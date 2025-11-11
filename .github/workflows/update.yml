@@ -1,36 +1,47 @@
-name: IUCN Data Update
+name: IUCN Monthly Update
 
+# Läuft automatisch einmal im Monat
 on:
   schedule:
-    # Jeden 1. des Monats um 02:00 UTC
-    - cron: '0 2 1 * *'
-  workflow_dispatch: # Manuell auslösbar
+    - cron: '0 2 1 * *'  # am 1. des Monats um 02:00 UTC
+  workflow_dispatch:    # erlaubt manuelles Auslösen
 
 jobs:
-  update-species-data:
+  update_species_data:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Repository auschecken
+      # Repository auschecken
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Node.js einrichten
+      # Node.js Setup (Node 18+ für native fetch)
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
-      - name: Abhängigkeiten installieren
-        run: npm install node-fetch@3
-
-      - name: IUCN Daten aktualisieren
-        run: node update.js
+      # Token als Secret verfügbar machen
+      - name: Set IUCN Token
         env:
           IUCN_TOKEN: ${{ secrets.IUCN_TOKEN }}
+        run: echo "IUCN Token gesetzt"
 
-      - name: Änderungen committen & pushen
+      # Installiere Dependencies (optional, wir haben keine)
+      - name: Install dependencies
+        run: npm ci || echo "Keine Dependencies installiert"
+
+      # Script ausführen
+      - name: Update species data
+        env:
+          IUCN_TOKEN: ${{ secrets.IUCN_TOKEN }}
+        run: node update.js
+
+      # Änderungen committen und pushen
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add speciesData.json
-          git commit -m "Automatisches Update der IUCN-Daten"
+          git commit -m "Automatisches Update der IUCN-Daten [ci skip]" || echo "Keine Änderungen zum Committen"
           git push
