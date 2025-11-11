@@ -1,47 +1,64 @@
 import fs from "fs";
+import fetch from "node-fetch";
 
-// Artenliste
 const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
+const IUCN_TOKEN = process.env.IUCN_TOKEN;
 
-// Platzhalter-Daten für Test
-const exampleData = {
-  "Alcedo atthis": {
-    status: "LC",
-    trend: "zunehmend",
-    mature_individuals: "3.000.000–6.000.000",
-    habitat: "Lebt in der Nähe von sauberen, langsam fließenden Gewässern mit reichlich Fischvorkommen.",
-    range_map: "https://example.com/alcedo_atthis_range_map.png"
-  },
-  "Turdus merula": {
-    status: "LC",
-    trend: "stabil",
-    mature_individuals: "7.900.000–9.550.000 Brutpaare in Deutschland",
-    habitat: "In Gärten, Parks und Wäldern weit verbreitet.",
-    range_map: "https://example.com/turdus_merula_range_map.png"
-  },
-  "Merops apiaster": {
-    status: "LC",
-    trend: "zunehmend",
-    mature_individuals: "500.000–1.000.000",
-    habitat: "Lebt in offenen Landschaften mit Bäumen und Buschwerk, oft in der Nähe von Flüssen.",
-    range_map: "https://example.com/merops_apiaster_range_map.png"
-  }
-};
-
-// Mapping Status auf Deutsch
 const statusMap = {
-  "LC": "nicht gefährdet",
-  "NT": "gering gefährdet",
-  "VU": "gefährdet",
-  "EN": "stark gefährdet",
-  "CR": "vom Aussterben bedroht"
+  "LC": { text: "nicht gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/LC.png" },
+  "NT": { text: "gering gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/NT.png" },
+  "VU": { text: "gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/VU.png" },
+  "EN": { text: "stark gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/EN.png" },
+  "CR": { text: "vom Aussterben bedroht", icon: "https://www.iucnredlist.org/static/images/categories/CR.png" },
+  "EW": { text: "in freier Wildbahn ausgestorben", icon: "https://www.iucnredlist.org/static/images/categories/EW.png" },
+  "EX": { text: "ausgestorben", icon: "https://www.iucnredlist.org/static/images/categories/EX.png" }
 };
 
-// Generiere JSON für alle Arten
-const data = {};
-for (const species of speciesList) {
-  data[species] = { ...exampleData[species], updated: new Date().toISOString().slice(0,10) };
+async function fetchSpeciesData(species) {
+  try {
+    const url = `https://apiv3.iucnredlist.org/api/v3/species/${encodeURIComponent(species)}?token=${IUCN_TOKEN}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const result = json.result?.[0] || {};
+
+    // Populationstrend
+    const trendUrl = `https://apiv3.iucnredlist.org/api/v3/species/trends/${encodeURIComponent(species)}?token=${IUCN_TOKEN}`;
+    const trendRes = await fetch(trendUrl);
+    const trendJson = await trendRes.json();
+    const trend = trendJson.result?.[0]?.trend || "n/a";
+    
+    //Abruf der Art- Daten
+    return {
+      status: result.category || "n/a",
+      status_icon: statusMap[result.category]?.icon || "",
+      trend: trend,
+      mature_individuals: result.number_of_mature_individuals || "n/a",
+      habitat: result.habitat || "n/a",
+      range_map: result.range_map || "",
+      updated: new Date().toISOString().slice(0,10)
+    };
+  } catch (err) {
+    console.error(`Fehler bei ${species}:`, err);
+    return {
+      status: "n/a",
+      trend: "n/a",
+      mature_individuals: "n/a",
+      habitat: "n/a",
+      range_map: "",
+      updated: new Date().toISOString().slice(0,10)
+    };
+  }
 }
 
-fs.writeFileSync("speciesData.json", JSON.stringify(data, null, 2));
-console.log("✅ speciesData.json mit Testdaten erstellt!");
+(async () => {
+  const data = {};
+  for (const sp of speciesList) {
+    const name = sp.scientific;
+    console.log(`Hole Daten für ${name}...`);
+    const info = await fetchSpeciesData(name);
+    data[name] = info;
+  }
+
+  fs.writeFileSync("speciesData.json", JSON.stringify(data, null, 2));
+  console.log("✅ speciesData.json aktualisiert!");
+})();
