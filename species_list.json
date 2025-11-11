@@ -1,4 +1,18 @@
 [
+  {
+    "common": "Eisvogel",
+    "scientific": "Alcedo atthis"
+  },
+  {
+    "common": "Amsel",
+    "scientific": "Turdus merula"
+  },
+  {
+    "common": "Bienenfresser",
+    "scientific": "Merops apiaster"
+  }
+]
+[
   "Alcedo atthis",
   "Turdus merula"
 ]
