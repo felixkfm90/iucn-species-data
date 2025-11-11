@@ -1,10 +1,11 @@
 {
   "Alcedo atthis": {
-    "status": "LC",
-    "trend": "zunehmend",
-    "mature_individuals": "3.000.000–6.000.000",
-    "habitat": "Lebt in der Nähe von sauberen, langsam fließenden Gewässern mit reichlich Fischvorkommen.",
-    "range_map": "https://example.com/alcedo_atthis_range_map.png",
+    "status": "nicht verfügbar",
+    "status_icon": "",
+    "trend": "nicht verfügbar",
+    "mature_individuals": "nicht verfügbar",
+    "habitat": "nicht verfügbar",
+    "range_map": "",
     "updated": "2025-11-11"
   }
 }
