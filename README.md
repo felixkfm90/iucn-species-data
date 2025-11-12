@@ -15,9 +15,15 @@ Die Daten können z. B. auf einer Website (wie Squarespace) eingebunden werden.
 
 ## 📁 Ordnerstruktur
 ├── .github/
+
 │ └── workflows/
+
 │ └── update.yml # GitHub Action für monatliche Updates
+
 ├── species_list.json # Liste der zu überwachenden Arten
+
 ├── update.js # Script zum Abrufen der Daten
+
 ├── speciesData.json # Automatisch erzeugte Datendatei
+
 └── package.json # Node.js-Konfiguration
