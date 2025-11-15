@@ -39,7 +39,7 @@ async function getSpeciesId(scientificName) {
 async function fetchSpeciesData(taxonId) {
   try {
     const speciesUrl = `https://apiv3.iucnredlist.org/api/v3/species/id/${taxonId}?token=${IUCN_TOKEN}`;
-    const trendUrl   = `https://apiv3.iucnredlist.org/api/v3/species/taxonid/${taxonId}/population?token=${IUCN_TOKEN}`;
+    const trendUrl = `https://apiv3.iucnredlist.org/api/v3/species/${taxonId}/population?token=${IUCN_TOKEN}`;
 
     const speciesRes = await fetch(speciesUrl);
     const speciesJson = await speciesRes.json();
