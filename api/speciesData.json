@@ -1,1 +1,87 @@
-
+[
+  {
+    "german": "Amsel",
+    "scientific": "Turdus merula",
+    "iucn": null
+  },
+  {
+    "german": "Bachstelze",
+    "scientific": "Motacilla alba",
+    "iucn": null
+  },
+  {
+    "german": "Bartmeise",
+    "scientific": "Panurus biarmicus",
+    "iucn": null
+  },
+  {
+    "german": "Bluthänfling",
+    "scientific": "Linaria cannabina",
+    "iucn": null
+  },
+  {
+    "german": "Buntspecht",
+    "scientific": "Dendrocopos major",
+    "iucn": null
+  },
+  {
+    "german": "Eisvogel",
+    "scientific": "Alcedo atthis",
+    "iucn": null
+  },
+  {
+    "german": "Blaukehlchen",
+    "scientific": "Luscinia svecica",
+    "iucn": null
+  },
+  {
+    "german": "Blaumeise",
+    "scientific": "Cyanistes caeruleus",
+    "iucn": null
+  },
+  {
+    "german": "Blässhuhn",
+    "scientific": "Fulica atra",
+    "iucn": null
+  },
+  {
+    "german": "Großtrappe",
+    "scientific": "Otis tarda",
+    "iucn": null
+  },
+  {
+    "german": "Rotkehlchen",
+    "scientific": "Erithacus rubecula",
+    "iucn": null
+  },
+  {
+    "german": "Turmfalke",
+    "scientific": "Falco tinnunculus",
+    "iucn": null
+  },
+  {
+    "german": "Mantelbrüllaffe",
+    "scientific": "Alouatta palliata",
+    "iucn": null
+  },
+  {
+    "german": "Quetzal",
+    "scientific": "Pharomachrus mocinno",
+    "iucn": null
+  },
+  {
+    "german": "Panama-Kapuzineraffe",
+    "scientific": "Cebus imitator",
+    "iucn": null
+  },
+  {
+    "german": "Papageientaucher",
+    "scientific": "Fratercula arctica",
+    "iucn": null
+  },
+  {
+    "german": "Buckelwal",
+    "scientific": "Megaptera novaeangliae",
+    "iucn": null
+  }
+]
