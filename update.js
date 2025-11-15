@@ -4,7 +4,7 @@ import fs from "fs"; // Zugriff auf das Dateisystem
 const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
 
 // IUCN API Token aus GitHub Secrets oder Umgebungsvariablen
-const IUCN_TOKEN = process.env.IUCN_TOKEN;
+const IUCN_TOKEN = secrets.env.IUCN_TOKEN;
 
 // Mapping der Status-Kategorien auf Deutsch + optional Icon-URL
 const statusMap = {
