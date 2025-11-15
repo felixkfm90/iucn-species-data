@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm ci || echo "Keine Dependencies installiert"
+        run: npm install
 
       - name: Update species data
         env:
