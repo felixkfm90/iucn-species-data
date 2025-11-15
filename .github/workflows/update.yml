@@ -24,6 +24,15 @@ jobs:
       - name: Install dependencies
         run: echo "Keine Dependencies installiert" 
 
+      - name: Check IUCN_TOKEN
+        run: |
+          if [ -z "$IUCN_TOKEN" ]; then
+            echo "❌ IUCN_TOKEN ist leer!"
+            exit 1
+          else
+            echo "✅ IUCN_TOKEN ist gesetzt"
+          fi
+
       - name: Update species data
         run: node update.js
 
