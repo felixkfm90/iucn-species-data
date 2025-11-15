@@ -1,13 +1,18 @@
 import puppeteer from "puppeteer";
 import fs from "fs/promises";
 
+await fs.mkdir("api", { recursive: true });
+
 const speciesList = JSON.parse(await fs.readFile("species_list.json", "utf-8"));
 const speciesData = [];
 const IUCN_TOKEN = process.env.IUCN_TOKEN;
 
 if (!IUCN_TOKEN) throw new Error("IUCN_TOKEN not set");
 
-const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+const browser = await puppeteer.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 const page = await browser.newPage();
 
 for (const sp of speciesList) {
@@ -39,5 +44,6 @@ for (const sp of speciesList) {
 }
 
 await browser.close();
+
 await fs.writeFile("api/speciesData.json", JSON.stringify(speciesData, null, 2));
 console.log("speciesData.json updated!");
