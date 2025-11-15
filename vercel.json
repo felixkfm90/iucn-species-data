@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/updateSpecies.js": {
+      "schedule": "0 0 1 * *"
+    }
+  }
+}
