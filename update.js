@@ -36,16 +36,21 @@ async function getSpeciesId(scientificName) {
     }
 
     const json = await res.json();
-    if (json.result?.length) return json.result[0].taxonid || null;
-
-    // Fallback: Subspecies auf Gattung + Art kürzen
-    const baseName = scientificName.split(" ").slice(0, 2).join(" ");
-    if (baseName !== scientificName) {
-      console.log(`ℹ Versuch mit verkürztem Namen: ${baseName}`);
-      return await getSpeciesId(baseName);
+    if (!json.result || !json.result.length) {
+      // Fallback: Subspecies auf Gattung + Art kürzen
+      const baseName = scientificName.split(" ").slice(0, 2).join(" ");
+      if (baseName !== scientificName) {
+        console.log(`ℹ Versuch mit verkürztem Namen: ${baseName}`);
+        return await getSpeciesId(baseName);
+      }
+      return null;
     }
 
-    return null;
+    // Globaler Eintrag bevorzugt
+    const globalResult = json.result.find(r => r.region === "Global") || json.result[0];
+    console.log(`ℹ Gefundene IDs für ${scientificName}:`, json.result.map(r => `${r.region}=${r.taxonid}`));
+    return globalResult?.taxonid || null;
+
   } catch (err) {
     console.error(`❌ Fehler beim Abrufen der ID für ${scientificName}:`, err);
     return null;
