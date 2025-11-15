@@ -1,6 +1,19 @@
 [
-  {
-    "common": "Eisvogel",
-    "scientific": "Alcedo atthis"
-  }
+  { "german": "Amsel", "scientific": "Turdus merula" },
+  { "german": "Bachstelze", "scientific": "Motacilla alba" },
+  { "german": "Bartmeise", "scientific": "Panurus biarmicus" },
+  { "german": "Bluthänfling", "scientific": "Linaria cannabina" },
+  { "german": "Buntspecht", "scientific": "Dendrocopos major" },
+  { "german": "Eisvogel", "scientific": "Alcedo atthis" },
+  { "german": "Blaukehlchen", "scientific": "Luscinia svecica" },
+  { "german": "Blaumeise", "scientific": "Cyanistes caeruleus" },
+  { "german": "Blässhuhn", "scientific": "Fulica atra" },
+  { "german": "Großtrappe", "scientific": "Otis tarda" },
+  { "german": "Rotkehlchen", "scientific": "Erithacus rubecula" },
+  { "german": "Turmfalke", "scientific": "Falco tinnunculus" },
+  { "german": "Mantelbrüllaffe", "scientific": "Alouatta palliata" },
+  { "german": "Quetzal", "scientific": "Pharomachrus mocinno" },
+  { "german": "Panama-Kapuzineraffe", "scientific": "Cebus capucinus imitator" },
+  { "german": "Papageientaucher", "scientific": "Fratercula arctica" },
+  { "german": "Buckelwal", "scientific": "Megaptera novaeangliae" }
 ]
