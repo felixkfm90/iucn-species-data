@@ -1,10 +1,3 @@
-name: Update IUCN Data
-
-on:
-  schedule:
-    - cron: '0 0 1 * *'  # jeden Monat am 1.
-  workflow_dispatch:      # manuell auslösbar
-
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -17,17 +10,20 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          npm install
 
       - name: Run Update Script
         env:
           IUCN_TOKEN: ${{ secrets.IUCN_TOKEN }}
-        run: npm run update
+        run: node update.js
 
       - name: Commit and Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add api/speciesData.json
-          git commit -m "Update IUCN data" || echo "No changes to commit"
+          git commit -m "Update IUCN data"
           git push
