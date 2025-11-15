@@ -1,3 +1,10 @@
+name: Update IUCN Data
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # jeden Monat am 1.
+  workflow_dispatch:     # manuell ausführbar
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
