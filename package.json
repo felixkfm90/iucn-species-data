@@ -1,4 +1,14 @@
 {
-  "type": "module",
-  "dependencies": {}
+  "name": "iucn-update",
+  "version": "1.0.0",
+  "description": "Update species data from IUCN",
+  "main": "update.js",
+  "scripts": {
+    "update": "node update.js"
+  },
+  "dependencies": {
+    "puppeteer": "^23.3.0",
+    "node-fetch": "^3.3.2"
+  },
+  "type": "module"
 }
