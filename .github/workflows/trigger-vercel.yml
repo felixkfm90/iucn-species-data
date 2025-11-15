@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Trigger Vercel Function
         run: |
-          curl -X GET https://DEINE-VERCEL-URL.vercel.app/api/updateSpecies
+          curl -X GET https://vercel.com/felixkfms-projects/iucn_species
