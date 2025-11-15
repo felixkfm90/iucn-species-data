@@ -14,16 +14,37 @@ const IUCN_TOKEN = process.env.IUCN_TOKEN;
     console.log("Fetching:", sp.scientific);
 
     try {
-      const data = await page.evaluate(async (species, token) => {
-        const response = await fetch(`https://apiv3.iucnredlist.org/api/v3/species/${species}?token=${token}`);
-        if (!response.ok) throw new Error("Request failed");
-        const json = await response.json();
-        return json.result[0];
+      // Species Data
+      const speciesInfo = await page.evaluate(async (species, token) => {
+        const res = await fetch(`https://apiv3.iucnredlist.org/api/v3/species/${species}?token=${token}`);
+        if (!res.ok) throw new Error("Species request failed");
+        const json = await res.json();
+        return json.result[0]; // enthält scientific_name, category etc.
       }, sp.scientific, IUCN_TOKEN);
 
-      speciesData.push({ ...sp, iucn: data });
+      // Population Data
+      const populationInfo = await page.evaluate(async (species, token) => {
+        const res = await fetch(`https://apiv3.iucnredlist.org/api/v3/species/population/${species}?token=${token}`);
+        if (!res.ok) throw new Error("Population request failed");
+        const json = await res.json();
+        return json.result || [];
+      }, sp.scientific, IUCN_TOKEN);
+
+      speciesData.push({
+        german: sp.german,
+        scientific: sp.scientific,
+        status: speciesInfo?.category || "unknown",
+        population: populationInfo.length ? populationInfo : null
+      });
+
     } catch (e) {
       console.error(`Failed for ${sp.scientific}:`, e.message);
+      speciesData.push({
+        german: sp.german,
+        scientific: sp.scientific,
+        status: "error",
+        population: null
+      });
     }
   }
 
