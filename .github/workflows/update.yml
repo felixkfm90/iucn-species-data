@@ -10,6 +10,9 @@ jobs:
   update_species_data:
     runs-on: ubuntu-latest
 
+    env:
+      IUCN_TOKEN: ${{ secrets.IUCN_TOKEN }}   # Token wird GLOBAL für alle Steps gesetzt
+
     steps:
       # Repository auschecken
       - name: Checkout repository
@@ -33,8 +36,6 @@ jobs:
 
       # Script ausführen
       - name: Update species data
-        env:
-          IUCN_TOKEN: ${{ secrets.IUCN_TOKEN }}
         run: node update.js
 
       # Änderungen committen und pushen
