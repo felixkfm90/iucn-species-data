@@ -1,14 +1,9 @@
 {
-  "name": "iucn-update",
+  "name": "iucn-vercel-update",
   "version": "1.0.0",
-  "description": "Update species data from IUCN",
-  "main": "update.js",
-  "scripts": {
-    "update": "node update.js"
-  },
+  "type": "module",
   "dependencies": {
-    "puppeteer": "^23.3.0",
-    "node-fetch": "^3.3.2"
-  },
-  "type": "module"
+    "node-fetch": "^3.3.2",
+    "@octokit/rest": "^21.0.2"
+  }
 }
