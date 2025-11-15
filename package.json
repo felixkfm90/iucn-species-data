@@ -1,0 +1,11 @@
+{
+  "name": "iucn-vercel",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "update": "node update.js"
+  },
+  "dependencies": {
+    "puppeteer": "^23.3.0"
+  }
+}
