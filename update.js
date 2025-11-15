@@ -26,9 +26,26 @@ async function getSpeciesId(scientificName) {
   const url = `https://apiv3.iucnredlist.org/api/v3/species/name/${encodeURIComponent(scientificName)}?token=${IUCN_TOKEN}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Node.js IUCN Script" }
+    });
+
+    if (!res.ok) {
+      console.error(`❌ HTTP-Fehler ${res.status} für ${scientificName}`);
+      return null;
+    }
+
     const json = await res.json();
-    return json.result?.[0]?.taxonid || null;
+    if (json.result?.length) return json.result[0].taxonid || null;
+
+    // Fallback: Subspecies auf Gattung + Art kürzen
+    const baseName = scientificName.split(" ").slice(0, 2).join(" ");
+    if (baseName !== scientificName) {
+      console.log(`ℹ Versuch mit verkürztem Namen: ${baseName}`);
+      return await getSpeciesId(baseName);
+    }
+
+    return null;
   } catch (err) {
     console.error(`❌ Fehler beim Abrufen der ID für ${scientificName}:`, err);
     return null;
@@ -41,10 +58,15 @@ async function fetchSpeciesData(taxonId) {
     const speciesUrl = `https://apiv3.iucnredlist.org/api/v3/species/id/${taxonId}?token=${IUCN_TOKEN}`;
     const trendUrl = `https://apiv3.iucnredlist.org/api/v3/species/${taxonId}/population?token=${IUCN_TOKEN}`;
 
-    const speciesRes = await fetch(speciesUrl);
-    const speciesJson = await speciesRes.json();
+    const [speciesRes, trendRes] = await Promise.all([
+      fetch(speciesUrl, { headers: { "User-Agent": "Node.js IUCN Script" } }),
+      fetch(trendUrl, { headers: { "User-Agent": "Node.js IUCN Script" } })
+    ]);
 
-    const trendRes = await fetch(trendUrl);
+    if (!speciesRes.ok) throw new Error(`HTTP-Fehler ${speciesRes.status} bei species`);
+    if (!trendRes.ok) throw new Error(`HTTP-Fehler ${trendRes.status} bei trend`);
+
+    const speciesJson = await speciesRes.json();
     const trendJson = await trendRes.json();
 
     const s = speciesJson.result?.[0] || {};
