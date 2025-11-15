@@ -1,70 +1,49 @@
-import fs from "fs";
-import fetch from "node-fetch";
-import { Octokit } from "@octokit/rest";
-
-const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf-8"));
-
-const IUCN_TOKEN = process.env.IUCN_TOKEN;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Personal Access Token
-const REPO_OWNER = "DEIN_USERNAME";
-const REPO_NAME = "DEIN_REPO";
+import puppeteer from "puppeteer";
+import fs from "fs/promises";
 
 export default async function handler(req, res) {
-  const speciesData = [];
-
-  for (const sp of speciesList) {
-    try {
-      const response = await fetch(
-        `https://apiv3.iucnredlist.org/api/v3/species/${encodeURIComponent(sp.scientific)}?token=${IUCN_TOKEN}`
-      );
-
-      if (!response.ok) throw new Error(`IUCN request failed: ${response.status}`);
-
-      const json = await response.json();
-      const data = json.result[0] || {};
-
-      speciesData.push({
-        german: sp.german,
-        scientific: sp.scientific,
-        status: data.category || null,
-        population: data.population || null
-      });
-    } catch (e) {
-      console.error(`Failed for ${sp.scientific}:`, e.message);
-      speciesData.push({ ...sp, status: null, population: null });
-    }
-  }
-
-  // Push to GitHub
-  const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
-  const content = Buffer.from(JSON.stringify(speciesData, null, 2)).toString("base64");
-
   try {
-    const { data: file } = await octokit.repos.getContent({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      path: "speciesData.json"
-    });
+    const speciesList = JSON.parse(await fs.readFile("species_list.json", "utf-8"));
+    const speciesData = [];
+    const IUCN_TOKEN = process.env.IUCN_TOKEN;
 
-    await octokit.repos.createOrUpdateFileContents({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      path: "speciesData.json",
-      message: "Update IUCN data",
-      content,
-      sha: file.sha
-    });
-  } catch {
-    // Wenn die Datei noch nicht existiert
-    await octokit.repos.createOrUpdateFileContents({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      path: "speciesData.json",
-      message: "Create IUCN data",
-      content
-    });
+    if (!IUCN_TOKEN) throw new Error("IUCN_TOKEN not set");
+
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+    const page = await browser.newPage();
+
+    for (const sp of speciesList) {
+      try {
+        const data = await page.evaluate(async (species, token) => {
+          const response = await fetch(`https://apiv3.iucnredlist.org/api/v3/species/${species}?token=${token}`);
+          if (!response.ok) throw new Error("Request failed");
+          const json = await response.json();
+          return json.result[0];
+        }, sp.scientific, IUCN_TOKEN);
+
+        speciesData.push({
+          german: sp.german,
+          scientific: sp.scientific,
+          status: data?.category || null,
+          population: data?.population || null,
+        });
+      } catch (e) {
+        console.error(`Failed for ${sp.scientific}:`, e.message);
+        speciesData.push({
+          german: sp.german,
+          scientific: sp.scientific,
+          status: null,
+          population: null,
+        });
+      }
+    }
+
+    await browser.close();
+    await fs.writeFile("speciesData.json", JSON.stringify(speciesData, null, 2));
+
+    res.status(200).json({ message: "speciesData.json updated", count: speciesData.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
-
-  res.status(200).json({ success: true, updated: speciesData.length });
 }
