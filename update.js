@@ -1,12 +1,16 @@
-import fs from "fs"; // Zugriff auf das Dateisystem
+import fs from "fs";
 
-// Artenliste einlesen (deutscher + wissenschaftlicher Name)
+// Artenliste einlesen
 const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
 
-// IUCN API Token aus GitHub Secrets oder Umgebungsvariablen
+// API-Token
 const IUCN_TOKEN = process.env.IUCN_TOKEN;
+if (!IUCN_TOKEN) {
+  console.error("❌ Fehler: IUCN_TOKEN ist nicht gesetzt!");
+  process.exit(1);
+}
 
-// Mapping der Status-Kategorien auf Deutsch + optional Icon-URL
+// Mapping der IUCN-Kategorien
 const statusMap = {
   "LC": { text: "nicht gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/LC.png" },
   "NT": { text: "gering gefährdet", icon: "https://www.iucnredlist.org/static/images/categories/NT.png" },
@@ -17,33 +21,45 @@ const statusMap = {
   "EX": { text: "ausgestorben", icon: "https://www.iucnredlist.org/static/images/categories/EX.png" }
 };
 
-// Funktion: Daten für eine einzelne Art von der IUCN API abrufen
-async function fetchSpeciesData(species) {
-  try {
-    // Allgemeine Artinformationen abrufen
-    const speciesUrl = `https://apiv3.iucnredlist.org/api/v3/species/${encodeURIComponent(species)}?token=${IUCN_TOKEN}`;
-    const speciesRes = await fetch(speciesUrl); // native fetch
-    const speciesJson = await speciesRes.json();
-    const result = speciesJson.result?.[0] || {};
+// Schritt 1: Species-ID abrufen
+async function getSpeciesId(scientificName) {
+  const url = `https://apiv3.iucnredlist.org/api/v3/species/name/${encodeURIComponent(scientificName)}?token=${IUCN_TOKEN}`;
 
-    // Populationstrend abrufen
-    const trendUrl = `https://apiv3.iucnredlist.org/api/v3/species/trends/${encodeURIComponent(species)}?token=${IUCN_TOKEN}`;
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    return json.result?.[0]?.taxonid || null;
+  } catch (err) {
+    console.error(`❌ Fehler beim Abrufen der ID für ${scientificName}:`, err);
+    return null;
+  }
+}
+
+// Schritt 2: Daten per ID holen
+async function fetchSpeciesData(taxonId) {
+  try {
+    const speciesUrl = `https://apiv3.iucnredlist.org/api/v3/species/id/${taxonId}?token=${IUCN_TOKEN}`;
+    const trendUrl   = `https://apiv3.iucnredlist.org/api/v3/species/taxonid/${taxonId}/population?token=${IUCN_TOKEN}`;
+
+    const speciesRes = await fetch(speciesUrl);
+    const speciesJson = await speciesRes.json();
+
     const trendRes = await fetch(trendUrl);
     const trendJson = await trendRes.json();
-    const trend = trendJson.result?.[0]?.trend || "nicht verfügbar";
 
-    // Daten zusammenstellen
+    const s = speciesJson.result?.[0] || {};
+
     return {
-      status: result.category || "nicht verfügbar",
-      status_icon: statusMap[result.category]?.icon || "",
-      trend: trend,
-      mature_individuals: result.number_of_mature_individuals || "nicht verfügbar",
-      habitat: result.habitat || "nicht verfügbar",
-      range_map: result.range_map || "",
+      status: s.category || "nicht verfügbar",
+      status_icon: statusMap[s.category]?.icon || "",
+      trend: trendJson.result?.[0]?.trend || "nicht verfügbar",
+      mature_individuals: s.number_of_mature_individuals || "nicht verfügbar",
+      habitat: s.habitat || "nicht verfügbar",
+      range_map: s.range || "",
       updated: new Date().toISOString().slice(0,10)
     };
   } catch (err) {
-    console.error(`Fehler bei ${species}:`, err);
+    console.error(`❌ Fehler beim Abruf der Artendaten:`, err);
     return {
       status: "nicht verfügbar",
       status_icon: "",
@@ -56,15 +72,32 @@ async function fetchSpeciesData(species) {
   }
 }
 
-// Hauptblock: Alle Arten durchgehen und JSON schreiben
+// Hauptprozess
 (async () => {
   const data = {};
 
   for (const sp of speciesList) {
-    const name = sp.scientific;
-    console.log(`Hole Daten für ${name}...`);
-    const info = await fetchSpeciesData(name);
-    data[name] = info;
+    const scientific = sp.scientific;
+    console.log(`🔎 Hole Daten für ${scientific}...`);
+
+    const taxonId = await getSpeciesId(scientific);
+
+    if (!taxonId) {
+      console.log(`⚠ Keine ID gefunden für ${scientific}`);
+      data[scientific] = {
+        status: "nicht verfügbar",
+        status_icon: "",
+        trend: "nicht verfügbar",
+        mature_individuals: "nicht verfügbar",
+        habitat: "nicht verfügbar",
+        range_map: "",
+        updated: new Date().toISOString().slice(0,10)
+      };
+      continue;
+    }
+
+    const info = await fetchSpeciesData(taxonId);
+    data[scientific] = info;
   }
 
   fs.writeFileSync("speciesData.json", JSON.stringify(data, null, 2));
