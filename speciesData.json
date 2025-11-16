@@ -1,121 +1,138 @@
 {
   "Turdus merula": {
     "resolved_name": "Turdus merula",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2024",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Motacilla alba": {
     "resolved_name": "Motacilla alba",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Panurus biarmicus": {
     "resolved_name": "Panurus biarmicus",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2024",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Linaria cannabina": {
     "resolved_name": "Linaria cannabina",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Dendrocopos major": {
     "resolved_name": "Dendrocopos major",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2025",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Alcedo atthis": {
     "resolved_name": "Alcedo atthis",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2024",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Luscinia svecica": {
     "resolved_name": "Luscinia svecica",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Cyanistes caeruleus": {
     "resolved_name": "Cyanistes caeruleus",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2024",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Fulica atra": {
     "resolved_name": "Fulica atra",
-    "status": "NT",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Otis tarda": {
     "resolved_name": "Otis tarda",
-    "status": "EN",
-    "Trend": "n/a",
-    "year_published": "2023",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Erithacus rubecula": {
     "resolved_name": "Erithacus rubecula",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Falco tinnunculus": {
     "resolved_name": "Falco tinnunculus",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2022",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Alouatta palliata": {
     "resolved_name": "Alouatta palliata",
-    "status": "VU",
-    "Trend": "n/a",
-    "year_published": "2020",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Pharomachrus mocinno": {
     "resolved_name": "Pharomachrus mocinno",
-    "status": "NT",
-    "Trend": "n/a",
-    "year_published": "2023",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Cebus imitator": {
     "resolved_name": "Cebus imitator",
-    "status": "VU",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Fratercula arctica": {
     "resolved_name": "Fratercula arctica",
-    "status": "EN",
-    "Trend": "n/a",
-    "year_published": "2021",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   },
   "Megaptera novaeangliae": {
     "resolved_name": "Megaptera novaeangliae",
-    "status": "LC",
-    "Trend": "n/a",
-    "year_published": "2023",
+    "status": "n/a",
+    "status_icon": "",
+    "assessment_url": "",
+    "year_published": "n/a",
     "updated": "2025-11-16"
   }
 }
