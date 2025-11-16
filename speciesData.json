@@ -1,10 +1,8 @@
 {
   "Turdus merula": {
     "resolved_name": "Turdus merula",
-    "status": "n/a",
-    "status_icon": "",
-    "assessment_url": "",
-    "year_published": "n/a",
+    "status": "LC",
+    "year_published": "2024",
     "updated": "2025-11-16"
   },
   "Motacilla alba": {
