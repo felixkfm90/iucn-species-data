@@ -1,104 +1,206 @@
-[
-  {
-    "scientific_name": "Turdus merula",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+{
+  "Turdus merula": {
+    "resolved_name": "Turdus merula",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Motacilla alba",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Motacilla alba": {
+    "resolved_name": "Motacilla alba",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Panurus biarmicus",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Panurus biarmicus": {
+    "resolved_name": "Panurus biarmicus",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Linaria cannabina",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Linaria cannabina": {
+    "resolved_name": "Linaria cannabina",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Dendrocopos major",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Dendrocopos major": {
+    "resolved_name": "Dendrocopos major",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Alcedo atthis",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Alcedo atthis": {
+    "resolved_name": "Alcedo atthis",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Luscinia svecica",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Luscinia svecica": {
+    "resolved_name": "Luscinia svecica",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Cyanistes caeruleus",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Cyanistes caeruleus": {
+    "resolved_name": "Cyanistes caeruleus",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Fulica atra",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Fulica atra": {
+    "resolved_name": "Fulica atra",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Otis tarda",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Otis tarda": {
+    "resolved_name": "Otis tarda",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Erithacus rubecula",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Erithacus rubecula": {
+    "resolved_name": "Erithacus rubecula",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Falco tinnunculus",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Falco tinnunculus": {
+    "resolved_name": "Falco tinnunculus",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Alouatta palliata",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Alouatta palliata": {
+    "resolved_name": "Alouatta palliata",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Pharomachrus mocinno",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Pharomachrus mocinno": {
+    "resolved_name": "Pharomachrus mocinno",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Cebus imitator",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Cebus imitator": {
+    "resolved_name": "Cebus imitator",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Fratercula arctica",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Fratercula arctica": {
+    "resolved_name": "Fratercula arctica",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   },
-  {
-    "scientific_name": "Megaptera novaeangliae",
-    "trend": null,
-    "mature_individuals": null,
-    "category": null
+  "Megaptera novaeangliae": {
+    "resolved_name": "Megaptera novaeangliae",
+    "status": "n/a",
+    "status_icon": "",
+    "category": "n/a",
+    "assessment_url": "",
+    "year_published": "n/a",
+    "trend": "n/a",
+    "mature_individuals": "n/a",
+    "range_map": "",
+    "updated": "2025-11-16"
   }
-]
+}
