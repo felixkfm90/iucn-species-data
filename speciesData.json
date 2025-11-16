@@ -1,20 +1,18 @@
 {
   "Turdus merula": {
     "resolved_name": "Turdus merula",
-    "status": "n/a",
-    "status_icon": "",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
+    "status": "LC",
+    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
+    "assessment_url": "https://www.iucnredlist.org/species/103888106/264548442",
+    "year_published": "2024",
     "updated": "2025-11-16"
   },
   "Motacilla alba": {
     "resolved_name": "Motacilla alba",
-    "status": "n/a",
-    "status_icon": "",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
+    "status": "LC",
+    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
+    "assessment_url": "https://www.iucnredlist.org/species/22718348/166400912",
+    "year_published": "2021",
     "updated": "2025-11-16"
   }
 }
