@@ -1,206 +1,104 @@
-{
-  "Turdus merula": {
-    "resolved_name": "Turdus merula",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/103888106/264548442",
-    "year_published": "2024",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+[
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Motacilla alba": {
-    "resolved_name": "Motacilla alba",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22718348/166400912",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Panurus biarmicus": {
-    "resolved_name": "Panurus biarmicus",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22716776/264585405",
-    "year_published": "2024",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Linaria cannabina": {
-    "resolved_name": "Linaria cannabina",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22720441/166415057",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Dendrocopos major": {
-    "resolved_name": "Dendrocopos major",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22681124/280946929",
-    "year_published": "2025",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Alcedo atthis": {
-    "resolved_name": "Alcedo atthis",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22683027/264589271",
-    "year_published": "2024",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Luscinia svecica": {
-    "resolved_name": "Luscinia svecica",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22709707/166352021",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Cyanistes caeruleus": {
-    "resolved_name": "Cyanistes caeruleus",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/103761667/264532201",
-    "year_published": "2024",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Fulica atra": {
-    "resolved_name": "Fulica atra",
-    "status": "NT",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/NT.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22692913/166239776",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Otis tarda": {
-    "resolved_name": "Otis tarda",
-    "status": "EN",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/EN.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22691900/226280431",
-    "year_published": "2023",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Erithacus rubecula": {
-    "resolved_name": "Erithacus rubecula",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22709675/166350059",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Falco tinnunculus": {
-    "resolved_name": "Falco tinnunculus",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22696362/210515355",
-    "year_published": "2022",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Alouatta palliata": {
-    "resolved_name": "Alouatta palliata",
-    "status": "VU",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/VU.png",
-    "assessment_url": "https://www.iucnredlist.org/species/39960/17925090",
-    "year_published": "2020",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Pharomachrus mocinno": {
-    "resolved_name": "Pharomachrus mocinno",
-    "status": "NT",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/NT.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22682727/221577625",
-    "year_published": "2023",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Cebus imitator": {
-    "resolved_name": "Cebus imitator",
-    "status": "VU",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/VU.png",
-    "assessment_url": "https://www.iucnredlist.org/species/81265980/191708420",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Fratercula arctica": {
-    "resolved_name": "Fratercula arctica",
-    "status": "EN",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/EN.png",
-    "assessment_url": "https://www.iucnredlist.org/species/22694927/166290968",
-    "year_published": "2021",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   },
-  "Megaptera novaeangliae": {
-    "resolved_name": "Megaptera novaeangliae",
-    "status": "LC",
-    "status_text": "",
-    "status_icon": "https://www.iucnredlist.org/static/images/categories/LC.png",
-    "assessment_url": "https://www.iucnredlist.org/species/13006/219002308",
-    "year_published": "2023",
-    "trend": "n/a",
-    "mature_individuals": "n/a",
-    "range_map": "",
-    "updated": "2025-11-16"
+  {
+    "scientific_name": "undefined undefined",
+    "trend": null,
+    "mature_individuals": null,
+    "category": null
   }
-}
+]
