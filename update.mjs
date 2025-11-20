@@ -19,13 +19,13 @@ const RATE_LIMIT = 400; // ms Pause zwischen Requests
 
 // Status → Text + Icon
 const statusMap = {
-  "LC": { text: "nicht gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Status_iucn_LC_icon.svg" },
-  "NT": { text: "gering gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/e/ec/Status_iucn_NT_icon.svg" },
-  "VU": { text: "gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/5/5f/Status_iucn_VU_icon.svg" },
-  "EN": { text: "stark gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/f/f0/Status_iucn_EN_icon.svg" },
-  "CR": { text: "vom Aussterben bedroht", icon: "https://upload.wikimedia.org/wikipedia/commons/6/6e/Status_iucn_CR_icon.svg" },
-  "EW": { text: "in freier Wildbahn ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/4/48/Status_iucn_EW_icon.svg" },
-  "EX": { text: "ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/1/19/Status_iucn_EX_icon.svg" }
+  "LC": { text: "nicht gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/8/84/LC_IUCN_3_1.svg" },
+  "NT": { text: "gering gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/7/77/NT_IUCN_3_1.svg" },
+  "VU": { text: "gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/e/e1/VU_IUCN_3_1.svg" },
+  "EN": { text: "stark gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/4/49/EN_IUCN_3_1.svg" },
+  "CR": { text: "vom Aussterben bedroht", icon: "https://upload.wikimedia.org/wikipedia/commons/c/cd/CR_IUCN_3_1.svg" },
+  "EW": { text: "in freier Wildbahn ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/8/82/EW_IUCN_3_1.svg" },
+  "EX": { text: "ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/1/1b/EX_IUCN_3_1.svg" }
 };
 
 // Logging
