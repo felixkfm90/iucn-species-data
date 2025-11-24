@@ -48,10 +48,10 @@ function emptyEntry(name) {
     "Wissenschaftlicher Name": name,
     "Deutscher Name": "n/a",
     "Assessment ID": "n/a",
-    Status: globalAssessment.red_list_category_code || "n/a",
+    Status: "n/a",
     Trend: "n/a",
     Kategorie: "n/a",
-    "Letztes IUCN Update": globalAssessment.year_published || "n/a",
+    "Letztes IUCN Update": "n/a",
     "Daten abgerufen": new Date().toISOString().slice(0, 10)
   };
 }
