@@ -22,6 +22,13 @@ const BASE = "https://api.iucnredlist.org/api/v4";
 // ms Pause zwischen API-Requests
 const RATE_LIMIT = 400;
 
+// Assessment ID tracken
+const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
+let lastSavedAssessmentId = {};
+if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
+  lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
+}
+
 // Status → Text + Icon
 const statusMap = {
   "LC": { text: "nicht gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/8/84/LC_IUCN_3_1.svg" },
@@ -147,25 +154,25 @@ async function fetchSpeciesData(genus, species, german) {
 }
 
 // Verbreitungskarten herunterladen
-async function downloadMaps(speciesData) {
+export async function downloadMaps(speciesData) {
   for (const s of speciesData) {
+    const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
     const assessmentId = s["Assessment ID"];
     if (!assessmentId || assessmentId === "n/a") {
-      console.log(`⚠ Überspringe ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]}, keine gültige Assessment-ID.`);
+      console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
       continue;
     }
 
-    const fileName = `${s["Deutscher Name"] || s["Wissenschaftlicher Name"]} - ${assessmentId}.jpg`;
-    const filePath = path.join(DIR, fileName);
+    const filePath = path.join(DIR, `${name}.jpg`);
 
-    // Prüfen, ob Datei bereits existiert
-    if (fs.existsSync(filePath)) {
-      console.log(`ℹ Karte für ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]} (${assessmentId}) existiert bereits, überspringe.`);
+    // Prüfen, ob Karte schon aktuell ist
+    if (fs.existsSync(filePath) && lastSavedAssessmentId[name] === assessmentId) {
+      console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
       continue;
     }
 
     const url = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
-    console.log(`→ Lade Karte für ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]} (${assessmentId})`);
+    console.log(`→ Lade Karte für ${name} (${assessmentId})`);
 
     try {
       const res = await fetch(url, {
@@ -176,16 +183,20 @@ async function downloadMaps(speciesData) {
       });
 
       if (!res.ok) {
-        console.warn(`⚠ Karte für ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]} nicht gefunden (HTTP ${res.status})`);
+        console.warn(`⚠ Karte für ${name} nicht gefunden (HTTP ${res.status})`);
         continue;
       }
 
       const buffer = await res.arrayBuffer();
       fs.writeFileSync(filePath, Buffer.from(buffer));
       console.log(`✔ Karte gespeichert: ${filePath}`);
+
+      // Update letzte heruntergeladene AssessmentID
+      lastSavedAssessmentId[name] = assessmentId;
+      fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
     } catch (err) {
-      console.error(`❌ Fehler beim Download der Karte für ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]}: ${err.message}`);
-      logError(`Fehler beim Download der Karte für ${s["Deutscher Name"] || s["Wissenschaftlicher Name"]}: ${err.message}`);
+      console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
+      logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
     }
 
     await new Promise(r => setTimeout(r, RATE_LIMIT));
