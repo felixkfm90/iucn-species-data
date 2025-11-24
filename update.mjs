@@ -165,6 +165,12 @@ export async function downloadMaps(speciesData) {
 
     const filePath = path.join(DIR, `${name}.jpg`);
 
+    // Wenn Datei existiert, aber AssessmentID neu ist → alte Datei löschen
+    if (fs.existsSync(filePath) && lastSavedAssessmentId[name] !== assessmentId) {
+      fs.unlinkSync(filePath);
+      console.log(`ℹ Alte Karte für ${name} gelöscht, neue AssessmentID erkannt.`);
+    }
+
     // Prüfen, ob Karte schon aktuell ist
     if (fs.existsSync(filePath) && lastSavedAssessmentId[name] === assessmentId) {
       console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
@@ -202,7 +208,6 @@ export async function downloadMaps(speciesData) {
     await new Promise(r => setTimeout(r, RATE_LIMIT));
   }
 }
-
 
 // Hauptprozess
 (async function() {
