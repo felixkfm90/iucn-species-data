@@ -149,7 +149,7 @@ async function fetchSpeciesData(genus, species, german) {
 // Verbreitungskarten herunterladen
 async function downloadMaps(speciesData) {
   for (const s of speciesData) {
-    if (!s.assessmentId) continue;
+    if (!s["Assessment ID"] || s["Assessment ID"] === "n/a") continue;
 
     const url = `https://www.iucnredlist.org/api/v4/assessments/${s.assessmentId}/distribution_map/jpg`;
     const filePath = path.join(DIR, `${s.german} - ${s.assessmentId}.jpg`);
