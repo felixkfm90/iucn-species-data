@@ -45,14 +45,12 @@ function logError(msg) {
 // Fallback für fehlende Daten
 function emptyEntry(name) {
   return {
-    "Wissenschaftlicher Name": name,
-    "Deutscher Name": "n/a",
-    "Assessment ID": "n/a",
-    Status: "n/a",
-    Trend: "n/a",
-    Kategorie: "n/a",
-    "Letztes IUCN Update": "n/a",
-    "Daten abgerufen": new Date().toISOString().slice(0, 10)
+    resolved_name: name,
+    status: "n/a",
+    status_icon: "",
+    assessment_url: "",
+    year_published: "n/a",
+    updated: new Date().toISOString().slice(0, 10)
   };
 }
 
@@ -129,14 +127,13 @@ async function fetchSpeciesData(genus, species, german) {
     const assessmentInfo = await getAssessmentData(assessmentId);
 
     return {
-      "Wissenschaftlicher Name": resolvedName,
-      "Deutscher Name": german,
-      "Assessment ID": assessmentId,
-      Status: globalAssessment.red_list_category_code || "n/a",
-      Trend: assessmentInfo.trend,
-      Kategory: assessmentInfo.category,
-      "Letztes IUCN Update": globalAssessment.year_published || "n/a",
-      "Daten abgerufen": new Date().toISOString().slice(0, 10)
+      german,
+      resolvedName,
+      assessmentId,
+      status: globalAssessment.red_list_category_code || "n/a",
+      trend: assessmentInfo.trend,
+      category: assessmentInfo.category,
+      year: globalAssessment.year_published || "n/a"
     };
 
   } catch (err) {
