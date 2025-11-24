@@ -1,0 +1,22 @@
+[
+  { "german": "Amsel", "genus": "Turdus", "species": "merula" },
+  { "german": "Bachstelze", "genus": "Motacilla", "species": "alba" },
+  { "german": "Bartmeise", "genus": "Panurus", "species": "biarmicus" },
+  { "german": "Bluthänfling", "genus": "Linaria", "species": "cannabina" },
+  { "german": "Buntspecht", "genus": "Dendrocopos", "species": "major" },
+  { "german": "Eisvogel", "genus": "Alcedo", "species": "atthis" },
+  { "german": "Blaukehlchen", "genus": "Luscinia", "species": "svecica" },
+  { "german": "Blaumeise", "genus": "Cyanistes", "species": "caeruleus" },
+  { "german": "Blässhuhn", "genus": "Fulica", "species": "atra" },
+  { "german": "Großtrappe", "genus": "Otis", "species": "tarda" },
+  { "german": "Rotkehlchen", "genus": "Erithacus", "species": "rubecula" },
+  { "german": "Turmfalke", "genus": "Falco", "species": "tinnunculus" },
+  { "german": "Mantelbrüllaffe", "genus": "Alouatta", "species": "palliata" },
+  { "german": "Quetzal", "genus": "Pharomachrus", "species": "mocinno" },
+  { "german": "Panama-Kapuzineraffe", "genus": "Cebus", "species": "imitator" },
+  { "german": "Mittelamerikanischer Totenkopfaffe", "genus": "Saimiri", "species": "Oerstedii" },
+  { "german": "Papageientaucher", "genus": "Fratercula", "species": "arctica" },
+  { "german": "Buckelwal", "genus": "Megaptera", "species": "novaeangliae" },
+  { "german": "Geoffroy-Klammeraffe", "genus": "Ateles", "species": "geoffroyi" },
+  { "german": "Goldkehltukan", "genus": "Ramphastos", "species": "ambiguus"}
+]

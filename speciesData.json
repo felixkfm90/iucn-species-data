@@ -1,0 +1,182 @@
+[
+  {
+    "german": "Amsel",
+    "resolvedName": "Turdus merula",
+    "assessmentId": 264548442,
+    "status": "LC",
+    "trend": "Increasing",
+    "category": "Least Concern",
+    "year": "2024"
+  },
+  {
+    "german": "Bachstelze",
+    "resolvedName": "Motacilla alba",
+    "assessmentId": 137417893,
+    "status": "LC",
+    "trend": "Stable",
+    "category": "Least Concern",
+    "year": "2019"
+  },
+  {
+    "german": "Bartmeise",
+    "resolvedName": "Panurus biarmicus",
+    "assessmentId": 264585405,
+    "status": "LC",
+    "trend": "Increasing",
+    "category": "Least Concern",
+    "year": "2024"
+  },
+  {
+    "german": "Bluthänfling",
+    "resolvedName": "Linaria cannabina",
+    "assessmentId": 132139778,
+    "status": "LC",
+    "trend": "Decreasing",
+    "category": "Least Concern",
+    "year": "2018"
+  },
+  {
+    "german": "Buntspecht",
+    "resolvedName": "Dendrocopos major",
+    "assessmentId": 280946929,
+    "status": "LC",
+    "trend": "Decreasing",
+    "category": "Least Concern",
+    "year": "2025"
+  },
+  {
+    "german": "Eisvogel",
+    "resolvedName": "Alcedo atthis",
+    "assessmentId": 264589271,
+    "status": "LC",
+    "trend": "Decreasing",
+    "category": "Least Concern",
+    "year": "2024"
+  },
+  {
+    "german": "Blaukehlchen",
+    "resolvedName": "Luscinia svecica",
+    "assessmentId": 137567006,
+    "status": "LC",
+    "trend": "Stable",
+    "category": "Least Concern",
+    "year": "2019"
+  },
+  {
+    "german": "Blaumeise",
+    "resolvedName": "Cyanistes caeruleus",
+    "assessmentId": 264532201,
+    "status": "LC",
+    "trend": "Stable",
+    "category": "Least Concern",
+    "year": "2024"
+  },
+  {
+    "german": "Blässhuhn",
+    "resolvedName": "Fulica atra",
+    "assessmentId": 154269531,
+    "status": "LC",
+    "trend": "Increasing",
+    "category": "Least Concern",
+    "year": "2019"
+  },
+  {
+    "german": "Großtrappe",
+    "resolvedName": "Otis tarda",
+    "assessmentId": 226280431,
+    "status": "EN",
+    "trend": "Decreasing",
+    "category": "Endangered",
+    "year": "2023"
+  },
+  {
+    "german": "Rotkehlchen",
+    "resolvedName": "Erithacus rubecula",
+    "assessmentId": 131953953,
+    "status": "LC",
+    "trend": "Increasing",
+    "category": "Least Concern",
+    "year": "2018"
+  },
+  {
+    "german": "Turmfalke",
+    "resolvedName": "Falco tinnunculus",
+    "assessmentId": 206316110,
+    "status": "LC",
+    "trend": "Decreasing",
+    "category": "Least Concern",
+    "year": "2021"
+  },
+  {
+    "german": "Mantelbrüllaffe",
+    "resolvedName": "Alouatta palliata",
+    "assessmentId": 17925090,
+    "status": "VU",
+    "trend": "Decreasing",
+    "category": "Vulnerable",
+    "year": "2020"
+  },
+  {
+    "german": "Quetzal",
+    "resolvedName": "Pharomachrus mocinno",
+    "assessmentId": 221577625,
+    "status": "NT",
+    "trend": "Decreasing",
+    "category": "Near Threatened",
+    "year": "2023"
+  },
+  {
+    "german": "Panama-Kapuzineraffe",
+    "resolvedName": "Cebus imitator",
+    "assessmentId": 191708420,
+    "status": "VU",
+    "trend": "Decreasing",
+    "category": "Vulnerable",
+    "year": "2021"
+  },
+  {
+    "german": "Mittelamerikanischer Totenkopfaffe",
+    "resolvedName": "Saimiri oerstedii",
+    "assessmentId": 17940807,
+    "status": "EN",
+    "trend": "Decreasing",
+    "category": "Endangered",
+    "year": "2021"
+  },
+  {
+    "german": "Papageientaucher",
+    "resolvedName": "Fratercula arctica",
+    "assessmentId": 132581443,
+    "status": "VU",
+    "trend": "Decreasing",
+    "category": "Vulnerable",
+    "year": "2018"
+  },
+  {
+    "german": "Buckelwal",
+    "resolvedName": "Megaptera novaeangliae",
+    "assessmentId": 50362794,
+    "status": "LC",
+    "trend": "Increasing",
+    "category": "Least Concern",
+    "year": "2018"
+  },
+  {
+    "german": "Geoffroy-Klammeraffe",
+    "resolvedName": "Ateles geoffroyi",
+    "assessmentId": 17929000,
+    "status": "EN",
+    "trend": "Decreasing",
+    "category": "Endangered",
+    "year": "2020"
+  },
+  {
+    "german": "Goldkehltukan",
+    "resolvedName": "Ramphastos ambiguus",
+    "assessmentId": 221585147,
+    "status": "LC",
+    "trend": "Decreasing",
+    "category": "Least Concern",
+    "year": "2023"
+  }
+]
