@@ -164,12 +164,7 @@ export async function downloadMaps(speciesData) {
     }
 
     const filePath = path.join(DIR, `${name}.jpg`);
-
-    // Wenn Datei existiert, aber AssessmentID neu ist → alte Datei löschen
-    if (fs.existsSync(filePath) && lastSavedAssessmentId[name] !== assessmentId) {
-      fs.unlinkSync(filePath);
-      console.log(`ℹ Alte Karte für ${name} gelöscht, neue AssessmentID erkannt.`);
-    }
+    const tempFilePath = filePath + ".tmp";
 
     // Prüfen, ob Karte schon aktuell ist
     if (fs.existsSync(filePath) && lastSavedAssessmentId[name] === assessmentId) {
@@ -194,13 +189,18 @@ export async function downloadMaps(speciesData) {
       }
 
       const buffer = await res.arrayBuffer();
-      fs.writeFileSync(filePath, Buffer.from(buffer));
+      fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+
+      // Nur wenn erfolgreich geladen → alte Datei ersetzen
+      fs.renameSync(tempFilePath, filePath);
       console.log(`✔ Karte gespeichert: ${filePath}`);
 
       // Update letzte heruntergeladene AssessmentID
       lastSavedAssessmentId[name] = assessmentId;
       fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+
     } catch (err) {
+      if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
       console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
       logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
     }
