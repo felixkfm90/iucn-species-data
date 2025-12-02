@@ -142,6 +142,8 @@ async function fetchSpeciesData(genus, species, german) {
       Status: globalAssessment.red_list_category_code || "n/a",
       Trend: assessmentInfo.trend,
       Kategory: assessmentInfo.category,
+      "Populationgröße": assessmentInfo.supplementary_info?.population_size || "n/a",
+      "Lebenserwartung": assessmentInfo.supplementary_info?.generational_length? `${assessmentInfo.supplementary_info.generational_length} Jahre` || "n/a",
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
       "Daten abgerufen": new Date().toISOString().slice(0, 10)
     };
