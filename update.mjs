@@ -29,16 +29,24 @@ if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
   lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
 }
 
-// Status → Text + Icon
-const statusMap = {
-  "LC": { text: "nicht gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/8/84/LC_IUCN_3_1.svg" },
-  "NT": { text: "gering gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/f/f0/NT_IUCN_3_1.svg" },
-  "VU": { text: "gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/0/04/VU_IUCN_3_1.svg" },
-  "EN": { text: "stark gefährdet", icon: "https://upload.wikimedia.org/wikipedia/commons/5/5d/EN_IUCN_3_1.svg" },
-  "CR": { text: "vom Aussterben bedroht", icon: "https://upload.wikimedia.org/wikipedia/commons/1/16/CR_IUCN_3_1.svg" },
-  "EW": { text: "in freier Wildbahn ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/6/64/EW_IUCN_3_1.svg" },
-  "EX": { text: "ausgestorben", icon: "https://upload.wikimedia.org/wikipedia/commons/2/28/EX_IUCN_3_1.svg" },
-  "DD": { text: "keine ausreichende Datenlage", icon: "https://upload.wikimedia.org/wikipedia/commons/0/02/DD_IUCN_3_1.svg" }
+//Festlegen Übersetzungen Kategorie
+const CATEGORY_MAP = {
+  "LC": "Nicht gefährdet",
+  "NT": "Potentiell gefährdet",
+  "VU": "Gefährdet",
+  "EN": "Stark gefährdet",
+  "CR": "Vom Aussterben bedroht",
+  "EW": "In freier Wildbahn ausgestorben",
+  "EX": "Ausgestorben",
+  "DD": "Keine ausreichende Datenlage"
+};
+
+//Festlegen Übersetzungen Trend
+const TREND_MAP = {
+  "Increasing": "Zunehmend",
+  "Stable": "Stabil",
+  "Decreasing": "Abnehmend",
+  "Unknown": "Unbekannt"
 };
 
 // Logging
@@ -58,6 +66,8 @@ function emptyEntry(name) {
     Status: "n/a",
     Trend: "n/a",
     Kategory: "n/a",
+    "Populationgröße": "n/a",
+    "Lebenserwartung": "n/a",
     "Letztes IUCN Update": "n/a",
     "Daten abgerufen": new Date().toISOString().slice(0, 10)
   };
@@ -90,12 +100,17 @@ async function getAssessmentData(assessmentId) {
         ? data.result[0]
         : null;
 
-    if (!assessment) return { trend: "n/a", category: "n/a" };
+    if (!assessment) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
 
-    const trend = assessment.population_trend?.description?.en || "n/a";
-    const category = assessment.red_list_category?.description?.en || "n/a";
+    const trendEN = assessment.population_trend?.description?.en || "Unknown";
+    const categoryCode = assessment.red_list_category?.code || "DD";
+    const population = assessment.supplementary_info?.population_size  || "n/a";
+    const generation = assessment.supplementary_info?.generational_length || "n/a";
 
-    return { trend, category };
+    const trend = TREND_MAP[trendEN] || "Unbekannt";
+    const category = CATEGORY_MAP[categoryCode] || "Keine ausreichende Datenlage";
+
+    return { trend, category, population, generation };
 
   } catch (err) {
     logError("Fehler bei Assessment " + assessmentId + ": " + err.message);
@@ -135,15 +150,31 @@ async function fetchSpeciesData(genus, species, german) {
     const assessmentId = globalAssessment.assessment_id;
     const assessmentInfo = await getAssessmentData(assessmentId);
 
+    //Formatierung Population mit 1000 Trennung
+    let populationFormatted = assessmentInfo.population;
+    if (typeof populationFormatted === "string") {
+      // Zahlen in Bereichen wie "1000-2000" erkennen und formatieren
+      populationFormatted = populationFormatted.replace(/\d+/g, n =>
+        Number(n).toLocaleString("de-DE")
+      );
+    }
+
+    // schreibe hinter Lebenserwartung Jahre
+    let generationFormatted = assessmentInfo.generation;
+    if (generationFormatted !== "n/a") {
+      // Punkt zu Komma wandeln, falls nötig
+      generationFormatted = generationFormatted.toString().replace(".", ",") + " Jahre";
+    }
+
     return {
       "Wissenschaftlicher Name": resolvedName,
       "Deutscher Name": german,
       "Assessment ID": assessmentId,
       Status: globalAssessment.red_list_category_code || "n/a",
       Trend: assessmentInfo.trend,
-      Kategory: assessmentInfo.category,
-      "Populationgröße": assessmentInfo.supplementary_info?.population_size || "n/a",
-      "Lebenserwartung": assessmentInfo.supplementary_info?.generational_length != null ? `${assessmentInfo.supplementary_info.generational_length} Jahre` : "n/a",
+      Kategorie: assessmentInfo.category,
+      "Populationgröße": populationFormatted,
+      "Lebenserwartung": generationFormatted,
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
       "Daten abgerufen": new Date().toISOString().slice(0, 10)
     };
