@@ -1,5 +1,6 @@
 [
   {
+    "URLSlug": "turdusmerula",
     "Wissenschaftlicher Name": "Turdus merula",
     "Deutscher Name": "Amsel",
     "Assessment ID": 264548442,
@@ -12,6 +13,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "motacillaalba",
     "Wissenschaftlicher Name": "Motacilla alba",
     "Deutscher Name": "Bachstelze",
     "Assessment ID": 137417893,
@@ -24,6 +26,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "panurusbiarmicus",
     "Wissenschaftlicher Name": "Panurus biarmicus",
     "Deutscher Name": "Bartmeise",
     "Assessment ID": 264585405,
@@ -36,6 +39,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "linariacannabina",
     "Wissenschaftlicher Name": "Linaria cannabina",
     "Deutscher Name": "Bluthänfling",
     "Assessment ID": 132139778,
@@ -48,6 +52,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "dendrocoposmajor",
     "Wissenschaftlicher Name": "Dendrocopos major",
     "Deutscher Name": "Buntspecht",
     "Assessment ID": 280946929,
@@ -60,6 +65,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "alcedoatthis",
     "Wissenschaftlicher Name": "Alcedo atthis",
     "Deutscher Name": "Eisvogel",
     "Assessment ID": 264589271,
@@ -72,6 +78,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "lusciniasvecica",
     "Wissenschaftlicher Name": "Luscinia svecica",
     "Deutscher Name": "Blaukehlchen",
     "Assessment ID": 137567006,
@@ -84,6 +91,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "cyanistescaeruleus",
     "Wissenschaftlicher Name": "Cyanistes caeruleus",
     "Deutscher Name": "Blaumeise",
     "Assessment ID": 264532201,
@@ -96,6 +104,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "fulicaatra",
     "Wissenschaftlicher Name": "Fulica atra",
     "Deutscher Name": "Blässhuhn",
     "Assessment ID": 154269531,
@@ -108,6 +117,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "otistarda",
     "Wissenschaftlicher Name": "Otis tarda",
     "Deutscher Name": "Großtrappe",
     "Assessment ID": 226280431,
@@ -120,6 +130,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "erithacusrubecula",
     "Wissenschaftlicher Name": "Erithacus rubecula",
     "Deutscher Name": "Rotkehlchen",
     "Assessment ID": 131953953,
@@ -132,6 +143,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "falcotinnunculus",
     "Wissenschaftlicher Name": "Falco tinnunculus",
     "Deutscher Name": "Turmfalke",
     "Assessment ID": 206316110,
@@ -144,6 +156,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "alouattapalliata",
     "Wissenschaftlicher Name": "Alouatta palliata",
     "Deutscher Name": "Mantelbrüllaffe",
     "Assessment ID": 17925090,
@@ -156,6 +169,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "pharomachrusmocinno",
     "Wissenschaftlicher Name": "Pharomachrus mocinno",
     "Deutscher Name": "Quetzal",
     "Assessment ID": 221577625,
@@ -168,6 +182,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "cebusimitator",
     "Wissenschaftlicher Name": "Cebus imitator",
     "Deutscher Name": "Panama-Kapuzineraffe",
     "Assessment ID": 191708420,
@@ -180,6 +195,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "saimirioerstedii",
     "Wissenschaftlicher Name": "Saimiri oerstedii",
     "Deutscher Name": "Mittelamerikanischer Totenkopfaffe",
     "Assessment ID": 17940807,
@@ -192,6 +208,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "fraterculaarctica",
     "Wissenschaftlicher Name": "Fratercula arctica",
     "Deutscher Name": "Papageientaucher",
     "Assessment ID": 132581443,
@@ -204,6 +221,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "megapteranovaeangliae",
     "Wissenschaftlicher Name": "Megaptera novaeangliae",
     "Deutscher Name": "Buckelwal",
     "Assessment ID": 50362794,
@@ -216,6 +234,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "atelesgeoffroyi",
     "Wissenschaftlicher Name": "Ateles geoffroyi",
     "Deutscher Name": "Geoffroy-Klammeraffe",
     "Assessment ID": 17929000,
@@ -228,6 +247,7 @@
     "Daten abgerufen": "2025-12-05"
   },
   {
+    "URLSlug": "ramphastosambiguus",
     "Wissenschaftlicher Name": "Ramphastos ambiguus",
     "Deutscher Name": "Goldkehltukan",
     "Assessment ID": 221585147,

@@ -60,6 +60,7 @@ function logError(msg) {
 // Fallback für fehlende Daten
 function emptyEntry(name) {
   return {
+    "URLSlug": URLSlug,
     "Wissenschaftlicher Name": name,
     "Deutscher Name": name,
     "Assessment ID": "n/a",
@@ -121,6 +122,7 @@ async function getAssessmentData(assessmentId) {
 // Eine Art abrufen
 async function fetchSpeciesData(genus, species, german) {
   const scientific = `${genus} ${species}`;
+  const URLSlug = `${genus}${species}`.toLowerCase();
   try {
     console.log(`→ Suche Taxon für ${scientific}`);
 
@@ -167,12 +169,13 @@ async function fetchSpeciesData(genus, species, german) {
     }
 
     return {
+      "URLSlug": URLSlug,
       "Wissenschaftlicher Name": resolvedName,
       "Deutscher Name": german,
       "Assessment ID": assessmentId,
-      Status: globalAssessment.red_list_category_code || "n/a",
-      Trend: assessmentInfo.trend,
-      Kategorie: assessmentInfo.category,
+      "Status": globalAssessment.red_list_category_code || "n/a",
+      "Trend": assessmentInfo.trend,
+      "Kategorie": assessmentInfo.category,
       "Populationgröße": populationFormatted,
       "Lebenserwartung": generationFormatted,
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
