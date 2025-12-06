@@ -256,7 +256,7 @@ export async function downloadMaps(speciesData) {
     const output = [];
 
     for (const s of speciesList) {
-      const data = await fetchSpeciesData(s.genus, s.species, s.german);
+      const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
       await new Promise(r => setTimeout(r, RATE_LIMIT));
     }
