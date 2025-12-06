@@ -195,7 +195,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
       "Order": taxon.order_name || "n/a",
       "Family": taxon.family_name || "n/a",
       "Genus": taxon.genus_name || "n/a",
-      "Species": taxon.species_name || "n/a"
+      "Species": taxon.species_name || "n/a",
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
       "Daten abgerufen": new Date().toISOString().slice(0, 10)
     };
