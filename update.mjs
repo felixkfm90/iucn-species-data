@@ -61,12 +61,14 @@ function logError(msg) {
 function emptyEntry(name) {
   return {
     "URLSlug": URLSlug,
-    "Wissenschaftlicher Name": name,
-    "Deutscher Name": name,
+    "Wissenschaftlicher Name": LATname,
+    "Deutscher Name": GERname,
+    "Gewicht": "n/a",
+    "Größe": "n/a",
     "Assessment ID": "n/a",
-    Status: "n/a",
-    Trend: "n/a",
-    Kategory: "n/a",
+    "Status": "n/a",
+    "Trend": "n/a",
+    "Kategory": "n/a",
     "Populationgröße": "n/a",
     "Lebenserwartung": "n/a",
     "Letztes IUCN Update": "n/a",
@@ -120,7 +122,7 @@ async function getAssessmentData(assessmentId) {
 }
 
 // Eine Art abrufen
-async function fetchSpeciesData(genus, species, german) {
+async function fetchSpeciesData(genus, species, german, size, weight) {
   const scientific = `${genus} ${species}`;
   const URLSlug = `${genus}${species}`.toLowerCase();
   try {
@@ -172,6 +174,8 @@ async function fetchSpeciesData(genus, species, german) {
       "URLSlug": URLSlug,
       "Wissenschaftlicher Name": resolvedName,
       "Deutscher Name": german,
+      "Gewicht": weight,
+      "Größe": size,
       "Assessment ID": assessmentId,
       "Status": globalAssessment.red_list_category_code || "n/a",
       "Trend": assessmentInfo.trend,
