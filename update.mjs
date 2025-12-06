@@ -71,6 +71,13 @@ function emptyEntry(name) {
     "Kategory": "n/a",
     "Populationgröße": "n/a",
     "Lebenserwartung": "n/a",
+    "Kingdom": "n/a",
+    "Phylum": "n/a",
+    "Class": "n/a",
+    "Order": "n/a",
+    "Family": "n/a",
+    "Genus": "n/a",
+    "Species": "n/a",
     "Letztes IUCN Update": "n/a",
     "Daten abgerufen": new Date().toISOString().slice(0, 10)
   };
@@ -182,6 +189,13 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
       "Kategorie": assessmentInfo.category,
       "Populationgröße": populationFormatted,
       "Lebenserwartung": generationFormatted,
+      "Kingdom": taxon.kingdom_name || "n/a",
+      "Phylum": taxon.phylum_name || "n/a",
+      "Class": taxon.class_name || "n/a",
+      "Order": taxon.order_name || "n/a",
+      "Family": taxon.family_name || "n/a",
+      "Genus": taxon.genus_name || "n/a",
+      "Species": taxon.species_name || "n/a"
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
       "Daten abgerufen": new Date().toISOString().slice(0, 10)
     };
