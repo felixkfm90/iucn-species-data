@@ -20,6 +20,6 @@
   { "german": "Geoffroy-Klammeraffe", "genus": "Ateles", "species": "geoffroyi", "size": "ca. 30-63 cm", "weight": "ca. 6-9 kg" },
   { "german": "Goldkehltukan", "genus": "Ramphastos", "species": "ambiguus", "size": "ca. 56-61 cm", "weight": "ca. 0,62-0,74 kg" },
   { "german": "Buchfink", "genus": "Fringilla", "species": "coelebs", "size": "ca. 14-16 cm", "weight": "ca. 18-29 g" },
-  { "german": "Kiebitz", "genus": "Vanellus", "species": "vanellus", "size": "ca. 28-31 cm", "weight": "ca. 128-230 g" }
+  { "german": "Kiebitz", "genus": "Vanellus", "species": "vanellus", "size": "ca. 28-31 cm", "weight": "ca. 128-230 g" },
   { "german": "Gimpel", "genus": "Pyrrhula", "species": "pyrrhula", "size": "ca. 14-17 cm", "weight": "ca. 25-35 g" }
 ]
