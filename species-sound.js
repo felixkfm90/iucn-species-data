@@ -9,14 +9,14 @@
 
     const check = await fetch(url, { method: "HEAD" });
     if (!check.ok) {
-      wrapper.innerHTML = `<div class="frame-box"><i>Kein Sound verfügbar</i></div>`;
+      wrapper.innerHTML = `<div class="frame-box"><i>Keine Tierstimme verfügbar</i></div>`;
       return;
     }
 
     wrapper.innerHTML = `
       <div class="frame-box" style="background:#d0d0d0">
         <b>Tierstimme</b>
-        <audio controls preload="none" style="width:100%" padding=4px>
+        <audio controls preload="none" style="width:100%">
           <source src="${url}" type="audio/mpeg">
         </audio>
       </div>
@@ -25,3 +25,16 @@
     wrapper.innerHTML = `<p>${e.message}</p>`;
   }
 })();
+
+
+.species-sound-frame {
+  padding: 16px;
+}
+.species-sound-frame b {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.species-sound-frame audio {
+  margin-top: 4px;
+}
