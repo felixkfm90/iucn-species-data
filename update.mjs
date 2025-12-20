@@ -280,8 +280,7 @@ if (!fs.existsSync(SOUND_DIR)) {
 }
 
 async function downloadSoundIfMissing(genus, species, germanName) {
-  const slug = slugifyGerman(germanName);
-  const targetDir = path.join(SOUND_DIR, slug);
+  const targetDir = path.join(SOUND_DIR, german);
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -327,7 +326,7 @@ async function downloadSoundIfMissing(genus, species, germanName) {
 
   // Audio URL korrekt zusammensetzen
   let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
-  const filePath = path.join(targetDir, `${slug}.mp3`);
+  const filePath = path.join(targetDir, `${german}.mp3`);
 
   try {
     const audioRes = await fetch(audioUrl);
