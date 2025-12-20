@@ -308,9 +308,6 @@ async function downloadSoundIfMissing(genus, species, germanName) {
   const query = `gen:${genus} sp:${species} q:A len:25-35`;
   const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}&key=${XENO_TOKEN}&page=1`;
 
-  console.log(`XENO QUERY: ${query}`);
-  console.log(`XENO URL: ${apiUrl}`);
-
   try {
     const res = await fetch(apiUrl);
     if (!res.ok) {
@@ -376,7 +373,7 @@ async function downloadSoundIfMissing(genus, species, germanName) {
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
       //Sound laden
-      await downloadSoundIfMissing(`${s.genus} ${s.species}`, s.german);
+      await downloadSoundIfMissing(s.genus, s.species, s.german);
       await new Promise(r => setTimeout(r, RATE_LIMIT));
     }
 
