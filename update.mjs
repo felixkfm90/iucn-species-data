@@ -280,7 +280,6 @@ if (!fs.existsSync(SOUND_DIR)) {
 }
 
 async function downloadSoundIfMissing(genus, species, german) {
-  const slug = slugifyGerman(german);
   const targetDir = path.join(SOUND_DIR, slug);
 
   if (!fs.existsSync(targetDir)) {
