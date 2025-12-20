@@ -280,7 +280,8 @@ if (!fs.existsSync(SOUND_DIR)) {
 }
 
 async function downloadSoundIfMissing(genus, species, german) {
-  const targetDir = path.join(SOUND_DIR, german);
+  const slug = slugifyGerman(german);
+  const targetDir = path.join(SOUND_DIR, slug);
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -293,30 +294,37 @@ async function downloadSoundIfMissing(genus, species, german) {
     return;
   }
 
-  // 1️⃣ Versuch: Länge 25–35 Sekunden
-  let query = `gen:${genus} sp:${species} q:A len:25-35`;
-  let apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}&key=${XENO_TOKEN}&page=1`;
+  let best = null;
+  let queries = [
+    // 1️⃣ Qualität A, Länge 25–35s
+    `gen:${genus} sp:${species} q:A len:25-35`,
+    // 2️⃣ Fallback: Qualität A, egal welche Länge
+    `gen:${genus} sp:${species} q:A`,
+    // 3️⃣ Letzter Fallback: egal welche Qualität oder Länge
+    `gen:${genus} sp:${species}`
+  ];
 
-  let data;
-  try {
-    let res = await fetch(apiUrl);
-    if (!res.ok) {
-      console.warn(`⚠ Xeno-Canto API Fehler ${res.status} für ${genus} ${species}`);
-      return;
+  for (let q of queries) {
+    let apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(q)}&key=${XENO_TOKEN}&page=1`;
+    console.log(`XENO QUERY: ${q}`);
+    console.log(`XENO URL: ${apiUrl}`);
+
+    try {
+      const res = await fetch(apiUrl);
+      if (!res.ok) {
+        console.warn(`⚠ Xeno-Canto API Fehler ${res.status} für ${genus} ${species}`);
+        continue;
+      }
+      const data = await res.json();
+      if (!data.recordings || data.recordings.length === 0) continue;
+
+      // Priorität: beste Qualität A zuerst
+      best = data.recordings.find(r => r.q === "A") || data.recordings[0];
+      if (best) break; // gefunden, abbrechen
+    } catch (err) {
+      console.error(`❌ Fehler bei Xeno-Canto Anfrage: ${err.message}`);
+      continue;
     }
-    data = await res.json();
-  } catch (err) {
-    console.error(`❌ Fehler bei Xeno-Canto Anfrage: ${err.message}`);
-    return;
-  }
-
-  // Beste Aufnahme finden
-  let best = data.recordings?.find(r => r.q === "A");
-
-  // 2️⃣ Fallback: Wenn keine Aufnahme in gewünschter Länge, irgendeine Aufnahme nehmen
-  if (!best && data.recordings && data.recordings.length > 0) {
-    console.log(`⚠ Keine Aufnahme 25–35s, lade erste vorhandene für ${genus} ${species}`);
-    best = data.recordings[0];
   }
 
   if (!best) {
@@ -326,7 +334,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   // Audio URL korrekt zusammensetzen
   let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
-  const filePath = path.join(targetDir, `${german}.mp3`);
+  const filePath = path.join(targetDir, `${slug}.mp3`);
 
   try {
     const audioRes = await fetch(audioUrl);
@@ -359,6 +367,7 @@ async function downloadSoundIfMissing(genus, species, german) {
     logError(`Sound ${genus} ${species}: ${err.message}`);
   }
 }
+
 
 // Hauptprozess
 (async function() {
