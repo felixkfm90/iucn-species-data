@@ -25,16 +25,3 @@
     wrapper.innerHTML = `<p>${e.message}</p>`;
   }
 })();
-
-
-.species-sound-frame {
-  padding: 16px;
-}
-.species-sound-frame b {
-  display: block;
-  margin-bottom: 8px;
-}
-
-.species-sound-frame audio {
-  margin-top: 4px;
-}
