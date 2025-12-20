@@ -16,7 +16,7 @@
     wrapper.innerHTML = `
       <div class="frame-box" style="background:#d0d0d0">
         <b>Tierstimme</b>
-        <audio controls preload="none" style="width:100%">
+        <audio controls preload="none" style="width:100%" padding=4px>
           <source src="${url}" type="audio/mpeg">
         </audio>
       </div>
