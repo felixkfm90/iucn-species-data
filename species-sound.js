@@ -14,13 +14,14 @@
     }
 
     wrapper.innerHTML = `
-      <div class="frame-box" style="background:#d0d0d0">
+      <div class="frame-box species-sound-frame">
         <b>Tierstimme</b>
         <audio controls preload="none" style="width:100%">
           <source src="${url}" type="audio/mpeg">
         </audio>
       </div>
     `;
+
   } catch (e) {
     wrapper.innerHTML = `<p>${e.message}</p>`;
   }
