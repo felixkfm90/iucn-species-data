@@ -68,14 +68,14 @@ function emptyEntry(scientific, german = scientific) {
   const URLSlug = scientific.toLowerCase().replace(/\s+/g, '');
   return {
     "URLSlug": URLSlug,
-    "Wissenschaftlicher Name": LATname,
-    "Deutscher Name": GERname,
+    "Wissenschaftlicher Name": scientific,
+    "Deutscher Name": german,
     "Gewicht": "n/a",
     "Größe": "n/a",
     "Assessment ID": "n/a",
     "Status": "n/a",
     "Trend": "n/a",
-    "Kategory": "n/a",
+    "Kategorie": "n/a",
     "Populationgröße": "n/a",
     "Lebenserwartung": "n/a",
     "Kingdom": "n/a",
