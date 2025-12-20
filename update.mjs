@@ -279,7 +279,7 @@ if (!fs.existsSync(SOUND_DIR)) {
   fs.mkdirSync(SOUND_DIR);
 }
 
-async function downloadSoundIfMissing(genus, species, germanName) {
+async function downloadSoundIfMissing(genus, species, german) {
   const targetDir = path.join(SOUND_DIR, german);
 
   if (!fs.existsSync(targetDir)) {
@@ -289,7 +289,7 @@ async function downloadSoundIfMissing(genus, species, germanName) {
   // Prüfen, ob bereits eine Aufnahme existiert
   const existing = fs.readdirSync(targetDir).filter(f => f.endsWith(".mp3"));
   if (existing.length > 0) {
-    console.log(`🎵 Sound existiert bereits für ${germanName}`);
+    console.log(`🎵 Sound existiert bereits für ${german}`);
     return;
   }
 
@@ -342,7 +342,7 @@ async function downloadSoundIfMissing(genus, species, germanName) {
     // Credits speichern
     const credits = {
       scientific_name: `${genus} ${species}`,
-      german_name: germanName,
+      german_name: german,
       recordist: best.rec,
       country: best.cnt,
       location: best.loc,
