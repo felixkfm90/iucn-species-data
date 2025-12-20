@@ -16,6 +16,13 @@ if (!TOKEN) {
   process.exit(1);
 }
 
+//XENO Token abrufen und speichern
+const XENO_TOKEN = process.env.XENO_TOKEN;
+if (!XENO_TOKEN) {
+  console.error("❌ XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+  process.exit(1);
+}
+
 //Basis-URL festlegen
 const BASE = "https://api.iucnredlist.org/api/v4";
 
@@ -263,6 +270,110 @@ export async function downloadMaps(speciesData) {
   }
 }
 
+// =======================
+// XENO-CANTO SOUNDS
+// =======================
+
+const SOUND_DIR = "./sounds";
+if (!fs.existsSync(SOUND_DIR)) {
+  fs.mkdirSync(SOUND_DIR);
+}
+
+function slugifyGerman(name) {
+  return name
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/\s+/g, "-");
+}
+
+async function downloadSoundIfMissing(scientificName, germanName) {
+  const slug = slugifyGerman(germanName);
+  const targetDir = path.join(SOUND_DIR, slug);
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  // 🔍 Nur neue Sounds
+  const existing = fs.readdirSync(targetDir).filter(f => f.endsWith(".mp3"));
+  if (existing.length > 0) {
+    console.log(`🎵 Sound existiert bereits für ${germanName}`);
+    return;
+  }
+
+  // ✅ API v3 + Token + Qualitätsfilter
+  const query = `gen:${genus} sp:${species} q:A`;
+  const apiUrl =
+    `https://xeno-canto.org/api/3/recordings` +
+    `?query=${encodeURIComponent(query)}` +
+    `&key=${XENO_TOKEN}` +
+    `&page=1`;
+console.log("XENO QUERY:", query);
+console.log("XENO URL:", apiUrl);
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { "Accept": "application/json" }
+    });
+
+    if (!res.ok) {
+      console.log(`⚠ Xeno-Canto API Fehler ${res.status} für ${scientificName}`);
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.recordings || data.recordings.length === 0) {
+      console.log(`⚠ Keine xeno-canto Aufnahmen für ${scientificName}`);
+      return;
+    }
+
+    // ⭐ Erste Aufnahme = beste (API liefert bereits sortiert)
+    const best = data.recordings[0];
+
+    const audioUrl = best.file.startsWith("http")
+      ? best.file
+      : `https:${best.file}`;
+
+    const filePath = path.join(targetDir, `${slug}.mp3`);
+
+    const audioRes = await fetch(audioUrl);
+    if (!audioRes.ok) {
+      console.log(`⚠ Audio konnte nicht geladen werden: ${audioUrl}`);
+      return;
+    }
+
+    const buffer = await audioRes.arrayBuffer();
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
+    console.log(`✔ Sound gespeichert: ${filePath}`);
+
+    // 🧾 Credits (rechtlich wichtig)
+    const credits = {
+      scientific_name: scientificName,
+      german_name: germanName,
+      recordist: best.rec,
+      country: best.cnt,
+      location: best.loc,
+      quality: best.q,
+      license: best.lic,
+      source: "xeno-canto.org",
+      url: `https://xeno-canto.org/${best.id}`
+    };
+
+    fs.writeFileSync(
+      path.join(targetDir, "credits.json"),
+      JSON.stringify(credits, null, 2)
+    );
+
+  } catch (err) {
+    console.error(`❌ Fehler bei Sound-Download ${scientificName}: ${err.message}`);
+    logError(`Sound ${scientificName}: ${err.message}`);
+  }
+}
+
 // Hauptprozess
 (async function() {
   try {
@@ -272,6 +383,8 @@ export async function downloadMaps(speciesData) {
     for (const s of speciesList) {
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
+      //Sound laden
+      await downloadSoundIfMissing(`${s.genus} ${s.species}`, s.german);
       await new Promise(r => setTimeout(r, RATE_LIMIT));
     }
 
