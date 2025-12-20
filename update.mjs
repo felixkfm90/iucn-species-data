@@ -64,8 +64,8 @@ function logError(msg) {
   );
 }
 
-// Fallback für fehlende Daten
-function emptyEntry(name) {
+function emptyEntry(scientific, german = scientific) {
+  const URLSlug = scientific.toLowerCase().replace(/\s+/g, '');
   return {
     "URLSlug": URLSlug,
     "Wissenschaftlicher Name": LATname,
