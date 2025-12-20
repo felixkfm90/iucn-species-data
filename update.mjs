@@ -280,7 +280,7 @@ if (!fs.existsSync(SOUND_DIR)) {
 }
 
 async function downloadSoundIfMissing(genus, species, german) {
-  const targetDir = path.join(SOUND_DIR, slug);
+  const targetDir = path.join(SOUND_DIR, german);
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -305,8 +305,6 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   for (let q of queries) {
     let apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(q)}&key=${XENO_TOKEN}&page=1`;
-    console.log(`XENO QUERY: ${q}`);
-    console.log(`XENO URL: ${apiUrl}`);
 
     try {
       const res = await fetch(apiUrl);
@@ -333,7 +331,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   // Audio URL korrekt zusammensetzen
   let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
-  const filePath = path.join(targetDir, `${slug}.mp3`);
+  const filePath = path.join(targetDir, `${german}.mp3`);
 
   try {
     const audioRes = await fetch(audioUrl);
