@@ -289,8 +289,7 @@ function slugifyGerman(name) {
     .replace(/\s+/g, "-");
 }
 
-async function downloadSoundIfMissing(scientificName, germanName) {
-  const [genus, species] = scientificName.split(" ");
+async function downloadSoundIfMissing(genus, species, germanName) {
   const slug = slugifyGerman(germanName);
   const targetDir = path.join(SOUND_DIR, slug);
 
@@ -298,47 +297,57 @@ async function downloadSoundIfMissing(scientificName, germanName) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
+  // 🔍 Prüfen, ob bereits eine Aufnahme existiert
   const existing = fs.readdirSync(targetDir).filter(f => f.endsWith(".mp3"));
   if (existing.length > 0) {
     console.log(`🎵 Sound existiert bereits für ${germanName}`);
     return;
   }
 
-  // Tag-basierte Abfrage für Xeno-Canto v3
-  const query = `gen:${genus} sp:${species} q:A`;
+  // Xeno-Canto v3 API: beste Qualität, Länge 25-35s
+  const query = `gen:${genus} sp:${species} q:A len:25-35`;
   const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}&key=${XENO_TOKEN}&page=1`;
+
+  console.log(`XENO QUERY: ${query}`);
+  console.log(`XENO URL: ${apiUrl}`);
 
   try {
     const res = await fetch(apiUrl);
     if (!res.ok) {
-      console.log(`⚠ Xeno-Canto API Fehler ${res.status} für ${scientificName}`);
+      console.warn(`⚠ Xeno-Canto API Fehler ${res.status} für ${genus} ${species}`);
       return;
     }
+
     const data = await res.json();
-
     if (!data.recordings || data.recordings.length === 0) {
-      console.log(`⚠ Keine xeno-canto Aufnahmen für ${scientificName}`);
+      console.log(`⚠ Keine Aufnahmen gefunden für ${genus} ${species}`);
       return;
     }
 
+    // Beste Aufnahme auswählen
     const best = data.recordings.find(r => r.q === "A");
     if (!best) {
-       console.log(`⚠ Keine Aufnahme mit Qualität A für ${scientificName}`);
-       return;
+      console.log(`⚠ Keine Aufnahme mit Qualität A für ${genus} ${species}`);
+      return;
     }
 
-    // 🔹 URL richtig zusammensetzen
-    const audioUrl = best.file.startsWith("http") ? best.file : `https:${best.file}`;
+    // Audio URL korrekt zusammensetzen
+    let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
     const filePath = path.join(targetDir, `${slug}.mp3`);
 
     const audioRes = await fetch(audioUrl);
+    if (!audioRes.ok) {
+      console.warn(`⚠ Fehler beim Herunterladen der Datei (${audioRes.status})`);
+      return;
+    }
+
     const buffer = await audioRes.arrayBuffer();
     fs.writeFileSync(filePath, Buffer.from(buffer));
-
     console.log(`✔ Sound gespeichert: ${filePath}`);
 
+    // Credits speichern
     const credits = {
-      scientific_name: scientificName,
+      scientific_name: `${genus} ${species}`,
       german_name: germanName,
       recordist: best.rec,
       country: best.cnt,
@@ -348,14 +357,14 @@ async function downloadSoundIfMissing(scientificName, germanName) {
       source: "xeno-canto.org",
       url: `https://xeno-canto.org/${best.id}`
     };
+
     fs.writeFileSync(path.join(targetDir, "credits.json"), JSON.stringify(credits, null, 2));
 
   } catch (err) {
-    console.error(`❌ Fehler bei Sound-Download ${scientificName}: ${err.message}`);
-    logError(`Sound ${scientificName}: ${err.message}`);
+    console.error(`❌ Fehler bei Sound-Download ${genus} ${species}: ${err.message}`);
+    logError(`Sound ${genus} ${species}: ${err.message}`);
   }
 }
-
 
 // Hauptprozess
 (async function() {
