@@ -21,7 +21,7 @@
 
     container.innerHTML = `
       <div class="frame-box left-frame">
-        <p><b>${data["Deutscher Name"]}</b> – ${data["Wissenschaftlicher Name"]}</p>
+        <p>Name: ${data["Deutscher Name"]} – ${data["Wissenschaftlicher Name"]}</p>
         ${renderSplit("Größe", data.Größe)}
         ${renderSplit("Gewicht", data.Gewicht)}
         <p>Lebenserwartung: ${data["Lebenserwartung"]}</p>
