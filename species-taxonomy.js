@@ -29,7 +29,7 @@
     /* Pfeil-Position korrigieren                */
     /* ----------------------------------------- */
     function adjustArrow() {
-      const frame = outputEl.querySelector('.pyramid-frame');
+      const frame = container.querySelector('.pyramid-frame');
       if (!frame) return;
       const first = frame.querySelector('.pyramid-step:first-child');
       const last  = frame.querySelector('.pyramid-step:last-child');
