@@ -1,6 +1,3 @@
-<script src="https://unpkg.com/wavesurfer.js@7"></script>
-
-<script>
 (async function () {
   const wrapper = document.getElementById("species-sound");
   if (!wrapper) return;
@@ -54,4 +51,3 @@
     wrapper.innerHTML = `<p>${e.message}</p>`;
   }
 })();
-</script>
