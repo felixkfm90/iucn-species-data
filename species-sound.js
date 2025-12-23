@@ -64,24 +64,6 @@
 
     wavesurfer.on('ready', () => {
       durEl.textContent = formatTime(wavesurfer.getDuration());
-
-      // Dynamische Zeitleiste erzeugen
-      const timelineEl = document.createElement('div');
-      timelineEl.className = 'timeline';
-      timelineEl.style.display = 'flex';
-      timelineEl.style.justifyContent = 'space-between';
-      timelineEl.style.fontSize = '0.75em';
-      timelineEl.style.marginTop = '4px';
-
-      const duration = wavesurfer.getDuration();
-      for (let i = 0; i <= 4; i++) {
-        const t = Math.floor((duration / 4) * i);
-        const span = document.createElement('span');
-        span.textContent = formatTime(t);
-        timelineEl.appendChild(span);
-      }
-
-      waveformEl.appendChild(timelineEl);
     });
 
     wavesurfer.on('audioprocess', () => {
