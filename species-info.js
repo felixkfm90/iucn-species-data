@@ -21,11 +21,11 @@
 
     container.innerHTML = `
       <div class="frame-box left-frame">
-        Name: ${found["Deutscher Name"]} – ${found["Wissenschaftlicher Name"]}</p>
-        <p>${renderSplit("Größe", found.Größe)}</p>
-        <p>${renderSplit("Gewicht", found.Gewicht)}</p>
-        <p>Lebenserwartung: ${found["Lebenserwartung"]}</p>
-        <p>Populationgröße: ${found["Populationgröße"]}
+        Name: ${data["Deutscher Name"]} – ${data["Wissenschaftlicher Name"]}</p>
+        <p>${renderSplit("Größe", data.Größe)}</p>
+        <p>${renderSplit("Gewicht", data.Gewicht)}</p>
+        <p>Lebenserwartung: ${data["Lebenserwartung"]}</p>
+        <p>Populationgröße: ${data["Populationgröße"]}
       </div>
     `;
   } catch (e) {
