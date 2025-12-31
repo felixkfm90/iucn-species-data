@@ -5,7 +5,7 @@
   "Bluthänfling": 132139778,
   "Buntspecht": 280946929,
   "Eisvogel": 264589271,
-  "Blaumeise": 0,
+  "Blaumeise": 264589271,
   "Blaukehlchen": 137567005,
   "Blässhuhn": 154269531,
   "Großtrappe": 226280431,
@@ -22,5 +22,5 @@
   "Buchfink": 131998000,
   "Kiebitz": 205921412,
   "Gimpel": 132141969,
-  "Haubenmeise": 0
+  "Haubenmeise": 264589272
 }
