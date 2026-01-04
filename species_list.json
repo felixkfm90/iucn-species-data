@@ -22,5 +22,6 @@
   { "german": "Buchfink", "genus": "Fringilla", "species": "coelebs", "size": "ca. 14-16 cm", "weight": "ca. 18-29 g" },
   { "german": "Kiebitz", "genus": "Vanellus", "species": "vanellus", "size": "ca. 28-31 cm", "weight": "ca. 128-230 g" },
   { "german": "Gimpel", "genus": "Pyrrhula", "species": "pyrrhula", "size": "ca. 14-17 cm", "weight": "ca. 25-35 g" },
-  { "german": "Haubenmeise", "genus": "Lophophanes", "species": "cristatus", "size": "ca. 10,5-12 cm", "weight": "ca. 11-14 g" }
+  { "german": "Haubenmeise", "genus": "Lophophanes", "species": "cristatus", "size": "ca. 10,5-12 cm", "weight": "ca. 11-14 g" },
+  { "german": "Fischertukan", "genus": "Ramphastos", "species": "sulfuratus", "size": "ca. 42–55 cm", "weight": "ca. 380–500 g" }
 ]
