@@ -25,4 +25,5 @@
   { "german": "Haubenmeise", "genus": "Lophophanes", "species": "cristatus", "size": "ca. 10,5-12 cm", "weight": "ca. 11-14 g" },
   { "german": "Fischertukan", "genus": "Ramphastos", "species": "sulfuratus", "size": "ca. 42–55 cm", "weight": "ca. 380–500 g" },
   { "german": "Jagdfasan", "genus": "Phasianus", "species": "colchicus", "size": "ca. 70–90 cm", "weight": "Männchen ca. 1,2-1,8 kg Weibchen ca. 0,8-1,3 kg" }
+  { "german": "Reh", "genus": "Capreolus", "species": "capreolus", "size": "ca. 60–75 cm", "weight": "ca. 15-30 kg" }
 ]
