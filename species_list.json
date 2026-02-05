@@ -30,5 +30,5 @@
   { "german": "Austernfischer", "genus": "Haematopus", "species": "ostralegus", "size": "ca. 39–44 cm", "weight": "ca. 400-700 g" },
   { "german": "Alpenstrandläufer", "genus": "Calidris", "species": "alpina", "size": "ca. 17–21 cm", "weight": "ca. 40-60 g" },
   { "german": "Alpenbirkenzeisig", "genus": "Acanthis", "species": "flammea", "size": "ca. 11-14 cm", "weight": "ca. 10-18 g" },
-  { "german": "Alpenbirkenzeisig", "genus": "Strix", "species": "aluco", "size": "ca. 37-43 cm", "weight": "ca. 400-650 g" }
+  { "german": "Waldkauz", "genus": "Strix", "species": "aluco", "size": "ca. 37-43 cm", "weight": "ca. 400-650 g" }
 ]
