@@ -9,21 +9,14 @@
   if (!base) return;
 
   // Failsafe: wenn das wie eine Detailseite aussieht (noch ein Segment), dann abbrechen
-  // (Du bindest das Script idealerweise nur auf Übersichtsseiten ein.)
-  // Heuristik: Wenn es mind. 4 Segmente hat (z.B. /wildlife/heimische-tierwelt/slug), dann nicht laufen.
+  // Wir stoppen ab 3 Segmenten: /wildlife/heimische-tierwelt/slug
   const parts = base.split("/").filter(Boolean);
-  if (parts.length >= 3) {
-    // Beispiel: /wildlife/heimische-tierwelt (2 Segmente) -> OK
-    // Beispiel: /wildlife/heimische-tierwelt/cyanistescaeruleus (3 Segmente) -> Detail -> STOP
-    // Wir stoppen ab 3 Segmenten
-    if (parts.length >= 3) return;
-  }
+  if (parts.length >= 3) return;
 
   const placeholder = "Suche …";
   const limit = 30;
 
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const DETAIL_RE = new RegExp("^" + esc(location.origin) + "?"+ esc(base) + "\\/[^\\/?#]+", "i");
 
   function norm(s){ return (s||"").toLowerCase().trim(); }
 
@@ -52,16 +45,20 @@
   }
 
   function collectEntries() {
-    const links = Array.from(document.querySelectorAll('a[href*="' + base + '/"]'));
+    // ✅ nur im Hauptinhalt scannen (nicht Header/Footer/Nav)
+    const scope = document.querySelector("main") || document.body;
 
+    // Links, die unter base/slug liegen
+    const links = Array.from(scope.querySelectorAll('a[href*="' + base + '/"]'));
     const map = new Map();
+
+    const slugRe = new RegExp(esc(base) + "\\/[^\\/?#]+", "i");
 
     for (const a of links) {
       const hrefRaw = a.getAttribute("href") || "";
       const hrefAbs = hrefRaw.startsWith("http") ? hrefRaw : (location.origin + hrefRaw);
 
-      // Muss unter base/slug liegen
-      if (!new RegExp(esc(base) + "\\/[^\\/?#]+", "i").test(hrefRaw)) continue;
+      if (!slugRe.test(hrefRaw)) continue;
 
       // Übersichtsseite selbst ausschließen
       const cleaned = hrefRaw.split("#")[0].replace(/\/+$/, "");
@@ -116,7 +113,13 @@
       render(matches);
     }
 
-    input.addEventListener("input", () => apply(input.value));
+    // ✅ Debounce beim Tippen
+    let t = null;
+    input.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(() => apply(input.value), 120);
+    });
+
     input.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { input.value = ""; apply(""); }
       if (e.key === "Enter") {
@@ -131,12 +134,16 @@
     setTimeout(buildIndex, 1800);
 
     const obs = new MutationObserver(() => {
+      // ✅ nur rebuilden wenn wirklich gar nichts da ist
       if (entries.length < 1) {
         buildIndex();
         if (input.value) apply(input.value);
       }
     });
     obs.observe(document.body, { childList: true, subtree: true });
+
+    // ✅ Observer nach kurzer Zeit abschalten (Squarespace ist dann i.d.R. fertig)
+    setTimeout(() => obs.disconnect(), 5000);
   }
 
   ensureUI();
