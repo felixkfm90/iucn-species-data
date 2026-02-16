@@ -131,7 +131,7 @@
     setTimeout(buildIndex, 1800);
 
     const obs = new MutationObserver(() => {
-      if (entries.length < 5) {
+      if (entries.length < 1) {
         buildIndex();
         if (input.value) apply(input.value);
       }
