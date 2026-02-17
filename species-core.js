@@ -10,6 +10,7 @@ window.SpeciesCore = (function () {
       const parts = window.location.pathname.split("/").filter(Boolean);
       slug = parts.pop();
     }
+    if (!slug) throw new Error("Ungültiger URL-Slug");
 
     const res = await fetch(
       "https://felixkfm90.github.io/iucn-species-data/speciesData.json"
@@ -17,6 +18,7 @@ window.SpeciesCore = (function () {
     if (!res.ok) throw new Error("JSON konnte nicht geladen werden");
 
     const json = await res.json();
+    if (!Array.isArray(json)) throw new Error("Ungültiges JSON-Format");
     const found = json.find((i) => i.URLSlug === slug);
     if (!found) throw new Error("Art nicht gefunden");
 
