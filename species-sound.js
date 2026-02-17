@@ -1,11 +1,51 @@
 (async function () {
+  function sanitizeAssetName(input) {
+    return String(input ?? "")
+      .replace(/ä/g, "ae")
+      .replace(/ö/g, "oe")
+      .replace(/ü/g, "ue")
+      .replace(/Ä/g, "Ae")
+      .replace(/Ö/g, "Oe")
+      .replace(/Ü/g, "Ue")
+      .replace(/ß/g, "ss")
+      .replace(/æ/g, "ae")
+      .replace(/Æ/g, "Ae")
+      .replace(/œ/g, "oe")
+      .replace(/Œ/g, "Oe")
+      .replace(/ø/g, "o")
+      .replace(/Ø/g, "O")
+      .replace(/å/g, "a")
+      .replace(/Å/g, "A")
+      .replace(/ð/g, "d")
+      .replace(/Ð/g, "D")
+      .replace(/þ/g, "th")
+      .replace(/Þ/g, "Th")
+      .replace(/ł/g, "l")
+      .replace(/Ł/g, "L")
+      .replace(/&/g, " and ")
+      .replace(/@/g, " at ")
+      .replace(/\+/g, " plus ")
+      .replace(/[’‘‚‛]/g, "'")
+      .replace(/[“”„‟]/g, '"')
+      .replace(/[–—−]/g, "-")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\/\\:*?"<>|]/g, "_")
+      .replace(/[\x00-\x1F\x7F]/g, "_")
+      .replace(/\s+/g, " ")
+      .replace(/_+/g, "_")
+      .trim()
+      .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
+  }
+
   const wrapper = document.getElementById("species-sound");
   if (!wrapper) return;
 
   try {
     const d = await window.SpeciesCore.getSpeciesData();
     const name = d["Deutscher Name"];
-    const url = `https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/sounds/${encodeURIComponent(name)}/${encodeURIComponent(name)}.mp3`;
+    const soundAssetName = sanitizeAssetName(name);
+    const url = `https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/sounds/${encodeURIComponent(soundAssetName)}/${encodeURIComponent(soundAssetName)}.mp3`;
 
     const check = await fetch(url, { method: "HEAD" });
     if (!check.ok) {
