@@ -26,6 +26,9 @@
       const res = await fetch(
         "https://felixkfm90.github.io/iucn-species-data/speciesData.json"
       );
+      if (!res.ok) {
+        throw new Error(`JSON konnte nicht geladen werden (HTTP ${res.status})`);
+      }
       const json = await res.json();
 
       const found = json.find((s) => s.URLSlug === slug);
