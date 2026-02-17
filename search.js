@@ -96,11 +96,11 @@
 
       for (const m of matches.slice(0, limit)) {
         const li = document.createElement("li");
-        li.innerHTML = `
-          <a href="${m.href}"
-             style="display:block; padding:10px 12px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
-            ${m.title}
-          </a>`;
+        const a = document.createElement("a");
+        a.href = m.href;
+        a.style.cssText = "display:block; padding:10px 12px; border:1px solid #ddd; border-radius:10px; text-decoration:none;";
+        a.textContent = m.title;
+        li.appendChild(a);
         resultsList.appendChild(li);
       }
     }
