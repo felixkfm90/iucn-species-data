@@ -56,7 +56,9 @@
     /* DYNAMISCHE PYRAMIDENBREITE (NEU!)         */
     /* ----------------------------------------- */
     function adjustPyramidWidth() {
-      const steps = [...document.querySelectorAll('.pyramid-step')];
+      const frame = container.querySelector('.pyramid-frame');
+      if (!frame) return;
+      const steps = [...frame.querySelectorAll('.pyramid-step')];
       if (steps.length === 0) return;
 
       const meter = document.createElement("span");
