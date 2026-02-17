@@ -18,21 +18,21 @@
         <b>Tierstimme</b>
 
         <div class="wave-wrapper">
-          <div class="play-toggle">▶</div>
-          <div class="species-waveform"></div>
+          <div id="play-toggle" class="play-toggle">▶</div>
+          <div id="species-waveform" class="species-waveform"></div>
         </div>
 
         <div class="wave-meta">
-          <span class="current-time">0:00</span>
-          <span class="duration">0:00</span>
+          <span id="current-time" class="current-time">0:00</span>
+          <span id="duration" class="duration">0:00</span>
         </div>
       </div>
     `;
 
-    const waveformEl = wrapper.querySelector("#species-waveform");
-    const playBtn = wrapper.querySelector("#play-toggle");
-    const curEl = wrapper.querySelector("#current-time");
-    const durEl = wrapper.querySelector("#duration");
+    const waveformEl = wrapper.querySelector("#species-waveform, .species-waveform");
+    const playBtn = wrapper.querySelector("#play-toggle, .play-toggle");
+    const curEl = wrapper.querySelector("#current-time, .current-time");
+    const durEl = wrapper.querySelector("#duration, .duration");
     if (!waveformEl || !playBtn || !curEl || !durEl) return;
 
     const wavesurfer = WaveSurfer.create({
