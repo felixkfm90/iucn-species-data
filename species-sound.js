@@ -29,10 +29,10 @@
       </div>
     `;
 
-    const waveformEl = wrapper.querySelector(".species-waveform");
-    const playBtn = wrapper.querySelector(".play-toggle");
-    const curEl = wrapper.querySelector(".current-time");
-    const durEl = wrapper.querySelector(".duration");
+    const waveformEl = wrapper.querySelector("#species-waveform");
+    const playBtn = wrapper.querySelector("#play-toggle");
+    const curEl = wrapper.querySelector("#current-time");
+    const durEl = wrapper.querySelector("#duration");
     if (!waveformEl || !playBtn || !curEl || !durEl) return;
 
     const wavesurfer = WaveSurfer.create({
