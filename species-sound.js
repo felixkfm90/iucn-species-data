@@ -18,21 +18,22 @@
         <b>Tierstimme</b>
 
         <div class="wave-wrapper">
-          <div id="play-toggle">▶</div>
-          <div id="species-waveform"></div>
+          <div class="play-toggle">▶</div>
+          <div class="species-waveform"></div>
         </div>
 
         <div class="wave-meta">
-          <span id="current-time">0:00</span>
-          <span id="duration">0:00</span>
+          <span class="current-time">0:00</span>
+          <span class="duration">0:00</span>
         </div>
       </div>
     `;
 
-    const waveformEl = document.getElementById("species-waveform");
-    const playBtn = document.getElementById("play-toggle");
-    const curEl = document.getElementById("current-time");
-    const durEl = document.getElementById("duration");
+    const waveformEl = wrapper.querySelector(".species-waveform");
+    const playBtn = wrapper.querySelector(".play-toggle");
+    const curEl = wrapper.querySelector(".current-time");
+    const durEl = wrapper.querySelector(".duration");
+    if (!waveformEl || !playBtn || !curEl || !durEl) return;
 
     const wavesurfer = WaveSurfer.create({
       container: waveformEl,
@@ -79,7 +80,7 @@
       e.preventDefault();
       const zoom = wavesurfer.params.minPxPerSec || 50;
       wavesurfer.zoom(Math.min(300, Math.max(30, zoom + e.deltaY * -0.1)));
-    });
+    }, { passive: false });
 
   } catch (e) {
     wrapper.innerHTML = `<p>${e.message}</p>`;
