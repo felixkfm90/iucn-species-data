@@ -8,8 +8,9 @@
     function renderInfoRow(label, value) {
       if (!value) return "";
       if (value.includes("Männchen") && value.includes("Weibchen")) {
-        const m = value.match(/Männchen([^W]+)/)?.[1]?.trim() || "";
-        const w = value.match(/Weibchen(.+)/)?.[1]?.trim() || "";
+        const m = value.match(/Männchen\s*:?\s*(.*?)\s*Weibchen/i)?.[1]?.trim() || "";
+        const w = value.match(/Weibchen\s*:?\s*(.+)$/i)?.[1]?.trim() || "";
+        if (!m || !w) return `<p>${label}: ${value}</p>`;
         return `
           <div style="display:grid; grid-template-columns:120px auto; row-gap:4px;">
             <span>${label}:</span><span>Männchen: ${m}</span>
