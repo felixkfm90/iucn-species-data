@@ -64,6 +64,56 @@ function logError(msg) {
   );
 }
 
+// Dateinamen/Ordnernamen absichern
+function sanitizeFilename(value) {
+  return String(value ?? "")
+  // 1) Deutsche Umlaute / ß
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/Ä/g, "Ae")
+    .replace(/Ö/g, "Oe")
+    .replace(/Ü/g, "Ue")
+    .replace(/ß/g, "ss")
+  // 2) Häufige Sonderbuchstaben (europäisch)
+    .replace(/æ/g, "ae")
+    .replace(/Æ/g, "Ae")
+    .replace(/œ/g, "oe")
+    .replace(/Œ/g, "Oe")
+    .replace(/ø/g, "o")
+    .replace(/Ø/g, "O")
+    .replace(/å/g, "a")
+    .replace(/Å/g, "A")
+    .replace(/ð/g, "d")
+    .replace(/Ð/g, "D")
+    .replace(/þ/g, "th")
+    .replace(/Þ/g, "Th")
+    .replace(/ł/g, "l")
+    .replace(/Ł/g, "L")
+  // 3) Typografische Zeichen / Symbole
+    .replace(/&/g, " and ")
+    .replace(/@/g, " at ")
+    .replace(/\+/g, " plus ")
+    .replace(/€/g, " euro ")
+    .replace(/£/g, " pound ")
+    .replace(/¥/g, " yen ")
+    .replace(/[’‘‚‛]/g, "'")
+    .replace(/[“”„‟]/g, '"')
+    .replace(/[–—−]/g, "-")
+    .replace(/[…]/g, "...")
+   // 4) Akzente entfernen (é -> e, ñ -> n, ç -> c, ...)
+     .normalize("NFKD")
+     .replace(/[\u0300-\u036f]/g, "")
+   // 5) Für Dateinamen problematische Zeichen ersetzen
+     .replace(/[\/\\:*?"<>|]/g, "_")
+     .replace(/[\x00-\x1F\x7F]/g, "_")
+   // 6) Aufräumen
+     .replace(/\s+/g, " ")
+     .replace(/_+/g, "_")
+     .trim()
+     .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
+}
+
 function emptyEntry(scientific, german = scientific) {
   const URLSlug = scientific.toLowerCase().replace(/\s+/g, '');
   return {
@@ -218,13 +268,14 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
 export async function downloadMaps(speciesData) {
   for (const s of speciesData) {
     const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
+    const safeName = sanitizeFilename(name);
     const assessmentId = s["Assessment ID"];
     if (!assessmentId || assessmentId === "n/a") {
       console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
       continue;
     }
 
-    const filePath = path.join(DIR, `${name}.jpg`);
+    const filePath = path.join(DIR, `${safeName}.jpg`);
     const tempFilePath = filePath + ".tmp";
 
     // Prüfen, ob Karte schon aktuell ist
@@ -257,7 +308,7 @@ export async function downloadMaps(speciesData) {
       console.log(`✔ Karte gespeichert: ${filePath}`);
 
       // Update letzte heruntergeladene AssessmentID
-      lastSavedAssessmentId[name] = assessmentId;
+      lastSavedAssessmentId[safeName] = assessmentId;
       fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
 
     } catch (err) {
@@ -280,7 +331,8 @@ if (!fs.existsSync(SOUND_DIR)) {
 }
 
 async function downloadSoundIfMissing(genus, species, german) {
-  const targetDir = path.join(SOUND_DIR, german);
+  const safeGerman = sanitizeFilename(german);
+  const targetDir = path.join(SOUND_DIR, safeGerman);
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -331,7 +383,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   // Audio URL korrekt zusammensetzen
   let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
-  const filePath = path.join(targetDir, `${german}.mp3`);
+  const filePath = path.join(targetDir, `${safeGerman}.mp3`);
 
   try {
     const audioRes = await fetch(audioUrl);
