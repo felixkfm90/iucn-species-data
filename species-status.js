@@ -14,19 +14,23 @@
 
   try {
     const d = await window.SpeciesCore.getSpeciesData();
+    const statusIcon = statusIcons[d.Status] || "LC.png";
+    const trendIcon = trendIcons[d.Trend] || "stabil.png";
+    const statusKnown = Boolean(statusIcons[d.Status]);
+    const trendKnown = Boolean(trendIcons[d.Trend]);
 
     container.innerHTML = `
       <div class="frame-box status-trend-frame">
         <div class="status-trend-wrapper">
           <div class="info-box">
             <p>Status</p>
-            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/catagory/Alternativ/${statusIcons[d.Status]}" height="80">
-            <p>${d.Kategorie}</p>
+            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/catagory/Alternativ/${statusIcon}" height="80">
+            <p>${d.Kategorie}${statusKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
           <div class="info-box">
             <p>Trend</p>
-            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/trend/${trendIcons[d.Trend]}" height="80">
-            <p>${d.Trend}</p>
+            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/trend/${trendIcon}" height="80">
+            <p>${d.Trend}${trendKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
         </div>
       </div>
