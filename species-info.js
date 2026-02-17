@@ -5,13 +5,13 @@
   try {
     const data = await window.SpeciesCore.getSpeciesData();
 
-    function renderSplit(label, value) {
+    function renderInfoRow(label, value) {
       if (!value) return "";
       if (value.includes("Männchen") && value.includes("Weibchen")) {
         const m = value.match(/Männchen([^W]+)/)?.[1]?.trim() || "";
         const w = value.match(/Weibchen(.+)/)?.[1]?.trim() || "";
         return `
-          <div style="display:grid; grid-template-columns:80px auto; row-gap:4px;">
+          <div style="display:grid; grid-template-columns:120px auto; row-gap:4px;">
             <span>${label}:</span><span>Männchen: ${m}</span>
             <span></span><span>Weibchen: ${w}</span>
           </div>`;
@@ -21,11 +21,11 @@
 
     container.innerHTML = `
       <div class="frame-box left-frame">
-        Name: ${data["Deutscher Name"]} – ${data["Wissenschaftlicher Name"]}</p>
-        <p>${renderSplit("Größe", data.Größe)}</p>
-        <p>${renderSplit("Gewicht", data.Gewicht)}</p>
+        <p>Name: ${data["Deutscher Name"]} – ${data["Wissenschaftlicher Name"]}</p>
+        ${renderInfoRow("Größe", data.Größe)}
+        ${renderInfoRow("Gewicht", data.Gewicht)}
         <p>Lebenserwartung: ${data["Lebenserwartung"]}</p>
-        <p>Populationgröße: ${data["Populationgröße"]}
+        <p>Populationgröße: ${data["Populationgröße"]}</p>
       </div>
     `;
   } catch (e) {
