@@ -108,7 +108,7 @@ async function getAssessmentData(assessmentId) {
       headers: { "Authorization": TOKEN, "Accept": "application/json" }
     });
 
-    if (!res.ok) return { trend: "n/a", category: "n/a" };
+    if (!res.ok) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
 
     const data = await res.json();
     const assessment = data.population_trend
@@ -131,7 +131,7 @@ async function getAssessmentData(assessmentId) {
 
   } catch (err) {
     logError("Fehler bei Assessment " + assessmentId + ": " + err.message);
-    return { trend: "n/a", category: "n/a" };
+    return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
   }
 }
 
