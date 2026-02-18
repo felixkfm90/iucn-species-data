@@ -52,41 +52,45 @@
   function init() {
     const wrapper = document.getElementById("map-wrapper");
     const outputEl = document.getElementById("map-output");
-
     if (!wrapper || !outputEl) return;
-
     loadMap(outputEl);
   }
 
+  function sourceHtml() {
+    return `
+      <div style="font-size:0.85em; color:#666; margin-top:8px;">
+        Quelle: <a href="https://www.iucnredlist.org" target="_blank" rel="noopener">IUCN Red List</a>
+      </div>
+    `;
+  }
+
   async function loadMap(outputEl) {
+    // ✅ Loading State
+    outputEl.innerHTML = `<p style="font-style:italic;">Lade Verbreitungskarte…</p>${sourceHtml()}`;
+
     try {
       const slug = getSlug();
 
-      const res = await fetch(
-        "https://felixkfm90.github.io/iucn-species-data/speciesData.json"
-      );
-      if (!res.ok) {
-        throw new Error(`JSON konnte nicht geladen werden (HTTP ${res.status})`);
-      }
+      const res = await fetch("https://felixkfm90.github.io/iucn-species-data/speciesData.json");
+      if (!res.ok) throw new Error(`JSON konnte nicht geladen werden (HTTP ${res.status})`);
       const json = await res.json();
 
       const found = json.find((s) => s.URLSlug === slug);
-
       if (!found) {
-        outputEl.innerHTML = `<p>Keine Art gefunden.</p>`;
+        outputEl.innerHTML = `<p>Keine Art gefunden.</p>${sourceHtml()}`;
         return;
       }
 
       const germanName = found["Deutscher Name"];
       const mapAssetName = sanitizeAssetName(germanName);
-      const imgUrl = `https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/Verbreitungskarten/${encodeURIComponent(
-        mapAssetName
-      )}.jpg`;
 
-      const check = await fetch(imgUrl);
+      // ✅ GitHub Pages statt raw
+      const imgUrl = `https://felixkfm90.github.io/iucn-species-data/Verbreitungskarten/${encodeURIComponent(mapAssetName)}.jpg`;
+
+      // ✅ HEAD statt GET (schneller)
+      const check = await fetch(imgUrl, { method: "HEAD" });
       if (!check.ok) {
-        outputEl.innerHTML =
-          `<p style="font-style:italic;">Keine Verbreitungskarte vorhanden!</p>`;
+        outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfügbar.</p>${sourceHtml()}`;
         return;
       }
 
@@ -96,18 +100,20 @@
           alt="Verbreitungskarte – ${germanName}"
           style="width:100%; height:auto; display:block; cursor:default;"
           class="species-map-img"
+          loading="lazy"
         >
+        ${sourceHtml()}
       `;
 
       const img = outputEl.querySelector("img");
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-      if (isMobile) {
+      if (isMobile && img) {
         img.style.cursor = "zoom-in";
         img.addEventListener("click", () => openFullscreen(imgUrl));
       }
-    } catch (err) {
-      outputEl.innerHTML = `<p>Fehler: ${err.message}</p>`;
+    } catch (_) {
+      outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfügbar.</p>${sourceHtml()}`;
     }
   }
 
