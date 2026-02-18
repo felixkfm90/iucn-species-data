@@ -4,4 +4,6 @@ errors.log
 .env.*
 !.env.example
 npm-debug.log*
-errors.log
+errors.logupdate_github_only.bat
+update_local.bat
+update_github_only.bat
