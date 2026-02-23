@@ -2,40 +2,45 @@ import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
 
-//Pfad für Karten festlegen oder Ordner erstellen
-const DIR = "./Verbreitungskarten";
-if (!fs.existsSync(DIR)) {
-  fs.mkdirSync(DIR);
-}
+// =======================
+// KONFIG / ORDNER
+// =======================
 
-//IUCN Token abrufen und speichern
+// Pfad für Karten festlegen oder Ordner erstellen
+const MAP_DIR = "./Verbreitungskarten";
+if (!fs.existsSync(MAP_DIR)) fs.mkdirSync(MAP_DIR);
+
+// Sound-Ordner
+const SOUND_DIR = "./sounds";
+if (!fs.existsSync(SOUND_DIR)) fs.mkdirSync(SOUND_DIR);
+
+// Tokens
 const TOKEN = process.env.IUCN_TOKEN;
 if (!TOKEN) {
   console.error("❌ IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
   process.exit(1);
 }
 
-//XENO Token abrufen und speichern
 const XENO_TOKEN = process.env.XENO_TOKEN;
 if (!XENO_TOKEN) {
   console.error("❌ XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
   process.exit(1);
 }
 
-//Basis-URL festlegen
+// Basis-URL IUCN
 const BASE = "https://api.iucnredlist.org/api/v4";
 
-// ms Pause zwischen API-Requests
+// Pause zwischen Arten (ms)
 const RATE_LIMIT = 400;
 
-// Assessment ID tracken
+// Assessment-ID Trackfile (für Karten-Caching)
 const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
 let lastSavedAssessmentId = {};
 if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
   lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
 }
 
-//Festlegen Übersetzungen Kategorie
+// Übersetzungen Kategorie & Trend
 const CATEGORY_MAP = {
   LC: "Nicht gefährdet",
   NT: "Potentiell gefährdet",
@@ -47,7 +52,6 @@ const CATEGORY_MAP = {
   DD: "Keine ausreichende Datenlage",
 };
 
-//Festlegen Übersetzungen Trend
 const TREND_MAP = {
   Increasing: "Zunehmend",
   Stable: "Stabil",
@@ -55,12 +59,14 @@ const TREND_MAP = {
   Unknown: "Unbekannt",
 };
 
-// Logging
+// =======================
+// HELFER
+// =======================
+
 function logError(msg) {
   fs.appendFileSync("errors.log", `[${new Date().toISOString()}] ${msg}\n`);
 }
 
-// Dateinamen/Ordnernamen absichern
 function sanitizeAssetName(input) {
   return String(input ?? "")
     .replace(/ä/g, "ae")
@@ -126,17 +132,23 @@ function emptyEntry(scientific, german = scientific) {
   };
 }
 
-// GET mit Token
+async function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// IUCN GET mit Token
 async function iucnGET(pathname) {
   const res = await fetch(`${BASE}${pathname}`, {
     headers: { Authorization: TOKEN, Accept: "application/json" },
   });
-
   if (!res.ok) return null;
   return res.json();
 }
 
-//Assessment ID abrufen
+// =======================
+// IUCN ASSESSMENT
+// =======================
+
 async function getAssessmentData(assessmentId) {
   try {
     const res = await fetch(`${BASE}/assessment/${assessmentId}`, {
@@ -146,11 +158,7 @@ async function getAssessmentData(assessmentId) {
     if (!res.ok) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
 
     const data = await res.json();
-    const assessment = data.population_trend
-      ? data
-      : data.result
-        ? data.result[0]
-        : null;
+    const assessment = data.population_trend ? data : data.result ? data.result[0] : null;
 
     if (!assessment) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
 
@@ -173,8 +181,9 @@ async function getAssessmentData(assessmentId) {
 async function fetchSpeciesData(genus, species, german, size, weight) {
   const scientific = `${genus} ${species}`;
   const URLSlug = `${genus}${species}`.toLowerCase();
+
   try {
-    console.log(`→ Suche Taxon für ${scientific}`);
+    console.log(`→ Suche Taxon für ${german} (${scientific})`);
 
     const taxonData = await iucnGET(
       `/taxa/scientific_name?genus_name=${encodeURIComponent(genus)}&species_name=${encodeURIComponent(species)}`
@@ -202,7 +211,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     const assessmentId = globalAssessment.assessment_id;
     const assessmentInfo = await getAssessmentData(assessmentId);
 
-    //Formatierung Population mit 1000 Trennung
+    // Formatierung Population mit 1000 Trennung
     let populationFormatted = assessmentInfo.population;
     if (typeof populationFormatted === "string") {
       populationFormatted = populationFormatted.replace(/\d+/g, (n) =>
@@ -245,60 +254,56 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
   }
 }
 
-// Verbreitungskarten herunterladen
-export async function downloadMaps(speciesData) {
-  for (const s of speciesData) {
-    const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
-    const safeName = sanitizeAssetName(name);
-    const assessmentId = s["Assessment ID"];
+// =======================
+// MAP: pro Art
+// =======================
 
-    if (!assessmentId || assessmentId === "n/a") {
-      console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
-      continue;
+async function downloadMapForSpecies(s) {
+  const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
+  const safeName = sanitizeAssetName(name);
+  const assessmentId = s["Assessment ID"];
+
+  if (!assessmentId || assessmentId === "n/a") {
+    console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
+    return;
+  }
+
+  const filePath = path.join(MAP_DIR, `${safeName}.jpg`);
+  const tempFilePath = filePath + ".tmp";
+
+  if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
+    console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
+    return;
+  }
+
+  const url = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
+  console.log(`→ Lade Karte für ${name} (${assessmentId})`);
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: "image/jpeg",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`⚠ Karte für ${name} nicht gefunden (HTTP ${res.status})`);
+      return;
     }
 
-    const filePath = path.join(DIR, `${safeName}.jpg`);
-    const tempFilePath = filePath + ".tmp";
+    const buffer = await res.arrayBuffer();
+    fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+    fs.renameSync(tempFilePath, filePath);
 
-    // Prüfen, ob Karte schon aktuell ist
-    if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
-      console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
-      continue;
-    }
+    console.log(`✔ Karte gespeichert: ${filePath}`);
 
-    const url = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
-    console.log(`→ Lade Karte für ${name} (${assessmentId})`);
-
-    try {
-      const res = await fetch(url, {
-        headers: {
-          Accept: "image/jpeg",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        },
-      });
-
-      if (!res.ok) {
-        console.warn(`⚠ Karte für ${name} nicht gefunden (HTTP ${res.status})`);
-        continue;
-      }
-
-      const buffer = await res.arrayBuffer();
-      fs.writeFileSync(tempFilePath, Buffer.from(buffer));
-
-      // Nur wenn erfolgreich geladen → alte Datei ersetzen
-      fs.renameSync(tempFilePath, filePath);
-      console.log(`✔ Karte gespeichert: ${filePath}`);
-
-      // Update letzte heruntergeladene AssessmentID
-      lastSavedAssessmentId[safeName] = assessmentId;
-      fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
-    } catch (err) {
-      if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-      console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
-      logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
-    }
-
-    await new Promise((r) => setTimeout(r, RATE_LIMIT));
+    lastSavedAssessmentId[safeName] = assessmentId;
+    fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+  } catch (err) {
+    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+    console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
+    logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
   }
 }
 
@@ -306,20 +311,12 @@ export async function downloadMaps(speciesData) {
 // XENO-CANTO SOUNDS
 // =======================
 
-const SOUND_DIR = "./sounds";
-if (!fs.existsSync(SOUND_DIR)) {
-  fs.mkdirSync(SOUND_DIR);
-}
-
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
   const targetDir = path.join(SOUND_DIR, safeGerman);
 
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
-  // Prüfen, ob bereits eine Aufnahme existiert
   const existing = fs.readdirSync(targetDir).filter((f) => f.endsWith(".mp3"));
   if (existing.length > 0) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
@@ -327,15 +324,14 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   let best = null;
-  let queries = [
+  const queries = [
     `gen:${genus} sp:${species} q:A len:25-35`,
     `gen:${genus} sp:${species} q:A`,
     `gen:${genus} sp:${species}`,
   ];
 
-  for (let q of queries) {
-    let apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(q)}&key=${XENO_TOKEN}&page=1`;
-
+  for (const q of queries) {
+    const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(q)}&key=${XENO_TOKEN}&page=1`;
     try {
       const res = await fetch(apiUrl);
       if (!res.ok) {
@@ -358,8 +354,7 @@ async function downloadSoundIfMissing(genus, species, german) {
     return;
   }
 
-  // Audio URL korrekt zusammensetzen
-  let audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
+  const audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
   const filePath = path.join(targetDir, `${safeGerman}.mp3`);
 
   try {
@@ -373,7 +368,6 @@ async function downloadSoundIfMissing(genus, species, german) {
     fs.writeFileSync(filePath, Buffer.from(buffer));
     console.log(`✔ Sound gespeichert: ${filePath}`);
 
-    // Credits speichern
     const credits = {
       scientific_name: `${genus} ${species}`,
       german_name: german,
@@ -396,14 +390,6 @@ async function downloadSoundIfMissing(genus, species, german) {
 // =======================
 // REPORT: Fehlende Elemente
 // =======================
-
-function fileExistsSafe(p) {
-  try {
-    return fs.existsSync(p);
-  } catch {
-    return false;
-  }
-}
 
 function createMissingElementsReport(speciesData) {
   const report = {
@@ -433,28 +419,20 @@ function createMissingElementsReport(speciesData) {
     const german = s["Deutscher Name"] || s["Wissenschaftlicher Name"] || "unknown";
     const safe = sanitizeAssetName(german);
 
-    const assessmentId = s["Assessment ID"];
-    const status = s.Status;
-    const category = s.Kategorie;
-    const trend = s.Trend;
+    if (!s["Assessment ID"] || s["Assessment ID"] === "n/a") report.missing.assessmentId.push(german);
+    if (!s.Status || s.Status === "n/a") report.missing.status.push(german);
+    if (!s.Kategorie || s.Kategorie === "n/a") report.missing.category.push(german);
+    if (!s.Trend || s.Trend === "n/a") report.missing.trend.push(german);
 
-    // Datenfelder
-    if (!assessmentId || assessmentId === "n/a") report.missing.assessmentId.push(german);
-    if (!status || status === "n/a") report.missing.status.push(german);
-    if (!category || category === "n/a") report.missing.category.push(german);
-    if (!trend || trend === "n/a") report.missing.trend.push(german);
+    const mp3Path = path.join(SOUND_DIR, safe, `${safe}.mp3`);
+    const creditsPath = path.join(SOUND_DIR, safe, "credits.json");
+    const mapPath = path.join(MAP_DIR, `${safe}.jpg`);
 
-    // Dateien
-    const mp3Path = path.join("./sounds", safe, `${safe}.mp3`);
-    const creditsPath = path.join("./sounds", safe, "credits.json");
-    const mapPath = path.join("./Verbreitungskarten", `${safe}.jpg`);
-
-    if (!fileExistsSafe(mp3Path)) report.missing.soundMp3.push(german);
-    if (fileExistsSafe(mp3Path) && !fileExistsSafe(creditsPath)) report.missing.soundCredits.push(german);
-    if (!fileExistsSafe(mapPath)) report.missing.maps.push(german);
+    if (!fs.existsSync(mp3Path)) report.missing.soundMp3.push(german);
+    if (fs.existsSync(mp3Path) && !fs.existsSync(creditsPath)) report.missing.soundCredits.push(german);
+    if (!fs.existsSync(mapPath)) report.missing.maps.push(german);
   }
 
-  // Counts
   report.counts.missingSoundMp3 = report.missing.soundMp3.length;
   report.counts.missingSoundCredits = report.missing.soundCredits.length;
   report.counts.missingMap = report.missing.maps.length;
@@ -497,7 +475,10 @@ function printReportToConsole(report) {
   console.log("\n==============================\n");
 }
 
-// Hauptprozess
+// =======================
+// HAUPTPROZESS
+// =======================
+
 (async function () {
   try {
     const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
@@ -507,25 +488,19 @@ function printReportToConsole(report) {
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
 
-      // Sound laden
       await downloadSoundIfMissing(s.genus, s.species, s.german);
+      await downloadMapForSpecies(data);
 
-      await new Promise((r) => setTimeout(r, RATE_LIMIT));
+      await sleep(RATE_LIMIT);
     }
 
     fs.writeFileSync("speciesData.json", JSON.stringify(output, null, 2));
     console.log("✔ speciesData.json aktualisiert!");
 
-    // Karten herunterladen
-    await downloadMaps(output);
-    console.log("✔ Alle Karten heruntergeladen!");
-
-    // ✅ Report erzeugen
     const report = createMissingElementsReport(output);
     fs.writeFileSync("fehlende_elemente_report.json", JSON.stringify(report, null, 2));
     printReportToConsole(report);
     console.log("✔ fehlende_elemente_report.json erstellt!");
-
   } catch (err) {
     console.error("❌ Fehler im Hauptprozess: " + err);
     logError("Hauptprozess: " + err.message);
