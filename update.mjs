@@ -8,7 +8,6 @@ if (!fs.existsSync(DIR)) {
   fs.mkdirSync(DIR);
 }
 
-
 //IUCN Token abrufen und speichern
 const TOKEN = process.env.IUCN_TOKEN;
 if (!TOKEN) {
@@ -38,30 +37,27 @@ if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
 
 //Festlegen Übersetzungen Kategorie
 const CATEGORY_MAP = {
-  "LC": "Nicht gefährdet",
-  "NT": "Potentiell gefährdet",
-  "VU": "Gefährdet",
-  "EN": "Stark gefährdet",
-  "CR": "Vom Aussterben bedroht",
-  "EW": "In freier Wildbahn ausgestorben",
-  "EX": "Ausgestorben",
-  "DD": "Keine ausreichende Datenlage"
+  LC: "Nicht gefährdet",
+  NT: "Potentiell gefährdet",
+  VU: "Gefährdet",
+  EN: "Stark gefährdet",
+  CR: "Vom Aussterben bedroht",
+  EW: "In freier Wildbahn ausgestorben",
+  EX: "Ausgestorben",
+  DD: "Keine ausreichende Datenlage",
 };
 
 //Festlegen Übersetzungen Trend
 const TREND_MAP = {
-  "Increasing": "Zunehmend",
-  "Stable": "Stabil",
-  "Decreasing": "Abnehmend",
-  "Unknown": "Unbekannt"
+  Increasing: "Zunehmend",
+  Stable: "Stabil",
+  Decreasing: "Abnehmend",
+  Unknown: "Unbekannt",
 };
 
 // Logging
 function logError(msg) {
-  fs.appendFileSync(
-    "errors.log",
-    `[${new Date().toISOString()}] ${msg}\n`
-  );
+  fs.appendFileSync("errors.log", `[${new Date().toISOString()}] ${msg}\n`);
 }
 
 // Dateinamen/Ordnernamen absichern
@@ -105,39 +101,38 @@ function sanitizeAssetName(input) {
 }
 
 function emptyEntry(scientific, german = scientific) {
-  const URLSlug = scientific.toLowerCase().replace(/\s+/g, '');
+  const URLSlug = scientific.toLowerCase().replace(/\s+/g, "");
   return {
-    "URLSlug": URLSlug,
+    URLSlug,
     "Wissenschaftlicher Name": scientific,
     "Deutscher Name": german,
-    "Gewicht": "n/a",
-    "Größe": "n/a",
+    Gewicht: "n/a",
+    Größe: "n/a",
     "Assessment ID": "n/a",
-    "Status": "n/a",
-    "Trend": "n/a",
-    "Kategorie": "n/a",
-    "Populationgröße": "n/a",
-    "Lebenserwartung": "n/a",
-    "Kingdom": "n/a",
-    "Phylum": "n/a",
-    "Class": "n/a",
-    "Order": "n/a",
-    "Family": "n/a",
-    "Genus": "n/a",
-    "Species": "n/a",
+    Status: "n/a",
+    Trend: "n/a",
+    Kategorie: "n/a",
+    Populationgröße: "n/a",
+    Lebenserwartung: "n/a",
+    Kingdom: "n/a",
+    Phylum: "n/a",
+    Class: "n/a",
+    Order: "n/a",
+    Family: "n/a",
+    Genus: "n/a",
+    Species: "n/a",
     "Letztes IUCN Update": "n/a",
-    "Daten abgerufen": new Date().toISOString().slice(0, 10)
+    "Daten abgerufen": new Date().toISOString().slice(0, 10),
   };
 }
 
 // GET mit Token
-async function iucnGET(path) {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Authorization": TOKEN, "Accept": "application/json" }
+async function iucnGET(pathname) {
+  const res = await fetch(`${BASE}${pathname}`, {
+    headers: { Authorization: TOKEN, Accept: "application/json" },
   });
 
   if (!res.ok) return null;
-
   return res.json();
 }
 
@@ -145,7 +140,7 @@ async function iucnGET(path) {
 async function getAssessmentData(assessmentId) {
   try {
     const res = await fetch(`${BASE}/assessment/${assessmentId}`, {
-      headers: { "Authorization": TOKEN, "Accept": "application/json" }
+      headers: { Authorization: TOKEN, Accept: "application/json" },
     });
 
     if (!res.ok) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
@@ -161,14 +156,13 @@ async function getAssessmentData(assessmentId) {
 
     const trendEN = assessment.population_trend?.description?.en || "Unknown";
     const categoryCode = assessment.red_list_category?.code || "DD";
-    const population = assessment.supplementary_info?.population_size  || "n/a";
+    const population = assessment.supplementary_info?.population_size || "n/a";
     const generation = assessment.supplementary_info?.generational_length || "n/a";
 
     const trend = TREND_MAP[trendEN] || "Unbekannt";
     const category = CATEGORY_MAP[categoryCode] || "Keine ausreichende Datenlage";
 
     return { trend, category, population, generation };
-
   } catch (err) {
     logError("Fehler bei Assessment " + assessmentId + ": " + err.message);
     return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
@@ -189,20 +183,20 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     if (!taxonData?.taxon) {
       console.error(`❌ Kein Treffer für ${scientific}`);
       logError("Kein Treffer: " + scientific);
-      return emptyEntry(scientific);
+      return emptyEntry(scientific, german);
     }
 
     const taxon = taxonData.taxon;
     const resolvedName = taxon.scientific_name;
 
-    const globalAssessment = taxonData.assessments?.find(a =>
-      a.scopes?.some(s => s.description?.en === "Global")
+    const globalAssessment = taxonData.assessments?.find((a) =>
+      a.scopes?.some((s) => s.description?.en === "Global")
     );
 
     if (!globalAssessment) {
       console.error(`❌ Keine globale Assessment-ID für ${resolvedName}`);
       logError("Keine globale Assessment-ID: " + resolvedName);
-      return emptyEntry(resolvedName);
+      return emptyEntry(resolvedName, german);
     }
 
     const assessmentId = globalAssessment.assessment_id;
@@ -211,8 +205,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     //Formatierung Population mit 1000 Trennung
     let populationFormatted = assessmentInfo.population;
     if (typeof populationFormatted === "string") {
-      // Zahlen in Bereichen wie "1000-2000" erkennen und formatieren
-      populationFormatted = populationFormatted.replace(/\d+/g, n =>
+      populationFormatted = populationFormatted.replace(/\d+/g, (n) =>
         Number(n).toLocaleString("de-DE")
       );
     }
@@ -220,37 +213,35 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     // schreibe hinter Lebenserwartung Jahre
     let generationFormatted = assessmentInfo.generation;
     if (generationFormatted !== "n/a") {
-      // Punkt zu Komma wandeln, falls nötig
       generationFormatted = generationFormatted.toString().replace(".", ",") + " Jahre";
     }
 
     return {
-      "URLSlug": URLSlug,
+      URLSlug,
       "Wissenschaftlicher Name": resolvedName,
       "Deutscher Name": german,
-      "Gewicht": weight,
-      "Größe": size,
+      Gewicht: weight,
+      Größe: size,
       "Assessment ID": assessmentId,
-      "Status": globalAssessment.red_list_category_code || "n/a",
-      "Trend": assessmentInfo.trend,
-      "Kategorie": assessmentInfo.category,
-      "Populationgröße": populationFormatted,
-      "Lebenserwartung": generationFormatted,
-      "Kingdom": taxon.kingdom_name || "n/a",
-      "Phylum": taxon.phylum_name || "n/a",
-      "Class": taxon.class_name || "n/a",
-      "Order": taxon.order_name || "n/a",
-      "Family": taxon.family_name || "n/a",
-      "Genus": taxon.genus_name || "n/a",
-      "Species": taxon.species_name || "n/a",
+      Status: globalAssessment.red_list_category_code || "n/a",
+      Trend: assessmentInfo.trend,
+      Kategorie: assessmentInfo.category,
+      Populationgröße: populationFormatted,
+      Lebenserwartung: generationFormatted,
+      Kingdom: taxon.kingdom_name || "n/a",
+      Phylum: taxon.phylum_name || "n/a",
+      Class: taxon.class_name || "n/a",
+      Order: taxon.order_name || "n/a",
+      Family: taxon.family_name || "n/a",
+      Genus: taxon.genus_name || "n/a",
+      Species: taxon.species_name || "n/a",
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
-      "Daten abgerufen": new Date().toISOString().slice(0, 10)
+      "Daten abgerufen": new Date().toISOString().slice(0, 10),
     };
-
   } catch (err) {
     console.error(`❌ Fehler bei ${scientific}: ${err}`);
     logError("Fehler bei " + scientific + ": " + err.message);
-    return emptyEntry(scientific);
+    return emptyEntry(scientific, german);
   }
 }
 
@@ -260,6 +251,7 @@ export async function downloadMaps(speciesData) {
     const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
     const safeName = sanitizeAssetName(name);
     const assessmentId = s["Assessment ID"];
+
     if (!assessmentId || assessmentId === "n/a") {
       console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
       continue;
@@ -280,9 +272,9 @@ export async function downloadMaps(speciesData) {
     try {
       const res = await fetch(url, {
         headers: {
-          "Accept": "image/jpeg",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        }
+          Accept: "image/jpeg",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        },
       });
 
       if (!res.ok) {
@@ -300,14 +292,13 @@ export async function downloadMaps(speciesData) {
       // Update letzte heruntergeladene AssessmentID
       lastSavedAssessmentId[safeName] = assessmentId;
       fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
-
     } catch (err) {
       if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
       console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
       logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
     }
 
-    await new Promise(r => setTimeout(r, RATE_LIMIT));
+    await new Promise((r) => setTimeout(r, RATE_LIMIT));
   }
 }
 
@@ -329,7 +320,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   // Prüfen, ob bereits eine Aufnahme existiert
-  const existing = fs.readdirSync(targetDir).filter(f => f.endsWith(".mp3"));
+  const existing = fs.readdirSync(targetDir).filter((f) => f.endsWith(".mp3"));
   if (existing.length > 0) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
     return;
@@ -337,12 +328,9 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   let best = null;
   let queries = [
-    // 1️⃣ Qualität A, Länge 25–35s
     `gen:${genus} sp:${species} q:A len:25-35`,
-    // 2️⃣ Fallback: Qualität A, egal welche Länge
     `gen:${genus} sp:${species} q:A`,
-    // 3️⃣ Letzter Fallback: egal welche Qualität oder Länge
-    `gen:${genus} sp:${species}`
+    `gen:${genus} sp:${species}`,
   ];
 
   for (let q of queries) {
@@ -357,9 +345,8 @@ async function downloadSoundIfMissing(genus, species, german) {
       const data = await res.json();
       if (!data.recordings || data.recordings.length === 0) continue;
 
-      // Priorität: beste Qualität A zuerst
-      best = data.recordings.find(r => r.q === "A") || data.recordings[0];
-      if (best) break; // gefunden, abbrechen
+      best = data.recordings.find((r) => r.q === "A") || data.recordings[0];
+      if (best) break;
     } catch (err) {
       console.error(`❌ Fehler bei Xeno-Canto Anfrage: ${err.message}`);
       continue;
@@ -396,20 +383,122 @@ async function downloadSoundIfMissing(genus, species, german) {
       quality: best.q,
       license: best.lic,
       source: "xeno-canto.org",
-      url: `https://xeno-canto.org/${best.id}`
+      url: `https://xeno-canto.org/${best.id}`,
     };
 
     fs.writeFileSync(path.join(targetDir, "credits.json"), JSON.stringify(credits, null, 2));
-
   } catch (err) {
     console.error(`❌ Fehler beim Sound-Download ${genus} ${species}: ${err.message}`);
     logError(`Sound ${genus} ${species}: ${err.message}`);
   }
 }
 
+// =======================
+// REPORT: Fehlende Elemente
+// =======================
+
+function fileExistsSafe(p) {
+  try {
+    return fs.existsSync(p);
+  } catch {
+    return false;
+  }
+}
+
+function createMissingElementsReport(speciesData) {
+  const report = {
+    generatedAt: new Date().toISOString(),
+    counts: {
+      totalSpecies: speciesData.length,
+      missingSoundMp3: 0,
+      missingSoundCredits: 0,
+      missingMap: 0,
+      missingAssessmentId: 0,
+      missingStatus: 0,
+      missingCategory: 0,
+      missingTrend: 0,
+    },
+    missing: {
+      soundMp3: [],
+      soundCredits: [],
+      maps: [],
+      assessmentId: [],
+      status: [],
+      category: [],
+      trend: [],
+    },
+  };
+
+  for (const s of speciesData) {
+    const german = s["Deutscher Name"] || s["Wissenschaftlicher Name"] || "unknown";
+    const safe = sanitizeAssetName(german);
+
+    const assessmentId = s["Assessment ID"];
+    const status = s.Status;
+    const category = s.Kategorie;
+    const trend = s.Trend;
+
+    // Datenfelder
+    if (!assessmentId || assessmentId === "n/a") report.missing.assessmentId.push(german);
+    if (!status || status === "n/a") report.missing.status.push(german);
+    if (!category || category === "n/a") report.missing.category.push(german);
+    if (!trend || trend === "n/a") report.missing.trend.push(german);
+
+    // Dateien
+    const mp3Path = path.join("./sounds", safe, `${safe}.mp3`);
+    const creditsPath = path.join("./sounds", safe, "credits.json");
+    const mapPath = path.join("./Verbreitungskarten", `${safe}.jpg`);
+
+    if (!fileExistsSafe(mp3Path)) report.missing.soundMp3.push(german);
+    if (fileExistsSafe(mp3Path) && !fileExistsSafe(creditsPath)) report.missing.soundCredits.push(german);
+    if (!fileExistsSafe(mapPath)) report.missing.maps.push(german);
+  }
+
+  // Counts
+  report.counts.missingSoundMp3 = report.missing.soundMp3.length;
+  report.counts.missingSoundCredits = report.missing.soundCredits.length;
+  report.counts.missingMap = report.missing.maps.length;
+  report.counts.missingAssessmentId = report.missing.assessmentId.length;
+  report.counts.missingStatus = report.missing.status.length;
+  report.counts.missingCategory = report.missing.category.length;
+  report.counts.missingTrend = report.missing.trend.length;
+
+  return report;
+}
+
+function printReportToConsole(report) {
+  console.log("\n==============================");
+  console.log("📋 Report: Fehlende Elemente");
+  console.log("==============================");
+  console.log(`Arten gesamt: ${report.counts.totalSpecies}`);
+  console.log(`❌ Sound (mp3) fehlt: ${report.counts.missingSoundMp3}`);
+  console.log(`❌ Sound Credits fehlen: ${report.counts.missingSoundCredits}`);
+  console.log(`❌ Karte fehlt: ${report.counts.missingMap}`);
+  console.log(`❌ Assessment ID fehlt: ${report.counts.missingAssessmentId}`);
+  console.log(`❌ Status fehlt: ${report.counts.missingStatus}`);
+  console.log(`❌ Kategorie fehlt: ${report.counts.missingCategory}`);
+  console.log(`❌ Trend fehlt: ${report.counts.missingTrend}`);
+  console.log("------------------------------");
+
+  const showList = (title, arr) => {
+    if (!arr.length) return;
+    console.log(`\n${title} (${arr.length}):`);
+    for (const n of arr) console.log(" - " + n);
+  };
+
+  showList("Fehlende Sound-MP3", report.missing.soundMp3);
+  showList("Fehlende Sound-Credits", report.missing.soundCredits);
+  showList("Fehlende Karten", report.missing.maps);
+  showList("Fehlende Assessment IDs", report.missing.assessmentId);
+  showList("Fehlender Status", report.missing.status);
+  showList("Fehlende Kategorie", report.missing.category);
+  showList("Fehlender Trend", report.missing.trend);
+
+  console.log("\n==============================\n");
+}
 
 // Hauptprozess
-(async function() {
+(async function () {
   try {
     const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
     const output = [];
@@ -417,9 +506,11 @@ async function downloadSoundIfMissing(genus, species, german) {
     for (const s of speciesList) {
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
-      //Sound laden
+
+      // Sound laden
       await downloadSoundIfMissing(s.genus, s.species, s.german);
-      await new Promise(r => setTimeout(r, RATE_LIMIT));
+
+      await new Promise((r) => setTimeout(r, RATE_LIMIT));
     }
 
     fs.writeFileSync("speciesData.json", JSON.stringify(output, null, 2));
@@ -428,6 +519,12 @@ async function downloadSoundIfMissing(genus, species, german) {
     // Karten herunterladen
     await downloadMaps(output);
     console.log("✔ Alle Karten heruntergeladen!");
+
+    // ✅ Report erzeugen
+    const report = createMissingElementsReport(output);
+    fs.writeFileSync("fehlende_elemente_report.json", JSON.stringify(report, null, 2));
+    printReportToConsole(report);
+    console.log("✔ fehlende_elemente_report.json erstellt!");
 
   } catch (err) {
     console.error("❌ Fehler im Hauptprozess: " + err);
