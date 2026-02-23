@@ -518,6 +518,7 @@ function printReportToConsole(report) {
       const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
 
       console.log(`✅ Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
+      console.log("");
 
       // 5) kleine Pause
       await sleep(RATE_LIMIT);
