@@ -265,7 +265,7 @@ async function downloadMapForSpecies(s) {
 
   if (!assessmentId || assessmentId === "n/a") {
     console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
-    return;
+    return "n/a";
   }
 
   const filePath = path.join(MAP_DIR, `${safeName}.jpg`);
@@ -273,7 +273,7 @@ async function downloadMapForSpecies(s) {
 
   if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
     console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
-    return;
+    return "ok";
   }
 
   const url = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
@@ -289,7 +289,7 @@ async function downloadMapForSpecies(s) {
 
     if (!res.ok) {
       console.warn(`⚠ Karte für ${name} nicht gefunden (HTTP ${res.status})`);
-      return;
+      return "missing";
     }
 
     const buffer = await res.arrayBuffer();
@@ -300,10 +300,12 @@ async function downloadMapForSpecies(s) {
 
     lastSavedAssessmentId[safeName] = assessmentId;
     fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+    return "ok";
   } catch (err) {
     if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
     console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
     logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
+    return "error";
   }
 }
 
@@ -320,7 +322,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   const existing = fs.readdirSync(targetDir).filter((f) => f.endsWith(".mp3"));
   if (existing.length > 0) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
-    return;
+    return "ok";
   }
 
   let best = null;
@@ -351,21 +353,24 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   if (!best) {
     console.log(`⚠ Keine Aufnahmen verfügbar für ${genus} ${species}`);
-    return;
+    return "missing";
   }
 
   const audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
   const filePath = path.join(targetDir, `${safeGerman}.mp3`);
+  const tempFilePath = filePath + ".tmp";
 
   try {
     const audioRes = await fetch(audioUrl);
     if (!audioRes.ok) {
       console.warn(`⚠ Fehler beim Herunterladen der Datei (${audioRes.status})`);
-      return;
+      return "error";
     }
 
     const buffer = await audioRes.arrayBuffer();
-    fs.writeFileSync(filePath, Buffer.from(buffer));
+    fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+    fs.renameSync(tempFilePath, filePath);
+
     console.log(`✔ Sound gespeichert: ${filePath}`);
 
     const credits = {
@@ -381,9 +386,12 @@ async function downloadSoundIfMissing(genus, species, german) {
     };
 
     fs.writeFileSync(path.join(targetDir, "credits.json"), JSON.stringify(credits, null, 2));
+    return "ok";
   } catch (err) {
+    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
     console.error(`❌ Fehler beim Sound-Download ${genus} ${species}: ${err.message}`);
     logError(`Sound ${genus} ${species}: ${err.message}`);
+    return "error";
   }
 }
 
@@ -485,12 +493,33 @@ function printReportToConsole(report) {
     const output = [];
 
     for (const s of speciesList) {
+      // 1) IUCN Daten holen
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
 
-      await downloadSoundIfMissing(s.genus, s.species, s.german);
-      await downloadMapForSpecies(data);
+      // 2) Sound (falls fehlt)
+      const soundStatus = await downloadSoundIfMissing(s.genus, s.species, s.german);
 
+      // 3) Map (falls fehlt / nicht aktuell)
+      const mapStatus = await downloadMapForSpecies(data);
+
+      // 4) Species-Data Status (minimaler "ok"-Check)
+      const speciesOk =
+        data &&
+        data["Wissenschaftlicher Name"] !== "n/a" &&
+        data["Assessment ID"] &&
+        data["Assessment ID"] !== "n/a";
+
+      const soundLabel = soundStatus === "ok" ? "ok" : soundStatus;
+      const mapLabel = mapStatus === "ok" ? "ok" : mapStatus;
+      const dataLabel = speciesOk ? "ok" : "n/a";
+
+      const germanName = data["Deutscher Name"] || s.german || "unbekannt";
+      const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
+
+      console.log(`✅ Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
+
+      // 5) kleine Pause
       await sleep(RATE_LIMIT);
     }
 
