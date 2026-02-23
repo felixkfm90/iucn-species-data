@@ -517,8 +517,12 @@ function printReportToConsole(report) {
       const germanName = data["Deutscher Name"] || s.german || "unbekannt";
       const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
 
-      console.log(`✅ Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
-      console.log("");
+      const hasError = soundLabel === "error" || mapLabel === "error";
+      const hasMissing = soundLabel === "missing" || mapLabel === "missing" || mapLabel === "n/a" || dataLabel === "n/a";
+      const icon = hasError ? "❌" : (hasMissing ? "⚠" : "✅");
+
+      console.log(`${icon} Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
+      console.log("")
 
       // 5) kleine Pause
       await sleep(RATE_LIMIT);
