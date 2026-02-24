@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T17:56:21.497Z",
+  "generatedAt": "2026-02-24T17:11:41.710Z",
   "counts": {
     "totalSpecies": 32,
-    "missingSoundMp3": 3,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
@@ -13,8 +13,7 @@
   "missing": {
     "soundMp3": [
       "Panama-Kapuzineraffe",
-      "Mittelamerikanischer Totenkopfaffe",
-      "Buckelwal"
+      "Mittelamerikanischer Totenkopfaffe"
     ],
     "soundCredits": [],
     "maps": [],
