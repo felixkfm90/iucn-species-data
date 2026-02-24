@@ -38,6 +38,22 @@
       .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
   }
 
+  function normalizeUrl(u) {
+    if (!u) return "";
+    // erlaubt //creativecommons... aus deinen bestehenden credits
+    if (u.startsWith("//")) return "https:" + u;
+    return u;
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   const wrapper = document.getElementById("species-sound");
   if (!wrapper) return;
 
@@ -46,7 +62,6 @@
     const name = d["Deutscher Name"];
     const soundAssetName = sanitizeAssetName(name);
 
-    // ✅ lieber GitHub Pages als raw (schneller/konstanter fürs Frontend)
     const base = "https://felixkfm90.github.io/iucn-species-data";
     const audioUrl = `${base}/sounds/${encodeURIComponent(soundAssetName)}/${encodeURIComponent(soundAssetName)}.mp3`;
     const creditsUrl = `${base}/sounds/${encodeURIComponent(soundAssetName)}/credits.json`;
@@ -58,10 +73,10 @@
       return;
     }
 
-    // ✅ Credits laden (best-effort)
+    // Credits laden (best-effort)
     let creditsHtml = `
       <div style="font-size:0.85em; color:#666; margin-top:10px; line-height:1.4;">
-        <div><b>Quelle:</b> Xeno-canto</div>
+        <div><b>Quelle:</b> n/a</div>
       </div>
     `;
 
@@ -69,16 +84,26 @@
       const cRes = await fetch(creditsUrl, { cache: "no-store" });
       if (cRes.ok) {
         const c = await cRes.json();
+
+        const source = c.source || "n/a";
         const rec = c.recordist || c.rec || c.recorded_by || c.author || "";
-        const lic = c.license || c.lic || "";
-        const src = c.url || c.source_url || c.xc_url || "";
+        const licRaw = c.license || c.lic || "";
+        const srcRaw = c.url || c.source_url || c.xc_url || "";
+        const lic = normalizeUrl(licRaw);
+        const src = normalizeUrl(srcRaw);
+
+        const licenseHtml = lic
+          ? (lic.startsWith("http")
+              ? `<a href="${escapeHtml(lic)}" target="_blank" rel="noopener">${escapeHtml(licRaw)}</a>`
+              : `${escapeHtml(licRaw)}`)
+          : "";
 
         creditsHtml = `
           <div style="font-size:0.85em; color:#666; margin-top:10px; line-height:1.4;">
-            <div><b>Quelle:</b> Xeno-canto</div>
-            ${rec ? `<div><b>Aufnahme:</b> ${rec}</div>` : ``}
-            ${lic ? `<div><b>Lizenz:</b> ${lic}</div>` : ``}
-            ${src ? `<div><a href="${src}" target="_blank" rel="noopener">Original auf Xeno-canto</a></div>` : ``}
+            <div><b>Quelle:</b> ${escapeHtml(source)}</div>
+            ${rec ? `<div><b>Aufnahme:</b> ${escapeHtml(rec)}</div>` : ``}
+            ${licenseHtml ? `<div><b>Lizenz:</b> ${licenseHtml}</div>` : ``}
+            ${src ? `<div><a href="${escapeHtml(src)}" target="_blank" rel="noopener">Quelle öffnen (${escapeHtml(source)})</a></div>` : ``}
           </div>
         `;
       }
@@ -105,9 +130,8 @@
       </div>
     `;
 
-    // ✅ WaveSurfer verfügbar?
+    // WaveSurfer verfügbar?
     if (typeof window.WaveSurfer === "undefined") {
-      // Credits bleiben sichtbar, aber Player geht nicht
       const box = wrapper.querySelector(".species-sound-frame");
       if (box) {
         box.insertAdjacentHTML(
@@ -124,7 +148,6 @@
     const durEl = wrapper.querySelector("#duration, .duration");
     if (!waveformEl || !playBtn || !curEl || !durEl) return;
 
-    // Wavesurfer init (deine Optik beibehalten)
     const wavesurfer = WaveSurfer.create({
       container: waveformEl,
       waveColor: "#9b9b9b",
@@ -145,7 +168,6 @@
       return `${m}:${s.toString().padStart(2, "0")}`;
     }
 
-    // ✅ bessere Fehlerfälle
     wavesurfer.on("error", () => {
       wrapper.innerHTML = `
         <div class="frame-box">
@@ -175,7 +197,6 @@
       curEl.textContent = formatTime(wavesurfer.getCurrentTime());
     });
 
-    // Zoom via Mausrad / Touch (wie gehabt)
     waveformEl.addEventListener(
       "wheel",
       (e) => {
