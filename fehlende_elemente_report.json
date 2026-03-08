@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-03-08T09:20:45.285Z",
+  "generatedAt": "2026-03-08T09:38:34.967Z",
   "counts": {
     "totalSpecies": 39,
     "missingSoundMp3": 4,
     "missingSoundCredits": 0,
-    "missingMap": 3,
+    "missingMap": 2,
     "missingAssessmentId": 2,
     "missingStatus": 2,
     "missingCategory": 2,
@@ -19,7 +19,6 @@
     ],
     "soundCredits": [],
     "maps": [
-      "Kernbeißer",
       "Bisamratte",
       "Eichhörnchen"
     ],
