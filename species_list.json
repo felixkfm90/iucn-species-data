@@ -33,5 +33,9 @@
   { "german": "Waldkauz", "genus": "Strix", "species": "aluco", "size": "ca. 37-43 cm", "weight": "ca. 400-650 g" },
   { "german": "Brauenmotmot", "genus": "Eumomota", "species": "superciliosa", "size": "ca. 34–38 cm", "weight": "ca. 60–80 g" },
   { "german": "Kleiber", "genus": "Sitta", "species": "europaea", "size": "ca. 12–14 cm", "weight": "ca. 20–25 g" },
-  { "german": "Bergfink", "genus": "Fringilla", "species": "montifringilla", "size": "ca. 14–16 cm", "weight": "ca. 20–30 g" }
+  { "german": "Bergfink", "genus": "Fringilla", "species": "montifringilla", "size": "ca. 14–16 cm", "weight": "ca. 20–30 g" },
+  { "german": "Kernbeißer", "genus": "Coccothraustes", "species": "coccothraustes", "size": "ca. 16–18 cm", "weight": "ca. 45–65 g" },
+  { "german": "Sperlingskauz", "genus": "Glaucidium", "species": "passerinum", "size": "ca. 15–19 cm", "weight": "ca. 50–80 g" },
+  { "german": "Bisamratte", "genus": "", "species": "", "size": "ca. ", "weight": "ca. " },
+  { "german": "Eichhörnchen", "genus": "", "species": "", "size": "ca. ", "weight": "ca. " }
 ]
