@@ -1,22 +1,20 @@
 {
-  "generatedAt": "2026-04-19T16:12:06.634Z",
+  "generatedAt": "2026-04-19T16:21:17.807Z",
   "counts": {
     "totalSpecies": 40,
-    "missingSoundMp3": 4,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundsAddedThisRun": 7
+    "ncSoundsAddedThisRun": 0
   },
   "missing": {
     "soundMp3": [
       "Panama-Kapuzineraffe",
-      "Mittelamerikanischer Totenkopfaffe",
-      "Buckelwal",
-      "Bisamratte"
+      "Mittelamerikanischer Totenkopfaffe"
     ],
     "soundCredits": [],
     "maps": [],
@@ -25,13 +23,5 @@
     "category": [],
     "trend": []
   },
-  "ncSoundsAddedThisRun": [
-    "Brauenmotmot",
-    "Eichhörnchen",
-    "Fischertukan",
-    "Geoffroy-Klammeraffe",
-    "Großtrappe",
-    "Mantelbrüllaffe",
-    "Quetzal"
-  ]
+  "ncSoundsAddedThisRun": []
 }
