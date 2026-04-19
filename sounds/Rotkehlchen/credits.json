@@ -1,12 +1,12 @@
 {
   "scientific_name": "Erithacus rubecula",
   "german_name": "Rotkehlchen",
-  "recordist": "Marc Anderson",
-  "country": "Spain",
-  "location": "Serranía de Ronda (near  Parauta), Málaga, Andalucía",
+  "recordist": "Pietro Maiorana",
+  "country": "Italy",
+  "location": "Parco Falcone Borsellino (near  Catania), Città metropolitana di Catania, Sicilia",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1079197",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/700239",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Erithacus sp:rubecula q:A\" | page=5"
 }

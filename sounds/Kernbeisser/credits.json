@@ -1,12 +1,12 @@
 {
   "scientific_name": "Coccothraustes coccothraustes",
   "german_name": "Kernbeißer",
-  "recordist": "Lars Edenius",
-  "country": "Sweden",
-  "location": "Umeå stad, Västerbottens län",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Benoît Van Hecke",
+  "country": "France",
+  "location": "Arrondissement de Poitiers (near  Fontaine-le-Comte), Vienne, Nouvelle-Aquitaine",
+  "quality": "C",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/724320",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1073957",
+  "notes": "Stage 5 (openOnly=true, q=C, len25-35=false) | query=\"gen:Coccothraustes sp:coccothraustes q:C\" | page=1"
 }

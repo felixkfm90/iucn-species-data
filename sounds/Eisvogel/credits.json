@@ -1,12 +1,12 @@
 {
   "scientific_name": "Alcedo atthis",
   "german_name": "Eisvogel",
-  "recordist": "Ray Tsu 诸仁",
-  "country": "China",
-  "location": "Sha Jia Bang, Suzhou, Jiangsu",
+  "recordist": "Noé Ferrari",
+  "country": "France",
+  "location": "Arrondissement d'Abbeville (near  Abbeville), Somme, Hauts-de-France",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1084671",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1085936",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Alcedo sp:atthis q:A\" | page=1"
 }

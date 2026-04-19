@@ -1,12 +1,12 @@
 {
   "scientific_name": "Lophophanes cristatus",
   "german_name": "Haubenmeise",
-  "recordist": "Jacobo Ramil Millarengo",
-  "country": "Spain",
-  "location": "Veiga da Cruz, Brañas de Laíño, Dodro , A Coruña, Galicia",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Arrondissement de Saint-Malo (near  Cancale), Ille-et-Vilaine, Brittany",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1056371",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1088492",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Lophophanes sp:cristatus q:B\" | page=1"
 }

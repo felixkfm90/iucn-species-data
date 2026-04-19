@@ -1,12 +1,12 @@
 {
   "scientific_name": "Haematopus ostralegus",
   "german_name": "Austernfischer",
-  "recordist": "Cureau Hervé",
-  "country": "France",
-  "location": "Arrondissement de Saint-Brieuc (near  Saint-Brieuc), Côtes-d'Armor, Bretagne",
+  "recordist": "Olivier Grimm",
+  "country": "Finland",
+  "location": "Helsinki, Helsinki, Uusimaa",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1074576",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/561038",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Haematopus sp:ostralegus q:A len:25-35\" | page=1"
 }

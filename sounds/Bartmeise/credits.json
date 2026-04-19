@@ -1,12 +1,12 @@
 {
   "scientific_name": "Panurus biarmicus",
   "german_name": "Bartmeise",
-  "recordist": "Ulf Elman",
-  "country": "Sweden",
-  "location": "Sundbyviken, Trögden, Uppland",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Genêts, Manche, Normandie",
+  "quality": "C",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/943150",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/730824",
+  "notes": "Stage 5 (openOnly=true, q=C, len25-35=false) | query=\"gen:Panurus sp:biarmicus q:C\" | page=1"
 }

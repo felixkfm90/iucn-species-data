@@ -1,12 +1,12 @@
 {
   "scientific_name": "Fulica atra",
   "german_name": "Blässhuhn",
-  "recordist": "Beatrix Saadi-Varchmin",
-  "country": "Germany",
-  "location": "beaver marsh behind Klingelbächel, near Thaining, Landsberg am Lech , Oberbayern, Bayern",
+  "recordist": "Grégoire Chauvot",
+  "country": "Sweden",
+  "location": "Lidingö, Danderyd Municipality, Stockholms län",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1097651",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/834775",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Fulica sp:atra q:A\" | page=1"
 }

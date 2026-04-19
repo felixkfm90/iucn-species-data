@@ -1,12 +1,12 @@
 {
   "scientific_name": "Pyrrhula pyrrhula",
   "german_name": "Gimpel",
-  "recordist": "Lars Edenius",
-  "country": "Sweden",
-  "location": "Umeå, Umeå, Västerbottens län",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Cabane Vauban (Carolles), Manche, Normandie",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1077468",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/916002",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Pyrrhula sp:pyrrhula q:B len:25-35\" | page=1"
 }

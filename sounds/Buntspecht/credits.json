@@ -1,12 +1,12 @@
 {
   "scientific_name": "Dendrocopos major",
   "german_name": "Buntspecht",
-  "recordist": "Hannu Varkki",
-  "country": "Finland",
-  "location": "Östersundom, Helsinki, Uusimaa",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Christian Kahle",
+  "country": "Germany",
+  "location": "Schneverdingen",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1090288",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1000836",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Dendrocopos sp:major q:B\" | page=3"
 }

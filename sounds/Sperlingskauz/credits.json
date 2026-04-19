@@ -1,12 +1,12 @@
 {
   "scientific_name": "Glaucidium passerinum",
   "german_name": "Sperlingskauz",
-  "recordist": "Marc Anderson",
+  "recordist": "Robert Petersen",
   "country": "Sweden",
-  "location": "Sala Municipality, Västmanland County",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "location": "Nyckelmossen, Lindesberg Municipality, Örebro County",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1079573",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/986017",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Glaucidium sp:passerinum q:B len:25-35\" | page=1"
 }

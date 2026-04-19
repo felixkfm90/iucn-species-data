@@ -1,12 +1,12 @@
 {
   "scientific_name": "Strix aluco",
   "german_name": "Waldkauz",
-  "recordist": "Valentin Toussaert",
+  "recordist": "Sonothèque ADVL",
   "country": "France",
-  "location": "Arrondissement de Limoges (near  Eybouleuf), Haute-Vienne, Nouvelle-Aquitaine",
+  "location": "Arrondissement of Avranches (near  Saint-Jean-de-la-Haize), Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1096198",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1042634",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Strix sp:aluco q:A\" | page=1"
 }

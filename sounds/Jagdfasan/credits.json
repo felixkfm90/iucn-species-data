@@ -1,12 +1,12 @@
 {
   "scientific_name": "Phasianus colchicus",
   "german_name": "Jagdfasan",
-  "recordist": "Bo Shunqi 薄顺奇",
-  "country": "China",
-  "location": "Haiwan Forest Park, Fengxian, Shanghai",
+  "recordist": "Jonathon Jongsma",
+  "country": "United States",
+  "location": "Murphy-Hanrehan Park Reserve, Dakota, Minnesota",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/992620",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/179662",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Phasianus sp:colchicus q:A\" | page=1"
 }

@@ -1,12 +1,12 @@
 {
   "scientific_name": "Fringilla montifringilla",
   "german_name": "Bergfink",
-  "recordist": "Stanislas Wroza",
-  "country": "France",
-  "location": "Pointe du Van, Cléden-Cap-Sizun, Finistere, Bretagne",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Grégoire Chauvot",
+  "country": "Norway",
+  "location": "Hamre, Karlsøy, Troms og Finnmark",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1055042",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/803899",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Fringilla sp:montifringilla q:B\" | page=2"
 }

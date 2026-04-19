@@ -1,12 +1,12 @@
 {
   "scientific_name": "Fratercula arctica",
   "german_name": "Papageientaucher",
-  "recordist": "Paul Kelly",
-  "country": "Ireland",
-  "location": "Tory Island, County Donegal, County Donegal",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Killian Sullivan",
+  "country": "United States",
+  "location": "Grand Manan",
+  "quality": "C",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/809776",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/821150",
+  "notes": "Stage 4 (openOnly=true, q=C, len25-35=true) | query=\"gen:Fratercula sp:arctica q:C len:25-35\" | page=1"
 }

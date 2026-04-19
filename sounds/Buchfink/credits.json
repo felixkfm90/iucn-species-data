@@ -1,12 +1,12 @@
 {
   "scientific_name": "Fringilla coelebs",
   "german_name": "Buchfink",
-  "recordist": "Lucien Hueber",
+  "recordist": "Sonothèque ADVL",
   "country": "France",
-  "location": "Arrondissement de Brest (near  Kerlouan), Finistère, Bretagne",
+  "location": "Cabane Vauban (Carolles), Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1100270",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/954053",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Fringilla sp:coelebs q:A len:25-35\" | page=1"
 }

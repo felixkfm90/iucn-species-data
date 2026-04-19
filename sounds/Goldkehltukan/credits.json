@@ -1,12 +1,12 @@
 {
   "scientific_name": "Ramphastos ambiguus",
   "german_name": "Goldkehltukan",
-  "recordist": "Jelle Scharringa",
-  "country": "Costa Rica",
-  "location": "La Fortuna, San Carlos, Alajuela Province",
+  "recordist": "Niels Krabbe",
+  "country": "Ecuador",
+  "location": "Napo: Napo Galeras",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/954654",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/251456",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Ramphastos sp:ambiguus q:A\" | page=1"
 }

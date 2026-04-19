@@ -301,8 +301,13 @@ async function downloadMapForSpecies(s) {
 }
 
 // =======================
-// XENO-CANTO SOUNDS (Open first, NC fallback)
+// XENO-CANTO SOUNDS (Open first, NC fallback) - MULTI PAGE (5)
 // =======================
+
+const MAX_XENO_PAGES = 5; // <- wie gewünscht
+
+// Tracks NC additions in diesem Lauf
+const ncAddedThisRun = new Set();
 
 function normalizeLicenseUrl(lic) {
   if (!lic) return "";
@@ -310,65 +315,72 @@ function normalizeLicenseUrl(lic) {
   return lic;
 }
 
-function isNC(licenseUrl) {
-  return (licenseUrl || "").toLowerCase().includes("/by-nc");
+function isNcLicense(lic) {
+  const s = String(lic || "").toLowerCase();
+  return s.includes("/by-nc");
 }
 
-function parseLenSeconds(lenStr) {
-  const n = Number(lenStr);
-  return Number.isFinite(n) ? n : null;
-}
-
-function lenIn2535(lenStr) {
-  const n = parseLenSeconds(lenStr);
-  if (n === null) return false;
-  return n >= 25 && n <= 35;
-}
-
-function qualityIs(r, q) {
-  return String(r.q || "").toUpperCase() === q;
-}
-
-function buildQuery(genus, species, opts) {
-  // opts: { qLetter: "A"/"B"/"C", len2535: true/false, openOnly: true/false }
-  // Xeno query supports filters like q:A, len:25-35, lic:...
+function buildXenoQuery(genus, species, qLetter, len2535) {
   const parts = [`gen:${genus}`, `sp:${species}`];
-
-  if (opts.qLetter) parts.push(`q:${opts.qLetter}`);
-  if (opts.len2535) parts.push(`len:25-35`);
-
-  // "openOnly" = exclude NC, i.e. exclude by-nc* licenses
-  // Xeno supports negation with "-" operator in query. We'll exclude NC licenses broadly.
-  if (opts.openOnly) {
-    parts.push(`-lic:by-nc-sa -lic:by-nc-nd -lic:by-nc`);
-  }
-
+  if (qLetter) parts.push(`q:${qLetter}`);
+  if (len2535) parts.push(`len:25-35`);
   return parts.join(" ");
 }
 
-async function fetchXeno(genus, species, query) {
-  const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}&key=${XENO_TOKEN}&page=1`;
+async function fetchXenoPage(query, page) {
+  const apiUrl =
+    `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}` +
+    `&key=${encodeURIComponent(XENO_TOKEN)}&page=${page}`;
+
   try {
     const res = await fetch(apiUrl);
-    if (!res.ok) return { ok: false, status: res.status, data: null, apiUrl };
+    if (!res.ok) return { ok: false, status: res.status, recordings: [], apiUrl };
+
     const data = await res.json();
     const recs = Array.isArray(data.recordings) ? data.recordings : [];
-    return { ok: true, status: res.status, data: recs, apiUrl };
+    const numPages = Number(data.numPages || data.num_pages || data.pages || 0) || null;
+
+    return { ok: true, status: res.status, recordings: recs, apiUrl, numPages };
   } catch (e) {
-    return { ok: false, status: 0, data: null, apiUrl, error: e.message };
+    return { ok: false, status: 0, recordings: [], apiUrl, error: e.message };
   }
 }
 
-function pickBestRecording(recs, preferredQuality) {
-  // Pick first with preferred quality if available else first
-  if (!recs.length) return null;
-  const q = preferredQuality;
-  const best = recs.find((r) => String(r.q || "").toUpperCase() === q) || recs[0];
-  return best;
-}
+async function findRecordingByStage(genus, species, stage) {
+  // stage: { openOnly, q, len2535 }
+  const query = buildXenoQuery(genus, species, stage.q, stage.len2535);
 
-// Tracks which species got NC audio during this run
-const ncAddedThisRun = new Set();
+  let maxPages = MAX_XENO_PAGES;
+  for (let page = 1; page <= maxPages; page++) {
+    const resp = await fetchXenoPage(query, page);
+
+    if (!resp.ok) {
+      console.warn(`⚠ Xeno-Canto API Fehler ${resp.status} für ${genus} ${species} (page ${page})`);
+      await sleep(150);
+      continue;
+    }
+
+    // wenn Xeno weniger Seiten hat als unser Limit, früher stoppen
+    if (resp.numPages && resp.numPages < maxPages) maxPages = resp.numPages;
+
+    if (!resp.recordings.length) {
+      await sleep(80);
+      continue;
+    }
+
+    if (stage.openOnly) {
+      const open = resp.recordings.find((r) => !isNcLicense(r.lic));
+      if (open) return { rec: open, query, page };
+    } else {
+      // NC erlaubt: ersten Treffer nehmen
+      return { rec: resp.recordings[0], query, page };
+    }
+
+    await sleep(80);
+  }
+
+  return null;
+}
 
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
@@ -379,54 +391,38 @@ async function downloadSoundIfMissing(genus, species, german) {
   const mp3Path = path.join(targetDir, `${safeGerman}.mp3`);
   const creditsPath = path.join(targetDir, "credits.json");
 
-  // Already have mp3?
+  // schon vorhanden?
   if (fs.existsSync(mp3Path)) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
     return "ok";
   }
 
-  // Fallback stages as requested:
+  // Deine Stages exakt:
   const stages = [
-    // 0-5: open (no NC), then 6-11: NC allowed
-    { openOnly: true,  q: "A", len2535: true  },  // 0
-    { openOnly: true,  q: "A", len2535: false },  // 1
-    { openOnly: true,  q: "B", len2535: true  },  // 2
-    { openOnly: true,  q: "B", len2535: false },  // 3
-    { openOnly: true,  q: "C", len2535: true  },  // 4
-    { openOnly: true,  q: "C", len2535: false },  // 5
-    { openOnly: false, q: "A", len2535: true  },  // 6
-    { openOnly: false, q: "A", len2535: false },  // 7
-    { openOnly: false, q: "B", len2535: true  },  // 8
-    { openOnly: false, q: "B", len2535: false },  // 9
-    { openOnly: false, q: "C", len2535: true  },  // 10
-    { openOnly: false, q: "C", len2535: false },  // 11
+    { openOnly: true, q: "A", len2535: true }, // 0
+    { openOnly: true, q: "A", len2535: false }, // 1
+    { openOnly: true, q: "B", len2535: true }, // 2
+    { openOnly: true, q: "B", len2535: false }, // 3
+    { openOnly: true, q: "C", len2535: true }, // 4
+    { openOnly: true, q: "C", len2535: false }, // 5
+    { openOnly: false, q: "A", len2535: true }, // 6
+    { openOnly: false, q: "A", len2535: false }, // 7
+    { openOnly: false, q: "B", len2535: true }, // 8
+    { openOnly: false, q: "B", len2535: false }, // 9
+    { openOnly: false, q: "C", len2535: true }, // 10
+    { openOnly: false, q: "C", len2535: false }, // 11
   ];
 
   let chosen = null;
-  let chosenStage = null;
+  let chosenInfo = null;
+  let chosenStageIndex = null;
 
   for (let i = 0; i < stages.length; i++) {
-    const st = stages[i];
-    const q = buildQuery(genus, species, { qLetter: st.q, len2535: st.len2535, openOnly: st.openOnly });
-
-    const resp = await fetchXeno(genus, species, q);
-    if (!resp.ok) {
-      console.warn(`⚠ Xeno-Canto API Fehler ${resp.status} für ${genus} ${species} (Stage ${i})`);
-      await sleep(150);
-      continue;
-    }
-
-    const recs = resp.data;
-    if (!recs || recs.length === 0) {
-      await sleep(100);
-      continue;
-    }
-
-    // Stage says quality q; still pick best in that page
-    const best = pickBestRecording(recs, st.q);
-    if (best) {
-      chosen = best;
-      chosenStage = i;
+    const hit = await findRecordingByStage(genus, species, stages[i]);
+    if (hit?.rec) {
+      chosen = hit.rec;
+      chosenInfo = hit;
+      chosenStageIndex = i;
       break;
     }
   }
@@ -436,11 +432,10 @@ async function downloadSoundIfMissing(genus, species, german) {
     return "missing";
   }
 
-  // Determine if chosen license is NC
   const lic = normalizeLicenseUrl(chosen.lic || "");
-  const isNcChosen = isNC(lic);
+  const chosenIsNc = isNcLicense(lic);
 
-  // Audio URL
+  // Xeno liefert file oft als //...
   const audioUrl = chosen.file?.startsWith("https:") ? chosen.file : `https:${chosen.file}`;
   const tempMp3 = mp3Path + ".tmp";
 
@@ -457,7 +452,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 
     console.log(`✔ Sound gespeichert: ${mp3Path}`);
 
-    // Credits speichern (mit https-normalisierten Lizenz-URL)
+    const st = stages[chosenStageIndex];
     const credits = {
       scientific_name: `${genus} ${species}`,
       german_name: german,
@@ -468,13 +463,12 @@ async function downloadSoundIfMissing(genus, species, german) {
       license: lic || "n/a",
       source: "xeno-canto.org",
       url: chosen.id ? `https://xeno-canto.org/${chosen.id}` : "n/a",
-      notes: `Selected by staged fallback: ${chosenStage} (openOnly=${stages[chosenStage]?.openOnly}, q=${stages[chosenStage]?.q}, len25-35=${stages[chosenStage]?.len2535})`
+      notes: `Stage ${chosenStageIndex} (openOnly=${st.openOnly}, q=${st.q}, len25-35=${st.len2535}) | query="${chosenInfo.query}" | page=${chosenInfo.page}`,
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
 
-    // Track NC additions only if we actually downloaded now
-    if (isNcChosen) ncAddedThisRun.add(german);
+    if (chosenIsNc) ncAddedThisRun.add(german);
 
     return "ok";
   } catch (err) {
@@ -512,7 +506,7 @@ function createMissingElementsReport(speciesData) {
       category: [],
       trend: [],
     },
-    ncSoundsAddedThisRun: [], // list of german names
+    ncSoundsAddedThisRun: [],
   };
 
   for (const s of speciesData) {
@@ -533,7 +527,7 @@ function createMissingElementsReport(speciesData) {
     if (!fs.existsSync(mapPath)) report.missing.maps.push(german);
   }
 
-  report.ncSoundsAddedThisRun = Array.from(ncAddedThisRun.values()).sort((a,b)=>a.localeCompare(b,"de"));
+  report.ncSoundsAddedThisRun = Array.from(ncAddedThisRun.values()).sort((a, b) => a.localeCompare(b, "de"));
   report.counts.ncSoundsAddedThisRun = report.ncSoundsAddedThisRun.length;
 
   report.counts.missingSoundMp3 = report.missing.soundMp3.length;
@@ -614,7 +608,9 @@ function printReportToConsole(report) {
       const germanName = data["Deutscher Name"] || s.german || "unbekannt";
       const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
 
-      console.log(`${icon} Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
+      console.log(
+        `${icon} Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`
+      );
       console.log("");
 
       await sleep(RATE_LIMIT);

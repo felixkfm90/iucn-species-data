@@ -1,12 +1,12 @@
 {
   "scientific_name": "Calidris alpina",
   "german_name": "Alpenstrandläufer",
-  "recordist": "Jacobo Ramil Millarengo",
-  "country": "Spain",
-  "location": "Marisma de O Bao, O Grove, Pontevedra, Galicia",
+  "recordist": "Doug Hynes",
+  "country": "Canada",
+  "location": "Churchill River Road (near  Churchill), Manitoba",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/845733",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/566009",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Calidris sp:alpina q:A\" | page=1"
 }

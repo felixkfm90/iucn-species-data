@@ -1,12 +1,12 @@
 {
   "scientific_name": "Linaria cannabina",
   "german_name": "Bluthänfling",
-  "recordist": "Stanislas Wroza",
+  "recordist": "Sonothèque ADVL",
   "country": "France",
-  "location": "Arrondissement d'Arles (near  Arles), Bouches-du-Rhone, Provence-Alpes-Côte d'Azur",
+  "location": "Courtils, Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/793053",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/707501",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Linaria sp:cannabina q:A len:25-35\" | page=1"
 }

@@ -1,12 +1,12 @@
 {
   "scientific_name": "Sitta europaea",
   "german_name": "Kleiber",
-  "recordist": "Francesco Sottile",
-  "country": "Italy",
-  "location": "Corigliano-Rossano, Province of Cosenza, Calabria",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Vallée du Lude (Carolles), Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1100302",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/804960",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Sitta sp:europaea q:A\" | page=1"
 }

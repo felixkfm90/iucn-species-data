@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T16:04:10.862Z",
+  "generatedAt": "2026-04-19T16:12:06.634Z",
   "counts": {
     "totalSpecies": 40,
     "missingSoundMp3": 4,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundsAddedThisRun": 36
+    "ncSoundsAddedThisRun": 7
   },
   "missing": {
     "soundMp3": [
@@ -26,41 +26,12 @@
     "trend": []
   },
   "ncSoundsAddedThisRun": [
-    "Alpenbirkenzeisig",
-    "Alpenstrandläufer",
-    "Amsel",
-    "Austernfischer",
-    "Bachstelze",
-    "Bartmeise",
-    "Bergfink",
-    "Blässhuhn",
-    "Blaukehlchen",
-    "Blaumeise",
-    "Bluthänfling",
     "Brauenmotmot",
-    "Buchfink",
-    "Buntspecht",
     "Eichhörnchen",
-    "Eisvogel",
     "Fischertukan",
     "Geoffroy-Klammeraffe",
-    "Gimpel",
-    "Goldkehltukan",
     "Großtrappe",
-    "Haubenmeise",
-    "Jagdfasan",
-    "Kernbeißer",
-    "Kiebitz",
-    "Kleiber",
-    "Kormoran",
     "Mantelbrüllaffe",
-    "Papageientaucher",
-    "Quetzal",
-    "Reh",
-    "Rotkehlchen",
-    "Rotmilan",
-    "Sperlingskauz",
-    "Turmfalke",
-    "Waldkauz"
+    "Quetzal"
   ]
 }

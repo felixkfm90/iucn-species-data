@@ -1,12 +1,12 @@
 {
   "scientific_name": "Cyanistes caeruleus",
   "german_name": "Blaumeise",
-  "recordist": "Norman Schiwora",
+  "recordist": "Christian Kahle",
   "country": "Germany",
-  "location": "Mittelsachsen (near  Freiberg), Sachsen",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "location": "Schneverdingen",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1097087",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/973366",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Cyanistes sp:caeruleus q:B len:25-35\" | page=1"
 }

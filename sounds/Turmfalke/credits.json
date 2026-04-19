@@ -1,12 +1,12 @@
 {
   "scientific_name": "Falco tinnunculus",
   "german_name": "Turmfalke",
-  "recordist": "Pere Josa",
-  "country": "Spain",
-  "location": "Montsià (near  Riumar), Tarragona, Catalunya",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Carolles, Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1076828",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/705934",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Falco sp:tinnunculus q:A len:25-35\" | page=1"
 }

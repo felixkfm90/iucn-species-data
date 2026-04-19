@@ -1,12 +1,12 @@
 {
   "scientific_name": "Phalacrocorax carbo",
   "german_name": "Kormoran",
-  "recordist": "Stanislas Wroza",
-  "country": "Morocco",
-  "location": "Sidi Ali Oufars",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Roche Ango, Chausey, Granville, Manche, Normandie",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1097969",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1059525",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Phalacrocorax sp:carbo q:A len:25-35\" | page=1"
 }

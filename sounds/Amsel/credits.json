@@ -1,12 +1,12 @@
 {
   "scientific_name": "Turdus merula",
   "german_name": "Amsel",
-  "recordist": "Petter Westberg",
-  "country": "Sweden",
-  "location": "Halmstad hamnutfyllnad, Halmstad Municipality, Halland County",
+  "recordist": "craig wilson",
+  "country": "New Zealand",
+  "location": "Granity, Buller District, West Coast",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1085866",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/1051538",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Turdus sp:merula q:A\" | page=2"
 }

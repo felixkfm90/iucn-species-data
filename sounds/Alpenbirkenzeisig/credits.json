@@ -1,12 +1,12 @@
 {
   "scientific_name": "Acanthis flammea",
   "german_name": "Alpenbirkenzeisig",
-  "recordist": "Uku Paal",
-  "country": "Estonia",
-  "location": "Kalana, Hiiumaa vald, Hiiu maakond",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Cabane Vauban (Carolles), Manche, Normandie",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1099032",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/918295",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Acanthis sp:flammea q:B len:25-35\" | page=1"
 }

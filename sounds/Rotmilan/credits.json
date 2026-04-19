@@ -1,12 +1,12 @@
 {
   "scientific_name": "Milvus milvus",
   "german_name": "Rotmilan",
-  "recordist": "Dennis Riederer",
+  "recordist": "Pascal Christe",
   "country": "Switzerland",
-  "location": "Hegmatten",
+  "location": "Siselen, Erlach, Bern",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1005822",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/576967",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Milvus sp:milvus q:A len:25-35\" | page=1"
 }

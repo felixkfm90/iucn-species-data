@@ -1,12 +1,12 @@
 {
   "scientific_name": "Vanellus vanellus",
   "german_name": "Kiebitz",
-  "recordist": "Paul Kelly",
-  "country": "Ireland",
-  "location": "Tacumshin Lake (East End), County Wexford",
+  "recordist": "Jochem verweij",
+  "country": "Sweden",
+  "location": "Mörbylånga Municipality, Kalmar County",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/972650",
-  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
+  "url": "https://xeno-canto.org/902884",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Vanellus sp:vanellus q:A\" | page=1"
 }
