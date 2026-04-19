@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T17:36:16.697Z",
+  "generatedAt": "2026-04-19T17:38:07.061Z",
   "counts": {
     "totalSpecies": 40,
     "missingSoundMp3": 0,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 10
+    "ncSoundLicensesAll": 9
   },
   "missing": {
     "soundMp3": [],
@@ -27,7 +27,6 @@
     "Fischertukan",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
-    "Mantelbrüllaffe",
     "Mittelamerikanischer Totenkopfaffe",
     "Panama-Kapuzineraffe",
     "Quetzal"

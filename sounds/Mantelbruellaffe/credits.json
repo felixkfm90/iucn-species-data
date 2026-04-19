@@ -1,12 +1,12 @@
 {
   "scientific_name": "Alouatta palliata",
   "german_name": "Mantelbrüllaffe",
-  "recordist": "Jelle Scharringa",
+  "recordist": "Richard Ranft",
   "country": "Costa Rica",
-  "location": "Chomes (near  Manzanillo), Puntarenas, Provincia de Puntarenas",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-  "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1091625",
-  "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Alouatta sp:palliata q:A len:25-35\" | page=1"
+  "location": "Santa Rosa National Park",
+  "quality": "",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "commons.wikimedia.org",
+  "url": "https://commons.wikimedia.org/wiki/File:Mantled_Howler_Monkey_(Alouatta_palliata)_(W_ALOUATTA_PALLIATA_R1_C2).ogg",
+  "notes": "Mantled Howler Monkey calls, recorded in Santa Rosa National Park, Costa Rica | British Library shelfmark: W1CDR0001419 BD20 | copyright holder: The British Library Board | recording date: 1985-05-02"
 }
