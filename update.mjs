@@ -380,9 +380,9 @@ async function downloadSoundIfMissing(genus, species, german) {
       country: best.cnt,
       location: best.loc,
       quality: best.q,
-      license: best.lic,
+      license: (best.lic && best.lic.startsWith("//")) ? ("https:" + best.lic) : best.lic,
       source: "xeno-canto.org",
-      url: `https://xeno-canto.org/${best.id}`,
+      url: best.id ? `https://xeno-canto.org/${best.id}` : "",
     };
 
     fs.writeFileSync(path.join(targetDir, "credits.json"), JSON.stringify(credits, null, 2));
