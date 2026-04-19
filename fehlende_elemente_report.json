@@ -1,42 +1,26 @@
 {
-  "generatedAt": "2026-04-04T14:52:06.907Z",
+  "generatedAt": "2026-04-19T08:30:30.925Z",
   "counts": {
     "totalSpecies": 40,
-    "missingSoundMp3": 4,
+    "missingSoundMp3": 3,
     "missingSoundCredits": 0,
-    "missingMap": 2,
-    "missingAssessmentId": 2,
-    "missingStatus": 2,
-    "missingCategory": 2,
-    "missingTrend": 2
+    "missingMap": 0,
+    "missingAssessmentId": 0,
+    "missingStatus": 0,
+    "missingCategory": 0,
+    "missingTrend": 0
   },
   "missing": {
     "soundMp3": [
       "Panama-Kapuzineraffe",
       "Mittelamerikanischer Totenkopfaffe",
-      "Bisamratte",
-      "Eichhörnchen"
+      "Bisamratte"
     ],
     "soundCredits": [],
-    "maps": [
-      "Bisamratte",
-      "Eichhörnchen"
-    ],
-    "assessmentId": [
-      "Bisamratte",
-      "Eichhörnchen"
-    ],
-    "status": [
-      "Bisamratte",
-      "Eichhörnchen"
-    ],
-    "category": [
-      "Bisamratte",
-      "Eichhörnchen"
-    ],
-    "trend": [
-      "Bisamratte",
-      "Eichhörnchen"
-    ]
+    "maps": [],
+    "assessmentId": [],
+    "status": [],
+    "category": [],
+    "trend": []
   }
 }
