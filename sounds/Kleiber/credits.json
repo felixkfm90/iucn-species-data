@@ -1,11 +1,12 @@
 {
   "scientific_name": "Sitta europaea",
   "german_name": "Kleiber",
-  "recordist": "Jarek Matusiak",
-  "country": "Poland",
-  "location": "Gmina Dobromierz (near  Dobromierz), Powiat świdnicki, Dolnośląskie",
+  "recordist": "Francesco Sottile",
+  "country": "Italy",
+  "location": "Corigliano-Rossano, Province of Cosenza, Calabria",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/879363"
+  "url": "https://xeno-canto.org/1100302",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

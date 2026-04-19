@@ -1,11 +1,12 @@
 {
   "scientific_name": "Alouatta palliata",
   "german_name": "Mantelbrüllaffe",
-  "recordist": "Lars Lachmann",
-  "country": "Ecuador",
-  "location": "Playa de Oro, Esmeraldas Province, Ecuador",
+  "recordist": "Jelle Scharringa",
+  "country": "Costa Rica",
+  "location": "Chomes (near  Manzanillo), Puntarenas, Provincia de Puntarenas",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1045380"
+  "url": "https://xeno-canto.org/1091625",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

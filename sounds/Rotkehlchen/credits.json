@@ -1,11 +1,12 @@
 {
   "scientific_name": "Erithacus rubecula",
   "german_name": "Rotkehlchen",
-  "recordist": "Stef van Zimmeren",
-  "country": "Netherlands",
-  "location": "'s-Hertogenbosch, Noord-Brabant",
+  "recordist": "Marc Anderson",
+  "country": "Spain",
+  "location": "Serranía de Ronda (near  Parauta), Málaga, Andalucía",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1045694"
+  "url": "https://xeno-canto.org/1079197",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

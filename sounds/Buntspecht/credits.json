@@ -1,11 +1,12 @@
 {
   "scientific_name": "Dendrocopos major",
   "german_name": "Buntspecht",
-  "recordist": "Lars Edenius",
-  "country": "Sweden",
-  "location": "Bäcksjön, Umeå, Västerbottens län",
+  "recordist": "Hannu Varkki",
+  "country": "Finland",
+  "location": "Östersundom, Helsinki, Uusimaa",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1048380"
+  "url": "https://xeno-canto.org/1090288",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

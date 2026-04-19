@@ -1,11 +1,12 @@
 {
   "scientific_name": "Coccothraustes coccothraustes",
   "german_name": "Kernbeißer",
-  "recordist": "Lars Lachmann",
-  "country": "Germany",
-  "location": "Bieselheide, Oberhavel (near Mühlenbecker Land), Brandenburg",
+  "recordist": "Lars Edenius",
+  "country": "Sweden",
+  "location": "Umeå stad, Västerbottens län",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1076086"
+  "url": "https://xeno-canto.org/724320",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

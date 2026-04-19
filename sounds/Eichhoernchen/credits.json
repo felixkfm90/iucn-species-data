@@ -7,5 +7,6 @@
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/971045"
+  "url": "https://xeno-canto.org/971045",
+  "notes": "Selected by staged fallback: 7 (openOnly=false, q=A, len25-35=false)"
 }

@@ -1,11 +1,12 @@
 {
   "scientific_name": "Fringilla coelebs",
   "german_name": "Buchfink",
-  "recordist": "Miika Silfverberg",
-  "country": "Finland",
-  "location": "Salmenkallio, Helsinki, Uusimaa",
+  "recordist": "Lucien Hueber",
+  "country": "France",
+  "location": "Arrondissement de Brest (near  Kerlouan), Finistère, Bretagne",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1027808"
+  "url": "https://xeno-canto.org/1100270",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

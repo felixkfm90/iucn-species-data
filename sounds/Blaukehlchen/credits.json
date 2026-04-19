@@ -1,11 +1,12 @@
 {
   "scientific_name": "Luscinia svecica",
   "german_name": "Blaukehlchen",
-  "recordist": "João Tomás",
-  "country": "Spain",
-  "location": "Tierra de Alba (near  Navianos de Alba), Zamora, Castilla y León",
+  "recordist": "Niels Kristian Bech Jensen",
+  "country": "Denmark",
+  "location": "Lund Fjord, Jammerbugt Municipality, North Denmark Region",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/994516"
+  "url": "https://xeno-canto.org/1092705",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

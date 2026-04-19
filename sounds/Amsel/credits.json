@@ -1,11 +1,12 @@
 {
   "scientific_name": "Turdus merula",
   "german_name": "Amsel",
-  "recordist": "Amselforscher",
-  "country": "Germany",
-  "location": "Werden Waldrand, Essen, NRW",
+  "recordist": "Petter Westberg",
+  "country": "Sweden",
+  "location": "Halmstad hamnutfyllnad, Halmstad Municipality, Halland County",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1064988"
+  "url": "https://xeno-canto.org/1085866",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

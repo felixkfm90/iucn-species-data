@@ -1,11 +1,12 @@
 {
   "scientific_name": "Motacilla alba",
   "german_name": "Bachstelze",
-  "recordist": "Ray Tsu 诸仁",
-  "country": "China",
-  "location": "Xian Shan, Hangzhou, Zhejiang",
+  "recordist": "Thierry THOMAS",
+  "country": "France",
+  "location": "Montpellier, Hérault, Occitanie",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/986182"
+  "url": "https://xeno-canto.org/1099146",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

@@ -1,11 +1,12 @@
 {
   "scientific_name": "Fulica atra",
   "german_name": "Blässhuhn",
-  "recordist": "Olivier SWIFT",
-  "country": "France",
-  "location": "Arrondissement de Bernay (near  Pont-Audemer), Eure, Normandy, PS09",
+  "recordist": "Beatrix Saadi-Varchmin",
+  "country": "Germany",
+  "location": "beaver marsh behind Klingelbächel, near Thaining, Landsberg am Lech , Oberbayern, Bayern",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/905537"
+  "url": "https://xeno-canto.org/1097651",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

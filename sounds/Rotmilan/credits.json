@@ -1,11 +1,12 @@
 {
   "scientific_name": "Milvus milvus",
   "german_name": "Rotmilan",
-  "recordist": "Olivier Swift",
-  "country": "France",
-  "location": "Galez, Hautes-Pyrénées, Occitanie, Barran",
+  "recordist": "Dennis Riederer",
+  "country": "Switzerland",
+  "location": "Hegmatten",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/879251"
+  "url": "https://xeno-canto.org/1005822",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

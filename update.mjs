@@ -6,15 +6,12 @@ import fetch from "node-fetch";
 // KONFIG / ORDNER
 // =======================
 
-// Pfad für Karten festlegen oder Ordner erstellen
 const MAP_DIR = "./Verbreitungskarten";
 if (!fs.existsSync(MAP_DIR)) fs.mkdirSync(MAP_DIR);
 
-// Sound-Ordner
 const SOUND_DIR = "./sounds";
 if (!fs.existsSync(SOUND_DIR)) fs.mkdirSync(SOUND_DIR);
 
-// Tokens
 const TOKEN = process.env.IUCN_TOKEN;
 if (!TOKEN) {
   console.error("❌ IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
@@ -27,10 +24,7 @@ if (!XENO_TOKEN) {
   process.exit(1);
 }
 
-// Basis-URL IUCN
 const BASE = "https://api.iucnredlist.org/api/v4";
-
-// Pause zwischen Arten (ms)
 const RATE_LIMIT = 400;
 
 // Assessment-ID Trackfile (für Karten-Caching)
@@ -40,7 +34,6 @@ if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
   lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
 }
 
-// Übersetzungen Kategorie & Trend
 const CATEGORY_MAP = {
   LC: "Nicht gefährdet",
   NT: "Potentiell gefährdet",
@@ -106,6 +99,10 @@ function sanitizeAssetName(input) {
     .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
 }
 
+async function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 function emptyEntry(scientific, german = scientific) {
   const URLSlug = scientific.toLowerCase().replace(/\s+/g, "");
   return {
@@ -130,10 +127,6 @@ function emptyEntry(scientific, german = scientific) {
     "Letztes IUCN Update": "n/a",
     "Daten abgerufen": new Date().toISOString().slice(0, 10),
   };
-}
-
-async function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 // IUCN GET mit Token
@@ -211,7 +204,6 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     const assessmentId = globalAssessment.assessment_id;
     const assessmentInfo = await getAssessmentData(assessmentId);
 
-    // Formatierung Population mit 1000 Trennung
     let populationFormatted = assessmentInfo.population;
     if (typeof populationFormatted === "string") {
       populationFormatted = populationFormatted.replace(/\d+/g, (n) =>
@@ -219,7 +211,6 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
       );
     }
 
-    // schreibe hinter Lebenserwartung Jahre
     let generationFormatted = assessmentInfo.generation;
     if (generationFormatted !== "n/a") {
       generationFormatted = generationFormatted.toString().replace(".", ",") + " Jahre";
@@ -310,8 +301,74 @@ async function downloadMapForSpecies(s) {
 }
 
 // =======================
-// XENO-CANTO SOUNDS
+// XENO-CANTO SOUNDS (Open first, NC fallback)
 // =======================
+
+function normalizeLicenseUrl(lic) {
+  if (!lic) return "";
+  if (lic.startsWith("//")) return "https:" + lic;
+  return lic;
+}
+
+function isNC(licenseUrl) {
+  return (licenseUrl || "").toLowerCase().includes("/by-nc");
+}
+
+function parseLenSeconds(lenStr) {
+  const n = Number(lenStr);
+  return Number.isFinite(n) ? n : null;
+}
+
+function lenIn2535(lenStr) {
+  const n = parseLenSeconds(lenStr);
+  if (n === null) return false;
+  return n >= 25 && n <= 35;
+}
+
+function qualityIs(r, q) {
+  return String(r.q || "").toUpperCase() === q;
+}
+
+function buildQuery(genus, species, opts) {
+  // opts: { qLetter: "A"/"B"/"C", len2535: true/false, openOnly: true/false }
+  // Xeno query supports filters like q:A, len:25-35, lic:...
+  const parts = [`gen:${genus}`, `sp:${species}`];
+
+  if (opts.qLetter) parts.push(`q:${opts.qLetter}`);
+  if (opts.len2535) parts.push(`len:25-35`);
+
+  // "openOnly" = exclude NC, i.e. exclude by-nc* licenses
+  // Xeno supports negation with "-" operator in query. We'll exclude NC licenses broadly.
+  if (opts.openOnly) {
+    parts.push(`-lic:by-nc-sa -lic:by-nc-nd -lic:by-nc`);
+  }
+
+  return parts.join(" ");
+}
+
+async function fetchXeno(genus, species, query) {
+  const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}&key=${XENO_TOKEN}&page=1`;
+  try {
+    const res = await fetch(apiUrl);
+    if (!res.ok) return { ok: false, status: res.status, data: null, apiUrl };
+    const data = await res.json();
+    const recs = Array.isArray(data.recordings) ? data.recordings : [];
+    return { ok: true, status: res.status, data: recs, apiUrl };
+  } catch (e) {
+    return { ok: false, status: 0, data: null, apiUrl, error: e.message };
+  }
+}
+
+function pickBestRecording(recs, preferredQuality) {
+  // Pick first with preferred quality if available else first
+  if (!recs.length) return null;
+  const q = preferredQuality;
+  const best = recs.find((r) => String(r.q || "").toUpperCase() === q) || recs[0];
+  return best;
+}
+
+// Tracks which species got NC audio during this run
+const ncAddedThisRun = new Set();
 
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
@@ -319,46 +376,73 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
-  const existing = fs.readdirSync(targetDir).filter((f) => f.endsWith(".mp3"));
-  if (existing.length > 0) {
+  const mp3Path = path.join(targetDir, `${safeGerman}.mp3`);
+  const creditsPath = path.join(targetDir, "credits.json");
+
+  // Already have mp3?
+  if (fs.existsSync(mp3Path)) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
     return "ok";
   }
 
-  let best = null;
-  const queries = [
-    `gen:${genus} sp:${species} q:A len:25-35`,
-    `gen:${genus} sp:${species} q:A`,
-    `gen:${genus} sp:${species}`,
+  // Fallback stages as requested:
+  const stages = [
+    // 0-5: open (no NC), then 6-11: NC allowed
+    { openOnly: true,  q: "A", len2535: true  },  // 0
+    { openOnly: true,  q: "A", len2535: false },  // 1
+    { openOnly: true,  q: "B", len2535: true  },  // 2
+    { openOnly: true,  q: "B", len2535: false },  // 3
+    { openOnly: true,  q: "C", len2535: true  },  // 4
+    { openOnly: true,  q: "C", len2535: false },  // 5
+    { openOnly: false, q: "A", len2535: true  },  // 6
+    { openOnly: false, q: "A", len2535: false },  // 7
+    { openOnly: false, q: "B", len2535: true  },  // 8
+    { openOnly: false, q: "B", len2535: false },  // 9
+    { openOnly: false, q: "C", len2535: true  },  // 10
+    { openOnly: false, q: "C", len2535: false },  // 11
   ];
 
-  for (const q of queries) {
-    const apiUrl = `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(q)}&key=${XENO_TOKEN}&page=1`;
-    try {
-      const res = await fetch(apiUrl);
-      if (!res.ok) {
-        console.warn(`⚠ Xeno-Canto API Fehler ${res.status} für ${genus} ${species}`);
-        continue;
-      }
-      const data = await res.json();
-      if (!data.recordings || data.recordings.length === 0) continue;
+  let chosen = null;
+  let chosenStage = null;
 
-      best = data.recordings.find((r) => r.q === "A") || data.recordings[0];
-      if (best) break;
-    } catch (err) {
-      console.error(`❌ Fehler bei Xeno-Canto Anfrage: ${err.message}`);
+  for (let i = 0; i < stages.length; i++) {
+    const st = stages[i];
+    const q = buildQuery(genus, species, { qLetter: st.q, len2535: st.len2535, openOnly: st.openOnly });
+
+    const resp = await fetchXeno(genus, species, q);
+    if (!resp.ok) {
+      console.warn(`⚠ Xeno-Canto API Fehler ${resp.status} für ${genus} ${species} (Stage ${i})`);
+      await sleep(150);
       continue;
+    }
+
+    const recs = resp.data;
+    if (!recs || recs.length === 0) {
+      await sleep(100);
+      continue;
+    }
+
+    // Stage says quality q; still pick best in that page
+    const best = pickBestRecording(recs, st.q);
+    if (best) {
+      chosen = best;
+      chosenStage = i;
+      break;
     }
   }
 
-  if (!best) {
+  if (!chosen) {
     console.log(`⚠ Keine Aufnahmen verfügbar für ${genus} ${species}`);
     return "missing";
   }
 
-  const audioUrl = best.file.startsWith("https:") ? best.file : `https:${best.file}`;
-  const filePath = path.join(targetDir, `${safeGerman}.mp3`);
-  const tempFilePath = filePath + ".tmp";
+  // Determine if chosen license is NC
+  const lic = normalizeLicenseUrl(chosen.lic || "");
+  const isNcChosen = isNC(lic);
+
+  // Audio URL
+  const audioUrl = chosen.file?.startsWith("https:") ? chosen.file : `https:${chosen.file}`;
+  const tempMp3 = mp3Path + ".tmp";
 
   try {
     const audioRes = await fetch(audioUrl);
@@ -368,27 +452,33 @@ async function downloadSoundIfMissing(genus, species, german) {
     }
 
     const buffer = await audioRes.arrayBuffer();
-    fs.writeFileSync(tempFilePath, Buffer.from(buffer));
-    fs.renameSync(tempFilePath, filePath);
+    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    fs.renameSync(tempMp3, mp3Path);
 
-    console.log(`✔ Sound gespeichert: ${filePath}`);
+    console.log(`✔ Sound gespeichert: ${mp3Path}`);
 
+    // Credits speichern (mit https-normalisierten Lizenz-URL)
     const credits = {
       scientific_name: `${genus} ${species}`,
       german_name: german,
-      recordist: best.rec,
-      country: best.cnt,
-      location: best.loc,
-      quality: best.q,
-      license: (best.lic && best.lic.startsWith("//")) ? ("https:" + best.lic) : best.lic,
+      recordist: chosen.rec || "n/a",
+      country: chosen.cnt || "n/a",
+      location: chosen.loc || "n/a",
+      quality: chosen.q || "n/a",
+      license: lic || "n/a",
       source: "xeno-canto.org",
-      url: best.id ? `https://xeno-canto.org/${best.id}` : "",
+      url: chosen.id ? `https://xeno-canto.org/${chosen.id}` : "n/a",
+      notes: `Selected by staged fallback: ${chosenStage} (openOnly=${stages[chosenStage]?.openOnly}, q=${stages[chosenStage]?.q}, len25-35=${stages[chosenStage]?.len2535})`
     };
 
-    fs.writeFileSync(path.join(targetDir, "credits.json"), JSON.stringify(credits, null, 2));
+    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+
+    // Track NC additions only if we actually downloaded now
+    if (isNcChosen) ncAddedThisRun.add(german);
+
     return "ok";
   } catch (err) {
-    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+    if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
     console.error(`❌ Fehler beim Sound-Download ${genus} ${species}: ${err.message}`);
     logError(`Sound ${genus} ${species}: ${err.message}`);
     return "error";
@@ -396,7 +486,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 }
 
 // =======================
-// REPORT: Fehlende Elemente
+// REPORT: Fehlende Elemente (+ NC neu hinzugefügt)
 // =======================
 
 function createMissingElementsReport(speciesData) {
@@ -411,6 +501,7 @@ function createMissingElementsReport(speciesData) {
       missingStatus: 0,
       missingCategory: 0,
       missingTrend: 0,
+      ncSoundsAddedThisRun: 0,
     },
     missing: {
       soundMp3: [],
@@ -421,6 +512,7 @@ function createMissingElementsReport(speciesData) {
       category: [],
       trend: [],
     },
+    ncSoundsAddedThisRun: [], // list of german names
   };
 
   for (const s of speciesData) {
@@ -440,6 +532,9 @@ function createMissingElementsReport(speciesData) {
     if (fs.existsSync(mp3Path) && !fs.existsSync(creditsPath)) report.missing.soundCredits.push(german);
     if (!fs.existsSync(mapPath)) report.missing.maps.push(german);
   }
+
+  report.ncSoundsAddedThisRun = Array.from(ncAddedThisRun.values()).sort((a,b)=>a.localeCompare(b,"de"));
+  report.counts.ncSoundsAddedThisRun = report.ncSoundsAddedThisRun.length;
 
   report.counts.missingSoundMp3 = report.missing.soundMp3.length;
   report.counts.missingSoundCredits = report.missing.soundCredits.length;
@@ -464,6 +559,7 @@ function printReportToConsole(report) {
   console.log(`❌ Status fehlt: ${report.counts.missingStatus}`);
   console.log(`❌ Kategorie fehlt: ${report.counts.missingCategory}`);
   console.log(`❌ Trend fehlt: ${report.counts.missingTrend}`);
+  console.log(`⚠ NC-Sounds neu hinzugefügt: ${report.counts.ncSoundsAddedThisRun}`);
   console.log("------------------------------");
 
   const showList = (title, arr) => {
@@ -479,6 +575,7 @@ function printReportToConsole(report) {
   showList("Fehlender Status", report.missing.status);
   showList("Fehlende Kategorie", report.missing.category);
   showList("Fehlender Trend", report.missing.trend);
+  showList("NC-Sounds neu hinzugefügt", report.ncSoundsAddedThisRun);
 
   console.log("\n==============================\n");
 }
@@ -493,17 +590,12 @@ function printReportToConsole(report) {
     const output = [];
 
     for (const s of speciesList) {
-      // 1) IUCN Daten holen
       const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
       output.push(data);
 
-      // 2) Sound (falls fehlt)
       const soundStatus = await downloadSoundIfMissing(s.genus, s.species, s.german);
-
-      // 3) Map (falls fehlt / nicht aktuell)
       const mapStatus = await downloadMapForSpecies(data);
 
-      // 4) Species-Data Status (minimaler "ok"-Check)
       const speciesOk =
         data &&
         data["Wissenschaftlicher Name"] !== "n/a" &&
@@ -514,17 +606,17 @@ function printReportToConsole(report) {
       const mapLabel = mapStatus === "ok" ? "ok" : mapStatus;
       const dataLabel = speciesOk ? "ok" : "n/a";
 
+      const hasError = soundLabel === "error" || mapLabel === "error";
+      const hasMissing =
+        soundLabel === "missing" || mapLabel === "missing" || mapLabel === "n/a" || dataLabel === "n/a";
+      const icon = hasError ? "❌" : hasMissing ? "⚠" : "✅";
+
       const germanName = data["Deutscher Name"] || s.german || "unbekannt";
       const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
 
-      const hasError = soundLabel === "error" || mapLabel === "error";
-      const hasMissing = soundLabel === "missing" || mapLabel === "missing" || mapLabel === "n/a" || dataLabel === "n/a";
-      const icon = hasError ? "❌" : (hasMissing ? "⚠" : "✅");
-
       console.log(`${icon} Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`);
-      console.log("")
+      console.log("");
 
-      // 5) kleine Pause
       await sleep(RATE_LIMIT);
     }
 

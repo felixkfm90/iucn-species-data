@@ -1,11 +1,12 @@
 {
   "scientific_name": "Cyanistes caeruleus",
   "german_name": "Blaumeise",
-  "recordist": "João Tomás",
-  "country": "Spain",
-  "location": "Sayago (near  Peñausende), Zamora, Castile and León",
+  "recordist": "Norman Schiwora",
+  "country": "Germany",
+  "location": "Mittelsachsen (near  Freiberg), Sachsen",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/994559"
+  "url": "https://xeno-canto.org/1097087",
+  "notes": "Selected by staged fallback: 6 (openOnly=false, q=A, len25-35=true)"
 }

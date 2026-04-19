@@ -1,19 +1,22 @@
 {
-  "generatedAt": "2026-04-19T14:47:53.977Z",
+  "generatedAt": "2026-04-19T16:04:10.862Z",
   "counts": {
     "totalSpecies": 40,
-    "missingSoundMp3": 2,
+    "missingSoundMp3": 4,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
-    "missingTrend": 0
+    "missingTrend": 0,
+    "ncSoundsAddedThisRun": 36
   },
   "missing": {
     "soundMp3": [
       "Panama-Kapuzineraffe",
-      "Mittelamerikanischer Totenkopfaffe"
+      "Mittelamerikanischer Totenkopfaffe",
+      "Buckelwal",
+      "Bisamratte"
     ],
     "soundCredits": [],
     "maps": [],
@@ -21,5 +24,43 @@
     "status": [],
     "category": [],
     "trend": []
-  }
+  },
+  "ncSoundsAddedThisRun": [
+    "Alpenbirkenzeisig",
+    "Alpenstrandläufer",
+    "Amsel",
+    "Austernfischer",
+    "Bachstelze",
+    "Bartmeise",
+    "Bergfink",
+    "Blässhuhn",
+    "Blaukehlchen",
+    "Blaumeise",
+    "Bluthänfling",
+    "Brauenmotmot",
+    "Buchfink",
+    "Buntspecht",
+    "Eichhörnchen",
+    "Eisvogel",
+    "Fischertukan",
+    "Geoffroy-Klammeraffe",
+    "Gimpel",
+    "Goldkehltukan",
+    "Großtrappe",
+    "Haubenmeise",
+    "Jagdfasan",
+    "Kernbeißer",
+    "Kiebitz",
+    "Kleiber",
+    "Kormoran",
+    "Mantelbrüllaffe",
+    "Papageientaucher",
+    "Quetzal",
+    "Reh",
+    "Rotkehlchen",
+    "Rotmilan",
+    "Sperlingskauz",
+    "Turmfalke",
+    "Waldkauz"
+  ]
 }
