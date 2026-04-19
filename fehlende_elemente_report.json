@@ -1,21 +1,18 @@
 {
-  "generatedAt": "2026-04-19T16:29:58.490Z",
+  "generatedAt": "2026-04-19T17:15:23.452Z",
   "counts": {
     "totalSpecies": 40,
-    "missingSoundMp3": 2,
+    "missingSoundMp3": 0,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 8
+    "ncSoundLicensesAll": 10
   },
   "missing": {
-    "soundMp3": [
-      "Panama-Kapuzineraffe",
-      "Mittelamerikanischer Totenkopfaffe"
-    ],
+    "soundMp3": [],
     "soundCredits": [],
     "maps": [],
     "assessmentId": [],
@@ -31,6 +28,8 @@
     "Geoffroy-Klammeraffe",
     "Großtrappe",
     "Mantelbrüllaffe",
+    "Mittelamerikanischer Totenkopfaffe",
+    "Panama-Kapuzineraffe",
     "Quetzal"
   ]
 }
