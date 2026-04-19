@@ -27,6 +27,9 @@ if (!XENO_TOKEN) {
 const BASE = "https://api.iucnredlist.org/api/v4";
 const RATE_LIMIT = 400;
 
+// Xeno multi-page
+const MAX_XENO_PAGES = 5;
+
 // Assessment-ID Trackfile (für Karten-Caching)
 const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
 let lastSavedAssessmentId = {};
@@ -301,13 +304,8 @@ async function downloadMapForSpecies(s) {
 }
 
 // =======================
-// XENO-CANTO SOUNDS (Open first, NC fallback) - MULTI PAGE (5)
+// XENO-CANTO SOUNDS (Open first, NC fallback) - MULTI PAGE
 // =======================
-
-const MAX_XENO_PAGES = 5; // <- wie gewünscht
-
-// Tracks NC additions in diesem Lauf
-const ncAddedThisRun = new Set();
 
 function normalizeLicenseUrl(lic) {
   if (!lic) return "";
@@ -347,7 +345,6 @@ async function fetchXenoPage(query, page) {
 }
 
 async function findRecordingByStage(genus, species, stage) {
-  // stage: { openOnly, q, len2535 }
   const query = buildXenoQuery(genus, species, stage.q, stage.len2535);
 
   let maxPages = MAX_XENO_PAGES;
@@ -360,7 +357,6 @@ async function findRecordingByStage(genus, species, stage) {
       continue;
     }
 
-    // wenn Xeno weniger Seiten hat als unser Limit, früher stoppen
     if (resp.numPages && resp.numPages < maxPages) maxPages = resp.numPages;
 
     if (!resp.recordings.length) {
@@ -372,7 +368,6 @@ async function findRecordingByStage(genus, species, stage) {
       const open = resp.recordings.find((r) => !isNcLicense(r.lic));
       if (open) return { rec: open, query, page };
     } else {
-      // NC erlaubt: ersten Treffer nehmen
       return { rec: resp.recordings[0], query, page };
     }
 
@@ -391,13 +386,11 @@ async function downloadSoundIfMissing(genus, species, german) {
   const mp3Path = path.join(targetDir, `${safeGerman}.mp3`);
   const creditsPath = path.join(targetDir, "credits.json");
 
-  // schon vorhanden?
   if (fs.existsSync(mp3Path)) {
     console.log(`🎵 Sound existiert bereits für ${german}`);
     return "ok";
   }
 
-  // Deine Stages exakt:
   const stages = [
     { openOnly: true, q: "A", len2535: true }, // 0
     { openOnly: true, q: "A", len2535: false }, // 1
@@ -433,9 +426,6 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   const lic = normalizeLicenseUrl(chosen.lic || "");
-  const chosenIsNc = isNcLicense(lic);
-
-  // Xeno liefert file oft als //...
   const audioUrl = chosen.file?.startsWith("https:") ? chosen.file : `https:${chosen.file}`;
   const tempMp3 = mp3Path + ".tmp";
 
@@ -468,8 +458,6 @@ async function downloadSoundIfMissing(genus, species, german) {
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
 
-    if (chosenIsNc) ncAddedThisRun.add(german);
-
     return "ok";
   } catch (err) {
     if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
@@ -480,7 +468,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 }
 
 // =======================
-// REPORT: Fehlende Elemente (+ NC neu hinzugefügt)
+// REPORT: Fehlende Elemente (+ NC-Lizenzen gesamt)
 // =======================
 
 function createMissingElementsReport(speciesData) {
@@ -495,7 +483,7 @@ function createMissingElementsReport(speciesData) {
       missingStatus: 0,
       missingCategory: 0,
       missingTrend: 0,
-      ncSoundsAddedThisRun: 0,
+      ncSoundLicensesAll: 0,
     },
     missing: {
       soundMp3: [],
@@ -506,7 +494,7 @@ function createMissingElementsReport(speciesData) {
       category: [],
       trend: [],
     },
-    ncSoundsAddedThisRun: [],
+    ncSoundLicensesAll: [],
   };
 
   for (const s of speciesData) {
@@ -527,8 +515,26 @@ function createMissingElementsReport(speciesData) {
     if (!fs.existsSync(mapPath)) report.missing.maps.push(german);
   }
 
-  report.ncSoundsAddedThisRun = Array.from(ncAddedThisRun.values()).sort((a, b) => a.localeCompare(b, "de"));
-  report.counts.ncSoundsAddedThisRun = report.ncSoundsAddedThisRun.length;
+  // NC-Lizenzen (alle vorhandenen Sounds mit credits.json)
+  const ncAll = [];
+  for (const s of speciesData) {
+    const german = s["Deutscher Name"] || s["Wissenschaftlicher Name"] || "unknown";
+    const safe = sanitizeAssetName(german);
+
+    const creditsPath = path.join(SOUND_DIR, safe, "credits.json");
+    if (!fs.existsSync(creditsPath)) continue;
+
+    try {
+      const c = JSON.parse(fs.readFileSync(creditsPath, "utf8"));
+      const lic = String(c.license || "").toLowerCase();
+      if (lic.includes("/by-nc")) ncAll.push(german);
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  report.ncSoundLicensesAll = Array.from(new Set(ncAll)).sort((a, b) => a.localeCompare(b, "de"));
+  report.counts.ncSoundLicensesAll = report.ncSoundLicensesAll.length;
 
   report.counts.missingSoundMp3 = report.missing.soundMp3.length;
   report.counts.missingSoundCredits = report.missing.soundCredits.length;
@@ -553,7 +559,6 @@ function printReportToConsole(report) {
   console.log(`❌ Status fehlt: ${report.counts.missingStatus}`);
   console.log(`❌ Kategorie fehlt: ${report.counts.missingCategory}`);
   console.log(`❌ Trend fehlt: ${report.counts.missingTrend}`);
-  console.log(`⚠ NC-Sounds neu hinzugefügt: ${report.counts.ncSoundsAddedThisRun}`);
   console.log("------------------------------");
 
   const showList = (title, arr) => {
@@ -563,13 +568,7 @@ function printReportToConsole(report) {
   };
 
   showList("Fehlende Sound-MP3", report.missing.soundMp3);
-  showList("Fehlende Sound-Credits", report.missing.soundCredits);
-  showList("Fehlende Karten", report.missing.maps);
-  showList("Fehlende Assessment IDs", report.missing.assessmentId);
-  showList("Fehlender Status", report.missing.status);
-  showList("Fehlende Kategorie", report.missing.category);
-  showList("Fehlender Trend", report.missing.trend);
-  showList("NC-Sounds neu hinzugefügt", report.ncSoundsAddedThisRun);
+  showList("NC-Sound-Lizenzen (only non commercial)", report.ncSoundLicensesAll);
 
   console.log("\n==============================\n");
 }

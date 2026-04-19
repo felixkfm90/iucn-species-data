@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T16:21:17.807Z",
+  "generatedAt": "2026-04-19T16:29:58.490Z",
   "counts": {
     "totalSpecies": 40,
     "missingSoundMp3": 2,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundsAddedThisRun": 0
+    "ncSoundLicensesAll": 8
   },
   "missing": {
     "soundMp3": [
@@ -23,5 +23,14 @@
     "category": [],
     "trend": []
   },
-  "ncSoundsAddedThisRun": []
+  "ncSoundLicensesAll": [
+    "Bisamratte",
+    "Brauenmotmot",
+    "Eichhörnchen",
+    "Fischertukan",
+    "Geoffroy-Klammeraffe",
+    "Großtrappe",
+    "Mantelbrüllaffe",
+    "Quetzal"
+  ]
 }
