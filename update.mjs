@@ -134,10 +134,16 @@ function emptyEntry(scientific, german = scientific) {
 
 // IUCN GET mit Token
 async function iucnGET(pathname) {
-  const res = await fetch(`${BASE}${pathname}`, {
-    headers: { Authorization: TOKEN, Accept: "application/json" },
+  const url = `${BASE}${pathname}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
   });
-  if (!res.ok) return null;
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`❌ IUCN HTTP ${res.status} bei ${url}${body ? ` | ${body.slice(0, 200)}` : ""}`);
+    return null;
+  }
   return res.json();
 }
 
@@ -148,7 +154,7 @@ async function iucnGET(pathname) {
 async function getAssessmentData(assessmentId) {
   try {
     const res = await fetch(`${BASE}/assessment/${assessmentId}`, {
-      headers: { Authorization: TOKEN, Accept: "application/json" },
+      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
     });
 
     if (!res.ok) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
