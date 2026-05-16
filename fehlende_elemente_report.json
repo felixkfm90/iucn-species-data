@@ -1,24 +1,74 @@
 {
-  "generatedAt": "2026-04-26T19:08:13.506Z",
+  "generatedAt": "2026-05-16T06:32:16.264Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
     "missingSoundCredits": 0,
     "missingMap": 0,
-    "missingAssessmentId": 0,
-    "missingStatus": 0,
-    "missingCategory": 0,
-    "missingTrend": 0,
+    "missingAssessmentId": 11,
+    "missingStatus": 11,
+    "missingCategory": 12,
+    "missingTrend": 12,
     "ncSoundLicensesAll": 9
   },
   "missing": {
     "soundMp3": [],
     "soundCredits": [],
     "maps": [],
-    "assessmentId": [],
-    "status": [],
-    "category": [],
-    "trend": []
+    "assessmentId": [
+      "Bergfink",
+      "Kernbeißer",
+      "Sperlingskauz",
+      "Bisamratte",
+      "Eurasisches Eichhörnchen",
+      "Rotmilan",
+      "Rotfuchs",
+      "Kohlmeise",
+      "Graureiher",
+      "Graugans",
+      "Gänsesäger"
+    ],
+    "status": [
+      "Bergfink",
+      "Kernbeißer",
+      "Sperlingskauz",
+      "Bisamratte",
+      "Eurasisches Eichhörnchen",
+      "Rotmilan",
+      "Rotfuchs",
+      "Kohlmeise",
+      "Graureiher",
+      "Graugans",
+      "Gänsesäger"
+    ],
+    "category": [
+      "Kleiber",
+      "Bergfink",
+      "Kernbeißer",
+      "Sperlingskauz",
+      "Bisamratte",
+      "Eurasisches Eichhörnchen",
+      "Rotmilan",
+      "Rotfuchs",
+      "Kohlmeise",
+      "Graureiher",
+      "Graugans",
+      "Gänsesäger"
+    ],
+    "trend": [
+      "Kleiber",
+      "Bergfink",
+      "Kernbeißer",
+      "Sperlingskauz",
+      "Bisamratte",
+      "Eurasisches Eichhörnchen",
+      "Rotmilan",
+      "Rotfuchs",
+      "Kohlmeise",
+      "Graureiher",
+      "Graugans",
+      "Gänsesäger"
+    ]
   },
   "ncSoundLicensesAll": [
     "Bisamratte",
