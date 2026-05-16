@@ -10,7 +10,8 @@
   const trendIcons = {
     Zunehmend: "zunehmend.png",
     Stabil: "stabil.png",
-    Abnehmend: "abnehmend.png"
+    Abnehmend: "abnehmend.png",
+    Unbekannt: "nodata.png"
   };
 
   function iucnSourceHtml() {
@@ -25,9 +26,14 @@
     const d = await window.SpeciesCore.getSpeciesData();
 
     const statusIcon = statusIcons[d.Status] || "LC.png";
-    const trendIcon = trendIcons[d.Trend] || "stabil.png";
     const statusKnown = Boolean(statusIcons[d.Status]);
-    const trendKnown = Boolean(trendIcons[d.Trend]);
+
+    const rawTrend = (d.Trend || "").trim();
+    const isUnknown = rawTrend === "" || rawTrend === "n/a" || rawTrend === "Unbekannt";
+
+    const trendLabel = isUnknown ? "Unbekannt" : rawTrend;
+    const trendIcon = trendIcons[trendLabel] || "nodata.png";
+    const trendKnown = Boolean(trendIcons[trendLabel]); // Unbekannt zählt als "known"
 
     container.innerHTML = `
       <div class="frame-box status-trend-frame">
@@ -41,7 +47,7 @@
           <div class="info-box">
             <p>Trend</p>
             <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/trend/${trendIcon}" height="80" alt="Populationstrend Icon">
-            <p>${d.Trend}${trendKnown ? "" : " (Fallback-Icon)"}</p>
+            <p>${trendLabel}${trendKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
         </div>
 

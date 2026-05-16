@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-05-16T06:35:15.132Z",
+  "generatedAt": "2026-05-16T06:37:39.371Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
     "missingSoundCredits": 0,
     "missingMap": 0,
-    "missingAssessmentId": 11,
-    "missingStatus": 11,
-    "missingCategory": 12,
-    "missingTrend": 12,
+    "missingAssessmentId": 15,
+    "missingStatus": 15,
+    "missingCategory": 15,
+    "missingTrend": 15,
     "ncSoundLicensesAll": 9
   },
   "missing": {
@@ -16,6 +16,10 @@
     "soundCredits": [],
     "maps": [],
     "assessmentId": [
+      "Alpenbirkenzeisig",
+      "Waldkauz",
+      "Brauenmotmot",
+      "Kleiber",
       "Bergfink",
       "Kernbeißer",
       "Sperlingskauz",
@@ -29,6 +33,10 @@
       "Gänsesäger"
     ],
     "status": [
+      "Alpenbirkenzeisig",
+      "Waldkauz",
+      "Brauenmotmot",
+      "Kleiber",
       "Bergfink",
       "Kernbeißer",
       "Sperlingskauz",
@@ -42,6 +50,9 @@
       "Gänsesäger"
     ],
     "category": [
+      "Alpenbirkenzeisig",
+      "Waldkauz",
+      "Brauenmotmot",
       "Kleiber",
       "Bergfink",
       "Kernbeißer",
@@ -56,6 +67,9 @@
       "Gänsesäger"
     ],
     "trend": [
+      "Alpenbirkenzeisig",
+      "Waldkauz",
+      "Brauenmotmot",
       "Kleiber",
       "Bergfink",
       "Kernbeißer",
