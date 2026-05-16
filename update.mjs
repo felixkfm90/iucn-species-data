@@ -135,16 +135,30 @@ function emptyEntry(scientific, german = scientific) {
 // IUCN GET mit Token
 async function iucnGET(pathname) {
   const url = `${BASE}${pathname}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
-  });
 
-  if (!res.ok) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
+    });
+
+    if (res.ok) return res.json();
+
+    // Rate limit handling
+    if (res.status === 429) {
+      // IUCN sagt explizit 60 Sekunden warten
+      console.warn(`⏳ IUCN 429 (Rate Limit). Warte 60 Sekunden… (${url})`);
+      await sleep(60000);
+      continue;
+    }
+
+    // Andere Fehler
     const body = await res.text().catch(() => "");
     console.error(`❌ IUCN HTTP ${res.status} bei ${url}${body ? ` | ${body.slice(0, 200)}` : ""}`);
     return null;
   }
-  return res.json();
+
+  console.error(`❌ IUCN: mehrfach 429 erhalten, Abbruch: ${url}`);
+  return null;
 }
 
 // =======================
