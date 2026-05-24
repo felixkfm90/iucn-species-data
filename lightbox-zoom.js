@@ -1,6 +1,12 @@
-// lightbox-zoom.js (CTA in Squarespace Lightbox: "Vollbild / Zoom")
+// lightbox-zoom.js
+// Adds a "Vollbild / Zoom" button for Squarespace gallery lightbox.
+// Button is appended to <body> (always clickable) and only shown while lightbox is open.
+// Clicking the button opens our own zoom overlay (pinch/pan/double-tap/wheel).
+
 (function () {
-  // =============== Overlay (Zoom) ===============
+  // =========================
+  // Zoom Overlay (own)
+  // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
   overlay.innerHTML = `
@@ -14,6 +20,7 @@
 
   let scale = 1, tx = 0, ty = 0;
   const minScale = 1, maxScale = 6;
+
   const pointers = new Map();
   let startDist = 0, startScale = 1, startMid = null, startTx = 0, startTy = 0;
   let lastTap = 0;
@@ -22,8 +29,14 @@
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 
-  function apply() { zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
-  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
+  function apply() {
+    zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
+  function reset() {
+    scale = 1; tx = 0; ty = 0;
+    apply();
+  }
 
   function openZoom(src) {
     if (!src) return;
@@ -44,7 +57,9 @@
 
   closeBtn.addEventListener("click", closeZoom);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
+  });
 
   // Pinch/Pan/Double-tap
   zoomImg.style.touchAction = "none";
@@ -89,6 +104,7 @@
       const pts = Array.from(pointers.values());
       const d = dist(pts[0], pts[1]);
       const m = mid(pts[0], pts[1]);
+
       scale = clamp(startScale * (d / startDist), minScale, maxScale);
       tx = startTx + (m.x - startMid.x);
       ty = startTy + (m.y - startMid.y);
@@ -116,7 +132,9 @@
     return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
 
-  // =============== Squarespace Lightbox: Button injizieren ===============
+  // =========================
+  // Squarespace Lightbox detection
+  // =========================
   function findLightboxRoot() {
     return (
       document.querySelector("[data-test='gallery-lightbox']") ||
@@ -126,89 +144,83 @@
     );
   }
 
-function findLightboxImg(root) {
-  if (!root) return null;
+  function findLightboxImg(root) {
+    if (!root) return null;
 
-  const imgs = Array.from(root.querySelectorAll("img"))
-    .filter(img => img && img.naturalWidth > 0);
+    const imgs = Array.from(root.querySelectorAll("img"))
+      .filter(img => img && img.naturalWidth > 0);
 
-  if (!imgs.length) return null;
+    if (!imgs.length) return null;
 
-  // wähle das "aktuell sichtbare" Bild:
-  // - nicht display:none / visibility hidden
-  // - höchste Opacity
-  // - größte sichtbare Fläche im Viewport
-  const vp = { w: window.innerWidth, h: window.innerHeight };
+    // pick the most visible one (preloaded images often exist)
+    const vp = { w: window.innerWidth, h: window.innerHeight };
+    let best = null, bestScore = -1;
 
-  let best = null;
-  let bestScore = -1;
+    for (const img of imgs) {
+      const cs = getComputedStyle(img);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
 
-  for (const img of imgs) {
-    const cs = getComputedStyle(img);
-    if (cs.display === "none" || cs.visibility === "hidden") continue;
+      const opacity = Number(cs.opacity || 1);
+      if (opacity <= 0.05) continue;
 
-    const opacity = Number(cs.opacity || 1);
-    if (opacity <= 0.05) continue;
+      const r = img.getBoundingClientRect();
+      const left = Math.max(0, r.left);
+      const top = Math.max(0, r.top);
+      const right = Math.min(vp.w, r.right);
+      const bottom = Math.min(vp.h, r.bottom);
 
-    const r = img.getBoundingClientRect();
+      const w = Math.max(0, right - left);
+      const h = Math.max(0, bottom - top);
+      const area = w * h;
 
-    // sichtbare Fläche grob via Intersection mit Viewport
-    const left = Math.max(0, r.left);
-    const top = Math.max(0, r.top);
-    const right = Math.min(vp.w, r.right);
-    const bottom = Math.min(vp.h, r.bottom);
-
-    const w = Math.max(0, right - left);
-    const h = Math.max(0, bottom - top);
-    const area = w * h;
-
-    const score = area * (0.5 + opacity);
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = img;
+      const score = area * (0.5 + opacity);
+      if (score > bestScore) {
+        bestScore = score;
+        best = img;
+      }
     }
+
+    return best || imgs[0];
   }
 
-  // fallback: erstes img
-  return best || imgs[0];
-}
+  // =========================
+  // Zoom Button (always clickable)
+  // =========================
+  let zoomBtn = null;
 
   function ensureZoomButton(root) {
-    if (!root) return;
+    if (!zoomBtn) {
+      zoomBtn = document.createElement("button");
+      zoomBtn.type = "button";
+      zoomBtn.className = "gz-zoom-btn";
+      zoomBtn.textContent = "Vollbild / Zoom";
+      zoomBtn.style.display = "none"; // default hidden
+      document.body.appendChild(zoomBtn);
 
-    // wo Buttons sitzen: meist Control-Bar
-    const controls =
-      root.querySelector(".gallery-lightbox-control") ||
-      root.querySelector(".gallery-lightbox-controls") ||
-      root.querySelector("[data-test='gallery-lightbox-controls']") ||
-      root;
+      zoomBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-    if (controls.querySelector(".gz-zoom-btn")) return;
+        const r = findLightboxRoot();
+        if (!r) return;
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "gz-zoom-btn";
-    btn.textContent = "Vollbild / Zoom";
+        const img = findLightboxImg(r);
+        const src = largestSrcFromImg(img);
+        openZoom(src);
+      });
+    }
 
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const img = findLightboxImg(root);
-      const src = largestSrcFromImg(img);
-      openZoom(src);
-    });
-
-    controls.appendChild(btn);
+    // show only when lightbox exists
+    zoomBtn.style.display = root ? "" : "none";
   }
 
-  // Beobachter nur zum *Button-Inject*, NICHT zum Auto-Open
+  // Observe DOM: only for "show/hide button", not for opening zoom
   const obs = new MutationObserver(() => {
     const root = findLightboxRoot();
-    if (!root) return;
     ensureZoomButton(root);
   });
-
   obs.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Initial
+  ensureZoomButton(findLightboxRoot());
 })();
