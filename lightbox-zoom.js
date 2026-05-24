@@ -1,9 +1,7 @@
-// lightbox-zoom.js
-// Squarespace Gallery Lightbox: shows a "Vollbild / Zoom" button (fixed top center).
-// Button always clickable (appended to body), only visible while Squarespace lightbox is open
-// and our zoom overlay is NOT open.
-// Fix: selects the CURRENT lightbox image using ?itemId=... to avoid "next image" offset.
-// Fix: button hides reliably after lightbox closes, close "X" stays on top while zooming.
+// lightbox-zoom.js (v: lightbox-open detection fixed)
+// - Button only shown when Squarespace lightbox is REALLY visible/open
+// - Button hides immediately when lightbox closes (even if DOM stays)
+// - Close X always above zoomed image
 
 (function () {
   // =========================
@@ -34,11 +32,7 @@
   function apply() {
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
-
-  function reset() {
-    scale = 1; tx = 0; ty = 0;
-    apply();
-  }
+  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
 
   function openZoom(src) {
     if (!src) return;
@@ -47,8 +41,6 @@
     reset();
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
-
-    // hide button while zoom overlay is open
     if (zoomBtn) zoomBtn.style.display = "none";
   }
 
@@ -59,8 +51,8 @@
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
 
-    // show button again only if lightbox is still open
-    const root = findLightboxRoot();
+    // show button again only if lightbox is still truly open
+    const root = findLightboxRootOpen();
     if (zoomBtn) zoomBtn.style.display = root ? "" : "none";
   }
 
@@ -142,15 +134,43 @@
   }
 
   // =========================
-  // Squarespace Lightbox detection
+  // Squarespace Lightbox detection (OPEN only)
   // =========================
-  function findLightboxRoot() {
+  function findLightboxRootRaw() {
     return (
       document.querySelector("[data-test='gallery-lightbox']") ||
       document.querySelector(".gallery-lightbox") ||
       document.querySelector(".sqs-image-lightbox") ||
       document.querySelector(".sqs-lightbox")
     );
+  }
+
+  function isElementVisible(el) {
+    if (!el) return false;
+
+    // aria-hidden often used
+    const ariaHidden = el.getAttribute("aria-hidden");
+    if (ariaHidden === "true") return false;
+
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") return false;
+    if (Number(cs.opacity || 1) <= 0.02) return false;
+
+    const r = el.getBoundingClientRect();
+    if (r.width < 20 || r.height < 20) return false;
+
+    // many overlays cover most of viewport when open
+    // (this is a heuristic, but prevents hidden/offscreen templates)
+    const vpArea = Math.max(1, window.innerWidth * window.innerHeight);
+    const area = r.width * r.height;
+    if (area / vpArea < 0.10) return false;
+
+    return true;
+  }
+
+  function findLightboxRootOpen() {
+    const root = findLightboxRootRaw();
+    return isElementVisible(root) ? root : null;
   }
 
   function getItemIdFromUrl() {
@@ -163,16 +183,14 @@
 
     const itemId = getItemIdFromUrl();
 
-    // 1) Try to locate the active item wrapper by itemId
+    // Try itemId wrapper first
     if (itemId) {
       const selectors = [
         `[data-item-id="${itemId}"]`,
         `[data-itemid="${itemId}"]`,
         `[data-id="${itemId}"]`,
-        `[data-collection-id="${itemId}"]`,
         `[id*="${itemId}"]`
       ];
-
       for (const sel of selectors) {
         const node = root.querySelector(sel);
         if (node) {
@@ -180,26 +198,13 @@
           if (img) return img;
         }
       }
-
-      // broad fallback: any element with attribute containing itemId
-      const any = Array.from(root.querySelectorAll("*")).find(el => {
-        for (const a of el.attributes) {
-          if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
-        }
-        return false;
-      });
-      if (any) {
-        const img = any.querySelector && any.querySelector("img");
-        if (img) return img;
-      }
     }
 
-    // 2) Fallback: pick best visible img
+    // Fallback: choose most visible img in open lightbox
     const imgs = Array.from(root.querySelectorAll("img")).filter(img => img && img.naturalWidth > 0);
     if (!imgs.length) return null;
 
     const vp = { w: window.innerWidth, h: window.innerHeight };
-    const cx = vp.w / 2, cy = vp.h / 2;
 
     function intersectionArea(r) {
       const left = Math.max(0, r.left);
@@ -209,51 +214,30 @@
       return Math.max(0, right - left) * Math.max(0, bottom - top);
     }
 
-    let best = null;
-    let bestScore = -Infinity;
-
+    let best = null, bestScore = -Infinity;
     for (const img of imgs) {
       const cs = getComputedStyle(img);
       if (cs.display === "none" || cs.visibility === "hidden") continue;
-
       const opacity = Number(cs.opacity || 1);
-      if (opacity <= 0.05) continue;
+      if (opacity <= 0.1) continue;
 
       const r = img.getBoundingClientRect();
-      if (r.width < 60 || r.height < 60) continue;
-
       const areaInt = intersectionArea(r);
       if (areaInt <= 0) continue;
 
-      const areaImg = Math.max(1, r.width * r.height);
-      const visRatio = areaInt / areaImg;
-      if (visRatio < 0.35) continue;
-
-      const imgCx = r.left + r.width / 2;
-      const imgCy = r.top + r.height / 2;
-      const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
-
-      const score = (areaInt * (0.5 + opacity)) - (centerDist * 900);
-      if (score > bestScore) {
-        bestScore = score;
-        best = img;
-      }
+      const score = areaInt * (0.5 + opacity);
+      if (score > bestScore) { bestScore = score; best = img; }
     }
 
-    if (best) return best;
-
-    // last resort: highest opacity
-    return imgs
-      .slice()
-      .sort((a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1))[0] || imgs[0];
+    return best || imgs[0];
   }
 
   // =========================
-  // Zoom Button (always clickable)
+  // Zoom Button (always clickable, but only shown when lightbox OPEN)
   // =========================
   let zoomBtn = null;
 
-  function ensureZoomButton(root) {
+  function ensureZoomButton(rootOpen) {
     if (!zoomBtn) {
       zoomBtn = document.createElement("button");
       zoomBtn.type = "button";
@@ -266,45 +250,44 @@
         e.preventDefault();
         e.stopPropagation();
 
-        const r = findLightboxRoot();
-        if (!r) return;
+        const root = findLightboxRootOpen();
+        if (!root) return;
 
-        const img = findLightboxImg(r);
+        const img = findLightboxImg(root);
         const src = largestSrcFromImg(img);
         openZoom(src);
       });
     }
 
-    // if zoom overlay open -> keep hidden
     if (overlay.classList.contains("open")) {
       zoomBtn.style.display = "none";
       return;
     }
 
-    zoomBtn.style.display = root ? "" : "none";
+    zoomBtn.style.display = rootOpen ? "" : "none";
   }
 
-  // Observe DOM: show/hide button only
-  const obs = new MutationObserver(() => {
-    const root = findLightboxRoot();
-    ensureZoomButton(root);
-  });
-  obs.observe(document.documentElement, { childList: true, subtree: true });
+  function update() {
+    const rootOpen = findLightboxRootOpen();
+    ensureZoomButton(rootOpen);
+  }
 
-  // Initial
-  ensureZoomButton(findLightboxRoot());
+  // Observe DOM changes
+  const obs = new MutationObserver(update);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
 
   // URL polling: itemId changes when navigating next/prev
   let lastSearch = location.search;
   setInterval(() => {
     if (location.search !== lastSearch) {
       lastSearch = location.search;
-      ensureZoomButton(findLightboxRoot());
+      update();
     }
   }, 200);
 
-  // ✅ Hard refresh visibility: lightbox sometimes closes without a helpful DOM mutation
-  setInterval(() => {
-    ensureZoomButton(findLightboxRoot());
-  }, 250);
+  // Hard refresh: closes sometimes happen without useful mutations
+  setInterval(update, 250);
+
+  // Initial
+  update();
 })();
