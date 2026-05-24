@@ -1,4 +1,11 @@
 // lightbox-zoom.js
+// Smooth Android pinch/pan overlay for Squarespace gallery lightbox.
+// - Button shows only if lightbox is open (itemId + visible)
+// - Overlay uses translate(tx,ty) scale(scale) (smoother feel)
+// - Pinch anchor is based on the currently visible content (no restart feeling)
+// - Pan only when zoomed, clamp prevents losing image
+// - X always on top
+
 (function () {
   // =========================
   // Helpers
@@ -6,19 +13,24 @@
   function hasItemId() {
     return new URLSearchParams(location.search).has("itemId");
   }
+
   function getItemIdFromUrl() {
     const p = new URLSearchParams(location.search);
     return p.get("itemId") || "";
   }
+
   function clamp(v, a, b) {
     return Math.max(a, Math.min(b, v));
   }
+
   function dist(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   }
+
   function mid(a, b) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
+
   function largestSrcFromImg(img) {
     if (!img) return null;
     const srcset = img.getAttribute("srcset");
@@ -31,6 +43,7 @@
     }
     return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
+
   function findLightboxRoot() {
     return (
       document.querySelector("[data-test='gallery-lightbox']") ||
@@ -39,6 +52,7 @@
       document.querySelector(".sqs-lightbox")
     );
   }
+
   function isOpenVisible(el) {
     if (!el) return false;
     if (el.getAttribute("aria-hidden") === "true") return false;
@@ -52,6 +66,7 @@
 
     return true;
   }
+
   function intersectionArea(r, vp) {
     const left = Math.max(0, r.left);
     const top = Math.max(0, r.top);
@@ -60,6 +75,7 @@
     return Math.max(0, right - left) * Math.max(0, bottom - top);
   }
 
+  // Bild in Lightbox finden (itemId bevorzugt; sonst sichtbares/zentriertes)
   function findLightboxImg(root) {
     if (!root) return null;
 
@@ -131,19 +147,11 @@
       }
     }
 
-    if (best) return best;
-
-    return (
-      imgs
-        .slice()
-        .sort(
-          (a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1)
-        )[0] || imgs[0]
-    );
+    return best || imgs[0];
   }
 
   // =========================
-  // Zoom Overlay
+  // Zoom Overlay DOM
   // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
@@ -156,23 +164,27 @@
   const zoomImg = overlay.querySelector("#gz-img");
   const closeBtn = overlay.querySelector("#gz-close");
 
+  // Transform state
   let scale = 1, tx = 0, ty = 0;
   const minScale = 1, maxScale = 6;
 
+  // Gesture state
   const pointers = new Map();
   let lastTap = 0;
-
   let panLast = null; // {x,y}
+
   // pinch = { startDist, startScale, u, v }
+  // u/v are the image-space coords under the pinch midpoint in pre-scale translate space
   let pinch = null;
 
+  // Base (unscaled) size for clamp
   let baseW = 0, baseH = 0;
 
   let zoomBtn = null;
 
-  // ✅ WICHTIG: scale zuerst, translate danach (tx/ty bleiben “echte Pixel”)
+  // Apply transform: translate then scale (smoother feel)
   function apply() {
-    zoomImg.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;
+    zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
 
   function reset() {
@@ -183,9 +195,8 @@
   function refreshBaseSize() {
     if (!overlay.classList.contains("open")) return;
 
-    const prevScale = scale;
-    const prevTx = tx, prevTy = ty;
-
+    // measure at scale=1, tx=ty=0
+    const prevScale = scale, prevTx = tx, prevTy = ty;
     scale = 1; tx = 0; ty = 0;
     apply();
 
@@ -197,25 +208,30 @@
     apply();
   }
 
+  // Clamp in translate->scale coordinate system:
+  // screen half overflow = (baseW*scale - vw)/2
+  // but tx is applied BEFORE scale, so allowed tx range is overflow/scale
   function clampTranslate() {
     if (!baseW || !baseH) return;
 
     const vw = window.innerWidth * 0.95;
-    const vh = window.innerHeight * 0.9;
+    const vh = window.innerHeight * 0.90;
 
     const scaledW = baseW * scale;
     const scaledH = baseH * scale;
 
     if (scaledW <= vw) tx = 0;
     else {
-      const maxX = (scaledW - vw) / 2;
-      tx = clamp(tx, -maxX, maxX);
+      const overflowX = (scaledW - vw) / 2;
+      const maxTx = overflowX / scale;
+      tx = clamp(tx, -maxTx, maxTx);
     }
 
     if (scaledH <= vh) ty = 0;
     else {
-      const maxY = (scaledH - vh) / 2;
-      ty = clamp(ty, -maxY, maxY);
+      const overflowY = (scaledH - vh) / 2;
+      const maxTy = overflowY / scale;
+      ty = clamp(ty, -maxTy, maxTy);
     }
   }
 
@@ -223,6 +239,7 @@
     if (!src) return;
 
     zoomImg.onload = () => {
+      // allow one paint, then measure
       setTimeout(() => {
         refreshBaseSize();
         clampTranslate();
@@ -232,8 +249,12 @@
 
     zoomImg.src = src;
     overlay.classList.add("open");
-    reset();
 
+    // performance hints
+    zoomImg.style.willChange = "transform";
+
+    // reset state
+    reset();
     pointers.clear();
     panLast = null;
     pinch = null;
@@ -246,6 +267,7 @@
   function closeZoom() {
     overlay.classList.remove("open");
     zoomImg.src = "";
+    zoomImg.style.willChange = "";
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
 
@@ -269,7 +291,7 @@
   });
 
   // =========================
-  // Gesten: Pinch anchored to current view
+  // Gestures (Pinch->Pan->Pinch)
   // =========================
   zoomImg.style.touchAction = "none";
 
@@ -277,6 +299,7 @@
     const pts = Array.from(pointers.values());
     const m = mid(pts[0], pts[1]);
 
+    // local midpoint relative to viewport center
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     const localMx = m.x - cx;
@@ -285,9 +308,10 @@
     pinch = {
       startDist: dist(pts[0], pts[1]),
       startScale: scale,
-      // ✅ Bildkoordinate unter den Fingern im aktuellen Ausschnitt
-      u: (localMx - tx) / scale,
-      v: (localMy - ty) / scale
+      // In translate->scale: screenLocal = scale * (u + tx)
+      // => u = screenLocal/scale - tx
+      u: localMx / scale - tx,
+      v: localMy / scale - ty
     };
   }
 
@@ -295,6 +319,7 @@
     zoomImg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+    // Double-tap toggle
     if (e.pointerType === "touch") {
       const now = Date.now();
       if (now - lastTap < 300) {
@@ -325,23 +350,22 @@
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // PAN
+    // Pan (1 finger)
     if (pointers.size === 1) {
       if (scale <= 1) return;
 
       const last = panLast || prev;
-      tx += (e.clientX - last.x);
-      ty += (e.clientY - last.y);
+      tx += (e.clientX - last.x) / scale; // keep pan speed consistent with scale
+      ty += (e.clientY - last.y) / scale;
       panLast = { x: e.clientX, y: e.clientY };
 
       clampTranslate();
       apply();
-
       e.preventDefault();
       return;
     }
 
-    // PINCH
+    // Pinch (2 fingers)
     if (pointers.size === 2) {
       if (!pinch) beginPinch();
 
@@ -356,14 +380,14 @@
       const localMx = m.x - cx;
       const localMy = m.y - cy;
 
-      // ✅ derselbe Bildpunkt bleibt unter den Fingern
-      tx = localMx - pinch.u * nextScale;
-      ty = localMy - pinch.v * nextScale;
+      // Keep same image-space point (u/v) under fingers:
+      // localM = nextScale * (u + tx) => tx = localM/nextScale - u
+      tx = localMx / nextScale - pinch.u;
+      ty = localMy / nextScale - pinch.v;
       scale = nextScale;
 
       clampTranslate();
       apply();
-
       e.preventDefault();
       return;
     }
@@ -384,7 +408,6 @@
 
       if (scale < 1.02) {
         reset();
-        apply();
       } else {
         clampTranslate();
         apply();
@@ -402,11 +425,24 @@
     }
   });
 
+  // Desktop wheel zoom
   overlay.addEventListener("wheel", (e) => {
     if (!overlay.classList.contains("open")) return;
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.08 : 0.92;
-    scale = clamp(scale * factor, minScale, maxScale);
+
+    const nextScale = clamp(scale * factor, minScale, maxScale);
+
+    // Zoom around center on wheel
+    const localMx = 0;
+    const localMy = 0;
+    const u = localMx / scale - tx;
+    const v = localMy / scale - ty;
+
+    tx = localMx / nextScale - u;
+    ty = localMy / nextScale - v;
+    scale = nextScale;
+
     clampTranslate();
     apply();
   }, { passive: false });
