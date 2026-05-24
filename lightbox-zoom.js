@@ -1,9 +1,160 @@
 // lightbox-zoom.js
-// Fix: Button nur anzeigen, wenn die Squarespace-Lightbox wirklich offen ist (sichtbar + itemId in URL).
+// - Button "Vollbild / Zoom" erscheint nur, wenn Squarespace-Lightbox wirklich offen ist (itemId + sichtbar)
+// - Klick auf Button öffnet eigenes Zoom-Overlay
+// - Zoom-Overlay: stabiler Pinch-Zoom + Pan + Double-Tap, mit Clamp gegen "wegfliegen"
+// - Close-X bleibt immer sichtbar
 
 (function () {
   // =========================
-  // Zoom Overlay (own)
+  // Helpers
+  // =========================
+  function hasItemId() {
+    return new URLSearchParams(location.search).has("itemId");
+  }
+
+  function getItemIdFromUrl() {
+    const p = new URLSearchParams(location.search);
+    return p.get("itemId") || "";
+  }
+
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
+  function dist(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  function mid(a, b) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  function largestSrcFromImg(img) {
+    if (!img) return null;
+    const srcset = img.getAttribute("srcset");
+    if (srcset) {
+      const candidates = srcset
+        .split(",")
+        .map((s) => s.trim().split(" ")[0])
+        .filter(Boolean);
+      if (candidates.length) return candidates[candidates.length - 1];
+    }
+    return img.getAttribute("data-src") || img.currentSrc || img.src;
+  }
+
+  function findLightboxRoot() {
+    return (
+      document.querySelector("[data-test='gallery-lightbox']") ||
+      document.querySelector(".gallery-lightbox") ||
+      document.querySelector(".sqs-image-lightbox") ||
+      document.querySelector(".sqs-lightbox")
+    );
+  }
+
+  function isOpenVisible(el) {
+    if (!el) return false;
+    if (el.getAttribute("aria-hidden") === "true") return false;
+
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") return false;
+    if (Number(cs.opacity || 1) <= 0.02) return false;
+
+    const r = el.getBoundingClientRect();
+    if (r.width < 20 || r.height < 20) return false;
+
+    return true;
+  }
+
+  function intersectionArea(r, vp) {
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    const right = Math.min(vp.w, r.right);
+    const bottom = Math.min(vp.h, r.bottom);
+    return Math.max(0, right - left) * Math.max(0, bottom - top);
+  }
+
+  // Bild in Lightbox finden (itemId bevorzugt; sonst sichtbares/zentriertes)
+  function findLightboxImg(root) {
+    if (!root) return null;
+
+    const itemId = getItemIdFromUrl();
+
+    if (itemId) {
+      const selectors = [
+        `[data-item-id="${itemId}"]`,
+        `[data-itemid="${itemId}"]`,
+        `[data-id="${itemId}"]`,
+        `[data-collection-id="${itemId}"]`,
+        `[id*="${itemId}"]`,
+      ];
+
+      for (const sel of selectors) {
+        const node = root.querySelector(sel);
+        if (node) {
+          const img = node.querySelector("img");
+          if (img) return img;
+        }
+      }
+
+      // broad fallback: any element with attribute containing itemId
+      const any = Array.from(root.querySelectorAll("*")).find((el) => {
+        for (const a of el.attributes) {
+          if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
+        }
+        return false;
+      });
+      if (any) {
+        const img = any.querySelector && any.querySelector("img");
+        if (img) return img;
+      }
+    }
+
+    const imgs = Array.from(root.querySelectorAll("img")).filter((img) => img && img.naturalWidth > 0);
+    if (!imgs.length) return null;
+
+    const vp = { w: window.innerWidth, h: window.innerHeight };
+    const cx = vp.w / 2, cy = vp.h / 2;
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const img of imgs) {
+      const cs = getComputedStyle(img);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
+
+      const opacity = Number(cs.opacity || 1);
+      if (opacity <= 0.05) continue;
+
+      const r = img.getBoundingClientRect();
+      if (r.width < 60 || r.height < 60) continue;
+
+      const areaInt = intersectionArea(r, vp);
+      if (areaInt <= 0) continue;
+
+      const areaImg = Math.max(1, r.width * r.height);
+      const visRatio = areaInt / areaImg;
+      if (visRatio < 0.35) continue;
+
+      const imgCx = r.left + r.width / 2;
+      const imgCy = r.top + r.height / 2;
+      const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
+
+      const score = areaInt * (0.5 + opacity) - centerDist * 900;
+      if (score > bestScore) {
+        bestScore = score;
+        best = img;
+      }
+    }
+
+    if (best) return best;
+
+    return imgs
+      .slice()
+      .sort((a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1))[0] || imgs[0];
+  }
+
+  // =========================
+  // Zoom Overlay
   // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
@@ -23,9 +174,7 @@
   let startDist = 0, startScale = 1, startMid = null, startTx = 0, startTy = 0;
   let lastTap = 0;
 
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-  function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+  let zoomBtn = null;
 
   function apply() {
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
@@ -36,6 +185,34 @@
     apply();
   }
 
+  function getImageBounds() {
+    const rect = zoomImg.getBoundingClientRect();
+    return { w: rect.width, h: rect.height };
+  }
+
+  function clampTranslate() {
+    // verhindert, dass Bild komplett aus dem sichtbaren Bereich fliegt
+    const { w, h } = getImageBounds();
+
+    const vw = window.innerWidth * 0.95;
+    const vh = window.innerHeight * 0.90;
+
+    const scaledW = w * scale;
+    const scaledH = h * scale;
+
+    if (scaledW <= vw) tx = 0;
+    else {
+      const maxX = (scaledW - vw) / 2;
+      tx = clamp(tx, -maxX, maxX);
+    }
+
+    if (scaledH <= vh) ty = 0;
+    else {
+      const maxY = (scaledH - vh) / 2;
+      ty = clamp(ty, -maxY, maxY);
+    }
+  }
+
   function openZoom(src) {
     if (!src) return;
     zoomImg.src = src;
@@ -43,8 +220,6 @@
     reset();
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
-
-    // hide button while zoom overlay is open
     if (zoomBtn) zoomBtn.style.display = "none";
   }
 
@@ -54,8 +229,6 @@
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
-
-    // show button again only if lightbox is still open
     updateButtonVisibility();
   }
 
@@ -65,17 +238,21 @@
     if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
   });
 
-  // Pinch/Pan/Double-tap
+  // -------- Stabiler Mobile-Zoom ----------
   zoomImg.style.touchAction = "none";
+  let lastPanPoint = null;
+
   zoomImg.addEventListener("pointerdown", (e) => {
     zoomImg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+    // Double-tap
     if (e.pointerType === "touch") {
       const now = Date.now();
       if (now - lastTap < 300) {
         if (scale === 1) scale = 2;
         else reset();
+        clampTranslate();
         apply();
         lastTap = 0;
         return;
@@ -83,185 +260,113 @@
       lastTap = now;
     }
 
+    if (pointers.size === 1) {
+      lastPanPoint = { x: e.clientX, y: e.clientY };
+    }
+
     if (pointers.size === 2) {
       const pts = Array.from(pointers.values());
       startDist = dist(pts[0], pts[1]);
       startScale = scale;
       startMid = mid(pts[0], pts[1]);
-      startTx = tx; startTy = ty;
+      startTx = tx;
+      startTy = ty;
+      lastPanPoint = null;
     }
   });
 
   zoomImg.addEventListener("pointermove", (e) => {
     if (!pointers.has(e.pointerId)) return;
+
+    const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+    // Pan (1 Finger)
     if (pointers.size === 1) {
       if (scale <= 1) return;
-      tx += e.movementX || 0;
-      ty += e.movementY || 0;
+
+      const lp = lastPanPoint || prev;
+      const dx = e.clientX - lp.x;
+      const dy = e.clientY - lp.y;
+
+      tx += dx;
+      ty += dy;
+
+      lastPanPoint = { x: e.clientX, y: e.clientY };
+
+      clampTranslate();
       apply();
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
+    // Pinch (2 Finger)
     if (pointers.size === 2) {
       const pts = Array.from(pointers.values());
       const d = dist(pts[0], pts[1]);
       const m = mid(pts[0], pts[1]);
 
-      scale = clamp(startScale * (d / startDist), minScale, maxScale);
-      tx = startTx + (m.x - startMid.x);
-      ty = startTy + (m.y - startMid.y);
+      const nextScale = clamp(startScale * (d / startDist), minScale, maxScale);
+      const ratio = nextScale / startScale;
+
+      // Zoom um den Pinch-Mittelpunkt: kompakt und stabil
+      tx = startTx + (m.x - startMid.x) + (startTx) * (ratio - 1);
+      ty = startTy + (m.y - startMid.y) + (startTy) * (ratio - 1);
+      scale = nextScale;
+
+      clampTranslate();
       apply();
+
+      e.preventDefault();
+      e.stopPropagation();
+      return;
     }
   }, { passive: false });
 
-  zoomImg.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
-  zoomImg.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
+  zoomImg.addEventListener("pointerup", (e) => {
+    pointers.delete(e.pointerId);
 
+    if (pointers.size === 1) {
+      const p = Array.from(pointers.values())[0];
+      lastPanPoint = p ? { x: p.x, y: p.y } : null;
+    }
+
+    if (pointers.size === 0) {
+      lastPanPoint = null;
+
+      if (scale < 1.02) {
+        reset();
+        apply();
+      } else {
+        clampTranslate();
+        apply();
+      }
+    }
+  });
+
+  zoomImg.addEventListener("pointercancel", (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      lastPanPoint = null;
+      clampTranslate();
+      apply();
+    }
+  });
+
+  // Desktop wheel zoom
   overlay.addEventListener("wheel", (e) => {
     if (!overlay.classList.contains("open")) return;
     e.preventDefault();
-    scale = clamp(scale * (e.deltaY < 0 ? 1.08 : 0.92), minScale, maxScale);
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    scale = clamp(scale * factor, minScale, maxScale);
+    clampTranslate();
     apply();
   }, { passive: false });
 
-  function largestSrcFromImg(img) {
-    if (!img) return null;
-    const srcset = img.getAttribute("srcset");
-    if (srcset) {
-      const candidates = srcset.split(",").map(s => s.trim().split(" ")[0]).filter(Boolean);
-      if (candidates.length) return candidates[candidates.length - 1];
-    }
-    return img.getAttribute("data-src") || img.currentSrc || img.src;
-  }
-
   // =========================
-  // Squarespace Lightbox detection
+  // Zoom Button (body)
   // =========================
-  function findLightboxRoot() {
-    return (
-      document.querySelector("[data-test='gallery-lightbox']") ||
-      document.querySelector(".gallery-lightbox") ||
-      document.querySelector(".sqs-image-lightbox") ||
-      document.querySelector(".sqs-lightbox")
-    );
-  }
-
-  function hasItemId() {
-    return new URLSearchParams(location.search).has("itemId");
-  }
-
-  function isOpenVisible(el) {
-    if (!el) return false;
-    if (el.getAttribute("aria-hidden") === "true") return false;
-
-    const cs = getComputedStyle(el);
-    if (cs.display === "none" || cs.visibility === "hidden") return false;
-    if (Number(cs.opacity || 1) <= 0.02) return false;
-
-    const r = el.getBoundingClientRect();
-    if (r.width < 20 || r.height < 20) return false;
-
-    return true;
-  }
-
-  function getItemIdFromUrl() {
-    const p = new URLSearchParams(location.search);
-    return p.get("itemId") || "";
-  }
-
-  function findLightboxImg(root) {
-    if (!root) return null;
-
-    const itemId = getItemIdFromUrl();
-
-    if (itemId) {
-      const selectors = [
-        `[data-item-id="${itemId}"]`,
-        `[data-itemid="${itemId}"]`,
-        `[data-id="${itemId}"]`,
-        `[data-collection-id="${itemId}"]`,
-        `[id*="${itemId}"]`
-      ];
-
-      for (const sel of selectors) {
-        const node = root.querySelector(sel);
-        if (node) {
-          const img = node.querySelector("img");
-          if (img) return img;
-        }
-      }
-
-      const any = Array.from(root.querySelectorAll("*")).find(el => {
-        for (const a of el.attributes) {
-          if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
-        }
-        return false;
-      });
-      if (any) {
-        const img = any.querySelector && any.querySelector("img");
-        if (img) return img;
-      }
-    }
-
-    const imgs = Array.from(root.querySelectorAll("img")).filter(img => img && img.naturalWidth > 0);
-    if (!imgs.length) return null;
-
-    const vp = { w: window.innerWidth, h: window.innerHeight };
-    const cx = vp.w / 2, cy = vp.h / 2;
-
-    function intersectionArea(r) {
-      const left = Math.max(0, r.left);
-      const top = Math.max(0, r.top);
-      const right = Math.min(vp.w, r.right);
-      const bottom = Math.min(vp.h, r.bottom);
-      return Math.max(0, right - left) * Math.max(0, bottom - top);
-    }
-
-    let best = null;
-    let bestScore = -Infinity;
-
-    for (const img of imgs) {
-      const cs = getComputedStyle(img);
-      if (cs.display === "none" || cs.visibility === "hidden") continue;
-
-      const opacity = Number(cs.opacity || 1);
-      if (opacity <= 0.05) continue;
-
-      const r = img.getBoundingClientRect();
-      if (r.width < 60 || r.height < 60) continue;
-
-      const areaInt = intersectionArea(r);
-      if (areaInt <= 0) continue;
-
-      const areaImg = Math.max(1, r.width * r.height);
-      const visRatio = areaInt / areaImg;
-      if (visRatio < 0.35) continue;
-
-      const imgCx = r.left + r.width / 2;
-      const imgCy = r.top + r.height / 2;
-      const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
-
-      const score = (areaInt * (0.5 + opacity)) - (centerDist * 900);
-      if (score > bestScore) {
-        bestScore = score;
-        best = img;
-      }
-    }
-
-    if (best) return best;
-
-    return imgs
-      .slice()
-      .sort((a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1))[0] || imgs[0];
-  }
-
-  // =========================
-  // Zoom Button (always clickable)
-  // =========================
-  let zoomBtn = null;
-
   function ensureZoomButton() {
     if (zoomBtn) return;
 
@@ -288,27 +393,21 @@
   function updateButtonVisibility() {
     ensureZoomButton();
 
-    // if zoom overlay open -> keep hidden
     if (overlay.classList.contains("open")) {
       zoomBtn.style.display = "none";
       return;
     }
 
     const root = findLightboxRoot();
-
-    // ✅ Nur anzeigen, wenn Lightbox wirklich offen ist:
-    // - URL hat itemId (Squarespace lightbox state)
-    // - Root ist sichtbar (nicht nur im DOM)
     const open = hasItemId() && isOpenVisible(root);
 
     zoomBtn.style.display = open ? "" : "none";
   }
 
-  // Observe DOM: show/hide button only
+  // Observe DOM + URL changes
   const obs = new MutationObserver(updateButtonVisibility);
   obs.observe(document.documentElement, { childList: true, subtree: true });
 
-  // URL polling: itemId changes when navigating next/prev or closing
   let lastSearch = location.search;
   setInterval(() => {
     if (location.search !== lastSearch) {
@@ -317,9 +416,7 @@
     }
   }, 200);
 
-  // Hard refresh visibility: lightbox sometimes closes without a helpful DOM mutation
   setInterval(updateButtonVisibility, 250);
 
-  // Initial
   updateButtonVisibility();
 })();
