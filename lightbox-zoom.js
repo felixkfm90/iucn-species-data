@@ -1,13 +1,16 @@
 // lightbox-zoom.js
-// Fix: Android Pinch springt auf "100%" beim 2. Finger -> PointerCapture entfernen + Pinch init im nächsten Frame
+// ✅ Ziel: Android-Overlay-Zoom wie “richtige” Lightbox
 // - Button "Vollbild / Zoom" erscheint nur, wenn Squarespace-Lightbox offen ist (itemId + sichtbar)
-// - Klick öffnet eigenes Zoom-Overlay
-// - Zoom-Overlay: Pinch + Pan + Double-Tap, Clamp gegen "wegfliegen"
-// - Close-X bleibt immer sichtbar
+// - Klick öffnet eigenes Overlay
+// - Overlay: Touch-basiert (kein PointerCapture), stabiler Pinch/Pan ohne “springt auf 100%”
+// - Pinch zoomt um Mittelpunkt zwischen den Fingern und startet aus aktuellem Ausschnitt
+// - 1-Finger Pan nur wenn gezoomt
+// - Clamp verhindert “wegfliegen”
+// - Close-X bleibt immer oben
 
 (function () {
   // =========================
-  // Helpers
+  // Lightbox (Squarespace) Helpers
   // =========================
   function hasItemId() {
     return new URLSearchParams(location.search).has("itemId");
@@ -16,31 +19,6 @@
   function getItemIdFromUrl() {
     const p = new URLSearchParams(location.search);
     return p.get("itemId") || "";
-  }
-
-  function clamp(v, a, b) {
-    return Math.max(a, Math.min(b, v));
-  }
-
-  function dist(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-  }
-
-  function mid(a, b) {
-    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  }
-
-  function largestSrcFromImg(img) {
-    if (!img) return null;
-    const srcset = img.getAttribute("srcset");
-    if (srcset) {
-      const candidates = srcset
-        .split(",")
-        .map((s) => s.trim().split(" ")[0])
-        .filter(Boolean);
-      if (candidates.length) return candidates[candidates.length - 1];
-    }
-    return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
 
   function findLightboxRoot() {
@@ -66,6 +44,10 @@
     return true;
   }
 
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
   function intersectionArea(r, vp) {
     const left = Math.max(0, r.left);
     const top = Math.max(0, r.top);
@@ -74,7 +56,19 @@
     return Math.max(0, right - left) * Math.max(0, bottom - top);
   }
 
-  // Bild in Lightbox finden (itemId bevorzugt; sonst sichtbares/zentriertes)
+  function largestSrcFromImg(img) {
+    if (!img) return null;
+    const srcset = img.getAttribute("srcset");
+    if (srcset) {
+      const candidates = srcset
+        .split(",")
+        .map((s) => s.trim().split(" ")[0])
+        .filter(Boolean);
+      if (candidates.length) return candidates[candidates.length - 1];
+    }
+    return img.getAttribute("data-src") || img.currentSrc || img.src;
+  }
+
   function findLightboxImg(root) {
     if (!root) return null;
 
@@ -164,6 +158,10 @@
   const zoomImg = overlay.querySelector("#gz-img");
   const closeBtn = overlay.querySelector("#gz-close");
 
+  // Make sure browser gestures are disabled inside overlay (also set in CSS ideally)
+  overlay.style.touchAction = "none";
+  zoomImg.style.touchAction = "none";
+
   // Transform state
   let scale = 1,
     tx = 0,
@@ -171,21 +169,19 @@
   const minScale = 1,
     maxScale = 6;
 
-  // Gesture state
-  const pointers = new Map();
-  let lastTap = 0;
-  let panLast = null;
-
-  // pinch = { startDist, startScale, u, v }
-  let pinch = null;
-
-  // Base size for clamp
+  // For clamping
   let baseW = 0,
     baseH = 0;
+
+  // Touch state
+  let lastTap = 0;
+  let lastPan = null; // {x,y}
+  let pinchState = null; // { startDist, startScale, u, v }
 
   let zoomBtn = null;
 
   function apply() {
+    // smooth feel
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
 
@@ -199,9 +195,9 @@
   function refreshBaseSize() {
     if (!overlay.classList.contains("open")) return;
 
-    const prevScale = scale,
-      prevTx = tx,
-      prevTy = ty;
+    const ps = scale,
+      ptx = tx,
+      pty = ty;
     scale = 1;
     tx = 0;
     ty = 0;
@@ -211,13 +207,13 @@
     baseW = r.width;
     baseH = r.height;
 
-    scale = prevScale;
-    tx = prevTx;
-    ty = prevTy;
+    scale = ps;
+    tx = ptx;
+    ty = pty;
     apply();
   }
 
-  // Clamp in translate->scale model: allowed tx range = overflow/scale
+  // Clamp for translate->scale: allowed tx/ty range is overflow/scale
   function clampTranslate() {
     if (!baseW || !baseH) return;
 
@@ -246,6 +242,7 @@
     if (!src) return;
 
     zoomImg.onload = () => {
+      // wait 1 paint
       setTimeout(() => {
         refreshBaseSize();
         clampTranslate();
@@ -255,13 +252,11 @@
 
     zoomImg.src = src;
     overlay.classList.add("open");
-
     zoomImg.style.willChange = "transform";
 
     reset();
-    pointers.clear();
-    panLast = null;
-    pinch = null;
+    lastPan = null;
+    pinchState = null;
 
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
@@ -275,9 +270,8 @@
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
 
-    pointers.clear();
-    panLast = null;
-    pinch = null;
+    lastPan = null;
+    pinchState = null;
 
     updateButtonVisibility();
   }
@@ -297,46 +291,42 @@
   });
 
   // =========================
-  // Gestures (Android-fix: NO PointerCapture, pinch init next frame)
+  // Touch gestures (stable)
   // =========================
-  zoomImg.style.touchAction = "none";
 
-  function getImageCenterScreen() {
-    const r = zoomImg.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  function touchDist(t1, t2) {
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
   }
 
-  function computePinchFromCurrentPointers() {
-    if (pointers.size !== 2) return;
+  function touchMidLocal(t1, t2) {
+    const mx = (t1.clientX + t2.clientX) / 2;
+    const my = (t1.clientY + t2.clientY) / 2;
 
-    const pts = Array.from(pointers.values());
-    const m = mid(pts[0], pts[1]);
-
-    const c = getImageCenterScreen();
-    const localMx = m.x - c.x;
-    const localMy = m.y - c.y;
-
-    pinch = {
-      startDist: dist(pts[0], pts[1]),
-      startScale: scale,
-      // local = scale*(u + tx) => u = local/scale - tx
-      u: localMx / scale - tx,
-      v: localMy / scale - ty,
-    };
+    // local midpoint relative to viewport center (transform-origin center)
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    return { x: mx - cx, y: my - cy };
   }
+
+  // Block browser pinch/scroll inside overlay
+  overlay.addEventListener(
+    "touchmove",
+    (e) => {
+      if (overlay.classList.contains("open")) e.preventDefault();
+    },
+    { passive: false }
+  );
 
   zoomImg.addEventListener(
-    "pointerdown",
+    "touchstart",
     (e) => {
-      // ✅ wichtig: kein setPointerCapture auf Android
+      if (!overlay.classList.contains("open")) return;
       e.preventDefault();
 
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      // Double-tap toggle
-      if (e.pointerType === "touch") {
+      // Double tap (1 finger)
+      if (e.touches.length === 1) {
         const now = Date.now();
-        if (now - lastTap < 300) {
+        if (now - lastTap < 280) {
           if (scale === 1) scale = 2;
           else reset();
           clampTranslate();
@@ -345,90 +335,99 @@
           return;
         }
         lastTap = now;
+
+        lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        pinchState = null;
       }
 
-      if (pointers.size === 1) {
-        panLast = { x: e.clientX, y: e.clientY };
-        pinch = null;
-        return;
-      }
+      if (e.touches.length === 2) {
+        lastPan = null;
 
-      if (pointers.size === 2) {
-        panLast = null;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const m = touchMidLocal(t1, t2);
+        const d = touchDist(t1, t2);
 
-        // ✅ pinch init im nächsten Frame (Android stabilisiert Pointer dann)
-        requestAnimationFrame(() => {
-          if (pointers.size === 2) computePinchFromCurrentPointers();
-        });
+        // Anchor to CURRENT visible content:
+        // local = scale*(u + tx)  => u = local/scale - tx
+        pinchState = {
+          startDist: d,
+          startScale: scale,
+          u: m.x / scale - tx,
+          v: m.y / scale - ty,
+        };
       }
     },
     { passive: false }
   );
 
   zoomImg.addEventListener(
-    "pointermove",
+    "touchmove",
     (e) => {
-      if (!pointers.has(e.pointerId)) return;
+      if (!overlay.classList.contains("open")) return;
       e.preventDefault();
 
-      const prev = pointers.get(e.pointerId);
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // 2-finger pinch
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
 
-      // Pan (1 finger)
-      if (pointers.size === 1) {
-        if (scale <= 1) return;
+        if (!pinchState) {
+          // initialize if missing
+          const m0 = touchMidLocal(t1, t2);
+          pinchState = {
+            startDist: touchDist(t1, t2),
+            startScale: scale,
+            u: m0.x / scale - tx,
+            v: m0.y / scale - ty,
+          };
+        }
 
-        const last = panLast || prev;
+        const m = touchMidLocal(t1, t2);
+        const d = touchDist(t1, t2);
 
-        tx += (e.clientX - last.x) / scale;
-        ty += (e.clientY - last.y) / scale;
+        const nextScale = clamp(pinchState.startScale * (d / pinchState.startDist), minScale, maxScale);
 
-        panLast = { x: e.clientX, y: e.clientY };
-
-        clampTranslate();
-        apply();
-        return;
-      }
-
-      // Pinch (2 fingers)
-      if (pointers.size === 2) {
-        if (!pinch) computePinchFromCurrentPointers();
-        if (!pinch) return;
-
-        const pts = Array.from(pointers.values());
-        const m = mid(pts[0], pts[1]);
-        const d = dist(pts[0], pts[1]);
-
-        const nextScale = clamp(pinch.startScale * (d / pinch.startDist), minScale, maxScale);
-
-        const c = getImageCenterScreen();
-        const localMx = m.x - c.x;
-        const localMy = m.y - c.y;
-
-        tx = localMx / nextScale - pinch.u;
-        ty = localMy / nextScale - pinch.v;
+        // keep same image-point under fingers:
+        // m = nextScale*(u + tx) => tx = m/nextScale - u
+        tx = m.x / nextScale - pinchState.u;
+        ty = m.y / nextScale - pinchState.v;
         scale = nextScale;
 
         clampTranslate();
         apply();
         return;
       }
+
+      // 1-finger pan (only if zoomed)
+      if (e.touches.length === 1 && scale > 1) {
+        const t = e.touches[0];
+        if (!lastPan) {
+          lastPan = { x: t.clientX, y: t.clientY };
+          return;
+        }
+
+        const dx = t.clientX - lastPan.x;
+        const dy = t.clientY - lastPan.y;
+
+        // pan in pre-scale coordinates for consistent speed
+        tx += dx / scale;
+        ty += dy / scale;
+
+        lastPan = { x: t.clientX, y: t.clientY };
+
+        clampTranslate();
+        apply();
+      }
     },
     { passive: false }
   );
 
-  function onPointerEnd(e) {
-    pointers.delete(e.pointerId);
-
-    if (pointers.size === 1) {
-      const p = Array.from(pointers.values())[0];
-      panLast = p ? { x: p.x, y: p.y } : null;
-      pinch = null;
-    }
-
-    if (pointers.size === 0) {
-      panLast = null;
-      pinch = null;
+  zoomImg.addEventListener(
+    "touchend",
+    () => {
+      lastPan = null;
+      pinchState = null;
 
       if (scale < 1.02) {
         reset();
@@ -436,14 +435,12 @@
         clampTranslate();
         apply();
       }
-    }
-  }
-
-  zoomImg.addEventListener("pointerup", onPointerEnd);
-  zoomImg.addEventListener("pointercancel", onPointerEnd);
+    },
+    { passive: true }
+  );
 
   // =========================
-  // Button
+  // Zoom Button (body)
   // =========================
   function ensureZoomButton() {
     if (zoomBtn) return;
