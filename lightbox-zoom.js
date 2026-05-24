@@ -1,10 +1,8 @@
 // lightbox-zoom.js
-// Smooth Android pinch/pan overlay for Squarespace gallery lightbox.
-// - Button shows only if lightbox is open (itemId + visible)
-// - Overlay uses translate(tx,ty) scale(scale) (smoother feel)
-// - Pinch anchor is based on the currently visible content (no restart feeling)
-// - Pan only when zoomed, clamp prevents losing image
-// - X always on top
+// - Button "Vollbild / Zoom" erscheint nur, wenn Squarespace-Lightbox wirklich offen ist (itemId + sichtbar)
+// - Klick auf Button öffnet eigenes Zoom-Overlay
+// - Zoom-Overlay: stabiler Pinch-Zoom + Pan + Double-Tap, mit Clamp gegen "wegfliegen"
+// - Close-X bleibt immer sichtbar
 
 (function () {
   // =========================
@@ -98,6 +96,7 @@
         }
       }
 
+      // broad fallback: any element with attribute containing itemId
       const any = Array.from(root.querySelectorAll("*")).find((el) => {
         for (const a of el.attributes) {
           if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
@@ -147,11 +146,15 @@
       }
     }
 
-    return best || imgs[0];
+    if (best) return best;
+
+    return imgs
+      .slice()
+      .sort((a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1))[0] || imgs[0];
   }
 
   // =========================
-  // Zoom Overlay DOM
+  // Zoom Overlay
   // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
@@ -164,25 +167,15 @@
   const zoomImg = overlay.querySelector("#gz-img");
   const closeBtn = overlay.querySelector("#gz-close");
 
-  // Transform state
   let scale = 1, tx = 0, ty = 0;
   const minScale = 1, maxScale = 6;
 
-  // Gesture state
   const pointers = new Map();
+  let startDist = 0, startScale = 1, startMid = null, startTx = 0, startTy = 0;
   let lastTap = 0;
-  let panLast = null; // {x,y}
-
-  // pinch = { startDist, startScale, u, v }
-  // u/v are the image-space coords under the pinch midpoint in pre-scale translate space
-  let pinch = null;
-
-  // Base (unscaled) size for clamp
-  let baseW = 0, baseH = 0;
 
   let zoomBtn = null;
 
-  // Apply transform: translate then scale (smoother feel)
   function apply() {
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
@@ -192,73 +185,39 @@
     apply();
   }
 
-  function refreshBaseSize() {
-    if (!overlay.classList.contains("open")) return;
-
-    // measure at scale=1, tx=ty=0
-    const prevScale = scale, prevTx = tx, prevTy = ty;
-    scale = 1; tx = 0; ty = 0;
-    apply();
-
-    const r = zoomImg.getBoundingClientRect();
-    baseW = r.width;
-    baseH = r.height;
-
-    scale = prevScale; tx = prevTx; ty = prevTy;
-    apply();
+  function getImageBounds() {
+    const rect = zoomImg.getBoundingClientRect();
+    return { w: rect.width, h: rect.height };
   }
 
-  // Clamp in translate->scale coordinate system:
-  // screen half overflow = (baseW*scale - vw)/2
-  // but tx is applied BEFORE scale, so allowed tx range is overflow/scale
   function clampTranslate() {
-    if (!baseW || !baseH) return;
+    // verhindert, dass Bild komplett aus dem sichtbaren Bereich fliegt
+    const { w, h } = getImageBounds();
 
     const vw = window.innerWidth * 0.95;
     const vh = window.innerHeight * 0.90;
 
-    const scaledW = baseW * scale;
-    const scaledH = baseH * scale;
+    const scaledW = w * scale;
+    const scaledH = h * scale;
 
     if (scaledW <= vw) tx = 0;
     else {
-      const overflowX = (scaledW - vw) / 2;
-      const maxTx = overflowX / scale;
-      tx = clamp(tx, -maxTx, maxTx);
+      const maxX = (scaledW - vw) / 2;
+      tx = clamp(tx, -maxX, maxX);
     }
 
     if (scaledH <= vh) ty = 0;
     else {
-      const overflowY = (scaledH - vh) / 2;
-      const maxTy = overflowY / scale;
-      ty = clamp(ty, -maxTy, maxTy);
+      const maxY = (scaledH - vh) / 2;
+      ty = clamp(ty, -maxY, maxY);
     }
   }
 
   function openZoom(src) {
     if (!src) return;
-
-    zoomImg.onload = () => {
-      // allow one paint, then measure
-      setTimeout(() => {
-        refreshBaseSize();
-        clampTranslate();
-        apply();
-      }, 0);
-    };
-
     zoomImg.src = src;
     overlay.classList.add("open");
-
-    // performance hints
-    zoomImg.style.willChange = "transform";
-
-    // reset state
     reset();
-    pointers.clear();
-    panLast = null;
-    pinch = null;
-
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
     if (zoomBtn) zoomBtn.style.display = "none";
@@ -267,14 +226,9 @@
   function closeZoom() {
     overlay.classList.remove("open");
     zoomImg.src = "";
-    zoomImg.style.willChange = "";
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
-
     pointers.clear();
-    panLast = null;
-    pinch = null;
-
     updateButtonVisibility();
   }
 
@@ -284,42 +238,15 @@
     if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
   });
 
-  window.addEventListener("resize", () => {
-    refreshBaseSize();
-    clampTranslate();
-    apply();
-  });
-
-  // =========================
-  // Gestures (Pinch->Pan->Pinch)
-  // =========================
+  // -------- Stabiler Mobile-Zoom ----------
   zoomImg.style.touchAction = "none";
-
-  function beginPinch() {
-    const pts = Array.from(pointers.values());
-    const m = mid(pts[0], pts[1]);
-
-    // local midpoint relative to viewport center
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    const localMx = m.x - cx;
-    const localMy = m.y - cy;
-
-    pinch = {
-      startDist: dist(pts[0], pts[1]),
-      startScale: scale,
-      // In translate->scale: screenLocal = scale * (u + tx)
-      // => u = screenLocal/scale - tx
-      u: localMx / scale - tx,
-      v: localMy / scale - ty
-    };
-  }
+  let lastPanPoint = null;
 
   zoomImg.addEventListener("pointerdown", (e) => {
     zoomImg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Double-tap toggle
+    // Double-tap
     if (e.pointerType === "touch") {
       const now = Date.now();
       if (now - lastTap < 300) {
@@ -334,13 +261,17 @@
     }
 
     if (pointers.size === 1) {
-      panLast = { x: e.clientX, y: e.clientY };
-      pinch = null;
+      lastPanPoint = { x: e.clientX, y: e.clientY };
     }
 
     if (pointers.size === 2) {
-      panLast = null;
-      beginPinch();
+      const pts = Array.from(pointers.values());
+      startDist = dist(pts[0], pts[1]);
+      startScale = scale;
+      startMid = mid(pts[0], pts[1]);
+      startTx = tx;
+      startTy = ty;
+      lastPanPoint = null;
     }
   });
 
@@ -350,45 +281,45 @@
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Pan (1 finger)
+    // Pan (1 Finger)
     if (pointers.size === 1) {
       if (scale <= 1) return;
 
-      const last = panLast || prev;
-      tx += (e.clientX - last.x) / scale; // keep pan speed consistent with scale
-      ty += (e.clientY - last.y) / scale;
-      panLast = { x: e.clientX, y: e.clientY };
+      const lp = lastPanPoint || prev;
+      const dx = e.clientX - lp.x;
+      const dy = e.clientY - lp.y;
+
+      tx += dx;
+      ty += dy;
+
+      lastPanPoint = { x: e.clientX, y: e.clientY };
 
       clampTranslate();
       apply();
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
-    // Pinch (2 fingers)
+    // Pinch (2 Finger)
     if (pointers.size === 2) {
-      if (!pinch) beginPinch();
-
       const pts = Array.from(pointers.values());
-      const m = mid(pts[0], pts[1]);
       const d = dist(pts[0], pts[1]);
+      const m = mid(pts[0], pts[1]);
 
-      const nextScale = clamp(pinch.startScale * (d / pinch.startDist), minScale, maxScale);
+      const nextScale = clamp(startScale * (d / startDist), minScale, maxScale);
+      const ratio = nextScale / startScale;
 
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      const localMx = m.x - cx;
-      const localMy = m.y - cy;
-
-      // Keep same image-space point (u/v) under fingers:
-      // localM = nextScale * (u + tx) => tx = localM/nextScale - u
-      tx = localMx / nextScale - pinch.u;
-      ty = localMy / nextScale - pinch.v;
+      // Zoom um den Pinch-Mittelpunkt: kompakt und stabil
+      tx = startTx + (m.x - startMid.x) + (startTx) * (ratio - 1);
+      ty = startTy + (m.y - startMid.y) + (startTy) * (ratio - 1);
       scale = nextScale;
 
       clampTranslate();
       apply();
+
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
   }, { passive: false });
@@ -398,16 +329,15 @@
 
     if (pointers.size === 1) {
       const p = Array.from(pointers.values())[0];
-      panLast = p ? { x: p.x, y: p.y } : null;
-      pinch = null;
+      lastPanPoint = p ? { x: p.x, y: p.y } : null;
     }
 
     if (pointers.size === 0) {
-      panLast = null;
-      pinch = null;
+      lastPanPoint = null;
 
       if (scale < 1.02) {
         reset();
+        apply();
       } else {
         clampTranslate();
         apply();
@@ -418,8 +348,7 @@
   zoomImg.addEventListener("pointercancel", (e) => {
     pointers.delete(e.pointerId);
     if (pointers.size === 0) {
-      panLast = null;
-      pinch = null;
+      lastPanPoint = null;
       clampTranslate();
       apply();
     }
@@ -430,19 +359,7 @@
     if (!overlay.classList.contains("open")) return;
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.08 : 0.92;
-
-    const nextScale = clamp(scale * factor, minScale, maxScale);
-
-    // Zoom around center on wheel
-    const localMx = 0;
-    const localMy = 0;
-    const u = localMx / scale - tx;
-    const v = localMy / scale - ty;
-
-    tx = localMx / nextScale - u;
-    ty = localMy / nextScale - v;
-    scale = nextScale;
-
+    scale = clamp(scale * factor, minScale, maxScale);
     clampTranslate();
     apply();
   }, { passive: false });
@@ -483,9 +400,11 @@
 
     const root = findLightboxRoot();
     const open = hasItemId() && isOpenVisible(root);
+
     zoomBtn.style.display = open ? "" : "none";
   }
 
+  // Observe DOM + URL changes
   const obs = new MutationObserver(updateButtonVisibility);
   obs.observe(document.documentElement, { childList: true, subtree: true });
 
