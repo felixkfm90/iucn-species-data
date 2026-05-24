@@ -126,10 +126,53 @@
     );
   }
 
-  function findLightboxImg(root) {
-    if (!root) return null;
-    return root.querySelector("img");
+function findLightboxImg(root) {
+  if (!root) return null;
+
+  const imgs = Array.from(root.querySelectorAll("img"))
+    .filter(img => img && img.naturalWidth > 0);
+
+  if (!imgs.length) return null;
+
+  // wähle das "aktuell sichtbare" Bild:
+  // - nicht display:none / visibility hidden
+  // - höchste Opacity
+  // - größte sichtbare Fläche im Viewport
+  const vp = { w: window.innerWidth, h: window.innerHeight };
+
+  let best = null;
+  let bestScore = -1;
+
+  for (const img of imgs) {
+    const cs = getComputedStyle(img);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+
+    const opacity = Number(cs.opacity || 1);
+    if (opacity <= 0.05) continue;
+
+    const r = img.getBoundingClientRect();
+
+    // sichtbare Fläche grob via Intersection mit Viewport
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    const right = Math.min(vp.w, r.right);
+    const bottom = Math.min(vp.h, r.bottom);
+
+    const w = Math.max(0, right - left);
+    const h = Math.max(0, bottom - top);
+    const area = w * h;
+
+    const score = area * (0.5 + opacity);
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = img;
+    }
   }
+
+  // fallback: erstes img
+  return best || imgs[0];
+}
 
   function ensureZoomButton(root) {
     if (!root) return;
