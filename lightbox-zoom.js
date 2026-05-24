@@ -1,6 +1,6 @@
-// lightbox-zoom.js (Galerie-CTA "Vollbild/Zoom", ohne Galerie-Interferenz)
+// lightbox-zoom.js (CTA in Squarespace Lightbox: "Vollbild / Zoom")
 (function () {
-  // ---------- Overlay ----------
+  // =============== Overlay (Zoom) ===============
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
   overlay.innerHTML = `
@@ -9,12 +9,11 @@
   `;
   document.body.appendChild(overlay);
 
-  const imgEl = overlay.querySelector("#gz-img");
+  const zoomImg = overlay.querySelector("#gz-img");
   const closeBtn = overlay.querySelector("#gz-close");
 
   let scale = 1, tx = 0, ty = 0;
   const minScale = 1, maxScale = 6;
-
   const pointers = new Map();
   let startDist = 0, startScale = 1, startMid = null, startTx = 0, startTy = 0;
   let lastTap = 0;
@@ -23,18 +22,12 @@
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 
-  function apply() {
-    imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-  }
-
-  function reset() {
-    scale = 1; tx = 0; ty = 0;
-    apply();
-  }
+  function apply() { zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
 
   function openZoom(src) {
     if (!src) return;
-    imgEl.src = src;
+    zoomImg.src = src;
     overlay.classList.add("open");
     reset();
     document.documentElement.classList.add("gz-noscroll");
@@ -43,7 +36,7 @@
 
   function closeZoom() {
     overlay.classList.remove("open");
-    imgEl.src = "";
+    zoomImg.src = "";
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
@@ -53,10 +46,10 @@
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom(); });
 
-  // Zoom/Pinch/Pan/Doppeltipp
-  imgEl.style.touchAction = "none";
-  imgEl.addEventListener("pointerdown", (e) => {
-    imgEl.setPointerCapture(e.pointerId);
+  // Pinch/Pan/Double-tap
+  zoomImg.style.touchAction = "none";
+  zoomImg.addEventListener("pointerdown", (e) => {
+    zoomImg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (e.pointerType === "touch") {
@@ -80,7 +73,7 @@
     }
   });
 
-  imgEl.addEventListener("pointermove", (e) => {
+  zoomImg.addEventListener("pointermove", (e) => {
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -103,8 +96,8 @@
     }
   }, { passive: false });
 
-  imgEl.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
-  imgEl.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
+  zoomImg.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
+  zoomImg.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
 
   overlay.addEventListener("wheel", (e) => {
     if (!overlay.classList.contains("open")) return;
@@ -113,7 +106,6 @@
     apply();
   }, { passive: false });
 
-  // ---------- Bild-Extraktion: größtes src aus srcset ----------
   function largestSrcFromImg(img) {
     if (!img) return null;
     const srcset = img.getAttribute("srcset");
@@ -124,76 +116,56 @@
     return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
 
-  // ---------- Heuristik: aktuell sichtbares Bild in Galerie finden ----------
-  function getCurrentGalleryImageSrc(galleryEl) {
-    const imgs = Array.from(galleryEl.querySelectorAll("img"))
-      .filter(img => img && img.offsetParent !== null && img.clientWidth > 20 && img.clientHeight > 20);
-
-    if (!imgs.length) return null;
-
-    // bevorzugt: Bild mit größter sichtbarer Fläche im Viewport der Galerie
-    const gRect = galleryEl.getBoundingClientRect();
-
-    let best = null;
-    let bestScore = -1;
-
-    for (const img of imgs) {
-      const r = img.getBoundingClientRect();
-
-      // Schnittfläche (Intersection Area)
-      const left = Math.max(r.left, gRect.left);
-      const top = Math.max(r.top, gRect.top);
-      const right = Math.min(r.right, gRect.right);
-      const bottom = Math.min(r.bottom, gRect.bottom);
-
-      const w = Math.max(0, right - left);
-      const h = Math.max(0, bottom - top);
-      const area = w * h;
-
-      // Opacity/Visibility mitbewerten
-      const cs = getComputedStyle(img);
-      const opacity = Number(cs.opacity || 1);
-      const visibleBonus = (cs.visibility !== "hidden" && cs.display !== "none") ? 1 : 0;
-
-      const score = area * (0.5 + opacity) + visibleBonus;
-
-      if (score > bestScore) {
-        bestScore = score;
-        best = img;
-      }
-    }
-
-    return largestSrcFromImg(best) || largestSrcFromImg(imgs[0]);
+  // =============== Squarespace Lightbox: Button injizieren ===============
+  function findLightboxRoot() {
+    return (
+      document.querySelector("[data-test='gallery-lightbox']") ||
+      document.querySelector(".gallery-lightbox") ||
+      document.querySelector(".sqs-image-lightbox") ||
+      document.querySelector(".sqs-lightbox")
+    );
   }
 
-  // ---------- CTA unter Galerie injizieren ----------
-  function injectButtons() {
-    const galleries = document.querySelectorAll(".sqs-block-gallery, .gallery-block, .sqs-gallery");
-    galleries.forEach((g) => {
-      // schon vorhanden?
-      if (g.parentElement && g.parentElement.querySelector(":scope > .gz-cta-wrap")) return;
+  function findLightboxImg(root) {
+    if (!root) return null;
+    return root.querySelector("img");
+  }
 
-      const wrap = document.createElement("div");
-      wrap.className = "gz-cta-wrap";
-      wrap.innerHTML = `
-        <button type="button" class="gz-cta-btn">Vollbild / Zoom</button>
-      `;
+  function ensureZoomButton(root) {
+    if (!root) return;
 
-      const btn = wrap.querySelector(".gz-cta-btn");
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const src = getCurrentGalleryImageSrc(g);
-        if (!src) return;
-        openZoom(src);
-      });
+    // wo Buttons sitzen: meist Control-Bar
+    const controls =
+      root.querySelector(".gallery-lightbox-control") ||
+      root.querySelector(".gallery-lightbox-controls") ||
+      root.querySelector("[data-test='gallery-lightbox-controls']") ||
+      root;
 
-      // direkt unter der Galerie einfügen
-      g.insertAdjacentElement("afterend", wrap);
+    if (controls.querySelector(".gz-zoom-btn")) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "gz-zoom-btn";
+    btn.textContent = "Vollbild / Zoom";
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const img = findLightboxImg(root);
+      const src = largestSrcFromImg(img);
+      openZoom(src);
     });
+
+    controls.appendChild(btn);
   }
 
-  // initial + nachträglich (Squarespace lädt oft dynamisch)
-  injectButtons();
-  const obs = new MutationObserver(() => injectButtons());
+  // Beobachter nur zum *Button-Inject*, NICHT zum Auto-Open
+  const obs = new MutationObserver(() => {
+    const root = findLightboxRoot();
+    if (!root) return;
+    ensureZoomButton(root);
+  });
+
   obs.observe(document.documentElement, { childList: true, subtree: true });
 })();
