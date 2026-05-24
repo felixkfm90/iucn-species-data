@@ -1,13 +1,123 @@
 // lightbox-zoom.js
 (function () {
-  let activeImg = null;
-  let cleanupCurrent = null;
+  // ---------- Zoom-Overlay (eigenes) ----------
+  const overlay = document.createElement("div");
+  overlay.id = "gz-overlay";
+  overlay.innerHTML = `
+    <button id="gz-close" aria-label="Schließen">×</button>
+    <img id="gz-img" alt="Zoom">
+  `;
+  document.body.appendChild(overlay);
 
-  function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
+  const imgEl = overlay.querySelector("#gz-img");
+  const closeBtn = overlay.querySelector("#gz-close");
+
+  let scale = 1, tx = 0, ty = 0;
+  const minScale = 1, maxScale = 6;
+
+  const pointers = new Map();
+  let startDist = 0, startScale = 1, startMid = null, startTx = 0, startTy = 0;
+  let lastTap = 0;
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+
+  function apply() {
+    imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
 
-  function findLightboxImg() {
+  function reset() {
+    scale = 1; tx = 0; ty = 0;
+    apply();
+  }
+
+  function openZoom(src) {
+    if (!src) return;
+    imgEl.src = src;
+    overlay.classList.add("open");
+    reset();
+    document.documentElement.classList.add("gz-noscroll");
+    document.body.classList.add("gz-noscroll");
+  }
+
+  function closeZoom() {
+    overlay.classList.remove("open");
+    imgEl.src = "";
+    document.documentElement.classList.remove("gz-noscroll");
+    document.body.classList.remove("gz-noscroll");
+    pointers.clear();
+  }
+
+  closeBtn.addEventListener("click", closeZoom);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
+  });
+
+  // Pinch/Pan/Double-tap auf dem Overlay-Bild
+  imgEl.style.touchAction = "none";
+  imgEl.addEventListener("pointerdown", (e) => {
+    imgEl.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (e.pointerType === "touch") {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        if (scale === 1) scale = 2;
+        else reset();
+        apply();
+        lastTap = 0;
+        return;
+      }
+      lastTap = now;
+    }
+
+    if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      startDist = dist(pts[0], pts[1]);
+      startScale = scale;
+      startMid = mid(pts[0], pts[1]);
+      startTx = tx; startTy = ty;
+    }
+  });
+
+  imgEl.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.size === 1) {
+      if (scale <= 1) return;
+      tx += e.movementX || 0;
+      ty += e.movementY || 0;
+      apply();
+      return;
+    }
+
+    if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      const d = dist(pts[0], pts[1]);
+      const m = mid(pts[0], pts[1]);
+
+      scale = clamp(startScale * (d / startDist), minScale, maxScale);
+      tx = startTx + (m.x - startMid.x);
+      ty = startTy + (m.y - startMid.y);
+      apply();
+    }
+  }, { passive: false });
+
+  imgEl.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
+  imgEl.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
+
+  overlay.addEventListener("wheel", (e) => {
+    if (!overlay.classList.contains("open")) return;
+    e.preventDefault();
+    scale = clamp(scale * (e.deltaY < 0 ? 1.08 : 0.92), minScale, maxScale);
+    apply();
+  }, { passive: false });
+
+  // ---------- Squarespace Lightbox erkennen und ersetzen ----------
+  function findSqLightboxImg() {
     return (
       document.querySelector("[data-test='gallery-lightbox'] img") ||
       document.querySelector(".gallery-lightbox img") ||
@@ -16,199 +126,34 @@
     );
   }
 
-  function enhanceImage(img) {
-    if (!img || img === activeImg) return;
-
-    if (cleanupCurrent) cleanupCurrent();
-
-    activeImg = img;
-
-    const state = {
-      scale: 1,
-      minScale: 1,
-      maxScale: 5,
-      tx: 0,
-      ty: 0,
-      pointers: new Map(),
-      startDist: 0,
-      startScale: 1,
-      startMid: null,
-      startTx: 0,
-      startTy: 0,
-      lastTap: 0
-    };
-
-    img.style.touchAction = "none";
-    img.style.transformOrigin = "center center";
-    img.style.userSelect = "none";
-    img.style.webkitUserDrag = "none";
-    img.style.cursor = "grab";
-    img.style.transition = "transform 0.05s linear";
-
-    function apply() {
-      img.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
-    }
-
-    function reset() {
-      state.scale = 1;
-      state.tx = 0;
-      state.ty = 0;
-      apply();
-    }
-
-    function dist(a, b) {
-      const dx = a.x - b.x;
-      const dy = a.y - b.y;
-      return Math.hypot(dx, dy);
-    }
-
-    function midpoint(a, b) {
-      return {
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2
-      };
-    }
-
-    function onPointerDown(e) {
-      e.stopPropagation();
-
-      img.setPointerCapture(e.pointerId);
-      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      if (e.pointerType === "touch") {
-        const now = Date.now();
-        if (now - state.lastTap < 300) {
-          if (state.scale === 1) {
-            state.scale = 2;
-          } else {
-            reset();
-          }
-          apply();
-          state.lastTap = 0;
-          return;
-        }
-        state.lastTap = now;
-      }
-
-      if (state.pointers.size === 2) {
-        const pts = Array.from(state.pointers.values());
-        state.startDist = dist(pts[0], pts[1]);
-        state.startScale = state.scale;
-        state.startMid = midpoint(pts[0], pts[1]);
-        state.startTx = state.tx;
-        state.startTy = state.ty;
-      }
-    }
-
-    function onPointerMove(e) {
-      if (!state.pointers.has(e.pointerId)) return;
-
-      e.stopPropagation();
-      e.preventDefault();
-
-      const prev = state.pointers.get(e.pointerId);
-      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      if (state.pointers.size === 1) {
-        if (state.scale <= 1) return;
-
-        const dx = e.clientX - prev.x;
-        const dy = e.clientY - prev.y;
-
-        state.tx += dx;
-        state.ty += dy;
-        apply();
-        return;
-      }
-
-      if (state.pointers.size === 2) {
-        const pts = Array.from(state.pointers.values());
-        const d = dist(pts[0], pts[1]);
-        const mid = midpoint(pts[0], pts[1]);
-
-        state.scale = clamp(
-          state.startScale * (d / state.startDist),
-          state.minScale,
-          state.maxScale
-        );
-
-        state.tx = state.startTx + (mid.x - state.startMid.x);
-        state.ty = state.startTy + (mid.y - state.startMid.y);
-
-        apply();
-      }
-    }
-
-    function onPointerUp(e) {
-      state.pointers.delete(e.pointerId);
-      if (state.scale <= 1) {
-        state.tx = 0;
-        state.ty = 0;
-        apply();
-      }
-    }
-
-    function onWheel(e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const factor = e.deltaY < 0 ? 1.1 : 0.9;
-      state.scale = clamp(state.scale * factor, state.minScale, state.maxScale);
-
-      if (state.scale <= 1) {
-        state.tx = 0;
-        state.ty = 0;
-      }
-
-      apply();
-    }
-
-    function onClick(e) {
-      // verhindert, dass Tap/Klick wieder nur "weiter" schaltet
-      e.stopPropagation();
-    }
-
-    img.addEventListener("pointerdown", onPointerDown);
-    img.addEventListener("pointermove", onPointerMove, { passive: false });
-    img.addEventListener("pointerup", onPointerUp);
-    img.addEventListener("pointercancel", onPointerUp);
-    img.addEventListener("wheel", onWheel, { passive: false });
-    img.addEventListener("click", onClick, true);
-
-    const srcObserver = new MutationObserver(() => {
-      reset();
-    });
-    srcObserver.observe(img, { attributes: true, attributeFilter: ["src"] });
-
-    cleanupCurrent = function () {
-      img.removeEventListener("pointerdown", onPointerDown);
-      img.removeEventListener("pointermove", onPointerMove);
-      img.removeEventListener("pointerup", onPointerUp);
-      img.removeEventListener("pointercancel", onPointerUp);
-      img.removeEventListener("wheel", onWheel);
-      img.removeEventListener("click", onClick, true);
-      srcObserver.disconnect();
-      img.style.transform = "";
-      img.style.touchAction = "";
-      img.style.transformOrigin = "";
-      img.style.userSelect = "";
-      img.style.webkitUserDrag = "";
-      img.style.cursor = "";
-      img.style.transition = "";
-    };
+  function closeSqLightbox() {
+    const btn =
+      document.querySelector("[data-test='gallery-lightbox-close-button']") ||
+      document.querySelector(".gallery-lightbox-control-close") ||
+      document.querySelector(".sqs-image-lightbox-close") ||
+      document.querySelector(".sqs-lightbox-close");
+    if (btn) { btn.click(); return; }
+    // fallback: ESC
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
   }
 
-  const observer = new MutationObserver(() => {
-    const img = findLightboxImg();
-    if (img) enhanceImage(img);
+  let lastSrc = null;
+
+  const obs = new MutationObserver(() => {
+    const sqImg = findSqLightboxImg();
+    if (!sqImg) return;
+
+    const src = sqImg.currentSrc || sqImg.src;
+    if (!src) return;
+
+    // nicht mehrfach triggern
+    if (src === lastSrc) return;
+    lastSrc = src;
+
+    // Squarespace-Lightbox zu, eigenes Zoom auf
+    closeSqLightbox();
+    setTimeout(() => openZoom(src), 60);
   });
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
-
-  // initialer Check
-  const firstImg = findLightboxImg();
-  if (firstImg) enhanceImage(firstImg);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
 })();
