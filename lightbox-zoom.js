@@ -1,6 +1,8 @@
 // lightbox-zoom.js
-// Lightbox button "Vollbild / Zoom" (appended to body) + own zoom overlay.
-// Fixes: pick CURRENT lightbox image reliably + hide button while zoom overlay open.
+// Squarespace Gallery Lightbox: shows a "Vollbild / Zoom" button (fixed top center).
+// Button always clickable (appended to body), only visible while Squarespace lightbox is open
+// and our zoom overlay is NOT open.
+// Fix: selects the CURRENT lightbox image using ?itemId=... to avoid "next image" offset.
 
 (function () {
   // =========================
@@ -45,7 +47,7 @@
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
 
-    // ✅ Button ausblenden, solange Zoom offen ist
+    // hide button while zoom overlay is open
     if (zoomBtn) zoomBtn.style.display = "none";
   }
 
@@ -56,7 +58,7 @@
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
 
-    // ✅ Button nur wieder zeigen, wenn Lightbox noch offen ist
+    // show button again only if lightbox is still open
     const root = findLightboxRoot();
     if (zoomBtn) zoomBtn.style.display = root ? "" : "none";
   }
@@ -150,27 +152,61 @@
     );
   }
 
-  function intersectionArea(r, vp) {
-    const left = Math.max(0, r.left);
-    const top = Math.max(0, r.top);
-    const right = Math.min(vp.w, r.right);
-    const bottom = Math.min(vp.h, r.bottom);
-    const w = Math.max(0, right - left);
-    const h = Math.max(0, bottom - top);
-    return w * h;
+  function getItemIdFromUrl() {
+    const p = new URLSearchParams(location.search);
+    return p.get("itemId") || "";
   }
 
   function findLightboxImg(root) {
     if (!root) return null;
 
-    const imgs = Array.from(root.querySelectorAll("img"))
-      .filter(img => img && img.naturalWidth > 0);
+    const itemId = getItemIdFromUrl();
 
+    // 1) Try to locate the active item wrapper by itemId
+    if (itemId) {
+      const selectors = [
+        `[data-item-id="${itemId}"]`,
+        `[data-itemid="${itemId}"]`,
+        `[data-id="${itemId}"]`,
+        `[data-collection-id="${itemId}"]`,
+        `[id*="${itemId}"]`
+      ];
+
+      for (const sel of selectors) {
+        const node = root.querySelector(sel);
+        if (node) {
+          const img = node.querySelector("img");
+          if (img) return img;
+        }
+      }
+
+      // also try: any node with attributes containing the itemId
+      const any = Array.from(root.querySelectorAll("*")).find(el => {
+        for (const a of el.attributes) {
+          if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
+        }
+        return false;
+      });
+      if (any) {
+        const img = any.querySelector && any.querySelector("img");
+        if (img) return img;
+      }
+    }
+
+    // 2) Fallback: pick best visible img
+    const imgs = Array.from(root.querySelectorAll("img")).filter(img => img && img.naturalWidth > 0);
     if (!imgs.length) return null;
 
     const vp = { w: window.innerWidth, h: window.innerHeight };
-    const cx = vp.w / 2;
-    const cy = vp.h / 2;
+    const cx = vp.w / 2, cy = vp.h / 2;
+
+    function intersectionArea(r) {
+      const left = Math.max(0, r.left);
+      const top = Math.max(0, r.top);
+      const right = Math.min(vp.w, r.right);
+      const bottom = Math.min(vp.h, r.bottom);
+      return Math.max(0, right - left) * Math.max(0, bottom - top);
+    }
 
     let best = null;
     let bestScore = -Infinity;
@@ -185,46 +221,32 @@
       const r = img.getBoundingClientRect();
       if (r.width < 60 || r.height < 60) continue;
 
-      const areaInt = intersectionArea(r, vp);
+      const areaInt = intersectionArea(r);
       if (areaInt <= 0) continue;
 
       const areaImg = Math.max(1, r.width * r.height);
       const visRatio = areaInt / areaImg;
 
-      // ✅ wichtig: preloads/next-slides haben oft nur einen kleinen Schnitt oder sind offscreen
-      if (visRatio < 0.25) continue;
+      // keep only fairly visible images
+      if (visRatio < 0.35) continue;
 
       const imgCx = r.left + r.width / 2;
       const imgCy = r.top + r.height / 2;
       const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
 
-      // Score: viel Fläche + hohe Opazität + nahe am Zentrum
-      const score = (areaInt * (0.5 + opacity)) - (centerDist * 800);
-
+      const score = (areaInt * (0.5 + opacity)) - (centerDist * 900);
       if (score > bestScore) {
         bestScore = score;
         best = img;
       }
     }
 
-    // Fallback: wenn Filter zu streng war, nimm das größte sichtbare
     if (best) return best;
 
-    let fallback = null;
-    let fbScore = -Infinity;
-    for (const img of imgs) {
-      const cs = getComputedStyle(img);
-      if (cs.display === "none" || cs.visibility === "hidden") continue;
-      const opacity = Number(cs.opacity || 1);
-      if (opacity <= 0.05) continue;
-
-      const r = img.getBoundingClientRect();
-      const areaInt = intersectionArea(r, vp);
-      const score = areaInt * (0.5 + opacity);
-      if (score > fbScore) { fbScore = score; fallback = img; }
-    }
-
-    return fallback || imgs[0];
+    // last resort: highest opacity
+    return imgs
+      .slice()
+      .sort((a, b) => Number(getComputedStyle(b).opacity || 1) - Number(getComputedStyle(a).opacity || 1))[0] || imgs[0];
   }
 
   // =========================
@@ -238,7 +260,7 @@
       zoomBtn.type = "button";
       zoomBtn.className = "gz-zoom-btn";
       zoomBtn.textContent = "Vollbild / Zoom";
-      zoomBtn.style.display = "none";
+      zoomBtn.style.display = "none"; // hidden by default
       document.body.appendChild(zoomBtn);
 
       zoomBtn.addEventListener("click", (e) => {
@@ -254,13 +276,13 @@
       });
     }
 
-    // wenn Zoom offen ist: Button versteckt lassen
+    // if zoom overlay open -> keep hidden
     if (overlay.classList.contains("open")) {
       zoomBtn.style.display = "none";
       return;
     }
 
-    // show only when lightbox exists
+    // show only if lightbox exists
     zoomBtn.style.display = root ? "" : "none";
   }
 
@@ -273,4 +295,13 @@
 
   // Initial
   ensureZoomButton(findLightboxRoot());
+
+  // Also update on URL changes (itemId changes when navigating next/prev)
+  let lastSearch = location.search;
+  setInterval(() => {
+    if (location.search !== lastSearch) {
+      lastSearch = location.search;
+      ensureZoomButton(findLightboxRoot());
+    }
+  }, 200);
 })();
