@@ -1,11 +1,31 @@
 // lightbox-zoom.js
-// Stable: tracks the CURRENT visible lightbox image (avoids "next image" offset)
-// - Button appended to body, only visible when lightbox is truly open
-// - Button uses tracked current image src (updated on src/style mutations + nav)
-// - Zoom overlay with pinch/pan/double-tap/wheel
-// - Button hidden while zoom overlay open; X always above image
+// FINAL: no "current image tracking" (avoids jumping to first image)
+// - Button visible ONLY when URL has ?itemId=... (lightbox open)
+// - Button uses the currently visible lightbox <img> (best visible/opaque) at click time
+// - Button hides while zoom overlay open
+// - X stays above zoomed image
 
 (function () {
+  // =========================
+  // Helpers
+  // =========================
+  function hasItemId() {
+    return new URLSearchParams(location.search).has("itemId");
+  }
+
+  function largestSrcFromImg(img) {
+    if (!img) return null;
+    const srcset = img.getAttribute("srcset");
+    if (srcset) {
+      const candidates = srcset
+        .split(",")
+        .map(s => s.trim().split(" ")[0])
+        .filter(Boolean);
+      if (candidates.length) return candidates[candidates.length - 1];
+    }
+    return img.getAttribute("data-src") || img.currentSrc || img.src;
+  }
+
   // =========================
   // Zoom Overlay (own)
   // =========================
@@ -52,7 +72,7 @@
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
-    update(); // re-evaluate button visibility
+    updateButtonVisibility();
   }
 
   closeBtn.addEventListener("click", closeZoom);
@@ -104,6 +124,7 @@
       const pts = Array.from(pointers.values());
       const d = dist(pts[0], pts[1]);
       const m = mid(pts[0], pts[1]);
+
       scale = clamp(startScale * (d / startDist), minScale, maxScale);
       tx = startTx + (m.x - startMid.x);
       ty = startTy + (m.y - startMid.y);
@@ -121,20 +142,10 @@
     apply();
   }, { passive: false });
 
-  function largestSrcFromImg(img) {
-    if (!img) return null;
-    const srcset = img.getAttribute("srcset");
-    if (srcset) {
-      const candidates = srcset.split(",").map(s => s.trim().split(" ")[0]).filter(Boolean);
-      if (candidates.length) return candidates[candidates.length - 1];
-    }
-    return img.getAttribute("data-src") || img.currentSrc || img.src;
-  }
-
   // =========================
-  // Lightbox detection (OPEN only)
+  // Squarespace Lightbox: find current image (NO tracking, compute on click)
   // =========================
-  function findLightboxRootRaw() {
+  function findLightboxRoot() {
     return (
       document.querySelector("[data-test='gallery-lightbox']") ||
       document.querySelector(".gallery-lightbox") ||
@@ -142,37 +153,6 @@
       document.querySelector(".sqs-lightbox")
     );
   }
-
-  function isElementVisible(el) {
-    if (!el) return false;
-    const ariaHidden = el.getAttribute("aria-hidden");
-    if (ariaHidden === "true") return false;
-
-    const cs = getComputedStyle(el);
-    if (cs.display === "none" || cs.visibility === "hidden") return false;
-    if (Number(cs.opacity || 1) <= 0.02) return false;
-
-    const r = el.getBoundingClientRect();
-    if (r.width < 20 || r.height < 20) return false;
-
-    const vpArea = Math.max(1, window.innerWidth * window.innerHeight);
-    const area = r.width * r.height;
-    if (area / vpArea < 0.10) return false;
-
-    return true;
-  }
-
-  function findLightboxRootOpen() {
-    const root = findLightboxRootRaw();
-    return isElementVisible(root) ? root : null;
-  }
-
-  // =========================
-  // Track CURRENT lightbox image (fix for "next image")
-  // =========================
-  let currentLightboxSrc = null;
-  let currentLightboxRoot = null;
-  let lbObserver = null;
 
   function intersectionArea(r, vp) {
     const left = Math.max(0, r.left);
@@ -182,15 +162,16 @@
     return Math.max(0, right - left) * Math.max(0, bottom - top);
   }
 
-  function computeCurrentSrc(root) {
+  // Pick the most "active" visible image in the lightbox at this moment
+  function findCurrentLightboxImg(root) {
     if (!root) return null;
 
-    const imgs = Array.from(root.querySelectorAll("img"))
-      .filter(img => img && img.naturalWidth > 0);
-
+    const imgs = Array.from(root.querySelectorAll("img")).filter(img => img && img.naturalWidth > 0);
     if (!imgs.length) return null;
 
     const vp = { w: window.innerWidth, h: window.innerHeight };
+    const cx = vp.w / 2, cy = vp.h / 2;
+
     let best = null;
     let bestScore = -Infinity;
 
@@ -199,7 +180,7 @@
       if (cs.display === "none" || cs.visibility === "hidden") continue;
 
       const opacity = Number(cs.opacity || 1);
-      if (opacity <= 0.05) continue;
+      if (opacity <= 0.15) continue;
 
       const r = img.getBoundingClientRect();
       if (r.width < 80 || r.height < 80) continue;
@@ -207,129 +188,84 @@
       const areaInt = intersectionArea(r, vp);
       if (areaInt <= 0) continue;
 
-      // Score: visible area + opacity, but also prefer the one closest to center
-      const cx = vp.w / 2;
-      const cy = vp.h / 2;
+      // prefer centered image (active slide) over preloaded neighbor
       const imgCx = r.left + r.width / 2;
       const imgCy = r.top + r.height / 2;
       const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
 
-      const score = (areaInt * (0.6 + opacity)) - (centerDist * 500);
+      const score = areaInt * (0.6 + opacity) - centerDist * 600;
       if (score > bestScore) {
         bestScore = score;
         best = img;
       }
     }
 
-    return largestSrcFromImg(best || imgs[0]);
-  }
-
-  function attachLightboxTracking(root) {
-    if (!root) return;
-
-    // if root changed, re-attach observer
-    if (currentLightboxRoot !== root) {
-      if (lbObserver) lbObserver.disconnect();
-      currentLightboxRoot = root;
-      currentLightboxSrc = computeCurrentSrc(root);
-
-      lbObserver = new MutationObserver(() => {
-        // defer to next frame so layout/opacities settle after slide transitions
-        requestAnimationFrame(() => {
-          const src = computeCurrentSrc(root);
-          if (src) currentLightboxSrc = src;
-        });
-      });
-
-      lbObserver.observe(root, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ["src", "class", "style", "aria-hidden"]
-      });
-    } else {
-      // same root: refresh current src
-      const src = computeCurrentSrc(root);
-      if (src) currentLightboxSrc = src;
-    }
-  }
-
-  function detachLightboxTracking() {
-    if (lbObserver) lbObserver.disconnect();
-    lbObserver = null;
-    currentLightboxRoot = null;
-    currentLightboxSrc = null;
+    return best || imgs[0];
   }
 
   // =========================
-  // Zoom Button (body, only when lightbox OPEN)
+  // Zoom Button (body)
   // =========================
   let zoomBtn = null;
 
-  function ensureZoomButton(rootOpen) {
-    if (!zoomBtn) {
-      zoomBtn = document.createElement("button");
-      zoomBtn.type = "button";
-      zoomBtn.className = "gz-zoom-btn";
-      zoomBtn.textContent = "Vollbild / Zoom";
-      zoomBtn.style.display = "none";
-      document.body.appendChild(zoomBtn);
+  function ensureZoomButton() {
+    if (zoomBtn) return;
 
-      zoomBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    zoomBtn = document.createElement("button");
+    zoomBtn.type = "button";
+    zoomBtn.className = "gz-zoom-btn";
+    zoomBtn.textContent = "Vollbild / Zoom";
+    zoomBtn.style.display = "none";
+    document.body.appendChild(zoomBtn);
 
-        // use tracked src (stable). if missing, compute once.
-        const root = findLightboxRootOpen();
-        if (!root) return;
+    zoomBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-        if (!currentLightboxSrc) currentLightboxSrc = computeCurrentSrc(root);
-        openZoom(currentLightboxSrc);
-      });
-    }
+      const root = findLightboxRoot();
+      if (!root) return;
 
-    // keep hidden when zoom overlay open
+      const img = findCurrentLightboxImg(root);
+      const src = largestSrcFromImg(img);
+      openZoom(src);
+    });
+  }
+
+  function updateButtonVisibility() {
+    ensureZoomButton();
+
+    // Hide while zoom overlay open
     if (overlay.classList.contains("open")) {
       zoomBtn.style.display = "none";
       return;
     }
 
-    zoomBtn.style.display = rootOpen ? "" : "none";
+    // ✅ Only show when itemId present (lightbox open)
+    if (!hasItemId()) {
+      zoomBtn.style.display = "none";
+      return;
+    }
+
+    // also require lightbox root exists
+    const root = findLightboxRoot();
+    zoomBtn.style.display = root ? "" : "none";
   }
 
-  function update() {
-    const rootOpen = findLightboxRootOpen();
-
-    if (rootOpen) attachLightboxTracking(rootOpen);
-    else detachLightboxTracking();
-
-    ensureZoomButton(rootOpen);
-  }
-
-  // Observe DOM changes (for open/close)
-  const obs = new MutationObserver(update);
+  // Update on DOM changes + URL changes
+  const obs = new MutationObserver(updateButtonVisibility);
   obs.observe(document.documentElement, { childList: true, subtree: true });
 
-  // Poll: closes sometimes happen "silently"
-  setInterval(update, 250);
-
-  // Extra: when URL changes (itemId changes on next/prev) refresh current src after transition
   let lastSearch = location.search;
   setInterval(() => {
     if (location.search !== lastSearch) {
       lastSearch = location.search;
-      const rootOpen = findLightboxRootOpen();
-      if (rootOpen) {
-        // give the transition a moment, then recompute
-        setTimeout(() => {
-          const src = computeCurrentSrc(rootOpen);
-          if (src) currentLightboxSrc = src;
-        }, 120);
-      }
-      ensureZoomButton(rootOpen);
+      updateButtonVisibility();
     }
-  }, 200);
+  }, 150);
+
+  // fallback timer
+  setInterval(updateButtonVisibility, 250);
 
   // Initial
-  update();
+  updateButtonVisibility();
 })();
