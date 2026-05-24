@@ -1,10 +1,4 @@
 // lightbox-zoom.js
-// - Button "Vollbild / Zoom" erscheint nur, wenn Squarespace-Lightbox wirklich offen ist (itemId + sichtbar)
-// - Klick auf Button öffnet eigenes Zoom-Overlay
-// - Zoom-Overlay: stabiler Pinch-Zoom + Pan + Double-Tap, mit Clamp gegen "wegfliegen"
-// - Pinch-Anker bleibt auf dem aktuell sichtbaren Ausschnitt (kein "Neustart"-Gefühl)
-// - Close-X bleibt immer sichtbar
-
 (function () {
   // =========================
   // Helpers
@@ -12,24 +6,19 @@
   function hasItemId() {
     return new URLSearchParams(location.search).has("itemId");
   }
-
   function getItemIdFromUrl() {
     const p = new URLSearchParams(location.search);
     return p.get("itemId") || "";
   }
-
   function clamp(v, a, b) {
     return Math.max(a, Math.min(b, v));
   }
-
   function dist(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   }
-
   function mid(a, b) {
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
-
   function largestSrcFromImg(img) {
     if (!img) return null;
     const srcset = img.getAttribute("srcset");
@@ -42,7 +31,6 @@
     }
     return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
-
   function findLightboxRoot() {
     return (
       document.querySelector("[data-test='gallery-lightbox']") ||
@@ -51,7 +39,6 @@
       document.querySelector(".sqs-lightbox")
     );
   }
-
   function isOpenVisible(el) {
     if (!el) return false;
     if (el.getAttribute("aria-hidden") === "true") return false;
@@ -65,7 +52,6 @@
 
     return true;
   }
-
   function intersectionArea(r, vp) {
     const left = Math.max(0, r.left);
     const top = Math.max(0, r.top);
@@ -74,7 +60,6 @@
     return Math.max(0, right - left) * Math.max(0, bottom - top);
   }
 
-  // Bild in Lightbox finden (itemId bevorzugt; sonst sichtbares/zentriertes)
   function findLightboxImg(root) {
     if (!root) return null;
 
@@ -97,7 +82,6 @@
         }
       }
 
-      // broad fallback: any element with attribute containing itemId
       const any = Array.from(root.querySelectorAll("*")).find((el) => {
         for (const a of el.attributes) {
           if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
@@ -114,8 +98,7 @@
     if (!imgs.length) return null;
 
     const vp = { w: window.innerWidth, h: window.innerHeight };
-    const cx = vp.w / 2,
-      cy = vp.h / 2;
+    const cx = vp.w / 2, cy = vp.h / 2;
 
     let best = null;
     let bestScore = -Infinity;
@@ -173,35 +156,27 @@
   const zoomImg = overlay.querySelector("#gz-img");
   const closeBtn = overlay.querySelector("#gz-close");
 
-  let scale = 1,
-    tx = 0,
-    ty = 0;
-  const minScale = 1,
-    maxScale = 6;
+  let scale = 1, tx = 0, ty = 0;
+  const minScale = 1, maxScale = 6;
 
-  // Pointer-Tracking
   const pointers = new Map();
   let lastTap = 0;
 
-  // Pinch/Pan State-Machine
   let panLast = null; // {x,y}
-  // pinch = { startDist, startScale, startTx, startTy, u, v }
+  // pinch = { startDist, startScale, u, v }
   let pinch = null;
 
-  // Basisgröße (bei scale=1) für stabiles Clamping
-  let baseW = 0,
-    baseH = 0;
+  let baseW = 0, baseH = 0;
 
   let zoomBtn = null;
 
+  // ✅ WICHTIG: scale zuerst, translate danach (tx/ty bleiben “echte Pixel”)
   function apply() {
-    zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    zoomImg.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;
   }
 
   function reset() {
-    scale = 1;
-    tx = 0;
-    ty = 0;
+    scale = 1; tx = 0; ty = 0;
     apply();
   }
 
@@ -209,23 +184,16 @@
     if (!overlay.classList.contains("open")) return;
 
     const prevScale = scale;
-    const prevTx = tx,
-      prevTy = ty;
+    const prevTx = tx, prevTy = ty;
 
-    // neutralisieren zum Messen
-    scale = 1;
-    tx = 0;
-    ty = 0;
+    scale = 1; tx = 0; ty = 0;
     apply();
 
     const r = zoomImg.getBoundingClientRect();
     baseW = r.width;
     baseH = r.height;
 
-    // restore
-    scale = prevScale;
-    tx = prevTx;
-    ty = prevTy;
+    scale = prevScale; tx = prevTx; ty = prevTy;
     apply();
   }
 
@@ -289,9 +257,7 @@
   }
 
   closeBtn.addEventListener("click", closeZoom);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeZoom();
-  });
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
   });
@@ -303,7 +269,7 @@
   });
 
   // =========================
-  // Gesten: Pinch -> Pan -> Pinch (ankert am aktuell sichtbaren Ausschnitt)
+  // Gesten: Pinch anchored to current view
   // =========================
   zoomImg.style.touchAction = "none";
 
@@ -311,7 +277,6 @@
     const pts = Array.from(pointers.values());
     const m = mid(pts[0], pts[1]);
 
-    // Midpoint relativ zur Viewport-Mitte (konsistent zu transform-origin center)
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     const localMx = m.x - cx;
@@ -320,11 +285,9 @@
     pinch = {
       startDist: dist(pts[0], pts[1]),
       startScale: scale,
-      startTx: tx,
-      startTy: ty,
-      // ✅ Bildpunkt unter den Fingern (in aktuellen Bildkoordinaten)
+      // ✅ Bildkoordinate unter den Fingern im aktuellen Ausschnitt
       u: (localMx - tx) / scale,
-      v: (localMy - ty) / scale,
+      v: (localMy - ty) / scale
     };
   }
 
@@ -332,7 +295,6 @@
     zoomImg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Double-tap toggle
     if (e.pointerType === "touch") {
       const now = Date.now();
       if (now - lastTap < 300) {
@@ -346,85 +308,76 @@
       lastTap = now;
     }
 
-    // 1 Finger => Pan start
     if (pointers.size === 1) {
       panLast = { x: e.clientX, y: e.clientY };
       pinch = null;
     }
 
-    // 2 Finger => Pinch start (jedes Mal sauber initialisieren)
     if (pointers.size === 2) {
       panLast = null;
       beginPinch();
     }
   });
 
-  zoomImg.addEventListener(
-    "pointermove",
-    (e) => {
-      if (!pointers.has(e.pointerId)) return;
+  zoomImg.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
 
-      const prev = pointers.get(e.pointerId);
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-      // PAN (1 Finger)
-      if (pointers.size === 1) {
-        if (scale <= 1) return;
+    // PAN
+    if (pointers.size === 1) {
+      if (scale <= 1) return;
 
-        const last = panLast || prev;
-        tx += e.clientX - last.x;
-        ty += e.clientY - last.y;
-        panLast = { x: e.clientX, y: e.clientY };
+      const last = panLast || prev;
+      tx += (e.clientX - last.x);
+      ty += (e.clientY - last.y);
+      panLast = { x: e.clientX, y: e.clientY };
 
-        clampTranslate();
-        apply();
+      clampTranslate();
+      apply();
 
-        e.preventDefault();
-        return;
-      }
+      e.preventDefault();
+      return;
+    }
 
-      // PINCH (2 Finger)
-      if (pointers.size === 2) {
-        if (!pinch) beginPinch();
+    // PINCH
+    if (pointers.size === 2) {
+      if (!pinch) beginPinch();
 
-        const pts = Array.from(pointers.values());
-        const m = mid(pts[0], pts[1]);
-        const d = dist(pts[0], pts[1]);
+      const pts = Array.from(pointers.values());
+      const m = mid(pts[0], pts[1]);
+      const d = dist(pts[0], pts[1]);
 
-        const nextScale = clamp(pinch.startScale * (d / pinch.startDist), minScale, maxScale);
+      const nextScale = clamp(pinch.startScale * (d / pinch.startDist), minScale, maxScale);
 
-        // Midpoint relativ zur Viewport-Mitte
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        const localMx = m.x - cx;
-        const localMy = m.y - cy;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const localMx = m.x - cx;
+      const localMy = m.y - cy;
 
-        // ✅ derselbe Bildpunkt (u/v) bleibt unter den Fingern
-        tx = localMx - pinch.u * nextScale;
-        ty = localMy - pinch.v * nextScale;
-        scale = nextScale;
+      // ✅ derselbe Bildpunkt bleibt unter den Fingern
+      tx = localMx - pinch.u * nextScale;
+      ty = localMy - pinch.v * nextScale;
+      scale = nextScale;
 
-        clampTranslate();
-        apply();
+      clampTranslate();
+      apply();
 
-        e.preventDefault();
-        return;
-      }
-    },
-    { passive: false }
-  );
+      e.preventDefault();
+      return;
+    }
+  }, { passive: false });
 
   zoomImg.addEventListener("pointerup", (e) => {
     pointers.delete(e.pointerId);
 
-    // 2 -> 1: neu pan initialisieren
     if (pointers.size === 1) {
       const p = Array.from(pointers.values())[0];
       panLast = p ? { x: p.x, y: p.y } : null;
       pinch = null;
     }
 
-    // -> 0: Ende, ggf. snap-back
     if (pointers.size === 0) {
       panLast = null;
       pinch = null;
@@ -449,19 +402,14 @@
     }
   });
 
-  // Desktop wheel zoom
-  overlay.addEventListener(
-    "wheel",
-    (e) => {
-      if (!overlay.classList.contains("open")) return;
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.08 : 0.92;
-      scale = clamp(scale * factor, minScale, maxScale);
-      clampTranslate();
-      apply();
-    },
-    { passive: false }
-  );
+  overlay.addEventListener("wheel", (e) => {
+    if (!overlay.classList.contains("open")) return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    scale = clamp(scale * factor, minScale, maxScale);
+    clampTranslate();
+    apply();
+  }, { passive: false });
 
   // =========================
   // Zoom Button (body)
@@ -502,7 +450,6 @@
     zoomBtn.style.display = open ? "" : "none";
   }
 
-  // Observe DOM + URL changes
   const obs = new MutationObserver(updateButtonVisibility);
   obs.observe(document.documentElement, { childList: true, subtree: true });
 
