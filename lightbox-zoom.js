@@ -3,6 +3,7 @@
 // Button always clickable (appended to body), only visible while Squarespace lightbox is open
 // and our zoom overlay is NOT open.
 // Fix: selects the CURRENT lightbox image using ?itemId=... to avoid "next image" offset.
+// Fix: button hides reliably after lightbox closes, close "X" stays on top while zooming.
 
 (function () {
   // =========================
@@ -180,7 +181,7 @@
         }
       }
 
-      // also try: any node with attributes containing the itemId
+      // broad fallback: any element with attribute containing itemId
       const any = Array.from(root.querySelectorAll("*")).find(el => {
         for (const a of el.attributes) {
           if (a && typeof a.value === "string" && a.value.includes(itemId)) return true;
@@ -226,8 +227,6 @@
 
       const areaImg = Math.max(1, r.width * r.height);
       const visRatio = areaInt / areaImg;
-
-      // keep only fairly visible images
       if (visRatio < 0.35) continue;
 
       const imgCx = r.left + r.width / 2;
@@ -260,7 +259,7 @@
       zoomBtn.type = "button";
       zoomBtn.className = "gz-zoom-btn";
       zoomBtn.textContent = "Vollbild / Zoom";
-      zoomBtn.style.display = "none"; // hidden by default
+      zoomBtn.style.display = "none";
       document.body.appendChild(zoomBtn);
 
       zoomBtn.addEventListener("click", (e) => {
@@ -282,7 +281,6 @@
       return;
     }
 
-    // show only if lightbox exists
     zoomBtn.style.display = root ? "" : "none";
   }
 
@@ -296,7 +294,7 @@
   // Initial
   ensureZoomButton(findLightboxRoot());
 
-  // Also update on URL changes (itemId changes when navigating next/prev)
+  // URL polling: itemId changes when navigating next/prev
   let lastSearch = location.search;
   setInterval(() => {
     if (location.search !== lastSearch) {
@@ -304,4 +302,9 @@
       ensureZoomButton(findLightboxRoot());
     }
   }, 200);
+
+  // ✅ Hard refresh visibility: lightbox sometimes closes without a helpful DOM mutation
+  setInterval(() => {
+    ensureZoomButton(findLightboxRoot());
+  }, 250);
 })();
