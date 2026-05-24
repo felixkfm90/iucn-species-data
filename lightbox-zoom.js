@@ -1,7 +1,6 @@
 // lightbox-zoom.js
-// Adds a "Vollbild / Zoom" button for Squarespace gallery lightbox.
-// Button is appended to <body> (always clickable) and only shown while lightbox is open.
-// Clicking the button opens our own zoom overlay (pinch/pan/double-tap/wheel).
+// Lightbox button "Vollbild / Zoom" (appended to body) + own zoom overlay.
+// Fixes: pick CURRENT lightbox image reliably + hide button while zoom overlay open.
 
 (function () {
   // =========================
@@ -45,6 +44,9 @@
     reset();
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
+
+    // ✅ Button ausblenden, solange Zoom offen ist
+    if (zoomBtn) zoomBtn.style.display = "none";
   }
 
   function closeZoom() {
@@ -53,6 +55,10 @@
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
     pointers.clear();
+
+    // ✅ Button nur wieder zeigen, wenn Lightbox noch offen ist
+    const root = findLightboxRoot();
+    if (zoomBtn) zoomBtn.style.display = root ? "" : "none";
   }
 
   closeBtn.addEventListener("click", closeZoom);
@@ -144,6 +150,16 @@
     );
   }
 
+  function intersectionArea(r, vp) {
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    const right = Math.min(vp.w, r.right);
+    const bottom = Math.min(vp.h, r.bottom);
+    const w = Math.max(0, right - left);
+    const h = Math.max(0, bottom - top);
+    return w * h;
+  }
+
   function findLightboxImg(root) {
     if (!root) return null;
 
@@ -152,9 +168,12 @@
 
     if (!imgs.length) return null;
 
-    // pick the most visible one (preloaded images often exist)
     const vp = { w: window.innerWidth, h: window.innerHeight };
-    let best = null, bestScore = -1;
+    const cx = vp.w / 2;
+    const cy = vp.h / 2;
+
+    let best = null;
+    let bestScore = -Infinity;
 
     for (const img of imgs) {
       const cs = getComputedStyle(img);
@@ -164,23 +183,48 @@
       if (opacity <= 0.05) continue;
 
       const r = img.getBoundingClientRect();
-      const left = Math.max(0, r.left);
-      const top = Math.max(0, r.top);
-      const right = Math.min(vp.w, r.right);
-      const bottom = Math.min(vp.h, r.bottom);
+      if (r.width < 60 || r.height < 60) continue;
 
-      const w = Math.max(0, right - left);
-      const h = Math.max(0, bottom - top);
-      const area = w * h;
+      const areaInt = intersectionArea(r, vp);
+      if (areaInt <= 0) continue;
 
-      const score = area * (0.5 + opacity);
+      const areaImg = Math.max(1, r.width * r.height);
+      const visRatio = areaInt / areaImg;
+
+      // ✅ wichtig: preloads/next-slides haben oft nur einen kleinen Schnitt oder sind offscreen
+      if (visRatio < 0.25) continue;
+
+      const imgCx = r.left + r.width / 2;
+      const imgCy = r.top + r.height / 2;
+      const centerDist = Math.hypot(imgCx - cx, imgCy - cy);
+
+      // Score: viel Fläche + hohe Opazität + nahe am Zentrum
+      const score = (areaInt * (0.5 + opacity)) - (centerDist * 800);
+
       if (score > bestScore) {
         bestScore = score;
         best = img;
       }
     }
 
-    return best || imgs[0];
+    // Fallback: wenn Filter zu streng war, nimm das größte sichtbare
+    if (best) return best;
+
+    let fallback = null;
+    let fbScore = -Infinity;
+    for (const img of imgs) {
+      const cs = getComputedStyle(img);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
+      const opacity = Number(cs.opacity || 1);
+      if (opacity <= 0.05) continue;
+
+      const r = img.getBoundingClientRect();
+      const areaInt = intersectionArea(r, vp);
+      const score = areaInt * (0.5 + opacity);
+      if (score > fbScore) { fbScore = score; fallback = img; }
+    }
+
+    return fallback || imgs[0];
   }
 
   // =========================
@@ -194,7 +238,7 @@
       zoomBtn.type = "button";
       zoomBtn.className = "gz-zoom-btn";
       zoomBtn.textContent = "Vollbild / Zoom";
-      zoomBtn.style.display = "none"; // default hidden
+      zoomBtn.style.display = "none";
       document.body.appendChild(zoomBtn);
 
       zoomBtn.addEventListener("click", (e) => {
@@ -210,11 +254,17 @@
       });
     }
 
+    // wenn Zoom offen ist: Button versteckt lassen
+    if (overlay.classList.contains("open")) {
+      zoomBtn.style.display = "none";
+      return;
+    }
+
     // show only when lightbox exists
     zoomBtn.style.display = root ? "" : "none";
   }
 
-  // Observe DOM: only for "show/hide button", not for opening zoom
+  // Observe DOM: show/hide button only
   const obs = new MutationObserver(() => {
     const root = findLightboxRoot();
     ensureZoomButton(root);
