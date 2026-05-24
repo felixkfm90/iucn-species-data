@@ -1,6 +1,8 @@
-// lightbox-zoom.js
+// lightbox-zoom.js (user-initiated only)
 (function () {
-  // ---------- Zoom-Overlay (eigenes) ----------
+  // =========================
+  // Overlay UI
+  // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
   overlay.innerHTML = `
@@ -23,14 +25,8 @@
   function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 
-  function apply() {
-    imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-  }
-
-  function reset() {
-    scale = 1; tx = 0; ty = 0;
-    apply();
-  }
+  function apply() { imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
 
   function openZoom(src) {
     if (!src) return;
@@ -51,11 +47,9 @@
 
   closeBtn.addEventListener("click", closeZoom);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
-  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom(); });
 
-  // Pinch/Pan/Double-tap auf dem Overlay-Bild
+  // Pinch/Pan/Double-tap
   imgEl.style.touchAction = "none";
   imgEl.addEventListener("pointerdown", (e) => {
     imgEl.setPointerCapture(e.pointerId);
@@ -98,7 +92,6 @@
       const pts = Array.from(pointers.values());
       const d = dist(pts[0], pts[1]);
       const m = mid(pts[0], pts[1]);
-
       scale = clamp(startScale * (d / startDist), minScale, maxScale);
       tx = startTx + (m.x - startMid.x);
       ty = startTy + (m.y - startMid.y);
@@ -116,44 +109,64 @@
     apply();
   }, { passive: false });
 
-  // ---------- Squarespace Lightbox erkennen und ersetzen ----------
-  function findSqLightboxImg() {
-    return (
-      document.querySelector("[data-test='gallery-lightbox'] img") ||
-      document.querySelector(".gallery-lightbox img") ||
-      document.querySelector(".sqs-image-lightbox img") ||
-      document.querySelector(".sqs-lightbox img")
-    );
+  // =========================
+  // Helpers: Bild-URL extrahieren
+  // =========================
+  function largestSrcFromImg(img) {
+    if (!img) return null;
+    const srcset = img.getAttribute("srcset");
+    if (srcset) {
+      const candidates = srcset.split(",").map(s => s.trim().split(" ")[0]).filter(Boolean);
+      if (candidates.length) return candidates[candidates.length - 1];
+    }
+    return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
 
-  function closeSqLightbox() {
-    const btn =
-      document.querySelector("[data-test='gallery-lightbox-close-button']") ||
-      document.querySelector(".gallery-lightbox-control-close") ||
-      document.querySelector(".sqs-image-lightbox-close") ||
-      document.querySelector(".sqs-lightbox-close");
-    if (btn) { btn.click(); return; }
-    // fallback: ESC
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-  }
+  // =========================
+  // 1) Auf der Tierseite: Klick in der Galerie unten
+  //    -> verhindert "weiter" und öffnet Zoom für das aktuelle Bild
+  // =========================
+  document.addEventListener("click", (e) => {
+    const gallery = e.target.closest && e.target.closest(".sqs-block-gallery, .gallery-block, .sqs-gallery");
+    if (!gallery) return;
 
-  let lastSrc = null;
+    // nur wenn wirklich auf ein Bild/Preview geklickt wird
+    const img = e.target.closest && e.target.closest("img");
+    if (!img) return;
 
-  const obs = new MutationObserver(() => {
-    const sqImg = findSqLightboxImg();
-    if (!sqImg) return;
-
-    const src = sqImg.currentSrc || sqImg.src;
+    const src = largestSrcFromImg(img);
     if (!src) return;
 
-    // nicht mehrfach triggern
-    if (src === lastSrc) return;
-    lastSrc = src;
+    // Squarespace "next" verhindern
+    e.preventDefault();
+    e.stopPropagation();
 
-    // Squarespace-Lightbox zu, eigenes Zoom auf
-    closeSqLightbox();
-    setTimeout(() => openZoom(src), 60);
-  });
+    openZoom(src);
+  }, true); // capture
 
-  obs.observe(document.documentElement, { childList: true, subtree: true });
+  // =========================
+  // 2) Wenn Lightbox schon offen ist (?itemId=...):
+  //    Klick auf das große Bild -> Zoom
+  // =========================
+  document.addEventListener("click", (e) => {
+    const lb =
+      e.target.closest?.("[data-test='gallery-lightbox']") ||
+      e.target.closest?.(".gallery-lightbox") ||
+      e.target.closest?.(".sqs-image-lightbox") ||
+      e.target.closest?.(".sqs-lightbox");
+
+    if (!lb) return;
+
+    const img = lb.querySelector("img");
+    if (!img) return;
+
+    const src = largestSrcFromImg(img);
+    if (!src) return;
+
+    // verhindert "next" in Lightbox
+    e.preventDefault();
+    e.stopPropagation();
+
+    openZoom(src);
+  }, true); // capture
 })();
