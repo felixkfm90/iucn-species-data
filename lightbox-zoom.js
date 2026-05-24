@@ -1,51 +1,59 @@
 // lightbox-zoom.js
 (function () {
-  const OVERLAY_SELECTORS = [
-    ".sqs-image-lightbox",     // häufig
-    ".sqs-lightbox",           // je nach Template
-    ".lightbox",               // fallback
-    "[data-lightbox]"          // fallback
-  ];
-
-  const IMG_SELECTORS = [
-    ".sqs-image-lightbox img",
-    ".sqs-lightbox img",
-    ".lightbox img",
-    "img[data-image]"          // fallback
-  ];
-
-  let attachedEl = null;
+  let activeImg = null;
+  let cleanupCurrent = null;
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
-  function attachZoom(imgEl) {
-    if (!imgEl || imgEl === attachedEl) return;
-    attachedEl = imgEl;
+  function findLightboxImg() {
+    return (
+      document.querySelector("[data-test='gallery-lightbox'] img") ||
+      document.querySelector(".gallery-lightbox img") ||
+      document.querySelector(".sqs-image-lightbox img") ||
+      document.querySelector(".sqs-lightbox img")
+    );
+  }
 
-    // Wichtig für Touch-Gesten
-    imgEl.style.touchAction = "none";
-    imgEl.style.transformOrigin = "center center";
-    imgEl.style.userSelect = "none";
-    imgEl.style.webkitUserDrag = "none";
+  function enhanceImage(img) {
+    if (!img || img === activeImg) return;
 
-    let scale = 1;
-    let minScale = 1;
-    let maxScale = 5;
-    let tx = 0, ty = 0;
+    if (cleanupCurrent) cleanupCurrent();
 
-    const pointers = new Map();
-    let startDist = 0;
-    let startScale = 1;
-    let startMid = null;
-    let startTx = 0;
-    let startTy = 0;
+    activeImg = img;
 
-    let lastTap = 0;
+    const state = {
+      scale: 1,
+      minScale: 1,
+      maxScale: 5,
+      tx: 0,
+      ty: 0,
+      pointers: new Map(),
+      startDist: 0,
+      startScale: 1,
+      startMid: null,
+      startTx: 0,
+      startTy: 0,
+      lastTap: 0
+    };
+
+    img.style.touchAction = "none";
+    img.style.transformOrigin = "center center";
+    img.style.userSelect = "none";
+    img.style.webkitUserDrag = "none";
+    img.style.cursor = "grab";
+    img.style.transition = "transform 0.05s linear";
 
     function apply() {
-      imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      img.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+    }
+
+    function reset() {
+      state.scale = 1;
+      state.tx = 0;
+      state.ty = 0;
+      apply();
     }
 
     function dist(a, b) {
@@ -55,118 +63,152 @@
     }
 
     function midpoint(a, b) {
-      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      return {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      };
     }
 
-    function reset() {
-      scale = 1;
-      tx = 0;
-      ty = 0;
-      apply();
-    }
+    function onPointerDown(e) {
+      e.stopPropagation();
 
-    // Reset bei jedem neuen Bild (src-Change)
-    const srcObserver = new MutationObserver(() => reset());
-    srcObserver.observe(imgEl, { attributes: true, attributeFilter: ["src"] });
+      img.setPointerCapture(e.pointerId);
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    imgEl.addEventListener("pointerdown", (e) => {
-      imgEl.setPointerCapture(e.pointerId);
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-      // Double-tap toggle (Touch)
       if (e.pointerType === "touch") {
         const now = Date.now();
-        if (now - lastTap < 300) {
-          if (scale === 1) {
-            scale = 2;
+        if (now - state.lastTap < 300) {
+          if (state.scale === 1) {
+            state.scale = 2;
           } else {
             reset();
           }
           apply();
-          lastTap = 0;
+          state.lastTap = 0;
           return;
         }
-        lastTap = now;
+        state.lastTap = now;
       }
 
-      if (pointers.size === 2) {
-        const pts = Array.from(pointers.values());
-        startDist = dist(pts[0], pts[1]);
-        startScale = scale;
-        startMid = midpoint(pts[0], pts[1]);
-        startTx = tx;
-        startTy = ty;
+      if (state.pointers.size === 2) {
+        const pts = Array.from(state.pointers.values());
+        state.startDist = dist(pts[0], pts[1]);
+        state.startScale = state.scale;
+        state.startMid = midpoint(pts[0], pts[1]);
+        state.startTx = state.tx;
+        state.startTy = state.ty;
       }
-    });
+    }
 
-    imgEl.addEventListener("pointermove", (e) => {
-      if (!pointers.has(e.pointerId)) return;
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    function onPointerMove(e) {
+      if (!state.pointers.has(e.pointerId)) return;
 
-      if (pointers.size === 1) {
-        // Pan nur wenn gezoomt
-        if (scale <= 1) return;
-        tx += e.movementX || 0;
-        ty += e.movementY || 0;
+      e.stopPropagation();
+      e.preventDefault();
+
+      const prev = state.pointers.get(e.pointerId);
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (state.pointers.size === 1) {
+        if (state.scale <= 1) return;
+
+        const dx = e.clientX - prev.x;
+        const dy = e.clientY - prev.y;
+
+        state.tx += dx;
+        state.ty += dy;
         apply();
         return;
       }
 
-      if (pointers.size === 2) {
-        const pts = Array.from(pointers.values());
+      if (state.pointers.size === 2) {
+        const pts = Array.from(state.pointers.values());
         const d = dist(pts[0], pts[1]);
         const mid = midpoint(pts[0], pts[1]);
 
-        scale = clamp(startScale * (d / startDist), minScale, maxScale);
+        state.scale = clamp(
+          state.startScale * (d / state.startDist),
+          state.minScale,
+          state.maxScale
+        );
 
-        // leichte Mitnahme, damit es sich nicht "wegzieht"
-        tx = startTx + (mid.x - startMid.x);
-        ty = startTy + (mid.y - startMid.y);
+        state.tx = state.startTx + (mid.x - state.startMid.x);
+        state.ty = state.startTy + (mid.y - state.startMid.y);
 
         apply();
       }
-    });
+    }
 
-    imgEl.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
-    imgEl.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
-
-    // Desktop: Wheel zoom (optional)
-    imgEl.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 1.08 : 0.92;
-        scale = clamp(scale * factor, minScale, maxScale);
+    function onPointerUp(e) {
+      state.pointers.delete(e.pointerId);
+      if (state.scale <= 1) {
+        state.tx = 0;
+        state.ty = 0;
         apply();
-      },
-      { passive: false }
-    );
+      }
+    }
 
-    // ESC/Close der Lightbox handled Squarespace – wir müssen nichts schließen.
+    function onWheel(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      state.scale = clamp(state.scale * factor, state.minScale, state.maxScale);
+
+      if (state.scale <= 1) {
+        state.tx = 0;
+        state.ty = 0;
+      }
+
+      apply();
+    }
+
+    function onClick(e) {
+      // verhindert, dass Tap/Klick wieder nur "weiter" schaltet
+      e.stopPropagation();
+    }
+
+    img.addEventListener("pointerdown", onPointerDown);
+    img.addEventListener("pointermove", onPointerMove, { passive: false });
+    img.addEventListener("pointerup", onPointerUp);
+    img.addEventListener("pointercancel", onPointerUp);
+    img.addEventListener("wheel", onWheel, { passive: false });
+    img.addEventListener("click", onClick, true);
+
+    const srcObserver = new MutationObserver(() => {
+      reset();
+    });
+    srcObserver.observe(img, { attributes: true, attributeFilter: ["src"] });
+
+    cleanupCurrent = function () {
+      img.removeEventListener("pointerdown", onPointerDown);
+      img.removeEventListener("pointermove", onPointerMove);
+      img.removeEventListener("pointerup", onPointerUp);
+      img.removeEventListener("pointercancel", onPointerUp);
+      img.removeEventListener("wheel", onWheel);
+      img.removeEventListener("click", onClick, true);
+      srcObserver.disconnect();
+      img.style.transform = "";
+      img.style.touchAction = "";
+      img.style.transformOrigin = "";
+      img.style.userSelect = "";
+      img.style.webkitUserDrag = "";
+      img.style.cursor = "";
+      img.style.transition = "";
+    };
   }
 
-  function findLightboxImage() {
-    // 1) Overlay finden
-    const overlay = OVERLAY_SELECTORS.map((s) => document.querySelector(s)).find(Boolean);
-    if (!overlay) return null;
-
-    // 2) Bild im Overlay finden
-    const img = IMG_SELECTORS
-      .map((s) => overlay.querySelector(s) || document.querySelector(s))
-      .find(Boolean);
-
-    return img || null;
-  }
-
-  // Beobachte DOM, weil Squarespace Lightbox dynamisch einfügt
-  const obs = new MutationObserver(() => {
-    const img = findLightboxImage();
-    if (img) attachZoom(img);
+  const observer = new MutationObserver(() => {
+    const img = findLightboxImg();
+    if (img) enhanceImage(img);
   });
 
-  obs.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
 
-  // Initial check
-  const init = findLightboxImage();
-  if (init) attachZoom(init);
+  // initialer Check
+  const firstImg = findLightboxImg();
+  if (firstImg) enhanceImage(firstImg);
 })();
