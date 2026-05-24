@@ -1,7 +1,7 @@
 // lightbox-zoom.js
 // - Button "Vollbild / Zoom" erscheint nur, wenn Squarespace-Lightbox wirklich offen ist (itemId + sichtbar)
 // - Klick auf Button öffnet eigenes Zoom-Overlay
-// - Zoom-Overlay: stabiler Pinch-Zoom + Pan + Double-Tap, mit Clamp gegen "wegfliegen"
+// - Zoom-Overlay: stabiler Pinch-Zoom + Pan + Double-Tap, mit Clamp gegen "wegfliegen" (Android-fix)
 // - Close-X bleibt immer sichtbar
 
 (function () {
@@ -185,20 +185,36 @@
     apply();
   }
 
-  function getImageBounds() {
-    const rect = zoomImg.getBoundingClientRect();
-    return { w: rect.width, h: rect.height };
+  // ---- Basisgröße (bei scale=1) merken ----
+  let baseW = 0, baseH = 0;
+
+  function refreshBaseSize() {
+    if (!overlay.classList.contains("open")) return;
+
+    const prevScale = scale;
+    const prevTx = tx, prevTy = ty;
+
+    // temporär neutralisieren zum Messen
+    scale = 1; tx = 0; ty = 0;
+    apply();
+
+    const r = zoomImg.getBoundingClientRect();
+    baseW = r.width;
+    baseH = r.height;
+
+    // restore
+    scale = prevScale; tx = prevTx; ty = prevTy;
+    apply();
   }
 
   function clampTranslate() {
-    // verhindert, dass Bild komplett aus dem sichtbaren Bereich fliegt
-    const { w, h } = getImageBounds();
+    if (!baseW || !baseH) return;
 
     const vw = window.innerWidth * 0.95;
     const vh = window.innerHeight * 0.90;
 
-    const scaledW = w * scale;
-    const scaledH = h * scale;
+    const scaledW = baseW * scale;
+    const scaledH = baseH * scale;
 
     if (scaledW <= vw) tx = 0;
     else {
@@ -215,6 +231,15 @@
 
   function openZoom(src) {
     if (!src) return;
+
+    zoomImg.onload = () => {
+      setTimeout(() => {
+        refreshBaseSize();
+        clampTranslate();
+        apply();
+      }, 0);
+    };
+
     zoomImg.src = src;
     overlay.classList.add("open");
     reset();
@@ -236,6 +261,13 @@
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeZoom(); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
+  });
+
+  // Resize: clamp neu berechnen
+  window.addEventListener("resize", () => {
+    refreshBaseSize();
+    clampTranslate();
+    apply();
   });
 
   // -------- Stabiler Mobile-Zoom ----------
@@ -268,7 +300,6 @@
       const pts = Array.from(pointers.values());
       startDist = dist(pts[0], pts[1]);
       startScale = scale;
-      startMid = mid(pts[0], pts[1]);
       startTx = tx;
       startTy = ty;
       lastPanPoint = null;
@@ -286,22 +317,17 @@
       if (scale <= 1) return;
 
       const lp = lastPanPoint || prev;
-      const dx = e.clientX - lp.x;
-      const dy = e.clientY - lp.y;
-
-      tx += dx;
-      ty += dy;
-
+      tx += (e.clientX - lp.x);
+      ty += (e.clientY - lp.y);
       lastPanPoint = { x: e.clientX, y: e.clientY };
 
       clampTranslate();
       apply();
       e.preventDefault();
-      e.stopPropagation();
       return;
     }
 
-    // Pinch (2 Finger)
+    // Pinch (2 Finger) - stabiler Anchor am Midpoint (kein Springen)
     if (pointers.size === 2) {
       const pts = Array.from(pointers.values());
       const d = dist(pts[0], pts[1]);
@@ -310,16 +336,13 @@
       const nextScale = clamp(startScale * (d / startDist), minScale, maxScale);
       const ratio = nextScale / startScale;
 
-      // Zoom um den Pinch-Mittelpunkt: kompakt und stabil
-      tx = startTx + (m.x - startMid.x) + (startTx) * (ratio - 1);
-      ty = startTy + (m.y - startMid.y) + (startTy) * (ratio - 1);
+      tx = ratio * startTx + (1 - ratio) * m.x;
+      ty = ratio * startTy + (1 - ratio) * m.y;
       scale = nextScale;
 
       clampTranslate();
       apply();
-
       e.preventDefault();
-      e.stopPropagation();
       return;
     }
   }, { passive: false });
@@ -400,7 +423,6 @@
 
     const root = findLightboxRoot();
     const open = hasItemId() && isOpenVisible(root);
-
     zoomBtn.style.display = open ? "" : "none";
   }
 
