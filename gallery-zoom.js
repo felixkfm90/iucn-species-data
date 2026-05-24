@@ -1,9 +1,5 @@
-// gallery-zoom.js
+// gallery-zoom.js (v2) - Works with Squarespace Gallery/Slideshow/Carousel (img + background-image)
 (function () {
-  // Nur aktiv, wenn Galleries existieren
-  const galleries = document.querySelectorAll(".sqs-gallery, .gallery-block, .sqs-block-gallery");
-  if (!galleries.length) return;
-
   // --- Overlay UI (einmalig) ---
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
@@ -21,21 +17,18 @@
   let maxScale = 5;
   let tx = 0, ty = 0;
 
-  // Pointer tracking (Pinch)
   const pointers = new Map();
   let startDist = 0;
   let startScale = 1;
   let startMid = null;
   let startTx = 0, startTy = 0;
-
-  // Double-tap
   let lastTap = 0;
 
   function open(src) {
+    if (!src) return;
     imgEl.src = src;
     overlay.classList.add("open");
     resetTransform();
-    // verhindern, dass Hintergrund scrollt
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
   }
@@ -49,8 +42,7 @@
   }
 
   function resetTransform() {
-    scale = 1;
-    tx = 0; ty = 0;
+    scale = 1; tx = 0; ty = 0;
     applyTransform();
   }
 
@@ -63,8 +55,7 @@
   }
 
   function dist(a, b) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
+    const dx = a.x - b.x, dy = a.y - b.y;
     return Math.hypot(dx, dy);
   }
 
@@ -72,35 +63,49 @@
     return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
 
-  // --- Event wiring: Klicks auf Galeriebilder abfangen ---
-  function getLargestSrc(target) {
-    // Versuche: data-src / srcset / src
-    const img = target.closest("img");
-    if (!img) return null;
+  function getBgUrl(el) {
+    if (!el) return null;
+    const bg = getComputedStyle(el).backgroundImage || "";
+    // background-image: url("...")  or url(...)
+    const m = bg.match(/url\(["']?(.+?)["']?\)/i);
+    return m ? m[1] : null;
+  }
 
-    // Wenn srcset vorhanden, nimm die letzte (meist größte)
+  function getLargestSrcFromImg(img) {
+    if (!img) return null;
     const srcset = img.getAttribute("srcset");
     if (srcset) {
       const candidates = srcset.split(",").map(s => s.trim().split(" ")[0]).filter(Boolean);
       if (candidates.length) return candidates[candidates.length - 1];
     }
-
     return img.getAttribute("data-src") || img.currentSrc || img.src;
   }
 
-  document.addEventListener("click", (e) => {
-    const inGallery = e.target.closest(".sqs-gallery, .gallery-block, .sqs-block-gallery");
-    if (!inGallery) return;
+  function extractImageSrc(target) {
+    // 1) echtes <img>
+    const img = target.closest && target.closest("img");
+    if (img) return getLargestSrcFromImg(img);
 
-    const src = getLargestSrc(e.target);
-    if (!src) return;
+    // 2) Squarespace gallery items nutzen oft background-image auf wrappern
+    // typ. Klassen: .gallery-slideshow-item, .sqs-gallery-design-slideshow, .slide, etc.
+    const bgEl = target.closest && target.closest(
+      ".sqs-gallery, .sqs-gallery-design-slideshow, .gallery-block, .sqs-block-gallery, .slide, .gallery-slideshow-item, figure, .sqs-gallery-item"
+    );
+    if (bgEl) {
+      const bgUrl = getBgUrl(bgEl);
+      if (bgUrl) return bgUrl;
+    }
 
-    // built-in lightbox vermeiden
-    e.preventDefault();
-    e.stopPropagation();
+    // 3) als Fallback: Eltern hochlaufen und bg prüfen
+    let el = target;
+    for (let i = 0; i < 6 && el; i++) {
+      const bgUrl = getBgUrl(el);
+      if (bgUrl) return bgUrl;
+      el = el.parentElement;
+    }
 
-    open(src);
-  }, true);
+    return null;
+  }
 
   // --- Close handlers ---
   closeBtn.addEventListener("click", close);
@@ -111,21 +116,36 @@
     if (e.key === "Escape" && overlay.classList.contains("open")) close();
   });
 
+  // --- Wichtig: Events im CAPTURE abfangen, bevor Squarespace "next slide" macht ---
+  document.addEventListener("click", (e) => {
+    const inGallery = e.target.closest &&
+      e.target.closest(".sqs-gallery, .sqs-gallery-design-slideshow, .gallery-block, .sqs-block-gallery");
+
+    if (!inGallery) return;
+    if (overlay.classList.contains("open")) return;
+
+    const src = extractImageSrc(e.target);
+    if (!src) return;
+
+    // Squarespace-Navigation verhindern
+    e.preventDefault();
+    e.stopPropagation();
+
+    open(src);
+  }, true); // <-- capture = true
+
   // --- Pointer Events: Pan + Pinch ---
   imgEl.addEventListener("pointerdown", (e) => {
     imgEl.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Double-tap (nur Touch)
     if (e.pointerType === "touch") {
       const now = Date.now();
       if (now - lastTap < 300) {
-        // toggle zoom
-        if (scale === 1) {
-          scale = 2;
-        } else {
-          resetTransform();
-        }
+        // Double-tap toggle
+        if (scale === 1) scale = 2;
+        else resetTransform();
+        applyTransform();
         lastTap = 0;
         return;
       }
@@ -147,15 +167,9 @@
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointers.size === 1) {
-      // pan (nur wenn gezoomt, sonst wackelt es unnötig)
       if (scale <= 1) return;
-
-      const prev = pointers.get(e.pointerId);
-      // Wir brauchen "delta": nutze movementX/Y (fallback)
-      const dx = e.movementX || 0;
-      const dy = e.movementY || 0;
-      tx += dx;
-      ty += dy;
+      tx += e.movementX || 0;
+      ty += e.movementY || 0;
       applyTransform();
       return;
     }
@@ -166,36 +180,24 @@
       const mid = midpoint(pts[0], pts[1]);
 
       const nextScale = clamp(startScale * (d / startDist), minScale, maxScale);
-
-      // translate so that zoom feels centered on pinch midpoint
-      const scaleChange = nextScale / scale;
       scale = nextScale;
 
-      // adjust translation relative to midpoint movement
-      const mx = mid.x - startMid.x;
-      const my = mid.y - startMid.y;
-      tx = startTx + mx;
-      ty = startTy + my;
+      tx = startTx + (mid.x - startMid.x);
+      ty = startTy + (mid.y - startMid.y);
 
       applyTransform();
     }
   });
 
-  imgEl.addEventListener("pointerup", (e) => {
-    pointers.delete(e.pointerId);
-  });
-  imgEl.addEventListener("pointercancel", (e) => {
-    pointers.delete(e.pointerId);
-  });
+  imgEl.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
+  imgEl.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
 
   // Desktop wheel zoom
   overlay.addEventListener("wheel", (e) => {
     if (!overlay.classList.contains("open")) return;
     e.preventDefault();
-    const delta = -e.deltaY;
-    const factor = delta > 0 ? 1.08 : 0.92;
-    const next = clamp(scale * factor, minScale, maxScale);
-    scale = next;
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    scale = clamp(scale * factor, minScale, maxScale);
     applyTransform();
   }, { passive: false });
 
