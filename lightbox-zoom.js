@@ -1,10 +1,6 @@
 // lightbox-zoom.js
-// Smooth Android pinch/pan overlay for Squarespace gallery lightbox.
-// - Button shows only if lightbox is open (itemId + visible)
-// - Overlay uses translate(tx,ty) scale(scale) (smoother feel)
-// - Pinch anchor is based on the currently visible content (no restart feeling)
-// - Pan only when zoomed, clamp prevents losing image
-// - X always on top
+// Basierend auf deiner angenehmen Version, Fix: Android-Pinch springt auf 100% beim 2. Finger
+// => PointerCapture entfernt + preventDefault + Pinch-init im nächsten Frame
 
 (function () {
   // =========================
@@ -174,15 +170,14 @@
   let panLast = null; // {x,y}
 
   // pinch = { startDist, startScale, u, v }
-  // u/v are the image-space coords under the pinch midpoint in pre-scale translate space
   let pinch = null;
 
-  // Base (unscaled) size for clamp
+  // Base size for clamp
   let baseW = 0, baseH = 0;
 
   let zoomBtn = null;
 
-  // Apply transform: translate then scale (smoother feel)
+  // Apply transform: translate then scale (dein “smooth feel”)
   function apply() {
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   }
@@ -195,7 +190,6 @@
   function refreshBaseSize() {
     if (!overlay.classList.contains("open")) return;
 
-    // measure at scale=1, tx=ty=0
     const prevScale = scale, prevTx = tx, prevTy = ty;
     scale = 1; tx = 0; ty = 0;
     apply();
@@ -208,9 +202,7 @@
     apply();
   }
 
-  // Clamp in translate->scale coordinate system:
-  // screen half overflow = (baseW*scale - vw)/2
-  // but tx is applied BEFORE scale, so allowed tx range is overflow/scale
+  // Clamp in translate->scale model (dein bisheriges Verhalten)
   function clampTranslate() {
     if (!baseW || !baseH) return;
 
@@ -239,7 +231,6 @@
     if (!src) return;
 
     zoomImg.onload = () => {
-      // allow one paint, then measure
       setTimeout(() => {
         refreshBaseSize();
         clampTranslate();
@@ -250,10 +241,8 @@
     zoomImg.src = src;
     overlay.classList.add("open");
 
-    // performance hints
     zoomImg.style.willChange = "transform";
 
-    // reset state
     reset();
     pointers.clear();
     panLast = null;
@@ -291,15 +280,16 @@
   });
 
   // =========================
-  // Gestures (Pinch->Pan->Pinch)
+  // Gestures (Pinch->Pan->Pinch) — FIX für Android “springt auf 100%”
   // =========================
   zoomImg.style.touchAction = "none";
 
-  function beginPinch() {
+  function beginPinchFromPointers() {
+    if (pointers.size !== 2) return;
+
     const pts = Array.from(pointers.values());
     const m = mid(pts[0], pts[1]);
 
-    // local midpoint relative to viewport center
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     const localMx = m.x - cx;
@@ -308,19 +298,21 @@
     pinch = {
       startDist: dist(pts[0], pts[1]),
       startScale: scale,
-      // In translate->scale: screenLocal = scale * (u + tx)
-      // => u = screenLocal/scale - tx
+      // In translate->scale: local = nextScale*(u+tx) => u = local/scale - tx
       u: localMx / scale - tx,
       v: localMy / scale - ty
     };
   }
 
+  // ✅ KEY FIX 1: KEIN setPointerCapture + pointerdown/passive:false + preventDefault
   zoomImg.addEventListener("pointerdown", (e) => {
-    zoomImg.setPointerCapture(e.pointerId);
+    if (!overlay.classList.contains("open")) return;
+    if (e.pointerType === "touch") e.preventDefault();
+
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Double-tap toggle
-    if (e.pointerType === "touch") {
+    // Double-tap toggle (nur 1 Finger)
+    if (e.pointerType === "touch" && pointers.size === 1) {
       const now = Date.now();
       if (now - lastTap < 300) {
         if (scale === 1) scale = 2;
@@ -340,12 +332,20 @@
 
     if (pointers.size === 2) {
       panLast = null;
-      beginPinch();
+      pinch = null;
+
+      // ✅ KEY FIX 2: Pinch-init im nächsten Frame (Android stabilisiert Pointer dann)
+      requestAnimationFrame(() => {
+        beginPinchFromPointers();
+      });
     }
-  });
+  }, { passive: false });
 
   zoomImg.addEventListener("pointermove", (e) => {
+    if (!overlay.classList.contains("open")) return;
     if (!pointers.has(e.pointerId)) return;
+
+    if (e.pointerType === "touch") e.preventDefault();
 
     const prev = pointers.get(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -355,19 +355,19 @@
       if (scale <= 1) return;
 
       const last = panLast || prev;
-      tx += (e.clientX - last.x) / scale; // keep pan speed consistent with scale
+      tx += (e.clientX - last.x) / scale;
       ty += (e.clientY - last.y) / scale;
       panLast = { x: e.clientX, y: e.clientY };
 
       clampTranslate();
       apply();
-      e.preventDefault();
       return;
     }
 
     // Pinch (2 fingers)
     if (pointers.size === 2) {
-      if (!pinch) beginPinch();
+      if (!pinch) beginPinchFromPointers();
+      if (!pinch) return;
 
       const pts = Array.from(pointers.values());
       const m = mid(pts[0], pts[1]);
@@ -380,20 +380,17 @@
       const localMx = m.x - cx;
       const localMy = m.y - cy;
 
-      // Keep same image-space point (u/v) under fingers:
-      // localM = nextScale * (u + tx) => tx = localM/nextScale - u
       tx = localMx / nextScale - pinch.u;
       ty = localMy / nextScale - pinch.v;
       scale = nextScale;
 
       clampTranslate();
       apply();
-      e.preventDefault();
       return;
     }
   }, { passive: false });
 
-  zoomImg.addEventListener("pointerup", (e) => {
+  function onPointerEnd(e) {
     pointers.delete(e.pointerId);
 
     if (pointers.size === 1) {
@@ -413,19 +410,12 @@
         apply();
       }
     }
-  });
+  }
 
-  zoomImg.addEventListener("pointercancel", (e) => {
-    pointers.delete(e.pointerId);
-    if (pointers.size === 0) {
-      panLast = null;
-      pinch = null;
-      clampTranslate();
-      apply();
-    }
-  });
+  zoomImg.addEventListener("pointerup", onPointerEnd, { passive: true });
+  zoomImg.addEventListener("pointercancel", onPointerEnd, { passive: true });
 
-  // Desktop wheel zoom
+  // Desktop wheel zoom (optional)
   overlay.addEventListener("wheel", (e) => {
     if (!overlay.classList.contains("open")) return;
     e.preventDefault();
@@ -433,7 +423,6 @@
 
     const nextScale = clamp(scale * factor, minScale, maxScale);
 
-    // Zoom around center on wheel
     const localMx = 0;
     const localMy = 0;
     const u = localMx / scale - tx;
