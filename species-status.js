@@ -2,6 +2,8 @@
   const container = document.getElementById("species-status");
   if (!container) return;
 
+  const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+
   const statusIcons = {
     LC: "LC.png", NT: "NT.png", VU: "VU.png",
     EN: "EN.png", CR: "CR.png", EW: "EW.png", EX: "EX.png"
@@ -46,13 +48,13 @@
         <div class="status-trend-wrapper">
           <div class="info-box">
             <p>Status</p>
-            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/catagory/Alternativ/${statusIcon}" height="80" alt="IUCN Status Icon">
+            <img src="${ASSET_BASE}/graphics/catagory/Alternativ/${statusIcon}" height="80" alt="IUCN Status Icon">
             <p>${d.Kategorie}${statusKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
 
           <div class="info-box">
             <p>Trend</p>
-            <img src="https://raw.githubusercontent.com/felixkfm90/iucn-species-data/main/graphics/trend/${trendIcon}" height="80" alt="Populationstrend Icon">
+            <img src="${ASSET_BASE}/graphics/trend/${trendIcon}" height="80" alt="Populationstrend Icon">
             <p>${trendLabel}${trendKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
         </div>
