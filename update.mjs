@@ -132,6 +132,46 @@ function emptyEntry(scientific, german = scientific) {
   };
 }
 
+function getInputSlug(s) {
+  return `${s.genus}${s.species}`.toLowerCase();
+}
+
+function loadExistingSpeciesData() {
+  if (!fs.existsSync("speciesData.json")) return [];
+
+  try {
+    const data = JSON.parse(fs.readFileSync("speciesData.json", "utf8"));
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    logError("Bestehende speciesData.json konnte nicht gelesen werden: " + err.message);
+    return [];
+  }
+}
+
+function hasUsableSpeciesData(entry) {
+  return Boolean(
+    entry &&
+      entry["Wissenschaftlicher Name"] &&
+      entry["Wissenschaftlicher Name"] !== "n/a" &&
+      entry["Assessment ID"] &&
+      entry["Assessment ID"] !== "n/a" &&
+      entry.Status &&
+      entry.Status !== "n/a" &&
+      entry.Kategorie &&
+      entry.Kategorie !== "n/a" &&
+      entry.Trend &&
+      entry.Trend !== "n/a"
+  );
+}
+
+function preserveExistingSpeciesData(existing, inputSpecies) {
+  return {
+    ...existing,
+    Gewicht: inputSpecies.weight || existing.Gewicht,
+    Größe: inputSpecies.size || existing.Größe,
+  };
+}
+
 // IUCN GET mit Token
 async function iucnGET(pathname) {
   const url = `${BASE}${pathname}`;
@@ -600,10 +640,20 @@ function printReportToConsole(report) {
 (async function () {
   try {
     const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
+    const existingSpeciesData = loadExistingSpeciesData();
+    const existingBySlug = new Map(existingSpeciesData.map((entry) => [entry.URLSlug, entry]));
     const output = [];
 
     for (const s of speciesList) {
-      const data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
+      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
+      const existingData = existingBySlug.get(getInputSlug(s));
+
+      if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {
+        console.warn(`⚠ Verwende vorhandene Daten für ${s.german}, neuer Abruf war unvollständig.`);
+        logError(`Fallback auf vorhandene Daten: ${s.german} (${s.genus} ${s.species})`);
+        data = preserveExistingSpeciesData(existingData, s);
+      }
+
       output.push(data);
 
       const soundStatus = await downloadSoundIfMissing(s.genus, s.species, s.german);
