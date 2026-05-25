@@ -38,17 +38,6 @@
       .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
   }
 
-  function getSlug() {
-    if (
-      window.location.hostname.includes("preview.squarespace.com") ||
-      window.location.pathname === "srcdoc"
-    ) {
-      return "turdusmerula";
-    }
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    return parts.pop();
-  }
-
   function init() {
     const wrapper = document.getElementById("map-wrapper");
     const outputEl = document.getElementById("map-output");
@@ -69,13 +58,7 @@
     outputEl.innerHTML = `<p style="font-style:italic;">Lade Verbreitungskarte…</p>${sourceHtml()}`;
 
     try {
-      const slug = getSlug();
-
-      const res = await fetch("https://felixkfm90.github.io/iucn-species-data/speciesData.json");
-      if (!res.ok) throw new Error(`JSON konnte nicht geladen werden (HTTP ${res.status})`);
-      const json = await res.json();
-
-      const found = json.find((s) => s.URLSlug === slug);
+      const found = await window.SpeciesCore.getSpeciesData();
       if (!found) {
         outputEl.innerHTML = `<p>Keine Art gefunden.</p>${sourceHtml()}`;
         return;
