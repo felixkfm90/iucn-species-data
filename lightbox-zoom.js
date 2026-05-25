@@ -252,6 +252,24 @@
     }
   }
 
+  function getBaseCenter() {
+    const r = overlay.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  }
+
+  function setScaleFromAnchor(start, currentMid, nextScale) {
+    const startScale = start.startScale || minScale;
+    const ratio = nextScale / startScale;
+    const center = getBaseCenter();
+
+    tx = currentMid.x - center.x - ratio * (start.startMid.x - center.x - start.startTx);
+    ty = currentMid.y - center.y - ratio * (start.startMid.y - center.y - start.startTy);
+    scale = nextScale;
+  }
+
   function openZoom(src) {
     if (!src) return;
 
@@ -312,9 +330,20 @@
 
   function beginPinch() {
     const pts = Array.from(pointers.values());
+    if (pts.length < 2) {
+      pinch = null;
+      return;
+    }
+
+    const startDist = dist(pts[0], pts[1]);
+    if (startDist < 1) {
+      pinch = null;
+      return;
+    }
+
     const m = mid(pts[0], pts[1]);
     pinch = {
-      startDist: dist(pts[0], pts[1]),
+      startDist,
       startScale: scale,
       startTx: tx,
       startTy: ty,
@@ -327,10 +356,10 @@
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     // Double-tap toggle
-    if (e.pointerType === "touch") {
+    if (e.pointerType === "touch" && pointers.size === 1) {
       const now = Date.now();
       if (now - lastTap < 300) {
-        if (scale === 1) scale = 2;
+        if (scale <= 1.02) scale = 2;
         else reset();
         clampTranslate();
         apply();
@@ -338,6 +367,8 @@
         return;
       }
       lastTap = now;
+    } else if (e.pointerType === "touch") {
+      lastTap = 0;
     }
 
     // 1 Finger => Pan start
@@ -384,18 +415,16 @@
       // PINCH (2 Finger)
       if (pointers.size === 2) {
         if (!pinch) beginPinch();
+        if (!pinch) return;
 
         const pts = Array.from(pointers.values());
         const m = mid(pts[0], pts[1]);
         const d = dist(pts[0], pts[1]);
 
         const nextScale = clamp(pinch.startScale * (d / pinch.startDist), minScale, maxScale);
-        const ratio = nextScale / pinch.startScale;
+        if (!Number.isFinite(nextScale)) return;
 
-        // ✅ Anchor am Midpoint (smooth zoom in/out)
-        tx = ratio * pinch.startTx + (1 - ratio) * m.x;
-        ty = ratio * pinch.startTy + (1 - ratio) * m.y;
-        scale = nextScale;
+        setScaleFromAnchor(pinch, m, nextScale);
 
         clampTranslate();
         apply();
