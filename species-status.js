@@ -16,6 +16,16 @@
     Unbekannt: "nodata.png"
   };
 
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    }[char]));
+  }
+
   function iucnSourceHtml() {
     return `
       <div style="font-size:0.85em; color:#666; margin-top:8px; text-align:center;">
@@ -43,19 +53,22 @@
     // ✅ "Unbekannt" soll NICHT als Fallback gelten
     const trendKnown = trendLabel === "Unbekannt" ? true : Boolean(trendIcons[trendLabel]);
 
+    const categoryText = escapeHtml(d.Kategorie);
+    const trendText = escapeHtml(trendLabel);
+
     container.innerHTML = `
       <div class="frame-box status-trend-frame">
         <div class="status-trend-wrapper">
           <div class="info-box">
             <p>Status</p>
             <img src="${ASSET_BASE}/graphics/catagory/Alternativ/${statusIcon}" height="80" alt="IUCN Status Icon">
-            <p>${d.Kategorie}${statusKnown ? "" : " (Fallback-Icon)"}</p>
+            <p>${categoryText}${statusKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
 
           <div class="info-box">
             <p>Trend</p>
             <img src="${ASSET_BASE}/graphics/trend/${trendIcon}" height="80" alt="Populationstrend Icon">
-            <p>${trendLabel}${trendKnown ? "" : " (Fallback-Icon)"}</p>
+            <p>${trendText}${trendKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
         </div>
 

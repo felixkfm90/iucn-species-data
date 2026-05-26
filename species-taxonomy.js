@@ -2,6 +2,16 @@
   const container = document.getElementById("species-taxonomy");
   if (!container) return;
 
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    }[char]));
+  }
+
   try {
     const d = await window.SpeciesCore.getSpeciesData();
 
@@ -13,13 +23,13 @@
             <div class="arrow-tip"></div>
           </div>
           <div class="taxonomy-pyramid">
-            <div class="pyramid-step step-kingdom">Kingdom: ${d.Kingdom}</div>
-            <div class="pyramid-step step-phylum">Phylum: ${d.Phylum}</div>
-            <div class="pyramid-step step-class">Class: ${d.Class}</div>
-            <div class="pyramid-step step-order">Order: ${d.Order}</div>
-            <div class="pyramid-step step-family">Family: ${d.Family}</div>
-            <div class="pyramid-step step-genus">Genus: ${d.Genus}</div>
-            <div class="pyramid-step step-species">Species: ${d.Species}</div>
+            <div class="pyramid-step step-kingdom">Kingdom: ${escapeHtml(d.Kingdom)}</div>
+            <div class="pyramid-step step-phylum">Phylum: ${escapeHtml(d.Phylum)}</div>
+            <div class="pyramid-step step-class">Class: ${escapeHtml(d.Class)}</div>
+            <div class="pyramid-step step-order">Order: ${escapeHtml(d.Order)}</div>
+            <div class="pyramid-step step-family">Family: ${escapeHtml(d.Family)}</div>
+            <div class="pyramid-step step-genus">Genus: ${escapeHtml(d.Genus)}</div>
+            <div class="pyramid-step step-species">Species: ${escapeHtml(d.Species)}</div>
           </div>
         </div>
       </div>
@@ -98,6 +108,6 @@
     window.addEventListener("resize", () => { adjustPyramidWidth(); adjustArrow(); });
 
   } catch (e) {
-    container.innerHTML = `<p>${e.message}</p>`;
+    container.innerHTML = `<p>${escapeHtml(e.message)}</p>`;
   }
 })();
