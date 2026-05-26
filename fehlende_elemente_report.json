@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-25T13:15:07.340Z",
+  "generatedAt": "2026-05-26T17:47:50.942Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 9
+    "ncSoundLicensesAll": 8
   },
   "missing": {
     "soundMp3": [],
@@ -23,7 +23,6 @@
   "ncSoundLicensesAll": [
     "Bisamratte",
     "Brauenmotmot",
-    "Eurasisches Eichhörnchen",
     "Fischertukan",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
