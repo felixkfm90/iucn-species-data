@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T18:57:47.877Z",
+  "generatedAt": "2026-05-26T19:17:15.379Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 5
+    "ncSoundLicensesAll": 3
   },
   "missing": {
     "soundMp3": [],
@@ -23,8 +23,6 @@
   "ncSoundLicensesAll": [
     "Bisamratte",
     "Brauenmotmot",
-    "Geoffroy-Klammeraffe",
-    "Mittelamerikanischer Totenkopfaffe",
-    "Panama-Kapuzineraffe"
+    "Geoffroy-Klammeraffe"
   ]
 }

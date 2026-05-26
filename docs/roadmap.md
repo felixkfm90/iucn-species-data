@@ -27,7 +27,7 @@ Status: erledigt
 - `update.mjs` nach den letzten Schutzlogiken komplett ausgefuehrt.
 - Report, Assets, Assessment-Tracking und erzeugtes `speciesData.json` geprueft.
 - Vorhandene gute Daten wurden nicht durch unvollstaendige API-Antworten verschlechtert.
-- NC-Sounds werden bei jedem Lauf erneut auf freie Xeno-Canto- und Commons-Alternativen geprueft.
+- NC-Sounds werden bei jedem Lauf erneut auf freie Xeno-Canto-, Commons- und iNaturalist-Alternativen geprueft.
 - Beim Lauf am 2026-05-26 wurde `Eurasisches Eichhoernchen` auf eine freie BY-SA-4.0-Aufnahme ersetzt.
 
 ## Phase 4 - Datenqualitaet, Sounds und Quellen
@@ -37,8 +37,10 @@ Status: erledigt
 - Verbleibende NC-Soundlizenzen geprueft und nach Moeglichkeit ersetzt.
 - `Fischertukan` wurde auf eine freie Wikimedia-Commons-/iNaturalist-Aufnahme mit CC BY-SA 4.0 ersetzt.
 - `Grosstrappe` wurde durch die nun integrierte Commons-Fallbacksuche automatisch auf eine freie Wikimedia-Commons-Aufnahme mit CC BY-SA 4.0 ersetzt.
-- Die Zahl der aktiven NC-Sounds wurde damit von 8 auf 6 reduziert.
-- Fuer die verbleibenden 6 NC-Faelle ergab die erweiterte Xeno-Canto- und Wikimedia-Commons-Suche keine direkt verwendbare freie MP3-Alternative.
+- Die Suche nach freien Alternativen wurde um iNaturalist erweitert. Es werden nur exakt passende Taxa, kommerziell nutzbare CC-/Public-Domain-Lizenzen und echte MP3-Dateien akzeptiert.
+- `Mittelamerikanischer Totenkopfaffe` und `Panama-Kapuzineraffe` wurden dadurch auf freie iNaturalist-Aufnahmen mit CC BY 4.0 ersetzt.
+- Die Zahl der aktiven NC-Sounds wurde damit von 8 auf 3 reduziert.
+- Fuer die verbleibenden 3 NC-Faelle ergab die erweiterte Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Suche keine direkt verwendbare freie MP3-Alternative.
 - Sound-Credits und Lizenzhinweise werden im Frontend bereits mit Quelle, Aufnahme, Lizenzlink und Quelllink ausgegeben.
 - Karten-, Sound- und Daten-Fallbacks wurden erneut geprueft; aktuell kein Frontend-Patch noetig.
 - README und Betriebsdoku bleiben als laufender Abgleich in Phase 5.
@@ -55,3 +57,14 @@ Status: in Arbeit
 - 5.6 Weitere Arten ergaenzen.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
 - 5.8 Ausruestungsseite, Affiliate, Shop/Kalender erst nach technischer Stabilitaet.
+
+### Phase 5 - Vorschlag fuer die naechsten Schritte
+
+1. Dokumentation und Uebergabe aktualisieren: README, AGENTS-/Uebergabestand, Roadmap, Footer-/CSS-Referenz und Betriebsablauf abgleichen.
+2. Lokalen Workflow absichern: Batch-Dateien, `.gitignore`, Token-Hinweise und GitHub-only-Push-Ablauf dokumentieren.
+3. Soundbar verbessern: Player-UX, Credits-Darstellung, fehlende/NC-Sound-Hinweise und mobile Bedienung pruefen.
+4. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert, z. B. Groesse, Gewicht und ggf. echte Lebenserwartung.
+5. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
+6. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
+7. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+8. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.

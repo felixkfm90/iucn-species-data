@@ -364,7 +364,7 @@ async function downloadMapForSpecies(s) {
 }
 
 // =======================
-// XENO-CANTO + COMMONS SOUNDS (Open first, NC fallback) - MULTI PAGE
+// XENO-CANTO + COMMONS + iNATURALIST SOUNDS (Open first, NC fallback) - MULTI PAGE
 // =======================
 
 function normalizeLicenseUrl(lic) {
@@ -375,12 +375,36 @@ function normalizeLicenseUrl(lic) {
 
 function isNcLicense(lic) {
   const s = String(lic || "").toLowerCase();
-  return s.includes("/by-nc");
+  return (
+    s.includes("by-nc") ||
+    s.includes("noncommercial") ||
+    s.includes("non-commercial")
+  );
 }
 
 function isOpenCommercialLicense(lic) {
   const s = String(lic || "").toLowerCase();
-  return Boolean(s) && !isNcLicense(s) && !s.includes("noncommercial") && !s.includes("non-commercial");
+  if (!s || isNcLicense(s)) return false;
+
+  return (
+    s.includes("creativecommons.org/licenses/by/") ||
+    s.includes("creativecommons.org/licenses/by-sa/") ||
+    s.includes("creativecommons.org/licenses/by-nd/") ||
+    s.includes("creativecommons.org/publicdomain/zero/") ||
+    s.includes("public-domain") ||
+    s.includes("cc0") ||
+    /\bcc-by(-sa|-nd)?\b/.test(s)
+  );
+}
+
+function isMp3Buffer(buffer) {
+  return (
+    buffer.length >= 3 &&
+    (
+      (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) ||
+      (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0)
+    )
+  );
 }
 
 function readSoundLicense(creditsPath) {
@@ -603,6 +627,101 @@ async function findCommonsRecording(genus, species, german) {
   return null;
 }
 
+function inatLicenseUrl(code) {
+  const value = String(code || "").toLowerCase().replace(/^cc-/, "");
+  if (!value) return "";
+  if (value === "cc0" || value === "public-domain") return "https://creativecommons.org/publicdomain/zero/1.0/";
+  if (value === "by") return "https://creativecommons.org/licenses/by/4.0/";
+  if (value === "by-sa") return "https://creativecommons.org/licenses/by-sa/4.0/";
+  if (value === "by-nd") return "https://creativecommons.org/licenses/by-nd/4.0/";
+  return code;
+}
+
+function inatSounds(observation) {
+  const direct = Array.isArray(observation.sounds) ? observation.sounds : [];
+  const nested = Array.isArray(observation.observation_sounds)
+    ? observation.observation_sounds.map((entry) => entry.sound).filter(Boolean)
+    : [];
+
+  return [...direct, ...nested];
+}
+
+function inatSoundUrl(sound) {
+  return sound.file_url || sound.fileUrl || sound.url || sound.original_url || "";
+}
+
+function isDirectMp3Sound(sound) {
+  const contentType = String(sound.file_content_type || "").toLowerCase();
+  const url = inatSoundUrl(sound);
+  return contentType.includes("audio/mpeg") || /\.mp3($|\?)/i.test(url);
+}
+
+async function fetchInatObservations(genus, species, qualityGrade) {
+  const scientific = `${genus} ${species}`;
+  const params = new URLSearchParams({
+    taxon_name: scientific,
+    sounds: "true",
+    per_page: "100",
+    order_by: "created_at",
+    order: "desc",
+  });
+  if (qualityGrade) params.set("quality_grade", qualityGrade);
+
+  const apiUrl = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
+
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { "User-Agent": "fnwildlifetravel-iucn-sound-updater/1.0" },
+    });
+    if (!res.ok) return { ok: false, status: res.status, results: [], apiUrl };
+
+    const data = await res.json();
+    return { ok: true, status: res.status, results: Array.isArray(data.results) ? data.results : [], apiUrl };
+  } catch (err) {
+    logError(`iNaturalist-Suche fehlgeschlagen (${scientific}): ${err.message}`);
+    return { ok: false, status: 0, results: [], apiUrl };
+  }
+}
+
+async function findInatRecording(genus, species, german) {
+  const scientific = `${genus} ${species}`.toLowerCase();
+  const qualityPasses = ["research", "needs_id", ""];
+  const seen = new Set();
+
+  for (const qualityGrade of qualityPasses) {
+    const resp = await fetchInatObservations(genus, species, qualityGrade);
+    if (!resp.ok) {
+      console.warn(`⚠ iNaturalist API Fehler ${resp.status} für ${genus} ${species}`);
+      await sleep(250);
+      continue;
+    }
+
+    for (const observation of resp.results) {
+      const taxonName = String(observation.taxon?.name || "").toLowerCase();
+      if (taxonName !== scientific) continue;
+
+      for (const sound of inatSounds(observation)) {
+        const url = inatSoundUrl(sound);
+        const key = sound.uuid || sound.id || url;
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+
+        const license = sound.license_code || sound.license || "";
+        if (!isOpenCommercialLicense(license)) continue;
+        if (!isDirectMp3Sound(sound)) continue;
+        if (!(await isReachableMp3(url))) continue;
+
+        return { observation, sound, url, qualityGrade: qualityGrade || "any" };
+      }
+    }
+
+    await sleep(250);
+  }
+
+  console.log(`ℹ Keine freie iNaturalist-MP3 gefunden für ${german}.`);
+  return null;
+}
+
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
   const targetDir = path.join(SOUND_DIR, safeGerman);
@@ -671,6 +790,19 @@ async function downloadSoundIfMissing(genus, species, german) {
       });
     }
 
+    const inatHit = await findInatRecording(genus, species, german);
+    if (inatHit) {
+      console.log(`✔ Freie iNaturalist-Alternative gefunden für ${german}.`);
+      return await saveInatSoundRecording({
+        genus,
+        species,
+        german,
+        mp3Path,
+        creditsPath,
+        hit: inatHit,
+      });
+    }
+
     console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
     return "ok";
   }
@@ -700,6 +832,21 @@ async function downloadSoundIfMissing(genus, species, german) {
         mp3Path,
         creditsPath,
         hit: commonsHit,
+      });
+    }
+  }
+
+  if (!chosen) {
+    const inatHit = await findInatRecording(genus, species, german);
+    if (inatHit) {
+      console.log(`✔ Freie iNaturalist-Aufnahme gefunden für ${german}.`);
+      return await saveInatSoundRecording({
+        genus,
+        species,
+        german,
+        mp3Path,
+        creditsPath,
+        hit: inatHit,
       });
     }
   }
@@ -795,8 +942,13 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
       return "error";
     }
 
-    const buffer = await audioRes.arrayBuffer();
-    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    const buffer = Buffer.from(await audioRes.arrayBuffer());
+    if (!isMp3Buffer(buffer)) {
+      console.warn("⚠ iNaturalist-Datei ist kein gültiges MP3, Treffer wird übersprungen.");
+      return "error";
+    }
+
+    fs.writeFileSync(tempMp3, buffer);
     fs.renameSync(tempMp3, mp3Path);
 
     console.log(`✔ Commons-Sound gespeichert: ${mp3Path}`);
@@ -825,6 +977,51 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
     if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
     console.error(`❌ Fehler beim Commons-Sound-Download ${genus} ${species}: ${err.message}`);
     logError(`Commons-Sound ${genus} ${species}: ${err.message}`);
+    return "error";
+  }
+}
+
+async function saveInatSoundRecording({ genus, species, german, mp3Path, creditsPath, hit }) {
+  const tempMp3 = mp3Path + ".tmp";
+
+  try {
+    const audioRes = await fetch(hit.url);
+    if (!audioRes.ok) {
+      console.warn(`⚠ Fehler beim Herunterladen der iNaturalist-Datei (${audioRes.status})`);
+      return "error";
+    }
+
+    const buffer = await audioRes.arrayBuffer();
+    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    fs.renameSync(tempMp3, mp3Path);
+
+    console.log(`✔ iNaturalist-Sound gespeichert: ${mp3Path}`);
+
+    const observation = hit.observation;
+    const sound = hit.sound;
+    const user = observation.user?.login || "n/a";
+    const license = sound.license_code || sound.license || "";
+
+    const credits = {
+      scientific_name: `${genus} ${species}`,
+      german_name: german,
+      recordist: sound.attribution || user,
+      country: "n/a",
+      location: observation.place_guess || "n/a",
+      quality: observation.quality_grade || hit.qualityGrade || "n/a",
+      license: inatLicenseUrl(license) || "n/a",
+      source: "iNaturalist",
+      url: observation.uri || `https://www.inaturalist.org/observations/${observation.id}`,
+      notes: `Free iNaturalist replacement. Observation=${observation.id} | user=${user} | license=${license} | sound=${sound.id || sound.uuid || "n/a"} | file=${hit.url}`,
+    };
+
+    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+
+    return "ok";
+  } catch (err) {
+    if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
+    console.error(`❌ Fehler beim iNaturalist-Sound-Download ${genus} ${species}: ${err.message}`);
+    logError(`iNaturalist-Sound ${genus} ${species}: ${err.message}`);
     return "error";
   }
 }

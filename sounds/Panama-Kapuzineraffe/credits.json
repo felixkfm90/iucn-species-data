@@ -1,12 +1,12 @@
 {
   "scientific_name": "Cebus imitator",
   "german_name": "Panama-Kapuzineraffe",
-  "recordist": "Douglas Von Gausig",
-  "country": "Costa Rica",
-  "location": "Costa Rica",
-  "quality": "",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/3.0/",
-  "source": "animaldiversity.org / Naturesongs.com",
-  "url": "https://animaldiversity.org/collections/contributors/naturesongs/wfmo12/",
-  "notes": "Source page identifies the recording as Cebus capucinus (white-faced capuchin), recorded in Costa Rica, contributor Douglas Von Gausig / Naturesongs.com. Used here for Cebus imitator because this taxon was historically treated as Cebus capucinus or C. capucinus imitator."
+  "recordist": "(c) Liam Steele, some rights reserved (CC BY)",
+  "country": "n/a",
+  "location": "Limón Province, Pococí, Costa Rica",
+  "quality": "needs_id",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "iNaturalist",
+  "url": "https://www.inaturalist.org/observations/266026085",
+  "notes": "Free iNaturalist replacement. Observation=266026085 | user=liamsteele | license=cc-by | sound=1341040 | file=https://static.inaturalist.org/sounds/1341040.mp3?1742424748"
 }

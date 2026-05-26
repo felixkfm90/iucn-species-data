@@ -85,8 +85,9 @@ node update.mjs
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
-Wikimedia-Commons-Audiodateien mit erreichbarem MP3-Transcode. Erst danach bleibt ein vorhandener NC-Sound erhalten
-oder wird bei neuen Arten als Fallback genutzt.
+Wikimedia-Commons-Audiodateien mit erreichbarem MP3-Transcode und danach nach freien iNaturalist-MP3-Aufnahmen.
+iNaturalist-Treffer werden nur uebernommen, wenn Taxon, Lizenz und MP3-Datei passen. Erst danach bleibt ein vorhandener
+NC-Sound erhalten oder wird bei neuen Arten als Fallback genutzt.
 
 Tokens duerfen nicht im Repository gespeichert werden.
 
