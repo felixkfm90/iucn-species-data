@@ -14,6 +14,7 @@
 
   try {
     const data = await window.SpeciesCore.getSpeciesData();
+    const generationDuration = data["Generationsdauer"] ?? data["Lebenserwartung"];
 
     function renderInfoRow(label, value) {
       const text = String(value || "").trim();
@@ -37,7 +38,7 @@
         <p>Name: ${escapeHtml(data["Deutscher Name"])} – ${escapeHtml(data["Wissenschaftlicher Name"])}</p>
         ${renderInfoRow("Größe", data.Größe)}
         ${renderInfoRow("Gewicht", data.Gewicht)}
-        <p>Lebenserwartung: ${escapeHtml(data["Lebenserwartung"])}</p>
+        <p>Generationsdauer: ${escapeHtml(generationDuration)}</p>
         <p>Populationgröße: ${escapeHtml(data["Populationgröße"])}</p>
       </div>
     `;

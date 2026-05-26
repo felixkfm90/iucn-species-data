@@ -23,7 +23,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 ## Wichtige Dateien
 
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
-- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung und Population
+- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
 - `species-sound.js`: Tierstimmen-Player mit WaveSurfer
