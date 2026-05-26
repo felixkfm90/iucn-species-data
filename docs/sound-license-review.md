@@ -42,5 +42,7 @@ vor einer spaeteren Asset-Bereinigung separat geprueft werden.
 
 1. Fuer die 9 aktiven NC-Sounds offene Alternativen suchen, bevorzugt CC0, CC BY oder CC BY-SA.
 2. Wenn keine offene Alternative verfuegbar ist, Sound auf der Website entfernen oder ausdruecklich rechtlich pruefen.
-3. Danach `fehlende_elemente_report.json` neu erzeugen und pruefen.
-4. Erst nach erfolgreichem Ersatz alte/duplizierte Sound-Ordner bereinigen.
+3. `update.mjs` prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Xeno-Canto-Alternativen und ersetzt sie
+   nur, wenn eine freie Alternative gefunden wird.
+4. Danach `fehlende_elemente_report.json` neu erzeugen und pruefen.
+5. Erst nach erfolgreichem Ersatz alte/duplizierte Sound-Ordner bereinigen.

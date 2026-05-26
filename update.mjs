@@ -378,6 +378,18 @@ function isNcLicense(lic) {
   return s.includes("/by-nc");
 }
 
+function readSoundLicense(creditsPath) {
+  if (!fs.existsSync(creditsPath)) return "";
+
+  try {
+    const credits = JSON.parse(fs.readFileSync(creditsPath, "utf8"));
+    return normalizeLicenseUrl(credits.license || "");
+  } catch (err) {
+    logError(`Credits konnten nicht gelesen werden (${creditsPath}): ${err.message}`);
+    return "";
+  }
+}
+
 function buildXenoQuery(genus, species, qLetter, len2535) {
   const parts = [`gen:${genus}`, `sp:${species}`];
   if (qLetter) parts.push(`q:${qLetter}`);
@@ -446,11 +458,6 @@ async function downloadSoundIfMissing(genus, species, german) {
   const mp3Path = path.join(targetDir, `${safeGerman}.mp3`);
   const creditsPath = path.join(targetDir, "credits.json");
 
-  if (fs.existsSync(mp3Path)) {
-    console.log(`🎵 Sound existiert bereits für ${german}`);
-    return "ok";
-  }
-
   const stages = [
     { openOnly: true, q: "A", len2535: true }, // 0
     { openOnly: true, q: "A", len2535: false }, // 1
@@ -465,6 +472,40 @@ async function downloadSoundIfMissing(genus, species, german) {
     { openOnly: false, q: "C", len2535: true }, // 10
     { openOnly: false, q: "C", len2535: false }, // 11
   ];
+
+  if (fs.existsSync(mp3Path)) {
+    const existingLicense = readSoundLicense(creditsPath);
+
+    if (!isNcLicense(existingLicense)) {
+      console.log(`🎵 Sound existiert bereits für ${german}`);
+      return "ok";
+    }
+
+    console.log(`🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`);
+    const openStages = stages.filter((stage) => stage.openOnly);
+
+    for (let i = 0; i < openStages.length; i++) {
+      const hit = await findRecordingByStage(genus, species, openStages[i]);
+      if (hit?.rec) {
+        const originalStageIndex = stages.indexOf(openStages[i]);
+        console.log(`✔ Freie Alternative gefunden für ${german} (Stage ${originalStageIndex}).`);
+        return await saveSoundRecording({
+          genus,
+          species,
+          german,
+          mp3Path,
+          creditsPath,
+          chosen: hit.rec,
+          chosenInfo: hit,
+          chosenStageIndex: originalStageIndex,
+          stages,
+        });
+      }
+    }
+
+    console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
+    return "ok";
+  }
 
   let chosen = null;
   let chosenInfo = null;
@@ -485,6 +526,30 @@ async function downloadSoundIfMissing(genus, species, german) {
     return "missing";
   }
 
+  return await saveSoundRecording({
+    genus,
+    species,
+    german,
+    mp3Path,
+    creditsPath,
+    chosen,
+    chosenInfo,
+    chosenStageIndex,
+    stages,
+  });
+}
+
+async function saveSoundRecording({
+  genus,
+  species,
+  german,
+  mp3Path,
+  creditsPath,
+  chosen,
+  chosenInfo,
+  chosenStageIndex,
+  stages,
+}) {
   const lic = normalizeLicenseUrl(chosen.lic || "");
   const audioUrl = chosen.file?.startsWith("https:") ? chosen.file : `https:${chosen.file}`;
   const tempMp3 = mp3Path + ".tmp";
