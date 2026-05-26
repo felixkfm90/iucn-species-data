@@ -16,9 +16,11 @@
   const placeholder = "Suche …";
   const limit = 30;
 
-  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
   function norm(s){ return (s||"").toLowerCase().trim(); }
+
+  function cleanPath(pathname) {
+    return pathname.replace(/\/+$/, "");
+  }
 
   function ensureUI() {
     host.innerHTML = `
@@ -46,31 +48,44 @@
 
   function collectEntries() {
     // ✅ nur im Hauptinhalt scannen (nicht Header/Footer/Nav)
-    const scope = document.querySelector("main") || document.body;
+    const scope = document.querySelector("main") || document.querySelector('[role="main"]') || document.body;
 
     // Links, die unter base/slug liegen
-    const links = Array.from(scope.querySelectorAll('a[href*="' + base + '/"]'));
+    const links = Array.from(scope.querySelectorAll("a[href]"));
     const map = new Map();
-
-    const slugRe = new RegExp(esc(base) + "\\/[^\\/?#]+", "i");
+    const baseLower = base.toLowerCase();
 
     for (const a of links) {
       const hrefRaw = a.getAttribute("href") || "";
-      const hrefAbs = hrefRaw.startsWith("http") ? hrefRaw : (location.origin + hrefRaw);
+      let url;
 
-      if (!slugRe.test(hrefRaw)) continue;
+      try {
+        url = new URL(hrefRaw, location.href);
+      } catch (e) {
+        continue;
+      }
+
+      if (url.origin !== location.origin) continue;
+
+      const path = cleanPath(url.pathname);
+      const pathLower = path.toLowerCase();
+      if (!pathLower.startsWith(baseLower + "/")) continue;
 
       // Übersichtsseite selbst ausschließen
-      const cleaned = hrefRaw.split("#")[0].replace(/\/+$/, "");
-      if (cleaned.toLowerCase() === base.toLowerCase()) continue;
+      if (pathLower === baseLower) continue;
 
-      if (map.has(hrefAbs)) continue;
+      const rest = path.slice(base.length + 1).split("/").filter(Boolean);
+      if (rest.length !== 1) continue;
+
+      if (map.has(pathLower)) continue;
 
       const item = getItemContainer(a);
       const title = getTitleFromItem(item);
-      const fallback = hrefRaw.split("/").filter(Boolean).pop() || "Unbenannt";
+      const linkText = (a.textContent || "").trim();
+      const fallback = rest[0] || "Unbenannt";
 
-      map.set(hrefAbs, { title: title || fallback, href: hrefAbs });
+      url.hash = "";
+      map.set(pathLower, { title: title || linkText || fallback, href: url.href });
     }
 
     return Array.from(map.values())
@@ -86,8 +101,22 @@
     if (!input || !meta || !resultsWrap || !resultsList) return;
 
     let entries = [];
+    let entriesSignature = "";
+    let rebuildTimer = null;
 
-    function buildIndex() { entries = collectEntries(); }
+    function buildEntriesSignature(nextEntries) {
+      return nextEntries.map(e => `${e.href}\u0001${e.title}`).join("\u0002");
+    }
+
+    function buildIndex() {
+      const nextEntries = collectEntries();
+      const nextSignature = buildEntriesSignature(nextEntries);
+      if (nextSignature === entriesSignature) return false;
+
+      entries = nextEntries;
+      entriesSignature = nextSignature;
+      return true;
+    }
 
     function render(matches) {
       resultsList.innerHTML = "";
@@ -124,26 +153,37 @@
       if (e.key === "Escape") { input.value = ""; apply(""); }
       if (e.key === "Enter") {
         const q = norm(input.value);
+        if (!q) return;
         const first = entries.find(e => norm(e.title).includes(q));
         if (first) location.href = first.href;
       }
     });
 
-    buildIndex();
-    setTimeout(buildIndex, 800);
-    setTimeout(buildIndex, 1800);
+    function rebuildAndApply() {
+      const changed = buildIndex();
+      if (changed && input.value) apply(input.value);
+    }
 
-    const obs = new MutationObserver(() => {
-      // ✅ nur rebuilden wenn wirklich gar nichts da ist
-      if (entries.length < 1) {
-        buildIndex();
-        if (input.value) apply(input.value);
-      }
+    buildIndex();
+    setTimeout(rebuildAndApply, 800);
+    setTimeout(rebuildAndApply, 1800);
+    setTimeout(rebuildAndApply, 3200);
+
+    const observeScope = document.querySelector("main") || document.querySelector('[role="main"]') || document.body;
+    const obs = new MutationObserver((mutations) => {
+      if (mutations.every(m => host.contains(m.target))) return;
+
+      clearTimeout(rebuildTimer);
+      rebuildTimer = setTimeout(rebuildAndApply, 180);
     });
-    obs.observe(document.body, { childList: true, subtree: true });
+    obs.observe(observeScope, { childList: true, subtree: true });
 
     // ✅ Observer nach kurzer Zeit abschalten (Squarespace ist dann i.d.R. fertig)
-    setTimeout(() => obs.disconnect(), 5000);
+    setTimeout(() => {
+      clearTimeout(rebuildTimer);
+      rebuildAndApply();
+      obs.disconnect();
+    }, 8000);
   }
 
   ensureUI();
