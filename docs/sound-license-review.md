@@ -14,9 +14,8 @@ Alle aktiven Arten haben laut Report Sounddatei und Credits. Der aktuelle Report
 Non-Commercial-Lizenzhinweis. Diese Sounds sollten vor kommerzieller Nutzung ersetzt, entfernt oder rechtlich geklaert
 werden.
 
-Zusaetzlich liegt im Ordner `sounds/` ein weiterer NC-Credit fuer `Eichhoernchen`. Diese Art ist nach aktuellem
-`speciesData.json` nicht als eigener aktiver Datensatz vorhanden; aktiv ist `Eurasisches Eichhörnchen`. Der Ordner sollte
-vor einer spaeteren Asset-Bereinigung separat geprueft werden.
+Alte/duplizierte Sound- und Kartenassets wurden bereinigt. `sounds/`, `Verbreitungskarten/` und
+`lastSavedAssessmentId.json` enthalten jeweils 45 Eintraege passend zu den 45 aktiven Arten.
 
 ## Aktive NC-Lizenzen laut Report
 
@@ -32,12 +31,6 @@ vor einer spaeteren Asset-Bereinigung separat geprueft werden.
 | Panama-Kapuzineraffe | Cebus imitator | CC BY-NC-SA 3.0 | https://animaldiversity.org/collections/contributors/naturesongs/wfmo12/ |
 | Quetzal | Pharomachrus mocinno | CC BY-NC-SA 4.0 | https://xeno-canto.org/914121 |
 
-## Zusaetzlicher alter/duplizierter NC-Ordner
-
-| Ordner | Deutscher Name in Credits | Wissenschaftlicher Name | Lizenz | Quelle |
-|---|---|---|---|---|
-| `sounds/Eichhoernchen/` | Eichhörnchen | Sciurus vulgaris | CC BY-NC-SA 4.0 | https://xeno-canto.org/971045 |
-
 ## Empfohlene naechste Schritte
 
 1. Fuer die 9 aktiven NC-Sounds offene Alternativen suchen, bevorzugt CC0, CC BY oder CC BY-SA.
@@ -45,4 +38,3 @@ vor einer spaeteren Asset-Bereinigung separat geprueft werden.
 3. `update.mjs` prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Xeno-Canto-Alternativen und ersetzt sie
    nur, wenn eine freie Alternative gefunden wird.
 4. Danach `fehlende_elemente_report.json` neu erzeugen und pruefen.
-5. Erst nach erfolgreichem Ersatz alte/duplizierte Sound-Ordner bereinigen.
