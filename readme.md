@@ -40,6 +40,7 @@ Versionierte Referenzen liegen unter:
 - `docs/squarespace-custom.css`
 - `docs/sound-license-review.md`
 - `docs/css-layout-audit.md`
+- `docs/repo-file-audit.md`
 - `docs/roadmap.md`
 
 Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht

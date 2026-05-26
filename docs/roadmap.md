@@ -45,10 +45,13 @@ Status: erledigt
 
 ## Phase 5 - Struktur, Assets und Wartbarkeit
 
-Status: offen
+Status: in Arbeit
 
-- Assets pro Art nach sanitisiertem Namen buendeln.
-- Soundbar verbessern.
-- Ordnerstruktur pruefen und bei Bedarf anpassen.
-- Alle Dokumentationen pruefen und aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation.
-- Alle Dateien im Repository pruefen: sinnvoll, alt, doppelt oder ueberfluessig.
+- 5.1 Repo- und Dateiaudit: erledigt, siehe `docs/repo-file-audit.md`.
+- 5.2 Dokumentation aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation.
+- 5.3 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
+- 5.4 Soundbar verbessern.
+- 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert.
+- 5.6 Weitere Arten ergaenzen.
+- 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+- 5.8 Ausruestungsseite, Affiliate, Shop/Kalender erst nach technischer Stabilitaet.
