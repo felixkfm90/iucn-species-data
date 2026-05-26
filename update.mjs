@@ -364,7 +364,7 @@ async function downloadMapForSpecies(s) {
 }
 
 // =======================
-// XENO-CANTO SOUNDS (Open first, NC fallback) - MULTI PAGE
+// XENO-CANTO + COMMONS SOUNDS (Open first, NC fallback) - MULTI PAGE
 // =======================
 
 function normalizeLicenseUrl(lic) {
@@ -376,6 +376,11 @@ function normalizeLicenseUrl(lic) {
 function isNcLicense(lic) {
   const s = String(lic || "").toLowerCase();
   return s.includes("/by-nc");
+}
+
+function isOpenCommercialLicense(lic) {
+  const s = String(lic || "").toLowerCase();
+  return Boolean(s) && !isNcLicense(s) && !s.includes("noncommercial") && !s.includes("non-commercial");
 }
 
 function readSoundLicense(creditsPath) {
@@ -449,6 +454,155 @@ async function findRecordingByStage(genus, species, stage) {
   return null;
 }
 
+function stripHtml(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+function commonsMetaValue(meta, key) {
+  return stripHtml(meta?.[key]?.value || "");
+}
+
+function commonsMp3Url(fileUrl) {
+  if (!fileUrl) return "";
+  if (/\.mp3($|\?)/i.test(fileUrl)) return fileUrl;
+
+  const fileName = fileUrl.split("/").pop();
+  if (!fileName || !/\.(ogg|oga)$/i.test(fileName)) return "";
+
+  return fileUrl.replace("/wikipedia/commons/", "/wikipedia/commons/transcoded/") + `/${fileName}.mp3`;
+}
+
+async function isReachableMp3(url) {
+  if (!url) return false;
+
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    return res.ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isExactCommonsSpecies(hit, genus, species) {
+  const scientific = `${genus} ${species}`.toLowerCase();
+  const scientificUnderscore = `${genus}_${species}`.toLowerCase();
+  const haystack = [hit.title, hit.description, hit.categories, hit.objectName].join(" ").toLowerCase();
+
+  return haystack.includes(scientific) || haystack.includes(scientificUnderscore);
+}
+
+async function fetchCommonsAudioCandidates(query) {
+  const apiUrl =
+    "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*" +
+    "&generator=search&gsrnamespace=6&gsrlimit=20" +
+    `&gsrsearch=${encodeURIComponent(query)}` +
+    "&prop=imageinfo&iiprop=url|mime|extmetadata";
+
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { "User-Agent": "fnwildlifetravel-iucn-sound-updater/1.0" },
+    });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const pages = Object.values(data.query?.pages || {});
+
+    return pages
+      .map((page) => {
+        const info = page.imageinfo?.[0] || {};
+        const meta = info.extmetadata || {};
+        const licenseUrl = normalizeLicenseUrl(commonsMetaValue(meta, "LicenseUrl"));
+        const licenseShort = commonsMetaValue(meta, "LicenseShortName");
+        const usageTerms = commonsMetaValue(meta, "UsageTerms");
+        const mp3Url = commonsMp3Url(info.url || "");
+
+        return {
+          query,
+          title: page.title || "",
+          fileUrl: info.url || "",
+          mp3Url,
+          descriptionUrl: info.descriptionurl || "",
+          mime: info.mime || "",
+          license: licenseUrl || licenseShort || usageTerms,
+          licenseShort,
+          artist: commonsMetaValue(meta, "Artist"),
+          credit: commonsMetaValue(meta, "Credit"),
+          description: commonsMetaValue(meta, "ImageDescription"),
+          categories: commonsMetaValue(meta, "Categories"),
+          objectName: commonsMetaValue(meta, "ObjectName"),
+        };
+      })
+      .filter((hit) => {
+        const looksAudio =
+          String(hit.mime || "").startsWith("audio/") ||
+          /\.(mp3|ogg|oga|wav|flac|opus)$/i.test(hit.title) ||
+          /\.(mp3|ogg|oga|wav|flac|opus)$/i.test(hit.fileUrl);
+
+        return looksAudio && isOpenCommercialLicense(hit.license) && hit.mp3Url;
+      });
+  } catch (err) {
+    logError(`Commons-Suche fehlgeschlagen (${query}): ${err.message}`);
+    return [];
+  }
+}
+
+function scoreCommonsHit(hit, genus, species) {
+  const scientific = `${genus} ${species}`.toLowerCase();
+  const scientificUnderscore = `${genus}_${species}`.toLowerCase();
+  const title = String(hit.title || "").toLowerCase();
+  const description = String(hit.description || "").toLowerCase();
+  const categories = String(hit.categories || "").toLowerCase();
+
+  let score = 0;
+  if (title.includes(scientific) || title.includes(scientificUnderscore)) score += 50;
+  if (description.includes(scientific) || description.includes(scientificUnderscore)) score += 20;
+  if (categories.includes(scientific) || categories.includes(scientificUnderscore)) score += 10;
+  if (String(hit.license || "").toLowerCase().includes("/by/")) score += 3;
+  if (String(hit.license || "").toLowerCase().includes("/by-sa/")) score += 2;
+  return score;
+}
+
+async function findCommonsRecording(genus, species, german) {
+  const queries = [
+    `${genus} ${species} audio`,
+    `${genus} ${species} sound`,
+    `${genus} ${species} call`,
+  ];
+
+  const candidates = [];
+  const seen = new Set();
+
+  for (const query of queries) {
+    const hits = await fetchCommonsAudioCandidates(query);
+    for (const hit of hits) {
+      const key = hit.descriptionUrl || hit.fileUrl || hit.title;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!isExactCommonsSpecies(hit, genus, species)) continue;
+      candidates.push(hit);
+    }
+    await sleep(150);
+  }
+
+  candidates.sort((a, b) => scoreCommonsHit(b, genus, species) - scoreCommonsHit(a, genus, species));
+
+  for (const hit of candidates) {
+    if (await isReachableMp3(hit.mp3Url)) return hit;
+  }
+
+  if (candidates.length) {
+    console.log(`⚠ Commons-Treffer für ${german}, aber kein erreichbarer MP3-Transcode.`);
+  }
+
+  return null;
+}
+
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
   const targetDir = path.join(SOUND_DIR, safeGerman);
@@ -473,6 +627,9 @@ async function downloadSoundIfMissing(genus, species, german) {
     { openOnly: false, q: "C", len2535: false }, // 11
   ];
 
+  const openStages = stages.filter((stage) => stage.openOnly);
+  const fallbackStages = stages.filter((stage) => !stage.openOnly);
+
   if (fs.existsSync(mp3Path)) {
     const existingLicense = readSoundLicense(creditsPath);
 
@@ -482,8 +639,6 @@ async function downloadSoundIfMissing(genus, species, german) {
     }
 
     console.log(`🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`);
-    const openStages = stages.filter((stage) => stage.openOnly);
-
     for (let i = 0; i < openStages.length; i++) {
       const hit = await findRecordingByStage(genus, species, openStages[i]);
       if (hit?.rec) {
@@ -503,6 +658,19 @@ async function downloadSoundIfMissing(genus, species, german) {
       }
     }
 
+    const commonsHit = await findCommonsRecording(genus, species, german);
+    if (commonsHit) {
+      console.log(`✔ Freie Commons-Alternative gefunden für ${german}.`);
+      return await saveCommonsSoundRecording({
+        genus,
+        species,
+        german,
+        mp3Path,
+        creditsPath,
+        hit: commonsHit,
+      });
+    }
+
     console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
     return "ok";
   }
@@ -511,12 +679,37 @@ async function downloadSoundIfMissing(genus, species, german) {
   let chosenInfo = null;
   let chosenStageIndex = null;
 
-  for (let i = 0; i < stages.length; i++) {
-    const hit = await findRecordingByStage(genus, species, stages[i]);
+  for (let i = 0; i < openStages.length; i++) {
+    const hit = await findRecordingByStage(genus, species, openStages[i]);
     if (hit?.rec) {
       chosen = hit.rec;
       chosenInfo = hit;
-      chosenStageIndex = i;
+      chosenStageIndex = stages.indexOf(openStages[i]);
+      break;
+    }
+  }
+
+  if (!chosen) {
+    const commonsHit = await findCommonsRecording(genus, species, german);
+    if (commonsHit) {
+      console.log(`✔ Freie Commons-Aufnahme gefunden für ${german}.`);
+      return await saveCommonsSoundRecording({
+        genus,
+        species,
+        german,
+        mp3Path,
+        creditsPath,
+        hit: commonsHit,
+      });
+    }
+  }
+
+  for (let i = 0; !chosen && i < fallbackStages.length; i++) {
+    const hit = await findRecordingByStage(genus, species, fallbackStages[i]);
+    if (hit?.rec) {
+      chosen = hit.rec;
+      chosenInfo = hit;
+      chosenStageIndex = stages.indexOf(fallbackStages[i]);
       break;
     }
   }
@@ -588,6 +781,50 @@ async function saveSoundRecording({
     if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
     console.error(`❌ Fehler beim Sound-Download ${genus} ${species}: ${err.message}`);
     logError(`Sound ${genus} ${species}: ${err.message}`);
+    return "error";
+  }
+}
+
+async function saveCommonsSoundRecording({ genus, species, german, mp3Path, creditsPath, hit }) {
+  const tempMp3 = mp3Path + ".tmp";
+
+  try {
+    const audioRes = await fetch(hit.mp3Url);
+    if (!audioRes.ok) {
+      console.warn(`⚠ Fehler beim Herunterladen der Commons-Datei (${audioRes.status})`);
+      return "error";
+    }
+
+    const buffer = await audioRes.arrayBuffer();
+    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    fs.renameSync(tempMp3, mp3Path);
+
+    console.log(`✔ Commons-Sound gespeichert: ${mp3Path}`);
+
+    const source = String(hit.credit || "").toLowerCase().includes("inaturalist")
+      ? "Wikimedia Commons / iNaturalist"
+      : "Wikimedia Commons";
+
+    const credits = {
+      scientific_name: `${genus} ${species}`,
+      german_name: german,
+      recordist: hit.artist || "n/a",
+      country: "n/a",
+      location: "n/a",
+      quality: "n/a",
+      license: normalizeLicenseUrl(hit.license) || "n/a",
+      source,
+      url: hit.descriptionUrl || hit.fileUrl || "n/a",
+      notes: `Free Commons replacement. Query="${hit.query}" | title="${hit.title}" | original=${hit.fileUrl} | mp3=${hit.mp3Url}`,
+    };
+
+    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+
+    return "ok";
+  } catch (err) {
+    if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
+    console.error(`❌ Fehler beim Commons-Sound-Download ${genus} ${species}: ${err.message}`);
+    logError(`Commons-Sound ${genus} ${species}: ${err.message}`);
     return "error";
   }
 }

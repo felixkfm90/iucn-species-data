@@ -27,7 +27,7 @@ Status: erledigt
 - `update.mjs` nach den letzten Schutzlogiken komplett ausgefuehrt.
 - Report, Assets, Assessment-Tracking und erzeugtes `speciesData.json` geprueft.
 - Vorhandene gute Daten wurden nicht durch unvollstaendige API-Antworten verschlechtert.
-- NC-Sounds werden bei jedem Lauf erneut auf freie Xeno-Canto-Alternativen geprueft.
+- NC-Sounds werden bei jedem Lauf erneut auf freie Xeno-Canto- und Commons-Alternativen geprueft.
 - Beim Lauf am 2026-05-26 wurde `Eurasisches Eichhoernchen` auf eine freie BY-SA-4.0-Aufnahme ersetzt.
 
 ## Phase 4 - Datenqualitaet, Sounds und Quellen
@@ -36,8 +36,9 @@ Status: erledigt
 
 - Verbleibende NC-Soundlizenzen geprueft und nach Moeglichkeit ersetzt.
 - `Fischertukan` wurde auf eine freie Wikimedia-Commons-/iNaturalist-Aufnahme mit CC BY-SA 4.0 ersetzt.
-- Die Zahl der aktiven NC-Sounds wurde damit von 8 auf 7 reduziert.
-- Fuer die verbleibenden 7 NC-Faelle ergab die erweiterte Xeno-Canto- und Wikimedia-Commons-Suche keine direkt verwendbare freie MP3-Alternative.
+- `Grosstrappe` wurde durch die nun integrierte Commons-Fallbacksuche automatisch auf eine freie Wikimedia-Commons-Aufnahme mit CC BY-SA 4.0 ersetzt.
+- Die Zahl der aktiven NC-Sounds wurde damit von 8 auf 6 reduziert.
+- Fuer die verbleibenden 6 NC-Faelle ergab die erweiterte Xeno-Canto- und Wikimedia-Commons-Suche keine direkt verwendbare freie MP3-Alternative.
 - Sound-Credits und Lizenzhinweise werden im Frontend bereits mit Quelle, Aufnahme, Lizenzlink und Quelllink ausgegeben.
 - Karten-, Sound- und Daten-Fallbacks wurden erneut geprueft; aktuell kein Frontend-Patch noetig.
 - README und Betriebsdoku bleiben als laufender Abgleich in Phase 5.
