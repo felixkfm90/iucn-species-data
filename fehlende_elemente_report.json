@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T18:21:46.171Z",
+  "generatedAt": "2026-05-26T18:57:47.877Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 6
+    "ncSoundLicensesAll": 5
   },
   "missing": {
     "soundMp3": [],
@@ -25,7 +25,6 @@
     "Brauenmotmot",
     "Geoffroy-Klammeraffe",
     "Mittelamerikanischer Totenkopfaffe",
-    "Panama-Kapuzineraffe",
-    "Quetzal"
+    "Panama-Kapuzineraffe"
   ]
 }
