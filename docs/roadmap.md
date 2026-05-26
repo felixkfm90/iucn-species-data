@@ -32,12 +32,15 @@ Status: erledigt
 
 ## Phase 4 - Datenqualitaet, Sounds und Quellen
 
-Status: offen
+Status: erledigt
 
-- Verbleibende NC-Soundlizenzen pruefen und nach Moeglichkeit ersetzen.
-- Sound-Credits und Lizenzhinweise im Frontend weiter bewerten.
-- Karten-Fallbacks und Daten-Fallbacks erneut pruefen.
-- README und Betriebsdoku mit dem finalen Update-Prozess abgleichen.
+- Verbleibende NC-Soundlizenzen geprueft und nach Moeglichkeit ersetzt.
+- `Fischertukan` wurde auf eine freie Wikimedia-Commons-/iNaturalist-Aufnahme mit CC BY-SA 4.0 ersetzt.
+- Die Zahl der aktiven NC-Sounds wurde damit von 8 auf 7 reduziert.
+- Fuer die verbleibenden 7 NC-Faelle ergab die erweiterte Xeno-Canto- und Wikimedia-Commons-Suche keine direkt verwendbare freie MP3-Alternative.
+- Sound-Credits und Lizenzhinweise werden im Frontend bereits mit Quelle, Aufnahme, Lizenzlink und Quelllink ausgegeben.
+- Karten-, Sound- und Daten-Fallbacks wurden erneut geprueft; aktuell kein Frontend-Patch noetig.
+- README und Betriebsdoku bleiben als laufender Abgleich in Phase 5.
 
 ## Phase 5 - Struktur, Assets und Wartbarkeit
 

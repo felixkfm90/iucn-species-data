@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T17:47:50.942Z",
+  "generatedAt": "2026-05-26T18:08:56.769Z",
   "counts": {
     "totalSpecies": 45,
     "missingSoundMp3": 0,
@@ -9,7 +9,7 @@
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "ncSoundLicensesAll": 8
+    "ncSoundLicensesAll": 7
   },
   "missing": {
     "soundMp3": [],
@@ -23,7 +23,6 @@
   "ncSoundLicensesAll": [
     "Bisamratte",
     "Brauenmotmot",
-    "Fischertukan",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
     "Mittelamerikanischer Totenkopfaffe",

@@ -1,12 +1,12 @@
 {
   "scientific_name": "Ramphastos sulfuratus",
   "german_name": "Fischertukan",
-  "recordist": "Whitney Neufeld-Kaiser",
-  "country": "Guatemala",
-  "location": "Laguna Yaxjá, Flores, Petén",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-  "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/972264",
-  "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Ramphastos sp:sulfuratus q:A len:25-35\" | page=1"
+  "recordist": "Juan Carlos Perez Magana (iNaturalist user charro)",
+  "country": "Mexico",
+  "location": "Veracruz, Mexico",
+  "quality": "n/a",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "Wikimedia Commons / iNaturalist",
+  "url": "https://commons.wikimedia.org/wiki/File:Ramphastos_sulfuratus_audio_observation_charro_401730.ogg",
+  "notes": "Free replacement for previous NC xeno-canto sound. Original observation: https://www.inaturalist.org/observations/112475667 | Wikimedia MP3 transcode of CC BY-SA 4.0 OGG."
 }
