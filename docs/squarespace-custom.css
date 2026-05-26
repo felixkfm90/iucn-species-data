@@ -1,0 +1,304 @@
+/*
+  Squarespace Custom CSS reference
+  Stand: 2026-05-26
+
+  Wichtig:
+  - Dies ist der bekannte Arbeitsstand aus der Projektuebergabe.
+  - Vor einem kompletten Ersetzen immer mit dem aktuell in Squarespace gespeicherten CSS abgleichen.
+*/
+
+/* Hauptlayout der Artseiten */
+#species-output {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#species-info,
+#species-taxonomy,
+#species-status,
+#species-sound,
+#map-wrapper,
+#map-output {
+  box-sizing: border-box;
+}
+
+.frame-box {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  box-sizing: border-box;
+}
+
+.left-frame,
+.status-trend-frame,
+.pyramid-frame {
+  height: 100%;
+}
+
+.left-frame p,
+.status-trend-frame p {
+  margin: 0 0 8px 0;
+}
+
+/* Status / Trend */
+.status-trend-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.status-trend-wrapper .info-box {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.status-trend-wrapper .info-box img {
+  display: block;
+  margin: 6px auto 8px auto;
+  max-width: 100%;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Taxonomie-Pyramide */
+.pyramid-frame {
+  position: relative;
+  overflow: visible;
+}
+
+.pyramid-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding-left: 32px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.taxonomy-pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pyramid-step {
+  display: block;
+  background: #dfe8d7;
+  border: 1px solid #c8d5bd;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  box-sizing: border-box;
+  overflow: visible;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.arrow-container {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.arrow-shaft {
+  width: 1.3em;
+  min-height: 10px;
+  background: #2f2f2f;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.arrow-text {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.arrow-tip {
+  width: 0;
+  height: 0;
+  border-left: 0.65em solid transparent;
+  border-right: 0.65em solid transparent;
+  border-top: 14px solid #2f2f2f;
+}
+
+/* Sound / WaveSurfer */
+.species-sound-frame {
+  margin-top: 20px;
+}
+
+.wave-wrapper {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eeeeee;
+  border-radius: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.play-toggle {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 50%;
+  background: #2b2b2b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 700;
+}
+
+.species-waveform {
+  flex: 1;
+  min-width: 0;
+}
+
+.wave-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 6px;
+}
+
+/* Karten */
+#map-wrapper {
+  margin-top: 20px;
+}
+
+.species-map-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Galerie-/Lightbox-Zoom Overlay aus lightbox-zoom.js */
+html.gz-noscroll,
+body.gz-noscroll {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+#gz-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0,0,0,0.94);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#gz-overlay.open {
+  display: flex;
+}
+
+#gz-img {
+  max-width: 95vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  transform-origin: center center;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+  cursor: grab;
+}
+
+#gz-close {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 1000000;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  color: #111;
+  font-size: 30px;
+  line-height: 44px;
+  cursor: pointer;
+}
+
+.gz-zoom-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  z-index: 999998;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: rgba(20,20,20,0.88);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  #species-output {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .status-trend-wrapper {
+    flex-direction: column;
+  }
+
+  .pyramid-frame {
+    width: 100%;
+  }
+
+  .pyramid-inner {
+    padding-left: 32px;
+    overflow-x: auto;
+  }
+
+  .pyramid-step {
+    font-size: 0.85rem;
+  }
+
+  .wave-wrapper {
+    gap: 10px;
+  }
+}

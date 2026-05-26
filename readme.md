@@ -1,24 +1,92 @@
-\# IUCN Species Data (Squarespace + GitHub Pages)
+# IUCN Species Data
 
+Dieses Repository erzeugt und hostet Arten-Daten, Karten, Sounds und Frontend-Module fuer die Squarespace-Website
+`https://www.fnwildlifetravel.de`.
 
+GitHub Pages Base:
+`https://felixkfm90.github.io/iucn-species-data/`
 
-Dieses Repository erzeugt und hostet eine Arten-Datenbank (JSON + Assets) für die Einbindung in eine Squarespace-Website.
+## Datenfluss
 
+`species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus die Artennamen und erzeugt bzw.
+aktualisiert:
 
+- `speciesData.json`
+- `Verbreitungskarten/*.jpg`
+- `sounds/<Artname>/<Artname>.mp3`
+- `sounds/<Artname>/credits.json`
+- `fehlende_elemente_report.json`
+- `lastSavedAssessmentId.json`
 
-\## Was liegt hier?
+Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Browser aus GitHub Pages geladen.
 
-\- `speciesData.json` – generierte Datenbank (wird von Squarespace geladen)
+## Wichtige Dateien
 
-\- `species\_list.json` – Eingabeliste der Arten
+- `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
+- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung und Population
+- `species-taxonomy.js`: Taxonomie-Pyramide
+- `species-status.js`: IUCN-Status und Populationstrend
+- `species-sound.js`: Tierstimmen-Player mit WaveSurfer
+- `map-loader.js`: Verbreitungskarte
+- `search.js`: Suche auf Uebersichtsseiten
+- `sort.js`: Sortierung der sichtbaren Listen
+- `lightbox-zoom.js`: Galerie-/Lightbox-Zoom
 
-\- `update.mjs` – Update-Skript: IUCN-Daten abrufen, Sounds (Xeno-Canto) \& Verbreitungskarten (IUCN) aktualisieren, Report erzeugen
+## Squarespace-Integration
 
-\- `Verbreitungskarten/` – Karten pro Art (`<sanitisierter deutscher Name>.jpg`)
+Versionierte Referenzen liegen unter:
 
-\- `sounds/` – Sounds pro Art (`<Art>/<Art>.mp3` + `credits.json`)
+- `docs/squarespace-footer.html`
+- `docs/squarespace-custom.css`
 
-\- JS-Module für Squarespace: `species-\*.js`, `map-loader.js`, `search.js`, `sort.js`
+Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht
+werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.
 
-\- `fehlende\_elemente\_report.json` – Report über fehlende Assets/Daten (wird lokal erzeugt)
+Artseiten brauchen diese Container:
 
+```html
+<div id="species-output">
+  <div id="species-info"></div>
+  <div id="species-taxonomy"></div>
+  <div id="species-status"></div>
+</div>
+
+<div id="species-sound"></div>
+
+<div id="map-wrapper" class="frame-box">
+  <div id="map-output"></div>
+</div>
+```
+
+Uebersichtsseiten brauchen fuer die Suche:
+
+```html
+<div id="species-search"></div>
+```
+
+## Lokaler Update-Prozess
+
+Voraussetzungen:
+
+- Node.js
+- `npm install`
+- Environment Variable `IUCN_TOKEN`
+- Environment Variable `XENO_TOKEN`
+
+Ausfuehren:
+
+```bash
+node update.mjs
+```
+
+Tokens duerfen nicht im Repository gespeichert werden.
+
+## Tests nach Frontend-Aenderungen
+
+- Detailseite, z. B. `/wildlife/heimische-tierwelt/acanthisflammea`
+- Uebersichtssuche:
+  - `/wildlife/heimische-tierwelt`
+  - `/wildlife/costarica`
+  - `/wildlife/island`
+- Lightbox-Zoom auf Desktop und Android Chrome
+- GitHub Pages pruefen, bevor Squarespace `?v=` erhoeht wird
