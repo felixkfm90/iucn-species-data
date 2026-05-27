@@ -51,7 +51,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 
 1. Alten GitHub-Token widerrufen, falls noch nicht geschehen, und Batch-Dateien weiterhin tokenfrei halten.
 2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren: erledigt, siehe `docs/repo-structure.md`.
-3. Erst danach Soundbar verbessern.
+3. Soundbar ist in Phase 5.4 umgesetzt, siehe `docs/soundbar.md`.
 4. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
 
 ## Nicht ohne Freigabe aendern

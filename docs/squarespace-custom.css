@@ -1,7 +1,7 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-05-26
-  Quelle: aktuelles Squarespace Custom CSS, vom Nutzer gepostet.
+  Stand: 2026-05-27
+  Soll-Stand nach Phase 5.4 Soundbar.
 */
 
 /* ================================ */
@@ -158,41 +158,95 @@
 }
 
 /* ================================ */
-/* WAVEFORM PLAYER (XENO-STYLE)    */
+/* WAVEFORM PLAYER                 */
 /* ================================ */
 
 .species-sound-frame {
-  padding: 10px;
+  padding: 14px;
   border-radius: 10px;
+}
+
+.sound-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sound-title {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.sound-state {
+  margin-top: 2px;
+  font-size: 0.82em;
+  color: #66736f;
+}
+
+.sound-license-badge {
+  flex: 0 0 auto;
+  max-width: 42%;
+  padding: 4px 8px;
+  border: 1px solid #bdd1cc;
+  border-radius: 999px;
+  background: #edf5f3;
+  color: #174f48;
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.sound-license-badge-nc {
+  border-color: #dfc08a;
+  background: #fff6df;
+  color: #6b4b00;
 }
 
 .wave-wrapper {
   display: flex;
   align-items: center;
-  background: #e0e0e0;
-  padding: 10px;
-  border-radius: 6px;
+  gap: 12px;
+  background: #edf3f2;
+  border: 1px solid #d2dfdc;
+  padding: 10px 12px;
+  border-radius: 8px;
   position: relative;
 }
 
-#play-toggle {
-  flex: 0 0 40px;
-  font-size: 22px;
-  background: rgba(0,0,0,0.6);
-  color: white;
+#play-toggle,
+.play-toggle {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  border: 0;
   border-radius: 50%;
-  width: 34px;
-  height: 34px;
+  background: #0f5e55;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 10px;
+  font-size: 20px;
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-#species-waveform {
+#play-toggle:hover,
+.play-toggle:hover {
+  background: #124d47;
+}
+
+#species-waveform,
+.species-waveform {
   flex: 1;
-  height: 90px;
+  min-width: 0;
+  height: 84px;
   cursor: pointer;
 }
 
@@ -202,6 +256,56 @@
   font-size: 0.85em;
   margin-top: 6px;
   color: #333;
+}
+
+.sound-credits {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+  font-size: 0.85em;
+  color: #555;
+  line-height: 1.35;
+}
+
+.sound-credit-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.sound-credit-label {
+  color: #666;
+  font-weight: 700;
+}
+
+.sound-credit-actions {
+  margin-top: 6px;
+}
+
+.sound-credit-actions a,
+.sound-credits a {
+  color: #0f5e55;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sound-credit-warning {
+  margin-top: 8px;
+  padding: 7px 9px;
+  border: 1px solid #dfc08a;
+  border-radius: 6px;
+  background: #fff6df;
+  color: #5b4300;
+}
+
+.sound-fallback-message {
+  margin: 8px 0;
+}
+
+.sound-fallback-audio {
+  width: 100%;
+  margin-top: 6px;
 }
 
 /* ================================ */
@@ -304,5 +408,30 @@
 
   .status-trend-wrapper {
     flex-direction: column;
+  }
+
+  .sound-header {
+    align-items: flex-start;
+  }
+
+  .sound-license-badge {
+    max-width: 48%;
+  }
+
+  .wave-wrapper {
+    gap: 10px;
+    padding: 9px;
+  }
+
+  #play-toggle,
+  .play-toggle {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .sound-credit-row {
+    grid-template-columns: 1fr;
+    gap: 1px;
   }
 }

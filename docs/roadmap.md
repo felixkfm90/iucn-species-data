@@ -56,7 +56,7 @@ Status: in Arbeit
 - 5.1 Repo- und Dateiaudit: erledigt, siehe `docs/repo-file-audit.md`.
 - 5.2 Dokumentation aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation: erledigt und ab jetzt fortlaufende Pflicht.
 - 5.3 Lokalen Workflow und Repo-Struktur absichern: erledigt, siehe `docs/repo-structure.md`.
-- 5.4 Soundbar verbessern.
+- 5.4 Soundbar verbessern: erledigt, siehe `docs/soundbar.md`.
 - 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert.
 - 5.6 Weitere Arten ergaenzen.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
@@ -65,9 +65,8 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Soundbar verbessern: Player-UX, Credits-Darstellung, fehlende/NC-Sound-Hinweise und mobile Bedienung pruefen.
-2. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert, z. B. Groesse, Gewicht und ggf. echte Lebenserwartung.
-3. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
-4. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
-5. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-6. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.
+1. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert, z. B. Groesse, Gewicht und ggf. echte Lebenserwartung.
+2. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
+3. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
+4. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.

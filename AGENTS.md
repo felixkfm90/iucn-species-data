@@ -198,12 +198,12 @@ Phase 5 laeuft. Bereits erledigt:
 - Repo- und Dateiaudit: `docs/repo-file-audit.md`
 - Dokumentationsregel und aktuelle Uebergabe: `AGENTS.md`, `README.md`, `docs/roadmap.md`
 - Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
+- Soundbar: `species-sound.js`, `docs/soundbar.md`, `docs/squarespace-custom.css`, `docs/squarespace-footer.html`
 
 Naechste sinnvolle Schritte:
 
-1. Soundbar verbessern: Player-UX, Credits, NC-/Fallback-Hinweise, mobile Bedienung.
-2. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert.
-3. Weitere Arten ergaenzen.
-4. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
-5. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-6. Spaeter: Ausruestung, Affiliate, Shop/Kalender und rechtliche Folgepruefung.
+1. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert.
+2. Weitere Arten ergaenzen.
+3. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+4. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+5. Spaeter: Ausruestung, Affiliate, Shop/Kalender und rechtliche Folgepruefung.

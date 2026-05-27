@@ -39,6 +39,7 @@ Versionierte Referenzen liegen unter:
 
 - `docs/squarespace-footer.html`
 - `docs/squarespace-custom.css`
+- `docs/soundbar.md`
 - `docs/sound-license-review.md`
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
