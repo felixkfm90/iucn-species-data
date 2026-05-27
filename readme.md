@@ -22,6 +22,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 
 ## Wichtige Dateien
 
+- `AGENTS.md`: aktuelle Projektuebergabe und verbindliche Arbeitsregeln
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
@@ -42,6 +43,9 @@ Versionierte Referenzen liegen unter:
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
 - `docs/roadmap.md`
+
+Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als abgeschlossen, wenn `AGENTS.md`,
+`readme.md`, `docs/roadmap.md` und betroffene Detaildokumente aktuell sind.
 
 Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht
 werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.
@@ -90,6 +94,23 @@ iNaturalist-Treffer werden nur uebernommen, wenn Taxon, Lizenz und MP3-Datei pas
 NC-Sound erhalten oder wird bei neuen Arten als Fallback genutzt.
 
 Tokens duerfen nicht im Repository gespeichert werden.
+
+Lokale Batch-Dateien:
+
+- `update_local.bat`: startet den Suchlauf und ruft danach den GitHub-Push-Workflow auf
+- `update_github_only.bat`: pusht aktuelle Projektdateien ohne Token in der Remote-URL
+
+Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
+
+## Aktueller Datenstand
+
+Laut aktuellem Report:
+
+- 45 Arten
+- 0 fehlende Sounddateien
+- 0 fehlende Sound-Credits
+- 0 fehlende Karten
+- 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 ## Tests nach Frontend-Aenderungen
 

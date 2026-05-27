@@ -1,6 +1,6 @@
 # Repo File Audit
 
-Stand: 2026-05-26
+Stand: 2026-05-27
 
 Ziel dieses Audits: Dateibestand, lokale Altlasten, generierte Assets und Strukturentscheidungen fuer Phase 5 bewerten,
 ohne direkt Dateien zu loeschen oder Pfade umzubauen.
@@ -10,9 +10,9 @@ ohne direkt Dateien zu loeschen oder Pfade umzubauen.
 Der produktive Git-Stand ist konsistent: 45 Arten, 45 Karten, 45 Soundordner, 45 MP3-Dateien und 45 Credits. Die
 GitHub-Pages-relevanten Frontend- und Datenpfade passen zusammen.
 
-Die groessten Risiken liegen nicht in den aktiven Frontend-Dateien, sondern in lokalen, ignorierten Workflow-Dateien:
-Die lokalen Batch-Dateien enthalten Zugangsdaten und sollten nicht weiterverwendet werden. Der lokale `Agents.md` ist
-zudem veraltet, untracked und inhaltlich nicht mehr deckungsgleich mit dem aktuellen Projektstand.
+Die groessten Risiken liegen nicht in den aktiven Frontend-Dateien. Der lokale Workflow und die Dokumentation muessen
+aber weiter diszipliniert gepflegt werden: Batch-Dateien bleiben ignoriert, duerfen keine Tokens enthalten, und
+Dokumentation ist ab Phase 5 Teil der Definition of Done.
 
 ## Gepruefte Kennzahlen
 
@@ -25,7 +25,7 @@ zudem veraltet, untracked und inhaltlich nicht mehr deckungsgleich mit dem aktue
 | MP3-Dateien | 45 |
 | Credits-Dateien | 45 |
 | Karten | 45 |
-| NC-Sounds laut Report | 6 |
+| NC-Sounds laut Report | 3 |
 | Fehlende Kernassets | 0 |
 | JS-/MJS-Syntaxfehler | 0 |
 
@@ -33,8 +33,8 @@ zudem veraltet, untracked und inhaltlich nicht mehr deckungsgleich mit dem aktue
 
 | Bereich | Datei / Ordner | Befund | Risiko | Empfehlung |
 |---|---|---|---|---|
-| Sicherheit | `update_local.bat`, `update_github_only.bat` | Lokal ignorierte Batch-Dateien enthalten eingebettete GitHub-Zugangsdaten. | Hoch | Token in GitHub widerrufen, Batch-Dateien loeschen oder durch sicheren Workflow mit Credential Manager/SSH/Umgebungsvariablen ersetzen. Nicht ins Repo aufnehmen. |
-| Uebergabe | `Agents.md` | Untracked, veraltet und teilweise ueberholt: nennt alte NC-Zahlen, alte Footer-Versionen, altes `Lebenserwartung`-Feld und alte Lightbox-Prioritaet. | Mittel | In Phase 5.2 durch sauberes `AGENTS.md` oder `docs/project-handoff.md` ersetzen. Danach lokale Altdatei entfernen. |
+| Sicherheit | `update_local.bat`, `update_github_only.bat` | Lokal ignorierte Batch-Dateien sind nicht Teil des Repos. Der aktuell gelesene lokale Stand nutzt eine Remote-URL ohne Token. | Mittel | Weiterhin nicht versionieren. Bei Workflow-Aenderungen pruefen, dass keine Tokens oder privaten URLs enthalten sind. |
+| Uebergabe | `AGENTS.md` | Aktuelle Projektuebergabe wurde neu erstellt und soll versioniert werden. | Niedrig | Bei jedem Roadmap-Schritt aktuell halten. Kein Schritt gilt ohne passende Doku-Aktualisierung als abgeschlossen. |
 | Hilfsskript | `list_licenses.mjs` | Untracked Hilfsskript listet Sound-Lizenzen. Funktion ist inzwischen teilweise durch `fehlende_elemente_report.json` und `docs/sound-license-review.md` abgedeckt. | Niedrig | Entweder entfernen oder bewusst als `tools/list-licenses.mjs` versionieren und dokumentieren. |
 | Lokale Logs | `errors.log` | Ignorierte lokale Fehlerhistorie. Nicht fuer GitHub Pages noetig. | Niedrig | Lokal behalten oder rotieren/loeschen. Nicht versionieren. |
 | Abhaengigkeiten | `node_modules/` | Ignoriert und lokal vorhanden. | Niedrig | Korrekt ignoriert. Installation laeuft ueber `package-lock.json`. |
@@ -49,15 +49,15 @@ zudem veraltet, untracked und inhaltlich nicht mehr deckungsgleich mit dem aktue
 
 ## Empfehlung fuer Phase 5
 
-1. Sicherheitsbereinigung lokal: GitHub-Token aus Batch-Workflow entfernen und Token widerrufen.
-2. Dokumentation aktualisieren: sauberes `AGENTS.md`/Handoff aus aktuellem Stand erzeugen, alte `Agents.md` entfernen.
-3. `.gitignore` bereinigen und lokalen Testlauf-Workflow dokumentieren.
-4. Erst danach Soundbar verbessern.
-5. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
+1. Alten GitHub-Token widerrufen, falls noch nicht geschehen, und Batch-Dateien weiterhin tokenfrei halten.
+2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren.
+3. Erst danach Soundbar verbessern.
+4. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
 
 ## Nicht ohne Freigabe aendern
 
 - Keine Loeschung von `sounds/` oder `Verbreitungskarten/`.
 - Keine Umbenennung von `graphics/catagory/`.
 - Keine Migration auf `species-assets/<SafeName>/` ohne separaten Patchplan.
-- Keine Versionierung lokaler Batch-Dateien mit Zugangsdaten.
+- Keine Versionierung lokaler Batch-Dateien.
+- Keine Roadmap-Schritte ohne aktualisierte Dokumentation abschliessen.

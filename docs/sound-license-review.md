@@ -1,6 +1,6 @@
 # Sound License Review
 
-Stand: 2026-05-26
+Stand: 2026-05-27
 
 Quelle:
 
