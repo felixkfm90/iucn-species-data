@@ -62,7 +62,9 @@ Status: in Arbeit
 - 5.6 Weitere Arten ergaenzen.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
-- 5.9 Ausruestungsseite, Affiliate, Shop/Kalender erst nach technischer Stabilitaet.
+- 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
+  Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
+  Spektrogramm-/Frequenzdarstellung fuer Tierstimmen.
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
@@ -70,4 +72,5 @@ Status: in Arbeit
 2. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
 3. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
 4. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.
+5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+   Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

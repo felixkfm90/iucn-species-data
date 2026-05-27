@@ -39,6 +39,20 @@ Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienun
 - Zeit rechts unten
 - Quellenangaben eingeklappt unterhalb der Soundbar
 
+## Spaeterer Ausbau
+
+Eine Merlin-aehnlichere Darstellung ueber Frequenzinformationen bzw. ein Spektrogramm ist programmiertechnisch
+moeglich, soll aber nicht mehr Teil von Phase 5.4 sein. Der Punkt liegt in Roadmap 5.9.
+
+Bevorzugte spaetere Umsetzung:
+
+1. `update.mjs` erzeugt pro MP3 ein kleines Spektrogramm-Asset oder reduzierte Frequenzdaten.
+2. `species-sound.js` laedt diese vorbereiteten Daten bzw. die Grafik.
+3. Der Browser rendert nur noch Anzeige und Positionsmarker, statt auf jeder Seitenansicht teuer zu decodieren.
+
+Das ist stabiler fuer Squarespace und mobile Geraete als eine vollstaendige Spektrogramm-Berechnung bei jedem
+Seitenaufruf.
+
 ## Squarespace-Anpassung
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:

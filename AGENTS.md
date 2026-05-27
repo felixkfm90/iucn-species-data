@@ -207,4 +207,5 @@ Naechste sinnvolle Schritte:
 2. Weitere Arten ergaenzen.
 3. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
 4. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-5. Spaeter: Ausruestung, Affiliate, Shop/Kalender und rechtliche Folgepruefung.
+5. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+   Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.
