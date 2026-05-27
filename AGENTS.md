@@ -42,7 +42,7 @@ Frontend-Module:
 - `species-info.js`: Info-Box
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Soundbar, Credits und Lizenzhinweise
+- `species-sound.js`: native Soundbar mit Canvas-Wellenform, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung sichtbarer Listen
@@ -199,6 +199,7 @@ Phase 5 laeuft. Bereits erledigt:
 - Dokumentationsregel und aktuelle Uebergabe: `AGENTS.md`, `README.md`, `docs/roadmap.md`
 - Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
 - Soundbar: `species-sound.js`, `docs/soundbar.md`, `docs/squarespace-custom.css`, `docs/squarespace-footer.html`
+  - aktueller Stand: native Audio-Wiedergabe mit gekapselter Canvas-Wellenform; keine WaveSurfer-Abhaengigkeit
 
 Naechste sinnvolle Schritte:
 

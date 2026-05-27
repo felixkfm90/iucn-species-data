@@ -56,7 +56,8 @@ Status: in Arbeit
 - 5.1 Repo- und Dateiaudit: erledigt, siehe `docs/repo-file-audit.md`.
 - 5.2 Dokumentation aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation: erledigt und ab jetzt fortlaufende Pflicht.
 - 5.3 Lokalen Workflow und Repo-Struktur absichern: erledigt, siehe `docs/repo-structure.md`.
-- 5.4 Soundbar verbessern: erledigt, siehe `docs/soundbar.md`.
+- 5.4 Soundbar verbessern: erledigt; nach Optikfeedback auf native Audio-Wiedergabe mit Canvas-Wellenform,
+  gekapselten Modulstyles und reduzierter Credit-Anzeige umgestellt, siehe `docs/soundbar.md`.
 - 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert.
 - 5.6 Weitere Arten ergaenzen.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.

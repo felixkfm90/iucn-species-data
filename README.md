@@ -27,7 +27,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Tierstimmen-Soundbar mit Credits und Lizenzhinweisen
+- `species-sound.js`: native Tierstimmen-Soundbar mit Canvas-Wellenform, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung der sichtbaren Listen

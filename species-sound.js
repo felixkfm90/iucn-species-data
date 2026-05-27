@@ -1,5 +1,220 @@
 (async function () {
   const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+  const STYLE_ID = "species-sound-style";
+  const WAVEFORM_BARS = 128;
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+      #species-sound .species-sound-frame {
+        padding: 14px;
+      }
+
+      #species-sound .sound-player {
+        background: #edf3f1;
+        border: 1px solid #d4dfdb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      #species-sound .sound-visual {
+        position: relative;
+        height: 108px;
+        background: linear-gradient(180deg, #ffffff 0%, #f6faf9 100%);
+        border-bottom: 1px solid #d4dfdb;
+        overflow: hidden;
+      }
+
+      #species-sound .sound-wave-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      #species-sound .sound-cursor {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0%;
+        width: 2px;
+        background: #d33b35;
+        box-shadow: 0 0 0 1px rgba(211,59,53,0.12);
+        pointer-events: none;
+      }
+
+      #species-sound .sound-scrubber {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      #species-sound .sound-controls {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+      }
+
+      #species-sound #play-toggle.play-toggle {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border: 0;
+        border-radius: 50%;
+        background: #52635f;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #species-sound #play-toggle.play-toggle:hover {
+        background: #3f514d;
+      }
+
+      #species-sound .sound-icon {
+        display: block;
+      }
+
+      #species-sound .sound-icon-play {
+        width: 0;
+        height: 0;
+        margin-left: 3px;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 12px solid #fff;
+      }
+
+      #species-sound .sound-icon-pause {
+        width: 12px;
+        height: 15px;
+        border-left: 4px solid #fff;
+        border-right: 4px solid #fff;
+      }
+
+      #species-sound .sound-copy {
+        min-width: 0;
+      }
+
+      #species-sound .sound-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.15;
+        color: #17221f;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #species-sound .sound-subtitle {
+        margin-top: 2px;
+        font-size: 0.78rem;
+        line-height: 1.25;
+        color: #5f6b67;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #species-sound .sound-time {
+        font-size: 0.78rem;
+        color: #38433f;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #species-sound .sound-warning {
+        margin: 9px 10px 0;
+        padding: 7px 9px;
+        border: 1px solid #dfc08a;
+        border-radius: 6px;
+        background: #fff6df;
+        color: #5b4300;
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+
+      #species-sound .sound-details {
+        border-top: 1px solid #d4dfdb;
+        padding: 7px 10px 9px;
+        font-size: 0.82rem;
+        color: #52615d;
+      }
+
+      #species-sound .sound-details summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: #35433f;
+      }
+
+      #species-sound .sound-detail-grid {
+        display: grid;
+        grid-template-columns: 84px minmax(0, 1fr);
+        gap: 4px 8px;
+        margin-top: 8px;
+      }
+
+      #species-sound .sound-detail-label {
+        font-weight: 700;
+        color: #64716d;
+      }
+
+      #species-sound .sound-details a {
+        color: #0f5e55;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      #species-sound .sound-audio {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        #species-sound .sound-visual {
+          height: 96px;
+        }
+
+        #species-sound .sound-controls {
+          grid-template-columns: 38px minmax(0, 1fr) auto;
+          gap: 8px;
+          padding: 8px;
+        }
+
+        #species-sound #play-toggle.play-toggle {
+          width: 32px;
+          height: 32px;
+          min-width: 32px;
+        }
+
+        #species-sound .sound-title {
+          font-size: 0.88rem;
+        }
+
+        #species-sound .sound-subtitle {
+          font-size: 0.74rem;
+        }
+
+        #species-sound .sound-detail-grid {
+          grid-template-columns: 1fr;
+          gap: 2px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
 
   function normalizeUrl(value) {
     const url = String(value || "").trim();
@@ -28,7 +243,7 @@
 
   function licenseLabel(value) {
     const raw = String(value || "").trim();
-    if (!raw) return "n/a";
+    if (!raw) return "Lizenz n/a";
 
     const normalized = normalizeUrl(raw);
     const lower = normalized.toLowerCase();
@@ -55,19 +270,172 @@
     return `<div class="frame-box species-sound-frame"><i>${escapeHtml(message)}</i></div>`;
   }
 
-  function buildCreditView(credits) {
+  function seedFromString(value) {
+    let seed = 2166136261;
+    const text = String(value || "sound");
+    for (let i = 0; i < text.length; i += 1) {
+      seed ^= text.charCodeAt(i);
+      seed = Math.imul(seed, 16777619);
+    }
+    return seed >>> 0;
+  }
+
+  function seededRandom(seed) {
+    let state = seed || 1;
+    return function next() {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      return ((state >>> 0) % 1000) / 1000;
+    };
+  }
+
+  function fallbackPeaks(seedText) {
+    const random = seededRandom(seedFromString(seedText));
+    const peaks = [];
+    let last = 0.35;
+
+    for (let i = 0; i < WAVEFORM_BARS; i += 1) {
+      const envelope = 0.35 + 0.45 * Math.sin((Math.PI * i) / WAVEFORM_BARS);
+      const next = Math.max(0.08, Math.min(1, last * 0.55 + random() * 0.65));
+      peaks.push(Math.max(0.08, Math.min(1, next * envelope + 0.08)));
+      last = next;
+    }
+
+    return peaks;
+  }
+
+  function buildPeaks(audioBuffer) {
+    const channel = audioBuffer.getChannelData(0);
+    const blockSize = Math.max(1, Math.floor(channel.length / WAVEFORM_BARS));
+    const peaks = [];
+    let maxPeak = 0;
+
+    for (let i = 0; i < WAVEFORM_BARS; i += 1) {
+      const start = i * blockSize;
+      const end = Math.min(channel.length, start + blockSize);
+      let sum = 0;
+
+      for (let j = start; j < end; j += 1) {
+        const value = channel[j];
+        sum += value * value;
+      }
+
+      const rms = Math.sqrt(sum / Math.max(1, end - start));
+      peaks.push(rms);
+      if (rms > maxPeak) maxPeak = rms;
+    }
+
+    if (!maxPeak) return fallbackPeaks(audioBuffer.duration || "empty");
+
+    return peaks.map((peak) => Math.max(0.06, Math.min(1, Math.pow(peak / maxPeak, 0.72))));
+  }
+
+  function getCanvasSize(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      width: Math.max(1, Math.round(rect.width || canvas.clientWidth || 600)),
+      height: Math.max(1, Math.round(rect.height || canvas.clientHeight || 100)),
+    };
+  }
+
+  function drawWaveform(canvas, peaks, progress) {
+    if (!canvas || !peaks || !peaks.length) return;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const size = getCanvasSize(canvas);
+    const ratio = window.devicePixelRatio || 1;
+    const pixelWidth = Math.round(size.width * ratio);
+    const pixelHeight = Math.round(size.height * ratio);
+
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+    }
+
+    context.clearRect(0, 0, pixelWidth, pixelHeight);
+    context.save();
+    context.scale(ratio, ratio);
+
+    const width = size.width;
+    const height = size.height;
+    const centerY = height / 2;
+    const barGap = width < 420 ? 1 : 2;
+    const barWidth = Math.max(1, (width - (peaks.length - 1) * barGap) / peaks.length);
+    const safeProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+    const playedX = width * safeProgress;
+
+    context.fillStyle = "#f7faf9";
+    context.fillRect(0, 0, width, height);
+
+    for (let i = 0; i < peaks.length; i += 1) {
+      const x = i * (barWidth + barGap);
+      const peak = peaks[i];
+      const barHeight = Math.max(4, peak * (height - 22));
+      const y = centerY - barHeight / 2;
+      const color = x + barWidth / 2 <= playedX ? "#0f5e55" : "#424a48";
+
+      context.fillStyle = color;
+      context.globalAlpha = x + barWidth / 2 <= playedX ? 0.92 : 0.56;
+      const radius = Math.min(3, barWidth / 2);
+      context.beginPath();
+      if (typeof context.roundRect === "function") {
+        context.roundRect(x, y, barWidth, barHeight, radius);
+      } else {
+        context.rect(x, y, barWidth, barHeight);
+      }
+      context.fill();
+    }
+
+    context.restore();
+  }
+
+  async function decodeWaveform(audioUrl, fallbackSeed) {
+    try {
+      const response = await fetch(audioUrl, { cache: "force-cache" });
+      if (!response.ok) return fallbackPeaks(fallbackSeed);
+
+      const arrayBuffer = await response.arrayBuffer();
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return fallbackPeaks(fallbackSeed);
+
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      const peaks = buildPeaks(audioBuffer);
+
+      if (typeof audioContext.close === "function") {
+        audioContext.close().catch(() => {});
+      }
+
+      return peaks;
+    } catch (_) {
+      return fallbackPeaks(fallbackSeed);
+    }
+  }
+
+  function compactCreditLine(credits) {
+    if (!credits) return "Quelle n/a";
+
+    const source = credits.source || "Quelle n/a";
+    const recordist = credits.recordist || credits.rec || credits.recorded_by || credits.author || "";
+    const licenseText = licenseLabel(credits.license || credits.lic || "");
+
+    return [source, recordist, licenseText].filter(Boolean).join(" · ");
+  }
+
+  function buildCreditDetails(credits) {
     if (!credits) {
-      return {
-        html: `
-          <div class="sound-credits">
-            <div class="sound-credit-row">
-              <span class="sound-credit-label">Quelle</span>
-              <span>n/a</span>
-            </div>
+      return `
+        <details class="sound-details">
+          <summary>Quelle</summary>
+          <div class="sound-detail-grid">
+            <span class="sound-detail-label">Quelle</span>
+            <span>n/a</span>
           </div>
-        `,
-        badgeHtml: `<span class="sound-license-badge">Lizenz n/a</span>`,
-      };
+        </details>
+      `;
     }
 
     const source = credits.source || "n/a";
@@ -79,55 +447,38 @@
     const licenseUrl = normalizeUrl(licenseRaw);
     const sourceUrl = normalizeUrl(sourceRaw);
     const licenseText = licenseLabel(licenseRaw);
-    const hasNcLicense = isNonCommercialLicense(licenseRaw);
 
     const licenseHtml = licenseUrl.startsWith("http")
       ? `<a href="${escapeHtml(licenseUrl)}" target="_blank" rel="noopener">${escapeHtml(licenseText)}</a>`
       : escapeHtml(licenseText);
 
-    return {
-      html: `
-        <div class="sound-credits">
-          <div class="sound-credit-row">
-            <span class="sound-credit-label">Quelle</span>
-            <span>${escapeHtml(source)}</span>
-          </div>
+    return `
+      <details class="sound-details">
+        <summary>Quelle und Lizenz</summary>
+        <div class="sound-detail-grid">
+          <span class="sound-detail-label">Quelle</span>
+          <span>${escapeHtml(source)}</span>
           ${recordist ? `
-            <div class="sound-credit-row">
-              <span class="sound-credit-label">Aufnahme</span>
-              <span>${escapeHtml(recordist)}</span>
-            </div>
+            <span class="sound-detail-label">Aufnahme</span>
+            <span>${escapeHtml(recordist)}</span>
           ` : ""}
           ${location ? `
-            <div class="sound-credit-row">
-              <span class="sound-credit-label">Ort</span>
-              <span>${escapeHtml(location)}</span>
-            </div>
+            <span class="sound-detail-label">Ort</span>
+            <span>${escapeHtml(location)}</span>
           ` : ""}
           ${quality ? `
-            <div class="sound-credit-row">
-              <span class="sound-credit-label">Qualitaet</span>
-              <span>${escapeHtml(quality)}</span>
-            </div>
+            <span class="sound-detail-label">Qualitaet</span>
+            <span>${escapeHtml(quality)}</span>
           ` : ""}
-          <div class="sound-credit-row">
-            <span class="sound-credit-label">Lizenz</span>
-            <span>${licenseHtml}</span>
-          </div>
+          <span class="sound-detail-label">Lizenz</span>
+          <span>${licenseHtml}</span>
           ${sourceUrl ? `
-            <div class="sound-credit-actions">
-              <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">Originalquelle oeffnen</a>
-            </div>
-          ` : ""}
-          ${hasNcLicense ? `
-            <div class="sound-credit-warning">
-              Non-Commercial-Lizenz: vor kommerzieller Nutzung pruefen.
-            </div>
+            <span class="sound-detail-label">Original</span>
+            <span><a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">oeffnen</a></span>
           ` : ""}
         </div>
-      `,
-      badgeHtml: `<span class="sound-license-badge${hasNcLicense ? " sound-license-badge-nc" : ""}">${escapeHtml(licenseText)}</span>`,
-    };
+      </details>
+    `;
   }
 
   async function fetchCredits(creditsUrl) {
@@ -140,15 +491,17 @@
     }
   }
 
-  function setProgress(rangeEl, fillEl, value) {
-    const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
-    rangeEl.value = String(safeValue);
-    rangeEl.setAttribute("aria-valuenow", String(Math.round(safeValue)));
-    fillEl.style.width = `${safeValue}%`;
+  function updateCursor(cursorEl, rangeEl, progress) {
+    const safeProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+    cursorEl.style.left = `${safeProgress * 100}%`;
+    rangeEl.value = String(safeProgress * 100);
+    rangeEl.setAttribute("aria-valuenow", String(Math.round(safeProgress * 100)));
   }
 
   const wrapper = document.getElementById("species-sound");
   if (!wrapper) return;
+
+  injectStyles();
 
   try {
     if (!window.SpeciesCore || typeof window.SpeciesCore.getSpeciesData !== "function") {
@@ -179,30 +532,20 @@
     }
 
     const credits = await fetchCredits(creditsUrl);
-    const creditView = buildCreditView(credits);
+    const hasNcLicense = isNonCommercialLicense(credits?.license || credits?.lic || "");
+    const compactCredits = compactCreditLine(credits);
+    const creditDetails = buildCreditDetails(credits);
+    const fallbackPeaksData = fallbackPeaks(soundAssetName);
 
     wrapper.innerHTML = `
       <div class="frame-box species-sound-frame">
-        <div class="sound-header">
-          <div>
-            <div class="sound-title">Tierstimme</div>
-            <div id="sound-state" class="sound-state">Bereit</div>
-          </div>
-          ${creditView.badgeHtml}
-        </div>
-
-        <div class="soundbar" aria-label="Tierstimmen-Player">
-          <button id="play-toggle" class="play-toggle" type="button" aria-label="Tierstimme abspielen" aria-pressed="false">
-            &#9658;
-          </button>
-
-          <div class="soundbar-main">
-            <div class="soundbar-track" aria-hidden="true">
-              <div id="soundbar-progress-fill" class="soundbar-progress-fill"></div>
-            </div>
+        <div class="sound-player" aria-label="Tierstimmen-Player">
+          <div class="sound-visual">
+            <canvas id="sound-wave-canvas" class="sound-wave-canvas" aria-hidden="true"></canvas>
+            <div id="sound-cursor" class="sound-cursor" aria-hidden="true"></div>
             <input
-              id="soundbar-progress"
-              class="soundbar-progress"
+              id="sound-scrubber"
+              class="sound-scrubber"
               type="range"
               min="0"
               max="100"
@@ -213,54 +556,77 @@
               aria-valuemax="100"
               aria-valuenow="0"
             >
-            <div class="wave-meta">
-              <span id="current-time" class="current-time">0:00</span>
-              <span id="duration" class="duration">0:00</span>
+          </div>
+
+          <div class="sound-controls">
+            <button id="play-toggle" class="play-toggle" type="button" aria-label="Tierstimme abspielen" aria-pressed="false">
+              <span class="sound-icon sound-icon-play" aria-hidden="true"></span>
+            </button>
+
+            <div class="sound-copy">
+              <div class="sound-title">Tierstimme</div>
+              <div class="sound-subtitle">${escapeHtml(compactCredits)}</div>
+            </div>
+
+            <div class="sound-time">
+              <span id="current-time">0:00</span> / <span id="duration">0:00</span>
             </div>
           </div>
+
+          ${hasNcLicense ? `
+            <div class="sound-warning">Non-Commercial-Lizenz: vor kommerzieller Nutzung pruefen.</div>
+          ` : ""}
+
+          ${creditDetails}
         </div>
 
-        <audio id="species-audio" preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
-
-        ${creditView.html}
+        <audio id="species-audio" class="sound-audio" preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
       </div>
     `;
 
     const audio = wrapper.querySelector("#species-audio");
     const playBtn = wrapper.querySelector("#play-toggle");
-    const progressEl = wrapper.querySelector("#soundbar-progress");
-    const progressFillEl = wrapper.querySelector("#soundbar-progress-fill");
+    const scrubberEl = wrapper.querySelector("#sound-scrubber");
+    const canvas = wrapper.querySelector("#sound-wave-canvas");
+    const cursorEl = wrapper.querySelector("#sound-cursor");
     const currentTimeEl = wrapper.querySelector("#current-time");
     const durationEl = wrapper.querySelector("#duration");
-    const stateEl = wrapper.querySelector("#sound-state");
 
-    if (!audio || !playBtn || !progressEl || !progressFillEl || !currentTimeEl || !durationEl) {
+    if (!audio || !playBtn || !scrubberEl || !canvas || !cursorEl || !currentTimeEl || !durationEl) {
       wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
       return;
     }
 
-    function setState(text) {
-      if (stateEl) stateEl.textContent = text;
+    let peaks = fallbackPeaksData;
+
+    function currentProgress() {
+      const duration = audio.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return 0;
+      return audio.currentTime / duration;
+    }
+
+    function redraw() {
+      const progress = currentProgress();
+      drawWaveform(canvas, peaks, progress);
+      updateCursor(cursorEl, scrubberEl, progress);
     }
 
     function setPlaying(isPlaying) {
-      playBtn.innerHTML = isPlaying ? "&#10073;&#10073;" : "&#9658;";
+      playBtn.innerHTML = isPlaying
+        ? `<span class="sound-icon sound-icon-pause" aria-hidden="true"></span>`
+        : `<span class="sound-icon sound-icon-play" aria-hidden="true"></span>`;
       playBtn.setAttribute("aria-label", isPlaying ? "Tierstimme pausieren" : "Tierstimme abspielen");
       playBtn.setAttribute("aria-pressed", isPlaying ? "true" : "false");
-      setState(isPlaying ? "Laeuft" : "Bereit");
+    }
+
+    function updateProgressText() {
+      currentTimeEl.textContent = formatTime(audio.currentTime);
+      durationEl.textContent = formatTime(audio.duration);
     }
 
     function updateProgress() {
-      const duration = audio.duration;
-      const current = audio.currentTime;
-      currentTimeEl.textContent = formatTime(current);
-      durationEl.textContent = formatTime(duration);
-
-      if (Number.isFinite(duration) && duration > 0) {
-        setProgress(progressEl, progressFillEl, (current / duration) * 100);
-      } else {
-        setProgress(progressEl, progressFillEl, 0);
-      }
+      updateProgressText();
+      redraw();
     }
 
     playBtn.addEventListener("click", async () => {
@@ -271,17 +637,27 @@
           audio.pause();
         }
       } catch (_) {
-        setState("Wiedergabe blockiert");
+        wrapper.innerHTML = `
+          <div class="frame-box species-sound-frame">
+            <i>Wiedergabe wurde vom Browser blockiert.</i>
+            ${creditDetails}
+          </div>
+        `;
       }
     });
 
-    progressEl.addEventListener("input", () => {
+    scrubberEl.addEventListener("input", () => {
       const duration = audio.duration;
-      const value = Number(progressEl.value);
-      setProgress(progressEl, progressFillEl, value);
+      const value = Number(scrubberEl.value);
+      const progress = Number.isFinite(value) ? Math.max(0, Math.min(1, value / 100)) : 0;
+
       if (Number.isFinite(duration) && duration > 0) {
-        audio.currentTime = (duration * value) / 100;
+        audio.currentTime = duration * progress;
       }
+
+      drawWaveform(canvas, peaks, progress);
+      updateCursor(cursorEl, scrubberEl, progress);
+      updateProgressText();
     });
 
     audio.addEventListener("loadedmetadata", updateProgress);
@@ -292,19 +668,29 @@
     audio.addEventListener("ended", () => {
       setPlaying(false);
       audio.currentTime = 0;
-      setProgress(progressEl, progressFillEl, 0);
-      currentTimeEl.textContent = "0:00";
+      updateProgress();
     });
     audio.addEventListener("error", () => {
       wrapper.innerHTML = `
         <div class="frame-box species-sound-frame">
           <i>Tierstimme aktuell nicht verfuegbar.</i>
-          ${creditView.html}
+          ${creditDetails}
         </div>
       `;
     });
 
-    updateProgress();
+    if (window.ResizeObserver) {
+      const resizeObserver = new window.ResizeObserver(redraw);
+      resizeObserver.observe(canvas);
+    } else {
+      window.addEventListener("resize", redraw);
+    }
+
+    redraw();
+    decodeWaveform(audioUrl, soundAssetName).then((decodedPeaks) => {
+      peaks = decodedPeaks;
+      redraw();
+    });
   } catch (_) {
     wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
   }

@@ -2,9 +2,9 @@
 
 Stand: 2026-05-27
 
-Ziel von Phase 5.4: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen: klarer
-Play-Button, robuste Fortschrittsleiste, stabile Wiedergabe, saubere Quellen-/Lizenzanzeige und brauchbare mobile
-Bedienung.
+Ziel von Phase 5.4: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen: klare
+Play-Bedienung, grafische Tonspur, stabile Wiedergabe, saubere aber nicht aufdringliche Quellen-/Lizenzanzeige und
+brauchbare mobile Bedienung.
 
 ## Geaenderte Dateien
 
@@ -19,31 +19,39 @@ Bedienung.
   - `sounds/<SafeName>/<SafeName>.mp3`
   - `sounds/<SafeName>/credits.json`
 - Vor dem Rendern wird die MP3 per `HEAD` geprueft.
-- Die aktive Soundbar nutzt ein natives `<audio>`-Element und eigene Controls. Es gibt keine WaveSurfer-Abhaengigkeit
-  mehr fuer die Grundfunktion.
-- Credits werden als strukturierte Zeilen gerendert: Quelle, Aufnahme, Ort, Qualitaet, Lizenz und Originalquelle.
-- Non-Commercial-Lizenzen werden sichtbar markiert.
+- Die aktive Soundbar nutzt ein natives `<audio>`-Element, eigene Controls und eine Canvas-Wellenform.
+- Die Wellenform wird aus der MP3 decodiert. Wenn Decoding im Browser scheitert, wird eine stabile Ersatzgrafik
+  gezeichnet; die Wiedergabe bleibt davon unabhaengig.
+- Die Soundbar injiziert ihre gekapselten CSS-Regeln selbst unter `#species-sound`. Dadurch haengt die Optik nicht mehr
+  davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
+- Credits werden nur kompakt in einer Zeile gezeigt. Detailinformationen liegen in einem eingeklappten
+  `Quelle und Lizenz`-Bereich.
+- Non-Commercial-Lizenzen werden weiterhin sichtbar markiert.
 
 ## UI-Entscheidung
 
 Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienung, ohne das Layout extern zu kopieren:
 
-- grosser runder Play-Button links
-- Fortschrittsleiste als Hauptbedienelement
-- Zeitangabe unter der Leiste
-- Lizenz-Badge rechts im Kopfbereich
-- Quellenangaben unterhalb der Soundbar
+- grafische Tonspur oben
+- roter Positionsmarker wie bei typischen Bird-ID-Playern
+- runder Play-Button links unten
+- Titel/Quelle kompakt neben dem Button
+- Zeit rechts unten
+- Quellenangaben eingeklappt unterhalb der Soundbar
 
 ## Squarespace-Anpassung
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.9`
-- Custom CSS: Soundbar-Block aus `docs/squarespace-custom.css`
+- Footer: `species-sound.js?v=1.0.10`
+- Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
+- Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
+  erhalten bleibt.
 - Der alte externe WaveSurfer-Eintrag kann aus dem Footer entfernt werden:
   `<script src="https://unpkg.com/wavesurfer.js@7"></script>`
 
-Ohne CSS-Update funktioniert der Player technisch weiter, sieht aber nicht wie der neue Soll-Stand aus.
+Ohne CSS-Update soll der Player technisch und optisch weiter funktionieren, weil die noetigen Regeln aus
+`species-sound.js` kommen.
 
 ## Testplan
 
@@ -51,17 +59,18 @@ Desktop:
 
 1. Artseite mit freiem Sound oeffnen, z. B. `Amsel`.
 2. Play-Button startet und pausiert die Wiedergabe.
-3. Fortschrittsleiste, Zeit und Dauer werden angezeigt.
-4. Lizenz-Badge und Credits sind sichtbar.
-5. Originalquelle oeffnet in neuem Tab.
+3. Canvas-Wellenform, roter Positionsmarker, Zeit und Dauer werden angezeigt.
+4. Kompakte Quelle ist sichtbar.
+5. `Quelle und Lizenz` klappt Detailinformationen auf.
+6. Originalquelle oeffnet in neuem Tab.
 
 NC-Fall:
 
 1. Artseite mit NC-Sound oeffnen, z. B. `Bisamratte`.
-2. Lizenz-Badge und NC-Hinweis sind sichtbar.
+2. NC-Hinweis ist sichtbar.
 
 Mobile:
 
 1. Artseite auf schmalem Viewport oeffnen.
 2. Play-Button bleibt gut antippbar.
-3. Fortschrittsleiste, Zeitangaben und Credits laufen nicht aus dem Container.
+3. Wellenform, Zeitangaben und eingeklappte Credits laufen nicht aus dem Container.

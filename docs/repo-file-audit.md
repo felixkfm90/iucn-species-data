@@ -44,14 +44,14 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 | Grafikassets | `graphics/catagory/` und `graphics/catagory/Alternativ/` | `species-status.js` nutzt nur `graphics/catagory/Alternativ/` und `graphics/trend/`. Die PNGs direkt unter `graphics/catagory/` wirken derzeit ungenutzt. `Blaupause.psd` ist vermutlich Quelldatei. | Mittel | Nicht sofort loeschen. In der spaeteren Asset-Struktur-Phase entscheiden: ungenutzte Statusicons entfernen/archivieren oder als Designquelle dokumentieren. Ordnername `catagory` wegen Live-Pfaden vorerst nicht umbenennen. |
 | Assets | `sounds/`, `Verbreitungskarten/` | Vollstaendig und konsistent, aber getrennt nach Assettyp statt pro Art gebuendelt. Sounds sind mit ca. 160 MB der groesste Repo-Bereich. | Mittel | Asset-Buendelung nur als bewusste Migration planen, weil alle GitHub-Pages-Pfade und Loader betroffen sind. |
 | Datenpipeline | `update.mjs` | Funktional, aber inzwischen relativ gross und enthaelt IUCN-, Karten-, Xeno-Canto-, Commons- und Reportlogik in einer Datei. | Mittel | Vorerst beibehalten. Spaeter nur modularisieren, wenn neue Arten/Felder die Wartung erschweren. |
-| Frontend | `species-*.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Syntax ok, alle Module brechen sauber ab, wenn erwartete Container fehlen. | Niedrig | Beibehalten. `species-sound.js` ist naechster sinnvoller Frontend-Verbesserungspunkt. |
+| Frontend | `species-*.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Syntax ok, alle Module brechen sauber ab, wenn erwartete Container fehlen. | Niedrig | Beibehalten. Soundbar ist aktuell als native Canvas-Komponente umgesetzt. |
 | Sortierung | `sort.js` | Wird im Footer geladen, aktiviert sich nur bei `#species-sort` oder `#species-search`. | Niedrig | Beibehalten und bei Uebersichtsseiten-Tests weiter beobachten. |
 
 ## Empfehlung fuer Phase 5
 
 1. Alten GitHub-Token widerrufen, falls noch nicht geschehen, und Batch-Dateien weiterhin tokenfrei halten.
 2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren: erledigt, siehe `docs/repo-structure.md`.
-3. Soundbar ist in Phase 5.4 umgesetzt, siehe `docs/soundbar.md`.
+3. Soundbar ist in Phase 5.4 als native Canvas-Komponente umgesetzt, siehe `docs/soundbar.md`.
 4. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
 
 ## Nicht ohne Freigabe aendern
