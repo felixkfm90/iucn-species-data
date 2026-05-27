@@ -18,7 +18,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 
 | Bereich | Ergebnis |
 |---|---:|
-| Getrackte Dateien | 180 |
+| Getrackte Dateien | 183 |
 | Arten in `speciesData.json` | 45 |
 | Arten in `species_list.json` | 45 |
 | Soundordner | 45 |
@@ -35,13 +35,13 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 |---|---|---|---|---|
 | Sicherheit | `update_local.bat`, `update_github_only.bat` | Lokal ignorierte Batch-Dateien sind nicht Teil des Repos. Der aktuell gelesene lokale Stand nutzt eine Remote-URL ohne Token. | Mittel | Weiterhin nicht versionieren. Bei Workflow-Aenderungen pruefen, dass keine Tokens oder privaten URLs enthalten sind. |
 | Uebergabe | `AGENTS.md` | Aktuelle Projektuebergabe wurde neu erstellt und soll versioniert werden. | Niedrig | Bei jedem Roadmap-Schritt aktuell halten. Kein Schritt gilt ohne passende Doku-Aktualisierung als abgeschlossen. |
-| Hilfsskript | `list_licenses.mjs` | Untracked Hilfsskript listet Sound-Lizenzen. Funktion ist inzwischen teilweise durch `fehlende_elemente_report.json` und `docs/sound-license-review.md` abgedeckt. | Niedrig | Entweder entfernen oder bewusst als `tools/list-licenses.mjs` versionieren und dokumentieren. |
+| Hilfsskript | `list_licenses.mjs` | Lokales Hilfsskript listet Sound-Lizenzen. Funktion ist inzwischen durch `fehlende_elemente_report.json` und `docs/sound-license-review.md` abgedeckt. | Niedrig | Nicht versionieren; bei Bedarf nur in `Testlauf/` nutzen. |
 | Lokale Logs | `errors.log` | Ignorierte lokale Fehlerhistorie. Nicht fuer GitHub Pages noetig. | Niedrig | Lokal behalten oder rotieren/loeschen. Nicht versionieren. |
 | Abhaengigkeiten | `node_modules/` | Ignoriert und lokal vorhanden. | Niedrig | Korrekt ignoriert. Installation laeuft ueber `package-lock.json`. |
-| Testartefakte | `Testlauf/` | Ignoriert und aktuell leer. | Niedrig | Beibehalten als Ablage fuer temporaere Tests. Nach Tests weiter leeren. |
-| Gitignore | `.gitignore` | Enthalt eine fehlerhafte Zeile `errors.logupdate_github_only.bat`; die relevanten Dateien werden aber durch separate Zeilen trotzdem ignoriert. | Niedrig | In Phase 5.2 aufraeumen, ohne Verhalten zu aendern. |
-| README | `readme.md` | Inhalt aktuell brauchbar, Dateiname aber nicht konventionell grossgeschrieben. | Niedrig | Optional spaeter auf `README.md` umbenennen. Auf Windows nur mit sauberem Git-Move in zwei Schritten. |
-| Grafikassets | `graphics/catagory/` und `graphics/catagory/Alternativ/` | `species-status.js` nutzt nur `graphics/catagory/Alternativ/` und `graphics/trend/`. Die PNGs direkt unter `graphics/catagory/` wirken derzeit ungenutzt. `Blaupause.psd` ist vermutlich Quelldatei. | Mittel | Nicht sofort loeschen. In Phase 5.3 entscheiden: ungenutzte Statusicons entfernen/archivieren oder als Designquelle dokumentieren. Ordnername `catagory` wegen Live-Pfaden vorerst nicht umbenennen. |
+| Testartefakte | `Testlauf/` | Ignoriert; enthaelt aktuell nur lokale Hilfsskripte wie `list_licenses.mjs`. | Niedrig | Beibehalten als Ablage fuer temporaere Tests. Keine Testartefakte versionieren. |
+| Gitignore | `.gitignore` | Bereinigt: lokale Abhaengigkeiten, Logs, `.env`, Batch-Dateien, `Testlauf/` und lokale Hilfsskripte sind ignoriert. | Niedrig | Beibehalten; keine breiten Regeln fuer produktive Dateitypen wie `.js`, `.json`, `.mp3` oder `.jpg` ergaenzen. |
+| README | `README.md` | Root-README ist bewusst fuer GitHub sichtbar. Detaildokumente liegen unter `docs/`. | Niedrig | Im Root behalten. Nicht nach `docs/` verschieben. |
+| Grafikassets | `graphics/catagory/` und `graphics/catagory/Alternativ/` | `species-status.js` nutzt nur `graphics/catagory/Alternativ/` und `graphics/trend/`. Die PNGs direkt unter `graphics/catagory/` wirken derzeit ungenutzt. `Blaupause.psd` ist vermutlich Quelldatei. | Mittel | Nicht sofort loeschen. In der spaeteren Asset-Struktur-Phase entscheiden: ungenutzte Statusicons entfernen/archivieren oder als Designquelle dokumentieren. Ordnername `catagory` wegen Live-Pfaden vorerst nicht umbenennen. |
 | Assets | `sounds/`, `Verbreitungskarten/` | Vollstaendig und konsistent, aber getrennt nach Assettyp statt pro Art gebuendelt. Sounds sind mit ca. 160 MB der groesste Repo-Bereich. | Mittel | Asset-Buendelung nur als bewusste Migration planen, weil alle GitHub-Pages-Pfade und Loader betroffen sind. |
 | Datenpipeline | `update.mjs` | Funktional, aber inzwischen relativ gross und enthaelt IUCN-, Karten-, Xeno-Canto-, Commons- und Reportlogik in einer Datei. | Mittel | Vorerst beibehalten. Spaeter nur modularisieren, wenn neue Arten/Felder die Wartung erschweren. |
 | Frontend | `species-*.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Syntax ok, alle Module brechen sauber ab, wenn erwartete Container fehlen. | Niedrig | Beibehalten. `species-sound.js` ist naechster sinnvoller Frontend-Verbesserungspunkt. |
@@ -50,7 +50,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 ## Empfehlung fuer Phase 5
 
 1. Alten GitHub-Token widerrufen, falls noch nicht geschehen, und Batch-Dateien weiterhin tokenfrei halten.
-2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren.
+2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren: erledigt, siehe `docs/repo-structure.md`.
 3. Erst danach Soundbar verbessern.
 4. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
 

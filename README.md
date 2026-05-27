@@ -42,10 +42,11 @@ Versionierte Referenzen liegen unter:
 - `docs/sound-license-review.md`
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
+- `docs/repo-structure.md`
 - `docs/roadmap.md`
 
 Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als abgeschlossen, wenn `AGENTS.md`,
-`readme.md`, `docs/roadmap.md` und betroffene Detaildokumente aktuell sind.
+`README.md`, `docs/roadmap.md` und betroffene Detaildokumente aktuell sind.
 
 Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht
 werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.

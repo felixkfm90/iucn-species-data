@@ -4,7 +4,7 @@ Stand: 2026-05-27
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
-`readme.md`, `docs/roadmap.md` und passende Detaildokumente unter `docs/`.
+`README.md`, `docs/roadmap.md` und passende Detaildokumente unter `docs/`.
 
 ## Phase 1 - Frontend-Stabilitaet
 
@@ -55,19 +55,19 @@ Status: in Arbeit
 
 - 5.1 Repo- und Dateiaudit: erledigt, siehe `docs/repo-file-audit.md`.
 - 5.2 Dokumentation aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation: erledigt und ab jetzt fortlaufende Pflicht.
-- 5.3 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
+- 5.3 Lokalen Workflow und Repo-Struktur absichern: erledigt, siehe `docs/repo-structure.md`.
 - 5.4 Soundbar verbessern.
 - 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert.
 - 5.6 Weitere Arten ergaenzen.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
-- 5.8 Ausruestungsseite, Affiliate, Shop/Kalender erst nach technischer Stabilitaet.
+- 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
+- 5.9 Ausruestungsseite, Affiliate, Shop/Kalender erst nach technischer Stabilitaet.
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Lokalen Workflow absichern: Batch-Dateien, `.gitignore`, Token-Hinweise und GitHub-only-Push-Ablauf pruefen und dokumentieren.
-2. Soundbar verbessern: Player-UX, Credits-Darstellung, fehlende/NC-Sound-Hinweise und mobile Bedienung pruefen.
-3. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert, z. B. Groesse, Gewicht und ggf. echte Lebenserwartung.
-4. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
-5. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
-6. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-7. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.
+1. Soundbar verbessern: Player-UX, Credits-Darstellung, fehlende/NC-Sound-Hinweise und mobile Bedienung pruefen.
+2. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert, z. B. Groesse, Gewicht und ggf. echte Lebenserwartung.
+3. Weitere Arten ergaenzen: erst Datenliste erweitern, dann Pipeline laufen lassen, danach Report und Seiten testen.
+4. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
+5. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+6. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender und rechtliche Folgepruefung erst nach Abschluss der technischen Stabilisierung.

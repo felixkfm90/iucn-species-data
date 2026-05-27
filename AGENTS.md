@@ -14,7 +14,7 @@ Kein Schritt der Roadmap gilt als abgeschlossen, solange die dazugehoerige Dokum
 Bei jedem technischen Schritt pruefen und bei Bedarf aktualisieren:
 
 - `AGENTS.md` fuer den aktuellen Uebergabe- und Arbeitsstand
-- `readme.md` fuer Projektueberblick, Bedienung und Betriebsablauf
+- `README.md` fuer Projektueberblick, Bedienung und Betriebsablauf
 - `docs/roadmap.md` fuer Status, naechste Schritte und Priorisierung
 - passende Detaildokumente unter `docs/`, z. B. CSS-, Sound-, Repo- oder Squarespace-Doku
 
@@ -156,7 +156,7 @@ Lokale Batch-Dateien:
 
 Die Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
-Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert und soll nach Tests wieder geleert werden.
+Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
 
 ## Bekannte Stolperstellen
 
@@ -196,14 +196,14 @@ Nach Frontend-Aenderungen:
 Phase 5 laeuft. Bereits erledigt:
 
 - Repo- und Dateiaudit: `docs/repo-file-audit.md`
-- Dokumentationsregel und aktuelle Uebergabe: `AGENTS.md`, `readme.md`, `docs/roadmap.md`
+- Dokumentationsregel und aktuelle Uebergabe: `AGENTS.md`, `README.md`, `docs/roadmap.md`
+- Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
 
 Naechste sinnvolle Schritte:
 
-1. Lokalen Workflow absichern und dokumentieren: Batch, `.gitignore`, Token-Hinweise, GitHub-only-Push.
-2. Soundbar verbessern: Player-UX, Credits, NC-/Fallback-Hinweise, mobile Bedienung.
-3. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert.
-4. Weitere Arten ergaenzen.
-5. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
-6. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-7. Spaeter: Ausruestung, Affiliate, Shop/Kalender und rechtliche Folgepruefung.
+1. Soundbar verbessern: Player-UX, Credits, NC-/Fallback-Hinweise, mobile Bedienung.
+2. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert.
+3. Weitere Arten ergaenzen.
+4. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+5. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+6. Spaeter: Ausruestung, Affiliate, Shop/Kalender und rechtliche Folgepruefung.
