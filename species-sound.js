@@ -55,23 +55,6 @@
     return `<div class="frame-box species-sound-frame"><i>${escapeHtml(message)}</i></div>`;
   }
 
-  function renderNativeFallback(audioUrl, creditsHtml, licenseBadgeHtml, message) {
-    return `
-      <div class="frame-box species-sound-frame">
-        <div class="sound-header">
-          <div>
-            <div class="sound-title">Tierstimme</div>
-            <div class="sound-state">Native Wiedergabe</div>
-          </div>
-          ${licenseBadgeHtml}
-        </div>
-        <p class="sound-fallback-message"><i>${escapeHtml(message)}</i></p>
-        <audio class="sound-fallback-audio" controls preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
-        ${creditsHtml}
-      </div>
-    `;
-  }
-
   function buildCreditView(credits) {
     if (!credits) {
       return {
@@ -157,6 +140,13 @@
     }
   }
 
+  function setProgress(rangeEl, fillEl, value) {
+    const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
+    rangeEl.value = String(safeValue);
+    rangeEl.setAttribute("aria-valuenow", String(Math.round(safeValue)));
+    fillEl.style.width = `${safeValue}%`;
+  }
+
   const wrapper = document.getElementById("species-sound");
   if (!wrapper) return;
 
@@ -190,7 +180,6 @@
 
     const credits = await fetchCredits(creditsUrl);
     const creditView = buildCreditView(credits);
-    const creditsHtml = creditView.html;
 
     wrapper.innerHTML = `
       <div class="frame-box species-sound-frame">
@@ -202,55 +191,53 @@
           ${creditView.badgeHtml}
         </div>
 
-        <div class="wave-wrapper">
+        <div class="soundbar" aria-label="Tierstimmen-Player">
           <button id="play-toggle" class="play-toggle" type="button" aria-label="Tierstimme abspielen" aria-pressed="false">
             &#9658;
           </button>
-          <div id="species-waveform" class="species-waveform" aria-label="Audiowellenform"></div>
+
+          <div class="soundbar-main">
+            <div class="soundbar-track" aria-hidden="true">
+              <div id="soundbar-progress-fill" class="soundbar-progress-fill"></div>
+            </div>
+            <input
+              id="soundbar-progress"
+              class="soundbar-progress"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="0.1"
+              aria-label="Position der Tierstimme"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+            <div class="wave-meta">
+              <span id="current-time" class="current-time">0:00</span>
+              <span id="duration" class="duration">0:00</span>
+            </div>
+          </div>
         </div>
 
-        <div class="wave-meta">
-          <span id="current-time" class="current-time">0:00</span>
-          <span id="duration" class="duration">0:00</span>
-        </div>
+        <audio id="species-audio" preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
 
-        ${creditsHtml}
+        ${creditView.html}
       </div>
     `;
 
-    if (typeof window.WaveSurfer === "undefined") {
-      wrapper.innerHTML = renderNativeFallback(
-        audioUrl,
-        creditsHtml,
-        creditView.badgeHtml,
-        "Audio-Player konnte nicht geladen werden. Native Wiedergabe wird verwendet."
-      );
-      return;
-    }
-
-    const waveformEl = wrapper.querySelector("#species-waveform");
+    const audio = wrapper.querySelector("#species-audio");
     const playBtn = wrapper.querySelector("#play-toggle");
+    const progressEl = wrapper.querySelector("#soundbar-progress");
+    const progressFillEl = wrapper.querySelector("#soundbar-progress-fill");
     const currentTimeEl = wrapper.querySelector("#current-time");
     const durationEl = wrapper.querySelector("#duration");
     const stateEl = wrapper.querySelector("#sound-state");
 
-    if (!waveformEl || !playBtn || !currentTimeEl || !durationEl) return;
-
-    let zoomLevel = 50;
-
-    const wavesurfer = WaveSurfer.create({
-      container: waveformEl,
-      waveColor: "#9fb9b4",
-      progressColor: "#0f5e55",
-      cursorColor: "#183f39",
-      height: 78,
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
-      minPxPerSec: zoomLevel,
-      normalize: true,
-      responsive: true,
-    });
+    if (!audio || !playBtn || !progressEl || !progressFillEl || !currentTimeEl || !durationEl) {
+      wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
+      return;
+    }
 
     function setState(text) {
       if (stateEl) stateEl.textContent = text;
@@ -263,52 +250,61 @@
       setState(isPlaying ? "Laeuft" : "Bereit");
     }
 
-    playBtn.addEventListener("click", () => {
-      wavesurfer.playPause();
+    function updateProgress() {
+      const duration = audio.duration;
+      const current = audio.currentTime;
+      currentTimeEl.textContent = formatTime(current);
+      durationEl.textContent = formatTime(duration);
+
+      if (Number.isFinite(duration) && duration > 0) {
+        setProgress(progressEl, progressFillEl, (current / duration) * 100);
+      } else {
+        setProgress(progressEl, progressFillEl, 0);
+      }
+    }
+
+    playBtn.addEventListener("click", async () => {
+      try {
+        if (audio.paused) {
+          await audio.play();
+        } else {
+          audio.pause();
+        }
+      } catch (_) {
+        setState("Wiedergabe blockiert");
+      }
     });
 
-    wavesurfer.on("ready", () => {
-      durationEl.textContent = formatTime(wavesurfer.getDuration());
+    progressEl.addEventListener("input", () => {
+      const duration = audio.duration;
+      const value = Number(progressEl.value);
+      setProgress(progressEl, progressFillEl, value);
+      if (Number.isFinite(duration) && duration > 0) {
+        audio.currentTime = (duration * value) / 100;
+      }
+    });
+
+    audio.addEventListener("loadedmetadata", updateProgress);
+    audio.addEventListener("durationchange", updateProgress);
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("play", () => setPlaying(true));
+    audio.addEventListener("pause", () => setPlaying(false));
+    audio.addEventListener("ended", () => {
+      setPlaying(false);
+      audio.currentTime = 0;
+      setProgress(progressEl, progressFillEl, 0);
       currentTimeEl.textContent = "0:00";
-      setPlaying(false);
+    });
+    audio.addEventListener("error", () => {
+      wrapper.innerHTML = `
+        <div class="frame-box species-sound-frame">
+          <i>Tierstimme aktuell nicht verfuegbar.</i>
+          ${creditView.html}
+        </div>
+      `;
     });
 
-    wavesurfer.on("play", () => setPlaying(true));
-    wavesurfer.on("pause", () => setPlaying(false));
-    wavesurfer.on("finish", () => {
-      currentTimeEl.textContent = formatTime(wavesurfer.getDuration());
-      setPlaying(false);
-    });
-
-    wavesurfer.on("audioprocess", () => {
-      currentTimeEl.textContent = formatTime(wavesurfer.getCurrentTime());
-    });
-
-    wavesurfer.on("seek", () => {
-      currentTimeEl.textContent = formatTime(wavesurfer.getCurrentTime());
-    });
-
-    wavesurfer.on("error", () => {
-      wrapper.innerHTML = renderNativeFallback(
-        audioUrl,
-        creditsHtml,
-        creditView.badgeHtml,
-        "Waveform konnte nicht geladen werden. Native Wiedergabe wird verwendet."
-      );
-    });
-
-    waveformEl.addEventListener(
-      "wheel",
-      (event) => {
-        if (typeof wavesurfer.zoom !== "function") return;
-        event.preventDefault();
-        zoomLevel = Math.min(300, Math.max(30, zoomLevel + event.deltaY * -0.1));
-        wavesurfer.zoom(zoomLevel);
-      },
-      { passive: false }
-    );
-
-    wavesurfer.load(audioUrl);
+    updateProgress();
   } catch (_) {
     wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
   }

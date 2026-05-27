@@ -42,7 +42,7 @@ Frontend-Module:
 - `species-info.js`: Info-Box
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: Soundplayer und Credits
+- `species-sound.js`: native Soundbar, Credits und Lizenzhinweise
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung sichtbarer Listen

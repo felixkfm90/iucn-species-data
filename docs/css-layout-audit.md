@@ -22,9 +22,9 @@ waere ein Layout-Eingriff und sollte erst gemacht werden, wenn ein konkreter Sei
 |---|---|---|---|
 | `.frame-box` | Live nur in den erwarteten Artseiten-Modulen gefunden. | Mittel, weil globaler Klassenselektor. | Beibehalten, solange keine fremden Squarespace-Elemente `.frame-box` nutzen. |
 | `.info-box` | Live nur in `#species-status` gefunden. | Mittel, weil globaler Klassenselektor. | Beibehalten; bei Konflikt spaeter auf `#species-status .info-box` scopen. |
-| `#play-toggle` | Passt zur aktuellen Ausgabe von `species-sound.js`. | Niedrig. | Beibehalten; Code hat zusaetzlich Klassen-Fallback. |
-| `#species-waveform` | Passt zur aktuellen Ausgabe von `species-sound.js`. | Niedrig. | Beibehalten; Code hat zusaetzlich Klassen-Fallback. |
-| `.sound-license-badge`, `.sound-credits`, `.sound-credit-warning` | Neue Soundbar-Ergaenzungen fuer Lizenz-Badge, Credits und NC-Hinweis. | Niedrig. | Auf `#species-sound` beschraenken, falls spaeter Namenskonflikte auf anderen Seiten sichtbar werden. |
+| `#play-toggle` | Passt zur aktuellen Ausgabe von `species-sound.js`. | Niedrig. | Beibehalten; echter Button statt `div`. |
+| `.soundbar`, `.soundbar-progress`, `.soundbar-progress-fill` | Native Soundbar ohne externe Waveform-Bibliothek. | Niedrig. | Beibehalten; funktioniert ohne WaveSurfer. |
+| `.sound-license-badge`, `.sound-credits`, `.sound-credit-warning` | Soundbar-Ergaenzungen fuer Lizenz-Badge, Credits und NC-Hinweis. | Niedrig. | Auf `#species-sound` beschraenken, falls spaeter Namenskonflikte auf anderen Seiten sichtbar werden. |
 | `#gz-overlay`, `#gz-img`, `#gz-close`, `.gz-zoom-btn` | Werden durch `lightbox-zoom.js` global angelegt, sind aber ohne offene Lightbox unsichtbar. | Niedrig bis Mittel. | Beibehalten; nur bei Konflikt mit anderen Lightboxen scopen/anpassen. |
 
 ## Layout-Pruefung

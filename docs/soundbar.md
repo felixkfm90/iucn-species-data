@@ -3,7 +3,8 @@
 Stand: 2026-05-27
 
 Ziel von Phase 5.4: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen: klarer
-Play-Button, gut lesbare Waveform, stabile Fallbacks, saubere Quellen-/Lizenzanzeige und brauchbare mobile Bedienung.
+Play-Button, robuste Fortschrittsleiste, stabile Wiedergabe, saubere Quellen-/Lizenzanzeige und brauchbare mobile
+Bedienung.
 
 ## Geaenderte Dateien
 
@@ -18,8 +19,8 @@ Play-Button, gut lesbare Waveform, stabile Fallbacks, saubere Quellen-/Lizenzanz
   - `sounds/<SafeName>/<SafeName>.mp3`
   - `sounds/<SafeName>/credits.json`
 - Vor dem Rendern wird die MP3 per `HEAD` geprueft.
-- Wenn WaveSurfer nicht geladen werden kann oder die Waveform fehlschlaegt, wird ein nativer `<audio controls>`-Player
-  als Fallback angezeigt.
+- Die aktive Soundbar nutzt ein natives `<audio>`-Element und eigene Controls. Es gibt keine WaveSurfer-Abhaengigkeit
+  mehr fuer die Grundfunktion.
 - Credits werden als strukturierte Zeilen gerendert: Quelle, Aufnahme, Ort, Qualitaet, Lizenz und Originalquelle.
 - Non-Commercial-Lizenzen werden sichtbar markiert.
 
@@ -28,8 +29,8 @@ Play-Button, gut lesbare Waveform, stabile Fallbacks, saubere Quellen-/Lizenzanz
 Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienung, ohne das Layout extern zu kopieren:
 
 - grosser runder Play-Button links
-- Waveform als Hauptbedienelement
-- Zeitangabe unter der Waveform
+- Fortschrittsleiste als Hauptbedienelement
+- Zeitangabe unter der Leiste
 - Lizenz-Badge rechts im Kopfbereich
 - Quellenangaben unterhalb der Soundbar
 
@@ -37,8 +38,10 @@ Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienun
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.8`
+- Footer: `species-sound.js?v=1.0.9`
 - Custom CSS: Soundbar-Block aus `docs/squarespace-custom.css`
+- Der alte externe WaveSurfer-Eintrag kann aus dem Footer entfernt werden:
+  `<script src="https://unpkg.com/wavesurfer.js@7"></script>`
 
 Ohne CSS-Update funktioniert der Player technisch weiter, sieht aber nicht wie der neue Soll-Stand aus.
 
@@ -48,7 +51,7 @@ Desktop:
 
 1. Artseite mit freiem Sound oeffnen, z. B. `Amsel`.
 2. Play-Button startet und pausiert die Wiedergabe.
-3. Waveform laedt, Zeit und Dauer werden angezeigt.
+3. Fortschrittsleiste, Zeit und Dauer werden angezeigt.
 4. Lizenz-Badge und Credits sind sichtbar.
 5. Originalquelle oeffnet in neuem Tab.
 
@@ -61,9 +64,4 @@ Mobile:
 
 1. Artseite auf schmalem Viewport oeffnen.
 2. Play-Button bleibt gut antippbar.
-3. Waveform, Zeitangaben und Credits laufen nicht aus dem Container.
-
-Fallback:
-
-1. WaveSurfer blockieren oder testweise nicht laden.
-2. Native Audio-Steuerung erscheint statt leerer Soundbox.
+3. Fortschrittsleiste, Zeitangaben und Credits laufen nicht aus dem Container.
