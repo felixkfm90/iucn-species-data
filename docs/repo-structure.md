@@ -53,8 +53,8 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `errors.log` | lokaler Laufzeitlog, ignoriert |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |
-| `Testlauf/` | temporare Tests, ignoriert |
-| `list_licenses.mjs` | lokales Hilfsskript; Funktion ist durch Report und Sound-Review abgedeckt, ignoriert |
+| `Testlauf/` | temporare Tests, ignoriert und nach Tests wieder leer zu halten |
+| `list_licenses.mjs` | altes lokales Hilfsskript; nicht mehr noetig, weil Report und Sound-Review die Lizenzuebersicht abdecken |
 
 ## Dokumentationsstruktur
 
