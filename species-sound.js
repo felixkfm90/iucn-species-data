@@ -98,7 +98,7 @@
       }
 
       #species-sound .sound-icon-pause {
-        width: 12px;
+        width: 5px;
         height: 15px;
         border-left: 4px solid #fff;
         border-right: 4px solid #fff;
