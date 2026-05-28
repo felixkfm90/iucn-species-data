@@ -47,6 +47,7 @@ Versionierte Referenzen liegen unter:
 - `docs/repo-structure.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
+- `docs/seo-worklist.md`
 - `docs/roadmap.md`
 
 Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als abgeschlossen, wenn `AGENTS.md`,
@@ -102,6 +103,9 @@ Tokens duerfen nicht im Repository gespeichert werden.
 
 Neue Arten werden nicht automatisch angelegt. Sie werden manuell in `species_list.json` ergaenzt; der genaue Ablauf ist
 in `docs/add-species-workflow.md` dokumentiert.
+
+SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Dort stehen konkrete Vorschlaege fuer
+Squarespace-Seitentitel, Meta-Beschreibungen, sichtbare Einstiegssaetze, Alt-Texte und interne Links.
 
 Lokale Batch-Dateien:
 

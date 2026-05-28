@@ -65,7 +65,10 @@ Status: in Arbeit
   Neue Arten werden nur manuell in `species_list.json` ergaenzt, nicht automatisiert. Der Ablauf ist in
   `docs/add-species-workflow.md` dokumentiert. Am 2026-05-28 wurde die Pipeline ohne neue Arten durchgefuehrt:
   45 Arten, 45 Karten, 45 Soundordner, 45 MP3s, 45 Credits, keine fehlenden Kernassets.
-- 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+- 5.7 SEO: in Arbeit.
+  `docs/seo-worklist.md` enthaelt jetzt konkrete Vorschlaege fuer Uebersichtsseiten und alle 45 Artseiten:
+  SEO-Titel, Meta-Beschreibungen, sichtbare Einstiegssaetze, Alt-Text-Basis und interne Linkregeln.
+  Offen bleibt die Eintragung und Stichprobenpruefung in Squarespace.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -73,7 +76,8 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
+1. SEO-Arbeiten in Squarespace umsetzen: Eintraege aus `docs/seo-worklist.md` setzen und live stichprobenartig
+   pruefen.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 3. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

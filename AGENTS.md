@@ -209,10 +209,15 @@ Phase 5 laeuft. Bereits erledigt:
   - aktueller Stand: Arten werden nur manuell von Felix in `species_list.json` ergaenzt; keine automatische
     Artenauswahl oder automatische Listenaenderung
   - Pipeline-Check am 2026-05-28 ohne neue Arten erfolgreich: 45 Arten, 45 Karten, 45 MP3s, keine fehlenden Kernassets
+- SEO/KI-Findbarkeit: `docs/seo-worklist.md`
+  - aktueller Stand: Arbeitsliste fuer Uebersichtsseiten und alle 45 Artseiten erstellt
+  - enthaelt SEO-Titel, Meta-Beschreibungen, sichtbare Einstiegssaetze, Alt-Text-Basis, interne Linkregeln und
+    spaetere Optionen fuer strukturierte Daten
+  - offen: Werte in Squarespace eintragen und live stichprobenartig pruefen
 
 Naechste sinnvolle Schritte:
 
-1. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+1. SEO-Eintraege aus `docs/seo-worklist.md` in Squarespace umsetzen und live pruefen.
 2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
 3. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.
