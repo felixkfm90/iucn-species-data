@@ -203,10 +203,13 @@ Phase 5 laeuft. Bereits erledigt:
   - aktueller Stand: native Audio-Wiedergabe mit gekapselter Canvas-Wellenform; keine WaveSurfer-Abhaengigkeit
 - Manuelle Zusatzdaten: `species_list.json`, `update.mjs`, `species-info.js`, `docs/manual-species-fields.md`
   - aktueller Stand: `life_expectancy` wird als `Lebenserwartung` oberhalb der Generationsdauer angezeigt
+- Weitere Arten: `docs/add-species-workflow.md`
+  - aktueller Stand: Arten werden nur manuell von Felix in `species_list.json` ergaenzt; keine automatische
+    Artenauswahl oder automatische Listenaenderung
 
 Naechste sinnvolle Schritte:
 
-1. Weitere Arten ergaenzen.
+1. Weitere Arten manuell ergaenzen und danach Pipeline/Report/Squarespace-Seiten testen.
 2. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
 3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
 4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete

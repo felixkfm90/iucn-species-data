@@ -46,6 +46,7 @@ Versionierte Referenzen liegen unter:
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
 - `docs/manual-species-fields.md`
+- `docs/add-species-workflow.md`
 - `docs/roadmap.md`
 
 Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als abgeschlossen, wenn `AGENTS.md`,
@@ -98,6 +99,9 @@ iNaturalist-Treffer werden nur uebernommen, wenn Taxon, Lizenz und MP3-Datei pas
 NC-Sound erhalten oder wird bei neuen Arten als Fallback genutzt.
 
 Tokens duerfen nicht im Repository gespeichert werden.
+
+Neue Arten werden nicht automatisch angelegt. Sie werden manuell in `species_list.json` ergaenzt; der genaue Ablauf ist
+in `docs/add-species-workflow.md` dokumentiert.
 
 Lokale Batch-Dateien:
 

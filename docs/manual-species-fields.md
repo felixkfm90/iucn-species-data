@@ -49,3 +49,6 @@ Neue Arten sollen in `species_list.json` nur dann als vollstaendig gelten, wenn 
 - `life_expectancy`
 
 Quellen fuer die Lebenserwartung werden aktuell nicht als eigenes Feld gepflegt.
+
+Der komplette Ablauf fuer neue Arten ist in `docs/add-species-workflow.md` dokumentiert. Wichtig: neue Arten werden
+nicht automatisch in `species_list.json` eingetragen.

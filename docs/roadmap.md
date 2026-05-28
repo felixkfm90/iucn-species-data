@@ -61,7 +61,9 @@ Status: in Arbeit
 - 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert: erledigt.
   `species_list.json` fuehrt jetzt manuell gepflegte `life_expectancy`; `update.mjs` uebernimmt sie als
   `Lebenserwartung` in `speciesData.json`, und `species-info.js` zeigt sie oberhalb der Generationsdauer.
-- 5.6 Weitere Arten ergaenzen.
+- 5.6 Weitere Arten ergaenzen: gestartet.
+  Neue Arten werden nur manuell in `species_list.json` ergaenzt, nicht automatisiert. Der Ablauf ist in
+  `docs/add-species-workflow.md` dokumentiert.
 - 5.7 SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
@@ -70,8 +72,8 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Weitere Arten ergaenzen: erst Datenliste mit Groesse, Gewicht und `life_expectancy` erweitern, dann Pipeline laufen
-   lassen, danach Report und Seiten testen.
+1. Weitere Arten ergaenzen: du ergaenzt neue Arten manuell in `species_list.json`; danach Pipeline laufen lassen,
+   Report pruefen, Squarespace-Detailseite/Listenlink manuell anlegen und live testen.
 2. SEO-Arbeiten: Seitentitel, Meta-Beschreibungen, Alt-Texte und interne Verlinkung systematisch pruefen.
 3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 4. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
