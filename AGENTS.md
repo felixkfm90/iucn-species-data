@@ -77,6 +77,8 @@ Aktuell ersetzte freie Quellen:
 - `Panama-Kapuzineraffe`: freie iNaturalist-Aufnahme, CC BY 4.0
 - `Quetzal`: freie Quelle, nicht mehr im NC-Report
 
+Letzter vollstaendiger Pipeline-/Report-Check: 2026-05-28.
+
 ## Datenfluss
 
 ```text
@@ -206,11 +208,11 @@ Phase 5 laeuft. Bereits erledigt:
 - Weitere Arten: `docs/add-species-workflow.md`
   - aktueller Stand: Arten werden nur manuell von Felix in `species_list.json` ergaenzt; keine automatische
     Artenauswahl oder automatische Listenaenderung
+  - Pipeline-Check am 2026-05-28 ohne neue Arten erfolgreich: 45 Arten, 45 Karten, 45 MP3s, keine fehlenden Kernassets
 
 Naechste sinnvolle Schritte:
 
-1. Weitere Arten manuell ergaenzen und danach Pipeline/Report/Squarespace-Seiten testen.
-2. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
-3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+1. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+3. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.

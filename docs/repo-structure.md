@@ -66,6 +66,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
   - `repo-file-audit.md`: Befunde zum Dateibestand
   - `repo-structure.md`: diese Struktur- und Workflow-Entscheidung
   - `manual-species-fields.md`: manuell gepflegte Artenfelder
+  - `add-species-workflow.md`: manueller Ablauf fuer neue Arten
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
   - `css-layout-audit.md`: CSS-/Layout-Befunde
   - `squarespace-footer.html`: dokumentierter Squarespace-Footer

@@ -18,7 +18,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 
 | Bereich | Ergebnis |
 |---|---:|
-| Getrackte Dateien | 184 |
+| Getrackte Dateien | 186 |
 | Arten in `speciesData.json` | 45 |
 | Arten in `species_list.json` | 45 |
 | Soundordner | 45 |
@@ -53,7 +53,8 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 2. `.gitignore` bereinigen und lokalen Testlauf-/Batch-Workflow dokumentieren: erledigt, siehe `docs/repo-structure.md`.
 3. Soundbar ist in Phase 5.4 als native Canvas-Komponente umgesetzt, siehe `docs/soundbar.md`.
 4. Manuelle Zusatzdaten sind in Phase 5.5 dokumentiert, siehe `docs/manual-species-fields.md`.
-5. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
+5. Der manuelle Ablauf fuer neue Arten ist in Phase 5.6 dokumentiert, siehe `docs/add-species-workflow.md`.
+6. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
 
 ## Nicht ohne Freigabe aendern
 

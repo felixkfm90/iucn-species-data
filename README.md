@@ -112,13 +112,15 @@ Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deploym
 
 ## Aktueller Datenstand
 
-Laut aktuellem Report:
+Laut aktuellem Report vom 2026-05-28:
 
 - 45 Arten
 - 0 fehlende Sounddateien
 - 0 fehlende Sound-Credits
 - 0 fehlende Karten
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
+
+Weitere Arten werden bei Bedarf manuell in `species_list.json` ergaenzt; aktuell wurden keine neuen Arten hinzugefuegt.
 
 ## Tests nach Frontend-Aenderungen
 
