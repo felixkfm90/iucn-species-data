@@ -14,12 +14,13 @@
 
   try {
     const data = await window.SpeciesCore.getSpeciesData();
-    const generationDuration = data["Generationsdauer"] ?? data["Lebenserwartung"];
+    const lifeExpectancy = data["Lebenserwartung"];
+    const generationDuration = data["Generationsdauer"];
 
     function renderInfoRow(label, value) {
       const text = String(value || "").trim();
       const safeLabel = escapeHtml(label);
-      if (!text) return "";
+      if (!text || text.toLowerCase() === "n/a") return "";
       if (text.includes("Männchen") && text.includes("Weibchen")) {
         const m = text.match(/Männchen\s*:?\s*(.*?)\s*Weibchen/i)?.[1]?.trim() || "";
         const w = text.match(/Weibchen\s*:?\s*(.+)$/i)?.[1]?.trim() || "";
@@ -38,6 +39,7 @@
         <p>Name: ${escapeHtml(data["Deutscher Name"])} – ${escapeHtml(data["Wissenschaftlicher Name"])}</p>
         ${renderInfoRow("Größe", data.Größe)}
         ${renderInfoRow("Gewicht", data.Gewicht)}
+        ${renderInfoRow("Lebenserwartung", lifeExpectancy)}
         <p>Generationsdauer: ${escapeHtml(generationDuration)}</p>
         <p>Populationgröße: ${escapeHtml(data["Populationgröße"])}</p>
       </div>

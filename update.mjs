@@ -106,14 +106,15 @@ async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function emptyEntry(scientific, german = scientific) {
+function emptyEntry(scientific, german = scientific, manual = {}) {
   const URLSlug = scientific.toLowerCase().replace(/\s+/g, "");
   return {
     URLSlug,
     "Wissenschaftlicher Name": scientific,
     "Deutscher Name": german,
-    Gewicht: "n/a",
-    Größe: "n/a",
+    Gewicht: manual.weight || "n/a",
+    Größe: manual.size || "n/a",
+    Lebenserwartung: manual.lifeExpectancy || "n/a",
     "Assessment ID": "n/a",
     Status: "n/a",
     Trend: "n/a",
@@ -169,6 +170,7 @@ function preserveExistingSpeciesData(existing, inputSpecies) {
     ...existing,
     Gewicht: inputSpecies.weight || existing.Gewicht,
     Größe: inputSpecies.size || existing.Größe,
+    Lebenserwartung: inputSpecies.life_expectancy || existing.Lebenserwartung || "n/a",
   };
 }
 
@@ -234,7 +236,7 @@ async function getAssessmentData(assessmentId) {
 }
 
 // Eine Art abrufen
-async function fetchSpeciesData(genus, species, german, size, weight) {
+async function fetchSpeciesData(genus, species, german, size, weight, lifeExpectancy) {
   const scientific = `${genus} ${species}`;
   const URLSlug = `${genus}${species}`.toLowerCase();
 
@@ -248,7 +250,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     if (!taxonData?.taxon) {
       console.error(`❌ Kein Treffer für ${scientific}`);
       logError("Kein Treffer: " + scientific);
-      return emptyEntry(scientific, german);
+      return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
     }
 
     const taxon = taxonData.taxon;
@@ -261,7 +263,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
     if (!globalAssessment) {
       console.error(`❌ Keine globale Assessment-ID für ${resolvedName}`);
       logError("Keine globale Assessment-ID: " + resolvedName);
-      return emptyEntry(resolvedName, german);
+      return emptyEntry(resolvedName, german, { size, weight, lifeExpectancy });
     }
 
     const assessmentId = globalAssessment.assessment_id;
@@ -285,6 +287,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
       "Deutscher Name": german,
       Gewicht: weight,
       Größe: size,
+      Lebenserwartung: lifeExpectancy || "n/a",
       "Assessment ID": assessmentId,
       Status: globalAssessment.red_list_category_code || "n/a",
       Trend: assessmentInfo.trend,
@@ -304,7 +307,7 @@ async function fetchSpeciesData(genus, species, german, size, weight) {
   } catch (err) {
     console.error(`❌ Fehler bei ${scientific}: ${err}`);
     logError("Fehler bei " + scientific + ": " + err.message);
-    return emptyEntry(scientific, german);
+    return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
   }
 }
 
@@ -1144,7 +1147,7 @@ function printReportToConsole(report) {
     const output = [];
 
     for (const s of speciesList) {
-      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight);
+      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
       const existingData = existingBySlug.get(getInputSlug(s));
 
       if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {

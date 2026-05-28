@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-05-27
+Stand: 2026-05-28
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -29,7 +29,8 @@ ueber JavaScript-Module von GitHub Pages geladen.
 
 Zentrale Dateien:
 
-- `species_list.json`: manuelle Artenliste und Input fuer die Pipeline
+- `species_list.json`: manuelle Artenliste und Input fuer die Pipeline, inklusive Groesse, Gewicht und
+  Lebenserwartung
 - `update.mjs`: Datenpipeline fuer IUCN, Karten, Xeno-Canto, Wikimedia Commons, iNaturalist, Sounds und Reports
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
 - `Verbreitungskarten/*.jpg`: Verbreitungskarten
@@ -200,12 +201,13 @@ Phase 5 laeuft. Bereits erledigt:
 - Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
 - Soundbar: `species-sound.js`, `docs/soundbar.md`, `docs/squarespace-custom.css`, `docs/squarespace-footer.html`
   - aktueller Stand: native Audio-Wiedergabe mit gekapselter Canvas-Wellenform; keine WaveSurfer-Abhaengigkeit
+- Manuelle Zusatzdaten: `species_list.json`, `update.mjs`, `species-info.js`, `docs/manual-species-fields.md`
+  - aktueller Stand: `life_expectancy` wird als `Lebenserwartung` oberhalb der Generationsdauer angezeigt
 
 Naechste sinnvolle Schritte:
 
-1. Manuelle Zusatzdaten bereinigen: nur Felder pflegen, die IUCN nicht liefert.
-2. Weitere Arten ergaenzen.
-3. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
-4. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-5. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+1. Weitere Arten ergaenzen.
+2. SEO: Titel, Meta-Beschreibungen, Alt-Texte, interne Verlinkung.
+3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.

@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-05-27
+Stand: 2026-05-28
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -22,7 +22,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `AGENTS.md` | Arbeitsregeln und Uebergabe fuer Codex/Agenten. Muss schnell auffindbar bleiben. |
 | `species-core.js`, `species-info.js`, `species-taxonomy.js`, `species-status.js`, `species-sound.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Werden im Squarespace-Footer direkt aus dem Repo-Root ueber GitHub Pages geladen. Verschieben wuerde Footer-Aenderungen erfordern. |
 | `update.mjs` | Zentrale lokale Datenpipeline. |
-| `species_list.json` | Manuelle Eingabeliste fuer die Pipeline. |
+| `species_list.json` | Manuelle Eingabeliste fuer die Pipeline: Name, Taxon, Groesse, Gewicht und Lebenserwartung. |
 | `speciesData.json` | Wird von den Frontend-Modulen ueber GitHub Pages geladen. |
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
@@ -65,6 +65,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
   - `roadmap.md`: Phasen, Status, naechste Schritte
   - `repo-file-audit.md`: Befunde zum Dateibestand
   - `repo-structure.md`: diese Struktur- und Workflow-Entscheidung
+  - `manual-species-fields.md`: manuell gepflegte Artenfelder
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
   - `css-layout-audit.md`: CSS-/Layout-Befunde
   - `squarespace-footer.html`: dokumentierter Squarespace-Footer

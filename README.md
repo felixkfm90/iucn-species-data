@@ -8,7 +8,8 @@ GitHub Pages Base:
 
 ## Datenfluss
 
-`species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus die Artennamen und erzeugt bzw.
+`species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus die Artennamen, Groesse, Gewicht und
+manuell gepflegte Lebenserwartung und erzeugt bzw.
 aktualisiert:
 
 - `speciesData.json`
@@ -24,7 +25,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 
 - `AGENTS.md`: aktuelle Projektuebergabe und verbindliche Arbeitsregeln
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
-- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Generationsdauer und Population
+- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
 - `species-sound.js`: native Tierstimmen-Soundbar mit Canvas-Wellenform, Credits und Lizenzhinweisen
@@ -44,6 +45,7 @@ Versionierte Referenzen liegen unter:
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
+- `docs/manual-species-fields.md`
 - `docs/roadmap.md`
 
 Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als abgeschlossen, wenn `AGENTS.md`,
