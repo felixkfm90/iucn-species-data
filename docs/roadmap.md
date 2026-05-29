@@ -70,8 +70,10 @@ Status: in Arbeit
   Meta-Beschreibung, konsistentem Vorschlag, Status und Hinweis je URL. Kurzbefund: 13 passen bereits, 53 brauchen
   Titel und Beschreibung, 42 brauchen nur eine vereinheitlichte Beschreibung, 7 brauchen einen vereinheitlichten Titel,
   1 URL liefert 404 und 1 Pfad ist strukturell auffaellig. Zusaetzlich sind per internem Link-Crawl Legacy-, Redirect-
-  und Systempfade ausserhalb der Sitemap dokumentiert. Offen bleibt die Eintragung der abweichenden Zeilen und
-  Stichprobenpruefung in Squarespace.
+  und Systempfade ausserhalb der Sitemap dokumentiert. Manueller Stand vom 2026-05-29: Basis-Titel,
+  Reise-Uebersichten, Reise-Detailseiten und Wildlife-Uebersichten sind laut Felix in Squarespace umgesetzt und in der
+  Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist eingetragen, aber noch nicht
+  oeffentlich freigegeben. Offen bleiben die Wildlife-Artseiten und der spaetere Live-Audit.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -79,8 +81,9 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Arbeiten in Squarespace umsetzen: Nur Zeilen aus `docs/seo-worklist.md` bearbeiten, die nicht `passt` sind,
-   danach live stichprobenartig pruefen.
+1. SEO-Arbeiten in Squarespace fortsetzen: Als naechstes nur die Wildlife-Artseiten aus `docs/seo-worklist.md`
+   bearbeiten. Bereits markierte Zeilen mit `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich`
+   nicht erneut anfassen; spaeter per Live-Audit pruefen.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 3. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

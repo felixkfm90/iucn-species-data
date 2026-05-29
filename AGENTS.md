@@ -216,9 +216,12 @@ Phase 5 laeuft. Bereits erledigt:
     `/wildlife`, `/reisen-1` und einen alten 404-Pfad
   - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
     Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
-  - Zeilen mit Status `passt` muessen nicht erneut bearbeitet werden; nur abweichende Zeilen in Squarespace
-    aktualisieren
-  - offen: Werte in Squarespace eintragen und live stichprobenartig pruefen
+  - manueller Umsetzungsstand vom 2026-05-29: Basis-Titel, Reise-Uebersichten, Reise-Detailseiten und
+    Wildlife-Uebersichten sind laut Felix in Squarespace eingetragen; diese Zeilen stehen auf `umgesetzt, live pruefen`
+  - `/reisen/2024-costarica` ist mit SEO-Titel und Beschreibung eingetragen, aber noch nicht oeffentlich freigegeben
+  - Wildlife-Artseiten sind noch offen und werden spaeter separat bearbeitet
+  - Zeilen mit Status `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich` nicht erneut bearbeiten;
+    nach Freigabe nur live pruefen und dann auf `passt` setzen
 
 Naechste sinnvolle Schritte:
 

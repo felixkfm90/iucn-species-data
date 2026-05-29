@@ -106,7 +106,8 @@ in `docs/add-species-workflow.md` dokumentiert.
 
 SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Die Datei basiert auf einem Live-Sitemap-Audit und
 enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen konsistenten Vorschlag und einen Status.
-Zeilen mit `passt` muessen in Squarespace nicht erneut bearbeitet werden.
+Zeilen mit `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich` muessen in Squarespace nicht erneut
+bearbeitet werden; offene Wildlife-Artseiten bleiben separat markiert.
 
 Lokale Batch-Dateien:
 
