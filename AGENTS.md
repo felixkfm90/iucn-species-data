@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-05-28
+Stand: 2026-05-29
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -210,9 +210,14 @@ Phase 5 laeuft. Bereits erledigt:
     Artenauswahl oder automatische Listenaenderung
   - Pipeline-Check am 2026-05-28 ohne neue Arten erfolgreich: 45 Arten, 45 Karten, 45 MP3s, keine fehlenden Kernassets
 - SEO/KI-Findbarkeit: `docs/seo-worklist.md`
-  - aktueller Stand: Arbeitsliste fuer Uebersichtsseiten und alle 45 Artseiten erstellt
-  - enthaelt SEO-Titel, Meta-Beschreibungen, sichtbare Einstiegssaetze, Alt-Text-Basis, interne Linkregeln und
-    spaetere Optionen fuer strukturierte Daten
+  - aktueller Stand: Live-Sitemap-Audit fuer 117 URLs erstellt, inklusive Root-Startseite und gemeldetem
+    Costa-Rica-404-Pfad
+  - zusaetzlicher interner Link-Crawl fand Legacy-, Redirect- und Systempfade ausserhalb der Sitemap, z. B. `/cart`,
+    `/wildlife`, `/reisen-1` und einen alten 404-Pfad
+  - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
+    Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
+  - Zeilen mit Status `passt` muessen nicht erneut bearbeitet werden; nur abweichende Zeilen in Squarespace
+    aktualisieren
   - offen: Werte in Squarespace eintragen und live stichprobenartig pruefen
 
 Naechste sinnvolle Schritte:
