@@ -106,8 +106,9 @@ in `docs/add-species-workflow.md` dokumentiert.
 
 SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Die Datei basiert auf einem Live-Sitemap-Audit und
 enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen konsistenten Vorschlag und einen Status.
-Zeilen mit `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich` muessen in Squarespace nicht erneut
-bearbeitet werden; offene Wildlife-Artseiten bleiben separat markiert.
+Beim Live-Audit vom 2026-05-30 passen alle per Sitemap auffindbaren Wildlife-Artseiten. Offene SEO-Restpunkte sind in
+der Worklist markiert, insbesondere die noch nicht oeffentliche Costa-Rica-Uebersicht und aktive Arten ohne
+oeffentliche Squarespace-Artseite.
 
 Lokale Batch-Dateien:
 

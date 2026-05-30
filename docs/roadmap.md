@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-05-29
+Stand: 2026-05-30
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -73,7 +73,9 @@ Status: in Arbeit
   und Systempfade ausserhalb der Sitemap dokumentiert. Manueller Stand vom 2026-05-29: Basis-Titel,
   Reise-Uebersichten, Reise-Detailseiten und Wildlife-Uebersichten sind laut Felix in Squarespace umgesetzt und in der
   Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist eingetragen, aber noch nicht
-  oeffentlich freigegeben. Offen bleiben die Wildlife-Artseiten und der spaetere Live-Audit.
+  oeffentlich freigegeben. Live-Audit vom 2026-05-30: 114 Seiten passen, alle 43 per Sitemap auffindbaren
+  Wildlife-Artseiten passen live, 2 Reise-Detailseiten haben nur minimale Wortlautabweichungen, und 2 aktive Arten
+  (`Kohlmeise`, `Graureiher`) haben noch keine oeffentliche Artseite.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -81,9 +83,9 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Arbeiten in Squarespace fortsetzen: Als naechstes nur die Wildlife-Artseiten aus `docs/seo-worklist.md`
-   bearbeiten. Bereits markierte Zeilen mit `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich`
-   nicht erneut anfassen; spaeter per Live-Audit pruefen.
+1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder als bewusst nicht oeffentlich belassen,
+   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken, und die zwei minimalen
+   Reise-Wortlautabweichungen bei Bedarf angleichen.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 3. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

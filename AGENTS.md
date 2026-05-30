@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-05-29
+Stand: 2026-05-30
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -216,12 +216,17 @@ Phase 5 laeuft. Bereits erledigt:
     `/wildlife`, `/reisen-1` und einen alten 404-Pfad
   - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
     Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
-  - manueller Umsetzungsstand vom 2026-05-29: Basis-Titel, Reise-Uebersichten, Reise-Detailseiten und
-    Wildlife-Uebersichten sind laut Felix in Squarespace eingetragen; diese Zeilen stehen auf `umgesetzt, live pruefen`
-  - `/reisen/2024-costarica` ist mit SEO-Titel und Beschreibung eingetragen, aber noch nicht oeffentlich freigegeben
-  - Wildlife-Artseiten sind noch offen und werden spaeter separat bearbeitet
-  - Zeilen mit Status `passt`, `umgesetzt, live pruefen` oder `eingetragen, nicht oeffentlich` nicht erneut bearbeiten;
-    nach Freigabe nur live pruefen und dann auf `passt` setzen
+  - Live-Audit vom 2026-05-30: 114 Seiten stehen auf `passt`; alle 43 per Sitemap auffindbaren Wildlife-Artseiten
+    passen live
+  - 2 Reise-Detailseiten bleiben als `umgesetzt, live pruefen`, weil der Live-Wortlaut minimal vom Vorschlag abweicht:
+    `Creta Maris Beach Resort` und `Rio Bebedero`
+  - `/reisen/2024-costarica` ist mit SEO-Titel und Beschreibung eingetragen, liefert live aber weiter 404, weil die
+    Seite noch nicht oeffentlich freigegeben ist
+  - 2 aktive Arten aus `species_list.json` haben noch keine oeffentliche Artseite und liefern 404:
+    `Kohlmeise` (`parusmajor`) und `Graureiher` (`ardeacinerea`)
+  - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
+    kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` ist der echte interne 404-Link aus der
+    Reiseuebersicht
 
 Naechste sinnvolle Schritte:
 
