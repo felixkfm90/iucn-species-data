@@ -216,10 +216,10 @@ Phase 5 laeuft. Bereits erledigt:
     `/wildlife`, `/reisen-1` und einen alten 404-Pfad
   - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
     Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
-  - Live-Audit vom 2026-05-30: 114 Seiten stehen auf `passt`; alle 43 per Sitemap auffindbaren Wildlife-Artseiten
+  - Live-Audit vom 2026-05-30: 116 Seiten stehen auf `passt`; alle 43 per Sitemap auffindbaren Wildlife-Artseiten
     passen live
-  - 2 Reise-Detailseiten bleiben als `umgesetzt, live pruefen`, weil der Live-Wortlaut minimal vom Vorschlag abweicht:
-    `Creta Maris Beach Resort` und `Rio Bebedero`
+  - Die zuvor offenen Reise-Detailseiten `Creta Maris Beach Resort` und `Rio Bebedero` wurden nach Felix' Anpassung
+    live geprueft und stehen jetzt auf `passt`
   - `/reisen/2024-costarica` ist mit SEO-Titel und Beschreibung eingetragen, liefert live aber weiter 404, weil die
     Seite noch nicht oeffentlich freigegeben ist
   - 2 aktive Arten aus `species_list.json` haben noch keine oeffentliche Artseite und liefern 404:

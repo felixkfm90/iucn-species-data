@@ -73,8 +73,8 @@ Status: in Arbeit
   und Systempfade ausserhalb der Sitemap dokumentiert. Manueller Stand vom 2026-05-29: Basis-Titel,
   Reise-Uebersichten, Reise-Detailseiten und Wildlife-Uebersichten sind laut Felix in Squarespace umgesetzt und in der
   Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist eingetragen, aber noch nicht
-  oeffentlich freigegeben. Live-Audit vom 2026-05-30: 114 Seiten passen, alle 43 per Sitemap auffindbaren
-  Wildlife-Artseiten passen live, 2 Reise-Detailseiten haben nur minimale Wortlautabweichungen, und 2 aktive Arten
+  oeffentlich freigegeben. Live-Audit vom 2026-05-30: 116 Seiten passen, alle 43 per Sitemap auffindbaren
+  Wildlife-Artseiten passen live, die zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 2 aktive Arten
   (`Kohlmeise`, `Graureiher`) haben noch keine oeffentliche Artseite.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
@@ -84,8 +84,7 @@ Status: in Arbeit
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
 1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder als bewusst nicht oeffentlich belassen,
-   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken, und die zwei minimalen
-   Reise-Wortlautabweichungen bei Bedarf angleichen.
+   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 3. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.
