@@ -74,12 +74,12 @@ Status: in Arbeit
   Reise-Uebersichten, Reise-Detailseiten und Wildlife-Uebersichten sind laut Felix in Squarespace umgesetzt und in der
   Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist seit Felix' Freigabe am 2026-06-01
   oeffentlich erreichbar und passt live. Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118
-  dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, die
-  zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 1 aktive Art
-  (`Kohlmeise`) hat noch keine oeffentliche Artseite. Der alte Pfad `/2019-griechenland` liefert weiter 404, ist nach
-  Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt; damit bleibt hoechstens ein optionales
-  Redirect-Thema fuer externe Altlinks. Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/
-  Barrierefreiheits-Audit aufgenommen.
+  dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, und die
+  zuvor offenen Reise-Wortlautabweichungen sind erledigt. `Kohlmeise` ist laut Felix bewusst geparkt und wird erst
+  spaeter aktiviert, wenn die Art auf Instagram gepostet wird. Der alte Pfad `/2019-griechenland` liefert weiter 404,
+  ist nach Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt; damit bleibt hoechstens ein optionales
+  Redirect-Thema fuer externe Altlinks. Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert:
+  `docs/image-alt-audit.md`.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -91,11 +91,10 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Restpunkt entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken. Optional kann der alte
-   Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen werden, falls externe
+1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
+   Alt-Texte und lange/captionartige Alt-Texte.
+2. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
    Altlinks existieren.
-2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
-   pruefen und konsistente Vorschlaege dokumentieren.
 3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
 4. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
    aktive Projektstand auf ein Netzlaufwerk umzieht.

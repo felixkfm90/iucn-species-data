@@ -222,21 +222,18 @@ Phase 5 laeuft. Bereits erledigt:
   - Die zuvor offenen Reise-Detailseiten `Creta Maris Beach Resort` und `Rio Bebedero` wurden nach Felix' Anpassung
     live geprueft und stehen jetzt auf `passt`
   - `/reisen/2024-costarica` wurde nach Felix' Freigabe am 2026-06-01 live geprueft und steht jetzt auf `passt`
-  - 1 aktive Art aus `species_list.json` hat noch keine oeffentliche Artseite und liefert 404:
-    `Kohlmeise` (`parusmajor`)
+  - `Kohlmeise` (`parusmajor`) ist bewusst geparkt und wird spaeter aktiviert, wenn Felix die Art auf Instagram postet
   - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
     kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` liefert weiter 404, ist nach Felix' Korrektur
     aber nicht mehr aus der Reiseuebersicht verlinkt und bleibt nur als optionales Redirect-Thema fuer externe Altlinks
-  - Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/Barrierefreiheits-Audit aufgenommen, aber noch nicht
-    systematisch geprueft
+  - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert: `docs/image-alt-audit.md`
 
 Naechste sinnvolle Schritte:
 
-1. SEO-Restpunkt entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken. Optional kann der alte
-   Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen werden, falls externe
-   Altlinks existieren.
-2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
-   pruefen und konsistente Vorschlaege dokumentieren.
+1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
+   Alt-Texte und lange/captionartige Alt-Texte.
+2. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
+   werden, falls externe Altlinks existieren.
 3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
 4. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
    Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe

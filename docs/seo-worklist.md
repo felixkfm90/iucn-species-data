@@ -27,6 +27,7 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - `URL prüfen`: URL ist nicht sauber erreichbar oder strukturell auffällig.
 - `eingetragen, nicht öffentlich`: SEO-Werte sind laut Felix in Squarespace eingetragen, die Seite ist aber noch nicht frei erreichbar.
 - `umgesetzt, live prüfen`: In Squarespace laut Felix umgesetzt; nicht erneut bearbeiten, sondern nach Veröffentlichung/live Crawl prüfen.
+- `bewusst geparkt`: Inhalt ist im Datenbestand aktiv, soll aber noch nicht öffentlich sichtbar sein.
 
 ## Aktueller Kurzbefund
 
@@ -35,8 +36,9 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - 44 von 44 per aktueller Sitemap gefundenen Wildlife-Artseiten passen live.
 - Die zwei vorher offenen Reise-Detailseiten `/reisen/2020-kreta/cretamaris` und `/reisen/2024-costarica/riobebedero` wurden am 2026-05-30 live nachgeprüft und passen jetzt.
 - `/reisen/2024-costarica` wurde am 2026-06-01 live nachgeprüft und passt jetzt.
-- Eine aktive Art aus `species_list.json` hat aktuell keine öffentliche Artseite und fehlt in der Sitemap:
-  - Kohlmeise: erwarteter Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert am 2026-06-01 weiter 404.
+- `Kohlmeise` ist laut Felix bewusst geparkt und wird spaeter aktiviert, wenn die Art auf Instagram gepostet wird.
+  Der erwartete Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert deshalb aktuell bewusst 404 und ist nicht als
+  aktiver SEO-Fehler zu behandeln.
 - Der alte Pfad `/2019-griechenland` liefert am 2026-06-01 weiter 404; die funktionierende Zielseite ist
   `/reisen/2019-griechenland`. Felix hat den alten Bildlink entfernt; die Reiseübersicht enthält jetzt keinen
   `href="/2019-griechenland"` mehr.
@@ -48,8 +50,8 @@ Auffälligkeiten:
 - `/reisen/2024-costarica` lieferte im Live-Audit 404, ist nach Felix' Freigabe aber seit der Nachprüfung vom 2026-06-01 öffentlich erreichbar und passt.
 - `/2021-neapel/capri` lag im Live-Audit außerhalb der sonstigen `/reisen/2021-neapel/...`-Struktur. Laut Felix wurde die URL auf `/reisen/2021-neapel/capri` korrigiert.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
-- Bild-Alt-Texte und optionale Bildtitel sind noch nicht vollständig geprüft. Sie gehören als eigener SEO- und
-  Barrierefreiheits-Audit in die nächsten Arbeiten, getrennt von Seitentiteln und Meta-Beschreibungen.
+- Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 separat auditiert. Ergebnis und Priorisierung stehen in
+  `docs/image-alt-audit.md`.
 
 ## Manueller Umsetzungsstand
 
@@ -62,7 +64,8 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite und zum Bild-Alt-Text-Audit.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Umsetzung der
+Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
 
 ## Basis
 
@@ -212,13 +215,14 @@ Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächs
 | --- | --- | --- | --- | --- | --- | --- |
 | passt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/ardeacinerea) | Graureiher (Ardea cinerea) \| Artenporträt — FN Wildlife & Travel | Graureiher (Ardea cinerea): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Graureiher (Ardea cinerea) \| Artenporträt | Graureiher (Ardea cinerea): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Live geprüft am 2026-06-01; `species-output` vorhanden. |
 
-## Aktive Arten ohne öffentliche Artseite
+## Bewusst geparkte aktive Arten
 
-Diese Art ist in `species_list.json` aktiv, aber die erwartete Artseite ist nicht in der Sitemap und liefert beim letzten Check live 404. Wenn sie auf der Website erscheinen soll, muss die Squarespace-Artseite noch erstellt oder freigegeben werden. Wenn sie bewusst noch nicht sichtbar sein soll, bleibt hier nur ein Merker.
+Diese Arten sind in `species_list.json` aktiv, sollen aber bewusst noch nicht öffentlich sichtbar sein. Sie gelten nicht
+als aktueller SEO-Fehler, solange sie absichtlich geparkt sind.
 
 | Status | Erwartete URL | Art | Empfehlung |
 | --- | --- | --- | --- |
-| URL prüfen | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/parusmajor) | Kohlmeise (Parus major) | Artseite erstellen/freigeben oder Art bewusst als noch nicht veröffentlicht markieren. |
+| bewusst geparkt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/parusmajor) | Kohlmeise (Parus major) | Spaeter aktivieren, wenn Felix die Art auf Instagram postet. Bis dahin kein SEO-Handlungsbedarf. |
 
 ## Legacy-/Beacon-URLs außerhalb der Sitemap
 
@@ -237,7 +241,7 @@ Diese Art ist in `species_list.json` aktiv, aber die erwartete Artseite ist nich
 
 ## Bild-Alt-Texte und Bildtitel
 
-Status: noch nicht systematisch geprüft.
+Status: Audit durchgefuehrt, Details in `docs/image-alt-audit.md`.
 
 Ziel: Bild-Alternativtexte verbessern Barrierefreiheit, Bildersuche und KI-/Suchmaschinen-Verständlichkeit. Das ist ein
 eigener Arbeitsschritt, weil die meisten Fotos in Squarespace-Bildblöcken und Galerien gepflegt werden, nicht in den
@@ -257,8 +261,8 @@ Empfohlene Regeln:
 - Dynamische Bilder aus den JS-Modulen, z. B. Karten und Status-/Trend-Icons, später separat prüfen und bei Bedarf im
   jeweiligen Modul mit sinnvollen `alt`-Attributen versehen.
 
-Nächster Schritt: eigener Bild-Audit über die wichtigsten Seiten und Galerien. Ergebnis als Tabelle mit URL, Bild/Motiv,
-aktuellem Alt-Text, Vorschlag und Status dokumentieren.
+Nächster Schritt: Squarespace-Bildbloecke und Galerien anhand von `docs/image-alt-audit.md` abarbeiten. Erste
+Prioritaet: globaler Logo-Alt-Text, danach Dateinamen-Alt-Texte und lange/captionartige Alt-Texte.
 
 ## Definition of Done für diesen SEO-Schritt
 
