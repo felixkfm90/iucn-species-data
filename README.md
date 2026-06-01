@@ -107,8 +107,8 @@ in `docs/add-species-workflow.md` dokumentiert.
 SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Die Datei basiert auf einem Live-Sitemap-Audit und
 enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen konsistenten Vorschlag und einen Status.
 Beim Live-Audit vom 2026-05-30 passen alle per Sitemap auffindbaren Wildlife-Artseiten. Offene SEO-Restpunkte sind in
-der Worklist markiert, insbesondere die noch nicht oeffentliche Kohlmeise-Artseite und der interne 404-Link aus der
-Reiseuebersicht. Die Costa-Rica-Uebersicht und Graureiher-Artseite wurden am 2026-06-01 live nachgeprueft und passen.
+der Worklist markiert, insbesondere die noch nicht oeffentliche Kohlmeise-Artseite. Die Costa-Rica-Uebersicht,
+Graureiher-Artseite und korrigierte Griechenland-Verlinkung wurden am 2026-06-01 live nachgeprueft und passen.
 Bild-Alt-Texte und optionale Bildtitel sind als separater SEO-/Barrierefreiheits-Audit vorgemerkt.
 
 Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder

@@ -38,7 +38,8 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - Eine aktive Art aus `species_list.json` hat aktuell keine öffentliche Artseite und fehlt in der Sitemap:
   - Kohlmeise: erwarteter Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert am 2026-06-01 weiter 404.
 - Der alte Pfad `/2019-griechenland` liefert am 2026-06-01 weiter 404; die funktionierende Zielseite ist
-  `/reisen/2019-griechenland`. Die Reiseübersicht enthält aktuell noch Links auf beide Pfade.
+  `/reisen/2019-griechenland`. Felix hat den alten Bildlink entfernt; die Reiseübersicht enthält jetzt keinen
+  `href="/2019-griechenland"` mehr.
 
 Auffälligkeiten:
 
@@ -61,7 +62,7 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite, zum internen 404-Link aus der Reiseübersicht und zum Bild-Alt-Text-Audit.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite und zum Bild-Alt-Text-Audit.
 
 ## Basis
 
@@ -230,7 +231,7 @@ Diese Art ist in `species_list.json` aktiv, aber die erwartete Artseite ist nich
 | [Link](https://www.fnwildlifetravel.de/2025-nordthailandlaos) | 302 | /reisen/2025-nordthailandlaos/chiangmai | Im Crawl 2026-05-30 keine interne Quelle gefunden. Wahrscheinlich alter Ordnerpfad; nicht doppelt als SEO-Seite pflegen. |
 | [Link](https://www.fnwildlifetravel.de/2024-costarica-reisen) | 404 |  | Im Crawl 2026-05-30 keine interne Quelle gefunden. Alter Beacon-/URL-Vorschlag; nicht als SEO-Ziel verwenden. |
 | [Link](https://www.fnwildlifetravel.de/reisen-1) | 302 | /reisen/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
-| [Link](https://www.fnwildlifetravel.de/2019-griechenland) | 404 |  | Wird von der Reiseübersicht verlinkt und liefert 404. Das ist der einzige echte interne Linkfehler im Legacy-Abschnitt; Linkziel auf /reisen/2019-griechenland ändern oder Redirect setzen. |
+| [Link](https://www.fnwildlifetravel.de/2019-griechenland) | 404 |  | Alter Legacy-Pfad. Am 2026-06-01 kein `href="/2019-griechenland"` mehr auf der Reiseübersicht gefunden; optional Redirect auf /reisen/2019-griechenland setzen, falls externe Altlinks existieren. |
 | [Link](https://www.fnwildlifetravel.de/wildlife) | 302 | /wildlife/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
 | [Link](https://www.fnwildlifetravel.de/cart) | 200 |  | Squarespace-Systemseite Warenkorb, wird automatisch verlinkt. Aktuell nur relevant, wenn später Shop/Kalender aktiv werden; bis dahin keine normale SEO-Seite daraus machen. |
 

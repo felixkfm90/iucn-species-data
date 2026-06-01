@@ -76,8 +76,9 @@ Status: in Arbeit
   oeffentlich erreichbar und passt live. Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118
   dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, die
   zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 1 aktive Art
-  (`Kohlmeise`) hat noch keine oeffentliche Artseite. Der alte Pfad `/2019-griechenland` liefert weiter 404 und ist
-  weiterhin aus der Reiseuebersicht verlinkt. Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/
+  (`Kohlmeise`) hat noch keine oeffentliche Artseite. Der alte Pfad `/2019-griechenland` liefert weiter 404, ist nach
+  Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt; damit bleibt hoechstens ein optionales
+  Redirect-Thema fuer externe Altlinks. Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/
   Barrierefreiheits-Audit aufgenommen.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
@@ -90,9 +91,9 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
-   404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
-   Redirect abfangen.
+1. SEO-Restpunkt entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken. Optional kann der alte
+   Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen werden, falls externe
+   Altlinks existieren.
 2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
    pruefen und konsistente Vorschlaege dokumentieren.
 3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.

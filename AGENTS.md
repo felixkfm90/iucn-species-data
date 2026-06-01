@@ -225,16 +225,16 @@ Phase 5 laeuft. Bereits erledigt:
   - 1 aktive Art aus `species_list.json` hat noch keine oeffentliche Artseite und liefert 404:
     `Kohlmeise` (`parusmajor`)
   - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
-    kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` ist der echte interne 404-Link aus der
-    Reiseuebersicht
+    kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` liefert weiter 404, ist nach Felix' Korrektur
+    aber nicht mehr aus der Reiseuebersicht verlinkt und bleibt nur als optionales Redirect-Thema fuer externe Altlinks
   - Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/Barrierefreiheits-Audit aufgenommen, aber noch nicht
     systematisch geprueft
 
 Naechste sinnvolle Schritte:
 
-1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
-   404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
-   Redirect abfangen.
+1. SEO-Restpunkt entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken. Optional kann der alte
+   Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen werden, falls externe
+   Altlinks existieren.
 2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
    pruefen und konsistente Vorschlaege dokumentieren.
 3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
