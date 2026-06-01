@@ -69,13 +69,14 @@ Status: in Arbeit
   `docs/seo-worklist.md` enthaelt jetzt einen Live-Sitemap-Audit fuer 117 URLs mit aktuellem SEO-Titel, aktueller
   Meta-Beschreibung, konsistentem Vorschlag, Status und Hinweis je URL. Kurzbefund: 13 passen bereits, 53 brauchen
   Titel und Beschreibung, 42 brauchen nur eine vereinheitlichte Beschreibung, 7 brauchen einen vereinheitlichten Titel,
-  1 URL liefert 404 und 1 Pfad ist strukturell auffaellig. Zusaetzlich sind per internem Link-Crawl Legacy-, Redirect-
+  1 URL lieferte 404 und 1 Pfad ist strukturell auffaellig. Zusaetzlich sind per internem Link-Crawl Legacy-, Redirect-
   und Systempfade ausserhalb der Sitemap dokumentiert. Manueller Stand vom 2026-05-29: Basis-Titel,
   Reise-Uebersichten, Reise-Detailseiten und Wildlife-Uebersichten sind laut Felix in Squarespace umgesetzt und in der
-  Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist eingetragen, aber noch nicht
-  oeffentlich freigegeben. Live-Audit vom 2026-05-30: 116 Seiten passen, alle 43 per Sitemap auffindbaren
-  Wildlife-Artseiten passen live, die zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 2 aktive Arten
-  (`Kohlmeise`, `Graureiher`) haben noch keine oeffentliche Artseite.
+  Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist seit Felix' Freigabe am 2026-06-01
+  oeffentlich erreichbar und passt live. Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118
+  dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, die
+  zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 1 aktive Art
+  (`Kohlmeise`) hat noch keine oeffentliche Artseite.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -87,8 +88,7 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder als bewusst nicht oeffentlich belassen,
-   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken und den internen
+1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
    404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
    Redirect abfangen.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.

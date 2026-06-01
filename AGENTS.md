@@ -212,27 +212,25 @@ Phase 5 laeuft. Bereits erledigt:
   - Pipeline-Check am 2026-05-28 ohne neue Arten erfolgreich: 45 Arten, 45 Karten, 45 MP3s, keine fehlenden Kernassets
 - SEO/KI-Findbarkeit: `docs/seo-worklist.md`
   - aktueller Stand: Live-Sitemap-Audit fuer 117 URLs erstellt, inklusive Root-Startseite und gemeldetem
-    Costa-Rica-404-Pfad
+    Costa-Rica-Reisepfad
   - zusaetzlicher interner Link-Crawl fand Legacy-, Redirect- und Systempfade ausserhalb der Sitemap, z. B. `/cart`,
     `/wildlife`, `/reisen-1` und einen alten 404-Pfad
   - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
     Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
-  - Live-Audit vom 2026-05-30: 116 Seiten stehen auf `passt`; alle 43 per Sitemap auffindbaren Wildlife-Artseiten
-    passen live
+  - Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118 dokumentierte URLs/Seiten stehen auf `passt`;
+    alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live
   - Die zuvor offenen Reise-Detailseiten `Creta Maris Beach Resort` und `Rio Bebedero` wurden nach Felix' Anpassung
     live geprueft und stehen jetzt auf `passt`
-  - `/reisen/2024-costarica` ist mit SEO-Titel und Beschreibung eingetragen, liefert live aber weiter 404, weil die
-    Seite noch nicht oeffentlich freigegeben ist
-  - 2 aktive Arten aus `species_list.json` haben noch keine oeffentliche Artseite und liefern 404:
-    `Kohlmeise` (`parusmajor`) und `Graureiher` (`ardeacinerea`)
+  - `/reisen/2024-costarica` wurde nach Felix' Freigabe am 2026-06-01 live geprueft und steht jetzt auf `passt`
+  - 1 aktive Art aus `species_list.json` hat noch keine oeffentliche Artseite und liefert 404:
+    `Kohlmeise` (`parusmajor`)
   - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
     kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` ist der echte interne 404-Link aus der
     Reiseuebersicht
 
 Naechste sinnvolle Schritte:
 
-1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder bewusst nicht oeffentlich belassen,
-   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken und den internen
+1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
    404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
    Redirect abfangen.
 2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.

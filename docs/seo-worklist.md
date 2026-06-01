@@ -1,6 +1,6 @@
 # SEO-Worklist
 
-Stand: 2026-05-30
+Stand: 2026-06-01
 
 Ziel: aktuelle Live-SEO-Titel und Meta-Beschreibungen aller per Sitemap auffindbaren Seiten prüfen und konsistente Vorschläge dokumentieren. Diese Datei ist die Arbeitsliste für Squarespace; sie ändert keine Live-Seiten automatisch.
 
@@ -9,7 +9,7 @@ Ziel: aktuelle Live-SEO-Titel und Meta-Beschreibungen aller per Sitemap auffindb
 - Sitemap: https://www.fnwildlifetravel.de/sitemap.xml
 - Geprüfte Live-Audit-URLs: 117
 - Stand Live-Audit: 2026-05-30T07:26:11.813Z
-- Zusätzlich geprüft: Root-Startseite und ein gemeldeter Costa-Rica-Reisepfad, der aktuell 404 liefert.
+- Zusätzlich geprüft: Root-Startseite und ein gemeldeter Costa-Rica-Reisepfad.
 - Zusätzlich per internem Link-Crawl geprüft: Legacy-, Redirect- und Systempfade außerhalb der Sitemap.
 
 ## Wichtigste Regel
@@ -31,18 +31,18 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 ## Aktueller Kurzbefund
 
 - Live-Audit vom 2026-05-30: 116 Seiten passen.
-- 43 von 43 per Sitemap gefundenen Wildlife-Artseiten passen live.
+- Nachprüfung vom 2026-06-01: `/reisen/2024-costarica` und `Graureiher` passen live. Damit stehen 118 dokumentierte URLs/Seiten auf `passt`.
+- 44 von 44 per aktueller Sitemap gefundenen Wildlife-Artseiten passen live.
 - Die zwei vorher offenen Reise-Detailseiten `/reisen/2020-kreta/cretamaris` und `/reisen/2024-costarica/riobebedero` wurden am 2026-05-30 live nachgeprüft und passen jetzt.
-- `/reisen/2024-costarica` ist laut Felix gepflegt, liefert live aber noch 404, weil die Seite noch nicht öffentlich freigegeben ist.
-- Zwei aktive Arten aus `species_list.json` haben aktuell keine öffentliche Artseite und fehlen in der Sitemap:
+- `/reisen/2024-costarica` wurde am 2026-06-01 live nachgeprüft und passt jetzt.
+- Eine aktive Art aus `species_list.json` hat aktuell keine öffentliche Artseite und fehlt in der Sitemap:
   - Kohlmeise: erwarteter Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert 404.
-  - Graureiher: erwarteter Pfad `/wildlife/heimische-tierwelt/ardeacinerea` liefert 404.
 
 Auffälligkeiten:
 
 - Viele Reise-Unterseiten waren im ersten Audit ohne Meta-Beschreibung; laut Live-Audit vom 2026-05-30 sind sie jetzt fast vollständig gepflegt.
 - Artseiten folgen live dem Muster `[Deutscher Name] ([Wissenschaftlicher Name]) | Artenporträt`. Beacon-Marketingtexte vermeiden.
-- `/reisen/2024-costarica` lieferte im Live-Audit 404. Laut Felix sind SEO-Titel und Beschreibung eingetragen; die Seite ist aber noch nicht öffentlich freigegeben.
+- `/reisen/2024-costarica` lieferte im Live-Audit 404, ist nach Felix' Freigabe aber seit der Nachprüfung vom 2026-06-01 öffentlich erreichbar und passt.
 - `/2021-neapel/capri` lag im Live-Audit außerhalb der sonstigen `/reisen/2021-neapel/...`-Struktur. Laut Felix wurde die URL auf `/reisen/2021-neapel/capri` korrigiert.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
 
@@ -54,17 +54,17 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - Reise-Übersichtsseiten wurden nach Vorschlag angepasst.
 - Reise-Detailseiten wurden nach Vorschlag umgesetzt; einzelne Ortsnamen/Formulierungen wurden bewusst angepasst und unten in der Tabelle übernommen.
 - Wildlife-Übersichtsseiten wurden übernommen.
-- `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt, ist aber noch nicht öffentlich freigegeben.
-- Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 43 per Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit auf `passt`.
+- `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
+- Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zu den zwei aktiven Arten ohne öffentliche Artseite und zur noch nicht öffentlichen Costa-Rica-Übersichtsseite.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite und zum internen 404-Link aus der Reiseübersicht.
 
 ## Basis
 
 | Status | URL | Aktueller SEO-Titel | Aktuelle SEO-Beschreibung | Vorschlag SEO-Titelfeld | Vorschlag SEO-Beschreibung | Hinweis |
 | --- | --- | --- | --- | --- | --- | --- |
 | passt | [Link](https://www.fnwildlifetravel.de/) | FN Wildlife & Travel | FN Wildlife & Travel zeigt Naturfotografie, Reiseberichte und Wildlife-Artenporträts mit Fotos, IUCN-Daten, Verbreitungskarten und Tierstimmen. | FN Wildlife & Travel | FN Wildlife & Travel zeigt Naturfotografie, Reiseberichte und Wildlife-Artenporträts mit Fotos, IUCN-Daten, Verbreitungskarten und Tierstimmen. | Live geprüft am 2026-05-30. |
-| eingetragen, nicht öffentlich | [Link](https://www.fnwildlifetravel.de/reisen/2024-costarica) | (fehlt) | (fehlt) | Costa Rica 2024 \| Reisebericht & Wildlife | Reisebericht Costa Rica 2024 mit Wildlife-Beobachtungen, Naturfotografie, Landschaften, Regenwald und persönlichen Eindrücken. | Laut Felix in Squarespace eingetragen; Seite ist noch nicht öffentlich freigegeben und deshalb live noch nicht sauber prüfbar. |
+| passt | [Link](https://www.fnwildlifetravel.de/reisen/2024-costarica) | Costa Rica 2024 \| Reisebericht & Wildlife — FN Wildlife & Travel | Reisebericht Costa Rica 2024 mit Wildlife-Beobachtungen, Naturfotografie, Landschaften, Regenwald und persönlichen Eindrücken. | Costa Rica 2024 \| Reisebericht & Wildlife | Reisebericht Costa Rica 2024 mit Wildlife-Beobachtungen, Naturfotografie, Landschaften, Regenwald und persönlichen Eindrücken. | Live geprüft am 2026-06-01. |
 | passt | [Link](https://www.fnwildlifetravel.de/contact) | Kontakt — FN Wildlife & Travel | Nehmen Sie Kontakt zu FN Wildlife & Travel auf: Fragen, Feedback und Anfragen zu Naturfotografie, Reiseberichten und Wildlife-Inhalten. | Kontakt | Nehmen Sie Kontakt zu FN Wildlife & Travel auf: Fragen, Feedback und Anfragen zu Naturfotografie, Reiseberichten und Wildlife-Inhalten. | Live geprüft am 2026-05-30. |
 | passt | [Link](https://www.fnwildlifetravel.de/about) | Über uns — FN Wildlife & Travel | Lernen Sie FN Wildlife & Travel kennen: Naturfotografie, Reiseerlebnisse, Wildlife-Beobachtungen und die Menschen hinter der Website. | Über uns | Lernen Sie FN Wildlife & Travel kennen: Naturfotografie, Reiseerlebnisse, Wildlife-Beobachtungen und die Menschen hinter der Website. | Live geprüft am 2026-05-30. |
 | passt | [Link](https://www.fnwildlifetravel.de/home) | FN Wildlife & Travel | FN Wildlife & Travel zeigt Naturfotografie, Reiseberichte und Wildlife-Artenporträts mit Fotos, IUCN-Daten, Verbreitungskarten und Tierstimmen. | FN Wildlife & Travel | FN Wildlife & Travel zeigt Naturfotografie, Reiseberichte und Wildlife-Artenporträts mit Fotos, IUCN-Daten, Verbreitungskarten und Tierstimmen. | Live geprüft am 2026-05-30. |
@@ -201,14 +201,19 @@ Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächs
 | passt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/anseranser) | Graugans (Anser anser) \| Artenporträt — FN Wildlife & Travel | Graugans (Anser anser): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Graugans (Anser anser) \| Artenporträt | Graugans (Anser anser): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Live geprüft am 2026-05-30. |
 | passt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/vulpesvulpes) | Rotfuchs (Vulpes vulpes) \| Artenporträt — FN Wildlife & Travel | Rotfuchs (Vulpes vulpes): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Rotfuchs (Vulpes vulpes) \| Artenporträt | Rotfuchs (Vulpes vulpes): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Live geprüft am 2026-05-30. |
 
+## Nachträglich live geprüfte Artseiten
+
+| Status | URL | Aktueller SEO-Titel | Aktuelle SEO-Beschreibung | Vorschlag SEO-Titelfeld | Vorschlag SEO-Beschreibung | Hinweis |
+| --- | --- | --- | --- | --- | --- | --- |
+| passt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/ardeacinerea) | Graureiher (Ardea cinerea) \| Artenporträt — FN Wildlife & Travel | Graureiher (Ardea cinerea): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Graureiher (Ardea cinerea) \| Artenporträt | Graureiher (Ardea cinerea): Artenporträt mit Naturfotos, Aussehen, Lebensraum, Verbreitung, IUCN-Status, Karte und Tierstimme. | Live geprüft am 2026-06-01; `species-output` vorhanden. |
+
 ## Aktive Arten ohne öffentliche Artseite
 
-Diese Arten sind in `species_list.json` aktiv, aber die erwarteten Artseiten sind nicht in der Sitemap und liefern am 2026-05-30 live 404. Wenn sie auf der Website erscheinen sollen, muessen die Squarespace-Artseiten noch erstellt oder freigegeben werden. Wenn sie bewusst noch nicht sichtbar sein sollen, bleibt hier nur ein Merker.
+Diese Art ist in `species_list.json` aktiv, aber die erwartete Artseite ist nicht in der Sitemap und liefert beim letzten Check live 404. Wenn sie auf der Website erscheinen soll, muss die Squarespace-Artseite noch erstellt oder freigegeben werden. Wenn sie bewusst noch nicht sichtbar sein soll, bleibt hier nur ein Merker.
 
 | Status | Erwartete URL | Art | Empfehlung |
 | --- | --- | --- | --- |
 | URL prüfen | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/parusmajor) | Kohlmeise (Parus major) | Artseite erstellen/freigeben oder Art bewusst als noch nicht veröffentlicht markieren. |
-| URL prüfen | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/ardeacinerea) | Graureiher (Ardea cinerea) | Artseite erstellen/freigeben oder Art bewusst als noch nicht veröffentlicht markieren. |
 
 ## Legacy-/Beacon-URLs außerhalb der Sitemap
 
