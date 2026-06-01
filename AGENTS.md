@@ -232,7 +232,9 @@ Phase 5 laeuft. Bereits erledigt:
 Naechste sinnvolle Schritte:
 
 1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder bewusst nicht oeffentlich belassen,
-   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken.
+   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken und den internen
+   404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
+   Redirect abfangen.
 2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
 3. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
    Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
