@@ -227,15 +227,19 @@ Phase 5 laeuft. Bereits erledigt:
   - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
     kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` ist der echte interne 404-Link aus der
     Reiseuebersicht
+  - Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/Barrierefreiheits-Audit aufgenommen, aber noch nicht
+    systematisch geprueft
 
 Naechste sinnvolle Schritte:
 
 1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
    404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
    Redirect abfangen.
-2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-3. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
+2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
+   pruefen und konsistente Vorschlaege dokumentieren.
+3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+4. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
    Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
    auf Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
-4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+5. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.

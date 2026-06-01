@@ -76,7 +76,9 @@ Status: in Arbeit
   oeffentlich erreichbar und passt live. Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118
   dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, die
   zuvor offenen Reise-Wortlautabweichungen sind erledigt, und 1 aktive Art
-  (`Kohlmeise`) hat noch keine oeffentliche Artseite.
+  (`Kohlmeise`) hat noch keine oeffentliche Artseite. Der alte Pfad `/2019-griechenland` liefert weiter 404 und ist
+  weiterhin aus der Reiseuebersicht verlinkt. Bild-Alt-Texte und optionale Bildtitel sind als eigener SEO-/
+  Barrierefreiheits-Audit aufgenommen.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -91,8 +93,10 @@ Status: in Arbeit
 1. SEO-Restpunkte entscheiden: `Kohlmeise` als Artseite erstellen/freigeben oder bewusst parken und den internen
    404-Link `/2019-griechenland` aus der Reiseuebersicht auf `/reisen/2019-griechenland` korrigieren oder per
    Redirect abfangen.
-2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-3. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
+2. Bild-Alt-Texte/Bildtitel auditieren: wichtige Seiten und Galerien auf fehlende oder ungenaue Alternativtexte
+   pruefen und konsistente Vorschlaege dokumentieren.
+3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+4. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
    aktive Projektstand auf ein Netzlaufwerk umzieht.
-4. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

@@ -36,7 +36,9 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - Die zwei vorher offenen Reise-Detailseiten `/reisen/2020-kreta/cretamaris` und `/reisen/2024-costarica/riobebedero` wurden am 2026-05-30 live nachgeprüft und passen jetzt.
 - `/reisen/2024-costarica` wurde am 2026-06-01 live nachgeprüft und passt jetzt.
 - Eine aktive Art aus `species_list.json` hat aktuell keine öffentliche Artseite und fehlt in der Sitemap:
-  - Kohlmeise: erwarteter Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert 404.
+  - Kohlmeise: erwarteter Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert am 2026-06-01 weiter 404.
+- Der alte Pfad `/2019-griechenland` liefert am 2026-06-01 weiter 404; die funktionierende Zielseite ist
+  `/reisen/2019-griechenland`. Die Reiseübersicht enthält aktuell noch Links auf beide Pfade.
 
 Auffälligkeiten:
 
@@ -45,6 +47,8 @@ Auffälligkeiten:
 - `/reisen/2024-costarica` lieferte im Live-Audit 404, ist nach Felix' Freigabe aber seit der Nachprüfung vom 2026-06-01 öffentlich erreichbar und passt.
 - `/2021-neapel/capri` lag im Live-Audit außerhalb der sonstigen `/reisen/2021-neapel/...`-Struktur. Laut Felix wurde die URL auf `/reisen/2021-neapel/capri` korrigiert.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
+- Bild-Alt-Texte und optionale Bildtitel sind noch nicht vollständig geprüft. Sie gehören als eigener SEO- und
+  Barrierefreiheits-Audit in die nächsten Arbeiten, getrennt von Seitentiteln und Meta-Beschreibungen.
 
 ## Manueller Umsetzungsstand
 
@@ -57,7 +61,7 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite und zum internen 404-Link aus der Reiseübersicht.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Entscheidung zur aktiven Art ohne öffentliche Artseite, zum internen 404-Link aus der Reiseübersicht und zum Bild-Alt-Text-Audit.
 
 ## Basis
 
@@ -230,9 +234,35 @@ Diese Art ist in `species_list.json` aktiv, aber die erwartete Artseite ist nich
 | [Link](https://www.fnwildlifetravel.de/wildlife) | 302 | /wildlife/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
 | [Link](https://www.fnwildlifetravel.de/cart) | 200 |  | Squarespace-Systemseite Warenkorb, wird automatisch verlinkt. Aktuell nur relevant, wenn später Shop/Kalender aktiv werden; bis dahin keine normale SEO-Seite daraus machen. |
 
+## Bild-Alt-Texte und Bildtitel
+
+Status: noch nicht systematisch geprüft.
+
+Ziel: Bild-Alternativtexte verbessern Barrierefreiheit, Bildersuche und KI-/Suchmaschinen-Verständlichkeit. Das ist ein
+eigener Arbeitsschritt, weil die meisten Fotos in Squarespace-Bildblöcken und Galerien gepflegt werden, nicht in den
+GitHub-Pages-JSON-Daten.
+
+Empfohlene Regeln:
+
+- Relevante Fotos bekommen einen konkreten Alt-Text; dekorative Bilder bleiben leer oder werden nicht als Inhalt
+  beschrieben.
+- Kein Keyword-Stuffing. Der Text beschreibt Motiv, Art, Ort oder Szene in natürlicher Sprache.
+- Artseiten: bevorzugt Muster wie `Graureiher (Ardea cinerea) am Gewässer` oder
+  `Buntspecht (Dendrocopos major) an einem Baumstamm`.
+- Reisebilder: bevorzugt Muster wie `Dettifoss in Island 2025`, `Regenwald in Costa Rica 2024` oder
+  `Küstenlandschaft an der Amalfiküste 2021`.
+- Bildtitel nur ergänzen, wenn Squarespace ihn sichtbar oder sinnvoll als Medienmetadatum nutzt; der Alt-Text ist
+  wichtiger als ein reiner Titel.
+- Dynamische Bilder aus den JS-Modulen, z. B. Karten und Status-/Trend-Icons, später separat prüfen und bei Bedarf im
+  jeweiligen Modul mit sinnvollen `alt`-Attributen versehen.
+
+Nächster Schritt: eigener Bild-Audit über die wichtigsten Seiten und Galerien. Ergebnis als Tabelle mit URL, Bild/Motiv,
+aktuellem Alt-Text, Vorschlag und Status dokumentieren.
+
 ## Definition of Done für diesen SEO-Schritt
 
 - Zeilen mit `passt`, `umgesetzt, live prüfen` oder `eingetragen, nicht öffentlich` nicht erneut in Squarespace bearbeiten; erst nach Veröffentlichung/live Crawl prüfen.
 - Nach Bearbeitung Live-Seite neu prüfen und Status in dieser Datei aktualisieren.
 - Bei URL-Änderungen Redirects prüfen, besonders für alte Ordnerpfade und die korrigierte Capri-URL `/reisen/2021-neapel/capri`.
 - Keine Beacon-Vorschläge übernehmen, wenn sie Reisen, Buchungen, Touren, Naturschutzprojekte oder falsche Regionen versprechen.
+- Bild-Alt-Texte/Bildtitel nicht mit Seitentiteln verwechseln; sie werden als eigener Audit gepflegt.
