@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-05-30
+Stand: 2026-06-01
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -80,11 +80,17 @@ Status: in Arbeit
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
   Spektrogramm-/Frequenzdarstellung fuer Tierstimmen.
+- 5.10 Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen:
+  Ziel klaeren (aktive Arbeitskopie, Backup/Mirror, Synology Drive oder Testklon). Bis zur Pruefung bleibt die lokale
+  Arbeitskopie massgeblich. Empfehlung: zuerst Backup/Mirror oder Testklon, weil Git- und Pipeline-Laeufe auf
+  Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
 1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder als bewusst nicht oeffentlich belassen,
    `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken.
 2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-3. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+3. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
+   aktive Projektstand auf ein Netzlaufwerk umzieht.
+4. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

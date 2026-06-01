@@ -110,12 +110,19 @@ Beim Live-Audit vom 2026-05-30 passen alle per Sitemap auffindbaren Wildlife-Art
 der Worklist markiert, insbesondere die noch nicht oeffentliche Costa-Rica-Uebersicht und aktive Arten ohne
 oeffentliche Squarespace-Artseite.
 
+Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder
+geleert.
+
 Lokale Batch-Dateien:
 
 - `update_local.bat`: startet den Suchlauf und ruft danach den GitHub-Push-Workflow auf
 - `update_github_only.bat`: pusht aktuelle Projektdateien ohne Token in der Remote-URL
 
 Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
+
+Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS ist in `docs/roadmap.md` vorgemerkt. Bis
+zur Pruefung bleibt die lokale Arbeitskopie der fuehrende Arbeitsstand; das NAS sollte zuerst als Backup, Mirror oder
+Testklon bewertet werden.
 
 ## Aktueller Datenstand
 

@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-05-30
+Stand: 2026-06-01
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -160,6 +160,7 @@ Lokale Batch-Dateien:
 Die Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
 Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
+Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
 
 ## Bekannte Stolperstellen
 
@@ -230,7 +231,11 @@ Phase 5 laeuft. Bereits erledigt:
 
 Naechste sinnvolle Schritte:
 
-1. SEO-Eintraege aus `docs/seo-worklist.md` in Squarespace umsetzen und live pruefen.
+1. SEO-Restpunkte entscheiden: `/reisen/2024-costarica` freigeben oder bewusst nicht oeffentlich belassen,
+   `Kohlmeise` und `Graureiher` als Artseiten erstellen/freigeben oder bewusst parken.
 2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-3. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+3. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
+   Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
+   auf Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
+4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.
