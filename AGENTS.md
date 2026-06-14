@@ -208,6 +208,8 @@ Phase 5 laeuft. Bereits erledigt:
     Sound-Review nachvollziehbar
 - Manuelle Zusatzdaten: `species_list.json`, `update.mjs`, `species-info.js`, `docs/manual-species-fields.md`
   - aktueller Stand: `life_expectancy` wird als `Lebenserwartung` oberhalb der Generationsdauer angezeigt
+  - technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als
+    `Unbekannt` angezeigt; Rohdaten bleiben unveraendert
 - Weitere Arten: `docs/add-species-workflow.md`
   - aktueller Stand: Arten werden nur manuell von Felix in `species_list.json` ergaenzt; keine automatische
     Artenauswahl oder automatische Listenaenderung

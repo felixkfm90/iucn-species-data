@@ -12,6 +12,19 @@
     }[char]));
   }
 
+  function isUnknownValue(value) {
+    const text = String(value ?? "").trim();
+    if (!text) return true;
+
+    const normalized = text.toLowerCase();
+    return normalized === "n/a" || normalized === "na" || normalized === "n.a." || normalized === "u" || normalized === "unknown";
+  }
+
+  function displayValue(value) {
+    const text = String(value ?? "").trim();
+    return isUnknownValue(text) ? "Unbekannt" : text;
+  }
+
   try {
     const data = await window.SpeciesCore.getSpeciesData();
     const lifeExpectancy = data["Lebenserwartung"];
@@ -20,7 +33,7 @@
     function renderInfoRow(label, value) {
       const text = String(value || "").trim();
       const safeLabel = escapeHtml(label);
-      if (!text || text.toLowerCase() === "n/a") return "";
+      if (isUnknownValue(text)) return "";
       if (text.includes("Männchen") && text.includes("Weibchen")) {
         const m = text.match(/Männchen\s*:?\s*(.*?)\s*Weibchen/i)?.[1]?.trim() || "";
         const w = text.match(/Weibchen\s*:?\s*(.+)$/i)?.[1]?.trim() || "";
@@ -40,8 +53,8 @@
         ${renderInfoRow("Größe", data.Größe)}
         ${renderInfoRow("Gewicht", data.Gewicht)}
         ${renderInfoRow("Lebenserwartung", lifeExpectancy)}
-        <p>Generationsdauer: ${escapeHtml(generationDuration)}</p>
-        <p>Populationgröße: ${escapeHtml(data["Populationgröße"])}</p>
+        <p>Generationsdauer: ${escapeHtml(displayValue(generationDuration))}</p>
+        <p>Populationsgröße: ${escapeHtml(displayValue(data["Populationgröße"]))}</p>
       </div>
     `;
   } catch (e) {

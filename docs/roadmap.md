@@ -61,7 +61,8 @@ Status: in Arbeit
   NC-Warnhinweis wurde am 2026-06-14 entfernt; NC bleibt intern ueber Credits, Report und Sound-Review nachvollziehbar.
 - 5.5 Manuelle Zusatzdaten nur dort pflegen, wo IUCN nichts liefert: erledigt.
   `species_list.json` fuehrt jetzt manuell gepflegte `life_expectancy`; `update.mjs` uebernimmt sie als
-  `Lebenserwartung` in `speciesData.json`, und `species-info.js` zeigt sie oberhalb der Generationsdauer.
+  `Lebenserwartung` in `speciesData.json`, und `species-info.js` zeigt sie oberhalb der Generationsdauer. Technische
+  Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Info-Box als `Unbekannt` angezeigt.
 - 5.6 Weitere Arten ergaenzen: erledigt fuer den aktuellen Stand.
   Neue Arten werden nur manuell in `species_list.json` ergaenzt, nicht automatisiert. Der Ablauf ist in
   `docs/add-species-workflow.md` dokumentiert. Am 2026-05-28 wurde die Pipeline ohne neue Arten durchgefuehrt:

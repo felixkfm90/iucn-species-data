@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-05-28
+Stand: 2026-06-14
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -23,6 +23,8 @@ oder die fuer die Artseiten redaktionell kontrolliert bleiben sollen.
 ## Anzeige
 
 `species-info.js` zeigt die manuelle `Lebenserwartung` oberhalb der aus IUCN stammenden `Generationsdauer` an.
+Technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als `Unbekannt`
+angezeigt. Das ist reine Frontend-Anzeigeformatierung; die Rohdaten in `speciesData.json` bleiben unveraendert.
 
 Reihenfolge in der Info-Box:
 
@@ -31,7 +33,7 @@ Reihenfolge in der Info-Box:
 3. Gewicht
 4. Lebenserwartung
 5. Generationsdauer
-6. Populationgroesse
+6. Populationsgroesse
 
 ## Pipeline-Verhalten
 

@@ -59,6 +59,9 @@ werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.
 Das Squarespace Custom CSS enthaelt seit 2026-06-14 einen Mobile-only-Override fuer Grid-Galerien: Galerien mit mehr
 als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert.
 
+Die Artseiten-Info-Box zeigt technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` als `Unbekannt` an,
+ohne die Rohdaten in `speciesData.json` umzuschreiben.
+
 Artseiten brauchen diese Container:
 
 ```html
