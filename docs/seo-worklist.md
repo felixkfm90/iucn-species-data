@@ -52,9 +52,10 @@ Auffälligkeiten:
 - `/2021-neapel/capri` liefert am 2026-06-14 weiter 404. Der korrekte Zielpfad `/reisen/2021-neapel/capri` passt,
   aber auf `/reisen/2021-neapel` verlinkt der Button `Weitere Bilder` im Capri-Listeneintrag noch auf den alten Pfad.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
-- Nachprüfung 2026-06-14: Im aktuellen Live-HTML sind außerhalb der Sitemap nur Root `/`, `/cart`, die globalen
-  Squarespace-Ordner `/reisen-1` und `/wildlife` sowie der falsche Capri-Link `/2021-neapel/capri` intern verlinkt.
-  Die älteren Beacon-/Folder-Pfade aus dem ersten Audit wurden dabei nicht mehr als interne Links gefunden.
+- Nachprüfung 2026-06-14 nach Capri-Korrektur: 117 Sitemap-Seiten geprüft; im aktuellen Live-HTML sind außerhalb der
+  Sitemap nur Root `/`, `/cart` und die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` intern verlinkt. Der
+  falsche Capri-Link wurde von Felix korrigiert und zeigt jetzt auf `/reisen/2021-neapel/capri`; die älteren
+  Beacon-/Folder-Pfade aus dem ersten Audit wurden dabei nicht mehr als interne Links gefunden.
 - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 separat auditiert. Ergebnis und Priorisierung stehen in
   `docs/image-alt-audit.md`.
 
@@ -69,8 +70,8 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist zuerst die Korrektur des
-Capri-Links auf `/reisen/2021-neapel`; danach folgen die Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt sind die
+Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
 
 ## Basis
 
@@ -234,7 +235,8 @@ als aktueller SEO-Fehler, solange sie absichtlich geparkt sind.
 Nachprüfung 2026-06-14:
 
 - Aktuell intern verlinkt, aber kein normaler Sitemap-Eintrag: Root `/`, `/cart`, `/reisen-1`, `/wildlife`.
-- Aktuell intern verlinkter Fehler: `/2021-neapel/capri` auf `/reisen/2021-neapel`.
+- Der interne Capri-Fehler wurde von Felix am 2026-06-14 korrigiert: `/reisen/2021-neapel` verlinkt jetzt auf
+  `/reisen/2021-neapel/capri`.
 - Nicht mehr im aktuellen internen Link-Crawl gefunden: `/heimische-tierwelt`, `/costa-rica-wildlife`,
   `/island-wildlife`, `/2025-island`, `/2025-nordthailandlaos`, `/2024-costarica-reisen`,
   `/2019-griechenland`. Diese Pfade können aus alten Squarespace-/Beacon-/Folder-Strukturen oder externen Altlinks
@@ -250,7 +252,7 @@ Nachprüfung 2026-06-14:
 | [Link](https://www.fnwildlifetravel.de/2024-costarica-reisen) | 404 |  | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Alter Beacon-/URL-Vorschlag; nicht als SEO-Ziel verwenden. |
 | [Link](https://www.fnwildlifetravel.de/reisen-1) | 302 | /reisen/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
 | [Link](https://www.fnwildlifetravel.de/2019-griechenland) | 404 |  | Alter Legacy-Pfad. Am 2026-06-01 kein `href="/2019-griechenland"` mehr auf der Reiseübersicht gefunden; auch im Vollcrawl 2026-06-14 keine interne Quelle. Optional Redirect auf `/reisen/2019-griechenland` setzen, falls externe Altlinks existieren. |
-| [Link](https://www.fnwildlifetravel.de/2021-neapel/capri) | 404 | /reisen/2021-neapel/capri | Wird am 2026-06-14 einmal von `/reisen/2021-neapel` im Capri-Listeneintrag über den Button `Weitere Bilder` verlinkt. Linkziel auf `/reisen/2021-neapel/capri` ändern oder Redirect setzen. |
+| [Link](https://www.fnwildlifetravel.de/2021-neapel/capri) | 404 | /reisen/2021-neapel/capri | Nach Felix' Korrektur am 2026-06-14 nicht mehr intern von `/reisen/2021-neapel` verlinkt. Optional Redirect setzen, falls externe Altlinks existieren. |
 | [Link](https://www.fnwildlifetravel.de/wildlife) | 302 | /wildlife/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
 | [Link](https://www.fnwildlifetravel.de/cart) | 200 |  | Squarespace-Systemseite Warenkorb, wird automatisch verlinkt. Aktuell nur relevant, wenn später Shop/Kalender aktiv werden; bis dahin keine normale SEO-Seite daraus machen. |
 

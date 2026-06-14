@@ -79,11 +79,11 @@ Status: in Arbeit
   spaeter aktiviert, wenn die Art auf Instagram gepostet wird. Der alte Pfad `/2019-griechenland` liefert weiter 404,
   ist nach Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt; damit bleibt hoechstens ein optionales
   Redirect-Thema fuer externe Altlinks. Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert:
-  `docs/image-alt-audit.md`. Nachpruefung vom 2026-06-14: `/reisen/2021-neapel` verlinkt im Capri-Listeneintrag
-  ueber `Weitere Bilder` noch auf den alten 404-Pfad `/2021-neapel/capri`; korrektes Ziel ist
-  `/reisen/2021-neapel/capri`. Der vollstaendige interne Link-Crawl vom 2026-06-14 fand ausserhalb der Sitemap nur
-  Root `/`, `/cart`, die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` sowie diesen Capri-Link. Aeltere
-  Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden.
+  `docs/image-alt-audit.md`. Nachpruefung vom 2026-06-14: Der Capri-Link auf `/reisen/2021-neapel` wurde von Felix
+  korrigiert und zeigt jetzt auf `/reisen/2021-neapel/capri`. Der vollstaendige interne Link-Crawl vom 2026-06-14
+  pruefte 117 Sitemap-Seiten und fand ausserhalb der Sitemap nur Root `/`, `/cart` und die globalen Squarespace-Ordner
+  `/reisen-1` und `/wildlife`.
+  Aeltere Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
@@ -95,14 +95,12 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Capri-Link korrigieren: auf `/reisen/2021-neapel` den Button `Weitere Bilder` im Capri-Listeneintrag von
-   `/2021-neapel/capri` auf `/reisen/2021-neapel/capri` setzen oder Redirect anlegen.
-2. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
+1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
    Alt-Texte und lange/captionartige Alt-Texte.
-3. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
+2. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
    Altlinks existieren.
-4. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-5. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
+3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+4. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
    aktive Projektstand auf ein Netzlaufwerk umzieht.
-6. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.
