@@ -26,7 +26,7 @@ einer Spalte werden unter 768 px auf eine Spalte gesetzt. Desktop bleibt unverae
 | `#species-sound .species-sound-frame` | Einzige noetige Custom-CSS-Ergaenzung fuer den Sound-Rahmen. | Niedrig. | Beibehalten. Die eigentliche Player-Optik kommt aus `species-sound.js`. |
 | `#play-toggle` | Passt zur aktuellen Ausgabe von `species-sound.js`; Modulstyle ueberschreibt alte globale Button-Regeln. | Niedrig. | Beibehalten; echter Button mit CSS-Icon statt Textsymbol. |
 | `.sound-player`, `.sound-wave-canvas`, `.sound-cursor`, `.sound-scrubber` | Canvas-Wellenform und Scrubbing ohne externe Waveform-Bibliothek. | Niedrig. | Werden durch `species-sound.js` unter `#species-sound` gekapselt injiziert. |
-| `.sound-details`, `.sound-warning` | Eingeklappte Credits und sichtbarer NC-Hinweis. | Niedrig. | Beibehalten; reduziert sichtbare Informationsmenge, Lizenzdaten bleiben erreichbar. |
+| `.sound-details` | Eingeklappte Credits mit Quelle und Lizenz. | Niedrig. | Beibehalten; Lizenzdaten bleiben erreichbar. Ein separater sichtbarer NC-Warnhinweis wird nicht mehr ausgegeben. |
 | `#gz-overlay`, `#gz-img`, `#gz-close`, `.gz-zoom-btn` | Werden durch `lightbox-zoom.js` global angelegt, sind aber ohne offene Lightbox unsichtbar. | Niedrig bis Mittel. | Beibehalten; nur bei Konflikt mit anderen Lightboxen scopen/anpassen. |
 | `.gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"])` | Mobile-only-Override fuer Squarespace-Galerien, die auf mehr als eine Spalte eingestellt sind. | Niedrig bis Mittel, weil Squarespace-Galerieklassen global sind. | Beibehalten, wenn Reisegalerien mobil sauber einspaltig bleiben; bei Konflikt spaeter auf einzelne Collections scopen. |
 

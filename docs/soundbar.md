@@ -1,6 +1,6 @@
 # Soundbar
 
-Stand: 2026-05-27
+Stand: 2026-06-14
 
 Ziel von Phase 5.4: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen: klare
 Play-Bedienung, grafische Tonspur, stabile Wiedergabe, saubere aber nicht aufdringliche Quellen-/Lizenzanzeige und
@@ -26,7 +26,8 @@ brauchbare mobile Bedienung.
   davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
 - Credits werden nur kompakt in einer Zeile gezeigt. Detailinformationen liegen in einem eingeklappten
   `Quelle und Lizenz`-Bereich.
-- Non-Commercial-Lizenzen werden weiterhin sichtbar markiert.
+- Non-Commercial-Lizenzen werden nicht mehr als sichtbarer Warnhinweis markiert. Der NC-Status bleibt intern ueber
+  `credits.json`, `fehlende_elemente_report.json` und `docs/sound-license-review.md` nachvollziehbar.
 
 ## UI-Entscheidung
 
@@ -57,7 +58,7 @@ Seitenaufruf.
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.11`
+- Footer: `species-sound.js?v=1.0.12`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
@@ -81,7 +82,8 @@ Desktop:
 NC-Fall:
 
 1. Artseite mit NC-Sound oeffnen, z. B. `Bisamratte`.
-2. NC-Hinweis ist sichtbar.
+2. Kein sichtbarer NC-Warnhinweis wird angezeigt.
+3. Quelle und Lizenz bleiben im eingeklappten Detailbereich nachvollziehbar.
 
 Mobile:
 

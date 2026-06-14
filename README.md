@@ -102,6 +102,9 @@ Wikimedia-Commons-Audiodateien mit erreichbarem MP3-Transcode und danach nach fr
 iNaturalist-Treffer werden nur uebernommen, wenn Taxon, Lizenz und MP3-Datei passen. Erst danach bleibt ein vorhandener
 NC-Sound erhalten oder wird bei neuen Arten als Fallback genutzt.
 
+NC-Sounds werden im Frontend nicht mit einem separaten Warnhinweis markiert. Die Information bleibt intern ueber
+`credits.json`, `fehlende_elemente_report.json` und `docs/sound-license-review.md` nachvollziehbar.
+
 Tokens duerfen nicht im Repository gespeichert werden.
 
 Neue Arten werden nicht automatisch angelegt. Sie werden manuell in `species_list.json` ergaenzt; der genaue Ablauf ist

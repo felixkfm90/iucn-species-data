@@ -204,6 +204,8 @@ Phase 5 laeuft. Bereits erledigt:
 - Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
 - Soundbar: `species-sound.js`, `docs/soundbar.md`, `docs/squarespace-custom.css`, `docs/squarespace-footer.html`
   - aktueller Stand: native Audio-Wiedergabe mit gekapselter Canvas-Wellenform; keine WaveSurfer-Abhaengigkeit
+  - der separate sichtbare NC-Warnhinweis wurde am 2026-06-14 entfernt; NC bleibt intern ueber Credits, Report und
+    Sound-Review nachvollziehbar
 - Manuelle Zusatzdaten: `species_list.json`, `update.mjs`, `species-info.js`, `docs/manual-species-fields.md`
   - aktueller Stand: `life_expectancy` wird als `Lebenserwartung` oberhalb der Generationsdauer angezeigt
 - Weitere Arten: `docs/add-species-workflow.md`

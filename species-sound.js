@@ -135,17 +135,6 @@
         font-variant-numeric: tabular-nums;
       }
 
-      #species-sound .sound-warning {
-        margin: 9px 10px 0;
-        padding: 7px 9px;
-        border: 1px solid #dfc08a;
-        border-radius: 6px;
-        background: #fff6df;
-        color: #5b4300;
-        font-size: 0.82rem;
-        line-height: 1.35;
-      }
-
       #species-sound .sound-details {
         border-top: 1px solid #d4dfdb;
         padding: 7px 10px 9px;
@@ -230,15 +219,6 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
-  }
-
-  function isNonCommercialLicense(value) {
-    const license = normalizeUrl(value).toLowerCase();
-    return (
-      license.includes("by-nc") ||
-      license.includes("noncommercial") ||
-      license.includes("non-commercial")
-    );
   }
 
   function licenseLabel(value) {
@@ -532,7 +512,6 @@
     }
 
     const credits = await fetchCredits(creditsUrl);
-    const hasNcLicense = isNonCommercialLicense(credits?.license || credits?.lic || "");
     const compactCredits = compactCreditLine(credits);
     const creditDetails = buildCreditDetails(credits);
     const fallbackPeaksData = fallbackPeaks(soundAssetName);
@@ -572,10 +551,6 @@
               <span id="current-time">0:00</span> / <span id="duration">0:00</span>
             </div>
           </div>
-
-          ${hasNcLicense ? `
-            <div class="sound-warning">Non-Commercial-Lizenz: vor kommerzieller Nutzung pruefen.</div>
-          ` : ""}
 
           ${creditDetails}
         </div>
