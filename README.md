@@ -56,6 +56,9 @@ Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als
 Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht
 werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.
 
+Das Squarespace Custom CSS enthaelt seit 2026-06-14 einen Mobile-only-Override fuer Grid-Galerien: Galerien mit mehr
+als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert.
+
 Artseiten brauchen diese Container:
 
 ```html

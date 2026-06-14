@@ -1,7 +1,7 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-05-27
-  Soll-Stand nach Phase 5.4 Soundbar-Optik.
+  Stand: 2026-06-14
+  Soll-Stand nach Phase 5.4 Soundbar-Optik und Mobile-Galerie-Override.
 */
 
 /* ================================ */
@@ -278,5 +278,17 @@
 
   #species-sound .species-sound-frame {
     width: 100%;
+  }
+}
+
+/* Mobile Squarespace-Galerien: Desktop bleibt unveraendert, mobil eine Spalte */
+@media (max-width: 768px) {
+  .gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"]) .gallery-grid-wrapper {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"]) .gallery-grid-item,
+  .gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"]) .gallery-grid-item-wrapper {
+    width: 100% !important;
   }
 }

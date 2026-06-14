@@ -1,6 +1,6 @@
 # CSS Layout Audit
 
-Stand: 2026-05-27
+Stand: 2026-06-14
 
 Quelle:
 
@@ -14,7 +14,8 @@ Quelle:
 
 Nach Phase 5.4 wurde der Soundbar-Block gezielt nachgeschärft. Die Soundbar injiziert ihre gekapselten Modulstyles jetzt
 selbst unter `#species-sound`, damit die Canvas-Wellenform und die Play-Bedienung nicht vom aktuellen Squarespace-CSS
-abhaengen. Das restliche Squarespace-CSS funktioniert mit der bestehenden Artseitenstruktur auf Desktop und Mobile.
+abhaengen. Am 2026-06-14 wurde ein Mobile-only-Override fuer Squarespace-Grid-Galerien ergaenzt: Galerien mit mehr als
+einer Spalte werden unter 768 px auf eine Spalte gesetzt. Desktop bleibt unveraendert.
 
 ## Gepruefte Risikoselektoren
 
@@ -27,6 +28,7 @@ abhaengen. Das restliche Squarespace-CSS funktioniert mit der bestehenden Artsei
 | `.sound-player`, `.sound-wave-canvas`, `.sound-cursor`, `.sound-scrubber` | Canvas-Wellenform und Scrubbing ohne externe Waveform-Bibliothek. | Niedrig. | Werden durch `species-sound.js` unter `#species-sound` gekapselt injiziert. |
 | `.sound-details`, `.sound-warning` | Eingeklappte Credits und sichtbarer NC-Hinweis. | Niedrig. | Beibehalten; reduziert sichtbare Informationsmenge, Lizenzdaten bleiben erreichbar. |
 | `#gz-overlay`, `#gz-img`, `#gz-close`, `.gz-zoom-btn` | Werden durch `lightbox-zoom.js` global angelegt, sind aber ohne offene Lightbox unsichtbar. | Niedrig bis Mittel. | Beibehalten; nur bei Konflikt mit anderen Lightboxen scopen/anpassen. |
+| `.gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"])` | Mobile-only-Override fuer Squarespace-Galerien, die auf mehr als eine Spalte eingestellt sind. | Niedrig bis Mittel, weil Squarespace-Galerieklassen global sind. | Beibehalten, wenn Reisegalerien mobil sauber einspaltig bleiben; bei Konflikt spaeter auf einzelne Collections scopen. |
 
 ## Layout-Pruefung
 
@@ -47,6 +49,8 @@ Mobile bei 390 x 844:
 - Status-/Trend-Boxen stapeln sauber.
 - Soundbox und Canvas-Wellenform bleiben im Viewport.
 - Lightbox-Smoke-Test mit gueltigem `itemId`: Button sichtbar, Overlay oeffnet, Bild laedt, `gz-noscroll` aktiv.
+- Reisegalerien mit `data-columns` groesser 1 werden per Custom CSS mobil auf eine Spalte gesetzt. Live-CSS
+  `custom.css` Version 38 enthaelt die Regel; geprueft an `/reisen/2024-costarica/bocatapada`.
 
 ## Beobachtungspunkte
 
