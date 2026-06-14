@@ -227,16 +227,23 @@ Phase 5 laeuft. Bereits erledigt:
     kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` liefert weiter 404, ist nach Felix' Korrektur
     aber nicht mehr aus der Reiseuebersicht verlinkt und bleibt nur als optionales Redirect-Thema fuer externe Altlinks
   - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert: `docs/image-alt-audit.md`
+  - Nachpruefung vom 2026-06-14: `/reisen/2021-neapel` verlinkt im Capri-Listeneintrag ueber `Weitere Bilder` noch
+    auf den alten 404-Pfad `/2021-neapel/capri`; korrektes Ziel ist `/reisen/2021-neapel/capri`
+  - Vollstaendiger interner Link-Crawl vom 2026-06-14: ausserhalb der Sitemap sind aktuell nur Root `/`, `/cart`,
+    die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` sowie der falsche Capri-Link intern verlinkt; aeltere
+    Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden
 
 Naechste sinnvolle Schritte:
 
-1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
+1. Capri-Link korrigieren: auf `/reisen/2021-neapel` den Button `Weitere Bilder` im Capri-Listeneintrag von
+   `/2021-neapel/capri` auf `/reisen/2021-neapel/capri` setzen oder Redirect anlegen.
+2. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
    Alt-Texte und lange/captionartige Alt-Texte.
-2. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
+3. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
    werden, falls externe Altlinks existieren.
-3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-4. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
+4. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+5. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
    Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
    auf Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
-5. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+6. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.

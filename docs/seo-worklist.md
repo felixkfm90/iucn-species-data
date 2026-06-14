@@ -1,6 +1,6 @@
 # SEO-Worklist
 
-Stand: 2026-06-01
+Stand: 2026-06-14
 
 Ziel: aktuelle Live-SEO-Titel und Meta-Beschreibungen aller per Sitemap auffindbaren Seiten prüfen und konsistente Vorschläge dokumentieren. Diese Datei ist die Arbeitsliste für Squarespace; sie ändert keine Live-Seiten automatisch.
 
@@ -11,6 +11,7 @@ Ziel: aktuelle Live-SEO-Titel und Meta-Beschreibungen aller per Sitemap auffindb
 - Stand Live-Audit: 2026-05-30T07:26:11.813Z
 - Zusätzlich geprüft: Root-Startseite und ein gemeldeter Costa-Rica-Reisepfad.
 - Zusätzlich per internem Link-Crawl geprüft: Legacy-, Redirect- und Systempfade außerhalb der Sitemap.
+- Nachprüfung 2026-06-14: vollständiger interner Link-Crawl über 117 Sitemap-URLs.
 
 ## Wichtigste Regel
 
@@ -48,8 +49,12 @@ Auffälligkeiten:
 - Viele Reise-Unterseiten waren im ersten Audit ohne Meta-Beschreibung; laut Live-Audit vom 2026-05-30 sind sie jetzt fast vollständig gepflegt.
 - Artseiten folgen live dem Muster `[Deutscher Name] ([Wissenschaftlicher Name]) | Artenporträt`. Beacon-Marketingtexte vermeiden.
 - `/reisen/2024-costarica` lieferte im Live-Audit 404, ist nach Felix' Freigabe aber seit der Nachprüfung vom 2026-06-01 öffentlich erreichbar und passt.
-- `/2021-neapel/capri` lag im Live-Audit außerhalb der sonstigen `/reisen/2021-neapel/...`-Struktur. Laut Felix wurde die URL auf `/reisen/2021-neapel/capri` korrigiert.
+- `/2021-neapel/capri` liefert am 2026-06-14 weiter 404. Der korrekte Zielpfad `/reisen/2021-neapel/capri` passt,
+  aber auf `/reisen/2021-neapel` verlinkt der Button `Weitere Bilder` im Capri-Listeneintrag noch auf den alten Pfad.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
+- Nachprüfung 2026-06-14: Im aktuellen Live-HTML sind außerhalb der Sitemap nur Root `/`, `/cart`, die globalen
+  Squarespace-Ordner `/reisen-1` und `/wildlife` sowie der falsche Capri-Link `/2021-neapel/capri` intern verlinkt.
+  Die älteren Beacon-/Folder-Pfade aus dem ersten Audit wurden dabei nicht mehr als interne Links gefunden.
 - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 separat auditiert. Ergebnis und Priorisierung stehen in
   `docs/image-alt-audit.md`.
 
@@ -64,8 +69,8 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - `/reisen/2024-costarica` wurde in Squarespace mit SEO-Titel und Meta-Beschreibung gepflegt und am 2026-06-01 live nachgeprüft.
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
-Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist die Umsetzung der
-Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
+Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt ist zuerst die Korrektur des
+Capri-Links auf `/reisen/2021-neapel`; danach folgen die Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
 
 ## Basis
 
@@ -226,16 +231,26 @@ als aktueller SEO-Fehler, solange sie absichtlich geparkt sind.
 
 ## Legacy-/Beacon-URLs außerhalb der Sitemap
 
+Nachprüfung 2026-06-14:
+
+- Aktuell intern verlinkt, aber kein normaler Sitemap-Eintrag: Root `/`, `/cart`, `/reisen-1`, `/wildlife`.
+- Aktuell intern verlinkter Fehler: `/2021-neapel/capri` auf `/reisen/2021-neapel`.
+- Nicht mehr im aktuellen internen Link-Crawl gefunden: `/heimische-tierwelt`, `/costa-rica-wildlife`,
+  `/island-wildlife`, `/2025-island`, `/2025-nordthailandlaos`, `/2024-costarica-reisen`,
+  `/2019-griechenland`. Diese Pfade können aus alten Squarespace-/Beacon-/Folder-Strukturen oder externen Altlinks
+  stammen und sollten nicht als normale Seiten doppelt gepflegt werden.
+
 | URL | Status | Ziel / Location | Empfehlung |
 | --- | --- | --- | --- |
-| [Link](https://www.fnwildlifetravel.de/heimische-tierwelt) | 302 | /wildlife/heimische-tierwelt/acanthisflammea | Im Crawl 2026-05-30 keine interne Quelle gefunden. Das ist wahrscheinlich nur ein alter Squarespace-/Beacon-Pfad oder externer Altlink; kein normaler Seiten-Eintrag, den du zwingend in Squarespace finden musst. |
-| [Link](https://www.fnwildlifetravel.de/costa-rica-wildlife) | 302 | /wildlife/costarica/eumomotasuperciliosa | Im Crawl 2026-05-30 keine interne Quelle gefunden. Nur prüfen, wenn externe Altlinks oder manuelle Redirects gepflegt werden sollen. |
-| [Link](https://www.fnwildlifetravel.de/island-wildlife) | 302 | /wildlife/island/megapteranovaeangliae | Im Crawl 2026-05-30 keine interne Quelle gefunden. Nur prüfen, wenn externe Altlinks oder manuelle Redirects gepflegt werden sollen. |
-| [Link](https://www.fnwildlifetravel.de/2025-island) | 302 | /reisen/2025-island/dettifossselfoss | Im Crawl 2026-05-30 keine interne Quelle gefunden. Wahrscheinlich alter Ordnerpfad; nicht doppelt als SEO-Seite pflegen. |
-| [Link](https://www.fnwildlifetravel.de/2025-nordthailandlaos) | 302 | /reisen/2025-nordthailandlaos/chiangmai | Im Crawl 2026-05-30 keine interne Quelle gefunden. Wahrscheinlich alter Ordnerpfad; nicht doppelt als SEO-Seite pflegen. |
-| [Link](https://www.fnwildlifetravel.de/2024-costarica-reisen) | 404 |  | Im Crawl 2026-05-30 keine interne Quelle gefunden. Alter Beacon-/URL-Vorschlag; nicht als SEO-Ziel verwenden. |
+| [Link](https://www.fnwildlifetravel.de/heimische-tierwelt) | 302 | /wildlife/heimische-tierwelt/acanthisflammea | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Wahrscheinlich alter Squarespace-/Beacon-Pfad oder externer Altlink; kein normaler Seiten-Eintrag. |
+| [Link](https://www.fnwildlifetravel.de/costa-rica-wildlife) | 302 | /wildlife/costarica/eumomotasuperciliosa | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Nur prüfen, wenn externe Altlinks oder manuelle Redirects gepflegt werden sollen. |
+| [Link](https://www.fnwildlifetravel.de/island-wildlife) | 302 | /wildlife/island/megapteranovaeangliae | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Nur prüfen, wenn externe Altlinks oder manuelle Redirects gepflegt werden sollen. |
+| [Link](https://www.fnwildlifetravel.de/2025-island) | 302 | /reisen/2025-island/dettifossselfoss | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Wahrscheinlich alter Ordnerpfad; nicht doppelt als SEO-Seite pflegen. |
+| [Link](https://www.fnwildlifetravel.de/2025-nordthailandlaos) | 302 | /reisen/2025-nordthailandlaos/chiangmai | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Wahrscheinlich alter Ordnerpfad; nicht doppelt als SEO-Seite pflegen. |
+| [Link](https://www.fnwildlifetravel.de/2024-costarica-reisen) | 404 |  | Im Crawl 2026-05-30 und im Vollcrawl 2026-06-14 keine interne Quelle gefunden. Alter Beacon-/URL-Vorschlag; nicht als SEO-Ziel verwenden. |
 | [Link](https://www.fnwildlifetravel.de/reisen-1) | 302 | /reisen/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
-| [Link](https://www.fnwildlifetravel.de/2019-griechenland) | 404 |  | Alter Legacy-Pfad. Am 2026-06-01 kein `href="/2019-griechenland"` mehr auf der Reiseübersicht gefunden; optional Redirect auf /reisen/2019-griechenland setzen, falls externe Altlinks existieren. |
+| [Link](https://www.fnwildlifetravel.de/2019-griechenland) | 404 |  | Alter Legacy-Pfad. Am 2026-06-01 kein `href="/2019-griechenland"` mehr auf der Reiseübersicht gefunden; auch im Vollcrawl 2026-06-14 keine interne Quelle. Optional Redirect auf `/reisen/2019-griechenland` setzen, falls externe Altlinks existieren. |
+| [Link](https://www.fnwildlifetravel.de/2021-neapel/capri) | 404 | /reisen/2021-neapel/capri | Wird am 2026-06-14 einmal von `/reisen/2021-neapel` im Capri-Listeneintrag über den Button `Weitere Bilder` verlinkt. Linkziel auf `/reisen/2021-neapel/capri` ändern oder Redirect setzen. |
 | [Link](https://www.fnwildlifetravel.de/wildlife) | 302 | /wildlife/uebersicht | Wird im Live-HTML sehr häufig gefunden, wahrscheinlich durch globale Squarespace-Navigation. Redirect ist sinnvoll; kein zusätzlicher SEO-Eintrag nötig. |
 | [Link](https://www.fnwildlifetravel.de/cart) | 200 |  | Squarespace-Systemseite Warenkorb, wird automatisch verlinkt. Aktuell nur relevant, wenn später Shop/Kalender aktiv werden; bis dahin keine normale SEO-Seite daraus machen. |
 

@@ -109,7 +109,10 @@ enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen k
 Beim Live-Audit vom 2026-05-30 passen alle per Sitemap auffindbaren Wildlife-Artseiten. Offene SEO-Restpunkte sind in
 der Worklist markiert. `Kohlmeise` ist bewusst geparkt und wird spaeter aktiviert, wenn Felix die Art auf Instagram
 postet. Die Costa-Rica-Uebersicht, Graureiher-Artseite und korrigierte Griechenland-Verlinkung wurden am 2026-06-01
-live nachgeprueft und passen. Bild-Alt-Texte und optionale Bildtitel wurden in `docs/image-alt-audit.md` auditiert.
+live nachgeprueft und passen. Am 2026-06-14 wurde ein Vollcrawl der internen Links durchgefuehrt; aktuell bleibt nur
+ein alter interner Capri-Link auf `/2021-neapel/capri` als echter Linkfehler. Details stehen in
+`docs/seo-worklist.md`. Bild-Alt-Texte und optionale Bildtitel wurden in
+`docs/image-alt-audit.md` auditiert.
 
 Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder
 geleert.
