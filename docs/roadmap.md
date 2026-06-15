@@ -67,7 +67,7 @@ Status: in Arbeit
   Neue Arten werden nur manuell in `species_list.json` ergaenzt, nicht automatisiert. Der Ablauf ist in
   `docs/add-species-workflow.md` dokumentiert. Am 2026-05-28 wurde die Pipeline ohne neue Arten durchgefuehrt:
   45 Arten, 45 Karten, 45 Soundordner, 45 MP3s, 45 Credits, keine fehlenden Kernassets.
-- 5.7 SEO: in Arbeit.
+- 5.7 SEO: erledigt fuer den aktuellen Stand.
   `docs/seo-worklist.md` enthaelt jetzt einen Live-Sitemap-Audit fuer 117 URLs mit aktuellem SEO-Titel, aktueller
   Meta-Beschreibung, konsistentem Vorschlag, Status und Hinweis je URL. Kurzbefund: 13 passen bereits, 53 brauchen
   Titel und Beschreibung, 42 brauchen nur eine vereinheitlichte Beschreibung, 7 brauchen einen vereinheitlichten Titel,
@@ -92,7 +92,8 @@ Status: in Arbeit
   eine Code-Aenderung im Repository.
   Felix hat am 2026-06-15 alle Artseiten manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die sichtbare
   Website-Darstellung gilt der Artseiten-Galerietext damit als erledigt. Reiseseiten-Galerietexte sind bewusst gesetzt
-  und bleiben bestehen. Technische Dateinamen-`alt`-Attribute bleiben nur als optionales SEO-/Accessibility-Thema.
+  und bleiben bestehen. Technische Dateinamen-`alt`-Attribute werden fuer den aktuellen Stand akzeptiert. Artseiten-
+  und Reiseseiten-Alt-Texte gelten damit als erledigt.
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
@@ -107,12 +108,10 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Optional: Technische Bild-Alt-Texte spaeter verbessern, wenn SEO-/Accessibility-Alt-Texte wichtiger werden.
-   Sichtbarer Artseiten-Galerietext ist erledigt; Reiseseiten-Texte bleiben bewusst bestehen.
-2. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
+1. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
    Altlinks existieren.
-3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-4. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
+2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
+3. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
    aktive Projektstand auf ein Netzlaufwerk umzieht.
-5. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+4. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

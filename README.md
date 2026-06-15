@@ -126,7 +126,8 @@ aber weiterhin auf allen 44 aktiven Artseiten Dateinamen. Vor einer Serienberein
 ob das direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt.
 Felix hat die Artseiten am 2026-06-15 manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die sichtbare
 Website-Darstellung gilt das Thema damit als erledigt. Reiseseiten-Galerietexte sind bewusst gesetzt und bleiben
-bestehen; technische Dateinamen-Alt-Texte sind nur ein optionales spaeteres SEO-/Accessibility-Thema.
+bestehen; technische Dateinamen-Alt-Texte werden fuer den aktuellen Stand akzeptiert. Artseiten- und Reiseseiten-
+Alt-Texte gelten damit als erledigt.
 
 Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder
 geleert.

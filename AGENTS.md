@@ -243,21 +243,19 @@ Phase 5 laeuft. Bereits erledigt:
     pruefen; erst danach serienweise umsetzen.
   - Felix hat am 2026-06-15 alle Artseiten manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die
     sichtbare Website-Darstellung gilt der Artseiten-Galerietext damit als erledigt. Reiseseiten-Galerietexte sind
-    bewusst gesetzt und bleiben bestehen. Technische Dateinamen-`alt`-Attribute bleiben nur als optionales
-    SEO-/Accessibility-Thema.
+    bewusst gesetzt und bleiben bestehen. Technische Dateinamen-`alt`-Attribute werden fuer den aktuellen Stand
+    akzeptiert. Artseiten- und Reiseseiten-Alt-Texte gelten damit als erledigt.
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
 
 Naechste sinnvolle Schritte:
 
-1. Optional: Technische Bild-Alt-Texte spaeter verbessern, wenn SEO-/Accessibility-Alt-Texte wichtiger werden.
-   Sichtbarer Artseiten-Galerietext ist erledigt; Reiseseiten-Texte bleiben bewusst bestehen.
-2. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
+1. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
    werden, falls externe Altlinks existieren.
-3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
-4. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
+2. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.
+3. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
    Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
    auf Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
-5. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
+4. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
    Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.
