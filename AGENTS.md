@@ -213,10 +213,14 @@ Phase 5 ist abgeschlossen. Erledigt wurden unter anderem:
 
 Aktuelle Planung:
 
-- Phase 6 - Funktionsueberarbeitung:
+- Phase 6 - Funktionsueberarbeitung: in Arbeit.
   Dokumentation pruefen, monatliches Gesamtaudit definieren, Spektrogramm-Assets konzipieren, artweise
   Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
-- Phase 7 - Ausbau:
-  Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
-- Phase 8 - Desktop-App / Arten-Explorer:
+  Audit-Grundlage: `docs/monthly-site-audit.md`.
+  Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md`.
+- Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
+  In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
+  automatisiertes Backup mit dokumentiertem Restore-Test.
+- Phase 8 - Ausbau:
+  Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.

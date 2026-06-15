@@ -104,7 +104,7 @@ Status: erledigt
 
 ## Phase 6 - Funktionsueberarbeitung
 
-Status: geplant
+Status: in Arbeit
 
 Ziel: Die bestehenden Funktionen weiter professionalisieren, ohne den stabilen Live-Betrieb durch grosse Umbauten ohne
 Testpfad zu gefaehrden.
@@ -112,6 +112,7 @@ Testpfad zu gefaehrden.
 - Dokumentation pruefen und bei Bedarf ueberarbeiten:
   `AGENTS.md`, `README.md`, `docs/roadmap.md` und relevante Detaildokumente muessen zum echten Projektstand passen.
 - Monatliches Gesamtaudit fuer die komplette Website definieren und durchfuehren:
+  siehe `docs/monthly-site-audit.md`.
   - Sitemap-/URL-Status
   - interne Links und Redirects
   - SEO-Titel und Meta-Beschreibungen
@@ -137,25 +138,19 @@ Testpfad zu gefaehrden.
   - erst mit Parallelbetrieb, Fallbacks und Live-Test migrieren
   - keine produktiven Pfade nebenbei verschieben
 - Manuell gepflegte Karten dokumentieren:
-  - Datei anlegen oder erweitern, in der manuell gepflegte Karten eindeutig gelistet sind
+  - Datei `docs/manual-map-overrides.md` pflegen, in der manuell gepflegte Karten eindeutig gelistet sind
   - Monatsaudit muss diese Karten als eigenen Pruefpunkt ausgeben
   - bei unveraenderten Karten reicht Status `nicht erneut manuell geprueft, unveraendert`
+- Gestartet am 2026-06-15:
+  - Audit-Grundlage angelegt: `docs/monthly-site-audit.md`
+  - Liste fuer manuell gepflegte Karten angelegt: `docs/manual-map-overrides.md`
 
-## Phase 7 - Ausbau
-
-Status: geplant
-
-- Affiliate-Links auf relevanten Seiten vorbereiten und kennzeichnen.
-- Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch pruefen.
-- Rechtliche Folgepruefung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
-  durchfuehren.
-
-## Phase 8 - Desktop-App / Arten-Explorer
+## Phase 7 - Desktop-App / Arten-Explorer
 
 Status: geplant
 
-Ziel: Eine lokale Desktop-App erstellen, damit Arten, Daten, Sounds, Karten, Bilder und weitere Assets gepflegt werden
-koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
+Ziel: Eine lokale Desktop-App und eine robustere lokale Betriebsumgebung erstellen, damit Arten, Daten, Sounds, Karten,
+Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
 
 - Arten anzeigen, suchen und filtern.
 - Neue Arten manuell hinzufuegen.
@@ -172,3 +167,22 @@ koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
   - vorhandener Sound
   - Credits-Datei
 - Export/Save so gestalten, dass bestehende Pipeline und GitHub-Pages-Struktur nicht unkontrolliert veraendert werden.
+- Projektmigration oder Spiegelung auf ein persoenliches Synology NAS konzipieren:
+  - klaeren, ob das NAS primaer Backup, Mirror, Testklon oder spaeter aktive Arbeitskopie wird
+  - Risiken von Git- und Pipeline-Laeufen auf Netzlaufwerken pruefen: Latenz, Dateilocks, Sync-Konflikte,
+    Credential-Handling und Windows-Pfadverhalten
+  - bestehende lokale Arbeitskopie erst nach Testlauf ersetzen, nicht direkt verschieben
+- Automatisiertes Backup einrichten:
+  - Backup-Ziel und Zeitplan festlegen
+  - sensible Daten und Tokens ausschliessen
+  - Restore-Test dokumentieren
+  - pruefen, ob GitHub-Remote, lokale Arbeitskopie und NAS-Backup zusammen eine nachvollziehbare Sicherung ergeben
+
+## Phase 8 - Ausbau
+
+Status: geplant
+
+- Affiliate-Links auf relevanten Seiten vorbereiten und kennzeichnen.
+- Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch pruefen.
+- Rechtliche Folgepruefung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
+  durchfuehren.

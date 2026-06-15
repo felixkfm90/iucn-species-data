@@ -46,6 +46,8 @@ Versionierte Referenzen liegen unter:
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
 - `docs/asset-structure-plan.md`
+- `docs/monthly-site-audit.md`
+- `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
 - `docs/seo-worklist.md`
@@ -144,9 +146,10 @@ Die Asset-Struktur wurde in Phase 5.8 bewertet und in `docs/asset-structure-plan
 sanitisiertem Namen ist nur eine spaetere Migrationsoption, weil Pipeline, Frontend-Loader, GitHub-Pages-Pfade und
 Live-Tests betroffen waeren.
 
-Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Geplant sind Phase 6 Funktionsueberarbeitung mit
-monatlichem Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter Karten,
-Phase 7 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung und Phase 8 Desktop-App/Arten-Explorer.
+Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
+umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter
+Karten. Danach folgen Phase 7 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration bzw. Spiegelung und
+automatisiertem Backup sowie Phase 8 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 
 ## Aktueller Datenstand
 
