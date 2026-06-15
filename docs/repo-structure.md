@@ -69,6 +69,7 @@ Dokumentation uebernommen.
   - `roadmap.md`: Phasen, Status, naechste Schritte
   - `repo-file-audit.md`: Befunde zum Dateibestand
   - `repo-structure.md`: diese Struktur- und Workflow-Entscheidung
+  - `asset-structure-plan.md`: Bewertung der artweisen Asset-Buendelung und Migrationsentscheidung
   - `manual-species-fields.md`: manuell gepflegte Artenfelder
   - `add-species-workflow.md`: manueller Ablauf fuer neue Arten
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
@@ -85,6 +86,8 @@ Dokumentation uebernommen.
 
 - Keine Frontend-JS-Dateien in `docs/`, `js/` oder `assets/` verschieben, weil Squarespace den Root-Pfad laedt.
 - Keine Sounds/Karten pro Art buendeln, bevor Loader, Pipeline, GitHub-Pages-Pfade und Squarespace-Tests geplant sind.
+- Phase 5.8 hat entschieden: aktueller Asset-Aufbau bleibt bestehen; artweise Buendelung ist nur eine spaetere
+  Migrationsoption, siehe `docs/asset-structure-plan.md`.
 - `README.md` nicht nach `docs/` verschieben.
 - `AGENTS.md` nicht nach `docs/` verschieben.
 

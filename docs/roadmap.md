@@ -79,8 +79,8 @@ Status: in Arbeit
   dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, und die
   zuvor offenen Reise-Wortlautabweichungen sind erledigt. `Kohlmeise` ist laut Felix bewusst geparkt und wird erst
   spaeter aktiviert, wenn die Art auf Instagram gepostet wird. Der alte Pfad `/2019-griechenland` liefert weiter 404,
-  ist nach Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt; damit bleibt hoechstens ein optionales
-  Redirect-Thema fuer externe Altlinks. Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert:
+  ist nach Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt. Laut Felix existieren keine Altlinks;
+  ein Redirect ist deshalb aktuell nicht noetig. Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert:
   `docs/image-alt-audit.md`. Nachpruefung vom 2026-06-14: Der Capri-Link auf `/reisen/2021-neapel` wurde von Felix
   korrigiert und zeigt jetzt auf `/reisen/2021-neapel/capri`. Der vollstaendige interne Link-Crawl vom 2026-06-14
   pruefte 117 Sitemap-Seiten und fand ausserhalb der Sitemap nur Root `/`, `/cart` und die globalen Squarespace-Ordner
@@ -88,8 +88,7 @@ Status: in Arbeit
   Aeltere Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden.
   Nachpruefung der Bild-Alt-Texte vom 2026-06-15: Die sichtbaren Artseiten-Galeriebeschreibungen wurden offenbar
   entfernt, die echten HTML-`alt`-Attribute enthalten live aber weiterhin auf allen 44 aktiven Artseiten Dateinamen
-  (1.330 Instanzen). Das naechste To-do ist deshalb die direkte Alt-Feld-/Galerieeinstellung in Squarespace, nicht
-  eine Code-Aenderung im Repository.
+  (1.330 Instanzen).
   Felix hat am 2026-06-15 alle Artseiten manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die sichtbare
   Website-Darstellung gilt der Artseiten-Galerietext damit als erledigt. Reiseseiten-Galerietexte sind bewusst gesetzt
   und bleiben bestehen. Technische Dateinamen-`alt`-Attribute werden fuer den aktuellen Stand akzeptiert. Artseiten-
@@ -97,7 +96,11 @@ Status: in Arbeit
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
-- 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten.
+- 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten: erledigt, siehe
+  `docs/asset-structure-plan.md`.
+  Ergebnis: Der aktuelle Aufbau bleibt bestehen, weil alle Kernassets konsistent vorhanden sind und Live-Pfade stabil
+  laufen. Artweise Buendelung ist technisch moeglich, aber nur als spaetere bewusste Migration mit Parallelbetrieb,
+  Loader-/Pipeline-Anpassung und Live-Test sinnvoll.
 - 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
   Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
   Spektrogramm-/Frequenzdarstellung fuer Tierstimmen.
@@ -108,10 +111,7 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
-   Altlinks existieren.
-2. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.
-3. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
+1. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
    aktive Projektstand auf ein Netzlaufwerk umzieht.
-4. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
+2. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
    Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.

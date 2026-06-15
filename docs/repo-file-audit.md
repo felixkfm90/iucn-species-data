@@ -1,6 +1,6 @@
 # Repo File Audit
 
-Stand: 2026-05-28
+Stand: 2026-06-15
 
 Ziel dieses Audits: Dateibestand, lokale Altlasten, generierte Assets und Strukturentscheidungen fuer Phase 5 bewerten,
 ohne direkt Dateien zu loeschen oder Pfade umzubauen.
@@ -42,7 +42,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 | Gitignore | `.gitignore` | Bereinigt: lokale Abhaengigkeiten, Logs, `.env`, Batch-Dateien, `Testlauf/` und lokale Hilfsskripte sind ignoriert. | Niedrig | Beibehalten; keine breiten Regeln fuer produktive Dateitypen wie `.js`, `.json`, `.mp3` oder `.jpg` ergaenzen. |
 | README | `README.md` | Root-README ist bewusst fuer GitHub sichtbar. Detaildokumente liegen unter `docs/`. | Niedrig | Im Root behalten. Nicht nach `docs/` verschieben. |
 | Grafikassets | `graphics/catagory/` und `graphics/catagory/Alternativ/` | `species-status.js` nutzt nur `graphics/catagory/Alternativ/` und `graphics/trend/`. Die PNGs direkt unter `graphics/catagory/` wirken derzeit ungenutzt. `Blaupause.psd` ist vermutlich Quelldatei. | Mittel | Nicht sofort loeschen. In der spaeteren Asset-Struktur-Phase entscheiden: ungenutzte Statusicons entfernen/archivieren oder als Designquelle dokumentieren. Ordnername `catagory` wegen Live-Pfaden vorerst nicht umbenennen. |
-| Assets | `sounds/`, `Verbreitungskarten/` | Vollstaendig und konsistent, aber getrennt nach Assettyp statt pro Art gebuendelt. Sounds sind mit ca. 160 MB der groesste Repo-Bereich. | Mittel | Asset-Buendelung nur als bewusste Migration planen, weil alle GitHub-Pages-Pfade und Loader betroffen sind. |
+| Assets | `sounds/`, `Verbreitungskarten/` | Vollstaendig und konsistent, aber getrennt nach Assettyp statt pro Art gebuendelt. Assets sind mit ca. 171,71 MB der groesste Repo-Bereich. | Mittel | Phase 5.8 abgeschlossen: aktueller Aufbau bleibt bestehen; artweise Buendelung nur als spaetere bewusste Migration, siehe `docs/asset-structure-plan.md`. |
 | Datenpipeline | `update.mjs` | Funktional, aber inzwischen relativ gross und enthaelt IUCN-, Karten-, Xeno-Canto-, Commons- und Reportlogik in einer Datei. | Mittel | Vorerst beibehalten. Spaeter nur modularisieren, wenn neue Arten/Felder die Wartung erschweren. |
 | Frontend | `species-*.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Syntax ok, alle Module brechen sauber ab, wenn erwartete Container fehlen. | Niedrig | Beibehalten. Soundbar ist aktuell als native Canvas-Komponente umgesetzt; `species-info.js` zeigt manuelle Lebenserwartung oberhalb der Generationsdauer. |
 | Sortierung | `sort.js` | Wird im Footer geladen, aktiviert sich nur bei `#species-sort` oder `#species-search`. | Niedrig | Beibehalten und bei Uebersichtsseiten-Tests weiter beobachten. |
@@ -54,7 +54,8 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 3. Soundbar ist in Phase 5.4 als native Canvas-Komponente umgesetzt, siehe `docs/soundbar.md`.
 4. Manuelle Zusatzdaten sind in Phase 5.5 dokumentiert, siehe `docs/manual-species-fields.md`.
 5. Der manuelle Ablauf fuer neue Arten ist in Phase 5.6 dokumentiert, siehe `docs/add-species-workflow.md`.
-6. Asset-Buendelung pro Art nur nach gesonderter Migrationsentscheidung umsetzen.
+6. Asset-Buendelung pro Art wurde in Phase 5.8 bewertet. Ergebnis: nicht jetzt migrieren; aktueller Aufbau bleibt
+   produktiv, Details in `docs/asset-structure-plan.md`.
 
 ## Nicht ohne Freigabe aendern
 

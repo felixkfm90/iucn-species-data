@@ -45,6 +45,7 @@ Versionierte Referenzen liegen unter:
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
+- `docs/asset-structure-plan.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
 - `docs/seo-worklist.md`
@@ -122,8 +123,7 @@ live nachgeprueft und passen. Am 2026-06-14 wurde ein Vollcrawl der internen Lin
 Capri-Linkfehler wurde von Felix korrigiert und live nachgeprueft. Details stehen in `docs/seo-worklist.md`.
 Bild-Alt-Texte und optionale Bildtitel wurden in `docs/image-alt-audit.md` auditiert. Nachpruefung vom 2026-06-15:
 Die sichtbaren Artseiten-Galeriebeschreibungen sind offenbar entfernt, die echten HTML-`alt`-Attribute enthalten live
-aber weiterhin auf allen 44 aktiven Artseiten Dateinamen. Vor einer Serienbereinigung zuerst an einer Artseite testen,
-ob das direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt.
+aber weiterhin auf allen 44 aktiven Artseiten Dateinamen.
 Felix hat die Artseiten am 2026-06-15 manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die sichtbare
 Website-Darstellung gilt das Thema damit als erledigt. Reiseseiten-Galerietexte sind bewusst gesetzt und bleiben
 bestehen; technische Dateinamen-Alt-Texte werden fuer den aktuellen Stand akzeptiert. Artseiten- und Reiseseiten-
@@ -142,6 +142,11 @@ Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deploym
 Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS ist in `docs/roadmap.md` vorgemerkt. Bis
 zur Pruefung bleibt die lokale Arbeitskopie der fuehrende Arbeitsstand; das NAS sollte zuerst als Backup, Mirror oder
 Testklon bewertet werden.
+
+Die Asset-Struktur wurde in Phase 5.8 bewertet und in `docs/asset-structure-plan.md` dokumentiert. Ergebnis:
+`Verbreitungskarten/`, `sounds/` und `graphics/` bleiben im aktuellen produktiven Aufbau. Eine Buendelung pro Art nach
+sanitisiertem Namen ist nur eine spaetere Migrationsoption, weil Pipeline, Frontend-Loader, GitHub-Pages-Pfade und
+Live-Tests betroffen waeren.
 
 ## Aktueller Datenstand
 
