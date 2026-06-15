@@ -70,6 +70,10 @@ Monatsaudit-Ergebnisse koennen spaeter als einzelne Dateien unter `docs/audits/`
 `docs/audits/2026-06-site-audit.md`. Der Ordner wird erst angelegt, wenn der erste echte Monatsbericht gespeichert
 wird.
 
+Aktueller Bericht:
+
+- `docs/audits/2026-06-site-audit.md`
+
 ## Offene Automatisierung
 
 Phase 6 soll spaeter entscheiden, ob Teile des Audits als Skript laufen sollen. Kandidaten:

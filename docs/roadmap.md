@@ -144,6 +144,9 @@ Testpfad zu gefaehrden.
 - Gestartet am 2026-06-15:
   - Audit-Grundlage angelegt: `docs/monthly-site-audit.md`
   - Liste fuer manuell gepflegte Karten angelegt: `docs/manual-map-overrides.md`
+- 6.1 Erster echter Monatsaudit: erledigt am 2026-06-15, siehe `docs/audits/2026-06-site-audit.md`.
+  Ergebnis: 117 Sitemap-URLs live erreichbar, keine fehlenden SEO-Grundfelder, GitHub-Pages-Daten und Kernassets
+  konsistent, keine neuen kritischen Fehler.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

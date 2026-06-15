@@ -217,6 +217,7 @@ Aktuelle Planung:
   Dokumentation pruefen, monatliches Gesamtaudit definieren, Spektrogramm-Assets konzipieren, artweise
   Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
   Audit-Grundlage: `docs/monthly-site-audit.md`.
+  Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md`.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

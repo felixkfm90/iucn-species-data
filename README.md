@@ -47,6 +47,7 @@ Versionierte Referenzen liegen unter:
 - `docs/repo-structure.md`
 - `docs/asset-structure-plan.md`
 - `docs/monthly-site-audit.md`
+- `docs/audits/2026-06-site-audit.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -148,8 +149,9 @@ Live-Tests betroffen waeren.
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
 umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter
-Karten. Danach folgen Phase 7 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration bzw. Spiegelung und
-automatisiertem Backup sowie Phase 8 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
+Karten. Der erste echte Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7
+Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration bzw. Spiegelung und automatisiertem Backup sowie Phase 8
+Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 
 ## Aktueller Datenstand
 
