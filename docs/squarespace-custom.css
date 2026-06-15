@@ -1,7 +1,7 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-06-14
-  Soll-Stand nach Phase 5.4 Soundbar-Optik und Mobile-Galerie-Override.
+  Stand: 2026-06-15
+  Soll-Stand nach Soundbar-Reglern und Mobile-Galerie-Override.
 */
 
 /* ================================ */
@@ -163,8 +163,9 @@
 
 /*
   Die eigentliche Soundbar-Optik wird seit species-sound.js v1.0.10 vom Modul selbst
-  in #species-sound gekapselt injiziert. Seit species-sound.js v1.0.13 nutzt der
-  Player ein vorbereitetes Spektrogramm mit Canvas-Fallback.
+  in #species-sound gekapselt injiziert. Seit species-sound.js v1.0.14 nutzt der
+  Player ein vorbereitetes Spektrogramm mit Canvas-Fallback, Lautstaerke 0-200
+  Prozent und Tempo-Auswahl.
 
   In Squarespace muss fuer die Soundbar nur der Rahmenstil aus .frame-box vorhanden
   bleiben. Alte WaveSurfer-/Waveform-Regeln koennen entfernt werden.

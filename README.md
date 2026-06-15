@@ -28,8 +28,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Tierstimmen-Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Credits und
-  Lizenzhinweisen
+- `species-sound.js`: native Tierstimmen-Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Lautstaerke,
+  Abspielgeschwindigkeit, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung der sichtbaren Listen
@@ -180,6 +180,10 @@ Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als 
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
 Frequenzbereich bis 18 kHz.
 
+Die Soundbar bietet zusaetzlich einen Lautstaerkeregler von 0 bis 200 Prozent und eine Tempo-Auswahl fuer `0,25x`,
+`0,5x`, `1x`, `1,5x`, `2x` und `4x`. Lautstaerke ueber 100 Prozent wird per Web-Audio-Gain verstaerkt; ohne
+Web-Audio-Unterstuetzung faellt der Player auf die normale Browser-Lautstaerke bis 100 Prozent zurueck.
+
 ffmpeg unter Windows installieren:
 
 ```bash
@@ -237,6 +241,7 @@ Weitere Arten werden bei Bedarf manuell in `species_list.json` ergaenzt; aktuell
 ## Tests nach Frontend-Aenderungen
 
 - Detailseite, z. B. `/wildlife/heimische-tierwelt/acanthisflammea`
+- Tierstimmen-Player: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent und Tempo-Auswahl pruefen
 - Uebersichtssuche:
   - `/wildlife/heimische-tierwelt`
   - `/wildlife/costarica`

@@ -227,7 +227,7 @@ Phase 6.4 ist als Konzept abgeschlossen; die produktive Umsetzung erfolgte danac
   Zielstil angepasst
 - 45 produktive Spektrogramm-Assets erzeugt
 - `species-sound.js` nutzt Spektrogramme optional mit Canvas-Fallback
-- Squarespace-`?v=` fuer den Live-Betrieb: `species-sound.js?v=1.0.13`
+- Aktuelle Squarespace-`?v=` fuer den Live-Betrieb nach Soundbar-Reglern: `species-sound.js?v=1.0.14`
 
 ## Generator-Test 2026-06-15
 

@@ -107,7 +107,10 @@ Stand: 2026-06-15
   - Generator-Default nach Sichtpruefung auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit leisere und
     hochfrequentere Arten nicht zu leer wirken
   - `species-sound.js` nutzt Spektrogramme optional und behaelt Canvas-Wellenform als Fallback
-  - dokumentierte Footer-Version: `species-sound.js?v=1.0.13`
+- Soundbar-Regler am 2026-06-15 umgesetzt:
+  - Lautstaerke 0 bis 200 Prozent, ueber 100 Prozent per Web-Audio-Gain
+  - Tempo-Auswahl `0,25x`, `0,5x`, `1x`, `1,5x`, `2x`, `4x`
+  - dokumentierte Footer-Version: `species-sound.js?v=1.0.14`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -138,6 +141,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.13` setzen und Artseiten mobil/desktop
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.14` setzen und Artseiten mobil/desktop
    pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

@@ -173,8 +173,14 @@ Testpfad zu gefaehrden.
   laedt die Spektrogramme optional per `HEAD` und zeigt sie mit rotem Positionsmarker und vorhandener Bedienlogik an.
   Wenn ein Spektrogramm fehlt oder nicht geladen werden kann, bleibt die bisherige Canvas-Wellenform als Fallback
   aktiv. Nach Sichtpruefung wurde der Default auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit auch leisere
-  und hochfrequentere Arten sichtbar bleiben. Squarespace-Footer-Version fuer den Live-Betrieb:
-  `species-sound.js?v=1.0.13`.
+  und hochfrequentere Arten sichtbar bleiben. Die aktuelle Squarespace-Footer-Version fuer den Live-Betrieb steht in
+  6.7.
+- 6.7 Soundbar-Regler fuer Lautstaerke und Tempo: erledigt am 2026-06-15.
+  `species-sound.js` bietet jetzt einen kompakten Lautstaerkeregler von 0 bis 200 Prozent und eine
+  Abspielgeschwindigkeit-Auswahl fuer `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`. Lautstaerke ueber 100 Prozent
+  wird per Web-Audio-Gain verstaerkt; ohne Web-Audio-Unterstuetzung bleibt die normale Browser-Lautstaerke bis
+  100 Prozent nutzbar. Lautstaerke und Tempo werden lokal im Browser gespeichert, wenn `localStorage` verfuegbar ist.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.14`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

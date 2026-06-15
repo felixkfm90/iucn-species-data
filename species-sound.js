@@ -2,6 +2,12 @@
   const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
   const STYLE_ID = "species-sound-style";
   const WAVEFORM_BARS = 128;
+  const VOLUME_STORAGE_KEY = "speciesSoundVolumePercent";
+  const SPEED_STORAGE_KEY = "speciesSoundPlaybackRate";
+  const VOLUME_MAX_PERCENT = 200;
+  const DEFAULT_VOLUME_PERCENT = 100;
+  const DEFAULT_PLAYBACK_RATE = 1;
+  const PLAYBACK_RATES = [0.25, 0.5, 1, 1.5, 2, 4];
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -147,6 +153,119 @@
         font-variant-numeric: tabular-nums;
       }
 
+      #species-sound .sound-settings {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 10px 10px 62px;
+      }
+
+      #species-sound .sound-volume-control,
+      #species-sound .sound-speed-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+      }
+
+      #species-sound .sound-volume-control {
+        flex: 1 1 210px;
+        max-width: 310px;
+      }
+
+      #species-sound .sound-volume-icon {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        color: #52635f;
+      }
+
+      #species-sound .sound-volume-range {
+        --sound-volume-progress: 50%;
+        appearance: none;
+        -webkit-appearance: none;
+        flex: 1 1 auto;
+        min-width: 92px;
+        height: 22px;
+        margin: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      #species-sound .sound-volume-range::-webkit-slider-runnable-track {
+        height: 10px;
+        border: 1px solid #9ea9a5;
+        border-radius: 2px;
+        background: linear-gradient(
+          90deg,
+          #2cc84d 0%,
+          #2cc84d var(--sound-volume-progress),
+          #f2f5f4 var(--sound-volume-progress),
+          #f2f5f4 100%
+        );
+      }
+
+      #species-sound .sound-volume-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 10px;
+        height: 18px;
+        margin-top: -5px;
+        border: 1px solid #7a8581;
+        border-radius: 2px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.16);
+      }
+
+      #species-sound .sound-volume-range::-moz-range-track {
+        height: 10px;
+        border: 1px solid #9ea9a5;
+        border-radius: 2px;
+        background: #f2f5f4;
+      }
+
+      #species-sound .sound-volume-range::-moz-range-progress {
+        height: 10px;
+        border-radius: 2px;
+        background: #2cc84d;
+      }
+
+      #species-sound .sound-volume-range::-moz-range-thumb {
+        width: 10px;
+        height: 18px;
+        border: 1px solid #7a8581;
+        border-radius: 2px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.16);
+      }
+
+      #species-sound .sound-control-value,
+      #species-sound .sound-control-label {
+        font-size: 0.76rem;
+        line-height: 1;
+        color: #52615d;
+        white-space: nowrap;
+      }
+
+      #species-sound .sound-control-value {
+        width: 42px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #species-sound .sound-speed-select {
+        height: 28px;
+        border: 1px solid #c1ccc8;
+        border-radius: 6px;
+        background: #fff;
+        color: #26332f;
+        font: inherit;
+        font-size: 0.78rem;
+        line-height: 1;
+        padding: 2px 24px 2px 8px;
+        cursor: pointer;
+      }
+
       #species-sound .sound-details {
         border-top: 1px solid #d4dfdb;
         padding: 7px 10px 9px;
@@ -207,6 +326,21 @@
           font-size: 0.74rem;
         }
 
+        #species-sound .sound-settings {
+          padding: 0 8px 9px;
+          flex-wrap: wrap;
+          gap: 8px 10px;
+        }
+
+        #species-sound .sound-volume-control {
+          flex: 1 1 178px;
+          max-width: none;
+        }
+
+        #species-sound .sound-speed-control {
+          flex: 0 0 auto;
+        }
+
         #species-sound .sound-detail-grid {
           grid-template-columns: 1fr;
           gap: 2px;
@@ -256,6 +390,53 @@
     const minutes = Math.floor(safeSeconds / 60);
     const rest = safeSeconds % 60;
     return `${minutes}:${rest.toString().padStart(2, "0")}`;
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(min, Math.min(max, number));
+  }
+
+  function readStoredNumber(key, fallback) {
+    try {
+      const value = window.localStorage.getItem(key);
+      return value === null ? fallback : Number(value);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function writeStoredNumber(key, value) {
+    try {
+      window.localStorage.setItem(key, String(value));
+    } catch (_) {
+      // Local storage can be unavailable in privacy modes. Controls still work for the current page view.
+    }
+  }
+
+  function getStoredVolumePercent() {
+    return Math.round(clampNumber(
+      readStoredNumber(VOLUME_STORAGE_KEY, DEFAULT_VOLUME_PERCENT),
+      0,
+      VOLUME_MAX_PERCENT,
+      DEFAULT_VOLUME_PERCENT
+    ));
+  }
+
+  function getStoredPlaybackRate() {
+    const storedRate = clampNumber(
+      readStoredNumber(SPEED_STORAGE_KEY, DEFAULT_PLAYBACK_RATE),
+      Math.min(...PLAYBACK_RATES),
+      Math.max(...PLAYBACK_RATES),
+      DEFAULT_PLAYBACK_RATE
+    );
+
+    return PLAYBACK_RATES.includes(storedRate) ? storedRate : DEFAULT_PLAYBACK_RATE;
+  }
+
+  function formatPlaybackRate(rate) {
+    return `${String(rate).replace(".", ",")}x`;
   }
 
   function renderStatus(message) {
@@ -531,6 +712,11 @@
     const compactCredits = compactCreditLine(credits);
     const creditDetails = buildCreditDetails(credits);
     const fallbackPeaksData = fallbackPeaks(soundAssetName);
+    const initialVolumePercent = getStoredVolumePercent();
+    const initialPlaybackRate = getStoredPlaybackRate();
+    const speedOptionsHtml = PLAYBACK_RATES.map((rate) => `
+      <option value="${rate}"${rate === initialPlaybackRate ? " selected" : ""}>${formatPlaybackRate(rate)}</option>
+    `).join("");
 
     wrapper.innerHTML = `
       <div class="frame-box species-sound-frame">
@@ -579,6 +765,37 @@
             </div>
           </div>
 
+          <div class="sound-settings">
+            <label class="sound-volume-control" for="sound-volume">
+              <svg class="sound-volume-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M4 9.5v5h3.2L12 18.4V5.6L7.2 9.5H4z"></path>
+                <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15 8.5c1 1 1.5 2.2 1.5 3.5S16 14.5 15 15.5"></path>
+                <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M17.5 6c1.7 1.7 2.6 3.7 2.6 6s-.9 4.3-2.6 6"></path>
+              </svg>
+              <input
+                id="sound-volume"
+                class="sound-volume-range"
+                type="range"
+                min="0"
+                max="${VOLUME_MAX_PERCENT}"
+                value="${initialVolumePercent}"
+                step="1"
+                aria-label="Lautstaerke"
+                aria-valuemin="0"
+                aria-valuemax="${VOLUME_MAX_PERCENT}"
+                aria-valuenow="${initialVolumePercent}"
+              >
+              <span id="sound-volume-value" class="sound-control-value">${initialVolumePercent}%</span>
+            </label>
+
+            <label class="sound-speed-control" for="sound-speed">
+              <span class="sound-control-label">Tempo</span>
+              <select id="sound-speed" class="sound-speed-select" aria-label="Abspielgeschwindigkeit">
+                ${speedOptionsHtml}
+              </select>
+            </label>
+          </div>
+
           ${creditDetails}
         </div>
 
@@ -595,8 +812,23 @@
     const cursorEl = wrapper.querySelector("#sound-cursor");
     const currentTimeEl = wrapper.querySelector("#current-time");
     const durationEl = wrapper.querySelector("#duration");
+    const volumeEl = wrapper.querySelector("#sound-volume");
+    const volumeValueEl = wrapper.querySelector("#sound-volume-value");
+    const speedEl = wrapper.querySelector("#sound-speed");
 
-    if (!audio || !playBtn || !scrubberEl || !visualEl || !canvas || !cursorEl || !currentTimeEl || !durationEl) {
+    if (
+      !audio ||
+      !playBtn ||
+      !scrubberEl ||
+      !visualEl ||
+      !canvas ||
+      !cursorEl ||
+      !currentTimeEl ||
+      !durationEl ||
+      !volumeEl ||
+      !volumeValueEl ||
+      !speedEl
+    ) {
       wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
       return;
     }
@@ -604,6 +836,83 @@
     let peaks = fallbackPeaksData;
     let useSpectrogram = Boolean(spectrogramExists && spectrogramImg);
     let waveformDecodeStarted = false;
+    let currentVolumePercent = initialVolumePercent;
+    let audioContext = null;
+    let mediaSourceNode = null;
+    let gainNode = null;
+    let audioGraphDisabled = false;
+
+    function ensureAudioGraph() {
+      if (gainNode) return true;
+      if (audioGraphDisabled) return false;
+
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) {
+        audioGraphDisabled = true;
+        return false;
+      }
+
+      try {
+        audioContext = new AudioContext();
+        mediaSourceNode = audioContext.createMediaElementSource(audio);
+        gainNode = audioContext.createGain();
+        mediaSourceNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        return true;
+      } catch (_) {
+        audioGraphDisabled = true;
+        gainNode = null;
+        mediaSourceNode = null;
+        audioContext = null;
+        return false;
+      }
+    }
+
+    async function resumeAudioGraph() {
+      if (!audioContext || audioContext.state !== "suspended") return;
+      try {
+        await audioContext.resume();
+      } catch (_) {
+        // If resuming fails, native playback still decides whether the browser allows audio output.
+      }
+    }
+
+    function updateVolumeUi(percent) {
+      const fillPercent = (percent / VOLUME_MAX_PERCENT) * 100;
+      volumeEl.value = String(percent);
+      volumeEl.style.setProperty("--sound-volume-progress", `${fillPercent}%`);
+      volumeEl.setAttribute("aria-valuenow", String(percent));
+      volumeValueEl.textContent = `${percent}%`;
+    }
+
+    function setVolumePercent(percent, options = {}) {
+      const safePercent = Math.round(clampNumber(percent, 0, VOLUME_MAX_PERCENT, DEFAULT_VOLUME_PERCENT));
+      const gainValue = safePercent / 100;
+      currentVolumePercent = safePercent;
+      updateVolumeUi(safePercent);
+
+      if ((options.activateGraph || gainNode) && ensureAudioGraph()) {
+        audio.volume = 1;
+        if (typeof gainNode.gain.setTargetAtTime === "function") {
+          gainNode.gain.setTargetAtTime(gainValue, audioContext.currentTime, 0.01);
+        } else {
+          gainNode.gain.value = gainValue;
+        }
+      } else {
+        audio.volume = Math.min(1, gainValue);
+      }
+
+      if (options.persist) writeStoredNumber(VOLUME_STORAGE_KEY, safePercent);
+    }
+
+    function setPlaybackRate(rate, persist) {
+      const safeRate = PLAYBACK_RATES.includes(Number(rate)) ? Number(rate) : DEFAULT_PLAYBACK_RATE;
+      audio.defaultPlaybackRate = safeRate;
+      audio.playbackRate = safeRate;
+      speedEl.value = String(safeRate);
+
+      if (persist) writeStoredNumber(SPEED_STORAGE_KEY, safeRate);
+    }
 
     function currentProgress() {
       const duration = audio.duration;
@@ -648,6 +957,8 @@
     playBtn.addEventListener("click", async () => {
       try {
         if (audio.paused) {
+          setVolumePercent(currentVolumePercent, { activateGraph: true });
+          await resumeAudioGraph();
           await audio.play();
         } else {
           audio.pause();
@@ -674,6 +985,14 @@
       if (!useSpectrogram) drawWaveform(canvas, peaks, progress);
       updateCursor(cursorEl, scrubberEl, progress);
       updateProgressText();
+    });
+
+    volumeEl.addEventListener("input", () => {
+      setVolumePercent(volumeEl.value, { activateGraph: true, persist: true });
+    });
+
+    speedEl.addEventListener("change", () => {
+      setPlaybackRate(speedEl.value, true);
     });
 
     audio.addEventListener("loadedmetadata", updateProgress);
@@ -712,6 +1031,8 @@
     }
 
     redraw();
+    setVolumePercent(initialVolumePercent);
+    setPlaybackRate(initialPlaybackRate, false);
     if (!useSpectrogram) ensureWaveformDecoded();
   } catch (_) {
     wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");

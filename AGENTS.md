@@ -44,7 +44,8 @@ Frontend-Module:
 - `species-info.js`: Info-Box
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Credits und Lizenzhinweisen
+- `species-sound.js`: native Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Lautstaerke,
+  Abspielgeschwindigkeit, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung sichtbarer Listen
@@ -227,6 +228,7 @@ Nach Frontend-Aenderungen:
   - `/wildlife/costarica`
   - `/wildlife/island`
 - Mobile Layout pruefen
+- Tierstimmen-Player pruefen: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent und Tempo-Auswahl
 - Lightbox-Zoom auf Desktop und Android Chrome pruefen
 - GitHub Pages Deploy abwarten
 - Danach erst Squarespace-`?v=` erhoehen
@@ -262,6 +264,8 @@ Aktuelle Planung:
   heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 18 kHz.
   45 produktive Spektrogramme erzeugt. `local-tools/` ist fuer projektlokales ffmpeg
   ignoriert.
+  Soundbar-Regler: `species-sound.js` bietet seit 2026-06-15 Lautstaerke 0-200 Prozent per Web-Audio-Gain und
+  Tempo-Auswahl `0,25x`, `0,5x`, `1x`, `1,5x`, `2x`, `4x`.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
