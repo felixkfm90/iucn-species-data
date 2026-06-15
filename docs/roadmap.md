@@ -47,11 +47,11 @@ Status: erledigt
 - Fuer die verbleibenden 3 NC-Faelle ergab die erweiterte Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Suche keine direkt verwendbare freie MP3-Alternative.
 - Sound-Credits und Lizenzhinweise werden im Frontend bereits mit Quelle, Aufnahme, Lizenzlink und Quelllink ausgegeben.
 - Karten-, Sound- und Daten-Fallbacks wurden erneut geprueft; aktuell kein Frontend-Patch noetig.
-- README und Betriebsdoku bleiben als laufender Abgleich in Phase 5.
+- README und Betriebsdoku bleiben als fortlaufender Abgleich Pflicht.
 
 ## Phase 5 - Struktur, Assets und Wartbarkeit
 
-Status: in Arbeit
+Status: erledigt
 
 - 5.1 Repo- und Dateiaudit: erledigt, siehe `docs/repo-file-audit.md`.
 - 5.2 Dokumentation aktualisieren, inklusive AGENTS-/Uebergabe-Dokumentation: erledigt und ab jetzt fortlaufende Pflicht.
@@ -101,17 +101,74 @@ Status: in Arbeit
   Ergebnis: Der aktuelle Aufbau bleibt bestehen, weil alle Kernassets konsistent vorhanden sind und Live-Pfade stabil
   laufen. Artweise Buendelung ist technisch moeglich, aber nur als spaetere bewusste Migration mit Parallelbetrieb,
   Loader-/Pipeline-Anpassung und Live-Test sinnvoll.
-- 5.9 Spaeterer Ausbau erst nach technischer Stabilitaet:
-  Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional eine hochwertigere
-  Spektrogramm-/Frequenzdarstellung fuer Tierstimmen.
-- 5.10 Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen:
-  Ziel klaeren (aktive Arbeitskopie, Backup/Mirror, Synology Drive oder Testklon). Bis zur Pruefung bleibt die lokale
-  Arbeitskopie massgeblich. Empfehlung: zuerst Backup/Mirror oder Testklon, weil Git- und Pipeline-Laeufe auf
-  Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
 
-### Phase 5 - Vorschlag fuer die naechsten Schritte
+## Phase 6 - Funktionsueberarbeitung
 
-1. NAS-/Backup-Konzept spaeter pruefen: lokale Arbeitskopie gegen Synology-Mirror/Testklon abwaegen, bevor der
-   aktive Projektstand auf ein Netzlaufwerk umzieht.
-2. Spaeterer Ausbau: Ausruestungsseite, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional
-   Spektrogramm-Assets fuer Tierstimmen erst nach Abschluss der technischen Stabilisierung.
+Status: geplant
+
+Ziel: Die bestehenden Funktionen weiter professionalisieren, ohne den stabilen Live-Betrieb durch grosse Umbauten ohne
+Testpfad zu gefaehrden.
+
+- Dokumentation pruefen und bei Bedarf ueberarbeiten:
+  `AGENTS.md`, `README.md`, `docs/roadmap.md` und relevante Detaildokumente muessen zum echten Projektstand passen.
+- Monatliches Gesamtaudit fuer die komplette Website definieren und durchfuehren:
+  - Sitemap-/URL-Status
+  - interne Links und Redirects
+  - SEO-Titel und Meta-Beschreibungen
+  - Artseiten-Module, Karten, Sounds, Suche, Sortierung und Lightbox
+  - GitHub-Pages-Assets und Reports
+  - rechtlich relevante externe Dienste und Einbindungen
+- Audit-Ausgabe als Zusammenfassung gliedern:
+  - offen
+  - erledigt/geprueft
+  - nicht erneut manuell geprueft, weil unveraendert
+  - noch nicht geprueft
+  - bewusst akzeptiert oder geparkt
+- Regel fuer unveraenderte Punkte: Wenn an einem Bereich nichts geaendert wurde, ist keine erneute manuelle
+  Detailpruefung Pflicht. Das Audit darf den Bereich aber nicht ignorieren; es muss ihn als unveraendert bzw. nicht
+  erneut manuell geprueft ausweisen.
+- Spektrogramm-Assets fuer Tierstimmen konzipieren:
+  - technische Machbarkeit pruefen
+  - Generierung lokal oder in Pipeline bewerten
+  - Speicherort, Dateigroesse, Ladezeit und mobile Darstellung pruefen
+  - Integration in `species-sound.js` erst nach Konzeptfreigabe
+- Buendelung der Assets pro Art erneut aufgreifen:
+  - Grundlage ist `docs/asset-structure-plan.md`
+  - erst mit Parallelbetrieb, Fallbacks und Live-Test migrieren
+  - keine produktiven Pfade nebenbei verschieben
+- Manuell gepflegte Karten dokumentieren:
+  - Datei anlegen oder erweitern, in der manuell gepflegte Karten eindeutig gelistet sind
+  - Monatsaudit muss diese Karten als eigenen Pruefpunkt ausgeben
+  - bei unveraenderten Karten reicht Status `nicht erneut manuell geprueft, unveraendert`
+
+## Phase 7 - Ausbau
+
+Status: geplant
+
+- Affiliate-Links auf relevanten Seiten vorbereiten und kennzeichnen.
+- Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch pruefen.
+- Rechtliche Folgepruefung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
+  durchfuehren.
+
+## Phase 8 - Desktop-App / Arten-Explorer
+
+Status: geplant
+
+Ziel: Eine lokale Desktop-App erstellen, damit Arten, Daten, Sounds, Karten, Bilder und weitere Assets gepflegt werden
+koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
+
+- Arten anzeigen, suchen und filtern.
+- Neue Arten manuell hinzufuegen.
+- Bestehende Artdaten bearbeiten, inklusive manueller Felder aus `species_list.json`.
+- IUCN-Datenabruf und Pipeline-Status sichtbar machen.
+- Sounds, Credits und Lizenzen anzeigen und austauschen.
+- Karten anzeigen, markieren und manuell gepflegte Karten dokumentieren.
+- Bilder/Assets je Art verwalten oder mindestens verlinken.
+- Validierung vor dem Speichern:
+  - Pflichtfelder
+  - URL-Slug
+  - sanitisierter Assetname
+  - vorhandene Karte
+  - vorhandener Sound
+  - Credits-Datei
+- Export/Save so gestalten, dass bestehende Pipeline und GitHub-Pages-Struktur nicht unkontrolliert veraendert werden.

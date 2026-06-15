@@ -139,14 +139,14 @@ Lokale Batch-Dateien:
 
 Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
-Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS ist in `docs/roadmap.md` vorgemerkt. Bis
-zur Pruefung bleibt die lokale Arbeitskopie der fuehrende Arbeitsstand; das NAS sollte zuerst als Backup, Mirror oder
-Testklon bewertet werden.
-
 Die Asset-Struktur wurde in Phase 5.8 bewertet und in `docs/asset-structure-plan.md` dokumentiert. Ergebnis:
 `Verbreitungskarten/`, `sounds/` und `graphics/` bleiben im aktuellen produktiven Aufbau. Eine Buendelung pro Art nach
 sanitisiertem Namen ist nur eine spaetere Migrationsoption, weil Pipeline, Frontend-Loader, GitHub-Pages-Pfade und
 Live-Tests betroffen waeren.
+
+Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Geplant sind Phase 6 Funktionsueberarbeitung mit
+monatlichem Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter Karten,
+Phase 7 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung und Phase 8 Desktop-App/Arten-Explorer.
 
 ## Aktueller Datenstand
 

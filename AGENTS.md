@@ -195,67 +195,28 @@ Nach Frontend-Aenderungen:
 - GitHub Pages Deploy abwarten
 - Danach erst Squarespace-`?v=` erhoehen
 
-## Aktuelle Phase-5-Roadmap
+## Aktuelle Roadmap
 
-Phase 5 laeuft. Bereits erledigt:
+Details stehen in `docs/roadmap.md`.
+
+Phase 5 ist abgeschlossen. Erledigt wurden unter anderem:
 
 - Repo- und Dateiaudit: `docs/repo-file-audit.md`
-- Dokumentationsregel und aktuelle Uebergabe: `AGENTS.md`, `README.md`, `docs/roadmap.md`
+- Dokumentationsregel und Uebergabe: `AGENTS.md`, `README.md`, `docs/roadmap.md`
 - Lokaler Workflow und Repo-Struktur: `docs/repo-structure.md`
-- Soundbar: `species-sound.js`, `docs/soundbar.md`, `docs/squarespace-custom.css`, `docs/squarespace-footer.html`
-  - aktueller Stand: native Audio-Wiedergabe mit gekapselter Canvas-Wellenform; keine WaveSurfer-Abhaengigkeit
-  - der separate sichtbare NC-Warnhinweis wurde am 2026-06-14 entfernt; NC bleibt intern ueber Credits, Report und
-    Sound-Review nachvollziehbar
+- Soundbar: `species-sound.js`, `docs/soundbar.md`
 - Manuelle Zusatzdaten: `species_list.json`, `update.mjs`, `species-info.js`, `docs/manual-species-fields.md`
-  - aktueller Stand: `life_expectancy` wird als `Lebenserwartung` oberhalb der Generationsdauer angezeigt
-  - technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als
-    `Unbekannt` angezeigt; Rohdaten bleiben unveraendert
-- Weitere Arten: `docs/add-species-workflow.md`
-  - aktueller Stand: Arten werden nur manuell von Felix in `species_list.json` ergaenzt; keine automatische
-    Artenauswahl oder automatische Listenaenderung
-  - Pipeline-Check am 2026-05-28 ohne neue Arten erfolgreich: 45 Arten, 45 Karten, 45 MP3s, keine fehlenden Kernassets
-- SEO/KI-Findbarkeit: `docs/seo-worklist.md`
-  - aktueller Stand: Live-Sitemap-Audit fuer 117 URLs erstellt, inklusive Root-Startseite und gemeldetem
-    Costa-Rica-Reisepfad
-  - zusaetzlicher interner Link-Crawl fand Legacy-, Redirect- und Systempfade ausserhalb der Sitemap, z. B. `/cart`,
-    `/wildlife`, `/reisen-1` und einen alten 404-Pfad
-  - enthaelt aktuelle Live-SEO-Titel, aktuelle Meta-Beschreibungen, konsistente Vorschlaege, Status je URL und
-    Hinweise zu doppelten Site-Namen, fehlenden Beschreibungen, Legacy-Redirects und auffaelligen Pfaden
-  - Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118 dokumentierte URLs/Seiten stehen auf `passt`;
-    alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live
-  - Die zuvor offenen Reise-Detailseiten `Creta Maris Beach Resort` und `Rio Bebedero` wurden nach Felix' Anpassung
-    live geprueft und stehen jetzt auf `passt`
-  - `/reisen/2024-costarica` wurde nach Felix' Freigabe am 2026-06-01 live geprueft und steht jetzt auf `passt`
-  - `Kohlmeise` (`parusmajor`) ist bewusst geparkt und wird spaeter aktiviert, wenn Felix die Art auf Instagram postet
-  - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
-    kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` liefert weiter 404, ist nach Felix' Korrektur
-    aber nicht mehr aus der Reiseuebersicht verlinkt. Laut Felix existieren keine Altlinks; ein Redirect ist aktuell
-    nicht noetig
-  - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert und am 2026-06-15 nach Felix'
-    Artseiten-Beschreibungsbereinigung erneut live geprueft: `docs/image-alt-audit.md`
-  - Nachpruefung vom 2026-06-14: Der Capri-Link auf `/reisen/2021-neapel` wurde von Felix korrigiert und zeigt jetzt
-    auf `/reisen/2021-neapel/capri`
-  - Vollstaendiger interner Link-Crawl vom 2026-06-14: 117 Sitemap-Seiten geprueft; ausserhalb der Sitemap sind
-    aktuell nur Root `/`, `/cart` und die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` intern verlinkt;
-    aeltere Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden
-  - Aktueller Alt-Text-Befund vom 2026-06-15: Die sichtbaren Beschreibungen der Artseiten-Galerien sind offenbar
-    entfernt, die echten HTML-`alt`-Attribute enthalten aber weiterhin auf allen 44 aktiven Artseiten Dateinamen
-    (1.330 Instanzen).
-  - Felix hat am 2026-06-15 alle Artseiten manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die
-    sichtbare Website-Darstellung gilt der Artseiten-Galerietext damit als erledigt. Reiseseiten-Galerietexte sind
-    bewusst gesetzt und bleiben bestehen. Technische Dateinamen-`alt`-Attribute werden fuer den aktuellen Stand
-    akzeptiert. Artseiten- und Reiseseiten-Alt-Texte gelten damit als erledigt.
-- Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
-  mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
-  `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
-- Asset-Struktur: Phase 5.8 ist abgeschlossen, siehe `docs/asset-structure-plan.md`.
-  Ergebnis: Aktuelle Pfade bleiben bestehen. Artweise Buendelung nach sanitisiertem Namen ist nur eine spaetere
-  Migrationsoption und darf nicht nebenbei umgesetzt werden.
+- Weitere-Arten-Workflow: `docs/add-species-workflow.md`
+- SEO/KI-Findbarkeit und Bild-Alt-Texte: `docs/seo-worklist.md`, `docs/image-alt-audit.md`
+- Mobile Reisegalerien: `docs/squarespace-custom.css`, `docs/css-layout-audit.md`
+- Asset-Strukturentscheidung: `docs/asset-structure-plan.md`
 
-Naechste sinnvolle Schritte:
+Aktuelle Planung:
 
-1. Projektumzug oder Spiegelung auf ein persoenliches Synology NAS spaeter pruefen. Bis dahin bleibt die lokale
-   Arbeitskopie massgeblich; das NAS zuerst als Backup, Mirror oder Testklon bewerten, weil Git- und Pipeline-Laeufe
-   auf Netzlaufwerken durch Latenz, Dateilocks und Sync-Konflikte stoeranfaelliger sein koennen.
-2. Spaeter: Ausruestung, Affiliate, Shop/Kalender, rechtliche Folgepruefung und optional vorberechnete
-   Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen.
+- Phase 6 - Funktionsueberarbeitung:
+  Dokumentation pruefen, monatliches Gesamtaudit definieren, Spektrogramm-Assets konzipieren, artweise
+  Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
+- Phase 7 - Ausbau:
+  Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
+- Phase 8 - Desktop-App / Arten-Explorer:
+  lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
