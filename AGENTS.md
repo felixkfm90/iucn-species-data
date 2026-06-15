@@ -243,6 +243,8 @@ Aktuelle Planung:
   Audit-Grundlage: `docs/monthly-site-audit.md`.
   Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
   Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
+  Spektrogramm-Konzept: `docs/spectrogram-plan.md`; empfohlener spaeterer Zielpfad
+  `sounds/<SafeName>/spectrogram.webp`, keine aktive Frontend-Aenderung.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

@@ -156,6 +156,10 @@ Testpfad zu gefaehrden.
   SEO-Grundfelder, GitHub-Pages-Beispielassets, lokale Assetkonsistenz, NC-Sounds und manuell gepflegte Karten.
   Nicht automatisiert bleiben echte Mobile-/Touch-Tests, visuelle Screenshot-Pruefung, fachliche SEO-Textqualitaet und
   rechtliche Detailpruefung.
+- 6.4 Spektrogramm-Assets fuer Tierstimmen konzipieren: erledigt am 2026-06-15, siehe
+  `docs/spectrogram-plan.md`.
+  Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets unter
+  `sounds/<SafeName>/spectrogram.webp`; keine Browser-Liveberechnung, keine Frontend-Aenderung ohne separaten Patch.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

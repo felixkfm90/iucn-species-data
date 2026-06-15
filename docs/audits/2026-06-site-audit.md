@@ -32,7 +32,6 @@ Stand: 2026-06-15
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
-- Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen sind noch nicht konzipiert.
 - Artweise Asset-Buendelung bleibt eine spaetere Migrationsoption, aber keine aktuelle Umsetzung.
 
 ## Erledigt/geprueft
@@ -88,6 +87,10 @@ Stand: 2026-06-15
   - Skript: `scripts/monthly-site-audit.mjs`
   - Ergebnis im Volltest: 117 Sitemap-URLs, 0 Fetch-Fehler, 0 Non-200, 0 fehlende SEO-Grundfelder,
     0 lokale Asset-Inkonsistenzen, 7 manuelle Karten dokumentiert, 3 NC-Sounds erkannt.
+- Spektrogramm-Konzept am 2026-06-15 dokumentiert:
+  - Datei: `docs/spectrogram-plan.md`
+  - empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
+  - keine aktive Frontend- oder Pipeline-Aenderung im aktuellen Schritt
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -118,5 +121,5 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Spektrogramm-Konzept fuer Tierstimmen ausarbeiten, bevor `species-sound.js` oder Assets geaendert werden.
+1. Spektrogramm-Generator nur nach Freigabe als separaten Prototyp bauen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

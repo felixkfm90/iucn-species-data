@@ -44,6 +44,7 @@ Versionierte Referenzen liegen unter:
 - `docs/squarespace-custom.css`
 - `docs/soundbar.md`
 - `docs/sound-license-review.md`
+- `docs/spectrogram-plan.md`
 - `docs/css-layout-audit.md`
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
@@ -169,6 +170,10 @@ Live-Tests betroffen waeren.
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
 korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
 `Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
+
+Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` konzipiert. Aktueller Stand: keine produktiven
+Spektrogramm-Assets, keine Frontend-Aenderung. Empfohlen ist spaeter ein Generator fuer optionale
+`sounds/<SafeName>/spectrogram.webp`-Dateien mit Fallback auf die bestehende Canvas-Wellenform.
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
 umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter

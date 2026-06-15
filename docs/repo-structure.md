@@ -74,6 +74,7 @@ Dokumentation uebernommen.
   - `repo-structure.md`: diese Struktur- und Workflow-Entscheidung
   - `asset-structure-plan.md`: Bewertung der artweisen Asset-Buendelung und Migrationsentscheidung
   - `manual-map-overrides.md`: manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
+  - `spectrogram-plan.md`: Konzept fuer spaetere Spektrogramm-Assets der Tierstimmen
   - `manual-species-fields.md`: manuell gepflegte Artenfelder
   - `add-species-workflow.md`: manueller Ablauf fuer neue Arten
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
