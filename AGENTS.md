@@ -241,15 +241,18 @@ Phase 5 laeuft. Bereits erledigt:
     entfernt, die echten HTML-`alt`-Attribute enthalten aber weiterhin auf allen 44 aktiven Artseiten Dateinamen
     (1.330 Instanzen). Naechster Test: Alt-Feld oder Galerieeinstellung direkt in Squarespace an einer Artseite
     pruefen; erst danach serienweise umsetzen.
+  - Felix hat am 2026-06-15 alle Artseiten manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die
+    sichtbare Website-Darstellung gilt der Artseiten-Galerietext damit als erledigt. Reiseseiten-Galerietexte sind
+    bewusst gesetzt und bleiben bestehen. Technische Dateinamen-`alt`-Attribute bleiben nur als optionales
+    SEO-/Accessibility-Thema.
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
 
 Naechste sinnvolle Schritte:
 
-1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten. Zuerst an einer Artseite testen, ob das
-   direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt; danach die
-   restlichen Artseiten bzw. kurze Motivtexte pflegen.
+1. Optional: Technische Bild-Alt-Texte spaeter verbessern, wenn SEO-/Accessibility-Alt-Texte wichtiger werden.
+   Sichtbarer Artseiten-Galerietext ist erledigt; Reiseseiten-Texte bleiben bewusst bestehen.
 2. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
    werden, falls externe Altlinks existieren.
 3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.

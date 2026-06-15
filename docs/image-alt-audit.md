@@ -13,6 +13,8 @@ JavaScript-Modulen.
 - Gefundene `<img>`-Instanzen im Live-HTML: 3.512
 - Eindeutige Bild-URLs: 1.479
 - Nachpruefung nach Entfernen der Artseiten-Galeriebeschreibungen: 2026-06-15
+- Nachpruefung nach Felix' manueller Artseiten-Kontrolle: 2026-06-15. Sichtbarer Galerietext ist laut manueller
+  Kontrolle auf den Artseiten entfernt; technische HTML-`alt`-Attribute enthalten weiterhin Dateinamen.
 - Zusaetzlich geprueft: dynamische Bilder in `species-status.js`, `map-loader.js` und `lightbox-zoom.js`
 
 Hinweis: Squarespace gibt viele Bildbloecke mit mehreren `alt`-Attributen im HTML aus. Diese doppelten Attribute wurden
@@ -26,7 +28,7 @@ Logo-Alt-Texte.
 |---|---:|---|---|
 | Alt-Text ist ein Dateiname | 1.448 Instanzen | Hoch | Groesster Pflegeblock. 1.330 Instanzen liegen weiterhin auf allen 44 Artseiten; das Entfernen der Galerie-Beschreibungen hat die Alt-Attribute nicht geleert. |
 | Leerer Alt-Text | 119 Instanzen | Hoch/Mittel | Sehr oft beim Logo oder Bildblock; wenn Bild verlinkt oder inhaltlich relevant ist, setzen. Dekorative Bilder duerfen leer bleiben. |
-| Sehr langer/captionartiger Alt-Text | 634 Instanzen | Mittel | Besonders Reiseunterseiten; Alt-Text kuerzen, lange Erklaerung als Bildunterschrift/Text belassen. |
+| Sehr langer/captionartiger Alt-Text | 634 Instanzen | Niedrig/beabsichtigt | Besonders Reiseunterseiten. Laut Felix sind die Reiseseiten-Texte bewusst so gesetzt und bleiben bestehen. |
 | Fehlerhafte Logo-/KI-Alt-Texte | 0 eindeutige Treffer fuer `FUKON`/`FAXIN` | Niedrig | Die alten OCR-Fehler wurden live nicht mehr gefunden. Logo-Varianten sind teils `FN Wildlife & Travel`, teils leer. |
 | Doppelte Alt-Attribute im Squarespace-HTML | 3.278 Instanzen | Niedrig/technisch | Wahrscheinlich Squarespace-Ausgabe. Nur pruefen, wenn Browser/SEO-Tool dadurch konkrete Probleme meldet. |
 
@@ -55,6 +57,8 @@ Nachpruefung vom 2026-06-15:
 - Insgesamt wurden auf Artseiten 1.330 Dateinamen-Alt-Texte gefunden.
 - Das Entfernen der Galerie-Beschreibungen in Squarespace hat die sichtbaren Beschreibungen reduziert, aber nicht die
   eigentlichen Bild-Alt-Attribute geleert.
+- Felix hat die Artseiten am 2026-06-15 manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die
+  sichtbare Seitendarstellung gilt das damit als erledigt.
 - Wenn Artseiten-Galerien keine sichtbaren oder technischen Galerie-Alt-Texte tragen sollen, muss der Alternativtext
   direkt am Bild/Galerieelement geleert oder die Caption-/Alt-Ausgabe der Galerie anders konfiguriert werden.
 
@@ -78,8 +82,8 @@ Priorisierte Seiten mit besonders vielen Dateinamen-Alt-Texten:
 
 Empfehlung:
 
-- Nicht alle Bilder gleichzeitig bearbeiten. Bei Artseiten zuerst entscheiden, ob Galerie-Alt-Texte bewusst leer
-  bleiben sollen oder ob kurze Motivtexte gepflegt werden.
+- Nicht alle Bilder gleichzeitig bearbeiten. Da die sichtbare Artseiten-Galerie stoerungsfrei ist, nur dann weiter
+  eingreifen, wenn technische SEO-/Barrierefreiheits-Alt-Texte bewusst verbessert werden sollen.
 - Artseiten-Muster, falls Alt-Texte gepflegt werden sollen: `[Artname] ([wissenschaftlicher Name]) [kurze Szene]`, z. B.
   `Eisvogel (Alcedo atthis) auf einem Ast am Gewaesser`.
 - Reiseseiten-Muster: `[Motiv/Ort] in [Reise/Jahr]`, z. B.
@@ -105,11 +109,13 @@ Priorisierte Seiten:
 | `/reisen/2024-costarica/cordillera-de-talamanca` | Reise Detail | 26 | Kuerzere Motivbeschreibung verwenden. |
 | `/reisen/2025-nordthailandlaos/chiangrai` | Reise Detail | 26 | Kuerzere Motivbeschreibung verwenden. |
 
-Empfehlung:
+Einordnung:
 
-- Alt-Text auf ca. 5 bis 15 Woerter kuerzen.
-- Lange Hintergrundinformationen als Bildunterschrift, Absatz oder Galerietext belassen.
-- Beispiel statt langem Infotext: `Regenwald im Corcovado-Nationalpark in Costa Rica 2024`.
+- Laut Felix sind die Reiseseiten-Texte beabsichtigt und sollen beibehalten werden.
+- Diese Treffer sind deshalb kein aktives To-do, solange keine konkreten SEO-, Accessibility- oder Layoutprobleme
+  auftreten.
+- Falls spaeter doch optimiert werden soll: Alt-Text auf ca. 5 bis 15 Woerter kuerzen und lange Hintergrundinformationen
+  als Bildunterschrift, Absatz oder Galerietext belassen.
 
 ## Dynamische Bilder aus den JavaScript-Modulen
 
@@ -125,24 +131,21 @@ Squarespace-Bildpflege.
 
 ## Priorisierte Umsetzung
 
-1. Artseiten-Galerien bewusst entscheiden: Die sichtbaren Beschreibungen sind offenbar entfernt, aber die echten
-   `alt`-Attribute enthalten live weiterhin Dateinamen. Entweder die Alt-Felder direkt am Bild/Galerieelement leeren
-   oder kurze Motivtexte pflegen.
-2. Reise-Dateinamen-Alt-Texte abarbeiten, zuerst `/reisen/2025-island/sonstige` mit 80 Treffern und
-   `/reisen/2025-nordthailandlaos/sonstige` mit 38 Treffern.
-3. Lange Reise-Alt-Texte kuerzen, besonders Costa Rica 2024 und Nordthailand/Laos 2025.
-4. Globales Logo bei der naechsten Header-/Designrunde nur noch optional vereinheitlichen; die alten OCR-Fehler sind
+1. Artseiten-Galerien: sichtbarer Galerietext ist manuell erledigt. Optional spaeter entscheiden, ob die technischen
+   Dateinamen-`alt`-Attribute fuer SEO/Barrierefreiheit durch leere Alt-Texte oder kurze Motivtexte ersetzt werden.
+2. Reise-Dateinamen- und lange Reise-Alt-Texte: bewusst beibehalten; nicht als aktives To-do bearbeiten.
+3. Globales Logo bei der naechsten Header-/Designrunde nur noch optional vereinheitlichen; die alten OCR-Fehler sind
    live nicht mehr sichtbar.
-5. Neue Regel fuer kuenftige Bilder: beim Upload oder Einbau direkt entscheiden, ob das Bild dekorativ ist oder einen
+4. Neue Regel fuer kuenftige Bilder: beim Upload oder Einbau direkt entscheiden, ob das Bild dekorativ ist oder einen
    kurzen, konkreten Alt-Text braucht.
-6. Spaeter in einer kleinen Frontend-Runde die dynamischen Icon-/Lightbox-/Fullscreen-Alt-Texte verbessern.
+5. Spaeter in einer kleinen Frontend-Runde die dynamischen Icon-/Lightbox-/Fullscreen-Alt-Texte verbessern.
 
 ## Umsetzungshinweise fuer Squarespace
 
 - In Bildbloecken und Galerien den Alternativtext direkt am Bild pflegen.
 - Sichtbare Galerie-Beschreibung, Bildtitel, Caption und `alt`-Attribut sind in Squarespace nicht zwingend dasselbe.
   Das Entfernen einer sichtbaren Beschreibung loescht nicht automatisch den HTML-Alt-Text.
-- Fuer die Artseiten zuerst an einer einzelnen Artseite testen: Alt-Feld eines Galerie-Bildes leeren, Seite
+- Fuer die Artseiten nur bei weiterem SEO-/Accessibility-Wunsch testen: Alt-Feld eines Galerie-Bildes leeren, Seite
   veroeffentlichen, live neu pruefen, dann erst serienweise anwenden.
 - Bildtitel nur setzen, wenn Squarespace ihn sichtbar oder sinnvoll als Medienmetadatum verwendet; wichtiger ist der
   Alt-Text.

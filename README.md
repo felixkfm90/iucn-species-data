@@ -124,6 +124,9 @@ Bild-Alt-Texte und optionale Bildtitel wurden in `docs/image-alt-audit.md` audit
 Die sichtbaren Artseiten-Galeriebeschreibungen sind offenbar entfernt, die echten HTML-`alt`-Attribute enthalten live
 aber weiterhin auf allen 44 aktiven Artseiten Dateinamen. Vor einer Serienbereinigung zuerst an einer Artseite testen,
 ob das direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt.
+Felix hat die Artseiten am 2026-06-15 manuell visuell geprueft und sieht keinen Galerietext mehr. Fuer die sichtbare
+Website-Darstellung gilt das Thema damit als erledigt. Reiseseiten-Galerietexte sind bewusst gesetzt und bleiben
+bestehen; technische Dateinamen-Alt-Texte sind nur ein optionales spaeteres SEO-/Accessibility-Thema.
 
 Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder
 geleert.
