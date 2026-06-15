@@ -4,7 +4,8 @@ Stand: 2026-06-15
 
 Ziel: Phase 6.4 bewertet, wie Tierstimmen spaeter mit einer Merlin-aehnlicheren Frequenzdarstellung bzw. einem
 Spektrogramm erweitert werden koennen, ohne die aktuell stabile Soundbar oder den Squarespace-Betrieb zu gefaehrden.
-Es wurde noch kein Frontend- oder Pipeline-Code fuer Spektrogramme aktiviert.
+Es wurde noch kein Frontend- oder Pipeline-Code fuer Spektrogramme aktiviert; der Generator liegt als separates Skript
+bereit.
 
 ## Kurzfazit
 
@@ -16,7 +17,7 @@ unnoetig teuer.
 Empfohlener Weg:
 
 1. Aktuelle Soundbar bleibt unveraendert.
-2. Spaeter ein separates Generator-Skript fuer Spektrogramm-Assets bauen.
+2. Das separate Generator-Skript `scripts/generate-spectrograms.mjs` erzeugt die Spektrogramm-Assets.
 3. Spektrogramme als optionale Dateien unter `sounds/<SafeName>/spectrogram.webp` speichern.
 4. `species-sound.js` erst danach minimal erweitern:
    - Spektrogramm laden, wenn vorhanden
@@ -79,8 +80,8 @@ Nicht empfohlen:
 
 ## Generierung
 
-Lokal ist `ffmpeg` am 2026-06-15 nicht installiert bzw. nicht im PATH. Fuer eine spaetere Umsetzung gibt es zwei
-saubere Optionen:
+`ffmpeg` ist fuer den aktuellen Teststand projektlokal unter `local-tools/ffmpeg/bin/ffmpeg.exe` verfuegbar. Der
+Ordner `local-tools/` ist ignoriert und wird nicht versioniert. Fuer spaetere Laeufe gibt es zwei saubere Optionen:
 
 1. `ffmpeg` lokal installieren und ueber PATH nutzen.
 2. Einen konfigurierbaren Pfad verwenden, z. B. `FFMPEG_PATH`, falls ein portables ffmpeg auf dem Rechner oder NAS
@@ -92,8 +93,9 @@ Generator-Skript:
 scripts/generate-spectrograms.mjs
 ```
 
-Der Generator wurde am 2026-06-15 als Prototyp umgesetzt. Er erzeugt noch keine produktiven Spektrogramme, solange
-`ffmpeg` nicht installiert oder per Pfad angegeben ist.
+Der Generator wurde am 2026-06-15 als Prototyp umgesetzt. Er erzeugt standardmaessig produktive Spektrogramme unter
+`sounds/<SafeName>/spectrogram.webp`, sofern kein `--output-root` gesetzt wird. Fuer Tests wird deshalb bewusst
+`--output-root=Testlauf/spectrograms` genutzt.
 
 Installation von ffmpeg unter Windows:
 
@@ -146,7 +148,7 @@ Moegliche Zielparameter:
 - Hoehe: ca. 220-260 px
 - Format: WebP, ersatzweise PNG
 - Legende/Achsen nicht ins Bild rendern
-- hoher Kontrast, ruhige graue Darstellung, roter Positionsmarker weiter im Frontend
+- hoher Kontrast, ruhige Schwarz-Weiss-/Graustufen-Darstellung, roter Positionsmarker weiter im Frontend
 
 ## Frontend-Integration spaeter
 
@@ -220,4 +222,37 @@ Phase 6.4 ist als Konzept abgeschlossen:
 - keine Squarespace-`?v=`-Aenderung noetig
 - empfohlene Umsetzung: vorberechnete optionale `sounds/<SafeName>/spectrogram.webp`
 - Generator-Prototyp: `scripts/generate-spectrograms.mjs`
-- naechster technischer Schritt: ffmpeg installieren und Testausgabe nach `Testlauf/spectrograms` erzeugen
+- Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt
+- naechster technischer Schritt: entscheiden, ob zuerst alle produktiven Spektrogramm-Assets erzeugt oder zuerst die
+  optionale Frontend-Integration in `species-sound.js` vorbereitet wird
+
+## Generator-Test 2026-06-15
+
+ffmpeg wurde lokal unter `local-tools/ffmpeg/bin/ffmpeg.exe` verfuegbar gemacht. `local-tools/` ist bewusst ignoriert
+und wird nicht versioniert.
+
+Testbefehl:
+
+```powershell
+npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-tools\ffmpeg\bin\ffmpeg.exe --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+```
+
+Ergebnis:
+
+| Art | Ausgabe | Groesse | Status |
+|---|---|---:|---|
+| Amsel | `Testlauf/spectrograms/Amsel/spectrogram.webp` | 20.336 Bytes | erzeugt |
+| Bisamratte | `Testlauf/spectrograms/Bisamratte/spectrogram.webp` | 41.406 Bytes | erzeugt |
+| Graugans | `Testlauf/spectrograms/Graugans/spectrogram.webp` | 10.958 Bytes | erzeugt |
+
+Sichtpruefung:
+
+- Die Spektrogramme werden korrekt erzeugt und sind sehr klein.
+- Schwarz-Weiss bzw. Graustufen sind die bevorzugte Darstellung.
+- `channel` bleibt vorerst der ruhigste ffmpeg-Default fuer diese Richtung.
+- `intensity`, `viridis` und `magma` wurden als Varianten getestet. Sie sind sichtbarer bzw. farbiger, aber fuer die
+  Website voraussichtlich zu dominant.
+- `color=gray` ist kein gueltiger ffmpeg-`showspectrumpic`-Wert.
+
+Die Testdateien wurden nicht produktiv uebernommen. Naechster technischer Schritt waere erst die Frontend-Integration
+mit Fallback in `species-sound.js`.

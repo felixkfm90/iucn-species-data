@@ -164,7 +164,10 @@ Testpfad zu gefaehrden.
   `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen
   `sounds/<SafeName>/<SafeName>.mp3`, unterstuetzen Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`,
   WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`.
-  Dry-Run ist erfolgreich getestet. Echte Ausgabe wartet darauf, dass `ffmpeg` fuer die Codex-Shell sichtbar ist.
+  Dry-Run und echte Testausgabe sind erfolgreich getestet. Am 2026-06-15 wurden fuer `Amsel`, `Graugans` und
+  `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist
+  Schwarz-Weiss/Graustufen; produktive `sounds/<SafeName>/spectrogram.webp`-Assets und Frontend-Integration stehen
+  noch aus.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+local-tools/
 
 # Local logs and environment files
 errors.log

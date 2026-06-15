@@ -254,8 +254,9 @@ Aktuelle Planung:
   Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
   Spektrogramm-Konzept: `docs/spectrogram-plan.md`; empfohlener spaeterer Zielpfad
   `sounds/<SafeName>/spectrogram.webp`, keine aktive Frontend-Aenderung.
-  Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run getestet am 2026-06-15, echte Ausgabe wartet
-  auf ein fuer Codex sichtbares `ffmpeg`.
+  Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run und echte Testausgabe fuer `Amsel`,
+  `Graugans` und `Bisamratte` erfolgreich getestet am 2026-06-15. Zielstil: ruhige Schwarz-Weiss-/Graustufen-
+  Darstellung. `local-tools/` ist fuer projektlokales ffmpeg ignoriert.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

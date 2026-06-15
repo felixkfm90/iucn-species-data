@@ -95,7 +95,8 @@ Stand: 2026-06-15
   - Skript: `scripts/generate-spectrograms.mjs`
   - Befehl: `npm.cmd run --silent generate:spectrograms`
   - Dry-Run: 45 MP3s erkannt, 45 Spektrogramme geplant, 0 fehlende MP3s
-  - echte Ausgabe wartet auf ein fuer Codex sichtbares `ffmpeg`
+  - echte Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt
+  - bevorzugter Zielstil: Schwarz-Weiss/Graustufen
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -126,6 +127,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. `ffmpeg` fuer Codex sichtbar machen und Testausgabe fuer `Amsel`, `Graugans` und `Bisamratte` nach
-   `Testlauf/spectrograms` erzeugen.
+1. Entscheiden, ob als naechster Schritt produktive `sounds/<SafeName>/spectrogram.webp`-Assets fuer alle Arten
+   erzeugt oder zuerst die optionale Frontend-Integration in `species-sound.js` vorbereitet wird.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

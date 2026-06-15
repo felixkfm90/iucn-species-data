@@ -175,7 +175,9 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` konzipiert. Aktueller Stand: keine produktiven
 Spektrogramm-Assets, keine Frontend-Aenderung. Der Generator-Prototyp liegt unter
-`scripts/generate-spectrograms.mjs`. Fuer echte Ausgabe ist `ffmpeg` noetig; ohne ffmpeg funktionieren Dry-Runs.
+`scripts/generate-spectrograms.mjs`. Ein echter Testlauf mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und
+`Bisamratte` war am 2026-06-15 erfolgreich. Zielstil fuer spaetere produktive Assets ist eine ruhige
+Schwarz-Weiss-/Graustufen-Darstellung.
 
 ffmpeg unter Windows installieren:
 
@@ -198,11 +200,19 @@ Dry-Run:
 npm.cmd run --silent generate:spectrograms -- --dry-run
 ```
 
-Testausgabe fuer drei Arten nach `Testlauf/`, sobald ffmpeg installiert ist:
+Testausgabe fuer drei Arten nach `Testlauf/`, wenn ffmpeg im PATH verfuegbar ist:
 
 ```bash
 npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
 ```
+
+Wenn ffmpeg projektlokal liegt:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-tools\ffmpeg\bin\ffmpeg.exe --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+```
+
+`local-tools/` ist ignoriert und wird nicht versioniert.
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
 umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter

@@ -126,10 +126,16 @@ Spektrogramm-Generator:
 npm.cmd run --silent generate:spectrograms -- --dry-run
 ```
 
-Testausgabe nach `Testlauf/`, sobald `ffmpeg` verfuegbar ist:
+Testausgabe nach `Testlauf/`:
 
 ```bash
 npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+```
+
+Mit projektlokalem ffmpeg:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-tools\ffmpeg\bin\ffmpeg.exe --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
 ```
 
 Produktive Spektrogramme duerfen erst nach Sichtpruefung erzeugt und versioniert werden. Der Generator schreibt
