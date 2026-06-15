@@ -151,6 +151,11 @@ Testpfad zu gefaehrden.
   `docs/manual-map-overrides.md`.
   Grund: IUCN liefert fuer `Blaukehlchen`, `Fischertukan`, `Grosstrappe`, `Kernbeisser`, `Reh`, `Rotfuchs` und
   `Waldkauz` korrupte Kartendaten. Diese produktiven Karten sind als manuell gepflegte Overrides dokumentiert.
+- 6.3 Audit-Automatisierung vorbereiten: erledigt am 2026-06-15.
+  `scripts/monthly-site-audit.mjs` und `npm.cmd run --silent audit:site` pruefen Sitemap-/Status, interne Links,
+  SEO-Grundfelder, GitHub-Pages-Beispielassets, lokale Assetkonsistenz, NC-Sounds und manuell gepflegte Karten.
+  Nicht automatisiert bleiben echte Mobile-/Touch-Tests, visuelle Screenshot-Pruefung, fachliche SEO-Textqualitaet und
+  rechtliche Detailpruefung.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

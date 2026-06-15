@@ -167,6 +167,22 @@ Lokale Batch-Dateien:
 
 Die Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
+Monatsaudit:
+
+```bash
+npm.cmd run --silent audit:site
+```
+
+Nur lokaler Repo-/Assetcheck ohne Netzwerk:
+
+```bash
+npm.cmd run --silent audit:site -- --skip-live --skip-pages
+```
+
+Das Audit-Skript `scripts/monthly-site-audit.mjs` schreibt keine Datei, sondern gibt JSON auf stdout aus. Temporare
+Zwischenergebnisse gehoeren nach `Testlauf/` und werden nach Abschluss geloescht oder als zusammengefasster Bericht
+unter `docs/audits/` dokumentiert.
+
 Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
 Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
 
@@ -226,6 +242,7 @@ Aktuelle Planung:
   Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
   Audit-Grundlage: `docs/monthly-site-audit.md`.
   Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
+  Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

@@ -34,8 +34,6 @@ Stand: 2026-06-15
   - `Geoffroy-Klammeraffe`
 - Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen sind noch nicht konzipiert.
 - Artweise Asset-Buendelung bleibt eine spaetere Migrationsoption, aber keine aktuelle Umsetzung.
-- Teile des Monatsaudits sind noch nicht automatisiert. Sinnvolle Kandidaten bleiben Sitemap-/Status-Check, interner
-  Link-Crawl, GitHub-Pages-Assetcheck und Report-Zusammenfassung.
 
 ## Erledigt/geprueft
 
@@ -85,6 +83,11 @@ Stand: 2026-06-15
   - `Reh`
   - `Rotfuchs`
   - `Waldkauz`
+- Audit-Automatisierung am 2026-06-15 eingerichtet und getestet:
+  - Befehl: `npm.cmd run --silent audit:site`
+  - Skript: `scripts/monthly-site-audit.mjs`
+  - Ergebnis im Volltest: 117 Sitemap-URLs, 0 Fetch-Fehler, 0 Non-200, 0 fehlende SEO-Grundfelder,
+    0 lokale Asset-Inkonsistenzen, 7 manuelle Karten dokumentiert, 3 NC-Sounds erkannt.
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -115,7 +118,5 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Audit-Automatisierung vorbereiten, mindestens fuer Sitemap-/Status-Check, internen Link-Crawl und GitHub-Pages-
-   Assetcheck.
-2. Spektrogramm-Konzept fuer Tierstimmen ausarbeiten, bevor `species-sound.js` oder Assets geaendert werden.
-3. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.
+1. Spektrogramm-Konzept fuer Tierstimmen ausarbeiten, bevor `species-sound.js` oder Assets geaendert werden.
+2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

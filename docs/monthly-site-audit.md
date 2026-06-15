@@ -74,12 +74,42 @@ Aktueller Bericht:
 
 - `docs/audits/2026-06-site-audit.md`
 
-## Offene Automatisierung
+## Automatisierung
 
-Phase 6 soll spaeter entscheiden, ob Teile des Audits als Skript laufen sollen. Kandidaten:
+Ein reproduzierbarer Teil des Audits liegt unter `scripts/monthly-site-audit.mjs`.
+
+Auf Windows PowerShell `npm.cmd` verwenden, weil `npm.ps1` je nach Execution-Policy blockiert sein kann.
+
+Vollstaendiger Live-Audit:
+
+```bash
+npm.cmd run --silent audit:site
+```
+
+Nur lokaler Repo-/Assetcheck ohne Netzwerk:
+
+```bash
+npm.cmd run --silent audit:site -- --skip-live --skip-pages
+```
+
+Der Befehl schreibt keine Datei, sondern gibt JSON auf stdout aus. Wenn ein Ergebnis zwischengespeichert werden soll,
+gehoert es waehrend der Arbeit nach `Testlauf/` und wird nach Abschluss wieder geloescht oder gezielt als
+Monatsbericht unter `docs/audits/` zusammengefasst.
+
+Aktuell automatisiert:
 
 - Sitemap-/Status-Check
-- interner Link-Crawl
-- GitHub-Pages-Assetcheck
+- interner Link-Crawl und Pfade ausserhalb der Sitemap
+- SEO-Grundfelder: `<title>` und Meta-Description
+- GitHub-Pages-Check fuer `speciesData.json`, `fehlende_elemente_report.json` und wichtige Beispielassets
+- lokaler Vergleich von `speciesData.json` gegen Karten, Sounds und Credits
 - Report-Zusammenfassung aus `fehlende_elemente_report.json`
-- Vergleich von `speciesData.json` gegen Karten, Sounds und Credits
+- Erkennung aktiver NC-Soundlizenzen aus `sounds/*/credits.json`
+- Pruefung der manuell gepflegten Karten aus `docs/manual-map-overrides.md`
+
+Nicht automatisiert:
+
+- echte Mobile-/Touch-Bedienung
+- visuelle Screenshot-Pruefung
+- fachliche SEO-Textqualitaet
+- rechtliche Detailpruefung

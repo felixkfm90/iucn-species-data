@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "audit:site": "node scripts/monthly-site-audit.mjs"
+  },
   "dependencies": {
     "node-fetch": "^3.3.2"
   }

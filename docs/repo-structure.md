@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-06-01
+Stand: 2026-06-15
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -27,6 +27,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
+| `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 
 ## Muss versioniert bleiben, obwohl generiert
 
@@ -67,9 +68,12 @@ Dokumentation uebernommen.
   - `AGENTS.md`: Arbeitsregeln, aktueller Stand und Uebergabe
 - `docs/`:
   - `roadmap.md`: Phasen, Status, naechste Schritte
+  - `monthly-site-audit.md`: Monatsaudit-Regeln und Audit-Befehl
+  - `audits/`: gespeicherte Monatsberichte
   - `repo-file-audit.md`: Befunde zum Dateibestand
   - `repo-structure.md`: diese Struktur- und Workflow-Entscheidung
   - `asset-structure-plan.md`: Bewertung der artweisen Asset-Buendelung und Migrationsentscheidung
+  - `manual-map-overrides.md`: manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
   - `manual-species-fields.md`: manuell gepflegte Artenfelder
   - `add-species-workflow.md`: manueller Ablauf fuer neue Arten
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
@@ -98,6 +102,21 @@ Empfohlener Normalfall:
 1. `update_local.bat` ausfuehren, wenn ein kompletter Suchlauf mit anschliessendem Push gewuenscht ist.
 2. `update_github_only.bat` ausfuehren, wenn nur der aktuelle Arbeitsstand gepusht werden soll.
 3. Vor dem Push pruefen, dass keine Tokens in Remote-URL, Batch-Dateien oder Logs stehen.
+
+Monatsaudit:
+
+```bash
+npm.cmd run --silent audit:site
+```
+
+Nur lokaler Asset-/Reportcheck ohne Netzwerk:
+
+```bash
+npm.cmd run --silent audit:site -- --skip-live --skip-pages
+```
+
+Der Audit-Befehl schreibt keine Datei. Wenn Zwischenergebnisse gespeichert werden, gehoeren sie nach `Testlauf/` und
+werden nach Abschluss geloescht oder als zusammengefasster Bericht unter `docs/audits/` dokumentiert.
 
 Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS wird separat geprueft. Bis dahin bleibt die
 lokale Arbeitskopie massgeblich. Fuer das NAS ist zuerst ein Backup-/Mirror- oder Testklon-Ansatz sinnvoll, weil Git

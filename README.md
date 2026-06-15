@@ -33,6 +33,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung der sichtbaren Listen
 - `lightbox-zoom.js`: Galerie-/Lightbox-Zoom
+- `scripts/monthly-site-audit.mjs`: reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder,
+  GitHub-Pages-Assets und lokale Assetkonsistenz
 
 ## Squarespace-Integration
 
@@ -102,6 +104,23 @@ Ausfuehren:
 ```bash
 node update.mjs
 ```
+
+## Monatsaudit
+
+Vollstaendiger Live-Audit fuer Squarespace, GitHub Pages und lokale Assets:
+
+```bash
+npm.cmd run --silent audit:site
+```
+
+Nur lokaler Repo-/Assetcheck ohne Netzwerk:
+
+```bash
+npm.cmd run --silent audit:site -- --skip-live --skip-pages
+```
+
+Der Audit-Befehl schreibt keine Datei, sondern gibt JSON aus. Zwischenergebnisse gehoeren bei Bedarf nach
+`Testlauf/`; gespeicherte Monatsberichte liegen unter `docs/audits/`.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
