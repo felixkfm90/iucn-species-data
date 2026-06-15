@@ -96,7 +96,8 @@ Stand: 2026-06-15
   - Befehl: `npm.cmd run --silent generate:spectrograms`
   - Dry-Run: 45 MP3s erkannt, 45 Spektrogramme geplant, 0 fehlende MP3s
   - echte Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt
-  - bevorzugter Zielstil: Schwarz-Weiss/Graustufen
+  - bevorzugter Zielstil im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren,
+    Rand oben und unten, Frequenzbereich bis 12 kHz
 
 ## Nicht erneut manuell geprueft, unveraendert
 

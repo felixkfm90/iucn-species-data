@@ -177,7 +177,8 @@ Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` konzipiert. Ak
 Spektrogramm-Assets, keine Frontend-Aenderung. Der Generator-Prototyp liegt unter
 `scripts/generate-spectrograms.mjs`. Ein echter Testlauf mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und
 `Bisamratte` war am 2026-06-15 erfolgreich. Zielstil fuer spaetere produktive Assets ist eine ruhige
-Schwarz-Weiss-/Graustufen-Darstellung.
+Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren und Rand oben/unten. Diese
+Optik ist jetzt Generator-Default.
 
 ffmpeg unter Windows installieren:
 

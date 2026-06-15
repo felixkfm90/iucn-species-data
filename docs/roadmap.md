@@ -165,8 +165,9 @@ Testpfad zu gefaehrden.
   `sounds/<SafeName>/<SafeName>.mp3`, unterstuetzen Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`,
   WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`.
   Dry-Run und echte Testausgabe sind erfolgreich getestet. Am 2026-06-15 wurden fuer `Amsel`, `Graugans` und
-  `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist
-  Schwarz-Weiss/Graustufen; produktive `sounds/<SafeName>/spectrogram.webp`-Assets und Frontend-Integration stehen
+  `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist jetzt
+  im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten,
+  Frequenzbereich bis 12 kHz. Produktive `sounds/<SafeName>/spectrogram.webp`-Assets und Frontend-Integration stehen
   noch aus.
 
 ## Phase 7 - Desktop-App / Arten-Explorer

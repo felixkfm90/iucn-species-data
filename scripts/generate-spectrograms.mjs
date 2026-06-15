@@ -4,11 +4,18 @@ import { spawn, spawnSync } from "node:child_process";
 
 const DEFAULT_WIDTH = 1000;
 const DEFAULT_HEIGHT = 240;
+const DEFAULT_INNER_HEIGHT = 200;
+const DEFAULT_TOP_PADDING = 20;
 const DEFAULT_FORMAT = "webp";
 const DEFAULT_OUTPUT_NAME = "spectrogram";
 const DEFAULT_COLOR = "channel";
 const DEFAULT_SCALE = "log";
-const DEFAULT_GAIN = 5;
+const DEFAULT_GAIN = 2.5;
+const DEFAULT_STOP = 12000;
+const DEFAULT_DRANGE = 60;
+const DEFAULT_CONTRAST = 1.35;
+const DEFAULT_BRIGHTNESS = 0.08;
+const DEFAULT_QUALITY = 90;
 
 const args = parseArgs(process.argv.slice(2));
 const cwd = process.cwd();
@@ -18,9 +25,24 @@ const format = normalizeFormat(args.format || DEFAULT_FORMAT);
 const outputFileName = `${args.outputName || DEFAULT_OUTPUT_NAME}.${format}`;
 const width = positiveInteger(args.width, DEFAULT_WIDTH, "width");
 const height = positiveInteger(args.height, DEFAULT_HEIGHT, "height");
+const innerHeight = positiveInteger(args.innerHeight, DEFAULT_INNER_HEIGHT, "inner-height");
+const topPadding = nonNegativeInteger(args.topPadding, DEFAULT_TOP_PADDING, "top-padding");
 const gain = Number.isFinite(Number(args.gain)) ? Number(args.gain) : DEFAULT_GAIN;
+const stop = nonNegativeInteger(args.stop, DEFAULT_STOP, "stop");
+const drange = positiveNumber(args.drange, DEFAULT_DRANGE, "drange");
+const contrast = positiveNumber(args.contrast, DEFAULT_CONTRAST, "contrast");
+const brightness = finiteNumber(args.brightness, DEFAULT_BRIGHTNESS, "brightness");
+const quality = positiveInteger(args.quality, DEFAULT_QUALITY, "quality");
 const color = args.color || DEFAULT_COLOR;
 const scale = args.scale || DEFAULT_SCALE;
+
+if (innerHeight > height) {
+  throw new Error("inner-height must be less than or equal to height");
+}
+
+if (topPadding + innerHeight > height) {
+  throw new Error("top-padding plus inner-height must be less than or equal to height");
+}
 
 if (args.help) {
   printHelp();
@@ -52,11 +74,18 @@ const result = {
   options: {
     width,
     height,
+    innerHeight,
+    topPadding,
     format,
     outputFileName,
     color,
     scale,
     gain,
+    stop,
+    drange,
+    contrast,
+    brightness,
+    quality,
     force: Boolean(args.force),
     outputRoot: args.outputRoot || null,
     species: args.species,
@@ -93,9 +122,16 @@ for (const job of jobs) {
     ffmpegPath,
     width,
     height,
+    innerHeight,
+    topPadding,
     color,
     scale,
     gain,
+    stop,
+    drange,
+    contrast,
+    brightness,
+    quality,
     format,
   });
   runResults.push(runResult);
@@ -131,9 +167,16 @@ function parseArgs(rawArgs) {
     else if (arg.startsWith("--format=")) parsed.format = arg.slice("--format=".length);
     else if (arg.startsWith("--width=")) parsed.width = arg.slice("--width=".length);
     else if (arg.startsWith("--height=")) parsed.height = arg.slice("--height=".length);
+    else if (arg.startsWith("--inner-height=")) parsed.innerHeight = arg.slice("--inner-height=".length);
+    else if (arg.startsWith("--top-padding=")) parsed.topPadding = arg.slice("--top-padding=".length);
     else if (arg.startsWith("--color=")) parsed.color = arg.slice("--color=".length);
     else if (arg.startsWith("--scale=")) parsed.scale = arg.slice("--scale=".length);
     else if (arg.startsWith("--gain=")) parsed.gain = arg.slice("--gain=".length);
+    else if (arg.startsWith("--stop=")) parsed.stop = arg.slice("--stop=".length);
+    else if (arg.startsWith("--drange=")) parsed.drange = arg.slice("--drange=".length);
+    else if (arg.startsWith("--contrast=")) parsed.contrast = arg.slice("--contrast=".length);
+    else if (arg.startsWith("--brightness=")) parsed.brightness = arg.slice("--brightness=".length);
+    else if (arg.startsWith("--quality=")) parsed.quality = arg.slice("--quality=".length);
     else throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -152,10 +195,17 @@ Options:
   --output-name=<name>      Base output file name. Default: ${DEFAULT_OUTPUT_NAME}.
   --format=<webp|png>       Output format. Default: ${DEFAULT_FORMAT}.
   --width=<px>              Output width. Default: ${DEFAULT_WIDTH}.
-  --height=<px>             Output height. Default: ${DEFAULT_HEIGHT}.
+  --height=<px>             Final output height. Default: ${DEFAULT_HEIGHT}.
+  --inner-height=<px>       Spectrogram drawing height before padding. Default: ${DEFAULT_INNER_HEIGHT}.
+  --top-padding=<px>        White top padding. Remaining height becomes bottom padding. Default: ${DEFAULT_TOP_PADDING}.
   --color=<ffmpeg-value>    showspectrumpic color option. Default: ${DEFAULT_COLOR}.
   --scale=<ffmpeg-value>    showspectrumpic scale option. Default: ${DEFAULT_SCALE}.
   --gain=<number>           showspectrumpic gain option. Default: ${DEFAULT_GAIN}.
+  --stop=<hz>               Upper frequency limit. 0 lets ffmpeg use the full range. Default: ${DEFAULT_STOP}.
+  --drange=<number>         showspectrumpic dynamic range. Default: ${DEFAULT_DRANGE}.
+  --contrast=<number>       Final grayscale contrast. Default: ${DEFAULT_CONTRAST}.
+  --brightness=<number>     Final grayscale brightness. Default: ${DEFAULT_BRIGHTNESS}.
+  --quality=<number>        WebP quality. Default: ${DEFAULT_QUALITY}.
 
 Examples:
   npm.cmd run --silent generate:spectrograms -- --dry-run
@@ -173,6 +223,27 @@ function positiveInteger(value, fallback, label) {
   if (value === undefined || value === null || value === "") return fallback;
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${label} must be a positive integer`);
+  return parsed;
+}
+
+function nonNegativeInteger(value, fallback, label) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) throw new Error(`${label} must be a non-negative integer`);
+  return parsed;
+}
+
+function positiveNumber(value, fallback, label) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${label} must be a positive number`);
+  return parsed;
+}
+
+function finiteNumber(value, fallback, label) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw new Error(`${label} must be a finite number`);
   return parsed;
 }
 
@@ -265,10 +336,42 @@ function publicJob(job) {
   };
 }
 
-async function generateSpectrogram({ job, ffmpegPath, width, height, color, scale, gain, format }) {
+async function generateSpectrogram({
+  job,
+  ffmpegPath,
+  width,
+  height,
+  innerHeight,
+  topPadding,
+  color,
+  scale,
+  gain,
+  stop,
+  drange,
+  contrast,
+  brightness,
+  quality,
+  format,
+}) {
   fs.mkdirSync(path.dirname(job.outputPath), { recursive: true });
 
-  const filter = `showspectrumpic=s=${width}x${height}:legend=disabled:scale=${scale}:color=${color}:gain=${gain}`;
+  const spectrumOptions = [
+    `s=${width}x${innerHeight}`,
+    "legend=disabled",
+    `scale=${scale}`,
+    `color=${color}`,
+    `gain=${gain}`,
+    `drange=${drange}`,
+  ];
+  if (stop > 0) spectrumOptions.push(`stop=${stop}`);
+
+  const filter = [
+    `showspectrumpic=${spectrumOptions.join(":")}`,
+    "format=gray",
+    "negate",
+    `eq=contrast=${contrast}:brightness=${brightness}`,
+    `pad=${width}:${height}:0:${topPadding}:white`,
+  ].join(",");
   const ffmpegArgs = [
     "-hide_banner",
     "-loglevel",
@@ -283,7 +386,7 @@ async function generateSpectrogram({ job, ffmpegPath, width, height, color, scal
   ];
 
   if (format === "webp") {
-    ffmpegArgs.push("-vcodec", "libwebp", "-quality", "78");
+    ffmpegArgs.push("-vcodec", "libwebp", "-quality", String(quality));
   }
 
   ffmpegArgs.push(job.outputPath);

@@ -139,7 +139,8 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 ```
 
 Produktive Spektrogramme duerfen erst nach Sichtpruefung erzeugt und versioniert werden. Der Generator schreibt
-standardmaessig nach `sounds/<SafeName>/spectrogram.webp`.
+standardmaessig nach `sounds/<SafeName>/spectrogram.webp`. Der Generator-Default ist auf den hellen Zielstil
+eingestellt: weisser Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 12 kHz.
 
 Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS wird separat geprueft. Bis dahin bleibt die
 lokale Arbeitskopie massgeblich. Fuer das NAS ist zuerst ein Backup-/Mirror- oder Testklon-Ansatz sinnvoll, weil Git

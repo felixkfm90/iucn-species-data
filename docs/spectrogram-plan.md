@@ -139,16 +139,21 @@ Aktuelles Verhalten:
 - unterstuetzt `--output-root=Testlauf/spectrograms` fuer Testausgaben
 - schreibt keine Dateien nach `Testlauf/`, ausser explizit per `--output-root`
 - unterstuetzt `--format=webp` und `--format=png`
-- unterstuetzt `--width`, `--height`, `--color`, `--scale` und `--gain`
+- unterstuetzt `--width`, `--height`, `--inner-height`, `--top-padding`, `--color`, `--scale`, `--gain`, `--stop`,
+  `--drange`, `--contrast`, `--brightness` und `--quality`
 - meldet Dateigroessen und Fehler je Art
 
-Moegliche Zielparameter:
+Aktuelle Zielparameter fuer den Merlin-aehnlichen hellen Stil:
 
-- Breite: ca. 1000 px
-- Hoehe: ca. 220-260 px
-- Format: WebP, ersatzweise PNG
+- Ausgabe: 1000 x 240 px
+- innere Spektrogrammhoehe: 200 px
+- oberer Rand: 20 px, unterer Rand ergibt sich automatisch
+- Format: WebP, Qualitaet 90; ersatzweise PNG
+- Frequenzbereich: bis 12 kHz (`--stop=12000`)
+- Dynamik: `--drange=60`, `--gain=2.5`
+- Nachbearbeitung: Graustufen, invertiert auf hellen Hintergrund, `contrast=1.35`, `brightness=0.08`
 - Legende/Achsen nicht ins Bild rendern
-- hoher Kontrast, ruhige Schwarz-Weiss-/Graustufen-Darstellung, roter Positionsmarker weiter im Frontend
+- roter Positionsmarker wird spaeter im Frontend daruebergelegt
 
 ## Frontend-Integration spaeter
 
@@ -222,7 +227,8 @@ Phase 6.4 ist als Konzept abgeschlossen:
 - keine Squarespace-`?v=`-Aenderung noetig
 - empfohlene Umsetzung: vorberechnete optionale `sounds/<SafeName>/spectrogram.webp`
 - Generator-Prototyp: `scripts/generate-spectrograms.mjs`
-- Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt
+- Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt und nach
+  Zielstil angepasst
 - naechster technischer Schritt: entscheiden, ob zuerst alle produktiven Spektrogramm-Assets erzeugt oder zuerst die
   optionale Frontend-Integration in `species-sound.js` vorbereitet wird
 
@@ -241,15 +247,17 @@ Ergebnis:
 
 | Art | Ausgabe | Groesse | Status |
 |---|---|---:|---|
-| Amsel | `Testlauf/spectrograms/Amsel/spectrogram.webp` | 20.336 Bytes | erzeugt |
-| Bisamratte | `Testlauf/spectrograms/Bisamratte/spectrogram.webp` | 41.406 Bytes | erzeugt |
-| Graugans | `Testlauf/spectrograms/Graugans/spectrogram.webp` | 10.958 Bytes | erzeugt |
+| Amsel | `Testlauf/spectrograms/Amsel/spectrogram.webp` | 8.504 Bytes | erzeugt |
+| Bisamratte | `Testlauf/spectrograms/Bisamratte/spectrogram.webp` | 15.150 Bytes | erzeugt |
+| Graugans | `Testlauf/spectrograms/Graugans/spectrogram.webp` | 7.534 Bytes | erzeugt |
 
 Sichtpruefung:
 
 - Die Spektrogramme werden korrekt erzeugt und sind sehr klein.
-- Schwarz-Weiss bzw. Graustufen sind die bevorzugte Darstellung.
-- `channel` bleibt vorerst der ruhigste ffmpeg-Default fuer diese Richtung.
+- Zielstil ist eine helle Schwarz-Weiss-/Graustufen-Darstellung: heller Hintergrund, dunkle Frequenzspuren,
+  sichtbarer Rand oben und unten.
+- `drange=60`, `gain=2.5`, `stop=12000`, Graustufen-Invertierung und leichter Kontrast-/Helligkeitsabgleich sind
+  aktuell der beste Default.
 - `intensity`, `viridis` und `magma` wurden als Varianten getestet. Sie sind sichtbarer bzw. farbiger, aber fuer die
   Website voraussichtlich zu dominant.
 - `color=gray` ist kein gueltiger ffmpeg-`showspectrumpic`-Wert.
