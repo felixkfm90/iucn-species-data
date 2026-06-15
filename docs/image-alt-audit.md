@@ -1,6 +1,6 @@
 # Image Alt Text Audit
 
-Stand: 2026-06-01
+Stand: 2026-06-15
 
 Ziel: Bild-Alternativtexte und optionale Bildtitel der oeffentlichen Squarespace-Seiten pruefen. Der Audit aendert keine
 Live-Seite automatisch; die Umsetzung erfolgt in Squarespace-Bildbloecken, Galerien oder spaeter gezielt in den
@@ -10,8 +10,9 @@ JavaScript-Modulen.
 
 - Quelle: `https://www.fnwildlifetravel.de/sitemap.xml`
 - Gepruefte Sitemap-URLs: 117
-- Gefundene `<img>`-Instanzen im Live-HTML: 3.458
-- Eindeutige Bild-URLs: 1.452
+- Gefundene `<img>`-Instanzen im Live-HTML: 3.512
+- Eindeutige Bild-URLs: 1.479
+- Nachpruefung nach Entfernen der Artseiten-Galeriebeschreibungen: 2026-06-15
 - Zusaetzlich geprueft: dynamische Bilder in `species-status.js`, `map-loader.js` und `lightbox-zoom.js`
 
 Hinweis: Squarespace gibt viele Bildbloecke mit mehreren `alt`-Attributen im HTML aus. Diese doppelten Attribute wurden
@@ -23,49 +24,63 @@ Logo-Alt-Texte.
 
 | Befund | Anzahl | Prioritaet | Einschaetzung |
 |---|---:|---|---|
-| Alt-Text ist ein Dateiname | 1.327 Instanzen | Hoch | Groesster Pflegeblock. Betrifft viele Galerie- und Artseitenbilder. |
-| Leerer Alt-Text | 118 Instanzen | Hoch/Mittel | Sehr oft beim Logo oder Bildblock; wenn Bild verlinkt oder inhaltlich relevant ist, setzen. |
-| Sehr langer/captionartiger Alt-Text | 276 Instanzen | Mittel | Besonders Reiseunterseiten; Alt-Text kuerzen, lange Erklaerung als Bildunterschrift/Text belassen. |
-| Logo-Alt-Texte uneinheitlich oder KI-fehlerhaft | Globaler Logo-Block, auf vielen Seiten | Hoch | Beispiele wie `FUKON`, `FAXIN`, `FOKUS` oder leere Werte. |
-| Doppelte Alt-Attribute im Squarespace-HTML | 3.224 Instanzen | Niedrig/technisch | Wahrscheinlich Squarespace-Ausgabe. Nur pruefen, wenn Browser/SEO-Tool dadurch konkrete Probleme meldet. |
+| Alt-Text ist ein Dateiname | 1.448 Instanzen | Hoch | Groesster Pflegeblock. 1.330 Instanzen liegen weiterhin auf allen 44 Artseiten; das Entfernen der Galerie-Beschreibungen hat die Alt-Attribute nicht geleert. |
+| Leerer Alt-Text | 119 Instanzen | Hoch/Mittel | Sehr oft beim Logo oder Bildblock; wenn Bild verlinkt oder inhaltlich relevant ist, setzen. Dekorative Bilder duerfen leer bleiben. |
+| Sehr langer/captionartiger Alt-Text | 634 Instanzen | Mittel | Besonders Reiseunterseiten; Alt-Text kuerzen, lange Erklaerung als Bildunterschrift/Text belassen. |
+| Fehlerhafte Logo-/KI-Alt-Texte | 0 eindeutige Treffer fuer `FUKON`/`FAXIN` | Niedrig | Die alten OCR-Fehler wurden live nicht mehr gefunden. Logo-Varianten sind teils `FN Wildlife & Travel`, teils leer. |
+| Doppelte Alt-Attribute im Squarespace-HTML | 3.278 Instanzen | Niedrig/technisch | Wahrscheinlich Squarespace-Ausgabe. Nur pruefen, wenn Browser/SEO-Tool dadurch konkrete Probleme meldet. |
 
 ## Wichtigste konkrete Befunde
 
 ### Globaler Logo-Block
 
-Das Bild `FN Wildlife & Travel Logo glow.jpg` kommt auf allen geprueften Seiten vor. Es hat je nach Block/Variante
-leere oder fehlerhafte Alt-Texte, z. B. falsch erkannte Logo-Woerter wie `FUKON`, `FAXIN` oder `FOKUS`.
+Das Bild `FN Wildlife & Travel Logo glow.jpg` kommt auf vielen geprueften Seiten vor. Es hat je nach Block/Variante
+leere Alt-Texte oder `FN Wildlife & Travel`. Die frueher gefundenen falschen Logo-Woerter wie `FUKON` oder `FAXIN`
+wurden am 2026-06-15 live nicht mehr gefunden.
 
 Empfehlung:
 
 - Wenn das Logo klickbar ist: Alt-Text `FN Wildlife & Travel` setzen.
-- Wenn das Logo nur dekorativ ist: Alt-Text leer lassen, aber keine KI-Beschreibung wie `FUKON` oder `FAXIN`.
-- Den globalen/header-/footer-nahen Logo-Block zuerst korrigieren, weil eine Aenderung viele Seiten betreffen kann.
+- Wenn das Logo nur dekorativ ist: Alt-Text leer lassen.
+- Logo ist aktuell kein Hauptblocker mehr; nur bei der naechsten globalen Design-/Header-Pruefung mitpruefen.
 
 ### Dateinamen als Alt-Text
 
 Viele Bilder nutzen den Dateinamen als Alt-Text. Das ist fuer Barrierefreiheit und Bildersuche schwach, weil Dateinamen
 wie `_7R56797-Verbessert-RR-Bearbeitet.jpg` oder `20190413_112617.JPG` kein Motiv beschreiben.
 
+Nachpruefung vom 2026-06-15:
+
+- Alle 44 aktiven Artseiten haben weiterhin Dateinamen als Alt-Text in den Galerie-Bildern.
+- Insgesamt wurden auf Artseiten 1.330 Dateinamen-Alt-Texte gefunden.
+- Das Entfernen der Galerie-Beschreibungen in Squarespace hat die sichtbaren Beschreibungen reduziert, aber nicht die
+  eigentlichen Bild-Alt-Attribute geleert.
+- Wenn Artseiten-Galerien keine sichtbaren oder technischen Galerie-Alt-Texte tragen sollen, muss der Alternativtext
+  direkt am Bild/Galerieelement geleert oder die Caption-/Alt-Ausgabe der Galerie anders konfiguriert werden.
+
 Priorisierte Seiten mit besonders vielen Dateinamen-Alt-Texten:
 
 | Seite | Typ | Dateiname-Alt-Texte | Hinweis |
 |---|---|---:|---|
-| `/reisen/2025-island/sonstige` | Reise Detail | 81 | Groesster Einzelblock im Audit. |
-| `/wildlife/heimische-tierwelt/alcedoatthis` | Artseite | 79 | Eisvogel-Artseite priorisieren. |
-| `/wildlife/heimische-tierwelt/capreoluscapreolus` | Artseite | 53 | Reh-Artseite priorisieren. |
-| `/wildlife/island/fraterculaarctica` | Artseite | 49 | Papageientaucher-Artseite priorisieren. |
-| `/wildlife/heimische-tierwelt/phalacrocoraxcarbo` | Artseite | 45 | Kormoran-Artseite priorisieren. |
-| `/wildlife/heimische-tierwelt/ardeacinerea` | Artseite | 43 | Aktive Graureiher-Artseite nachziehen. |
-| `/wildlife/costarica/alouattapalliata` | Artseite | 41 | Mantelbruellaffe-Artseite priorisieren. |
-| `/wildlife/heimische-tierwelt/anseranser` | Artseite | 41 | Graugans-Artseite priorisieren. |
-| `/wildlife/heimische-tierwelt/milvusmilvus` | Artseite | 41 | Rotmilan-Artseite priorisieren. |
-| `/reisen/2025-nordthailandlaos/sonstige` | Reise Detail | 39 | Reisegalerie nachziehen. |
+| `/wildlife/heimische-tierwelt/lusciniasvecica` | Artseite | 88 | Blaukehlchen-Artseite priorisieren, falls Artseiten-Galerien bereinigt werden sollen. |
+| `/reisen/2025-island/sonstige` | Reise Detail | 80 | Groesster Reise-Dateinamenblock. |
+| `/wildlife/heimische-tierwelt/alcedoatthis` | Artseite | 78 | Eisvogel-Artseite priorisieren, falls Artseiten-Galerien bereinigt werden sollen. |
+| `/wildlife/heimische-tierwelt/cyanistescaeruleus` | Artseite | 74 | Blaumeise-Artseite priorisieren, falls Artseiten-Galerien bereinigt werden sollen. |
+| `/wildlife/heimische-tierwelt/panurusbiarmicus` | Artseite | 56 | Bartmeise-Artseite priorisieren. |
+| `/wildlife/heimische-tierwelt/capreoluscapreolus` | Artseite | 52 | Reh-Artseite priorisieren. |
+| `/wildlife/island/fraterculaarctica` | Artseite | 48 | Papageientaucher-Artseite priorisieren. |
+| `/wildlife/heimische-tierwelt/phalacrocoraxcarbo` | Artseite | 44 | Kormoran-Artseite priorisieren. |
+| `/wildlife/heimische-tierwelt/ardeacinerea` | Artseite | 42 | Graureiher-Artseite priorisieren. |
+| `/wildlife/heimische-tierwelt/anseranser` | Artseite | 40 | Graugans-Artseite priorisieren. |
+| `/wildlife/costarica/alouattapalliata` | Artseite | 40 | Mantelbruellaffe-Artseite priorisieren. |
+| `/wildlife/heimische-tierwelt/milvusmilvus` | Artseite | 40 | Rotmilan-Artseite priorisieren. |
+| `/reisen/2025-nordthailandlaos/sonstige` | Reise Detail | 38 | Zweiter Reise-Dateinamenblock. |
 
 Empfehlung:
 
-- Nicht alle Bilder gleichzeitig bearbeiten. Zuerst sichtbare Hero-/Teaser-/Galerie-Einstiegsbilder, dann Galerien.
-- Artseiten-Muster: `[Artname] ([wissenschaftlicher Name]) [kurze Szene]`, z. B.
+- Nicht alle Bilder gleichzeitig bearbeiten. Bei Artseiten zuerst entscheiden, ob Galerie-Alt-Texte bewusst leer
+  bleiben sollen oder ob kurze Motivtexte gepflegt werden.
+- Artseiten-Muster, falls Alt-Texte gepflegt werden sollen: `[Artname] ([wissenschaftlicher Name]) [kurze Szene]`, z. B.
   `Eisvogel (Alcedo atthis) auf einem Ast am Gewaesser`.
 - Reiseseiten-Muster: `[Motiv/Ort] in [Reise/Jahr]`, z. B.
   `Schwarzer Strand an der Suedkueste Islands 2025`.
@@ -79,12 +94,16 @@ Priorisierte Seiten:
 
 | Seite | Typ | Lange Alt-Texte | Hinweis |
 |---|---|---:|---|
-| `/reisen/2024-costarica/corcovado` | Reise Detail | 30 | Viele Beschreibungen wirken wie Infotext. |
-| `/reisen/2024-costarica/tortuguero` | Reise Detail | 24 | Kuerzere Motivbeschreibung verwenden. |
-| `/reisen/2024-costarica/vulkanarenal` | Reise Detail | 24 | Kuerzere Motivbeschreibung verwenden. |
-| `/reisen/2025-nordthailandlaos/chiangmai` | Reise Detail | 24 | Kuerzere Motivbeschreibung verwenden. |
-| `/reisen/2024-costarica/puntarenas` | Reise Detail | 22 | Kuerzere Motivbeschreibung verwenden. |
-| `/reisen/2025-nordthailandlaos/chiangrai` | Reise Detail | 20 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/tortuguero` | Reise Detail | 68 | Viele Beschreibungen wirken wie Infotext. |
+| `/reisen/2024-costarica/corcovado` | Reise Detail | 66 | Viele Beschreibungen wirken wie Infotext. |
+| `/reisen/2024-costarica/vulkanarenal` | Reise Detail | 56 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/bocatapada` | Reise Detail | 54 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/tirimbina` | Reise Detail | 42 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2025-nordthailandlaos/chiangmai` | Reise Detail | 32 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/rincondelavieja` | Reise Detail | 32 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/puntarenas` | Reise Detail | 30 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2024-costarica/cordillera-de-talamanca` | Reise Detail | 26 | Kuerzere Motivbeschreibung verwenden. |
+| `/reisen/2025-nordthailandlaos/chiangrai` | Reise Detail | 26 | Kuerzere Motivbeschreibung verwenden. |
 
 Empfehlung:
 
@@ -106,16 +125,25 @@ Squarespace-Bildpflege.
 
 ## Priorisierte Umsetzung
 
-1. Globales Logo korrigieren: Alt-Text vereinheitlichen oder dekorativ leer lassen, keine KI-Fehltexte.
-2. Seiten mit vielen Dateinamen-Alt-Texten abarbeiten, zuerst `/reisen/2025-island/sonstige` und die oben genannten
-   Artseiten.
+1. Artseiten-Galerien bewusst entscheiden: Die sichtbaren Beschreibungen sind offenbar entfernt, aber die echten
+   `alt`-Attribute enthalten live weiterhin Dateinamen. Entweder die Alt-Felder direkt am Bild/Galerieelement leeren
+   oder kurze Motivtexte pflegen.
+2. Reise-Dateinamen-Alt-Texte abarbeiten, zuerst `/reisen/2025-island/sonstige` mit 80 Treffern und
+   `/reisen/2025-nordthailandlaos/sonstige` mit 38 Treffern.
 3. Lange Reise-Alt-Texte kuerzen, besonders Costa Rica 2024 und Nordthailand/Laos 2025.
-4. Neue Regel fuer kuenftige Bilder: beim Upload oder Einbau direkt einen kurzen, konkreten Alt-Text setzen.
-5. Spaeter in einer kleinen Frontend-Runde die dynamischen Icon-/Lightbox-/Fullscreen-Alt-Texte verbessern.
+4. Globales Logo bei der naechsten Header-/Designrunde nur noch optional vereinheitlichen; die alten OCR-Fehler sind
+   live nicht mehr sichtbar.
+5. Neue Regel fuer kuenftige Bilder: beim Upload oder Einbau direkt entscheiden, ob das Bild dekorativ ist oder einen
+   kurzen, konkreten Alt-Text braucht.
+6. Spaeter in einer kleinen Frontend-Runde die dynamischen Icon-/Lightbox-/Fullscreen-Alt-Texte verbessern.
 
 ## Umsetzungshinweise fuer Squarespace
 
 - In Bildbloecken und Galerien den Alternativtext direkt am Bild pflegen.
+- Sichtbare Galerie-Beschreibung, Bildtitel, Caption und `alt`-Attribut sind in Squarespace nicht zwingend dasselbe.
+  Das Entfernen einer sichtbaren Beschreibung loescht nicht automatisch den HTML-Alt-Text.
+- Fuer die Artseiten zuerst an einer einzelnen Artseite testen: Alt-Feld eines Galerie-Bildes leeren, Seite
+  veroeffentlichen, live neu pruefen, dann erst serienweise anwenden.
 - Bildtitel nur setzen, wenn Squarespace ihn sichtbar oder sinnvoll als Medienmetadatum verwendet; wichtiger ist der
   Alt-Text.
 - Keine reinen Dateinamen, keine langen SEO-Texte, kein Keyword-Stuffing.

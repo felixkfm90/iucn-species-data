@@ -120,8 +120,10 @@ der Worklist markiert. `Kohlmeise` ist bewusst geparkt und wird spaeter aktivier
 postet. Die Costa-Rica-Uebersicht, Graureiher-Artseite und korrigierte Griechenland-Verlinkung wurden am 2026-06-01
 live nachgeprueft und passen. Am 2026-06-14 wurde ein Vollcrawl der internen Links durchgefuehrt; der gefundene
 Capri-Linkfehler wurde von Felix korrigiert und live nachgeprueft. Details stehen in `docs/seo-worklist.md`.
-Bild-Alt-Texte und optionale Bildtitel wurden in
-`docs/image-alt-audit.md` auditiert.
+Bild-Alt-Texte und optionale Bildtitel wurden in `docs/image-alt-audit.md` auditiert. Nachpruefung vom 2026-06-15:
+Die sichtbaren Artseiten-Galeriebeschreibungen sind offenbar entfernt, die echten HTML-`alt`-Attribute enthalten live
+aber weiterhin auf allen 44 aktiven Artseiten Dateinamen. Vor einer Serienbereinigung zuerst an einer Artseite testen,
+ob das direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt.
 
 Temporare Arbeitsdateien gehoeren in `Testlauf/`. Der Ordner ist ignoriert und wird nach Abschluss eines Themas wieder
 geleert.

@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-01
+Stand: 2026-06-15
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -230,20 +230,26 @@ Phase 5 laeuft. Bereits erledigt:
   - Legacy-/Beacon-Pfade sind erklaert: mehrere sind nicht intern verlinkt, `/reisen-1`, `/wildlife` und `/cart`
     kommen aus Squarespace-Navigation/Systemlinks; `/2019-griechenland` liefert weiter 404, ist nach Felix' Korrektur
     aber nicht mehr aus der Reiseuebersicht verlinkt und bleibt nur als optionales Redirect-Thema fuer externe Altlinks
-  - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert: `docs/image-alt-audit.md`
+  - Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert und am 2026-06-15 nach Felix'
+    Artseiten-Beschreibungsbereinigung erneut live geprueft: `docs/image-alt-audit.md`
   - Nachpruefung vom 2026-06-14: Der Capri-Link auf `/reisen/2021-neapel` wurde von Felix korrigiert und zeigt jetzt
     auf `/reisen/2021-neapel/capri`
   - Vollstaendiger interner Link-Crawl vom 2026-06-14: 117 Sitemap-Seiten geprueft; ausserhalb der Sitemap sind
     aktuell nur Root `/`, `/cart` und die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` intern verlinkt;
     aeltere Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden
+  - Aktueller Alt-Text-Befund vom 2026-06-15: Die sichtbaren Beschreibungen der Artseiten-Galerien sind offenbar
+    entfernt, die echten HTML-`alt`-Attribute enthalten aber weiterhin auf allen 44 aktiven Artseiten Dateinamen
+    (1.330 Instanzen). Naechster Test: Alt-Feld oder Galerieeinstellung direkt in Squarespace an einer Artseite
+    pruefen; erst danach serienweise umsetzen.
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
 
 Naechste sinnvolle Schritte:
 
-1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
-   Alt-Texte und lange/captionartige Alt-Texte.
+1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten. Zuerst an einer Artseite testen, ob das
+   direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt; danach die
+   restlichen Artseiten bzw. kurze Motivtexte pflegen.
 2. Optional kann der alte Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abgefangen
    werden, falls externe Altlinks existieren.
 3. Asset-Struktur pro Art nach sanitisiertem Namen konzipieren.

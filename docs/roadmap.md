@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-01
+Stand: 2026-06-15
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -86,6 +86,10 @@ Status: in Arbeit
   pruefte 117 Sitemap-Seiten und fand ausserhalb der Sitemap nur Root `/`, `/cart` und die globalen Squarespace-Ordner
   `/reisen-1` und `/wildlife`.
   Aeltere Beacon-/Folder-Pfade wurden aktuell nicht mehr intern verlinkt gefunden.
+  Nachpruefung der Bild-Alt-Texte vom 2026-06-15: Die sichtbaren Artseiten-Galeriebeschreibungen wurden offenbar
+  entfernt, die echten HTML-`alt`-Attribute enthalten live aber weiterhin auf allen 44 aktiven Artseiten Dateinamen
+  (1.330 Instanzen). Das naechste To-do ist deshalb die direkte Alt-Feld-/Galerieeinstellung in Squarespace, nicht
+  eine Code-Aenderung im Repository.
 - Mobile Reisegalerien: Am 2026-06-14 wurde im Squarespace Custom CSS ein Mobile-only-Override ergaenzt. Grid-Galerien
   mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert. Dokumentiert in
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
@@ -100,8 +104,9 @@ Status: in Arbeit
 
 ### Phase 5 - Vorschlag fuer die naechsten Schritte
 
-1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten, zuerst globales Logo, danach Dateinamen-
-   Alt-Texte und lange/captionartige Alt-Texte.
+1. Bild-Alt-Texte/Bildtitel umsetzen: `docs/image-alt-audit.md` abarbeiten. Zuerst an einer Artseite testen, ob das
+   direkte Leeren des Bild-Alt-Feldes oder eine Galerieeinstellung die Dateinamen-Alt-Texte entfernt; danach die
+   restlichen Artseiten bzw. kurze Motivtexte pflegen.
 2. Optional: alten Legacy-Pfad `/2019-griechenland` per Redirect auf `/reisen/2019-griechenland` abfangen, falls externe
    Altlinks existieren.
 3. Asset-Struktur bewerten: pro Art Buendelung nach sanitisiertem Namen konzipieren, aber erst nach stabilem Betrieb migrieren.

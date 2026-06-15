@@ -1,6 +1,6 @@
 # SEO-Worklist
 
-Stand: 2026-06-14
+Stand: 2026-06-15
 
 Ziel: aktuelle Live-SEO-Titel und Meta-Beschreibungen aller per Sitemap auffindbaren Seiten prüfen und konsistente Vorschläge dokumentieren. Diese Datei ist die Arbeitsliste für Squarespace; sie ändert keine Live-Seiten automatisch.
 
@@ -49,15 +49,15 @@ Auffälligkeiten:
 - Viele Reise-Unterseiten waren im ersten Audit ohne Meta-Beschreibung; laut Live-Audit vom 2026-05-30 sind sie jetzt fast vollständig gepflegt.
 - Artseiten folgen live dem Muster `[Deutscher Name] ([Wissenschaftlicher Name]) | Artenporträt`. Beacon-Marketingtexte vermeiden.
 - `/reisen/2024-costarica` lieferte im Live-Audit 404, ist nach Felix' Freigabe aber seit der Nachprüfung vom 2026-06-01 öffentlich erreichbar und passt.
-- `/2021-neapel/capri` liefert am 2026-06-14 weiter 404. Der korrekte Zielpfad `/reisen/2021-neapel/capri` passt,
-  aber auf `/reisen/2021-neapel` verlinkt der Button `Weitere Bilder` im Capri-Listeneintrag noch auf den alten Pfad.
+- `/2021-neapel/capri` liefert als alter Pfad weiter 404. Der korrekte Zielpfad `/reisen/2021-neapel/capri` passt;
+  Felix hat den falschen Capri-Link auf `/reisen/2021-neapel` korrigiert.
 - Intern verlinkte Pfade außerhalb der Sitemap sind im Legacy-Abschnitt aufgeführt. Diese nicht doppelt als normale SEO-Seiten pflegen, sondern Redirect, Linkziel, Sichtbarkeit oder Squarespace-Systemfunktion prüfen.
 - Nachprüfung 2026-06-14 nach Capri-Korrektur: 117 Sitemap-Seiten geprüft; im aktuellen Live-HTML sind außerhalb der
   Sitemap nur Root `/`, `/cart` und die globalen Squarespace-Ordner `/reisen-1` und `/wildlife` intern verlinkt. Der
   falsche Capri-Link wurde von Felix korrigiert und zeigt jetzt auf `/reisen/2021-neapel/capri`; die älteren
   Beacon-/Folder-Pfade aus dem ersten Audit wurden dabei nicht mehr als interne Links gefunden.
-- Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 separat auditiert. Ergebnis und Priorisierung stehen in
-  `docs/image-alt-audit.md`.
+- Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 separat auditiert und am 2026-06-15 nach Entfernen der
+  Artseiten-Galeriebeschreibungen erneut live geprueft. Ergebnis und Priorisierung stehen in `docs/image-alt-audit.md`.
 
 ## Manueller Umsetzungsstand
 
@@ -71,7 +71,7 @@ Stand laut Felix am 2026-05-29/2026-05-30:
 - Wildlife-Artseiten wurden laut Felix am 2026-05-30 in Squarespace eingetragen; alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten stehen nach Live-Audit und Nachprüfung auf `passt`.
 
 Diese umgesetzten Bereiche nicht erneut in Beacon/Squarespace bearbeiten. Nächster Schritt sind die
-Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`.
+Bild-Alt-Text-Arbeiten aus `docs/image-alt-audit.md`, beginnend mit einem Einzeltest an einer Artseiten-Galerie.
 
 ## Basis
 
@@ -258,7 +258,7 @@ Nachprüfung 2026-06-14:
 
 ## Bild-Alt-Texte und Bildtitel
 
-Status: Audit durchgefuehrt, Details in `docs/image-alt-audit.md`.
+Status: Audit durchgefuehrt und am 2026-06-15 nachgeprueft, Details in `docs/image-alt-audit.md`.
 
 Ziel: Bild-Alternativtexte verbessern Barrierefreiheit, Bildersuche und KI-/Suchmaschinen-Verständlichkeit. Das ist ein
 eigener Arbeitsschritt, weil die meisten Fotos in Squarespace-Bildblöcken und Galerien gepflegt werden, nicht in den
@@ -275,11 +275,14 @@ Empfohlene Regeln:
   `Küstenlandschaft an der Amalfiküste 2021`.
 - Bildtitel nur ergänzen, wenn Squarespace ihn sichtbar oder sinnvoll als Medienmetadatum nutzt; der Alt-Text ist
   wichtiger als ein reiner Titel.
+- Sichtbare Galerie-Beschreibung, Bildtitel, Caption und `alt`-Attribut sind in Squarespace nicht zwingend dasselbe.
+  Das Entfernen der Artseiten-Beschreibungen hat die HTML-`alt`-Attribute live nicht geleert.
 - Dynamische Bilder aus den JS-Modulen, z. B. Karten und Status-/Trend-Icons, später separat prüfen und bei Bedarf im
   jeweiligen Modul mit sinnvollen `alt`-Attributen versehen.
 
-Nächster Schritt: Squarespace-Bildbloecke und Galerien anhand von `docs/image-alt-audit.md` abarbeiten. Erste
-Prioritaet: globaler Logo-Alt-Text, danach Dateinamen-Alt-Texte und lange/captionartige Alt-Texte.
+Nächster Schritt: An einer Artseiten-Galerie testen, ob das direkte Leeren des Bild-Alt-Feldes oder eine
+Galerieeinstellung die Dateinamen-Alt-Texte entfernt. Danach die Artseiten serienweise bereinigen oder kurze
+Motivtexte pflegen. Reise-Dateinamen-Alt-Texte und lange/captionartige Reise-Alt-Texte folgen danach.
 
 ## Definition of Done für diesen SEO-Schritt
 
