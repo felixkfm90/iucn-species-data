@@ -28,6 +28,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
+| `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `sounds/<SafeName>/spectrogram.webp`. |
 
 ## Muss versioniert bleiben, obwohl generiert
 
@@ -118,6 +119,21 @@ npm.cmd run --silent audit:site -- --skip-live --skip-pages
 
 Der Audit-Befehl schreibt keine Datei. Wenn Zwischenergebnisse gespeichert werden, gehoeren sie nach `Testlauf/` und
 werden nach Abschluss geloescht oder als zusammengefasster Bericht unter `docs/audits/` dokumentiert.
+
+Spektrogramm-Generator:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --dry-run
+```
+
+Testausgabe nach `Testlauf/`, sobald `ffmpeg` verfuegbar ist:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+```
+
+Produktive Spektrogramme duerfen erst nach Sichtpruefung erzeugt und versioniert werden. Der Generator schreibt
+standardmaessig nach `sounds/<SafeName>/spectrogram.webp`.
 
 Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS wird separat geprueft. Bis dahin bleibt die
 lokale Arbeitskopie massgeblich. Fuer das NAS ist zuerst ein Backup-/Mirror- oder Testklon-Ansatz sinnvoll, weil Git

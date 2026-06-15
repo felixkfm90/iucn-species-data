@@ -35,6 +35,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `lightbox-zoom.js`: Galerie-/Lightbox-Zoom
 - `scripts/monthly-site-audit.mjs`: reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder,
   GitHub-Pages-Assets und lokale Assetkonsistenz
+- `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
+  `sounds/<SafeName>/spectrogram.webp`
 
 ## Squarespace-Integration
 
@@ -172,8 +174,35 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 `Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` konzipiert. Aktueller Stand: keine produktiven
-Spektrogramm-Assets, keine Frontend-Aenderung. Empfohlen ist spaeter ein Generator fuer optionale
-`sounds/<SafeName>/spectrogram.webp`-Dateien mit Fallback auf die bestehende Canvas-Wellenform.
+Spektrogramm-Assets, keine Frontend-Aenderung. Der Generator-Prototyp liegt unter
+`scripts/generate-spectrograms.mjs`. Fuer echte Ausgabe ist `ffmpeg` noetig; ohne ffmpeg funktionieren Dry-Runs.
+
+ffmpeg unter Windows installieren:
+
+```bash
+winget install "FFmpeg (Essentials Build)"
+```
+
+Danach neues Terminal oeffnen und pruefen:
+
+```bash
+ffmpeg -version
+```
+
+Der Bindestrich ist wichtig. `ffmpeg version` ist ein falscher Testbefehl und fuehrt zu einem Ausgabedatei-Fehler.
+FFmpeg nicht direkt in `C:\Windows\System32` ablegen; besser ist ein Tool-Pfad wie `C:\Tools\ffmpeg\bin`.
+
+Dry-Run:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --dry-run
+```
+
+Testausgabe fuer drei Arten nach `Testlauf/`, sobald ffmpeg installiert ist:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+```
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
 umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter

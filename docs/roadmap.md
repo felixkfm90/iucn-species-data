@@ -160,6 +160,11 @@ Testpfad zu gefaehrden.
   `docs/spectrogram-plan.md`.
   Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets unter
   `sounds/<SafeName>/spectrogram.webp`; keine Browser-Liveberechnung, keine Frontend-Aenderung ohne separaten Patch.
+- 6.5 Spektrogramm-Generator-Prototyp bauen: erledigt am 2026-06-15.
+  `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen
+  `sounds/<SafeName>/<SafeName>.mp3`, unterstuetzen Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`,
+  WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`.
+  Dry-Run ist erfolgreich getestet. Echte Ausgabe wartet darauf, dass `ffmpeg` fuer die Codex-Shell sichtbar ist.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

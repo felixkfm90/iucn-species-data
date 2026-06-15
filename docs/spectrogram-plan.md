@@ -86,20 +86,58 @@ saubere Optionen:
 2. Einen konfigurierbaren Pfad verwenden, z. B. `FFMPEG_PATH`, falls ein portables ffmpeg auf dem Rechner oder NAS
    liegt.
 
-Spaeteres Generator-Skript:
+Generator-Skript:
 
 ```text
 scripts/generate-spectrograms.mjs
 ```
 
-Gewuenschtes Verhalten:
+Der Generator wurde am 2026-06-15 als Prototyp umgesetzt. Er erzeugt noch keine produktiven Spektrogramme, solange
+`ffmpeg` nicht installiert oder per Pfad angegeben ist.
+
+Installation von ffmpeg unter Windows:
+
+```powershell
+winget install "FFmpeg (Essentials Build)"
+```
+
+Danach ein neues Terminal oeffnen und pruefen:
+
+```powershell
+ffmpeg -version
+```
+
+Wichtig: `ffmpeg version` ist nicht dasselbe. Ohne Bindestrich interpretiert ffmpeg `version` als Ausgabedatei und
+meldet danach einen Ausgabeformat-Fehler.
+
+Nicht empfohlen ist eine Installation direkt nach `C:\Windows\System32`. Wenn ffmpeg dort manuell abgelegt wurde, nur
+die FFmpeg-Dateien entfernen (`ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`) und danach einen normalen Tool-Pfad wie
+`C:\Tools\ffmpeg\bin` verwenden.
+
+Alternativ kann ein portables ffmpeg genutzt werden:
+
+```powershell
+$env:FFMPEG_PATH = "C:\Tools\ffmpeg\bin\ffmpeg.exe"
+```
+
+oder beim Aufruf:
+
+```powershell
+npm.cmd run --silent generate:spectrograms -- --ffmpeg=C:\Tools\ffmpeg\bin\ffmpeg.exe
+```
+
+Aktuelles Verhalten:
 
 - scannt `sounds/<SafeName>/<SafeName>.mp3`
 - erzeugt `sounds/<SafeName>/spectrogram.webp`
 - ueberspringt vorhandene Spektrogramme, wenn sie neuer als die MP3 sind
 - unterstuetzt `--force`
 - unterstuetzt `--species=<SafeName>` fuer Einzeltests
-- schreibt keine Dateien nach `Testlauf/`, ausser explizit bei Test-/Trockenlauf
+- unterstuetzt `--dry-run`
+- unterstuetzt `--output-root=Testlauf/spectrograms` fuer Testausgaben
+- schreibt keine Dateien nach `Testlauf/`, ausser explizit per `--output-root`
+- unterstuetzt `--format=webp` und `--format=png`
+- unterstuetzt `--width`, `--height`, `--color`, `--scale` und `--gain`
 - meldet Dateigroessen und Fehler je Art
 
 Moegliche Zielparameter:
@@ -145,23 +183,31 @@ Grobe Erwartung:
 
 ## Testplan fuer spaetere Umsetzung
 
-1. Generator nur fuer 3 Testarten laufen lassen:
+1. ffmpeg installieren oder `FFMPEG_PATH` setzen.
+2. Generator zunaechst als Dry-Run pruefen:
+   ```powershell
+   npm.cmd run --silent generate:spectrograms -- --dry-run --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+   ```
+3. Generator nur fuer 3 Testarten laufen lassen:
    - `Amsel` als Standardfall
    - `Graugans` als sehr grosse MP3
    - `Bisamratte` als NC-Fall
-2. Dateien und Groessen pruefen.
-3. Testausgabe zunaechst nach `Testlauf/`, dann erst produktiv nach `sounds/<SafeName>/`.
-4. `species-sound.js` mit Fallback testen:
+   ```powershell
+   npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+   ```
+4. Dateien und Groessen pruefen.
+5. Erst nach Sichtpruefung produktiv nach `sounds/<SafeName>/` schreiben.
+6. `species-sound.js` mit Fallback testen, sobald die Frontend-Integration gebaut wird:
    - Art mit Spektrogramm
    - Art ohne Spektrogramm
    - fehlende MP3
    - NC-Sound ohne sichtbaren Warnhinweis
-5. Desktop und Mobile pruefen:
+7. Desktop und Mobile pruefen:
    - Layout passt in Container
    - roter Positionsmarker laeuft synchron
    - Scrubbing funktioniert
    - keine spuerbare Verzoegerung beim Seitenaufruf
-6. Nach GitHub-Pages-Deploy Squarespace-`?v=` nur fuer `species-sound.js` erhoehen, falls Frontend-Code geaendert
+8. Nach GitHub-Pages-Deploy Squarespace-`?v=` nur fuer `species-sound.js` erhoehen, falls Frontend-Code geaendert
    wurde.
 
 ## Entscheidung fuer Phase 6.4
@@ -173,4 +219,5 @@ Phase 6.4 ist als Konzept abgeschlossen:
 - keine Frontend-Logik geaendert
 - keine Squarespace-`?v=`-Aenderung noetig
 - empfohlene Umsetzung: vorberechnete optionale `sounds/<SafeName>/spectrogram.webp`
-- naechster technischer Schritt waere ein separater Generator-Prototyp, erst nach Freigabe
+- Generator-Prototyp: `scripts/generate-spectrograms.mjs`
+- naechster technischer Schritt: ffmpeg installieren und Testausgabe nach `Testlauf/spectrograms` erzeugen

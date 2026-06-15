@@ -91,6 +91,11 @@ Stand: 2026-06-15
   - Datei: `docs/spectrogram-plan.md`
   - empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
   - keine aktive Frontend- oder Pipeline-Aenderung im aktuellen Schritt
+- Spektrogramm-Generator-Prototyp am 2026-06-15 umgesetzt:
+  - Skript: `scripts/generate-spectrograms.mjs`
+  - Befehl: `npm.cmd run --silent generate:spectrograms`
+  - Dry-Run: 45 MP3s erkannt, 45 Spektrogramme geplant, 0 fehlende MP3s
+  - echte Ausgabe wartet auf ein fuer Codex sichtbares `ffmpeg`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -121,5 +126,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Spektrogramm-Generator nur nach Freigabe als separaten Prototyp bauen.
+1. `ffmpeg` fuer Codex sichtbar machen und Testausgabe fuer `Amsel`, `Graugans` und `Bisamratte` nach
+   `Testlauf/spectrograms` erzeugen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

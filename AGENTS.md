@@ -183,6 +183,15 @@ Das Audit-Skript `scripts/monthly-site-audit.mjs` schreibt keine Datei, sondern 
 Zwischenergebnisse gehoeren nach `Testlauf/` und werden nach Abschluss geloescht oder als zusammengefasster Bericht
 unter `docs/audits/` dokumentiert.
 
+Spektrogramm-Generator:
+
+```bash
+npm.cmd run --silent generate:spectrograms -- --dry-run
+```
+
+Echte Ausgabe braucht `ffmpeg` im PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`. Erst mit Testausgabe nach
+`Testlauf/spectrograms` pruefen, bevor produktive `sounds/<SafeName>/spectrogram.webp`-Dateien erzeugt werden.
+
 Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
 Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
 
@@ -245,6 +254,8 @@ Aktuelle Planung:
   Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
   Spektrogramm-Konzept: `docs/spectrogram-plan.md`; empfohlener spaeterer Zielpfad
   `sounds/<SafeName>/spectrogram.webp`, keine aktive Frontend-Aenderung.
+  Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run getestet am 2026-06-15, echte Ausgabe wartet
+  auf ein fuer Codex sichtbares `ffmpeg`.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
