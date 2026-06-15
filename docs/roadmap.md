@@ -132,7 +132,7 @@ Testpfad zu gefaehrden.
   - technische Machbarkeit pruefen
   - Generierung lokal oder in Pipeline bewerten
   - Speicherort, Dateigroesse, Ladezeit und mobile Darstellung pruefen
-  - Integration in `species-sound.js` erst nach Konzeptfreigabe
+  - Integration in `species-sound.js` mit Fallback umsetzen
 - Buendelung der Assets pro Art erneut aufgreifen:
   - Grundlage ist `docs/asset-structure-plan.md`
   - erst mit Parallelbetrieb, Fallbacks und Live-Test migrieren
@@ -167,8 +167,14 @@ Testpfad zu gefaehrden.
   Dry-Run und echte Testausgabe sind erfolgreich getestet. Am 2026-06-15 wurden fuer `Amsel`, `Graugans` und
   `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist jetzt
   im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten,
-  Frequenzbereich bis 12 kHz. Produktive `sounds/<SafeName>/spectrogram.webp`-Assets und Frontend-Integration stehen
-  noch aus.
+  Frequenzbereich bis 18 kHz. Die produktive Erzeugung und Frontend-Integration wurde anschliessend in 6.6 umgesetzt.
+- 6.6 Spektrogramme produktiv erzeugen und Soundbar integrieren: erledigt am 2026-06-15.
+  Es wurden 45 `sounds/<SafeName>/spectrogram.webp`-Assets erzeugt, Gesamtgroesse ca. 1,22 MB. `species-sound.js`
+  laedt die Spektrogramme optional per `HEAD` und zeigt sie mit rotem Positionsmarker und vorhandener Bedienlogik an.
+  Wenn ein Spektrogramm fehlt oder nicht geladen werden kann, bleibt die bisherige Canvas-Wellenform als Fallback
+  aktiv. Nach Sichtpruefung wurde der Default auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit auch leisere
+  und hochfrequentere Arten sichtbar bleiben. Squarespace-Footer-Version fuer den Live-Betrieb:
+  `species-sound.js?v=1.0.13`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

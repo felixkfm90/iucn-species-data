@@ -19,7 +19,7 @@ Empfohlener Weg:
 1. Aktuelle Soundbar bleibt unveraendert.
 2. Das separate Generator-Skript `scripts/generate-spectrograms.mjs` erzeugt die Spektrogramm-Assets.
 3. Spektrogramme als optionale Dateien unter `sounds/<SafeName>/spectrogram.webp` speichern.
-4. `species-sound.js` erst danach minimal erweitern:
+4. `species-sound.js` minimal erweitern:
    - Spektrogramm laden, wenn vorhanden
    - sonst aktuelle Canvas-Wellenform beibehalten
    - roter Positionsmarker und Bedienlogik bleiben wie heute
@@ -149,9 +149,9 @@ Aktuelle Zielparameter fuer den Merlin-aehnlichen hellen Stil:
 - innere Spektrogrammhoehe: 200 px
 - oberer Rand: 20 px, unterer Rand ergibt sich automatisch
 - Format: WebP, Qualitaet 90; ersatzweise PNG
-- Frequenzbereich: bis 12 kHz (`--stop=12000`)
-- Dynamik: `--drange=60`, `--gain=2.5`
-- Nachbearbeitung: Graustufen, invertiert auf hellen Hintergrund, `contrast=1.35`, `brightness=0.08`
+- Frequenzbereich: bis 18 kHz (`--stop=18000`)
+- Dynamik: `--drange=80`, `--gain=3`
+- Nachbearbeitung: Graustufen, invertiert auf hellen Hintergrund, `contrast=1.25`, `brightness=0.08`
 - Legende/Achsen nicht ins Bild rendern
 - roter Positionsmarker wird spaeter im Frontend daruebergelegt
 
@@ -219,18 +219,15 @@ Grobe Erwartung:
 
 ## Entscheidung fuer Phase 6.4
 
-Phase 6.4 ist als Konzept abgeschlossen:
+Phase 6.4 ist als Konzept abgeschlossen; die produktive Umsetzung erfolgte danach in Phase 6.6:
 
-- keine Spektrogramm-Assets erzeugt
-- keine produktiven Pfade geaendert
-- keine Frontend-Logik geaendert
-- keine Squarespace-`?v=`-Aenderung noetig
 - empfohlene Umsetzung: vorberechnete optionale `sounds/<SafeName>/spectrogram.webp`
 - Generator-Prototyp: `scripts/generate-spectrograms.mjs`
 - Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt und nach
   Zielstil angepasst
-- naechster technischer Schritt: entscheiden, ob zuerst alle produktiven Spektrogramm-Assets erzeugt oder zuerst die
-  optionale Frontend-Integration in `species-sound.js` vorbereitet wird
+- 45 produktive Spektrogramm-Assets erzeugt
+- `species-sound.js` nutzt Spektrogramme optional mit Canvas-Fallback
+- Squarespace-`?v=` fuer den Live-Betrieb: `species-sound.js?v=1.0.13`
 
 ## Generator-Test 2026-06-15
 
@@ -256,11 +253,12 @@ Sichtpruefung:
 - Die Spektrogramme werden korrekt erzeugt und sind sehr klein.
 - Zielstil ist eine helle Schwarz-Weiss-/Graustufen-Darstellung: heller Hintergrund, dunkle Frequenzspuren,
   sichtbarer Rand oben und unten.
-- `drange=60`, `gain=2.5`, `stop=12000`, Graustufen-Invertierung und leichter Kontrast-/Helligkeitsabgleich sind
+- `drange=80`, `gain=3`, `stop=18000`, Graustufen-Invertierung und leichter Kontrast-/Helligkeitsabgleich sind
   aktuell der beste Default.
 - `intensity`, `viridis` und `magma` wurden als Varianten getestet. Sie sind sichtbarer bzw. farbiger, aber fuer die
   Website voraussichtlich zu dominant.
 - `color=gray` ist kein gueltiger ffmpeg-`showspectrumpic`-Wert.
 
-Die Testdateien wurden nicht produktiv uebernommen. Naechster technischer Schritt waere erst die Frontend-Integration
-mit Fallback in `species-sound.js`.
+Die Testparameter wurden produktiv uebernommen. Anschliessend wurden 45 produktive
+`sounds/<SafeName>/spectrogram.webp`-Assets erzeugt und `species-sound.js` mit Spektrogramm-Anzeige plus
+Canvas-Fallback erweitert.

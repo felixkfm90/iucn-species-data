@@ -28,7 +28,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Tierstimmen-Soundbar mit Canvas-Wellenform, Credits und Lizenzhinweisen
+- `species-sound.js`: native Tierstimmen-Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Credits und
+  Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung der sichtbaren Listen
@@ -173,12 +174,11 @@ Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. 
 korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
 `Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
 
-Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` konzipiert. Aktueller Stand: keine produktiven
-Spektrogramm-Assets, keine Frontend-Aenderung. Der Generator-Prototyp liegt unter
-`scripts/generate-spectrograms.mjs`. Ein echter Testlauf mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und
-`Bisamratte` war am 2026-06-15 erfolgreich. Zielstil fuer spaetere produktive Assets ist eine ruhige
-Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren und Rand oben/unten. Diese
-Optik ist jetzt Generator-Default.
+Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
+`sounds/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden. Ohne
+Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
+ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
+Frequenzbereich bis 18 kHz.
 
 ffmpeg unter Windows installieren:
 
@@ -216,8 +216,8 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 `local-tools/` ist ignoriert und wird nicht versioniert.
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
-umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter
-Karten. Der erste echte Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7
+umfasst monatliches Gesamtaudit, Spektrogramm-Konzept und -Integration, Asset-Migrationskonzept und Dokumentation
+manuell gepflegter Karten. Der erste echte Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7
 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration bzw. Spiegelung und automatisiertem Backup sowie Phase 8
 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 

@@ -35,6 +35,7 @@ Zentrale Dateien:
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
 - `Verbreitungskarten/*.jpg`: Verbreitungskarten
 - `sounds/<Artname>/<Artname>.mp3` und `sounds/<Artname>/credits.json`: Tierstimmen und Quellen
+- `sounds/<Artname>/spectrogram.webp`: vorberechnete Spektrogramme fuer die Tierstimmen-Soundbar
 - `fehlende_elemente_report.json`: Qualitaetsreport fuer fehlende Assets/Daten und NC-Soundlizenzen
 
 Frontend-Module:
@@ -43,7 +44,7 @@ Frontend-Module:
 - `species-info.js`: Info-Box
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
-- `species-sound.js`: native Soundbar mit Canvas-Wellenform, Credits und Lizenzhinweisen
+- `species-sound.js`: native Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung sichtbarer Listen
@@ -56,6 +57,7 @@ Frontend-Module:
 - 45 Soundordner
 - 45 MP3-Dateien
 - 45 Credits-Dateien
+- 45 Spektrogramm-Dateien
 - 0 fehlende Kernassets laut Report
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
@@ -100,6 +102,7 @@ species_list.json
      -> Verbreitungskarten/*.jpg
      -> sounds/<SafeName>/<SafeName>.mp3
      -> sounds/<SafeName>/credits.json
+     -> sounds/<SafeName>/spectrogram.webp
      -> fehlende_elemente_report.json
   -> GitHub Pages
   -> Squarespace Footer Scripts
@@ -252,12 +255,13 @@ Aktuelle Planung:
   Audit-Grundlage: `docs/monthly-site-audit.md`.
   Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
   Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
-  Spektrogramm-Konzept: `docs/spectrogram-plan.md`; empfohlener spaeterer Zielpfad
-  `sounds/<SafeName>/spectrogram.webp`, keine aktive Frontend-Aenderung.
+  Spektrogramm-Konzept und Integration: `docs/spectrogram-plan.md`; Zielpfad
+  `sounds/<SafeName>/spectrogram.webp`; `species-sound.js` nutzt Spektrogramme mit Canvas-Fallback.
   Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run und echte Testausgabe fuer `Amsel`,
   `Graugans` und `Bisamratte` erfolgreich getestet am 2026-06-15. Zielstil im Generator-Default:
-  heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 12 kHz.
-  `local-tools/` ist fuer projektlokales ffmpeg ignoriert.
+  heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 18 kHz.
+  45 produktive Spektrogramme erzeugt. `local-tools/` ist fuer projektlokales ffmpeg
+  ignoriert.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

@@ -10,10 +10,10 @@ const DEFAULT_FORMAT = "webp";
 const DEFAULT_OUTPUT_NAME = "spectrogram";
 const DEFAULT_COLOR = "channel";
 const DEFAULT_SCALE = "log";
-const DEFAULT_GAIN = 2.5;
-const DEFAULT_STOP = 12000;
-const DEFAULT_DRANGE = 60;
-const DEFAULT_CONTRAST = 1.35;
+const DEFAULT_GAIN = 3;
+const DEFAULT_STOP = 18000;
+const DEFAULT_DRANGE = 80;
+const DEFAULT_CONTRAST = 1.25;
 const DEFAULT_BRIGHTNESS = 0.08;
 const DEFAULT_QUALITY = 90;
 

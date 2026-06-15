@@ -34,6 +34,18 @@
         height: 100%;
       }
 
+      #species-sound .sound-spectrogram-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        background: #fff;
+      }
+
+      #species-sound .sound-visual.has-spectrogram .sound-wave-canvas {
+        display: none;
+      }
+
       #species-sound .sound-cursor {
         position: absolute;
         top: 0;
@@ -250,6 +262,15 @@
     return `<div class="frame-box species-sound-frame"><i>${escapeHtml(message)}</i></div>`;
   }
 
+  async function headExists(url) {
+    try {
+      const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+      return response.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function seedFromString(value) {
     let seed = 2166136261;
     const text = String(value || "sound");
@@ -402,7 +423,7 @@
     const recordist = credits.recordist || credits.rec || credits.recorded_by || credits.author || "";
     const licenseText = licenseLabel(credits.license || credits.lic || "");
 
-    return [source, recordist, licenseText].filter(Boolean).join(" · ");
+    return [source, recordist, licenseText].filter(Boolean).join(" - ");
   }
 
   function buildCreditDetails(credits) {
@@ -497,20 +518,15 @@
     const encodedName = encodeURIComponent(soundAssetName);
     const audioUrl = `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`;
     const creditsUrl = `${ASSET_BASE}/sounds/${encodedName}/credits.json`;
-
-    let audioExists = false;
-    try {
-      const check = await fetch(audioUrl, { method: "HEAD", cache: "no-store" });
-      audioExists = check.ok;
-    } catch (_) {
-      audioExists = false;
-    }
+    const spectrogramUrl = `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`;
+    const audioExists = await headExists(audioUrl);
 
     if (!audioExists) {
       wrapper.innerHTML = renderStatus("Keine Tierstimme verfuegbar.");
       return;
     }
 
+    const spectrogramExists = await headExists(spectrogramUrl);
     const credits = await fetchCredits(creditsUrl);
     const compactCredits = compactCreditLine(credits);
     const creditDetails = buildCreditDetails(credits);
@@ -519,7 +535,18 @@
     wrapper.innerHTML = `
       <div class="frame-box species-sound-frame">
         <div class="sound-player" aria-label="Tierstimmen-Player">
-          <div class="sound-visual">
+          <div class="sound-visual${spectrogramExists ? " has-spectrogram" : ""}">
+            ${spectrogramExists ? `
+              <img
+                id="sound-spectrogram"
+                class="sound-spectrogram-image"
+                src="${escapeHtml(spectrogramUrl)}"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              >
+            ` : ""}
             <canvas id="sound-wave-canvas" class="sound-wave-canvas" aria-hidden="true"></canvas>
             <div id="sound-cursor" class="sound-cursor" aria-hidden="true"></div>
             <input
@@ -562,17 +589,21 @@
     const audio = wrapper.querySelector("#species-audio");
     const playBtn = wrapper.querySelector("#play-toggle");
     const scrubberEl = wrapper.querySelector("#sound-scrubber");
+    const visualEl = wrapper.querySelector(".sound-visual");
+    const spectrogramImg = wrapper.querySelector("#sound-spectrogram");
     const canvas = wrapper.querySelector("#sound-wave-canvas");
     const cursorEl = wrapper.querySelector("#sound-cursor");
     const currentTimeEl = wrapper.querySelector("#current-time");
     const durationEl = wrapper.querySelector("#duration");
 
-    if (!audio || !playBtn || !scrubberEl || !canvas || !cursorEl || !currentTimeEl || !durationEl) {
+    if (!audio || !playBtn || !scrubberEl || !visualEl || !canvas || !cursorEl || !currentTimeEl || !durationEl) {
       wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
       return;
     }
 
     let peaks = fallbackPeaksData;
+    let useSpectrogram = Boolean(spectrogramExists && spectrogramImg);
+    let waveformDecodeStarted = false;
 
     function currentProgress() {
       const duration = audio.duration;
@@ -582,8 +613,18 @@
 
     function redraw() {
       const progress = currentProgress();
-      drawWaveform(canvas, peaks, progress);
+      if (!useSpectrogram) drawWaveform(canvas, peaks, progress);
       updateCursor(cursorEl, scrubberEl, progress);
+    }
+
+    function ensureWaveformDecoded() {
+      if (waveformDecodeStarted) return;
+      waveformDecodeStarted = true;
+
+      decodeWaveform(audioUrl, soundAssetName).then((decodedPeaks) => {
+        peaks = decodedPeaks;
+        redraw();
+      });
     }
 
     function setPlaying(isPlaying) {
@@ -630,7 +671,7 @@
         audio.currentTime = duration * progress;
       }
 
-      drawWaveform(canvas, peaks, progress);
+      if (!useSpectrogram) drawWaveform(canvas, peaks, progress);
       updateCursor(cursorEl, scrubberEl, progress);
       updateProgressText();
     });
@@ -656,16 +697,22 @@
 
     if (window.ResizeObserver) {
       const resizeObserver = new window.ResizeObserver(redraw);
-      resizeObserver.observe(canvas);
+      resizeObserver.observe(visualEl);
     } else {
       window.addEventListener("resize", redraw);
     }
 
+    if (spectrogramImg) {
+      spectrogramImg.addEventListener("error", () => {
+        useSpectrogram = false;
+        visualEl.classList.remove("has-spectrogram");
+        ensureWaveformDecoded();
+        redraw();
+      });
+    }
+
     redraw();
-    decodeWaveform(audioUrl, soundAssetName).then((decodedPeaks) => {
-      peaks = decodedPeaks;
-      redraw();
-    });
+    if (!useSpectrogram) ensureWaveformDecoded();
   } catch (_) {
     wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
   }

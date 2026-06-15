@@ -163,8 +163,8 @@
 
 /*
   Die eigentliche Soundbar-Optik wird seit species-sound.js v1.0.10 vom Modul selbst
-  in #species-sound gekapselt injiziert. Dadurch bleibt die Merlin-aehnliche Canvas-
-  Wellenform auch stabil, wenn Squarespace-CSS noch nicht aktualisiert wurde.
+  in #species-sound gekapselt injiziert. Seit species-sound.js v1.0.13 nutzt der
+  Player ein vorbereitetes Spektrogramm mit Canvas-Fallback.
 
   In Squarespace muss fuer die Soundbar nur der Rahmenstil aus .frame-box vorhanden
   bleiben. Alte WaveSurfer-/Waveform-Regeln koennen entfernt werden.

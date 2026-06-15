@@ -100,6 +100,7 @@ function auditLocalProject(cwd) {
       map: fs.existsSync(path.join(mapDir, `${safeName}.jpg`)),
       soundMp3: fs.existsSync(path.join(soundsDir, safeName, `${safeName}.mp3`)),
       soundCredits: fs.existsSync(path.join(soundsDir, safeName, "credits.json")),
+      soundSpectrogram: fs.existsSync(path.join(soundsDir, safeName, "spectrogram.webp")),
       urlSlug: Boolean(species.URLSlug),
       lifeExpectancy: Object.prototype.hasOwnProperty.call(species, "Lebenserwartung"),
     };
@@ -111,6 +112,11 @@ function auditLocalProject(cwd) {
 
   const mp3Count = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, `${dir}.mp3`))).length;
   const creditsCount = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, "credits.json"))).length;
+  const spectrogramCount = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, "spectrogram.webp"))).length;
+  const spectrogramBytes = soundDirs
+    .map((dir) => path.join(soundsDir, dir, "spectrogram.webp"))
+    .filter((filePath) => fs.existsSync(filePath))
+    .reduce((sum, filePath) => sum + fs.statSync(filePath).size, 0);
   const ncSoundLicenses = soundDirs
     .map((dir) => readCreditsIfPresent(soundsDir, dir))
     .filter((entry) => entry && isNonCommercialLicense(entry.license))
@@ -130,6 +136,8 @@ function auditLocalProject(cwd) {
     soundDirCount: soundDirs.length,
     mp3Count,
     creditsCount,
+    spectrogramCount,
+    spectrogramBytes,
     reportGeneratedAt: report.generatedAt || null,
     reportCounts: report.counts || {},
     perSpeciesMissingCount: missing.length,
@@ -243,6 +251,7 @@ async function auditGithubPages(config) {
     "Verbreitungskarten/Amsel.jpg",
     "sounds/Amsel/Amsel.mp3",
     "sounds/Amsel/credits.json",
+    "sounds/Amsel/spectrogram.webp",
   ];
 
   const sampleResults = await mapLimit(samples, config.concurrency, async (samplePath) => {

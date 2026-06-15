@@ -1,6 +1,6 @@
 # Soundbar
 
-Stand: 2026-06-14
+Stand: 2026-06-15
 
 Ziel von Phase 5.4: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen: klare
 Play-Bedienung, grafische Tonspur, stabile Wiedergabe, saubere aber nicht aufdringliche Quellen-/Lizenzanzeige und
@@ -19,9 +19,12 @@ brauchbare mobile Bedienung.
   - `sounds/<SafeName>/<SafeName>.mp3`
   - `sounds/<SafeName>/credits.json`
 - Vor dem Rendern wird die MP3 per `HEAD` geprueft.
-- Die aktive Soundbar nutzt ein natives `<audio>`-Element, eigene Controls und eine Canvas-Wellenform.
-- Die Wellenform wird aus der MP3 decodiert. Wenn Decoding im Browser scheitert, wird eine stabile Ersatzgrafik
-  gezeichnet; die Wiedergabe bleibt davon unabhaengig.
+- Die aktive Soundbar nutzt ein natives `<audio>`-Element, eigene Controls und eine grafische Tonspur.
+- Wenn `sounds/<SafeName>/spectrogram.webp` vorhanden ist, wird dieses vorberechnete Spektrogramm angezeigt.
+- Wenn kein Spektrogramm vorhanden ist oder das Bild nicht geladen werden kann, faellt der Player auf die bisherige
+  Canvas-Wellenform zurueck.
+- Die Canvas-Wellenform wird nur noch als Fallback aus der MP3 decodiert. Wenn Decoding im Browser scheitert, wird
+  eine stabile Ersatzgrafik gezeichnet; die Wiedergabe bleibt davon unabhaengig.
 - Die Soundbar injiziert ihre gekapselten CSS-Regeln selbst unter `#species-sound`. Dadurch haengt die Optik nicht mehr
   davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
 - Credits werden nur kompakt in einer Zeile gezeigt. Detailinformationen liegen in einem eingeklappten
@@ -42,11 +45,10 @@ Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienun
 
 ## Spektrogramm-Ausbau
 
-Eine Merlin-aehnlichere Darstellung ueber Frequenzinformationen bzw. ein Spektrogramm ist programmiertechnisch
-moeglich, soll aber nicht Teil der bestehenden Soundbar-Stabilisierung sein. Das Konzept steht in
-`docs/spectrogram-plan.md`.
+Eine Merlin-aehnlichere Darstellung ueber Frequenzinformationen bzw. ein Spektrogramm ist umgesetzt. Das Konzept und
+die Generator-Parameter stehen in `docs/spectrogram-plan.md`.
 
-Bevorzugte spaetere Umsetzung laut Konzept:
+Aktuelle Umsetzung:
 
 1. Ein separates Generator-Skript erzeugt pro MP3 ein kleines Spektrogramm-Asset.
 2. Zielpfad: `sounds/<SafeName>/spectrogram.webp`.
@@ -57,11 +59,17 @@ Bevorzugte spaetere Umsetzung laut Konzept:
 Das ist stabiler fuer Squarespace und mobile Geraete als eine vollstaendige Spektrogramm-Berechnung bei jedem
 Seitenaufruf.
 
+Aktueller Stand:
+
+- 45 produktive `spectrogram.webp`-Dateien erzeugt.
+- Gesamtgroesse: ca. 1,22 MB.
+- Zielstil: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben/unten, Frequenzbereich bis 18 kHz.
+
 ## Squarespace-Anpassung
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.12`
+- Footer: `species-sound.js?v=1.0.13`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
@@ -77,7 +85,7 @@ Desktop:
 
 1. Artseite mit freiem Sound oeffnen, z. B. `Amsel`.
 2. Play-Button startet und pausiert die Wiedergabe.
-3. Canvas-Wellenform, roter Positionsmarker, Zeit und Dauer werden angezeigt.
+3. Spektrogramm, roter Positionsmarker, Zeit und Dauer werden angezeigt.
 4. Kompakte Quelle ist sichtbar.
 5. `Quelle und Lizenz` klappt Detailinformationen auf.
 6. Originalquelle oeffnet in neuem Tab.
@@ -92,4 +100,4 @@ Mobile:
 
 1. Artseite auf schmalem Viewport oeffnen.
 2. Play-Button bleibt gut antippbar.
-3. Wellenform, Zeitangaben und eingeklappte Credits laufen nicht aus dem Container.
+3. Spektrogramm, Zeitangaben und eingeklappte Credits laufen nicht aus dem Container.

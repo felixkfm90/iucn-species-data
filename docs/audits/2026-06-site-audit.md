@@ -22,7 +22,7 @@ Stand: 2026-06-15
 | SEO-Grundfelder | Titel und Meta-Description je Sitemap-URL | 0 fehlende Titel, 0 fehlende Meta-Beschreibungen |
 | Interne Links | HTML-Crawl der 117 Sitemap-URLs | nur bekannte System-/Ordnerpfade ausserhalb der Sitemap |
 | GitHub Pages | `speciesData.json`, `fehlende_elemente_report.json`, JS- und Asset-Stichproben | erreichbar, 45 Arten, Report konsistent |
-| Lokale Assets | `speciesData.json` gegen Karten, Sounds und Credits | 45/45 konsistent, keine fehlenden Kernassets |
+| Lokale Assets | `speciesData.json` gegen Karten, Sounds, Credits und Spektrogramme | 45/45 konsistent, keine fehlenden Kernassets |
 | Manuell gepflegte Karten | Rueckmeldung von Felix am 2026-06-15 | 7 Karten dokumentiert |
 | Soundlizenzen | `fehlende_elemente_report.json` und `sounds/*/credits.json` | 3 aktive NC-Lizenzen, unveraendert bekannt |
 
@@ -64,6 +64,7 @@ Stand: 2026-06-15
   - Soundordner: 45
   - MP3-Dateien: 45
   - Credits-Dateien: 45
+  - Spektrogramm-Dateien: 45 WebP-Dateien, ca. 1,22 MB
   - per-Art-Abgleich: 0 Inkonsistenzen
 - Reportwerte:
   - fehlende MP3s: 0
@@ -87,6 +88,8 @@ Stand: 2026-06-15
   - Skript: `scripts/monthly-site-audit.mjs`
   - Ergebnis im Volltest: 117 Sitemap-URLs, 0 Fetch-Fehler, 0 Non-200, 0 fehlende SEO-Grundfelder,
     0 lokale Asset-Inkonsistenzen, 7 manuelle Karten dokumentiert, 3 NC-Sounds erkannt.
+  - Nach Spektrogramm-Erweiterung prueft der lokale Audit zusaetzlich `spectrogramCount`, `spectrogramBytes` und
+    fehlende `sounds/<SafeName>/spectrogram.webp`.
 - Spektrogramm-Konzept am 2026-06-15 dokumentiert:
   - Datei: `docs/spectrogram-plan.md`
   - empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
@@ -97,7 +100,14 @@ Stand: 2026-06-15
   - Dry-Run: 45 MP3s erkannt, 45 Spektrogramme geplant, 0 fehlende MP3s
   - echte Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt
   - bevorzugter Zielstil im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren,
-    Rand oben und unten, Frequenzbereich bis 12 kHz
+    Rand oben und unten, Frequenzbereich bis 18 kHz
+- Spektrogramm-Assets und Soundbar-Integration am 2026-06-15 umgesetzt:
+  - 45 produktive `sounds/<SafeName>/spectrogram.webp`-Dateien
+  - Gesamtgroesse ca. 1,22 MB
+  - Generator-Default nach Sichtpruefung auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit leisere und
+    hochfrequentere Arten nicht zu leer wirken
+  - `species-sound.js` nutzt Spektrogramme optional und behaelt Canvas-Wellenform als Fallback
+  - dokumentierte Footer-Version: `species-sound.js?v=1.0.13`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -128,6 +138,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Entscheiden, ob als naechster Schritt produktive `sounds/<SafeName>/spectrogram.webp`-Assets fuer alle Arten
-   erzeugt oder zuerst die optionale Frontend-Integration in `species-sound.js` vorbereitet wird.
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.13` setzen und Artseiten mobil/desktop
+   pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.
