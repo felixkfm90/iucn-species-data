@@ -8,14 +8,21 @@ Automatisierung oder Asset-Migrationen uebersehen werden.
 
 ## Aktueller Stand
 
-Aktuell ist in der Repository-Dokumentation noch keine konkrete Karte als manuell gepflegt belegt. Wenn eine Karte
-manuell erstellt, ersetzt oder korrigiert wurde, muss sie hier eingetragen werden.
+Aktuell sind sieben Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
+fehlerhafte Kartendaten. Die produktiven Karten duerfen deshalb nicht unbemerkt durch automatisch geladene IUCN-Karten
+ersetzt werden.
 
 ## Liste
 
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
-| _noch nicht erfasst_ |  |  |  |  |  |  |
+| Blaukehlchen | Blaukehlchen | `Verbreitungskarten/Blaukehlchen.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Fischertukan | Fischertukan | `Verbreitungskarten/Fischertukan.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Grosstrappe | Grosstrappe | `Verbreitungskarten/Grosstrappe.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Kernbeisser | Kernbeisser | `Verbreitungskarten/Kernbeisser.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Reh | Reh | `Verbreitungskarten/Reh.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Rotfuchs | Rotfuchs | `Verbreitungskarten/Rotfuchs.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
+| Waldkauz | Waldkauz | `Verbreitungskarten/Waldkauz.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Asset-Migration schuetzen. | 2026-06-15 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

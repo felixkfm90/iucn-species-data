@@ -23,6 +23,7 @@ Stand: 2026-06-15
 | Interne Links | HTML-Crawl der 117 Sitemap-URLs | nur bekannte System-/Ordnerpfade ausserhalb der Sitemap |
 | GitHub Pages | `speciesData.json`, `fehlende_elemente_report.json`, JS- und Asset-Stichproben | erreichbar, 45 Arten, Report konsistent |
 | Lokale Assets | `speciesData.json` gegen Karten, Sounds und Credits | 45/45 konsistent, keine fehlenden Kernassets |
+| Manuell gepflegte Karten | Rueckmeldung von Felix am 2026-06-15 | 7 Karten dokumentiert |
 | Soundlizenzen | `fehlende_elemente_report.json` und `sounds/*/credits.json` | 3 aktive NC-Lizenzen, unveraendert bekannt |
 
 ## Offen
@@ -33,8 +34,6 @@ Stand: 2026-06-15
   - `Geoffroy-Klammeraffe`
 - Spektrogramm-/Frequenzdarstellungen fuer Tierstimmen sind noch nicht konzipiert.
 - Artweise Asset-Buendelung bleibt eine spaetere Migrationsoption, aber keine aktuelle Umsetzung.
-- Es ist noch keine konkrete Karte als manuell gepflegt dokumentiert. Wenn es solche Karten gibt, muessen sie in
-  `docs/manual-map-overrides.md` eingetragen werden.
 - Teile des Monatsaudits sind noch nicht automatisiert. Sinnvolle Kandidaten bleiben Sitemap-/Status-Check, interner
   Link-Crawl, GitHub-Pages-Assetcheck und Report-Zusammenfassung.
 
@@ -78,6 +77,14 @@ Stand: 2026-06-15
   - fehlende Kategorie: 0
   - fehlender Trend: 0
   - aktive NC-Soundlizenzen: 3
+- Manuell gepflegte Karten nach Felix' Rueckmeldung vom 2026-06-15 dokumentiert:
+  - `Blaukehlchen`
+  - `Fischertukan`
+  - `Grosstrappe`
+  - `Kernbeisser`
+  - `Reh`
+  - `Rotfuchs`
+  - `Waldkauz`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -108,8 +115,7 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. `docs/manual-map-overrides.md` mit Felix abgleichen: Gibt es konkret manuell gepflegte Karten?
-2. Audit-Automatisierung vorbereiten, mindestens fuer Sitemap-/Status-Check, internen Link-Crawl und GitHub-Pages-
+1. Audit-Automatisierung vorbereiten, mindestens fuer Sitemap-/Status-Check, internen Link-Crawl und GitHub-Pages-
    Assetcheck.
-3. Spektrogramm-Konzept fuer Tierstimmen ausarbeiten, bevor `species-sound.js` oder Assets geaendert werden.
-4. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.
+2. Spektrogramm-Konzept fuer Tierstimmen ausarbeiten, bevor `species-sound.js` oder Assets geaendert werden.
+3. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

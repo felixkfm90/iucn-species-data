@@ -147,6 +147,10 @@ Die Asset-Struktur wurde in Phase 5.8 bewertet und in `docs/asset-structure-plan
 sanitisiertem Namen ist nur eine spaetere Migrationsoption, weil Pipeline, Frontend-Loader, GitHub-Pages-Pfade und
 Live-Tests betroffen waeren.
 
+Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
+korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
+`Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
+
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
 umfasst monatliches Gesamtaudit, Spektrogramm-Konzept, Asset-Migrationskonzept und Dokumentation manuell gepflegter
 Karten. Der erste echte Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7
@@ -158,6 +162,7 @@ Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 Laut aktuellem Report vom 2026-05-28:
 
 - 45 Arten
+- 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 0 fehlende Sounddateien
 - 0 fehlende Sound-Credits
 - 0 fehlende Karten

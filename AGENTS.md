@@ -57,6 +57,14 @@ Frontend-Module:
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 0 fehlende Kernassets laut Report
+- 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
+  - `Blaukehlchen`
+  - `Fischertukan`
+  - `Grosstrappe`
+  - `Kernbeisser`
+  - `Reh`
+  - `Rotfuchs`
+  - `Waldkauz`
 - 3 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
@@ -218,7 +226,7 @@ Aktuelle Planung:
   Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
   Audit-Grundlage: `docs/monthly-site-audit.md`.
   Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
-  Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md`.
+  Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
   In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein

@@ -147,6 +147,10 @@ Testpfad zu gefaehrden.
 - 6.1 Erster echter Monatsaudit: erledigt am 2026-06-15, siehe `docs/audits/2026-06-site-audit.md`.
   Ergebnis: 117 Sitemap-URLs live erreichbar, keine fehlenden SEO-Grundfelder, GitHub-Pages-Daten und Kernassets
   konsistent, keine neuen kritischen Fehler.
+- 6.2 Manuell gepflegte Karten dokumentieren: erledigt am 2026-06-15, siehe
+  `docs/manual-map-overrides.md`.
+  Grund: IUCN liefert fuer `Blaukehlchen`, `Fischertukan`, `Grosstrappe`, `Kernbeisser`, `Reh`, `Rotfuchs` und
+  `Waldkauz` korrupte Kartendaten. Diese produktiven Karten sind als manuell gepflegte Overrides dokumentiert.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 
