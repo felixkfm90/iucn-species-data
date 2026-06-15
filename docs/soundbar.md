@@ -25,8 +25,12 @@ aufdringliche Quellen-/Lizenzanzeige und brauchbare mobile Bedienung.
   Canvas-Wellenform zurueck.
 - Der Lautstaerkeregler arbeitet von 0 bis 200 Prozent. Werte bis 100 Prozent nutzen die normale Audio-Lautstaerke;
   Werte darueber werden per Web-Audio-Gain verstaerkt.
+- Web Audio wird nur aktiviert, wenn die Lautstaerke ueber 100 Prozent liegt. Dadurch bleibt die normale Wiedergabe
+  fuer 0 bis 100 Prozent stabil und wird nicht durch Cross-Origin-Einschraenkungen stummgeschaltet.
 - Die Abspielgeschwindigkeit kann auf `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x` gesetzt werden.
 - Lautstaerke und Tempo werden lokal im Browser gespeichert, sofern `localStorage` verfuegbar ist.
+- Der rote Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` aktualisiert; `timeupdate` bleibt
+  nur als Fallback-/Synchronisationsereignis aktiv.
 - Die Canvas-Wellenform wird nur noch als Fallback aus der MP3 decodiert. Wenn Decoding im Browser scheitert, wird
   eine stabile Ersatzgrafik gezeichnet; die Wiedergabe bleibt davon unabhaengig.
 - Die Soundbar injiziert ihre gekapselten CSS-Regeln selbst unter `#species-sound`. Dadurch haengt die Optik nicht mehr
@@ -74,7 +78,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.14`
+- Footer: `species-sound.js?v=1.0.15`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.

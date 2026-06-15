@@ -266,6 +266,8 @@ Aktuelle Planung:
   ignoriert.
   Soundbar-Regler: `species-sound.js` bietet seit 2026-06-15 Lautstaerke 0-200 Prozent per Web-Audio-Gain und
   Tempo-Auswahl `0,25x`, `0,5x`, `1x`, `1,5x`, `2x`, `4x`.
+  Tonfix: Seit `species-sound.js?v=1.0.15` wird Web Audio nur noch fuer Lautstaerke ueber 100 Prozent aktiviert; der
+  Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

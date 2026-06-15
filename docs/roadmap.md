@@ -180,7 +180,10 @@ Testpfad zu gefaehrden.
   Abspielgeschwindigkeit-Auswahl fuer `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`. Lautstaerke ueber 100 Prozent
   wird per Web-Audio-Gain verstaerkt; ohne Web-Audio-Unterstuetzung bleibt die normale Browser-Lautstaerke bis
   100 Prozent nutzbar. Lautstaerke und Tempo werden lokal im Browser gespeichert, wenn `localStorage` verfuegbar ist.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.14`.
+  Nach Live-Rueckmeldung wurde ein Tonfix nachgezogen: Web Audio wird seit `species-sound.js?v=1.0.15` nur noch fuer
+  Werte ueber 100 Prozent aktiviert, damit die normale Wiedergabe nicht durch Cross-Origin-Einschraenkungen stumm
+  wird. Der Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.15`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

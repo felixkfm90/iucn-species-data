@@ -799,7 +799,7 @@
           ${creditDetails}
         </div>
 
-        <audio id="species-audio" class="sound-audio" preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
+        <audio id="species-audio" class="sound-audio" crossorigin="anonymous" preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
       </div>
     `;
 
@@ -841,6 +841,8 @@
     let mediaSourceNode = null;
     let gainNode = null;
     let audioGraphDisabled = false;
+    let animationFrameId = 0;
+    let lastRenderedTimeText = "";
 
     function ensureAudioGraph() {
       if (gainNode) return true;
@@ -877,6 +879,10 @@
       }
     }
 
+    function shouldUseAudioGraph(percent) {
+      return Number(percent) > 100;
+    }
+
     function updateVolumeUi(percent) {
       const fillPercent = (percent / VOLUME_MAX_PERCENT) * 100;
       volumeEl.value = String(percent);
@@ -891,7 +897,7 @@
       currentVolumePercent = safePercent;
       updateVolumeUi(safePercent);
 
-      if ((options.activateGraph || gainNode) && ensureAudioGraph()) {
+      if ((gainNode || (options.activateGraph && shouldUseAudioGraph(safePercent))) && ensureAudioGraph()) {
         audio.volume = 1;
         if (typeof gainNode.gain.setTargetAtTime === "function") {
           gainNode.gain.setTargetAtTime(gainValue, audioContext.currentTime, 0.01);
@@ -945,8 +951,15 @@
     }
 
     function updateProgressText() {
-      currentTimeEl.textContent = formatTime(audio.currentTime);
-      durationEl.textContent = formatTime(audio.duration);
+      const currentText = formatTime(audio.currentTime);
+      const durationText = formatTime(audio.duration);
+      const textKey = `${currentText}|${durationText}`;
+
+      if (textKey === lastRenderedTimeText) return;
+
+      currentTimeEl.textContent = currentText;
+      durationEl.textContent = durationText;
+      lastRenderedTimeText = textKey;
     }
 
     function updateProgress() {
@@ -954,10 +967,32 @@
       redraw();
     }
 
+    function stopProgressAnimation() {
+      if (!animationFrameId) return;
+      window.cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
+    }
+
+    function startProgressAnimation() {
+      stopProgressAnimation();
+
+      const tick = () => {
+        updateProgress();
+
+        if (!audio.paused && !audio.ended) {
+          animationFrameId = window.requestAnimationFrame(tick);
+        } else {
+          animationFrameId = 0;
+        }
+      };
+
+      animationFrameId = window.requestAnimationFrame(tick);
+    }
+
     playBtn.addEventListener("click", async () => {
       try {
         if (audio.paused) {
-          setVolumePercent(currentVolumePercent, { activateGraph: true });
+          setVolumePercent(currentVolumePercent, { activateGraph: shouldUseAudioGraph(currentVolumePercent) });
           await resumeAudioGraph();
           await audio.play();
         } else {
@@ -988,7 +1023,8 @@
     });
 
     volumeEl.addEventListener("input", () => {
-      setVolumePercent(volumeEl.value, { activateGraph: true, persist: true });
+      const nextVolume = Number(volumeEl.value);
+      setVolumePercent(nextVolume, { activateGraph: shouldUseAudioGraph(nextVolume), persist: true });
     });
 
     speedEl.addEventListener("change", () => {
@@ -998,10 +1034,18 @@
     audio.addEventListener("loadedmetadata", updateProgress);
     audio.addEventListener("durationchange", updateProgress);
     audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("play", () => setPlaying(true));
-    audio.addEventListener("pause", () => setPlaying(false));
+    audio.addEventListener("play", () => {
+      setPlaying(true);
+      startProgressAnimation();
+    });
+    audio.addEventListener("pause", () => {
+      setPlaying(false);
+      stopProgressAnimation();
+      updateProgress();
+    });
     audio.addEventListener("ended", () => {
       setPlaying(false);
+      stopProgressAnimation();
       audio.currentTime = 0;
       updateProgress();
     });
