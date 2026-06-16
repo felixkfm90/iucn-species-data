@@ -165,10 +165,11 @@ Lokale Batch-Dateien:
 
 Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
-Die Asset-Struktur wurde in Phase 5.8 bewertet und in `docs/asset-structure-plan.md` dokumentiert. Ergebnis:
-`Verbreitungskarten/`, `sounds/` und `graphics/` bleiben im aktuellen produktiven Aufbau. Eine Buendelung pro Art nach
-sanitisiertem Namen ist nur eine spaetere Migrationsoption, weil Pipeline, Frontend-Loader, GitHub-Pages-Pfade und
-Live-Tests betroffen waeren.
+Die Asset-Struktur wurde in Phase 5.8 bewertet und in Phase 6.8 erneut als konkrete Migration vorbereitet; Details
+stehen in `docs/asset-structure-plan.md`. Ergebnis: `Verbreitungskarten/`, `sounds/` und `graphics/` bleiben im
+aktuellen produktiven Aufbau. Eine Buendelung pro Art nach sanitisiertem Namen ist nur eine spaetere Migrationsoption,
+weil Pipeline, Frontend-Loader, Audit-Skript, Spektrogramm-Generator, GitHub-Pages-Pfade und Live-Tests betroffen
+waeren.
 
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
 korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
@@ -230,11 +231,11 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 
 `local-tools/` ist ignoriert und wird nicht versioniert.
 
-Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist gestartet und
-umfasst monatliches Gesamtaudit, Spektrogramm-Konzept und -Integration, Asset-Migrationskonzept und Dokumentation
-manuell gepflegter Karten. Der erste echte Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7
-Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration bzw. Spiegelung und automatisiertem Backup sowie Phase 8
-Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
+Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist weitgehend
+abgearbeitet: Monatsaudit, Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und
+Asset-Migrationsvorbereitung sind dokumentiert. Der erste echte Monatsaudit liegt unter
+`docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration
+bzw. Spiegelung und automatisiertem Backup sowie Phase 8 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 
 ## Aktueller Datenstand
 

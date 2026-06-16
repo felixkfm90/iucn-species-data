@@ -35,7 +35,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | Ordner | Grund |
 |---|---|
 | `Verbreitungskarten/` | GitHub-Pages-Assetquelle fuer `map-loader.js`. |
-| `sounds/` | GitHub-Pages-Assetquelle fuer `species-sound.js`; MP3s und Credits werden live geladen. |
+| `sounds/` | GitHub-Pages-Assetquelle fuer `species-sound.js`; MP3s, Credits und Spektrogramme werden live geladen. |
 | `graphics/trend/` | Trend-Icons fuer `species-status.js`. |
 | `graphics/catagory/Alternativ/` | Status-Icons fuer `species-status.js`; Ordnername nicht ohne Pfadmigration aendern. |
 
@@ -91,9 +91,10 @@ Dokumentation uebernommen.
 ## Nicht jetzt verschieben
 
 - Keine Frontend-JS-Dateien in `docs/`, `js/` oder `assets/` verschieben, weil Squarespace den Root-Pfad laedt.
-- Keine Sounds/Karten pro Art buendeln, bevor Loader, Pipeline, GitHub-Pages-Pfade und Squarespace-Tests geplant sind.
-- Phase 5.8 hat entschieden: aktueller Asset-Aufbau bleibt bestehen; artweise Buendelung ist nur eine spaetere
-  Migrationsoption, siehe `docs/asset-structure-plan.md`.
+- Keine Sounds/Karten pro Art buendeln, bevor Loader, Pipeline, Audit, Spektrogramm-Generator, GitHub-Pages-Pfade und
+  Squarespace-Tests geplant sind.
+- Phase 5.8 und Phase 6.8 haben entschieden: aktueller Asset-Aufbau bleibt bestehen; artweise Buendelung ist nur eine
+  spaetere Migrationsoption mit Parallelbetrieb und Fallbacks, siehe `docs/asset-structure-plan.md`.
 - `README.md` nicht nach `docs/` verschieben.
 - `AGENTS.md` nicht nach `docs/` verschieben.
 

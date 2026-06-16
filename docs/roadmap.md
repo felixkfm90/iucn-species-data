@@ -193,6 +193,12 @@ Testpfad zu gefaehrden.
   gemeinsamen Control-Zeile. Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms, damit
   die Bedienflaeche darunter kompakter bleibt.
   Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.20`.
+- 6.8 Asset-Buendelung pro Art als Migration vorbereiten: erledigt am 2026-06-16, siehe
+  `docs/asset-structure-plan.md`.
+  Ergebnis: Weiter keine produktive Pfadverschiebung. Die aktuelle Struktur bleibt `Verbreitungskarten/<SafeName>.jpg`
+  plus `sounds/<SafeName>/<SafeName>.mp3`, `credits.json` und `spectrogram.webp`. Fuer eine spaetere Migration nach
+  `species-assets/<SafeName>/` sind die betroffenen Dateien, Parallelbetriebsstrategie, Fallbacks und Stop-Kriterien
+  dokumentiert. Besonders zu schuetzen sind die sieben manuell gepflegten Karten aus `docs/manual-map-overrides.md`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

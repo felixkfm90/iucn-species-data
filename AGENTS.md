@@ -278,6 +278,9 @@ Aktuelle Planung:
   Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms; Playbutton, Lautstaerke, Zeit und
   Tempo liegen darunter in einer gemeinsamen kompakten Control-Zeile.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
+  Asset-Buendelung pro Art: in Phase 6.8 erneut vorbereitet und in `docs/asset-structure-plan.md` konkretisiert.
+  Produktive Pfade bleiben unveraendert; eine spaetere Migration nach `species-assets/<SafeName>/` braucht
+  Parallelbetrieb, Fallbacks, Audit-Anpassung und Schutz der manuell gepflegten Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
   In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
