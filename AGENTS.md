@@ -273,6 +273,8 @@ Aktuelle Planung:
   das Symbol rot durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
   Playbutton: Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohne
   Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch leicht nach unten versetzt.
+  Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche und die
+  zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

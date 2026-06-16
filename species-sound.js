@@ -93,7 +93,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transform: translateY(2px);
+        transform: translateY(18px);
         cursor: pointer;
         line-height: 0;
         box-shadow: none;
@@ -135,16 +135,6 @@
         font-weight: 700;
         line-height: 1.15;
         color: #17221f;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      #species-sound .sound-subtitle {
-        margin-top: 2px;
-        font-size: 0.78rem;
-        line-height: 1.25;
-        color: #5f6b67;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -364,14 +354,11 @@
           width: 32px;
           height: 32px;
           min-width: 32px;
+          transform: translateY(15px);
         }
 
         #species-sound .sound-title {
           font-size: 0.88rem;
-        }
-
-        #species-sound .sound-subtitle {
-          font-size: 0.74rem;
         }
 
         #species-sound .sound-settings {
@@ -645,16 +632,6 @@
     }
   }
 
-  function compactCreditLine(credits) {
-    if (!credits) return "Quelle n/a";
-
-    const source = credits.source || "Quelle n/a";
-    const recordist = credits.recordist || credits.rec || credits.recorded_by || credits.author || "";
-    const licenseText = licenseLabel(credits.license || credits.lic || "");
-
-    return [source, recordist, licenseText].filter(Boolean).join(" - ");
-  }
-
   function buildCreditDetails(credits) {
     if (!credits) {
       return `
@@ -757,7 +734,6 @@
 
     const spectrogramExists = await headExists(spectrogramUrl);
     const credits = await fetchCredits(creditsUrl);
-    const compactCredits = compactCreditLine(credits);
     const creditDetails = buildCreditDetails(credits);
     const fallbackPeaksData = fallbackPeaks(soundAssetName);
     const initialVolumePercent = getStoredVolumePercent();
@@ -805,7 +781,6 @@
 
             <div class="sound-copy">
               <div class="sound-title">Tierstimme</div>
-              <div class="sound-subtitle">${escapeHtml(compactCredits)}</div>
             </div>
 
             <div class="sound-time">

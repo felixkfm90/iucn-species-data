@@ -3,8 +3,8 @@
 Stand: 2026-06-15
 
 Ziel von Phase 5.4 und Phase 6.7: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen:
-klare Play-Bedienung, grafische Tonspur, stabile Wiedergabe, Lautstaerke- und Tempo-Regler, saubere aber nicht
-aufdringliche Quellen-/Lizenzanzeige und brauchbare mobile Bedienung.
+klare Play-Bedienung, grafische Tonspur, stabile Wiedergabe, Lautstaerke- und Tempo-Regler, reduzierte sichtbare
+Informationen und brauchbare mobile Bedienung.
 
 ## Geaenderte Dateien
 
@@ -37,8 +37,8 @@ aufdringliche Quellen-/Lizenzanzeige und brauchbare mobile Bedienung.
   eine stabile Ersatzgrafik gezeichnet; die Wiedergabe bleibt davon unabhaengig.
 - Die Soundbar injiziert ihre gekapselten CSS-Regeln selbst unter `#species-sound`. Dadurch haengt die Optik nicht mehr
   davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
-- Credits werden nur kompakt in einer Zeile gezeigt. Detailinformationen liegen in einem eingeklappten
-  `Quelle und Lizenz`-Bereich.
+- Quelle und Lizenz werden nur im eingeklappten `Quelle und Lizenz`-Bereich gezeigt; unter `Tierstimme` steht keine
+  zusaetzliche Quellenzeile mehr.
 - Non-Commercial-Lizenzen werden nicht mehr als sichtbarer Warnhinweis markiert. Der NC-Status bleibt intern ueber
   `credits.json`, `fehlende_elemente_report.json` und `docs/sound-license-review.md` nachvollziehbar.
 
@@ -50,8 +50,8 @@ Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienun
 - roter Positionsmarker wie bei typischen Bird-ID-Playern
 - runder Play-Button links unten
 - Play-/Pause-Symbol im runden Button ohne Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch
-  leicht nach unten versetzt, damit er homogener im Bedienfeld sitzt
-- Titel/Quelle kompakt neben dem Button
+  deutlich nach unten versetzt, damit er homogener in der gesamten unteren Bedienflaeche sitzt
+- Titel kompakt neben dem Button
 - Zeit rechts unten
 - Lautstaerke und Tempo in einer kompakten zweiten Bedienzeile
 - Quellenangaben eingeklappt unterhalb der Soundbar
@@ -82,7 +82,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.17`
+- Footer: `species-sound.js?v=1.0.18`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
@@ -103,7 +103,7 @@ Desktop:
 5. Klick auf das Lautsprechersymbol setzt auf `0%`, zeigt das Symbol rot durchgestrichen und stellt beim zweiten Klick
    den vorherigen Wert wieder her.
 6. Tempo-Auswahl schaltet zwischen `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`.
-7. Kompakte Quelle ist sichtbar.
+7. Unter `Tierstimme` steht keine zusaetzliche Quellenzeile.
 8. `Quelle und Lizenz` klappt Detailinformationen auf.
 9. Originalquelle oeffnet in neuem Tab.
 

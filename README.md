@@ -190,6 +190,8 @@ Seit `species-sound.js?v=1.0.16` schaltet ein Klick auf das Lautsprechersymbol t
 rot durchgestrichen und ein zweiter Klick stellt den vorherigen Wert wieder her.
 Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohne Browser-Default-Padding vertikal
 zentriert; der ganze Button ist optisch leicht nach unten versetzt, ohne das Control-Grid umzubauen.
+Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche. Die
+zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt; Quelle und Lizenz bleiben im ausklappbaren Detailbereich.
 
 ffmpeg unter Windows installieren:
 
