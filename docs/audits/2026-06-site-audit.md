@@ -113,7 +113,9 @@ Stand: 2026-06-15
   - Nachfix: Web Audio wird seit `species-sound.js?v=1.0.15` nur noch fuer Lautstaerke ueber 100 Prozent aktiviert,
     damit die normale Wiedergabe nicht stummgeschaltet wird.
   - Nachfix: Der Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
-  - dokumentierte Footer-Version: `species-sound.js?v=1.0.15`
+  - Mute-Toggle seit `species-sound.js?v=1.0.16`: Lautsprechersymbol setzt temporaer auf `0%`, wird rot
+    durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
+  - dokumentierte Footer-Version: `species-sound.js?v=1.0.16`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -144,6 +146,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.15` setzen und Artseiten mobil/desktop
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.16` setzen und Artseiten mobil/desktop
    pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

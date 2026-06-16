@@ -228,7 +228,8 @@ Nach Frontend-Aenderungen:
   - `/wildlife/costarica`
   - `/wildlife/island`
 - Mobile Layout pruefen
-- Tierstimmen-Player pruefen: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent und Tempo-Auswahl
+- Tierstimmen-Player pruefen: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent, Mute-Toggle und
+  Tempo-Auswahl
 - Lightbox-Zoom auf Desktop und Android Chrome pruefen
 - GitHub Pages Deploy abwarten
 - Danach erst Squarespace-`?v=` erhoehen
@@ -268,6 +269,8 @@ Aktuelle Planung:
   Tempo-Auswahl `0,25x`, `0,5x`, `1x`, `1,5x`, `2x`, `4x`.
   Tonfix: Seit `species-sound.js?v=1.0.15` wird Web Audio nur noch fuer Lautstaerke ueber 100 Prozent aktiviert; der
   Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
+  Mute-Toggle: Seit `species-sound.js?v=1.0.16` setzt ein Klick auf das Lautsprechersymbol temporaer auf `0%`, zeigt
+  das Symbol rot durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

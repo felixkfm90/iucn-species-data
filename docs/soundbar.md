@@ -25,6 +25,8 @@ aufdringliche Quellen-/Lizenzanzeige und brauchbare mobile Bedienung.
   Canvas-Wellenform zurueck.
 - Der Lautstaerkeregler arbeitet von 0 bis 200 Prozent. Werte bis 100 Prozent nutzen die normale Audio-Lautstaerke;
   Werte darueber werden per Web-Audio-Gain verstaerkt.
+- Klick auf das Lautsprechersymbol schaltet temporaer auf `0%`. Das Symbol wird rot durchgestrichen. Ein weiterer
+  Klick stellt den zuvor eingestellten Wert wieder her.
 - Web Audio wird nur aktiviert, wenn die Lautstaerke ueber 100 Prozent liegt. Dadurch bleibt die normale Wiedergabe
   fuer 0 bis 100 Prozent stabil und wird nicht durch Cross-Origin-Einschraenkungen stummgeschaltet.
 - Die Abspielgeschwindigkeit kann auf `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x` gesetzt werden.
@@ -78,7 +80,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.15`
+- Footer: `species-sound.js?v=1.0.16`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
@@ -96,10 +98,12 @@ Desktop:
 2. Play-Button startet und pausiert die Wiedergabe.
 3. Spektrogramm, roter Positionsmarker, Zeit und Dauer werden angezeigt.
 4. Lautstaerkeregler veraendert die Wiedergabe von 0 bis 200 Prozent.
-5. Tempo-Auswahl schaltet zwischen `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`.
-6. Kompakte Quelle ist sichtbar.
-7. `Quelle und Lizenz` klappt Detailinformationen auf.
-8. Originalquelle oeffnet in neuem Tab.
+5. Klick auf das Lautsprechersymbol setzt auf `0%`, zeigt das Symbol rot durchgestrichen und stellt beim zweiten Klick
+   den vorherigen Wert wieder her.
+6. Tempo-Auswahl schaltet zwischen `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`.
+7. Kompakte Quelle ist sichtbar.
+8. `Quelle und Lizenz` klappt Detailinformationen auf.
+9. Originalquelle oeffnet in neuem Tab.
 
 NC-Fall:
 

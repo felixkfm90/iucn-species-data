@@ -183,7 +183,9 @@ Testpfad zu gefaehrden.
   Nach Live-Rueckmeldung wurde ein Tonfix nachgezogen: Web Audio wird seit `species-sound.js?v=1.0.15` nur noch fuer
   Werte ueber 100 Prozent aktiviert, damit die normale Wiedergabe nicht durch Cross-Origin-Einschraenkungen stumm
   wird. Der Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.15`.
+  Danach wurde ein Mute-Toggle auf dem Lautsprechersymbol ergaenzt: Klick setzt temporaer auf `0%`, markiert das
+  Symbol rot durchgestrichen und ein zweiter Klick stellt den vorherigen Wert wieder her.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.16`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

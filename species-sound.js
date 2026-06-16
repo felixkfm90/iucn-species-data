@@ -181,6 +181,50 @@
         color: #52635f;
       }
 
+      #species-sound .sound-mute-toggle {
+        position: relative;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+        border: 0;
+        border-radius: 4px;
+        padding: 2px;
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        color: #52635f;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #species-sound .sound-mute-toggle:hover {
+        background: rgba(82,99,95,0.08);
+      }
+
+      #species-sound .sound-mute-toggle::after {
+        content: "";
+        position: absolute;
+        left: 3px;
+        right: 3px;
+        top: 50%;
+        height: 2px;
+        border-radius: 999px;
+        background: #cf2d2d;
+        transform: rotate(-38deg) scaleX(0);
+        transform-origin: center;
+      }
+
+      #species-sound .sound-mute-toggle.is-muted {
+        color: #cf2d2d;
+      }
+
+      #species-sound .sound-mute-toggle.is-muted::after {
+        transform: rotate(-38deg) scaleX(1);
+      }
+
       #species-sound .sound-volume-range {
         --sound-volume-progress: 50%;
         appearance: none;
@@ -766,12 +810,20 @@
           </div>
 
           <div class="sound-settings">
-            <label class="sound-volume-control" for="sound-volume">
-              <svg class="sound-volume-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M4 9.5v5h3.2L12 18.4V5.6L7.2 9.5H4z"></path>
-                <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15 8.5c1 1 1.5 2.2 1.5 3.5S16 14.5 15 15.5"></path>
-                <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M17.5 6c1.7 1.7 2.6 3.7 2.6 6s-.9 4.3-2.6 6"></path>
-              </svg>
+            <div class="sound-volume-control">
+              <button
+                id="sound-mute-toggle"
+                class="sound-mute-toggle"
+                type="button"
+                aria-label="Stummschalten"
+                aria-pressed="false"
+              >
+                <svg class="sound-volume-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M4 9.5v5h3.2L12 18.4V5.6L7.2 9.5H4z"></path>
+                  <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M15 8.5c1 1 1.5 2.2 1.5 3.5S16 14.5 15 15.5"></path>
+                  <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M17.5 6c1.7 1.7 2.6 3.7 2.6 6s-.9 4.3-2.6 6"></path>
+                </svg>
+              </button>
               <input
                 id="sound-volume"
                 class="sound-volume-range"
@@ -786,7 +838,7 @@
                 aria-valuenow="${initialVolumePercent}"
               >
               <span id="sound-volume-value" class="sound-control-value">${initialVolumePercent}%</span>
-            </label>
+            </div>
 
             <label class="sound-speed-control" for="sound-speed">
               <span class="sound-control-label">Tempo</span>
@@ -814,6 +866,7 @@
     const durationEl = wrapper.querySelector("#duration");
     const volumeEl = wrapper.querySelector("#sound-volume");
     const volumeValueEl = wrapper.querySelector("#sound-volume-value");
+    const muteBtn = wrapper.querySelector("#sound-mute-toggle");
     const speedEl = wrapper.querySelector("#sound-speed");
 
     if (
@@ -827,6 +880,7 @@
       !durationEl ||
       !volumeEl ||
       !volumeValueEl ||
+      !muteBtn ||
       !speedEl
     ) {
       wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
@@ -843,6 +897,7 @@
     let audioGraphDisabled = false;
     let animationFrameId = 0;
     let lastRenderedTimeText = "";
+    let volumeBeforeMute = initialVolumePercent > 0 ? initialVolumePercent : DEFAULT_VOLUME_PERCENT;
 
     function ensureAudioGraph() {
       if (gainNode) return true;
@@ -891,11 +946,22 @@
       volumeValueEl.textContent = `${percent}%`;
     }
 
+    function updateMuteUi(isMuted) {
+      muteBtn.classList.toggle("is-muted", isMuted);
+      muteBtn.setAttribute("aria-pressed", isMuted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", isMuted ? "Lautstaerke wiederherstellen" : "Stummschalten");
+    }
+
     function setVolumePercent(percent, options = {}) {
       const safePercent = Math.round(clampNumber(percent, 0, VOLUME_MAX_PERCENT, DEFAULT_VOLUME_PERCENT));
       const gainValue = safePercent / 100;
       currentVolumePercent = safePercent;
       updateVolumeUi(safePercent);
+      updateMuteUi(safePercent === 0);
+
+      if (safePercent > 0 && options.remember !== false) {
+        volumeBeforeMute = safePercent;
+      }
 
       if ((gainNode || (options.activateGraph && shouldUseAudioGraph(safePercent))) && ensureAudioGraph()) {
         audio.volume = 1;
@@ -1025,6 +1091,20 @@
     volumeEl.addEventListener("input", () => {
       const nextVolume = Number(volumeEl.value);
       setVolumePercent(nextVolume, { activateGraph: shouldUseAudioGraph(nextVolume), persist: true });
+    });
+
+    muteBtn.addEventListener("click", () => {
+      if (currentVolumePercent > 0) {
+        volumeBeforeMute = currentVolumePercent;
+        setVolumePercent(0, { remember: false });
+        return;
+      }
+
+      const restoredVolume = volumeBeforeMute > 0 ? volumeBeforeMute : DEFAULT_VOLUME_PERCENT;
+      setVolumePercent(restoredVolume, {
+        activateGraph: shouldUseAudioGraph(restoredVolume),
+        persist: true,
+      });
     });
 
     speedEl.addEventListener("change", () => {

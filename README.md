@@ -186,6 +186,8 @@ Web-Audio-Unterstuetzung faellt der Player auf die normale Browser-Lautstaerke b
 Seit `species-sound.js?v=1.0.15` wird Web Audio nur noch fuer Werte ueber 100 Prozent aktiviert; die normale
 Wiedergabe bei 0 bis 100 Prozent bleibt dadurch nativ. Der Positionsmarker wird waehrend der Wiedergabe per
 `requestAnimationFrame` geglaettet.
+Seit `species-sound.js?v=1.0.16` schaltet ein Klick auf das Lautsprechersymbol temporaer auf `0%`; das Symbol wird
+rot durchgestrichen und ein zweiter Klick stellt den vorherigen Wert wieder her.
 
 ffmpeg unter Windows installieren:
 
@@ -244,7 +246,8 @@ Weitere Arten werden bei Bedarf manuell in `species_list.json` ergaenzt; aktuell
 ## Tests nach Frontend-Aenderungen
 
 - Detailseite, z. B. `/wildlife/heimische-tierwelt/acanthisflammea`
-- Tierstimmen-Player: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent und Tempo-Auswahl pruefen
+- Tierstimmen-Player: Spektrogramm, Play/Pause, Scrubbing, Lautstaerke 0-200 Prozent, Mute-Toggle und Tempo-Auswahl
+  pruefen
 - Uebersichtssuche:
   - `/wildlife/heimische-tierwelt`
   - `/wildlife/costarica`
