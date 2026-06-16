@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-15
+Stand: 2026-06-16
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -275,6 +275,8 @@ Aktuelle Planung:
   Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch leicht nach unten versetzt.
   Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche und die
   zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt.
+  Seit `species-sound.js?v=1.0.19` steht `Tierstimme` als Titelzeile oberhalb der Controls; Playbutton, Lautstaerke,
+  Zeit und Tempo liegen in einer gemeinsamen kompakten Control-Zeile.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

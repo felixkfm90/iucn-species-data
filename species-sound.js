@@ -75,13 +75,17 @@
 
       #species-sound .sound-controls {
         display: grid;
-        grid-template-columns: 42px minmax(0, 1fr) auto;
+        grid-template-columns: 34px minmax(176px, 230px) auto minmax(12px, 1fr) auto;
+        grid-template-areas:
+          "title title title title title"
+          "play volume time spacer speed";
         align-items: center;
-        gap: 10px;
-        padding: 9px 10px;
+        gap: 5px 10px;
+        padding: 8px 10px 9px;
       }
 
       #species-sound #play-toggle.play-toggle {
+        grid-area: play;
         width: 34px;
         height: 34px;
         min-width: 34px;
@@ -93,7 +97,6 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transform: translateY(18px);
         cursor: pointer;
         line-height: 0;
         box-shadow: none;
@@ -126,11 +129,10 @@
         border-right: 4px solid #fff;
       }
 
-      #species-sound .sound-copy {
-        min-width: 0;
-      }
-
       #species-sound .sound-title {
+        grid-area: title;
+        min-width: 0;
+        margin-left: 44px;
         font-size: 0.92rem;
         font-weight: 700;
         line-height: 1.15;
@@ -141,18 +143,11 @@
       }
 
       #species-sound .sound-time {
+        grid-area: time;
         font-size: 0.78rem;
         color: #38433f;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
-      }
-
-      #species-sound .sound-settings {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 0 10px 10px 62px;
       }
 
       #species-sound .sound-volume-control,
@@ -164,8 +159,8 @@
       }
 
       #species-sound .sound-volume-control {
-        flex: 1 1 210px;
-        max-width: 310px;
+        grid-area: volume;
+        width: 100%;
       }
 
       #species-sound .sound-volume-icon {
@@ -224,7 +219,7 @@
         appearance: none;
         -webkit-appearance: none;
         flex: 1 1 auto;
-        min-width: 92px;
+        min-width: 86px;
         height: 22px;
         margin: 0;
         background: transparent;
@@ -304,6 +299,10 @@
         cursor: pointer;
       }
 
+      #species-sound .sound-speed-control {
+        grid-area: speed;
+      }
+
       #species-sound .sound-details {
         border-top: 1px solid #d4dfdb;
         padding: 7px 10px 9px;
@@ -345,8 +344,12 @@
         }
 
         #species-sound .sound-controls {
-          grid-template-columns: 38px minmax(0, 1fr) auto;
-          gap: 8px;
+          grid-template-columns: 32px minmax(128px, 1fr) auto;
+          grid-template-areas:
+            "title title title"
+            "play volume time"
+            "speed speed speed";
+          gap: 6px 8px;
           padding: 8px;
         }
 
@@ -354,26 +357,19 @@
           width: 32px;
           height: 32px;
           min-width: 32px;
-          transform: translateY(15px);
         }
 
         #species-sound .sound-title {
+          margin-left: 40px;
           font-size: 0.88rem;
         }
 
-        #species-sound .sound-settings {
-          padding: 0 8px 9px;
-          flex-wrap: wrap;
-          gap: 8px 10px;
-        }
-
-        #species-sound .sound-volume-control {
-          flex: 1 1 178px;
-          max-width: none;
+        #species-sound .sound-control-value {
+          width: 38px;
         }
 
         #species-sound .sound-speed-control {
-          flex: 0 0 auto;
+          justify-self: end;
         }
 
         #species-sound .sound-detail-grid {
@@ -775,20 +771,12 @@
           </div>
 
           <div class="sound-controls">
+            <div class="sound-title">Tierstimme</div>
+
             <button id="play-toggle" class="play-toggle" type="button" aria-label="Tierstimme abspielen" aria-pressed="false">
               <span class="sound-icon sound-icon-play" aria-hidden="true"></span>
             </button>
 
-            <div class="sound-copy">
-              <div class="sound-title">Tierstimme</div>
-            </div>
-
-            <div class="sound-time">
-              <span id="current-time">0:00</span> / <span id="duration">0:00</span>
-            </div>
-          </div>
-
-          <div class="sound-settings">
             <div class="sound-volume-control">
               <button
                 id="sound-mute-toggle"
@@ -817,6 +805,10 @@
                 aria-valuenow="${initialVolumePercent}"
               >
               <span id="sound-volume-value" class="sound-control-value">${initialVolumePercent}%</span>
+            </div>
+
+            <div class="sound-time">
+              <span id="current-time">0:00</span> / <span id="duration">0:00</span>
             </div>
 
             <label class="sound-speed-control" for="sound-speed">

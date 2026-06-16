@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-15
+Stand: 2026-06-16
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -189,7 +189,9 @@ Testpfad zu gefaehrden.
   ganze Button optisch in die Mitte der unteren Bedienflaeche versetzt, ohne das Control-Grid umzubauen. Die
   zusaetzliche sichtbare Quellenzeile unter `Tierstimme` wurde entfernt; Quelle und Lizenz bleiben im ausklappbaren
   Detailbereich.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.18`.
+  Anschliessend wurde die Soundbar weiter verdichtet: `Tierstimme` steht als Titelzeile oberhalb der Controls;
+  darunter liegen Playbutton, kompakte Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.19`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

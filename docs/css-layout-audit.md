@@ -1,6 +1,6 @@
 # CSS Layout Audit
 
-Stand: 2026-06-15
+Stand: 2026-06-16
 
 Quelle:
 
@@ -25,7 +25,7 @@ Galerien mit mehr als einer Spalte werden unter 768 px auf eine Spalte gesetzt. 
 | `.info-box` | Live nur in `#species-status` gefunden. | Mittel, weil globaler Klassenselektor. | Beibehalten; bei Konflikt spaeter auf `#species-status .info-box` scopen. |
 | `#species-sound .species-sound-frame` | Einzige noetige Custom-CSS-Ergaenzung fuer den Sound-Rahmen. | Niedrig. | Beibehalten. Die eigentliche Player-Optik kommt aus `species-sound.js`. |
 | `#play-toggle` | Passt zur aktuellen Ausgabe von `species-sound.js`; Modulstyle ueberschreibt alte globale Button-Regeln. | Niedrig. | Beibehalten; echter Button mit CSS-Icon statt Textsymbol. |
-| `.sound-player`, `.sound-spectrogram-image`, `.sound-wave-canvas`, `.sound-cursor`, `.sound-scrubber`, `.sound-settings` | Spektrogramm-Anzeige, Canvas-Fallback, Scrubbing, Lautstaerke und Tempo ohne externe Waveform-Bibliothek. | Niedrig. | Werden durch `species-sound.js` unter `#species-sound` gekapselt injiziert. |
+| `.sound-player`, `.sound-spectrogram-image`, `.sound-wave-canvas`, `.sound-cursor`, `.sound-scrubber`, `.sound-controls`, `.sound-volume-control`, `.sound-speed-control` | Spektrogramm-Anzeige, Canvas-Fallback, Scrubbing, Lautstaerke, Zeit und Tempo in kompakter Control-Zeile ohne externe Waveform-Bibliothek. | Niedrig. | Werden durch `species-sound.js` unter `#species-sound` gekapselt injiziert. |
 | `.sound-details` | Eingeklappte Credits mit Quelle und Lizenz. | Niedrig. | Beibehalten; Lizenzdaten bleiben erreichbar. Ein separater sichtbarer NC-Warnhinweis wird nicht mehr ausgegeben. |
 | `#gz-overlay`, `#gz-img`, `#gz-close`, `.gz-zoom-btn` | Werden durch `lightbox-zoom.js` global angelegt, sind aber ohne offene Lightbox unsichtbar. | Niedrig bis Mittel. | Beibehalten; nur bei Konflikt mit anderen Lightboxen scopen/anpassen. |
 | `.gallery-grid[data-test="gallery-grid-simple"][data-columns]:not([data-columns="1"])` | Mobile-only-Override fuer Squarespace-Galerien, die auf mehr als eine Spalte eingestellt sind. | Niedrig bis Mittel, weil Squarespace-Galerieklassen global sind. | Beibehalten, wenn Reisegalerien mobil sauber einspaltig bleiben; bei Konflikt spaeter auf einzelne Collections scopen. |
