@@ -49,6 +49,8 @@ Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienun
 - grafische Tonspur oben
 - roter Positionsmarker wie bei typischen Bird-ID-Playern
 - runder Play-Button links unten
+- Play-/Pause-Symbol im runden Button ohne Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch
+  leicht nach unten versetzt, damit er homogener im Bedienfeld sitzt
 - Titel/Quelle kompakt neben dem Button
 - Zeit rechts unten
 - Lautstaerke und Tempo in einer kompakten zweiten Bedienzeile
@@ -80,7 +82,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.16`
+- Footer: `species-sound.js?v=1.0.17`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.

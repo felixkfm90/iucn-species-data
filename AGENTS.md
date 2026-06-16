@@ -271,6 +271,8 @@ Aktuelle Planung:
   Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
   Mute-Toggle: Seit `species-sound.js?v=1.0.16` setzt ein Klick auf das Lautsprechersymbol temporaer auf `0%`, zeigt
   das Symbol rot durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
+  Playbutton: Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohne
+  Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch leicht nach unten versetzt.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

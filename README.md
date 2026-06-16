@@ -188,6 +188,8 @@ Wiedergabe bei 0 bis 100 Prozent bleibt dadurch nativ. Der Positionsmarker wird 
 `requestAnimationFrame` geglaettet.
 Seit `species-sound.js?v=1.0.16` schaltet ein Klick auf das Lautsprechersymbol temporaer auf `0%`; das Symbol wird
 rot durchgestrichen und ein zweiter Klick stellt den vorherigen Wert wieder her.
+Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohne Browser-Default-Padding vertikal
+zentriert; der ganze Button ist optisch leicht nach unten versetzt, ohne das Control-Grid umzubauen.
 
 ffmpeg unter Windows installieren:
 

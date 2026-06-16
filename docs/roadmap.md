@@ -185,7 +185,9 @@ Testpfad zu gefaehrden.
   wird. Der Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
   Danach wurde ein Mute-Toggle auf dem Lautsprechersymbol ergaenzt: Klick setzt temporaer auf `0%`, markiert das
   Symbol rot durchgestrichen und ein zweiter Klick stellt den vorherigen Wert wieder her.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.16`.
+  Danach wurde die Playbutton-Optik nachgeschaerft: Play-/Pause-Symbol im runden Button vertikal zentriert und der
+  ganze Button optisch leicht nach unten versetzt, ohne das Control-Grid umzubauen.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.17`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

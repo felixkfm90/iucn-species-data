@@ -87,12 +87,15 @@
         min-width: 34px;
         border: 0;
         border-radius: 50%;
+        padding: 0;
         background: #52635f;
         color: #fff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        transform: translateY(2px);
         cursor: pointer;
+        line-height: 0;
         box-shadow: none;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
@@ -104,6 +107,7 @@
 
       #species-sound .sound-icon {
         display: block;
+        flex: 0 0 auto;
       }
 
       #species-sound .sound-icon-play {

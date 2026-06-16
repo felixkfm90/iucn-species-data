@@ -115,7 +115,9 @@ Stand: 2026-06-15
   - Nachfix: Der Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
   - Mute-Toggle seit `species-sound.js?v=1.0.16`: Lautsprechersymbol setzt temporaer auf `0%`, wird rot
     durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
-  - dokumentierte Footer-Version: `species-sound.js?v=1.0.16`
+  - Playbutton-Zentrierung seit `species-sound.js?v=1.0.17`: Play-/Pause-Symbol im runden Button ohne
+    Browser-Default-Padding vertikal zentriert; ganzer Button optisch leicht nach unten versetzt.
+  - dokumentierte Footer-Version: `species-sound.js?v=1.0.17`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -146,6 +148,6 @@ Stand: 2026-06-15
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.16` setzen und Artseiten mobil/desktop
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.17` setzen und Artseiten mobil/desktop
    pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.
