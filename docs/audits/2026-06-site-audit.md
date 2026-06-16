@@ -119,9 +119,9 @@ Stand: 2026-06-16
     Browser-Default-Padding vertikal zentriert; ganzer Button optisch leicht nach unten versetzt.
   - Playbutton-Position und reduzierte Quellenanzeige seit `species-sound.js?v=1.0.18`: Button deutlicher in der
     Mitte der unteren Bedienflaeche, keine zusaetzliche Quellenzeile unter `Tierstimme`.
-  - Kompakte Control-Zeile seit `species-sound.js?v=1.0.19`: `Tierstimme` als Titelzeile oberhalb, darunter
+  - Kompakte Control-Zeile seit `species-sound.js?v=1.0.20`: `Tierstimme` oberhalb des Spektrogramms, darunter
     Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
-  - dokumentierte Footer-Version: `species-sound.js?v=1.0.19`
+  - dokumentierte Footer-Version: `species-sound.js?v=1.0.20`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -152,6 +152,6 @@ Stand: 2026-06-16
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.19` setzen und Artseiten mobil/desktop
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.20` setzen und Artseiten mobil/desktop
    pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

@@ -163,10 +163,11 @@
 
 /*
   Die eigentliche Soundbar-Optik wird seit species-sound.js v1.0.10 vom Modul selbst
-  in #species-sound gekapselt injiziert. Seit species-sound.js v1.0.19 nutzt der
+  in #species-sound gekapselt injiziert. Seit species-sound.js v1.0.20 nutzt der
   Player ein vorbereitetes Spektrogramm mit Canvas-Fallback, Lautstaerke 0-200
   Prozent, Mute-Toggle, Tempo-Auswahl, geglaettetem Positionsmarker und
-  kompakter Control-Zeile ohne sichtbare Quellenzeile unter Tierstimme.
+  kompakter Control-Zeile. Der Titel steht oberhalb des Spektrogramms; unter
+  Tierstimme gibt es keine sichtbare Quellenzeile.
 
   In Squarespace muss fuer die Soundbar nur der Rahmenstil aus .frame-box vorhanden
   bleiben. Alte WaveSurfer-/Waveform-Regeln koennen entfernt werden.

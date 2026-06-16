@@ -192,8 +192,8 @@ Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohn
 zentriert; der ganze Button ist optisch leicht nach unten versetzt, ohne das Control-Grid umzubauen.
 Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche. Die
 zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt; Quelle und Lizenz bleiben im ausklappbaren Detailbereich.
-Seit `species-sound.js?v=1.0.19` ist die Soundbar kompakter: `Tierstimme` steht als Titelzeile oberhalb der Controls;
-darunter liegen Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Zeile.
+Seit `species-sound.js?v=1.0.20` ist die Soundbar kompakter: `Tierstimme` steht oberhalb des Spektrogramms; darunter
+liegen Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Zeile.
 
 ffmpeg unter Windows installieren:
 

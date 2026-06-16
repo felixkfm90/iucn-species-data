@@ -189,9 +189,10 @@ Testpfad zu gefaehrden.
   ganze Button optisch in die Mitte der unteren Bedienflaeche versetzt, ohne das Control-Grid umzubauen. Die
   zusaetzliche sichtbare Quellenzeile unter `Tierstimme` wurde entfernt; Quelle und Lizenz bleiben im ausklappbaren
   Detailbereich.
-  Anschliessend wurde die Soundbar weiter verdichtet: `Tierstimme` steht als Titelzeile oberhalb der Controls;
-  darunter liegen Playbutton, kompakte Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.19`.
+  Anschliessend wurde die Soundbar weiter verdichtet: Playbutton, kompakte Lautstaerke, Zeit und Tempo liegen in einer
+  gemeinsamen Control-Zeile. Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms, damit
+  die Bedienflaeche darunter kompakter bleibt.
+  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.20`.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

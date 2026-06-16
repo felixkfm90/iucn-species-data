@@ -26,6 +26,18 @@
         overflow: hidden;
       }
 
+      #species-sound .sound-title {
+        padding: 8px 10px 6px;
+        border-bottom: 1px solid #d4dfdb;
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.15;
+        color: #17221f;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       #species-sound .sound-visual {
         position: relative;
         height: 108px;
@@ -76,12 +88,10 @@
       #species-sound .sound-controls {
         display: grid;
         grid-template-columns: 34px minmax(176px, 230px) auto minmax(12px, 1fr) auto;
-        grid-template-areas:
-          "title title title title title"
-          "play volume time spacer speed";
+        grid-template-areas: "play volume time spacer speed";
         align-items: center;
-        gap: 5px 10px;
-        padding: 8px 10px 9px;
+        gap: 8px 10px;
+        padding: 8px 10px;
       }
 
       #species-sound #play-toggle.play-toggle {
@@ -127,19 +137,6 @@
         height: 15px;
         border-left: 4px solid #fff;
         border-right: 4px solid #fff;
-      }
-
-      #species-sound .sound-title {
-        grid-area: title;
-        min-width: 0;
-        margin-left: 44px;
-        font-size: 0.92rem;
-        font-weight: 700;
-        line-height: 1.15;
-        color: #17221f;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
 
       #species-sound .sound-time {
@@ -346,7 +343,6 @@
         #species-sound .sound-controls {
           grid-template-columns: 32px minmax(128px, 1fr) auto;
           grid-template-areas:
-            "title title title"
             "play volume time"
             "speed speed speed";
           gap: 6px 8px;
@@ -360,7 +356,6 @@
         }
 
         #species-sound .sound-title {
-          margin-left: 40px;
           font-size: 0.88rem;
         }
 
@@ -741,6 +736,8 @@
     wrapper.innerHTML = `
       <div class="frame-box species-sound-frame">
         <div class="sound-player" aria-label="Tierstimmen-Player">
+          <div class="sound-title">Tierstimme</div>
+
           <div class="sound-visual${spectrogramExists ? " has-spectrogram" : ""}">
             ${spectrogramExists ? `
               <img
@@ -771,8 +768,6 @@
           </div>
 
           <div class="sound-controls">
-            <div class="sound-title">Tierstimme</div>
-
             <button id="play-toggle" class="play-toggle" type="button" aria-label="Tierstimme abspielen" aria-pressed="false">
               <span class="sound-icon sound-icon-play" aria-hidden="true"></span>
             </button>

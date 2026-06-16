@@ -275,8 +275,8 @@ Aktuelle Planung:
   Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch leicht nach unten versetzt.
   Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche und die
   zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt.
-  Seit `species-sound.js?v=1.0.19` steht `Tierstimme` als Titelzeile oberhalb der Controls; Playbutton, Lautstaerke,
-  Zeit und Tempo liegen in einer gemeinsamen kompakten Control-Zeile.
+  Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms; Playbutton, Lautstaerke, Zeit und
+  Tempo liegen darunter in einer gemeinsamen kompakten Control-Zeile.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.

@@ -37,8 +37,8 @@ Informationen und brauchbare mobile Bedienung.
   eine stabile Ersatzgrafik gezeichnet; die Wiedergabe bleibt davon unabhaengig.
 - Die Soundbar injiziert ihre gekapselten CSS-Regeln selbst unter `#species-sound`. Dadurch haengt die Optik nicht mehr
   davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
-- Die Bedienung ist kompakt aufgebaut: `Tierstimme` steht als kleine Titelzeile oben; darunter liegen Playbutton,
-  Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
+- Die Bedienung ist kompakt aufgebaut: `Tierstimme` steht als kleine Kopfzeile oberhalb des Spektrogramms.
+  Unter dem Spektrogramm liegen Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
 - Quelle und Lizenz werden nur im eingeklappten `Quelle und Lizenz`-Bereich gezeigt; unter `Tierstimme` steht keine
   zusaetzliche Quellenzeile mehr.
 - Non-Commercial-Lizenzen werden nicht mehr als sichtbarer Warnhinweis markiert. Der NC-Status bleibt intern ueber
@@ -48,9 +48,9 @@ Informationen und brauchbare mobile Bedienung.
 
 Die Soundbar orientiert sich an einer kompakten Bird-ID-/Merlin-artigen Bedienung, ohne das Layout extern zu kopieren:
 
-- grafische Tonspur oben
+- Titel `Tierstimme` als eigene kleine Kopfzeile oberhalb des Spektrogramms
+- grafische Tonspur darunter
 - roter Positionsmarker wie bei typischen Bird-ID-Playern
-- Titel `Tierstimme` als eigene kleine Zeile oberhalb der Controls
 - runder Play-Button ganz links in der Control-Zeile
 - kompakte Lautstaerke direkt neben dem Playbutton
 - Zeit direkt neben der Lautstaerke
@@ -83,7 +83,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.19`
+- Footer: `species-sound.js?v=1.0.20`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
@@ -104,8 +104,8 @@ Desktop:
 5. Klick auf das Lautsprechersymbol setzt auf `0%`, zeigt das Symbol rot durchgestrichen und stellt beim zweiten Klick
    den vorherigen Wert wieder her.
 6. Tempo-Auswahl schaltet zwischen `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`.
-7. `Tierstimme` steht oberhalb der Control-Zeile; darunter folgen Playbutton, Lautstaerke, Zeit und Tempo in einer
-   kompakten Zeile.
+7. `Tierstimme` steht oberhalb des Spektrogramms; unter dem Spektrogramm folgen Playbutton, Lautstaerke, Zeit und
+   Tempo in einer kompakten Zeile.
 8. Unter `Tierstimme` steht keine zusaetzliche Quellenzeile.
 9. `Quelle und Lizenz` klappt Detailinformationen auf.
 10. Originalquelle oeffnet in neuem Tab.
