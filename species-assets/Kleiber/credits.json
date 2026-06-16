@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Sitta europaea",
+  "german_name": "Kleiber",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Vallée du Lude (Carolles), Manche, Normandie",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/804960",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Sitta sp:europaea q:A\" | page=1"
+}

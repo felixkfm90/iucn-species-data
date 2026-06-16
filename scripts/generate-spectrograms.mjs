@@ -20,6 +20,7 @@ const DEFAULT_QUALITY = 90;
 const args = parseArgs(process.argv.slice(2));
 const cwd = process.cwd();
 const soundsDir = path.join(cwd, "sounds");
+const speciesAssetsDir = path.join(cwd, "species-assets");
 const ffmpegPath = args.ffmpeg || process.env.FFMPEG_PATH || "ffmpeg";
 const format = normalizeFormat(args.format || DEFAULT_FORMAT);
 const outputFileName = `${args.outputName || DEFAULT_OUTPUT_NAME}.${format}`;
@@ -56,6 +57,7 @@ if (!fs.existsSync(soundsDir)) {
 const ffmpeg = checkFfmpeg(ffmpegPath);
 const jobs = collectJobs({
   soundsDir,
+  speciesAssetsDir,
   speciesFilter: args.species,
   outputRoot: args.outputRoot,
   outputFileName,
@@ -277,20 +279,31 @@ function checkFfmpeg(command) {
   };
 }
 
-function collectJobs({ soundsDir, speciesFilter, outputRoot, outputFileName, force }) {
+function collectJobs({ soundsDir, speciesAssetsDir, speciesFilter, outputRoot, outputFileName, force }) {
   const selected = new Set((speciesFilter || []).map((name) => name.toLowerCase()));
-  const dirs = fs
+  const soundDirs = fs
     .readdirSync(soundsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
+    .map((entry) => entry.name);
+  const assetDirs = fs.existsSync(speciesAssetsDir)
+    ? fs
+      .readdirSync(speciesAssetsDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+    : [];
+  const dirs = [...new Set([...soundDirs, ...assetDirs])]
     .filter((safeName) => !selected.size || selected.has(safeName.toLowerCase()))
     .sort((a, b) => a.localeCompare(b, "de"));
 
   return dirs.map((safeName) => {
-    const sourceDir = path.join(soundsDir, safeName);
-    const inputPath = path.join(sourceDir, `${safeName}.mp3`);
-    const outputDir = outputRoot ? path.resolve(cwd, outputRoot, safeName) : sourceDir;
+    const legacySoundDir = path.join(soundsDir, safeName);
+    const assetDir = path.join(speciesAssetsDir, safeName);
+    const assetInputPath = path.join(assetDir, "sound.mp3");
+    const legacyInputPath = path.join(legacySoundDir, `${safeName}.mp3`);
+    const inputPath = fs.existsSync(assetInputPath) ? assetInputPath : legacyInputPath;
+    const outputDir = outputRoot ? path.resolve(cwd, outputRoot, safeName) : assetDir;
     const outputPath = path.join(outputDir, outputFileName);
+    const legacyOutputPath = outputRoot ? null : path.join(legacySoundDir, outputFileName);
 
     if (!fs.existsSync(inputPath)) {
       return { safeName, inputPath, outputPath, action: "missing-mp3", reason: "MP3 not found" };
@@ -320,6 +333,7 @@ function collectJobs({ soundsDir, speciesFilter, outputRoot, outputFileName, for
       action: "generate",
       reason: force ? "forced" : "missing or older than MP3",
       inputBytes: inputStat.size,
+      legacyOutputPath,
     };
   });
 }
@@ -329,6 +343,7 @@ function publicJob(job) {
     safeName: job.safeName,
     input: relativeToCwd(job.inputPath),
     output: relativeToCwd(job.outputPath),
+    legacyOutput: job.legacyOutputPath ? relativeToCwd(job.legacyOutputPath) : null,
     action: job.action,
     reason: job.reason,
     inputBytes: job.inputBytes,
@@ -399,6 +414,11 @@ async function generateSpectrogram({
       ffmpegStatus: run.status,
       stderr: run.stderr.trim(),
     };
+  }
+
+  if (job.legacyOutputPath && job.legacyOutputPath !== job.outputPath) {
+    fs.mkdirSync(path.dirname(job.legacyOutputPath), { recursive: true });
+    fs.copyFileSync(job.outputPath, job.legacyOutputPath);
   }
 
   const outputStat = fs.statSync(job.outputPath);

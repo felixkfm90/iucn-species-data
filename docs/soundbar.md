@@ -16,11 +16,13 @@ Informationen und brauchbare mobile Bedienung.
 
 - Das Modul startet nur, wenn `#species-sound` existiert.
 - Sound und Credits werden weiter ueber GitHub Pages geladen:
-  - `sounds/<SafeName>/<SafeName>.mp3`
-  - `sounds/<SafeName>/credits.json`
+  - primaer `species-assets/<SafeName>/sound.mp3`
+  - primaer `species-assets/<SafeName>/credits.json`
+  - Legacy-Fallbacks unter `sounds/<SafeName>/...`
 - Vor dem Rendern wird die MP3 per `HEAD` geprueft.
 - Die aktive Soundbar nutzt ein natives `<audio>`-Element, eigene Controls und eine grafische Tonspur.
-- Wenn `sounds/<SafeName>/spectrogram.webp` vorhanden ist, wird dieses vorberechnete Spektrogramm angezeigt.
+- Wenn `species-assets/<SafeName>/spectrogram.webp` vorhanden ist, wird dieses vorberechnete Spektrogramm angezeigt.
+  Legacy-Fallback: `sounds/<SafeName>/spectrogram.webp`.
 - Wenn kein Spektrogramm vorhanden ist oder das Bild nicht geladen werden kann, faellt der Player auf die bisherige
   Canvas-Wellenform zurueck.
 - Der Lautstaerkeregler arbeitet von 0 bis 200 Prozent. Werte bis 100 Prozent nutzen die normale Audio-Lautstaerke;
@@ -65,7 +67,7 @@ die Generator-Parameter stehen in `docs/spectrogram-plan.md`.
 Aktuelle Umsetzung:
 
 1. Ein separates Generator-Skript erzeugt pro MP3 ein kleines Spektrogramm-Asset.
-2. Zielpfad: `sounds/<SafeName>/spectrogram.webp`.
+2. Primaerer Zielpfad: `species-assets/<SafeName>/spectrogram.webp`.
 3. `species-sound.js` laedt die Grafik nur, wenn sie vorhanden ist.
 4. Der Browser rendert dann nur noch Bild, Scrubber und Positionsmarker, statt auf jeder Seitenansicht teuer ein
    Spektrogramm zu berechnen.
@@ -83,7 +85,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.20`
+- Footer: `species-sound.js?v=1.0.21`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.

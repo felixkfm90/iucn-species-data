@@ -54,13 +54,14 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 3. Soundbar ist in Phase 5.4 als native Canvas-Komponente umgesetzt, siehe `docs/soundbar.md`.
 4. Manuelle Zusatzdaten sind in Phase 5.5 dokumentiert, siehe `docs/manual-species-fields.md`.
 5. Der manuelle Ablauf fuer neue Arten ist in Phase 5.6 dokumentiert, siehe `docs/add-species-workflow.md`.
-6. Asset-Buendelung pro Art wurde in Phase 5.8 bewertet. Ergebnis: nicht jetzt migrieren; aktueller Aufbau bleibt
-   produktiv, Details in `docs/asset-structure-plan.md`.
+6. Asset-Buendelung pro Art wurde in Phase 6.8 umgesetzt. Primaere Struktur ist jetzt
+   `species-assets/<SafeName>/`; `sounds/` und `Verbreitungskarten/` bleiben als Legacy-Fallbacks bestehen. Details
+   stehen in `docs/asset-structure-plan.md`.
 
 ## Nicht ohne Freigabe aendern
 
 - Keine Loeschung von `sounds/` oder `Verbreitungskarten/`.
 - Keine Umbenennung von `graphics/catagory/`.
-- Keine Migration auf `species-assets/<SafeName>/` ohne separaten Patchplan.
+- Keine Loeschung der Legacy-Fallbacks, bevor GitHub Pages, Squarespace-Footer, Live-Test und Monatsaudit stabil sind.
 - Keine Versionierung lokaler Batch-Dateien.
 - Keine Roadmap-Schritte ohne aktualisierte Dokumentation abschliessen.

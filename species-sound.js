@@ -478,6 +478,14 @@
     }
   }
 
+  async function firstExistingUrl(urls) {
+    for (const url of urls.filter(Boolean)) {
+      if (await headExists(url)) return url;
+    }
+
+    return "";
+  }
+
   function seedFromString(value) {
     let seed = 2166136261;
     const text = String(value || "sound");
@@ -711,20 +719,34 @@
 
     const data = await window.SpeciesCore.getSpeciesData();
     const name = data["Deutscher Name"];
-    const soundAssetName = window.SpeciesCore.sanitizeAssetName(name);
-    const encodedName = encodeURIComponent(soundAssetName);
-    const audioUrl = `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`;
-    const creditsUrl = `${ASSET_BASE}/sounds/${encodedName}/credits.json`;
-    const spectrogramUrl = `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`;
-    const audioExists = await headExists(audioUrl);
+    const paths = typeof window.SpeciesCore.getSpeciesAssetPaths === "function"
+      ? window.SpeciesCore.getSpeciesAssetPaths(data)
+      : null;
+    const soundAssetName = paths?.safeName || window.SpeciesCore.sanitizeAssetName(name);
+    const encodedName = paths?.encodedName || encodeURIComponent(soundAssetName);
+    const audioUrl = await firstExistingUrl([
+      paths?.sound,
+      paths?.legacySound,
+      `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`,
+    ]);
 
-    if (!audioExists) {
+    if (!audioUrl) {
       wrapper.innerHTML = renderStatus("Keine Tierstimme verfuegbar.");
       return;
     }
 
-    const spectrogramExists = await headExists(spectrogramUrl);
-    const credits = await fetchCredits(creditsUrl);
+    const creditsUrl = await firstExistingUrl([
+      paths?.credits,
+      paths?.legacyCredits,
+      `${ASSET_BASE}/sounds/${encodedName}/credits.json`,
+    ]);
+    const spectrogramUrl = await firstExistingUrl([
+      paths?.spectrogram,
+      paths?.legacySpectrogram,
+      `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`,
+    ]);
+    const spectrogramExists = Boolean(spectrogramUrl);
+    const credits = creditsUrl ? await fetchCredits(creditsUrl) : null;
     const creditDetails = buildCreditDetails(credits);
     const fallbackPeaksData = fallbackPeaks(soundAssetName);
     const initialVolumePercent = getStoredVolumePercent();

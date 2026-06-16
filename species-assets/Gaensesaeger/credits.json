@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Mergus merganser",
+  "german_name": "Gänsesäger",
+  "recordist": "Pascal Christe",
+  "country": "Switzerland",
+  "location": "Lüscherz, Dorf (near  Lüscherz), Erlach, Bern",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/513502",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Mergus sp:merganser q:B\" | page=1"
+}

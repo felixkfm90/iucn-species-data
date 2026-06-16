@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Cyanistes caeruleus",
+  "german_name": "Blaumeise",
+  "recordist": "Christian Kahle",
+  "country": "Germany",
+  "location": "Schneverdingen",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/973366",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Cyanistes sp:caeruleus q:B len:25-35\" | page=1"
+}

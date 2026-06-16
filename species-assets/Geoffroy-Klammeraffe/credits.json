@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Ateles geoffroyi",
+  "german_name": "Geoffroy-Klammeraffe",
+  "recordist": "Albert Lastukhin",
+  "country": "Costa Rica",
+  "location": "Provincia de Guanacaste",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/1009734",
+  "notes": "Stage 7 (openOnly=false, q=A, len25-35=false) | query=\"gen:Ateles sp:geoffroyi q:A\" | page=1"
+}

@@ -1,5 +1,6 @@
 window.SpeciesCore = (function () {
-  const DATA_URL = "https://felixkfm90.github.io/iucn-species-data/speciesData.json";
+  const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+  const DATA_URL = `${ASSET_BASE}/speciesData.json`;
   const PREVIEW_FALLBACK_SLUG = "turdusmerula";
 
   let speciesListPromise = null;
@@ -55,6 +56,28 @@ window.SpeciesCore = (function () {
       .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
   }
 
+  function getSpeciesAssetPaths(dataOrName) {
+    const name = typeof dataOrName === "string"
+      ? dataOrName
+      : dataOrName?.["Deutscher Name"] || dataOrName?.["Wissenschaftlicher Name"] || "";
+    const safeName = sanitizeAssetName(name);
+    const encodedName = encodeURIComponent(safeName);
+
+    return {
+      safeName,
+      encodedName,
+      assetDir: `${ASSET_BASE}/species-assets/${encodedName}`,
+      map: `${ASSET_BASE}/species-assets/${encodedName}/map.jpg`,
+      legacyMap: `${ASSET_BASE}/Verbreitungskarten/${encodedName}.jpg`,
+      sound: `${ASSET_BASE}/species-assets/${encodedName}/sound.mp3`,
+      legacySound: `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`,
+      credits: `${ASSET_BASE}/species-assets/${encodedName}/credits.json`,
+      legacyCredits: `${ASSET_BASE}/sounds/${encodedName}/credits.json`,
+      spectrogram: `${ASSET_BASE}/species-assets/${encodedName}/spectrogram.webp`,
+      legacySpectrogram: `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`,
+    };
+  }
+
   async function getSpeciesList() {
     if (!speciesListPromise) {
       speciesListPromise = fetch(DATA_URL)
@@ -85,5 +108,5 @@ window.SpeciesCore = (function () {
     return found;
   }
 
-  return { getCurrentSlug, sanitizeAssetName, getSpeciesList, getSpeciesData };
+  return { getCurrentSlug, sanitizeAssetName, getSpeciesAssetPaths, getSpeciesList, getSpeciesData };
 })();

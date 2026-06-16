@@ -12,6 +12,9 @@ if (!fs.existsSync(MAP_DIR)) fs.mkdirSync(MAP_DIR);
 const SOUND_DIR = "./sounds";
 if (!fs.existsSync(SOUND_DIR)) fs.mkdirSync(SOUND_DIR);
 
+const SPECIES_ASSETS_DIR = "./species-assets";
+if (!fs.existsSync(SPECIES_ASSETS_DIR)) fs.mkdirSync(SPECIES_ASSETS_DIR);
+
 const TOKEN = process.env.IUCN_TOKEN;
 if (!TOKEN) {
   console.error("❌ IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
@@ -100,6 +103,40 @@ function sanitizeAssetName(input) {
     .replace(/_+/g, "_")
     .trim()
     .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
+}
+
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function speciesAssetDir(safeName) {
+  return path.join(SPECIES_ASSETS_DIR, safeName);
+}
+
+function copyIfPresent(sourcePath, targetPath) {
+  if (!fs.existsSync(sourcePath)) return false;
+
+  ensureDir(path.dirname(targetPath));
+  if (fs.existsSync(targetPath)) {
+    const sourceStat = fs.statSync(sourcePath);
+    const targetStat = fs.statSync(targetPath);
+    if (targetStat.mtimeMs >= sourceStat.mtimeMs && targetStat.size === sourceStat.size) return true;
+  }
+
+  fs.copyFileSync(sourcePath, targetPath);
+  return true;
+}
+
+function syncSpeciesAssetFiles(safeName) {
+  const legacySoundDir = path.join(SOUND_DIR, safeName);
+  const assetDir = speciesAssetDir(safeName);
+
+  return {
+    map: copyIfPresent(path.join(MAP_DIR, `${safeName}.jpg`), path.join(assetDir, "map.jpg")),
+    sound: copyIfPresent(path.join(legacySoundDir, `${safeName}.mp3`), path.join(assetDir, "sound.mp3")),
+    credits: copyIfPresent(path.join(legacySoundDir, "credits.json"), path.join(assetDir, "credits.json")),
+    spectrogram: copyIfPresent(path.join(legacySoundDir, "spectrogram.webp"), path.join(assetDir, "spectrogram.webp")),
+  };
 }
 
 async function sleep(ms) {
@@ -329,6 +366,7 @@ async function downloadMapForSpecies(s) {
   const tempFilePath = filePath + ".tmp";
 
   if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
+    syncSpeciesAssetFiles(safeName);
     console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
     return "ok";
   }
@@ -352,6 +390,7 @@ async function downloadMapForSpecies(s) {
     const buffer = await res.arrayBuffer();
     fs.writeFileSync(tempFilePath, Buffer.from(buffer));
     fs.renameSync(tempFilePath, filePath);
+    syncSpeciesAssetFiles(safeName);
 
     console.log(`✔ Karte gespeichert: ${filePath}`);
 
@@ -756,6 +795,7 @@ async function downloadSoundIfMissing(genus, species, german) {
     const existingLicense = readSoundLicense(creditsPath);
 
     if (!isNcLicense(existingLicense)) {
+      syncSpeciesAssetFiles(safeGerman);
       console.log(`🎵 Sound existiert bereits für ${german}`);
       return "ok";
     }
@@ -807,6 +847,7 @@ async function downloadSoundIfMissing(genus, species, german) {
     }
 
     console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
+    syncSpeciesAssetFiles(safeGerman);
     return "ok";
   }
 
@@ -925,6 +966,7 @@ async function saveSoundRecording({
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -974,6 +1016,7 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -1019,6 +1062,7 @@ async function saveInatSoundRecording({ genus, species, german, mp3Path, credits
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
+    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -1045,12 +1089,14 @@ function createMissingElementsReport(speciesData) {
       missingStatus: 0,
       missingCategory: 0,
       missingTrend: 0,
+      missingSpeciesAssets: 0,
       ncSoundLicensesAll: 0,
     },
     missing: {
       soundMp3: [],
       soundCredits: [],
       maps: [],
+      speciesAssets: [],
       assessmentId: [],
       status: [],
       category: [],
@@ -1068,13 +1114,30 @@ function createMissingElementsReport(speciesData) {
     if (!s.Kategorie || s.Kategorie === "n/a") report.missing.category.push(german);
     if (!s.Trend || s.Trend === "n/a") report.missing.trend.push(german);
 
-    const mp3Path = path.join(SOUND_DIR, safe, `${safe}.mp3`);
-    const creditsPath = path.join(SOUND_DIR, safe, "credits.json");
-    const mapPath = path.join(MAP_DIR, `${safe}.jpg`);
+    const legacyMp3Path = path.join(SOUND_DIR, safe, `${safe}.mp3`);
+    const legacyCreditsPath = path.join(SOUND_DIR, safe, "credits.json");
+    const legacyMapPath = path.join(MAP_DIR, `${safe}.jpg`);
+    const assetDir = speciesAssetDir(safe);
+    const assetMapPath = path.join(assetDir, "map.jpg");
+    const assetSoundPath = path.join(assetDir, "sound.mp3");
+    const assetCreditsPath = path.join(assetDir, "credits.json");
+    const assetSpectrogramPath = path.join(assetDir, "spectrogram.webp");
+    const hasMp3 = fs.existsSync(assetSoundPath) || fs.existsSync(legacyMp3Path);
+    const hasCredits = fs.existsSync(assetCreditsPath) || fs.existsSync(legacyCreditsPath);
+    const hasMap = fs.existsSync(assetMapPath) || fs.existsSync(legacyMapPath);
 
-    if (!fs.existsSync(mp3Path)) report.missing.soundMp3.push(german);
-    if (fs.existsSync(mp3Path) && !fs.existsSync(creditsPath)) report.missing.soundCredits.push(german);
-    if (!fs.existsSync(mapPath)) report.missing.maps.push(german);
+    if (!hasMp3) report.missing.soundMp3.push(german);
+    if (hasMp3 && !hasCredits) report.missing.soundCredits.push(german);
+    if (!hasMap) report.missing.maps.push(german);
+
+    const missingAssetParts = [];
+    if (!fs.existsSync(assetMapPath)) missingAssetParts.push("map.jpg");
+    if (!fs.existsSync(assetSoundPath)) missingAssetParts.push("sound.mp3");
+    if (!fs.existsSync(assetCreditsPath)) missingAssetParts.push("credits.json");
+    if (!fs.existsSync(assetSpectrogramPath)) missingAssetParts.push("spectrogram.webp");
+    if (missingAssetParts.length) {
+      report.missing.speciesAssets.push({ german, safeName: safe, missing: missingAssetParts });
+    }
   }
 
   // NC-Lizenzen (alle vorhandenen Sounds mit credits.json)
@@ -1083,7 +1146,9 @@ function createMissingElementsReport(speciesData) {
     const german = s["Deutscher Name"] || s["Wissenschaftlicher Name"] || "unknown";
     const safe = sanitizeAssetName(german);
 
-    const creditsPath = path.join(SOUND_DIR, safe, "credits.json");
+    const assetCreditsPath = path.join(speciesAssetDir(safe), "credits.json");
+    const legacyCreditsPath = path.join(SOUND_DIR, safe, "credits.json");
+    const creditsPath = fs.existsSync(assetCreditsPath) ? assetCreditsPath : legacyCreditsPath;
     if (!fs.existsSync(creditsPath)) continue;
 
     try {
@@ -1101,6 +1166,7 @@ function createMissingElementsReport(speciesData) {
   report.counts.missingSoundMp3 = report.missing.soundMp3.length;
   report.counts.missingSoundCredits = report.missing.soundCredits.length;
   report.counts.missingMap = report.missing.maps.length;
+  report.counts.missingSpeciesAssets = report.missing.speciesAssets.length;
   report.counts.missingAssessmentId = report.missing.assessmentId.length;
   report.counts.missingStatus = report.missing.status.length;
   report.counts.missingCategory = report.missing.category.length;

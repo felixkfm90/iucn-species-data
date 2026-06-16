@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Parus major",
+  "german_name": "Kohlmeise",
+  "recordist": "Noé Ferrari",
+  "country": "France",
+  "location": "Arrondissement d'Abbeville (near  Noyelles-sur-Mer), Somme, Hauts-de-France",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/989898",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Parus sp:major q:A\" | page=1"
+}

@@ -10,7 +10,9 @@ Automatisierung oder Asset-Migrationen uebersehen werden.
 
 Aktuell sind sieben Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
 fehlerhafte Kartendaten. Die produktiven Karten duerfen deshalb nicht unbemerkt durch automatisch geladene IUCN-Karten
-ersetzt werden.
+ersetzt werden. Seit der Asset-Migration liegen die primaeren Karten unter
+`species-assets/<SafeName>/map.jpg`; die bisherigen Dateien unter `Verbreitungskarten/<SafeName>.jpg` bleiben
+parallel als Legacy-Fallback erhalten.
 
 ## Liste
 
@@ -28,7 +30,8 @@ ersetzt werden.
 
 - Jede manuell gepflegte Karte bekommt genau einen Eintrag.
 - `SafeName` muss der Ausgabe von `sanitizeAssetName()` entsprechen.
-- `Datei` ist der produktive Pfad, aktuell z. B. `Verbreitungskarten/<SafeName>.jpg`.
+- `Datei` dokumentiert den Legacy-Pfad. Der primaere Live-Pfad ist zusaetzlich
+  `species-assets/<SafeName>/map.jpg`.
 - `Grund` beschreibt knapp, warum die Karte manuell gepflegt wurde.
 - `Quelle / Hinweis` enthaelt Quelle, Bearbeitungshinweis oder Entscheidung.
 - Im Monatssaudit reicht bei unveraenderten Karten der Status `nicht erneut manuell geprueft, unveraendert`.

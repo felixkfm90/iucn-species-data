@@ -1,4 +1,6 @@
 (async function () {
+  const LEGACY_ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+
   function init() {
     const wrapper = document.getElementById("map-wrapper");
     const outputEl = document.getElementById("map-output");
@@ -14,9 +16,37 @@
     `;
   }
 
+  async function headExists(url) {
+    try {
+      const response = await fetch(url, { method: "HEAD" });
+      return response.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function firstExistingUrl(urls) {
+    for (const url of urls.filter(Boolean)) {
+      if (await headExists(url)) return url;
+    }
+
+    return "";
+  }
+
+  function getMapCandidates(found) {
+    if (window.SpeciesCore && typeof window.SpeciesCore.getSpeciesAssetPaths === "function") {
+      const paths = window.SpeciesCore.getSpeciesAssetPaths(found);
+      return [paths.map, paths.legacyMap];
+    }
+
+    const germanName = found["Deutscher Name"];
+    const mapAssetName = window.SpeciesCore.sanitizeAssetName(germanName);
+    const encodedName = encodeURIComponent(mapAssetName);
+    return [`${LEGACY_ASSET_BASE}/Verbreitungskarten/${encodedName}.jpg`];
+  }
+
   async function loadMap(outputEl) {
-    // ✅ Loading State
-    outputEl.innerHTML = `<p style="font-style:italic;">Lade Verbreitungskarte…</p>${sourceHtml()}`;
+    outputEl.innerHTML = `<p style="font-style:italic;">Lade Verbreitungskarte...</p>${sourceHtml()}`;
 
     try {
       const found = await window.SpeciesCore.getSpeciesData();
@@ -26,22 +56,17 @@
       }
 
       const germanName = found["Deutscher Name"];
-      const mapAssetName = window.SpeciesCore.sanitizeAssetName(germanName);
+      const imgUrl = await firstExistingUrl(getMapCandidates(found));
 
-      // ✅ GitHub Pages statt raw
-      const imgUrl = `https://felixkfm90.github.io/iucn-species-data/Verbreitungskarten/${encodeURIComponent(mapAssetName)}.jpg`;
-
-      // ✅ HEAD statt GET (schneller)
-      const check = await fetch(imgUrl, { method: "HEAD" });
-      if (!check.ok) {
-        outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfügbar.</p>${sourceHtml()}`;
+      if (!imgUrl) {
+        outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfuegbar.</p>${sourceHtml()}`;
         return;
       }
 
       outputEl.innerHTML = `
         <img
           src="${imgUrl}"
-          alt="Verbreitungskarte – ${germanName}"
+          alt="Verbreitungskarte - ${germanName}"
           style="width:100%; height:auto; display:block; cursor:default;"
           class="species-map-img"
           loading="lazy"
@@ -57,7 +82,7 @@
         img.addEventListener("click", () => openFullscreen(imgUrl));
       }
     } catch (_) {
-      outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfügbar.</p>${sourceHtml()}`;
+      outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfuegbar.</p>${sourceHtml()}`;
     }
   }
 
@@ -89,5 +114,5 @@
   }
 
   document.addEventListener("DOMContentLoaded", init);
-  window.addEventListener("mercury:load", init); // wichtig für Squarespace
+  window.addEventListener("mercury:load", init);
 })();

@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Luscinia svecica",
+  "german_name": "Blaukehlchen",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Genêts, Manche, Normandy",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/1041347",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Luscinia sp:svecica q:B\" | page=1"
+}

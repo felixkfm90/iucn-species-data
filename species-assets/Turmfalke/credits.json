@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Falco tinnunculus",
+  "german_name": "Turmfalke",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Carolles, Manche, Normandie",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/705934",
+  "notes": "Stage 0 (openOnly=true, q=A, len25-35=true) | query=\"gen:Falco sp:tinnunculus q:A len:25-35\" | page=1"
+}

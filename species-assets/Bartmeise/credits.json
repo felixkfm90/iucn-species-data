@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Panurus biarmicus",
+  "german_name": "Bartmeise",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Genêts, Manche, Normandie",
+  "quality": "C",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/730824",
+  "notes": "Stage 5 (openOnly=true, q=C, len25-35=false) | query=\"gen:Panurus sp:biarmicus q:C\" | page=1"
+}

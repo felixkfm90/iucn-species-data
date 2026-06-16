@@ -88,12 +88,13 @@ Stand: 2026-06-16
   - Skript: `scripts/monthly-site-audit.mjs`
   - Ergebnis im Volltest: 117 Sitemap-URLs, 0 Fetch-Fehler, 0 Non-200, 0 fehlende SEO-Grundfelder,
     0 lokale Asset-Inkonsistenzen, 7 manuelle Karten dokumentiert, 3 NC-Sounds erkannt.
-  - Nach Spektrogramm-Erweiterung prueft der lokale Audit zusaetzlich `spectrogramCount`, `spectrogramBytes` und
-    fehlende `sounds/<SafeName>/spectrogram.webp`.
+  - Nach Spektrogramm-Erweiterung prueft der lokale Audit zusaetzlich Spektrogramme und fehlende Assets. Seit der
+    Asset-Migration am 2026-06-16 wird primaer `species-assets/<SafeName>/spectrogram.webp` geprueft; der alte Pfad
+    unter `sounds/` bleibt Fallback.
 - Spektrogramm-Konzept am 2026-06-15 dokumentiert:
   - Datei: `docs/spectrogram-plan.md`
-  - empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
-  - keine aktive Frontend- oder Pipeline-Aenderung im aktuellen Schritt
+  - urspruenglich empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
+  - aktueller Zielpfad seit Asset-Migration: `species-assets/<SafeName>/spectrogram.webp`
 - Spektrogramm-Generator-Prototyp am 2026-06-15 umgesetzt:
   - Skript: `scripts/generate-spectrograms.mjs`
   - Befehl: `npm.cmd run --silent generate:spectrograms`
@@ -102,7 +103,8 @@ Stand: 2026-06-16
   - bevorzugter Zielstil im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren,
     Rand oben und unten, Frequenzbereich bis 18 kHz
 - Spektrogramm-Assets und Soundbar-Integration am 2026-06-15 umgesetzt:
-  - 45 produktive `sounds/<SafeName>/spectrogram.webp`-Dateien
+  - 45 produktive Spektrogramm-Dateien; seit Asset-Migration primaer unter
+    `species-assets/<SafeName>/spectrogram.webp`
   - Gesamtgroesse ca. 1,22 MB
   - Generator-Default nach Sichtpruefung auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit leisere und
     hochfrequentere Arten nicht zu leer wirken
@@ -121,7 +123,13 @@ Stand: 2026-06-16
     Mitte der unteren Bedienflaeche, keine zusaetzliche Quellenzeile unter `Tierstimme`.
   - Kompakte Control-Zeile seit `species-sound.js?v=1.0.20`: `Tierstimme` oberhalb des Spektrogramms, darunter
     Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
-  - dokumentierte Footer-Version: `species-sound.js?v=1.0.20`
+  - damalige dokumentierte Footer-Version: `species-sound.js?v=1.0.20`
+- Asset-Migration am 2026-06-16 umgesetzt:
+  - primaere Struktur: `species-assets/<SafeName>/map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp`
+  - Legacy-Fallbacks: `Verbreitungskarten/` und `sounds/`
+  - lokaler Audit: 45 Artordner, 45 Karten, 45 Sounds, 45 Credits, 45 Spektrogramme, 0 fehlende neue Artassets
+  - dokumentierte Footer-Versionen fuer den Live-Betrieb nach Deploy:
+    `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6`, `species-sound.js?v=1.0.21`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -152,6 +160,6 @@ Stand: 2026-06-16
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-sound.js?v=1.0.20` setzen und Artseiten mobil/desktop
-   pruefen.
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und
+   `species-sound.js?v=1.0.21` setzen und Artseiten mobil/desktop pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

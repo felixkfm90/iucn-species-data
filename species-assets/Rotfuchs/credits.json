@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Vulpes vulpes",
+  "german_name": "Rotfuchs",
+  "recordist": "Pascal DUBOIS",
+  "country": "France",
+  "location": "Arrondissement de Saint-Étienne (near  Chuyer), Loire, Auvergne-Rhône-Alpes",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/961873",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Vulpes sp:vulpes q:A\" | page=1"
+}

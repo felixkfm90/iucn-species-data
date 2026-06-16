@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Anser anser",
+  "german_name": "Graugans",
+  "recordist": "Grégoire Chauvot",
+  "country": "Sweden",
+  "location": "Lidingö, Danderyd Municipality, Stockholms län",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/834777",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Anser sp:anser q:A\" | page=1"
+}

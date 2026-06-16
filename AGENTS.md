@@ -33,9 +33,10 @@ Zentrale Dateien:
   Lebenserwartung
 - `update.mjs`: Datenpipeline fuer IUCN, Karten, Xeno-Canto, Wikimedia Commons, iNaturalist, Sounds und Reports
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
-- `Verbreitungskarten/*.jpg`: Verbreitungskarten
-- `sounds/<Artname>/<Artname>.mp3` und `sounds/<Artname>/credits.json`: Tierstimmen und Quellen
-- `sounds/<Artname>/spectrogram.webp`: vorberechnete Spektrogramme fuer die Tierstimmen-Soundbar
+- `species-assets/<Artname>/map.jpg`: primaere Verbreitungskarte pro Art
+- `species-assets/<Artname>/sound.mp3` und `species-assets/<Artname>/credits.json`: primaere Tierstimme und Quellen
+- `species-assets/<Artname>/spectrogram.webp`: primaeres Spektrogramm fuer die Tierstimmen-Soundbar
+- `Verbreitungskarten/*.jpg` und `sounds/<Artname>/...`: Legacy-Fallbacks waehrend des Parallelbetriebs
 - `fehlende_elemente_report.json`: Qualitaetsreport fuer fehlende Assets/Daten und NC-Soundlizenzen
 
 Frontend-Module:
@@ -59,6 +60,7 @@ Frontend-Module:
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 45 Spektrogramm-Dateien
+- 45 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
 - 0 fehlende Kernassets laut Report
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
@@ -100,10 +102,11 @@ species_list.json
      -> Wikimedia Commons API
      -> iNaturalist API
      -> speciesData.json
-     -> Verbreitungskarten/*.jpg
-     -> sounds/<SafeName>/<SafeName>.mp3
-     -> sounds/<SafeName>/credits.json
-     -> sounds/<SafeName>/spectrogram.webp
+     -> species-assets/<SafeName>/map.jpg
+     -> species-assets/<SafeName>/sound.mp3
+     -> species-assets/<SafeName>/credits.json
+     -> species-assets/<SafeName>/spectrogram.webp
+     -> Legacy-Fallbacks in Verbreitungskarten/ und sounds/
      -> fehlende_elemente_report.json
   -> GitHub Pages
   -> Squarespace Footer Scripts
@@ -194,7 +197,7 @@ npm.cmd run --silent generate:spectrograms -- --dry-run
 ```
 
 Echte Ausgabe braucht `ffmpeg` im PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`. Erst mit Testausgabe nach
-`Testlauf/spectrograms` pruefen, bevor produktive `sounds/<SafeName>/spectrogram.webp`-Dateien erzeugt werden.
+`Testlauf/spectrograms` pruefen, bevor produktive `species-assets/<SafeName>/spectrogram.webp`-Dateien erzeugt werden.
 
 Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
 Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
@@ -254,12 +257,12 @@ Aktuelle Planung:
 
 - Phase 6 - Funktionsueberarbeitung: in Arbeit.
   Dokumentation pruefen, monatliches Gesamtaudit definieren, Spektrogramm-Assets konzipieren, artweise
-  Asset-Buendelung nur als geplante Migration vorbereiten und manuell gepflegte Karten dokumentieren.
+  Asset-Buendelung umsetzen und manuell gepflegte Karten dokumentieren.
   Audit-Grundlage: `docs/monthly-site-audit.md`.
   Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
   Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
-  Spektrogramm-Konzept und Integration: `docs/spectrogram-plan.md`; Zielpfad
-  `sounds/<SafeName>/spectrogram.webp`; `species-sound.js` nutzt Spektrogramme mit Canvas-Fallback.
+  Spektrogramm-Konzept und Integration: `docs/spectrogram-plan.md`; primaerer Zielpfad
+  `species-assets/<SafeName>/spectrogram.webp`; `species-sound.js` nutzt Spektrogramme mit Canvas-Fallback.
   Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run und echte Testausgabe fuer `Amsel`,
   `Graugans` und `Bisamratte` erfolgreich getestet am 2026-06-15. Zielstil im Generator-Default:
   heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 18 kHz.
@@ -278,9 +281,11 @@ Aktuelle Planung:
   Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms; Playbutton, Lautstaerke, Zeit und
   Tempo liegen darunter in einer gemeinsamen kompakten Control-Zeile.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
-  Asset-Buendelung pro Art: in Phase 6.8 erneut vorbereitet und in `docs/asset-structure-plan.md` konkretisiert.
-  Produktive Pfade bleiben unveraendert; eine spaetere Migration nach `species-assets/<SafeName>/` braucht
-  Parallelbetrieb, Fallbacks, Audit-Anpassung und Schutz der manuell gepflegten Karten.
+  Asset-Buendelung pro Art: in Phase 6.8 umgesetzt und in `docs/asset-structure-plan.md` dokumentiert.
+  `species-assets/<SafeName>/` ist primaer; alte Pfade bleiben als Legacy-Fallbacks bis nach Live-Stabilisierung.
+  Relevante Footer-Versionen nach dem Deploy: `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und
+  `species-sound.js?v=1.0.21`.
+  Audit, Generator und Pipeline wurden auf den Parallelbetrieb angepasst.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
   In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein

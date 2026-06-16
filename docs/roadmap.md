@@ -158,23 +158,26 @@ Testpfad zu gefaehrden.
   rechtliche Detailpruefung.
 - 6.4 Spektrogramm-Assets fuer Tierstimmen konzipieren: erledigt am 2026-06-15, siehe
   `docs/spectrogram-plan.md`.
-  Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets unter
-  `sounds/<SafeName>/spectrogram.webp`; keine Browser-Liveberechnung, keine Frontend-Aenderung ohne separaten Patch.
+  Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets. Seit der Asset-Migration
+  ist der primaere Zielpfad `species-assets/<SafeName>/spectrogram.webp`; der alte Pfad unter `sounds/` bleibt
+  Fallback. Keine Browser-Liveberechnung.
 - 6.5 Spektrogramm-Generator-Prototyp bauen: erledigt am 2026-06-15.
-  `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen
-  `sounds/<SafeName>/<SafeName>.mp3`, unterstuetzen Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`,
-  WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`.
+  `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen primaer
+  `species-assets/<SafeName>/sound.mp3` und fallbacken auf `sounds/<SafeName>/<SafeName>.mp3`. Unterstuetzt werden
+  Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`, WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder
+  `--ffmpeg=<Pfad>`.
   Dry-Run und echte Testausgabe sind erfolgreich getestet. Am 2026-06-15 wurden fuer `Amsel`, `Graugans` und
   `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist jetzt
   im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten,
   Frequenzbereich bis 18 kHz. Die produktive Erzeugung und Frontend-Integration wurde anschliessend in 6.6 umgesetzt.
 - 6.6 Spektrogramme produktiv erzeugen und Soundbar integrieren: erledigt am 2026-06-15.
-  Es wurden 45 `sounds/<SafeName>/spectrogram.webp`-Assets erzeugt, Gesamtgroesse ca. 1,22 MB. `species-sound.js`
+  Es wurden 45 Spektrogramm-Assets erzeugt; seit der Asset-Migration liegen sie primaer unter
+  `species-assets/<SafeName>/spectrogram.webp` und parallel als Legacy-Fallback unter `sounds/`. `species-sound.js`
   laedt die Spektrogramme optional per `HEAD` und zeigt sie mit rotem Positionsmarker und vorhandener Bedienlogik an.
   Wenn ein Spektrogramm fehlt oder nicht geladen werden kann, bleibt die bisherige Canvas-Wellenform als Fallback
   aktiv. Nach Sichtpruefung wurde der Default auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit auch leisere
   und hochfrequentere Arten sichtbar bleiben. Die aktuelle Squarespace-Footer-Version fuer den Live-Betrieb steht in
-  6.7.
+  6.8.
 - 6.7 Soundbar-Regler fuer Lautstaerke und Tempo: erledigt am 2026-06-15.
   `species-sound.js` bietet jetzt einen kompakten Lautstaerkeregler von 0 bis 200 Prozent und eine
   Abspielgeschwindigkeit-Auswahl fuer `0,25x`, `0,5x`, `1x`, `1,5x`, `2x` und `4x`. Lautstaerke ueber 100 Prozent
@@ -192,13 +195,17 @@ Testpfad zu gefaehrden.
   Anschliessend wurde die Soundbar weiter verdichtet: Playbutton, kompakte Lautstaerke, Zeit und Tempo liegen in einer
   gemeinsamen Control-Zeile. Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms, damit
   die Bedienflaeche darunter kompakter bleibt.
-  Squarespace-Footer-Version fuer den Live-Betrieb: `species-sound.js?v=1.0.20`.
-- 6.8 Asset-Buendelung pro Art als Migration vorbereiten: erledigt am 2026-06-16, siehe
+  Soundbar-UI-Version im damaligen Live-Betrieb: `species-sound.js?v=1.0.20`.
+- 6.8 Asset-Buendelung pro Art umsetzen: erledigt am 2026-06-16, siehe
   `docs/asset-structure-plan.md`.
-  Ergebnis: Weiter keine produktive Pfadverschiebung. Die aktuelle Struktur bleibt `Verbreitungskarten/<SafeName>.jpg`
-  plus `sounds/<SafeName>/<SafeName>.mp3`, `credits.json` und `spectrogram.webp`. Fuer eine spaetere Migration nach
-  `species-assets/<SafeName>/` sind die betroffenen Dateien, Parallelbetriebsstrategie, Fallbacks und Stop-Kriterien
-  dokumentiert. Besonders zu schuetzen sind die sieben manuell gepflegten Karten aus `docs/manual-map-overrides.md`.
+  Ergebnis: `species-assets/<SafeName>/` ist jetzt die primaere Struktur mit `map.jpg`, `sound.mp3`, `credits.json`
+  und `spectrogram.webp`. `Verbreitungskarten/` und `sounds/` bleiben vorerst als Legacy-Fallbacks bestehen.
+  `species-core.js`, `map-loader.js`, `species-sound.js`, `update.mjs`, `scripts/generate-spectrograms.mjs` und
+  `scripts/monthly-site-audit.mjs` wurden auf den Parallelbetrieb angepasst. Lokaler Audit: 45 neue Artordner, 0
+  fehlende neue Artassets. Besonders zu schuetzen sind die sieben manuell gepflegten Karten aus
+  `docs/manual-map-overrides.md`. Nach GitHub-Pages-Deploy muss der Squarespace-Footer auf
+  `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und `species-sound.js?v=1.0.21` gesetzt und live getestet
+  werden.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 

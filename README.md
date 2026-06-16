@@ -13,9 +13,11 @@ manuell gepflegte Lebenserwartung und erzeugt bzw.
 aktualisiert:
 
 - `speciesData.json`
-- `Verbreitungskarten/*.jpg`
-- `sounds/<Artname>/<Artname>.mp3`
-- `sounds/<Artname>/credits.json`
+- `species-assets/<Artname>/map.jpg`
+- `species-assets/<Artname>/sound.mp3`
+- `species-assets/<Artname>/credits.json`
+- `species-assets/<Artname>/spectrogram.webp`
+- Legacy-Fallbacks: `Verbreitungskarten/*.jpg` und `sounds/<Artname>/...`
 - `fehlende_elemente_report.json`
 - `lastSavedAssessmentId.json`
 
@@ -37,7 +39,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `scripts/monthly-site-audit.mjs`: reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder,
   GitHub-Pages-Assets und lokale Assetkonsistenz
 - `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
-  `sounds/<SafeName>/spectrogram.webp`
+  `species-assets/<SafeName>/spectrogram.webp`
 
 ## Squarespace-Integration
 
@@ -165,19 +167,20 @@ Lokale Batch-Dateien:
 
 Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
-Die Asset-Struktur wurde in Phase 5.8 bewertet und in Phase 6.8 erneut als konkrete Migration vorbereitet; Details
-stehen in `docs/asset-structure-plan.md`. Ergebnis: `Verbreitungskarten/`, `sounds/` und `graphics/` bleiben im
-aktuellen produktiven Aufbau. Eine Buendelung pro Art nach sanitisiertem Namen ist nur eine spaetere Migrationsoption,
-weil Pipeline, Frontend-Loader, Audit-Skript, Spektrogramm-Generator, GitHub-Pages-Pfade und Live-Tests betroffen
-waeren.
+Die Asset-Struktur wurde in Phase 6.8 umgesetzt; Details stehen in `docs/asset-structure-plan.md`. Primaer ist jetzt
+`species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`. Die alten Pfade unter
+`Verbreitungskarten/` und `sounds/` bleiben vorerst als Legacy-Fallbacks versioniert, bis die neue Struktur live
+stabil getestet ist. Nach Deploy sind dafuer im Squarespace-Footer `species-core.js?v=1.0.3`,
+`map-loader.js?v=1.0.6` und `species-sound.js?v=1.0.21` zu verwenden.
 
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
 korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
 `Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
-`sounds/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden. Ohne
-Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
+`species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
+Legacy-Spektrogramme unter `sounds/<SafeName>/spectrogram.webp` bleiben parallel als Fallback. Ohne Spektrogramm oder
+bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
 Frequenzbereich bis 18 kHz.
 
@@ -233,7 +236,7 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist weitgehend
 abgearbeitet: Monatsaudit, Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und
-Asset-Migrationsvorbereitung sind dokumentiert. Der erste echte Monatsaudit liegt unter
+Asset-Migration mit Parallelbetrieb sind dokumentiert. Der erste echte Monatsaudit liegt unter
 `docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration
 bzw. Spiegelung und automatisiertem Backup sowie Phase 8 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
 

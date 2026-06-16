@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Ardea cinerea",
+  "german_name": "Graureiher",
+  "recordist": "Jens Loose",
+  "country": "Germany",
+  "location": "Dresden, Dresden, Sachsen",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/610467",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Ardea sp:cinerea q:A\" | page=2"
+}
