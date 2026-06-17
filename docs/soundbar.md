@@ -1,6 +1,6 @@
 # Soundbar
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 Ziel von Phase 5.4 und Phase 6.7: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen:
 klare Play-Bedienung, grafische Tonspur, stabile Wiedergabe, Lautstaerke- und Tempo-Regler, reduzierte sichtbare
@@ -15,14 +15,12 @@ Informationen und brauchbare mobile Bedienung.
 ## Verhalten
 
 - Das Modul startet nur, wenn `#species-sound` existiert.
-- Sound und Credits werden weiter ueber GitHub Pages geladen:
-  - primaer `species-assets/<SafeName>/sound.mp3`
-  - primaer `species-assets/<SafeName>/credits.json`
-  - Legacy-Fallbacks unter `sounds/<SafeName>/...`
+- Sound und Credits werden ueber GitHub Pages aus `species-assets/<SafeName>/` geladen:
+  - `sound.mp3`
+  - `credits.json`
 - Vor dem Rendern wird die MP3 per `HEAD` geprueft.
 - Die aktive Soundbar nutzt ein natives `<audio>`-Element, eigene Controls und eine grafische Tonspur.
 - Wenn `species-assets/<SafeName>/spectrogram.webp` vorhanden ist, wird dieses vorberechnete Spektrogramm angezeigt.
-  Legacy-Fallback: `sounds/<SafeName>/spectrogram.webp`.
 - Wenn kein Spektrogramm vorhanden ist oder das Bild nicht geladen werden kann, faellt der Player auf die bisherige
   Canvas-Wellenform zurueck.
 - Der Lautstaerkeregler arbeitet von 0 bis 200 Prozent. Werte bis 100 Prozent nutzen die normale Audio-Lautstaerke;
@@ -85,7 +83,7 @@ Aktueller Stand:
 
 Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
 
-- Footer: `species-sound.js?v=1.0.21`
+- Footer: `species-sound.js?v=1.0.22`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.

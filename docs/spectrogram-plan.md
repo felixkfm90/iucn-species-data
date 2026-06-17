@@ -1,11 +1,10 @@
 # Spectrogram Plan
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 Ziel: Phase 6.4 bewertet, wie Tierstimmen spaeter mit einer Merlin-aehnlicheren Frequenzdarstellung bzw. einem
 Spektrogramm erweitert werden koennen, ohne die aktuell stabile Soundbar oder den Squarespace-Betrieb zu gefaehrden.
-Die Umsetzung ist inzwischen produktiv: Spektrogramme liegen primaer in `species-assets/<SafeName>/spectrogram.webp`;
-Legacy-Spektrogramme unter `sounds/<SafeName>/spectrogram.webp` bleiben vorerst als Fallback erhalten.
+Die Umsetzung ist produktiv: Spektrogramme liegen in `species-assets/<SafeName>/spectrogram.webp`.
 
 ## Kurzfazit
 
@@ -19,7 +18,7 @@ Empfohlener Weg:
 1. Soundbar bleibt nativ und ohne Browser-Liveberechnung der MP3-Spektrogramme.
 2. Das separate Generator-Skript `scripts/generate-spectrograms.mjs` erzeugt die Spektrogramm-Assets.
 3. Spektrogramme werden primaer unter `species-assets/<SafeName>/spectrogram.webp` gespeichert.
-4. `species-sound.js` laedt das Spektrogramm bevorzugt aus `species-assets/` und nutzt danach den Legacy-Pfad.
+4. `species-sound.js` laedt das Spektrogramm aus `species-assets/`.
 5. Wenn kein Spektrogramm verfuegbar ist, bleibt die Canvas-Wellenform als Fallback aktiv.
 
 ## Aktueller Soundbestand
@@ -69,12 +68,12 @@ Begruendung:
 - Sound und Spektrogramm gehoeren fachlich zusammen.
 - Der Pfad passt zur neuen artweisen Asset-Buendelung.
 - GitHub Pages kann alle artspezifischen Assets einer Art unter einem Ordner ausliefern.
-- Legacy-Pfade unter `sounds/<SafeName>/` bleiben waehrend des Parallelbetriebs als Fallback erhalten.
+- Alle artspezifischen Soundassets liegen in einem Ordner.
 
 Nicht empfohlen:
 
 - Spektrogramme in `graphics/` speichern. Dort liegen globale Icons, keine artspezifischen Soundassets.
-- Legacy-Ordner sofort loeschen. Vorher muessen GitHub Pages, Squarespace-Footer und Live-Seiten stabil getestet sein.
+- Spektrogramme wieder in globale `graphics/`-Ordner verschieben.
 
 ## Generierung
 
@@ -94,8 +93,7 @@ scripts/generate-spectrograms.mjs
 Der Generator wurde am 2026-06-15 als Prototyp umgesetzt und am 2026-06-16 auf die artweise Asset-Struktur
 umgestellt. Er erzeugt standardmaessig produktive Spektrogramme unter
 `species-assets/<SafeName>/spectrogram.webp`, sofern kein `--output-root` gesetzt wird. Fuer Tests wird bewusst
-`--output-root=Testlauf/spectrograms` genutzt. Bei produktiven Laeufen kann der Generator vorhandene Legacy-Ausgaben
-unter `sounds/<SafeName>/spectrogram.webp` parallel synchron halten.
+`--output-root=Testlauf/spectrograms` genutzt.
 
 Installation von ffmpeg unter Windows:
 
@@ -130,9 +128,8 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=C:\Tools\ffmpeg\bin\ffmpe
 
 Aktuelles Verhalten:
 
-- scannt primaer `species-assets/<SafeName>/sound.mp3` und nutzt `sounds/<SafeName>/<SafeName>.mp3` als Fallback
+- scannt `species-assets/<SafeName>/sound.mp3`
 - erzeugt primaer `species-assets/<SafeName>/spectrogram.webp`
-- kann vorhandene Legacy-Ausgaben unter `sounds/<SafeName>/spectrogram.webp` synchron halten
 - ueberspringt vorhandene Spektrogramme, wenn sie neuer als die MP3 sind
 - unterstuetzt `--force`
 - unterstuetzt `--species=<SafeName>` fuer Einzeltests
@@ -160,13 +157,12 @@ Aktuelle Zielparameter fuer den Merlin-aehnlichen hellen Stil:
 
 `species-sound.js` wurde minimal erweitert:
 
-1. primaer `species-assets/<SafeName>/spectrogram.webp` pruefen
-2. danach Legacy-Fallback `sounds/<SafeName>/spectrogram.webp` pruefen
-3. wenn vorhanden:
+1. `species-assets/<SafeName>/spectrogram.webp` pruefen
+2. wenn vorhanden:
    - Bild in `.sound-visual` anzeigen
    - Cursor und Scrubber bleiben unveraendert
    - keine MP3-Decodierung fuer Canvas-Wellenform noetig
-4. wenn nicht vorhanden:
+3. wenn nicht vorhanden:
    - aktuelle Canvas-Wellenform verwenden
    - aktueller Fallback bleibt erhalten
 
@@ -227,9 +223,9 @@ Phase 6.4 ist als Konzept abgeschlossen; die produktive Umsetzung erfolgte danac
 - Testausgabe mit projektlokalem `ffmpeg` fuer `Amsel`, `Graugans` und `Bisamratte` erfolgreich erzeugt und nach
   Zielstil angepasst
 - 45 produktive Spektrogramm-Assets erzeugt
-- `species-sound.js` nutzt Spektrogramme optional mit Canvas-Fallback und Legacy-Fallback auf `sounds/<SafeName>/spectrogram.webp`
-- Aktuelle Squarespace-`?v=` fuer den Live-Betrieb nach Soundbar-Titel oberhalb des Spektrogramms:
-  `species-sound.js?v=1.0.21`
+- `species-sound.js` nutzt Spektrogramme optional mit Canvas-Fallback
+- Aktuelle Squarespace-`?v=` fuer den Live-Betrieb nach Entfernung der alten Assetstruktur:
+  `species-sound.js?v=1.0.22`
 
 ## Generator-Test 2026-06-15
 
@@ -263,4 +259,4 @@ Sichtpruefung:
 
 Die Testparameter wurden produktiv uebernommen. Anschliessend wurden 45 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets erzeugt und `species-sound.js` mit Spektrogramm-Anzeige plus
-Canvas-Fallback erweitert. Legacy-Spektrogramme unter `sounds/<SafeName>/spectrogram.webp` bleiben vorerst parallel.
+Canvas-Fallback erweitert. Die alte `sounds/`-Struktur wurde am 2026-06-17 entfernt.

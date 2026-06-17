@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-06-15
+Stand: 2026-06-17
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -34,9 +34,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 
 | Ordner | Grund |
 |---|---|
-| `species-assets/` | Primaere GitHub-Pages-Assetquelle pro Art: Karte, Sound, Credits und Spektrogramm. |
-| `Verbreitungskarten/` | Legacy-Fallback fuer `map-loader.js` waehrend des Parallelbetriebs. |
-| `sounds/` | Legacy-Fallback fuer `species-sound.js`; MP3s, Credits und Spektrogramme bleiben vorerst parallel. |
+| `species-assets/` | Einzige GitHub-Pages-Assetquelle pro Art: Karte, Sound, Credits und Spektrogramm. |
 | `graphics/trend/` | Trend-Icons fuer `species-status.js`. |
 | `graphics/catagory/Alternativ/` | Status-Icons fuer `species-status.js`; Ordnername nicht ohne Pfadmigration aendern. |
 
@@ -44,9 +42,9 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 
 | Datei / Ordner | Befund | Entscheidung |
 |---|---|---|
-| `graphics/catagory/*.png` | Aktuell nutzt das Frontend `graphics/catagory/Alternativ/*.png`. | Nicht loeschen, bis Phase 5 Asset-Struktur entschieden ist. |
+| `graphics/catagory/*.png` | Aktuell nutzt das Frontend `graphics/catagory/Alternativ/*.png`. | Nicht loeschen, bis Status-Icon-Pfade separat geprueft wurden. |
 | `graphics/catagory/Alternativ/Blaupause.psd` | Vermutlich Quelldatei fuer Status-Icons. | Vorerst behalten; spaeter entscheiden, ob Designquellen in `graphics/source/` gehoeren. |
-| grosse MP3-Dateien in `sounds/` | Einige Dateien sind gross, aber unter GitHub-Grenzen und live benoetigt. | Nicht entfernen; optional spaeter gezielt komprimieren oder neu beziehen. |
+| grosse MP3-Dateien in `species-assets/` | Einige Dateien sind gross, aber unter GitHub-Grenzen und live benoetigt. | Nicht entfernen; optional spaeter gezielt komprimieren oder neu beziehen. |
 
 ## Gehoert nicht ins Repo
 
@@ -92,10 +90,10 @@ Dokumentation uebernommen.
 ## Nicht jetzt verschieben
 
 - Keine Frontend-JS-Dateien in `docs/`, `js/` oder `assets/` verschieben, weil Squarespace den Root-Pfad laedt.
-- Keine Legacy-Ordner `sounds/` oder `Verbreitungskarten/` entfernen, bevor GitHub Pages, Squarespace-Footer,
-  Artseiten-Live-Test und mindestens ein kompletter Pipeline-/Auditlauf mit `species-assets/` sauber waren.
-- Phase 6.8 hat die artweise Buendelung umgesetzt: `species-assets/<SafeName>/` ist primaer, Legacy-Pfade bleiben
-  vorerst als Fallbacks, siehe `docs/asset-structure-plan.md`.
+- Keine neuen Asset-Pfade einfuehren, ohne `species-core.js`, `map-loader.js`, `species-sound.js`, `update.mjs`,
+  Audit, Generator und Doku gemeinsam anzupassen.
+- Phase 6.8 hat die artweise Buendelung umgesetzt: `species-assets/<SafeName>/` ist die produktive Struktur; die
+  alten Ordner `sounds/` und `Verbreitungskarten/` wurden am 2026-06-17 entfernt.
 - `README.md` nicht nach `docs/` verschieben.
 - `AGENTS.md` nicht nach `docs/` verschieben.
 
@@ -141,8 +139,7 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 ```
 
 Produktive Spektrogramme duerfen erst nach Sichtpruefung erzeugt und versioniert werden. Der Generator schreibt
-standardmaessig nach `species-assets/<SafeName>/spectrogram.webp` und synchronisiert den Legacy-Fallback. Der
-Generator-Default ist auf den hellen Zielstil
+standardmaessig nach `species-assets/<SafeName>/spectrogram.webp`. Der Generator-Default ist auf den hellen Zielstil
 eingestellt: weisser Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 18 kHz.
 
 Ein spaeterer Umzug oder eine Spiegelung auf ein persoenliches Synology NAS wird separat geprueft. Bis dahin bleibt die

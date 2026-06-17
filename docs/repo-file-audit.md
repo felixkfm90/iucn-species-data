@@ -1,13 +1,13 @@
 # Repo File Audit
 
-Stand: 2026-06-15
+Stand: 2026-06-17
 
 Ziel dieses Audits: Dateibestand, lokale Altlasten, generierte Assets und Strukturentscheidungen fuer Phase 5 bewerten,
 ohne direkt Dateien zu loeschen oder Pfade umzubauen.
 
 ## Kurzfazit
 
-Der produktive Git-Stand ist konsistent: 45 Arten, 45 Karten, 45 Soundordner, 45 MP3-Dateien und 45 Credits. Die
+Der produktive Git-Stand ist konsistent: 45 Arten, 45 Art-Assetordner, 45 Karten, 45 MP3-Dateien und 45 Credits. Die
 GitHub-Pages-relevanten Frontend- und Datenpfade passen zusammen.
 
 Die groessten Risiken liegen nicht in den aktiven Frontend-Dateien. Der lokale Workflow und die Dokumentation muessen
@@ -21,7 +21,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 | Getrackte Dateien | 186 |
 | Arten in `speciesData.json` | 45 |
 | Arten in `species_list.json` | 45 |
-| Soundordner | 45 |
+| Art-Assetordner | 45 |
 | MP3-Dateien | 45 |
 | Credits-Dateien | 45 |
 | Karten | 45 |
@@ -42,7 +42,7 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 | Gitignore | `.gitignore` | Bereinigt: lokale Abhaengigkeiten, Logs, `.env`, Batch-Dateien, `Testlauf/` und lokale Hilfsskripte sind ignoriert. | Niedrig | Beibehalten; keine breiten Regeln fuer produktive Dateitypen wie `.js`, `.json`, `.mp3` oder `.jpg` ergaenzen. |
 | README | `README.md` | Root-README ist bewusst fuer GitHub sichtbar. Detaildokumente liegen unter `docs/`. | Niedrig | Im Root behalten. Nicht nach `docs/` verschieben. |
 | Grafikassets | `graphics/catagory/` und `graphics/catagory/Alternativ/` | `species-status.js` nutzt nur `graphics/catagory/Alternativ/` und `graphics/trend/`. Die PNGs direkt unter `graphics/catagory/` wirken derzeit ungenutzt. `Blaupause.psd` ist vermutlich Quelldatei. | Mittel | Nicht sofort loeschen. In der spaeteren Asset-Struktur-Phase entscheiden: ungenutzte Statusicons entfernen/archivieren oder als Designquelle dokumentieren. Ordnername `catagory` wegen Live-Pfaden vorerst nicht umbenennen. |
-| Assets | `sounds/`, `Verbreitungskarten/` | Vollstaendig und konsistent, aber getrennt nach Assettyp statt pro Art gebuendelt. Assets sind mit ca. 171,71 MB der groesste Repo-Bereich. | Mittel | Phase 5.8 abgeschlossen: aktueller Aufbau bleibt bestehen; artweise Buendelung nur als spaetere bewusste Migration, siehe `docs/asset-structure-plan.md`. |
+| Assets | `species-assets/` | Artspezifisch gebuendelt: `map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp`. Die alten Ordner `sounds/` und `Verbreitungskarten/` wurden entfernt. | Niedrig | Beibehalten. Bei kuenftigen Pfadaenderungen Loader, Pipeline, Audit, Generator und Doku gemeinsam anpassen. |
 | Datenpipeline | `update.mjs` | Funktional, aber inzwischen relativ gross und enthaelt IUCN-, Karten-, Xeno-Canto-, Commons- und Reportlogik in einer Datei. | Mittel | Vorerst beibehalten. Spaeter nur modularisieren, wenn neue Arten/Felder die Wartung erschweren. |
 | Frontend | `species-*.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Syntax ok, alle Module brechen sauber ab, wenn erwartete Container fehlen. | Niedrig | Beibehalten. Soundbar ist aktuell als native Canvas-Komponente umgesetzt; `species-info.js` zeigt manuelle Lebenserwartung oberhalb der Generationsdauer. |
 | Sortierung | `sort.js` | Wird im Footer geladen, aktiviert sich nur bei `#species-sort` oder `#species-search`. | Niedrig | Beibehalten und bei Uebersichtsseiten-Tests weiter beobachten. |
@@ -55,13 +55,11 @@ Dokumentation ist ab Phase 5 Teil der Definition of Done.
 4. Manuelle Zusatzdaten sind in Phase 5.5 dokumentiert, siehe `docs/manual-species-fields.md`.
 5. Der manuelle Ablauf fuer neue Arten ist in Phase 5.6 dokumentiert, siehe `docs/add-species-workflow.md`.
 6. Asset-Buendelung pro Art wurde in Phase 6.8 umgesetzt. Primaere Struktur ist jetzt
-   `species-assets/<SafeName>/`; `sounds/` und `Verbreitungskarten/` bleiben als Legacy-Fallbacks bestehen. Details
-   stehen in `docs/asset-structure-plan.md`.
+   `species-assets/<SafeName>/`; `sounds/` und `Verbreitungskarten/` wurden entfernt. Details stehen in
+   `docs/asset-structure-plan.md`.
 
 ## Nicht ohne Freigabe aendern
 
-- Keine Loeschung von `sounds/` oder `Verbreitungskarten/`.
 - Keine Umbenennung von `graphics/catagory/`.
-- Keine Loeschung der Legacy-Fallbacks, bevor GitHub Pages, Squarespace-Footer, Live-Test und Monatsaudit stabil sind.
 - Keine Versionierung lokaler Batch-Dateien.
 - Keine Roadmap-Schritte ohne aktualisierte Dokumentation abschliessen.

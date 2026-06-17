@@ -1,6 +1,6 @@
 # Monthly Site Audit
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 Ziel: Einmal pro Monat soll die komplette Website und GitHub-Pages-Integration strukturiert geprueft werden. Das Audit
 soll nicht jeden unveraenderten Bereich erneut manuell im Detail pruefen, aber keinen Bereich ignorieren. Unveraenderte
@@ -26,7 +26,7 @@ Das Audit liefert eine Zusammenfassung mit klarer Einordnung:
 | Artseiten-Module | Stichprobe oder Vollcheck fuer Info, Taxonomie, Status, Sound und Karte. | offen / erledigt/geprueft |
 | Suche und Sortierung | Uebersichtsseiten `/wildlife/heimische-tierwelt`, `/wildlife/costarica`, `/wildlife/island` pruefen. | offen / erledigt/geprueft |
 | Lightbox | Desktop und Mobile-Pinch/Zoom nur erneut manuell testen, wenn JS/CSS/Galerie geaendert wurde. | unveraendert / erledigt/geprueft |
-| GitHub Pages Assets | `speciesData.json`, `species-assets/`, Legacy-Karten, Legacy-Sounds, Credits, Spektrogramme und Reports pruefen. | offen / erledigt/geprueft |
+| GitHub Pages Assets | `speciesData.json`, `species-assets/`, Credits, Spektrogramme und Reports pruefen. | offen / erledigt/geprueft |
 | Manuell gepflegte Karten | Liste aus `docs/manual-map-overrides.md` beruecksichtigen. | offen / unveraendert / erledigt |
 | Sounds und Lizenzen | `fehlende_elemente_report.json` und `docs/sound-license-review.md` pruefen. | offen / erledigt/geprueft |
 | Externe Dienste | GitHub Pages, Xeno-Canto, iNaturalist, Wikimedia Commons, Waves/Audio, Shop/Affiliate falls aktiv. | offen / unveraendert |
@@ -102,11 +102,10 @@ Aktuell automatisiert:
 - interner Link-Crawl und Pfade ausserhalb der Sitemap
 - SEO-Grundfelder: `<title>` und Meta-Description
 - GitHub-Pages-Check fuer `speciesData.json`, `fehlende_elemente_report.json`, `species-assets/Amsel/*` und wichtige
-  Legacy-Beispielassets
-- lokaler Vergleich von `speciesData.json` gegen primaere `species-assets` sowie Legacy-Karten, Sounds, Credits und
-  Spektrogramme
+  Frontend-Module
+- lokaler Vergleich von `speciesData.json` gegen `species-assets` mit Karten, Sounds, Credits und Spektrogrammen
 - Report-Zusammenfassung aus `fehlende_elemente_report.json`
-- Erkennung aktiver NC-Soundlizenzen aus `species-assets/*/credits.json` mit Legacy-Fallback auf `sounds/*/credits.json`
+- Erkennung aktiver NC-Soundlizenzen aus `species-assets/*/credits.json`
 - Pruefung der manuell gepflegten Karten aus `docs/manual-map-overrides.md`
 
 Nicht automatisiert:

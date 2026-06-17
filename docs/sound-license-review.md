@@ -1,11 +1,11 @@
 # Sound License Review
 
-Stand: 2026-05-27
+Stand: 2026-06-17
 
 Quelle:
 
 - `fehlende_elemente_report.json`
-- `sounds/*/credits.json`
+- `species-assets/*/credits.json`
 - `speciesData.json`
 
 ## Kurzfazit
@@ -23,8 +23,8 @@ gefunden. Der vorhandene NC-Sound wurde durch den Wikimedia-MP3-Transcode der CC
 Die Commons-Suche wurde danach in `update.mjs` integriert. Beim ersten normalen Pipeline-Lauf mit dieser Erweiterung
 wurde `Grosstrappe` automatisch durch eine freie Wikimedia-Commons-Aufnahme mit CC BY-SA 4.0 ersetzt.
 
-Alte/duplizierte Sound- und Kartenassets wurden bereinigt. `sounds/`, `Verbreitungskarten/` und
-`lastSavedAssessmentId.json` enthalten jeweils 45 Eintraege passend zu den 45 aktiven Arten.
+Alte/duplizierte Sound- und Kartenassets wurden bereinigt. Seit 2026-06-17 liegen Sound, Credits, Karte und
+Spektrogramm pro Art unter `species-assets/<SafeName>/`.
 
 Die freie Alternativsuche wurde danach um iNaturalist erweitert. `Mittelamerikanischer Totenkopfaffe` und
 `Panama-Kapuzineraffe` wurden auf exakt zugeordnete iNaturalist-Aufnahmen mit CC BY 4.0 ersetzt. Zwei zunaechst

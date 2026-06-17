@@ -1,5 +1,5 @@
 (async function () {
-  const LEGACY_ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+  const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
 
   function init() {
     const wrapper = document.getElementById("map-wrapper");
@@ -36,13 +36,13 @@
   function getMapCandidates(found) {
     if (window.SpeciesCore && typeof window.SpeciesCore.getSpeciesAssetPaths === "function") {
       const paths = window.SpeciesCore.getSpeciesAssetPaths(found);
-      return [paths.map, paths.legacyMap];
+      return [paths.map];
     }
 
     const germanName = found["Deutscher Name"];
     const mapAssetName = window.SpeciesCore.sanitizeAssetName(germanName);
     const encodedName = encodeURIComponent(mapAssetName);
-    return [`${LEGACY_ASSET_BASE}/Verbreitungskarten/${encodedName}.jpg`];
+    return [`${ASSET_BASE}/species-assets/${encodedName}/map.jpg`];
   }
 
   async function loadMap(outputEl) {

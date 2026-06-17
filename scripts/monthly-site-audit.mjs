@@ -83,15 +83,8 @@ function auditLocalProject(cwd) {
   const speciesData = readJson(cwd, "speciesData.json");
   const speciesList = readJson(cwd, "species_list.json");
   const report = readJson(cwd, "fehlende_elemente_report.json");
-  const mapDir = path.join(cwd, "Verbreitungskarten");
-  const soundsDir = path.join(cwd, "sounds");
   const speciesAssetsDir = path.join(cwd, "species-assets");
 
-  const mapFiles = fs.readdirSync(mapDir).filter((name) => name.toLowerCase().endsWith(".jpg"));
-  const soundDirs = fs
-    .readdirSync(soundsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
   const speciesAssetDirs = fs.existsSync(speciesAssetsDir)
     ? fs
       .readdirSync(speciesAssetsDir, { withFileTypes: true })
@@ -106,10 +99,10 @@ function auditLocalProject(cwd) {
     const safeName = sanitizeAssetName(germanName);
     const assetDir = path.join(speciesAssetsDir, safeName);
     const checks = {
-      map: fs.existsSync(path.join(assetDir, "map.jpg")) || fs.existsSync(path.join(mapDir, `${safeName}.jpg`)),
-      soundMp3: fs.existsSync(path.join(assetDir, "sound.mp3")) || fs.existsSync(path.join(soundsDir, safeName, `${safeName}.mp3`)),
-      soundCredits: fs.existsSync(path.join(assetDir, "credits.json")) || fs.existsSync(path.join(soundsDir, safeName, "credits.json")),
-      soundSpectrogram: fs.existsSync(path.join(assetDir, "spectrogram.webp")) || fs.existsSync(path.join(soundsDir, safeName, "spectrogram.webp")),
+      map: fs.existsSync(path.join(assetDir, "map.jpg")),
+      soundMp3: fs.existsSync(path.join(assetDir, "sound.mp3")),
+      soundCredits: fs.existsSync(path.join(assetDir, "credits.json")),
+      soundSpectrogram: fs.existsSync(path.join(assetDir, "spectrogram.webp")),
       urlSlug: Boolean(species.URLSlug),
       lifeExpectancy: Object.prototype.hasOwnProperty.call(species, "Lebenserwartung"),
     };
@@ -129,20 +122,16 @@ function auditLocalProject(cwd) {
     }
   }
 
-  const mp3Count = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, `${dir}.mp3`))).length;
-  const creditsCount = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, "credits.json"))).length;
-  const spectrogramCount = soundDirs.filter((dir) => fs.existsSync(path.join(soundsDir, dir, "spectrogram.webp"))).length;
   const speciesAssetMapCount = speciesAssetDirs.filter((dir) => fs.existsSync(path.join(speciesAssetsDir, dir, "map.jpg"))).length;
   const speciesAssetSoundCount = speciesAssetDirs.filter((dir) => fs.existsSync(path.join(speciesAssetsDir, dir, "sound.mp3"))).length;
   const speciesAssetCreditsCount = speciesAssetDirs.filter((dir) => fs.existsSync(path.join(speciesAssetsDir, dir, "credits.json"))).length;
   const speciesAssetSpectrogramCount = speciesAssetDirs.filter((dir) => fs.existsSync(path.join(speciesAssetsDir, dir, "spectrogram.webp"))).length;
-  const spectrogramBytes = soundDirs
-    .map((dir) => path.join(soundsDir, dir, "spectrogram.webp"))
+  const spectrogramBytes = speciesAssetDirs
+    .map((dir) => path.join(speciesAssetsDir, dir, "spectrogram.webp"))
     .filter((filePath) => fs.existsSync(filePath))
     .reduce((sum, filePath) => sum + fs.statSync(filePath).size, 0);
-  const allSafeDirs = [...new Set([...soundDirs, ...speciesAssetDirs])];
-  const ncSoundLicenses = allSafeDirs
-    .map((dir) => readCreditsIfPresent(soundsDir, speciesAssetsDir, dir))
+  const ncSoundLicenses = speciesAssetDirs
+    .map((dir) => readCreditsIfPresent(speciesAssetsDir, dir))
     .filter((entry) => entry && isNonCommercialLicense(entry.license))
     .map((entry) => ({
       safeName: entry.safeName,
@@ -156,11 +145,11 @@ function auditLocalProject(cwd) {
   return {
     speciesDataCount: speciesData.length,
     speciesListCount: speciesList.length,
-    mapFileCount: mapFiles.length,
-    soundDirCount: soundDirs.length,
-    mp3Count,
-    creditsCount,
-    spectrogramCount,
+    mapFileCount: speciesAssetMapCount,
+    soundDirCount: speciesAssetDirs.length,
+    mp3Count: speciesAssetSoundCount,
+    creditsCount: speciesAssetCreditsCount,
+    spectrogramCount: speciesAssetSpectrogramCount,
     speciesAssetDirCount: speciesAssetDirs.length,
     speciesAssetMapCount,
     speciesAssetSoundCount,
@@ -180,13 +169,11 @@ function auditLocalProject(cwd) {
   };
 }
 
-function readCreditsIfPresent(soundsDir, speciesAssetsDir, safeName) {
+function readCreditsIfPresent(speciesAssetsDir, safeName) {
   const assetPath = path.join(speciesAssetsDir, safeName, "credits.json");
-  const legacyPath = path.join(soundsDir, safeName, "credits.json");
-  const filePath = fs.existsSync(assetPath) ? assetPath : legacyPath;
-  if (!fs.existsSync(filePath)) return null;
+  if (!fs.existsSync(assetPath)) return null;
 
-  const credits = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const credits = JSON.parse(fs.readFileSync(assetPath, "utf8"));
   return {
     safeName,
     credits,
@@ -205,7 +192,7 @@ function readManualMapOverrides(cwd) {
   }
 
   const markdown = fs.readFileSync(filePath, "utf8");
-  const entries = [...markdown.matchAll(/`(Verbreitungskarten\/[^`]+\.jpg)`/g)]
+  const entries = [...markdown.matchAll(/`(species-assets\/[^`]+\/map\.jpg)`/g)]
     .map((match) => match[1])
     .filter((entry) => !entry.includes("<"));
   const missingFiles = entries
@@ -285,10 +272,6 @@ async function auditGithubPages(config) {
     "species-assets/Amsel/sound.mp3",
     "species-assets/Amsel/credits.json",
     "species-assets/Amsel/spectrogram.webp",
-    "Verbreitungskarten/Amsel.jpg",
-    "sounds/Amsel/Amsel.mp3",
-    "sounds/Amsel/credits.json",
-    "sounds/Amsel/spectrogram.webp",
   ];
 
   const sampleResults = await mapLimit(samples, config.concurrency, async (samplePath) => {

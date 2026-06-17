@@ -1,31 +1,22 @@
 # Asset Structure Plan
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
-Ziel: Karten, Sounds, Credits und Spektrogramme sind pro Art nach sanitisiertem Namen gebuendelt. Die Migration wurde
-bewusst als Parallelbetrieb umgesetzt: `species-assets/<SafeName>/` ist die neue primaere Struktur, die bisherigen
-Pfade bleiben zunaechst als Fallback bestehen.
+Ziel: Artspezifische Assets werden dauerhaft pro Art gebuendelt. Die alte getrennte Struktur nach Assettyp wurde nach
+erfolgreichem Live-Test entfernt.
 
-## Kurzfazit
+## Aktueller Stand
 
-Die Asset-Struktur ist umgesetzt:
+- Produktive Struktur: `species-assets/<SafeName>/`
+- 45 Artordner
+- 45 Karten: `map.jpg`
+- 45 Sounds: `sound.mp3`
+- 45 Credits-Dateien: `credits.json`
+- 45 Spektrogramme: `spectrogram.webp`
+- Alte Ordner `Verbreitungskarten/` und `sounds/` sind geloescht.
+- `Testlauf/` bleibt nur fuer temporaere lokale Ausgaben und ist nicht versioniert.
 
-- 45 Arten in `speciesData.json`
-- 45 Artordner in `species-assets/<SafeName>/`
-- 45 Karten in `species-assets/<SafeName>/map.jpg`
-- 45 Sounds in `species-assets/<SafeName>/sound.mp3`
-- 45 Credits-Dateien in `species-assets/<SafeName>/credits.json`
-- 45 Spektrogramme in `species-assets/<SafeName>/spectrogram.webp`
-- alte Pfade bleiben parallel bestehen:
-  - `Verbreitungskarten/<SafeName>.jpg`
-  - `sounds/<SafeName>/<SafeName>.mp3`
-  - `sounds/<SafeName>/credits.json`
-  - `sounds/<SafeName>/spectrogram.webp`
-
-Die Frontend-Module bevorzugen die neue Struktur und fallen bei fehlenden neuen Dateien auf die alten Pfade zurueck.
-Dadurch kann GitHub Pages und Squarespace ohne harten Bruch getestet werden.
-
-## Neue primaere Struktur
+## Zielstruktur
 
 ```text
 species-assets/
@@ -34,57 +25,34 @@ species-assets/
     sound.mp3
     credits.json
     spectrogram.webp
-  Bluthaenfling/
-    map.jpg
-    sound.mp3
-    credits.json
-    spectrogram.webp
-  ...
 ```
+
+`SafeName` entspricht weiterhin `SpeciesCore.sanitizeAssetName()` und der Pipeline-Funktion `sanitizeAssetName()`.
+Die Slugs der Squarespace-Artseiten bleiben unveraendert und werden nicht aus dieser Ordnerstruktur abgeleitet.
 
 Nicht in `species-assets/` gehoeren:
 
-- `graphics/catagory/Alternativ/*.png`
-- `graphics/trend/*.png`
-- globale Website- oder Statusgrafiken
-- JavaScript-Dateien
-- `speciesData.json`
+- globale Icons unter `graphics/`
+- JavaScript-Module
+- Reports wie `fehlende_elemente_report.json`
+- temporaere Testausgaben aus `Testlauf/`
 
-## Legacy-Fallbacks
+## Geaenderte Komponenten
 
-Diese Pfade bleiben fuer den Parallelbetrieb versioniert:
-
-```text
-Verbreitungskarten/<SafeName>.jpg
-sounds/<SafeName>/<SafeName>.mp3
-sounds/<SafeName>/credits.json
-sounds/<SafeName>/spectrogram.webp
-```
-
-Sie duerfen erst entfernt werden, wenn:
-
-1. GitHub Pages die neue Struktur live ausliefert.
-2. Squarespace-Footer auf die neuen JS-Versionen gesetzt wurde.
-3. Artseiten live auf Desktop und Mobile getestet wurden.
-4. Ein kompletter Auditlauf mit GitHub-Pages-Checks erfolgreich war.
-5. Mindestens ein normaler Pipeline-/Suchlauf die neue Struktur korrekt weiterpflegt.
-
-## Betroffene Dateien
-
-| Datei / Bereich | Neuer Stand |
+| Datei | Aktueller Stand |
 |---|---|
-| `species-core.js` | Liefert `getSpeciesAssetPaths(data)` mit primaeren und Legacy-Pfaden. |
-| `map-loader.js` | Bevorzugt `species-assets/<SafeName>/map.jpg`, fallbackt auf `Verbreitungskarten/<SafeName>.jpg`. |
-| `species-sound.js` | Bevorzugt `species-assets/<SafeName>/sound.mp3`, `credits.json`, `spectrogram.webp`; fallbackt auf `sounds/<SafeName>/...`. |
-| `update.mjs` | Pflegt Legacy-Pfade weiter und synchronisiert danach nach `species-assets/<SafeName>/`. |
-| `scripts/generate-spectrograms.mjs` | Liest bevorzugt `species-assets/<SafeName>/sound.mp3` und schreibt produktiv nach `species-assets/<SafeName>/spectrogram.webp`; Legacy-Spektrogramm wird mit synchronisiert. |
-| `scripts/monthly-site-audit.mjs` | Prueft Legacy und `species-assets`; fehlende neue Artassets werden separat gemeldet. |
-| `docs/manual-map-overrides.md` | Manuell gepflegte Karten bleiben Schutzpunkt; sie muessen in beiden Strukturen vorhanden sein. |
-| Squarespace Footer | Muss nach Deploy `species-core.js`, `map-loader.js` und `species-sound.js` mit neuen `?v=`-Versionen laden. |
+| `species-core.js` | Liefert `getSpeciesAssetPaths(data)` ausschliesslich fuer `species-assets/<SafeName>/`. |
+| `map-loader.js` | Laedt Karten aus `species-assets/<SafeName>/map.jpg`. |
+| `species-sound.js` | Laedt Sound, Credits und Spektrogramm aus dem Artordner. |
+| `update.mjs` | Schreibt Karten, Sounds und Credits direkt nach `species-assets/<SafeName>/`. |
+| `scripts/generate-spectrograms.mjs` | Liest `species-assets/<SafeName>/sound.mp3` und schreibt `spectrogram.webp` in denselben Artordner. |
+| `scripts/monthly-site-audit.mjs` | Prueft nur noch `species-assets/` als produktive Asset-Struktur. |
+| `update_local.bat` | Fuehrt Suchlauf und anschliessend Spektrogramm-Abgleich aus. |
+| `update_github_only.bat` | Pusht die aktuelle neue Struktur ohne alte Assetordner. |
 
-## Manuell Gepflegte Karten
+## Manuell gepflegte Karten
 
-Diese Karten bleiben wegen korrupter IUCN-Daten besonders zu schuetzen:
+Sieben Karten bleiben fachlich manuell gepflegt, weil die IUCN-Daten korrupte Kartendaten liefern:
 
 - `Blaukehlchen`
 - `Fischertukan`
@@ -94,62 +62,35 @@ Diese Karten bleiben wegen korrupter IUCN-Daten besonders zu schuetzen:
 - `Rotfuchs`
 - `Waldkauz`
 
-Fuer diese Arten muessen sowohl `Verbreitungskarten/<SafeName>.jpg` als auch
-`species-assets/<SafeName>/map.jpg` vorhanden bleiben, bis der Legacy-Pfad bewusst entfernt wird.
+Diese Karten liegen jetzt ausschliesslich unter `species-assets/<SafeName>/map.jpg` und sind in
+`docs/manual-map-overrides.md` dokumentiert. Bei Pipeline- oder Kartenlogik-Aenderungen muss diese Liste geprueft
+werden, bevor Karten ersetzt werden.
 
-## Test- Und Auditstand
+## Teststand
 
-Lokaler Check am 2026-06-16:
+Lokale Checks vor der Entfernung der alten Struktur:
 
-- `speciesAssetDirCount`: 45
-- `speciesAssetMapCount`: 45
-- `speciesAssetSoundCount`: 45
-- `speciesAssetCreditsCount`: 45
-- `speciesAssetSpectrogramCount`: 45
-- `speciesAssetMissingCount`: 0
-
-Gepruefte Befehle:
-
-```bash
-node --check species-core.js
-node --check map-loader.js
-node --check species-sound.js
-node --check update.mjs
-node --check scripts/generate-spectrograms.mjs
-node --check scripts/monthly-site-audit.mjs
+```powershell
+node --check .\species-core.js
+node --check .\map-loader.js
+node --check .\species-sound.js
+node --check .\update.mjs
+node --check .\scripts\generate-spectrograms.mjs
+node --check .\scripts\monthly-site-audit.mjs
 npm.cmd run --silent audit:site -- --skip-live --skip-pages
 npm.cmd run --silent generate:spectrograms -- --dry-run --species=Amsel
 ```
 
-Der Spektrogramm-Dry-Run fuer `Amsel` nutzt bereits:
+Nach der Entfernung der alten Struktur muessen diese Checks erneut laufen. Ein kompletter Suchlauf ueber
+`node .\update.mjs` bzw. `update_local.bat` prueft zusaetzlich, dass die Pipeline die neue Struktur aktiv pflegt.
 
-- Eingabe: `species-assets/Amsel/sound.mp3`
-- Ausgabe: `species-assets/Amsel/spectrogram.webp`
+## Squarespace
 
-## Squarespace-Versionen
+Aktuell dokumentierter Footer-Stand:
 
-Nach GitHub-Pages-Deploy muessen diese Footer-Versionen gesetzt werden:
+- `species-core.js?v=1.0.4`
+- `map-loader.js?v=1.0.7`
+- `species-sound.js?v=1.0.22`
 
-- `species-core.js?v=1.0.3`
-- `map-loader.js?v=1.0.6`
-- `species-sound.js?v=1.0.21`
-
-## Naechste Schritte
-
-1. GitHub Pages Deploy abwarten.
-2. Squarespace-Footer auf die dokumentierten Versionen setzen.
-3. Live-Test:
-   - Heimische Artseite
-   - Costa-Rica-Artseite
-   - Island-Artseite
-   - Karte vorhanden
-   - Sound vorhanden
-   - Spektrogramm vorhanden
-   - Quelle/Lizenz klappt aus
-4. Vollstaendigen Audit mit GitHub-Pages-Checks ausfuehren:
-
-```bash
-npm.cmd run --silent audit:site
-```
-
-5. Legacy-Entfernung erst spaeter separat entscheiden.
+Wenn im Rahmen dieser Bereinigung weitere Frontend-Dateien geaendert werden, muss `docs/squarespace-footer.html`
+aktualisiert und die betroffene `?v=`-Version in Squarespace erhoeht werden.

@@ -6,12 +6,6 @@ import fetch from "node-fetch";
 // KONFIG / ORDNER
 // =======================
 
-const MAP_DIR = "./Verbreitungskarten";
-if (!fs.existsSync(MAP_DIR)) fs.mkdirSync(MAP_DIR);
-
-const SOUND_DIR = "./sounds";
-if (!fs.existsSync(SOUND_DIR)) fs.mkdirSync(SOUND_DIR);
-
 const SPECIES_ASSETS_DIR = "./species-assets";
 if (!fs.existsSync(SPECIES_ASSETS_DIR)) fs.mkdirSync(SPECIES_ASSETS_DIR);
 
@@ -111,32 +105,6 @@ function ensureDir(dirPath) {
 
 function speciesAssetDir(safeName) {
   return path.join(SPECIES_ASSETS_DIR, safeName);
-}
-
-function copyIfPresent(sourcePath, targetPath) {
-  if (!fs.existsSync(sourcePath)) return false;
-
-  ensureDir(path.dirname(targetPath));
-  if (fs.existsSync(targetPath)) {
-    const sourceStat = fs.statSync(sourcePath);
-    const targetStat = fs.statSync(targetPath);
-    if (targetStat.mtimeMs >= sourceStat.mtimeMs && targetStat.size === sourceStat.size) return true;
-  }
-
-  fs.copyFileSync(sourcePath, targetPath);
-  return true;
-}
-
-function syncSpeciesAssetFiles(safeName) {
-  const legacySoundDir = path.join(SOUND_DIR, safeName);
-  const assetDir = speciesAssetDir(safeName);
-
-  return {
-    map: copyIfPresent(path.join(MAP_DIR, `${safeName}.jpg`), path.join(assetDir, "map.jpg")),
-    sound: copyIfPresent(path.join(legacySoundDir, `${safeName}.mp3`), path.join(assetDir, "sound.mp3")),
-    credits: copyIfPresent(path.join(legacySoundDir, "credits.json"), path.join(assetDir, "credits.json")),
-    spectrogram: copyIfPresent(path.join(legacySoundDir, "spectrogram.webp"), path.join(assetDir, "spectrogram.webp")),
-  };
 }
 
 async function sleep(ms) {
@@ -362,11 +330,12 @@ async function downloadMapForSpecies(s) {
     return "n/a";
   }
 
-  const filePath = path.join(MAP_DIR, `${safeName}.jpg`);
+  const assetDir = speciesAssetDir(safeName);
+  ensureDir(assetDir);
+  const filePath = path.join(assetDir, "map.jpg");
   const tempFilePath = filePath + ".tmp";
 
   if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
-    syncSpeciesAssetFiles(safeName);
     console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
     return "ok";
   }
@@ -390,7 +359,6 @@ async function downloadMapForSpecies(s) {
     const buffer = await res.arrayBuffer();
     fs.writeFileSync(tempFilePath, Buffer.from(buffer));
     fs.renameSync(tempFilePath, filePath);
-    syncSpeciesAssetFiles(safeName);
 
     console.log(`✔ Karte gespeichert: ${filePath}`);
 
@@ -766,11 +734,11 @@ async function findInatRecording(genus, species, german) {
 
 async function downloadSoundIfMissing(genus, species, german) {
   const safeGerman = sanitizeAssetName(german);
-  const targetDir = path.join(SOUND_DIR, safeGerman);
+  const targetDir = speciesAssetDir(safeGerman);
 
   if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
-  const mp3Path = path.join(targetDir, `${safeGerman}.mp3`);
+  const mp3Path = path.join(targetDir, "sound.mp3");
   const creditsPath = path.join(targetDir, "credits.json");
 
   const stages = [
@@ -795,7 +763,6 @@ async function downloadSoundIfMissing(genus, species, german) {
     const existingLicense = readSoundLicense(creditsPath);
 
     if (!isNcLicense(existingLicense)) {
-      syncSpeciesAssetFiles(safeGerman);
       console.log(`🎵 Sound existiert bereits für ${german}`);
       return "ok";
     }
@@ -847,7 +814,6 @@ async function downloadSoundIfMissing(genus, species, german) {
     }
 
     console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
-    syncSpeciesAssetFiles(safeGerman);
     return "ok";
   }
 
@@ -966,7 +932,6 @@ async function saveSoundRecording({
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -1016,7 +981,6 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -1062,7 +1026,6 @@ async function saveInatSoundRecording({ genus, species, german, mp3Path, credits
     };
 
     fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-    syncSpeciesAssetFiles(sanitizeAssetName(german));
 
     return "ok";
   } catch (err) {
@@ -1114,17 +1077,14 @@ function createMissingElementsReport(speciesData) {
     if (!s.Kategorie || s.Kategorie === "n/a") report.missing.category.push(german);
     if (!s.Trend || s.Trend === "n/a") report.missing.trend.push(german);
 
-    const legacyMp3Path = path.join(SOUND_DIR, safe, `${safe}.mp3`);
-    const legacyCreditsPath = path.join(SOUND_DIR, safe, "credits.json");
-    const legacyMapPath = path.join(MAP_DIR, `${safe}.jpg`);
     const assetDir = speciesAssetDir(safe);
     const assetMapPath = path.join(assetDir, "map.jpg");
     const assetSoundPath = path.join(assetDir, "sound.mp3");
     const assetCreditsPath = path.join(assetDir, "credits.json");
     const assetSpectrogramPath = path.join(assetDir, "spectrogram.webp");
-    const hasMp3 = fs.existsSync(assetSoundPath) || fs.existsSync(legacyMp3Path);
-    const hasCredits = fs.existsSync(assetCreditsPath) || fs.existsSync(legacyCreditsPath);
-    const hasMap = fs.existsSync(assetMapPath) || fs.existsSync(legacyMapPath);
+    const hasMp3 = fs.existsSync(assetSoundPath);
+    const hasCredits = fs.existsSync(assetCreditsPath);
+    const hasMap = fs.existsSync(assetMapPath);
 
     if (!hasMp3) report.missing.soundMp3.push(german);
     if (hasMp3 && !hasCredits) report.missing.soundCredits.push(german);
@@ -1147,12 +1107,10 @@ function createMissingElementsReport(speciesData) {
     const safe = sanitizeAssetName(german);
 
     const assetCreditsPath = path.join(speciesAssetDir(safe), "credits.json");
-    const legacyCreditsPath = path.join(SOUND_DIR, safe, "credits.json");
-    const creditsPath = fs.existsSync(assetCreditsPath) ? assetCreditsPath : legacyCreditsPath;
-    if (!fs.existsSync(creditsPath)) continue;
+    if (!fs.existsSync(assetCreditsPath)) continue;
 
     try {
-      const c = JSON.parse(fs.readFileSync(creditsPath, "utf8"));
+      const c = JSON.parse(fs.readFileSync(assetCreditsPath, "utf8"));
       const lic = String(c.license || "").toLowerCase();
       if (lic.includes("/by-nc")) ncAll.push(german);
     } catch (_) {

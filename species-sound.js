@@ -726,8 +726,7 @@
     const encodedName = paths?.encodedName || encodeURIComponent(soundAssetName);
     const audioUrl = await firstExistingUrl([
       paths?.sound,
-      paths?.legacySound,
-      `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`,
+      `${ASSET_BASE}/species-assets/${encodedName}/sound.mp3`,
     ]);
 
     if (!audioUrl) {
@@ -737,13 +736,11 @@
 
     const creditsUrl = await firstExistingUrl([
       paths?.credits,
-      paths?.legacyCredits,
-      `${ASSET_BASE}/sounds/${encodedName}/credits.json`,
+      `${ASSET_BASE}/species-assets/${encodedName}/credits.json`,
     ]);
     const spectrogramUrl = await firstExistingUrl([
       paths?.spectrogram,
-      paths?.legacySpectrogram,
-      `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`,
+      `${ASSET_BASE}/species-assets/${encodedName}/spectrogram.webp`,
     ]);
     const spectrogramExists = Boolean(spectrogramUrl);
     const credits = creditsUrl ? await fetchCredits(creditsUrl) : null;

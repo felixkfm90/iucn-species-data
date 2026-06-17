@@ -68,13 +68,9 @@ window.SpeciesCore = (function () {
       encodedName,
       assetDir: `${ASSET_BASE}/species-assets/${encodedName}`,
       map: `${ASSET_BASE}/species-assets/${encodedName}/map.jpg`,
-      legacyMap: `${ASSET_BASE}/Verbreitungskarten/${encodedName}.jpg`,
       sound: `${ASSET_BASE}/species-assets/${encodedName}/sound.mp3`,
-      legacySound: `${ASSET_BASE}/sounds/${encodedName}/${encodedName}.mp3`,
       credits: `${ASSET_BASE}/species-assets/${encodedName}/credits.json`,
-      legacyCredits: `${ASSET_BASE}/sounds/${encodedName}/credits.json`,
       spectrogram: `${ASSET_BASE}/species-assets/${encodedName}/spectrogram.webp`,
-      legacySpectrogram: `${ASSET_BASE}/sounds/${encodedName}/spectrogram.webp`,
     };
   }
 

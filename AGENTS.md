@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -35,8 +35,7 @@ Zentrale Dateien:
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
 - `species-assets/<Artname>/map.jpg`: primaere Verbreitungskarte pro Art
 - `species-assets/<Artname>/sound.mp3` und `species-assets/<Artname>/credits.json`: primaere Tierstimme und Quellen
-- `species-assets/<Artname>/spectrogram.webp`: primaeres Spektrogramm fuer die Tierstimmen-Soundbar
-- `Verbreitungskarten/*.jpg` und `sounds/<Artname>/...`: Legacy-Fallbacks waehrend des Parallelbetriebs
+- `species-assets/<Artname>/spectrogram.webp`: Spektrogramm fuer die Tierstimmen-Soundbar
 - `fehlende_elemente_report.json`: Qualitaetsreport fuer fehlende Assets/Daten und NC-Soundlizenzen
 
 Frontend-Module:
@@ -56,7 +55,7 @@ Frontend-Module:
 
 - 45 aktive Arten
 - 45 Karten
-- 45 Soundordner
+- 45 Art-Assetordner
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 45 Spektrogramm-Dateien
@@ -90,7 +89,7 @@ Aktuell ersetzte freie Quellen:
 - `Panama-Kapuzineraffe`: freie iNaturalist-Aufnahme, CC BY 4.0
 - `Quetzal`: freie Quelle, nicht mehr im NC-Report
 
-Letzter vollstaendiger Pipeline-/Report-Check: 2026-05-28.
+Letzter vollstaendiger Pipeline-/Report-Check: 2026-06-17.
 
 ## Datenfluss
 
@@ -106,7 +105,6 @@ species_list.json
      -> species-assets/<SafeName>/sound.mp3
      -> species-assets/<SafeName>/credits.json
      -> species-assets/<SafeName>/spectrogram.webp
-     -> Legacy-Fallbacks in Verbreitungskarten/ und sounds/
      -> fehlende_elemente_report.json
   -> GitHub Pages
   -> Squarespace Footer Scripts
@@ -206,12 +204,12 @@ Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
 
 - Keine Tokens oder privaten Schluessel hardcoden.
 - `graphics/catagory/Alternativ/` nicht vorschnell umbenennen. Die Schreibweise ist in Live-Pfaden relevant.
-- `Verbreitungskarten/` ist case-sensitive fuer GitHub Pages.
+- `species-assets/` ist die einzige produktive Asset-Struktur fuer Karten, Sounds, Credits und Spektrogramme.
 - `speciesData.json` muss ein Array bleiben.
 - Detailseiten-Slugs entsprechen dem wissenschaftlichen Namen ohne Leerzeichen, z. B. `cyanistescaeruleus`.
 - Squarespace Preview kann andere Pfade liefern als die Live-Seite.
 - Nach jeder eingebundenen JS-Aenderung muss die jeweilige Squarespace-`?v=`-Version erhoeht werden.
-- Asset-Migrationen pro Art duerfen nicht nebenbei passieren, weil sie Loader, GitHub-Pages-Pfade und bestehende Assets betreffen.
+- Asset-Pfadmigrationen duerfen nicht nebenbei passieren, weil sie Loader, GitHub-Pages-Pfade und bestehende Assets betreffen.
 
 ## Testplan
 
@@ -220,7 +218,7 @@ Nach Datenpipeline-Aenderungen:
 - `node --check update.mjs`
 - `node update.mjs`
 - `fehlende_elemente_report.json` pruefen
-- Anzahl Arten, Karten, Soundordner, MP3s und Credits pruefen
+- Anzahl Arten, Art-Assetordner, Karten, MP3s, Credits und Spektrogramme pruefen
 - Credits der ersetzten Sounds auf Quelle, Lizenz und URL pruefen
 
 Nach Frontend-Aenderungen:
@@ -282,10 +280,10 @@ Aktuelle Planung:
   Tempo liegen darunter in einer gemeinsamen kompakten Control-Zeile.
   Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
   Asset-Buendelung pro Art: in Phase 6.8 umgesetzt und in `docs/asset-structure-plan.md` dokumentiert.
-  `species-assets/<SafeName>/` ist primaer; alte Pfade bleiben als Legacy-Fallbacks bis nach Live-Stabilisierung.
-  Relevante Footer-Versionen nach dem Deploy: `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und
-  `species-sound.js?v=1.0.21`.
-  Audit, Generator und Pipeline wurden auf den Parallelbetrieb angepasst.
+  `species-assets/<SafeName>/` ist die alleinige produktive Struktur; `sounds/` und `Verbreitungskarten/` wurden am
+  2026-06-17 entfernt. Relevante Footer-Versionen nach dem Deploy: `species-core.js?v=1.0.4`,
+  `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22`.
+  Audit, Generator und Pipeline wurden auf die neue Struktur angepasst.
 - Phase 7 - Desktop-App / Arten-Explorer:
   lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
   In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein

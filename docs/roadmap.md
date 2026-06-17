@@ -65,8 +65,8 @@ Status: erledigt
   Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Info-Box als `Unbekannt` angezeigt.
 - 5.6 Weitere Arten ergaenzen: erledigt fuer den aktuellen Stand.
   Neue Arten werden nur manuell in `species_list.json` ergaenzt, nicht automatisiert. Der Ablauf ist in
-  `docs/add-species-workflow.md` dokumentiert. Am 2026-05-28 wurde die Pipeline ohne neue Arten durchgefuehrt:
-  45 Arten, 45 Karten, 45 Soundordner, 45 MP3s, 45 Credits, keine fehlenden Kernassets.
+  `docs/add-species-workflow.md` dokumentiert. Am 2026-06-17 wurde die Pipeline ohne neue Arten durchgefuehrt:
+  45 Arten, 45 Art-Assetordner, 45 Karten, 45 MP3s, 45 Credits, 45 Spektrogramme, keine fehlenden Kernassets.
 - 5.7 SEO: erledigt fuer den aktuellen Stand.
   `docs/seo-worklist.md` enthaelt jetzt einen Live-Sitemap-Audit fuer 117 URLs mit aktuellem SEO-Titel, aktueller
   Meta-Beschreibung, konsistentem Vorschlag, Status und Hinweis je URL. Kurzbefund: 13 passen bereits, 53 brauchen
@@ -98,9 +98,8 @@ Status: erledigt
   `docs/squarespace-custom.css` und `docs/css-layout-audit.md`.
 - 5.8 Ordnerstruktur und Assets pro Art nach sanitisiertem Namen bewerten: erledigt, siehe
   `docs/asset-structure-plan.md`.
-  Ergebnis: Der aktuelle Aufbau bleibt bestehen, weil alle Kernassets konsistent vorhanden sind und Live-Pfade stabil
-  laufen. Artweise Buendelung ist technisch moeglich, aber nur als spaetere bewusste Migration mit Parallelbetrieb,
-  Loader-/Pipeline-Anpassung und Live-Test sinnvoll.
+  Ergebnis damals: artweise Buendelung ist technisch sinnvoll, aber nur mit Loader-/Pipeline-Anpassung und Live-Test.
+  Die Umsetzung erfolgte spaeter in Phase 6.8.
 
 ## Phase 6 - Funktionsueberarbeitung
 
@@ -133,10 +132,10 @@ Testpfad zu gefaehrden.
   - Generierung lokal oder in Pipeline bewerten
   - Speicherort, Dateigroesse, Ladezeit und mobile Darstellung pruefen
   - Integration in `species-sound.js` mit Fallback umsetzen
-- Buendelung der Assets pro Art erneut aufgreifen:
+- Buendelung der Assets pro Art abschliessen:
   - Grundlage ist `docs/asset-structure-plan.md`
-  - erst mit Parallelbetrieb, Fallbacks und Live-Test migrieren
-  - keine produktiven Pfade nebenbei verschieben
+  - `species-assets/<SafeName>/` ist die produktive Struktur
+  - alte Assetordner nicht wieder einfuehren
 - Manuell gepflegte Karten dokumentieren:
   - Datei `docs/manual-map-overrides.md` pflegen, in der manuell gepflegte Karten eindeutig gelistet sind
   - Monatsaudit muss diese Karten als eigenen Pruefpunkt ausgeben
@@ -158,21 +157,19 @@ Testpfad zu gefaehrden.
   rechtliche Detailpruefung.
 - 6.4 Spektrogramm-Assets fuer Tierstimmen konzipieren: erledigt am 2026-06-15, siehe
   `docs/spectrogram-plan.md`.
-  Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets. Seit der Asset-Migration
-  ist der primaere Zielpfad `species-assets/<SafeName>/spectrogram.webp`; der alte Pfad unter `sounds/` bleibt
-  Fallback. Keine Browser-Liveberechnung.
+  Ergebnis: Spektrogramme sind technisch sinnvoll, aber als vorberechnete optionale Assets unter
+  `species-assets/<SafeName>/spectrogram.webp`. Keine Browser-Liveberechnung.
 - 6.5 Spektrogramm-Generator-Prototyp bauen: erledigt am 2026-06-15.
-  `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen primaer
-  `species-assets/<SafeName>/sound.mp3` und fallbacken auf `sounds/<SafeName>/<SafeName>.mp3`. Unterstuetzt werden
-  Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`, `--force`, WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder
+  `scripts/generate-spectrograms.mjs` und `npm.cmd run --silent generate:spectrograms` scannen
+  `species-assets/<SafeName>/sound.mp3`. Unterstuetzt werden Dry-Run, Einzelarten, Testausgabe nach `Testlauf/`,
+  `--force`, WebP/PNG und ffmpeg per PATH, `FFMPEG_PATH` oder
   `--ffmpeg=<Pfad>`.
   Dry-Run und echte Testausgabe sind erfolgreich getestet. Am 2026-06-15 wurden fuer `Amsel`, `Graugans` und
   `Bisamratte` temporare WebP-Testausgaben nach `Testlauf/spectrograms` erzeugt. Der bevorzugte Zielstil ist jetzt
   im Generator-Default abgebildet: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten,
   Frequenzbereich bis 18 kHz. Die produktive Erzeugung und Frontend-Integration wurde anschliessend in 6.6 umgesetzt.
 - 6.6 Spektrogramme produktiv erzeugen und Soundbar integrieren: erledigt am 2026-06-15.
-  Es wurden 45 Spektrogramm-Assets erzeugt; seit der Asset-Migration liegen sie primaer unter
-  `species-assets/<SafeName>/spectrogram.webp` und parallel als Legacy-Fallback unter `sounds/`. `species-sound.js`
+  Es wurden 45 Spektrogramm-Assets unter `species-assets/<SafeName>/spectrogram.webp` erzeugt. `species-sound.js`
   laedt die Spektrogramme optional per `HEAD` und zeigt sie mit rotem Positionsmarker und vorhandener Bedienlogik an.
   Wenn ein Spektrogramm fehlt oder nicht geladen werden kann, bleibt die bisherige Canvas-Wellenform als Fallback
   aktiv. Nach Sichtpruefung wurde der Default auf `stop=18000`, `drange=80`, `gain=3` angepasst, damit auch leisere
@@ -196,15 +193,14 @@ Testpfad zu gefaehrden.
   gemeinsamen Control-Zeile. Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms, damit
   die Bedienflaeche darunter kompakter bleibt.
   Soundbar-UI-Version im damaligen Live-Betrieb: `species-sound.js?v=1.0.20`.
-- 6.8 Asset-Buendelung pro Art umsetzen: erledigt am 2026-06-16, siehe
+- 6.8 Asset-Buendelung pro Art umsetzen: erledigt am 2026-06-17, siehe
   `docs/asset-structure-plan.md`.
-  Ergebnis: `species-assets/<SafeName>/` ist jetzt die primaere Struktur mit `map.jpg`, `sound.mp3`, `credits.json`
-  und `spectrogram.webp`. `Verbreitungskarten/` und `sounds/` bleiben vorerst als Legacy-Fallbacks bestehen.
+  Ergebnis: `species-assets/<SafeName>/` ist die produktive Struktur mit `map.jpg`, `sound.mp3`, `credits.json`
+  und `spectrogram.webp`. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden entfernt.
   `species-core.js`, `map-loader.js`, `species-sound.js`, `update.mjs`, `scripts/generate-spectrograms.mjs` und
-  `scripts/monthly-site-audit.mjs` wurden auf den Parallelbetrieb angepasst. Lokaler Audit: 45 neue Artordner, 0
-  fehlende neue Artassets. Besonders zu schuetzen sind die sieben manuell gepflegten Karten aus
-  `docs/manual-map-overrides.md`. Nach GitHub-Pages-Deploy muss der Squarespace-Footer auf
-  `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und `species-sound.js?v=1.0.21` gesetzt und live getestet
+  `scripts/monthly-site-audit.mjs` wurden auf die neue Struktur angepasst. Besonders zu schuetzen sind die sieben
+  manuell gepflegten Karten aus `docs/manual-map-overrides.md`. Nach GitHub-Pages-Deploy muss der Squarespace-Footer
+  auf `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` gesetzt und live getestet
   werden.
 
 ## Phase 7 - Desktop-App / Arten-Explorer

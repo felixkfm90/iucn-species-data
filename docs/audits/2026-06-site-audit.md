@@ -1,6 +1,6 @@
 # Monatsaudit 2026-06
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 ## Kurzfazit
 
@@ -24,7 +24,7 @@ Stand: 2026-06-16
 | GitHub Pages | `speciesData.json`, `fehlende_elemente_report.json`, JS- und Asset-Stichproben | erreichbar, 45 Arten, Report konsistent |
 | Lokale Assets | `speciesData.json` gegen Karten, Sounds, Credits und Spektrogramme | 45/45 konsistent, keine fehlenden Kernassets |
 | Manuell gepflegte Karten | Rueckmeldung von Felix am 2026-06-15 | 7 Karten dokumentiert |
-| Soundlizenzen | `fehlende_elemente_report.json` und `sounds/*/credits.json` | 3 aktive NC-Lizenzen, unveraendert bekannt |
+| Soundlizenzen | `fehlende_elemente_report.json` und `species-assets/*/credits.json` | 3 aktive NC-Lizenzen, unveraendert bekannt |
 
 ## Offen
 
@@ -32,7 +32,7 @@ Stand: 2026-06-16
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
-- Artweise Asset-Buendelung bleibt eine spaetere Migrationsoption, aber keine aktuelle Umsetzung.
+- Keine kritischen offenen Punkte zur Asset-Struktur. Die alte Struktur wurde nach erfolgreichem Live-Test entfernt.
 
 ## Erledigt/geprueft
 
@@ -54,9 +54,10 @@ Stand: 2026-06-16
   - `/universal/svg/social-accounts.svg` liefert 200 und ist ein Squarespace-SVG-Systemasset
 - GitHub Pages live geprueft:
   - `speciesData.json`: 45 Arten
-  - `fehlende_elemente_report.json`: Report vom `2026-05-30T08:57:16.202Z`
+  - `fehlende_elemente_report.json`: Report vom `2026-06-17T16:07:45.206Z`
   - Stichproben erreichbar: `species-core.js`, `species-info.js`, `species-sound.js`, `map-loader.js`, `search.js`,
-    `lightbox-zoom.js`, `Verbreitungskarten/Amsel.jpg`, `sounds/Amsel/Amsel.mp3`, `sounds/Amsel/credits.json`
+    `lightbox-zoom.js`, `species-assets/Amsel/map.jpg`, `species-assets/Amsel/sound.mp3`,
+    `species-assets/Amsel/credits.json`, `species-assets/Amsel/spectrogram.webp`
 - Lokaler Assetabgleich:
   - `speciesData.json`: 45 Arten
   - `species_list.json`: 45 Arten
@@ -88,13 +89,11 @@ Stand: 2026-06-16
   - Skript: `scripts/monthly-site-audit.mjs`
   - Ergebnis im Volltest: 117 Sitemap-URLs, 0 Fetch-Fehler, 0 Non-200, 0 fehlende SEO-Grundfelder,
     0 lokale Asset-Inkonsistenzen, 7 manuelle Karten dokumentiert, 3 NC-Sounds erkannt.
-  - Nach Spektrogramm-Erweiterung prueft der lokale Audit zusaetzlich Spektrogramme und fehlende Assets. Seit der
-    Asset-Migration am 2026-06-16 wird primaer `species-assets/<SafeName>/spectrogram.webp` geprueft; der alte Pfad
-    unter `sounds/` bleibt Fallback.
+  - Nach Spektrogramm-Erweiterung prueft der lokale Audit zusaetzlich Spektrogramme und fehlende Assets unter
+    `species-assets/<SafeName>/`.
 - Spektrogramm-Konzept am 2026-06-15 dokumentiert:
   - Datei: `docs/spectrogram-plan.md`
-  - urspruenglich empfohlener Zielpfad: `sounds/<SafeName>/spectrogram.webp`
-  - aktueller Zielpfad seit Asset-Migration: `species-assets/<SafeName>/spectrogram.webp`
+  - Zielpfad seit Asset-Migration: `species-assets/<SafeName>/spectrogram.webp`
 - Spektrogramm-Generator-Prototyp am 2026-06-15 umgesetzt:
   - Skript: `scripts/generate-spectrograms.mjs`
   - Befehl: `npm.cmd run --silent generate:spectrograms`
@@ -126,10 +125,13 @@ Stand: 2026-06-16
   - damalige dokumentierte Footer-Version: `species-sound.js?v=1.0.20`
 - Asset-Migration am 2026-06-16 umgesetzt:
   - primaere Struktur: `species-assets/<SafeName>/map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp`
-  - Legacy-Fallbacks: `Verbreitungskarten/` und `sounds/`
   - lokaler Audit: 45 Artordner, 45 Karten, 45 Sounds, 45 Credits, 45 Spektrogramme, 0 fehlende neue Artassets
+  - damalige dokumentierte Footer-Versionen wurden am 2026-06-17 durch die bereinigte Assetstruktur abgeloest.
+- Asset-Struktur am 2026-06-17 final bereinigt:
+  - alte Ordner `Verbreitungskarten/` und `sounds/` entfernt
+  - Pipeline, Frontend-Loader, Spektrogramm-Generator und Audit pruefen nur noch `species-assets/`
   - dokumentierte Footer-Versionen fuer den Live-Betrieb nach Deploy:
-    `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6`, `species-sound.js?v=1.0.21`
+    `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7`, `species-sound.js?v=1.0.22`
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -160,6 +162,6 @@ Stand: 2026-06-16
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-core.js?v=1.0.3`, `map-loader.js?v=1.0.6` und
-   `species-sound.js?v=1.0.21` setzen und Artseiten mobil/desktop pruefen.
+1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
+   `species-sound.js?v=1.0.22` setzen und Artseiten mobil/desktop pruefen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.
