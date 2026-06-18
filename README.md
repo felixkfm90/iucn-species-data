@@ -55,6 +55,7 @@ Versionierte Referenzen liegen unter:
 - `docs/asset-structure-plan.md`
 - `docs/monthly-site-audit.md`
 - `docs/audits/2026-06-site-audit.md`
+- `docs/desktop-app-plan.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -161,16 +162,25 @@ geleert.
 
 Lokale Batch-Dateien:
 
-- `update_local.bat`: startet den Suchlauf, aktualisiert Spektrogramme und ruft danach den GitHub-Push-Workflow auf
+- `update_local.bat`: startet den Suchlauf, aktualisiert Spektrogramme und ruft danach den GitHub-Push-Workflow mit
+  `--no-pause` auf
 - `update_github_only.bat`: pusht aktuelle Projektdateien ohne Token in der Remote-URL
 
-Diese Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
+Beim manuellen Start per Doppelklick starten die Batch-Dateien zuerst ein dauerhaftes Konsolenfenster und fuehren sich
+darin mit `--run` erneut aus. Die komplette Ausgabe bleibt dadurch sichtbar. Zum Schliessen das Fenster schliessen oder
+`exit` eingeben. Der Parameter `--no-pause` wird nur intern genutzt, damit `update_local.bat` beim Aufruf von
+`update_github_only.bat` kein zweites Fenster oeffnet. Diese Batch-Dateien sind lokal ignoriert und nicht Teil des
+GitHub-Pages-Deployments.
+Die JSON-Ausgabe des Spektrogramm-Generators wird im Erfolgslauf nicht angezeigt. Bei Fehlern wird die Detailausgabe
+aus `Testlauf/spectrogram-update.log` ins Fenster geschrieben.
+Innerhalb der Windows-Batch-Datei wird `npm.cmd` mit `call` gestartet, damit der Ablauf danach mit Erfolgsmeldung,
+Commit und Push fortgesetzt wird.
 
 Die Asset-Struktur wurde in Phase 6.8 umgesetzt; Details stehen in `docs/asset-structure-plan.md`.
 `species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp` ist die einzige
-produktive Struktur. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach Deploy
-sind dafuer im Squarespace-Footer `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
-`species-sound.js?v=1.0.22` zu verwenden.
+produktive Struktur. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
+GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
+`map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
 korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
@@ -232,11 +242,12 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 
 `local-tools/` ist ignoriert und wird nicht versioniert.
 
-Die Roadmap steht in `docs/roadmap.md`. Phase 5 ist abgeschlossen. Phase 6 Funktionsueberarbeitung ist weitgehend
-abgearbeitet: Monatsaudit, Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und
-Asset-Buendelung sind dokumentiert. Der erste echte Monatsaudit liegt unter
-`docs/audits/2026-06-site-audit.md`. Danach folgen Phase 7 Desktop-App/Arten-Explorer inklusive Synology-NAS-Migration
-bzw. Spiegelung und automatisiertem Backup sowie Phase 8 Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung.
+Die Roadmap steht in `docs/roadmap.md`. Phase 5 und Phase 6 sind abgeschlossen. Phase 6 umfasst Monatsaudit,
+Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und Asset-Buendelung. Der erste echte
+Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Phase 7 Desktop-App/Arten-Explorer wurde am 2026-06-17
+gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der Start erfolgt als lokale Node-Web-App mit
+Browseroberflaeche und zunaechst read-only. In Phase 7 folgen spaeter Synology-NAS-Migration bzw. Spiegelung und
+automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 

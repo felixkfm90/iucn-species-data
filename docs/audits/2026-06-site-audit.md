@@ -132,6 +132,10 @@ Stand: 2026-06-17
   - Pipeline, Frontend-Loader, Spektrogramm-Generator und Audit pruefen nur noch `species-assets/`
   - dokumentierte Footer-Versionen fuer den Live-Betrieb nach Deploy:
     `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7`, `species-sound.js?v=1.0.22`
+  - GitHub Pages wurde fuer Commit `f9126d7` erfolgreich deployed.
+  - Live geprueft: `species-assets/Amsel/*` erreichbar, alte Beispielpfade unter `sounds/` und
+    `Verbreitungskarten/` liefern 404, produktive JS-Dateien enthalten keine alten Asset-Pfade mehr.
+  - Squarespace-Footer wurde von Felix mit den dokumentierten Versionen getestet; die neue Struktur funktioniert.
 
 ## Nicht erneut manuell geprueft, unveraendert
 
@@ -162,6 +166,6 @@ Stand: 2026-06-17
 
 ## Empfohlene naechste Schritte
 
-1. Nach GitHub-Pages-Deploy Squarespace-Footer auf `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
-   `species-sound.js?v=1.0.22` setzen und Artseiten mobil/desktop pruefen.
+1. Phase 7.2 starten: read-only Prototyp des Arten-Explorers mit Artenliste, Suche, Detaildaten und Assetstatus
+   bauen.
 2. NC-Soundfaelle bei kuenftigen Pipeline-Laeufen weiter automatisch auf freie Alternativen pruefen lassen.

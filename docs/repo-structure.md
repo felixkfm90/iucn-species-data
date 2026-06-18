@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-06-17
+Stand: 2026-06-18
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -103,7 +103,14 @@ Empfohlener Normalfall:
 
 1. `update_local.bat` ausfuehren, wenn ein kompletter Suchlauf mit anschliessendem Push gewuenscht ist.
 2. `update_github_only.bat` ausfuehren, wenn nur der aktuelle Arbeitsstand gepusht werden soll.
-3. Vor dem Push pruefen, dass keine Tokens in Remote-URL, Batch-Dateien oder Logs stehen.
+3. Beim manuellen Start per Doppelklick starten die Batch-Dateien zuerst ein dauerhaftes Konsolenfenster und fuehren
+   sich darin mit `--run` erneut aus. Die komplette Ausgabe bleibt dadurch sichtbar.
+4. Zum Schliessen das Fenster schliessen oder `exit` eingeben.
+5. `--no-pause` ist nur fuer interne Aufrufe gedacht, damit `update_local.bat` beim Aufruf von
+   `update_github_only.bat` kein zweites Fenster oeffnet.
+6. `npm.cmd` innerhalb einer Batch-Datei immer mit `call npm.cmd ...` aufrufen. Ohne `call` endet die aufrufende
+   Batch-Datei nach dem npm-Skript und erreicht die nachfolgenden Erfolgsmeldungen bzw. den GitHub-Push nicht.
+7. Vor dem Push pruefen, dass keine Tokens in Remote-URL, Batch-Dateien oder Logs stehen.
 
 Monatsaudit:
 

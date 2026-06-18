@@ -68,7 +68,7 @@ werden, bevor Karten ersetzt werden.
 
 ## Teststand
 
-Lokale Checks vor der Entfernung der alten Struktur:
+Lokale Checks vor und nach der Entfernung der alten Struktur:
 
 ```powershell
 node --check .\species-core.js
@@ -81,12 +81,21 @@ npm.cmd run --silent audit:site -- --skip-live --skip-pages
 npm.cmd run --silent generate:spectrograms -- --dry-run --species=Amsel
 ```
 
-Nach der Entfernung der alten Struktur muessen diese Checks erneut laufen. Ein kompletter Suchlauf ueber
-`node .\update.mjs` bzw. `update_local.bat` prueft zusaetzlich, dass die Pipeline die neue Struktur aktiv pflegt.
+Abschlusscheck am 2026-06-17:
+
+- kompletter Suchlauf ueber `node .\update.mjs` erfolgreich
+- Report: 45 Arten, 45 Karten, 45 Sounds, 45 Credits, 45 Spektrogramme, 0 fehlende Kernassets
+- Spektrogramm-Abgleich erfolgreich: 45 erkannt, 0 fehlend, 0 Fehler
+- lokaler Audit ohne Netzwerk erfolgreich: 0 Asset-Inkonsistenzen
+- produktive JS-/MJS-Dateien enthalten keine alten Asset-Pfade mehr
+- `Testlauf/` leer
+- GitHub Pages nach Deploy live geprueft:
+  - `species-assets/Amsel/map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`: 200
+  - `sounds/Amsel/Amsel.mp3` und `Verbreitungskarten/Amsel.jpg`: 404
 
 ## Squarespace
 
-Aktuell dokumentierter Footer-Stand:
+Aktuell bestaetigter Footer-Stand nach GitHub-Pages-Deploy und Live-Test:
 
 - `species-core.js?v=1.0.4`
 - `map-loader.js?v=1.0.7`

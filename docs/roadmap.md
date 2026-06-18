@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-16
+Stand: 2026-06-17
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -103,10 +103,15 @@ Status: erledigt
 
 ## Phase 6 - Funktionsueberarbeitung
 
-Status: in Arbeit
+Status: erledigt
 
 Ziel: Die bestehenden Funktionen weiter professionalisieren, ohne den stabilen Live-Betrieb durch grosse Umbauten ohne
 Testpfad zu gefaehrden.
+
+Abschluss: Phase 6 wurde am 2026-06-17 nach erfolgreichem GitHub-Pages-Deploy und Live-Test abgeschlossen. Die
+produktive Asset-Struktur ist jetzt ausschliesslich `species-assets/<SafeName>/`; die alten Ordner
+`Verbreitungskarten/` und `sounds/` wurden entfernt. Dokumentation, Pipeline, Audit, Spektrogramm-Generator und
+Frontend-Loader sind auf diesen Stand abgeglichen.
 
 - Dokumentation pruefen und bei Bedarf ueberarbeiten:
   `AGENTS.md`, `README.md`, `docs/roadmap.md` und relevante Detaildokumente muessen zum echten Projektstand passen.
@@ -199,13 +204,15 @@ Testpfad zu gefaehrden.
   und `spectrogram.webp`. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden entfernt.
   `species-core.js`, `map-loader.js`, `species-sound.js`, `update.mjs`, `scripts/generate-spectrograms.mjs` und
   `scripts/monthly-site-audit.mjs` wurden auf die neue Struktur angepasst. Besonders zu schuetzen sind die sieben
-  manuell gepflegten Karten aus `docs/manual-map-overrides.md`. Nach GitHub-Pages-Deploy muss der Squarespace-Footer
-  auf `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` gesetzt und live getestet
-  werden.
+  manuell gepflegten Karten aus `docs/manual-map-overrides.md`. GitHub Pages wurde fuer Commit `f9126d7` erfolgreich
+  deployed. Live geprueft wurde: neue Pfade unter `species-assets/Amsel/*` liefern `200`, alte Pfade unter `sounds/`
+  und `Verbreitungskarten/` liefern `404`, und die ausgelieferten JS-Dateien enthalten keine alten Asset-Pfade mehr.
+  Der Squarespace-Footer ist fuer diesen Stand auf `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
+  `species-sound.js?v=1.0.22` gesetzt und wurde von Felix live erfolgreich getestet.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 
-Status: geplant
+Status: in Arbeit seit 2026-06-17
 
 Ziel: Eine lokale Desktop-App und eine robustere lokale Betriebsumgebung erstellen, damit Arten, Daten, Sounds, Karten,
 Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
@@ -235,6 +242,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   - sensible Daten und Tokens ausschliessen
   - Restore-Test dokumentieren
   - pruefen, ob GitHub-Remote, lokale Arbeitskopie und NAS-Backup zusammen eine nachvollziehbare Sicherung ergeben
+
+- 7.1 Anforderungen, Bedienumfang und technische Basis der Desktop-App festlegen: erledigt am 2026-06-17, siehe
+  `docs/desktop-app-plan.md`.
+  Entscheidung: Start als lokale Node-Web-App mit Browseroberflaeche. Der erste Prototyp bleibt read-only und zeigt
+  Arten, Datenstatus und Assets an, bevor Bearbeiten/Speichern freigeschaltet wird. Electron oder Tauri bleiben
+  spaetere Optionen, falls ein echtes Desktop-Paket noetig wird.
+- 7.2 Read-only Prototyp bauen: naechster Schritt.
+  Geplant sind `species-explorer/`, lokaler Node-Server, API fuer Artenliste/Detaildaten/Assetstatus und eine kompakte
+  Arbeitsoberflaeche mit Suche, Liste und Detailbereich. Keine Schreibfunktionen in 7.2.
 
 ## Phase 8 - Ausbau
 

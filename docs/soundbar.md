@@ -81,7 +81,7 @@ Aktueller Stand:
 
 ## Squarespace-Anpassung
 
-Nach dem GitHub-Pages-Deploy muss in Squarespace aktualisiert werden:
+Aktueller bestaetigter Live-Stand nach GitHub-Pages-Deploy und Squarespace-Test:
 
 - Footer: `species-sound.js?v=1.0.22`
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.

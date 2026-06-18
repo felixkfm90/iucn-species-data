@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-17
+Stand: 2026-06-18
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -16,7 +16,7 @@ Bei jedem technischen Schritt pruefen und bei Bedarf aktualisieren:
 - `AGENTS.md` fuer den aktuellen Uebergabe- und Arbeitsstand
 - `README.md` fuer Projektueberblick, Bedienung und Betriebsablauf
 - `docs/roadmap.md` fuer Status, naechste Schritte und Priorisierung
-- passende Detaildokumente unter `docs/`, z. B. CSS-, Sound-, Repo- oder Squarespace-Doku
+- passende Detaildokumente unter `docs/`, z. B. CSS-, Sound-, Repo-, Desktop-App- oder Squarespace-Doku
 
 Wenn eine JS-Datei geaendert wird, muss auch `docs/squarespace-footer.html` bzw. die Squarespace-`?v=`-Version
 geprueft werden. Wenn CSS geaendert wird, muss `docs/squarespace-custom.css` mit dem echten Squarespace-Stand
@@ -167,8 +167,18 @@ node update.mjs
 
 Lokale Batch-Dateien:
 
-- `update_local.bat`: fuehrt `node .\update.mjs` aus und ruft danach `update_github_only.bat` auf
+- `update_local.bat`: fuehrt `node .\update.mjs` aus, gleicht danach Spektrogramme ab und ruft anschliessend
+  `update_github_only.bat --no-pause` auf
 - `update_github_only.bat`: pusht aktuelle Projektdateien ins Repo, ohne Token in der Remote-URL
+
+Beim manuellen Start per Doppelklick starten beide Batch-Dateien zuerst ein dauerhaftes Konsolenfenster und fuehren
+sich darin mit `--run` erneut aus. Die komplette Ausgabe bleibt dadurch sichtbar. Zum Schliessen das Fenster
+schliessen oder `exit` eingeben. Der Parameter `--no-pause` ist nur fuer interne Aufrufe gedacht, damit
+`update_local.bat` beim Aufruf von `update_github_only.bat` kein zweites Fenster oeffnet.
+Die JSON-Ausgabe des Spektrogramm-Generators wird im normalen Erfolgslauf unterdrueckt; bei Fehlern wird die
+Detailausgabe aus `Testlauf/spectrogram-update.log` angezeigt.
+Aufrufe von `npm.cmd` innerhalb einer Batch-Datei muessen mit `call npm.cmd ...` erfolgen. Ohne `call` kehrt Windows
+nach dem npm-Skript nicht zur aufrufenden Batch-Datei zurueck.
 
 Die Batch-Dateien sind lokal ignoriert und nicht Teil des GitHub-Pages-Deployments.
 
@@ -253,40 +263,25 @@ Phase 5 ist abgeschlossen. Erledigt wurden unter anderem:
 
 Aktuelle Planung:
 
-- Phase 6 - Funktionsueberarbeitung: in Arbeit.
-  Dokumentation pruefen, monatliches Gesamtaudit definieren, Spektrogramm-Assets konzipieren, artweise
-  Asset-Buendelung umsetzen und manuell gepflegte Karten dokumentieren.
-  Audit-Grundlage: `docs/monthly-site-audit.md`.
-  Erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`.
-  Audit-Automatisierung: `scripts/monthly-site-audit.mjs`, getestet am 2026-06-15.
-  Spektrogramm-Konzept und Integration: `docs/spectrogram-plan.md`; primaerer Zielpfad
-  `species-assets/<SafeName>/spectrogram.webp`; `species-sound.js` nutzt Spektrogramme mit Canvas-Fallback.
-  Spektrogramm-Generator: `scripts/generate-spectrograms.mjs`; Dry-Run und echte Testausgabe fuer `Amsel`,
-  `Graugans` und `Bisamratte` erfolgreich getestet am 2026-06-15. Zielstil im Generator-Default:
-  heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben und unten, Frequenzbereich bis 18 kHz.
-  45 produktive Spektrogramme erzeugt. `local-tools/` ist fuer projektlokales ffmpeg
-  ignoriert.
-  Soundbar-Regler: `species-sound.js` bietet seit 2026-06-15 Lautstaerke 0-200 Prozent per Web-Audio-Gain und
-  Tempo-Auswahl `0,25x`, `0,5x`, `1x`, `1,5x`, `2x`, `4x`.
-  Tonfix: Seit `species-sound.js?v=1.0.15` wird Web Audio nur noch fuer Lautstaerke ueber 100 Prozent aktiviert; der
-  Positionsmarker wird waehrend der Wiedergabe per `requestAnimationFrame` geglaettet.
-  Mute-Toggle: Seit `species-sound.js?v=1.0.16` setzt ein Klick auf das Lautsprechersymbol temporaer auf `0%`, zeigt
-  das Symbol rot durchgestrichen und stellt beim zweiten Klick den vorherigen Wert wieder her.
-  Playbutton: Seit `species-sound.js?v=1.0.17` ist das Play-/Pause-Symbol im runden Button ohne
-  Browser-Default-Padding vertikal zentriert; der ganze Button ist optisch leicht nach unten versetzt.
-  Seit `species-sound.js?v=1.0.18` sitzt der Playbutton deutlicher in der Mitte der unteren Bedienflaeche und die
-  zusaetzliche Quellenzeile unter `Tierstimme` ist entfernt.
-  Seit `species-sound.js?v=1.0.20` steht `Tierstimme` oberhalb des Spektrogramms; Playbutton, Lautstaerke, Zeit und
-  Tempo liegen darunter in einer gemeinsamen kompakten Control-Zeile.
-  Liste fuer manuell gepflegte Karten: `docs/manual-map-overrides.md` mit aktuell 7 Karten.
-  Asset-Buendelung pro Art: in Phase 6.8 umgesetzt und in `docs/asset-structure-plan.md` dokumentiert.
-  `species-assets/<SafeName>/` ist die alleinige produktive Struktur; `sounds/` und `Verbreitungskarten/` wurden am
-  2026-06-17 entfernt. Relevante Footer-Versionen nach dem Deploy: `species-core.js?v=1.0.4`,
+- Phase 6 - Funktionsueberarbeitung: abgeschlossen am 2026-06-17.
+  Erledigt und dokumentiert sind monatliches Gesamtaudit, Audit-Automatisierung, manuell gepflegte Karten,
+  Spektrogramm-Konzept, Spektrogramm-Generator, produktive Spektrogramm-Integration, Soundbar-Regler und
+  artweise Asset-Buendelung. `species-assets/<SafeName>/` ist die alleinige produktive Struktur; `sounds/` und
+  `Verbreitungskarten/` wurden am 2026-06-17 entfernt.
+  Wichtige Detaildokumente:
+  - Audit-Grundlage: `docs/monthly-site-audit.md`
+  - erster echter Monatsaudit: `docs/audits/2026-06-site-audit.md`
+  - manuell gepflegte Karten: `docs/manual-map-overrides.md`
+  - Spektrogramme: `docs/spectrogram-plan.md`
+  - Soundbar: `docs/soundbar.md`
+  - Asset-Struktur: `docs/asset-structure-plan.md`
+  Relevante Footer-Versionen nach erfolgreichem GitHub-Pages-Deploy und Live-Test: `species-core.js?v=1.0.4`,
   `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22`.
-  Audit, Generator und Pipeline wurden auf die neue Struktur angepasst.
 - Phase 7 - Desktop-App / Arten-Explorer:
-  lokale Anwendung fuer manuelle Artenpflege, Datenbearbeitung, Sound-/Karten-/Assetverwaltung und Validierung.
-  In diese Phase gehoeren auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
+  in Arbeit seit 2026-06-17. Die technische Basis steht in `docs/desktop-app-plan.md`.
+  Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche, erster Prototyp read-only.
+  Naechster Schritt ist 7.2: Read-only Prototyp mit Artenliste, Suche, Detaildaten und Assetstatus.
+  In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
