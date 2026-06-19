@@ -24,6 +24,18 @@ const elements = {
   ncCount: document.querySelector("#nc-count"),
   manualMapCount: document.querySelector("#manual-map-count"),
   reportDate: document.querySelector("#report-date"),
+  validationOverall: document.querySelector("#validation-overall"),
+  validationDataCard: document.querySelector("#validation-data-card"),
+  validationData: document.querySelector("#validation-data"),
+  validationDataDetail: document.querySelector("#validation-data-detail"),
+  validationAssetsCard: document.querySelector("#validation-assets-card"),
+  validationAssets: document.querySelector("#validation-assets"),
+  validationAssetsDetail: document.querySelector("#validation-assets-detail"),
+  validationReportCard: document.querySelector("#validation-report-card"),
+  validationReport: document.querySelector("#validation-report"),
+  validationReportDetail: document.querySelector("#validation-report-detail"),
+  validationSpecial: document.querySelector("#validation-special"),
+  validationDetails: document.querySelector("#validation-details"),
   search: document.querySelector("#search"),
   statusFilter: document.querySelector("#status-filter"),
   flagFilter: document.querySelector("#flag-filter"),
@@ -101,6 +113,71 @@ function updateSummary(summary) {
   elements.ncCount.textContent = summary.ncSoundCount;
   elements.manualMapCount.textContent = summary.manualMapCount;
   elements.reportDate.textContent = formatDate(summary.reportGeneratedAt);
+}
+
+function setValidationCardState(card, ok) {
+  card.classList.toggle("ok", ok);
+  card.classList.toggle("error", !ok);
+}
+
+function updateValidation(validation) {
+  const isOk = validation.status === "ok";
+  elements.validationOverall.textContent = isOk
+    ? "Alle Prüfungen bestanden"
+    : `${validation.issueCount} Prüfhinweis(e)`;
+  elements.validationOverall.classList.toggle("ok", isOk);
+  elements.validationOverall.classList.toggle("error", !isOk);
+
+  const dataOk = validation.data.issueSpeciesCount === 0;
+  elements.validationData.textContent = `${validation.data.inputCount} / ${validation.data.generatedCount}`;
+  elements.validationDataDetail.textContent = dataOk
+    ? "Eingabe und Pipeline stimmen überein"
+    : `${validation.data.issueSpeciesCount} Art(en) mit Datenabweichung`;
+  setValidationCardState(elements.validationDataCard, dataOk);
+
+  const assetsOk = validation.assets.issueSpeciesCount === 0;
+  elements.validationAssets.textContent = `${validation.assets.completeSpeciesCount} vollständig`;
+  elements.validationAssetsDetail.textContent = assetsOk
+    ? "Karte, Sound, Credits und Spektrogramm vorhanden"
+    : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
+  setValidationCardState(elements.validationAssetsCard, assetsOk);
+
+  elements.validationReport.textContent = validation.report.consistent ? "Konsistent" : "Abweichung";
+  elements.validationReportDetail.textContent = validation.report.consistent
+    ? `${validation.report.checks.length} Reportprüfungen bestanden`
+    : `${validation.report.issueCount} Reportproblem(e)`;
+  setValidationCardState(elements.validationReportCard, validation.report.consistent);
+
+  elements.validationSpecial.textContent =
+    `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`;
+
+  const detailItems = [];
+  if (!dataOk) {
+    detailItems.push(
+      `Daten: ${validation.data.inputOnlyCount} nur in species_list.json, `
+      + `${validation.data.generatedOnlyCount} nur in speciesData.json, `
+      + `${validation.data.mismatchSpeciesCount} Art(en) mit Feldabweichung`,
+    );
+  }
+  if (!assetsOk) {
+    const available = validation.assets.available;
+    detailItems.push(
+      `Assets vorhanden: ${available.maps} Karten, ${available.sounds} Sounds, `
+      + `${available.credits} Credits, ${available.spectrograms} Spektrogramme`,
+    );
+  }
+  for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
+    detailItems.push(
+      `${check.label}: ${check.missingFromReport.length} fehlen im Report, `
+      + `${check.staleInReport.length} stehen nur im Report`,
+    );
+  }
+  detailItems.push(...validation.report.counterIssues.map((issue) => `Report-Zähler: ${issue}`));
+
+  elements.validationDetails.hidden = detailItems.length === 0;
+  elements.validationDetails.innerHTML = detailItems.length
+    ? `<ul>${detailItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    : "";
 }
 
 function populateStatusFilter() {
@@ -362,9 +439,12 @@ function setupMapZoom(species) {
 function renderDetail(species) {
   const badges = [
     `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
-    species.inconsistencies.length
-      ? `<span class="status-pill error">${species.inconsistencies.length} Problem(e)</span>`
+    species.assetIssues.length
+      ? `<span class="status-pill error">${species.assetIssues.length} Assetproblem(e)</span>`
       : `<span class="status-pill ok">Assets vollständig</span>`,
+    species.dataIssues.length
+      ? `<span class="status-pill error">${species.dataIssues.length} Datenhinweis(e)</span>`
+      : "",
     species.isNcSound ? `<span class="status-pill warning">NC-Sound</span>` : "",
   ].filter(Boolean).join("");
 
@@ -395,11 +475,22 @@ function renderDetail(species) {
     `
     : `<p class="media-missing">Keine Sounddatei vorhanden.</p>`;
 
-  const issues = species.inconsistencies.length
+  const issueGroups = [
+    ["Datenabweichungen", species.dataIssues],
+    ["Assetprobleme", species.assetIssues],
+  ].filter(([, entries]) => entries.length > 0);
+  const issues = issueGroups.length
     ? `
       <section class="issues-section">
-        <h3 class="section-title">Inkonsistenzen</h3>
-        <ul>${species.inconsistencies.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
+        <h3 class="section-title">Validierungshinweise</h3>
+        <div class="issue-groups">
+          ${issueGroups.map(([title, entries]) => `
+            <div>
+              <h4>${escapeHtml(title)}</h4>
+              <ul>${entries.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
+            </div>
+          `).join("")}
+        </div>
       </section>
     `
     : "";
@@ -520,18 +611,23 @@ async function loadData({ reload = false } = {}) {
   elements.reloadButton.textContent = "Lädt…";
   try {
     if (reload) await fetch("/api/reload");
-    const [summaryResponse, speciesResponse] = await Promise.all([
+    const [summaryResponse, validationResponse, speciesResponse] = await Promise.all([
       fetch("/api/summary"),
+      fetch("/api/validation"),
       fetch("/api/species"),
     ]);
-    if (!summaryResponse.ok || !speciesResponse.ok) throw new Error("Lokale Daten konnten nicht geladen werden.");
+    if (!summaryResponse.ok || !validationResponse.ok || !speciesResponse.ok) {
+      throw new Error("Lokale Daten konnten nicht geladen werden.");
+    }
 
-    const [summary, species] = await Promise.all([
+    const [summary, validation, species] = await Promise.all([
       summaryResponse.json(),
+      validationResponse.json(),
       speciesResponse.json(),
     ]);
     state.species = species;
     updateSummary(summary);
+    updateValidation(validation);
     populateStatusFilter();
     applyFilters();
 

@@ -246,15 +246,53 @@ Teststand:
 
 ### 7.3 Validierung und Statusdashboard
 
-Naechster Schritt.
+Status: erledigt am 2026-06-19.
 
-- Report- und Assetprobleme sichtbar machen
-- manuell gepflegte Karten markieren
-- NC-Sounds markieren
-- Unterschiede zwischen `species_list.json` und `speciesData.json` anzeigen
+Umgesetzt:
+
+- read-only API `GET /api/validation`
+- kompaktes Dashboard mit Gesamtzustand und vier Bereichen:
+  - Eingabe gegen Pipeline-Ausgabe
+  - Assetvollstaendigkeit
+  - Report-Abgleich
+  - besondere Pflege mit manuellen Karten und NC-Sounds
+- Abgleich aller Arten zwischen `species_list.json` und `speciesData.json`
+- Feldvergleich fuer deutschen Namen, wissenschaftlichen Namen, Groesse, Gewicht, Lebenserwartung und URL-Slug
+- Pruefung der IUCN-Kernfelder Assessment ID, Status, Kategorie und Trend
+- getrennte artweise Listen fuer Datenabweichungen und Assetprobleme
+- Filter `Datenabweichung`, `Assetproblem` und `Alle Probleme`
+- Status- und Hinweis-Dropdowns alphabetisch nach den sichtbaren deutschen Bezeichnungen sortiert
+- Assetzaehler fuer Karte, Sound, Credits und Spektrogramm
+- neun Reportpruefungen:
+  - fehlende Sounds
+  - fehlende Sound-Credits
+  - fehlende Karten
+  - unvollstaendige Assetordner
+  - fehlende Assessment IDs
+  - fehlende Status
+  - fehlende Kategorien
+  - fehlende Trends
+  - NC-Soundlizenzen
+- zusaetzlicher Abgleich der Reportzaehler gegen die zugehoerigen Listen
+- der gueltige IUCN-Trend `Unbekannt` wird nicht als fehlender Wert behandelt
+
+Aktueller Pruefstand:
+
+- 45 Eingabeeintraege
+- 45 Pipeline-Eintraege
+- 45 vollstaendig uebereinstimmende Datenpaare
+- 0 Datenabweichungen
+- 45 vollstaendige Assetpakete
+- 0 Assetprobleme
+- 9 von 9 Reportpruefungen konsistent
+- 0 Reportzaehler-Probleme
+- 7 manuell hinzugefuegte Karten
+- 3 NC-Sounds
+- visuelle Pruefung durch Felix am 2026-06-19 erfolgreich
 
 ### 7.4 Bearbeiten von `species_list.json`
 
+- naechster Schritt
 - erst nach stabilem read-only Prototyp
 - kontrollierte Formularfelder
 - Validierung vor Speichern

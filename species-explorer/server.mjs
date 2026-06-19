@@ -91,6 +91,48 @@ function valueOrUnknown(value) {
   return value;
 }
 
+function normalizeComparable(value) {
+  return String(value ?? "").trim();
+}
+
+function isMissingValue(value) {
+  const normalized = normalizeComparable(value).toLocaleLowerCase("de");
+  return !normalized || normalized === "n/a";
+}
+
+function compareValues(label, inputValue, generatedValue) {
+  if (normalizeComparable(inputValue) === normalizeComparable(generatedValue)) return null;
+  return {
+    field: label,
+    input: valueOrUnknown(inputValue),
+    generated: valueOrUnknown(generatedValue),
+    message: `${label} weicht zwischen Eingabe und Pipeline-Ausgabe ab`,
+  };
+}
+
+function sortedUnique(values) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+}
+
+function compareReportList(key, label, reportedValues, actualValues) {
+  const reported = sortedUnique(reportedValues);
+  const actual = sortedUnique(actualValues);
+  const reportedSet = new Set(reported);
+  const actualSet = new Set(actual);
+  const missingFromReport = actual.filter((value) => !reportedSet.has(value));
+  const staleInReport = reported.filter((value) => !actualSet.has(value));
+
+  return {
+    key,
+    label,
+    reportedCount: reported.length,
+    actualCount: actual.length,
+    missingFromReport,
+    staleInReport,
+    ok: missingFromReport.length === 0 && staleInReport.length === 0,
+  };
+}
+
 export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   const [inputList, generatedList, report, manualMapMarkdown] = await Promise.all([
     readJson(join(repoRoot, "species_list.json")),
@@ -144,14 +186,43 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     }
 
     const inconsistencies = [];
-    if (!input) inconsistencies.push("Kein Eintrag in species_list.json");
-    if (!generated) inconsistencies.push("Kein Eintrag in speciesData.json");
-    if (!map.exists) inconsistencies.push("Karte fehlt");
-    if (!sound.exists) inconsistencies.push("Sound fehlt");
-    if (!creditsFile.exists) inconsistencies.push("Credits fehlen");
-    if (creditsFile.exists && creditsError) inconsistencies.push("Credits sind ungueltig");
-    if (!spectrogram.exists) inconsistencies.push("Spektrogramm fehlt");
+    const dataIssues = [];
+    const assetIssues = [];
+    const fieldMismatches = [];
+
+    if (!input) dataIssues.push("Kein Eintrag in species_list.json");
+    if (!generated) dataIssues.push("Kein Eintrag in speciesData.json");
+
+    if (input && generated) {
+      const expectedScientificName = `${input.genus ?? ""} ${input.species ?? ""}`.trim();
+      const expectedSlug = `${input.genus ?? ""}${input.species ?? ""}`.toLocaleLowerCase("de");
+      const comparisons = [
+        compareValues("Deutscher Name", input.german, generated["Deutscher Name"]),
+        compareValues("Wissenschaftlicher Name", expectedScientificName, generated["Wissenschaftlicher Name"]),
+        compareValues("Größe", input.size, generated["Größe"]),
+        compareValues("Gewicht", input.weight, generated.Gewicht),
+        compareValues("Lebenserwartung", input.life_expectancy, generated.Lebenserwartung),
+        compareValues("URL-Slug", expectedSlug, generated.URLSlug),
+      ].filter(Boolean);
+      fieldMismatches.push(...comparisons);
+      dataIssues.push(...comparisons.map((comparison) => comparison.message));
+    }
+
+    if (generated) {
+      if (isMissingValue(generated["Assessment ID"])) dataIssues.push("Assessment ID fehlt");
+      if (isMissingValue(generated.Status)) dataIssues.push("IUCN-Status fehlt");
+      if (isMissingValue(generated.Kategorie)) dataIssues.push("IUCN-Kategorie fehlt");
+      if (isMissingValue(generated.Trend)) dataIssues.push("Populationstrend fehlt");
+    }
+
+    if (!map.exists) assetIssues.push("Karte fehlt");
+    if (!sound.exists) assetIssues.push("Sound fehlt");
+    if (!creditsFile.exists) assetIssues.push("Credits fehlen");
+    if (creditsFile.exists && creditsError) assetIssues.push("Credits sind ungültig");
+    if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
+    inconsistencies.push(...dataIssues, ...assetIssues);
     const isManualMap = manualMapSafeNames.has(safeName);
+    const isNcSound = String(credits?.license ?? "").toLocaleLowerCase("de").includes("/by-nc");
 
     species.push({
       id: generated?.URLSlug ?? key.replace(/\s+/g, ""),
@@ -202,26 +273,163 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       },
       credits,
       creditsError,
-      isNcSound: ncNames.has(germanName),
+      isNcSound,
+      reportNcSound: ncNames.has(germanName),
       isManualMap,
+      fieldMismatches,
+      dataIssues,
+      assetIssues,
       inconsistencies,
     });
   }
 
   species.sort((a, b) => a.germanName.localeCompare(b.germanName, "de"));
 
+  const actualMissing = {
+    soundMp3: species.filter((entry) => !entry.assets.sound.exists).map((entry) => entry.germanName),
+    soundCredits: species
+      .filter((entry) => entry.assets.sound.exists && !entry.assets.credits.exists)
+      .map((entry) => entry.germanName),
+    maps: species.filter((entry) => !entry.assets.map.exists).map((entry) => entry.germanName),
+    speciesAssets: species
+      .filter((entry) => (
+        !entry.assets.map.exists
+        || !entry.assets.sound.exists
+        || !entry.assets.credits.exists
+        || !entry.assets.spectrogram.exists
+      ))
+      .map((entry) => entry.germanName),
+    assessmentId: generatedList
+      .filter((entry) => isMissingValue(entry["Assessment ID"]))
+      .map((entry) => entry["Deutscher Name"]),
+    status: generatedList
+      .filter((entry) => isMissingValue(entry.Status))
+      .map((entry) => entry["Deutscher Name"]),
+    category: generatedList
+      .filter((entry) => isMissingValue(entry.Kategorie))
+      .map((entry) => entry["Deutscher Name"]),
+    trend: generatedList
+      .filter((entry) => isMissingValue(entry.Trend))
+      .map((entry) => entry["Deutscher Name"]),
+    ncSoundLicensesAll: species.filter((entry) => entry.isNcSound).map((entry) => entry.germanName),
+  };
+
+  const reportChecks = [
+    compareReportList("soundMp3", "Fehlende Sounds", report.missing?.soundMp3 ?? [], actualMissing.soundMp3),
+    compareReportList(
+      "soundCredits",
+      "Fehlende Sound-Credits",
+      report.missing?.soundCredits ?? [],
+      actualMissing.soundCredits,
+    ),
+    compareReportList("maps", "Fehlende Karten", report.missing?.maps ?? [], actualMissing.maps),
+    compareReportList(
+      "speciesAssets",
+      "Unvollständige Assetordner",
+      (report.missing?.speciesAssets ?? []).map((entry) => entry.german),
+      actualMissing.speciesAssets,
+    ),
+    compareReportList(
+      "assessmentId",
+      "Fehlende Assessment IDs",
+      report.missing?.assessmentId ?? [],
+      actualMissing.assessmentId,
+    ),
+    compareReportList("status", "Fehlende IUCN-Status", report.missing?.status ?? [], actualMissing.status),
+    compareReportList(
+      "category",
+      "Fehlende IUCN-Kategorien",
+      report.missing?.category ?? [],
+      actualMissing.category,
+    ),
+    compareReportList("trend", "Fehlende Trends", report.missing?.trend ?? [], actualMissing.trend),
+    compareReportList(
+      "ncSoundLicensesAll",
+      "NC-Soundlizenzen",
+      report.ncSoundLicensesAll ?? [],
+      actualMissing.ncSoundLicensesAll,
+    ),
+  ];
+
+  const reportCounterIssues = [];
+  const expectedCounters = {
+    totalSpecies: generatedList.length,
+    missingSoundMp3: (report.missing?.soundMp3 ?? []).length,
+    missingSoundCredits: (report.missing?.soundCredits ?? []).length,
+    missingMap: (report.missing?.maps ?? []).length,
+    missingSpeciesAssets: (report.missing?.speciesAssets ?? []).length,
+    missingAssessmentId: (report.missing?.assessmentId ?? []).length,
+    missingStatus: (report.missing?.status ?? []).length,
+    missingCategory: (report.missing?.category ?? []).length,
+    missingTrend: (report.missing?.trend ?? []).length,
+    ncSoundLicensesAll: (report.ncSoundLicensesAll ?? []).length,
+  };
+  for (const [key, expected] of Object.entries(expectedCounters)) {
+    if (Number(report.counts?.[key]) !== expected) {
+      reportCounterIssues.push(`${key}: Zähler ${report.counts?.[key] ?? "fehlt"}, Liste ${expected}`);
+    }
+  }
+
+  const inputOnlyCount = [...inputByScientificName.keys()]
+    .filter((key) => !generatedByScientificName.has(key)).length;
+  const generatedOnlyCount = [...generatedByScientificName.keys()]
+    .filter((key) => !inputByScientificName.has(key)).length;
+  const dataIssueSpecies = species.filter((entry) => entry.dataIssues.length > 0);
+  const assetIssueSpecies = species.filter((entry) => entry.assetIssues.length > 0);
+  const reportIssueCount = reportChecks.filter((check) => !check.ok).length + reportCounterIssues.length;
+  const validation = {
+    status: dataIssueSpecies.length === 0 && assetIssueSpecies.length === 0 && reportIssueCount === 0
+      ? "ok"
+      : "issues",
+    issueCount: dataIssueSpecies.length + assetIssueSpecies.length + reportIssueCount,
+    data: {
+      inputCount: inputList.length,
+      generatedCount: generatedList.length,
+      matchedCount: species.filter((entry) => (
+        entry.dataIssues.length === 0
+        && inputByScientificName.has(scientificKey(entry.taxonomy.genus, entry.taxonomy.species))
+        && generatedByScientificName.has(scientificKey(entry.taxonomy.genus, entry.taxonomy.species))
+      )).length,
+      inputOnlyCount,
+      generatedOnlyCount,
+      mismatchSpeciesCount: species.filter((entry) => entry.fieldMismatches.length > 0).length,
+      issueSpeciesCount: dataIssueSpecies.length,
+    },
+    assets: {
+      completeSpeciesCount: species.length - assetIssueSpecies.length,
+      issueSpeciesCount: assetIssueSpecies.length,
+      available: {
+        maps: species.filter((entry) => entry.assets.map.exists).length,
+        sounds: species.filter((entry) => entry.assets.sound.exists).length,
+        credits: species.filter((entry) => entry.assets.credits.exists).length,
+        spectrograms: species.filter((entry) => entry.assets.spectrogram.exists).length,
+      },
+    },
+    report: {
+      consistent: reportIssueCount === 0,
+      issueCount: reportIssueCount,
+      checks: reportChecks,
+      counterIssues: reportCounterIssues,
+    },
+    special: {
+      manualMapCount: species.filter((entry) => entry.isManualMap).length,
+      ncSoundCount: species.filter((entry) => entry.isNcSound).length,
+    },
+  };
+
   const summary = {
     speciesCount: species.length,
     inputCount: inputList.length,
     generatedCount: generatedList.length,
     reportGeneratedAt: report.generatedAt ?? null,
-    missingCoreAssets: species.filter((entry) => entry.inconsistencies.length > 0).length,
+    missingCoreAssets: assetIssueSpecies.length,
+    validationIssueSpecies: species.filter((entry) => entry.inconsistencies.length > 0).length,
     ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     manualMapCount: species.filter((entry) => entry.isManualMap).length,
     readOnly: true,
   };
 
-  return { summary, species };
+  return { summary, validation, species };
 }
 
 function sendJson(response, statusCode, payload) {
@@ -300,6 +508,11 @@ export async function createExplorerServer({
 
       if (url.pathname === "/api/species") {
         sendJson(response, 200, model.species);
+        return;
+      }
+
+      if (url.pathname === "/api/validation") {
+        sendJson(response, 200, model.validation);
         return;
       }
 

@@ -15,6 +15,15 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.summary.ncSoundCount, 3);
   assert.equal(model.summary.manualMapCount, 7);
   assert.equal(model.summary.readOnly, true);
+  assert.equal(model.validation.status, "ok");
+  assert.equal(model.validation.issueCount, 0);
+  assert.equal(model.validation.data.matchedCount, 45);
+  assert.equal(model.validation.data.issueSpeciesCount, 0);
+  assert.equal(model.validation.assets.completeSpeciesCount, 45);
+  assert.equal(model.validation.assets.issueSpeciesCount, 0);
+  assert.equal(model.validation.report.consistent, true);
+  assert.equal(model.validation.report.issueCount, 0);
+  assert.ok(model.validation.report.checks.every((check) => check.ok));
   assert.equal(model.species.filter((entry) => entry.isNcSound).length, 3);
   assert.equal(model.species.filter((entry) => entry.isManualMap).length, 7);
   assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, 7);
@@ -41,6 +50,10 @@ test("Lokaler Server liefert API und Assets, lehnt Schreibzugriffe ab", async (c
   const speciesResponse = await fetch(`${baseUrl}/api/species`);
   assert.equal(speciesResponse.status, 200);
   assert.equal((await speciesResponse.json()).length, 45);
+
+  const validationResponse = await fetch(`${baseUrl}/api/validation`);
+  assert.equal(validationResponse.status, 200);
+  assert.equal((await validationResponse.json()).status, "ok");
 
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
@@ -72,14 +85,27 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
   );
   assert.equal(filterSpecies(model.species, { flag: "nc" }).length, 3);
   assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 7);
+  assert.equal(filterSpecies(model.species, { flag: "data-issues" }).length, 0);
+  assert.equal(filterSpecies(model.species, { flag: "asset-issues" }).length, 0);
   assert.equal(filterSpecies(model.species, { flag: "issues" }).length, 0);
   assert.ok(filterSpecies(model.species, { status: "LC" }).length > 0);
+
+  const dataIssue = structuredClone(model.species[0]);
+  dataIssue.dataIssues = ["Testabweichung"];
+  dataIssue.inconsistencies = ["Testabweichung"];
+  const assetIssue = structuredClone(model.species[1]);
+  assetIssue.assetIssues = ["Testasset fehlt"];
+  assetIssue.inconsistencies = ["Testasset fehlt"];
+  assert.equal(filterSpecies([dataIssue, assetIssue], { flag: "data-issues" }).length, 1);
+  assert.equal(filterSpecies([dataIssue, assetIssue], { flag: "asset-issues" }).length, 1);
+  assert.equal(filterSpecies([dataIssue, assetIssue], { flag: "issues" }).length, 2);
 });
 
 test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", async () => {
-  const [appSource, cssSource] = await Promise.all([
+  const [appSource, cssSource, htmlSource] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
+    readFile(new URL("./public/index.html", import.meta.url), "utf8"),
   ]);
 
   assert.match(appSource, /class="map-image"/);
@@ -96,6 +122,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /IUCN-Daten abgerufen/);
   assert.match(appSource, /class="audio-credits"/);
   assert.match(appSource, /assetStatusText\(species\.assets\.map\)/);
+  assert.match(appSource, /updateValidation/);
+  assert.match(appSource, /fetch\("\/api\/validation"\)/);
+  assert.match(htmlSource, /class="validation-dashboard"/);
+  assert.match(htmlSource, /value="data-issues"/);
+  assert.match(htmlSource, /value="asset-issues"/);
+  assert.match(
+    htmlSource,
+    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
+  );
+  assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);

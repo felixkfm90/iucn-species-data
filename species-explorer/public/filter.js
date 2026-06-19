@@ -17,6 +17,8 @@
       const matchesFlag = !flag
         || (flag === "nc" && entry.isNcSound)
         || (flag === "manual-map" && entry.isManualMap)
+        || (flag === "data-issues" && entry.dataIssues.length > 0)
+        || (flag === "asset-issues" && entry.assetIssues.length > 0)
         || (flag === "issues" && entry.inconsistencies.length > 0);
 
       return matchesQuery && matchesStatus && matchesFlag;

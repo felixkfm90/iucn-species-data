@@ -281,9 +281,9 @@ Aktuelle Planung:
   - Spektrogramme: `docs/spectrogram-plan.md`
   - Soundbar: `docs/soundbar.md`
   - Asset-Struktur: `docs/asset-structure-plan.md`
-  Relevante Footer-Versionen: `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und als Sollstand nach dem
-  naechsten GitHub-Pages-Deploy `species-sound.js?v=1.0.23`. Version `1.0.23` reduziert nur die sichtbare
-  Spektrogrammhoehe; die vorhandenen WebP-Assets bleiben unveraendert.
+  Relevante Footer-Versionen: `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
+  `species-sound.js?v=1.0.24`. Version `1.0.24` reduziert nur die sichtbare Spektrogrammhoehe; die vorhandenen
+  WebP-Assets bleiben unveraendert. Der Footer wurde von Felix am 2026-06-19 angepasst und live erfolgreich getestet.
 - Phase 7 - Desktop-App / Arten-Explorer:
   in Arbeit seit 2026-06-17. Die technische Basis steht in `docs/desktop-app-plan.md`.
   Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche.
@@ -296,7 +296,13 @@ Aktuelle Planung:
   Das IUCN-Abrufdatum steht im Detailkopf, Statusfilter verwenden deutsche Bezeichnungen mit IUCN-Kuerzel und
   manuell hinzugefuegte Assets werden direkt in ihrer Assetzeile markiert. Artwechsel erhalten Fenster- und
   Listenposition. Start: `npm.cmd run species:explorer`; Tests: `npm.cmd run --silent test:explorer`.
-  Naechster Schritt ist 7.3: vertiefte Validierung und Statusdashboard, weiterhin read-only.
+  Phase 7.3 ist seit 2026-06-19 erledigt: Das read-only Statusdashboard vergleicht `species_list.json`,
+  `speciesData.json`, `fehlende_elemente_report.json` und die tatsaechlichen Assetdateien. Aktueller Stand:
+  45 von 45 Datenpaaren stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent
+  und es gibt 0 Validierungshinweise. Daten- und Assetprobleme sind getrennt filterbar und werden artweise erklaert.
+  Status- und Hinweis-Dropdowns sind alphabetisch nach ihren sichtbaren deutschen Bezeichnungen sortiert.
+  Phase 7.3 wurde von Felix am 2026-06-19 visuell geprueft.
+  Naechster Schritt ist 7.4: kontrolliertes Bearbeiten von `species_list.json`.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

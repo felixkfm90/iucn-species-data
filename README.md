@@ -157,6 +157,7 @@ http://127.0.0.1:4177
 Der Explorer zeigt:
 
 - alle 45 Arten mit Suche und Filtern
+- kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
 - Karte, Sound, Credits und Spektrogramm je Art
@@ -166,6 +167,7 @@ Der Explorer zeigt:
 - IUCN-Abrufdatum im Kopf der Detailansicht
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
+- getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - drei aktive NC-Sounds
 - sieben manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
@@ -174,6 +176,18 @@ Beim Wechsel zwischen Arten bleibt die aktuelle Fenster- und Listenposition erha
 
 Der Server bindet nur an `127.0.0.1`. Er bietet keine Schreibroute, startet keine Pipeline und fuehrt keine
 Git-Aktionen aus. Andere HTTP-Methoden als GET/HEAD werden mit `405 Read-only` abgewiesen.
+
+Phase 7.3 erweitert den Explorer um `GET /api/validation`. Geprueft werden:
+
+- Artenbestand und uebernommene manuelle Felder zwischen `species_list.json` und `speciesData.json`
+- Vollstaendigkeit von Karte, Sound, Credits und Spektrogramm je Art
+- Listen und Zaehler aus `fehlende_elemente_report.json` gegen den tatsaechlichen Daten-/Assetstand
+- NC-Soundlizenzen aus `credits.json` gegen den Report
+
+Aktueller Validierungsstand vom 2026-06-19: 45 von 45 Datenpaaren stimmen ueberein, 45 Assetpakete sind vollstaendig,
+neun Reportpruefungen sind konsistent und es bestehen keine Validierungshinweise. Der IUCN-Trend `Unbekannt` ist ein
+gueltiger Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch
+nach den sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
 
 Tests:
 
@@ -230,9 +244,10 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
-Seit `species-sound.js?v=1.0.23` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
+Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
 erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
 ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt, damit mehr Platz fuer das spaetere Artportraet bleibt.
+Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet.
 Ohne Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
 Frequenzbereich bis 18 kHz.
@@ -291,8 +306,9 @@ Die Roadmap steht in `docs/roadmap.md`. Phase 5 und Phase 6 sind abgeschlossen. 
 Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und Asset-Buendelung. Der erste echte
 Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Phase 7 Desktop-App/Arten-Explorer wurde am 2026-06-17
 gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-only Prototyp aus Phase 7.2 ist seit
-2026-06-18 umgesetzt und getestet. Als Naechstes folgt 7.3 mit vertiefter Validierung und Statusdashboard. In Phase 7
-folgen spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
+2026-06-18 umgesetzt und getestet. Phase 7.3 mit vertiefter Validierung und Statusdashboard wurde am 2026-06-19
+umgesetzt. Als Naechstes folgt Phase 7.4 mit kontrolliertem Bearbeiten von `species_list.json`. In Phase 7 folgen
+spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand

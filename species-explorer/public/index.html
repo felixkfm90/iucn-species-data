@@ -26,6 +26,39 @@
         <div><strong id="manual-map-count">–</strong><span>Manuelle Karten</span></div>
       </section>
 
+      <section class="validation-dashboard" aria-labelledby="validation-title">
+        <div class="validation-heading">
+          <div>
+            <p class="validation-eyebrow">Phase 7.3 · Read-only-Prüfung</p>
+            <h2 id="validation-title">Validierung und Status</h2>
+          </div>
+          <span id="validation-overall" class="validation-overall">Prüfung läuft…</span>
+        </div>
+        <div class="validation-grid">
+          <article id="validation-data-card" class="validation-card">
+            <span>Eingabe ↔ Pipeline</span>
+            <strong id="validation-data">–</strong>
+            <small id="validation-data-detail">Wird geprüft</small>
+          </article>
+          <article id="validation-assets-card" class="validation-card">
+            <span>Assetstruktur</span>
+            <strong id="validation-assets">–</strong>
+            <small id="validation-assets-detail">Wird geprüft</small>
+          </article>
+          <article id="validation-report-card" class="validation-card">
+            <span>Report-Abgleich</span>
+            <strong id="validation-report">–</strong>
+            <small id="validation-report-detail">Wird geprüft</small>
+          </article>
+          <article class="validation-card info">
+            <span>Besondere Pflege</span>
+            <strong id="validation-special">–</strong>
+            <small>Manuelle Karten und NC-Sounds</small>
+          </article>
+        </div>
+        <div id="validation-details" class="validation-details" hidden></div>
+      </section>
+
       <main class="workspace">
         <aside class="species-panel" aria-label="Artenauswahl">
           <div class="panel-toolbar">
@@ -45,9 +78,11 @@
                 <span>Hinweis</span>
                 <select id="flag-filter">
                   <option value="">Alle</option>
-                  <option value="nc">NC-Sound</option>
+                  <option value="issues">Alle Probleme</option>
+                  <option value="asset-issues">Assetproblem</option>
+                  <option value="data-issues">Datenabweichung</option>
                   <option value="manual-map">Manuelle Karte</option>
-                  <option value="issues">Assetproblem</option>
+                  <option value="nc">NC-Sound</option>
                 </select>
               </label>
             </div>

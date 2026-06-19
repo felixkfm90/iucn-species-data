@@ -260,11 +260,18 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   IUCN-Kuerzel. Manuelle Assetpflege wird direkt bei der jeweiligen Karte markiert und ist fuer spaetere manuelle
   Sounds erweiterbar. Medien- und Datenraster sind seit 2026-06-19 auf identische 50/50-Spalten ausgerichtet.
   Spektrogramme werden im Explorer nur noch 64 bis 84 Pixel hoch angezeigt. Fuer Squarespace reduziert
-  `species-sound.js?v=1.0.23` die Anzeige auf 78 Pixel beziehungsweise 68 Pixel mobil; die Assets bleiben
+  `species-sound.js?v=1.0.24` die Anzeige auf 78 Pixel beziehungsweise 68 Pixel mobil; die Assets bleiben
   unveraendert.
-- 7.3 Validierung und Statusdashboard erweitern: naechster Schritt.
-  Bestehende Projektkennzahlen sollen um gezielte Vergleiche zwischen Eingabe, Pipeline-Ausgabe, Report und
-  Assetstruktur erweitert werden. Die App bleibt dabei weiterhin read-only.
+- 7.3 Validierung und Statusdashboard erweitern: erledigt am 2026-06-19, siehe `docs/desktop-app-plan.md`.
+  Das read-only Dashboard vergleicht `species_list.json`, `speciesData.json`, `fehlende_elemente_report.json` und
+  die tatsaechlichen Dateien unter `species-assets/`. Datenabweichungen, Assetprobleme und alle Probleme sind getrennt
+  filterbar; artweise Hinweise erscheinen in der Detailansicht. Der aktuelle Stand besteht alle Pruefungen:
+  45 von 45 Datenpaare stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent und
+  es bestehen 0 Validierungshinweise. Der gueltige Trendwert `Unbekannt` wird nicht als fehlend bewertet.
+  Status- und Hinweis-Dropdowns sind alphabetisch sortiert. Felix hat Phase 7.3 am 2026-06-19 visuell geprueft.
+  Der Squarespace-Footer mit `species-sound.js?v=1.0.24` wurde ebenfalls live erfolgreich getestet.
+- 7.4 Kontrolliertes Bearbeiten von `species_list.json`: naechster Schritt.
+  Geplant sind klar begrenzte Formularfelder, Validierung vor dem Speichern und ein sichtbarer Diff-/Backup-Hinweis.
 
 ## Phase 8 - Ausbau
 

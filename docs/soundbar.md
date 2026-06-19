@@ -39,7 +39,7 @@ Informationen und brauchbare mobile Bedienung.
   davon ab, ob Squarespace-CSS bereits aktualisiert wurde.
 - Die Bedienung ist kompakt aufgebaut: `Tierstimme` steht als kleine Kopfzeile oberhalb des Spektrogramms.
   Unter dem Spektrogramm liegen Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
-- Das Spektrogramm wird seit Version `1.0.23` flacher dargestellt: `78px` auf Desktop und `68px` bis `768px`
+- Das Spektrogramm wird seit Version `1.0.24` flacher dargestellt: `78px` auf Desktop und `68px` bis `768px`
   Viewportbreite. Die vorhandenen WebP-Dateien bleiben unveraendert; nur die Anzeigehoehe wurde reduziert.
 - Quelle und Lizenz werden nur im eingeklappten `Quelle und Lizenz`-Bereich gezeigt; unter `Tierstimme` steht keine
   zusaetzliche Quellenzeile mehr.
@@ -85,7 +85,7 @@ Aktueller Stand:
 
 Aktueller bestaetigter Live-Stand nach GitHub-Pages-Deploy und Squarespace-Test:
 
-- Footer-Sollstand nach dem naechsten GitHub-Pages-Deploy: `species-sound.js?v=1.0.23`
+- Footer: `species-sound.js?v=1.0.24`, von Felix am 2026-06-19 live getestet
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.
