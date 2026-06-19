@@ -40,7 +40,7 @@
 
       #species-sound .sound-visual {
         position: relative;
-        height: 108px;
+        height: 78px;
         background: linear-gradient(180deg, #ffffff 0%, #f6faf9 100%);
         border-bottom: 1px solid #d4dfdb;
         overflow: hidden;
@@ -337,7 +337,7 @@
 
       @media (max-width: 768px) {
         #species-sound .sound-visual {
-          height: 96px;
+          height: 68px;
         }
 
         #species-sound .sound-controls {

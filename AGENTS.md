@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-18
+Stand: 2026-06-19
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -50,6 +50,12 @@ Frontend-Module:
 - `search.js`: Suche auf Uebersichtsseiten
 - `sort.js`: Sortierung sichtbarer Listen
 - `lightbox-zoom.js`: Galerie-/Lightbox-Zoom
+
+Lokale Arbeitsoberflaeche:
+
+- `species-explorer/server.mjs`: read-only Server auf `127.0.0.1:4177`
+- `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
+- `species-explorer/server.test.mjs`: Modell-, API-, Read-only-, Such- und Filtertests
 
 ## Aktueller Projektstand
 
@@ -275,12 +281,22 @@ Aktuelle Planung:
   - Spektrogramme: `docs/spectrogram-plan.md`
   - Soundbar: `docs/soundbar.md`
   - Asset-Struktur: `docs/asset-structure-plan.md`
-  Relevante Footer-Versionen nach erfolgreichem GitHub-Pages-Deploy und Live-Test: `species-core.js?v=1.0.4`,
-  `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22`.
+  Relevante Footer-Versionen: `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und als Sollstand nach dem
+  naechsten GitHub-Pages-Deploy `species-sound.js?v=1.0.23`. Version `1.0.23` reduziert nur die sichtbare
+  Spektrogrammhoehe; die vorhandenen WebP-Assets bleiben unveraendert.
 - Phase 7 - Desktop-App / Arten-Explorer:
   in Arbeit seit 2026-06-17. Die technische Basis steht in `docs/desktop-app-plan.md`.
-  Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche, erster Prototyp read-only.
-  Naechster Schritt ist 7.2: Read-only Prototyp mit Artenliste, Suche, Detaildaten und Assetstatus.
+  Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche.
+  Phase 7.2 ist seit 2026-06-18 erledigt: read-only Prototyp mit 45 Arten, Suche, Filtern, Detaildaten, Karte, Sound,
+  Credits, Spektrogramm und Assetstatus. Karten werden vollstaendig im Originalseitenverhaeltnis angezeigt.
+  Spektrogramm und Audio sind in einem Player mit Play/Pause, Zeit, Lautstaerke, Scrubbing und Positionsmarker
+  gekoppelt. Der Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; Credits sind einklappbar.
+  Medien- und Datenkarten verwenden identische 50/50-Spalten. Das Explorer-Spektrogramm ist auf 64 bis 84 Pixel
+  Anzeigehoehe begrenzt, damit das Artportraet mehr Platz erhaelt.
+  Das IUCN-Abrufdatum steht im Detailkopf, Statusfilter verwenden deutsche Bezeichnungen mit IUCN-Kuerzel und
+  manuell hinzugefuegte Assets werden direkt in ihrer Assetzeile markiert. Artwechsel erhalten Fenster- und
+  Listenposition. Start: `npm.cmd run species:explorer`; Tests: `npm.cmd run --silent test:explorer`.
+  Naechster Schritt ist 7.3: vertiefte Validierung und Statusdashboard, weiterhin read-only.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

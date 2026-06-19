@@ -39,6 +39,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
   GitHub-Pages-Assets und lokale Assetkonsistenz
 - `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
   `species-assets/<SafeName>/spectrogram.webp`
+- `species-explorer/`: lokale read-only Web-App fuer Arten, Daten, Karten, Sounds, Credits und Assetstatus
 
 ## Squarespace-Integration
 
@@ -139,6 +140,47 @@ NC-Sounds werden im Frontend nicht mit einem separaten Warnhinweis markiert. Die
 
 Tokens duerfen nicht im Repository gespeichert werden.
 
+## Arten-Explorer
+
+Phase 7.2 stellt eine lokale read-only Arbeitsoberflaeche bereit:
+
+```bash
+npm.cmd run species:explorer
+```
+
+Danach im Browser oeffnen:
+
+```text
+http://127.0.0.1:4177
+```
+
+Der Explorer zeigt:
+
+- alle 45 Arten mit Suche und Filtern
+- manuelle Felder aus `species_list.json`
+- generierte IUCN-Daten aus `speciesData.json`
+- Karte, Sound, Credits und Spektrogramm je Art
+- Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
+- kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
+  Positionsmarker und einklappbaren Quellen-/Lizenzdaten
+- IUCN-Abrufdatum im Kopf der Detailansicht
+- deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
+- manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
+- drei aktive NC-Sounds
+- sieben manuell gepflegte Karten
+- fehlende oder inkonsistente Daten und Assets
+
+Beim Wechsel zwischen Arten bleibt die aktuelle Fenster- und Listenposition erhalten.
+
+Der Server bindet nur an `127.0.0.1`. Er bietet keine Schreibroute, startet keine Pipeline und fuehrt keine
+Git-Aktionen aus. Andere HTTP-Methoden als GET/HEAD werden mit `405 Read-only` abgewiesen.
+
+Tests:
+
+```bash
+npm.cmd run --silent test:explorer
+```
+
 Neue Arten werden nicht automatisch angelegt. Sie werden manuell in `species_list.json` ergaenzt; der genaue Ablauf ist
 in `docs/add-species-workflow.md` dokumentiert.
 
@@ -188,6 +230,9 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
+Seit `species-sound.js?v=1.0.23` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
+erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
+ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt, damit mehr Platz fuer das spaetere Artportraet bleibt.
 Ohne Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
 Frequenzbereich bis 18 kHz.
@@ -245,9 +290,10 @@ npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-t
 Die Roadmap steht in `docs/roadmap.md`. Phase 5 und Phase 6 sind abgeschlossen. Phase 6 umfasst Monatsaudit,
 Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler und Asset-Buendelung. Der erste echte
 Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Phase 7 Desktop-App/Arten-Explorer wurde am 2026-06-17
-gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der Start erfolgt als lokale Node-Web-App mit
-Browseroberflaeche und zunaechst read-only. In Phase 7 folgen spaeter Synology-NAS-Migration bzw. Spiegelung und
-automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung geplant.
+gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-only Prototyp aus Phase 7.2 ist seit
+2026-06-18 umgesetzt und getestet. Als Naechstes folgt 7.3 mit vertiefter Validierung und Statusdashboard. In Phase 7
+folgen spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
+Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 

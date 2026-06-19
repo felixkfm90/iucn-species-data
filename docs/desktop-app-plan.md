@@ -1,6 +1,6 @@
 # Desktop App / Arten-Explorer
 
-Stand: 2026-06-17
+Stand: 2026-06-19
 
 Ziel von Phase 7: Eine lokale Bedienoberflaeche schaffen, mit der Arten, manuelle Daten, Assets, Sounds, Karten,
 Credits, Reports und Pipeline-Status gepflegt bzw. geprueft werden koennen, ohne direkt in JSON-Dateien und Ordnern
@@ -177,17 +177,76 @@ Ergebnis:
 
 ### 7.2 Read-only Prototyp
 
-Naechster Schritt.
+Status: erledigt am 2026-06-18.
 
-Umfang:
+Umgesetzt:
 
 - Ordner `species-explorer/` anlegen
-- lokaler Node-Server
-- API fuer Artenliste, Detaildaten und Assetstatus
-- UI mit Artenliste, Suche und Detailbereich
-- keine Schreibfunktionen
+- lokaler Node-Server unter `127.0.0.1:4177`
+- Startbefehl: `npm.cmd run species:explorer`
+- read-only API fuer Projektstatus, Artenliste, Detaildaten und Assets
+- UI mit Artenliste, Suche, Statusfilter, Hinweisfilter und Detailbereich
+- Anzeige von manuellen Daten, IUCN-Daten, Taxonomie und Assetstatus
+- Vorschau von Karte und Spektrogramm
+- native Soundwiedergabe und Credits-/Lizenzanzeige
+- Kennzeichnung von drei NC-Sounds und sieben manuell gepflegten Karten
+- Kennzeichnung fehlender oder inkonsistenter Daten/Assets
+- keine Schreibfunktionen, Pipeline-Aufrufe oder Git-Aktionen
+
+Dateien:
+
+```text
+species-explorer/
+  server.mjs
+  server.test.mjs
+  public/
+    index.html
+    app.css
+    filter.js
+    app.js
+```
+
+API:
+
+- `GET /api/summary`
+- `GET /api/species`
+- `GET /api/reload`: liest lokale Dateien erneut ein, schreibt aber nichts
+- `GET /assets/<SafeName>/<Datei>`
+- andere HTTP-Methoden werden mit `405 Read-only` abgewiesen
+
+Teststand:
+
+- 45 Arten aus `species_list.json` und `speciesData.json`
+- 0 Assetinkonsistenzen
+- 3 NC-Sounds erkannt
+- 7 manuell gepflegte Karten erkannt
+- Suche nach deutschem Namen, wissenschaftlichem Namen und Slug getestet
+- Status-/Hinweisfilter getestet
+- `POST /api/species` liefert 405
+- Desktop-Sichtpruefung bei 1440 x 1000 Pixeln
+- responsive Sichtpruefung bei 500 x 900 Pixeln
+- gerenderter DOM enthaelt Artenzahl, Detaildaten, Karte, Spektrogramm und Read-only-Hinweis
+- Nachbesserung vom 2026-06-18:
+  - Verbreitungskarten werden ohne festen 16:9-Rahmen im vollstaendigen Originalseitenverhaeltnis angezeigt.
+  - Das Spektrogramm ist direkt in den Tierstimmen-Player integriert.
+  - Play/Pause, Zeit, Lautstaerke, Scrubbing im Spektrogramm und roter Positionsmarker sind miteinander gekoppelt.
+  - Beim Artwechsel wird die Artenliste nicht neu aufgebaut und die Fenster-Scrollposition bleibt erhalten.
+  - Der Tierstimmen-Bereich belegt nur noch etwa ein Drittel der rechten Medienspalt-Hoehe; das spaetere
+    Artportraet erhaelt den groesseren Bereich. Quellen- und Lizenzdaten sind standardmaessig eingeklappt.
+  - Medienbereich und darunterliegendes Datenraster nutzen identische 50/50-Spalten, sodass Karten- und Datenboxen
+    exakt aneinander ausgerichtet sind.
+  - Das Explorer-Spektrogramm ist auf eine responsive Anzeigehoehe von 64 bis 84 Pixel begrenzt. Die produktiven
+    WebP-Dateien werden dafuer nicht neu erzeugt.
+  - Das Datum `Daten abgerufen` steht im Detailkopf statt in der IUCN-Datentabelle.
+  - Der Statusfilter zeigt deutsche Bezeichnungen mit IUCN-Kuerzel, zum Beispiel `Gefaehrdet (VU)`.
+  - Eine manuell hinzugefuegte Karte wird direkt in der Zeile `Karte` markiert. Die generische Assetkennzeichnung
+    kann spaeter auch fuer manuell hinzugefuegte Sounds verwendet werden.
+  - Browsermessung: Scrollposition vor/nach Artwechsel jeweils `900`; Rotfuchs-Karte im gleichen Seitenverhaeltnis
+    wie das Original; echter Play-Klick bewegte Wiedergabezeit und Positionsmarker.
 
 ### 7.3 Validierung und Statusdashboard
+
+Naechster Schritt.
 
 - Report- und Assetprobleme sichtbar machen
 - manuell gepflegte Karten markieren
@@ -222,12 +281,12 @@ Umfang:
 
 ## Testplan fuer 7.2
 
-- `npm.cmd run species:explorer` startet lokalen Server.
-- Browser zeigt Artenliste mit 45 Arten.
-- Suche findet deutsche und wissenschaftliche Namen.
-- Detailansicht zeigt Daten aus `species_list.json` und `speciesData.json`.
-- Assetstatus zeigt fuer alle 45 Arten Karte, Sound, Credits und Spektrogramm vorhanden.
-- NC-Sounds werden fuer `Bisamratte`, `Brauenmotmot` und `Geoffroy-Klammeraffe` markiert.
-- Manuelle Karten werden fuer die 7 dokumentierten Arten markiert.
-- Server schreibt keine Dateien.
-- Beenden des Servers hinterlaesst keine Dateien in `Testlauf/`.
+- `npm.cmd run species:explorer` startet lokalen Server: erledigt.
+- Browser zeigt Artenliste mit 45 Arten: erledigt.
+- Suche findet deutsche und wissenschaftliche Namen sowie Slugs: erledigt.
+- Detailansicht zeigt Daten aus `species_list.json` und `speciesData.json`: erledigt.
+- Assetstatus zeigt fuer alle 45 Arten Karte, Sound, Credits und Spektrogramm vorhanden: erledigt.
+- NC-Sounds werden fuer `Bisamratte`, `Brauenmotmot` und `Geoffroy-Klammeraffe` markiert: erledigt.
+- Manuelle Karten werden fuer die 7 dokumentierten Arten markiert: erledigt.
+- Server schreibt keine Dateien und weist POST mit 405 ab: erledigt.
+- Temporaere Screenshots, Browserprofile und Logs aus `Testlauf/` werden nach dem Abschluss entfernt.

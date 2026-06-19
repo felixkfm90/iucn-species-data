@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-17
+Stand: 2026-06-19
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -248,9 +248,23 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Entscheidung: Start als lokale Node-Web-App mit Browseroberflaeche. Der erste Prototyp bleibt read-only und zeigt
   Arten, Datenstatus und Assets an, bevor Bearbeiten/Speichern freigeschaltet wird. Electron oder Tauri bleiben
   spaetere Optionen, falls ein echtes Desktop-Paket noetig wird.
-- 7.2 Read-only Prototyp bauen: naechster Schritt.
-  Geplant sind `species-explorer/`, lokaler Node-Server, API fuer Artenliste/Detaildaten/Assetstatus und eine kompakte
-  Arbeitsoberflaeche mit Suche, Liste und Detailbereich. Keine Schreibfunktionen in 7.2.
+- 7.2 Read-only Prototyp bauen: erledigt am 2026-06-18, siehe `docs/desktop-app-plan.md`.
+  `species-explorer/` enthaelt einen lokalen Node-Server, read-only API, Artenliste, Suche, Filter und Detailansicht
+  fuer manuelle Daten, IUCN-Daten, Taxonomie, Karte, Sound, Credits und Spektrogramm. Drei NC-Sounds, sieben manuell
+  gepflegte Karten sowie fehlende oder inkonsistente Assets werden markiert. Tests: 45 Arten, 0 Assetinkonsistenzen,
+  Suche/Filter erfolgreich, POST wird mit 405 abgewiesen, Desktop- und responsive Sichtpruefung erfolgreich.
+  Nach Live-Feedback werden Karten vollstaendig im Originalseitenverhaeltnis angezeigt; Spektrogramm und Audio sind
+  in einem Player mit Play/Pause, Zeit, Lautstaerke, Scrubbing und Positionsmarker gekoppelt. Artwechsel erhalten die
+  Scrollposition. Der Tierstimmen-Bereich wurde zugunsten des spaeteren Artportraets verkleinert, Credits sind
+  einklappbar, das IUCN-Abrufdatum steht im Detailkopf und der Statusfilter verwendet deutsche Bezeichnungen mit
+  IUCN-Kuerzel. Manuelle Assetpflege wird direkt bei der jeweiligen Karte markiert und ist fuer spaetere manuelle
+  Sounds erweiterbar. Medien- und Datenraster sind seit 2026-06-19 auf identische 50/50-Spalten ausgerichtet.
+  Spektrogramme werden im Explorer nur noch 64 bis 84 Pixel hoch angezeigt. Fuer Squarespace reduziert
+  `species-sound.js?v=1.0.23` die Anzeige auf 78 Pixel beziehungsweise 68 Pixel mobil; die Assets bleiben
+  unveraendert.
+- 7.3 Validierung und Statusdashboard erweitern: naechster Schritt.
+  Bestehende Projektkennzahlen sollen um gezielte Vergleiche zwischen Eingabe, Pipeline-Ausgabe, Report und
+  Assetstruktur erweitert werden. Die App bleibt dabei weiterhin read-only.
 
 ## Phase 8 - Ausbau
 

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Arten-Explorer</title>
+    <link rel="stylesheet" href="/app.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">IUCN Species Data</p>
+          <h1>Arten-Explorer</h1>
+        </div>
+        <div class="header-status" aria-label="Datenstatus">
+          <span class="read-only-badge">Read-only</span>
+          <span id="report-date">Daten werden geladen</span>
+        </div>
+      </header>
+
+      <section class="summary-bar" aria-label="Projektübersicht">
+        <div><strong id="species-count">–</strong><span>Arten</span></div>
+        <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
+        <div><strong id="nc-count">–</strong><span>NC-Sounds</span></div>
+        <div><strong id="manual-map-count">–</strong><span>Manuelle Karten</span></div>
+      </section>
+
+      <main class="workspace">
+        <aside class="species-panel" aria-label="Artenauswahl">
+          <div class="panel-toolbar">
+            <label class="search-field">
+              <span>Suche</span>
+              <input id="search" type="search" placeholder="Name, Art oder Slug" autocomplete="off">
+            </label>
+
+            <div class="filters" aria-label="Filter">
+              <label>
+                <span>Status</span>
+                <select id="status-filter">
+                  <option value="">Alle</option>
+                </select>
+              </label>
+              <label>
+                <span>Hinweis</span>
+                <select id="flag-filter">
+                  <option value="">Alle</option>
+                  <option value="nc">NC-Sound</option>
+                  <option value="manual-map">Manuelle Karte</option>
+                  <option value="issues">Assetproblem</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="list-meta">
+            <span id="visible-count">0 Arten</span>
+            <button id="reload-button" type="button" title="Daten erneut vom lokalen Projekt laden">
+              Aktualisieren
+            </button>
+          </div>
+          <div id="species-list" class="species-list" role="listbox" aria-label="Arten"></div>
+        </aside>
+
+        <section id="detail-panel" class="detail-panel" aria-live="polite">
+          <div class="empty-state">
+            <h2>Art auswählen</h2>
+            <p>Wähle links eine Art, um Daten und Assets zu prüfen.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="species-item-template">
+      <button class="species-item" type="button" role="option">
+        <span class="species-item-copy">
+          <strong></strong>
+          <em></em>
+        </span>
+        <span class="species-item-flags"></span>
+      </button>
+    </template>
+
+    <script src="/filter.js" defer></script>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
