@@ -14,6 +14,11 @@ import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
+import {
+  DEFAULT_SPECTROGRAM_OPTIONS,
+  renderSpectrogram,
+  resolveFfmpegPath,
+} from "../scripts/spectrogram-renderer.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -276,6 +281,18 @@ export function inspectMp3(buffer) {
   throw new Error("Kein plausibler MPEG-Audioframe gefunden");
 }
 
+export function inspectWebp(buffer) {
+  if (
+    !Buffer.isBuffer(buffer)
+    || buffer.length < 12
+    || buffer.subarray(0, 4).toString("ascii") !== "RIFF"
+    || buffer.subarray(8, 12).toString("ascii") !== "WEBP"
+  ) {
+    throw new Error("Erzeugte Spektrogramm-Datei ist kein gültiges WebP");
+  }
+  return { signature: "RIFF/WEBP" };
+}
+
 function isNonCommercialLicense(value) {
   const normalized = String(value ?? "").toLocaleLowerCase("de");
   return normalized.includes("/by-nc")
@@ -374,6 +391,14 @@ function valueOrUnknown(value) {
 
 function hashText(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+async function fileSha256(filePath) {
+  return createHash("sha256").update(await readFile(filePath)).digest("hex");
+}
+
+function isSha256(value) {
+  return /^[0-9a-f]{64}$/i.test(String(value ?? ""));
 }
 
 function compactTimestamp(date = new Date()) {
@@ -922,7 +947,33 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       : manualMapSafeNames.has(safeName);
     const isManualSound = soundOverride?.manual === true;
     const isNcSound = String(credits?.license ?? "").toLocaleLowerCase("de").includes("/by-nc");
-    if (spectrogramOverride?.stale === true) assetIssues.push("Spektrogramm veraltet");
+    const spectrogramHashTracked =
+      isSha256(spectrogramOverride?.soundSha256)
+      && isSha256(spectrogramOverride?.spectrogramSha256);
+    let spectrogramHashVerified = false;
+    let spectrogramStale = spectrogramOverride?.stale === true;
+    let spectrogramStaleReason = spectrogramStale
+      ? String(spectrogramOverride?.reason ?? "Spektrogramm ist als veraltet markiert")
+      : "";
+    let actualSoundSha256 = "";
+    let actualSpectrogramSha256 = "";
+    if (sound.exists && spectrogram.exists && spectrogramHashTracked) {
+      [actualSoundSha256, actualSpectrogramSha256] = await Promise.all([
+        fileSha256(join(assetDir, "sound.mp3")),
+        fileSha256(join(assetDir, "spectrogram.webp")),
+      ]);
+      spectrogramHashVerified =
+        actualSoundSha256 === spectrogramOverride.soundSha256
+        && actualSpectrogramSha256 === spectrogramOverride.spectrogramSha256;
+      if (!spectrogramHashVerified) {
+        spectrogramStale = true;
+        spectrogramStaleReason =
+          actualSoundSha256 !== spectrogramOverride.soundSha256
+            ? "Sounddatei stimmt nicht mit dem registrierten Spektrogramm-Soundhash überein"
+            : "Spektrogrammdatei stimmt nicht mit dem registrierten Dateihash überein";
+      }
+    }
+    if (spectrogramStale) assetIssues.push("Spektrogramm veraltet");
     else if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
     inconsistencies.push(...dataIssues, ...assetIssues);
 
@@ -978,8 +1029,15 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         spectrogram: {
           ...spectrogram,
           url: `/assets/${encodeURIComponent(safeName)}/spectrogram.webp`,
-          stale: spectrogramOverride?.stale === true,
+          stale: spectrogramStale,
+          staleReason: spectrogramStaleReason,
+          hashTracked: spectrogramHashTracked,
+          hashVerified: spectrogramHashVerified,
           soundSha256: spectrogramOverride?.soundSha256 ?? "",
+          spectrogramSha256: spectrogramOverride?.spectrogramSha256 ?? "",
+          actualSoundSha256,
+          actualSpectrogramSha256,
+          generatedAt: spectrogramOverride?.generatedAt ?? "",
         },
       },
       credits,
@@ -1273,6 +1331,7 @@ export async function createExplorerServer({
   host = DEFAULT_HOST,
   port = DEFAULT_PORT,
   publishAssetChanges = true,
+  spectrogramRenderer = renderSpectrogram,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
@@ -1341,6 +1400,9 @@ export async function createExplorerServer({
       if (preview.expiresAt > now) continue;
       if (["map-asset", "sound-asset"].includes(preview.type) && preview.stagingPath) {
         rmSync(preview.stagingPath, { force: true });
+      }
+      if (preview.type === "sound-asset" && preview.spectrogramStagingPath) {
+        rmSync(preview.spectrogramStagingPath, { force: true });
       }
       previewTokens.delete(token);
     }
@@ -1454,6 +1516,9 @@ export async function createExplorerServer({
     const snapshot = new Map();
     const keepBackups = plan.mode === "manual-maps" || plan.mode === "nc-sounds";
     const runBackupRoot = join(pipelineAssetBackupRoot, pipelineState.runId);
+    const registry = existsSync(assetOverridesPath)
+      ? JSON.parse(readFileSync(assetOverridesPath, "utf8"))
+      : { version: 1, assets: {} };
     if (keepBackups) mkdirSync(runBackupRoot, { recursive: true });
     for (const target of plan.targets ?? []) {
       const assetDir = join(repoRoot, "species-assets", target.safeName);
@@ -1481,6 +1546,10 @@ export async function createExplorerServer({
           exists: existsSync(filePath),
           hash: assetCompositeHash(assetDir, type),
           backupFiles,
+          override: structuredClone(registry.assets?.[target.safeName]?.[type] ?? null),
+          spectrogramOverride: type === "sound"
+            ? structuredClone(registry.assets?.[target.safeName]?.spectrogram ?? null)
+            : null,
         });
       }
     }
@@ -1811,6 +1880,7 @@ export async function createExplorerServer({
     for (const asset of pipelineState.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
       if (retryMode && choice.manual) {
+        const previous = pipelineAssetSnapshot.get(`${asset.safeName}:${asset.type}`);
         for (const [fileName, backupPath] of Object.entries(asset.backupFiles ?? {})) {
           const allowedBackupRoot = `${resolve(pipelineAssetBackupRoot, pipelineState.runId)}${sep}`;
           const resolvedBackupPath = resolve(backupPath);
@@ -1824,6 +1894,20 @@ export async function createExplorerServer({
           }
           if (existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
         }
+        registry.assets[asset.safeName] ??= {};
+        if (previous?.override) registry.assets[asset.safeName][asset.type] = previous.override;
+        else delete registry.assets[asset.safeName][asset.type];
+        if (asset.type === "sound") {
+          if (previous?.spectrogramOverride) {
+            registry.assets[asset.safeName].spectrogram = previous.spectrogramOverride;
+          } else {
+            delete registry.assets[asset.safeName].spectrogram;
+          }
+        }
+        if (Object.keys(registry.assets[asset.safeName]).length === 0) {
+          delete registry.assets[asset.safeName];
+        }
+        registryChanged = true;
         continue;
       }
 
@@ -2352,11 +2436,11 @@ export async function createExplorerServer({
       reason: validated.reason,
       warnings: [
         "Sound, Credits und vorhandenes Spektrogramm werden vor dem Austausch gemeinsam gesichert.",
-        "Das bisherige Spektrogramm wird entfernt und bis zur Neuerzeugung als veraltet markiert.",
+        "Vor dem Speichern wird automatisch ein neues Spektrogramm für die ausgewählte MP3 erzeugt.",
         validated.isNc
           ? "Die angegebene Lizenz ist nicht-kommerziell (NC) und bleibt als Prüfhinweis sichtbar."
           : "Die Lizenz wird gespeichert, aber nicht automatisch rechtlich freigegeben.",
-        "Nach erfolgreichem Speichern werden Sound, Credits, Spektrogrammstatus und Register automatisch committed und gepusht.",
+        "Sound, Credits, neues Spektrogramm und Hash-Metadaten werden gemeinsam committed und gepusht.",
       ],
     };
   }
@@ -2417,7 +2501,39 @@ export async function createExplorerServer({
 
     assetWriteActive = true;
     let backupRelativePath = "";
+    const spectrogramStagingPath = join(assetStagingRoot, `${token}.webp`);
     try {
+      preview.spectrogramStagingPath = spectrogramStagingPath;
+      let renderedSpectrogram;
+      try {
+        renderedSpectrogram = await spectrogramRenderer({
+          inputPath: preview.stagingPath,
+          outputPath: spectrogramStagingPath,
+          ffmpegPath: resolveFfmpegPath({ repoRoot }),
+          options: DEFAULT_SPECTROGRAM_OPTIONS,
+        });
+      } catch (error) {
+        await unlink(spectrogramStagingPath).catch(() => {});
+        const generationError = new Error(
+          `Sound wurde nicht gespeichert, weil das Spektrogramm nicht erzeugt werden konnte: ${error.message}`,
+        );
+        generationError.statusCode = 500;
+        throw generationError;
+      }
+      let stagedSpectrogramBuffer;
+      try {
+        stagedSpectrogramBuffer = await readFile(spectrogramStagingPath);
+        inspectWebp(stagedSpectrogramBuffer);
+      } catch (error) {
+        await unlink(spectrogramStagingPath).catch(() => {});
+        const validationError = new Error(
+          `Sound wurde nicht gespeichert, weil das erzeugte Spektrogramm ungültig ist: ${error.message}`,
+        );
+        validationError.statusCode = 500;
+        throw validationError;
+      }
+      const spectrogramSha256 = createHash("sha256").update(stagedSpectrogramBuffer).digest("hex");
+
       await mkdir(source.assetDirectory, { recursive: true });
       if (source.soundBuffer.length || source.creditsBuffer.length || source.spectrogramBuffer.length) {
         const backupDirectory = join(assetBackupRoot, species.safeName, "sound");
@@ -2442,6 +2558,10 @@ export async function createExplorerServer({
       const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
+      registry.spectrogramGenerator = {
+        version: 1,
+        ...DEFAULT_SPECTROGRAM_OPTIONS,
+      };
       registry.assets[species.safeName] ??= {};
       const updatedAt = new Date().toISOString();
       registry.assets[species.safeName].sound = {
@@ -2460,39 +2580,45 @@ export async function createExplorerServer({
         isNc: preview.isNc,
       };
       registry.assets[species.safeName].spectrogram = {
-        stale: true,
-        reason: "Sound wurde manuell ersetzt; Spektrogramm muss neu erzeugt werden.",
+        stale: false,
         soundSha256: preview.sha256,
-        updatedAt,
+        spectrogramSha256,
+        generatedAt: updatedAt,
+        verifiedAt: updatedAt,
       };
       const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
 
       const soundTempPath = `${source.soundPath}.tmp-${randomUUID()}`;
       const creditsTempPath = `${source.creditsPath}.tmp-${randomUUID()}`;
+      const spectrogramTempPath = `${source.spectrogramPath}.tmp-${randomUUID()}`;
       const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
       try {
         await writeFile(soundTempPath, stagedBuffer);
         await writeFile(creditsTempPath, preview.creditsText, "utf8");
+        await writeFile(spectrogramTempPath, stagedSpectrogramBuffer);
         await writeFile(registryTempPath, nextRegistryText, "utf8");
         await rename(soundTempPath, source.soundPath);
         await rename(creditsTempPath, source.creditsPath);
+        await rename(spectrogramTempPath, source.spectrogramPath);
         await rename(registryTempPath, assetOverridesPath);
-        await unlink(source.spectrogramPath).catch(() => {});
       } catch (error) {
         await unlink(soundTempPath).catch(() => {});
         await unlink(creditsTempPath).catch(() => {});
+        await unlink(spectrogramTempPath).catch(() => {});
         await unlink(registryTempPath).catch(() => {});
         if (source.soundBuffer.length) await writeFile(source.soundPath, source.soundBuffer);
         else await unlink(source.soundPath).catch(() => {});
         if (source.creditsBuffer.length) await writeFile(source.creditsPath, source.creditsBuffer);
         else await unlink(source.creditsPath).catch(() => {});
         if (source.spectrogramBuffer.length) await writeFile(source.spectrogramPath, source.spectrogramBuffer);
+        else await unlink(source.spectrogramPath).catch(() => {});
         await writeFile(assetOverridesPath, source.registryText, "utf8");
         throw error;
       }
 
       previewTokens.delete(token);
       rmSync(preview.stagingPath, { force: true });
+      rmSync(spectrogramStagingPath, { force: true });
       let backupRetention = { kept: 0, removed: 0, bytes: 0 };
       let backupCleanupWarning = "";
       try {
@@ -2519,7 +2645,11 @@ export async function createExplorerServer({
         gitSkipped: publication.skipped,
         gitCommit: publication.commit,
         publicationError,
-        spectrogramStale: true,
+        spectrogramGenerated: true,
+        spectrogramBytes: renderedSpectrogram.outputBytes ?? stagedSpectrogramBuffer.length,
+        spectrogramStale: false,
+        soundSha256: preview.sha256,
+        spectrogramSha256,
         isNc: preview.isNc,
         species: model.species.find((entry) => entry.id === id) ?? null,
         summary: model.summary,

@@ -1,6 +1,6 @@
 # Desktop App / Arten-Explorer
 
-Stand: 2026-06-19
+Stand: 2026-06-20
 
 Ziel von Phase 7: Eine lokale Bedienoberflaeche schaffen, mit der Arten, manuelle Daten, Assets, Sounds, Karten,
 Credits, Reports und Pipeline-Status gepflegt bzw. geprueft werden koennen, ohne direkt in JSON-Dateien und Ordnern
@@ -538,7 +538,8 @@ Geplante Teilstufen:
    Commit/Push: technisch lokal umgesetzt; produktive Bedienprüfung offen
 3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen: technisch lokal umgesetzt; produktive
    Bedienprüfung offen
-4. Spektrogramm per Soundhash als passend oder veraltet kennzeichnen
+4. Spektrogramm automatisch neu erzeugen und per Sound-/Dateihash als passend oder veraltet kennzeichnen:
+   technisch umgesetzt
 5. Artportraet-Quelle, Lizenz, Dateiformat und Squarespace-Verwendung separat entscheiden
 
 Der Kartenimport akzeptiert nur JPEG bis 20 MB, prüft Magic Bytes und Abmessungen, nutzt Staging und ein
@@ -548,11 +549,15 @@ Versionen je Art/Karte und insgesamt 500 MB begrenzt.
 Der Soundimport akzeptiert nur MP3 bis 50 MB und verlangt Pflegegrund, Aufnahme/Urheber, Quelle, Original-URL und
 Lizenz. Wissenschaftlicher und deutscher Name werden aus der Art übernommen. Die Vorschau spielt alten und neuen
 Sound ab, prüft die Browser-Dekodierbarkeit und zeigt Credits sowie den NC-Status. Beim Speichern werden vorhandener
-Sound, Credits und Spektrogramm gemeinsam gesichert. `sound.mp3` und `credits.json` werden ersetzt, das bisherige
-Spektrogramm wird entfernt und mit dem SHA-256 des neuen Sounds als veraltet registriert. Sound und Credits werden
-vor der Pipeline geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpaket-Backups sind
-ebenfalls auf drei Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB.
-Zwölf Explorer-Tests sind erfolgreich.
+Sound, Credits und Spektrogramm gemeinsam gesichert. Vor dem Produktivaustausch erzeugt
+`scripts/spectrogram-renderer.mjs` das neue WebP. Nur nach erfolgreicher FFmpeg- und WebP-Prüfung werden
+`sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam ersetzt. Bei einem Generatorfehler bleibt das bisherige
+Paket unverändert. Sound- und Spektrogramm-SHA-256 werden im Override-Register gespeichert; der Explorer berechnet
+die aktuellen Hashes und kennzeichnet jede Abweichung als `Spektrogramm veraltet`. Der bestehende Bestand wurde
+ohne Neurendering registriert: 47 von 47 Hashpaare sind verifiziert. Sound und Credits werden vor der Pipeline
+geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpaket-Backups sind ebenfalls auf drei
+Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Dreizehn Explorer-Tests
+sind erfolgreich.
 
 ### 7.8 Synology NAS und automatisiertes Backup
 

@@ -6,6 +6,13 @@
         "manual": true,
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "6fc9cd1216e8f22b894c80376f0665d49584661ccbf08f8df7acee8b4b773055",
+        "spectrogramSha256": "52a5a2b390a716edfea9c9e59fb7665bed00e296978192002bdf7e0115d27b91",
+        "generatedAt": "2026-06-15T13:03:03.963Z",
+        "verifiedAt": "2026-06-20T18:35:37.717Z"
       }
     },
     "Fischertukan": {
@@ -13,6 +20,13 @@
         "manual": true,
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "fd50a1e359b0e6b1a0ef7c29b5e96ea837f904752eb00b65513e181824da02ac",
+        "spectrogramSha256": "9af947828d9377be622e72ef73f1a45a5dc9fa52b54fcf5542dbf3784b7c43df",
+        "generatedAt": "2026-06-15T13:03:09.880Z",
+        "verifiedAt": "2026-06-20T18:35:37.751Z"
       }
     },
     "Grosstrappe": {
@@ -20,6 +34,13 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T12:50:06.402Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "c03882a54d8cd83f1641bdfad06238225e7607b66af8282312d3905cf75d6f53",
+        "spectrogramSha256": "43a9d8cf99e37bbf7ef26f431d05fb2d678340c2d0188ff5386420ef222bb08a",
+        "generatedAt": "2026-06-15T13:03:13.712Z",
+        "verifiedAt": "2026-06-20T18:35:37.782Z"
       }
     },
     "Kernbeisser": {
@@ -27,6 +48,13 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T12:50:06.402Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "95bd3bf3da8e64290994b27102a89cb57d9398ac65704f64835e50a4eec4f1e5",
+        "spectrogramSha256": "a97478de94a5a2e0c2723168f6b09b9cb004f2b526dbf86e72392dac1539cb41",
+        "generatedAt": "2026-06-15T13:03:15.895Z",
+        "verifiedAt": "2026-06-20T18:35:37.788Z"
       }
     },
     "Reh": {
@@ -34,6 +62,13 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T12:50:06.402Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "ef21e0cef41a6c718ab332affdd55ac3a6fec615d30bc96e8b881e30c6ec2639",
+        "spectrogramSha256": "08f42b7193792343dc7288eccee2fc97d12241eb52ec4a4214fcfac82f0d5d69",
+        "generatedAt": "2026-06-15T13:03:19.473Z",
+        "verifiedAt": "2026-06-20T18:35:37.808Z"
       }
     },
     "Rotfuchs": {
@@ -41,6 +76,13 @@
         "manual": true,
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "50c4f2fb792ae28e0c341b2c8bc3f5676baab2003a8f6f501f2333c37bfaf5c5",
+        "spectrogramSha256": "6744f2b55861568a2c376889815036f8054cd1ce1e0c395a95d5430899de719e",
+        "generatedAt": "2026-06-15T13:03:19.602Z",
+        "verifiedAt": "2026-06-20T18:35:37.808Z"
       }
     },
     "Waldkauz": {
@@ -48,6 +90,13 @@
         "manual": true,
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "082bf8fede7bfe623d9270085726f766d1d67b2173318e3ba3b4ebfc06f1cc57",
+        "spectrogramSha256": "0165caaca0223dec013219e11aa510dcd03350cea89f4725f54f88cfc213e783",
+        "generatedAt": "2026-06-15T13:03:20.877Z",
+        "verifiedAt": "2026-06-20T18:35:37.811Z"
       }
     },
     "Haubentaucher": {
@@ -60,6 +109,13 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T06:47:59.604Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "9d9a9a568b9838e400ac623710ddeb43f7f411c2263f28f9e240b3db8dcd63ed",
+        "spectrogramSha256": "16fa0f77f2e61bd9bd0239c8f52eb6330ebbc6b042a292cbf5bf04f76d239d80",
+        "generatedAt": "2026-06-20T06:47:43.304Z",
+        "verifiedAt": "2026-06-20T18:35:37.783Z"
       }
     },
     "Hoeckerschwan": {
@@ -72,7 +128,370 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T06:51:36.088Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "1d202c2eb86b1c2828b82f97e1758e99392020d7bcfeaeeef0a6d1560c7dc00e",
+        "spectrogramSha256": "84875d832ee0dd603c1b53c055ae155528736fceb652d04e691bc7bec22535ef",
+        "generatedAt": "2026-06-20T06:51:16.324Z",
+        "verifiedAt": "2026-06-20T18:35:37.784Z"
+      }
+    },
+    "Alpenbirkenzeisig": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "b0a098f105e5e2f6b952e9c2b6aa4ddd8d9d27918751f732cd47897b447dcf19",
+        "spectrogramSha256": "5faf14fd53986f4085ccf1d5956bbfecf4ae8ed42798d326fc3f0571aae4e333",
+        "generatedAt": "2026-06-15T13:03:01.215Z",
+        "verifiedAt": "2026-06-20T18:35:37.701Z"
+      }
+    },
+    "Alpenstrandlaeufer": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "1df753721ee80fb201dee34f33222b62dde1ea5989e73e00b2a9fd722d6f5a5d",
+        "spectrogramSha256": "423dc5ec60b50db5f949073271e0b1ff98b1c17fa11d3207d561cdf21925a3e2",
+        "generatedAt": "2026-06-15T13:03:01.459Z",
+        "verifiedAt": "2026-06-20T18:35:37.702Z"
+      }
+    },
+    "Amsel": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "d08a32a901f6f3c4690126c58815acef8fc32cbe8a177c5d3e8cbef38d045ebb",
+        "spectrogramSha256": "88f6b6069163961b8202f1e7755e90e867de0ab807d449cd1115cb0a1da63a14",
+        "generatedAt": "2026-06-15T13:03:01.900Z",
+        "verifiedAt": "2026-06-20T18:35:37.702Z"
+      }
+    },
+    "Austernfischer": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "6fd91dc61c224f7d56033ed1ff96f369ad2810777804f5b2f78595ff8e866e5e",
+        "spectrogramSha256": "07426583918aeeb6f9f4b165d3cb8570a6c24cd6bce01a38e304cb2823356286",
+        "generatedAt": "2026-06-15T13:03:02.286Z",
+        "verifiedAt": "2026-06-20T18:35:37.703Z"
+      }
+    },
+    "Bachstelze": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "f90709f1c04c73ac30d59aa4e73d810e88b4abd3a964a3db818432bba4718a58",
+        "spectrogramSha256": "bb07417ffa4b83d99dba68ac6df5e22515580c5698d56cac6da10a549a1e29ce",
+        "generatedAt": "2026-06-15T13:03:02.536Z",
+        "verifiedAt": "2026-06-20T18:35:37.704Z"
+      }
+    },
+    "Bartmeise": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "4c7629e9b948b6e218bced54c3678c765fa3c34c8155ee0eb789f9d3bb8f26bf",
+        "spectrogramSha256": "070940673800dccfa918163161b4c610edb910bb1f040ee48203d7fc95cda83b",
+        "generatedAt": "2026-06-15T13:03:02.856Z",
+        "verifiedAt": "2026-06-20T18:35:37.705Z"
+      }
+    },
+    "Bergfink": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "2623d2c3172dcb2616e7c1339157a6e0266c35d229b1569b51ec4d5f4706e4c8",
+        "spectrogramSha256": "67e8577b2c18104c709eafa1860f62f0d7c9dc9ae5a08186c45be5a97319c334",
+        "generatedAt": "2026-06-15T13:03:03.067Z",
+        "verifiedAt": "2026-06-20T18:35:37.707Z"
+      }
+    },
+    "Bisamratte": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "fc8c5faa5cfccaf772662f83784062c4bebf9eb4003ff328f37905b41f509d2e",
+        "spectrogramSha256": "dd78d705e63b4bc9ed464bcb0a7335a072787115730ad8d4d58713ca6a7cd1da",
+        "generatedAt": "2026-06-15T13:03:03.313Z",
+        "verifiedAt": "2026-06-20T18:35:37.708Z"
+      }
+    },
+    "Blaesshuhn": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "0264401cde08a0ded21ff931ecef95c1cc3dc9e8a38e02ccc390810a46453d3d",
+        "spectrogramSha256": "be2e81727a73ce7acb136af905b0dcaced9557b33afa9f920099db2f4069f330",
+        "generatedAt": "2026-06-15T13:03:03.799Z",
+        "verifiedAt": "2026-06-20T18:35:37.716Z"
+      }
+    },
+    "Blaumeise": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "198b6bac462f047f7fde04c737d9e8b6581b2d3ac8da51e1431aee7c8e6814e9",
+        "spectrogramSha256": "578d921b6d3eb60caf71d0242ac824389bbaec24ebbbbd4c73196be6c11139ba",
+        "generatedAt": "2026-06-15T13:03:04.259Z",
+        "verifiedAt": "2026-06-20T18:35:37.718Z"
+      }
+    },
+    "Bluthaenfling": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "00361a82d6aa2e13ee04a1cef0f79d49d2a01dc600ed758216ff631cfc15ab91",
+        "spectrogramSha256": "901258a0491cb23a11f5db5916e95cb8884b3a6ade3f2095232075edaafec65b",
+        "generatedAt": "2026-06-15T13:03:04.554Z",
+        "verifiedAt": "2026-06-20T18:35:37.718Z"
+      }
+    },
+    "Brauenmotmot": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "3371981d4ef7a1b2922bdf8bb1f4c31a92719ef6c5acb3bad11ff42092fde16d",
+        "spectrogramSha256": "57ed33e945fb38038106ff5d63782154bb675f08908c92aec5d70051c726cb49",
+        "generatedAt": "2026-06-15T13:03:04.849Z",
+        "verifiedAt": "2026-06-20T18:35:37.719Z"
+      }
+    },
+    "Buchfink": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "31e6b6b68adce58c00f35af35f09001b800883a14d3511e1afae1f7801426c17",
+        "spectrogramSha256": "1d7bac98ffa948ca8db6f866176d21597704fd7ea5092507b5d7b1617610a0f8",
+        "generatedAt": "2026-06-15T13:03:05.215Z",
+        "verifiedAt": "2026-06-20T18:35:37.719Z"
+      }
+    },
+    "Buckelwal": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "de79917c26a9f8a68ce141481f2828cea6970d7b4dfbb831a1468b587965b8f1",
+        "spectrogramSha256": "527c7792991897215b4c3690cfd70f5c71da96d8e0112984710ec732c9bdc799",
+        "generatedAt": "2026-06-15T13:03:06.709Z",
+        "verifiedAt": "2026-06-20T18:35:37.721Z"
+      }
+    },
+    "Buntspecht": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "a75078ed747961790ab4449b5118b46e96a939e05cd4acb053318cf774a125d9",
+        "spectrogramSha256": "217b2f20316a701290b2c6755e48387092ceab6ae2a87a593a1f8e78784dda4e",
+        "generatedAt": "2026-06-15T13:03:08.508Z",
+        "verifiedAt": "2026-06-20T18:35:37.746Z"
+      }
+    },
+    "Eisvogel": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "a4e6b47ee2dfcf72457e6ab0e99fe2284ddbd0f192cd8dac3bf95c2d633016b4",
+        "spectrogramSha256": "43f8006aa39f456665b71e65ab62f4cc0240c7d438ed42b5a039e5a1a683f78f",
+        "generatedAt": "2026-06-15T13:03:08.788Z",
+        "verifiedAt": "2026-06-20T18:35:37.749Z"
+      }
+    },
+    "Eurasisches Eichhoernchen": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "95d3137d348b87aa5e2d18c1f06be390a97ac97cbc21059e6065042a2f404428",
+        "spectrogramSha256": "a356a3af3d667af540c5fd1c0010752cb24222ce8c272f435d37511d5a1906b7",
+        "generatedAt": "2026-06-15T13:03:09.663Z",
+        "verifiedAt": "2026-06-20T18:35:37.750Z"
+      }
+    },
+    "Gaensesaeger": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "aa5ce4ba4c4f768e058b096c72bce0f6053a3cdd410a6f1778cc33f9c436c4fe",
+        "spectrogramSha256": "8235d252cf502ace89e3cbc276958e516e8d5111c23583055c237f32887a9f94",
+        "generatedAt": "2026-06-15T13:03:10.453Z",
+        "verifiedAt": "2026-06-20T18:35:37.752Z"
+      }
+    },
+    "Geoffroy-Klammeraffe": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "6091c895303b109abacedb8cdde954a1ec36758de423bb780927b9674d2998a0",
+        "spectrogramSha256": "a8f6db8b9f6effe2734879beefc021ecf1c1e0e154502974e53c83ebba1d6a84",
+        "generatedAt": "2026-06-15T13:03:10.671Z",
+        "verifiedAt": "2026-06-20T18:35:37.753Z"
+      }
+    },
+    "Gimpel": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "32fc2cdafbfc7d07e162b0aaef0e292f830811e68cc24ea67a40b43c7b8338b5",
+        "spectrogramSha256": "411b6f9fe3081478968d61a56626dceec9e4a70aa644d3283b1118a2d4038036",
+        "generatedAt": "2026-06-15T13:03:10.954Z",
+        "verifiedAt": "2026-06-20T18:35:37.754Z"
+      }
+    },
+    "Goldkehltukan": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "531d7797e452adb56d40b067675fae218954a80427c298286afa0cee19965d56",
+        "spectrogramSha256": "8c6bf55dac1e9038670683c2c944bbacdb79e73fe17ac6f505860c7eda293d03",
+        "generatedAt": "2026-06-15T13:03:11.616Z",
+        "verifiedAt": "2026-06-20T18:35:37.755Z"
+      }
+    },
+    "Graugans": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "c90eb7fe5753ad9348385c8e8293f068b03fc3ba919963c75e5033588674f616",
+        "spectrogramSha256": "75cbd08de3ea987030960e9692c88fca1d1e1804352fec2a406b380ee1abcb22",
+        "generatedAt": "2026-06-15T13:03:12.942Z",
+        "verifiedAt": "2026-06-20T18:35:37.781Z"
+      }
+    },
+    "Graureiher": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "b3827a3b5a88c25983571891f999bd42b91306462e454dd04b0da1cb3e1a2172",
+        "spectrogramSha256": "bca47873859ca4847ca4978ad9c88917c96b428f3dde08f75b96fcde29a08119",
+        "generatedAt": "2026-06-15T13:03:13.481Z",
+        "verifiedAt": "2026-06-20T18:35:37.782Z"
+      }
+    },
+    "Haubenmeise": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "5282e1553dd8a836db9a06d85259e04c0c7c8ae285f86095e7a85f814cd2870d",
+        "spectrogramSha256": "460d7beb41f71f3b98defe70c003bb55c41d4524a2f6237093d334f253c7a05e",
+        "generatedAt": "2026-06-15T13:03:13.975Z",
+        "verifiedAt": "2026-06-20T18:35:37.783Z"
+      }
+    },
+    "Jagdfasan": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "198fcf25bd70fe0d9d24239e00f1ca36710422c38843fbe7174900f25e4a515a",
+        "spectrogramSha256": "171e0d33c641df3966206e00c6ce326dc99ffbdfd8350e2524c13272d845dcd4",
+        "generatedAt": "2026-06-15T13:03:15.494Z",
+        "verifiedAt": "2026-06-20T18:35:37.787Z"
+      }
+    },
+    "Kiebitz": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "7a7e86545f02044d1a4fb7dba2f119c81f3a44e525f7a4568201bb0a0155c499",
+        "spectrogramSha256": "26955efd6b95bf640dc6aeee086972d673b890386f77f3b6c96203cfa88d2725",
+        "generatedAt": "2026-06-15T13:03:16.330Z",
+        "verifiedAt": "2026-06-20T18:35:37.788Z"
+      }
+    },
+    "Kleiber": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "81e7d9186c27eed0b97cc8f2aa4b7917c677f78014853a1bf099673e6c69d004",
+        "spectrogramSha256": "f87b2a59de6837a17f6e30d47b172b343a3346e8dfd4dad8fe764a957983c590",
+        "generatedAt": "2026-06-15T13:03:17.009Z",
+        "verifiedAt": "2026-06-20T18:35:37.796Z"
+      }
+    },
+    "Kohlmeise": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "f8ff936761ec712cd5cf7220e012c1072e9e41c64686af59be18b2cb0cc1c7ec",
+        "spectrogramSha256": "cac60ae00dd1575baba61227cd49fe866fc1a99dd81023810b97a17b4ed80c1b",
+        "generatedAt": "2026-06-15T13:03:17.454Z",
+        "verifiedAt": "2026-06-20T18:35:37.802Z"
+      }
+    },
+    "Kormoran": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "b0fec98aa8f2b67a5a9c448ecf85f1d19c30a1bc326791dce0e723aaa06b2f82",
+        "spectrogramSha256": "87893a5b995c40ff39eac94d2682984e7451935672c20132b472d72dfe8ea19f",
+        "generatedAt": "2026-06-15T13:03:17.877Z",
+        "verifiedAt": "2026-06-20T18:35:37.803Z"
+      }
+    },
+    "Mantelbruellaffe": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "44310ddfffcceb1e993a0cff7d160fe632e125c15a202acd7fdbe41582a7dcf3",
+        "spectrogramSha256": "f4df93023e28ee716c748238ecf12087890d82ff58c1ebd891c6e8c3a33bd0e7",
+        "generatedAt": "2026-06-15T13:03:18.455Z",
+        "verifiedAt": "2026-06-20T18:35:37.804Z"
+      }
+    },
+    "Mittelamerikanischer Totenkopfaffe": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "fb2a772f6e8fcaa7ddef191e8f6cf992a66a78a71328676dbb31feca78dce29d",
+        "spectrogramSha256": "f4a0309c1964a10474072347a877af9aa751cdeb1b679e873c7f00148d9e479d",
+        "generatedAt": "2026-06-15T13:03:18.595Z",
+        "verifiedAt": "2026-06-20T18:35:37.804Z"
+      }
+    },
+    "Panama-Kapuzineraffe": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "d90fd8b5d3bd28b1a2e671e35b95fb6fc254e09a29af92a04a6161fce83ec02b",
+        "spectrogramSha256": "cd5bf58ac1fbbe3ac5ac3fc487fc7fa86e7ae117c99c9ebc5b2d7d40adf7fcb3",
+        "generatedAt": "2026-06-15T13:03:18.803Z",
+        "verifiedAt": "2026-06-20T18:35:37.804Z"
+      }
+    },
+    "Papageientaucher": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "8ac5ae12028ad49ad5d7ae7c7de8f44f07ecfb36fa589b6806c7b94f3290d9fc",
+        "spectrogramSha256": "f8c10f6ecb47f45d3604128960efa4e224c8e79d068bc93e6d583b12609a87d6",
+        "generatedAt": "2026-06-15T13:03:19.082Z",
+        "verifiedAt": "2026-06-20T18:35:37.807Z"
+      }
+    },
+    "Quetzal": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "f772bc5c6ba38b24686bfd68e169313fd0898fc860cec542b4043cf244acbdf8",
+        "spectrogramSha256": "daa75d7f2d17132ba513fa15cdb9ce3e43cad402152d6742b86c11970496b7b4",
+        "generatedAt": "2026-06-15T13:03:19.291Z",
+        "verifiedAt": "2026-06-20T18:35:37.807Z"
+      }
+    },
+    "Rotkehlchen": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "b70f8f0a7ca36711803e67688e6c1f35d833308e47f51551b48ef025750d2e6a",
+        "spectrogramSha256": "a99379001bc3750fb545b53b56ca3cee506b7838d5f7846dd455aafc70621de2",
+        "generatedAt": "2026-06-15T13:03:19.810Z",
+        "verifiedAt": "2026-06-20T18:35:37.808Z"
+      }
+    },
+    "Rotmilan": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "18732403a8ec8890daca49bb18963960fe4386e1c7a4651cbf103326f5163eea",
+        "spectrogramSha256": "19ceaa7073a6d2f2760830476dd080929107bf173e08caf9cc8477081a5db1cf",
+        "generatedAt": "2026-06-15T13:03:20.163Z",
+        "verifiedAt": "2026-06-20T18:35:37.809Z"
+      }
+    },
+    "Sperlingskauz": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "d734733f8d3e4afc0055b5d34b7ac55c81159f99f049f3d4a10f2647609569ec",
+        "spectrogramSha256": "65fd2c5fb3233374b6b7411a5a6212216d89e44144b416336ffe83abd5270a07",
+        "generatedAt": "2026-06-15T13:03:20.331Z",
+        "verifiedAt": "2026-06-20T18:35:37.809Z"
+      }
+    },
+    "Turmfalke": {
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "1330b7c4267cc01f31a5d05c405f1de85628682ede17b9c81ec01e2ab8adcb9b",
+        "spectrogramSha256": "a6ccf6f40e5d633f66c5d0df48771565687534088dab11865f2f54d1de6e4e85",
+        "generatedAt": "2026-06-15T13:03:20.637Z",
+        "verifiedAt": "2026-06-20T18:35:37.810Z"
       }
     }
+  },
+  "spectrogramGenerator": {
+    "version": 1,
+    "width": 1000,
+    "height": 240,
+    "innerHeight": 200,
+    "topPadding": 20,
+    "format": "webp",
+    "gain": 3,
+    "stop": 18000,
+    "drange": 80,
+    "contrast": 1.25,
+    "brightness": 0.08,
+    "quality": 90
   }
 }

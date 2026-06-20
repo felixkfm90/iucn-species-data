@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-19
+Stand: 2026-06-20
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -405,12 +405,18 @@ Aktuelle Planung:
   Speichern zeigt die App alten und neuen Sound, Dateigroesse, Dauer, Credits und einen sichtbaren NC-Hinweis.
   Der Server prueft Endung und MP3-Signatur, verwendet ein zehn Minuten gueltiges Vorschau-Token und schuetzt gegen
   parallele Aenderungen. Beim Speichern werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam
-  gesichert. Sound und Credits werden ersetzt, das alte Spektrogramm wird entfernt und im Override-Register mit
-  dem neuen Sound-SHA-256 als veraltet markiert. Der manuelle Pipeline-Schutz wird gesetzt. Danach folgen
-  automatisch ein eng begrenzter Commit und Push. Pro Art bleiben hoechstens drei verwaltete Soundpaket-Backups;
-  Karten- und Soundbackups teilen sich die globale Obergrenze von 500 MB. Zwölf Explorer-Tests sind erfolgreich;
-  ein produktiver Soundimport und die visuelle Bedienpruefung stehen noch aus. Danach folgen die automatische
-  Spektrogramm-Neuerzeugung mit Hashabgleich, Artportraet und 7.8 NAS/Backup.
+  gesichert. Phase 7.7.4 erzeugt vor jeder produktiven Soundaenderung automatisch ein neues Spektrogramm mit den
+  gemeinsamen Parametern aus `scripts/spectrogram-renderer.mjs`. Erst wenn FFmpeg und WebP-Pruefung erfolgreich
+  sind, werden Sound, Credits und Spektrogramm gemeinsam ersetzt. Schlaegt die Erzeugung fehl, bleibt das bestehende
+  Produktivpaket unveraendert. `species-assets-overrides.json` speichert pro Art Sound- und Spektrogramm-SHA-256;
+  der Explorer vergleicht diese Hashes mit den aktuellen Dateien und meldet Abweichungen als
+  `Spektrogramm veraltet`. Der Generator registriert auch uebersprungene aktuelle Spektrogramme und veraendert bei
+  einem erneuten unveraenderten Lauf keine Zeitstempel. Der bestehende Bestand wurde am 2026-06-20 migriert:
+  47 von 47 Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
+  beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
+  hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
+  500 MB. Dreizehn Explorer-Tests sind erfolgreich; ein produktiver manueller Soundimport und die visuelle
+  Bedienpruefung stehen noch aus. Danach folgen Artportraet und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

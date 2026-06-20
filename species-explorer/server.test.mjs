@@ -10,6 +10,7 @@ import {
   createExplorerServer,
   inspectJpeg,
   inspectMp3,
+  inspectWebp,
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
@@ -37,6 +38,15 @@ function createTestMp3(seed = 1) {
     Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
     Buffer.from([0xff, 0xfb, 0x90, 0x64]),
     Buffer.alloc(512, seed),
+  ]);
+}
+
+function createTestWebp(seed = 1) {
+  return Buffer.concat([
+    Buffer.from("RIFF", "ascii"),
+    Buffer.from([0x08, 0x00, 0x00, 0x00]),
+    Buffer.from("WEBP", "ascii"),
+    Buffer.alloc(8, seed),
   ]);
 }
 
@@ -746,9 +756,63 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   );
 });
 
-test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogramm veraltet", async (context) => {
+test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fehlschlägt", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDirectory = join(repoRoot, "species-assets", "Amsel");
+  const before = {
+    sound: await readFile(join(assetDirectory, "sound.mp3")),
+    credits: await readFile(join(assetDirectory, "credits.json")),
+    spectrogram: await readFile(join(assetDirectory, "spectrogram.webp")),
+  };
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+    spectrogramRenderer: async () => {
+      throw new Error("Test-FFmpeg nicht verfügbar");
+    },
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "amsel-neu.mp3",
+      audioBase64: createTestMp3(4).toString("base64"),
+      reason: "Manuell geprüfter Testsound",
+      credits: {
+        recordist: "Testaufnahme",
+        source: "Testarchiv",
+        url: "https://example.com/amsel-sound",
+        license: "https://creativecommons.org/licenses/by/4.0/",
+      },
+    }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 500);
+  assert.match((await saveResponse.json()).error, /Sound wurde nicht gespeichert/);
+  assert.deepEqual(await readFile(join(assetDirectory, "sound.mp3")), before.sound);
+  assert.deepEqual(await readFile(join(assetDirectory, "credits.json")), before.credits);
+  assert.deepEqual(await readFile(join(assetDirectory, "spectrogram.webp")), before.spectrogram);
+  assert.equal(existsSync(join(repoRoot, "species-assets-overrides.json")), false);
+});
+
+test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüpftes Spektrogramm", async (context) => {
   const mp3 = createTestMp3(7);
+  const webp = createTestWebp(9);
   assert.deepEqual(inspectMp3(mp3), { signature: "ID3 + MPEG frame", frameOffset: 10 });
+  assert.deepEqual(inspectWebp(webp), { signature: "RIFF/WEBP" });
+  assert.throws(() => inspectWebp(Buffer.from("kein webp")), /WebP/);
   assert.throws(
     () => inspectMp3(Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])),
     /keinen Audiostream/,
@@ -761,6 +825,10 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogram
     repoRoot,
     port: 0,
     publishAssetChanges: false,
+    spectrogramRenderer: async ({ outputPath }) => {
+      await writeFile(outputPath, webp);
+      return { outputBytes: webp.length };
+    },
   });
   const address = await app.listen();
   context.after(() => app.close());
@@ -821,11 +889,16 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogram
   assert.equal(saved.saved, true);
   assert.equal(saved.gitPublished, false);
   assert.equal(saved.gitSkipped, true);
-  assert.equal(saved.spectrogramStale, true);
+  assert.equal(saved.spectrogramGenerated, true);
+  assert.equal(saved.spectrogramBytes, webp.length);
+  assert.equal(saved.spectrogramStale, false);
   assert.equal(saved.isNc, true);
   assert.match(saved.backup, /^species-explorer\/asset-backups\/Amsel\/sound\/sound-/);
   assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "sound.mp3")), mp3);
-  assert.equal(existsSync(join(repoRoot, "species-assets", "Amsel", "spectrogram.webp")), false);
+  assert.deepEqual(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "spectrogram.webp")),
+    webp,
+  );
 
   const storedCredits = JSON.parse(
     await readFile(join(repoRoot, "species-assets", "Amsel", "credits.json"), "utf8"),
@@ -836,12 +909,16 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogram
   assert.equal(storedCredits.license, credits.license);
 
   const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.spectrogramGenerator.version, 1);
+  assert.equal(registry.spectrogramGenerator.width, 1000);
   assert.equal(registry.assets.Amsel.sound.manual, true);
   assert.equal(registry.assets.Amsel.sound.protectFromPipeline, true);
   assert.equal(registry.assets.Amsel.sound.isNc, true);
   assert.match(registry.assets.Amsel.sound.sha256, /^[0-9a-f]{64}$/);
-  assert.equal(registry.assets.Amsel.spectrogram.stale, true);
+  assert.equal(registry.assets.Amsel.spectrogram.stale, false);
   assert.equal(registry.assets.Amsel.spectrogram.soundSha256, registry.assets.Amsel.sound.sha256);
+  assert.match(registry.assets.Amsel.spectrogram.spectrogramSha256, /^[0-9a-f]{64}$/);
+  assert.equal(registry.assets.Amsel.spectrogram.spectrogramSha256, saved.spectrogramSha256);
 
   const backupDirectory = join(repoRoot, ...saved.backup.split("/"));
   assert.equal(existsSync(join(backupDirectory, "sound.mp3")), true);
@@ -850,8 +927,16 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogram
 
   const model = await buildExplorerModel(repoRoot);
   assert.equal(model.species[0].assets.sound.manuallyAdded, true);
-  assert.equal(model.species[0].assets.spectrogram.stale, true);
-  assert.match(model.species[0].assetIssues.join(" "), /Spektrogramm veraltet/);
+  assert.equal(model.species[0].assets.spectrogram.stale, false);
+  assert.equal(model.species[0].assets.spectrogram.hashTracked, true);
+  assert.equal(model.species[0].assets.spectrogram.hashVerified, true);
+  assert.doesNotMatch(model.species[0].assetIssues.join(" "), /Spektrogramm/);
+
+  await writeFile(join(repoRoot, "species-assets", "Amsel", "sound.mp3"), createTestMp3(8));
+  const staleModel = await buildExplorerModel(repoRoot);
+  assert.equal(staleModel.species[0].assets.spectrogram.stale, true);
+  assert.equal(staleModel.species[0].assets.spectrogram.hashVerified, false);
+  assert.match(staleModel.species[0].assetIssues.join(" "), /Spektrogramm veraltet/);
 
   const reusedResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
     method: "POST",
@@ -1135,8 +1220,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="sound-edit-section"/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
-  assert.match(appSource, /Sound und Credits werden gesichert, ersetzt, committed und gepusht/);
-  assert.match(appSource, /Das bisherige Spektrogramm wurde entfernt und muss neu erzeugt werden/);
+  assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
+  assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
+  assert.match(appSource, /Soundhash geprüft/);
   assert.match(cssSource, /\.sound-compare-grid/);
   assert.match(
     appSource,

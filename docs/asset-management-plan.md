@@ -133,9 +133,9 @@ Workflow:
 2. MP3-Signatur, Dateigroesse und Erreichbarkeit der Quellen-URL pruefen, soweit lokal moeglich.
 3. Lizenz auswerten und NC-Status vor dem Speichern sichtbar machen.
 4. Alte `sound.mp3`, `credits.json` und das zugehoerige Spektrogramm gemeinsam sichern.
-5. Sound und Credits atomar ersetzen.
-6. Override-Register aktualisieren.
-7. Das bisherige Spektrogramm als veraltet markieren und nicht als zum neuen Sound passend behandeln.
+5. Neues Spektrogramm aus der vorgemerkten MP3 erzeugen und als WebP prüfen.
+6. Sound, Credits und Spektrogramm gemeinsam ersetzen.
+7. Override-Register mit Sound- und Spektrogramm-SHA-256 aktualisieren.
 
 Vorgesehene Grenze:
 
@@ -161,9 +161,11 @@ Umgesetzt:
 - zehn Minuten gültiges Vorschau-Token und Staging unter `species-explorer/staging/`
 - Schutz gegen zwischenzeitliche Änderungen an Sound, Credits, Spektrogramm oder Override-Register
 - gemeinsames Backup von `sound.mp3`, `credits.json` und `spectrogram.webp`
-- Ersatz von `sound.mp3` und `credits.json`; Entfernung des nicht mehr passenden Spektrogramms
+- automatische Spektrogramm-Erzeugung vor jeder produktiven Soundänderung
+- keine Änderung an Produktivdateien, wenn FFmpeg oder die WebP-Prüfung fehlschlägt
+- gemeinsamer Ersatz von `sound.mp3`, `credits.json` und `spectrogram.webp`
 - `manual: true`, `protectFromPipeline: true`, Quellangaben, Credits-Hash und Sound-SHA-256 im Override-Register
-- Spektrogrammstatus `stale: true` mit dem SHA-256 des neuen Sounds
+- Spektrogrammstatus `stale: false` mit Sound- und Spektrogramm-SHA-256
 - höchstens drei verwaltete Soundpaket-Backups je Art und gemeinsame globale Backupgrenze von 500 MB
 - automatischer, auf Sound, Credits, Spektrogramm und Override-Register begrenzter Commit und Push
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
@@ -171,17 +173,28 @@ Umgesetzt:
 
 ### 7.7.4 Spektrogramm-Konsistenz
 
-Nach einem Soundwechsel muss ein neues Spektrogramm erzeugt werden.
+Status: technisch umgesetzt am 2026-06-20. Der Bestand mit 47 Arten ist vollständig hashregistriert und verifiziert.
 
-Geplante Regel:
+Umgesetzte Regel:
 
 - SHA-256 des Sounds wird beim Erzeugen des Spektrogramms gespeichert.
-- Der Explorer vergleicht den aktuellen Soundhash mit dem dokumentierten Spektrogrammhash.
+- zusätzlich wird der SHA-256 der erzeugten WebP-Datei gespeichert.
+- Der Explorer vergleicht beide registrierten Hashes mit den aktuellen Dateien.
 - Bei Abweichung wird `Spektrogramm veraltet` angezeigt.
 - Ein veraltetes Spektrogramm wird nicht als vollstaendiges, passendes Asset gewertet.
+- Der gemeinsame Renderer `scripts/spectrogram-renderer.mjs` stellt identische Parameter für App und CLI sicher.
+- Der CLI-Generator registriert erzeugte und bereits aktuelle Spektrogramme.
+- Ein unveränderter erneuter Generatorlauf ändert das Register nicht.
+- Bei einem NC-Soundsuchlauf wird beim Ablehnen einer Alternative auch der vorherige Spektrogramm-Hashstatus
+  wiederhergestellt.
 
-Die eigentliche Prozesssteuerung des Generators gehoert funktional zu Phase 7.6. Phase 7.7 bereitet Status,
-Sicherung und konsistente Assetzustande vor.
+Migrationsstand vom 2026-06-20:
+
+- 47 Spektrogramme vorhanden
+- 47 Soundhashes registriert
+- 47 Spektrogrammhashes registriert
+- 47 Hashpaare verifiziert
+- 0 veraltete Spektrogramme
 
 ### 7.7.5 Artportraet
 
@@ -257,7 +270,7 @@ Vor dem Speichern zeigt die App:
 1. Override-Register und Pipeline-Schutz
 2. Kartenimport mit Vorschau, Backup, Dokumentationsabgleich und Git-Veröffentlichung: technisch umgesetzt
 3. Sound-/Credits-Paket mit Backup und Git-Veröffentlichung: technisch umgesetzt
-4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich
+4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich: technisch umgesetzt
 5. Entscheidung zum Artportraet
 6. erst danach Restore-Funktion und weitergehende Assetaktionen
 
@@ -273,7 +286,9 @@ Vor dem Speichern zeigt die App:
 - Override-Register und menschenlesbare Dokumentation bleiben konsistent.
 - Geschuetzte Assets werden von `update.mjs` nicht ueberschrieben.
 - Soundimport ohne Credits wird abgewiesen.
-- Soundwechsel markiert das bisherige Spektrogramm als veraltet.
+- Fehlgeschlagene Spektrogramm-Erzeugung verändert keine Produktivdatei.
+- Erfolgreicher Soundwechsel erzeugt ein neues WebP und registriert beide SHA-256-Hashes.
+- Nachträgliche Änderung an Sound oder Spektrogramm wird als `Spektrogramm veraltet` erkannt.
 - Backup-Retention behaelt hoechstens 3 Versionen je Art/Asset und respektiert die globale Groessengrenze.
 - Fremde Dateien in Staging- oder Backupordnern werden nicht automatisch geloescht.
 - Projektvalidierung wird nach dem Import automatisch neu geladen.

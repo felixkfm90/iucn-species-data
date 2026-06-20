@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-19
+Stand: 2026-06-20
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -350,11 +350,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Speichern werden Karte, Override-Register und Kartendokumentation automatisch committed und gepusht.
   7.7.3 Sound-/Credits-Verwaltung ist technisch lokal umgesetzt: MP3 bis 50 MB, Pflichtcredits, Alt-/Neu-Wiedergabe,
   NC-Hinweis, Staging, Vorschau-Token, paralleler Änderungsschutz und gemeinsames Backup von Sound, Credits und
-  Spektrogramm. Nach dem Speichern werden Sound und Credits manuell geschützt, das alte Spektrogramm entfernt und
-  mit dem neuen Soundhash als veraltet markiert. Die betroffenen Assetpfade werden automatisch committed und
-  gepusht. Zwölf Explorer-Tests sind erfolgreich. Produktiver Karten-/Soundimport und visuelle Bedienprüfung sind
-  noch offen. Danach folgt 7.7.4 mit automatischer Spektrogramm-Neuerzeugung und Hashabgleich sowie die separate
-  Entscheidung für Artporträts. Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
+  Spektrogramm. 7.7.4 ist technisch umgesetzt: Vor dem Austausch wird das neue Spektrogramm automatisch erzeugt
+  und als WebP geprüft. Bei einem Fehler bleiben alle Produktivdateien unverändert. Sound- und Spektrogramm-SHA-256
+  werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 47 von 47
+  Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
+  Die betroffenen Assetpfade werden automatisch committed und gepusht. Dreizehn Explorer-Tests sind erfolgreich.
+  Produktiver Karten-/Soundimport und visuelle Bedienprüfung sind noch offen. Danach folgt die separate Entscheidung
+  für Artporträts. Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
 - 7.8 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

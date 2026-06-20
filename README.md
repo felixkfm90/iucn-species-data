@@ -324,10 +324,18 @@ Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 technisch lokal umgese
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
 neuen Sound gegenüber, liest die Dauer im Browser und zeigt Quelle, Lizenz sowie einen NC-Hinweis. Vor dem Austausch
 werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. Das alte Spektrogramm wird danach
-entfernt und bis zur Neuerzeugung im Override-Register als veraltet markiert; Sound und Credits erhalten manuellen
-Pipeline-Schutz. Der erfolgreiche Austausch wird automatisch auf die betroffenen Assetpfade begrenzt committed und
-gepusht. Die gemeinsame Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
-Zwölf Explorer-Tests sind erfolgreich; produktiver Soundimport und visuelle Bedienprüfung stehen noch aus.
+zusammen mit Sound und Credits ersetzt; Sound und Credits erhalten manuellen Pipeline-Schutz. Der erfolgreiche
+Austausch wird automatisch auf die betroffenen Assetpfade begrenzt committed und gepusht. Die gemeinsame
+Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
+
+Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
+erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.
+Schlägt FFmpeg oder die WebP-Prüfung fehl, werden keine Produktivdateien verändert. Sound-SHA-256 und
+Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und bei jedem Modellauf gegen die
+aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 47 von 47 Spektrogrammen
+sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten Registeränderungen.
+Dreizehn Explorer-Tests sind erfolgreich; produktiver manueller Soundimport und visuelle Bedienprüfung stehen noch
+aus.
 
 Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen kontrolliert ueber den Explorer in
 `species_list.json` angelegt werden; der genaue Ablauf ist in `docs/add-species-workflow.md` dokumentiert.

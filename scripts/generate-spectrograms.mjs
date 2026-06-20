@@ -1,26 +1,32 @@
 import fs from "node:fs";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import {
+  DEFAULT_SPECTROGRAM_OPTIONS,
+  checkFfmpeg,
+  renderSpectrogram,
+  resolveFfmpegPath,
+} from "./spectrogram-renderer.mjs";
 
-const DEFAULT_WIDTH = 1000;
-const DEFAULT_HEIGHT = 240;
-const DEFAULT_INNER_HEIGHT = 200;
-const DEFAULT_TOP_PADDING = 20;
+const DEFAULT_WIDTH = DEFAULT_SPECTROGRAM_OPTIONS.width;
+const DEFAULT_HEIGHT = DEFAULT_SPECTROGRAM_OPTIONS.height;
+const DEFAULT_INNER_HEIGHT = DEFAULT_SPECTROGRAM_OPTIONS.innerHeight;
+const DEFAULT_TOP_PADDING = DEFAULT_SPECTROGRAM_OPTIONS.topPadding;
 const DEFAULT_FORMAT = "webp";
 const DEFAULT_OUTPUT_NAME = "spectrogram";
-const DEFAULT_COLOR = "channel";
-const DEFAULT_SCALE = "log";
-const DEFAULT_GAIN = 3;
-const DEFAULT_STOP = 18000;
-const DEFAULT_DRANGE = 80;
-const DEFAULT_CONTRAST = 1.25;
-const DEFAULT_BRIGHTNESS = 0.08;
-const DEFAULT_QUALITY = 90;
+const DEFAULT_COLOR = DEFAULT_SPECTROGRAM_OPTIONS.color;
+const DEFAULT_SCALE = DEFAULT_SPECTROGRAM_OPTIONS.scale;
+const DEFAULT_GAIN = DEFAULT_SPECTROGRAM_OPTIONS.gain;
+const DEFAULT_STOP = DEFAULT_SPECTROGRAM_OPTIONS.stop;
+const DEFAULT_DRANGE = DEFAULT_SPECTROGRAM_OPTIONS.drange;
+const DEFAULT_CONTRAST = DEFAULT_SPECTROGRAM_OPTIONS.contrast;
+const DEFAULT_BRIGHTNESS = DEFAULT_SPECTROGRAM_OPTIONS.brightness;
+const DEFAULT_QUALITY = DEFAULT_SPECTROGRAM_OPTIONS.quality;
 
 const args = parseArgs(process.argv.slice(2));
 const cwd = process.cwd();
 const speciesAssetsDir = path.join(cwd, "species-assets");
-const ffmpegPath = args.ffmpeg || process.env.FFMPEG_PATH || "ffmpeg";
+const ffmpegPath = resolveFfmpegPath({ repoRoot: cwd, explicitPath: args.ffmpeg });
 const format = normalizeFormat(args.format || DEFAULT_FORMAT);
 const outputFileName = `${args.outputName || DEFAULT_OUTPUT_NAME}.${format}`;
 const width = positiveInteger(args.width, DEFAULT_WIDTH, "width");
@@ -54,12 +60,16 @@ if (!fs.existsSync(speciesAssetsDir)) {
 }
 
 const ffmpeg = checkFfmpeg(ffmpegPath);
+const existingRegistry = fs.existsSync(path.join(cwd, "species-assets-overrides.json"))
+  ? JSON.parse(fs.readFileSync(path.join(cwd, "species-assets-overrides.json"), "utf8"))
+  : { version: 1, assets: {} };
 const jobs = collectJobs({
   speciesAssetsDir,
   speciesFilter: args.species,
   outputRoot: args.outputRoot,
   outputFileName,
   force: Boolean(args.force),
+  registry: existingRegistry,
 });
 
 const result = {
@@ -141,6 +151,14 @@ result.results = runResults;
 result.counts.generated = runResults.filter((entry) => entry.status === "generated").length;
 result.counts.failed = runResults.filter((entry) => entry.status === "failed").length;
 result.counts.skipped = runResults.filter((entry) => entry.status === "skip").length;
+if (!args.outputRoot && outputFileName === "spectrogram.webp") {
+  result.hashRegistry = updateSpectrogramHashRegistry({
+    registryPath: path.join(cwd, "species-assets-overrides.json"),
+    jobs,
+    runResults,
+    options: result.options,
+  });
+}
 
 console.log(JSON.stringify(result, null, 2));
 process.exit(result.counts.failed ? 1 : 0);
@@ -247,37 +265,14 @@ function finiteNumber(value, fallback, label) {
   return parsed;
 }
 
-function checkFfmpeg(command) {
-  const check = spawnSync(command, ["-version"], {
-    encoding: "utf8",
-    windowsHide: true,
-  });
-
-  if (check.error) {
-    return {
-      available: false,
-      version: "",
-      error: check.error.message,
-    };
-  }
-
-  if (check.status !== 0) {
-    return {
-      available: false,
-      version: "",
-      error: check.stderr || `ffmpeg exited with status ${check.status}`,
-    };
-  }
-
-  const firstLine = String(check.stdout || "").split(/\r?\n/)[0] || "";
-  return {
-    available: true,
-    version: firstLine,
-    error: "",
-  };
-}
-
-function collectJobs({ speciesAssetsDir, speciesFilter, outputRoot, outputFileName, force }) {
+function collectJobs({
+  speciesAssetsDir,
+  speciesFilter,
+  outputRoot,
+  outputFileName,
+  force,
+  registry,
+}) {
   const selected = new Set((speciesFilter || []).map((name) => name.toLowerCase()));
   const assetDirs = fs.existsSync(speciesAssetsDir)
     ? fs
@@ -300,15 +295,20 @@ function collectJobs({ speciesAssetsDir, speciesFilter, outputRoot, outputFileNa
     }
 
     if (!force && fs.existsSync(outputPath)) {
-      const inputStat = fs.statSync(inputPath);
-      const outputStat = fs.statSync(outputPath);
-      if (outputStat.mtimeMs >= inputStat.mtimeMs) {
+      const registered = registry.assets?.[safeName]?.spectrogram;
+      if (
+        registered?.stale === false
+        && registered.soundSha256 === fileSha256(inputPath)
+        && registered.spectrogramSha256 === fileSha256(outputPath)
+      ) {
+        const inputStat = fs.statSync(inputPath);
+        const outputStat = fs.statSync(outputPath);
         return {
           safeName,
           inputPath,
           outputPath,
           action: "skip",
-          reason: "spectrogram is up to date",
+          reason: "registered sound and spectrogram hashes match",
           inputBytes: inputStat.size,
           outputBytes: outputStat.size,
         };
@@ -321,7 +321,7 @@ function collectJobs({ speciesAssetsDir, speciesFilter, outputRoot, outputFileNa
       inputPath,
       outputPath,
       action: "generate",
-      reason: force ? "forced" : "missing or older than MP3",
+      reason: force ? "forced" : "missing or hash mismatch",
       inputBytes: inputStat.size,
     };
   });
@@ -356,88 +356,106 @@ async function generateSpectrogram({
   quality,
   format,
 }) {
-  fs.mkdirSync(path.dirname(job.outputPath), { recursive: true });
-
-  const spectrumOptions = [
-    `s=${width}x${innerHeight}`,
-    "legend=disabled",
-    `scale=${scale}`,
-    `color=${color}`,
-    `gain=${gain}`,
-    `drange=${drange}`,
-  ];
-  if (stop > 0) spectrumOptions.push(`stop=${stop}`);
-
-  const filter = [
-    `showspectrumpic=${spectrumOptions.join(":")}`,
-    "format=gray",
-    "negate",
-    `eq=contrast=${contrast}:brightness=${brightness}`,
-    `pad=${width}:${height}:0:${topPadding}:white`,
-  ].join(",");
-  const ffmpegArgs = [
-    "-hide_banner",
-    "-loglevel",
-    "error",
-    "-y",
-    "-i",
-    job.inputPath,
-    "-lavfi",
-    filter,
-    "-frames:v",
-    "1",
-  ];
-
-  if (format === "webp") {
-    ffmpegArgs.push("-vcodec", "libwebp", "-quality", String(quality));
-  }
-
-  ffmpegArgs.push(job.outputPath);
-
-  const run = await runProcess(ffmpegPath, ffmpegArgs);
-  if (run.status !== 0) {
+  try {
+    const rendered = await renderSpectrogram({
+      inputPath: job.inputPath,
+      outputPath: job.outputPath,
+      ffmpegPath,
+      options: {
+        width,
+        height,
+        innerHeight,
+        topPadding,
+        color,
+        scale,
+        gain,
+        stop,
+        drange,
+        contrast,
+        brightness,
+        quality,
+        format,
+      },
+    });
+    return {
+      ...publicJob(job),
+      status: "generated",
+      outputBytes: rendered.outputBytes,
+    };
+  } catch (error) {
     return {
       ...publicJob(job),
       status: "failed",
-      ffmpegStatus: run.status,
-      stderr: run.stderr.trim(),
+      ffmpegStatus: error.ffmpegStatus ?? 1,
+      stderr: error.message,
     };
   }
-
-  const outputStat = fs.statSync(job.outputPath);
-  return {
-    ...publicJob(job),
-    status: "generated",
-    outputBytes: outputStat.size,
-  };
 }
 
-function runProcess(command, args) {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, {
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+function updateSpectrogramHashRegistry({ registryPath, jobs, runResults, options }) {
+  const currentText = fs.existsSync(registryPath)
+    ? fs.readFileSync(registryPath, "utf8")
+    : "";
+  const registry = currentText
+    ? JSON.parse(currentText)
+    : { version: 1, assets: {} };
+  registry.version = 1;
+  registry.assets ??= {};
+  registry.spectrogramGenerator = {
+    version: 1,
+    width: options.width,
+    height: options.height,
+    innerHeight: options.innerHeight,
+    topPadding: options.topPadding,
+    format: options.format,
+    gain: options.gain,
+    stop: options.stop,
+    drange: options.drange,
+    contrast: options.contrast,
+    brightness: options.brightness,
+    quality: options.quality,
+  };
+  const resultsBySafeName = new Map(runResults.map((entry) => [entry.safeName, entry]));
+  let updated = 0;
 
-    let stdout = "";
-    let stderr = "";
+  for (const job of jobs) {
+    const runResult = resultsBySafeName.get(job.safeName);
+    if (!runResult || !["generated", "skip"].includes(runResult.status)) continue;
+    if (!fs.existsSync(job.inputPath) || !fs.existsSync(job.outputPath)) continue;
+    const soundSha256 = fileSha256(job.inputPath);
+    const spectrogramSha256 = fileSha256(job.outputPath);
+    const outputStat = fs.statSync(job.outputPath);
+    registry.assets[job.safeName] ??= {};
+    const existing = registry.assets[job.safeName].spectrogram ?? {};
+    const unchanged =
+      existing.stale === false
+      && existing.soundSha256 === soundSha256
+      && existing.spectrogramSha256 === spectrogramSha256
+      && existing.generatedAt === outputStat.mtime.toISOString();
+    registry.assets[job.safeName].spectrogram = {
+      stale: false,
+      soundSha256,
+      spectrogramSha256,
+      generatedAt: outputStat.mtime.toISOString(),
+      verifiedAt: unchanged && existing.verifiedAt
+        ? existing.verifiedAt
+        : new Date().toISOString(),
+    };
+    updated += 1;
+  }
 
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
+  const nextText = `${JSON.stringify(registry, null, 2)}\n`;
+  const changed = updated > 0 && nextText !== currentText;
+  if (changed) {
+    const tempPath = `${registryPath}.tmp-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(tempPath, nextText, "utf8");
+    fs.renameSync(tempPath, registryPath);
+  }
+  return { updated, changed, registry: relativeToCwd(registryPath) };
+}
 
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", (error) => {
-      resolve({ status: 1, stdout, stderr: stderr + error.message });
-    });
-
-    child.on("close", (status) => {
-      resolve({ status, stdout, stderr });
-    });
-  });
+function fileSha256(filePath) {
+  return createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
 function relativeToCwd(filePath) {

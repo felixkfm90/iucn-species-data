@@ -1,6 +1,6 @@
 # Spectrogram Plan
 
-Stand: 2026-06-17
+Stand: 2026-06-20
 
 Ziel: Phase 6.4 bewertet, wie Tierstimmen spaeter mit einer Merlin-aehnlicheren Frequenzdarstellung bzw. einem
 Spektrogramm erweitert werden koennen, ohne die aktuell stabile Soundbar oder den Squarespace-Betrieb zu gefaehrden.
@@ -90,6 +90,12 @@ Generator-Skript:
 scripts/generate-spectrograms.mjs
 ```
 
+Gemeinsamer Renderer für CLI und Arten-Explorer:
+
+```text
+scripts/spectrogram-renderer.mjs
+```
+
 Der Generator wurde am 2026-06-15 als Prototyp umgesetzt und am 2026-06-16 auf die artweise Asset-Struktur
 umgestellt. Er erzeugt standardmaessig produktive Spektrogramme unter
 `species-assets/<SafeName>/spectrogram.webp`, sofern kein `--output-root` gesetzt wird. Fuer Tests wird bewusst
@@ -130,7 +136,8 @@ Aktuelles Verhalten:
 
 - scannt `species-assets/<SafeName>/sound.mp3`
 - erzeugt primaer `species-assets/<SafeName>/spectrogram.webp`
-- ueberspringt vorhandene Spektrogramme, wenn sie neuer als die MP3 sind
+- ueberspringt vorhandene Spektrogramme nur, wenn registrierter Sound- und Spektrogrammhash zu den aktuellen Dateien
+  passen; Dateizeitstempel allein gelten nicht als Konsistenznachweis
 - unterstuetzt `--force`
 - unterstuetzt `--species=<SafeName>` fuer Einzeltests
 - unterstuetzt `--dry-run`
@@ -140,6 +147,38 @@ Aktuelles Verhalten:
 - unterstuetzt `--width`, `--height`, `--inner-height`, `--top-padding`, `--color`, `--scale`, `--gain`, `--stop`,
   `--drange`, `--contrast`, `--brightness` und `--quality`
 - meldet Dateigroessen und Fehler je Art
+- speichert bei produktiven WebP-Läufen Sound- und Spektrogramm-SHA-256 in `species-assets-overrides.json`
+- registriert auch bereits aktuelle und deshalb übersprungene Spektrogramme
+- behält bei unveränderten Dateien den vorhandenen Prüfzeitpunkt bei und erzeugt dadurch keinen unnötigen Git-Diff
+- wird vom Arten-Explorer vor einem manuellen Soundaustausch direkt verwendet
+
+## Hash-Konsistenz seit Phase 7.7.4
+
+Jeder registrierte Spektrogrammeintrag enthält:
+
+- `soundSha256`: Hash der zugehörigen `sound.mp3`
+- `spectrogramSha256`: Hash der `spectrogram.webp`
+- `generatedAt`: Dateizeitpunkt des Spektrogramms
+- `verifiedAt`: Zeitpunkt der ersten beziehungsweise letzten notwendigen Hashregistrierung
+- `stale`: `false`, solange beide aktuellen Dateien zu den gespeicherten Hashes passen
+
+Die gemeinsamen Generatorparameter stehen einmal unter `spectrogramGenerator` im Override-Register. Der Explorer
+berechnet die aktuellen Hashes nur beim Aufbau eines geänderten Modells. Bei einer Abweichung wird die Art mit
+`Spektrogramm veraltet` als Assetproblem markiert.
+
+Beim manuellen Soundimport gilt:
+
+1. neue MP3 und Credits validieren
+2. neues Spektrogramm im ignorierten Stagingbereich erzeugen
+3. WebP-Signatur prüfen
+4. altes Soundpaket sichern
+5. Sound, Credits, Spektrogramm und Hashregister gemeinsam ersetzen
+6. erst danach committen und pushen
+
+Schlägt Schritt 2 oder 3 fehl, bleiben alle Produktivdateien unverändert.
+
+Migrationsprüfung vom 2026-06-20: 47 von 47 vorhandenen Spektrogrammen sind registriert und hashverifiziert; keine
+Datei ist als veraltet markiert.
 
 Aktuelle Zielparameter fuer den Merlin-aehnlichen hellen Stil:
 

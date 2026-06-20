@@ -163,9 +163,10 @@ function formatIucnStatus(status) {
 }
 
 function assetStatusText(asset) {
-  if (asset.stale) return "Veraltet · nach Soundwechsel neu erzeugen";
+  if (asset.stale) return `Veraltet · ${asset.staleReason || "Hash stimmt nicht überein"}`;
   if (!asset.exists) return "Fehlt";
   const parts = ["Vorhanden"];
+  if (asset.hashVerified) parts.push("Soundhash geprüft");
   if (asset.manuallyAdded) parts.push("manuell hinzugefügt");
   parts.push(formatBytes(asset.bytes));
   return parts.join(" · ");
@@ -1556,7 +1557,7 @@ function setupSpeciesEditor(species) {
       soundPreview.hidden = false;
       soundSaveButton.disabled = false;
       setSoundMessage(
-        "Vorschau erstellt. Beim Speichern werden Sound, Credits und Spektrogramm gemeinsam gesichert.",
+        "Vorschau erstellt. Beim Speichern wird zuerst das neue Spektrogramm erzeugt und anschließend das bisherige Soundpaket gesichert.",
         "success",
       );
     } catch (error) {
@@ -1570,7 +1571,10 @@ function setupSpeciesEditor(species) {
   soundSaveButton?.addEventListener("click", async () => {
     if (!soundPreviewToken) return;
     setSoundBusy(true);
-    setSoundMessage("Sound und Credits werden gesichert, ersetzt, committed und gepusht…", "info");
+    setSoundMessage(
+      "Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm gesichert, ersetzt, committed und gepusht…",
+      "info",
+    );
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/sound/save`,
@@ -1583,7 +1587,8 @@ function setupSpeciesEditor(species) {
       state.notice = result.gitPublished
         ? `Sound und Credits gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
-          + " Das bisherige Spektrogramm wurde entfernt und muss neu erzeugt werden."
+          + ` Das neue Spektrogramm wurde automatisch erzeugt${result.spectrogramBytes ? ` (${formatBytes(result.spectrogramBytes)})` : ""}`
+          + " und per Soundhash verknüpft."
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
         : `Sound und Credits wurden lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
       stopSoundPreviewAudio();
@@ -2122,8 +2127,9 @@ function renderDetail(species) {
             <span class="sound-license-state"></span>
             <dl class="data-list sound-credits-preview"></dl>
             <p class="edit-warning">
-              Speichern ersetzt <code>sound.mp3</code> und <code>credits.json</code>. Das bisherige Spektrogramm
-              wird gesichert und entfernt, bis für den neuen Sound ein passendes Spektrogramm erzeugt wurde.
+              Speichern sichert das bisherige Soundpaket und ersetzt <code>sound.mp3</code>,
+              <code>credits.json</code> und <code>spectrogram.webp</code> gemeinsam. Das neue Spektrogramm wird
+              automatisch erzeugt und über SHA-256 mit dem Sound verknüpft.
             </p>
           </section>
 
