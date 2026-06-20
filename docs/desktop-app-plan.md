@@ -536,13 +536,23 @@ Geplante Teilstufen:
 1. maschinenlesbares Override-Register und expliziter Pipeline-Schutz
 2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup, Dokumentationsabgleich und automatischem
    Commit/Push: technisch lokal umgesetzt; produktive Bedienprüfung offen
-3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen
+3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen: technisch lokal umgesetzt; produktive
+   Bedienprüfung offen
 4. Spektrogramm per Soundhash als passend oder veraltet kennzeichnen
 5. Artportraet-Quelle, Lizenz, Dateiformat und Squarespace-Verwendung separat entscheiden
 
 Der Kartenimport akzeptiert nur JPEG bis 20 MB, prüft Magic Bytes und Abmessungen, nutzt Staging und ein
 Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen Pipeline-Schutz. Assetbackups sind auf drei
-Versionen je Art/Karte und insgesamt 500 MB begrenzt. Elf Explorer-Tests sind erfolgreich.
+Versionen je Art/Karte und insgesamt 500 MB begrenzt.
+
+Der Soundimport akzeptiert nur MP3 bis 50 MB und verlangt Pflegegrund, Aufnahme/Urheber, Quelle, Original-URL und
+Lizenz. Wissenschaftlicher und deutscher Name werden aus der Art übernommen. Die Vorschau spielt alten und neuen
+Sound ab, prüft die Browser-Dekodierbarkeit und zeigt Credits sowie den NC-Status. Beim Speichern werden vorhandener
+Sound, Credits und Spektrogramm gemeinsam gesichert. `sound.mp3` und `credits.json` werden ersetzt, das bisherige
+Spektrogramm wird entfernt und mit dem SHA-256 des neuen Sounds als veraltet registriert. Sound und Credits werden
+vor der Pipeline geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpaket-Backups sind
+ebenfalls auf drei Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB.
+Zwölf Explorer-Tests sind erfolgreich.
 
 ### 7.8 Synology NAS und automatisiertes Backup
 

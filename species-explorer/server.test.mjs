@@ -9,6 +9,7 @@ import {
   buildExplorerModel,
   createExplorerServer,
   inspectJpeg,
+  inspectMp3,
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
@@ -28,6 +29,14 @@ function createTestJpeg(width = 3, height = 2) {
     0x02, 0x11, 0x00,
     0x03, 0x11, 0x00,
     0xff, 0xd9,
+  ]);
+}
+
+function createTestMp3(seed = 1) {
+  return Buffer.concat([
+    Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+    Buffer.from([0xff, 0xfb, 0x90, 0x64]),
+    Buffer.alloc(512, seed),
   ]);
 }
 
@@ -737,6 +746,121 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   );
 });
 
+test("Soundimport ersetzt MP3 und Credits gemeinsam und markiert das Spektrogramm veraltet", async (context) => {
+  const mp3 = createTestMp3(7);
+  assert.deepEqual(inspectMp3(mp3), { signature: "ID3 + MPEG frame", frameOffset: 10 });
+  assert.throws(
+    () => inspectMp3(Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])),
+    /keinen Audiostream/,
+  );
+  assert.throws(() => inspectMp3(Buffer.from("kein mp3")), /MPEG-Audioframe/);
+
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const invalidResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "sound.wav",
+      audioBase64: Buffer.from("kein sound").toString("base64"),
+      reason: "Test",
+      credits: {},
+    }),
+  });
+  assert.equal(invalidResponse.status, 400);
+
+  const credits = {
+    recordist: "Testaufnahme",
+    source: "Testarchiv",
+    url: "https://example.com/amsel-sound",
+    license: "https://creativecommons.org/licenses/by-nc/4.0/",
+    country: "Deutschland",
+    location: "Testort",
+    quality: "A",
+    notes: "Manuell geprüfter Testsound",
+  };
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "amsel-neu.mp3",
+      audioBase64: mp3.toString("base64"),
+      reason: "Manuell geprüfter Testsound",
+      credits,
+    }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.ok(preview.token);
+  assert.equal(preview.newSound.bytes, mp3.length);
+  assert.equal(preview.newSound.isNc, true);
+  assert.equal(preview.newSound.credits.scientific_name, "Turdus merula");
+  assert.equal(preview.newSound.credits.german_name, "Amsel");
+
+  const previewFile = await fetch(`${baseUrl}${preview.newSound.url}`);
+  assert.equal(previewFile.status, 200);
+  assert.equal(previewFile.headers.get("content-type"), "audio/mpeg");
+  assert.deepEqual(Buffer.from(await previewFile.arrayBuffer()), mp3);
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.saved, true);
+  assert.equal(saved.gitPublished, false);
+  assert.equal(saved.gitSkipped, true);
+  assert.equal(saved.spectrogramStale, true);
+  assert.equal(saved.isNc, true);
+  assert.match(saved.backup, /^species-explorer\/asset-backups\/Amsel\/sound\/sound-/);
+  assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "sound.mp3")), mp3);
+  assert.equal(existsSync(join(repoRoot, "species-assets", "Amsel", "spectrogram.webp")), false);
+
+  const storedCredits = JSON.parse(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "credits.json"), "utf8"),
+  );
+  assert.equal(storedCredits.recordist, "Testaufnahme");
+  assert.equal(storedCredits.scientific_name, "Turdus merula");
+  assert.equal(storedCredits.german_name, "Amsel");
+  assert.equal(storedCredits.license, credits.license);
+
+  const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.assets.Amsel.sound.manual, true);
+  assert.equal(registry.assets.Amsel.sound.protectFromPipeline, true);
+  assert.equal(registry.assets.Amsel.sound.isNc, true);
+  assert.match(registry.assets.Amsel.sound.sha256, /^[0-9a-f]{64}$/);
+  assert.equal(registry.assets.Amsel.spectrogram.stale, true);
+  assert.equal(registry.assets.Amsel.spectrogram.soundSha256, registry.assets.Amsel.sound.sha256);
+
+  const backupDirectory = join(repoRoot, ...saved.backup.split("/"));
+  assert.equal(existsSync(join(backupDirectory, "sound.mp3")), true);
+  assert.equal(existsSync(join(backupDirectory, "credits.json")), true);
+  assert.equal(existsSync(join(backupDirectory, "spectrogram.webp")), true);
+
+  const model = await buildExplorerModel(repoRoot);
+  assert.equal(model.species[0].assets.sound.manuallyAdded, true);
+  assert.equal(model.species[0].assets.spectrogram.stale, true);
+  assert.match(model.species[0].assetIssues.join(" "), /Spektrogramm veraltet/);
+
+  const reusedResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(reusedResponse.status, 409);
+});
+
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -984,6 +1108,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function previewMapAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveMapAsset\(id, payload\)/);
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
+  assert.match(serverSource, /async function previewSoundAsset\(id, payload\)/);
+  assert.match(serverSource, /async function saveSoundAsset\(id, payload\)/);
+  assert.match(serverSource, /async function publishSoundAssetChanges\(species\)/);
   assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 3/);
   assert.match(serverSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
@@ -1005,6 +1132,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-save-button"/);
   assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
   assert.match(cssSource, /\.map-compare-grid/);
+  assert.match(appSource, /class="sound-edit-section"/);
+  assert.match(appSource, /class="sound-preview-button"/);
+  assert.match(appSource, /class="sound-save-button"/);
+  assert.match(appSource, /Sound und Credits werden gesichert, ersetzt, committed und gepusht/);
+  assert.match(appSource, /Das bisherige Spektrogramm wurde entfernt und muss neu erzeugt werden/);
+  assert.match(cssSource, /\.sound-compare-grid/);
   assert.match(
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,

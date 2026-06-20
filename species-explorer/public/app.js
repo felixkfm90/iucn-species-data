@@ -125,6 +125,33 @@ function fileToBase64(file) {
   });
 }
 
+function waitForAudioMetadata(audio) {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) return Promise.resolve(audio.duration);
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("MP3-Metadaten konnten nicht gelesen werden"));
+    }, 8000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("error", onError);
+    };
+    const onLoaded = () => {
+      cleanup();
+      if (Number.isFinite(audio.duration) && audio.duration > 0) resolve(audio.duration);
+      else reject(new Error("MP3-Dauer ist ungültig"));
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("MP3-Datei kann im Browser nicht abgespielt werden"));
+    };
+    audio.addEventListener("loadedmetadata", onLoaded, { once: true });
+    audio.addEventListener("error", onError, { once: true });
+    audio.load();
+  });
+}
+
 function formatIucnFetchDate(value) {
   const match = String(value ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}.${match[2]}.${match[1]}` : value || "Unbekannt";
@@ -136,6 +163,7 @@ function formatIucnStatus(status) {
 }
 
 function assetStatusText(asset) {
+  if (asset.stale) return "Veraltet · nach Soundwechsel neu erzeugen";
   if (!asset.exists) return "Fehlt";
   const parts = ["Vorhanden"];
   if (asset.manuallyAdded) parts.push("manuell hinzugefügt");
@@ -1184,10 +1212,23 @@ function setupSpeciesEditor(species) {
   const mapNewMeta = elements.detailPanel.querySelector(".map-new-meta");
   const mapPreviewButton = elements.detailPanel.querySelector(".map-preview-button");
   const mapSaveButton = elements.detailPanel.querySelector(".map-save-button");
+  const soundFileInput = elements.detailPanel.querySelector(".sound-file-input");
+  const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
+  const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
+  const soundPreview = elements.detailPanel.querySelector(".sound-edit-preview");
+  const soundCurrentAudio = elements.detailPanel.querySelector(".sound-preview-current");
+  const soundNewAudio = elements.detailPanel.querySelector(".sound-preview-new");
+  const soundCurrentMeta = elements.detailPanel.querySelector(".sound-current-meta");
+  const soundNewMeta = elements.detailPanel.querySelector(".sound-new-meta");
+  const soundCreditsPreview = elements.detailPanel.querySelector(".sound-credits-preview");
+  const soundLicenseState = elements.detailPanel.querySelector(".sound-license-state");
+  const soundPreviewButton = elements.detailPanel.querySelector(".sound-preview-button");
+  const soundSaveButton = elements.detailPanel.querySelector(".sound-save-button");
   if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
   let mapPreviewToken = "";
+  let soundPreviewToken = "";
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1217,6 +1258,34 @@ function setupSpeciesEditor(species) {
     if (mapNewImage) mapNewImage.removeAttribute("src");
   };
 
+  const stopSoundPreviewAudio = () => {
+    for (const audio of [soundCurrentAudio, soundNewAudio]) {
+      if (!audio) continue;
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  };
+
+  const setSoundMessage = (text = "", type = "") => {
+    if (!soundMessage) return;
+    soundMessage.textContent = text;
+    soundMessage.className = `edit-message sound-edit-message${type ? ` ${type}` : ""}`;
+    soundMessage.hidden = !text;
+  };
+
+  const resetSoundPreview = () => {
+    soundPreviewToken = "";
+    stopSoundPreviewAudio();
+    if (soundPreview) soundPreview.hidden = true;
+    if (soundSaveButton) soundSaveButton.disabled = true;
+    for (const audio of [soundCurrentAudio, soundNewAudio]) {
+      if (!audio) continue;
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    if (soundCreditsPreview) soundCreditsPreview.replaceChildren();
+  };
+
   const setBusy = (busy) => {
     previewButton.disabled = busy;
     saveButton.disabled = busy || !previewToken;
@@ -1232,28 +1301,47 @@ function setupSpeciesEditor(species) {
     for (const button of closeButtons) button.disabled = busy;
   };
 
+  const setSoundBusy = (busy) => {
+    if (soundPreviewButton) soundPreviewButton.disabled = busy;
+    if (soundSaveButton) soundSaveButton.disabled = busy || !soundPreviewToken;
+    if (soundFileInput) soundFileInput.disabled = busy;
+    if (soundReasonInput) soundReasonInput.disabled = busy;
+    for (const input of form.querySelectorAll(".sound-credit-input")) input.disabled = busy;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
   openButton.addEventListener("click", () => {
     resetPreview();
     resetMapPreview();
+    resetSoundPreview();
     setMessage();
     setMapMessage();
+    setSoundMessage();
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   });
 
   for (const button of closeButtons) {
     button.addEventListener("click", () => {
+      stopSoundPreviewAudio();
       if (typeof dialog.close === "function") dialog.close();
       else dialog.removeAttribute("open");
     });
   }
 
   setupSafeBackdropClose(dialog, () => {
+    stopSoundPreviewAudio();
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   });
+  dialog.addEventListener("close", stopSoundPreviewAudio);
 
   form.addEventListener("input", (event) => {
+    if (event.target.closest(".sound-edit-section")) {
+      resetSoundPreview();
+      setSoundMessage("Sound oder Credits geändert. Bitte die Vorschau erneut erstellen.", "info");
+      return;
+    }
     if (event.target.closest(".map-edit-section")) {
       resetMapPreview();
       setMapMessage("Kartenauswahl oder Angaben geändert. Bitte die Vorschau erneut erstellen.", "info");
@@ -1405,6 +1493,105 @@ function setupSpeciesEditor(species) {
     } catch (error) {
       setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setMapBusy(false);
+    }
+  });
+
+  soundPreviewButton?.addEventListener("click", async () => {
+    resetSoundPreview();
+    setSoundBusy(true);
+    setSoundMessage("MP3 und Credits werden geprüft…", "info");
+    try {
+      const file = soundFileInput.files?.[0];
+      if (!file) throw new Error("Bitte eine MP3-Datei auswählen");
+      if (file.size > 50 * 1024 * 1024) throw new Error("MP3-Datei darf maximal 50 MB groß sein");
+      const audioBase64 = await fileToBase64(file);
+      const formData = new FormData(form);
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/sound/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalName: file.name,
+            audioBase64,
+            reason: soundReasonInput.value,
+            credits: {
+              recordist: formData.get("soundRecordist"),
+              source: formData.get("soundSource"),
+              url: formData.get("soundUrl"),
+              license: formData.get("soundLicense"),
+              country: formData.get("soundCountry"),
+              location: formData.get("soundLocation"),
+              quality: formData.get("soundQuality"),
+              notes: formData.get("soundNotes"),
+            },
+          }),
+        },
+      );
+      soundPreviewToken = result.token;
+      soundCurrentAudio.hidden = !result.currentSound.exists;
+      if (result.currentSound.exists) soundCurrentAudio.src = result.currentSound.url;
+      soundNewAudio.src = result.newSound.url;
+      const newDuration = await waitForAudioMetadata(soundNewAudio);
+      soundCurrentMeta.textContent = result.currentSound.exists
+        ? formatBytes(result.currentSound.bytes)
+        : "Kein bisheriger Sound";
+      soundNewMeta.textContent = `${formatBytes(result.newSound.bytes)} · ${formatTime(newDuration)}`;
+      const credits = result.newSound.credits;
+      soundCreditsPreview.innerHTML = dataRows([
+        ["Wissenschaftlicher Name", credits.scientific_name],
+        ["Deutscher Name", credits.german_name],
+        ["Aufnahme/Urheber", credits.recordist],
+        ["Quelle", credits.source],
+        ["Original-URL", credits.url],
+        ["Lizenz", credits.license],
+        ["Land", credits.country || "Nicht angegeben"],
+        ["Ort", credits.location || "Nicht angegeben"],
+        ["Qualität", credits.quality || "Nicht angegeben"],
+      ]);
+      soundLicenseState.textContent = result.newSound.isNc
+        ? "NC-Lizenz · intern prüfen"
+        : "Nicht als NC erkannt · Lizenz trotzdem prüfen";
+      soundLicenseState.className = `sound-license-state${result.newSound.isNc ? " warning" : ""}`;
+      soundPreview.hidden = false;
+      soundSaveButton.disabled = false;
+      setSoundMessage(
+        "Vorschau erstellt. Beim Speichern werden Sound, Credits und Spektrogramm gemeinsam gesichert.",
+        "success",
+      );
+    } catch (error) {
+      resetSoundPreview();
+      setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setSoundBusy(false);
+    }
+  });
+
+  soundSaveButton?.addEventListener("click", async () => {
+    if (!soundPreviewToken) return;
+    setSoundBusy(true);
+    setSoundMessage("Sound und Credits werden gesichert, ersetzt, committed und gepusht…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/sound/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: soundPreviewToken }),
+        },
+      );
+      state.notice = result.gitPublished
+        ? `Sound und Credits gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
+          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+          + " Das bisherige Spektrogramm wurde entfernt und muss neu erzeugt werden."
+          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
+        : `Sound und Credits wurden lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      stopSoundPreviewAudio();
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setSoundBusy(false);
     }
   });
 }
@@ -1805,6 +1992,144 @@ function renderDetail(species) {
           <div class="map-edit-actions">
             <button class="map-preview-button" type="button">Karte prüfen</button>
             <button class="map-save-button" type="button" disabled>Karte ersetzen</button>
+          </div>
+        </section>
+
+        <section class="sound-edit-section">
+          <header>
+            <div>
+              <h4>Sound und Credits ersetzen</h4>
+              <p>MP3 und Credits werden nur gemeinsam gespeichert. Die Lizenz bleibt eine manuelle Prüfentscheidung.</p>
+            </div>
+            <span class="sound-care-state">
+              ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
+            </span>
+          </header>
+
+          <div class="sound-species-lock">
+            <span>Art</span>
+            <strong>${escapeHtml(species.germanName)} · ${escapeHtml(species.scientificName)}</strong>
+          </div>
+
+          <div class="sound-edit-fields">
+            <label>
+              <span>Neue MP3-Datei</span>
+              <input class="sound-file-input" type="file" accept=".mp3,audio/mpeg">
+            </label>
+            <label>
+              <span>Pflegegrund</span>
+              <textarea
+                class="sound-reason-input"
+                maxlength="500"
+                rows="2"
+                placeholder="Warum wird dieser Sound manuell gepflegt?"
+              >${escapeHtml(species.assets.sound.manualReason || "")}</textarea>
+            </label>
+            <label>
+              <span>Aufnahme / Urheber</span>
+              <input
+                class="sound-credit-input"
+                name="soundRecordist"
+                maxlength="500"
+                value="${escapeHtml(species.credits?.recordist || "")}"
+              >
+            </label>
+            <label>
+              <span>Quelle</span>
+              <input
+                class="sound-credit-input"
+                name="soundSource"
+                maxlength="500"
+                placeholder="z. B. xeno-canto.org"
+                value="${escapeHtml(species.credits?.source || "")}"
+              >
+            </label>
+            <label>
+              <span>Original-URL</span>
+              <input
+                class="sound-credit-input"
+                name="soundUrl"
+                type="url"
+                maxlength="2000"
+                placeholder="https://…"
+                value="${escapeHtml(species.credits?.url || "")}"
+              >
+            </label>
+            <label>
+              <span>Lizenz-URL</span>
+              <input
+                class="sound-credit-input"
+                name="soundLicense"
+                type="url"
+                maxlength="2000"
+                placeholder="https://creativecommons.org/…"
+                value="${escapeHtml(species.credits?.license || "")}"
+              >
+            </label>
+            <label>
+              <span>Land</span>
+              <input
+                class="sound-credit-input"
+                name="soundCountry"
+                maxlength="240"
+                value="${escapeHtml(species.credits?.country || "")}"
+              >
+            </label>
+            <label>
+              <span>Ort</span>
+              <input
+                class="sound-credit-input"
+                name="soundLocation"
+                maxlength="500"
+                value="${escapeHtml(species.credits?.location || "")}"
+              >
+            </label>
+            <label>
+              <span>Qualität</span>
+              <input
+                class="sound-credit-input"
+                name="soundQuality"
+                maxlength="120"
+                value="${escapeHtml(species.credits?.quality || "")}"
+              >
+            </label>
+            <label class="sound-notes-field">
+              <span>Notizen</span>
+              <textarea
+                class="sound-credit-input"
+                name="soundNotes"
+                maxlength="2000"
+                rows="2"
+              >${escapeHtml(species.credits?.notes || "")}</textarea>
+            </label>
+          </div>
+
+          <p class="edit-message sound-edit-message" hidden></p>
+
+          <section class="sound-edit-preview" hidden>
+            <div class="sound-compare-grid">
+              <figure>
+                <figcaption>Bisheriger Sound</figcaption>
+                <audio class="sound-preview-current" controls preload="metadata"></audio>
+                <p class="sound-current-meta"></p>
+              </figure>
+              <figure>
+                <figcaption>Neuer Sound</figcaption>
+                <audio class="sound-preview-new" controls preload="metadata"></audio>
+                <p class="sound-new-meta"></p>
+              </figure>
+            </div>
+            <span class="sound-license-state"></span>
+            <dl class="data-list sound-credits-preview"></dl>
+            <p class="edit-warning">
+              Speichern ersetzt <code>sound.mp3</code> und <code>credits.json</code>. Das bisherige Spektrogramm
+              wird gesichert und entfernt, bis für den neuen Sound ein passendes Spektrogramm erzeugt wurde.
+            </p>
+          </section>
+
+          <div class="sound-edit-actions">
+            <button class="sound-preview-button" type="button">Sound und Credits prüfen</button>
+            <button class="sound-save-button" type="button" disabled>Sound und Credits ersetzen</button>
           </div>
         </section>
 

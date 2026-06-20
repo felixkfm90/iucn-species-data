@@ -320,6 +320,15 @@ Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-b
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
 
+Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 technisch lokal umgesetzt. MP3-Dateien bis 50 MB werden
+nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
+neuen Sound gegenüber, liest die Dauer im Browser und zeigt Quelle, Lizenz sowie einen NC-Hinweis. Vor dem Austausch
+werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. Das alte Spektrogramm wird danach
+entfernt und bis zur Neuerzeugung im Override-Register als veraltet markiert; Sound und Credits erhalten manuellen
+Pipeline-Schutz. Der erfolgreiche Austausch wird automatisch auf die betroffenen Assetpfade begrenzt committed und
+gepusht. Die gemeinsame Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
+Zwölf Explorer-Tests sind erfolgreich; produktiver Soundimport und visuelle Bedienprüfung stehen noch aus.
+
 Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen kontrolliert ueber den Explorer in
 `species_list.json` angelegt werden; der genaue Ablauf ist in `docs/add-species-workflow.md` dokumentiert.
 

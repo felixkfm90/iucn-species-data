@@ -348,9 +348,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Pflegegrund, Staging, Vorschau-Token, Schutz gegen parallele Änderungen, atomarer Austausch und manuelle
   Kennzeichnung. Pro Art bleiben höchstens drei Kartenbackups erhalten; global gilt 500 MB. Nach erfolgreichem
   Speichern werden Karte, Override-Register und Kartendokumentation automatisch committed und gepusht.
-  Produktiver Import und visuelle Bedienprüfung sind noch offen. Danach folgen Sound-/Credits-Paket,
-  Spektrogramm-Hashabgleich und die separate Entscheidung für Artporträts. Löschen, Pipeline-Start und automatische
-  Lizenzfreigabe bleiben außerhalb von 7.7.
+  7.7.3 Sound-/Credits-Verwaltung ist technisch lokal umgesetzt: MP3 bis 50 MB, Pflichtcredits, Alt-/Neu-Wiedergabe,
+  NC-Hinweis, Staging, Vorschau-Token, paralleler Änderungsschutz und gemeinsames Backup von Sound, Credits und
+  Spektrogramm. Nach dem Speichern werden Sound und Credits manuell geschützt, das alte Spektrogramm entfernt und
+  mit dem neuen Soundhash als veraltet markiert. Die betroffenen Assetpfade werden automatisch committed und
+  gepusht. Zwölf Explorer-Tests sind erfolgreich. Produktiver Karten-/Soundimport und visuelle Bedienprüfung sind
+  noch offen. Danach folgt 7.7.4 mit automatischer Spektrogramm-Neuerzeugung und Hashabgleich sowie die separate
+  Entscheidung für Artporträts. Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
 - 7.8 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

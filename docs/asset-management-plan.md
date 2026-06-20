@@ -113,6 +113,8 @@ Umgesetzt:
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
 
+Status: technisch lokal umgesetzt am 2026-06-20; produktiver Import und visuelle Bedienprüfung stehen noch aus.
+
 Ein Sound darf nur zusammen mit vollstaendigen Credits ersetzt werden.
 
 Pflichtfelder fuer Credits:
@@ -141,6 +143,31 @@ Vorgesehene Grenze:
 - maximal 50 MB
 - kein Soundimport ohne Credits
 - keine automatische Lizenzfreigabe; die Entscheidung bleibt sichtbar und pruefbar
+
+API:
+
+- `POST /api/species/<Slug>/assets/sound/preview`
+- `GET /api/species/<Slug>/assets/sound/preview-file?token=<Token>`
+- `POST /api/species/<Slug>/assets/sound/save`
+
+Umgesetzt:
+
+- Einbindung in den allgemeinen `Bearbeiten`-Dialog der Art
+- Pflichtfelder `Pflegegrund`, `Aufnahme/Urheber`, `Quelle`, `Original-URL` und `Lizenz-URL`
+- wissenschaftlicher und deutscher Name werden serverseitig aus dem Arteintrag übernommen
+- Prüfung von Dateiendung, ID3- beziehungsweise MPEG-Frame-Signatur und Dateigröße
+- zusätzliche Browserprüfung der neuen MP3-Datei einschließlich ausgelesener Dauer
+- Alt-/Neu-Wiedergabe, Dateigröße, neue Credits und sichtbarer NC-Status vor dem Speichern
+- zehn Minuten gültiges Vorschau-Token und Staging unter `species-explorer/staging/`
+- Schutz gegen zwischenzeitliche Änderungen an Sound, Credits, Spektrogramm oder Override-Register
+- gemeinsames Backup von `sound.mp3`, `credits.json` und `spectrogram.webp`
+- Ersatz von `sound.mp3` und `credits.json`; Entfernung des nicht mehr passenden Spektrogramms
+- `manual: true`, `protectFromPipeline: true`, Quellangaben, Credits-Hash und Sound-SHA-256 im Override-Register
+- Spektrogrammstatus `stale: true` mit dem SHA-256 des neuen Sounds
+- höchstens drei verwaltete Soundpaket-Backups je Art und gemeinsame globale Backupgrenze von 500 MB
+- automatischer, auf Sound, Credits, Spektrogramm und Override-Register begrenzter Commit und Push
+- Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
+- laufende Vorschau-Audios stoppen und springen beim Schließen des Bearbeitungsdialogs auf Position 0 zurück
 
 ### 7.7.4 Spektrogramm-Konsistenz
 
@@ -229,8 +256,8 @@ Vor dem Speichern zeigt die App:
 
 1. Override-Register und Pipeline-Schutz
 2. Kartenimport mit Vorschau, Backup, Dokumentationsabgleich und Git-Veröffentlichung: technisch umgesetzt
-3. Sound-/Credits-Paket
-4. Spektrogramm-Stale-Status und Hashabgleich
+3. Sound-/Credits-Paket mit Backup und Git-Veröffentlichung: technisch umgesetzt
+4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich
 5. Entscheidung zum Artportraet
 6. erst danach Restore-Funktion und weitergehende Assetaktionen
 
@@ -250,4 +277,6 @@ Vor dem Speichern zeigt die App:
 - Backup-Retention behaelt hoechstens 3 Versionen je Art/Asset und respektiert die globale Groessengrenze.
 - Fremde Dateien in Staging- oder Backupordnern werden nicht automatisch geloescht.
 - Projektvalidierung wird nach dem Import automatisch neu geladen.
-- Erfolgreicher Austausch wird nur mit Karte, Override-Register und Kartendokumentation committed und gepusht.
+- Erfolgreicher Kartenaustausch wird nur mit Karte, Override-Register und Kartendokumentation committed und gepusht.
+- Erfolgreicher Soundaustausch wird nur mit Sound, Credits, Spektrogrammstatus und Override-Register committed und
+  gepusht.

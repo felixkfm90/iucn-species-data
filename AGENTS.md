@@ -398,9 +398,19 @@ Aktuelle Planung:
   und schuetzt gegen parallele Aenderungen. Beim Speichern wird die alte Karte gesichert, `map.jpg` atomar ersetzt,
   der manuelle Pipeline-Schutz samt SHA-256 im Override-Register gesetzt und die Kartendokumentation aktualisiert.
   Pro Art bleiben hoechstens drei verwaltete Kartenbackups, global hoechstens 500 MB. Nach erfolgreichem Austausch
-  folgen automatisch ein auf Karte, Register und Dokumentation begrenzter Git-Commit und Push. Elf Explorer-Tests
-  sind erfolgreich; produktiver Import und visuelle Bedienpruefung stehen noch aus. Danach folgen Sound/Credits,
-  Spektrogramm-Hashabgleich, Artportraet und 7.8 NAS/Backup.
+  folgen automatisch ein auf Karte, Register und Dokumentation begrenzter Git-Commit und Push.
+  Die technische Grundlage fuer 7.7.3 Sound-/Credits-Verwaltung ist ebenfalls lokal umgesetzt. Der allgemeine
+  Bearbeitungsdialog akzeptiert MP3-Dateien bis 50 MB nur zusammen mit Aufnahme/Urheber, Quelle, Original-URL,
+  Lizenz und Pflegegrund. Wissenschaftlicher und deutscher Name werden aus dem Arteintrag uebernommen. Vor dem
+  Speichern zeigt die App alten und neuen Sound, Dateigroesse, Dauer, Credits und einen sichtbaren NC-Hinweis.
+  Der Server prueft Endung und MP3-Signatur, verwendet ein zehn Minuten gueltiges Vorschau-Token und schuetzt gegen
+  parallele Aenderungen. Beim Speichern werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam
+  gesichert. Sound und Credits werden ersetzt, das alte Spektrogramm wird entfernt und im Override-Register mit
+  dem neuen Sound-SHA-256 als veraltet markiert. Der manuelle Pipeline-Schutz wird gesetzt. Danach folgen
+  automatisch ein eng begrenzter Commit und Push. Pro Art bleiben hoechstens drei verwaltete Soundpaket-Backups;
+  Karten- und Soundbackups teilen sich die globale Obergrenze von 500 MB. Zwölf Explorer-Tests sind erfolgreich;
+  ein produktiver Soundimport und die visuelle Bedienpruefung stehen noch aus. Danach folgen die automatische
+  Spektrogramm-Neuerzeugung mit Hashabgleich, Artportraet und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:
