@@ -33,6 +33,7 @@ Zentrale Dateien:
   Lebenserwartung
 - `update.mjs`: Datenpipeline fuer IUCN, Karten, Xeno-Canto, Wikimedia Commons, iNaturalist, Sounds und Reports
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
+- `species-assets-overrides.json`: maschinenlesbarer Schutzstatus fuer manuell gepflegte Karten und Sounds
 - `species-assets/<Artname>/map.jpg`: primaere Verbreitungskarte pro Art
 - `species-assets/<Artname>/sound.mp3` und `species-assets/<Artname>/credits.json`: primaere Tierstimme und Quellen
 - `species-assets/<Artname>/spectrogram.webp`: Spektrogramm fuer die Tierstimmen-Soundbar
@@ -53,20 +54,27 @@ Frontend-Module:
 
 Lokale Arbeitsoberflaeche:
 
-- `species-explorer/server.mjs`: read-only Server auf `127.0.0.1:4177`
+- `species-explorer/server.mjs`: lokaler Server auf `127.0.0.1:4177` mit begrenzter `species_list.json`-Bearbeitung
 - `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
-- `species-explorer/server.test.mjs`: Modell-, API-, Read-only-, Such- und Filtertests
+- `species-explorer/server.test.mjs`: Modell-, API-, Schreibschutz-, Backup-, Such- und Filtertests
+- `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
+- `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
 
 ## Aktueller Projektstand
 
+- 46 Eintraege in `species_list.json`
 - 45 aktive Arten
+- 45 Arten in `speciesData.json`
+- `Haubentaucher` ist neu angelegt und wartet auf den ersten Pipeline-Lauf
 - 45 Karten
 - 45 Art-Assetordner
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 45 Spektrogramm-Dateien
 - 45 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
-- 0 fehlende Kernassets laut Report
+- 0 fehlende Kernassets im letzten Report fuer die 45 verarbeiteten Arten
+- Haubentaucher hat bis zum Pipeline-Lauf erwartungsgemaess noch kein Assetpaket; der Report ist fuer diesen neuen
+  Eintrag noch nicht aktualisiert
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -171,10 +179,20 @@ Manuell ausfuehren:
 node update.mjs
 ```
 
+Weitere Pipeline-Modi:
+
+```bash
+node update.mjs --mode=missing --dry-run
+node update.mjs --mode=missing
+node update.mjs --mode=all
+node update.mjs --report-only
+npm.cmd run --silent cleanup:species -- --dry-run
+```
+
 Lokale Batch-Dateien:
 
-- `update_local.bat`: fuehrt `node .\update.mjs` aus, gleicht danach Spektrogramme ab und ruft anschliessend
-  `update_github_only.bat --no-pause` auf
+- `update_local.bat`: fuehrt `node .\update.mjs` aus, gleicht danach Spektrogramme ab, baut den Report mit
+  `node .\update.mjs --report-only` neu auf und ruft anschliessend `update_github_only.bat --no-pause` auf
 - `update_github_only.bat`: pusht aktuelle Projektdateien ins Repo, ohne Token in der Remote-URL
 
 Beim manuellen Start per Doppelklick starten beide Batch-Dateien zuerst ein dauerhaftes Konsolenfenster und fuehren
@@ -290,19 +308,60 @@ Aktuelle Planung:
   Phase 7.2 ist seit 2026-06-18 erledigt: read-only Prototyp mit 45 Arten, Suche, Filtern, Detaildaten, Karte, Sound,
   Credits, Spektrogramm und Assetstatus. Karten werden vollstaendig im Originalseitenverhaeltnis angezeigt.
   Spektrogramm und Audio sind in einem Player mit Play/Pause, Zeit, Lautstaerke, Scrubbing und Positionsmarker
-  gekoppelt. Der Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; Credits sind einklappbar.
+  gekoppelt. Ein Klick ins Spektrogramm setzt die Position und startet die Wiedergabe dort sofort. Der
+  Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; Credits sind einklappbar.
+  Der lokale Server liefert Assets mit HTTP-Byte-Range-Unterstuetzung aus, damit MP3-Spruenge nicht auf Position 0
+  zurueckfallen.
   Medien- und Datenkarten verwenden identische 50/50-Spalten. Das Explorer-Spektrogramm ist auf 64 bis 84 Pixel
   Anzeigehoehe begrenzt, damit das Artportraet mehr Platz erhaelt.
   Das IUCN-Abrufdatum steht im Detailkopf, Statusfilter verwenden deutsche Bezeichnungen mit IUCN-Kuerzel und
   manuell hinzugefuegte Assets werden direkt in ihrer Assetzeile markiert. Artwechsel erhalten Fenster- und
   Listenposition. Start: `npm.cmd run species:explorer`; Tests: `npm.cmd run --silent test:explorer`.
   Phase 7.3 ist seit 2026-06-19 erledigt: Das read-only Statusdashboard vergleicht `species_list.json`,
-  `speciesData.json`, `fehlende_elemente_report.json` und die tatsaechlichen Assetdateien. Aktueller Stand:
-  45 von 45 Datenpaaren stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent
-  und es gibt 0 Validierungshinweise. Daten- und Assetprobleme sind getrennt filterbar und werden artweise erklaert.
+  `speciesData.json`, `fehlende_elemente_report.json` und die tatsaechlichen Assetdateien. Beim Abschluss stimmten
+  45 von 45 Datenpaare ueberein, 45 Assetpakete waren vollstaendig und neun Reportpruefungen konsistent. Nach dem
+  Anlegen des Haubentauchers zeigt der Explorer erwartungsgemaess eine input-only Art, ein fehlendes Assetpaket und
+  einen bis zum Pipeline-Lauf noch nicht aktualisierten Report. Daten- und Assetprobleme sind getrennt filterbar und
+  werden artweise erklaert.
   Status- und Hinweis-Dropdowns sind alphabetisch nach ihren sichtbaren deutschen Bezeichnungen sortiert.
   Phase 7.3 wurde von Felix am 2026-06-19 visuell geprueft.
-  Naechster Schritt ist 7.4: kontrolliertes Bearbeiten von `species_list.json`.
+  Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft: Bestehende Arten erlauben nur die
+  Bearbeitung von Groesse, Gewicht und
+  Lebenserwartung. Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn
+  Minuten ab und werden bei parallelen Dateiaenderungen ungueltig. Vor jedem Schreiben entsteht eine ignorierte
+  Sicherung unter `species-explorer/backups/`. Automatisch bleiben nur die neuesten 20 verwalteten Backups erhalten;
+  fremde Dateien im Ordner werden nicht geloescht. Name, Taxonomie, neue Arten, Pipeline und Git bleiben gesperrt
+  bzw. separat. Die Phase-7.4-Pruefungen sind Teil der inzwischen sechs erfolgreichen Explorer-Tests.
+  Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
+  Phase 7.5 ist seit 2026-06-19 technisch lokal umgesetzt; die visuelle Bedienpruefung durch Felix ist noch offen.
+  Neue Arten werden kontrolliert nach `docs/add-species-workflow.md` angelegt. Erfasst werden
+  deutscher Name, wissenschaftlicher Name, Groesse, Gewicht und Lebenserwartung. Der wissenschaftliche Name wird
+  im Hintergrund in Gattung und Artepitheton getrennt und normalisiert. Duplikate, Slug-/SafeName-Kollisionen
+  sowie vorhandene Assetordner werden vor einer vollstaendigen JSON-Vorschau geprueft.
+  Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Die neue Art bleibt bis zum separaten Pipeline-Lauf
+  erwartungsgemaess nur in `species_list.json`. API: `POST /api/species/new/preview` und
+  `POST /api/species/new/save`. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
+  Oberflaeche enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
+  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Der Haubentaucher ist der erste echte neue Eintrag.
+  Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist technisch lokal umgesetzt. Die App
+  unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`. `update.mjs`
+  unterstuetzt
+  `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
+  Lauf kann gleichzeitig aktiv sein. Nach erfolgreicher Pipeline folgt der passende Spektrogramm-Abgleich.
+  Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
+  bestaetigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
+  `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
+  Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Die getrennte
+  Aktion `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen und Assetordner auf und loescht sie nach
+  genau einer Bestaetigung dauerhaft ohne Wiederherstellungsablage. Details:
+  `docs/delete-species-workflow.md`. Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
+  `Lesemodus` den Bearbeitungsmodus; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
+  sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
+  ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
+  `Datenbank aktuell`. Nach dem Speichern einer neuen Art wird der selektive Lauf
+  direkt angeboten und kann gestartet oder abgebrochen werden. Acht Explorer-Tests sind erfolgreich. Ein echter
+  Pipeline-Lauf und die visuelle Pruefung sind noch offen. Danach folgt 7.7 Asset-Verwaltung nach
+  `docs/asset-management-plan.md` und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

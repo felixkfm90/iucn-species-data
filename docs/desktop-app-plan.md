@@ -138,7 +138,8 @@ Diese Funktionen brauchen klare Schutzmechanismen:
 - keine Tokens anzeigen
 - lange Prozesse mit Statusausgabe
 - nach Abschluss klarer Hinweis auf geaenderte Dateien
-- Git-Push nur separat und bewusst, nicht automatisch nebenbei
+- Git-Push nur nach einem ausdrücklich bestätigten Pipeline- oder Bereinigungslauf; nicht bei normalen
+  Formularänderungen nebenbei
 
 ## NAS und Backup
 
@@ -230,6 +231,9 @@ Teststand:
   - Verbreitungskarten werden ohne festen 16:9-Rahmen im vollstaendigen Originalseitenverhaeltnis angezeigt.
   - Das Spektrogramm ist direkt in den Tierstimmen-Player integriert.
   - Play/Pause, Zeit, Lautstaerke, Scrubbing im Spektrogramm und roter Positionsmarker sind miteinander gekoppelt.
+  - Ein Klick ins Spektrogramm setzt die Wiedergabeposition und startet den Ton sofort an dieser Stelle.
+  - Der lokale Assetserver beantwortet Byte-Range-Anfragen mit `206 Partial Content`. Das ist fuer zuverlaessiges
+    MP3-Seeking erforderlich; ohne Range-Unterstuetzung fiel die Wiedergabe nach einem Klick auf Position 0 zurueck.
   - Beim Artwechsel wird die Artenliste nicht neu aufgebaut und die Fenster-Scrollposition bleibt erhalten.
   - Der Tierstimmen-Bereich belegt nur noch etwa ein Drittel der rechten Medienspalt-Hoehe; das spaetere
     Artportraet erhaelt den groesseren Bereich. Quellen- und Lizenzdaten sind standardmaessig eingeklappt.
@@ -292,25 +296,214 @@ Aktueller Pruefstand:
 
 ### 7.4 Bearbeiten von `species_list.json`
 
-- naechster Schritt
-- erst nach stabilem read-only Prototyp
-- kontrollierte Formularfelder
-- Validierung vor Speichern
-- Backup-/Diff-Hinweis
+Status: abgeschlossen am 2026-06-19.
 
-### 7.5 Asset-Verwaltung
+Umgesetzt:
 
-- Karten, Sound, Credits und Spektrogramme je Art anzeigen
-- manuelle Kartenwechsel dokumentieren
-- spaeter Datei-Import pruefen
+- Bearbeiten-Schaltflaeche im Bereich `Manuelle Daten`
+- kontrollierte Formularfelder:
+  - Groesse (`size`)
+  - Gewicht (`weight`)
+  - Lebenserwartung (`life_expectancy`)
+- deutscher Name, Gattung und Art bleiben gesperrt, weil sie Slugs und Assetpfade beruehren
+- generierte IUCN-Felder bleiben nicht editierbar
+- serverseitige Pflichtfeld-, Laengen- und Steuerzeichenvalidierung
+- Diff-Vorschau mit Vorher-/Nachher-Werten
+- Speichern erst nach erfolgreicher Vorschau
+- zehn Minuten gueltiges einmaliges Vorschau-Token
+- Schutz gegen parallele Aenderungen durch SHA-256-Pruefung der Quelldatei
+- lokale Sicherung vor jedem Schreibvorgang unter `species-explorer/backups/`
+- Backupordner ist in `.gitignore` eingetragen
+- automatische Aufbewahrungsgrenze von 20 verwalteten Backups; beim erfolgreichen Speichern werden aeltere passende
+  `species_list-*.json`-Backups entfernt
+- andere Dateien im Backupordner werden von der Bereinigung nicht beruehrt
+- Schreiben ueber temporaere Datei und anschliessendes Ersetzen von `species_list.json`
+- sichtbarer Hinweis, dass `speciesData.json` unveraendert bleibt und die Pipeline separat gestartet werden muss
+- Dashboard zeigt nach dem Speichern erwartete Feldabweichungen bis zum naechsten Pipeline-Lauf
+- keine Funktion fuer neue Arten, Namens-/Taxonomieaenderungen, Pipeline oder Git
+
+API:
+
+- `POST /api/species/<Slug>/preview`
+- `POST /api/species/<Slug>/save`
+- andere nicht definierte Schreibzugriffe liefern `405`
+
+Teststand:
+
+- leere oder ungueltige Felder werden mit `400` abgewiesen
+- Vorschau schreibt keine Datei
+- Speichern ohne gueltiges Vorschau-Token liefert `409`
+- Speichern erzeugt zuerst ein inhaltlich korrektes Backup
+- bei mehr als 20 verwalteten Backups bleiben exakt die neuesten 20 erhalten
+- eine fremde Testdatei im Backupordner bleibt bei der Bereinigung erhalten
+- nur die drei freigegebenen Felder werden geschrieben
+- Vorschau-Token kann nur einmal verwendet werden
+- nach dem Speichern meldet die Validierung die erwartete Pipeline-Abweichung
+- echte Projektdatei bleibt bei Tests unveraendert; Schreibtests laufen in einem temporaeren Mini-Repository
+- Phase-7.4-Pruefungen sind Teil der inzwischen 6 erfolgreichen Explorer-Tests
+- Speichern und Korrigieren eines Testwerts von Felix visuell geprueft
+- Erfolgsmeldung funktioniert auch bei einem bereits laufenden aelteren Server-Antwortformat
+- automatische Aufbewahrungsgrenze ist im neu gestarteten Server aktiv
+
+### 7.5 Neue Art anlegen
+
+Status: technisch lokal umgesetzt am 2026-06-19; visuelle Bedienpruefung durch Felix offen.
+Fachlicher Ablauf: `docs/add-species-workflow.md`.
+
+Ziel:
+
+- neue, von Felix ausgewaehlte Arten kontrolliert in `species_list.json` anlegen
+- nur die fuenf redaktionellen Eingabefelder erfassen
+- Pipeline und Assets weiterhin separat erzeugen
+
+Formularfelder:
+
+- deutscher Name
+- wissenschaftlicher Name, zum Beispiel `Turdus Merula`
+- Groesse
+- Gewicht
+- Lebenserwartung
+
+Pflichtvalidierung:
+
+- keine leeren Felder
+- wissenschaftlicher Name besteht aus genau zwei gueltigen Namensbestandteilen
+- Gattung und Artepitheton werden im Hintergrund getrennt und als `Turdus` plus `merula` normalisiert
+- keine doppelte Kombination aus Gattung und Art
+- kein doppelter deutscher Name
+- keine Kollision des berechneten URL-Slugs
+- keine Kollision des berechneten `SafeName` oder Assetordners
+- Feldlaengen und Steuerzeichen pruefen
+
+Vorschau und Speicherung:
+
+- neuen JSON-Eintrag vollstaendig anzeigen
+- erwarteten wissenschaftlichen Namen, Slug und Assetpfad anzeigen
+- expliziter Hinweis: IUCN-Daten und Assets entstehen erst nach `node update.mjs`
+- Speichern nur mit einmaligem Vorschau-Token
+- SHA-256-Schutz gegen parallele Aenderungen
+- Sicherung und 20-Dateien-Aufbewahrung wie in Phase 7.4
+- atomar an `species_list.json` anhaengen
+- keine automatische Pipeline und kein Git-Push
+
+Erwarteter Zustand nach dem Speichern:
+
+- neue Art ist sofort in der Explorer-Liste sichtbar
+- Statusdashboard zeigt `nur in species_list.json`
+- IUCN-Daten und Assets gelten bis zum Pipeline-Lauf als ausstehend, nicht als unerwarteter Systemfehler
+
+Testplan:
+
+- gueltige neue Art kann in einem temporaeren Testrepo angelegt werden: erledigt
+- Duplikate nach wissenschaftlichem und deutschem Namen werden abgewiesen: erledigt
+- vorhandener Assetordner wird als Kollision abgewiesen: erledigt
+- Eingaben wie `Testus Avis` werden zu `Testus avis` normalisiert: erledigt
+- Vorschau schreibt nichts: erledigt
+- Speichern ohne Token wird abgewiesen: erledigt
+- Backup entsteht vor dem Anhaengen: erledigt
+- nur ein neuer Eintrag wird angehaengt; bestehende Eintraege bleiben unveraendert: erledigt
+- Dashboard erkennt den erwarteten `input-only`-Zustand: erledigt
+- Vorschau-Token kann nur einmal verwendet werden: erledigt
+- parallele Dateiaenderung vor dem Speichern wird durch den SHA-256-Schutz abgewiesen: erledigt
+
+API:
+
+- `POST /api/species/new/preview`
+- `POST /api/species/new/save`
+
+Aktueller Pruefstand:
+
+- 6 Explorer-Tests erfolgreich
+- echte Projektdatei bleibt bei den Schreibtests unveraendert
+- lokaler Server auf `127.0.0.1:4177` mit dem neuen Stand neu gestartet
+- HTML-Auslieferung enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten
+- nach erfolgreichem Speichern wird die Aktion wieder freigegeben; weitere Arten koennen ohne Seitenneuladen
+  angelegt werden
+- erster echter neuer Eintrag: `Haubentaucher` (`Podiceps cristatus`), wartet auf den Pipeline-Lauf
+- integrierte Browsersteuerung konnte wegen der lokalen Windows-Sandbox nicht gestartet werden; deshalb ist die
+  visuelle Bedienpruefung noch nicht als abgeschlossen markiert
 
 ### 7.6 Pipeline- und Audit-Steuerung
 
-- Update, Audit und Spektrogramm-Generator aus UI starten
-- Ausgabe und Fehler in der UI anzeigen
-- Git-Push weiterhin separat bestaetigen
+Status: technische Basis lokal umgesetzt am 2026-06-19; echter Pipeline-Lauf und visuelle Pruefung offen.
+Detailplanung: `docs/pipeline-control-plan.md`.
 
-### 7.7 Synology NAS und automatisiertes Backup
+Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
+
+- `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten und Arten mit fehlenden
+  Kernfeldern oder Assets
+- `Alle Arten vollstaendig aktualisieren`: entspricht dem bisherigen kompletten Lauf von `node update.mjs`
+
+Vor jedem Start werden Laufart, Artenliste und Gruende angezeigt. Es darf nur ein Lauf gleichzeitig aktiv sein.
+Tokenwerte werden weder an den Browser noch in Logs ausgegeben. Git-Commit und Git-Push bleiben separate Schritte.
+
+Technische Reihenfolge:
+
+1. `update.mjs` um Auswahl-, Voll- und Dry-run-Modus erweitern
+2. bei Teillaeufen nicht ausgewaehlte Bestandsdaten sicher erhalten
+3. lokale Start-/Status-/Log-API mit Einzellauf-Sperre bauen
+4. Vorschau und Startbestaetigung in der App anbinden
+5. Spektrogramm-Abgleich passend zur Zielartenliste ausfuehren
+6. nach Laufende Explorer-Daten und Validierung neu laden
+
+Umgesetzt:
+
+- `update.mjs --mode=missing`: nur neue Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets
+- `update.mjs --mode=all`: vollstaendiger Lauf; Aufruf ohne Parameter bleibt rueckwaertskompatibel ebenfalls `all`
+- `--dry-run`: zeigt Artenauswahl ohne Schreibzugriff und ohne erforderliche API-Tokens
+- nicht ausgewaehlte Arten werden bei einem Teillauf aus der vorhandenen `speciesData.json` uebernommen
+- Pipeline-Vorschau, einmaliges Token und Schutz gegen zwischenzeitliche Datenänderungen
+- nur ein Pipeline- oder Bereinigungslauf gleichzeitig
+- Live-Status und begrenzte lokale Logs unter `species-explorer/logs/`
+- gezielter beziehungsweise vollstaendiger Spektrogramm-Abgleich nach erfolgreicher Datenpipeline
+- Git bleibt getrennt
+- der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften
+  vertikalen Platz belegt
+- die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Datenbank aktualisieren`, gruen bedeutet
+  `Datenbank aktuell`
+- es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`
+  oder `Bereinigen`
+- die Prozessausgabe und der letzte Status stehen ebenfalls in diesem Dialog
+- die Kopfzeile schaltet mit identischer Feldbreite zwischen `Lesemodus` und `Bearbeitungsmodus`
+- im Lesemodus sind `Neue Art`, Datenbankaktualisierung, Bearbeiten und Löschen ausgeblendet, ohne dass der Schalter
+  seine Position veraendert
+- nach dem Anlegen einer neuen Art öffnet die App automatisch die Vorschau für den selektiven Lauf; Abbrechen lässt
+  die Art wie bisher als ausstehend stehen
+- neue Karten und Sounds werden nach Pipeline, Spektrogramm und Report angezeigt
+- Felix bestätigt je Asset automatische Pflege oder manuellen Schutz
+- `species-assets-overrides.json` schützt manuell markierte Karten und Sounds bei späteren Pipeline-Laeufen
+- danach werden die vorgesehenen Pipeline-Dateien automatisch committed und gepusht
+
+Arten loeschen und bereinigen:
+
+- `Löschen` in der Artansicht entfernt nach Vorschau nur den Eintrag aus `species_list.json`
+- vorher wird ein normales `species_list.json`-Backup angelegt
+- generierte Daten und Assetordner bleiben zunächst bestehen
+- globale Aktion `Bereinigen` zeigt verwaiste Datensaetze, Assessment-Zuordnungen und Assetordner
+- nach genau einer Bestaetigung werden die aufgelisteten Altdateien dauerhaft und ohne Wiederherstellungsablage
+  geloescht
+- Detailablauf: `docs/delete-species-workflow.md`
+
+Aktueller Teststand:
+
+- 8 Explorer-Tests erfolgreich
+- Auswahl `missing` und `all` in temporaerem Repository getestet
+- Listeneintrag loeschen, Backup, erhaltene Assets und anschliessende dauerhafte Bereinigung getestet
+- produktive Artenliste und Assets werden von diesen Tests nicht verändert
+
+### 7.7 Asset-Verwaltung
+
+Danach. Detailplanung: `docs/asset-management-plan.md`.
+
+Geplante Teilstufen:
+
+1. maschinenlesbares Override-Register und expliziter Pipeline-Schutz
+2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup und Dokumentationsabgleich
+3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen
+4. Spektrogramm per Soundhash als passend oder veraltet kennzeichnen
+5. Artportraet-Quelle, Lizenz, Dateiformat und Squarespace-Verwendung separat entscheiden
+
+### 7.8 Synology NAS und automatisiertes Backup
 
 - NAS als Backup/Mirror konzipieren
 - Backup-Skript oder Synology-Job definieren

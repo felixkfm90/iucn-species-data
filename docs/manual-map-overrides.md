@@ -6,6 +6,9 @@ Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline sta
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
 Automatisierung oder Asset-Migrationen uebersehen werden.
 
+Maschinenlesbarer Schutz: `species-assets-overrides.json`. Diese Markdown-Datei bleibt die menschenlesbare
+Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nicht zu überschreiben.
+
 ## Aktueller Stand
 
 Aktuell sind sieben Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.

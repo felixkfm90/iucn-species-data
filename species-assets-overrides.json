@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "assets": {
+    "Blaukehlchen": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Fischertukan": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Grosstrappe": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Kernbeisser": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Reh": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Rotfuchs": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    },
+    "Waldkauz": {
+      "map": {
+        "manual": true,
+        "reason": "IUCN liefert korrupte Kartendaten.",
+        "updatedAt": "2026-06-17"
+      }
+    }
+  }
+}

@@ -16,3 +16,8 @@ update_github_only.bat
 # Local scratch/test runs
 Testlauf/
 list_licenses.mjs
+
+# Local species explorer backups created before editing species_list.json
+species-explorer/backups/
+species-explorer/logs/
+species-explorer/pending-asset-review.json

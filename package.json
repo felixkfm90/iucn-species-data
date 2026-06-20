@@ -1,6 +1,7 @@
 {
   "scripts": {
     "audit:site": "node scripts/monthly-site-audit.mjs",
+    "cleanup:species": "node scripts/species-cleanup.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
     "species:explorer": "node species-explorer/server.mjs",
     "test:explorer": "node --test species-explorer/server.test.mjs"

@@ -14,7 +14,18 @@
           <h1>Arten-Explorer</h1>
         </div>
         <div class="header-status" aria-label="Datenstatus">
-          <span class="read-only-badge">Read-only</span>
+          <button id="pipeline-menu-button" class="header-action header-edit-slot database-status outdated" type="button">
+            <span id="pipeline-status" class="pipeline-status-text">Datenbank aktualisieren</span>
+          </button>
+          <button
+            id="edit-mode-toggle"
+            class="header-action mode-toggle"
+            type="button"
+            aria-pressed="false"
+            title="Zwischen Lesemodus und Bearbeitungsmodus wechseln"
+          >
+            Lesemodus
+          </button>
           <span id="report-date">Daten werden geladen</span>
         </div>
       </header>
@@ -29,7 +40,7 @@
       <section class="validation-dashboard" aria-labelledby="validation-title">
         <div class="validation-heading">
           <div>
-            <p class="validation-eyebrow">Phase 7.3 · Read-only-Prüfung</p>
+            <p class="validation-eyebrow">Phase 7.3 · Datenprüfung</p>
             <h2 id="validation-title">Validierung und Status</h2>
           </div>
           <span id="validation-overall" class="validation-overall">Prüfung läuft…</span>
@@ -90,9 +101,12 @@
 
           <div class="list-meta">
             <span id="visible-count">0 Arten</span>
-            <button id="reload-button" type="button" title="Daten erneut vom lokalen Projekt laden">
-              Aktualisieren
-            </button>
+            <div class="list-actions">
+              <button id="new-species-button" class="edit-only" type="button">Neue Art</button>
+              <button id="reload-button" type="button" title="Daten erneut vom lokalen Projekt laden">
+                Aktualisieren
+              </button>
+            </div>
           </div>
           <div id="species-list" class="species-list" role="listbox" aria-label="Arten"></div>
         </aside>
@@ -105,6 +119,139 @@
         </section>
       </main>
     </div>
+
+    <dialog id="new-species-dialog" class="edit-dialog new-species-dialog" aria-labelledby="new-species-title">
+      <form id="new-species-form" class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">species_list.json</p>
+            <h3 id="new-species-title">Neue Art anlegen</h3>
+            <p>Die Pipeline ergänzt IUCN-Daten und Assets später separat.</p>
+          </div>
+          <button class="edit-close new-species-cancel" type="button" aria-label="Dialog schließen">×</button>
+        </header>
+
+        <div class="edit-fields new-species-fields">
+          <label>
+            <span>Deutscher Name</span>
+            <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel" required>
+          </label>
+          <label>
+            <span>Wissenschaftlicher Name</span>
+            <input
+              name="scientificName"
+              type="text"
+              maxlength="201"
+              autocomplete="off"
+              placeholder="Turdus Merula"
+              required
+            >
+          </label>
+          <label>
+            <span>Größe</span>
+            <input name="size" type="text" maxlength="240" autocomplete="off" placeholder="ca. 23,5-29 cm" required>
+          </label>
+          <label>
+            <span>Gewicht</span>
+            <input name="weight" type="text" maxlength="240" autocomplete="off" placeholder="ca. 80-110 g" required>
+          </label>
+          <label>
+            <span>Lebenserwartung</span>
+            <input
+              name="lifeExpectancy"
+              type="text"
+              maxlength="240"
+              autocomplete="off"
+              placeholder="ca. 3 Jahre"
+              required
+            >
+          </label>
+        </div>
+
+        <p class="edit-message new-species-message" hidden></p>
+
+        <section class="edit-preview new-species-preview" hidden>
+          <h4>Vorschau</h4>
+          <dl class="new-species-derived">
+            <div><dt>Wissenschaftlicher Name</dt><dd data-derived="scientificName"></dd></div>
+            <div><dt>URL-Slug</dt><dd data-derived="slug"></dd></div>
+            <div><dt>Assetordner</dt><dd data-derived="assetDirectory"></dd></div>
+          </dl>
+          <p class="new-species-json-label">Neuer JSON-Eintrag</p>
+          <pre class="new-species-json"></pre>
+          <p class="edit-warning">
+            Nach dem Speichern wird die Art sofort als unvollständig angezeigt. Danach ist ein Pipeline-Lauf erforderlich.
+          </p>
+        </section>
+
+        <div class="edit-actions">
+          <button class="new-species-cancel" type="button">Abbrechen</button>
+          <button class="edit-preview-button new-species-preview-button" type="submit">Art prüfen</button>
+          <button class="edit-save-button new-species-save-button" type="button" disabled>Art anlegen</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pipeline-dialog" class="edit-dialog pipeline-dialog" aria-labelledby="pipeline-dialog-title">
+      <form id="pipeline-form" class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Pipeline</p>
+            <h3 id="pipeline-dialog-title">Laufart auswählen</h3>
+            <p id="pipeline-dialog-description">Welche Aktion soll gestartet werden?</p>
+          </div>
+          <button class="edit-close pipeline-cancel" type="button" aria-label="Dialog schließen">×</button>
+        </header>
+
+        <p class="edit-message pipeline-message" hidden></p>
+        <div id="pipeline-mode-choice" class="pipeline-mode-choice">
+          <button type="button" data-pipeline-mode="missing">
+            <strong>Neue/Unvollständige Arten aktualisieren</strong>
+            <span>Nur Arten mit fehlenden Daten oder Assets</span>
+          </button>
+          <button type="button" data-pipeline-mode="all">
+            <strong>Alle Arten aktualisieren</strong>
+            <span>Vollständiger Lauf über die gesamte Artenliste</span>
+          </button>
+          <button class="danger" type="button" data-pipeline-mode="cleanup">
+            <strong>Bereinigen</strong>
+            <span>Verwaiste Daten und Assets dauerhaft löschen</span>
+          </button>
+        </div>
+        <section class="edit-preview pipeline-preview" hidden>
+          <h4 id="pipeline-preview-title">Vorschau</h4>
+          <div id="pipeline-preview-content"></div>
+          <p id="pipeline-warning" class="edit-warning"></p>
+        </section>
+        <p id="pipeline-status-detail" class="pipeline-dialog-status">Kein Lauf aktiv.</p>
+        <details id="pipeline-log-details" class="pipeline-log-details" hidden>
+          <summary>Letzte Prozessausgabe</summary>
+          <pre id="pipeline-log"></pre>
+        </details>
+
+        <div class="edit-actions">
+          <button class="pipeline-cancel" type="button">Abbrechen</button>
+          <button id="pipeline-start-button" class="edit-save-button" type="submit" hidden disabled>Starten</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="asset-review-dialog" class="edit-dialog asset-review-dialog" aria-labelledby="asset-review-title">
+      <form id="asset-review-form" class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Neue Pipeline-Assets</p>
+            <h3 id="asset-review-title">Karten und Sounds prüfen</h3>
+            <p>Lege für jedes neue Asset fest, ob es automatisch oder manuell geschützt gepflegt wird.</p>
+          </div>
+        </header>
+        <div id="asset-review-list" class="asset-review-list"></div>
+        <p class="edit-message asset-review-message" hidden></p>
+        <div class="edit-actions">
+          <button id="asset-review-save" class="edit-save-button" type="submit">Entscheidung speichern</button>
+        </div>
+      </form>
+    </dialog>
 
     <template id="species-item-template">
       <button class="species-item" type="button" role="option">

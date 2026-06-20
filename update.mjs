@@ -1,25 +1,15 @@
 import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
+import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
 
 // =======================
 // KONFIG / ORDNER
 // =======================
 
 const SPECIES_ASSETS_DIR = "./species-assets";
-if (!fs.existsSync(SPECIES_ASSETS_DIR)) fs.mkdirSync(SPECIES_ASSETS_DIR);
-
 const TOKEN = process.env.IUCN_TOKEN;
-if (!TOKEN) {
-  console.error("❌ IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
-  process.exit(1);
-}
-
 const XENO_TOKEN = process.env.XENO_TOKEN;
-if (!XENO_TOKEN) {
-  console.error("❌ XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
-  process.exit(1);
-}
 
 const BASE = "https://api.iucnredlist.org/api/v4";
 const RATE_LIMIT = 400;
@@ -29,9 +19,19 @@ const MAX_XENO_PAGES = 5;
 
 // Assessment-ID Trackfile (für Karten-Caching)
 const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
+const ASSET_OVERRIDES_FILE = "./species-assets-overrides.json";
 let lastSavedAssessmentId = {};
 if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
   lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
+}
+let assetOverrides = { version: 1, assets: {} };
+if (fs.existsSync(ASSET_OVERRIDES_FILE)) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(ASSET_OVERRIDES_FILE, "utf8"));
+    if (parsed && typeof parsed === "object") assetOverrides = parsed;
+  } catch (error) {
+    console.warn(`⚠ Asset-Overrides konnten nicht gelesen werden: ${error.message}`);
+  }
 }
 
 const CATEGORY_MAP = {
@@ -58,6 +58,38 @@ const TREND_MAP = {
 
 function logError(msg) {
   fs.appendFileSync("errors.log", `[${new Date().toISOString()}] ${msg}\n`);
+}
+
+function parsePipelineArgs(rawArgs) {
+  const parsed = { mode: "all", dryRun: false, reportOnly: false };
+  for (const arg of rawArgs) {
+    if (arg === "--dry-run") parsed.dryRun = true;
+    else if (arg === "--report-only") parsed.reportOnly = true;
+    else if (arg.startsWith("--mode=")) parsed.mode = arg.slice("--mode=".length);
+    else if (arg === "--help" || arg === "-h") parsed.help = true;
+    else throw new Error(`Unbekannter Parameter: ${arg}`);
+  }
+  if (!["all", "missing"].includes(parsed.mode)) {
+    throw new Error(`Unbekannter Pipeline-Modus: ${parsed.mode}`);
+  }
+  return parsed;
+}
+
+function printPipelineHelp() {
+  console.log(`Verwendung: node update.mjs [Optionen]
+
+Optionen:
+  --mode=all       Vollständiger Lauf über alle Arten (Standard)
+  --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
+  --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
+  --report-only    Report aus speciesData.json und aktuellen Assets neu aufbauen
+`);
+}
+
+function atomicWriteJson(filePath, value) {
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tempPath, JSON.stringify(value, null, 2));
+  fs.renameSync(tempPath, filePath);
 }
 
 function sanitizeAssetName(input) {
@@ -105,6 +137,10 @@ function ensureDir(dirPath) {
 
 function speciesAssetDir(safeName) {
   return path.join(SPECIES_ASSETS_DIR, safeName);
+}
+
+function isManualAsset(safeName, assetType) {
+  return assetOverrides.assets?.[safeName]?.[assetType]?.manual === true;
 }
 
 async function sleep(ms) {
@@ -334,6 +370,11 @@ async function downloadMapForSpecies(s) {
   ensureDir(assetDir);
   const filePath = path.join(assetDir, "map.jpg");
   const tempFilePath = filePath + ".tmp";
+
+  if (fs.existsSync(filePath) && isManualAsset(safeName, "map")) {
+    console.log(`ℹ Manuell gepflegte Karte für ${name} ist geschützt, überspringe Download.`);
+    return "ok";
+  }
 
   if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
     console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
@@ -741,6 +782,11 @@ async function downloadSoundIfMissing(genus, species, german) {
   const mp3Path = path.join(targetDir, "sound.mp3");
   const creditsPath = path.join(targetDir, "credits.json");
 
+  if (fs.existsSync(mp3Path) && isManualAsset(safeGerman, "sound")) {
+    console.log(`🎵 Manuell gepflegter Sound für ${german} ist geschützt, überspringe Suche.`);
+    return fs.existsSync(creditsPath) ? "ok" : "missing";
+  }
+
   const stages = [
     { openOnly: true, q: "A", len2535: true }, // 0
     { openOnly: true, q: "A", len2535: false }, // 1
@@ -760,14 +806,19 @@ async function downloadSoundIfMissing(genus, species, german) {
   const fallbackStages = stages.filter((stage) => !stage.openOnly);
 
   if (fs.existsSync(mp3Path)) {
+    const hasCredits = fs.existsSync(creditsPath);
     const existingLicense = readSoundLicense(creditsPath);
 
-    if (!isNcLicense(existingLicense)) {
+    if (hasCredits && !isNcLicense(existingLicense)) {
       console.log(`🎵 Sound existiert bereits für ${german}`);
       return "ok";
     }
 
-    console.log(`🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`);
+    console.log(
+      hasCredits
+        ? `🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`
+        : `🎵 Sound ohne Credits existiert für ${german}; prüfe dokumentierte freie Alternative.`,
+    );
     for (let i = 0; i < openStages.length; i++) {
       const hit = await findRecordingByStage(genus, species, openStages[i]);
       if (hit?.rec) {
@@ -813,8 +864,12 @@ async function downloadSoundIfMissing(genus, species, german) {
       });
     }
 
-    console.log(`ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`);
-    return "ok";
+    console.log(
+      hasCredits
+        ? `ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`
+        : `⚠ Keine dokumentierte freie Alternative gefunden für ${german}; vorhandener Sound bleibt ohne Credits.`,
+    );
+    return hasCredits ? "ok" : "missing";
   }
 
   let chosen = null;
@@ -1165,14 +1220,71 @@ function printReportToConsole(report) {
 
 (async function () {
   try {
+    const args = parsePipelineArgs(process.argv.slice(2));
+    if (args.help) {
+      printPipelineHelp();
+      return;
+    }
+
     const speciesList = JSON.parse(fs.readFileSync("species_list.json", "utf8"));
+    if (!Array.isArray(speciesList)) throw new Error("species_list.json muss ein Array enthalten.");
     const existingSpeciesData = loadExistingSpeciesData();
+    if (args.reportOnly) {
+      const report = createMissingElementsReport(existingSpeciesData);
+      atomicWriteJson("fehlende_elemente_report.json", report);
+      printReportToConsole(report);
+      console.log("✔ fehlende_elemente_report.json aus aktuellem Daten-/Assetstand neu aufgebaut!");
+      return;
+    }
+    const plan = buildPipelinePlan({
+      speciesList,
+      existingSpeciesData,
+      repoRoot: process.cwd(),
+      sanitizeAssetName,
+      mode: args.mode,
+    });
+
+    if (args.dryRun) {
+      console.log(JSON.stringify({
+        dryRun: true,
+        mode: plan.mode,
+        inputCount: plan.inputCount,
+        targetCount: plan.targetCount,
+        targets: plan.targets.map(({ slug, safeName, germanName, scientificName, reasons }) => ({
+          slug,
+          safeName,
+          germanName,
+          scientificName,
+          reasons,
+        })),
+        removedCount: plan.removedCount,
+        removed: plan.removed,
+        hasWork: plan.hasWork,
+      }, null, 2));
+      return;
+    }
+
+    if (!TOKEN) throw new Error("IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+    if (!XENO_TOKEN) throw new Error("XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+    if (!fs.existsSync(SPECIES_ASSETS_DIR)) fs.mkdirSync(SPECIES_ASSETS_DIR);
+
+    if (args.mode === "missing" && !plan.hasWork) {
+      console.log("✔ Keine neuen oder unvollständigen Arten gefunden. Es sind keine Pipeline-Aktionen erforderlich.");
+      return;
+    }
+
     const existingBySlug = new Map(existingSpeciesData.map((entry) => [entry.URLSlug, entry]));
+    const targetSlugs = new Set(plan.targets.map((entry) => entry.slug));
     const output = [];
 
     for (const s of speciesList) {
-      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
       const existingData = existingBySlug.get(getInputSlug(s));
+      if (!targetSlugs.has(getInputSlug(s)) && existingData) {
+        output.push(preserveExistingSpeciesData(existingData, s));
+        continue;
+      }
+
+      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
 
       if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {
         console.warn(`⚠ Verwende vorhandene Daten für ${s.german}, neuer Abruf war unvollständig.`);
@@ -1211,15 +1323,16 @@ function printReportToConsole(report) {
       await sleep(RATE_LIMIT);
     }
 
-    fs.writeFileSync("speciesData.json", JSON.stringify(output, null, 2));
+    atomicWriteJson("speciesData.json", output);
     console.log("✔ speciesData.json aktualisiert!");
 
     const report = createMissingElementsReport(output);
-    fs.writeFileSync("fehlende_elemente_report.json", JSON.stringify(report, null, 2));
+    atomicWriteJson("fehlende_elemente_report.json", report);
     printReportToConsole(report);
     console.log("✔ fehlende_elemente_report.json erstellt!");
   } catch (err) {
     console.error("❌ Fehler im Hauptprozess: " + err);
     logError("Hauptprozess: " + err.message);
+    process.exitCode = 1;
   }
 })();

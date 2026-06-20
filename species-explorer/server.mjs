@@ -1,8 +1,12 @@
 import { createReadStream, existsSync } from "node:fs";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash, randomUUID } from "node:crypto";
+import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
+import { buildCleanupPlan } from "../scripts/species-cleanup.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -10,6 +14,30 @@ const PUBLIC_DIR = join(APP_DIR, "public");
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4177;
 const ASSET_FILES = new Set(["map.jpg", "sound.mp3", "credits.json", "spectrogram.webp"]);
+const EDITABLE_FIELD_DEFINITIONS = [
+  { key: "size", sourceKey: "size", label: "Größe", maxLength: 240 },
+  { key: "weight", sourceKey: "weight", label: "Gewicht", maxLength: 240 },
+  {
+    key: "lifeExpectancy",
+    sourceKey: "life_expectancy",
+    label: "Lebenserwartung",
+    maxLength: 240,
+  },
+];
+const NEW_SPECIES_FIELD_DEFINITIONS = [
+  { key: "german", label: "Deutscher Name", maxLength: 160 },
+  { key: "scientificName", label: "Wissenschaftlicher Name", maxLength: 201 },
+  ...EDITABLE_FIELD_DEFINITIONS.map((field) => ({
+    key: field.key,
+    label: field.label,
+    maxLength: field.maxLength,
+  })),
+];
+const PREVIEW_TOKEN_TTL_MS = 10 * 60 * 1000;
+const MAX_JSON_BODY_BYTES = 16 * 1024;
+const BACKUP_RETENTION_COUNT = 20;
+const PIPELINE_LOG_RETENTION_COUNT = 20;
+const PIPELINE_LOG_LINE_LIMIT = 400;
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -91,6 +119,238 @@ function valueOrUnknown(value) {
   return value;
 }
 
+function hashText(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function compactTimestamp(date = new Date()) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+async function pruneSpeciesListBackups(backupDir, keepCount = BACKUP_RETENTION_COUNT) {
+  const entries = await readdir(backupDir, { withFileTypes: true });
+  const candidates = entries
+    .filter((entry) => (
+      entry.isFile()
+      && /^species_list-\d{8}T\d{6}Z-.+-[0-9a-f]{8}\.json$/.test(entry.name)
+    ))
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a, "en"));
+  const remove = candidates.slice(keepCount);
+  await Promise.all(remove.map((name) => unlink(join(backupDir, name))));
+  return {
+    kept: Math.min(candidates.length, keepCount),
+    removed: remove.length,
+  };
+}
+
+async function prunePipelineLogs(logDir, keepCount = PIPELINE_LOG_RETENTION_COUNT) {
+  const entries = await readdir(logDir, { withFileTypes: true });
+  const candidates = entries
+    .filter((entry) => entry.isFile() && /^pipeline-\d{8}T\d{6}Z-[0-9a-f]{8}\.log$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a, "en"));
+  const remove = candidates.slice(keepCount);
+  await Promise.all(remove.map((name) => unlink(join(logDir, name))));
+}
+
+function publicPipelinePlan(plan) {
+  return {
+    mode: plan.mode,
+    inputCount: plan.inputCount,
+    targetCount: plan.targetCount,
+    targets: plan.targets.map(({ slug, safeName, germanName, scientificName, reasons }) => ({
+      slug,
+      safeName,
+      germanName,
+      scientificName,
+      reasons,
+    })),
+    removedCount: plan.removedCount,
+    removed: plan.removed,
+    hasWork: plan.hasWork,
+  };
+}
+
+function publicCleanupPlan(plan) {
+  return {
+    mode: "cleanup",
+    targetCount:
+      plan.obsoleteData.length
+      + plan.obsoleteAssetDirectories.length
+      + plan.obsoleteAssessmentKeys.length,
+    obsoleteData: plan.obsoleteData,
+    obsoleteAssetDirectories: plan.obsoleteAssetDirectories,
+    obsoleteAssessmentKeys: plan.obsoleteAssessmentKeys,
+    reclaimableBytes: plan.reclaimableBytes,
+    hasWork: plan.hasWork,
+  };
+}
+
+function validateEditableValues(payload) {
+  const values = {};
+  const errors = [];
+
+  for (const field of EDITABLE_FIELD_DEFINITIONS) {
+    const value = String(payload?.[field.key] ?? "").trim();
+    if (!value) {
+      errors.push(`${field.label} darf nicht leer sein`);
+    } else if (value.length > field.maxLength) {
+      errors.push(`${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
+    } else if (/[\u0000-\u001F\u007F]/.test(value)) {
+      errors.push(`${field.label} enthält unzulässige Steuerzeichen`);
+    }
+    values[field.key] = value;
+  }
+
+  return { values, errors };
+}
+
+function validateNewSpeciesValues(payload) {
+  const values = {};
+  const errors = [];
+
+  for (const field of NEW_SPECIES_FIELD_DEFINITIONS) {
+    const value = String(payload?.[field.key] ?? "").trim();
+    if (!value) {
+      errors.push(`${field.label} darf nicht leer sein`);
+    } else if (value.length > field.maxLength) {
+      errors.push(`${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
+    } else if (/[\u0000-\u001F\u007F]/.test(value)) {
+      errors.push(`${field.label} enthält unzulässige Steuerzeichen`);
+    }
+    values[field.key] = value;
+  }
+
+  const scientificParts = values.scientificName.split(/\s+/).filter(Boolean);
+  if (
+    values.scientificName
+    && (
+      scientificParts.length !== 2
+      || scientificParts.some((part) => !/^[\p{L}][\p{L}-]*$/u.test(part))
+    )
+  ) {
+    errors.push(
+      "Wissenschaftlicher Name muss genau aus Gattung und Art-Epitheton bestehen, zum Beispiel Turdus Merula",
+    );
+  } else if (scientificParts.some((part) => part.length > 100)) {
+    errors.push("Gattung und Art-Epitheton dürfen jeweils maximal 100 Zeichen lang sein");
+  } else if (scientificParts.length === 2) {
+    const [rawGenus, rawSpecies] = scientificParts;
+    values.genus =
+      rawGenus.charAt(0).toLocaleUpperCase("de") + rawGenus.slice(1).toLocaleLowerCase("de");
+    values.species = rawSpecies.toLocaleLowerCase("de");
+    values.scientificName = `${values.genus} ${values.species}`;
+  }
+
+  return { values, errors };
+}
+
+function buildNewSpeciesEntry(values) {
+  const scientificName = `${values.genus} ${values.species}`;
+  return {
+    entry: {
+      german: values.german,
+      genus: values.genus,
+      species: values.species,
+      size: values.size,
+      weight: values.weight,
+      life_expectancy: values.lifeExpectancy,
+    },
+    derived: {
+      scientificName,
+      slug: `${values.genus}${values.species}`.toLocaleLowerCase("de"),
+      safeName: sanitizeAssetName(values.german),
+    },
+  };
+}
+
+function findNewSpeciesCollisions({ inputList, model, entry, derived, repoRoot }) {
+  const errors = [];
+  const candidateScientificKey = scientificKey(entry.genus, entry.species);
+  const candidateGermanName = entry.german.toLocaleLowerCase("de");
+  const candidateSafeName = derived.safeName.toLocaleLowerCase("de");
+  const candidateSlug = derived.slug.toLocaleLowerCase("de");
+
+  const scientificNameInInput = inputList.some(
+    (item) => scientificKey(item.genus, item.species) === candidateScientificKey,
+  );
+  if (scientificNameInInput) {
+    errors.push(`Wissenschaftlicher Name ist bereits vorhanden: ${derived.scientificName}`);
+  } else if (model.species.some((item) => (
+    item.scientificName.toLocaleLowerCase("de") === derived.scientificName.toLocaleLowerCase("de")
+  ))) {
+    errors.push(`Wissenschaftlicher Name kollidiert mit bestehenden Daten: ${derived.scientificName}`);
+  }
+  const germanNameInInput = inputList.some(
+    (item) => String(item.german ?? "").trim().toLocaleLowerCase("de") === candidateGermanName,
+  );
+  if (germanNameInInput) {
+    errors.push(`Deutscher Name ist bereits vorhanden: ${entry.german}`);
+  } else if (model.species.some(
+    (item) => item.germanName.trim().toLocaleLowerCase("de") === candidateGermanName,
+  )) {
+    errors.push(`Deutscher Name kollidiert mit bestehenden Daten: ${entry.german}`);
+  }
+  if (model.species.some((item) => (
+    item.id.toLocaleLowerCase("de") === candidateSlug
+    || item.slug.toLocaleLowerCase("de") === candidateSlug
+  ))) {
+    errors.push(`URL-Slug ist bereits vorhanden: ${derived.slug}`);
+  }
+  if (model.species.some((item) => item.safeName.toLocaleLowerCase("de") === candidateSafeName)) {
+    errors.push(`Assetname ist bereits vorhanden: ${derived.safeName}`);
+  }
+  if (existsSync(join(repoRoot, "species-assets", derived.safeName))) {
+    errors.push(`Assetordner ist bereits vorhanden: species-assets/${derived.safeName}`);
+  }
+
+  return [...new Set(errors)];
+}
+
+function findEditableSpecies(model, id) {
+  return model.species.find((entry) => entry.id === id) ?? null;
+}
+
+function findInputIndex(inputList, species) {
+  const key = scientificKey(species.taxonomy.genus, species.taxonomy.species);
+  return inputList.findIndex((entry) => scientificKey(entry.genus, entry.species) === key);
+}
+
+function buildEditChanges(inputEntry, values) {
+  return EDITABLE_FIELD_DEFINITIONS
+    .map((field) => ({
+      field: field.label,
+      key: field.key,
+      before: valueOrUnknown(inputEntry[field.sourceKey]),
+      after: values[field.key],
+    }))
+    .filter((change) => normalizeComparable(change.before) !== normalizeComparable(change.after));
+}
+
+async function readJsonBody(request) {
+  const chunks = [];
+  let bytes = 0;
+
+  for await (const chunk of request) {
+    bytes += chunk.length;
+    if (bytes > MAX_JSON_BODY_BYTES) {
+      const error = new Error("Anfrage ist zu groß");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  } catch {
+    const error = new Error("Ungültige JSON-Anfrage");
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
 function normalizeComparable(value) {
   return String(value ?? "").trim();
 }
@@ -134,11 +394,12 @@ function compareReportList(key, label, reportedValues, actualValues) {
 }
 
 export async function buildExplorerModel(repoRoot = REPO_ROOT) {
-  const [inputList, generatedList, report, manualMapMarkdown] = await Promise.all([
+  const [inputList, generatedList, report, manualMapMarkdown, assetOverrides] = await Promise.all([
     readJson(join(repoRoot, "species_list.json")),
     readJson(join(repoRoot, "speciesData.json")),
     readJson(join(repoRoot, "fehlende_elemente_report.json")),
     readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8"),
+    readJson(join(repoRoot, "species-assets-overrides.json")).catch(() => ({ version: 1, assets: {} })),
   ]);
 
   if (!Array.isArray(inputList) || !Array.isArray(generatedList)) {
@@ -221,7 +482,10 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     if (creditsFile.exists && creditsError) assetIssues.push("Credits sind ungültig");
     if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
     inconsistencies.push(...dataIssues, ...assetIssues);
-    const isManualMap = manualMapSafeNames.has(safeName);
+    const isManualMap =
+      manualMapSafeNames.has(safeName)
+      || assetOverrides.assets?.[safeName]?.map?.manual === true;
+    const isManualSound = assetOverrides.assets?.[safeName]?.sound?.manual === true;
     const isNcSound = String(credits?.license ?? "").toLocaleLowerCase("de").includes("/by-nc");
 
     species.push({
@@ -230,6 +494,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       scientificName,
       safeName,
       slug: generated?.URLSlug ?? "",
+      inInput: Boolean(input),
+      inGenerated: Boolean(generated),
       manual: {
         size: valueOrUnknown(input?.size),
         weight: valueOrUnknown(input?.weight),
@@ -263,7 +529,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         sound: {
           ...sound,
           url: `/assets/${encodeURIComponent(safeName)}/sound.mp3`,
-          manuallyAdded: false,
+          manuallyAdded: isManualSound,
         },
         credits: { ...creditsFile, url: `/assets/${encodeURIComponent(safeName)}/credits.json` },
         spectrogram: {
@@ -276,6 +542,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       isNcSound,
       reportNcSound: ncNames.has(germanName),
       isManualMap,
+      isManualSound,
       fieldMismatches,
       dataIssues,
       assetIssues,
@@ -413,6 +680,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     },
     special: {
       manualMapCount: species.filter((entry) => entry.isManualMap).length,
+      manualSoundCount: species.filter((entry) => entry.isManualSound).length,
       ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     },
   };
@@ -426,7 +694,10 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     validationIssueSpecies: species.filter((entry) => entry.inconsistencies.length > 0).length,
     ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     manualMapCount: species.filter((entry) => entry.isManualMap).length,
-    readOnly: true,
+    manualSoundCount: species.filter((entry) => entry.isManualSound).length,
+    readOnly: false,
+    editingEnabled: true,
+    editableFile: "species_list.json",
   };
 
   return { summary, validation, species };
@@ -465,7 +736,39 @@ function safeAssetPath(pathname, repoRoot) {
   return path.startsWith(assetRoot) ? path : null;
 }
 
-async function sendFile(response, path) {
+function parseByteRange(rangeHeader, size) {
+  const match = String(rangeHeader ?? "").match(/^bytes=(\d*)-(\d*)$/);
+  if (!match) return null;
+
+  const [, rawStart, rawEnd] = match;
+  if (!rawStart && !rawEnd) return null;
+
+  let start;
+  let end;
+  if (!rawStart) {
+    const suffixLength = Number(rawEnd);
+    if (!Number.isInteger(suffixLength) || suffixLength <= 0) return null;
+    start = Math.max(0, size - suffixLength);
+    end = size - 1;
+  } else {
+    start = Number(rawStart);
+    end = rawEnd ? Number(rawEnd) : size - 1;
+  }
+
+  if (
+    !Number.isInteger(start)
+    || !Number.isInteger(end)
+    || start < 0
+    || end < start
+    || start >= size
+  ) {
+    return null;
+  }
+
+  return { start, end: Math.min(end, size - 1) };
+}
+
+async function sendFile(request, response, path) {
   if (!path || !existsSync(path)) {
     sendText(response, 404, "Nicht gefunden");
     return;
@@ -477,11 +780,46 @@ async function sendFile(response, path) {
     return;
   }
 
-  response.writeHead(200, {
+  const baseHeaders = {
     "Content-Type": MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream",
-    "Content-Length": details.size,
     "Cache-Control": "no-store",
+    "Accept-Ranges": "bytes",
+  };
+  const rangeHeader = request.headers.range;
+
+  if (rangeHeader) {
+    const range = parseByteRange(rangeHeader, details.size);
+    if (!range) {
+      response.writeHead(416, {
+        ...baseHeaders,
+        "Content-Range": `bytes */${details.size}`,
+      });
+      response.end();
+      return;
+    }
+
+    const contentLength = range.end - range.start + 1;
+    response.writeHead(206, {
+      ...baseHeaders,
+      "Content-Length": contentLength,
+      "Content-Range": `bytes ${range.start}-${range.end}/${details.size}`,
+    });
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+    createReadStream(path, range).pipe(response);
+    return;
+  }
+
+  response.writeHead(200, {
+    ...baseHeaders,
+    "Content-Length": details.size,
   });
+  if (request.method === "HEAD") {
+    response.end();
+    return;
+  }
   createReadStream(path).pipe(response);
 }
 
@@ -491,13 +829,926 @@ export async function createExplorerServer({
   port = DEFAULT_PORT,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
+  const previewTokens = new Map();
+  const speciesListPath = join(repoRoot, "species_list.json");
+  const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
+  const backupDir = join(repoRoot, "species-explorer", "backups");
+  const pipelineLogDir = join(repoRoot, "species-explorer", "logs");
+  const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
+  let pipelineProcess = null;
+  let pipelineAssetSnapshot = new Map();
+  let pipelineState = {
+    status: "idle",
+    phase: "",
+    mode: "",
+    runId: "",
+    startedAt: "",
+    completedAt: "",
+    exitCode: null,
+    targetCount: 0,
+    targets: [],
+    removed: [],
+    log: [],
+    logFile: "",
+    error: "",
+    reviewAssets: [],
+    gitPublished: false,
+  };
+  if (existsSync(pendingAssetReviewPath)) {
+    try {
+      const pending = await readJson(pendingAssetReviewPath);
+      if (pending?.status === "awaiting-review" && Array.isArray(pending.reviewAssets)) {
+        pipelineState = pending;
+      }
+    } catch {
+      // Eine unlesbare lokale Statusdatei wird beim nächsten erfolgreichen Lauf ersetzt.
+    }
+  }
+
+  function cleanupPreviewTokens() {
+    const now = Date.now();
+    for (const [token, preview] of previewTokens) {
+      if (preview.expiresAt <= now) previewTokens.delete(token);
+    }
+  }
+
+  async function readPipelinePlan(mode) {
+    const [speciesListText, speciesDataText] = await Promise.all([
+      readFile(speciesListPath, "utf8"),
+      readFile(join(repoRoot, "speciesData.json"), "utf8"),
+    ]);
+    const speciesList = JSON.parse(speciesListText);
+    const existingSpeciesData = JSON.parse(speciesDataText);
+    const plan = mode === "cleanup"
+      ? buildCleanupPlan(repoRoot)
+      : buildPipelinePlan({
+        speciesList,
+        existingSpeciesData,
+        repoRoot,
+        sanitizeAssetName,
+        mode,
+      });
+    return {
+      plan,
+      sourceRevision: hashText(
+        `${speciesListText}\n${speciesDataText}\n${JSON.stringify(
+          mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan),
+        )}`,
+      ),
+    };
+  }
+
+  async function previewPipeline(payload) {
+    cleanupPreviewTokens();
+    const mode = String(payload?.mode ?? "");
+    if (!["all", "missing", "cleanup"].includes(mode)) {
+      const error = new Error("Pipeline-Modus muss all, missing oder cleanup sein");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const { plan, sourceRevision } = await readPipelinePlan(mode);
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    previewTokens.set(token, {
+      type: "pipeline",
+      mode,
+      sourceRevision,
+      expiresAt,
+    });
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      ...(mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan)),
+      tokensAvailable: mode === "cleanup" || Boolean(process.env.IUCN_TOKEN && process.env.XENO_TOKEN),
+      warnings: [
+        "Nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht.",
+        mode === "cleanup"
+          ? "Die aufgelisteten Alt-Daten und Assetordner werden dauerhaft gelöscht und sind danach nicht wiederherstellbar."
+          : mode === "all"
+            ? "Der vollständige Lauf fragt alle Arten erneut bei den externen Diensten ab."
+            : "Der gezielte Lauf verarbeitet neue oder unvollständige Arten und übernimmt übrige Bestandsdaten.",
+      ],
+    };
+  }
+
+  function appendPipelineLog(text) {
+    const tokenValues = [process.env.IUCN_TOKEN, process.env.XENO_TOKEN].filter(Boolean);
+    let sanitized = String(text ?? "");
+    for (const token of tokenValues) sanitized = sanitized.split(token).join("[TOKEN]");
+    const lines = sanitized.split(/\r?\n/).filter((line) => line.length > 0);
+    pipelineState.log.push(...lines);
+    if (pipelineState.log.length > PIPELINE_LOG_LINE_LIMIT) {
+      pipelineState.log.splice(0, pipelineState.log.length - PIPELINE_LOG_LINE_LIMIT);
+    }
+  }
+
+  function capturePipelineAssets(plan) {
+    const snapshot = new Map();
+    for (const target of plan.targets ?? []) {
+      const assetDir = join(repoRoot, "species-assets", target.safeName);
+      for (const [type, fileName] of [["map", "map.jpg"], ["sound", "sound.mp3"]]) {
+        snapshot.set(`${target.safeName}:${type}`, existsSync(join(assetDir, fileName)));
+      }
+    }
+    return snapshot;
+  }
+
+  function detectNewPipelineAssets(plan) {
+    const additions = [];
+    for (const target of plan.targets ?? []) {
+      const assetDir = join(repoRoot, "species-assets", target.safeName);
+      for (const [type, fileName, label] of [
+        ["map", "map.jpg", "Karte"],
+        ["sound", "sound.mp3", "Sound"],
+      ]) {
+        const key = `${target.safeName}:${type}`;
+        if (!pipelineAssetSnapshot.get(key) && existsSync(join(assetDir, fileName))) {
+          additions.push({
+            safeName: target.safeName,
+            germanName: target.germanName,
+            scientificName: target.scientificName,
+            type,
+            label,
+            file: `species-assets/${target.safeName}/${fileName}`,
+            url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}`,
+          });
+        }
+      }
+    }
+    return additions;
+  }
+
+  function runPipelineChild(command, args, phase) {
+    pipelineState.phase = phase;
+    appendPipelineLog(`--- ${phase} ---`);
+    return new Promise((resolveRun) => {
+      const child = spawn(command, args, {
+        cwd: repoRoot,
+        env: process.env,
+        windowsHide: true,
+      });
+      pipelineProcess = child;
+      child.stdout.on("data", (chunk) => appendPipelineLog(chunk));
+      child.stderr.on("data", (chunk) => appendPipelineLog(chunk));
+      child.on("error", (error) => {
+        appendPipelineLog(`Prozessfehler: ${error.message}`);
+        pipelineProcess = null;
+        resolveRun(1);
+      });
+      child.on("close", (code) => {
+        pipelineProcess = null;
+        resolveRun(Number.isInteger(code) ? code : 1);
+      });
+    });
+  }
+
+  async function publishPipelineChanges() {
+    let code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Vorprüfung");
+    if (code !== 0) {
+      pipelineState.error = "Vor dem Pipeline-Lauf waren bereits Dateien vorgemerkt. Automatischer Commit wurde abgebrochen.";
+      appendPipelineLog(pipelineState.error);
+      return 1;
+    }
+
+    code = await runPipelineChild(
+      "git",
+      [
+        "add",
+        "--",
+        "species_list.json",
+        "speciesData.json",
+        "fehlende_elemente_report.json",
+        "lastSavedAssessmentId.json",
+        "species-assets-overrides.json",
+        "species-assets",
+      ],
+      "Git-Dateien vormerken",
+    );
+    if (code !== 0) return code;
+
+    code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Änderungen prüfen");
+    if (code === 0) {
+      appendPipelineLog("Keine versionierbaren Pipeline-Änderungen vorhanden.");
+      pipelineState.gitPublished = true;
+      return 0;
+    }
+    if (code !== 1) return code;
+
+    const message = pipelineState.mode === "cleanup"
+      ? "Clean obsolete species data"
+      : pipelineState.mode === "all"
+        ? "Refresh all species data"
+        : "Update incomplete species data";
+    code = await runPipelineChild("git", ["commit", "-m", message], "Git-Commit");
+    if (code !== 0) return code;
+    code = await runPipelineChild("git", ["push"], "Git-Push");
+    if (code === 0) pipelineState.gitPublished = true;
+    return code;
+  }
+
+  async function continueAfterAssetReview() {
+    const exitCode = await publishPipelineChanges();
+    await finishPipelineRun(exitCode);
+  }
+
+  async function finishPipelineRun(exitCode) {
+    await unlink(pendingAssetReviewPath).catch(() => {});
+    pipelineState.status = exitCode === 0 ? "completed" : "failed";
+    pipelineState.exitCode = exitCode;
+    pipelineState.completedAt = new Date().toISOString();
+    if (exitCode !== 0 && !pipelineState.error) {
+      pipelineState.error = `Pipeline wurde mit Code ${exitCode} beendet`;
+    }
+    await mkdir(pipelineLogDir, { recursive: true });
+    const logName = `pipeline-${compactTimestamp(new Date(pipelineState.startedAt))}-${pipelineState.runId.slice(0, 8)}.log`;
+    const logPath = join(pipelineLogDir, logName);
+    await writeFile(logPath, `${pipelineState.log.join("\n")}\n`, "utf8");
+    pipelineState.logFile = `species-explorer/logs/${logName}`;
+    await prunePipelineLogs(pipelineLogDir).catch(() => {});
+    model = await buildExplorerModel(repoRoot);
+  }
+
+  async function executePipelineRun(plan) {
+    if (pipelineState.mode === "cleanup") {
+      const exitCode = await runPipelineChild(
+        process.execPath,
+        [join(repoRoot, "scripts", "species-cleanup.mjs")],
+        "Dauerhafte Bereinigung",
+      );
+      if (exitCode === 0) await continueAfterAssetReview();
+      else await finishPipelineRun(exitCode);
+      return;
+    }
+
+    let exitCode = await runPipelineChild(
+      process.execPath,
+      [join(repoRoot, "update.mjs"), `--mode=${plan.mode}`],
+      "Datenpipeline",
+    );
+
+    if (exitCode === 0 && (plan.mode === "all" || plan.targets.length > 0)) {
+      const spectrogramArgs = [join(repoRoot, "scripts", "generate-spectrograms.mjs")];
+      if (plan.mode === "missing") {
+        spectrogramArgs.push(`--species=${plan.targets.map((entry) => entry.safeName).join(",")}`);
+      }
+      const localFfmpeg = join(repoRoot, "local-tools", "ffmpeg", "bin", "ffmpeg.exe");
+      if (existsSync(localFfmpeg)) spectrogramArgs.push(`--ffmpeg=${localFfmpeg}`);
+      exitCode = await runPipelineChild(process.execPath, spectrogramArgs, "Spektrogramm-Abgleich");
+    }
+
+    if (exitCode === 0) {
+      exitCode = await runPipelineChild(
+        process.execPath,
+        [join(repoRoot, "update.mjs"), "--report-only"],
+        "Report-Abgleich",
+      );
+    }
+
+    if (exitCode !== 0) {
+      await finishPipelineRun(exitCode);
+      return;
+    }
+
+    const reviewAssets = detectNewPipelineAssets(plan);
+    if (reviewAssets.length > 0) {
+      pipelineState.status = "awaiting-review";
+      pipelineState.phase = "Neue Assets prüfen";
+      pipelineState.reviewAssets = reviewAssets;
+      appendPipelineLog(`${reviewAssets.length} neue Karte(n)/Sound(s) warten auf Pflegeentscheidung.`);
+      await writeFile(pendingAssetReviewPath, `${JSON.stringify(pipelineState, null, 2)}\n`, "utf8");
+      model = await buildExplorerModel(repoRoot);
+      return;
+    }
+
+    await continueAfterAssetReview();
+  }
+
+  async function startPipeline(payload) {
+    cleanupPreviewTokens();
+    if (pipelineState.status === "running" || pipelineState.status === "awaiting-review" || pipelineProcess) {
+      const error = new Error("Es läuft bereits eine Pipeline");
+      error.statusCode = 409;
+      throw error;
+    }
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "pipeline") {
+      const error = new Error("Pipeline-Vorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (
+      preview.mode !== "cleanup"
+      && (!process.env.IUCN_TOKEN || !process.env.XENO_TOKEN)
+    ) {
+      const error = new Error("IUCN_TOKEN oder XENO_TOKEN fehlt in der Server-Umgebung");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const { plan, sourceRevision } = await readPipelinePlan(preview.mode);
+    if (sourceRevision !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      const error = new Error("Artenliste oder Pipeline-Daten wurden seit der Vorschau geändert");
+      error.statusCode = 409;
+      throw error;
+    }
+    if ((preview.mode === "missing" || preview.mode === "cleanup") && !plan.hasWork) {
+      previewTokens.delete(token);
+      const error = new Error(
+        preview.mode === "cleanup"
+          ? "Es wurden keine verwaisten Daten oder Assetordner gefunden"
+          : "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    previewTokens.delete(token);
+    pipelineState = {
+      status: "running",
+      phase: "Start",
+      mode: plan.mode,
+      runId: randomUUID(),
+      startedAt: new Date().toISOString(),
+      completedAt: "",
+      exitCode: null,
+      targetCount: preview.mode === "cleanup"
+        ? publicCleanupPlan(plan).targetCount
+        : plan.targetCount,
+      targets: preview.mode === "cleanup"
+        ? plan.obsoleteAssetDirectories.map((entry) => ({
+          safeName: entry.safeName,
+          germanName: entry.safeName,
+          scientificName: "",
+          reasons: ["verwaister Assetordner wird dauerhaft gelöscht"],
+        }))
+        : publicPipelinePlan(plan).targets,
+      removed: preview.mode === "cleanup" ? plan.obsoleteData : plan.removed,
+      log: [],
+      logFile: "",
+      error: "",
+      reviewAssets: [],
+      gitPublished: false,
+    };
+    pipelineAssetSnapshot = preview.mode === "cleanup" ? new Map() : capturePipelineAssets(plan);
+    void executePipelineRun(plan).catch(async (error) => {
+      appendPipelineLog(`Unerwarteter Pipelinefehler: ${error.message}`);
+      pipelineState.error = error.message;
+      await finishPipelineRun(1);
+    });
+    return pipelineState;
+  }
+
+  async function savePipelineAssetReview(payload) {
+    if (pipelineState.status !== "awaiting-review") {
+      const error = new Error("Es warten keine neuen Assets auf eine Pflegeentscheidung");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (String(payload?.runId ?? "") !== pipelineState.runId) {
+      const error = new Error("Assetprüfung gehört nicht zum aktuellen Pipeline-Lauf");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const choices = Array.isArray(payload?.choices) ? payload.choices : [];
+    const choicesByKey = new Map(
+      choices.map((choice) => [`${choice.safeName}:${choice.type}`, choice]),
+    );
+    for (const asset of pipelineState.reviewAssets) {
+      const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
+      if (!choice || typeof choice.manual !== "boolean") {
+        const error = new Error(`Pflegeentscheidung fehlt für ${asset.germanName} · ${asset.label}`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    const registry = await readJson(assetOverridesPath).catch(() => ({ version: 1, assets: {} }));
+    registry.version = 1;
+    registry.assets ??= {};
+    const updatedAt = new Date().toISOString();
+    for (const asset of pipelineState.reviewAssets) {
+      const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
+      registry.assets[asset.safeName] ??= {};
+      registry.assets[asset.safeName][asset.type] = {
+        manual: choice.manual,
+        reason: choice.manual
+          ? "Nach Pipeline-Import von Felix als manuell gepflegt markiert."
+          : "Automatisch durch die Pipeline gepflegt.",
+        updatedAt,
+      };
+    }
+    const tempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+    try {
+      await writeFile(tempPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
+      await rename(tempPath, assetOverridesPath);
+    } catch (error) {
+      await unlink(tempPath).catch(() => {});
+      throw error;
+    }
+
+    pipelineState.reviewAssets = [];
+    pipelineState.status = "running";
+    pipelineState.phase = "Git-Veröffentlichung";
+    await unlink(pendingAssetReviewPath).catch(() => {});
+    model = await buildExplorerModel(repoRoot);
+    void continueAfterAssetReview().catch(async (error) => {
+      appendPipelineLog(`Git-Veröffentlichung fehlgeschlagen: ${error.message}`);
+      pipelineState.error = error.message;
+      await finishPipelineRun(1);
+    });
+    return pipelineState;
+  }
+
+  async function previewNewSpecies(payload) {
+    cleanupPreviewTokens();
+    const { values, errors } = validateNewSpeciesValues(payload?.values);
+    if (errors.length) {
+      const error = new Error("Eingaben sind ungültig");
+      error.statusCode = 400;
+      error.details = errors;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    const inputList = JSON.parse(sourceText);
+    if (!Array.isArray(inputList)) {
+      const error = new Error("species_list.json muss ein Array enthalten");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const { entry, derived } = buildNewSpeciesEntry(values);
+    const collisions = findNewSpeciesCollisions({
+      inputList,
+      model,
+      entry,
+      derived,
+      repoRoot,
+    });
+    if (collisions.length) {
+      const error = new Error("Neue Art kollidiert mit bestehenden Daten oder Assets");
+      error.statusCode = 409;
+      error.details = collisions;
+      throw error;
+    }
+
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    previewTokens.set(token, {
+      type: "create",
+      values,
+      sourceRevision: hashText(sourceText),
+      expiresAt,
+    });
+
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      entry,
+      derived: {
+        ...derived,
+        assetDirectory: `species-assets/${derived.safeName}`,
+      },
+      warnings: [
+        "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
+        "Die neue Art erscheint zunächst ohne Pipeline-Daten und Assets im Explorer.",
+        "speciesData.json und Assets bleiben unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
+      ],
+    };
+  }
+
+  async function saveNewSpecies(payload) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "create") {
+      const error = new Error("Vorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    if (hashText(sourceText) !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      const error = new Error("species_list.json wurde seit der Vorschau geändert. Bitte erneut prüfen.");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const inputList = JSON.parse(sourceText);
+    if (!Array.isArray(inputList)) {
+      const error = new Error("species_list.json muss ein Array enthalten");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const { values, errors } = validateNewSpeciesValues(preview.values);
+    if (errors.length) {
+      const error = new Error("Gespeicherte Vorschau ist ungültig");
+      error.statusCode = 409;
+      error.details = errors;
+      throw error;
+    }
+
+    const { entry, derived } = buildNewSpeciesEntry(values);
+    const collisions = findNewSpeciesCollisions({
+      inputList,
+      model,
+      entry,
+      derived,
+      repoRoot,
+    });
+    if (collisions.length) {
+      previewTokens.delete(token);
+      const error = new Error("Neue Art kollidiert inzwischen mit bestehenden Daten oder Assets");
+      error.statusCode = 409;
+      error.details = collisions;
+      throw error;
+    }
+
+    await mkdir(backupDir, { recursive: true });
+    const backupName =
+      `species_list-${compactTimestamp()}-${derived.safeName}-${randomUUID().slice(0, 8)}.json`;
+    const backupPath = join(backupDir, backupName);
+    await writeFile(backupPath, sourceText, "utf8");
+
+    const nextText = `${JSON.stringify([...inputList, entry], null, 2)}\n`;
+    const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
+    try {
+      await writeFile(tempPath, nextText, "utf8");
+      await rename(tempPath, speciesListPath);
+    } catch (error) {
+      await unlink(tempPath).catch(() => {});
+      throw error;
+    }
+
+    previewTokens.delete(token);
+    model = await buildExplorerModel(repoRoot);
+    let backupRetention = { kept: 0, removed: 0 };
+    let backupCleanupWarning = "";
+    try {
+      backupRetention = await pruneSpeciesListBackups(backupDir);
+    } catch (error) {
+      backupCleanupWarning = `Backup-Bereinigung fehlgeschlagen: ${error.message}`;
+    }
+
+    return {
+      ok: true,
+      backup: `species-explorer/backups/${backupName}`,
+      backupRetention,
+      backupCleanupWarning,
+      entry,
+      derived: {
+        ...derived,
+        assetDirectory: `species-assets/${derived.safeName}`,
+      },
+      species: model.species.find((item) => item.id === derived.slug) ?? null,
+      summary: model.summary,
+      validation: model.validation,
+      pipelineRequired: true,
+    };
+  }
+
+  async function previewSpeciesDelete(id) {
+    cleanupPreviewTokens();
+    const species = findEditableSpecies(model, id);
+    if (!species) {
+      const error = new Error("Art wurde nicht gefunden");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!species.inInput) {
+      const error = new Error("Art ist nicht in species_list.json enthalten");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    const inputList = JSON.parse(sourceText);
+    const inputIndex = findInputIndex(inputList, species);
+    if (inputIndex < 0) {
+      const error = new Error("Art fehlt in species_list.json");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    previewTokens.set(token, {
+      type: "delete",
+      id,
+      sourceRevision: hashText(sourceText),
+      expiresAt,
+    });
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      species: {
+        id: species.id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+        inGenerated: species.inGenerated,
+        assetDirectory: `species-assets/${species.safeName}`,
+      },
+      effects: [
+        "Der Eintrag wird nur aus species_list.json entfernt.",
+        "speciesData.json und der Report werden beim nächsten Pipeline-Lauf bereinigt.",
+        "Der Assetordner bleibt bestehen und wird nicht gelöscht.",
+      ],
+    };
+  }
+
+  async function saveSpeciesDelete(id, payload) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "delete" || preview.id !== id) {
+      const error = new Error("Löschvorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const species = findEditableSpecies(model, id);
+    if (!species || !species.inInput) {
+      previewTokens.delete(token);
+      const error = new Error("Art ist nicht mehr in species_list.json enthalten");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    if (hashText(sourceText) !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      const error = new Error("species_list.json wurde seit der Löschvorschau geändert");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const inputList = JSON.parse(sourceText);
+    const inputIndex = findInputIndex(inputList, species);
+    if (inputIndex < 0) {
+      previewTokens.delete(token);
+      const error = new Error("Art fehlt bereits in species_list.json");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    await mkdir(backupDir, { recursive: true });
+    const backupName =
+      `species_list-${compactTimestamp()}-${sanitizeAssetName(species.germanName)}-${randomUUID().slice(0, 8)}.json`;
+    await writeFile(join(backupDir, backupName), sourceText, "utf8");
+    inputList.splice(inputIndex, 1);
+    const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
+    try {
+      await writeFile(tempPath, `${JSON.stringify(inputList, null, 2)}\n`, "utf8");
+      await rename(tempPath, speciesListPath);
+    } catch (error) {
+      await unlink(tempPath).catch(() => {});
+      throw error;
+    }
+
+    previewTokens.delete(token);
+    model = await buildExplorerModel(repoRoot);
+    let backupRetention = { kept: 0, removed: 0 };
+    let backupCleanupWarning = "";
+    try {
+      backupRetention = await pruneSpeciesListBackups(backupDir);
+    } catch (error) {
+      backupCleanupWarning = `Backup-Bereinigung fehlgeschlagen: ${error.message}`;
+    }
+    return {
+      ok: true,
+      deleted: {
+        id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+      },
+      backup: `species-explorer/backups/${backupName}`,
+      backupRetention,
+      backupCleanupWarning,
+      assetDirectoryPreserved: `species-assets/${species.safeName}`,
+      pipelineRequired: species.inGenerated,
+      summary: model.summary,
+      validation: model.validation,
+    };
+  }
+
+  async function previewSpeciesEdit(id, payload) {
+    cleanupPreviewTokens();
+    const species = findEditableSpecies(model, id);
+    if (!species) {
+      const error = new Error("Art wurde nicht gefunden");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const { values, errors } = validateEditableValues(payload?.values);
+    if (errors.length) {
+      const error = new Error("Eingaben sind ungültig");
+      error.statusCode = 400;
+      error.details = errors;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    const inputList = JSON.parse(sourceText);
+    const inputIndex = findInputIndex(inputList, species);
+    if (inputIndex < 0) {
+      const error = new Error("Art fehlt in species_list.json");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const changes = buildEditChanges(inputList[inputIndex], values);
+    if (!changes.length) {
+      const error = new Error("Es wurden keine Änderungen vorgenommen");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    previewTokens.set(token, {
+      type: "edit",
+      id,
+      values,
+      sourceRevision: hashText(sourceText),
+      expiresAt,
+    });
+
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      species: {
+        id: species.id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+      },
+      changes,
+      warnings: [
+        "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
+        "speciesData.json bleibt unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
+      ],
+    };
+  }
+
+  async function saveSpeciesEdit(id, payload) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "edit" || preview.id !== id) {
+      const error = new Error("Vorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const species = findEditableSpecies(model, id);
+    if (!species) {
+      const error = new Error("Art wurde nicht gefunden");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const sourceText = await readFile(speciesListPath, "utf8");
+    if (hashText(sourceText) !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      const error = new Error("species_list.json wurde seit der Vorschau geändert. Bitte erneut prüfen.");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const inputList = JSON.parse(sourceText);
+    const inputIndex = findInputIndex(inputList, species);
+    if (inputIndex < 0) {
+      const error = new Error("Art fehlt in species_list.json");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const { values, errors } = validateEditableValues(preview.values);
+    if (errors.length) {
+      const error = new Error("Gespeicherte Vorschau ist ungültig");
+      error.statusCode = 409;
+      error.details = errors;
+      throw error;
+    }
+
+    const changes = buildEditChanges(inputList[inputIndex], values);
+    if (!changes.length) {
+      previewTokens.delete(token);
+      const error = new Error("Die Änderungen sind nicht mehr erforderlich");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    await mkdir(backupDir, { recursive: true });
+    const backupName =
+      `species_list-${compactTimestamp()}-${sanitizeAssetName(species.germanName)}-${randomUUID().slice(0, 8)}.json`;
+    const backupPath = join(backupDir, backupName);
+    await writeFile(backupPath, sourceText, "utf8");
+
+    const currentEntry = inputList[inputIndex];
+    inputList[inputIndex] = {
+      ...currentEntry,
+      size: values.size,
+      weight: values.weight,
+      life_expectancy: values.lifeExpectancy,
+    };
+    const nextText = `${JSON.stringify(inputList, null, 2)}\n`;
+    const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
+    try {
+      await writeFile(tempPath, nextText, "utf8");
+      await rename(tempPath, speciesListPath);
+    } catch (error) {
+      await unlink(tempPath).catch(() => {});
+      throw error;
+    }
+
+    previewTokens.delete(token);
+    model = await buildExplorerModel(repoRoot);
+    let backupRetention = { kept: 0, removed: 0 };
+    let backupCleanupWarning = "";
+    try {
+      backupRetention = await pruneSpeciesListBackups(backupDir);
+    } catch (error) {
+      backupCleanupWarning = `Backup-Bereinigung fehlgeschlagen: ${error.message}`;
+    }
+    return {
+      ok: true,
+      backup: `species-explorer/backups/${backupName}`,
+      backupRetention,
+      backupCleanupWarning,
+      changes,
+      species: model.species.find((entry) => entry.id === id) ?? null,
+      summary: model.summary,
+      validation: model.validation,
+      pipelineRequired: true,
+    };
+  }
 
   const server = createHttpServer(async (request, response) => {
     try {
       const url = new URL(request.url, `http://${host}:${port}`);
+      const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
+      const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
+
+      if (
+        request.method === "POST"
+        && (url.pathname === "/api/pipeline/preview" || url.pathname === "/api/pipeline/start")
+      ) {
+        const payload = await readJsonBody(request);
+        const result = url.pathname.endsWith("/preview")
+          ? await previewPipeline(payload)
+          : await startPipeline(payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/pipeline/assets/review") {
+        const payload = await readJsonBody(request);
+        sendJson(response, 200, await savePipelineAssetReview(payload));
+        return;
+      }
+
+      if (
+        request.method === "POST"
+        && (url.pathname === "/api/species/new/preview" || url.pathname === "/api/species/new/save")
+      ) {
+        const payload = await readJsonBody(request);
+        const result = url.pathname.endsWith("/preview")
+          ? await previewNewSpecies(payload)
+          : await saveNewSpecies(payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "POST" && deleteRoute) {
+        const id = decodeURIComponent(deleteRoute[1]);
+        const payload = await readJsonBody(request);
+        const result = deleteRoute[2] === "preview"
+          ? await previewSpeciesDelete(id)
+          : await saveSpeciesDelete(id, payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "POST" && editRoute) {
+        const id = decodeURIComponent(editRoute[1]);
+        const payload = await readJsonBody(request);
+        const result = editRoute[2] === "preview"
+          ? await previewSpeciesEdit(id, payload)
+          : await saveSpeciesEdit(id, payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
       if (request.method !== "GET" && request.method !== "HEAD") {
-        response.setHeader("Allow", "GET, HEAD");
-        sendText(response, 405, "Read-only: Nur GET und HEAD sind erlaubt.");
+        response.setHeader("Allow", "GET, HEAD, POST");
+        sendText(response, 405, "Nur definierte Lese- und Bearbeitungsrouten sind erlaubt.");
         return;
       }
 
@@ -516,6 +1767,11 @@ export async function createExplorerServer({
         return;
       }
 
+      if (url.pathname === "/api/pipeline/status") {
+        sendJson(response, 200, pipelineState);
+        return;
+      }
+
       if (url.pathname === "/api/reload") {
         model = await buildExplorerModel(repoRoot);
         sendJson(response, 200, { ok: true, summary: model.summary });
@@ -523,13 +1779,16 @@ export async function createExplorerServer({
       }
 
       if (url.pathname.startsWith("/assets/")) {
-        await sendFile(response, safeAssetPath(url.pathname, repoRoot));
+        await sendFile(request, response, safeAssetPath(url.pathname, repoRoot));
         return;
       }
 
-      await sendFile(response, safePublicPath(url.pathname));
+      await sendFile(request, response, safePublicPath(url.pathname));
     } catch (error) {
-      sendJson(response, 500, { error: error.message });
+      sendJson(response, error.statusCode ?? 500, {
+        error: error.message,
+        details: error.details ?? [],
+      });
     }
   });
 
@@ -567,5 +1826,5 @@ if (isMain) {
   const app = await createExplorerServer({ port: parsePort(process.argv.slice(2)) });
   await app.listen();
   console.log(`Arten-Explorer: http://${app.host}:${app.port}`);
-  console.log("Read-only. Beenden mit Strg+C.");
+  console.log("Kontrollierte species_list.json-Bearbeitung aktiv. Beenden mit Strg+C.");
 }

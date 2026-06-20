@@ -19,12 +19,14 @@ aktualisiert:
 - `species-assets/<Artname>/spectrogram.webp`
 - `fehlende_elemente_report.json`
 - `lastSavedAssessmentId.json`
+- `species-assets-overrides.json`
 
 Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Browser aus GitHub Pages geladen.
 
 ## Wichtige Dateien
 
 - `AGENTS.md`: aktuelle Projektuebergabe und verbindliche Arbeitsregeln
+- `species-assets-overrides.json`: maschinenlesbarer Schutz für manuell gepflegte Karten und Sounds
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
 - `species-taxonomy.js`: Taxonomie-Pyramide
@@ -39,7 +41,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
   GitHub-Pages-Assets und lokale Assetkonsistenz
 - `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
   `species-assets/<SafeName>/spectrogram.webp`
-- `species-explorer/`: lokale read-only Web-App fuer Arten, Daten, Karten, Sounds, Credits und Assetstatus
+- `species-explorer/`: lokale Web-App fuer Arten, Daten, Karten, Sounds, Credits, Validierung und kontrollierte
+  Pflege manueller Artenfelder
 
 ## Squarespace-Integration
 
@@ -54,6 +57,10 @@ Versionierte Referenzen liegen unter:
 - `docs/repo-file-audit.md`
 - `docs/repo-structure.md`
 - `docs/asset-structure-plan.md`
+- `docs/asset-management-plan.md`
+- `docs/pipeline-control-plan.md`
+- `docs/delete-species-workflow.md`
+- `docs/asset-review-workflow.md`
 - `docs/monthly-site-audit.md`
 - `docs/audits/2026-06-site-audit.md`
 - `docs/desktop-app-plan.md`
@@ -112,6 +119,19 @@ Ausfuehren:
 node update.mjs
 ```
 
+Weitere Modi:
+
+```bash
+node update.mjs --mode=missing --dry-run
+node update.mjs --mode=missing
+node update.mjs --mode=all
+node update.mjs --report-only
+npm.cmd run --silent cleanup:species -- --dry-run
+```
+
+`--report-only` baut den Report nach einem Spektrogramm-Abgleich aus dem aktuellen Daten- und Assetstand neu auf,
+ohne externe APIs aufzurufen.
+
 ## Monatsaudit
 
 Vollstaendiger Live-Audit fuer Squarespace, GitHub Pages und lokale Assets:
@@ -142,7 +162,8 @@ Tokens duerfen nicht im Repository gespeichert werden.
 
 ## Arten-Explorer
 
-Phase 7.2 stellt eine lokale read-only Arbeitsoberflaeche bereit:
+Der Arten-Explorer begann in Phase 7.2 als read-only Arbeitsoberflaeche und erlaubt seit Phase 7.4 das kontrollierte
+Bearbeiten ausgewaehlter Felder in `species_list.json`:
 
 ```bash
 npm.cmd run species:explorer
@@ -156,7 +177,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 45 Arten mit Suche und Filtern
+- alle 46 Eintraege aus Eingabe und Pipeline mit Suche und Filtern
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
@@ -164,18 +185,27 @@ Der Explorer zeigt:
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und einklappbaren Quellen-/Lizenzdaten
+- Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle
 - IUCN-Abrufdatum im Kopf der Detailansicht
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
+- Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
+- separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - drei aktive NC-Sounds
 - sieben manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
+- Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
+- serverseitige Validierung, Diff-Vorschau und explizite Speicherbestaetigung
+- automatische lokale Sicherung vor jedem Schreibvorgang
 
 Beim Wechsel zwischen Arten bleibt die aktuelle Fenster- und Listenposition erhalten.
 
-Der Server bindet nur an `127.0.0.1`. Er bietet keine Schreibroute, startet keine Pipeline und fuehrt keine
-Git-Aktionen aus. Andere HTTP-Methoden als GET/HEAD werden mit `405 Read-only` abgewiesen.
+Der Server bindet nur an `127.0.0.1`. Schreibzugriffe sind auf die beiden definierten Vorschau-/Speicherrouten fuer
+bestehende Arten begrenzt. Er startet keine Pipeline und fuehrt keine Git-Aktionen aus. Alle anderen nicht
+freigegebenen Schreibzugriffe werden mit `405` abgewiesen.
+Audio- und andere Assetdateien unterstuetzen HTTP-Byte-Ranges (`206 Partial Content`), damit der Browser beim Klick
+ins Spektrogramm zu einer beliebigen Wiedergabeposition springen und dort starten kann.
 
 Phase 7.3 erweitert den Explorer um `GET /api/validation`. Geprueft werden:
 
@@ -184,10 +214,73 @@ Phase 7.3 erweitert den Explorer um `GET /api/validation`. Geprueft werden:
 - Listen und Zaehler aus `fehlende_elemente_report.json` gegen den tatsaechlichen Daten-/Assetstand
 - NC-Soundlizenzen aus `credits.json` gegen den Report
 
-Aktueller Validierungsstand vom 2026-06-19: 45 von 45 Datenpaaren stimmen ueberein, 45 Assetpakete sind vollstaendig,
-neun Reportpruefungen sind konsistent und es bestehen keine Validierungshinweise. Der IUCN-Trend `Unbekannt` ist ein
-gueltiger Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch
-nach den sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
+Abschlussstand von Phase 7.3 am 2026-06-19: 45 von 45 Datenpaare stimmten ueberein, 45 Assetpakete waren vollstaendig
+und neun Reportpruefungen konsistent. Nach dem Anlegen des Haubentauchers zeigt der Explorer erwartungsgemaess
+46 Eingabeeintraege, 45 Pipeline-Eintraege, eine input-only Art und ein noch fehlendes Assetpaket. Der alte Report
+kann diesen neuen Eintrag erst nach dem Pipeline-Lauf enthalten. Der IUCN-Trend `Unbekannt` ist ein gueltiger
+Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch nach den
+sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
+
+Phase 7.4 stellt je Art unter `Manuelle Daten` einen Bearbeiten-Dialog bereit:
+
+- editierbar: `size`, `weight`, `life_expectancy`
+- gesperrt: deutscher Name, Gattung, Art und alle generierten IUCN-Felder
+- `POST /api/species/<Slug>/preview`: validiert und erzeugt eine zehn Minuten gueltige Diff-Vorschau
+- `POST /api/species/<Slug>/save`: akzeptiert nur ein gueltiges Vorschau-Token
+- parallele Aenderungen an `species_list.json` machen die Vorschau ungueltig
+- Sicherungen werden vor dem Schreiben unter `species-explorer/backups/` angelegt und durch `.gitignore` nicht
+  versioniert
+- nach jedem erfolgreichen Speichern bleiben automatisch nur die neuesten 20 verwalteten Backups erhalten; andere
+  Dateien im Ordner werden nicht geloescht
+- nach dem Speichern zeigt das Dashboard erwartete Datenabweichungen, bis `node update.mjs` separat ausgefuehrt wurde
+
+Namensaenderungen, Taxonomieaenderungen, Assetpfade, Pipeline-Aufrufe und Git-Aktionen sind nicht Bestandteil von
+Phase 7.4.
+
+Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch lokal umgesetzt:
+
+- `Neue Art` oeffnet ein Formular fuer deutschen Namen, wissenschaftlichen Namen, Groesse, Gewicht und
+  Lebenserwartung. Alle Felder enthalten Beispieltexte.
+- Der wissenschaftliche Name wird als ein Feld eingegeben, zum Beispiel `Turdus Merula`, und intern in
+  `genus: Turdus` und `species: merula` getrennt.
+- `POST /api/species/new/preview` prueft Pflichtfelder, Schreibweise, wissenschaftlichen und deutschen Namen, Slug,
+  `SafeName` sowie bereits vorhandene Assetordner.
+- Die Vorschau zeigt den vollstaendigen JSON-Eintrag, wissenschaftlichen Namen, Slug und erwarteten Assetordner.
+- `POST /api/species/new/save` verwendet ein einmaliges Vorschau-Token, SHA-256-Dateischutz, Backup-Retention und
+  atomares Schreiben.
+- Nach dem Speichern erscheint die Art sofort als nur in `species_list.json` vorhanden. Pipeline und Git bleiben
+  separate Schritte.
+- Nach erfolgreichem Speichern koennen ohne Seitenneuladen weitere Arten angelegt werden.
+- Sechs Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- Die visuelle Bedienpruefung durch Felix ist noch offen.
+
+Aktuell stehen 46 Arten in `species_list.json`. Der neu angelegte Haubentaucher wartet auf den ersten Pipeline-Lauf.
+
+Phase 7.6 ist technisch lokal vorbereitet:
+
+- `node update.mjs --mode=missing --dry-run`: Auswahl neuer oder fehlender Arten ohne Schreibzugriff
+- `node update.mjs --mode=missing`: gezielter Lauf; übrige Bestandsdaten bleiben erhalten
+- `node update.mjs --mode=all` oder weiterhin `node update.mjs`: vollständiger Lauf
+- App-Vorschau und ausdrückliche Startbestätigung
+- nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
+- nach erfolgreicher Pipeline passender Spektrogramm-Abgleich
+- Artansicht kann einen Eintrag nach Vorschau und Backup aus `species_list.json` entfernen
+- `Bereinigen` löscht nach einer einzigen klaren Bestätigung verwaiste Daten und Assetordner dauerhaft und ohne
+  Wiederherstellungsablage
+- nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
+- neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
+  bestätigt
+- die Kopfzeile schaltet zwischen Lesemodus und Bearbeitungsmodus; Schreibaktionen werden entsprechend
+  aus- beziehungsweise eingeblendet
+- das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
+- die Laufart heißt `Neue/Unvollständige Arten aktualisieren`
+- nach dem Speichern einer neuen Art wird der selektive Lauf sofort angeboten; Abbrechen lässt ihn für später offen
+
+Details:
+
+- `docs/pipeline-control-plan.md`
+- `docs/delete-species-workflow.md`
+- `docs/asset-review-workflow.md`
 
 Tests:
 
@@ -195,8 +288,8 @@ Tests:
 npm.cmd run --silent test:explorer
 ```
 
-Neue Arten werden nicht automatisch angelegt. Sie werden manuell in `species_list.json` ergaenzt; der genaue Ablauf ist
-in `docs/add-species-workflow.md` dokumentiert.
+Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen kontrolliert ueber den Explorer in
+`species_list.json` angelegt werden; der genaue Ablauf ist in `docs/add-species-workflow.md` dokumentiert.
 
 SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Die Datei basiert auf einem Live-Sitemap-Audit und
 enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen konsistenten Vorschlag und einen Status.
@@ -307,22 +400,30 @@ Audit-Automatisierung, manuell gepflegte Karten, Spektrogramme, Soundbar-Regler 
 Monatsaudit liegt unter `docs/audits/2026-06-site-audit.md`. Phase 7 Desktop-App/Arten-Explorer wurde am 2026-06-17
 gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-only Prototyp aus Phase 7.2 ist seit
 2026-06-18 umgesetzt und getestet. Phase 7.3 mit vertiefter Validierung und Statusdashboard wurde am 2026-06-19
-umgesetzt. Als Naechstes folgt Phase 7.4 mit kontrolliertem Bearbeiten von `species_list.json`. In Phase 7 folgen
+umgesetzt. Phase 7.4 fuer kontrolliertes Bearbeiten von `species_list.json` ist seit 2026-06-19 technisch und visuell
+abgeschlossen. Phase 7.5 zum kontrollierten Anlegen neuer Arten nach `docs/add-species-workflow.md` ist technisch
+lokal umgesetzt; die visuelle Bedienpruefung ist noch offen. Phase 7.6 mit Pipeline-Steuerung und dauerhafter
+Bereinigung ist technisch lokal umgesetzt; ein echter Pipeline-Lauf und die visuelle Prüfung stehen noch aus.
+Dabei wird zwischen einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle
+Arten unterschieden. Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
+In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 
-Laut aktuellem Report vom 2026-06-17:
+Aktueller lokaler Stand vom 2026-06-19:
 
-- 45 Arten
+- 46 Eintraege in `species_list.json`
+- 45 Arten in der letzten Pipeline-Ausgabe
+- Haubentaucher als neuer, noch nicht durch die Pipeline verarbeiteter Eintrag
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
-- 0 fehlende Sounddateien
-- 0 fehlende Sound-Credits
-- 0 fehlende Karten
+- 0 fehlende Sounddateien unter den 45 zuletzt verarbeiteten Arten
+- 0 fehlende Sound-Credits unter den 45 zuletzt verarbeiteten Arten
+- 0 fehlende Karten unter den 45 zuletzt verarbeiteten Arten
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
-Weitere Arten werden bei Bedarf manuell in `species_list.json` ergaenzt; aktuell wurden keine neuen Arten hinzugefuegt.
+Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 
 ## Tests nach Frontend-Aenderungen
 

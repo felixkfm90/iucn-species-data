@@ -4,6 +4,14 @@ const state = {
   selectedId: "",
   audioCleanup: null,
   mapCleanup: null,
+  notice: "",
+  editMode: false,
+  databaseNeedsUpdate: true,
+  openPipelinePreview: null,
+  openAssetReview: null,
+  pipelineWasRunning: false,
+  pipelinePollTimer: null,
+  assetReviewRunId: "",
 };
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 const IUCN_STATUS_LABELS = {
@@ -24,6 +32,8 @@ const elements = {
   ncCount: document.querySelector("#nc-count"),
   manualMapCount: document.querySelector("#manual-map-count"),
   reportDate: document.querySelector("#report-date"),
+  editModeToggle: document.querySelector("#edit-mode-toggle"),
+  pipelineMenuButton: document.querySelector("#pipeline-menu-button"),
   validationOverall: document.querySelector("#validation-overall"),
   validationDataCard: document.querySelector("#validation-data-card"),
   validationData: document.querySelector("#validation-data"),
@@ -40,6 +50,30 @@ const elements = {
   statusFilter: document.querySelector("#status-filter"),
   flagFilter: document.querySelector("#flag-filter"),
   visibleCount: document.querySelector("#visible-count"),
+  newSpeciesButton: document.querySelector("#new-species-button"),
+  newSpeciesDialog: document.querySelector("#new-species-dialog"),
+  newSpeciesForm: document.querySelector("#new-species-form"),
+  pipelineButtons: [...document.querySelectorAll("[data-pipeline-mode]")],
+  pipelineStatus: document.querySelector("#pipeline-status"),
+  pipelineStatusDetail: document.querySelector("#pipeline-status-detail"),
+  pipelineLogDetails: document.querySelector("#pipeline-log-details"),
+  pipelineLog: document.querySelector("#pipeline-log"),
+  pipelineDialog: document.querySelector("#pipeline-dialog"),
+  pipelineForm: document.querySelector("#pipeline-form"),
+  pipelineDialogTitle: document.querySelector("#pipeline-dialog-title"),
+  pipelineDialogDescription: document.querySelector("#pipeline-dialog-description"),
+  pipelineMessage: document.querySelector(".pipeline-message"),
+  pipelinePreview: document.querySelector(".pipeline-preview"),
+  pipelinePreviewTitle: document.querySelector("#pipeline-preview-title"),
+  pipelinePreviewContent: document.querySelector("#pipeline-preview-content"),
+  pipelineWarning: document.querySelector("#pipeline-warning"),
+  pipelineStartButton: document.querySelector("#pipeline-start-button"),
+  pipelineModeChoice: document.querySelector("#pipeline-mode-choice"),
+  assetReviewDialog: document.querySelector("#asset-review-dialog"),
+  assetReviewForm: document.querySelector("#asset-review-form"),
+  assetReviewList: document.querySelector("#asset-review-list"),
+  assetReviewMessage: document.querySelector(".asset-review-message"),
+  assetReviewSave: document.querySelector("#asset-review-save"),
   reloadButton: document.querySelector("#reload-button"),
   speciesList: document.querySelector("#species-list"),
   detailPanel: document.querySelector("#detail-panel"),
@@ -81,6 +115,28 @@ function assetStatusText(asset) {
   return parts.join(" · ");
 }
 
+function backupRetentionText(result) {
+  const retention = result?.backupRetention;
+  if (!retention) return "";
+  return ` Backupbestand: ${retention.kept} Datei(en)`
+    + `${retention.removed ? `, ${retention.removed} alte entfernt` : ""}.`;
+}
+
+function setupEditingMode() {
+  const applyMode = (enabled) => {
+    state.editMode = enabled;
+    document.body.classList.toggle("edit-mode", enabled);
+    elements.editModeToggle.setAttribute("aria-pressed", String(enabled));
+    elements.editModeToggle.textContent = enabled ? "Bearbeitungsmodus" : "Lesemodus";
+    elements.editModeToggle.title = enabled
+      ? "In den Lesemodus wechseln"
+      : "Bearbeitungsfunktionen einblenden";
+  };
+
+  elements.editModeToggle.addEventListener("click", () => applyMode(!state.editMode));
+  applyMode(false);
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -120,8 +176,21 @@ function setValidationCardState(card, ok) {
   card.classList.toggle("error", !ok);
 }
 
+function renderDatabaseStatus(stateName = "") {
+  const status = stateName || (state.databaseNeedsUpdate ? "outdated" : "current");
+  elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
+  elements.pipelineStatus.className = `pipeline-status-text ${status}`;
+  if (status === "running") elements.pipelineStatus.textContent = "Aktualisierung läuft";
+  else if (status === "review") elements.pipelineStatus.textContent = "Neue Assets prüfen";
+  else if (status === "failed") elements.pipelineStatus.textContent = "Datenbank aktualisieren";
+  else if (status === "current") elements.pipelineStatus.textContent = "Datenbank aktuell";
+  else elements.pipelineStatus.textContent = "Datenbank aktualisieren";
+}
+
 function updateValidation(validation) {
   const isOk = validation.status === "ok";
+  state.databaseNeedsUpdate = !isOk;
+  renderDatabaseStatus();
   elements.validationOverall.textContent = isOk
     ? "Alle Prüfungen bestanden"
     : `${validation.issueCount} Prüfhinweis(e)`;
@@ -290,6 +359,17 @@ function creditLink(credits, key, label) {
     : escapeHtml("Nicht verfügbar");
 }
 
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error || "Anfrage ist fehlgeschlagen");
+    error.details = payload.details || [];
+    throw error;
+  }
+  return payload;
+}
+
 function selectSpecies(id) {
   const species = state.species.find((entry) => entry.id === id);
   if (!species) return;
@@ -363,12 +443,17 @@ function setupAudioPlayer() {
     }
   };
 
-  const seekFromPointer = (event) => {
+  const seekFromPointer = async (event) => {
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
     const rect = visual.getBoundingClientRect();
     const progress = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
     audio.currentTime = progress * audio.duration;
     updateProgress();
+    try {
+      await audio.play();
+    } catch {
+      updatePlayState();
+    }
   };
 
   playButton.addEventListener("click", togglePlayback);
@@ -436,6 +521,620 @@ function setupMapZoom(species) {
   };
 }
 
+function setupAssetReview() {
+  const dialog = elements.assetReviewDialog;
+  const form = elements.assetReviewForm;
+
+  const setMessage = (text = "", type = "") => {
+    elements.assetReviewMessage.textContent = text;
+    elements.assetReviewMessage.className = `edit-message asset-review-message${type ? ` ${type}` : ""}`;
+    elements.assetReviewMessage.hidden = !text;
+  };
+
+  const openReview = (status) => {
+    if (!status.reviewAssets?.length) return;
+    if (state.assetReviewRunId === status.runId && dialog.open) return;
+    state.assetReviewRunId = status.runId;
+    elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => `
+      <article class="asset-review-item" data-index="${index}">
+        <div class="asset-review-preview">
+          ${asset.type === "map"
+            ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">`
+            : `<audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>`}
+        </div>
+        <div class="asset-review-copy">
+          <div>
+            <strong>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.label)}</strong>
+            <p>${escapeHtml(asset.scientificName)} · ${escapeHtml(asset.file)}</p>
+          </div>
+          <div class="asset-review-options">
+            <label>
+              <input type="radio" name="asset-${index}" value="automatic" required>
+              Automatisch durch Pipeline pflegen
+            </label>
+            <label>
+              <input type="radio" name="asset-${index}" value="manual" required>
+              Manuell pflegen und schützen
+            </label>
+          </div>
+        </div>
+      </article>
+    `).join("");
+    form.dataset.runId = status.runId;
+    form.dataset.assets = JSON.stringify(status.reviewAssets);
+    setMessage("Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.", "info");
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  };
+
+  dialog.addEventListener("cancel", (event) => event.preventDefault());
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const assets = JSON.parse(form.dataset.assets || "[]");
+    const formData = new FormData(form);
+    const choices = assets.map((asset, index) => ({
+      safeName: asset.safeName,
+      type: asset.type,
+      manual: formData.get(`asset-${index}`) === "manual",
+    }));
+    elements.assetReviewSave.disabled = true;
+    setMessage("Pflegeentscheidungen werden gespeichert…", "info");
+    try {
+      await fetchJson("/api/pipeline/assets/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: form.dataset.runId,
+          choices,
+        }),
+      });
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+      setMessage();
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      elements.assetReviewSave.disabled = false;
+    }
+  });
+
+  state.openAssetReview = openReview;
+}
+
+function setupPipelineControl() {
+  const dialog = elements.pipelineDialog;
+  const form = elements.pipelineForm;
+  const cancelButtons = [...dialog.querySelectorAll(".pipeline-cancel")];
+  let previewToken = "";
+  let previewMode = "";
+
+  const modeLabel = (mode) => ({
+    missing: "Neue/Unvollständige Arten aktualisieren",
+    all: "Alle Arten vollständig aktualisieren",
+    cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
+  }[mode] || mode);
+
+  const setMessage = (text = "", type = "") => {
+    elements.pipelineMessage.textContent = text;
+    elements.pipelineMessage.className = `edit-message pipeline-message${type ? ` ${type}` : ""}`;
+    elements.pipelineMessage.hidden = !text;
+  };
+
+  const close = () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  };
+
+  const showDialog = () => {
+    if (dialog.open) return;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  };
+
+  const setPipelineButtonsDisabled = (disabled) => {
+    for (const button of elements.pipelineButtons) button.disabled = disabled;
+  };
+
+  const openChooser = () => {
+    previewToken = "";
+    previewMode = "";
+    elements.pipelineDialogTitle.textContent = "Laufart auswählen";
+    elements.pipelineDialogDescription.textContent = "Welche Aktion soll gestartet werden?";
+    elements.pipelineModeChoice.hidden = false;
+    elements.pipelinePreview.hidden = true;
+    elements.pipelineStartButton.hidden = true;
+    elements.pipelineStartButton.disabled = true;
+    setMessage();
+    showDialog();
+  };
+
+  const renderPreview = (result) => {
+    if (result.mode === "cleanup") {
+      const assetRows = result.obsoleteAssetDirectories.map((entry) => `
+        <li><strong>${escapeHtml(entry.path)}</strong> · ${escapeHtml(formatBytes(entry.bytes))}</li>
+      `).join("");
+      const dataRows = result.obsoleteData.map((entry) => `
+        <li><strong>${escapeHtml(entry.germanName)}</strong> · ${escapeHtml(entry.scientificName)}</li>
+      `).join("");
+      elements.pipelinePreviewContent.innerHTML = result.hasWork
+        ? `
+          <p><strong>${result.obsoleteData.length}</strong> veraltete Datensätze,
+            <strong>${result.obsoleteAssetDirectories.length}</strong> verwaiste Assetordner und
+            <strong>${result.obsoleteAssessmentKeys.length}</strong> alte Assessment-Zuordnungen.</p>
+          ${dataRows ? `<h5>Datensätze</h5><ul>${dataRows}</ul>` : ""}
+          ${assetRows ? `<h5>Assetordner</h5><ul>${assetRows}</ul>` : ""}
+        `
+        : "<p>Keine verwaisten Daten oder Assetordner gefunden.</p>";
+      elements.pipelineWarning.textContent =
+        "Dauerhaft löschen: Die aufgelisteten Daten und Dateien sind danach nicht wiederherstellbar.";
+      return;
+    }
+
+    const targetRows = result.targets.map((entry) => `
+      <li>
+        <strong>${escapeHtml(entry.germanName)}</strong>
+        <span>${escapeHtml(entry.scientificName)} · ${escapeHtml(entry.reasons.join(", "))}</span>
+      </li>
+    `).join("");
+    const removedRows = result.removed.map((entry) => `
+      <li><strong>${escapeHtml(entry.germanName)}</strong> · wird aus der Pipeline-Ausgabe entfernt</li>
+    `).join("");
+    elements.pipelinePreviewContent.innerHTML = `
+      <p><strong>${result.targetCount}</strong> von ${result.inputCount} Arten werden verarbeitet.</p>
+      ${targetRows ? `<ul class="pipeline-target-list">${targetRows}</ul>` : "<p>Keine Zielarten gefunden.</p>"}
+      ${removedRows ? `<h5>Aus Ausgabe entfernen</h5><ul>${removedRows}</ul>` : ""}
+    `;
+    elements.pipelineWarning.textContent =
+      "Nach erfolgreichem Lauf werden die Pipeline-Änderungen automatisch committed und gepusht.";
+  };
+
+  async function openPreview(mode) {
+    previewToken = "";
+    previewMode = mode;
+    elements.pipelineStartButton.disabled = true;
+    elements.pipelineStartButton.hidden = true;
+    elements.pipelineModeChoice.hidden = true;
+    elements.pipelinePreview.hidden = true;
+    setMessage("Vorschau wird erstellt…", "info");
+    elements.pipelineDialogTitle.textContent = modeLabel(mode);
+    elements.pipelineDialogDescription.textContent =
+      mode === "cleanup"
+        ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
+        : "Vor dem Start werden Zielarten und Umfang geprüft.";
+    showDialog();
+
+    try {
+      const result = await fetchJson("/api/pipeline/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      previewToken = result.token;
+      renderPreview(result);
+      elements.pipelinePreview.hidden = false;
+      elements.pipelineStartButton.hidden = false;
+      elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
+      elements.pipelineStartButton.textContent =
+        mode === "cleanup" ? "Dauerhaft löschen" : "Pipeline starten";
+      setMessage(
+        !result.tokensAvailable
+          ? "Die benötigten API-Tokens fehlen in der Server-Umgebung."
+          : result.hasWork
+            ? "Vorschau ist bereit."
+            : "Für diesen Lauf wurden keine Aktionen gefunden.",
+        !result.tokensAvailable ? "error" : result.hasWork ? "success" : "info",
+      );
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    }
+  }
+
+  async function refreshPipelineStatus() {
+    try {
+      const status = await fetchJson("/api/pipeline/status");
+      const running = status.status === "running";
+      const awaitingReview = status.status === "awaiting-review";
+      const active = running || awaitingReview;
+      setPipelineButtonsDisabled(active);
+      if (running) renderDatabaseStatus("running");
+      else if (awaitingReview) renderDatabaseStatus("review");
+      else if (status.status === "failed") renderDatabaseStatus("failed");
+      else renderDatabaseStatus();
+      elements.pipelineStatusDetail.textContent = active
+        ? `${modeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
+        : status.completedAt
+          ? `${modeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
+          : "Kein Lauf aktiv.";
+      elements.pipelineLogDetails.hidden = status.log.length === 0;
+      elements.pipelineLog.textContent = status.log.join("\n");
+
+      if (awaitingReview) state.openAssetReview?.(status);
+
+      if (state.pipelineWasRunning && !active && status.status !== "idle") {
+        await loadData({ reload: true });
+      }
+      state.pipelineWasRunning = active;
+      clearTimeout(state.pipelinePollTimer);
+      state.pipelinePollTimer = active
+        ? setTimeout(refreshPipelineStatus, 1000)
+        : null;
+    } catch (error) {
+      elements.pipelineStatus.textContent = "Statusfehler";
+      elements.pipelineStatusDetail.textContent = error.message;
+    }
+  }
+
+  for (const button of elements.pipelineButtons) {
+    button.addEventListener("click", () => openPreview(button.dataset.pipelineMode));
+  }
+  elements.pipelineMenuButton.addEventListener("click", openChooser);
+  for (const button of cancelButtons) button.addEventListener("click", close);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) close();
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!previewToken) return;
+    elements.pipelineStartButton.disabled = true;
+    setMessage(
+      previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
+      "info",
+    );
+    try {
+      await fetchJson("/api/pipeline/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: previewToken }),
+      });
+      close();
+      await refreshPipelineStatus();
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      elements.pipelineStartButton.disabled = false;
+    }
+  });
+
+  state.openPipelinePreview = openPreview;
+  void refreshPipelineStatus();
+}
+
+function setupNewSpeciesCreator() {
+  const dialog = elements.newSpeciesDialog;
+  const form = elements.newSpeciesForm;
+  const openButton = elements.newSpeciesButton;
+  const closeButtons = [...dialog.querySelectorAll(".new-species-cancel")];
+  const preview = dialog.querySelector(".new-species-preview");
+  const message = dialog.querySelector(".new-species-message");
+  const previewButton = dialog.querySelector(".new-species-preview-button");
+  const saveButton = dialog.querySelector(".new-species-save-button");
+  const jsonPreview = dialog.querySelector(".new-species-json");
+  const derivedFields = [...dialog.querySelectorAll("[data-derived]")];
+  let previewToken = "";
+
+  const setMessage = (text = "", type = "") => {
+    message.textContent = text;
+    message.className = `edit-message new-species-message${type ? ` ${type}` : ""}`;
+    message.hidden = !text;
+  };
+
+  const resetPreview = () => {
+    previewToken = "";
+    preview.hidden = true;
+    jsonPreview.textContent = "";
+    for (const field of derivedFields) field.textContent = "";
+    saveButton.disabled = true;
+  };
+
+  const setBusy = (busy) => {
+    previewButton.disabled = busy;
+    saveButton.disabled = busy || !previewToken;
+    openButton.disabled = busy;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
+  const close = () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  };
+
+  openButton.addEventListener("click", () => {
+    form.reset();
+    resetPreview();
+    setMessage();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    form.elements.german.focus();
+  });
+
+  for (const button of closeButtons) button.addEventListener("click", close);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) close();
+  });
+
+  form.addEventListener("input", () => {
+    resetPreview();
+    setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    resetPreview();
+    setBusy(true);
+    setMessage("Neue Art und mögliche Kollisionen werden geprüft…", "info");
+    const formData = new FormData(form);
+    try {
+      const result = await fetchJson("/api/species/new/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          values: {
+            german: formData.get("german"),
+            scientificName: formData.get("scientificName"),
+            size: formData.get("size"),
+            weight: formData.get("weight"),
+            lifeExpectancy: formData.get("lifeExpectancy"),
+          },
+        }),
+      });
+      previewToken = result.token;
+      for (const field of derivedFields) {
+        field.textContent = result.derived[field.dataset.derived] ?? "";
+      }
+      jsonPreview.textContent = JSON.stringify(result.entry, null, 2);
+      preview.hidden = false;
+      saveButton.disabled = false;
+      setMessage(
+        "Vorschau erstellt. Beim Anlegen wird zuerst eine lokale Sicherung gespeichert.",
+        "success",
+      );
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  saveButton.addEventListener("click", async () => {
+    if (!previewToken) return;
+    setBusy(true);
+    setMessage("species_list.json wird gesichert und um die neue Art ergänzt…", "info");
+    try {
+      const result = await fetchJson("/api/species/new/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: previewToken }),
+      });
+      state.notice =
+        `${result.entry.german} wurde angelegt. Sicherung: ${result.backup}.`
+        + backupRetentionText(result)
+        + " Die Art ist bis zum nächsten Pipeline-Lauf erwartungsgemäß unvollständig."
+        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
+      state.selectedId = result.species?.id || result.derived.slug;
+      elements.search.value = "";
+      elements.statusFilter.value = "";
+      elements.flagFilter.value = "";
+      form.reset();
+      resetPreview();
+      setBusy(false);
+      close();
+      await loadData();
+      await state.openPipelinePreview?.("missing");
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setBusy(false);
+    }
+  });
+}
+
+function setupSpeciesEditor(species) {
+  const dialog = elements.detailPanel.querySelector(".edit-dialog");
+  const openButton = elements.detailPanel.querySelector(".edit-species-open");
+  const closeButtons = [...elements.detailPanel.querySelectorAll(".edit-cancel")];
+  const form = elements.detailPanel.querySelector(".edit-form");
+  const preview = elements.detailPanel.querySelector(".edit-preview");
+  const previewRows = elements.detailPanel.querySelector(".edit-preview-rows");
+  const message = elements.detailPanel.querySelector(".edit-message");
+  const previewButton = elements.detailPanel.querySelector(".edit-preview-button");
+  const saveButton = elements.detailPanel.querySelector(".edit-save-button");
+  if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
+
+  let previewToken = "";
+
+  const setMessage = (text = "", type = "") => {
+    message.textContent = text;
+    message.className = `edit-message${type ? ` ${type}` : ""}`;
+    message.hidden = !text;
+  };
+
+  const resetPreview = () => {
+    previewToken = "";
+    preview.hidden = true;
+    previewRows.replaceChildren();
+    saveButton.disabled = true;
+  };
+
+  const setBusy = (busy) => {
+    previewButton.disabled = busy;
+    saveButton.disabled = busy || !previewToken;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
+  openButton.addEventListener("click", () => {
+    resetPreview();
+    setMessage();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  });
+
+  for (const button of closeButtons) {
+    button.addEventListener("click", () => {
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+    });
+  }
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog && typeof dialog.close === "function") dialog.close();
+  });
+
+  form.addEventListener("input", () => {
+    resetPreview();
+    setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    resetPreview();
+    setBusy(true);
+    setMessage("Änderungen werden geprüft…", "info");
+    const formData = new FormData(form);
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            values: {
+              size: formData.get("size"),
+              weight: formData.get("weight"),
+              lifeExpectancy: formData.get("lifeExpectancy"),
+            },
+          }),
+        },
+      );
+      previewToken = result.token;
+      for (const change of result.changes) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <th scope="row">${escapeHtml(change.field)}</th>
+          <td>${escapeHtml(change.before)}</td>
+          <td>${escapeHtml(change.after)}</td>
+        `;
+        previewRows.append(row);
+      }
+      preview.hidden = false;
+      saveButton.disabled = false;
+      setMessage(
+        "Vorschau erstellt. Beim Speichern wird zuerst eine lokale Sicherung angelegt.",
+        "success",
+      );
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  saveButton.addEventListener("click", async () => {
+    if (!previewToken) return;
+    setBusy(true);
+    setMessage("species_list.json wird gesichert und gespeichert…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: previewToken }),
+        },
+      );
+      state.notice =
+        `Gespeichert. Sicherung: ${result.backup}. `
+        + backupRetentionText(result)
+        + " "
+        + "Die Datenpipeline muss anschließend separat ausgeführt werden."
+        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData();
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setBusy(false);
+    }
+  });
+}
+
+function setupSpeciesDelete(species) {
+  const dialog = elements.detailPanel.querySelector(".delete-dialog");
+  const openButton = elements.detailPanel.querySelector(".delete-species-open");
+  const form = elements.detailPanel.querySelector(".delete-form");
+  const message = elements.detailPanel.querySelector(".delete-message");
+  const effects = elements.detailPanel.querySelector(".delete-effects");
+  const confirmButton = elements.detailPanel.querySelector(".delete-confirm");
+  const cancelButtons = [...elements.detailPanel.querySelectorAll(".delete-cancel")];
+  if (!dialog || !openButton || !form || !message || !effects || !confirmButton) return;
+  let previewToken = "";
+
+  const setMessage = (text = "", type = "") => {
+    message.textContent = text;
+    message.className = `edit-message delete-message${type ? ` ${type}` : ""}`;
+    message.hidden = !text;
+  };
+  const close = () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  };
+
+  openButton.addEventListener("click", async () => {
+    previewToken = "";
+    confirmButton.disabled = true;
+    effects.replaceChildren();
+    setMessage("Auswirkungen werden geprüft…", "info");
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/delete/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        },
+      );
+      previewToken = result.token;
+      effects.innerHTML = `<ul>${result.effects.map((effect) => `<li>${escapeHtml(effect)}</li>`).join("")}</ul>`;
+      confirmButton.disabled = false;
+      setMessage("Löschvorschau ist bereit. Der Assetordner bleibt erhalten.", "success");
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    }
+  });
+
+  for (const button of cancelButtons) button.addEventListener("click", close);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) close();
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!previewToken) return;
+    confirmButton.disabled = true;
+    setMessage("Art wird aus species_list.json entfernt…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/delete/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: previewToken }),
+        },
+      );
+      state.notice =
+        `${result.deleted.germanName} wurde aus species_list.json entfernt. Sicherung: ${result.backup}.`
+        + backupRetentionText(result)
+        + ` Assetordner bleibt erhalten: ${result.assetDirectoryPreserved}.`
+        + (result.pipelineRequired
+          ? " Ein Pipeline- oder Bereinigungslauf entfernt die Art aus den generierten Daten."
+          : "");
+      state.selectedId = "";
+      close();
+      await loadData();
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      confirmButton.disabled = false;
+    }
+  });
+}
+
 function renderDetail(species) {
   const badges = [
     `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
@@ -496,6 +1195,12 @@ function renderDetail(species) {
     : "";
 
   elements.detailPanel.innerHTML = `
+    ${state.notice ? `
+      <div class="save-notice" role="status">
+        ${escapeHtml(state.notice)}
+      </div>
+    ` : ""}
+
     <header class="detail-header">
       <div>
         <h2>${escapeHtml(species.germanName)}</h2>
@@ -537,7 +1242,15 @@ function renderDetail(species) {
 
     <div class="data-grid">
       <section class="data-section">
-        <h3 class="section-title">Manuelle Daten</h3>
+        <div class="section-title-row">
+          <h3 class="section-title">Manuelle Daten</h3>
+          ${species.inInput ? `
+            <div class="section-actions edit-only">
+              <button class="edit-species-open" type="button">Bearbeiten</button>
+              <button class="delete-species-open danger" type="button">Löschen</button>
+            </div>
+          ` : ""}
+        </div>
         <dl class="data-list">
           ${dataRows([
             ["Größe", species.manual.size],
@@ -594,6 +1307,87 @@ function renderDetail(species) {
 
     ${issues}
 
+    <dialog class="edit-dialog" aria-labelledby="edit-dialog-title">
+      <form class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">species_list.json</p>
+            <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
+            <p>${escapeHtml(species.scientificName)} · Taxonomie und Name sind in Phase 7.4 gesperrt.</p>
+          </div>
+          <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
+        </header>
+
+        <div class="edit-fields">
+          <label>
+            <span>Größe</span>
+            <input name="size" required maxlength="240" value="${escapeHtml(species.manual.size)}">
+          </label>
+          <label>
+            <span>Gewicht</span>
+            <input name="weight" required maxlength="240" value="${escapeHtml(species.manual.weight)}">
+          </label>
+          <label>
+            <span>Lebenserwartung</span>
+            <input
+              name="lifeExpectancy"
+              required
+              maxlength="240"
+              value="${escapeHtml(species.manual.lifeExpectancy)}"
+            >
+          </label>
+        </div>
+
+        <p class="edit-message" hidden></p>
+
+        <section class="edit-preview" hidden>
+          <h4>Diff-Vorschau</h4>
+          <div class="edit-table-wrap">
+            <table>
+              <thead>
+                <tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr>
+              </thead>
+              <tbody class="edit-preview-rows"></tbody>
+            </table>
+          </div>
+          <p class="edit-warning">
+            Speichern ändert nur <code>species_list.json</code>. Danach ist ein Pipeline-Lauf erforderlich.
+          </p>
+        </section>
+
+        <div class="edit-actions">
+          <button class="edit-cancel" type="button">Abbrechen</button>
+          <button class="edit-preview-button" type="submit">Änderungen prüfen</button>
+          <button class="edit-save-button" type="button" disabled>Jetzt speichern</button>
+        </div>
+      </form>
+    </dialog>
+
+    ${species.inInput ? `
+      <dialog class="edit-dialog delete-dialog" aria-labelledby="delete-dialog-title">
+        <form class="edit-form delete-form">
+          <header class="edit-dialog-header">
+            <div>
+              <p class="edit-eyebrow">species_list.json</p>
+              <h3 id="delete-dialog-title">${escapeHtml(species.germanName)} löschen</h3>
+              <p>${escapeHtml(species.scientificName)}</p>
+            </div>
+            <button class="edit-close delete-cancel" type="button" aria-label="Dialog schließen">×</button>
+          </header>
+          <p class="edit-message delete-message" hidden></p>
+          <div class="delete-effects"></div>
+          <p class="edit-warning">
+            Diese Aktion entfernt zunächst nur den Listeneintrag. Produktive Assets werden nur über den separaten
+            Bereinigungslauf dauerhaft gelöscht.
+          </p>
+          <div class="edit-actions">
+            <button class="delete-cancel" type="button">Abbrechen</button>
+            <button class="delete-confirm danger" type="submit" disabled>Aus Artenliste entfernen</button>
+          </div>
+        </form>
+      </dialog>
+    ` : ""}
+
     ${species.assets.map.exists ? `
       <dialog class="map-lightbox" aria-label="Vergrößerte Verbreitungskarte ${escapeHtml(species.germanName)}">
         <button class="map-lightbox-close" type="button" aria-label="Vergrößerte Karte schließen">×</button>
@@ -604,6 +1398,8 @@ function renderDetail(species) {
 
   setupAudioPlayer();
   setupMapZoom(species);
+  setupSpeciesEditor(species);
+  setupSpeciesDelete(species);
 }
 
 async function loadData({ reload = false } = {}) {
@@ -656,4 +1452,8 @@ elements.statusFilter.addEventListener("change", applyFilters);
 elements.flagFilter.addEventListener("change", applyFilters);
 elements.reloadButton.addEventListener("click", () => loadData({ reload: true }));
 
+setupEditingMode();
+setupAssetReview();
+setupPipelineControl();
+setupNewSpeciesCreator();
 loadData();

@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-05-28
+Stand: 2026-06-19
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -8,8 +8,9 @@ Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
 Neue Arten werden nicht automatisch vorgeschlagen oder automatisch in `species_list.json` eingefuegt.
 
-Die Artenauswahl bleibt redaktionell manuell. Die Pipeline verarbeitet nur Arten, die bereits von Hand in
-`species_list.json` stehen.
+Die Artenauswahl bleibt redaktionell manuell. Die Pipeline verarbeitet nur Arten, die von Felix bestaetigt und in
+`species_list.json` gespeichert wurden. Phase 7.5 bildet diesen bisher direkten JSON-Schritt kontrolliert ueber den
+lokalen Arten-Explorer ab.
 
 ## Manuell zu pflegen
 
@@ -36,6 +37,80 @@ Regeln:
 - `life_expectancy`: manuelle Lebenserwartung ohne Quellenfeld.
 - Keine doppelten `genus + species`-Kombinationen.
 - Keine leeren Pflichtfelder.
+
+## App-Workflow in Phase 7.5
+
+Der Arten-Explorer stellt in der Artenliste die Aktion `Neue Art` bereit.
+
+Formularfelder:
+
+- deutscher Name (`german`)
+- wissenschaftlicher Name als zwei Woerter, zum Beispiel `Turdus Merula`
+- Groesse (`size`)
+- Gewicht (`weight`)
+- Lebenserwartung (`life_expectancy`)
+
+Vor der Vorschau prueft der Server:
+
+- alle fuenf Pflichtfelder sind gefuellt
+- wissenschaftlicher Name besteht genau aus Gattung und Artepitheton
+- beide Namensbestandteile enthalten nur Buchstaben oder Bindestriche
+- wissenschaftlicher Name ist noch nicht vorhanden
+- deutscher Name ist noch nicht vorhanden
+- der erwartete URL-Slug `genus + species`, klein und ohne Leerzeichen, kollidiert nicht
+- der aus dem deutschen Namen erzeugte `SafeName` kollidiert nicht mit einer anderen Art oder einem fremden
+  Assetordner
+- Feldlaengen und Steuerzeichen sind gueltig
+
+Im Hintergrund trennt der Server den eingegebenen wissenschaftlichen Namen. Die Gattung wird mit grossem
+Anfangsbuchstaben und das Artepitheton kleingeschrieben in `genus` und `species` gespeichert. Die Eingabe
+`Turdus Merula` wird damit als `Turdus merula` normalisiert.
+
+Die Vorschau zeigt:
+
+- vollstaendigen neuen JSON-Eintrag
+- wissenschaftlichen Namen
+- erwarteten URL-Slug
+- erwarteten Assetordner
+- Hinweis, dass IUCN-Daten und Assets erst nach `node update.mjs` entstehen
+
+Speichern:
+
+- nur nach gueltiger Vorschau
+- Schutz gegen parallele Aenderungen an `species_list.json`
+- Backup nach derselben Aufbewahrungsregel wie Phase 7.4
+- neuer Eintrag wird atomar an die Liste angehaengt
+- keine automatische Pipeline und kein Git-Push
+
+Direkt nach dem Speichern erscheint die Art im Explorer als `nur in species_list.json`. Dieser Zustand ist erwartet
+und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
+
+API:
+
+- `POST /api/species/new/preview`: validiert alle Felder und Kollisionen, schreibt aber keine Datei
+- `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
+
+Technischer Stand vom 2026-06-19:
+
+- Formular, Vorschau und Speichern sind lokal umgesetzt.
+- Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle
+  Eingaben.
+- Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
+  angelegt werden koennen.
+- Direkt nach dem Speichern öffnet sich die Vorschau für `Neue oder fehlende Arten aktualisieren`. Der selektive
+  Lauf kann sofort gestartet oder abgebrochen und später über das Pipeline-Feld in der Kopfzeile aufgerufen werden.
+- Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
+- Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
+- Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
+  unveraendert.
+- Sechs Explorer-Tests sind erfolgreich.
+- Der neu gestartete lokale Server liefert den Dialog und alle fuenf Formularfelder aus.
+- Die visuelle Bedienpruefung durch Felix ist noch offen.
+
+Aktueller redaktioneller Stand:
+
+- 46 Eintraege in `species_list.json`
+- der neu angelegte `Haubentaucher` wartet erwartungsgemaess auf den ersten Pipeline-Lauf
 
 ## Was danach automatisch passiert
 
