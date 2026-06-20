@@ -49,18 +49,6 @@
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
       }
-    },
-    "Hoeckerschwan": {
-      "map": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T05:43:58.090Z"
-      },
-      "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T05:43:58.090Z"
-      }
     }
   }
 }
