@@ -334,7 +334,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für die sieben
   geschützten Karten und `NC-Sounds erneut suchen` für die drei aktuellen NC-Sounds. Bestehende Dateien werden bis
   zur Übernahmeentscheidung lokal gesichert. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
-  ursprünglichen Art-Speicherschritts.
+  ursprünglichen Art-Speicherschritts. Der Pipeline-Dialog bleibt nach dem Start geöffnet und zeigt eindeutig
+  `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` wechselt dann zu `Fenster schließen`; der Lauf
+  wird beim Schließen nicht beendet. Ein dauerhafter Balken im Hauptfenster zeigt auch nach dem Schließen den
+  laufenden, wartenden, abgeschlossenen oder fehlgeschlagenen Status und öffnet die Details erneut.
 - 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
   Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
   explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die

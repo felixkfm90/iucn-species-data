@@ -10,6 +10,7 @@ const state = {
   openPipelinePreview: null,
   openAssetReview: null,
   pipelineWasRunning: false,
+  pipelineStatusSnapshot: null,
   pipelinePollTimer: null,
   assetReviewRunId: "",
   dataRevision: "",
@@ -58,6 +59,10 @@ const elements = {
   newSpeciesForm: document.querySelector("#new-species-form"),
   pipelineButtons: [...document.querySelectorAll("[data-pipeline-mode]")],
   pipelineStatus: document.querySelector("#pipeline-status"),
+  pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
+  pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
+  pipelineRunNoticeDetail: document.querySelector("#pipeline-run-notice-detail"),
+  pipelineRunNoticeOpen: document.querySelector("#pipeline-run-notice-open"),
   pipelineStatusDetail: document.querySelector("#pipeline-status-detail"),
   pipelineLogDetails: document.querySelector("#pipeline-log-details"),
   pipelineLog: document.querySelector("#pipeline-log"),
@@ -198,7 +203,14 @@ function setValidationCardState(card, ok) {
 }
 
 function renderDatabaseStatus(stateName = "") {
-  const status = stateName || (state.databaseNeedsUpdate ? "outdated" : "current");
+  const activePipelineStatus = state.pipelineStatusSnapshot?.status === "running"
+    ? "running"
+    : state.pipelineStatusSnapshot?.status === "awaiting-review"
+      ? "review"
+      : state.pipelineStatusSnapshot?.status === "failed"
+        ? "failed"
+        : "";
+  const status = stateName || activePipelineStatus || (state.databaseNeedsUpdate ? "outdated" : "current");
   elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
   elements.pipelineStatus.className = `pipeline-status-text ${status}`;
   if (status === "running") elements.pipelineStatus.textContent = "Aktualisierung läuft";
@@ -687,6 +699,7 @@ function setupPipelineControl() {
   const dialog = elements.pipelineDialog;
   const form = elements.pipelineForm;
   const cancelButtons = [...dialog.querySelectorAll(".pipeline-cancel")];
+  const footerCloseButton = dialog.querySelector(".pipeline-dialog-close-button");
   let previewToken = "";
   let previewMode = "";
 
@@ -719,7 +732,85 @@ function setupPipelineControl() {
     for (const button of elements.pipelineButtons) button.disabled = disabled;
   };
 
+  const setDialogCloseMode = (active) => {
+    footerCloseButton.textContent = active ? "Fenster schließen" : "Abbrechen";
+  };
+
+  const statusPresentation = (status) => {
+    if (status.status === "running") {
+      return {
+        className: "running",
+        title: "Pipeline-Lauf läuft gerade",
+        detail: `${modeLabel(status.mode)} · ${status.phase || "Verarbeitung läuft"}`,
+        message: "Pipeline-Lauf läuft gerade. Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter.",
+        messageType: "info",
+      };
+    }
+    if (status.status === "awaiting-review") {
+      return {
+        className: "review",
+        title: "Pipeline-Lauf wartet auf Prüfung",
+        detail: `${modeLabel(status.mode)} · neue Karten oder Sounds müssen geprüft werden`,
+        message: "Der Pipeline-Lauf wartet auf die Prüfung der neuen Karten und Sounds.",
+        messageType: "info",
+      };
+    }
+    if (status.status === "completed") {
+      return {
+        className: "completed",
+        title: "Pipeline-Lauf abgeschlossen",
+        detail: status.gitPublished
+          ? `${modeLabel(status.mode)} · Verarbeitung, Commit und Push sind abgeschlossen`
+          : `${modeLabel(status.mode)} · Verarbeitung ist abgeschlossen`,
+        message: status.gitPublished
+          ? "Pipeline-Lauf abgeschlossen. Änderungen wurden committed und gepusht."
+          : "Pipeline-Lauf abgeschlossen.",
+        messageType: "success",
+      };
+    }
+    if (status.status === "failed") {
+      return {
+        className: "failed",
+        title: "Pipeline-Lauf fehlgeschlagen",
+        detail: status.error || `${modeLabel(status.mode)} wurde nicht erfolgreich abgeschlossen`,
+        message: `Pipeline-Lauf fehlgeschlagen${status.error ? `: ${status.error}` : "."}`,
+        messageType: "error",
+      };
+    }
+    return null;
+  };
+
+  const renderPersistentPipelineStatus = (status) => {
+    const presentation = statusPresentation(status);
+    elements.pipelineRunNotice.hidden = !presentation;
+    elements.pipelineRunNotice.className = `pipeline-run-notice${presentation ? ` ${presentation.className}` : ""}`;
+    if (!presentation) return;
+    elements.pipelineRunNoticeTitle.textContent = presentation.title;
+    elements.pipelineRunNoticeDetail.textContent = presentation.detail;
+  };
+
+  const showStatusDialog = (status) => {
+    const presentation = statusPresentation(status);
+    if (!presentation) return;
+    previewToken = "";
+    previewMode = status.mode;
+    elements.pipelineDialogTitle.textContent = presentation.title;
+    elements.pipelineDialogDescription.textContent = modeLabel(status.mode);
+    elements.pipelineModeChoice.hidden = true;
+    elements.pipelinePreview.hidden = true;
+    elements.pipelineStartButton.hidden = true;
+    elements.pipelineStartButton.disabled = true;
+    setDialogCloseMode(true);
+    setMessage(presentation.message, presentation.messageType);
+    showDialog();
+  };
+
   const openChooser = () => {
+    if (state.pipelineStatusSnapshot?.status === "running"
+      || state.pipelineStatusSnapshot?.status === "awaiting-review") {
+      showStatusDialog(state.pipelineStatusSnapshot);
+      return;
+    }
     previewToken = "";
     previewMode = "";
     elements.pipelineDialogTitle.textContent = "Laufart auswählen";
@@ -728,6 +819,7 @@ function setupPipelineControl() {
     elements.pipelinePreview.hidden = true;
     elements.pipelineStartButton.hidden = true;
     elements.pipelineStartButton.disabled = true;
+    setDialogCloseMode(false);
     setMessage();
     showDialog();
   };
@@ -780,6 +872,7 @@ function setupPipelineControl() {
     elements.pipelineStartButton.hidden = true;
     elements.pipelineModeChoice.hidden = true;
     elements.pipelinePreview.hidden = true;
+    setDialogCloseMode(false);
     setMessage("Vorschau wird erstellt…", "info");
     elements.pipelineDialogTitle.textContent = modeLabel(mode);
     elements.pipelineDialogDescription.textContent =
@@ -825,6 +918,7 @@ function setupPipelineControl() {
   async function refreshPipelineStatus() {
     try {
       const status = await fetchJson("/api/pipeline/status");
+      state.pipelineStatusSnapshot = status;
       const running = status.status === "running";
       const awaitingReview = status.status === "awaiting-review";
       const active = running || awaitingReview;
@@ -833,13 +927,31 @@ function setupPipelineControl() {
       else if (awaitingReview) renderDatabaseStatus("review");
       else if (status.status === "failed") renderDatabaseStatus("failed");
       else renderDatabaseStatus();
+      renderPersistentPipelineStatus(status);
       elements.pipelineStatusDetail.textContent = active
         ? `${modeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
         : status.completedAt
           ? `${modeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
           : "Kein Lauf aktiv.";
+      elements.pipelineStatusDetail.className = `pipeline-dialog-status${
+        status.status === "awaiting-review" ? " review" : status.status !== "idle" ? ` ${status.status}` : ""
+      }`;
       elements.pipelineLogDetails.hidden = status.log.length === 0;
       elements.pipelineLog.textContent = status.log.join("\n");
+
+      if (dialog.open && active) {
+        const presentation = statusPresentation(status);
+        setDialogCloseMode(true);
+        setMessage(presentation.message, presentation.messageType);
+      } else if (dialog.open && state.pipelineWasRunning && !active) {
+        const presentation = statusPresentation(status);
+        if (presentation) {
+          elements.pipelineDialogTitle.textContent = presentation.title;
+          elements.pipelineDialogDescription.textContent = modeLabel(status.mode);
+          setDialogCloseMode(true);
+          setMessage(presentation.message, presentation.messageType);
+        }
+      }
 
       if (awaitingReview) state.openAssetReview?.(status);
 
@@ -855,6 +967,11 @@ function setupPipelineControl() {
     } catch (error) {
       elements.pipelineStatus.textContent = "Statusfehler";
       elements.pipelineStatusDetail.textContent = error.message;
+      elements.pipelineStatusDetail.className = "pipeline-dialog-status failed";
+      elements.pipelineRunNotice.hidden = false;
+      elements.pipelineRunNotice.className = "pipeline-run-notice failed";
+      elements.pipelineRunNoticeTitle.textContent = "Pipeline-Status nicht verfügbar";
+      elements.pipelineRunNoticeDetail.textContent = error.message;
     }
   }
 
@@ -862,6 +979,9 @@ function setupPipelineControl() {
     button.addEventListener("click", () => openPreview(button.dataset.pipelineMode));
   }
   elements.pipelineMenuButton.addEventListener("click", openChooser);
+  elements.pipelineRunNoticeOpen.addEventListener("click", () => {
+    if (state.pipelineStatusSnapshot) showStatusDialog(state.pipelineStatusSnapshot);
+  });
   for (const button of cancelButtons) button.addEventListener("click", close);
   setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
@@ -873,12 +993,22 @@ function setupPipelineControl() {
       "info",
     );
     try {
-      await fetchJson("/api/pipeline/start", {
+      const startedStatus = await fetchJson("/api/pipeline/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: previewToken }),
       });
-      close();
+      state.pipelineStatusSnapshot = startedStatus;
+      state.pipelineWasRunning = true;
+      previewToken = "";
+      elements.pipelineStartButton.hidden = true;
+      elements.pipelinePreview.hidden = true;
+      setDialogCloseMode(true);
+      const presentation = statusPresentation(startedStatus);
+      elements.pipelineDialogTitle.textContent = presentation.title;
+      elements.pipelineDialogDescription.textContent = modeLabel(startedStatus.mode);
+      setMessage(presentation.message, presentation.messageType);
+      renderPersistentPipelineStatus(startedStatus);
       await refreshPipelineStatus();
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");

@@ -275,6 +275,10 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - `node update.mjs --mode=nc-sounds`: nur drei NC-Sounds auf freie Alternativen prüfen
 - App-Vorschau und ausdrückliche Startbestätigung
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
+- nach dem Start bleibt der Dialog geöffnet und meldet `Pipeline-Lauf läuft gerade`; `Fenster schließen` schließt nur
+  die Anzeige, während der Lauf im Hintergrund weiterläuft
+- ein Statusbalken im Hauptfenster zeigt laufend, wartend, abgeschlossen oder fehlgeschlagen und öffnet bei Bedarf
+  wieder die Prozessdetails
 - nach erfolgreicher Pipeline passender Spektrogramm-Abgleich
 - Artansicht kann einen Eintrag nach Vorschau und Backup aus `species_list.json` entfernen
 - im Löschdialog können die zugehörigen generierten Daten und Assets per Checkbox sofort dauerhaft mitgelöscht werden

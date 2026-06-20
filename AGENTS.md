@@ -353,7 +353,11 @@ Aktuelle Planung:
   `Manuelle Karten erneut suchen` und `NC-Sounds erneut suchen`. `update.mjs`
   unterstuetzt
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
-  Lauf kann gleichzeitig aktiv sein. Nach erfolgreicher Pipeline folgt der passende Spektrogramm-Abgleich.
+  Lauf kann gleichzeitig aktiv sein. Nach dem Start bleibt der Dialog geöffnet und zeigt
+  `Pipeline-Lauf läuft gerade`. Der Button `Abbrechen` wechselt zu `Fenster schließen`; das Schließen beendet den
+  Hintergrundprozess nicht. Ein Statusbalken im Hauptfenster zeigt laufende, wartende, abgeschlossene und
+  fehlgeschlagene Läufe und öffnet die Prozessdetails erneut. Nach erfolgreicher Pipeline folgt der passende
+  Spektrogramm-Abgleich.
   Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
   bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
   Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:

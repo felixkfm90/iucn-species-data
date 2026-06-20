@@ -461,6 +461,9 @@ Umgesetzt:
 - Pipeline-Vorschau, einmaliges Token und Schutz gegen zwischenzeitliche Datenänderungen
 - nur ein Pipeline- oder Bereinigungslauf gleichzeitig
 - Live-Status und begrenzte lokale Logs unter `species-explorer/logs/`
+- nach Prozessstart bleibt der Statusdialog geöffnet und meldet `Pipeline-Lauf läuft gerade`
+- `Abbrechen` wird nach dem Start zu `Fenster schließen`; das Schließen beendet den Hintergrundprozess nicht
+- ein Statusbalken im Hauptfenster bleibt für laufende, wartende, abgeschlossene und fehlgeschlagene Läufe sichtbar
 - gezielter beziehungsweise vollstaendiger Spektrogramm-Abgleich nach erfolgreicher Datenpipeline
 - Git bleibt getrennt
 - der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften

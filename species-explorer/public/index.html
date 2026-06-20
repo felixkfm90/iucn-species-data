@@ -30,6 +30,20 @@
         </div>
       </header>
 
+      <section
+        id="pipeline-run-notice"
+        class="pipeline-run-notice"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <div>
+          <strong id="pipeline-run-notice-title">Pipeline-Lauf läuft gerade</strong>
+          <span id="pipeline-run-notice-detail"></span>
+        </div>
+        <button id="pipeline-run-notice-open" type="button">Details anzeigen</button>
+      </section>
+
       <section class="summary-bar" aria-label="Projektübersicht">
         <div><strong id="species-count">–</strong><span>Arten</span></div>
         <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
@@ -237,7 +251,7 @@
         </details>
 
         <div class="edit-actions">
-          <button class="pipeline-cancel" type="button">Abbrechen</button>
+          <button class="pipeline-cancel pipeline-dialog-close-button" type="button">Abbrechen</button>
           <button id="pipeline-start-button" class="edit-save-button" type="submit" hidden disabled>Starten</button>
         </div>
       </form>

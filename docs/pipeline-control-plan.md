@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-06-19
+Stand: 2026-06-20
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -23,8 +23,16 @@ Der Pipeline-Dialog fragt zuerst die Laufart ab:
 - NC-Sounds erneut auf freie Alternativen prüfen
 - dauerhafte Bereinigung
 
-Status und letzte Prozessausgabe werden im selben Dialog angezeigt. Im Lesemodus ist die Pipeline-Aktion
-ausgeblendet.
+Status und letzte Prozessausgabe werden im selben Dialog angezeigt. Nach dem Start bleibt der Dialog geöffnet und
+meldet ausdrücklich `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` heißt ab diesem Zeitpunkt
+`Fenster schließen`, weil er nur den Dialog schließt und den Prozess nicht beendet. Ein zusätzlicher Hinweis erklärt,
+dass der Lauf im Hintergrund weiterläuft. Nach erfolgreichem Ende wechselt die Meldung auf
+`Pipeline-Lauf abgeschlossen`; Fehler und die wartende Assetprüfung erhalten eigene Zustände.
+
+Parallel zeigt das Hauptfenster unter der Kopfzeile einen dauerhaften Statusbalken. Dadurch bleiben laufender,
+wartender, abgeschlossener oder fehlgeschlagener Lauf auch nach dem Schließen des Dialogs sichtbar. Über
+`Details anzeigen` lässt sich der Statusdialog erneut öffnen. Im Lesemodus ist der Start einer Pipeline
+ausgeblendet; ein bereits laufender Status bleibt trotzdem sichtbar.
 
 Nach dem Speichern einer neuen Art öffnet der Explorer automatisch die Vorschau `Neue oder fehlende Arten`.
 Der Lauf kann dort sofort gestartet oder abgebrochen werden. Beim Abbrechen bleibt die neue Art als ausstehender
@@ -162,6 +170,9 @@ npm.cmd run --silent cleanup:species
 - Prozessausgabe, Startzeit, Laufart, Zielarten, Exit-Code und Fehler werden lokal protokolliert.
 - Logs werden unter `species-explorer/logs/` geschrieben, auf 20 Dateien begrenzt und nicht versioniert.
 - Nach Erfolg oder Fehler laedt der Explorer Daten, Assets und Validierung neu.
+- Während des Laufs bleibt der Prozess als `Pipeline-Lauf läuft gerade` im Dialog und im Hauptfenster sichtbar.
+- Das Schließen des Statusdialogs beendet keinen Lauf; der Button heißt deshalb nach dem Start `Fenster schließen`.
+- Nach Ende bleibt `Pipeline-Lauf abgeschlossen` beziehungsweise die Fehlermeldung sichtbar.
 - Die Meldung direkt nach dem Anlegen einer Art wird nach erfolgreichem Pipeline-Commit und Push entfernt.
 - Ein fehlgeschlagener Teillauf darf vorhandene gute Daten nicht durch leere oder unvollstaendige Ergebnisse
   ersetzen.

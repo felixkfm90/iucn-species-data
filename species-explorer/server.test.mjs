@@ -763,6 +763,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /Manuelle Karten erneut suchen/);
   assert.match(appSource, /NC-Sounds erneut suchen/);
+  assert.match(htmlSource, /id="pipeline-run-notice"/);
+  assert.match(htmlSource, /pipeline-dialog-close-button/);
+  assert.match(appSource, /Pipeline-Lauf läuft gerade/);
+  assert.match(appSource, /Pipeline-Lauf abgeschlossen/);
+  assert.match(appSource, /Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter/);
+  assert.match(appSource, /footerCloseButton\.textContent = active \? "Fenster schließen" : "Abbrechen"/);
+  assert.match(appSource, /renderPersistentPipelineStatus\(status\)/);
+  assert.match(cssSource, /\.pipeline-run-notice\.completed/);
+  assert.match(cssSource, /\.pipeline-dialog-status\.running/);
   assert.match(appSource, /Bisherige manuelle Karte behalten/);
   assert.match(appSource, /Bisherigen NC-Sound behalten/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
