@@ -6,6 +6,10 @@ Ziel von Phase 7.7: Karten, Sounds, Credits und Spektrogramme kontrolliert je Ar
 beliebige Dateisystemzugriffe zu erlauben und ohne manuelle Assets beim naechsten Pipeline-Lauf unbemerkt zu
 ueberschreiben.
 
+Der Einstieg erfolgt über die allgemeine Aktion `Bearbeiten` oben rechts im Artkopf. Dort werden neben den bereits
+vorhandenen manuellen Eingaben später auch Karte, Sound/Credits, Spektrogramm und Artporträt verwaltet. Die
+Schaltflächen sind deshalb bewusst nicht mehr dem Abschnitt `Manuelle Daten` zugeordnet.
+
 ## Ausgangslage
 
 Produktive Assets liegen ausschliesslich unter:

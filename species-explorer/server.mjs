@@ -6,7 +6,7 @@ import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
-import { buildCleanupPlan } from "../scripts/species-cleanup.mjs";
+import { buildCleanupPlan, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -178,10 +178,12 @@ function publicCleanupPlan(plan) {
     targetCount:
       plan.obsoleteData.length
       + plan.obsoleteAssetDirectories.length
-      + plan.obsoleteAssessmentKeys.length,
+      + plan.obsoleteAssessmentKeys.length
+      + plan.obsoleteOverrideKeys.length,
     obsoleteData: plan.obsoleteData,
     obsoleteAssetDirectories: plan.obsoleteAssetDirectories,
     obsoleteAssessmentKeys: plan.obsoleteAssessmentKeys,
+    obsoleteOverrideKeys: plan.obsoleteOverrideKeys,
     reclaimableBytes: plan.reclaimableBytes,
     hasWork: plan.hasWork,
   };
@@ -1231,7 +1233,7 @@ export async function createExplorerServer({
     pipelineState = {
       status: "running",
       phase: "Start",
-      mode: plan.mode,
+      mode: preview.mode,
       runId: randomUUID(),
       startedAt: new Date().toISOString(),
       completedAt: "",
@@ -1517,16 +1519,18 @@ export async function createExplorerServer({
         assetDirectory: `species-assets/${species.safeName}`,
       },
       effects: [
-        "Der Eintrag wird nur aus species_list.json entfernt.",
-        "speciesData.json und der Report werden beim nächsten Pipeline-Lauf bereinigt.",
-        "Der Assetordner bleibt bestehen und wird nicht gelöscht.",
+        "Der Eintrag wird aus species_list.json entfernt.",
+        "Ohne Zusatzoption bleiben generierte Daten und Assets bis zum Bereinigungslauf bestehen.",
+        "Mit Zusatzoption werden generierte Daten, Assessment-Zuordnung, Assetpflege und der Assetordner sofort dauerhaft gelöscht.",
       ],
+      assetDirectoryExists: existsSync(join(repoRoot, "species-assets", species.safeName)),
     };
   }
 
   async function saveSpeciesDelete(id, payload) {
     cleanupPreviewTokens();
     const token = String(payload?.token ?? "");
+    const deleteAssets = payload?.deleteAssets === true;
     const preview = previewTokens.get(token);
     if (!preview || preview.type !== "delete" || preview.id !== id) {
       const error = new Error("Löschvorschau ist ungültig oder abgelaufen");
@@ -1573,6 +1577,25 @@ export async function createExplorerServer({
       throw error;
     }
 
+    let permanentCleanup = null;
+    if (deleteAssets) {
+      try {
+        permanentCleanup = runSpeciesCleanup(repoRoot, {
+          slug: species.slug || species.id,
+          safeName: species.safeName,
+        });
+      } catch (error) {
+        const rollbackPath = `${speciesListPath}.tmp-${randomUUID()}`;
+        try {
+          await writeFile(rollbackPath, sourceText, "utf8");
+          await rename(rollbackPath, speciesListPath);
+        } catch {
+          await unlink(rollbackPath).catch(() => {});
+        }
+        throw error;
+      }
+    }
+
     previewTokens.delete(token);
     await refreshModel({ force: true });
     let backupRetention = { kept: 0, removed: 0 };
@@ -1592,8 +1615,9 @@ export async function createExplorerServer({
       backup: `species-explorer/backups/${backupName}`,
       backupRetention,
       backupCleanupWarning,
-      assetDirectoryPreserved: `species-assets/${species.safeName}`,
-      pipelineRequired: species.inGenerated,
+      assetDirectoryPreserved: deleteAssets ? "" : `species-assets/${species.safeName}`,
+      permanentCleanup,
+      pipelineRequired: deleteAssets ? false : species.inGenerated,
       summary: model.summary,
       validation: model.validation,
     };

@@ -1,26 +1,38 @@
 # Arten löschen und Altdateien bereinigen
 
-Stand: 2026-06-19
+Stand: 2026-06-20
 
-Das Löschen ist bewusst in zwei getrennte Aktionen aufgeteilt.
+Beim Löschen einer Art kann zwischen einem rückholbaren ersten Schritt und der sofortigen dauerhaften Entfernung
+aller zugehörigen Daten gewählt werden.
 
 ## 1. Art aus der Artenliste entfernen
 
-In der Detailansicht steht bei Arten aus `species_list.json` neben `Bearbeiten` die Aktion `Löschen`.
+Im Artkopf steht bei Arten aus `species_list.json` neben `Bearbeiten` die Aktion `Löschen`.
 
 Vor dem Entfernen zeigt der Explorer:
 
 - deutschen und wissenschaftlichen Namen
-- Hinweis, dass nur der Eintrag aus `species_list.json` entfernt wird
-- Hinweis, dass generierte Daten und Assets zunächst bestehen bleiben
+- eine Checkbox `Zugehörige generierte Daten und Assets sofort dauerhaft löschen`
+- die Auswirkungen mit und ohne aktivierte Checkbox
 
-Beim Bestätigen:
+Ohne aktivierte Checkbox:
 
 - wird `species_list.json` vorab unter `species-explorer/backups/` gesichert
 - wird nur der ausgewählte Listeneintrag atomar entfernt
 - bleiben `speciesData.json`, Report und `species-assets/<SafeName>/` zunächst unverändert
 
 Damit kann ein versehentlich entfernter Listeneintrag aus dem JSON-Backup wiederhergestellt werden.
+
+Mit aktivierter Checkbox werden zusätzlich sofort und dauerhaft entfernt:
+
+- der zugehörige Eintrag aus `speciesData.json`
+- der Assetordner `species-assets/<SafeName>/`
+- die Assessment-Zuordnung aus `lastSavedAssessmentId.json`
+- der Pflegeeintrag aus `species-assets-overrides.json`
+- anschließend wird der Report neu aufgebaut
+
+Diese Zusatzlöschung hat keine separate Wiederherstellungsablage. Danach kann dieselbe Art ohne Kollision mit alten
+generierten Daten oder einem alten Assetordner wieder neu angelegt werden.
 
 ## 2. Dauerhafter Bereinigungslauf
 
@@ -29,6 +41,7 @@ Die globale Aktion `Bereinigen` sucht:
 - Einträge in `speciesData.json`, die nicht mehr in `species_list.json` vorkommen
 - Assetordner unter `species-assets/`, für die keine aktuelle Art mehr existiert
 - veraltete Einträge in `lastSavedAssessmentId.json`
+- verwaiste Einträge in `species-assets-overrides.json`
 
 Die Vorschau listet die gefundenen Datensätze und Assetordner einschließlich Dateigröße auf. Es gibt genau eine
 Bestätigung:
@@ -40,6 +53,7 @@ Nach dieser Bestätigung:
 - werden verwaiste Assetordner rekursiv und dauerhaft gelöscht
 - werden veraltete Einträge aus `speciesData.json` entfernt
 - werden veraltete Assessment-Zuordnungen entfernt
+- werden verwaiste Asset-Pflegeeinträge entfernt
 - wird `fehlende_elemente_report.json` für den bereinigten Bestand neu aufgebaut
 
 Für den Bereinigungslauf wird keine zusätzliche Wiederherstellungsablage erzeugt. Die in der Vorschau aufgelisteten
@@ -50,6 +64,8 @@ Assetdateien sind nach dem Lauf nicht wiederherstellbar.
 - Ein Assetordner wird nur gelöscht, wenn sein aufgelöster Pfad sicher innerhalb von `species-assets/` liegt.
 - Aktuelle `SafeName`-Ordner aus `species_list.json` werden nicht als verwaist eingestuft.
 - Die Bereinigung startet nur nach einer aktuellen Vorschau mit einmaligem Token.
+- Der Bereinigungsplan trägt ausdrücklich `mode: cleanup`; damit startet die App das Löschskript und nicht
+  versehentlich die normale Datenpipeline.
 - Ändert sich Artenliste, Pipeline-Ausgabe oder Bereinigungsplan zwischen Vorschau und Start, wird der Start
   abgewiesen.
 - Es kann immer nur ein Pipeline- oder Bereinigungslauf gleichzeitig laufen.

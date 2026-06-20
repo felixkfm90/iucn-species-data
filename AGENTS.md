@@ -62,19 +62,16 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 46 Eintraege in `species_list.json`
-- 45 aktive Arten
-- 45 Arten in `speciesData.json`
-- `Haubentaucher` ist neu angelegt und wartet auf den ersten Pipeline-Lauf
-- 45 Karten
-- 45 Art-Assetordner
-- 45 MP3-Dateien
-- 45 Credits-Dateien
-- 45 Spektrogramm-Dateien
-- 45 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
-- 0 fehlende Kernassets im letzten Report fuer die 45 verarbeiteten Arten
-- Haubentaucher hat bis zum Pipeline-Lauf erwartungsgemaess noch kein Assetpaket; der Report ist fuer diesen neuen
-  Eintrag noch nicht aktualisiert
+- 47 Eintraege in `species_list.json`
+- 47 aktive Arten
+- 47 Arten in `speciesData.json`
+- 47 Karten
+- 47 Art-Assetordner
+- 47 MP3-Dateien
+- 47 Credits-Dateien
+- 47 Spektrogramm-Dateien
+- 47 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
+- 0 fehlende Kernassets im letzten Report fuer die 47 verarbeiteten Arten
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -335,7 +332,10 @@ Aktuelle Planung:
   fremde Dateien im Ordner werden nicht geloescht. Name, Taxonomie, neue Arten, Pipeline und Git bleiben gesperrt
   bzw. separat. Die Phase-7.4-Pruefungen sind Teil der inzwischen sechs erfolgreichen Explorer-Tests.
   Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
-  Phase 7.5 ist seit 2026-06-19 technisch lokal umgesetzt; die visuelle Bedienpruefung durch Felix ist noch offen.
+  `Bearbeiten` und `Loeschen` stehen als allgemeine Artaktionen oben rechts im Detailkopf. Phase 7.7 erweitert
+  diesen Einstieg spaeter um Karten-, Sound- und weitere Assetpflege.
+  Phase 7.5 ist seit 2026-06-20 abgeschlossen und durch das erneute Anlegen von Haubentaucher und Hoeckerschwan
+  praktisch geprueft.
   Neue Arten werden kontrolliert nach `docs/add-species-workflow.md` angelegt. Erfasst werden
   deutscher Name, wissenschaftlicher Name, Groesse, Gewicht und Lebenserwartung. Der wissenschaftliche Name wird
   im Hintergrund in Gattung und Artepitheton getrennt und normalisiert. Duplikate, Slug-/SafeName-Kollisionen
@@ -344,8 +344,11 @@ Aktuelle Planung:
   erwartungsgemaess nur in `species_list.json`. API: `POST /api/species/new/preview` und
   `POST /api/species/new/save`. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
-  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Der Haubentaucher ist der erste echte neue Eintrag.
-  Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist technisch lokal umgesetzt. Die App
+  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und Hoeckerschwan wurden fuer
+  produktive Workflow-Tests angelegt und danach wieder entfernt.
+  Hintergrundklicks schließen Eingabedialoge nur, wenn Zeigerdruck und Klickende beide auf dem Hintergrund liegen.
+  Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
+  Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
   unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`. `update.mjs`
   unterstuetzt
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
@@ -354,8 +357,11 @@ Aktuelle Planung:
   bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
   Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
-  Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Die getrennte
-  Aktion `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen und Assetordner auf und loescht sie nach
+  Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
+  Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Eine Checkbox
+  loescht bei Bedarf generierte Daten, Assessment-Zuordnung, Asset-Pflegeeintrag und Assetordner derselben Art sofort
+  dauerhaft mit. Ohne Checkbox bleiben diese Inhalte bis zur getrennten Bereinigung bestehen. Die Aktion
+  `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen, Pflegeeintraege und Assetordner auf und loescht sie nach
   genau einer Bestaetigung dauerhaft ohne Wiederherstellungsablage. Details:
   `docs/delete-species-workflow.md`. Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus` den Bearbeitungsmodus; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
@@ -368,9 +374,13 @@ Aktuelle Planung:
   neu. Neun Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
-  ergaenzte Karten-Grossansicht benoetigt noch einen kurzen visuellen Bestaetigungstest. Danach folgt 7.7
-  Asset-Verwaltung nach
+  ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
+  geprueft. Danach folgt 7.7 Asset-Verwaltung nach
   `docs/asset-management-plan.md` und 7.8 NAS/Backup.
+  Ein am 2026-06-20 gefundener Fehler startete bei `Bereinigen` wegen eines fehlenden internen Modus irrtuemlich
+  `update.mjs --mode=undefined`. Der Plan und Prozessstatus tragen jetzt ausdruecklich `mode: cleanup`; der
+  isolierte Test prueft sowohl den Bereinigungslauf als auch die optionale Sofortloeschung und anschliessende
+  kollisionsfreie Neuanlage.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

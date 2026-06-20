@@ -300,7 +300,8 @@ Status: abgeschlossen am 2026-06-19.
 
 Umgesetzt:
 
-- Bearbeiten-Schaltflaeche im Bereich `Manuelle Daten`
+- Artaktionen `Bearbeiten` und `Löschen` im Detailkopf oben rechts; sie sind nicht an den Abschnitt
+  `Manuelle Daten` gebunden und können in Phase 7.7 um Karten-, Sound- und weitere Assetpflege erweitert werden
 - kontrollierte Formularfelder:
   - Groesse (`size`)
   - Gewicht (`weight`)
@@ -347,7 +348,7 @@ Teststand:
 
 ### 7.5 Neue Art anlegen
 
-Status: technisch lokal umgesetzt am 2026-06-19; visuelle Bedienpruefung durch Felix offen.
+Status: abgeschlossen und am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 Fachlicher Ablauf: `docs/add-species-workflow.md`.
 
 Ziel:
@@ -419,15 +420,16 @@ Aktueller Pruefstand:
 - HTML-Auslieferung enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten
 - nach erfolgreichem Speichern wird die Aktion wieder freigegeben; weitere Arten koennen ohne Seitenneuladen
   angelegt werden
-- erster echter neuer Eintrag: `Haubentaucher` (`Podiceps cristatus`), wartet auf den Pipeline-Lauf
+- Eingabedialoge schließen bei einer Textmarkierung über den Fensterrand nicht mehr versehentlich; ein
+  Hintergrundklick zählt nur, wenn er vollständig auf dem Hintergrund beginnt und endet
+- Haubentaucher und Höckerschwan wurden erfolgreich neu angelegt und anschließend vollständig verarbeitet
 - integrierte Browsersteuerung konnte wegen der lokalen Windows-Sandbox nicht gestartet werden; deshalb ist die
   visuelle Bedienpruefung noch nicht als abgeschlossen markiert
 
 ### 7.6 Pipeline- und Audit-Steuerung
 
-Status: technisch umgesetzt und am 2026-06-20 mit einem produktiven selektiven Lauf für den Höckerschwan geprüft.
-Start, Prozessanzeige, Assetentscheidung sowie automatischer Commit und Push funktionierten. Die anschließend
-ergänzte Karten-Großansicht im Prüfdialog benötigt noch einen kurzen visuellen Bestätigungstest.
+Status: abgeschlossen am 2026-06-20. Start, Prozessanzeige, Assetentscheidung, automatischer Commit/Push,
+Bereinigung, Karten-Großansicht, sichere Dialogbedienung und Soundstopp wurden praktisch geprüft.
 Detailplanung: `docs/pipeline-control-plan.md`.
 
 Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
@@ -473,16 +475,19 @@ Umgesetzt:
   die Art wie bisher als ausstehend stehen
 - neue Karten und Sounds werden nach Pipeline, Spektrogramm und Report angezeigt
 - neue Karten lassen sich im Prüfdialog anklicken und in einer großen Lightbox bewerten
+- laufende Sounds im Prüfdialog stoppen beim Schließen sofort und springen auf Position 0 zurück
 - Felix bestätigt je Asset automatische Pflege oder manuellen Schutz
 - `species-assets-overrides.json` schützt manuell markierte Karten und Sounds bei späteren Pipeline-Laeufen
 - danach werden die vorgesehenen Pipeline-Dateien automatisch committed und gepusht
 
 Arten loeschen und bereinigen:
 
-- `Löschen` in der Artansicht entfernt nach Vorschau nur den Eintrag aus `species_list.json`
+- `Löschen` in der Artansicht entfernt nach Vorschau standardmäßig nur den Eintrag aus `species_list.json`
 - vorher wird ein normales `species_list.json`-Backup angelegt
-- generierte Daten und Assetordner bleiben zunächst bestehen
-- globale Aktion `Bereinigen` zeigt verwaiste Datensaetze, Assessment-Zuordnungen und Assetordner
+- eine Checkbox kann generierte Daten, Assessment-Zuordnung, Asset-Pflegeeintrag und Assetordner derselben Art
+  sofort dauerhaft mitlöschen
+- ohne Checkbox bleiben generierte Daten und Assetordner zunächst bestehen
+- globale Aktion `Bereinigen` zeigt verwaiste Datensaetze, Assessment-Zuordnungen, Pflegeeinträge und Assetordner
 - nach genau einer Bestaetigung werden die aufgelisteten Altdateien dauerhaft und ohne Wiederherstellungsablage
   geloescht
 - Detailablauf: `docs/delete-species-workflow.md`
@@ -491,7 +496,8 @@ Aktueller Teststand:
 
 - 9 Explorer-Tests erfolgreich
 - Auswahl `missing` und `all` in temporaerem Repository getestet
-- Listeneintrag loeschen, Backup, erhaltene Assets und anschliessende dauerhafte Bereinigung getestet
+- Listeneintrag loeschen, optionale Sofortlöschung, Backup, erhaltene Assets und anschliessende dauerhafte
+  Bereinigung getestet
 - produktive Artenliste und Assets werden von diesen Tests nicht verändert
 
 Automatische Aktualität:

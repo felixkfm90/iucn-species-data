@@ -284,8 +284,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   die neuesten 20 verwalteten Dateien begrenzt; fremde Dateien werden nicht geloescht. Die inzwischen sechs
   automatisierten Explorer-Tests
   einschliesslich isoliertem Schreib-/Backup-/Retention-Test sind erfolgreich. Felix hat Speichern, Testwertkorrektur
-  und Bedienablauf visuell geprueft.
-- 7.5 Neue Art kontrolliert anlegen: technisch lokal umgesetzt am 2026-06-19, visuelle Bedienpruefung offen,
+  und Bedienablauf visuell geprueft. `Bearbeiten` und `Löschen` stehen inzwischen als allgemeine Artaktionen oben
+  rechts im Detailkopf, damit Phase 7.7 dort auch Karten- und Soundpflege anbinden kann.
+- 7.5 Neue Art kontrolliert anlegen: abgeschlossen und praktisch geprüft am 2026-06-20,
   siehe `docs/add-species-workflow.md`.
   Die App erfasst deutschen Namen, wissenschaftlichen Namen, Groesse, Gewicht und Lebenserwartung. Der
   wissenschaftliche Name wird im Hintergrund in Gattung und Artepitheton getrennt und normalisiert. Vor dem Speichern
@@ -296,13 +297,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Die beiden neuen API-Routen sind `POST /api/species/new/preview` und `POST /api/species/new/save`. Sechs
   Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests nicht veraendert. Der lokale Server
   wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle fuenf Felder mit Beispieltexten aus.
-  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Der Haubentaucher
-  wurde als erster echter neuer Eintrag angelegt; damit stehen 46 Arten in `species_list.json`, davon eine
-  erwartungsgemaess noch ohne Pipeline-Ausgabe und Assets.
-- 7.6 Pipeline- und Audit-Steuerung: technisch umgesetzt. Ein vollständiger externer Lauf und ein selektiver
-  App-Lauf für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start, Prozessanzeige,
-  Assetentscheidung sowie automatischer Commit und Push funktionierten. Die anschließend ergänzte
-  Karten-Großansicht benötigt noch einen kurzen visuellen Bestätigungstest, siehe `docs/pipeline-control-plan.md`.
+  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
+  Höckerschwan wurden nach erfolgreicher Bereinigung erneut angelegt; aktuell stehen 47 Arten in `species_list.json`.
+- 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
+  Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
+  Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
   Die App unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`.
   Der gezielte Lauf verarbeitet input-only Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets. Der
   vollstaendige Lauf entspricht dem bisherigen `node update.mjs` ueber die gesamte Artenliste. Vor dem Start werden
@@ -311,7 +310,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Aufrufe ohne Parameter bleiben vollstaendige Laeufe. Die App zeigt Prozessstatus und lokale, auf 20 Dateien
   begrenzte Logs. Nach erfolgreicher Pipeline folgt der passende Spektrogramm-Abgleich.
   Arten koennen nach Vorschau und Backup aus `species_list.json` entfernt werden. Die separate Aktion `Bereinigen`
-  listet danach verwaiste generierte Daten, Assessment-Zuordnungen und Assetordner auf. Nach genau einer
+  listet danach verwaiste generierte Daten, Assessment-Zuordnungen, Pflegeeinträge und Assetordner auf. Nach genau einer
   Bestaetigung werden diese Inhalte dauerhaft und ohne Wiederherstellungsablage geloescht. Details:
   `docs/delete-species-workflow.md`. Die Prozesssteuerung wurde kompakt in die Kopfzeile verschoben: Das klickbare
   Datenbank-Feld fragt im Dialog die Laufart ab. Es ist bei offenen Problemen rot als `Datenbank aktualisieren` und
@@ -326,6 +325,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   veraltet. Deshalb überwacht der Server nun Artenliste, Pipeline-Ausgaben, Report, Overrides und Assetdateien per
   Revision. Die geöffnete App prüft diese Revision alle fünf Sekunden und lädt bei Änderungen automatisch neu.
   Einschließlich dieses externen Änderungsfalls sind jetzt neun Explorer-Tests erfolgreich.
+  Ein Fehler bei der Modusübergabe ließ die Bereinigung zunächst fälschlich `update.mjs --mode=undefined` starten.
+  Seit 2026-06-20 trägt der Bereinigungsplan ausdrücklich `mode: cleanup`. Zusätzlich bietet der Art-Löschdialog eine
+  Checkbox, um die generierten Daten und Assets der gewählten Art sofort dauerhaft mitzulöschen.
+  Dialoge schließen bei Textmarkierungen über den Fensterrand nicht mehr versehentlich; die sichere
+  Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
+  Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
 - 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
   Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
   explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die

@@ -15,6 +15,9 @@ Für jedes neue Asset zeigt der Dialog:
 - bei Karten eine anklickbare Bildvorschau; ein Klick öffnet die Karte in einer großen Lightbox
 - bei Sounds einen Audioplayer
 
+Beim Schließen des Prüfdialogs wird jede laufende Soundwiedergabe sofort gestoppt und auf den Anfang zurückgesetzt.
+Das gilt auch, wenn der Dialog nach dem Speichern der Pflegeentscheidung automatisch geschlossen wird.
+
 Felix muss je Asset eine Option wählen:
 
 - `Automatisch durch Pipeline pflegen`

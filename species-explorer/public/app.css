@@ -229,6 +229,30 @@ button.danger,
   border-color: #dfb2b2;
 }
 
+.delete-assets-option {
+  margin-top: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--red);
+  background: var(--red-soft);
+  border: 1px solid #dfb2b2;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.delete-assets-option input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.delete-assets-warning.danger {
+  color: var(--red);
+  border-color: #dfb2b2;
+}
+
 .pipeline-log-details {
   margin-top: 12px;
 }
@@ -702,6 +726,16 @@ button:focus-visible {
   gap: 7px;
 }
 
+.detail-actions {
+  margin-bottom: 2px;
+}
+
+.detail-actions .edit-species-open {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: #b9d9ca;
+}
+
 .scientific-name {
   margin: 0;
   color: var(--text-muted);
@@ -788,31 +822,6 @@ button:focus-visible {
   font-size: 0.78rem;
   text-transform: uppercase;
   border-bottom: 1px solid var(--line);
-}
-
-.section-title-row {
-  min-height: 39px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-.section-title-row .section-title {
-  flex: 1 1 auto;
-  border-bottom: 0;
-}
-
-.edit-species-open {
-  margin-right: 10px;
-  padding: 5px 9px;
-  color: var(--green);
-  background: var(--green-soft);
-  border: 1px solid #b9d9ca;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 750;
 }
 
 .map-frame {
@@ -1468,6 +1477,10 @@ button:focus-visible {
 
   .detail-meta {
     justify-items: start;
+  }
+
+  .detail-actions {
+    justify-content: flex-start;
   }
 
   .detail-badges {

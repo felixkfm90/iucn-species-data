@@ -6,10 +6,9 @@ Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Expl
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
 unterscheiden.
 
-Status: technisch umgesetzt. Nach dem vollständigen Lauf für den Haubentaucher wurde am 2026-06-20 auch ein
-produktiver selektiver Lauf direkt aus der App für den Höckerschwan erfolgreich abgeschlossen. Start,
-Prozessanzeige, Karte-/Sound-Entscheidung sowie automatischer Commit und Push funktionierten. Die nach diesem Test
-ergänzte Karten-Großansicht benötigt noch einen kurzen visuellen Bestätigungstest.
+Status: abgeschlossen am 2026-06-20. Vollständige und selektive Läufe, Prozessanzeige, Karte-/Sound-Entscheidung,
+automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere Dialogbedienung und Soundstopp wurden praktisch
+geprüft.
 
 ## Bedienoberfläche
 
@@ -93,6 +92,7 @@ Die Bereinigung ist eine eigene Aktion und wird nie automatisch an einen Update-
 - nicht mehr benötigte Einträge in `speciesData.json`
 - verwaiste Ordner unter `species-assets/`
 - veraltete Einträge in `lastSavedAssessmentId.json`
+- verwaiste Einträge in `species-assets-overrides.json`
 
 Die App zeigt die betroffenen Datensätze, Ordner und Dateigrößen. Nach genau einer Bestätigung werden diese Inhalte
 dauerhaft gelöscht und sind nicht wiederherstellbar. Details: `docs/delete-species-workflow.md`.
@@ -138,6 +138,7 @@ npm.cmd run --silent cleanup:species
 - Ein fehlgeschlagener Teillauf darf vorhandene gute Daten nicht durch leere oder unvollstaendige Ergebnisse
   ersetzen.
 - Die Bereinigung löscht nur Pfade, die nach Auflösung sicher innerhalb von `species-assets/` liegen.
+- Der Bereinigungsmodus wird im Plan und beim Prozessstart ausdrücklich als `cleanup` weitergegeben.
 
 ## Spektrogramme
 
@@ -167,6 +168,7 @@ mehr als fehlend im Report stehen bleibt.
 - Pflegeentscheidung wird in `species-assets-overrides.json` gespeichert
 - Git-Commit und Git-Push laufen erst nach vollständiger Assetentscheidung
 - Löschen aus `species_list.json` lässt Assets zunächst bestehen: getestet.
+- Optionale Sofortlöschung entfernt generierte Daten und Assets derselben Art dauerhaft: getestet.
 - Bereinigung erkennt verwaiste Daten und Assets: getestet.
 - Bereinigung löscht verwaiste Assetordner und aktualisiert Daten/Report: getestet im temporären Repository.
 

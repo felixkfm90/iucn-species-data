@@ -128,6 +128,21 @@ function backupRetentionText(result) {
     + `${retention.removed ? `, ${retention.removed} alte entfernt` : ""}.`;
 }
 
+function setupSafeBackdropClose(dialog, close) {
+  let startedOnBackdrop = false;
+  dialog.addEventListener("pointerdown", (event) => {
+    startedOnBackdrop = event.target === dialog;
+  });
+  dialog.addEventListener("pointercancel", () => {
+    startedOnBackdrop = false;
+  });
+  dialog.addEventListener("click", (event) => {
+    const shouldClose = startedOnBackdrop && event.target === dialog;
+    startedOnBackdrop = false;
+    if (shouldClose) close();
+  });
+}
+
 function setupEditingMode() {
   const applyMode = (enabled) => {
     state.editMode = enabled;
@@ -513,13 +528,9 @@ function setupMapZoom(species) {
     document.body.classList.remove("explorer-modal-open");
   };
 
-  const closeOnBackdrop = (event) => {
-    if (event.target === dialog) close();
-  };
-
   trigger.addEventListener("click", open);
   closeButton.addEventListener("click", close);
-  dialog.addEventListener("click", closeOnBackdrop);
+  setupSafeBackdropClose(dialog, close);
   dialog.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
 
   state.mapCleanup = () => {
@@ -532,6 +543,13 @@ function setupAssetReview() {
   const form = elements.assetReviewForm;
   const mapLightbox = elements.assetReviewMapLightbox;
   const mapLightboxImage = elements.assetReviewMapLightboxImage;
+
+  const stopAssetReviewAudio = () => {
+    for (const audio of elements.assetReviewList.querySelectorAll("audio")) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  };
 
   const closeMapLightbox = () => {
     if (mapLightbox.open && typeof mapLightbox.close === "function") mapLightbox.close();
@@ -610,11 +628,12 @@ function setupAssetReview() {
     if (trigger) openMapLightbox(trigger);
   });
   elements.assetReviewMapLightboxClose.addEventListener("click", closeMapLightbox);
-  mapLightbox.addEventListener("click", (event) => {
-    if (event.target === mapLightbox) closeMapLightbox();
-  });
+  setupSafeBackdropClose(mapLightbox, closeMapLightbox);
   mapLightbox.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
-  dialog.addEventListener("close", closeMapLightbox);
+  dialog.addEventListener("close", () => {
+    stopAssetReviewAudio();
+    closeMapLightbox();
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const assets = JSON.parse(form.dataset.assets || "[]");
@@ -707,7 +726,8 @@ function setupPipelineControl() {
         ? `
           <p><strong>${result.obsoleteData.length}</strong> veraltete Datensätze,
             <strong>${result.obsoleteAssetDirectories.length}</strong> verwaiste Assetordner und
-            <strong>${result.obsoleteAssessmentKeys.length}</strong> alte Assessment-Zuordnungen.</p>
+            <strong>${result.obsoleteAssessmentKeys.length}</strong> alte Assessment-Zuordnungen sowie
+            <strong>${result.obsoleteOverrideKeys.length}</strong> verwaiste Pflegeeinträge.</p>
           ${dataRows ? `<h5>Datensätze</h5><ul>${dataRows}</ul>` : ""}
           ${assetRows ? `<h5>Assetordner</h5><ul>${assetRows}</ul>` : ""}
         `
@@ -816,9 +836,7 @@ function setupPipelineControl() {
   }
   elements.pipelineMenuButton.addEventListener("click", openChooser);
   for (const button of cancelButtons) button.addEventListener("click", close);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) close();
-  });
+  setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!previewToken) return;
@@ -894,9 +912,7 @@ function setupNewSpeciesCreator() {
   });
 
   for (const button of closeButtons) button.addEventListener("click", close);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) close();
-  });
+  setupSafeBackdropClose(dialog, close);
 
   form.addEventListener("input", () => {
     resetPreview();
@@ -1020,8 +1036,9 @@ function setupSpeciesEditor(species) {
     });
   }
 
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog && typeof dialog.close === "function") dialog.close();
+  setupSafeBackdropClose(dialog, () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
   });
 
   form.addEventListener("input", () => {
@@ -1107,9 +1124,20 @@ function setupSpeciesDelete(species) {
   const form = elements.detailPanel.querySelector(".delete-form");
   const message = elements.detailPanel.querySelector(".delete-message");
   const effects = elements.detailPanel.querySelector(".delete-effects");
+  const deleteAssetsOption = elements.detailPanel.querySelector(".delete-assets-now");
+  const deleteWarning = elements.detailPanel.querySelector(".delete-assets-warning");
   const confirmButton = elements.detailPanel.querySelector(".delete-confirm");
   const cancelButtons = [...elements.detailPanel.querySelectorAll(".delete-cancel")];
-  if (!dialog || !openButton || !form || !message || !effects || !confirmButton) return;
+  if (
+    !dialog
+    || !openButton
+    || !form
+    || !message
+    || !effects
+    || !deleteAssetsOption
+    || !deleteWarning
+    || !confirmButton
+  ) return;
   let previewToken = "";
 
   const setMessage = (text = "", type = "") => {
@@ -1121,9 +1149,21 @@ function setupSpeciesDelete(species) {
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
+  const updateDeleteMode = () => {
+    const permanent = deleteAssetsOption.checked;
+    confirmButton.textContent = permanent
+      ? "Art und Daten dauerhaft löschen"
+      : "Aus Artenliste entfernen";
+    deleteWarning.textContent = permanent
+      ? "Dauerhaft: Generierte Daten, Assetordner und zugehörige Pflegeinformationen werden sofort gelöscht und sind nicht wiederherstellbar."
+      : "Ohne Auswahl bleiben generierte Daten und Assets bis zum separaten Bereinigungslauf bestehen.";
+    deleteWarning.classList.toggle("danger", permanent);
+  };
 
   openButton.addEventListener("click", async () => {
     previewToken = "";
+    deleteAssetsOption.checked = false;
+    updateDeleteMode();
     confirmButton.disabled = true;
     effects.replaceChildren();
     setMessage("Auswirkungen werden geprüft…", "info");
@@ -1140,35 +1180,44 @@ function setupSpeciesDelete(species) {
       );
       previewToken = result.token;
       effects.innerHTML = `<ul>${result.effects.map((effect) => `<li>${escapeHtml(effect)}</li>`).join("")}</ul>`;
+      deleteAssetsOption.disabled = !result.assetDirectoryExists && !species.inGenerated;
       confirmButton.disabled = false;
-      setMessage("Löschvorschau ist bereit. Der Assetordner bleibt erhalten.", "success");
+      setMessage("Löschvorschau ist bereit.", "success");
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
     }
   });
 
+  deleteAssetsOption.addEventListener("change", updateDeleteMode);
   for (const button of cancelButtons) button.addEventListener("click", close);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) close();
-  });
+  setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!previewToken) return;
+    const deleteAssets = deleteAssetsOption.checked;
+    state.audioCleanup?.();
     confirmButton.disabled = true;
-    setMessage("Art wird aus species_list.json entfernt…", "info");
+    setMessage(
+      deleteAssets
+        ? "Art, generierte Daten und Assets werden dauerhaft gelöscht…"
+        : "Art wird aus species_list.json entfernt…",
+      "info",
+    );
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/delete/save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: previewToken }),
+          body: JSON.stringify({ token: previewToken, deleteAssets }),
         },
       );
       state.notice =
         `${result.deleted.germanName} wurde aus species_list.json entfernt. Sicherung: ${result.backup}.`
         + backupRetentionText(result)
-        + ` Assetordner bleibt erhalten: ${result.assetDirectoryPreserved}.`
+        + (result.permanentCleanup
+          ? " Generierte Daten und Assetordner wurden dauerhaft gelöscht."
+          : ` Assetordner bleibt erhalten: ${result.assetDirectoryPreserved}.`)
         + (result.pipelineRequired
           ? " Ein Pipeline- oder Bereinigungslauf entfernt die Art aus den generierten Daten."
           : "");
@@ -1254,6 +1303,12 @@ function renderDetail(species) {
         <p class="scientific-name">${escapeHtml(species.scientificName)}</p>
       </div>
       <div class="detail-meta">
+        ${species.inInput ? `
+          <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
+            <button class="edit-species-open" type="button">Bearbeiten</button>
+            <button class="delete-species-open danger" type="button">Löschen</button>
+          </div>
+        ` : ""}
         <div class="detail-badges">${badges}</div>
         <p class="detail-fetched-at">
           IUCN-Daten abgerufen: <strong>${escapeHtml(formatIucnFetchDate(species.iucn.fetchedAt))}</strong>
@@ -1289,15 +1344,7 @@ function renderDetail(species) {
 
     <div class="data-grid">
       <section class="data-section">
-        <div class="section-title-row">
-          <h3 class="section-title">Manuelle Daten</h3>
-          ${species.inInput ? `
-            <div class="section-actions edit-only">
-              <button class="edit-species-open" type="button">Bearbeiten</button>
-              <button class="delete-species-open danger" type="button">Löschen</button>
-            </div>
-          ` : ""}
-        </div>
+        <h3 class="section-title">Manuelle Daten</h3>
         <dl class="data-list">
           ${dataRows([
             ["Größe", species.manual.size],
@@ -1423,10 +1470,11 @@ function renderDetail(species) {
           </header>
           <p class="edit-message delete-message" hidden></p>
           <div class="delete-effects"></div>
-          <p class="edit-warning">
-            Diese Aktion entfernt zunächst nur den Listeneintrag. Produktive Assets werden nur über den separaten
-            Bereinigungslauf dauerhaft gelöscht.
-          </p>
+          <label class="delete-assets-option">
+            <input class="delete-assets-now" type="checkbox">
+            <span>Zugehörige generierte Daten und Assets sofort dauerhaft löschen</span>
+          </label>
+          <p class="edit-warning delete-assets-warning"></p>
           <div class="edit-actions">
             <button class="delete-cancel" type="button">Abbrechen</button>
             <button class="delete-confirm danger" type="submit" disabled>Aus Artenliste entfernen</button>

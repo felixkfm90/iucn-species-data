@@ -526,7 +526,7 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   assert.ok(allPlan.targets.every((entry) => entry.reasons[0] === "vollständiger Lauf"));
 });
 
-test("Löschen entfernt nur den Listeneintrag; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
+test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
   const app = await createExplorerServer({ repoRoot, port: 0 });
@@ -544,7 +544,7 @@ test("Löschen entfernt nur den Listeneintrag; Bereinigung löscht verwaiste Dat
   const preview = await previewResponse.json();
   assert.ok(preview.token);
   assert.equal(preview.species.germanName, "Amsel");
-  assert.match(preview.effects.join(" "), /Assetordner bleibt bestehen/);
+  assert.match(preview.effects.join(" "), /Ohne Zusatzoption bleiben generierte Daten und Assets/);
 
   const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/delete/save`, {
     method: "POST",
@@ -570,6 +570,7 @@ test("Löschen entfernt nur den Listeneintrag; Bereinigung löscht verwaiste Dat
   assert.equal(cleanupPreview.obsoleteAssetDirectories[0].safeName, "Amsel");
 
   const plan = buildCleanupPlan(repoRoot);
+  assert.equal(plan.mode, "cleanup");
   assert.equal(plan.hasWork, true);
   const cleaned = runCleanup(repoRoot);
   assert.equal(cleaned.cleaned, true);
@@ -579,6 +580,57 @@ test("Löschen entfernt nur den Listeneintrag; Bereinigung löscht verwaiste Dat
     JSON.parse(await readFile(join(repoRoot, "fehlende_elemente_report.json"), "utf8")).counts.totalSpecies,
     0,
   );
+
+  const directRoot = await createEditableFixture();
+  context.after(() => rm(directRoot, { recursive: true, force: true }));
+  const directApp = await createExplorerServer({ repoRoot: directRoot, port: 0 });
+  const directAddress = await directApp.listen();
+  context.after(() => directApp.close());
+  const directBaseUrl = `http://${directApp.host}:${directAddress.port}`;
+  const directAssetDir = join(directRoot, "species-assets", "Amsel");
+  const directPreviewResponse = await fetch(
+    `${directBaseUrl}/api/species/turdusmerula/delete/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    },
+  );
+  assert.equal(directPreviewResponse.status, 200);
+  const directPreview = await directPreviewResponse.json();
+  assert.equal(directPreview.assetDirectoryExists, true);
+  const directSaveResponse = await fetch(
+    `${directBaseUrl}/api/species/turdusmerula/delete/save`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: directPreview.token, deleteAssets: true }),
+    },
+  );
+  assert.equal(directSaveResponse.status, 200);
+  const directSaved = await directSaveResponse.json();
+  assert.equal(directSaved.pipelineRequired, false);
+  assert.equal(directSaved.permanentCleanup.assetDirectoryDeleted, true);
+  assert.equal(existsSync(directAssetDir), false);
+  assert.equal(JSON.parse(await readFile(join(directRoot, "speciesData.json"), "utf8")).length, 0);
+  assert.equal(
+    JSON.parse(await readFile(join(directRoot, "fehlende_elemente_report.json"), "utf8")).counts.totalSpecies,
+    0,
+  );
+  const recreateResponse = await fetch(`${directBaseUrl}/api/species/new/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      values: {
+        german: "Amsel",
+        scientificName: "Turdus merula",
+        size: "ca. 23,5-29 cm",
+        weight: "ca. 80-110 g",
+        lifeExpectancy: "ca. 3 Jahre",
+      },
+    }),
+  });
+  assert.equal(recreateResponse.status, 200);
 });
 
 test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async () => {
@@ -661,6 +713,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function backupRetentionText\(result\)/);
   assert.match(appSource, /if \(!retention\) return ""/);
   assert.match(appSource, /function setupNewSpeciesCreator\(\)/);
+  assert.match(appSource, /function setupSafeBackdropClose\(dialog, close\)/);
+  assert.match(
+    appSource,
+    /startedOnBackdrop = event\.target === dialog;[\s\S]*startedOnBackdrop && event\.target === dialog/,
+  );
+  assert.doesNotMatch(
+    appSource,
+    /dialog\.addEventListener\("click",\s*\(event\)\s*=>\s*\{\s*if \(event\.target === dialog\)/,
+  );
   assert.match(appSource, /\/api\/species\/new\/preview/);
   assert.match(appSource, /\/api\/species\/new\/save/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
@@ -672,6 +733,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /class="asset-review-map-trigger"/);
   assert.match(appSource, /openMapLightbox/);
+  assert.match(
+    appSource,
+    /const stopAssetReviewAudio = \(\) => \{[\s\S]*audio\.pause\(\);[\s\S]*audio\.currentTime = 0;/,
+  );
+  assert.match(
+    appSource,
+    /dialog\.addEventListener\("close", \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
+  );
   assert.match(appSource, /Datenbank aktuell/);
   assert.match(appSource, /function monitorProjectRevision\(\)/);
   assert.match(appSource, /fetch\("\/api\/revision"\)/);
@@ -687,6 +756,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function setupSpeciesDelete\(species\)/);
   assert.match(appSource, /\/delete\/preview/);
   assert.match(appSource, /\/delete\/save/);
+  assert.match(appSource, /class="delete-assets-now"/);
+  assert.match(appSource, /deleteAssets/);
+  assert.match(
+    appSource,
+    /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
+  );
+  assert.doesNotMatch(
+    appSource,
+    /<h3 class="section-title">Manuelle Daten<\/h3>[\s\S]{0,400}edit-species-open/,
+  );
   assert.match(
     appSource,
     /form\.reset\(\);\s*resetPreview\(\);\s*setBusy\(false\);\s*close\(\);\s*await loadData\(\)/,
@@ -746,6 +825,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.database-status\.current\s*\{[^}]*background:\s*#1f6b4f/s);
   assert.match(cssSource, /\.asset-review-item\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.asset-review-map-trigger\s*\{[^}]*cursor:\s*zoom-in/s);
+  assert.match(cssSource, /\.detail-actions\s*\{/);
+  assert.match(cssSource, /\.delete-assets-option\s*\{/);
+  assert.match(serverSource, /mode:\s*preview\.mode/);
   assert.match(cssSource, /button\.danger/);
   assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);

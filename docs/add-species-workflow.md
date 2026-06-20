@@ -105,12 +105,20 @@ Technischer Stand vom 2026-06-19:
   unveraendert.
 - Sechs Explorer-Tests sind erfolgreich.
 - Der neu gestartete lokale Server liefert den Dialog und alle fuenf Formularfelder aus.
-- Die visuelle Bedienpruefung durch Felix ist noch offen.
+- Die Bedienung wurde am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktueller redaktioneller Stand:
 
-- 46 Eintraege in `species_list.json`
-- der neu angelegte `Haubentaucher` wartet erwartungsgemaess auf den ersten Pipeline-Lauf
+- 47 Eintraege in `species_list.json`
+- Haubentaucher und Höckerschwan wurden nach der Bereinigung erneut angelegt und vollständig verarbeitet
+- nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
+  Assetordner-Kollision erneut angelegt werden
+
+## Formularverhalten
+
+- Eine Textmarkierung darf über den Rand des Dialogs hinausgezogen werden, ohne das Formular zu schließen.
+- Ein Klick auf den dunklen Hintergrund schließt den Dialog nur, wenn der Klick dort begonnen und geendet hat.
+- Damit bleiben bereits eingetragene Werte auch beim erneuten Anlegen einer Art erhalten.
 
 ## Was danach automatisch passiert
 

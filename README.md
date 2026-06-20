@@ -177,7 +177,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 46 Eintraege aus Eingabe und Pipeline mit Suche und Filtern
+- alle 45 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
@@ -223,7 +223,8 @@ sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visue
 Die App zeigt dabei keine interne Phasenbezeichnung. In der linken Navigation bleiben maximal 15 Arten gleichzeitig
 sichtbar; weitere Treffer werden innerhalb der Liste gescrollt.
 
-Phase 7.4 stellt je Art unter `Manuelle Daten` einen Bearbeiten-Dialog bereit:
+Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. Die Aktionen `Bearbeiten` und `Löschen` stehen im Artkopf
+oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller Daten, Karten und Sounds gelten:
 
 - editierbar: `size`, `weight`, `life_expectancy`
 - gesperrt: deutscher Name, Gattung, Art und alle generierten IUCN-Felder
@@ -253,10 +254,13 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Nach dem Speichern erscheint die Art sofort als nur in `species_list.json` vorhanden. Pipeline und Git bleiben
   separate Schritte.
 - Nach erfolgreichem Speichern koennen ohne Seitenneuladen weitere Arten angelegt werden.
+- Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
+  Eingaben verloren gehen.
 - Sechs Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
-- Die visuelle Bedienpruefung durch Felix ist noch offen.
+- Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 46 Arten in `species_list.json`. Der neu angelegte Haubentaucher wartet auf den ersten Pipeline-Lauf.
+Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Haubentaucher und Höckerschwan wurden nach
+erfolgreicher Bereinigung erneut angelegt und vollständig verarbeitet.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -267,11 +271,13 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
 - nach erfolgreicher Pipeline passender Spektrogramm-Abgleich
 - Artansicht kann einen Eintrag nach Vorschau und Backup aus `species_list.json` entfernen
+- im Löschdialog können die zugehörigen generierten Daten und Assets per Checkbox sofort dauerhaft mitgelöscht werden
 - `Bereinigen` löscht nach einer einzigen klaren Bestätigung verwaiste Daten und Assetordner dauerhaft und ohne
   Wiederherstellungsablage
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
   bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
+- beim Schließen des Asset-Prüfdialogs werden laufende Prüfsounds sofort gestoppt
 - die Kopfzeile schaltet zwischen Lesemodus und Bearbeitungsmodus; Schreibaktionen werden entsprechend
   aus- beziehungsweise eingeblendet
 - das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
@@ -406,10 +412,10 @@ gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-on
 2026-06-18 umgesetzt und getestet. Phase 7.3 mit vertiefter Validierung und Statusdashboard wurde am 2026-06-19
 umgesetzt. Phase 7.4 fuer kontrolliertes Bearbeiten von `species_list.json` ist seit 2026-06-19 technisch und visuell
 abgeschlossen. Phase 7.5 zum kontrollierten Anlegen neuer Arten nach `docs/add-species-workflow.md` ist technisch
-lokal umgesetzt; die visuelle Bedienpruefung ist noch offen. Phase 7.6 mit Pipeline-Steuerung und dauerhafter
-Bereinigung ist technisch umgesetzt. Ein vollständiger externer Lauf sowie ein selektiver Lauf direkt aus der App
+lokal umgesetzt und praktisch geprüft. Phase 7.6 mit Pipeline-Steuerung und dauerhafter
+Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive Läufe direkt aus der App
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
-Push funktionierten; die anschließend ergänzte Karten-Großansicht benötigt noch einen visuellen Bestätigungstest.
+Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
 Dabei wird zwischen einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle
 Arten unterschieden. Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
 In Phase 7 folgen
@@ -418,15 +424,15 @@ Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-06-19:
+Aktueller lokaler Stand vom 2026-06-20:
 
-- 46 Eintraege in `species_list.json`
-- 45 Arten in der letzten Pipeline-Ausgabe
-- Haubentaucher als neuer, noch nicht durch die Pipeline verarbeiteter Eintrag
+- 47 Eintraege in `species_list.json`
+- 47 Arten in der letzten Pipeline-Ausgabe
+- 47 vollständige Assetordner
 - 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
-- 0 fehlende Sounddateien unter den 45 zuletzt verarbeiteten Arten
-- 0 fehlende Sound-Credits unter den 45 zuletzt verarbeiteten Arten
-- 0 fehlende Karten unter den 45 zuletzt verarbeiteten Arten
+- 0 fehlende Sounddateien unter den 47 verarbeiteten Arten
+- 0 fehlende Sound-Credits unter den 47 verarbeiteten Arten
+- 0 fehlende Karten unter den 47 verarbeiteten Arten
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
