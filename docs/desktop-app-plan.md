@@ -437,6 +437,8 @@ Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
 - `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten und Arten mit fehlenden
   Kernfeldern oder Assets
 - `Alle Arten vollstaendig aktualisieren`: entspricht dem bisherigen kompletten Lauf von `node update.mjs`
+- `Manuelle Karten erneut suchen`: verarbeitet nur die sieben manuell geschützten Karten
+- `NC-Sounds erneut suchen`: verarbeitet nur die drei vorhandenen NC-Sounds
 
 Vor jedem Start werden Laufart, Artenliste und Gruende angezeigt. Es darf nur ein Lauf gleichzeitig aktiv sein.
 Tokenwerte werden weder an den Browser noch in Logs ausgegeben. Git-Commit und Git-Push bleiben separate Schritte.
@@ -479,6 +481,8 @@ Umgesetzt:
 - Felix bestätigt je Asset automatische Pflege oder manuellen Schutz
 - `species-assets-overrides.json` schützt manuell markierte Karten und Sounds bei späteren Pipeline-Laeufen
 - danach werden die vorgesehenen Pipeline-Dateien automatisch committed und gepusht
+- die Erfolgsmeldung aus dem ersten Speicherschritt einer neuen Art verschwindet nach erfolgreichem Commit und Push
+- Karten- und NC-Soundsuchlauf sichern bestehende Assets lokal und stellen sie bei Ablehnung wieder her
 
 Arten loeschen und bereinigen:
 

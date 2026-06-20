@@ -579,6 +579,17 @@ function setupAssetReview() {
     if (!status.reviewAssets?.length) return;
     if (state.assetReviewRunId === status.runId && dialog.open) return;
     state.assetReviewRunId = status.runId;
+    const retryMode = status.mode === "manual-maps" || status.mode === "nc-sounds";
+    const automaticLabel = status.mode === "manual-maps"
+      ? "Automatische Karte übernehmen"
+      : status.mode === "nc-sounds"
+        ? "Freie Soundalternative übernehmen"
+        : "Automatisch durch Pipeline pflegen";
+    const manualLabel = status.mode === "manual-maps"
+      ? "Bisherige manuelle Karte behalten"
+      : status.mode === "nc-sounds"
+        ? "Bisherigen NC-Sound behalten"
+        : "Manuell pflegen und schützen";
     elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => `
       <article class="asset-review-item" data-index="${index}">
         <div class="asset-review-preview">
@@ -605,11 +616,11 @@ function setupAssetReview() {
           <div class="asset-review-options">
             <label>
               <input type="radio" name="asset-${index}" value="automatic" required>
-              Automatisch durch Pipeline pflegen
+              ${automaticLabel}
             </label>
             <label>
               <input type="radio" name="asset-${index}" value="manual" required>
-              Manuell pflegen und schützen
+              ${manualLabel}
             </label>
           </div>
         </div>
@@ -617,7 +628,12 @@ function setupAssetReview() {
     `).join("");
     form.dataset.runId = status.runId;
     form.dataset.assets = JSON.stringify(status.reviewAssets);
-    setMessage("Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.", "info");
+    setMessage(
+      retryMode
+        ? "Bitte für jede gefundene Alternative festlegen, ob sie übernommen oder der bisherige Bestand behalten wird."
+        : "Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.",
+      "info",
+    );
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   };
@@ -677,6 +693,8 @@ function setupPipelineControl() {
   const modeLabel = (mode) => ({
     missing: "Neue/Unvollständige Arten aktualisieren",
     all: "Alle Arten vollständig aktualisieren",
+    "manual-maps": "Manuelle Karten erneut suchen",
+    "nc-sounds": "NC-Sounds erneut suchen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
 
@@ -767,6 +785,10 @@ function setupPipelineControl() {
     elements.pipelineDialogDescription.textContent =
       mode === "cleanup"
         ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
+        : mode === "manual-maps"
+          ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht."
+          : mode === "nc-sounds"
+            ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft."
         : "Vor dem Start werden Zielarten und Umfang geprüft.";
     showDialog();
 
@@ -782,7 +804,11 @@ function setupPipelineControl() {
       elements.pipelineStartButton.hidden = false;
       elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
       elements.pipelineStartButton.textContent =
-        mode === "cleanup" ? "Dauerhaft löschen" : "Pipeline starten";
+        mode === "cleanup"
+          ? "Dauerhaft löschen"
+          : mode === "manual-maps" || mode === "nc-sounds"
+            ? "Suchlauf starten"
+            : "Pipeline starten";
       setMessage(
         !result.tokensAvailable
           ? "Die benötigten API-Tokens fehlen in der Server-Umgebung."
@@ -818,6 +844,7 @@ function setupPipelineControl() {
       if (awaitingReview) state.openAssetReview?.(status);
 
       if (state.pipelineWasRunning && !active && status.status !== "idle") {
+        if (status.status === "completed" && status.gitPublished) state.notice = "";
         await loadData({ reload: true });
       }
       state.pipelineWasRunning = active;

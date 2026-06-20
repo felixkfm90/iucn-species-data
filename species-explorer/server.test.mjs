@@ -524,6 +524,37 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   });
   assert.equal(allPlan.targetCount, 2);
   assert.ok(allPlan.targets.every((entry) => entry.reasons[0] === "vollständiger Lauf"));
+
+  await writeFile(
+    join(repoRoot, "species-assets-overrides.json"),
+    `${JSON.stringify({
+      version: 1,
+      assets: { Amsel: { map: { manual: true } } },
+    }, null, 2)}\n`,
+  );
+  const manualMapPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "manual-maps",
+  });
+  assert.equal(manualMapPlan.targetCount, 1);
+  assert.equal(manualMapPlan.targets[0].safeName, "Amsel");
+
+  await writeFile(
+    join(repoRoot, "species-assets", "Amsel", "credits.json"),
+    JSON.stringify({ license: "https://creativecommons.org/licenses/by-nc/4.0/" }),
+  );
+  const ncSoundPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "nc-sounds",
+  });
+  assert.equal(ncSoundPlan.targetCount, 1);
+  assert.equal(ncSoundPlan.targets[0].safeName, "Amsel");
 });
 
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
@@ -730,6 +761,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/start/);
   assert.match(appSource, /\/api\/pipeline\/status/);
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(appSource, /Manuelle Karten erneut suchen/);
+  assert.match(appSource, /NC-Sounds erneut suchen/);
+  assert.match(appSource, /Bisherige manuelle Karte behalten/);
+  assert.match(appSource, /Bisherigen NC-Sound behalten/);
+  assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /class="asset-review-map-trigger"/);
   assert.match(appSource, /openMapLightbox/);
@@ -750,8 +786,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(serverSource, /pipeline-asset-backups/);
+  assert.match(serverSource, /assetCompositeHash/);
+  assert.match(serverSource, /reviewMode:\s*plan\.mode/);
+  assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
+  assert.match(serverSource, /removeAcceptedManualMapsFromDocumentation/);
+  assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
+  assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
+  assert.match(updateSource, /args\.mode === "manual-maps"/);
+  assert.match(updateSource, /args\.mode === "nc-sounds"/);
   assert.equal(assetOverrides.assets.Blaukehlchen.map.manual, true);
   assert.match(appSource, /function setupSpeciesDelete\(species\)/);
   assert.match(appSource, /\/delete\/preview/);
@@ -786,6 +831,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /class="new-species-json"/);
   assert.match(htmlSource, /data-pipeline-mode="missing"/);
   assert.match(htmlSource, /data-pipeline-mode="all"/);
+  assert.match(htmlSource, /data-pipeline-mode="manual-maps"/);
+  assert.match(htmlSource, /data-pipeline-mode="nc-sounds"/);
   assert.match(htmlSource, /data-pipeline-mode="cleanup"/);
   assert.match(htmlSource, /id="pipeline-dialog"/);
   assert.match(htmlSource, /id="edit-mode-toggle"/);

@@ -349,7 +349,8 @@ Aktuelle Planung:
   Hintergrundklicks schließen Eingabedialoge nur, wenn Zeigerdruck und Klickende beide auf dem Hintergrund liegen.
   Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
   Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
-  unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`. `update.mjs`
+  unterscheidet `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten vollstaendig aktualisieren`,
+  `Manuelle Karten erneut suchen` und `NC-Sounds erneut suchen`. `update.mjs`
   unterstuetzt
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
   Lauf kann gleichzeitig aktiv sein. Nach erfolgreicher Pipeline folgt der passende Spektrogramm-Abgleich.
@@ -358,6 +359,12 @@ Aktuelle Planung:
   Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
+  Die beiden Wartungsläufe verarbeiten nur die sieben manuell geschützten Karten beziehungsweise die drei
+  NC-Sounds. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
+  `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
+  Bei Übernahme einer automatischen Karte werden JSON-Register und `docs/manual-map-overrides.md` gemeinsam
+  aktualisiert.
+  Die Speichermeldung einer neu angelegten Art wird nach erfolgreichem Pipeline-Commit und Push entfernt.
   Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Eine Checkbox
   loescht bei Bedarf generierte Daten, Assessment-Zuordnung, Asset-Pflegeeintrag und Assetordner derselben Art sofort
   dauerhaft mit. Ohne Checkbox bleiben diese Inhalte bis zur getrennten Bereinigung bestehen. Die Aktion

@@ -19,6 +19,8 @@ Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
 - neue oder unvollstaendige Arten
 - alle Arten
+- manuell gepflegte Karten erneut automatisch suchen
+- NC-Sounds erneut auf freie Alternativen prüfen
 - dauerhafte Bereinigung
 
 Status und letzte Prozessausgabe werden im selben Dialog angezeigt. Im Lesemodus ist die Pipeline-Aktion
@@ -85,6 +87,29 @@ Vor dem Start zeigt die App:
 - aktuelle Artenzahl
 - deutlichen Hinweis auf die laengere Laufzeit und alle externen API-Abfragen
 
+### Manuelle Karten erneut suchen
+
+Der Kartensuchlauf wählt ausschließlich Arten aus, deren Karte in `species-assets-overrides.json` als manuell
+geschützt markiert ist. Aktuell sind das sieben Arten.
+
+- IUCN-Daten und Sounds bleiben unverändert.
+- Die vorhandene Karte wird vorübergehend lokal gesichert.
+- Nur eine gültige JPEG-Antwort mit plausibler Mindestgröße ersetzt die Arbeitskopie.
+- `Automatische Karte übernehmen` behält die neue Karte und entfernt den manuellen Schutz.
+- Das Register und `docs/manual-map-overrides.md` werden dabei gemeinsam aktualisiert.
+- `Bisherige manuelle Karte behalten` stellt die gesicherte Karte wieder her.
+
+### NC-Sounds erneut suchen
+
+Der Soundsuchlauf wählt ausschließlich vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz aus. Aktuell sind
+das drei Arten.
+
+- IUCN-Daten und Karten bleiben unverändert.
+- Sound, Credits und Spektrogramm werden vorübergehend lokal gesichert.
+- Die Suche prüft freie Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Alternativen.
+- `Freie Soundalternative übernehmen` behält die neue Alternative.
+- `Bisherigen NC-Sound behalten` stellt Sound, Credits und Spektrogramm wieder her.
+
 ### Dauerhafte Bereinigung
 
 Die Bereinigung ist eine eigene Aktion und wird nie automatisch an einen Update-Lauf angehaengt. Sie sucht:
@@ -114,6 +139,8 @@ Geplante Kommandozeilenform:
 node update.mjs --mode=missing --dry-run
 node update.mjs --mode=missing
 node update.mjs --mode=all
+node update.mjs --mode=manual-maps
+node update.mjs --mode=nc-sounds
 node update.mjs --report-only
 ```
 
@@ -135,6 +162,7 @@ npm.cmd run --silent cleanup:species
 - Prozessausgabe, Startzeit, Laufart, Zielarten, Exit-Code und Fehler werden lokal protokolliert.
 - Logs werden unter `species-explorer/logs/` geschrieben, auf 20 Dateien begrenzt und nicht versioniert.
 - Nach Erfolg oder Fehler laedt der Explorer Daten, Assets und Validierung neu.
+- Die Meldung direkt nach dem Anlegen einer Art wird nach erfolgreichem Pipeline-Commit und Push entfernt.
 - Ein fehlgeschlagener Teillauf darf vorhandene gute Daten nicht durch leere oder unvollstaendige Ergebnisse
   ersetzen.
 - Die Bereinigung löscht nur Pfade, die nach Auflösung sicher innerhalb von `species-assets/` liegen.
@@ -157,6 +185,8 @@ mehr als fehlend im Report stehen bleibt.
 - Eine neue Art wird im Modus `missing` ausgewaehlt: getestet.
 - Vollstaendige Arten ohne Fehler werden im Modus `missing` nicht ausgewaehlt: getestet.
 - Modus `all` waehlt alle Eintraege: getestet.
+- Modus `manual-maps` wählt genau die sieben manuell geschützten Karten: getestet.
+- Modus `nc-sounds` wählt genau die drei aktuellen NC-Sounds: getestet.
 - Nicht ausgewaehlte Bestandsdaten werden bei einem Teillauf übernommen: implementiert.
 - Ein zweiter gleichzeitiger Start wird abgewiesen.
 - Fehlende Tokens verhindern den Start mit klarer Meldung.

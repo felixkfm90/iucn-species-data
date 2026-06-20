@@ -1,8 +1,15 @@
-import { createReadStream, existsSync } from "node:fs";
+import {
+  copyFileSync,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
@@ -880,8 +887,11 @@ export async function createExplorerServer({
   const previewTokens = new Map();
   const speciesListPath = join(repoRoot, "species_list.json");
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
+  const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
+  const manualMapOverridesPath = join(repoRoot, "docs", "manual-map-overrides.md");
   const backupDir = join(repoRoot, "species-explorer", "backups");
   const pipelineLogDir = join(repoRoot, "species-explorer", "logs");
+  const pipelineAssetBackupRoot = join(repoRoot, "species-explorer", "pipeline-asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   let pipelineProcess = null;
   let pipelineAssetSnapshot = new Map();
@@ -965,8 +975,10 @@ export async function createExplorerServer({
   async function previewPipeline(payload) {
     cleanupPreviewTokens();
     const mode = String(payload?.mode ?? "");
-    if (!["all", "missing", "cleanup"].includes(mode)) {
-      const error = new Error("Pipeline-Modus muss all, missing oder cleanup sein");
+    if (!["all", "missing", "manual-maps", "nc-sounds", "cleanup"].includes(mode)) {
+      const error = new Error(
+        "Pipeline-Modus muss all, missing, manual-maps, nc-sounds oder cleanup sein",
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -984,11 +996,19 @@ export async function createExplorerServer({
       token,
       expiresAt: new Date(expiresAt).toISOString(),
       ...(mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan)),
-      tokensAvailable: mode === "cleanup" || Boolean(process.env.IUCN_TOKEN && process.env.XENO_TOKEN),
+      tokensAvailable:
+        mode === "cleanup"
+        || (mode === "manual-maps" && Boolean(process.env.IUCN_TOKEN))
+        || (mode === "nc-sounds" && Boolean(process.env.XENO_TOKEN))
+        || Boolean(process.env.IUCN_TOKEN && process.env.XENO_TOKEN),
       warnings: [
         "Nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht.",
         mode === "cleanup"
           ? "Die aufgelisteten Alt-Daten und Assetordner werden dauerhaft gelöscht und sind danach nicht wiederherstellbar."
+          : mode === "manual-maps"
+            ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht und vor einer Übernahme angezeigt."
+            : mode === "nc-sounds"
+              ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft und vor einer Übernahme angehört."
           : mode === "all"
             ? "Der vollständige Lauf fragt alle Arten erneut bei den externen Diensten ab."
             : "Der gezielte Lauf verarbeitet neue oder unvollständige Arten und übernimmt übrige Bestandsdaten.",
@@ -1007,12 +1027,73 @@ export async function createExplorerServer({
     }
   }
 
+  async function removeAcceptedManualMapsFromDocumentation(safeNames) {
+    if (!safeNames.size) return;
+    const source = await readFile(manualMapOverridesPath, "utf8");
+    const lines = source.split(/\r?\n/);
+    const filtered = lines.filter((line) => {
+      if (!line.startsWith("|") || line.startsWith("|---")) return true;
+      const cells = line.split("|").map((cell) => cell.trim());
+      return !safeNames.has(cells[2]);
+    });
+    const remainingCount = filtered.filter(
+      (line) => line.startsWith("|") && line.includes("species-assets/") && line.includes("/map.jpg"),
+    ).length;
+    const next = filtered.join("\n").replace(
+      /Aktuell sind .*? Karten als manuell gepflegt dokumentiert\./,
+      `Aktuell sind ${remainingCount} Karten als manuell gepflegt dokumentiert.`,
+    );
+    const tempPath = `${manualMapOverridesPath}.tmp-${randomUUID()}`;
+    await writeFile(tempPath, next, "utf8");
+    await rename(tempPath, manualMapOverridesPath);
+  }
+
+  function assetCompositeHash(assetDir, type) {
+    const names = type === "sound" ? ["sound.mp3", "credits.json"] : ["map.jpg"];
+    const hash = createHash("sha256");
+    let found = false;
+    for (const name of names) {
+      const filePath = join(assetDir, name);
+      if (!existsSync(filePath)) continue;
+      found = true;
+      hash.update(name);
+      hash.update(readFileSync(filePath));
+    }
+    return found ? hash.digest("hex") : "";
+  }
+
   function capturePipelineAssets(plan) {
     const snapshot = new Map();
+    const keepBackups = plan.mode === "manual-maps" || plan.mode === "nc-sounds";
+    const runBackupRoot = join(pipelineAssetBackupRoot, pipelineState.runId);
+    if (keepBackups) mkdirSync(runBackupRoot, { recursive: true });
     for (const target of plan.targets ?? []) {
       const assetDir = join(repoRoot, "species-assets", target.safeName);
       for (const [type, fileName] of [["map", "map.jpg"], ["sound", "sound.mp3"]]) {
-        snapshot.set(`${target.safeName}:${type}`, existsSync(join(assetDir, fileName)));
+        const filePath = join(assetDir, fileName);
+        const backupFiles = {};
+        const relevantBackup =
+          (plan.mode === "manual-maps" && type === "map")
+          || (plan.mode === "nc-sounds" && type === "sound");
+        if (keepBackups && relevantBackup && existsSync(filePath)) {
+          const names = type === "sound"
+            ? ["sound.mp3", "credits.json", "spectrogram.webp"]
+            : ["map.jpg"];
+          const targetBackupDir = join(runBackupRoot, target.safeName);
+          mkdirSync(targetBackupDir, { recursive: true });
+          for (const name of names) {
+            const source = join(assetDir, name);
+            if (!existsSync(source)) continue;
+            const backup = join(targetBackupDir, name);
+            copyFileSync(source, backup);
+            backupFiles[name] = backup;
+          }
+        }
+        snapshot.set(`${target.safeName}:${type}`, {
+          exists: existsSync(filePath),
+          hash: assetCompositeHash(assetDir, type),
+          backupFiles,
+        });
       }
     }
     return snapshot;
@@ -1027,7 +1108,11 @@ export async function createExplorerServer({
         ["sound", "sound.mp3", "Sound"],
       ]) {
         const key = `${target.safeName}:${type}`;
-        if (!pipelineAssetSnapshot.get(key) && existsSync(join(assetDir, fileName))) {
+        const before = pipelineAssetSnapshot.get(key) ?? { exists: false, hash: "", backupFiles: {} };
+        const currentPath = join(assetDir, fileName);
+        const exists = existsSync(currentPath);
+        const changed = exists && before.exists && before.hash !== assetCompositeHash(assetDir, type);
+        if ((!before.exists && exists) || changed) {
           additions.push({
             safeName: target.safeName,
             germanName: target.germanName,
@@ -1035,7 +1120,10 @@ export async function createExplorerServer({
             type,
             label,
             file: `species-assets/${target.safeName}/${fileName}`,
-            url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}`,
+            url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}?review=${pipelineState.runId}`,
+            changed,
+            reviewMode: plan.mode,
+            backupFiles: before.backupFiles,
           });
         }
       }
@@ -1085,6 +1173,7 @@ export async function createExplorerServer({
         "fehlende_elemente_report.json",
         "lastSavedAssessmentId.json",
         "species-assets-overrides.json",
+        "docs/manual-map-overrides.md",
         "species-assets",
       ],
       "Git-Dateien vormerken",
@@ -1101,6 +1190,10 @@ export async function createExplorerServer({
 
     const message = pipelineState.mode === "cleanup"
       ? "Clean obsolete species data"
+      : pipelineState.mode === "manual-maps"
+        ? "Refresh automatic distribution maps"
+        : pipelineState.mode === "nc-sounds"
+          ? "Replace NC sounds with free alternatives"
       : pipelineState.mode === "all"
         ? "Refresh all species data"
         : "Update incomplete species data";
@@ -1130,6 +1223,9 @@ export async function createExplorerServer({
     await writeFile(logPath, `${pipelineState.log.join("\n")}\n`, "utf8");
     pipelineState.logFile = `species-explorer/logs/${logName}`;
     await prunePipelineLogs(pipelineLogDir).catch(() => {});
+    if (pipelineState.runId) {
+      rmSync(join(pipelineAssetBackupRoot, pipelineState.runId), { recursive: true, force: true });
+    }
     await refreshModel({ force: true });
   }
 
@@ -1151,17 +1247,30 @@ export async function createExplorerServer({
       "Datenpipeline",
     );
 
-    if (exitCode === 0 && (plan.mode === "all" || plan.targets.length > 0)) {
+    const assetOnlyMode = plan.mode === "manual-maps" || plan.mode === "nc-sounds";
+    let reviewAssets = exitCode === 0 ? detectNewPipelineAssets(plan) : [];
+
+    if (
+      exitCode === 0
+      && (
+        plan.mode === "all"
+        || plan.mode === "missing"
+        || (plan.mode === "nc-sounds" && reviewAssets.some((asset) => asset.type === "sound"))
+      )
+    ) {
       const spectrogramArgs = [join(repoRoot, "scripts", "generate-spectrograms.mjs")];
-      if (plan.mode === "missing") {
-        spectrogramArgs.push(`--species=${plan.targets.map((entry) => entry.safeName).join(",")}`);
+      if (plan.mode !== "all") {
+        const spectrogramSpecies = plan.mode === "nc-sounds"
+          ? reviewAssets.filter((asset) => asset.type === "sound").map((asset) => asset.safeName)
+          : plan.targets.map((entry) => entry.safeName);
+        spectrogramArgs.push(`--species=${spectrogramSpecies.join(",")}`);
       }
       const localFfmpeg = join(repoRoot, "local-tools", "ffmpeg", "bin", "ffmpeg.exe");
       if (existsSync(localFfmpeg)) spectrogramArgs.push(`--ffmpeg=${localFfmpeg}`);
       exitCode = await runPipelineChild(process.execPath, spectrogramArgs, "Spektrogramm-Abgleich");
     }
 
-    if (exitCode === 0) {
+    if (exitCode === 0 && !assetOnlyMode) {
       exitCode = await runPipelineChild(
         process.execPath,
         [join(repoRoot, "update.mjs"), "--report-only"],
@@ -1174,7 +1283,7 @@ export async function createExplorerServer({
       return;
     }
 
-    const reviewAssets = detectNewPipelineAssets(plan);
+    reviewAssets = detectNewPipelineAssets(plan);
     if (reviewAssets.length > 0) {
       pipelineState.status = "awaiting-review";
       pipelineState.phase = "Neue Assets prüfen";
@@ -1182,6 +1291,13 @@ export async function createExplorerServer({
       appendPipelineLog(`${reviewAssets.length} neue Karte(n)/Sound(s) warten auf Pflegeentscheidung.`);
       await writeFile(pendingAssetReviewPath, `${JSON.stringify(pipelineState, null, 2)}\n`, "utf8");
       await refreshModel({ force: true });
+      return;
+    }
+
+    if (assetOnlyMode) {
+      appendPipelineLog("Keine neue automatische Alternative gefunden; bestehende Assets bleiben unverändert.");
+      pipelineState.gitPublished = true;
+      await finishPipelineRun(0);
       return;
     }
 
@@ -1202,10 +1318,14 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
-    if (
-      preview.mode !== "cleanup"
-      && (!process.env.IUCN_TOKEN || !process.env.XENO_TOKEN)
-    ) {
+    const tokensMissing =
+      (preview.mode === "manual-maps" && !process.env.IUCN_TOKEN)
+      || (preview.mode === "nc-sounds" && !process.env.XENO_TOKEN)
+      || (
+        !["cleanup", "manual-maps", "nc-sounds"].includes(preview.mode)
+        && (!process.env.IUCN_TOKEN || !process.env.XENO_TOKEN)
+      );
+    if (tokensMissing) {
       const error = new Error("IUCN_TOKEN oder XENO_TOKEN fehlt in der Server-Umgebung");
       error.statusCode = 409;
       throw error;
@@ -1218,12 +1338,15 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
-    if ((preview.mode === "missing" || preview.mode === "cleanup") && !plan.hasWork) {
+    if (preview.mode !== "all" && !plan.hasWork) {
       previewTokens.delete(token);
       const error = new Error(
-        preview.mode === "cleanup"
-          ? "Es wurden keine verwaisten Daten oder Assetordner gefunden"
-          : "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
+        ({
+          cleanup: "Es wurden keine verwaisten Daten oder Assetordner gefunden",
+          missing: "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
+          "manual-maps": "Es gibt keine manuell gepflegten Karten",
+          "nc-sounds": "Es gibt keine ungeschützten NC-Sounds",
+        })[preview.mode] || "Für diesen Lauf wurden keine Zielarten gefunden",
       );
       error.statusCode = 400;
       throw error;
@@ -1294,8 +1417,29 @@ export async function createExplorerServer({
     registry.version = 1;
     registry.assets ??= {};
     const updatedAt = new Date().toISOString();
+    const retryMode = pipelineState.mode === "manual-maps" || pipelineState.mode === "nc-sounds";
+    let registryChanged = false;
+    let acceptedAny = false;
     for (const asset of pipelineState.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
+      if (retryMode && choice.manual) {
+        for (const [fileName, backupPath] of Object.entries(asset.backupFiles ?? {})) {
+          const allowedBackupRoot = `${resolve(pipelineAssetBackupRoot, pipelineState.runId)}${sep}`;
+          const resolvedBackupPath = resolve(backupPath);
+          const allowedAssetRoot = `${resolve(repoRoot, "species-assets", asset.safeName)}${sep}`;
+          const targetPath = resolve(repoRoot, "species-assets", asset.safeName, fileName);
+          if (
+            !`${resolvedBackupPath}`.startsWith(allowedBackupRoot)
+            || !`${targetPath}`.startsWith(allowedAssetRoot)
+          ) {
+            throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
+          }
+          if (existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
+        }
+        continue;
+      }
+
+      acceptedAny = true;
       registry.assets[asset.safeName] ??= {};
       registry.assets[asset.safeName][asset.type] = {
         manual: choice.manual,
@@ -1304,14 +1448,36 @@ export async function createExplorerServer({
           : "Automatisch durch die Pipeline gepflegt.",
         updatedAt,
       };
+      registryChanged = true;
     }
-    const tempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
-    try {
-      await writeFile(tempPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
-      await rename(tempPath, assetOverridesPath);
-    } catch (error) {
-      await unlink(tempPath).catch(() => {});
-      throw error;
+
+    if (registryChanged) {
+      const tempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      try {
+        await writeFile(tempPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
+        await rename(tempPath, assetOverridesPath);
+      } catch (error) {
+        await unlink(tempPath).catch(() => {});
+        throw error;
+      }
+    }
+
+    if (pipelineState.mode === "manual-maps" && acceptedAny) {
+      const assessmentIds = await readJson(assessmentIdsPath).catch(() => ({}));
+      const acceptedMaps = new Set();
+      for (const asset of pipelineState.reviewAssets) {
+        const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
+        if (choice.manual) continue;
+        acceptedMaps.add(asset.safeName);
+        const species = model.species.find((entry) => entry.safeName === asset.safeName);
+        if (species?.iucn?.assessmentId && species.iucn.assessmentId !== "Unbekannt") {
+          assessmentIds[asset.safeName] = species.iucn.assessmentId;
+        }
+      }
+      const tempPath = `${assessmentIdsPath}.tmp-${randomUUID()}`;
+      await writeFile(tempPath, `${JSON.stringify(assessmentIds, null, 2)}\n`, "utf8");
+      await rename(tempPath, assessmentIdsPath);
+      await removeAcceptedManualMapsFromDocumentation(acceptedMaps);
     }
 
     pipelineState.reviewAssets = [];
@@ -1319,7 +1485,26 @@ export async function createExplorerServer({
     pipelineState.phase = "Git-Veröffentlichung";
     await unlink(pendingAssetReviewPath).catch(() => {});
     await refreshModel({ force: true });
-    void continueAfterAssetReview().catch(async (error) => {
+    const continueReview = async () => {
+      if (!acceptedAny && retryMode) {
+        pipelineState.gitPublished = true;
+        await finishPipelineRun(0);
+        return;
+      }
+      if (pipelineState.mode === "nc-sounds") {
+        const reportExitCode = await runPipelineChild(
+          process.execPath,
+          [join(repoRoot, "update.mjs"), "--report-only"],
+          "Report-Abgleich",
+        );
+        if (reportExitCode !== 0) {
+          await finishPipelineRun(reportExitCode);
+          return;
+        }
+      }
+      await continueAfterAssetReview();
+    };
+    void continueReview().catch(async (error) => {
       appendPipelineLog(`Git-Veröffentlichung fehlgeschlagen: ${error.message}`);
       pipelineState.error = error.message;
       await finishPipelineRun(1);

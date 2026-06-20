@@ -25,6 +25,15 @@ Felix muss je Asset eine Option wählen:
 
 Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
 
+Bei den gezielten Wiederholungsläufen ändern sich die Optionen:
+
+- Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`
+- NC-Soundsuchlauf: `Freie Soundalternative übernehmen` oder `Bisherigen NC-Sound behalten`
+
+Vorhandene Dateien werden dafür unter `species-explorer/pipeline-asset-backups/` vorübergehend gesichert. Der Ordner
+ist ignoriert und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt, stellt der Explorer die gesicherten
+Dateien vor Commit und Push wieder her.
+
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
 den dunklen Hintergrund geschlossen werden, ohne die bereits gewählten Pflegeoptionen zu verlieren.

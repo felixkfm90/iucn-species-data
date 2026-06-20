@@ -331,6 +331,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Dialoge schließen bei Textmarkierungen über den Fensterrand nicht mehr versehentlich; die sichere
   Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
   Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
+  Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für die sieben
+  geschützten Karten und `NC-Sounds erneut suchen` für die drei aktuellen NC-Sounds. Bestehende Dateien werden bis
+  zur Übernahmeentscheidung lokal gesichert. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
+  ursprünglichen Art-Speicherschritts.
 - 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
   Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
   explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die

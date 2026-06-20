@@ -125,6 +125,8 @@ Weitere Modi:
 node update.mjs --mode=missing --dry-run
 node update.mjs --mode=missing
 node update.mjs --mode=all
+node update.mjs --mode=manual-maps
+node update.mjs --mode=nc-sounds
 node update.mjs --report-only
 npm.cmd run --silent cleanup:species -- --dry-run
 ```
@@ -190,6 +192,8 @@ Der Explorer zeigt:
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
+- gezielten Suchlauf nur für manuell gepflegte Karten
+- gezielten Suchlauf nur für NC-Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - drei aktive NC-Sounds
@@ -267,6 +271,8 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - `node update.mjs --mode=missing --dry-run`: Auswahl neuer oder fehlender Arten ohne Schreibzugriff
 - `node update.mjs --mode=missing`: gezielter Lauf; übrige Bestandsdaten bleiben erhalten
 - `node update.mjs --mode=all` oder weiterhin `node update.mjs`: vollständiger Lauf
+- `node update.mjs --mode=manual-maps`: nur sieben manuell geschützte Karten erneut suchen
+- `node update.mjs --mode=nc-sounds`: nur drei NC-Sounds auf freie Alternativen prüfen
 - App-Vorschau und ausdrückliche Startbestätigung
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
 - nach erfolgreicher Pipeline passender Spektrogramm-Abgleich
@@ -277,7 +283,10 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
   bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
+- manuelle Karten und NC-Sounds können unabhängig vom Komplettlauf erneut gesucht werden; bisherige Dateien bleiben
+  bis zur Übernahmeentscheidung lokal gesichert
 - beim Schließen des Asset-Prüfdialogs werden laufende Prüfsounds sofort gestoppt
+- die Zwischenmeldung direkt nach dem Anlegen einer Art verschwindet nach erfolgreichem Pipeline-Push
 - die Kopfzeile schaltet zwischen Lesemodus und Bearbeitungsmodus; Schreibaktionen werden entsprechend
   aus- beziehungsweise eingeblendet
 - das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
@@ -416,8 +425,8 @@ lokal umgesetzt und praktisch geprüft. Phase 7.6 mit Pipeline-Steuerung und dau
 Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive Läufe direkt aus der App
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
-Dabei wird zwischen einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle
-Arten unterschieden. Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
+Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
+Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.

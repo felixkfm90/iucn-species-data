@@ -69,7 +69,7 @@ function parsePipelineArgs(rawArgs) {
     else if (arg === "--help" || arg === "-h") parsed.help = true;
     else throw new Error(`Unbekannter Parameter: ${arg}`);
   }
-  if (!["all", "missing"].includes(parsed.mode)) {
+  if (!["all", "missing", "manual-maps", "nc-sounds"].includes(parsed.mode)) {
     throw new Error(`Unbekannter Pipeline-Modus: ${parsed.mode}`);
   }
   return parsed;
@@ -81,6 +81,8 @@ function printPipelineHelp() {
 Optionen:
   --mode=all       Vollständiger Lauf über alle Arten (Standard)
   --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
+  --mode=manual-maps  Nur manuell gepflegte Karten erneut bei IUCN suchen
+  --mode=nc-sounds    Nur vorhandene NC-Sounds auf freie Alternativen prüfen
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
   --report-only    Report aus speciesData.json und aktuellen Assets neu aufbauen
 `);
@@ -356,7 +358,18 @@ async function fetchSpeciesData(genus, species, german, size, weight, lifeExpect
 // MAP: pro Art
 // =======================
 
-async function downloadMapForSpecies(s) {
+function isJpegBuffer(buffer) {
+  return buffer.length >= 4
+    && buffer[0] === 0xff
+    && buffer[1] === 0xd8
+    && buffer[buffer.length - 2] === 0xff
+    && buffer[buffer.length - 1] === 0xd9;
+}
+
+async function downloadMapForSpecies(
+  s,
+  { force = false, allowManual = false, recordAssessment = true } = {},
+) {
   const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
   const safeName = sanitizeAssetName(name);
   const assessmentId = s["Assessment ID"];
@@ -371,12 +384,12 @@ async function downloadMapForSpecies(s) {
   const filePath = path.join(assetDir, "map.jpg");
   const tempFilePath = filePath + ".tmp";
 
-  if (fs.existsSync(filePath) && isManualAsset(safeName, "map")) {
+  if (fs.existsSync(filePath) && isManualAsset(safeName, "map") && !allowManual) {
     console.log(`ℹ Manuell gepflegte Karte für ${name} ist geschützt, überspringe Download.`);
     return "ok";
   }
 
-  if (fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
+  if (!force && fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
     console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
     return "ok";
   }
@@ -397,14 +410,20 @@ async function downloadMapForSpecies(s) {
       return "missing";
     }
 
-    const buffer = await res.arrayBuffer();
-    fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+    const buffer = Buffer.from(await res.arrayBuffer());
+    if (buffer.length < 10_000 || !isJpegBuffer(buffer)) {
+      console.warn(`⚠ Ungültige oder zu kleine Kartendatei für ${name}; vorhandene Karte bleibt erhalten.`);
+      return "missing";
+    }
+    fs.writeFileSync(tempFilePath, buffer);
     fs.renameSync(tempFilePath, filePath);
 
     console.log(`✔ Karte gespeichert: ${filePath}`);
 
-    lastSavedAssessmentId[safeName] = assessmentId;
-    fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+    if (recordAssessment) {
+      lastSavedAssessmentId[safeName] = assessmentId;
+      fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+    }
     return "ok";
   } catch (err) {
     if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
@@ -1264,15 +1283,25 @@ function printReportToConsole(report) {
       return;
     }
 
-    if (!TOKEN) throw new Error("IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
-    if (!XENO_TOKEN) throw new Error("XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+    if (args.mode !== "nc-sounds" && !TOKEN) {
+      throw new Error("IUCN_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+    }
+    if (args.mode !== "manual-maps" && !XENO_TOKEN) {
+      throw new Error("XENO_TOKEN fehlt! Bitte als Umgebungsvariable setzen.");
+    }
     if (!fs.existsSync(SPECIES_ASSETS_DIR)) fs.mkdirSync(SPECIES_ASSETS_DIR);
 
-    if (args.mode === "missing" && !plan.hasWork) {
-      console.log("✔ Keine neuen oder unvollständigen Arten gefunden. Es sind keine Pipeline-Aktionen erforderlich.");
+    if (args.mode !== "all" && !plan.hasWork) {
+      const noWorkMessage = {
+        missing: "Keine neuen oder unvollständigen Arten gefunden.",
+        "manual-maps": "Keine manuell gepflegten Karten gefunden.",
+        "nc-sounds": "Keine ungeschützten NC-Sounds gefunden.",
+      }[args.mode] || "Keine Pipeline-Aktionen gefunden.";
+      console.log(`✔ ${noWorkMessage} Es sind keine Pipeline-Aktionen erforderlich.`);
       return;
     }
 
+    const assetOnlyMode = args.mode === "manual-maps" || args.mode === "nc-sounds";
     const existingBySlug = new Map(existingSpeciesData.map((entry) => [entry.URLSlug, entry]));
     const targetSlugs = new Set(plan.targets.map((entry) => entry.slug));
     const output = [];
@@ -1284,7 +1313,9 @@ function printReportToConsole(report) {
         continue;
       }
 
-      let data = await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
+      let data = assetOnlyMode && existingData
+        ? preserveExistingSpeciesData(existingData, s)
+        : await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
 
       if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {
         console.warn(`⚠ Verwende vorhandene Daten für ${s.german}, neuer Abruf war unvollständig.`);
@@ -1294,8 +1325,17 @@ function printReportToConsole(report) {
 
       output.push(data);
 
-      const soundStatus = await downloadSoundIfMissing(s.genus, s.species, s.german);
-      const mapStatus = await downloadMapForSpecies(data);
+      const soundStatus = args.mode === "manual-maps"
+        ? "ok"
+        : await downloadSoundIfMissing(s.genus, s.species, s.german);
+      const mapStatus = args.mode === "nc-sounds"
+        ? "ok"
+        : await downloadMapForSpecies(
+          data,
+          args.mode === "manual-maps"
+            ? { force: true, allowManual: true, recordAssessment: false }
+            : undefined,
+        );
 
       const speciesOk =
         data &&
@@ -1323,13 +1363,17 @@ function printReportToConsole(report) {
       await sleep(RATE_LIMIT);
     }
 
-    atomicWriteJson("speciesData.json", output);
-    console.log("✔ speciesData.json aktualisiert!");
+    if (assetOnlyMode) {
+      console.log("✔ Gezielter Asset-Suchlauf abgeschlossen; Artendaten bleiben unverändert.");
+    } else {
+      atomicWriteJson("speciesData.json", output);
+      console.log("✔ speciesData.json aktualisiert!");
 
-    const report = createMissingElementsReport(output);
-    atomicWriteJson("fehlende_elemente_report.json", report);
-    printReportToConsole(report);
-    console.log("✔ fehlende_elemente_report.json erstellt!");
+      const report = createMissingElementsReport(output);
+      atomicWriteJson("fehlende_elemente_report.json", report);
+      printReportToConsole(report);
+      console.log("✔ fehlende_elemente_report.json erstellt!");
+    }
   } catch (err) {
     console.error("❌ Fehler im Hauptprozess: " + err);
     logError("Hauptprozess: " + err.message);
