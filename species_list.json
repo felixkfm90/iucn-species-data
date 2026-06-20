@@ -366,5 +366,13 @@
     "size": "ca. 46–51 cm",
     "weight": "ca. 800–1.500 g",
     "life_expectancy": "ca. 15 Jahre"
+  },
+  {
+    "german": "Höckerschwan",
+    "genus": "Cygnus",
+    "species": "olor",
+    "size": "ca. 140–160 cm",
+    "weight": "ca. 8–15 kg",
+    "life_expectancy": "ca. 20–30 Jahre"
   }
 ]

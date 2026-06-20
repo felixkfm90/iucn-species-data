@@ -61,6 +61,18 @@
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-20T06:47:59.604Z"
       }
+    },
+    "Hoeckerschwan": {
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-20T06:51:36.088Z"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-20T06:51:36.088Z"
+      }
     }
   }
 }
