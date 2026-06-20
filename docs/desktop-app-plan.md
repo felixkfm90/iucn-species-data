@@ -529,15 +529,20 @@ Kompakte Oberfläche:
 
 ### 7.7 Asset-Verwaltung
 
-Danach. Detailplanung: `docs/asset-management-plan.md`.
+In Arbeit seit 2026-06-20. Detailplanung: `docs/asset-management-plan.md`.
 
 Geplante Teilstufen:
 
 1. maschinenlesbares Override-Register und expliziter Pipeline-Schutz
-2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup und Dokumentationsabgleich
+2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup, Dokumentationsabgleich und automatischem
+   Commit/Push: technisch lokal umgesetzt; produktive Bedienprüfung offen
 3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen
 4. Spektrogramm per Soundhash als passend oder veraltet kennzeichnen
 5. Artportraet-Quelle, Lizenz, Dateiformat und Squarespace-Verwendung separat entscheiden
+
+Der Kartenimport akzeptiert nur JPEG bis 20 MB, prüft Magic Bytes und Abmessungen, nutzt Staging und ein
+Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen Pipeline-Schutz. Assetbackups sind auf drei
+Versionen je Art/Karte und insgesamt 500 MB begrenzt. Elf Explorer-Tests sind erfolgreich.
 
 ### 7.8 Synology NAS und automatisiertes Backup
 

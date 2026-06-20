@@ -42,7 +42,11 @@ const NEW_SPECIES_FIELD_DEFINITIONS = [
 ];
 const PREVIEW_TOKEN_TTL_MS = 10 * 60 * 1000;
 const MAX_JSON_BODY_BYTES = 16 * 1024;
+const MAX_MAP_BYTES = 20 * 1024 * 1024;
+const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const BACKUP_RETENTION_COUNT = 20;
+const ASSET_BACKUP_RETENTION_COUNT = 3;
+const ASSET_BACKUP_GLOBAL_BYTES = 500 * 1024 * 1024;
 const PIPELINE_LOG_RETENTION_COUNT = 20;
 const PIPELINE_LOG_LINE_LIMIT = 400;
 
@@ -123,14 +127,46 @@ export function synchronizeManualMapDocumentation(
   updatedDate = new Date().toISOString().slice(0, 10),
 ) {
   const lines = markdown.split(/\r?\n/);
-  const filtered = lines.filter((line) => {
+  const manualMapRow = (safeName, map) => {
+    const cell = (value) => String(value ?? "").replace(/\|/g, "/").trim();
+    const source = map.source
+      ? `[Quelle](${String(map.source).replace(/\|/g, "%7C").replace(/\)/g, "%29")})`
+      : "Manuell über Arten-Explorer gepflegt.";
+    return `| ${cell(map.germanName || safeName)} | ${cell(safeName)} | \`species-assets/${safeName}/map.jpg\` | ${cell(map.reason || "Manuell gepflegte Karte.")} | ${source} | ${updatedDate} | erledigt/geprueft |`;
+  };
+  const filtered = [];
+  for (const line of lines) {
     const match = line.match(
       /^\|\s*[^|]+\|\s*([^|]+?)\s*\|\s*`species-assets\/([^/]+)\/map\.jpg`/,
     );
-    if (!match) return true;
+    if (!match) {
+      filtered.push(line);
+      continue;
+    }
     const safeName = match[2].trim();
-    return assetOverrides.assets?.[safeName]?.map?.manual !== false;
-  });
+    const map = assetOverrides.assets?.[safeName]?.map;
+    if (map?.manual === false) continue;
+    filtered.push(map?.manual === true && (map.source || map.importedAt)
+      ? manualMapRow(safeName, map)
+      : line);
+  }
+  const documented = new Set();
+  for (const line of filtered) {
+    const match = line.match(/`species-assets\/([^/]+)\/map\.jpg`/);
+    if (match) documented.add(match[1]);
+  }
+  const addedRows = Object.entries(assetOverrides.assets ?? {})
+    .filter(([safeName, entry]) => entry?.map?.manual === true && !documented.has(safeName))
+    .sort(([left], [right]) => left.localeCompare(right, "de"))
+    .map(([safeName, entry]) => manualMapRow(safeName, entry.map));
+  if (addedRows.length) {
+    const rulesIndex = filtered.findIndex((line) => line.trim() === "## Pflege-Regeln");
+    const insertAt = rulesIndex >= 0 ? rulesIndex : filtered.length;
+    const prefix = filtered.slice(0, insertAt);
+    const suffix = filtered.slice(insertAt);
+    while (prefix.length && prefix.at(-1) === "") prefix.pop();
+    filtered.splice(0, filtered.length, ...prefix, ...addedRows, "", ...suffix);
+  }
   const remainingCount = filtered.filter((line) => (
     /^\|\s*[^|]+\|\s*[^|]+\|\s*`species-assets\/[^/]+\/map\.jpg`/.test(line)
   )).length;
@@ -144,6 +180,46 @@ export function synchronizeManualMapDocumentation(
       `Aktuell sind ${remainingCount} ${mapLabel} als manuell gepflegt dokumentiert.`,
     );
   return hadFinalNewline && !next.endsWith("\n") ? `${next}\n` : next;
+}
+
+export function inspectJpeg(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) {
+    throw new Error("JPEG-Datei ist zu klein oder unlesbar");
+  }
+  if (buffer[0] !== 0xff || buffer[1] !== 0xd8 || buffer[2] !== 0xff) {
+    throw new Error("Dateisignatur ist kein JPEG");
+  }
+
+  const startOfFrameMarkers = new Set([
+    0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
+    0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+  ]);
+  let offset = 2;
+  while (offset + 4 <= buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    while (offset < buffer.length && buffer[offset] === 0xff) offset += 1;
+    const marker = buffer[offset];
+    offset += 1;
+    if (marker === 0xd9 || marker === 0xda) break;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (offset + 2 > buffer.length) break;
+    const segmentLength = buffer.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) {
+      throw new Error("JPEG-Struktur ist beschädigt");
+    }
+    if (startOfFrameMarkers.has(marker)) {
+      if (segmentLength < 7) throw new Error("JPEG-Bildinformationen sind unvollständig");
+      const height = buffer.readUInt16BE(offset + 3);
+      const width = buffer.readUInt16BE(offset + 5);
+      if (!width || !height) throw new Error("JPEG-Abmessungen sind ungültig");
+      return { width, height };
+    }
+    offset += segmentLength;
+  }
+  throw new Error("JPEG-Abmessungen konnten nicht gelesen werden");
 }
 
 function scientificKey(genus, species) {
@@ -188,6 +264,116 @@ async function prunePipelineLogs(logDir, keepCount = PIPELINE_LOG_RETENTION_COUN
     .sort((a, b) => b.localeCompare(a, "en"));
   const remove = candidates.slice(keepCount);
   await Promise.all(remove.map((name) => unlink(join(logDir, name))));
+}
+
+async function collectManagedAssetBackups(assetBackupRoot) {
+  if (!existsSync(assetBackupRoot)) return [];
+  const collected = [];
+  const speciesDirectories = await readdir(assetBackupRoot, { withFileTypes: true });
+  for (const speciesDirectory of speciesDirectories) {
+    if (!speciesDirectory.isDirectory()) continue;
+    const speciesPath = join(assetBackupRoot, speciesDirectory.name);
+    const assetDirectories = await readdir(speciesPath, { withFileTypes: true });
+    for (const assetDirectory of assetDirectories) {
+      if (!assetDirectory.isDirectory()) continue;
+      const assetPath = join(speciesPath, assetDirectory.name);
+      const files = await readdir(assetPath, { withFileTypes: true });
+      for (const file of files) {
+        if (!file.isFile() || !/^map-\d{8}T\d{6}Z-[0-9a-f]{8}\.jpg$/.test(file.name)) continue;
+        const filePath = join(assetPath, file.name);
+        const details = await stat(filePath);
+        collected.push({
+          filePath,
+          species: speciesDirectory.name,
+          assetType: assetDirectory.name,
+          name: file.name,
+          bytes: details.size,
+          mtimeMs: details.mtimeMs,
+        });
+      }
+    }
+  }
+  return collected;
+}
+
+async function pruneAssetBackups(assetBackupRoot) {
+  const backups = await collectManagedAssetBackups(assetBackupRoot);
+  const removePaths = new Set();
+  const groups = new Map();
+  for (const backup of backups) {
+    const key = `${backup.species}:${backup.assetType}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(backup);
+  }
+  for (const group of groups.values()) {
+    group.sort((left, right) => right.mtimeMs - left.mtimeMs || right.name.localeCompare(left.name));
+    for (const backup of group.slice(ASSET_BACKUP_RETENTION_COUNT)) {
+      removePaths.add(backup.filePath);
+    }
+  }
+
+  const retained = backups
+    .filter((backup) => !removePaths.has(backup.filePath))
+    .sort((left, right) => left.mtimeMs - right.mtimeMs || left.name.localeCompare(right.name));
+  let retainedBytes = retained.reduce((sum, backup) => sum + backup.bytes, 0);
+  for (const backup of retained) {
+    if (retainedBytes <= ASSET_BACKUP_GLOBAL_BYTES) break;
+    removePaths.add(backup.filePath);
+    retainedBytes -= backup.bytes;
+  }
+
+  await Promise.all([...removePaths].map((filePath) => unlink(filePath)));
+  return {
+    kept: backups.length - removePaths.size,
+    removed: removePaths.size,
+    bytes: retainedBytes,
+  };
+}
+
+function validateMapPreviewPayload(payload) {
+  const reason = String(payload?.reason ?? "").trim();
+  const source = String(payload?.source ?? "").trim();
+  const originalName = String(payload?.originalName ?? "").trim();
+  const imageBase64 = String(payload?.imageBase64 ?? "").trim();
+  const errors = [];
+
+  if (reason.length < 5) errors.push("Pflegegrund muss mindestens 5 Zeichen enthalten");
+  if (reason.length > 500) errors.push("Pflegegrund darf maximal 500 Zeichen enthalten");
+  if (!source) {
+    errors.push("Quellen-URL ist erforderlich");
+  } else {
+    try {
+      const parsed = new URL(source);
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        errors.push("Quellen-URL muss mit http:// oder https:// beginnen");
+      }
+    } catch {
+      errors.push("Quellen-URL ist ungültig");
+    }
+  }
+  if (source.length > 2000) errors.push("Quellen-URL darf maximal 2000 Zeichen enthalten");
+  if (!/\.jpe?g$/i.test(originalName)) errors.push("Es sind nur JPEG-Dateien erlaubt");
+  if (!imageBase64) errors.push("JPEG-Datei fehlt");
+  if (errors.length) return { errors };
+
+  let buffer;
+  try {
+    buffer = Buffer.from(imageBase64, "base64");
+  } catch {
+    errors.push("JPEG-Datei konnte nicht gelesen werden");
+    return { errors };
+  }
+  if (!buffer.length) errors.push("JPEG-Datei ist leer");
+  if (buffer.length > MAX_MAP_BYTES) errors.push("JPEG-Datei darf maximal 20 MB groß sein");
+  let dimensions = null;
+  if (!errors.length) {
+    try {
+      dimensions = inspectJpeg(buffer);
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+  return { errors, reason, source, originalName, buffer, dimensions };
 }
 
 function publicPipelinePlan(plan) {
@@ -366,13 +552,13 @@ function buildEditChanges(inputEntry, values) {
     .filter((change) => normalizeComparable(change.before) !== normalizeComparable(change.after));
 }
 
-async function readJsonBody(request) {
+async function readJsonBody(request, { maxBytes = MAX_JSON_BODY_BYTES } = {}) {
   const chunks = [];
   let bytes = 0;
 
   for await (const chunk of request) {
     bytes += chunk.length;
-    if (bytes > MAX_JSON_BODY_BYTES) {
+    if (bytes > maxBytes) {
       const error = new Error("Anfrage ist zu groß");
       error.statusCode = 413;
       throw error;
@@ -608,6 +794,9 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           ...map,
           url: `/assets/${encodeURIComponent(safeName)}/map.jpg`,
           manuallyAdded: isManualMap,
+          manualReason: mapOverride?.reason ?? "",
+          source: mapOverride?.source ?? "",
+          sha256: mapOverride?.sha256 ?? "",
         },
         sound: {
           ...sound,
@@ -910,6 +1099,7 @@ export async function createExplorerServer({
   repoRoot = REPO_ROOT,
   host = DEFAULT_HOST,
   port = DEFAULT_PORT,
+  publishAssetChanges = true,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
@@ -922,8 +1112,11 @@ export async function createExplorerServer({
   const backupDir = join(repoRoot, "species-explorer", "backups");
   const pipelineLogDir = join(repoRoot, "species-explorer", "logs");
   const pipelineAssetBackupRoot = join(repoRoot, "species-explorer", "pipeline-asset-backups");
+  const assetStagingRoot = join(repoRoot, "species-explorer", "staging");
+  const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   let pipelineProcess = null;
+  let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
   let pipelineState = {
     status: "idle",
@@ -972,7 +1165,11 @@ export async function createExplorerServer({
   function cleanupPreviewTokens() {
     const now = Date.now();
     for (const [token, preview] of previewTokens) {
-      if (preview.expiresAt <= now) previewTokens.delete(token);
+      if (preview.expiresAt > now) continue;
+      if (preview.type === "map-asset" && preview.stagingPath) {
+        rmSync(preview.stagingPath, { force: true });
+      }
+      previewTokens.delete(token);
     }
   }
 
@@ -1531,6 +1728,318 @@ export async function createExplorerServer({
     return pipelineState;
   }
 
+  function runCommandCapture(command, args) {
+    return new Promise((resolveRun) => {
+      const child = spawn(command, args, {
+        cwd: repoRoot,
+        env: process.env,
+        windowsHide: true,
+      });
+      const stdout = [];
+      const stderr = [];
+      child.stdout.on("data", (chunk) => stdout.push(chunk));
+      child.stderr.on("data", (chunk) => stderr.push(chunk));
+      child.on("error", (error) => {
+        resolveRun({ code: 1, stdout: "", stderr: error.message });
+      });
+      child.on("close", (code) => {
+        resolveRun({
+          code: Number.isInteger(code) ? code : 1,
+          stdout: Buffer.concat(stdout).toString("utf8").trim(),
+          stderr: Buffer.concat(stderr).toString("utf8").trim(),
+        });
+      });
+    });
+  }
+
+  async function publishMapAssetChanges(species) {
+    if (!publishAssetChanges) {
+      return { published: false, skipped: true, commit: "" };
+    }
+    const paths = [
+      `species-assets/${species.safeName}/map.jpg`,
+      "species-assets-overrides.json",
+      "docs/manual-map-overrides.md",
+    ];
+    const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+    if (stagedBefore.code !== 0) {
+      throw new Error(
+        "Vor dem Kartenimport waren bereits Dateien vorgemerkt. Commit und Push wurden nicht gestartet.",
+      );
+    }
+    const staged = await runCommandCapture("git", ["add", "--", ...paths]);
+    if (staged.code !== 0) {
+      throw new Error(`Git-Dateien konnten nicht vorgemerkt werden: ${staged.stderr || staged.stdout}`);
+    }
+    const changed = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+    if (changed.code === 0) return { published: true, skipped: false, commit: "" };
+    if (changed.code !== 1) {
+      throw new Error(`Git-Änderungen konnten nicht geprüft werden: ${changed.stderr || changed.stdout}`);
+    }
+    const committed = await runCommandCapture(
+      "git",
+      ["commit", "-m", `Replace distribution map for ${species.germanName}`],
+    );
+    if (committed.code !== 0) {
+      throw new Error(`Git-Commit fehlgeschlagen: ${committed.stderr || committed.stdout}`);
+    }
+    const commit = await runCommandCapture("git", ["rev-parse", "--short", "HEAD"]);
+    const pushed = await runCommandCapture("git", ["push"]);
+    if (pushed.code !== 0) {
+      throw new Error(`Git-Push fehlgeschlagen: ${pushed.stderr || pushed.stdout}`);
+    }
+    return { published: true, skipped: false, commit: commit.stdout };
+  }
+
+  async function mapAssetSourceRevision(species) {
+    const mapPath = join(repoRoot, "species-assets", species.safeName, "map.jpg");
+    const [registryText, documentationText] = await Promise.all([
+      readFile(assetOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "assets": {}\n}\n'),
+      readFile(manualMapOverridesPath, "utf8"),
+    ]);
+    const mapBuffer = existsSync(mapPath) ? await readFile(mapPath) : Buffer.alloc(0);
+    return {
+      revision: hashText(
+        `${createHash("sha256").update(mapBuffer).digest("hex")}\n${registryText}\n${documentationText}`,
+      ),
+      mapPath,
+      mapBuffer,
+      registryText,
+      documentationText,
+    };
+  }
+
+  async function previewMapAsset(id, payload) {
+    cleanupPreviewTokens();
+    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Während eines Pipeline-Laufs können keine Karten ersetzt werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const validated = validateMapPreviewPayload(payload);
+    if (validated.errors.length) {
+      const error = new Error("Karten-Datei oder Angaben sind ungültig");
+      error.statusCode = 400;
+      error.details = validated.errors;
+      throw error;
+    }
+
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    await mkdir(assetStagingRoot, { recursive: true });
+    const stagingPath = join(assetStagingRoot, `${token}.jpg`);
+    await writeFile(stagingPath, validated.buffer);
+    const source = await mapAssetSourceRevision(species);
+    let currentDimensions = null;
+    if (source.mapBuffer.length) {
+      try {
+        currentDimensions = inspectJpeg(source.mapBuffer);
+      } catch {
+        currentDimensions = null;
+      }
+    }
+    const sha256 = createHash("sha256").update(validated.buffer).digest("hex");
+    previewTokens.set(token, {
+      type: "map-asset",
+      id,
+      safeName: species.safeName,
+      reason: validated.reason,
+      source: validated.source,
+      originalName: validated.originalName,
+      stagingPath,
+      sha256,
+      bytes: validated.buffer.length,
+      dimensions: validated.dimensions,
+      sourceRevision: source.revision,
+      expiresAt,
+    });
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      species: {
+        id: species.id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+      },
+      currentMap: {
+        exists: source.mapBuffer.length > 0,
+        bytes: source.mapBuffer.length,
+        dimensions: currentDimensions,
+        url: source.mapBuffer.length
+          ? `/assets/${encodeURIComponent(species.safeName)}/map.jpg?current=${token}`
+          : "",
+      },
+      newMap: {
+        bytes: validated.buffer.length,
+        dimensions: validated.dimensions,
+        sha256,
+        url: `/api/species/${encodeURIComponent(id)}/assets/map/preview-file?token=${encodeURIComponent(token)}`,
+      },
+      reason: validated.reason,
+      source: validated.source,
+      warnings: [
+        "Die vorhandene Karte wird vor dem Austausch lokal gesichert.",
+        "Die neue Karte wird als manuell gepflegt markiert und vor automatischen Pipeline-Updates geschützt.",
+        "Nach erfolgreichem Speichern werden Karte, Register und Dokumentation automatisch committed und gepusht.",
+      ],
+    };
+  }
+
+  async function saveMapAsset(id, payload) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "map-asset" || preview.id !== id) {
+      const error = new Error("Kartenvorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive || pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput || species.safeName !== preview.safeName) {
+      previewTokens.delete(token);
+      const error = new Error("Art ist nicht mehr im erwarteten Zustand");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (!existsSync(preview.stagingPath)) {
+      previewTokens.delete(token);
+      const error = new Error("Vorgemerkte Kartendatei fehlt");
+      error.statusCode = 409;
+      throw error;
+    }
+    const stagedBuffer = await readFile(preview.stagingPath);
+    const stagedHash = createHash("sha256").update(stagedBuffer).digest("hex");
+    if (stagedHash !== preview.sha256) {
+      previewTokens.delete(token);
+      const error = new Error("Vorgemerkte Kartendatei wurde verändert");
+      error.statusCode = 409;
+      throw error;
+    }
+    const source = await mapAssetSourceRevision(species);
+    if (source.revision !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      const error = new Error("Karte oder Pflegeangaben wurden seit der Vorschau geändert");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (publishAssetChanges) {
+      const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+      if (stagedBefore.code !== 0) {
+        const error = new Error(
+          "Vor dem Kartenimport sind bereits Dateien für Git vorgemerkt. Bitte diese zuerst committen oder aus dem Index entfernen.",
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
+    assetWriteActive = true;
+    let backupRelativePath = "";
+    try {
+      const assetDirectory = join(repoRoot, "species-assets", species.safeName);
+      await mkdir(assetDirectory, { recursive: true });
+      if (source.mapBuffer.length) {
+        const backupDirectory = join(assetBackupRoot, species.safeName, "map");
+        await mkdir(backupDirectory, { recursive: true });
+        const currentHash = createHash("sha256").update(source.mapBuffer).digest("hex");
+        const backupName = `map-${compactTimestamp()}-${currentHash.slice(0, 8)}.jpg`;
+        const backupPath = join(backupDirectory, backupName);
+        await writeFile(backupPath, source.mapBuffer);
+        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/map/${backupName}`;
+      }
+
+      const registry = JSON.parse(source.registryText);
+      registry.version = 1;
+      registry.assets ??= {};
+      registry.assets[species.safeName] ??= {};
+      const updatedAt = new Date().toISOString();
+      registry.assets[species.safeName].map = {
+        manual: true,
+        protectFromPipeline: true,
+        reason: preview.reason,
+        source: preview.source,
+        germanName: species.germanName,
+        originalFileName: preview.originalName,
+        importedAt: updatedAt,
+        updatedAt,
+        sha256: preview.sha256,
+      };
+      const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
+      const nextDocumentationText = synchronizeManualMapDocumentation(
+        source.documentationText,
+        registry,
+      );
+
+      const mapTempPath = `${source.mapPath}.tmp-${randomUUID()}`;
+      const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      const documentationTempPath = `${manualMapOverridesPath}.tmp-${randomUUID()}`;
+      try {
+        await writeFile(mapTempPath, stagedBuffer);
+        await rename(mapTempPath, source.mapPath);
+        await writeFile(registryTempPath, nextRegistryText, "utf8");
+        await rename(registryTempPath, assetOverridesPath);
+        await writeFile(documentationTempPath, nextDocumentationText, "utf8");
+        await rename(documentationTempPath, manualMapOverridesPath);
+      } catch (error) {
+        await unlink(mapTempPath).catch(() => {});
+        await unlink(registryTempPath).catch(() => {});
+        await unlink(documentationTempPath).catch(() => {});
+        if (source.mapBuffer.length) await writeFile(source.mapPath, source.mapBuffer);
+        else await unlink(source.mapPath).catch(() => {});
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        await writeFile(manualMapOverridesPath, source.documentationText, "utf8");
+        throw error;
+      }
+
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      let backupRetention = { kept: 0, removed: 0, bytes: 0 };
+      let backupCleanupWarning = "";
+      try {
+        backupRetention = await pruneAssetBackups(assetBackupRoot);
+      } catch (error) {
+        backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
+      }
+      await refreshModel({ force: true });
+      let publication;
+      let publicationError = "";
+      try {
+        publication = await publishMapAssetChanges(species);
+      } catch (error) {
+        publication = { published: false, skipped: false, commit: "" };
+        publicationError = error.message;
+      }
+      return {
+        ok: !publicationError,
+        saved: true,
+        backup: backupRelativePath,
+        backupRetention,
+        backupCleanupWarning,
+        gitPublished: publication.published,
+        gitSkipped: publication.skipped,
+        gitCommit: publication.commit,
+        publicationError,
+        species: model.species.find((entry) => entry.id === id) ?? null,
+        summary: model.summary,
+        validation: model.validation,
+      };
+    } finally {
+      assetWriteActive = false;
+    }
+  }
+
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
     const { values, errors } = validateNewSpeciesValues(payload?.values);
@@ -1985,6 +2494,41 @@ export async function createExplorerServer({
       const url = new URL(request.url, `http://${host}:${port}`);
       const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
       const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
+      const mapAssetRoute = url.pathname.match(
+        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save)$/,
+      );
+      const mapPreviewFileRoute = url.pathname.match(
+        /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
+      );
+
+      if (
+        (request.method === "GET" || request.method === "HEAD")
+        && mapPreviewFileRoute
+      ) {
+        cleanupPreviewTokens();
+        const id = decodeURIComponent(mapPreviewFileRoute[1]);
+        const token = String(url.searchParams.get("token") ?? "");
+        const preview = previewTokens.get(token);
+        if (!preview || preview.type !== "map-asset" || preview.id !== id) {
+          sendText(response, 404, "Kartenvorschau nicht gefunden");
+          return;
+        }
+        await sendFile(request, response, preview.stagingPath);
+        return;
+      }
+
+      if (request.method === "POST" && mapAssetRoute) {
+        const id = decodeURIComponent(mapAssetRoute[1]);
+        const action = mapAssetRoute[2];
+        const payload = await readJsonBody(request, {
+          maxBytes: action === "preview" ? MAX_MAP_PREVIEW_BODY_BYTES : MAX_JSON_BODY_BYTES,
+        });
+        const result = action === "preview"
+          ? await previewMapAsset(id, payload)
+          : await saveMapAsset(id, payload);
+        sendJson(response, 200, result);
+        return;
+      }
 
       if (
         request.method === "POST"

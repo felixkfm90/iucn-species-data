@@ -22,3 +22,5 @@ species-explorer/backups/
 species-explorer/logs/
 species-explorer/pending-asset-review.json
 species-explorer/pipeline-asset-backups/
+species-explorer/staging/
+species-explorer/asset-backups/

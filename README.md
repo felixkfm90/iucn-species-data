@@ -200,6 +200,8 @@ Der Explorer zeigt:
 - vier manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
+- kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-Prüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund,
+  lokalem Backup, manuellem Pipeline-Schutz sowie automatischem Commit und Push
 - serverseitige Validierung, Diff-Vorschau und explizite Speicherbestaetigung
 - automatische lokale Sicherung vor jedem Schreibvorgang
 
@@ -311,6 +313,12 @@ Tests:
 ```bash
 npm.cmd run --silent test:explorer
 ```
+
+Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 technisch lokal umgesetzt. Produktive Kartenimporte werden erst
+nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB; die App prüft Signatur, Struktur, Abmessungen,
+Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
+höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
+Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
 
 Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen kontrolliert ueber den Explorer in
 `species_list.json` angelegt werden; der genaue Ablauf ist in `docs/add-species-workflow.md` dokumentiert.

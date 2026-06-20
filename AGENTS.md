@@ -382,16 +382,25 @@ Aktuelle Planung:
   direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. Zehn Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. Elf Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
-  geprueft. Danach folgt 7.7 Asset-Verwaltung nach
-  `docs/asset-management-plan.md` und 7.8 NAS/Backup.
+  geprueft.
   Ein am 2026-06-20 gefundener Fehler startete bei `Bereinigen` wegen eines fehlenden internen Modus irrtuemlich
   `update.mjs --mode=undefined`. Der Plan und Prozessstatus tragen jetzt ausdruecklich `mode: cleanup`; der
   isolierte Test prueft sowohl den Bereinigungslauf als auch die optionale Sofortloeschung und anschliessende
   kollisionsfreie Neuanlage.
+  Phase 7.7 Asset-Verwaltung nach `docs/asset-management-plan.md` ist seit 2026-06-20 in Arbeit. Die technische
+  Grundlage fuer 7.7.2 Kartenverwaltung ist lokal umgesetzt: Im allgemeinen Bearbeitungsdialog koennen bekannte
+  Arten eine neue JPEG-Karte bis 20 MB mit Quelle und Pflegegrund pruefen. Der Server validiert Magic Bytes,
+  JPEG-Struktur und Abmessungen, legt eine zehn Minuten gueltige Alt-/Neu-Vorschau im ignorierten Stagingbereich an
+  und schuetzt gegen parallele Aenderungen. Beim Speichern wird die alte Karte gesichert, `map.jpg` atomar ersetzt,
+  der manuelle Pipeline-Schutz samt SHA-256 im Override-Register gesetzt und die Kartendokumentation aktualisiert.
+  Pro Art bleiben hoechstens drei verwaltete Kartenbackups, global hoechstens 500 MB. Nach erfolgreichem Austausch
+  folgen automatisch ein auf Karte, Register und Dokumentation begrenzter Git-Commit und Push. Elf Explorer-Tests
+  sind erfolgreich; produktiver Import und visuelle Bedienpruefung stehen noch aus. Danach folgen Sound/Credits,
+  Spektrogramm-Hashabgleich, Artportraet und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

@@ -108,6 +108,23 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      const value = String(reader.result ?? "");
+      const commaIndex = value.indexOf(",");
+      if (commaIndex < 0) {
+        reject(new Error("Datei konnte nicht gelesen werden"));
+        return;
+      }
+      resolve(value.slice(commaIndex + 1));
+    });
+    reader.addEventListener("error", () => reject(reader.error || new Error("Datei konnte nicht gelesen werden")));
+    reader.readAsDataURL(file);
+  });
+}
+
 function formatIucnFetchDate(value) {
   const match = String(value ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}.${match[2]}.${match[1]}` : value || "Unbekannt";
@@ -1156,9 +1173,21 @@ function setupSpeciesEditor(species) {
   const message = elements.detailPanel.querySelector(".edit-message");
   const previewButton = elements.detailPanel.querySelector(".edit-preview-button");
   const saveButton = elements.detailPanel.querySelector(".edit-save-button");
+  const mapFileInput = elements.detailPanel.querySelector(".map-file-input");
+  const mapReasonInput = elements.detailPanel.querySelector(".map-reason-input");
+  const mapSourceInput = elements.detailPanel.querySelector(".map-source-input");
+  const mapMessage = elements.detailPanel.querySelector(".map-edit-message");
+  const mapPreview = elements.detailPanel.querySelector(".map-edit-preview");
+  const mapCurrentImage = elements.detailPanel.querySelector(".map-preview-current");
+  const mapNewImage = elements.detailPanel.querySelector(".map-preview-new");
+  const mapCurrentMeta = elements.detailPanel.querySelector(".map-current-meta");
+  const mapNewMeta = elements.detailPanel.querySelector(".map-new-meta");
+  const mapPreviewButton = elements.detailPanel.querySelector(".map-preview-button");
+  const mapSaveButton = elements.detailPanel.querySelector(".map-save-button");
   if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
+  let mapPreviewToken = "";
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1173,15 +1202,41 @@ function setupSpeciesEditor(species) {
     saveButton.disabled = true;
   };
 
+  const setMapMessage = (text = "", type = "") => {
+    if (!mapMessage) return;
+    mapMessage.textContent = text;
+    mapMessage.className = `edit-message map-edit-message${type ? ` ${type}` : ""}`;
+    mapMessage.hidden = !text;
+  };
+
+  const resetMapPreview = () => {
+    mapPreviewToken = "";
+    if (mapPreview) mapPreview.hidden = true;
+    if (mapSaveButton) mapSaveButton.disabled = true;
+    if (mapCurrentImage) mapCurrentImage.removeAttribute("src");
+    if (mapNewImage) mapNewImage.removeAttribute("src");
+  };
+
   const setBusy = (busy) => {
     previewButton.disabled = busy;
     saveButton.disabled = busy || !previewToken;
     for (const button of closeButtons) button.disabled = busy;
   };
 
+  const setMapBusy = (busy) => {
+    if (mapPreviewButton) mapPreviewButton.disabled = busy;
+    if (mapSaveButton) mapSaveButton.disabled = busy || !mapPreviewToken;
+    if (mapFileInput) mapFileInput.disabled = busy;
+    if (mapReasonInput) mapReasonInput.disabled = busy;
+    if (mapSourceInput) mapSourceInput.disabled = busy;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
   openButton.addEventListener("click", () => {
     resetPreview();
+    resetMapPreview();
     setMessage();
+    setMapMessage();
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   });
@@ -1198,7 +1253,12 @@ function setupSpeciesEditor(species) {
     else dialog.removeAttribute("open");
   });
 
-  form.addEventListener("input", () => {
+  form.addEventListener("input", (event) => {
+    if (event.target.closest(".map-edit-section")) {
+      resetMapPreview();
+      setMapMessage("Kartenauswahl oder Angaben geändert. Bitte die Vorschau erneut erstellen.", "info");
+      return;
+    }
     resetPreview();
     setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
   });
@@ -1271,6 +1331,80 @@ function setupSpeciesEditor(species) {
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setBusy(false);
+    }
+  });
+
+  mapPreviewButton?.addEventListener("click", async () => {
+    resetMapPreview();
+    setMapBusy(true);
+    setMapMessage("Karte und Angaben werden geprüft…", "info");
+    try {
+      const file = mapFileInput.files?.[0];
+      if (!file) throw new Error("Bitte eine JPEG-Datei auswählen");
+      if (file.size > 20 * 1024 * 1024) throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+      const imageBase64 = await fileToBase64(file);
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/map/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalName: file.name,
+            imageBase64,
+            reason: mapReasonInput.value,
+            source: mapSourceInput.value,
+          }),
+        },
+      );
+      mapPreviewToken = result.token;
+      mapCurrentImage.hidden = !result.currentMap.exists;
+      if (result.currentMap.exists) mapCurrentImage.src = result.currentMap.url;
+      mapNewImage.src = result.newMap.url;
+      if (typeof mapNewImage.decode === "function") await mapNewImage.decode();
+      const dimensions = (entry) => entry.dimensions
+        ? `${entry.dimensions.width} × ${entry.dimensions.height} px`
+        : "Abmessungen unbekannt";
+      mapCurrentMeta.textContent = result.currentMap.exists
+        ? `${dimensions(result.currentMap)} · ${formatBytes(result.currentMap.bytes)}`
+        : "Keine bisherige Karte";
+      mapNewMeta.textContent = `${dimensions(result.newMap)} · ${formatBytes(result.newMap.bytes)}`;
+      mapPreview.hidden = false;
+      mapSaveButton.disabled = false;
+      setMapMessage(
+        "Vorschau erstellt. Beim Speichern werden Backup, manueller Schutz, Commit und Push ausgeführt.",
+        "success",
+      );
+    } catch (error) {
+      resetMapPreview();
+      setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setMapBusy(false);
+    }
+  });
+
+  mapSaveButton?.addEventListener("click", async () => {
+    if (!mapPreviewToken) return;
+    setMapBusy(true);
+    setMapMessage("Karte wird gesichert, ersetzt, committed und gepusht…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/map/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: mapPreviewToken }),
+        },
+      );
+      state.notice = result.gitPublished
+        ? `Karte gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
+          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
+        : `Karte wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setMapBusy(false);
     }
   });
 }
@@ -1604,6 +1738,74 @@ function renderDetail(species) {
           <p class="edit-warning">
             Speichern ändert nur <code>species_list.json</code>. Danach ist ein Pipeline-Lauf erforderlich.
           </p>
+        </section>
+
+        <section class="map-edit-section">
+          <header>
+            <div>
+              <h4>Verbreitungskarte ersetzen</h4>
+              <p>Nur JPEG bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
+            </div>
+            <span class="map-care-state">
+              ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
+            </span>
+          </header>
+
+          <div class="map-edit-fields">
+            <label>
+              <span>Neue JPEG-Datei</span>
+              <input class="map-file-input" type="file" accept=".jpg,.jpeg,image/jpeg">
+            </label>
+            <label>
+              <span>Pflegegrund</span>
+              <textarea
+                class="map-reason-input"
+                maxlength="500"
+                rows="2"
+                placeholder="Warum wird diese Karte manuell gepflegt?"
+              >${escapeHtml(species.assets.map.manualReason || "")}</textarea>
+            </label>
+            <label>
+              <span>Quellen-URL</span>
+              <input
+                class="map-source-input"
+                type="url"
+                maxlength="2000"
+                placeholder="https://…"
+                value="${escapeHtml(species.assets.map.source || "")}"
+              >
+            </label>
+          </div>
+
+          <p class="edit-message map-edit-message" hidden></p>
+
+          <section class="map-edit-preview" hidden>
+            <div class="map-compare-grid">
+              <figure>
+                <figcaption>Bisherige Karte</figcaption>
+                <div class="map-compare-frame">
+                  <img class="map-preview-current" alt="Bisherige Karte ${escapeHtml(species.germanName)}">
+                </div>
+                <p class="map-current-meta"></p>
+              </figure>
+              <figure>
+                <figcaption>Neue Karte</figcaption>
+                <div class="map-compare-frame">
+                  <img class="map-preview-new" alt="Neue Karte ${escapeHtml(species.germanName)}">
+                </div>
+                <p class="map-new-meta"></p>
+              </figure>
+            </div>
+            <p class="edit-warning">
+              Speichern ersetzt <code>map.jpg</code>, legt ein lokales Backup an, aktiviert den manuellen
+              Pipeline-Schutz und führt anschließend Commit und Push aus.
+            </p>
+          </section>
+
+          <div class="map-edit-actions">
+            <button class="map-preview-button" type="button">Karte prüfen</button>
+            <button class="map-save-button" type="button" disabled>Karte ersetzen</button>
+          </div>
         </section>
 
         <div class="edit-actions">

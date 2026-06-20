@@ -342,12 +342,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Beim ersten produktiven Kartensuchlauf wurden Großtrappe, Kernbeißer und Reh als funktionierende automatische
   Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; vier manuelle Karten bleiben. Das
   JSON-Register ist bei einer ausdrücklichen Pflegeentscheidung maßgeblich und synchronisiert die Markdown-Liste.
-- 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
-  Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
-  explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die
-  separate Entscheidung fuer Artportraets. Uploads werden auf bekannte Arten/Dateien, Dateisignaturen und
-  Groessengrenzen beschraenkt. Geplant sind Vorschau, atomarer Austausch und hoechstens drei Backups je Art/Asset bei
-  500 MB globaler Obergrenze. Loeschen, Pipeline-Start, Lizenzfreigabe und Git-Aktionen bleiben ausserhalb von 7.7.
+- 7.7 Asset-Verwaltung: in Arbeit seit 2026-06-20, siehe `docs/asset-management-plan.md`.
+  Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
+  technisch lokal umgesetzt: JPEG bis 20 MB, Signatur-/Struktur-/Abmessungsprüfung, Alt-/Neu-Vorschau, Quelle,
+  Pflegegrund, Staging, Vorschau-Token, Schutz gegen parallele Änderungen, atomarer Austausch und manuelle
+  Kennzeichnung. Pro Art bleiben höchstens drei Kartenbackups erhalten; global gilt 500 MB. Nach erfolgreichem
+  Speichern werden Karte, Override-Register und Kartendokumentation automatisch committed und gepusht.
+  Produktiver Import und visuelle Bedienprüfung sind noch offen. Danach folgen Sound-/Credits-Paket,
+  Spektrogramm-Hashabgleich und die separate Entscheidung für Artporträts. Löschen, Pipeline-Start und automatische
+  Lizenzfreigabe bleiben außerhalb von 7.7.
 - 7.8 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

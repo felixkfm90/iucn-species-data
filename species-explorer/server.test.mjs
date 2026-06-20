@@ -8,11 +8,28 @@ import test from "node:test";
 import {
   buildExplorerModel,
   createExplorerServer,
+  inspectJpeg,
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup } from "../scripts/species-cleanup.mjs";
 await import("./public/filter.js");
+
+function createTestJpeg(width = 3, height = 2) {
+  return Buffer.from([
+    0xff, 0xd8,
+    0xff, 0xe0, 0x00, 0x0e,
+    0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01,
+    0xff, 0xc0, 0x00, 0x11, 0x08,
+    (height >> 8) & 0xff, height & 0xff,
+    (width >> 8) & 0xff, width & 0xff,
+    0x03,
+    0x01, 0x11, 0x00,
+    0x02, 0x11, 0x00,
+    0x03, 0x11, 0x00,
+    0xff, 0xd9,
+  ]);
+}
 
 async function createEditableFixture() {
   const root = await mkdtemp(join(tmpdir(), "species-explorer-edit-"));
@@ -610,6 +627,116 @@ test("Automatisch übernommene Karten verlassen die manuelle Pflege", async (con
   assert.equal(model.species[0].assets.map.manuallyAdded, false);
 });
 
+test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz", async (context) => {
+  const jpeg = createTestJpeg(640, 480);
+  assert.deepEqual(inspectJpeg(jpeg), { width: 640, height: 480 });
+  assert.throws(() => inspectJpeg(Buffer.from("kein jpeg")), /JPEG/);
+
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const invalidResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "karte.png",
+      imageBase64: Buffer.from("kein bild").toString("base64"),
+      reason: "Testkarte",
+      source: "keine-url",
+    }),
+  });
+  assert.equal(invalidResponse.status, 400);
+
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "amsel-neu.jpg",
+      imageBase64: jpeg.toString("base64"),
+      reason: "Manuell geprüfte Testkarte",
+      source: "https://example.com/amsel-map",
+    }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.ok(preview.token);
+  assert.deepEqual(preview.newMap.dimensions, { width: 640, height: 480 });
+  assert.equal(preview.newMap.bytes, jpeg.length);
+  assert.equal(preview.currentMap.exists, true);
+
+  const previewFile = await fetch(`${baseUrl}${preview.newMap.url}`);
+  assert.equal(previewFile.status, 200);
+  assert.equal(previewFile.headers.get("content-type"), "image/jpeg");
+  assert.deepEqual(Buffer.from(await previewFile.arrayBuffer()), jpeg);
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.saved, true);
+  assert.equal(saved.gitPublished, false);
+  assert.equal(saved.gitSkipped, true);
+  assert.match(saved.backup, /^species-explorer\/asset-backups\/Amsel\/map\/map-/);
+  assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg")), jpeg);
+  assert.equal(existsSync(join(repoRoot, ...saved.backup.split("/"))), true);
+
+  const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.assets.Amsel.map.manual, true);
+  assert.equal(registry.assets.Amsel.map.protectFromPipeline, true);
+  assert.equal(registry.assets.Amsel.map.source, "https://example.com/amsel-map");
+  assert.equal(registry.assets.Amsel.map.reason, "Manuell geprüfte Testkarte");
+  assert.match(registry.assets.Amsel.map.sha256, /^[0-9a-f]{64}$/);
+  const documentation = await readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8");
+  assert.match(documentation, /species-assets\/Amsel\/map\.jpg/);
+  assert.match(documentation, /https:\/\/example\.com\/amsel-map/);
+
+  const reusedResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(reusedResponse.status, 409);
+
+  for (const width of [641, 642, 643]) {
+    const replacement = createTestJpeg(width, 480);
+    const nextPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        originalName: `amsel-${width}.jpg`,
+        imageBase64: replacement.toString("base64"),
+        reason: `Testkarte ${width}`,
+        source: `https://example.com/amsel-map-${width}`,
+      }),
+    });
+    assert.equal(nextPreviewResponse.status, 200);
+    const nextPreview = await nextPreviewResponse.json();
+    const nextSaveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: nextPreview.token }),
+    });
+    assert.equal(nextSaveResponse.status, 200);
+  }
+  const backupFiles = await readdir(join(repoRoot, "species-explorer", "asset-backups", "Amsel", "map"));
+  assert.equal(backupFiles.length, 3);
+  assert.deepEqual(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg")),
+    createTestJpeg(643, 480),
+  );
+});
+
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -854,6 +981,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
   assert.match(serverSource, /synchronizeStoredManualMapDocumentation/);
   assert.match(serverSource, /typeof mapOverride\?\.manual === "boolean"/);
+  assert.match(serverSource, /async function previewMapAsset\(id, payload\)/);
+  assert.match(serverSource, /async function saveMapAsset\(id, payload\)/);
+  assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
+  assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 3/);
+  assert.match(serverSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
@@ -868,6 +1000,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /deleteAssets/);
   assert.match(appSource, /Taxonomie und Name sind gesperrt\./);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
+  assert.match(appSource, /class="map-edit-section"/);
+  assert.match(appSource, /class="map-preview-button"/);
+  assert.match(appSource, /class="map-save-button"/);
+  assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
+  assert.match(cssSource, /\.map-compare-grid/);
   assert.match(
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
