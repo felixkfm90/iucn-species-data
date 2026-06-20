@@ -1033,5 +1033,28 @@
     "Species": "merganser",
     "Letztes IUCN Update": "2018",
     "Daten abgerufen": "2026-06-20"
+  },
+  {
+    "URLSlug": "podicepscristatus",
+    "Wissenschaftlicher Name": "Podiceps cristatus",
+    "Deutscher Name": "Haubentaucher",
+    "Gewicht": "ca. 800–1.500 g",
+    "Größe": "ca. 46–51 cm",
+    "Lebenserwartung": "ca. 15 Jahre",
+    "Assessment ID": 154250080,
+    "Status": "LC",
+    "Trend": "Unbekannt",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "609.999-997.000",
+    "Generationsdauer": "7,1 Jahre",
+    "Kingdom": "ANIMALIA",
+    "Phylum": "CHORDATA",
+    "Class": "AVES",
+    "Order": "PODICIPEDIFORMES",
+    "Family": "PODICIPEDIDAE",
+    "Genus": "Podiceps",
+    "Species": "cristatus",
+    "Letztes IUCN Update": "2019",
+    "Daten abgerufen": "2026-06-20"
   }
 ]

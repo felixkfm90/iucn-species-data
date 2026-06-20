@@ -1,0 +1,12 @@
+{
+  "scientific_name": "Podiceps cristatus",
+  "german_name": "Haubentaucher",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Val-Couesnon, Ille-et-Vilaine, Bretagne",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/925320",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Podiceps sp:cristatus q:B\" | page=1"
+}

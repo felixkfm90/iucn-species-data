@@ -358,5 +358,13 @@
     "size": "ca. 58-72 cm",
     "weight": "ca. 0,9–2,1 kg",
     "life_expectancy": "ca. 13 Jahre"
+  },
+  {
+    "german": "Haubentaucher",
+    "genus": "Podiceps",
+    "species": "cristatus",
+    "size": "ca. 46–51 cm",
+    "weight": "ca. 800–1.500 g",
+    "life_expectancy": "ca. 15 Jahre"
   }
 ]
