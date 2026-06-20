@@ -197,7 +197,7 @@ Der Explorer zeigt:
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - drei aktive NC-Sounds
-- sieben manuell gepflegte Karten
+- vier manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
 - serverseitige Validierung, Diff-Vorschau und explizite Speicherbestaetigung
@@ -240,6 +240,7 @@ oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller
 - nach jedem erfolgreichen Speichern bleiben automatisch nur die neuesten 20 verwalteten Backups erhalten; andere
   Dateien im Ordner werden nicht geloescht
 - nach dem Speichern zeigt das Dashboard erwartete Datenabweichungen, bis `node update.mjs` separat ausgefuehrt wurde
+- der Bearbeitungsdialog weist auf gesperrte Taxonomie- und Namensfelder hin, ohne eine interne Phasennummer zu nennen
 
 Namensaenderungen, Taxonomieaenderungen, Assetpfade, Pipeline-Aufrufe und Git-Aktionen sind nicht Bestandteil von
 Phase 7.4.
@@ -271,7 +272,7 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - `node update.mjs --mode=missing --dry-run`: Auswahl neuer oder fehlender Arten ohne Schreibzugriff
 - `node update.mjs --mode=missing`: gezielter Lauf; übrige Bestandsdaten bleiben erhalten
 - `node update.mjs --mode=all` oder weiterhin `node update.mjs`: vollständiger Lauf
-- `node update.mjs --mode=manual-maps`: nur sieben manuell geschützte Karten erneut suchen
+- `node update.mjs --mode=manual-maps`: nur die aktuell vier manuell geschützten Karten erneut suchen
 - `node update.mjs --mode=nc-sounds`: nur drei NC-Sounds auf freie Alternativen prüfen
 - App-Vorschau und ausdrückliche Startbestätigung
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
@@ -354,9 +355,10 @@ produktive Struktur. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden
 GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 
-Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind sieben Karten wegen
-korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Grosstrappe`,
-`Kernbeisser`, `Reh`, `Rotfuchs` und `Waldkauz`.
+Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind vier Karten wegen
+korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Rotfuchs`
+und `Waldkauz`. Großtrappe, Kernbeißer und Reh werden seit der bestätigten Übernahme funktionierender automatischer
+Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
@@ -442,7 +444,7 @@ Aktueller lokaler Stand vom 2026-06-20:
 - 47 Eintraege in `species_list.json`
 - 47 Arten in der letzten Pipeline-Ausgabe
 - 47 vollständige Assetordner
-- 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
+- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 0 fehlende Sounddateien unter den 47 verarbeiteten Arten
 - 0 fehlende Sound-Credits unter den 47 verarbeiteten Arten
 - 0 fehlende Karten unter den 47 verarbeiteten Arten

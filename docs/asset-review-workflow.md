@@ -42,15 +42,16 @@ den dunklen Hintergrund geschlossen werden, ohne die bereits gewählten Pflegeop
 
 Die Entscheidung wird in `species-assets-overrides.json` gespeichert.
 
-Bereits migriert sind die sieben manuell gepflegten Karten:
+Weiterhin manuell geschützt sind vier Karten:
 
 - Blaukehlchen
 - Fischertukan
-- Grosstrappe
-- Kernbeisser
-- Reh
 - Rotfuchs
 - Waldkauz
+
+Großtrappe, Kernbeißer und Reh wurden am 2026-06-20 nach visueller Bestätigung der neu gefundenen automatischen
+Karten auf automatische Pipeline-Pflege umgestellt. Sie werden deshalb nicht mehr als manuell hinzugefügt angezeigt
+und nicht mehr vom Wartungslauf `Manuelle Karten erneut suchen` ausgewählt.
 
 `update.mjs` respektiert das Register:
 

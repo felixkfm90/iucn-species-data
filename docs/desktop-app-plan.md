@@ -320,6 +320,7 @@ Umgesetzt:
 - andere Dateien im Backupordner werden von der Bereinigung nicht beruehrt
 - Schreiben ueber temporaere Datei und anschliessendes Ersetzen von `species_list.json`
 - sichtbarer Hinweis, dass `speciesData.json` unveraendert bleibt und die Pipeline separat gestartet werden muss
+- Hinweis auf gesperrte Taxonomie- und Namensfelder ohne interne Phasenbezeichnung
 - Dashboard zeigt nach dem Speichern erwartete Feldabweichungen bis zum naechsten Pipeline-Lauf
 - keine Funktion fuer neue Arten, Namens-/Taxonomieaenderungen, Pipeline oder Git
 
@@ -437,7 +438,7 @@ Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
 - `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten und Arten mit fehlenden
   Kernfeldern oder Assets
 - `Alle Arten vollstaendig aktualisieren`: entspricht dem bisherigen kompletten Lauf von `node update.mjs`
-- `Manuelle Karten erneut suchen`: verarbeitet nur die sieben manuell geschützten Karten
+- `Manuelle Karten erneut suchen`: verarbeitet nur die aktuell vier manuell geschützten Karten
 - `NC-Sounds erneut suchen`: verarbeitet nur die drei vorhandenen NC-Sounds
 
 Vor jedem Start werden Laufart, Artenliste und Gruende angezeigt. Es darf nur ein Lauf gleichzeitig aktiv sein.
@@ -501,7 +502,7 @@ Arten loeschen und bereinigen:
 
 Aktueller Teststand:
 
-- 9 Explorer-Tests erfolgreich
+- 10 Explorer-Tests erfolgreich
 - Auswahl `missing` und `all` in temporaerem Repository getestet
 - Listeneintrag loeschen, optionale Sofortlöschung, Backup, erhaltene Assets und anschliessende dauerhafte
   Bereinigung getestet

@@ -117,6 +117,35 @@ function parseManualMapOverrides(markdown) {
   return safeNames;
 }
 
+export function synchronizeManualMapDocumentation(
+  markdown,
+  assetOverrides,
+  updatedDate = new Date().toISOString().slice(0, 10),
+) {
+  const lines = markdown.split(/\r?\n/);
+  const filtered = lines.filter((line) => {
+    const match = line.match(
+      /^\|\s*[^|]+\|\s*([^|]+?)\s*\|\s*`species-assets\/([^/]+)\/map\.jpg`/,
+    );
+    if (!match) return true;
+    const safeName = match[2].trim();
+    return assetOverrides.assets?.[safeName]?.map?.manual !== false;
+  });
+  const remainingCount = filtered.filter((line) => (
+    /^\|\s*[^|]+\|\s*[^|]+\|\s*`species-assets\/[^/]+\/map\.jpg`/.test(line)
+  )).length;
+  const hadFinalNewline = markdown.endsWith("\n");
+  const mapLabel = remainingCount === 1 ? "Karte" : "Karten";
+  const next = filtered
+    .join("\n")
+    .replace(/^Stand:\s*\d{4}-\d{2}-\d{2}$/m, `Stand: ${updatedDate}`)
+    .replace(
+      /Aktuell sind .*? Karten? als manuell gepflegt dokumentiert\./,
+      `Aktuell sind ${remainingCount} ${mapLabel} als manuell gepflegt dokumentiert.`,
+    );
+  return hadFinalNewline && !next.endsWith("\n") ? `${next}\n` : next;
+}
+
 function scientificKey(genus, species) {
   return `${genus ?? ""} ${species ?? ""}`.trim().toLocaleLowerCase("de");
 }
@@ -535,9 +564,10 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     if (creditsFile.exists && creditsError) assetIssues.push("Credits sind ungültig");
     if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
     inconsistencies.push(...dataIssues, ...assetIssues);
-    const isManualMap =
-      manualMapSafeNames.has(safeName)
-      || assetOverrides.assets?.[safeName]?.map?.manual === true;
+    const mapOverride = assetOverrides.assets?.[safeName]?.map;
+    const isManualMap = typeof mapOverride?.manual === "boolean"
+      ? mapOverride.manual
+      : manualMapSafeNames.has(safeName);
     const isManualSound = assetOverrides.assets?.[safeName]?.sound?.manual === true;
     const isNcSound = String(credits?.license ?? "").toLocaleLowerCase("de").includes("/by-nc");
 
@@ -1027,22 +1057,10 @@ export async function createExplorerServer({
     }
   }
 
-  async function removeAcceptedManualMapsFromDocumentation(safeNames) {
-    if (!safeNames.size) return;
+  async function synchronizeStoredManualMapDocumentation(registry) {
     const source = await readFile(manualMapOverridesPath, "utf8");
-    const lines = source.split(/\r?\n/);
-    const filtered = lines.filter((line) => {
-      if (!line.startsWith("|") || line.startsWith("|---")) return true;
-      const cells = line.split("|").map((cell) => cell.trim());
-      return !safeNames.has(cells[2]);
-    });
-    const remainingCount = filtered.filter(
-      (line) => line.startsWith("|") && line.includes("species-assets/") && line.includes("/map.jpg"),
-    ).length;
-    const next = filtered.join("\n").replace(
-      /Aktuell sind .*? Karten als manuell gepflegt dokumentiert\./,
-      `Aktuell sind ${remainingCount} Karten als manuell gepflegt dokumentiert.`,
-    );
+    const next = synchronizeManualMapDocumentation(source, registry);
+    if (next === source) return;
     const tempPath = `${manualMapOverridesPath}.tmp-${randomUUID()}`;
     await writeFile(tempPath, next, "utf8");
     await rename(tempPath, manualMapOverridesPath);
@@ -1462,13 +1480,15 @@ export async function createExplorerServer({
       }
     }
 
+    if (pipelineState.mode === "manual-maps") {
+      await synchronizeStoredManualMapDocumentation(registry);
+    }
+
     if (pipelineState.mode === "manual-maps" && acceptedAny) {
       const assessmentIds = await readJson(assessmentIdsPath).catch(() => ({}));
-      const acceptedMaps = new Set();
       for (const asset of pipelineState.reviewAssets) {
         const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
         if (choice.manual) continue;
-        acceptedMaps.add(asset.safeName);
         const species = model.species.find((entry) => entry.safeName === asset.safeName);
         if (species?.iucn?.assessmentId && species.iucn.assessmentId !== "Unbekannt") {
           assessmentIds[asset.safeName] = species.iucn.assessmentId;
@@ -1477,7 +1497,6 @@ export async function createExplorerServer({
       const tempPath = `${assessmentIdsPath}.tmp-${randomUUID()}`;
       await writeFile(tempPath, `${JSON.stringify(assessmentIds, null, 2)}\n`, "utf8");
       await rename(tempPath, assessmentIdsPath);
-      await removeAcceptedManualMapsFromDocumentation(acceptedMaps);
     }
 
     pipelineState.reviewAssets = [];

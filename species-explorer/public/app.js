@@ -1564,7 +1564,7 @@ function renderDetail(species) {
           <div>
             <p class="edit-eyebrow">species_list.json</p>
             <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
-            <p>${escapeHtml(species.scientificName)} · Taxonomie und Name sind in Phase 7.4 gesperrt.</p>
+            <p>${escapeHtml(species.scientificName)} · Taxonomie und Name sind gesperrt.</p>
           </div>
           <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
         </header>

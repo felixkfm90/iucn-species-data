@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildExplorerModel, createExplorerServer } from "./server.mjs";
+import {
+  buildExplorerModel,
+  createExplorerServer,
+  synchronizeManualMapDocumentation,
+} from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup } from "../scripts/species-cleanup.mjs";
 await import("./public/filter.js");
@@ -110,7 +114,7 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.summary.generatedCount, generatedList.length);
   assert.equal(model.summary.missingCoreAssets, model.validation.assets.issueSpeciesCount);
   assert.equal(model.summary.ncSoundCount, 3);
-  assert.equal(model.summary.manualMapCount, 7);
+  assert.equal(model.summary.manualMapCount, 4);
   assert.equal(model.summary.readOnly, false);
   assert.equal(model.summary.editingEnabled, true);
   assert.equal(model.summary.editableFile, "species_list.json");
@@ -125,8 +129,8 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.validation.report.checks.length, 9);
   assert.equal(model.validation.report.consistent, model.validation.report.issueCount === 0);
   assert.equal(model.species.filter((entry) => entry.isNcSound).length, 3);
-  assert.equal(model.species.filter((entry) => entry.isManualMap).length, 7);
-  assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, 7);
+  assert.equal(model.species.filter((entry) => entry.isManualMap).length, 4);
+  assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, 4);
   assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
   assert.equal(
     model.validation.data.issueSpeciesCount,
@@ -557,6 +561,55 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   assert.equal(ncSoundPlan.targets[0].safeName, "Amsel");
 });
 
+test("Automatisch übernommene Karten verlassen die manuelle Pflege", async (context) => {
+  const markdown = [
+    "# Manual Map Overrides",
+    "",
+    "Stand: 2026-06-17",
+    "",
+    "Aktuell sind 2 Karten als manuell gepflegt dokumentiert.",
+    "",
+    "| Art | SafeName | Datei |",
+    "|---|---|---|",
+    "| Amsel | Amsel | `species-assets/Amsel/map.jpg` |",
+    "| Drossel | Drossel | `species-assets/Drossel/map.jpg` |",
+    "",
+  ].join("\n");
+  const registry = {
+    version: 1,
+    assets: {
+      Amsel: { map: { manual: false } },
+      Drossel: { map: { manual: true } },
+    },
+  };
+  const synchronized = synchronizeManualMapDocumentation(markdown, registry, "2026-06-20");
+  assert.doesNotMatch(synchronized, /species-assets\/Amsel\/map\.jpg/);
+  assert.match(synchronized, /species-assets\/Drossel\/map\.jpg/);
+  assert.match(synchronized, /Stand: 2026-06-20/);
+  assert.match(synchronized, /Aktuell sind 1 Karte als manuell gepflegt dokumentiert\./);
+
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  await Promise.all([
+    writeFile(join(repoRoot, "docs", "manual-map-overrides.md"), [
+      "# Manual Map Overrides",
+      "",
+      "| Art | SafeName | Datei |",
+      "|---|---|---|",
+      "| Amsel | Amsel | `species-assets/Amsel/map.jpg` |",
+      "",
+    ].join("\n")),
+    writeFile(
+      join(repoRoot, "species-assets-overrides.json"),
+      `${JSON.stringify({ version: 1, assets: { Amsel: { map: { manual: false } } } }, null, 2)}\n`,
+    ),
+  ]);
+  const model = await buildExplorerModel(repoRoot);
+  assert.equal(model.summary.manualMapCount, 0);
+  assert.equal(model.species[0].isManualMap, false);
+  assert.equal(model.species[0].assets.map.manuallyAdded, false);
+});
+
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -681,7 +734,7 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
     ["Amsel"],
   );
   assert.equal(filterSpecies(model.species, { flag: "nc" }).length, 3);
-  assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 7);
+  assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 4);
   assert.equal(
     filterSpecies(model.species, { flag: "data-issues" }).length,
     model.validation.data.issueSpeciesCount,
@@ -799,7 +852,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /assetCompositeHash/);
   assert.match(serverSource, /reviewMode:\s*plan\.mode/);
   assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
-  assert.match(serverSource, /removeAcceptedManualMapsFromDocumentation/);
+  assert.match(serverSource, /synchronizeStoredManualMapDocumentation/);
+  assert.match(serverSource, /typeof mapOverride\?\.manual === "boolean"/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
@@ -812,6 +866,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/delete\/save/);
   assert.match(appSource, /class="delete-assets-now"/);
   assert.match(appSource, /deleteAssets/);
+  assert.match(appSource, /Taxonomie und Name sind gesperrt\./);
+  assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,

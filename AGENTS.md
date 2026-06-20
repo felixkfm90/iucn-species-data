@@ -72,12 +72,9 @@ Lokale Arbeitsoberflaeche:
 - 47 Spektrogramm-Dateien
 - 47 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
 - 0 fehlende Kernassets im letzten Report fuer die 47 verarbeiteten Arten
-- 7 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
+- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
-  - `Grosstrappe`
-  - `Kernbeisser`
-  - `Reh`
   - `Rotfuchs`
   - `Waldkauz`
 - 3 aktive NC-Soundlizenzen laut Report:
@@ -100,7 +97,7 @@ Aktuell ersetzte freie Quellen:
 - `Panama-Kapuzineraffe`: freie iNaturalist-Aufnahme, CC BY 4.0
 - `Quetzal`: freie Quelle, nicht mehr im NC-Report
 
-Letzter vollstaendiger Pipeline-/Report-Check: 2026-06-17.
+Letzter vollstaendiger Pipeline-/Report-Check: 2026-06-20.
 
 ## Datenfluss
 
@@ -333,7 +330,8 @@ Aktuelle Planung:
   bzw. separat. Die Phase-7.4-Pruefungen sind Teil der inzwischen sechs erfolgreichen Explorer-Tests.
   Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
   `Bearbeiten` und `Loeschen` stehen als allgemeine Artaktionen oben rechts im Detailkopf. Phase 7.7 erweitert
-  diesen Einstieg spaeter um Karten-, Sound- und weitere Assetpflege.
+  diesen Einstieg spaeter um Karten-, Sound- und weitere Assetpflege. Der Bearbeitungsdialog kennzeichnet
+  Taxonomie und Name als gesperrt, nennt dabei aber keine interne Phasennummer.
   Phase 7.5 ist seit 2026-06-20 abgeschlossen und durch das erneute Anlegen von Haubentaucher und Hoeckerschwan
   praktisch geprueft.
   Neue Arten werden kontrolliert nach `docs/add-species-workflow.md` angelegt. Erfasst werden
@@ -363,11 +361,13 @@ Aktuelle Planung:
   Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
-  Die beiden Wartungsläufe verarbeiten nur die sieben manuell geschützten Karten beziehungsweise die drei
+  Die beiden Wartungsläufe verarbeiten nur die aktuell vier manuell geschützten Karten beziehungsweise die drei
   NC-Sounds. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Bei Übernahme einer automatischen Karte werden JSON-Register und `docs/manual-map-overrides.md` gemeinsam
-  aktualisiert.
+  aktualisiert. Großtrappe, Kernbeißer und Reh wurden am 2026-06-20 aus der manuellen Pflege genommen, nachdem
+  Felix die neu gefundenen automatischen Karten übernommen hatte. Das JSON-Register ist bei einer ausdrücklichen
+  `manual`-Entscheidung maßgeblich; die Markdown-Liste wird daraus synchronisiert.
   Die Speichermeldung einer neu angelegten Art wird nach erfolgreichem Pipeline-Commit und Push entfernt.
   Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Eine Checkbox
   loescht bei Bedarf generierte Daten, Assessment-Zuordnung, Asset-Pflegeeintrag und Assetordner derselben Art sofort
@@ -382,7 +382,7 @@ Aktuelle Planung:
   direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. Neun Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. Zehn Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch

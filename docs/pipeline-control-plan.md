@@ -98,13 +98,15 @@ Vor dem Start zeigt die App:
 ### Manuelle Karten erneut suchen
 
 Der Kartensuchlauf wählt ausschließlich Arten aus, deren Karte in `species-assets-overrides.json` als manuell
-geschützt markiert ist. Aktuell sind das sieben Arten.
+geschützt markiert ist. Aktuell sind das vier Arten.
 
 - IUCN-Daten und Sounds bleiben unverändert.
 - Die vorhandene Karte wird vorübergehend lokal gesichert.
 - Nur eine gültige JPEG-Antwort mit plausibler Mindestgröße ersetzt die Arbeitskopie.
 - `Automatische Karte übernehmen` behält die neue Karte und entfernt den manuellen Schutz.
 - Das Register und `docs/manual-map-overrides.md` werden dabei gemeinsam aktualisiert.
+- Eine ausdrückliche `manual: false`-Entscheidung im JSON-Register hat Vorrang vor einem veralteten
+  Markdown-Eintrag. Dadurch erscheint eine übernommene automatische Karte sofort nicht mehr unter manueller Pflege.
 - `Bisherige manuelle Karte behalten` stellt die gesicherte Karte wieder her.
 
 ### NC-Sounds erneut suchen
@@ -196,7 +198,8 @@ mehr als fehlend im Report stehen bleibt.
 - Eine neue Art wird im Modus `missing` ausgewaehlt: getestet.
 - Vollstaendige Arten ohne Fehler werden im Modus `missing` nicht ausgewaehlt: getestet.
 - Modus `all` waehlt alle Eintraege: getestet.
-- Modus `manual-maps` wählt genau die sieben manuell geschützten Karten: getestet.
+- Modus `manual-maps` wählt die jeweils aktuell manuell geschützten Karten: mit ursprünglich sieben und nach drei
+  bestätigten Übernahmen mit vier Karten getestet.
 - Modus `nc-sounds` wählt genau die drei aktuellen NC-Sounds: getestet.
 - Nicht ausgewaehlte Bestandsdaten werden bei einem Teillauf übernommen: implementiert.
 - Ein zweiter gleichzeitiger Start wird abgewiesen.

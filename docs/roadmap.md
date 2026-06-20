@@ -324,7 +324,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   waren erfolgreich. Nach einem extern gestarteten Batch-Lauf blieb das bereits laufende Servermodell zunächst
   veraltet. Deshalb überwacht der Server nun Artenliste, Pipeline-Ausgaben, Report, Overrides und Assetdateien per
   Revision. Die geöffnete App prüft diese Revision alle fünf Sekunden und lädt bei Änderungen automatisch neu.
-  Einschließlich dieses externen Änderungsfalls sind jetzt neun Explorer-Tests erfolgreich.
+  Einschließlich dieses externen Änderungsfalls und der automatischen Entfernung übernommener Karten aus der
+  manuellen Pflege sind jetzt zehn Explorer-Tests erfolgreich.
   Ein Fehler bei der Modusübergabe ließ die Bereinigung zunächst fälschlich `update.mjs --mode=undefined` starten.
   Seit 2026-06-20 trägt der Bereinigungsplan ausdrücklich `mode: cleanup`. Zusätzlich bietet der Art-Löschdialog eine
   Checkbox, um die generierten Daten und Assets der gewählten Art sofort dauerhaft mitzulöschen.
@@ -338,6 +339,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` wechselt dann zu `Fenster schließen`; der Lauf
   wird beim Schließen nicht beendet. Ein dauerhafter Balken im Hauptfenster zeigt auch nach dem Schließen den
   laufenden, wartenden, abgeschlossenen oder fehlgeschlagenen Status und öffnet die Details erneut.
+  Beim ersten produktiven Kartensuchlauf wurden Großtrappe, Kernbeißer und Reh als funktionierende automatische
+  Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; vier manuelle Karten bleiben. Das
+  JSON-Register ist bei einer ausdrücklichen Pflegeentscheidung maßgeblich und synchronisiert die Markdown-Liste.
 - 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
   Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
   explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die

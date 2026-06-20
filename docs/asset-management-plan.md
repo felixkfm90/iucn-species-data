@@ -27,8 +27,8 @@ Der Explorer zeigt diese Dateien bereits an und prueft ihre Vollstaendigkeit.
 Aktuelle Schutzlogik:
 
 - Karten werden von `update.mjs` nur uebersprungen, wenn die gespeicherte Assessment-ID unveraendert ist.
-- Sieben manuelle Karten sind zusaetzlich in `docs/manual-map-overrides.md` dokumentiert, aber diese Markdown-Datei
-  ist kein robuster maschinenlesbarer Pipeline-Schutz.
+- Vier manuelle Karten sind zusätzlich in `docs/manual-map-overrides.md` dokumentiert. Maßgeblicher
+  maschinenlesbarer Pipeline-Schutz ist `species-assets-overrides.json`.
 - Vorhandene Sounds mit freier Lizenz bleiben normalerweise erhalten.
 - Vorhandene NC-Sounds werden bei jedem Pipeline-Lauf auf freie Alternativen geprueft und koennen ersetzt werden.
 - Ein Spektrogramm gehoert immer zum aktuellen `sound.mp3`. Nach einem Soundwechsel darf kein altes Spektrogramm
@@ -43,9 +43,11 @@ Dateisystempfade sind nicht erlaubt.
 
 Status: technische Grundlage bereits in Phase 7.6 umgesetzt.
 
-`species-assets-overrides.json` enthält die sieben bestehenden manuellen Karten. Neue Karten und Sounds werden nach
-einem Pipeline-Lauf in der App geprüft und als automatisch oder manuell geschützt bestätigt. `update.mjs` respektiert
-diese Entscheidungen bereits. Die weitergehende Assetverwaltung mit Import und Austausch bleibt Phase 7.7.
+`species-assets-overrides.json` enthält die vier weiterhin manuell geschützten Karten. Großtrappe, Kernbeißer und
+Reh wurden nach erfolgreicher automatischer Neusuche am 2026-06-20 aus der manuellen Pflege genommen. Neue Karten
+und Sounds werden nach einem Pipeline-Lauf in der App geprüft und als automatisch oder manuell geschützt bestätigt.
+`update.mjs` respektiert diese Entscheidungen bereits. Die weitergehende Assetverwaltung mit Import und Austausch
+bleibt Phase 7.7.
 
 Vor dem ersten produktiven Dateiimport wird ein strukturiertes Register eingefuehrt, zum Beispiel:
 
