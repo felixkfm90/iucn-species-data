@@ -325,6 +325,8 @@ Aktuelle Planung:
   werden artweise erklaert.
   Status- und Hinweis-Dropdowns sind alphabetisch nach ihren sichtbaren deutschen Bezeichnungen sortiert.
   Phase 7.3 wurde von Felix am 2026-06-19 visuell geprueft.
+  Die interne Phasenbezeichnung ist in der App ausgeblendet. Die linke Artenliste zeigt maximal 15 Eintraege
+  gleichzeitig und scrollt weitere Treffer innerhalb der Liste.
   Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft: Bestehende Arten erlauben nur die
   Bearbeitung von Groesse, Gewicht und
   Lebenserwartung. Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn
@@ -359,8 +361,12 @@ Aktuelle Planung:
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
   ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
   `Datenbank aktuell`. Nach dem Speichern einer neuen Art wird der selektive Lauf
-  direkt angeboten und kann gestartet oder abgebrochen werden. Acht Explorer-Tests sind erfolgreich. Ein echter
-  Pipeline-Lauf und die visuelle Pruefung sind noch offen. Danach folgt 7.7 Asset-Verwaltung nach
+  direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
+  CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
+  neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
+  neu. Neun Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf wurde am 2026-06-20
+  erfolgreich abgeschlossen; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung ist
+  offen. Danach folgt 7.7 Asset-Verwaltung nach
   `docs/asset-management-plan.md` und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.

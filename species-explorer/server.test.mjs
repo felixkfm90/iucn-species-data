@@ -186,6 +186,41 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(await writeResponse.text(), /definierte/);
 });
 
+test("Explorer erkennt externe Dateiänderungen ohne manuellen Reload", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const initialRevision = await (await fetch(`${baseUrl}/api/revision`)).json();
+  assert.ok(initialRevision.revision);
+  assert.equal((await (await fetch(`${baseUrl}/api/summary`)).json()).speciesCount, 1);
+
+  const speciesListPath = join(repoRoot, "species_list.json");
+  const speciesList = JSON.parse(await readFile(speciesListPath, "utf8"));
+  speciesList.push({
+    german: "Testvogel",
+    genus: "Testus",
+    species: "avis",
+    size: "ca. 20 cm",
+    weight: "ca. 50 g",
+    life_expectancy: "ca. 5 Jahre",
+  });
+  await writeFile(speciesListPath, `${JSON.stringify(speciesList, null, 2)}\n`, "utf8");
+
+  const changedRevision = await (await fetch(`${baseUrl}/api/revision`)).json();
+  assert.equal(changedRevision.changed, true);
+  assert.notEqual(changedRevision.revision, initialRevision.revision);
+  const summary = await (await fetch(`${baseUrl}/api/summary`)).json();
+  assert.equal(summary.speciesCount, 2);
+  assert.equal(summary.inputCount, 2);
+  assert.equal(summary.generatedCount, 1);
+  const species = await (await fetch(`${baseUrl}/api/species`)).json();
+  assert.ok(species.some((entry) => entry.id === "testusavis"));
+});
+
 test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Backup an", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -636,6 +671,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /Datenbank aktuell/);
+  assert.match(appSource, /function monitorProjectRevision\(\)/);
+  assert.match(appSource, /fetch\("\/api\/revision"\)/);
+  assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
+  assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
+  assert.match(serverSource, /async function refreshModel/);
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
@@ -676,6 +716,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="asset-review-list"/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);
   assert.match(htmlSource, /class="validation-dashboard"/);
+  assert.doesNotMatch(htmlSource, /Phase 7\.3/);
+  assert.match(htmlSource, />Validierung und Status</);
   assert.match(htmlSource, /value="data-issues"/);
   assert.match(htmlSource, /value="asset-issues"/);
   assert.match(
@@ -683,6 +725,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
+  assert.match(cssSource, /\.species-list\s*\{[^}]*max-height:\s*915px[^}]*overflow-y:\s*auto/s);
+  assert.match(cssSource, /\.species-item\s*\{[^}]*height:\s*61px/s);
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);

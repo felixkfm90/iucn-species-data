@@ -6,8 +6,9 @@ Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Expl
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
 unterscheiden.
 
-Status: technische Basis lokal umgesetzt am 2026-06-19. Ein echter Pipeline-Lauf und die visuelle Bedienpruefung
-durch Felix stehen noch aus.
+Status: technische Basis lokal umgesetzt am 2026-06-19. Ein vollständiger Pipeline-Lauf wurde am 2026-06-20
+erfolgreich abgeschlossen und veröffentlichte den Haubentaucher mit Daten und allen Kernassets. Die visuelle
+Bedienprüfung des Starts direkt aus der App und der Assetentscheidung steht noch aus.
 
 ## Bedienoberfläche
 

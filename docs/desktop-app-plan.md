@@ -425,7 +425,8 @@ Aktueller Pruefstand:
 
 ### 7.6 Pipeline- und Audit-Steuerung
 
-Status: technische Basis lokal umgesetzt am 2026-06-19; echter Pipeline-Lauf und visuelle Pruefung offen.
+Status: technische Basis lokal umgesetzt am 2026-06-19. Ein vollständiger externer Pipeline-Lauf war am
+2026-06-20 erfolgreich; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung ist offen.
 Detailplanung: `docs/pipeline-control-plan.md`.
 
 Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
@@ -486,10 +487,29 @@ Arten loeschen und bereinigen:
 
 Aktueller Teststand:
 
-- 8 Explorer-Tests erfolgreich
+- 9 Explorer-Tests erfolgreich
 - Auswahl `missing` und `all` in temporaerem Repository getestet
 - Listeneintrag loeschen, Backup, erhaltene Assets und anschliessende dauerhafte Bereinigung getestet
 - produktive Artenliste und Assets werden von diesen Tests nicht verändert
+
+Automatische Aktualität:
+
+- Der Server bildet eine Revision aus `species_list.json`, `speciesData.json`, Report, Asset-Overrides,
+  manueller Karten-Dokumentation und allen produktiven Assetdateien.
+- Vor jeder Daten-API-Antwort prüft der Server diese Revision und baut sein Modell bei externen Änderungen neu auf.
+- Die Browseroberfläche fragt `GET /api/revision` alle fünf Sekunden ab.
+- Ändert sich die Revision, werden Übersicht, Validierung, Artenliste und Detailansicht automatisch neu geladen.
+- Damit werden auch Läufe über `update_local.bat`, manuelle CLI-Aufrufe und andere externe Dateiänderungen sichtbar,
+  ohne den Server neu zu starten oder den Aktualisieren-Knopf zu drücken.
+- Ein isolierter Test verändert `species_list.json` nach dem Serverstart und bestätigt die automatische
+  Modellaktualisierung.
+
+Kompakte Oberfläche:
+
+- Die interne Roadmap-Bezeichnung `Phase 7.3 · Datenprüfung` wird nicht in der App angezeigt; sichtbar bleibt nur
+  die fachliche Überschrift `Validierung und Status`.
+- Die linke Artenliste zeigt maximal 15 Einträge gleichzeitig. Weitere Treffer bleiben innerhalb der Liste per
+  Scrollen erreichbar, damit die Navigation bei wachsender Artenzahl nicht die Seite verlängert.
 
 ### 7.7 Asset-Verwaltung
 

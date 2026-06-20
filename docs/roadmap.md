@@ -272,6 +272,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   45 von 45 Datenpaare stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent und
   es bestehen 0 Validierungshinweise. Der gueltige Trendwert `Unbekannt` wird nicht als fehlend bewertet.
   Status- und Hinweis-Dropdowns sind alphabetisch sortiert. Felix hat Phase 7.3 am 2026-06-19 visuell geprueft.
+  Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Die linke Artenliste ist auf 15 gleichzeitig
+  sichtbare Eintraege begrenzt; weitere Treffer sind innerhalb der Liste scrollbar.
   Der Squarespace-Footer mit `species-sound.js?v=1.0.24` wurde ebenfalls live erfolgreich getestet.
 - 7.4 Kontrolliertes Bearbeiten von `species_list.json`: abgeschlossen am 2026-06-19.
   Bestehende Arten erlauben ausschliesslich die Bearbeitung von Groesse, Gewicht und Lebenserwartung. Vor dem
@@ -297,8 +299,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Der Haubentaucher
   wurde als erster echter neuer Eintrag angelegt; damit stehen 46 Arten in `species_list.json`, davon eine
   erwartungsgemaess noch ohne Pipeline-Ausgabe und Assets.
-- 7.6 Pipeline- und Audit-Steuerung: technische Basis lokal umgesetzt am 2026-06-19; echter Pipeline-Lauf und
-  visuelle Pruefung offen, siehe `docs/pipeline-control-plan.md`.
+- 7.6 Pipeline- und Audit-Steuerung: technische Basis lokal umgesetzt am 2026-06-19; ein vollständiger externer
+  Pipeline-Lauf wurde am 2026-06-20 erfolgreich abgeschlossen. Die visuelle Prüfung des Starts direkt aus der App
+  und der neuen Assetentscheidung ist offen, siehe `docs/pipeline-control-plan.md`.
   Die App unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`.
   Der gezielte Lauf verarbeitet input-only Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets. Der
   vollstaendige Lauf entspricht dem bisherigen `node update.mjs` ueber die gesamte Artenliste. Vor dem Start werden
@@ -317,7 +320,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt. Danach
   erfolgen Git-Commit und Git-Push automatisch. Das maschinenlesbare Register
   `species-assets-overrides.json` schützt manuell gepflegte Karten und Sounds vor der Pipeline. Acht Explorer-Tests
-  sind erfolgreich.
+  waren erfolgreich. Nach einem extern gestarteten Batch-Lauf blieb das bereits laufende Servermodell zunächst
+  veraltet. Deshalb überwacht der Server nun Artenliste, Pipeline-Ausgaben, Report, Overrides und Assetdateien per
+  Revision. Die geöffnete App prüft diese Revision alle fünf Sekunden und lädt bei Änderungen automatisch neu.
+  Einschließlich dieses externen Änderungsfalls sind jetzt neun Explorer-Tests erfolgreich.
 - 7.7 Asset-Verwaltung: danach, siehe `docs/asset-management-plan.md`.
   Zuerst wird ein maschinenlesbares Override-Register eingefuehrt, damit manuelle Karten und Sounds von der Pipeline
   explizit geschuetzt werden. Danach folgen Kartenimport, Sound-/Credits-Paket, Spektrogramm-Hashabgleich und die

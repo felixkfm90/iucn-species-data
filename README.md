@@ -220,6 +220,8 @@ und neun Reportpruefungen konsistent. Nach dem Anlegen des Haubentauchers zeigt 
 kann diesen neuen Eintrag erst nach dem Pipeline-Lauf enthalten. Der IUCN-Trend `Unbekannt` ist ein gueltiger
 Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch nach den
 sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
+Die App zeigt dabei keine interne Phasenbezeichnung. In der linken Navigation bleiben maximal 15 Arten gleichzeitig
+sichtbar; weitere Treffer werden innerhalb der Liste gescrollt.
 
 Phase 7.4 stellt je Art unter `Manuelle Daten` einen Bearbeiten-Dialog bereit:
 
@@ -275,6 +277,8 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
 - die Laufart heißt `Neue/Unvollständige Arten aktualisieren`
 - nach dem Speichern einer neuen Art wird der selektive Lauf sofort angeboten; Abbrechen lässt ihn für später offen
+- externe Änderungen durch Batch-Dateien oder manuelle Pipeline-Aufrufe werden automatisch erkannt; die geöffnete
+  App prüft den Projektstand alle fünf Sekunden und lädt die Anzeige bei Änderungen neu
 
 Details:
 
@@ -403,7 +407,8 @@ gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-on
 umgesetzt. Phase 7.4 fuer kontrolliertes Bearbeiten von `species_list.json` ist seit 2026-06-19 technisch und visuell
 abgeschlossen. Phase 7.5 zum kontrollierten Anlegen neuer Arten nach `docs/add-species-workflow.md` ist technisch
 lokal umgesetzt; die visuelle Bedienpruefung ist noch offen. Phase 7.6 mit Pipeline-Steuerung und dauerhafter
-Bereinigung ist technisch lokal umgesetzt; ein echter Pipeline-Lauf und die visuelle Prüfung stehen noch aus.
+Bereinigung ist technisch lokal umgesetzt. Ein vollständiger externer Pipeline-Lauf wurde am 2026-06-20 erfolgreich
+abgeschlossen; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung steht noch aus.
 Dabei wird zwischen einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle
 Arten unterschieden. Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
 In Phase 7 folgen

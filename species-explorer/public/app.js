@@ -12,6 +12,9 @@ const state = {
   pipelineWasRunning: false,
   pipelinePollTimer: null,
   assetReviewRunId: "",
+  dataRevision: "",
+  dataRevisionTimer: null,
+  dataLoading: false,
 };
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 const IUCN_STATUS_LABELS = {
@@ -1403,24 +1406,33 @@ function renderDetail(species) {
 }
 
 async function loadData({ reload = false } = {}) {
+  state.dataLoading = true;
   elements.reloadButton.disabled = true;
   elements.reloadButton.textContent = "Lädt…";
   try {
     if (reload) await fetch("/api/reload");
-    const [summaryResponse, validationResponse, speciesResponse] = await Promise.all([
+    const [summaryResponse, validationResponse, speciesResponse, revisionResponse] = await Promise.all([
       fetch("/api/summary"),
       fetch("/api/validation"),
       fetch("/api/species"),
+      fetch("/api/revision"),
     ]);
-    if (!summaryResponse.ok || !validationResponse.ok || !speciesResponse.ok) {
+    if (
+      !summaryResponse.ok
+      || !validationResponse.ok
+      || !speciesResponse.ok
+      || !revisionResponse.ok
+    ) {
       throw new Error("Lokale Daten konnten nicht geladen werden.");
     }
 
-    const [summary, validation, species] = await Promise.all([
+    const [summary, validation, species, revision] = await Promise.all([
       summaryResponse.json(),
       validationResponse.json(),
       speciesResponse.json(),
+      revisionResponse.json(),
     ]);
+    state.dataRevision = revision.revision;
     state.species = species;
     updateSummary(summary);
     updateValidation(validation);
@@ -1442,8 +1454,27 @@ async function loadData({ reload = false } = {}) {
       </div>
     `;
   } finally {
+    state.dataLoading = false;
     elements.reloadButton.disabled = false;
     elements.reloadButton.textContent = "Aktualisieren";
+  }
+}
+
+async function monitorProjectRevision() {
+  try {
+    const response = await fetch("/api/revision");
+    if (!response.ok) return;
+    const current = await response.json();
+    if (state.dataRevision && current.revision !== state.dataRevision && !state.dataLoading) {
+      await loadData();
+    } else if (!state.dataRevision) {
+      state.dataRevision = current.revision;
+    }
+  } catch {
+    // Der nächste Intervall versucht die Verbindung erneut.
+  } finally {
+    clearTimeout(state.dataRevisionTimer);
+    state.dataRevisionTimer = setTimeout(monitorProjectRevision, 5000);
   }
 }
 
@@ -1456,4 +1487,4 @@ setupEditingMode();
 setupAssetReview();
 setupPipelineControl();
 setupNewSpeciesCreator();
-loadData();
+loadData().finally(() => monitorProjectRevision());

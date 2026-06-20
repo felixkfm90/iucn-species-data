@@ -393,6 +393,50 @@ function compareReportList(key, label, reportedValues, actualValues) {
   };
 }
 
+async function buildExplorerRevision(repoRoot) {
+  const parts = [];
+  const trackedFiles = [
+    "species_list.json",
+    "speciesData.json",
+    "fehlende_elemente_report.json",
+    "species-assets-overrides.json",
+    join("docs", "manual-map-overrides.md"),
+  ];
+
+  for (const relativePath of trackedFiles) {
+    try {
+      const content = await readFile(join(repoRoot, relativePath));
+      parts.push(`${relativePath}:${hashText(content)}`);
+    } catch {
+      parts.push(`${relativePath}:missing`);
+    }
+  }
+
+  const assetRoot = join(repoRoot, "species-assets");
+  try {
+    const directories = (await readdir(assetRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((a, b) => a.localeCompare(b, "de"));
+    for (const safeName of directories) {
+      parts.push(`dir:${safeName}`);
+      for (const fileName of [...ASSET_FILES].sort()) {
+        const filePath = join(assetRoot, safeName, fileName);
+        try {
+          const details = await stat(filePath);
+          parts.push(`${safeName}/${fileName}:${details.size}:${details.mtimeMs}`);
+        } catch {
+          parts.push(`${safeName}/${fileName}:missing`);
+        }
+      }
+    }
+  } catch {
+    parts.push("species-assets:missing");
+  }
+
+  return hashText(parts.join("\n"));
+}
+
 export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   const [inputList, generatedList, report, manualMapMarkdown, assetOverrides] = await Promise.all([
     readJson(join(repoRoot, "species_list.json")),
@@ -829,6 +873,8 @@ export async function createExplorerServer({
   port = DEFAULT_PORT,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
+  let modelRevision = await buildExplorerRevision(repoRoot);
+  let modelRefreshPromise = null;
   const previewTokens = new Map();
   const speciesListPath = join(repoRoot, "species_list.json");
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
@@ -862,6 +908,22 @@ export async function createExplorerServer({
       }
     } catch {
       // Eine unlesbare lokale Statusdatei wird beim nächsten erfolgreichen Lauf ersetzt.
+    }
+  }
+
+  async function refreshModel({ force = false } = {}) {
+    if (modelRefreshPromise) return modelRefreshPromise;
+    modelRefreshPromise = (async () => {
+      const currentRevision = await buildExplorerRevision(repoRoot);
+      if (!force && currentRevision === modelRevision) return false;
+      model = await buildExplorerModel(repoRoot);
+      modelRevision = currentRevision;
+      return true;
+    })();
+    try {
+      return await modelRefreshPromise;
+    } finally {
+      modelRefreshPromise = null;
     }
   }
 
@@ -1066,7 +1128,7 @@ export async function createExplorerServer({
     await writeFile(logPath, `${pipelineState.log.join("\n")}\n`, "utf8");
     pipelineState.logFile = `species-explorer/logs/${logName}`;
     await prunePipelineLogs(pipelineLogDir).catch(() => {});
-    model = await buildExplorerModel(repoRoot);
+    await refreshModel({ force: true });
   }
 
   async function executePipelineRun(plan) {
@@ -1117,7 +1179,7 @@ export async function createExplorerServer({
       pipelineState.reviewAssets = reviewAssets;
       appendPipelineLog(`${reviewAssets.length} neue Karte(n)/Sound(s) warten auf Pflegeentscheidung.`);
       await writeFile(pendingAssetReviewPath, `${JSON.stringify(pipelineState, null, 2)}\n`, "utf8");
-      model = await buildExplorerModel(repoRoot);
+      await refreshModel({ force: true });
       return;
     }
 
@@ -1254,7 +1316,7 @@ export async function createExplorerServer({
     pipelineState.status = "running";
     pipelineState.phase = "Git-Veröffentlichung";
     await unlink(pendingAssetReviewPath).catch(() => {});
-    model = await buildExplorerModel(repoRoot);
+    await refreshModel({ force: true });
     void continueAfterAssetReview().catch(async (error) => {
       appendPipelineLog(`Git-Veröffentlichung fehlgeschlagen: ${error.message}`);
       pipelineState.error = error.message;
@@ -1387,7 +1449,7 @@ export async function createExplorerServer({
     }
 
     previewTokens.delete(token);
-    model = await buildExplorerModel(repoRoot);
+    await refreshModel({ force: true });
     let backupRetention = { kept: 0, removed: 0 };
     let backupCleanupWarning = "";
     try {
@@ -1512,7 +1574,7 @@ export async function createExplorerServer({
     }
 
     previewTokens.delete(token);
-    model = await buildExplorerModel(repoRoot);
+    await refreshModel({ force: true });
     let backupRetention = { kept: 0, removed: 0 };
     let backupCleanupWarning = "";
     try {
@@ -1669,7 +1731,7 @@ export async function createExplorerServer({
     }
 
     previewTokens.delete(token);
-    model = await buildExplorerModel(repoRoot);
+    await refreshModel({ force: true });
     let backupRetention = { kept: 0, removed: 0 };
     let backupCleanupWarning = "";
     try {
@@ -1753,17 +1815,26 @@ export async function createExplorerServer({
       }
 
       if (url.pathname === "/api/summary") {
+        await refreshModel();
         sendJson(response, 200, model.summary);
         return;
       }
 
       if (url.pathname === "/api/species") {
+        await refreshModel();
         sendJson(response, 200, model.species);
         return;
       }
 
       if (url.pathname === "/api/validation") {
+        await refreshModel();
         sendJson(response, 200, model.validation);
+        return;
+      }
+
+      if (url.pathname === "/api/revision") {
+        const changed = await refreshModel();
+        sendJson(response, 200, { revision: modelRevision, changed });
         return;
       }
 
@@ -1773,7 +1844,7 @@ export async function createExplorerServer({
       }
 
       if (url.pathname === "/api/reload") {
-        model = await buildExplorerModel(repoRoot);
+        await refreshModel({ force: true });
         sendJson(response, 200, { ok: true, summary: model.summary });
         return;
       }

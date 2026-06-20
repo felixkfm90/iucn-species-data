@@ -359,14 +359,6 @@ button.danger,
   gap: 18px;
 }
 
-.validation-eyebrow {
-  margin: 0 0 2px;
-  color: var(--text-muted);
-  font-size: 0.67rem;
-  font-weight: 750;
-  text-transform: uppercase;
-}
-
 .validation-heading h2 {
   margin: 0;
   font-size: 1rem;
@@ -552,11 +544,14 @@ button:focus-visible {
 
 .species-list {
   min-height: 0;
+  max-height: 915px;
+  align-self: start;
   overflow-y: auto;
 }
 
 .species-item {
   width: 100%;
+  height: 61px;
   min-height: 61px;
   padding: 10px 13px 10px 16px;
   display: flex;
