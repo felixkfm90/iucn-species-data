@@ -12,7 +12,7 @@ Für jedes neue Asset zeigt der Dialog:
 - Artname und wissenschaftlichen Namen
 - Assettyp Karte oder Sound
 - produktiven Dateipfad
-- bei Karten eine Bildvorschau
+- bei Karten eine anklickbare Bildvorschau; ein Klick öffnet die Karte in einer großen Lightbox
 - bei Sounds einen Audioplayer
 
 Felix muss je Asset eine Option wählen:
@@ -21,6 +21,10 @@ Felix muss je Asset eine Option wählen:
 - `Manuell pflegen und schützen`
 
 Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
+
+Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
+automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
+den dunklen Hintergrund geschlossen werden, ohne die bereits gewählten Pflegeoptionen zu verlieren.
 
 ## Maschinenlesbares Register
 
@@ -54,3 +58,11 @@ fremden Staging-Inhalte in den Pipeline-Commit geraten.
 
 Die lokale Datei `species-explorer/pending-asset-review.json` hält eine noch offene Assetprüfung über einen
 Serverneustart hinweg fest und wird nicht versioniert.
+
+Erster produktiver App-Durchlauf:
+
+- Art: `Höckerschwan`
+- Laufart: neue/unvollständige Arten
+- Karte und Sound wurden im Prüfdialog als automatisch durch die Pipeline gepflegt bestätigt.
+- Der Explorer veröffentlichte Daten, Assets und Override-Entscheidung anschließend automatisch mit Commit
+  `55fda06`.

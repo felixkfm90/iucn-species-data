@@ -271,7 +271,7 @@ Phase 7.6 ist technisch lokal vorbereitet:
   Wiederherstellungsablage
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
-  bestätigt
+  bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
 - die Kopfzeile schaltet zwischen Lesemodus und Bearbeitungsmodus; Schreibaktionen werden entsprechend
   aus- beziehungsweise eingeblendet
 - das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
@@ -407,8 +407,9 @@ gestartet; die technische Basis steht in `docs/desktop-app-plan.md`. Der read-on
 umgesetzt. Phase 7.4 fuer kontrolliertes Bearbeiten von `species_list.json` ist seit 2026-06-19 technisch und visuell
 abgeschlossen. Phase 7.5 zum kontrollierten Anlegen neuer Arten nach `docs/add-species-workflow.md` ist technisch
 lokal umgesetzt; die visuelle Bedienpruefung ist noch offen. Phase 7.6 mit Pipeline-Steuerung und dauerhafter
-Bereinigung ist technisch lokal umgesetzt. Ein vollständiger externer Pipeline-Lauf wurde am 2026-06-20 erfolgreich
-abgeschlossen; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung steht noch aus.
+Bereinigung ist technisch umgesetzt. Ein vollständiger externer Lauf sowie ein selektiver Lauf direkt aus der App
+für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
+Push funktionierten; die anschließend ergänzte Karten-Großansicht benötigt noch einen visuellen Bestätigungstest.
 Dabei wird zwischen einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle
 Arten unterschieden. Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
 In Phase 7 folgen

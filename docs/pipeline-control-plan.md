@@ -6,9 +6,10 @@ Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Expl
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
 unterscheiden.
 
-Status: technische Basis lokal umgesetzt am 2026-06-19. Ein vollständiger Pipeline-Lauf wurde am 2026-06-20
-erfolgreich abgeschlossen und veröffentlichte den Haubentaucher mit Daten und allen Kernassets. Die visuelle
-Bedienprüfung des Starts direkt aus der App und der Assetentscheidung steht noch aus.
+Status: technisch umgesetzt. Nach dem vollständigen Lauf für den Haubentaucher wurde am 2026-06-20 auch ein
+produktiver selektiver Lauf direkt aus der App für den Höckerschwan erfolgreich abgeschlossen. Start,
+Prozessanzeige, Karte-/Sound-Entscheidung sowie automatischer Commit und Push funktionierten. Die nach diesem Test
+ergänzte Karten-Großansicht benötigt noch einen kurzen visuellen Bestätigungstest.
 
 ## Bedienoberfläche
 
@@ -105,7 +106,7 @@ dauerhaft gelöscht und sind nicht wiederherstellbar. Details: `docs/delete-spec
 5. Start-, Status- und Log-API mit Einzellauf-Sperre ergaenzen: umgesetzt.
 6. Bedienoberflaeche mit Vorschau und expliziter Startbestaetigung anbinden: umgesetzt.
 7. Separaten permanenten Bereinigungslauf anbinden: umgesetzt.
-8. Echten gezielten Lauf mit Haubentaucher pruefen: offen.
+8. Echten gezielten App-Lauf mit Höckerschwan prüfen: erledigt am 2026-06-20, Commit `55fda06`.
 
 Geplante Kommandozeilenform:
 
@@ -162,6 +163,7 @@ mehr als fehlend im Report stehen bleibt.
 - Fehlercode und letzte erfolgreiche Phase werden in der App angezeigt.
 - bei Pipelinefehlern wird kein Commit oder Push gestartet
 - neue Karten und Sounds pausieren den Lauf vor Git
+- die Kartenvorschau im Assetdialog öffnet zur Qualitätsprüfung eine große Lightbox
 - Pflegeentscheidung wird in `species-assets-overrides.json` gespeichert
 - Git-Commit und Git-Push laufen erst nach vollständiger Assetentscheidung
 - Löschen aus `species_list.json` lässt Assets zunächst bestehen: getestet.

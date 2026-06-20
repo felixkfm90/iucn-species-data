@@ -77,6 +77,9 @@ const elements = {
   assetReviewList: document.querySelector("#asset-review-list"),
   assetReviewMessage: document.querySelector(".asset-review-message"),
   assetReviewSave: document.querySelector("#asset-review-save"),
+  assetReviewMapLightbox: document.querySelector("#asset-review-map-lightbox"),
+  assetReviewMapLightboxImage: document.querySelector("#asset-review-map-lightbox-image"),
+  assetReviewMapLightboxClose: document.querySelector("#asset-review-map-lightbox-close"),
   reloadButton: document.querySelector("#reload-button"),
   speciesList: document.querySelector("#species-list"),
   detailPanel: document.querySelector("#detail-panel"),
@@ -527,6 +530,26 @@ function setupMapZoom(species) {
 function setupAssetReview() {
   const dialog = elements.assetReviewDialog;
   const form = elements.assetReviewForm;
+  const mapLightbox = elements.assetReviewMapLightbox;
+  const mapLightboxImage = elements.assetReviewMapLightboxImage;
+
+  const closeMapLightbox = () => {
+    if (mapLightbox.open && typeof mapLightbox.close === "function") mapLightbox.close();
+    else mapLightbox.removeAttribute("open");
+    document.body.classList.remove("explorer-modal-open");
+  };
+
+  const openMapLightbox = (trigger) => {
+    const url = trigger.dataset.mapUrl;
+    const alt = trigger.dataset.mapAlt || "Neue Verbreitungskarte";
+    if (!url) return;
+    mapLightboxImage.src = url;
+    mapLightboxImage.alt = alt;
+    mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
+    if (typeof mapLightbox.showModal === "function") mapLightbox.showModal();
+    else mapLightbox.setAttribute("open", "");
+    document.body.classList.add("explorer-modal-open");
+  };
 
   const setMessage = (text = "", type = "") => {
     elements.assetReviewMessage.textContent = text;
@@ -542,7 +565,18 @@ function setupAssetReview() {
       <article class="asset-review-item" data-index="${index}">
         <div class="asset-review-preview">
           ${asset.type === "map"
-            ? `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">`
+            ? `
+              <button
+                class="asset-review-map-trigger"
+                type="button"
+                data-map-url="${escapeHtml(asset.url)}"
+                data-map-alt="${escapeHtml(`neue Karte ${asset.germanName}`)}"
+                aria-label="Neue Karte ${escapeHtml(asset.germanName)} vergrößern"
+              >
+                <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">
+                <span class="asset-review-zoom-hint">Vergrößern</span>
+              </button>
+            `
             : `<audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>`}
         </div>
         <div class="asset-review-copy">
@@ -571,6 +605,16 @@ function setupAssetReview() {
   };
 
   dialog.addEventListener("cancel", (event) => event.preventDefault());
+  elements.assetReviewList.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".asset-review-map-trigger");
+    if (trigger) openMapLightbox(trigger);
+  });
+  elements.assetReviewMapLightboxClose.addEventListener("click", closeMapLightbox);
+  mapLightbox.addEventListener("click", (event) => {
+    if (event.target === mapLightbox) closeMapLightbox();
+  });
+  mapLightbox.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
+  dialog.addEventListener("close", closeMapLightbox);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const assets = JSON.parse(form.dataset.assets || "[]");

@@ -299,9 +299,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Der Haubentaucher
   wurde als erster echter neuer Eintrag angelegt; damit stehen 46 Arten in `species_list.json`, davon eine
   erwartungsgemaess noch ohne Pipeline-Ausgabe und Assets.
-- 7.6 Pipeline- und Audit-Steuerung: technische Basis lokal umgesetzt am 2026-06-19; ein vollständiger externer
-  Pipeline-Lauf wurde am 2026-06-20 erfolgreich abgeschlossen. Die visuelle Prüfung des Starts direkt aus der App
-  und der neuen Assetentscheidung ist offen, siehe `docs/pipeline-control-plan.md`.
+- 7.6 Pipeline- und Audit-Steuerung: technisch umgesetzt. Ein vollständiger externer Lauf und ein selektiver
+  App-Lauf für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start, Prozessanzeige,
+  Assetentscheidung sowie automatischer Commit und Push funktionierten. Die anschließend ergänzte
+  Karten-Großansicht benötigt noch einen kurzen visuellen Bestätigungstest, siehe `docs/pipeline-control-plan.md`.
   Die App unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`.
   Der gezielte Lauf verarbeitet input-only Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets. Der
   vollstaendige Lauf entspricht dem bisherigen `node update.mjs` ueber die gesamte Artenliste. Vor dem Start werden
@@ -317,7 +318,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Ein gleich breiter Umschalter trennt Lesemodus und
   Bearbeitungsmodus; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
-  werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt. Danach
+  werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.
+  Kartenvorschauen öffnen für die Qualitätsprüfung eine große Lightbox. Danach
   erfolgen Git-Commit und Git-Push automatisch. Das maschinenlesbare Register
   `species-assets-overrides.json` schützt manuell gepflegte Karten und Sounds vor der Pipeline. Acht Explorer-Tests
   waren erfolgreich. Nach einem extern gestarteten Batch-Lauf blieb das bereits laufende Servermodell zunächst

@@ -351,7 +351,8 @@ Aktuelle Planung:
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
   Lauf kann gleichzeitig aktiv sein. Nach erfolgreicher Pipeline folgt der passende Spektrogramm-Abgleich.
   Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
-  bestaetigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
+  bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
+  Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Die getrennte
   Aktion `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen und Assetordner auf und loescht sie nach
@@ -364,9 +365,11 @@ Aktuelle Planung:
   direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. Neun Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf wurde am 2026-06-20
-  erfolgreich abgeschlossen; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung ist
-  offen. Danach folgt 7.7 Asset-Verwaltung nach
+  neu. Neun Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
+  Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
+  ergaenzte Karten-Grossansicht benoetigt noch einen kurzen visuellen Bestaetigungstest. Danach folgt 7.7
+  Asset-Verwaltung nach
   `docs/asset-management-plan.md` und 7.8 NAS/Backup.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.

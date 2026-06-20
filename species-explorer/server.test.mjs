@@ -670,6 +670,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/status/);
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /function setupAssetReview\(\)/);
+  assert.match(appSource, /class="asset-review-map-trigger"/);
+  assert.match(appSource, /openMapLightbox/);
   assert.match(appSource, /Datenbank aktuell/);
   assert.match(appSource, /function monitorProjectRevision\(\)/);
   assert.match(appSource, /fetch\("\/api\/revision"\)/);
@@ -714,6 +716,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Neue\/Unvollständige Arten aktualisieren/);
   assert.match(htmlSource, /id="asset-review-dialog"/);
   assert.match(htmlSource, /id="asset-review-list"/);
+  assert.match(htmlSource, /id="asset-review-map-lightbox"/);
+  assert.match(htmlSource, /id="asset-review-map-lightbox-image"/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);
   assert.match(htmlSource, /class="validation-dashboard"/);
   assert.doesNotMatch(htmlSource, /Phase 7\.3/);
@@ -741,6 +745,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.database-status\.outdated\s*\{[^}]*background:\s*#a32929/s);
   assert.match(cssSource, /\.database-status\.current\s*\{[^}]*background:\s*#1f6b4f/s);
   assert.match(cssSource, /\.asset-review-item\s*\{[^}]*grid-template-columns/s);
+  assert.match(cssSource, /\.asset-review-map-trigger\s*\{[^}]*cursor:\s*zoom-in/s);
   assert.match(cssSource, /button\.danger/);
   assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);

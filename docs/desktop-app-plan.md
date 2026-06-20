@@ -425,8 +425,9 @@ Aktueller Pruefstand:
 
 ### 7.6 Pipeline- und Audit-Steuerung
 
-Status: technische Basis lokal umgesetzt am 2026-06-19. Ein vollständiger externer Pipeline-Lauf war am
-2026-06-20 erfolgreich; die visuelle Prüfung des Starts direkt aus der App und der Assetentscheidung ist offen.
+Status: technisch umgesetzt und am 2026-06-20 mit einem produktiven selektiven Lauf für den Höckerschwan geprüft.
+Start, Prozessanzeige, Assetentscheidung sowie automatischer Commit und Push funktionierten. Die anschließend
+ergänzte Karten-Großansicht im Prüfdialog benötigt noch einen kurzen visuellen Bestätigungstest.
 Detailplanung: `docs/pipeline-control-plan.md`.
 
 Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
@@ -471,6 +472,7 @@ Umgesetzt:
 - nach dem Anlegen einer neuen Art öffnet die App automatisch die Vorschau für den selektiven Lauf; Abbrechen lässt
   die Art wie bisher als ausstehend stehen
 - neue Karten und Sounds werden nach Pipeline, Spektrogramm und Report angezeigt
+- neue Karten lassen sich im Prüfdialog anklicken und in einer großen Lightbox bewerten
 - Felix bestätigt je Asset automatische Pflege oder manuellen Schutz
 - `species-assets-overrides.json` schützt manuell markierte Karten und Sounds bei späteren Pipeline-Laeufen
 - danach werden die vorgesehenen Pipeline-Dateien automatisch committed und gepusht
