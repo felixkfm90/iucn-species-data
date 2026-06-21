@@ -144,6 +144,16 @@
         "spectrogramSha256": "5faf14fd53986f4085ccf1d5956bbfecf4ae8ed42798d326fc3f0571aae4e333",
         "generatedAt": "2026-06-15T13:03:01.215Z",
         "verifiedAt": "2026-06-20T18:35:37.701Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T16:01:52.556Z",
+        "approvedAt": "2026-06-21T16:02:02.138Z",
+        "sha256": "10c71e0094ce83ebe830f6a00c124f9e74890dbdd9c164edc0a2cfa88dfedb43",
+        "metadataSha256": "34a6671f45703d58244428d375f290f81973141fbb4c3c606a4391c55be8d266"
       }
     },
     "Alpenstrandlaeufer": {
