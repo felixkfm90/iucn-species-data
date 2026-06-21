@@ -157,6 +157,16 @@
         "spectrogramSha256": "0165caaca0223dec013219e11aa510dcd03350cea89f4725f54f88cfc213e783",
         "generatedAt": "2026-06-15T13:03:20.877Z",
         "verifiedAt": "2026-06-20T18:35:37.811Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:47:04.238Z",
+        "approvedAt": "2026-06-21T19:47:07.277Z",
+        "sha256": "3cb949f955b10e165e9a24f39393421b8c0dadfb2a239736946d8da7c526a885",
+        "metadataSha256": "cd86e693171ae7e5be0e7e2a194d7ff7b2d062865733416c5d91ee42c9b4eafd"
       }
     },
     "Haubentaucher": {
