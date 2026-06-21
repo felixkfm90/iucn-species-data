@@ -357,6 +357,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Die betroffenen Assetpfade werden automatisch committed und gepusht. Dreizehn Explorer-Tests sind erfolgreich.
   Produktiver Karten-/Soundimport und visuelle Bedienprüfung sind noch offen. Danach folgt die separate Entscheidung
   für Artporträts. Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
+  Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
+  gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
+  einspaltig.
 - 7.8 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

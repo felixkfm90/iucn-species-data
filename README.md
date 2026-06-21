@@ -337,6 +337,11 @@ sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen ke
 Dreizehn Explorer-Tests sind erfolgreich; produktiver manueller Soundimport und visuelle Bedienprüfung stehen noch
 aus.
 
+Die Karten- und Soundformulare verwenden auf Desktop feste Grid-Bereiche. Dateieingaben sind gleich hoch, der
+Pflegegrund reicht jeweils von der Oberkante der ersten bis zur Unterkante der zweiten linken Feldzeile. Im
+Soundformular sind Quelle, Lizenz und Ort dadurch mit Original-URL, Land und Qualität ausgerichtet. Mobile Ansichten
+bleiben einspaltig.
+
 Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen kontrolliert ueber den Explorer in
 `species_list.json` angelegt werden; der genaue Ablauf ist in `docs/add-species-workflow.md` dokumentiert.
 

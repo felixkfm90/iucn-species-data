@@ -559,6 +559,14 @@ geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpak
 Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Dreizehn Explorer-Tests
 sind erfolgreich.
 
+Formularlayout seit 2026-06-21:
+
+- Karten- und MP3-Dateieingabe besitzen dieselbe kompakte Höhe.
+- Der Pflegegrund spannt auf Desktop jeweils über die ersten zwei linken Feldzeilen.
+- Im Soundformular stehen Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualität.
+- Notizen nutzen weiterhin beide Spalten.
+- Unter dem mobilen Breakpoint werden alle expliziten Grid-Bereiche aufgehoben und einspaltig angeordnet.
+
 ### 7.8 Synology NAS und automatisiertes Backup
 
 - NAS als Backup/Mirror konzipieren

@@ -1353,6 +1353,9 @@ button:focus-visible {
 .map-edit-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "file reason"
+    "source reason";
   gap: 10px 12px;
 }
 
@@ -1360,10 +1363,6 @@ button:focus-visible {
   min-width: 0;
   display: grid;
   gap: 5px;
-}
-
-.map-edit-fields label:nth-child(2) {
-  grid-row: span 2;
 }
 
 .map-edit-fields label > span {
@@ -1388,6 +1387,38 @@ button:focus-visible {
 .map-edit-fields textarea {
   min-height: 82px;
   resize: vertical;
+}
+
+.map-file-field {
+  grid-area: file;
+}
+
+.map-reason-field {
+  grid-area: reason;
+}
+
+.map-source-field {
+  grid-area: source;
+}
+
+.asset-file-field {
+  align-self: start;
+}
+
+.asset-file-field input[type="file"] {
+  min-height: 42px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.asset-reason-field {
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.asset-reason-field textarea {
+  height: 100%;
+  min-height: 0;
 }
 
 .map-edit-preview {
@@ -1530,6 +1561,13 @@ button:focus-visible {
 .sound-edit-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "file reason"
+    "recordist reason"
+    "url source"
+    "country license"
+    "quality location"
+    "notes notes";
   gap: 10px 12px;
 }
 
@@ -1563,8 +1601,56 @@ button:focus-visible {
   resize: vertical;
 }
 
+.map-edit-fields .asset-file-field input[type="file"],
+.sound-edit-fields .asset-file-field input[type="file"] {
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.map-edit-fields .asset-reason-field textarea,
+.sound-edit-fields .asset-reason-field textarea {
+  height: 100%;
+  min-height: 0;
+}
+
+.sound-file-field {
+  grid-area: file;
+}
+
+.sound-reason-field {
+  grid-area: reason;
+}
+
+.sound-recordist-field {
+  grid-area: recordist;
+}
+
+.sound-source-field {
+  grid-area: source;
+}
+
+.sound-url-field {
+  grid-area: url;
+}
+
+.sound-license-field {
+  grid-area: license;
+}
+
+.sound-country-field {
+  grid-area: country;
+}
+
+.sound-location-field {
+  grid-area: location;
+}
+
+.sound-quality-field {
+  grid-area: quality;
+}
+
 .sound-notes-field {
-  grid-column: 1 / -1;
+  grid-area: notes;
 }
 
 .sound-edit-preview {
@@ -1983,8 +2069,18 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .map-edit-fields label:nth-child(2) {
-    grid-row: auto;
+  .map-edit-fields,
+  .sound-edit-fields {
+    grid-template-areas: none;
+  }
+
+  .map-edit-fields label,
+  .sound-edit-fields label {
+    grid-area: auto;
+  }
+
+  .asset-reason-field textarea {
+    min-height: 82px;
   }
 
   .map-compare-frame {
@@ -1994,10 +2090,6 @@ button:focus-visible {
   .map-edit-actions {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .sound-notes-field {
-    grid-column: auto;
   }
 
   .sound-edit-actions {

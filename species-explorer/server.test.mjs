@@ -1224,6 +1224,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
   assert.match(appSource, /Soundhash geprüft/);
   assert.match(cssSource, /\.sound-compare-grid/);
+  assert.match(cssSource, /grid-template-areas:\s*"file reason"\s*"source reason"/);
+  assert.match(
+    cssSource,
+    /grid-template-areas:\s*"file reason"\s*"recordist reason"\s*"url source"\s*"country license"\s*"quality location"\s*"notes notes"/,
+  );
+  assert.match(cssSource, /\.asset-file-field input\[type="file"\]/);
+  assert.match(cssSource, /\.asset-reason-field textarea/);
   assert.match(
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,

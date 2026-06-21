@@ -1944,11 +1944,11 @@ function renderDetail(species) {
           </header>
 
           <div class="map-edit-fields">
-            <label>
+            <label class="asset-file-field map-file-field">
               <span>Neue JPEG-Datei</span>
               <input class="map-file-input" type="file" accept=".jpg,.jpeg,image/jpeg">
             </label>
-            <label>
+            <label class="asset-reason-field map-reason-field">
               <span>Pflegegrund</span>
               <textarea
                 class="map-reason-input"
@@ -1957,7 +1957,7 @@ function renderDetail(species) {
                 placeholder="Warum wird diese Karte manuell gepflegt?"
               >${escapeHtml(species.assets.map.manualReason || "")}</textarea>
             </label>
-            <label>
+            <label class="map-source-field">
               <span>Quellen-URL</span>
               <input
                 class="map-source-input"
@@ -2017,11 +2017,11 @@ function renderDetail(species) {
           </div>
 
           <div class="sound-edit-fields">
-            <label>
+            <label class="asset-file-field sound-file-field">
               <span>Neue MP3-Datei</span>
               <input class="sound-file-input" type="file" accept=".mp3,audio/mpeg">
             </label>
-            <label>
+            <label class="asset-reason-field sound-reason-field">
               <span>Pflegegrund</span>
               <textarea
                 class="sound-reason-input"
@@ -2030,7 +2030,7 @@ function renderDetail(species) {
                 placeholder="Warum wird dieser Sound manuell gepflegt?"
               >${escapeHtml(species.assets.sound.manualReason || "")}</textarea>
             </label>
-            <label>
+            <label class="sound-recordist-field">
               <span>Aufnahme / Urheber</span>
               <input
                 class="sound-credit-input"
@@ -2039,7 +2039,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.recordist || "")}"
               >
             </label>
-            <label>
+            <label class="sound-source-field">
               <span>Quelle</span>
               <input
                 class="sound-credit-input"
@@ -2049,7 +2049,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.source || "")}"
               >
             </label>
-            <label>
+            <label class="sound-url-field">
               <span>Original-URL</span>
               <input
                 class="sound-credit-input"
@@ -2060,7 +2060,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.url || "")}"
               >
             </label>
-            <label>
+            <label class="sound-license-field">
               <span>Lizenz-URL</span>
               <input
                 class="sound-credit-input"
@@ -2071,7 +2071,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.license || "")}"
               >
             </label>
-            <label>
+            <label class="sound-country-field">
               <span>Land</span>
               <input
                 class="sound-credit-input"
@@ -2080,7 +2080,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.country || "")}"
               >
             </label>
-            <label>
+            <label class="sound-location-field">
               <span>Ort</span>
               <input
                 class="sound-credit-input"
@@ -2089,7 +2089,7 @@ function renderDetail(species) {
                 value="${escapeHtml(species.credits?.location || "")}"
               >
             </label>
-            <label>
+            <label class="sound-quality-field">
               <span>Qualität</span>
               <input
                 class="sound-credit-input"

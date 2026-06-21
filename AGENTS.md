@@ -417,6 +417,10 @@ Aktuelle Planung:
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB. Dreizehn Explorer-Tests sind erfolgreich; ein produktiver manueller Soundimport und die visuelle
   Bedienpruefung stehen noch aus. Danach folgen Artportraet und 7.8 NAS/Backup.
+  Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
+  intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
+  Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
+  Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
   In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:

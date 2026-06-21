@@ -170,6 +170,8 @@ Umgesetzt:
 - automatischer, auf Sound, Credits, Spektrogramm und Override-Register begrenzter Commit und Push
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
 - laufende Vorschau-Audios stoppen und springen beim Schließen des Bearbeitungsdialogs auf Position 0 zurück
+- festes Desktop-Grid mit kompakter Dateieingabe und Pflegegrund über zwei linke Zeilen
+- Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualität; mobile Darstellung einspaltig
 
 ### 7.7.4 Spektrogramm-Konsistenz
 
