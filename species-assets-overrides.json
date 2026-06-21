@@ -774,6 +774,16 @@
         "spectrogramSha256": "f4a0309c1964a10474072347a877af9aa751cdeb1b679e873c7f00148d9e479d",
         "generatedAt": "2026-06-15T13:03:18.595Z",
         "verifiedAt": "2026-06-20T18:35:37.804Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:28:18.912Z",
+        "approvedAt": "2026-06-21T19:28:21.693Z",
+        "sha256": "6da71ffe75955b7efb1160bc048de8dbf192421a6ed091ddd537f866727e10c9",
+        "metadataSha256": "554a036af3bc7d21792b9a3e02199a70e6297900a317527c1a0988326a3ece15"
       }
     },
     "Panama-Kapuzineraffe": {
