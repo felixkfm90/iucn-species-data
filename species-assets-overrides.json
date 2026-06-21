@@ -736,6 +736,16 @@
         "spectrogramSha256": "87893a5b995c40ff39eac94d2682984e7451935672c20132b472d72dfe8ea19f",
         "generatedAt": "2026-06-15T13:03:17.877Z",
         "verifiedAt": "2026-06-20T18:35:37.803Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:52:33.312Z",
+        "approvedAt": "2026-06-21T18:52:35.819Z",
+        "sha256": "597ac46854d43fdf9d266afa892bc4ed510196b6b374e79fda7271f3498b28da",
+        "metadataSha256": "f3f511530de526ab2968bca9a0197c553a5cef7df045a241d019cc802bdf49dc"
       }
     },
     "Mantelbruellaffe": {
