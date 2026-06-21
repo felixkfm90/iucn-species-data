@@ -146,6 +146,16 @@
         "spectrogramSha256": "16fa0f77f2e61bd9bd0239c8f52eb6330ebbc6b042a292cbf5bf04f76d239d80",
         "generatedAt": "2026-06-20T06:47:43.304Z",
         "verifiedAt": "2026-06-20T18:35:37.783Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:03:56.299Z",
+        "approvedAt": "2026-06-21T18:04:18.743Z",
+        "sha256": "2d60ab6a1029398bb5b91ee11278f562facbbf8d734caca74efe24f561700bd4",
+        "metadataSha256": "53925968874495399a60f8e3622d3c16029aa3ec7f42a6300ba53b57849a9e41"
       }
     },
     "Hoeckerschwan": {
