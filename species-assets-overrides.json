@@ -429,6 +429,16 @@
         "spectrogramSha256": "43f8006aa39f456665b71e65ab62f4cc0240c7d438ed42b5a039e5a1a683f78f",
         "generatedAt": "2026-06-15T13:03:08.788Z",
         "verifiedAt": "2026-06-20T18:35:37.749Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:54:10.832Z",
+        "approvedAt": "2026-06-21T17:54:48.855Z",
+        "sha256": "3dd06f0518004f9622276e204d0201d12f5cb08b2d78b0bc0726d00c82879c13",
+        "metadataSha256": "32a17bd5f5c9b4f4a48dfff671504dae7113afa54971d056ceeb417d82e41afb"
       }
     },
     "Eurasisches Eichhoernchen": {
