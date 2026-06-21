@@ -274,7 +274,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Status- und Hinweis-Dropdowns sind alphabetisch sortiert. Felix hat Phase 7.3 am 2026-06-19 visuell geprueft.
   Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Die linke Artenliste reicht dynamisch bis
   zur Unterkante des letzten Detailblocks; die sichtbare Zeilenzahl richtet sich nach dessen Hoehe und weitere
-  Treffer sind innerhalb der Liste scrollbar.
+  Treffer sind innerhalb der Liste scrollbar. Die Hoehe wird nach Artwechseln und Fenstergroessenaenderungen
+  explizit an der letzten sichtbaren Detailbox ausgerichtet, statt von der vollstaendigen Artenliste bestimmt zu
+  werden.
   Der Squarespace-Footer mit `species-sound.js?v=1.0.24` wurde ebenfalls live erfolgreich getestet.
 - 7.4 Kontrolliertes Bearbeiten von `species_list.json`: abgeschlossen am 2026-06-19.
   Bestehende Arten erlauben ausschliesslich die Bearbeitung von Groesse, Gewicht und Lebenserwartung. Vor dem

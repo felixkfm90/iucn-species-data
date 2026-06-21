@@ -324,7 +324,9 @@ Aktuelle Planung:
   Phase 7.3 wurde von Felix am 2026-06-19 visuell geprueft.
   Die interne Phasenbezeichnung ist in der App ausgeblendet. Die linke Artenliste reicht dynamisch bis zur
   Unterkante des letzten Detailblocks. Je nach Detailhoehe sind unterschiedlich viele Arten gleichzeitig sichtbar;
-  weitere Treffer bleiben innerhalb der Liste scrollbar.
+  weitere Treffer bleiben innerhalb der Liste scrollbar. Die Desktop-Hoehe wird nach jedem Artwechsel und bei
+  Fenstergroessenaenderungen explizit aus der Unterkante des letzten sichtbaren Detailblocks berechnet, damit die
+  Artenliste die Grid-Zeile nicht selbst verlaengert.
   Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft: Bestehende Arten erlauben nur die
   Bearbeitung von Groesse, Gewicht und
   Lebenserwartung. Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn

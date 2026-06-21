@@ -229,7 +229,8 @@ Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropd
 sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
 Die App zeigt dabei keine interne Phasenbezeichnung. Die linke Navigation reicht dynamisch bis zur Unterkante des
 letzten Detailblocks. Dadurch haengt die gleichzeitig sichtbare Anzahl von der tatsaechlichen Detailhoehe ab;
-weitere Treffer werden innerhalb der Liste gescrollt.
+weitere Treffer werden innerhalb der Liste gescrollt. Die Hoehe wird bei Artwechsel und Fenstergroessenaenderung
+neu an der Unterkante des letzten sichtbaren Detailblocks ausgerichtet.
 
 Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. Die Aktionen `Bearbeiten` und `Löschen` stehen im Artkopf
 oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller Daten, Karten und Sounds gelten:

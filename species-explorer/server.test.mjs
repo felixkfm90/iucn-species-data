@@ -1496,6 +1496,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.species-list\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);
   assert.doesNotMatch(cssSource, /\.species-list\s*\{[^}]*max-height:/s);
+  assert.match(
+    cssSource,
+    /\.species-panel\s*\{[^}]*align-self:\s*start[^}]*grid-template-rows:\s*auto\s+auto\s+minmax\(0,\s*1fr\)[^}]*overflow:\s*hidden/s,
+  );
   assert.match(cssSource, /\.species-item\s*\{[^}]*height:\s*61px/s);
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
@@ -1513,6 +1517,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     cssSource,
     /\.species-portrait-image\s*\{[^}]*max-width:\s*100%[^}]*max-height:\s*100%[^}]*object-fit:\s*contain/s,
   );
+  assert.match(appSource, /function syncSpeciesPanelHeight\(\)/);
+  assert.match(appSource, /lastDetailBlock\.getBoundingClientRect\(\)\.bottom/);
+  assert.match(appSource, /elements\.speciesPanel\.style\.height = `\$\{targetHeight\}px`/);
+  assert.match(appSource, /window\.addEventListener\("resize", syncSpeciesPanelHeight\)/);
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);

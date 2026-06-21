@@ -526,7 +526,9 @@ Kompakte Oberfläche:
   die fachliche Überschrift `Validierung und Status`.
 - Die linke Artenliste reicht bis zur Unterkante des letzten Detailblocks. Ihre sichtbare Zeilenzahl passt sich
   damit dynamisch an die tatsächliche Detailhöhe an. Weitere Treffer bleiben innerhalb der Liste per Scrollen
-  erreichbar, damit die Navigation bei wachsender Artenzahl nicht über den Detailbereich hinausläuft.
+  erreichbar, damit die Navigation bei wachsender Artenzahl nicht über den Detailbereich hinausläuft. Die
+  Desktop-Höhe wird nach Artwechseln und Größenänderungen aus der tatsächlichen Unterkante des letzten sichtbaren
+  Detailblocks berechnet; die vollständige Artenliste darf die Höhe der Grid-Zeile nicht bestimmen.
 - Ein vorhandenes Artporträt vergrößert die Medienzeile nicht. Portraitzelle und Platzhalter verwenden dieselbe
   feste Höhe; das vollständige 4:5-Bild wird mit `object-fit: contain` eingepasst und bei Bedarf über die Lightbox
   vergrößert.

@@ -580,8 +580,10 @@ button.danger,
 
 .species-panel {
   min-height: 0;
+  align-self: start;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
   background: var(--surface);
   border-right: 1px solid var(--line);
 }
