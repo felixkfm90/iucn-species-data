@@ -227,8 +227,9 @@ und neun Reportpruefungen konsistent. Nach dem Anlegen des Haubentauchers zeigt 
 kann diesen neuen Eintrag erst nach dem Pipeline-Lauf enthalten. Der IUCN-Trend `Unbekannt` ist ein gueltiger
 Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch nach den
 sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
-Die App zeigt dabei keine interne Phasenbezeichnung. In der linken Navigation bleiben maximal 15 Arten gleichzeitig
-sichtbar; weitere Treffer werden innerhalb der Liste gescrollt.
+Die App zeigt dabei keine interne Phasenbezeichnung. Die linke Navigation reicht dynamisch bis zur Unterkante des
+letzten Detailblocks. Dadurch haengt die gleichzeitig sichtbare Anzahl von der tatsaechlichen Detailhoehe ab;
+weitere Treffer werden innerhalb der Liste gescrollt.
 
 Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. Die Aktionen `Bearbeiten` und `Löschen` stehen im Artkopf
 oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller Daten, Karten und Sounds gelten:
@@ -397,7 +398,9 @@ Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. 
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
 Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
 erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
-ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt, damit mehr Platz fuer das spaetere Artportraet bleibt.
+ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt. Ein vorhandenes 4:5-Artportraet wird in die feste Portraitzelle
+eingepasst und vergroessert die Medienzeile nicht. Die vollstaendige Darstellung bleibt sichtbar; fuer Details
+steht die Portrait-Lightbox bereit.
 Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet.
 Ohne Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
@@ -479,12 +482,12 @@ Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-06-20:
+Aktueller lokaler Stand vom 2026-06-21:
 
 - 47 Eintraege in `species_list.json`
 - 47 Arten in der letzten Pipeline-Ausgabe
 - 47 vollständige Kernpakete aus Karte, Sound, Credits und Spektrogramm
-- 0 Artportraits; 47 Portrait-Assetprobleme
+- 1 Artportrait (`Alpenbirkenzeisig`); 46 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 0 fehlende Sounddateien unter den 47 verarbeiteten Arten
 - 0 fehlende Sound-Credits unter den 47 verarbeiteten Arten

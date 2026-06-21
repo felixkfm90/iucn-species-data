@@ -99,6 +99,16 @@ Assetproblem:
 Der normale IUCN-/Karten-/Sound-Pipelinelauf erzeugt trotzdem keine Portraits. Dafür bleibt ausschließlich der
 eigene Ablauf `Fehlende Artporträts ergänzen` zuständig.
 
+## Darstellung im Explorer
+
+Ein vorhandenes Portrait darf die Medienzeile nicht höher machen als der leere Portraitplatzhalter. Karte und
+rechte Medienspaltensumme behalten daher eine gemeinsame feste Höhe. Das 4:5-Portrait wird vollständig mit
+`object-fit: contain` in die Portraitzelle eingepasst. Es wird weder abgeschnitten noch innerhalb der Zelle
+verschoben; für die große Qualitätsprüfung dient die Portrait-Lightbox.
+
+Der erste produktive Einzelimport wurde am 2026-06-21 für `Alpenbirkenzeisig` erfolgreich gespeichert, committed
+und gepusht.
+
 ## Pflichtprüfung
 
 Vor jeder Übernahme prüfen:

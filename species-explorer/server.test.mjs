@@ -162,15 +162,17 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   const expectedInputOnly = [...inputKeys].filter((entry) => !generatedKeys.has(entry)).length;
   const expectedGeneratedOnly = [...generatedKeys].filter((entry) => !inputKeys.has(entry)).length;
   const expectedSpeciesCount = new Set([...inputKeys, ...generatedKeys]).size;
+  const expectedPortraitCount = model.species.filter((entry) => entry.assets.portrait.exists).length;
+  const expectedMissingPortraitCount = expectedSpeciesCount - expectedPortraitCount;
 
   assert.equal(model.summary.speciesCount, expectedSpeciesCount);
   assert.equal(model.summary.inputCount, inputList.length);
   assert.equal(model.summary.generatedCount, generatedList.length);
   assert.equal(model.summary.missingCoreAssets, model.validation.assets.issueSpeciesCount);
-  assert.equal(model.summary.missingPortraitCount, expectedSpeciesCount);
-  assert.equal(model.validation.assets.available.portraits, 0);
-  assert.equal(model.validation.assets.completeSpeciesCount, 0);
-  assert.equal(model.validation.assets.issueSpeciesCount, expectedSpeciesCount);
+  assert.equal(model.summary.missingPortraitCount, expectedMissingPortraitCount);
+  assert.equal(model.validation.assets.available.portraits, expectedPortraitCount);
+  assert.equal(model.validation.assets.completeSpeciesCount, expectedPortraitCount);
+  assert.equal(model.validation.assets.issueSpeciesCount, expectedMissingPortraitCount);
   assert.equal(model.summary.ncSoundCount, 3);
   assert.equal(model.summary.manualMapCount, 4);
   assert.equal(model.summary.readOnly, false);
@@ -192,7 +194,7 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
   assert.equal(
     model.species.filter((entry) => entry.assetIssues.includes("Artporträt fehlt")).length,
-    expectedSpeciesCount,
+    expectedMissingPortraitCount,
   );
   assert.equal(
     model.validation.data.issueSpeciesCount,
@@ -1492,12 +1494,25 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
-  assert.match(cssSource, /\.species-list\s*\{[^}]*max-height:\s*915px[^}]*overflow-y:\s*auto/s);
+  assert.match(cssSource, /\.species-list\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);
+  assert.doesNotMatch(cssSource, /\.species-list\s*\{[^}]*max-height:/s);
   assert.match(cssSource, /\.species-item\s*\{[^}]*height:\s*61px/s);
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(cssSource, /\.detail-side-stack\s*\{[^}]*grid-template-rows:\s*minmax\(280px,\s*2fr\)\s*auto/s);
+  assert.match(
+    cssSource,
+    /\.detail-media-layout\s*\{[^}]*grid-auto-rows:\s*calc\(var\(--detail-media-frame-height\)\s*\+\s*39px\)/s,
+  );
+  assert.match(cssSource, /\.detail-side-stack\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s*auto/s);
+  assert.match(
+    cssSource,
+    /\.species-image-panel\s*\{[^}]*grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\)[^}]*overflow:\s*hidden/s,
+  );
+  assert.match(
+    cssSource,
+    /\.species-portrait-image\s*\{[^}]*max-width:\s*100%[^}]*max-height:\s*100%[^}]*object-fit:\s*contain/s,
+  );
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);

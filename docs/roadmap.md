@@ -272,8 +272,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   45 von 45 Datenpaare stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent und
   es bestehen 0 Validierungshinweise. Der gueltige Trendwert `Unbekannt` wird nicht als fehlend bewertet.
   Status- und Hinweis-Dropdowns sind alphabetisch sortiert. Felix hat Phase 7.3 am 2026-06-19 visuell geprueft.
-  Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Die linke Artenliste ist auf 15 gleichzeitig
-  sichtbare Eintraege begrenzt; weitere Treffer sind innerhalb der Liste scrollbar.
+  Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Die linke Artenliste reicht dynamisch bis
+  zur Unterkante des letzten Detailblocks; die sichtbare Zeilenzahl richtet sich nach dessen Hoehe und weitere
+  Treffer sind innerhalb der Liste scrollbar.
   Der Squarespace-Footer mit `species-sound.js?v=1.0.24` wurde ebenfalls live erfolgreich getestet.
 - 7.4 Kontrolliertes Bearbeiten von `species_list.json`: abgeschlossen am 2026-06-19.
   Bestehende Arten erlauben ausschliesslich die Bearbeitung von Groesse, Gewicht und Lebenserwartung. Vor dem
@@ -365,8 +366,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   die Assetstruktur zeigt die genaue Fehlanzahl und betroffene Arten erhalten die Listenmarkierung `P`. Sie sind
   über `Fehlendes Artporträt` filterbar. Der Datenbankdialog bietet `Fehlende Artporträts ergänzen` und kopiert die
   Prompts für alle betroffenen Arten, ohne sie fälschlich in den normalen Datenpipeline-Lauf aufzunehmen.
-  Vierzehn Explorer-Tests sind vorgesehen; ein echter Einzelimport und die
-  visuelle/fachliche Freigabe stehen noch aus. Squarespace folgt erst danach. Details:
+  Vierzehn Explorer-Tests sind erfolgreich. Der erste produktive Einzelimport fuer `Alpenbirkenzeisig` wurde am
+  2026-06-21 gespeichert, committed und gepusht. Vorhandene Portraits behalten dieselbe feste Zellenhoehe wie der
+  leere Platzhalter und werden vollstaendig eingepasst; eine Vergroesserung erfolgt nur in der Lightbox. Die weitere
+  visuelle/fachliche Freigabe steht noch aus. Squarespace folgt erst danach. Details:
   `docs/portrait-generation.md`.
   Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:

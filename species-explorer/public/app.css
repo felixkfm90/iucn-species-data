@@ -668,8 +668,6 @@ button:focus-visible {
 
 .species-list {
   min-height: 0;
-  max-height: 915px;
-  align-self: start;
   overflow-y: auto;
 }
 
@@ -873,16 +871,19 @@ button:focus-visible {
 }
 
 .detail-media-layout {
+  --detail-media-frame-height: clamp(390px, 44vw, 570px);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: calc(var(--detail-media-frame-height) + 39px);
   align-items: stretch;
   gap: 14px;
 }
 
 .detail-side-stack {
   min-width: 0;
+  min-height: 0;
   display: grid;
-  grid-template-rows: minmax(280px, 2fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 14px;
 }
 
@@ -891,6 +892,7 @@ button:focus-visible {
 }
 
 .section-title {
+  min-height: 39px;
   margin: 0;
   padding: 11px 13px;
   color: #34433c;
@@ -900,7 +902,7 @@ button:focus-visible {
 }
 
 .map-frame {
-  height: clamp(390px, 44vw, 570px);
+  height: var(--detail-media-frame-height);
   display: grid;
   place-items: center;
   padding: 10px;
@@ -923,11 +925,18 @@ button:focus-visible {
   overflow: hidden;
 }
 
+.species-image-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
 .portrait-zoom-trigger {
   position: relative;
   width: 100%;
-  min-height: 280px;
-  height: calc(100% - 39px);
+  min-height: 0;
+  height: 100%;
   padding: 10px;
   display: grid;
   place-items: center;
@@ -938,8 +947,10 @@ button:focus-visible {
 }
 
 .species-portrait-image {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   min-height: 0;
   display: block;
   object-fit: contain;
@@ -978,7 +989,7 @@ button:focus-visible {
 }
 
 .species-image-placeholder {
-  min-height: 280px;
+  min-height: 0;
   height: 100%;
   padding: 20px;
   display: grid;
@@ -2174,9 +2185,17 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .detail-media-layout {
+    grid-auto-rows: auto;
+  }
+
   .detail-side-stack {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
+  }
+
+  .species-image-panel {
+    height: min(68vh, 580px);
   }
 
   .map-frame {

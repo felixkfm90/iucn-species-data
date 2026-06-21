@@ -524,8 +524,12 @@ Kompakte Oberfläche:
 
 - Die interne Roadmap-Bezeichnung `Phase 7.3 · Datenprüfung` wird nicht in der App angezeigt; sichtbar bleibt nur
   die fachliche Überschrift `Validierung und Status`.
-- Die linke Artenliste zeigt maximal 15 Einträge gleichzeitig. Weitere Treffer bleiben innerhalb der Liste per
-  Scrollen erreichbar, damit die Navigation bei wachsender Artenzahl nicht die Seite verlängert.
+- Die linke Artenliste reicht bis zur Unterkante des letzten Detailblocks. Ihre sichtbare Zeilenzahl passt sich
+  damit dynamisch an die tatsächliche Detailhöhe an. Weitere Treffer bleiben innerhalb der Liste per Scrollen
+  erreichbar, damit die Navigation bei wachsender Artenzahl nicht über den Detailbereich hinausläuft.
+- Ein vorhandenes Artporträt vergrößert die Medienzeile nicht. Portraitzelle und Platzhalter verwenden dieselbe
+  feste Höhe; das vollständige 4:5-Bild wird mit `object-fit: contain` eingepasst und bei Bedarf über die Lightbox
+  vergrößert.
 
 ### 7.7 Asset-Verwaltung
 

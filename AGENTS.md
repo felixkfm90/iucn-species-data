@@ -71,9 +71,9 @@ Lokale Arbeitsoberflaeche:
 - 47 Credits-Dateien
 - 47 Spektrogramm-Dateien
 - 47 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
-- 0 Artportraets; 47 Artportraets fehlen noch
+- 1 Artportraet (`Alpenbirkenzeisig`); 46 Artportraets fehlen noch
 - Artportraets gehoeren seit 2026-06-21 zur Explorer-Assetvalidierung. Deshalb zeigt die lokale App aktuell
-  47 Arten mit Assetproblem, obwohl Karten, Sounds, Credits und Spektrogramme vollstaendig sind.
+  46 Arten mit Assetproblem, obwohl Karten, Sounds, Credits und Spektrogramme vollstaendig sind.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -322,8 +322,9 @@ Aktuelle Planung:
   werden artweise erklaert.
   Status- und Hinweis-Dropdowns sind alphabetisch nach ihren sichtbaren deutschen Bezeichnungen sortiert.
   Phase 7.3 wurde von Felix am 2026-06-19 visuell geprueft.
-  Die interne Phasenbezeichnung ist in der App ausgeblendet. Die linke Artenliste zeigt maximal 15 Eintraege
-  gleichzeitig und scrollt weitere Treffer innerhalb der Liste.
+  Die interne Phasenbezeichnung ist in der App ausgeblendet. Die linke Artenliste reicht dynamisch bis zur
+  Unterkante des letzten Detailblocks. Je nach Detailhoehe sind unterschiedlich viele Arten gleichzeitig sichtbar;
+  weitere Treffer bleiben innerhalb der Liste scrollbar.
   Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft: Bestehende Arten erlauben nur die
   Bearbeitung von Groesse, Gewicht und
   Lebenserwartung. Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn
@@ -432,8 +433,10 @@ Aktuelle Planung:
   und betroffene Arten tragen die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar. Der normale
   Datenpipeline-Lauf erzeugt weiterhin keine Portraets; dafuer gilt nur `Fehlende Artportraets ergaenzen`.
   Vierzehn Explorer-Tests decken Prompt, Sammelprompts, Dateipruefung, Konvertierung, Speicherung und Hashpruefung
-  ab. Ein echter Einzelimport und die visuelle/fachliche Freigabe stehen noch aus. Squarespace wird erst danach
-  erweitert. Details: `docs/portrait-generation.md`.
+  ab. Der erste produktive Import fuer `Alpenbirkenzeisig` wurde am 2026-06-21 gespeichert, committed und gepusht.
+  Der Detailbereich behaelt mit und ohne Portrait dieselbe Medienhoehe; das vollstaendige 4:5-Bild wird innerhalb
+  dieser Flaeche eingepasst und nur in der Lightbox vergroessert. Squarespace wird erst nach weiterer
+  visueller/fachlicher Freigabe erweitert. Details: `docs/portrait-generation.md`.
   Als naechste Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
   und beendet den Server selbst und zeigt die bestehende Oberflaeche im eigenen App-Fenster. Chrome und das
   manuelle Oeffnen von `127.0.0.1:4177` entfallen. Planung: `docs/desktop-shell-plan.md`. NAS/Backup verschiebt
