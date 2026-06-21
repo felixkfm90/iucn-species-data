@@ -755,6 +755,16 @@
         "spectrogramSha256": "f4df93023e28ee716c748238ecf12087890d82ff58c1ebd891c6e8c3a33bd0e7",
         "generatedAt": "2026-06-15T13:03:18.455Z",
         "verifiedAt": "2026-06-20T18:35:37.804Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:12:53.377Z",
+        "approvedAt": "2026-06-21T19:13:37.299Z",
+        "sha256": "c9b514720dbd8549d76d1cafd1eaac33470c296d2f22a5420dba045920a29780",
+        "metadataSha256": "40ea7dc955087982527b46874e5cde6cd2f8cd0fb8eb9e5e8b2d7e1d5403e2b8"
       }
     },
     "Mittelamerikanischer Totenkopfaffe": {
