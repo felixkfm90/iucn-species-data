@@ -505,6 +505,16 @@
         "spectrogramSha256": "411b6f9fe3081478968d61a56626dceec9e4a70aa644d3283b1118a2d4038036",
         "generatedAt": "2026-06-15T13:03:10.954Z",
         "verifiedAt": "2026-06-20T18:35:37.754Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:59:56.239Z",
+        "approvedAt": "2026-06-21T18:00:17.477Z",
+        "sha256": "d213543a6c16ede7d660a2c6e46447ec9371f275331139165d995d799541d4f4",
+        "metadataSha256": "9de45ea8f01c850c70e025565e0cb63bd6d56168b4d78b82a4467b6786532391"
       }
     },
     "Goldkehltukan": {
