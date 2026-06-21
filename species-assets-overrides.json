@@ -182,6 +182,16 @@
         "spectrogramSha256": "88f6b6069163961b8202f1e7755e90e867de0ab807d449cd1115cb0a1da63a14",
         "generatedAt": "2026-06-15T13:03:01.900Z",
         "verifiedAt": "2026-06-20T18:35:37.702Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:29:56.689Z",
+        "approvedAt": "2026-06-21T17:30:14.414Z",
+        "sha256": "206e65930a4da25a1b26093f850b1ad119969e0ee8144450f1f03046b90f2d8d",
+        "metadataSha256": "a4627ce8e53ce9f51e8c28ec6bcd16691b956c4dce21d808c184983f0eddfabd"
       }
     },
     "Austernfischer": {
