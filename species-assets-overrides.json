@@ -239,6 +239,16 @@
         "spectrogramSha256": "070940673800dccfa918163161b4c610edb910bb1f040ee48203d7fc95cda83b",
         "generatedAt": "2026-06-15T13:03:02.856Z",
         "verifiedAt": "2026-06-20T18:35:37.705Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:46:10.617Z",
+        "approvedAt": "2026-06-21T17:46:13.831Z",
+        "sha256": "6a8514f0644ee4c274df6a75e30a60da32125bd0dd653aba12768d60ac3d65aa",
+        "metadataSha256": "bcaf0d982c7a92e28b096bc674c59bb7f374e37f0e87a171ec50a3c17e479d28"
       }
     },
     "Bergfink": {
