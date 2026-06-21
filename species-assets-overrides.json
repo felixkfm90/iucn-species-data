@@ -552,6 +552,16 @@
         "spectrogramSha256": "bca47873859ca4847ca4978ad9c88917c96b428f3dde08f75b96fcde29a08119",
         "generatedAt": "2026-06-15T13:03:13.481Z",
         "verifiedAt": "2026-06-20T18:35:37.782Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:01:34.371Z",
+        "approvedAt": "2026-06-21T18:02:07.007Z",
+        "sha256": "da9d2fb0f95c75def9222c979399ade6d3bf270fe2bc3d2ac8cec3ac15fb8c41",
+        "metadataSha256": "509baf5336af459f36b2ef2b6bb21355f78d5bb1e30a13a8e6d19e34f4b5904f"
       }
     },
     "Haubenmeise": {
