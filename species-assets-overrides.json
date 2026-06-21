@@ -810,6 +810,16 @@
         "spectrogramSha256": "a99379001bc3750fb545b53b56ca3cee506b7838d5f7846dd455aafc70621de2",
         "generatedAt": "2026-06-15T13:03:19.810Z",
         "verifiedAt": "2026-06-20T18:35:37.808Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T18:57:21.351Z",
+        "approvedAt": "2026-06-21T18:57:23.723Z",
+        "sha256": "52e9968b37c35fbf2ea5736daadb87331fbd558dc6ea1998530f2610c4d3e915",
+        "metadataSha256": "e8d43554ae40608c7e9f4ddabddff39163e8186fedc9bcebc9f6d25a36cbc291"
       }
     },
     "Rotmilan": {
