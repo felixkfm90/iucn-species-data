@@ -267,6 +267,16 @@
         "spectrogramSha256": "dd78d705e63b4bc9ed464bcb0a7335a072787115730ad8d4d58713ca6a7cd1da",
         "generatedAt": "2026-06-15T13:03:03.313Z",
         "verifiedAt": "2026-06-20T18:35:37.708Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:43:57.941Z",
+        "approvedAt": "2026-06-21T17:44:17.383Z",
+        "sha256": "4e84c8ae2a3d03ccf10d578193d98d6f7b99b35ff2bacb00e655de60573524ec",
+        "metadataSha256": "2726d22ad094eeeb5d39fe182464b2fbd8a9e34ea66a69730cc441fa0dfa9191"
       }
     },
     "Blaesshuhn": {
