@@ -382,6 +382,9 @@ function renderSpeciesList() {
     if (species.isManualMap) {
       flags.append(createFlag("K", "map", "Manuell gepflegte Karte"));
     }
+    if (species.missingPortrait) {
+      flags.append(createFlag("P", "portrait", "Artporträt fehlt"));
+    }
 
     item.addEventListener("click", () => selectSpecies(species.id));
     elements.speciesList.append(item);
@@ -794,12 +797,14 @@ function setupPipelineControl() {
   const footerCloseButton = dialog.querySelector(".pipeline-dialog-close-button");
   let previewToken = "";
   let previewMode = "";
+  let portraitBundleText = "";
 
   const modeLabel = (mode) => ({
     missing: "Neue/Unvollständige Arten aktualisieren",
     all: "Alle Arten vollständig aktualisieren",
     "manual-maps": "Manuelle Karten erneut suchen",
     "nc-sounds": "NC-Sounds erneut suchen",
+    portraits: "Fehlende Artporträts ergänzen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
 
@@ -905,6 +910,7 @@ function setupPipelineControl() {
     }
     previewToken = "";
     previewMode = "";
+    portraitBundleText = "";
     elements.pipelineDialogTitle.textContent = "Laufart auswählen";
     elements.pipelineDialogDescription.textContent = "Welche Aktion soll gestartet werden?";
     elements.pipelineModeChoice.hidden = false;
@@ -917,6 +923,23 @@ function setupPipelineControl() {
   };
 
   const renderPreview = (result) => {
+    if (result.mode === "portraits") {
+      const targetRows = result.targets.map((entry) => `
+        <li>
+          <strong>${escapeHtml(entry.germanName)}</strong>
+          <span>${escapeHtml(entry.scientificName)} · ${escapeHtml(entry.suggestedFileName)}</span>
+        </li>
+      `).join("");
+      elements.pipelinePreviewContent.innerHTML = result.hasWork
+        ? `
+          <p><strong>${result.targetCount}</strong> Arten haben noch kein Artporträt.</p>
+          <ul class="pipeline-target-list portrait-prompt-targets">${targetRows}</ul>
+        `
+        : "<p>Alle Arten besitzen bereits ein Artporträt.</p>";
+      elements.pipelineWarning.textContent =
+        "Der Button kopiert alle Prompts. Die Bilder werden danach in ChatGPT erzeugt und artweise über Bearbeiten importiert.";
+      return;
+    }
     if (result.mode === "cleanup") {
       const assetRows = result.obsoleteAssetDirectories.map((entry) => `
         <li><strong>${escapeHtml(entry.path)}</strong> · ${escapeHtml(formatBytes(entry.bytes))}</li>
@@ -960,6 +983,7 @@ function setupPipelineControl() {
   async function openPreview(mode) {
     previewToken = "";
     previewMode = mode;
+    portraitBundleText = "";
     elements.pipelineStartButton.disabled = true;
     elements.pipelineStartButton.hidden = true;
     elements.pipelineModeChoice.hidden = true;
@@ -974,33 +998,44 @@ function setupPipelineControl() {
           ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht."
           : mode === "nc-sounds"
             ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft."
-        : "Vor dem Start werden Zielarten und Umfang geprüft.";
+            : mode === "portraits"
+              ? "Für alle Arten ohne Porträt werden lokale, kostenfreie Prompts erstellt."
+              : "Vor dem Start werden Zielarten und Umfang geprüft.";
     showDialog();
 
     try {
-      const result = await fetchJson("/api/pipeline/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
-      previewToken = result.token;
+      const result = await fetchJson(
+        mode === "portraits" ? "/api/portraits/missing" : "/api/pipeline/preview",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mode === "portraits" ? {} : { mode }),
+        },
+      );
+      previewToken = mode === "portraits" ? "portrait-prompts" : result.token;
+      portraitBundleText = mode === "portraits" ? result.combinedText : "";
       renderPreview(result);
       elements.pipelinePreview.hidden = false;
       elements.pipelineStartButton.hidden = false;
-      elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
+      elements.pipelineStartButton.disabled =
+        !result.hasWork || (mode !== "portraits" && !result.tokensAvailable);
       elements.pipelineStartButton.textContent =
         mode === "cleanup"
           ? "Dauerhaft löschen"
+          : mode === "portraits"
+            ? "Alle Prompts kopieren"
           : mode === "manual-maps" || mode === "nc-sounds"
             ? "Suchlauf starten"
             : "Pipeline starten";
       setMessage(
-        !result.tokensAvailable
+        mode !== "portraits" && !result.tokensAvailable
           ? "Die benötigten API-Tokens fehlen in der Server-Umgebung."
           : result.hasWork
             ? "Vorschau ist bereit."
             : "Für diesen Lauf wurden keine Aktionen gefunden.",
-        !result.tokensAvailable ? "error" : result.hasWork ? "success" : "info",
+        mode !== "portraits" && !result.tokensAvailable
+          ? "error"
+          : result.hasWork ? "success" : "info",
       );
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -1079,6 +1114,27 @@ function setupPipelineControl() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!previewToken) return;
+    if (previewMode === "portraits") {
+      try {
+        await navigator.clipboard.writeText(portraitBundleText);
+        setMessage(
+          "Alle Portraitprompts wurden kopiert. Nach der Bilderzeugung die jeweilige Art öffnen und das Bild über Bearbeiten importieren.",
+          "success",
+        );
+      } catch {
+        const blob = new Blob([portraitBundleText], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "artportrait-prompts.txt";
+        link.click();
+        URL.revokeObjectURL(link.href);
+        setMessage(
+          "Direktes Kopieren war nicht möglich. Die Prompts wurden als Textdatei heruntergeladen.",
+          "info",
+        );
+      }
+      return;
+    }
     elements.pipelineStartButton.disabled = true;
     setMessage(
       previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
@@ -1279,7 +1335,11 @@ function setupSpeciesEditor(species) {
   const portraitCurrentMeta = elements.detailPanel.querySelector(".portrait-current-meta");
   const portraitNewMeta = elements.detailPanel.querySelector(".portrait-new-meta");
   const portraitPrompt = elements.detailPanel.querySelector(".portrait-prompt-preview");
-  const portraitGenerateButton = elements.detailPanel.querySelector(".portrait-generate-button");
+  const portraitPromptDetails = elements.detailPanel.querySelector(".portrait-prompt-details");
+  const portraitPromptButton = elements.detailPanel.querySelector(".portrait-prompt-button");
+  const portraitCopyButton = elements.detailPanel.querySelector(".portrait-copy-button");
+  const portraitFileInput = elements.detailPanel.querySelector(".portrait-file-input");
+  const portraitPreviewButton = elements.detailPanel.querySelector(".portrait-preview-button");
   const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
   if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
 
@@ -1287,6 +1347,7 @@ function setupSpeciesEditor(species) {
   let mapPreviewToken = "";
   let soundPreviewToken = "";
   let portraitPreviewToken = "";
+  let portraitPromptText = "";
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1357,7 +1418,13 @@ function setupSpeciesEditor(species) {
     if (portraitSaveButton) portraitSaveButton.disabled = true;
     if (portraitCurrentImage) portraitCurrentImage.removeAttribute("src");
     if (portraitNewImage) portraitNewImage.removeAttribute("src");
+  };
+
+  const resetPortraitPrompt = () => {
+    portraitPromptText = "";
     if (portraitPrompt) portraitPrompt.textContent = "";
+    if (portraitPromptDetails) portraitPromptDetails.hidden = true;
+    if (portraitCopyButton) portraitCopyButton.disabled = true;
   };
 
   const setBusy = (busy) => {
@@ -1385,8 +1452,11 @@ function setupSpeciesEditor(species) {
   };
 
   const setPortraitBusy = (busy) => {
-    if (portraitGenerateButton) portraitGenerateButton.disabled = busy;
+    if (portraitPromptButton) portraitPromptButton.disabled = busy;
+    if (portraitCopyButton) portraitCopyButton.disabled = busy || !portraitPromptText;
+    if (portraitPreviewButton) portraitPreviewButton.disabled = busy;
     if (portraitSaveButton) portraitSaveButton.disabled = busy || !portraitPreviewToken;
+    if (portraitFileInput) portraitFileInput.disabled = busy;
     if (portraitInstructions) portraitInstructions.disabled = busy;
     for (const button of closeButtons) button.disabled = busy;
   };
@@ -1396,6 +1466,7 @@ function setupSpeciesEditor(species) {
     resetMapPreview();
     resetSoundPreview();
     resetPortraitPreview();
+    resetPortraitPrompt();
     setMessage();
     setMapMessage();
     setSoundMessage();
@@ -1427,8 +1498,9 @@ function setupSpeciesEditor(species) {
     }
     if (event.target.closest(".portrait-edit-section")) {
       resetPortraitPreview();
+      if (event.target === portraitInstructions) resetPortraitPrompt();
       setPortraitMessage(
-        "Zusätzliche Hinweise geändert. Für eine neue Vorschau wird ein neuer kostenpflichtiger Bildauftrag gestartet.",
+        "Eingabe geändert. Prompt beziehungsweise Bildvorschau bitte erneut erstellen.",
         "info",
       );
       return;
@@ -1690,20 +1762,75 @@ function setupSpeciesEditor(species) {
     }
   });
 
-  portraitGenerateButton?.addEventListener("click", async () => {
+  portraitPromptButton?.addEventListener("click", async () => {
     resetPortraitPreview();
     setPortraitBusy(true);
-    setPortraitMessage(
-      "OpenAI erzeugt ein neues Artporträt. Das kann mehrere Minuten dauern und verursacht API-Kosten…",
-      "info",
-    );
+    setPortraitMessage("Prompt wird lokal aus den Artdaten erstellt…", "info");
     try {
       const result = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/assets/portrait/generate`,
+        `/api/species/${encodeURIComponent(species.id)}/assets/portrait/prompt`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            additionalInstructions: portraitInstructions?.value || "",
+          }),
+        },
+      );
+      portraitPromptText = result.prompt;
+      portraitPrompt.textContent = result.prompt;
+      portraitPromptDetails.hidden = false;
+      portraitCopyButton.disabled = false;
+      setPortraitMessage(
+        `Prompt erstellt. In ChatGPT einfügen, Bild erzeugen und anschließend als ${result.fileName} herunterladen.`,
+        "success",
+      );
+    } catch (error) {
+      resetPortraitPrompt();
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setPortraitBusy(false);
+    }
+  });
+
+  portraitCopyButton?.addEventListener("click", async () => {
+    if (!portraitPromptText) return;
+    try {
+      await navigator.clipboard.writeText(portraitPromptText);
+      setPortraitMessage("Prompt wurde in die Zwischenablage kopiert.", "success");
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(portraitPrompt);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      setPortraitMessage(
+        "Automatisches Kopieren war nicht möglich. Der Prompt wurde markiert; bitte Strg+C drücken.",
+        "info",
+      );
+    }
+  });
+
+  portraitPreviewButton?.addEventListener("click", async () => {
+    resetPortraitPreview();
+    setPortraitBusy(true);
+    setPortraitMessage(
+      "Bilddatei wird geprüft und lokal in das Produktformat umgewandelt…",
+      "info",
+    );
+    try {
+      const file = portraitFileInput.files?.[0];
+      if (!file) throw new Error("Bitte ein in ChatGPT erzeugtes PNG-, JPEG- oder WebP-Bild auswählen");
+      if (file.size > 20 * 1024 * 1024) throw new Error("Bilddatei darf maximal 20 MB groß sein");
+      const imageBase64 = await fileToBase64(file);
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/portrait/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalName: file.name,
+            imageBase64,
             additionalInstructions: portraitInstructions?.value || "",
           }),
         },
@@ -1717,13 +1844,16 @@ function setupSpeciesEditor(species) {
         ? formatBytes(result.currentPortrait.bytes)
         : "Kein bisheriges Artporträt";
       portraitNewMeta.textContent =
-        `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)} · ${result.newPortrait.model}`;
+        `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)}`
+        + ` · Quelle ${result.newPortrait.originalDimensions.width} × ${result.newPortrait.originalDimensions.height} px`;
       portraitPrompt.textContent = result.newPortrait.prompt;
+      portraitPromptText = result.newPortrait.prompt;
+      portraitPromptDetails.hidden = false;
+      portraitCopyButton.disabled = false;
       portraitPreview.hidden = false;
       portraitSaveButton.disabled = false;
-      portraitGenerateButton.textContent = "Neu generieren";
       setPortraitMessage(
-        "Vorschau erzeugt. Bitte Artmerkmale, Anatomie, Anzahl der Gliedmaßen und vollständige Bildränder prüfen.",
+        "Vorschau erstellt. Bitte Artmerkmale, Anatomie, Anzahl der Gliedmaßen und vollständige Bildränder prüfen.",
         "success",
       );
     } catch (error) {
@@ -2101,10 +2231,10 @@ function renderDetail(species) {
         <section class="portrait-edit-section">
           <header>
             <div>
-              <h4>Artporträt erzeugen</h4>
+              <h4>Artporträt erstellen und importieren</h4>
               <p>
-                OpenAI erzeugt eine 4:5-Naturillustration. Jede Generierung verursacht API-Kosten und wird
-                vor der Übernahme manuell geprüft.
+                Die App erstellt den Prompt ohne API-Kosten. Das Bild wird selbst in ChatGPT erzeugt,
+                heruntergeladen und anschließend hier geprüft.
               </p>
             </div>
             <span class="portrait-care-state">
@@ -2125,6 +2255,25 @@ function renderDetail(species) {
               rows="3"
               placeholder="z. B. adultes Männchen im Brutkleid; vollständiger Schwanz sichtbar"
             ></textarea>
+          </label>
+
+          <div class="portrait-prompt-actions">
+            <button class="portrait-prompt-button" type="button">Prompt erstellen</button>
+            <button class="portrait-copy-button" type="button" disabled>Prompt kopieren</button>
+          </div>
+
+          <details class="portrait-prompt-details" hidden>
+            <summary>Prompt anzeigen</summary>
+            <pre class="portrait-prompt-preview"></pre>
+          </details>
+
+          <label class="asset-file-field portrait-file-field">
+            <span>In ChatGPT erzeugtes Bild</span>
+            <input
+              class="portrait-file-input"
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+            >
           </label>
 
           <p class="edit-message portrait-edit-message" hidden></p>
@@ -2152,10 +2301,6 @@ function renderDetail(species) {
                 <p class="portrait-new-meta"></p>
               </figure>
             </div>
-            <details class="portrait-prompt-details">
-              <summary>Verwendeten Prompt anzeigen</summary>
-              <pre class="portrait-prompt-preview"></pre>
-            </details>
             <p class="edit-warning">
               Vor der Übernahme müssen Artmerkmale, Anatomie, Gliedmaßen, Zehen, Flügel, Flossen, Schwanz und
               Bildränder geprüft werden. Speichern legt <code>portrait.webp</code> und
@@ -2164,7 +2309,7 @@ function renderDetail(species) {
           </section>
 
           <div class="portrait-edit-actions">
-            <button class="portrait-generate-button" type="button">Artporträt generieren</button>
+            <button class="portrait-preview-button" type="button">Bild prüfen</button>
             <button class="portrait-save-button" type="button" disabled>Artporträt übernehmen</button>
           </div>
         </section>

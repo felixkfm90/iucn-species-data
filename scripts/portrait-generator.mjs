@@ -1,14 +1,10 @@
 import { createHash } from "node:crypto";
 
-export const PORTRAIT_GENERATOR = Object.freeze({
-  provider: "OpenAI",
-  model: "gpt-image-2",
+export const PORTRAIT_STANDARD = Object.freeze({
   promptVersion: "1.0.0",
   size: "1280x1600",
-  quality: "high",
   outputFormat: "webp",
-  outputCompression: 88,
-  background: "opaque",
+  source: "Extern in ChatGPT erzeugt und manuell geprüft",
 });
 
 export function buildPortraitPrompt({
@@ -56,6 +52,12 @@ EXCLUSIONS
 FINAL CHECK
 - Before finishing, verify the number and shape of all visible limbs, toes, claws, wings, fins, teeth, ears, eyes, and tail structures.
 - Verify that the diagnostic markings belong specifically to ${String(scientificName ?? "").trim()}.
+
+OUTPUT
+- Use a vertical 4:5 canvas.
+- Create the highest available image quality.
+- Keep the warm ivory paper background opaque.
+- Do not add text, labels, logos, signatures, borders, or watermarks.
 ${optionalInstructions ? `
 ADDITIONAL SPECIES INSTRUCTIONS
 ${optionalInstructions}
@@ -64,70 +66,4 @@ ${optionalInstructions}
 
 export function portraitPromptSha256(prompt) {
   return createHash("sha256").update(String(prompt ?? "")).digest("hex");
-}
-
-export async function generateSpeciesPortrait({
-  apiKey = process.env.OPENAI_API_KEY,
-  germanName,
-  scientificName,
-  additionalInstructions = "",
-  fetchImpl = fetch,
-  signal,
-}) {
-  if (!apiKey) {
-    const error = new Error(
-      "OPENAI_API_KEY fehlt in der Server-Umgebung. Es wurde kein kostenpflichtiger Bildauftrag gestartet.",
-    );
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const prompt = buildPortraitPrompt({
-    germanName,
-    scientificName,
-    additionalInstructions,
-  });
-  const response = await fetchImpl("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: PORTRAIT_GENERATOR.model,
-      prompt,
-      size: PORTRAIT_GENERATOR.size,
-      quality: PORTRAIT_GENERATOR.quality,
-      output_format: PORTRAIT_GENERATOR.outputFormat,
-      output_compression: PORTRAIT_GENERATOR.outputCompression,
-      background: PORTRAIT_GENERATOR.background,
-      n: 1,
-    }),
-    signal,
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload?.error?.message || `OpenAI Image API antwortete mit HTTP ${response.status}`;
-    const error = new Error(`Artporträt konnte nicht erzeugt werden: ${message}`);
-    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
-    throw error;
-  }
-
-  const imageBase64 = payload?.data?.[0]?.b64_json;
-  if (!imageBase64) {
-    const error = new Error("OpenAI Image API lieferte keine Bilddaten");
-    error.statusCode = 502;
-    throw error;
-  }
-
-  const buffer = Buffer.from(imageBase64, "base64");
-  return {
-    buffer,
-    prompt,
-    promptSha256: portraitPromptSha256(prompt),
-    revisedPrompt: String(payload?.data?.[0]?.revised_prompt ?? ""),
-    usage: payload?.usage ?? null,
-    generator: PORTRAIT_GENERATOR,
-  };
 }

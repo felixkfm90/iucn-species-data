@@ -202,31 +202,30 @@ Migrationsstand vom 2026-06-20:
 
 Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 
-- direkte serverseitige OpenAI-Image-API-Anbindung
-- `gpt-image-2` mit dem versionierten Prompt `1.0.0`
-- WebP-Ausgabe in `1280x1600` und damit exakt `4:5`
+- keine kostenpflichtige Image-API und kein `OPENAI_API_KEY`
+- lokaler versionierter Prompt `1.0.0`
 - deutscher und wissenschaftlicher Name automatisch aus der Artenliste
 - optionale artspezifische Zusatzhinweise
-- kostenpflichtige Generierung nur nach ausdruecklichem Klick
+- Prompt anzeigen und kopieren
+- externe Bilderzeugung im vorhandenen ChatGPT-Zugang
+- Upload von PNG, JPEG oder WebP bis 20 MB
+- Magic-Byte-, Mindestgroessen- und 4:5-Pruefung
+- lokale Vereinheitlichung auf WebP in `1280x1600`
 - Stagingvorschau ohne produktive Aenderung
-- Neu-generieren verwirft nur die unbestaetigte Vorschau
 - verpflichtende manuelle Art- und Anatomiepruefung vor der Uebernahme
 - produktive Dateien `portrait.webp` und `portrait.json`
 - SHA-256-Registrierung und Abweichungspruefung
 - gemeinsames Backup beim Ersetzen
 - automatischer, eng begrenzter Commit und Push nach Freigabe
+- Markierung `P` und Filter fuer Arten ohne Portrait
+- Sammelworkflow zum Kopieren aller fehlenden Portraitprompts
 
 Details und Promptstandard: `docs/portrait-generation.md`.
 
-Der private ChatGPT-Verlauf ist keine technische Abhaengigkeit. Die App verwendet `OPENAI_API_KEY` nur
-serverseitig. Ohne Schluessel startet kein Bildauftrag.
-
 Noch offen:
 
-- echter Einzeltest mit gesetztem API-Schluessel
+- echter Einzelimport eines in ChatGPT erzeugten Bildes
 - visuelle und fachliche Freigabe
-- bei Bedarf Stilreferenzbilder zusaetzlich zum Prompt
-- kontrollierter Stapellauf nur fuer fehlende Portraets
 - Squarespace-Ausgabe ausdruecklich erst nach Abschluss dieser Pruefungen
 
 ## Upload- und Dateisicherheit

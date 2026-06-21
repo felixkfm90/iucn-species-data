@@ -10,13 +10,14 @@ import {
   createExplorerServer,
   inspectJpeg,
   inspectMp3,
+  inspectPng,
   inspectWebp,
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup } from "../scripts/species-cleanup.mjs";
 import {
-  PORTRAIT_GENERATOR,
+  PORTRAIT_STANDARD,
   buildPortraitPrompt,
   portraitPromptSha256,
 } from "../scripts/portrait-generator.mjs";
@@ -53,6 +54,18 @@ function createTestWebp(seed = 1) {
     Buffer.from("WEBP", "ascii"),
     Buffer.alloc(8, seed),
   ]);
+}
+
+function createTestPng(width = 1120, height = 1400) {
+  const buffer = Buffer.alloc(33);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buffer, 0);
+  buffer.writeUInt32BE(13, 8);
+  buffer.write("IHDR", 12, "ascii");
+  buffer.writeUInt32BE(width, 16);
+  buffer.writeUInt32BE(height, 20);
+  buffer[24] = 8;
+  buffer[25] = 2;
+  return buffer;
 }
 
 async function createEditableFixture() {
@@ -951,7 +964,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
   assert.equal(reusedResponse.status, 409);
 });
 
-test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashregistriert", async (context) => {
+test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflichtige API", async (context) => {
   const prompt = buildPortraitPrompt({
     germanName: "Amsel",
     scientificName: "Turdus merula",
@@ -961,38 +974,31 @@ test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashr
   assert.match(prompt, /Traditional natural-history plate/);
   assert.match(prompt, /Adultes Männchen mit gelbem Schnabel/);
   assert.match(portraitPromptSha256(prompt), /^[0-9a-f]{64}$/);
-  assert.equal(PORTRAIT_GENERATOR.size, "1280x1600");
-  assert.equal(PORTRAIT_GENERATOR.outputFormat, "webp");
+  assert.equal(PORTRAIT_STANDARD.size, "1280x1600");
+  assert.equal(PORTRAIT_STANDARD.outputFormat, "webp");
+  const uploadedPng = createTestPng();
+  assert.deepEqual(inspectPng(uploadedPng), { width: 1120, height: 1400 });
 
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
-  const generatedWebp = createTestWebp(12);
-  let generationCalls = 0;
+  const renderedWebp = createTestWebp(12);
+  let renderCalls = 0;
   const app = await createExplorerServer({
     repoRoot,
     port: 0,
     publishAssetChanges: false,
-    portraitGenerator: async ({ germanName, scientificName, additionalInstructions }) => {
-      generationCalls += 1;
-      const generatedPrompt = buildPortraitPrompt({
-        germanName,
-        scientificName,
-        additionalInstructions,
-      });
-      return {
-        buffer: generatedWebp,
-        prompt: generatedPrompt,
-        promptSha256: portraitPromptSha256(generatedPrompt),
-        generator: PORTRAIT_GENERATOR,
-      };
+    portraitRenderer: async ({ outputPath }) => {
+      renderCalls += 1;
+      await writeFile(outputPath, renderedWebp);
+      return { outputBytes: renderedWebp.length, width: 1280, height: 1600 };
     },
   });
   const address = await app.listen();
   context.after(() => app.close());
   const baseUrl = `http://${app.host}:${address.port}`;
 
-  const generateResponse = await fetch(
-    `${baseUrl}/api/species/turdusmerula/assets/portrait/generate`,
+  const promptResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/prompt`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1001,19 +1007,61 @@ test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashr
       }),
     },
   );
-  assert.equal(generateResponse.status, 200);
-  const preview = await generateResponse.json();
-  assert.equal(generationCalls, 1);
+  assert.equal(promptResponse.status, 200);
+  const promptResult = await promptResponse.json();
+  assert.equal(promptResult.fileName, "Amsel.png");
+  assert.match(promptResult.prompt, /Adultes Männchen/);
+
+  const missingResponse = await fetch(`${baseUrl}/api/portraits/missing`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(missingResponse.status, 200);
+  const missing = await missingResponse.json();
+  assert.equal(missing.targetCount, 1);
+  assert.match(missing.combinedText, /Amsel · Turdus merula/);
+
+  const invalidRatioResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        originalName: "Amsel.png",
+        imageBase64: createTestPng(1200, 1200).toString("base64"),
+        additionalInstructions: "",
+      }),
+    },
+  );
+  assert.equal(invalidRatioResponse.status, 400);
+
+  const previewResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        originalName: "Amsel.png",
+        imageBase64: uploadedPng.toString("base64"),
+        additionalInstructions: "Adultes Männchen mit gelbem Schnabel.",
+      }),
+    },
+  );
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.equal(renderCalls, 1);
   assert.ok(preview.token);
   assert.equal(preview.currentPortrait.exists, false);
   assert.equal(preview.newPortrait.size, "1280x1600");
-  assert.equal(preview.newPortrait.model, "gpt-image-2");
+  assert.equal(preview.newPortrait.originalName, "Amsel.png");
+  assert.deepEqual(preview.newPortrait.originalDimensions, { width: 1120, height: 1400 });
   assert.match(preview.newPortrait.prompt, /Adultes Männchen/);
 
   const previewFile = await fetch(`${baseUrl}${preview.newPortrait.url}`);
   assert.equal(previewFile.status, 200);
   assert.equal(previewFile.headers.get("content-type"), "image/webp");
-  assert.deepEqual(Buffer.from(await previewFile.arrayBuffer()), generatedWebp);
+  assert.deepEqual(Buffer.from(await previewFile.arrayBuffer()), renderedWebp);
 
   const saveResponse = await fetch(
     `${baseUrl}/api/species/turdusmerula/assets/portrait/save`,
@@ -1031,7 +1079,7 @@ test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashr
   assert.equal(saved.backup, "");
   assert.deepEqual(
     await readFile(join(repoRoot, "species-assets", "Amsel", "portrait.webp")),
-    generatedWebp,
+    renderedWebp,
   );
 
   const metadata = JSON.parse(
@@ -1039,17 +1087,19 @@ test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashr
   );
   assert.equal(metadata.german_name, "Amsel");
   assert.equal(metadata.scientific_name, "Turdus merula");
-  assert.equal(metadata.provider, "OpenAI");
-  assert.equal(metadata.model, "gpt-image-2");
+  assert.equal(metadata.source, "ChatGPT");
+  assert.match(metadata.generation_method, /manuell/i);
   assert.equal(metadata.prompt_version, "1.0.0");
-  assert.equal(metadata.size, "1280x1600");
+  assert.equal(metadata.original_file_name, "Amsel.png");
+  assert.equal(metadata.original_width, 1120);
+  assert.equal(metadata.product_width, 1280);
   assert.equal(metadata.additional_instructions, "Adultes Männchen mit gelbem Schnabel.");
   assert.match(metadata.prompt_sha256, /^[0-9a-f]{64}$/);
   assert.match(metadata.sha256, /^[0-9a-f]{64}$/);
 
   const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
   assert.equal(registry.assets.Amsel.portrait.managedBy, "species-explorer");
-  assert.equal(registry.assets.Amsel.portrait.model, "gpt-image-2");
+  assert.equal(registry.assets.Amsel.portrait.source, "ChatGPT");
   assert.match(registry.assets.Amsel.portrait.sha256, /^[0-9a-f]{64}$/);
   assert.match(registry.assets.Amsel.portrait.metadataSha256, /^[0-9a-f]{64}$/);
 
@@ -1058,6 +1108,7 @@ test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashr
   assert.equal(model.species[0].assets.portrait.metadataExists, true);
   assert.equal(model.species[0].assets.portrait.hashTracked, true);
   assert.equal(model.species[0].assets.portrait.hashVerified, true);
+  assert.equal(model.species[0].missingPortrait, false);
   assert.doesNotMatch(model.species[0].assetIssues.join(" "), /Artporträt/);
 
   const reusedResponse = await fetch(
@@ -1197,6 +1248,10 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
   assert.equal(filterSpecies(model.species, { flag: "nc" }).length, 3);
   assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 4);
   assert.equal(
+    filterSpecies(model.species, { flag: "missing-portrait" }).length,
+    model.summary.missingPortraitCount,
+  );
+  assert.equal(
     filterSpecies(model.species, { flag: "data-issues" }).length,
     model.validation.data.issueSpeciesCount,
   );
@@ -1277,6 +1332,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /Manuelle Karten erneut suchen/);
   assert.match(appSource, /NC-Sounds erneut suchen/);
+  assert.match(appSource, /Fehlende Artporträts ergänzen/);
+  assert.match(appSource, /\/api\/portraits\/missing/);
   assert.match(htmlSource, /id="pipeline-run-notice"/);
   assert.match(htmlSource, /pipeline-dialog-close-button/);
   assert.match(appSource, /Pipeline-Lauf läuft gerade/);
@@ -1349,6 +1406,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
   assert.match(appSource, /Soundhash geprüft/);
   assert.match(cssSource, /\.sound-compare-grid/);
+  assert.match(appSource, /class="portrait-prompt-button"/);
+  assert.match(appSource, /class="portrait-copy-button"/);
+  assert.match(appSource, /class="portrait-file-input"/);
+  assert.match(appSource, /class="portrait-preview-button"/);
+  assert.match(appSource, /\/assets\/portrait\/prompt/);
+  assert.match(appSource, /\/assets\/portrait\/preview/);
+  assert.doesNotMatch(appSource, /\/assets\/portrait\/generate/);
   assert.match(cssSource, /grid-template-areas:\s*"file reason"\s*"source reason"/);
   assert.match(
     cssSource,
@@ -1386,6 +1450,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /data-pipeline-mode="all"/);
   assert.match(htmlSource, /data-pipeline-mode="manual-maps"/);
   assert.match(htmlSource, /data-pipeline-mode="nc-sounds"/);
+  assert.match(htmlSource, /data-pipeline-mode="portraits"/);
   assert.match(htmlSource, /data-pipeline-mode="cleanup"/);
   assert.match(htmlSource, /id="pipeline-dialog"/);
   assert.match(htmlSource, /id="edit-mode-toggle"/);
@@ -1405,7 +1470,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /value="asset-issues"/);
   assert.match(
     htmlSource,
-    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
+    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.species-list\s*\{[^}]*max-height:\s*915px[^}]*overflow-y:\s*auto/s);

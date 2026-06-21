@@ -567,7 +567,15 @@ Formularlayout seit 2026-06-21:
 - Notizen nutzen weiterhin beide Spalten.
 - Unter dem mobilen Breakpoint werden alle expliziten Grid-Bereiche aufgehoben und einspaltig angeordnet.
 
-### 7.8 Synology NAS und automatisiertes Backup
+### 7.8 Browserunabhängiger Desktop-Wrapper
+
+- bestehende Node-/Weboberfläche in einem eigenen Windows-App-Fenster betreiben
+- lokalen Server automatisch starten, per Healthcheck überwachen und beim Schließen kontrolliert beenden
+- kein manuelles Browserfenster und kein manuelles Öffnen von `127.0.0.1:4177`
+- belegte Ports, Serverabstürze und zweite schreibende Instanzen verständlich behandeln
+- technische Detailplanung: `docs/desktop-shell-plan.md`
+
+### 7.9 Synology NAS und automatisiertes Backup
 
 - NAS als Backup/Mirror konzipieren
 - Backup-Skript oder Synology-Job definieren

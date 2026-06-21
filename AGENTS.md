@@ -416,26 +416,29 @@ Aktuelle Planung:
   beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB.
-  Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als sicherer Einzelart-Workflow umgesetzt. Der Explorer
-  bindet nicht den privaten ChatGPT-Verlauf ein, sondern verwendet serverseitig die OpenAI Image API. Der
-  versionierte Prompt `1.0.0` erzeugt mit `gpt-image-2` ein WebP in `1280x1600`, hoher Qualitaet und festem
-  4:5-Seitenverhaeltnis. Deutscher und wissenschaftlicher Name kommen automatisch aus der Artenliste; optionale
-  Zusatzhinweise koennen Geschlecht, Alterskleid oder wichtige sichtbare Merkmale festlegen. Jede Generierung
-  schreibt zuerst nur eine zehn Minuten gueltige Stagingvorschau. Erst nach manueller Art- und Anatomiepruefung
-  werden `portrait.webp`, `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets
-  bleiben optional und erzeugen keinen Datenbankfehler. Der API-Schluessel wird nur aus `OPENAI_API_KEY` gelesen;
-  ohne Schluessel startet kein kostenpflichtiger Auftrag. Vierzehn Explorer-Tests sind erfolgreich. Der lokale
-  Server liefert die neue Oberflaeche aus und der fehlende-Schluessel-Pfad antwortet korrekt mit HTTP 503.
-  Ein echter Einzeltest mit gesetztem API-Schluessel und die visuelle/fachliche Freigabe stehen noch aus. Danach
-  folgt ein kontrollierter Stapellauf nur fuer fehlende Portraets. Squarespace wird ausdruecklich erst nach dieser
-  Freigabe erweitert. Details: `docs/portrait-generation.md`.
-  Ein produktiver manueller Soundimport und die visuelle Bedienpruefung stehen ebenfalls noch aus. Danach folgt
-  7.8 NAS/Backup.
+  Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
+  vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
+  vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.0.0` lokal aus deutschem und
+  wissenschaftlichem Namen sowie optionalen Zusatzhinweisen. Einzelprompts koennen angezeigt und kopiert werden.
+  Der Datenbankdialog `Fehlende Artportraets ergaenzen` erstellt ausserdem einen gemeinsamen Promptblock fuer alle
+  Arten ohne Portrait. Die Bilder werden im vorhandenen ChatGPT-Zugang erzeugt und als PNG, JPEG oder WebP wieder
+  in die App geladen. Der Server prueft Magic Bytes, mindestens 800x1000 Pixel und 4:5; FFmpeg vereinheitlicht die
+  Vorschau auf `1280x1600` WebP. Erst nach manueller Art- und Anatomiepruefung werden `portrait.webp`,
+  `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets bleiben optional,
+  erzeugen keinen Kernassetfehler, tragen aber die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar.
+  Vierzehn Explorer-Tests decken Prompt, Sammelprompts, Dateipruefung, Konvertierung, Speicherung und Hashpruefung
+  ab. Ein echter Einzelimport und die visuelle/fachliche Freigabe stehen noch aus. Squarespace wird erst danach
+  erweitert. Details: `docs/portrait-generation.md`.
+  Als naechste Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
+  und beendet den Server selbst und zeigt die bestehende Oberflaeche im eigenen App-Fenster. Chrome und das
+  manuelle Oeffnen von `127.0.0.1:4177` entfallen. Planung: `docs/desktop-shell-plan.md`. NAS/Backup verschiebt
+  sich auf Phase 7.9.
+  Ein produktiver manueller Soundimport und die visuelle Bedienpruefung stehen ebenfalls noch aus.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  In diese Phase gehoeren spaeter auch Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
+  Phase 7.9 umfasst spaeter Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
   automatisiertes Backup mit dokumentiertem Restore-Test.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.

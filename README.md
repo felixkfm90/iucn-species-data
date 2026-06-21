@@ -112,7 +112,6 @@ Voraussetzungen:
 - `npm install`
 - Environment Variable `IUCN_TOKEN`
 - Environment Variable `XENO_TOKEN`
-- optional fuer die Artportraet-Erzeugung im Arten-Explorer: Environment Variable `OPENAI_API_KEY`
 
 Ausfuehren:
 
@@ -466,11 +465,13 @@ für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetents
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
 Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
 Die Assetverwaltung laeuft in Phase 7.7 nach `docs/asset-management-plan.md`. Karten, Sound/Credits und
-Spektrogrammverwaltung sind technisch umgesetzt. Der erste sichere Einzelart-Workflow fuer KI-Artportraets verwendet
-serverseitig `gpt-image-2`, erzeugt nur eine Stagingvorschau und speichert erst nach manueller Art- und
-Anatomiepruefung. Ohne `OPENAI_API_KEY` wird kein kostenpflichtiger Bildauftrag gestartet. Details:
+Spektrogrammverwaltung sind technisch umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
+Der Explorer erstellt den Prompt lokal, kopiert Einzel- oder Sammelprompts und importiert ein anschliessend selbst
+in ChatGPT erzeugtes PNG, JPEG oder WebP. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
+`portrait.webp` in `1280x1600` und speichert erst nach manueller Art- und Anatomiepruefung. Details:
 `docs/portrait-generation.md`. Squarespace wird erst nach dem lokalen Einzeltest und der visuellen Freigabe
-erweitert.
+erweitert. Danach folgt Phase 7.8 als browserunabhaengiger Windows-Desktop-Wrapper fuer die gesamte App; Planung:
+`docs/desktop-shell-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.

@@ -749,6 +749,11 @@ button:focus-visible {
   background: var(--blue-soft);
 }
 
+.flag.portrait {
+  color: #77591b;
+  background: #fff3cf;
+}
+
 .flag.issue {
   color: var(--red);
   background: var(--red-soft);
@@ -1422,6 +1427,56 @@ button:focus-visible {
   resize: vertical;
 }
 
+.portrait-prompt-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.portrait-prompt-actions button {
+  padding: 8px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.portrait-prompt-button,
+.portrait-copy-button,
+.portrait-preview-button {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.portrait-prompt-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.portrait-file-field {
+  margin-top: 10px;
+  display: grid;
+  gap: 5px;
+}
+
+.portrait-file-field > span {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.portrait-file-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: #17211d;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
+}
+
 .portrait-edit-preview {
   margin-top: 14px;
   padding: 12px;
@@ -1512,11 +1567,6 @@ button:focus-visible {
   border-radius: 4px;
   font-size: 0.78rem;
   font-weight: 750;
-}
-
-.portrait-generate-button {
-  color: var(--blue);
-  background: var(--blue-soft);
 }
 
 .portrait-save-button {

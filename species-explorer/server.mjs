@@ -20,11 +20,14 @@ import {
   resolveFfmpegPath,
 } from "../scripts/spectrogram-renderer.mjs";
 import {
-  PORTRAIT_GENERATOR,
+  PORTRAIT_STANDARD,
   buildPortraitPrompt,
-  generateSpeciesPortrait,
   portraitPromptSha256,
 } from "../scripts/portrait-generator.mjs";
+import {
+  DEFAULT_PORTRAIT_OPTIONS,
+  renderPortrait,
+} from "../scripts/portrait-renderer.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -64,6 +67,8 @@ const MAX_MAP_BYTES = 20 * 1024 * 1024;
 const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAX_SOUND_BYTES = 50 * 1024 * 1024;
 const MAX_SOUND_PREVIEW_BODY_BYTES = 68 * 1024 * 1024;
+const MAX_PORTRAIT_BYTES = 20 * 1024 * 1024;
+const MAX_PORTRAIT_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAX_PORTRAIT_INSTRUCTIONS_LENGTH = 800;
 const BACKUP_RETENTION_COUNT = 20;
 const ASSET_BACKUP_RETENTION_COUNT = 3;
@@ -243,6 +248,22 @@ export function inspectJpeg(buffer) {
   throw new Error("JPEG-Abmessungen konnten nicht gelesen werden");
 }
 
+export function inspectPng(buffer) {
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (
+    !Buffer.isBuffer(buffer)
+    || buffer.length < 24
+    || !buffer.subarray(0, 8).equals(signature)
+    || buffer.subarray(12, 16).toString("ascii") !== "IHDR"
+  ) {
+    throw new Error("Dateisignatur ist kein gültiges PNG");
+  }
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (!width || !height) throw new Error("PNG-Abmessungen sind ungültig");
+  return { width, height };
+}
+
 export function inspectMp3(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 4) {
     throw new Error("MP3-Datei ist zu klein oder unlesbar");
@@ -302,9 +323,100 @@ export function inspectWebp(buffer) {
     || buffer.subarray(0, 4).toString("ascii") !== "RIFF"
     || buffer.subarray(8, 12).toString("ascii") !== "WEBP"
   ) {
-    throw new Error("Erzeugte Spektrogramm-Datei ist kein gültiges WebP");
+    throw new Error("Datei ist kein gültiges WebP");
   }
-  return { signature: "RIFF/WEBP" };
+  const chunk = buffer.subarray(12, 16).toString("ascii");
+  let width = 0;
+  let height = 0;
+  if (chunk === "VP8X" && buffer.length >= 30) {
+    width = 1 + buffer.readUIntLE(24, 3);
+    height = 1 + buffer.readUIntLE(27, 3);
+  } else if (chunk === "VP8L" && buffer.length >= 25 && buffer[20] === 0x2f) {
+    width = 1 + buffer[21] + ((buffer[22] & 0x3f) << 8);
+    height = 1 + (buffer[22] >> 6) + (buffer[23] << 2) + ((buffer[24] & 0x0f) << 10);
+  } else if (
+    chunk === "VP8 "
+    && buffer.length >= 30
+    && buffer[23] === 0x9d
+    && buffer[24] === 0x01
+    && buffer[25] === 0x2a
+  ) {
+    width = buffer.readUInt16LE(26) & 0x3fff;
+    height = buffer.readUInt16LE(28) & 0x3fff;
+  }
+  return {
+    signature: "RIFF/WEBP",
+    ...(width && height ? { width, height } : {}),
+  };
+}
+
+function inspectPortraitImage(buffer, originalName) {
+  const extension = extname(String(originalName ?? "")).toLocaleLowerCase("en");
+  if (extension === ".png") {
+    return { format: "png", ...inspectPng(buffer) };
+  }
+  if (extension === ".jpg" || extension === ".jpeg") {
+    return { format: "jpeg", ...inspectJpeg(buffer) };
+  }
+  if (extension === ".webp") {
+    const inspected = inspectWebp(buffer);
+    if (!inspected.width || !inspected.height) {
+      throw new Error("WebP-Abmessungen konnten nicht gelesen werden");
+    }
+    return { format: "webp", width: inspected.width, height: inspected.height };
+  }
+  throw new Error("Es sind nur PNG-, JPEG- oder WebP-Dateien erlaubt");
+}
+
+function validatePortraitPreviewPayload(payload, species) {
+  const originalName = String(payload?.originalName ?? "").trim();
+  const imageBase64 = String(payload?.imageBase64 ?? "").trim();
+  const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+  const errors = [];
+  if (!originalName) errors.push("Dateiname fehlt");
+  if (!imageBase64) errors.push("Bilddatei fehlt");
+  if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
+    errors.push(
+      `Zusätzliche Hinweise dürfen maximal ${MAX_PORTRAIT_INSTRUCTIONS_LENGTH} Zeichen enthalten`,
+    );
+  }
+  let buffer = Buffer.alloc(0);
+  let image = null;
+  if (imageBase64) {
+    try {
+      buffer = Buffer.from(imageBase64, "base64");
+      if (!buffer.length) throw new Error("Bilddatei ist leer");
+      if (buffer.length > MAX_PORTRAIT_BYTES) {
+        throw new Error("Bilddatei darf maximal 20 MB groß sein");
+      }
+      image = inspectPortraitImage(buffer, originalName);
+      if (image.width < 800 || image.height < 1000) {
+        throw new Error("Bild muss mindestens 800 × 1000 Pixel groß sein");
+      }
+      const ratio = image.width / image.height;
+      if (Math.abs(ratio - 0.8) > 0.025) {
+        throw new Error(
+          `Bildformat muss 4:5 sein; erkannt wurden ${image.width} × ${image.height} Pixel`,
+        );
+      }
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+  const prompt = buildPortraitPrompt({
+    germanName: species.germanName,
+    scientificName: species.scientificName,
+    additionalInstructions,
+  });
+  return {
+    originalName,
+    buffer,
+    image,
+    additionalInstructions,
+    prompt,
+    promptSha256: portraitPromptSha256(prompt),
+    errors,
+  };
 }
 
 function isNonCommercialLicense(value) {
@@ -1128,9 +1240,9 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           metadataSha256: portraitOverride?.metadataSha256 ?? "",
           actualSha256: actualPortraitSha256,
           actualMetadataSha256: actualPortraitMetadataSha256,
-          generatedAt: portraitOverride?.generatedAt ?? portraitMetadata?.generated_at ?? "",
+          importedAt: portraitOverride?.importedAt ?? portraitMetadata?.imported_at ?? "",
           approvedAt: portraitOverride?.approvedAt ?? portraitMetadata?.approved_at ?? "",
-          model: portraitOverride?.model ?? portraitMetadata?.model ?? "",
+          source: portraitOverride?.source ?? portraitMetadata?.source ?? "",
           promptVersion:
             portraitOverride?.promptVersion
             ?? portraitMetadata?.prompt_version
@@ -1143,6 +1255,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       reportNcSound: ncNames.has(germanName),
       isManualMap,
       isManualSound,
+      missingPortrait: !portrait.exists,
       fieldMismatches,
       dataIssues,
       assetIssues,
@@ -1270,6 +1383,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         sounds: species.filter((entry) => entry.assets.sound.exists).length,
         credits: species.filter((entry) => entry.assets.credits.exists).length,
         spectrograms: species.filter((entry) => entry.assets.spectrogram.exists).length,
+        portraits: species.filter((entry) => entry.assets.portrait.exists).length,
       },
     },
     report: {
@@ -1282,6 +1396,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       manualMapCount: species.filter((entry) => entry.isManualMap).length,
       manualSoundCount: species.filter((entry) => entry.isManualSound).length,
       ncSoundCount: species.filter((entry) => entry.isNcSound).length,
+      missingPortraitCount: species.filter((entry) => entry.missingPortrait).length,
     },
   };
 
@@ -1295,6 +1410,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     manualMapCount: species.filter((entry) => entry.isManualMap).length,
     manualSoundCount: species.filter((entry) => entry.isManualSound).length,
+    missingPortraitCount: species.filter((entry) => entry.missingPortrait).length,
     readOnly: false,
     editingEnabled: true,
     editableFile: "species_list.json",
@@ -1429,7 +1545,7 @@ export async function createExplorerServer({
   port = DEFAULT_PORT,
   publishAssetChanges = true,
   spectrogramRenderer = renderSpectrogram,
-  portraitGenerator = generateSpeciesPortrait,
+  portraitRenderer = renderPortrait,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
@@ -1447,7 +1563,6 @@ export async function createExplorerServer({
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   let pipelineProcess = null;
   let assetWriteActive = false;
-  let portraitGenerationActive = false;
   let pipelineAssetSnapshot = new Map();
   let pipelineState = {
     status: "idle",
@@ -1499,6 +1614,9 @@ export async function createExplorerServer({
       if (preview.expiresAt > now) continue;
       if (["map-asset", "sound-asset", "portrait-asset"].includes(preview.type) && preview.stagingPath) {
         rmSync(preview.stagingPath, { force: true });
+      }
+      if (preview.type === "portrait-asset" && preview.inputStagingPath) {
+        rmSync(preview.inputStagingPath, { force: true });
       }
       if (preview.type === "sound-asset" && preview.spectrogramStagingPath) {
         rmSync(preview.spectrogramStagingPath, { force: true });
@@ -2823,22 +2941,13 @@ export async function createExplorerServer({
     for (const [token, preview] of previewTokens) {
       if (preview.type !== "portrait-asset" || preview.id !== id) continue;
       if (preview.stagingPath) rmSync(preview.stagingPath, { force: true });
+      if (preview.inputStagingPath) rmSync(preview.inputStagingPath, { force: true });
       previewTokens.delete(token);
     }
   }
 
-  async function generatePortraitPreview(id, payload) {
+  function createPortraitPrompt(id, payload) {
     cleanupPreviewTokens();
-    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
-      const error = new Error("Während eines Pipeline-Laufs können keine Artporträts erzeugt werden");
-      error.statusCode = 409;
-      throw error;
-    }
-    if (assetWriteActive || portraitGenerationActive) {
-      const error = new Error("Es läuft bereits eine Bildgenerierung oder ein schreibender Assetprozess");
-      error.statusCode = 409;
-      throw error;
-    }
     const species = findEditableSpecies(model, id);
     if (!species?.inInput) {
       const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
@@ -2853,53 +2962,133 @@ export async function createExplorerServer({
       error.statusCode = 400;
       throw error;
     }
+    const prompt = buildPortraitPrompt({
+      germanName: species.germanName,
+      scientificName: species.scientificName,
+      additionalInstructions,
+    });
+    return {
+      species: {
+        id: species.id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+        safeName: species.safeName,
+      },
+      prompt,
+      promptVersion: PORTRAIT_STANDARD.promptVersion,
+      promptSha256: portraitPromptSha256(prompt),
+      fileName: `${species.safeName}.png`,
+      instructions: [
+        "Prompt in ChatGPT einfügen und dort ein Bild erzeugen.",
+        `Bild als ${species.safeName}.png, .jpg oder .webp speichern.`,
+        "Bild anschließend in der App prüfen und übernehmen.",
+      ],
+    };
+  }
 
+  function createMissingPortraitPrompts() {
+    const targets = model.species
+      .filter((species) => species.inInput && species.missingPortrait)
+      .map((species, index) => {
+        const prompt = buildPortraitPrompt({
+          germanName: species.germanName,
+          scientificName: species.scientificName,
+        });
+        return {
+          number: index + 1,
+          id: species.id,
+          germanName: species.germanName,
+          scientificName: species.scientificName,
+          safeName: species.safeName,
+          suggestedFileName: `${species.safeName}.png`,
+          prompt,
+          promptSha256: portraitPromptSha256(prompt),
+        };
+      });
+    const combinedText = targets.map((entry) => [
+      `===== ${entry.number}. ${entry.germanName} · ${entry.scientificName} =====`,
+      `Empfohlener Dateiname: ${entry.suggestedFileName}`,
+      "",
+      entry.prompt,
+    ].join("\n")).join("\n\n\n");
+    return {
+      mode: "portraits",
+      hasWork: targets.length > 0,
+      targetCount: targets.length,
+      speciesCount: model.species.length,
+      promptVersion: PORTRAIT_STANDARD.promptVersion,
+      targets,
+      combinedText,
+    };
+  }
+
+  async function previewPortraitAsset(id, payload) {
+    cleanupPreviewTokens();
+    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Während eines Pipeline-Laufs können keine Artporträts importiert werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive) {
+      const error = new Error("Es läuft bereits ein schreibender Assetprozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const validated = validatePortraitPreviewPayload(payload, species);
+    if (validated.errors.length) {
+      const error = new Error("Artporträt-Datei oder Angaben sind ungültig");
+      error.statusCode = 400;
+      error.details = validated.errors;
+      throw error;
+    }
     const source = await portraitAssetSourceRevision(species);
-    portraitGenerationActive = true;
+    removePreviousPortraitPreviews(id);
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    const importedAt = new Date().toISOString();
+    const inputExtension = validated.image.format === "jpeg"
+      ? ".jpg"
+      : `.${validated.image.format}`;
+    await mkdir(assetStagingRoot, { recursive: true });
+    const inputStagingPath = join(assetStagingRoot, `${token}.portrait-input${inputExtension}`);
+    const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
+    await writeFile(inputStagingPath, validated.buffer);
     try {
-      const result = await portraitGenerator({
-        germanName: species.germanName,
-        scientificName: species.scientificName,
-        additionalInstructions,
-        signal: AbortSignal.timeout(5 * 60 * 1000),
+      const rendered = await portraitRenderer({
+        inputPath: inputStagingPath,
+        outputPath: stagingPath,
+        ffmpegPath: resolveFfmpegPath({ repoRoot }),
+        options: DEFAULT_PORTRAIT_OPTIONS,
       });
-      inspectWebp(result.buffer);
-      if (result.buffer.length > 20 * 1024 * 1024) {
-        const error = new Error("Das erzeugte Artporträt überschreitet 20 MB");
-        error.statusCode = 502;
-        throw error;
-      }
-
-      removePreviousPortraitPreviews(id);
-      const token = randomUUID();
-      const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
-      const generatedAt = new Date().toISOString();
-      await mkdir(assetStagingRoot, { recursive: true });
-      const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
-      await writeFile(stagingPath, result.buffer);
-      const sha256 = createHash("sha256").update(result.buffer).digest("hex");
-      const generator = result.generator ?? PORTRAIT_GENERATOR;
-      const prompt = result.prompt ?? buildPortraitPrompt({
-        germanName: species.germanName,
-        scientificName: species.scientificName,
-        additionalInstructions,
-      });
-      const promptSha256 = result.promptSha256 ?? portraitPromptSha256(prompt);
+      const renderedBuffer = await readFile(stagingPath);
+      inspectWebp(renderedBuffer);
+      const sha256 = createHash("sha256").update(renderedBuffer).digest("hex");
       previewTokens.set(token, {
         type: "portrait-asset",
         id,
         safeName: species.safeName,
+        inputStagingPath,
         stagingPath,
         sha256,
-        bytes: result.buffer.length,
+        bytes: renderedBuffer.length,
         sourceRevision: source.revision,
         expiresAt,
-        generatedAt,
-        additionalInstructions,
-        prompt,
-        promptSha256,
-        revisedPrompt: String(result.revisedPrompt ?? ""),
-        generator,
+        importedAt,
+        additionalInstructions: validated.additionalInstructions,
+        prompt: validated.prompt,
+        promptSha256: validated.promptSha256,
+        originalName: validated.originalName,
+        originalFormat: validated.image.format,
+        originalDimensions: {
+          width: validated.image.width,
+          height: validated.image.height,
+        },
       });
       return {
         token,
@@ -2917,22 +3106,29 @@ export async function createExplorerServer({
             : "",
         },
         newPortrait: {
-          bytes: result.buffer.length,
+          bytes: renderedBuffer.length,
           sha256,
           url: `/api/species/${encodeURIComponent(id)}/assets/portrait/preview-file?token=${encodeURIComponent(token)}`,
-          size: generator.size,
-          model: generator.model,
-          promptVersion: generator.promptVersion,
-          prompt,
+          size: `${rendered.width}x${rendered.height}`,
+          promptVersion: PORTRAIT_STANDARD.promptVersion,
+          prompt: validated.prompt,
+          originalName: validated.originalName,
+          originalFormat: validated.image.format,
+          originalDimensions: {
+            width: validated.image.width,
+            height: validated.image.height,
+          },
         },
         warnings: [
-          "Das Bild ist KI-generiert und muss vor der Übernahme auf Artmerkmale und Anatomie geprüft werden.",
-          "Die Generierung ersetzt noch keine produktive Datei. Erst Artporträt übernehmen speichert, committed und pusht.",
-          "Bei einer Neugenerierung wird diese noch nicht übernommene Vorschau verworfen.",
+          "Das extern erzeugte Bild muss vor der Übernahme auf Artmerkmale und Anatomie geprüft werden.",
+          "Die Vorschau ersetzt noch keine produktive Datei.",
+          "Erst Artporträt übernehmen speichert, committed und pusht.",
         ],
       };
-    } finally {
-      portraitGenerationActive = false;
+    } catch (error) {
+      rmSync(inputStagingPath, { force: true });
+      rmSync(stagingPath, { force: true });
+      throw error;
     }
   }
 
@@ -2945,7 +3141,7 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
-    if (assetWriteActive || portraitGenerationActive || pipelineProcess
+    if (assetWriteActive || pipelineProcess
       || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
       const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
       error.statusCode = 409;
@@ -2977,6 +3173,7 @@ export async function createExplorerServer({
     if (source.revision !== preview.sourceRevision) {
       previewTokens.delete(token);
       rmSync(preview.stagingPath, { force: true });
+      rmSync(preview.inputStagingPath, { force: true });
       const error = new Error("Artporträt oder Metadaten wurden seit der Vorschau geändert");
       error.statusCode = 409;
       throw error;
@@ -3017,23 +3214,25 @@ export async function createExplorerServer({
       }
 
       const approvedAt = new Date().toISOString();
-      const generator = preview.generator ?? PORTRAIT_GENERATOR;
       const metadata = {
         version: 1,
         german_name: species.germanName,
         scientific_name: species.scientificName,
         type: "AI-generated natural-history illustration",
-        provider: generator.provider ?? "OpenAI",
-        model: generator.model,
-        prompt_version: generator.promptVersion,
+        source: "ChatGPT",
+        generation_method: "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        prompt_version: PORTRAIT_STANDARD.promptVersion,
         prompt_sha256: preview.promptSha256,
-        size: generator.size,
-        quality: generator.quality,
-        format: generator.outputFormat,
-        output_compression: generator.outputCompression,
-        background: generator.background,
+        prompt: preview.prompt,
+        original_file_name: preview.originalName,
+        original_format: preview.originalFormat,
+        original_width: preview.originalDimensions.width,
+        original_height: preview.originalDimensions.height,
+        product_width: DEFAULT_PORTRAIT_OPTIONS.width,
+        product_height: DEFAULT_PORTRAIT_OPTIONS.height,
+        product_format: PORTRAIT_STANDARD.outputFormat,
         additional_instructions: preview.additionalInstructions,
-        generated_at: preview.generatedAt,
+        imported_at: preview.importedAt,
         approved_at: approvedAt,
         sha256: preview.sha256,
       };
@@ -3045,10 +3244,10 @@ export async function createExplorerServer({
       registry.assets[species.safeName] ??= {};
       registry.assets[species.safeName].portrait = {
         managedBy: "species-explorer",
-        provider: metadata.provider,
-        model: metadata.model,
+        source: metadata.source,
+        generationMethod: metadata.generation_method,
         promptVersion: metadata.prompt_version,
-        generatedAt: metadata.generated_at,
+        importedAt: metadata.imported_at,
         approvedAt,
         sha256: preview.sha256,
         metadataSha256,
@@ -3079,6 +3278,7 @@ export async function createExplorerServer({
 
       previewTokens.delete(token);
       rmSync(preview.stagingPath, { force: true });
+      rmSync(preview.inputStagingPath, { force: true });
       let backupRetention = { kept: 0, removed: 0, bytes: 0 };
       let backupCleanupWarning = "";
       try {
@@ -3583,7 +3783,7 @@ export async function createExplorerServer({
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
       );
       const portraitAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/(generate|save)$/,
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save)$/,
       );
       const portraitPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
@@ -3666,10 +3866,16 @@ export async function createExplorerServer({
       if (request.method === "POST" && portraitAssetRoute) {
         const id = decodeURIComponent(portraitAssetRoute[1]);
         const action = portraitAssetRoute[2];
-        const payload = await readJsonBody(request);
-        const result = action === "generate"
-          ? await generatePortraitPreview(id, payload)
-          : await savePortraitAsset(id, payload);
+        const payload = await readJsonBody(request, {
+          maxBytes: action === "preview"
+            ? MAX_PORTRAIT_PREVIEW_BODY_BYTES
+            : MAX_JSON_BODY_BYTES,
+        });
+        const result = action === "prompt"
+          ? createPortraitPrompt(id, payload)
+          : action === "preview"
+            ? await previewPortraitAsset(id, payload)
+            : await savePortraitAsset(id, payload);
         sendJson(response, 200, result);
         return;
       }
@@ -3683,6 +3889,12 @@ export async function createExplorerServer({
           ? await previewPipeline(payload)
           : await startPipeline(payload);
         sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/portraits/missing") {
+        await readJsonBody(request);
+        sendJson(response, 200, createMissingPortraitPrompts());
         return;
       }
 

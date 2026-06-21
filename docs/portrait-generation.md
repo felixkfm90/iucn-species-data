@@ -2,66 +2,88 @@
 
 Stand: 2026-06-21
 
-## Ziel
+## Entscheidung
 
-Phase 7.7.5 erzeugt Artporträts zunächst ausschließlich im lokalen Arten-Explorer. Die Squarespace-Ausgabe folgt
-erst nach der visuellen Freigabe des Generierungs-, Prüf- und Speicherworkflows.
+Die kostenpflichtige OpenAI Image API wird nicht verwendet. Der Explorer benötigt keinen `OPENAI_API_KEY` und
+führt keinen automatischen kostenpflichtigen Bildauftrag aus.
 
-Der private ChatGPT-Link ist keine technische Datenquelle. Der Explorer verwendet stattdessen direkt die OpenAI
-Image API. Deutscher und wissenschaftlicher Artname stammen aus `species_list.json`; der verbindliche Stilprompt
-liegt versioniert in `scripts/portrait-generator.mjs`.
+Stattdessen gilt ein manueller, kontrollierter Workflow:
 
-## Technischer Standard
+1. Die App erzeugt kostenfrei einen artspezifischen Prompt.
+2. Der Prompt wird kopiert und im vorhandenen ChatGPT-Zugang verwendet.
+3. Das dort erzeugte Bild wird heruntergeladen.
+4. Die Datei wird wieder in den Arten-Explorer geladen.
+5. Die App prüft und vereinheitlicht die Datei.
+6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen, committed und gepusht.
 
-- Provider: OpenAI
-- Modell: `gpt-image-2`
-- Promptversion: `1.0.0`
-- Ausgabegröße: `1280x1600`
-- Seitenverhältnis: `4:5`
-- Qualität: `high`
-- Format: `webp`
-- WebP-Kompression: `88`
-- Hintergrund: undurchsichtig
+Squarespace folgt erst, wenn der lokale Workflow und die Portraitqualität freigegeben sind.
 
-`gpt-image-2` erlaubt laut aktueller OpenAI-Dokumentation frei gewählte Abmessungen, wenn beide Kanten ein
-Vielfaches von 16 sind und die weiteren Größenlimits eingehalten werden. `1280x1600` erfüllt diese Bedingungen.
+## Prompt
 
-Offizielle Dokumentation:
+Deutscher und wissenschaftlicher Artname stammen aus `species_list.json`. Der verbindliche, versionierte
+Stilprompt steht in `scripts/portrait-generator.mjs`.
 
-- https://developers.openai.com/api/docs/guides/image-generation
+Die App bietet je Art:
 
-## Voraussetzung
+- optionale Zusatzhinweise, etwa Geschlecht, Alters- oder Brutkleid
+- `Prompt erstellen`
+- `Prompt kopieren`
+- sichtbare Promptvorschau
 
-Der lokale Server benötigt:
+Der Sammelpunkt `Fehlende Artporträts ergänzen` erstellt die Prompts für alle Arten ohne Portrait. Die Prompts
+werden gemeinsam kopiert. Falls die Browser-Zwischenablage nicht verfügbar ist, lädt die App automatisch
+`artportrait-prompts.txt` herunter.
+
+## Importstandard
+
+Zulässige Quelldateien:
+
+- PNG
+- JPEG
+- WebP
+- höchstens 20 MB
+- mindestens 800 × 1000 Pixel
+- Seitenverhältnis 4:5 mit kleiner technischer Toleranz
+
+Der Server prüft Dateiendung, Magic Bytes und Bildabmessungen. Danach erzeugt der lokale FFmpeg-Prozess das
+einheitliche Produktformat:
 
 ```text
-OPENAI_API_KEY
+1280 × 1600 Pixel
+WebP
+Qualität 90
+undurchsichtiger warmer Hintergrund
 ```
 
-Der Schlüssel wird ausschließlich serverseitig aus der Prozessumgebung gelesen. Er gehört nicht in:
-
-- Repository-Dateien
-- Browser-JavaScript
-- `species_list.json`
-- `species-assets-overrides.json`
-- Screenshots oder Dokumentation
-
-Das ChatGPT-Abonnement stellt nicht automatisch API-Guthaben bereit. Bildaufträge über die Image API werden über
-das zugehörige OpenAI-API-Projekt abgerechnet. Fehlt der Schlüssel, antwortet die App mit HTTP 503 und startet
-keinen Bildauftrag.
+Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignorierten Stagingordner. Sie wird nach
+Übernahme, Ablauf oder neuer Vorschau gelöscht.
 
 ## Bedienablauf
 
+### Einzelne Art
+
 1. Bearbeitungsmodus aktivieren.
 2. Art öffnen und `Bearbeiten` wählen.
-3. Optional zusätzliche artspezifische Hinweise eintragen, zum Beispiel Geschlecht, Alterskleid oder vollständig
-   sichtbare lange Schwanzfedern.
-4. `Artporträt generieren` wählen.
-5. Die Vorschau manuell prüfen.
-6. Bei Fehlern `Neu generieren`; die vorherige unbestätigte Vorschau wird verworfen.
-7. Nur ein fachlich akzeptables Bild mit `Artporträt übernehmen` freigeben.
+3. Optional Zusatzhinweise eintragen.
+4. `Prompt erstellen` und danach `Prompt kopieren`.
+5. Prompt in ChatGPT einfügen und Bild herunterladen.
+6. Bild in der App auswählen.
+7. `Bild prüfen`.
+8. Fachliche Prüfung durchführen.
+9. `Artporträt übernehmen`.
 
-Eine Generierung verändert noch keine produktive Datei. Erst die Freigabe schreibt, sichert, committed und pusht.
+### Alle fehlenden Porträts
+
+1. Das rote/grüne Datenbankfeld öffnen.
+2. `Fehlende Artporträts ergänzen` wählen.
+3. Vorschau der betroffenen Arten prüfen.
+4. `Alle Prompts kopieren`.
+5. Bilder in ChatGPT erzeugen.
+6. Filter `Fehlendes Artporträt` verwenden.
+7. Bilder artweise über `Bearbeiten` importieren und freigeben.
+
+Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait bleibt ein eigener
+Pflegehinweis und wird nicht als Fehler der bestehenden Kernassets gewertet.
 
 ## Pflichtprüfung
 
@@ -88,28 +110,30 @@ species-assets/<SafeName>/portrait.webp
 species-assets/<SafeName>/portrait.json
 ```
 
-`portrait.json` dokumentiert unter anderem:
+`portrait.json` dokumentiert:
 
 - deutschen und wissenschaftlichen Namen
-- Provider und Modell
-- Promptversion und Prompt-SHA-256
-- Ausgabeparameter
+- Quelle `ChatGPT`
+- manuellen Generierungs- und Importweg
+- Promptversion, vollständigen Prompt und Prompt-SHA-256
+- ursprünglichen Dateinamen, Format und Abmessungen
+- Produktabmessungen und Format
 - optionale Zusatzhinweise
-- Erstellungs- und Freigabezeitpunkt
-- SHA-256 der Bilddatei
+- Import- und Freigabezeitpunkt
+- SHA-256 der Produktdatei
 
 `species-assets-overrides.json` registriert Bild- und Metadatenhash. Der Explorer meldet nachträgliche
 Abweichungen.
 
 ## Backup und Veröffentlichung
 
-Beim Ersetzen eines vorhandenen Porträts werden Bild und Metadaten gemeinsam gesichert:
+Beim Ersetzen eines vorhandenen Portraits werden Bild und Metadaten gemeinsam gesichert:
 
 ```text
 species-explorer/asset-backups/<SafeName>/portrait/
 ```
 
-Es gelten dieselben Grenzen wie für Karten- und Soundbackups:
+Es gelten:
 
 - höchstens drei verwaltete Backups pro Art und Assettyp
 - globale Obergrenze 500 MB
@@ -122,29 +146,9 @@ Nach erfolgreicher Speicherung werden nur folgende Dateien vorgemerkt:
 
 Anschließend folgen automatischer Commit und Push.
 
-## Promptstandard
+## Nächste Phase
 
-Der Prompt verlangt eine wissenschaftlich orientierte Naturillustration als detailliertes Aquarell mit feiner
-Buntstiftzeichnung, warmem hellem Papierhintergrund, genau einem möglichst vollständig sichtbaren Tier,
-ausreichenden Sicherheitsabständen und nur einem minimalen artspezifischen Untergrund.
-
-Ausgeschlossen sind unter anderem:
-
-- dekorative Landschaft
-- zweites Tier oder Beute
-- erfundene Anatomie
-- Merkmale verwandter Arten
-- Text, Beschriftung, Signatur, Logo oder Wasserzeichen
-- Fotorealismus und Cartoonstil
-
-Die vollständige ausführbare Fassung steht in `buildPortraitPrompt()` unter
-`scripts/portrait-generator.mjs`. Jede Änderung daran erfordert eine neue Promptversion.
-
-## Noch offen
-
-1. `OPENAI_API_KEY` in der lokalen Startumgebung setzen.
-2. Eine Testart erzeugen und visuell/fachlich prüfen.
-3. Bei Bedarf Stilreferenzbilder ergänzen, falls der reine Prompt den gewünschten Stil nicht ausreichend stabil
-   reproduziert.
-4. Nach erfolgreichem Einzeltest einen kontrollierten Stapellauf nur für fehlende Porträts planen.
-5. Erst danach Squarespace-Modul, Container und Footer-Version umsetzen.
+Die nächste Phase betrifft nicht nur Portraits, sondern die gesamte Arten-Explorer-App: ein eigenes
+Windows-App-Fenster startet und überwacht den lokalen Server automatisch. Ein externer Browser und die manuelle URL
+`127.0.0.1:4177` sollen für den normalen Betrieb nicht mehr erforderlich sein. Planung:
+`docs/desktop-shell-plan.md`.

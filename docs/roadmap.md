@@ -355,20 +355,26 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 47 von 47
   Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
   Die betroffenen Assetpfade werden automatisch committed und gepusht.
-  7.7.5 Artporträt ist seit 2026-06-21 technisch als sicherer Einzelart-Workflow umgesetzt. Der Explorer verwendet
-  serverseitig die OpenAI Image API mit `gpt-image-2`, dem versionierten Prompt `1.0.0`, `1280x1600`, hoher
-  Qualität und WebP-Ausgabe. Die Generierung schreibt zunächst nur eine zehn Minuten gültige Vorschau. Erst nach
+  7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
+  vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
+  versionierten Prompt `1.0.0` lokal, kopiert Einzel- oder Sammelprompts und importiert anschließend ein im
+  vorhandenen ChatGPT-Zugang erzeugtes PNG, JPEG oder WebP. Dateisignatur, mindestens 800×1000 Pixel und
+  4:5-Seitenverhältnis werden geprüft; FFmpeg vereinheitlicht das Produkt auf `1280x1600` WebP. Erst nach
   manueller Art- und Anatomieprüfung werden `portrait.webp`, `portrait.json`, Hashregister, Backup, Commit und Push
-  ausgeführt. Fehlende Porträts bleiben optional und verschlechtern den Datenbankstatus nicht. Ohne
-  `OPENAI_API_KEY` startet kein kostenpflichtiger Bildauftrag. Vierzehn Explorer-Tests sind erfolgreich.
-  Ein echter Einzeltest mit API-Schlüssel und die visuelle/fachliche Freigabe stehen noch aus. Danach wird ein
-  kontrollierter Stapellauf nur für fehlende Porträts geplant. Die Squarespace-Ausgabe folgt ausdrücklich erst,
-  wenn der lokale Workflow freigegeben ist. Details: `docs/portrait-generation.md`.
+  ausgeführt. Fehlende Porträts bleiben optionale Pflegehinweise, erhalten die Listenmarkierung `P` und sind über
+  `Fehlendes Artporträt` filterbar. Der Datenbankdialog bietet `Fehlende Artporträts ergänzen` und kopiert die
+  Prompts für alle betroffenen Arten. Vierzehn Explorer-Tests sind vorgesehen; ein echter Einzelimport und die
+  visuelle/fachliche Freigabe stehen noch aus. Squarespace folgt erst danach. Details:
+  `docs/portrait-generation.md`.
   Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
   gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
   einspaltig.
-- 7.8 Synology NAS und automatisiertes Backup: danach.
+- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: als nächste Phase geplant. Der Wrapper startet,
+  überwacht und beendet den lokalen Server selbst und zeigt die bestehende Oberfläche in einem eigenen
+  Windows-App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177` entfallen. Technische Vorplanung:
+  `docs/desktop-shell-plan.md`.
+- 7.9 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau
 
