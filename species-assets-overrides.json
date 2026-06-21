@@ -717,6 +717,16 @@
         "spectrogramSha256": "cac60ae00dd1575baba61227cd49fe866fc1a99dd81023810b97a17b4ed80c1b",
         "generatedAt": "2026-06-15T13:03:17.454Z",
         "verifiedAt": "2026-06-20T18:35:37.802Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:50:44.366Z",
+        "approvedAt": "2026-06-21T18:50:46.745Z",
+        "sha256": "ca46db3cc40e212fcf52976081db84fa1e56aac67bda869068080e3885d6c8ad",
+        "metadataSha256": "5a76d32ba6093f5a6535132eeb2823283c518f98f8f149a2b3cf84bb16d81fff"
       }
     },
     "Kormoran": {
