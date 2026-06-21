@@ -200,15 +200,34 @@ Migrationsstand vom 2026-06-20:
 
 ### 7.7.5 Artportraet
 
-Der Explorer hat bereits einen Platzhalter fuer ein spaeteres Artportraet. Vor einer produktiven Einfuehrung muss
-entschieden werden:
+Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 
-- Quelle des Bildes: lokale Datei, Squarespace-Galerie oder GitHub-Pages-Asset
-- produktiver Dateiname und Format
-- Lizenz-/Creditpflicht
-- Verwendung nur in der App oder auch auf Squarespace
+- direkte serverseitige OpenAI-Image-API-Anbindung
+- `gpt-image-2` mit dem versionierten Prompt `1.0.0`
+- WebP-Ausgabe in `1280x1600` und damit exakt `4:5`
+- deutscher und wissenschaftlicher Name automatisch aus der Artenliste
+- optionale artspezifische Zusatzhinweise
+- kostenpflichtige Generierung nur nach ausdruecklichem Klick
+- Stagingvorschau ohne produktive Aenderung
+- Neu-generieren verwirft nur die unbestaetigte Vorschau
+- verpflichtende manuelle Art- und Anatomiepruefung vor der Uebernahme
+- produktive Dateien `portrait.webp` und `portrait.json`
+- SHA-256-Registrierung und Abweichungspruefung
+- gemeinsames Backup beim Ersetzen
+- automatischer, eng begrenzter Commit und Push nach Freigabe
 
-Das Artportraet wird nicht nebenbei in die bestehende Kernassetstruktur aufgenommen.
+Details und Promptstandard: `docs/portrait-generation.md`.
+
+Der private ChatGPT-Verlauf ist keine technische Abhaengigkeit. Die App verwendet `OPENAI_API_KEY` nur
+serverseitig. Ohne Schluessel startet kein Bildauftrag.
+
+Noch offen:
+
+- echter Einzeltest mit gesetztem API-Schluessel
+- visuelle und fachliche Freigabe
+- bei Bedarf Stilreferenzbilder zusaetzlich zum Prompt
+- kontrollierter Stapellauf nur fuer fehlende Portraets
+- Squarespace-Ausgabe ausdruecklich erst nach Abschluss dieser Pruefungen
 
 ## Upload- und Dateisicherheit
 

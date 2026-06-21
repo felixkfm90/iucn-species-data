@@ -112,6 +112,7 @@ Voraussetzungen:
 - `npm install`
 - Environment Variable `IUCN_TOKEN`
 - Environment Variable `XENO_TOKEN`
+- optional fuer die Artportraet-Erzeugung im Arten-Explorer: Environment Variable `OPENAI_API_KEY`
 
 Ausfuehren:
 
@@ -160,7 +161,7 @@ NC-Sound erhalten oder wird bei neuen Arten als Fallback genutzt.
 NC-Sounds werden im Frontend nicht mit einem separaten Warnhinweis markiert. Die Information bleibt intern ueber
 `credits.json`, `fehlende_elemente_report.json` und `docs/sound-license-review.md` nachvollziehbar.
 
-Tokens duerfen nicht im Repository gespeichert werden.
+Tokens und API-Schluessel duerfen nicht im Repository oder Browser-JavaScript gespeichert werden.
 
 ## Arten-Explorer
 
@@ -184,6 +185,7 @@ Der Explorer zeigt:
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
 - Karte, Sound, Credits und Spektrogramm je Art
+- optionales, manuell freigegebenes KI-Artportraet aus `portrait.webp` und `portrait.json`
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und einklappbaren Quellen-/Lizenzdaten
@@ -380,8 +382,9 @@ Innerhalb der Windows-Batch-Datei wird `npm.cmd` mit `call` gestartet, damit der
 Commit und Push fortgesetzt wird.
 
 Die Asset-Struktur wurde in Phase 6.8 umgesetzt; Details stehen in `docs/asset-structure-plan.md`.
-`species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp` ist die einzige
-produktive Struktur. Die alten Ordner `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
+`species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp` sowie den optionalen
+Dateien `portrait.webp` und `portrait.json` ist die einzige produktive Struktur. Die alten Ordner
+`Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
 GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 
@@ -462,7 +465,12 @@ Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive 
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
 Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
-Die Assetverwaltung folgt danach in Phase 7.7 nach `docs/asset-management-plan.md`.
+Die Assetverwaltung laeuft in Phase 7.7 nach `docs/asset-management-plan.md`. Karten, Sound/Credits und
+Spektrogrammverwaltung sind technisch umgesetzt. Der erste sichere Einzelart-Workflow fuer KI-Artportraets verwendet
+serverseitig `gpt-image-2`, erzeugt nur eine Stagingvorschau und speichert erst nach manueller Art- und
+Anatomiepruefung. Ohne `OPENAI_API_KEY` wird kein kostenpflichtiger Bildauftrag gestartet. Details:
+`docs/portrait-generation.md`. Squarespace wird erst nach dem lokalen Einzeltest und der visuellen Freigabe
+erweitert.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.

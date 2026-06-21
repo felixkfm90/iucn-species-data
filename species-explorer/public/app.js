@@ -4,6 +4,7 @@ const state = {
   selectedId: "",
   audioCleanup: null,
   mapCleanup: null,
+  portraitCleanup: null,
   notice: "",
   editMode: false,
   databaseNeedsUpdate: true,
@@ -416,12 +417,28 @@ function mapPanel(asset, alt) {
 }
 
 function speciesImagePanel(species) {
+  const portrait = species.assets.portrait;
+  if (portrait?.exists) {
+    return `
+      <section class="species-image-panel">
+        <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
+        <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
+          <img
+            class="species-portrait-image"
+            src="${escapeHtml(portrait.url)}"
+            alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
+          >
+          <span class="map-zoom-hint">Vergrößern</span>
+        </button>
+      </section>
+    `;
+  }
   return `
     <section class="species-image-panel">
-      <h3 class="section-title">Artporträt · später</h3>
+      <h3 class="section-title">Artporträt</h3>
       <div class="species-image-placeholder">
         <strong>${escapeHtml(species.germanName)}</strong>
-        <span>Bereich für ein später hinterlegtes Artporträt</span>
+        <span>Noch kein geprüftes Artporträt vorhanden</span>
       </div>
     </section>
   `;
@@ -592,6 +609,35 @@ function setupMapZoom(species) {
   dialog.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
 
   state.mapCleanup = () => {
+    if (dialog.open) close();
+  };
+}
+
+function setupPortraitZoom() {
+  state.portraitCleanup?.();
+  state.portraitCleanup = null;
+
+  const trigger = elements.detailPanel.querySelector(".portrait-zoom-trigger");
+  const dialog = elements.detailPanel.querySelector(".portrait-lightbox");
+  const closeButton = elements.detailPanel.querySelector(".portrait-lightbox-close");
+  if (!trigger || !dialog || !closeButton) return;
+
+  const open = () => {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    document.body.classList.add("explorer-modal-open");
+  };
+  const close = () => {
+    if (dialog.open && typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+    document.body.classList.remove("explorer-modal-open");
+  };
+
+  trigger.addEventListener("click", open);
+  closeButton.addEventListener("click", close);
+  setupSafeBackdropClose(dialog, close);
+  dialog.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
+  state.portraitCleanup = () => {
     if (dialog.open) close();
   };
 }
@@ -1225,11 +1271,22 @@ function setupSpeciesEditor(species) {
   const soundLicenseState = elements.detailPanel.querySelector(".sound-license-state");
   const soundPreviewButton = elements.detailPanel.querySelector(".sound-preview-button");
   const soundSaveButton = elements.detailPanel.querySelector(".sound-save-button");
+  const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
+  const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
+  const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
+  const portraitCurrentImage = elements.detailPanel.querySelector(".portrait-preview-current");
+  const portraitNewImage = elements.detailPanel.querySelector(".portrait-preview-new");
+  const portraitCurrentMeta = elements.detailPanel.querySelector(".portrait-current-meta");
+  const portraitNewMeta = elements.detailPanel.querySelector(".portrait-new-meta");
+  const portraitPrompt = elements.detailPanel.querySelector(".portrait-prompt-preview");
+  const portraitGenerateButton = elements.detailPanel.querySelector(".portrait-generate-button");
+  const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
   if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
   let mapPreviewToken = "";
   let soundPreviewToken = "";
+  let portraitPreviewToken = "";
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1287,6 +1344,22 @@ function setupSpeciesEditor(species) {
     if (soundCreditsPreview) soundCreditsPreview.replaceChildren();
   };
 
+  const setPortraitMessage = (text = "", type = "") => {
+    if (!portraitMessage) return;
+    portraitMessage.textContent = text;
+    portraitMessage.className = `edit-message portrait-edit-message${type ? ` ${type}` : ""}`;
+    portraitMessage.hidden = !text;
+  };
+
+  const resetPortraitPreview = () => {
+    portraitPreviewToken = "";
+    if (portraitPreview) portraitPreview.hidden = true;
+    if (portraitSaveButton) portraitSaveButton.disabled = true;
+    if (portraitCurrentImage) portraitCurrentImage.removeAttribute("src");
+    if (portraitNewImage) portraitNewImage.removeAttribute("src");
+    if (portraitPrompt) portraitPrompt.textContent = "";
+  };
+
   const setBusy = (busy) => {
     previewButton.disabled = busy;
     saveButton.disabled = busy || !previewToken;
@@ -1311,13 +1384,22 @@ function setupSpeciesEditor(species) {
     for (const button of closeButtons) button.disabled = busy;
   };
 
+  const setPortraitBusy = (busy) => {
+    if (portraitGenerateButton) portraitGenerateButton.disabled = busy;
+    if (portraitSaveButton) portraitSaveButton.disabled = busy || !portraitPreviewToken;
+    if (portraitInstructions) portraitInstructions.disabled = busy;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
   openButton.addEventListener("click", () => {
     resetPreview();
     resetMapPreview();
     resetSoundPreview();
+    resetPortraitPreview();
     setMessage();
     setMapMessage();
     setSoundMessage();
+    setPortraitMessage();
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   });
@@ -1341,6 +1423,14 @@ function setupSpeciesEditor(species) {
     if (event.target.closest(".sound-edit-section")) {
       resetSoundPreview();
       setSoundMessage("Sound oder Credits geändert. Bitte die Vorschau erneut erstellen.", "info");
+      return;
+    }
+    if (event.target.closest(".portrait-edit-section")) {
+      resetPortraitPreview();
+      setPortraitMessage(
+        "Zusätzliche Hinweise geändert. Für eine neue Vorschau wird ein neuer kostenpflichtiger Bildauftrag gestartet.",
+        "info",
+      );
       return;
     }
     if (event.target.closest(".map-edit-section")) {
@@ -1597,6 +1687,79 @@ function setupSpeciesEditor(species) {
     } catch (error) {
       setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setSoundBusy(false);
+    }
+  });
+
+  portraitGenerateButton?.addEventListener("click", async () => {
+    resetPortraitPreview();
+    setPortraitBusy(true);
+    setPortraitMessage(
+      "OpenAI erzeugt ein neues Artporträt. Das kann mehrere Minuten dauern und verursacht API-Kosten…",
+      "info",
+    );
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/portrait/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            additionalInstructions: portraitInstructions?.value || "",
+          }),
+        },
+      );
+      portraitPreviewToken = result.token;
+      portraitCurrentImage.hidden = !result.currentPortrait.exists;
+      if (result.currentPortrait.exists) portraitCurrentImage.src = result.currentPortrait.url;
+      portraitNewImage.src = result.newPortrait.url;
+      if (typeof portraitNewImage.decode === "function") await portraitNewImage.decode();
+      portraitCurrentMeta.textContent = result.currentPortrait.exists
+        ? formatBytes(result.currentPortrait.bytes)
+        : "Kein bisheriges Artporträt";
+      portraitNewMeta.textContent =
+        `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)} · ${result.newPortrait.model}`;
+      portraitPrompt.textContent = result.newPortrait.prompt;
+      portraitPreview.hidden = false;
+      portraitSaveButton.disabled = false;
+      portraitGenerateButton.textContent = "Neu generieren";
+      setPortraitMessage(
+        "Vorschau erzeugt. Bitte Artmerkmale, Anatomie, Anzahl der Gliedmaßen und vollständige Bildränder prüfen.",
+        "success",
+      );
+    } catch (error) {
+      resetPortraitPreview();
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setPortraitBusy(false);
+    }
+  });
+
+  portraitSaveButton?.addEventListener("click", async () => {
+    if (!portraitPreviewToken) return;
+    setPortraitBusy(true);
+    setPortraitMessage(
+      "Artporträt und Metadaten werden gespeichert, gesichert, committed und gepusht…",
+      "info",
+    );
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/portrait/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: portraitPreviewToken }),
+        },
+      );
+      state.notice = result.gitPublished
+        ? `Artporträt gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
+          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
+        : `Artporträt wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setPortraitBusy(false);
     }
   });
 }
@@ -1876,6 +2039,9 @@ function renderDetail(species) {
             ["Sound", assetStatusText(species.assets.sound)],
             ["Credits", assetStatusText(species.assets.credits)],
             ["Spektrogramm", assetStatusText(species.assets.spectrogram)],
+            ["Artporträt", species.assets.portrait.exists
+              ? `Vorhanden${species.assets.portrait.hashVerified ? " · Hash geprüft" : ""}`
+              : "Optional · nicht vorhanden"],
             ["Soundlizenz", species.isNcSound ? "NC · intern prüfen" : "Frei/nicht als NC markiert"],
           ])}
         </dl>
@@ -1930,6 +2096,77 @@ function renderDetail(species) {
           <p class="edit-warning">
             Speichern ändert nur <code>species_list.json</code>. Danach ist ein Pipeline-Lauf erforderlich.
           </p>
+        </section>
+
+        <section class="portrait-edit-section">
+          <header>
+            <div>
+              <h4>Artporträt erzeugen</h4>
+              <p>
+                OpenAI erzeugt eine 4:5-Naturillustration. Jede Generierung verursacht API-Kosten und wird
+                vor der Übernahme manuell geprüft.
+              </p>
+            </div>
+            <span class="portrait-care-state">
+              ${species.assets.portrait.exists ? "Porträt vorhanden" : "Noch kein Porträt"}
+            </span>
+          </header>
+
+          <div class="portrait-species-lock">
+            <span>Art</span>
+            <strong>${escapeHtml(species.germanName)} · ${escapeHtml(species.scientificName)}</strong>
+          </div>
+
+          <label class="portrait-instructions-field">
+            <span>Zusätzliche Hinweise · optional</span>
+            <textarea
+              class="portrait-instructions-input"
+              maxlength="800"
+              rows="3"
+              placeholder="z. B. adultes Männchen im Brutkleid; vollständiger Schwanz sichtbar"
+            ></textarea>
+          </label>
+
+          <p class="edit-message portrait-edit-message" hidden></p>
+
+          <section class="portrait-edit-preview" hidden>
+            <div class="portrait-compare-grid">
+              <figure>
+                <figcaption>Bisheriges Artporträt</figcaption>
+                <div class="portrait-compare-frame">
+                  <img
+                    class="portrait-preview-current"
+                    alt="Bisheriges Artporträt ${escapeHtml(species.germanName)}"
+                  >
+                </div>
+                <p class="portrait-current-meta"></p>
+              </figure>
+              <figure>
+                <figcaption>Neue KI-Vorschau</figcaption>
+                <div class="portrait-compare-frame">
+                  <img
+                    class="portrait-preview-new"
+                    alt="Neue Artporträt-Vorschau ${escapeHtml(species.germanName)}"
+                  >
+                </div>
+                <p class="portrait-new-meta"></p>
+              </figure>
+            </div>
+            <details class="portrait-prompt-details">
+              <summary>Verwendeten Prompt anzeigen</summary>
+              <pre class="portrait-prompt-preview"></pre>
+            </details>
+            <p class="edit-warning">
+              Vor der Übernahme müssen Artmerkmale, Anatomie, Gliedmaßen, Zehen, Flügel, Flossen, Schwanz und
+              Bildränder geprüft werden. Speichern legt <code>portrait.webp</code> und
+              <code>portrait.json</code> an und führt anschließend Commit und Push aus.
+            </p>
+          </section>
+
+          <div class="portrait-edit-actions">
+            <button class="portrait-generate-button" type="button">Artporträt generieren</button>
+            <button class="portrait-save-button" type="button" disabled>Artporträt übernehmen</button>
+          </div>
         </section>
 
         <section class="map-edit-section">
@@ -2179,10 +2416,21 @@ function renderDetail(species) {
         <img src="${escapeHtml(species.assets.map.url)}" alt="${escapeHtml(`Verbreitungskarte ${species.germanName}`)}">
       </dialog>
     ` : ""}
+
+    ${species.assets.portrait.exists ? `
+      <dialog class="map-lightbox portrait-lightbox" aria-label="Vergrößertes Artporträt ${escapeHtml(species.germanName)}">
+        <button class="map-lightbox-close portrait-lightbox-close" type="button" aria-label="Artporträt schließen">×</button>
+        <img
+          src="${escapeHtml(species.assets.portrait.url)}"
+          alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
+        >
+      </dialog>
+    ` : ""}
   `;
 
   setupAudioPlayer();
   setupMapZoom(species);
+  setupPortraitZoom();
   setupSpeciesEditor(species);
   setupSpeciesDelete(species);
 }

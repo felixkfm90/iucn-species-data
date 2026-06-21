@@ -354,9 +354,17 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   und als WebP geprüft. Bei einem Fehler bleiben alle Produktivdateien unverändert. Sound- und Spektrogramm-SHA-256
   werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 47 von 47
   Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
-  Die betroffenen Assetpfade werden automatisch committed und gepusht. Dreizehn Explorer-Tests sind erfolgreich.
-  Produktiver Karten-/Soundimport und visuelle Bedienprüfung sind noch offen. Danach folgt die separate Entscheidung
-  für Artporträts. Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
+  Die betroffenen Assetpfade werden automatisch committed und gepusht.
+  7.7.5 Artporträt ist seit 2026-06-21 technisch als sicherer Einzelart-Workflow umgesetzt. Der Explorer verwendet
+  serverseitig die OpenAI Image API mit `gpt-image-2`, dem versionierten Prompt `1.0.0`, `1280x1600`, hoher
+  Qualität und WebP-Ausgabe. Die Generierung schreibt zunächst nur eine zehn Minuten gültige Vorschau. Erst nach
+  manueller Art- und Anatomieprüfung werden `portrait.webp`, `portrait.json`, Hashregister, Backup, Commit und Push
+  ausgeführt. Fehlende Porträts bleiben optional und verschlechtern den Datenbankstatus nicht. Ohne
+  `OPENAI_API_KEY` startet kein kostenpflichtiger Bildauftrag. Vierzehn Explorer-Tests sind erfolgreich.
+  Ein echter Einzeltest mit API-Schlüssel und die visuelle/fachliche Freigabe stehen noch aus. Danach wird ein
+  kontrollierter Stapellauf nur für fehlende Porträts geplant. Die Squarespace-Ausgabe folgt ausdrücklich erst,
+  wenn der lokale Workflow freigegeben ist. Details: `docs/portrait-generation.md`.
+  Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
   gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
   einspaltig.

@@ -415,8 +415,22 @@ Aktuelle Planung:
   47 von 47 Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
   beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
-  500 MB. Dreizehn Explorer-Tests sind erfolgreich; ein produktiver manueller Soundimport und die visuelle
-  Bedienpruefung stehen noch aus. Danach folgen Artportraet und 7.8 NAS/Backup.
+  500 MB.
+  Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als sicherer Einzelart-Workflow umgesetzt. Der Explorer
+  bindet nicht den privaten ChatGPT-Verlauf ein, sondern verwendet serverseitig die OpenAI Image API. Der
+  versionierte Prompt `1.0.0` erzeugt mit `gpt-image-2` ein WebP in `1280x1600`, hoher Qualitaet und festem
+  4:5-Seitenverhaeltnis. Deutscher und wissenschaftlicher Name kommen automatisch aus der Artenliste; optionale
+  Zusatzhinweise koennen Geschlecht, Alterskleid oder wichtige sichtbare Merkmale festlegen. Jede Generierung
+  schreibt zuerst nur eine zehn Minuten gueltige Stagingvorschau. Erst nach manueller Art- und Anatomiepruefung
+  werden `portrait.webp`, `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets
+  bleiben optional und erzeugen keinen Datenbankfehler. Der API-Schluessel wird nur aus `OPENAI_API_KEY` gelesen;
+  ohne Schluessel startet kein kostenpflichtiger Auftrag. Vierzehn Explorer-Tests sind erfolgreich. Der lokale
+  Server liefert die neue Oberflaeche aus und der fehlende-Schluessel-Pfad antwortet korrekt mit HTTP 503.
+  Ein echter Einzeltest mit gesetztem API-Schluessel und die visuelle/fachliche Freigabe stehen noch aus. Danach
+  folgt ein kontrollierter Stapellauf nur fuer fehlende Portraets. Squarespace wird ausdruecklich erst nach dieser
+  Freigabe erweitert. Details: `docs/portrait-generation.md`.
+  Ein produktiver manueller Soundimport und die visuelle Bedienpruefung stehen ebenfalls noch aus. Danach folgt
+  7.8 NAS/Backup.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.

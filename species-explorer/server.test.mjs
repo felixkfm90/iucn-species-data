@@ -15,6 +15,11 @@ import {
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup } from "../scripts/species-cleanup.mjs";
+import {
+  PORTRAIT_GENERATOR,
+  buildPortraitPrompt,
+  portraitPromptSha256,
+} from "../scripts/portrait-generator.mjs";
 await import("./public/filter.js");
 
 function createTestJpeg(width = 3, height = 2) {
@@ -943,6 +948,126 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: preview.token }),
   });
+  assert.equal(reusedResponse.status, 409);
+});
+
+test("Artporträt wird mit festem Prompt erzeugt, geprüft gespeichert und hashregistriert", async (context) => {
+  const prompt = buildPortraitPrompt({
+    germanName: "Amsel",
+    scientificName: "Turdus merula",
+    additionalInstructions: "Adultes Männchen mit gelbem Schnabel.",
+  });
+  assert.match(prompt, /Turdus merula/);
+  assert.match(prompt, /Traditional natural-history plate/);
+  assert.match(prompt, /Adultes Männchen mit gelbem Schnabel/);
+  assert.match(portraitPromptSha256(prompt), /^[0-9a-f]{64}$/);
+  assert.equal(PORTRAIT_GENERATOR.size, "1280x1600");
+  assert.equal(PORTRAIT_GENERATOR.outputFormat, "webp");
+
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const generatedWebp = createTestWebp(12);
+  let generationCalls = 0;
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+    portraitGenerator: async ({ germanName, scientificName, additionalInstructions }) => {
+      generationCalls += 1;
+      const generatedPrompt = buildPortraitPrompt({
+        germanName,
+        scientificName,
+        additionalInstructions,
+      });
+      return {
+        buffer: generatedWebp,
+        prompt: generatedPrompt,
+        promptSha256: portraitPromptSha256(generatedPrompt),
+        generator: PORTRAIT_GENERATOR,
+      };
+    },
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const generateResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        additionalInstructions: "Adultes Männchen mit gelbem Schnabel.",
+      }),
+    },
+  );
+  assert.equal(generateResponse.status, 200);
+  const preview = await generateResponse.json();
+  assert.equal(generationCalls, 1);
+  assert.ok(preview.token);
+  assert.equal(preview.currentPortrait.exists, false);
+  assert.equal(preview.newPortrait.size, "1280x1600");
+  assert.equal(preview.newPortrait.model, "gpt-image-2");
+  assert.match(preview.newPortrait.prompt, /Adultes Männchen/);
+
+  const previewFile = await fetch(`${baseUrl}${preview.newPortrait.url}`);
+  assert.equal(previewFile.status, 200);
+  assert.equal(previewFile.headers.get("content-type"), "image/webp");
+  assert.deepEqual(Buffer.from(await previewFile.arrayBuffer()), generatedWebp);
+
+  const saveResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/save`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: preview.token }),
+    },
+  );
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.saved, true);
+  assert.equal(saved.gitPublished, false);
+  assert.equal(saved.gitSkipped, true);
+  assert.equal(saved.backup, "");
+  assert.deepEqual(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "portrait.webp")),
+    generatedWebp,
+  );
+
+  const metadata = JSON.parse(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "portrait.json"), "utf8"),
+  );
+  assert.equal(metadata.german_name, "Amsel");
+  assert.equal(metadata.scientific_name, "Turdus merula");
+  assert.equal(metadata.provider, "OpenAI");
+  assert.equal(metadata.model, "gpt-image-2");
+  assert.equal(metadata.prompt_version, "1.0.0");
+  assert.equal(metadata.size, "1280x1600");
+  assert.equal(metadata.additional_instructions, "Adultes Männchen mit gelbem Schnabel.");
+  assert.match(metadata.prompt_sha256, /^[0-9a-f]{64}$/);
+  assert.match(metadata.sha256, /^[0-9a-f]{64}$/);
+
+  const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.assets.Amsel.portrait.managedBy, "species-explorer");
+  assert.equal(registry.assets.Amsel.portrait.model, "gpt-image-2");
+  assert.match(registry.assets.Amsel.portrait.sha256, /^[0-9a-f]{64}$/);
+  assert.match(registry.assets.Amsel.portrait.metadataSha256, /^[0-9a-f]{64}$/);
+
+  const model = await buildExplorerModel(repoRoot);
+  assert.equal(model.species[0].assets.portrait.exists, true);
+  assert.equal(model.species[0].assets.portrait.metadataExists, true);
+  assert.equal(model.species[0].assets.portrait.hashTracked, true);
+  assert.equal(model.species[0].assets.portrait.hashVerified, true);
+  assert.doesNotMatch(model.species[0].assetIssues.join(" "), /Artporträt/);
+
+  const reusedResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/save`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: preview.token }),
+    },
+  );
   assert.equal(reusedResponse.status, 409);
 });
 

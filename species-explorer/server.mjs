@@ -19,13 +19,26 @@ import {
   renderSpectrogram,
   resolveFfmpegPath,
 } from "../scripts/spectrogram-renderer.mjs";
+import {
+  PORTRAIT_GENERATOR,
+  buildPortraitPrompt,
+  generateSpeciesPortrait,
+  portraitPromptSha256,
+} from "../scripts/portrait-generator.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
 const PUBLIC_DIR = join(APP_DIR, "public");
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4177;
-const ASSET_FILES = new Set(["map.jpg", "sound.mp3", "credits.json", "spectrogram.webp"]);
+const ASSET_FILES = new Set([
+  "map.jpg",
+  "sound.mp3",
+  "credits.json",
+  "spectrogram.webp",
+  "portrait.webp",
+  "portrait.json",
+]);
 const EDITABLE_FIELD_DEFINITIONS = [
   { key: "size", sourceKey: "size", label: "Größe", maxLength: 240 },
   { key: "weight", sourceKey: "weight", label: "Gewicht", maxLength: 240 },
@@ -51,6 +64,7 @@ const MAX_MAP_BYTES = 20 * 1024 * 1024;
 const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAX_SOUND_BYTES = 50 * 1024 * 1024;
 const MAX_SOUND_PREVIEW_BODY_BYTES = 68 * 1024 * 1024;
+const MAX_PORTRAIT_INSTRUCTIONS_LENGTH = 800;
 const BACKUP_RETENTION_COUNT = 20;
 const ASSET_BACKUP_RETENTION_COUNT = 3;
 const ASSET_BACKUP_GLOBAL_BYTES = 500 * 1024 * 1024;
@@ -480,6 +494,30 @@ async function collectManagedAssetBackups(assetBackupRoot) {
             bytes,
             mtimeMs,
           });
+        } else if (
+          file.isDirectory()
+          && assetDirectory.name === "portrait"
+          && /^portrait-\d{8}T\d{6}Z-[0-9a-f]{8}$/.test(file.name)
+        ) {
+          const backupFiles = await readdir(backupPath, { withFileTypes: true });
+          let bytes = 0;
+          let mtimeMs = 0;
+          for (const backupFile of backupFiles) {
+            if (!backupFile.isFile() || !["portrait.webp", "portrait.json"].includes(backupFile.name)) {
+              continue;
+            }
+            const details = await stat(join(backupPath, backupFile.name));
+            bytes += details.size;
+            mtimeMs = Math.max(mtimeMs, details.mtimeMs);
+          }
+          collected.push({
+            backupPath,
+            species: speciesDirectory.name,
+            assetType: assetDirectory.name,
+            name: file.name,
+            bytes,
+            mtimeMs,
+          });
         }
       }
     }
@@ -888,11 +926,13 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       ?? "Unbekannt";
     const safeName = sanitizeAssetName(germanName);
     const assetDir = join(repoRoot, "species-assets", safeName);
-    const [map, sound, creditsFile, spectrogram] = await Promise.all([
+    const [map, sound, creditsFile, spectrogram, portrait, portraitMetadataFile] = await Promise.all([
       fileInfo(join(assetDir, "map.jpg")),
       fileInfo(join(assetDir, "sound.mp3")),
       fileInfo(join(assetDir, "credits.json")),
       fileInfo(join(assetDir, "spectrogram.webp")),
+      fileInfo(join(assetDir, "portrait.webp")),
+      fileInfo(join(assetDir, "portrait.json")),
     ]);
 
     let credits = null;
@@ -902,6 +942,16 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         credits = await readJson(join(assetDir, "credits.json"));
       } catch (error) {
         creditsError = error.message;
+      }
+    }
+
+    let portraitMetadata = null;
+    let portraitMetadataError = "";
+    if (portraitMetadataFile.exists) {
+      try {
+        portraitMetadata = await readJson(join(assetDir, "portrait.json"));
+      } catch (error) {
+        portraitMetadataError = error.message;
       }
     }
 
@@ -942,6 +992,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     const mapOverride = assetOverrides.assets?.[safeName]?.map;
     const soundOverride = assetOverrides.assets?.[safeName]?.sound;
     const spectrogramOverride = assetOverrides.assets?.[safeName]?.spectrogram;
+    const portraitOverride = assetOverrides.assets?.[safeName]?.portrait;
     const isManualMap = typeof mapOverride?.manual === "boolean"
       ? mapOverride.manual
       : manualMapSafeNames.has(safeName);
@@ -975,6 +1026,30 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     }
     if (spectrogramStale) assetIssues.push("Spektrogramm veraltet");
     else if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
+    let portraitHashVerified = false;
+    let actualPortraitSha256 = "";
+    let actualPortraitMetadataSha256 = "";
+    if (portrait.exists || portraitMetadataFile.exists) {
+      if (!portrait.exists) assetIssues.push("Artporträt-Datei fehlt");
+      if (!portraitMetadataFile.exists) assetIssues.push("Artporträt-Metadaten fehlen");
+      if (portraitMetadataError) assetIssues.push("Artporträt-Metadaten sind ungültig");
+      if (
+        portrait.exists
+        && portraitMetadataFile.exists
+        && !portraitMetadataError
+        && isSha256(portraitOverride?.sha256)
+        && isSha256(portraitOverride?.metadataSha256)
+      ) {
+        [actualPortraitSha256, actualPortraitMetadataSha256] = await Promise.all([
+          fileSha256(join(assetDir, "portrait.webp")),
+          fileSha256(join(assetDir, "portrait.json")),
+        ]);
+        portraitHashVerified =
+          actualPortraitSha256 === portraitOverride.sha256
+          && actualPortraitMetadataSha256 === portraitOverride.metadataSha256;
+        if (!portraitHashVerified) assetIssues.push("Artporträt stimmt nicht mit den registrierten Hashes überein");
+      }
+    }
     inconsistencies.push(...dataIssues, ...assetIssues);
 
     species.push({
@@ -1038,6 +1113,28 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           actualSoundSha256,
           actualSpectrogramSha256,
           generatedAt: spectrogramOverride?.generatedAt ?? "",
+        },
+        portrait: {
+          ...portrait,
+          url: `/assets/${encodeURIComponent(safeName)}/portrait.webp`,
+          metadataExists: portraitMetadataFile.exists,
+          metadataError: portraitMetadataError,
+          metadata: portraitMetadata,
+          hashTracked:
+            isSha256(portraitOverride?.sha256)
+            && isSha256(portraitOverride?.metadataSha256),
+          hashVerified: portraitHashVerified,
+          sha256: portraitOverride?.sha256 ?? "",
+          metadataSha256: portraitOverride?.metadataSha256 ?? "",
+          actualSha256: actualPortraitSha256,
+          actualMetadataSha256: actualPortraitMetadataSha256,
+          generatedAt: portraitOverride?.generatedAt ?? portraitMetadata?.generated_at ?? "",
+          approvedAt: portraitOverride?.approvedAt ?? portraitMetadata?.approved_at ?? "",
+          model: portraitOverride?.model ?? portraitMetadata?.model ?? "",
+          promptVersion:
+            portraitOverride?.promptVersion
+            ?? portraitMetadata?.prompt_version
+            ?? "",
         },
       },
       credits,
@@ -1332,6 +1429,7 @@ export async function createExplorerServer({
   port = DEFAULT_PORT,
   publishAssetChanges = true,
   spectrogramRenderer = renderSpectrogram,
+  portraitGenerator = generateSpeciesPortrait,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
@@ -1349,6 +1447,7 @@ export async function createExplorerServer({
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   let pipelineProcess = null;
   let assetWriteActive = false;
+  let portraitGenerationActive = false;
   let pipelineAssetSnapshot = new Map();
   let pipelineState = {
     status: "idle",
@@ -1398,7 +1497,7 @@ export async function createExplorerServer({
     const now = Date.now();
     for (const [token, preview] of previewTokens) {
       if (preview.expiresAt > now) continue;
-      if (["map-asset", "sound-asset"].includes(preview.type) && preview.stagingPath) {
+      if (["map-asset", "sound-asset", "portrait-asset"].includes(preview.type) && preview.stagingPath) {
         rmSync(preview.stagingPath, { force: true });
       }
       if (preview.type === "sound-asset" && preview.spectrogramStagingPath) {
@@ -2660,6 +2759,363 @@ export async function createExplorerServer({
     }
   }
 
+  async function publishPortraitAssetChanges(species) {
+    if (!publishAssetChanges) {
+      return { published: false, skipped: true, commit: "" };
+    }
+    const paths = [
+      `species-assets/${species.safeName}/portrait.webp`,
+      `species-assets/${species.safeName}/portrait.json`,
+      "species-assets-overrides.json",
+    ];
+    const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+    if (stagedBefore.code !== 0) {
+      throw new Error(
+        "Vor der Porträtübernahme waren bereits Dateien vorgemerkt. Commit und Push wurden nicht gestartet.",
+      );
+    }
+    const staged = await runCommandCapture("git", ["add", "--", ...paths]);
+    if (staged.code !== 0) {
+      throw new Error(`Porträtdateien konnten nicht vorgemerkt werden: ${staged.stderr || staged.stdout}`);
+    }
+    const changed = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+    if (changed.code === 0) return { published: true, skipped: false, commit: "" };
+    if (changed.code !== 1) {
+      throw new Error(`Git-Änderungen konnten nicht geprüft werden: ${changed.stderr || changed.stdout}`);
+    }
+    const committed = await runCommandCapture(
+      "git",
+      ["commit", "-m", `Add species portrait for ${species.germanName}`],
+    );
+    if (committed.code !== 0) {
+      throw new Error(`Git-Commit fehlgeschlagen: ${committed.stderr || committed.stdout}`);
+    }
+    const commit = await runCommandCapture("git", ["rev-parse", "--short", "HEAD"]);
+    const pushed = await runCommandCapture("git", ["push"]);
+    if (pushed.code !== 0) {
+      throw new Error(`Git-Push fehlgeschlagen: ${pushed.stderr || pushed.stdout}`);
+    }
+    return { published: true, skipped: false, commit: commit.stdout };
+  }
+
+  async function portraitAssetSourceRevision(species) {
+    const assetDirectory = join(repoRoot, "species-assets", species.safeName);
+    const portraitPath = join(assetDirectory, "portrait.webp");
+    const metadataPath = join(assetDirectory, "portrait.json");
+    const [registryText, portraitBuffer, metadataBuffer] = await Promise.all([
+      readFile(assetOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "assets": {}\n}\n'),
+      existsSync(portraitPath) ? readFile(portraitPath) : Promise.resolve(Buffer.alloc(0)),
+      existsSync(metadataPath) ? readFile(metadataPath) : Promise.resolve(Buffer.alloc(0)),
+    ]);
+    const digest = (buffer) => createHash("sha256").update(buffer).digest("hex");
+    return {
+      revision: hashText(`${digest(portraitBuffer)}\n${digest(metadataBuffer)}\n${registryText}`),
+      assetDirectory,
+      portraitPath,
+      metadataPath,
+      portraitBuffer,
+      metadataBuffer,
+      registryText,
+    };
+  }
+
+  function removePreviousPortraitPreviews(id) {
+    for (const [token, preview] of previewTokens) {
+      if (preview.type !== "portrait-asset" || preview.id !== id) continue;
+      if (preview.stagingPath) rmSync(preview.stagingPath, { force: true });
+      previewTokens.delete(token);
+    }
+  }
+
+  async function generatePortraitPreview(id, payload) {
+    cleanupPreviewTokens();
+    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Während eines Pipeline-Laufs können keine Artporträts erzeugt werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive || portraitGenerationActive) {
+      const error = new Error("Es läuft bereits eine Bildgenerierung oder ein schreibender Assetprozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+    if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
+      const error = new Error(
+        `Zusätzliche Hinweise dürfen maximal ${MAX_PORTRAIT_INSTRUCTIONS_LENGTH} Zeichen enthalten`,
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const source = await portraitAssetSourceRevision(species);
+    portraitGenerationActive = true;
+    try {
+      const result = await portraitGenerator({
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+        additionalInstructions,
+        signal: AbortSignal.timeout(5 * 60 * 1000),
+      });
+      inspectWebp(result.buffer);
+      if (result.buffer.length > 20 * 1024 * 1024) {
+        const error = new Error("Das erzeugte Artporträt überschreitet 20 MB");
+        error.statusCode = 502;
+        throw error;
+      }
+
+      removePreviousPortraitPreviews(id);
+      const token = randomUUID();
+      const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+      const generatedAt = new Date().toISOString();
+      await mkdir(assetStagingRoot, { recursive: true });
+      const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
+      await writeFile(stagingPath, result.buffer);
+      const sha256 = createHash("sha256").update(result.buffer).digest("hex");
+      const generator = result.generator ?? PORTRAIT_GENERATOR;
+      const prompt = result.prompt ?? buildPortraitPrompt({
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+        additionalInstructions,
+      });
+      const promptSha256 = result.promptSha256 ?? portraitPromptSha256(prompt);
+      previewTokens.set(token, {
+        type: "portrait-asset",
+        id,
+        safeName: species.safeName,
+        stagingPath,
+        sha256,
+        bytes: result.buffer.length,
+        sourceRevision: source.revision,
+        expiresAt,
+        generatedAt,
+        additionalInstructions,
+        prompt,
+        promptSha256,
+        revisedPrompt: String(result.revisedPrompt ?? ""),
+        generator,
+      });
+      return {
+        token,
+        expiresAt: new Date(expiresAt).toISOString(),
+        species: {
+          id: species.id,
+          germanName: species.germanName,
+          scientificName: species.scientificName,
+        },
+        currentPortrait: {
+          exists: source.portraitBuffer.length > 0,
+          bytes: source.portraitBuffer.length,
+          url: source.portraitBuffer.length
+            ? `/assets/${encodeURIComponent(species.safeName)}/portrait.webp?current=${token}`
+            : "",
+        },
+        newPortrait: {
+          bytes: result.buffer.length,
+          sha256,
+          url: `/api/species/${encodeURIComponent(id)}/assets/portrait/preview-file?token=${encodeURIComponent(token)}`,
+          size: generator.size,
+          model: generator.model,
+          promptVersion: generator.promptVersion,
+          prompt,
+        },
+        warnings: [
+          "Das Bild ist KI-generiert und muss vor der Übernahme auf Artmerkmale und Anatomie geprüft werden.",
+          "Die Generierung ersetzt noch keine produktive Datei. Erst Artporträt übernehmen speichert, committed und pusht.",
+          "Bei einer Neugenerierung wird diese noch nicht übernommene Vorschau verworfen.",
+        ],
+      };
+    } finally {
+      portraitGenerationActive = false;
+    }
+  }
+
+  async function savePortraitAsset(id, payload) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token ?? "");
+    const preview = previewTokens.get(token);
+    if (!preview || preview.type !== "portrait-asset" || preview.id !== id) {
+      const error = new Error("Artporträt-Vorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive || portraitGenerationActive || pipelineProcess
+      || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput || species.safeName !== preview.safeName) {
+      previewTokens.delete(token);
+      const error = new Error("Art ist nicht mehr im erwarteten Zustand");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (!existsSync(preview.stagingPath)) {
+      previewTokens.delete(token);
+      const error = new Error("Vorgemerkte Artporträt-Datei fehlt");
+      error.statusCode = 409;
+      throw error;
+    }
+    const stagedBuffer = await readFile(preview.stagingPath);
+    const stagedHash = createHash("sha256").update(stagedBuffer).digest("hex");
+    if (stagedHash !== preview.sha256) {
+      previewTokens.delete(token);
+      const error = new Error("Vorgemerkte Artporträt-Datei wurde verändert");
+      error.statusCode = 409;
+      throw error;
+    }
+    inspectWebp(stagedBuffer);
+    const source = await portraitAssetSourceRevision(species);
+    if (source.revision !== preview.sourceRevision) {
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      const error = new Error("Artporträt oder Metadaten wurden seit der Vorschau geändert");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (publishAssetChanges) {
+      const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+      if (stagedBefore.code !== 0) {
+        const error = new Error(
+          "Vor der Porträtübernahme sind bereits Dateien für Git vorgemerkt. Bitte diese zuerst committen oder aus dem Index entfernen.",
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
+    assetWriteActive = true;
+    let backupRelativePath = "";
+    try {
+      await mkdir(source.assetDirectory, { recursive: true });
+      if (source.portraitBuffer.length || source.metadataBuffer.length) {
+        const backupDirectory = join(assetBackupRoot, species.safeName, "portrait");
+        await mkdir(backupDirectory, { recursive: true });
+        const currentHash = createHash("sha256")
+          .update(source.portraitBuffer)
+          .update(source.metadataBuffer)
+          .digest("hex");
+        const backupName = `portrait-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
+        const backupPath = join(backupDirectory, backupName);
+        await mkdir(backupPath, { recursive: true });
+        if (source.portraitBuffer.length) {
+          await writeFile(join(backupPath, "portrait.webp"), source.portraitBuffer);
+        }
+        if (source.metadataBuffer.length) {
+          await writeFile(join(backupPath, "portrait.json"), source.metadataBuffer);
+        }
+        backupRelativePath =
+          `species-explorer/asset-backups/${species.safeName}/portrait/${backupName}`;
+      }
+
+      const approvedAt = new Date().toISOString();
+      const generator = preview.generator ?? PORTRAIT_GENERATOR;
+      const metadata = {
+        version: 1,
+        german_name: species.germanName,
+        scientific_name: species.scientificName,
+        type: "AI-generated natural-history illustration",
+        provider: generator.provider ?? "OpenAI",
+        model: generator.model,
+        prompt_version: generator.promptVersion,
+        prompt_sha256: preview.promptSha256,
+        size: generator.size,
+        quality: generator.quality,
+        format: generator.outputFormat,
+        output_compression: generator.outputCompression,
+        background: generator.background,
+        additional_instructions: preview.additionalInstructions,
+        generated_at: preview.generatedAt,
+        approved_at: approvedAt,
+        sha256: preview.sha256,
+      };
+      const metadataText = `${JSON.stringify(metadata, null, 2)}\n`;
+      const metadataSha256 = createHash("sha256").update(metadataText).digest("hex");
+      const registry = JSON.parse(source.registryText);
+      registry.version = 1;
+      registry.assets ??= {};
+      registry.assets[species.safeName] ??= {};
+      registry.assets[species.safeName].portrait = {
+        managedBy: "species-explorer",
+        provider: metadata.provider,
+        model: metadata.model,
+        promptVersion: metadata.prompt_version,
+        generatedAt: metadata.generated_at,
+        approvedAt,
+        sha256: preview.sha256,
+        metadataSha256,
+      };
+      const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
+
+      const portraitTempPath = `${source.portraitPath}.tmp-${randomUUID()}`;
+      const metadataTempPath = `${source.metadataPath}.tmp-${randomUUID()}`;
+      const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      try {
+        await writeFile(portraitTempPath, stagedBuffer);
+        await writeFile(metadataTempPath, metadataText, "utf8");
+        await writeFile(registryTempPath, nextRegistryText, "utf8");
+        await rename(portraitTempPath, source.portraitPath);
+        await rename(metadataTempPath, source.metadataPath);
+        await rename(registryTempPath, assetOverridesPath);
+      } catch (error) {
+        await unlink(portraitTempPath).catch(() => {});
+        await unlink(metadataTempPath).catch(() => {});
+        await unlink(registryTempPath).catch(() => {});
+        if (source.portraitBuffer.length) await writeFile(source.portraitPath, source.portraitBuffer);
+        else await unlink(source.portraitPath).catch(() => {});
+        if (source.metadataBuffer.length) await writeFile(source.metadataPath, source.metadataBuffer);
+        else await unlink(source.metadataPath).catch(() => {});
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        throw error;
+      }
+
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      let backupRetention = { kept: 0, removed: 0, bytes: 0 };
+      let backupCleanupWarning = "";
+      try {
+        backupRetention = await pruneAssetBackups(assetBackupRoot);
+      } catch (error) {
+        backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
+      }
+      await refreshModel({ force: true });
+      let publication;
+      let publicationError = "";
+      try {
+        publication = await publishPortraitAssetChanges(species);
+      } catch (error) {
+        publication = { published: false, skipped: false, commit: "" };
+        publicationError = error.message;
+      }
+      return {
+        ok: !publicationError,
+        saved: true,
+        backup: backupRelativePath,
+        backupRetention,
+        backupCleanupWarning,
+        gitPublished: publication.published,
+        gitSkipped: publication.skipped,
+        gitCommit: publication.commit,
+        publicationError,
+        portraitSha256: preview.sha256,
+        metadataSha256,
+        species: model.species.find((entry) => entry.id === id) ?? null,
+        summary: model.summary,
+        validation: model.validation,
+      };
+    } finally {
+      assetWriteActive = false;
+    }
+  }
+
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
     const { values, errors } = validateNewSpeciesValues(payload?.values);
@@ -3126,6 +3582,12 @@ export async function createExplorerServer({
       const soundPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
       );
+      const portraitAssetRoute = url.pathname.match(
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/(generate|save)$/,
+      );
+      const portraitPreviewFileRoute = url.pathname.match(
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
+      );
 
       if (
         (request.method === "GET" || request.method === "HEAD")
@@ -3159,6 +3621,22 @@ export async function createExplorerServer({
         return;
       }
 
+      if (
+        (request.method === "GET" || request.method === "HEAD")
+        && portraitPreviewFileRoute
+      ) {
+        cleanupPreviewTokens();
+        const id = decodeURIComponent(portraitPreviewFileRoute[1]);
+        const token = String(url.searchParams.get("token") ?? "");
+        const preview = previewTokens.get(token);
+        if (!preview || preview.type !== "portrait-asset" || preview.id !== id) {
+          sendText(response, 404, "Artporträt-Vorschau nicht gefunden");
+          return;
+        }
+        await sendFile(request, response, preview.stagingPath);
+        return;
+      }
+
       if (request.method === "POST" && mapAssetRoute) {
         const id = decodeURIComponent(mapAssetRoute[1]);
         const action = mapAssetRoute[2];
@@ -3181,6 +3659,17 @@ export async function createExplorerServer({
         const result = action === "preview"
           ? await previewSoundAsset(id, payload)
           : await saveSoundAsset(id, payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "POST" && portraitAssetRoute) {
+        const id = decodeURIComponent(portraitAssetRoute[1]);
+        const action = portraitAssetRoute[2];
+        const payload = await readJsonBody(request);
+        const result = action === "generate"
+          ? await generatePortraitPreview(id, payload)
+          : await savePortraitAsset(id, payload);
         sendJson(response, 200, result);
         return;
       }
