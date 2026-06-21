@@ -372,6 +372,16 @@
         "spectrogramSha256": "1d7bac98ffa948ca8db6f866176d21597704fd7ea5092507b5d7b1617610a0f8",
         "generatedAt": "2026-06-15T13:03:05.215Z",
         "verifiedAt": "2026-06-20T18:35:37.719Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:51:25.876Z",
+        "approvedAt": "2026-06-21T17:52:50.342Z",
+        "sha256": "fd0abea5f2d9a48d3817c8c5086d36dee8dffc58762eb68c307f631094a80827",
+        "metadataSha256": "a66c8fbf93a3ea8b907f29c643bb356065564fec3aaf8241a35c50a75fdbd793"
       }
     },
     "Buckelwal": {
