@@ -698,6 +698,16 @@
         "spectrogramSha256": "f87b2a59de6837a17f6e30d47b172b343a3346e8dfd4dad8fe764a957983c590",
         "generatedAt": "2026-06-15T13:03:17.009Z",
         "verifiedAt": "2026-06-20T18:35:37.796Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:48:03.011Z",
+        "approvedAt": "2026-06-21T18:48:28.809Z",
+        "sha256": "818794147f1f0c87d0d88aef14cba6879946cb5794339af3d0842ea436842596",
+        "metadataSha256": "81c268f97f65a3eb6e4be2e6c70fd27ef29f2d49568b321049c48b52c07139c5"
       }
     },
     "Kohlmeise": {
