@@ -344,6 +344,16 @@
         "spectrogramSha256": "901258a0491cb23a11f5db5916e95cb8884b3a6ade3f2095232075edaafec65b",
         "generatedAt": "2026-06-15T13:03:04.554Z",
         "verifiedAt": "2026-06-20T18:35:37.718Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:49:43.382Z",
+        "approvedAt": "2026-06-21T17:50:22.094Z",
+        "sha256": "eeea3290b65fce56ab1fe830db595a506a1aca8773bd0f5977f97d6a44567c29",
+        "metadataSha256": "6164dacc2eb0267121cb8868c0df2e80777009af85bd38cb0cf06aa3fc38ac16"
       }
     },
     "Brauenmotmot": {
