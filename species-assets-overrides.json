@@ -620,6 +620,16 @@
         "spectrogramSha256": "171e0d33c641df3966206e00c6ce326dc99ffbdfd8350e2524c13272d845dcd4",
         "generatedAt": "2026-06-15T13:03:15.494Z",
         "verifiedAt": "2026-06-20T18:35:37.787Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:05:01.124Z",
+        "approvedAt": "2026-06-21T18:05:46.729Z",
+        "sha256": "9b7b716234e790d473b131fe23e481876c364b3f71c10f2295509696c78653f2",
+        "metadataSha256": "7903c0966b9f9f1d102f28a79b7f8a892d5d38b15da3762959cf9fb9c1818319"
       }
     },
     "Kiebitz": {
