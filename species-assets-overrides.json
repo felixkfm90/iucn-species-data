@@ -584,6 +584,16 @@
         "spectrogramSha256": "8c6bf55dac1e9038670683c2c944bbacdb79e73fe17ac6f505860c7eda293d03",
         "generatedAt": "2026-06-15T13:03:11.616Z",
         "verifiedAt": "2026-06-20T18:35:37.755Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:31:35.606Z",
+        "approvedAt": "2026-06-21T18:31:39.252Z",
+        "sha256": "e3028c13b5376f598005ac286678ffe33a35e0727e96af30bf2d745e8a3cdaae",
+        "metadataSha256": "4cba19d494f16640316dcc869a5cc205abfb63cbd61740610e7a1d3509afae78"
       }
     },
     "Graugans": {
