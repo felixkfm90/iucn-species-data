@@ -889,6 +889,16 @@
         "spectrogramSha256": "19ceaa7073a6d2f2760830476dd080929107bf173e08caf9cc8477081a5db1cf",
         "generatedAt": "2026-06-15T13:03:20.163Z",
         "verifiedAt": "2026-06-20T18:35:37.809Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:40:36.158Z",
+        "approvedAt": "2026-06-21T19:40:38.494Z",
+        "sha256": "9e4f00f950025037d24f9ed98165baa724f26a5e9bb3c2f34dc7267dc6c29c52",
+        "metadataSha256": "c4e4b6ce28f06914b224685b872d903ed45b368a81eb28ba530811e2bc32a020"
       }
     },
     "Sperlingskauz": {
