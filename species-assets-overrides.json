@@ -908,6 +908,16 @@
         "spectrogramSha256": "65fd2c5fb3233374b6b7411a5a6212216d89e44144b416336ffe83abd5270a07",
         "generatedAt": "2026-06-15T13:03:20.331Z",
         "verifiedAt": "2026-06-20T18:35:37.809Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:44:37.009Z",
+        "approvedAt": "2026-06-21T19:44:40.253Z",
+        "sha256": "8d58a0b00b25157d168b03224a28fbed3ebbe41c3a4e17617ff99028cd075c83",
+        "metadataSha256": "ade8c4aeef0909e5e199db509f7c9fdd27c7a3b0c0d8faf3094e2291fd777446"
       }
     },
     "Turmfalke": {
