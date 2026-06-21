@@ -81,7 +81,7 @@ Der Desktop-Wrapper muss mindestens unterstützen:
 
 ## Phasenfolge
 
-- Phase 7.7.5: kostenfreier Portrait-Prompt-/Importworkflow
-- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App
+- Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
+- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App als nächster aktiver Schritt
 - Phase 7.9: Synology NAS, Backup und Restore-Test
 - Phase 8: weiterer funktionaler Ausbau

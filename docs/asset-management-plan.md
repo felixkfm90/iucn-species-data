@@ -1,6 +1,8 @@
 # Asset-Verwaltung im Arten-Explorer
 
-Stand: 2026-06-20
+Stand: 2026-06-21
+
+Status: Phase 7.7 am 2026-06-21 abgeschlossen und von Felix freigegeben.
 
 Ziel von Phase 7.7: Karten, Sounds, Credits und Spektrogramme kontrolliert je Art ersetzen oder pflegen, ohne
 beliebige Dateisystemzugriffe zu erlauben und ohne manuelle Assets beim naechsten Pipeline-Lauf unbemerkt zu
@@ -36,8 +38,8 @@ Aktuelle Schutzlogik:
 
 ## Grundentscheidung
 
-Phase 7.7 wird in kontrollierten Teilstufen umgesetzt. Direkte Loeschfunktionen, beliebige Dateinamen und freie
-Dateisystempfade sind nicht erlaubt.
+Phase 7.7 wurde in kontrollierten Teilstufen umgesetzt. Direkte Loeschfunktionen, beliebige Dateinamen und freie
+Dateisystempfade sind weiterhin nicht erlaubt.
 
 ### 7.7.1 Maschinenlesbares Override-Register
 
@@ -226,11 +228,14 @@ Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 
 Details und Promptstandard: `docs/portrait-generation.md`.
 
-Noch offen:
+Abschlussstand:
 
-- echter Einzelimport eines in ChatGPT erzeugten Bildes
-- visuelle und fachliche Freigabe
-- Squarespace-Ausgabe ausdruecklich erst nach Abschluss dieser Pruefungen
+- erster echter Einzelimport für `Alpenbirkenzeisig` erfolgreich
+- Vorschau, vollständige 4:5-Darstellung, Lightbox und kompakte Detailzelle visuell geprüft
+- fehlende Portraits als Assetprobleme und Sammelprompt-Workflow umgesetzt
+- Phase 7.7 am 2026-06-21 freigegeben
+- Squarespace-Ausgabe bleibt bewusst ein späterer eigener Schritt und blockiert den Abschluss der lokalen
+  Assetverwaltung nicht
 
 ## Upload- und Dateisicherheit
 
@@ -287,16 +292,18 @@ Vor dem Speichern zeigt die App:
 - beliebige Dateinamen oder Zielordner
 - komplette Pipeline aus der App starten
 - automatische rechtliche Bewertung einer Lizenz
-- produktives Artportraet ohne vorherige Strukturentscheidung
+- Squarespace-Ausgabe der Artportraits
 
-## Geplante Reihenfolge
+## Umgesetzte Reihenfolge
 
-1. Override-Register und Pipeline-Schutz
-2. Kartenimport mit Vorschau, Backup, Dokumentationsabgleich und Git-Veröffentlichung: technisch umgesetzt
-3. Sound-/Credits-Paket mit Backup und Git-Veröffentlichung: technisch umgesetzt
-4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich: technisch umgesetzt
-5. Entscheidung zum Artportraet
-6. erst danach Restore-Funktion und weitergehende Assetaktionen
+1. Override-Register und Pipeline-Schutz: umgesetzt
+2. Kartenimport mit Vorschau, Backup, Dokumentationsabgleich und Git-Veröffentlichung: umgesetzt
+3. Sound-/Credits-Paket mit Backup und Git-Veröffentlichung: umgesetzt
+4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich: umgesetzt
+5. kostenfreier Artportrait-Prompt-/Importworkflow: umgesetzt und produktiv erprobt
+
+Restore-Funktion und weitergehende Assetaktionen sind mögliche spätere Erweiterungen, aber kein offener Bestandteil
+von Phase 7.7.
 
 ## Testplan
 

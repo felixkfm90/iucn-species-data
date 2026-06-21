@@ -16,7 +16,8 @@ Stattdessen gilt ein manueller, kontrollierter Workflow:
 5. Die App prüft und vereinheitlicht die Datei.
 6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen, committed und gepusht.
 
-Squarespace folgt erst, wenn der lokale Workflow und die Portraitqualität freigegeben sind.
+Der lokale Workflow ist seit dem 2026-06-21 freigegeben. Die Squarespace-Ausgabe bleibt trotzdem bewusst ein
+späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich geprüft wurden.
 
 ## Prompt
 

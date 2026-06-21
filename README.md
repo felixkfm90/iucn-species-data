@@ -317,13 +317,13 @@ Tests:
 npm.cmd run --silent test:explorer
 ```
 
-Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 technisch lokal umgesetzt. Produktive Kartenimporte werden erst
+Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 umgesetzt. Produktive Kartenimporte werden erst
 nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB; die App prüft Signatur, Struktur, Abmessungen,
 Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
 
-Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 technisch lokal umgesetzt. MP3-Dateien bis 50 MB werden
+Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
 neuen Sound gegenüber, liest die Dauer im Browser und zeigt Quelle, Lizenz sowie einen NC-Hinweis. Vor dem Austausch
 werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. Das alte Spektrogramm wird danach
@@ -337,8 +337,9 @@ Schlägt FFmpeg oder die WebP-Prüfung fehl, werden keine Produktivdateien verä
 Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und bei jedem Modellauf gegen die
 aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 47 von 47 Spektrogrammen
 sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten Registeränderungen.
-Dreizehn Explorer-Tests sind erfolgreich; produktiver manueller Soundimport und visuelle Bedienprüfung stehen noch
-aus.
+Vierzehn Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
+Portraitimport und visueller Freigabe der Asset- und Detailoberfläche abgeschlossen. Ein unnötiger produktiver
+Austausch eines bereits gültigen Sounds ist kein verbleibendes Abschlusskriterium.
 
 Die Karten- und Soundformulare verwenden auf Desktop feste Grid-Bereiche. Dateieingaben sind gleich hoch, der
 Pflegegrund reicht jeweils von der Oberkante der ersten bis zur Unterkante der zweiten linken Feldzeile. Im
@@ -469,13 +470,14 @@ Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive 
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
 Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
-Die Assetverwaltung laeuft in Phase 7.7 nach `docs/asset-management-plan.md`. Karten, Sound/Credits und
-Spektrogrammverwaltung sind technisch umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
+Die Assetverwaltung aus Phase 7.7 ist seit 2026-06-21 abgeschlossen. Karten, Sound/Credits,
+Spektrogrammverwaltung und Artportrait-Workflow sind umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
 Der Explorer erstellt den Prompt lokal, kopiert Einzel- oder Sammelprompts und importiert ein anschliessend selbst
 in ChatGPT erzeugtes PNG, JPEG oder WebP. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
 `portrait.webp` in `1280x1600` und speichert erst nach manueller Art- und Anatomiepruefung. Details:
-`docs/portrait-generation.md`. Squarespace wird erst nach dem lokalen Einzeltest und der visuellen Freigabe
-erweitert. Danach folgt Phase 7.8 als browserunabhaengiger Windows-Desktop-Wrapper fuer die gesamte App; Planung:
+`docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
+Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Als naechstes folgt Phase 7.8 als browserunabhaengiger
+Windows-Desktop-Wrapper fuer die gesamte App; Planung:
 `docs/desktop-shell-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit

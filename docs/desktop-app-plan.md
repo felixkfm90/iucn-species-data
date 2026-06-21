@@ -536,18 +536,18 @@ Kompakte Oberfläche:
 
 ### 7.7 Asset-Verwaltung
 
-In Arbeit seit 2026-06-20. Detailplanung: `docs/asset-management-plan.md`.
+Abgeschlossen und von Felix freigegeben am 2026-06-21. Detaildokumentation:
+`docs/asset-management-plan.md`.
 
-Geplante Teilstufen:
+Abgeschlossene Teilstufen:
 
 1. maschinenlesbares Override-Register und expliziter Pipeline-Schutz
 2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup, Dokumentationsabgleich und automatischem
-   Commit/Push: technisch lokal umgesetzt; produktive Bedienprüfung offen
-3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen: technisch lokal umgesetzt; produktive
-   Bedienprüfung offen
+   Commit/Push
+3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen
 4. Spektrogramm automatisch neu erzeugen und per Sound-/Dateihash als passend oder veraltet kennzeichnen:
-   technisch umgesetzt
-5. Artportraet-Quelle, Lizenz, Dateiformat und Squarespace-Verwendung separat entscheiden
+   umgesetzt
+5. kostenfreier Artportraet-Prompt-/Importworkflow mit Einzel- und Sammelprompts, Prüfung, Backup und Git-Push
 
 Der Kartenimport akzeptiert nur JPEG bis 20 MB, prüft Magic Bytes und Abmessungen, nutzt Staging und ein
 Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen Pipeline-Schutz. Assetbackups sind auf drei
@@ -563,8 +563,9 @@ Paket unverändert. Sound- und Spektrogramm-SHA-256 werden im Override-Register 
 die aktuellen Hashes und kennzeichnet jede Abweichung als `Spektrogramm veraltet`. Der bestehende Bestand wurde
 ohne Neurendering registriert: 47 von 47 Hashpaare sind verifiziert. Sound und Credits werden vor der Pipeline
 geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpaket-Backups sind ebenfalls auf drei
-Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Dreizehn Explorer-Tests
-sind erfolgreich.
+Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Vierzehn Explorer-Tests
+sind erfolgreich. Die Sicherheits- und Bedienkonzepte wurden als Abschluss von Phase 7.7 akzeptiert; ein unnötiger
+produktiver Austausch eines bereits gültigen Sounds ist dafür nicht erforderlich.
 
 Formularlayout seit 2026-06-21:
 

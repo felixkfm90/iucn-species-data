@@ -397,8 +397,8 @@ Aktuelle Planung:
   `update.mjs --mode=undefined`. Der Plan und Prozessstatus tragen jetzt ausdruecklich `mode: cleanup`; der
   isolierte Test prueft sowohl den Bereinigungslauf als auch die optionale Sofortloeschung und anschliessende
   kollisionsfreie Neuanlage.
-  Phase 7.7 Asset-Verwaltung nach `docs/asset-management-plan.md` ist seit 2026-06-20 in Arbeit. Die technische
-  Grundlage fuer 7.7.2 Kartenverwaltung ist lokal umgesetzt: Im allgemeinen Bearbeitungsdialog koennen bekannte
+  Phase 7.7 Asset-Verwaltung nach `docs/asset-management-plan.md` wurde am 2026-06-21 abgeschlossen und von Felix
+  freigegeben. Die Kartenverwaltung erlaubt im allgemeinen Bearbeitungsdialog bekannten Arten eine neue
   Arten eine neue JPEG-Karte bis 20 MB mit Quelle und Pflegegrund pruefen. Der Server validiert Magic Bytes,
   JPEG-Struktur und Abmessungen, legt eine zehn Minuten gueltige Alt-/Neu-Vorschau im ignorierten Stagingbereich an
   und schuetzt gegen parallele Aenderungen. Beim Speichern wird die alte Karte gesichert, `map.jpg` atomar ersetzt,
@@ -438,13 +438,16 @@ Aktuelle Planung:
   ab. Der erste produktive Import fuer `Alpenbirkenzeisig` wurde am 2026-06-21 gespeichert, committed und gepusht.
   Der Detailbereich behaelt mit und ohne Portrait dieselbe Medienhoehe; das vollstaendige 4:5-Bild wird innerhalb
   dieser Flaeche eingepasst und nur in der Lightbox vergroessert. Die feste Medienzeile beruecksichtigt Titel,
-  Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Squarespace wird erst nach weiterer
-  visueller/fachlicher Freigabe erweitert. Details: `docs/portrait-generation.md`.
-  Als naechste Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
+  Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Die weitere
+  Portraitbefuellung und Squarespace-Ausgabe sind Betriebs- beziehungsweise spaetere Ausbauschritte und blockieren
+  den Abschluss der lokalen Assetverwaltung nicht. Details: `docs/portrait-generation.md`.
+  Als naechste aktive Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
   und beendet den Server selbst und zeigt die bestehende Oberflaeche im eigenen App-Fenster. Chrome und das
   manuelle Oeffnen von `127.0.0.1:4177` entfallen. Planung: `docs/desktop-shell-plan.md`. NAS/Backup verschiebt
   sich auf Phase 7.9.
-  Ein produktiver manueller Soundimport und die visuelle Bedienpruefung stehen ebenfalls noch aus.
+  Karten-, Sound-/Credits-, Spektrogramm- und Portraitpfade sind durch Vorschau-, Validierungs-, Backup-, Hash-,
+  Commit- und Push-Tests abgedeckt. Felix hat die Asset- und Detailoberflaeche zum Abschluss von Phase 7.7
+  akzeptiert; ein unnoetiger Austausch eines bereits gueltigen Sounds ist kein offener Abschlussblocker.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.

@@ -345,7 +345,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Beim ersten produktiven Kartensuchlauf wurden Großtrappe, Kernbeißer und Reh als funktionierende automatische
   Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; vier manuelle Karten bleiben. Das
   JSON-Register ist bei einer ausdrücklichen Pflegeentscheidung maßgeblich und synchronisiert die Markdown-Liste.
-- 7.7 Asset-Verwaltung: in Arbeit seit 2026-06-20, siehe `docs/asset-management-plan.md`.
+- 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
+  `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
   technisch lokal umgesetzt: JPEG bis 20 MB, Signatur-/Struktur-/Abmessungsprüfung, Alt-/Neu-Vorschau, Quelle,
   Pflegegrund, Staging, Vorschau-Token, Schutz gegen parallele Änderungen, atomarer Austausch und manuelle
@@ -370,14 +371,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Prompts für alle betroffenen Arten, ohne sie fälschlich in den normalen Datenpipeline-Lauf aufzunehmen.
   Vierzehn Explorer-Tests sind erfolgreich. Der erste produktive Einzelimport fuer `Alpenbirkenzeisig` wurde am
   2026-06-21 gespeichert, committed und gepusht. Vorhandene Portraits behalten dieselbe feste Zellenhoehe wie der
-  leere Platzhalter und werden vollstaendig eingepasst; eine Vergroesserung erfolgt nur in der Lightbox. Die weitere
-  visuelle/fachliche Freigabe steht noch aus. Squarespace folgt erst danach. Details:
+  leere Platzhalter und werden vollstaendig eingepasst; eine Vergroesserung erfolgt nur in der Lightbox. Die
+  abschliessenden Rahmen-, Listen- und Medienlayouts wurden visuell nachgebessert und von Felix akzeptiert.
+  Squarespace bleibt bewusst ein spaeterer eigener Ausgabeschritt. Details:
   `docs/portrait-generation.md`.
   Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
   gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
   einspaltig.
-- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: als nächste Phase geplant. Der Wrapper startet,
+- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: nächster aktiver Schritt. Der Wrapper startet,
   überwacht und beendet den lokalen Server selbst und zeigt die bestehende Oberfläche in einem eigenen
   Windows-App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177` entfallen. Technische Vorplanung:
   `docs/desktop-shell-plan.md`.
