@@ -133,6 +133,16 @@
         "spectrogramSha256": "6744f2b55861568a2c376889815036f8054cd1ce1e0c395a95d5430899de719e",
         "generatedAt": "2026-06-15T13:03:19.602Z",
         "verifiedAt": "2026-06-20T18:35:37.808Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:37:59.900Z",
+        "approvedAt": "2026-06-21T19:38:03.617Z",
+        "sha256": "0d0ea4341f319a672c37065c341d5cb305d118aba1de60a23ee463144328ee6b",
+        "metadataSha256": "27d7256a1bd49ab2403375fed8cb5cbfccb9ae56df080385d816034240eef95e"
       }
     },
     "Waldkauz": {
