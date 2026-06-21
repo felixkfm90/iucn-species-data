@@ -13,6 +13,16 @@
         "spectrogramSha256": "52a5a2b390a716edfea9c9e59fb7665bed00e296978192002bdf7e0115d27b91",
         "generatedAt": "2026-06-15T13:03:03.963Z",
         "verifiedAt": "2026-06-20T18:35:37.717Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:46:30.072Z",
+        "approvedAt": "2026-06-21T17:47:07.501Z",
+        "sha256": "36fd7ae37968ed9bdaff4fd9eff1bcf05b9cef2985114b8a8f64cb418ac2dc2e",
+        "metadataSha256": "1493fccee617129c273d925df042d04fd66bc8d2fe06efce37d04582b51e7797"
       }
     },
     "Fischertukan": {
