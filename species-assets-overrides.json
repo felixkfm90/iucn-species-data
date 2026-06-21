@@ -248,6 +248,16 @@
         "spectrogramSha256": "67e8577b2c18104c709eafa1860f62f0d7c9dc9ae5a08186c45be5a97319c334",
         "generatedAt": "2026-06-15T13:03:03.067Z",
         "verifiedAt": "2026-06-20T18:35:37.707Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:42:01.151Z",
+        "approvedAt": "2026-06-21T17:43:44.181Z",
+        "sha256": "fe880823f1d8df596287d7079bf45386ab6d5af45685da9175e44b0b21c411f6",
+        "metadataSha256": "1e6a55efdd3666538d35a3faf082b089b150585fe47e17cd6b05a86fd0e0f5a8"
       }
     },
     "Bisamratte": {
