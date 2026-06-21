@@ -220,6 +220,16 @@
         "spectrogramSha256": "bb07417ffa4b83d99dba68ac6df5e22515580c5698d56cac6da10a549a1e29ce",
         "generatedAt": "2026-06-15T13:03:02.536Z",
         "verifiedAt": "2026-06-20T18:35:37.704Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:39:17.135Z",
+        "approvedAt": "2026-06-21T17:40:10.249Z",
+        "sha256": "558cf75dd3dc1a6d39eac15809af15236ea23f7e04aa4b9f92b94781bd9a9cbc",
+        "metadataSha256": "b2f6690bb97dd820c095c37988f771508391b1028e32b7f08cabe5f142c26573"
       }
     },
     "Bartmeise": {

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "german_name": "Bachstelze",
+  "scientific_name": "Motacilla alba",
+  "type": "AI-generated natural-history illustration",
+  "source": "ChatGPT",
+  "generation_method": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+  "prompt_version": "1.0.0",
+  "prompt_sha256": "2bf5589ac2b6369f725d637698669a62e8a18e06c518dbb61a1bf7385565d1e8",
+  "prompt": "Create one scientifically accurate natural-history illustration of the following animal species.\n\nGerman common name: Bachstelze\nScientific name: Motacilla alba\n\nSTYLE STANDARD\n- Traditional natural-history plate rendered as detailed watercolor with fine colored-pencil linework.\n- Realistic and scientifically informative, while remaining visibly hand-painted rather than photographic.\n- Warm ivory watercolor-paper background with a very subtle natural paper texture.\n- Softly fading watercolor edges around the minimal supporting element.\n- Neutral, even lighting without dramatic shadows.\n- Use natural, restrained colors. Avoid artificial saturation, glossy digital effects, cartoon styling, and photorealism.\n\nSPECIES ACCURACY\n- Depict exactly one recognizable adult specimen typical of Motacilla alba.\n- Accurately reproduce species-specific anatomy, proportions, coloration, plumage, fur, scales, beak, eyes, ears, limbs, feet, claws, fins, tail, and diagnostic markings.\n- Do not invent, combine, exaggerate, omit, duplicate, or deform anatomical features.\n- Do not introduce characteristics from similar or related species.\n- If the sexes differ substantially, depict the visually most characteristic adult form unless the additional instructions specify otherwise.\n\nCOMPOSITION\n- Vertical 4:5 composition.\n- Show the complete animal whenever anatomically possible.\n- Keep every important body part fully inside the image.\n- The animal should occupy approximately 65 to 75 percent of the canvas.\n- Leave generous safe margins around the beak, ears, wings, feet, fins, and tail.\n- Position the animal naturally for its body shape. Long-bodied animals may be arranged slightly diagonally.\n- Leave slightly more open space in the direction the animal is facing.\n- Use only one minimal species-appropriate support such as a branch, rock, sand, subtle ground, or a pale watercolor suggestion of water.\n- Do not force an unnatural perch or pose.\n\nEXCLUSIONS\n- No second animal, prey, decorative plants, detailed landscape, scenery, border, frame, text, caption, scientific label, signature, logo, or watermark.\n- No cropped limbs, tail, wings, beak, fins, or feet.\n- No fantasy elements.\n\nFINAL CHECK\n- Before finishing, verify the number and shape of all visible limbs, toes, claws, wings, fins, teeth, ears, eyes, and tail structures.\n- Verify that the diagnostic markings belong specifically to Motacilla alba.\n\nOUTPUT\n- Use a vertical 4:5 canvas.\n- Create the highest available image quality.\n- Keep the warm ivory paper background opaque.\n- Do not add text, labels, logos, signatures, borders, or watermarks.",
+  "original_file_name": "ChatGPT Image 21. Juni 2026, 18_21_55 (4).png",
+  "original_format": "png",
+  "original_width": 1122,
+  "original_height": 1402,
+  "product_width": 1280,
+  "product_height": 1600,
+  "product_format": "webp",
+  "additional_instructions": "",
+  "imported_at": "2026-06-21T17:39:17.135Z",
+  "approved_at": "2026-06-21T17:40:10.249Z",
+  "sha256": "558cf75dd3dc1a6d39eac15809af15236ea23f7e04aa4b9f92b94781bd9a9cbc"
+}
