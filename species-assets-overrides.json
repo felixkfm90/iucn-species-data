@@ -413,6 +413,16 @@
         "spectrogramSha256": "57ed33e945fb38038106ff5d63782154bb675f08908c92aec5d70051c726cb49",
         "generatedAt": "2026-06-15T13:03:04.849Z",
         "verifiedAt": "2026-06-20T18:35:37.719Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:26:06.977Z",
+        "approvedAt": "2026-06-21T18:26:11.072Z",
+        "sha256": "d07fc3426883987a2d408ca37676815af283072fe07b6f33e9852b4abbda67fe",
+        "metadataSha256": "b50e7c2d5018124eefdccc1beafefc2984c8f845c25038313120ef6ba71e1077"
       }
     },
     "Buchfink": {
