@@ -325,6 +325,16 @@
         "spectrogramSha256": "578d921b6d3eb60caf71d0242ac824389bbaec24ebbbbd4c73196be6c11139ba",
         "generatedAt": "2026-06-15T13:03:04.259Z",
         "verifiedAt": "2026-06-20T18:35:37.718Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:48:48.090Z",
+        "approvedAt": "2026-06-21T17:49:21.462Z",
+        "sha256": "6aa1829951a2fbc47bf7dacb7a4c2f182dd40b83cdf80590f7e4b74c4d5efc13",
+        "metadataSha256": "3a98bf679e3246b9eb808b439d4e6a7f2b1edad73b5effcc960a23d8474c7ab0"
       }
     },
     "Bluthaenfling": {
