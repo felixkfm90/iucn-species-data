@@ -410,6 +410,16 @@
         "spectrogramSha256": "217b2f20316a701290b2c6755e48387092ceab6ae2a87a593a1f8e78784dda4e",
         "generatedAt": "2026-06-15T13:03:08.508Z",
         "verifiedAt": "2026-06-20T18:35:37.746Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:53:29.413Z",
+        "approvedAt": "2026-06-21T17:53:52.934Z",
+        "sha256": "c870f0c5af47c79f2749fe5993d3d6fab66901e77a5cffa2477cc593a98ddcb6",
+        "metadataSha256": "78dc036082cf157cca1c94ac82d430435171b875a921deeb58682fea71acbbe0"
       }
     },
     "Eisvogel": {
