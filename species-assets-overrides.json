@@ -581,6 +581,16 @@
         "spectrogramSha256": "460d7beb41f71f3b98defe70c003bb55c41d4524a2f6237093d334f253c7a05e",
         "generatedAt": "2026-06-15T13:03:13.975Z",
         "verifiedAt": "2026-06-20T18:35:37.783Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:03:11.301Z",
+        "approvedAt": "2026-06-21T18:03:41.220Z",
+        "sha256": "b5fa2993aada7c2f74d3d632c7bf04600a75523ec345647329409d35ed014ece",
+        "metadataSha256": "039935178e639eced1584d8e657a67dee7f69391f1aefa552751894202dc013c"
       }
     },
     "Jagdfasan": {
