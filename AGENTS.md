@@ -437,7 +437,8 @@ Aktuelle Planung:
   Vierzehn Explorer-Tests decken Prompt, Sammelprompts, Dateipruefung, Konvertierung, Speicherung und Hashpruefung
   ab. Der erste produktive Import fuer `Alpenbirkenzeisig` wurde am 2026-06-21 gespeichert, committed und gepusht.
   Der Detailbereich behaelt mit und ohne Portrait dieselbe Medienhoehe; das vollstaendige 4:5-Bild wird innerhalb
-  dieser Flaeche eingepasst und nur in der Lightbox vergroessert. Squarespace wird erst nach weiterer
+  dieser Flaeche eingepasst und nur in der Lightbox vergroessert. Die feste Medienzeile beruecksichtigt Titel,
+  Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Squarespace wird erst nach weiterer
   visueller/fachlicher Freigabe erweitert. Details: `docs/portrait-generation.md`.
   Als naechste Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
   und beendet den Server selbst und zeigt die bestehende Oberflaeche im eigenen App-Fenster. Chrome und das

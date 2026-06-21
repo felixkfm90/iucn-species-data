@@ -531,7 +531,8 @@ Kompakte Oberfläche:
   Detailblocks berechnet; die vollständige Artenliste darf die Höhe der Grid-Zeile nicht bestimmen.
 - Ein vorhandenes Artporträt vergrößert die Medienzeile nicht. Portraitzelle und Platzhalter verwenden dieselbe
   feste Höhe; das vollständige 4:5-Bild wird mit `object-fit: contain` eingepasst und bei Bedarf über die Lightbox
-  vergrößert.
+  vergrößert. Die berechnete Medienzeile berücksichtigt zusätzlich beide äußeren Rahmenkanten, damit insbesondere
+  die Unterkante der Karten- und Portraitbox vollständig sichtbar bleibt.
 
 ### 7.7 Asset-Verwaltung
 

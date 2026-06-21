@@ -1506,7 +1506,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(
     cssSource,
-    /\.detail-media-layout\s*\{[^}]*grid-auto-rows:\s*calc\(var\(--detail-media-frame-height\)\s*\+\s*39px\)/s,
+    /\.detail-media-layout\s*\{[^}]*grid-auto-rows:\s*calc\(var\(--detail-media-frame-height\)\s*\+\s*41px\)/s,
   );
   assert.match(cssSource, /\.detail-side-stack\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s*auto/s);
   assert.match(
