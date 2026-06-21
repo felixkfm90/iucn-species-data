@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "german_name": "Quetzal",
+  "scientific_name": "Pharomachrus mocinno",
+  "type": "AI-generated natural-history illustration",
+  "source": "ChatGPT",
+  "generation_method": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+  "prompt_version": "1.1.0",
+  "prompt_sha256": "b650bb2321b69a12e75b4fd277c7a7610532de2c0366ae9675e57b50e92b3fbf",
+  "prompt": "Create exactly one single standalone image containing one scientifically accurate natural-history illustration of the following animal species.\n\nHARD OUTPUT CONSTRAINTS — ONE IMAGE ONLY\n- Return exactly one image for exactly one species in this response.\n- Do not create a collage, image grid, contact sheet, diptych, triptych, storyboard, comparison plate, multi-panel layout, or collection of alternatives.\n- Do not show multiple poses, multiple views, multiple variants, multiple life stages, or separate detail insets.\n- Do not divide the canvas into panels or sections.\n- If other species prompts appear before or after this prompt block, ignore them for the current image. Process only the species named directly below.\n- After creating this one image, stop. Do not automatically create another species.\n\nGerman common name: Quetzal\nScientific name: Pharomachrus mocinno\n\nSTYLE STANDARD\n- Traditional natural-history plate rendered as detailed watercolor with fine colored-pencil linework.\n- Realistic and scientifically informative, while remaining visibly hand-painted rather than photographic.\n- Warm ivory watercolor-paper background with a very subtle natural paper texture.\n- Softly fading watercolor edges around the minimal supporting element.\n- Neutral, even lighting without dramatic shadows.\n- Use natural, restrained colors. Avoid artificial saturation, glossy digital effects, cartoon styling, and photorealism.\n\nSPECIES ACCURACY\n- Depict exactly one recognizable adult specimen typical of Pharomachrus mocinno.\n- Accurately reproduce species-specific anatomy, proportions, coloration, plumage, fur, scales, beak, eyes, ears, limbs, feet, claws, fins, tail, and diagnostic markings.\n- Do not invent, combine, exaggerate, omit, duplicate, or deform anatomical features.\n- Do not introduce characteristics from similar or related species.\n- If the sexes differ substantially, depict the visually most characteristic adult form unless the additional instructions specify otherwise.\n\nCOMPOSITION\n- Vertical 4:5 composition.\n- Show the complete animal whenever anatomically possible.\n- Keep every important body part fully inside the image.\n- The animal should occupy approximately 65 to 75 percent of the canvas.\n- Leave generous safe margins around the beak, ears, wings, feet, fins, and tail.\n- Position the animal naturally for its body shape. Long-bodied animals may be arranged slightly diagonally.\n- Leave slightly more open space in the direction the animal is facing.\n- Use only one minimal species-appropriate support such as a branch, rock, sand, subtle ground, or a pale watercolor suggestion of water.\n- Do not force an unnatural perch or pose.\n\nEXCLUSIONS\n- No second animal, prey, decorative plants, detailed landscape, scenery, border, frame, text, caption, scientific label, signature, logo, or watermark.\n- No collage, grid, contact sheet, multiple panels, alternate versions, inset details, or repeated depiction of the animal.\n- No cropped limbs, tail, wings, beak, fins, or feet.\n- No fantasy elements.\n\nFINAL CHECK\n- Before finishing, verify the number and shape of all visible limbs, toes, claws, wings, fins, teeth, ears, eyes, and tail structures.\n- Verify that the diagnostic markings belong specifically to Pharomachrus mocinno.\n\nOUTPUT\n- Use a vertical 4:5 canvas.\n- Create the highest available image quality.\n- Keep the warm ivory paper background opaque.\n- Do not add text, labels, logos, signatures, borders, or watermarks.",
+  "original_file_name": "ChatGPT Image 21. Juni 2026, 21_34_28.png",
+  "original_format": "png",
+  "original_width": 1122,
+  "original_height": 1402,
+  "product_width": 1280,
+  "product_height": 1600,
+  "product_format": "webp",
+  "additional_instructions": "",
+  "imported_at": "2026-06-21T19:34:44.963Z",
+  "approved_at": "2026-06-21T19:34:49.171Z",
+  "sha256": "f16b6bca07877c58b150a16b45a2ea85a9f9616a90d2b64974c8ccda43c30841"
+}
