@@ -1141,7 +1141,9 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     let portraitHashVerified = false;
     let actualPortraitSha256 = "";
     let actualPortraitMetadataSha256 = "";
-    if (portrait.exists || portraitMetadataFile.exists) {
+    if (!portrait.exists && !portraitMetadataFile.exists) {
+      assetIssues.push("Artporträt fehlt");
+    } else {
       if (!portrait.exists) assetIssues.push("Artporträt-Datei fehlt");
       if (!portraitMetadataFile.exists) assetIssues.push("Artporträt-Metadaten fehlen");
       if (portraitMetadataError) assetIssues.push("Artporträt-Metadaten sind ungültig");

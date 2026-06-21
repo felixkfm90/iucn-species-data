@@ -219,6 +219,10 @@ Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 - automatischer, eng begrenzter Commit und Push nach Freigabe
 - Markierung `P` und Filter fuer Arten ohne Portrait
 - Sammelworkflow zum Kopieren aller fehlenden Portraitprompts
+- fehlende Portraits zaehlen als regulaere Assetprobleme und schalten Gesamtvalidierung sowie Datenbankstatus rot
+- Assetdashboard zeigt die genaue Anzahl fehlender Portraits
+- 4:5-Vorschau zeigt das vollstaendige Produktbild ohne Beschnitt; ein Verschieben ist nicht erforderlich, weil
+  die lokale Konvertierung immer vollstaendig einpasst und nur leere Randflaechen ergaenzt
 
 Details und Promptstandard: `docs/portrait-generation.md`.
 

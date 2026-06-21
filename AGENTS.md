@@ -71,7 +71,9 @@ Lokale Arbeitsoberflaeche:
 - 47 Credits-Dateien
 - 47 Spektrogramm-Dateien
 - 47 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
-- 0 fehlende Kernassets im letzten Report fuer die 47 verarbeiteten Arten
+- 0 Artportraets; 47 Artportraets fehlen noch
+- Artportraets gehoeren seit 2026-06-21 zur Explorer-Assetvalidierung. Deshalb zeigt die lokale App aktuell
+  47 Arten mit Assetproblem, obwohl Karten, Sounds, Credits und Spektrogramme vollstaendig sind.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -247,6 +249,7 @@ Nach Datenpipeline-Aenderungen:
 - `node update.mjs`
 - `fehlende_elemente_report.json` pruefen
 - Anzahl Arten, Art-Assetordner, Karten, MP3s, Credits und Spektrogramme pruefen
+- Anzahl Artportraets und fehlende Portrait-Assetprobleme pruefen
 - Credits der ersetzten Sounds auf Quelle, Lizenz und URL pruefen
 
 Nach Frontend-Aenderungen:
@@ -424,8 +427,10 @@ Aktuelle Planung:
   Arten ohne Portrait. Die Bilder werden im vorhandenen ChatGPT-Zugang erzeugt und als PNG, JPEG oder WebP wieder
   in die App geladen. Der Server prueft Magic Bytes, mindestens 800x1000 Pixel und 4:5; FFmpeg vereinheitlicht die
   Vorschau auf `1280x1600` WebP. Erst nach manueller Art- und Anatomiepruefung werden `portrait.webp`,
-  `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets bleiben optional,
-  erzeugen keinen Kernassetfehler, tragen aber die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar.
+  `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets sind regulaere
+  Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot, das Assetdashboard nennt die genaue Fehlanzahl,
+  und betroffene Arten tragen die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar. Der normale
+  Datenpipeline-Lauf erzeugt weiterhin keine Portraets; dafuer gilt nur `Fehlende Artportraets ergaenzen`.
   Vierzehn Explorer-Tests decken Prompt, Sammelprompts, Dateipruefung, Konvertierung, Speicherung und Hashpruefung
   ab. Ein echter Einzelimport und die visuelle/fachliche Freigabe stehen noch aus. Squarespace wird erst danach
   erweitert. Details: `docs/portrait-generation.md`.

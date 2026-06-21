@@ -55,6 +55,11 @@ Qualität 90
 undurchsichtiger warmer Hintergrund
 ```
 
+Die Konvertierung beschneidet das Bild nicht. Sie skaliert es vollständig innerhalb des 4:5-Rahmens und ergänzt
+bei kleinen Seitenverhältnisabweichungen nur Randfläche. Die Vorschau verwendet ebenfalls einen echten
+4:5-Rahmen und zeigt das gesamte Produktbild. Ein Verschieben oder manuelles Festlegen eines Crop-Ausschnitts ist
+daher nicht vorgesehen.
+
 Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignorierten Stagingordner. Sie wird nach
 Übernahme, Ablauf oder neuer Vorschau gelöscht.
 
@@ -82,8 +87,17 @@ Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignori
 6. Filter `Fehlendes Artporträt` verwenden.
 7. Bilder artweise über `Bearbeiten` importieren und freigeben.
 
-Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait bleibt ein eigener
-Pflegehinweis und wird nicht als Fehler der bestehenden Kernassets gewertet.
+Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait gilt als reguläres
+Assetproblem:
+
+- die Gesamtvalidierung wird rot
+- der Zähler `Assetprobleme` berücksichtigt die Art
+- die Karte `Assetstruktur` zeigt die Anzahl fehlender Portraits
+- die Detailprüfung nennt `Artporträt fehlt`
+- der Datenbankstatus bleibt auf `Datenbank aktualisieren`, bis alle Portraits ergänzt sind
+
+Der normale IUCN-/Karten-/Sound-Pipelinelauf erzeugt trotzdem keine Portraits. Dafür bleibt ausschließlich der
+eigene Ablauf `Fehlende Artporträts ergänzen` zuständig.
 
 ## Pflichtprüfung
 

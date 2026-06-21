@@ -167,6 +167,10 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.summary.inputCount, inputList.length);
   assert.equal(model.summary.generatedCount, generatedList.length);
   assert.equal(model.summary.missingCoreAssets, model.validation.assets.issueSpeciesCount);
+  assert.equal(model.summary.missingPortraitCount, expectedSpeciesCount);
+  assert.equal(model.validation.assets.available.portraits, 0);
+  assert.equal(model.validation.assets.completeSpeciesCount, 0);
+  assert.equal(model.validation.assets.issueSpeciesCount, expectedSpeciesCount);
   assert.equal(model.summary.ncSoundCount, 3);
   assert.equal(model.summary.manualMapCount, 4);
   assert.equal(model.summary.readOnly, false);
@@ -186,6 +190,10 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.species.filter((entry) => entry.isManualMap).length, 4);
   assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, 4);
   assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
+  assert.equal(
+    model.species.filter((entry) => entry.assetIssues.includes("Artporträt fehlt")).length,
+    expectedSpeciesCount,
+  );
   assert.equal(
     model.validation.data.issueSpeciesCount,
     model.species.filter((entry) => entry.dataIssues.length > 0).length,
@@ -514,7 +522,8 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
   const newSpecies = species.find((entry) => entry.id === "testusavis");
   assert.ok(newSpecies);
   assert.deepEqual(newSpecies.dataIssues, ["Kein Eintrag in speciesData.json"]);
-  assert.equal(newSpecies.assetIssues.length, 4);
+  assert.equal(newSpecies.assetIssues.length, 5);
+  assert.ok(newSpecies.assetIssues.includes("Artporträt fehlt"));
   const validation = await (await fetch(`${baseUrl}/api/validation`)).json();
   assert.equal(validation.data.inputOnlyCount, 1);
 
@@ -1267,6 +1276,7 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
 
   const dataIssue = structuredClone(model.species[0]);
   dataIssue.dataIssues = ["Testabweichung"];
+  dataIssue.assetIssues = [];
   dataIssue.inconsistencies = ["Testabweichung"];
   const assetIssue = structuredClone(model.species[1]);
   assetIssue.assetIssues = ["Testasset fehlt"];
@@ -1304,6 +1314,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /IUCN-Daten abgerufen/);
   assert.match(appSource, /class="audio-credits"/);
   assert.match(appSource, /assetStatusText\(species\.assets\.map\)/);
+  assert.match(appSource, /Portraits fehlen/);
+  assert.match(appSource, /Artporträts: \$\{missingPortraitCount\} von/);
+  assert.match(appSource, /Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden/);
   assert.match(appSource, /updateValidation/);
   assert.match(appSource, /fetch\("\/api\/validation"\)/);
   assert.match(appSource, /class="edit-dialog"/);
@@ -1413,6 +1426,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/assets\/portrait\/prompt/);
   assert.match(appSource, /\/assets\/portrait\/preview/);
   assert.doesNotMatch(appSource, /\/assets\/portrait\/generate/);
+  assert.match(cssSource, /\.portrait-compare-frame\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/s);
+  assert.match(
+    cssSource,
+    /\.portrait-compare-frame img\s*\{[^}]*max-width:\s*100%[^}]*max-height:\s*100%[^}]*object-fit:\s*contain/s,
+  );
+  assert.match(cssSource, /\.portrait-compare-frame img\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /grid-template-areas:\s*"file reason"\s*"source reason"/);
   assert.match(
     cssSource,

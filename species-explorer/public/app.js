@@ -285,9 +285,12 @@ function updateValidation(validation) {
   setValidationCardState(elements.validationDataCard, dataOk);
 
   const assetsOk = validation.assets.issueSpeciesCount === 0;
-  elements.validationAssets.textContent = `${validation.assets.completeSpeciesCount} vollständig`;
+  const missingPortraitCount = validation.special.missingPortraitCount ?? 0;
+  elements.validationAssets.textContent = missingPortraitCount
+    ? `${validation.assets.completeSpeciesCount} vollständig · ${missingPortraitCount} Portraits fehlen`
+    : `${validation.assets.completeSpeciesCount} vollständig`;
   elements.validationAssetsDetail.textContent = assetsOk
-    ? "Karte, Sound, Credits und Spektrogramm vorhanden"
+    ? "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden"
     : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
   setValidationCardState(elements.validationAssetsCard, assetsOk);
 
@@ -312,8 +315,12 @@ function updateValidation(validation) {
     const available = validation.assets.available;
     detailItems.push(
       `Assets vorhanden: ${available.maps} Karten, ${available.sounds} Sounds, `
-      + `${available.credits} Credits, ${available.spectrograms} Spektrogramme`,
+      + `${available.credits} Credits, ${available.spectrograms} Spektrogramme, `
+      + `${available.portraits} Artporträts`,
     );
+    if (missingPortraitCount) {
+      detailItems.push(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`);
+    }
   }
   for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
     detailItems.push(

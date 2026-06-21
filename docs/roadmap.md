@@ -361,9 +361,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   vorhandenen ChatGPT-Zugang erzeugtes PNG, JPEG oder WebP. Dateisignatur, mindestens 800×1000 Pixel und
   4:5-Seitenverhältnis werden geprüft; FFmpeg vereinheitlicht das Produkt auf `1280x1600` WebP. Erst nach
   manueller Art- und Anatomieprüfung werden `portrait.webp`, `portrait.json`, Hashregister, Backup, Commit und Push
-  ausgeführt. Fehlende Porträts bleiben optionale Pflegehinweise, erhalten die Listenmarkierung `P` und sind über
-  `Fehlendes Artporträt` filterbar. Der Datenbankdialog bietet `Fehlende Artporträts ergänzen` und kopiert die
-  Prompts für alle betroffenen Arten. Vierzehn Explorer-Tests sind vorgesehen; ein echter Einzelimport und die
+  ausgeführt. Fehlende Porträts sind reguläre Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot,
+  die Assetstruktur zeigt die genaue Fehlanzahl und betroffene Arten erhalten die Listenmarkierung `P`. Sie sind
+  über `Fehlendes Artporträt` filterbar. Der Datenbankdialog bietet `Fehlende Artporträts ergänzen` und kopiert die
+  Prompts für alle betroffenen Arten, ohne sie fälschlich in den normalen Datenpipeline-Lauf aufzunehmen.
+  Vierzehn Explorer-Tests sind vorgesehen; ein echter Einzelimport und die
   visuelle/fachliche Freigabe stehen noch aus. Squarespace folgt erst danach. Details:
   `docs/portrait-generation.md`.
   Löschen, Pipeline-Start und automatische Lizenzfreigabe bleiben außerhalb von 7.7.

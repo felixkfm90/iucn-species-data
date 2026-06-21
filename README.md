@@ -381,8 +381,9 @@ Innerhalb der Windows-Batch-Datei wird `npm.cmd` mit `call` gestartet, damit der
 Commit und Push fortgesetzt wird.
 
 Die Asset-Struktur wurde in Phase 6.8 umgesetzt; Details stehen in `docs/asset-structure-plan.md`.
-`species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp` sowie den optionalen
-Dateien `portrait.webp` und `portrait.json` ist die einzige produktive Struktur. Die alten Ordner
+`species-assets/<SafeName>/` mit `map.jpg`, `sound.mp3`, `credits.json`, `spectrogram.webp` sowie
+`portrait.webp` und `portrait.json` ist die einzige produktive Struktur. Noch fehlende Portraitdateien gelten im
+Arten-Explorer als Assetproblem. Die alten Ordner
 `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
 GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
@@ -482,7 +483,8 @@ Aktueller lokaler Stand vom 2026-06-20:
 
 - 47 Eintraege in `species_list.json`
 - 47 Arten in der letzten Pipeline-Ausgabe
-- 47 vollständige Assetordner
+- 47 vollständige Kernpakete aus Karte, Sound, Credits und Spektrogramm
+- 0 Artportraits; 47 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 0 fehlende Sounddateien unter den 47 verarbeiteten Arten
 - 0 fehlende Sound-Credits unter den 47 verarbeiteten Arten
