@@ -477,6 +477,16 @@
         "spectrogramSha256": "8235d252cf502ace89e3cbc276958e516e8d5111c23583055c237f32887a9f94",
         "generatedAt": "2026-06-15T13:03:10.453Z",
         "verifiedAt": "2026-06-20T18:35:37.752Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:57:08.898Z",
+        "approvedAt": "2026-06-21T17:57:44.404Z",
+        "sha256": "aa0073a3f9ac1529aa9a16adf2c6a441a1bc4060cb4db4c749633a8cee70a84c",
+        "metadataSha256": "1a00aa9d60589f87cfff5d9474d896fef0e51ecf2789fe8256dff37fd7f02ab5"
       }
     },
     "Geoffroy-Klammeraffe": {
