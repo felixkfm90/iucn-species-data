@@ -533,6 +533,16 @@
         "spectrogramSha256": "75cbd08de3ea987030960e9692c88fca1d1e1804352fec2a406b380ee1abcb22",
         "generatedAt": "2026-06-15T13:03:12.942Z",
         "verifiedAt": "2026-06-20T18:35:37.781Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:00:59.134Z",
+        "approvedAt": "2026-06-21T18:01:18.880Z",
+        "sha256": "01a69abf39e830f0ead7937cde75d0687f7d71869e088f9c2eac31c40e67da6a",
+        "metadataSha256": "ce717711594f63d217e59a5b3b71dc6731b0a74e9c9dc4f2f607db67cc309c5b"
       }
     },
     "Graureiher": {
