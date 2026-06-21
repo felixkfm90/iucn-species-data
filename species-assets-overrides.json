@@ -286,6 +286,16 @@
         "spectrogramSha256": "be2e81727a73ce7acb136af905b0dcaced9557b33afa9f920099db2f4069f330",
         "generatedAt": "2026-06-15T13:03:03.799Z",
         "verifiedAt": "2026-06-20T18:35:37.716Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T17:44:28.633Z",
+        "approvedAt": "2026-06-21T17:45:04.179Z",
+        "sha256": "b3a872964868c4e4858350ed21e87fcc454f7d4a00fef708fb533a394b94b71c",
+        "metadataSha256": "e107933d9adc4336ba204bdc66efcbb52ffdaa23ada3ed9ca682cf8147dae497"
       }
     },
     "Blaumeise": {
