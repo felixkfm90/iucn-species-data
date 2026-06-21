@@ -782,6 +782,16 @@
         "spectrogramSha256": "f8c10f6ecb47f45d3604128960efa4e224c8e79d068bc93e6d583b12609a87d6",
         "generatedAt": "2026-06-15T13:03:19.082Z",
         "verifiedAt": "2026-06-20T18:35:37.807Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T18:54:41.027Z",
+        "approvedAt": "2026-06-21T18:54:47.916Z",
+        "sha256": "8d12bbb24797e9690043b5dff48f9d6b6a17901685208cd051e51fd0855c13fe",
+        "metadataSha256": "8b104f9937df8ef50eacb097195e2dc4a32b38f42a1f55b25592607a5af77a60"
       }
     },
     "Quetzal": {
