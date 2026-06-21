@@ -61,6 +61,16 @@
         "spectrogramSha256": "43a9d8cf99e37bbf7ef26f431d05fb2d678340c2d0188ff5386420ef222bb08a",
         "generatedAt": "2026-06-15T13:03:13.712Z",
         "verifiedAt": "2026-06-20T18:35:37.782Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.0.0",
+        "importedAt": "2026-06-21T18:02:29.129Z",
+        "approvedAt": "2026-06-21T18:02:56.667Z",
+        "sha256": "0a106b1b04e2e8e5eec615f453c979be11d52d046cb3dca08e981814cee655a8",
+        "metadataSha256": "9adf4d8faeb745d79a647792d5b162d614b8d127ed17df9e478fc9380d134500"
       }
     },
     "Kernbeisser": {
