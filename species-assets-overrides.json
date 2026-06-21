@@ -109,6 +109,16 @@
         "spectrogramSha256": "08f42b7193792343dc7288eccee2fc97d12241eb52ec4a4214fcfac82f0d5d69",
         "generatedAt": "2026-06-15T13:03:19.473Z",
         "verifiedAt": "2026-06-20T18:35:37.808Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-21T19:35:52.588Z",
+        "approvedAt": "2026-06-21T19:35:55.548Z",
+        "sha256": "4a54c97810adbf00a56751e13d70fec12cc7a5d5f14bed3335be0af77f5f06de",
+        "metadataSha256": "8bbe270413e1aaa4de0889425bd99067c2b2ec547f7dd1129ab8253028ae3f7a"
       }
     },
     "Rotfuchs": {
