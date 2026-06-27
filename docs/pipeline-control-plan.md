@@ -192,6 +192,18 @@ Der bestehende Generator unterstuetzt bereits eine Artenauswahl ueber `--species
 Anschliessend baut `update.mjs --report-only` den Report erneut auf, damit ein gerade erzeugtes Spektrogramm nicht
 mehr als fehlend im Report stehen bleibt.
 
+Die Explorer-Prozessausgabe zeigt den Spektrogramm-Abgleich nicht mehr als rohes JSON. Pro Art erscheinen nur noch
+die relevanten Entscheidungen:
+
+```text
+<Artname>
+  Sound: vorhanden|fehlt
+  Spektrogramm: vorhanden|wurde erstellt|übersprungen|Fehler - <Grund>
+```
+
+Damit ist direkt erkennbar, ob ein Sound vorhanden war und ob das Spektrogramm bereits gepasst hat oder neu erzeugt
+wurde.
+
 ## Geplante Tests
 
 - Dry-run veraendert keine Datei: getestet.

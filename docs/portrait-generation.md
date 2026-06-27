@@ -1,6 +1,6 @@
 # KI-Artporträts im Arten-Explorer
 
-Stand: 2026-06-21
+Stand: 2026-06-27
 
 ## Entscheidung
 
@@ -14,7 +14,9 @@ Stattdessen gilt ein manueller, kontrollierter Workflow:
 3. Das dort erzeugte Bild wird heruntergeladen.
 4. Die Datei wird wieder in den Arten-Explorer geladen.
 5. Die App prüft und vereinheitlicht die Datei.
-6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen, committed und gepusht.
+6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen. Bei bestehenden Arten speichert
+   `Artporträt übernehmen` wie zuvor direkt mit Backup, Commit und Push. Nur der Sofortimport während einer
+   neu angelegten Art fragt vor Speicherung, Commit und Push zusätzlich nach.
 
 Der lokale Workflow ist seit dem 2026-06-21 freigegeben. Die Squarespace-Ausgabe bleibt trotzdem bewusst ein
 späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich geprüft wurden.
@@ -22,7 +24,14 @@ späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich
 ## Prompt
 
 Deutscher und wissenschaftlicher Artname stammen aus `species_list.json`. Der verbindliche, versionierte
-Stilprompt steht in `scripts/portrait-generator.mjs`.
+Stilprompt steht in `scripts/portrait-generator.mjs`. Promptversion `1.1.0` ergänzt eine verbindliche
+Ein-Bild-Regel:
+
+- genau eine einzelne Bilddatei pro Antwort
+- genau eine Art und ein Exemplar
+- keine Collage, kein Raster, kein Kontaktabzug und keine Mehrfachfelder
+- keine Varianten, Mehrfachansichten, Detail-Inserts oder wiederholten Darstellungen
+- nach einem erzeugten Bild stoppen
 
 Die App bietet je Art:
 
@@ -31,9 +40,9 @@ Die App bietet je Art:
 - `Prompt kopieren`
 - sichtbare Promptvorschau
 
-Der Sammelpunkt `Fehlende Artporträts ergänzen` erstellt die Prompts für alle Arten ohne Portrait. Die Prompts
-werden gemeinsam kopiert. Falls die Browser-Zwischenablage nicht verfügbar ist, lädt die App automatisch
-`artportrait-prompts.txt` herunter.
+Einen Sammelprompt für mehrere Arten gibt es bewusst nicht mehr. ChatGPT erzeugte daraus wiederholt Collagen oder
+Mehrfachbilder. Deshalb wird immer genau eine Art geöffnet, deren Einzelprompt kopiert und genau ein Bild wieder
+importiert.
 
 ## Importstandard
 
@@ -78,15 +87,25 @@ Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignori
 8. Fachliche Prüfung durchführen.
 9. `Artporträt übernehmen`.
 
-### Alle fehlenden Porträts
+Weitere fehlende Porträts werden über den Filter `Fehlendes Artporträt` gesucht und danach jeweils einzeln über
+`Bearbeiten` erstellt und importiert.
 
-1. Das rote/grüne Datenbankfeld öffnen.
-2. `Fehlende Artporträts ergänzen` wählen.
-3. Vorschau der betroffenen Arten prüfen.
-4. `Alle Prompts kopieren`.
-5. Bilder in ChatGPT erzeugen.
-6. Filter `Fehlendes Artporträt` verwenden.
-7. Bilder artweise über `Bearbeiten` importieren und freigeben.
+### Neue Art mit optionalem Sofortportrait
+
+Beim Anlegen einer neuen Art kann der Portraitschritt direkt vorbereitet werden:
+
+1. Deutscher Name, wissenschaftlicher Name, Größe, Gewicht und Lebenserwartung eintragen.
+2. `Art prüfen`.
+3. Optional Zusatzhinweise für das Portrait eintragen.
+4. `Portrait-Prompt erstellen` und `Prompt kopieren`.
+5. In ChatGPT genau ein Bild erzeugen und herunterladen.
+6. Optional das erzeugte Bild im Neue-Art-Dialog auswählen.
+7. `Art anlegen`.
+
+Wenn kein Bild ausgewählt ist, läuft der bisherige Ablauf weiter und die App bietet den selektiven Pipeline-Lauf an.
+Wenn ein Bild ausgewählt ist, speichert die App zuerst die neue Art, prüft danach das Bild im selben Dialog und zeigt
+`Artportrait übernehmen`. Nur dieser Sofortimport fragt anschließend ausdrücklich, ob das Portrait gespeichert,
+committed und gepusht werden soll.
 
 Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait gilt als reguläres
 Assetproblem:
@@ -97,8 +116,8 @@ Assetproblem:
 - die Detailprüfung nennt `Artporträt fehlt`
 - der Datenbankstatus bleibt auf `Datenbank aktualisieren`, bis alle Portraits ergänzt sind
 
-Der normale IUCN-/Karten-/Sound-Pipelinelauf erzeugt trotzdem keine Portraits. Dafür bleibt ausschließlich der
-eigene Ablauf `Fehlende Artporträts ergänzen` zuständig.
+Der normale IUCN-/Karten-/Sound-Pipelinelauf erzeugt keine Portraits. Portraits werden ausschließlich artweise im
+Bearbeitungsdialog gepflegt.
 
 ## Darstellung im Explorer
 
@@ -108,7 +127,8 @@ rechte Medienspaltensumme behalten daher eine gemeinsame feste Höhe. Das 4:5-Po
 verschoben; für die große Qualitätsprüfung dient die Portrait-Lightbox.
 
 Der erste produktive Einzelimport wurde am 2026-06-21 für `Alpenbirkenzeisig` erfolgreich gespeichert, committed
-und gepusht.
+und gepusht. Seit 2026-06-27 kann der Neue-Art-Dialog den Einzelprompt aus den gerade eingegebenen Artdaten erzeugen
+und optional ein sofort erzeugtes Bild direkt nach der Artanlage prüfen und übernehmen.
 
 ## Pflichtprüfung
 
@@ -169,7 +189,7 @@ Nach erfolgreicher Speicherung werden nur folgende Dateien vorgemerkt:
 - `species-assets/<SafeName>/portrait.json`
 - `species-assets-overrides.json`
 
-Anschließend folgen automatischer Commit und Push.
+Anschließend folgen Commit und Push nach der ausdrücklichen Bestätigung in der App.
 
 ## Nächste Phase
 

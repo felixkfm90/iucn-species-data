@@ -711,7 +711,7 @@
 
   try {
     if (!window.SpeciesCore || typeof window.SpeciesCore.getSpeciesData !== "function") {
-      wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
+      wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfügbar");
       return;
     }
 
@@ -730,7 +730,7 @@
     ]);
 
     if (!audioUrl) {
-      wrapper.innerHTML = renderStatus("Keine Tierstimme verfuegbar.");
+      wrapper.innerHTML = renderStatus("Keine Tierstimme verfügbar");
       return;
     }
 
@@ -868,7 +868,7 @@
       !muteBtn ||
       !speedEl
     ) {
-      wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
+      wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfügbar");
       return;
     }
 
@@ -1117,7 +1117,7 @@
     audio.addEventListener("error", () => {
       wrapper.innerHTML = `
         <div class="frame-box species-sound-frame">
-          <i>Tierstimme aktuell nicht verfuegbar.</i>
+          <i>Tierstimme aktuell nicht verfügbar</i>
           ${creditDetails}
         </div>
       `;
@@ -1144,6 +1144,6 @@
     setPlaybackRate(initialPlaybackRate, false);
     if (!useSpectrogram) ensureWaveformDecoded();
   } catch (_) {
-    wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfuegbar.");
+    wrapper.innerHTML = renderStatus("Tierstimme aktuell nicht verfügbar");
   }
 })();

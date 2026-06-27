@@ -16,6 +16,7 @@
       const matchesStatus = !status || entry.iucn.status === status;
       const matchesFlag = !flag
         || (flag === "nc" && entry.isNcSound)
+        || (flag === "sound-care" && entry.soundCareHint)
         || (flag === "manual-map" && entry.isManualMap)
         || (flag === "missing-portrait" && entry.missingPortrait)
         || (flag === "data-issues" && entry.dataIssues.length > 0)

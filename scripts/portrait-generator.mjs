@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const PORTRAIT_STANDARD = Object.freeze({
-  promptVersion: "1.0.0",
+  promptVersion: "1.1.0",
   size: "1280x1600",
   outputFormat: "webp",
   source: "Extern in ChatGPT erzeugt und manuell geprüft",
@@ -13,7 +13,15 @@ export function buildPortraitPrompt({
   additionalInstructions = "",
 }) {
   const optionalInstructions = String(additionalInstructions ?? "").trim();
-  return `Create one scientifically accurate natural-history illustration of the following animal species.
+  return `Create exactly one single standalone image containing one scientifically accurate natural-history illustration of the following animal species.
+
+HARD OUTPUT CONSTRAINTS — ONE IMAGE ONLY
+- Return exactly one image for exactly one species in this response.
+- Do not create a collage, image grid, contact sheet, diptych, triptych, storyboard, comparison plate, multi-panel layout, or collection of alternatives.
+- Do not show multiple poses, multiple views, multiple variants, multiple life stages, or separate detail insets.
+- Do not divide the canvas into panels or sections.
+- If other species prompts appear before or after this prompt block, ignore them for the current image. Process only the species named directly below.
+- After creating this one image, stop. Do not automatically create another species.
 
 German common name: ${String(germanName ?? "").trim()}
 Scientific name: ${String(scientificName ?? "").trim()}
@@ -46,6 +54,7 @@ COMPOSITION
 
 EXCLUSIONS
 - No second animal, prey, decorative plants, detailed landscape, scenery, border, frame, text, caption, scientific label, signature, logo, or watermark.
+- No collage, grid, contact sheet, multiple panels, alternate versions, inset details, or repeated depiction of the animal.
 - No cropped limbs, tail, wings, beak, fins, or feet.
 - No fantasy elements.
 

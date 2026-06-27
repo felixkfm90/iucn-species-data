@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   buildExplorerModel,
   createExplorerServer,
+  formatSpectrogramPipelineLog,
   inspectJpeg,
   inspectMp3,
   inspectPng,
@@ -204,6 +205,69 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
     model.validation.assets.issueSpeciesCount,
     model.species.filter((entry) => entry.assetIssues.length > 0).length,
   );
+});
+
+test("Bekannt fehlender Sound ist Pflegehinweis statt Assetproblem", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDir = join(repoRoot, "species-assets", "Amsel");
+  await Promise.all([
+    rm(join(assetDir, "sound.mp3"), { force: true }),
+    rm(join(assetDir, "credits.json"), { force: true }),
+    rm(join(assetDir, "spectrogram.webp"), { force: true }),
+  ]);
+  const report = JSON.parse(await readFile(join(repoRoot, "fehlende_elemente_report.json"), "utf8"));
+  report.counts.missingSoundMp3 = 1;
+  report.counts.missingSpeciesAssets = 1;
+  report.missing.soundMp3 = ["Amsel"];
+  report.missing.speciesAssets = [{
+    german: "Amsel",
+    safeName: "Amsel",
+    missing: ["sound.mp3", "credits.json", "spectrogram.webp"],
+  }];
+  await writeFile(join(repoRoot, "fehlende_elemente_report.json"), `${JSON.stringify(report, null, 2)}\n`);
+
+  const model = await buildExplorerModel(repoRoot);
+  const species = model.species[0];
+  assert.equal(species.soundMissingKnown, true);
+  assert.equal(species.soundCareHint, true);
+  assert.match(species.careHints.join(" "), /keine verwendbare Quelle/);
+  assert.doesNotMatch(species.assetIssues.join(" "), /Sound fehlt|Credits fehlen|Spektrogramm fehlt/);
+  assert.equal(model.validation.special.soundCareCount, 1);
+  assert.equal(model.validation.special.missingSoundKnownCount, 1);
+  assert.equal(
+    model.validation.report.checks.find((entry) => entry.key === "soundMp3").ok,
+    true,
+  );
+});
+
+test("Spektrogramm-Prozessausgabe wird für die App lesbar zusammengefasst", () => {
+  const output = formatSpectrogramPipelineLog(JSON.stringify({
+    results: [
+      {
+        safeName: "Amsel",
+        status: "skip",
+        inputBytes: 2048,
+        outputBytes: 512,
+      },
+      {
+        safeName: "Grüner Leguan",
+        status: "missing-mp3",
+      },
+      {
+        safeName: "Bachstelze",
+        status: "generated",
+        inputBytes: 4096,
+        outputBytes: 700,
+      },
+    ],
+    hashRegistry: { updated: 2, changed: true },
+  }));
+  assert.match(output, /Amsel\n  Sound: vorhanden\n  Spektrogramm: vorhanden/);
+  assert.match(output, /Grüner Leguan\n  Sound: fehlt\n  Spektrogramm: übersprungen/);
+  assert.match(output, /Bachstelze\n  Sound: vorhanden\n  Spektrogramm: wurde erstellt/);
+  assert.match(output, /Zusammenfassung: 1 erstellt, 1 vorhanden, 1 ohne Sound, 0 Fehler/);
+  assert.doesNotMatch(output, /"safeName"/);
 });
 
 test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", async (context) => {
@@ -472,6 +536,23 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
   assert.equal(preview.derived.safeName, "Testvogel");
   assert.equal(preview.derived.assetDirectory, "species-assets/Testvogel");
   assert.equal(await readFile(speciesListPath, "utf8"), beforeText);
+
+  const portraitPromptResponse = await fetch(`${baseUrl}/api/species/new/portrait-prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      values: validValues,
+      additionalInstructions: "vollständiger Schwanz sichtbar",
+    }),
+  });
+  assert.equal(portraitPromptResponse.status, 200);
+  const portraitPrompt = await portraitPromptResponse.json();
+  assert.equal(portraitPrompt.derived.scientificName, "Testus avis");
+  assert.equal(portraitPrompt.fileName, "Testvogel.png");
+  assert.match(portraitPrompt.prompt, /German common name: Testvogel/);
+  assert.match(portraitPrompt.prompt, /Scientific name: Testus avis/);
+  assert.match(portraitPrompt.prompt, /vollständiger Schwanz sichtbar/);
+  assert.match(portraitPrompt.prompt, /Do not create a collage/);
 
   await writeFile(speciesListPath, `${beforeText}\n`, "utf8");
   const staleSaveResponse = await fetch(`${baseUrl}/api/species/new/save`, {
@@ -984,7 +1065,11 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.match(prompt, /Turdus merula/);
   assert.match(prompt, /Traditional natural-history plate/);
   assert.match(prompt, /Adultes Männchen mit gelbem Schnabel/);
+  assert.match(prompt, /HARD OUTPUT CONSTRAINTS — ONE IMAGE ONLY/);
+  assert.match(prompt, /Do not create a collage, image grid, contact sheet/);
+  assert.match(prompt, /After creating this one image, stop/);
   assert.match(portraitPromptSha256(prompt), /^[0-9a-f]{64}$/);
+  assert.equal(PORTRAIT_STANDARD.promptVersion, "1.1.0");
   assert.equal(PORTRAIT_STANDARD.size, "1280x1600");
   assert.equal(PORTRAIT_STANDARD.outputFormat, "webp");
   const uploadedPng = createTestPng();
@@ -1028,11 +1113,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
     headers: { "Content-Type": "application/json" },
     body: "{}",
   });
-  assert.equal(missingResponse.status, 200);
-  const missing = await missingResponse.json();
-  assert.equal(missing.targetCount, 1);
-  assert.match(missing.combinedText, /Amsel · Turdus merula/);
-
+  assert.equal(missingResponse.status, 405);
   const invalidRatioResponse = await fetch(
     `${baseUrl}/api/species/turdusmerula/assets/portrait/preview`,
     {
@@ -1100,7 +1181,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.equal(metadata.scientific_name, "Turdus merula");
   assert.equal(metadata.source, "ChatGPT");
   assert.match(metadata.generation_method, /manuell/i);
-  assert.equal(metadata.prompt_version, "1.0.0");
+  assert.equal(metadata.prompt_version, "1.1.0");
   assert.equal(metadata.original_file_name, "Amsel.png");
   assert.equal(metadata.original_width, 1120);
   assert.equal(metadata.product_width, 1280);
@@ -1271,6 +1352,10 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
     model.validation.assets.issueSpeciesCount,
   );
   assert.equal(
+    filterSpecies(model.species, { flag: "sound-care" }).length,
+    model.summary.soundCareCount,
+  );
+  assert.equal(
     filterSpecies(model.species, { flag: "issues" }).length,
     model.species.filter((entry) => entry.inconsistencies.length > 0).length,
   );
@@ -1339,6 +1424,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appSource, /\/api\/species\/new\/preview/);
   assert.match(appSource, /\/api\/species\/new\/save/);
+  assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
+  assert.match(appSource, /previewNewSpeciesPortrait\(savedSpeciesId\)/);
+  assert.match(appSource, /Artportrait für die neu angelegte Art speichern/);
+  assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
   assert.match(appSource, /function setupEditingMode\(\)/);
   assert.match(appSource, /\/api\/pipeline\/preview/);
@@ -1347,8 +1436,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /Manuelle Karten erneut suchen/);
   assert.match(appSource, /NC-Sounds erneut suchen/);
-  assert.match(appSource, /Fehlende Artporträts ergänzen/);
-  assert.match(appSource, /\/api\/portraits\/missing/);
+  assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
+  assert.doesNotMatch(appSource, /strikten Ein-Bild-Regel/);
+  assert.doesNotMatch(appSource, /mit „Weiter“ folgt jeweils die nächste/);
+  assert.doesNotMatch(appSource, /\/api\/portraits\/missing/);
+  assert.match(appSource, /soundCareHint/);
+  assert.match(appSource, /Sound fehlt oder wird manuell gepflegt/);
   assert.match(htmlSource, /id="pipeline-run-notice"/);
   assert.match(htmlSource, /pipeline-dialog-close-button/);
   assert.match(appSource, /Pipeline-Lauf läuft gerade/);
@@ -1378,6 +1471,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
   assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
+  assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
@@ -1451,7 +1545,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(
     appSource,
-    /form\.reset\(\);\s*resetPreview\(\);\s*setBusy\(false\);\s*close\(\);\s*await loadData\(\)/,
+    /newSpeciesSaved = true;[\s\S]*await loadData\(\{ reload: true \}\);[\s\S]*previewNewSpeciesPortrait\(savedSpeciesId\)/,
   );
   assert.match(appSource, /await state\.openPipelinePreview\?\.\("missing"\)/);
   assert.match(htmlSource, /Lesemodus\s*<\/button>/);
@@ -1467,11 +1561,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(htmlSource, /name="genus"/);
   assert.doesNotMatch(htmlSource, /name="species"/);
   assert.match(htmlSource, /class="new-species-json"/);
+  assert.match(htmlSource, /class="new-species-portrait"/);
+  assert.match(htmlSource, /new-species-portrait-file-input/);
+  assert.match(htmlSource, /Portrait-Prompt erstellen/);
   assert.match(htmlSource, /data-pipeline-mode="missing"/);
   assert.match(htmlSource, /data-pipeline-mode="all"/);
   assert.match(htmlSource, /data-pipeline-mode="manual-maps"/);
   assert.match(htmlSource, /data-pipeline-mode="nc-sounds"/);
-  assert.match(htmlSource, /data-pipeline-mode="portraits"/);
+  assert.doesNotMatch(htmlSource, /data-pipeline-mode="portraits"/);
   assert.match(htmlSource, /data-pipeline-mode="cleanup"/);
   assert.match(htmlSource, /id="pipeline-dialog"/);
   assert.match(htmlSource, /id="edit-mode-toggle"/);
@@ -1491,7 +1588,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /value="asset-issues"/);
   assert.match(
     htmlSource,
-    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>/s,
+    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>\s*<option value="sound-care">Sound fehlt\/manuell gepflegt<\/option>/s,
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.species-list\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);

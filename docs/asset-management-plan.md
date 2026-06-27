@@ -200,12 +200,16 @@ Migrationsstand vom 2026-06-20:
 - 47 Hashpaare verifiziert
 - 0 veraltete Spektrogramme
 
+Seit 2026-06-27 werden Arten, bei denen ein vollständiger Pipeline-Lauf keine verwendbare automatische Tonquelle
+findet, nicht mehr als Assetfehler fuer Sound, Credits und Spektrogramm bewertet. Sie erhalten stattdessen den
+Hinweis `S` (`Sound fehlt/manuell gepflegt`). Beispiel: `Grüner Leguan`.
+
 ### 7.7.5 Artportraet
 
 Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 
 - keine kostenpflichtige Image-API und kein `OPENAI_API_KEY`
-- lokaler versionierter Prompt `1.0.0`
+- lokaler versionierter Prompt `1.1.0` mit strikter Ein-Bild-/Anti-Collage-Regel
 - deutscher und wissenschaftlicher Name automatisch aus der Artenliste
 - optionale artspezifische Zusatzhinweise
 - Prompt anzeigen und kopieren
@@ -218,9 +222,11 @@ Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 - produktive Dateien `portrait.webp` und `portrait.json`
 - SHA-256-Registrierung und Abweichungspruefung
 - gemeinsames Backup beim Ersetzen
-- automatischer, eng begrenzter Commit und Push nach Freigabe
+- eng begrenzter Commit und Push; bei bestehenden Arten wie bisher direkt nach `Artporträt übernehmen`
+- Neue-Art-Dialog kann aus den eingegebenen Artdaten einen Prompt erzeugen und ein optional sofort erzeugtes Bild
+  nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit und Push zusätzlich nach
 - Markierung `P` und Filter fuer Arten ohne Portrait
-- Sammelworkflow zum Kopieren aller fehlenden Portraitprompts
+- kein Sammelprompt mehr; Portraits werden einzeln je Art erzeugt und importiert
 - fehlende Portraits zaehlen als regulaere Assetprobleme und schalten Gesamtvalidierung sowie Datenbankstatus rot
 - Assetdashboard zeigt die genaue Anzahl fehlender Portraits
 - 4:5-Vorschau zeigt das vollstaendige Produktbild ohne Beschnitt; ein Verschieben ist nicht erforderlich, weil
@@ -232,7 +238,7 @@ Abschlussstand:
 
 - erster echter Einzelimport für `Alpenbirkenzeisig` erfolgreich
 - Vorschau, vollständige 4:5-Darstellung, Lightbox und kompakte Detailzelle visuell geprüft
-- fehlende Portraits als Assetprobleme und Sammelprompt-Workflow umgesetzt
+- fehlende Portraits als Assetprobleme umgesetzt; Sammelprompt-Workflow am 2026-06-27 entfernt
 - Phase 7.7 am 2026-06-21 freigegeben
 - Squarespace-Ausgabe bleibt bewusst ein späterer eigener Schritt und blockiert den Abschluss der lokalen
   Assetverwaltung nicht

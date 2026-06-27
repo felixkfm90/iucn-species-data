@@ -108,6 +108,7 @@
                   <option value="missing-portrait">Fehlendes Artporträt</option>
                   <option value="manual-map">Manuelle Karte</option>
                   <option value="nc">NC-Sound</option>
+                  <option value="sound-care">Sound fehlt/manuell gepflegt</option>
                 </select>
               </label>
             </div>
@@ -198,6 +199,70 @@
           </p>
         </section>
 
+        <section class="new-species-portrait" hidden>
+          <header>
+            <div>
+              <h4>Artporträt optional direkt vorbereiten</h4>
+              <p>
+                Der Prompt wird aus den geprüften neuen Artdaten erstellt. Das Bild wird extern erzeugt und nach dem
+                Anlegen der Art hier geprüft.
+              </p>
+            </div>
+            <span class="portrait-care-state">Optional</span>
+          </header>
+
+          <label class="portrait-instructions-field">
+            <span>Zusätzliche Hinweise · optional</span>
+            <textarea
+              class="new-species-portrait-instructions"
+              maxlength="800"
+              rows="3"
+              placeholder="z. B. adultes Männchen im Brutkleid; vollständiger Schwanz sichtbar"
+            ></textarea>
+          </label>
+
+          <div class="portrait-prompt-actions">
+            <button class="new-species-portrait-prompt-button" type="button">Portrait-Prompt erstellen</button>
+            <button class="new-species-portrait-copy-button" type="button" disabled>Prompt kopieren</button>
+          </div>
+
+          <details class="portrait-prompt-details new-species-portrait-prompt-details" hidden>
+            <summary>Prompt anzeigen</summary>
+            <pre class="new-species-portrait-prompt"></pre>
+          </details>
+
+          <label class="asset-file-field portrait-file-field new-species-portrait-file-field">
+            <span>Optional schon erzeugtes Bild</span>
+            <input
+              class="new-species-portrait-file-input"
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+            >
+          </label>
+
+          <p class="edit-message new-species-portrait-message" hidden></p>
+
+          <section class="portrait-edit-preview new-species-portrait-preview" hidden>
+            <div class="portrait-compare-grid new-species-portrait-grid">
+              <figure>
+                <figcaption>Neue KI-Vorschau</figcaption>
+                <div class="portrait-compare-frame">
+                  <img class="new-species-portrait-preview-image" alt="Neue Artporträt-Vorschau">
+                </div>
+                <p class="new-species-portrait-preview-meta"></p>
+              </figure>
+            </div>
+            <p class="edit-warning">
+              Vor der Übernahme müssen Artmerkmale, Anatomie, Gliedmaßen, Zehen, Flügel, Flossen, Schwanz und
+              Bildränder geprüft werden. Nur dieser Neue-Art-Sofortimport fragt vor Speichern, Commit und Push noch einmal nach.
+            </p>
+          </section>
+
+          <div class="portrait-edit-actions">
+            <button class="new-species-portrait-save-button" type="button" disabled>Artportrait übernehmen</button>
+          </div>
+        </section>
+
         <div class="edit-actions">
           <button class="new-species-cancel" type="button">Abbrechen</button>
           <button class="edit-preview-button new-species-preview-button" type="submit">Art prüfen</button>
@@ -234,10 +299,6 @@
           <button type="button" data-pipeline-mode="nc-sounds">
             <strong>NC-Sounds erneut suchen</strong>
             <span>Nur NC-Sounds auf freie Alternativen prüfen</span>
-          </button>
-          <button type="button" data-pipeline-mode="portraits">
-            <strong>Fehlende Artporträts ergänzen</strong>
-            <span>Prompts für fehlende Porträts erstellen und Bilder anschließend manuell importieren</span>
           </button>
           <button class="danger" type="button" data-pipeline-mode="cleanup">
             <strong>Bereinigen</strong>

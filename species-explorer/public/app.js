@@ -293,7 +293,9 @@ function updateValidation(validation) {
     ? `${validation.assets.completeSpeciesCount} vollständig · ${missingPortraitCount} Portraits fehlen`
     : `${validation.assets.completeSpeciesCount} vollständig`;
   elements.validationAssetsDetail.textContent = assetsOk
-    ? "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden"
+    ? (validation.special.soundCareCount
+      ? `Kernassets vollständig · ${validation.special.soundCareCount} Soundhinweis(e)`
+      : "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden")
     : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
   setValidationCardState(elements.validationAssetsCard, assetsOk);
 
@@ -304,7 +306,8 @@ function updateValidation(validation) {
   setValidationCardState(elements.validationReportCard, validation.report.consistent);
 
   elements.validationSpecial.textContent =
-    `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`;
+    `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`
+    + `${validation.special.soundCareCount ? ` · ${validation.special.soundCareCount} S` : ""}`;
 
   const detailItems = [];
   if (!dataOk) {
@@ -324,6 +327,15 @@ function updateValidation(validation) {
     if (missingPortraitCount) {
       detailItems.push(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`);
     }
+    if (validation.special.soundCareCount) {
+      detailItems.push(
+        `Soundhinweise: ${validation.special.soundCareCount} Art(en) ohne automatische Tonquelle oder mit manueller Pflege`,
+      );
+    }
+  } else if (validation.special.soundCareCount) {
+    detailItems.push(
+      `Soundhinweise: ${validation.special.soundCareCount} Art(en) ohne automatische Tonquelle oder mit manueller Pflege`,
+    );
   }
   for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
     detailItems.push(
@@ -391,6 +403,9 @@ function renderSpeciesList() {
     }
     if (species.isManualMap) {
       flags.append(createFlag("K", "map", "Manuell gepflegte Karte"));
+    }
+    if (species.soundCareHint) {
+      flags.append(createFlag("S", "sound", "Sound fehlt oder wird manuell gepflegt"));
     }
     if (species.missingPortrait) {
       flags.append(createFlag("P", "portrait", "Artporträt fehlt"));
@@ -832,14 +847,12 @@ function setupPipelineControl() {
   const footerCloseButton = dialog.querySelector(".pipeline-dialog-close-button");
   let previewToken = "";
   let previewMode = "";
-  let portraitBundleText = "";
 
   const modeLabel = (mode) => ({
     missing: "Neue/Unvollständige Arten aktualisieren",
     all: "Alle Arten vollständig aktualisieren",
     "manual-maps": "Manuelle Karten erneut suchen",
     "nc-sounds": "NC-Sounds erneut suchen",
-    portraits: "Fehlende Artporträts ergänzen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
 
@@ -945,7 +958,6 @@ function setupPipelineControl() {
     }
     previewToken = "";
     previewMode = "";
-    portraitBundleText = "";
     elements.pipelineDialogTitle.textContent = "Laufart auswählen";
     elements.pipelineDialogDescription.textContent = "Welche Aktion soll gestartet werden?";
     elements.pipelineModeChoice.hidden = false;
@@ -958,23 +970,6 @@ function setupPipelineControl() {
   };
 
   const renderPreview = (result) => {
-    if (result.mode === "portraits") {
-      const targetRows = result.targets.map((entry) => `
-        <li>
-          <strong>${escapeHtml(entry.germanName)}</strong>
-          <span>${escapeHtml(entry.scientificName)} · ${escapeHtml(entry.suggestedFileName)}</span>
-        </li>
-      `).join("");
-      elements.pipelinePreviewContent.innerHTML = result.hasWork
-        ? `
-          <p><strong>${result.targetCount}</strong> Arten haben noch kein Artporträt.</p>
-          <ul class="pipeline-target-list portrait-prompt-targets">${targetRows}</ul>
-        `
-        : "<p>Alle Arten besitzen bereits ein Artporträt.</p>";
-      elements.pipelineWarning.textContent =
-        "Der Button kopiert alle Prompts. Die Bilder werden danach in ChatGPT erzeugt und artweise über Bearbeiten importiert.";
-      return;
-    }
     if (result.mode === "cleanup") {
       const assetRows = result.obsoleteAssetDirectories.map((entry) => `
         <li><strong>${escapeHtml(entry.path)}</strong> · ${escapeHtml(formatBytes(entry.bytes))}</li>
@@ -1018,7 +1013,6 @@ function setupPipelineControl() {
   async function openPreview(mode) {
     previewToken = "";
     previewMode = mode;
-    portraitBundleText = "";
     elements.pipelineStartButton.disabled = true;
     elements.pipelineStartButton.hidden = true;
     elements.pipelineModeChoice.hidden = true;
@@ -1033,42 +1027,33 @@ function setupPipelineControl() {
           ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht."
           : mode === "nc-sounds"
             ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft."
-            : mode === "portraits"
-              ? "Für alle Arten ohne Porträt werden lokale, kostenfreie Prompts erstellt."
-              : "Vor dem Start werden Zielarten und Umfang geprüft.";
+            : "Vor dem Start werden Zielarten und Umfang geprüft.";
     showDialog();
 
     try {
-      const result = await fetchJson(
-        mode === "portraits" ? "/api/portraits/missing" : "/api/pipeline/preview",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(mode === "portraits" ? {} : { mode }),
-        },
-      );
-      previewToken = mode === "portraits" ? "portrait-prompts" : result.token;
-      portraitBundleText = mode === "portraits" ? result.combinedText : "";
+      const result = await fetchJson("/api/pipeline/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      previewToken = result.token;
       renderPreview(result);
       elements.pipelinePreview.hidden = false;
       elements.pipelineStartButton.hidden = false;
-      elements.pipelineStartButton.disabled =
-        !result.hasWork || (mode !== "portraits" && !result.tokensAvailable);
+      elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
       elements.pipelineStartButton.textContent =
         mode === "cleanup"
           ? "Dauerhaft löschen"
-          : mode === "portraits"
-            ? "Alle Prompts kopieren"
           : mode === "manual-maps" || mode === "nc-sounds"
             ? "Suchlauf starten"
             : "Pipeline starten";
       setMessage(
-        mode !== "portraits" && !result.tokensAvailable
+        !result.tokensAvailable
           ? "Die benötigten API-Tokens fehlen in der Server-Umgebung."
           : result.hasWork
             ? "Vorschau ist bereit."
             : "Für diesen Lauf wurden keine Aktionen gefunden.",
-        mode !== "portraits" && !result.tokensAvailable
+        !result.tokensAvailable
           ? "error"
           : result.hasWork ? "success" : "info",
       );
@@ -1149,27 +1134,6 @@ function setupPipelineControl() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!previewToken) return;
-    if (previewMode === "portraits") {
-      try {
-        await navigator.clipboard.writeText(portraitBundleText);
-        setMessage(
-          "Alle Portraitprompts wurden kopiert. Nach der Bilderzeugung die jeweilige Art öffnen und das Bild über Bearbeiten importieren.",
-          "success",
-        );
-      } catch {
-        const blob = new Blob([portraitBundleText], { type: "text/plain;charset=utf-8" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "artportrait-prompts.txt";
-        link.click();
-        URL.revokeObjectURL(link.href);
-        setMessage(
-          "Direktes Kopieren war nicht möglich. Die Prompts wurden als Textdatei heruntergeladen.",
-          "info",
-        );
-      }
-      return;
-    }
     elements.pipelineStartButton.disabled = true;
     setMessage(
       previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
@@ -1214,7 +1178,23 @@ function setupNewSpeciesCreator() {
   const saveButton = dialog.querySelector(".new-species-save-button");
   const jsonPreview = dialog.querySelector(".new-species-json");
   const derivedFields = [...dialog.querySelectorAll("[data-derived]")];
+  const portraitSection = dialog.querySelector(".new-species-portrait");
+  const portraitInstructions = dialog.querySelector(".new-species-portrait-instructions");
+  const portraitPromptButton = dialog.querySelector(".new-species-portrait-prompt-button");
+  const portraitCopyButton = dialog.querySelector(".new-species-portrait-copy-button");
+  const portraitPromptDetails = dialog.querySelector(".new-species-portrait-prompt-details");
+  const portraitPrompt = dialog.querySelector(".new-species-portrait-prompt");
+  const portraitFileInput = dialog.querySelector(".new-species-portrait-file-input");
+  const portraitMessage = dialog.querySelector(".new-species-portrait-message");
+  const portraitPreview = dialog.querySelector(".new-species-portrait-preview");
+  const portraitPreviewImage = dialog.querySelector(".new-species-portrait-preview-image");
+  const portraitPreviewMeta = dialog.querySelector(".new-species-portrait-preview-meta");
+  const portraitSaveButton = dialog.querySelector(".new-species-portrait-save-button");
   let previewToken = "";
+  let portraitPromptText = "";
+  let portraitPreviewToken = "";
+  let savedSpeciesId = "";
+  let newSpeciesSaved = false;
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1222,17 +1202,63 @@ function setupNewSpeciesCreator() {
     message.hidden = !text;
   };
 
+  const setPortraitMessage = (text = "", type = "") => {
+    portraitMessage.textContent = text;
+    portraitMessage.className = `edit-message new-species-portrait-message${type ? ` ${type}` : ""}`;
+    portraitMessage.hidden = !text;
+  };
+
+  const speciesValues = () => {
+    const formData = new FormData(form);
+    return {
+      german: formData.get("german"),
+      scientificName: formData.get("scientificName"),
+      size: formData.get("size"),
+      weight: formData.get("weight"),
+      lifeExpectancy: formData.get("lifeExpectancy"),
+    };
+  };
+
+  const resetPortraitPrompt = () => {
+    portraitPromptText = "";
+    portraitPrompt.textContent = "";
+    portraitPromptDetails.hidden = true;
+    portraitCopyButton.disabled = true;
+  };
+
+  const resetPortraitPreview = () => {
+    portraitPreviewToken = "";
+    portraitPreview.hidden = true;
+    portraitPreviewImage.removeAttribute("src");
+    portraitPreviewMeta.textContent = "";
+    portraitSaveButton.disabled = true;
+  };
+
+  const resetPortraitState = ({ hideSection = true, clearFile = true } = {}) => {
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    setPortraitMessage();
+    savedSpeciesId = "";
+    if (clearFile && portraitFileInput) portraitFileInput.value = "";
+    if (hideSection) portraitSection.hidden = true;
+  };
+
   const resetPreview = () => {
     previewToken = "";
+    newSpeciesSaved = false;
     preview.hidden = true;
     jsonPreview.textContent = "";
     for (const field of derivedFields) field.textContent = "";
     saveButton.disabled = true;
+    resetPortraitState();
   };
 
   const setBusy = (busy) => {
-    previewButton.disabled = busy;
-    saveButton.disabled = busy || !previewToken;
+    previewButton.disabled = busy || newSpeciesSaved;
+    saveButton.disabled = busy || !previewToken || newSpeciesSaved;
+    portraitPromptButton.disabled = busy || preview.hidden || newSpeciesSaved;
+    portraitCopyButton.disabled = busy || !portraitPromptText;
+    portraitSaveButton.disabled = busy || !portraitPreviewToken;
     openButton.disabled = busy;
     for (const button of closeButtons) button.disabled = busy;
   };
@@ -1254,9 +1280,24 @@ function setupNewSpeciesCreator() {
   for (const button of closeButtons) button.addEventListener("click", close);
   setupSafeBackdropClose(dialog, close);
 
-  form.addEventListener("input", () => {
+  form.addEventListener("input", (event) => {
+    if (event.target.closest(".new-species-portrait")) {
+      resetPortraitPrompt();
+      resetPortraitPreview();
+      setPortraitMessage("Portraitangaben geändert. Prompt oder Bildprüfung bei Bedarf neu erstellen.", "info");
+      return;
+    }
     resetPreview();
     setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
+  });
+
+  portraitFileInput.addEventListener("change", () => {
+    resetPortraitPreview();
+    if (portraitFileInput.files?.[0]) {
+      setPortraitMessage("Bild ausgewählt. Nach dem Anlegen der Art wird es direkt geprüft.", "info");
+    } else {
+      setPortraitMessage();
+    }
   });
 
   form.addEventListener("submit", async (event) => {
@@ -1264,20 +1305,11 @@ function setupNewSpeciesCreator() {
     resetPreview();
     setBusy(true);
     setMessage("Neue Art und mögliche Kollisionen werden geprüft…", "info");
-    const formData = new FormData(form);
     try {
       const result = await fetchJson("/api/species/new/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          values: {
-            german: formData.get("german"),
-            scientificName: formData.get("scientificName"),
-            size: formData.get("size"),
-            weight: formData.get("weight"),
-            lifeExpectancy: formData.get("lifeExpectancy"),
-          },
-        }),
+        body: JSON.stringify({ values: speciesValues() }),
       });
       previewToken = result.token;
       for (const field of derivedFields) {
@@ -1285,6 +1317,8 @@ function setupNewSpeciesCreator() {
       }
       jsonPreview.textContent = JSON.stringify(result.entry, null, 2);
       preview.hidden = false;
+      portraitSection.hidden = false;
+      portraitPromptButton.disabled = false;
       saveButton.disabled = false;
       setMessage(
         "Vorschau erstellt. Beim Anlegen wird zuerst eine lokale Sicherung gespeichert.",
@@ -1296,6 +1330,91 @@ function setupNewSpeciesCreator() {
       setBusy(false);
     }
   });
+
+  portraitPromptButton.addEventListener("click", async () => {
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    setBusy(true);
+    setPortraitMessage("Portrait-Prompt wird aus den neuen Artdaten erstellt…", "info");
+    try {
+      const result = await fetchJson("/api/species/new/portrait-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          values: speciesValues(),
+          additionalInstructions: portraitInstructions.value || "",
+        }),
+      });
+      portraitPromptText = result.prompt;
+      portraitPrompt.textContent = result.prompt;
+      portraitPromptDetails.hidden = false;
+      portraitCopyButton.disabled = false;
+      setPortraitMessage(
+        `Prompt erstellt. In ChatGPT genau ein Bild erzeugen und anschließend als ${result.fileName} auswählen.`,
+        "success",
+      );
+    } catch (error) {
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  portraitCopyButton.addEventListener("click", async () => {
+    if (!portraitPromptText) return;
+    try {
+      await navigator.clipboard.writeText(portraitPromptText);
+      setPortraitMessage("Prompt wurde in die Zwischenablage kopiert.", "success");
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(portraitPrompt);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      setPortraitMessage(
+        "Automatisches Kopieren war nicht möglich. Der Prompt wurde markiert; bitte Strg+C drücken.",
+        "info",
+      );
+    }
+  });
+
+  const previewNewSpeciesPortrait = async (speciesId) => {
+    resetPortraitPreview();
+    const file = portraitFileInput.files?.[0];
+    if (!file) return false;
+    if (file.size > 20 * 1024 * 1024) throw new Error("Bilddatei darf maximal 20 MB groß sein");
+    setPortraitMessage("Art wurde angelegt. Portraitbild wird jetzt geprüft…", "info");
+    const imageBase64 = await fileToBase64(file);
+    const result = await fetchJson(
+      `/api/species/${encodeURIComponent(speciesId)}/assets/portrait/preview`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          originalName: file.name,
+          imageBase64,
+          additionalInstructions: portraitInstructions.value || "",
+        }),
+      },
+    );
+    portraitPreviewToken = result.token;
+    portraitPreviewImage.src = result.newPortrait.url;
+    if (typeof portraitPreviewImage.decode === "function") await portraitPreviewImage.decode();
+    portraitPreviewMeta.textContent =
+      `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)}`
+      + ` · Quelle ${result.newPortrait.originalDimensions.width} × ${result.newPortrait.originalDimensions.height} px`;
+    portraitPromptText = result.newPortrait.prompt;
+    portraitPrompt.textContent = result.newPortrait.prompt;
+    portraitPromptDetails.hidden = false;
+    portraitCopyButton.disabled = false;
+    portraitPreview.hidden = false;
+    portraitSaveButton.disabled = false;
+    setPortraitMessage(
+      "Vorschau erstellt. Bitte Artmerkmale, Anatomie und vollständige Bildränder prüfen.",
+      "success",
+    );
+    return true;
+  };
 
   saveButton.addEventListener("click", async () => {
     if (!previewToken) return;
@@ -1312,18 +1431,79 @@ function setupNewSpeciesCreator() {
         + backupRetentionText(result)
         + " Die Art ist bis zum nächsten Pipeline-Lauf erwartungsgemäß unvollständig."
         + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
-      state.selectedId = result.species?.id || result.derived.slug;
+      savedSpeciesId = result.species?.id || result.derived.slug;
+      state.selectedId = savedSpeciesId;
       elements.search.value = "";
       elements.statusFilter.value = "";
       elements.flagFilter.value = "";
+      newSpeciesSaved = true;
+      previewToken = "";
+      await loadData({ reload: true });
+      if (portraitFileInput.files?.[0]) {
+        try {
+          await previewNewSpeciesPortrait(savedSpeciesId);
+          setMessage(
+            `${result.entry.german} wurde angelegt. Das ausgewählte Portraitbild ist jetzt zur Übernahme bereit.`,
+            "success",
+          );
+        } catch (portraitError) {
+          setPortraitMessage(
+            [`Portraitbild konnte nicht geprüft werden: ${portraitError.message}`, ...(portraitError.details || [])]
+              .join(" · "),
+            "error",
+          );
+          setMessage(
+            `${result.entry.german} wurde angelegt. Das Portrait kann später im Bearbeiten-Dialog ergänzt werden.`,
+            "success",
+          );
+        }
+        setBusy(false);
+        return;
+      }
       form.reset();
       resetPreview();
       setBusy(false);
       close();
-      await loadData();
       await state.openPipelinePreview?.("missing");
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setBusy(false);
+    }
+  });
+
+  portraitSaveButton.addEventListener("click", async () => {
+    if (!portraitPreviewToken || !savedSpeciesId) return;
+    const shouldSave = window.confirm(
+      "Artportrait für die neu angelegte Art speichern, committen und pushen?",
+    );
+    if (!shouldSave) {
+      setPortraitMessage("Übernahme abgebrochen. Das geprüfte Vorschaubild wurde nicht gespeichert.", "info");
+      return;
+    }
+    setBusy(true);
+    setPortraitMessage("Artportrait wird gespeichert, committed und gepusht…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/portrait/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: portraitPreviewToken }),
+        },
+      );
+      state.notice = result.gitPublished
+        ? `Artportrait gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
+          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
+        : `Artportrait wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      form.reset();
+      resetPreview();
+      setBusy(false);
+      close();
+      await loadData({ reload: true });
+      await state.openPipelinePreview?.("missing");
+    } catch (error) {
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setBusy(false);
     }
   });
@@ -2079,19 +2259,24 @@ function renderDetail(species) {
         </div>
       </div>
     `
-    : `<p class="media-missing">Keine Sounddatei vorhanden.</p>`;
+    : `<p class="media-missing">${
+      species.soundMissingKnown
+        ? "Keine automatische Tonquelle gefunden. Falls später ein geeigneter Sound verfügbar ist, manuell pflegen."
+        : "Keine Sounddatei vorhanden."
+    }</p>`;
 
   const issueGroups = [
-    ["Datenabweichungen", species.dataIssues],
-    ["Assetprobleme", species.assetIssues],
-  ].filter(([, entries]) => entries.length > 0);
+    { title: "Datenabweichungen", entries: species.dataIssues, className: "error" },
+    { title: "Assetprobleme", entries: species.assetIssues, className: "error" },
+    { title: "Hinweise", entries: species.careHints || [], className: "care" },
+  ].filter((group) => group.entries.length > 0);
   const issues = issueGroups.length
     ? `
       <section class="issues-section">
         <h3 class="section-title">Validierungshinweise</h3>
         <div class="issue-groups">
-          ${issueGroups.map(([title, entries]) => `
-            <div>
+          ${issueGroups.map(({ title, entries, className }) => `
+            <div class="${escapeHtml(className)}">
               <h4>${escapeHtml(title)}</h4>
               <ul>${entries.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
             </div>
@@ -2201,9 +2386,15 @@ function renderDetail(species) {
         <dl class="data-list">
           ${dataRows([
             ["Karte", assetStatusText(species.assets.map)],
-            ["Sound", assetStatusText(species.assets.sound)],
-            ["Credits", assetStatusText(species.assets.credits)],
-            ["Spektrogramm", assetStatusText(species.assets.spectrogram)],
+            ["Sound", species.soundMissingKnown
+              ? "Keine automatische Tonquelle gefunden · Hinweis S"
+              : assetStatusText(species.assets.sound)],
+            ["Credits", species.soundMissingKnown
+              ? "Ohne Sound nicht erforderlich"
+              : assetStatusText(species.assets.credits)],
+            ["Spektrogramm", species.soundMissingKnown
+              ? "Ohne Sound nicht erforderlich"
+              : assetStatusText(species.assets.spectrogram)],
             ["Artporträt", species.assets.portrait.exists
               ? `Vorhanden${species.assets.portrait.hashVerified ? " · Hash geprüft" : ""}`
               : "Optional · nicht vorhanden"],

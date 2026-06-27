@@ -269,7 +269,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Sechs Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Haubentaucher und Höckerschwan wurden nach
+Aktuell stehen 48 Arten in `species_list.json` und `speciesData.json`. Haubentaucher und Höckerschwan wurden nach
 erfolgreicher Bereinigung erneut angelegt und vollständig verarbeitet.
 
 Phase 7.6 ist technisch lokal vorbereitet:
@@ -379,7 +379,8 @@ darin mit `--run` erneut aus. Die komplette Ausgabe bleibt dadurch sichtbar. Zum
 `update_github_only.bat` kein zweites Fenster oeffnet. Diese Batch-Dateien sind lokal ignoriert und nicht Teil des
 GitHub-Pages-Deployments.
 Die JSON-Ausgabe des Spektrogramm-Generators wird im Erfolgslauf nicht angezeigt. Bei Fehlern wird die Detailausgabe
-aus `Testlauf/spectrogram-update.log` ins Fenster geschrieben.
+aus `Testlauf/spectrogram-update.log` ins Fenster geschrieben. Der Arten-Explorer übersetzt den Spektrogramm-Abgleich
+im Prozessdialog in kurze Zeilen pro Art: Sound vorhanden/fehlt und Spektrogramm vorhanden/erstellt/Ã¼bersprungen.
 Innerhalb der Windows-Batch-Datei wird `npm.cmd` mit `call` gestartet, damit der Ablauf danach mit Erfolgsmeldung,
 Commit und Push fortgesetzt wird.
 
@@ -396,14 +397,16 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 und `Waldkauz`. Großtrappe, Kernbeißer und Reh werden seit der bestätigten Übernahme funktionierender automatischer
 Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
 
-Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
+Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 47 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
 Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
 erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
 ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt. Ein vorhandenes 4:5-Artportraet wird in die feste Portraitzelle
 eingepasst und vergroessert die Medienzeile nicht. Die vollstaendige Darstellung bleibt sichtbar; fuer Details
 steht die Portrait-Lightbox bereit.
-Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet.
+Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet. Die dokumentierte
+Folgeversion `species-sound.js?v=1.0.25` korrigiert die Squarespace-Meldung fuer fehlende Tonquellen auf
+`Keine Tierstimme verfügbar` ohne Schlusspunkt.
 Ohne Spektrogramm oder bei Bildladefehler bleibt die bisherige Canvas-Wellenform als Fallback aktiv. Zielstil ist eine
 ruhige Schwarz-Weiss-/Graustufen-Darstellung mit hellem Hintergrund, dunklen Frequenzspuren, Rand oben/unten und
 Frequenzbereich bis 18 kHz.
@@ -472,9 +475,14 @@ Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktioni
 Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
 Die Assetverwaltung aus Phase 7.7 ist seit 2026-06-21 abgeschlossen. Karten, Sound/Credits,
 Spektrogrammverwaltung und Artportrait-Workflow sind umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
-Der Explorer erstellt den Prompt lokal, kopiert Einzel- oder Sammelprompts und importiert ein anschliessend selbst
-in ChatGPT erzeugtes PNG, JPEG oder WebP. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
-`portrait.webp` in `1280x1600` und speichert erst nach manueller Art- und Anatomiepruefung. Details:
+Der Explorer erstellt den Prompt lokal je Art, kopiert diesen Einzelprompt und importiert ein anschliessend selbst
+in ChatGPT erzeugtes PNG, JPEG oder WebP. Promptversion `1.1.0` fordert genau ein Einzelbild an und verbietet
+Collagen, Raster, Kontaktabzuege und Mehrfachansichten. Der Sammelprompt-Workflow wurde entfernt, weil ChatGPT daraus
+wiederholt Collagen erzeugte. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
+`portrait.webp` in `1280x1600` und speichert bei bestehenden Arten wie zuvor nach `Artporträt übernehmen` mit
+Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Daten einen Einzelprompt erzeugen und
+ein optional sofort erzeugtes Bild nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit
+und Push zusätzlich nach. Details:
 `docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
 Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Als naechstes folgt Phase 7.8 als browserunabhaengiger
 Windows-Desktop-Wrapper fuer die gesamte App; Planung:
@@ -485,16 +493,15 @@ Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-06-21:
+Aktueller lokaler Stand vom 2026-06-27:
 
-- 47 Eintraege in `species_list.json`
-- 47 Arten in der letzten Pipeline-Ausgabe
-- 47 vollständige Kernpakete aus Karte, Sound, Credits und Spektrogramm
-- 1 Artportrait (`Alpenbirkenzeisig`); 46 Portrait-Assetprobleme
+- 48 Eintraege in `species_list.json`
+- 48 Arten in der letzten Pipeline-Ausgabe
+- 48 Karten, 47 Sounds, 47 Credits und 47 Spektrogramme
+- 48 Artportraits; 0 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
-- 0 fehlende Sounddateien unter den 47 verarbeiteten Arten
-- 0 fehlende Sound-Credits unter den 47 verarbeiteten Arten
-- 0 fehlende Karten unter den 47 verarbeiteten Arten
+- 1 Soundhinweis `S`: `Grüner Leguan` hat nach vollständigem Pipeline-Lauf keine verwendbare automatische Tonquelle
+- 0 fehlende Karten unter den 48 verarbeiteten Arten
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.

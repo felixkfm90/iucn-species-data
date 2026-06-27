@@ -41,6 +41,8 @@ Informationen und brauchbare mobile Bedienung.
   Unter dem Spektrogramm liegen Playbutton, Lautstaerke, Zeit und Tempo in einer gemeinsamen Control-Zeile.
 - Das Spektrogramm wird seit Version `1.0.24` flacher dargestellt: `78px` auf Desktop und `68px` bis `768px`
   Viewportbreite. Die vorhandenen WebP-Dateien bleiben unveraendert; nur die Anzeigehoehe wurde reduziert.
+- Version `1.0.25` korrigiert die Squarespace-Meldung bei fehlender Tonquelle auf `Keine Tierstimme verfügbar`
+  ohne Schlusspunkt.
 - Quelle und Lizenz werden nur im eingeklappten `Quelle und Lizenz`-Bereich gezeigt; unter `Tierstimme` steht keine
   zusaetzliche Quellenzeile mehr.
 - Non-Commercial-Lizenzen werden nicht mehr als sichtbarer Warnhinweis markiert. Der NC-Status bleibt intern ueber
@@ -77,7 +79,7 @@ Seitenaufruf.
 
 Aktueller Stand:
 
-- 45 produktive `spectrogram.webp`-Dateien erzeugt.
+- 47 produktive `spectrogram.webp`-Dateien erzeugt.
 - Gesamtgroesse: ca. 1,22 MB.
 - Zielstil: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben/unten, Frequenzbereich bis 18 kHz.
 
@@ -85,7 +87,8 @@ Aktueller Stand:
 
 Aktueller bestaetigter Live-Stand nach GitHub-Pages-Deploy und Squarespace-Test:
 
-- Footer: `species-sound.js?v=1.0.24`, von Felix am 2026-06-19 live getestet
+- Footer: `species-sound.js?v=1.0.25`; `1.0.24` wurde von Felix am 2026-06-19 live getestet, `1.0.25`
+  enthaelt nur die Textkorrektur fuer fehlende Tierstimmen.
 - Custom CSS: kein zwingender neuer Soundbar-Block; die Komponente injiziert ihre eigene gekapselte Optik.
 - Alte Soundbar-/WaveSurfer-CSS-Regeln in Squarespace koennen spaeter aufgeraeumt werden, solange `.frame-box`
   erhalten bleibt.

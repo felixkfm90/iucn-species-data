@@ -86,6 +86,71 @@ const MIME_TYPES = {
   ".webp": "image/webp",
 };
 
+export function formatSpectrogramPipelineLog(stdoutText) {
+  const raw = String(stdoutText ?? "").trim();
+  if (!raw) return "";
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+
+  const entries = Array.isArray(parsed.results)
+    ? parsed.results
+    : Array.isArray(parsed.jobs)
+      ? parsed.jobs
+      : [];
+  if (!entries.length) {
+    return parsed.error
+      ? `Spektrogramm-Abgleich: Fehler - ${parsed.error}`
+      : "Spektrogramm-Abgleich: Keine Arten verarbeitet.";
+  }
+
+  const counts = {
+    generated: 0,
+    skipped: 0,
+    missingSound: 0,
+    failed: 0,
+  };
+  const lines = ["Spektrogramm-Abgleich:"];
+  for (const entry of entries) {
+    const status = String(entry.status ?? entry.action ?? "");
+    const reason = String(entry.stderr || entry.reason || "").trim();
+    const hasSound = status !== "missing-mp3" && Number(entry.inputBytes ?? 0) > 0;
+    let spectrogramStatus = status || "geprüft";
+    if (status === "generated") {
+      counts.generated += 1;
+      spectrogramStatus = "wurde erstellt";
+    } else if (status === "skip") {
+      counts.skipped += 1;
+      spectrogramStatus = "vorhanden";
+    } else if (status === "missing-mp3") {
+      counts.missingSound += 1;
+      spectrogramStatus = "übersprungen";
+    } else if (status === "failed") {
+      counts.failed += 1;
+      spectrogramStatus = `Fehler${reason ? ` - ${reason}` : ""}`;
+    } else if (status === "generate") {
+      spectrogramStatus = "würde erstellt";
+    }
+    lines.push(
+      `${entry.safeName ?? "Unbekannte Art"}`,
+      `  Sound: ${hasSound ? "vorhanden" : "fehlt"}`,
+      `  Spektrogramm: ${spectrogramStatus}`,
+    );
+  }
+  lines.push(
+    `Zusammenfassung: ${counts.generated} erstellt, ${counts.skipped} vorhanden, ${counts.missingSound} ohne Sound, ${counts.failed} Fehler.`,
+  );
+  if (parsed.hashRegistry) {
+    lines.push(
+      `Hashregister: ${parsed.hashRegistry.updated ?? 0} geprüft${parsed.hashRegistry.changed ? " und aktualisiert" : ""}.`,
+    );
+  }
+  return lines.join("\n");
+}
+
 function sanitizeAssetName(input) {
   return String(input ?? "")
     .replace(/ä/g, "ae")
@@ -1026,6 +1091,13 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   );
   const manualMapSafeNames = parseManualMapOverrides(manualMapMarkdown);
   const ncNames = new Set(report.ncSoundLicensesAll ?? []);
+  const reportMissingSoundNames = new Set(report.missing?.soundMp3 ?? []);
+  const reportMissingSoundAssetNames = new Set(
+    (report.missing?.speciesAssets ?? [])
+      .filter((entry) => Array.isArray(entry.missing) && entry.missing.includes("sound.mp3"))
+      .map((entry) => entry.german)
+      .filter(Boolean),
+  );
   const allKeys = new Set([...inputByScientificName.keys(), ...generatedByScientificName.keys()]);
   const species = [];
 
@@ -1097,10 +1169,6 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       if (isMissingValue(generated.Trend)) dataIssues.push("Populationstrend fehlt");
     }
 
-    if (!map.exists) assetIssues.push("Karte fehlt");
-    if (!sound.exists) assetIssues.push("Sound fehlt");
-    if (!creditsFile.exists) assetIssues.push("Credits fehlen");
-    if (creditsFile.exists && creditsError) assetIssues.push("Credits sind ungültig");
     const mapOverride = assetOverrides.assets?.[safeName]?.map;
     const soundOverride = assetOverrides.assets?.[safeName]?.sound;
     const spectrogramOverride = assetOverrides.assets?.[safeName]?.spectrogram;
@@ -1109,6 +1177,21 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       ? mapOverride.manual
       : manualMapSafeNames.has(safeName);
     const isManualSound = soundOverride?.manual === true;
+    const soundMissingKnown =
+      Boolean(generated)
+      && !sound.exists
+      && (reportMissingSoundNames.has(germanName) || reportMissingSoundAssetNames.has(germanName));
+    const soundCareHint = soundMissingKnown || isManualSound;
+    const careHints = [];
+    if (soundMissingKnown) {
+      careHints.push("Sound fehlt; der vollständige Pipeline-Lauf hat keine verwendbare Quelle gefunden.");
+    } else if (isManualSound) {
+      careHints.push("Sound wird manuell gepflegt und ist vor automatischer Pipeline-Übernahme geschützt.");
+    }
+    if (!map.exists) assetIssues.push("Karte fehlt");
+    if (!sound.exists && !soundMissingKnown) assetIssues.push("Sound fehlt");
+    if (!creditsFile.exists && !soundMissingKnown) assetIssues.push("Credits fehlen");
+    if (creditsFile.exists && creditsError) assetIssues.push("Credits sind ungültig");
     const isNcSound = String(credits?.license ?? "").toLocaleLowerCase("de").includes("/by-nc");
     const spectrogramHashTracked =
       isSha256(spectrogramOverride?.soundSha256)
@@ -1137,7 +1220,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       }
     }
     if (spectrogramStale) assetIssues.push("Spektrogramm veraltet");
-    else if (!spectrogram.exists) assetIssues.push("Spektrogramm fehlt");
+    else if (!spectrogram.exists && !soundMissingKnown) assetIssues.push("Spektrogramm fehlt");
     let portraitHashVerified = false;
     let actualPortraitSha256 = "";
     let actualPortraitMetadataSha256 = "";
@@ -1257,6 +1340,9 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       reportNcSound: ncNames.has(germanName),
       isManualMap,
       isManualSound,
+      soundMissingKnown,
+      soundCareHint,
+      careHints,
       missingPortrait: !portrait.exists,
       fieldMismatches,
       dataIssues,
@@ -1397,6 +1483,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     special: {
       manualMapCount: species.filter((entry) => entry.isManualMap).length,
       manualSoundCount: species.filter((entry) => entry.isManualSound).length,
+      soundCareCount: species.filter((entry) => entry.soundCareHint).length,
+      missingSoundKnownCount: species.filter((entry) => entry.soundMissingKnown).length,
       ncSoundCount: species.filter((entry) => entry.isNcSound).length,
       missingPortraitCount: species.filter((entry) => entry.missingPortrait).length,
     },
@@ -1412,6 +1500,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     manualMapCount: species.filter((entry) => entry.isManualMap).length,
     manualSoundCount: species.filter((entry) => entry.isManualSound).length,
+    soundCareCount: species.filter((entry) => entry.soundCareHint).length,
+    missingSoundKnownCount: species.filter((entry) => entry.soundMissingKnown).length,
     missingPortraitCount: species.filter((entry) => entry.missingPortrait).length,
     readOnly: false,
     editingEnabled: true,
@@ -1807,17 +1897,21 @@ export async function createExplorerServer({
     return additions;
   }
 
-  function runPipelineChild(command, args, phase) {
+  function runPipelineChild(command, args, phase, { stdoutFormatter = null } = {}) {
     pipelineState.phase = phase;
     appendPipelineLog(`--- ${phase} ---`);
     return new Promise((resolveRun) => {
+      let stdoutBuffer = "";
       const child = spawn(command, args, {
         cwd: repoRoot,
         env: process.env,
         windowsHide: true,
       });
       pipelineProcess = child;
-      child.stdout.on("data", (chunk) => appendPipelineLog(chunk));
+      child.stdout.on("data", (chunk) => {
+        if (stdoutFormatter) stdoutBuffer += chunk.toString("utf8");
+        else appendPipelineLog(chunk);
+      });
       child.stderr.on("data", (chunk) => appendPipelineLog(chunk));
       child.on("error", (error) => {
         appendPipelineLog(`Prozessfehler: ${error.message}`);
@@ -1825,6 +1919,13 @@ export async function createExplorerServer({
         resolveRun(1);
       });
       child.on("close", (code) => {
+        if (stdoutFormatter && stdoutBuffer.trim()) {
+          try {
+            appendPipelineLog(stdoutFormatter(stdoutBuffer));
+          } catch {
+            appendPipelineLog(stdoutBuffer);
+          }
+        }
         pipelineProcess = null;
         resolveRun(Number.isInteger(code) ? code : 1);
       });
@@ -1943,7 +2044,12 @@ export async function createExplorerServer({
       }
       const localFfmpeg = join(repoRoot, "local-tools", "ffmpeg", "bin", "ffmpeg.exe");
       if (existsSync(localFfmpeg)) spectrogramArgs.push(`--ffmpeg=${localFfmpeg}`);
-      exitCode = await runPipelineChild(process.execPath, spectrogramArgs, "Spektrogramm-Abgleich");
+      exitCode = await runPipelineChild(
+        process.execPath,
+        spectrogramArgs,
+        "Spektrogramm-Abgleich",
+        { stdoutFormatter: formatSpectrogramPipelineLog },
+      );
     }
 
     if (exitCode === 0 && !assetOnlyMode) {
@@ -2988,42 +3094,6 @@ export async function createExplorerServer({
     };
   }
 
-  function createMissingPortraitPrompts() {
-    const targets = model.species
-      .filter((species) => species.inInput && species.missingPortrait)
-      .map((species, index) => {
-        const prompt = buildPortraitPrompt({
-          germanName: species.germanName,
-          scientificName: species.scientificName,
-        });
-        return {
-          number: index + 1,
-          id: species.id,
-          germanName: species.germanName,
-          scientificName: species.scientificName,
-          safeName: species.safeName,
-          suggestedFileName: `${species.safeName}.png`,
-          prompt,
-          promptSha256: portraitPromptSha256(prompt),
-        };
-      });
-    const combinedText = targets.map((entry) => [
-      `===== ${entry.number}. ${entry.germanName} · ${entry.scientificName} =====`,
-      `Empfohlener Dateiname: ${entry.suggestedFileName}`,
-      "",
-      entry.prompt,
-    ].join("\n")).join("\n\n\n");
-    return {
-      mode: "portraits",
-      hasWork: targets.length > 0,
-      targetCount: targets.length,
-      speciesCount: model.species.length,
-      promptVersion: PORTRAIT_STANDARD.promptVersion,
-      targets,
-      combinedText,
-    };
-  }
-
   async function previewPortraitAsset(id, payload) {
     cleanupPreviewTokens();
     if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
@@ -3137,6 +3207,7 @@ export async function createExplorerServer({
   async function savePortraitAsset(id, payload) {
     cleanupPreviewTokens();
     const token = String(payload?.token ?? "");
+    const publishAfterSave = payload?.publish !== false;
     const preview = previewTokens.get(token);
     if (!preview || preview.type !== "portrait-asset" || preview.id !== id) {
       const error = new Error("Artporträt-Vorschau ist ungültig oder abgelaufen");
@@ -3180,7 +3251,7 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
-    if (publishAssetChanges) {
+    if (publishAssetChanges && publishAfterSave) {
       const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
       if (stagedBefore.code !== 0) {
         const error = new Error(
@@ -3289,13 +3360,15 @@ export async function createExplorerServer({
         backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
       }
       await refreshModel({ force: true });
-      let publication;
+      let publication = { published: false, skipped: true, commit: "" };
       let publicationError = "";
-      try {
-        publication = await publishPortraitAssetChanges(species);
-      } catch (error) {
-        publication = { published: false, skipped: false, commit: "" };
-        publicationError = error.message;
+      if (publishAfterSave) {
+        try {
+          publication = await publishPortraitAssetChanges(species);
+        } catch (error) {
+          publication = { published: false, skipped: false, commit: "" };
+          publicationError = error.message;
+        }
       }
       return {
         ok: !publicationError,
@@ -3372,6 +3445,46 @@ export async function createExplorerServer({
         "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
         "Die neue Art erscheint zunächst ohne Pipeline-Daten und Assets im Explorer.",
         "speciesData.json und Assets bleiben unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
+      ],
+    };
+  }
+
+  function createNewSpeciesPortraitPrompt(payload) {
+    cleanupPreviewTokens();
+    const { values, errors } = validateNewSpeciesValues(payload?.values);
+    const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+    if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
+      errors.push(
+        `Zusätzliche Hinweise dürfen maximal ${MAX_PORTRAIT_INSTRUCTIONS_LENGTH} Zeichen enthalten`,
+      );
+    }
+    if (errors.length) {
+      const error = new Error("Eingaben sind ungültig");
+      error.statusCode = 400;
+      error.details = errors;
+      throw error;
+    }
+
+    const { entry, derived } = buildNewSpeciesEntry(values);
+    const prompt = buildPortraitPrompt({
+      germanName: entry.german,
+      scientificName: derived.scientificName,
+      additionalInstructions,
+    });
+    return {
+      entry,
+      derived: {
+        ...derived,
+        assetDirectory: `species-assets/${derived.safeName}`,
+      },
+      prompt,
+      promptVersion: PORTRAIT_STANDARD.promptVersion,
+      promptSha256: portraitPromptSha256(prompt),
+      fileName: `${derived.safeName}.png`,
+      instructions: [
+        "Prompt in ChatGPT einfügen und dort genau ein Bild für diese eine Art erzeugen.",
+        `Bild als ${derived.safeName}.png, .jpg oder .webp speichern.`,
+        "Art anschließend anlegen und das Bild im selben Dialog prüfen und übernehmen.",
       ],
     };
   }
@@ -3894,12 +4007,6 @@ export async function createExplorerServer({
         return;
       }
 
-      if (request.method === "POST" && url.pathname === "/api/portraits/missing") {
-        await readJsonBody(request);
-        sendJson(response, 200, createMissingPortraitPrompts());
-        return;
-      }
-
       if (request.method === "POST" && url.pathname === "/api/pipeline/assets/review") {
         const payload = await readJsonBody(request);
         sendJson(response, 200, await savePipelineAssetReview(payload));
@@ -3908,12 +4015,18 @@ export async function createExplorerServer({
 
       if (
         request.method === "POST"
-        && (url.pathname === "/api/species/new/preview" || url.pathname === "/api/species/new/save")
+        && (
+          url.pathname === "/api/species/new/preview"
+          || url.pathname === "/api/species/new/save"
+          || url.pathname === "/api/species/new/portrait-prompt"
+        )
       ) {
         const payload = await readJsonBody(request);
         const result = url.pathname.endsWith("/preview")
           ? await previewNewSpecies(payload)
-          : await saveNewSpecies(payload);
+          : url.pathname.endsWith("/portrait-prompt")
+            ? createNewSpeciesPortraitPrompt(payload)
+            : await saveNewSpecies(payload);
         sendJson(response, 200, result);
         return;
       }

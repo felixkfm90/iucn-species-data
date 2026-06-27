@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-20
+Stand: 2026-06-27
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -62,18 +62,18 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 47 Eintraege in `species_list.json`
-- 47 aktive Arten
-- 47 Arten in `speciesData.json`
-- 47 Karten
-- 47 Art-Assetordner
+- 48 Eintraege in `species_list.json`
+- 48 aktive Arten
+- 48 Arten in `speciesData.json`
+- 48 Karten
+- 48 Art-Assetordner
 - 47 MP3-Dateien
 - 47 Credits-Dateien
 - 47 Spektrogramm-Dateien
-- 47 `species-assets/<SafeName>/`-Ordner mit `map.jpg`, `sound.mp3`, `credits.json` und `spectrogram.webp`
-- 1 Artportraet (`Alpenbirkenzeisig`); 46 Artportraets fehlen noch
-- Artportraets gehoeren seit 2026-06-21 zur Explorer-Assetvalidierung. Deshalb zeigt die lokale App aktuell
-  46 Arten mit Assetproblem, obwohl Karten, Sounds, Credits und Spektrogramme vollstaendig sind.
+- 48 Artportraets
+- 0 Assetprobleme im Explorer-Modell
+- 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische Tonquelle.
+  Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -297,8 +297,10 @@ Aktuelle Planung:
   - Soundbar: `docs/soundbar.md`
   - Asset-Struktur: `docs/asset-structure-plan.md`
   Relevante Footer-Versionen: `species-core.js?v=1.0.4`, `map-loader.js?v=1.0.7` und
-  `species-sound.js?v=1.0.24`. Version `1.0.24` reduziert nur die sichtbare Spektrogrammhoehe; die vorhandenen
-  WebP-Assets bleiben unveraendert. Der Footer wurde von Felix am 2026-06-19 angepasst und live erfolgreich getestet.
+  `species-sound.js?v=1.0.25`. Version `1.0.24` reduziert nur die sichtbare Spektrogrammhoehe; die vorhandenen
+  WebP-Assets bleiben unveraendert. Version `1.0.25` korrigiert die Meldung fuer fehlende Tierstimmen auf
+  `Keine Tierstimme verfügbar` ohne Schlusspunkt. Der Footer mit `1.0.24` wurde von Felix am 2026-06-19 angepasst
+  und live erfolgreich getestet.
 - Phase 7 - Desktop-App / Arten-Explorer:
   in Arbeit seit 2026-06-17. Die technische Basis steht in `docs/desktop-app-plan.md`.
   Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche.
@@ -346,7 +348,8 @@ Aktuelle Planung:
   sowie vorhandene Assetordner werden vor einer vollstaendigen JSON-Vorschau geprueft.
   Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Die neue Art bleibt bis zum separaten Pipeline-Lauf
   erwartungsgemaess nur in `species_list.json`. API: `POST /api/species/new/preview` und
-  `POST /api/species/new/save`. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
+  `POST /api/species/new/save`. Fuer optionale Sofortportraits liefert `POST /api/species/new/portrait-prompt`
+  einen Einzelprompt aus den eingegebenen neuen Artdaten. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
   erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und Hoeckerschwan wurden fuer
   produktive Workflow-Tests angelegt und danach wieder entfernt.
@@ -361,7 +364,8 @@ Aktuelle Planung:
   `Pipeline-Lauf läuft gerade`. Der Button `Abbrechen` wechselt zu `Fenster schließen`; das Schließen beendet den
   Hintergrundprozess nicht. Ein Statusbalken im Hauptfenster zeigt laufende, wartende, abgeschlossene und
   fehlgeschlagene Läufe und öffnet die Prozessdetails erneut. Nach erfolgreicher Pipeline folgt der passende
-  Spektrogramm-Abgleich.
+  Spektrogramm-Abgleich. Die Prozessausgabe des Spektrogramm-Abgleichs wird im Explorer als lesbare Zeilen pro Art
+  angezeigt: Sound vorhanden/fehlt und Spektrogramm vorhanden/erstellt/uebersprungen statt rohem JSON.
   Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
   bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
   Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
@@ -424,18 +428,23 @@ Aktuelle Planung:
   500 MB.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
-  vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.0.0` lokal aus deutschem und
+  vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und
   wissenschaftlichem Namen sowie optionalen Zusatzhinweisen. Einzelprompts koennen angezeigt und kopiert werden.
-  Der Datenbankdialog `Fehlende Artportraets ergaenzen` erstellt ausserdem einen gemeinsamen Promptblock fuer alle
-  Arten ohne Portrait. Die Bilder werden im vorhandenen ChatGPT-Zugang erzeugt und als PNG, JPEG oder WebP wieder
+  Der Sammelprompt-/Datenbankdialog fuer alle fehlenden Portraits wurde am 2026-06-27 entfernt, weil ChatGPT daraus
+  wiederholt Collagen oder Mehrfachbilder erzeugte. Die Ein-Bild-Regel verbietet Collagen, Raster,
+  Mehrfachansichten und Varianten. Bilder werden deshalb artweise im vorhandenen ChatGPT-Zugang erzeugt und als PNG,
+  JPEG oder WebP wieder
   in die App geladen. Der Server prueft Magic Bytes, mindestens 800x1000 Pixel und 4:5; FFmpeg vereinheitlicht die
-  Vorschau auf `1280x1600` WebP. Erst nach manueller Art- und Anatomiepruefung werden `portrait.webp`,
-  `portrait.json`, SHA-256-Register, Backup, Commit und Push ausgefuehrt. Fehlende Portraets sind regulaere
+  Vorschau auf `1280x1600` WebP. Bei bestehenden Arten fuehrt `Artporträt übernehmen` nach manueller Art- und
+  Anatomiepruefung wie zuvor Speichern, Backup, Commit und Push aus. Beim optionalen Sofortportrait einer neu
+  angelegten Art fragt die App vor diesem Schritt zusaetzlich nach. Fehlende Portraets sind regulaere
   Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot, das Assetdashboard nennt die genaue Fehlanzahl,
   und betroffene Arten tragen die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar. Der normale
-  Datenpipeline-Lauf erzeugt weiterhin keine Portraets; dafuer gilt nur `Fehlende Artportraets ergaenzen`.
-  Vierzehn Explorer-Tests decken Prompt, Sammelprompts, Dateipruefung, Konvertierung, Speicherung und Hashpruefung
-  ab. Der erste produktive Import fuer `Alpenbirkenzeisig` wurde am 2026-06-21 gespeichert, committed und gepusht.
+  Datenpipeline-Lauf erzeugt weiterhin keine Portraets; sie werden nur artweise im Bearbeitungsdialog gepflegt.
+  Explorer-Tests decken Prompt, Dateipruefung, Konvertierung, Speicherung, Hashpruefung und die entfernte
+  Sammelroute ab. Der Neue-Art-Dialog kann seit 2026-06-27 aus den eingegebenen neuen Artdaten einen Einzelprompt
+  erzeugen und ein optional sofort erzeugtes Bild nach der Artanlage pruefen und uebernehmen. Der erste produktive
+  Import fuer `Alpenbirkenzeisig` wurde am 2026-06-21 gespeichert, committed und gepusht.
   Der Detailbereich behaelt mit und ohne Portrait dieselbe Medienhoehe; das vollstaendige 4:5-Bild wird innerhalb
   dieser Flaeche eingepasst und nur in der Lightbox vergroessert. Die feste Medienzeile beruecksichtigt Titel,
   Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Die weitere

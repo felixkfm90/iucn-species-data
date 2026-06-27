@@ -749,6 +749,11 @@ button:focus-visible {
   background: var(--blue-soft);
 }
 
+.flag.sound {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
 .flag.portrait {
   color: #77591b;
   background: #fff3cf;
@@ -1366,13 +1371,15 @@ button:focus-visible {
   font-weight: 650;
 }
 
-.portrait-edit-section {
+.portrait-edit-section,
+.new-species-portrait {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
-.portrait-edit-section > header {
+.portrait-edit-section > header,
+.new-species-portrait > header {
   margin-bottom: 12px;
   display: flex;
   align-items: flex-start;
@@ -1380,12 +1387,14 @@ button:focus-visible {
   gap: 14px;
 }
 
-.portrait-edit-section h4 {
+.portrait-edit-section h4,
+.new-species-portrait h4 {
   margin: 0 0 3px;
   font-size: 0.9rem;
 }
 
-.portrait-edit-section header p {
+.portrait-edit-section header p,
+.new-species-portrait header p {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.74rem;
@@ -1456,7 +1465,9 @@ button:focus-visible {
 
 .portrait-prompt-button,
 .portrait-copy-button,
-.portrait-preview-button {
+.portrait-preview-button,
+.new-species-portrait-prompt-button,
+.new-species-portrait-copy-button {
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -1502,6 +1513,11 @@ button:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.new-species-portrait-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 360px;
 }
 
 .portrait-compare-grid figure {
@@ -1590,7 +1606,8 @@ button:focus-visible {
   font-weight: 750;
 }
 
-.portrait-save-button {
+.portrait-save-button,
+.new-species-portrait-save-button {
   color: #fff;
   background: var(--green);
   border-color: var(--green) !important;
@@ -2167,6 +2184,11 @@ button:focus-visible {
   padding-left: 18px;
   color: var(--red);
   font-size: 0.84rem;
+}
+
+.issue-groups .care h4,
+.issue-groups .care ul {
+  color: var(--green);
 }
 
 .loading-row,
