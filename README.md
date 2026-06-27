@@ -484,9 +484,16 @@ Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Da
 ein optional sofort erzeugtes Bild nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit
 und Push zusätzlich nach. Details:
 `docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
-Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Als naechstes folgt Phase 7.8 als browserunabhaengiger
-Windows-Desktop-Wrapper fuer die gesamte App; Planung:
-`docs/desktop-shell-plan.md`.
+Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Phase 7.8 wurde am 2026-06-27 als erster
+browserunabhaengiger Electron-Prototyp gestartet. Start:
+
+```bash
+npm.cmd run species:desktop
+```
+
+Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api/summary` und laedt die bestehende
+Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
+Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.

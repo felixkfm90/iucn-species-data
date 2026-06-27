@@ -1,6 +1,6 @@
 # Browserunabhängiger Arten-Explorer
 
-Stand: 2026-06-21
+Stand: 2026-06-27
 
 ## Ziel
 
@@ -11,9 +11,9 @@ Betrieb nicht mehr erforderlich sein.
 Die bestehende Node-/HTML-/CSS-/JavaScript-Anwendung bleibt erhalten. Sie wird nicht neu geschrieben, sondern in
 einen Desktop-Wrapper eingebettet.
 
-## Empfohlene technische Richtung
+## Technische Richtung
 
-Für den ersten Prototyp wird Electron geprüft.
+Der erste Prototyp nutzt Electron.
 
 Gründe:
 
@@ -35,7 +35,7 @@ Alternative, falls die Electron-Paketgröße im Prototyp nicht akzeptabel ist.
 
 1. Desktop-Prozess startet.
 2. Freier lokaler Port wird ermittelt oder Port 4177 kontrolliert belegt.
-3. Der bestehende Explorer-Server wird als verwalteter Kindprozess gestartet.
+3. Der bestehende Explorer-Server wird im Electron-Hauptprozess als verwalteter Server gestartet.
 4. Die App wartet auf einen erfolgreichen `/api/summary`-Healthcheck.
 5. Erst danach öffnet sich das App-Fenster.
 6. Serverfehler werden als verständliche App-Fehlermeldung mit `Neu starten` angezeigt.
@@ -68,20 +68,53 @@ Der Desktop-Wrapper muss mindestens unterstützen:
 
 ## Akzeptanzkriterien
 
-- Start per Windows-Verknüpfung oder EXE
+- Start per `npm.cmd run species:desktop`, später per Windows-Verknüpfung oder EXE
 - kein separates Konsolenfenster im Normalbetrieb
 - kein manuelles Starten von `npm.cmd run species:explorer`
 - kein manuelles Öffnen von `127.0.0.1:4177`
 - App erkennt einen belegten oder abgestürzten Server
 - App kann den eigenen Server neu starten
-- zwei parallele schreibende App-Instanzen werden verhindert
+- zwei parallele App-Instanzen werden über Electron-Single-Instance-Schutz verhindert
 - alle bestehenden Explorer-Tests bleiben erfolgreich
 - zusätzlicher Desktop-Start-/Shutdown-Test
 - dokumentierter Installations-, Update- und Fehlerbehebungsablauf
 
+## Umgesetzter Prototyp seit 2026-06-27
+
+Neue Dateien:
+
+- `species-explorer/desktop/server-lifecycle.mjs`
+- `species-explorer/desktop/main.mjs`
+
+Neue npm-Skripte:
+
+```bash
+npm.cmd run species:desktop
+npm.cmd run species:explorer
+npm.cmd run test:explorer
+```
+
+`species:desktop` startet Electron, zeigt zuerst eine interne Startseite, startet den lokalen Explorer-Server,
+wartet auf `/api/summary` und lädt danach die bestehende Oberfläche im App-Fenster. Wenn Port `4177` belegt ist,
+nutzt die App automatisch einen freien Ersatzport. Externe Links werden aus dem App-Fenster herausgehalten und im
+Standardbrowser geöffnet.
+
+Der Server wird nicht als sichtbares Konsolenfenster gestartet. Beim Schließen der App wird nur der von der
+Desktop-Hülle gestartete Server beendet. Wenn ein Pipeline- oder Asset-Prüfschritt läuft, fragt die App vor dem
+Schließen nach.
+
+Der Desktop-Lifecycle ist über den Explorer-Test abgedeckt:
+
+```bash
+npm.cmd run --silent test:explorer
+```
+
+Der Test startet den verwalteten Server auf einem freien Port, prüft `/api/summary`, liest den Pipeline-Status und
+stoppt den Server wieder kontrolliert.
+
 ## Phasenfolge
 
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
-- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App als nächster aktiver Schritt
+- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App als Prototyp gestartet
 - Phase 7.9: Synology NAS, Backup und Restore-Test
 - Phase 8: weiterer funktionaler Ausbau

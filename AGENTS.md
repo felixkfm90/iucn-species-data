@@ -450,10 +450,14 @@ Aktuelle Planung:
   Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Die weitere
   Portraitbefuellung und Squarespace-Ausgabe sind Betriebs- beziehungsweise spaetere Ausbauschritte und blockieren
   den Abschluss der lokalen Assetverwaltung nicht. Details: `docs/portrait-generation.md`.
-  Als naechste aktive Phase 7.8 wird die gesamte App browserunabhaengig: Ein Windows-Desktop-Wrapper startet, ueberwacht
-  und beendet den Server selbst und zeigt die bestehende Oberflaeche im eigenen App-Fenster. Chrome und das
-  manuelle Oeffnen von `127.0.0.1:4177` entfallen. Planung: `docs/desktop-shell-plan.md`. NAS/Backup verschiebt
-  sich auf Phase 7.9.
+  Phase 7.8 wurde am 2026-06-27 als erster Electron-Prototyp gestartet. `npm.cmd run species:desktop` startet den
+  bestehenden Explorer-Server im Electron-Hauptprozess, wartet auf `/api/summary` und zeigt die bestehende
+  Oberflaeche im eigenen App-Fenster. Chrome und das manuelle Oeffnen von `127.0.0.1:4177` entfallen im
+  Normalbetrieb; `npm.cmd run species:explorer` bleibt fuer Debugging verfuegbar. Umgesetzt sind
+  Single-Instance-Schutz, Fallback auf freien Port bei belegtem 4177, externe Links im Standardbrowser,
+  Server-Neustart bei Startfehlern und eine Schliessabfrage bei laufendem Pipeline-/Asset-Pruefschritt. Der
+  Desktop-Lifecycle ist im Explorer-Test abgedeckt; `npm.cmd run --silent test:explorer` umfasst jetzt 17 Tests.
+  Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock verschieben sich auf Phase 7.9.
   Karten-, Sound-/Credits-, Spektrogramm- und Portraitpfade sind durch Vorschau-, Validierungs-, Backup-, Hash-,
   Commit- und Push-Tests abgedeckt. Felix hat die Asset- und Detailoberflaeche zum Abschluss von Phase 7.7
   akzeptiert; ein unnoetiger Austausch eines bereits gueltigen Sounds ist kein offener Abschlussblocker.

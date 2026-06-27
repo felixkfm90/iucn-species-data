@@ -389,10 +389,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
   gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
   einspaltig.
-- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: nächster aktiver Schritt. Der Wrapper startet,
-  überwacht und beendet den lokalen Server selbst und zeigt die bestehende Oberfläche in einem eigenen
-  Windows-App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177` entfallen. Technische Vorplanung:
-  `docs/desktop-shell-plan.md`.
+- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: erster Electron-Prototyp am 2026-06-27 gestartet.
+  Der Wrapper startet den bestehenden Explorer-Server im Electron-Hauptprozess, wartet auf `/api/summary` und zeigt
+  die bestehende Oberfläche in einem eigenen App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177`
+  entfallen im Normalbetrieb. Start: `npm.cmd run species:desktop`. Der direkte Servermodus
+  `npm.cmd run species:explorer` bleibt für Debugging erhalten. Umgesetzt sind Single-Instance-Schutz,
+  Port-4177-Fallback auf freien Port, externe Links im Standardbrowser, Server-Neustart bei Startfehlern und eine
+  Schließabfrage bei laufendem Pipeline-/Asset-Prüfschritt. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
+  `npm.cmd run --silent test:explorer` läuft mit 17 Tests. Details: `docs/desktop-shell-plan.md`.
 - 7.9 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

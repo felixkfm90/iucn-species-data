@@ -22,6 +22,12 @@ import {
   buildPortraitPrompt,
   portraitPromptSha256,
 } from "../scripts/portrait-generator.mjs";
+import {
+  getExplorerPipelineStatus,
+  isPipelineBlockingShutdown,
+  startManagedExplorerServer,
+  stopManagedExplorerServer,
+} from "./desktop/server-lifecycle.mjs";
 await import("./public/filter.js");
 
 function createTestJpeg(width = 3, height = 2) {
@@ -316,6 +322,28 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   });
   assert.equal(writeResponse.status, 405);
   assert.match(await writeResponse.text(), /definierte/);
+});
+
+test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const managed = await startManagedExplorerServer({
+    repoRoot,
+    preferredPort: 0,
+    healthTimeoutMs: 5000,
+  });
+  context.after(() => stopManagedExplorerServer(managed));
+
+  assert.match(managed.baseUrl, /^http:\/\/127\.0\.0\.1:\d+$/);
+  assert.equal(managed.health.summary.speciesCount, 1);
+  const status = await getExplorerPipelineStatus(managed.baseUrl);
+  assert.equal(status.status, "idle");
+  assert.equal(isPipelineBlockingShutdown(status), false);
+  assert.equal(isPipelineBlockingShutdown({ status: "running" }), true);
+  assert.equal(isPipelineBlockingShutdown({ status: "awaiting-review" }), true);
+
+  await stopManagedExplorerServer(managed);
+  managed.server = null;
 });
 
 test("Explorer erkennt externe Dateiänderungen ohne manuellen Reload", async (context) => {

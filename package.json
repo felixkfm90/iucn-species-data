@@ -1,12 +1,17 @@
 {
+  "main": "species-explorer/desktop/main.mjs",
   "scripts": {
     "audit:site": "node scripts/monthly-site-audit.mjs",
     "cleanup:species": "node scripts/species-cleanup.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
+    "species:desktop": "electron species-explorer/desktop/main.mjs",
     "species:explorer": "node species-explorer/server.mjs",
-    "test:explorer": "node --test species-explorer/server.test.mjs"
+    "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },
   "dependencies": {
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0"
   }
 }
