@@ -964,6 +964,16 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-06-27T05:55:50.114Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-27T05:59:45.199Z",
+        "approvedAt": "2026-06-27T05:59:49.446Z",
+        "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
+        "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
       }
     }
   },
