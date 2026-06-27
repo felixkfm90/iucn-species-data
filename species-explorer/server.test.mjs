@@ -1426,12 +1426,25 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
 });
 
 test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", async () => {
-  const [appSource, cssSource, htmlSource, serverSource, updateSource, assetOverrides] = await Promise.all([
+  const [
+    appSource,
+    cssSource,
+    htmlSource,
+    serverSource,
+    updateSource,
+    desktopLauncherSource,
+    shortcutInstallerSource,
+    packageSource,
+    assetOverrides,
+  ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
     readFile(new URL("../update.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./desktop/start-explorer.vbs", import.meta.url), "utf8"),
+    readFile(new URL("./desktop/install-shortcut.ps1", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
 
@@ -1524,6 +1537,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
   assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
+  assert.match(desktopLauncherSource, /WScript\.Shell/);
+  assert.match(desktopLauncherSource, /electron\.cmd/);
+  assert.match(desktopLauncherSource, /shell\.Run command,\s*0,\s*False/);
+  assert.match(shortcutInstallerSource, /CreateShortcut/);
+  assert.match(shortcutInstallerSource, /wscript\.exe/);
+  assert.match(packageSource, /species:desktop:shortcut/);
   assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);

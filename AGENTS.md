@@ -461,8 +461,11 @@ Aktuelle Planung:
   Oberflaeche im eigenen App-Fenster. Chrome und das manuelle Oeffnen von `127.0.0.1:4177` entfallen im
   Normalbetrieb; `npm.cmd run species:explorer` bleibt fuer Debugging verfuegbar. Umgesetzt sind
   Single-Instance-Schutz, Fallback auf freien Port bei belegtem 4177, externe Links im Standardbrowser,
-  Server-Neustart bei Startfehlern und eine Schliessabfrage bei laufendem Pipeline-/Asset-Pruefschritt. Der
-  Desktop-Lifecycle ist im Explorer-Test abgedeckt; `npm.cmd run --silent test:explorer` umfasst jetzt 17 Tests.
+  Server-Neustart bei Startfehlern und eine Schliessabfrage bei laufendem Pipeline-/Asset-Pruefschritt.
+  `npm.cmd run species:desktop:shortcut` erstellt eine Desktop-Verknuepfung, die per `wscript.exe` den versteckten
+  Launcher `species-explorer/desktop/start-explorer.vbs` nutzt. Dadurch startet die App per Doppelklick ohne
+  dauerhaft sichtbares PowerShell-Fenster. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
+  `npm.cmd run --silent test:explorer` umfasst jetzt 18 Tests.
   Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock verschieben sich auf Phase 7.9.
   Karten-, Sound-/Credits-, Spektrogramm- und Portraitpfade sind durch Vorschau-, Validierungs-, Backup-, Hash-,
   Commit- und Push-Tests abgedeckt. Felix hat die Asset- und Detailoberflaeche zum Abschluss von Phase 7.7

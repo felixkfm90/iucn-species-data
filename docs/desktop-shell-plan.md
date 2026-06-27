@@ -87,11 +87,14 @@ Neue Dateien:
 
 - `species-explorer/desktop/server-lifecycle.mjs`
 - `species-explorer/desktop/main.mjs`
+- `species-explorer/desktop/start-explorer.vbs`
+- `species-explorer/desktop/install-shortcut.ps1`
 
 Neue npm-Skripte:
 
 ```bash
 npm.cmd run species:desktop
+npm.cmd run species:desktop:shortcut
 npm.cmd run species:explorer
 npm.cmd run test:explorer
 ```
@@ -104,6 +107,11 @@ Standardbrowser geöffnet.
 Der Server wird nicht als sichtbares Konsolenfenster gestartet. Beim Schließen der App wird nur der von der
 Desktop-Hülle gestartete Server beendet. Wenn ein Pipeline- oder Asset-Prüfschritt läuft, fragt die App vor dem
 Schließen nach.
+
+`species:desktop:shortcut` erstellt eine Desktop-Verknüpfung `IUCN Arten-Explorer.lnk`. Sie verweist auf
+`wscript.exe` und startet `start-explorer.vbs`, damit beim Doppelklick kein dauerhaft sichtbares PowerShell- oder
+Konsolenfenster offen bleibt. Die Prozessausgabe landet bei Bedarf in
+`species-explorer/logs/desktop-launch.log`.
 
 Der Desktop-Lifecycle ist über den Explorer-Test abgedeckt:
 

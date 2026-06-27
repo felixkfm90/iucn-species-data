@@ -5,6 +5,7 @@
     "cleanup:species": "node scripts/species-cleanup.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
     "species:desktop": "electron species-explorer/desktop/main.mjs",
+    "species:desktop:shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File species-explorer/desktop/install-shortcut.ps1",
     "species:explorer": "node species-explorer/server.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },

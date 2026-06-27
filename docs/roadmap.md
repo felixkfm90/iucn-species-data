@@ -398,9 +398,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   die bestehende Oberfläche in einem eigenen App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177`
   entfallen im Normalbetrieb. Start: `npm.cmd run species:desktop`. Der direkte Servermodus
   `npm.cmd run species:explorer` bleibt für Debugging erhalten. Umgesetzt sind Single-Instance-Schutz,
-  Port-4177-Fallback auf freien Port, externe Links im Standardbrowser, Server-Neustart bei Startfehlern und eine
+  Port-4177-Fallback auf freien Port, externe Links im Standardbrowser, Server-Neustart bei Startfehlern, eine
+  Desktop-Verknüpfung per `npm.cmd run species:desktop:shortcut` und eine
   Schließabfrage bei laufendem Pipeline-/Asset-Prüfschritt. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
-  `npm.cmd run --silent test:explorer` läuft mit 17 Tests. Details: `docs/desktop-shell-plan.md`.
+  `npm.cmd run --silent test:explorer` läuft mit 18 Tests. Details: `docs/desktop-shell-plan.md`.
   Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.9 Synology NAS und automatisiertes Backup: danach.

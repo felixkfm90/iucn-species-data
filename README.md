@@ -496,6 +496,16 @@ browserunabhaengiger Electron-Prototyp gestartet. Start:
 npm.cmd run species:desktop
 ```
 
+Einmalig kann eine Desktop-Verknuepfung angelegt werden:
+
+```bash
+npm.cmd run species:desktop:shortcut
+```
+
+Die Verknuepfung startet `species-explorer/desktop/start-explorer.vbs`. Dadurch oeffnet sich nur das App-Fenster;
+eine PowerShell bleibt im Normalbetrieb nicht sichtbar geoeffnet. Falls `node_modules` oder Electron fehlen, zeigt
+der Launcher eine kurze Windows-Meldung mit dem Hinweis auf `npm.cmd install`.
+
 Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api/summary` und laedt die bestehende
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
