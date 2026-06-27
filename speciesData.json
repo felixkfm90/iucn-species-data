@@ -1079,5 +1079,28 @@
     "Species": "olor",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-06-22"
+  },
+  {
+    "URLSlug": "iguanaiguana",
+    "Wissenschaftlicher Name": "Iguana iguana",
+    "Deutscher Name": "Grüner Leguan",
+    "Gewicht": "ca. 4–8 kg",
+    "Größe": "ca. 120–200 cm",
+    "Lebenserwartung": "ca. 15–20 Jahre",
+    "Assessment ID": 218317281,
+    "Status": "LC",
+    "Trend": "Unbekannt",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "n/a",
+    "Kingdom": "ANIMALIA",
+    "Phylum": "CHORDATA",
+    "Class": "REPTILIA",
+    "Order": "SQUAMATA",
+    "Family": "IGUANIDAE",
+    "Genus": "Iguana",
+    "Species": "iguana",
+    "Letztes IUCN Update": "2022",
+    "Daten abgerufen": "2026-06-27"
   }
 ]

@@ -374,5 +374,13 @@
     "size": "ca. 140–160 cm",
     "weight": "ca. 8–15 kg",
     "life_expectancy": "ca. 20–30 Jahre"
+  },
+  {
+    "german": "Grüner Leguan",
+    "genus": "Iguana",
+    "species": "iguana",
+    "size": "ca. 120–200 cm",
+    "weight": "ca. 4–8 kg",
+    "life_expectancy": "ca. 15–20 Jahre"
   }
 ]
