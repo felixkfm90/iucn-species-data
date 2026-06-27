@@ -400,6 +400,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Port-4177-Fallback auf freien Port, externe Links im Standardbrowser, Server-Neustart bei Startfehlern und eine
   Schließabfrage bei laufendem Pipeline-/Asset-Prüfschritt. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
   `npm.cmd run --silent test:explorer` läuft mit 17 Tests. Details: `docs/desktop-shell-plan.md`.
+  Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
+  bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.9 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

@@ -316,6 +316,9 @@ Aktuelle Planung:
   Das IUCN-Abrufdatum steht im Detailkopf, Statusfilter verwenden deutsche Bezeichnungen mit IUCN-Kuerzel und
   manuell hinzugefuegte Assets werden direkt in ihrer Assetzeile markiert. Artwechsel erhalten Fenster- und
   Listenposition. Start: `npm.cmd run species:explorer`; Tests: `npm.cmd run --silent test:explorer`.
+  Wenn der direkte Browser-/Servermodus erneut gestartet wird, waehrend bereits ein Explorer auf Port 4177 laeuft,
+  meldet der Server seit 2026-06-27 verstaendlich die bestehende URL statt mit einem rohen `EADDRINUSE`-Stacktrace
+  abzubrechen.
   Phase 7.3 ist seit 2026-06-19 erledigt: Das read-only Statusdashboard vergleicht `species_list.json`,
   `speciesData.json`, `fehlende_elemente_report.json` und die tatsaechlichen Assetdateien. Beim Abschluss stimmten
   45 von 45 Datenpaare ueberein, 45 Assetpakete waren vollstaendig und neun Reportpruefungen konsistent. Nach dem

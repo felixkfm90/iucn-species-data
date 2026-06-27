@@ -211,6 +211,8 @@ Beim Wechsel zwischen Arten bleibt die aktuelle Fenster- und Listenposition erha
 Der Server bindet nur an `127.0.0.1`. Schreibzugriffe sind auf die beiden definierten Vorschau-/Speicherrouten fuer
 bestehende Arten begrenzt. Er startet keine Pipeline und fuehrt keine Git-Aktionen aus. Alle anderen nicht
 freigegebenen Schreibzugriffe werden mit `405` abgewiesen.
+Wenn `npm.cmd run species:explorer` gestartet wird, waehrend bereits ein Explorer auf demselben Port laeuft, erscheint
+seit 2026-06-27 eine verstaendliche Meldung mit der bestehenden URL statt eines rohen `EADDRINUSE`-Stacktraces.
 Audio- und andere Assetdateien unterstuetzen HTTP-Byte-Ranges (`206 Partial Content`), damit der Browser beim Klick
 ins Spektrogramm zu einer beliebigen Wiedergabeposition springen und dort starten kann.
 

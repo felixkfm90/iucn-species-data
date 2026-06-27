@@ -73,6 +73,8 @@ Der Desktop-Wrapper muss mindestens unterstützen:
 - kein manuelles Starten von `npm.cmd run species:explorer`
 - kein manuelles Öffnen von `127.0.0.1:4177`
 - App erkennt einen belegten oder abgestürzten Server
+- der direkte Browser-/Servermodus meldet einen bereits laufenden Explorer verständlich statt mit `EADDRINUSE`
+  abzubrechen
 - App kann den eigenen Server neu starten
 - zwei parallele App-Instanzen werden über Electron-Single-Instance-Schutz verhindert
 - alle bestehenden Explorer-Tests bleiben erfolgreich

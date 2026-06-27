@@ -4135,10 +4135,42 @@ function parsePort(argv) {
   return Number.isInteger(parsed) && parsed > 0 && parsed < 65536 ? parsed : DEFAULT_PORT;
 }
 
+export async function isExplorerAlreadyReachable(host, port) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1000);
+  try {
+    const response = await fetch(`http://${host}:${port}/`, { signal: controller.signal });
+    if (!response.ok) {
+      return false;
+    }
+    const html = await response.text();
+    return html.includes("<title>Arten-Explorer</title>") || html.includes("Arten-Explorer");
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const app = await createExplorerServer({ port: parsePort(process.argv.slice(2)) });
-  await app.listen();
-  console.log(`Arten-Explorer: http://${app.host}:${app.port}`);
-  console.log("Kontrollierte species_list.json-Bearbeitung aktiv. Beenden mit Strg+C.");
+  try {
+    await app.listen();
+    console.log(`Arten-Explorer: http://${app.host}:${app.port}`);
+    console.log("Kontrollierte species_list.json-Bearbeitung aktiv. Beenden mit Strg+C.");
+  } catch (error) {
+    const url = `http://${app.host}:${app.port}`;
+    if (error.code === "EADDRINUSE" && (await isExplorerAlreadyReachable(app.host, app.port))) {
+      console.log(`Arten-Explorer läuft bereits: ${url}`);
+      console.log("Kein zweiter Server gestartet. Bestehendes Fenster oder Browser-Tab verwenden.");
+      process.exitCode = 0;
+    } else if (error.code === "EADDRINUSE") {
+      console.error(`Port ${app.host}:${app.port} ist bereits belegt, aber dort läuft kein erkannter Arten-Explorer.`);
+      console.error("Alten Prozess beenden oder mit --port=<Port> einen anderen Port wählen.");
+      process.exitCode = 1;
+    } else {
+      throw error;
+    }
+  }
 }

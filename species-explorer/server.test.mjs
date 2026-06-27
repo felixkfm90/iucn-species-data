@@ -13,6 +13,7 @@ import {
   inspectMp3,
   inspectPng,
   inspectWebp,
+  isExplorerAlreadyReachable,
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
@@ -322,6 +323,17 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   });
   assert.equal(writeResponse.status, 405);
   assert.match(await writeResponse.text(), /definierte/);
+});
+
+test("Server erkennt bereits laufenden Explorer auf belegtem Port", async (context) => {
+  const app = await createExplorerServer({ port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+
+  assert.equal(await isExplorerAlreadyReachable(app.host, address.port), true);
+
+  const duplicate = await createExplorerServer({ port: address.port });
+  await assert.rejects(() => duplicate.listen(), { code: "EADDRINUSE" });
 });
 
 test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async (context) => {
