@@ -108,6 +108,9 @@ geschützt markiert ist. Aktuell sind das vier Arten.
 - Eine ausdrückliche `manual: false`-Entscheidung im JSON-Register hat Vorrang vor einem veralteten
   Markdown-Eintrag. Dadurch erscheint eine übernommene automatische Karte sofort nicht mehr unter manueller Pflege.
 - `Bisherige manuelle Karte behalten` stellt die gesicherte Karte wieder her.
+- Seit 2026-06-27 beendet `update.mjs` den Prozess nach erfolgreichem Abschluss explizit, nachdem stdout und stderr
+  geleert wurden. Damit bleibt der Explorer nach einem abgeschlossenen Kartensuchlauf nicht mehr im Status
+  `Pipeline-Lauf läuft gerade` hängen und kann die Übernahme-/Ablehnentscheidung anzeigen.
 
 ### NC-Sounds erneut suchen
 

@@ -349,6 +349,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Beim ersten produktiven Kartensuchlauf wurden Großtrappe, Kernbeißer und Reh als funktionierende automatische
   Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; vier manuelle Karten bleiben. Das
   JSON-Register ist bei einer ausdrücklichen Pflegeentscheidung maßgeblich und synchronisiert die Markdown-Liste.
+  Ein am 2026-06-27 geprüfter Hänger nach finaler Erfolgsausgabe wurde behoben: `update.mjs` leert stdout/stderr und
+  beendet den Prozess danach explizit, damit der Explorer den Lauf als abgeschlossen erkennt und die Assetentscheidung
+  anzeigen kann.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist

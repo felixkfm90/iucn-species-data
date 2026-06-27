@@ -283,6 +283,8 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
 - nach dem Start bleibt der Dialog geöffnet und meldet `Pipeline-Lauf läuft gerade`; `Fenster schließen` schließt nur
   die Anzeige, während der Lauf im Hintergrund weiterläuft
+- abgeschlossene Pipeline- und Wartungsläufe beenden den Node-Prozess nach geleertem stdout/stderr explizit, damit
+  die App nicht nach der letzten Erfolgsausgabe im laufenden Status hängen bleibt
 - ein Statusbalken im Hauptfenster zeigt laufend, wartend, abgeschlossen oder fehlgeschlagen und öffnet bei Bedarf
   wieder die Prozessdetails
 - nach erfolgreicher Pipeline passender Spektrogramm-Abgleich

@@ -88,6 +88,24 @@ Optionen:
 `);
 }
 
+function flushStream(stream) {
+  return new Promise((resolveFlush) => {
+    if (!stream?.writable || stream.destroyed || stream.writableEnded) {
+      resolveFlush();
+      return;
+    }
+    stream.write("", () => resolveFlush());
+  });
+}
+
+async function exitAfterMain() {
+  await Promise.all([
+    flushStream(process.stdout),
+    flushStream(process.stderr),
+  ]);
+  process.exit(Number(process.exitCode ?? 0) || 0);
+}
+
 function atomicWriteJson(filePath, value) {
   const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
   fs.writeFileSync(tempPath, JSON.stringify(value, null, 2));
@@ -1379,4 +1397,4 @@ function printReportToConsole(report) {
     logError("Hauptprozess: " + err.message);
     process.exitCode = 1;
   }
-})();
+})().finally(exitAfterMain);
