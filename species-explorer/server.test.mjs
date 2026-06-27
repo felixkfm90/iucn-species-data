@@ -745,6 +745,18 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   });
   assert.equal(ncSoundPlan.targetCount, 1);
   assert.equal(ncSoundPlan.targets[0].safeName, "Amsel");
+
+  await rm(join(repoRoot, "species-assets", "Amsel", "sound.mp3"), { force: true });
+  const missingSoundPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "nc-sounds",
+  });
+  assert.equal(missingSoundPlan.targetCount, 1);
+  assert.equal(missingSoundPlan.targets[0].safeName, "Amsel");
+  assert.match(missingSoundPlan.targets[0].reasons.join(" "), /Sound fehlt/);
 });
 
 test("Automatisch übernommene Karten verlassen die manuelle Pflege", async (context) => {
@@ -1475,7 +1487,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/status/);
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /Manuelle Karten erneut suchen/);
-  assert.match(appSource, /NC-Sounds erneut suchen/);
+  assert.match(appSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
   assert.doesNotMatch(appSource, /strikten Ein-Bild-Regel/);
   assert.doesNotMatch(appSource, /mit „Weiter“ folgt jeweils die nächste/);
@@ -1493,6 +1505,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
   assert.match(appSource, /Bisherige manuelle Karte behalten/);
   assert.match(appSource, /Bisherigen NC-Sound behalten/);
+  assert.match(appSource, /Neuen Sound nicht übernehmen/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /class="asset-review-map-trigger"/);

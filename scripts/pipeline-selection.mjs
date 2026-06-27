@@ -101,13 +101,18 @@ export function buildPipelinePlan({
 
     if (mode === "nc-sounds") {
       reasons.splice(0, reasons.length);
-      const credits = readJson(path.join(assetDir, "credits.json"), {});
-      if (
-        fs.existsSync(path.join(assetDir, "sound.mp3"))
-        && isNcLicense(credits.license)
-        && assetOverrides.assets?.[safeName]?.sound?.manual !== true
-      ) {
+      const soundPath = path.join(assetDir, "sound.mp3");
+      const creditsPath = path.join(assetDir, "credits.json");
+      const credits = readJson(creditsPath, {});
+      const soundIsManual = assetOverrides.assets?.[safeName]?.sound?.manual === true;
+      if (!existing) {
+        // Neue Arten werden weiterhin vom Modus "missing" verarbeitet.
+      } else if (fs.existsSync(soundPath) && isNcLicense(credits.license) && !soundIsManual) {
         reasons.push("NC-Sound auf freie Alternative prüfen");
+      } else if (!soundIsManual && !fs.existsSync(soundPath)) {
+        reasons.push("Sound fehlt; automatische Quelle suchen");
+      } else if (!soundIsManual && fs.existsSync(soundPath) && !fs.existsSync(creditsPath)) {
+        reasons.push("Sound-Credits fehlen; dokumentierte freie Alternative suchen");
       }
     }
 

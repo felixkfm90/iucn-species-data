@@ -307,7 +307,7 @@ function updateValidation(validation) {
 
   elements.validationSpecial.textContent =
     `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`
-    + `${validation.special.soundCareCount ? ` · ${validation.special.soundCareCount} S` : ""}`;
+    + `${validation.special.soundCareCount ? ` · ${validation.special.soundCareCount} Sound${validation.special.soundCareCount === 1 ? "" : "s"}` : ""}`;
 
   const detailItems = [];
   if (!dataOk) {
@@ -747,7 +747,11 @@ function setupAssetReview() {
       : status.mode === "nc-sounds"
         ? "Bisherigen NC-Sound behalten"
         : "Manuell pflegen und schützen";
-    elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => `
+    elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => {
+      const assetManualLabel = status.mode === "nc-sounds" && asset.previouslyExisting === false
+        ? "Neuen Sound nicht übernehmen"
+        : manualLabel;
+      return `
       <article class="asset-review-item" data-index="${index}">
         <div class="asset-review-preview">
           ${asset.type === "map"
@@ -777,17 +781,18 @@ function setupAssetReview() {
             </label>
             <label>
               <input type="radio" name="asset-${index}" value="manual" required>
-              ${manualLabel}
+              ${assetManualLabel}
             </label>
           </div>
         </div>
       </article>
-    `).join("");
+    `;
+    }).join("");
     form.dataset.runId = status.runId;
     form.dataset.assets = JSON.stringify(status.reviewAssets);
     setMessage(
       retryMode
-        ? "Bitte für jede gefundene Alternative festlegen, ob sie übernommen oder der bisherige Bestand behalten wird."
+        ? "Bitte für jede gefundene Alternative festlegen, ob sie übernommen, abgelehnt oder der bisherige Bestand behalten wird."
         : "Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.",
       "info",
     );
@@ -852,7 +857,7 @@ function setupPipelineControl() {
     missing: "Neue/Unvollständige Arten aktualisieren",
     all: "Alle Arten vollständig aktualisieren",
     "manual-maps": "Manuelle Karten erneut suchen",
-    "nc-sounds": "NC-Sounds erneut suchen",
+    "nc-sounds": "NC- und fehlende Sounds erneut suchen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
 
@@ -1026,7 +1031,7 @@ function setupPipelineControl() {
         : mode === "manual-maps"
           ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht."
           : mode === "nc-sounds"
-            ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft."
+            ? "Vorhandene NC-Sounds werden auf freie Alternativen geprüft; fehlende Sounds werden erneut gesucht."
             : "Vor dem Start werden Zielarten und Umfang geprüft.";
     showDialog();
 

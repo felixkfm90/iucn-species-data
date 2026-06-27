@@ -340,7 +340,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
   Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
   Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für die sieben
-  geschützten Karten und `NC-Sounds erneut suchen` für die drei aktuellen NC-Sounds. Bestehende Dateien werden bis
+  geschützten Karten und `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds sowie fehlende
+  Sounddateien. Bestehende Dateien werden bis
   zur Übernahmeentscheidung lokal gesichert. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
   ursprünglichen Art-Speicherschritts. Der Pipeline-Dialog bleibt nach dem Start geöffnet und zeigt eindeutig
   `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` wechselt dann zu `Fenster schließen`; der Lauf

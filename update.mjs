@@ -82,7 +82,7 @@ Optionen:
   --mode=all       Vollständiger Lauf über alle Arten (Standard)
   --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
   --mode=manual-maps  Nur manuell gepflegte Karten erneut bei IUCN suchen
-  --mode=nc-sounds    Nur vorhandene NC-Sounds auf freie Alternativen prüfen
+  --mode=nc-sounds    Vorhandene NC-Sounds und fehlende Sounds erneut suchen
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
   --report-only    Report aus speciesData.json und aktuellen Assets neu aufbauen
 `);
@@ -1313,7 +1313,7 @@ function printReportToConsole(report) {
       const noWorkMessage = {
         missing: "Keine neuen oder unvollständigen Arten gefunden.",
         "manual-maps": "Keine manuell gepflegten Karten gefunden.",
-        "nc-sounds": "Keine ungeschützten NC-Sounds gefunden.",
+        "nc-sounds": "Keine ungeschützten NC-Sounds oder fehlenden Sounds gefunden.",
       }[args.mode] || "Keine Pipeline-Aktionen gefunden.";
       console.log(`✔ ${noWorkMessage} Es sind keine Pipeline-Aktionen erforderlich.`);
       return;

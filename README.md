@@ -280,7 +280,7 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - `node update.mjs --mode=missing`: gezielter Lauf; übrige Bestandsdaten bleiben erhalten
 - `node update.mjs --mode=all` oder weiterhin `node update.mjs`: vollständiger Lauf
 - `node update.mjs --mode=manual-maps`: nur die aktuell vier manuell geschützten Karten erneut suchen
-- `node update.mjs --mode=nc-sounds`: nur drei NC-Sounds auf freie Alternativen prüfen
+- `node update.mjs --mode=nc-sounds`: NC-Sounds auf freie Alternativen prüfen und fehlende Sounds erneut suchen
 - App-Vorschau und ausdrückliche Startbestätigung
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
 - nach dem Start bleibt der Dialog geöffnet und meldet `Pipeline-Lauf läuft gerade`; `Fenster schließen` schließt nur
@@ -297,7 +297,7 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
   bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
-- manuelle Karten und NC-Sounds können unabhängig vom Komplettlauf erneut gesucht werden; bisherige Dateien bleiben
+- manuelle Karten, NC-Sounds und fehlende Sounds können unabhängig vom Komplettlauf erneut gesucht werden; bisherige Dateien bleiben
   bis zur Übernahmeentscheidung lokal gesichert
 - beim Schließen des Asset-Prüfdialogs werden laufende Prüfsounds sofort gestoppt
 - die Zwischenmeldung direkt nach dem Anlegen einer Art verschwindet nach erfolgreichem Pipeline-Push
@@ -476,7 +476,8 @@ lokal umgesetzt und praktisch geprüft. Phase 7.6 mit Pipeline-Steuerung und dau
 Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive Läufe direkt aus der App
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
-Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten oder NC-Sounds, ohne alle Arten erneut abzurufen.
+Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten sowie für NC- und fehlende Sounds, ohne alle Arten
+erneut abzurufen.
 Die Assetverwaltung aus Phase 7.7 ist seit 2026-06-21 abgeschlossen. Karten, Sound/Credits,
 Spektrogrammverwaltung und Artportrait-Workflow sind umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
 Der Explorer erstellt den Prompt lokal je Art, kopiert diesen Einzelprompt und importiert ein anschliessend selbst

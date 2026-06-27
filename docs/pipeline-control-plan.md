@@ -112,16 +112,17 @@ geschützt markiert ist. Aktuell sind das vier Arten.
   geleert wurden. Damit bleibt der Explorer nach einem abgeschlossenen Kartensuchlauf nicht mehr im Status
   `Pipeline-Lauf läuft gerade` hängen und kann die Übernahme-/Ablehnentscheidung anzeigen.
 
-### NC-Sounds erneut suchen
+### NC- und fehlende Sounds erneut suchen
 
-Der Soundsuchlauf wählt ausschließlich vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz aus. Aktuell sind
-das drei Arten.
+Der Soundsuchlauf wählt vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz und Arten ohne Sounddatei aus.
+Aktuell sind das drei NC-Sounds plus der bekannte fehlende Sound beim Grünen Leguan.
 
 - IUCN-Daten und Karten bleiben unverändert.
 - Sound, Credits und Spektrogramm werden vorübergehend lokal gesichert.
 - Die Suche prüft freie Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Alternativen.
 - `Freie Soundalternative übernehmen` behält die neue Alternative.
 - `Bisherigen NC-Sound behalten` stellt Sound, Credits und Spektrogramm wieder her.
+- Bei vorher fehlendem Sound entfernt `Neuen Sound nicht übernehmen` die neu erzeugten Sounddateien wieder.
 
 ### Dauerhafte Bereinigung
 
@@ -215,7 +216,7 @@ wurde.
 - Modus `all` waehlt alle Eintraege: getestet.
 - Modus `manual-maps` wählt die jeweils aktuell manuell geschützten Karten: mit ursprünglich sieben und nach drei
   bestätigten Übernahmen mit vier Karten getestet.
-- Modus `nc-sounds` wählt genau die drei aktuellen NC-Sounds: getestet.
+- Modus `nc-sounds` wählt die drei aktuellen NC-Sounds und fehlende Soundpakete: getestet.
 - Nicht ausgewaehlte Bestandsdaten werden bei einem Teillauf übernommen: implementiert.
 - Ein zweiter gleichzeitiger Start wird abgewiesen.
 - Fehlende Tokens verhindern den Start mit klarer Meldung.

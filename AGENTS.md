@@ -360,7 +360,7 @@ Aktuelle Planung:
   Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
   Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
   unterscheidet `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten vollstaendig aktualisieren`,
-  `Manuelle Karten erneut suchen` und `NC-Sounds erneut suchen`. `update.mjs`
+  `Manuelle Karten erneut suchen` und `NC- und fehlende Sounds erneut suchen`. `update.mjs`
   unterstuetzt
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
   Lauf kann gleichzeitig aktiv sein. Nach dem Start bleibt der Dialog geöffnet und zeigt
@@ -375,7 +375,7 @@ Aktuelle Planung:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
   Die beiden Wartungsläufe verarbeiten nur die aktuell vier manuell geschützten Karten beziehungsweise die drei
-  NC-Sounds. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
+  NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status

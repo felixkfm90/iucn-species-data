@@ -1779,7 +1779,7 @@ export async function createExplorerServer({
           : mode === "manual-maps"
             ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht und vor einer Übernahme angezeigt."
             : mode === "nc-sounds"
-              ? "Nur vorhandene NC-Sounds werden auf freie Alternativen geprüft und vor einer Übernahme angehört."
+              ? "Vorhandene NC-Sounds werden auf freie Alternativen geprüft; fehlende Sounds werden erneut gesucht und vor einer Übernahme angehört."
           : mode === "all"
             ? "Der vollständige Lauf fragt alle Arten erneut bei den externen Diensten ab."
             : "Der gezielte Lauf verarbeitet neue oder unvollständige Arten und übernimmt übrige Bestandsdaten.",
@@ -1888,6 +1888,7 @@ export async function createExplorerServer({
             file: `species-assets/${target.safeName}/${fileName}`,
             url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}?review=${pipelineState.runId}`,
             changed,
+            previouslyExisting: before.exists,
             reviewMode: plan.mode,
             backupFiles: before.backupFiles,
           });
@@ -1970,7 +1971,7 @@ export async function createExplorerServer({
       : pipelineState.mode === "manual-maps"
         ? "Refresh automatic distribution maps"
         : pipelineState.mode === "nc-sounds"
-          ? "Replace NC sounds with free alternatives"
+          ? "Refresh sound assets"
       : pipelineState.mode === "all"
         ? "Refresh all species data"
         : "Update incomplete species data";
@@ -2127,7 +2128,7 @@ export async function createExplorerServer({
           cleanup: "Es wurden keine verwaisten Daten oder Assetordner gefunden",
           missing: "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
           "manual-maps": "Es gibt keine manuell gepflegten Karten",
-          "nc-sounds": "Es gibt keine ungeschützten NC-Sounds",
+          "nc-sounds": "Es gibt keine ungeschützten NC-Sounds oder fehlenden Sounds",
         })[preview.mode] || "Für diesen Lauf wurden keine Zielarten gefunden",
       );
       error.statusCode = 400;
@@ -2206,18 +2207,23 @@ export async function createExplorerServer({
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
       if (retryMode && choice.manual) {
         const previous = pipelineAssetSnapshot.get(`${asset.safeName}:${asset.type}`);
-        for (const [fileName, backupPath] of Object.entries(asset.backupFiles ?? {})) {
+        const names = asset.type === "sound"
+          ? ["sound.mp3", "credits.json", "spectrogram.webp"]
+          : ["map.jpg"];
+        for (const fileName of names) {
+          const backupPath = asset.backupFiles?.[fileName];
           const allowedBackupRoot = `${resolve(pipelineAssetBackupRoot, pipelineState.runId)}${sep}`;
-          const resolvedBackupPath = resolve(backupPath);
+          const resolvedBackupPath = backupPath ? resolve(backupPath) : "";
           const allowedAssetRoot = `${resolve(repoRoot, "species-assets", asset.safeName)}${sep}`;
           const targetPath = resolve(repoRoot, "species-assets", asset.safeName, fileName);
           if (
-            !`${resolvedBackupPath}`.startsWith(allowedBackupRoot)
+            (backupPath && !`${resolvedBackupPath}`.startsWith(allowedBackupRoot))
             || !`${targetPath}`.startsWith(allowedAssetRoot)
           ) {
             throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
           }
-          if (existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
+          if (backupPath && existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
+          else if (!previous?.exists && existsSync(targetPath)) await unlink(targetPath);
         }
         registry.assets[asset.safeName] ??= {};
         if (previous?.override) registry.assets[asset.safeName][asset.type] = previous.override;
