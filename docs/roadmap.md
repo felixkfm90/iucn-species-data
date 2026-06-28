@@ -404,6 +404,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `npm.cmd run --silent test:explorer` läuft mit 18 Tests. Details: `docs/desktop-shell-plan.md`.
   Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
+- 7.8.1 Projektkonsolidierungs-Audit vor NAS/Mehrgeraete: gestartet am 2026-06-28, siehe
+  `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer 7.9. Bereinigungskandidaten sind
+  `Testlauf/`, `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten sind
+  die wahrscheinlich ungenutzte Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
 - 7.9 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau

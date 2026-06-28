@@ -510,7 +510,8 @@ Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 In Phase 7 folgen
-spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Phase 8 bleibt fuer Ausbau mit
+spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Vor Phase 7.9 wurde ein
+Projektkonsolidierungs-Audit gestartet: `docs/project-consolidation-audit.md`. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand
