@@ -75,6 +75,10 @@ const ASSET_BACKUP_RETENTION_COUNT = 3;
 const ASSET_BACKUP_GLOBAL_BYTES = 500 * 1024 * 1024;
 const PIPELINE_LOG_RETENTION_COUNT = 20;
 const PIPELINE_LOG_LINE_LIMIT = 400;
+const BACKUP_LOG_LINE_LIMIT = 400;
+const DEFAULT_NAS_BACKUP_ROOT = "W:\\Website Datenbank Backup";
+const LOCAL_SETTINGS_FILE = "local-settings.json";
+const MAX_BACKUP_ROOT_LENGTH = 500;
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -192,6 +196,31 @@ function sanitizeAssetName(input) {
 
 async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
+}
+
+function normalizeBackupRoot(value) {
+  return String(value ?? "").trim();
+}
+
+function validateBackupRoot(value) {
+  const backupRoot = normalizeBackupRoot(value);
+  if (!backupRoot) {
+    const error = new Error("Backup-Pfad darf nicht leer sein.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (backupRoot.length > MAX_BACKUP_ROOT_LENGTH) {
+    const error = new Error(`Backup-Pfad darf maximal ${MAX_BACKUP_ROOT_LENGTH} Zeichen lang sein.`);
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!/^[a-zA-Z]:[\\/]/.test(backupRoot) && !backupRoot.startsWith("\\\\")) {
+    const error = new Error("Backup-Pfad muss ein absoluter Windows- oder UNC-Pfad sein.");
+    error.statusCode = 400;
+    error.details = ["Beispiele: W:\\Website Datenbank Backup oder \\\\NAS\\Website Datenbank Backup"];
+    throw error;
+  }
+  return backupRoot;
 }
 
 async function fileInfo(path) {
@@ -1636,6 +1665,7 @@ export async function createExplorerServer({
   host = DEFAULT_HOST,
   port = DEFAULT_PORT,
   publishAssetChanges = true,
+  nasBackupRoot = process.env.IUCN_NAS_BACKUP_DIR || DEFAULT_NAS_BACKUP_ROOT,
   spectrogramRenderer = renderSpectrogram,
   portraitRenderer = renderPortrait,
 } = {}) {
@@ -1648,12 +1678,17 @@ export async function createExplorerServer({
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
   const manualMapOverridesPath = join(repoRoot, "docs", "manual-map-overrides.md");
   const backupDir = join(repoRoot, "species-explorer", "backups");
+  const localSettingsPath = join(repoRoot, "species-explorer", LOCAL_SETTINGS_FILE);
   const pipelineLogDir = join(repoRoot, "species-explorer", "logs");
   const pipelineAssetBackupRoot = join(repoRoot, "species-explorer", "pipeline-asset-backups");
   const assetStagingRoot = join(repoRoot, "species-explorer", "staging");
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
+  const defaultNasBackupRoot = nasBackupRoot;
+  let explorerSettings = await loadExplorerSettings();
+  let currentNasBackupRoot = normalizeBackupRoot(explorerSettings.nasBackupRoot) || defaultNasBackupRoot;
   let pipelineProcess = null;
+  let backupProcess = null;
   let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
   let pipelineState = {
@@ -1673,6 +1708,23 @@ export async function createExplorerServer({
     reviewAssets: [],
     gitPublished: false,
   };
+  let backupState = {
+    status: "idle",
+    phase: "",
+    backupRoot: currentNasBackupRoot,
+    archivePath: "",
+    startedAt: "",
+    completedAt: "",
+    percent: 0,
+    fileCount: 0,
+    totalBytes: 0,
+    retainedBackups: 0,
+    removedBackups: 0,
+    log: [],
+    error: "",
+    skipped: false,
+    reason: "",
+  };
   if (existsSync(pendingAssetReviewPath)) {
     try {
       const pending = await readJson(pendingAssetReviewPath);
@@ -1682,6 +1734,54 @@ export async function createExplorerServer({
     } catch {
       // Eine unlesbare lokale Statusdatei wird beim nächsten erfolgreichen Lauf ersetzt.
     }
+  }
+
+  async function loadExplorerSettings() {
+    try {
+      const parsed = await readJson(localSettingsPath);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
+    } catch (error) {
+      if (error.code === "ENOENT") return {};
+      throw error;
+    }
+  }
+
+  async function writeExplorerSettings(settings) {
+    await mkdir(join(repoRoot, "species-explorer"), { recursive: true });
+    await writeFile(localSettingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+  }
+
+  function publicSettingsPayload() {
+    return {
+      backupRoot: currentNasBackupRoot,
+      defaultBackupRoot: defaultNasBackupRoot,
+      hasCustomBackupRoot: currentNasBackupRoot !== defaultNasBackupRoot,
+      settingsFile: `species-explorer/${LOCAL_SETTINGS_FILE}`,
+      maxBackups: 10,
+    };
+  }
+
+  async function saveBackupSettings(payload = {}) {
+    if (backupProcess || backupState.status === "running") {
+      const error = new Error("Während eines laufenden NAS-Backups kann der Backup-Pfad nicht geändert werden.");
+      error.statusCode = 409;
+      throw error;
+    }
+    const reset = payload.reset === true;
+    const nextBackupRoot = reset
+      ? defaultNasBackupRoot
+      : validateBackupRoot(payload.backupRoot);
+    const nextSettings = { ...explorerSettings };
+    if (nextBackupRoot === defaultNasBackupRoot) delete nextSettings.nasBackupRoot;
+    else nextSettings.nasBackupRoot = nextBackupRoot;
+    nextSettings.updatedAt = new Date().toISOString();
+    await writeExplorerSettings(nextSettings);
+    explorerSettings = nextSettings;
+    currentNasBackupRoot = nextBackupRoot;
+    backupState.backupRoot = currentNasBackupRoot;
+    return publicSettingsPayload();
   }
 
   async function refreshModel({ force = false } = {}) {
@@ -2336,6 +2436,216 @@ export async function createExplorerServer({
           stdout: Buffer.concat(stdout).toString("utf8").trim(),
           stderr: Buffer.concat(stderr).toString("utf8").trim(),
         });
+      });
+    });
+  }
+
+  function powershellExecutable() {
+    return process.platform === "win32" ? "powershell.exe" : "pwsh";
+  }
+
+  function nasBackupArgs({ dryRun = false, force = false, progress = false } = {}) {
+    const args = [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      join(repoRoot, "scripts", "nas-backup.ps1"),
+      "-BackupRoot",
+      currentNasBackupRoot,
+      "-MaxBackups",
+      "10",
+    ];
+    if (dryRun) args.push("-DryRun");
+    if (force) args.push("-Force");
+    if (progress) args.push("-Progress");
+    return args;
+  }
+
+  function parseJsonProcessOutput(output, fallbackMessage) {
+    const raw = String(output ?? "").trim();
+    if (!raw) {
+      throw new Error(fallbackMessage);
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error(`${fallbackMessage}: ${raw}`);
+    }
+  }
+
+  function isPipelineActive() {
+    return pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review";
+  }
+
+  function appendBackupLog(text) {
+    const lines = String(text ?? "").split(/\r?\n/).filter((line) => line.length > 0);
+    backupState.log.push(...lines);
+    if (backupState.log.length > BACKUP_LOG_LINE_LIMIT) {
+      backupState.log.splice(0, backupState.log.length - BACKUP_LOG_LINE_LIMIT);
+    }
+  }
+
+  function appendBackupProcessOutput(text) {
+    for (const line of String(text ?? "").split(/\r?\n/).filter(Boolean)) {
+      if (line.startsWith("BACKUP_PROGRESS ")) {
+        try {
+          const progress = JSON.parse(line.slice("BACKUP_PROGRESS ".length));
+          backupState.percent = Number(progress.percent ?? backupState.percent);
+          backupState.phase = String(progress.message ?? backupState.phase);
+          if (Number.isInteger(progress.fileCount)) backupState.fileCount = progress.fileCount;
+          if (Number.isInteger(progress.processedFiles)) {
+            appendBackupLog(`${progress.percent}% · ${progress.message} (${progress.processedFiles}/${progress.fileCount})`);
+          } else {
+            appendBackupLog(`${progress.percent}% · ${progress.message}`);
+          }
+          continue;
+        } catch {
+          // Unlesbare Fortschrittszeilen werden als normale Prozessausgabe angezeigt.
+        }
+      }
+      appendBackupLog(line);
+    }
+  }
+
+  async function previewNasBackup() {
+    if (backupProcess || backupState.status === "running") {
+      const error = new Error("Es läuft bereits ein NAS-Backup");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (isPipelineActive() || assetWriteActive) {
+      const error = new Error("Während Pipeline- oder Asset-Schreibvorgängen kann kein Backup vorbereitet werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    const result = await runCommandCapture(powershellExecutable(), nasBackupArgs({ dryRun: true }));
+    if (result.code !== 0) {
+      const error = new Error(result.stderr || result.stdout || "Backup-Vorschau fehlgeschlagen");
+      error.statusCode = 500;
+      throw error;
+    }
+    const parsed = parseJsonProcessOutput(result.stdout, "Backup-Vorschau lieferte keine gültige Antwort");
+    return {
+      mode: "nas-backup",
+      backupRoot: parsed.backupRoot || currentNasBackupRoot,
+      skipped: Boolean(parsed.skipped),
+      reason: parsed.reason || "",
+      archivePath: parsed.archivePath || parsed.latestBackup || "",
+      fileCount: Number(parsed.fileCount ?? 0),
+      totalBytes: Number(parsed.totalBytes ?? 0),
+      gitCommit: parsed.gitCommit || "",
+      workingTreeDirty: Boolean(parsed.workingTreeDirty),
+      retentionWouldRemove: Number(parsed.retentionWouldRemove ?? 0),
+      warnings: [
+        "Das Backup wird als ZIP auf dem NAS gespeichert und enthält Projektdateien, Git-Stand, node_modules und lokale Werkzeuge.",
+        "Temporäre Test-, Staging-, Pipeline-Asset-Backup- und Logdateien werden nicht gesichert.",
+        "Es bleiben maximal zehn NAS-Backups erhalten; ältere IUCN_Datenbank_*.zip-Dateien werden nach erfolgreichem Lauf entfernt.",
+      ],
+    };
+  }
+
+  function startNasBackup(payload = {}) {
+    if (backupProcess || backupState.status === "running") {
+      const error = new Error("Es läuft bereits ein NAS-Backup");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (isPipelineActive() || assetWriteActive) {
+      const error = new Error("Während Pipeline- oder Asset-Schreibvorgängen kann kein Backup gestartet werden");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const force = payload?.force === true;
+    backupState = {
+      status: "running",
+      phase: "Backup wird vorbereitet",
+      backupRoot: currentNasBackupRoot,
+      archivePath: "",
+      startedAt: new Date().toISOString(),
+      completedAt: "",
+      percent: 0,
+      fileCount: 0,
+      totalBytes: 0,
+      retainedBackups: 0,
+      removedBackups: 0,
+      log: [],
+      error: "",
+      skipped: false,
+      reason: "",
+    };
+    appendBackupLog(force ? "NAS-Backup wird erzwungen gestartet." : "NAS-Backup wird gestartet.");
+    void executeNasBackupRun(force).catch((error) => {
+      backupState.status = "failed";
+      backupState.completedAt = new Date().toISOString();
+      backupState.error = error.message;
+      backupState.phase = "Backup fehlgeschlagen";
+      appendBackupLog(`Unerwarteter Backupfehler: ${error.message}`);
+    });
+    return backupState;
+  }
+
+  function executeNasBackupRun(force) {
+    return new Promise((resolveRun) => {
+      let stdoutBuffer = "";
+      const child = spawn(powershellExecutable(), nasBackupArgs({ force, progress: true }), {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          IUCN_NAS_BACKUP_DIR: currentNasBackupRoot,
+        },
+        windowsHide: true,
+      });
+      backupProcess = child;
+      child.stdout.on("data", (chunk) => {
+        stdoutBuffer += chunk.toString("utf8");
+      });
+      child.stderr.on("data", (chunk) => appendBackupProcessOutput(chunk.toString("utf8")));
+      child.on("error", (error) => {
+        backupProcess = null;
+        backupState.status = "failed";
+        backupState.completedAt = new Date().toISOString();
+        backupState.error = error.message;
+        backupState.phase = "Backup fehlgeschlagen";
+        appendBackupLog(`Prozessfehler: ${error.message}`);
+        resolveRun();
+      });
+      child.on("close", (code) => {
+        backupProcess = null;
+        backupState.completedAt = new Date().toISOString();
+        if (code === 0) {
+          try {
+            const result = parseJsonProcessOutput(stdoutBuffer, "Backup-Lauf lieferte keine gültige Antwort");
+            backupState.status = "completed";
+            backupState.skipped = Boolean(result.skipped);
+            backupState.reason = result.reason || "";
+            backupState.archivePath = result.archivePath || result.latestBackup || "";
+            backupState.backupRoot = result.backupRoot || currentNasBackupRoot;
+            backupState.fileCount = Number(result.fileCount ?? backupState.fileCount);
+            backupState.totalBytes = Number(result.totalBytes ?? backupState.totalBytes);
+            backupState.retainedBackups = Number(result.retainedBackups ?? 0);
+            backupState.removedBackups = Number(result.removedBackups ?? 0);
+            backupState.percent = 100;
+            backupState.phase = backupState.skipped ? "Kein neues Backup erforderlich" : "Backup abgeschlossen";
+            appendBackupLog(
+              backupState.skipped
+                ? backupState.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt."
+                : `Backup erstellt: ${backupState.archivePath}`,
+            );
+          } catch (error) {
+            backupState.status = "failed";
+            backupState.error = error.message;
+            backupState.phase = "Backup fehlgeschlagen";
+            appendBackupLog(error.message);
+          }
+        } else {
+          backupState.status = "failed";
+          backupState.error = stdoutBuffer.trim() || `Backup wurde mit Code ${code} beendet`;
+          backupState.phase = "Backup fehlgeschlagen";
+          appendBackupLog(backupState.error);
+        }
+        resolveRun();
       });
     });
   }
@@ -4013,6 +4323,24 @@ export async function createExplorerServer({
         return;
       }
 
+      if (request.method === "POST" && url.pathname === "/api/settings/backup") {
+        const payload = await readJsonBody(request);
+        sendJson(response, 200, await saveBackupSettings(payload));
+        return;
+      }
+
+      if (
+        request.method === "POST"
+        && (url.pathname === "/api/backup/preview" || url.pathname === "/api/backup/start")
+      ) {
+        const payload = await readJsonBody(request);
+        const result = url.pathname.endsWith("/preview")
+          ? await previewNasBackup()
+          : startNasBackup(payload);
+        sendJson(response, 200, result);
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/pipeline/assets/review") {
         const payload = await readJsonBody(request);
         sendJson(response, 200, await savePipelineAssetReview(payload));
@@ -4087,8 +4415,18 @@ export async function createExplorerServer({
         return;
       }
 
+      if (url.pathname === "/api/settings") {
+        sendJson(response, 200, publicSettingsPayload());
+        return;
+      }
+
       if (url.pathname === "/api/pipeline/status") {
         sendJson(response, 200, pipelineState);
+        return;
+      }
+
+      if (url.pathname === "/api/backup/status") {
+        sendJson(response, 200, backupState);
         return;
       }
 

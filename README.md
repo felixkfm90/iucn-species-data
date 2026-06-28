@@ -530,6 +530,12 @@ npm.cmd run backup:nas:dry-run
 npm.cmd run backup:nas
 ```
 
+In der Desktop-App ist derselbe Lauf im Datenbank-Dialog als `NAS-Backup erstellen` erreichbar. Die App zeigt vor dem
+Start Zielpfad, Umfang, geplante ZIP-Datei und Rotation an. Danach zeigt sie Fortschritt in Prozent, Prozessausgabe
+und Abschlussmeldung. Wenn seit dem letzten Backup nichts geaendert wurde, kann das Backup manuell trotzdem
+erzwungen werden. Der Zielpfad ist im gleichen Dialog ueber `Backup-Pfad einstellen` lokal aenderbar; gespeichert wird
+er in `species-explorer/local-settings.json`, das nicht in Git landet.
+
 ## Aktueller Datenstand
 
 Aktueller lokaler Stand vom 2026-06-27:

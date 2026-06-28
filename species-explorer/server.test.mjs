@@ -358,6 +358,56 @@ test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async
   managed.server = null;
 });
 
+test("Backup-Pfad ist lokal einstellbar und bleibt aus Git heraus", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    nasBackupRoot: "W:\\Default Backup",
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const initialSettings = await (await fetch(`${baseUrl}/api/settings`)).json();
+  assert.equal(initialSettings.backupRoot, "W:\\Default Backup");
+  assert.equal(initialSettings.hasCustomBackupRoot, false);
+  assert.equal(initialSettings.settingsFile, "species-explorer/local-settings.json");
+
+  const invalidResponse = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ backupRoot: "relative\\backup" }),
+  });
+  assert.equal(invalidResponse.status, 400);
+
+  const changedResponse = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ backupRoot: "D:\\IUCN Backup" }),
+  });
+  assert.equal(changedResponse.status, 200);
+  const changedSettings = await changedResponse.json();
+  assert.equal(changedSettings.backupRoot, "D:\\IUCN Backup");
+  assert.equal(changedSettings.hasCustomBackupRoot, true);
+
+  const status = await (await fetch(`${baseUrl}/api/backup/status`)).json();
+  assert.equal(status.backupRoot, "D:\\IUCN Backup");
+  const settingsFile = JSON.parse(await readFile(join(repoRoot, "species-explorer", "local-settings.json"), "utf8"));
+  assert.equal(settingsFile.nasBackupRoot, "D:\\IUCN Backup");
+
+  const resetResponse = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reset: true }),
+  });
+  assert.equal(resetResponse.status, 200);
+  const resetSettings = await resetResponse.json();
+  assert.equal(resetSettings.backupRoot, "W:\\Default Backup");
+  assert.equal(resetSettings.hasCustomBackupRoot, false);
+});
+
 test("Explorer erkennt externe Dateiänderungen ohne manuellen Reload", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -1434,9 +1484,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     updateSource,
     desktopLauncherSource,
     shortcutInstallerSource,
+    desktopMainSource,
+    serverLifecycleSource,
     restoreStartSource,
     nasBackupSource,
     packageSource,
+    gitignoreSource,
     assetOverrides,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
@@ -1446,9 +1499,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("../update.mjs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/start-explorer.vbs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/install-shortcut.ps1", import.meta.url), "utf8"),
+    readFile(new URL("./desktop/main.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./desktop/server-lifecycle.mjs", import.meta.url), "utf8"),
     readFile(new URL("../restore-start.cmd", import.meta.url), "utf8"),
     readFile(new URL("../scripts/nas-backup.ps1", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../.gitignore", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
 
@@ -1555,8 +1611,36 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(nasBackupSource, /backup-manifest\.json/);
   assert.match(nasBackupSource, /MaxBackups = 10/);
   assert.match(nasBackupSource, /DryRun/);
+  assert.match(nasBackupSource, /Progress/);
+  assert.match(nasBackupSource, /BACKUP_PROGRESS/);
+  assert.match(nasBackupSource, /yyyy-MM-dd_HHmmss/);
   assert.match(nasBackupSource, /species-explorer\/pipeline-asset-backups/);
   assert.match(packageSource, /backup:nas:dry-run/);
+  assert.match(gitignoreSource, /species-explorer\/local-settings\.json/);
+  assert.match(htmlSource, /data-backup-action="nas"/);
+  assert.match(htmlSource, /NAS-Backup erstellen/);
+  assert.match(htmlSource, /data-settings-action="backup-path"/);
+  assert.match(htmlSource, /id="settings-dialog"/);
+  assert.match(htmlSource, /Backup-Pfad einstellen/);
+  assert.match(appSource, /function setupBackupSettings\(\)/);
+  assert.match(appSource, /\/api\/settings/);
+  assert.match(appSource, /\/api\/settings\/backup/);
+  assert.match(appSource, /\/api\/backup\/preview/);
+  assert.match(appSource, /\/api\/backup\/start/);
+  assert.match(appSource, /\/api\/backup\/status/);
+  assert.match(appSource, /Backup trotzdem erstellen/);
+  assert.match(appSource, /backupStatusPresentation/);
+  assert.match(cssSource, /\.database-status\.backup/);
+  assert.match(serverSource, /async function previewNasBackup/);
+  assert.match(serverSource, /local-settings\.json/);
+  assert.match(serverSource, /async function saveBackupSettings/);
+  assert.match(serverSource, /url\.pathname === "\/api\/settings"/);
+  assert.match(serverSource, /url\.pathname === "\/api\/settings\/backup"/);
+  assert.match(serverSource, /function startNasBackup/);
+  assert.match(serverSource, /executeNasBackupRun/);
+  assert.match(serverSource, /url\.pathname === "\/api\/backup\/status"/);
+  assert.match(desktopMainSource, /getExplorerBackupStatus/);
+  assert.match(serverLifecycleSource, /isBackupBlockingShutdown/);
   assert.match(packageSource, /species:desktop:shortcut/);
   assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
   assert.match(serverSource, /Git-Commit/);

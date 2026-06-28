@@ -2,7 +2,8 @@ param(
   [string]$BackupRoot = $(if ($env:IUCN_NAS_BACKUP_DIR) { $env:IUCN_NAS_BACKUP_DIR } else { "W:\Website Datenbank Backup" }),
   [int]$MaxBackups = 10,
   [switch]$DryRun,
-  [switch]$Force
+  [switch]$Force,
+  [switch]$Progress
 )
 
 $ErrorActionPreference = "Stop"
@@ -103,9 +104,28 @@ function Add-FileToArchive {
   }
 }
 
+function Write-BackupProgress {
+  param(
+    [int]$Percent,
+    [string]$Message,
+    [int]$ProcessedFiles = -1,
+    [int]$FileCount = -1
+  )
+  if (-not $Progress) { return }
+  $payload = [ordered]@{
+    percent = $Percent
+    message = $Message
+  }
+  if ($ProcessedFiles -ge 0) { $payload.processedFiles = $ProcessedFiles }
+  if ($FileCount -ge 0) { $payload.fileCount = $FileCount }
+  [Console]::Error.WriteLine("BACKUP_PROGRESS $($payload | ConvertTo-Json -Compress)")
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $backupRootPath = $BackupRoot
+
+Write-BackupProgress -Percent 1 -Message "Backup-Ziel wird geprüft"
 
 if ($MaxBackups -lt 1) {
   throw "MaxBackups muss mindestens 1 sein."
@@ -116,6 +136,7 @@ if (-not (Test-Path -LiteralPath $backupRootPath)) {
 }
 
 $backupRootResolved = (Resolve-Path -LiteralPath $backupRootPath).Path
+Write-BackupProgress -Percent 3 -Message "Git-Stand wird geprüft"
 $gitCommit = Invoke-Git -Arguments @("rev-parse", "HEAD")
 $gitShort = Invoke-Git -Arguments @("rev-parse", "--short=12", "HEAD")
 $gitStatus = Invoke-Git -Arguments @("status", "--porcelain=v1")
@@ -124,11 +145,13 @@ $statusHash = Get-Sha256Hex $gitStatus
 
 $existingArchives = @(Get-ChildItem -LiteralPath $backupRootResolved -Filter "IUCN_Datenbank_*.zip" -File -ErrorAction SilentlyContinue |
   Sort-Object LastWriteTime -Descending)
+Write-BackupProgress -Percent 6 -Message "Vorhandene NAS-Backups werden geprüft"
 $latestManifest = if ($existingArchives.Count) { Get-ArchiveManifest $existingArchives[0].FullName } else { $null }
 $currentStateKey = "$gitCommit|$statusHash"
 $latestStateKey = if ($latestManifest) { "$($latestManifest.gitCommit)|$($latestManifest.workingTreeStatusHash)" } else { "" }
 
 if (-not $Force -and $latestStateKey -eq $currentStateKey) {
+  Write-BackupProgress -Percent 100 -Message "Kein neues Backup erforderlich"
   $result = [pscustomobject]@{
     ok = $true
     skipped = $true
@@ -142,7 +165,7 @@ if (-not $Force -and $latestStateKey -eq $currentStateKey) {
   exit 0
 }
 
-$timestamp = Get-Date -Format "yyyy-MM-dd_HHmm"
+$timestamp = Get-Date -Format "yyyy-MM-dd_HHmmss"
 $archiveName = "IUCN_Datenbank_${timestamp}_${gitShort}.zip"
 $archivePath = Join-Path $backupRootResolved $archiveName
 
@@ -150,6 +173,7 @@ $files = @(Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Force | Where-Ob
   $relative = Get-RelativePathFromRoot -Root $repoRoot -FullPath $_.FullName
   -not (Test-ExcludedRelativePath $relative)
 })
+Write-BackupProgress -Percent 10 -Message "Dateiliste wurde erstellt" -ProcessedFiles 0 -FileCount $files.Count
 
 $manifest = [ordered]@{
   createdAt = (Get-Date).ToString("o")
@@ -207,9 +231,17 @@ try {
       $manifestWriter.Dispose()
     }
 
+    $processedFiles = 0
+    $lastProgressPercent = 10
     foreach ($file in $files) {
+      $processedFiles += 1
       $relative = Get-RelativePathFromRoot -Root $repoRoot -FullPath $file.FullName
       Add-FileToArchive -Archive $archive -SourcePath $file.FullName -EntryName (Convert-ToZipPath $relative)
+      $currentPercent = 10 + [int][Math]::Floor(($processedFiles / [Math]::Max(1, $files.Count)) * 85)
+      if ($currentPercent -gt $lastProgressPercent -or $processedFiles -eq $files.Count) {
+        $lastProgressPercent = $currentPercent
+        Write-BackupProgress -Percent $currentPercent -Message "Dateien werden ins ZIP geschrieben" -ProcessedFiles $processedFiles -FileCount $files.Count
+      }
     }
   } finally {
     $archive.Dispose()
@@ -225,10 +257,12 @@ try {
 
 $allArchives = @(Get-ChildItem -LiteralPath $backupRootResolved -Filter "IUCN_Datenbank_*.zip" -File |
   Sort-Object LastWriteTime -Descending)
+Write-BackupProgress -Percent 97 -Message "Backup-Rotation wird geprüft"
 $removeArchives = @($allArchives | Select-Object -Skip $MaxBackups)
 foreach ($archiveToRemove in $removeArchives) {
   Remove-Item -LiteralPath $archiveToRemove.FullName -Force
 }
+Write-BackupProgress -Percent 100 -Message "Backup abgeschlossen"
 
 [pscustomobject]@{
   ok = $true

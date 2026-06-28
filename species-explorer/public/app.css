@@ -119,6 +119,7 @@ h1 {
 }
 
 .database-status.running,
+.database-status.backup,
 .database-status.review {
   color: #17211d;
   background: #f1c75b;
@@ -371,6 +372,16 @@ button.danger,
 .pipeline-mode-choice button span {
   color: var(--text-muted);
   font-size: 0.74rem;
+}
+
+.settings-help {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.settings-help code {
+  color: var(--green);
 }
 
 .pipeline-dialog-status {

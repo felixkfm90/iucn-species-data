@@ -62,7 +62,9 @@ Regeln:
 - kein neues Backup, wenn sich seit dem letzten Backup nichts geaendert hat
 - Backup ist ablehnbar
 - Standard-Zielpfad: `W:\Website Datenbank Backup`
-- der Pfad bleibt per Parameter oder Umgebungsvariable `IUCN_NAS_BACKUP_DIR` ueberschreibbar
+- der Pfad ist in der App ueber `Backup-Pfad einstellen` lokal aenderbar
+- die lokale Einstellung liegt in `species-explorer/local-settings.json` und wird nicht committed
+- technisch bleibt der Pfad per Parameter oder Umgebungsvariable `IUCN_NAS_BACKUP_DIR` ueberschreibbar
 
 Die App soll nach relevanten Aenderungen oder beim Schliessen vorschlagen:
 
@@ -173,7 +175,7 @@ Nicht in das ZIP gehoeren:
 Beispiel-Dateiname:
 
 ```text
-IUCN_Datenbank_2026-06-28_0945_3880eea.zip
+IUCN_Datenbank_2026-06-28_094512_3880eea.zip
 ```
 
 `backup-manifest.json` soll enthalten:
@@ -211,15 +213,16 @@ Wenn Node.js fehlt, zeigt das Skript eine klare Meldung. Node.js wird nicht auto
 4. Bearbeitungs-Lock ueber `app-lock` Branch einbauen.
 5. NAS-Backup-Konfiguration und ZIP-Erzeugung einbauen.
 6. Backup-Rotation auf maximal 10 ZIPs einbauen.
-7. Restore-Test dokumentieren.
-8. Danach Installer/zweiter-PC-Komfort klaeren.
+7. Backup-Pfad in der App lokal einstellbar machen.
+8. Restore-Test dokumentieren.
+9. Danach Installer/zweiter-PC-Komfort klaeren.
 
-## Noch offen vor der Backup-Implementierung
+## Noch offen vor Lock-/Update-Implementierung
 
 - gewuenschter Anzeigename fuer den lokalen Rechner/User im Lock
 - ob `species-explorer/logs/` spaeter teilweise in das ZIP soll oder per Retention klein gehalten wird
 
-## Technischer Backup-Kern seit 2026-06-28
+## Technischer Backup-Stand seit 2026-06-28
 
 Der erste Backup-Kern ist als PowerShell-Skript vorhanden:
 
@@ -228,7 +231,10 @@ npm.cmd run backup:nas:dry-run
 npm.cmd run backup:nas
 ```
 
-Standardziel ist `W:\Website Datenbank Backup`. Das Ziel kann ueberschrieben werden:
+Standardziel ist `W:\Website Datenbank Backup`. In der App kann der Zielpfad ueber
+`Datenbank aktualisieren` -> `Backup-Pfad einstellen` pro Rechner geaendert werden. Diese Einstellung wird in
+`species-explorer/local-settings.json` gespeichert und ist per `.gitignore` bewusst lokal. Zusaetzlich kann das Ziel
+weiterhin direkt im Skript ueberschrieben werden:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -BackupRoot "W:\Website Datenbank Backup"
@@ -236,7 +242,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -Back
 
 Das Skript:
 
-- erstellt ZIP-Dateien mit Namen `IUCN_Datenbank_<Datum>_<Uhrzeit>_<Commit>.zip`
+- erstellt ZIP-Dateien mit Namen `IUCN_Datenbank_<Datum>_<UhrzeitMitSekunden>_<Commit>.zip`
 - schreibt `backup-manifest.json` in das ZIP
 - nimmt `.git`, `node_modules`, `local-tools/ffmpeg`, Assets und Projektdateien auf
 - schliesst `Testlauf`, `species-explorer/staging`, `species-explorer/pipeline-asset-backups` und
@@ -244,5 +250,19 @@ Das Skript:
 - ueberspringt ein Backup, wenn letzter Backup-Manifest-Stand und aktueller Git-/Arbeitsbaum-Status identisch sind
 - entfernt nach erfolgreichem Backup alte ZIPs oberhalb der Grenze von 10
 - bietet mit `-DryRun` eine Vorschau ohne Schreiben oder Loeschen
+- bietet mit `-Progress` maschinenlesbare Fortschrittszeilen fuer die App
 
-Die App-UI fuer Rueckfrage, Fortschritt und automatischen Start ist noch offen.
+Die App-UI ist als manuelle Wartungsaktion im Datenbank-Dialog eingebunden:
+
+- Button `NAS-Backup erstellen`
+- Button `Backup-Pfad einstellen` fuer den lokalen NAS-Zielpfad mit Reset auf den Standard
+- Vorschau prueft Zielpfad, Dateianzahl, Rohdatenmenge, geplanten ZIP-Namen und Rotation
+- bei unveraendertem Stand kann ein Backup manuell trotzdem erzwungen werden
+- waehrend des Laufs zeigt die App Status, Prozent, Prozessausgabe und Abschlussmeldung
+- der Desktop-Schliessschutz warnt bei laufendem NAS-Backup wie bei Pipeline-Laeufen
+
+Erster produktiver Testlauf:
+
+- Ziel: `W:\Website Datenbank Backup`
+- Datei: `IUCN_Datenbank_2026-06-28_1118_07b5c8a84ab2.zip`
+- Ergebnis: erfolgreich, 1022 Dateien, ca. 784 MB ZIP, keine Rotation geloescht

@@ -13,6 +13,10 @@ const state = {
   pipelineWasRunning: false,
   pipelineStatusSnapshot: null,
   pipelinePollTimer: null,
+  backupWasRunning: false,
+  backupStatusSnapshot: null,
+  backupPollTimer: null,
+  settingsSnapshot: null,
   assetReviewRunId: "",
   dataRevision: "",
   dataRevisionTimer: null,
@@ -59,6 +63,8 @@ const elements = {
   newSpeciesDialog: document.querySelector("#new-species-dialog"),
   newSpeciesForm: document.querySelector("#new-species-form"),
   pipelineButtons: [...document.querySelectorAll("[data-pipeline-mode]")],
+  backupButtons: [...document.querySelectorAll("[data-backup-action]")],
+  settingsButtons: [...document.querySelectorAll("[data-settings-action]")],
   pipelineStatus: document.querySelector("#pipeline-status"),
   pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
   pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
@@ -78,6 +84,13 @@ const elements = {
   pipelineWarning: document.querySelector("#pipeline-warning"),
   pipelineStartButton: document.querySelector("#pipeline-start-button"),
   pipelineModeChoice: document.querySelector("#pipeline-mode-choice"),
+  settingsDialog: document.querySelector("#settings-dialog"),
+  settingsForm: document.querySelector("#settings-form"),
+  backupRootInput: document.querySelector("#backup-root-input"),
+  backupRootDefault: document.querySelector("#backup-root-default"),
+  settingsMessage: document.querySelector(".settings-message"),
+  settingsResetButton: document.querySelector(".settings-reset-button"),
+  settingsSaveButton: document.querySelector(".settings-save-button"),
   assetReviewDialog: document.querySelector("#asset-review-dialog"),
   assetReviewForm: document.querySelector("#asset-review-form"),
   assetReviewList: document.querySelector("#asset-review-list"),
@@ -253,6 +266,7 @@ function setValidationCardState(card, ok) {
 }
 
 function renderDatabaseStatus(stateName = "") {
+  const activeBackupStatus = state.backupStatusSnapshot?.status === "running" ? "backup" : "";
   const activePipelineStatus = state.pipelineStatusSnapshot?.status === "running"
     ? "running"
     : state.pipelineStatusSnapshot?.status === "awaiting-review"
@@ -260,7 +274,7 @@ function renderDatabaseStatus(stateName = "") {
       : state.pipelineStatusSnapshot?.status === "failed"
         ? "failed"
         : "";
-  const status = stateName || activePipelineStatus || (state.databaseNeedsUpdate ? "outdated" : "current");
+  const status = stateName || activeBackupStatus || activePipelineStatus || (state.databaseNeedsUpdate ? "outdated" : "current");
   elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
   elements.pipelineStatus.className = `pipeline-status-text ${status}`;
   if (status === "running") elements.pipelineStatus.textContent = "Aktualisierung läuft";
@@ -845,6 +859,99 @@ function setupAssetReview() {
   state.openAssetReview = openReview;
 }
 
+function setupBackupSettings() {
+  const dialog = elements.settingsDialog;
+  const form = elements.settingsForm;
+  if (!dialog || !form) return;
+  const cancelButtons = [...dialog.querySelectorAll(".settings-cancel")];
+
+  const setMessage = (text = "", type = "") => {
+    elements.settingsMessage.textContent = text;
+    elements.settingsMessage.className = `edit-message settings-message${type ? ` ${type}` : ""}`;
+    elements.settingsMessage.hidden = !text;
+  };
+
+  const close = () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  };
+
+  const showDialog = () => {
+    if (dialog.open) return;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  };
+
+  const applySettings = (settings) => {
+    state.settingsSnapshot = settings;
+    elements.backupRootInput.value = settings.backupRoot || "";
+    elements.backupRootDefault.textContent = settings.defaultBackupRoot || "W:\\Website Datenbank Backup";
+  };
+
+  const loadSettings = async () => {
+    const settings = await fetchJson("/api/settings");
+    applySettings(settings);
+    return settings;
+  };
+
+  const openSettings = async () => {
+    setMessage("Einstellungen werden geladen...", "info");
+    elements.settingsSaveButton.disabled = true;
+    showDialog();
+    try {
+      const settings = await loadSettings();
+      setMessage(
+        settings.hasCustomBackupRoot
+          ? "Eigener Backup-Pfad ist aktiv."
+          : "Der Standardpfad ist aktiv.",
+        "info",
+      );
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      elements.settingsSaveButton.disabled = false;
+    }
+  };
+
+  for (const button of elements.settingsButtons) {
+    button.addEventListener("click", openSettings);
+  }
+
+  elements.settingsResetButton.addEventListener("click", () => {
+    const defaultBackupRoot = state.settingsSnapshot?.defaultBackupRoot || "W:\\Website Datenbank Backup";
+    elements.backupRootInput.value = defaultBackupRoot;
+    setMessage("Standardpfad wird beim Speichern verwendet.", "info");
+  });
+
+  for (const button of cancelButtons) button.addEventListener("click", close);
+  setupSafeBackdropClose(dialog, close);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    elements.settingsSaveButton.disabled = true;
+    setMessage("Backup-Pfad wird gespeichert...", "info");
+    const requestedBackupRoot = elements.backupRootInput.value.trim();
+    const defaultBackupRoot = state.settingsSnapshot?.defaultBackupRoot || "";
+    try {
+      const settings = await fetchJson("/api/settings/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          requestedBackupRoot === defaultBackupRoot
+            ? { reset: true }
+            : { backupRoot: requestedBackupRoot },
+        ),
+      });
+      applySettings(settings);
+      setMessage("Backup-Pfad gespeichert.", "success");
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      elements.settingsSaveButton.disabled = false;
+    }
+  });
+}
+
 function setupPipelineControl() {
   const dialog = elements.pipelineDialog;
   const form = elements.pipelineForm;
@@ -852,6 +959,8 @@ function setupPipelineControl() {
   const footerCloseButton = dialog.querySelector(".pipeline-dialog-close-button");
   let previewToken = "";
   let previewMode = "";
+  let previewKind = "";
+  let backupForceStart = false;
 
   const modeLabel = (mode) => ({
     missing: "Neue/Unvollständige Arten aktualisieren",
@@ -860,6 +969,8 @@ function setupPipelineControl() {
     "nc-sounds": "NC- und fehlende Sounds erneut suchen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
+
+  const backupLabel = () => "NAS-Backup erstellen";
 
   const setMessage = (text = "", type = "") => {
     elements.pipelineMessage.textContent = text;
@@ -880,6 +991,8 @@ function setupPipelineControl() {
 
   const setPipelineButtonsDisabled = (disabled) => {
     for (const button of elements.pipelineButtons) button.disabled = disabled;
+    for (const button of elements.backupButtons) button.disabled = disabled;
+    for (const button of elements.settingsButtons) button.disabled = disabled;
   };
 
   const setDialogCloseMode = (active) => {
@@ -930,8 +1043,47 @@ function setupPipelineControl() {
     return null;
   };
 
+  const backupStatusPresentation = (status) => {
+    if (status.status === "running") {
+      return {
+        className: "running",
+        title: "NAS-Backup läuft gerade",
+        detail: `${Math.max(0, Math.min(100, Math.round(status.percent || 0)))}% · ${status.phase || "Backup läuft"}`,
+        message: "NAS-Backup läuft gerade. Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter.",
+        messageType: "info",
+      };
+    }
+    if (status.status === "completed") {
+      return {
+        className: "completed",
+        title: status.skipped ? "NAS-Backup nicht erforderlich" : "NAS-Backup abgeschlossen",
+        detail: status.skipped
+          ? (status.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt")
+          : `${formatBytes(status.totalBytes)} · ${status.archivePath || status.backupRoot}`,
+        message: status.skipped
+          ? (status.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt.")
+          : "NAS-Backup abgeschlossen.",
+        messageType: "success",
+      };
+    }
+    if (status.status === "failed") {
+      return {
+        className: "failed",
+        title: "NAS-Backup fehlgeschlagen",
+        detail: status.error || "Backup wurde nicht erfolgreich abgeschlossen",
+        message: `NAS-Backup fehlgeschlagen${status.error ? `: ${status.error}` : "."}`,
+        messageType: "error",
+      };
+    }
+    return null;
+  };
+
   const renderPersistentPipelineStatus = (status) => {
-    const presentation = statusPresentation(status);
+    const backupPresentation = backupStatusPresentation(state.backupStatusSnapshot || {});
+    const backupFirst = state.backupStatusSnapshot?.status === "running" || state.backupWasRunning;
+    const presentation = backupFirst
+      ? backupPresentation || statusPresentation(status)
+      : statusPresentation(status) || backupPresentation;
     elements.pipelineRunNotice.hidden = !presentation;
     elements.pipelineRunNotice.className = `pipeline-run-notice${presentation ? ` ${presentation.className}` : ""}`;
     if (!presentation) return;
@@ -955,14 +1107,37 @@ function setupPipelineControl() {
     showDialog();
   };
 
+  const showBackupStatusDialog = (status) => {
+    const presentation = backupStatusPresentation(status);
+    if (!presentation) return;
+    previewToken = "";
+    previewMode = "nas-backup";
+    previewKind = "backup";
+    elements.pipelineDialogTitle.textContent = presentation.title;
+    elements.pipelineDialogDescription.textContent = backupLabel();
+    elements.pipelineModeChoice.hidden = true;
+    elements.pipelinePreview.hidden = true;
+    elements.pipelineStartButton.hidden = true;
+    elements.pipelineStartButton.disabled = true;
+    setDialogCloseMode(status.status === "running");
+    setMessage(presentation.message, presentation.messageType);
+    showDialog();
+  };
+
   const openChooser = () => {
     if (state.pipelineStatusSnapshot?.status === "running"
       || state.pipelineStatusSnapshot?.status === "awaiting-review") {
       showStatusDialog(state.pipelineStatusSnapshot);
       return;
     }
+    if (state.backupStatusSnapshot?.status === "running") {
+      showBackupStatusDialog(state.backupStatusSnapshot);
+      return;
+    }
     previewToken = "";
     previewMode = "";
+    previewKind = "";
+    backupForceStart = false;
     elements.pipelineDialogTitle.textContent = "Laufart auswählen";
     elements.pipelineDialogDescription.textContent = "Welche Aktion soll gestartet werden?";
     elements.pipelineModeChoice.hidden = false;
@@ -1015,9 +1190,33 @@ function setupPipelineControl() {
       "Nach erfolgreichem Lauf werden die Pipeline-Änderungen automatisch committed und gepusht.";
   };
 
+  const renderBackupPreview = (result) => {
+    backupForceStart = result.skipped === true;
+    elements.pipelinePreviewContent.innerHTML = result.skipped
+      ? `
+        <p><strong>Kein neues Backup erforderlich.</strong></p>
+        <p>${escapeHtml(result.reason || "Seit dem letzten Backup wurden keine Aenderungen erkannt.")}</p>
+        <p>Letztes Backup: <strong>${escapeHtml(result.archivePath || "Unbekannt")}</strong></p>
+      `
+      : `
+        <p><strong>${result.fileCount}</strong> Dateien werden als ZIP gesichert.</p>
+        <ul>
+          <li>Ziel: <strong>${escapeHtml(result.backupRoot)}</strong></li>
+          <li>Voraussichtliche Rohdatenmenge: <strong>${escapeHtml(formatBytes(result.totalBytes))}</strong></li>
+          <li>Geplante Datei: <strong>${escapeHtml(result.archivePath)}</strong></li>
+          <li>Backup-Rotation entfernt danach: <strong>${result.retentionWouldRemove}</strong> alte Datei(en)</li>
+        </ul>
+      `;
+    elements.pipelineWarning.textContent = result.skipped
+      ? "Du kannst trotzdem manuell ein neues Backup erzwingen."
+      : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent.";
+  };
+
   async function openPreview(mode) {
     previewToken = "";
     previewMode = mode;
+    previewKind = "pipeline";
+    backupForceStart = false;
     elements.pipelineStartButton.disabled = true;
     elements.pipelineStartButton.hidden = true;
     elements.pipelineModeChoice.hidden = true;
@@ -1062,6 +1261,40 @@ function setupPipelineControl() {
           ? "error"
           : result.hasWork ? "success" : "info",
       );
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    }
+  }
+
+  async function openBackupPreview() {
+    previewToken = "";
+    previewMode = "nas-backup";
+    previewKind = "backup";
+    backupForceStart = false;
+    elements.pipelineStartButton.disabled = true;
+    elements.pipelineStartButton.hidden = true;
+    elements.pipelineModeChoice.hidden = true;
+    elements.pipelinePreview.hidden = true;
+    setDialogCloseMode(false);
+    setMessage("Backup-Vorschau wird erstellt...", "info");
+    elements.pipelineDialogTitle.textContent = backupLabel();
+    elements.pipelineDialogDescription.textContent = "Vor dem Start werden Zielpfad, Umfang und Rotation geprueft.";
+    showDialog();
+
+    try {
+      const result = await fetchJson("/api/backup/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      renderBackupPreview(result);
+      elements.pipelinePreview.hidden = false;
+      elements.pipelineStartButton.hidden = false;
+      elements.pipelineStartButton.disabled = false;
+      elements.pipelineStartButton.textContent = result.skipped
+        ? "Backup trotzdem erstellen"
+        : "Backup starten";
+      setMessage("Backup-Vorschau ist bereit.", "success");
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
     }
@@ -1127,17 +1360,91 @@ function setupPipelineControl() {
     }
   }
 
+  async function refreshBackupStatus() {
+    try {
+      const status = await fetchJson("/api/backup/status");
+      state.backupStatusSnapshot = status;
+      const active = status.status === "running";
+      if (active) {
+        renderDatabaseStatus("backup");
+        elements.pipelineStatus.textContent = "Backup läuft";
+      } else {
+        renderDatabaseStatus();
+      }
+      renderPersistentPipelineStatus(state.pipelineStatusSnapshot || { status: "idle" });
+
+      if (dialog.open && (previewKind === "backup" || state.backupWasRunning)) {
+        const presentation = backupStatusPresentation(status);
+        if (presentation) {
+          elements.pipelineDialogTitle.textContent = presentation.title;
+          elements.pipelineDialogDescription.textContent = backupLabel();
+          setDialogCloseMode(active);
+          setMessage(presentation.message, presentation.messageType);
+        }
+        elements.pipelineStatusDetail.textContent = active
+          ? `${Math.max(0, Math.min(100, Math.round(status.percent || 0)))}% · ${status.phase || "Backup läuft"}`
+          : status.completedAt
+            ? `${backupLabel()} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
+            : "Kein Backup aktiv.";
+        elements.pipelineStatusDetail.className = `pipeline-dialog-status${status.status !== "idle" ? ` ${status.status}` : ""}`;
+        elements.pipelineLogDetails.hidden = status.log.length === 0;
+        elements.pipelineLog.textContent = status.log.join("\n");
+      }
+
+      state.backupWasRunning = active;
+      clearTimeout(state.backupPollTimer);
+      state.backupPollTimer = active
+        ? setTimeout(refreshBackupStatus, 1000)
+        : null;
+    } catch (error) {
+      elements.pipelineRunNotice.hidden = false;
+      elements.pipelineRunNotice.className = "pipeline-run-notice failed";
+      elements.pipelineRunNoticeTitle.textContent = "Backup-Status nicht verfügbar";
+      elements.pipelineRunNoticeDetail.textContent = error.message;
+    }
+  }
+
   for (const button of elements.pipelineButtons) {
     button.addEventListener("click", () => openPreview(button.dataset.pipelineMode));
   }
+  for (const button of elements.backupButtons) {
+    button.addEventListener("click", openBackupPreview);
+  }
   elements.pipelineMenuButton.addEventListener("click", openChooser);
   elements.pipelineRunNoticeOpen.addEventListener("click", () => {
-    if (state.pipelineStatusSnapshot) showStatusDialog(state.pipelineStatusSnapshot);
+    if (statusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
+    else if (backupStatusPresentation(state.backupStatusSnapshot || {})) showBackupStatusDialog(state.backupStatusSnapshot);
   });
   for (const button of cancelButtons) button.addEventListener("click", close);
   setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (previewKind === "backup") {
+      elements.pipelineStartButton.disabled = true;
+      setMessage("NAS-Backup wird gestartet...", "info");
+      try {
+        const startedStatus = await fetchJson("/api/backup/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ force: backupForceStart }),
+        });
+        state.backupStatusSnapshot = startedStatus;
+        state.backupWasRunning = true;
+        elements.pipelineStartButton.hidden = true;
+        elements.pipelinePreview.hidden = true;
+        setDialogCloseMode(true);
+        const presentation = backupStatusPresentation(startedStatus);
+        elements.pipelineDialogTitle.textContent = presentation.title;
+        elements.pipelineDialogDescription.textContent = backupLabel();
+        setMessage(presentation.message, presentation.messageType);
+        renderPersistentPipelineStatus(state.pipelineStatusSnapshot || { status: "idle" });
+        await refreshBackupStatus();
+      } catch (error) {
+        setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+        elements.pipelineStartButton.disabled = false;
+      }
+      return;
+    }
     if (!previewToken) return;
     elements.pipelineStartButton.disabled = true;
     setMessage(
@@ -1169,7 +1476,9 @@ function setupPipelineControl() {
   });
 
   state.openPipelinePreview = openPreview;
+  state.openBackupPreview = openBackupPreview;
   void refreshPipelineStatus();
+  void refreshBackupStatus();
 }
 
 function setupNewSpeciesCreator() {
@@ -2894,6 +3203,7 @@ elements.detailPanel.addEventListener("toggle", syncSpeciesPanelHeight, true);
 
 setupEditingMode();
 setupAssetReview();
+setupBackupSettings();
 setupPipelineControl();
 setupNewSpeciesCreator();
 loadData().finally(() => monitorProjectRevision());

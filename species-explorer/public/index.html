@@ -300,6 +300,14 @@
             <strong>NC- und fehlende Sounds erneut suchen</strong>
             <span>NC-Sounds auf freie Alternativen prüfen und fehlende Sounds suchen</span>
           </button>
+          <button type="button" data-backup-action="nas">
+            <strong>NAS-Backup erstellen</strong>
+            <span>Projektstand als ZIP auf dem NAS sichern</span>
+          </button>
+          <button type="button" data-settings-action="backup-path">
+            <strong>Backup-Pfad einstellen</strong>
+            <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
+          </button>
           <button class="danger" type="button" data-pipeline-mode="cleanup">
             <strong>Bereinigen</strong>
             <span>Verwaiste Daten und Assets dauerhaft löschen</span>
@@ -319,6 +327,45 @@
         <div class="edit-actions">
           <button class="pipeline-cancel pipeline-dialog-close-button" type="button">Abbrechen</button>
           <button id="pipeline-start-button" class="edit-save-button" type="submit" hidden disabled>Starten</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="edit-dialog settings-dialog" aria-labelledby="settings-dialog-title">
+      <form id="settings-form" class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Einstellungen</p>
+            <h3 id="settings-dialog-title">Backup-Pfad einstellen</h3>
+            <p>Diese Einstellung gilt nur lokal auf diesem Rechner und wird nicht committed.</p>
+          </div>
+          <button class="edit-close settings-cancel" type="button" aria-label="Dialog schließen">×</button>
+        </header>
+
+        <div class="edit-fields settings-fields">
+          <label>
+            <span>NAS-Zielpfad</span>
+            <input
+              id="backup-root-input"
+              name="backupRoot"
+              type="text"
+              maxlength="500"
+              autocomplete="off"
+              placeholder="W:\Website Datenbank Backup"
+              required
+            >
+          </label>
+        </div>
+        <p class="settings-help">
+          Standard: <code id="backup-root-default">W:\Website Datenbank Backup</code>.
+          Zulässig sind absolute Windows- oder UNC-Pfade.
+        </p>
+        <p class="edit-message settings-message" hidden></p>
+
+        <div class="edit-actions">
+          <button class="settings-reset-button" type="button">Standard verwenden</button>
+          <button class="settings-cancel" type="button">Abbrechen</button>
+          <button class="edit-save-button settings-save-button" type="submit">Speichern</button>
         </div>
       </form>
     </dialog>

@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
 import {
+  getExplorerBackupStatus,
   getExplorerPipelineStatus,
+  isBackupBlockingShutdown,
   isPipelineBlockingShutdown,
   startManagedExplorerServer,
   stopManagedExplorerServer,
@@ -133,22 +135,30 @@ async function handleWindowClose(event) {
   event.preventDefault();
 
   let pipelineStatus = null;
+  let backupStatus = null;
   try {
     if (managedServer?.baseUrl) {
-      pipelineStatus = await getExplorerPipelineStatus(managedServer.baseUrl);
+      [pipelineStatus, backupStatus] = await Promise.all([
+        getExplorerPipelineStatus(managedServer.baseUrl),
+        getExplorerBackupStatus(managedServer.baseUrl),
+      ]);
     }
   } catch {
     pipelineStatus = null;
+    backupStatus = null;
   }
 
-  if (isPipelineBlockingShutdown(pipelineStatus)) {
+  if (isPipelineBlockingShutdown(pipelineStatus) || isBackupBlockingShutdown(backupStatus)) {
+    const backupRunning = isBackupBlockingShutdown(backupStatus);
     const response = await dialog.showMessageBox(mainWindow, {
       type: "warning",
       buttons: ["App offen lassen", "Trotzdem schließen"],
       defaultId: 0,
       cancelId: 0,
-      title: "Pipeline läuft noch",
-      message: "Im Arten-Explorer läuft noch ein Pipeline- oder Asset-Prüfschritt.",
+      title: backupRunning ? "Backup läuft noch" : "Pipeline läuft noch",
+      message: backupRunning
+        ? "Im Arten-Explorer läuft noch ein NAS-Backup."
+        : "Im Arten-Explorer läuft noch ein Pipeline- oder Asset-Prüfschritt.",
       detail:
         "Wenn du jetzt schließt, wird nur der App-Server beendet. Prüfe vorher, ob der laufende Schritt abgeschlossen ist.",
     });

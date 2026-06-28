@@ -488,7 +488,10 @@ Aktuelle Planung:
   `restore-start.cmd` ist der erste technische Baustein: Nach dem Entpacken eines NAS-Backups prueft das Skript
   Node.js 18+, richtet die Desktop-Verknuepfung ein und startet die App. Als NAS-Zielpfad wurde
   `W:\Website Datenbank Backup` festgelegt. Der Backup-Kern ist als `scripts/nas-backup.ps1` mit
-  `npm.cmd run backup:nas:dry-run` und `npm.cmd run backup:nas` vorbereitet; die App-UI fuer Rueckfrage und
-  Fortschritt ist noch offen.
+  `npm.cmd run backup:nas:dry-run` und `npm.cmd run backup:nas` vorbereitet. In der Desktop-App ist
+  `NAS-Backup erstellen` als manuelle Wartungsaktion im Datenbank-Dialog eingebunden: Vorschau mit Zielpfad,
+  Umfang und Rotation, Start per Klick, Fortschritt in Prozent, Prozessausgabe, Abschlussmeldung und
+  Schliesswarnung bei laufendem Backup. Der lokale Zielpfad kann ueber `Backup-Pfad einstellen` geaendert werden;
+  die rechnerabhaengige Einstellung liegt ignoriert in `species-explorer/local-settings.json`.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
