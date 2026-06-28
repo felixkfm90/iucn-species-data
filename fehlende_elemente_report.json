@@ -1,28 +1,41 @@
 {
-  "generatedAt": "2026-06-28T16:57:24.888Z",
+  "generatedAt": "2026-06-28T19:03:06.342Z",
   "counts": {
-    "totalSpecies": 46,
-    "missingSoundMp3": 1,
+    "totalSpecies": 47,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
-    "missingMap": 0,
+    "missingMap": 1,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 1,
+    "missingSpeciesAssets": 2,
     "ncSoundLicensesAll": 3
   },
   "missing": {
     "soundMp3": [
-      "Grüner Leguan"
+      "Grüner Leguan",
+      "Löwe"
     ],
     "soundCredits": [],
-    "maps": [],
+    "maps": [
+      "Löwe"
+    ],
     "speciesAssets": [
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",
         "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
+      {
+        "german": "Löwe",
+        "safeName": "Loewe",
+        "missing": [
+          "map.jpg",
           "sound.mp3",
           "credits.json",
           "spectrogram.webp"
