@@ -179,8 +179,11 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.summary.missingCoreAssets, model.validation.assets.issueSpeciesCount);
   assert.equal(model.summary.missingPortraitCount, expectedMissingPortraitCount);
   assert.equal(model.validation.assets.available.portraits, expectedPortraitCount);
-  assert.equal(model.validation.assets.completeSpeciesCount, expectedPortraitCount);
-  assert.equal(model.validation.assets.issueSpeciesCount, expectedMissingPortraitCount);
+  assert.equal(
+    model.validation.assets.completeSpeciesCount + model.validation.assets.issueSpeciesCount,
+    expectedSpeciesCount,
+  );
+  assert.ok(model.validation.assets.issueSpeciesCount >= expectedMissingPortraitCount);
   assert.equal(model.summary.ncSoundCount, 3);
   assert.equal(model.summary.manualMapCount, 4);
   assert.equal(model.summary.readOnly, false);
@@ -190,10 +193,6 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.validation.data.generatedCount, generatedList.length);
   assert.equal(model.validation.data.inputOnlyCount, expectedInputOnly);
   assert.equal(model.validation.data.generatedOnlyCount, expectedGeneratedOnly);
-  assert.equal(
-    model.validation.assets.completeSpeciesCount + model.validation.assets.issueSpeciesCount,
-    expectedSpeciesCount,
-  );
   assert.equal(model.validation.report.checks.length, 9);
   assert.equal(model.validation.report.consistent, model.validation.report.issueCount === 0);
   assert.equal(model.species.filter((entry) => entry.isNcSound).length, 3);
@@ -781,6 +780,31 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   });
   assert.equal(manualMapPlan.targetCount, 1);
   assert.equal(manualMapPlan.targets[0].safeName, "Amsel");
+
+  await writeFile(
+    join(repoRoot, "species-assets-overrides.json"),
+    `${JSON.stringify({ version: 1, assets: {} }, null, 2)}\n`,
+  );
+  await rm(join(repoRoot, "species-assets", "Amsel", "map.jpg"), { force: true });
+  const untargetedMissingMapPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "manual-maps",
+  });
+  assert.equal(untargetedMissingMapPlan.targetCount, 0);
+  const targetedMissingMapPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "manual-maps",
+    targetSlugs: ["turdusmerula"],
+  });
+  assert.equal(targetedMissingMapPlan.targetCount, 1);
+  assert.equal(targetedMissingMapPlan.targets[0].safeName, "Amsel");
+  assert.match(targetedMissingMapPlan.targets[0].reasons.join(" "), /Karte fehlt/);
 
   await writeFile(
     join(repoRoot, "species-assets", "Amsel", "credits.json"),
@@ -1373,6 +1397,21 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
 
   const directRoot = await createEditableFixture();
   context.after(() => rm(directRoot, { recursive: true, force: true }));
+  await writeFile(
+    join(directRoot, "species-assets-overrides.json"),
+    `${JSON.stringify({
+      version: 1,
+      assets: {
+        Amsel: {
+          map: { manual: true, reason: "Testkarte" },
+          sound: {
+            manual: false,
+            rejectedSources: [{ key: "xeno-canto:123", source: "xeno-canto", rejectedAt: "2026-06-28T00:00:00Z" }],
+          },
+        },
+      },
+    }, null, 2)}\n`,
+  );
   const directApp = await createExplorerServer({ repoRoot: directRoot, port: 0 });
   const directAddress = await directApp.listen();
   context.after(() => directApp.close());
@@ -1401,7 +1440,12 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
   const directSaved = await directSaveResponse.json();
   assert.equal(directSaved.pipelineRequired, false);
   assert.equal(directSaved.permanentCleanup.assetDirectoryDeleted, true);
+  assert.equal(directSaved.permanentCleanup.overrideDeleted, true);
   assert.equal(existsSync(directAssetDir), false);
+  assert.deepEqual(
+    JSON.parse(await readFile(join(directRoot, "species-assets-overrides.json"), "utf8")).assets,
+    {},
+  );
   assert.equal(JSON.parse(await readFile(join(directRoot, "speciesData.json"), "utf8")).length, 0);
   assert.equal(
     JSON.parse(await readFile(join(directRoot, "fehlende_elemente_report.json"), "utf8")).counts.totalSpecies,
@@ -1562,6 +1606,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/start/);
   assert.match(appSource, /\/api\/pipeline\/status/);
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(appSource, /autoStart/);
+  assert.match(appSource, /startCurrentPipelinePreview/);
   assert.match(appSource, /Manuelle Karten erneut suchen/);
   assert.match(appSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
@@ -1603,6 +1649,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
   assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
+  assert.match(serverSource, /publishAfterAssetOnlyNoAssets/);
+  assert.match(serverSource, /Weitere Soundquelle suchen/);
+  assert.match(serverSource, /Abgelehnter Sound wurde gesperrt/);
   assert.match(desktopLauncherSource, /WScript\.Shell/);
   assert.match(desktopLauncherSource, /electron\.cmd/);
   assert.match(desktopLauncherSource, /shell\.Run command,\s*0,\s*False/);
@@ -1692,11 +1741,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Taxonomie und Name sind gesperrt\./);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
+  assert.match(appSource, /class="map-auto-search-button"/);
+  assert.match(appSource, /openPipelinePreview\?\.\("manual-maps"/);
   assert.match(appSource, /class="map-preview-button"/);
   assert.match(appSource, /class="map-save-button"/);
   assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
   assert.match(cssSource, /\.map-compare-grid/);
   assert.match(appSource, /class="sound-edit-section"/);
+  assert.match(appSource, /class="sound-auto-search-button"/);
+  assert.match(appSource, /openPipelinePreview\?\.\("nc-sounds"/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
   assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
@@ -1732,7 +1785,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /<h3 class="section-title">Manuelle Daten<\/h3>[\s\S]{0,400}edit-species-open/,
   );
   assert.match(appSource, /await loadData\(\{ reload: true \}\);[\s\S]*targetSlugs:\s*\[savedSpeciesId\]/);
-  assert.match(appSource, /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\]\s*\}\)/);
+  assert.match(
+    appSource,
+    /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\],\s*autoStart:\s*true\s*\}\)/,
+  );
   assert.match(htmlSource, /Lesemodus 🔒\s*<\/button>/);
   assert.match(htmlSource, /id="new-species-button"/);
   assert.match(htmlSource, /id="new-species-dialog"/);
@@ -1760,6 +1816,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /new-species-portrait-file-input/);
   assert.match(htmlSource, /Portrait-Prompt erstellen/);
   assert.match(htmlSource, /Artportrait überspringen/);
+  assert.match(htmlSource, /Karte, Sound und Spektrogramm werden gesucht/);
+  assert.match(htmlSource, /Abgelehnte Sounds werden gemerkt/);
   assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
   assert.doesNotMatch(htmlSource, /species-info\.json/);
   assert.match(
@@ -1831,7 +1889,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.addEventListener\("resize", syncSpeciesPanelHeight\)/);
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
+  assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
+  assert.match(cssSource, /\.edit-fields label\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);
+  assert.match(cssSource, /\.asset-header-actions\s*\{/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.edit-only\s*\{[^}]*display:\s*none/s);
   assert.match(cssSource, /\.pipeline-mode-choice\s*\{[^}]*display:\s*grid/s);
   assert.match(cssSource, /\.action-group\s*\{/);

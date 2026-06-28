@@ -264,7 +264,10 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Schritt 1 prueft allgemeine Daten; ungueltige Felder werden rot markiert und erhalten eine direkte Fehlermeldung.
 - Schritt 2 erzeugt optional einen Portrait-Einzelprompt, kopiert ihn, prueft ein extern erzeugtes Bild oder laesst
   das Portrait bewusst ueberspringen.
-- Schritt 3 legt die Art an und bietet danach den gezielten Pipeline-Lauf fuer genau diese neue Art an.
+- Schritt 3 legt die Art an und startet danach automatisch den gezielten Pipeline-Lauf fuer genau diese neue Art.
+  Neue Karten und Sounds werden anschließend einzeln geprüft.
+- Wird ein neu gefundener Sound abgelehnt, merkt die App die Quelle und startet automatisch die nächste gezielte
+  Soundsuche fuer dieselbe Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird.
 - `POST /api/species/new/preview` prueft Pflichtfelder, Schreibweise, wissenschaftlichen und deutschen Namen, Slug,
   `SafeName` sowie bereits vorhandene Assetordner.
 - Die Vorschau zeigt den vollstaendigen Eintrag, wissenschaftlichen Namen, Slug und erwarteten Assetordner.
@@ -338,6 +341,8 @@ nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB; die App pr
 Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
+Im Bearbeitungsdialog kann eine fehlende oder manuell geschützte Karte per `Automatisch suchen` gezielt nur für
+die aktuelle Art gesucht werden.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -349,6 +354,9 @@ Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 50
 Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden. Dann sichert die App das
 Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
 Report neu auf und committed/pusht die Änderung. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
+Fehlende oder NC-Sounds koennen per `Automatisch suchen` gezielt nur fuer die aktuelle Art gesucht werden. Neu
+gefundene Sounds werden im Review mit Spektrogramm angezeigt; Klick ins Spektrogramm springt im Audioplayer an die
+gewaehlte Stelle.
 
 Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
 erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.

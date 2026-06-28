@@ -355,9 +355,10 @@ Aktuelle Planung:
   deutscher Name, wissenschaftlicher Name, Groesse, Gewicht und Lebenserwartung. Der wissenschaftliche Name wird
   im Hintergrund in Gattung und Artepitheton getrennt und normalisiert. Duplikate, Slug-/SafeName-Kollisionen
   sowie vorhandene Assetordner werden vor einer vollstaendigen JSON-Vorschau geprueft.
-  Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Die neue Art bleibt bis zum separaten Pipeline-Lauf
-  erwartungsgemaess nur in `species_list.json`. API: `POST /api/species/new/preview` und
-  `POST /api/species/new/save`. Fuer optionale Sofortportraits liefert `POST /api/species/new/portrait-prompt`
+  Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Nach dem Abschluss startet der Explorer automatisch den
+  gezielten Pipeline-Lauf fuer genau diese neue Art; bis zum erfolgreichen Lauf bleibt sie erwartungsgemaess nur in
+  `species_list.json`. API: `POST /api/species/new/preview` und `POST /api/species/new/save`. Fuer optionale
+  Sofortportraits liefert `POST /api/species/new/portrait-prompt`
   einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-28 ist `Neue Art` als Schrittassistent
   aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen, Abschluss. Ungueltige
   Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig voneinander per Checkbox nach
@@ -382,14 +383,16 @@ Aktuelle Planung:
   angezeigt: Sound vorhanden/fehlt und Spektrogramm vorhanden/erstellt/uebersprungen statt rohem JSON.
   Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
   bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
-  Lightbox angezeigt. Die Entscheidung steht in `species-assets-overrides.json`; Details:
+  Lightbox angezeigt. Sounds werden im Pruefdialog mit dem erzeugten Spektrogramm angezeigt; ein Klick ins
+  Spektrogramm setzt die Wiedergabeposition. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
   Die beiden Wartungsläufe verarbeiten nur die aktuell vier manuell geschützten Karten beziehungsweise die drei
   NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Wenn ein Sound im Pruefdialog ausdruecklich abgelehnt wird, speichert der Explorer die Quellkennung unter
-  `sound.rejectedSources`; der naechste Sound-Suchlauf ueberspringt diese konkrete Quelle.
+  `sound.rejectedSources` und startet automatisch die naechste gezielte Soundsuche fuer dieselbe Art. Die Schleife
+  endet erst, wenn eine Quelle uebernommen wird oder keine weitere taugliche Quelle vorhanden ist.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status
   `Pipeline-Lauf läuft gerade` hängen; die anschließende Assetentscheidung kann geöffnet werden.
@@ -411,8 +414,8 @@ Aktuelle Planung:
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
   ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
   `Datenbank aktuell`; der Dialog dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
-  Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art wird der selektive Lauf
-  direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
+  Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art startet der
+  selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
   neu. Elf Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
@@ -452,7 +455,8 @@ Aktuelle Planung:
   Im Bearbeitungsmodus kann seit 2026-06-28 auch der aktuell produktive Sound abgelehnt werden. Der Explorer legt ein
   Soundpaket-Backup an, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, merkt die Quellkennung unter
   `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Der naechste Sound-Suchlauf
-  ueberspringt diese konkrete Quelle.
+  ueberspringt diese konkrete Quelle. Fehlende oder manuell geschuetzte Karten sowie fehlende/NC-Sounds koennen
+  im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer die aktuelle Art gesucht werden.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
   vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und

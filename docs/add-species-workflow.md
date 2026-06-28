@@ -114,8 +114,11 @@ Speichern:
 - Backup nach derselben Aufbewahrungsregel wie Phase 7.4
 - neuer Eintrag wird atomar an die Liste angehaengt
 - wenn ein Portrait geprueft wurde, fragt die App vor der lokalen Uebernahme nach
-- danach wird der selektive Pipeline-Lauf fuer genau diese neue Art angeboten; erst dieser Lauf vervollstaendigt
+- danach startet der selektive Pipeline-Lauf fuer genau diese neue Art automatisch; erst dieser Lauf vervollstaendigt
   IUCN-Daten, Karte, Sound, Spektrogramm und Git-Veröffentlichung
+- neu gefundene Karten und Sounds werden danach einzeln geprüft
+- wenn ein neu gefundener Sound abgelehnt wird, merkt die App die Quellkennung und startet automatisch die nächste
+  gezielte Soundsuche fuer diese Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird
 
 Direkt nach dem Speichern erscheint die Art im Explorer als `nur in species_list.json`. Dieser Zustand ist erwartet
 und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
@@ -137,8 +140,8 @@ Technischer Stand vom 2026-06-28:
 - Ungueltige Felder werden sichtbar markiert; Fehlermeldungen stehen direkt am Feld.
 - Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
   angelegt werden koennen.
-- Direkt nach dem Speichern öffnet sich die Vorschau für `Neue/Unvollständige Arten aktualisieren`. Der selektive
-  Lauf kann sofort gestartet oder abgebrochen und später über das Pipeline-Feld in der Kopfzeile aufgerufen werden.
+- Direkt nach dem Speichern startet der gezielte Lauf `Neue/Unvollständige Arten aktualisieren` fuer diese Art.
+  Der Prozessdialog zeigt Status, Ausgabe und anschließende Assetprüfung.
 - Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei

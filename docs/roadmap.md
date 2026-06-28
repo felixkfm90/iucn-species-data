@@ -304,7 +304,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die
   bestehenden Textfelder. Die API-Routen sind `POST /api/species/new/preview`,
   `POST /api/species/new/portrait-prompt`, `POST /api/species/new/portrait-preview` und
-  `POST /api/species/new/save`. 19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  `POST /api/species/new/save`. Beim Abschluss startet die App den gezielten Lauf fuer genau diese neue Art
+  automatisch. Neue Karten und Sounds werden danach einzeln geprüft; abgelehnte Sounds starten automatisch die
+  nächste gezielte Soundsuche, bis eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
+  19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher,
@@ -383,7 +386,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Seit 2026-06-28 kann im Bearbeitungsdialog der aktuell produktive Sound abgelehnt werden. Der Explorer sichert
     das Soundpaket, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter
     `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Spaetere Sound-Suchlaeufe schlagen
-    dieselbe Quelle nicht erneut vor.
+    dieselbe Quelle nicht erneut vor. Fehlende oder manuell geschützte Karten sowie fehlende/NC-Sounds koennen im
+    Bearbeitungsdialog gezielt je Art gesucht werden. Neu gefundene Sounds werden im Asset-Review mit Spektrogramm
+    angezeigt; Klick ins Spektrogramm setzt die Wiedergabeposition.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor

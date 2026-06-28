@@ -773,9 +773,11 @@ function setupAssetReview() {
     elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => {
       const assetManualLabel = status.mode === "nc-sounds" && asset.previouslyExisting === false
         ? "Neuen Sound nicht übernehmen"
+        : status.mode === "manual-maps" && asset.previouslyExisting === false
+          ? "Neue Karte nicht übernehmen"
         : manualLabel;
       return `
-      <article class="asset-review-item" data-index="${index}">
+      <article class="asset-review-item" data-index="${index}" data-type="${escapeHtml(asset.type)}">
         <div class="asset-review-preview">
           ${asset.type === "map"
             ? `
@@ -790,7 +792,21 @@ function setupAssetReview() {
                 <span class="asset-review-zoom-hint">Vergrößern</span>
               </button>
             `
-            : `<audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>`}
+            : `
+              <div class="asset-review-sound-preview">
+                ${asset.spectrogramUrl ? `
+                  <button
+                    class="asset-review-spectrogram"
+                    type="button"
+                    aria-label="Im Spektrogramm von ${escapeHtml(asset.germanName)} springen"
+                  >
+                    <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
+                    <span class="asset-review-progress-marker"></span>
+                  </button>
+                ` : `<span class="asset-review-no-spectrogram">Spektrogramm noch nicht vorhanden</span>`}
+                <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
+              </div>
+            `}
         </div>
         <div class="asset-review-copy">
           <div>
@@ -827,12 +843,36 @@ function setupAssetReview() {
     );
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
+    for (const item of elements.assetReviewList.querySelectorAll(".asset-review-item")) {
+      const audio = item.querySelector("audio");
+      const marker = item.querySelector(".asset-review-progress-marker");
+      if (!audio || !marker) continue;
+      const updateMarker = () => {
+        const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        marker.style.left = `${Math.min(1, Math.max(0, progress)) * 100}%`;
+      };
+      audio.addEventListener("timeupdate", updateMarker);
+      audio.addEventListener("loadedmetadata", updateMarker);
+      audio.addEventListener("seeked", updateMarker);
+    }
   };
 
   dialog.addEventListener("cancel", (event) => event.preventDefault());
   elements.assetReviewList.addEventListener("click", (event) => {
     const trigger = event.target.closest(".asset-review-map-trigger");
     if (trigger) openMapLightbox(trigger);
+    const spectrogram = event.target.closest(".asset-review-spectrogram");
+    if (spectrogram) {
+      const item = spectrogram.closest(".asset-review-item");
+      const audio = item?.querySelector("audio");
+      const marker = spectrogram.querySelector(".asset-review-progress-marker");
+      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      const rect = spectrogram.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      audio.currentTime = progress * audio.duration;
+      if (marker) marker.style.left = `${progress * 100}%`;
+      audio.play().catch(() => {});
+    }
   });
   elements.assetReviewMapLightboxClose.addEventListener("click", closeMapLightbox);
   setupSafeBackdropClose(mapLightbox, closeMapLightbox);
@@ -1228,6 +1268,39 @@ function setupPipelineControl() {
       : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent.";
   };
 
+  async function startCurrentPipelinePreview() {
+    if (!previewToken) return;
+    state.audioCleanup?.();
+    state.audioCleanup = null;
+    elements.pipelineStartButton.disabled = true;
+    setMessage(
+      previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
+      "info",
+    );
+    try {
+      const startedStatus = await fetchJson("/api/pipeline/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: previewToken }),
+      });
+      state.pipelineStatusSnapshot = startedStatus;
+      state.pipelineWasRunning = true;
+      previewToken = "";
+      elements.pipelineStartButton.hidden = true;
+      elements.pipelinePreview.hidden = true;
+      setDialogCloseMode(true);
+      const presentation = statusPresentation(startedStatus);
+      elements.pipelineDialogTitle.textContent = presentation.title;
+      elements.pipelineDialogDescription.textContent = modeLabel(startedStatus.mode);
+      setMessage(presentation.message, presentation.messageType);
+      renderPersistentPipelineStatus(startedStatus);
+      await refreshPipelineStatus();
+    } catch (error) {
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      elements.pipelineStartButton.disabled = false;
+    }
+  }
+
   async function openPreview(mode, options = {}) {
     previewToken = "";
     previewMode = mode;
@@ -1277,6 +1350,9 @@ function setupPipelineControl() {
           ? "error"
           : result.hasWork ? "success" : "info",
       );
+      if (options.autoStart && result.hasWork && result.tokensAvailable) {
+        await startCurrentPipelinePreview();
+      }
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
     }
@@ -1461,36 +1537,7 @@ function setupPipelineControl() {
       }
       return;
     }
-    if (!previewToken) return;
-    state.audioCleanup?.();
-    state.audioCleanup = null;
-    elements.pipelineStartButton.disabled = true;
-    setMessage(
-      previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
-      "info",
-    );
-    try {
-      const startedStatus = await fetchJson("/api/pipeline/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: previewToken }),
-      });
-      state.pipelineStatusSnapshot = startedStatus;
-      state.pipelineWasRunning = true;
-      previewToken = "";
-      elements.pipelineStartButton.hidden = true;
-      elements.pipelinePreview.hidden = true;
-      setDialogCloseMode(true);
-      const presentation = statusPresentation(startedStatus);
-      elements.pipelineDialogTitle.textContent = presentation.title;
-      elements.pipelineDialogDescription.textContent = modeLabel(startedStatus.mode);
-      setMessage(presentation.message, presentation.messageType);
-      renderPersistentPipelineStatus(startedStatus);
-      await refreshPipelineStatus();
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-      elements.pipelineStartButton.disabled = false;
-    }
+    await startCurrentPipelinePreview();
   });
 
   state.openPipelinePreview = openPreview;
@@ -1971,7 +2018,7 @@ function setupNewSpeciesCreator() {
       setBusy(false);
       close();
       await loadData({ reload: true });
-      await state.openPipelinePreview?.("missing", { targetSlugs: [savedSpeciesId] });
+      await state.openPipelinePreview?.("missing", { targetSlugs: [savedSpeciesId], autoStart: true });
     } catch (error) {
       applyFieldErrors(error.fieldErrors || {});
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -2001,6 +2048,7 @@ function setupSpeciesEditor(species) {
   const mapNewMeta = elements.detailPanel.querySelector(".map-new-meta");
   const mapPreviewButton = elements.detailPanel.querySelector(".map-preview-button");
   const mapSaveButton = elements.detailPanel.querySelector(".map-save-button");
+  const mapAutoSearchButton = elements.detailPanel.querySelector(".map-auto-search-button");
   const soundFileInput = elements.detailPanel.querySelector(".sound-file-input");
   const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
   const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
@@ -2014,6 +2062,7 @@ function setupSpeciesEditor(species) {
   const soundPreviewButton = elements.detailPanel.querySelector(".sound-preview-button");
   const soundSaveButton = elements.detailPanel.querySelector(".sound-save-button");
   const soundRejectCurrentButton = elements.detailPanel.querySelector(".sound-reject-current-button");
+  const soundAutoSearchButton = elements.detailPanel.querySelector(".sound-auto-search-button");
   const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
   const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
   const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
@@ -2123,6 +2172,7 @@ function setupSpeciesEditor(species) {
   const setMapBusy = (busy) => {
     if (mapPreviewButton) mapPreviewButton.disabled = busy;
     if (mapSaveButton) mapSaveButton.disabled = busy || !mapPreviewToken;
+    if (mapAutoSearchButton) mapAutoSearchButton.disabled = busy;
     if (mapFileInput) mapFileInput.disabled = busy;
     if (mapReasonInput) mapReasonInput.disabled = busy;
     if (mapSourceInput) mapSourceInput.disabled = busy;
@@ -2133,6 +2183,7 @@ function setupSpeciesEditor(species) {
     if (soundPreviewButton) soundPreviewButton.disabled = busy;
     if (soundSaveButton) soundSaveButton.disabled = busy || !soundPreviewToken;
     if (soundRejectCurrentButton) soundRejectCurrentButton.disabled = busy;
+    if (soundAutoSearchButton) soundAutoSearchButton.disabled = busy;
     if (soundFileInput) soundFileInput.disabled = busy;
     if (soundReasonInput) soundReasonInput.disabled = busy;
     for (const input of form.querySelectorAll(".sound-credit-input")) input.disabled = busy;
@@ -2321,6 +2372,15 @@ function setupSpeciesEditor(species) {
     }
   });
 
+  mapAutoSearchButton?.addEventListener("click", async () => {
+    setMapMessage("Gezielter Kartensuchlauf wird gestartet…", "info");
+    close();
+    await state.openPipelinePreview?.("manual-maps", {
+      targetSlugs: [species.id],
+      autoStart: true,
+    });
+  });
+
   mapSaveButton?.addEventListener("click", async () => {
     if (!mapPreviewToken) return;
     setMapBusy(true);
@@ -2380,6 +2440,15 @@ function setupSpeciesEditor(species) {
       setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setSoundBusy(false);
     }
+  });
+
+  soundAutoSearchButton?.addEventListener("click", async () => {
+    setSoundMessage("Gezielter Sound-Suchlauf wird gestartet…", "info");
+    close();
+    await state.openPipelinePreview?.("nc-sounds", {
+      targetSlugs: [species.id],
+      autoStart: true,
+    });
   });
 
   soundPreviewButton?.addEventListener("click", async () => {
@@ -3053,9 +3122,14 @@ function renderDetail(species) {
               <h4>Verbreitungskarte ersetzen</h4>
               <p>Nur JPEG bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
             </div>
-            <span class="map-care-state">
-              ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
-            </span>
+            <div class="asset-header-actions">
+              ${(!species.assets.map.exists || species.assets.map.manuallyAdded) ? `
+                <button class="map-auto-search-button" type="button">Automatisch suchen</button>
+              ` : ""}
+              <span class="map-care-state">
+                ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
+              </span>
+            </div>
           </header>
 
           <div class="map-edit-fields">
@@ -3121,9 +3195,14 @@ function renderDetail(species) {
               <h4>Sound und Credits ersetzen</h4>
               <p>MP3 und Credits werden nur gemeinsam gespeichert. Die Lizenz bleibt eine manuelle Prüfentscheidung.</p>
             </div>
-            <span class="sound-care-state">
-              ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
-            </span>
+            <div class="asset-header-actions">
+              ${(!species.assets.sound.exists || species.isNcSound || species.soundCareHint) ? `
+                <button class="sound-auto-search-button" type="button">Automatisch suchen</button>
+              ` : ""}
+              <span class="sound-care-state">
+                ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
+              </span>
+            </div>
           </header>
 
           <div class="sound-species-lock">

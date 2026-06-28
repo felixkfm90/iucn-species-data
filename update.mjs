@@ -92,7 +92,7 @@ function printPipelineHelp() {
 Optionen:
   --mode=all       Vollständiger Lauf über alle Arten (Standard)
   --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
-  --mode=manual-maps  Nur manuell gepflegte Karten erneut bei IUCN suchen
+  --mode=manual-maps  Manuell gepflegte Karten erneut suchen; mit --species auch fehlende Karten gezielt suchen
   --mode=nc-sounds    Vorhandene NC-Sounds und fehlende Sounds erneut suchen
   --species=slug      Optional: nur die angegebenen URL-Slugs verarbeiten, kommagetrennt
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern

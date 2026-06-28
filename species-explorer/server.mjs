@@ -1708,6 +1708,7 @@ export async function createExplorerServer({
     status: "idle",
     phase: "",
     mode: "",
+    initialMode: "",
     runId: "",
     startedAt: "",
     completedAt: "",
@@ -1720,6 +1721,7 @@ export async function createExplorerServer({
     error: "",
     reviewAssets: [],
     gitPublished: false,
+    publishAfterAssetOnlyNoAssets: false,
   };
   let backupState = {
     status: "idle",
@@ -2058,6 +2060,9 @@ export async function createExplorerServer({
             label,
             file: `species-assets/${target.safeName}/${fileName}`,
             url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}?review=${pipelineState.runId}`,
+            spectrogramUrl: type === "sound" && existsSync(join(assetDir, "spectrogram.webp"))
+              ? `/assets/${encodeURIComponent(target.safeName)}/spectrogram.webp?review=${pipelineState.runId}`
+              : "",
             changed,
             previouslyExisting: before.exists,
             reviewMode: plan.mode,
@@ -2137,13 +2142,14 @@ export async function createExplorerServer({
     }
     if (code !== 1) return code;
 
-    const message = pipelineState.mode === "cleanup"
+    const publishMode = pipelineState.initialMode || pipelineState.mode;
+    const message = publishMode === "cleanup"
       ? "Clean obsolete species data"
-      : pipelineState.mode === "manual-maps"
+      : publishMode === "manual-maps"
         ? "Refresh automatic distribution maps"
-        : pipelineState.mode === "nc-sounds"
+        : publishMode === "nc-sounds"
           ? "Refresh sound assets"
-      : pipelineState.mode === "all"
+      : publishMode === "all"
         ? "Refresh all species data"
         : "Update incomplete species data";
     code = await runPipelineChild("git", ["commit", "-m", message], "Git-Commit");
@@ -2255,6 +2261,11 @@ export async function createExplorerServer({
 
     if (assetOnlyMode) {
       appendPipelineLog("Keine neue automatische Alternative gefunden; bestehende Assets bleiben unverändert.");
+      if (pipelineState.publishAfterAssetOnlyNoAssets) {
+        pipelineState.publishAfterAssetOnlyNoAssets = false;
+        await continueAfterAssetReview();
+        return;
+      }
       pipelineState.gitPublished = true;
       await finishPipelineRun(0);
       return;
@@ -2316,6 +2327,7 @@ export async function createExplorerServer({
       status: "running",
       phase: "Start",
       mode: preview.mode,
+      initialMode: preview.mode,
       runId: randomUUID(),
       startedAt: new Date().toISOString(),
       completedAt: "",
@@ -2337,6 +2349,7 @@ export async function createExplorerServer({
       error: "",
       reviewAssets: [],
       gitPublished: false,
+      publishAfterAssetOnlyNoAssets: false,
     };
     pipelineAssetSnapshot = preview.mode === "cleanup" ? new Map() : capturePipelineAssets(plan);
     void executePipelineRun(plan).catch(async (error) => {
@@ -2390,6 +2403,7 @@ export async function createExplorerServer({
     let registryChanged = false;
     let acceptedAny = false;
     let reportNeedsRefresh = false;
+    const rejectedSoundAssets = [];
     const restoreOrRemovePipelineAsset = async (asset) => {
       const previous = pipelineAssetSnapshot.get(`${asset.safeName}:${asset.type}`);
       const names = asset.type === "sound"
@@ -2428,6 +2442,7 @@ export async function createExplorerServer({
             delete registry.assets[asset.safeName].spectrogram;
           }
           if (rejectSound) {
+            rejectedSoundAssets.push(asset);
             const restoredOverride = registry.assets[asset.safeName].sound ?? {
               manual: previous?.override?.manual === true,
               reason: previous?.override?.reason
@@ -2506,6 +2521,37 @@ export async function createExplorerServer({
           await finishPipelineRun(reportExitCode);
           return;
         }
+      }
+      if (rejectedSoundAssets.length) {
+        const retrySafeNames = new Set(rejectedSoundAssets.map((asset) => asset.safeName));
+        const retryTargetSlugs = pipelineState.targets
+          .filter((target) => retrySafeNames.has(target.safeName))
+          .map((target) => target.slug)
+          .filter(Boolean);
+        for (const asset of rejectedSoundAssets) {
+          if (retryTargetSlugs.length) continue;
+          const species = model.species.find((entry) => entry.safeName === asset.safeName);
+          if (species?.id) retryTargetSlugs.push(species.id);
+        }
+        const { plan: retryPlan } = await readPipelinePlan(
+          "nc-sounds",
+          [...new Set(retryTargetSlugs)],
+        );
+        if (!retryPlan.hasWork) {
+          appendPipelineLog("Keine weitere Soundquelle mehr gefunden; bisherige Änderungen werden veröffentlicht.");
+          await continueAfterAssetReview();
+          return;
+        }
+        pipelineState.mode = "nc-sounds";
+        pipelineState.phase = "Weitere Soundquelle suchen";
+        pipelineState.targetCount = retryPlan.targetCount;
+        pipelineState.targets = publicPipelinePlan(retryPlan).targets;
+        pipelineState.removed = retryPlan.removed;
+        pipelineState.publishAfterAssetOnlyNoAssets = true;
+        pipelineAssetSnapshot = capturePipelineAssets(retryPlan);
+        appendPipelineLog("Abgelehnter Sound wurde gesperrt. Suche automatisch nach der nächsten Soundquelle.");
+        await executePipelineRun(retryPlan);
+        return;
       }
       if (!acceptedAny && retryMode && !registryChanged) {
         pipelineState.gitPublished = true;

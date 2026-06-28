@@ -112,6 +112,8 @@ Umgesetzt:
 - höchstens drei verwaltete Kartenbackups je Art und globale Obergrenze von 500 MB
 - automatischer, auf die drei Kartenpfade begrenzter Commit und Push
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
+- fehlende Karten oder manuell geschützte Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer
+  genau diese Art gesucht werden; der normale globale Kartensuchlauf bleibt auf manuell geschützte Karten begrenzt
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
 
@@ -182,6 +184,11 @@ Umgesetzt:
 - die Quellkennung aus den Credits wird unter `sound.rejectedSources` gespeichert und von spaeteren Sound-Suchlaeufen
   uebersprungen
 - nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report committed und gepusht
+- fehlende oder problematische Sounds koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer diese Art
+  gesucht werden
+- wenn ein gefundener Sound im Review abgelehnt wird, startet automatisch die naechste gezielte Soundsuche fuer
+  dieselbe Art
+- neu gefundene Sounds werden im Review mit Spektrogramm angezeigt; Klick ins Spektrogramm setzt die Wiedergabeposition
 
 ### 7.7.4 Spektrogramm-Konsistenz
 

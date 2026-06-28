@@ -13,7 +13,10 @@ Für jedes neue Asset zeigt der Dialog:
 - Assettyp Karte oder Sound
 - produktiven Dateipfad
 - bei Karten eine anklickbare Bildvorschau; ein Klick öffnet die Karte in einer großen Lightbox
-- bei Sounds einen Audioplayer
+- bei Sounds einen Audioplayer und, falls bereits erzeugt, das Spektrogramm mit rotem Positionsmarker
+
+Ein Klick in das Spektrogramm eines neu gefundenen Sounds setzt die Wiedergabeposition und startet die Wiedergabe
+an dieser Stelle. Dadurch kann die Tonquelle vor der Pflegeentscheidung gezielt geprüft werden.
 
 Beim Schließen des Prüfdialogs wird jede laufende Soundwiedergabe sofort gestoppt und auf den Anfang zurückgesetzt.
 Das gilt auch, wenn der Dialog nach dem Speichern der Pflegeentscheidung automatisch geschlossen wird.
@@ -42,11 +45,21 @@ iNaturalist-Soundkennung mit dieser Liste und schlägt dieselbe Quelle nicht ern
 vorhanden war, werden die neu erzeugten `sound.mp3`, `credits.json` und `spectrogram.webp` wieder entfernt und der
 Report danach neu aufgebaut.
 
+Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezielten Sound-Suchlauf fuer dieselbe
+Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
+
 Dieselbe Ablehnlogik steht seit 2026-06-28 auch im normalen Bearbeitungsdialog einer Art zur Verfügung. Dort kann
 der aktuell produktive Sound abgelehnt werden. Der Explorer sichert das bestehende Soundpaket, entfernt
 `sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter `sound.rejectedSources`, baut
 den Report neu auf und veröffentlicht die Änderung per Commit und Push. Der nächste Sound-Suchlauf schlägt diese
 konkrete Quelle nicht erneut vor.
+
+Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gestartet werden:
+
+- `Automatisch suchen` im Kartenabschnitt nutzt den Kartensuchlauf fuer genau diese Art. Bei Zielarten darf der
+  Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
+- `Automatisch suchen` im Soundabschnitt nutzt den NC-/fehlende-Sounds-Suchlauf fuer genau diese Art.
+- Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
