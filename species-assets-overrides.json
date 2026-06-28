@@ -986,6 +986,18 @@
         "approvedAt": "2026-06-28T16:03:03.261Z",
         "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
         "metadataSha256": "92d4e55306bbc3e13a210a66531e817e5ff923e84e7941ff70e5f81af6ee86cb"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "dc1309c2ecc91ee53fb761eb645626719ee3e674086f9008abf7f0303747ec9c",
+        "spectrogramSha256": "270957dd792d914bfed34dc87b1f1ee379cc4a0a05809614e478bd6034689434",
+        "generatedAt": "2026-06-28T16:03:33.147Z",
+        "verifiedAt": "2026-06-28T16:03:33.153Z"
+      },
+      "sound": {
+        "manual": true,
+        "reason": "Nach Pipeline-Import von Felix als manuell gepflegt markiert.",
+        "updatedAt": "2026-06-28T16:04:16.874Z"
       }
     }
   },

@@ -382,5 +382,13 @@
     "size": "ca. 120–200 cm",
     "weight": "ca. 4–8 kg",
     "life_expectancy": "ca. 15–20 Jahre"
+  },
+  {
+    "german": "Löwe",
+    "genus": "Panthera",
+    "species": "leo",
+    "size": "ca. 140–250 cm",
+    "weight": "Männchen 150–250 kg, Weibchen 110–180 kg",
+    "life_expectancy": "ca. 10–14 Jahre"
   }
 ]
