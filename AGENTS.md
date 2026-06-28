@@ -471,6 +471,9 @@ Aktuelle Planung:
   `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker; Bereinigungskandidaten sind `Testlauf/`,
   `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten sind die
   wahrscheinlich ungenutzte Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
+  Nach Felix' Freigabe wurden `Testlauf/`, `errors.log` und `species-explorer/pipeline-asset-backups/` geloescht
+  sowie `node-fetch` aus `package.json` und `package-lock.json` entfernt. Tests, JS-/MJS-Syntax und lokaler Site-Audit
+  sind danach erfolgreich.
   Karten-, Sound-/Credits-, Spektrogramm- und Portraitpfade sind durch Vorschau-, Validierungs-, Backup-, Hash-,
   Commit- und Push-Tests abgedeckt. Felix hat die Asset- und Detailoberflaeche zum Abschluss von Phase 7.7
   akzeptiert; ein unnoetiger Austausch eines bereits gueltigen Sounds ist kein offener Abschlussblocker.

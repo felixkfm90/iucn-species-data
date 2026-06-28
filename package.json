@@ -9,9 +9,6 @@
     "species:explorer": "node species-explorer/server.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  },
   "devDependencies": {
     "electron": "^42.5.0"
   }

@@ -511,7 +511,8 @@ Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als di
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Vor Phase 7.9 wurde ein
-Projektkonsolidierungs-Audit gestartet: `docs/project-consolidation-audit.md`. Phase 8 bleibt fuer Ausbau mit
+Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`. Dabei wurden lokale Altlasten
+entfernt und die ungenutzte Dependency `node-fetch` bereinigt. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand

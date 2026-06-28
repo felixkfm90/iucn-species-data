@@ -117,7 +117,7 @@ Diese Bereiche sind produktiv oder bewusst lokal:
 
 ## Empfehlung vor Phase 7.9
 
-Empfohlene Reihenfolge:
+Empfohlene Reihenfolge aus dem Audit:
 
 1. Lokale Bereinigung nach Freigabe:
    - `Testlauf/`
@@ -132,7 +132,38 @@ Empfohlene Reihenfolge:
    - Backup-Zeitplan
    - dokumentierter Restore-Test
 
+## Umgesetzte Bereinigung am 2026-06-28
+
+Nach Felix' Freigabe wurden die drei lokalen Altlasten entfernt:
+
+- `Testlauf/`
+- `errors.log`
+- `species-explorer/pipeline-asset-backups/`
+
+Die Pfade wurden vor dem Loeschen jeweils auf `D:\IUCN_Datenbank` aufgeloest und gegen den Workspace-Pfad
+geprueft. Es wurden nur diese freigegebenen, ignorierten Ziele geloescht.
+
+Zusaetzlich wurde die ungenutzte Dependency `node-fetch` kontrolliert entfernt:
+
+- `rg` fand keine aktive Nutzung von `node-fetch` oder `fetch(` im versionierten Projektbereich.
+- `npm.cmd uninstall node-fetch` entfernte `node-fetch` und seine indirekten Pakete aus `package.json`,
+  `package-lock.json` und `node_modules`.
+- `npm.cmd ls --depth=0` zeigt danach nur noch `electron` als Dev-Dependency.
+
+Nach der Bereinigung erfolgreich geprueft:
+
+- `npm.cmd run --silent test:explorer`
+- Syntaxpruefung aller 23 JS-/MJS-Dateien
+- `npm.cmd run --silent audit:site -- --skip-live --skip-pages`
+
+Offen bleiben bewusst:
+
+- `local-tools/ffmpeg`, bis das FFmpeg-/Installer-Konzept fuer weitere Rechner entschieden ist
+- `species-explorer/logs/`, weil es klein ist und spaeter per Retention geregelt werden soll
+- `species-explorer/backups/`, weil die Dateien zur bestehenden Backup-Retention gehoeren
+
 ## Fazit
 
 Es gibt keinen kritischen Blocker fuer Phase 7.9. Der Projektzustand ist konsistent. Vor der NAS-/Mehrgeraete-Stufe
-lohnt sich eine kleine kontrollierte Bereinigung lokaler Altlasten und eine Dependency-Bereinigung.
+wurden die lokalen Altlasten und die ungenutzte Dependency bereinigt. Die naechsten offenen Strukturfragen betreffen
+FFmpeg-/Installer-Konzept, Log-/Temp-Retention und das Mehrgeraete-/Backup-Modell.
