@@ -975,6 +975,18 @@
         "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
         "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
       }
+    },
+    "Loewe": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-28T16:02:54.119Z",
+        "approvedAt": "2026-06-28T16:03:03.261Z",
+        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
+        "metadataSha256": "92d4e55306bbc3e13a210a66531e817e5ff923e84e7941ff70e5f81af6ee86cb"
+      }
     }
   },
   "spectrogramGenerator": {
