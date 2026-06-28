@@ -456,7 +456,7 @@ Aktuelle Planung:
   Inhalt und beide aeusseren Rahmenkanten, damit die untere Border nicht abgeschnitten wird. Die weitere
   Portraitbefuellung und Squarespace-Ausgabe sind Betriebs- beziehungsweise spaetere Ausbauschritte und blockieren
   den Abschluss der lokalen Assetverwaltung nicht. Details: `docs/portrait-generation.md`.
-  Phase 7.8 wurde am 2026-06-27 als erster Electron-Prototyp gestartet. `npm.cmd run species:desktop` startet den
+  Phase 7.8 wurde am 2026-06-28 abgeschlossen und von Felix erfolgreich getestet. `npm.cmd run species:desktop` startet den
   bestehenden Explorer-Server im Electron-Hauptprozess, wartet auf `/api/summary` und zeigt die bestehende
   Oberflaeche im eigenen App-Fenster. Chrome und das manuelle Oeffnen von `127.0.0.1:4177` entfallen im
   Normalbetrieb; `npm.cmd run species:explorer` bleibt fuer Debugging verfuegbar. Umgesetzt sind

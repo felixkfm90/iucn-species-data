@@ -489,8 +489,8 @@ Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Da
 ein optional sofort erzeugtes Bild nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit
 und Push zusätzlich nach. Details:
 `docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
-Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Phase 7.8 wurde am 2026-06-27 als erster
-browserunabhaengiger Electron-Prototyp gestartet. Start:
+Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Phase 7.8 wurde am 2026-06-28 abgeschlossen und von
+Felix erfolgreich getestet. Start:
 
 ```bash
 npm.cmd run species:desktop

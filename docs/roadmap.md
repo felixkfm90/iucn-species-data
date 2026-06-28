@@ -393,7 +393,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Die Desktop-Formulare für Karte und Sound sind seit 2026-06-21 über feste Grid-Bereiche ausgerichtet:
   gleich hohe Dateieingaben, Pflegegrund über zwei linke Zeilen sowie Ort bündig mit Qualität. Mobile bleibt
   einspaltig.
-- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: erster Electron-Prototyp am 2026-06-27 gestartet.
+- 7.8 Browserunabhängiger Desktop-Wrapper für die gesamte App: abgeschlossen und von Felix erfolgreich getestet am 2026-06-28.
   Der Wrapper startet den bestehenden Explorer-Server im Electron-Hauptprozess, wartet auf `/api/summary` und zeigt
   die bestehende Oberfläche in einem eigenen App-Fenster. Chrome und das manuelle Öffnen von `127.0.0.1:4177`
   entfallen im Normalbetrieb. Start: `npm.cmd run species:desktop`. Der direkte Servermodus

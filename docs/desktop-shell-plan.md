@@ -81,7 +81,7 @@ Der Desktop-Wrapper muss mindestens unterstützen:
 - zusätzlicher Desktop-Start-/Shutdown-Test
 - dokumentierter Installations-, Update- und Fehlerbehebungsablauf
 
-## Umgesetzter Prototyp seit 2026-06-27
+## Abgeschlossene Umsetzung seit 2026-06-28
 
 Neue Dateien:
 
@@ -125,6 +125,6 @@ stoppt den Server wieder kontrolliert.
 ## Phasenfolge
 
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
-- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App als Prototyp gestartet
+- Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App abgeschlossen und von Felix getestet
 - Phase 7.9: Synology NAS, Backup und Restore-Test
 - Phase 8: weiterer funktionaler Ausbau
