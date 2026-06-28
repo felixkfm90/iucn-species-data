@@ -50,19 +50,96 @@ function resolveAssetDirectory(repoRoot, safeName) {
   return source;
 }
 
-function removeAssetDirectory(repoRoot, safeName) {
+function cleanupTrashRoot(repoRoot) {
+  return path.resolve(repoRoot, "species-explorer", "cleanup-trash");
+}
+
+function uniqueCleanupTrashRunDirectory(repoRoot) {
+  return path.join(cleanupTrashRoot(repoRoot), `cleanup-${new Date().toISOString().replace(/[:.]/g, "-")}-${process.pid}`);
+}
+
+function stageAssetDirectory(repoRoot, safeName, trashRunDirectory) {
   const source = resolveAssetDirectory(repoRoot, safeName);
-  const existed = fs.existsSync(source);
-  fs.rmSync(source, {
-    recursive: true,
-    force: true,
-    maxRetries: 5,
-    retryDelay: 200,
-  });
-  if (fs.existsSync(source)) {
-    throw new Error(`Assetordner konnte nicht gelöscht werden: ${source}`);
+  if (!fs.existsSync(source)) {
+    return {
+      safeName,
+      existed: false,
+      source,
+      staged: "",
+      publicStaged: "",
+    };
   }
-  return existed;
+
+  fs.mkdirSync(trashRunDirectory, { recursive: true });
+  let target = path.join(trashRunDirectory, safeName);
+  let suffix = 1;
+  while (fs.existsSync(target)) {
+    target = path.join(trashRunDirectory, `${safeName}-${suffix}`);
+    suffix += 1;
+  }
+
+  const trashRoot = `${cleanupTrashRoot(repoRoot)}${path.sep}`;
+  const resolvedTarget = path.resolve(target);
+  if (!`${resolvedTarget}${path.sep}`.startsWith(trashRoot)) {
+    throw new Error(`Unsicherer Papierkorbpfad: ${resolvedTarget}`);
+  }
+
+  fs.renameSync(source, resolvedTarget);
+  return {
+    safeName,
+    existed: true,
+    source,
+    staged: resolvedTarget,
+    publicStaged: path.relative(repoRoot, resolvedTarget).replace(/\\/g, "/"),
+  };
+}
+
+function restoreStagedAssetDirectories(stagedEntries) {
+  for (const entry of [...stagedEntries].reverse()) {
+    if (!entry.existed || !entry.staged || !fs.existsSync(entry.staged)) continue;
+    if (fs.existsSync(entry.source)) {
+      throw new Error(`Assetordner kann nicht wiederhergestellt werden, Ziel existiert bereits: ${entry.source}`);
+    }
+    fs.renameSync(entry.staged, entry.source);
+  }
+}
+
+function deleteStagedAssetDirectory(entry) {
+  if (!entry.existed || !entry.staged || !fs.existsSync(entry.staged)) return null;
+  try {
+    fs.rmSync(entry.staged, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 200,
+    });
+  } catch (error) {
+    return {
+      safeName: entry.safeName,
+      path: entry.publicStaged,
+      error: error.message,
+    };
+  }
+  if (fs.existsSync(entry.staged)) {
+    return {
+      safeName: entry.safeName,
+      path: entry.publicStaged,
+      error: "Ordner ist nach Löschversuch noch vorhanden",
+    };
+  }
+  return null;
+}
+
+function removeEmptyCleanupTrashRunDirectory(trashRunDirectory) {
+  if (!trashRunDirectory || !fs.existsSync(trashRunDirectory)) return;
+  try {
+    fs.rmSync(trashRunDirectory, {
+      recursive: true,
+      force: true,
+    });
+  } catch {
+    // Ein nicht leerbarer Zwischenordner ist kein Datenverlust. Er bleibt ignoriert und kann spaeter bereinigt werden.
+  }
 }
 
 function createReport(speciesData, repoRoot) {
@@ -233,19 +310,33 @@ export function runCleanup(repoRoot = process.cwd()) {
     ),
   };
 
-  atomicWriteJson(speciesDataPath, filteredData);
-  atomicWriteJson(assessmentPath, filteredAssessmentIds);
-  atomicWriteJson(assetOverridesPath, filteredAssetOverrides);
-
+  const trashRunDirectory = uniqueCleanupTrashRunDirectory(repoRoot);
+  const stagedAssetDirectories = [];
   for (const entry of plan.obsoleteAssetDirectories) {
-    removeAssetDirectory(repoRoot, entry.safeName);
+    stagedAssetDirectories.push(stageAssetDirectory(repoRoot, entry.safeName, trashRunDirectory));
   }
 
-  atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
+  try {
+    atomicWriteJson(speciesDataPath, filteredData);
+    atomicWriteJson(assessmentPath, filteredAssessmentIds);
+    atomicWriteJson(assetOverridesPath, filteredAssetOverrides);
+    atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
+  } catch (error) {
+    restoreStagedAssetDirectories(stagedAssetDirectories);
+    throw error;
+  }
+
+  const pendingDeleteDirectories = stagedAssetDirectories
+    .map(deleteStagedAssetDirectory)
+    .filter(Boolean);
+  if (pendingDeleteDirectories.length === 0) {
+    removeEmptyCleanupTrashRunDirectory(trashRunDirectory);
+  }
 
   return {
     ...plan,
     cleaned: true,
+    pendingDeleteDirectories,
   };
 }
 
@@ -279,34 +370,27 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName }) {
   const generatedDataDeleted = filteredData.length !== speciesData.length;
   const assessmentDeleted = Object.hasOwn(assessmentIds, normalizedSafeName);
   const overrideDeleted = Object.hasOwn(assetOverrides.assets ?? {}, normalizedSafeName);
-  const assetDirectory = resolveAssetDirectory(repoRoot, normalizedSafeName);
-  const stagedAssetDirectory = `${assetDirectory}.delete-${process.pid}-${Date.now()}`;
-  const assetDirectoryDeleted = fs.existsSync(assetDirectory);
+  const trashRunDirectory = uniqueCleanupTrashRunDirectory(repoRoot);
+  const stagedAssetDirectory = stageAssetDirectory(repoRoot, normalizedSafeName, trashRunDirectory);
+  const assetDirectoryDeleted = stagedAssetDirectory.existed;
 
   delete assessmentIds[normalizedSafeName];
   assetOverrides.version = 1;
   assetOverrides.assets ??= {};
   delete assetOverrides.assets[normalizedSafeName];
 
-  if (assetDirectoryDeleted) fs.renameSync(assetDirectory, stagedAssetDirectory);
   try {
     atomicWriteJson(speciesDataPath, filteredData);
     atomicWriteJson(assessmentPath, assessmentIds);
     atomicWriteJson(assetOverridesPath, assetOverrides);
     atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
   } catch (error) {
-    if (assetDirectoryDeleted && fs.existsSync(stagedAssetDirectory) && !fs.existsSync(assetDirectory)) {
-      fs.renameSync(stagedAssetDirectory, assetDirectory);
-    }
+    restoreStagedAssetDirectories([stagedAssetDirectory]);
     throw error;
   }
-  if (assetDirectoryDeleted) {
-    fs.rmSync(stagedAssetDirectory, {
-      recursive: true,
-      force: true,
-      maxRetries: 5,
-      retryDelay: 200,
-    });
+  const pendingDeleteDirectories = [deleteStagedAssetDirectory(stagedAssetDirectory)].filter(Boolean);
+  if (pendingDeleteDirectories.length === 0) {
+    removeEmptyCleanupTrashRunDirectory(trashRunDirectory);
   }
 
   return {
@@ -316,6 +400,7 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName }) {
     assessmentDeleted,
     overrideDeleted,
     assetDirectoryDeleted,
+    pendingDeleteDirectories,
   };
 }
 

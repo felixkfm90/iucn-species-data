@@ -1,6 +1,6 @@
 # Arten löschen und Altdateien bereinigen
 
-Stand: 2026-06-20
+Stand: 2026-06-28
 
 Beim Löschen einer Art kann zwischen einem rückholbaren ersten Schritt und der sofortigen dauerhaften Entfernung
 aller zugehörigen Daten gewählt werden.
@@ -50,18 +50,23 @@ Bestätigung:
 
 Nach dieser Bestätigung:
 
-- werden verwaiste Assetordner rekursiv und dauerhaft gelöscht
+- werden verwaiste Assetordner zuerst in den ignorierten Zwischenordner `species-explorer/cleanup-trash/` verschoben
 - werden veraltete Einträge aus `speciesData.json` entfernt
 - werden veraltete Assessment-Zuordnungen entfernt
 - werden verwaiste Asset-Pflegeeinträge entfernt
 - wird `fehlende_elemente_report.json` für den bereinigten Bestand neu aufgebaut
+- werden die verschobenen Assetordner danach endgültig gelöscht
 
-Für den Bereinigungslauf wird keine zusätzliche Wiederherstellungsablage erzeugt. Die in der Vorschau aufgelisteten
-Assetdateien sind nach dem Lauf nicht wiederherstellbar.
+`cleanup-trash` ist keine Wiederherstellungsablage fuer den Anwender, sondern ein technischer Transaktionsbereich.
+Wenn Windows eine Datei beim endgültigen Löschen noch sperrt, sind die produktiven Daten und der Report trotzdem
+konsistent; der Restordner bleibt ignoriert liegen und kann nach Freigabe der Datei erneut entfernt werden. Die in
+der Vorschau aufgelisteten Assetdateien sind nach erfolgreichem Lauf nicht wiederherstellbar.
 
 ## Sicherheitsgrenzen
 
 - Ein Assetordner wird nur gelöscht, wenn sein aufgelöster Pfad sicher innerhalb von `species-assets/` liegt.
+- Ein Assetordner wird vor dem JSON-Schreibvorgang verschoben. Schlägt dieser Schritt fehl, werden Daten und Report
+  nicht verändert.
 - Aktuelle `SafeName`-Ordner aus `species_list.json` werden nicht als verwaist eingestuft.
 - Die Bereinigung startet nur nach einer aktuellen Vorschau mit einmaligem Token.
 - Der Bereinigungsplan trägt ausdrücklich `mode: cleanup`; damit startet die App das Löschskript und nicht

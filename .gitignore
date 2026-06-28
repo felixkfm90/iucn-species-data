@@ -19,6 +19,7 @@ list_licenses.mjs
 
 # Local species explorer backups created before editing species_list.json
 species-explorer/backups/
+species-explorer/cleanup-trash/
 species-explorer/logs/
 species-explorer/local-settings.json
 species-explorer/pending-asset-review.json

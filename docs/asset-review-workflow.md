@@ -1,6 +1,6 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-06-20
+Stand: 2026-06-28
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
@@ -22,17 +22,25 @@ Felix muss je Asset eine Option wählen:
 
 - `Automatisch durch Pipeline pflegen`
 - `Manuell pflegen und schützen`
+- bei Sounds zusätzlich `Sound ablehnen und Quelle merken`
 
 Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
 
 Bei den gezielten Wiederholungsläufen ändern sich die Optionen:
 
 - Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`
-- NC-Soundsuchlauf: `Freie Soundalternative übernehmen` oder `Bisherigen NC-Sound behalten`
+- NC-Soundsuchlauf: `Freie Soundalternative übernehmen`, `Bisherigen NC-Sound behalten` oder
+  `Sound ablehnen und Quelle merken`
 
 Vorhandene Dateien werden dafür unter `species-explorer/pipeline-asset-backups/` vorübergehend gesichert. Der Ordner
 ist ignoriert und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt, stellt der Explorer die gesicherten
 Dateien vor Commit und Push wieder her.
+
+Bei der ausdrücklichen Sound-Ablehnung wird die neue Quelle in `species-assets-overrides.json` unter
+`sound.rejectedSources` gespeichert. Die Pipeline vergleicht später Xeno-Canto-ID, Wikimedia-Commons-Quelle oder
+iNaturalist-Soundkennung mit dieser Liste und schlägt dieselbe Quelle nicht erneut vor. Wenn vorher kein Sound
+vorhanden war, werden die neu erzeugten `sound.mp3`, `credits.json` und `spectrogram.webp` wieder entfernt und der
+Report danach neu aufgebaut.
 
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf

@@ -352,10 +352,14 @@ function updateValidation(validation) {
     );
   }
   for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
-    detailItems.push(
-      `${check.label}: ${check.missingFromReport.length} fehlen im Report, `
-      + `${check.staleInReport.length} stehen nur im Report`,
-    );
+    const parts = [];
+    if (check.missingFromReport.length) {
+      parts.push(`${check.missingFromReport.length} fehlen im Report: ${check.missingFromReport.join(", ")}`);
+    }
+    if (check.staleInReport.length) {
+      parts.push(`${check.staleInReport.length} stehen nur im Report: ${check.staleInReport.join(", ")}`);
+    }
+    detailItems.push(`${check.label}: ${parts.join("; ")}`);
   }
   detailItems.push(...validation.report.counterIssues.map((issue) => `Report-Zähler: ${issue}`));
 
@@ -646,6 +650,8 @@ function setupAudioPlayer() {
   state.audioCleanup = () => {
     cancelAnimationFrame(animationFrame);
     audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
   };
 }
 
@@ -719,6 +725,8 @@ function setupAssetReview() {
     for (const audio of elements.assetReviewList.querySelectorAll("audio")) {
       audio.pause();
       audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
     }
   };
 
@@ -797,6 +805,12 @@ function setupAssetReview() {
               <input type="radio" name="asset-${index}" value="manual" required>
               ${assetManualLabel}
             </label>
+            ${asset.type === "sound" ? `
+              <label>
+                <input type="radio" name="asset-${index}" value="reject" required>
+                Sound ablehnen und Quelle merken
+              </label>
+            ` : ""}
           </div>
         </div>
       </article>
@@ -833,6 +847,7 @@ function setupAssetReview() {
     const choices = assets.map((asset, index) => ({
       safeName: asset.safeName,
       type: asset.type,
+      decision: formData.get(`asset-${index}`),
       manual: formData.get(`asset-${index}`) === "manual",
     }));
     elements.assetReviewSave.disabled = true;
@@ -1446,6 +1461,8 @@ function setupPipelineControl() {
       return;
     }
     if (!previewToken) return;
+    state.audioCleanup?.();
+    state.audioCleanup = null;
     elements.pipelineStartButton.disabled = true;
     setMessage(
       previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",

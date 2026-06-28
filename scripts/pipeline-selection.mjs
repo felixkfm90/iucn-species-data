@@ -37,6 +37,7 @@ export function buildPipelinePlan({
   repoRoot,
   sanitizeAssetName,
   mode = "missing",
+  targetSlugs = [],
 }) {
   if (!["all", "missing", "manual-maps", "nc-sounds"].includes(mode)) {
     throw new Error(`Unbekannter Pipeline-Modus: ${mode}`);
@@ -47,11 +48,16 @@ export function buildPipelinePlan({
     { version: 1, assets: {} },
   );
 
+  const requestedTargetSlugs = new Set(
+    (Array.isArray(targetSlugs) ? targetSlugs : [])
+      .map((slug) => normalized(slug))
+      .filter(Boolean),
+  );
   const existingBySlug = new Map(
     existingSpeciesData.map((entry) => [String(entry.URLSlug ?? "").toLocaleLowerCase("de"), entry]),
   );
   const inputSlugs = new Set(speciesList.map(inputSlug));
-  const removed = existingSpeciesData
+  const rawRemoved = existingSpeciesData
     .filter((entry) => !inputSlugs.has(String(entry.URLSlug ?? "").toLocaleLowerCase("de")))
     .map((entry) => ({
       slug: entry.URLSlug,
@@ -59,6 +65,7 @@ export function buildPipelinePlan({
       scientificName: entry["Wissenschaftlicher Name"] ?? "Unbekannt",
       reason: "nicht mehr in species_list.json",
     }));
+  const removed = requestedTargetSlugs.size ? [] : rawRemoved;
 
   const candidates = speciesList.map((entry) => {
     const slug = inputSlug(entry);
@@ -126,12 +133,16 @@ export function buildPipelinePlan({
     };
   });
 
-  const targets = mode === "all"
+  let targets = mode === "all"
     ? candidates
     : candidates.filter((entry) => entry.reasons.length > 0);
+  if (requestedTargetSlugs.size) {
+    targets = targets.filter((entry) => requestedTargetSlugs.has(normalized(entry.slug)));
+  }
 
   return {
     mode,
+    targetSlugs: [...requestedTargetSlugs],
     inputCount: speciesList.length,
     targetCount: targets.length,
     targets,

@@ -55,6 +55,8 @@ function Test-ExcludedRelativePath {
     $normalized.StartsWith("species-explorer/staging/") -or
     $normalized -eq "species-explorer/pipeline-asset-backups" -or
     $normalized.StartsWith("species-explorer/pipeline-asset-backups/") -or
+    $normalized -eq "species-explorer/cleanup-trash" -or
+    $normalized.StartsWith("species-explorer/cleanup-trash/") -or
     $normalized -eq "species-explorer/logs" -or
     $normalized.StartsWith("species-explorer/logs/")
   )
@@ -191,6 +193,7 @@ $manifest = [ordered]@{
     "Testlauf/",
     "species-explorer/staging/",
     "species-explorer/pipeline-asset-backups/",
+    "species-explorer/cleanup-trash/",
     "species-explorer/logs/"
   )
   fileCount = $files.Count

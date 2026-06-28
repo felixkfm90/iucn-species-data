@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-27
+Stand: 2026-06-28
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -62,15 +62,15 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 48 Eintraege in `species_list.json`
-- 48 aktive Arten
-- 48 Arten in `speciesData.json`
-- 48 Karten
-- 48 Art-Assetordner
-- 47 MP3-Dateien
-- 47 Credits-Dateien
-- 47 Spektrogramm-Dateien
-- 48 Artportraets
+- 46 Eintraege in `species_list.json`
+- 46 aktive Arten
+- 46 Arten in `speciesData.json`
+- 46 Karten
+- 46 Art-Assetordner
+- 45 MP3-Dateien
+- 45 Credits-Dateien
+- 45 Spektrogramm-Dateien
+- 46 Artportraets
 - 0 Assetprobleme im Explorer-Modell
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische Tonquelle.
   Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
@@ -90,6 +90,11 @@ Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie
 2. freie Wikimedia-Commons-Audiodateien mit erreichbarem MP3-Transcode
 3. freie iNaturalist-MP3-Aufnahmen mit exaktem Taxon, freier Lizenz und gueltiger MP3-Datei
 
+Im Asset-Pruefdialog abgelehnte Soundquellen werden in `species-assets-overrides.json` unter
+`sound.rejectedSources` gespeichert. `update.mjs` ueberspringt diese Xeno-Canto-, Wikimedia-Commons- oder
+iNaturalist-Quelle bei spaeteren Suchlaeufen, damit ein ausdruecklich abgelehnter Sound nicht erneut vorgeschlagen
+wird.
+
 Aktuell ersetzte freie Quellen:
 
 - `Eurasisches Eichhoernchen`: freie Xeno-Canto-Alternative
@@ -99,7 +104,8 @@ Aktuell ersetzte freie Quellen:
 - `Panama-Kapuzineraffe`: freie iNaturalist-Aufnahme, CC BY 4.0
 - `Quetzal`: freie Quelle, nicht mehr im NC-Report
 
-Letzter vollstaendiger Pipeline-/Report-Check: 2026-06-20.
+Letzter vollstaendiger Pipeline-Check: 2026-06-20.
+Letzter lokaler Bereinigungs-/Report-Check: 2026-06-28.
 
 ## Datenfluss
 
@@ -354,8 +360,8 @@ Aktuelle Planung:
   `POST /api/species/new/save`. Fuer optionale Sofortportraits liefert `POST /api/species/new/portrait-prompt`
   einen Einzelprompt aus den eingegebenen neuen Artdaten. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
-  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und Hoeckerschwan wurden fuer
-  produktive Workflow-Tests angelegt und danach wieder entfernt.
+  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher, Hoeckerschwan und Loewe wurden fuer
+  produktive Workflow-Tests angelegt und danach am 2026-06-28 wieder entfernt und bereinigt.
   Hintergrundklicks schließen Eingabedialoge nur, wenn Zeigerdruck und Klickende beide auf dem Hintergrund liegen.
   Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
   Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
@@ -377,6 +383,8 @@ Aktuelle Planung:
   Die beiden Wartungsläufe verarbeiten nur die aktuell vier manuell geschützten Karten beziehungsweise die drei
   NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
+  Wenn ein Sound im Pruefdialog ausdruecklich abgelehnt wird, speichert der Explorer die Quellkennung unter
+  `sound.rejectedSources`; der naechste Sound-Suchlauf ueberspringt diese konkrete Quelle.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status
   `Pipeline-Lauf läuft gerade` hängen; die anschließende Assetentscheidung kann geöffnet werden.
@@ -390,7 +398,10 @@ Aktuelle Planung:
   dauerhaft mit. Ohne Checkbox bleiben diese Inhalte bis zur getrennten Bereinigung bestehen. Die Aktion
   `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen, Pflegeeintraege und Assetordner auf und loescht sie nach
   genau einer Bestaetigung dauerhaft ohne Wiederherstellungsablage. Details:
-  `docs/delete-species-workflow.md`. Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
+  `docs/delete-species-workflow.md`. Die Bereinigung verschiebt Assetordner seit 2026-06-28 zuerst in den ignorierten
+  Ordner `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht den verschobenen Ordner erst
+  anschliessend endgueltig. Dadurch bleiben Daten, Report und Assetbestand auch bei Windows-Dateisperren konsistent.
+  Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
   ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
@@ -429,7 +440,7 @@ Aktuelle Planung:
   der Explorer vergleicht diese Hashes mit den aktuellen Dateien und meldet Abweichungen als
   `Spektrogramm veraltet`. Der Generator registriert auch uebersprungene aktuelle Spektrogramme und veraendert bei
   einem erneuten unveraenderten Lauf keine Zeitstempel. Der bestehende Bestand wurde am 2026-06-20 migriert:
-  47 von 47 Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
+  45 von 45 Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
   beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB.
@@ -466,7 +477,7 @@ Aktuelle Planung:
   `npm.cmd run species:desktop:shortcut` erstellt eine Desktop-Verknuepfung, die per `wscript.exe` den versteckten
   Launcher `species-explorer/desktop/start-explorer.vbs` nutzt. Dadurch startet die App per Doppelklick ohne
   dauerhaft sichtbares PowerShell-Fenster. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
-  `npm.cmd run --silent test:explorer` umfasst jetzt 18 Tests.
+  `npm.cmd run --silent test:explorer` umfasst jetzt 19 Tests.
   Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock verschieben sich auf Phase 7.9.
   Vor Phase 7.9 wurde am 2026-06-28 ein nicht-destruktiver Projektkonsolidierungs-Audit gestartet:
   `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker; Bereinigungskandidaten sind `Testlauf/`,

@@ -360,35 +360,11 @@
     "life_expectancy": "ca. 13 Jahre"
   },
   {
-    "german": "Haubentaucher",
-    "genus": "Podiceps",
-    "species": "cristatus",
-    "size": "ca. 46–51 cm",
-    "weight": "ca. 800–1.500 g",
-    "life_expectancy": "ca. 15 Jahre"
-  },
-  {
-    "german": "Höckerschwan",
-    "genus": "Cygnus",
-    "species": "olor",
-    "size": "ca. 140–160 cm",
-    "weight": "ca. 8–15 kg",
-    "life_expectancy": "ca. 20–30 Jahre"
-  },
-  {
     "german": "Grüner Leguan",
     "genus": "Iguana",
     "species": "iguana",
     "size": "ca. 120–200 cm",
     "weight": "ca. 4–8 kg",
     "life_expectancy": "ca. 15–20 Jahre"
-  },
-  {
-    "german": "Löwe",
-    "genus": "Panthera",
-    "species": "leo",
-    "size": "ca. 140–250 cm",
-    "weight": "Männchen 150–250 kg, Weibchen 110–180 kg",
-    "life_expectancy": "ca. 10–14 Jahre"
   }
 ]

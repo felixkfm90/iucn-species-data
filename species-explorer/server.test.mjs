@@ -1488,6 +1488,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     serverLifecycleSource,
     restoreStartSource,
     nasBackupSource,
+    cleanupSource,
     packageSource,
     gitignoreSource,
     assetOverrides,
@@ -1503,6 +1504,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./desktop/server-lifecycle.mjs", import.meta.url), "utf8"),
     readFile(new URL("../restore-start.cmd", import.meta.url), "utf8"),
     readFile(new URL("../scripts/nas-backup.ps1", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/species-cleanup.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../.gitignore", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
@@ -1650,6 +1652,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
   assert.match(serverSource, /pipeline-asset-backups/);
+  assert.match(serverSource, /soundRejectionKeyFromCredits/);
+  assert.match(serverSource, /rejectedSoundSourceFromCredits/);
+  assert.match(serverSource, /sound\.rejectedSources|rejectedSources/);
+  assert.match(cleanupSource, /cleanup-trash/);
   assert.match(serverSource, /assetCompositeHash/);
   assert.match(serverSource, /reviewMode:\s*plan\.mode/);
   assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
@@ -1669,6 +1675,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
   assert.match(updateSource, /args\.mode === "manual-maps"/);
   assert.match(updateSource, /args\.mode === "nc-sounds"/);
+  assert.match(updateSource, /rejectedSoundKeys/);
+  assert.match(updateSource, /isRejectedSoundCandidate/);
+  assert.match(updateSource, /rejectionKey/);
+  assert.match(updateSource, /--species=/);
   assert.equal(assetOverrides.assets.Blaukehlchen.map.manual, true);
   assert.match(appSource, /function setupSpeciesDelete\(species\)/);
   assert.match(appSource, /\/delete\/preview/);
@@ -1763,6 +1773,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="asset-review-list"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox-image"/);
+  assert.match(appSource, /value="reject"/);
+  assert.match(appSource, /Sound ablehnen und Quelle merken/);
+  assert.match(appSource, /decision:\s*formData\.get/);
+  assert.match(appSource, /audio\.removeAttribute\("src"\)/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);
   assert.match(htmlSource, /class="validation-dashboard"/);
   assert.doesNotMatch(htmlSource, /Phase 7\.3/);

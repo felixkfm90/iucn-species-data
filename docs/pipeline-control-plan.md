@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-06-20
+Stand: 2026-06-28
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -122,7 +122,9 @@ Aktuell sind das drei NC-Sounds plus der bekannte fehlende Sound beim Grünen Le
 - Die Suche prüft freie Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Alternativen.
 - `Freie Soundalternative übernehmen` behält die neue Alternative.
 - `Bisherigen NC-Sound behalten` stellt Sound, Credits und Spektrogramm wieder her.
-- Bei vorher fehlendem Sound entfernt `Neuen Sound nicht übernehmen` die neu erzeugten Sounddateien wieder.
+- `Sound ablehnen und Quelle merken` stellt den vorherigen Bestand wieder her beziehungsweise entfernt bei vorher
+  fehlendem Sound die neu erzeugten Sounddateien wieder. Die Quellkennung wird in `species-assets-overrides.json`
+  gespeichert und bei spaeteren Sound-Suchlaeufen uebersprungen.
 
 ### Dauerhafte Bereinigung
 
@@ -135,6 +137,11 @@ Die Bereinigung ist eine eigene Aktion und wird nie automatisch an einen Update-
 
 Die App zeigt die betroffenen Datensätze, Ordner und Dateigrößen. Nach genau einer Bestätigung werden diese Inhalte
 dauerhaft gelöscht und sind nicht wiederherstellbar. Details: `docs/delete-species-workflow.md`.
+
+Seit 2026-06-28 arbeitet die Bereinigung transaktional: verwaiste Assetordner werden zuerst nach
+`species-explorer/cleanup-trash/` verschoben, danach werden Daten, Register und Report geschrieben und erst danach
+werden die verschobenen Ordner endgueltig geloescht. Wird eine Datei unter Windows noch gesperrt, bleiben die
+produktiven JSON-Dateien dadurch trotzdem konsistent.
 
 ## Technische Reihenfolge
 
@@ -155,6 +162,7 @@ node update.mjs --mode=missing
 node update.mjs --mode=all
 node update.mjs --mode=manual-maps
 node update.mjs --mode=nc-sounds
+node update.mjs --mode=missing --species=acanthisflammea
 node update.mjs --report-only
 ```
 

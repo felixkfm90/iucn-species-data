@@ -66,11 +66,17 @@ function logError(msg) {
 }
 
 function parsePipelineArgs(rawArgs) {
-  const parsed = { mode: "all", dryRun: false, reportOnly: false };
+  const parsed = { mode: "all", dryRun: false, reportOnly: false, targetSlugs: [] };
   for (const arg of rawArgs) {
     if (arg === "--dry-run") parsed.dryRun = true;
     else if (arg === "--report-only") parsed.reportOnly = true;
     else if (arg.startsWith("--mode=")) parsed.mode = arg.slice("--mode=".length);
+    else if (arg.startsWith("--species=")) {
+      parsed.targetSlugs = arg.slice("--species=".length)
+        .split(",")
+        .map((slug) => slug.trim().toLocaleLowerCase("de"))
+        .filter(Boolean);
+    }
     else if (arg === "--help" || arg === "-h") parsed.help = true;
     else throw new Error(`Unbekannter Parameter: ${arg}`);
   }
@@ -88,6 +94,7 @@ Optionen:
   --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
   --mode=manual-maps  Nur manuell gepflegte Karten erneut bei IUCN suchen
   --mode=nc-sounds    Vorhandene NC-Sounds und fehlende Sounds erneut suchen
+  --species=slug      Optional: nur die angegebenen URL-Slugs verarbeiten, kommagetrennt
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
   --report-only    Report aus speciesData.json und aktuellen Assets neu aufbauen
 `);
@@ -166,6 +173,40 @@ function speciesAssetDir(safeName) {
 
 function isManualAsset(safeName, assetType) {
   return assetOverrides.assets?.[safeName]?.[assetType]?.manual === true;
+}
+
+function rejectedSoundKeys(safeName) {
+  const sources = assetOverrides.assets?.[safeName]?.sound?.rejectedSources;
+  if (!Array.isArray(sources)) return new Set();
+  return new Set(sources
+    .map((entry) => String(entry?.key ?? "").trim())
+    .filter(Boolean));
+}
+
+function isRejectedSoundCandidate(safeName, key, german) {
+  const normalizedKey = String(key ?? "").trim();
+  if (!normalizedKey) return false;
+  const rejected = rejectedSoundKeys(safeName);
+  if (!rejected.has(normalizedKey)) return false;
+  console.log(`↩ Abgelehnte Soundquelle wird übersprungen für ${german}: ${normalizedKey}`);
+  return true;
+}
+
+function xenoRejectionKey(recording) {
+  const id = String(recording?.id ?? "").trim();
+  if (id) return `xeno-canto:${id}`;
+  const file = String(recording?.file ?? "").trim();
+  return file ? `xeno-canto:${file}` : "";
+}
+
+function commonsRejectionKey(hit) {
+  return `wikimedia-commons:${hit.descriptionUrl || hit.fileUrl || hit.mp3Url || hit.title || "unknown"}`;
+}
+
+function inatRejectionKey(hit) {
+  const observationId = String(hit?.observation?.id ?? "").trim();
+  const soundId = String(hit?.sound?.id ?? hit?.sound?.uuid ?? hit?.url ?? "").trim();
+  return `inaturalist:${observationId}:${soundId || "unknown"}`;
 }
 
 async function sleep(ms) {
@@ -538,7 +579,7 @@ async function fetchXenoPage(query, page) {
   }
 }
 
-async function findRecordingByStage(genus, species, stage) {
+async function findRecordingByStage(genus, species, stage, { isRejected = () => false } = {}) {
   const query = buildXenoQuery(genus, species, stage.q, stage.len2535);
 
   let maxPages = MAX_XENO_PAGES;
@@ -559,10 +600,11 @@ async function findRecordingByStage(genus, species, stage) {
     }
 
     if (stage.openOnly) {
-      const open = resp.recordings.find((r) => !isNcLicense(r.lic));
+      const open = resp.recordings.find((r) => !isNcLicense(r.lic) && !isRejected(r));
       if (open) return { rec: open, query, page };
     } else {
-      return { rec: resp.recordings[0], query, page };
+      const recording = resp.recordings.find((r) => !isRejected(r));
+      if (recording) return { rec: recording, query, page };
     }
 
     await sleep(80);
@@ -685,7 +727,7 @@ function scoreCommonsHit(hit, genus, species) {
   return score;
 }
 
-async function findCommonsRecording(genus, species, german) {
+async function findCommonsRecording(genus, species, german, safeName) {
   const queries = [
     `${genus} ${species} audio`,
     `${genus} ${species} sound`,
@@ -702,6 +744,7 @@ async function findCommonsRecording(genus, species, german) {
       if (seen.has(key)) continue;
       seen.add(key);
       if (!isExactCommonsSpecies(hit, genus, species)) continue;
+      if (isRejectedSoundCandidate(safeName, commonsRejectionKey(hit), german)) continue;
       candidates.push(hit);
     }
     await sleep(150);
@@ -776,7 +819,7 @@ async function fetchInatObservations(genus, species, qualityGrade) {
   }
 }
 
-async function findInatRecording(genus, species, german) {
+async function findInatRecording(genus, species, german, safeName) {
   const scientific = `${genus} ${species}`.toLowerCase();
   const qualityPasses = ["research", "needs_id", ""];
   const seen = new Set();
@@ -802,9 +845,11 @@ async function findInatRecording(genus, species, german) {
         const license = sound.license_code || sound.license || "";
         if (!isOpenCommercialLicense(license)) continue;
         if (!isDirectMp3Sound(sound)) continue;
+        const candidate = { observation, sound, url, qualityGrade: qualityGrade || "any" };
+        if (isRejectedSoundCandidate(safeName, inatRejectionKey(candidate), german)) continue;
         if (!(await isReachableMp3(url))) continue;
 
-        return { observation, sound, url, qualityGrade: qualityGrade || "any" };
+        return candidate;
       }
     }
 
@@ -823,6 +868,7 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   const mp3Path = path.join(targetDir, "sound.mp3");
   const creditsPath = path.join(targetDir, "credits.json");
+  const rejectXenoCandidate = (recording) => isRejectedSoundCandidate(safeGerman, xenoRejectionKey(recording), german);
 
   if (fs.existsSync(mp3Path) && isManualAsset(safeGerman, "sound")) {
     console.log(`🎵 Manuell gepflegter Sound für ${german} ist geschützt, überspringe Suche.`);
@@ -862,7 +908,7 @@ async function downloadSoundIfMissing(genus, species, german) {
         : `🎵 Sound ohne Credits existiert für ${german}; prüfe dokumentierte freie Alternative.`,
     );
     for (let i = 0; i < openStages.length; i++) {
-      const hit = await findRecordingByStage(genus, species, openStages[i]);
+      const hit = await findRecordingByStage(genus, species, openStages[i], { isRejected: rejectXenoCandidate });
       if (hit?.rec) {
         const originalStageIndex = stages.indexOf(openStages[i]);
         console.log(`✔ Freie Alternative gefunden für ${german} (Stage ${originalStageIndex}).`);
@@ -880,7 +926,7 @@ async function downloadSoundIfMissing(genus, species, german) {
       }
     }
 
-    const commonsHit = await findCommonsRecording(genus, species, german);
+    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman);
     if (commonsHit) {
       console.log(`✔ Freie Commons-Alternative gefunden für ${german}.`);
       return await saveCommonsSoundRecording({
@@ -893,7 +939,7 @@ async function downloadSoundIfMissing(genus, species, german) {
       });
     }
 
-    const inatHit = await findInatRecording(genus, species, german);
+    const inatHit = await findInatRecording(genus, species, german, safeGerman);
     if (inatHit) {
       console.log(`✔ Freie iNaturalist-Alternative gefunden für ${german}.`);
       return await saveInatSoundRecording({
@@ -919,7 +965,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   let chosenStageIndex = null;
 
   for (let i = 0; i < openStages.length; i++) {
-    const hit = await findRecordingByStage(genus, species, openStages[i]);
+    const hit = await findRecordingByStage(genus, species, openStages[i], { isRejected: rejectXenoCandidate });
     if (hit?.rec) {
       chosen = hit.rec;
       chosenInfo = hit;
@@ -929,7 +975,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   if (!chosen) {
-    const commonsHit = await findCommonsRecording(genus, species, german);
+    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman);
     if (commonsHit) {
       console.log(`✔ Freie Commons-Aufnahme gefunden für ${german}.`);
       return await saveCommonsSoundRecording({
@@ -944,7 +990,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   if (!chosen) {
-    const inatHit = await findInatRecording(genus, species, german);
+    const inatHit = await findInatRecording(genus, species, german, safeGerman);
     if (inatHit) {
       console.log(`✔ Freie iNaturalist-Aufnahme gefunden für ${german}.`);
       return await saveInatSoundRecording({
@@ -959,7 +1005,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   for (let i = 0; !chosen && i < fallbackStages.length; i++) {
-    const hit = await findRecordingByStage(genus, species, fallbackStages[i]);
+    const hit = await findRecordingByStage(genus, species, fallbackStages[i], { isRejected: rejectXenoCandidate });
     if (hit?.rec) {
       chosen = hit.rec;
       chosenInfo = hit;
@@ -1025,6 +1071,7 @@ async function saveSoundRecording({
       license: lic || "n/a",
       source: "xeno-canto.org",
       url: chosen.id ? `https://xeno-canto.org/${chosen.id}` : "n/a",
+      rejectionKey: xenoRejectionKey(chosen),
       notes: `Stage ${chosenStageIndex} (openOnly=${st.openOnly}, q=${st.q}, len25-35=${st.len2535}) | query="${chosenInfo.query}" | page=${chosenInfo.page}`,
     };
 
@@ -1074,6 +1121,7 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
       license: normalizeLicenseUrl(hit.license) || "n/a",
       source,
       url: hit.descriptionUrl || hit.fileUrl || "n/a",
+      rejectionKey: commonsRejectionKey(hit),
       notes: `Free Commons replacement. Query="${hit.query}" | title="${hit.title}" | original=${hit.fileUrl} | mp3=${hit.mp3Url}`,
     };
 
@@ -1119,6 +1167,7 @@ async function saveInatSoundRecording({ genus, species, german, mp3Path, credits
       license: inatLicenseUrl(license) || "n/a",
       source: "iNaturalist",
       url: observation.uri || `https://www.inaturalist.org/observations/${observation.id}`,
+      rejectionKey: inatRejectionKey(hit),
       notes: `Free iNaturalist replacement. Observation=${observation.id} | user=${user} | license=${license} | sound=${sound.id || sound.uuid || "n/a"} | file=${hit.url}`,
     };
 
@@ -1284,6 +1333,7 @@ function printReportToConsole(report) {
       repoRoot: process.cwd(),
       sanitizeAssetName,
       mode: args.mode,
+      targetSlugs: args.targetSlugs,
     });
 
     if (args.dryRun) {
@@ -1292,6 +1342,7 @@ function printReportToConsole(report) {
         mode: plan.mode,
         inputCount: plan.inputCount,
         targetCount: plan.targetCount,
+        targetSlugs: plan.targetSlugs,
         targets: plan.targets.map(({ slug, safeName, germanName, scientificName, reasons }) => ({
           slug,
           safeName,
@@ -1330,9 +1381,10 @@ function printReportToConsole(report) {
     const output = [];
 
     for (const s of speciesList) {
-      const existingData = existingBySlug.get(getInputSlug(s));
-      if (!targetSlugs.has(getInputSlug(s)) && existingData) {
-        output.push(preserveExistingSpeciesData(existingData, s));
+      const currentSlug = getInputSlug(s);
+      const existingData = existingBySlug.get(currentSlug);
+      if (!targetSlugs.has(currentSlug)) {
+        if (existingData) output.push(preserveExistingSpeciesData(existingData, s));
         continue;
       }
 

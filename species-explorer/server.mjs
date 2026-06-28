@@ -1463,7 +1463,12 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   };
   for (const [key, expected] of Object.entries(expectedCounters)) {
     if (Number(report.counts?.[key]) !== expected) {
-      reportCounterIssues.push(`${key}: Zähler ${report.counts?.[key] ?? "fehlt"}, Liste ${expected}`);
+      const actualCounter = report.counts?.[key] ?? "fehlt";
+      const label = key === "totalSpecies" ? "Artenanzahl im Report" : key;
+      const suffix = key === "totalSpecies"
+        ? "Report ist veraltet oder verweist noch auf gelöschte Arten; Report-Abgleich/Bereinigung ausführen."
+        : "Report-Zähler passt nicht zur gemeldeten Liste.";
+      reportCounterIssues.push(`${label}: Report ${actualCounter}, aktueller Stand ${expected}. ${suffix}`);
     }
   }
 
@@ -1817,7 +1822,7 @@ export async function createExplorerServer({
     }
   }
 
-  async function readPipelinePlan(mode) {
+  async function readPipelinePlan(mode, targetSlugs = []) {
     const [speciesListText, speciesDataText] = await Promise.all([
       readFile(speciesListPath, "utf8"),
       readFile(join(repoRoot, "speciesData.json"), "utf8"),
@@ -1832,12 +1837,16 @@ export async function createExplorerServer({
         repoRoot,
         sanitizeAssetName,
         mode,
+        targetSlugs,
       });
     return {
       plan,
       sourceRevision: hashText(
         `${speciesListText}\n${speciesDataText}\n${JSON.stringify(
-          mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan),
+          {
+            targetSlugs,
+            plan: mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan),
+          },
         )}`,
       ),
     };
@@ -1854,12 +1863,16 @@ export async function createExplorerServer({
       throw error;
     }
 
-    const { plan, sourceRevision } = await readPipelinePlan(mode);
+    const targetSlugs = Array.isArray(payload?.targetSlugs)
+      ? payload.targetSlugs.map((slug) => String(slug ?? "").trim().toLocaleLowerCase("de")).filter(Boolean)
+      : [];
+    const { plan, sourceRevision } = await readPipelinePlan(mode, targetSlugs);
     const token = randomUUID();
     const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
     previewTokens.set(token, {
       type: "pipeline",
       mode,
+      targetSlugs,
       sourceRevision,
       expiresAt,
     });
@@ -1919,6 +1932,56 @@ export async function createExplorerServer({
       hash.update(readFileSync(filePath));
     }
     return found ? hash.digest("hex") : "";
+  }
+
+  function soundRejectionKeyFromCredits(credits) {
+    const explicit = String(credits?.rejectionKey ?? "").trim();
+    if (explicit) return explicit;
+    const source = String(credits?.source ?? "").toLocaleLowerCase("de");
+    const url = String(credits?.url ?? "").trim();
+    const notes = String(credits?.notes ?? "").trim();
+    const xenoMatch = url.match(/xeno-canto\.org\/(\d+)/i) || notes.match(/xeno-canto\.org\/(\d+)/i);
+    if (source.includes("xeno") && xenoMatch) return `xeno-canto:${xenoMatch[1]}`;
+    if (source.includes("wikimedia")) return `wikimedia-commons:${url || notes}`;
+    if (source.includes("inaturalist")) {
+      const observation = notes.match(/Observation=([^|\s]+)/i)?.[1] ?? "";
+      const sound = notes.match(/sound=([^|\s]+)/i)?.[1] ?? "";
+      if (observation || sound) return `inaturalist:${observation}:${sound || url}`;
+    }
+    return `${source || "unknown"}:${url || notes || "unknown"}`;
+  }
+
+  function rejectedSoundSourceFromCredits(asset) {
+    const creditsPath = join(repoRoot, "species-assets", asset.safeName, "credits.json");
+    let credits = {};
+    if (existsSync(creditsPath)) {
+      try {
+        credits = JSON.parse(readFileSync(creditsPath, "utf8"));
+      } catch {
+        credits = {};
+      }
+    }
+    return {
+      key: soundRejectionKeyFromCredits(credits),
+      source: String(credits.source ?? "").trim() || "Unbekannt",
+      url: String(credits.url ?? "").trim() || "",
+      recordist: String(credits.recordist ?? "").trim() || "",
+      license: String(credits.license ?? "").trim() || "",
+      rejectedAt: new Date().toISOString(),
+    };
+  }
+
+  function addRejectedSoundSource(soundOverride, rejectedSource) {
+    const next = soundOverride && typeof soundOverride === "object"
+      ? structuredClone(soundOverride)
+      : {};
+    const existing = Array.isArray(next.rejectedSources) ? next.rejectedSources : [];
+    const byKey = new Map(existing
+      .filter((entry) => entry && typeof entry === "object")
+      .map((entry) => [String(entry.key ?? ""), entry]));
+    byKey.set(rejectedSource.key, rejectedSource);
+    next.rejectedSources = [...byKey.values()].filter((entry) => String(entry.key ?? "").trim());
+    return next;
   }
 
   function capturePipelineAssets(plan) {
@@ -2119,9 +2182,14 @@ export async function createExplorerServer({
       return;
     }
 
+    const updateArgs = [join(repoRoot, "update.mjs"), `--mode=${plan.mode}`];
+    if (Array.isArray(plan.targetSlugs) && plan.targetSlugs.length > 0) {
+      updateArgs.push(`--species=${plan.targetSlugs.join(",")}`);
+    }
+
     let exitCode = await runPipelineChild(
       process.execPath,
-      [join(repoRoot, "update.mjs"), `--mode=${plan.mode}`],
+      updateArgs,
       "Datenpipeline",
     );
 
@@ -2214,7 +2282,7 @@ export async function createExplorerServer({
       throw error;
     }
 
-    const { plan, sourceRevision } = await readPipelinePlan(preview.mode);
+    const { plan, sourceRevision } = await readPipelinePlan(preview.mode, preview.targetSlugs ?? []);
     if (sourceRevision !== preview.sourceRevision) {
       previewTokens.delete(token);
       const error = new Error("Artenliste oder Pipeline-Daten wurden seit der Vorschau geändert");
@@ -2285,12 +2353,22 @@ export async function createExplorerServer({
 
     const choices = Array.isArray(payload?.choices) ? payload.choices : [];
     const choicesByKey = new Map(
-      choices.map((choice) => [`${choice.safeName}:${choice.type}`, choice]),
+      choices.map((choice) => {
+        const decision = String(
+          choice.decision ?? (choice.manual === true ? "manual" : choice.manual === false ? "automatic" : ""),
+        );
+        return [`${choice.safeName}:${choice.type}`, { ...choice, decision }];
+      }),
     );
     for (const asset of pipelineState.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
-      if (!choice || typeof choice.manual !== "boolean") {
+      if (!choice || !["automatic", "manual", "reject"].includes(choice.decision)) {
         const error = new Error(`Pflegeentscheidung fehlt für ${asset.germanName} · ${asset.label}`);
+        error.statusCode = 400;
+        throw error;
+      }
+      if (choice.decision === "reject" && asset.type !== "sound") {
+        const error = new Error(`Ablehnen mit Quellensperre ist nur für Sounds möglich: ${asset.germanName}`);
         error.statusCode = 400;
         throw error;
       }
@@ -2303,28 +2381,35 @@ export async function createExplorerServer({
     const retryMode = pipelineState.mode === "manual-maps" || pipelineState.mode === "nc-sounds";
     let registryChanged = false;
     let acceptedAny = false;
+    let reportNeedsRefresh = false;
+    const restoreOrRemovePipelineAsset = async (asset) => {
+      const previous = pipelineAssetSnapshot.get(`${asset.safeName}:${asset.type}`);
+      const names = asset.type === "sound"
+        ? ["sound.mp3", "credits.json", "spectrogram.webp"]
+        : ["map.jpg"];
+      for (const fileName of names) {
+        const backupPath = asset.backupFiles?.[fileName];
+        const allowedBackupRoot = `${resolve(pipelineAssetBackupRoot, pipelineState.runId)}${sep}`;
+        const resolvedBackupPath = backupPath ? resolve(backupPath) : "";
+        const allowedAssetRoot = `${resolve(repoRoot, "species-assets", asset.safeName)}${sep}`;
+        const targetPath = resolve(repoRoot, "species-assets", asset.safeName, fileName);
+        if (
+          (backupPath && !`${resolvedBackupPath}`.startsWith(allowedBackupRoot))
+          || !`${targetPath}`.startsWith(allowedAssetRoot)
+        ) {
+          throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
+        }
+        if (backupPath && existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
+        else if (!previous?.exists && existsSync(targetPath)) await unlink(targetPath);
+      }
+      return previous;
+    };
     for (const asset of pipelineState.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
-      if (retryMode && choice.manual) {
-        const previous = pipelineAssetSnapshot.get(`${asset.safeName}:${asset.type}`);
-        const names = asset.type === "sound"
-          ? ["sound.mp3", "credits.json", "spectrogram.webp"]
-          : ["map.jpg"];
-        for (const fileName of names) {
-          const backupPath = asset.backupFiles?.[fileName];
-          const allowedBackupRoot = `${resolve(pipelineAssetBackupRoot, pipelineState.runId)}${sep}`;
-          const resolvedBackupPath = backupPath ? resolve(backupPath) : "";
-          const allowedAssetRoot = `${resolve(repoRoot, "species-assets", asset.safeName)}${sep}`;
-          const targetPath = resolve(repoRoot, "species-assets", asset.safeName, fileName);
-          if (
-            (backupPath && !`${resolvedBackupPath}`.startsWith(allowedBackupRoot))
-            || !`${targetPath}`.startsWith(allowedAssetRoot)
-          ) {
-            throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
-          }
-          if (backupPath && existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
-          else if (!previous?.exists && existsSync(targetPath)) await unlink(targetPath);
-        }
+      const rejectSound = choice.decision === "reject";
+      if ((retryMode && choice.decision === "manual") || rejectSound) {
+        const rejectedSource = rejectSound ? rejectedSoundSourceFromCredits(asset) : null;
+        const previous = await restoreOrRemovePipelineAsset(asset);
         registry.assets[asset.safeName] ??= {};
         if (previous?.override) registry.assets[asset.safeName][asset.type] = previous.override;
         else delete registry.assets[asset.safeName][asset.type];
@@ -2333,6 +2418,19 @@ export async function createExplorerServer({
             registry.assets[asset.safeName].spectrogram = previous.spectrogramOverride;
           } else {
             delete registry.assets[asset.safeName].spectrogram;
+          }
+          if (rejectSound) {
+            const restoredOverride = registry.assets[asset.safeName].sound ?? {
+              manual: previous?.override?.manual === true,
+              reason: previous?.override?.reason
+                || "Automatische Soundquelle wurde manuell abgelehnt; Quelle wird kuenftig uebersprungen.",
+            };
+            registry.assets[asset.safeName].sound = {
+              ...addRejectedSoundSource(restoredOverride, rejectedSource),
+              updatedAt,
+            };
+            appendPipelineLog(`Soundquelle abgelehnt und gesperrt: ${asset.germanName} (${rejectedSource.key})`);
+            reportNeedsRefresh = true;
           }
         }
         if (Object.keys(registry.assets[asset.safeName]).length === 0) {
@@ -2345,8 +2443,8 @@ export async function createExplorerServer({
       acceptedAny = true;
       registry.assets[asset.safeName] ??= {};
       registry.assets[asset.safeName][asset.type] = {
-        manual: choice.manual,
-        reason: choice.manual
+        manual: choice.decision === "manual",
+        reason: choice.decision === "manual"
           ? "Nach Pipeline-Import von Felix als manuell gepflegt markiert."
           : "Automatisch durch die Pipeline gepflegt.",
         updatedAt,
@@ -2373,7 +2471,7 @@ export async function createExplorerServer({
       const assessmentIds = await readJson(assessmentIdsPath).catch(() => ({}));
       for (const asset of pipelineState.reviewAssets) {
         const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
-        if (choice.manual) continue;
+        if (choice.decision === "manual") continue;
         const species = model.species.find((entry) => entry.safeName === asset.safeName);
         if (species?.iucn?.assessmentId && species.iucn.assessmentId !== "Unbekannt") {
           assessmentIds[asset.safeName] = species.iucn.assessmentId;
@@ -2390,12 +2488,7 @@ export async function createExplorerServer({
     await unlink(pendingAssetReviewPath).catch(() => {});
     await refreshModel({ force: true });
     const continueReview = async () => {
-      if (!acceptedAny && retryMode) {
-        pipelineState.gitPublished = true;
-        await finishPipelineRun(0);
-        return;
-      }
-      if (pipelineState.mode === "nc-sounds") {
+      if (pipelineState.mode === "nc-sounds" || reportNeedsRefresh) {
         const reportExitCode = await runPipelineChild(
           process.execPath,
           [join(repoRoot, "update.mjs"), "--report-only"],
@@ -2405,6 +2498,11 @@ export async function createExplorerServer({
           await finishPipelineRun(reportExitCode);
           return;
         }
+      }
+      if (!acceptedAny && retryMode && !registryChanged) {
+        pipelineState.gitPublished = true;
+        await finishPipelineRun(0);
+        return;
       }
       await continueAfterAssetReview();
     };

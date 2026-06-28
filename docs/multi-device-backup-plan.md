@@ -188,7 +188,7 @@ IUCN_Datenbank_2026-06-28_094512_3880eea.zip
   "nodeVersion": "v24.12.0",
   "includesNodeModules": true,
   "includesFfmpeg": true,
-  "speciesCount": 48
+  "speciesCount": 46
 }
 ```
 

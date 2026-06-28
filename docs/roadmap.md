@@ -302,8 +302,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Die beiden neuen API-Routen sind `POST /api/species/new/preview` und `POST /api/species/new/save`. Sechs
   Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests nicht veraendert. Der lokale Server
   wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle fuenf Felder mit Beispieltexten aus.
-  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
-    Höckerschwan wurden nach erfolgreicher Bereinigung erneut angelegt; aktuell stehen 48 Arten in `species_list.json`.
+  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher,
+  Höckerschwan und Löwe wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt;
+  aktuell stehen 46 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -343,7 +344,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für die sieben
   geschützten Karten und `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds sowie fehlende
   Sounddateien. Bestehende Dateien werden bis
-  zur Übernahmeentscheidung lokal gesichert. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
+  zur Übernahmeentscheidung lokal gesichert. Abgelehnte Soundquellen werden unter `sound.rejectedSources` gespeichert
+  und in spaeteren Suchlaeufen uebersprungen. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
   ursprünglichen Art-Speicherschritts. Der Pipeline-Dialog bleibt nach dem Start geöffnet und zeigt eindeutig
   `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` wechselt dann zu `Fenster schließen`; der Lauf
   wird beim Schließen nicht beendet. Ein dauerhafter Balken im Hauptfenster zeigt auch nach dem Schließen den
@@ -354,6 +356,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Ein am 2026-06-27 geprüfter Hänger nach finaler Erfolgsausgabe wurde behoben: `update.mjs` leert stdout/stderr und
   beendet den Prozess danach explizit, damit der Explorer den Lauf als abgeschlossen erkennt und die Assetentscheidung
   anzeigen kann.
+  Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
+  `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
+  anschliessend endgueltig. Dadurch bleibt der Report auch bei Windows-Dateisperren konsistent. Die produktive
+  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen; danach meldet der Explorer 46/46 Arten,
+  0 Assetprobleme und einen konsistenten Report.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
@@ -365,7 +372,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   NC-Hinweis, Staging, Vorschau-Token, paralleler Änderungsschutz und gemeinsames Backup von Sound, Credits und
   Spektrogramm. 7.7.4 ist technisch umgesetzt: Vor dem Austausch wird das neue Spektrogramm automatisch erzeugt
   und als WebP geprüft. Bei einem Fehler bleiben alle Produktivdateien unverändert. Sound- und Spektrogramm-SHA-256
-  werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 47 von 47
+  werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 45 von 45
     Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
     Die betroffenen Assetpfade werden automatisch committed und gepusht.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
@@ -402,7 +409,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Port-4177-Fallback auf freien Port, externe Links im Standardbrowser, Server-Neustart bei Startfehlern, eine
   Desktop-Verknüpfung per `npm.cmd run species:desktop:shortcut` und eine
   Schließabfrage bei laufendem Pipeline-/Asset-Prüfschritt. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
-  `npm.cmd run --silent test:explorer` läuft mit 18 Tests. Details: `docs/desktop-shell-plan.md`.
+  `npm.cmd run --silent test:explorer` läuft mit 19 Tests. Details: `docs/desktop-shell-plan.md`.
   Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.8.1 Projektkonsolidierungs-Audit vor NAS/Mehrgeraete: gestartet am 2026-06-28, siehe

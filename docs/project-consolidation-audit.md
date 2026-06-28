@@ -27,14 +27,14 @@ Dieser Audit ist bewusst nicht-destruktiv: Es wurden keine Dateien geloescht, ve
 
 | Pruefung | Ergebnis |
 | --- | --- |
-| Explorer-Tests | 18 von 18 erfolgreich |
+| Explorer-Tests | 19 von 19 erfolgreich |
 | JS-/MJS-Syntax | 23 Dateien erfolgreich geprueft |
 | Lokaler Site-Audit | erfolgreich |
-| Arten in `species_list.json` | 48 |
-| Arten in `speciesData.json` | 48 |
-| Karten | 48 |
-| Artportraets | 48 |
-| MP3/Credits/Spektrogramme | 47 je Typ |
+| Arten in `species_list.json` | 46 |
+| Arten in `speciesData.json` | 46 |
+| Karten | 46 |
+| Artportraets | 46 |
+| MP3/Credits/Spektrogramme | 45 je Typ |
 | Bewusster Soundhinweis | `Gruener Leguan` |
 | NC-Soundhinweise | 3 |
 | Manuelle Karten | 4 |
@@ -44,7 +44,7 @@ Dieser Audit ist bewusst nicht-destruktiv: Es wurden keine Dateien geloescht, ve
 
 | Pfad | Dateien | Groesse | Bewertung |
 | --- | ---: | ---: | --- |
-| `species-assets/` | 285 | ca. 191 MB | produktiv, behalten |
+| `species-assets/` | 273 | ca. 188,4 MB | produktiv, behalten |
 | `local-tools/` | 3 | ca. 291 MB | lokales FFmpeg-Paket, ignoriert, fuer Spektrogramme nuetzlich |
 | `Testlauf/` | 983 | ca. 31,5 MB | alter Browser-/Screenshot-/Cache-Testlauf, Bereinigungskandidat |
 | `species-explorer/backups/` | 15 | ca. 0,13 MB | normale species-list-Sicherungen, unter Retention-Grenze |

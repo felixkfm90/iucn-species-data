@@ -109,8 +109,9 @@ Technischer Stand vom 2026-06-19:
 
 Aktueller redaktioneller Stand:
 
-- 47 Eintraege in `species_list.json`
-- Haubentaucher und Höckerschwan wurden nach der Bereinigung erneut angelegt und vollständig verarbeitet
+- 46 Eintraege in `species_list.json`
+- Haubentaucher, Höckerschwan und Löwe wurden nach den produktiven Workflow-Tests wieder entfernt und am
+  2026-06-28 bereinigt
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
 

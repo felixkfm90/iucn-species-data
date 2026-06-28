@@ -169,64 +169,6 @@
         "metadataSha256": "cd86e693171ae7e5be0e7e2a194d7ff7b2d062865733416c5d91ee42c9b4eafd"
       }
     },
-    "Haubentaucher": {
-      "map": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T06:47:59.604Z"
-      },
-      "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T06:47:59.604Z"
-      },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "9d9a9a568b9838e400ac623710ddeb43f7f411c2263f28f9e240b3db8dcd63ed",
-        "spectrogramSha256": "16fa0f77f2e61bd9bd0239c8f52eb6330ebbc6b042a292cbf5bf04f76d239d80",
-        "generatedAt": "2026-06-20T06:47:43.304Z",
-        "verifiedAt": "2026-06-20T18:35:37.783Z"
-      },
-      "portrait": {
-        "managedBy": "species-explorer",
-        "source": "ChatGPT",
-        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.0.0",
-        "importedAt": "2026-06-21T18:03:56.299Z",
-        "approvedAt": "2026-06-21T18:04:18.743Z",
-        "sha256": "2d60ab6a1029398bb5b91ee11278f562facbbf8d734caca74efe24f561700bd4",
-        "metadataSha256": "53925968874495399a60f8e3622d3c16029aa3ec7f42a6300ba53b57849a9e41"
-      }
-    },
-    "Hoeckerschwan": {
-      "map": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T06:51:36.088Z"
-      },
-      "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-20T06:51:36.088Z"
-      },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "1d202c2eb86b1c2828b82f97e1758e99392020d7bcfeaeeef0a6d1560c7dc00e",
-        "spectrogramSha256": "84875d832ee0dd603c1b53c055ae155528736fceb652d04e691bc7bec22535ef",
-        "generatedAt": "2026-06-20T06:51:16.324Z",
-        "verifiedAt": "2026-06-20T18:35:37.784Z"
-      },
-      "portrait": {
-        "managedBy": "species-explorer",
-        "source": "ChatGPT",
-        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.0.0",
-        "importedAt": "2026-06-21T18:04:30.146Z",
-        "approvedAt": "2026-06-21T18:04:49.027Z",
-        "sha256": "e2b6bc0a371688317954284d989cb65fdebb066cb010c3103783e6b9743d8c99",
-        "metadataSha256": "6a53a97bcba37f2202c7667f5757510d5aee86babf5720aa0731c1e989c17dad"
-      }
-    },
     "Alpenstrandlaeufer": {
       "spectrogram": {
         "stale": false,
@@ -974,30 +916,6 @@
         "approvedAt": "2026-06-27T05:59:49.446Z",
         "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
         "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
-      }
-    },
-    "Loewe": {
-      "portrait": {
-        "managedBy": "species-explorer",
-        "source": "ChatGPT",
-        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.1.0",
-        "importedAt": "2026-06-28T16:02:54.119Z",
-        "approvedAt": "2026-06-28T16:03:03.261Z",
-        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "92d4e55306bbc3e13a210a66531e817e5ff923e84e7941ff70e5f81af6ee86cb"
-      },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "dc1309c2ecc91ee53fb761eb645626719ee3e674086f9008abf7f0303747ec9c",
-        "spectrogramSha256": "270957dd792d914bfed34dc87b1f1ee379cc4a0a05809614e478bd6034689434",
-        "generatedAt": "2026-06-28T16:03:33.147Z",
-        "verifiedAt": "2026-06-28T16:03:33.153Z"
-      },
-      "sound": {
-        "manual": true,
-        "reason": "Nach Pipeline-Import von Felix als manuell gepflegt markiert.",
-        "updatedAt": "2026-06-28T16:04:16.874Z"
       }
     }
   },
