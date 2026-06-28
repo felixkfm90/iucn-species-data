@@ -1,7 +1,12 @@
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
+
+const nativeFetch = globalThis.fetch;
+if (typeof nativeFetch !== "function") {
+  throw new Error("Diese Pipeline benoetigt Node.js 18 oder neuer, weil natives fetch verwendet wird.");
+}
+const fetch = nativeFetch.bind(globalThis);
 
 // =======================
 // KONFIG / ORDNER

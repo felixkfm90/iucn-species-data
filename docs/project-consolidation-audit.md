@@ -78,10 +78,10 @@ werden:
 
 Diese Punkte sind keine Fehler, aber sinnvoll vor oder waehrend Phase 7.9 zu klaeren:
 
-1. `node-fetch` pruefen und wahrscheinlich entfernen
+1. `node-fetch` pruefen und kontrolliert entfernen oder ersetzen
    - `npm.cmd ls --depth=0` zeigt `node-fetch` als Dependency
-   - eine Suche im versionierten Projektbereich fand keine aktive Nutzung
    - Kandidat fuer kontrollierte Entfernung mit Testlauf und Commit
+   - falls noch Codepfade darauf verweisen, auf natives Node-`fetch` umstellen oder Dependency behalten
 
 2. Lokales FFmpeg behandeln
    - `local-tools/ffmpeg` ist korrekt ignoriert, aber mit ca. 291 MB gross
@@ -143,11 +143,13 @@ Nach Felix' Freigabe wurden die drei lokalen Altlasten entfernt:
 Die Pfade wurden vor dem Loeschen jeweils auf `D:\IUCN_Datenbank` aufgeloest und gegen den Workspace-Pfad
 geprueft. Es wurden nur diese freigegebenen, ignorierten Ziele geloescht.
 
-Zusaetzlich wurde die ungenutzte Dependency `node-fetch` kontrolliert entfernt:
+Zusaetzlich wurde `node-fetch` kontrolliert entfernt und die Pipeline auf natives Node-`fetch` umgestellt:
 
-- `rg` fand keine aktive Nutzung von `node-fetch` oder `fetch(` im versionierten Projektbereich.
 - `npm.cmd uninstall node-fetch` entfernte `node-fetch` und seine indirekten Pakete aus `package.json`,
   `package-lock.json` und `node_modules`.
+- Danach zeigte ein Pipeline-Test, dass `update.mjs` noch einen direkten Top-Level-Import `node-fetch` enthielt.
+- `update.mjs` nutzt seitdem natives `globalThis.fetch` und meldet verstaendlich, wenn Node.js aelter als Version 18
+  ist.
 - `npm.cmd ls --depth=0` zeigt danach nur noch `electron` als Dev-Dependency.
 
 Nach der Bereinigung erfolgreich geprueft:
@@ -165,5 +167,6 @@ Offen bleiben bewusst:
 ## Fazit
 
 Es gibt keinen kritischen Blocker fuer Phase 7.9. Der Projektzustand ist konsistent. Vor der NAS-/Mehrgeraete-Stufe
-wurden die lokalen Altlasten und die ungenutzte Dependency bereinigt. Die naechsten offenen Strukturfragen betreffen
-FFmpeg-/Installer-Konzept, Log-/Temp-Retention und das Mehrgeraete-/Backup-Modell.
+wurden die lokalen Altlasten bereinigt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Die
+naechsten offenen Strukturfragen betreffen FFmpeg-/Installer-Konzept, Log-/Temp-Retention und das
+Mehrgeraete-/Backup-Modell.

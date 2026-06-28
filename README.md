@@ -108,7 +108,7 @@ Uebersichtsseiten brauchen fuer die Suche:
 
 Voraussetzungen:
 
-- Node.js
+- Node.js 18 oder neuer
 - `npm install`
 - Environment Variable `IUCN_TOKEN`
 - Environment Variable `XENO_TOKEN`
@@ -512,7 +512,7 @@ Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 In Phase 7 folgen
 spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Vor Phase 7.9 wurde ein
 Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`. Dabei wurden lokale Altlasten
-entfernt und die ungenutzte Dependency `node-fetch` bereinigt. Phase 8 bleibt fuer Ausbau mit
+entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 ## Aktueller Datenstand

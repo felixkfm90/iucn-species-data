@@ -406,11 +406,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.8.1 Projektkonsolidierungs-Audit vor NAS/Mehrgeraete: gestartet am 2026-06-28, siehe
   `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer 7.9. Bereinigungskandidaten sind
-  `Testlauf/`, `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten sind
-  die wahrscheinlich ungenutzte Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
-  Nach Felix' Freigabe wurden `Testlauf/`, `errors.log` und `species-explorer/pipeline-asset-backups/` geloescht
-  sowie `node-fetch` aus `package.json` und `package-lock.json` entfernt. Tests, JS-/MJS-Syntax und lokaler Site-Audit
-  sind danach erfolgreich.
+  `Testlauf/`, `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten waren
+  die Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
+  Nach Felix' Freigabe wurden `Testlauf/`, `errors.log` und `species-explorer/pipeline-asset-backups/` geloescht.
+  `node-fetch` wurde aus `package.json` und `package-lock.json` entfernt; ein danach gefundener Pipeline-Importfehler
+  wurde durch Umstellung von `update.mjs` auf natives Node-`fetch` korrigiert. Node.js 18 oder neuer ist damit
+  Voraussetzung. Tests, JS-/MJS-Syntax und lokaler Site-Audit sind danach erfolgreich.
 - 7.9 Synology NAS und automatisiertes Backup: danach.
 
 ## Phase 8 - Ausbau
