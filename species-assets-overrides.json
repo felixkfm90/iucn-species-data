@@ -948,9 +948,17 @@
             "recordist": "Speaker: Andrew Krizhanovsky, incorporating:\n\nFragmento Deemento - Volume 1.5 / Fragmento Deemento - Volume 1.5 (by-sa 3.0, en:Jamendo)\nFile:Lion raring-sound1TamilNadu178.ogg\nImage:Ru-audio template-Wikipedia.ogg\nAuthors of the article",
             "license": "https://creativecommons.org/licenses/by-sa/3.0",
             "rejectedAt": "2026-06-28T19:06:47.293Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-06-28T19:11:22.062Z"
           }
         ],
-        "updatedAt": "2026-06-28T19:06:47.292Z"
+        "updatedAt": "2026-06-28T19:11:22.062Z"
       }
     }
   },
