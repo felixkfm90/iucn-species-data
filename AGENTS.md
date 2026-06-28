@@ -482,7 +482,10 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 7.9 umfasst spaeter Projektmigration oder Spiegelung auf ein persoenliches Synology NAS und ein
-  automatisiertes Backup mit dokumentiertem Restore-Test.
+  Phase 7.9 wurde am 2026-06-28 gestartet, siehe `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
+  zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
+  vollstaendiges ZIP-Restore-Backup und der Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch.
+  `restore-start.cmd` ist der erste technische Baustein: Nach dem Entpacken eines NAS-Backups prueft das Skript
+  Node.js 18+, richtet die Desktop-Verknuepfung ein und startet die App.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.

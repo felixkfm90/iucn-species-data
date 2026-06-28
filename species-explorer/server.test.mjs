@@ -1434,6 +1434,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     updateSource,
     desktopLauncherSource,
     shortcutInstallerSource,
+    restoreStartSource,
     packageSource,
     assetOverrides,
   ] = await Promise.all([
@@ -1444,6 +1445,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("../update.mjs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/start-explorer.vbs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/install-shortcut.ps1", import.meta.url), "utf8"),
+    readFile(new URL("../restore-start.cmd", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
@@ -1542,6 +1544,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(desktopLauncherSource, /shell\.Run command,\s*0,\s*False/);
   assert.match(shortcutInstallerSource, /CreateShortcut/);
   assert.match(shortcutInstallerSource, /wscript\.exe/);
+  assert.match(restoreStartSource, /Node\.js 18 oder neuer/);
+  assert.match(restoreStartSource, /npm\.cmd install/);
+  assert.match(restoreStartSource, /species:desktop:shortcut/);
+  assert.match(restoreStartSource, /start-explorer\.vbs/);
   assert.match(packageSource, /species:desktop:shortcut/);
   assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
   assert.match(serverSource, /Git-Commit/);

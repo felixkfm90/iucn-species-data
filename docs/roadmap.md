@@ -412,7 +412,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `node-fetch` wurde aus `package.json` und `package-lock.json` entfernt; ein danach gefundener Pipeline-Importfehler
   wurde durch Umstellung von `update.mjs` auf natives Node-`fetch` korrigiert. Node.js 18 oder neuer ist damit
   Voraussetzung. Tests, JS-/MJS-Syntax und lokaler Site-Audit sind danach erfolgreich.
-- 7.9 Synology NAS und automatisiertes Backup: danach.
+- 7.9 Synology NAS, Mehrgeraete und automatisiertes Backup: gestartet am 2026-06-28, siehe
+  `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt zentrale versionierte Wahrheit, die App
+  bearbeitet lokale Projektordner pfadunabhaengig, NAS wird als vollstaendiges ZIP-Restore-Backup genutzt und der
+  Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch statt in `main`. Der erste technische
+  Baustein ist `restore-start.cmd`: Nach dem Entpacken eines NAS-Backups prueft das Skript Node.js 18+, richtet die
+  Desktop-Verknuepfung ein und startet die App.
 
 ## Phase 8 - Ausbau
 

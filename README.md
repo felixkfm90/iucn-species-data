@@ -515,6 +515,14 @@ Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`. D
 entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
+Phase 7.9 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
+versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
+vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.
+
+Nach einem Restore aus einem NAS-ZIP kann `restore-start.cmd` im entpackten Projektordner per Doppelklick gestartet
+werden. Das Skript prueft Node.js 18+, bietet bei fehlenden `node_modules` ein `npm install` an, erstellt die
+Desktop-Verknuepfung und startet die App.
+
 ## Aktueller Datenstand
 
 Aktueller lokaler Stand vom 2026-06-27:
