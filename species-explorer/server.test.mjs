@@ -1636,6 +1636,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /class="new-species-portrait"/);
   assert.match(htmlSource, /new-species-portrait-file-input/);
   assert.match(htmlSource, /Portrait-Prompt erstellen/);
+  assert.match(
+    htmlSource,
+    /data-pipeline-mode="all"[\s\S]*data-pipeline-mode="missing"[\s\S]*data-pipeline-mode="manual-maps"/,
+  );
   assert.match(htmlSource, /data-pipeline-mode="missing"/);
   assert.match(htmlSource, /data-pipeline-mode="all"/);
   assert.match(htmlSource, /data-pipeline-mode="manual-maps"/);
