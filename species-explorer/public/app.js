@@ -326,7 +326,7 @@ function updateValidation(validation) {
   const detailItems = [];
   if (!dataOk) {
     detailItems.push(
-      `Daten: ${validation.data.inputOnlyCount} nur in species_list.json, `
+      `Daten: ${validation.data.inputOnlyCount} nur in der Eingabeliste, `
       + `${validation.data.generatedOnlyCount} nur in speciesData.json, `
       + `${validation.data.mismatchSpeciesCount} Art(en) mit Feldabweichung`,
     );
@@ -532,6 +532,7 @@ async function fetchJson(url, options) {
   if (!response.ok) {
     const error = new Error(payload.error || "Anfrage ist fehlgeschlagen");
     error.details = payload.details || [];
+    error.fieldErrors = payload.fieldErrors || {};
     throw error;
   }
   return payload;
@@ -1227,7 +1228,7 @@ function setupPipelineControl() {
       : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent.";
   };
 
-  async function openPreview(mode) {
+  async function openPreview(mode, options = {}) {
     previewToken = "";
     previewMode = mode;
     previewKind = "pipeline";
@@ -1253,7 +1254,7 @@ function setupPipelineControl() {
       const result = await fetchJson("/api/pipeline/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, targetSlugs: options.targetSlugs || [] }),
       });
       previewToken = result.token;
       renderPreview(result);
@@ -1503,13 +1504,16 @@ function setupNewSpeciesCreator() {
   const form = elements.newSpeciesForm;
   const openButton = elements.newSpeciesButton;
   const closeButtons = [...dialog.querySelectorAll(".new-species-cancel")];
+  const steps = [...dialog.querySelectorAll("[data-new-species-step]")];
+  const stepIndicators = [...dialog.querySelectorAll("[data-new-species-step-indicator]")];
   const preview = dialog.querySelector(".new-species-preview");
   const message = dialog.querySelector(".new-species-message");
   const previewButton = dialog.querySelector(".new-species-preview-button");
+  const nextButton = dialog.querySelector(".new-species-next-button");
+  const backButton = dialog.querySelector(".new-species-back-button");
   const saveButton = dialog.querySelector(".new-species-save-button");
   const jsonPreview = dialog.querySelector(".new-species-json");
   const derivedFields = [...dialog.querySelectorAll("[data-derived]")];
-  const portraitSection = dialog.querySelector(".new-species-portrait");
   const portraitInstructions = dialog.querySelector(".new-species-portrait-instructions");
   const portraitPromptButton = dialog.querySelector(".new-species-portrait-prompt-button");
   const portraitCopyButton = dialog.querySelector(".new-species-portrait-copy-button");
@@ -1520,12 +1524,16 @@ function setupNewSpeciesCreator() {
   const portraitPreview = dialog.querySelector(".new-species-portrait-preview");
   const portraitPreviewImage = dialog.querySelector(".new-species-portrait-preview-image");
   const portraitPreviewMeta = dialog.querySelector(".new-species-portrait-preview-meta");
-  const portraitSaveButton = dialog.querySelector(".new-species-portrait-save-button");
+  const portraitPreviewButton = dialog.querySelector(".new-species-portrait-preview-button");
+  const portraitSkipButton = dialog.querySelector(".new-species-portrait-skip-button");
+  const finalPortraitState = dialog.querySelector(".new-species-final-portrait-state");
+
+  let currentStep = 1;
   let previewToken = "";
   let portraitPromptText = "";
   let portraitPreviewToken = "";
-  let savedSpeciesId = "";
-  let newSpeciesSaved = false;
+  let portraitSkipped = false;
+  let busy = false;
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1539,15 +1547,124 @@ function setupNewSpeciesCreator() {
     portraitMessage.hidden = !text;
   };
 
+  const fieldLabel = (fieldKey) => form.querySelector(`[data-field="${fieldKey}"]`);
+
+  const clearFieldErrors = () => {
+    for (const label of form.querySelectorAll("[data-field]")) {
+      label.classList.remove("field-error");
+      label.querySelector(".field-error-text")?.remove();
+    }
+  };
+
+  const applyFieldErrors = (fieldErrors = {}) => {
+    clearFieldErrors();
+    for (const [fieldKey, errors] of Object.entries(fieldErrors)) {
+      const label = fieldLabel(fieldKey);
+      if (!label) continue;
+      label.classList.add("field-error");
+      const text = document.createElement("small");
+      text.className = "field-error-text";
+      text.textContent = Array.isArray(errors) ? errors.join(" · ") : String(errors);
+      label.append(text);
+    }
+  };
+
+  const updateMeasurementMode = (kind) => {
+    const checked = form.elements[`${kind}Sexed`]?.checked === true;
+    const sharedLabel = fieldLabel(kind);
+    const sexedFields = form.querySelector(`[data-sexed-fields="${kind}"]`);
+    if (sharedLabel) sharedLabel.hidden = checked;
+    if (sexedFields) sexedFields.hidden = !checked;
+  };
+
+  const composeSexedValue = (male, female) => `Männchen: ${String(male ?? "").trim()}; Weibchen: ${String(female ?? "").trim()}`;
+
   const speciesValues = () => {
     const formData = new FormData(form);
+    const sizeSexed = formData.get("sizeSexed") === "on";
+    const weightSexed = formData.get("weightSexed") === "on";
     return {
       german: formData.get("german"),
       scientificName: formData.get("scientificName"),
-      size: formData.get("size"),
-      weight: formData.get("weight"),
+      size: sizeSexed
+        ? composeSexedValue(formData.get("sizeMale"), formData.get("sizeFemale"))
+        : formData.get("size"),
+      weight: weightSexed
+        ? composeSexedValue(formData.get("weightMale"), formData.get("weightFemale"))
+        : formData.get("weight"),
       lifeExpectancy: formData.get("lifeExpectancy"),
     };
+  };
+
+  const localFieldErrors = () => {
+    const formData = new FormData(form);
+    const errors = {};
+    const add = (fieldKey, text) => {
+      errors[fieldKey] ??= [];
+      errors[fieldKey].push(text);
+    };
+    for (const [fieldKey, label] of [
+      ["german", "Deutscher Name"],
+      ["scientificName", "Wissenschaftlicher Name"],
+      ["lifeExpectancy", "Lebenserwartung"],
+    ]) {
+      if (!String(formData.get(fieldKey) ?? "").trim()) add(fieldKey, `${label} darf nicht leer sein`);
+    }
+    if (formData.get("sizeSexed") === "on") {
+      if (!String(formData.get("sizeMale") ?? "").trim()) add("sizeMale", "Größe Männchen darf nicht leer sein");
+      if (!String(formData.get("sizeFemale") ?? "").trim()) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
+    } else if (!String(formData.get("size") ?? "").trim()) {
+      add("size", "Größe darf nicht leer sein");
+    }
+    if (formData.get("weightSexed") === "on") {
+      if (!String(formData.get("weightMale") ?? "").trim()) add("weightMale", "Gewicht Männchen darf nicht leer sein");
+      if (!String(formData.get("weightFemale") ?? "").trim()) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
+    } else if (!String(formData.get("weight") ?? "").trim()) {
+      add("weight", "Gewicht darf nicht leer sein");
+    }
+    return errors;
+  };
+
+  const canAdvanceFromPortrait = () => portraitSkipped || Boolean(portraitPreviewToken);
+
+  const updateFinalPortraitState = () => {
+    if (!finalPortraitState) return;
+    finalPortraitState.textContent = portraitPreviewToken
+      ? "Geprüftes Artportrait wird beim Abschluss lokal übernommen."
+      : "Artportrait wird übersprungen.";
+  };
+
+  const updateButtons = () => {
+    previewButton.hidden = currentStep !== 1;
+    backButton.hidden = currentStep === 1;
+    nextButton.hidden = currentStep === 3;
+    saveButton.hidden = currentStep !== 3;
+    previewButton.disabled = busy;
+    backButton.disabled = busy;
+    nextButton.disabled = busy || (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait());
+    saveButton.disabled = busy || !previewToken;
+    portraitPromptButton.disabled = busy || !previewToken;
+    portraitCopyButton.disabled = busy || !portraitPromptText;
+    portraitPreviewButton.disabled = busy || !previewToken;
+    portraitSkipButton.disabled = busy || !previewToken;
+    openButton.disabled = busy;
+    for (const button of closeButtons) button.disabled = busy;
+  };
+
+  const showStep = (step) => {
+    currentStep = step;
+    for (const section of steps) {
+      const active = Number(section.dataset.newSpeciesStep) === step;
+      section.hidden = !active;
+      section.classList.toggle("active", active);
+    }
+    for (const indicator of stepIndicators) {
+      const active = Number(indicator.dataset.newSpeciesStepIndicator) === step;
+      indicator.classList.toggle("active", active);
+      indicator.classList.toggle("done", Number(indicator.dataset.newSpeciesStepIndicator) < step);
+    }
+    updateFinalPortraitState();
+    updateButtons();
   };
 
   const resetPortraitPrompt = () => {
@@ -1559,39 +1676,36 @@ function setupNewSpeciesCreator() {
 
   const resetPortraitPreview = () => {
     portraitPreviewToken = "";
+    portraitSkipped = false;
     portraitPreview.hidden = true;
     portraitPreviewImage.removeAttribute("src");
     portraitPreviewMeta.textContent = "";
-    portraitSaveButton.disabled = true;
+    updateFinalPortraitState();
+    updateButtons();
   };
 
-  const resetPortraitState = ({ hideSection = true, clearFile = true } = {}) => {
-    resetPortraitPrompt();
-    resetPortraitPreview();
-    setPortraitMessage();
-    savedSpeciesId = "";
-    if (clearFile && portraitFileInput) portraitFileInput.value = "";
-    if (hideSection) portraitSection.hidden = true;
-  };
-
-  const resetPreview = () => {
+  const resetAll = () => {
     previewToken = "";
-    newSpeciesSaved = false;
+    portraitPromptText = "";
+    portraitPreviewToken = "";
+    portraitSkipped = false;
+    busy = false;
     preview.hidden = true;
     jsonPreview.textContent = "";
     for (const field of derivedFields) field.textContent = "";
-    saveButton.disabled = true;
-    resetPortraitState();
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    setMessage();
+    setPortraitMessage();
+    clearFieldErrors();
+    updateMeasurementMode("size");
+    updateMeasurementMode("weight");
+    showStep(1);
   };
 
-  const setBusy = (busy) => {
-    previewButton.disabled = busy || newSpeciesSaved;
-    saveButton.disabled = busy || !previewToken || newSpeciesSaved;
-    portraitPromptButton.disabled = busy || preview.hidden || newSpeciesSaved;
-    portraitCopyButton.disabled = busy || !portraitPromptText;
-    portraitSaveButton.disabled = busy || !portraitPreviewToken;
-    openButton.disabled = busy;
-    for (const button of closeButtons) button.disabled = busy;
+  const setBusy = (value) => {
+    busy = value;
+    updateButtons();
   };
 
   const close = () => {
@@ -1601,8 +1715,7 @@ function setupNewSpeciesCreator() {
 
   openButton.addEventListener("click", () => {
     form.reset();
-    resetPreview();
-    setMessage();
+    resetAll();
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
     form.elements.german.focus();
@@ -1611,21 +1724,45 @@ function setupNewSpeciesCreator() {
   for (const button of closeButtons) button.addEventListener("click", close);
   setupSafeBackdropClose(dialog, close);
 
+  form.elements.sizeSexed?.addEventListener("change", () => {
+    updateMeasurementMode("size");
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    previewToken = "";
+    preview.hidden = true;
+    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
+    updateButtons();
+  });
+  form.elements.weightSexed?.addEventListener("change", () => {
+    updateMeasurementMode("weight");
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    previewToken = "";
+    preview.hidden = true;
+    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
+    updateButtons();
+  });
+
   form.addEventListener("input", (event) => {
     if (event.target.closest(".new-species-portrait")) {
-      resetPortraitPrompt();
+      if (event.target === portraitInstructions) resetPortraitPrompt();
       resetPortraitPreview();
-      setPortraitMessage("Portraitangaben geändert. Prompt oder Bildprüfung bei Bedarf neu erstellen.", "info");
+      setPortraitMessage("Portraitangaben geändert. Bitte Bildprüfung bei Bedarf erneut ausführen.", "info");
       return;
     }
-    resetPreview();
-    setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
+    previewToken = "";
+    preview.hidden = true;
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    if (currentStep !== 1) showStep(1);
+    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
+    updateButtons();
   });
 
   portraitFileInput.addEventListener("change", () => {
     resetPortraitPreview();
     if (portraitFileInput.files?.[0]) {
-      setPortraitMessage("Bild ausgewählt. Nach dem Anlegen der Art wird es direkt geprüft.", "info");
+      setPortraitMessage("Bild ausgewählt. Bitte mit „Bild prüfen“ validieren.", "info");
     } else {
       setPortraitMessage();
     }
@@ -1633,7 +1770,16 @@ function setupNewSpeciesCreator() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    resetPreview();
+    if (currentStep !== 1) return;
+    const localErrors = localFieldErrors();
+    if (Object.keys(localErrors).length) {
+      applyFieldErrors(localErrors);
+      setMessage(Object.values(localErrors).flat().join(" · "), "error");
+      return;
+    }
+    clearFieldErrors();
+    resetPortraitPrompt();
+    resetPortraitPreview();
     setBusy(true);
     setMessage("Neue Art und mögliche Kollisionen werden geprüft…", "info");
     try {
@@ -1648,25 +1794,30 @@ function setupNewSpeciesCreator() {
       }
       jsonPreview.textContent = JSON.stringify(result.entry, null, 2);
       preview.hidden = false;
-      portraitSection.hidden = false;
-      portraitPromptButton.disabled = false;
-      saveButton.disabled = false;
-      setMessage(
-        "Vorschau erstellt. Beim Anlegen wird zuerst eine lokale Sicherung gespeichert.",
-        "success",
-      );
+      setMessage("Eingaben sind geprüft. Der nächste Schritt ist jetzt verfügbar.", "success");
     } catch (error) {
+      applyFieldErrors(error.fieldErrors || {});
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
     } finally {
       setBusy(false);
     }
   });
 
+  nextButton.addEventListener("click", () => {
+    if (currentStep === 1 && previewToken) showStep(2);
+    else if (currentStep === 2 && canAdvanceFromPortrait()) showStep(3);
+  });
+
+  backButton.addEventListener("click", () => {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
+
   portraitPromptButton.addEventListener("click", async () => {
+    if (!previewToken) return;
     resetPortraitPrompt();
     resetPortraitPreview();
     setBusy(true);
-    setPortraitMessage("Portrait-Prompt wird aus den neuen Artdaten erstellt…", "info");
+    setPortraitMessage("Portrait-Prompt wird aus den geprüften Artdaten erstellt…", "info");
     try {
       const result = await fetchJson("/api/species/new/portrait-prompt", {
         method: "POST",
@@ -1685,6 +1836,7 @@ function setupNewSpeciesCreator() {
         "success",
       );
     } catch (error) {
+      applyFieldErrors(error.fieldErrors || {});
       setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
     } finally {
       setBusy(false);
@@ -1709,132 +1861,120 @@ function setupNewSpeciesCreator() {
     }
   });
 
-  const previewNewSpeciesPortrait = async (speciesId) => {
+  portraitPreviewButton.addEventListener("click", async () => {
+    if (!previewToken) return;
     resetPortraitPreview();
     const file = portraitFileInput.files?.[0];
-    if (!file) return false;
-    if (file.size > 20 * 1024 * 1024) throw new Error("Bilddatei darf maximal 20 MB groß sein");
-    setPortraitMessage("Art wurde angelegt. Portraitbild wird jetzt geprüft…", "info");
-    const imageBase64 = await fileToBase64(file);
-    const result = await fetchJson(
-      `/api/species/${encodeURIComponent(speciesId)}/assets/portrait/preview`,
-      {
+    if (!file) {
+      setPortraitMessage("Bitte ein in ChatGPT erzeugtes PNG-, JPEG- oder WebP-Bild auswählen.", "error");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setPortraitMessage("Bilddatei darf maximal 20 MB groß sein.", "error");
+      return;
+    }
+    setBusy(true);
+    setPortraitMessage("Bilddatei wird geprüft und in das Produktformat umgewandelt…", "info");
+    try {
+      const imageBase64 = await fileToBase64(file);
+      const result = await fetchJson("/api/species/new/portrait-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          token: previewToken,
           originalName: file.name,
           imageBase64,
           additionalInstructions: portraitInstructions.value || "",
         }),
-      },
-    );
-    portraitPreviewToken = result.token;
-    portraitPreviewImage.src = result.newPortrait.url;
-    if (typeof portraitPreviewImage.decode === "function") await portraitPreviewImage.decode();
-    portraitPreviewMeta.textContent =
-      `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)}`
-      + ` · Quelle ${result.newPortrait.originalDimensions.width} × ${result.newPortrait.originalDimensions.height} px`;
-    portraitPromptText = result.newPortrait.prompt;
-    portraitPrompt.textContent = result.newPortrait.prompt;
-    portraitPromptDetails.hidden = false;
-    portraitCopyButton.disabled = false;
-    portraitPreview.hidden = false;
-    portraitSaveButton.disabled = false;
-    setPortraitMessage(
-      "Vorschau erstellt. Bitte Artmerkmale, Anatomie und vollständige Bildränder prüfen.",
-      "success",
-    );
-    return true;
-  };
+      });
+      portraitPreviewToken = result.token;
+      portraitSkipped = false;
+      portraitPreviewImage.src = result.newPortrait.url;
+      if (typeof portraitPreviewImage.decode === "function") await portraitPreviewImage.decode();
+      portraitPreviewMeta.textContent =
+        `${result.newPortrait.size} · ${formatBytes(result.newPortrait.bytes)}`
+        + ` · Quelle ${result.newPortrait.originalDimensions.width} × ${result.newPortrait.originalDimensions.height} px`;
+      portraitPromptText = result.newPortrait.prompt;
+      portraitPrompt.textContent = result.newPortrait.prompt;
+      portraitPromptDetails.hidden = false;
+      portraitCopyButton.disabled = false;
+      portraitPreview.hidden = false;
+      setPortraitMessage(
+        "Vorschau erstellt. Bitte Artmerkmale, Anatomie und vollständige Bildränder prüfen.",
+        "success",
+      );
+    } catch (error) {
+      resetPortraitPreview();
+      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  portraitSkipButton.addEventListener("click", () => {
+    resetPortraitPreview();
+    portraitSkipped = true;
+    setPortraitMessage("Artportrait wird für diese neue Art übersprungen und kann später ergänzt werden.", "info");
+    showStep(3);
+  });
 
   saveButton.addEventListener("click", async () => {
     if (!previewToken) return;
     setBusy(true);
-    setMessage("species_list.json wird gesichert und um die neue Art ergänzt…", "info");
+    setMessage("Neue Art wird gesichert und angelegt…", "info");
     try {
       const result = await fetchJson("/api/species/new/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: previewToken }),
       });
-      state.notice =
-        `${result.entry.german} wurde angelegt. Sicherung: ${result.backup}.`
-        + backupRetentionText(result)
-        + " Die Art ist bis zum nächsten Pipeline-Lauf erwartungsgemäß unvollständig."
-        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
-      savedSpeciesId = result.species?.id || result.derived.slug;
+      const savedSpeciesId = result.species?.id || result.derived.slug;
       state.selectedId = savedSpeciesId;
       elements.search.value = "";
       elements.statusFilter.value = "";
       elements.flagFilter.value = "";
-      newSpeciesSaved = true;
-      previewToken = "";
-      await loadData({ reload: true });
-      if (portraitFileInput.files?.[0]) {
-        try {
-          await previewNewSpeciesPortrait(savedSpeciesId);
-          setMessage(
-            `${result.entry.german} wurde angelegt. Das ausgewählte Portraitbild ist jetzt zur Übernahme bereit.`,
-            "success",
-          );
-        } catch (portraitError) {
-          setPortraitMessage(
-            [`Portraitbild konnte nicht geprüft werden: ${portraitError.message}`, ...(portraitError.details || [])]
-              .join(" · "),
-            "error",
-          );
-          setMessage(
-            `${result.entry.german} wurde angelegt. Das Portrait kann später im Bearbeiten-Dialog ergänzt werden.`,
-            "success",
-          );
-        }
-        setBusy(false);
-        return;
-      }
-      form.reset();
-      resetPreview();
-      setBusy(false);
-      close();
-      await state.openPipelinePreview?.("missing");
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-      setBusy(false);
-    }
-  });
 
-  portraitSaveButton.addEventListener("click", async () => {
-    if (!portraitPreviewToken || !savedSpeciesId) return;
-    const shouldSave = window.confirm(
-      "Artportrait für die neu angelegte Art speichern, committen und pushen?",
-    );
-    if (!shouldSave) {
-      setPortraitMessage("Übernahme abgebrochen. Das geprüfte Vorschaubild wurde nicht gespeichert.", "info");
-      return;
-    }
-    setBusy(true);
-    setPortraitMessage("Artportrait wird gespeichert, committed und gepusht…", "info");
-    try {
-      const result = await fetchJson(
-        `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/portrait/save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: portraitPreviewToken }),
-        },
-      );
-      state.notice = result.gitPublished
-        ? `Artportrait gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
-          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
-          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
-        : `Artportrait wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      let portraitNotice = "";
+      if (portraitPreviewToken) {
+        const shouldSavePortrait = window.confirm(
+          "Geprüftes Artportrait für die neue Art übernehmen? Die Veröffentlichung erfolgt mit dem anschließenden Pipeline-Lauf.",
+        );
+        if (shouldSavePortrait) {
+          setPortraitMessage("Artportrait wird lokal übernommen…", "info");
+          try {
+            const portraitResult = await fetchJson(
+              `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/portrait/save`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: portraitPreviewToken, publish: false }),
+              },
+            );
+            portraitNotice = portraitResult.saved ? " Artportrait wurde lokal übernommen." : "";
+          } catch (portraitError) {
+            portraitNotice =
+              ` Artportrait konnte nicht übernommen werden: ${portraitError.message}. Es kann später ergänzt werden.`;
+          }
+        } else {
+          portraitNotice = " Artportrait wurde nicht übernommen.";
+        }
+      }
+
+      state.notice =
+        `${result.entry.german} wurde angelegt. Sicherung: ${result.backup}.`
+        + backupRetentionText(result)
+        + portraitNotice
+        + " Die Art ist bis zum Pipeline-Lauf unvollständig."
+        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
       form.reset();
-      resetPreview();
+      resetAll();
       setBusy(false);
       close();
       await loadData({ reload: true });
-      await state.openPipelinePreview?.("missing");
+      await state.openPipelinePreview?.("missing", { targetSlugs: [savedSpeciesId] });
     } catch (error) {
-      setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      applyFieldErrors(error.fieldErrors || {});
+      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setBusy(false);
     }
   });
@@ -1873,6 +2013,7 @@ function setupSpeciesEditor(species) {
   const soundLicenseState = elements.detailPanel.querySelector(".sound-license-state");
   const soundPreviewButton = elements.detailPanel.querySelector(".sound-preview-button");
   const soundSaveButton = elements.detailPanel.querySelector(".sound-save-button");
+  const soundRejectCurrentButton = elements.detailPanel.querySelector(".sound-reject-current-button");
   const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
   const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
   const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
@@ -1991,6 +2132,7 @@ function setupSpeciesEditor(species) {
   const setSoundBusy = (busy) => {
     if (soundPreviewButton) soundPreviewButton.disabled = busy;
     if (soundSaveButton) soundSaveButton.disabled = busy || !soundPreviewToken;
+    if (soundRejectCurrentButton) soundRejectCurrentButton.disabled = busy;
     if (soundFileInput) soundFileInput.disabled = busy;
     if (soundReasonInput) soundReasonInput.disabled = busy;
     for (const input of form.querySelectorAll(".sound-credit-input")) input.disabled = busy;
@@ -2107,7 +2249,7 @@ function setupSpeciesEditor(species) {
   saveButton.addEventListener("click", async () => {
     if (!previewToken) return;
     setBusy(true);
-    setMessage("species_list.json wird gesichert und gespeichert…", "info");
+    setMessage("Manuelle Artdaten werden gesichert und gespeichert…", "info");
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/save`,
@@ -2202,6 +2344,41 @@ function setupSpeciesEditor(species) {
     } catch (error) {
       setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setMapBusy(false);
+    }
+  });
+
+  soundRejectCurrentButton?.addEventListener("click", async () => {
+    const shouldReject = window.confirm(
+      "Aktuellen Sound entfernen und diese Quelle künftig bei der Suche überspringen?",
+    );
+    if (!shouldReject) return;
+    resetSoundPreview();
+    setSoundBusy(true);
+    setSoundMessage(
+      "Aktueller Sound wird gesichert, entfernt, als abgelehnte Quelle gemerkt, der Report wird aktualisiert und danach committed/gepusht…",
+      "info",
+    );
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/sound/reject`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        },
+      );
+      state.notice = result.gitPublished
+        ? `Soundquelle abgelehnt und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
+          + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+          + ` Gesperrte Quelle: ${result.rejectedSource?.source || "Unbekannt"}.`
+          + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
+        : `Soundquelle wurde lokal abgelehnt, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+      stopSoundPreviewAudio();
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      setSoundBusy(false);
     }
   });
 
@@ -2522,7 +2699,7 @@ function setupSpeciesDelete(species) {
     setMessage(
       deleteAssets
         ? "Art, generierte Daten und Assets werden dauerhaft gelöscht…"
-        : "Art wird aus species_list.json entfernt…",
+        : "Art wird aus der Eingabeliste entfernt…",
       "info",
     );
     try {
@@ -2535,7 +2712,7 @@ function setupSpeciesDelete(species) {
         },
       );
       state.notice =
-        `${result.deleted.germanName} wurde aus species_list.json entfernt. Sicherung: ${result.backup}.`
+        `${result.deleted.germanName} wurde aus der Eingabeliste entfernt. Sicherung: ${result.backup}.`
         + backupRetentionText(result)
         + (result.permanentCleanup
           ? " Generierte Daten und Assetordner wurden dauerhaft gelöscht."
@@ -2741,7 +2918,6 @@ function renderDetail(species) {
       <form class="edit-form">
         <header class="edit-dialog-header">
           <div>
-            <p class="edit-eyebrow">species_list.json</p>
             <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
             <p>${escapeHtml(species.scientificName)} · Taxonomie und Name sind gesperrt.</p>
           </div>
@@ -2781,7 +2957,7 @@ function renderDetail(species) {
             </table>
           </div>
           <p class="edit-warning">
-            Speichern ändert nur <code>species_list.json</code>. Danach ist ein Pipeline-Lauf erforderlich.
+            Speichern ändert nur die manuellen Artdaten. Danach ist ein Pipeline-Lauf erforderlich.
           </p>
         </section>
 
@@ -3073,6 +3249,11 @@ function renderDetail(species) {
           </section>
 
           <div class="sound-edit-actions">
+            ${species.assets.sound.exists ? `
+              <button class="sound-reject-current-button danger" type="button">
+                Aktuellen Sound ablehnen
+              </button>
+            ` : ""}
             <button class="sound-preview-button" type="button">Sound und Credits prüfen</button>
             <button class="sound-save-button" type="button" disabled>Sound und Credits ersetzen</button>
           </div>
@@ -3091,7 +3272,6 @@ function renderDetail(species) {
         <form class="edit-form delete-form">
           <header class="edit-dialog-header">
             <div>
-              <p class="edit-eyebrow">species_list.json</p>
               <h3 id="delete-dialog-title">${escapeHtml(species.germanName)} löschen</h3>
               <p>${escapeHtml(species.scientificName)}</p>
             </div>

@@ -1552,8 +1552,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/species\/new\/preview/);
   assert.match(appSource, /\/api\/species\/new\/save/);
   assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
-  assert.match(appSource, /previewNewSpeciesPortrait\(savedSpeciesId\)/);
-  assert.match(appSource, /Artportrait für die neu angelegte Art speichern/);
+  assert.match(appSource, /\/api\/species\/new\/portrait-preview/);
+  assert.match(appSource, /Geprüftes Artportrait für die neue Art übernehmen/);
+  assert.match(appSource, /publish:\s*false/);
   assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
   assert.match(appSource, /function setupEditingMode\(\)/);
@@ -1648,6 +1649,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverLifecycleSource, /isBackupBlockingShutdown/);
   assert.match(packageSource, /species:desktop:shortcut/);
   assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
+  assert.match(serverSource, /async function previewNewSpeciesPortrait\(payload\)/);
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
@@ -1666,7 +1668,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
   assert.match(serverSource, /async function previewSoundAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveSoundAsset\(id, payload\)/);
-  assert.match(serverSource, /async function publishSoundAssetChanges\(species\)/);
+  assert.match(serverSource, /async function rejectCurrentSoundAsset\(id\)/);
+  assert.match(serverSource, /Reject sound source for/);
+  assert.match(serverSource, /async function publishSoundAssetChanges\(species,/);
   assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 3/);
   assert.match(serverSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
@@ -1727,16 +1731,23 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     /<h3 class="section-title">Manuelle Daten<\/h3>[\s\S]{0,400}edit-species-open/,
   );
-  assert.match(
-    appSource,
-    /newSpeciesSaved = true;[\s\S]*await loadData\(\{ reload: true \}\);[\s\S]*previewNewSpeciesPortrait\(savedSpeciesId\)/,
-  );
-  assert.match(appSource, /await state\.openPipelinePreview\?\.\("missing"\)/);
+  assert.match(appSource, /await loadData\(\{ reload: true \}\);[\s\S]*targetSlugs:\s*\[savedSpeciesId\]/);
+  assert.match(appSource, /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\]\s*\}\)/);
   assert.match(htmlSource, /Lesemodus 🔒\s*<\/button>/);
   assert.match(htmlSource, /id="new-species-button"/);
   assert.match(htmlSource, /id="new-species-dialog"/);
+  assert.match(htmlSource, /new-species-steps/);
+  assert.match(htmlSource, /Allgemeine Daten/);
+  assert.match(htmlSource, /Artportrait/);
+  assert.match(htmlSource, /Abschluss/);
   assert.match(htmlSource, /name="german"/);
   assert.match(htmlSource, /name="scientificName"/);
+  assert.match(htmlSource, /name="sizeSexed"/);
+  assert.match(htmlSource, /name="sizeMale"/);
+  assert.match(htmlSource, /name="sizeFemale"/);
+  assert.match(htmlSource, /name="weightSexed"/);
+  assert.match(htmlSource, /name="weightMale"/);
+  assert.match(htmlSource, /name="weightFemale"/);
   assert.match(htmlSource, /placeholder="Turdus Merula"/);
   assert.match(htmlSource, /placeholder="Amsel"/);
   assert.match(htmlSource, /placeholder="ca\. 23,5-29 cm"/);
@@ -1745,9 +1756,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(htmlSource, /name="genus"/);
   assert.doesNotMatch(htmlSource, /name="species"/);
   assert.match(htmlSource, /class="new-species-json"/);
-  assert.match(htmlSource, /class="new-species-portrait"/);
+  assert.match(htmlSource, /class="new-species-step new-species-portrait"/);
   assert.match(htmlSource, /new-species-portrait-file-input/);
   assert.match(htmlSource, /Portrait-Prompt erstellen/);
+  assert.match(htmlSource, /Artportrait überspringen/);
+  assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
+  assert.doesNotMatch(htmlSource, /species-info\.json/);
   assert.match(
     htmlSource,
     /data-pipeline-mode="all"[\s\S]*data-pipeline-mode="missing"[\s\S]*data-pipeline-mode="manual-maps"/,

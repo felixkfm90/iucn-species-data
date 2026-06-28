@@ -868,15 +868,22 @@ function validateEditableValues(payload) {
 function validateNewSpeciesValues(payload) {
   const values = {};
   const errors = [];
+  const fieldErrors = {};
+  const addError = (fieldKey, message) => {
+    errors.push(message);
+    if (!fieldKey) return;
+    fieldErrors[fieldKey] ??= [];
+    fieldErrors[fieldKey].push(message);
+  };
 
   for (const field of NEW_SPECIES_FIELD_DEFINITIONS) {
     const value = String(payload?.[field.key] ?? "").trim();
     if (!value) {
-      errors.push(`${field.label} darf nicht leer sein`);
+      addError(field.key, `${field.label} darf nicht leer sein`);
     } else if (value.length > field.maxLength) {
-      errors.push(`${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
+      addError(field.key, `${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
     } else if (/[\u0000-\u001F\u007F]/.test(value)) {
-      errors.push(`${field.label} enthält unzulässige Steuerzeichen`);
+      addError(field.key, `${field.label} enthält unzulässige Steuerzeichen`);
     }
     values[field.key] = value;
   }
@@ -889,11 +896,12 @@ function validateNewSpeciesValues(payload) {
       || scientificParts.some((part) => !/^[\p{L}][\p{L}-]*$/u.test(part))
     )
   ) {
-    errors.push(
+    addError(
+      "scientificName",
       "Wissenschaftlicher Name muss genau aus Gattung und Art-Epitheton bestehen, zum Beispiel Turdus Merula",
     );
   } else if (scientificParts.some((part) => part.length > 100)) {
-    errors.push("Gattung und Art-Epitheton dürfen jeweils maximal 100 Zeichen lang sein");
+    addError("scientificName", "Gattung und Art-Epitheton dürfen jeweils maximal 100 Zeichen lang sein");
   } else if (scientificParts.length === 2) {
     const [rawGenus, rawSpecies] = scientificParts;
     values.genus =
@@ -902,7 +910,7 @@ function validateNewSpeciesValues(payload) {
     values.scientificName = `${values.genus} ${values.species}`;
   }
 
-  return { values, errors };
+  return { values, errors, fieldErrors };
 }
 
 function buildNewSpeciesEntry(values) {
@@ -1106,7 +1114,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   ]);
 
   if (!Array.isArray(inputList) || !Array.isArray(generatedList)) {
-    throw new Error("species_list.json und speciesData.json muessen Arrays enthalten.");
+      throw new Error("Eingabeliste und Pipeline-Daten muessen Arrays enthalten.");
   }
 
   const inputByScientificName = new Map(
@@ -1173,7 +1181,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     const assetIssues = [];
     const fieldMismatches = [];
 
-    if (!input) dataIssues.push("Kein Eintrag in species_list.json");
+    if (!input) dataIssues.push("Kein Eintrag in der Eingabeliste");
     if (!generated) dataIssues.push("Kein Eintrag in speciesData.json");
 
     if (input && generated) {
@@ -3036,7 +3044,7 @@ export async function createExplorerServer({
     }
   }
 
-  async function publishSoundAssetChanges(species) {
+  async function publishSoundAssetChanges(species, { message = "", includeReport = false } = {}) {
     if (!publishAssetChanges) {
       return { published: false, skipped: true, commit: "" };
     }
@@ -3046,6 +3054,7 @@ export async function createExplorerServer({
       `species-assets/${species.safeName}/spectrogram.webp`,
       "species-assets-overrides.json",
     ];
+    if (includeReport) paths.push("fehlende_elemente_report.json");
     const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
     if (stagedBefore.code !== 0) {
       throw new Error(
@@ -3063,7 +3072,7 @@ export async function createExplorerServer({
     }
     const committed = await runCommandCapture(
       "git",
-      ["commit", "-m", `Replace sound and credits for ${species.germanName}`],
+      ["commit", "-m", message || `Replace sound and credits for ${species.germanName}`],
     );
     if (committed.code !== 0) {
       throw new Error(`Git-Commit fehlgeschlagen: ${committed.stderr || committed.stdout}`);
@@ -3390,6 +3399,144 @@ export async function createExplorerServer({
         soundSha256: preview.sha256,
         spectrogramSha256,
         isNc: preview.isNc,
+        species: model.species.find((entry) => entry.id === id) ?? null,
+        summary: model.summary,
+        validation: model.validation,
+      };
+    } finally {
+      assetWriteActive = false;
+    }
+  }
+
+  async function rejectCurrentSoundAsset(id) {
+    cleanupPreviewTokens();
+    if (assetWriteActive || pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const source = await soundAssetSourceRevision(species);
+    if (!source.soundBuffer.length && !source.creditsBuffer.length && !source.spectrogramBuffer.length) {
+      const error = new Error("Für diese Art ist kein aktueller Sound vorhanden, der abgelehnt werden kann");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (publishAssetChanges) {
+      const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
+      if (stagedBefore.code !== 0) {
+        const error = new Error(
+          "Vor der Sound-Ablehnung sind bereits Dateien für Git vorgemerkt. Bitte diese zuerst committen oder aus dem Index entfernen.",
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
+    assetWriteActive = true;
+    let backupRelativePath = "";
+    const reportPath = join(repoRoot, "fehlende_elemente_report.json");
+    const reportText = await readFile(reportPath, "utf8").catch(() => "");
+    try {
+      await mkdir(source.assetDirectory, { recursive: true });
+      const backupDirectory = join(assetBackupRoot, species.safeName, "sound");
+      await mkdir(backupDirectory, { recursive: true });
+      const currentHash = createHash("sha256")
+        .update(source.soundBuffer)
+        .update(source.creditsBuffer)
+        .update(source.spectrogramBuffer)
+        .digest("hex");
+      const backupName = `sound-rejected-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
+      const backupPath = join(backupDirectory, backupName);
+      await mkdir(backupPath, { recursive: true });
+      for (const [fileName, buffer] of [
+        ["sound.mp3", source.soundBuffer],
+        ["credits.json", source.creditsBuffer],
+        ["spectrogram.webp", source.spectrogramBuffer],
+      ]) {
+        if (buffer.length) await writeFile(join(backupPath, fileName), buffer);
+      }
+      backupRelativePath = `species-explorer/asset-backups/${species.safeName}/sound/${backupName}`;
+
+      const rejectedSource = rejectedSoundSourceFromCredits({ safeName: species.safeName });
+      const registry = JSON.parse(source.registryText);
+      registry.version = 1;
+      registry.assets ??= {};
+      registry.assets[species.safeName] ??= {};
+      const previousSoundOverride = registry.assets[species.safeName].sound ?? {};
+      registry.assets[species.safeName].sound = {
+        ...addRejectedSoundSource(previousSoundOverride, rejectedSource),
+        manual: false,
+        protectFromPipeline: false,
+        reason: "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
+        rejectedCurrent: true,
+        rejectedAt: rejectedSource.rejectedAt,
+        updatedAt: rejectedSource.rejectedAt,
+      };
+      delete registry.assets[species.safeName].spectrogram;
+      const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
+      const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+
+      try {
+        await writeFile(registryTempPath, nextRegistryText, "utf8");
+        await unlink(source.soundPath).catch(() => {});
+        await unlink(source.creditsPath).catch(() => {});
+        await unlink(source.spectrogramPath).catch(() => {});
+        await rename(registryTempPath, assetOverridesPath);
+      } catch (error) {
+        await unlink(registryTempPath).catch(() => {});
+        if (source.soundBuffer.length) await writeFile(source.soundPath, source.soundBuffer);
+        if (source.creditsBuffer.length) await writeFile(source.creditsPath, source.creditsBuffer);
+        if (source.spectrogramBuffer.length) await writeFile(source.spectrogramPath, source.spectrogramBuffer);
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        throw error;
+      }
+
+      const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+      if (reportRun.code !== 0) {
+        if (source.soundBuffer.length) await writeFile(source.soundPath, source.soundBuffer);
+        if (source.creditsBuffer.length) await writeFile(source.creditsPath, source.creditsBuffer);
+        if (source.spectrogramBuffer.length) await writeFile(source.spectrogramPath, source.spectrogramBuffer);
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        if (reportText) await writeFile(reportPath, reportText, "utf8");
+        throw new Error(`Report-Abgleich nach Sound-Ablehnung fehlgeschlagen: ${reportRun.stderr || reportRun.stdout}`);
+      }
+
+      let backupRetention = { kept: 0, removed: 0, bytes: 0 };
+      let backupCleanupWarning = "";
+      try {
+        backupRetention = await pruneAssetBackups(assetBackupRoot);
+      } catch (error) {
+        backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
+      }
+      await refreshModel({ force: true });
+      let publication;
+      let publicationError = "";
+      try {
+        publication = await publishSoundAssetChanges(species, {
+          message: `Reject sound source for ${species.germanName}`,
+          includeReport: true,
+        });
+      } catch (error) {
+        publication = { published: false, skipped: false, commit: "" };
+        publicationError = error.message;
+      }
+      return {
+        ok: !publicationError,
+        saved: true,
+        rejectedSource,
+        backup: backupRelativePath,
+        backupRetention,
+        backupCleanupWarning,
+        gitPublished: publication.published,
+        gitSkipped: publication.skipped,
+        gitCommit: publication.commit,
+        publicationError,
         species: model.species.find((entry) => entry.id === id) ?? null,
         summary: model.summary,
         validation: model.validation,
@@ -3807,18 +3954,19 @@ export async function createExplorerServer({
 
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
-    const { values, errors } = validateNewSpeciesValues(payload?.values);
+    const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
     if (errors.length) {
       const error = new Error("Eingaben sind ungültig");
       error.statusCode = 400;
       error.details = errors;
+      error.fieldErrors = fieldErrors;
       throw error;
     }
 
     const sourceText = await readFile(speciesListPath, "utf8");
     const inputList = JSON.parse(sourceText);
     if (!Array.isArray(inputList)) {
-      const error = new Error("species_list.json muss ein Array enthalten");
+      const error = new Error("Eingabeliste muss ein Array enthalten");
       error.statusCode = 409;
       throw error;
     }
@@ -3835,6 +3983,10 @@ export async function createExplorerServer({
       const error = new Error("Neue Art kollidiert mit bestehenden Daten oder Assets");
       error.statusCode = 409;
       error.details = collisions;
+      error.fieldErrors = {
+        ...(collisions.some((message) => message.includes("Deutscher Name")) ? { german: collisions.filter((message) => message.includes("Deutscher Name")) } : {}),
+        ...(collisions.some((message) => message.includes("Wissenschaftlicher Name") || message.includes("URL-Slug")) ? { scientificName: collisions.filter((message) => message.includes("Wissenschaftlicher Name") || message.includes("URL-Slug")) } : {}),
+      };
       throw error;
     }
 
@@ -3858,14 +4010,14 @@ export async function createExplorerServer({
       warnings: [
         "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
         "Die neue Art erscheint zunächst ohne Pipeline-Daten und Assets im Explorer.",
-        "speciesData.json und Assets bleiben unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
+        "Pipeline-Daten und Assets bleiben unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
       ],
     };
   }
 
   function createNewSpeciesPortraitPrompt(payload) {
     cleanupPreviewTokens();
-    const { values, errors } = validateNewSpeciesValues(payload?.values);
+    const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
     const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
     if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
       errors.push(
@@ -3876,6 +4028,7 @@ export async function createExplorerServer({
       const error = new Error("Eingaben sind ungültig");
       error.statusCode = 400;
       error.details = errors;
+      error.fieldErrors = fieldErrors;
       throw error;
     }
 
@@ -3903,6 +4056,137 @@ export async function createExplorerServer({
     };
   }
 
+  async function previewNewSpeciesPortrait(payload) {
+    cleanupPreviewTokens();
+    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Während eines Pipeline-Laufs können keine Artporträts importiert werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive) {
+      const error = new Error("Es läuft bereits ein schreibender Assetprozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const createToken = String(payload?.token ?? payload?.createToken ?? "");
+    const createPreview = previewTokens.get(createToken);
+    if (!createPreview || createPreview.type !== "create") {
+      const error = new Error("Artvorschau ist ungültig oder abgelaufen");
+      error.statusCode = 409;
+      throw error;
+    }
+    const sourceText = await readFile(speciesListPath, "utf8");
+    if (hashText(sourceText) !== createPreview.sourceRevision) {
+      previewTokens.delete(createToken);
+      const error = new Error("Eingabeliste wurde seit der Artprüfung geändert. Bitte erneut prüfen.");
+      error.statusCode = 409;
+      throw error;
+    }
+    const { values, errors, fieldErrors } = validateNewSpeciesValues(createPreview.values);
+    if (errors.length) {
+      const error = new Error("Gespeicherte Artvorschau ist ungültig");
+      error.statusCode = 409;
+      error.details = errors;
+      error.fieldErrors = fieldErrors;
+      throw error;
+    }
+
+    const { entry, derived } = buildNewSpeciesEntry(values);
+    const species = {
+      id: derived.slug,
+      germanName: entry.german,
+      scientificName: derived.scientificName,
+      safeName: derived.safeName,
+    };
+    const validated = validatePortraitPreviewPayload(payload, species);
+    if (validated.errors.length) {
+      const error = new Error("Artporträt-Datei oder Angaben sind ungültig");
+      error.statusCode = 400;
+      error.details = validated.errors;
+      throw error;
+    }
+
+    const source = await portraitAssetSourceRevision(species);
+    removePreviousPortraitPreviews(species.id);
+    const token = randomUUID();
+    const expiresAt = Date.now() + PREVIEW_TOKEN_TTL_MS;
+    const importedAt = new Date().toISOString();
+    const inputExtension = validated.image.format === "jpeg"
+      ? ".jpg"
+      : `.${validated.image.format}`;
+    await mkdir(assetStagingRoot, { recursive: true });
+    const inputStagingPath = join(assetStagingRoot, `${token}.portrait-input${inputExtension}`);
+    const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
+    await writeFile(inputStagingPath, validated.buffer);
+    try {
+      const rendered = await portraitRenderer({
+        inputPath: inputStagingPath,
+        outputPath: stagingPath,
+        ffmpegPath: resolveFfmpegPath({ repoRoot }),
+        options: DEFAULT_PORTRAIT_OPTIONS,
+      });
+      const renderedBuffer = await readFile(stagingPath);
+      inspectWebp(renderedBuffer);
+      const sha256 = createHash("sha256").update(renderedBuffer).digest("hex");
+      previewTokens.set(token, {
+        type: "portrait-asset",
+        id: species.id,
+        safeName: species.safeName,
+        inputStagingPath,
+        stagingPath,
+        sha256,
+        bytes: renderedBuffer.length,
+        sourceRevision: source.revision,
+        expiresAt,
+        importedAt,
+        additionalInstructions: validated.additionalInstructions,
+        prompt: validated.prompt,
+        promptSha256: validated.promptSha256,
+        originalName: validated.originalName,
+        originalFormat: validated.image.format,
+        originalDimensions: {
+          width: validated.image.width,
+          height: validated.image.height,
+        },
+      });
+      return {
+        token,
+        expiresAt: new Date(expiresAt).toISOString(),
+        species,
+        currentPortrait: {
+          exists: source.portraitBuffer.length > 0,
+          bytes: source.portraitBuffer.length,
+          url: source.portraitBuffer.length
+            ? `/assets/${encodeURIComponent(species.safeName)}/portrait.webp?current=${token}`
+            : "",
+        },
+        newPortrait: {
+          bytes: renderedBuffer.length,
+          sha256,
+          url: `/api/species/${encodeURIComponent(species.id)}/assets/portrait/preview-file?token=${encodeURIComponent(token)}`,
+          size: `${rendered.width}x${rendered.height}`,
+          promptVersion: PORTRAIT_STANDARD.promptVersion,
+          prompt: validated.prompt,
+          originalName: validated.originalName,
+          originalFormat: validated.image.format,
+          originalDimensions: {
+            width: validated.image.width,
+            height: validated.image.height,
+          },
+        },
+        warnings: [
+          "Das extern erzeugte Bild muss vor der Übernahme auf Artmerkmale und Anatomie geprüft werden.",
+          "Die Vorschau legt noch keine Art und keine produktive Datei an.",
+          "Erst der Abschluss speichert die Art und übernimmt optional dieses Portrait.",
+        ],
+      };
+    } catch (error) {
+      rmSync(inputStagingPath, { force: true });
+      rmSync(stagingPath, { force: true });
+      throw error;
+    }
+  }
+
   async function saveNewSpecies(payload) {
     cleanupPreviewTokens();
     const token = String(payload?.token ?? "");
@@ -3916,14 +4200,14 @@ export async function createExplorerServer({
     const sourceText = await readFile(speciesListPath, "utf8");
     if (hashText(sourceText) !== preview.sourceRevision) {
       previewTokens.delete(token);
-      const error = new Error("species_list.json wurde seit der Vorschau geändert. Bitte erneut prüfen.");
+      const error = new Error("Eingabeliste wurde seit der Vorschau geändert. Bitte erneut prüfen.");
       error.statusCode = 409;
       throw error;
     }
 
     const inputList = JSON.parse(sourceText);
     if (!Array.isArray(inputList)) {
-      const error = new Error("species_list.json muss ein Array enthalten");
+      const error = new Error("Eingabeliste muss ein Array enthalten");
       error.statusCode = 409;
       throw error;
     }
@@ -4004,7 +4288,7 @@ export async function createExplorerServer({
       throw error;
     }
     if (!species.inInput) {
-      const error = new Error("Art ist nicht in species_list.json enthalten");
+      const error = new Error("Art ist nicht in der Eingabeliste enthalten");
       error.statusCode = 409;
       throw error;
     }
@@ -4013,7 +4297,7 @@ export async function createExplorerServer({
     const inputList = JSON.parse(sourceText);
     const inputIndex = findInputIndex(inputList, species);
     if (inputIndex < 0) {
-      const error = new Error("Art fehlt in species_list.json");
+      const error = new Error("Art fehlt in der Eingabeliste");
       error.statusCode = 409;
       throw error;
     }
@@ -4037,7 +4321,7 @@ export async function createExplorerServer({
         assetDirectory: `species-assets/${species.safeName}`,
       },
       effects: [
-        "Der Eintrag wird aus species_list.json entfernt.",
+        "Der Eintrag wird aus der Eingabeliste entfernt.",
         "Ohne Zusatzoption bleiben generierte Daten und Assets bis zum Bereinigungslauf bestehen.",
         "Mit Zusatzoption werden generierte Daten, Assessment-Zuordnung, Assetpflege und der Assetordner sofort dauerhaft gelöscht.",
       ],
@@ -4059,7 +4343,7 @@ export async function createExplorerServer({
     const species = findEditableSpecies(model, id);
     if (!species || !species.inInput) {
       previewTokens.delete(token);
-      const error = new Error("Art ist nicht mehr in species_list.json enthalten");
+      const error = new Error("Art ist nicht mehr in der Eingabeliste enthalten");
       error.statusCode = 409;
       throw error;
     }
@@ -4067,7 +4351,7 @@ export async function createExplorerServer({
     const sourceText = await readFile(speciesListPath, "utf8");
     if (hashText(sourceText) !== preview.sourceRevision) {
       previewTokens.delete(token);
-      const error = new Error("species_list.json wurde seit der Löschvorschau geändert");
+      const error = new Error("Eingabeliste wurde seit der Löschvorschau geändert");
       error.statusCode = 409;
       throw error;
     }
@@ -4076,7 +4360,7 @@ export async function createExplorerServer({
     const inputIndex = findInputIndex(inputList, species);
     if (inputIndex < 0) {
       previewTokens.delete(token);
-      const error = new Error("Art fehlt bereits in species_list.json");
+      const error = new Error("Art fehlt bereits in der Eingabeliste");
       error.statusCode = 409;
       throw error;
     }
@@ -4162,7 +4446,7 @@ export async function createExplorerServer({
     const inputList = JSON.parse(sourceText);
     const inputIndex = findInputIndex(inputList, species);
     if (inputIndex < 0) {
-      const error = new Error("Art fehlt in species_list.json");
+      const error = new Error("Art fehlt in der Eingabeliste");
       error.statusCode = 409;
       throw error;
     }
@@ -4220,7 +4504,7 @@ export async function createExplorerServer({
     const sourceText = await readFile(speciesListPath, "utf8");
     if (hashText(sourceText) !== preview.sourceRevision) {
       previewTokens.delete(token);
-      const error = new Error("species_list.json wurde seit der Vorschau geändert. Bitte erneut prüfen.");
+      const error = new Error("Eingabeliste wurde seit der Vorschau geändert. Bitte erneut prüfen.");
       error.statusCode = 409;
       throw error;
     }
@@ -4228,7 +4512,7 @@ export async function createExplorerServer({
     const inputList = JSON.parse(sourceText);
     const inputIndex = findInputIndex(inputList, species);
     if (inputIndex < 0) {
-      const error = new Error("Art fehlt in species_list.json");
+      const error = new Error("Art fehlt in der Eingabeliste");
       error.statusCode = 409;
       throw error;
     }
@@ -4306,7 +4590,7 @@ export async function createExplorerServer({
         /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
       );
       const soundAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save)$/,
+        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject)$/,
       );
       const soundPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
@@ -4387,7 +4671,9 @@ export async function createExplorerServer({
         });
         const result = action === "preview"
           ? await previewSoundAsset(id, payload)
-          : await saveSoundAsset(id, payload);
+          : action === "reject"
+            ? await rejectCurrentSoundAsset(id)
+            : await saveSoundAsset(id, payload);
         sendJson(response, 200, result);
         return;
       }
@@ -4451,14 +4737,21 @@ export async function createExplorerServer({
           url.pathname === "/api/species/new/preview"
           || url.pathname === "/api/species/new/save"
           || url.pathname === "/api/species/new/portrait-prompt"
+          || url.pathname === "/api/species/new/portrait-preview"
         )
       ) {
-        const payload = await readJsonBody(request);
+        const payload = await readJsonBody(request, {
+          maxBytes: url.pathname.endsWith("/portrait-preview")
+            ? MAX_PORTRAIT_PREVIEW_BODY_BYTES
+            : MAX_JSON_BODY_BYTES,
+        });
         const result = url.pathname.endsWith("/preview")
           ? await previewNewSpecies(payload)
           : url.pathname.endsWith("/portrait-prompt")
             ? createNewSpeciesPortraitPrompt(payload)
-            : await saveNewSpecies(payload);
+            : url.pathname.endsWith("/portrait-preview")
+              ? await previewNewSpeciesPortrait(payload)
+              : await saveNewSpecies(payload);
         sendJson(response, 200, result);
         return;
       }
@@ -4544,6 +4837,7 @@ export async function createExplorerServer({
       sendJson(response, error.statusCode ?? 500, {
         error: error.message,
         details: error.details ?? [],
+        fieldErrors: error.fieldErrors ?? {},
       });
     }
   });

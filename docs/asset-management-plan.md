@@ -118,6 +118,9 @@ Umgesetzt:
 Status: technisch lokal umgesetzt am 2026-06-20; produktiver Import und visuelle Bedienprüfung stehen noch aus.
 
 Ein Sound darf nur zusammen mit vollstaendigen Credits ersetzt werden.
+Im Bearbeitungsmodus kann ein vorhandener aktueller Sound außerdem ausdrücklich abgelehnt werden, wenn die Quelle
+fachlich nicht passt. Dann wird kein Ersatzsound importiert, sondern das bestehende Soundpaket entfernt und die
+abgelehnte Quellkennung fuer spaetere Suchlaeufe gespeichert.
 
 Pflichtfelder fuer Credits:
 
@@ -174,6 +177,11 @@ Umgesetzt:
 - laufende Vorschau-Audios stoppen und springen beim Schließen des Bearbeitungsdialogs auf Position 0 zurück
 - festes Desktop-Grid mit kompakter Dateieingabe und Pflegegrund über zwei linke Zeilen
 - Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualität; mobile Darstellung einspaltig
+- aktueller Sound kann im Bearbeitungsdialog abgelehnt werden
+- bei Ablehnung werden `sound.mp3`, `credits.json` und `spectrogram.webp` nach Backup entfernt
+- die Quellkennung aus den Credits wird unter `sound.rejectedSources` gespeichert und von spaeteren Sound-Suchlaeufen
+  uebersprungen
+- nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report committed und gepusht
 
 ### 7.7.4 Spektrogramm-Konsistenz
 

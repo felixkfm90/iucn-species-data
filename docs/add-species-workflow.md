@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-06-19
+Stand: 2026-06-28
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -46,11 +46,17 @@ Formularfelder:
 
 - deutscher Name (`german`)
 - wissenschaftlicher Name als zwei Woerter, zum Beispiel `Turdus Merula`
-- Groesse (`size`)
-- Gewicht (`weight`)
+- Groesse (`size`), optional getrennt nach Maennchen und Weibchen
+- Gewicht (`weight`), optional getrennt nach Maennchen und Weibchen
 - Lebenserwartung (`life_expectancy`)
 
-Vor der Vorschau prueft der Server:
+Der Dialog ist als dreistufiger Assistent aufgebaut.
+
+### Schritt 1: Allgemeine Daten pruefen
+
+Die App zeigt keine internen Dateinamen mehr im Dialogkopf. Anwender sehen nur die fachlichen Schritte.
+
+Vor dem naechsten Schritt prueft die App lokal und danach der Server:
 
 - alle fuenf Pflichtfelder sind gefuellt
 - wissenschaftlicher Name besteht genau aus Gattung und Artepitheton
@@ -62,9 +68,19 @@ Vor der Vorschau prueft der Server:
   Assetordner
 - Feldlaengen und Steuerzeichen sind gueltig
 
+Fehlerhafte Felder werden direkt rot markiert; die konkrete Fehlermeldung steht unter dem betroffenen Feld und
+zusaetzlich gesammelt im Dialog. Erst nach einer gueltigen Pruefung wird `Naechster Schritt` aktiv.
+
 Im Hintergrund trennt der Server den eingegebenen wissenschaftlichen Namen. Die Gattung wird mit grossem
 Anfangsbuchstaben und das Artepitheton kleingeschrieben in `genus` und `species` gespeichert. Die Eingabe
 `Turdus Merula` wird damit als `Turdus merula` normalisiert.
+
+Groesse und Gewicht koennen getrennt nach Geschlecht erfasst werden. Dafuer gibt es je Feld eine eigene Checkbox:
+
+- Checkbox aus: ein gemeinsamer Textwert wie bisher, zum Beispiel `ca. 23,5-29 cm`.
+- Checkbox an: je ein Feld fuer `Maennchen` und `Weibchen`.
+- Sind beide Angaben getrennt, speichert die App weiterhin die bestehenden Textfelder, zum Beispiel:
+  `Maennchen: ca. 24-29 cm; Weibchen: ca. 23,5-27 cm`.
 
 Die Vorschau zeigt:
 
@@ -72,7 +88,24 @@ Die Vorschau zeigt:
 - wissenschaftlichen Namen
 - erwarteten URL-Slug
 - erwarteten Assetordner
-- Hinweis, dass IUCN-Daten und Assets erst nach `node update.mjs` entstehen
+
+### Schritt 2: Optionales Artportrait
+
+Nach erfolgreicher Datenpruefung kann direkt ein Portrait vorbereitet werden:
+
+1. optionale Zusatzhinweise eintragen
+2. Einzelprompt aus den geprueften Artdaten erzeugen und kopieren
+3. genau ein Bild in ChatGPT erzeugen
+4. Bilddatei im Dialog auswaehlen
+5. `Bild pruefen`
+
+Die Bildpruefung nutzt dieselben Regeln wie die Bearbeitung bestehender Arten: PNG/JPEG/WebP bis 20 MB,
+Mindestgroesse 800x1000 Pixel, 4:5-Seitenverhaeltnis und lokale Umwandlung auf `portrait.webp` in 1280x1600.
+Der Schritt kann mit `Artportrait ueberspringen` bewusst ausgelassen werden.
+
+### Schritt 3: Abschluss
+
+Der Abschluss fasst zusammen, ob ein geprueftes Portrait uebernommen oder das Portrait uebersprungen wird.
 
 Speichern:
 
@@ -80,7 +113,9 @@ Speichern:
 - Schutz gegen parallele Aenderungen an `species_list.json`
 - Backup nach derselben Aufbewahrungsregel wie Phase 7.4
 - neuer Eintrag wird atomar an die Liste angehaengt
-- keine automatische Pipeline und kein Git-Push
+- wenn ein Portrait geprueft wurde, fragt die App vor der lokalen Uebernahme nach
+- danach wird der selektive Pipeline-Lauf fuer genau diese neue Art angeboten; erst dieser Lauf vervollstaendigt
+  IUCN-Daten, Karte, Sound, Spektrogramm und Git-Veröffentlichung
 
 Direkt nach dem Speichern erscheint die Art im Explorer als `nur in species_list.json`. Dieser Zustand ist erwartet
 und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
@@ -88,22 +123,27 @@ und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
 API:
 
 - `POST /api/species/new/preview`: validiert alle Felder und Kollisionen, schreibt aber keine Datei
+- `POST /api/species/new/portrait-prompt`: erzeugt den Einzelprompt aus den geprueften Artdaten
+- `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
 
-Technischer Stand vom 2026-06-19:
+Technischer Stand vom 2026-06-28:
 
 - Formular, Vorschau und Speichern sind lokal umgesetzt.
+- Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt und Abschluss.
 - Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle
   Eingaben.
+- Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden.
+- Ungueltige Felder werden sichtbar markiert; Fehlermeldungen stehen direkt am Feld.
 - Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
   angelegt werden koennen.
-- Direkt nach dem Speichern öffnet sich die Vorschau für `Neue oder fehlende Arten aktualisieren`. Der selektive
+- Direkt nach dem Speichern öffnet sich die Vorschau für `Neue/Unvollständige Arten aktualisieren`. Der selektive
   Lauf kann sofort gestartet oder abgebrochen und später über das Pipeline-Feld in der Kopfzeile aufgerufen werden.
 - Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
   unveraendert.
-- Sechs Explorer-Tests sind erfolgreich.
+- 19 Explorer-Tests sind erfolgreich.
 - Der neu gestartete lokale Server liefert den Dialog und alle fuenf Formularfelder aus.
 - Die Bedienung wurde am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 

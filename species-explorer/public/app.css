@@ -1338,17 +1338,85 @@ button:focus-visible {
   gap: 12px;
 }
 
+.new-species-steps {
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.new-species-steps li {
+  padding: 8px 10px;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.new-species-steps li.active {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: #b7d5e8;
+}
+
+.new-species-steps li.done {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: #b9d9ca;
+}
+
+.new-species-step[hidden] {
+  display: none !important;
+}
+
 .new-species-fields {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.new-species-fields label:last-child {
+.new-species-fields > label:last-child {
   grid-column: 1 / -1;
 }
 
-.edit-fields label {
+.edit-fields label,
+.new-species-measurement {
   display: grid;
   gap: 5px;
+}
+
+.new-species-measurement {
+  padding: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.new-species-sex-toggle {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 8px;
+  color: #34433c;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.new-species-sex-toggle input {
+  width: auto;
+  min-height: auto;
+}
+
+.new-species-sexed-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.new-species-sexed-fields[hidden] {
+  display: none !important;
 }
 
 .edit-fields label > span {
@@ -1356,6 +1424,18 @@ button:focus-visible {
   font-size: 0.72rem;
   font-weight: 750;
   text-transform: uppercase;
+}
+
+.field-error input,
+.field-error textarea {
+  border-color: var(--red) !important;
+  background: #fff7f7;
+}
+
+.field-error-text {
+  color: var(--red);
+  font-size: 0.7rem;
+  font-weight: 650;
 }
 
 .edit-message {
@@ -2145,6 +2225,30 @@ button:focus-visible {
   white-space: pre-wrap;
 }
 
+.new-species-final {
+  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.new-species-final h4 {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+}
+
+.new-species-final p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.new-species-final-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+}
+
 .edit-actions {
   margin-top: 16px;
   display: flex;
@@ -2412,12 +2516,14 @@ button:focus-visible {
     padding: 14px;
   }
 
+  .new-species-steps,
   .new-species-fields,
+  .new-species-sexed-fields,
   .new-species-derived {
     grid-template-columns: 1fr;
   }
 
-  .new-species-fields label:last-child {
+  .new-species-fields > label:last-child {
     grid-column: auto;
   }
 

@@ -42,6 +42,12 @@ iNaturalist-Soundkennung mit dieser Liste und schlägt dieselbe Quelle nicht ern
 vorhanden war, werden die neu erzeugten `sound.mp3`, `credits.json` und `spectrogram.webp` wieder entfernt und der
 Report danach neu aufgebaut.
 
+Dieselbe Ablehnlogik steht seit 2026-06-28 auch im normalen Bearbeitungsdialog einer Art zur Verfügung. Dort kann
+der aktuell produktive Sound abgelehnt werden. Der Explorer sichert das bestehende Soundpaket, entfernt
+`sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter `sound.rejectedSources`, baut
+den Report neu auf und veröffentlicht die Änderung per Commit und Push. Der nächste Sound-Suchlauf schlägt diese
+konkrete Quelle nicht erneut vor.
+
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
 den dunklen Hintergrund geschlossen werden, ohne die bereits gewählten Pflegeoptionen zu verlieren.

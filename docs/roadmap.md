@@ -299,9 +299,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   geprueft. Vorschau, einmaliges Token, SHA-256-Abgleich, Backup-Retention und atomisches Schreiben werden aus
   Phase 7.4 wiederverwendet. Nach dem Speichern erscheint die Art erwartungsgemaess zunaechst nur in
   `species_list.json`; IUCN-Daten und Assets entstehen erst durch den separaten Lauf von `node update.mjs`.
-  Die beiden neuen API-Routen sind `POST /api/species/new/preview` und `POST /api/species/new/save`. Sechs
-  Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests nicht veraendert. Der lokale Server
-  wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle fuenf Felder mit Beispieltexten aus.
+  Seit 2026-06-28 ist der Dialog als Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales Artportrait
+  pruefen oder ueberspringen, Abschluss. Ungueltige Eingaben werden direkt am Feld markiert. Groesse und Gewicht
+  koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die
+  bestehenden Textfelder. Die API-Routen sind `POST /api/species/new/preview`,
+  `POST /api/species/new/portrait-prompt`, `POST /api/species/new/portrait-preview` und
+  `POST /api/species/new/save`. 19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
+  Pflichtfelder mit Beispieltexten aus.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher,
   Höckerschwan und Löwe wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt;
   aktuell stehen 46 Arten in `species_list.json`.
@@ -375,6 +380,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 45 von 45
     Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
     Die betroffenen Assetpfade werden automatisch committed und gepusht.
+    Seit 2026-06-28 kann im Bearbeitungsdialog der aktuell produktive Sound abgelehnt werden. Der Explorer sichert
+    das Soundpaket, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter
+    `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Spaetere Sound-Suchlaeufe schlagen
+    dieselbe Quelle nicht erneut vor.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor

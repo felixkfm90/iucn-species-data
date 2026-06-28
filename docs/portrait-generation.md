@@ -95,17 +95,16 @@ Weitere fehlende Porträts werden über den Filter `Fehlendes Artporträt` gesuc
 Beim Anlegen einer neuen Art kann der Portraitschritt direkt vorbereitet werden:
 
 1. Deutscher Name, wissenschaftlicher Name, Größe, Gewicht und Lebenserwartung eintragen.
-2. `Art prüfen`.
-3. Optional Zusatzhinweise für das Portrait eintragen.
+2. `Art prüfen`; Fehler werden direkt an den betroffenen Feldern angezeigt.
+3. Im Schritt `Artportrait` optional Zusatzhinweise eintragen.
 4. `Portrait-Prompt erstellen` und `Prompt kopieren`.
 5. In ChatGPT genau ein Bild erzeugen und herunterladen.
-6. Optional das erzeugte Bild im Neue-Art-Dialog auswählen.
-7. `Art anlegen`.
+6. Bild im Neue-Art-Dialog auswählen und mit `Bild prüfen` validieren oder `Artportrait überspringen` wählen.
+7. Im Schritt `Abschluss` die Art anlegen.
 
-Wenn kein Bild ausgewählt ist, läuft der bisherige Ablauf weiter und die App bietet den selektiven Pipeline-Lauf an.
-Wenn ein Bild ausgewählt ist, speichert die App zuerst die neue Art, prüft danach das Bild im selben Dialog und zeigt
-`Artportrait übernehmen`. Nur dieser Sofortimport fragt anschließend ausdrücklich, ob das Portrait gespeichert,
-committed und gepusht werden soll.
+Wenn kein Bild geprüft wurde, läuft der bisherige Ablauf weiter und die App bietet den selektiven Pipeline-Lauf an.
+Wenn ein Bild geprüft wurde, speichert die App zuerst die neue Art und fragt dann, ob das Portrait lokal übernommen
+werden soll. Die Veröffentlichung erfolgt anschließend zusammen mit dem gezielten Pipeline-Lauf für diese neue Art.
 
 Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait gilt als reguläres
 Assetproblem:

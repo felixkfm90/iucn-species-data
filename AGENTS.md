@@ -358,8 +358,13 @@ Aktuelle Planung:
   Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Die neue Art bleibt bis zum separaten Pipeline-Lauf
   erwartungsgemaess nur in `species_list.json`. API: `POST /api/species/new/preview` und
   `POST /api/species/new/save`. Fuer optionale Sofortportraits liefert `POST /api/species/new/portrait-prompt`
-  einen Einzelprompt aus den eingegebenen neuen Artdaten. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
-  Oberflaeche enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
+  einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-28 ist `Neue Art` als Schrittassistent
+  aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen, Abschluss. Ungueltige
+  Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig voneinander per Checkbox nach
+  Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die vorhandenen Textfelder. Die Route
+  `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor der Artanlage. Der
+  lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
+  Oberflaeche enthaelt Aktion, Dialog und alle Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
   erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher, Hoeckerschwan und Loewe wurden fuer
   produktive Workflow-Tests angelegt und danach am 2026-06-28 wieder entfernt und bereinigt.
   Hintergrundklicks schließen Eingabedialoge nur, wenn Zeigerdruck und Klickende beide auf dem Hintergrund liegen.
@@ -444,6 +449,10 @@ Aktuelle Planung:
   beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB.
+  Im Bearbeitungsmodus kann seit 2026-06-28 auch der aktuell produktive Sound abgelehnt werden. Der Explorer legt ein
+  Soundpaket-Backup an, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, merkt die Quellkennung unter
+  `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Der naechste Sound-Suchlauf
+  ueberspringt diese konkrete Quelle.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
   vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und

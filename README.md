@@ -252,15 +252,22 @@ oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller
 Namensaenderungen, Taxonomieaenderungen, Assetpfade, Pipeline-Aufrufe und Git-Aktionen sind nicht Bestandteil von
 Phase 7.4.
 
-Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch lokal umgesetzt:
+Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch lokal umgesetzt und seit
+2026-06-28 als Schrittassistent erweitert:
 
 - `Neue Art` oeffnet ein Formular fuer deutschen Namen, wissenschaftlichen Namen, Groesse, Gewicht und
   Lebenserwartung. Alle Felder enthalten Beispieltexte.
 - Der wissenschaftliche Name wird als ein Feld eingegeben, zum Beispiel `Turdus Merula`, und intern in
   `genus: Turdus` und `species: merula` getrennt.
+- Groesse und Gewicht koennen je ueber eine eigene Checkbox nach Maennchen und Weibchen getrennt werden. Die App
+  speichert daraus weiterhin die bestehenden Textfelder.
+- Schritt 1 prueft allgemeine Daten; ungueltige Felder werden rot markiert und erhalten eine direkte Fehlermeldung.
+- Schritt 2 erzeugt optional einen Portrait-Einzelprompt, kopiert ihn, prueft ein extern erzeugtes Bild oder laesst
+  das Portrait bewusst ueberspringen.
+- Schritt 3 legt die Art an und bietet danach den gezielten Pipeline-Lauf fuer genau diese neue Art an.
 - `POST /api/species/new/preview` prueft Pflichtfelder, Schreibweise, wissenschaftlichen und deutschen Namen, Slug,
   `SafeName` sowie bereits vorhandene Assetordner.
-- Die Vorschau zeigt den vollstaendigen JSON-Eintrag, wissenschaftlichen Namen, Slug und erwarteten Assetordner.
+- Die Vorschau zeigt den vollstaendigen Eintrag, wissenschaftlichen Namen, Slug und erwarteten Assetordner.
 - `POST /api/species/new/save` verwendet ein einmaliges Vorschau-Token, SHA-256-Dateischutz, Backup-Retention und
   atomares Schreiben.
 - Nach dem Speichern erscheint die Art sofort als nur in `species_list.json` vorhanden. Pipeline und Git bleiben
@@ -268,7 +275,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Nach erfolgreichem Speichern koennen ohne Seitenneuladen weitere Arten angelegt werden.
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
-- Sechs Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Haubentaucher, Höckerschwan und Löwe wurden
@@ -339,6 +346,9 @@ werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. D
 zusammen mit Sound und Credits ersetzt; Sound und Credits erhalten manuellen Pipeline-Schutz. Der erfolgreiche
 Austausch wird automatisch auf die betroffenen Assetpfade begrenzt committed und gepusht. Die gemeinsame
 Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
+Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden. Dann sichert die App das
+Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
+Report neu auf und committed/pusht die Änderung. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
 
 Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
 erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.
@@ -490,9 +500,9 @@ in ChatGPT erzeugtes PNG, JPEG oder WebP. Promptversion `1.1.0` fordert genau ei
 Collagen, Raster, Kontaktabzuege und Mehrfachansichten. Der Sammelprompt-Workflow wurde entfernt, weil ChatGPT daraus
 wiederholt Collagen erzeugte. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
 `portrait.webp` in `1280x1600` und speichert bei bestehenden Arten wie zuvor nach `Artporträt übernehmen` mit
-Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Daten einen Einzelprompt erzeugen und
-ein optional sofort erzeugtes Bild nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit
-und Push zusätzlich nach. Details:
+Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Daten einen Einzelprompt erzeugen,
+das erzeugte Bild vor dem Anlegen prüfen oder den Portraitschritt überspringen. Ein geprüftes Sofortportrait wird
+nach Rückfrage lokal übernommen und anschließend zusammen mit dem gezielten Pipeline-Lauf veröffentlicht. Details:
 `docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
 Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Phase 7.8 wurde am 2026-06-28 abgeschlossen und von
 Felix erfolgreich getestet. Start:

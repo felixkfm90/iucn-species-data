@@ -136,76 +136,104 @@
     </div>
 
     <dialog id="new-species-dialog" class="edit-dialog new-species-dialog" aria-labelledby="new-species-title">
-      <form id="new-species-form" class="edit-form">
+      <form id="new-species-form" class="edit-form" novalidate>
         <header class="edit-dialog-header">
           <div>
-            <p class="edit-eyebrow">species_list.json</p>
             <h3 id="new-species-title">Neue Art anlegen</h3>
-            <p>Die Pipeline ergänzt IUCN-Daten und Assets später separat.</p>
+            <p>Erst allgemeine Daten prüfen, danach optional ein Artportrait vorbereiten.</p>
           </div>
           <button class="edit-close new-species-cancel" type="button" aria-label="Dialog schließen">×</button>
         </header>
 
-        <div class="edit-fields new-species-fields">
-          <label>
-            <span>Deutscher Name</span>
-            <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel" required>
-          </label>
-          <label>
-            <span>Wissenschaftlicher Name</span>
-            <input
-              name="scientificName"
-              type="text"
-              maxlength="201"
-              autocomplete="off"
-              placeholder="Turdus Merula"
-              required
-            >
-          </label>
-          <label>
-            <span>Größe</span>
-            <input name="size" type="text" maxlength="240" autocomplete="off" placeholder="ca. 23,5-29 cm" required>
-          </label>
-          <label>
-            <span>Gewicht</span>
-            <input name="weight" type="text" maxlength="240" autocomplete="off" placeholder="ca. 80-110 g" required>
-          </label>
-          <label>
-            <span>Lebenserwartung</span>
-            <input
-              name="lifeExpectancy"
-              type="text"
-              maxlength="240"
-              autocomplete="off"
-              placeholder="ca. 3 Jahre"
-              required
-            >
-          </label>
-        </div>
+        <ol class="new-species-steps" aria-label="Neue-Art-Schritte">
+          <li class="active" data-new-species-step-indicator="1">1. Allgemeine Daten</li>
+          <li data-new-species-step-indicator="2">2. Artportrait</li>
+          <li data-new-species-step-indicator="3">3. Abschluss</li>
+        </ol>
 
-        <p class="edit-message new-species-message" hidden></p>
+        <section class="new-species-step active" data-new-species-step="1">
+          <div class="edit-fields new-species-fields">
+            <label data-field="german">
+              <span>Deutscher Name</span>
+              <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
+            </label>
+            <label data-field="scientificName">
+              <span>Wissenschaftlicher Name</span>
+              <input name="scientificName" type="text" maxlength="201" autocomplete="off" placeholder="Turdus Merula">
+            </label>
 
-        <section class="edit-preview new-species-preview" hidden>
-          <h4>Vorschau</h4>
-          <dl class="new-species-derived">
-            <div><dt>Wissenschaftlicher Name</dt><dd data-derived="scientificName"></dd></div>
-            <div><dt>URL-Slug</dt><dd data-derived="slug"></dd></div>
-            <div><dt>Assetordner</dt><dd data-derived="assetDirectory"></dd></div>
-          </dl>
-          <p class="new-species-json-label">Neuer JSON-Eintrag</p>
-          <pre class="new-species-json"></pre>
-          <p class="edit-warning">
-            Nach dem Speichern wird die Art sofort als unvollständig angezeigt. Danach ist ein Pipeline-Lauf erforderlich.
-          </p>
+            <div class="new-species-measurement" data-measurement="size">
+              <label class="new-species-sex-toggle">
+                <input type="checkbox" name="sizeSexed">
+                <span>Größe nach Männchen/Weibchen unterscheiden</span>
+              </label>
+              <label data-field="size">
+                <span>Größe</span>
+                <input name="size" type="text" maxlength="240" autocomplete="off" placeholder="ca. 23,5-29 cm">
+              </label>
+              <div class="new-species-sexed-fields" data-sexed-fields="size" hidden>
+                <label data-field="sizeMale">
+                  <span>Größe Männchen</span>
+                  <input name="sizeMale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 24-29 cm">
+                </label>
+                <label data-field="sizeFemale">
+                  <span>Größe Weibchen</span>
+                  <input name="sizeFemale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 23,5-27 cm">
+                </label>
+              </div>
+            </div>
+
+            <div class="new-species-measurement" data-measurement="weight">
+              <label class="new-species-sex-toggle">
+                <input type="checkbox" name="weightSexed">
+                <span>Gewicht nach Männchen/Weibchen unterscheiden</span>
+              </label>
+              <label data-field="weight">
+                <span>Gewicht</span>
+                <input name="weight" type="text" maxlength="240" autocomplete="off" placeholder="ca. 80-110 g">
+              </label>
+              <div class="new-species-sexed-fields" data-sexed-fields="weight" hidden>
+                <label data-field="weightMale">
+                  <span>Gewicht Männchen</span>
+                  <input name="weightMale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 85-110 g">
+                </label>
+                <label data-field="weightFemale">
+                  <span>Gewicht Weibchen</span>
+                  <input name="weightFemale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 80-100 g">
+                </label>
+              </div>
+            </div>
+
+            <label data-field="lifeExpectancy">
+              <span>Lebenserwartung</span>
+              <input name="lifeExpectancy" type="text" maxlength="240" autocomplete="off" placeholder="ca. 3 Jahre">
+            </label>
+          </div>
+
+          <p class="edit-message new-species-message" hidden></p>
+
+          <section class="edit-preview new-species-preview" hidden>
+            <h4>Geprüfte Vorschau</h4>
+            <dl class="new-species-derived">
+              <div><dt>Wissenschaftlicher Name</dt><dd data-derived="scientificName"></dd></div>
+              <div><dt>URL-Slug</dt><dd data-derived="slug"></dd></div>
+              <div><dt>Assetordner</dt><dd data-derived="assetDirectory"></dd></div>
+            </dl>
+            <p class="new-species-json-label">Neuer Arteintrag</p>
+            <pre class="new-species-json"></pre>
+            <p class="edit-warning">
+              Die Art wird erst im letzten Schritt gespeichert. Danach ist ein Pipeline-Lauf erforderlich.
+            </p>
+          </section>
         </section>
 
-        <section class="new-species-portrait" hidden>
+        <section class="new-species-step new-species-portrait" data-new-species-step="2" hidden>
           <header>
             <div>
-              <h4>Artporträt optional direkt vorbereiten</h4>
+              <h4>Artportrait optional vorbereiten</h4>
               <p>
-                Der Prompt wird aus den geprüften neuen Artdaten erstellt. Das Bild wird extern erzeugt und nach dem
-                Anlegen der Art hier geprüft.
+                Prompt aus den geprüften Artdaten erstellen, Bild extern erzeugen und hier prüfen.
+                Du kannst diesen Schritt auch überspringen.
               </p>
             </div>
             <span class="portrait-care-state">Optional</span>
@@ -232,7 +260,7 @@
           </details>
 
           <label class="asset-file-field portrait-file-field new-species-portrait-file-field">
-            <span>Optional schon erzeugtes Bild</span>
+            <span>Erzeugtes Bild</span>
             <input
               class="new-species-portrait-file-input"
               type="file"
@@ -254,19 +282,35 @@
             </div>
             <p class="edit-warning">
               Vor der Übernahme müssen Artmerkmale, Anatomie, Gliedmaßen, Zehen, Flügel, Flossen, Schwanz und
-              Bildränder geprüft werden. Nur dieser Neue-Art-Sofortimport fragt vor Speichern, Commit und Push noch einmal nach.
+              Bildränder geprüft werden.
             </p>
           </section>
 
           <div class="portrait-edit-actions">
-            <button class="new-species-portrait-save-button" type="button" disabled>Artportrait übernehmen</button>
+            <button class="new-species-portrait-preview-button" type="button">Bild prüfen</button>
+            <button class="new-species-portrait-skip-button" type="button">Artportrait überspringen</button>
           </div>
+        </section>
+
+        <section class="new-species-step new-species-final" data-new-species-step="3" hidden>
+          <h4>Neue Art speichern</h4>
+          <p>
+            Beim Abschluss wird die Art angelegt. Danach bietet die App direkt einen selektiven Pipeline-Lauf für
+            diese Art an.
+          </p>
+          <ul class="new-species-final-list">
+            <li>Allgemeine Daten wurden geprüft.</li>
+            <li class="new-species-final-portrait-state">Artportrait wird übersprungen.</li>
+            <li>Vor dem Schreiben wird automatisch eine lokale Sicherung angelegt.</li>
+          </ul>
         </section>
 
         <div class="edit-actions">
           <button class="new-species-cancel" type="button">Abbrechen</button>
-          <button class="edit-preview-button new-species-preview-button" type="submit">Art prüfen</button>
-          <button class="edit-save-button new-species-save-button" type="button" disabled>Art anlegen</button>
+          <button class="new-species-back-button" type="button" hidden>Zurück</button>
+          <button class="edit-preview-button new-species-preview-button" type="submit">Eingaben prüfen</button>
+          <button class="edit-preview-button new-species-next-button" type="button" disabled hidden>Nächster Schritt</button>
+          <button class="edit-save-button new-species-save-button" type="button" disabled hidden>Art anlegen</button>
         </div>
       </form>
     </dialog>
