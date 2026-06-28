@@ -24,7 +24,7 @@
             aria-pressed="false"
             title="Zwischen Lesemodus und Bearbeitungsmodus wechseln"
           >
-            Lesemodus
+            Lesemodus 🔒
           </button>
           <span id="report-date">Daten werden geladen</span>
         </div>
@@ -275,43 +275,69 @@
       <form id="pipeline-form" class="edit-form">
         <header class="edit-dialog-header">
           <div>
-            <p class="edit-eyebrow">Pipeline</p>
-            <h3 id="pipeline-dialog-title">Laufart auswählen</h3>
-            <p id="pipeline-dialog-description">Welche Aktion soll gestartet werden?</p>
+            <p class="edit-eyebrow">Datenbank-Aktionen</p>
+            <h3 id="pipeline-dialog-title">Aktion auswählen</h3>
+            <p id="pipeline-dialog-description">Was soll aktualisiert, gesichert oder bereinigt werden?</p>
           </div>
           <button class="edit-close pipeline-cancel" type="button" aria-label="Dialog schließen">×</button>
         </header>
 
         <p class="edit-message pipeline-message" hidden></p>
         <div id="pipeline-mode-choice" class="pipeline-mode-choice">
-          <button type="button" data-pipeline-mode="all">
-            <strong>Alle Arten aktualisieren</strong>
-            <span>Vollständiger Lauf über die gesamte Artenliste</span>
-          </button>
-          <button type="button" data-pipeline-mode="missing">
-            <strong>Neue/Unvollständige Arten aktualisieren</strong>
-            <span>Nur Arten mit fehlenden Daten oder Assets</span>
-          </button>
-          <button type="button" data-pipeline-mode="manual-maps">
-            <strong>Manuelle Karten erneut suchen</strong>
-            <span>Nur geschützte Karten erneut bei IUCN prüfen</span>
-          </button>
-          <button type="button" data-pipeline-mode="nc-sounds">
-            <strong>NC- und fehlende Sounds erneut suchen</strong>
-            <span>NC-Sounds auf freie Alternativen prüfen und fehlende Sounds suchen</span>
-          </button>
-          <button type="button" data-backup-action="nas">
-            <strong>NAS-Backup erstellen</strong>
-            <span>Projektstand als ZIP auf dem NAS sichern</span>
-          </button>
-          <button type="button" data-settings-action="backup-path">
-            <strong>Backup-Pfad einstellen</strong>
-            <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
-          </button>
-          <button class="danger" type="button" data-pipeline-mode="cleanup">
-            <strong>Bereinigen</strong>
-            <span>Verwaiste Daten und Assets dauerhaft löschen</span>
-          </button>
+          <details class="action-group" open>
+            <summary>
+              <strong>Daten aktualisieren</strong>
+              <span>Pipeline-Läufe für Arten, Karten und Sounds</span>
+            </summary>
+            <div class="action-group-buttons">
+              <button type="button" data-pipeline-mode="all">
+                <strong>Alle Arten aktualisieren</strong>
+                <span>Vollständiger Lauf über die gesamte Artenliste</span>
+              </button>
+              <button type="button" data-pipeline-mode="missing">
+                <strong>Neue/Unvollständige Arten aktualisieren</strong>
+                <span>Nur Arten mit fehlenden Daten oder Assets</span>
+              </button>
+              <button type="button" data-pipeline-mode="manual-maps">
+                <strong>Manuelle Karten erneut suchen</strong>
+                <span>Nur geschützte Karten erneut bei IUCN prüfen</span>
+              </button>
+              <button type="button" data-pipeline-mode="nc-sounds">
+                <strong>NC- und fehlende Sounds erneut suchen</strong>
+                <span>NC-Sounds auf freie Alternativen prüfen und fehlende Sounds suchen</span>
+              </button>
+            </div>
+          </details>
+
+          <details class="action-group" open>
+            <summary>
+              <strong>Backup und Einstellungen</strong>
+              <span>NAS-Sicherung und lokaler Zielpfad</span>
+            </summary>
+            <div class="action-group-buttons">
+              <button type="button" data-backup-action="nas">
+                <strong>NAS-Backup erstellen</strong>
+                <span>Projektstand als ZIP auf dem NAS sichern</span>
+              </button>
+              <button type="button" data-settings-action="backup-path">
+                <strong>Backup-Pfad einstellen</strong>
+                <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
+              </button>
+            </div>
+          </details>
+
+          <details class="action-group action-group-danger">
+            <summary>
+              <strong>Wartung</strong>
+              <span>Dauerhafte Bereinigung verwaister Daten</span>
+            </summary>
+            <div class="action-group-buttons">
+              <button class="danger" type="button" data-pipeline-mode="cleanup">
+                <strong>Bereinigen</strong>
+                <span>Verwaiste Daten und Assets dauerhaft löschen</span>
+              </button>
+            </div>
+          </details>
         </div>
         <section class="edit-preview pipeline-preview" hidden>
           <h4 id="pipeline-preview-title">Vorschau</h4>

@@ -301,9 +301,10 @@ Phase 7.6 ist technisch lokal vorbereitet:
   bis zur Übernahmeentscheidung lokal gesichert
 - beim Schließen des Asset-Prüfdialogs werden laufende Prüfsounds sofort gestoppt
 - die Zwischenmeldung direkt nach dem Anlegen einer Art verschwindet nach erfolgreichem Pipeline-Push
-- die Kopfzeile schaltet zwischen Lesemodus und Bearbeitungsmodus; Schreibaktionen werden entsprechend
+- die Kopfzeile schaltet zwischen `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Schreibaktionen werden entsprechend
   aus- beziehungsweise eingeblendet
 - das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
+- der Dialog dahinter heißt `Datenbank-Aktionen` und gruppiert Aktualisieren, Backup/Einstellungen und Wartung
 - die Laufart heißt `Neue/Unvollständige Arten aktualisieren`
 - nach dem Speichern einer neuen Art wird der selektive Lauf sofort angeboten; Abbrechen lässt ihn für später offen
 - externe Änderungen durch Batch-Dateien oder manuelle Pipeline-Aufrufe werden automatisch erkannt; die geöffnete

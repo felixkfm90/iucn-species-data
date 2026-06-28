@@ -79,7 +79,7 @@ h1 {
 
 .header-status {
   display: grid;
-  grid-template-columns: 196px 148px auto;
+  grid-template-columns: 196px 174px auto;
   align-items: center;
   justify-content: end;
   gap: 12px;
@@ -99,7 +99,8 @@ h1 {
 }
 
 .mode-toggle {
-  width: 148px;
+  width: 174px;
+  white-space: nowrap;
 }
 
 .database-status {
@@ -355,7 +356,46 @@ button.danger,
 
 .pipeline-mode-choice {
   display: grid;
-  gap: 9px;
+  gap: 10px;
+}
+
+.action-group {
+  padding: 0;
+  background: #f7faf8;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
+.action-group[open] {
+  background: #fff;
+}
+
+.action-group summary {
+  padding: 10px 12px;
+  display: grid;
+  gap: 2px;
+  color: var(--green);
+  cursor: pointer;
+  list-style-position: outside;
+}
+
+.action-group summary strong {
+  font-size: 0.86rem;
+}
+
+.action-group summary span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.action-group-buttons {
+  padding: 0 10px 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.action-group-danger summary strong {
+  color: var(--red);
 }
 
 .pipeline-mode-choice button {

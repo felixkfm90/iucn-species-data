@@ -320,9 +320,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   listet danach verwaiste generierte Daten, Assessment-Zuordnungen, Pflegeeinträge und Assetordner auf. Nach genau einer
   Bestaetigung werden diese Inhalte dauerhaft und ohne Wiederherstellungsablage geloescht. Details:
   `docs/delete-species-workflow.md`. Die Prozesssteuerung wurde kompakt in die Kopfzeile verschoben: Das klickbare
-  Datenbank-Feld fragt im Dialog die Laufart ab. Es ist bei offenen Problemen rot als `Datenbank aktualisieren` und
-  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Ein gleich breiter Umschalter trennt Lesemodus und
-  Bearbeitungsmodus; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
+  Datenbank-Feld oeffnet den Dialog `Datenbank-Aktionen`; dort sind Aktualisieren, Backup/Einstellungen und Wartung
+  in aufklappbaren Gruppen getrennt. Es ist bei offenen Problemen rot als `Datenbank aktualisieren` und
+  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
+  und `Bearbeitungsmodus 🔓`; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.
   Kartenvorschauen öffnen für die Qualitätsprüfung eine große Lightbox. Danach

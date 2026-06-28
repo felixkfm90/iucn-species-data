@@ -232,7 +232,7 @@ npm.cmd run backup:nas
 ```
 
 Standardziel ist `W:\Website Datenbank Backup`. In der App kann der Zielpfad ueber
-`Datenbank aktualisieren` -> `Backup-Pfad einstellen` pro Rechner geaendert werden. Diese Einstellung wird in
+`Datenbank-Aktionen` -> `Backup-Pfad einstellen` pro Rechner geaendert werden. Diese Einstellung wird in
 `species-explorer/local-settings.json` gespeichert und ist per `.gitignore` bewusst lokal. Zusaetzlich kann das Ziel
 weiterhin direkt im Skript ueberschrieben werden:
 
@@ -254,6 +254,7 @@ Das Skript:
 
 Die App-UI ist als manuelle Wartungsaktion im Datenbank-Dialog eingebunden:
 
+- Dialog `Datenbank-Aktionen` mit getrennten Gruppen fuer Aktualisieren, Backup/Einstellungen und Wartung
 - Button `NAS-Backup erstellen`
 - Button `Backup-Pfad einstellen` fuer den lokalen NAS-Zielpfad mit Reset auf den Standard
 - Vorschau prueft Zielpfad, Dateianzahl, Rohdatenmenge, geplanten ZIP-Namen und Rotation

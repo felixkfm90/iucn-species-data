@@ -391,10 +391,11 @@ Aktuelle Planung:
   `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen, Pflegeeintraege und Assetordner auf und loescht sie nach
   genau einer Bestaetigung dauerhaft ohne Wiederherstellungsablage. Details:
   `docs/delete-species-workflow.md`. Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
-  `Lesemodus` den Bearbeitungsmodus; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
+  `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
   ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
-  `Datenbank aktuell`. Nach dem Speichern einer neuen Art wird der selektive Lauf
+  `Datenbank aktuell`; der Dialog dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
+  Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art wird der selektive Lauf
   direkt angeboten und kann gestartet oder abgebrochen werden. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig

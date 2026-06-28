@@ -216,7 +216,7 @@ function setupEditingMode() {
     state.editMode = enabled;
     document.body.classList.toggle("edit-mode", enabled);
     elements.editModeToggle.setAttribute("aria-pressed", String(enabled));
-    elements.editModeToggle.textContent = enabled ? "Bearbeitungsmodus" : "Lesemodus";
+    elements.editModeToggle.textContent = enabled ? "Bearbeitungsmodus 🔓" : "Lesemodus 🔒";
     elements.editModeToggle.title = enabled
       ? "In den Lesemodus wechseln"
       : "Bearbeitungsfunktionen einblenden";
@@ -1138,8 +1138,8 @@ function setupPipelineControl() {
     previewMode = "";
     previewKind = "";
     backupForceStart = false;
-    elements.pipelineDialogTitle.textContent = "Laufart auswählen";
-    elements.pipelineDialogDescription.textContent = "Welche Aktion soll gestartet werden?";
+    elements.pipelineDialogTitle.textContent = "Datenbank-Aktionen";
+    elements.pipelineDialogDescription.textContent = "Wähle aus, was aktualisiert, gesichert oder bereinigt werden soll.";
     elements.pipelineModeChoice.hidden = false;
     elements.pipelinePreview.hidden = true;
     elements.pipelineStartButton.hidden = true;

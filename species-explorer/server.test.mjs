@@ -1592,6 +1592,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /dialog\.addEventListener\("close", \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
   );
   assert.match(appSource, /Datenbank aktuell/);
+  assert.match(appSource, /Datenbank-Aktionen/);
+  assert.match(appSource, /Bearbeitungsmodus 🔓/);
+  assert.match(appSource, /Lesemodus 🔒/);
   assert.match(appSource, /function monitorProjectRevision\(\)/);
   assert.match(appSource, /fetch\("\/api\/revision"\)/);
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
@@ -1719,7 +1722,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /newSpeciesSaved = true;[\s\S]*await loadData\(\{ reload: true \}\);[\s\S]*previewNewSpeciesPortrait\(savedSpeciesId\)/,
   );
   assert.match(appSource, /await state\.openPipelinePreview\?\.\("missing"\)/);
-  assert.match(htmlSource, /Lesemodus\s*<\/button>/);
+  assert.match(htmlSource, /Lesemodus 🔒\s*<\/button>/);
   assert.match(htmlSource, /id="new-species-button"/);
   assert.match(htmlSource, /id="new-species-dialog"/);
   assert.match(htmlSource, /name="german"/);
@@ -1747,9 +1750,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /data-pipeline-mode="cleanup"/);
   assert.match(htmlSource, /id="pipeline-dialog"/);
   assert.match(htmlSource, /id="edit-mode-toggle"/);
+  assert.match(htmlSource, /Lesemodus 🔒/);
   assert.match(htmlSource, /id="pipeline-menu-button"/);
   assert.match(htmlSource, /Datenbank aktualisieren/);
   assert.match(htmlSource, /id="pipeline-mode-choice"/);
+  assert.match(htmlSource, /Datenbank-Aktionen/);
+  assert.match(htmlSource, /Daten aktualisieren/);
+  assert.match(htmlSource, /Backup und Einstellungen/);
+  assert.match(htmlSource, /<details class="action-group action-group-danger">/);
   assert.match(htmlSource, /Neue\/Unvollständige Arten aktualisieren/);
   assert.match(htmlSource, /id="asset-review-dialog"/);
   assert.match(htmlSource, /id="asset-review-list"/);
@@ -1798,8 +1806,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.edit-only\s*\{[^}]*display:\s*none/s);
   assert.match(cssSource, /\.pipeline-mode-choice\s*\{[^}]*display:\s*grid/s);
+  assert.match(cssSource, /\.action-group\s*\{/);
+  assert.match(cssSource, /\.action-group-buttons\s*\{[^}]*display:\s*grid/s);
   assert.match(cssSource, /\.header-action\s*\{[^}]*border:/s);
-  assert.match(cssSource, /\.mode-toggle\s*\{[^}]*width:\s*148px/s);
+  assert.match(cssSource, /\.mode-toggle\s*\{[^}]*width:\s*174px/s);
+  assert.match(cssSource, /\.mode-toggle\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(cssSource, /\.database-status\.outdated\s*\{[^}]*background:\s*#a32929/s);
   assert.match(cssSource, /\.database-status\.current\s*\{[^}]*background:\s*#1f6b4f/s);
   assert.match(cssSource, /\.asset-review-item\s*\{[^}]*grid-template-columns/s);
