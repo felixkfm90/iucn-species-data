@@ -486,6 +486,9 @@ Aktuelle Planung:
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
   vollstaendiges ZIP-Restore-Backup und der Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch.
   `restore-start.cmd` ist der erste technische Baustein: Nach dem Entpacken eines NAS-Backups prueft das Skript
-  Node.js 18+, richtet die Desktop-Verknuepfung ein und startet die App.
+  Node.js 18+, richtet die Desktop-Verknuepfung ein und startet die App. Als NAS-Zielpfad wurde
+  `W:\Website Datenbank Backup` festgelegt. Der Backup-Kern ist als `scripts/nas-backup.ps1` mit
+  `npm.cmd run backup:nas:dry-run` und `npm.cmd run backup:nas` vorbereitet; die App-UI fuer Rueckfrage und
+  Fortschritt ist noch offen.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.

@@ -523,6 +523,13 @@ Nach einem Restore aus einem NAS-ZIP kann `restore-start.cmd` im entpackten Proj
 werden. Das Skript prueft Node.js 18+, bietet bei fehlenden `node_modules` ein `npm install` an, erstellt die
 Desktop-Verknuepfung und startet die App.
 
+Der technische Backup-Kern nutzt als Standardziel `W:\Website Datenbank Backup`:
+
+```bash
+npm.cmd run backup:nas:dry-run
+npm.cmd run backup:nas
+```
+
 ## Aktueller Datenstand
 
 Aktueller lokaler Stand vom 2026-06-27:

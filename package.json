@@ -2,6 +2,8 @@
   "main": "species-explorer/desktop/main.mjs",
   "scripts": {
     "audit:site": "node scripts/monthly-site-audit.mjs",
+    "backup:nas": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1",
+    "backup:nas:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -DryRun",
     "cleanup:species": "node scripts/species-cleanup.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
     "species:desktop": "electron species-explorer/desktop/main.mjs",

@@ -61,7 +61,8 @@ Regeln:
 - mindestens einmal woechentlich bei Aenderungen
 - kein neues Backup, wenn sich seit dem letzten Backup nichts geaendert hat
 - Backup ist ablehnbar
-- konkreter NAS-Zielpfad wird vor der technischen Umsetzung konfigurierbar gemacht
+- Standard-Zielpfad: `W:\Website Datenbank Backup`
+- der Pfad bleibt per Parameter oder Umgebungsvariable `IUCN_NAS_BACKUP_DIR` ueberschreibbar
 
 Die App soll nach relevanten Aenderungen oder beim Schliessen vorschlagen:
 
@@ -215,6 +216,33 @@ Wenn Node.js fehlt, zeigt das Skript eine klare Meldung. Node.js wird nicht auto
 
 ## Noch offen vor der Backup-Implementierung
 
-- konkreter NAS-Zielpfad
 - gewuenschter Anzeigename fuer den lokalen Rechner/User im Lock
 - ob `species-explorer/logs/` spaeter teilweise in das ZIP soll oder per Retention klein gehalten wird
+
+## Technischer Backup-Kern seit 2026-06-28
+
+Der erste Backup-Kern ist als PowerShell-Skript vorhanden:
+
+```bash
+npm.cmd run backup:nas:dry-run
+npm.cmd run backup:nas
+```
+
+Standardziel ist `W:\Website Datenbank Backup`. Das Ziel kann ueberschrieben werden:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -BackupRoot "W:\Website Datenbank Backup"
+```
+
+Das Skript:
+
+- erstellt ZIP-Dateien mit Namen `IUCN_Datenbank_<Datum>_<Uhrzeit>_<Commit>.zip`
+- schreibt `backup-manifest.json` in das ZIP
+- nimmt `.git`, `node_modules`, `local-tools/ffmpeg`, Assets und Projektdateien auf
+- schliesst `Testlauf`, `species-explorer/staging`, `species-explorer/pipeline-asset-backups` und
+  `species-explorer/logs` aus
+- ueberspringt ein Backup, wenn letzter Backup-Manifest-Stand und aktueller Git-/Arbeitsbaum-Status identisch sind
+- entfernt nach erfolgreichem Backup alte ZIPs oberhalb der Grenze von 10
+- bietet mit `-DryRun` eine Vorschau ohne Schreiben oder Loeschen
+
+Die App-UI fuer Rueckfrage, Fortschritt und automatischen Start ist noch offen.

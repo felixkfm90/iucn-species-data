@@ -1435,6 +1435,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     desktopLauncherSource,
     shortcutInstallerSource,
     restoreStartSource,
+    nasBackupSource,
     packageSource,
     assetOverrides,
   ] = await Promise.all([
@@ -1446,6 +1447,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./desktop/start-explorer.vbs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/install-shortcut.ps1", import.meta.url), "utf8"),
     readFile(new URL("../restore-start.cmd", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/nas-backup.ps1", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
@@ -1548,6 +1550,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(restoreStartSource, /npm\.cmd install/);
   assert.match(restoreStartSource, /species:desktop:shortcut/);
   assert.match(restoreStartSource, /start-explorer\.vbs/);
+  assert.match(nasBackupSource, /W:\\Website Datenbank Backup/);
+  assert.match(nasBackupSource, /IUCN_Datenbank_\$\{timestamp\}_\$\{gitShort\}\.zip/);
+  assert.match(nasBackupSource, /backup-manifest\.json/);
+  assert.match(nasBackupSource, /MaxBackups = 10/);
+  assert.match(nasBackupSource, /DryRun/);
+  assert.match(nasBackupSource, /species-explorer\/pipeline-asset-backups/);
+  assert.match(packageSource, /backup:nas:dry-run/);
   assert.match(packageSource, /species:desktop:shortcut/);
   assert.match(serverSource, /function createNewSpeciesPortraitPrompt\(payload\)/);
   assert.match(serverSource, /Git-Commit/);
