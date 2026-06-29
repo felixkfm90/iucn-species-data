@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-06-29T13:42:31.007Z",
+  "generatedAt": "2026-06-29T15:22:56.251Z",
   "counts": {
     "totalSpecies": 47,
-    "missingSoundMp3": 2,
+    "missingSoundMp3": 1,
     "missingSoundCredits": 0,
     "missingMap": 1,
     "missingAssessmentId": 0,
@@ -10,12 +10,11 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 2,
-    "ncSoundLicensesAll": 3
+    "ncSoundLicensesAll": 4
   },
   "missing": {
     "soundMp3": [
-      "Grüner Leguan",
-      "Löwe"
+      "Grüner Leguan"
     ],
     "soundCredits": [],
     "maps": [
@@ -35,10 +34,7 @@
         "german": "Löwe",
         "safeName": "Loewe",
         "missing": [
-          "map.jpg",
-          "sound.mp3",
-          "credits.json",
-          "spectrogram.webp"
+          "map.jpg"
         ]
       }
     ],
@@ -50,6 +46,7 @@
   "ncSoundLicensesAll": [
     "Bisamratte",
     "Brauenmotmot",
-    "Geoffroy-Klammeraffe"
+    "Geoffroy-Klammeraffe",
+    "Löwe"
   ]
 }
