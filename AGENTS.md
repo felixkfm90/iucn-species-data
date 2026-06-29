@@ -62,19 +62,18 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 47 Eintraege in `species_list.json`
-- 47 aktive Arten
-- 47 Arten in `speciesData.json`
+- 46 Eintraege in `species_list.json`
+- 46 aktive Arten
+- 46 Arten in `speciesData.json`
 - 46 Karten
-- 47 Art-Assetordner
+- 46 Art-Assetordner
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 45 Spektrogramm-Dateien
-- 47 Artportraets
-- 1 Assetproblem im Explorer-Modell: `Loewe` hat aktuell keine Karte
-- 2 Soundhinweise `S`: `Gruener Leguan` und `Loewe` haben nach vollstaendigem beziehungsweise gezieltem Pipeline-Lauf
-  keine verwendbare automatische Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als
-  Assetproblem.
+- 46 Artportraets
+- 0 Assetprobleme im Explorer-Modell
+- 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
+  Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -362,13 +361,18 @@ Aktuelle Planung:
   Sofortportraits liefert `POST /api/species/new/portrait-prompt`
   einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-29 ist `Neue Art` als vierstufiger
   Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen,
-  Karte/Suchlauf und Sound/Abschluss. Nach Schritt 2 wird die Art angelegt und der gezielte Pipeline-Lauf fuer genau
-  diese Art im selben Dialog gestartet; das Datenbank-Aktionen-Fenster wird dabei nicht geoeffnet. Gefundene Karten
+  Karte/Suchlauf und Sound/Abschluss. Groesse, Gewicht und Lebenserwartung werden aus Wert plus Einheit
+  zusammengesetzt; `ca.` wird automatisch gespeichert und Lebenserwartung wird bei `1` automatisch auf `Tag`,
+  `Monat` oder `Jahr` gebeugt. Bereits erreichte Schritte koennen angeklickt werden. `Artportrait ueberspringen`
+  startet keine Anlage mehr, sondern gibt erst `Naechster Schritt` frei. Nach Schritt 2 wird die Art angelegt und der
+  gezielte Pipeline-Lauf fuer genau diese Art im selben Dialog gestartet; das Datenbank-Aktionen-Fenster wird dabei
+  nicht geoeffnet. Gefundene Karten
   koennen uebernommen oder uebersprungen werden. Gefundene Sounds werden mit Spektrogramm angezeigt, koennen
   uebernommen, uebersprungen oder abgelehnt werden. Bei Ablehnung merkt der Explorer die Quellkennung und sucht
   automatisch weiter. Ungueltige Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig
   voneinander per Checkbox nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die vorhandenen
-  Textfelder. Die Route `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor
+  Textfelder. Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben. Die
+  Route `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor
   der Artanlage. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
   erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher, Hoeckerschwan und Loewe wurden fuer

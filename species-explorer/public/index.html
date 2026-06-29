@@ -170,16 +170,40 @@
               </label>
               <label data-field="size">
                 <span>Größe</span>
-                <input name="size" type="text" maxlength="240" autocomplete="off" placeholder="ca. 23,5-29 cm">
+                <span class="new-species-value-unit">
+                  <span aria-hidden="true">ca.</span>
+                  <input name="size" type="text" maxlength="80" autocomplete="off" placeholder="23,5-29">
+                  <select name="sizeUnit" aria-label="Größeneinheit">
+                    <option value="mm">mm</option>
+                    <option value="cm" selected>cm</option>
+                    <option value="m">m</option>
+                  </select>
+                </span>
               </label>
               <div class="new-species-sexed-fields" data-sexed-fields="size" hidden>
                 <label data-field="sizeMale">
                   <span>Größe Männchen</span>
-                  <input name="sizeMale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 24-29 cm">
+                  <span class="new-species-value-unit">
+                    <span aria-hidden="true">ca.</span>
+                    <input name="sizeMale" type="text" maxlength="80" autocomplete="off" placeholder="24-29">
+                    <select name="sizeMaleUnit" aria-label="Größeneinheit Männchen">
+                      <option value="mm">mm</option>
+                      <option value="cm" selected>cm</option>
+                      <option value="m">m</option>
+                    </select>
+                  </span>
                 </label>
                 <label data-field="sizeFemale">
                   <span>Größe Weibchen</span>
-                  <input name="sizeFemale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 23,5-27 cm">
+                  <span class="new-species-value-unit">
+                    <span aria-hidden="true">ca.</span>
+                    <input name="sizeFemale" type="text" maxlength="80" autocomplete="off" placeholder="23,5-27">
+                    <select name="sizeFemaleUnit" aria-label="Größeneinheit Weibchen">
+                      <option value="mm">mm</option>
+                      <option value="cm" selected>cm</option>
+                      <option value="m">m</option>
+                    </select>
+                  </span>
                 </label>
               </div>
             </div>
@@ -191,23 +215,55 @@
               </label>
               <label data-field="weight">
                 <span>Gewicht</span>
-                <input name="weight" type="text" maxlength="240" autocomplete="off" placeholder="ca. 80-110 g">
+                <span class="new-species-value-unit">
+                  <span aria-hidden="true">ca.</span>
+                  <input name="weight" type="text" maxlength="80" autocomplete="off" placeholder="80-110">
+                  <select name="weightUnit" aria-label="Gewichtseinheit">
+                    <option value="g" selected>g</option>
+                    <option value="kg">kg</option>
+                    <option value="t">t</option>
+                  </select>
+                </span>
               </label>
               <div class="new-species-sexed-fields" data-sexed-fields="weight" hidden>
                 <label data-field="weightMale">
                   <span>Gewicht Männchen</span>
-                  <input name="weightMale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 85-110 g">
+                  <span class="new-species-value-unit">
+                    <span aria-hidden="true">ca.</span>
+                    <input name="weightMale" type="text" maxlength="80" autocomplete="off" placeholder="85-110">
+                    <select name="weightMaleUnit" aria-label="Gewichtseinheit Männchen">
+                      <option value="g" selected>g</option>
+                      <option value="kg">kg</option>
+                      <option value="t">t</option>
+                    </select>
+                  </span>
                 </label>
                 <label data-field="weightFemale">
                   <span>Gewicht Weibchen</span>
-                  <input name="weightFemale" type="text" maxlength="100" autocomplete="off" placeholder="ca. 80-100 g">
+                  <span class="new-species-value-unit">
+                    <span aria-hidden="true">ca.</span>
+                    <input name="weightFemale" type="text" maxlength="80" autocomplete="off" placeholder="80-100">
+                    <select name="weightFemaleUnit" aria-label="Gewichtseinheit Weibchen">
+                      <option value="g" selected>g</option>
+                      <option value="kg">kg</option>
+                      <option value="t">t</option>
+                    </select>
+                  </span>
                 </label>
               </div>
             </div>
 
             <label data-field="lifeExpectancy">
               <span>Lebenserwartung</span>
-              <input name="lifeExpectancy" type="text" maxlength="240" autocomplete="off" placeholder="ca. 3 Jahre">
+              <span class="new-species-value-unit">
+                <span aria-hidden="true">ca.</span>
+                <input name="lifeExpectancy" type="text" maxlength="80" autocomplete="off" placeholder="3">
+                <select name="lifeExpectancyUnit" aria-label="Alterseinheit">
+                  <option value="Tage">Tage</option>
+                  <option value="Monate">Monate</option>
+                  <option value="Jahre" selected>Jahre</option>
+                </select>
+              </span>
             </label>
           </div>
 

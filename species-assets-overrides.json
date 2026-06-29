@@ -917,20 +917,6 @@
         "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
         "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
       }
-    },
-    "Loewe": {
-      "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-29T15:22:56.020Z"
-      },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "63c3a7da9a048c3257e14fdd6af03479887b40d69163619d9cb80046bcdc7a0c",
-        "spectrogramSha256": "2a6faac80b3b12c9562a629a037a896d31d316e518ddb4edc8592fd6458a5bc7",
-        "generatedAt": "2026-06-29T15:22:37.116Z",
-        "verifiedAt": "2026-06-29T15:22:37.122Z"
-      }
     }
   },
   "spectrogramGenerator": {

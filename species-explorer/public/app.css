@@ -1409,6 +1409,10 @@ button:focus-visible {
   font-weight: 750;
 }
 
+.new-species-steps li.reachable {
+  cursor: pointer;
+}
+
 .new-species-steps li.active {
   color: var(--blue);
   background: var(--blue-soft);
@@ -1465,6 +1469,30 @@ button:focus-visible {
 .new-species-sex-toggle input {
   width: auto;
   min-height: auto;
+}
+
+.new-species-value-unit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(72px, auto);
+  align-items: center;
+  gap: 7px;
+}
+
+.new-species-value-unit > span {
+  color: #34433c;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-transform: none;
+}
+
+.new-species-value-unit select {
+  min-height: 40px;
+  padding: 8px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
 }
 
 .new-species-sexed-fields {

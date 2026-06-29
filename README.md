@@ -256,16 +256,20 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 2026-06-28 als Schrittassistent erweitert:
 
 - `Neue Art` oeffnet ein Formular fuer deutschen Namen, wissenschaftlichen Namen, Groesse, Gewicht und
-  Lebenserwartung. Alle Felder enthalten Beispieltexte.
+  Lebenserwartung. Die Zahlenfelder erfassen nur den Wert oder Bereich, zum Beispiel `140-250`; `ca.` und die
+  ausgewaehlte Einheit werden automatisch in den gespeicherten Text geschrieben.
 - Der wissenschaftliche Name wird als ein Feld eingegeben, zum Beispiel `Turdus Merula`, und intern in
   `genus: Turdus` und `species: merula` getrennt.
-- Groesse und Gewicht koennen je ueber eine eigene Checkbox nach Maennchen und Weibchen getrennt werden. Die App
-  speichert daraus weiterhin die bestehenden Textfelder.
+- Groesse und Gewicht koennen je ueber eine eigene Checkbox nach Maennchen und Weibchen getrennt werden. Die
+  Einheiten sind auswählbar: Groesse `mm/cm/m`, Gewicht `g/kg/t`, Lebenserwartung `Tage/Monate/Jahre`.
+  Bei `1` wird die Lebenserwartung automatisch als `1 Tag`, `1 Monat` oder `1 Jahr` gespeichert.
 - Schritt 1 prueft allgemeine Daten; ungueltige Felder werden rot markiert und erhalten eine direkte Fehlermeldung.
-- Schritt 2 erzeugt optional einen Portrait-Einzelprompt, kopiert ihn, prueft ein extern erzeugtes Bild oder laesst
-  das Portrait bewusst ueberspringen.
+- Schritt 2 erzeugt optional einen Portrait-Einzelprompt, kopiert ihn, prueft ein extern erzeugtes Bild oder markiert
+  das Portrait bewusst als uebersprungen. Erst `Nächster Schritt` legt die Art an.
 - Mit `Nächster Schritt` nach Schritt 2 wird die Art angelegt und der gezielte Pipeline-Lauf fuer genau diese Art
   direkt im Neue-Art-Fenster gestartet. Das Datenbank-Aktionen-Fenster wird dabei nicht geöffnet.
+- Bereits erreichte Schritte koennen im Assistenten wieder angeklickt werden, um die Eingaben oder Pruefansichten zu
+  kontrollieren.
 - Schritt 3 zeigt den Suchlauf und die Kartenprüfung. Eine gefundene Karte kann übernommen oder übersprungen werden.
 - Schritt 4 zeigt den Sound mit Spektrogramm; ein Klick ins Spektrogramm springt im Audioplayer an die gewählte
   Stelle.
@@ -281,11 +285,12 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Nach erfolgreichem Speichern koennen ohne Seitenneuladen weitere Arten angelegt werden.
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
+- Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben.
 - 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist wieder angelegt; Karte und Sound
-sind noch offen und werden über die gezielten Such- beziehungsweise Pflegefunktionen weiter bearbeitet.
+Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Der Löwe wurde fuer den naechsten sauberen
+Neue-Art-Test wieder entfernt.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -565,15 +570,14 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-06-28:
+Aktueller lokaler Stand vom 2026-06-29:
 
-- 47 Eintraege in `species_list.json`
-- 47 Arten in der letzten Pipeline-Ausgabe
+- 46 Eintraege in `species_list.json`
+- 46 Arten in der letzten Pipeline-Ausgabe
 - 46 Karten, 45 Sounds, 45 Credits und 45 Spektrogramme
-- 47 Artportraits; 0 Portrait-Assetprobleme
+- 46 Artportraits; 0 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
-- 2 Soundhinweise `S`: `Grüner Leguan` und `Löwe` haben aktuell keine verwendbare automatische Tonquelle
-- 1 fehlende Karte: `Löwe`
+- 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.

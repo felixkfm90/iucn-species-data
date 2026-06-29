@@ -1599,8 +1599,32 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/species\/new\/save/);
   assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
   assert.match(appSource, /\/api\/species\/new\/portrait-preview/);
+  assert.match(htmlSource, /name="sizeUnit"/);
+  assert.match(htmlSource, /name="weightUnit"/);
+  assert.match(htmlSource, /name="lifeExpectancyUnit"/);
+  assert.match(htmlSource, /placeholder="23,5-29"/);
+  assert.match(htmlSource, /placeholder="80-110"/);
+  assert.match(htmlSource, /placeholder="3"/);
+  assert.doesNotMatch(htmlSource, /placeholder="ca\. 23,5-29 cm"/);
+  assert.match(appSource, /const formatMeasureValue = /);
+  assert.match(appSource, /const singularAgeUnit = /);
+  assert.match(appSource, /state\.renderPersistentPipelineStatus\?\.\(status\)/);
+  assert.doesNotMatch(
+    appSource,
+    /async function pollInlinePipelineStatus\(\)[\s\S]*?[^.]renderPersistentPipelineStatus\(status\)/,
+  );
+  assert.match(appSource, /let maxStepReached = 1/);
+  assert.match(appSource, /indicator\.addEventListener\("click"/);
+  assert.match(appSource, /newSpeciesPipelineActive\) return;[\s\S]*form\.reset\(\);[\s\S]*resetAll\(\);/);
+  assert.match(cssSource, /\.new-species-value-unit/);
+  assert.match(cssSource, /\.new-species-steps li\.reachable/);
   assert.match(appSource, /Artportrait wird lokal übernommen/);
   assert.match(appSource, /publish:\s*false/);
+  assert.match(appSource, /Artportrait wird für diese neue Art übersprungen/);
+  assert.doesNotMatch(
+    appSource,
+    /portraitSkipButton\.addEventListener\("click", \(\) => \{[\s\S]*?saveAndStartPipeline\(\);[\s\S]*?\}\);/,
+  );
   assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
   assert.match(appSource, /function setupEditingMode\(\)/);
@@ -1816,9 +1840,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /name="weightFemale"/);
   assert.match(htmlSource, /placeholder="Turdus Merula"/);
   assert.match(htmlSource, /placeholder="Amsel"/);
-  assert.match(htmlSource, /placeholder="ca\. 23,5-29 cm"/);
-  assert.match(htmlSource, /placeholder="ca\. 80-110 g"/);
-  assert.match(htmlSource, /placeholder="ca\. 3 Jahre"/);
+  assert.match(htmlSource, /placeholder="23,5-29"/);
+  assert.match(htmlSource, /name="sizeUnit"/);
+  assert.match(htmlSource, /placeholder="80-110"/);
+  assert.match(htmlSource, /name="weightUnit"/);
+  assert.match(htmlSource, /placeholder="3"/);
+  assert.match(htmlSource, /name="lifeExpectancyUnit"/);
   assert.doesNotMatch(htmlSource, /name="genus"/);
   assert.doesNotMatch(htmlSource, /name="species"/);
   assert.match(htmlSource, /class="new-species-json"/);

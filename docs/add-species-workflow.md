@@ -50,7 +50,8 @@ Formularfelder:
 - Gewicht (`weight`), optional getrennt nach Maennchen und Weibchen
 - Lebenserwartung (`life_expectancy`)
 
-Der Dialog ist als dreistufiger Assistent aufgebaut.
+Der Dialog ist als vierstufiger Assistent aufgebaut. Bereits erreichte Schritte koennen angeklickt werden, um
+vorherige Eingaben oder Pruefansichten erneut zu sehen.
 
 ### Schritt 1: Allgemeine Daten pruefen
 
@@ -75,9 +76,18 @@ Im Hintergrund trennt der Server den eingegebenen wissenschaftlichen Namen. Die 
 Anfangsbuchstaben und das Artepitheton kleingeschrieben in `genus` und `species` gespeichert. Die Eingabe
 `Turdus Merula` wird damit als `Turdus merula` normalisiert.
 
+Groesse, Gewicht und Lebenserwartung werden anwenderfreundlich aus Wert und Einheit zusammengesetzt:
+
+- In das Zahlenfeld kommt nur der Wert oder Bereich, zum Beispiel `140-250`.
+- `ca.` wird automatisch vorangestellt.
+- Groesse bietet `mm`, `cm` und `m`.
+- Gewicht bietet `g`, `kg` und `t`.
+- Lebenserwartung bietet `Tage`, `Monate` und `Jahre`; bei genau `1` speichert die App automatisch `1 Tag`,
+  `1 Monat` oder `1 Jahr`.
+
 Groesse und Gewicht koennen getrennt nach Geschlecht erfasst werden. Dafuer gibt es je Feld eine eigene Checkbox:
 
-- Checkbox aus: ein gemeinsamer Textwert wie bisher, zum Beispiel `ca. 23,5-29 cm`.
+- Checkbox aus: ein gemeinsamer Wert plus Einheit, gespeichert zum Beispiel als `ca. 23,5-29 cm`.
 - Checkbox an: je ein Feld fuer `Maennchen` und `Weibchen`.
 - Sind beide Angaben getrennt, speichert die App weiterhin die bestehenden Textfelder, zum Beispiel:
   `Maennchen: ca. 24-29 cm; Weibchen: ca. 23,5-27 cm`.
@@ -101,7 +111,9 @@ Nach erfolgreicher Datenpruefung kann direkt ein Portrait vorbereitet werden:
 
 Die Bildpruefung nutzt dieselben Regeln wie die Bearbeitung bestehender Arten: PNG/JPEG/WebP bis 20 MB,
 Mindestgroesse 800x1000 Pixel, 4:5-Seitenverhaeltnis und lokale Umwandlung auf `portrait.webp` in 1280x1600.
-Der Schritt kann mit `Artportrait ueberspringen` bewusst ausgelassen werden.
+Der Schritt kann mit `Artportrait ueberspringen` bewusst ausgelassen werden. Diese Aktion markiert den Schritt nur
+als erledigt; erst `Naechster Schritt` legt die Art an und startet den Suchlauf. Wird der Dialog vorher mit `X` oder
+`Abbrechen` geschlossen, werden die Eingaben verworfen und keine Art angelegt.
 
 ### Schritt 3: Karte und Pipeline-Status
 
@@ -156,8 +168,11 @@ Technischer Stand vom 2026-06-29:
 - Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt, Kartenpruefung sowie
   Sound-/Abschluss-Schritt.
 - Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle
-  Eingaben.
+  Eingaben. Groesse, Gewicht und Lebenserwartung werden aus Wert plus Einheit zusammengesetzt; `ca.` wird automatisch
+  gespeichert.
 - Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden.
+- Bereits erreichte Schritte koennen angeklickt werden. `Artportrait ueberspringen` startet keine Anlage mehr,
+  sondern gibt erst `Naechster Schritt` frei.
 - Ungueltige Felder werden sichtbar markiert; Fehlermeldungen stehen direkt am Feld.
 - Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
   angelegt werden koennen.
@@ -168,15 +183,15 @@ Technischer Stand vom 2026-06-29:
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
   unveraendert.
 - 19 Explorer-Tests sind erfolgreich.
-- Der neu gestartete lokale Server liefert den Dialog und alle fuenf Formularfelder aus.
+- Der neu gestartete lokale Server liefert den Dialog und alle Formularfelder aus.
 - Die Bedienung wurde am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktueller redaktioneller Stand:
 
-- 47 Eintraege in `species_list.json`
+- 46 Eintraege in `species_list.json`
 - Haubentaucher und Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28
   bereinigt
-- Löwe ist aktuell wieder angelegt; Karte und Sound sind noch offen
+- Löwe wurde fuer einen sauberen erneuten Neue-Art-Test wieder entfernt
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
 

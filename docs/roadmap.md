@@ -302,8 +302,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Seit 2026-06-29 ist der Dialog als vierstufiger Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales
   Artportrait pruefen oder ueberspringen, Karte/Suchlauf und Sound/Abschluss. Ungueltige Eingaben werden direkt am
   Feld markiert; der initiale Hinweis ist bereits sichtbar, damit das Formular beim ersten Tippen nicht springt.
-  Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden; gespeichert
-  werden weiterhin die bestehenden Textfelder. Die API-Routen sind `POST /api/species/new/preview`,
+  Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden. Groesse, Gewicht
+  und Lebenserwartung werden aus Wert plus Einheit zusammengesetzt; `ca.` wird automatisch gespeichert und
+  Lebenserwartung wird bei `1` automatisch auf `Tag`, `Monat` oder `Jahr` gebeugt. Bereits erreichte Schritte
+  koennen wieder angeklickt werden. `Artportrait ueberspringen` startet keine Anlage mehr, sondern gibt erst
+  `Naechster Schritt` frei. Die API-Routen sind `POST /api/species/new/preview`,
   `POST /api/species/new/portrait-prompt`, `POST /api/species/new/portrait-preview` und
   `POST /api/species/new/save`. Nach Schritt 2 legt die App die Art an und startet den gezielten Lauf fuer genau
   diese neue Art im selben Dialog; das Datenbank-Aktionen-Fenster wird dabei nicht geoeffnet. Neue Karten koennen
@@ -314,8 +317,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
-  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe ist
-  aktuell wieder angelegt; Karte und Sound sind noch offen. Aktuell stehen 47 Arten in `species_list.json`.
+  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde
+  fuer einen sauberen erneuten Neue-Art-Test wieder entfernt. Aktuell stehen 46 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -370,8 +373,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Dadurch bleibt der Report auch bei Windows-Dateisperren konsistent. Die produktive
-  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen. Nach dem erneuten Anlegen des Löwen meldet
-  der Explorer 47/47 Arten, eine fehlende Karte beim Löwen und einen konsistenten Report.
+  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen. Der Löwe wurde nach dem letzten Test erneut
+  entfernt, sodass der Explorer wieder 46/46 Arten ohne Löwe-Zwischenstand meldet.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist

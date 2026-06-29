@@ -1149,6 +1149,7 @@ function setupPipelineControl() {
     elements.pipelineRunNoticeTitle.textContent = presentation.title;
     elements.pipelineRunNoticeDetail.textContent = presentation.detail;
   };
+  state.renderPersistentPipelineStatus = renderPersistentPipelineStatus;
 
   const showStatusDialog = (status) => {
     const presentation = statusPresentation(status);
@@ -1598,6 +1599,7 @@ function setupNewSpeciesCreator() {
   let inlineReviewAssets = [];
   let inlineReviewChoices = new Map();
   let inlinePipelinePollTimer = null;
+  let maxStepReached = 1;
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1653,7 +1655,39 @@ function setupNewSpeciesCreator() {
     if (sexedFields) sexedFields.hidden = !checked;
   };
 
-  const composeSexedValue = (male, female) => `Männchen: ${String(male ?? "").trim()}; Weibchen: ${String(female ?? "").trim()}`;
+  const sizeUnits = ["mm", "cm", "m"];
+  const weightUnits = ["kg", "g", "t"];
+  const ageUnits = ["Tage", "Tag", "Monate", "Monat", "Jahre", "Jahr"];
+
+  const escapeRegExp = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const stripMeasureInput = (value, units = []) => {
+    let text = String(value ?? "").trim();
+    text = text.replace(/^ca\.?\s*/i, "").trim();
+    for (const unit of units) {
+      text = text.replace(new RegExp(`\\s*${escapeRegExp(unit)}\\.?$`, "i"), "").trim();
+    }
+    return text;
+  };
+
+  const singularAgeUnit = (value, unit) => {
+    const normalized = String(value ?? "").trim().replace(",", ".");
+    if (!/^1(?:\.0+)?$/.test(normalized)) return unit;
+    return { Tage: "Tag", Monate: "Monat", Jahre: "Jahr" }[unit] || unit;
+  };
+
+  const formatMeasureValue = (value, unit, { units = [], age = false } = {}) => {
+    const cleaned = stripMeasureInput(value, units);
+    if (!cleaned) return "";
+    const finalUnit = age ? singularAgeUnit(cleaned, unit) : unit;
+    return `ca. ${cleaned} ${finalUnit}`;
+  };
+
+  const composeSexedValue = (male, maleUnit, female, femaleUnit, options = {}) => {
+    const maleValue = formatMeasureValue(male, maleUnit, options);
+    const femaleValue = formatMeasureValue(female, femaleUnit, options);
+    return `Männchen: ${maleValue}; Weibchen: ${femaleValue}`;
+  };
 
   const speciesValues = () => {
     const formData = new FormData(form);
@@ -1663,12 +1697,27 @@ function setupNewSpeciesCreator() {
       german: formData.get("german"),
       scientificName: formData.get("scientificName"),
       size: sizeSexed
-        ? composeSexedValue(formData.get("sizeMale"), formData.get("sizeFemale"))
-        : formData.get("size"),
+        ? composeSexedValue(
+          formData.get("sizeMale"),
+          formData.get("sizeMaleUnit"),
+          formData.get("sizeFemale"),
+          formData.get("sizeFemaleUnit"),
+          { units: sizeUnits },
+        )
+        : formatMeasureValue(formData.get("size"), formData.get("sizeUnit"), { units: sizeUnits }),
       weight: weightSexed
-        ? composeSexedValue(formData.get("weightMale"), formData.get("weightFemale"))
-        : formData.get("weight"),
-      lifeExpectancy: formData.get("lifeExpectancy"),
+        ? composeSexedValue(
+          formData.get("weightMale"),
+          formData.get("weightMaleUnit"),
+          formData.get("weightFemale"),
+          formData.get("weightFemaleUnit"),
+          { units: weightUnits },
+        )
+        : formatMeasureValue(formData.get("weight"), formData.get("weightUnit"), { units: weightUnits }),
+      lifeExpectancy: formatMeasureValue(formData.get("lifeExpectancy"), formData.get("lifeExpectancyUnit"), {
+        units: ageUnits,
+        age: true,
+      }),
     };
   };
 
@@ -1682,23 +1731,35 @@ function setupNewSpeciesCreator() {
     for (const [fieldKey, label] of [
       ["german", "Deutscher Name"],
       ["scientificName", "Wissenschaftlicher Name"],
-      ["lifeExpectancy", "Lebenserwartung"],
     ]) {
       if (!String(formData.get(fieldKey) ?? "").trim()) add(fieldKey, `${label} darf nicht leer sein`);
     }
     if (formData.get("sizeSexed") === "on") {
-      if (!String(formData.get("sizeMale") ?? "").trim()) add("sizeMale", "Größe Männchen darf nicht leer sein");
-      if (!String(formData.get("sizeFemale") ?? "").trim()) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
-    } else if (!String(formData.get("size") ?? "").trim()) {
+      if (!stripMeasureInput(formData.get("sizeMale"), sizeUnits)) add("sizeMale", "Größe Männchen darf nicht leer sein");
+      if (!stripMeasureInput(formData.get("sizeFemale"), sizeUnits)) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
+    } else if (!stripMeasureInput(formData.get("size"), sizeUnits)) {
       add("size", "Größe darf nicht leer sein");
     }
     if (formData.get("weightSexed") === "on") {
-      if (!String(formData.get("weightMale") ?? "").trim()) add("weightMale", "Gewicht Männchen darf nicht leer sein");
-      if (!String(formData.get("weightFemale") ?? "").trim()) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
-    } else if (!String(formData.get("weight") ?? "").trim()) {
+      if (!stripMeasureInput(formData.get("weightMale"), weightUnits)) add("weightMale", "Gewicht Männchen darf nicht leer sein");
+      if (!stripMeasureInput(formData.get("weightFemale"), weightUnits)) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
+    } else if (!stripMeasureInput(formData.get("weight"), weightUnits)) {
       add("weight", "Gewicht darf nicht leer sein");
     }
+    if (!stripMeasureInput(formData.get("lifeExpectancy"), ageUnits)) {
+      add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
+    }
     return errors;
+  };
+
+  const markSpeciesInputsChanged = () => {
+    previewToken = "";
+    preview.hidden = true;
+    resetPortraitPrompt();
+    resetPortraitPreview();
+    if (currentStep !== 1) showStep(1);
+    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
+    updateButtons();
   };
 
   const canAdvanceFromPortrait = () => portraitSkipped || Boolean(portraitPreviewToken);
@@ -1801,15 +1862,18 @@ function setupNewSpeciesCreator() {
 
   const showStep = (step) => {
     currentStep = step;
+    maxStepReached = Math.max(maxStepReached, step);
     for (const section of steps) {
       const active = Number(section.dataset.newSpeciesStep) === step;
       section.hidden = !active;
       section.classList.toggle("active", active);
     }
     for (const indicator of stepIndicators) {
-      const active = Number(indicator.dataset.newSpeciesStepIndicator) === step;
+      const indicatorStep = Number(indicator.dataset.newSpeciesStepIndicator);
+      const active = indicatorStep === step;
       indicator.classList.toggle("active", active);
-      indicator.classList.toggle("done", Number(indicator.dataset.newSpeciesStepIndicator) < step);
+      indicator.classList.toggle("done", indicatorStep < step);
+      indicator.classList.toggle("reachable", indicatorStep <= maxStepReached && !active);
     }
     updateFinalPortraitState();
     updateButtons();
@@ -1847,6 +1911,7 @@ function setupNewSpeciesCreator() {
     inlineReviewAssets = [];
     inlineReviewChoices = new Map();
     state.newSpeciesPipelineActive = false;
+    maxStepReached = 1;
     preview.hidden = true;
     jsonPreview.textContent = "";
     for (const field of derivedFields) field.textContent = "";
@@ -1960,7 +2025,7 @@ function setupNewSpeciesCreator() {
     try {
       const status = await fetchJson("/api/pipeline/status");
       state.pipelineStatusSnapshot = status;
-      renderPersistentPipelineStatus(status);
+      state.renderPersistentPipelineStatus?.(status);
       if (status.status === "running") {
         setPipelineBusy(true);
         const phase = status.phase || "Suchlauf läuft";
@@ -2065,6 +2130,9 @@ function setupNewSpeciesCreator() {
   };
 
   const close = () => {
+    if (busy || pipelineBusy || state.newSpeciesPipelineActive) return;
+    form.reset();
+    resetAll();
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
@@ -2082,21 +2150,16 @@ function setupNewSpeciesCreator() {
 
   form.elements.sizeSexed?.addEventListener("change", () => {
     updateMeasurementMode("size");
-    resetPortraitPrompt();
-    resetPortraitPreview();
-    previewToken = "";
-    preview.hidden = true;
-    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
-    updateButtons();
+    markSpeciesInputsChanged();
   });
   form.elements.weightSexed?.addEventListener("change", () => {
     updateMeasurementMode("weight");
-    resetPortraitPrompt();
-    resetPortraitPreview();
-    previewToken = "";
-    preview.hidden = true;
-    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
-    updateButtons();
+    markSpeciesInputsChanged();
+  });
+
+  form.addEventListener("change", (event) => {
+    if (!event.target.matches(".new-species-value-unit select")) return;
+    markSpeciesInputsChanged();
   });
 
   form.addEventListener("input", (event) => {
@@ -2106,13 +2169,7 @@ function setupNewSpeciesCreator() {
       setPortraitMessage("Portraitangaben geändert. Bitte Bildprüfung bei Bedarf erneut ausführen.", "info");
       return;
     }
-    previewToken = "";
-    preview.hidden = true;
-    resetPortraitPrompt();
-    resetPortraitPreview();
-    if (currentStep !== 1) showStep(1);
-    setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
-    updateButtons();
+    markSpeciesInputsChanged();
   });
 
   portraitFileInput.addEventListener("change", () => {
@@ -2167,6 +2224,14 @@ function setupNewSpeciesCreator() {
   backButton.addEventListener("click", () => {
     if (currentStep > 1) showStep(currentStep - 1);
   });
+
+  for (const indicator of stepIndicators) {
+    indicator.addEventListener("click", () => {
+      const targetStep = Number(indicator.dataset.newSpeciesStepIndicator);
+      if (!targetStep || targetStep > maxStepReached || busy || pipelineBusy) return;
+      showStep(targetStep);
+    });
+  }
 
   portraitPromptButton.addEventListener("click", async () => {
     if (!previewToken) return;
@@ -2270,8 +2335,12 @@ function setupNewSpeciesCreator() {
   portraitSkipButton.addEventListener("click", () => {
     resetPortraitPreview();
     portraitSkipped = true;
-    setPortraitMessage("Artportrait wird für diese neue Art übersprungen und kann später ergänzt werden.", "info");
-    void saveAndStartPipeline();
+    setPortraitMessage(
+      "Artportrait wird für diese neue Art übersprungen. Mit „Nächster Schritt“ wird die Art angelegt.",
+      "info",
+    );
+    updateFinalPortraitState();
+    updateButtons();
   });
 
   mapReview.addEventListener("click", (event) => {
