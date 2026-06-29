@@ -917,6 +917,30 @@
         "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
         "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
       }
+    },
+    "Loewe": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-06-29T16:22:40.423Z",
+        "approvedAt": "2026-06-29T16:22:45.568Z",
+        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
+        "metadataSha256": "e3e4f7cf863a91d22705ab2e7f126a5834a45e7b372be65bc7970dbe76ca842d"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-29T16:27:19.584Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "7c8f29b1580cae5b3adc08708775965dc82fbff629356e51b2c0bc239347c187",
+        "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
+        "generatedAt": "2026-06-29T16:25:36.788Z",
+        "verifiedAt": "2026-06-29T16:25:36.794Z"
+      }
     }
   },
   "spectrogramGenerator": {
