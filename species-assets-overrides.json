@@ -924,10 +924,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-06-28T19:01:34.591Z",
-        "approvedAt": "2026-06-28T19:02:44.239Z",
+        "importedAt": "2026-06-29T13:38:48.497Z",
+        "approvedAt": "2026-06-29T13:39:25.076Z",
         "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "820fdef4dab014f838cc117f41289a9c544282c4c3d2a6f57cc9f8dec4c7ebbb"
+        "metadataSha256": "3bb3f2d1cec3e564baafa9e34d09b2a2830662ad9cd2afa29cc9a08826e461ee"
       },
       "sound": {
         "manual": false,
@@ -939,7 +939,7 @@
             "url": "https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
             "recordist": "Ken123",
             "license": "https://creativecommons.org/licenses/by-sa/3.0",
-            "rejectedAt": "2026-06-28T19:03:06.093Z"
+            "rejectedAt": "2026-06-29T13:40:14.359Z"
           },
           {
             "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
@@ -947,7 +947,7 @@
             "url": "https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
             "recordist": "Speaker: Andrew Krizhanovsky, incorporating:\n\nFragmento Deemento - Volume 1.5 / Fragmento Deemento - Volume 1.5 (by-sa 3.0, en:Jamendo)\nFile:Lion raring-sound1TamilNadu178.ogg\nImage:Ru-audio template-Wikipedia.ogg\nAuthors of the article",
             "license": "https://creativecommons.org/licenses/by-sa/3.0",
-            "rejectedAt": "2026-06-28T19:06:47.293Z"
+            "rejectedAt": "2026-06-29T13:40:38.001Z"
           },
           {
             "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
@@ -955,10 +955,10 @@
             "url": "https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
             "recordist": "Jeuwre",
             "license": "https://creativecommons.org/licenses/by-sa/4.0",
-            "rejectedAt": "2026-06-28T19:11:22.062Z"
+            "rejectedAt": "2026-06-29T13:40:48.689Z"
           }
         ],
-        "updatedAt": "2026-06-28T19:11:22.062Z"
+        "updatedAt": "2026-06-29T13:40:48.688Z"
       }
     }
   },
