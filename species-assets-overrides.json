@@ -7,13 +7,6 @@
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
       },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "6fc9cd1216e8f22b894c80376f0665d49584661ccbf08f8df7acee8b4b773055",
-        "spectrogramSha256": "52a5a2b390a716edfea9c9e59fb7665bed00e296978192002bdf7e0115d27b91",
-        "generatedAt": "2026-06-15T13:03:03.963Z",
-        "verifiedAt": "2026-06-20T18:35:37.717Z"
-      },
       "portrait": {
         "managedBy": "species-explorer",
         "source": "ChatGPT",
@@ -23,6 +16,24 @@
         "approvedAt": "2026-06-21T17:47:07.501Z",
         "sha256": "36fd7ae37968ed9bdaff4fd9eff1bcf05b9cef2985114b8a8f64cb418ac2dc2e",
         "metadataSha256": "1493fccee617129c273d925df042d04fd66bc8d2fe06efce37d04582b51e7797"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:1041347",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1041347",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-06-29T16:35:27.821Z"
+          }
+        ],
+        "manual": false,
+        "protectFromPipeline": false,
+        "reason": "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
+        "rejectedCurrent": true,
+        "rejectedAt": "2026-06-29T16:35:27.821Z",
+        "updatedAt": "2026-06-29T16:35:27.821Z"
       }
     },
     "Fischertukan": {

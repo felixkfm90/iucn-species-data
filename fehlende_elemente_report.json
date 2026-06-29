@@ -1,19 +1,20 @@
 {
-  "generatedAt": "2026-06-29T16:27:19.822Z",
+  "generatedAt": "2026-06-29T16:35:27.873Z",
   "counts": {
     "totalSpecies": 47,
-    "missingSoundMp3": 1,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 1,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 2,
+    "missingSpeciesAssets": 3,
     "ncSoundLicensesAll": 4
   },
   "missing": {
     "soundMp3": [
+      "Blaukehlchen",
       "Grüner Leguan"
     ],
     "soundCredits": [],
@@ -21,6 +22,15 @@
       "Löwe"
     ],
     "speciesAssets": [
+      {
+        "german": "Blaukehlchen",
+        "safeName": "Blaukehlchen",
+        "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",
