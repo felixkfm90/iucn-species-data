@@ -114,6 +114,7 @@ Umgesetzt:
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
 - fehlende Karten oder manuell geschützte Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer
   genau diese Art gesucht werden
+- diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
 - der globale Kartensuchlauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
@@ -187,13 +188,17 @@ Umgesetzt:
 - nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report committed und gepusht
 - fehlende oder problematische Sounds koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer diese Art
   gesucht werden
+- diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
 - wenn ein gefundener Sound im Review abgelehnt wird, startet automatisch die naechste gezielte Soundsuche fuer
   dieselbe Art
-- neu gefundene Sounds werden im Review mit Spektrogramm angezeigt; Klick ins Spektrogramm setzt die Wiedergabeposition
+- pro Art koennen beliebig viele Soundquellen abgelehnt werden
+- neu gefundene Sounds werden im strukturierten Review mit Spektrogramm und Kennzeichnung `NC` oder `frei` angezeigt;
+  Klick ins Spektrogramm setzt die Wiedergabeposition
 
 ### 7.7.4 Spektrogramm-Konsistenz
 
-Status: technisch umgesetzt am 2026-06-20. Der Bestand mit 47 Arten ist vollständig hashregistriert und verifiziert.
+Status: technisch umgesetzt am 2026-06-20. Der Bestand mit 46 vorhandenen Spektrogrammen ist vollständig
+hashregistriert und verifiziert.
 
 Umgesetzte Regel:
 

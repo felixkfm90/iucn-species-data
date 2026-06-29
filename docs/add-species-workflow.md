@@ -171,13 +171,16 @@ Technischer Stand vom 2026-06-29:
   Eingaben. Groesse, Gewicht und Lebenserwartung werden aus Wert plus Einheit zusammengesetzt; `ca.` wird automatisch
   gespeichert.
 - Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden.
-- Bereits erreichte Schritte koennen angeklickt werden. `Artportrait ueberspringen` startet keine Anlage mehr,
+- Bereits erreichte Schritte koennen angeklickt werden. Klickbare, noch offene Schritte sind blau, abgeschlossene
+  Schritte gruen und gesperrte Schritte grau markiert. `Artportrait ueberspringen` startet keine Anlage mehr,
   sondern gibt erst `Naechster Schritt` frei.
 - Ungueltige Felder werden sichtbar markiert; Fehlermeldungen stehen direkt am Feld.
 - Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
   angelegt werden koennen.
 - Nach Schritt 2 startet der gezielte Lauf `Neue/Unvollständige Arten aktualisieren` fuer diese Art im selben Dialog.
   Das Datenbank-Aktionen-Fenster wird dabei nicht geöffnet.
+- Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem Hash versehen, damit nach einer
+  Ablehnung nicht versehentlich ein alter Browser-/Electron-Cache abgespielt wird.
 - Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
@@ -188,10 +191,10 @@ Technischer Stand vom 2026-06-29:
 
 Aktueller redaktioneller Stand:
 
-- 46 Eintraege in `species_list.json`
+- 47 Eintraege in `species_list.json`
 - Haubentaucher und Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28
   bereinigt
-- Löwe wurde fuer einen sauberen erneuten Neue-Art-Test wieder entfernt
+- Löwe ist aktuell wieder enthalten; seine Karte fehlt noch und wird vom erweiterten Kartensuchlauf verarbeitet
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
 

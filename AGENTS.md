@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-28
+Stand: 2026-06-29
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -62,16 +62,16 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 46 Eintraege in `species_list.json`
-- 46 aktive Arten
-- 46 Arten in `speciesData.json`
-- 46 Karten
-- 46 Art-Assetordner
-- 45 MP3-Dateien
-- 45 Credits-Dateien
-- 45 Spektrogramm-Dateien
-- 46 Artportraets
-- 0 Assetprobleme im Explorer-Modell
+- 47 Eintraege in `species_list.json`
+- 47 aktive Arten
+- 47 Arten in `speciesData.json`
+- 46 Karten; `Loewe` fehlt aktuell eine Karte und wird vom erweiterten Kartensuchlauf verarbeitet
+- 47 Art-Assetordner
+- 46 MP3-Dateien
+- 46 Credits-Dateien
+- 46 Spektrogramm-Dateien
+- 47 Artportraets
+- 1 Assetproblem im Explorer-Modell: Karte fuer `Loewe` fehlt
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
   Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
@@ -79,10 +79,11 @@ Lokale Arbeitsoberflaeche:
   - `Fischertukan`
   - `Rotfuchs`
   - `Waldkauz`
-- 3 aktive NC-Soundlizenzen laut Report:
+- 4 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
+  - `Loewe`
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
 
@@ -105,7 +106,7 @@ Aktuell ersetzte freie Quellen:
 - `Quetzal`: freie Quelle, nicht mehr im NC-Report
 
 Letzter vollstaendiger Pipeline-Check: 2026-06-20.
-Letzter lokaler Bereinigungs-/Report-Check: 2026-06-28.
+Letzter lokaler Bereinigungs-/Report-Check: 2026-06-29.
 
 ## Datenfluss
 
@@ -361,7 +362,8 @@ Aktuelle Planung:
   Sofortportraits liefert `POST /api/species/new/portrait-prompt`
   einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-29 ist `Neue Art` als vierstufiger
   Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen,
-  Karte/Suchlauf und Sound/Abschluss. Groesse, Gewicht und Lebenserwartung werden aus Wert plus Einheit
+  Karte/Suchlauf und Sound/Abschluss. Klickbare, noch offene Schritte sind blau markiert, abgeschlossene Schritte
+  gruen und gesperrte Schritte grau. Groesse, Gewicht und Lebenserwartung werden aus Wert plus Einheit
   zusammengesetzt; `ca.` wird automatisch gespeichert und Lebenserwartung wird bei `1` automatisch auf `Tag`,
   `Monat` oder `Jahr` gebeugt. Bereits erreichte Schritte koennen angeklickt werden. `Artportrait ueberspringen`
   startet keine Anlage mehr, sondern gibt erst `Naechster Schritt` frei. Nach Schritt 2 wird die Art angelegt und der
@@ -369,14 +371,18 @@ Aktuelle Planung:
   nicht geoeffnet. Gefundene Karten
   koennen uebernommen oder uebersprungen werden. Gefundene Sounds werden mit Spektrogramm angezeigt, koennen
   uebernommen, uebersprungen oder abgelehnt werden. Bei Ablehnung merkt der Explorer die Quellkennung und sucht
-  automatisch weiter. Ungueltige Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig
+  automatisch weiter. Dabei werden Asset-URLs mit einem Hash-Buster versehen, damit nach abgelehnten Sounds nicht
+  versehentlich ein altes MP3 oder Spektrogramm aus dem Cache angezeigt wird. Ungueltige Eingaben werden direkt am
+  Feld markiert. Groesse und Gewicht koennen unabhaengig
   voneinander per Checkbox nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die vorhandenen
   Textfelder. Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben. Die
   Route `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor
   der Artanlage. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
-  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher, Hoeckerschwan und Loewe wurden fuer
-  produktive Workflow-Tests angelegt und danach am 2026-06-28 wieder entfernt und bereinigt.
+  erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und Hoeckerschwan wurden fuer
+  produktive Workflow-Tests angelegt und danach am 2026-06-28 wieder entfernt und bereinigt. Loewe ist aktuell wieder
+  als Test- und Arbeitsart vorhanden; die automatische Karte fehlt noch und wird vom erweiterten Kartensuchlauf
+  verarbeitet.
   Hintergrundklicks schließen Eingabedialoge nur, wenn Zeigerdruck und Klickende beide auf dem Hintergrund liegen.
   Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
   Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
@@ -393,16 +399,23 @@ Aktuelle Planung:
   Neu hinzugefuegte Karten und Sounds werden danach angezeigt und je Asset als automatisch oder manuell geschuetzt
   bestaetigt. Kartenvorschauen sind dabei anklickbar und werden fuer die Qualitaetspruefung in einer grossen
   Lightbox angezeigt. Sounds werden im Pruefdialog mit dem erzeugten Spektrogramm angezeigt; ein Klick ins
-  Spektrogramm setzt die Wiedergabeposition. Die Entscheidung steht in `species-assets-overrides.json`; Details:
+  Spektrogramm setzt die Wiedergabeposition. Sound-Optionen werden strukturiert angezeigt und nennen eindeutig,
+  ob es sich um einen aktuellen Sound mit `NC`-Lizenz oder eine freie Alternative handelt. Die Entscheidung steht in
+  `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
   Die beiden Wartungsläufe verarbeiten die aktuell vier manuell geschützten Karten plus Arten mit fehlender Karte
-  beziehungsweise die drei NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend
+  beziehungsweise die vier NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend
   unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Wenn ein Sound im Pruefdialog ausdruecklich abgelehnt wird, speichert der Explorer die Quellkennung unter
-  `sound.rejectedSources` und startet automatisch die naechste gezielte Soundsuche fuer dieselbe Art. Die Schleife
-  endet erst, wenn eine Quelle uebernommen wird oder keine weitere taugliche Quelle vorhanden ist.
+  `sound.rejectedSources` und startet automatisch die naechste gezielte Soundsuche fuer dieselbe Art. Es koennen
+  beliebig viele Quellen je Art abgelehnt werden; die Schleife endet erst, wenn eine Quelle uebernommen wird oder
+  keine weitere taugliche Quelle vorhanden ist.
+  Seit 2026-06-29 schliessen `X`, `Abbrechen` und `Fenster schliessen` die Datenbank- und Einstellungsdialoge
+  wieder korrekt; der laufende Prozess bleibt dabei unveraendert im Hintergrund aktiv.
+  Der IUCN-Kartenabruf prueft zusaetzlich eine robuste Fallback-Strategie fuer gecachte Einzelkarten. Beim Loewe ist
+  der direkte IUCN-Endpunkt fuer Assessment `280792135` am 2026-06-29 als gueltiges JPEG verifiziert worden.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status
   `Pipeline-Lauf läuft gerade` hängen; die anschließende Assetentscheidung kann geöffnet werden.
@@ -458,7 +471,7 @@ Aktuelle Planung:
   der Explorer vergleicht diese Hashes mit den aktuellen Dateien und meldet Abweichungen als
   `Spektrogramm veraltet`. Der Generator registriert auch uebersprungene aktuelle Spektrogramme und veraendert bei
   einem erneuten unveraenderten Lauf keine Zeitstempel. Der bestehende Bestand wurde am 2026-06-20 migriert:
-  45 von 45 Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
+  46 von 46 vorhandenen Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
   beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB.
@@ -466,7 +479,9 @@ Aktuelle Planung:
   Soundpaket-Backup an, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, merkt die Quellkennung unter
   `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Der naechste Sound-Suchlauf
   ueberspringt diese konkrete Quelle. Fehlende oder manuell geschuetzte Karten sowie fehlende/NC-Sounds koennen
-  im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer die aktuelle Art gesucht werden.
+  im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer die aktuelle Art gesucht werden. Diese gezielte Suche
+  startet seit 2026-06-29 im Hintergrund ohne das Bearbeitungsfenster oder die Desktop-App zu schliessen und ohne den
+  allgemeinen Datenbank-Aktionen-Dialog einzublenden.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
   vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und

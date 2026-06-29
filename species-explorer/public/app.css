@@ -291,6 +291,7 @@ button.danger,
   display: flex;
   align-items: flex-start;
   gap: 9px;
+  min-width: 0;
   color: var(--red);
   background: var(--red-soft);
   border: 1px solid #dfb2b2;
@@ -310,6 +311,7 @@ button.danger,
 .delete-assets-warning.danger {
   color: var(--red);
   border-color: #dfb2b2;
+  overflow-wrap: anywhere;
 }
 
 .pipeline-log-details {
@@ -465,7 +467,7 @@ button.danger,
 }
 
 .asset-review-item[data-type="sound"] {
-  grid-template-columns: minmax(260px, 38%) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
 }
 
 .asset-review-preview {
@@ -562,7 +564,7 @@ button.danger,
 
 .asset-review-copy {
   display: grid;
-  gap: 7px;
+  gap: 10px;
 }
 
 .asset-review-copy p {
@@ -572,10 +574,29 @@ button.danger,
 }
 
 .asset-review-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
   font-size: 0.76rem;
+}
+
+.asset-review-options label {
+  min-height: 44px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.asset-review-options input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin: 0;
 }
 
 .validation-heading {
@@ -1411,6 +1432,9 @@ button:focus-visible {
 
 .new-species-steps li.reachable {
   cursor: pointer;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: #b7d5e8;
 }
 
 .new-species-steps li.active {
@@ -1475,7 +1499,15 @@ button:focus-visible {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(72px, auto);
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+}
+
+.new-species-value-unit.compact-unit {
+  grid-template-columns: auto minmax(0, 1fr) 52px;
+}
+
+.new-species-value-unit.age-unit {
+  grid-template-columns: auto minmax(0, 1fr) 84px;
 }
 
 .new-species-value-unit > span {
@@ -1487,12 +1519,19 @@ button:focus-visible {
 
 .new-species-value-unit select {
   min-height: 40px;
-  padding: 8px;
+  width: 100%;
+  padding: 8px 6px;
   color: var(--text);
   background: #fff;
   border: 1px solid var(--line-strong);
   border-radius: 4px;
   font: inherit;
+}
+
+.new-species-fields input::placeholder,
+.new-species-fields textarea::placeholder {
+  color: #9facaa;
+  opacity: 0.68;
 }
 
 .new-species-sexed-fields {

@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-20
+Stand: 2026-06-29
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -315,10 +315,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
   19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
-  Pflichtfelder mit Beispieltexten aus.
+  Pflichtfelder mit Beispieltexten aus. Klickbare, noch offene Schritte sind blau, abgeschlossene Schritte gruen und
+  gesperrte Schritte grau markiert. Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem
+  Hash-Buster versehen, damit nach einer Ablehnung kein veralteter Cache abgespielt wird.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
-  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde
-  fuer einen sauberen erneuten Neue-Art-Test wieder entfernt. Aktuell stehen 46 Arten in `species_list.json`.
+  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe ist
+  aktuell wieder enthalten; seine Karte fehlt noch und wird vom erweiterten Kartensuchlauf verarbeitet. Aktuell
+  stehen 47 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -356,10 +359,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
   Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
   Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für manuell
-  geschützte und fehlende Karten sowie `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds
+  geschützte und fehlende Karten sowie `NC- und fehlende Sounds erneut suchen` für die vier aktuellen NC-Sounds
   sowie fehlende Sounddateien. Bestehende Dateien werden bis
   zur Übernahmeentscheidung lokal gesichert. Abgelehnte Soundquellen werden unter `sound.rejectedSources` gespeichert
-  und in spaeteren Suchlaeufen uebersprungen. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
+  und in spaeteren Suchlaeufen uebersprungen; pro Art koennen beliebig viele Quellen abgelehnt werden. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
   ursprünglichen Art-Speicherschritts. Der Pipeline-Dialog bleibt nach dem Start geöffnet und zeigt eindeutig
   `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` wechselt dann zu `Fenster schließen`; der Lauf
   wird beim Schließen nicht beendet. Ein dauerhafter Balken im Hauptfenster zeigt auch nach dem Schließen den
@@ -370,11 +373,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Ein am 2026-06-27 geprüfter Hänger nach finaler Erfolgsausgabe wurde behoben: `update.mjs` leert stdout/stderr und
   beendet den Prozess danach explizit, damit der Explorer den Lauf als abgeschlossen erkennt und die Assetentscheidung
   anzeigen kann.
+  Seit 2026-06-29 schliessen `X`, `Abbrechen` und `Fenster schliessen` die Datenbank- und Einstellungsdialoge
+  wieder korrekt; laufende Prozesse bleiben im Hintergrund aktiv. Der IUCN-Kartenabruf prueft neben dem direkten
+  Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Beim Löwen wurde der direkte IUCN-Endpunkt zu
+  Assessment `280792135` als gueltiges JPEG verifiziert.
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Dadurch bleibt der Report auch bei Windows-Dateisperren konsistent. Die produktive
-  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen. Der Löwe wurde nach dem letzten Test erneut
-  entfernt, sodass der Explorer wieder 46/46 Arten ohne Löwe-Zwischenstand meldet.
+  Bereinigung von Haubentaucher und Höckerschwan ist durchgelaufen. Löwe ist aktuell wieder Bestandteil des
+  Arbeitsstands; der Explorer meldet 47/47 Arten mit einer noch fehlenden Karte.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
@@ -386,15 +393,17 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   NC-Hinweis, Staging, Vorschau-Token, paralleler Änderungsschutz und gemeinsames Backup von Sound, Credits und
   Spektrogramm. 7.7.4 ist technisch umgesetzt: Vor dem Austausch wird das neue Spektrogramm automatisch erzeugt
   und als WebP geprüft. Bei einem Fehler bleiben alle Produktivdateien unverändert. Sound- und Spektrogramm-SHA-256
-  werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 45 von 45
+  werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 46 von 46
     Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
     Die betroffenen Assetpfade werden automatisch committed und gepusht.
     Seit 2026-06-28 kann im Bearbeitungsdialog der aktuell produktive Sound abgelehnt werden. Der Explorer sichert
     das Soundpaket, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter
     `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Spaetere Sound-Suchlaeufe schlagen
     dieselbe Quelle nicht erneut vor. Fehlende oder manuell geschützte Karten sowie fehlende/NC-Sounds koennen im
-    Bearbeitungsdialog gezielt je Art gesucht werden. Neu gefundene Sounds werden im Asset-Review mit Spektrogramm
-    angezeigt; Klick ins Spektrogramm setzt die Wiedergabeposition.
+    Bearbeitungsdialog gezielt je Art gesucht werden. Diese Suche startet seit 2026-06-29 als stiller Hintergrundlauf
+    ohne das Bearbeitungsfenster oder die Desktop-App zu schliessen und ohne den allgemeinen Datenbank-Aktionen-Dialog
+    einzublenden. Neu gefundene Sounds werden im strukturierten Asset-Review mit Spektrogramm und eindeutiger
+    Lizenzkennzeichnung `NC` oder `frei` angezeigt; Klick ins Spektrogramm setzt die Wiedergabeposition.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor

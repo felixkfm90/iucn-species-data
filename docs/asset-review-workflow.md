@@ -1,6 +1,6 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-06-28
+Stand: 2026-06-29
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
@@ -14,6 +14,7 @@ Für jedes neue Asset zeigt der Dialog:
 - produktiven Dateipfad
 - bei Karten eine anklickbare Bildvorschau; ein Klick öffnet die Karte in einer großen Lightbox
 - bei Sounds einen Audioplayer und, falls bereits erzeugt, das Spektrogramm mit rotem Positionsmarker
+- bei Sounds die Lizenzart der geprüften Quelle: `NC` oder `frei`
 
 Ein Klick in das Spektrogramm eines neu gefundenen Sounds setzt die Wiedergabeposition und startet die Wiedergabe
 an dieser Stelle. Dadurch kann die Tonquelle vor der Pflegeentscheidung gezielt geprüft werden.
@@ -29,10 +30,12 @@ Felix muss je Asset eine Option wählen:
 
 Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
 
-Bei den gezielten Wiederholungsläufen ändern sich die Optionen:
+Bei den gezielten Wiederholungsläufen ändern sich die Optionen und werden als getrennte Entscheidungskarten
+angezeigt:
 
 - Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`
-- NC-Soundsuchlauf: `Freie Soundalternative übernehmen`, `Bisherigen NC-Sound behalten` oder
+- NC-Soundsuchlauf: `Aktuellen Sound übernehmen (NC)` beziehungsweise `Aktuellen Sound übernehmen (frei)`,
+  `Bisherigen Sound behalten` oder
   `Sound ablehnen und Quelle merken`
 
 Vorhandene Dateien werden dafür unter `species-explorer/pipeline-asset-backups/` vorübergehend gesichert. Der Ordner
@@ -47,6 +50,7 @@ Report danach neu aufgebaut.
 
 Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezielten Sound-Suchlauf fuer dieselbe
 Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
+Pro Art koennen beliebig viele Soundquellen abgelehnt werden; jede Quellkennung bleibt gespeichert.
 
 Dieselbe Ablehnlogik steht seit 2026-06-28 auch im normalen Bearbeitungsdialog einer Art zur Verfügung. Dort kann
 der aktuell produktive Sound abgelehnt werden. Der Explorer sichert das bestehende Soundpaket, entfernt
@@ -59,6 +63,8 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 - `Automatisch suchen` im Kartenabschnitt nutzt den Kartensuchlauf fuer genau diese Art. Bei Zielarten darf der
   Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
 - `Automatisch suchen` im Soundabschnitt nutzt den NC-/fehlende-Sounds-Suchlauf fuer genau diese Art.
+- Beide Aktionen starten seit 2026-06-29 als stiller gezielter Hintergrundlauf, ohne den Bearbeitungsdialog oder die
+  Desktop-App zu schliessen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
 Der globale Wartungslauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht

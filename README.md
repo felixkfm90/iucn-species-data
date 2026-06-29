@@ -179,7 +179,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 45 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
+- alle 47 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
@@ -193,11 +193,11 @@ Der Explorer zeigt:
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
-- gezielten Suchlauf nur für manuell gepflegte Karten
-- gezielten Suchlauf nur für NC-Sounds
+- gezielten Suchlauf nur fuer manuell gepflegte oder fehlende Karten
+- gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
-- drei aktive NC-Sounds
+- vier aktive NC-Sounds
 - vier manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
@@ -208,9 +208,10 @@ Der Explorer zeigt:
 
 Beim Wechsel zwischen Arten bleibt die aktuelle Fenster- und Listenposition erhalten.
 
-Der Server bindet nur an `127.0.0.1`. Schreibzugriffe sind auf die beiden definierten Vorschau-/Speicherrouten fuer
-bestehende Arten begrenzt. Er startet keine Pipeline und fuehrt keine Git-Aktionen aus. Alle anderen nicht
-freigegebenen Schreibzugriffe werden mit `405` abgewiesen.
+Der Server bindet nur an `127.0.0.1`. Schreibzugriffe laufen ueber definierte Vorschau-/Speicher- und
+Prozessrouten mit Token-, Hash- und Backup-Schutz. Pipeline-, Backup- und Git-Aktionen werden nur ueber die
+Explorer-Oberflaeche beziehungsweise dokumentierte Skripte gestartet. Nicht freigegebene Schreibzugriffe werden mit
+`405` abgewiesen.
 Wenn `npm.cmd run species:explorer` gestartet wird, waehrend bereits ein Explorer auf demselben Port laeuft, erscheint
 seit 2026-06-27 eine verstaendliche Meldung mit der bestehenden URL statt eines rohen `EADDRINUSE`-Stacktraces.
 Audio- und andere Assetdateien unterstuetzen HTTP-Byte-Ranges (`206 Partial Content`), damit der Browser beim Klick
@@ -289,8 +290,8 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Der Löwe wurde fuer den naechsten sauberen
-Neue-Art-Test wieder entfernt.
+Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist wieder enthalten; seine Karte
+fehlt aktuell und wird vom erweiterten Lauf `Manuelle Karten erneut suchen` mitverarbeitet.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -350,7 +351,8 @@ Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-b
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
 Im Bearbeitungsdialog kann eine fehlende oder manuell geschützte Karte per `Automatisch suchen` gezielt nur für
-die aktuelle Art gesucht werden.
+die aktuelle Art gesucht werden. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App
+zu schließen.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -363,15 +365,17 @@ Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden.
 Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
 Report neu auf und committed/pusht die Änderung. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
 Fehlende oder NC-Sounds koennen per `Automatisch suchen` gezielt nur fuer die aktuelle Art gesucht werden. Neu
-gefundene Sounds werden im Review mit Spektrogramm angezeigt; Klick ins Spektrogramm springt im Audioplayer an die
-gewaehlte Stelle.
+gefundene Sounds werden im strukturierten Review mit Spektrogramm und eindeutiger Kennzeichnung `NC` oder `frei`
+angezeigt; Klick ins Spektrogramm springt im Audioplayer an die gewaehlte Stelle. Der Lauf startet im Hintergrund,
+ohne den Bearbeitungsdialog oder die Desktop-App zu schließen.
 
 Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
 erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.
 Schlägt FFmpeg oder die WebP-Prüfung fehl, werden keine Produktivdateien verändert. Sound-SHA-256 und
 Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und bei jedem Modellauf gegen die
-aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 47 von 47 Spektrogrammen
-sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten Registeränderungen.
+aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 46 von 46 vorhandenen
+Spektrogrammen sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten
+Registeränderungen.
 Vierzehn Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
 Portraitimport und visueller Freigabe der Asset- und Detailoberfläche abgeschlossen. Ein unnötiger produktiver
 Austausch eines bereits gültigen Sounds ist kein verbleibendes Abschlusskriterium.
@@ -432,7 +436,7 @@ korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlch
 und `Waldkauz`. Großtrappe, Kernbeißer und Reh werden seit der bestätigten Übernahme funktionierender automatischer
 Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
 
-Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 45 produktive
+Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 46 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
 Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
 erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
@@ -572,13 +576,14 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 Aktueller lokaler Stand vom 2026-06-29:
 
-- 46 Eintraege in `species_list.json`
-- 46 Arten in der letzten Pipeline-Ausgabe
-- 46 Karten, 45 Sounds, 45 Credits und 45 Spektrogramme
-- 46 Artportraits; 0 Portrait-Assetprobleme
+- 47 Eintraege in `species_list.json`
+- 47 Arten in der letzten Pipeline-Ausgabe
+- 46 Karten, 46 Sounds, 46 Credits und 46 Spektrogramme
+- 47 Artportraits; 0 Portrait-Assetprobleme
+- 1 Karten-Assetproblem: `Löwe` hat aktuell keine `map.jpg`
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
-- 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
+- 4 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

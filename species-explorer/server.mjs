@@ -1944,6 +1944,16 @@ export async function createExplorerServer({
     return found ? hash.digest("hex") : "";
   }
 
+  function readAssetCredits(assetDir) {
+    const creditsPath = join(assetDir, "credits.json");
+    if (!existsSync(creditsPath)) return {};
+    try {
+      return JSON.parse(readFileSync(creditsPath, "utf8"));
+    } catch {
+      return {};
+    }
+  }
+
   function soundRejectionKeyFromCredits(credits) {
     const explicit = String(credits?.rejectionKey ?? "").trim();
     if (explicit) return explicit;
@@ -2050,8 +2060,12 @@ export async function createExplorerServer({
         const before = pipelineAssetSnapshot.get(key) ?? { exists: false, hash: "", backupFiles: {} };
         const currentPath = join(assetDir, fileName);
         const exists = existsSync(currentPath);
-        const changed = exists && before.exists && before.hash !== assetCompositeHash(assetDir, type);
+        const currentHash = exists ? assetCompositeHash(assetDir, type) : "";
+        const reviewVersion = `${pipelineState.runId}-${currentHash.slice(0, 16)}`;
+        const changed = exists && before.exists && before.hash !== currentHash;
         if ((!before.exists && exists) || changed) {
+          const credits = type === "sound" ? readAssetCredits(assetDir) : {};
+          const isNc = type === "sound" ? isNonCommercialLicense(credits.license) : false;
           additions.push({
             safeName: target.safeName,
             germanName: target.germanName,
@@ -2059,13 +2073,23 @@ export async function createExplorerServer({
             type,
             label,
             file: `species-assets/${target.safeName}/${fileName}`,
-            url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}?review=${pipelineState.runId}`,
+            url: `/assets/${encodeURIComponent(target.safeName)}/${fileName}?review=${encodeURIComponent(reviewVersion)}`,
             spectrogramUrl: type === "sound" && existsSync(join(assetDir, "spectrogram.webp"))
-              ? `/assets/${encodeURIComponent(target.safeName)}/spectrogram.webp?review=${pipelineState.runId}`
+              ? `/assets/${encodeURIComponent(target.safeName)}/spectrogram.webp?review=${encodeURIComponent(reviewVersion)}`
               : "",
             changed,
             previouslyExisting: before.exists,
             reviewMode: plan.mode,
+            isNc,
+            sourceLabel: type === "sound"
+              ? (isNc ? "NC" : "frei")
+              : "",
+            license: type === "sound"
+              ? String(credits.license ?? "").trim()
+              : "",
+            source: type === "sound"
+              ? String(credits.source ?? "").trim()
+              : "",
             backupFiles: before.backupFiles,
           });
         }

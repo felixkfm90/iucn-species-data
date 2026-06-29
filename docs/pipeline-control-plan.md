@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-06-28
+Stand: 2026-06-29
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -13,17 +13,17 @@ geprüft.
 ## Bedienoberfläche
 
 Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht im Bearbeitungsmodus das klickbare
-Feld `Pipeline: <Status>`.
+Feld `Datenbank aktualisieren` beziehungsweise `Datenbank aktuell`.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
 - neue oder unvollstaendige Arten
 - alle Arten
-- manuell gepflegte Karten erneut automatisch suchen
-- NC-Sounds erneut auf freie Alternativen prüfen
+- manuell gepflegte und fehlende Karten erneut automatisch suchen
+- NC-Sounds und fehlende Sounds erneut prüfen
 - dauerhafte Bereinigung
 
-Status und letzte Prozessausgabe werden im selben Dialog angezeigt. Nach dem Start bleibt der Dialog geöffnet und
+Status und letzte Prozessausgabe werden im selben Dialog `Datenbank-Aktionen` angezeigt. Nach dem Start bleibt der Dialog geöffnet und
 meldet ausdrücklich `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` heißt ab diesem Zeitpunkt
 `Fenster schließen`, weil er nur den Dialog schließt und den Prozess nicht beendet. Ein zusätzlicher Hinweis erklärt,
 dass der Lauf im Hintergrund weiterläuft. Nach erfolgreichem Ende wechselt die Meldung auf
@@ -31,7 +31,8 @@ dass der Lauf im Hintergrund weiterläuft. Nach erfolgreichem Ende wechselt die 
 
 Parallel zeigt das Hauptfenster unter der Kopfzeile einen dauerhaften Statusbalken. Dadurch bleiben laufender,
 wartender, abgeschlossener oder fehlgeschlagener Lauf auch nach dem Schließen des Dialogs sichtbar. Über
-`Details anzeigen` lässt sich der Statusdialog erneut öffnen. Im Lesemodus ist der Start einer Pipeline
+`Details anzeigen` lässt sich der Statusdialog erneut öffnen. `X`, `Abbrechen` und `Fenster schließen` schließen seit
+2026-06-29 den Dialog wieder zuverlässig; laufende Prozesse laufen im Hintergrund weiter. Im Lesemodus ist der Start einer Pipeline
 ausgeblendet; ein bereits laufender Status bleibt trotzdem sichtbar.
 
 Nach dem Speichern einer neuen Art öffnet der Explorer automatisch die Vorschau `Neue oder fehlende Arten`.
@@ -98,8 +99,8 @@ Vor dem Start zeigt die App:
 ### Manuelle Karten erneut suchen
 
 Der Kartensuchlauf wählt Arten aus, deren Karte in `species-assets-overrides.json` als manuell geschützt markiert
-ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; fehlende Karten werden bei
-Bedarf zusätzlich verarbeitet.
+ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; zusätzlich wird `Löwe` wegen
+fehlender Karte verarbeitet.
 
 - IUCN-Daten und Sounds bleiben unverändert.
 - Die vorhandene Karte wird vorübergehend lokal gesichert.
@@ -114,20 +115,24 @@ Bedarf zusätzlich verarbeitet.
 - Seit 2026-06-27 beendet `update.mjs` den Prozess nach erfolgreichem Abschluss explizit, nachdem stdout und stderr
   geleert wurden. Damit bleibt der Explorer nach einem abgeschlossenen Kartensuchlauf nicht mehr im Status
   `Pipeline-Lauf läuft gerade` hängen und kann die Übernahme-/Ablehnentscheidung anzeigen.
+- Seit 2026-06-29 prüft `update.mjs` neben dem direkten IUCN-Kartenendpunkt eine Fallback-Strategie fuer gecachte
+  Einzelkarten. Fuer `Löwe` wurde der direkte IUCN-Endpunkt zu Assessment `280792135` als gültiges JPEG verifiziert.
 
 ### NC- und fehlende Sounds erneut suchen
 
 Der Soundsuchlauf wählt vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz und Arten ohne Sounddatei aus.
-Aktuell sind das drei NC-Sounds plus der bekannte fehlende Sound beim Grünen Leguan.
+Aktuell sind das vier NC-Sounds plus der bekannte fehlende Sound beim Grünen Leguan.
 
 - IUCN-Daten und Karten bleiben unverändert.
 - Sound, Credits und Spektrogramm werden vorübergehend lokal gesichert.
 - Die Suche prüft freie Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Alternativen.
-- `Freie Soundalternative übernehmen` behält die neue Alternative.
-- `Bisherigen NC-Sound behalten` stellt Sound, Credits und Spektrogramm wieder her.
+- `Aktuellen Sound übernehmen (NC)` beziehungsweise `Aktuellen Sound übernehmen (frei)` behält die aktuell geprüfte
+  Quelle und kennzeichnet die Lizenzart eindeutig.
+- `Bisherigen Sound behalten` stellt Sound, Credits und Spektrogramm wieder her, wenn ein Bestand vorhanden ist.
 - `Sound ablehnen und Quelle merken` stellt den vorherigen Bestand wieder her beziehungsweise entfernt bei vorher
   fehlendem Sound die neu erzeugten Sounddateien wieder. Die Quellkennung wird in `species-assets-overrides.json`
-  gespeichert und bei spaeteren Sound-Suchlaeufen uebersprungen.
+  gespeichert und bei spaeteren Sound-Suchlaeufen uebersprungen. Pro Art koennen beliebig viele Quellen abgelehnt
+  werden.
 
 ### Dauerhafte Bereinigung
 
@@ -227,7 +232,7 @@ wurde.
 - Modus `all` waehlt alle Eintraege: getestet.
 - Modus `manual-maps` wählt die jeweils aktuell manuell geschützten Karten: mit ursprünglich sieben und nach drei
   bestätigten Übernahmen mit vier Karten getestet.
-- Modus `nc-sounds` wählt die drei aktuellen NC-Sounds und fehlende Soundpakete: getestet.
+- Modus `nc-sounds` wählt die aktuellen NC-Sounds und fehlende Soundpakete: getestet.
 - Nicht ausgewaehlte Bestandsdaten werden bei einem Teillauf übernommen: implementiert.
 - Ein zweiter gleichzeitiger Start wird abgewiesen.
 - Fehlende Tokens verhindern den Start mit klarer Meldung.

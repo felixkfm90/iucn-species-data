@@ -172,6 +172,8 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   const expectedSpeciesCount = new Set([...inputKeys, ...generatedKeys]).size;
   const expectedPortraitCount = model.species.filter((entry) => entry.assets.portrait.exists).length;
   const expectedMissingPortraitCount = expectedSpeciesCount - expectedPortraitCount;
+  const expectedNcSoundCount = model.species.filter((entry) => entry.isNcSound).length;
+  const expectedManualMapCount = model.species.filter((entry) => entry.isManualMap).length;
 
   assert.equal(model.summary.speciesCount, expectedSpeciesCount);
   assert.equal(model.summary.inputCount, inputList.length);
@@ -184,8 +186,8 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
     expectedSpeciesCount,
   );
   assert.ok(model.validation.assets.issueSpeciesCount >= expectedMissingPortraitCount);
-  assert.equal(model.summary.ncSoundCount, 3);
-  assert.equal(model.summary.manualMapCount, 4);
+  assert.equal(model.summary.ncSoundCount, expectedNcSoundCount);
+  assert.equal(model.summary.manualMapCount, expectedManualMapCount);
   assert.equal(model.summary.readOnly, false);
   assert.equal(model.summary.editingEnabled, true);
   assert.equal(model.summary.editableFile, "species_list.json");
@@ -195,9 +197,9 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.validation.data.generatedOnlyCount, expectedGeneratedOnly);
   assert.equal(model.validation.report.checks.length, 9);
   assert.equal(model.validation.report.consistent, model.validation.report.issueCount === 0);
-  assert.equal(model.species.filter((entry) => entry.isNcSound).length, 3);
-  assert.equal(model.species.filter((entry) => entry.isManualMap).length, 4);
-  assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, 4);
+  assert.equal(model.species.filter((entry) => entry.isNcSound).length, expectedNcSoundCount);
+  assert.equal(model.species.filter((entry) => entry.isManualMap).length, expectedManualMapCount);
+  assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, expectedManualMapCount);
   assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
   assert.equal(
     model.species.filter((entry) => entry.assetIssues.includes("Artporträt fehlt")).length,
@@ -1485,7 +1487,7 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
     filterSpecies(model.species, { query: "turdusmerula" }).map((entry) => entry.germanName),
     ["Amsel"],
   );
-  assert.equal(filterSpecies(model.species, { flag: "nc" }).length, 3);
+  assert.equal(filterSpecies(model.species, { flag: "nc" }).length, model.summary.ncSoundCount);
   assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 4);
   assert.equal(
     filterSpecies(model.species, { flag: "missing-portrait" }).length,
@@ -1652,8 +1654,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
   assert.match(appSource, /Bisherige manuelle Karte behalten/);
-  assert.match(appSource, /Bisherigen NC-Sound behalten/);
-  assert.match(appSource, /Neuen Sound nicht übernehmen/);
+  assert.match(appSource, /Aktuellen Sound übernehmen \(\$\{soundKind\}\)/);
+  assert.match(appSource, /Sound nicht übernehmen/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /class="asset-review-map-trigger"/);
@@ -1769,14 +1771,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
   assert.match(appSource, /class="map-auto-search-button"/);
-  assert.match(appSource, /openPipelinePreview\?\.\("manual-maps"/);
+  assert.match(appSource, /openPipelinePreview\("manual-maps"/);
+  assert.match(appSource, /silent: true/);
   assert.match(appSource, /class="map-preview-button"/);
   assert.match(appSource, /class="map-save-button"/);
   assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
   assert.match(cssSource, /\.map-compare-grid/);
   assert.match(appSource, /class="sound-edit-section"/);
   assert.match(appSource, /class="sound-auto-search-button"/);
-  assert.match(appSource, /openPipelinePreview\?\.\("nc-sounds"/);
+  assert.match(appSource, /openPipelinePreview\("nc-sounds"/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
   assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);

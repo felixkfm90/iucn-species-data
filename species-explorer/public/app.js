@@ -761,22 +761,34 @@ function setupAssetReview() {
     if (state.assetReviewRunId === status.runId && dialog.open) return;
     state.assetReviewRunId = status.runId;
     const retryMode = status.mode === "manual-maps" || status.mode === "nc-sounds";
-    const automaticLabel = status.mode === "manual-maps"
-      ? "Automatische Karte übernehmen"
-      : status.mode === "nc-sounds"
-        ? "Freie Soundalternative übernehmen"
-        : "Automatisch durch Pipeline pflegen";
-    const manualLabel = status.mode === "manual-maps"
-      ? "Bisherige manuelle Karte behalten"
-      : status.mode === "nc-sounds"
-        ? "Bisherigen NC-Sound behalten"
-        : "Manuell pflegen und schützen";
+    const decisionLabels = (asset) => {
+      if (asset.type === "map") {
+        return {
+          automatic: status.mode === "manual-maps"
+            ? "Automatische Karte übernehmen"
+            : "Karte automatisch pflegen",
+          manual: status.mode === "manual-maps" && asset.previouslyExisting === false
+            ? "Neue Karte nicht übernehmen"
+            : status.mode === "manual-maps"
+              ? "Bisherige manuelle Karte behalten"
+              : "Manuell pflegen und schützen",
+        };
+      }
+      const soundKind = asset.isNc ? "NC" : "frei";
+      return {
+        automatic: `Aktuellen Sound übernehmen (${soundKind})`,
+        manual: status.mode === "nc-sounds" && asset.previouslyExisting === false
+          ? "Sound nicht übernehmen"
+          : status.mode === "nc-sounds"
+            ? "Bisherigen Sound behalten"
+            : "Manuell pflegen und schützen",
+      };
+    };
     elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => {
-      const assetManualLabel = status.mode === "nc-sounds" && asset.previouslyExisting === false
-        ? "Neuen Sound nicht übernehmen"
-        : status.mode === "manual-maps" && asset.previouslyExisting === false
-          ? "Neue Karte nicht übernehmen"
-        : manualLabel;
+      const labels = decisionLabels(asset);
+      const sourceSuffix = asset.type === "sound" && asset.sourceLabel
+        ? ` · ${asset.sourceLabel}`
+        : "";
       return `
       <article class="asset-review-item" data-index="${index}" data-type="${escapeHtml(asset.type)}">
         <div class="asset-review-preview">
@@ -812,16 +824,16 @@ function setupAssetReview() {
         <div class="asset-review-copy">
           <div>
             <strong>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.label)}</strong>
-            <p>${escapeHtml(asset.scientificName)} · ${escapeHtml(asset.file)}</p>
+            <p>${escapeHtml(asset.scientificName)} · ${escapeHtml(asset.file)}${escapeHtml(sourceSuffix)}</p>
           </div>
           <div class="asset-review-options">
             <label>
               <input type="radio" name="asset-${index}" value="automatic" required>
-              ${automaticLabel}
+              ${escapeHtml(labels.automatic)}
             </label>
             <label>
               <input type="radio" name="asset-${index}" value="manual" required>
-              ${assetManualLabel}
+              ${escapeHtml(labels.manual)}
             </label>
             ${asset.type === "sound" ? `
               <label>
@@ -929,7 +941,6 @@ function setupBackupSettings() {
   };
 
   const close = () => {
-    if (pipelineBusy) return;
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
@@ -1037,7 +1048,6 @@ function setupPipelineControl() {
   };
 
   const close = () => {
-    if (pipelineBusy || state.newSpeciesPipelineActive) return;
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
@@ -1305,7 +1315,36 @@ function setupPipelineControl() {
     }
   }
 
+  async function startSilentPipelinePreview(mode, options = {}) {
+    const result = await fetchJson("/api/pipeline/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, targetSlugs: options.targetSlugs || [] }),
+    });
+    if (!result.tokensAvailable) {
+      throw new Error("Die benötigten API-Tokens fehlen in der Server-Umgebung.");
+    }
+    if (!result.hasWork) {
+      return {
+        noWork: true,
+        message: "Für diese Art wurde aktuell keine passende Suchaktion gefunden.",
+        preview: result,
+      };
+    }
+    const startedStatus = await fetchJson("/api/pipeline/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: result.token }),
+    });
+    state.pipelineStatusSnapshot = startedStatus;
+    state.pipelineWasRunning = true;
+    renderPersistentPipelineStatus(startedStatus);
+    void refreshPipelineStatus();
+    return { noWork: false, status: startedStatus, preview: result };
+  }
+
   async function openPreview(mode, options = {}) {
+    if (options.silent) return startSilentPipelinePreview(mode, options);
     previewToken = "";
     previewMode = mode;
     previewKind = "pipeline";
@@ -1754,6 +1793,7 @@ function setupNewSpeciesCreator() {
 
   const markSpeciesInputsChanged = () => {
     previewToken = "";
+    maxStepReached = 1;
     preview.hidden = true;
     resetPortraitPrompt();
     resetPortraitPreview();
@@ -1766,6 +1806,8 @@ function setupNewSpeciesCreator() {
 
   const updateFinalPortraitState = () => {
     if (!finalPortraitState) return;
+    finalPortraitState.hidden = currentStep >= 3;
+    if (finalPortraitState.hidden) return;
     finalPortraitState.textContent = portraitPreviewToken
       ? "Geprüftes Artportrait wird beim Abschluss lokal übernommen."
       : "Artportrait wird übersprungen.";
@@ -1807,6 +1849,21 @@ function setupNewSpeciesCreator() {
     });
   };
 
+  const cacheBustedUrl = (url, key) => {
+    if (!url) return "";
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}inline=${encodeURIComponent(key)}`;
+  };
+
+  const stopInlineReviewAudio = () => {
+    for (const audio of soundReview.querySelectorAll("audio")) {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
+    }
+  };
+
   const renderInlineMapReview = (asset) => {
     mapReview.hidden = false;
     mapReview.innerHTML = `
@@ -1823,17 +1880,21 @@ function setupNewSpeciesCreator() {
   };
 
   const renderInlineSoundReview = (asset) => {
+    stopInlineReviewAudio();
+    const reviewKey = `${inlineRunId || "inline"}-${asset.safeName || "sound"}-${Date.now()}`;
+    const audioUrl = cacheBustedUrl(asset.url, reviewKey);
+    const spectrogramUrl = cacheBustedUrl(asset.spectrogramUrl, reviewKey);
     soundReview.hidden = false;
     soundReview.innerHTML = `
       <h5>Sound prüfen</h5>
       <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}</p>
-      ${asset.spectrogramUrl ? `
+      ${spectrogramUrl ? `
         <button class="new-species-review-spectrogram" type="button">
-          <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
+          <img src="${escapeHtml(spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
           <span class="asset-review-progress-marker"></span>
         </button>
       ` : `<p>Spektrogramm ist für diese Vorschau noch nicht vorhanden.</p>`}
-      <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
+      <audio controls preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
       <div class="new-species-review-actions">
         <button type="button" data-new-species-sound-decision="manual">Überspringen / später manuell einfügen</button>
         <button class="danger" type="button" data-new-species-sound-decision="reject">Sound ablehnen und nächste Quelle suchen</button>
@@ -1917,6 +1978,7 @@ function setupNewSpeciesCreator() {
     for (const field of derivedFields) field.textContent = "";
     mapReview.hidden = true;
     mapReview.innerHTML = "";
+    stopInlineReviewAudio();
     soundReview.hidden = true;
     soundReview.innerHTML = "";
     doneSection.hidden = true;
@@ -1952,7 +2014,8 @@ function setupNewSpeciesCreator() {
     await loadData({ reload: true });
     completed = true;
     setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
-    setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} wurde angelegt.`, "success");
+    setPipelineMessage();
+    setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} ist erfolgreich angelegt.`, "success");
     doneSection.hidden = false;
     showStep(4);
   };
@@ -1972,8 +2035,19 @@ function setupNewSpeciesCreator() {
       return;
     }
     setPipelineBusy(true);
-    setPipelineMessage("Entscheidung wird gespeichert. Falls ein Sound abgelehnt wurde, sucht die App direkt weiter.", "info");
-    setFinishMessage();
+    const rejectedSound = choices.some((choice) => choice.type === "sound" && choice.decision === "reject");
+    setPipelineMessage(
+      rejectedSound
+        ? "Sound wurde abgelehnt. Neuer Sound wird gesucht …"
+        : `Neue Art: ${savedSpeciesName || "Neue Art"} wird angelegt …`,
+      "info",
+    );
+    setFinishMessage(
+      rejectedSound
+        ? "Neuer Sound wird gesucht …"
+        : `Neue Art: ${savedSpeciesName || "Neue Art"} wird angelegt …`,
+      "info",
+    );
     try {
       await fetchJson("/api/pipeline/assets/review", {
         method: "POST",
@@ -1984,6 +2058,7 @@ function setupNewSpeciesCreator() {
       inlineReviewChoices = new Map();
       mapReview.hidden = true;
       mapReview.innerHTML = "";
+      stopInlineReviewAudio();
       soundReview.hidden = true;
       soundReview.innerHTML = "";
       void pollInlinePipelineStatus();
@@ -2026,11 +2101,12 @@ function setupNewSpeciesCreator() {
       const status = await fetchJson("/api/pipeline/status");
       state.pipelineStatusSnapshot = status;
       state.renderPersistentPipelineStatus?.(status);
-      if (status.status === "running") {
-        setPipelineBusy(true);
-        const phase = status.phase || "Suchlauf läuft";
-        setPipelineMessage(`${phase} · bitte warten.`, "info");
-        if (/Spektrogramm/i.test(phase)) setPipelineStepState("spectrogram", ["save", "data", "sound"]);
+    if (status.status === "running") {
+      setPipelineBusy(true);
+      const phase = status.phase || "Suchlauf läuft";
+      setPipelineMessage(`${phase} · bitte warten.`, "info");
+      if (/Weitere Soundquelle|Sound/i.test(phase)) setFinishMessage("Neuer Sound wird gesucht …", "info");
+      if (/Spektrogramm/i.test(phase)) setPipelineStepState("spectrogram", ["save", "data", "sound"]);
         else if (/Sound|Datenpipeline/i.test(phase)) setPipelineStepState("sound", ["save", "data"]);
         else setPipelineStepState("data", ["save"]);
         inlinePipelinePollTimer = setTimeout(pollInlinePipelineStatus, 1000);
@@ -2064,7 +2140,7 @@ function setupNewSpeciesCreator() {
     state.newSpeciesPipelineActive = true;
     setPipelineBusy(true);
     setPipelineStepState("save");
-    setPipelineMessage("Neue Art wird angelegt…", "info");
+    setPipelineMessage(`Neue Art: ${speciesValues().german || "Neue Art"} wird angelegt …`, "info");
     try {
       const result = await fetchJson("/api/species/new/save", {
         method: "POST",
@@ -2202,12 +2278,14 @@ function setupNewSpeciesCreator() {
         body: JSON.stringify({ values: speciesValues() }),
       });
       previewToken = result.token;
+      maxStepReached = Math.max(maxStepReached, 2);
       for (const field of derivedFields) {
         field.textContent = result.derived[field.dataset.derived] ?? "";
       }
       jsonPreview.textContent = JSON.stringify(result.entry, null, 2);
       preview.hidden = false;
       setMessage("Eingaben sind geprüft. Der nächste Schritt ist jetzt verfügbar.", "success");
+      showStep(1);
     } catch (error) {
       applyFieldErrors(error.fieldErrors || {});
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -2366,6 +2444,7 @@ function setupNewSpeciesCreator() {
     const asset = inlineReviewAssets.find((entry) => entry.type === "sound");
     if (!asset) return;
     inlineReviewChoices.set(`${asset.safeName}:sound`, button.dataset.newSpeciesSoundDecision);
+    stopInlineReviewAudio();
     void submitInlineAssetReview();
   });
 
@@ -2563,19 +2642,17 @@ function setupSpeciesEditor(species) {
     else dialog.setAttribute("open", "");
   });
 
-  for (const button of closeButtons) {
-    button.addEventListener("click", () => {
-      stopSoundPreviewAudio();
-      if (typeof dialog.close === "function") dialog.close();
-      else dialog.removeAttribute("open");
-    });
-  }
-
-  setupSafeBackdropClose(dialog, () => {
+  const closeEditDialog = () => {
     stopSoundPreviewAudio();
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
-  });
+  };
+
+  for (const button of closeButtons) {
+    button.addEventListener("click", closeEditDialog);
+  }
+
+  setupSafeBackdropClose(dialog, closeEditDialog);
   dialog.addEventListener("close", stopSoundPreviewAudio);
 
   form.addEventListener("input", (event) => {
@@ -2722,12 +2799,26 @@ function setupSpeciesEditor(species) {
   });
 
   mapAutoSearchButton?.addEventListener("click", async () => {
-    setMapMessage("Gezielter Kartensuchlauf wird gestartet…", "info");
-    close();
-    await state.openPipelinePreview?.("manual-maps", {
-      targetSlugs: [species.id],
-      autoStart: true,
-    });
+    setMapBusy(true);
+    setMapMessage("Gezielter Kartensuchlauf wird vorbereitet…", "info");
+    try {
+      if (!state.openPipelinePreview) throw new Error("Pipeline-Steuerung ist nicht verfügbar");
+      const result = await state.openPipelinePreview("manual-maps", {
+        targetSlugs: [species.id],
+        autoStart: true,
+        silent: true,
+      });
+      setMapMessage(
+        result?.noWork
+          ? result.message
+          : "Kartensuchlauf läuft im Hintergrund. Falls eine Karte gefunden wird, öffnet sich die Prüfung automatisch.",
+        result?.noWork ? "info" : "success",
+      );
+    } catch (error) {
+      setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setMapBusy(false);
+    }
   });
 
   mapSaveButton?.addEventListener("click", async () => {
@@ -2792,12 +2883,27 @@ function setupSpeciesEditor(species) {
   });
 
   soundAutoSearchButton?.addEventListener("click", async () => {
-    setSoundMessage("Gezielter Sound-Suchlauf wird gestartet…", "info");
-    close();
-    await state.openPipelinePreview?.("nc-sounds", {
-      targetSlugs: [species.id],
-      autoStart: true,
-    });
+    resetSoundPreview();
+    setSoundBusy(true);
+    setSoundMessage("Gezielter Sound-Suchlauf wird vorbereitet…", "info");
+    try {
+      if (!state.openPipelinePreview) throw new Error("Pipeline-Steuerung ist nicht verfügbar");
+      const result = await state.openPipelinePreview("nc-sounds", {
+        targetSlugs: [species.id],
+        autoStart: true,
+        silent: true,
+      });
+      setSoundMessage(
+        result?.noWork
+          ? result.message
+          : "Sound-Suchlauf läuft im Hintergrund. Falls ein Sound gefunden wird, öffnet sich die Prüfung automatisch.",
+        result?.noWork ? "info" : "success",
+      );
+    } catch (error) {
+      setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setSoundBusy(false);
+    }
   });
 
   soundPreviewButton?.addEventListener("click", async () => {

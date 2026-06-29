@@ -430,6 +430,93 @@ function isJpegBuffer(buffer) {
     && buffer[buffer.length - 1] === 0xd9;
 }
 
+function numericId(value) {
+  const text = String(value ?? "").trim();
+  return /^\d+$/.test(text) ? text : "";
+}
+
+function taxonIdFromTaxon(taxon) {
+  if (!taxon || typeof taxon !== "object") return "";
+  for (const key of ["sis_taxon_id", "taxon_id", "taxonid", "taxonId", "id"]) {
+    const id = numericId(taxon[key]);
+    if (id) return id;
+  }
+  return "";
+}
+
+async function findIucnTaxonIdForMap(entry) {
+  const direct = taxonIdFromTaxon(entry) || numericId(entry["Taxon ID"]);
+  if (direct) return direct;
+  const genus = String(entry.Genus ?? "").trim();
+  const species = String(entry.Species ?? "").trim();
+  if (!genus || !species || genus === "n/a" || species === "n/a") return "";
+  const taxonData = await iucnGET(
+    `/taxa/scientific_name?genus_name=${encodeURIComponent(genus)}&species_name=${encodeURIComponent(species)}`
+  );
+  return taxonIdFromTaxon(taxonData?.taxon);
+}
+
+function normalizeIucnPageHtml(html) {
+  return String(html ?? "")
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u002F/gi, "/")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/g, "&");
+}
+
+async function fetchValidJpeg(url) {
+  const res = await fetch(url, {
+    headers: {
+      Accept: "image/jpeg",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    },
+  });
+  if (!res.ok) return null;
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return buffer.length >= 10_000 && isJpegBuffer(buffer) ? buffer : null;
+}
+
+async function fetchCachedIucnMap(entry, assessmentId, name) {
+  const taxonId = await findIucnTaxonIdForMap(entry);
+  if (!taxonId) return null;
+  const cacheFile = `T${taxonId}A${assessmentId}.jpg`;
+  const pageUrl = `https://www.iucnredlist.org/species/${taxonId}/${assessmentId}`;
+  try {
+    const pageRes = await fetch(pageUrl, {
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
+    });
+    if (pageRes.ok) {
+      const html = normalizeIucnPageHtml(await pageRes.text());
+      const pattern = new RegExp(`https?:[^"'\\s<>]*cached-individual-maps/${cacheFile}[^"'\\s<>]*`, "i");
+      const match = html.match(pattern);
+      if (match?.[0]) {
+        const cached = await fetchValidJpeg(match[0]);
+        if (cached) {
+          console.log(`↪ IUCN-Karte über Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
+          return cached;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`⚠ IUCN-Cache-Seite für ${name} nicht nutzbar: ${err.message}`);
+  }
+
+  try {
+    const publicUrl = `https://f002.backblazeb2.com/file/cached-individual-maps/${cacheFile}`;
+    const cached = await fetchValidJpeg(publicUrl);
+    if (cached) {
+      console.log(`↪ IUCN-Karte über öffentlichen Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
+      return cached;
+    }
+  } catch (err) {
+    console.warn(`⚠ IUCN-Cache-Datei für ${name} nicht nutzbar: ${err.message}`);
+  }
+  return null;
+}
+
 async function downloadMapForSpecies(
   s,
   { force = false, allowManual = false, recordAssessment = true } = {},
@@ -462,21 +549,13 @@ async function downloadMapForSpecies(
   console.log(`→ Lade Karte für ${name} (${assessmentId})`);
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        Accept: "image/jpeg",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
-    });
-
-    if (!res.ok) {
-      console.warn(`⚠ Karte für ${name} nicht gefunden (HTTP ${res.status})`);
-      return "missing";
+    let buffer = await fetchValidJpeg(url);
+    if (!buffer) {
+      console.warn(`⚠ Direkte IUCN-Karte für ${name} nicht gefunden oder ungültig; versuche Cache-Fallback.`);
+      buffer = await fetchCachedIucnMap(s, assessmentId, name);
     }
-
-    const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.length < 10_000 || !isJpegBuffer(buffer)) {
-      console.warn(`⚠ Ungültige oder zu kleine Kartendatei für ${name}; vorhandene Karte bleibt erhalten.`);
+    if (!buffer) {
+      console.warn(`⚠ Keine gültige Kartendatei für ${name} gefunden; vorhandene Karte bleibt erhalten.`);
       return "missing";
     }
     fs.writeFileSync(tempFilePath, buffer);
