@@ -300,8 +300,11 @@ button.danger,
 }
 
 .delete-assets-option input {
-  flex: 0 0 auto;
-  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+  margin: 1px 0 0;
 }
 
 .delete-assets-warning.danger {
@@ -1391,7 +1394,7 @@ button:focus-visible {
   margin: 0 0 16px;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   list-style: none;
 }
@@ -1704,6 +1707,126 @@ button:focus-visible {
 .new-species-portrait-grid {
   grid-template-columns: minmax(0, 1fr);
   max-width: 360px;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.new-species-pipeline-steps li {
+  margin-bottom: 4px;
+}
+
+.new-species-pipeline-steps li.done {
+  color: var(--green);
+  font-weight: 750;
+}
+
+.new-species-pipeline-steps li.active {
+  color: var(--blue);
+  font-weight: 750;
+}
+
+.new-species-inline-review {
+  margin-top: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.new-species-inline-review[hidden] {
+  display: none !important;
+}
+
+.new-species-inline-review h5 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.new-species-inline-review p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.new-species-review-media {
+  width: 100%;
+  max-height: 280px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.new-species-review-media img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
+.new-species-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.new-species-review-actions button {
+  padding: 8px 10px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border: 1px solid #b7d5e8;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.new-species-review-actions button.primary {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.new-species-review-actions button.danger {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: #dfb2b2;
+}
+
+.new-species-review-spectrogram {
+  position: relative;
+  width: 100%;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.new-species-review-spectrogram img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.new-species-review-spectrogram .asset-review-progress-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: #ef2020;
+  pointer-events: none;
+}
+
+.new-species-done[hidden] {
+  display: none !important;
 }
 
 .portrait-compare-grid figure {

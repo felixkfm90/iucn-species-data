@@ -61,6 +61,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 - `Automatisch suchen` im Soundabschnitt nutzt den NC-/fehlende-Sounds-Suchlauf fuer genau diese Art.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
+Der globale Wartungslauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht
+mehr ausschließlich auf manuell geschützte Karten begrenzt.
+
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
 den dunklen Hintergrund geschlossen werden, ohne die bereits gewählten Pflegeoptionen zu verlieren.

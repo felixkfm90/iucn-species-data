@@ -299,20 +299,23 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   geprueft. Vorschau, einmaliges Token, SHA-256-Abgleich, Backup-Retention und atomisches Schreiben werden aus
   Phase 7.4 wiederverwendet. Nach dem Speichern erscheint die Art erwartungsgemaess zunaechst nur in
   `species_list.json`; IUCN-Daten und Assets entstehen erst durch den separaten Lauf von `node update.mjs`.
-  Seit 2026-06-28 ist der Dialog als Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales Artportrait
-  pruefen oder ueberspringen, Abschluss. Ungueltige Eingaben werden direkt am Feld markiert. Groesse und Gewicht
-  koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die
-  bestehenden Textfelder. Die API-Routen sind `POST /api/species/new/preview`,
+  Seit 2026-06-29 ist der Dialog als vierstufiger Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales
+  Artportrait pruefen oder ueberspringen, Karte/Suchlauf und Sound/Abschluss. Ungueltige Eingaben werden direkt am
+  Feld markiert; der initiale Hinweis ist bereits sichtbar, damit das Formular beim ersten Tippen nicht springt.
+  Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden; gespeichert
+  werden weiterhin die bestehenden Textfelder. Die API-Routen sind `POST /api/species/new/preview`,
   `POST /api/species/new/portrait-prompt`, `POST /api/species/new/portrait-preview` und
-  `POST /api/species/new/save`. Beim Abschluss startet die App den gezielten Lauf fuer genau diese neue Art
-  automatisch. Neue Karten und Sounds werden danach einzeln geprüft; abgelehnte Sounds starten automatisch die
-  nächste gezielte Soundsuche, bis eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
+  `POST /api/species/new/save`. Nach Schritt 2 legt die App die Art an und startet den gezielten Lauf fuer genau
+  diese neue Art im selben Dialog; das Datenbank-Aktionen-Fenster wird dabei nicht geoeffnet. Neue Karten koennen
+  uebernommen oder uebersprungen werden. Neue Sounds werden mit Spektrogramm angezeigt und koennen uebernommen,
+  uebersprungen oder abgelehnt werden. Abgelehnte Sounds starten automatisch die nächste gezielte Soundsuche, bis
+  eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
   19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus.
-  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher,
-  Höckerschwan und Löwe wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt;
-  aktuell stehen 46 Arten in `species_list.json`.
+  Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
+  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe ist
+  aktuell wieder angelegt; Karte und Sound sind noch offen. Aktuell stehen 47 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -349,9 +352,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Dialoge schließen bei Textmarkierungen über den Fensterrand nicht mehr versehentlich; die sichere
   Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
   Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
-  Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für die sieben
-  geschützten Karten und `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds sowie fehlende
-  Sounddateien. Bestehende Dateien werden bis
+  Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für manuell
+  geschützte und fehlende Karten sowie `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds
+  sowie fehlende Sounddateien. Bestehende Dateien werden bis
   zur Übernahmeentscheidung lokal gesichert. Abgelehnte Soundquellen werden unter `sound.rejectedSources` gespeichert
   und in spaeteren Suchlaeufen uebersprungen. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
   ursprünglichen Art-Speicherschritts. Der Pipeline-Dialog bleibt nach dem Start geöffnet und zeigt eindeutig
@@ -367,8 +370,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Dadurch bleibt der Report auch bei Windows-Dateisperren konsistent. Die produktive
-  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen; danach meldet der Explorer 46/46 Arten,
-  0 Assetprobleme und einen konsistenten Report.
+  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen. Nach dem erneuten Anlegen des Löwen meldet
+  der Explorer 47/47 Arten, eine fehlende Karte beim Löwen und einen konsistenten Report.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
@@ -397,8 +400,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   vorhandenen ChatGPT-Zugang erzeugtes PNG, JPEG oder WebP. Dateisignatur, mindestens 800×1000 Pixel und
   4:5-Seitenverhältnis werden geprüft; FFmpeg vereinheitlicht das Produkt auf `1280x1600` WebP. Bei bestehenden
   Arten führt `Artporträt übernehmen` nach der manuellen Art- und Anatomieprüfung wie zuvor Speichern, Backup,
-  Commit und Push aus. Beim optionalen Sofortportrait einer neu angelegten Art fragt die App vor diesem Schritt
-  zusätzlich nach. Fehlende Porträts sind reguläre Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot,
+  Commit und Push aus. Beim optionalen Sofortportrait einer neu angelegten Art wird ein geprüftes Portrait im
+  Neue-Art-Assistenten ohne zusätzliche Electron-Bestätigung lokal übernommen. Fehlende Porträts sind reguläre
+  Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot,
   die Assetstruktur zeigt die genaue Fehlanzahl und betroffene Arten erhalten die Listenmarkierung `P`. Sie sind
   über `Fehlendes Artporträt` filterbar. Der Sammelprompt-/Datenbankdialog für alle fehlenden Portraits wurde am
   2026-06-27 entfernt, weil ChatGPT daraus wiederholt Collagen oder Mehrfachbilder erzeugte.

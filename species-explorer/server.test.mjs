@@ -793,7 +793,9 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
     sanitizeAssetName: sanitize,
     mode: "manual-maps",
   });
-  assert.equal(untargetedMissingMapPlan.targetCount, 0);
+  assert.equal(untargetedMissingMapPlan.targetCount, 1);
+  assert.equal(untargetedMissingMapPlan.targets[0].safeName, "Amsel");
+  assert.match(untargetedMissingMapPlan.targets[0].reasons.join(" "), /Karte fehlt/);
   const targetedMissingMapPlan = buildPipelinePlan({
     speciesList,
     existingSpeciesData: speciesData,
@@ -1597,7 +1599,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/species\/new\/save/);
   assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
   assert.match(appSource, /\/api\/species\/new\/portrait-preview/);
-  assert.match(appSource, /Geprüftes Artportrait für die neue Art übernehmen/);
+  assert.match(appSource, /Artportrait wird lokal übernommen/);
   assert.match(appSource, /publish:\s*false/);
   assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
@@ -1705,6 +1707,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /pipeline-asset-backups/);
   assert.match(serverSource, /soundRejectionKeyFromCredits/);
   assert.match(serverSource, /rejectedSoundSourceFromCredits/);
+  assert.match(serverSource, /Karte abgelehnt und entfernt/);
   assert.match(serverSource, /sound\.rejectedSources|rejectedSources/);
   assert.match(cleanupSource, /cleanup-trash/);
   assert.match(serverSource, /assetCompositeHash/);
@@ -1784,8 +1787,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     /<h3 class="section-title">Manuelle Daten<\/h3>[\s\S]{0,400}edit-species-open/,
   );
-  assert.match(appSource, /await loadData\(\{ reload: true \}\);[\s\S]*targetSlugs:\s*\[savedSpeciesId\]/);
-  assert.match(
+  assert.match(appSource, /const saveAndStartPipeline = async \(\) =>/);
+  assert.match(appSource, /state\.newSpeciesPipelineActive = true/);
+  assert.match(appSource, /\/api\/pipeline\/preview/);
+  assert.match(appSource, /\/api\/pipeline\/start/);
+  assert.match(appSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(appSource, /data-new-species-map-decision="reject"/);
+  assert.match(appSource, /data-new-species-sound-decision="reject"/);
+  assert.doesNotMatch(
     appSource,
     /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\],\s*autoStart:\s*true\s*\}\)/,
   );
@@ -1795,7 +1804,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /new-species-steps/);
   assert.match(htmlSource, /Allgemeine Daten/);
   assert.match(htmlSource, /Artportrait/);
-  assert.match(htmlSource, /Abschluss/);
+  assert.match(htmlSource, /Karte/);
+  assert.match(htmlSource, /Sound &amp; Abschluss|Sound & Abschluss/);
   assert.match(htmlSource, /name="german"/);
   assert.match(htmlSource, /name="scientificName"/);
   assert.match(htmlSource, /name="sizeSexed"/);
@@ -1816,8 +1826,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /new-species-portrait-file-input/);
   assert.match(htmlSource, /Portrait-Prompt erstellen/);
   assert.match(htmlSource, /Artportrait überspringen/);
-  assert.match(htmlSource, /Karte, Sound und Spektrogramm werden gesucht/);
-  assert.match(htmlSource, /Abgelehnte Sounds werden gemerkt/);
+  assert.match(htmlSource, /Karte,\s*Sound und Spektrogramm geprüft oder erstellt/);
+  assert.match(htmlSource, /new-species-map-review/);
+  assert.match(htmlSource, /new-species-sound-review/);
   assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
   assert.doesNotMatch(htmlSource, /species-info\.json/);
   assert.match(
@@ -1841,6 +1852,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Backup und Einstellungen/);
   assert.match(htmlSource, /<details class="action-group action-group-danger">/);
   assert.match(htmlSource, /Neue\/Unvollständige Arten aktualisieren/);
+  assert.match(htmlSource, /Manuelle und fehlende Karten erneut bei IUCN prüfen/);
   assert.match(htmlSource, /id="asset-review-dialog"/);
   assert.match(htmlSource, /id="asset-review-list"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox"/);
@@ -1890,6 +1902,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
+  assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
   assert.match(cssSource, /\.edit-fields label\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);
   assert.match(cssSource, /\.asset-header-actions\s*\{/);
@@ -1906,6 +1919,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.asset-review-map-trigger\s*\{[^}]*cursor:\s*zoom-in/s);
   assert.match(cssSource, /\.detail-actions\s*\{/);
   assert.match(cssSource, /\.delete-assets-option\s*\{/);
+  assert.match(cssSource, /\.delete-assets-option input\s*\{[^}]*width:\s*16px/s);
   assert.match(serverSource, /mode:\s*preview\.mode/);
   assert.match(cssSource, /button\.danger/);
   assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);

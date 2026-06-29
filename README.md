@@ -264,8 +264,11 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Schritt 1 prueft allgemeine Daten; ungueltige Felder werden rot markiert und erhalten eine direkte Fehlermeldung.
 - Schritt 2 erzeugt optional einen Portrait-Einzelprompt, kopiert ihn, prueft ein extern erzeugtes Bild oder laesst
   das Portrait bewusst ueberspringen.
-- Schritt 3 legt die Art an und startet danach automatisch den gezielten Pipeline-Lauf fuer genau diese neue Art.
-  Neue Karten und Sounds werden anschließend einzeln geprüft.
+- Mit `Nächster Schritt` nach Schritt 2 wird die Art angelegt und der gezielte Pipeline-Lauf fuer genau diese Art
+  direkt im Neue-Art-Fenster gestartet. Das Datenbank-Aktionen-Fenster wird dabei nicht geöffnet.
+- Schritt 3 zeigt den Suchlauf und die Kartenprüfung. Eine gefundene Karte kann übernommen oder übersprungen werden.
+- Schritt 4 zeigt den Sound mit Spektrogramm; ein Klick ins Spektrogramm springt im Audioplayer an die gewählte
+  Stelle.
 - Wird ein neu gefundener Sound abgelehnt, merkt die App die Quelle und startet automatisch die nächste gezielte
   Soundsuche fuer dieselbe Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird.
 - `POST /api/species/new/preview` prueft Pflichtfelder, Schreibweise, wissenschaftlichen und deutschen Namen, Slug,
@@ -273,23 +276,23 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Die Vorschau zeigt den vollstaendigen Eintrag, wissenschaftlichen Namen, Slug und erwarteten Assetordner.
 - `POST /api/species/new/save` verwendet ein einmaliges Vorschau-Token, SHA-256-Dateischutz, Backup-Retention und
   atomares Schreiben.
-- Nach dem Speichern erscheint die Art sofort als nur in `species_list.json` vorhanden. Pipeline und Git bleiben
-  separate Schritte.
+- Nach dem Anlegen startet der gezielte Pipeline-Lauf im Neue-Art-Fenster. Bis dieser Lauf abgeschlossen ist, kann
+  die Art kurzzeitig nur in `species_list.json` vorhanden sein.
 - Nach erfolgreichem Speichern koennen ohne Seitenneuladen weitere Arten angelegt werden.
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
 - 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Haubentaucher, Höckerschwan und Löwe wurden
-nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt.
+Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist wieder angelegt; Karte und Sound
+sind noch offen und werden über die gezielten Such- beziehungsweise Pflegefunktionen weiter bearbeitet.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
 - `node update.mjs --mode=missing --dry-run`: Auswahl neuer oder fehlender Arten ohne Schreibzugriff
 - `node update.mjs --mode=missing`: gezielter Lauf; übrige Bestandsdaten bleiben erhalten
 - `node update.mjs --mode=all` oder weiterhin `node update.mjs`: vollständiger Lauf
-- `node update.mjs --mode=manual-maps`: nur die aktuell vier manuell geschützten Karten erneut suchen
+- `node update.mjs --mode=manual-maps`: manuell geschützte und fehlende Karten erneut suchen
 - `node update.mjs --mode=nc-sounds`: NC-Sounds auf freie Alternativen prüfen und fehlende Sounds erneut suchen
 - App-Vorschau und ausdrückliche Startbestätigung
 - nur ein Prozess gleichzeitig, Statusanzeige und lokale Logs unter `species-explorer/logs/`
@@ -510,7 +513,8 @@ wiederholt Collagen erzeugte. Die App prueft Format, Mindestgroesse und 4:5, erz
 `portrait.webp` in `1280x1600` und speichert bei bestehenden Arten wie zuvor nach `Artporträt übernehmen` mit
 Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Daten einen Einzelprompt erzeugen,
 das erzeugte Bild vor dem Anlegen prüfen oder den Portraitschritt überspringen. Ein geprüftes Sofortportrait wird
-nach Rückfrage lokal übernommen und anschließend zusammen mit dem gezielten Pipeline-Lauf veröffentlicht. Details:
+ohne zusätzliche Electron-Bestätigung lokal übernommen und anschließend zusammen mit dem gezielten Pipeline-Lauf
+veröffentlicht. Details:
 `docs/portrait-generation.md`. Der erste lokale Einzelimport fuer `Alpenbirkenzeisig` ist erfolgreich; die
 Squarespace-Ausgabe bleibt bewusst ein spaeterer Schritt. Phase 7.8 wurde am 2026-06-28 abgeschlossen und von
 Felix erfolgreich getestet. Start:
@@ -563,13 +567,13 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 Aktueller lokaler Stand vom 2026-06-28:
 
-- 46 Eintraege in `species_list.json`
-- 46 Arten in der letzten Pipeline-Ausgabe
+- 47 Eintraege in `species_list.json`
+- 47 Arten in der letzten Pipeline-Ausgabe
 - 46 Karten, 45 Sounds, 45 Credits und 45 Spektrogramme
-- 46 Artportraits; 0 Portrait-Assetprobleme
+- 47 Artportraits; 0 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
-- 1 Soundhinweis `S`: `Grüner Leguan` hat nach vollständigem Pipeline-Lauf keine verwendbare automatische Tonquelle
-- 0 fehlende Karten unter den 46 verarbeiteten Arten
+- 2 Soundhinweise `S`: `Grüner Leguan` und `Löwe` haben aktuell keine verwendbare automatische Tonquelle
+- 1 fehlende Karte: `Löwe`
 - 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.

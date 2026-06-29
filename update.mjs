@@ -92,7 +92,7 @@ function printPipelineHelp() {
 Optionen:
   --mode=all       Vollständiger Lauf über alle Arten (Standard)
   --mode=missing   Nur neue Arten oder Arten mit fehlenden Kerndaten/Assets
-  --mode=manual-maps  Manuell gepflegte Karten erneut suchen; mit --species auch fehlende Karten gezielt suchen
+  --mode=manual-maps  Manuell gepflegte und fehlende Karten erneut suchen
   --mode=nc-sounds    Vorhandene NC-Sounds und fehlende Sounds erneut suchen
   --species=slug      Optional: nur die angegebenen URL-Slugs verarbeiten, kommagetrennt
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
@@ -1368,7 +1368,7 @@ function printReportToConsole(report) {
     if (args.mode !== "all" && !plan.hasWork) {
       const noWorkMessage = {
         missing: "Keine neuen oder unvollständigen Arten gefunden.",
-        "manual-maps": "Keine manuell gepflegten Karten gefunden.",
+        "manual-maps": "Keine manuell gepflegten oder fehlenden Karten gefunden.",
         "nc-sounds": "Keine ungeschützten NC-Sounds oder fehlenden Sounds gefunden.",
       }[args.mode] || "Keine Pipeline-Aktionen gefunden.";
       console.log(`✔ ${noWorkMessage} Es sind keine Pipeline-Aktionen erforderlich.`);

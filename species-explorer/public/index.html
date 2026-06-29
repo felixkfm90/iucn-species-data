@@ -148,7 +148,8 @@
         <ol class="new-species-steps" aria-label="Neue-Art-Schritte">
           <li class="active" data-new-species-step-indicator="1">1. Allgemeine Daten</li>
           <li data-new-species-step-indicator="2">2. Artportrait</li>
-          <li data-new-species-step-indicator="3">3. Abschluss</li>
+          <li data-new-species-step-indicator="3">3. Karte</li>
+          <li data-new-species-step-indicator="4">4. Sound & Abschluss</li>
         </ol>
 
         <section class="new-species-step active" data-new-species-step="1">
@@ -210,7 +211,7 @@
             </label>
           </div>
 
-          <p class="edit-message new-species-message" hidden></p>
+          <p class="edit-message new-species-message">Bitte Eingaben ausfüllen und auf „Eingaben prüfen“ klicken.</p>
 
           <section class="edit-preview new-species-preview" hidden>
             <h4>Geprüfte Vorschau</h4>
@@ -293,18 +294,29 @@
         </section>
 
         <section class="new-species-step new-species-final" data-new-species-step="3" hidden>
-          <h4>Neue Art speichern</h4>
+          <h4>Neue Art anlegen und Karte prüfen</h4>
           <p>
-            Beim Abschluss wird die Art angelegt. Danach startet die App direkt den gezielten Pipeline-Lauf für
-            diese Art.
+            Die Art wird angelegt und der gezielte Suchlauf startet im Hintergrund. Bitte warten, bis Karte,
+            Sound und Spektrogramm geprüft oder erstellt wurden.
           </p>
-          <ul class="new-species-final-list">
-            <li>Allgemeine Daten wurden geprüft.</li>
-            <li class="new-species-final-portrait-state">Artportrait wird übersprungen.</li>
-            <li>Vor dem Schreiben wird automatisch eine lokale Sicherung angelegt.</li>
-            <li>Karte, Sound und Spektrogramm werden gesucht und danach einzeln geprüft.</li>
-            <li>Abgelehnte Sounds werden gemerkt; danach wird automatisch nach der nächsten Quelle gesucht.</li>
+          <ul class="new-species-final-list new-species-pipeline-steps">
+            <li data-new-species-pipeline-step="save">Art anlegen</li>
+            <li data-new-species-pipeline-step="data">IUCN-Daten und Karte suchen</li>
+            <li data-new-species-pipeline-step="sound">Sound suchen</li>
+            <li data-new-species-pipeline-step="spectrogram">Spektrogramm bereitstellen</li>
           </ul>
+          <p class="edit-message new-species-pipeline-message" hidden></p>
+          <section class="new-species-inline-review new-species-map-review" hidden></section>
+        </section>
+
+        <section class="new-species-step new-species-final" data-new-species-step="4" hidden>
+          <h4>Sound prüfen und abschließen</h4>
+          <p class="new-species-final-portrait-state">Artportrait wird übersprungen.</p>
+          <p class="edit-message new-species-finish-message" hidden></p>
+          <section class="new-species-inline-review new-species-sound-review" hidden></section>
+          <section class="new-species-done" hidden>
+            <p class="edit-message success">✓ Neue Art wurde angelegt und verarbeitet.</p>
+          </section>
         </section>
 
         <div class="edit-actions">
@@ -312,7 +324,7 @@
           <button class="new-species-back-button" type="button" hidden>Zurück</button>
           <button class="edit-preview-button new-species-preview-button" type="submit">Eingaben prüfen</button>
           <button class="edit-preview-button new-species-next-button" type="button" disabled hidden>Nächster Schritt</button>
-          <button class="edit-save-button new-species-save-button" type="button" disabled hidden>Art anlegen</button>
+          <button class="edit-save-button new-species-save-button" type="button" disabled hidden>Fenster schließen</button>
         </div>
       </form>
     </dialog>
@@ -346,7 +358,7 @@
               </button>
               <button type="button" data-pipeline-mode="manual-maps">
                 <strong>Manuelle Karten erneut suchen</strong>
-                <span>Nur geschützte Karten erneut bei IUCN prüfen</span>
+                <span>Manuelle und fehlende Karten erneut bei IUCN prüfen</span>
               </button>
               <button type="button" data-pipeline-mode="nc-sounds">
                 <strong>NC- und fehlende Sounds erneut suchen</strong>

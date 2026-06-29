@@ -62,18 +62,19 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 46 Eintraege in `species_list.json`
-- 46 aktive Arten
-- 46 Arten in `speciesData.json`
+- 47 Eintraege in `species_list.json`
+- 47 aktive Arten
+- 47 Arten in `speciesData.json`
 - 46 Karten
-- 46 Art-Assetordner
+- 47 Art-Assetordner
 - 45 MP3-Dateien
 - 45 Credits-Dateien
 - 45 Spektrogramm-Dateien
-- 46 Artportraets
-- 0 Assetprobleme im Explorer-Modell
-- 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische Tonquelle.
-  Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
+- 47 Artportraets
+- 1 Assetproblem im Explorer-Modell: `Loewe` hat aktuell keine Karte
+- 2 Soundhinweise `S`: `Gruener Leguan` und `Loewe` haben nach vollstaendigem beziehungsweise gezieltem Pipeline-Lauf
+  keine verwendbare automatische Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als
+  Assetproblem.
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
   - `Blaukehlchen`
   - `Fischertukan`
@@ -359,12 +360,16 @@ Aktuelle Planung:
   gezielten Pipeline-Lauf fuer genau diese neue Art; bis zum erfolgreichen Lauf bleibt sie erwartungsgemaess nur in
   `species_list.json`. API: `POST /api/species/new/preview` und `POST /api/species/new/save`. Fuer optionale
   Sofortportraits liefert `POST /api/species/new/portrait-prompt`
-  einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-28 ist `Neue Art` als Schrittassistent
-  aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen, Abschluss. Ungueltige
-  Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig voneinander per Checkbox nach
-  Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die vorhandenen Textfelder. Die Route
-  `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor der Artanlage. Der
-  lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
+  einen Einzelprompt aus den eingegebenen neuen Artdaten. Seit 2026-06-29 ist `Neue Art` als vierstufiger
+  Schrittassistent aufgebaut: allgemeine Daten pruefen, optionales Artportrait pruefen oder ueberspringen,
+  Karte/Suchlauf und Sound/Abschluss. Nach Schritt 2 wird die Art angelegt und der gezielte Pipeline-Lauf fuer genau
+  diese Art im selben Dialog gestartet; das Datenbank-Aktionen-Fenster wird dabei nicht geoeffnet. Gefundene Karten
+  koennen uebernommen oder uebersprungen werden. Gefundene Sounds werden mit Spektrogramm angezeigt, koennen
+  uebernommen, uebersprungen oder abgelehnt werden. Bei Ablehnung merkt der Explorer die Quellkennung und sucht
+  automatisch weiter. Ungueltige Eingaben werden direkt am Feld markiert. Groesse und Gewicht koennen unabhaengig
+  voneinander per Checkbox nach Maennchen und Weibchen getrennt werden; gespeichert werden weiterhin die vorhandenen
+  Textfelder. Die Route `POST /api/species/new/portrait-preview` prueft ein optional sofort erzeugtes Portrait vor
+  der Artanlage. Der lokale Server wurde mit dem neuen Stand neu gestartet; die ausgelieferte
   Oberflaeche enthaelt Aktion, Dialog und alle Pflichtfelder mit Beispieltexten. Weitere Arten koennen nach
   erfolgreichem Speichern ohne Seitenneuladen angelegt werden. Haubentaucher, Hoeckerschwan und Loewe wurden fuer
   produktive Workflow-Tests angelegt und danach am 2026-06-28 wieder entfernt und bereinigt.
@@ -387,8 +392,9 @@ Aktuelle Planung:
   Spektrogramm setzt die Wiedergabeposition. Die Entscheidung steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
-  Die beiden Wartungsläufe verarbeiten nur die aktuell vier manuell geschützten Karten beziehungsweise die drei
-  NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend unter dem ignorierten Pfad
+  Die beiden Wartungsläufe verarbeiten die aktuell vier manuell geschützten Karten plus Arten mit fehlender Karte
+  beziehungsweise die drei NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend
+  unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Wenn ein Sound im Pruefdialog ausdruecklich abgelehnt wird, speichert der Explorer die Quellkennung unter
   `sound.rejectedSources` und startet automatisch die naechste gezielte Soundsuche fuer dieselbe Art. Die Schleife
@@ -468,7 +474,8 @@ Aktuelle Planung:
   in die App geladen. Der Server prueft Magic Bytes, mindestens 800x1000 Pixel und 4:5; FFmpeg vereinheitlicht die
   Vorschau auf `1280x1600` WebP. Bei bestehenden Arten fuehrt `Artporträt übernehmen` nach manueller Art- und
   Anatomiepruefung wie zuvor Speichern, Backup, Commit und Push aus. Beim optionalen Sofortportrait einer neu
-  angelegten Art fragt die App vor diesem Schritt zusaetzlich nach. Fehlende Portraets sind regulaere
+  angelegten Art wird ein geprueftes Portrait im Neue-Art-Assistenten ohne zusaetzliche Electron-Bestaetigung lokal
+  uebernommen und anschließend mit dem gezielten Pipeline-Lauf veroeffentlicht. Fehlende Portraets sind regulaere
   Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot, das Assetdashboard nennt die genaue Fehlanzahl,
   und betroffene Arten tragen die Listenmarkierung `P` und sind ueber den Hinweisfilter auffindbar. Der normale
   Datenpipeline-Lauf erzeugt weiterhin keine Portraets; sie werden nur artweise im Bearbeitungsdialog gepflegt.

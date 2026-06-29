@@ -2314,7 +2314,7 @@ export async function createExplorerServer({
         ({
           cleanup: "Es wurden keine verwaisten Daten oder Assetordner gefunden",
           missing: "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
-          "manual-maps": "Es gibt keine manuell gepflegten Karten",
+          "manual-maps": "Es gibt keine manuell gepflegten oder fehlenden Karten",
           "nc-sounds": "Es gibt keine ungeschützten NC-Sounds oder fehlenden Sounds",
         })[preview.mode] || "Für diesen Lauf wurden keine Zielarten gefunden",
       );
@@ -2388,8 +2388,8 @@ export async function createExplorerServer({
         error.statusCode = 400;
         throw error;
       }
-      if (choice.decision === "reject" && asset.type !== "sound") {
-        const error = new Error(`Ablehnen mit Quellensperre ist nur für Sounds möglich: ${asset.germanName}`);
+      if (choice.decision === "reject" && !["map", "sound"].includes(asset.type)) {
+        const error = new Error(`Ablehnen ist für diesen Assettyp nicht möglich: ${asset.germanName}`);
         error.statusCode = 400;
         throw error;
       }
@@ -2428,8 +2428,9 @@ export async function createExplorerServer({
     };
     for (const asset of pipelineState.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
-      const rejectSound = choice.decision === "reject";
-      if ((retryMode && choice.decision === "manual") || rejectSound) {
+      const rejectAsset = choice.decision === "reject";
+      const rejectSound = rejectAsset && asset.type === "sound";
+      if ((retryMode && choice.decision === "manual") || rejectAsset) {
         const rejectedSource = rejectSound ? rejectedSoundSourceFromCredits(asset) : null;
         const previous = await restoreOrRemovePipelineAsset(asset);
         registry.assets[asset.safeName] ??= {};
@@ -2455,6 +2456,9 @@ export async function createExplorerServer({
             appendPipelineLog(`Soundquelle abgelehnt und gesperrt: ${asset.germanName} (${rejectedSource.key})`);
             reportNeedsRefresh = true;
           }
+        } else if (rejectAsset && asset.type === "map") {
+          appendPipelineLog(`Karte abgelehnt und entfernt: ${asset.germanName}`);
+          reportNeedsRefresh = true;
         }
         if (Object.keys(registry.assets[asset.safeName]).length === 0) {
           delete registry.assets[asset.safeName];
@@ -2494,7 +2498,7 @@ export async function createExplorerServer({
       const assessmentIds = await readJson(assessmentIdsPath).catch(() => ({}));
       for (const asset of pipelineState.reviewAssets) {
         const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
-        if (choice.decision === "manual") continue;
+        if (choice.decision === "manual" || choice.decision === "reject") continue;
         const species = model.species.find((entry) => entry.safeName === asset.safeName);
         if (species?.iucn?.assessmentId && species.iucn.assessmentId !== "Unbekannt") {
           assessmentIds[asset.safeName] = species.iucn.assessmentId;

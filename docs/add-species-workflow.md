@@ -103,9 +103,28 @@ Die Bildpruefung nutzt dieselben Regeln wie die Bearbeitung bestehender Arten: P
 Mindestgroesse 800x1000 Pixel, 4:5-Seitenverhaeltnis und lokale Umwandlung auf `portrait.webp` in 1280x1600.
 Der Schritt kann mit `Artportrait ueberspringen` bewusst ausgelassen werden.
 
-### Schritt 3: Abschluss
+### Schritt 3: Karte und Pipeline-Status
 
-Der Abschluss fasst zusammen, ob ein geprueftes Portrait uebernommen oder das Portrait uebersprungen wird.
+Nach Schritt 2 wird die Art ohne weiteres Datenbank-Aktionen-Fenster angelegt. Der Dialog bleibt offen und zeigt den
+Status des gezielten Pipeline-Laufs fuer genau diese Art:
+
+- Art anlegen
+- IUCN-Daten und Karte suchen
+- Sound suchen
+- Spektrogramm bereitstellen
+
+Wenn eine neue Karte gefunden wird, wird sie direkt in diesem Dialog geprüft. Sie kann übernommen oder übersprungen
+werden. Beim Überspringen wird die automatisch gefundene Karte entfernt; eine manuelle Karte kann später über die
+Assetverwaltung eingefügt werden.
+
+### Schritt 4: Sound und Abschluss
+
+Wenn ein Sound gefunden wird, wird er im selben Dialog mit Audioplayer und Spektrogramm angezeigt. Ein Klick ins
+Spektrogramm setzt die Wiedergabeposition. Der Sound kann übernommen, übersprungen oder abgelehnt werden.
+Bei Ablehnung speichert der Explorer die Quellkennung und startet automatisch die nächste gezielte Soundsuche fuer
+diese Art. Es können beliebig viele Soundquellen pro Art abgelehnt werden.
+
+Nach Abschluss erscheint im Dialog die Erfolgsmeldung `Neue Art: <Name> wurde angelegt`.
 
 Speichern:
 
@@ -113,10 +132,11 @@ Speichern:
 - Schutz gegen parallele Aenderungen an `species_list.json`
 - Backup nach derselben Aufbewahrungsregel wie Phase 7.4
 - neuer Eintrag wird atomar an die Liste angehaengt
-- wenn ein Portrait geprueft wurde, fragt die App vor der lokalen Uebernahme nach
+- wenn ein Portrait geprueft wurde, wird es im Neue-Art-Ablauf ohne zusätzliche Browser-/Electron-Bestätigung lokal
+  uebernommen
 - danach startet der selektive Pipeline-Lauf fuer genau diese neue Art automatisch; erst dieser Lauf vervollstaendigt
   IUCN-Daten, Karte, Sound, Spektrogramm und Git-Veröffentlichung
-- neu gefundene Karten und Sounds werden danach einzeln geprüft
+- neu gefundene Karten und Sounds werden im Neue-Art-Dialog einzeln geprüft
 - wenn ein neu gefundener Sound abgelehnt wird, merkt die App die Quellkennung und startet automatisch die nächste
   gezielte Soundsuche fuer diese Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird
 
@@ -130,18 +150,19 @@ API:
 - `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
 
-Technischer Stand vom 2026-06-28:
+Technischer Stand vom 2026-06-29:
 
 - Formular, Vorschau und Speichern sind lokal umgesetzt.
-- Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt und Abschluss.
+- Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt, Kartenpruefung sowie
+  Sound-/Abschluss-Schritt.
 - Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle
   Eingaben.
 - Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden.
 - Ungueltige Felder werden sichtbar markiert; Fehlermeldungen stehen direkt am Feld.
 - Nach erfolgreichem Speichern wird die Aktion wieder freigegeben, sodass ohne Seitenneuladen weitere Arten
   angelegt werden koennen.
-- Direkt nach dem Speichern startet der gezielte Lauf `Neue/Unvollständige Arten aktualisieren` fuer diese Art.
-  Der Prozessdialog zeigt Status, Ausgabe und anschließende Assetprüfung.
+- Nach Schritt 2 startet der gezielte Lauf `Neue/Unvollständige Arten aktualisieren` fuer diese Art im selben Dialog.
+  Das Datenbank-Aktionen-Fenster wird dabei nicht geöffnet.
 - Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
@@ -152,9 +173,10 @@ Technischer Stand vom 2026-06-28:
 
 Aktueller redaktioneller Stand:
 
-- 46 Eintraege in `species_list.json`
-- Haubentaucher, Höckerschwan und Löwe wurden nach den produktiven Workflow-Tests wieder entfernt und am
-  2026-06-28 bereinigt
+- 47 Eintraege in `species_list.json`
+- Haubentaucher und Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28
+  bereinigt
+- Löwe ist aktuell wieder angelegt; Karte und Sound sind noch offen
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
 

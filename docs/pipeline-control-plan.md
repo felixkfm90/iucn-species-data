@@ -97,13 +97,16 @@ Vor dem Start zeigt die App:
 
 ### Manuelle Karten erneut suchen
 
-Der Kartensuchlauf wählt ausschließlich Arten aus, deren Karte in `species-assets-overrides.json` als manuell
-geschützt markiert ist. Aktuell sind das vier Arten.
+Der Kartensuchlauf wählt Arten aus, deren Karte in `species-assets-overrides.json` als manuell geschützt markiert
+ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; fehlende Karten werden bei
+Bedarf zusätzlich verarbeitet.
 
 - IUCN-Daten und Sounds bleiben unverändert.
 - Die vorhandene Karte wird vorübergehend lokal gesichert.
 - Nur eine gültige JPEG-Antwort mit plausibler Mindestgröße ersetzt die Arbeitskopie.
 - `Automatische Karte übernehmen` behält die neue Karte und entfernt den manuellen Schutz.
+- Eine neu gefundene Karte kann auch abgelehnt/übersprungen werden; dann wird sie entfernt beziehungsweise die
+  vorherige Karte wiederhergestellt.
 - Das Register und `docs/manual-map-overrides.md` werden dabei gemeinsam aktualisiert.
 - Eine ausdrückliche `manual: false`-Entscheidung im JSON-Register hat Vorrang vor einem veralteten
   Markdown-Eintrag. Dadurch erscheint eine übernommene automatische Karte sofort nicht mehr unter manueller Pflege.

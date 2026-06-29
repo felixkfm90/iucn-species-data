@@ -10,6 +10,7 @@ const state = {
   databaseNeedsUpdate: true,
   openPipelinePreview: null,
   openAssetReview: null,
+  newSpeciesPipelineActive: false,
   pipelineWasRunning: false,
   pipelineStatusSnapshot: null,
   pipelinePollTimer: null,
@@ -928,6 +929,7 @@ function setupBackupSettings() {
   };
 
   const close = () => {
+    if (pipelineBusy) return;
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
@@ -1035,6 +1037,7 @@ function setupPipelineControl() {
   };
 
   const close = () => {
+    if (pipelineBusy || state.newSpeciesPipelineActive) return;
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
   };
@@ -1317,7 +1320,7 @@ function setupPipelineControl() {
       mode === "cleanup"
         ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
         : mode === "manual-maps"
-          ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht."
+          ? "Manuell geschützte und fehlende Karten werden erneut bei IUCN gesucht."
           : mode === "nc-sounds"
             ? "Vorhandene NC-Sounds werden auf freie Alternativen geprüft; fehlende Sounds werden erneut gesucht."
             : "Vor dem Start werden Zielarten und Umfang geprüft.";
@@ -1430,7 +1433,7 @@ function setupPipelineControl() {
         }
       }
 
-      if (awaitingReview) state.openAssetReview?.(status);
+      if (awaitingReview && !state.newSpeciesPipelineActive) state.openAssetReview?.(status);
 
       if (state.pipelineWasRunning && !active && status.status !== "idle") {
         if (status.status === "completed" && status.gitPublished) state.notice = "";
@@ -1574,6 +1577,12 @@ function setupNewSpeciesCreator() {
   const portraitPreviewButton = dialog.querySelector(".new-species-portrait-preview-button");
   const portraitSkipButton = dialog.querySelector(".new-species-portrait-skip-button");
   const finalPortraitState = dialog.querySelector(".new-species-final-portrait-state");
+  const pipelineMessage = dialog.querySelector(".new-species-pipeline-message");
+  const pipelineStepItems = [...dialog.querySelectorAll("[data-new-species-pipeline-step]")];
+  const mapReview = dialog.querySelector(".new-species-map-review");
+  const soundReview = dialog.querySelector(".new-species-sound-review");
+  const finishMessage = dialog.querySelector(".new-species-finish-message");
+  const doneSection = dialog.querySelector(".new-species-done");
 
   let currentStep = 1;
   let previewToken = "";
@@ -1581,6 +1590,14 @@ function setupNewSpeciesCreator() {
   let portraitPreviewToken = "";
   let portraitSkipped = false;
   let busy = false;
+  let pipelineBusy = false;
+  let completed = false;
+  let savedSpeciesId = "";
+  let savedSpeciesName = "";
+  let inlineRunId = "";
+  let inlineReviewAssets = [];
+  let inlineReviewChoices = new Map();
+  let inlinePipelinePollTimer = null;
 
   const setMessage = (text = "", type = "") => {
     message.textContent = text;
@@ -1592,6 +1609,18 @@ function setupNewSpeciesCreator() {
     portraitMessage.textContent = text;
     portraitMessage.className = `edit-message new-species-portrait-message${type ? ` ${type}` : ""}`;
     portraitMessage.hidden = !text;
+  };
+
+  const setPipelineMessage = (text = "", type = "") => {
+    pipelineMessage.textContent = text;
+    pipelineMessage.className = `edit-message new-species-pipeline-message${type ? ` ${type}` : ""}`;
+    pipelineMessage.hidden = !text;
+  };
+
+  const setFinishMessage = (text = "", type = "") => {
+    finishMessage.textContent = text;
+    finishMessage.className = `edit-message new-species-finish-message${type ? ` ${type}` : ""}`;
+    finishMessage.hidden = !text;
   };
 
   const fieldLabel = (fieldKey) => form.querySelector(`[data-field="${fieldKey}"]`);
@@ -1681,21 +1710,93 @@ function setupNewSpeciesCreator() {
       : "Artportrait wird übersprungen.";
   };
 
+  const stopInlinePipelinePolling = () => {
+    clearTimeout(inlinePipelinePollTimer);
+    inlinePipelinePollTimer = null;
+  };
+
+  const setPipelineStepState = (activeKey = "", doneKeys = []) => {
+    const doneSet = new Set(doneKeys);
+    for (const item of pipelineStepItems) {
+      const key = item.dataset.newSpeciesPipelineStep;
+      item.classList.toggle("active", key === activeKey);
+      item.classList.toggle("done", doneSet.has(key));
+    }
+  };
+
+  const renderInlineSoundPlayback = (container) => {
+    const audio = container.querySelector("audio");
+    const marker = container.querySelector(".asset-review-progress-marker");
+    const spectrogram = container.querySelector(".new-species-review-spectrogram");
+    if (!audio || !marker || !spectrogram) return;
+    const updateMarker = () => {
+      const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+      marker.style.left = `${Math.min(1, Math.max(0, progress)) * 100}%`;
+    };
+    audio.addEventListener("timeupdate", updateMarker);
+    audio.addEventListener("loadedmetadata", updateMarker);
+    audio.addEventListener("seeked", updateMarker);
+    spectrogram.addEventListener("click", (event) => {
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      const rect = spectrogram.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      audio.currentTime = progress * audio.duration;
+      marker.style.left = `${progress * 100}%`;
+      audio.play().catch(() => {});
+    });
+  };
+
+  const renderInlineMapReview = (asset) => {
+    mapReview.hidden = false;
+    mapReview.innerHTML = `
+      <h5>Karte prüfen</h5>
+      <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}</p>
+      <div class="new-species-review-media">
+        <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">
+      </div>
+      <div class="new-species-review-actions">
+        <button type="button" data-new-species-map-decision="reject">Überspringen / später manuell einfügen</button>
+        <button class="primary" type="button" data-new-species-map-decision="automatic">Karte übernehmen</button>
+      </div>
+    `;
+  };
+
+  const renderInlineSoundReview = (asset) => {
+    soundReview.hidden = false;
+    soundReview.innerHTML = `
+      <h5>Sound prüfen</h5>
+      <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}</p>
+      ${asset.spectrogramUrl ? `
+        <button class="new-species-review-spectrogram" type="button">
+          <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
+          <span class="asset-review-progress-marker"></span>
+        </button>
+      ` : `<p>Spektrogramm ist für diese Vorschau noch nicht vorhanden.</p>`}
+      <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
+      <div class="new-species-review-actions">
+        <button type="button" data-new-species-sound-decision="manual">Überspringen / später manuell einfügen</button>
+        <button class="danger" type="button" data-new-species-sound-decision="reject">Sound ablehnen und nächste Quelle suchen</button>
+        <button class="primary" type="button" data-new-species-sound-decision="automatic">Sound übernehmen</button>
+      </div>
+    `;
+    renderInlineSoundPlayback(soundReview);
+  };
+
   const updateButtons = () => {
     previewButton.hidden = currentStep !== 1;
-    backButton.hidden = currentStep === 1;
-    nextButton.hidden = currentStep === 3;
-    saveButton.hidden = currentStep !== 3;
-    previewButton.disabled = busy;
-    backButton.disabled = busy;
-    nextButton.disabled = busy || (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait());
-    saveButton.disabled = busy || !previewToken;
-    portraitPromptButton.disabled = busy || !previewToken;
-    portraitCopyButton.disabled = busy || !portraitPromptText;
-    portraitPreviewButton.disabled = busy || !previewToken;
-    portraitSkipButton.disabled = busy || !previewToken;
-    openButton.disabled = busy;
-    for (const button of closeButtons) button.disabled = busy;
+    backButton.hidden = currentStep === 1 || currentStep >= 3 || completed;
+    nextButton.hidden = currentStep >= 3 || completed;
+    saveButton.hidden = !completed;
+    previewButton.disabled = busy || pipelineBusy;
+    backButton.disabled = busy || pipelineBusy;
+    nextButton.disabled = busy || pipelineBusy || (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait());
+    saveButton.disabled = busy || pipelineBusy;
+    portraitPromptButton.disabled = busy || pipelineBusy || !previewToken;
+    portraitCopyButton.disabled = busy || pipelineBusy || !portraitPromptText;
+    portraitPreviewButton.disabled = busy || pipelineBusy || !previewToken;
+    portraitSkipButton.disabled = busy || pipelineBusy || !previewToken;
+    openButton.disabled = busy || pipelineBusy;
+    for (const button of closeButtons) button.disabled = busy || pipelineBusy || state.newSpeciesPipelineActive;
   };
 
   const showStep = (step) => {
@@ -1732,18 +1833,35 @@ function setupNewSpeciesCreator() {
   };
 
   const resetAll = () => {
+    stopInlinePipelinePolling();
     previewToken = "";
     portraitPromptText = "";
     portraitPreviewToken = "";
     portraitSkipped = false;
     busy = false;
+    pipelineBusy = false;
+    completed = false;
+    savedSpeciesId = "";
+    savedSpeciesName = "";
+    inlineRunId = "";
+    inlineReviewAssets = [];
+    inlineReviewChoices = new Map();
+    state.newSpeciesPipelineActive = false;
     preview.hidden = true;
     jsonPreview.textContent = "";
     for (const field of derivedFields) field.textContent = "";
+    mapReview.hidden = true;
+    mapReview.innerHTML = "";
+    soundReview.hidden = true;
+    soundReview.innerHTML = "";
+    doneSection.hidden = true;
+    setPipelineStepState();
     resetPortraitPrompt();
     resetPortraitPreview();
-    setMessage();
+    setMessage("Bitte Eingaben ausfüllen und auf „Eingaben prüfen“ klicken.", "info");
     setPortraitMessage();
+    setPipelineMessage();
+    setFinishMessage();
     clearFieldErrors();
     updateMeasurementMode("size");
     updateMeasurementMode("weight");
@@ -1753,6 +1871,197 @@ function setupNewSpeciesCreator() {
   const setBusy = (value) => {
     busy = value;
     updateButtons();
+  };
+
+  const setPipelineBusy = (value) => {
+    pipelineBusy = value;
+    updateButtons();
+  };
+
+  const finishNewSpeciesWorkflow = async (status) => {
+    stopInlinePipelinePolling();
+    setPipelineBusy(false);
+    state.newSpeciesPipelineActive = false;
+    state.pipelineWasRunning = false;
+    if (status?.status === "completed" && status.gitPublished) state.notice = "";
+    await loadData({ reload: true });
+    completed = true;
+    setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
+    setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} wurde angelegt.`, "success");
+    doneSection.hidden = false;
+    showStep(4);
+  };
+
+  const submitInlineAssetReview = async () => {
+    const choices = inlineReviewAssets.map((asset) => {
+      const decision = inlineReviewChoices.get(`${asset.safeName}:${asset.type}`);
+      return {
+        safeName: asset.safeName,
+        type: asset.type,
+        decision,
+        manual: decision === "manual",
+      };
+    });
+    if (choices.some((choice) => !choice.decision)) {
+      setFinishMessage("Bitte zuerst Karte und Sound bewerten.", "error");
+      return;
+    }
+    setPipelineBusy(true);
+    setPipelineMessage("Entscheidung wird gespeichert. Falls ein Sound abgelehnt wurde, sucht die App direkt weiter.", "info");
+    setFinishMessage();
+    try {
+      await fetchJson("/api/pipeline/assets/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId: inlineRunId, choices }),
+      });
+      inlineReviewAssets = [];
+      inlineReviewChoices = new Map();
+      mapReview.hidden = true;
+      mapReview.innerHTML = "";
+      soundReview.hidden = true;
+      soundReview.innerHTML = "";
+      void pollInlinePipelineStatus();
+    } catch (error) {
+      setPipelineBusy(false);
+      state.newSpeciesPipelineActive = false;
+      setFinishMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    }
+  };
+
+  const handleInlineReviewStatus = (status) => {
+    setPipelineBusy(false);
+    inlineRunId = status.runId;
+    if (inlineReviewAssets !== status.reviewAssets) {
+      inlineReviewAssets = status.reviewAssets || [];
+      inlineReviewChoices = new Map();
+    }
+    const mapAsset = inlineReviewAssets.find((asset) => asset.type === "map");
+    const soundAsset = inlineReviewAssets.find((asset) => asset.type === "sound");
+    setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
+    setPipelineMessage("Suchlauf abgeschlossen. Bitte die gefundenen Assets prüfen.", "success");
+    if (mapAsset && !inlineReviewChoices.has(`${mapAsset.safeName}:map`)) {
+      showStep(3);
+      renderInlineMapReview(mapAsset);
+      return;
+    }
+    mapReview.hidden = true;
+    if (soundAsset && !inlineReviewChoices.has(`${soundAsset.safeName}:sound`)) {
+      showStep(4);
+      renderInlineSoundReview(soundAsset);
+      setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
+      return;
+    }
+    void submitInlineAssetReview();
+  };
+
+  async function pollInlinePipelineStatus() {
+    stopInlinePipelinePolling();
+    try {
+      const status = await fetchJson("/api/pipeline/status");
+      state.pipelineStatusSnapshot = status;
+      renderPersistentPipelineStatus(status);
+      if (status.status === "running") {
+        setPipelineBusy(true);
+        const phase = status.phase || "Suchlauf läuft";
+        setPipelineMessage(`${phase} · bitte warten.`, "info");
+        if (/Spektrogramm/i.test(phase)) setPipelineStepState("spectrogram", ["save", "data", "sound"]);
+        else if (/Sound|Datenpipeline/i.test(phase)) setPipelineStepState("sound", ["save", "data"]);
+        else setPipelineStepState("data", ["save"]);
+        inlinePipelinePollTimer = setTimeout(pollInlinePipelineStatus, 1000);
+        return;
+      }
+      if (status.status === "awaiting-review") {
+        handleInlineReviewStatus(status);
+        return;
+      }
+      if (status.status === "completed") {
+        await finishNewSpeciesWorkflow(status);
+        return;
+      }
+      if (status.status === "failed") {
+        setPipelineBusy(false);
+        state.newSpeciesPipelineActive = false;
+        setPipelineMessage(status.error || "Suchlauf ist fehlgeschlagen.", "error");
+        return;
+      }
+      inlinePipelinePollTimer = setTimeout(pollInlinePipelineStatus, 1000);
+    } catch (error) {
+      setPipelineBusy(false);
+      state.newSpeciesPipelineActive = false;
+      setPipelineMessage(error.message, "error");
+    }
+  }
+
+  const saveAndStartPipeline = async () => {
+    if (!previewToken || pipelineBusy) return;
+    showStep(3);
+    state.newSpeciesPipelineActive = true;
+    setPipelineBusy(true);
+    setPipelineStepState("save");
+    setPipelineMessage("Neue Art wird angelegt…", "info");
+    try {
+      const result = await fetchJson("/api/species/new/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: previewToken }),
+      });
+      savedSpeciesId = result.species?.id || result.derived.slug;
+      savedSpeciesName = result.entry.german;
+      state.selectedId = savedSpeciesId;
+      elements.search.value = "";
+      elements.statusFilter.value = "";
+      elements.flagFilter.value = "";
+
+      if (portraitPreviewToken) {
+        setPipelineMessage("Artportrait wird lokal übernommen…", "info");
+        try {
+          await fetchJson(
+            `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/portrait/save`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: portraitPreviewToken, publish: false }),
+            },
+          );
+        } catch (portraitError) {
+          setPipelineMessage(
+            `Art wurde angelegt, aber das Portrait konnte nicht übernommen werden: ${portraitError.message}`,
+            "error",
+          );
+        }
+      }
+
+      setPipelineStepState("data", ["save"]);
+      setPipelineMessage("Suchlauf für Karte, Sound und Spektrogramm startet…", "info");
+      await loadData({ reload: true });
+      const previewResult = await fetchJson("/api/pipeline/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "missing", targetSlugs: [savedSpeciesId] }),
+      });
+      if (!previewResult.tokensAvailable) {
+        throw new Error("Die benötigten API-Tokens fehlen in der Server-Umgebung.");
+      }
+      if (!previewResult.hasWork) {
+        await finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
+        return;
+      }
+      const startedStatus = await fetchJson("/api/pipeline/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: previewResult.token }),
+      });
+      state.pipelineStatusSnapshot = startedStatus;
+      state.pipelineWasRunning = true;
+      setPipelineStepState("data", ["save"]);
+      setPipelineMessage("Suchlauf läuft. Karte, Sound und Spektrogramm werden vorbereitet…", "info");
+      void pollInlinePipelineStatus();
+    } catch (error) {
+      setPipelineBusy(false);
+      state.newSpeciesPipelineActive = false;
+      setPipelineMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    }
   };
 
   const close = () => {
@@ -1852,7 +2161,7 @@ function setupNewSpeciesCreator() {
 
   nextButton.addEventListener("click", () => {
     if (currentStep === 1 && previewToken) showStep(2);
-    else if (currentStep === 2 && canAdvanceFromPortrait()) showStep(3);
+    else if (currentStep === 2 && canAdvanceFromPortrait()) void saveAndStartPipeline();
   });
 
   backButton.addEventListener("click", () => {
@@ -1962,68 +2271,39 @@ function setupNewSpeciesCreator() {
     resetPortraitPreview();
     portraitSkipped = true;
     setPortraitMessage("Artportrait wird für diese neue Art übersprungen und kann später ergänzt werden.", "info");
-    showStep(3);
+    void saveAndStartPipeline();
   });
 
-  saveButton.addEventListener("click", async () => {
-    if (!previewToken) return;
-    setBusy(true);
-    setMessage("Neue Art wird gesichert und angelegt…", "info");
-    try {
-      const result = await fetchJson("/api/species/new/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: previewToken }),
-      });
-      const savedSpeciesId = result.species?.id || result.derived.slug;
-      state.selectedId = savedSpeciesId;
-      elements.search.value = "";
-      elements.statusFilter.value = "";
-      elements.flagFilter.value = "";
-
-      let portraitNotice = "";
-      if (portraitPreviewToken) {
-        const shouldSavePortrait = window.confirm(
-          "Geprüftes Artportrait für die neue Art übernehmen? Die Veröffentlichung erfolgt mit dem anschließenden Pipeline-Lauf.",
-        );
-        if (shouldSavePortrait) {
-          setPortraitMessage("Artportrait wird lokal übernommen…", "info");
-          try {
-            const portraitResult = await fetchJson(
-              `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/portrait/save`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: portraitPreviewToken, publish: false }),
-              },
-            );
-            portraitNotice = portraitResult.saved ? " Artportrait wurde lokal übernommen." : "";
-          } catch (portraitError) {
-            portraitNotice =
-              ` Artportrait konnte nicht übernommen werden: ${portraitError.message}. Es kann später ergänzt werden.`;
-          }
-        } else {
-          portraitNotice = " Artportrait wurde nicht übernommen.";
-        }
-      }
-
-      state.notice =
-        `${result.entry.german} wurde angelegt. Sicherung: ${result.backup}.`
-        + backupRetentionText(result)
-        + portraitNotice
-        + " Die Art ist bis zum Pipeline-Lauf unvollständig."
-        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
-      form.reset();
-      resetAll();
-      setBusy(false);
-      close();
-      await loadData({ reload: true });
-      await state.openPipelinePreview?.("missing", { targetSlugs: [savedSpeciesId], autoStart: true });
-    } catch (error) {
-      applyFieldErrors(error.fieldErrors || {});
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-      setBusy(false);
+  mapReview.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-new-species-map-decision]");
+    if (!button) return;
+    const asset = inlineReviewAssets.find((entry) => entry.type === "map");
+    if (!asset) return;
+    inlineReviewChoices.set(`${asset.safeName}:map`, button.dataset.newSpeciesMapDecision);
+    mapReview.hidden = true;
+    const soundAsset = inlineReviewAssets.find((entry) => entry.type === "sound");
+    if (soundAsset) {
+      showStep(4);
+      renderInlineSoundReview(soundAsset);
+      setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
+    } else {
+      void submitInlineAssetReview();
     }
+  });
+
+  soundReview.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-new-species-sound-decision]");
+    if (!button) return;
+    const asset = inlineReviewAssets.find((entry) => entry.type === "sound");
+    if (!asset) return;
+    inlineReviewChoices.set(`${asset.safeName}:sound`, button.dataset.newSpeciesSoundDecision);
+    void submitInlineAssetReview();
+  });
+
+  saveButton.addEventListener("click", () => {
+    form.reset();
+    resetAll();
+    close();
   });
 }
 

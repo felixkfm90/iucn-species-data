@@ -104,8 +104,8 @@ export function buildPipelinePlan({
       const mapPath = path.join(assetDir, "map.jpg");
       if (assetOverrides.assets?.[safeName]?.map?.manual === true) {
         reasons.push("manuell gepflegte Karte erneut automatisch suchen");
-      } else if (requestedTargetSlugs.has(normalized(slug)) && !fs.existsSync(mapPath)) {
-        reasons.push("Karte fehlt; automatische Karte gezielt suchen");
+      } else if (existing && !fs.existsSync(mapPath)) {
+        reasons.push("Karte fehlt; automatische Karte suchen");
       }
     }
 

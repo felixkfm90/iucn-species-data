@@ -113,7 +113,8 @@ Umgesetzt:
 - automatischer, auf die drei Kartenpfade begrenzter Commit und Push
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
 - fehlende Karten oder manuell geschützte Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer
-  genau diese Art gesucht werden; der normale globale Kartensuchlauf bleibt auf manuell geschützte Karten begrenzt
+  genau diese Art gesucht werden
+- der globale Kartensuchlauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
 
