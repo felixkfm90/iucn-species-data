@@ -18,22 +18,16 @@
         "metadataSha256": "1493fccee617129c273d925df042d04fd66bc8d2fe06efce37d04582b51e7797"
       },
       "sound": {
-        "rejectedSources": [
-          {
-            "key": "xeno-canto:1041347",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/1041347",
-            "recordist": "Sonothèque ADVL",
-            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "rejectedAt": "2026-06-29T16:35:27.821Z"
-          }
-        ],
         "manual": false,
-        "protectFromPipeline": false,
-        "reason": "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
-        "rejectedCurrent": true,
-        "rejectedAt": "2026-06-29T16:35:27.821Z",
-        "updatedAt": "2026-06-29T16:35:27.821Z"
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-29T16:41:14.674Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "54ec5a1fb0d9909747375b05a90048912992b6de43f98188475aabf603af6b22",
+        "spectrogramSha256": "9407d01d3c933e4978f923ecbe8666ec6b02b0c9cec9c552031c1021c3f38e94",
+        "generatedAt": "2026-06-29T16:40:54.252Z",
+        "verifiedAt": "2026-06-29T16:40:54.278Z"
       }
     },
     "Fischertukan": {
@@ -943,7 +937,17 @@
       "sound": {
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-29T16:27:19.584Z"
+        "updatedAt": "2026-06-29T16:40:22.355Z",
+        "rejectedSources": [
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
+            "recordist": "Ken123",
+            "license": "https://creativecommons.org/licenses/by-sa/3.0",
+            "rejectedAt": "2026-06-29T16:40:22.356Z"
+          }
+        ]
       },
       "spectrogram": {
         "stale": false,
