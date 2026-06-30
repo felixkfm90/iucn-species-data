@@ -414,7 +414,10 @@ Aktuelle Planung:
   beliebig viele Quellen je Art abgelehnt werden; die Schleife endet erst, wenn eine Quelle uebernommen wird oder
   keine weitere taugliche Quelle vorhanden ist. Bei einer gezielten Alternative fuer einen bereits akzeptierten
   Sound wird die aktuelle Quelle nur temporaer uebersprungen; nach freien Kandidaten werden auch die bisherigen
-  Xeno-Canto-Fallback-Stufen geprueft.
+  Xeno-Canto-Fallback-Stufen geprueft. Wenn ein gefundener Kandidat wegen Download-, Format- oder
+  Transcode-Problemen nicht uebernommen werden kann, prueft `update.mjs` im selben Lauf weitere Kandidaten. Eine
+  Windows-Dateisperre auf der produktiven MP3 wird als eigener Warnzustand gemeldet; der Bearbeitungsdialog entlaedt
+  den aktuellen Audioplayer vor dem Alternativlauf, um solche Sperren zu vermeiden.
   Seit 2026-06-29 schliessen `X`, `Abbrechen` und `Fenster schliessen` die Datenbank- und Einstellungsdialoge
   wieder korrekt; der laufende Prozess bleibt dabei unveraendert im Hintergrund aktiv.
   Der IUCN-Kartenabruf prueft zusaetzlich eine robuste Fallback-Strategie fuer gecachte Einzelkarten. Stand
@@ -450,7 +453,7 @@ Aktuelle Planung:
   selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. Elf Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. Zwanzig Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
@@ -493,7 +496,7 @@ Aktuelle Planung:
   Sound ist dort direkt abspielbar. Ein gezielter Alternativlauf ueberspringt die aktuell gespeicherte Quelle
   temporaer, damit nicht derselbe Sound erneut vorgeschlagen wird. Diese gezielte Suche startet im Hintergrund ohne
   das Bearbeitungsfenster oder die Desktop-App zu schliessen und ohne den allgemeinen Datenbank-Aktionen-Dialog
-  einzublenden.
+  einzublenden. Der aktuelle Audioplayer wird vor dem Start entladen, damit Windows die produktive MP3 nicht sperrt.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
   vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und

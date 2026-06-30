@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-06-29
+Stand: 2026-06-30
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -139,6 +139,9 @@ vorhandenem akzeptiertem Sound eine Alternative suchen. Dabei wird die aktuelle 
   fehlendem Sound die neu erzeugten Sounddateien wieder. Die Quellkennung wird in `species-assets-overrides.json`
   gespeichert und bei spaeteren Sound-Suchlaeufen uebersprungen. Pro Art koennen beliebig viele Quellen abgelehnt
   werden.
+- Wenn ein Kandidat zwar gefunden, aber nicht übernehmbar ist, prüft `update.mjs` im selben Lauf weitere Xeno-Canto-,
+  Wikimedia-Commons- oder iNaturalist-Kandidaten. Nur eine echte Windows-Dateisperre auf `sound.mp3` beendet den
+  Speicherversuch mit einer klaren Sperrmeldung, weil dann kein Kandidat sicher ersetzt werden kann.
 - Bei vorhandenen Sounds zeigt der Review den bisherigen Sound und den gefundenen Kandidaten nebeneinander mit
   jeweils eigenem Player und Spektrogramm. Ein gezielter Alternativlauf überspringt die aktuell gespeicherte Quelle
   temporär, damit nicht derselbe Sound erneut vorgeschlagen wird.

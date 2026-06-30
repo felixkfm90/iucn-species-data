@@ -1983,6 +1983,23 @@ export async function createExplorerServer({
     }
   }
 
+  function assetOnlyNoChangeMessage(mode) {
+    const logText = pipelineState.log.join("\n");
+    if (/Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText)) {
+      return "Sounddatei war noch geöffnet oder gesperrt; gefundene Alternative konnte nicht gespeichert werden. Bitte Wiedergabe/Fenster schließen und Suchlauf erneut starten.";
+    }
+    if (/Abgelehnte Soundquelle wird übersprungen/i.test(logText)) {
+      return "Bereits abgelehnte Soundquellen wurden übersprungen; keine weitere geeignete Soundalternative gefunden.";
+    }
+    if (mode === "nc-sounds") {
+      return "Keine neue geeignete Soundalternative gefunden; bestehende Sounds bleiben unverändert.";
+    }
+    if (mode === "manual-maps") {
+      return "Keine neue automatisch abrufbare Karte gefunden; bestehende Karten bleiben unverändert.";
+    }
+    return "Keine neue automatische Alternative gefunden; bestehende Assets bleiben unverändert.";
+  }
+
   async function synchronizeStoredManualMapDocumentation(registry) {
     const source = await readFile(manualMapOverridesPath, "utf8");
     const next = synchronizeManualMapDocumentation(source, registry);
@@ -2385,7 +2402,7 @@ export async function createExplorerServer({
     }
 
     if (assetOnlyMode) {
-      appendPipelineLog("Keine neue automatische Alternative gefunden; bestehende Assets bleiben unverändert.");
+      appendPipelineLog(assetOnlyNoChangeMessage(plan.mode));
       if (pipelineState.publishAfterAssetOnlyNoAssets) {
         pipelineState.publishAfterAssetOnlyNoAssets = false;
         await continueAfterAssetReview();

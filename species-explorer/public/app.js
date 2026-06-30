@@ -1502,7 +1502,11 @@ function setupPipelineControl() {
     if (status.status !== "completed") return false;
 
     const logText = (status.log || []).join("\n");
-    const noAlternative = /Keine neue automatische Alternative gefunden/i.test(logText);
+    const noAlternative =
+      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine neue automatisch abrufbare Karte/i
+        .test(logText);
+    const soundLocked = /Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText);
+    const rejectedSourcesSkipped = /Abgelehnte Soundquelle wird übersprungen/i.test(logText);
     if (context.section === "map") {
       setEditorMessage(
         noAlternative
@@ -1512,10 +1516,14 @@ function setupPipelineControl() {
       );
     } else {
       setEditorMessage(
-        noAlternative
+        soundLocked
+          ? "Sound-Suchlauf abgeschlossen. Die Sounddatei war noch geöffnet oder gesperrt; bitte Wiedergabe/Fenster schließen und erneut suchen."
+          : rejectedSourcesSkipped && noAlternative
+          ? "Sound-Suchlauf abgeschlossen. Bereits abgelehnte Soundquellen wurden übersprungen; keine weitere geeignete Alternative gefunden."
+          : noAlternative
           ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden."
           : "Sound-Suchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
-        noAlternative ? "info" : "success",
+        soundLocked ? "error" : noAlternative ? "info" : "success",
       );
     }
     return true;
@@ -2639,6 +2647,14 @@ function setupSpeciesEditor(species) {
     }
   };
 
+  const releaseCurrentSoundAudio = () => {
+    if (!currentSoundAudio) return;
+    currentSoundAudio.pause();
+    currentSoundAudio.currentTime = 0;
+    currentSoundAudio.removeAttribute("src");
+    currentSoundAudio.load();
+  };
+
   const setSoundMessage = (text = "", type = "") => {
     if (!soundMessage) return;
     soundMessage.textContent = text;
@@ -2972,6 +2988,7 @@ function setupSpeciesEditor(species) {
     );
     if (!shouldReject) return;
     resetSoundPreview();
+    releaseCurrentSoundAudio();
     setSoundBusy(true);
     setSoundMessage(
       "Aktueller Sound wird gesichert, entfernt, als abgelehnte Quelle gemerkt, der Report wird aktualisiert und danach committed/gepusht…",
@@ -3012,6 +3029,7 @@ function setupSpeciesEditor(species) {
 
   soundAutoSearchButton?.addEventListener("click", async () => {
     resetSoundPreview();
+    releaseCurrentSoundAudio();
     setSoundBusy(true);
     setSoundMessage("Gezielter Sound-Suchlauf wird vorbereitet…", "info");
     try {

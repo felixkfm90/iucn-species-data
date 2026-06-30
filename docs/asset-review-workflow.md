@@ -52,6 +52,10 @@ Report danach neu aufgebaut.
 Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezielten Sound-Suchlauf fuer dieselbe
 Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
 Pro Art koennen beliebig viele Soundquellen abgelehnt werden; jede Quellkennung bleibt gespeichert.
+Wenn ein gefundener Kandidat wegen Download-, Format- oder Transcode-Problemen nicht übernommen werden kann, wird
+nur dieser Kandidat für den aktuellen Lauf temporär übersprungen und die nächste Quelle geprüft. Wenn Windows die
+produktive `sound.mp3` noch durch einen Player sperrt, stoppt der Lauf mit einer verständlichen Dateisperrenmeldung,
+weil dann keine Alternative sicher gespeichert werden kann.
 
 Dieselbe Ablehnlogik steht seit 2026-06-28 auch im normalen Bearbeitungsdialog einer Art zur Verfügung. Dort kann
 der aktuell produktive Sound abgelehnt werden. Der Explorer sichert das bestehende Soundpaket, entfernt
@@ -70,6 +74,8 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   zuerst freie Alternativen und danach auch die bisherigen Xeno-Canto-Fallback-Stufen, damit bei einer bewussten
   Alternativsuche nicht fälschlich „keine Alternative“ gemeldet wird, nur weil der einzige freie Treffer bereits der
   aktuelle Sound ist.
+- Vor dem Start dieses Laufs entlädt der Bearbeitungsdialog den aktuellen Audioplayer, damit Windows die produktive
+  MP3 möglichst nicht als geöffnete Datei blockiert.
 - Beide Aktionen starten seit 2026-06-29 als stiller gezielter Hintergrundlauf, ohne den Bearbeitungsdialog oder die
   Desktop-App zu schließen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.

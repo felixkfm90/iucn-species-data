@@ -417,7 +417,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     derselbe Sound erneut vorgeschlagen wird. Diese Suche startet als stiller Hintergrundlauf ohne das
     Bearbeitungsfenster oder die Desktop-App zu schliessen und ohne den allgemeinen Datenbank-Aktionen-Dialog
     einzublenden. Neu gefundene Sounds werden mit eindeutiger Lizenzkennzeichnung `NC` oder `frei` angezeigt; Klick
-    ins jeweilige Spektrogramm setzt die passende Wiedergabeposition.
+    ins jeweilige Spektrogramm setzt die passende Wiedergabeposition. Kandidaten, die wegen Download-, Format- oder
+    Transcode-Problemen nicht uebernommen werden koennen, beenden die Suche nicht mehr; die Pipeline prueft dann die
+    naechste Quelle. Eine Windows-Dateisperre auf der produktiven MP3 wird als eigener Warnzustand gemeldet.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
