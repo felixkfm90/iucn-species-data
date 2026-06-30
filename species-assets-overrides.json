@@ -161,13 +161,6 @@
         "reason": "IUCN liefert korrupte Kartendaten.",
         "updatedAt": "2026-06-17"
       },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "082bf8fede7bfe623d9270085726f766d1d67b2173318e3ba3b4ebfc06f1cc57",
-        "spectrogramSha256": "0165caaca0223dec013219e11aa510dcd03350cea89f4725f54f88cfc213e783",
-        "generatedAt": "2026-06-15T13:03:20.877Z",
-        "verifiedAt": "2026-06-20T18:35:37.811Z"
-      },
       "portrait": {
         "managedBy": "species-explorer",
         "source": "ChatGPT",
@@ -177,6 +170,24 @@
         "approvedAt": "2026-06-21T19:47:07.277Z",
         "sha256": "3cb949f955b10e165e9a24f39393421b8c0dadfb2a239736946d8da7c526a885",
         "metadataSha256": "cd86e693171ae7e5be0e7e2a194d7ff7b2d062865733416c5d91ee42c9b4eafd"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:1042634",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1042634",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-06-30T17:10:28.553Z"
+          }
+        ],
+        "manual": false,
+        "protectFromPipeline": false,
+        "reason": "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
+        "rejectedCurrent": true,
+        "rejectedAt": "2026-06-30T17:10:28.553Z",
+        "updatedAt": "2026-06-30T17:10:28.553Z"
       }
     },
     "Alpenstrandlaeufer": {
