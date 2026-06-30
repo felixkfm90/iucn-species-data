@@ -950,6 +950,17 @@
         "spectrogramSha256": "a95fd1899b2f68831eb836fd8849d63fc5fc6b8fb89cacc428325f1cf7d1bd15",
         "generatedAt": "2026-06-30T14:51:13.221Z",
         "verifiedAt": "2026-06-30T14:51:13.227Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "aktuell kein automatischer download möglich durch explorer",
+        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260630165556_4ca656477464197f3c7dc334_e36b5d5e8c4cb522adb5dcb8ffa40132ddbf99ef_002_20260707165556_0020_dnld",
+        "germanName": "Löwe",
+        "originalFileName": "T15951A280792135.jpg",
+        "importedAt": "2026-06-30T16:58:18.832Z",
+        "updatedAt": "2026-06-30T16:58:18.832Z",
+        "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
       }
     }
   },
