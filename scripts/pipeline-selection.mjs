@@ -115,6 +115,7 @@ export function buildPipelinePlan({
       const creditsPath = path.join(assetDir, "credits.json");
       const credits = readJson(creditsPath, {});
       const soundIsManual = assetOverrides.assets?.[safeName]?.sound?.manual === true;
+      const explicitlyTargeted = requestedTargetSlugs.has(normalized(slug));
       if (!existing) {
         // Neue Arten werden weiterhin vom Modus "missing" verarbeitet.
       } else if (fs.existsSync(soundPath) && isNcLicense(credits.license) && !soundIsManual) {
@@ -123,6 +124,8 @@ export function buildPipelinePlan({
         reasons.push("Sound fehlt; automatische Quelle suchen");
       } else if (!soundIsManual && fs.existsSync(soundPath) && !fs.existsSync(creditsPath)) {
         reasons.push("Sound-Credits fehlen; dokumentierte freie Alternative suchen");
+      } else if (explicitlyTargeted && !soundIsManual && fs.existsSync(soundPath) && fs.existsSync(creditsPath)) {
+        reasons.push("gezielte Soundalternative suchen");
       }
     }
 

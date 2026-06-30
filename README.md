@@ -179,7 +179,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 47 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
+- alle 46 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
@@ -235,8 +235,9 @@ letzten Detailblocks. Dadurch haengt die gleichzeitig sichtbare Anzahl von der t
 weitere Treffer werden innerhalb der Liste gescrollt. Die Hoehe wird bei Artwechsel und Fenstergroessenaenderung
 neu an der Unterkante des letzten sichtbaren Detailblocks ausgerichtet.
 
-Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. Die Aktionen `Bearbeiten` und `Löschen` stehen im Artkopf
-oben rechts, weil sie langfristig für die gesamte Art einschließlich manueller Daten, Karten und Sounds gelten:
+Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. `Löschen` steht im Artkopf oben rechts. `Bearbeiten` steht
+direkt an den bearbeitbaren Bereichen `Manuelle Daten`, `Artporträt`, `Verbreitungskarte` und `Tierstimme`; der
+Dialog öffnet jeweils nur den gewählten Bereich, damit nicht alle Pflegefelder gleichzeitig sichtbar sind:
 
 - editierbar: `size`, `weight`, `life_expectancy`
 - gesperrt: deutscher Name, Gattung, Art und alle generierten IUCN-Felder
@@ -290,8 +291,8 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist wieder enthalten; seine Karte
-fehlt aktuell und wird vom erweiterten Lauf `Manuelle Karten erneut suchen` mitverarbeitet.
+Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Der Löwe wurde am 2026-06-30 fuer den
+erneuten Neue-Art-Test wieder vollständig entfernt.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -314,8 +315,8 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - `Bereinigen` löscht nach einer einzigen klaren Bestätigung verwaiste Daten und Assetordner dauerhaft und ohne
   Wiederherstellungsablage
 - die Bereinigung verschiebt verwaiste Assetordner zuerst nach `species-explorer/cleanup-trash/`, schreibt danach
-  Daten und Report und löscht erst anschließend endgültig; Windows-Dateisperren hinterlassen dadurch keinen
-  inkonsistenten Report mehr
+  Daten und Report und löscht erst anschließend endgültig; kurze Windows-Dateisperren beim Verschieben werden
+  mehrfach erneut versucht und danach per kontrolliertem Kopieren/Original-Löschen abgefangen
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
   bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
@@ -346,13 +347,20 @@ npm.cmd run --silent test:explorer
 ```
 
 Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 umgesetzt. Produktive Kartenimporte werden erst
-nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB; die App prüft Signatur, Struktur, Abmessungen,
-Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
+nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB oder direkte signierte JPEG-Links, z. B. ein im
+Browser geöffneter IUCN-/Backblaze-Kartenlink. Die App lädt die URL serverseitig, prüft Signatur, Struktur,
+Abmessungen, Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
 Im Bearbeitungsdialog kann eine fehlende oder manuell geschützte Karte per `Automatisch suchen` gezielt nur für
 die aktuelle Art gesucht werden. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App
 zu schließen.
+Stand 2026-06-30: Der verwendete IUCN-Webendpunkt
+`https://www.iucnredlist.org/api/v4/assessments/<AssessmentID>/distribution_map/jpg` liefert aus Node lokal
+HTTP 403, obwohl der Browser auf einen zeitlich signierten Backblaze-Link weiterleitet. Die App meldet diesen Fall
+im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
+Kartenimport als Quellen-URL eingefügt und geprüft werden; ein robuster Electron-/Chromium-Fallback für diesen
+signierten Kartenabruf bleibt ein offener Folgeschritt.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -364,10 +372,15 @@ Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 50
 Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden. Dann sichert die App das
 Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
 Report neu auf und committed/pusht die Änderung. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
-Fehlende oder NC-Sounds koennen per `Automatisch suchen` gezielt nur fuer die aktuelle Art gesucht werden. Neu
-gefundene Sounds werden im strukturierten Review mit Spektrogramm und eindeutiger Kennzeichnung `NC` oder `frei`
-angezeigt; Klick ins Spektrogramm springt im Audioplayer an die gewaehlte Stelle. Der Lauf startet im Hintergrund,
-ohne den Bearbeitungsdialog oder die Desktop-App zu schließen.
+Fehlende, NC-Sounds oder bewusst angestoßene Alternativsuchen fuer bereits vorhandene akzeptierte Sounds koennen
+gezielt fuer die aktuelle Art gestartet werden. Bei vorhandenem Sound zeigt der Bearbeitungsdialog den aktuellen
+Sound direkt abspielbar an. Neu gefundene Sounds werden im strukturierten Review dem bisherigen Sound
+gegenuebergestellt, mit Spektrogramm und eindeutiger Kennzeichnung `NC` oder `frei`; Klick ins Spektrogramm springt
+im jeweiligen Audioplayer an die gewaehlte Stelle. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder
+die Desktop-App zu schließen. Der gezielte Alternativlauf ueberspringt die aktuell gespeicherte Quelle temporaer,
+damit nicht derselbe Kandidat erneut vorgeschlagen wird. Wenn kein anderer freier Treffer gefunden wird, prüft der
+gezielte Lauf zusätzlich die bisherigen Xeno-Canto-Fallback-Stufen, damit auch bewusst akzeptierte NC-Alternativen
+als Kandidaten angezeigt werden können.
 
 Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
 erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.
@@ -576,14 +589,13 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 Aktueller lokaler Stand vom 2026-06-29:
 
-- 47 Eintraege in `species_list.json`
-- 47 Arten in der letzten Pipeline-Ausgabe
-- 46 Karten, 46 Sounds, 46 Credits und 46 Spektrogramme
-- 47 Artportraits; 0 Portrait-Assetprobleme
-- 1 Karten-Assetproblem: `Löwe` hat aktuell keine `map.jpg`
+- 46 Eintraege in `species_list.json`
+- 46 Arten in der letzten Pipeline-Ausgabe
+- 46 Karten, 45 Sounds, 45 Credits und 45 Spektrogramme
+- 46 Artportraits; 0 Portrait-Assetprobleme
 - 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
 - 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
-- 4 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`
+- 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

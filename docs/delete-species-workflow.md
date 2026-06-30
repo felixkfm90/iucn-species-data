@@ -1,6 +1,6 @@
 # Arten löschen und Altdateien bereinigen
 
-Stand: 2026-06-28
+Stand: 2026-06-30
 
 Beim Löschen einer Art kann zwischen einem rückholbaren ersten Schritt und der sofortigen dauerhaften Entfernung
 aller zugehörigen Daten gewählt werden.
@@ -50,7 +50,9 @@ Bestätigung:
 
 Nach dieser Bestätigung:
 
-- werden verwaiste Assetordner zuerst in den ignorierten Zwischenordner `species-explorer/cleanup-trash/` verschoben
+- werden verwaiste Assetordner zuerst in den ignorierten Zwischenordner `species-explorer/cleanup-trash/` verschoben;
+  bei kurzen Windows-Dateisperren versucht der Explorer das Verschieben mehrfach und nutzt danach einen
+  Fallback `kopieren -> Original löschen`
 - werden veraltete Einträge aus `speciesData.json` entfernt
 - werden veraltete Assessment-Zuordnungen entfernt
 - werden verwaiste Asset-Pflegeeinträge entfernt
@@ -59,14 +61,16 @@ Nach dieser Bestätigung:
 
 `cleanup-trash` ist keine Wiederherstellungsablage fuer den Anwender, sondern ein technischer Transaktionsbereich.
 Wenn Windows eine Datei beim endgültigen Löschen noch sperrt, sind die produktiven Daten und der Report trotzdem
-konsistent; der Restordner bleibt ignoriert liegen und kann nach Freigabe der Datei erneut entfernt werden. Die in
-der Vorschau aufgelisteten Assetdateien sind nach erfolgreichem Lauf nicht wiederherstellbar.
+konsistent; der Restordner bleibt ignoriert liegen und kann nach Freigabe der Datei erneut entfernt werden. Wenn
+Windows bereits das Entfernen des Original-Assetordners verhindert, bricht der Explorer mit einem klaren Hinweis auf
+die Dateisperre ab und ändert Daten und Report nicht. Die in der Vorschau aufgelisteten Assetdateien sind nach
+erfolgreichem Lauf nicht wiederherstellbar.
 
 ## Sicherheitsgrenzen
 
 - Ein Assetordner wird nur gelöscht, wenn sein aufgelöster Pfad sicher innerhalb von `species-assets/` liegt.
-- Ein Assetordner wird vor dem JSON-Schreibvorgang verschoben. Schlägt dieser Schritt fehl, werden Daten und Report
-  nicht verändert.
+- Ein Assetordner wird vor dem JSON-Schreibvorgang verschoben beziehungsweise bei Windows-Sperren kontrolliert
+  kopiert und aus dem Produktivordner entfernt. Schlägt dieser Schritt fehl, werden Daten und Report nicht verändert.
 - Aktuelle `SafeName`-Ordner aus `species_list.json` werden nicht als verwaist eingestuft.
 - Die Bereinigung startet nur nach einer aktuellen Vorschau mit einmaligem Token.
 - Der Bereinigungsplan trägt ausdrücklich `mode: cleanup`; damit startet die App das Löschskript und nicht

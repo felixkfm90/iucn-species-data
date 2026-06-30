@@ -58,6 +58,97 @@ function uniqueCleanupTrashRunDirectory(repoRoot) {
   return path.join(cleanupTrashRoot(repoRoot), `cleanup-${new Date().toISOString().replace(/[:.]/g, "-")}-${process.pid}`);
 }
 
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function withRetry(operation, { attempts = 10, delay = 150 } = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return operation();
+    } catch (error) {
+      lastError = error;
+      if (!["EPERM", "EBUSY", "ENOTEMPTY"].includes(error.code) || attempt === attempts) break;
+      sleepSync(delay);
+    }
+  }
+  throw lastError;
+}
+
+function isDirectoryEmpty(directory) {
+  return fs.existsSync(directory)
+    && fs.statSync(directory).isDirectory()
+    && fs.readdirSync(directory).length === 0;
+}
+
+function stageDirectoryWithWindowsFallback(source, target) {
+  try {
+    withRetry(() => fs.renameSync(source, target));
+    return;
+  } catch (renameError) {
+    if (!["EPERM", "EBUSY", "EXDEV"].includes(renameError.code)) {
+      throw renameError;
+    }
+
+    try {
+      fs.cpSync(source, target, {
+        recursive: true,
+        errorOnExist: true,
+        force: false,
+      });
+    } catch (copyError) {
+      throw new Error(
+        `Assetordner konnte nicht in den Bereinigungsbereich verschoben werden: ${source}. `
+        + `Verschieben: ${renameError.message}; Kopieren: ${copyError.message}`,
+      );
+    }
+
+    try {
+      withRetry(() => {
+        fs.rmSync(source, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 200,
+        });
+        if (fs.existsSync(source)) {
+          const error = new Error(`Assetordner existiert nach dem Entfernen weiterhin: ${source}`);
+          error.code = "EPERM";
+          throw error;
+        }
+      });
+    } catch (removeError) {
+      let restoreError = null;
+      try {
+        fs.mkdirSync(source, { recursive: true });
+        fs.cpSync(target, source, {
+          recursive: true,
+          force: true,
+        });
+      } catch (error) {
+        restoreError = error;
+      }
+      try {
+        fs.rmSync(target, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 200,
+        });
+      } catch {
+        // Der kopierte Zwischenstand liegt im ignorierten Cleanup-Trash und kann spaeter entfernt werden.
+      }
+      throw new Error(
+        `Assetordner ist durch Windows noch gesperrt und konnte nicht entfernt werden: ${source}. `
+        + "Bitte Detailansicht, Explorer-Vorschau oder andere Fenster mit diesen Dateien schliessen und erneut versuchen. "
+        + `Originalfehler: ${removeError.message}`
+        + (restoreError ? `; Wiederherstellung fehlgeschlagen: ${restoreError.message}` : ""),
+      );
+    }
+  }
+}
+
 function stageAssetDirectory(repoRoot, safeName, trashRunDirectory) {
   const source = resolveAssetDirectory(repoRoot, safeName);
   if (!fs.existsSync(source)) {
@@ -84,7 +175,7 @@ function stageAssetDirectory(repoRoot, safeName, trashRunDirectory) {
     throw new Error(`Unsicherer Papierkorbpfad: ${resolvedTarget}`);
   }
 
-  fs.renameSync(source, resolvedTarget);
+  stageDirectoryWithWindowsFallback(source, resolvedTarget);
   return {
     safeName,
     existed: true,
@@ -98,7 +189,15 @@ function restoreStagedAssetDirectories(stagedEntries) {
   for (const entry of [...stagedEntries].reverse()) {
     if (!entry.existed || !entry.staged || !fs.existsSync(entry.staged)) continue;
     if (fs.existsSync(entry.source)) {
-      throw new Error(`Assetordner kann nicht wiederhergestellt werden, Ziel existiert bereits: ${entry.source}`);
+      if (!isDirectoryEmpty(entry.source)) {
+        throw new Error(`Assetordner kann nicht wiederhergestellt werden, Ziel existiert bereits: ${entry.source}`);
+      }
+      fs.rmSync(entry.source, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 200,
+      });
     }
     fs.renameSync(entry.staged, entry.source);
   }

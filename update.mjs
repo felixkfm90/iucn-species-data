@@ -183,11 +183,11 @@ function rejectedSoundKeys(safeName) {
     .filter(Boolean));
 }
 
-function isRejectedSoundCandidate(safeName, key, german) {
+function isRejectedSoundCandidate(safeName, key, german, extraRejectedKeys = new Set()) {
   const normalizedKey = String(key ?? "").trim();
   if (!normalizedKey) return false;
   const rejected = rejectedSoundKeys(safeName);
-  if (!rejected.has(normalizedKey)) return false;
+  if (!rejected.has(normalizedKey) && !extraRejectedKeys.has(normalizedKey)) return false;
   console.log(`↩ Abgelehnte Soundquelle wird übersprungen für ${german}: ${normalizedKey}`);
   return true;
 }
@@ -207,6 +207,32 @@ function inatRejectionKey(hit) {
   const observationId = String(hit?.observation?.id ?? "").trim();
   const soundId = String(hit?.sound?.id ?? hit?.sound?.uuid ?? hit?.url ?? "").trim();
   return `inaturalist:${observationId}:${soundId || "unknown"}`;
+}
+
+function soundRejectionKeyFromCredits(credits) {
+  const explicit = String(credits?.rejectionKey ?? "").trim();
+  if (explicit) return explicit;
+  const source = String(credits?.source ?? "").toLocaleLowerCase("de");
+  const url = String(credits?.url ?? "").trim();
+  const notes = String(credits?.notes ?? "").trim();
+  const xenoMatch = url.match(/xeno-canto\.org\/(\d+)/i) || notes.match(/xeno-canto\.org\/(\d+)/i);
+  if (source.includes("xeno") && xenoMatch) return `xeno-canto:${xenoMatch[1]}`;
+  if (source.includes("wikimedia")) return `wikimedia-commons:${url || notes}`;
+  if (source.includes("inaturalist")) {
+    const observation = notes.match(/Observation=([^|\s]+)/i)?.[1] ?? "";
+    const sound = notes.match(/sound=([^|\s]+)/i)?.[1] ?? "";
+    if (observation || sound) return `inaturalist:${observation}:${sound || url}`;
+  }
+  return "";
+}
+
+function soundRejectionKeyFromCreditsFile(creditsPath) {
+  if (!fs.existsSync(creditsPath)) return "";
+  try {
+    return soundRejectionKeyFromCredits(JSON.parse(fs.readFileSync(creditsPath, "utf8")));
+  } catch {
+    return "";
+  }
 }
 
 async function sleep(ms) {
@@ -437,7 +463,7 @@ function numericId(value) {
 
 function taxonIdFromTaxon(taxon) {
   if (!taxon || typeof taxon !== "object") return "";
-  for (const key of ["sis_taxon_id", "taxon_id", "taxonid", "taxonId", "id"]) {
+  for (const key of ["sis_id", "sis_taxon_id", "taxon_id", "taxonid", "taxonId", "id"]) {
     const id = numericId(taxon[key]);
     if (id) return id;
   }
@@ -471,7 +497,17 @@ async function fetchValidJpeg(url) {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const host = new URL(url).hostname;
+    if (res.status === 403 && host.includes("iucnredlist.org")) {
+      console.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403). Im Browser sichtbare Karten nutzen vermutlich eine signierte Weiterleitung.");
+    } else if (res.status === 401 && host.includes("backblazeb2.com")) {
+      console.warn("⚠ IUCN-Cache-Datei benötigt einen signierten Backblaze-Link; öffentlicher Cachepfad ist nicht direkt abrufbar.");
+    } else {
+      console.warn(`⚠ JPEG-Abruf fehlgeschlagen (${res.status}) bei ${host}.`);
+    }
+    return null;
+  }
   const buffer = Buffer.from(await res.arrayBuffer());
   return buffer.length >= 10_000 && isJpegBuffer(buffer) ? buffer : null;
 }
@@ -806,7 +842,7 @@ function scoreCommonsHit(hit, genus, species) {
   return score;
 }
 
-async function findCommonsRecording(genus, species, german, safeName) {
+async function findCommonsRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
   const queries = [
     `${genus} ${species} audio`,
     `${genus} ${species} sound`,
@@ -823,7 +859,7 @@ async function findCommonsRecording(genus, species, german, safeName) {
       if (seen.has(key)) continue;
       seen.add(key);
       if (!isExactCommonsSpecies(hit, genus, species)) continue;
-      if (isRejectedSoundCandidate(safeName, commonsRejectionKey(hit), german)) continue;
+      if (isRejectedSoundCandidate(safeName, commonsRejectionKey(hit), german, extraRejectedKeys)) continue;
       candidates.push(hit);
     }
     await sleep(150);
@@ -898,7 +934,7 @@ async function fetchInatObservations(genus, species, qualityGrade) {
   }
 }
 
-async function findInatRecording(genus, species, german, safeName) {
+async function findInatRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
   const scientific = `${genus} ${species}`.toLowerCase();
   const qualityPasses = ["research", "needs_id", ""];
   const seen = new Set();
@@ -925,7 +961,7 @@ async function findInatRecording(genus, species, german, safeName) {
         if (!isOpenCommercialLicense(license)) continue;
         if (!isDirectMp3Sound(sound)) continue;
         const candidate = { observation, sound, url, qualityGrade: qualityGrade || "any" };
-        if (isRejectedSoundCandidate(safeName, inatRejectionKey(candidate), german)) continue;
+        if (isRejectedSoundCandidate(safeName, inatRejectionKey(candidate), german, extraRejectedKeys)) continue;
         if (!(await isReachableMp3(url))) continue;
 
         return candidate;
@@ -939,7 +975,7 @@ async function findInatRecording(genus, species, german, safeName) {
   return null;
 }
 
-async function downloadSoundIfMissing(genus, species, german) {
+async function downloadSoundIfMissing(genus, species, german, { forceAlternativeSearch = false } = {}) {
   const safeGerman = sanitizeAssetName(german);
   const targetDir = speciesAssetDir(safeGerman);
 
@@ -947,7 +983,11 @@ async function downloadSoundIfMissing(genus, species, german) {
 
   const mp3Path = path.join(targetDir, "sound.mp3");
   const creditsPath = path.join(targetDir, "credits.json");
-  const rejectXenoCandidate = (recording) => isRejectedSoundCandidate(safeGerman, xenoRejectionKey(recording), german);
+  const extraRejectedKeys = new Set();
+  const currentSoundKey = forceAlternativeSearch ? soundRejectionKeyFromCreditsFile(creditsPath) : "";
+  if (currentSoundKey) extraRejectedKeys.add(currentSoundKey);
+  const rejectXenoCandidate = (recording) =>
+    isRejectedSoundCandidate(safeGerman, xenoRejectionKey(recording), german, extraRejectedKeys);
 
   if (fs.existsSync(mp3Path) && isManualAsset(safeGerman, "sound")) {
     console.log(`🎵 Manuell gepflegter Sound für ${german} ist geschützt, überspringe Suche.`);
@@ -976,13 +1016,15 @@ async function downloadSoundIfMissing(genus, species, german) {
     const hasCredits = fs.existsSync(creditsPath);
     const existingLicense = readSoundLicense(creditsPath);
 
-    if (hasCredits && !isNcLicense(existingLicense)) {
+    if (hasCredits && !isNcLicense(existingLicense) && !forceAlternativeSearch) {
       console.log(`🎵 Sound existiert bereits für ${german}`);
       return "ok";
     }
 
     console.log(
-      hasCredits
+      forceAlternativeSearch && hasCredits
+        ? `🎵 Sound existiert für ${german}; suche gezielt nach einer Alternative.`
+        : hasCredits
         ? `🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`
         : `🎵 Sound ohne Credits existiert für ${german}; prüfe dokumentierte freie Alternative.`,
     );
@@ -1005,7 +1047,7 @@ async function downloadSoundIfMissing(genus, species, german) {
       }
     }
 
-    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman);
+    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman, extraRejectedKeys);
     if (commonsHit) {
       console.log(`✔ Freie Commons-Alternative gefunden für ${german}.`);
       return await saveCommonsSoundRecording({
@@ -1018,7 +1060,7 @@ async function downloadSoundIfMissing(genus, species, german) {
       });
     }
 
-    const inatHit = await findInatRecording(genus, species, german, safeGerman);
+    const inatHit = await findInatRecording(genus, species, german, safeGerman, extraRejectedKeys);
     if (inatHit) {
       console.log(`✔ Freie iNaturalist-Alternative gefunden für ${german}.`);
       return await saveInatSoundRecording({
@@ -1031,8 +1073,31 @@ async function downloadSoundIfMissing(genus, species, german) {
       });
     }
 
+    if (forceAlternativeSearch) {
+      for (let i = 0; i < fallbackStages.length; i++) {
+        const hit = await findRecordingByStage(genus, species, fallbackStages[i], { isRejected: rejectXenoCandidate });
+        if (hit?.rec) {
+          const originalStageIndex = stages.indexOf(fallbackStages[i]);
+          console.log(`✔ Weitere Soundalternative gefunden für ${german} (Stage ${originalStageIndex}).`);
+          return await saveSoundRecording({
+            genus,
+            species,
+            german,
+            mp3Path,
+            creditsPath,
+            chosen: hit.rec,
+            chosenInfo: hit,
+            chosenStageIndex: originalStageIndex,
+            stages,
+          });
+        }
+      }
+    }
+
     console.log(
-      hasCredits
+      forceAlternativeSearch && hasCredits
+        ? `ℹ Keine weitere Soundalternative gefunden für ${german}; vorhandener Sound bleibt erhalten.`
+        : hasCredits
         ? `ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`
         : `⚠ Keine dokumentierte freie Alternative gefunden für ${german}; vorhandener Sound bleibt ohne Credits.`,
     );
@@ -1054,7 +1119,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   if (!chosen) {
-    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman);
+    const commonsHit = await findCommonsRecording(genus, species, german, safeGerman, extraRejectedKeys);
     if (commonsHit) {
       console.log(`✔ Freie Commons-Aufnahme gefunden für ${german}.`);
       return await saveCommonsSoundRecording({
@@ -1069,7 +1134,7 @@ async function downloadSoundIfMissing(genus, species, german) {
   }
 
   if (!chosen) {
-    const inatHit = await findInatRecording(genus, species, german, safeGerman);
+    const inatHit = await findInatRecording(genus, species, german, safeGerman, extraRejectedKeys);
     if (inatHit) {
       console.log(`✔ Freie iNaturalist-Aufnahme gefunden für ${german}.`);
       return await saveInatSoundRecording({
@@ -1479,9 +1544,16 @@ function printReportToConsole(report) {
 
       output.push(data);
 
+      const forceSoundAlternativeSearch = args.mode === "nc-sounds"
+        && args.targetSlugs.includes(currentSlug);
       const soundStatus = args.mode === "manual-maps"
         ? "ok"
-        : await downloadSoundIfMissing(s.genus, s.species, s.german);
+        : await downloadSoundIfMissing(
+          s.genus,
+          s.species,
+          s.german,
+          { forceAlternativeSearch: forceSoundAlternativeSearch },
+        );
       const mapStatus = args.mode === "nc-sounds"
         ? "ok"
         : await downloadMapForSpecies(

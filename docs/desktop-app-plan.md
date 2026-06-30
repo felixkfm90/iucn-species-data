@@ -550,9 +550,9 @@ Abgeschlossene Teilstufen:
    umgesetzt
 5. kostenfreier Artportraet-Prompt-/Importworkflow mit Einzel- und Sammelprompts, Prüfung, Backup und Git-Push
 
-Der Kartenimport akzeptiert nur JPEG bis 20 MB, prüft Magic Bytes und Abmessungen, nutzt Staging und ein
-Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen Pipeline-Schutz. Assetbackups sind auf drei
-Versionen je Art/Karte und insgesamt 500 MB begrenzt.
+Der Kartenimport akzeptiert JPEG bis 20 MB als Datei oder direkten signierten JPEG-Link, prüft Magic Bytes und
+Abmessungen, nutzt Staging und ein Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen
+Pipeline-Schutz. Assetbackups sind auf drei Versionen je Art/Karte und insgesamt 500 MB begrenzt.
 
 Der Soundimport akzeptiert nur MP3 bis 50 MB und verlangt Pflegegrund, Aufnahme/Urheber, Quelle, Original-URL und
 Lizenz. Wissenschaftlicher und deutscher Name werden aus der Art übernommen. Die Vorschau spielt alten und neuen

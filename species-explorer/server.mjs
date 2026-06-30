@@ -65,6 +65,7 @@ const PREVIEW_TOKEN_TTL_MS = 10 * 60 * 1000;
 const MAX_JSON_BODY_BYTES = 16 * 1024;
 const MAX_MAP_BYTES = 20 * 1024 * 1024;
 const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
+const MAP_SOURCE_FETCH_TIMEOUT_MS = 30_000;
 const MAX_SOUND_BYTES = 50 * 1024 * 1024;
 const MAX_SOUND_PREVIEW_BODY_BYTES = 68 * 1024 * 1024;
 const MAX_PORTRAIT_BYTES = 20 * 1024 * 1024;
@@ -765,10 +766,61 @@ async function pruneAssetBackups(assetBackupRoot) {
   };
 }
 
-function validateMapPreviewPayload(payload) {
+function mapOriginalNameFromSource(source) {
+  try {
+    const parsed = new URL(source);
+    const name = decodeURIComponent(parsed.pathname.split("/").filter(Boolean).pop() || "");
+    return /\.jpe?g$/i.test(name) ? name : "source-url.jpg";
+  } catch {
+    return "source-url.jpg";
+  }
+}
+
+async function fetchMapPreviewSource(source) {
+  const parsed = new URL(source);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MAP_SOURCE_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(source, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        Accept: "image/jpeg,image/*;q=0.8,*/*;q=0.5",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
+    });
+    if (!response.ok) {
+      const host = parsed.hostname.toLowerCase();
+      if (response.status === 403 && host.includes("iucnredlist.org")) {
+        throw new Error(
+          "IUCN blockiert den lokalen Kartenabruf. Bitte den im Browser geöffneten signierten Backblaze-JPEG-Link als Quellen-URL einfügen.",
+        );
+      }
+      throw new Error(`Karten-URL konnte nicht geladen werden (HTTP ${response.status}).`);
+    }
+    const contentLength = Number(response.headers.get("content-length") || 0);
+    if (contentLength > MAX_MAP_BYTES) {
+      throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > MAX_MAP_BYTES) {
+      throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+    }
+    return buffer;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Karten-URL hat nicht rechtzeitig geantwortet");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function validateMapPreviewPayload(payload) {
   const reason = String(payload?.reason ?? "").trim();
   const source = String(payload?.source ?? "").trim();
-  const originalName = String(payload?.originalName ?? "").trim();
+  let originalName = String(payload?.originalName ?? "").trim();
   const imageBase64 = String(payload?.imageBase64 ?? "").trim();
   const errors = [];
 
@@ -787,16 +839,26 @@ function validateMapPreviewPayload(payload) {
     }
   }
   if (source.length > 2000) errors.push("Quellen-URL darf maximal 2000 Zeichen enthalten");
-  if (!/\.jpe?g$/i.test(originalName)) errors.push("Es sind nur JPEG-Dateien erlaubt");
-  if (!imageBase64) errors.push("JPEG-Datei fehlt");
+  if (imageBase64 && !/\.jpe?g$/i.test(originalName)) errors.push("Es sind nur JPEG-Dateien erlaubt");
+  if (!imageBase64 && !source) errors.push("JPEG-Datei oder direkter JPEG-Link fehlt");
   if (errors.length) return { errors };
 
   let buffer;
-  try {
-    buffer = Buffer.from(imageBase64, "base64");
-  } catch {
-    errors.push("JPEG-Datei konnte nicht gelesen werden");
-    return { errors };
+  if (imageBase64) {
+    try {
+      buffer = Buffer.from(imageBase64, "base64");
+    } catch {
+      errors.push("JPEG-Datei konnte nicht gelesen werden");
+      return { errors };
+    }
+  } else {
+    try {
+      buffer = await fetchMapPreviewSource(source);
+      originalName = mapOriginalNameFromSource(source);
+    } catch (error) {
+      errors.push(error.message || "Karten-URL konnte nicht geladen werden");
+      return { errors };
+    }
   }
   if (!buffer.length) errors.push("JPEG-Datei ist leer");
   if (buffer.length > MAX_MAP_BYTES) errors.push("JPEG-Datei darf maximal 20 MB groß sein");
@@ -2050,6 +2112,9 @@ export async function createExplorerServer({
 
   function detectNewPipelineAssets(plan) {
     const additions = [];
+    const backupFileUrl = (safeName, fileName) =>
+      `/api/pipeline/assets/backup-file?runId=${encodeURIComponent(pipelineState.runId)}`
+      + `&safeName=${encodeURIComponent(safeName)}&file=${encodeURIComponent(fileName)}`;
     for (const target of plan.targets ?? []) {
       const assetDir = join(repoRoot, "species-assets", target.safeName);
       for (const [type, fileName, label] of [
@@ -2091,11 +2156,47 @@ export async function createExplorerServer({
               ? String(credits.source ?? "").trim()
               : "",
             backupFiles: before.backupFiles,
+            previousUrl: type === "sound" && existsSync(before.backupFiles?.["sound.mp3"] || "")
+              ? backupFileUrl(target.safeName, "sound.mp3")
+              : "",
+            previousSpectrogramUrl: type === "sound" && existsSync(before.backupFiles?.["spectrogram.webp"] || "")
+              ? backupFileUrl(target.safeName, "spectrogram.webp")
+              : "",
           });
         }
       }
     }
     return additions;
+  }
+
+  async function sendPipelineBackupFile(url, request, response) {
+    const runId = String(url.searchParams.get("runId") ?? "");
+    const safeName = String(url.searchParams.get("safeName") ?? "");
+    const fileName = String(url.searchParams.get("file") ?? "");
+    const allowedFiles = new Set(["sound.mp3", "spectrogram.webp"]);
+    if (
+      !runId
+      || runId !== pipelineState.runId
+      || pipelineState.status !== "awaiting-review"
+      || sanitizeAssetName(safeName) !== safeName
+      || !allowedFiles.has(fileName)
+    ) {
+      sendText(response, 404, "Nicht gefunden");
+      return;
+    }
+
+    const asset = pipelineState.reviewAssets.find((entry) =>
+      entry.safeName === safeName && entry.type === "sound"
+    );
+    const backupPath = asset?.backupFiles?.[fileName] ?? "";
+    const resolvedBackupPath = resolve(backupPath);
+    const allowedRoot = `${resolve(pipelineAssetBackupRoot, runId, safeName)}${sep}`;
+    if (!backupPath || !resolvedBackupPath.startsWith(allowedRoot)) {
+      sendText(response, 404, "Nicht gefunden");
+      return;
+    }
+
+    await sendFile(request, response, resolvedBackupPath);
   }
 
   function runPipelineChild(command, args, phase, { stdoutFormatter = null } = {}) {
@@ -2900,7 +3001,7 @@ export async function createExplorerServer({
       error.statusCode = species ? 409 : 404;
       throw error;
     }
-    const validated = validateMapPreviewPayload(payload);
+    const validated = await validateMapPreviewPayload(payload);
     if (validated.errors.length) {
       const error = new Error("Karten-Datei oder Angaben sind ungültig");
       error.statusCode = 400;
@@ -4887,6 +4988,11 @@ export async function createExplorerServer({
 
       if (url.pathname === "/api/pipeline/status") {
         sendJson(response, 200, pipelineState);
+        return;
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/pipeline/assets/backup-file") {
+        await sendPipelineBackupFile(url, request, response);
         return;
       }
 

@@ -467,7 +467,7 @@ button.danger,
 }
 
 .asset-review-item[data-type="sound"] {
-  grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
+  grid-template-columns: minmax(360px, 46%) minmax(0, 1fr);
 }
 
 .asset-review-preview {
@@ -521,6 +521,19 @@ button.danger,
   width: 100%;
   display: grid;
   gap: 6px;
+}
+
+.asset-review-sound-compare {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.asset-review-sound-preview > strong {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  text-transform: uppercase;
 }
 
 .asset-review-spectrogram {
@@ -1030,6 +1043,33 @@ button:focus-visible {
   font-size: 0.78rem;
   text-transform: uppercase;
   border-bottom: 1px solid var(--line);
+}
+
+.section-heading {
+  min-height: 39px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-heading .section-title {
+  min-height: 0;
+  flex: 1 1 auto;
+  border-bottom: 0;
+}
+
+.inline-edit-open {
+  align-self: center;
+  margin-right: 10px;
+  padding: 6px 9px;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid #b9d9ca;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 750;
 }
 
 .map-frame {
@@ -1627,6 +1667,43 @@ button:focus-visible {
   font-weight: 650;
 }
 
+.manual-edit-section {
+  margin-top: 6px;
+}
+
+.manual-edit-section > header {
+  margin-bottom: 12px;
+}
+
+.manual-edit-section h4 {
+  margin: 0 0 3px;
+  font-size: 0.9rem;
+}
+
+.manual-edit-section header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.edit-dialog[data-active-section="manual"] .portrait-edit-section,
+.edit-dialog[data-active-section="manual"] .map-edit-section,
+.edit-dialog[data-active-section="manual"] .sound-edit-section,
+.edit-dialog[data-active-section="portrait"] .manual-edit-section,
+.edit-dialog[data-active-section="portrait"] .map-edit-section,
+.edit-dialog[data-active-section="portrait"] .sound-edit-section,
+.edit-dialog[data-active-section="portrait"] .manual-edit-actions,
+.edit-dialog[data-active-section="map"] .manual-edit-section,
+.edit-dialog[data-active-section="map"] .portrait-edit-section,
+.edit-dialog[data-active-section="map"] .sound-edit-section,
+.edit-dialog[data-active-section="map"] .manual-edit-actions,
+.edit-dialog[data-active-section="sound"] .manual-edit-section,
+.edit-dialog[data-active-section="sound"] .portrait-edit-section,
+.edit-dialog[data-active-section="sound"] .map-edit-section,
+.edit-dialog[data-active-section="sound"] .manual-edit-actions {
+  display: none;
+}
+
 .portrait-edit-section,
 .new-species-portrait {
   margin-top: 18px;
@@ -2155,8 +2232,10 @@ button:focus-visible {
 }
 
 .map-compare-frame img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   display: block;
   object-fit: contain;
 }
@@ -2252,6 +2331,33 @@ button:focus-visible {
 
 .sound-species-lock strong {
   font-size: 0.78rem;
+}
+
+.current-sound-preview {
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(160px, 0.34fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.current-sound-preview strong {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.current-sound-preview span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.current-sound-preview audio {
+  width: 100%;
+  min-height: 38px;
 }
 
 .sound-edit-fields {

@@ -191,10 +191,10 @@ Technischer Stand vom 2026-06-29:
 
 Aktueller redaktioneller Stand:
 
-- 47 Eintraege in `species_list.json`
+- 46 Eintraege in `species_list.json`
 - Haubentaucher und Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28
   bereinigt
-- Löwe ist aktuell wieder enthalten; seine Karte fehlt noch und wird vom erweiterten Kartensuchlauf verarbeitet
+- Löwe wurde am 2026-06-30 fuer einen sauberen erneuten Neue-Art-Test wieder vollständig entfernt
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import fs, { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer as createHttpServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -17,7 +18,7 @@ import {
   synchronizeManualMapDocumentation,
 } from "./server.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
-import { buildCleanupPlan, runCleanup } from "../scripts/species-cleanup.mjs";
+import { buildCleanupPlan, runCleanup, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
 import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
@@ -931,6 +932,37 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.equal(preview.newMap.bytes, jpeg.length);
   assert.equal(preview.currentMap.exists, true);
 
+  const linkedJpeg = createTestJpeg(800, 500);
+  const sourceServer = createHttpServer((request, response) => {
+    response.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": String(linkedJpeg.length),
+    });
+    response.end(linkedJpeg);
+  });
+  await new Promise((resolve, reject) => {
+    sourceServer.once("error", reject);
+    sourceServer.listen(0, "127.0.0.1", resolve);
+  });
+  context.after(() => sourceServer.close());
+  const sourceAddress = sourceServer.address();
+  const sourceUrl = `http://127.0.0.1:${sourceAddress.port}/iucn-map.jpg?Authorization=test`;
+  const linkPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "",
+      imageBase64: "",
+      reason: "Manuell geprüfter Kartenlink",
+      source: sourceUrl,
+    }),
+  });
+  assert.equal(linkPreviewResponse.status, 200);
+  const linkPreview = await linkPreviewResponse.json();
+  assert.deepEqual(linkPreview.newMap.dimensions, { width: 800, height: 500 });
+  assert.equal(linkPreview.newMap.bytes, linkedJpeg.length);
+  assert.equal(linkPreview.source, sourceUrl);
+
   const previewFile = await fetch(`${baseUrl}${preview.newMap.url}`);
   assert.equal(previewFile.status, 200);
   assert.equal(previewFile.headers.get("content-type"), "image/jpeg");
@@ -1471,6 +1503,59 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
   assert.equal(recreateResponse.status, 200);
 });
 
+test("Artbereinigung stellt Assets nach Windows-Dateisperre wieder her", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDir = join(repoRoot, "species-assets", "Amsel");
+  await writeFile(join(repoRoot, "species_list.json"), "[]\n", "utf8");
+
+  const originalRmSync = fs.rmSync;
+  const originalRenameSync = fs.renameSync;
+  let simulatedLockCount = 0;
+  fs.renameSync = function patchedRenameSync(sourcePath, targetPath) {
+    const normalized = String(sourcePath).replace(/\\/g, "/");
+    if (normalized.endsWith("/species-assets/Amsel")) {
+      const error = new Error("simulierter Rename-Fehler");
+      error.code = "EPERM";
+      throw error;
+    }
+    return originalRenameSync.call(fs, sourcePath, targetPath);
+  };
+  fs.rmSync = function patchedRmSync(targetPath, options) {
+    const normalized = String(targetPath).replace(/\\/g, "/");
+    if (normalized.endsWith("/species-assets/Amsel")) {
+      simulatedLockCount += 1;
+      if (simulatedLockCount === 1) {
+        for (const entry of fs.readdirSync(targetPath)) {
+          originalRmSync.call(fs, join(targetPath, entry), { recursive: true, force: true });
+        }
+      }
+      const error = new Error("simulierte Windows-Dateisperre");
+      error.code = "EPERM";
+      throw error;
+    }
+    return originalRmSync.call(fs, targetPath, options);
+  };
+
+  try {
+    assert.throws(
+      () => runSpeciesCleanup(repoRoot, { slug: "turdusmerula", safeName: "Amsel" }),
+      /Windows noch gesperrt|simulierte Windows-Dateisperre/,
+    );
+  } finally {
+    fs.rmSync = originalRmSync;
+    fs.renameSync = originalRenameSync;
+  }
+
+  assert.equal(simulatedLockCount > 1, true);
+  assert.equal(existsSync(assetDir), true);
+  assert.equal(existsSync(join(assetDir, "map.jpg")), true);
+  assert.equal(existsSync(join(assetDir, "sound.mp3")), true);
+  assert.equal(existsSync(join(assetDir, "credits.json")), true);
+  assert.equal(existsSync(join(assetDir, "spectrogram.webp")), true);
+  assert.equal(JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8")).length, 1);
+});
+
 test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async () => {
   const model = await buildExplorerModel();
   const { filterSpecies } = globalThis.SpeciesExplorerFilters;
@@ -1488,7 +1573,7 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
     ["Amsel"],
   );
   assert.equal(filterSpecies(model.species, { flag: "nc" }).length, model.summary.ncSoundCount);
-  assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, 4);
+  assert.equal(filterSpecies(model.species, { flag: "manual-map" }).length, model.summary.manualMapCount);
   assert.equal(
     filterSpecies(model.species, { flag: "missing-portrait" }).length,
     model.summary.missingPortraitCount,
@@ -1654,7 +1739,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
   assert.match(appSource, /Bisherige manuelle Karte behalten/);
-  assert.match(appSource, /Aktuellen Sound übernehmen \(\$\{soundKind\}\)/);
+  assert.match(appSource, /Gefundenen Sound übernehmen \(\$\{soundKind\}\)/);
   assert.match(appSource, /Sound nicht übernehmen/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
@@ -1730,7 +1815,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
   assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(serverSource, /\/api\/pipeline\/assets\/backup-file/);
   assert.match(serverSource, /pipeline-asset-backups/);
+  assert.match(serverSource, /sendPipelineBackupFile/);
   assert.match(serverSource, /soundRejectionKeyFromCredits/);
   assert.match(serverSource, /rejectedSoundSourceFromCredits/);
   assert.match(serverSource, /Karte abgelehnt und entfernt/);
@@ -1760,6 +1847,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /rejectedSoundKeys/);
   assert.match(updateSource, /isRejectedSoundCandidate/);
   assert.match(updateSource, /rejectionKey/);
+  assert.match(updateSource, /forceAlternativeSearch[\s\S]*fallbackStages[\s\S]*Weitere Soundalternative gefunden/);
   assert.match(updateSource, /--species=/);
   assert.equal(assetOverrides.assets.Blaukehlchen.map.manual, true);
   assert.match(appSource, /function setupSpeciesDelete\(species\)/);
@@ -1773,6 +1861,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-auto-search-button"/);
   assert.match(appSource, /openPipelinePreview\("manual-maps"/);
   assert.match(appSource, /silent: true/);
+  assert.match(appSource, /direkter Karten-JPEG-Link/);
   assert.match(appSource, /class="map-preview-button"/);
   assert.match(appSource, /class="map-save-button"/);
   assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
@@ -1806,14 +1895,18 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(cssSource, /\.asset-file-field input\[type="file"\]/);
   assert.match(cssSource, /\.asset-reason-field textarea/);
-  assert.match(
+  assert.doesNotMatch(
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
   );
-  assert.doesNotMatch(
-    appSource,
-    /<h3 class="section-title">Manuelle Daten<\/h3>[\s\S]{0,400}edit-species-open/,
-  );
+  assert.match(appSource, /function inlineEditButton\(section\)/);
+  assert.match(appSource, /inlineEditButton\("manual"\)/);
+  assert.match(appSource, /species\.inInput \? "map" : ""/);
+  assert.match(appSource, /inlineEditButton\("sound"\)/);
+  assert.match(appSource, /inlineEditButton\("portrait"\)/);
+  assert.match(appSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
+  assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);
+  assert.match(cssSource, /\.edit-dialog\[data-active-section="map"\]\s+\.manual-edit-section/);
   assert.match(appSource, /const saveAndStartPipeline = async \(\) =>/);
   assert.match(appSource, /state\.newSpeciesPipelineActive = true/);
   assert.match(appSource, /\/api\/pipeline\/preview/);
@@ -1888,7 +1981,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="asset-review-map-lightbox"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox-image"/);
   assert.match(appSource, /value="reject"/);
-  assert.match(appSource, /Sound ablehnen und Quelle merken/);
+  assert.match(appSource, /Gefundenen Sound ablehnen und weiter suchen/);
   assert.match(appSource, /decision:\s*formData\.get/);
   assert.match(appSource, /audio\.removeAttribute\("src"\)/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);

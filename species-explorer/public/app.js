@@ -12,6 +12,7 @@ const state = {
   openAssetReview: null,
   newSpeciesPipelineActive: false,
   pipelineWasRunning: false,
+  silentPipelineContext: null,
   pipelineStatusSnapshot: null,
   pipelinePollTimer: null,
   backupWasRunning: false,
@@ -19,6 +20,7 @@ const state = {
   backupPollTimer: null,
   settingsSnapshot: null,
   assetReviewRunId: "",
+  reloadAfterEditClose: false,
   dataRevision: "",
   dataRevisionTimer: null,
   dataLoading: false,
@@ -446,7 +448,15 @@ function dataRows(entries) {
   `).join("");
 }
 
-function mapPanel(asset, alt) {
+function inlineEditButton(section) {
+  return `
+    <button class="inline-edit-open edit-species-open edit-only" type="button" data-edit-section="${escapeHtml(section)}">
+      Bearbeiten
+    </button>
+  `;
+}
+
+function mapPanel(asset, alt, editSection = "") {
   const content = asset.exists
     ? `
       <button class="map-zoom-trigger" type="button" aria-label="Verbreitungskarte vergrößern">
@@ -457,7 +467,10 @@ function mapPanel(asset, alt) {
     : `<span class="media-missing">Nicht vorhanden</span>`;
   return `
     <section class="map-panel">
-      <h3 class="section-title">Verbreitungskarte${asset.exists ? ` · ${formatBytes(asset.bytes)}` : ""}</h3>
+      <div class="section-heading">
+        <h3 class="section-title">Verbreitungskarte${asset.exists ? ` · ${formatBytes(asset.bytes)}` : ""}</h3>
+        ${editSection ? inlineEditButton(editSection) : ""}
+      </div>
       <div class="map-frame">${content}</div>
     </section>
   `;
@@ -468,7 +481,10 @@ function speciesImagePanel(species) {
   if (portrait?.exists) {
     return `
       <section class="species-image-panel">
-        <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
+        <div class="section-heading">
+          <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
+          ${species.inInput ? inlineEditButton("portrait") : ""}
+        </div>
         <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
           <img
             class="species-portrait-image"
@@ -482,7 +498,10 @@ function speciesImagePanel(species) {
   }
   return `
     <section class="species-image-panel">
-      <h3 class="section-title">Artporträt</h3>
+      <div class="section-heading">
+        <h3 class="section-title">Artporträt</h3>
+        ${species.inInput ? inlineEditButton("portrait") : ""}
+      </div>
       <div class="species-image-placeholder">
         <strong>${escapeHtml(species.germanName)}</strong>
         <span>Noch kein geprüftes Artporträt vorhanden</span>
@@ -776,7 +795,7 @@ function setupAssetReview() {
       }
       const soundKind = asset.isNc ? "NC" : "frei";
       return {
-        automatic: `Aktuellen Sound übernehmen (${soundKind})`,
+        automatic: `Gefundenen Sound übernehmen (${soundKind})`,
         manual: status.mode === "nc-sounds" && asset.previouslyExisting === false
           ? "Sound nicht übernehmen"
           : status.mode === "nc-sounds"
@@ -806,18 +825,37 @@ function setupAssetReview() {
               </button>
             `
             : `
-              <div class="asset-review-sound-preview">
-                ${asset.spectrogramUrl ? `
-                  <button
-                    class="asset-review-spectrogram"
-                    type="button"
-                    aria-label="Im Spektrogramm von ${escapeHtml(asset.germanName)} springen"
-                  >
-                    <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
-                    <span class="asset-review-progress-marker"></span>
-                  </button>
-                ` : `<span class="asset-review-no-spectrogram">Spektrogramm noch nicht vorhanden</span>`}
-                <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
+              <div class="asset-review-sound-compare">
+                ${asset.previousUrl ? `
+                  <div class="asset-review-sound-preview">
+                    <strong>Aktueller Sound</strong>
+                    ${asset.previousSpectrogramUrl ? `
+                      <button
+                        class="asset-review-spectrogram"
+                        type="button"
+                        aria-label="Im bisherigen Spektrogramm von ${escapeHtml(asset.germanName)} springen"
+                      >
+                        <img src="${escapeHtml(asset.previousSpectrogramUrl)}" alt="${escapeHtml(`Bisheriges Spektrogramm ${asset.germanName}`)}">
+                        <span class="asset-review-progress-marker"></span>
+                      </button>
+                    ` : `<span class="asset-review-no-spectrogram">Bisheriges Spektrogramm nicht vorhanden</span>`}
+                    <audio controls preload="metadata" src="${escapeHtml(asset.previousUrl)}"></audio>
+                  </div>
+                ` : ""}
+                <div class="asset-review-sound-preview">
+                  <strong>Gefundener Sound (${escapeHtml(asset.sourceLabel || "unbekannt")})</strong>
+                  ${asset.spectrogramUrl ? `
+                    <button
+                      class="asset-review-spectrogram"
+                      type="button"
+                      aria-label="Im Spektrogramm von ${escapeHtml(asset.germanName)} springen"
+                    >
+                      <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
+                      <span class="asset-review-progress-marker"></span>
+                    </button>
+                  ` : `<span class="asset-review-no-spectrogram">Spektrogramm noch nicht vorhanden</span>`}
+                  <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
+                </div>
               </div>
             `}
         </div>
@@ -838,7 +876,7 @@ function setupAssetReview() {
             ${asset.type === "sound" ? `
               <label>
                 <input type="radio" name="asset-${index}" value="reject" required>
-                Sound ablehnen und Quelle merken
+                Gefundenen Sound ablehnen und weiter suchen
               </label>
             ` : ""}
           </div>
@@ -856,7 +894,7 @@ function setupAssetReview() {
     );
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
-    for (const item of elements.assetReviewList.querySelectorAll(".asset-review-item")) {
+    for (const item of elements.assetReviewList.querySelectorAll(".asset-review-sound-preview")) {
       const audio = item.querySelector("audio");
       const marker = item.querySelector(".asset-review-progress-marker");
       if (!audio || !marker) continue;
@@ -876,7 +914,7 @@ function setupAssetReview() {
     if (trigger) openMapLightbox(trigger);
     const spectrogram = event.target.closest(".asset-review-spectrogram");
     if (spectrogram) {
-      const item = spectrogram.closest(".asset-review-item");
+      const item = spectrogram.closest(".asset-review-sound-preview");
       const audio = item?.querySelector("audio");
       const marker = spectrogram.querySelector(".asset-review-progress-marker");
       if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
@@ -1316,6 +1354,7 @@ function setupPipelineControl() {
   }
 
   async function startSilentPipelinePreview(mode, options = {}) {
+    state.silentPipelineContext = options.context || null;
     const result = await fetchJson("/api/pipeline/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1325,6 +1364,7 @@ function setupPipelineControl() {
       throw new Error("Die benötigten API-Tokens fehlen in der Server-Umgebung.");
     }
     if (!result.hasWork) {
+      state.silentPipelineContext = null;
       return {
         noWork: true,
         message: "Für diese Art wurde aktuell keine passende Suchaktion gefunden.",
@@ -1435,6 +1475,52 @@ function setupPipelineControl() {
     }
   }
 
+  function notifySilentPipelineContext(status) {
+    const context = state.silentPipelineContext;
+    if (!context || context.source !== "editor") return false;
+    const editDialog = elements.detailPanel.querySelector(".edit-dialog[open]");
+    if (!editDialog) return false;
+    const message = editDialog.querySelector(
+      context.section === "map" ? ".map-edit-message" : ".sound-edit-message",
+    );
+    if (!message) return false;
+
+    const setEditorMessage = (text, type = "info") => {
+      message.textContent = text;
+      message.className = `edit-message ${context.section === "map" ? "map-edit-message" : "sound-edit-message"} ${type}`;
+      message.hidden = false;
+    };
+
+    if (status.status === "failed") {
+      setEditorMessage(
+        status.error || "Der gezielte Suchlauf ist fehlgeschlagen. Details stehen im Datenbankstatus.",
+        "error",
+      );
+      return true;
+    }
+
+    if (status.status !== "completed") return false;
+
+    const logText = (status.log || []).join("\n");
+    const noAlternative = /Keine neue automatische Alternative gefunden/i.test(logText);
+    if (context.section === "map") {
+      setEditorMessage(
+        noAlternative
+          ? "Kartensuchlauf abgeschlossen. Es wurde keine neue automatisch abrufbare Karte gefunden. Die IUCN-Karten-URL liefert lokal aktuell keinen direkt speicherbaren JPEG-Abruf."
+          : "Kartensuchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
+        noAlternative ? "info" : "success",
+      );
+    } else {
+      setEditorMessage(
+        noAlternative
+          ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden."
+          : "Sound-Suchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
+        noAlternative ? "info" : "success",
+      );
+    }
+    return true;
+  }
+
   async function refreshPipelineStatus() {
     try {
       const status = await fetchJson("/api/pipeline/status");
@@ -1477,7 +1563,10 @@ function setupPipelineControl() {
 
       if (state.pipelineWasRunning && !active && status.status !== "idle") {
         if (status.status === "completed" && status.gitPublished) state.notice = "";
-        await loadData({ reload: true });
+        const keepEditDialogOpen = notifySilentPipelineContext(status);
+        if (keepEditDialogOpen) state.reloadAfterEditClose = true;
+        else await loadData({ reload: true });
+        if (state.silentPipelineContext) state.silentPipelineContext = null;
       }
       state.pipelineWasRunning = active;
       clearTimeout(state.pipelinePollTimer);
@@ -1897,7 +1986,7 @@ function setupNewSpeciesCreator() {
       <audio controls preload="metadata" src="${escapeHtml(audioUrl)}"></audio>
       <div class="new-species-review-actions">
         <button type="button" data-new-species-sound-decision="manual">Überspringen / später manuell einfügen</button>
-        <button class="danger" type="button" data-new-species-sound-decision="reject">Sound ablehnen und nächste Quelle suchen</button>
+        <button class="danger" type="button" data-new-species-sound-decision="reject">Gefundenen Sound ablehnen und weiter suchen</button>
         <button class="primary" type="button" data-new-species-sound-decision="automatic">Sound übernehmen</button>
       </div>
     `;
@@ -2457,7 +2546,7 @@ function setupNewSpeciesCreator() {
 
 function setupSpeciesEditor(species) {
   const dialog = elements.detailPanel.querySelector(".edit-dialog");
-  const openButton = elements.detailPanel.querySelector(".edit-species-open");
+  const openButtons = [...elements.detailPanel.querySelectorAll(".edit-species-open")];
   const closeButtons = [...elements.detailPanel.querySelectorAll(".edit-cancel")];
   const form = elements.detailPanel.querySelector(".edit-form");
   const preview = elements.detailPanel.querySelector(".edit-preview");
@@ -2481,6 +2570,7 @@ function setupSpeciesEditor(species) {
   const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
   const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
   const soundPreview = elements.detailPanel.querySelector(".sound-edit-preview");
+  const currentSoundAudio = elements.detailPanel.querySelector(".current-sound-audio");
   const soundCurrentAudio = elements.detailPanel.querySelector(".sound-preview-current");
   const soundNewAudio = elements.detailPanel.querySelector(".sound-preview-new");
   const soundCurrentMeta = elements.detailPanel.querySelector(".sound-current-meta");
@@ -2505,7 +2595,7 @@ function setupSpeciesEditor(species) {
   const portraitFileInput = elements.detailPanel.querySelector(".portrait-file-input");
   const portraitPreviewButton = elements.detailPanel.querySelector(".portrait-preview-button");
   const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
-  if (!dialog || !openButton || !closeButtons.length || !form || !preview || !previewRows) return;
+  if (!dialog || !openButtons.length || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
   let mapPreviewToken = "";
@@ -2542,7 +2632,7 @@ function setupSpeciesEditor(species) {
   };
 
   const stopSoundPreviewAudio = () => {
-    for (const audio of [soundCurrentAudio, soundNewAudio]) {
+    for (const audio of [currentSoundAudio, soundCurrentAudio, soundNewAudio]) {
       if (!audio) continue;
       audio.pause();
       audio.currentTime = 0;
@@ -2628,7 +2718,15 @@ function setupSpeciesEditor(species) {
     for (const button of closeButtons) button.disabled = busy;
   };
 
-  openButton.addEventListener("click", () => {
+  const sectionLabels = {
+    manual: "Allgemeine Daten bearbeiten",
+    portrait: "Artporträt bearbeiten",
+    map: "Verbreitungskarte bearbeiten",
+    sound: "Tierstimme bearbeiten",
+  };
+
+  const openEditor = (section = "manual") => {
+    const activeSection = ["manual", "portrait", "map", "sound"].includes(section) ? section : "manual";
     resetPreview();
     resetMapPreview();
     resetSoundPreview();
@@ -2638,9 +2736,18 @@ function setupSpeciesEditor(species) {
     setMapMessage();
     setSoundMessage();
     setPortraitMessage();
+    dialog.dataset.activeSection = activeSection;
+    const title = dialog.querySelector("#edit-dialog-title");
+    if (title) title.textContent = sectionLabels[activeSection] || `${species.germanName} bearbeiten`;
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
-  });
+  };
+
+  for (const button of openButtons) {
+    button.addEventListener("click", () => {
+      openEditor(button.dataset.editSection || "manual");
+    });
+  }
 
   const closeEditDialog = () => {
     stopSoundPreviewAudio();
@@ -2648,12 +2755,21 @@ function setupSpeciesEditor(species) {
     else dialog.removeAttribute("open");
   };
 
+  const runDeferredEditorReload = () => {
+    if (!state.reloadAfterEditClose) return;
+    state.reloadAfterEditClose = false;
+    void loadData({ reload: true });
+  };
+
   for (const button of closeButtons) {
     button.addEventListener("click", closeEditDialog);
   }
 
   setupSafeBackdropClose(dialog, closeEditDialog);
-  dialog.addEventListener("close", stopSoundPreviewAudio);
+  dialog.addEventListener("close", () => {
+    stopSoundPreviewAudio();
+    runDeferredEditorReload();
+  });
 
   form.addEventListener("input", (event) => {
     if (event.target.closest(".sound-edit-section")) {
@@ -2756,19 +2872,20 @@ function setupSpeciesEditor(species) {
     setMapMessage("Karte und Angaben werden geprüft…", "info");
     try {
       const file = mapFileInput.files?.[0];
-      if (!file) throw new Error("Bitte eine JPEG-Datei auswählen");
-      if (file.size > 20 * 1024 * 1024) throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
-      const imageBase64 = await fileToBase64(file);
+      const source = mapSourceInput.value.trim();
+      if (!file && !source) throw new Error("Bitte eine JPEG-Datei auswählen oder einen direkten JPEG-Link einfügen");
+      if (file && file.size > 20 * 1024 * 1024) throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+      const imageBase64 = file ? await fileToBase64(file) : "";
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/map/preview`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            originalName: file.name,
+            originalName: file?.name || "",
             imageBase64,
             reason: mapReasonInput.value,
-            source: mapSourceInput.value,
+            source,
           }),
         },
       );
@@ -2807,6 +2924,7 @@ function setupSpeciesEditor(species) {
         targetSlugs: [species.id],
         autoStart: true,
         silent: true,
+        context: { source: "editor", section: "map", speciesId: species.id },
       });
       setMapMessage(
         result?.noWork
@@ -2815,6 +2933,7 @@ function setupSpeciesEditor(species) {
         result?.noWork ? "info" : "success",
       );
     } catch (error) {
+      state.silentPipelineContext = null;
       setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
     } finally {
       setMapBusy(false);
@@ -2874,10 +2993,19 @@ function setupSpeciesEditor(species) {
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
         : `Soundquelle wurde lokal abgelehnt, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
       stopSoundPreviewAudio();
-      if (typeof dialog.close === "function") dialog.close();
-      await loadData({ reload: true });
+      state.reloadAfterEditClose = true;
+      setSoundMessage("Aktueller Sound wurde abgelehnt. Neuer Sound wird gesucht …", "info");
+      if (!state.openPipelinePreview) throw new Error("Pipeline-Steuerung ist nicht verfügbar");
+      await state.openPipelinePreview("nc-sounds", {
+        targetSlugs: [species.id],
+        autoStart: true,
+        silent: true,
+        context: { source: "editor", section: "sound", speciesId: species.id },
+      });
     } catch (error) {
+      state.silentPipelineContext = null;
       setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
       setSoundBusy(false);
     }
   });
@@ -2892,6 +3020,7 @@ function setupSpeciesEditor(species) {
         targetSlugs: [species.id],
         autoStart: true,
         silent: true,
+        context: { source: "editor", section: "sound", speciesId: species.id },
       });
       setSoundMessage(
         result?.noWork
@@ -2900,6 +3029,7 @@ function setupSpeciesEditor(species) {
         result?.noWork ? "info" : "success",
       );
     } catch (error) {
+      state.silentPipelineContext = null;
       setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
     } finally {
       setSoundBusy(false);
@@ -3333,7 +3463,6 @@ function renderDetail(species) {
       <div class="detail-meta">
         ${species.inInput ? `
           <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
-            <button class="edit-species-open" type="button">Bearbeiten</button>
             <button class="delete-species-open danger" type="button">Löschen</button>
           </div>
         ` : ""}
@@ -3345,13 +3474,20 @@ function renderDetail(species) {
     </header>
 
     <div class="detail-media-layout">
-      ${mapPanel(species.assets.map, `Verbreitungskarte ${species.germanName}`)}
+      ${mapPanel(
+        species.assets.map,
+        `Verbreitungskarte ${species.germanName}`,
+        species.inInput ? "map" : "",
+      )}
 
       <div class="detail-side-stack">
         ${speciesImagePanel(species)}
 
         <section class="audio-section">
-          <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
+          <div class="section-heading">
+            <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
+            ${species.inInput ? inlineEditButton("sound") : ""}
+          </div>
           <div class="audio-body">
             ${audio}
             <details class="audio-credits">
@@ -3372,7 +3508,10 @@ function renderDetail(species) {
 
     <div class="data-grid">
       <section class="data-section">
-        <h3 class="section-title">Manuelle Daten</h3>
+        <div class="section-heading">
+          <h3 class="section-title">Manuelle Daten</h3>
+          ${species.inInput ? inlineEditButton("manual") : ""}
+        </div>
         <dl class="data-list">
           ${dataRows([
             ["Größe", species.manual.size],
@@ -3448,41 +3587,50 @@ function renderDetail(species) {
           <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
         </header>
 
-        <div class="edit-fields">
-          <label>
-            <span>Größe</span>
-            <input name="size" required maxlength="240" value="${escapeHtml(species.manual.size)}">
-          </label>
-          <label>
-            <span>Gewicht</span>
-            <input name="weight" required maxlength="240" value="${escapeHtml(species.manual.weight)}">
-          </label>
-          <label>
-            <span>Lebenserwartung</span>
-            <input
-              name="lifeExpectancy"
-              required
-              maxlength="240"
-              value="${escapeHtml(species.manual.lifeExpectancy)}"
-            >
-          </label>
-        </div>
+        <section class="manual-edit-section">
+          <header>
+            <div>
+              <h4>Allgemeine Daten bearbeiten</h4>
+              <p>Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
+            </div>
+          </header>
 
-        <p class="edit-message" hidden></p>
-
-        <section class="edit-preview" hidden>
-          <h4>Diff-Vorschau</h4>
-          <div class="edit-table-wrap">
-            <table>
-              <thead>
-                <tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr>
-              </thead>
-              <tbody class="edit-preview-rows"></tbody>
-            </table>
+          <div class="edit-fields">
+            <label>
+              <span>Größe</span>
+              <input name="size" required maxlength="240" value="${escapeHtml(species.manual.size)}">
+            </label>
+            <label>
+              <span>Gewicht</span>
+              <input name="weight" required maxlength="240" value="${escapeHtml(species.manual.weight)}">
+            </label>
+            <label>
+              <span>Lebenserwartung</span>
+              <input
+                name="lifeExpectancy"
+                required
+                maxlength="240"
+                value="${escapeHtml(species.manual.lifeExpectancy)}"
+              >
+            </label>
           </div>
-          <p class="edit-warning">
-            Speichern ändert nur die manuellen Artdaten. Danach ist ein Pipeline-Lauf erforderlich.
-          </p>
+
+          <p class="edit-message" hidden></p>
+
+          <section class="edit-preview" hidden>
+            <h4>Diff-Vorschau</h4>
+            <div class="edit-table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr>
+                </thead>
+                <tbody class="edit-preview-rows"></tbody>
+              </table>
+            </div>
+            <p class="edit-warning">
+              Speichern ändert nur die manuellen Artdaten. Danach ist ein Pipeline-Lauf erforderlich.
+            </p>
+          </section>
         </section>
 
         <section class="portrait-edit-section">
@@ -3575,7 +3723,7 @@ function renderDetail(species) {
           <header>
             <div>
               <h4>Verbreitungskarte ersetzen</h4>
-              <p>Nur JPEG bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
+              <p>JPEG-Datei oder direkter Karten-JPEG-Link bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
             </div>
             <div class="asset-header-actions">
               ${(!species.assets.map.exists || species.assets.map.manuallyAdded) ? `
@@ -3607,7 +3755,7 @@ function renderDetail(species) {
                 class="map-source-input"
                 type="url"
                 maxlength="2000"
-                placeholder="https://…"
+                placeholder="https://… oder signierter IUCN/Backblaze-JPEG-Link"
                 value="${escapeHtml(species.assets.map.source || "")}"
               >
             </label>
@@ -3651,8 +3799,10 @@ function renderDetail(species) {
               <p>MP3 und Credits werden nur gemeinsam gespeichert. Die Lizenz bleibt eine manuelle Prüfentscheidung.</p>
             </div>
             <div class="asset-header-actions">
-              ${(!species.assets.sound.exists || species.isNcSound || species.soundCareHint) ? `
-                <button class="sound-auto-search-button" type="button">Automatisch suchen</button>
+              ${!species.assets.sound.manuallyAdded ? `
+                <button class="sound-auto-search-button" type="button">
+                  ${species.assets.sound.exists ? "Alternative suchen" : "Automatisch suchen"}
+                </button>
               ` : ""}
               <span class="sound-care-state">
                 ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
@@ -3664,6 +3814,16 @@ function renderDetail(species) {
             <span>Art</span>
             <strong>${escapeHtml(species.germanName)} · ${escapeHtml(species.scientificName)}</strong>
           </div>
+
+          ${species.assets.sound.exists ? `
+            <section class="current-sound-preview">
+              <div>
+                <strong>Aktueller Sound</strong>
+                <span>${escapeHtml(species.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
+              </div>
+              <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(species.assets.sound.url)}"></audio>
+            </section>
+          ` : ""}
 
           <div class="sound-edit-fields">
             <label class="asset-file-field sound-file-field">
@@ -3793,7 +3953,7 @@ function renderDetail(species) {
           </div>
         </section>
 
-        <div class="edit-actions">
+        <div class="edit-actions manual-edit-actions">
           <button class="edit-cancel" type="button">Abbrechen</button>
           <button class="edit-preview-button" type="submit">Änderungen prüfen</button>
           <button class="edit-save-button" type="button" disabled>Jetzt speichern</button>

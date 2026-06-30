@@ -71,8 +71,10 @@ Regeln:
 
 Status: technisch lokal umgesetzt am 2026-06-20; produktiver Import und visuelle Bedienprüfung stehen noch aus.
 
-Der Kartenimport ist im allgemeinen `Bearbeiten`-Dialog der Art integriert. Manuelle Daten und Karte besitzen
-getrennte Vorschau- und Speicheraktionen. API:
+Der Kartenimport ist im bereichsbezogenen `Bearbeiten`-Dialog der Art integriert. Auf der Detailseite steht
+`Bearbeiten` direkt an den Bereichen `Manuelle Daten`, `Artporträt`, `Verbreitungskarte` und `Tierstimme`; der
+Dialog zeigt jeweils nur den gewählten Pflegebereich. Manuelle Daten und Karte besitzen getrennte Vorschau- und
+Speicheraktionen. API:
 
 - `POST /api/species/<Slug>/assets/map/preview`
 - `GET /api/species/<Slug>/assets/map/preview-file?token=<Token>`
@@ -81,8 +83,8 @@ getrennte Vorschau- und Speicheraktionen. API:
 Workflow:
 
 1. Art und vorhandene Karte anzeigen.
-2. Neue JPEG-Datei auswaehlen.
-3. Dateityp, Signatur, JPEG-Struktur, Browser-Dekodierbarkeit, Abmessungen und Groesse pruefen.
+2. Neue JPEG-Datei auswählen oder einen direkten signierten JPEG-Link als Quellen-URL einfügen.
+3. Dateityp, Signatur, JPEG-Struktur, Browser-Dekodierbarkeit, Abmessungen und Größe prüfen.
 4. Vorschau mit alter und neuer Karte sowie Dateiinformationen anzeigen.
 5. Grund und Quelle fuer die manuelle Pflege erfassen.
 6. Vorhandene Karte sichern.
@@ -99,12 +101,14 @@ Vorgesehene Grenze:
 
 Umgesetzt:
 
-- Prüfung von Dateiendung, JPEG-Magic-Bytes, Segmentstruktur, Abmessungen und Dateigröße
+- Prüfung von Dateiendung beziehungsweise URL-Download, JPEG-Magic-Bytes, Segmentstruktur, Abmessungen und Dateigröße
 - zusätzliche Dekodierprüfung über die tatsächliche Browser-Vorschau
 - zehn Minuten gültiges Vorschau-Token
 - Schutz gegen zwischenzeitliche Änderungen an Karte, Register oder Dokumentation
 - Alt-/Neu-Vorschau mit Abmessungen und Dateigröße
+- neue Karten werden in der Vorschau vollständig in den Rahmen eingepasst; sie dürfen dabei kleiner erscheinen
 - Pflichtfelder `Pflegegrund` und gültige HTTP(S)-Quellen-URL
+- URL-Import für direkte JPEG-Links, z. B. im Browser geöffnete signierte IUCN-/Backblaze-Karten
 - Staging unter `species-explorer/staging/`
 - atomarer Austausch von `species-assets/<SafeName>/map.jpg`
 - `manual: true`, `protectFromPipeline: true`, Quelle, Grund, Importdatum und SHA-256 im Override-Register
@@ -186,14 +190,18 @@ Umgesetzt:
 - die Quellkennung aus den Credits wird unter `sound.rejectedSources` gespeichert und von spaeteren Sound-Suchlaeufen
   uebersprungen
 - nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report committed und gepusht
-- fehlende oder problematische Sounds koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer diese Art
-  gesucht werden
+- fehlende, problematische oder bewusst als Vergleich angefragte vorhandene Sounds koennen im Bearbeitungsdialog
+  gezielt fuer diese Art gesucht werden; bei vorhandenem Sound heisst die Aktion `Alternative suchen`
 - diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
+- der aktuelle Sound ist im Bearbeitungsdialog direkt abspielbar
 - wenn ein gefundener Sound im Review abgelehnt wird, startet automatisch die naechste gezielte Soundsuche fuer
   dieselbe Art
 - pro Art koennen beliebig viele Soundquellen abgelehnt werden
 - neu gefundene Sounds werden im strukturierten Review mit Spektrogramm und Kennzeichnung `NC` oder `frei` angezeigt;
-  Klick ins Spektrogramm setzt die Wiedergabeposition
+  bei vorhandenem Bestand stehen aktueller Sound und gefundener Kandidat nebeneinander, jeweils mit eigenem Player
+  und Spektrogramm. Klick ins jeweilige Spektrogramm setzt die passende Wiedergabeposition.
+- gezielte Alternativsuchen ueberspringen die aktuell gespeicherte Quelle temporaer, damit nicht derselbe Sound
+  erneut vorgeschlagen wird
 
 ### 7.7.4 Spektrogramm-Konsistenz
 
@@ -215,10 +223,10 @@ Umgesetzte Regel:
 
 Migrationsstand vom 2026-06-20:
 
-- 47 Spektrogramme vorhanden
-- 47 Soundhashes registriert
-- 47 Spektrogrammhashes registriert
-- 47 Hashpaare verifiziert
+- 45 Spektrogramme vorhanden
+- 45 Soundhashes registriert
+- 45 Spektrogrammhashes registriert
+- 45 Hashpaare verifiziert
 - 0 veraltete Spektrogramme
 
 Seit 2026-06-27 werden Arten, bei denen ein vollständiger Pipeline-Lauf keine verwendbare automatische Tonquelle

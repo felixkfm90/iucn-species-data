@@ -99,8 +99,8 @@ Vor dem Start zeigt die App:
 ### Manuelle Karten erneut suchen
 
 Der Kartensuchlauf wählt Arten aus, deren Karte in `species-assets-overrides.json` als manuell geschützt markiert
-ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; zusätzlich wird `Löwe` wegen
-fehlender Karte verarbeitet.
+ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; fehlende Karten werden bei
+Bedarf zusätzlich verarbeitet.
 
 - IUCN-Daten und Sounds bleiben unverändert.
 - Die vorhandene Karte wird vorübergehend lokal gesichert.
@@ -116,23 +116,32 @@ fehlender Karte verarbeitet.
   geleert wurden. Damit bleibt der Explorer nach einem abgeschlossenen Kartensuchlauf nicht mehr im Status
   `Pipeline-Lauf läuft gerade` hängen und kann die Übernahme-/Ablehnentscheidung anzeigen.
 - Seit 2026-06-29 prüft `update.mjs` neben dem direkten IUCN-Kartenendpunkt eine Fallback-Strategie fuer gecachte
-  Einzelkarten. Fuer `Löwe` wurde der direkte IUCN-Endpunkt zu Assessment `280792135` als gültiges JPEG verifiziert.
+  Einzelkarten. Stand 2026-06-30 liefert der direkte IUCN-Webendpunkt aus Node lokal HTTP 403; im Browser wird
+  dieselbe Assessment-ID auf einen zeitlich signierten Backblaze-Link weitergeleitet. Der Explorer meldet diesen
+  Fall im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
+  Kartenimport als Quellen-URL eingefügt und geprüft werden. Ein robuster Electron-/Chromium-Fallback fuer signierte
+  Kartenabrufe ist ein offener Folgeschritt.
 
 ### NC- und fehlende Sounds erneut suchen
 
-Der Soundsuchlauf wählt vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz und Arten ohne Sounddatei aus.
-Aktuell sind das vier NC-Sounds plus der bekannte fehlende Sound beim Grünen Leguan.
+Der globale Soundsuchlauf wählt vorhandene, nicht manuell geschützte Sounds mit NC-Lizenz und Arten ohne
+Sounddatei aus. Ein gezielter Einzellauf aus dem Bearbeitungsdialog darf zusätzlich für eine Art mit bereits
+vorhandenem akzeptiertem Sound eine Alternative suchen. Dabei wird die aktuelle Quellkennung nur für diesen Lauf
+übersprungen; nach freien Kandidaten werden auch die Xeno-Canto-Fallback-Stufen geprüft.
 
 - IUCN-Daten und Karten bleiben unverändert.
 - Sound, Credits und Spektrogramm werden vorübergehend lokal gesichert.
 - Die Suche prüft freie Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Alternativen.
-- `Aktuellen Sound übernehmen (NC)` beziehungsweise `Aktuellen Sound übernehmen (frei)` behält die aktuell geprüfte
-  Quelle und kennzeichnet die Lizenzart eindeutig.
+- `Gefundenen Sound übernehmen (NC)` beziehungsweise `Gefundenen Sound übernehmen (frei)` übernimmt den neu
+  gefundenen Kandidaten und kennzeichnet die Lizenzart eindeutig.
 - `Bisherigen Sound behalten` stellt Sound, Credits und Spektrogramm wieder her, wenn ein Bestand vorhanden ist.
-- `Sound ablehnen und Quelle merken` stellt den vorherigen Bestand wieder her beziehungsweise entfernt bei vorher
+- `Gefundenen Sound ablehnen und weiter suchen` stellt den vorherigen Bestand wieder her beziehungsweise entfernt bei vorher
   fehlendem Sound die neu erzeugten Sounddateien wieder. Die Quellkennung wird in `species-assets-overrides.json`
   gespeichert und bei spaeteren Sound-Suchlaeufen uebersprungen. Pro Art koennen beliebig viele Quellen abgelehnt
   werden.
+- Bei vorhandenen Sounds zeigt der Review den bisherigen Sound und den gefundenen Kandidaten nebeneinander mit
+  jeweils eigenem Player und Spektrogramm. Ein gezielter Alternativlauf überspringt die aktuell gespeicherte Quelle
+  temporär, damit nicht derselbe Sound erneut vorgeschlagen wird.
 
 ### Dauerhafte Bereinigung
 
