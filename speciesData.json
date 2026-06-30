@@ -1061,9 +1061,9 @@
     "URLSlug": "pantheraleo",
     "Wissenschaftlicher Name": "Panthera leo",
     "Deutscher Name": "Löwe",
-    "Gewicht": "Männchen: ca. 150–250 kg; Weibchen: ca. 110–180 kg",
+    "Gewicht": "Männchen: ca. 150-250 kg; Weibchen: ca. 110-180 kg",
     "Größe": "ca. 140–250 cm",
-    "Lebenserwartung": "ca. 10–14 Jahre",
+    "Lebenserwartung": "ca. 10-14 Jahre",
     "Assessment ID": 280792135,
     "Status": "VU",
     "Trend": "Abnehmend",
@@ -1078,6 +1078,6 @@
     "Genus": "Panthera",
     "Species": "leo",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-06-29"
+    "Daten abgerufen": "2026-06-30"
   }
 ]

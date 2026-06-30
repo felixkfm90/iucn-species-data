@@ -929,32 +929,22 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-06-29T16:22:40.423Z",
-        "approvedAt": "2026-06-29T16:22:45.568Z",
+        "importedAt": "2026-06-30T14:50:14.579Z",
+        "approvedAt": "2026-06-30T14:50:17.698Z",
         "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "e3e4f7cf863a91d22705ab2e7f126a5834a45e7b372be65bc7970dbe76ca842d"
+        "metadataSha256": "3a286c875f4bf8ecac6c8dc59730cd719e6d3bee9012c3ac7ae8e40f5abe1835"
       },
       "sound": {
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-29T16:40:22.355Z",
-        "rejectedSources": [
-          {
-            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
-            "source": "Wikimedia Commons",
-            "url": "https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
-            "recordist": "Ken123",
-            "license": "https://creativecommons.org/licenses/by-sa/3.0",
-            "rejectedAt": "2026-06-29T16:40:22.356Z"
-          }
-        ]
+        "updatedAt": "2026-06-30T14:51:30.048Z"
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "7c8f29b1580cae5b3adc08708775965dc82fbff629356e51b2c0bc239347c187",
-        "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
-        "generatedAt": "2026-06-29T16:25:36.788Z",
-        "verifiedAt": "2026-06-29T16:25:36.794Z"
+        "soundSha256": "cd1ebd8d41cc184a69694a911acf152aec30d7bf541950e9f6d0a709a6bdc83c",
+        "spectrogramSha256": "a95fd1899b2f68831eb836fd8849d63fc5fc6b8fb89cacc428325f1cf7d1bd15",
+        "generatedAt": "2026-06-30T14:51:13.221Z",
+        "verifiedAt": "2026-06-30T14:51:13.227Z"
       }
     }
   },
