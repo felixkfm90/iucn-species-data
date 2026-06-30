@@ -1,34 +1,24 @@
 {
-  "generatedAt": "2026-06-30T17:10:28.609Z",
+  "generatedAt": "2026-06-30T17:10:48.911Z",
   "counts": {
     "totalSpecies": 47,
-    "missingSoundMp3": 2,
+    "missingSoundMp3": 1,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 2,
+    "missingSpeciesAssets": 1,
     "ncSoundLicensesAll": 4
   },
   "missing": {
     "soundMp3": [
-      "Waldkauz",
       "Grüner Leguan"
     ],
     "soundCredits": [],
     "maps": [],
     "speciesAssets": [
-      {
-        "german": "Waldkauz",
-        "safeName": "Waldkauz",
-        "missing": [
-          "sound.mp3",
-          "credits.json",
-          "spectrogram.webp"
-        ]
-      },
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",

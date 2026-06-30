@@ -172,22 +172,16 @@
         "metadataSha256": "cd86e693171ae7e5be0e7e2a194d7ff7b2d062865733416c5d91ee42c9b4eafd"
       },
       "sound": {
-        "rejectedSources": [
-          {
-            "key": "xeno-canto:1042634",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/1042634",
-            "recordist": "Sonothèque ADVL",
-            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "rejectedAt": "2026-06-30T17:10:28.553Z"
-          }
-        ],
         "manual": false,
-        "protectFromPipeline": false,
-        "reason": "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
-        "rejectedCurrent": true,
-        "rejectedAt": "2026-06-30T17:10:28.553Z",
-        "updatedAt": "2026-06-30T17:10:28.553Z"
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-30T17:10:48.641Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "f5190edbb172fa384a48053fa7496deeea541fc6ec21d08db58c1bf36c744234",
+        "spectrogramSha256": "fa28b7a3892af81192c4b2e60d47cc73f727ee1c64a1c263d75bfb0fcb9b25f0",
+        "generatedAt": "2026-06-30T17:10:32.710Z",
+        "verifiedAt": "2026-06-30T17:10:32.718Z"
       }
     },
     "Alpenstrandlaeufer": {

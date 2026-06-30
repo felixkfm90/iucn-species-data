@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Strix aluco",
+  "german_name": "Waldkauz",
+  "recordist": "Jurijs Ješkins",
+  "country": "Latvia",
+  "location": "Gaisma, Bārbele parish, Bauska Municipality",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/982285",
+  "rejectionKey": "xeno-canto:982285",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Strix sp:aluco q:A\" | page=1"
+}
