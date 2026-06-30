@@ -1,20 +1,19 @@
 {
-  "generatedAt": "2026-06-30T14:59:24.115Z",
+  "generatedAt": "2026-06-30T15:01:35.957Z",
   "counts": {
     "totalSpecies": 47,
-    "missingSoundMp3": 2,
+    "missingSoundMp3": 1,
     "missingSoundCredits": 0,
     "missingMap": 1,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 3,
+    "missingSpeciesAssets": 2,
     "ncSoundLicensesAll": 4
   },
   "missing": {
     "soundMp3": [
-      "Rotfuchs",
       "Grüner Leguan"
     ],
     "soundCredits": [],
@@ -22,15 +21,6 @@
       "Löwe"
     ],
     "speciesAssets": [
-      {
-        "german": "Rotfuchs",
-        "safeName": "Rotfuchs",
-        "missing": [
-          "sound.mp3",
-          "credits.json",
-          "spectrogram.webp"
-        ]
-      },
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",

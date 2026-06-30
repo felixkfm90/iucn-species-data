@@ -143,22 +143,16 @@
         "metadataSha256": "27d7256a1bd49ab2403375fed8cb5cbfccb9ae56df080385d816034240eef95e"
       },
       "sound": {
-        "rejectedSources": [
-          {
-            "key": "xeno-canto:961873",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/961873",
-            "recordist": "Pascal DUBOIS",
-            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "rejectedAt": "2026-06-30T14:59:24.062Z"
-          }
-        ],
         "manual": false,
-        "protectFromPipeline": false,
-        "reason": "Aktuelle Soundquelle wurde manuell abgelehnt; Quelle wird künftig übersprungen.",
-        "rejectedCurrent": true,
-        "rejectedAt": "2026-06-30T14:59:24.062Z",
-        "updatedAt": "2026-06-30T14:59:24.062Z"
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-06-30T15:01:35.676Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "f12c1296907e92c3c7fc7c6f95207773163970b0f45e4445b4119228f0375f46",
+        "spectrogramSha256": "3946df024ca4c2ddda319cc07cd3411da25ac53276055e1fed60135a045bee16",
+        "generatedAt": "2026-06-30T15:01:07.024Z",
+        "verifiedAt": "2026-06-30T15:01:07.030Z"
       }
     },
     "Waldkauz": {
