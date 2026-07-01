@@ -955,6 +955,17 @@
         "spectrogramSha256": "2a6faac80b3b12c9562a629a037a896d31d316e518ddb4edc8592fd6458a5bc7",
         "generatedAt": "2026-07-01T16:01:02.544Z",
         "verifiedAt": "2026-07-01T16:01:02.550Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Automatische Suche nicht erfolgreich --> Karte über backblaze-Link eingefügt",
+        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701155811_c2f8d694f10b6257bd628c80_539b21f8d4f1a01daf8f03e118f98500e2bc32f8_002_20260708155811_0020_dnld",
+        "germanName": "Löwe",
+        "originalFileName": "T15951A280792135.jpg",
+        "importedAt": "2026-07-01T16:03:29.858Z",
+        "updatedAt": "2026-07-01T16:03:29.858Z",
+        "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
       }
     }
   },
