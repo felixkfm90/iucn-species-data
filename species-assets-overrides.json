@@ -958,14 +958,14 @@
       "sound": {
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-01T19:07:05.669Z"
+        "updatedAt": "2026-07-01T19:09:02.634Z"
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "d289fabbbe20c1e37f74f9d078d66af50417ca98484fd7fdf9540c42f7aa760f",
-        "spectrogramSha256": "1ee8c64bf18a4f05ba34d1acd86e44df88cfc01e401834655fcd33250992619d",
-        "generatedAt": "2026-07-01T19:07:03.783Z",
-        "verifiedAt": "2026-07-01T19:07:03.789Z"
+        "soundSha256": "7c8f29b1580cae5b3adc08708775965dc82fbff629356e51b2c0bc239347c187",
+        "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
+        "generatedAt": "2026-07-01T19:08:52.341Z",
+        "verifiedAt": "2026-07-01T19:08:52.348Z"
       }
     }
   },
