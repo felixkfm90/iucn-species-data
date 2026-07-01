@@ -932,6 +932,36 @@
         "sha256": "5efa938370d46b266f2ec854785f406cc7184483302a00855cdb3a0f305f2e99",
         "metadataSha256": "856d9a894ef1af39dde0e42a1e3814b91f38b660820085d121a13d30e2c68d3b"
       }
+    },
+    "Loewe": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-01T19:05:15.307Z",
+        "approvedAt": "2026-07-01T19:05:17.892Z",
+        "sha256": "87a20c41b9ea50878db481909f05cdae580d5a62d658d5293e3a59f1cc1c04e7",
+        "metadataSha256": "17c93dc7f0de0ca320a92259bc44b4474ceb9bf144fcbf3f77bc694b837f9f2e"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "dc1309c2ecc91ee53fb761eb645626719ee3e674086f9008abf7f0303747ec9c",
+        "spectrogramSha256": "270957dd792d914bfed34dc87b1f1ee379cc4a0a05809614e478bd6034689434",
+        "generatedAt": "2026-07-01T19:05:28.320Z",
+        "verifiedAt": "2026-07-01T19:05:28.326Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
+        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701190537_cf8aa2a93606ab9a7d487c95_d1938d80b7967aabe397f6bc62743d6265a46e18_002_20260708190537_0020_dnld",
+        "germanName": "Löwe",
+        "originalFileName": "T15951A280792135.jpg",
+        "importedAt": "2026-07-01T19:06:33.198Z",
+        "updatedAt": "2026-07-01T19:06:33.198Z",
+        "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
+      }
     }
   },
   "spectrogramGenerator": {
