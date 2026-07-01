@@ -23,7 +23,7 @@ ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeNam
 | Fischertukan | Fischertukan | `species-assets/Fischertukan/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
 | Rotfuchs | Rotfuchs | `species-assets/Rotfuchs/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
 | Waldkauz | Waldkauz | `species-assets/Waldkauz/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Löwe | Loewe | `species-assets/Loewe/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701190537_cf8aa2a93606ab9a7d487c95_d1938d80b7967aabe397f6bc62743d6265a46e18_002_20260708190537_0020_dnld) | 2026-07-01 | erledigt/geprueft |
+| Löwe | Loewe | `species-assets/Loewe/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701195320_2c28d688586b5ccafec3d5d6_09280f0935b83320eb463ddae012fa2dd7362691_002_20260708195320_0020_dnld) | 2026-07-01 | erledigt/geprueft |
 
 ## Pflege-Regeln
 
