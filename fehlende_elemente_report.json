@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-01T16:19:18.492Z",
+  "generatedAt": "2026-07-01T19:03:41.736Z",
   "counts": {
-    "totalSpecies": 47,
+    "totalSpecies": 46,
     "missingSoundMp3": 1,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 1,
-    "ncSoundLicensesAll": 4
+    "ncSoundLicensesAll": 3
   },
   "missing": {
     "soundMp3": [
@@ -37,7 +37,6 @@
   "ncSoundLicensesAll": [
     "Bisamratte",
     "Brauenmotmot",
-    "Geoffroy-Klammeraffe",
-    "Löwe"
+    "Geoffroy-Klammeraffe"
   ]
 }
