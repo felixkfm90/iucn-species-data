@@ -1,12 +1,13 @@
 {
   "scientific_name": "Eumomota superciliosa",
   "german_name": "Brauenmotmot",
-  "recordist": "Doug Knapp",
-  "country": "Nicaragua",
-  "location": "Managua",
+  "recordist": "Jerome Fischer",
+  "country": "Costa Rica",
+  "location": "La Ensenada Lodge, Puntarenas",
   "quality": "A",
-  "license": "https://creativecommons.org/licenses/by-nc-nd/2.5/",
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/11684",
-  "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Eumomota sp:superciliosa q:A len:25-35\" | page=1"
+  "url": "https://xeno-canto.org/720624",
+  "rejectionKey": "xeno-canto:720624",
+  "notes": "Stage 7 (openOnly=false, q=A, len25-35=false) | query=\"gen:Eumomota sp:superciliosa q:A\" | page=1"
 }

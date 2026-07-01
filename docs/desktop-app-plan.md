@@ -438,7 +438,7 @@ Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
 - `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten und Arten mit fehlenden
   Kernfeldern oder Assets
 - `Alle Arten vollstaendig aktualisieren`: entspricht dem bisherigen kompletten Lauf von `node update.mjs`
-- `Manuelle Karten erneut suchen`: verarbeitet nur die aktuell vier manuell geschützten Karten
+- `Manuelle und fehlende Karten erneut suchen`: verarbeitet manuell geschützte und fehlende Karten
 - `NC- und fehlende Sounds erneut suchen`: verarbeitet vorhandene NC-Sounds und Arten ohne Sounddatei
 
 Vor jedem Start werden Laufart, Artenliste und Gruende angezeigt. Es darf nur ein Lauf gleichzeitig aktiv sein.

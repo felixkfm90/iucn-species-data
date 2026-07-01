@@ -119,7 +119,7 @@ Umgesetzt:
 - fehlende Karten oder manuell geschützte Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer
   genau diese Art gesucht werden
 - diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
-- der globale Kartensuchlauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten
+- der globale Kartensuchlauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
 

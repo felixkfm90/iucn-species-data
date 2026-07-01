@@ -96,7 +96,7 @@ Vor dem Start zeigt die App:
 - aktuelle Artenzahl
 - deutlichen Hinweis auf die laengere Laufzeit und alle externen API-Abfragen
 
-### Manuelle Karten erneut suchen
+### Manuelle und fehlende Karten erneut suchen
 
 Der Kartensuchlauf wählt Arten aus, deren Karte in `species-assets-overrides.json` als manuell geschützt markiert
 ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; fehlende Karten werden bei
@@ -119,8 +119,11 @@ Bedarf zusätzlich verarbeitet.
   Einzelkarten. Stand 2026-06-30 liefert der direkte IUCN-Webendpunkt aus Node lokal HTTP 403; im Browser wird
   dieselbe Assessment-ID auf einen zeitlich signierten Backblaze-Link weitergeleitet. Der Explorer meldet diesen
   Fall im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
-  Kartenimport als Quellen-URL eingefügt und geprüft werden. Ein robuster Electron-/Chromium-Fallback fuer signierte
-  Kartenabrufe ist ein offener Folgeschritt.
+  Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 zeigt der Karten-Bearbeitungsdialog
+  dafür direkt `IUCN-Karte im Browser öffnen`. Im Neue-Art-Assistenten steht derselbe manuelle URL-Schritt zur
+  Verfügung; die Karte kann dort während einer pausierten Assetprüfung geprüft und übernommen werden. Der versteckte
+  Electron-/Chromium-Fallback wurde verworfen, weil Headless-Browserprozesse auf dem Zielsystem mit
+  Anwendungsfehlern abbrechen.
 
 ### NC- und fehlende Sounds erneut suchen
 
@@ -145,6 +148,8 @@ vorhandenem akzeptiertem Sound eine Alternative suchen. Dabei wird die aktuelle 
 - Bei vorhandenen Sounds zeigt der Review den bisherigen Sound und den gefundenen Kandidaten nebeneinander mit
   jeweils eigenem Player und Spektrogramm. Ein gezielter Alternativlauf überspringt die aktuell gespeicherte Quelle
   temporär, damit nicht derselbe Sound erneut vorgeschlagen wird.
+- Im Bearbeitungsdialog wird der aktuelle Audioplayer vor dem Alternativlauf ersetzt und kurz freigegeben, damit
+  eine pausierte Vorschau unter Windows keine produktive MP3-Dateisperre hält.
 
 ### Dauerhafte Bereinigung
 

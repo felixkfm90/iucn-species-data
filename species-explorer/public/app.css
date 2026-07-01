@@ -1896,6 +1896,7 @@ button:focus-visible {
 
 .new-species-review-media {
   width: 100%;
+  height: 280px;
   max-height: 280px;
   display: grid;
   place-items: center;
@@ -1906,9 +1907,46 @@ button:focus-visible {
 }
 
 .new-species-review-media img {
+  width: 100% !important;
+  height: 100% !important;
   max-width: 100%;
   max-height: 280px;
-  object-fit: contain;
+  object-fit: contain !important;
+}
+
+.new-species-manual-map {
+  display: grid;
+  gap: 10px;
+}
+
+.new-species-manual-map label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.new-species-manual-map input,
+.new-species-manual-map textarea {
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
+  text-transform: none;
+}
+
+.new-species-manual-map textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.new-species-manual-map .map-browser-link {
+  justify-self: start;
 }
 
 .new-species-review-actions {
@@ -2103,7 +2141,8 @@ button:focus-visible {
   gap: 8px;
 }
 
-.asset-header-actions button {
+.asset-header-actions button,
+.asset-header-actions a {
   padding: 4px 8px;
   color: var(--blue);
   background: var(--blue-soft);
@@ -2111,6 +2150,7 @@ button:focus-visible {
   border-radius: 4px;
   font-size: 0.68rem;
   font-weight: 750;
+  text-decoration: none;
 }
 
 .map-care-state {
@@ -2222,22 +2262,23 @@ button:focus-visible {
 }
 
 .map-compare-frame {
-  height: 260px;
+  min-height: 260px;
   display: grid;
-  place-items: center;
-  overflow: hidden;
+  align-items: start;
+  justify-items: center;
+  overflow: visible;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 4px;
 }
 
 .map-compare-frame img {
-  width: auto;
-  height: auto;
+  width: 100% !important;
+  height: auto !important;
   max-width: 100%;
-  max-height: 100%;
+  max-height: none;
   display: block;
-  object-fit: contain;
+  object-fit: contain !important;
 }
 
 .map-compare-grid figure > p {
@@ -2930,7 +2971,7 @@ button:focus-visible {
   }
 
   .map-compare-frame {
-    height: 220px;
+    min-height: 220px;
   }
 
   .portrait-compare-frame {

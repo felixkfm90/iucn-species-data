@@ -68,6 +68,10 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 
 - `Automatisch suchen` im Kartenabschnitt nutzt den Kartensuchlauf für genau diese Art. Bei Zielarten darf der
   Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
+- Wenn IUCN den lokalen Node-Abruf blockiert, bietet der Kartenabschnitt einen direkten Link `IUCN-Karte im Browser
+  öffnen`. Der externe Browser erzeugt dabei den signierten Backblaze-JPEG-Link; dieser Link kann in das
+  Quellenfeld kopiert und anschließend mit `Karte prüfen` übernommen werden. Ein versteckter Electron-/Chrome-Abruf
+  wird nicht verwendet, weil Headless-Browserprozesse auf dem Zielsystem abstürzen können.
 - `Alternative suchen` im Soundabschnitt nutzt den NC-/fehlende-Sounds-Suchlauf für genau diese Art. Bei vorhandenen
   akzeptierten Sounds wird die aktuelle Quellkennung für diesen gezielten Lauf vorübergehend übersprungen, damit ein
   echter Alternativkandidat gesucht und mit dem aktuellen Sound verglichen werden kann. Der gezielte Lauf prüft
@@ -75,13 +79,19 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   Alternativsuche nicht fälschlich „keine Alternative“ gemeldet wird, nur weil der einzige freie Treffer bereits der
   aktuelle Sound ist.
 - Vor dem Start dieses Laufs entlädt der Bearbeitungsdialog den aktuellen Audioplayer, damit Windows die produktive
-  MP3 möglichst nicht als geöffnete Datei blockiert.
+  MP3 möglichst nicht als geöffnete Datei blockiert. Seit 2026-07-01 wird der Player vor dem Alternativlauf
+  zusätzlich aus dem Dialog ersetzt und kurz freigegeben, damit auch eine pausierte Vorschau keine Dateisperre hält.
 - Beide Aktionen starten seit 2026-06-29 als stiller gezielter Hintergrundlauf, ohne den Bearbeitungsdialog oder die
   Desktop-App zu schließen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
-Der globale Wartungslauf `Manuelle Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht
+Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht
 mehr ausschließlich auf manuell geschützte Karten begrenzt.
+
+Beim Neue-Art-Assistenten nutzt Schritt `Karte` denselben manuellen URL-Workflow wie der Kartenabschnitt im
+Bearbeitungsdialog. Wenn keine automatisch speicherbare IUCN-Karte gefunden wird, kann der sichtbare Backblaze-JPEG-
+Link direkt im Schritt eingefügt, geprüft und übernommen oder übersprungen werden. Dadurch muss die neu angelegte
+Art für eine manuelle Karte nicht erst aus dem Assistenten heraus im allgemeinen Bearbeitungsdialog geöffnet werden.
 
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf
@@ -100,7 +110,7 @@ Weiterhin manuell geschützt sind vier Karten:
 
 Großtrappe, Kernbeißer und Reh wurden am 2026-06-20 nach visueller Bestätigung der neu gefundenen automatischen
 Karten auf automatische Pipeline-Pflege umgestellt. Sie werden deshalb nicht mehr als manuell hinzugefügt angezeigt
-und nicht mehr vom Wartungslauf `Manuelle Karten erneut suchen` ausgewählt.
+und nicht mehr vom Wartungslauf `Manuelle und fehlende Karten erneut suchen` ausgewählt.
 
 `update.mjs` respektiert das Register:
 

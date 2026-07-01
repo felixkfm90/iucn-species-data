@@ -7,6 +7,7 @@
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1009734",
+  "url": "https://xeno-canto.org/1009733",
+  "rejectionKey": "xeno-canto:1009733",
   "notes": "Stage 7 (openOnly=false, q=A, len25-35=false) | query=\"gen:Ateles sp:geoffroyi q:A\" | page=1"
 }

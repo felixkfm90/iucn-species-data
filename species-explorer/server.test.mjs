@@ -1501,6 +1501,43 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
     }),
   });
   assert.equal(recreateResponse.status, 200);
+
+  const generatedOnlyRoot = await createEditableFixture();
+  context.after(() => rm(generatedOnlyRoot, { recursive: true, force: true }));
+  await writeFile(join(generatedOnlyRoot, "species_list.json"), "[]\n", "utf8");
+  const generatedOnlyApp = await createExplorerServer({ repoRoot: generatedOnlyRoot, port: 0 });
+  const generatedOnlyAddress = await generatedOnlyApp.listen();
+  context.after(() => generatedOnlyApp.close());
+  const generatedOnlyBaseUrl = `http://${generatedOnlyApp.host}:${generatedOnlyAddress.port}`;
+  const generatedOnlyAssetDir = join(generatedOnlyRoot, "species-assets", "Amsel");
+  const generatedOnlyPreviewResponse = await fetch(
+    `${generatedOnlyBaseUrl}/api/species/turdusmerula/delete/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    },
+  );
+  assert.equal(generatedOnlyPreviewResponse.status, 200);
+  const generatedOnlyPreview = await generatedOnlyPreviewResponse.json();
+  assert.equal(generatedOnlyPreview.requiresAssetDeletion, true);
+  assert.match(generatedOnlyPreview.effects.join(" "), /bereits aus der Eingabeliste entfernt/);
+  const generatedOnlySaveResponse = await fetch(
+    `${generatedOnlyBaseUrl}/api/species/turdusmerula/delete/save`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: generatedOnlyPreview.token, deleteAssets: true }),
+    },
+  );
+  assert.equal(generatedOnlySaveResponse.status, 200);
+  const generatedOnlySaved = await generatedOnlySaveResponse.json();
+  assert.equal(generatedOnlySaved.inputEntryRemoved, false);
+  assert.equal(generatedOnlySaved.backup, "");
+  assert.equal(generatedOnlySaved.permanentCleanup.generatedDataDeleted, true);
+  assert.equal(generatedOnlySaved.permanentCleanup.assetDirectoryDeleted, true);
+  assert.equal(existsSync(generatedOnlyAssetDir), false);
+  assert.equal(JSON.parse(await readFile(join(generatedOnlyRoot, "speciesData.json"), "utf8")).length, 0);
 });
 
 test("Artbereinigung stellt Assets nach Windows-Dateisperre wieder her", async (context) => {
@@ -1721,7 +1758,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/pipeline\/assets\/review/);
   assert.match(appSource, /autoStart/);
   assert.match(appSource, /startCurrentPipelinePreview/);
-  assert.match(appSource, /Manuelle Karten erneut suchen/);
+  assert.match(htmlSource, /Manuelle und fehlende Karten erneut suchen/);
   assert.match(appSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
   assert.doesNotMatch(appSource, /strikten Ein-Bild-Regel/);
@@ -1855,6 +1892,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/delete\/save/);
   assert.match(appSource, /class="delete-assets-now"/);
   assert.match(appSource, /deleteAssets/);
+  assert.match(appSource, /function releaseDetailMedia\(\)/);
+  assert.match(appSource, /releaseDetailMedia\(\)/);
+  assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
+  assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
   assert.match(appSource, /Taxonomie und Name sind gesperrt\./);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
@@ -1866,9 +1907,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-save-button"/);
   assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
   assert.match(cssSource, /\.map-compare-grid/);
+  assert.match(
+    cssSource,
+    /\.map-compare-frame img\s*\{[^}]*width:\s*100% !important[^}]*height:\s*auto !important[^}]*object-fit:\s*contain !important/s,
+  );
+  assert.match(cssSource, /\.new-species-manual-map/);
   assert.match(appSource, /class="sound-edit-section"/);
   assert.match(appSource, /class="sound-auto-search-button"/);
   assert.match(appSource, /openPipelinePreview\("nc-sounds"/);
+  assert.match(appSource, /const releaseCurrentSoundAudio = async/);
+  assert.match(appSource, /async function releaseAllAudioElements\(\)/);
+  assert.match(appSource, /await releaseAllAudioElements\(\)/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
   assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
@@ -1952,6 +2001,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Karte,\s*Sound und Spektrogramm geprüft oder erstellt/);
   assert.match(htmlSource, /new-species-map-review/);
   assert.match(htmlSource, /new-species-sound-review/);
+  assert.match(appSource, /Manuell per URL einfügen/);
+  assert.match(appSource, /new-species-map-source-input/);
+  assert.match(appSource, /pipelineRunId:\s*inlineRunId/);
+  assert.match(serverSource, /allowDuringCurrentReview/);
   assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
   assert.doesNotMatch(htmlSource, /species-info\.json/);
   assert.match(

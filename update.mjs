@@ -257,6 +257,29 @@ function removeTempFile(tempPath) {
   }
 }
 
+async function replaceExistingFileWithTemp(tempPath, targetPath) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      fs.renameSync(tempPath, targetPath);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isFileLockError(error)) throw error;
+      try {
+        if (fs.existsSync(targetPath)) fs.rmSync(targetPath, { force: true });
+        fs.renameSync(tempPath, targetPath);
+        return;
+      } catch (replaceError) {
+        lastError = replaceError;
+        if (!isFileLockError(replaceError)) throw replaceError;
+        await sleep(250 * (attempt + 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function temporarilySkipSoundCandidate(extraRejectedKeys, key, german, sourceLabel) {
   const normalizedKey = String(key ?? "").trim();
   if (normalizedKey) extraRejectedKeys.add(normalizedKey);
@@ -1305,7 +1328,7 @@ async function saveSoundRecording({
 
     const buffer = await audioRes.arrayBuffer();
     fs.writeFileSync(tempMp3, Buffer.from(buffer));
-    fs.renameSync(tempMp3, mp3Path);
+    await replaceExistingFileWithTemp(tempMp3, mp3Path);
     replacedSound = true;
 
     console.log(`✔ Sound gespeichert: ${mp3Path}`);
@@ -1359,7 +1382,7 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
     }
 
     fs.writeFileSync(tempMp3, buffer);
-    fs.renameSync(tempMp3, mp3Path);
+    await replaceExistingFileWithTemp(tempMp3, mp3Path);
     replacedSound = true;
 
     console.log(`✔ Commons-Sound gespeichert: ${mp3Path}`);
@@ -1411,7 +1434,7 @@ async function saveInatSoundRecording({ genus, species, german, mp3Path, credits
 
     const buffer = await audioRes.arrayBuffer();
     fs.writeFileSync(tempMp3, Buffer.from(buffer));
-    fs.renameSync(tempMp3, mp3Path);
+    await replaceExistingFileWithTemp(tempMp3, mp3Path);
     replacedSound = true;
 
     console.log(`✔ iNaturalist-Sound gespeichert: ${mp3Path}`);

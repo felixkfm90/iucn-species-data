@@ -179,7 +179,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 46 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
+- alle 47 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
@@ -193,12 +193,12 @@ Der Explorer zeigt:
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
-- gezielten Suchlauf nur fuer manuell gepflegte oder fehlende Karten
+- gezielten Suchlauf nur fuer manuell gepflegte und fehlende Karten
 - gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - vier aktive NC-Sounds
-- vier manuell gepflegte Karten
+- fuenf manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
 - kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-Prüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund,
@@ -288,11 +288,11 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
 - Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben.
-- 19 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- 20 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 46 Arten in `species_list.json` und `speciesData.json`. Der Löwe wurde am 2026-06-30 fuer den
-erneuten Neue-Art-Test wieder vollständig entfernt.
+Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist nach dem erneuten Neue-Art-Test
+wieder produktiv vorhanden.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -312,11 +312,22 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - nach erfolgreicher Pipeline passender Spektrogramm-Abgleich
 - Artansicht kann einen Eintrag nach Vorschau und Backup aus `species_list.json` entfernen
 - im Löschdialog können die zugehörigen generierten Daten und Assets per Checkbox sofort dauerhaft mitgelöscht werden
+- bei aktivierter Sofortlöschung bereinigt der Explorer zuerst generierte Daten und Assetordner; erst danach wird
+  `species_list.json` geändert. Sperrt Windows eine Assetdatei, bleibt die Art vollständig in der Eingabeliste.
+- bereits teilbereinigte Arten, die nur noch in generierten Daten oder Assetordnern hängen, können direkt über den
+  Löschdialog vollständig bereinigt werden; vor dem Löschen entlädt die App die Detailmedien, um Windows-Dateisperren
+  auf Karte, Portrait oder Sound zu vermeiden, und wartet bei Sofortlöschung kurz auf die Freigabe der Handles
 - `Bereinigen` löscht nach einer einzigen klaren Bestätigung verwaiste Daten und Assetordner dauerhaft und ohne
   Wiederherstellungsablage
 - die Bereinigung verschiebt verwaiste Assetordner zuerst nach `species-explorer/cleanup-trash/`, schreibt danach
   Daten und Report und löscht erst anschließend endgültig; kurze Windows-Dateisperren beim Verschieben werden
   mehrfach erneut versucht und danach per kontrolliertem Kopieren/Original-Löschen abgefangen
+- beim Neue-Art-Assistenten kann Schritt `Karte` eine fehlende automatische Karte direkt per sichtbarem
+  Backblaze-/IUCN-JPEG-Link prüfen und übernehmen, ohne in den allgemeinen Bearbeitungsdialog zu wechseln
+- nach einem manuellen Kartenimport wird der Report sofort neu aufgebaut und zusammen mit Karte, Register und
+  Dokumentation veröffentlicht
+- vor Sound-Alternativläufen werden die Explorer-Audioplayer technisch entladen und kurz freigegeben, damit Windows
+  die produktive MP3 nicht wegen einer pausierten Vorschau weiter sperrt
 - nach erfolgreichem Lauf werden die Pipeline-Dateien automatisch committed und gepusht
 - neue Karten und Sounds werden vor dem Commit angezeigt; je Asset wird automatische oder manuell geschützte Pflege
   bestätigt; Kartenvorschauen sind für die Qualitätsprüfung als große Lightbox anklickbar
@@ -359,8 +370,9 @@ Stand 2026-06-30: Der verwendete IUCN-Webendpunkt
 `https://www.iucnredlist.org/api/v4/assessments/<AssessmentID>/distribution_map/jpg` liefert aus Node lokal
 HTTP 403, obwohl der Browser auf einen zeitlich signierten Backblaze-Link weiterleitet. Die App meldet diesen Fall
 im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
-Kartenimport als Quellen-URL eingefügt und geprüft werden; ein robuster Electron-/Chromium-Fallback für diesen
-signierten Kartenabruf bleibt ein offener Folgeschritt.
+Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür
+direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
+Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen können.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -447,9 +459,9 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 
-Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind vier Karten wegen
-korrupter IUCN-Kartendaten als manuell gepflegte Overrides markiert: `Blaukehlchen`, `Fischertukan`, `Rotfuchs`
-und `Waldkauz`. Großtrappe, Kernbeißer und Reh werden seit der bestätigten Übernahme funktionierender automatischer
+Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind fünf Karten wegen
+korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf als manuell gepflegte Overrides markiert:
+`Blaukehlchen`, `Fischertukan`, `Rotfuchs`, `Waldkauz` und `Löwe`. Großtrappe, Kernbeißer und Reh werden seit der bestätigten Übernahme funktionierender automatischer
 Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
 
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 46 produktive
@@ -527,8 +539,8 @@ lokal umgesetzt und praktisch geprüft. Phase 7.6 mit Pipeline-Steuerung und dau
 Bereinigung ist abgeschlossen. Ein vollständiger externer Lauf sowie selektive Läufe direkt aus der App
 für den Höckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Assetentscheidung, automatischer Commit und
 Push, Karten-Großansicht, Bereinigung, Dialogbedienung und Soundstopp funktionierten.
-Zusätzlich gibt es kleine Wartungsläufe nur für manuelle Karten sowie für NC- und fehlende Sounds, ohne alle Arten
-erneut abzurufen.
+Zusätzlich gibt es kleine Wartungsläufe für manuelle und fehlende Karten sowie für NC- und fehlende Sounds, ohne
+alle Arten erneut abzurufen.
 Die Assetverwaltung aus Phase 7.7 ist seit 2026-06-21 abgeschlossen. Karten, Sound/Credits,
 Spektrogrammverwaltung und Artportrait-Workflow sind umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
 Der Explorer erstellt den Prompt lokal je Art, kopiert diesen Einzelprompt und importiert ein anschliessend selbst
@@ -590,15 +602,15 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-06-29:
+Aktueller lokaler Stand vom 2026-07-01:
 
-- 46 Eintraege in `species_list.json`
-- 46 Arten in der letzten Pipeline-Ausgabe
-- 46 Karten, 45 Sounds, 45 Credits und 45 Spektrogramme
-- 46 Artportraits; 0 Portrait-Assetprobleme
-- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
+- 47 Eintraege in `species_list.json`
+- 47 Arten in der letzten Pipeline-Ausgabe
+- 47 Karten, 46 Sounds, 46 Credits und 46 Spektrogramme
+- 47 Artportraits; 0 Portrait-Assetprobleme
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf
 - 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
-- 3 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`
+- 4 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

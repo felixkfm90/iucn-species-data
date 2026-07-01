@@ -439,7 +439,7 @@ export function runCleanup(repoRoot = process.cwd()) {
   };
 }
 
-export function runSpeciesCleanup(repoRoot, { slug, safeName }) {
+export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = false }) {
   const normalizedSlug = String(slug ?? "").toLocaleLowerCase("de");
   const normalizedSafeName = String(safeName ?? "");
   if (!normalizedSlug || !normalizedSafeName) {
@@ -451,7 +451,7 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName }) {
     (entry) => `${entry.genus ?? ""}${entry.species ?? ""}`.toLocaleLowerCase("de") === normalizedSlug
       || sanitizeAssetName(entry.german) === normalizedSafeName,
   );
-  if (stillInInput) {
+  if (stillInInput && !allowInputEntry) {
     throw new Error("Art ist noch in species_list.json enthalten");
   }
 

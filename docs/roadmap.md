@@ -313,15 +313,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   uebernommen oder uebersprungen werden. Neue Sounds werden mit Spektrogramm angezeigt und koennen uebernommen,
   uebersprungen oder abgelehnt werden. Abgelehnte Sounds starten automatisch die nächste gezielte Soundsuche, bis
   eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
-  19 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  20 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus. Klickbare, noch offene Schritte sind blau, abgeschlossene Schritte gruen und
   gesperrte Schritte grau markiert. Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem
   Hash-Buster versehen, damit nach einer Ablehnung kein veralteter Cache abgespielt wird.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
-  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde am
-  2026-06-30 fuer einen sauberen erneuten Neue-Art-Test wieder vollständig entfernt. Aktuell stehen 46 Arten in
-  `species_list.json`.
+  Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde
+  nach einem erneuten Neue-Art-Test wieder produktiv angelegt. Aktuell stehen 47 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -358,8 +357,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Dialoge schließen bei Textmarkierungen über den Fensterrand nicht mehr versehentlich; die sichere
   Hintergrundklick-Erkennung gilt auch beim erneuten Anlegen einer Art.
   Soundwiedergaben des Asset-Prüfdialogs stoppen beim Schließen automatisch und werden auf Position 0 zurückgesetzt.
-  Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle Karten erneut suchen` für manuell
-  geschützte und fehlende Karten sowie `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds
+  Ergänzt wurden zwei Wartungsläufe ohne vollständigen Datenabruf: `Manuelle und fehlende Karten erneut suchen`
+  für manuell geschützte und fehlende Karten sowie `NC- und fehlende Sounds erneut suchen` für die drei aktuellen NC-Sounds
   sowie fehlende Sounddateien. Bestehende Dateien werden bis
   zur Übernahmeentscheidung lokal gesichert. Abgelehnte Soundquellen werden unter `sound.rejectedSources` gespeichert
   und in spaeteren Suchlaeufen uebersprungen; pro Art koennen beliebig viele Quellen abgelehnt werden. Nach erfolgreichem Pipeline-Push verschwindet die Zwischenmeldung des
@@ -368,7 +367,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   wird beim Schließen nicht beendet. Ein dauerhafter Balken im Hauptfenster zeigt auch nach dem Schließen den
   laufenden, wartenden, abgeschlossenen oder fehlgeschlagenen Status und öffnet die Details erneut.
   Beim ersten produktiven Kartensuchlauf wurden Großtrappe, Kernbeißer und Reh als funktionierende automatische
-  Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; vier manuelle Karten bleiben. Das
+  Karten übernommen. Sie sind seit 2026-06-20 nicht mehr manuell geschützt; fünf manuelle Karten bleiben. Das
   JSON-Register ist bei einer ausdrücklichen Pflegeentscheidung maßgeblich und synchronisiert die Markdown-Liste.
   Ein am 2026-06-27 geprüfter Hänger nach finaler Erfolgsausgabe wurde behoben: `update.mjs` leert stdout/stderr und
   beendet den Prozess danach explizit, damit der Explorer den Lauf als abgeschlossen erkennt und die Assetentscheidung
@@ -378,15 +377,32 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Stand 2026-06-30 liefert der direkte IUCN-Webendpunkt
   aus Node lokal HTTP 403; im Browser wird dieselbe Assessment-ID auf einen zeitlich signierten Backblaze-Link
   weitergeleitet. Der Explorer meldet diesen Fall im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser
-  sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft werden. Ein robuster
-  Electron-/Chromium-Fallback fuer signierte Kartenabrufe ist ein offener Folgeschritt.
+  sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit
+  2026-07-01 bietet der Karten-Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
+  Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
+  Anwendungsfehlern abbrechen können. Derselbe URL-Workflow steht im Neue-Art-Assistenten in Schritt `Karte` zur
+  Verfügung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog vollständig mit Karte
+  abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollständig in die verfügbare
+  Breite ein, statt den unteren Kartenbereich abzuschneiden. Nach einem manuellen Kartenimport wird der Report sofort
+  neu aufgebaut und zusammen mit Karte, Register und Dokumentation veröffentlicht.
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Seit 2026-06-30 werden kurze Windows-Dateisperren beim Verschieben mehrfach erneut
   versucht und danach per kontrolliertem Kopieren/Original-Loeschen abgefangen. Dadurch bleibt der Report auch bei
-  Windows-Dateisperren konsistent. Die produktive
-  Bereinigung von Haubentaucher, Höckerschwan und Löwe ist durchgelaufen; der Explorer meldet wieder 46/46 Arten
-  ohne Löwe-Zwischenstand.
+  Windows-Dateisperren konsistent. Seit 2026-07-01 kann der Löschdialog auch einen teilbereinigten Zwischenzustand
+  ohne `species_list.json`-Eintrag, aber mit verbliebenen generierten Daten oder Assets direkt dauerhaft bereinigen.
+  Bei aktivierter Sofortloeschung wird zuerst diese dauerhafte Bereinigung ausgefuehrt und erst danach der Eintrag
+  aus `species_list.json` entfernt. Wenn Windows den Assetordner sperrt, bricht der Vorgang ab und die Art bleibt
+  vollstaendig in der Eingabeliste.
+  Vor der Löschung entlädt die Oberfläche alle Detailmedien und wartet bei Sofortloeschung kurz, damit Windows keine
+  produktiven Assetdateien sperrt.
+  Frühere Löwe-Testzwischenstände können über den Löschdialog vollständig bereinigt werden; aktuell ist Löwe wieder
+  produktiv angelegt und der Explorer meldet 47/47 Arten.
+  Beim gezielten Sound-Alternativlauf im Bearbeitungsdialog und vor globalen `nc-sounds`-Läufen werden alle
+  Audioplayer entladen; der aktuelle Bearbeitungsplayer wird aus dem DOM ersetzt und kurz freigegeben, damit eine
+  pausierte Vorschau unter Windows keine produktive MP3-Dateisperre hält. Temporäre Pipeline-Backupordner, die
+  Windows nach erfolgreichem Commit/Push noch sperrt, werden nur noch als Warnung protokolliert und machen den Lauf
+  nicht mehr nachträglich fehlgeschlagen.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
@@ -486,3 +502,5 @@ Status: geplant
 - Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch pruefen.
 - Rechtliche Folgepruefung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
   durchfuehren.
+- Optional: Soundzuschnitt für manuelle oder automatisch gefundene Tierstimmen planen. Ziel wäre Start- und Endpunkt
+  im Spektrogramm zu setzen und daraus lokal ein finales MP3 samt neuem Spektrogramm zu erzeugen.

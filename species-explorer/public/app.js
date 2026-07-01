@@ -128,6 +128,13 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function iucnDistributionMapUrl(species) {
+  const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
+  return /^\d+$/.test(assessmentId)
+    ? `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`
+    : "";
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -574,6 +581,49 @@ function selectSpecies(id) {
   renderDetail(species);
   window.scrollTo(scrollPosition);
   requestAnimationFrame(() => window.scrollTo(scrollPosition));
+}
+
+function releaseAudioElement(audio, { replace = false } = {}) {
+  if (!audio) return null;
+  audio.pause();
+  try {
+    audio.currentTime = 0;
+  } catch {}
+  audio.removeAttribute("src");
+  audio.load();
+  if (!replace || !audio.parentNode) return audio;
+  const releasedAudio = audio.cloneNode(false);
+  releasedAudio.controls = audio.controls;
+  releasedAudio.preload = "none";
+  releasedAudio.className = audio.className;
+  audio.parentNode.replaceChild(releasedAudio, audio);
+  return releasedAudio;
+}
+
+async function releaseAllAudioElements() {
+  state.audioCleanup?.();
+  state.audioCleanup = null;
+  for (const audio of document.querySelectorAll("audio")) {
+    releaseAudioElement(audio, { replace: audio.classList.contains("current-sound-audio") });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 800));
+}
+
+function releaseDetailMedia() {
+  state.audioCleanup?.();
+  state.audioCleanup = null;
+  state.mapCleanup?.();
+  state.mapCleanup = null;
+  state.portraitCleanup?.();
+  state.portraitCleanup = null;
+
+  for (const audio of elements.detailPanel.querySelectorAll("audio")) {
+    releaseAudioElement(audio);
+  }
+  for (const image of elements.detailPanel.querySelectorAll("img")) {
+    image.removeAttribute("src");
+    image.removeAttribute("srcset");
+  }
 }
 
 function formatTime(value) {
@@ -1072,7 +1122,7 @@ function setupPipelineControl() {
   const modeLabel = (mode) => ({
     missing: "Neue/Unvollständige Arten aktualisieren",
     all: "Alle Arten vollständig aktualisieren",
-    "manual-maps": "Manuelle Karten erneut suchen",
+    "manual-maps": "Manuelle und fehlende Karten erneut suchen",
     "nc-sounds": "NC- und fehlende Sounds erneut suchen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
@@ -1324,6 +1374,7 @@ function setupPipelineControl() {
     if (!previewToken) return;
     state.audioCleanup?.();
     state.audioCleanup = null;
+    if (previewMode === "nc-sounds") await releaseAllAudioElements();
     elements.pipelineStartButton.disabled = true;
     setMessage(
       previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
@@ -1355,6 +1406,7 @@ function setupPipelineControl() {
 
   async function startSilentPipelinePreview(mode, options = {}) {
     state.silentPipelineContext = options.context || null;
+    if (mode === "nc-sounds") await releaseAllAudioElements();
     const result = await fetchJson("/api/pipeline/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1510,7 +1562,7 @@ function setupPipelineControl() {
     if (context.section === "map") {
       setEditorMessage(
         noAlternative
-          ? "Kartensuchlauf abgeschlossen. Es wurde keine neue automatisch abrufbare Karte gefunden. Die IUCN-Karten-URL liefert lokal aktuell keinen direkt speicherbaren JPEG-Abruf."
+          ? "Kartensuchlauf abgeschlossen. Lokal wurde keine direkt speicherbare Karte gefunden. Bitte „IUCN-Karte im Browser öffnen“ nutzen, den sichtbaren Backblaze-JPEG-Link ins Quellenfeld kopieren und „Karte prüfen“ wählen."
           : "Kartensuchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
         noAlternative ? "info" : "success",
       );
@@ -1734,6 +1786,8 @@ function setupNewSpeciesCreator() {
   let inlineRunId = "";
   let inlineReviewAssets = [];
   let inlineReviewChoices = new Map();
+  let inlineManualMapPreviewToken = "";
+  let inlineManualMapHandled = false;
   let inlinePipelinePollTimer = null;
   let maxStepReached = 1;
 
@@ -1924,6 +1978,20 @@ function setupNewSpeciesCreator() {
     }
   };
 
+  const newSpeciesData = () => state.species.find((entry) => entry.id === savedSpeciesId) ?? null;
+
+  const continueAfterMapDecision = () => {
+    const soundAsset = inlineReviewAssets.find((entry) => entry.type === "sound");
+    if (soundAsset) {
+      showStep(4);
+      renderInlineSoundReview(soundAsset);
+      setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
+      return;
+    }
+    if (inlineReviewAssets.length) void submitInlineAssetReview();
+    else void finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
+  };
+
   const renderInlineSoundPlayback = (container) => {
     const audio = container.querySelector("audio");
     const marker = container.querySelector(".asset-review-progress-marker");
@@ -1961,6 +2029,14 @@ function setupNewSpeciesCreator() {
     }
   };
 
+  const setInlineMapMessage = (text = "", type = "") => {
+    const mapMessage = mapReview.querySelector(".new-species-map-message");
+    if (!mapMessage) return;
+    mapMessage.textContent = text;
+    mapMessage.className = `edit-message new-species-map-message${type ? ` ${type}` : ""}`;
+    mapMessage.hidden = !text;
+  };
+
   const renderInlineMapReview = (asset) => {
     mapReview.hidden = false;
     mapReview.innerHTML = `
@@ -1971,9 +2047,133 @@ function setupNewSpeciesCreator() {
       </div>
       <div class="new-species-review-actions">
         <button type="button" data-new-species-map-decision="reject">Überspringen / später manuell einfügen</button>
+        <button type="button" data-new-species-map-action="manual">Manuell per URL einfügen</button>
         <button class="primary" type="button" data-new-species-map-decision="automatic">Karte übernehmen</button>
       </div>
     `;
+  };
+
+  const renderInlineManualMapReview = (messageText = "Keine automatisch speicherbare Karte gefunden.") => {
+    inlineManualMapPreviewToken = "";
+    const species = newSpeciesData();
+    const browserMapUrl = iucnDistributionMapUrl(species);
+    mapReview.hidden = false;
+    mapReview.innerHTML = `
+      <h5>Karte manuell einfügen</h5>
+      <p>${escapeHtml(messageText)} Du kannst den sichtbaren Backblaze-JPEG-Link aus dem Browser hier einfügen.</p>
+      <div class="new-species-manual-map">
+        ${browserMapUrl ? `
+          <a
+            class="map-browser-link"
+            href="${escapeHtml(browserMapUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >IUCN-Karte im Browser öffnen</a>
+        ` : ""}
+        <label>
+          Quellen-URL
+          <input class="new-species-map-source-input" type="url" placeholder="https://...jpg">
+        </label>
+        <label>
+          Pflegegrund
+          <textarea class="new-species-map-reason-input">Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.</textarea>
+        </label>
+        <p class="edit-message new-species-map-message" hidden></p>
+        <section class="new-species-manual-map-preview" hidden>
+          <div class="new-species-review-media">
+            <img alt="${escapeHtml(`Neue Karte ${savedSpeciesName || "Neue Art"}`)}">
+          </div>
+          <p class="new-species-map-preview-meta"></p>
+        </section>
+      </div>
+      <div class="new-species-review-actions">
+        <button type="button" data-new-species-map-action="skip">Karte überspringen</button>
+        <button type="button" data-new-species-map-action="preview">Karte prüfen</button>
+        <button class="primary" type="button" data-new-species-map-action="save" disabled>Manuelle Karte übernehmen</button>
+      </div>
+    `;
+    setInlineMapMessage("Bitte Quellen-URL einfügen und „Karte prüfen“ wählen.", "info");
+  };
+
+  const previewInlineManualMap = async () => {
+    inlineManualMapPreviewToken = "";
+    const sourceInput = mapReview.querySelector(".new-species-map-source-input");
+    const reasonInput = mapReview.querySelector(".new-species-map-reason-input");
+    const previewSection = mapReview.querySelector(".new-species-manual-map-preview");
+    const previewImage = previewSection?.querySelector("img");
+    const previewMeta = mapReview.querySelector(".new-species-map-preview-meta");
+    const saveMapButton = mapReview.querySelector('[data-new-species-map-action="save"]');
+    if (!sourceInput || !reasonInput || !previewSection || !previewImage || !previewMeta || !saveMapButton) return;
+    const source = sourceInput.value.trim();
+    if (!source) {
+      setInlineMapMessage("Bitte zuerst den direkten Karten-JPEG-Link einfügen.", "error");
+      return;
+    }
+    setPipelineBusy(true);
+    setInlineMapMessage("Kartenlink wird geprüft…", "info");
+    try {
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/map/preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalName: "",
+            imageBase64: "",
+            reason: reasonInput.value,
+            source,
+            pipelineRunId: inlineRunId,
+          }),
+        },
+      );
+      inlineManualMapPreviewToken = result.token;
+      previewImage.src = result.newMap.url;
+      if (typeof previewImage.decode === "function") await previewImage.decode();
+      previewMeta.textContent = `${result.newMap.dimensions.width} × ${result.newMap.dimensions.height} px · ${formatBytes(result.newMap.bytes)}`;
+      previewSection.hidden = false;
+      saveMapButton.disabled = false;
+      setInlineMapMessage("Karte geprüft. Bitte vollständige Darstellung kontrollieren und dann übernehmen oder überspringen.", "success");
+    } catch (error) {
+      previewSection.hidden = true;
+      saveMapButton.disabled = true;
+      setInlineMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setPipelineBusy(false);
+    }
+  };
+
+  const saveInlineManualMap = async () => {
+    if (!inlineManualMapPreviewToken) {
+      setInlineMapMessage("Bitte zuerst die Karte prüfen.", "error");
+      return;
+    }
+    setPipelineBusy(true);
+    setInlineMapMessage("Manuelle Karte wird übernommen…", "info");
+    try {
+      await fetchJson(
+        `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/map/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: inlineManualMapPreviewToken,
+            pipelineRunId: inlineRunId,
+          }),
+        },
+      );
+      const mapAsset = inlineReviewAssets.find((entry) => entry.type === "map");
+      if (mapAsset) inlineReviewChoices.set(`${mapAsset.safeName}:map`, "manual");
+      inlineManualMapHandled = true;
+      inlineManualMapPreviewToken = "";
+      await loadData({ reload: true });
+      mapReview.hidden = true;
+      mapReview.innerHTML = "";
+      continueAfterMapDecision();
+    } catch (error) {
+      setInlineMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
+    } finally {
+      setPipelineBusy(false);
+    }
   };
 
   const renderInlineSoundReview = (asset) => {
@@ -2068,6 +2268,8 @@ function setupNewSpeciesCreator() {
     inlineRunId = "";
     inlineReviewAssets = [];
     inlineReviewChoices = new Map();
+    inlineManualMapPreviewToken = "";
+    inlineManualMapHandled = false;
     state.newSpeciesPipelineActive = false;
     maxStepReached = 1;
     preview.hidden = true;
@@ -2166,9 +2368,10 @@ function setupNewSpeciesCreator() {
     }
   };
 
-  const handleInlineReviewStatus = (status) => {
+  const handleInlineReviewStatus = async (status) => {
     setPipelineBusy(false);
     inlineRunId = status.runId;
+    await loadData({ reload: true });
     if (inlineReviewAssets !== status.reviewAssets) {
       inlineReviewAssets = status.reviewAssets || [];
       inlineReviewChoices = new Map();
@@ -2180,6 +2383,11 @@ function setupNewSpeciesCreator() {
     if (mapAsset && !inlineReviewChoices.has(`${mapAsset.safeName}:map`)) {
       showStep(3);
       renderInlineMapReview(mapAsset);
+      return;
+    }
+    if (!mapAsset && !inlineManualMapHandled) {
+      showStep(3);
+      renderInlineManualMapReview("Es wurde keine automatisch speicherbare Karte gefunden.");
       return;
     }
     mapReview.hidden = true;
@@ -2210,10 +2418,22 @@ function setupNewSpeciesCreator() {
         return;
       }
       if (status.status === "awaiting-review") {
-        handleInlineReviewStatus(status);
+        await handleInlineReviewStatus(status);
         return;
       }
       if (status.status === "completed") {
+        await loadData({ reload: true });
+        const createdSpecies = newSpeciesData();
+        if (createdSpecies && !createdSpecies.assets?.map?.exists && !inlineManualMapHandled) {
+          setPipelineBusy(false);
+          state.newSpeciesPipelineActive = false;
+          state.pipelineWasRunning = false;
+          setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
+          setPipelineMessage("Suchlauf abgeschlossen. Es wurde keine automatisch speicherbare Karte gefunden.", "info");
+          showStep(3);
+          renderInlineManualMapReview("Es wurde keine automatisch speicherbare Karte gefunden.");
+          return;
+        }
         await finishNewSpeciesWorkflow(status);
         return;
       }
@@ -2331,11 +2551,22 @@ function setupNewSpeciesCreator() {
   });
 
   form.addEventListener("change", (event) => {
+    if (event.target.closest(".new-species-map-review") || event.target.closest(".new-species-sound-review")) return;
     if (!event.target.matches(".new-species-value-unit select")) return;
     markSpeciesInputsChanged();
   });
 
   form.addEventListener("input", (event) => {
+    if (event.target.closest(".new-species-map-review")) {
+      inlineManualMapPreviewToken = "";
+      const saveMapButton = mapReview.querySelector('[data-new-species-map-action="save"]');
+      const previewSection = mapReview.querySelector(".new-species-manual-map-preview");
+      if (saveMapButton) saveMapButton.disabled = true;
+      if (previewSection) previewSection.hidden = true;
+      setInlineMapMessage("Kartenangaben geändert. Bitte erneut „Karte prüfen“ wählen.", "info");
+      return;
+    }
+    if (event.target.closest(".new-species-sound-review")) return;
     if (event.target.closest(".new-species-portrait")) {
       if (event.target === portraitInstructions) resetPortraitPrompt();
       resetPortraitPreview();
@@ -2519,20 +2750,34 @@ function setupNewSpeciesCreator() {
   });
 
   mapReview.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-new-species-map-action]");
+    if (actionButton) {
+      const action = actionButton.dataset.newSpeciesMapAction;
+      if (action === "manual") {
+        renderInlineManualMapReview("Automatische Karte wird nicht übernommen.");
+      } else if (action === "preview") {
+        void previewInlineManualMap();
+      } else if (action === "save") {
+        void saveInlineManualMap();
+      } else if (action === "skip") {
+        const mapAsset = inlineReviewAssets.find((entry) => entry.type === "map");
+        if (mapAsset) inlineReviewChoices.set(`${mapAsset.safeName}:map`, "reject");
+        inlineManualMapHandled = true;
+        inlineManualMapPreviewToken = "";
+        mapReview.hidden = true;
+        mapReview.innerHTML = "";
+        continueAfterMapDecision();
+      }
+      return;
+    }
     const button = event.target.closest("[data-new-species-map-decision]");
     if (!button) return;
     const asset = inlineReviewAssets.find((entry) => entry.type === "map");
     if (!asset) return;
     inlineReviewChoices.set(`${asset.safeName}:map`, button.dataset.newSpeciesMapDecision);
+    inlineManualMapHandled = true;
     mapReview.hidden = true;
-    const soundAsset = inlineReviewAssets.find((entry) => entry.type === "sound");
-    if (soundAsset) {
-      showStep(4);
-      renderInlineSoundReview(soundAsset);
-      setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
-    } else {
-      void submitInlineAssetReview();
-    }
+    continueAfterMapDecision();
   });
 
   soundReview.addEventListener("click", (event) => {
@@ -2574,6 +2819,7 @@ function setupSpeciesEditor(species) {
   const mapPreviewButton = elements.detailPanel.querySelector(".map-preview-button");
   const mapSaveButton = elements.detailPanel.querySelector(".map-save-button");
   const mapAutoSearchButton = elements.detailPanel.querySelector(".map-auto-search-button");
+  const mapBrowserLink = elements.detailPanel.querySelector(".map-browser-link");
   const soundFileInput = elements.detailPanel.querySelector(".sound-file-input");
   const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
   const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
@@ -2647,12 +2893,8 @@ function setupSpeciesEditor(species) {
     }
   };
 
-  const releaseCurrentSoundAudio = () => {
-    if (!currentSoundAudio) return;
-    currentSoundAudio.pause();
-    currentSoundAudio.currentTime = 0;
-    currentSoundAudio.removeAttribute("src");
-    currentSoundAudio.load();
+  const releaseCurrentSoundAudio = async () => {
+    await releaseAllAudioElements();
   };
 
   const setSoundMessage = (text = "", type = "") => {
@@ -2758,6 +3000,13 @@ function setupSpeciesEditor(species) {
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   };
+
+  mapBrowserLink?.addEventListener("click", () => {
+    setMapMessage(
+      "Die IUCN-Karte öffnet im externen Browser. Wenn dort ein Backblaze-JPEG-Link sichtbar ist, diesen Link in das Quellen-URL-Feld kopieren und danach „Karte prüfen“ wählen.",
+      "info",
+    );
+  });
 
   for (const button of openButtons) {
     button.addEventListener("click", () => {
@@ -2988,13 +3237,13 @@ function setupSpeciesEditor(species) {
     );
     if (!shouldReject) return;
     resetSoundPreview();
-    releaseCurrentSoundAudio();
     setSoundBusy(true);
     setSoundMessage(
       "Aktueller Sound wird gesichert, entfernt, als abgelehnte Quelle gemerkt, der Report wird aktualisiert und danach committed/gepusht…",
       "info",
     );
     try {
+      await releaseCurrentSoundAudio();
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/sound/reject`,
         {
@@ -3029,10 +3278,10 @@ function setupSpeciesEditor(species) {
 
   soundAutoSearchButton?.addEventListener("click", async () => {
     resetSoundPreview();
-    releaseCurrentSoundAudio();
     setSoundBusy(true);
     setSoundMessage("Gezielter Sound-Suchlauf wird vorbereitet…", "info");
     try {
+      await releaseCurrentSoundAudio();
       if (!state.openPipelinePreview) throw new Error("Pipeline-Steuerung ist nicht verfügbar");
       const result = await state.openPipelinePreview("nc-sounds", {
         targetSlugs: [species.id],
@@ -3351,7 +3600,13 @@ function setupSpeciesDelete(species) {
       );
       previewToken = result.token;
       effects.innerHTML = `<ul>${result.effects.map((effect) => `<li>${escapeHtml(effect)}</li>`).join("")}</ul>`;
-      deleteAssetsOption.disabled = !result.assetDirectoryExists && !species.inGenerated;
+      if (result.requiresAssetDeletion) {
+        deleteAssetsOption.checked = true;
+        deleteAssetsOption.disabled = true;
+      } else {
+        deleteAssetsOption.disabled = !result.assetDirectoryExists && !species.inGenerated;
+      }
+      updateDeleteMode();
       confirmButton.disabled = false;
       setMessage("Löschvorschau ist bereit.", "success");
     } catch (error) {
@@ -3366,7 +3621,8 @@ function setupSpeciesDelete(species) {
     event.preventDefault();
     if (!previewToken) return;
     const deleteAssets = deleteAssetsOption.checked;
-    state.audioCleanup?.();
+    releaseDetailMedia();
+    if (deleteAssets) await new Promise((resolve) => setTimeout(resolve, 800));
     confirmButton.disabled = true;
     setMessage(
       deleteAssets
@@ -3384,7 +3640,10 @@ function setupSpeciesDelete(species) {
         },
       );
       state.notice =
-        `${result.deleted.germanName} wurde aus der Eingabeliste entfernt. Sicherung: ${result.backup}.`
+        (result.inputEntryRemoved
+          ? `${result.deleted.germanName} wurde aus der Eingabeliste entfernt.`
+          : `${result.deleted.germanName} war bereits aus der Eingabeliste entfernt.`)
+        + (result.backup ? ` Sicherung: ${result.backup}.` : "")
         + backupRetentionText(result)
         + (result.permanentCleanup
           ? " Generierte Daten und Assetordner wurden dauerhaft gelöscht."
@@ -3403,6 +3662,7 @@ function setupSpeciesDelete(species) {
 }
 
 function renderDetail(species) {
+  const browserMapUrl = iucnDistributionMapUrl(species);
   const badges = [
     `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
     species.assetIssues.length
@@ -3744,6 +4004,14 @@ function renderDetail(species) {
               <p>JPEG-Datei oder direkter Karten-JPEG-Link bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
             </div>
             <div class="asset-header-actions">
+              ${browserMapUrl ? `
+                <a
+                  class="map-browser-link"
+                  href="${escapeHtml(browserMapUrl)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >IUCN-Karte im Browser öffnen</a>
+              ` : ""}
               ${(!species.assets.map.exists || species.assets.map.manuallyAdded) ? `
                 <button class="map-auto-search-button" type="button">Automatisch suchen</button>
               ` : ""}

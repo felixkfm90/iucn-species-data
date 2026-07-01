@@ -1,6 +1,6 @@
 # Arten löschen und Altdateien bereinigen
 
-Stand: 2026-06-30
+Stand: 2026-07-01
 
 Beim Löschen einer Art kann zwischen einem rückholbaren ersten Schritt und der sofortigen dauerhaften Entfernung
 aller zugehörigen Daten gewählt werden.
@@ -33,6 +33,18 @@ Mit aktivierter Checkbox werden zusätzlich sofort und dauerhaft entfernt:
 
 Diese Zusatzlöschung hat keine separate Wiederherstellungsablage. Danach kann dieselbe Art ohne Kollision mit alten
 generierten Daten oder einem alten Assetordner wieder neu angelegt werden.
+
+Seit 2026-07-01 läuft diese Zusatzlöschung transaktionaler: Der Explorer entfernt zuerst die generierten Daten,
+Assessment-Zuordnung, Pflegeeintrag und den Assetordner. Erst wenn dieser Schritt erfolgreich abgeschlossen ist,
+wird der Eintrag aus `species_list.json` entfernt. Wenn Windows den Assetordner oder eine Datei darin sperrt,
+bricht der Löschvorgang mit einer Dateisperrenmeldung ab und die Art bleibt vollständig in der Eingabeliste.
+
+Seit 2026-07-01 behandelt der Dialog auch einen bereits teilbereinigten Zwischenzustand: Wenn eine Art nicht mehr in
+`species_list.json`, aber noch in `speciesData.json`, `species-assets-overrides.json` oder `species-assets/` steckt,
+wird die dauerhafte Bereinigung automatisch vorausgewählt. Vor dem Löschaufruf entlädt die Oberfläche Audio,
+Karten- und Portraitbilder der Detailseite, damit Windows den produktiven Assetordner nicht durch eine noch offene
+Medienvorschau sperrt. Bei aktivierter Sofortlöschung wartet die Oberfläche danach kurz, bevor der Server den
+Assetordner entfernt.
 
 ## 2. Dauerhafter Bereinigungslauf
 

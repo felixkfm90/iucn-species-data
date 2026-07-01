@@ -62,27 +62,29 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 46 Eintraege in `species_list.json`
-- 46 aktive Arten
-- 46 Arten in `speciesData.json`
-- 46 Karten
-- 46 Art-Assetordner
-- 45 MP3-Dateien
-- 45 Credits-Dateien
-- 45 Spektrogramm-Dateien
-- 46 Artportraets
+- 47 Eintraege in `species_list.json`
+- 47 aktive Arten
+- 47 Arten in `speciesData.json`
+- 47 Karten
+- 47 Art-Assetordner
+- 46 MP3-Dateien
+- 46 Credits-Dateien
+- 46 Spektrogramm-Dateien
+- 47 Artportraets
 - 0 Assetprobleme im Explorer-Modell
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
   Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
-- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten:
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf:
   - `Blaukehlchen`
   - `Fischertukan`
   - `Rotfuchs`
   - `Waldkauz`
-- 3 aktive NC-Soundlizenzen laut Report:
+  - `Loewe` (Backblaze-Karte manuell übernommen, bis der automatische signierte Kartenabruf umgesetzt ist)
+- 4 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
+  - `Loewe`
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
 
@@ -387,7 +389,7 @@ Aktuelle Planung:
   Dadurch bleibt das Formular bei Textmarkierungen über den Dialogrand geöffnet.
   Phase 7.6 Pipeline-Steuerung nach `docs/pipeline-control-plan.md` ist seit 2026-06-20 abgeschlossen. Die App
   unterscheidet `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten vollstaendig aktualisieren`,
-  `Manuelle Karten erneut suchen` und `NC- und fehlende Sounds erneut suchen`. `update.mjs`
+  `Manuelle und fehlende Karten erneut suchen` und `NC- und fehlende Sounds erneut suchen`. `update.mjs`
   unterstuetzt
   `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
   Lauf kann gleichzeitig aktiv sein. Nach dem Start bleibt der Dialog geöffnet und zeigt
@@ -405,8 +407,8 @@ Aktuelle Planung:
   `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
-  Die beiden Wartungsläufe verarbeiten die aktuell vier manuell geschützten Karten plus Arten mit fehlender Karte
-  beziehungsweise die drei NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend
+  Die beiden Wartungsläufe verarbeiten die aktuell fünf manuell geschützten Karten plus Arten mit fehlender Karte
+  beziehungsweise die vier NC-Sounds plus Arten mit fehlender Sounddatei. Vorhandene Dateien werden vorübergehend
   unter dem ignorierten Pfad
   `species-explorer/pipeline-asset-backups/` gesichert und bei Ablehnung einer Alternative wiederhergestellt.
   Wenn ein Sound im Pruefdialog ausdruecklich abgelehnt wird, speichert der Explorer die Quellkennung unter
@@ -424,8 +426,14 @@ Aktuelle Planung:
   2026-06-30 liefert der direkte IUCN-Webendpunkt aus Node lokal HTTP 403; im Browser wird dieselbe Assessment-ID
   auf einen zeitlich signierten Backblaze-Link weitergeleitet. Der Explorer meldet diesen Fall im Karten-Suchlauf
   explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport als
-  Quellen-URL eingefuegt und wie ein Datei-Upload geprueft und uebernommen werden. Ein robuster
-  Electron-/Chromium-Fallback fuer signierte Kartenabrufe ist ein offener Folgeschritt.
+  Quellen-URL eingefuegt und wie ein Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der
+  Karten-Bearbeitungsdialog dafuer direkt `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im
+  Neue-Art-Assistenten im Schritt `Karte` zur Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen
+  Bearbeitungsdialog mit manueller Karte abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige
+  IUCN-Karten vollstaendig in die verfuegbare Breite ein; nach einem manuellen Kartenimport wird der Report sofort
+  neu aufgebaut und zusammen mit Karte, Register und Dokumentation veroeffentlicht. Ein versteckter
+  Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
+  Anwendungsfehlern abbrechen koennen.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status
   `Pipeline-Lauf läuft gerade` hängen; die anschließende Assetentscheidung kann geöffnet werden.
@@ -436,14 +444,24 @@ Aktuelle Planung:
   Die Speichermeldung einer neu angelegten Art wird nach erfolgreichem Pipeline-Commit und Push entfernt.
   Arten koennen nach Vorschau und `species_list.json`-Backup aus der Eingabeliste entfernt werden. Eine Checkbox
   loescht bei Bedarf generierte Daten, Assessment-Zuordnung, Asset-Pflegeeintrag und Assetordner derselben Art sofort
-  dauerhaft mit. Ohne Checkbox bleiben diese Inhalte bis zur getrennten Bereinigung bestehen. Die Aktion
+  dauerhaft mit. Seit 2026-07-01 wird bei aktivierter Checkbox zuerst die dauerhafte Bereinigung ausgefuehrt und erst
+  danach `species_list.json` geaendert; bei einer Windows-Dateisperre bleibt die Art vollstaendig in der Eingabeliste.
+  Ohne Checkbox bleiben diese Inhalte bis zur getrennten Bereinigung bestehen. Die Aktion
   `Bereinigen` listet verwaiste Datensaetze, Assessment-Zuordnungen, Pflegeeintraege und Assetordner auf und loescht sie nach
   genau einer Bestaetigung dauerhaft ohne Wiederherstellungsablage. Details:
   `docs/delete-species-workflow.md`. Die Bereinigung verschiebt Assetordner seit 2026-06-28 zuerst in den ignorierten
   Ordner `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht den verschobenen Ordner erst
   anschliessend endgueltig. Seit 2026-06-30 werden kurze Windows-Dateisperren beim Verschieben mehrfach erneut
   versucht; danach nutzt der Explorer einen kontrollierten Fallback aus Kopieren und Entfernen des Originalordners.
-  Dadurch bleiben Daten, Report und Assetbestand auch bei Windows-Dateisperren konsistent.
+  Dadurch bleiben Daten, Report und Assetbestand auch bei Windows-Dateisperren konsistent. Seit 2026-07-01 kann der
+  Loeschdialog auch einen teilbereinigten Zwischenzustand ohne `species_list.json`-Eintrag, aber mit verbliebenen
+  generierten Daten oder Assets direkt dauerhaft bereinigen. Vor dem Loeschaufruf entlaedt die Oberflaeche Audio,
+  Karten- und Portraitmedien der Detailseite und wartet bei Sofortloeschung kurz, damit Windows keine produktiven
+  Assetdateien sperrt.
+  Gezielte Sound-Alternativlaeufe im Bearbeitungsdialog und globale `nc-sounds`-Laeufe entladen vor dem Start alle
+  Audioplayer; der aktuelle Bearbeitungsplayer wird ersetzt und kurz freigegeben, damit eine pausierte Vorschau keine
+  produktive MP3-Dateisperre haelt. Temporäre Pipeline-Backupordner, die Windows nach erfolgreichem Commit/Push noch
+  sperrt, werden nur noch als Warnung protokolliert und machen den Lauf nicht nachtraeglich fehlgeschlagen.
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld

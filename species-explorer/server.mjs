@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  statSync,
 } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -2000,6 +2001,18 @@ export async function createExplorerServer({
     return "Keine neue automatische Alternative gefunden; bestehende Assets bleiben unverändert.";
   }
 
+  function isWindowsFileLockError(error) {
+    const code = String(error?.code ?? "").toUpperCase();
+    const message = String(error?.message ?? "").toLowerCase();
+    return (
+      ["EPERM", "EBUSY", "EACCES", "ENOTEMPTY"].includes(code)
+      || message.includes("operation not permitted")
+      || message.includes("permission denied")
+      || message.includes("access is denied")
+      || message.includes("zugriff verweigert")
+    );
+  }
+
   async function synchronizeStoredManualMapDocumentation(registry) {
     const source = await readFile(manualMapOverridesPath, "utf8");
     const next = synchronizeManualMapDocumentation(source, registry);
@@ -2018,7 +2031,20 @@ export async function createExplorerServer({
       if (!existsSync(filePath)) continue;
       found = true;
       hash.update(name);
-      hash.update(readFileSync(filePath));
+      try {
+        hash.update(readFileSync(filePath));
+      } catch (error) {
+        if (!isWindowsFileLockError(error)) throw error;
+        let fallback = "locked";
+        try {
+          const details = statSync(filePath);
+          fallback = `locked:${details.size}:${details.mtimeMs}`;
+        } catch {}
+        hash.update(fallback);
+        appendPipelineLog(
+          `Warnung: Assetdatei konnte wegen Windows-Sperre nicht vollständig gelesen werden und wurde per Metadaten bewertet: ${filePath}`,
+        );
+      }
     }
     return found ? hash.digest("hex") : "";
   }
@@ -2109,8 +2135,15 @@ export async function createExplorerServer({
             const source = join(assetDir, name);
             if (!existsSync(source)) continue;
             const backup = join(targetBackupDir, name);
-            copyFileSync(source, backup);
-            backupFiles[name] = backup;
+            try {
+              copyFileSync(source, backup);
+              backupFiles[name] = backup;
+            } catch (error) {
+              if (!isWindowsFileLockError(error)) throw error;
+              appendPipelineLog(
+                `Warnung: Assetdatei konnte wegen Windows-Sperre nicht für die Rücksicherung kopiert werden: ${source}`,
+              );
+            }
           }
         }
         snapshot.set(`${target.safeName}:${type}`, {
@@ -2306,6 +2339,24 @@ export async function createExplorerServer({
     await finishPipelineRun(exitCode);
   }
 
+  async function removePipelineAssetBackupRun(runId) {
+    if (!runId) return;
+    const runBackupPath = join(pipelineAssetBackupRoot, runId);
+    if (!existsSync(runBackupPath)) return;
+    try {
+      await rm(runBackupPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 4,
+        retryDelay: 250,
+      });
+    } catch (error) {
+      appendPipelineLog(
+        `Warnung: Temporärer Pipeline-Backupordner konnte nicht entfernt werden und bleibt zur späteren Bereinigung liegen: ${error.message}`,
+      );
+    }
+  }
+
   async function finishPipelineRun(exitCode) {
     await unlink(pendingAssetReviewPath).catch(() => {});
     pipelineState.status = exitCode === 0 ? "completed" : "failed";
@@ -2314,15 +2365,15 @@ export async function createExplorerServer({
     if (exitCode !== 0 && !pipelineState.error) {
       pipelineState.error = `Pipeline wurde mit Code ${exitCode} beendet`;
     }
+    if (pipelineState.runId) {
+      await removePipelineAssetBackupRun(pipelineState.runId);
+    }
     await mkdir(pipelineLogDir, { recursive: true });
     const logName = `pipeline-${compactTimestamp(new Date(pipelineState.startedAt))}-${pipelineState.runId.slice(0, 8)}.log`;
     const logPath = join(pipelineLogDir, logName);
     await writeFile(logPath, `${pipelineState.log.join("\n")}\n`, "utf8");
     pipelineState.logFile = `species-explorer/logs/${logName}`;
     await prunePipelineLogs(pipelineLogDir).catch(() => {});
-    if (pipelineState.runId) {
-      rmSync(join(pipelineAssetBackupRoot, pipelineState.runId), { recursive: true, force: true });
-    }
     await refreshModel({ force: true });
   }
 
@@ -2956,6 +3007,7 @@ export async function createExplorerServer({
       `species-assets/${species.safeName}/map.jpg`,
       "species-assets-overrides.json",
       "docs/manual-map-overrides.md",
+      "fehlende_elemente_report.json",
     ];
     const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
     if (stagedBefore.code !== 0) {
@@ -3007,7 +3059,15 @@ export async function createExplorerServer({
 
   async function previewMapAsset(id, payload) {
     cleanupPreviewTokens();
-    if (pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+    const allowDuringCurrentReview =
+      pipelineState.status === "awaiting-review"
+      && String(payload?.pipelineRunId ?? "") === pipelineState.runId
+      && pipelineState.targets.some((target) => target.slug === id);
+    if (
+      pipelineProcess
+      || pipelineState.status === "running"
+      || (pipelineState.status === "awaiting-review" && !allowDuringCurrentReview)
+    ) {
       const error = new Error("Während eines Pipeline-Laufs können keine Karten ersetzt werden");
       error.statusCode = 409;
       throw error;
@@ -3096,7 +3156,16 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
-    if (assetWriteActive || pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+    const allowDuringCurrentReview =
+      pipelineState.status === "awaiting-review"
+      && String(payload?.pipelineRunId ?? "") === pipelineState.runId
+      && pipelineState.targets.some((target) => target.slug === id);
+    if (
+      assetWriteActive
+      || pipelineProcess
+      || pipelineState.status === "running"
+      || (pipelineState.status === "awaiting-review" && !allowDuringCurrentReview)
+    ) {
       const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
       error.statusCode = 409;
       throw error;
@@ -3207,6 +3276,12 @@ export async function createExplorerServer({
         backupRetention = await pruneAssetBackups(assetBackupRoot);
       } catch (error) {
         backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
+      }
+      if (publishAssetChanges) {
+        const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+        if (reportRun.code !== 0) {
+          throw new Error(`Report konnte nach dem Kartenimport nicht aktualisiert werden: ${reportRun.stderr || reportRun.stdout}`);
+        }
       }
       await refreshModel({ force: true });
       let publication;
@@ -4479,8 +4554,9 @@ export async function createExplorerServer({
       error.statusCode = 404;
       throw error;
     }
-    if (!species.inInput) {
-      const error = new Error("Art ist nicht in der Eingabeliste enthalten");
+    const assetDirectoryExists = existsSync(join(repoRoot, "species-assets", species.safeName));
+    if (!species.inInput && !species.inGenerated && !assetDirectoryExists) {
+      const error = new Error("Für diese Art sind keine löschbaren Eingabe-, Daten- oder Assetreste vorhanden");
       error.statusCode = 409;
       throw error;
     }
@@ -4488,7 +4564,7 @@ export async function createExplorerServer({
     const sourceText = await readFile(speciesListPath, "utf8");
     const inputList = JSON.parse(sourceText);
     const inputIndex = findInputIndex(inputList, species);
-    if (inputIndex < 0) {
+    if (species.inInput && inputIndex < 0) {
       const error = new Error("Art fehlt in der Eingabeliste");
       error.statusCode = 409;
       throw error;
@@ -4513,11 +4589,16 @@ export async function createExplorerServer({
         assetDirectory: `species-assets/${species.safeName}`,
       },
       effects: [
-        "Der Eintrag wird aus der Eingabeliste entfernt.",
-        "Ohne Zusatzoption bleiben generierte Daten und Assets bis zum Bereinigungslauf bestehen.",
+        species.inInput
+          ? "Der Eintrag wird aus der Eingabeliste entfernt."
+          : "Der Eintrag ist bereits aus der Eingabeliste entfernt; es werden nur noch verbliebene generierte Daten und Assets bereinigt.",
+        species.inInput
+          ? "Ohne Zusatzoption bleiben generierte Daten und Assets bis zum Bereinigungslauf bestehen."
+          : "Die dauerhafte Bereinigung ist erforderlich, damit die Art vollständig aus der App verschwindet.",
         "Mit Zusatzoption werden generierte Daten, Assessment-Zuordnung, Assetpflege und der Assetordner sofort dauerhaft gelöscht.",
       ],
-      assetDirectoryExists: existsSync(join(repoRoot, "species-assets", species.safeName)),
+      assetDirectoryExists,
+      requiresAssetDeletion: !species.inInput,
     };
   }
 
@@ -4533,9 +4614,14 @@ export async function createExplorerServer({
     }
 
     const species = findEditableSpecies(model, id);
-    if (!species || !species.inInput) {
+    if (!species) {
       previewTokens.delete(token);
-      const error = new Error("Art ist nicht mehr in der Eingabeliste enthalten");
+      const error = new Error("Art wurde nicht gefunden");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (!species.inInput && !deleteAssets) {
+      const error = new Error("Art ist bereits aus der Eingabeliste entfernt. Bitte dauerhafte Bereinigung auswählen.");
       error.statusCode = 409;
       throw error;
     }
@@ -4550,42 +4636,42 @@ export async function createExplorerServer({
 
     const inputList = JSON.parse(sourceText);
     const inputIndex = findInputIndex(inputList, species);
-    if (inputIndex < 0) {
+    if (species.inInput && inputIndex < 0) {
       previewTokens.delete(token);
       const error = new Error("Art fehlt bereits in der Eingabeliste");
       error.statusCode = 409;
       throw error;
     }
 
-    await mkdir(backupDir, { recursive: true });
-    const backupName =
-      `species_list-${compactTimestamp()}-${sanitizeAssetName(species.germanName)}-${randomUUID().slice(0, 8)}.json`;
-    await writeFile(join(backupDir, backupName), sourceText, "utf8");
-    inputList.splice(inputIndex, 1);
-    const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
-    try {
-      await writeFile(tempPath, `${JSON.stringify(inputList, null, 2)}\n`, "utf8");
-      await rename(tempPath, speciesListPath);
-    } catch (error) {
-      await unlink(tempPath).catch(() => {});
-      throw error;
-    }
-
+    let backupName = "";
+    let inputEntryRemoved = false;
     let permanentCleanup = null;
     if (deleteAssets) {
       try {
         permanentCleanup = runSpeciesCleanup(repoRoot, {
           slug: species.slug || species.id,
           safeName: species.safeName,
+          allowInputEntry: species.inInput,
         });
       } catch (error) {
-        const rollbackPath = `${speciesListPath}.tmp-${randomUUID()}`;
-        try {
-          await writeFile(rollbackPath, sourceText, "utf8");
-          await rename(rollbackPath, speciesListPath);
-        } catch {
-          await unlink(rollbackPath).catch(() => {});
-        }
+        await refreshModel({ force: true }).catch(() => {});
+        throw error;
+      }
+    }
+
+    if (species.inInput) {
+      await mkdir(backupDir, { recursive: true });
+      backupName =
+        `species_list-${compactTimestamp()}-${sanitizeAssetName(species.germanName)}-${randomUUID().slice(0, 8)}.json`;
+      await writeFile(join(backupDir, backupName), sourceText, "utf8");
+      inputList.splice(inputIndex, 1);
+      const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
+      try {
+        await writeFile(tempPath, `${JSON.stringify(inputList, null, 2)}\n`, "utf8");
+        await rename(tempPath, speciesListPath);
+        inputEntryRemoved = true;
+      } catch (error) {
+        await unlink(tempPath).catch(() => {});
         throw error;
       }
     }
@@ -4606,7 +4692,8 @@ export async function createExplorerServer({
         germanName: species.germanName,
         scientificName: species.scientificName,
       },
-      backup: `species-explorer/backups/${backupName}`,
+      inputEntryRemoved,
+      backup: backupName ? `species-explorer/backups/${backupName}` : "",
       backupRetention,
       backupCleanupWarning,
       assetDirectoryPreserved: deleteAssets ? "" : `species-assets/${species.safeName}`,

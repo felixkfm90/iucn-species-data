@@ -377,10 +377,10 @@
     "Brauenmotmot": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "3371981d4ef7a1b2922bdf8bb1f4c31a92719ef6c5acb3bad11ff42092fde16d",
-        "spectrogramSha256": "57ed33e945fb38038106ff5d63782154bb675f08908c92aec5d70051c726cb49",
-        "generatedAt": "2026-06-15T13:03:04.849Z",
-        "verifiedAt": "2026-06-20T18:35:37.719Z"
+        "soundSha256": "42f2d6b7241461282d6cb9a344b6536a064098b40dd876b81bd26ccc4e33da6d",
+        "spectrogramSha256": "f98c76d0a5d984f8343ad0acf6e84541c8e96c403709be813d512575185e89aa",
+        "generatedAt": "2026-07-01T17:19:53.165Z",
+        "verifiedAt": "2026-07-01T17:19:53.666Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -510,10 +510,10 @@
     "Geoffroy-Klammeraffe": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "6091c895303b109abacedb8cdde954a1ec36758de423bb780927b9674d2998a0",
-        "spectrogramSha256": "a8f6db8b9f6effe2734879beefc021ecf1c1e0e154502974e53c83ebba1d6a84",
-        "generatedAt": "2026-06-15T13:03:10.671Z",
-        "verifiedAt": "2026-06-20T18:35:37.753Z"
+        "soundSha256": "cdad1e357fccbe1e15ab7c1ea140feaaabd5938103593a7dc65d23f4b61699e9",
+        "spectrogramSha256": "e5d8879a875d9a57642a6be41ca9673c9096ef3cc5e9eeaa9cac835622e63abf",
+        "generatedAt": "2026-07-01T17:19:53.379Z",
+        "verifiedAt": "2026-07-01T17:19:53.668Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
