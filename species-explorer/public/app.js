@@ -565,6 +565,122 @@ async function fetchJson(url, options) {
   return payload;
 }
 
+function cacheBustedUrl(url, key = Date.now()) {
+  if (!url) return "";
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}t=${encodeURIComponent(key)}`;
+}
+
+async function refreshExplorerModelOnly({ reload = false } = {}) {
+  if (reload) await fetch("/api/reload");
+  const [summaryResponse, validationResponse, speciesResponse, revisionResponse] = await Promise.all([
+    fetch("/api/summary"),
+    fetch("/api/validation"),
+    fetch("/api/species"),
+    fetch("/api/revision"),
+  ]);
+  if (
+    !summaryResponse.ok
+    || !validationResponse.ok
+    || !speciesResponse.ok
+    || !revisionResponse.ok
+  ) {
+    throw new Error("Lokale Daten konnten nicht aktualisiert werden.");
+  }
+  const [summary, validation, species, revision] = await Promise.all([
+    summaryResponse.json(),
+    validationResponse.json(),
+    speciesResponse.json(),
+    revisionResponse.json(),
+  ]);
+  state.dataRevision = revision.revision;
+  state.species = species;
+  updateSummary(summary);
+  updateValidation(validation);
+  populateStatusFilter();
+  applyFilters();
+  return { summary, validation, species, revision };
+}
+
+async function refreshOpenSoundEditor(speciesId) {
+  const editDialog = elements.detailPanel.querySelector(".edit-dialog[open]");
+  if (!editDialog || editDialog.dataset.activeSection !== "sound") return false;
+  const { species } = await refreshExplorerModelOnly({ reload: true });
+  const updatedSpecies = species.find((entry) => entry.id === speciesId);
+  if (!updatedSpecies) return false;
+
+  const form = editDialog.querySelector(".edit-form");
+  const soundFields = editDialog.querySelector(".sound-edit-fields");
+  let currentPreview = editDialog.querySelector(".current-sound-preview");
+  if (updatedSpecies.assets.sound.exists) {
+    if (!currentPreview && soundFields) {
+      currentPreview = document.createElement("section");
+      currentPreview.className = "current-sound-preview";
+      soundFields.before(currentPreview);
+    }
+    if (currentPreview) {
+      releaseAudioElement(currentPreview.querySelector("audio"), { replace: false });
+      const cacheKey = [
+        updatedSpecies.assets.sound.sha256,
+        updatedSpecies.assets.sound.bytes,
+        updatedSpecies.assets.spectrogram?.soundSha256,
+        Date.now(),
+      ].filter(Boolean).join("-");
+      currentPreview.innerHTML = `
+        <div>
+          <strong>Aktueller Sound</strong>
+          <span>${escapeHtml(updatedSpecies.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
+        </div>
+        <audio
+          class="current-sound-audio"
+          controls
+          preload="metadata"
+          src="${escapeHtml(cacheBustedUrl(updatedSpecies.assets.sound.url, cacheKey))}"
+        ></audio>
+      `;
+    }
+  } else if (currentPreview) {
+    releaseAudioElement(currentPreview.querySelector("audio"), { replace: false });
+    currentPreview.remove();
+  }
+
+  const setField = (name, value) => {
+    const field = form?.querySelector(`[name="${name}"]`);
+    if (field) field.value = value || "";
+  };
+  const credits = updatedSpecies.credits || {};
+  setField("soundRecordist", credits.recordist);
+  setField("soundSource", credits.source);
+  setField("soundUrl", credits.url);
+  setField("soundLicense", credits.license);
+  setField("soundCountry", credits.country);
+  setField("soundLocation", credits.location);
+  setField("soundQuality", credits.quality);
+  setField("soundNotes", credits.notes);
+
+  const reasonInput = editDialog.querySelector(".sound-reason-input");
+  if (reasonInput) reasonInput.value = updatedSpecies.assets.sound.manualReason || "";
+  const careState = editDialog.querySelector(".sound-care-state");
+  if (careState) careState.textContent = updatedSpecies.assets.sound.manuallyAdded
+    ? "Manuell geschützt"
+    : "Automatische Pflege";
+  const autoSearchButton = editDialog.querySelector(".sound-auto-search-button");
+  if (autoSearchButton) autoSearchButton.textContent = updatedSpecies.assets.sound.exists
+    ? "Alternative suchen"
+    : "Automatisch suchen";
+
+  const preview = editDialog.querySelector(".sound-edit-preview");
+  if (preview) preview.hidden = true;
+  for (const audio of editDialog.querySelectorAll(".sound-preview-current, .sound-preview-new")) {
+    releaseAudioElement(audio, { replace: false });
+  }
+  const saveButton = editDialog.querySelector(".sound-save-button");
+  if (saveButton) saveButton.disabled = true;
+  const creditsPreview = editDialog.querySelector(".sound-credits-preview");
+  if (creditsPreview) creditsPreview.replaceChildren();
+  return true;
+}
+
 function selectSpecies(id) {
   const species = state.species.find((entry) => entry.id === id);
   if (!species) return;
@@ -604,9 +720,9 @@ async function releaseAllAudioElements() {
   state.audioCleanup?.();
   state.audioCleanup = null;
   for (const audio of document.querySelectorAll("audio")) {
-    releaseAudioElement(audio, { replace: audio.classList.contains("current-sound-audio") });
+    releaseAudioElement(audio, { replace: true });
   }
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
 function releaseDetailMedia() {
@@ -618,7 +734,7 @@ function releaseDetailMedia() {
   state.portraitCleanup = null;
 
   for (const audio of elements.detailPanel.querySelectorAll("audio")) {
-    releaseAudioElement(audio);
+    releaseAudioElement(audio, { replace: true });
   }
   for (const image of elements.detailPanel.querySelectorAll("img")) {
     image.removeAttribute("src");
@@ -1527,7 +1643,7 @@ function setupPipelineControl() {
     }
   }
 
-  function notifySilentPipelineContext(status) {
+  async function notifySilentPipelineContext(status) {
     const context = state.silentPipelineContext;
     if (!context || context.source !== "editor") return false;
     const editDialog = elements.detailPanel.querySelector(".edit-dialog[open]");
@@ -1567,6 +1683,18 @@ function setupPipelineControl() {
         noAlternative ? "info" : "success",
       );
     } else {
+      let refreshedSoundEditor = false;
+      if (!soundLocked && !noAlternative) {
+        try {
+          refreshedSoundEditor = await refreshOpenSoundEditor(context.speciesId);
+        } catch (error) {
+          setEditorMessage(
+            `Sound-Suchlauf abgeschlossen, aber die offene Ansicht konnte nicht aktualisiert werden: ${error.message}`,
+            "error",
+          );
+          return true;
+        }
+      }
       setEditorMessage(
         soundLocked
           ? "Sound-Suchlauf abgeschlossen. Die Sounddatei war noch geöffnet oder gesperrt; bitte Wiedergabe/Fenster schließen und erneut suchen."
@@ -1574,6 +1702,8 @@ function setupPipelineControl() {
           ? "Sound-Suchlauf abgeschlossen. Bereits abgelehnte Soundquellen wurden übersprungen; keine weitere geeignete Alternative gefunden."
           : noAlternative
           ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden."
+          : refreshedSoundEditor
+          ? "Sound-Suchlauf abgeschlossen. Der aktuelle Sound und die Credits wurden im geöffneten Fenster aktualisiert."
           : "Sound-Suchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
         soundLocked ? "error" : noAlternative ? "info" : "success",
       );
@@ -1623,7 +1753,7 @@ function setupPipelineControl() {
 
       if (state.pipelineWasRunning && !active && status.status !== "idle") {
         if (status.status === "completed" && status.gitPublished) state.notice = "";
-        const keepEditDialogOpen = notifySilentPipelineContext(status);
+        const keepEditDialogOpen = await notifySilentPipelineContext(status);
         if (keepEditDialogOpen) state.reloadAfterEditClose = true;
         else await loadData({ reload: true });
         if (state.silentPipelineContext) state.silentPipelineContext = null;

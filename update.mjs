@@ -266,15 +266,7 @@ async function replaceExistingFileWithTemp(tempPath, targetPath) {
     } catch (error) {
       lastError = error;
       if (!isFileLockError(error)) throw error;
-      try {
-        if (fs.existsSync(targetPath)) fs.rmSync(targetPath, { force: true });
-        fs.renameSync(tempPath, targetPath);
-        return;
-      } catch (replaceError) {
-        lastError = replaceError;
-        if (!isFileLockError(replaceError)) throw replaceError;
-        await sleep(250 * (attempt + 1));
-      }
+      await sleep(250 * (attempt + 1));
     }
   }
   throw lastError;

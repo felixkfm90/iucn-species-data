@@ -461,7 +461,10 @@ Aktuelle Planung:
   Gezielte Sound-Alternativlaeufe im Bearbeitungsdialog und globale `nc-sounds`-Laeufe entladen vor dem Start alle
   Audioplayer; der aktuelle Bearbeitungsplayer wird ersetzt und kurz freigegeben, damit eine pausierte Vorschau keine
   produktive MP3-Dateisperre haelt. Temporäre Pipeline-Backupordner, die Windows nach erfolgreichem Commit/Push noch
-  sperrt, werden nur noch als Warnung protokolliert und machen den Lauf nicht nachtraeglich fehlgeschlagen.
+  sperrt, werden nur noch als Warnung protokolliert und machen den Lauf nicht nachtraeglich fehlgeschlagen. Beim
+  spaeteren Uebernehmen einer Soundalternative bleiben bereits gespeicherte `sound.rejectedSources` erhalten. Der
+  offene Tierstimmen-Bearbeitungsdialog aktualisiert nach einem still gestarteten Alternativlauf aktuellen Sound und
+  Credits aus dem neu geladenen Modell.
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld

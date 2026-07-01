@@ -1859,6 +1859,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /rejectedSoundSourceFromCredits/);
   assert.match(serverSource, /Karte abgelehnt und entfernt/);
   assert.match(serverSource, /sound\.rejectedSources|rejectedSources/);
+  assert.match(serverSource, /preservedSoundRejections/);
+  assert.match(serverSource, /rejectedSources: preservedSoundRejections/);
+  assert.match(appSource, /async function refreshOpenSoundEditor/);
+  assert.match(appSource, /await notifySilentPipelineContext\(status\)/);
   assert.match(cleanupSource, /cleanup-trash/);
   assert.match(serverSource, /assetCompositeHash/);
   assert.match(serverSource, /reviewMode:\s*plan\.mode/);

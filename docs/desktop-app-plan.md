@@ -488,6 +488,9 @@ Umgesetzt:
 - die Erfolgsmeldung aus dem ersten Speicherschritt einer neuen Art verschwindet nach erfolgreichem Commit und Push
 - Karten- und NC-/fehlende-Soundsuchlauf sichern bestehende Assets lokal und stellen sie bei Ablehnung wieder her;
   bei vorher fehlendem Sound werden neu erzeugte Sounddateien bei Ablehnung wieder entfernt
+- abgelehnte Soundquellen bleiben auch nach einer später akzeptierten Alternative in `sound.rejectedSources`
+  erhalten; der offene Tierstimmen-Bearbeitungsdialog lädt nach einem stillen Soundlauf aktuellen Sound und Credits
+  neu
 
 Arten loeschen und bereinigen:
 

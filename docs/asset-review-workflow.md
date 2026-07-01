@@ -51,7 +51,8 @@ Report danach neu aufgebaut.
 
 Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezielten Sound-Suchlauf fuer dieselbe
 Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
-Pro Art koennen beliebig viele Soundquellen abgelehnt werden; jede Quellkennung bleibt gespeichert.
+Pro Art koennen beliebig viele Soundquellen abgelehnt werden; jede Quellkennung bleibt gespeichert. Diese Liste
+bleibt auch erhalten, wenn spaeter ein anderer gefundener Sound uebernommen wird.
 Wenn ein gefundener Kandidat wegen Download-, Format- oder Transcode-Problemen nicht übernommen werden kann, wird
 nur dieser Kandidat für den aktuellen Lauf temporär übersprungen und die nächste Quelle geprüft. Wenn Windows die
 produktive `sound.mp3` noch durch einen Player sperrt, stoppt der Lauf mit einer verständlichen Dateisperrenmeldung,
@@ -82,7 +83,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   MP3 möglichst nicht als geöffnete Datei blockiert. Seit 2026-07-01 wird der Player vor dem Alternativlauf
   zusätzlich aus dem Dialog ersetzt und kurz freigegeben, damit auch eine pausierte Vorschau keine Dateisperre hält.
 - Beide Aktionen starten seit 2026-06-29 als stiller gezielter Hintergrundlauf, ohne den Bearbeitungsdialog oder die
-  Desktop-App zu schließen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden.
+  Desktop-App zu schließen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden. Seit 2026-07-01 wird der
+  offene Tierstimmen-Dialog nach einem abgeschlossenen Soundlauf mit aktuellem Sound und aktuellen Credits neu
+  befüllt.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
 Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht

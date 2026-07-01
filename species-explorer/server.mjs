@@ -91,6 +91,15 @@ const MIME_TYPES = {
   ".mp3": "audio/mpeg",
   ".webp": "image/webp",
 };
+const activeFileStreams = new Set();
+
+function closeActiveFileStreams(predicate = () => true) {
+  for (const entry of [...activeFileStreams]) {
+    if (!predicate(entry.path)) continue;
+    entry.stream.destroy();
+    activeFileStreams.delete(entry);
+  }
+}
 
 export function formatSpectrogramPipelineLog(stdoutText) {
   const raw = String(stdoutText ?? "").trim();
@@ -615,8 +624,25 @@ function hashText(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function isWindowsFileLockError(error) {
+  const code = String(error?.code ?? "").toUpperCase();
+  const message = String(error?.message ?? "").toLowerCase();
+  return (
+    ["EPERM", "EBUSY", "EACCES", "ENOTEMPTY"].includes(code)
+    || message.includes("operation not permitted")
+    || message.includes("permission denied")
+    || message.includes("access is denied")
+    || message.includes("zugriff verweigert")
+  );
+}
+
 async function fileSha256(filePath) {
-  return createHash("sha256").update(await readFile(filePath)).digest("hex");
+  try {
+    return createHash("sha256").update(await readFile(filePath)).digest("hex");
+  } catch (error) {
+    if (!isWindowsFileLockError(error)) throw error;
+    return "";
+  }
 }
 
 function isSha256(value) {
@@ -1700,6 +1726,21 @@ async function sendFile(request, response, path) {
   };
   const rangeHeader = request.headers.range;
 
+  const streamFile = (options) => {
+    const stream = createReadStream(path, options);
+    const entry = { path, stream };
+    activeFileStreams.add(entry);
+    const cleanup = () => {
+      activeFileStreams.delete(entry);
+      stream.destroy();
+    };
+    response.on("close", cleanup);
+    response.on("finish", cleanup);
+    stream.on("close", cleanup);
+    stream.on("error", cleanup);
+    stream.pipe(response);
+  };
+
   if (rangeHeader) {
     const range = parseByteRange(rangeHeader, details.size);
     if (!range) {
@@ -1721,7 +1762,7 @@ async function sendFile(request, response, path) {
       response.end();
       return;
     }
-    createReadStream(path, range).pipe(response);
+    streamFile(range);
     return;
   }
 
@@ -1733,7 +1774,7 @@ async function sendFile(request, response, path) {
     response.end();
     return;
   }
-  createReadStream(path).pipe(response);
+  streamFile();
 }
 
 export async function createExplorerServer({
@@ -2544,6 +2585,11 @@ export async function createExplorerServer({
       gitPublished: false,
       publishAfterAssetOnlyNoAssets: false,
     };
+    if (preview.mode === "nc-sounds") {
+      closeActiveFileStreams((filePath) => extname(filePath).toLowerCase() === ".mp3");
+      appendPipelineLog("Offene MP3-Streams im Explorer wurden vor dem Sound-Suchlauf geschlossen.");
+      await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
+    }
     pipelineAssetSnapshot = preview.mode === "cleanup" ? new Map() : capturePipelineAssets(plan);
     void executePipelineRun(plan).catch(async (error) => {
       appendPipelineLog(`Unerwarteter Pipelinefehler: ${error.message}`);
@@ -2662,7 +2708,13 @@ export async function createExplorerServer({
 
       acceptedAny = true;
       registry.assets[asset.safeName] ??= {};
+      const previousAssetOverride = registry.assets[asset.safeName][asset.type];
+      const preservedSoundRejections =
+        asset.type === "sound" && Array.isArray(previousAssetOverride?.rejectedSources)
+          ? previousAssetOverride.rejectedSources
+          : [];
       registry.assets[asset.safeName][asset.type] = {
+        ...(preservedSoundRejections.length ? { rejectedSources: preservedSoundRejections } : {}),
         manual: choice.decision === "manual",
         reason: choice.decision === "manual"
           ? "Nach Pipeline-Import von Felix als manuell gepflegt markiert."

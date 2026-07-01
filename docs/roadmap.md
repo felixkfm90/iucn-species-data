@@ -402,7 +402,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Audioplayer entladen; der aktuelle Bearbeitungsplayer wird aus dem DOM ersetzt und kurz freigegeben, damit eine
   pausierte Vorschau unter Windows keine produktive MP3-Dateisperre hält. Temporäre Pipeline-Backupordner, die
   Windows nach erfolgreichem Commit/Push noch sperrt, werden nur noch als Warnung protokolliert und machen den Lauf
-  nicht mehr nachträglich fehlgeschlagen.
+  nicht mehr nachträglich fehlgeschlagen. Beim späteren Übernehmen einer neuen Soundalternative bleiben bereits
+  gespeicherte `sound.rejectedSources` erhalten. Nach still gestarteten Sound-Alternativläufen aktualisiert der
+  offene Tierstimmen-Bearbeitungsdialog aktuellen Sound und Credits aus dem neu geladenen Modell.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
