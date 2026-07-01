@@ -86,6 +86,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   Desktop-App zu schließen und ohne den allgemeinen Datenbank-Aktionen-Dialog einzublenden. Seit 2026-07-01 wird der
   offene Tierstimmen-Dialog nach einem abgeschlossenen Soundlauf mit aktuellem Sound und aktuellen Credits neu
   befüllt.
+- Wenn im Sound-Prüfdialog eine gefundene Alternative abgelehnt wird, bleibt der Dialog geöffnet, zeigt den laufenden
+  nächsten Suchlauf an und wird beim nächsten Kandidaten im selben Fenster neu befüllt. Er schließt erst nach
+  Übernahme des Kandidaten, nach Behalten des bisherigen Sounds oder wenn keine weitere Alternative verfügbar ist.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
 Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht

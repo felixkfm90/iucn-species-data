@@ -398,7 +398,8 @@ Wenn ein gefundener Kandidat wegen Download-, Format- oder Transcode-Problemen n
 die Pipeline weitere Kandidaten. Eine Windows-Dateisperre auf der produktiven MP3 wird gesondert gemeldet; vor dem
 gezielten Alternativlauf entlädt der Bearbeitungsdialog den aktuellen Player, um solche Sperren zu vermeiden. Nach
 einem stillen Alternativlauf bleibt der Tierstimmen-Bearbeitungsdialog offen und befüllt aktuellen Sound und Credits
-aus dem neu geladenen Modell.
+aus dem neu geladenen Modell. Wird eine gefundene Alternative abgelehnt, bleibt auch der Sound-Prüfdialog offen,
+zeigt den nächsten Suchlauf an und rendert den nächsten Kandidaten im selben Dialog.
 
 Phase 7.7.4 Spektrogramm-Konsistenz ist seit 2026-06-20 technisch umgesetzt. Vor dem Speichern eines neuen Sounds
 erzeugt die App automatisch ein neues WebP mit denselben FFmpeg-Parametern wie der Kommandozeilen-Generator.

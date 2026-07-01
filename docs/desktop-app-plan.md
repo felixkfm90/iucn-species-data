@@ -490,7 +490,7 @@ Umgesetzt:
   bei vorher fehlendem Sound werden neu erzeugte Sounddateien bei Ablehnung wieder entfernt
 - abgelehnte Soundquellen bleiben auch nach einer später akzeptierten Alternative in `sound.rejectedSources`
   erhalten; der offene Tierstimmen-Bearbeitungsdialog lädt nach einem stillen Soundlauf aktuellen Sound und Credits
-  neu
+  neu; der Sound-Prüfdialog bleibt nach einer Ablehnung geöffnet und zeigt den nächsten Kandidaten im selben Fenster
 
 Arten loeschen und bereinigen:
 

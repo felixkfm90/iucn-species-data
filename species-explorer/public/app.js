@@ -20,6 +20,9 @@ const state = {
   backupPollTimer: null,
   settingsSnapshot: null,
   assetReviewRunId: "",
+  assetReviewSignature: "",
+  assetReviewAwaitingRetry: false,
+  reloadAfterAssetReviewClose: false,
   reloadAfterEditClose: false,
   dataRevision: "",
   dataRevisionTimer: null,
@@ -941,10 +944,36 @@ function setupAssetReview() {
     elements.assetReviewMessage.hidden = !text;
   };
 
+  const closeReviewDialog = () => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  };
+
+  const reviewSignature = (assets = []) => JSON.stringify(
+    assets.map((asset) => [
+      asset.safeName,
+      asset.type,
+      asset.file,
+      asset.url,
+      asset.spectrogramUrl,
+      asset.previousUrl,
+      asset.previousSpectrogramUrl,
+      asset.sourceLabel,
+    ]),
+  );
+
   const openReview = (status) => {
     if (!status.reviewAssets?.length) return;
-    if (state.assetReviewRunId === status.runId && dialog.open) return;
+    const nextSignature = reviewSignature(status.reviewAssets);
+    if (state.assetReviewRunId === status.runId && state.assetReviewSignature === nextSignature && dialog.open) {
+      return;
+    }
     state.assetReviewRunId = status.runId;
+    state.assetReviewSignature = nextSignature;
+    state.assetReviewAwaitingRetry = false;
+    form.dataset.closeOnly = "false";
+    elements.assetReviewSave.textContent = "Entscheidung speichern";
+    elements.assetReviewSave.disabled = false;
     const retryMode = status.mode === "manual-maps" || status.mode === "nc-sounds";
     const decisionLabels = (asset) => {
       if (asset.type === "map") {
@@ -1058,8 +1087,10 @@ function setupAssetReview() {
         : "Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.",
       "info",
     );
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    if (!dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
+    }
     for (const item of elements.assetReviewList.querySelectorAll(".asset-review-sound-preview")) {
       const audio = item.querySelector("audio");
       const marker = item.querySelector(".asset-review-progress-marker");
@@ -1097,9 +1128,43 @@ function setupAssetReview() {
   dialog.addEventListener("close", () => {
     stopAssetReviewAudio();
     closeMapLightbox();
+    state.assetReviewAwaitingRetry = false;
+    state.assetReviewSignature = "";
+    form.dataset.closeOnly = "false";
+    elements.assetReviewSave.textContent = "Entscheidung speichern";
+    if (state.reloadAfterAssetReviewClose) {
+      state.reloadAfterAssetReviewClose = false;
+      void loadData({ reload: true });
+    }
   });
+  state.finishAssetReviewWaiting = (status) => {
+    if (!dialog.open || !state.assetReviewAwaitingRetry) return false;
+    const failed = status.status === "failed";
+    const logText = (status.log || []).join("\n");
+    const noAlternative =
+      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine weitere Soundquelle|keine weitere taugliche Quelle/i
+        .test(logText);
+    stopAssetReviewAudio();
+    setMessage(
+      failed
+        ? status.error || "Sound-Suchlauf fehlgeschlagen. Der bisherige Sound bleibt erhalten."
+        : noAlternative
+        ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden; der bisherige Sound bleibt erhalten."
+        : "Sound-Suchlauf abgeschlossen. Der bisherige Sound bleibt erhalten.",
+      failed ? "error" : "info",
+    );
+    form.dataset.closeOnly = "true";
+    elements.assetReviewSave.textContent = "Fenster schließen";
+    elements.assetReviewSave.disabled = false;
+    state.assetReviewAwaitingRetry = false;
+    return true;
+  };
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (form.dataset.closeOnly === "true") {
+      closeReviewDialog();
+      return;
+    }
     const assets = JSON.parse(form.dataset.assets || "[]");
     const formData = new FormData(form);
     const choices = assets.map((asset, index) => ({
@@ -1108,6 +1173,7 @@ function setupAssetReview() {
       decision: formData.get(`asset-${index}`),
       manual: formData.get(`asset-${index}`) === "manual",
     }));
+    const rejectedSound = choices.some((choice) => choice.type === "sound" && choice.decision === "reject");
     elements.assetReviewSave.disabled = true;
     setMessage("Pflegeentscheidungen werden gespeichert…", "info");
     try {
@@ -1119,13 +1185,22 @@ function setupAssetReview() {
           choices,
         }),
       });
-      if (typeof dialog.close === "function") dialog.close();
-      else dialog.removeAttribute("open");
-      setMessage();
+      if (rejectedSound) {
+        state.assetReviewAwaitingRetry = true;
+        stopAssetReviewAudio();
+        setMessage(
+          "Gefundener Sound wurde abgelehnt und gemerkt. Nächster Sound wird gesucht …",
+          "info",
+        );
+      } else {
+        closeReviewDialog();
+        setMessage();
+      }
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-    } finally {
       elements.assetReviewSave.disabled = false;
+    } finally {
+      if (!rejectedSound && form.dataset.closeOnly !== "true") elements.assetReviewSave.disabled = false;
     }
   });
 
@@ -1753,8 +1828,10 @@ function setupPipelineControl() {
 
       if (state.pipelineWasRunning && !active && status.status !== "idle") {
         if (status.status === "completed" && status.gitPublished) state.notice = "";
+        const keepAssetReviewOpen = state.finishAssetReviewWaiting?.(status) === true;
         const keepEditDialogOpen = await notifySilentPipelineContext(status);
         if (keepEditDialogOpen) state.reloadAfterEditClose = true;
+        else if (keepAssetReviewOpen) state.reloadAfterAssetReviewClose = true;
         else await loadData({ reload: true });
         if (state.silentPipelineContext) state.silentPipelineContext = null;
       }
