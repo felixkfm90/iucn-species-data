@@ -939,33 +939,22 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-06-30T14:50:14.579Z",
-        "approvedAt": "2026-06-30T14:50:17.698Z",
+        "importedAt": "2026-07-01T15:07:05.846Z",
+        "approvedAt": "2026-07-01T15:07:08.265Z",
         "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "3a286c875f4bf8ecac6c8dc59730cd719e6d3bee9012c3ac7ae8e40f5abe1835"
+        "metadataSha256": "5cd0dca84bb9ac3460391cefb2088abee991cf61275059b5fd20e7ace4a62b01"
       },
       "sound": {
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-06-30T14:51:30.048Z"
+        "updatedAt": "2026-07-01T15:08:20.131Z"
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "cd1ebd8d41cc184a69694a911acf152aec30d7bf541950e9f6d0a709a6bdc83c",
-        "spectrogramSha256": "a95fd1899b2f68831eb836fd8849d63fc5fc6b8fb89cacc428325f1cf7d1bd15",
-        "generatedAt": "2026-06-30T14:51:13.221Z",
-        "verifiedAt": "2026-06-30T14:51:13.227Z"
-      },
-      "map": {
-        "manual": true,
-        "protectFromPipeline": true,
-        "reason": "aktuell kein automatischer download möglich durch explorer",
-        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260630165556_4ca656477464197f3c7dc334_e36b5d5e8c4cb522adb5dcb8ffa40132ddbf99ef_002_20260707165556_0020_dnld",
-        "germanName": "Löwe",
-        "originalFileName": "T15951A280792135.jpg",
-        "importedAt": "2026-06-30T16:58:18.832Z",
-        "updatedAt": "2026-06-30T16:58:18.832Z",
-        "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
+        "soundSha256": "63c3a7da9a048c3257e14fdd6af03479887b40d69163619d9cb80046bcdc7a0c",
+        "spectrogramSha256": "2a6faac80b3b12c9562a629a037a896d31d316e518ddb4edc8592fd6458a5bc7",
+        "generatedAt": "2026-07-01T15:08:08.460Z",
+        "verifiedAt": "2026-07-01T15:08:08.465Z"
       }
     }
   },

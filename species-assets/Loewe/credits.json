@@ -1,13 +1,13 @@
 {
   "scientific_name": "Panthera leo",
   "german_name": "Löwe",
-  "recordist": "Bernard hanus",
-  "country": "Senegal",
-  "location": "Sindia (near  Guereo), Mbour, Thiès Region",
+  "recordist": "Stein Ø. Nilsen",
+  "country": "Tanzania",
+  "location": "Tarangire safari lodge, Tarangire Np ",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1086154",
-  "rejectionKey": "xeno-canto:1086154",
+  "url": "https://xeno-canto.org/962314",
+  "rejectionKey": "xeno-canto:962314",
   "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Panthera sp:leo q:A len:25-35\" | page=1"
 }
