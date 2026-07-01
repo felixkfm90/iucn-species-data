@@ -972,18 +972,42 @@
             "recordist": "Speaker: Andrew Krizhanovsky, incorporating:\n\nFragmento Deemento - Volume 1.5 / Fragmento Deemento - Volume 1.5 (by-sa 3.0, en:Jamendo)\nFile:Lion raring-sound1TamilNadu178.ogg\nImage:Ru-audio template-Wikipedia.ogg\nAuthors of the article",
             "license": "https://creativecommons.org/licenses/by-sa/3.0",
             "rejectedAt": "2026-07-01T19:53:52.681Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-01T19:54:25.437Z"
+          },
+          {
+            "key": "xeno-canto:1086154",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1086154",
+            "recordist": "Bernard hanus",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-07-01T19:54:38.662Z"
+          },
+          {
+            "key": "xeno-canto:962314",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/962314",
+            "recordist": "Stein Ø. Nilsen",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-07-01T19:56:23.906Z"
           }
         ],
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-01T19:54:00.883Z"
+        "updatedAt": "2026-07-01T19:56:49.458Z"
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "794bbeb9ab62f88dbdebbe4cfb16bd7ba4bce07182facfa1a1ed020c9191ff8b",
-        "spectrogramSha256": "b5d8119d9ac2c6c87029ce7982553ac4d56bba973ea70e8c20fa4f8406a37eba",
-        "generatedAt": "2026-07-01T19:53:57.244Z",
-        "verifiedAt": "2026-07-01T19:53:57.249Z"
+        "soundSha256": "7c8f29b1580cae5b3adc08708775965dc82fbff629356e51b2c0bc239347c187",
+        "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
+        "generatedAt": "2026-07-01T19:56:32.498Z",
+        "verifiedAt": "2026-07-01T19:56:32.504Z"
       }
     }
   },
