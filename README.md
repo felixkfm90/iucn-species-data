@@ -193,7 +193,7 @@ Der Explorer zeigt:
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
-- gezielten Suchlauf nur fuer manuell gepflegte und fehlende Karten
+- gezielten Kartensuchlauf fuer jede einzelne Art sowie global fuer manuell gepflegte und fehlende Karten
 - gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
@@ -363,9 +363,12 @@ Browser geöffneter IUCN-/Backblaze-Kartenlink. Die App lädt die URL serverseit
 Abmessungen, Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
 höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
 Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
-Im Bearbeitungsdialog kann eine fehlende oder manuell geschützte Karte per `Automatisch suchen` gezielt nur für
-die aktuelle Art gesucht werden. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App
-zu schließen.
+Im Bearbeitungsdialog kann per `Automatisch suchen` für jede vorhandene Art ein gezielter Kartensuchlauf gestartet
+werden, unabhängig davon, ob die Karte bisher automatisch gepflegt, manuell geschützt oder fehlend ist. Der Lauf
+startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App zu schließen. Wenn die Pipeline eine Karte
+speichert, zeigt der Explorer sie auch dann als prüfbare automatische Alternative an, wenn die Bilddatei bytegleich
+zur bisherigen manuell gepflegten Karte ist; dadurch kann die Pflegeentscheidung wieder auf automatische Pflege
+zurückgestellt werden.
 Seit 2026-07-02 versucht der automatische Kartenabruf zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen
 Headern, danach den offiziellen IUCN-API-Host mit Token und zusätzlich signierte Backblaze-Links, die in Redirect-,
 HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn Node lokal HTTP 403 erhält, nutzt
@@ -375,6 +378,14 @@ sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefü
 werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
 Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
 Anwendungsfehlern abbrechen können.
+
+Offene Bedienungswünsche für eine spätere UI-Runde:
+
+- einzelne Assets einer Art gezielt entfernen, ohne die ganze Art zu löschen
+- deutschen Artnamen umbenennen, wenn sich die deutsche Bezeichnung ändert und der wissenschaftliche Name/Slug
+  gleich bleibt
+- allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
+  Männchen/Weibchen, Wert und Einheit aufteilen
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und

@@ -68,7 +68,10 @@ Quelle nicht erneut vor.
 Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gestartet werden:
 
 - `Automatisch suchen` im Kartenabschnitt nutzt den Kartensuchlauf für genau diese Art. Bei Zielarten darf der
-  Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
+  Lauf für jede vorhandene Art gestartet werden, auch wenn bereits eine automatisch gepflegte Karte vorhanden ist.
+  Wenn die Pipeline eine Karte speichert, wird sie auch dann als prüfbare Alternative angezeigt, wenn die Bilddatei
+  bytegleich zur bisherigen manuell gepflegten Karte ist. Dadurch kann eine manuell geschützte Karte nach erfolgreichem
+  IUCN-Abruf wieder auf automatische Pflege zurückgestellt werden.
 - Der automatische Kartenlauf versucht zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
   Fehlerantworten. Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich
@@ -98,8 +101,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   Austausch keine alte Spektrogrammdatei aus dem Browsercache neben dem neuen MP3 angezeigt wird.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
-Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht
-mehr ausschließlich auf manuell geschützte Karten begrenzt.
+Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet weiterhin manuell geschützte und
+fehlende Karten. Die artweise Suche im Bearbeitungsdialog ist zusätzlich bewusst breiter und kann für jede einzelne
+Art gestartet werden.
 
 Beim Neue-Art-Assistenten nutzt Schritt `Karte` denselben manuellen URL-Workflow wie der Kartenabschnitt im
 Bearbeitungsdialog. Wenn keine automatisch speicherbare IUCN-Karte gefunden wird, kann der sichtbare Backblaze-JPEG-

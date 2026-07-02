@@ -386,7 +386,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Verfügung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog vollständig mit Karte
   abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollständig in die verfügbare
   Breite ein, statt den unteren Kartenbereich abzuschneiden. Nach einem manuellen Kartenimport wird der Report sofort
-  neu aufgebaut und zusammen mit Karte, Register und Dokumentation veröffentlicht.
+  neu aufgebaut und zusammen mit Karte, Register und Dokumentation veröffentlicht. Seit 2026-07-02 kann
+  `Automatisch suchen` im Karten-Bearbeitungsdialog für jede vorhandene Art gestartet werden, auch wenn bereits eine
+  automatisch gepflegte Karte vorhanden ist. Wenn der Pipeline-Lauf eine Karte speichert, zeigt der Explorer die
+  Pflegeentscheidung auch dann an, wenn die gespeicherte Datei bytegleich zur bisherigen manuell gepflegten Karte ist.
+  Dadurch können Backblaze-übernommene Karten nach erfolgreichem automatischem Abruf wieder auf automatische Pflege
+  zurückgestellt werden.
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Seit 2026-06-30 werden kurze Windows-Dateisperren beim Verschieben mehrfach erneut
@@ -445,6 +450,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     naechste Quelle. Eine Windows-Dateisperre auf der produktiven MP3 wird als eigener Warnzustand gemeldet.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
+    Offene UI-Wünsche nach 2026-07-02: einzelne Assets einer Art gezielt löschen; deutschen Artnamen bei
+    unverändertem wissenschaftlichem Namen/Slug umbenennen; allgemeine Daten im Bearbeitungsdialog in strukturierte
+    Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im

@@ -435,7 +435,12 @@ Aktuelle Planung:
   Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog mit manueller Karte
   abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollstaendig in die verfuegbare
   Breite ein; nach einem manuellen Kartenimport wird der Report sofort neu aufgebaut und zusammen mit Karte,
-  Register und Dokumentation veroeffentlicht. Ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
+  Register und Dokumentation veroeffentlicht. Seit 2026-07-02 kann `Automatisch suchen` im
+  Karten-Bearbeitungsdialog fuer jede vorhandene Art gestartet werden, auch wenn die Karte bereits automatisch
+  gepflegt ist. Wenn die Pipeline eine Karte speichert, zeigt der Explorer die Pflegeentscheidung auch dann an, wenn
+  die Datei bytegleich zur bisherigen manuell gepflegten Karte ist; dadurch koennen Backblaze-uebernommene Karten
+  nach erfolgreichem automatischem Abruf wieder auf automatische Pflege zurueckgestellt werden. Ein versteckter
+  Electron-/Chromium-Fallback wird nicht genutzt, weil
   Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen koennen.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status

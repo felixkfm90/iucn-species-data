@@ -24,6 +24,7 @@ const state = {
   assetReviewAwaitingRetry: false,
   reloadAfterAssetReviewClose: false,
   reloadAfterEditClose: false,
+  pendingRevisionReload: false,
   dataRevision: "",
   dataRevisionTimer: null,
   dataLoading: false,
@@ -770,6 +771,10 @@ function releaseDetailMedia() {
   }
 }
 
+function hasOpenDialog() {
+  return Boolean(document.querySelector("dialog[open]"));
+}
+
 function formatTime(value) {
   if (!Number.isFinite(value) || value < 0) return "0:00";
   const minutes = Math.floor(value / 60);
@@ -1157,9 +1162,11 @@ function setupAssetReview() {
     state.assetReviewSignature = "";
     form.dataset.closeOnly = "false";
     elements.assetReviewSave.textContent = "Entscheidung speichern";
-    if (state.reloadAfterAssetReviewClose) {
+    if (state.reloadAfterAssetReviewClose || state.pendingRevisionReload) {
+      const forceReload = state.reloadAfterAssetReviewClose;
       state.reloadAfterAssetReviewClose = false;
-      void loadData({ reload: true });
+      state.pendingRevisionReload = false;
+      void loadData({ reload: forceReload });
     }
   });
   state.finishAssetReviewWaiting = (status) => {
@@ -3253,9 +3260,12 @@ function setupSpeciesEditor(species) {
   };
 
   const runDeferredEditorReload = () => {
-    if (!state.reloadAfterEditClose) return;
+    const forceReload = state.reloadAfterEditClose;
+    if (!forceReload && !state.pendingRevisionReload) return;
+    if (hasOpenDialog()) return;
     state.reloadAfterEditClose = false;
-    void loadData({ reload: true });
+    state.pendingRevisionReload = false;
+    void loadData({ reload: forceReload });
   };
 
   for (const button of closeButtons) {
@@ -4257,9 +4267,7 @@ function renderDetail(species) {
                   rel="noopener noreferrer"
                 >IUCN-Karte im Browser öffnen</a>
               ` : ""}
-              ${(!species.assets.map.exists || species.assets.map.manuallyAdded) ? `
-                <button class="map-auto-search-button" type="button">Automatisch suchen</button>
-              ` : ""}
+              <button class="map-auto-search-button" type="button">Automatisch suchen</button>
               <span class="map-care-state">
                 ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
               </span>
@@ -4604,7 +4612,11 @@ async function monitorProjectRevision() {
     if (!response.ok) return;
     const current = await response.json();
     if (state.dataRevision && current.revision !== state.dataRevision && !state.dataLoading) {
-      await loadData();
+      if (hasOpenDialog()) {
+        state.pendingRevisionReload = true;
+      } else {
+        await loadData();
+      }
     } else if (!state.dataRevision) {
       state.dataRevision = current.revision;
     }

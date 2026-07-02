@@ -2090,6 +2090,18 @@ export async function createExplorerServer({
     return found ? hash.digest("hex") : "";
   }
 
+  function wasAssetSavedInCurrentPipelineLog(safeName, type) {
+    const fileName = type === "map" ? "map.jpg" : "sound.mp3";
+    const expectedPath = `species-assets/${safeName}/${fileName}`.toLocaleLowerCase("de");
+    const savedMarker = type === "map" ? "karte gespeichert" : "sound gespeichert";
+    return pipelineState.log.some((line) => {
+      const normalizedLine = String(line ?? "")
+        .replaceAll("\\", "/")
+        .toLocaleLowerCase("de");
+      return normalizedLine.includes(savedMarker) && normalizedLine.includes(expectedPath);
+    });
+  }
+
   function readAssetCredits(assetDir) {
     const creditsPath = join(assetDir, "credits.json");
     if (!existsSync(creditsPath)) return {};
@@ -2219,7 +2231,13 @@ export async function createExplorerServer({
         const currentHash = exists ? assetCompositeHash(assetDir, type) : "";
         const reviewVersion = `${pipelineState.runId}-${currentHash.slice(0, 16)}`;
         const changed = exists && before.exists && before.hash !== currentHash;
-        if ((!before.exists && exists) || changed) {
+        const refreshedByPipeline = exists
+          && before.exists
+          && !changed
+          && plan.mode === "manual-maps"
+          && type === "map"
+          && wasAssetSavedInCurrentPipelineLog(target.safeName, type);
+        if ((!before.exists && exists) || changed || refreshedByPipeline) {
           const credits = type === "sound" ? readAssetCredits(assetDir) : {};
           const isNc = type === "sound" ? isNonCommercialLicense(credits.license) : false;
           additions.push({
@@ -2234,6 +2252,7 @@ export async function createExplorerServer({
               ? `/assets/${encodeURIComponent(target.safeName)}/spectrogram.webp?review=${encodeURIComponent(reviewVersion)}`
               : "",
             changed,
+            refreshed: refreshedByPipeline,
             previouslyExisting: before.exists,
             reviewMode: plan.mode,
             isNc,

@@ -73,6 +73,7 @@ export function buildPipelinePlan({
     const safeName = sanitizeAssetName(entry.german);
     const assetDir = path.join(repoRoot, "species-assets", safeName);
     const reasons = [];
+    const explicitlyTargeted = requestedTargetSlugs.has(normalized(slug));
 
     if (!existing) {
       reasons.push("noch nicht in speciesData.json");
@@ -106,6 +107,8 @@ export function buildPipelinePlan({
         reasons.push("manuell gepflegte Karte erneut automatisch suchen");
       } else if (existing && !fs.existsSync(mapPath)) {
         reasons.push("Karte fehlt; automatische Karte suchen");
+      } else if (existing && explicitlyTargeted) {
+        reasons.push("gezielte Kartensuche");
       }
     }
 
@@ -115,7 +118,6 @@ export function buildPipelinePlan({
       const creditsPath = path.join(assetDir, "credits.json");
       const credits = readJson(creditsPath, {});
       const soundIsManual = assetOverrides.assets?.[safeName]?.sound?.manual === true;
-      const explicitlyTargeted = requestedTargetSlugs.has(normalized(slug));
       if (!existing) {
         // Neue Arten werden weiterhin vom Modus "missing" verarbeitet.
       } else if (fs.existsSync(soundPath) && isNcLicense(credits.license) && !soundIsManual) {

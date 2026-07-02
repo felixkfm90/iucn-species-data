@@ -116,8 +116,10 @@ Umgesetzt:
 - höchstens drei verwaltete Kartenbackups je Art und globale Obergrenze von 500 MB
 - automatischer, auf die drei Kartenpfade begrenzter Commit und Push
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
-- fehlende Karten oder manuell geschützte Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer
-  genau diese Art gesucht werden
+- Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer genau diese Art gesucht werden,
+  unabhaengig davon, ob die aktuelle Karte automatisch gepflegt, manuell geschuetzt oder fehlend ist
+- wenn der Suchlauf eine Karte speichert, wird die Pflegeentscheidung auch bei bytegleicher Bilddatei angezeigt,
+  damit eine bisher manuell geschuetzte Karte wieder auf automatische Pflege umgestellt werden kann
 - diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
 - der globale Kartensuchlauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten
 

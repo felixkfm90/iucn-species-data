@@ -788,6 +788,18 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
     join(repoRoot, "species-assets-overrides.json"),
     `${JSON.stringify({ version: 1, assets: {} }, null, 2)}\n`,
   );
+  const targetedCompleteMapPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "manual-maps",
+    targetSlugs: ["turdusmerula"],
+  });
+  assert.equal(targetedCompleteMapPlan.targetCount, 1);
+  assert.equal(targetedCompleteMapPlan.targets[0].safeName, "Amsel");
+  assert.match(targetedCompleteMapPlan.targets[0].reasons.join(" "), /gezielte Kartensuche/);
+
   await rm(join(repoRoot, "species-assets", "Amsel", "map.jpg"), { force: true });
   const untargetedMissingMapPlan = buildPipelinePlan({
     speciesList,
@@ -1797,6 +1809,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function monitorProjectRevision\(\)/);
   assert.match(appSource, /fetch\("\/api\/revision"\)/);
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
+  assert.match(appSource, /pendingRevisionReload/);
+  assert.match(appSource, /function hasOpenDialog\(\)/);
   assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
   assert.match(serverSource, /publishAfterAssetOnlyNoAssets/);
@@ -1871,6 +1885,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /form\.dataset\.closeOnly === "true"/);
   assert.match(cleanupSource, /cleanup-trash/);
   assert.match(serverSource, /assetCompositeHash/);
+  assert.match(serverSource, /wasAssetSavedInCurrentPipelineLog/);
+  assert.match(serverSource, /refreshedByPipeline/);
   assert.match(serverSource, /reviewMode:\s*plan\.mode/);
   assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
   assert.match(serverSource, /synchronizeStoredManualMapDocumentation/);
