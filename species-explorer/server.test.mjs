@@ -1863,6 +1863,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /rejectedSources: preservedSoundRejections/);
   assert.match(appSource, /async function refreshOpenSoundEditor/);
   assert.match(appSource, /await notifySilentPipelineContext\(status\)/);
+  assert.match(appSource, /function versionedAssetUrl/);
+  assert.match(appSource, /species\.assets\.spectrogram\?\.soundSha256/);
   assert.match(appSource, /assetReviewAwaitingRetry/);
   assert.match(appSource, /Gefundener Sound wurde abgelehnt und gemerkt\. Nächster Sound wird gesucht/);
   assert.match(appSource, /state\.finishAssetReviewWaiting/);

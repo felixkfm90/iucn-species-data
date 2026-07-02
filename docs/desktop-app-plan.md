@@ -491,6 +491,8 @@ Umgesetzt:
 - abgelehnte Soundquellen bleiben auch nach einer später akzeptierten Alternative in `sound.rejectedSources`
   erhalten; der offene Tierstimmen-Bearbeitungsdialog lädt nach einem stillen Soundlauf aktuellen Sound und Credits
   neu; der Sound-Prüfdialog bleibt nach einer Ablehnung geöffnet und zeigt den nächsten Kandidaten im selben Fenster
+- Sound, Spektrogramm, Karte und Portrait werden in der Detailansicht über versionsbasierte lokale URLs geladen,
+  damit schnelle Assetwechsel nicht durch alte Browsercache-Dateien verfälscht werden
 
 Arten loeschen und bereinigen:
 

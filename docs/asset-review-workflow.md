@@ -89,6 +89,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 - Wenn im Sound-Prüfdialog eine gefundene Alternative abgelehnt wird, bleibt der Dialog geöffnet, zeigt den laufenden
   nächsten Suchlauf an und wird beim nächsten Kandidaten im selben Fenster neu befüllt. Er schließt erst nach
   Übernahme des Kandidaten, nach Behalten des bisherigen Sounds oder wenn keine weitere Alternative verfügbar ist.
+- Die Detailansicht nutzt für Sound, Spektrogramm, Karte und Portrait versionsbasierte lokale URLs. Bei Sound und
+  Spektrogramm basiert diese Version unter anderem auf den gespeicherten Spektrogramm-Hashes, damit nach einem
+  Austausch keine alte Spektrogrammdatei aus dem Browsercache neben dem neuen MP3 angezeigt wird.
 - Fehlende Portraits werden weiterhin im Portraitabschnitt artweise über Prompt, Bildprüfung und Import gepflegt.
 
 Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet ebenfalls fehlende Karten. Er ist damit nicht

@@ -405,7 +405,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   nicht mehr nachträglich fehlgeschlagen. Beim späteren Übernehmen einer neuen Soundalternative bleiben bereits
   gespeicherte `sound.rejectedSources` erhalten. Nach still gestarteten Sound-Alternativläufen aktualisiert der
   offene Tierstimmen-Bearbeitungsdialog aktuellen Sound und Credits aus dem neu geladenen Modell. Der Sound-
-  Prüfdialog bleibt nach einer Ablehnung geöffnet und zeigt den nächsten Kandidaten im selben Fenster.
+  Prüfdialog bleibt nach einer Ablehnung geöffnet und zeigt den nächsten Kandidaten im selben Fenster. Die
+  Detailansicht verwendet versionsbasierte lokale Asset-URLs, damit Sound und Spektrogramm nach schnellen
+  Austausch-/Ablehnzyklen nicht aus unterschiedlichen Browsercache-Ständen stammen.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist

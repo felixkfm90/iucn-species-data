@@ -467,10 +467,11 @@ function inlineEditButton(section) {
 }
 
 function mapPanel(asset, alt, editSection = "") {
+  const mapUrl = versionedAssetUrl(asset.url, asset);
   const content = asset.exists
     ? `
       <button class="map-zoom-trigger" type="button" aria-label="Verbreitungskarte vergrößern">
-        <img class="map-image" src="${escapeHtml(asset.url)}" alt="${escapeHtml(alt)}">
+        <img class="map-image" src="${escapeHtml(mapUrl)}" alt="${escapeHtml(alt)}">
         <span class="map-zoom-hint">Vergrößern</span>
       </button>
     `
@@ -489,6 +490,7 @@ function mapPanel(asset, alt, editSection = "") {
 function speciesImagePanel(species) {
   const portrait = species.assets.portrait;
   if (portrait?.exists) {
+    const portraitUrl = versionedAssetUrl(portrait.url, portrait);
     return `
       <section class="species-image-panel">
         <div class="section-heading">
@@ -498,7 +500,7 @@ function speciesImagePanel(species) {
         <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
           <img
             class="species-portrait-image"
-            src="${escapeHtml(portrait.url)}"
+            src="${escapeHtml(portraitUrl)}"
             alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
           >
           <span class="map-zoom-hint">Vergrößern</span>
@@ -572,6 +574,29 @@ function cacheBustedUrl(url, key = Date.now()) {
   if (!url) return "";
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}t=${encodeURIComponent(key)}`;
+}
+
+function assetVersionKey(asset = {}, ...extraParts) {
+  return [
+    asset.sha256,
+    asset.actualSha256,
+    asset.metadataSha256,
+    asset.actualMetadataSha256,
+    asset.soundSha256,
+    asset.spectrogramSha256,
+    asset.actualSoundSha256,
+    asset.actualSpectrogramSha256,
+    asset.generatedAt,
+    asset.importedAt,
+    asset.approvedAt,
+    asset.bytes,
+    ...extraParts,
+  ].filter(Boolean).join("-");
+}
+
+function versionedAssetUrl(url, asset = {}, ...extraParts) {
+  const key = assetVersionKey(asset, ...extraParts);
+  return key ? cacheBustedUrl(url, key) : url;
 }
 
 async function refreshExplorerModelOnly({ reload = false } = {}) {
@@ -3870,6 +3895,19 @@ function setupSpeciesDelete(species) {
 
 function renderDetail(species) {
   const browserMapUrl = iucnDistributionMapUrl(species);
+  const detailMapUrl = versionedAssetUrl(species.assets.map.url, species.assets.map);
+  const detailPortraitUrl = versionedAssetUrl(species.assets.portrait.url, species.assets.portrait);
+  const soundVersion = assetVersionKey(
+    species.assets.sound,
+    species.assets.spectrogram?.soundSha256,
+    species.assets.spectrogram?.actualSoundSha256,
+  );
+  const soundUrl = versionedAssetUrl(species.assets.sound.url, species.assets.sound, soundVersion);
+  const spectrogramUrl = versionedAssetUrl(
+    species.assets.spectrogram.url,
+    species.assets.spectrogram,
+    species.assets.spectrogram?.soundSha256,
+  );
   const badges = [
     `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
     species.assetIssues.length
@@ -3884,7 +3922,7 @@ function renderDetail(species) {
   const audio = species.assets.sound.exists
     ? `
       <div class="audio-player">
-        <audio class="explorer-audio" preload="metadata" src="${escapeHtml(species.assets.sound.url)}"></audio>
+        <audio class="explorer-audio" preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
         <div
           class="audio-visual"
           role="button"
@@ -3892,7 +3930,7 @@ function renderDetail(species) {
           aria-label="Spektrogramm: klicken zum Springen, Leertaste zum Abspielen"
         >
           ${species.assets.spectrogram.exists
-            ? `<img src="${escapeHtml(species.assets.spectrogram.url)}" alt="Spektrogramm ${escapeHtml(species.germanName)}">`
+            ? `<img src="${escapeHtml(spectrogramUrl)}" alt="Spektrogramm ${escapeHtml(species.germanName)}">`
             : `<span class="media-missing">Kein Spektrogramm vorhanden</span>`}
           <span class="audio-progress-marker" aria-hidden="true"></span>
         </div>
@@ -4314,7 +4352,7 @@ function renderDetail(species) {
                 <strong>Aktueller Sound</strong>
                 <span>${escapeHtml(species.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
               </div>
-              <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(species.assets.sound.url)}"></audio>
+              <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
             </section>
           ` : ""}
 
@@ -4482,7 +4520,7 @@ function renderDetail(species) {
     ${species.assets.map.exists ? `
       <dialog class="map-lightbox" aria-label="Vergrößerte Verbreitungskarte ${escapeHtml(species.germanName)}">
         <button class="map-lightbox-close" type="button" aria-label="Vergrößerte Karte schließen">×</button>
-        <img src="${escapeHtml(species.assets.map.url)}" alt="${escapeHtml(`Verbreitungskarte ${species.germanName}`)}">
+        <img src="${escapeHtml(detailMapUrl)}" alt="${escapeHtml(`Verbreitungskarte ${species.germanName}`)}">
       </dialog>
     ` : ""}
 
@@ -4490,7 +4528,7 @@ function renderDetail(species) {
       <dialog class="map-lightbox portrait-lightbox" aria-label="Vergrößertes Artporträt ${escapeHtml(species.germanName)}">
         <button class="map-lightbox-close portrait-lightbox-close" type="button" aria-label="Artporträt schließen">×</button>
         <img
-          src="${escapeHtml(species.assets.portrait.url)}"
+          src="${escapeHtml(detailPortraitUrl)}"
           alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
         >
       </dialog>

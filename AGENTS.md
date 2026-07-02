@@ -465,7 +465,9 @@ Aktuelle Planung:
   spaeteren Uebernehmen einer Soundalternative bleiben bereits gespeicherte `sound.rejectedSources` erhalten. Der
   offene Tierstimmen-Bearbeitungsdialog aktualisiert nach einem still gestarteten Alternativlauf aktuellen Sound und
   Credits aus dem neu geladenen Modell. Der Sound-Pruefdialog bleibt nach einer Ablehnung geoeffnet und zeigt den
-  naechsten Kandidaten im selben Fenster.
+  naechsten Kandidaten im selben Fenster. Die Detailansicht nutzt versionsbasierte lokale Asset-URLs fuer Sound,
+  Spektrogramm, Karte und Portrait, damit nach schnellen Assetwechseln keine alten Browsercache-Dateien neben neuen
+  Dateien angezeigt werden.
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
