@@ -944,13 +944,6 @@
         "sha256": "87a20c41b9ea50878db481909f05cdae580d5a62d658d5293e3a59f1cc1c04e7",
         "metadataSha256": "1c121148b6776611143fe5a75d2a2d66af9530a670c9e6672ccaad2b3af0ce61"
       },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "dc1309c2ecc91ee53fb761eb645626719ee3e674086f9008abf7f0303747ec9c",
-        "spectrogramSha256": "270957dd792d914bfed34dc87b1f1ee379cc4a0a05809614e478bd6034689434",
-        "generatedAt": "2026-07-02T13:15:09.004Z",
-        "verifiedAt": "2026-07-02T13:15:09.012Z"
-      },
       "map": {
         "manual": true,
         "protectFromPipeline": true,
@@ -961,6 +954,44 @@
         "importedAt": "2026-07-02T13:15:26.792Z",
         "updatedAt": "2026-07-02T13:15:26.792Z",
         "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
+            "recordist": "Ken123",
+            "license": "https://creativecommons.org/licenses/by-sa/3.0",
+            "rejectedAt": "2026-07-02T13:15:31.547Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
+            "recordist": "Speaker: Andrew Krizhanovsky, incorporating:\n\nFragmento Deemento - Volume 1.5 / Fragmento Deemento - Volume 1.5 (by-sa 3.0, en:Jamendo)\nFile:Lion raring-sound1TamilNadu178.ogg\nImage:Ru-audio template-Wikipedia.ogg\nAuthors of the article",
+            "license": "https://creativecommons.org/licenses/by-sa/3.0",
+            "rejectedAt": "2026-07-02T13:15:41.221Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-02T13:15:48.915Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-02T13:15:55.146Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "d289fabbbe20c1e37f74f9d078d66af50417ca98484fd7fdf9540c42f7aa760f",
+        "spectrogramSha256": "1ee8c64bf18a4f05ba34d1acd86e44df88cfc01e401834655fcd33250992619d",
+        "generatedAt": "2026-07-02T13:15:52.690Z",
+        "verifiedAt": "2026-07-02T13:15:52.696Z"
       }
     }
   },
