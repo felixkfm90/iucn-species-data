@@ -945,15 +945,9 @@
         "metadataSha256": "f97c5180d4a462b85d4c02d052fa38855301411401cbc015359205f58e38e535"
       },
       "map": {
-        "manual": true,
-        "protectFromPipeline": true,
-        "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
-        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260702144359_8ccc97e1cd2c394db095a195_f73baa9e88d58ce7ed0a6e52f5b3c38f799fc14c_002_20260709144359_0020_dnld",
-        "germanName": "Löwe",
-        "originalFileName": "T15951A280792135.jpg",
-        "importedAt": "2026-07-02T14:44:07.825Z",
-        "updatedAt": "2026-07-02T14:44:07.825Z",
-        "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-02T18:25:56.140Z"
       },
       "sound": {
         "rejectedSources": [
