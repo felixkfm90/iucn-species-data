@@ -939,75 +939,28 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-07-01T19:52:45.784Z",
-        "approvedAt": "2026-07-01T19:52:48.771Z",
+        "importedAt": "2026-07-02T13:14:57.855Z",
+        "approvedAt": "2026-07-02T13:15:00.436Z",
         "sha256": "87a20c41b9ea50878db481909f05cdae580d5a62d658d5293e3a59f1cc1c04e7",
-        "metadataSha256": "973b15f72b7d61b1c9bb59b947ef3c8a68dc1bf68063cb3b317d794f0ee90ac4"
+        "metadataSha256": "1c121148b6776611143fe5a75d2a2d66af9530a670c9e6672ccaad2b3af0ce61"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "dc1309c2ecc91ee53fb761eb645626719ee3e674086f9008abf7f0303747ec9c",
+        "spectrogramSha256": "270957dd792d914bfed34dc87b1f1ee379cc4a0a05809614e478bd6034689434",
+        "generatedAt": "2026-07-02T13:15:09.004Z",
+        "verifiedAt": "2026-07-02T13:15:09.012Z"
       },
       "map": {
         "manual": true,
         "protectFromPipeline": true,
         "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
-        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701195320_2c28d688586b5ccafec3d5d6_09280f0935b83320eb463ddae012fa2dd7362691_002_20260708195320_0020_dnld",
+        "source": "https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260702131515_d0044403b390805d8f514ba3_80267771e55714bab8d7248d1d3241f1ad9dff1e_002_20260709131515_0020_dnld",
         "germanName": "Löwe",
         "originalFileName": "T15951A280792135.jpg",
-        "importedAt": "2026-07-01T19:53:33.651Z",
-        "updatedAt": "2026-07-01T19:53:33.651Z",
+        "importedAt": "2026-07-02T13:15:26.792Z",
+        "updatedAt": "2026-07-02T13:15:26.792Z",
         "sha256": "b95e663305d15dd883b99544a854f9a11faa88f47f5912010dfde901597e3b2e"
-      },
-      "sound": {
-        "rejectedSources": [
-          {
-            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
-            "source": "Wikimedia Commons",
-            "url": "https://commons.wikimedia.org/wiki/File:De_Kaapse_leeuw.ogg",
-            "recordist": "Ken123",
-            "license": "https://creativecommons.org/licenses/by-sa/3.0",
-            "rejectedAt": "2026-07-01T19:53:42.229Z"
-          },
-          {
-            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
-            "source": "Wikimedia Commons",
-            "url": "https://commons.wikimedia.org/wiki/File:Ru-Lion_(intro).ogg",
-            "recordist": "Speaker: Andrew Krizhanovsky, incorporating:\n\nFragmento Deemento - Volume 1.5 / Fragmento Deemento - Volume 1.5 (by-sa 3.0, en:Jamendo)\nFile:Lion raring-sound1TamilNadu178.ogg\nImage:Ru-audio template-Wikipedia.ogg\nAuthors of the article",
-            "license": "https://creativecommons.org/licenses/by-sa/3.0",
-            "rejectedAt": "2026-07-01T19:53:52.681Z"
-          },
-          {
-            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
-            "source": "Wikimedia Commons",
-            "url": "https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
-            "recordist": "Jeuwre",
-            "license": "https://creativecommons.org/licenses/by-sa/4.0",
-            "rejectedAt": "2026-07-01T19:54:25.437Z"
-          },
-          {
-            "key": "xeno-canto:1086154",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/1086154",
-            "recordist": "Bernard hanus",
-            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-            "rejectedAt": "2026-07-01T19:54:38.662Z"
-          },
-          {
-            "key": "xeno-canto:962314",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/962314",
-            "recordist": "Stein Ø. Nilsen",
-            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-            "rejectedAt": "2026-07-01T19:56:23.906Z"
-          }
-        ],
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-01T19:56:49.458Z"
-      },
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "7c8f29b1580cae5b3adc08708775965dc82fbff629356e51b2c0bc239347c187",
-        "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
-        "generatedAt": "2026-07-01T19:56:32.498Z",
-        "verifiedAt": "2026-07-01T19:56:32.504Z"
       }
     }
   },

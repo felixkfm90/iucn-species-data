@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-07-01
+Stand: 2026-07-02
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -23,7 +23,7 @@ ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeNam
 | Fischertukan | Fischertukan | `species-assets/Fischertukan/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
 | Rotfuchs | Rotfuchs | `species-assets/Rotfuchs/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
 | Waldkauz | Waldkauz | `species-assets/Waldkauz/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Löwe | Loewe | `species-assets/Loewe/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260701195320_2c28d688586b5ccafec3d5d6_09280f0935b83320eb463ddae012fa2dd7362691_002_20260708195320_0020_dnld) | 2026-07-01 | erledigt/geprueft |
+| Löwe | Loewe | `species-assets/Loewe/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://f002.backblazeb2.com/file/cached-individual-maps/T15951A280792135.jpg?Authorization=3_20260702131515_d0044403b390805d8f514ba3_80267771e55714bab8d7248d1d3241f1ad9dff1e_002_20260709131515_0020_dnld) | 2026-07-02 | erledigt/geprueft |
 
 ## Pflege-Regeln
 
