@@ -377,7 +377,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Seit 2026-07-02 versucht `update.mjs` zuerst den
   bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und
   extrahiert signierte Backblaze-Links aus Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL.
-  Wenn lokal trotzdem kein direkt
+  Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich `Invoke-WebRequest` als
+  WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Wenn lokal trotzdem kein direkt
   speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im
   Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog
   dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil

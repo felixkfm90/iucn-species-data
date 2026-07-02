@@ -368,8 +368,10 @@ die aktuelle Art gesucht werden. Der Lauf startet im Hintergrund, ohne den Bearb
 zu schließen.
 Seit 2026-07-02 versucht der automatische Kartenabruf zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen
 Headern, danach den offiziellen IUCN-API-Host mit Token und zusätzlich signierte Backblaze-Links, die in Redirect-,
-HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn IUCN lokal weiterhin keinen direkt
-speicherbaren Link liefert, kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft
+HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn Node lokal HTTP 403 erhält, nutzt
+die Pipeline unter Windows zusätzlich `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort
+die JPEG-Karte ausliefert. Wenn IUCN lokal weiterhin keinen direkt speicherbaren Link liefert, kann der im Browser
+sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft
 werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
 Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
 Anwendungsfehlern abbrechen können.

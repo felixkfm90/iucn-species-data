@@ -1,5 +1,8 @@
 import fs from "fs";
 import path from "path";
+import os from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
 
 const nativeFetch = globalThis.fetch;
@@ -7,6 +10,7 @@ if (typeof nativeFetch !== "function") {
   throw new Error("Diese Pipeline benoetigt Node.js 18 oder neuer, weil natives fetch verwendet wird.");
 }
 const fetch = nativeFetch.bind(globalThis);
+const execFileAsync = promisify(execFile);
 
 // =======================
 // KONFIG / ORDNER
@@ -553,6 +557,108 @@ function iucnMapHeaders(url) {
   return headers;
 }
 
+function canUsePowerShellMapFetch(url) {
+  if (process.platform !== "win32") return false;
+  const parsed = new URL(url);
+  return parsed.hostname.toLowerCase() === "www.iucnredlist.org"
+    && parsed.pathname.includes("/api/v4/assessments/")
+    && parsed.pathname.endsWith("/distribution_map/jpg");
+}
+
+function removeQuietly(filePath) {
+  try {
+    if (fs.existsSync(filePath)) fs.rmSync(filePath, { recursive: true, force: true });
+  } catch {
+    // Temp-Dateien sind fuer den naechsten Lauf nicht relevant.
+  }
+}
+
+async function fetchJpegWithPowerShell(url) {
+  if (!canUsePowerShellMapFetch(url)) return null;
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "iucn-map-"));
+  const tempFile = path.join(tempDir, "map.jpg");
+  const script = `
+$Uri = $env:IUCN_MAP_URL
+$OutFile = $env:IUCN_MAP_OUTFILE
+if (-not $Uri -or -not $OutFile) {
+  throw 'IUCN_MAP_URL oder IUCN_MAP_OUTFILE fehlt.'
+}
+$headers = @{
+  Accept = 'image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7'
+  'Accept-Language' = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
+}
+if ($env:IUCN_TOKEN) {
+  $headers.Authorization = 'Bearer ' + $env:IUCN_TOKEN
+}
+try {
+  $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
+  $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
+  $status = 200
+  $contentType = ''
+  if ($response) {
+    if ($response.StatusCode) { $status = [int]$response.StatusCode }
+    if ($response.Headers -and $response.Headers['Content-Type']) {
+      $contentType = ($response.Headers['Content-Type'] -join ';')
+    }
+  }
+  [pscustomobject]@{
+    status = $status
+    contentType = $contentType
+    length = [int64]$file.Length
+  } | ConvertTo-Json -Compress
+  exit 0
+} catch {
+  $status = $null
+  if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+  [pscustomobject]@{
+    status = $status
+    error = $_.Exception.Message
+  } | ConvertTo-Json -Compress
+  exit 1
+}
+`.trim();
+
+  try {
+    const { stdout } = await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+      {
+        env: {
+          ...process.env,
+          IUCN_MAP_URL: url,
+          IUCN_MAP_OUTFILE: tempFile,
+        },
+        maxBuffer: 1024 * 1024,
+        timeout: 60_000,
+      },
+    );
+    const info = JSON.parse(String(stdout || "{}"));
+    const buffer = fs.existsSync(tempFile) ? fs.readFileSync(tempFile) : Buffer.alloc(0);
+    if (info.status === 200 && buffer.length >= 10_000 && isJpegBuffer(buffer)) {
+      console.log("↪ IUCN-Karte über Windows-WebRequest-Fallback geladen.");
+      return buffer;
+    }
+    console.warn(`⚠ Windows-WebRequest-Fallback lieferte keine gültige Karte (${info.status ?? "unbekannt"}).`);
+  } catch (err) {
+    const output = String(err.stdout || err.stderr || "").trim();
+    let message = err.message;
+    if (output) {
+      try {
+        const parsed = JSON.parse(output);
+        message = parsed.error || message;
+      } catch {
+        message = output.slice(0, 200);
+      }
+    }
+    console.warn(`⚠ Windows-WebRequest-Fallback für IUCN-Karte nicht nutzbar: ${message}`);
+  } finally {
+    removeQuietly(tempDir);
+  }
+  return null;
+}
+
 function normalizeCachedMapUrl(rawUrl) {
   const cleaned = normalizeIucnPageHtml(rawUrl)
     .replace(/%26/gi, "&")
@@ -600,6 +706,8 @@ async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
     });
   } catch (err) {
     const host = new URL(url).hostname;
+    const fallback = await fetchJpegWithPowerShell(url);
+    if (fallback) return fallback;
     console.warn(`⚠ JPEG-Abruf bei ${host} fehlgeschlagen: ${err.message}`);
     return null;
   }
@@ -611,6 +719,8 @@ async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
       const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
       if (cached) return cached;
     }
+    const fallback = await fetchJpegWithPowerShell(url);
+    if (fallback) return fallback;
     if (res.status === 403 && host.includes("iucnredlist.org")) {
       console.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403); prüfe Cache-/Backblaze-Fallback.");
     } else if (res.status === 401 && host.includes("backblazeb2.com")) {
@@ -632,6 +742,8 @@ async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
       if (cached) return cached;
     }
   }
+  const fallback = await fetchJpegWithPowerShell(url);
+  if (fallback) return fallback;
   const host = new URL(url).hostname;
   console.warn(`⚠ JPEG-Abruf bei ${host} lieferte keine gültige Kartendatei.`);
   return null;

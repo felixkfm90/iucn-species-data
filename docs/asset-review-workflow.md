@@ -71,7 +71,8 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
 - Der automatische Kartenlauf versucht zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
-  Fehlerantworten. Wenn IUCN lokal
+  Fehlerantworten. Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich
+  `Invoke-WebRequest` als WebRequest-Fallback. Wenn IUCN lokal
   trotzdem keinen direkt speicherbaren Link liefert, bietet der Kartenabschnitt einen direkten Link `IUCN-Karte im
   Browser öffnen`. Der externe Browser erzeugt dabei den signierten Backblaze-JPEG-Link; dieser Link kann in das
   Quellenfeld kopiert und anschließend mit `Karte prüfen` übernommen werden. Ein versteckter Electron-/Chrome-Abruf

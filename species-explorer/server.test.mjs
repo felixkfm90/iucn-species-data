@@ -1891,6 +1891,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
   assert.match(updateSource, /function iucnMapHeaders\(url\)/);
   assert.match(updateSource, /headers\.Authorization = `Bearer \$\{TOKEN\}`/);
+  assert.match(updateSource, /async function fetchJpegWithPowerShell\(url\)/);
+  assert.match(updateSource, /IUCN_MAP_URL/);
+  assert.match(updateSource, /Invoke-WebRequest -UseBasicParsing/);
   assert.match(updateSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
   assert.match(updateSource, /cached-individual-maps/);
   assert.match(updateSource, /\$\{BASE\}\/assessments\/\$\{assessmentId\}\/distribution_map\/jpg/);

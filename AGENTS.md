@@ -426,8 +426,10 @@ Aktuelle Planung:
   2026-07-02 versucht `update.mjs` zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
   Fehlerantworten als
-  `cached-individual-maps`-URL. Wenn lokal trotzdem kein direkt speicherbarer Link geliefert wird, kann der im
-  Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL eingefuegt und wie ein
+  `cached-individual-maps`-URL. Wenn Node lokal HTTP 403 erhaelt, nutzt die Pipeline unter Windows zusaetzlich
+  `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Wenn
+  lokal trotzdem kein direkt speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte
+  Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL eingefuegt und wie ein
   Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog dafuer direkt
   `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im Neue-Art-Assistenten im Schritt `Karte` zur
   Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog mit manueller Karte
