@@ -1889,6 +1889,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
   assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
+  assert.match(updateSource, /function iucnMapHeaders\(url\)/);
+  assert.match(updateSource, /headers\.Authorization = `Bearer \$\{TOKEN\}`/);
+  assert.match(updateSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
+  assert.match(updateSource, /cached-individual-maps/);
+  assert.match(updateSource, /\$\{BASE\}\/assessments\/\$\{assessmentId\}\/distribution_map\/jpg/);
+  assert.match(updateSource, /fetchValidJpeg\(directUrl, \{ cacheFile \}\)/);
   assert.match(updateSource, /args\.mode === "manual-maps"/);
   assert.match(updateSource, /args\.mode === "nc-sounds"/);
   assert.match(updateSource, /rejectedSoundKeys/);

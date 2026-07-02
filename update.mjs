@@ -527,23 +527,92 @@ async function findIucnTaxonIdForMap(entry) {
 
 function normalizeIucnPageHtml(html) {
   return String(html ?? "")
+    .replace(/\\u0022/g, "\"")
     .replace(/\\u0026/g, "&")
     .replace(/\\u002F/gi, "/")
+    .replace(/\\u003D/gi, "=")
+    .replace(/\\u003F/gi, "?")
     .replace(/\\\//g, "/")
     .replace(/&amp;/g, "&");
 }
 
-async function fetchValidJpeg(url) {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "image/jpeg",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    },
-  });
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function iucnMapHeaders(url) {
+  const host = new URL(url).hostname.toLowerCase();
+  const headers = {
+    Accept: "image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7",
+    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  };
+  if (TOKEN && (host === "api.iucnredlist.org" || host === "www.iucnredlist.org" || host.endsWith(".iucnredlist.org"))) {
+    headers.Authorization = `Bearer ${TOKEN}`;
+  }
+  return headers;
+}
+
+function normalizeCachedMapUrl(rawUrl) {
+  const cleaned = normalizeIucnPageHtml(rawUrl)
+    .replace(/%26/gi, "&")
+    .replace(/%3D/gi, "=")
+    .replace(/\\+"/g, "")
+    .replace(/[)"',;]+$/g, "")
+    .trim();
+  if (!cleaned) return "";
+  if (cleaned.startsWith("//")) return `https:${cleaned}`;
+  if (cleaned.startsWith("/file/cached-individual-maps/")) return `https://f002.backblazeb2.com${cleaned}`;
+  if (cleaned.startsWith("cached-individual-maps/")) return `https://f002.backblazeb2.com/file/${cleaned}`;
+  return cleaned;
+}
+
+function extractCachedIucnMapUrls(text, cacheFile = "") {
+  const normalized = normalizeIucnPageHtml(text);
+  const filePattern = cacheFile ? escapeRegExp(cacheFile) : "T\\d+A\\d+\\.jpg";
+  const patterns = [
+    new RegExp(`https?:\\/\\/[^"'\\s<>]+cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
+    new RegExp(`\\/file\\/cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
+    new RegExp(`cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
+  ];
+  const urls = [];
+  const seen = new Set();
+  for (const pattern of patterns) {
+    for (const match of normalized.matchAll(pattern)) {
+      const url = normalizeCachedMapUrl(match[0]);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      urls.push(url);
+    }
+  }
+  return urls;
+}
+
+async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
+  if (seen.has(url)) return null;
+  seen.add(url);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: iucnMapHeaders(url),
+      redirect: "follow",
+    });
+  } catch (err) {
+    const host = new URL(url).hostname;
+    console.warn(`⚠ JPEG-Abruf bei ${host} fehlgeschlagen: ${err.message}`);
+    return null;
+  }
+
   if (!res.ok) {
     const host = new URL(url).hostname;
+    const body = await res.text().catch(() => "");
+    for (const candidate of extractCachedIucnMapUrls(body, cacheFile)) {
+      const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
+      if (cached) return cached;
+    }
     if (res.status === 403 && host.includes("iucnredlist.org")) {
-      console.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403). Im Browser sichtbare Karten nutzen vermutlich eine signierte Weiterleitung.");
+      console.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403); prüfe Cache-/Backblaze-Fallback.");
     } else if (res.status === 401 && host.includes("backblazeb2.com")) {
       console.warn("⚠ IUCN-Cache-Datei benötigt einen signierten Backblaze-Link; öffentlicher Cachepfad ist nicht direkt abrufbar.");
     } else {
@@ -551,8 +620,21 @@ async function fetchValidJpeg(url) {
     }
     return null;
   }
+
   const buffer = Buffer.from(await res.arrayBuffer());
-  return buffer.length >= 10_000 && isJpegBuffer(buffer) ? buffer : null;
+  if (buffer.length >= 10_000 && isJpegBuffer(buffer)) return buffer;
+
+  const contentType = res.headers.get("content-type") || "";
+  if (/text|json|html/i.test(contentType) || buffer.length < 2_000_000) {
+    const body = buffer.toString("utf8");
+    for (const candidate of extractCachedIucnMapUrls(body, cacheFile)) {
+      const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
+      if (cached) return cached;
+    }
+  }
+  const host = new URL(url).hostname;
+  console.warn(`⚠ JPEG-Abruf bei ${host} lieferte keine gültige Kartendatei.`);
+  return null;
 }
 
 async function fetchCachedIucnMap(entry, assessmentId, name) {
@@ -569,10 +651,8 @@ async function fetchCachedIucnMap(entry, assessmentId, name) {
     });
     if (pageRes.ok) {
       const html = normalizeIucnPageHtml(await pageRes.text());
-      const pattern = new RegExp(`https?:[^"'\\s<>]*cached-individual-maps/${cacheFile}[^"'\\s<>]*`, "i");
-      const match = html.match(pattern);
-      if (match?.[0]) {
-        const cached = await fetchValidJpeg(match[0]);
+      for (const candidate of extractCachedIucnMapUrls(html, cacheFile)) {
+        const cached = await fetchValidJpeg(candidate, { cacheFile });
         if (cached) {
           console.log(`↪ IUCN-Karte über Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
           return cached;
@@ -585,7 +665,7 @@ async function fetchCachedIucnMap(entry, assessmentId, name) {
 
   try {
     const publicUrl = `https://f002.backblazeb2.com/file/cached-individual-maps/${cacheFile}`;
-    const cached = await fetchValidJpeg(publicUrl);
+    const cached = await fetchValidJpeg(publicUrl, { cacheFile });
     if (cached) {
       console.log(`↪ IUCN-Karte über öffentlichen Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
       return cached;
@@ -624,11 +704,21 @@ async function downloadMapForSpecies(
     return "ok";
   }
 
-  const url = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
   console.log(`→ Lade Karte für ${name} (${assessmentId})`);
 
   try {
-    let buffer = await fetchValidJpeg(url);
+    const cacheFile = numericId(s.sis_id || s.sis_taxon_id || s.taxon_id || s["Taxon ID"])
+      ? `T${numericId(s.sis_id || s.sis_taxon_id || s.taxon_id || s["Taxon ID"])}A${assessmentId}.jpg`
+      : "";
+    const directUrls = [
+      `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`,
+      `${BASE}/assessments/${assessmentId}/distribution_map/jpg`,
+    ];
+    let buffer = null;
+    for (const directUrl of directUrls) {
+      buffer = await fetchValidJpeg(directUrl, { cacheFile });
+      if (buffer) break;
+    }
     if (!buffer) {
       console.warn(`⚠ Direkte IUCN-Karte für ${name} nicht gefunden oder ungültig; versuche Cache-Fallback.`);
       buffer = await fetchCachedIucnMap(s, assessmentId, name);

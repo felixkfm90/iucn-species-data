@@ -116,14 +116,14 @@ Bedarf zusätzlich verarbeitet.
   geleert wurden. Damit bleibt der Explorer nach einem abgeschlossenen Kartensuchlauf nicht mehr im Status
   `Pipeline-Lauf läuft gerade` hängen und kann die Übernahme-/Ablehnentscheidung anzeigen.
 - Seit 2026-06-29 prüft `update.mjs` neben dem direkten IUCN-Kartenendpunkt eine Fallback-Strategie fuer gecachte
-  Einzelkarten. Stand 2026-06-30 liefert der direkte IUCN-Webendpunkt aus Node lokal HTTP 403; im Browser wird
-  dieselbe Assessment-ID auf einen zeitlich signierten Backblaze-Link weitergeleitet. Der Explorer meldet diesen
-  Fall im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
-  Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 zeigt der Karten-Bearbeitungsdialog
-  dafür direkt `IUCN-Karte im Browser öffnen`. Im Neue-Art-Assistenten steht derselbe manuelle URL-Schritt zur
-  Verfügung; die Karte kann dort während einer pausierten Assetprüfung geprüft und übernommen werden. Der versteckte
-  Electron-/Chromium-Fallback wurde verworfen, weil Headless-Browserprozesse auf dem Zielsystem mit
-  Anwendungsfehlern abbrechen.
+  Einzelkarten. Seit 2026-07-02 versucht der automatische Abruf zuerst den bisherigen IUCN-Web-Endpunkt mit
+  browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus
+  Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL. Wenn lokal trotzdem kein direkt speicherbarer Link geliefert
+  wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL
+  eingefügt und geprüft werden. Seit 2026-07-01 zeigt der Karten-Bearbeitungsdialog dafür direkt `IUCN-Karte im
+  Browser öffnen`. Im Neue-Art-Assistenten steht derselbe manuelle URL-Schritt zur Verfügung; die Karte kann dort
+  während einer pausierten Assetprüfung geprüft und übernommen werden. Der versteckte Electron-/Chromium-Fallback
+  wurde verworfen, weil Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen.
 
 ### NC- und fehlende Sounds erneut suchen
 

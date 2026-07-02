@@ -74,12 +74,12 @@ Lokale Arbeitsoberflaeche:
 - 0 Assetprobleme im Explorer-Modell
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
   Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
-- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf:
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
   - `Blaukehlchen`
   - `Fischertukan`
   - `Rotfuchs`
   - `Waldkauz`
-  - `Loewe` (Backblaze-Karte manuell übernommen, bis der automatische signierte Kartenabruf umgesetzt ist)
+  - `Loewe` (Backblaze-Karte manuell übernommen; automatischer signierter Kartenabruf wurde am 2026-07-02 erweitert)
 - 4 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
@@ -422,18 +422,19 @@ Aktuelle Planung:
   den aktuellen Audioplayer vor dem Alternativlauf, um solche Sperren zu vermeiden.
   Seit 2026-06-29 schliessen `X`, `Abbrechen` und `Fenster schliessen` die Datenbank- und Einstellungsdialoge
   wieder korrekt; der laufende Prozess bleibt dabei unveraendert im Hintergrund aktiv.
-  Der IUCN-Kartenabruf prueft zusaetzlich eine robuste Fallback-Strategie fuer gecachte Einzelkarten. Stand
-  2026-06-30 liefert der direkte IUCN-Webendpunkt aus Node lokal HTTP 403; im Browser wird dieselbe Assessment-ID
-  auf einen zeitlich signierten Backblaze-Link weitergeleitet. Der Explorer meldet diesen Fall im Karten-Suchlauf
-  explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport als
-  Quellen-URL eingefuegt und wie ein Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der
-  Karten-Bearbeitungsdialog dafuer direkt `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im
-  Neue-Art-Assistenten im Schritt `Karte` zur Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen
-  Bearbeitungsdialog mit manueller Karte abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige
-  IUCN-Karten vollstaendig in die verfuegbare Breite ein; nach einem manuellen Kartenimport wird der Report sofort
-  neu aufgebaut und zusammen mit Karte, Register und Dokumentation veroeffentlicht. Ein versteckter
-  Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
-  Anwendungsfehlern abbrechen koennen.
+  Der IUCN-Kartenabruf prueft zusaetzlich eine robuste Fallback-Strategie fuer gecachte Einzelkarten. Seit
+  2026-07-02 versucht `update.mjs` zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
+  offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
+  Fehlerantworten als
+  `cached-individual-maps`-URL. Wenn lokal trotzdem kein direkt speicherbarer Link geliefert wird, kann der im
+  Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL eingefuegt und wie ein
+  Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog dafuer direkt
+  `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im Neue-Art-Assistenten im Schritt `Karte` zur
+  Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog mit manueller Karte
+  abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollstaendig in die verfuegbare
+  Breite ein; nach einem manuellen Kartenimport wird der Report sofort neu aufgebaut und zusammen mit Karte,
+  Register und Dokumentation veroeffentlicht. Ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
+  Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen koennen.
   Seit 2026-06-27 beendet `update.mjs` abgeschlossene Pipeline- und Wartungsläufe nach dem Leeren von stdout und
   stderr explizit. Dadurch bleibt der Explorer nach einer finalen Erfolgsausgabe nicht mehr fälschlich im Status
   `Pipeline-Lauf läuft gerade` hängen; die anschließende Assetentscheidung kann geöffnet werden.

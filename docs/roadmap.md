@@ -374,13 +374,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   anzeigen kann.
   Seit 2026-06-29 schliessen `X`, `Abbrechen` und `Fenster schliessen` die Datenbank- und Einstellungsdialoge
   wieder korrekt; laufende Prozesse bleiben im Hintergrund aktiv. Der IUCN-Kartenabruf prueft neben dem direkten
-  Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Stand 2026-06-30 liefert der direkte IUCN-Webendpunkt
-  aus Node lokal HTTP 403; im Browser wird dieselbe Assessment-ID auf einen zeitlich signierten Backblaze-Link
-  weitergeleitet. Der Explorer meldet diesen Fall im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser
-  sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit
-  2026-07-01 bietet der Karten-Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
-  Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
-  Anwendungsfehlern abbrechen können. Derselbe URL-Workflow steht im Neue-Art-Assistenten in Schritt `Karte` zur
+  Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Seit 2026-07-02 versucht `update.mjs` zuerst den
+  bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und
+  extrahiert signierte Backblaze-Links aus Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL.
+  Wenn lokal trotzdem kein direkt
+  speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im
+  Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog
+  dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
+  Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen können. Derselbe URL-Workflow steht im Neue-Art-Assistenten in Schritt `Karte` zur
   Verfügung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog vollständig mit Karte
   abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollständig in die verfügbare
   Breite ein, statt den unteren Kartenbereich abzuschneiden. Nach einem manuellen Kartenimport wird der Report sofort

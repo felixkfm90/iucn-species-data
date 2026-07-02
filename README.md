@@ -366,13 +366,13 @@ Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automa
 Im Bearbeitungsdialog kann eine fehlende oder manuell geschützte Karte per `Automatisch suchen` gezielt nur für
 die aktuelle Art gesucht werden. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App
 zu schließen.
-Stand 2026-06-30: Der verwendete IUCN-Webendpunkt
-`https://www.iucnredlist.org/api/v4/assessments/<AssessmentID>/distribution_map/jpg` liefert aus Node lokal
-HTTP 403, obwohl der Browser auf einen zeitlich signierten Backblaze-Link weiterleitet. Die App meldet diesen Fall
-im Karten-Suchlauf explizit. Als Zwischenweg kann der im Browser sichtbare signierte Backblaze-JPEG-Link im
-Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür
-direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
-Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen können.
+Seit 2026-07-02 versucht der automatische Kartenabruf zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen
+Headern, danach den offiziellen IUCN-API-Host mit Token und zusätzlich signierte Backblaze-Links, die in Redirect-,
+HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn IUCN lokal weiterhin keinen direkt
+speicherbaren Link liefert, kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport als Quellen-URL eingefügt und geprüft
+werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
+Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
+Anwendungsfehlern abbrechen können.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -614,7 +614,7 @@ Aktueller lokaler Stand vom 2026-07-01:
 - 47 Arten in der letzten Pipeline-Ausgabe
 - 47 Karten, 46 Sounds, 46 Credits und 46 Spektrogramme
 - 47 Artportraits; 0 Portrait-Assetprobleme
-- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf
 - 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
 - 4 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`
 

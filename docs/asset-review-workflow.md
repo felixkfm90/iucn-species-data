@@ -69,8 +69,11 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 
 - `Automatisch suchen` im Kartenabschnitt nutzt den Kartensuchlauf für genau diese Art. Bei Zielarten darf der
   Lauf auch fehlende Karten suchen, nicht nur manuell geschützte Karten.
-- Wenn IUCN den lokalen Node-Abruf blockiert, bietet der Kartenabschnitt einen direkten Link `IUCN-Karte im Browser
-  öffnen`. Der externe Browser erzeugt dabei den signierten Backblaze-JPEG-Link; dieser Link kann in das
+- Der automatische Kartenlauf versucht zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
+  offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
+  Fehlerantworten. Wenn IUCN lokal
+  trotzdem keinen direkt speicherbaren Link liefert, bietet der Kartenabschnitt einen direkten Link `IUCN-Karte im
+  Browser öffnen`. Der externe Browser erzeugt dabei den signierten Backblaze-JPEG-Link; dieser Link kann in das
   Quellenfeld kopiert und anschließend mit `Karte prüfen` übernommen werden. Ein versteckter Electron-/Chrome-Abruf
   wird nicht verwendet, weil Headless-Browserprozesse auf dem Zielsystem abstürzen können.
 - `Alternative suchen` im Soundabschnitt nutzt den NC-/fehlende-Sounds-Suchlauf für genau diese Art. Bei vorhandenen
