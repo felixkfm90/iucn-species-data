@@ -225,6 +225,11 @@
         "approvedAt": "2026-06-21T17:30:14.414Z",
         "sha256": "206e65930a4da25a1b26093f850b1ad119969e0ee8144450f1f03046b90f2d8d",
         "metadataSha256": "a4627ce8e53ce9f51e8c28ec6bcd16691b956c4dce21d808c184983f0eddfabd"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-03T13:20:15.681Z"
       }
     },
     "Austernfischer": {
