@@ -403,8 +403,9 @@ Aktuelle Planung:
   Lightbox angezeigt. Sounds werden im Pruefdialog mit dem erzeugten Spektrogramm angezeigt; ein Klick ins
   Spektrogramm setzt die Wiedergabeposition. Sound-Optionen werden strukturiert angezeigt und nennen eindeutig,
   ob ein gefundener Kandidat `NC` oder `frei` ist. Wenn ein bisheriger Sound vorhanden ist, stehen bisheriger Sound
-  und gefundener Kandidat nebeneinander, jeweils mit eigenem Player und Spektrogramm. Die Entscheidung steht in
-  `species-assets-overrides.json`; Details:
+  und gefundener Kandidat nebeneinander, jeweils mit eigenem Player und Spektrogramm. Bei gezielten Kartenlaeufen
+  stehen die bisherige Karte und die gefundene Karte nebeneinander und sind einzeln vergroesserbar. Die Entscheidung
+  steht in `species-assets-overrides.json`; Details:
   `docs/asset-review-workflow.md`. Danach werden die Pipeline-Dateien automatisch committed und gepusht.
   Beim Schliessen des Asset-Pruefdialogs werden laufende Sounds gestoppt und auf Position 0 zurueckgesetzt.
   Die beiden Wartungsläufe verarbeiten die aktuell fünf manuell geschützten Karten plus Arten mit fehlender Karte

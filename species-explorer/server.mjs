@@ -2266,8 +2266,10 @@ export async function createExplorerServer({
               ? String(credits.source ?? "").trim()
               : "",
             backupFiles: before.backupFiles,
-            previousUrl: type === "sound" && existsSync(before.backupFiles?.["sound.mp3"] || "")
-              ? backupFileUrl(target.safeName, "sound.mp3")
+            previousUrl: type === "map" && existsSync(before.backupFiles?.["map.jpg"] || "")
+              ? backupFileUrl(target.safeName, "map.jpg")
+              : type === "sound" && existsSync(before.backupFiles?.["sound.mp3"] || "")
+                ? backupFileUrl(target.safeName, "sound.mp3")
               : "",
             previousSpectrogramUrl: type === "sound" && existsSync(before.backupFiles?.["spectrogram.webp"] || "")
               ? backupFileUrl(target.safeName, "spectrogram.webp")
@@ -2283,7 +2285,7 @@ export async function createExplorerServer({
     const runId = String(url.searchParams.get("runId") ?? "");
     const safeName = String(url.searchParams.get("safeName") ?? "");
     const fileName = String(url.searchParams.get("file") ?? "");
-    const allowedFiles = new Set(["sound.mp3", "spectrogram.webp"]);
+    const allowedFiles = new Set(["map.jpg", "sound.mp3", "spectrogram.webp"]);
     if (
       !runId
       || runId !== pipelineState.runId
@@ -2295,8 +2297,9 @@ export async function createExplorerServer({
       return;
     }
 
+    const expectedType = fileName === "map.jpg" ? "map" : "sound";
     const asset = pipelineState.reviewAssets.find((entry) =>
-      entry.safeName === safeName && entry.type === "sound"
+      entry.safeName === safeName && entry.type === expectedType
     );
     const backupPath = asset?.backupFiles?.[fileName] ?? "";
     const resolvedBackupPath = resolve(backupPath);

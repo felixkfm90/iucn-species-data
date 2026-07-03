@@ -368,7 +368,8 @@ werden, unabhängig davon, ob die Karte bisher automatisch gepflegt, manuell ges
 startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App zu schließen. Wenn die Pipeline eine Karte
 speichert, zeigt der Explorer sie auch dann als prüfbare automatische Alternative an, wenn die Bilddatei bytegleich
 zur bisherigen manuell gepflegten Karte ist; dadurch kann die Pflegeentscheidung wieder auf automatische Pflege
-zurückgestellt werden.
+zurückgestellt werden. Bei gezielten Kartenläufen zeigt der Prüfdialog die bisherige und die gefundene Karte
+nebeneinander; beide Karten können einzeln vergrößert werden.
 Seit 2026-07-02 versucht der automatische Kartenabruf zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen
 Headern, danach den offiziellen IUCN-API-Host mit Token und zusätzlich signierte Backblaze-Links, die in Redirect-,
 HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn Node lokal HTTP 403 erhält, nutzt
@@ -383,7 +384,7 @@ Offene Bedienungswünsche für eine spätere UI-Runde:
 
 - einzelne Assets einer Art gezielt entfernen, ohne die ganze Art zu löschen
 - deutschen Artnamen umbenennen, wenn sich die deutsche Bezeichnung ändert und der wissenschaftliche Name/Slug
-  gleich bleibt
+  gleich bleibt; dabei müssen auch Assetname/SafeName, Assetordner, Override-Einträge und Dokumentation mitwandern
 - allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
   Männchen/Weibchen, Wert und Einheit aufteilen
 

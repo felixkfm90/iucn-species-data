@@ -13,6 +13,7 @@ Für jedes neue Asset zeigt der Dialog:
 - Assettyp Karte oder Sound
 - produktiven Dateipfad
 - bei Karten eine anklickbare Bildvorschau; ein Klick öffnet die Karte in einer großen Lightbox
+- bei gezielten Kartenläufen mit bestehender Karte einen direkten Vergleich aus bisheriger Karte und gefundener Karte
 - bei Sounds einen Audioplayer und, falls bereits erzeugt, das Spektrogramm mit rotem Positionsmarker
 - bei Sounds die Lizenzart der geprüften Quelle: `NC` oder `frei`
 
@@ -33,14 +34,16 @@ Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
 Bei den gezielten Wiederholungsläufen ändern sich die Optionen und werden als getrennte Entscheidungskarten
 angezeigt:
 
-- Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`
+- Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`; bisherige und gefundene
+  Karte werden nebeneinander angezeigt und sind einzeln vergrößerbar
 - NC-Soundsuchlauf: `Gefundenen Sound übernehmen (NC)` beziehungsweise `Gefundenen Sound übernehmen (frei)`,
   `Bisherigen Sound behalten` oder
   `Gefundenen Sound ablehnen und weiter suchen`
 
 Vorhandene Dateien werden dafür unter `species-explorer/pipeline-asset-backups/` vorübergehend gesichert. Der
-Prüfdialog zeigt bei Sounds dann den bisherigen Sound und den neu gefundenen Kandidaten nebeneinander, jeweils mit
-Audio und Spektrogramm. Der Ordner ist ignoriert und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt
+Prüfdialog zeigt bei Karten die bisherige und die gefundene Karte nebeneinander; bei Sounds zeigt er den bisherigen
+Sound und den neu gefundenen Kandidaten nebeneinander, jeweils mit Audio und Spektrogramm. Der Ordner ist ignoriert
+und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt
 oder der bisherige Sound behalten, stellt der Explorer die gesicherten Dateien vor Commit und Push wieder her.
 
 Bei der ausdrücklichen Sound-Ablehnung wird die neue Quelle in `species-assets-overrides.json` unter

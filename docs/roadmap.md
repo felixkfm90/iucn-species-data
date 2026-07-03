@@ -391,7 +391,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   automatisch gepflegte Karte vorhanden ist. Wenn der Pipeline-Lauf eine Karte speichert, zeigt der Explorer die
   Pflegeentscheidung auch dann an, wenn die gespeicherte Datei bytegleich zur bisherigen manuell gepflegten Karte ist.
   Dadurch können Backblaze-übernommene Karten nach erfolgreichem automatischem Abruf wieder auf automatische Pflege
-  zurückgestellt werden.
+  zurückgestellt werden. Bei gezielten Kartenläufen zeigt der Asset-Prüfdialog die bisherige und die gefundene Karte
+  nebeneinander; beide Karten können einzeln vergrößert werden.
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Seit 2026-06-30 werden kurze Windows-Dateisperren beim Verschieben mehrfach erneut
@@ -451,7 +452,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
     Offene UI-Wünsche nach 2026-07-02: einzelne Assets einer Art gezielt löschen; deutschen Artnamen bei
-    unverändertem wissenschaftlichem Namen/Slug umbenennen; allgemeine Daten im Bearbeitungsdialog in strukturierte
+    unverändertem wissenschaftlichem Namen/Slug umbenennen inklusive Mitnahme von Assetname/SafeName, Assetordner,
+    Override-Einträgen und Dokumentation; allgemeine Daten im Bearbeitungsdialog in strukturierte
     Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den

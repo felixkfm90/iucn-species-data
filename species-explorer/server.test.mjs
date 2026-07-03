@@ -1793,6 +1793,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
   assert.match(appSource, /class="asset-review-map-trigger"/);
+  assert.match(appSource, /class="asset-review-map-compare"/);
+  assert.match(appSource, /Bisherige Karte/);
+  assert.match(appSource, /Gefundene Karte/);
   assert.match(appSource, /openMapLightbox/);
   assert.match(
     appSource,
@@ -1869,6 +1872,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /\/api\/pipeline\/assets\/backup-file/);
   assert.match(serverSource, /pipeline-asset-backups/);
   assert.match(serverSource, /sendPipelineBackupFile/);
+  assert.match(serverSource, /"map\.jpg",\s*"sound\.mp3",\s*"spectrogram\.webp"/);
   assert.match(serverSource, /soundRejectionKeyFromCredits/);
   assert.match(serverSource, /rejectedSoundSourceFromCredits/);
   assert.match(serverSource, /Karte abgelehnt und entfernt/);
@@ -2127,6 +2131,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.database-status\.outdated\s*\{[^}]*background:\s*#a32929/s);
   assert.match(cssSource, /\.database-status\.current\s*\{[^}]*background:\s*#1f6b4f/s);
   assert.match(cssSource, /\.asset-review-item\s*\{[^}]*grid-template-columns/s);
+  assert.match(cssSource, /\.asset-review-item\[data-type="map"\]\s*\{[^}]*grid-template-columns/s);
+  assert.match(cssSource, /\.asset-review-map-compare\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
   assert.match(cssSource, /\.asset-review-map-trigger\s*\{[^}]*cursor:\s*zoom-in/s);
   assert.match(cssSource, /\.detail-actions\s*\{/);
   assert.match(cssSource, /\.delete-assets-option\s*\{/);

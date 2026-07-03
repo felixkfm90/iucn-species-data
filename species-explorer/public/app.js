@@ -1038,16 +1038,36 @@ function setupAssetReview() {
         <div class="asset-review-preview">
           ${asset.type === "map"
             ? `
-              <button
-                class="asset-review-map-trigger"
-                type="button"
-                data-map-url="${escapeHtml(asset.url)}"
-                data-map-alt="${escapeHtml(`neue Karte ${asset.germanName}`)}"
-                aria-label="Neue Karte ${escapeHtml(asset.germanName)} vergrößern"
-              >
-                <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">
-                <span class="asset-review-zoom-hint">Vergrößern</span>
-              </button>
+              <div class="asset-review-map-compare">
+                <div class="asset-review-map-preview">
+                  <strong>Bisherige Karte</strong>
+                  ${asset.previousUrl ? `
+                    <button
+                      class="asset-review-map-trigger"
+                      type="button"
+                      data-map-url="${escapeHtml(asset.previousUrl)}"
+                      data-map-alt="${escapeHtml(`bisherige Karte ${asset.germanName}`)}"
+                      aria-label="Bisherige Karte ${escapeHtml(asset.germanName)} vergrößern"
+                    >
+                      <img src="${escapeHtml(asset.previousUrl)}" alt="${escapeHtml(`Bisherige Karte ${asset.germanName}`)}">
+                      <span class="asset-review-zoom-hint">Vergrößern</span>
+                    </button>
+                  ` : `<span class="asset-review-no-map">Keine bisherige Karte vorhanden</span>`}
+                </div>
+                <div class="asset-review-map-preview">
+                  <strong>Gefundene Karte</strong>
+                  <button
+                    class="asset-review-map-trigger"
+                    type="button"
+                    data-map-url="${escapeHtml(asset.url)}"
+                    data-map-alt="${escapeHtml(`gefundene Karte ${asset.germanName}`)}"
+                    aria-label="Gefundene Karte ${escapeHtml(asset.germanName)} vergrößern"
+                  >
+                    <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Gefundene Karte ${asset.germanName}`)}">
+                    <span class="asset-review-zoom-hint">Vergrößern</span>
+                  </button>
+                </div>
+              </div>
             `
             : `
               <div class="asset-review-sound-compare">
