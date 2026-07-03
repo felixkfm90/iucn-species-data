@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-07-02
+Stand: 2026-07-03
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
