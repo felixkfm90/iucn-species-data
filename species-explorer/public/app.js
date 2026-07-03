@@ -577,6 +577,16 @@ function cacheBustedUrl(url, key = Date.now()) {
   return `${url}${separator}t=${encodeURIComponent(key)}`;
 }
 
+function resetScrollableToTop(element) {
+  if (!element) return;
+  element.scrollTop = 0;
+  element.scrollLeft = 0;
+  requestAnimationFrame(() => {
+    element.scrollTop = 0;
+    element.scrollLeft = 0;
+  });
+}
+
 function assetVersionKey(asset = {}, ...extraParts) {
   return [
     asset.sha256,
@@ -724,6 +734,7 @@ function selectSpecies(id) {
     item.setAttribute("aria-selected", String(active));
   }
   renderDetail(species);
+  resetScrollableToTop(elements.detailPanel);
   window.scrollTo(scrollPosition);
   requestAnimationFrame(() => window.scrollTo(scrollPosition));
 }
@@ -885,8 +896,10 @@ function setupMapZoom(species) {
   if (!trigger || !dialog || !closeButton) return;
 
   const open = () => {
+    resetScrollableToTop(dialog);
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
+    resetScrollableToTop(dialog);
     document.body.classList.add("explorer-modal-open");
   };
 
@@ -916,8 +929,10 @@ function setupPortraitZoom() {
   if (!trigger || !dialog || !closeButton) return;
 
   const open = () => {
+    resetScrollableToTop(dialog);
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
+    resetScrollableToTop(dialog);
     document.body.classList.add("explorer-modal-open");
   };
   const close = () => {
@@ -960,11 +975,14 @@ function setupAssetReview() {
     const url = trigger.dataset.mapUrl;
     const alt = trigger.dataset.mapAlt || "Neue Verbreitungskarte";
     if (!url) return;
+    mapLightboxImage.onload = () => resetScrollableToTop(mapLightbox);
     mapLightboxImage.src = url;
     mapLightboxImage.alt = alt;
     mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
+    resetScrollableToTop(mapLightbox);
     if (typeof mapLightbox.showModal === "function") mapLightbox.showModal();
     else mapLightbox.setAttribute("open", "");
+    resetScrollableToTop(mapLightbox);
     document.body.classList.add("explorer-modal-open");
   };
 

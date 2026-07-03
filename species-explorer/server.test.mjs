@@ -1696,6 +1696,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.map-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(appSource, /map-zoom-trigger/);
   assert.match(appSource, /map-lightbox/);
+  assert.match(appSource, /function resetScrollableToTop\(element\)/);
+  assert.match(appSource, /resetScrollableToTop\(elements\.detailPanel\)/);
   assert.match(appSource, /species-image-placeholder/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns/s);
   assert.match(appSource, /class="explorer-audio"/);
@@ -1796,6 +1798,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="asset-review-map-compare"/);
   assert.match(appSource, /Bisherige Karte/);
   assert.match(appSource, /Gefundene Karte/);
+  assert.match(appSource, /mapLightboxImage\.onload = \(\) => resetScrollableToTop\(mapLightbox\)/);
   assert.match(appSource, /openMapLightbox/);
   assert.match(
     appSource,
@@ -2133,6 +2136,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.asset-review-item\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.asset-review-item\[data-type="map"\]\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.asset-review-map-compare\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
+  assert.match(cssSource, /\.map-lightbox\s*\{[^}]*scrollbar-gutter:\s*stable/s);
+  assert.match(cssSource, /\.map-lightbox-close\s*\{[^}]*right:\s*max\(54px,/s);
   assert.match(cssSource, /\.asset-review-map-trigger\s*\{[^}]*cursor:\s*zoom-in/s);
   assert.match(cssSource, /\.detail-actions\s*\{/);
   assert.match(cssSource, /\.delete-assets-option\s*\{/);

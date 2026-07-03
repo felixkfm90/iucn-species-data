@@ -1371,6 +1371,7 @@ button:focus-visible {
   border: 1px solid #53645c;
   border-radius: 6px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .map-lightbox::backdrop {
@@ -1396,7 +1397,7 @@ button:focus-visible {
 .map-lightbox-close {
   position: fixed;
   top: max(14px, calc(3vh + 8px));
-  right: max(18px, calc(2vw + 8px));
+  right: max(54px, calc(2vw + 38px));
   width: 38px;
   height: 38px;
   padding: 0;
