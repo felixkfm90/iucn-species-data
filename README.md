@@ -230,10 +230,10 @@ und neun Reportpruefungen konsistent. Nach dem Anlegen des Haubentauchers zeigt 
 kann diesen neuen Eintrag erst nach dem Pipeline-Lauf enthalten. Der IUCN-Trend `Unbekannt` ist ein gueltiger
 Datenwert und wird nicht als fehlendes Feld behandelt. Status- und Hinweis-Dropdowns sind alphabetisch nach den
 sichtbaren deutschen Bezeichnungen sortiert. Phase 7.3 wurde am 2026-06-19 visuell geprueft.
-Die App zeigt dabei keine interne Phasenbezeichnung. Die linke Navigation reicht dynamisch bis zur Unterkante des
-letzten Detailblocks. Dadurch haengt die gleichzeitig sichtbare Anzahl von der tatsaechlichen Detailhoehe ab;
-weitere Treffer werden innerhalb der Liste gescrollt. Die Hoehe wird bei Artwechsel und Fenstergroessenaenderung
-neu an der Unterkante des letzten sichtbaren Detailblocks ausgerichtet.
+Die App zeigt dabei keine interne Phasenbezeichnung. Kopfbereich, Zusammenfassung und Validierungsstatus bleiben
+im Desktopfenster sichtbar. Darunter scrollen die linke Artenliste und der rechte Detailbereich getrennt. Beim
+Artwechsel springt nur der rechte Detailbereich wieder an den Anfang; die Scrollposition der linken Artenliste
+bleibt erhalten.
 
 Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. `Löschen` steht im Artkopf oben rechts. `Bearbeiten` steht
 direkt an den bearbeitbaren Bereichen `Manuelle Daten`, `Artporträt`, `Verbreitungskarte` und `Tierstimme`; der

@@ -273,11 +273,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   45 von 45 Datenpaare stimmen ueberein, 45 Assetpakete sind vollstaendig, neun Reportpruefungen sind konsistent und
   es bestehen 0 Validierungshinweise. Der gueltige Trendwert `Unbekannt` wird nicht als fehlend bewertet.
   Status- und Hinweis-Dropdowns sind alphabetisch sortiert. Felix hat Phase 7.3 am 2026-06-19 visuell geprueft.
-  Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Die linke Artenliste reicht dynamisch bis
-  zur Unterkante des letzten Detailblocks; die sichtbare Zeilenzahl richtet sich nach dessen Hoehe und weitere
-  Treffer sind innerhalb der Liste scrollbar. Die Hoehe wird nach Artwechseln und Fenstergroessenaenderungen
-  explizit an der letzten sichtbaren Detailbox ausgerichtet, statt von der vollstaendigen Artenliste bestimmt zu
-  werden.
+  Die interne Phasenbezeichnung wird in der App nicht mehr angezeigt. Kopfbereich, Zusammenfassung und
+  Validierungsstatus bleiben im Desktopfenster sichtbar; darunter scrollen Artenliste und Detailbereich getrennt.
+  Beim Artwechsel springt nur der rechte Detailbereich wieder an den Anfang, waehrend die linke Artenliste ihre
+  Scrollposition behaelt.
   Der Squarespace-Footer mit `species-sound.js?v=1.0.24` wurde live erfolgreich getestet; dokumentierter Folgestand
   fuer die Textkorrektur ist `species-sound.js?v=1.0.25`.
 - 7.4 Kontrolliertes Bearbeiten von `species_list.json`: abgeschlossen am 2026-06-19.

@@ -113,8 +113,6 @@ const elements = {
   itemTemplate: document.querySelector("#species-item-template"),
 };
 
-let speciesPanelLayoutFrame = 0;
-
 function formatDate(value) {
   if (!value) return "Kein Reportdatum";
   const date = new Date(value);
@@ -521,31 +519,6 @@ function speciesImagePanel(species) {
       </div>
     </section>
   `;
-}
-
-function syncSpeciesPanelHeight() {
-  cancelAnimationFrame(speciesPanelLayoutFrame);
-  speciesPanelLayoutFrame = requestAnimationFrame(() => {
-    if (window.matchMedia("(max-width: 720px)").matches) {
-      elements.speciesPanel.style.removeProperty("height");
-      return;
-    }
-
-    const visibleDetailBlocks = [...elements.detailPanel.children].filter((element) => {
-      if (element.tagName === "DIALOG" || element.hidden) return false;
-      return window.getComputedStyle(element).display !== "none";
-    });
-    const lastDetailBlock = visibleDetailBlocks.at(-1);
-    if (!lastDetailBlock) {
-      elements.speciesPanel.style.removeProperty("height");
-      return;
-    }
-
-    const detailTop = elements.detailPanel.getBoundingClientRect().top;
-    const detailBottom = lastDetailBlock.getBoundingClientRect().bottom;
-    const targetHeight = Math.max(0, Math.ceil(detailBottom - detailTop));
-    elements.speciesPanel.style.height = `${targetHeight}px`;
-  });
 }
 
 function creditValue(credits, key) {
@@ -4586,7 +4559,6 @@ function renderDetail(species) {
   setupPortraitZoom();
   setupSpeciesEditor(species);
   setupSpeciesDelete(species);
-  syncSpeciesPanelHeight();
 }
 
 async function loadData({ reload = false } = {}) {
@@ -4670,8 +4642,6 @@ elements.search.addEventListener("input", applyFilters);
 elements.statusFilter.addEventListener("change", applyFilters);
 elements.flagFilter.addEventListener("change", applyFilters);
 elements.reloadButton.addEventListener("click", () => loadData({ reload: true }));
-window.addEventListener("resize", syncSpeciesPanelHeight);
-elements.detailPanel.addEventListener("toggle", syncSpeciesPanelHeight, true);
 
 setupEditingMode();
 setupAssetReview();
