@@ -992,18 +992,26 @@
             "recordist": "Bernard hanus",
             "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
             "rejectedAt": "2026-07-02T14:45:09.406Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-L%C3%B6we2.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-03T16:04:06.182Z"
           }
         ],
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-02T14:45:24.454Z"
+        "updatedAt": "2026-07-03T16:04:30.665Z"
       },
       "spectrogram": {
         "stale": false,
         "soundSha256": "63c3a7da9a048c3257e14fdd6af03479887b40d69163619d9cb80046bcdc7a0c",
         "spectrogramSha256": "2a6faac80b3b12c9562a629a037a896d31d316e518ddb4edc8592fd6458a5bc7",
-        "generatedAt": "2026-07-02T14:45:17.180Z",
-        "verifiedAt": "2026-07-02T14:45:17.186Z"
+        "generatedAt": "2026-07-03T16:04:14.733Z",
+        "verifiedAt": "2026-07-03T16:04:14.738Z"
       }
     }
   },
