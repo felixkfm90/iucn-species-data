@@ -293,6 +293,7 @@ function renderDatabaseStatus(stateName = "") {
   else if (status === "review") elements.pipelineStatus.textContent = "Neue Assets prüfen";
   else if (status === "failed") elements.pipelineStatus.textContent = "Datenbank aktualisieren";
   else if (status === "current") elements.pipelineStatus.textContent = "Datenbank aktuell";
+  else if (status === "outdated") elements.pipelineStatus.textContent = "Änderungen übertragen";
   else elements.pipelineStatus.textContent = "Datenbank aktualisieren";
 }
 
@@ -1681,9 +1682,11 @@ function setupPipelineControl() {
     elements.pipelinePreview.hidden = true;
     setDialogCloseMode(false);
     setMessage("Vorschau wird erstellt…", "info");
-    elements.pipelineDialogTitle.textContent = modeLabel(mode);
+    elements.pipelineDialogTitle.textContent = options.transfer ? "Änderungen übertragen" : modeLabel(mode);
     elements.pipelineDialogDescription.textContent =
-      mode === "cleanup"
+      options.transfer
+        ? "Offene Änderungen werden geprüft und gezielt in die Datenbank übertragen."
+        : mode === "cleanup"
         ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
         : mode === "manual-maps"
           ? "Manuell geschützte und fehlende Karten werden erneut bei IUCN gesucht."
@@ -1704,7 +1707,9 @@ function setupPipelineControl() {
       elements.pipelineStartButton.hidden = false;
       elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
       elements.pipelineStartButton.textContent =
-        mode === "cleanup"
+        options.transfer
+          ? "Änderungen übertragen"
+          : mode === "cleanup"
           ? "Dauerhaft löschen"
           : mode === "manual-maps" || mode === "nc-sounds"
             ? "Suchlauf starten"
@@ -1944,7 +1949,16 @@ function setupPipelineControl() {
   for (const button of elements.backupButtons) {
     button.addEventListener("click", openBackupPreview);
   }
-  elements.pipelineMenuButton.addEventListener("click", openChooser);
+  elements.pipelineMenuButton.addEventListener("click", () => {
+    const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
+      || state.pipelineStatusSnapshot?.status === "awaiting-review";
+    const backupActive = state.backupStatusSnapshot?.status === "running";
+    if (state.databaseNeedsUpdate && !pipelineActive && !backupActive) {
+      void openPreview("missing", { transfer: true });
+      return;
+    }
+    openChooser();
+  });
   elements.pipelineRunNoticeOpen.addEventListener("click", () => {
     if (statusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
     else if (backupStatusPresentation(state.backupStatusSnapshot || {})) showBackupStatusDialog(state.backupStatusSnapshot);

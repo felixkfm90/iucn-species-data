@@ -11,6 +11,20 @@ function isMissing(value) {
   return MISSING_VALUES.has(normalized(value));
 }
 
+function changedManualFields(entry, existing, slug) {
+  const expectedScientificName = `${entry?.genus ?? ""} ${entry?.species ?? ""}`.trim();
+  return [
+    ["Deutscher Name", entry?.german, existing?.["Deutscher Name"]],
+    ["Wissenschaftlicher Name", expectedScientificName, existing?.["Wissenschaftlicher Name"]],
+    ["Größe", entry?.size, existing?.["Größe"]],
+    ["Gewicht", entry?.weight, existing?.Gewicht],
+    ["Lebenserwartung", entry?.life_expectancy, existing?.Lebenserwartung],
+    ["URL-Slug", slug, existing?.URLSlug],
+  ]
+    .filter(([, expected, actual]) => normalized(expected) !== normalized(actual))
+    .map(([label]) => label);
+}
+
 function readJson(filePath, fallback) {
   if (!fs.existsSync(filePath)) return fallback;
   try {
@@ -87,6 +101,10 @@ export function buildPipelinePlan({
         .filter(([, value]) => isMissing(value))
         .map(([label]) => label);
       if (missingCore.length) reasons.push(`fehlende IUCN-Felder: ${missingCore.join(", ")}`);
+      const manualChanges = changedManualFields(entry, existing, slug);
+      if (manualChanges.length) {
+        reasons.push(`geänderte Eingabefelder: ${manualChanges.join(", ")}`);
+      }
     }
 
     const assetChecks = [

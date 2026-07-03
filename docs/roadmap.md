@@ -326,7 +326,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Die App unterscheidet `Neue/Unvollstaendige Arten aktualisieren` und `Alle Arten vollstaendig aktualisieren`.
     Der Spektrogramm-Abgleich wird in der Prozessausgabe inzwischen als lesbare Zusammenfassung pro Art angezeigt
     statt als roher JSON-Block.
-  Der gezielte Lauf verarbeitet input-only Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets. Der
+  Der gezielte Lauf verarbeitet input-only Arten, Arten mit fehlenden IUCN-Kernfeldern oder Assets sowie Arten mit
+  geaenderten manuellen Eingabefeldern aus `species_list.json`. Der
   vollstaendige Lauf entspricht dem bisherigen `node update.mjs` ueber die gesamte Artenliste. Vor dem Start werden
   Laufart, Zielarten und Gruende angezeigt. Nur ein Lauf darf gleichzeitig aktiv sein; Logs duerfen keine Tokens
   enthalten. `update.mjs` unterstuetzt jetzt `--mode=missing`, `--mode=all` und `--dry-run`;
@@ -337,8 +338,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Bestaetigung werden diese Inhalte dauerhaft und ohne Wiederherstellungsablage geloescht. Details:
   `docs/delete-species-workflow.md`. Die Prozesssteuerung wurde kompakt in die Kopfzeile verschoben: Das klickbare
   Datenbank-Feld oeffnet den Dialog `Datenbank-Aktionen`; dort sind Aktualisieren, Backup/Einstellungen und Wartung
-  in aufklappbaren Gruppen getrennt. Es ist bei offenen Problemen rot als `Datenbank aktualisieren` und
-  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
+  in aufklappbaren Gruppen getrennt. Es ist bei offenen Problemen rot als `Änderungen übertragen` und
+  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Bei roten Abweichungen öffnet ein Klick direkt die
+  gezielte Übertragungsvorschau. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
   und `Bearbeitungsmodus 🔓`; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.

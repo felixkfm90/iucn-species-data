@@ -390,7 +390,8 @@ Aktuelle Planung:
   unterscheidet `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten vollstaendig aktualisieren`,
   `Manuelle und fehlende Karten erneut suchen` und `NC- und fehlende Sounds erneut suchen`. `update.mjs`
   unterstuetzt
-  `--mode=missing`, `--mode=all` und `--dry-run`; die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
+  `--mode=missing`, `--mode=all` und `--dry-run`; `missing` verarbeitet neben neuen oder unvollstaendigen Arten
+  auch geaenderte manuelle Eingabefelder aus `species_list.json`. Die App zeigt Vorschau, Prozessstatus und lokale Logs. Nur ein
   Lauf kann gleichzeitig aktiv sein. Nach dem Start bleibt der Dialog geöffnet und zeigt
   `Pipeline-Lauf läuft gerade`. Der Button `Abbrechen` wechselt zu `Fenster schließen`; das Schließen beendet den
   Hintergrundprozess nicht. Ein Statusbalken im Hauptfenster zeigt laufende, wartende, abgeschlossene und
@@ -479,8 +480,9 @@ Aktuelle Planung:
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
-  ist bei offenen Problemen rot mit `Datenbank aktualisieren` und bei konsistentem Stand gruen mit
-  `Datenbank aktuell`; der Dialog dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
+  ist bei offenen Problemen rot mit `Änderungen übertragen` und bei konsistentem Stand gruen mit
+  `Datenbank aktuell`; ein Klick auf den roten Zustand öffnet direkt die gezielte Übertragungsvorschau. Der Dialog
+  dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
   Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art startet der
   selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch

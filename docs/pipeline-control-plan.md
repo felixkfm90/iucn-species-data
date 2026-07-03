@@ -13,7 +13,9 @@ geprüft.
 ## Bedienoberfläche
 
 Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht im Bearbeitungsmodus das klickbare
-Feld `Datenbank aktualisieren` beziehungsweise `Datenbank aktuell`.
+Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei offenen Abweichungen oeffnet ein Klick direkt
+die gezielte Vorschau fuer neue, unvollstaendige oder geaenderte Arten; ohne offene Abweichungen oeffnet es den
+Dialog `Datenbank-Aktionen`.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
@@ -63,6 +65,7 @@ Die App ermittelt vor dem Start eine konkrete Artenliste. Aufgenommen werden Art
 Merkmale:
 
 - nur in `species_list.json`, aber noch nicht in `speciesData.json`
+- geaenderte manuelle Eingabefelder aus `species_list.json`, zum Beispiel Groesse, Gewicht oder Lebenserwartung
 - fehlende Assessment-ID, Status, Kategorie oder Trend
 - fehlende Karte
 - fehlender Sound oder fehlende Credits

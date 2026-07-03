@@ -739,6 +739,18 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   assert.equal(completePlan.targetCount, 0);
   assert.equal(completePlan.hasWork, false);
 
+  const changedInputPlan = buildPipelinePlan({
+    speciesList: speciesList.map((entry, index) => (index === 0
+      ? { ...entry, size: `${entry.size} geändert` }
+      : entry)),
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "missing",
+  });
+  assert.equal(changedInputPlan.targetCount, 1);
+  assert.match(changedInputPlan.targets[0].reasons.join(" "), /geänderte Eingabefelder: Größe/);
+
   speciesList.push({
     german: "Testvogel",
     genus: "Testus",
@@ -2064,6 +2076,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Lesemodus 🔒/);
   assert.match(htmlSource, /id="pipeline-menu-button"/);
   assert.match(htmlSource, /Datenbank aktualisieren/);
+  assert.match(appSource, /Änderungen übertragen/);
+  assert.match(appSource, /openPreview\("missing", \{ transfer: true \}\)/);
   assert.match(htmlSource, /id="pipeline-mode-choice"/);
   assert.match(htmlSource, /Datenbank-Aktionen/);
   assert.match(htmlSource, /Daten aktualisieren/);

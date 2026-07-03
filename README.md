@@ -196,6 +196,8 @@ Der Explorer zeigt:
 - gezielten Kartensuchlauf fuer jede einzelne Art sowie global fuer manuell gepflegte und fehlende Karten
 - gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
+- roten Kopfstatus `Änderungen übertragen`, wenn Eingabe, Pipeline, Report oder Assets nicht mehr zusammenpassen;
+  ein Klick öffnet direkt die gezielte Vorschau fuer neue, unvollstaendige oder geaenderte Arten
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - vier aktive NC-Sounds
 - fuenf manuell gepflegte Karten
@@ -338,7 +340,9 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - die Zwischenmeldung direkt nach dem Anlegen einer Art verschwindet nach erfolgreichem Pipeline-Push
 - die Kopfzeile schaltet zwischen `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Schreibaktionen werden entsprechend
   aus- beziehungsweise eingeblendet
-- das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Datenbank aktualisieren` oder grün `Datenbank aktuell`
+- das klickbare Datenbank-Feld in der Kopfzeile zeigt rot `Änderungen übertragen` oder grün `Datenbank aktuell`
+- bei offenen Abweichungen oeffnet dieses Feld direkt den gezielten Übertragungslauf; der Modus verarbeitet
+  neue Arten, fehlende Daten/Assets und geaenderte manuelle Eingabefelder
 - der Dialog dahinter heißt `Datenbank-Aktionen` und gruppiert Aktualisieren, Backup/Einstellungen und Wartung
 - die Laufart heißt `Neue/Unvollständige Arten aktualisieren`
 - nach dem Speichern einer neuen Art wird der selektive Lauf sofort angeboten; Abbrechen lässt ihn für später offen

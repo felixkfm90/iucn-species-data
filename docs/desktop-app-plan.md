@@ -433,10 +433,10 @@ Status: abgeschlossen am 2026-06-20. Start, Prozessanzeige, Assetentscheidung, a
 Bereinigung, Karten-Großansicht, sichere Dialogbedienung und Soundstopp wurden praktisch geprüft.
 Detailplanung: `docs/pipeline-control-plan.md`.
 
-Die Bedienoberflaeche unterscheidet zwei ausdrueckliche Laufarten:
+Die Bedienoberflaeche unterscheidet vier ausdrueckliche Laufarten:
 
-- `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten und Arten mit fehlenden
-  Kernfeldern oder Assets
+- `Neue/Unvollstaendige Arten aktualisieren`: verarbeitet gezielt input-only Arten, Arten mit fehlenden
+  Kernfeldern oder Assets sowie geaenderte manuelle Eingabefelder aus `species_list.json`
 - `Alle Arten vollstaendig aktualisieren`: entspricht dem bisherigen kompletten Lauf von `node update.mjs`
 - `Manuelle und fehlende Karten erneut suchen`: verarbeitet manuell geschützte und fehlende Karten
 - `NC- und fehlende Sounds erneut suchen`: verarbeitet vorhandene NC-Sounds und Arten ohne Sounddatei
@@ -455,7 +455,8 @@ Technische Reihenfolge:
 
 Umgesetzt:
 
-- `update.mjs --mode=missing`: nur neue Arten sowie Arten mit fehlenden IUCN-Kernfeldern oder Assets
+- `update.mjs --mode=missing`: neue Arten, Arten mit fehlenden IUCN-Kernfeldern oder Assets sowie Arten mit
+  geaenderten manuellen Eingabefeldern
 - `update.mjs --mode=all`: vollstaendiger Lauf; Aufruf ohne Parameter bleibt rueckwaertskompatibel ebenfalls `all`
 - `--dry-run`: zeigt Artenauswahl ohne Schreibzugriff und ohne erforderliche API-Tokens
 - nicht ausgewaehlte Arten werden bei einem Teillauf aus der vorhandenen `speciesData.json` uebernommen
@@ -469,8 +470,8 @@ Umgesetzt:
 - Git bleibt getrennt
 - der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften
   vertikalen Platz belegt
-- die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Datenbank aktualisieren`, gruen bedeutet
-  `Datenbank aktuell`
+- die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Änderungen übertragen`, gruen bedeutet
+  `Datenbank aktuell`; bei roten Abweichungen öffnet ein Klick direkt die gezielte Übertragungsvorschau
 - es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`
   oder `Bereinigen`
 - die Prozessausgabe und der letzte Status stehen ebenfalls in diesem Dialog
