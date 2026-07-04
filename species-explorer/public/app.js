@@ -1668,7 +1668,7 @@ function setupPipelineControl() {
     elements.pipelinePreviewContent.innerHTML = result.skipped
       ? `
         <p><strong>Kein neues Backup erforderlich.</strong></p>
-        <p>${escapeHtml(result.reason || "Seit dem letzten Backup wurden keine Aenderungen erkannt.")}</p>
+        <p>${escapeHtml(result.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt.")}</p>
         <p>Letztes Backup: <strong>${escapeHtml(result.archivePath || "Unbekannt")}</strong></p>
       `
       : `
