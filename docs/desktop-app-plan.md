@@ -472,7 +472,10 @@ Umgesetzt:
   vertikalen Platz belegt
 - die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Änderungen übertragen`, gruen bedeutet
   `Datenbank aktuell`; bei roten Eingabeabweichungen oder lokal gespeicherten Assetaenderungen öffnet ein Klick
-  direkt den Transferlauf ohne Karten- oder Soundsuche
+  direkt den Transferlauf ohne Karten- oder Soundsuche. Dieser Status- und Übertragungsbutton bleibt auch im
+  Lesemodus sichtbar; ohne offene Änderungen öffnet er dort keine Wartungsaktionen.
+- `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im Hintergrund, ohne den
+  allgemeinen Datenbank-Aktionen-Dialog zu öffnen.
 - beim Schliessen der Desktop-App warnt der Explorer vor offenen, noch nicht uebertragenen Aenderungen; der Nutzer
   kann zur App zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen
 - es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`

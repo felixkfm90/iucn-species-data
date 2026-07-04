@@ -1913,10 +1913,13 @@ export async function createExplorerServer({
       .split(/\r?\n/)
       .map((line) => line.trimEnd())
       .filter(Boolean)
-      .map((line) => ({
-        status: line.slice(0, 2).trim() || "??",
-        path: line.slice(3).trim(),
-      }))
+      .map((line) => {
+        const match = line.match(/^(.{1,2})\s+(.*)$/);
+        return {
+          status: (match?.[1] ?? line.slice(0, 2)).trim() || "??",
+          path: (match?.[2] ?? line.slice(2)).trim(),
+        };
+      })
       .filter((entry) => entry.path);
     return { files, count: files.length, error: "" };
   }

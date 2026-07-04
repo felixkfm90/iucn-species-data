@@ -482,7 +482,10 @@ Aktuelle Planung:
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
   ist bei manuellen Eingabeabweichungen oder lokal gespeicherten Assetaenderungen rot mit
   `Änderungen übertragen` und bei konsistentem Stand gruen mit `Datenbank aktuell`; ein Klick auf den roten Zustand
-  startet den Transferlauf fuer geaenderte Eingabefelder und lokale Assetdateien ohne Karten- oder Soundsuche. Beim
+  startet den Transferlauf fuer geaenderte Eingabefelder und lokale Assetdateien ohne Karten- oder Soundsuche. Der
+  Status- und Uebertragungsbutton bleibt auch im Lesemodus sichtbar; ohne offene Aenderungen oeffnet er dort keine
+  Wartungsaktionen. `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im
+  Hintergrund, ohne den allgemeinen Datenbank-Aktionen-Dialog zu oeffnen. Beim
   Schliessen der Desktop-App warnt der Explorer vor noch nicht uebertragenen Aenderungen; der Nutzer kann zur App
   zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen. Der Dialog dahinter
   heisst `Datenbank-Aktionen` und trennt Aktualisieren, Backup/Einstellungen sowie Wartung in aufklappbare Gruppen.

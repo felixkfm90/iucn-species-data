@@ -135,7 +135,7 @@ h1 {
   border-color: #d86f6f;
 }
 
-body:not(.edit-mode) .header-edit-slot {
+body:not(.edit-mode) .header-edit-slot:not(.database-status) {
   visibility: hidden;
   pointer-events: none;
 }

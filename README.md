@@ -194,10 +194,14 @@ Der Explorer zeigt:
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
 - gezielten Kartensuchlauf fuer jede einzelne Art sowie global fuer manuell gepflegte und fehlende Karten
+- `Art aktualisieren` je Art mit kurzem Bestätigungsdialog; der Lauf startet danach direkt im Hintergrund, ohne den
+  allgemeinen Datenbank-Aktionen-Dialog zu öffnen
 - gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
 - roten Kopfstatus `Änderungen übertragen`, wenn manuelle Eingaben von der Pipeline-Ausgabe abweichen oder lokale
-  Assetaenderungen auf Veröffentlichung warten; ein Klick überträgt diese Änderungen ohne Karten- oder Soundsuche
+  Assetaenderungen auf Veröffentlichung warten; ein Klick überträgt diese Änderungen ohne Karten- oder Soundsuche.
+  Dieser Übertragungsbutton bleibt auch im Lesemodus sichtbar, damit offene Änderungen vor dem Beenden
+  veröffentlicht werden können.
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - vier aktive NC-Sounds
 - fuenf manuell gepflegte Karten

@@ -172,14 +172,14 @@ async function handleWindowClose(event) {
   if (pendingChanges?.hasPendingChanges) {
     const response = await dialog.showMessageBox(mainWindow, {
       type: "warning",
-      buttons: ["Zur App zurueck", "Trotzdem schliessen"],
+      buttons: ["Zur App zurück", "Trotzdem schließen"],
       defaultId: 0,
       cancelId: 0,
-      title: "Offene Aenderungen",
-      message: "Es gibt noch nicht uebertragene Aenderungen.",
+      title: "Offene Änderungen",
+      message: "Es gibt noch nicht übertragene Änderungen.",
       detail:
-        "Gehe zur App zurueck, wenn du die Aenderungen jetzt uebertragen willst. "
-        + "Du kannst trotzdem schliessen und die Uebertragung beim naechsten Start nachholen.",
+        "Gehe zur App zurück, wenn du die Änderungen jetzt übertragen willst. "
+        + "Du kannst trotzdem schließen und die Übertragung beim nächsten Start nachholen.",
     });
     if (response.response !== 1) return;
   }

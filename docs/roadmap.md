@@ -341,7 +341,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   in aufklappbaren Gruppen getrennt. Es ist bei manuellen Eingabeabweichungen rot als `Änderungen übertragen` und
   bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Bei roten Abweichungen öffnet ein Klick direkt den
   Transferlauf fuer geaenderte Eingabefelder und lokal gespeicherte Assetaenderungen ohne Karten- oder Soundsuche.
-  Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
+  Der Status- und Übertragungsbutton bleibt auch im Lesemodus sichtbar; ohne offene Änderungen öffnet er dort keine
+  Wartungsaktionen. `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im
+  Hintergrund, ohne den allgemeinen Datenbank-Aktionen-Dialog zu öffnen. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
   und `Bearbeitungsmodus 🔓`; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.

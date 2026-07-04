@@ -12,10 +12,11 @@ geprüft.
 
 ## Bedienoberfläche
 
-Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht im Bearbeitungsmodus das klickbare
-Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oder lokal
+Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht das klickbare Feld
+`Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oder lokal
 gespeicherten Assetaenderungen oeffnet ein Klick direkt den Transferlauf; dabei werden keine Karten oder Sounds
-gesucht. Ohne offene Abweichungen oeffnet es den Dialog `Datenbank-Aktionen`.
+gesucht. Dieser Übertragungsweg bleibt auch im Lesemodus sichtbar. Ohne offene Abweichungen oeffnet das Feld nur im
+Bearbeitungsmodus den Dialog `Datenbank-Aktionen`.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
@@ -24,6 +25,10 @@ Der Pipeline-Dialog fragt zuerst die Laufart ab:
 - manuell gepflegte und fehlende Karten erneut automatisch suchen
 - NC-Sounds und fehlende Sounds erneut prüfen
 - dauerhafte Bereinigung
+
+Zusätzlich kann eine einzelne Art über `Art aktualisieren` direkt aktualisiert werden. Die App fragt nur kurz
+`Automatische Aktualisierung für <Art> wirklich ausführen?` ab und startet danach den gezielten Lauf im Hintergrund,
+ohne den allgemeinen Dialog `Datenbank-Aktionen` zu öffnen.
 
 Status und letzte Prozessausgabe werden im selben Dialog `Datenbank-Aktionen` angezeigt. Nach dem Start bleibt der Dialog geöffnet und
 meldet ausdrücklich `Pipeline-Lauf läuft gerade`. Der bisherige Button `Abbrechen` heißt ab diesem Zeitpunkt

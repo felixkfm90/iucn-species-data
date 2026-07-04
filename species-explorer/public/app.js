@@ -132,6 +132,15 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatPendingFileStatus(status) {
+  const value = String(status || "").trim();
+  if (!value || value.includes("M")) return "geändert";
+  if (value.includes("A") || value === "??") return "neu";
+  if (value.includes("D")) return "gelöscht";
+  if (value.includes("R")) return "umbenannt";
+  return value;
+}
+
 function iucnDistributionMapUrl(species) {
   const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
   return /^\d+$/.test(assessmentId)
@@ -247,6 +256,49 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function showQuickConfirm({
+  eyebrow = "",
+  title = "Bestätigen",
+  message = "",
+  confirmLabel = "Ja",
+  cancelLabel = "Abbrechen",
+  danger = false,
+} = {}) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "edit-dialog quick-confirm-dialog";
+    dialog.innerHTML = `
+      <form method="dialog" class="quick-confirm-form">
+        ${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ""}
+        <h2>${escapeHtml(title)}</h2>
+        ${message ? `<p>${escapeHtml(message)}</p>` : ""}
+        <div class="dialog-actions">
+          ${cancelLabel ? `<button class="quick-confirm-cancel" type="button">${escapeHtml(cancelLabel)}</button>` : ""}
+          <button class="quick-confirm-ok ${danger ? "danger" : ""}" type="submit">${escapeHtml(confirmLabel)}</button>
+        </div>
+      </form>
+    `;
+    const closeWith = (value) => {
+      if (dialog.open) dialog.close();
+      dialog.remove();
+      resolve(value);
+    };
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeWith(false);
+    });
+    dialog.querySelector(".quick-confirm-cancel")?.addEventListener("click", () => closeWith(false));
+    dialog.querySelector(".quick-confirm-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      closeWith(true);
+    });
+    setupSafeBackdropClose(dialog, () => closeWith(false));
+    document.body.append(dialog);
+    dialog.showModal();
+    dialog.querySelector(".quick-confirm-ok")?.focus();
+  });
 }
 
 function safeUrl(value) {
@@ -1586,7 +1638,7 @@ function setupPipelineControl() {
     `).join("");
     const pendingFiles = Array.isArray(result.pendingFiles) ? result.pendingFiles : [];
     const pendingFileRows = pendingFiles.slice(0, 12).map((entry) => `
-      <li><strong>${escapeHtml(entry.status || "geändert")}</strong> · ${escapeHtml(entry.path)}</li>
+      <li><strong>${escapeHtml(formatPendingFileStatus(entry.status))}</strong> · ${escapeHtml(entry.path)}</li>
     `).join("");
     const pendingMoreRows = pendingFiles.length > 12
       ? `<li>${pendingFiles.length - 12} weitere Datei(en)</li>`
@@ -1991,10 +2043,19 @@ function setupPipelineControl() {
     const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
       || state.pipelineStatusSnapshot?.status === "awaiting-review";
     const backupActive = state.backupStatusSnapshot?.status === "running";
-    if (state.databaseNeedsUpdate && !pipelineActive && !backupActive) {
+    if (pipelineActive) {
+      showStatusDialog(state.pipelineStatusSnapshot);
+      return;
+    }
+    if (backupActive) {
+      showBackupStatusDialog(state.backupStatusSnapshot);
+      return;
+    }
+    if (state.databaseNeedsUpdate) {
       void openPreview("transfer", { transfer: true });
       return;
     }
+    if (!state.editMode) return;
     openChooser();
   });
   elements.pipelineRunNoticeOpen.addEventListener("click", () => {
@@ -3846,12 +3907,41 @@ function setupSpeciesEditor(species) {
 function setupSpeciesRefresh(species) {
   const openButton = elements.detailPanel.querySelector(".refresh-species-open");
   if (!openButton) return;
-  openButton.addEventListener("click", () => {
+  openButton.addEventListener("click", async () => {
     if (!state.openPipelinePreview) return;
-    void state.openPipelinePreview("all", {
-      targetSlugs: [species.id],
-      speciesRefresh: true,
+    const confirmed = await showQuickConfirm({
+      eyebrow: "Art aktualisieren",
+      title: "Automatische Aktualisierung",
+      message: `Automatische Aktualisierung für ${species.germanName} wirklich ausführen?`,
+      confirmLabel: "Ja, aktualisieren",
+      cancelLabel: "Abbrechen",
     });
+    if (!confirmed) return;
+    openButton.disabled = true;
+    try {
+      const result = await state.openPipelinePreview("all", {
+        targetSlugs: [species.id],
+        silent: true,
+        speciesRefresh: true,
+      });
+      if (result?.noWork) {
+        await showQuickConfirm({
+          title: "Keine Aktualisierung gestartet",
+          message: result.message,
+          confirmLabel: "OK",
+          cancelLabel: "",
+        });
+      }
+    } catch (error) {
+      await showQuickConfirm({
+        title: "Aktualisierung konnte nicht gestartet werden",
+        message: error.message,
+        confirmLabel: "OK",
+        cancelLabel: "",
+      });
+    } finally {
+      openButton.disabled = false;
+    }
   });
 }
 

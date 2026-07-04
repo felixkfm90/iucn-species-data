@@ -1938,6 +1938,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /publishAssetChanges = false/);
   assert.match(serverSource, /rebuildReportAfterAssetSave = true/);
   assert.match(serverSource, /async function readPendingProjectChanges\(\)/);
+  assert.match(serverSource, /const match = line\.match/);
+  assert.match(serverSource, /path: \(match\?\.\[2\]/);
   assert.match(serverSource, /url\.pathname === "\/api\/pending-changes"/);
   assert.match(serverSource, /Transfer pending Explorer changes/);
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
@@ -2039,6 +2041,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="refresh-species-open"/);
   assert.match(appSource, /Art aktualisieren/);
   assert.match(appSource, /openPipelinePreview\("all",/);
+  assert.match(appSource, /Automatische Aktualisierung für/);
+  assert.match(appSource, /silent:\s*true/);
+  assert.match(appSource, /function formatPendingFileStatus/);
+  assert.match(appSource, /showQuickConfirm/);
+  assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
   assert.match(appSource, /\/api\/pending-changes/);
   assert.match(appSource, /beforeunload/);
   assert.match(appSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
