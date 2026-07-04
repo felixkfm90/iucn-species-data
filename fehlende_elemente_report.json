@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-04T15:47:15.182Z",
+  "generatedAt": "2026-07-04T16:14:24.784Z",
   "counts": {
-    "totalSpecies": 48,
+    "totalSpecies": 47,
     "missingSoundMp3": 1,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 1,
-    "ncSoundLicensesAll": 5
+    "ncSoundLicensesAll": 4
   },
   "missing": {
     "soundMp3": [
@@ -38,7 +38,6 @@
     "Bisamratte",
     "Brauenmotmot",
     "Geoffroy-Klammeraffe",
-    "Löwe",
     "Scharlachara"
   ]
 }
