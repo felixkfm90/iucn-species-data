@@ -949,10 +949,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-07-02T14:43:45.323Z",
-        "approvedAt": "2026-07-02T14:43:47.447Z",
-        "sha256": "87a20c41b9ea50878db481909f05cdae580d5a62d658d5293e3a59f1cc1c04e7",
-        "metadataSha256": "f97c5180d4a462b85d4c02d052fa38855301411401cbc015359205f58e38e535"
+        "importedAt": "2026-07-04T08:02:20.392Z",
+        "approvedAt": "2026-07-04T08:02:26.955Z",
+        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
+        "metadataSha256": "39761d99c0ecc2e664ee0c4b259596e780c5a28d4b679ad0565bf6ad0f45e50f"
       },
       "map": {
         "manual": false,
