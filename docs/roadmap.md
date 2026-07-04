@@ -340,7 +340,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Datenbank-Feld oeffnet den Dialog `Datenbank-Aktionen`; dort sind Aktualisieren, Backup/Einstellungen und Wartung
   in aufklappbaren Gruppen getrennt. Es ist bei manuellen Eingabeabweichungen rot als `Änderungen übertragen` und
   bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Bei roten Abweichungen öffnet ein Klick direkt den
-  Transferlauf fuer geaenderte Eingabefelder ohne Karten- oder Soundsuche. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
+  Transferlauf fuer geaenderte Eingabefelder und lokal gespeicherte Assetaenderungen ohne Karten- oder Soundsuche.
+  Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
   und `Bearbeitungsmodus 🔓`; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.
@@ -424,7 +425,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Signatur-/Struktur-/Abmessungsprüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund, Staging, Vorschau-Token, Schutz
   gegen parallele Änderungen, atomarer Austausch und manuelle
   Kennzeichnung. Pro Art bleiben höchstens drei Kartenbackups erhalten; global gilt 500 MB. Nach erfolgreichem
-  Speichern werden Karte, Override-Register und Kartendokumentation automatisch committed und gepusht. Beim Prüfen
+  Speichern bleiben Karte, Override-Register, Kartendokumentation und Report lokal vorgemerkt und werden ueber
+  `Änderungen übertragen` gemeinsam committed und gepusht. Beim Prüfen
   wird die neue Karte vollständig in den Vorschau-Rahmen eingepasst. `Bearbeiten` steht seit 2026-06-30 direkt an den
   Bereichen Manuelle Daten, Artporträt, Verbreitungskarte und Tierstimme; der Dialog zeigt jeweils nur den gewählten
   Bereich. Gezielte Soundalternativen überspringen die aktuelle Quelle temporär und prüfen nach freien Treffern auch
@@ -435,10 +437,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   und als WebP geprüft. Bei einem Fehler bleiben alle Produktivdateien unverändert. Sound- und Spektrogramm-SHA-256
   werden registriert und vom Explorer gegen die aktuellen Dateien geprüft. Der Bestand ist migriert; 45 von 45
     Spektrogrammen sind verifiziert und keines ist veraltet. Unveränderte Generatorläufe bleiben ohne Dateidiff.
-    Die betroffenen Assetpfade werden automatisch committed und gepusht.
+    Die betroffenen Assetpfade werden ueber `Änderungen übertragen` gesammelt committed und gepusht.
     Seit 2026-06-28 kann im Bearbeitungsdialog der aktuell produktive Sound abgelehnt werden. Der Explorer sichert
     das Soundpaket, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, speichert die Quellkennung unter
-    `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Spaetere Sound-Suchlaeufe schlagen
+    `sound.rejectedSources`, baut den Report neu auf und merkt die Änderung lokal vor. Spaetere Sound-Suchlaeufe schlagen
     dieselbe Quelle nicht erneut vor. Fehlende oder manuell geschützte Karten sowie fehlende/NC-Sounds koennen im
     Bearbeitungsdialog gezielt je Art gesucht werden. Seit 2026-06-30 kann bei vorhandenem akzeptiertem Sound im
     Bearbeitungsdialog auch gezielt eine Alternative gesucht werden. Der aktuelle Sound ist dort abspielbar; im
@@ -461,8 +463,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im
   vorhandenen ChatGPT-Zugang erzeugtes PNG, JPEG oder WebP. Dateisignatur, mindestens 800×1000 Pixel und
   4:5-Seitenverhältnis werden geprüft; FFmpeg vereinheitlicht das Produkt auf `1280x1600` WebP. Bei bestehenden
-  Arten führt `Artporträt übernehmen` nach der manuellen Art- und Anatomieprüfung wie zuvor Speichern, Backup,
-  Commit und Push aus. Beim optionalen Sofortportrait einer neu angelegten Art wird ein geprüftes Portrait im
+  Arten führt `Artporträt übernehmen` nach der manuellen Art- und Anatomieprüfung lokale Speicherung und Backup aus;
+  veroeffentlicht wird gesammelt ueber `Änderungen übertragen`. Beim optionalen Sofortportrait einer neu angelegten Art wird ein geprüftes Portrait im
   Neue-Art-Assistenten ohne zusätzliche Electron-Bestätigung lokal übernommen. Fehlende Porträts sind reguläre
   Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot,
   die Assetstruktur zeigt die genaue Fehlanzahl und betroffene Arten erhalten die Listenmarkierung `P`. Sie sind

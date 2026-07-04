@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-06-29
+Stand: 2026-07-04
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -435,8 +435,8 @@ Aktuelle Planung:
   `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im Neue-Art-Assistenten im Schritt `Karte` zur
   Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog mit manueller Karte
   abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollstaendig in die verfuegbare
-  Breite ein; nach einem manuellen Kartenimport wird der Report sofort neu aufgebaut und zusammen mit Karte,
-  Register und Dokumentation veroeffentlicht. Seit 2026-07-02 kann `Automatisch suchen` im
+  Breite ein; nach einem manuellen Kartenimport wird der Report sofort neu aufgebaut und die Aenderung lokal fuer
+  `Änderungen übertragen` vorgemerkt. Seit 2026-07-02 kann `Automatisch suchen` im
   Karten-Bearbeitungsdialog fuer jede vorhandene Art gestartet werden, auch wenn die Karte bereits automatisch
   gepflegt ist. Wenn die Pipeline eine Karte speichert, zeigt der Explorer die Pflegeentscheidung auch dann an, wenn
   die Datei bytegleich zur bisherigen manuell gepflegten Karte ist; dadurch koennen Backblaze-uebernommene Karten
@@ -480,11 +480,13 @@ Aktuelle Planung:
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
-  ist bei manuellen Eingabeabweichungen rot mit `Änderungen übertragen` und bei konsistentem Stand gruen mit
-  `Datenbank aktuell`; ein Klick auf den roten Zustand startet den Transferlauf fuer geaenderte Eingabefelder ohne
-  Karten- oder Soundsuche. Der Dialog dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
-  Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art startet der
-  selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
+  ist bei manuellen Eingabeabweichungen oder lokal gespeicherten Assetaenderungen rot mit
+  `Änderungen übertragen` und bei konsistentem Stand gruen mit `Datenbank aktuell`; ein Klick auf den roten Zustand
+  startet den Transferlauf fuer geaenderte Eingabefelder und lokale Assetdateien ohne Karten- oder Soundsuche. Beim
+  Schliessen der Desktop-App warnt der Explorer vor noch nicht uebertragenen Aenderungen; der Nutzer kann zur App
+  zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen. Der Dialog dahinter
+  heisst `Datenbank-Aktionen` und trennt Aktualisieren, Backup/Einstellungen sowie Wartung in aufklappbare Gruppen.
+  Nach dem Speichern einer neuen Art startet der selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
   neu. Zwanzig Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
@@ -503,7 +505,8 @@ Aktuelle Planung:
   und schuetzt gegen parallele Aenderungen. Beim Speichern wird die alte Karte gesichert, `map.jpg` atomar ersetzt,
   der manuelle Pipeline-Schutz samt SHA-256 im Override-Register gesetzt und die Kartendokumentation aktualisiert.
   Pro Art bleiben hoechstens drei verwaltete Kartenbackups, global hoechstens 500 MB. Nach erfolgreichem Austausch
-  folgen automatisch ein auf Karte, Register und Dokumentation begrenzter Git-Commit und Push.
+  bleiben Karte, Register, Dokumentation und Report lokal vorgemerkt und werden gesammelt ueber
+  `Änderungen übertragen` committed und gepusht.
   Die technische Grundlage fuer 7.7.3 Sound-/Credits-Verwaltung ist ebenfalls lokal umgesetzt. Der allgemeine
   Bearbeitungsdialog akzeptiert MP3-Dateien bis 50 MB nur zusammen mit Aufnahme/Urheber, Quelle, Original-URL,
   Lizenz und Pflegegrund. Wissenschaftlicher und deutscher Name werden aus dem Arteintrag uebernommen. Vor dem
@@ -518,12 +521,13 @@ Aktuelle Planung:
   `Spektrogramm veraltet`. Der Generator registriert auch uebersprungene aktuelle Spektrogramme und veraendert bei
   einem erneuten unveraenderten Lauf keine Zeitstempel. Der bestehende Bestand wurde am 2026-06-20 migriert:
   45 von 45 vorhandenen Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
-  beim Soundimport gesetzt. Danach folgen automatisch ein eng begrenzter Commit und Push. Pro Art bleiben
+  beim Soundimport gesetzt. Danach bleiben die betroffenen Assetpfade lokal vorgemerkt und werden gesammelt ueber
+  `Änderungen übertragen` committed und gepusht. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
   500 MB.
   Im Bearbeitungsmodus kann seit 2026-06-28 auch der aktuell produktive Sound abgelehnt werden. Der Explorer legt ein
   Soundpaket-Backup an, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, merkt die Quellkennung unter
-  `sound.rejectedSources`, baut den Report neu auf und published die Änderung. Der naechste Sound-Suchlauf
+  `sound.rejectedSources`, baut den Report neu auf und merkt die Änderung lokal fuer `Änderungen übertragen` vor. Der naechste Sound-Suchlauf
   ueberspringt diese konkrete Quelle. Fehlende oder manuell geschuetzte Karten sowie fehlende/NC-Sounds koennen
   im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer die aktuelle Art gesucht werden. Seit 2026-06-30 kann
   bei vorhandenem akzeptiertem Sound im Bearbeitungsdialog auch gezielt eine Alternative gesucht werden; der aktuelle
@@ -541,7 +545,8 @@ Aktuelle Planung:
   JPEG oder WebP wieder
   in die App geladen. Der Server prueft Magic Bytes, mindestens 800x1000 Pixel und 4:5; FFmpeg vereinheitlicht die
   Vorschau auf `1280x1600` WebP. Bei bestehenden Arten fuehrt `Artporträt übernehmen` nach manueller Art- und
-  Anatomiepruefung wie zuvor Speichern, Backup, Commit und Push aus. Beim optionalen Sofortportrait einer neu
+  Anatomiepruefung Speichern und Backup lokal aus; veroeffentlicht wird gesammelt ueber `Änderungen übertragen`.
+  Beim optionalen Sofortportrait einer neu
   angelegten Art wird ein geprueftes Portrait im Neue-Art-Assistenten ohne zusaetzliche Electron-Bestaetigung lokal
   uebernommen und anschließend mit dem gezielten Pipeline-Lauf veroeffentlicht. Fehlende Portraets sind regulaere
   Assetprobleme: Gesamtvalidierung und Datenbankstatus werden rot, das Assetdashboard nennt die genaue Fehlanzahl,

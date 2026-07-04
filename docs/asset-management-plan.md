@@ -91,7 +91,8 @@ Workflow:
 7. Neue Karte atomar als `species-assets/<SafeName>/map.jpg` schreiben.
 8. Override-Register und `docs/manual-map-overrides.md` aktualisieren.
 9. Explorer-Modell und Validierung neu laden.
-10. Karte, Override-Register und Dokumentation automatisch committen und pushen.
+10. Karte, Override-Register, Dokumentation und Report lokal vormerken; Veröffentlichung gesammelt ueber
+    `Änderungen übertragen`.
 
 Vorgesehene Grenze:
 
@@ -114,7 +115,8 @@ Umgesetzt:
 - `manual: true`, `protectFromPipeline: true`, Quelle, Grund, Importdatum und SHA-256 im Override-Register
 - gemeinsamer Abgleich der menschenlesbaren Karten-Dokumentation
 - höchstens drei verwaltete Kartenbackups je Art und globale Obergrenze von 500 MB
-- automatischer, auf die drei Kartenpfade begrenzter Commit und Push
+- lokale Vormerkung von Karte, Register, Dokumentation und Report; Commit und Push gesammelt ueber
+  `Änderungen übertragen`
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
 - Karten koennen im Bearbeitungsdialog per `Automatisch suchen` gezielt fuer genau diese Art gesucht werden,
   unabhaengig davon, ob die aktuelle Karte automatisch gepflegt, manuell geschuetzt oder fehlend ist
@@ -182,7 +184,8 @@ Umgesetzt:
 - `manual: true`, `protectFromPipeline: true`, Quellangaben, Credits-Hash und Sound-SHA-256 im Override-Register
 - Spektrogrammstatus `stale: false` mit Sound- und Spektrogramm-SHA-256
 - höchstens drei verwaltete Soundpaket-Backups je Art und gemeinsame globale Backupgrenze von 500 MB
-- automatischer, auf Sound, Credits, Spektrogramm und Override-Register begrenzter Commit und Push
+- lokale Vormerkung von Sound, Credits, Spektrogramm, Override-Register und Report; Commit und Push gesammelt ueber
+  `Änderungen übertragen`
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
 - laufende Vorschau-Audios stoppen und springen beim Schließen des Bearbeitungsdialogs auf Position 0 zurück
 - festes Desktop-Grid mit kompakter Dateieingabe und Pflegegrund über zwei linke Zeilen
@@ -191,7 +194,8 @@ Umgesetzt:
 - bei Ablehnung werden `sound.mp3`, `credits.json` und `spectrogram.webp` nach Backup entfernt
 - die Quellkennung aus den Credits wird unter `sound.rejectedSources` gespeichert und von spaeteren Sound-Suchlaeufen
   uebersprungen
-- nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report committed und gepusht
+- nach der Ablehnung wird der Report neu aufgebaut und die Aenderung inklusive Report lokal fuer
+  `Änderungen übertragen` vorgemerkt
 - fehlende, problematische oder bewusst als Vergleich angefragte vorhandene Sounds koennen im Bearbeitungsdialog
   gezielt fuer diese Art gesucht werden; bei vorhandenem Sound heisst die Aktion `Alternative suchen`
 - diese Suche startet als stiller Hintergrundlauf, ohne den Bearbeitungsdialog oder die Desktop-App zu schliessen
@@ -253,9 +257,10 @@ Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 - produktive Dateien `portrait.webp` und `portrait.json`
 - SHA-256-Registrierung und Abweichungspruefung
 - gemeinsames Backup beim Ersetzen
-- eng begrenzter Commit und Push; bei bestehenden Arten wie bisher direkt nach `Artporträt übernehmen`
+- lokale Vormerkung von Portrait, Metadaten und Override-Register; Commit und Push gesammelt ueber
+  `Änderungen übertragen`
 - Neue-Art-Dialog kann aus den eingegebenen Artdaten einen Prompt erzeugen und ein optional sofort erzeugtes Bild
-  nach der Artanlage prüfen; nur dieser Sofortimport fragt vor Speichern, Commit und Push zusätzlich nach
+  nach der Artanlage prüfen
 - Markierung `P` und Filter fuer Arten ohne Portrait
 - kein Sammelprompt mehr; Portraits werden einzeln je Art erzeugt und importiert
 - fehlende Portraits zaehlen als regulaere Assetprobleme und schalten Gesamtvalidierung sowie Datenbankstatus rot
@@ -360,6 +365,7 @@ von Phase 7.7.
 - Backup-Retention behaelt hoechstens 3 Versionen je Art/Asset und respektiert die globale Groessengrenze.
 - Fremde Dateien in Staging- oder Backupordnern werden nicht automatisch geloescht.
 - Projektvalidierung wird nach dem Import automatisch neu geladen.
-- Erfolgreicher Kartenaustausch wird nur mit Karte, Override-Register und Kartendokumentation committed und gepusht.
-- Erfolgreicher Soundaustausch wird nur mit Sound, Credits, Spektrogrammstatus und Override-Register committed und
-  gepusht.
+- Erfolgreicher Kartenaustausch wird lokal vorgemerkt und mit Karte, Override-Register, Kartendokumentation und
+  Report ueber `Änderungen übertragen` committed und gepusht.
+- Erfolgreicher Soundaustausch wird lokal vorgemerkt und mit Sound, Credits, Spektrogrammstatus, Override-Register
+  und Report ueber `Änderungen übertragen` committed und gepusht.

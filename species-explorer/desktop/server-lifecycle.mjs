@@ -96,6 +96,10 @@ export async function getExplorerBackupStatus(baseUrl) {
   return fetchJson(`${baseUrl}/api/backup/status`);
 }
 
+export async function getExplorerPendingChanges(baseUrl) {
+  return fetchJson(`${baseUrl}/api/pending-changes`);
+}
+
 export function isPipelineBlockingShutdown(status) {
   return status?.status === "running" || status?.status === "awaiting-review";
 }

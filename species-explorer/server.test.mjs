@@ -941,6 +941,7 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
     repoRoot,
     port: 0,
     publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
   });
   const address = await app.listen();
   context.after(() => app.close());
@@ -1084,6 +1085,7 @@ test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fe
     repoRoot,
     port: 0,
     publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
     spectrogramRenderer: async () => {
       throw new Error("Test-FFmpeg nicht verfügbar");
     },
@@ -1140,6 +1142,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
     repoRoot,
     port: 0,
     publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
     spectrogramRenderer: async ({ outputPath }) => {
       await writeFile(outputPath, webp);
       return { outputBytes: webp.length };
@@ -1288,6 +1291,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
     repoRoot,
     port: 0,
     publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
     portraitRenderer: async ({ outputPath }) => {
       renderCalls += 1;
       await writeFile(outputPath, renderedWebp);
@@ -1931,6 +1935,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /typeof mapOverride\?\.manual === "boolean"/);
   assert.match(serverSource, /async function previewMapAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveMapAsset\(id, payload\)/);
+  assert.match(serverSource, /publishAssetChanges = false/);
+  assert.match(serverSource, /rebuildReportAfterAssetSave = true/);
+  assert.match(serverSource, /async function readPendingProjectChanges\(\)/);
+  assert.match(serverSource, /url\.pathname === "\/api\/pending-changes"/);
+  assert.match(serverSource, /Transfer pending Explorer changes/);
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
   assert.match(serverSource, /async function previewSoundAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveSoundAsset\(id, payload\)/);
@@ -1978,7 +1987,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /direkter Karten-JPEG-Link/);
   assert.match(appSource, /class="map-preview-button"/);
   assert.match(appSource, /class="map-save-button"/);
-  assert.match(appSource, /Karte wird gesichert, ersetzt, committed und gepusht/);
+  assert.match(appSource, /Karte wird lokal gesichert und ersetzt/);
   assert.match(cssSource, /\.map-compare-grid/);
   assert.match(
     cssSource,
@@ -1993,6 +2002,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /await releaseAllAudioElements\(\)/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
+  assert.match(appSource, /Sound, Credits und Spektrogramm lokal gesichert und ersetzt/);
   assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
   assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
   assert.match(appSource, /Soundhash geprüft/);
@@ -2026,6 +2036,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /species\.inInput \? "map" : ""/);
   assert.match(appSource, /inlineEditButton\("sound"\)/);
   assert.match(appSource, /inlineEditButton\("portrait"\)/);
+  assert.match(appSource, /class="refresh-species-open"/);
+  assert.match(appSource, /Art aktualisieren/);
+  assert.match(appSource, /openPipelinePreview\("all",/);
+  assert.match(appSource, /\/api\/pending-changes/);
+  assert.match(appSource, /beforeunload/);
   assert.match(appSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
   assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);
   assert.match(cssSource, /\.edit-dialog\[data-active-section="map"\]\s+\.manual-edit-section/);

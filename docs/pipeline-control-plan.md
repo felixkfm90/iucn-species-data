@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-06-30
+Stand: 2026-07-04
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -13,9 +13,9 @@ geprüft.
 ## Bedienoberfläche
 
 Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht im Bearbeitungsmodus das klickbare
-Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oeffnet ein Klick
-direkt den Transferlauf fuer geaenderte Eingabefelder; dabei werden keine Karten oder Sounds gesucht. Ohne offene
-Abweichungen oeffnet es den Dialog `Datenbank-Aktionen`.
+Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oder lokal
+gespeicherten Assetaenderungen oeffnet ein Klick direkt den Transferlauf; dabei werden keine Karten oder Sounds
+gesucht. Ohne offene Abweichungen oeffnet es den Dialog `Datenbank-Aktionen`.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
@@ -84,11 +84,13 @@ Bestandsarten neu zusammengesetzt werden.
 
 ### Änderungen übertragen
 
-Dieser Kopfzeilenlauf ist bewusst enger als `Neue/Unvollstaendige Arten aktualisieren`. Er verarbeitet nur bereits
+Dieser Kopfzeilenlauf ist bewusst enger als `Neue/Unvollstaendige Arten aktualisieren`. Er verarbeitet bereits
 vorhandene Arten, bei denen Groesse, Gewicht, Lebenserwartung oder andere manuelle Eingabefelder in
-`species_list.json` von `speciesData.json` abweichen. Fehlende Assets wie Sound, Credits oder Spektrogramm werden in
-diesem Lauf ignoriert, damit bewusst fehlende oder separat gepflegte Assets nicht nebenbei erneut gesucht werden.
-Der Server schreibt die geaenderten Felder direkt in `speciesData.json` und veroeffentlicht danach Commit und Push.
+`species_list.json` von `speciesData.json` abweichen, und veroeffentlicht zusaetzlich lokal gespeicherte
+Assetaenderungen aus der Explorer-Oberflaeche. Fehlende Assets wie Sound, Credits oder Spektrogramm werden in diesem
+Lauf ignoriert, damit bewusst fehlende oder separat gepflegte Assets nicht nebenbei erneut gesucht werden.
+Der Server schreibt geaenderte Eingabefelder direkt in `speciesData.json`, nimmt lokale Dateiaenderungen aus den
+bekannten Projektpfaden in die Vorschau auf und veroeffentlicht danach einen gemeinsamen Commit und Push.
 
 ### Vollstaendiger Lauf
 

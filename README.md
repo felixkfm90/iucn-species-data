@@ -196,15 +196,15 @@ Der Explorer zeigt:
 - gezielten Kartensuchlauf fuer jede einzelne Art sowie global fuer manuell gepflegte und fehlende Karten
 - gezielten Suchlauf nur fuer NC-Sounds und fehlende Sounds
 - separaten permanenten Bereinigungslauf fuer geloeschte Arten und verwaiste Assetordner
-- roten Kopfstatus `Änderungen übertragen`, wenn manuelle Eingaben von der Pipeline-Ausgabe abweichen;
-  ein Klick überträgt diese Eingabefelder ohne Karten- oder Soundsuche
+- roten Kopfstatus `Änderungen übertragen`, wenn manuelle Eingaben von der Pipeline-Ausgabe abweichen oder lokale
+  Assetaenderungen auf Veröffentlichung warten; ein Klick überträgt diese Änderungen ohne Karten- oder Soundsuche
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
 - vier aktive NC-Sounds
 - fuenf manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
 - kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-Prüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund,
-  lokalem Backup, manuellem Pipeline-Schutz sowie automatischem Commit und Push
+  lokalem Backup und manuellem Pipeline-Schutz; die Veröffentlichung erfolgt gesammelt über `Änderungen übertragen`
 - serverseitige Validierung, Diff-Vorschau und explizite Speicherbestaetigung
 - automatische lokale Sicherung vor jedem Schreibvorgang
 
@@ -365,8 +365,9 @@ Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 umgesetzt. Produktive Kartenimp
 nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB oder direkte signierte JPEG-Links, z. B. ein im
 Browser geöffneter IUCN-/Backblaze-Kartenlink. Die App lädt die URL serverseitig, prüft Signatur, Struktur,
 Abmessungen, Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
-höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch werden
-Karte, `species-assets-overrides.json` und `docs/manual-map-overrides.md` automatisch committed und gepusht.
+höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch bleiben
+Karte, `species-assets-overrides.json`, `docs/manual-map-overrides.md` und Report lokal vorgemerkt; veröffentlicht
+werden sie gesammelt über `Änderungen übertragen`.
 Im Bearbeitungsdialog kann per `Automatisch suchen` für jede vorhandene Art ein gezielter Kartensuchlauf gestartet
 werden, unabhängig davon, ob die Karte bisher automatisch gepflegt, manuell geschützt oder fehlend ist. Der Lauf
 startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App zu schließen. Wenn die Pipeline eine Karte
@@ -397,11 +398,12 @@ nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Di
 neuen Sound gegenüber, liest die Dauer im Browser und zeigt Quelle, Lizenz sowie einen NC-Hinweis. Vor dem Austausch
 werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. Das alte Spektrogramm wird danach
 zusammen mit Sound und Credits ersetzt; Sound und Credits erhalten manuellen Pipeline-Schutz. Der erfolgreiche
-Austausch wird automatisch auf die betroffenen Assetpfade begrenzt committed und gepusht. Die gemeinsame
+Austausch bleibt lokal vorgemerkt und wird zusammen mit anderen offenen Explorer-Änderungen über
+`Änderungen übertragen` committed und gepusht. Die gemeinsame
 Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
 Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden. Dann sichert die App das
 Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
-Report neu auf und committed/pusht die Änderung. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
+Report neu auf und merkt die Änderung lokal für `Änderungen übertragen` vor. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
 Bereits abgelehnte Quellkennungen bleiben auch dann erhalten, wenn später ein neuer Sound übernommen wird.
 Fehlende, NC-Sounds oder bewusst angestoßene Alternativsuchen fuer bereits vorhandene akzeptierte Sounds koennen
 gezielt fuer die aktuelle Art gestartet werden. Bei vorhandenem Sound zeigt der Bearbeitungsdialog den aktuellen
@@ -471,7 +473,7 @@ darin mit `--run` erneut aus. Die komplette Ausgabe bleibt dadurch sichtbar. Zum
 GitHub-Pages-Deployments.
 Die JSON-Ausgabe des Spektrogramm-Generators wird im Erfolgslauf nicht angezeigt. Bei Fehlern wird die Detailausgabe
 aus `Testlauf/spectrogram-update.log` ins Fenster geschrieben. Der Arten-Explorer übersetzt den Spektrogramm-Abgleich
-im Prozessdialog in kurze Zeilen pro Art: Sound vorhanden/fehlt und Spektrogramm vorhanden/erstellt/Ã¼bersprungen.
+im Prozessdialog in kurze Zeilen pro Art: Sound vorhanden/fehlt und Spektrogramm vorhanden/erstellt/uebersprungen.
 Innerhalb der Windows-Batch-Datei wird `npm.cmd` mit `call` gestartet, damit der Ablauf danach mit Erfolgsmeldung,
 Commit und Push fortgesetzt wird.
 

@@ -8,6 +8,8 @@ const state = {
   notice: "",
   editMode: false,
   databaseNeedsUpdate: true,
+  validationNeedsUpdate: true,
+  pendingChanges: null,
   openPipelinePreview: null,
   openAssetReview: null,
   newSpeciesPipelineActive: false,
@@ -299,7 +301,8 @@ function renderDatabaseStatus(stateName = "") {
 
 function updateValidation(validation) {
   const isOk = validation.status === "ok";
-  state.databaseNeedsUpdate = !isOk;
+  state.validationNeedsUpdate = !isOk;
+  state.databaseNeedsUpdate = state.validationNeedsUpdate || Boolean(state.pendingChanges?.hasPendingChanges);
   renderDatabaseStatus();
   elements.validationOverall.textContent = isOk
     ? "Alle Prüfungen bestanden"
@@ -380,6 +383,12 @@ function updateValidation(validation) {
   elements.validationDetails.innerHTML = detailItems.length
     ? `<ul>${detailItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
     : "";
+}
+
+function updatePendingChanges(pendingChanges = {}) {
+  state.pendingChanges = pendingChanges;
+  state.databaseNeedsUpdate = state.validationNeedsUpdate || Boolean(pendingChanges.hasPendingChanges);
+  renderDatabaseStatus();
 }
 
 function populateStatusFilter() {
@@ -1575,13 +1584,31 @@ function setupPipelineControl() {
     const removedRows = result.removed.map((entry) => `
       <li><strong>${escapeHtml(entry.germanName)}</strong> · wird aus der Pipeline-Ausgabe entfernt</li>
     `).join("");
+    const pendingFiles = Array.isArray(result.pendingFiles) ? result.pendingFiles : [];
+    const pendingFileRows = pendingFiles.slice(0, 12).map((entry) => `
+      <li><strong>${escapeHtml(entry.status || "geändert")}</strong> · ${escapeHtml(entry.path)}</li>
+    `).join("");
+    const pendingMoreRows = pendingFiles.length > 12
+      ? `<li>${pendingFiles.length - 12} weitere Datei(en)</li>`
+      : "";
+    const transferSummary = result.mode === "transfer"
+      ? `
+        <p>
+          <strong>${result.targetCount}</strong> Art(en) mit geänderten Eingabefeldern,
+          <strong>${result.pendingFileCount || 0}</strong> lokale Dateiänderung(en).
+        </p>
+      `
+      : `<p><strong>${result.targetCount}</strong> von ${result.inputCount} Arten werden verarbeitet.</p>`;
     elements.pipelinePreviewContent.innerHTML = `
-      <p><strong>${result.targetCount}</strong> von ${result.inputCount} Arten werden verarbeitet.</p>
-      ${targetRows ? `<ul class="pipeline-target-list">${targetRows}</ul>` : "<p>Keine Zielarten gefunden.</p>"}
+      ${transferSummary}
+      ${targetRows ? `<ul class="pipeline-target-list">${targetRows}</ul>` : result.mode === "transfer" && pendingFiles.length ? "" : "<p>Keine Zielarten gefunden.</p>"}
+      ${pendingFileRows || pendingMoreRows ? `<h5>Lokale Dateiänderungen</h5><ul>${pendingFileRows}${pendingMoreRows}</ul>` : ""}
       ${removedRows ? `<h5>Aus Ausgabe entfernen</h5><ul>${removedRows}</ul>` : ""}
     `;
     elements.pipelineWarning.textContent =
-      "Nach erfolgreichem Lauf werden die Pipeline-Änderungen automatisch committed und gepusht.";
+      result.mode === "transfer"
+        ? "Nach erfolgreicher Übertragung werden die gesammelten Änderungen committed und gepusht."
+        : "Nach erfolgreichem Lauf werden die Pipeline-Änderungen automatisch committed und gepusht.";
   };
 
   const renderBackupPreview = (result) => {
@@ -1613,7 +1640,11 @@ function setupPipelineControl() {
     if (previewMode === "nc-sounds") await releaseAllAudioElements();
     elements.pipelineStartButton.disabled = true;
     setMessage(
-      previewMode === "cleanup" ? "Bereinigung wird gestartet…" : "Pipeline wird gestartet…",
+      previewMode === "cleanup"
+        ? "Bereinigung wird gestartet…"
+        : previewMode === "transfer"
+          ? "Übertragung wird gestartet…"
+          : "Pipeline wird gestartet…",
       "info",
     );
     try {
@@ -1683,10 +1714,16 @@ function setupPipelineControl() {
     elements.pipelinePreview.hidden = true;
     setDialogCloseMode(false);
     setMessage("Vorschau wird erstellt…", "info");
-    elements.pipelineDialogTitle.textContent = options.transfer ? "Änderungen übertragen" : modeLabel(mode);
+    elements.pipelineDialogTitle.textContent = options.transfer
+      ? "Änderungen übertragen"
+      : options.speciesRefresh
+        ? "Art aktualisieren"
+        : modeLabel(mode);
     elements.pipelineDialogDescription.textContent =
       options.transfer
-        ? "Geänderte Eingabefelder werden ohne Karten- oder Soundsuche in die Datenbank übertragen."
+        ? "Geänderte Eingabefelder und lokal gespeicherte Assets werden ohne externe Suche übertragen."
+        : options.speciesRefresh
+          ? "Vollständiger Pipeline-Lauf nur für diese Art."
         : mode === "cleanup"
         ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
         : mode === "manual-maps"
@@ -3437,7 +3474,7 @@ function setupSpeciesEditor(species) {
       mapPreview.hidden = false;
       mapSaveButton.disabled = false;
       setMapMessage(
-        "Vorschau erstellt. Beim Speichern werden Backup, manueller Schutz, Commit und Push ausgeführt.",
+        "Vorschau erstellt. Beim Speichern wird die Karte lokal vorgemerkt; veröffentlicht wird sie mit Änderungen übertragen.",
         "success",
       );
     } catch (error) {
@@ -3476,7 +3513,7 @@ function setupSpeciesEditor(species) {
   mapSaveButton?.addEventListener("click", async () => {
     if (!mapPreviewToken) return;
     setMapBusy(true);
-    setMapMessage("Karte wird gesichert, ersetzt, committed und gepusht…", "info");
+    setMapMessage("Karte wird lokal gesichert und ersetzt…", "info");
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/map/save`,
@@ -3490,7 +3527,7 @@ function setupSpeciesEditor(species) {
         ? `Karte gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
-        : `Karte wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+        : `Karte wurde lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
       if (typeof dialog.close === "function") dialog.close();
       await loadData({ reload: true });
     } catch (error) {
@@ -3507,7 +3544,7 @@ function setupSpeciesEditor(species) {
     resetSoundPreview();
     setSoundBusy(true);
     setSoundMessage(
-      "Aktueller Sound wird gesichert, entfernt, als abgelehnte Quelle gemerkt, der Report wird aktualisiert und danach committed/gepusht…",
+      "Aktueller Sound wird lokal gesichert, entfernt, als abgelehnte Quelle gemerkt und für die spätere Übertragung vorgemerkt…",
       "info",
     );
     try {
@@ -3525,7 +3562,7 @@ function setupSpeciesEditor(species) {
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
           + ` Gesperrte Quelle: ${result.rejectedSource?.source || "Unbekannt"}.`
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
-        : `Soundquelle wurde lokal abgelehnt, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+        : `Soundquelle wurde lokal abgelehnt. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
       stopSoundPreviewAudio();
       state.reloadAfterEditClose = true;
       setSoundMessage("Aktueller Sound wurde abgelehnt. Neuer Sound wird gesucht …", "info");
@@ -3646,7 +3683,7 @@ function setupSpeciesEditor(species) {
     if (!soundPreviewToken) return;
     setSoundBusy(true);
     setSoundMessage(
-      "Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm gesichert, ersetzt, committed und gepusht…",
+      "Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm lokal gesichert und ersetzt…",
       "info",
     );
     try {
@@ -3664,7 +3701,7 @@ function setupSpeciesEditor(species) {
           + ` Das neue Spektrogramm wurde automatisch erzeugt${result.spectrogramBytes ? ` (${formatBytes(result.spectrogramBytes)})` : ""}`
           + " und per Soundhash verknüpft."
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
-        : `Sound und Credits wurden lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+        : `Sound und Credits wurden lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
       stopSoundPreviewAudio();
       if (typeof dialog.close === "function") dialog.close();
       await loadData({ reload: true });
@@ -3780,7 +3817,7 @@ function setupSpeciesEditor(species) {
     if (!portraitPreviewToken) return;
     setPortraitBusy(true);
     setPortraitMessage(
-      "Artporträt und Metadaten werden gespeichert, gesichert, committed und gepusht…",
+      "Artporträt und Metadaten werden lokal gespeichert und gesichert…",
       "info",
     );
     try {
@@ -3796,13 +3833,25 @@ function setupSpeciesEditor(species) {
         ? `Artporträt gespeichert und veröffentlicht${result.gitCommit ? ` · Commit ${result.gitCommit}` : ""}.`
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
-        : `Artporträt wurde lokal gespeichert, aber nicht veröffentlicht. ${result.publicationError || "Git-Veröffentlichung wurde übersprungen."}`;
+        : `Artporträt wurde lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
       if (typeof dialog.close === "function") dialog.close();
       await loadData({ reload: true });
     } catch (error) {
       setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setPortraitBusy(false);
     }
+  });
+}
+
+function setupSpeciesRefresh(species) {
+  const openButton = elements.detailPanel.querySelector(".refresh-species-open");
+  if (!openButton) return;
+  openButton.addEventListener("click", () => {
+    if (!state.openPipelinePreview) return;
+    void state.openPipelinePreview("all", {
+      targetSlugs: [species.id],
+      speciesRefresh: true,
+    });
   });
 }
 
@@ -4022,6 +4071,7 @@ function renderDetail(species) {
       <div class="detail-meta">
         ${species.inInput ? `
           <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
+            <button class="refresh-species-open" type="button">Art aktualisieren</button>
             <button class="delete-species-open danger" type="button">Löschen</button>
           </div>
         ` : ""}
@@ -4573,6 +4623,7 @@ function renderDetail(species) {
   setupMapZoom(species);
   setupPortraitZoom();
   setupSpeciesEditor(species);
+  setupSpeciesRefresh(species);
   setupSpeciesDelete(species);
 }
 
@@ -4582,31 +4633,41 @@ async function loadData({ reload = false } = {}) {
   elements.reloadButton.textContent = "Lädt…";
   try {
     if (reload) await fetch("/api/reload");
-    const [summaryResponse, validationResponse, speciesResponse, revisionResponse] = await Promise.all([
+    const [
+      summaryResponse,
+      validationResponse,
+      speciesResponse,
+      revisionResponse,
+      pendingChangesResponse,
+    ] = await Promise.all([
       fetch("/api/summary"),
       fetch("/api/validation"),
       fetch("/api/species"),
       fetch("/api/revision"),
+      fetch("/api/pending-changes"),
     ]);
     if (
       !summaryResponse.ok
       || !validationResponse.ok
       || !speciesResponse.ok
       || !revisionResponse.ok
+      || !pendingChangesResponse.ok
     ) {
       throw new Error("Lokale Daten konnten nicht geladen werden.");
     }
 
-    const [summary, validation, species, revision] = await Promise.all([
+    const [summary, validation, species, revision, pendingChanges] = await Promise.all([
       summaryResponse.json(),
       validationResponse.json(),
       speciesResponse.json(),
       revisionResponse.json(),
+      pendingChangesResponse.json(),
     ]);
     state.dataRevision = revision.revision;
     state.species = species;
     updateSummary(summary);
     updateValidation(validation);
+    updatePendingChanges(pendingChanges);
     populateStatusFilter();
     applyFilters();
 
@@ -4657,6 +4718,14 @@ elements.search.addEventListener("input", applyFilters);
 elements.statusFilter.addEventListener("change", applyFilters);
 elements.flagFilter.addEventListener("change", applyFilters);
 elements.reloadButton.addEventListener("click", () => loadData({ reload: true }));
+window.addEventListener("beforeunload", (event) => {
+  const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
+    || state.pipelineStatusSnapshot?.status === "awaiting-review";
+  const backupActive = state.backupStatusSnapshot?.status === "running";
+  if (!state.pendingChanges?.hasPendingChanges || pipelineActive || backupActive) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
 
 setupEditingMode();
 setupAssetReview();

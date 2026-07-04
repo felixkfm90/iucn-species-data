@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
 import {
   getExplorerBackupStatus,
+  getExplorerPendingChanges,
   getExplorerPipelineStatus,
   isBackupBlockingShutdown,
   isPipelineBlockingShutdown,
@@ -136,16 +137,19 @@ async function handleWindowClose(event) {
 
   let pipelineStatus = null;
   let backupStatus = null;
+  let pendingChanges = null;
   try {
     if (managedServer?.baseUrl) {
-      [pipelineStatus, backupStatus] = await Promise.all([
+      [pipelineStatus, backupStatus, pendingChanges] = await Promise.all([
         getExplorerPipelineStatus(managedServer.baseUrl),
         getExplorerBackupStatus(managedServer.baseUrl),
+        getExplorerPendingChanges(managedServer.baseUrl),
       ]);
     }
   } catch {
     pipelineStatus = null;
     backupStatus = null;
+    pendingChanges = null;
   }
 
   if (isPipelineBlockingShutdown(pipelineStatus) || isBackupBlockingShutdown(backupStatus)) {
@@ -161,6 +165,21 @@ async function handleWindowClose(event) {
         : "Im Arten-Explorer läuft noch ein Pipeline- oder Asset-Prüfschritt.",
       detail:
         "Wenn du jetzt schließt, wird nur der App-Server beendet. Prüfe vorher, ob der laufende Schritt abgeschlossen ist.",
+    });
+    if (response.response !== 1) return;
+  }
+
+  if (pendingChanges?.hasPendingChanges) {
+    const response = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      buttons: ["Zur App zurueck", "Trotzdem schliessen"],
+      defaultId: 0,
+      cancelId: 0,
+      title: "Offene Aenderungen",
+      message: "Es gibt noch nicht uebertragene Aenderungen.",
+      detail:
+        "Gehe zur App zurueck, wenn du die Aenderungen jetzt uebertragen willst. "
+        + "Du kannst trotzdem schliessen und die Uebertragung beim naechsten Start nachholen.",
     });
     if (response.response !== 1) return;
   }

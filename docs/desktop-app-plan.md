@@ -471,8 +471,10 @@ Umgesetzt:
 - der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften
   vertikalen Platz belegt
 - die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Änderungen übertragen`, gruen bedeutet
-  `Datenbank aktuell`; bei roten Eingabeabweichungen öffnet ein Klick direkt den Transferlauf fuer geaenderte
-  manuelle Eingabefelder ohne Karten- oder Soundsuche
+  `Datenbank aktuell`; bei roten Eingabeabweichungen oder lokal gespeicherten Assetaenderungen öffnet ein Klick
+  direkt den Transferlauf ohne Karten- oder Soundsuche
+- beim Schliessen der Desktop-App warnt der Explorer vor offenen, noch nicht uebertragenen Aenderungen; der Nutzer
+  kann zur App zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen
 - es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`
   oder `Bereinigen`
 - die Prozessausgabe und der letzte Status stehen ebenfalls in diesem Dialog
@@ -548,12 +550,13 @@ Abgeschlossen und von Felix freigegeben am 2026-06-21. Detaildokumentation:
 Abgeschlossene Teilstufen:
 
 1. maschinenlesbares Override-Register und expliziter Pipeline-Schutz
-2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup, Dokumentationsabgleich und automatischem
-   Commit/Push
+2. kontrollierter Kartenimport mit Vorschau, Quelle, Grund, Backup, Dokumentationsabgleich und Veröffentlichung
+   ueber `Änderungen übertragen`
 3. Sound und Credits nur als gemeinsames validiertes Paket ersetzen
 4. Spektrogramm automatisch neu erzeugen und per Sound-/Dateihash als passend oder veraltet kennzeichnen:
    umgesetzt
-5. kostenfreier Artportraet-Prompt-/Importworkflow mit Einzel- und Sammelprompts, Prüfung, Backup und Git-Push
+5. kostenfreier Artportraet-Prompt-/Importworkflow mit Einzelprompt, Prüfung, Backup und Veröffentlichung ueber
+   `Änderungen übertragen`
 
 Der Kartenimport akzeptiert JPEG bis 20 MB als Datei oder direkten signierten JPEG-Link, prüft Magic Bytes und
 Abmessungen, nutzt Staging und ein Vorschau-Token, tauscht `map.jpg` atomar aus und setzt den manuellen
@@ -568,7 +571,7 @@ Sound, Credits und Spektrogramm gemeinsam gesichert. Vor dem Produktivaustausch 
 Paket unverändert. Sound- und Spektrogramm-SHA-256 werden im Override-Register gespeichert; der Explorer berechnet
 die aktuellen Hashes und kennzeichnet jede Abweichung als `Spektrogramm veraltet`. Der bestehende Bestand wurde
 ohne Neurendering registriert: 47 von 47 Hashpaare sind verifiziert. Sound und Credits werden vor der Pipeline
-geschützt und die betroffenen Pfade automatisch committed und gepusht. Soundpaket-Backups sind ebenfalls auf drei
+geschützt; die betroffenen Pfade werden ueber `Änderungen übertragen` committed und gepusht. Soundpaket-Backups sind ebenfalls auf drei
 Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Vierzehn Explorer-Tests
 sind erfolgreich. Die Sicherheits- und Bedienkonzepte wurden als Abschluss von Phase 7.7 akzeptiert; ein unnötiger
 produktiver Austausch eines bereits gültigen Sounds ist dafür nicht erforderlich.

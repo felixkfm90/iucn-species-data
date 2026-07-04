@@ -914,6 +914,8 @@ function publicPipelinePlan(plan) {
     })),
     removedCount: plan.removedCount,
     removed: plan.removed,
+    pendingFileCount: plan.pendingFileCount ?? 0,
+    pendingFiles: Array.isArray(plan.pendingFiles) ? plan.pendingFiles : [],
     hasWork: plan.hasWork,
   };
 }
@@ -1781,7 +1783,8 @@ export async function createExplorerServer({
   repoRoot = REPO_ROOT,
   host = DEFAULT_HOST,
   port = DEFAULT_PORT,
-  publishAssetChanges = true,
+  publishAssetChanges = false,
+  rebuildReportAfterAssetSave = true,
   nasBackupRoot = process.env.IUCN_NAS_BACKUP_DIR || DEFAULT_NAS_BACKUP_ROOT,
   spectrogramRenderer = renderSpectrogram,
   portraitRenderer = renderPortrait,
@@ -1882,6 +1885,42 @@ export async function createExplorerServer({
     };
   }
 
+  async function readPendingProjectChanges() {
+    const trackedPaths = [
+      "species_list.json",
+      "speciesData.json",
+      "fehlende_elemente_report.json",
+      "lastSavedAssessmentId.json",
+      "species-assets-overrides.json",
+      "docs/manual-map-overrides.md",
+      "species-assets",
+    ];
+    const result = await runCommandCapture("git", [
+      "status",
+      "--porcelain",
+      "--untracked-files=all",
+      "--",
+      ...trackedPaths,
+    ]);
+    if (result.code !== 0) {
+      return {
+        files: [],
+        count: 0,
+        error: result.stderr || result.stdout || "Git-Status konnte nicht gelesen werden",
+      };
+    }
+    const files = result.stdout
+      .split(/\r?\n/)
+      .map((line) => line.trimEnd())
+      .filter(Boolean)
+      .map((line) => ({
+        status: line.slice(0, 2).trim() || "??",
+        path: line.slice(3).trim(),
+      }))
+      .filter((entry) => entry.path);
+    return { files, count: files.length, error: "" };
+  }
+
   async function saveBackupSettings(payload = {}) {
     if (backupProcess || backupState.status === "running") {
       const error = new Error("Während eines laufenden NAS-Backups kann der Backup-Pfad nicht geändert werden.");
@@ -1953,16 +1992,38 @@ export async function createExplorerServer({
         mode,
         targetSlugs,
       });
+    let pendingProjectChanges = { files: [], count: 0, error: "" };
+    if (mode === "transfer") {
+      pendingProjectChanges = await readPendingProjectChanges();
+      plan.pendingFiles = pendingProjectChanges.files;
+      plan.pendingFileCount = pendingProjectChanges.count;
+      plan.pendingFileError = pendingProjectChanges.error;
+      plan.hasWork = plan.hasWork || pendingProjectChanges.count > 0;
+    }
     return {
       plan,
       sourceRevision: hashText(
         `${speciesListText}\n${speciesDataText}\n${JSON.stringify(
           {
             targetSlugs,
+            pendingProjectChanges,
             plan: mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan),
           },
         )}`,
       ),
+    };
+  }
+
+  async function pendingChangesPayload() {
+    const { plan } = await readPipelinePlan("transfer", []);
+    const publicPlan = publicPipelinePlan(plan);
+    return {
+      hasPendingChanges: publicPlan.hasWork,
+      manualChangeCount: publicPlan.targetCount,
+      pendingFileCount: publicPlan.pendingFileCount,
+      pendingFiles: publicPlan.pendingFiles,
+      targets: publicPlan.targets,
+      error: plan.pendingFileError || "",
     };
   }
 
@@ -2009,7 +2070,7 @@ export async function createExplorerServer({
             : mode === "nc-sounds"
               ? "Vorhandene NC-Sounds werden auf freie Alternativen geprüft; fehlende Sounds werden erneut gesucht und vor einer Übernahme angehört."
           : mode === "transfer"
-            ? "Nur geaenderte manuelle Eingabefelder werden ohne Karten- oder Soundsuche in speciesData.json uebertragen."
+            ? "Geaenderte manuelle Eingabefelder und lokal gespeicherte Asset-Dateien werden ohne externe Suche uebertragen."
           : mode === "all"
             ? "Der vollständige Lauf fragt alle Arten erneut bei den externen Diensten ab."
             : "Der gezielte Lauf verarbeitet neue oder unvollständige Arten und übernimmt übrige Bestandsdaten.",
@@ -2385,7 +2446,7 @@ export async function createExplorerServer({
     const message = publishMode === "cleanup"
       ? "Clean obsolete species data"
       : publishMode === "transfer"
-        ? "Transfer pending species edits"
+        ? "Transfer pending Explorer changes"
       : publishMode === "manual-maps"
         ? "Refresh automatic distribution maps"
         : publishMode === "nc-sounds"
@@ -2630,7 +2691,7 @@ export async function createExplorerServer({
       const error = new Error(
         ({
           cleanup: "Es wurden keine verwaisten Daten oder Assetordner gefunden",
-          transfer: "Es gibt keine geaenderten manuellen Eingabefelder",
+          transfer: "Es gibt keine geaenderten manuellen Eingabefelder oder lokalen Asset-Aenderungen",
           missing: "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
           "manual-maps": "Es gibt keine manuell gepflegten oder fehlenden Karten",
           "nc-sounds": "Es gibt keine ungeschützten NC-Sounds oder fehlenden Sounds",
@@ -2662,6 +2723,7 @@ export async function createExplorerServer({
         }))
         : publicPipelinePlan(plan).targets,
       removed: preview.mode === "cleanup" ? plan.obsoleteData : plan.removed,
+      pendingFiles: preview.mode === "transfer" ? (plan.pendingFiles ?? []) : [],
       log: [],
       logFile: "",
       error: "",
@@ -3413,7 +3475,7 @@ export async function createExplorerServer({
       } catch (error) {
         backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
       }
-      if (publishAssetChanges) {
+      if (rebuildReportAfterAssetSave) {
         const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
         if (reportRun.code !== 0) {
           throw new Error(`Report konnte nach dem Kartenimport nicht aktualisiert werden: ${reportRun.stderr || reportRun.stdout}`);
@@ -3777,6 +3839,12 @@ export async function createExplorerServer({
       } catch (error) {
         backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
       }
+      if (rebuildReportAfterAssetSave) {
+        const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+        if (reportRun.code !== 0) {
+          throw new Error(`Report konnte nach dem Soundimport nicht aktualisiert werden: ${reportRun.stderr || reportRun.stdout}`);
+        }
+      }
       await refreshModel({ force: true });
       let publication;
       let publicationError = "";
@@ -3900,14 +3968,16 @@ export async function createExplorerServer({
         throw error;
       }
 
-      const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
-      if (reportRun.code !== 0) {
-        if (source.soundBuffer.length) await writeFile(source.soundPath, source.soundBuffer);
-        if (source.creditsBuffer.length) await writeFile(source.creditsPath, source.creditsBuffer);
-        if (source.spectrogramBuffer.length) await writeFile(source.spectrogramPath, source.spectrogramBuffer);
-        await writeFile(assetOverridesPath, source.registryText, "utf8");
-        if (reportText) await writeFile(reportPath, reportText, "utf8");
-        throw new Error(`Report-Abgleich nach Sound-Ablehnung fehlgeschlagen: ${reportRun.stderr || reportRun.stdout}`);
+      if (rebuildReportAfterAssetSave) {
+        const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+        if (reportRun.code !== 0) {
+          if (source.soundBuffer.length) await writeFile(source.soundPath, source.soundBuffer);
+          if (source.creditsBuffer.length) await writeFile(source.creditsPath, source.creditsBuffer);
+          if (source.spectrogramBuffer.length) await writeFile(source.spectrogramPath, source.spectrogramBuffer);
+          await writeFile(assetOverridesPath, source.registryText, "utf8");
+          if (reportText) await writeFile(reportPath, reportText, "utf8");
+          throw new Error(`Report-Abgleich nach Sound-Ablehnung fehlgeschlagen: ${reportRun.stderr || reportRun.stdout}`);
+        }
       }
 
       let backupRetention = { kept: 0, removed: 0, bytes: 0 };
@@ -5218,6 +5288,12 @@ export async function createExplorerServer({
       if (url.pathname === "/api/revision") {
         const changed = await refreshModel();
         sendJson(response, 200, { revision: modelRevision, changed });
+        return;
+      }
+
+      if (url.pathname === "/api/pending-changes") {
+        await refreshModel();
+        sendJson(response, 200, await pendingChangesPayload());
         return;
       }
 

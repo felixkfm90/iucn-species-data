@@ -1,6 +1,6 @@
 # KI-Artporträts im Arten-Explorer
 
-Stand: 2026-06-27
+Stand: 2026-07-04
 
 ## Entscheidung
 
@@ -15,8 +15,7 @@ Stattdessen gilt ein manueller, kontrollierter Workflow:
 4. Die Datei wird wieder in den Arten-Explorer geladen.
 5. Die App prüft und vereinheitlicht die Datei.
 6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen. Bei bestehenden Arten speichert
-   `Artporträt übernehmen` wie zuvor direkt mit Backup, Commit und Push. Nur der Sofortimport während einer
-   neu angelegten Art fragt vor Speicherung, Commit und Push zusätzlich nach.
+   `Artporträt übernehmen` lokal mit Backup; veröffentlicht wird gesammelt über `Änderungen übertragen`.
 
 Der lokale Workflow ist seit dem 2026-06-21 freigegeben. Die Squarespace-Ausgabe bleibt trotzdem bewusst ein
 späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich geprüft wurden.
@@ -188,7 +187,7 @@ Nach erfolgreicher Speicherung werden nur folgende Dateien vorgemerkt:
 - `species-assets/<SafeName>/portrait.json`
 - `species-assets-overrides.json`
 
-Anschließend folgen Commit und Push nach der ausdrücklichen Bestätigung in der App.
+Anschließend folgen Commit und Push gesammelt über `Änderungen übertragen`.
 
 ## Nächste Phase
 
