@@ -587,6 +587,19 @@ Formularlayout seit 2026-06-21:
 - Notizen nutzen weiterhin beide Spalten.
 - Unter dem mobilen Breakpoint werden alle expliziten Grid-Bereiche aufgehoben und einspaltig angeordnet.
 
+Neue-Art-Feinschliff seit 2026-07-04:
+
+- Die gefundene oder manuell geprüfte Karte im Schritt `Karte` ist per Lightbox vergrößerbar.
+- Im Schritt `Sound & Abschluss` wird der Lizenzstatus des gefundenen Sounds sichtbar als `frei` oder `NC`
+  angezeigt.
+- Derselbe Lizenzstatus steht im ausgeklappten Tierstimmen-Quellenbereich der Detailseite neben dem Lizenzlink.
+- Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund nicht neu gerendert; die neue Artseite wird
+  erst nach Abschluss sichtbar.
+
+Offener späterer UI-Feinschliff:
+
+- Taxonomie-Pyramide um deutsche Übersetzungen der einzelnen Stufen ergänzen und optisch überarbeiten.
+
 ### 7.8 Browserunabhängiger Desktop-Wrapper
 
 - bestehende Node-/Weboberfläche in einem eigenen Windows-App-Fenster betreiben

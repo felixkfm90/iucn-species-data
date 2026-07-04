@@ -12,6 +12,7 @@ const state = {
   pendingChanges: null,
   openPipelinePreview: null,
   openAssetReview: null,
+  holdNewSpeciesBackground: false,
   newSpeciesPipelineActive: false,
   pipelineWasRunning: false,
   silentPipelineContext: null,
@@ -592,6 +593,67 @@ function creditLink(credits, key, label) {
   return url
     ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
     : escapeHtml("Nicht verfügbar");
+}
+
+function soundLicenseInfo({ isNc = null, license = "" } = {}) {
+  const text = String(license ?? "").toLowerCase();
+  const nc = isNc === true
+    || text.includes("/by-nc")
+    || text.includes("by-nc")
+    || text.includes("noncommercial")
+    || text.includes("non-commercial");
+  if (nc) {
+    return {
+      label: "NC",
+      title: "Nicht-kommerzielle Lizenz",
+      className: "nc",
+    };
+  }
+  if (isNc === false || text) {
+    return {
+      label: "frei",
+      title: "Nicht als NC markiert",
+      className: "free",
+    };
+  }
+  return {
+    label: "unbekannt",
+    title: "Lizenzstatus unbekannt",
+    className: "unknown",
+  };
+}
+
+function soundLicenseBadgeHtml(info) {
+  if (!info) return "";
+  return `
+    <span class="license-kind-badge ${escapeHtml(info.className)}" title="${escapeHtml(info.title)}">
+      ${escapeHtml(info.label)}
+    </span>
+  `;
+}
+
+function creditLinkWithLicense(credits, key, label, licenseInfo) {
+  return `
+    <span class="credit-link-with-badge">
+      ${creditLink(credits, key, label)}
+      ${soundLicenseBadgeHtml(licenseInfo)}
+    </span>
+  `;
+}
+
+function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
+  const mapLightbox = elements.assetReviewMapLightbox;
+  const image = elements.assetReviewMapLightboxImage;
+  if (!mapLightbox || !image || !url) return;
+  image.onload = () => resetScrollableToTop(mapLightbox);
+  image.src = url;
+  image.alt = alt;
+  mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
+  resetScrollableToTop(mapLightbox);
+  if (typeof mapLightbox.showModal === "function") mapLightbox.showModal();
+  else mapLightbox.setAttribute("open", "");
+  resetScrollableToTop(mapLightbox);
+  document.body.classList.add("explorer-modal-open");
 }
 
 async function fetchJson(url, options) {
@@ -2406,7 +2468,17 @@ function setupNewSpeciesCreator() {
       <h5>Karte prüfen</h5>
       <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}</p>
       <div class="new-species-review-media">
-        <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">
+        <button
+          class="new-species-map-zoom-trigger"
+          type="button"
+          data-new-species-map-zoom
+          data-map-url="${escapeHtml(asset.url)}"
+          data-map-alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}"
+          aria-label="Neue Karte ${escapeHtml(asset.germanName)} vergrößern"
+        >
+          <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Neue Karte ${asset.germanName}`)}">
+          <span class="asset-review-zoom-hint">Vergrößern</span>
+        </button>
       </div>
       <div class="new-species-review-actions">
         <button type="button" data-new-species-map-decision="reject">Überspringen / später manuell einfügen</button>
@@ -2444,7 +2516,17 @@ function setupNewSpeciesCreator() {
         <p class="edit-message new-species-map-message" hidden></p>
         <section class="new-species-manual-map-preview" hidden>
           <div class="new-species-review-media">
-            <img alt="${escapeHtml(`Neue Karte ${savedSpeciesName || "Neue Art"}`)}">
+            <button
+              class="new-species-map-zoom-trigger"
+              type="button"
+              data-new-species-map-zoom
+              data-map-url=""
+              data-map-alt="${escapeHtml(`Neue Karte ${savedSpeciesName || "Neue Art"}`)}"
+              aria-label="Neue Karte vergrößern"
+            >
+              <img alt="${escapeHtml(`Neue Karte ${savedSpeciesName || "Neue Art"}`)}">
+              <span class="asset-review-zoom-hint">Vergrößern</span>
+            </button>
           </div>
           <p class="new-species-map-preview-meta"></p>
         </section>
@@ -2464,6 +2546,7 @@ function setupNewSpeciesCreator() {
     const reasonInput = mapReview.querySelector(".new-species-map-reason-input");
     const previewSection = mapReview.querySelector(".new-species-manual-map-preview");
     const previewImage = previewSection?.querySelector("img");
+    const previewTrigger = previewSection?.querySelector("[data-new-species-map-zoom]");
     const previewMeta = mapReview.querySelector(".new-species-map-preview-meta");
     const saveMapButton = mapReview.querySelector('[data-new-species-map-action="save"]');
     if (!sourceInput || !reasonInput || !previewSection || !previewImage || !previewMeta || !saveMapButton) return;
@@ -2491,6 +2574,7 @@ function setupNewSpeciesCreator() {
       );
       inlineManualMapPreviewToken = result.token;
       previewImage.src = result.newMap.url;
+      if (previewTrigger) previewTrigger.dataset.mapUrl = result.newMap.url;
       if (typeof previewImage.decode === "function") await previewImage.decode();
       previewMeta.textContent = `${result.newMap.dimensions.width} × ${result.newMap.dimensions.height} px · ${formatBytes(result.newMap.bytes)}`;
       previewSection.hidden = false;
@@ -2544,10 +2628,15 @@ function setupNewSpeciesCreator() {
     const reviewKey = `${inlineRunId || "inline"}-${asset.safeName || "sound"}-${Date.now()}`;
     const audioUrl = cacheBustedUrl(asset.url, reviewKey);
     const spectrogramUrl = cacheBustedUrl(asset.spectrogramUrl, reviewKey);
+    const licenseInfo = soundLicenseInfo({ isNc: asset.isNc, license: asset.license });
+    const sourceLabel = asset.sourceLabel ? ` · ${asset.sourceLabel}` : "";
     soundReview.hidden = false;
     soundReview.innerHTML = `
-      <h5>Sound prüfen</h5>
-      <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}</p>
+      <h5 class="new-species-review-title">
+        <span>Sound prüfen</span>
+        ${soundLicenseBadgeHtml(licenseInfo)}
+      </h5>
+      <p>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.scientificName)}${escapeHtml(sourceLabel)}</p>
       ${spectrogramUrl ? `
         <button class="new-species-review-spectrogram" type="button">
           <img src="${escapeHtml(spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
@@ -2633,6 +2722,7 @@ function setupNewSpeciesCreator() {
     inlineReviewChoices = new Map();
     inlineManualMapPreviewToken = "";
     inlineManualMapHandled = false;
+    state.holdNewSpeciesBackground = false;
     state.newSpeciesPipelineActive = false;
     maxStepReached = 1;
     preview.hidden = true;
@@ -2670,6 +2760,7 @@ function setupNewSpeciesCreator() {
   const finishNewSpeciesWorkflow = async (status) => {
     stopInlinePipelinePolling();
     setPipelineBusy(false);
+    state.holdNewSpeciesBackground = false;
     state.newSpeciesPipelineActive = false;
     state.pipelineWasRunning = false;
     if (status?.status === "completed" && status.gitPublished) state.notice = "";
@@ -2888,6 +2979,7 @@ function setupNewSpeciesCreator() {
   const close = () => {
     if (busy || pipelineBusy || state.newSpeciesPipelineActive) return;
     form.reset();
+    state.holdNewSpeciesBackground = false;
     resetAll();
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
@@ -2896,6 +2988,7 @@ function setupNewSpeciesCreator() {
   openButton.addEventListener("click", () => {
     form.reset();
     resetAll();
+    state.holdNewSpeciesBackground = true;
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
     form.elements.german.focus();
@@ -3113,6 +3206,14 @@ function setupNewSpeciesCreator() {
   });
 
   mapReview.addEventListener("click", (event) => {
+    const zoomButton = event.target.closest("[data-new-species-map-zoom]");
+    if (zoomButton) {
+      openSharedMapLightbox(
+        zoomButton.dataset.mapUrl,
+        zoomButton.dataset.mapAlt || "Neue Karte",
+      );
+      return;
+    }
     const actionButton = event.target.closest("[data-new-species-map-action]");
     if (actionButton) {
       const action = actionButton.dataset.newSpeciesMapAction;
@@ -4093,6 +4194,10 @@ function renderDetail(species) {
       : "",
     species.isNcSound ? `<span class="status-pill warning">NC-Sound</span>` : "",
   ].filter(Boolean).join("");
+  const detailSoundLicenseInfo = soundLicenseInfo({
+    isNc: species.isNcSound,
+    license: species.credits?.license,
+  });
 
   const audio = species.assets.sound.exists
     ? `
@@ -4196,7 +4301,7 @@ function renderDetail(species) {
                 <div><span>Aufnahme</span><strong>${escapeHtml(creditValue(species.credits, "recordist"))}</strong></div>
                 <div><span>Qualität</span><strong>${escapeHtml(creditValue(species.credits, "quality"))}</strong></div>
                 <div><span>Land</span><strong>${escapeHtml(creditValue(species.credits, "country"))}</strong></div>
-                <div><span>Lizenz</span>${creditLink(species.credits, "license", "Lizenz öffnen")}</div>
+                <div><span>Lizenz</span>${creditLinkWithLicense(species.credits, "license", "Lizenz öffnen", detailSoundLicenseInfo)}</div>
                 <div><span>Original</span>${creditLink(species.credits, "url", "Quelle öffnen")}</div>
               </div>
             </details>
@@ -4767,7 +4872,15 @@ async function loadData({ reload = false } = {}) {
       : state.species.some((entry) => entry.id === requestedSpeciesId)
         ? requestedSpeciesId
         : state.filtered[0]?.id || state.species[0]?.id;
-    if (next) selectSpecies(next);
+    if (next) {
+      const holdBackgroundDetail = state.holdNewSpeciesBackground && elements.newSpeciesDialog?.open;
+      if (holdBackgroundDetail) {
+        state.selectedId = next;
+        renderSpeciesList();
+      } else {
+        selectSpecies(next);
+      }
+    }
   } catch (error) {
     elements.detailPanel.innerHTML = `
       <div class="error-state">

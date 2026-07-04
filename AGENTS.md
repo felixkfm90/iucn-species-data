@@ -591,6 +591,10 @@ Aktuelle Planung:
   Karten-, Sound-/Credits-, Spektrogramm- und Portraitpfade sind durch Vorschau-, Validierungs-, Backup-, Hash-,
   Commit- und Push-Tests abgedeckt. Felix hat die Asset- und Detailoberflaeche zum Abschluss von Phase 7.7
   akzeptiert; ein unnoetiger Austausch eines bereits gueltigen Sounds ist kein offener Abschlussblocker.
+  Seit 2026-07-04 ist die Neue-Art-Karte im Assistenten vergroesserbar, der Lizenzstatus `frei`/`NC` wird im
+  Neue-Art-Soundcheck und im Tierstimmen-Quellenbereich angezeigt und der Hintergrund im Neue-Art-Assistenten bleibt
+  bis zum Abschluss stabil. Offener spaeterer UI-Feinschliff: Taxonomie-Pyramide um deutsche
+  Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.

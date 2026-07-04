@@ -460,11 +460,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     unverändertem wissenschaftlichem Namen/Slug umbenennen inklusive Mitnahme von Assetname/SafeName, Assetordner,
     Override-Einträgen und Dokumentation; allgemeine Daten im Bearbeitungsdialog in strukturierte
     Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen.
-    Offene Feinschliffe aus dem Neue-Art-Test `Scharlachara` vom 2026-07-04: Karte im Schritt `Karte` per
-    Vergrößern/Lightbox prüfbar machen, sichtbaren Lizenzstatus `frei`/`NC` im Sound-Prüfschritt ergänzen,
-    denselben Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich anzeigen und den Hintergrund-Detailbereich
-    während des Neue-Art-Assistenten optisch stabil halten, damit die sich aufbauende Artseite hinter dem Dialog
-    nicht springt.
+    Seit 2026-07-04 sind die Feinschliffe aus dem Neue-Art-Test `Scharlachara` umgesetzt: Karte im Schritt `Karte`
+    per Vergrößern/Lightbox prüfbar, sichtbarer Lizenzstatus `frei`/`NC` im Sound-Prüfschritt, derselbe
+    Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich und stabiler Hintergrund-Detailbereich während des
+    Neue-Art-Assistenten. Offen bleibt: Die Taxonomie-Pyramide soll später deutsche Übersetzungen der einzelnen
+    Stufen erhalten und optisch überarbeitet werden.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im

@@ -396,10 +396,13 @@ Offene Bedienungswünsche für eine spätere UI-Runde:
   gleich bleibt; dabei müssen auch Assetname/SafeName, Assetordner, Override-Einträge und Dokumentation mitwandern
 - allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
   Männchen/Weibchen, Wert und Einheit aufteilen
-- Feinschliff aus dem Neue-Art-Test `Scharlachara` vom 2026-07-04: Karte im Neue-Art-Schritt `Karte` vergrößerbar
-  machen, Lizenzstatus `frei`/`NC` im Sound-Prüfschritt und im Tierstimmen-Quellenbereich sichtbar anzeigen und den
-  Hintergrund während des Neue-Art-Assistenten optisch stabil halten, damit die Artseite hinter dem Dialog nicht
-  sichtbar springt
+- Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
+  überarbeiten
+
+Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.
+Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenzstatus `frei` oder `NC` sichtbar
+angezeigt. Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund erst nach Abschluss neu gerendert,
+damit die Artseite hinter dem Dialog nicht springt.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und

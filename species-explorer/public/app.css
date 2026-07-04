@@ -1932,6 +1932,12 @@ button:focus-visible {
   font-size: 0.88rem;
 }
 
+.new-species-review-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .new-species-inline-review p {
   margin: 0;
   color: var(--text-muted);
@@ -1956,6 +1962,27 @@ button:focus-visible {
   max-width: 100%;
   max-height: 280px;
   object-fit: contain !important;
+}
+
+.new-species-map-zoom-trigger {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.new-species-map-zoom-trigger .asset-review-zoom-hint {
+  opacity: 0.88;
+}
+
+.new-species-map-zoom-trigger:hover .asset-review-zoom-hint,
+.new-species-map-zoom-trigger:focus-visible .asset-review-zoom-hint {
+  opacity: 1;
 }
 
 .new-species-manual-map {
@@ -2773,6 +2800,58 @@ button:focus-visible {
 
 .credit-grid a {
   color: var(--blue);
+}
+
+.credit-link-with-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.credit-grid .credit-link-with-badge {
+  display: inline-flex;
+  margin-bottom: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: none;
+}
+
+.license-kind-badge {
+  min-height: 20px;
+  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: none;
+}
+
+.license-kind-badge.free {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.license-kind-badge.nc {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.license-kind-badge.unknown {
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+}
+
+.credit-grid .license-kind-badge {
+  margin-bottom: 0;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: none;
 }
 
 .issue-groups {
