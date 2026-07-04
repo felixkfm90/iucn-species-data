@@ -6,6 +6,7 @@
     "backup:nas:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -DryRun",
     "cleanup:species": "node scripts/species-cleanup.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
+    "pages:prepare": "node scripts/prepare-pages-artifact.mjs",
     "species:desktop": "electron species-explorer/desktop/main.mjs",
     "species:desktop:shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File species-explorer/desktop/install-shortcut.ps1",
     "species:explorer": "node species-explorer/server.mjs",

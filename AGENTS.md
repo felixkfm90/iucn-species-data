@@ -248,10 +248,12 @@ Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
 - Squarespace Preview kann andere Pfade liefern als die Live-Seite.
 - Nach jeder eingebundenen JS-Aenderung muss die jeweilige Squarespace-`?v=`-Version erhoeht werden.
 - Asset-Pfadmigrationen duerfen nicht nebenbei passieren, weil sie Loader, GitHub-Pages-Pfade und bestehende Assets betreffen.
-- GitHub-Pages-Deploys koennen im Schritt `deploy` gelegentlich nach erfolgreichem Build und Artefakt-Upload mit
-  `Deployment failed, try again later` abbrechen. Am 2026-07-04 betraf das Commit `1bab38c`; ein Rerun des
-  fehlgeschlagenen Jobs war erfolgreich. Fuer Diagnose ist lokal `gh` nutzbar. Falls `gh` in Codex ueber
-  `127.0.0.1:9` scheitert, Proxy-Umgebungsvariablen fuer den Befehl leeren:
+- GitHub Pages muss auf `Source: GitHub Actions` stehen. Das Deployment laeuft ueber
+  `.github/workflows/pages.yml` und das kontrollierte `_site/`-Artefakt aus `scripts/prepare-pages-artifact.mjs`.
+  Branch-Deployment aus `main:/` ist nicht mehr der Sollzustand, weil dabei der komplette Repo-Root ueber den
+  GitHub-Standardlauf deployed wird und der Deploy-Schritt wiederholt erst nach einem Rerun erfolgreich war.
+  Fuer Diagnose ist lokal `gh` nutzbar. Falls `gh` in Codex ueber `127.0.0.1:9` scheitert,
+  Proxy-Umgebungsvariablen fuer den Befehl leeren:
   `$env:HTTP_PROXY=''; $env:HTTPS_PROXY=''; $env:ALL_PROXY=''; $env:NO_PROXY='github.com,api.github.com'`.
 
 ## Testplan

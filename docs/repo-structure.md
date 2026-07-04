@@ -30,6 +30,8 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |
+| `scripts/prepare-pages-artifact.mjs` | Baut das kontrollierte `_site/`-Artefakt fuer GitHub Pages. |
+| `.github/workflows/pages.yml` | Eigenes GitHub-Actions-Deployment fuer GitHub Pages. |
 
 ## Muss versioniert bleiben, obwohl generiert
 
@@ -52,6 +54,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | Datei / Ordner | Status |
 |---|---|
 | `node_modules/` | lokal installiert, ignoriert |
+| `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
 | `errors.log` | lokaler Laufzeitlog, ignoriert |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |
@@ -93,6 +96,8 @@ Dokumentation uebernommen.
 - Keine Frontend-JS-Dateien in `docs/`, `js/` oder `assets/` verschieben, weil Squarespace den Root-Pfad laedt.
 - Keine neuen Asset-Pfade einfuehren, ohne `species-core.js`, `map-loader.js`, `species-sound.js`, `update.mjs`,
   Audit, Generator und Doku gemeinsam anzupassen.
+- GitHub Pages nicht wieder auf Branch-Deployment `main:/` umstellen. Der Sollzustand ist `Source: GitHub Actions`
+  mit `.github/workflows/pages.yml`; das Artefakt enthaelt nur die veroeffentlichungsrelevanten statischen Dateien.
 - Phase 6.8 hat die artweise Buendelung umgesetzt: `species-assets/<SafeName>/` ist die produktive Struktur; die
   alten Ordner `sounds/` und `Verbreitungskarten/` wurden am 2026-06-17 entfernt.
 - `README.md` nicht nach `docs/` verschieben.

@@ -520,6 +520,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Datenbank-Dialog eingebunden: Vorschau mit Zielpfad, Umfang und Rotation, Start per Klick, Fortschritt in Prozent,
   Prozessausgabe, Abschlussmeldung und Schliesswarnung bei laufendem Backup. Der lokale Zielpfad kann in der App ueber
   `Backup-Pfad einstellen` geaendert werden und liegt nicht versioniert in `species-explorer/local-settings.json`.
+- 7.9.1 GitHub-Pages-Stabilisierung: umgesetzt am 2026-07-04. Das Repository nutzt nicht mehr das
+  legacy Branch-Deployment aus `main:/`, sondern ein eigenes GitHub-Actions-Deployment unter
+  `.github/workflows/pages.yml`. `scripts/prepare-pages-artifact.mjs` baut dafuer ein kontrolliertes `_site/`-Artefakt
+  mit Frontend-JavaScript, JSON-Daten, `species-assets/`, `graphics/`, `docs/`, `README.md` und `.nojekyll`.
+  Ziel ist, die wiederholten Deploy-Fehler `Deployment failed, try again later` nach erfolgreichem Build und erstem
+  Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
 
 ## Phase 8 - Ausbau
 

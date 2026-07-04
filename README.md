@@ -41,6 +41,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
   GitHub-Pages-Assets und lokale Assetkonsistenz
 - `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
   `species-assets/<SafeName>/spectrogram.webp`
+- `scripts/prepare-pages-artifact.mjs`: baut das kontrollierte GitHub-Pages-Artefakt unter `_site/`
+- `.github/workflows/pages.yml`: eigenes GitHub-Actions-Deployment fuer GitHub Pages
 - `species-explorer/`: lokale Web-App fuer Arten, Daten, Karten, Sounds, Credits, Validierung und kontrollierte
   Pflege manueller Artenfelder
 
@@ -81,6 +83,27 @@ als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unv
 
 Die Artseiten-Info-Box zeigt technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` als `Unbekannt` an,
 ohne die Rohdaten in `speciesData.json` umzuschreiben.
+
+## GitHub-Pages-Deployment
+
+GitHub Pages wird nicht mehr aus dem kompletten Branch-Root gebaut. Das Repo nutzt ein eigenes
+GitHub-Actions-Deployment unter `.github/workflows/pages.yml`.
+
+Der Workflow erzeugt mit `npm.cmd run pages:prepare` beziehungsweise `node scripts/prepare-pages-artifact.mjs` ein
+kontrolliertes `_site/`-Artefakt. Veröffentlicht werden nur die fuer Squarespace und die Projektdokumentation
+benoetigten statischen Dateien:
+
+- Frontend-JavaScript aus dem Repo-Root
+- `speciesData.json`, `species_list.json`, `fehlende_elemente_report.json`, `lastSavedAssessmentId.json` und
+  `species-assets-overrides.json`
+- `species-assets/`
+- `graphics/`
+- `docs/`
+- `README.md`
+- `.nojekyll`
+
+Die GitHub-Pages-Einstellung muss auf `Source: GitHub Actions` stehen. Falls GitHub wieder auf Branch-Deployment
+zeigt, laeuft erneut der alte Standardprozess ueber `main:/` und kann beim Deploy-Schritt sporadisch fehlschlagen.
 
 Artseiten brauchen diese Container:
 
