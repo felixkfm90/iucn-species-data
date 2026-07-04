@@ -3284,6 +3284,7 @@ function setupSpeciesEditor(species) {
   const mapSaveButton = elements.detailPanel.querySelector(".map-save-button");
   const mapAutoSearchButton = elements.detailPanel.querySelector(".map-auto-search-button");
   const mapBrowserLink = elements.detailPanel.querySelector(".map-browser-link");
+  const mapDeleteButton = elements.detailPanel.querySelector(".map-delete-button");
   const soundFileInput = elements.detailPanel.querySelector(".sound-file-input");
   const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
   const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
@@ -3299,6 +3300,7 @@ function setupSpeciesEditor(species) {
   const soundSaveButton = elements.detailPanel.querySelector(".sound-save-button");
   const soundRejectCurrentButton = elements.detailPanel.querySelector(".sound-reject-current-button");
   const soundAutoSearchButton = elements.detailPanel.querySelector(".sound-auto-search-button");
+  const soundDeleteButton = elements.detailPanel.querySelector(".sound-delete-button");
   const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
   const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
   const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
@@ -3313,6 +3315,7 @@ function setupSpeciesEditor(species) {
   const portraitFileInput = elements.detailPanel.querySelector(".portrait-file-input");
   const portraitPreviewButton = elements.detailPanel.querySelector(".portrait-preview-button");
   const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
+  const portraitDeleteButton = elements.detailPanel.querySelector(".portrait-delete-button");
   if (!dialog || !openButtons.length || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
@@ -3413,6 +3416,7 @@ function setupSpeciesEditor(species) {
     if (mapPreviewButton) mapPreviewButton.disabled = busy;
     if (mapSaveButton) mapSaveButton.disabled = busy || !mapPreviewToken;
     if (mapAutoSearchButton) mapAutoSearchButton.disabled = busy;
+    if (mapDeleteButton) mapDeleteButton.disabled = busy;
     if (mapFileInput) mapFileInput.disabled = busy;
     if (mapReasonInput) mapReasonInput.disabled = busy;
     if (mapSourceInput) mapSourceInput.disabled = busy;
@@ -3424,6 +3428,7 @@ function setupSpeciesEditor(species) {
     if (soundSaveButton) soundSaveButton.disabled = busy || !soundPreviewToken;
     if (soundRejectCurrentButton) soundRejectCurrentButton.disabled = busy;
     if (soundAutoSearchButton) soundAutoSearchButton.disabled = busy;
+    if (soundDeleteButton) soundDeleteButton.disabled = busy;
     if (soundFileInput) soundFileInput.disabled = busy;
     if (soundReasonInput) soundReasonInput.disabled = busy;
     for (const input of form.querySelectorAll(".sound-credit-input")) input.disabled = busy;
@@ -3435,6 +3440,7 @@ function setupSpeciesEditor(species) {
     if (portraitCopyButton) portraitCopyButton.disabled = busy || !portraitPromptText;
     if (portraitPreviewButton) portraitPreviewButton.disabled = busy;
     if (portraitSaveButton) portraitSaveButton.disabled = busy || !portraitPreviewToken;
+    if (portraitDeleteButton) portraitDeleteButton.disabled = busy;
     if (portraitFileInput) portraitFileInput.disabled = busy;
     if (portraitInstructions) portraitInstructions.disabled = busy;
     for (const button of closeButtons) button.disabled = busy;
@@ -3697,6 +3703,73 @@ function setupSpeciesEditor(species) {
       setMapBusy(false);
     }
   });
+
+  const deleteSingleAsset = async (assetType) => {
+    const config = {
+      map: {
+        label: "Verbreitungskarte",
+        message: setMapMessage,
+        busy: setMapBusy,
+        reset: resetMapPreview,
+        confirm:
+          "Verbreitungskarte dauerhaft löschen? Die Karte wird lokal gesichert, danach fehlt sie bis zur nächsten automatischen Suche oder manuellen Übernahme.",
+      },
+      portrait: {
+        label: "Artporträt",
+        message: setPortraitMessage,
+        busy: setPortraitBusy,
+        reset: resetPortraitPreview,
+        confirm:
+          "Artporträt dauerhaft löschen? Das Porträt wird lokal gesichert, danach fehlt es bis zum nächsten manuellen Import.",
+      },
+      sound: {
+        label: "Soundpaket",
+        message: setSoundMessage,
+        busy: setSoundBusy,
+        reset: resetSoundPreview,
+        confirm:
+          "Sound, Credits und Spektrogramm dauerhaft löschen? Das Paket wird lokal gesichert, danach fehlt die Tierstimme bis zur nächsten Suche oder manuellen Übernahme.",
+      },
+    }[assetType];
+    if (!config) return;
+    if (!window.confirm(config.confirm)) return;
+    config.reset();
+    config.busy(true);
+    config.message(`${config.label} wird lokal gesichert und gelöscht …`, "info");
+    try {
+      if (assetType === "map") {
+        state.mapCleanup?.();
+        state.mapCleanup = null;
+      }
+      if (assetType === "portrait") {
+        state.portraitCleanup?.();
+        state.portraitCleanup = null;
+      }
+      if (assetType === "sound") await releaseCurrentSoundAudio();
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        },
+      );
+      state.notice =
+        `${result.label || config.label} wurde gelöscht.`
+        + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+        + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
+        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      config.message([error.message, ...(error.details || [])].join(" · "), "error");
+      config.busy(false);
+    }
+  };
+
+  mapDeleteButton?.addEventListener("click", () => deleteSingleAsset("map"));
+  portraitDeleteButton?.addEventListener("click", () => deleteSingleAsset("portrait"));
+  soundDeleteButton?.addEventListener("click", () => deleteSingleAsset("sound"));
 
   soundRejectCurrentButton?.addEventListener("click", async () => {
     const shouldReject = window.confirm(
@@ -4437,7 +4510,7 @@ function renderDetail(species) {
           </section>
         </section>
 
-        <section class="portrait-edit-section">
+          <section class="portrait-edit-section">
           <header>
             <div>
               <h4>Artporträt erstellen und importieren</h4>
@@ -4446,9 +4519,14 @@ function renderDetail(species) {
                 heruntergeladen und anschließend hier geprüft.
               </p>
             </div>
-            <span class="portrait-care-state">
-              ${species.assets.portrait.exists ? "Porträt vorhanden" : "Noch kein Porträt"}
-            </span>
+            <div class="asset-header-actions">
+              ${species.assets.portrait.exists ? `
+                <button class="portrait-delete-button danger" type="button">Artporträt löschen</button>
+              ` : ""}
+              <span class="portrait-care-state">
+                ${species.assets.portrait.exists ? "Porträt vorhanden" : "Noch kein Porträt"}
+              </span>
+            </div>
           </header>
 
           <div class="portrait-species-lock">
@@ -4539,6 +4617,9 @@ function renderDetail(species) {
                 >IUCN-Karte im Browser öffnen</a>
               ` : ""}
               <button class="map-auto-search-button" type="button">Automatisch suchen</button>
+              ${species.assets.map.exists ? `
+                <button class="map-delete-button danger" type="button">Karte löschen</button>
+              ` : ""}
               <span class="map-care-state">
                 ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
               </span>
@@ -4613,6 +4694,9 @@ function renderDetail(species) {
                 <button class="sound-auto-search-button" type="button">
                   ${species.assets.sound.exists ? "Alternative suchen" : "Automatisch suchen"}
                 </button>
+              ` : ""}
+              ${species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists ? `
+                <button class="sound-delete-button danger" type="button">Soundpaket löschen</button>
               ` : ""}
               <span class="sound-care-state">
                 ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}

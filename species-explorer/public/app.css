@@ -2224,6 +2224,12 @@ button:focus-visible {
   text-decoration: none;
 }
 
+.asset-header-actions button.danger {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: #dfb2b2;
+}
+
 .map-care-state {
   flex: 0 0 auto;
   padding: 4px 7px;

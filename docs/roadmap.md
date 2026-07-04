@@ -312,7 +312,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   uebernommen oder uebersprungen werden. Neue Sounds werden mit Spektrogramm angezeigt und koennen uebernommen,
   uebersprungen oder abgelehnt werden. Abgelehnte Sounds starten automatisch die nächste gezielte Soundsuche, bis
   eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
-  20 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  21 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus. Klickbare, noch offene Schritte sind blau, abgeschlossene Schritte gruen und
   gesperrte Schritte grau markiert. Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem
@@ -456,15 +456,21 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     naechste Quelle. Eine Windows-Dateisperre auf der produktiven MP3 wird als eigener Warnzustand gemeldet.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
-    Offene UI-Wünsche nach 2026-07-02: einzelne Assets einer Art gezielt löschen; deutschen Artnamen bei
-    unverändertem wissenschaftlichem Namen/Slug umbenennen inklusive Mitnahme von Assetname/SafeName, Assetordner,
-    Override-Einträgen und Dokumentation; allgemeine Daten im Bearbeitungsdialog in strukturierte
-    Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen.
+    Priorisierte Bedienungs- und Ausbauschritte: Einzelne Assets einer Art gezielt löschen ist seit 2026-07-04
+    umgesetzt. Offen bleiben: deutschen Artnamen bei unverändertem wissenschaftlichem Namen/Slug umbenennen inklusive
+    Mitnahme von Assetname/SafeName, Assetordner, Override-Einträgen und Dokumentation; allgemeine Daten im
+    Bearbeitungsdialog in strukturierte Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen; Taxonomie-
+    Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten; Artportrait auf der Squarespace-Artseite
+    einbinden.
     Seit 2026-07-04 sind die Feinschliffe aus dem Neue-Art-Test `Scharlachara` umgesetzt: Karte im Schritt `Karte`
     per Vergrößern/Lightbox prüfbar, sichtbarer Lizenzstatus `frei`/`NC` im Sound-Prüfschritt, derselbe
     Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich und stabiler Hintergrund-Detailbereich während des
     Neue-Art-Assistenten. Offen bleibt: Die Taxonomie-Pyramide soll später deutsche Übersetzungen der einzelnen
     Stufen erhalten und optisch überarbeitet werden.
+    Seit 2026-07-04 können einzelne Assets gezielt gelöscht werden: Karte, Soundpaket und Artportrait werden vor dem
+    Entfernen unter `species-explorer/asset-backups/` gesichert, aus Override-Register beziehungsweise
+    Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Beim Soundpaket bleiben bereits
+    gemerkte abgelehnte Quellen unter `sound.rejectedSources` erhalten.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im

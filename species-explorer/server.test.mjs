@@ -1423,6 +1423,147 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.equal(reusedResponse.status, 409);
 });
 
+test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung vorgemerkt werden", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDirectory = join(repoRoot, "species-assets", "Amsel");
+  await Promise.all([
+    writeFile(join(assetDirectory, "portrait.webp"), createTestWebp(13)),
+    writeFile(join(assetDirectory, "portrait.json"), `${JSON.stringify({
+      german_name: "Amsel",
+      scientific_name: "Turdus merula",
+      source: "ChatGPT",
+      prompt_version: "1.1.0",
+    }, null, 2)}\n`),
+    writeFile(join(repoRoot, "docs", "manual-map-overrides.md"), [
+      "# Manual Map Overrides",
+      "",
+      "| Art | SafeName | Datei | Grund | Quelle | Aktualisiert | Status |",
+      "|---|---|---|---|---|---|---|",
+      "| Amsel | Amsel | `species-assets/Amsel/map.jpg` | Test | [Quelle](https://example.com/map) | 2026-07-04 | erledigt |",
+      "",
+    ].join("\n")),
+    writeFile(join(repoRoot, "species-assets-overrides.json"), `${JSON.stringify({
+      version: 1,
+      assets: {
+        Amsel: {
+          map: {
+            manual: true,
+            protectFromPipeline: true,
+            source: "https://example.com/map",
+            reason: "Testkarte",
+            sha256: "0".repeat(64),
+          },
+          sound: {
+            manual: true,
+            protectFromPipeline: true,
+            isNc: true,
+            rejectedSources: [{
+              key: "xeno-canto:123",
+              source: "xeno-canto.org",
+              url: "https://xeno-canto.org/123",
+              recordist: "Test",
+              license: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+              rejectedAt: "2026-07-04T00:00:00.000Z",
+            }],
+          },
+          spectrogram: {
+            stale: false,
+            soundSha256: "1".repeat(64),
+            spectrogramSha256: "2".repeat(64),
+          },
+          portrait: {
+            managedBy: "species-explorer",
+            source: "ChatGPT",
+            sha256: "3".repeat(64),
+            metadataSha256: "4".repeat(64),
+          },
+        },
+      },
+    }, null, 2)}\n`),
+  ]);
+
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const deleteMapResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(deleteMapResponse.status, 200);
+  const deletedMap = await deleteMapResponse.json();
+  assert.equal(deletedMap.deleted, true);
+  assert.equal(deletedMap.assetType, "map");
+  assert.equal(deletedMap.pendingTransfer, true);
+  assert.equal(existsSync(join(assetDirectory, "map.jpg")), false);
+  assert.match(deletedMap.backup, /^species-explorer\/asset-backups\/Amsel\/map\/map-deleted-/);
+  assert.equal(existsSync(join(repoRoot, ...deletedMap.backup.split("/"))), true);
+  const registryAfterMap = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registryAfterMap.assets.Amsel.map, undefined);
+  const documentationAfterMap = await readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8");
+  assert.doesNotMatch(documentationAfterMap, /species-assets\/Amsel\/map\.jpg/);
+
+  const deleteSoundResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(deleteSoundResponse.status, 200);
+  const deletedSound = await deleteSoundResponse.json();
+  assert.equal(deletedSound.deleted, true);
+  assert.equal(deletedSound.assetType, "sound");
+  assert.equal(deletedSound.pendingTransfer, true);
+  assert.equal(existsSync(join(assetDirectory, "sound.mp3")), false);
+  assert.equal(existsSync(join(assetDirectory, "credits.json")), false);
+  assert.equal(existsSync(join(assetDirectory, "spectrogram.webp")), false);
+  assert.match(deletedSound.backup, /^species-explorer\/asset-backups\/Amsel\/sound\/sound-deleted-/);
+  const soundBackupDirectory = join(repoRoot, ...deletedSound.backup.split("/"));
+  assert.equal(existsSync(join(soundBackupDirectory, "sound.mp3")), true);
+  assert.equal(existsSync(join(soundBackupDirectory, "credits.json")), true);
+  assert.equal(existsSync(join(soundBackupDirectory, "spectrogram.webp")), true);
+  const registryAfterSound = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registryAfterSound.assets.Amsel.spectrogram, undefined);
+  assert.equal(registryAfterSound.assets.Amsel.sound.manual, false);
+  assert.equal(registryAfterSound.assets.Amsel.sound.protectFromPipeline, false);
+  assert.equal(registryAfterSound.assets.Amsel.sound.rejectedSources.length, 1);
+  assert.equal(registryAfterSound.assets.Amsel.sound.rejectedSources[0].key, "xeno-canto:123");
+
+  const deletePortraitResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(deletePortraitResponse.status, 200);
+  const deletedPortrait = await deletePortraitResponse.json();
+  assert.equal(deletedPortrait.deleted, true);
+  assert.equal(deletedPortrait.assetType, "portrait");
+  assert.equal(deletedPortrait.pendingTransfer, true);
+  assert.equal(existsSync(join(assetDirectory, "portrait.webp")), false);
+  assert.equal(existsSync(join(assetDirectory, "portrait.json")), false);
+  assert.match(deletedPortrait.backup, /^species-explorer\/asset-backups\/Amsel\/portrait\/portrait-deleted-/);
+  const portraitBackupDirectory = join(repoRoot, ...deletedPortrait.backup.split("/"));
+  assert.equal(existsSync(join(portraitBackupDirectory, "portrait.webp")), true);
+  assert.equal(existsSync(join(portraitBackupDirectory, "portrait.json")), true);
+  const registryAfterPortrait = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registryAfterPortrait.assets.Amsel.portrait, undefined);
+
+  const model = await buildExplorerModel(repoRoot);
+  const amsel = model.species.find((entry) => entry.id === "turdusmerula");
+  assert.ok(amsel.assetIssues.includes("Karte fehlt"));
+  assert.ok(amsel.assetIssues.includes("Sound fehlt"));
+  assert.ok(amsel.assetIssues.includes("Credits fehlen"));
+  assert.ok(amsel.assetIssues.includes("Spektrogramm fehlt"));
+  assert.ok(amsel.assetIssues.includes("Artporträt fehlt"));
+});
+
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));

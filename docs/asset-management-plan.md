@@ -279,6 +279,18 @@ Abschlussstand:
 - Squarespace-Ausgabe bleibt bewusst ein späterer eigener Schritt und blockiert den Abschluss der lokalen
   Assetverwaltung nicht
 
+Erweiterung seit 2026-07-04:
+
+- einzelne Assets können in der Artbearbeitung gezielt gelöscht werden
+- unterstützt sind Verbreitungskarte, Soundpaket und Artportrait
+- Karte löscht `map.jpg`, entfernt den Karten-Override und synchronisiert `docs/manual-map-overrides.md`
+- Soundpaket löscht `sound.mp3`, `credits.json` und `spectrogram.webp`; bereits abgelehnte Quellen bleiben unter
+  `sound.rejectedSources` erhalten
+- Artportrait löscht `portrait.webp` und `portrait.json` sowie den Portrait-Override
+- vor jedem Löschen wird unter `species-explorer/asset-backups/<SafeName>/<Assettyp>/` gesichert
+- die Löschung bleibt lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen`
+  veröffentlicht
+
 ## Upload- und Dateisicherheit
 
 - nur vorhandene Arten und bekannte Assettypen
@@ -330,11 +342,11 @@ Vor dem Speichern zeigt die App:
 ## Nicht Bestandteil von Phase 7.7
 
 - neue Arten anlegen; das wird vorher in Phase 7.5 umgesetzt
-- Assets loeschen
 - beliebige Dateinamen oder Zielordner
 - komplette Pipeline aus der App starten
 - automatische rechtliche Bewertung einer Lizenz
-- Squarespace-Ausgabe der Artportraits
+- Squarespace-Ausgabe der Artportraits; als späterer Ausbauschritt vorgemerkt ist die Einbindung des Artportraits auf
+  der Squarespace-Artseite
 
 ## Umgesetzte Reihenfolge
 
@@ -343,9 +355,9 @@ Vor dem Speichern zeigt die App:
 3. Sound-/Credits-Paket mit Backup und Git-Veröffentlichung: umgesetzt
 4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich: umgesetzt
 5. kostenfreier Artportrait-Prompt-/Importworkflow: umgesetzt und produktiv erprobt
+6. gezieltes Löschen einzelner Assets mit Backup und lokaler Vormerkung für `Änderungen übertragen`: umgesetzt
 
-Restore-Funktion und weitergehende Assetaktionen sind mögliche spätere Erweiterungen, aber kein offener Bestandteil
-von Phase 7.7.
+Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erweiterungen.
 
 ## Testplan
 

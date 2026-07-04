@@ -596,9 +596,22 @@ Neue-Art-Feinschliff seit 2026-07-04:
 - Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund nicht neu gerendert; die neue Artseite wird
   erst nach Abschluss sichtbar.
 
-Offener späterer UI-Feinschliff:
+Gezieltes Asset-Löschen seit 2026-07-04:
 
-- Taxonomie-Pyramide um deutsche Übersetzungen der einzelnen Stufen ergänzen und optisch überarbeiten.
+- Verbreitungskarte, Soundpaket und Artportrait können einzeln aus der Artbearbeitung gelöscht werden.
+- Vor dem Löschen wird in `species-explorer/asset-backups/` gesichert.
+- Kartenlöschung entfernt auch den Karten-Override und synchronisiert die Kartendokumentation.
+- Soundlöschung entfernt Sound, Credits und Spektrogramm, erhält aber abgelehnte Quellen unter
+  `sound.rejectedSources`.
+- Die Änderung bleibt lokal offen und wird mit `Änderungen übertragen` veröffentlicht.
+
+Priorisierte nächste Ausbauschritte:
+
+1. Einzelne Assets gezielt löschen: seit 2026-07-04 umgesetzt.
+2. Deutschen Artnamen umbenennen inklusive Assetname/SafeName, Assetordner, Override-Einträgen und Dokumentation.
+3. Allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten strukturieren.
+4. Taxonomie-Pyramide um deutsche Übersetzungen der einzelnen Stufen ergänzen und optisch überarbeiten.
+5. Artportrait auf der Squarespace-Artseite einbinden.
 
 ### 7.8 Browserunabhängiger Desktop-Wrapper
 

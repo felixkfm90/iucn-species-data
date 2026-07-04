@@ -317,7 +317,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
 - Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben.
-- 20 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- 21 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist nach dem erneuten Neue-Art-Test
@@ -412,20 +412,26 @@ werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte 
 Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
 Anwendungsfehlern abbrechen können.
 
-Offene Bedienungswünsche für eine spätere UI-Runde:
+Priorisierte Bedienungs- und Ausbauschritte:
 
-- einzelne Assets einer Art gezielt entfernen, ohne die ganze Art zu löschen
-- deutschen Artnamen umbenennen, wenn sich die deutsche Bezeichnung ändert und der wissenschaftliche Name/Slug
-  gleich bleibt; dabei müssen auch Assetname/SafeName, Assetordner, Override-Einträge und Dokumentation mitwandern
-- allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
-  Männchen/Weibchen, Wert und Einheit aufteilen
-- Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
-  überarbeiten
+1. Einzelne Assets einer Art gezielt entfernen, ohne die ganze Art zu löschen: seit 2026-07-04 umgesetzt.
+2. Deutschen Artnamen umbenennen, wenn sich die deutsche Bezeichnung ändert und der wissenschaftliche Name/Slug
+   gleich bleibt; dabei müssen auch Assetname/SafeName, Assetordner, Override-Einträge und Dokumentation mitwandern.
+3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
+   Männchen/Weibchen, Wert und Einheit aufteilen.
+4. Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
+   überarbeiten.
+5. Artportrait auf der Squarespace-Artseite einbinden.
 
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.
 Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenzstatus `frei` oder `NC` sichtbar
 angezeigt. Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund erst nach Abschluss neu gerendert,
 damit die Artseite hinter dem Dialog nicht springt.
+
+Seit 2026-07-04 umgesetzt: In den Asset-Bearbeitungsdialogen können Verbreitungskarte, Soundpaket
+(`sound.mp3`, `credits.json`, `spectrogram.webp`) und Artportrait (`portrait.webp`, `portrait.json`) einzeln
+gelöscht werden. Vor dem Löschen wird lokal unter `species-explorer/asset-backups/` gesichert. Die Änderung bleibt
+lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen` veröffentlicht.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -464,7 +470,7 @@ Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und b
 aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 46 von 46 vorhandenen
 Spektrogrammen sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten
 Registeränderungen.
-Zwanzig Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
+21 Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
 Portraitimport und visueller Freigabe der Asset- und Detailoberfläche abgeschlossen. Ein unnötiger produktiver
 Austausch eines bereits gültigen Sounds ist kein verbleibendes Abschlusskriterium.
 

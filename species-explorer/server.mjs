@@ -276,7 +276,7 @@ export function synchronizeManualMapDocumentation(
     }
     const safeName = match[2].trim();
     const map = assetOverrides.assets?.[safeName]?.map;
-    if (map?.manual === false) continue;
+    if (!map || map.manual === false) continue;
     filtered.push(map?.manual === true && (map.source || map.importedAt)
       ? manualMapRow(safeName, map)
       : line);
@@ -3241,7 +3241,8 @@ export async function createExplorerServer({
   }
 
   async function mapAssetSourceRevision(species) {
-    const mapPath = join(repoRoot, "species-assets", species.safeName, "map.jpg");
+    const assetDirectory = join(repoRoot, "species-assets", species.safeName);
+    const mapPath = join(assetDirectory, "map.jpg");
     const [registryText, documentationText] = await Promise.all([
       readFile(assetOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "assets": {}\n}\n'),
       readFile(manualMapOverridesPath, "utf8"),
@@ -3251,6 +3252,7 @@ export async function createExplorerServer({
       revision: hashText(
         `${createHash("sha256").update(mapBuffer).digest("hex")}\n${registryText}\n${documentationText}`,
       ),
+      assetDirectory,
       mapPath,
       mapBuffer,
       registryText,
@@ -4428,6 +4430,195 @@ export async function createExplorerServer({
     }
   }
 
+  async function deleteSpeciesAsset(id, assetType) {
+    cleanupPreviewTokens();
+    if (!["map", "sound", "portrait"].includes(assetType)) {
+      const error = new Error("Assettyp muss Karte, Sound oder Artporträt sein");
+      error.statusCode = 400;
+      throw error;
+    }
+    if (assetWriteActive || pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+
+    const reportPath = join(repoRoot, "fehlende_elemente_report.json");
+    const reportText = await readFile(reportPath, "utf8").catch(() => "");
+    const backupFiles = [];
+    let backupRelativePath = "";
+    let source;
+    let documentationText = "";
+    let removedLabel = "";
+    let reportNeedsRefresh = false;
+
+    if (assetType === "map") {
+      source = await mapAssetSourceRevision(species);
+      documentationText = source.documentationText;
+      if (!source.mapBuffer.length) {
+        const error = new Error("Für diese Art ist keine Verbreitungskarte vorhanden");
+        error.statusCode = 409;
+        throw error;
+      }
+      removedLabel = "Verbreitungskarte";
+      reportNeedsRefresh = true;
+      backupFiles.push({ fileName: "map.jpg", path: source.mapPath, buffer: source.mapBuffer });
+    } else if (assetType === "sound") {
+      source = await soundAssetSourceRevision(species);
+      if (!source.soundBuffer.length && !source.creditsBuffer.length && !source.spectrogramBuffer.length) {
+        const error = new Error("Für diese Art ist kein Soundpaket vorhanden");
+        error.statusCode = 409;
+        throw error;
+      }
+      removedLabel = "Soundpaket";
+      reportNeedsRefresh = true;
+      backupFiles.push(
+        { fileName: "sound.mp3", path: source.soundPath, buffer: source.soundBuffer },
+        { fileName: "credits.json", path: source.creditsPath, buffer: source.creditsBuffer },
+        { fileName: "spectrogram.webp", path: source.spectrogramPath, buffer: source.spectrogramBuffer },
+      );
+    } else {
+      source = await portraitAssetSourceRevision(species);
+      if (!source.portraitBuffer.length && !source.metadataBuffer.length) {
+        const error = new Error("Für diese Art ist kein Artporträt vorhanden");
+        error.statusCode = 409;
+        throw error;
+      }
+      removedLabel = "Artporträt";
+      backupFiles.push(
+        { fileName: "portrait.webp", path: source.portraitPath, buffer: source.portraitBuffer },
+        { fileName: "portrait.json", path: source.metadataPath, buffer: source.metadataBuffer },
+      );
+    }
+
+    assetWriteActive = true;
+    try {
+      closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(source.assetDirectory)));
+      const backupDirectory = join(assetBackupRoot, species.safeName, assetType);
+      await mkdir(backupDirectory, { recursive: true });
+      const currentHash = createHash("sha256")
+        .update(Buffer.concat(backupFiles.map((entry) => entry.buffer)))
+        .digest("hex");
+      if (assetType === "map") {
+        const backupName = `map-deleted-${compactTimestamp()}-${currentHash.slice(0, 8)}.jpg`;
+        const backupPath = join(backupDirectory, backupName);
+        await writeFile(backupPath, source.mapBuffer);
+        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/map/${backupName}`;
+      } else {
+        const backupName = `${assetType}-deleted-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
+        const backupPath = join(backupDirectory, backupName);
+        await mkdir(backupPath, { recursive: true });
+        for (const entry of backupFiles) {
+          if (entry.buffer.length) await writeFile(join(backupPath, entry.fileName), entry.buffer);
+        }
+        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/${assetType}/${backupName}`;
+      }
+
+      const registry = JSON.parse(source.registryText);
+      registry.version = 1;
+      registry.assets ??= {};
+      registry.assets[species.safeName] ??= {};
+      if (assetType === "map") {
+        delete registry.assets[species.safeName].map;
+      } else if (assetType === "sound") {
+        const previousSoundOverride = registry.assets[species.safeName].sound ?? {};
+        const rejectedSources = Array.isArray(previousSoundOverride.rejectedSources)
+          ? previousSoundOverride.rejectedSources
+          : [];
+        registry.assets[species.safeName].sound = rejectedSources.length
+          ? {
+              rejectedSources,
+              manual: false,
+              protectFromPipeline: false,
+              reason: "Soundpaket wurde manuell gelöscht; bereits abgelehnte Quellen bleiben gespeichert.",
+              updatedAt: new Date().toISOString(),
+            }
+          : undefined;
+        if (!registry.assets[species.safeName].sound) delete registry.assets[species.safeName].sound;
+        delete registry.assets[species.safeName].spectrogram;
+      } else {
+        delete registry.assets[species.safeName].portrait;
+      }
+      if (Object.keys(registry.assets[species.safeName]).length === 0) {
+        delete registry.assets[species.safeName];
+      }
+      const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
+      const nextDocumentationText = assetType === "map"
+        ? synchronizeManualMapDocumentation(documentationText, registry)
+        : "";
+      const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      const documentationTempPath = assetType === "map"
+        ? `${manualMapOverridesPath}.tmp-${randomUUID()}`
+        : "";
+
+      try {
+        await writeFile(registryTempPath, nextRegistryText, "utf8");
+        if (assetType === "map") {
+          await writeFile(documentationTempPath, nextDocumentationText, "utf8");
+        }
+        for (const entry of backupFiles) {
+          if (entry.buffer.length) await unlink(entry.path).catch((error) => {
+            if (error.code !== "ENOENT") throw error;
+          });
+        }
+        await rename(registryTempPath, assetOverridesPath);
+        if (assetType === "map") await rename(documentationTempPath, manualMapOverridesPath);
+      } catch (error) {
+        await unlink(registryTempPath).catch(() => {});
+        if (documentationTempPath) await unlink(documentationTempPath).catch(() => {});
+        for (const entry of backupFiles) {
+          if (entry.buffer.length) await writeFile(entry.path, entry.buffer);
+        }
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        if (assetType === "map") await writeFile(manualMapOverridesPath, documentationText, "utf8");
+        throw error;
+      }
+
+      if (reportNeedsRefresh && rebuildReportAfterAssetSave) {
+        const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+        if (reportRun.code !== 0) {
+          for (const entry of backupFiles) {
+            if (entry.buffer.length) await writeFile(entry.path, entry.buffer);
+          }
+          await writeFile(assetOverridesPath, source.registryText, "utf8");
+          if (assetType === "map") await writeFile(manualMapOverridesPath, documentationText, "utf8");
+          if (reportText) await writeFile(reportPath, reportText, "utf8");
+          throw new Error(`Report-Abgleich nach Asset-Löschung fehlgeschlagen: ${reportRun.stderr || reportRun.stdout}`);
+        }
+      }
+
+      let backupRetention = { kept: 0, removed: 0, bytes: 0 };
+      let backupCleanupWarning = "";
+      try {
+        backupRetention = await pruneAssetBackups(assetBackupRoot);
+      } catch (error) {
+        backupCleanupWarning = `Assetbackup-Bereinigung fehlgeschlagen: ${error.message}`;
+      }
+      await refreshModel({ force: true });
+      return {
+        ok: true,
+        deleted: true,
+        assetType,
+        label: removedLabel,
+        backup: backupRelativePath,
+        backupRetention,
+        backupCleanupWarning,
+        species: model.species.find((entry) => entry.id === id) ?? null,
+        summary: model.summary,
+        validation: model.validation,
+        pendingTransfer: true,
+      };
+    } finally {
+      assetWriteActive = false;
+    }
+  }
+
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
     const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
@@ -5072,19 +5263,19 @@ export async function createExplorerServer({
       const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
       const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
       const mapAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save)$/,
+        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete)$/,
       );
       const mapPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
       );
       const soundAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject)$/,
+        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete)$/,
       );
       const soundPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
       );
       const portraitAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save)$/,
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete)$/,
       );
       const portraitPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
@@ -5146,6 +5337,8 @@ export async function createExplorerServer({
         });
         const result = action === "preview"
           ? await previewMapAsset(id, payload)
+          : action === "delete"
+            ? await deleteSpeciesAsset(id, "map")
           : await saveMapAsset(id, payload);
         sendJson(response, 200, result);
         return;
@@ -5161,6 +5354,8 @@ export async function createExplorerServer({
           ? await previewSoundAsset(id, payload)
           : action === "reject"
             ? await rejectCurrentSoundAsset(id)
+            : action === "delete"
+              ? await deleteSpeciesAsset(id, "sound")
             : await saveSoundAsset(id, payload);
         sendJson(response, 200, result);
         return;
@@ -5178,6 +5373,8 @@ export async function createExplorerServer({
           ? createPortraitPrompt(id, payload)
           : action === "preview"
             ? await previewPortraitAsset(id, payload)
+            : action === "delete"
+              ? await deleteSpeciesAsset(id, "portrait")
             : await savePortraitAsset(id, payload);
         sendJson(response, 200, result);
         return;

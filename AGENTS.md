@@ -499,7 +499,7 @@ Aktuelle Planung:
   Nach dem Speichern einer neuen Art startet der selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. Zwanzig Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. 21 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
@@ -595,8 +595,14 @@ Aktuelle Planung:
   akzeptiert; ein unnoetiger Austausch eines bereits gueltigen Sounds ist kein offener Abschlussblocker.
   Seit 2026-07-04 ist die Neue-Art-Karte im Assistenten vergroesserbar, der Lizenzstatus `frei`/`NC` wird im
   Neue-Art-Soundcheck und im Tierstimmen-Quellenbereich angezeigt und der Hintergrund im Neue-Art-Assistenten bleibt
-  bis zum Abschluss stabil. Offener spaeterer UI-Feinschliff: Taxonomie-Pyramide um deutsche
-  Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen.
+  bis zum Abschluss stabil. Seit 2026-07-04 koennen Verbreitungskarte, Soundpaket und Artportrait einzeln aus der
+  Artbearbeitung geloescht werden. Vor dem Loeschen wird unter `species-explorer/asset-backups/` gesichert; Karten-
+  Overrides und Kartendokumentation werden synchron entfernt, beim Soundpaket bleiben bereits gemerkte
+  `sound.rejectedSources` erhalten. Die Loeschung bleibt lokal offen und wird ueber `Änderungen übertragen`
+  veroeffentlicht. Naechste priorisierte Ausbauschritte: deutschen Artnamen inklusive Assetname/SafeName, Ordner,
+  Override-Eintraegen und Dokumentation umbenennen; allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten
+  strukturieren; Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen;
+  Artportrait auf der Squarespace-Artseite einbinden.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
