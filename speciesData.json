@@ -1079,5 +1079,28 @@
     "Species": "leo",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-07-03"
+  },
+  {
+    "URLSlug": "aramacao",
+    "Wissenschaftlicher Name": "Ara macao",
+    "Deutscher Name": "Scharlachara",
+    "Gewicht": "ca. 900–1.200 g",
+    "Größe": "ca. 81–96 cm",
+    "Lebenserwartung": "ca. 40–50 Jahre",
+    "Assessment ID": 163778999,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "50.000-499.999",
+    "Generationsdauer": "8,5 Jahre",
+    "Kingdom": "ANIMALIA",
+    "Phylum": "CHORDATA",
+    "Class": "AVES",
+    "Order": "PSITTACIFORMES",
+    "Family": "PSITTACIDAE",
+    "Genus": "Ara",
+    "Species": "macao",
+    "Letztes IUCN Update": "2022",
+    "Daten abgerufen": "2026-07-04"
   }
 ]

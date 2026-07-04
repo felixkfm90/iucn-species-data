@@ -1013,6 +1013,61 @@
         "generatedAt": "2026-07-03T16:04:14.733Z",
         "verifiedAt": "2026-07-03T16:04:14.738Z"
       }
+    },
+    "Scharlachara": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-04T11:45:46.935Z",
+        "approvedAt": "2026-07-04T11:45:52.876Z",
+        "sha256": "6e5c7e006eb5afa5de9aace54c95119c7f3e2636884502974dd4266d30dc6b4c",
+        "metadataSha256": "735d1277a3dc54b346ba7d1753ee114181ec7811a700fe432072da72caa4464f"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-04T11:49:08.860Z"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:1005554",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1005554",
+            "recordist": "Richard Borrmann",
+            "license": "https://creativecommons.org/licenses/by/4.0/",
+            "rejectedAt": "2026-07-04T11:49:08.861Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-Scharlachara.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-Scharlachara.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-04T11:49:23.208Z"
+          },
+          {
+            "key": "xeno-canto:998171",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/998171",
+            "recordist": "Marc Anderson",
+            "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+            "rejectedAt": "2026-07-04T11:49:49.368Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-04T11:51:10.694Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "eab196b8113299efff9fa8799013fa81051f973338ac6fee4175695959a1312e",
+        "spectrogramSha256": "d5cc219a3975871c041f64d94804ef0676801d28722d538f3ff2d2ec419443b6",
+        "generatedAt": "2026-07-04T11:49:58.270Z",
+        "verifiedAt": "2026-07-04T11:49:58.288Z"
+      }
     }
   },
   "spectrogramGenerator": {
