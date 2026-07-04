@@ -1969,9 +1969,9 @@ export async function createExplorerServer({
   async function previewPipeline(payload) {
     cleanupPreviewTokens();
     const mode = String(payload?.mode ?? "");
-    if (!["all", "missing", "manual-maps", "nc-sounds", "cleanup"].includes(mode)) {
+    if (!["all", "missing", "manual-maps", "nc-sounds", "cleanup", "transfer"].includes(mode)) {
       const error = new Error(
-        "Pipeline-Modus muss all, missing, manual-maps, nc-sounds oder cleanup sein",
+        "Pipeline-Modus muss all, missing, manual-maps, nc-sounds, transfer oder cleanup sein",
       );
       error.statusCode = 400;
       throw error;
@@ -1996,6 +1996,7 @@ export async function createExplorerServer({
       ...(mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan)),
       tokensAvailable:
         mode === "cleanup"
+        || mode === "transfer"
         || (mode === "manual-maps" && Boolean(process.env.IUCN_TOKEN))
         || (mode === "nc-sounds" && Boolean(process.env.XENO_TOKEN))
         || Boolean(process.env.IUCN_TOKEN && process.env.XENO_TOKEN),
@@ -2007,6 +2008,8 @@ export async function createExplorerServer({
             ? "Nur manuell geschützte Karten werden erneut bei IUCN gesucht und vor einer Übernahme angezeigt."
             : mode === "nc-sounds"
               ? "Vorhandene NC-Sounds werden auf freie Alternativen geprüft; fehlende Sounds werden erneut gesucht und vor einer Übernahme angehört."
+          : mode === "transfer"
+            ? "Nur geaenderte manuelle Eingabefelder werden ohne Karten- oder Soundsuche in speciesData.json uebertragen."
           : mode === "all"
             ? "Der vollständige Lauf fragt alle Arten erneut bei den externen Diensten ab."
             : "Der gezielte Lauf verarbeitet neue oder unvollständige Arten und übernimmt übrige Bestandsdaten.",
@@ -2164,7 +2167,7 @@ export async function createExplorerServer({
 
   function capturePipelineAssets(plan) {
     const snapshot = new Map();
-    const keepBackups = plan.mode === "manual-maps" || plan.mode === "nc-sounds";
+    const keepBackups = !["cleanup", "transfer"].includes(plan.mode);
     const runBackupRoot = join(pipelineAssetBackupRoot, pipelineState.runId);
     const registry = existsSync(assetOverridesPath)
       ? JSON.parse(readFileSync(assetOverridesPath, "utf8"))
@@ -2175,9 +2178,7 @@ export async function createExplorerServer({
       for (const [type, fileName] of [["map", "map.jpg"], ["sound", "sound.mp3"]]) {
         const filePath = join(assetDir, fileName);
         const backupFiles = {};
-        const relevantBackup =
-          (plan.mode === "manual-maps" && type === "map")
-          || (plan.mode === "nc-sounds" && type === "sound");
+        const relevantBackup = keepBackups && ["map", "sound"].includes(type);
         if (keepBackups && relevantBackup && existsSync(filePath)) {
           const names = type === "sound"
             ? ["sound.mp3", "credits.json", "spectrogram.webp"]
@@ -2383,6 +2384,8 @@ export async function createExplorerServer({
     const publishMode = pipelineState.initialMode || pipelineState.mode;
     const message = publishMode === "cleanup"
       ? "Clean obsolete species data"
+      : publishMode === "transfer"
+        ? "Transfer pending species edits"
       : publishMode === "manual-maps"
         ? "Refresh automatic distribution maps"
         : publishMode === "nc-sounds"
@@ -2400,6 +2403,57 @@ export async function createExplorerServer({
   async function continueAfterAssetReview() {
     const exitCode = await publishPipelineChanges();
     await finishPipelineRun(exitCode);
+  }
+
+  function manualFieldUpdatesForEntry(inputEntry) {
+    return {
+      "Deutscher Name": inputEntry.german,
+      "Wissenschaftlicher Name": `${inputEntry.genus} ${inputEntry.species}`.trim(),
+      "Größe": inputEntry.size,
+      Gewicht: inputEntry.weight,
+      Lebenserwartung: inputEntry.life_expectancy,
+      URLSlug: `${inputEntry.genus}${inputEntry.species}`.toLocaleLowerCase("de"),
+      Genus: inputEntry.genus,
+      Species: inputEntry.species,
+    };
+  }
+
+  async function transferManualSpeciesEdits(plan) {
+    const speciesDataPath = join(repoRoot, "speciesData.json");
+    const speciesData = JSON.parse(await readFile(speciesDataPath, "utf8"));
+    const dataBySlug = new Map(
+      speciesData.map((entry) => [String(entry.URLSlug ?? "").toLocaleLowerCase("de"), entry]),
+    );
+    let changedSpeciesCount = 0;
+    const changedFields = [];
+    for (const target of plan.targets ?? []) {
+      const dataEntry = dataBySlug.get(String(target.slug ?? "").toLocaleLowerCase("de"));
+      if (!dataEntry || !target.entry) continue;
+      const updates = manualFieldUpdatesForEntry(target.entry);
+      const fieldsForSpecies = [];
+      for (const [field, expectedValue] of Object.entries(updates)) {
+        const nextValue = expectedValue ?? "";
+        if (String(dataEntry[field] ?? "").trim() === String(nextValue).trim()) continue;
+        dataEntry[field] = nextValue;
+        fieldsForSpecies.push(field);
+      }
+      if (fieldsForSpecies.length) {
+        changedSpeciesCount += 1;
+        changedFields.push(`${target.germanName}: ${fieldsForSpecies.join(", ")}`);
+      }
+    }
+    if (!changedSpeciesCount) {
+      appendPipelineLog("Keine geaenderten manuellen Eingabefelder mehr gefunden.");
+      return 0;
+    }
+    const tempPath = `${speciesDataPath}.tmp-${randomUUID()}`;
+    await writeFile(tempPath, `${JSON.stringify(speciesData, null, 2)}\n`, "utf8");
+    await rename(tempPath, speciesDataPath);
+    appendPipelineLog(
+      `Manuelle Eingabefelder in speciesData.json uebertragen: ${changedSpeciesCount} Art(en).`,
+    );
+    for (const line of changedFields) appendPipelineLog(`- ${line}`);
+    return 0;
   }
 
   async function removePipelineAssetBackupRun(runId) {
@@ -2447,6 +2501,13 @@ export async function createExplorerServer({
         [join(repoRoot, "scripts", "species-cleanup.mjs")],
         "Dauerhafte Bereinigung",
       );
+      if (exitCode === 0) await continueAfterAssetReview();
+      else await finishPipelineRun(exitCode);
+      return;
+    }
+
+    if (plan.mode === "transfer") {
+      const exitCode = await transferManualSpeciesEdits(plan);
       if (exitCode === 0) await continueAfterAssetReview();
       else await finishPipelineRun(exitCode);
       return;
@@ -2548,7 +2609,7 @@ export async function createExplorerServer({
       (preview.mode === "manual-maps" && !process.env.IUCN_TOKEN)
       || (preview.mode === "nc-sounds" && !process.env.XENO_TOKEN)
       || (
-        !["cleanup", "manual-maps", "nc-sounds"].includes(preview.mode)
+        !["cleanup", "manual-maps", "nc-sounds", "transfer"].includes(preview.mode)
         && (!process.env.IUCN_TOKEN || !process.env.XENO_TOKEN)
       );
     if (tokensMissing) {
@@ -2569,6 +2630,7 @@ export async function createExplorerServer({
       const error = new Error(
         ({
           cleanup: "Es wurden keine verwaisten Daten oder Assetordner gefunden",
+          transfer: "Es gibt keine geaenderten manuellen Eingabefelder",
           missing: "Es gibt keine neuen, fehlenden oder zu entfernenden Arten",
           "manual-maps": "Es gibt keine manuell gepflegten oder fehlenden Karten",
           "nc-sounds": "Es gibt keine ungeschützten NC-Sounds oder fehlenden Sounds",
@@ -2612,7 +2674,7 @@ export async function createExplorerServer({
       appendPipelineLog("Offene MP3-Streams im Explorer wurden vor dem Sound-Suchlauf geschlossen.");
       await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
     }
-    pipelineAssetSnapshot = preview.mode === "cleanup" ? new Map() : capturePipelineAssets(plan);
+    pipelineAssetSnapshot = ["cleanup", "transfer"].includes(preview.mode) ? new Map() : capturePipelineAssets(plan);
     void executePipelineRun(plan).catch(async (error) => {
       appendPipelineLog(`Unerwarteter Pipelinefehler: ${error.message}`);
       pipelineState.error = error.message;

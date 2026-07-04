@@ -750,6 +750,17 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   });
   assert.equal(changedInputPlan.targetCount, 1);
   assert.match(changedInputPlan.targets[0].reasons.join(" "), /geänderte Eingabefelder: Größe/);
+  const transferPlan = buildPipelinePlan({
+    speciesList: speciesList.map((entry, index) => (index === 0
+      ? { ...entry, size: `${entry.size} geändert` }
+      : entry)),
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "transfer",
+  });
+  assert.equal(transferPlan.targetCount, 1);
+  assert.match(transferPlan.targets[0].reasons.join(" "), /geänderte Eingabefelder: Größe/);
 
   speciesList.push({
     german: "Testvogel",
@@ -860,6 +871,14 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   assert.equal(missingSoundPlan.targetCount, 1);
   assert.equal(missingSoundPlan.targets[0].safeName, "Amsel");
   assert.match(missingSoundPlan.targets[0].reasons.join(" "), /Sound fehlt/);
+  const transferIgnoresMissingAssetsPlan = buildPipelinePlan({
+    speciesList,
+    existingSpeciesData: speciesData,
+    repoRoot,
+    sanitizeAssetName: sanitize,
+    mode: "transfer",
+  });
+  assert.equal(transferIgnoresMissingAssetsPlan.targetCount, 0);
 });
 
 test("Automatisch übernommene Karten verlassen die manuelle Pflege", async (context) => {
@@ -2077,7 +2096,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="pipeline-menu-button"/);
   assert.match(htmlSource, /Datenbank aktualisieren/);
   assert.match(appSource, /Änderungen übertragen/);
-  assert.match(appSource, /openPreview\("missing", \{ transfer: true \}\)/);
+  assert.match(appSource, /openPreview\("transfer", \{ transfer: true \}\)/);
   assert.match(htmlSource, /id="pipeline-mode-choice"/);
   assert.match(htmlSource, /Datenbank-Aktionen/);
   assert.match(htmlSource, /Daten aktualisieren/);

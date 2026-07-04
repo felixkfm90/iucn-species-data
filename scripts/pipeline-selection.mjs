@@ -53,7 +53,7 @@ export function buildPipelinePlan({
   mode = "missing",
   targetSlugs = [],
 }) {
-  if (!["all", "missing", "manual-maps", "nc-sounds"].includes(mode)) {
+  if (!["all", "missing", "manual-maps", "nc-sounds", "transfer"].includes(mode)) {
     throw new Error(`Unbekannter Pipeline-Modus: ${mode}`);
   }
 
@@ -79,7 +79,7 @@ export function buildPipelinePlan({
       scientificName: entry["Wissenschaftlicher Name"] ?? "Unbekannt",
       reason: "nicht mehr in species_list.json",
     }));
-  const removed = requestedTargetSlugs.size ? [] : rawRemoved;
+  const removed = requestedTargetSlugs.size || mode === "transfer" ? [] : rawRemoved;
 
   const candidates = speciesList.map((entry) => {
     const slug = inputSlug(entry);
@@ -90,17 +90,24 @@ export function buildPipelinePlan({
     const explicitlyTargeted = requestedTargetSlugs.has(normalized(slug));
 
     if (!existing) {
-      reasons.push("noch nicht in speciesData.json");
+      if (mode === "transfer") {
+        // Neue Arten brauchen den normalen selektiven Pipeline-Lauf. Der Transfer-Scope
+        // ist nur fuer bereits vorhandene Arten mit geaenderten manuellen Eingabefeldern.
+      } else {
+        reasons.push("noch nicht in speciesData.json");
+      }
     } else {
-      const missingCore = [
-        ["Assessment ID", existing["Assessment ID"]],
-        ["Status", existing.Status],
-        ["Kategorie", existing.Kategorie],
-        ["Trend", existing.Trend],
-      ]
-        .filter(([, value]) => isMissing(value))
-        .map(([label]) => label);
-      if (missingCore.length) reasons.push(`fehlende IUCN-Felder: ${missingCore.join(", ")}`);
+      if (mode !== "transfer") {
+        const missingCore = [
+          ["Assessment ID", existing["Assessment ID"]],
+          ["Status", existing.Status],
+          ["Kategorie", existing.Kategorie],
+          ["Trend", existing.Trend],
+        ]
+          .filter(([, value]) => isMissing(value))
+          .map(([label]) => label);
+        if (missingCore.length) reasons.push(`fehlende IUCN-Felder: ${missingCore.join(", ")}`);
+      }
       const manualChanges = changedManualFields(entry, existing, slug);
       if (manualChanges.length) {
         reasons.push(`geänderte Eingabefelder: ${manualChanges.join(", ")}`);
@@ -116,7 +123,7 @@ export function buildPipelinePlan({
     const missingAssets = assetChecks
       .filter(([, fileName]) => !fs.existsSync(path.join(assetDir, fileName)))
       .map(([label]) => label);
-    if (missingAssets.length) reasons.push(`fehlende Assets: ${missingAssets.join(", ")}`);
+    if (mode !== "transfer" && missingAssets.length) reasons.push(`fehlende Assets: ${missingAssets.join(", ")}`);
 
     if (mode === "manual-maps") {
       reasons.splice(0, reasons.length);

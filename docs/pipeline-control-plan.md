@@ -13,9 +13,9 @@ geprüft.
 ## Bedienoberfläche
 
 Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht im Bearbeitungsmodus das klickbare
-Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei offenen Abweichungen oeffnet ein Klick direkt
-die gezielte Vorschau fuer neue, unvollstaendige oder geaenderte Arten; ohne offene Abweichungen oeffnet es den
-Dialog `Datenbank-Aktionen`.
+Feld `Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oeffnet ein Klick
+direkt den Transferlauf fuer geaenderte Eingabefelder; dabei werden keine Karten oder Sounds gesucht. Ohne offene
+Abweichungen oeffnet es den Dialog `Datenbank-Aktionen`.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 
@@ -81,6 +81,14 @@ Vor dem Start zeigt die App:
 Ein gezielter Lauf darf nicht die nicht ausgewaehlten Arten aus `speciesData.json` oder dem Report entfernen.
 Globale Ausgabedateien muessen deshalb aus den aktualisierten Zielarten und den unveraendert uebernommenen
 Bestandsarten neu zusammengesetzt werden.
+
+### Änderungen übertragen
+
+Dieser Kopfzeilenlauf ist bewusst enger als `Neue/Unvollstaendige Arten aktualisieren`. Er verarbeitet nur bereits
+vorhandene Arten, bei denen Groesse, Gewicht, Lebenserwartung oder andere manuelle Eingabefelder in
+`species_list.json` von `speciesData.json` abweichen. Fehlende Assets wie Sound, Credits oder Spektrogramm werden in
+diesem Lauf ignoriert, damit bewusst fehlende oder separat gepflegte Assets nicht nebenbei erneut gesucht werden.
+Der Server schreibt die geaenderten Felder direkt in `speciesData.json` und veroeffentlicht danach Commit und Push.
 
 ### Vollstaendiger Lauf
 

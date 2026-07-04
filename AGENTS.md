@@ -480,9 +480,9 @@ Aktuelle Planung:
   Der separate Phase-7.6-Seitenbereich wurde entfernt. In der Kopfzeile schaltet
   `Lesemodus 🔒` und `Bearbeitungsmodus 🔓`; Neue Art, Datenbankaktualisierung, Bearbeiten und Loeschen sind nur dort
   sichtbar. Der Modusschalter hat in beiden Zuständen dieselbe feste Breite und Position. Das klickbare Datenbankfeld
-  ist bei offenen Problemen rot mit `Änderungen übertragen` und bei konsistentem Stand gruen mit
-  `Datenbank aktuell`; ein Klick auf den roten Zustand öffnet direkt die gezielte Übertragungsvorschau. Der Dialog
-  dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
+  ist bei manuellen Eingabeabweichungen rot mit `Änderungen übertragen` und bei konsistentem Stand gruen mit
+  `Datenbank aktuell`; ein Klick auf den roten Zustand startet den Transferlauf fuer geaenderte Eingabefelder ohne
+  Karten- oder Soundsuche. Der Dialog dahinter heisst `Datenbank-Aktionen` und trennt Aktualisieren,
   Backup/Einstellungen sowie Wartung in aufklappbare Gruppen. Nach dem Speichern einer neuen Art startet der
   selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch

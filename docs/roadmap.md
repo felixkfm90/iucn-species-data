@@ -338,9 +338,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Bestaetigung werden diese Inhalte dauerhaft und ohne Wiederherstellungsablage geloescht. Details:
   `docs/delete-species-workflow.md`. Die Prozesssteuerung wurde kompakt in die Kopfzeile verschoben: Das klickbare
   Datenbank-Feld oeffnet den Dialog `Datenbank-Aktionen`; dort sind Aktualisieren, Backup/Einstellungen und Wartung
-  in aufklappbaren Gruppen getrennt. Es ist bei offenen Problemen rot als `Änderungen übertragen` und
-  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Bei roten Abweichungen öffnet ein Klick direkt die
-  gezielte Übertragungsvorschau. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
+  in aufklappbaren Gruppen getrennt. Es ist bei manuellen Eingabeabweichungen rot als `Änderungen übertragen` und
+  bei konsistentem Stand gruen als `Datenbank aktuell` markiert. Bei roten Abweichungen öffnet ein Klick direkt den
+  Transferlauf fuer geaenderte Eingabefelder ohne Karten- oder Soundsuche. Ein gleich breiter Umschalter trennt `Lesemodus 🔒`
   und `Bearbeitungsmodus 🔓`; alle Schreibaktionen sind nur im Bearbeitungsmodus sichtbar. Nach dem Anlegen einer Art wird
   der selektive Lauf direkt angeboten, kann aber abgebrochen und spaeter gestartet werden. Neue Karten und Sounds
   werden vor der Git-Veröffentlichung angezeigt und als automatisch oder manuell geschuetzt bestaetigt.

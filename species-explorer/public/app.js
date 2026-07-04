@@ -1359,6 +1359,7 @@ function setupPipelineControl() {
     all: "Alle Arten vollständig aktualisieren",
     "manual-maps": "Manuelle und fehlende Karten erneut suchen",
     "nc-sounds": "NC- und fehlende Sounds erneut suchen",
+    transfer: "Änderungen übertragen",
     cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
   }[mode] || mode);
 
@@ -1685,7 +1686,7 @@ function setupPipelineControl() {
     elements.pipelineDialogTitle.textContent = options.transfer ? "Änderungen übertragen" : modeLabel(mode);
     elements.pipelineDialogDescription.textContent =
       options.transfer
-        ? "Offene Änderungen werden geprüft und gezielt in die Datenbank übertragen."
+        ? "Geänderte Eingabefelder werden ohne Karten- oder Soundsuche in die Datenbank übertragen."
         : mode === "cleanup"
         ? "Es wird genau einmal bestätigt, welche Alt-Daten und Assets dauerhaft gelöscht werden."
         : mode === "manual-maps"
@@ -1954,7 +1955,7 @@ function setupPipelineControl() {
       || state.pipelineStatusSnapshot?.status === "awaiting-review";
     const backupActive = state.backupStatusSnapshot?.status === "running";
     if (state.databaseNeedsUpdate && !pipelineActive && !backupActive) {
-      void openPreview("missing", { transfer: true });
+      void openPreview("transfer", { transfer: true });
       return;
     }
     openChooser();

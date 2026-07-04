@@ -471,7 +471,8 @@ Umgesetzt:
 - der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften
   vertikalen Platz belegt
 - die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Änderungen übertragen`, gruen bedeutet
-  `Datenbank aktuell`; bei roten Abweichungen öffnet ein Klick direkt die gezielte Übertragungsvorschau
+  `Datenbank aktuell`; bei roten Eingabeabweichungen öffnet ein Klick direkt den Transferlauf fuer geaenderte
+  manuelle Eingabefelder ohne Karten- oder Soundsuche
 - es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`
   oder `Bereinigen`
 - die Prozessausgabe und der letzte Status stehen ebenfalls in diesem Dialog
