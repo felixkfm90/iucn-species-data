@@ -660,6 +660,87 @@ test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträge
   assert.equal(model.species[0].assets.map.exists, true);
 });
 
+test("Wissenschaftlicher Artname bleibt gesperrt und kann bewusst mit URL-Slug geändert werden", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDir = join(repoRoot, "species-assets", "Amsel");
+  await Promise.all([
+    writeFile(join(assetDir, "portrait.json"), `${JSON.stringify({
+      german_name: "Amsel",
+      scientific_name: "Turdus merula",
+    }, null, 2)}\n`),
+    writeFile(join(assetDir, "credits.json"), `${JSON.stringify({
+      german_name: "Amsel",
+      scientific_name: "Turdus merula",
+      source: "Test",
+      license: "https://creativecommons.org/licenses/by/4.0/",
+    }, null, 2)}\n`),
+  ]);
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const payload = {
+    germanName: "Amsel",
+    scientificName: "Turdus iliacus",
+    size: "ca. 23,5-29 cm",
+    weight: "ca. 80-110 g",
+    lifeExpectancy: "ca. 3 Jahre",
+  };
+
+  const lockedPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ values: payload }),
+  });
+  assert.equal(lockedPreviewResponse.status, 409);
+  assert.match((await lockedPreviewResponse.json()).details.join(" "), /URL-Slug/);
+
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ values: { ...payload, scientificNameUnlocked: true } }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.deepEqual(
+    preview.changes.map((entry) => entry.field),
+    ["Wissenschaftlicher Name", "URL-Slug"],
+  );
+  assert.match(preview.warnings.join(" "), /Website/);
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.pipelineRequired, false);
+  assert.equal(saved.slugChanged, true);
+  assert.equal(saved.oldSlug, "turdusmerula");
+  assert.equal(saved.newSlug, "turdusiliacus");
+  assert.equal(saved.species.id, "turdusiliacus");
+  assert.equal(existsSync(assetDir), true);
+
+  const inputList = JSON.parse(await readFile(join(repoRoot, "species_list.json"), "utf8"));
+  assert.equal(inputList[0].genus, "Turdus");
+  assert.equal(inputList[0].species, "iliacus");
+  const generated = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"))[0];
+  assert.equal(generated["Wissenschaftlicher Name"], "Turdus iliacus");
+  assert.equal(generated.Genus, "Turdus");
+  assert.equal(generated.Species, "iliacus");
+  assert.equal(generated.URLSlug, "turdusiliacus");
+  assert.equal(
+    JSON.parse(await readFile(join(assetDir, "credits.json"), "utf8")).scientific_name,
+    "Turdus iliacus",
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(assetDir, "portrait.json"), "utf8")).scientific_name,
+    "Turdus iliacus",
+  );
+});
+
 test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehängt", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -2242,7 +2323,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /releaseDetailMedia\(\)/);
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
-  assert.match(appSource, /Taxonomie und wissenschaftlicher Name sind gesperrt\./);
+  assert.match(appSource, /Taxonomie ist gesperrt\./);
+  assert.match(appSource, /Wissenschaftlichen Namen wirklich entsperren/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
   assert.match(appSource, /class="map-auto-search-button"/);

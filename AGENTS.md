@@ -356,10 +356,11 @@ Aktuelle Planung:
   Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
   `Loeschen` steht als Artaktion oben rechts im Detailkopf. `Bearbeiten` steht seit 2026-06-30 direkt an den
   bearbeitbaren Bereichen `Manuelle Daten`, `Artportraet`, `Verbreitungskarte` und `Tierstimme`; der
-  Bearbeitungsdialog oeffnet jeweils nur den gewaehlten Bereich. Der Dialog kennzeichnet Taxonomie und
-  wissenschaftlichen Namen als gesperrt, nennt dabei aber keine interne Phasennummer.
-  Seit 2026-07-05 kann der deutsche Artname im Bereich `Allgemeine Daten` umbenannt werden, wenn der
-  wissenschaftliche Name und URL-Slug gleich bleiben. Die Umbenennung prueft Kollisionen und fuehrt
+  Bearbeitungsdialog oeffnet jeweils nur den gewaehlten Bereich. Der Dialog kennzeichnet Taxonomie als gesperrt und
+  nennt keine interne Phasennummer.
+  Seit 2026-07-05 koennen deutscher und wissenschaftlicher Artname im Bereich `Allgemeine Daten` umbenannt werden.
+  Der wissenschaftliche Name ist per Schloss geschuetzt; nach Warnbestaetigung werden wissenschaftlicher Name,
+  Genus/Species und URL-Slug konsistent angepasst. Die Umbenennung prueft Kollisionen und fuehrt
   `species_list.json`, `speciesData.json`, Assetname/SafeName, Assetordner, `species-assets-overrides.json`,
   `lastSavedAssessmentId.json`, `fehlende_elemente_report.json`, Kartendokumentation sowie lokale Credits- und
   Portrait-Metadaten mit. Die Aenderung bleibt lokal offen und wird ueber `Änderungen übertragen` veroeffentlicht.
@@ -505,7 +506,7 @@ Aktuelle Planung:
   Nach dem Speichern einer neuen Art startet der selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. 22 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. 23 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch

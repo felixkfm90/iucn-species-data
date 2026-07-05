@@ -3271,6 +3271,9 @@ function setupSpeciesEditor(species) {
   const message = elements.detailPanel.querySelector(".edit-message");
   const previewButton = elements.detailPanel.querySelector(".edit-preview-button");
   const saveButton = elements.detailPanel.querySelector(".edit-save-button");
+  const scientificNameInput = elements.detailPanel.querySelector(".scientific-name-input");
+  const scientificNameUnlockButton = elements.detailPanel.querySelector(".scientific-name-unlock");
+  const scientificNameWarning = elements.detailPanel.querySelector(".scientific-name-warning");
   const mapFileInput = elements.detailPanel.querySelector(".map-file-input");
   const mapReasonInput = elements.detailPanel.querySelector(".map-reason-input");
   const mapSourceInput = elements.detailPanel.querySelector(".map-source-input");
@@ -3453,6 +3456,29 @@ function setupSpeciesEditor(species) {
     sound: "Tierstimme bearbeiten",
   };
 
+  const setScientificNameUnlocked = (unlocked) => {
+    if (!scientificNameInput || !scientificNameUnlockButton) return;
+    scientificNameInput.readOnly = !unlocked;
+    scientificNameInput.dataset.unlocked = unlocked ? "true" : "false";
+    scientificNameUnlockButton.textContent = unlocked ? "🔓" : "🔒";
+    scientificNameUnlockButton.title = unlocked
+      ? "Wissenschaftlicher Name ist entsperrt"
+      : "Wissenschaftlichen Namen entsperren";
+    scientificNameUnlockButton.setAttribute(
+      "aria-label",
+      unlocked
+        ? "Wissenschaftlicher Name ist entsperrt"
+        : "Wissenschaftlichen Namen entsperren",
+    );
+    if (scientificNameWarning) scientificNameWarning.hidden = !unlocked;
+  };
+
+  const resetScientificNameLock = () => {
+    if (!scientificNameInput) return;
+    scientificNameInput.value = species.scientificName;
+    setScientificNameUnlocked(false);
+  };
+
   const openEditor = (section = "manual") => {
     const activeSection = ["manual", "portrait", "map", "sound"].includes(section) ? section : "manual";
     resetPreview();
@@ -3464,6 +3490,7 @@ function setupSpeciesEditor(species) {
     setMapMessage();
     setSoundMessage();
     setPortraitMessage();
+    if (activeSection === "manual") resetScientificNameLock();
     dialog.dataset.activeSection = activeSection;
     const title = dialog.querySelector("#edit-dialog-title");
     if (title) title.textContent = sectionLabels[activeSection] || `${species.germanName} bearbeiten`;
@@ -3483,6 +3510,27 @@ function setupSpeciesEditor(species) {
       openEditor(button.dataset.editSection || "manual");
     });
   }
+
+  scientificNameUnlockButton?.addEventListener("click", () => {
+    const alreadyUnlocked = scientificNameInput?.dataset.unlocked === "true";
+    if (alreadyUnlocked) {
+      setScientificNameUnlocked(false);
+      if (scientificNameInput) scientificNameInput.value = species.scientificName;
+      resetPreview();
+      setMessage("Wissenschaftlicher Name wurde wieder gesperrt.", "info");
+      return;
+    }
+    const confirmed = window.confirm(
+      "Achtung: Eine Änderung des wissenschaftlichen Namens ändert den URL-Slug und kann sich direkt auf die Website auswirken. Wissenschaftlichen Namen wirklich entsperren?",
+    );
+    if (!confirmed) return;
+    setScientificNameUnlocked(true);
+    scientificNameInput?.focus();
+    setMessage(
+      "Wissenschaftlicher Name ist entsperrt. Änderungen am URL-Slug vor dem Speichern sorgfältig prüfen.",
+      "info",
+    );
+  });
 
   const closeEditDialog = () => {
     stopSoundPreviewAudio();
@@ -3548,6 +3596,8 @@ function setupSpeciesEditor(species) {
           body: JSON.stringify({
             values: {
               germanName: formData.get("germanName"),
+              scientificName: formData.get("scientificName"),
+              scientificNameUnlocked: scientificNameInput?.dataset.unlocked === "true",
               size: formData.get("size"),
               weight: formData.get("weight"),
               lifeExpectancy: formData.get("lifeExpectancy"),
@@ -3597,8 +3647,9 @@ function setupSpeciesEditor(species) {
         + " "
         + "Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
         + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
+      if (result.species?.id) state.selectedId = result.species.id;
       if (typeof dialog.close === "function") dialog.close();
-      await loadData();
+      await loadData({ reload: true });
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
       setBusy(false);
@@ -4460,7 +4511,7 @@ function renderDetail(species) {
         <header class="edit-dialog-header">
           <div>
             <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
-            <p>${escapeHtml(species.scientificName)} · Taxonomie und wissenschaftlicher Name sind gesperrt.</p>
+            <p>${escapeHtml(species.scientificName)} · Taxonomie ist gesperrt.</p>
           </div>
           <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
         </header>
@@ -4469,7 +4520,7 @@ function renderDetail(species) {
           <header>
             <div>
               <h4>Allgemeine Daten bearbeiten</h4>
-              <p>Deutscher Name, Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
+              <p>Deutscher Name, wissenschaftlicher Name, Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
             </div>
           </header>
 
@@ -4477,6 +4528,29 @@ function renderDetail(species) {
             <label>
               <span>Deutscher Name</span>
               <input name="germanName" required maxlength="160" value="${escapeHtml(species.germanName)}">
+            </label>
+            <label class="scientific-name-field">
+              <span>Wissenschaftlicher Name</span>
+              <div class="locked-input-row">
+                <input
+                  class="scientific-name-input"
+                  name="scientificName"
+                  required
+                  maxlength="201"
+                  readonly
+                  data-unlocked="false"
+                  value="${escapeHtml(species.scientificName)}"
+                >
+                <button
+                  class="scientific-name-unlock"
+                  type="button"
+                  title="Wissenschaftlichen Namen entsperren"
+                  aria-label="Wissenschaftlichen Namen entsperren"
+                >🔒</button>
+              </div>
+              <small class="scientific-name-warning" hidden>
+                Änderung ändert den URL-Slug und kann sich direkt auf die Website auswirken.
+              </small>
             </label>
             <label>
               <span>Größe</span>

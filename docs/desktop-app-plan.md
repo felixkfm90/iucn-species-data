@@ -608,9 +608,10 @@ Gezieltes Asset-Löschen seit 2026-07-04:
 Priorisierte nächste Ausbauschritte:
 
 1. Einzelne Assets gezielt löschen: seit 2026-07-04 umgesetzt.
-2. Deutschen Artnamen umbenennen: seit 2026-07-05 umgesetzt. Der wissenschaftliche Name und Slug bleiben
-   unverändert; Assetname/SafeName, Assetordner, Override-Einträge, Assessment-Zuordnung, Report und
-   Kartendokumentation werden mitgeführt. Details: `docs/rename-species-workflow.md`.
+2. Deutschen und wissenschaftlichen Artnamen umbenennen: seit 2026-07-05 umgesetzt. Der wissenschaftliche Name ist
+   per Schloss geschützt; nach Warnbestätigung werden wissenschaftlicher Name, Genus/Species und URL-Slug
+   konsistent angepasst. Beim deutschen Namen werden Assetname/SafeName, Assetordner, Override-Einträge,
+   Assessment-Zuordnung, Report und Kartendokumentation mitgeführt. Details: `docs/rename-species-workflow.md`.
 3. Allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten strukturieren.
 4. Taxonomie-Pyramide um deutsche Übersetzungen der einzelnen Stufen ergänzen und optisch überarbeiten.
 5. Artportrait auf der Squarespace-Artseite einbinden.

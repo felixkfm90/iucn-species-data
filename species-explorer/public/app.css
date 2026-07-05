@@ -1635,6 +1635,31 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
+.locked-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 6px;
+  align-items: center;
+}
+
+.locked-input-row input[readonly] {
+  color: var(--text-muted);
+  background: var(--surface-muted);
+}
+
+.scientific-name-unlock {
+  min-height: 40px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.scientific-name-warning {
+  color: var(--amber);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
 .field-error input,
 .field-error textarea {
   border-color: var(--red) !important;

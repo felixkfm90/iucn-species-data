@@ -44,6 +44,11 @@ const ASSET_FILES = new Set([
   "portrait.json",
 ]);
 const EDITABLE_NAME_FIELD = { key: "germanName", sourceKey: "german", label: "Deutscher Name", maxLength: 160 };
+const EDITABLE_SCIENTIFIC_FIELD = {
+  key: "scientificName",
+  label: "Wissenschaftlicher Name",
+  maxLength: 201,
+};
 const EDITABLE_FIELD_DEFINITIONS = [
   { key: "size", sourceKey: "size", label: "Größe", maxLength: 240 },
   { key: "weight", sourceKey: "weight", label: "Gewicht", maxLength: 240 },
@@ -951,6 +956,49 @@ function validateFieldValue(field, rawValue) {
   return { value, errors };
 }
 
+function normalizeScientificName(rawValue) {
+  const value = String(rawValue ?? "").trim();
+  const errors = [];
+  const parts = value.split(/\s+/).filter(Boolean);
+  if (!value) {
+    errors.push(`${EDITABLE_SCIENTIFIC_FIELD.label} darf nicht leer sein`);
+  } else if (value.length > EDITABLE_SCIENTIFIC_FIELD.maxLength) {
+    errors.push(
+      `${EDITABLE_SCIENTIFIC_FIELD.label} darf maximal ${EDITABLE_SCIENTIFIC_FIELD.maxLength} Zeichen lang sein`,
+    );
+  } else if (/[\u0000-\u001F\u007F]/.test(value)) {
+    errors.push(`${EDITABLE_SCIENTIFIC_FIELD.label} enthält unzulässige Steuerzeichen`);
+  } else if (
+    parts.length !== 2
+    || parts.some((part) => !/^[\p{L}][\p{L}-]*$/u.test(part))
+  ) {
+    errors.push(
+      "Wissenschaftlicher Name muss genau aus Gattung und Art-Epitheton bestehen, zum Beispiel Turdus Merula",
+    );
+  } else if (parts.some((part) => part.length > 100)) {
+    errors.push("Gattung und Art-Epitheton dürfen jeweils maximal 100 Zeichen lang sein");
+  }
+  if (errors.length || parts.length !== 2) {
+    return {
+      scientificName: value,
+      genus: "",
+      species: "",
+      slug: "",
+      errors,
+    };
+  }
+  const [rawGenus, rawSpecies] = parts;
+  const genus = rawGenus.charAt(0).toLocaleUpperCase("de") + rawGenus.slice(1).toLocaleLowerCase("de");
+  const species = rawSpecies.toLocaleLowerCase("de");
+  return {
+    scientificName: `${genus} ${species}`,
+    genus,
+    species,
+    slug: `${genus}${species}`.toLocaleLowerCase("de"),
+    errors,
+  };
+}
+
 function validateEditableValues(payload, species = null) {
   const values = {};
   const errors = [];
@@ -963,6 +1011,18 @@ function validateEditableValues(payload, species = null) {
   );
   values.germanName = germanName.value;
   errors.push(...germanName.errors);
+
+  const scientificName = normalizeScientificName(
+    payload && Object.hasOwn(payload, EDITABLE_SCIENTIFIC_FIELD.key)
+      ? payload?.[EDITABLE_SCIENTIFIC_FIELD.key]
+      : species?.scientificName,
+  );
+  values.scientificName = scientificName.scientificName;
+  values.genus = scientificName.genus;
+  values.species = scientificName.species;
+  values.slug = scientificName.slug;
+  values.scientificNameUnlocked = payload?.scientificNameUnlocked === true;
+  errors.push(...scientificName.errors);
 
   for (const field of EDITABLE_FIELD_DEFINITIONS) {
     const { value, errors: fieldErrors } = validateFieldValue(field, payload?.[field.key]);
@@ -1098,6 +1158,16 @@ function buildEditChanges(inputEntry, values) {
     key: EDITABLE_NAME_FIELD.key,
     before: valueOrUnknown(inputEntry[EDITABLE_NAME_FIELD.sourceKey]),
     after: values[EDITABLE_NAME_FIELD.key],
+  }, {
+    field: EDITABLE_SCIENTIFIC_FIELD.label,
+    key: EDITABLE_SCIENTIFIC_FIELD.key,
+    before: valueOrUnknown(`${inputEntry.genus ?? ""} ${inputEntry.species ?? ""}`.trim()),
+    after: values.scientificName,
+  }, {
+    field: "URL-Slug",
+    key: "urlSlug",
+    before: valueOrUnknown(`${inputEntry.genus ?? ""}${inputEntry.species ?? ""}`.toLocaleLowerCase("de")),
+    after: values.slug,
   }];
   changes.push(...EDITABLE_FIELD_DEFINITIONS
     .map((field) => ({
@@ -1112,7 +1182,8 @@ function buildEditChanges(inputEntry, values) {
 }
 
 function editChangesRequirePipelineTransfer(changes) {
-  return changes.some((change) => change.key !== EDITABLE_NAME_FIELD.key);
+  const directRenameKeys = new Set([EDITABLE_NAME_FIELD.key, EDITABLE_SCIENTIFIC_FIELD.key, "urlSlug"]);
+  return changes.some((change) => !directRenameKeys.has(change.key));
 }
 
 function validateGermanRename({
@@ -1170,6 +1241,40 @@ function validateGermanRename({
   return [...new Set(errors)];
 }
 
+function validateScientificRename({ inputList, model, species, values }) {
+  const errors = [];
+  const oldScientificKey = scientificKey(species.taxonomy.genus, species.taxonomy.species);
+  const nextScientificKey = scientificKey(values.genus, values.species);
+  const oldSlug = String(species.id ?? "").trim().toLocaleLowerCase("de");
+  const newSlug = String(values.slug ?? "").trim().toLocaleLowerCase("de");
+
+  if (nextScientificKey !== oldScientificKey) {
+    const duplicateInput = inputList.find((entry) => (
+      scientificKey(entry.genus, entry.species) !== oldScientificKey
+      && scientificKey(entry.genus, entry.species) === nextScientificKey
+    ));
+    if (duplicateInput) errors.push(`Wissenschaftlicher Name ist bereits vorhanden: ${values.scientificName}`);
+
+    const duplicateModel = model.species.find((entry) => (
+      entry.id !== species.id
+      && scientificKey(entry.taxonomy?.genus, entry.taxonomy?.species) === nextScientificKey
+    ));
+    if (duplicateModel) {
+      errors.push(`Wissenschaftlicher Name kollidiert mit bestehenden Daten: ${values.scientificName}`);
+    }
+  }
+
+  if (newSlug !== oldSlug) {
+    const duplicateSlug = model.species.find((entry) => (
+      entry.id !== species.id
+      && String(entry.id ?? "").trim().toLocaleLowerCase("de") === newSlug
+    ));
+    if (duplicateSlug) errors.push(`URL-Slug ist bereits vorhanden: ${values.slug}`);
+  }
+
+  return [...new Set(errors)];
+}
+
 function replaceReportSpeciesName(report, oldGermanName, newGermanName, oldSafeName, newSafeName) {
   if (!report || typeof report !== "object") return report;
   const replaceNames = (values) => Array.isArray(values)
@@ -1190,10 +1295,16 @@ function replaceReportSpeciesName(report, oldGermanName, newGermanName, oldSafeN
   return report;
 }
 
-function updateAssetMetadataNames(metadata, newGermanName) {
+function updateAssetMetadataNames(metadata, { germanName, scientificName }) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return metadata;
-  if (Object.hasOwn(metadata, "german_name")) metadata.german_name = newGermanName;
-  if (Object.hasOwn(metadata, "germanName")) metadata.germanName = newGermanName;
+  if (germanName) {
+    if (Object.hasOwn(metadata, "german_name")) metadata.german_name = germanName;
+    if (Object.hasOwn(metadata, "germanName")) metadata.germanName = germanName;
+  }
+  if (scientificName) {
+    if (Object.hasOwn(metadata, "scientific_name")) metadata.scientific_name = scientificName;
+    if (Object.hasOwn(metadata, "scientificName")) metadata.scientificName = scientificName;
+  }
   return metadata;
 }
 
@@ -5275,11 +5386,29 @@ export async function createExplorerServer({
       error.details = renameErrors;
       throw error;
     }
+    const scientificRenameErrors = validateScientificRename({ inputList, model, species, values });
+    if (scientificRenameErrors.length) {
+      const error = new Error("Wissenschaftliche Umbenennung ist nicht möglich");
+      error.statusCode = 409;
+      error.details = scientificRenameErrors;
+      throw error;
+    }
 
     const changes = buildEditChanges(inputList[inputIndex], values);
     if (!changes.length) {
       const error = new Error("Es wurden keine Änderungen vorgenommen");
       error.statusCode = 400;
+      throw error;
+    }
+    const scientificNameChanged = changes.some((change) => (
+      change.key === EDITABLE_SCIENTIFIC_FIELD.key || change.key === "urlSlug"
+    ));
+    if (scientificNameChanged && !values.scientificNameUnlocked) {
+      const error = new Error("Wissenschaftlicher Name ist gesperrt");
+      error.statusCode = 409;
+      error.details = [
+        "Bitte Schloss öffnen und bestätigen: Die Änderung ändert den URL-Slug und kann sich direkt auf die Website auswirken.",
+      ];
       throw error;
     }
 
@@ -5305,10 +5434,13 @@ export async function createExplorerServer({
       changes,
       warnings: [
         "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
+        scientificNameChanged
+          ? "Achtung: Der wissenschaftliche Name ändert den URL-Slug und kann sich direkt auf die Website auswirken."
+          : "",
         editChangesRequirePipelineTransfer(changes)
           ? "Geänderte Eingabefelder werden später mit „Änderungen übertragen“ in speciesData.json übernommen."
-          : "Der deutsche Name, Assetname, Assetordner und lokale Metadaten werden direkt zusammen umbenannt.",
-      ],
+          : "Name, URL-Slug, Assetname, Assetordner und lokale Metadaten werden direkt konsistent umbenannt.",
+      ].filter(Boolean),
     };
   }
 
@@ -5388,6 +5520,13 @@ export async function createExplorerServer({
       error.details = renameErrors;
       throw error;
     }
+    const scientificRenameErrors = validateScientificRename({ inputList, model, species, values });
+    if (scientificRenameErrors.length) {
+      const error = new Error("Wissenschaftliche Umbenennung ist nicht möglich");
+      error.statusCode = 409;
+      error.details = scientificRenameErrors;
+      throw error;
+    }
 
     const changes = buildEditChanges(inputList[inputIndex], values);
     if (!changes.length) {
@@ -5399,6 +5538,21 @@ export async function createExplorerServer({
     const pipelineRequired = editChangesRequirePipelineTransfer(changes);
     const germanNameChanged =
       normalizeComparable(inputList[inputIndex].german) !== normalizeComparable(values.germanName);
+    const newScientificName = values.scientificName;
+    const oldSlug = species.id;
+    const newSlug = values.slug;
+    const scientificNameChanged =
+      scientificKey(inputList[inputIndex].genus, inputList[inputIndex].species)
+        !== scientificKey(values.genus, values.species);
+    if (scientificNameChanged && !values.scientificNameUnlocked) {
+      previewTokens.delete(token);
+      const error = new Error("Wissenschaftlicher Name ist gesperrt");
+      error.statusCode = 409;
+      error.details = [
+        "Bitte Schloss öffnen und bestätigen: Die Änderung ändert den URL-Slug und kann sich direkt auf die Website auswirken.",
+      ];
+      throw error;
+    }
     const oldGermanName = species.germanName;
     const newGermanName = values.germanName;
     const oldSafeName = species.safeName;
@@ -5418,6 +5572,8 @@ export async function createExplorerServer({
     inputList[inputIndex] = {
       ...currentEntry,
       german: values.germanName,
+      genus: values.genus,
+      species: values.species,
       size: values.size,
       weight: values.weight,
       life_expectancy: values.lifeExpectancy,
@@ -5429,20 +5585,28 @@ export async function createExplorerServer({
     let reportChanged = false;
     let manualMapTextNext = manualMapText;
 
-    if (germanNameChanged) {
-      const generatedIndex = speciesData.findIndex((entry) => (
-        entry?.URLSlug === species.id
-        || scientificKey(entry?.Genus, entry?.Species)
-          === scientificKey(species.taxonomy.genus, species.taxonomy.species)
-      ));
-      if (generatedIndex >= 0) {
-        speciesData[generatedIndex] = {
-          ...speciesData[generatedIndex],
-          "Deutscher Name": newGermanName,
-        };
-        speciesDataChanged = true;
-      }
+    const generatedIndex = speciesData.findIndex((entry) => (
+      entry?.URLSlug === species.id
+      || scientificKey(entry?.Genus, entry?.Species)
+        === scientificKey(species.taxonomy.genus, species.taxonomy.species)
+    ));
+    if (generatedIndex >= 0 && (germanNameChanged || scientificNameChanged)) {
+      speciesData[generatedIndex] = {
+        ...speciesData[generatedIndex],
+        ...(germanNameChanged ? { "Deutscher Name": newGermanName } : {}),
+        ...(scientificNameChanged
+          ? {
+              "Wissenschaftlicher Name": newScientificName,
+              Genus: values.genus,
+              Species: values.species,
+              URLSlug: newSlug,
+            }
+          : {}),
+      };
+      speciesDataChanged = true;
+    }
 
+    if (germanNameChanged) {
       if (registry.assets[oldSafeName]) {
         registry.assets[newSafeName] = registry.assets[oldSafeName];
         if (newSafeName !== oldSafeName) delete registry.assets[oldSafeName];
@@ -5471,7 +5635,7 @@ export async function createExplorerServer({
     }
 
     const metadataUpdates = [];
-    if (germanNameChanged && existsSync(oldAssetDirectory)) {
+    if ((germanNameChanged || scientificNameChanged) && existsSync(oldAssetDirectory)) {
       metadataUpdates.push("credits.json", "portrait.json");
     }
 
@@ -5496,7 +5660,7 @@ export async function createExplorerServer({
         if (!existsSync(metadataPath)) continue;
         const metadata = updateAssetMetadataNames(
           JSON.parse(await readFile(metadataPath, "utf8")),
-          newGermanName,
+          { germanName: newGermanName, scientificName: newScientificName },
         );
         await writeJsonAtomic(metadataPath, metadata);
       }
@@ -5530,12 +5694,17 @@ export async function createExplorerServer({
       backupRetention,
       backupCleanupWarning,
       changes,
-      species: model.species.find((entry) => entry.id === id) ?? null,
+      species: model.species.find((entry) => entry.id === newSlug)
+        ?? model.species.find((entry) => entry.id === id)
+        ?? null,
       summary: model.summary,
       validation: model.validation,
       oldSafeName,
       newSafeName,
       safeNameChanged,
+      oldSlug,
+      newSlug,
+      slugChanged: oldSlug !== newSlug,
       pipelineRequired,
     };
   }

@@ -381,7 +381,8 @@ Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erwe
 - Projektvalidierung wird nach dem Import automatisch neu geladen.
 - Erfolgreicher Kartenaustausch wird lokal vorgemerkt und mit Karte, Override-Register, Kartendokumentation und
   Report ueber `Änderungen übertragen` committed und gepusht.
-- Deutscher Artname kann bei unverändertem wissenschaftlichem Namen/Slug umbenannt werden; Assetordner,
-  Override-Schluessel, Assessment-Zuordnung, Report, Kartendokumentation und lokale Metadaten wandern mit.
+- Deutscher und wissenschaftlicher Artname koennen umbenannt werden. Der wissenschaftliche Name ist per Schloss
+  geschützt und ändert nach Warnbestätigung den URL-Slug. Assetordner, Override-Schluessel, Assessment-Zuordnung,
+  Report, Kartendokumentation und lokale Metadaten wandern je nach Änderung konsistent mit.
 - Erfolgreicher Soundaustausch wird lokal vorgemerkt und mit Sound, Credits, Spektrogrammstatus, Override-Register
   und Report ueber `Änderungen übertragen` committed und gepusht.
