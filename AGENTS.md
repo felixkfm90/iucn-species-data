@@ -356,8 +356,14 @@ Aktuelle Planung:
   Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
   `Loeschen` steht als Artaktion oben rechts im Detailkopf. `Bearbeiten` steht seit 2026-06-30 direkt an den
   bearbeitbaren Bereichen `Manuelle Daten`, `Artportraet`, `Verbreitungskarte` und `Tierstimme`; der
-  Bearbeitungsdialog oeffnet jeweils nur den gewaehlten Bereich. Der Dialog kennzeichnet Taxonomie und Name als
-  gesperrt, nennt dabei aber keine interne Phasennummer.
+  Bearbeitungsdialog oeffnet jeweils nur den gewaehlten Bereich. Der Dialog kennzeichnet Taxonomie und
+  wissenschaftlichen Namen als gesperrt, nennt dabei aber keine interne Phasennummer.
+  Seit 2026-07-05 kann der deutsche Artname im Bereich `Allgemeine Daten` umbenannt werden, wenn der
+  wissenschaftliche Name und URL-Slug gleich bleiben. Die Umbenennung prueft Kollisionen und fuehrt
+  `species_list.json`, `speciesData.json`, Assetname/SafeName, Assetordner, `species-assets-overrides.json`,
+  `lastSavedAssessmentId.json`, `fehlende_elemente_report.json`, Kartendokumentation sowie lokale Credits- und
+  Portrait-Metadaten mit. Die Aenderung bleibt lokal offen und wird ueber `Änderungen übertragen` veroeffentlicht.
+  Details: `docs/rename-species-workflow.md`.
   Phase 7.5 ist seit 2026-06-20 abgeschlossen und durch das erneute Anlegen von Haubentaucher und Hoeckerschwan
   praktisch geprueft.
   Neue Arten werden kontrolliert nach `docs/add-species-workflow.md` angelegt. Erfasst werden
@@ -499,7 +505,7 @@ Aktuelle Planung:
   Nach dem Speichern einer neuen Art startet der selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. 21 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. 22 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
@@ -599,8 +605,9 @@ Aktuelle Planung:
   Artbearbeitung geloescht werden. Vor dem Loeschen wird unter `species-explorer/asset-backups/` gesichert; Karten-
   Overrides und Kartendokumentation werden synchron entfernt, beim Soundpaket bleiben bereits gemerkte
   `sound.rejectedSources` erhalten. Die Loeschung bleibt lokal offen und wird ueber `Änderungen übertragen`
-  veroeffentlicht. Naechste priorisierte Ausbauschritte: deutschen Artnamen inklusive Assetname/SafeName, Ordner,
-  Override-Eintraegen und Dokumentation umbenennen; allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten
+  veroeffentlicht. Seit 2026-07-05 ist auch das Umbenennen des deutschen Artnamens inklusive Assetname/SafeName,
+  Ordner, Override-Eintraegen, Assessment-Zuordnung, Report und Dokumentation umgesetzt.
+  Naechste priorisierte Ausbauschritte: allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten
   strukturieren; Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen;
   Artportrait auf der Squarespace-Artseite einbinden.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe

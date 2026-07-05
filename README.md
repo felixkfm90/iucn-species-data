@@ -317,7 +317,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
 - Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben.
-- 21 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- 22 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktuell stehen 47 Arten in `species_list.json` und `speciesData.json`. Der Löwe ist nach dem erneuten Neue-Art-Test
@@ -415,8 +415,9 @@ Anwendungsfehlern abbrechen können.
 Priorisierte Bedienungs- und Ausbauschritte:
 
 1. Einzelne Assets einer Art gezielt entfernen, ohne die ganze Art zu löschen: seit 2026-07-04 umgesetzt.
-2. Deutschen Artnamen umbenennen, wenn sich die deutsche Bezeichnung ändert und der wissenschaftliche Name/Slug
-   gleich bleibt; dabei müssen auch Assetname/SafeName, Assetordner, Override-Einträge und Dokumentation mitwandern.
+2. Deutschen Artnamen umbenennen: seit 2026-07-05 umgesetzt. Der wissenschaftliche Name und URL-Slug bleiben
+   unverändert; Assetname/SafeName, Assetordner, Override-Einträge, Assessment-Zuordnung, Report und
+   Kartendokumentation wandern mit. Details: `docs/rename-species-workflow.md`.
 3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
    Männchen/Weibchen, Wert und Einheit aufteilen.
 4. Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
@@ -470,7 +471,7 @@ Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und b
 aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 46 von 46 vorhandenen
 Spektrogrammen sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten
 Registeränderungen.
-21 Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
+22 Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
 Portraitimport und visueller Freigabe der Asset- und Detailoberfläche abgeschlossen. Ein unnötiger produktiver
 Austausch eines bereits gültigen Sounds ist kein verbleibendes Abschlusskriterium.
 

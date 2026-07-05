@@ -312,7 +312,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   uebernommen oder uebersprungen werden. Neue Sounds werden mit Spektrogramm angezeigt und koennen uebernommen,
   uebersprungen oder abgelehnt werden. Abgelehnte Sounds starten automatisch die nächste gezielte Soundsuche, bis
   eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
-  21 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  22 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus. Klickbare, noch offene Schritte sind blau, abgeschlossene Schritte gruen und
   gesperrte Schritte grau markiert. Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem
@@ -457,8 +457,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
     `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
     Priorisierte Bedienungs- und Ausbauschritte: Einzelne Assets einer Art gezielt löschen ist seit 2026-07-04
-    umgesetzt. Offen bleiben: deutschen Artnamen bei unverändertem wissenschaftlichem Namen/Slug umbenennen inklusive
-    Mitnahme von Assetname/SafeName, Assetordner, Override-Einträgen und Dokumentation; allgemeine Daten im
+    umgesetzt. Deutschen Artnamen bei unverändertem wissenschaftlichem Namen/Slug umbenennen ist seit 2026-07-05
+    umgesetzt; dabei werden Assetname/SafeName, Assetordner, Override-Einträge, Assessment-Zuordnung, Report und
+    Kartendokumentation mitgeführt. Details: `docs/rename-species-workflow.md`. Offen bleiben: allgemeine Daten im
     Bearbeitungsdialog in strukturierte Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen; Taxonomie-
     Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten; Artportrait auf der Squarespace-Artseite
     einbinden.

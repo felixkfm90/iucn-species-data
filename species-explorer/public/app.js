@@ -3547,6 +3547,7 @@ function setupSpeciesEditor(species) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             values: {
+              germanName: formData.get("germanName"),
               size: formData.get("size"),
               weight: formData.get("weight"),
               lifeExpectancy: formData.get("lifeExpectancy"),
@@ -3580,7 +3581,7 @@ function setupSpeciesEditor(species) {
   saveButton.addEventListener("click", async () => {
     if (!previewToken) return;
     setBusy(true);
-    setMessage("Manuelle Artdaten werden gesichert und gespeichert…", "info");
+    setMessage("Änderungen werden lokal gesichert und gespeichert…", "info");
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/save`,
@@ -3594,7 +3595,7 @@ function setupSpeciesEditor(species) {
         `Gespeichert. Sicherung: ${result.backup}. `
         + backupRetentionText(result)
         + " "
-        + "Die Datenpipeline muss anschließend separat ausgeführt werden."
+        + "Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
         + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
       if (typeof dialog.close === "function") dialog.close();
       await loadData();
@@ -4459,7 +4460,7 @@ function renderDetail(species) {
         <header class="edit-dialog-header">
           <div>
             <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
-            <p>${escapeHtml(species.scientificName)} · Taxonomie und Name sind gesperrt.</p>
+            <p>${escapeHtml(species.scientificName)} · Taxonomie und wissenschaftlicher Name sind gesperrt.</p>
           </div>
           <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
         </header>
@@ -4468,11 +4469,15 @@ function renderDetail(species) {
           <header>
             <div>
               <h4>Allgemeine Daten bearbeiten</h4>
-              <p>Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
+              <p>Deutscher Name, Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
             </div>
           </header>
 
           <div class="edit-fields">
+            <label>
+              <span>Deutscher Name</span>
+              <input name="germanName" required maxlength="160" value="${escapeHtml(species.germanName)}">
+            </label>
             <label>
               <span>Größe</span>
               <input name="size" required maxlength="240" value="${escapeHtml(species.manual.size)}">
@@ -4505,7 +4510,7 @@ function renderDetail(species) {
               </table>
             </div>
             <p class="edit-warning">
-              Speichern ändert nur die manuellen Artdaten. Danach ist ein Pipeline-Lauf erforderlich.
+              Speichern merkt die Änderung lokal vor. Veröffentlichung erfolgt anschließend über „Änderungen übertragen“.
             </p>
           </section>
         </section>

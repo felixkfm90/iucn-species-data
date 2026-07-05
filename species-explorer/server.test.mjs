@@ -539,6 +539,127 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   assert.equal(validation.data.mismatchSpeciesCount, 1);
 });
 
+test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträgen umbenannt werden", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const assetDir = join(repoRoot, "species-assets", "Amsel");
+  await Promise.all([
+    writeFile(join(repoRoot, "lastSavedAssessmentId.json"), `${JSON.stringify({ Amsel: 264548442 }, null, 2)}\n`),
+    writeFile(
+      join(repoRoot, "species-assets-overrides.json"),
+      `${JSON.stringify({
+        version: 1,
+        assets: {
+          Amsel: {
+            map: {
+              manual: true,
+              germanName: "Amsel",
+              reason: "Testkarte",
+              source: "https://example.test/map.jpg",
+            },
+            sound: {
+              manual: false,
+              rejectedSources: [{ key: "xeno-canto:123", source: "xeno-canto" }],
+            },
+          },
+        },
+      }, null, 2)}\n`,
+    ),
+    writeFile(
+      join(repoRoot, "docs", "manual-map-overrides.md"),
+      [
+        "# Manuell gepflegte Karten",
+        "",
+        "Stand: 2026-06-19",
+        "",
+        "Aktuell sind 1 Karte als manuell gepflegt dokumentiert.",
+        "",
+        "| Art | SafeName | Datei | Grund | Quelle | Stand | Status |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Amsel | Amsel | `species-assets/Amsel/map.jpg` | Testkarte | [Quelle](https://example.test/map.jpg) | 2026-06-19 | erledigt/geprueft |",
+        "",
+        "## Pflege-Regeln",
+        "",
+      ].join("\n"),
+    ),
+    writeFile(join(assetDir, "portrait.webp"), Buffer.alloc(256)),
+    writeFile(join(assetDir, "portrait.json"), `${JSON.stringify({ german_name: "Amsel" }, null, 2)}\n`),
+    writeFile(join(assetDir, "credits.json"), `${JSON.stringify({
+      scientific_name: "Turdus merula",
+      german_name: "Amsel",
+      source: "Test",
+      license: "https://creativecommons.org/licenses/by/4.0/",
+    }, null, 2)}\n`),
+  ]);
+  const report = JSON.parse(await readFile(join(repoRoot, "fehlende_elemente_report.json"), "utf8"));
+  report.counts.ncSoundLicensesAll = 1;
+  report.ncSoundLicensesAll = ["Amsel"];
+  await writeFile(join(repoRoot, "fehlende_elemente_report.json"), `${JSON.stringify(report, null, 2)}\n`);
+
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      values: {
+        germanName: "Schwarzdrossel",
+        size: "ca. 23,5-29 cm",
+        weight: "ca. 80-110 g",
+        lifeExpectancy: "ca. 3 Jahre",
+      },
+    }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.equal(preview.changes.length, 1);
+  assert.equal(preview.changes[0].field, "Deutscher Name");
+  assert.equal(preview.changes[0].after, "Schwarzdrossel");
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.pipelineRequired, false);
+  assert.equal(saved.oldSafeName, "Amsel");
+  assert.equal(saved.newSafeName, "Schwarzdrossel");
+  assert.equal(saved.safeNameChanged, true);
+
+  assert.equal(existsSync(join(repoRoot, "species-assets", "Amsel")), false);
+  assert.equal(existsSync(join(repoRoot, "species-assets", "Schwarzdrossel")), true);
+  assert.equal(JSON.parse(await readFile(join(repoRoot, "species_list.json"), "utf8"))[0].german, "Schwarzdrossel");
+  assert.equal(JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"))[0]["Deutscher Name"], "Schwarzdrossel");
+  assert.equal(JSON.parse(await readFile(join(repoRoot, "lastSavedAssessmentId.json"), "utf8")).Schwarzdrossel, 264548442);
+  const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.assets.Amsel, undefined);
+  assert.equal(registry.assets.Schwarzdrossel.map.germanName, "Schwarzdrossel");
+  assert.equal(registry.assets.Schwarzdrossel.sound.rejectedSources[0].key, "xeno-canto:123");
+  assert.equal(
+    JSON.parse(await readFile(join(repoRoot, "species-assets", "Schwarzdrossel", "credits.json"), "utf8")).german_name,
+    "Schwarzdrossel",
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(repoRoot, "species-assets", "Schwarzdrossel", "portrait.json"), "utf8")).german_name,
+    "Schwarzdrossel",
+  );
+  const nextReport = JSON.parse(await readFile(join(repoRoot, "fehlende_elemente_report.json"), "utf8"));
+  assert.deepEqual(nextReport.ncSoundLicensesAll, ["Schwarzdrossel"]);
+  const manualDoc = await readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8");
+  assert.match(manualDoc, /Schwarzdrossel/);
+  assert.match(manualDoc, /species-assets\/Schwarzdrossel\/map\.jpg/);
+
+  const model = await buildExplorerModel(repoRoot);
+  assert.equal(model.species[0].germanName, "Schwarzdrossel");
+  assert.equal(model.species[0].safeName, "Schwarzdrossel");
+  assert.equal(model.species[0].assets.map.exists, true);
+});
+
 test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehängt", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
@@ -2121,7 +2242,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /releaseDetailMedia\(\)/);
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
-  assert.match(appSource, /Taxonomie und Name sind gesperrt\./);
+  assert.match(appSource, /Taxonomie und wissenschaftlicher Name sind gesperrt\./);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
   assert.match(appSource, /class="map-auto-search-button"/);

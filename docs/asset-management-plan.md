@@ -356,6 +356,8 @@ Vor dem Speichern zeigt die App:
 4. automatische Spektrogramm-Neuerzeugung und vollständiger Hashabgleich: umgesetzt
 5. kostenfreier Artportrait-Prompt-/Importworkflow: umgesetzt und produktiv erprobt
 6. gezieltes Löschen einzelner Assets mit Backup und lokaler Vormerkung für `Änderungen übertragen`: umgesetzt
+7. deutschen Artnamen inklusive SafeName, Assetordner, Overrides, Assessment-Zuordnung, Report und Dokumentation
+   umbenennen: umgesetzt
 
 Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erweiterungen.
 
@@ -379,5 +381,7 @@ Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erwe
 - Projektvalidierung wird nach dem Import automatisch neu geladen.
 - Erfolgreicher Kartenaustausch wird lokal vorgemerkt und mit Karte, Override-Register, Kartendokumentation und
   Report ueber `Änderungen übertragen` committed und gepusht.
+- Deutscher Artname kann bei unverändertem wissenschaftlichem Namen/Slug umbenannt werden; Assetordner,
+  Override-Schluessel, Assessment-Zuordnung, Report, Kartendokumentation und lokale Metadaten wandern mit.
 - Erfolgreicher Soundaustausch wird lokal vorgemerkt und mit Sound, Credits, Spektrogrammstatus, Override-Register
   und Report ueber `Änderungen übertragen` committed und gepusht.

@@ -43,6 +43,7 @@ const ASSET_FILES = new Set([
   "portrait.webp",
   "portrait.json",
 ]);
+const EDITABLE_NAME_FIELD = { key: "germanName", sourceKey: "german", label: "Deutscher Name", maxLength: 160 };
 const EDITABLE_FIELD_DEFINITIONS = [
   { key: "size", sourceKey: "size", label: "Größe", maxLength: 240 },
   { key: "weight", sourceKey: "weight", label: "Gewicht", maxLength: 240 },
@@ -937,20 +938,36 @@ function publicCleanupPlan(plan) {
   };
 }
 
-function validateEditableValues(payload) {
+function validateFieldValue(field, rawValue) {
+  const value = String(rawValue ?? "").trim();
+  const errors = [];
+  if (!value) {
+    errors.push(`${field.label} darf nicht leer sein`);
+  } else if (value.length > field.maxLength) {
+    errors.push(`${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
+  } else if (/[\u0000-\u001F\u007F]/.test(value)) {
+    errors.push(`${field.label} enthält unzulässige Steuerzeichen`);
+  }
+  return { value, errors };
+}
+
+function validateEditableValues(payload, species = null) {
   const values = {};
   const errors = [];
 
+  const germanName = validateFieldValue(
+    EDITABLE_NAME_FIELD,
+    payload && Object.hasOwn(payload, EDITABLE_NAME_FIELD.key)
+      ? payload?.[EDITABLE_NAME_FIELD.key]
+      : species?.germanName,
+  );
+  values.germanName = germanName.value;
+  errors.push(...germanName.errors);
+
   for (const field of EDITABLE_FIELD_DEFINITIONS) {
-    const value = String(payload?.[field.key] ?? "").trim();
-    if (!value) {
-      errors.push(`${field.label} darf nicht leer sein`);
-    } else if (value.length > field.maxLength) {
-      errors.push(`${field.label} darf maximal ${field.maxLength} Zeichen lang sein`);
-    } else if (/[\u0000-\u001F\u007F]/.test(value)) {
-      errors.push(`${field.label} enthält unzulässige Steuerzeichen`);
-    }
+    const { value, errors: fieldErrors } = validateFieldValue(field, payload?.[field.key]);
     values[field.key] = value;
+    errors.push(...fieldErrors);
   }
 
   return { values, errors };
@@ -1076,14 +1093,123 @@ function findInputIndex(inputList, species) {
 }
 
 function buildEditChanges(inputEntry, values) {
-  return EDITABLE_FIELD_DEFINITIONS
+  const changes = [{
+    field: EDITABLE_NAME_FIELD.label,
+    key: EDITABLE_NAME_FIELD.key,
+    before: valueOrUnknown(inputEntry[EDITABLE_NAME_FIELD.sourceKey]),
+    after: values[EDITABLE_NAME_FIELD.key],
+  }];
+  changes.push(...EDITABLE_FIELD_DEFINITIONS
     .map((field) => ({
       field: field.label,
       key: field.key,
       before: valueOrUnknown(inputEntry[field.sourceKey]),
       after: values[field.key],
     }))
+  );
+  return changes
     .filter((change) => normalizeComparable(change.before) !== normalizeComparable(change.after));
+}
+
+function editChangesRequirePipelineTransfer(changes) {
+  return changes.some((change) => change.key !== EDITABLE_NAME_FIELD.key);
+}
+
+function validateGermanRename({
+  inputList,
+  model,
+  species,
+  newGermanName,
+  repoRoot,
+  assetOverrides = { assets: {} },
+  assessmentIds = {},
+}) {
+  const errors = [];
+  const oldGermanName = String(species.germanName ?? "").trim();
+  const nextGermanName = String(newGermanName ?? "").trim();
+  const oldSafeName = species.safeName;
+  const newSafeName = sanitizeAssetName(nextGermanName);
+  const oldSafeKey = oldSafeName.toLocaleLowerCase("de");
+  const newSafeKey = newSafeName.toLocaleLowerCase("de");
+  const oldGermanKey = oldGermanName.toLocaleLowerCase("de");
+  const newGermanKey = nextGermanName.toLocaleLowerCase("de");
+  const currentScientificKey = scientificKey(species.taxonomy.genus, species.taxonomy.species);
+
+  if (newGermanKey !== oldGermanKey) {
+    const duplicateInput = inputList.find((entry) => (
+      scientificKey(entry.genus, entry.species) !== currentScientificKey
+      && String(entry.german ?? "").trim().toLocaleLowerCase("de") === newGermanKey
+    ));
+    if (duplicateInput) errors.push(`Deutscher Name ist bereits vorhanden: ${nextGermanName}`);
+
+    const duplicateModel = model.species.find((entry) => (
+      entry.id !== species.id
+      && entry.germanName.trim().toLocaleLowerCase("de") === newGermanKey
+    ));
+    if (duplicateModel) errors.push(`Deutscher Name kollidiert mit bestehenden Daten: ${nextGermanName}`);
+  }
+
+  if (newSafeKey !== oldSafeKey) {
+    const duplicateSafeName = model.species.find((entry) => (
+      entry.id !== species.id && entry.safeName.toLocaleLowerCase("de") === newSafeKey
+    ));
+    if (duplicateSafeName) errors.push(`Assetname ist bereits vorhanden: ${newSafeName}`);
+
+    const newAssetDirectory = join(repoRoot, "species-assets", newSafeName);
+    if (existsSync(newAssetDirectory)) {
+      errors.push(`Assetordner ist bereits vorhanden: species-assets/${newSafeName}`);
+    }
+    if (assetOverrides.assets?.[newSafeName]) {
+      errors.push(`Assetpflege ist bereits vorhanden: ${newSafeName}`);
+    }
+    if (Object.hasOwn(assessmentIds, newSafeName)) {
+      errors.push(`Assessment-Zuordnung ist bereits vorhanden: ${newSafeName}`);
+    }
+  }
+
+  return [...new Set(errors)];
+}
+
+function replaceReportSpeciesName(report, oldGermanName, newGermanName, oldSafeName, newSafeName) {
+  if (!report || typeof report !== "object") return report;
+  const replaceNames = (values) => Array.isArray(values)
+    ? values.map((value) => (value === oldGermanName ? newGermanName : value))
+    : values;
+  if (report.missing && typeof report.missing === "object") {
+    for (const key of ["soundMp3", "soundCredits", "maps", "assessmentId", "status", "category", "trend"]) {
+      report.missing[key] = replaceNames(report.missing[key]);
+    }
+    if (Array.isArray(report.missing.speciesAssets)) {
+      for (const entry of report.missing.speciesAssets) {
+        if (entry?.german === oldGermanName) entry.german = newGermanName;
+        if (entry?.safeName === oldSafeName) entry.safeName = newSafeName;
+      }
+    }
+  }
+  report.ncSoundLicensesAll = replaceNames(report.ncSoundLicensesAll);
+  return report;
+}
+
+function updateAssetMetadataNames(metadata, newGermanName) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return metadata;
+  if (Object.hasOwn(metadata, "german_name")) metadata.german_name = newGermanName;
+  if (Object.hasOwn(metadata, "germanName")) metadata.germanName = newGermanName;
+  return metadata;
+}
+
+async function writeJsonAtomic(filePath, value) {
+  await writeTextAtomic(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function writeTextAtomic(filePath, nextText) {
+  const tempPath = `${filePath}.tmp-${randomUUID()}`;
+  try {
+    await writeFile(tempPath, nextText, "utf8");
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await unlink(tempPath).catch(() => {});
+    throw error;
+  }
 }
 
 async function readJsonBody(request, { maxBytes = MAX_JSON_BODY_BYTES } = {}) {
@@ -5113,7 +5239,7 @@ export async function createExplorerServer({
       throw error;
     }
 
-    const { values, errors } = validateEditableValues(payload?.values);
+    const { values, errors } = validateEditableValues(payload?.values, species);
     if (errors.length) {
       const error = new Error("Eingaben sind ungültig");
       error.statusCode = 400;
@@ -5127,6 +5253,26 @@ export async function createExplorerServer({
     if (inputIndex < 0) {
       const error = new Error("Art fehlt in der Eingabeliste");
       error.statusCode = 409;
+      throw error;
+    }
+
+    const [assetOverrides, assessmentIds] = await Promise.all([
+      readJson(assetOverridesPath).catch(() => ({ version: 1, assets: {} })),
+      readJson(assessmentIdsPath).catch(() => ({})),
+    ]);
+    const renameErrors = validateGermanRename({
+      inputList,
+      model,
+      species,
+      newGermanName: values.germanName,
+      repoRoot,
+      assetOverrides,
+      assessmentIds,
+    });
+    if (renameErrors.length) {
+      const error = new Error("Umbenennung ist nicht möglich");
+      error.statusCode = 409;
+      error.details = renameErrors;
       throw error;
     }
 
@@ -5144,6 +5290,7 @@ export async function createExplorerServer({
       id,
       values,
       sourceRevision: hashText(sourceText),
+      speciesDataRevision: await readFile(join(repoRoot, "speciesData.json"), "utf8").then(hashText).catch(() => ""),
       expiresAt,
     });
 
@@ -5158,7 +5305,9 @@ export async function createExplorerServer({
       changes,
       warnings: [
         "Vor dem Speichern wird automatisch eine lokale Sicherung angelegt.",
-        "speciesData.json bleibt unverändert. Die Pipeline muss anschließend separat ausgeführt werden.",
+        editChangesRequirePipelineTransfer(changes)
+          ? "Geänderte Eingabefelder werden später mit „Änderungen übertragen“ in speciesData.json übernommen."
+          : "Der deutsche Name, Assetname, Assetordner und lokale Metadaten werden direkt zusammen umbenannt.",
       ],
     };
   }
@@ -5196,11 +5345,47 @@ export async function createExplorerServer({
       throw error;
     }
 
-    const { values, errors } = validateEditableValues(preview.values);
+    const { values, errors } = validateEditableValues(preview.values, species);
     if (errors.length) {
       const error = new Error("Gespeicherte Vorschau ist ungültig");
       error.statusCode = 409;
       error.details = errors;
+      throw error;
+    }
+
+    const speciesDataPath = join(repoRoot, "speciesData.json");
+    const reportPath = join(repoRoot, "fehlende_elemente_report.json");
+    const [
+      speciesDataText,
+      registryText,
+      assessmentText,
+      reportText,
+      manualMapText,
+    ] = await Promise.all([
+      readFile(speciesDataPath, "utf8").catch(() => "[]\n"),
+      readFile(assetOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "assets": {}\n}\n'),
+      readFile(assessmentIdsPath, "utf8").catch(() => "{}\n"),
+      readFile(reportPath, "utf8").catch(() => ""),
+      readFile(manualMapOverridesPath, "utf8").catch(() => ""),
+    ]);
+    const speciesData = JSON.parse(speciesDataText);
+    const registry = JSON.parse(registryText);
+    registry.assets ??= {};
+    const assessmentIds = JSON.parse(assessmentText);
+    const report = reportText ? JSON.parse(reportText) : null;
+    const renameErrors = validateGermanRename({
+      inputList,
+      model,
+      species,
+      newGermanName: values.germanName,
+      repoRoot,
+      assetOverrides: registry,
+      assessmentIds,
+    });
+    if (renameErrors.length) {
+      const error = new Error("Umbenennung ist nicht möglich");
+      error.statusCode = 409;
+      error.details = renameErrors;
       throw error;
     }
 
@@ -5211,6 +5396,17 @@ export async function createExplorerServer({
       error.statusCode = 409;
       throw error;
     }
+    const pipelineRequired = editChangesRequirePipelineTransfer(changes);
+    const germanNameChanged =
+      normalizeComparable(inputList[inputIndex].german) !== normalizeComparable(values.germanName);
+    const oldGermanName = species.germanName;
+    const newGermanName = values.germanName;
+    const oldSafeName = species.safeName;
+    const newSafeName = sanitizeAssetName(newGermanName);
+    const safeNameChanged =
+      oldSafeName.toLocaleLowerCase("de") !== newSafeName.toLocaleLowerCase("de");
+    const oldAssetDirectory = join(repoRoot, "species-assets", oldSafeName);
+    const newAssetDirectory = join(repoRoot, "species-assets", newSafeName);
 
     await mkdir(backupDir, { recursive: true });
     const backupName =
@@ -5221,17 +5417,101 @@ export async function createExplorerServer({
     const currentEntry = inputList[inputIndex];
     inputList[inputIndex] = {
       ...currentEntry,
+      german: values.germanName,
       size: values.size,
       weight: values.weight,
       life_expectancy: values.lifeExpectancy,
     };
-    const nextText = `${JSON.stringify(inputList, null, 2)}\n`;
-    const tempPath = `${speciesListPath}.tmp-${randomUUID()}`;
+
+    let registryChanged = false;
+    let assessmentChanged = false;
+    let speciesDataChanged = false;
+    let reportChanged = false;
+    let manualMapTextNext = manualMapText;
+
+    if (germanNameChanged) {
+      const generatedIndex = speciesData.findIndex((entry) => (
+        entry?.URLSlug === species.id
+        || scientificKey(entry?.Genus, entry?.Species)
+          === scientificKey(species.taxonomy.genus, species.taxonomy.species)
+      ));
+      if (generatedIndex >= 0) {
+        speciesData[generatedIndex] = {
+          ...speciesData[generatedIndex],
+          "Deutscher Name": newGermanName,
+        };
+        speciesDataChanged = true;
+      }
+
+      if (registry.assets[oldSafeName]) {
+        registry.assets[newSafeName] = registry.assets[oldSafeName];
+        if (newSafeName !== oldSafeName) delete registry.assets[oldSafeName];
+        for (const assetEntry of Object.values(registry.assets[newSafeName] ?? {})) {
+          if (assetEntry && typeof assetEntry === "object" && Object.hasOwn(assetEntry, "germanName")) {
+            assetEntry.germanName = newGermanName;
+          }
+        }
+        registryChanged = true;
+      }
+
+      if (Object.hasOwn(assessmentIds, oldSafeName)) {
+        assessmentIds[newSafeName] = assessmentIds[oldSafeName];
+        if (newSafeName !== oldSafeName) delete assessmentIds[oldSafeName];
+        assessmentChanged = true;
+      }
+
+      if (report) {
+        replaceReportSpeciesName(report, oldGermanName, newGermanName, oldSafeName, newSafeName);
+        reportChanged = true;
+      }
+
+      if (manualMapText && registryChanged) {
+        manualMapTextNext = synchronizeManualMapDocumentation(manualMapText, registry);
+      }
+    }
+
+    const metadataUpdates = [];
+    if (germanNameChanged && existsSync(oldAssetDirectory)) {
+      metadataUpdates.push("credits.json", "portrait.json");
+    }
+
+    let assetDirectoryMoved = false;
     try {
-      await writeFile(tempPath, nextText, "utf8");
-      await rename(tempPath, speciesListPath);
+      if (safeNameChanged && existsSync(oldAssetDirectory)) {
+        closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(oldAssetDirectory)));
+        await rename(oldAssetDirectory, newAssetDirectory);
+        assetDirectoryMoved = true;
+      }
+
+      await writeJsonAtomic(speciesListPath, inputList);
+      if (speciesDataChanged) await writeJsonAtomic(speciesDataPath, speciesData);
+      if (registryChanged) await writeJsonAtomic(assetOverridesPath, registry);
+      if (assessmentChanged) await writeJsonAtomic(assessmentIdsPath, assessmentIds);
+      if (reportChanged && report) await writeJsonAtomic(reportPath, report);
+      if (manualMapTextNext !== manualMapText) await writeTextAtomic(manualMapOverridesPath, manualMapTextNext);
+
+      const metadataDirectory = safeNameChanged ? newAssetDirectory : oldAssetDirectory;
+      for (const fileName of metadataUpdates) {
+        const metadataPath = join(metadataDirectory, fileName);
+        if (!existsSync(metadataPath)) continue;
+        const metadata = updateAssetMetadataNames(
+          JSON.parse(await readFile(metadataPath, "utf8")),
+          newGermanName,
+        );
+        await writeJsonAtomic(metadataPath, metadata);
+      }
     } catch (error) {
-      await unlink(tempPath).catch(() => {});
+      if (assetDirectoryMoved && existsSync(newAssetDirectory) && !existsSync(oldAssetDirectory)) {
+        await rename(newAssetDirectory, oldAssetDirectory).catch(() => {});
+      }
+      await writeFile(speciesListPath, sourceText, "utf8").catch(() => {});
+      if (speciesDataChanged) await writeFile(speciesDataPath, speciesDataText, "utf8").catch(() => {});
+      if (registryChanged) await writeFile(assetOverridesPath, registryText, "utf8").catch(() => {});
+      if (assessmentChanged) await writeFile(assessmentIdsPath, assessmentText, "utf8").catch(() => {});
+      if (reportChanged && reportText) await writeFile(reportPath, reportText, "utf8").catch(() => {});
+      if (manualMapTextNext !== manualMapText) {
+        await writeFile(manualMapOverridesPath, manualMapText, "utf8").catch(() => {});
+      }
       throw error;
     }
 
@@ -5253,7 +5533,10 @@ export async function createExplorerServer({
       species: model.species.find((entry) => entry.id === id) ?? null,
       summary: model.summary,
       validation: model.validation,
-      pipelineRequired: true,
+      oldSafeName,
+      newSafeName,
+      safeNameChanged,
+      pipelineRequired,
     };
   }
 
