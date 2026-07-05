@@ -1,6 +1,6 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-06-30
+Stand: 2026-07-05
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
@@ -42,8 +42,9 @@ angezeigt:
 
 Vorhandene Dateien werden dafür unter `species-explorer/pipeline-asset-backups/` vorübergehend gesichert. Der
 Prüfdialog zeigt bei Karten die bisherige und die gefundene Karte nebeneinander; bei Sounds zeigt er den bisherigen
-Sound und den neu gefundenen Kandidaten nebeneinander, jeweils mit Audio und Spektrogramm. Der Ordner ist ignoriert
-und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt
+Sound und den neu gefundenen Kandidaten nebeneinander, jeweils mit Audio, Spektrogramm und Lizenzstatus `frei` oder
+`NC`. Der Beschreibungstext des gefundenen Sounds nennt bewusst keinen produktiven Dateipfad, damit im Dialog die
+fachliche Entscheidung im Vordergrund bleibt. Der Ordner ist ignoriert und wird nach Abschluss entfernt. Wird eine Alternative abgelehnt
 oder der bisherige Sound behalten, stellt der Explorer die gesicherten Dateien vor Commit und Push wieder her.
 
 Bei der ausdrücklichen Sound-Ablehnung wird die neue Quelle in `species-assets-overrides.json` unter

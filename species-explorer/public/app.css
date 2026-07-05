@@ -339,6 +339,42 @@ button.danger,
   white-space: pre-wrap;
 }
 
+.quick-confirm-dialog {
+  width: min(560px, calc(100vw - 48px));
+}
+
+.quick-confirm-form {
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.quick-confirm-form .eyebrow {
+  margin: 0;
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.quick-confirm-form h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.quick-confirm-form p {
+  margin: 0;
+  color: #34433c;
+}
+
+.quick-confirm-form .dialog-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .pipeline-preview-content h5,
 #pipeline-preview-content h5 {
   margin: 12px 0 5px;
@@ -976,8 +1012,15 @@ button:focus-visible {
 }
 
 .detail-header h2 {
-  margin: 0 0 3px;
+  margin: 0;
   font-size: 1.55rem;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .detail-meta {
@@ -1006,7 +1049,7 @@ button:focus-visible {
 .detail-badges {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
 }
 
@@ -1103,9 +1146,18 @@ button:focus-visible {
   border-bottom: 0;
 }
 
-.inline-edit-open {
+.section-heading-actions {
   align-self: center;
   margin-right: 10px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.inline-edit-open,
+.inline-delete-open {
+  align-self: center;
   padding: 6px 9px;
   color: var(--green);
   background: var(--green-soft);
@@ -1113,6 +1165,12 @@ button:focus-visible {
   border-radius: 4px;
   font-size: 0.72rem;
   font-weight: 750;
+}
+
+.inline-delete-open {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: #dfb2b2;
 }
 
 .map-frame {

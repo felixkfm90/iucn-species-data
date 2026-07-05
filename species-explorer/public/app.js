@@ -332,6 +332,21 @@ function setValidationCardState(card, ok) {
   card.classList.toggle("error", !ok);
 }
 
+function pluralize(count, singular, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function updateProcessLog(lines = []) {
+  const logLines = Array.isArray(lines) ? lines : [];
+  elements.pipelineLogDetails.hidden = logLines.length === 0;
+  elements.pipelineLog.textContent = logLines.join("\n");
+  if (!elements.pipelineLogDetails.hidden) {
+    requestAnimationFrame(() => {
+      elements.pipelineLog.scrollTop = elements.pipelineLog.scrollHeight;
+    });
+  }
+}
+
 function renderDatabaseStatus(stateName = "") {
   const activeBackupStatus = state.backupStatusSnapshot?.status === "running" ? "backup" : "";
   const activePipelineStatus = state.pipelineStatusSnapshot?.status === "running"
@@ -372,12 +387,14 @@ function updateValidation(validation) {
 
   const assetsOk = validation.assets.issueSpeciesCount === 0;
   const missingPortraitCount = validation.special.missingPortraitCount ?? 0;
+  const missingSoundKnownCount = validation.special.missingSoundKnownCount ?? 0;
+  const manualSoundCount = validation.special.manualSoundCount ?? 0;
   elements.validationAssets.textContent = missingPortraitCount
     ? `${validation.assets.completeSpeciesCount} vollständig · ${missingPortraitCount} Portraits fehlen`
     : `${validation.assets.completeSpeciesCount} vollständig`;
   elements.validationAssetsDetail.textContent = assetsOk
-    ? (validation.special.soundCareCount
-      ? `Kernassets vollständig · ${validation.special.soundCareCount} Soundhinweis(e)`
+    ? (missingSoundKnownCount || manualSoundCount
+      ? `Kernassets vollständig · ${pluralize(missingSoundKnownCount + manualSoundCount, "Soundhinweis", "Soundhinweise")}`
       : "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden")
     : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
   setValidationCardState(elements.validationAssetsCard, assetsOk);
@@ -390,7 +407,8 @@ function updateValidation(validation) {
 
   elements.validationSpecial.textContent =
     `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`
-    + `${validation.special.soundCareCount ? ` · ${validation.special.soundCareCount} Sound${validation.special.soundCareCount === 1 ? "" : "s"}` : ""}`;
+    + `${manualSoundCount ? ` · ${pluralize(manualSoundCount, "manueller Sound", "manuelle Sounds")}` : ""}`
+    + `${missingSoundKnownCount ? ` · ${pluralize(missingSoundKnownCount, "fehlender Sound", "fehlende Sounds")}` : ""}`;
 
   const detailItems = [];
   if (!dataOk) {
@@ -410,15 +428,27 @@ function updateValidation(validation) {
     if (missingPortraitCount) {
       detailItems.push(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`);
     }
-    if (validation.special.soundCareCount) {
+    if (missingSoundKnownCount) {
       detailItems.push(
-        `Soundhinweise: ${validation.special.soundCareCount} Art(en) ohne automatische Tonquelle oder mit manueller Pflege`,
+        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`,
       );
     }
-  } else if (validation.special.soundCareCount) {
-    detailItems.push(
-      `Soundhinweise: ${validation.special.soundCareCount} Art(en) ohne automatische Tonquelle oder mit manueller Pflege`,
-    );
+    if (manualSoundCount) {
+      detailItems.push(
+        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`,
+      );
+    }
+  } else {
+    if (missingSoundKnownCount) {
+      detailItems.push(
+        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`,
+      );
+    }
+    if (manualSoundCount) {
+      detailItems.push(
+        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`,
+      );
+    }
   }
   for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
     const parts = [];
@@ -528,6 +558,21 @@ function inlineEditButton(section) {
   `;
 }
 
+function inlineDeleteButton(assetType, label) {
+  return `
+    <button class="inline-delete-open ${escapeHtml(assetType)}-delete-button danger edit-only" type="button">
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
+function sectionActions(editSection = "", deleteAssetType = "", deleteLabel = "") {
+  const actions = [];
+  if (editSection) actions.push(inlineEditButton(editSection));
+  if (deleteAssetType && deleteLabel) actions.push(inlineDeleteButton(deleteAssetType, deleteLabel));
+  return actions.length ? `<div class="section-heading-actions edit-only">${actions.join("")}</div>` : "";
+}
+
 function mapPanel(asset, alt, editSection = "") {
   const mapUrl = versionedAssetUrl(asset.url, asset);
   const content = asset.exists
@@ -542,7 +587,7 @@ function mapPanel(asset, alt, editSection = "") {
     <section class="map-panel">
       <div class="section-heading">
         <h3 class="section-title">Verbreitungskarte${asset.exists ? ` · ${formatBytes(asset.bytes)}` : ""}</h3>
-        ${editSection ? inlineEditButton(editSection) : ""}
+        ${sectionActions(editSection, editSection && asset.exists ? "map" : "", "Karte löschen")}
       </div>
       <div class="map-frame">${content}</div>
     </section>
@@ -557,7 +602,7 @@ function speciesImagePanel(species) {
       <section class="species-image-panel">
         <div class="section-heading">
           <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
-          ${species.inInput ? inlineEditButton("portrait") : ""}
+          ${sectionActions(species.inInput ? "portrait" : "", species.inInput ? "portrait" : "", "Artporträt löschen")}
         </div>
         <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
           <img
@@ -574,7 +619,7 @@ function speciesImagePanel(species) {
     <section class="species-image-panel">
       <div class="section-heading">
         <h3 class="section-title">Artporträt</h3>
-        ${species.inInput ? inlineEditButton("portrait") : ""}
+        ${sectionActions(species.inInput ? "portrait" : "")}
       </div>
       <div class="species-image-placeholder">
         <strong>${escapeHtml(species.germanName)}</strong>
@@ -1145,9 +1190,11 @@ function setupAssetReview() {
     };
     elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => {
       const labels = decisionLabels(asset);
-      const sourceSuffix = asset.type === "sound" && asset.sourceLabel
-        ? ` · ${asset.sourceLabel}`
-        : "";
+      const currentSoundKind = asset.previousSourceLabel || (asset.previousIsNc === true ? "NC" : "frei");
+      const foundSoundKind = asset.sourceLabel || (asset.isNc ? "NC" : "frei");
+      const metaLine = asset.type === "sound"
+        ? `${asset.scientificName} · gefundener Sound: ${foundSoundKind}`
+        : `${asset.scientificName} · ${asset.file}`;
       return `
       <article class="asset-review-item" data-index="${index}" data-type="${escapeHtml(asset.type)}">
         <div class="asset-review-preview">
@@ -1188,7 +1235,7 @@ function setupAssetReview() {
               <div class="asset-review-sound-compare">
                 ${asset.previousUrl ? `
                   <div class="asset-review-sound-preview">
-                    <strong>Aktueller Sound</strong>
+                    <strong>Aktueller Sound (${escapeHtml(currentSoundKind)})</strong>
                     ${asset.previousSpectrogramUrl ? `
                       <button
                         class="asset-review-spectrogram"
@@ -1203,7 +1250,7 @@ function setupAssetReview() {
                   </div>
                 ` : ""}
                 <div class="asset-review-sound-preview">
-                  <strong>Gefundener Sound (${escapeHtml(asset.sourceLabel || "unbekannt")})</strong>
+                  <strong>Gefundener Sound (${escapeHtml(foundSoundKind)})</strong>
                   ${asset.spectrogramUrl ? `
                     <button
                       class="asset-review-spectrogram"
@@ -1222,7 +1269,7 @@ function setupAssetReview() {
         <div class="asset-review-copy">
           <div>
             <strong>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.label)}</strong>
-            <p>${escapeHtml(asset.scientificName)} · ${escapeHtml(asset.file)}${escapeHtml(sourceSuffix)}</p>
+            <p>${escapeHtml(metaLine)}</p>
           </div>
           <div class="asset-review-options">
             <label>
@@ -1705,10 +1752,14 @@ function setupPipelineControl() {
     const pendingMoreRows = pendingFiles.length > 12
       ? `<li>${pendingFiles.length - 12} weitere Datei(en)</li>`
       : "";
+    const affectedSpeciesCount = Number.isFinite(result.affectedSpeciesCount)
+      ? result.affectedSpeciesCount
+      : result.targetCount;
     const transferSummary = result.mode === "transfer"
       ? `
         <p>
-          <strong>${result.targetCount}</strong> Art(en) mit geänderten Eingabefeldern,
+          <strong>${affectedSpeciesCount}</strong> Art(en) betroffen:
+          <strong>${result.targetCount}</strong> mit geänderten Eingabefeldern,
           <strong>${result.pendingFileCount || 0}</strong> lokale Dateiänderung(en).
         </p>
       `
@@ -2007,8 +2058,7 @@ function setupPipelineControl() {
       elements.pipelineStatusDetail.className = `pipeline-dialog-status${
         status.status === "awaiting-review" ? " review" : status.status !== "idle" ? ` ${status.status}` : ""
       }`;
-      elements.pipelineLogDetails.hidden = status.log.length === 0;
-      elements.pipelineLog.textContent = status.log.join("\n");
+      updateProcessLog(status.log);
 
       if (dialog.open && active) {
         const presentation = statusPresentation(status);
@@ -2078,8 +2128,7 @@ function setupPipelineControl() {
             ? `${backupLabel()} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
             : "Kein Backup aktiv.";
         elements.pipelineStatusDetail.className = `pipeline-dialog-status${status.status !== "idle" ? ` ${status.status}` : ""}`;
-        elements.pipelineLogDetails.hidden = status.log.length === 0;
-        elements.pipelineLog.textContent = status.log.join("\n");
+        updateProcessLog(status.log);
       }
 
       state.backupWasRunning = active;
@@ -3317,6 +3366,7 @@ function setupSpeciesEditor(species) {
   const portraitCopyButton = elements.detailPanel.querySelector(".portrait-copy-button");
   const portraitFileInput = elements.detailPanel.querySelector(".portrait-file-input");
   const portraitPreviewButton = elements.detailPanel.querySelector(".portrait-preview-button");
+  const portraitKeepButton = elements.detailPanel.querySelector(".portrait-keep-button");
   const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
   const portraitDeleteButton = elements.detailPanel.querySelector(".portrait-delete-button");
   if (!dialog || !openButtons.length || !closeButtons.length || !form || !preview || !previewRows) return;
@@ -3442,6 +3492,7 @@ function setupSpeciesEditor(species) {
     if (portraitPromptButton) portraitPromptButton.disabled = busy;
     if (portraitCopyButton) portraitCopyButton.disabled = busy || !portraitPromptText;
     if (portraitPreviewButton) portraitPreviewButton.disabled = busy;
+    if (portraitKeepButton) portraitKeepButton.disabled = busy;
     if (portraitSaveButton) portraitSaveButton.disabled = busy || !portraitPreviewToken;
     if (portraitDeleteButton) portraitDeleteButton.disabled = busy;
     if (portraitFileInput) portraitFileInput.disabled = busy;
@@ -3822,6 +3873,12 @@ function setupSpeciesEditor(species) {
   mapDeleteButton?.addEventListener("click", () => deleteSingleAsset("map"));
   portraitDeleteButton?.addEventListener("click", () => deleteSingleAsset("portrait"));
   soundDeleteButton?.addEventListener("click", () => deleteSingleAsset("sound"));
+
+  portraitKeepButton?.addEventListener("click", () => {
+    resetPortraitPreview();
+    if (portraitFileInput) portraitFileInput.value = "";
+    setPortraitMessage("Bisheriges Artporträt bleibt unverändert.", "info");
+  });
 
   soundRejectCurrentButton?.addEventListener("click", async () => {
     const shouldReject = window.confirm(
@@ -4385,7 +4442,10 @@ function renderDetail(species) {
 
     <header class="detail-header">
       <div>
-        <h2>${escapeHtml(species.germanName)}</h2>
+        <div class="detail-title-row">
+          <h2>${escapeHtml(species.germanName)}</h2>
+          <div class="detail-badges">${badges}</div>
+        </div>
         <p class="scientific-name">${escapeHtml(species.scientificName)}</p>
       </div>
       <div class="detail-meta">
@@ -4395,7 +4455,6 @@ function renderDetail(species) {
             <button class="delete-species-open danger" type="button">Löschen</button>
           </div>
         ` : ""}
-        <div class="detail-badges">${badges}</div>
         <p class="detail-fetched-at">
           IUCN-Daten abgerufen: <strong>${escapeHtml(formatIucnFetchDate(species.iucn.fetchedAt))}</strong>
         </p>
@@ -4415,7 +4474,13 @@ function renderDetail(species) {
         <section class="audio-section">
           <div class="section-heading">
             <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
-            ${species.inInput ? inlineEditButton("sound") : ""}
+            ${sectionActions(
+              species.inInput ? "sound" : "",
+              species.inInput && (species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists)
+                ? "sound"
+                : "",
+              "Soundpaket löschen",
+            )}
           </div>
           <div class="audio-body">
             ${audio}
@@ -4599,9 +4664,6 @@ function renderDetail(species) {
               </p>
             </div>
             <div class="asset-header-actions">
-              ${species.assets.portrait.exists ? `
-                <button class="portrait-delete-button danger" type="button">Artporträt löschen</button>
-              ` : ""}
               <span class="portrait-care-state">
                 ${species.assets.portrait.exists ? "Porträt vorhanden" : "Noch kein Porträt"}
               </span>
@@ -4675,6 +4737,9 @@ function renderDetail(species) {
           </section>
 
           <div class="portrait-edit-actions">
+            ${species.assets.portrait.exists ? `
+              <button class="portrait-keep-button" type="button">Bisheriges Artporträt beibehalten</button>
+            ` : ""}
             <button class="portrait-preview-button" type="button">Bild prüfen</button>
             <button class="portrait-save-button" type="button" disabled>Artporträt übernehmen</button>
           </div>
@@ -4696,9 +4761,6 @@ function renderDetail(species) {
                 >IUCN-Karte im Browser öffnen</a>
               ` : ""}
               <button class="map-auto-search-button" type="button">Automatisch suchen</button>
-              ${species.assets.map.exists ? `
-                <button class="map-delete-button danger" type="button">Karte löschen</button>
-              ` : ""}
               <span class="map-care-state">
                 ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
               </span>
@@ -4773,9 +4835,6 @@ function renderDetail(species) {
                 <button class="sound-auto-search-button" type="button">
                   ${species.assets.sound.exists ? "Alternative suchen" : "Automatisch suchen"}
                 </button>
-              ` : ""}
-              ${species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists ? `
-                <button class="sound-delete-button danger" type="button">Soundpaket löschen</button>
               ` : ""}
               <span class="sound-care-state">
                 ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}

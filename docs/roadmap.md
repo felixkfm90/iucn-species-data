@@ -418,8 +418,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   gespeicherte `sound.rejectedSources` erhalten. Nach still gestarteten Sound-Alternativläufen aktualisiert der
   offene Tierstimmen-Bearbeitungsdialog aktuellen Sound und Credits aus dem neu geladenen Modell. Der Sound-
   Prüfdialog bleibt nach einer Ablehnung geöffnet und zeigt den nächsten Kandidaten im selben Fenster. Die
-  Detailansicht verwendet versionsbasierte lokale Asset-URLs, damit Sound und Spektrogramm nach schnellen
-  Austausch-/Ablehnzyklen nicht aus unterschiedlichen Browsercache-Ständen stammen.
+    Detailansicht verwendet versionsbasierte lokale Asset-URLs, damit Sound und Spektrogramm nach schnellen
+    Austausch-/Ablehnzyklen nicht aus unterschiedlichen Browsercache-Ständen stammen.
+    Der Datenbank-Aktionen-Dialog scrollt die letzte Prozessausgabe während laufender Prozesse automatisch ans Ende.
+    Pipeline, Assetprüfung, Transfer, Bereinigung und NAS-Backup laufen exklusiv; der Server blockiert parallele
+    Datenbank-Aktionen, statt mehrere Schreibprozesse gleichzeitig auf dieselben Projektdateien loszulassen.
 - 7.7 Asset-Verwaltung: abgeschlossen und von Felix freigegeben am 2026-06-21, siehe
   `docs/asset-management-plan.md`.
   Das maschinenlesbare Override-Register und der Pipeline-Schutz sind vorhanden. 7.7.2 Kartenverwaltung ist
@@ -455,9 +458,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Transcode-Problemen nicht uebernommen werden koennen, beenden die Suche nicht mehr; die Pipeline prueft dann die
     naechste Quelle. Eine Windows-Dateisperre auf der produktiven MP3 wird als eigener Warnzustand gemeldet.
     Seit 2026-06-27 werden Arten ohne automatisch auffindbare Tonquelle als Hinweis `S` geführt. Beispiel:
-    `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem.
-    Priorisierte Bedienungs- und Ausbauschritte: Einzelne Assets einer Art gezielt löschen ist seit 2026-07-04
-    umgesetzt. Deutschen und wissenschaftlichen Artnamen umbenennen ist seit 2026-07-05 umgesetzt; der
+    `Grüner Leguan`. Sound, Credits und Spektrogramm fehlen dort bewusst und zählen nicht als Assetproblem. Die
+    Validierung unterscheidet sichtbar zwischen fehlendem Sound ohne verwendbare automatische Tonquelle und manuell
+    gepflegten Sounds.
+    Priorisierte Bedienungs- und Ausbauschritte: Einzelne Assets einer Art gezielt löschen ist seit 2026-07-05
+    direkt in den Asset-Kopfzeilen der Artseite umgesetzt. Deutschen und wissenschaftlichen Artnamen umbenennen ist seit 2026-07-05 umgesetzt; der
     wissenschaftliche Name ist per Schloss geschützt und ändert nach Warnbestätigung den URL-Slug mit.
     Assetname/SafeName, Assetordner, Override-Einträge, Assessment-Zuordnung, Report, Kartendokumentation und
     lokale Metadaten werden konsistent mitgeführt. Details: `docs/rename-species-workflow.md`. Offen bleiben:
@@ -470,10 +475,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich und stabiler Hintergrund-Detailbereich während des
     Neue-Art-Assistenten. Offen bleibt: Die Taxonomie-Pyramide soll später deutsche Übersetzungen der einzelnen
     Stufen erhalten und optisch überarbeitet werden.
-    Seit 2026-07-04 können einzelne Assets gezielt gelöscht werden: Karte, Soundpaket und Artportrait werden vor dem
+    Seit 2026-07-05 können einzelne Assets gezielt gelöscht werden: Karte, Soundpaket und Artportrait werden vor dem
     Entfernen unter `species-explorer/asset-backups/` gesichert, aus Override-Register beziehungsweise
-    Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Beim Soundpaket bleiben bereits
-    gemerkte abgelehnte Quellen unter `sound.rejectedSources` erhalten.
+    Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Die Löschknöpfe stehen sichtbar
+    neben `Bearbeiten` in den jeweiligen Asset-Kopfzeilen. Beim Soundpaket bleiben bereits gemerkte abgelehnte
+    Quellen unter `sound.rejectedSources` erhalten. Beim Artportrait-Import kann eine geprüfte Vorschau verworfen
+    und das bisherige Portrait beibehalten werden.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im
@@ -535,6 +542,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   mit Frontend-JavaScript, JSON-Daten, `species-assets/`, `graphics/`, `docs/`, `README.md` und `.nojekyll`.
   Ziel ist, die wiederholten Deploy-Fehler `Deployment failed, try again later` nach erfolgreichem Build und erstem
   Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
+  Seit 2026-07-05 werden Pages-Läufe in der gemeinsamen `pages`-Concurrency-Gruppe nicht mehr abgebrochen, sondern
+  serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
 
 ## Phase 8 - Ausbau
 

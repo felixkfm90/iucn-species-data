@@ -104,6 +104,9 @@ benoetigten statischen Dateien:
 
 Die GitHub-Pages-Einstellung muss auf `Source: GitHub Actions` stehen. Falls GitHub wieder auf Branch-Deployment
 zeigt, laeuft erneut der alte Standardprozess ueber `main:/` und kann beim Deploy-Schritt sporadisch fehlschlagen.
+Der Pages-Workflow nutzt eine gemeinsame `pages`-Concurrency-Gruppe ohne Abbruch laufender Deployments. Kurz
+hintereinander ausgelöste Veröffentlichungen werden dadurch serialisiert statt einen bereits laufenden
+Pages-Deploy im Hintergrund zu überholen.
 
 Artseiten brauchen diese Container:
 
@@ -371,6 +374,8 @@ Phase 7.6 ist technisch lokal vorbereitet:
 - bei offenen Abweichungen oeffnet dieses Feld direkt den Übertragungslauf; dieser verarbeitet nur geaenderte
   manuelle Eingabefelder und startet keine Karten- oder Soundsuche
 - der Dialog dahinter heißt `Datenbank-Aktionen` und gruppiert Aktualisieren, Backup/Einstellungen und Wartung
+- Datenbank-Aktionen laufen exklusiv: während Pipeline, Assetprüfung, Transfer, Bereinigung oder NAS-Backup aktiv
+  ist, blockiert der Server weitere Datenbank-Aktionen mit verständlicher Meldung
 - die Laufart heißt `Neue/Unvollständige Arten aktualisieren`
 - nach dem Speichern einer neuen Art wird der selektive Lauf sofort angeboten; Abbrechen lässt ihn für später offen
 - externe Änderungen durch Batch-Dateien oder manuelle Pipeline-Aufrufe werden automatisch erkannt; die geöffnete
@@ -430,10 +435,11 @@ Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenz
 angezeigt. Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund erst nach Abschluss neu gerendert,
 damit die Artseite hinter dem Dialog nicht springt.
 
-Seit 2026-07-04 umgesetzt: In den Asset-Bearbeitungsdialogen können Verbreitungskarte, Soundpaket
-(`sound.mp3`, `credits.json`, `spectrogram.webp`) und Artportrait (`portrait.webp`, `portrait.json`) einzeln
+Seit 2026-07-05 umgesetzt: Verbreitungskarte, Soundpaket (`sound.mp3`, `credits.json`, `spectrogram.webp`) und
+Artportrait (`portrait.webp`, `portrait.json`) können direkt in der jeweiligen Asset-Kopfzeile der Artseite einzeln
 gelöscht werden. Vor dem Löschen wird lokal unter `species-explorer/asset-backups/` gesichert. Die Änderung bleibt
-lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen` veröffentlicht.
+lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen` veröffentlicht. Beim
+Artportrait-Import kann eine geprüfte Vorschau außerdem verworfen werden, ohne das bisherige Portrait zu ersetzen.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und

@@ -474,8 +474,13 @@ Umgesetzt:
   `Datenbank aktuell`; bei roten Eingabeabweichungen oder lokal gespeicherten Assetaenderungen öffnet ein Klick
   direkt den Transferlauf ohne Karten- oder Soundsuche. Dieser Status- und Übertragungsbutton bleibt auch im
   Lesemodus sichtbar; ohne offene Änderungen öffnet er dort keine Wartungsaktionen.
+- die Transfer-Vorschau zeigt die betroffenen Arten auch dann korrekt, wenn nur lokale Assetdateien geändert wurden
+  und keine manuellen Eingabefelder offen sind.
 - `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im Hintergrund, ohne den
   allgemeinen Datenbank-Aktionen-Dialog zu öffnen.
+- Datenbank-Aktionen laufen exklusiv. Während Pipeline, Assetprüfung, Transfer, Bereinigung oder NAS-Backup aktiv
+  ist, blockiert der Server weitere Datenbank-Aktionen, damit keine zwei Prozesse dieselben JSON- und Assetdateien
+  gleichzeitig schreiben.
 - beim Schliessen der Desktop-App warnt der Explorer vor offenen, noch nicht uebertragenen Aenderungen; der Nutzer
   kann zur App zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen
 - es öffnet einen Dialog zur Auswahl von `Neue/Unvollstaendige Arten aktualisieren`, `Alle Arten aktualisieren`
@@ -578,6 +583,10 @@ geschützt; die betroffenen Pfade werden ueber `Änderungen übertragen` committ
 Versionen je Art begrenzt und teilen sich mit Kartenbackups die globale Grenze von 500 MB. Vierzehn Explorer-Tests
 sind erfolgreich. Die Sicherheits- und Bedienkonzepte wurden als Abschluss von Phase 7.7 akzeptiert; ein unnötiger
 produktiver Austausch eines bereits gültigen Sounds ist dafür nicht erforderlich.
+
+Seit 2026-07-05 stehen die Löschknöpfe für Verbreitungskarte, Artportrait und Soundpaket direkt in den
+Asset-Kopfzeilen der Artseite neben `Bearbeiten`. Beim Artportrait-Import kann eine geprüfte Vorschau verworfen und
+das bisherige Portrait ausdrücklich beibehalten werden.
 
 Formularlayout seit 2026-06-21:
 

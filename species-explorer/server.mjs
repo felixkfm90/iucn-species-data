@@ -922,6 +922,9 @@ function publicPipelinePlan(plan) {
     removed: plan.removed,
     pendingFileCount: plan.pendingFileCount ?? 0,
     pendingFiles: Array.isArray(plan.pendingFiles) ? plan.pendingFiles : [],
+    pendingAssetSpeciesCount: plan.pendingAssetSpeciesCount ?? 0,
+    pendingAssetSpecies: Array.isArray(plan.pendingAssetSpecies) ? plan.pendingAssetSpecies : [],
+    affectedSpeciesCount: plan.affectedSpeciesCount ?? plan.targetCount,
     hasWork: plan.hasWork,
   };
 }
@@ -2133,6 +2136,8 @@ export async function createExplorerServer({
       "species-assets",
     ];
     const result = await runCommandCapture("git", [
+      "-c",
+      "core.quotepath=false",
       "status",
       "--porcelain",
       "--untracked-files=all",
@@ -2159,6 +2164,42 @@ export async function createExplorerServer({
       })
       .filter((entry) => entry.path);
     return { files, count: files.length, error: "" };
+  }
+
+  function normalizePendingPath(pathValue) {
+    let normalized = String(pathValue ?? "").trim();
+    if (normalized.includes(" -> ")) normalized = normalized.split(" -> ").pop().trim();
+    normalized = normalized.replace(/^"|"$/g, "");
+    return normalized.replace(/\\/g, "/");
+  }
+
+  function pendingAssetSpeciesFromFiles(files, speciesList) {
+    const bySafeName = new Map(
+      speciesList.map((entry) => {
+        const safeName = sanitizeAssetName(entry.german);
+        const scientificName = `${entry.genus ?? ""} ${entry.species ?? ""}`.trim();
+        return [safeName.toLocaleLowerCase("de"), {
+          slug: `${entry.genus ?? ""}${entry.species ?? ""}`.toLocaleLowerCase("de"),
+          safeName,
+          germanName: entry.german,
+          scientificName,
+        }];
+      }),
+    );
+    const affected = new Map();
+    for (const file of files ?? []) {
+      const match = normalizePendingPath(file.path).match(/^species-assets\/([^/]+)\//);
+      if (!match) continue;
+      const safeName = match[1];
+      const species = bySafeName.get(safeName.toLocaleLowerCase("de")) ?? {
+        slug: "",
+        safeName,
+        germanName: safeName,
+        scientificName: "",
+      };
+      affected.set(safeName.toLocaleLowerCase("de"), species);
+    }
+    return [...affected.values()].sort((a, b) => a.germanName.localeCompare(b.germanName, "de"));
   }
 
   async function saveBackupSettings(payload = {}) {
@@ -2235,9 +2276,17 @@ export async function createExplorerServer({
     let pendingProjectChanges = { files: [], count: 0, error: "" };
     if (mode === "transfer") {
       pendingProjectChanges = await readPendingProjectChanges();
+      const pendingAssetSpecies = pendingAssetSpeciesFromFiles(pendingProjectChanges.files, speciesList);
+      const affectedSpeciesKeys = new Set([
+        ...(plan.targets ?? []).map((target) => String(target.safeName ?? target.slug ?? "").toLocaleLowerCase("de")),
+        ...pendingAssetSpecies.map((entry) => entry.safeName.toLocaleLowerCase("de")),
+      ].filter(Boolean));
       plan.pendingFiles = pendingProjectChanges.files;
       plan.pendingFileCount = pendingProjectChanges.count;
       plan.pendingFileError = pendingProjectChanges.error;
+      plan.pendingAssetSpecies = pendingAssetSpecies;
+      plan.pendingAssetSpeciesCount = pendingAssetSpecies.length;
+      plan.affectedSpeciesCount = affectedSpeciesKeys.size;
       plan.hasWork = plan.hasWork || pendingProjectChanges.count > 0;
     }
     return {
@@ -2262,6 +2311,9 @@ export async function createExplorerServer({
       manualChangeCount: publicPlan.targetCount,
       pendingFileCount: publicPlan.pendingFileCount,
       pendingFiles: publicPlan.pendingFiles,
+      pendingAssetSpeciesCount: publicPlan.pendingAssetSpeciesCount,
+      pendingAssetSpecies: publicPlan.pendingAssetSpecies,
+      affectedSpeciesCount: publicPlan.affectedSpeciesCount,
       targets: publicPlan.targets,
       error: plan.pendingFileError || "",
     };
@@ -2275,6 +2327,21 @@ export async function createExplorerServer({
         "Pipeline-Modus muss all, missing, manual-maps, nc-sounds, transfer oder cleanup sein",
       );
       error.statusCode = 400;
+      throw error;
+    }
+    if (isPipelineActive()) {
+      const error = new Error("Es läuft bereits eine Datenbank-Aktion. Bitte den laufenden Prozess abwarten.");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (isBackupActive()) {
+      const error = new Error("Während eines laufenden NAS-Backups kann keine Datenbank-Aktion gestartet werden.");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive) {
+      const error = new Error("Während eines laufenden Schreibvorgangs kann keine Datenbank-Aktion gestartet werden.");
+      error.statusCode = 409;
       throw error;
     }
 
@@ -2479,6 +2546,7 @@ export async function createExplorerServer({
       for (const [type, fileName] of [["map", "map.jpg"], ["sound", "sound.mp3"]]) {
         const filePath = join(assetDir, fileName);
         const backupFiles = {};
+        const previousCredits = type === "sound" ? readAssetCredits(assetDir) : {};
         const relevantBackup = keepBackups && ["map", "sound"].includes(type);
         if (keepBackups && relevantBackup && existsSync(filePath)) {
           const names = type === "sound"
@@ -2505,6 +2573,13 @@ export async function createExplorerServer({
           exists: existsSync(filePath),
           hash: assetCompositeHash(assetDir, type),
           backupFiles,
+          previousIsNc: type === "sound" ? isNonCommercialLicense(previousCredits.license) : false,
+          previousSourceLabel: type === "sound"
+            ? (isNonCommercialLicense(previousCredits.license) ? "NC" : "frei")
+            : "",
+          previousLicense: type === "sound"
+            ? String(previousCredits.license ?? "").trim()
+            : "",
           override: structuredClone(registry.assets?.[target.safeName]?.[type] ?? null),
           spectrogramOverride: type === "sound"
             ? structuredClone(registry.assets?.[target.safeName]?.spectrogram ?? null)
@@ -2556,6 +2631,13 @@ export async function createExplorerServer({
             changed,
             refreshed: refreshedByPipeline,
             previouslyExisting: before.exists,
+            previousIsNc: type === "sound" ? Boolean(before.previousIsNc) : false,
+            previousSourceLabel: type === "sound"
+              ? String(before.previousSourceLabel ?? "").trim()
+              : "",
+            previousLicense: type === "sound"
+              ? String(before.previousLicense ?? "").trim()
+              : "",
             reviewMode: plan.mode,
             isNc,
             sourceLabel: type === "sound"
@@ -2896,6 +2978,16 @@ export async function createExplorerServer({
     cleanupPreviewTokens();
     if (pipelineState.status === "running" || pipelineState.status === "awaiting-review" || pipelineProcess) {
       const error = new Error("Es läuft bereits eine Pipeline");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (isBackupActive()) {
+      const error = new Error("Während eines laufenden NAS-Backups kann keine Datenbank-Aktion gestartet werden.");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (assetWriteActive) {
+      const error = new Error("Während eines laufenden Schreibvorgangs kann keine Datenbank-Aktion gestartet werden.");
       error.statusCode = 409;
       throw error;
     }
@@ -3263,6 +3355,10 @@ export async function createExplorerServer({
 
   function isPipelineActive() {
     return pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review";
+  }
+
+  function isBackupActive() {
+    return backupProcess || backupState.status === "running";
   }
 
   function appendBackupLog(text) {

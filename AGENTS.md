@@ -252,6 +252,9 @@ Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
   `.github/workflows/pages.yml` und das kontrollierte `_site/`-Artefakt aus `scripts/prepare-pages-artifact.mjs`.
   Branch-Deployment aus `main:/` ist nicht mehr der Sollzustand, weil dabei der komplette Repo-Root ueber den
   GitHub-Standardlauf deployed wird und der Deploy-Schritt wiederholt erst nach einem Rerun erfolgreich war.
+  Pages-Laeufe verwenden die gemeinsame Concurrency-Gruppe `pages` mit `cancel-in-progress: false`, damit mehrere
+  kurz nacheinander ausgelöste Veröffentlichungen serialisiert werden und ein noch synchronisierender Deploy nicht
+  durch einen neuen Lauf ueberholt wird.
   Fuer Diagnose ist lokal `gh` nutzbar. Falls `gh` in Codex ueber `127.0.0.1:9` scheitert,
   Proxy-Umgebungsvariablen fuer den Befehl leeren:
   `$env:HTTP_PROXY=''; $env:HTTPS_PROXY=''; $env:ALL_PROXY=''; $env:NO_PROXY='github.com,api.github.com'`.
@@ -498,8 +501,10 @@ Aktuelle Planung:
   `Änderungen übertragen` und bei konsistentem Stand gruen mit `Datenbank aktuell`; ein Klick auf den roten Zustand
   startet den Transferlauf fuer geaenderte Eingabefelder und lokale Assetdateien ohne Karten- oder Soundsuche. Der
   Status- und Uebertragungsbutton bleibt auch im Lesemodus sichtbar; ohne offene Aenderungen oeffnet er dort keine
-  Wartungsaktionen. `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im
-  Hintergrund, ohne den allgemeinen Datenbank-Aktionen-Dialog zu oeffnen. Beim
+  Wartungsaktionen. Die Transfer-Vorschau zaehlt auch Arten, bei denen nur lokale Assetdateien geaendert wurden.
+  Datenbank-Aktionen laufen exklusiv: waehrend Pipeline, Assetpruefung, Transfer, Bereinigung oder NAS-Backup aktiv
+  ist, blockiert der Server weitere Datenbank-Aktionen. `Art aktualisieren` fragt je Art nur kurz nach und startet
+  den gezielten Lauf direkt im Hintergrund, ohne den allgemeinen Datenbank-Aktionen-Dialog zu oeffnen. Beim
   Schliessen der Desktop-App warnt der Explorer vor noch nicht uebertragenen Aenderungen; der Nutzer kann zur App
   zurueckkehren oder trotzdem schliessen und die Uebertragung beim naechsten Start nachholen. Der Dialog dahinter
   heisst `Datenbank-Aktionen` und trennt Aktualisieren, Backup/Einstellungen sowie Wartung in aufklappbare Gruppen.
@@ -541,7 +546,9 @@ Aktuelle Planung:
   beim Soundimport gesetzt. Danach bleiben die betroffenen Assetpfade lokal vorgemerkt und werden gesammelt ueber
   `Änderungen übertragen` committed und gepusht. Pro Art bleiben
   hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
-  500 MB.
+  500 MB. Die Loeschaktionen fuer Verbreitungskarte, Artportraet und Soundpaket stehen direkt in den
+  Asset-Kopfzeilen der Artseite neben `Bearbeiten`; beim Artportraet-Import kann eine gepruefte Vorschau verworfen
+  und das bisherige Portrait beibehalten werden.
   Im Bearbeitungsmodus kann seit 2026-06-28 auch der aktuell produktive Sound abgelehnt werden. Der Explorer legt ein
   Soundpaket-Backup an, entfernt `sound.mp3`, `credits.json` und `spectrogram.webp`, merkt die Quellkennung unter
   `sound.rejectedSources`, baut den Report neu auf und merkt die Änderung lokal fuer `Änderungen übertragen` vor. Der naechste Sound-Suchlauf
@@ -552,6 +559,8 @@ Aktuelle Planung:
   temporaer, damit nicht derselbe Sound erneut vorgeschlagen wird. Diese gezielte Suche startet im Hintergrund ohne
   das Bearbeitungsfenster oder die Desktop-App zu schliessen und ohne den allgemeinen Datenbank-Aktionen-Dialog
   einzublenden. Der aktuelle Audioplayer wird vor dem Start entladen, damit Windows die produktive MP3 nicht sperrt.
+  Die Validierung unterscheidet in der Oberflaeche zwischen fehlendem Sound ohne verwendbare automatische Tonquelle
+  und manuell gepflegten Sounds.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
   vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und

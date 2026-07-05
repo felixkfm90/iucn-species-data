@@ -2378,10 +2378,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
   );
   assert.match(appSource, /function inlineEditButton\(section\)/);
+  assert.match(appSource, /function inlineDeleteButton\(assetType, label\)/);
+  assert.match(appSource, /function sectionActions\(editSection = ""/);
   assert.match(appSource, /inlineEditButton\("manual"\)/);
   assert.match(appSource, /species\.inInput \? "map" : ""/);
-  assert.match(appSource, /inlineEditButton\("sound"\)/);
-  assert.match(appSource, /inlineEditButton\("portrait"\)/);
+  assert.match(appSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);
+  assert.match(appSource, /sectionActions\(species\.inInput \? "portrait" : ""/);
+  assert.match(appSource, /Bisheriges Artporträt beibehalten/);
   assert.match(appSource, /class="refresh-species-open"/);
   assert.match(appSource, /Art aktualisieren/);
   assert.match(appSource, /openPipelinePreview\("all",/);
