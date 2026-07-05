@@ -1,13 +1,13 @@
 {
   "scientific_name": "Ara macao",
   "german_name": "Scharlachara",
-  "recordist": "Carlos Delgado JUMABITA",
-  "country": "Colombia",
-  "location": "Jardín Botánico de Medellin ",
+  "recordist": "Robson Silva e Silva",
+  "country": "Brazil",
+  "location": "Fazenda Fartura, Santana do Araguaia, Pará",
   "quality": "A",
   "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/945991",
-  "rejectionKey": "xeno-canto:945991",
+  "url": "https://xeno-canto.org/728520",
+  "rejectionKey": "xeno-canto:728520",
   "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Ara sp:macao q:A len:25-35\" | page=1"
 }

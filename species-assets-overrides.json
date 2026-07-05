@@ -387,10 +387,10 @@
     "Brauenmotmot": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "42f2d6b7241461282d6cb9a344b6536a064098b40dd876b81bd26ccc4e33da6d",
-        "spectrogramSha256": "f98c76d0a5d984f8343ad0acf6e84541c8e96c403709be813d512575185e89aa",
-        "generatedAt": "2026-07-01T17:19:53.165Z",
-        "verifiedAt": "2026-07-01T17:19:53.666Z"
+        "soundSha256": "3371981d4ef7a1b2922bdf8bb1f4c31a92719ef6c5acb3bad11ff42092fde16d",
+        "spectrogramSha256": "57ed33e945fb38038106ff5d63782154bb675f08908c92aec5d70051c726cb49",
+        "generatedAt": "2026-07-05T08:05:55.778Z",
+        "verifiedAt": "2026-07-05T08:05:56.365Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -401,6 +401,11 @@
         "approvedAt": "2026-06-21T18:26:11.072Z",
         "sha256": "d07fc3426883987a2d408ca37676815af283072fe07b6f33e9852b4abbda67fe",
         "metadataSha256": "b50e7c2d5018124eefdccc1beafefc2984c8f845c25038313120ef6ba71e1077"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-05T08:15:32.489Z"
       }
     },
     "Buchfink": {
@@ -520,10 +525,10 @@
     "Geoffroy-Klammeraffe": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "cdad1e357fccbe1e15ab7c1ea140feaaabd5938103593a7dc65d23f4b61699e9",
-        "spectrogramSha256": "e5d8879a875d9a57642a6be41ca9673c9096ef3cc5e9eeaa9cac835622e63abf",
-        "generatedAt": "2026-07-01T17:19:53.379Z",
-        "verifiedAt": "2026-07-01T17:19:53.668Z"
+        "soundSha256": "6091c895303b109abacedb8cdde954a1ec36758de423bb780927b9674d2998a0",
+        "spectrogramSha256": "a8f6db8b9f6effe2734879beefc021ecf1c1e0e154502974e53c83ebba1d6a84",
+        "generatedAt": "2026-07-05T08:05:56.006Z",
+        "verifiedAt": "2026-07-05T08:05:56.366Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -534,6 +539,11 @@
         "approvedAt": "2026-06-21T18:12:10.892Z",
         "sha256": "32cdf79627473308cc41ad8a02a47650ab14aa0e747d42b87ddcf16a4f67f2cf",
         "metadataSha256": "34973561e74fa6faa81e529c3edae0186fb5a86923cb0d02db86a1314ba8e544"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-05T08:15:32.489Z"
       }
     },
     "Gimpel": {
@@ -988,14 +998,14 @@
         ],
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-04T11:51:10.694Z"
+        "updatedAt": "2026-07-05T08:15:32.489Z"
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "eab196b8113299efff9fa8799013fa81051f973338ac6fee4175695959a1312e",
-        "spectrogramSha256": "d5cc219a3975871c041f64d94804ef0676801d28722d538f3ff2d2ec419443b6",
-        "generatedAt": "2026-07-04T11:49:58.270Z",
-        "verifiedAt": "2026-07-04T11:49:58.288Z"
+        "soundSha256": "60015895c20c68f995c89c64ce80055d6db73093a08630f18bf81d127c2403c6",
+        "spectrogramSha256": "99840d3a1d1e12ea9561668fa562852efae2a848a1a6791e66a64b921f6e559a",
+        "generatedAt": "2026-07-05T08:05:56.361Z",
+        "verifiedAt": "2026-07-05T08:05:56.370Z"
       }
     }
   },
