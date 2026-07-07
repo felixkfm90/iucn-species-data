@@ -374,5 +374,13 @@
     "size": "ca. 81–96 cm",
     "weight": "ca. 900–1.200 g",
     "life_expectancy": "ca. 40–50 Jahre"
+  },
+  {
+    "german": "Eichelhäher",
+    "genus": "Garrulus",
+    "species": "glandarius",
+    "size": "ca. 32–35 cm",
+    "weight": "ca. 140–190 g",
+    "life_expectancy": "ca. 15–18 Jahre"
   }
 ]

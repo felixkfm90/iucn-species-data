@@ -1007,6 +1007,64 @@
         "generatedAt": "2026-07-05T08:05:56.361Z",
         "verifiedAt": "2026-07-05T08:05:56.370Z"
       }
+    },
+    "Eichelhaeher": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-07T15:49:08.774Z",
+        "approvedAt": "2026-07-07T15:49:20.803Z",
+        "sha256": "41160cc4ddc8506160bdd27acf25ff41233674e7206406ffd16cf179cc7a97d1",
+        "metadataSha256": "5f0e5cd6db06ce295f441f38aa54b1cbd2c273e40fca2b76a7b7eaec9c975ef9"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:1104351",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1104351",
+            "recordist": "Christian Kahle",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-07-07T15:51:22.111Z"
+          },
+          {
+            "key": "xeno-canto:918606",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/918606",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-07-07T15:51:33.019Z"
+          },
+          {
+            "key": "xeno-canto:461843",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/461843",
+            "recordist": "Marie-Lan Taÿ Pamart",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "rejectedAt": "2026-07-07T15:52:10.995Z"
+          },
+          {
+            "key": "xeno-canto:461842",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/461842",
+            "recordist": "Marie-Lan Taÿ Pamart",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "rejectedAt": "2026-07-07T15:52:48.378Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-07T15:53:58.938Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "1c48dcf168e01541267c8c11e5b7a8dae3f04b1a16a8510f3f940a197b279f56",
+        "spectrogramSha256": "9774c8bdd927c805486fc7f8b6090cd19e99e916b3536a511d3a49d65fa42195",
+        "generatedAt": "2026-07-07T15:52:51.948Z",
+        "verifiedAt": "2026-07-07T15:52:51.953Z"
+      }
     }
   },
   "spectrogramGenerator": {

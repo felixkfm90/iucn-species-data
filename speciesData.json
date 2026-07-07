@@ -1079,5 +1079,28 @@
     "Species": "macao",
     "Letztes IUCN Update": "2022",
     "Daten abgerufen": "2026-07-05"
+  },
+  {
+    "URLSlug": "garrulusglandarius",
+    "Wissenschaftlicher Name": "Garrulus glandarius",
+    "Deutscher Name": "Eichelhäher",
+    "Gewicht": "ca. 140–190 g",
+    "Größe": "ca. 32–35 cm",
+    "Lebenserwartung": "ca. 15–18 Jahre",
+    "Assessment ID": 153832514,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "24.000.000-46.200.000",
+    "Generationsdauer": "4,74 Jahre",
+    "Kingdom": "ANIMALIA",
+    "Phylum": "CHORDATA",
+    "Class": "AVES",
+    "Order": "PASSERIFORMES",
+    "Family": "CORVIDAE",
+    "Genus": "Garrulus",
+    "Species": "glandarius",
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-07-07"
   }
 ]
