@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-07T15:53:59.227Z",
+  "generatedAt": "2026-07-07T15:57:58.085Z",
   "counts": {
     "totalSpecies": 48,
     "missingSoundMp3": 1,
     "missingSoundCredits": 0,
-    "missingMap": 1,
+    "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 2,
+    "missingSpeciesAssets": 1,
     "ncSoundLicensesAll": 4
   },
   "missing": {
@@ -17,9 +17,7 @@
       "Grüner Leguan"
     ],
     "soundCredits": [],
-    "maps": [
-      "Eichelhäher"
-    ],
+    "maps": [],
     "speciesAssets": [
       {
         "german": "Grüner Leguan",
@@ -28,13 +26,6 @@
           "sound.mp3",
           "credits.json",
           "spectrogram.webp"
-        ]
-      },
-      {
-        "german": "Eichelhäher",
-        "safeName": "Eichelhaeher",
-        "missing": [
-          "map.jpg"
         ]
       }
     ],
