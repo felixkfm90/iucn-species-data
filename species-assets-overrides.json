@@ -1064,6 +1064,11 @@
         "spectrogramSha256": "9774c8bdd927c805486fc7f8b6090cd19e99e916b3536a511d3a49d65fa42195",
         "generatedAt": "2026-07-07T15:52:51.948Z",
         "verifiedAt": "2026-07-07T15:52:51.953Z"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-07T15:54:18.809Z"
       }
     }
   },
