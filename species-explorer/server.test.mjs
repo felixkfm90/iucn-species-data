@@ -2300,6 +2300,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /function iucnMapHeaders\(url\)/);
   assert.match(updateSource, /headers\.Authorization = `Bearer \$\{TOKEN\}`/);
   assert.match(updateSource, /async function fetchJpegWithPowerShell\(url\)/);
+  assert.match(updateSource, /IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS = 3/);
+  assert.match(updateSource, /Neuer Versuch folgt/);
   assert.match(updateSource, /IUCN_MAP_URL/);
   assert.match(updateSource, /Invoke-WebRequest -UseBasicParsing/);
   assert.match(updateSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
@@ -2330,6 +2332,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-auto-search-button"/);
   assert.match(appSource, /openPipelinePreview\("manual-maps"/);
   assert.match(appSource, /silent: true/);
+  assert.match(appSource, /fetch\("\/api\/pending-changes"\)/);
+  assert.match(appSource, /refreshExplorerModelOnly\(\{ reload: true \}\)/);
+  assert.match(serverSource, /async function fetchMapPreviewSourceWithPowerShell\(source\)/);
+  assert.match(serverSource, /MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3/);
   assert.match(appSource, /direkter Karten-JPEG-Link/);
   assert.match(appSource, /class="map-preview-button"/);
   assert.match(appSource, /class="map-save-button"/);

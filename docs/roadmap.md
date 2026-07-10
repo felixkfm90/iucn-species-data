@@ -319,7 +319,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Hash-Buster versehen, damit nach einer Ablehnung kein veralteter Cache abgespielt wird.
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
   Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde
-  nach einem erneuten Neue-Art-Test wieder produktiv angelegt. Aktuell stehen 47 Arten in `species_list.json`.
+  nach einem erneuten Neue-Art-Test wieder produktiv angelegt. Eichelhäher wurde danach ebenfalls über den
+  Neue-Art-Assistenten produktiv ergänzt. Aktuell stehen 48 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -382,7 +383,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und
   extrahiert signierte Backblaze-Links aus Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL.
   Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich `Invoke-WebRequest` als
-  WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Wenn lokal trotzdem kein direkt
+  WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Seit 2026-07-10 wiederholt die
+  Pipeline diesen Fallback bei temporären IUCN-/Backblaze-Fehlern bis zu dreimal; der Kartenimport kann
+  IUCN-API-Kartenlinks ebenfalls direkt über diesen Fallback prüfen. Wenn lokal trotzdem kein direkt
   speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im
   Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog
   dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
@@ -396,7 +399,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Pflegeentscheidung auch dann an, wenn die gespeicherte Datei bytegleich zur bisherigen manuell gepflegten Karte ist.
   Dadurch können Backblaze-übernommene Karten nach erfolgreichem automatischem Abruf wieder auf automatische Pflege
   zurückgestellt werden. Bei gezielten Kartenläufen zeigt der Asset-Prüfdialog die bisherige und die gefundene Karte
-  nebeneinander; beide Karten können einzeln vergrößert werden.
+  nebeneinander; beide Karten können einzeln vergrößert werden. Nach still gestarteten Kartenläufen im offenen
+  Bearbeitungsdialog werden Kopfstatus, Validierung und offene Git-Änderungen ohne vollständiges Neurendern
+  aktualisiert, damit bereits committed/gepushte Läufe nicht mehr fälschlich als offene Übertragung erscheinen.
   Seit 2026-06-28 verschiebt die Bereinigung verwaiste Assetordner zuerst nach
   `species-explorer/cleanup-trash/`, schreibt danach Daten und Report und loescht die verschobenen Ordner erst
   anschliessend endgueltig. Seit 2026-06-30 werden kurze Windows-Dateisperren beim Verschieben mehrfach erneut
@@ -409,7 +414,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Vor der Löschung entlädt die Oberfläche alle Detailmedien und wartet bei Sofortloeschung kurz, damit Windows keine
   produktiven Assetdateien sperrt.
   Frühere Löwe-Testzwischenstände können über den Löschdialog vollständig bereinigt werden; aktuell ist Löwe wieder
-  produktiv angelegt und der Explorer meldet 47/47 Arten.
+  produktiv angelegt und der Explorer meldet nach Eichelhäher aktuell 48/48 Arten.
   Beim gezielten Sound-Alternativlauf im Bearbeitungsdialog und vor globalen `nc-sounds`-Läufen werden alle
   Audioplayer entladen; der aktuelle Bearbeitungsplayer wird aus dem DOM ersetzt und kurz freigegeben, damit eine
   pausierte Vorschau unter Windows keine produktive MP3-Dateisperre hält. Temporäre Pipeline-Backupordner, die

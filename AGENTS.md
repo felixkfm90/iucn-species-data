@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-04
+Stand: 2026-07-10
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -62,29 +62,28 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 47 Eintraege in `species_list.json`
-- 47 aktive Arten
-- 47 Arten in `speciesData.json`
-- 47 Karten
-- 47 Art-Assetordner
-- 46 MP3-Dateien
-- 46 Credits-Dateien
-- 46 Spektrogramm-Dateien
-- 47 Artportraets
+- 48 Eintraege in `species_list.json`
+- 48 aktive Arten
+- 48 Arten in `speciesData.json`
+- 48 Karten
+- 48 Art-Assetordner
+- 47 MP3-Dateien
+- 47 Credits-Dateien
+- 47 Spektrogramm-Dateien
+- 48 Artportraets
 - 0 Assetprobleme im Explorer-Modell
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
   Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
-- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
+- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
   - `Blaukehlchen`
   - `Fischertukan`
   - `Rotfuchs`
   - `Waldkauz`
-  - `Loewe` (Backblaze-Karte manuell übernommen; automatischer signierter Kartenabruf wurde am 2026-07-02 erweitert)
 - 4 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
-  - `Loewe`
+  - `Scharlachara`
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
 
@@ -445,7 +444,10 @@ Aktuelle Planung:
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
   Fehlerantworten als
   `cached-individual-maps`-URL. Wenn Node lokal HTTP 403 erhaelt, nutzt die Pipeline unter Windows zusaetzlich
-  `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Wenn
+  `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Seit
+  2026-07-10 wiederholt die Pipeline diesen Fallback bei temporären IUCN-/Backblaze-Fehlern bis zu dreimal, damit
+  ein einzelnes `503 Server nicht verfügbar` nicht direkt in den manuellen Kartenworkflow führt. Der URL-Prüfer im
+  Kartenimport nutzt denselben Windows-WebRequest-Fallback für IUCN-API-Kartenlinks. Wenn
   lokal trotzdem kein direkt speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte
   Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL eingefuegt und wie ein
   Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog dafuer direkt
@@ -500,6 +502,9 @@ Aktuelle Planung:
   ist bei manuellen Eingabeabweichungen oder lokal gespeicherten Assetaenderungen rot mit
   `Änderungen übertragen` und bei konsistentem Stand gruen mit `Datenbank aktuell`; ein Klick auf den roten Zustand
   startet den Transferlauf fuer geaenderte Eingabefelder und lokale Assetdateien ohne Karten- oder Soundsuche. Der
+  Kopfstatus und die Validierung werden nach stillen Karten-/Soundläufen im geöffneten Bearbeitungsdialog ohne
+  vollständiges Neurendern aktualisiert, damit ein bereits committed/gepushter Lauf nicht fälschlich weiter
+  `Änderungen übertragen` anzeigt. Der
   Status- und Uebertragungsbutton bleibt auch im Lesemodus sichtbar; ohne offene Aenderungen oeffnet er dort keine
   Wartungsaktionen. Die Transfer-Vorschau zaehlt auch Arten, bei denen nur lokale Assetdateien geaendert wurden.
   Datenbank-Aktionen laufen exklusiv: waehrend Pipeline, Assetpruefung, Transfer, Bereinigung oder NAS-Backup aktiv

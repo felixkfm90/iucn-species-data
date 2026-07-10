@@ -144,6 +144,12 @@ Bedarf zusätzlich verarbeitet.
   Browser öffnen`. Im Neue-Art-Assistenten steht derselbe manuelle URL-Schritt zur Verfügung; die Karte kann dort
   während einer pausierten Assetprüfung geprüft und übernommen werden. Der versteckte Electron-/Chromium-Fallback
   wurde verworfen, weil Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen.
+- Seit 2026-07-10 versucht der Windows-WebRequest-Fallback den IUCN-Kartenabruf bis zu drei Mal, damit kurzzeitige
+  503-Antworten nicht sofort in den manuellen Kartenworkflow führen. Der Kartenimport kann außerdem die offizielle
+  IUCN-API-URL direkt prüfen; falls der Browser dort auf einen signierten Backblaze-Link weitergeleitet wird, lädt
+  der lokale Explorer die JPEG-Datei über denselben Windows-Fallback.
+- Nach still gestarteten Kartenläufen aktualisiert der Explorer Kopfstatus, Validierung und offene
+  Änderungsanzeige, ohne den aktuell geöffneten Bearbeitungsdialog zu schließen oder vollständig neu aufzubauen.
 
 ### NC- und fehlende Sounds erneut suchen
 

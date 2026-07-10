@@ -79,7 +79,9 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 - Der automatische Kartenlauf versucht zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
   Fehlerantworten. Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich
-  `Invoke-WebRequest` als WebRequest-Fallback. Wenn IUCN lokal
+  `Invoke-WebRequest` als WebRequest-Fallback. Seit 2026-07-10 wird dieser Fallback bei temporären IUCN- oder
+  Backblaze-Fehlern mehrfach versucht. Der Kartenimport kann IUCN-API-Kartenlinks ebenfalls direkt über diesen
+  Fallback prüfen. Wenn IUCN lokal
   trotzdem keinen direkt speicherbaren Link liefert, bietet der Kartenabschnitt einen direkten Link `IUCN-Karte im
   Browser öffnen`. Der externe Browser erzeugt dabei den signierten Backblaze-JPEG-Link; dieser Link kann in das
   Quellenfeld kopiert und anschließend mit `Karte prüfen` übernommen werden. Ein versteckter Electron-/Chrome-Abruf
@@ -110,9 +112,11 @@ fehlende Karten. Die artweise Suche im Bearbeitungsdialog ist zusätzlich bewuss
 Art gestartet werden.
 
 Beim Neue-Art-Assistenten nutzt Schritt `Karte` denselben manuellen URL-Workflow wie der Kartenabschnitt im
-Bearbeitungsdialog. Wenn keine automatisch speicherbare IUCN-Karte gefunden wird, kann der sichtbare Backblaze-JPEG-
-Link direkt im Schritt eingefügt, geprüft und übernommen oder übersprungen werden. Dadurch muss die neu angelegte
-Art für eine manuelle Karte nicht erst aus dem Assistenten heraus im allgemeinen Bearbeitungsdialog geöffnet werden.
+Bearbeitungsdialog. Wenn der erste automatische Kartenlauf wegen eines temporären IUCN-/Backblaze-Fehlers keine
+Karte speichern kann, versucht die Pipeline den Windows-WebRequest-Fallback mehrfach. Falls danach weiterhin keine
+automatisch speicherbare IUCN-Karte gefunden wird, kann der sichtbare Backblaze-JPEG-Link direkt im Schritt
+eingefügt, geprüft und übernommen oder übersprungen werden. Dadurch muss die neu angelegte Art für eine manuelle
+Karte nicht erst aus dem Assistenten heraus im allgemeinen Bearbeitungsdialog geöffnet werden.
 
 Die Großansicht dient der Prüfung von Kartenausschnitt, Beschriftungen, Legende und Bildqualität, bevor die Karte als
 automatisch gepflegt oder manuell geschützt bestätigt wird. Sie kann über den Schließen-Knopf oder einen Klick auf

@@ -8,11 +8,13 @@ import {
   statSync,
 } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { promisify } from "node:util";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
 import {
@@ -73,6 +75,8 @@ const MAX_JSON_BODY_BYTES = 16 * 1024;
 const MAX_MAP_BYTES = 20 * 1024 * 1024;
 const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAP_SOURCE_FETCH_TIMEOUT_MS = 30_000;
+const MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3;
+const MAP_SOURCE_POWERSHELL_RETRY_DELAY_MS = 1500;
 const MAX_SOUND_BYTES = 50 * 1024 * 1024;
 const MAX_SOUND_PREVIEW_BODY_BYTES = 68 * 1024 * 1024;
 const MAX_PORTRAIT_BYTES = 20 * 1024 * 1024;
@@ -86,6 +90,7 @@ const PIPELINE_LOG_LINE_LIMIT = 400;
 const BACKUP_LOG_LINE_LIMIT = 400;
 const DEFAULT_NAS_BACKUP_ROOT = "W:\\Website Datenbank Backup";
 const LOCAL_SETTINGS_FILE = "local-settings.json";
+const execFileAsync = promisify(execFile);
 const MAX_BACKUP_ROOT_LENGTH = 500;
 
 const MIME_TYPES = {
@@ -809,6 +814,110 @@ function mapOriginalNameFromSource(source) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
+function isIucnDistributionMapUrl(source) {
+  try {
+    const parsed = new URL(source);
+    return process.platform === "win32"
+      && parsed.hostname.toLowerCase() === "www.iucnredlist.org"
+      && parsed.pathname.includes("/api/v4/assessments/")
+      && parsed.pathname.endsWith("/distribution_map/jpg");
+  } catch {
+    return false;
+  }
+}
+
+function isJpegBuffer(buffer) {
+  return Buffer.isBuffer(buffer)
+    && buffer.length >= 3
+    && buffer[0] === 0xff
+    && buffer[1] === 0xd8
+    && buffer[2] === 0xff;
+}
+
+async function fetchMapPreviewSourceWithPowerShell(source) {
+  if (!isIucnDistributionMapUrl(source)) return null;
+
+  const script = `
+$Uri = $env:IUCN_MAP_URL
+$OutFile = $env:IUCN_MAP_OUTFILE
+if (-not $Uri -or -not $OutFile) {
+  throw 'IUCN_MAP_URL oder IUCN_MAP_OUTFILE fehlt.'
+}
+$headers = @{
+  Accept = 'image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7'
+  'Accept-Language' = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
+}
+if ($env:IUCN_TOKEN) {
+  $headers.Authorization = 'Bearer ' + $env:IUCN_TOKEN
+}
+try {
+  $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
+  $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
+  $status = 200
+  if ($response -and $response.StatusCode) { $status = [int]$response.StatusCode }
+  [pscustomobject]@{ status = $status; length = [int64]$file.Length } | ConvertTo-Json -Compress
+  exit 0
+} catch {
+  $status = $null
+  if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+  [pscustomobject]@{ status = $status; error = $_.Exception.Message } | ConvertTo-Json -Compress
+  exit 1
+}
+`.trim();
+
+  let lastMessage = "";
+  for (let attempt = 1; attempt <= MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS; attempt++) {
+    const tempDir = join(tmpdir(), `iucn-map-preview-${randomUUID()}`);
+    const tempFile = join(tempDir, "map.jpg");
+    await mkdir(tempDir, { recursive: true });
+    try {
+      const { stdout } = await execFileAsync(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+        {
+          env: {
+            ...process.env,
+            IUCN_MAP_URL: source,
+            IUCN_MAP_OUTFILE: tempFile,
+          },
+          maxBuffer: 1024 * 1024,
+          timeout: 60_000,
+        },
+      );
+      const info = JSON.parse(String(stdout || "{}"));
+      const buffer = existsSync(tempFile) ? await readFile(tempFile) : Buffer.alloc(0);
+      if (info.status === 200 && buffer.length >= 10_000 && isJpegBuffer(buffer)) {
+        return buffer;
+      }
+      lastMessage = `keine gültige Karte (${info.status ?? "unbekannt"})`;
+    } catch (error) {
+      const output = String(error.stdout || error.stderr || "").trim();
+      lastMessage = error.message;
+      if (output) {
+        try {
+          const parsed = JSON.parse(output);
+          lastMessage = parsed.error || lastMessage;
+        } catch {
+          lastMessage = output.slice(0, 200);
+        }
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+    if (attempt < MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS) {
+      await sleep(MAP_SOURCE_POWERSHELL_RETRY_DELAY_MS * attempt);
+    }
+  }
+  throw new Error(
+    `IUCN-Karte konnte auch über den Windows-WebRequest-Fallback nicht geladen werden: ${lastMessage || "unbekannter Fehler"}`,
+  );
+}
+
 async function fetchMapPreviewSource(source) {
   const parsed = new URL(source);
   const controller = new AbortController();
@@ -839,11 +948,16 @@ async function fetchMapPreviewSource(source) {
     if (buffer.length > MAX_MAP_BYTES) {
       throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
     }
+    if (isIucnDistributionMapUrl(source) && !isJpegBuffer(buffer)) {
+      throw new Error("IUCN-Karten-URL lieferte keine gültige JPEG-Datei.");
+    }
     return buffer;
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error("Karten-URL hat nicht rechtzeitig geantwortet");
     }
+    const fallback = await fetchMapPreviewSourceWithPowerShell(source);
+    if (fallback) return fallback;
     throw error;
   } finally {
     clearTimeout(timeout);

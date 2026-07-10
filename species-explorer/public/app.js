@@ -754,33 +754,43 @@ function versionedAssetUrl(url, asset = {}, ...extraParts) {
 
 async function refreshExplorerModelOnly({ reload = false } = {}) {
   if (reload) await fetch("/api/reload");
-  const [summaryResponse, validationResponse, speciesResponse, revisionResponse] = await Promise.all([
+  const [
+    summaryResponse,
+    validationResponse,
+    speciesResponse,
+    revisionResponse,
+    pendingChangesResponse,
+  ] = await Promise.all([
     fetch("/api/summary"),
     fetch("/api/validation"),
     fetch("/api/species"),
     fetch("/api/revision"),
+    fetch("/api/pending-changes"),
   ]);
   if (
     !summaryResponse.ok
     || !validationResponse.ok
     || !speciesResponse.ok
     || !revisionResponse.ok
+    || !pendingChangesResponse.ok
   ) {
     throw new Error("Lokale Daten konnten nicht aktualisiert werden.");
   }
-  const [summary, validation, species, revision] = await Promise.all([
+  const [summary, validation, species, revision, pendingChanges] = await Promise.all([
     summaryResponse.json(),
     validationResponse.json(),
     speciesResponse.json(),
     revisionResponse.json(),
+    pendingChangesResponse.json(),
   ]);
   state.dataRevision = revision.revision;
   state.species = species;
   updateSummary(summary);
   updateValidation(validation);
+  updatePendingChanges(pendingChanges);
   populateStatusFilter();
   applyFilters();
-  return { summary, validation, species, revision };
+  return { summary, validation, species, revision, pendingChanges };
 }
 
 async function refreshOpenSoundEditor(speciesId) {
@@ -2002,6 +2012,15 @@ function setupPipelineControl() {
     const soundLocked = /Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText);
     const rejectedSourcesSkipped = /Abgelehnte Soundquelle wird übersprungen/i.test(logText);
     if (context.section === "map") {
+      try {
+        await refreshExplorerModelOnly({ reload: true });
+      } catch (error) {
+        setEditorMessage(
+          `Kartensuchlauf abgeschlossen, aber der Status konnte nicht aktualisiert werden: ${error.message}`,
+          "error",
+        );
+        return true;
+      }
       setEditorMessage(
         noAlternative
           ? "Kartensuchlauf abgeschlossen. Lokal wurde keine direkt speicherbare Karte gefunden. Bitte „IUCN-Karte im Browser öffnen“ nutzen, den sichtbaren Backblaze-JPEG-Link ins Quellenfeld kopieren und „Karte prüfen“ wählen."

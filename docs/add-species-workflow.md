@@ -129,6 +129,11 @@ Wenn eine neue Karte gefunden wird, wird sie direkt in diesem Dialog geprüft. S
 werden. Beim Überspringen wird die automatisch gefundene Karte entfernt; eine manuelle Karte kann später über die
 Assetverwaltung eingefügt werden.
 
+Seit 2026-07-10 nutzt der Neue-Art-Lauf beim IUCN-Kartenabruf denselben Windows-WebRequest-Fallback wie die
+Kartenbearbeitung und wiederholt kurzzeitig fehlgeschlagene Abrufe bis zu drei Mal. Wenn die Pipeline danach noch
+keine direkt speicherbare Karte erhält, kann die offizielle IUCN-API-URL oder der im Browser sichtbare
+Backblaze-JPEG-Link im selben Schritt geprüft und manuell übernommen werden.
+
 ### Schritt 4: Sound und Abschluss
 
 Wenn ein Sound gefunden wird, wird er im selben Dialog mit Audioplayer und Spektrogramm angezeigt. Ein Klick ins
@@ -148,6 +153,8 @@ Speichern:
   uebernommen
 - danach startet der selektive Pipeline-Lauf fuer genau diese neue Art automatisch; erst dieser Lauf vervollstaendigt
   IUCN-Daten, Karte, Sound, Spektrogramm und Git-Veröffentlichung
+- der Kartenabruf versucht vor dem manuellen URL-Schritt den direkten IUCN-Abruf inklusive Windows-Fallback und
+  Wiederholungen
 - neu gefundene Karten und Sounds werden im Neue-Art-Dialog einzeln geprüft
 - wenn ein neu gefundener Sound abgelehnt wird, merkt die App die Quellkennung und startet automatisch die nächste
   gezielte Soundsuche fuer diese Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird
