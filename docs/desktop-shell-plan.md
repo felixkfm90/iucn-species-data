@@ -108,7 +108,7 @@ Der Server wird nicht als sichtbares Konsolenfenster gestartet. Beim Schließen 
 Desktop-Hülle gestartete Server beendet. Wenn ein Pipeline- oder Asset-Prüfschritt läuft, fragt die App vor dem
 Schließen nach.
 
-`species:desktop:shortcut` erstellt eine Desktop-Verknüpfung `IUCN Arten-Explorer.lnk`. Sie verweist auf
+`species:desktop:shortcut` erstellt eine Desktop-Verknüpfung `Arten-Explorer.lnk`. Sie verweist auf
 `wscript.exe` und startet `start-explorer.vbs`, damit beim Doppelklick kein dauerhaft sichtbares PowerShell- oder
 Konsolenfenster offen bleibt. Die Prozessausgabe landet bei Bedarf in
 `species-explorer/logs/desktop-launch.log`.

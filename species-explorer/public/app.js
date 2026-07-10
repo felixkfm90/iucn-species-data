@@ -1266,7 +1266,7 @@ function setupAssetReview() {
                       <img src="${escapeHtml(asset.previousUrl)}" alt="${escapeHtml(`Bisherige Karte ${asset.germanName}`)}">
                       <span class="asset-review-zoom-hint">Vergrößern</span>
                     </button>
-                  ` : `<span class="asset-review-no-map">Keine bisherige Karte vorhanden</span>`}
+                  ` : `<span class="asset-review-no-map">Keine Karte vorhanden</span>`}
                 </div>
                 <div class="asset-review-map-preview">
                   <strong>Gefundene Karte</strong>
@@ -3778,8 +3778,8 @@ function setupSpeciesEditor(species) {
     try {
       const file = mapFileInput.files?.[0];
       const source = mapSourceInput.value.trim();
-      if (!file && !source) throw new Error("Bitte eine JPEG-Datei auswählen oder einen direkten JPEG-Link einfügen");
-      if (file && file.size > 20 * 1024 * 1024) throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+      if (!file && !source) throw new Error("Bitte eine JPEG-/PNG-Datei auswählen oder einen direkten JPEG-Link einfügen");
+      if (file && file.size > 20 * 1024 * 1024) throw new Error("Karten-Datei darf maximal 20 MB groß sein");
       const imageBase64 = file ? await fileToBase64(file) : "";
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/map/preview`,
@@ -3804,7 +3804,7 @@ function setupSpeciesEditor(species) {
         : "Abmessungen unbekannt";
       mapCurrentMeta.textContent = result.currentMap.exists
         ? `${dimensions(result.currentMap)} · ${formatBytes(result.currentMap.bytes)}`
-        : "Keine bisherige Karte";
+        : "Keine Karte vorhanden";
       mapNewMeta.textContent = `${dimensions(result.newMap)} · ${formatBytes(result.newMap.bytes)}`;
       mapPreview.hidden = false;
       mapSaveButton.disabled = false;
@@ -4592,38 +4592,36 @@ function renderDetail(species) {
         species.inInput ? "map" : "",
       )}
 
-      <div class="detail-side-stack">
-        ${speciesImagePanel(species)}
+      <section class="audio-section">
+        <div class="section-heading">
+          <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
+          ${sectionActions(
+            species.inInput ? "sound" : "",
+            species.inInput && (species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists)
+              ? "sound"
+              : "",
+            "Soundpaket löschen",
+            species.inInput ? "sound" : "",
+            species.assets.sound.backup,
+          )}
+        </div>
+        <div class="audio-body">
+          ${audio}
+          <details class="audio-credits" open>
+            <summary>Quellen und Lizenz</summary>
+            <div class="credit-grid">
+              <div><span>Quelle</span><strong>${escapeHtml(creditValue(species.credits, "source"))}</strong></div>
+              <div><span>Aufnahme</span><strong>${escapeHtml(creditValue(species.credits, "recordist"))}</strong></div>
+              <div><span>Qualität</span><strong>${escapeHtml(creditValue(species.credits, "quality"))}</strong></div>
+              <div><span>Land</span><strong>${escapeHtml(creditValue(species.credits, "country"))}</strong></div>
+              <div><span>Lizenz</span>${creditLinkWithLicense(species.credits, "license", "Lizenz öffnen", detailSoundLicenseInfo)}</div>
+              <div><span>Original</span>${creditLink(species.credits, "url", "Quelle öffnen")}</div>
+            </div>
+          </details>
+        </div>
+      </section>
 
-        <section class="audio-section">
-          <div class="section-heading">
-            <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
-            ${sectionActions(
-              species.inInput ? "sound" : "",
-              species.inInput && (species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists)
-                ? "sound"
-                : "",
-              "Soundpaket löschen",
-              species.inInput ? "sound" : "",
-              species.assets.sound.backup,
-            )}
-          </div>
-          <div class="audio-body">
-            ${audio}
-            <details class="audio-credits">
-              <summary>Quellen und Lizenz</summary>
-              <div class="credit-grid">
-                <div><span>Quelle</span><strong>${escapeHtml(creditValue(species.credits, "source"))}</strong></div>
-                <div><span>Aufnahme</span><strong>${escapeHtml(creditValue(species.credits, "recordist"))}</strong></div>
-                <div><span>Qualität</span><strong>${escapeHtml(creditValue(species.credits, "quality"))}</strong></div>
-                <div><span>Land</span><strong>${escapeHtml(creditValue(species.credits, "country"))}</strong></div>
-                <div><span>Lizenz</span>${creditLinkWithLicense(species.credits, "license", "Lizenz öffnen", detailSoundLicenseInfo)}</div>
-                <div><span>Original</span>${creditLink(species.credits, "url", "Quelle öffnen")}</div>
-              </div>
-            </details>
-          </div>
-        </section>
-      </div>
+      ${speciesImagePanel(species)}
     </div>
 
     <div class="data-grid">
@@ -4875,7 +4873,7 @@ function renderDetail(species) {
           <header>
             <div>
               <h4>Verbreitungskarte ersetzen</h4>
-              <p>JPEG-Datei oder direkter Karten-JPEG-Link bis 20 MB. Quelle und Pflegegrund werden dauerhaft dokumentiert.</p>
+              <p>JPEG- oder PNG-Datei bis 20 MB oder direkter Karten-JPEG-Link. Pflegegrund wird dauerhaft dokumentiert; Quellen-URL ist nur bei Linkimport Pflicht.</p>
             </div>
             <div class="asset-header-actions">
               ${browserMapUrl ? `
@@ -4895,8 +4893,8 @@ function renderDetail(species) {
 
           <div class="map-edit-fields">
             <label class="asset-file-field map-file-field">
-              <span>Neue JPEG-Datei</span>
-              <input class="map-file-input" type="file" accept=".jpg,.jpeg,image/jpeg">
+              <span>Neue Karten-Datei</span>
+              <input class="map-file-input" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
             </label>
             <label class="asset-reason-field map-reason-field">
               <span>Pflegegrund</span>

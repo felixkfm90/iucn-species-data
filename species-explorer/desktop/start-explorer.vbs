@@ -15,13 +15,13 @@ logFile = fso.BuildPath(logDir, "desktop-launch.log")
 If Not fso.FileExists(electronCmd) Then
   MsgBox "Electron wurde nicht gefunden." & vbCrLf & vbCrLf & _
     "Bitte im Projektordner einmal ausfuehren:" & vbCrLf & _
-    "npm.cmd install", vbExclamation, "IUCN Arten-Explorer"
+    "npm.cmd install", vbExclamation, "Arten-Explorer"
   WScript.Quit 1
 End If
 
 If Not fso.FileExists(mainScript) Then
   MsgBox "Desktop-Startdatei wurde nicht gefunden:" & vbCrLf & mainScript, _
-    vbCritical, "IUCN Arten-Explorer"
+    vbCritical, "Arten-Explorer"
   WScript.Quit 1
 End If
 

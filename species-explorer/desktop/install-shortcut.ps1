@@ -4,7 +4,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $launcher = Join-Path $scriptDir "start-explorer.vbs"
 $desktop = [Environment]::GetFolderPath("Desktop")
-$shortcutPath = Join-Path $desktop "IUCN Arten-Explorer.lnk"
+$shortcutPath = Join-Path $desktop "Arten-Explorer.lnk"
 $wscript = Join-Path $env:WINDIR "System32\wscript.exe"
 $electronExe = Join-Path $repoRoot "node_modules\electron\dist\electron.exe"
 
@@ -21,7 +21,7 @@ $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = $wscript
 $shortcut.Arguments = "`"$launcher`""
 $shortcut.WorkingDirectory = $repoRoot
-$shortcut.Description = "IUCN Arten-Explorer starten"
+$shortcut.Description = "Arten-Explorer starten"
 if (Test-Path -LiteralPath $electronExe) {
   $shortcut.IconLocation = "$electronExe,0"
 }

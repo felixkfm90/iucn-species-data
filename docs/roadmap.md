@@ -258,10 +258,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Scrollposition. Ein Klick ins Spektrogramm setzt die Position und startet die Wiedergabe dort. Der
   lokale Server unterstuetzt dafuer HTTP-Byte-Ranges und liefert partielle MP3-Inhalte mit Status `206`; ohne diese
   Unterstuetzung sprang die lokale Wiedergabe beim Start wieder auf Position 0. Der
-  Tierstimmen-Bereich wurde zugunsten des spaeteren Artportraets verkleinert, Credits sind
-  einklappbar, das IUCN-Abrufdatum steht im Detailkopf und der Statusfilter verwendet deutsche Bezeichnungen mit
+  Tierstimmen-Bereich wurde zugunsten des spaeteren Artportraets verkleinert; seit 2026-07-10 stehen
+  Verbreitungskarte, Tierstimme und Artportraet als drei gleich grosse Medienbereiche nebeneinander und
+  Quellen-/Lizenzdaten sind in der Tierstimme direkt sichtbar. Das IUCN-Abrufdatum steht im Detailkopf und der Statusfilter verwendet deutsche Bezeichnungen mit
   IUCN-Kuerzel. Manuelle Assetpflege wird direkt bei der jeweiligen Karte markiert und ist fuer spaetere manuelle
-  Sounds erweiterbar. Medien- und Datenraster sind seit 2026-06-19 auf identische 50/50-Spalten ausgerichtet.
+  Sounds erweiterbar. Medien- und Datenraster waren seit 2026-06-19 auf identische 50/50-Spalten ausgerichtet.
   Spektrogramme werden im Explorer nur noch 64 bis 84 Pixel hoch angezeigt. Fuer Squarespace reduziert
   `species-sound.js?v=1.0.24` die Anzeige auf 78 Pixel beziehungsweise 68 Pixel mobil; die Assets bleiben
   unveraendert. Die dokumentierte Footer-Version ist inzwischen `species-sound.js?v=1.0.25`; sie korrigiert die
@@ -387,7 +388,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Pipeline diesen Fallback bei temporären IUCN-/Backblaze-Fehlern bis zu dreimal; der Kartenimport kann
   IUCN-API-Kartenlinks ebenfalls direkt über diesen Fallback prüfen. Wenn lokal trotzdem kein direkt
   speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im
-  Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog
+  Kartenimport als Quellen-URL eingefügt und geprüft werden. Seit 2026-07-10 akzeptiert der Karten-Dateiupload
+  JPEG und PNG; PNG wird serverseitig nach JPEG konvertiert und weiterhin als `map.jpg` gespeichert. Eine
+  Quellen-URL ist nur beim Linkimport Pflicht. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog
   dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter Electron-/Chromium-Fallback wird nicht genutzt, weil
   Headless-Browserprozesse auf dem Zielsystem mit Anwendungsfehlern abbrechen können. Derselbe URL-Workflow steht im Neue-Art-Assistenten in Schritt `Karte` zur
   Verfügung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog vollständig mit Karte

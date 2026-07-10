@@ -10,7 +10,7 @@ import {
 import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
-import { extname, join, normalize, relative, resolve, sep } from "node:path";
+import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -482,6 +482,68 @@ function inspectPortraitImage(buffer, originalName) {
     return { format: "webp", width: inspected.width, height: inspected.height };
   }
   throw new Error("Es sind nur PNG-, JPEG- oder WebP-Dateien erlaubt");
+}
+
+function inspectMapUploadImage(buffer, originalName) {
+  const extension = extname(String(originalName ?? "")).toLocaleLowerCase("en");
+  if (extension === ".png") {
+    return { format: "png", ...inspectPng(buffer) };
+  }
+  if (extension === ".jpg" || extension === ".jpeg") {
+    return { format: "jpeg", ...inspectJpeg(buffer) };
+  }
+  throw new Error("Es sind nur JPEG- oder PNG-Dateien erlaubt");
+}
+
+async function renderMapJpeg({
+  inputPath,
+  outputPath,
+  ffmpegPath = resolveFfmpegPath(),
+}) {
+  await mkdir(dirname(outputPath), { recursive: true });
+  const args = [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-i",
+    inputPath,
+    "-frames:v",
+    "1",
+    "-q:v",
+    "2",
+    outputPath,
+  ];
+
+  const run = await new Promise((resolveRun) => {
+    const child = spawn(ffmpegPath, args, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => {
+      resolveRun({ status: 1, stderr: `${stderr}${error.message}` });
+    });
+    child.on("close", (status) => {
+      resolveRun({ status: Number.isInteger(status) ? status : 1, stderr });
+    });
+  });
+  if (run.status !== 0) {
+    const error = new Error(
+      `Karte konnte nicht nach JPEG konvertiert werden: ${run.stderr.trim() || `ffmpeg exit ${run.status}`}`,
+    );
+    error.code = "MAP_RENDER_FAILED";
+    throw error;
+  }
+
+  const outputStat = await stat(outputPath);
+  return {
+    outputBytes: outputStat.size,
+    ffmpegPath,
+  };
 }
 
 function validatePortraitPreviewPayload(payload, species) {
@@ -1076,7 +1138,50 @@ async function fetchMapPreviewSource(source) {
   }
 }
 
-async function validateMapPreviewPayload(payload) {
+async function normalizeMapUploadToJpeg({
+  buffer,
+  originalName,
+  repoRoot,
+  mapImageRenderer,
+}) {
+  const inspected = inspectMapUploadImage(buffer, originalName);
+  if (inspected.format === "jpeg") {
+    return {
+      buffer,
+      dimensions: { width: inspected.width, height: inspected.height },
+      inputFormat: "jpeg",
+      converted: false,
+    };
+  }
+
+  const tempDir = join(tmpdir(), `map-upload-${randomUUID()}`);
+  const inputPath = join(tempDir, "source.png");
+  const outputPath = join(tempDir, "map.jpg");
+  await mkdir(tempDir, { recursive: true });
+  try {
+    await writeFile(inputPath, buffer);
+    await mapImageRenderer({
+      inputPath,
+      outputPath,
+      ffmpegPath: resolveFfmpegPath({ repoRoot }),
+    });
+    const convertedBuffer = await readFile(outputPath);
+    const dimensions = inspectJpeg(convertedBuffer);
+    return {
+      buffer: convertedBuffer,
+      dimensions,
+      inputFormat: inspected.format,
+      converted: true,
+    };
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function validateMapPreviewPayload(payload, {
+  repoRoot = REPO_ROOT,
+  mapImageRenderer = renderMapJpeg,
+} = {}) {
   const reason = String(payload?.reason ?? "").trim();
   const source = String(payload?.source ?? "").trim();
   let originalName = String(payload?.originalName ?? "").trim();
@@ -1085,9 +1190,7 @@ async function validateMapPreviewPayload(payload) {
 
   if (reason.length < 5) errors.push("Pflegegrund muss mindestens 5 Zeichen enthalten");
   if (reason.length > 500) errors.push("Pflegegrund darf maximal 500 Zeichen enthalten");
-  if (!source) {
-    errors.push("Quellen-URL ist erforderlich");
-  } else {
+  if (source) {
     try {
       const parsed = new URL(source);
       if (!["http:", "https:"].includes(parsed.protocol)) {
@@ -1098,17 +1201,36 @@ async function validateMapPreviewPayload(payload) {
     }
   }
   if (source.length > 2000) errors.push("Quellen-URL darf maximal 2000 Zeichen enthalten");
-  if (imageBase64 && !/\.jpe?g$/i.test(originalName)) errors.push("Es sind nur JPEG-Dateien erlaubt");
-  if (!imageBase64 && !source) errors.push("JPEG-Datei oder direkter JPEG-Link fehlt");
+  if (imageBase64 && !/\.(jpe?g|png)$/i.test(originalName)) {
+    errors.push("Es sind nur JPEG- oder PNG-Dateien erlaubt");
+  }
+  if (!imageBase64 && !source) errors.push("JPEG-/PNG-Datei oder direkter JPEG-Link fehlt");
   if (errors.length) return { errors };
 
   let buffer;
+  let dimensions = null;
+  let inputFormat = "";
+  let converted = false;
   if (imageBase64) {
     try {
       buffer = Buffer.from(imageBase64, "base64");
     } catch {
-      errors.push("JPEG-Datei konnte nicht gelesen werden");
+      errors.push("Karten-Datei konnte nicht gelesen werden");
       return { errors };
+    }
+    try {
+      const normalized = await normalizeMapUploadToJpeg({
+        buffer,
+        originalName,
+        repoRoot,
+        mapImageRenderer,
+      });
+      buffer = normalized.buffer;
+      dimensions = normalized.dimensions;
+      inputFormat = normalized.inputFormat;
+      converted = normalized.converted;
+    } catch (error) {
+      errors.push(error.message || "Karten-Datei konnte nicht verarbeitet werden");
     }
   } else {
     try {
@@ -1119,17 +1241,16 @@ async function validateMapPreviewPayload(payload) {
       return { errors };
     }
   }
-  if (!buffer.length) errors.push("JPEG-Datei ist leer");
-  if (buffer.length > MAX_MAP_BYTES) errors.push("JPEG-Datei darf maximal 20 MB groß sein");
-  let dimensions = null;
-  if (!errors.length) {
+  if (!buffer?.length) errors.push("Karten-Datei ist leer");
+  if (buffer?.length > MAX_MAP_BYTES) errors.push("Karten-Datei darf maximal 20 MB groß sein");
+  if (!errors.length && !dimensions) {
     try {
       dimensions = inspectJpeg(buffer);
     } catch (error) {
       errors.push(error.message);
     }
   }
-  return { errors, reason, source, originalName, buffer, dimensions };
+  return { errors, reason, source, originalName, buffer, dimensions, inputFormat, converted };
 }
 
 function publicPipelinePlan(plan) {
@@ -2282,6 +2403,7 @@ export async function createExplorerServer({
   nasBackupRoot = process.env.IUCN_NAS_BACKUP_DIR || DEFAULT_NAS_BACKUP_ROOT,
   spectrogramRenderer = renderSpectrogram,
   portraitRenderer = renderPortrait,
+  mapImageRenderer = renderMapJpeg,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
@@ -3870,7 +3992,7 @@ export async function createExplorerServer({
       error.statusCode = species ? 409 : 404;
       throw error;
     }
-    const validated = await validateMapPreviewPayload(payload);
+    const validated = await validateMapPreviewPayload(payload, { repoRoot, mapImageRenderer });
     if (validated.errors.length) {
       const error = new Error("Karten-Datei oder Angaben sind ungültig");
       error.statusCode = 400;

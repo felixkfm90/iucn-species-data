@@ -1144,6 +1144,10 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
     port: 0,
     publishAssetChanges: false,
     rebuildReportAfterAssetSave: false,
+    mapImageRenderer: async ({ outputPath }) => {
+      await writeFile(outputPath, createTestJpeg(320, 210));
+      return { outputBytes: createTestJpeg(320, 210).length, ffmpegPath: "test-ffmpeg" };
+    },
   });
   const address = await app.listen();
   context.after(() => app.close());
@@ -1177,6 +1181,21 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.deepEqual(preview.newMap.dimensions, { width: 640, height: 480 });
   assert.equal(preview.newMap.bytes, jpeg.length);
   assert.equal(preview.currentMap.exists, true);
+
+  const pngPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      originalName: "amsel-neu.png",
+      imageBase64: createTestPng(640, 480).toString("base64"),
+      reason: "Manuell geprüfte PNG-Testkarte",
+      source: "",
+    }),
+  });
+  assert.equal(pngPreviewResponse.status, 200);
+  const pngPreview = await pngPreviewResponse.json();
+  assert.deepEqual(pngPreview.newMap.dimensions, { width: 320, height: 210 });
+  assert.equal(pngPreview.source, "");
 
   const linkedJpeg = createTestJpeg(800, 500);
   const sourceServer = createHttpServer((request, response) => {
@@ -2101,6 +2120,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   ]);
 
   assert.match(appSource, /class="map-image"/);
+  assert.match(htmlSource, /class="header-logo"/);
+  assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
+  assert.doesNotMatch(htmlSource, /IUCN Species Data/);
   assert.match(cssSource, /\.map-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(appSource, /map-zoom-trigger/);
   assert.match(appSource, /map-lightbox/);
@@ -2118,7 +2140,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appSource, /Gefährdet/);
   assert.match(appSource, /IUCN-Daten abgerufen/);
-  assert.match(appSource, /class="audio-credits"/);
+  assert.match(appSource, /class="audio-credits" open/);
+  assert.match(appSource, /Keine Karte vorhanden/);
+  assert.doesNotMatch(appSource, /Keine bisherige Karte vorhanden/);
   assert.match(appSource, /assetStatusText\(species\.assets\.map\)/);
   assert.match(appSource, /Portraits fehlen/);
   assert.match(appSource, /Artporträts: \$\{missingPortraitCount\} von/);
@@ -2548,16 +2572,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.species-item\s*\{[^}]*height:\s*61px/s);
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
-  assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.doesNotMatch(cssSource, /\.detail-side-stack\s*\{/);
+  assert.doesNotMatch(appSource, /detail-side-stack/);
   assert.match(
     cssSource,
-    /\.detail-media-layout\s*\{[^}]*grid-auto-rows:\s*calc\(var\(--detail-media-frame-height\)\s*\+\s*41px\)/s,
+    /\.detail-media-layout > \.map-panel,[\s\S]*?\.detail-media-layout > \.species-image-panel\s*\{[^}]*flex-direction:\s*column/s,
   );
-  assert.match(cssSource, /\.detail-side-stack\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s*auto/s);
-  assert.match(
-    cssSource,
-    /\.species-image-panel\s*\{[^}]*grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\)[^}]*overflow:\s*hidden/s,
-  );
+  assert.match(cssSource, /\.species-image-panel\s*\{[^}]*overflow:\s*hidden/s);
   assert.match(
     cssSource,
     /\.species-portrait-image\s*\{[^}]*max-width:\s*100%[^}]*max-height:\s*100%[^}]*object-fit:\s*contain/s,
@@ -2567,6 +2589,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /elements\.speciesPanel\.style\.height = `\$\{targetHeight\}px`/);
   assert.doesNotMatch(appSource, /window\.addEventListener\("resize", syncSpeciesPanelHeight\)/);
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
+  assert.match(appSource, /JPEG- oder PNG-Datei bis 20 MB oder direkter Karten-JPEG-Link/);
+  assert.match(appSource, /accept="\.jpg,\.jpeg,\.png,image\/jpeg,image\/png"/);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
   assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);

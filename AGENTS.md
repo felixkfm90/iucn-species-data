@@ -325,10 +325,12 @@ Aktuelle Planung:
   Credits, Spektrogramm und Assetstatus. Karten werden vollstaendig im Originalseitenverhaeltnis angezeigt.
   Spektrogramm und Audio sind in einem Player mit Play/Pause, Zeit, Lautstaerke, Scrubbing und Positionsmarker
   gekoppelt. Ein Klick ins Spektrogramm setzt die Position und startet die Wiedergabe dort sofort. Der
-  Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; Credits sind einklappbar.
+  Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; seit 2026-07-10 stehen
+  Verbreitungskarte, Tierstimme und Artportraet als drei gleich grosse Medienbereiche nebeneinander. Die
+  Quellen-/Lizenzdaten der Tierstimme sind im Explorer direkt sichtbar.
   Der lokale Server liefert Assets mit HTTP-Byte-Range-Unterstuetzung aus, damit MP3-Spruenge nicht auf Position 0
   zurueckfallen.
-  Medien- und Datenkarten verwenden identische 50/50-Spalten. Das Explorer-Spektrogramm ist auf 64 bis 84 Pixel
+  Das Explorer-Spektrogramm ist auf 64 bis 84 Pixel
   Anzeigehoehe begrenzt, damit das Artportraet mehr Platz erhaelt.
   Das IUCN-Abrufdatum steht im Detailkopf, Statusfilter verwenden deutsche Bezeichnungen mit IUCN-Kuerzel und
   manuell hinzugefuegte Assets werden direkt in ihrer Assetzeile markiert. Artwechsel erhalten Fenster- und
@@ -450,7 +452,9 @@ Aktuelle Planung:
   Kartenimport nutzt denselben Windows-WebRequest-Fallback für IUCN-API-Kartenlinks. Wenn
   lokal trotzdem kein direkt speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte
   Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL eingefuegt und wie ein
-  Datei-Upload geprueft und uebernommen werden. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog dafuer direkt
+  Datei-Upload geprueft und uebernommen werden. Seit 2026-07-10 akzeptiert der Karten-Dateiupload JPEG und PNG;
+  PNG wird serverseitig nach JPEG konvertiert und weiterhin als `map.jpg` gespeichert. Eine Quellen-URL ist nur
+  beim Linkimport Pflicht. Seit 2026-07-01 bietet der Karten-Bearbeitungsdialog dafuer direkt
   `IUCN-Karte im Browser oeffnen`. Derselbe URL-Workflow steht im Neue-Art-Assistenten im Schritt `Karte` zur
   Verfuegung, damit eine neue Art ohne Wechsel in den allgemeinen Bearbeitungsdialog mit manueller Karte
   abgeschlossen werden kann. Karten-Vorschauen skalieren hochformatige IUCN-Karten vollstaendig in die verfuegbare

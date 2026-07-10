@@ -9,7 +9,7 @@ import {
   stopManagedExplorerServer,
 } from "./server-lifecycle.mjs";
 
-const WINDOW_TITLE = "IUCN Arten-Explorer";
+const WINDOW_TITLE = "Arten-Explorer";
 const START_PAGE = "data:text/html;charset=utf-8,"
   + encodeURIComponent(`
 <!doctype html>

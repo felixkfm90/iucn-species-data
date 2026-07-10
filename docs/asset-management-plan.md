@@ -83,10 +83,11 @@ Speicheraktionen. API:
 Workflow:
 
 1. Art und vorhandene Karte anzeigen.
-2. Neue JPEG-Datei auswählen oder einen direkten signierten JPEG-Link als Quellen-URL einfügen.
-3. Dateityp, Signatur, JPEG-Struktur, Browser-Dekodierbarkeit, Abmessungen und Größe prüfen.
+2. Neue JPEG- oder PNG-Datei auswählen oder einen direkten signierten JPEG-Link als Quellen-URL einfügen.
+3. Dateityp, Signatur, Bildstruktur, Browser-Dekodierbarkeit, Abmessungen und Größe prüfen. PNG-Uploads werden
+   vor dem Speichern serverseitig nach JPEG konvertiert.
 4. Vorschau mit alter und neuer Karte sowie Dateiinformationen anzeigen.
-5. Grund und Quelle fuer die manuelle Pflege erfassen.
+5. Grund fuer die manuelle Pflege erfassen; eine Quellen-URL ist nur bei Linkimport Pflicht.
 6. Vorhandene Karte sichern.
 7. Neue Karte atomar als `species-assets/<SafeName>/map.jpg` schreiben.
 8. Override-Register und `docs/manual-map-overrides.md` aktualisieren.
@@ -96,19 +97,19 @@ Workflow:
 
 Vorgesehene Grenze:
 
-- nur JPEG
+- Produktdatei bleibt immer `map.jpg`; Upload akzeptiert JPEG und PNG
 - maximal 20 MB
 - keine Loeschfunktion in der ersten Version
 
 Umgesetzt:
 
-- Prüfung von Dateiendung beziehungsweise URL-Download, JPEG-Magic-Bytes, Segmentstruktur, Abmessungen und Dateigröße
+- Prüfung von Dateiendung beziehungsweise URL-Download, JPEG-/PNG-Signatur, Bildstruktur, Abmessungen und Dateigröße
 - zusätzliche Dekodierprüfung über die tatsächliche Browser-Vorschau
 - zehn Minuten gültiges Vorschau-Token
 - Schutz gegen zwischenzeitliche Änderungen an Karte, Register oder Dokumentation
 - Alt-/Neu-Vorschau mit Abmessungen und Dateigröße
 - neue Karten werden in der Vorschau vollständig in den Rahmen eingepasst; sie dürfen dabei kleiner erscheinen
-- Pflichtfelder `Pflegegrund` und gültige HTTP(S)-Quellen-URL
+- Pflichtfeld `Pflegegrund`; gültige HTTP(S)-Quellen-URL nur bei Linkimport
 - URL-Import für direkte JPEG-Links, z. B. im Browser geöffnete signierte IUCN-/Backblaze-Karten
 - Staging unter `species-explorer/staging/`
 - atomarer Austausch von `species-assets/<SafeName>/map.jpg`

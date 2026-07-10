@@ -206,14 +206,16 @@ http://127.0.0.1:4177
 Der Explorer zeigt:
 
 - alle 48 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
+- lokal gebrandete Oberflaeche `Arten-Explorer` mit FN-Wildlife-&-Travel-Logo in der Kopfzeile
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
 - generierte IUCN-Daten aus `speciesData.json`
 - Karte, Sound, Credits und Spektrogramm je Art
 - optionales, manuell freigegebenes KI-Artportraet aus `portrait.webp` und `portrait.json`
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
+- drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
-  Positionsmarker und einklappbaren Quellen-/Lizenzdaten
+  Positionsmarker und standardmaessig sichtbaren Quellen-/Lizenzdaten
 - Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle
 - IUCN-Abrufdatum im Kopf der Detailansicht
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
@@ -233,8 +235,9 @@ Der Explorer zeigt:
 - vier manuell gepflegte Karten
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
-- kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-Prüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund,
-  lokalem Backup und manuellem Pipeline-Schutz; die Veröffentlichung erfolgt gesammelt über `Änderungen übertragen`
+- kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-/PNG-Upload, automatischer PNG-zu-JPEG-Konvertierung,
+  alternativem direktem JPEG-Link, Alt-/Neu-Vorschau, Pflegegrund und optionaler Quelle, lokalem Backup und
+  manuellem Pipeline-Schutz; die Veröffentlichung erfolgt gesammelt über `Änderungen übertragen`
 - serverseitige Validierung, Diff-Vorschau und explizite Speicherbestaetigung
 - automatische lokale Sicherung vor jedem Schreibvorgang
 
@@ -420,7 +423,9 @@ die JPEG-Karte ausliefert. Seit 2026-07-10 wird dieser Fallback bei temporären 
 Der Kartenimport kann IUCN-API-Kartenlinks ebenfalls direkt über diesen Fallback prüfen. Wenn IUCN lokal weiterhin
 keinen direkt speicherbaren Link liefert, kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport
 als Quellen-URL eingefügt und geprüft
-werden. Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
+werden. Beim Datei-Upload akzeptiert der Kartenimport JPEG und PNG; PNG wird serverseitig nach JPEG konvertiert und
+weiterhin als `map.jpg` gespeichert. Eine Quellen-URL ist nur beim Linkimport Pflicht.
+Seit 2026-07-01 bietet der Bearbeitungsdialog dafür direkt `IUCN-Karte im Browser öffnen`; ein versteckter
 Electron-/Chromium-Fallback wird nicht genutzt, weil Headless-Browserprozesse auf dem Zielsystem mit
 Anwendungsfehlern abbrechen können.
 
@@ -552,8 +557,9 @@ Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
 Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 46 produktive
 `species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
 Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
-erzeugen. Im Arten-Explorer sind Medien- und Datenkarten auf identische 50/50-Spalten ausgerichtet; das Spektrogramm
-ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt. Ein vorhandenes 4:5-Artportraet wird in die feste Portraitzelle
+erzeugen. Im Arten-Explorer stehen Verbreitungskarte, Tierstimme und Artportraet in drei gleich grossen
+Medienbereichen nebeneinander; das Spektrogramm ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt und die
+Quellen-/Lizenzdaten sind direkt sichtbar. Ein vorhandenes 4:5-Artportraet wird in die feste Portraitzelle
 eingepasst und vergroessert die Medienzeile nicht. Die vollstaendige Darstellung bleibt sichtbar; fuer Details
 steht die Portrait-Lightbox bereit.
 Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet. Die dokumentierte
