@@ -19,6 +19,9 @@ Für jedes neue Asset zeigt der Dialog:
 
 Ein Klick in das Spektrogramm eines Sounds setzt die Wiedergabeposition und startet die Wiedergabe an dieser Stelle.
 Dadurch kann die Tonquelle vor der Pflegeentscheidung gezielt geprüft werden.
+Startet ein Player im Prüf- oder Vergleichsdialog, stoppt der Explorer alle anderen offenen Audioplayer und setzt
+sie auf Position 0 zurück. Dadurch laufen beim Vergleich von aktuellem und gefundenem Sound nicht zwei Tonquellen
+parallel.
 
 Beim Schließen des Prüfdialogs wird jede laufende Soundwiedergabe sofort gestoppt und auf den Anfang zurückgesetzt.
 Das gilt auch, wenn der Dialog nach dem Speichern der Pflegeentscheidung automatisch geschlossen wird.
@@ -34,8 +37,9 @@ Erst nach vollständiger Bestätigung wird der Lauf fortgesetzt.
 Bei den gezielten Wiederholungsläufen ändern sich die Optionen und werden als getrennte Entscheidungskarten
 angezeigt:
 
-- Kartensuchlauf: `Automatische Karte übernehmen` oder `Bisherige manuelle Karte behalten`; bisherige und gefundene
-  Karte werden nebeneinander angezeigt und sind einzeln vergrößerbar
+- Kartensuchlauf: `Automatische Karte übernehmen` oder je nach bisherigem Pflegezustand `Bisherige manuelle Karte
+  behalten` beziehungsweise `Bisherige automatische Karte behalten`; bisherige und gefundene Karte werden
+  nebeneinander angezeigt und sind einzeln vergrößerbar
 - NC-Soundsuchlauf: `Gefundenen Sound übernehmen (NC)` beziehungsweise `Gefundenen Sound übernehmen (frei)`,
   `Bisherigen Sound behalten` oder
   `Gefundenen Sound ablehnen und weiter suchen`

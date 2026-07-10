@@ -400,8 +400,9 @@ npm.cmd run --silent test:explorer
 Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 umgesetzt. Produktive Kartenimporte werden erst
 nach Vorschau bestätigt. Unterstützt werden JPEG-Dateien bis 20 MB oder direkte signierte JPEG-Links, z. B. ein im
 Browser geöffneter IUCN-/Backblaze-Kartenlink. Die App lädt die URL serverseitig, prüft Signatur, Struktur,
-Abmessungen, Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro Art bleiben
-höchstens drei verwaltete Kartenbackups erhalten, insgesamt höchstens 500 MB. Nach erfolgreichem Austausch bleiben
+Abmessungen, Quelle und Pflegegrund. Bestehende Karten werden unter `species-explorer/asset-backups/` gesichert. Pro
+Art und Assettyp bleibt genau die letzte verwaltete Sicherung erhalten; ein erneutes Löschen oder Ersetzen
+überschreibt diese Sicherung. Nach erfolgreichem Austausch bleiben
 Karte, `species-assets-overrides.json`, `docs/manual-map-overrides.md` und Report lokal vorgemerkt; veröffentlicht
 werden sie gesammelt über `Änderungen übertragen`.
 Im Bearbeitungsdialog kann per `Automatisch suchen` für jede vorhandene Art ein gezielter Kartensuchlauf gestartet
@@ -441,11 +442,14 @@ Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenz
 angezeigt. Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund erst nach Abschluss neu gerendert,
 damit die Artseite hinter dem Dialog nicht springt.
 
-Seit 2026-07-05 umgesetzt: Verbreitungskarte, Soundpaket (`sound.mp3`, `credits.json`, `spectrogram.webp`) und
-Artportrait (`portrait.webp`, `portrait.json`) können direkt in der jeweiligen Asset-Kopfzeile der Artseite einzeln
-gelöscht werden. Vor dem Löschen wird lokal unter `species-explorer/asset-backups/` gesichert. Die Änderung bleibt
-lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen` veröffentlicht. Beim
-Artportrait-Import kann eine geprüfte Vorschau außerdem verworfen werden, ohne das bisherige Portrait zu ersetzen.
+Seit 2026-07-05 umgesetzt und seit 2026-07-10 erweitert: Verbreitungskarte, Soundpaket (`sound.mp3`,
+`credits.json`, `spectrogram.webp`) und Artportrait (`portrait.webp`, `portrait.json`) können direkt in der
+jeweiligen Asset-Kopfzeile der Artseite einzeln gelöscht werden. Vor dem Löschen wird lokal unter
+`species-explorer/asset-backups/<SafeName>/<Assettyp>/` mit den Originaldateinamen und `backup.json` gesichert. Pro
+Art und Assettyp bleibt nur diese letzte Sicherung erhalten. Ist eine Sicherung vorhanden, bietet die Kopfzeile
+`Wiederherstellen`; ohne Sicherung ist der Button deaktiviert. Wiederhergestellte Assets bleiben lokal vorgemerkt
+und werden zusammen mit anderen offenen Änderungen über `Änderungen übertragen` veröffentlicht. Beim Artportrait-
+Import kann eine geprüfte Vorschau außerdem verworfen werden, ohne das bisherige Portrait zu ersetzen.
 
 Phase 7.7.3 Sound-/Credits-Verwaltung ist seit 2026-06-20 umgesetzt. MP3-Dateien bis 50 MB werden
 nur zusammen mit vollständigen Kerncredits und einem Pflegegrund akzeptiert. Die Vorschau stellt bisherigen und
@@ -454,7 +458,7 @@ werden `sound.mp3`, `credits.json` und `spectrogram.webp` gemeinsam gesichert. D
 zusammen mit Sound und Credits ersetzt; Sound und Credits erhalten manuellen Pipeline-Schutz. Der erfolgreiche
 Austausch bleibt lokal vorgemerkt und wird zusammen mit anderen offenen Explorer-Änderungen über
 `Änderungen übertragen` committed und gepusht. Die gemeinsame
-Backup-Retention beträgt höchstens drei Versionen je Art und Assettyp sowie 500 MB global.
+Backup-Retention beträgt genau eine letzte Version je Art und Assettyp sowie 500 MB global.
 Im selben Bearbeitungsdialog kann der aktuell produktive Sound abgelehnt werden. Dann sichert die App das
 Soundpaket, entfernt Sound, Credits und Spektrogramm, merkt die Quellkennung unter `sound.rejectedSources`, baut den
 Report neu auf und merkt die Änderung lokal für `Änderungen übertragen` vor. Spaetere Sound-Suchlaeufe schlagen dieselbe Quelle nicht erneut vor.
@@ -463,7 +467,8 @@ Fehlende, NC-Sounds oder bewusst angestoßene Alternativsuchen fuer bereits vorh
 gezielt fuer die aktuelle Art gestartet werden. Bei vorhandenem Sound zeigt der Bearbeitungsdialog den aktuellen
 Sound direkt abspielbar an. Neu gefundene Sounds werden im strukturierten Review dem bisherigen Sound
 gegenuebergestellt, mit Spektrogramm und eindeutiger Kennzeichnung `NC` oder `frei`; Klick ins Spektrogramm springt
-im jeweiligen Audioplayer an die gewaehlte Stelle. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder
+im jeweiligen Audioplayer an die gewaehlte Stelle. Sobald ein Player gestartet wird, werden andere offene Player
+gestoppt und auf den Anfang zurückgesetzt, damit beim Vergleich nicht zwei Sounds parallel laufen. Der Lauf startet im Hintergrund, ohne den Bearbeitungsdialog oder
 die Desktop-App zu schließen. Der gezielte Alternativlauf ueberspringt die aktuell gespeicherte Quelle temporaer,
 damit nicht derselbe Kandidat erneut vorgeschlagen wird. Wenn kein anderer freier Treffer gefunden wird, prüft der
 gezielte Lauf zusätzlich die bisherigen Xeno-Canto-Fallback-Stufen, damit auch bewusst akzeptierte NC-Alternativen

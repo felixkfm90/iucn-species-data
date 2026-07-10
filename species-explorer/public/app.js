@@ -394,7 +394,10 @@ function updateValidation(validation) {
     : `${validation.assets.completeSpeciesCount} vollständig`;
   elements.validationAssetsDetail.textContent = assetsOk
     ? (missingSoundKnownCount || manualSoundCount
-      ? `Kernassets vollständig · ${pluralize(missingSoundKnownCount + manualSoundCount, "Soundhinweis", "Soundhinweise")}`
+      ? `Kernassets vollständig · ${[
+          missingSoundKnownCount ? pluralize(missingSoundKnownCount, "fehlender Sound", "fehlende Sounds") : "",
+          manualSoundCount ? pluralize(manualSoundCount, "manueller Sound", "manuelle Sounds") : "",
+        ].filter(Boolean).join(" · ")}`
       : "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden")
     : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
   setValidationCardState(elements.validationAssetsCard, assetsOk);
@@ -566,9 +569,28 @@ function inlineDeleteButton(assetType, label) {
   `;
 }
 
-function sectionActions(editSection = "", deleteAssetType = "", deleteLabel = "") {
+function inlineRestoreButton(assetType, backup = null) {
+  const hasBackup = backup?.exists === true;
+  const title = hasBackup
+    ? `Letzte lokale Sicherung wiederherstellen (${formatBytes(backup.bytes || 0)})`
+    : "Keine lokale Sicherung vorhanden";
+  return `
+    <button
+      class="inline-restore-open ${escapeHtml(assetType)}-restore-button edit-only${hasBackup ? " available" : ""}"
+      type="button"
+      data-asset-type="${escapeHtml(assetType)}"
+      title="${escapeHtml(title)}"
+      ${hasBackup ? "" : "disabled"}
+    >
+      Wiederherstellen
+    </button>
+  `;
+}
+
+function sectionActions(editSection = "", deleteAssetType = "", deleteLabel = "", restoreAssetType = "", restoreBackup = null) {
   const actions = [];
   if (editSection) actions.push(inlineEditButton(editSection));
+  if (restoreAssetType) actions.push(inlineRestoreButton(restoreAssetType, restoreBackup));
   if (deleteAssetType && deleteLabel) actions.push(inlineDeleteButton(deleteAssetType, deleteLabel));
   return actions.length ? `<div class="section-heading-actions edit-only">${actions.join("")}</div>` : "";
 }
@@ -587,7 +609,7 @@ function mapPanel(asset, alt, editSection = "") {
     <section class="map-panel">
       <div class="section-heading">
         <h3 class="section-title">Verbreitungskarte${asset.exists ? ` · ${formatBytes(asset.bytes)}` : ""}</h3>
-        ${sectionActions(editSection, editSection && asset.exists ? "map" : "", "Karte löschen")}
+        ${sectionActions(editSection, editSection && asset.exists ? "map" : "", "Karte löschen", editSection ? "map" : "", asset.backup)}
       </div>
       <div class="map-frame">${content}</div>
     </section>
@@ -602,7 +624,13 @@ function speciesImagePanel(species) {
       <section class="species-image-panel">
         <div class="section-heading">
           <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
-          ${sectionActions(species.inInput ? "portrait" : "", species.inInput ? "portrait" : "", "Artporträt löschen")}
+          ${sectionActions(
+            species.inInput ? "portrait" : "",
+            species.inInput ? "portrait" : "",
+            "Artporträt löschen",
+            species.inInput ? "portrait" : "",
+            portrait.backup,
+          )}
         </div>
         <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
           <img
@@ -619,7 +647,7 @@ function speciesImagePanel(species) {
     <section class="species-image-panel">
       <div class="section-heading">
         <h3 class="section-title">Artporträt</h3>
-        ${sectionActions(species.inInput ? "portrait" : "")}
+        ${sectionActions(species.inInput ? "portrait" : "", "", "", species.inInput ? "portrait" : "", portrait?.backup)}
       </div>
       <div class="species-image-placeholder">
         <strong>${escapeHtml(species.germanName)}</strong>
@@ -917,6 +945,20 @@ async function releaseAllAudioElements() {
   await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
+document.addEventListener("play", (event) => {
+  const current = event.target;
+  if (!(current instanceof HTMLAudioElement)) return;
+  for (const audio of document.querySelectorAll("audio")) {
+    if (audio === current) continue;
+    audio.pause();
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // currentTime kann bei noch nicht geladenen Audiodateien gesperrt sein.
+    }
+  }
+}, true);
+
 function releaseDetailMedia() {
   state.audioCleanup?.();
   state.audioCleanup = null;
@@ -1184,7 +1226,7 @@ function setupAssetReview() {
           manual: status.mode === "manual-maps" && asset.previouslyExisting === false
             ? "Neue Karte nicht übernehmen"
             : status.mode === "manual-maps"
-              ? "Bisherige manuelle Karte behalten"
+              ? `Bisherige ${asset.previousManual ? "manuelle" : "automatische"} Karte behalten`
               : "Manuell pflegen und schützen",
         };
       }
@@ -1366,7 +1408,7 @@ function setupAssetReview() {
     const failed = status.status === "failed";
     const logText = (status.log || []).join("\n");
     const noAlternative =
-      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine weitere Soundquelle|keine weitere taugliche Quelle/i
+      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine weitere Soundquelle|Keine weitere Soundalternative|Keine freie Alternative gefunden|keine weitere taugliche Quelle/i
         .test(logText);
     stopAssetReviewAudio();
     setMessage(
@@ -2007,7 +2049,7 @@ function setupPipelineControl() {
 
     const logText = (status.log || []).join("\n");
     const noAlternative =
-      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine neue automatisch abrufbare Karte/i
+      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine neue automatisch abrufbare Karte|Keine weitere Soundalternative|Keine freie Alternative gefunden/i
         .test(logText);
     const soundLocked = /Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText);
     const rejectedSourcesSkipped = /Abgelehnte Soundquelle wird übersprungen/i.test(logText);
@@ -3356,6 +3398,7 @@ function setupSpeciesEditor(species) {
   const mapAutoSearchButton = elements.detailPanel.querySelector(".map-auto-search-button");
   const mapBrowserLink = elements.detailPanel.querySelector(".map-browser-link");
   const mapDeleteButton = elements.detailPanel.querySelector(".map-delete-button");
+  const mapRestoreButton = elements.detailPanel.querySelector(".map-restore-button");
   const soundFileInput = elements.detailPanel.querySelector(".sound-file-input");
   const soundReasonInput = elements.detailPanel.querySelector(".sound-reason-input");
   const soundMessage = elements.detailPanel.querySelector(".sound-edit-message");
@@ -3372,6 +3415,7 @@ function setupSpeciesEditor(species) {
   const soundRejectCurrentButton = elements.detailPanel.querySelector(".sound-reject-current-button");
   const soundAutoSearchButton = elements.detailPanel.querySelector(".sound-auto-search-button");
   const soundDeleteButton = elements.detailPanel.querySelector(".sound-delete-button");
+  const soundRestoreButton = elements.detailPanel.querySelector(".sound-restore-button");
   const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
   const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
   const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
@@ -3388,6 +3432,7 @@ function setupSpeciesEditor(species) {
   const portraitKeepButton = elements.detailPanel.querySelector(".portrait-keep-button");
   const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
   const portraitDeleteButton = elements.detailPanel.querySelector(".portrait-delete-button");
+  const portraitRestoreButton = elements.detailPanel.querySelector(".portrait-restore-button");
   if (!dialog || !openButtons.length || !closeButtons.length || !form || !preview || !previewRows) return;
 
   let previewToken = "";
@@ -3892,6 +3937,66 @@ function setupSpeciesEditor(species) {
   mapDeleteButton?.addEventListener("click", () => deleteSingleAsset("map"));
   portraitDeleteButton?.addEventListener("click", () => deleteSingleAsset("portrait"));
   soundDeleteButton?.addEventListener("click", () => deleteSingleAsset("sound"));
+
+  const restoreSingleAsset = async (assetType) => {
+    const config = {
+      map: {
+        label: "Verbreitungskarte",
+        message: setMapMessage,
+        busy: setMapBusy,
+        reset: resetMapPreview,
+      },
+      portrait: {
+        label: "Artporträt",
+        message: setPortraitMessage,
+        busy: setPortraitBusy,
+        reset: resetPortraitPreview,
+      },
+      sound: {
+        label: "Soundpaket",
+        message: setSoundMessage,
+        busy: setSoundBusy,
+        reset: resetSoundPreview,
+      },
+    }[assetType];
+    if (!config) return;
+    if (!window.confirm(`${config.label} aus der letzten lokalen Sicherung wiederherstellen?`)) return;
+    config.reset();
+    config.busy(true);
+    config.message(`${config.label} wird aus der letzten lokalen Sicherung wiederhergestellt …`, "info");
+    try {
+      if (assetType === "map") {
+        state.mapCleanup?.();
+        state.mapCleanup = null;
+      }
+      if (assetType === "portrait") {
+        state.portraitCleanup?.();
+        state.portraitCleanup = null;
+      }
+      if (assetType === "sound") await releaseCurrentSoundAudio();
+      const result = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/restore`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        },
+      );
+      state.notice =
+        `${config.label} wurde aus der lokalen Sicherung wiederhergestellt.`
+        + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
+        + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht.";
+      if (typeof dialog.close === "function") dialog.close();
+      await loadData({ reload: true });
+    } catch (error) {
+      config.message([error.message, ...(error.details || [])].join(" · "), "error");
+      config.busy(false);
+    }
+  };
+
+  mapRestoreButton?.addEventListener("click", () => restoreSingleAsset("map"));
+  portraitRestoreButton?.addEventListener("click", () => restoreSingleAsset("portrait"));
+  soundRestoreButton?.addEventListener("click", () => restoreSingleAsset("sound"));
 
   portraitKeepButton?.addEventListener("click", () => {
     resetPortraitPreview();
@@ -4499,6 +4604,8 @@ function renderDetail(species) {
                 ? "sound"
                 : "",
               "Soundpaket löschen",
+              species.inInput ? "sound" : "",
+              species.assets.sound.backup,
             )}
           </div>
           <div class="audio-body">

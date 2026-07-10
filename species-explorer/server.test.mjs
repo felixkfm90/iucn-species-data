@@ -1224,9 +1224,11 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.equal(saved.saved, true);
   assert.equal(saved.gitPublished, false);
   assert.equal(saved.gitSkipped, true);
-  assert.match(saved.backup, /^species-explorer\/asset-backups\/Amsel\/map\/map-/);
+  assert.equal(saved.backup, "species-explorer/asset-backups/Amsel/map");
   assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg")), jpeg);
   assert.equal(existsSync(join(repoRoot, ...saved.backup.split("/"))), true);
+  assert.equal(existsSync(join(repoRoot, ...saved.backup.split("/"), "map.jpg")), true);
+  assert.equal(existsSync(join(repoRoot, ...saved.backup.split("/"), "backup.json")), true);
 
   const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
   assert.equal(registry.assets.Amsel.map.manual, true);
@@ -1267,7 +1269,7 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
     assert.equal(nextSaveResponse.status, 200);
   }
   const backupFiles = await readdir(join(repoRoot, "species-explorer", "asset-backups", "Amsel", "map"));
-  assert.equal(backupFiles.length, 3);
+  assert.deepEqual(backupFiles.sort(), ["backup.json", "map.jpg"]);
   assert.deepEqual(
     await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg")),
     createTestJpeg(643, 480),
@@ -1413,7 +1415,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
   assert.equal(saved.spectrogramBytes, webp.length);
   assert.equal(saved.spectrogramStale, false);
   assert.equal(saved.isNc, true);
-  assert.match(saved.backup, /^species-explorer\/asset-backups\/Amsel\/sound\/sound-/);
+  assert.equal(saved.backup, "species-explorer/asset-backups/Amsel/sound");
   assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "sound.mp3")), mp3);
   assert.deepEqual(
     await readFile(join(repoRoot, "species-assets", "Amsel", "spectrogram.webp")),
@@ -1706,12 +1708,38 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
   assert.equal(deletedMap.assetType, "map");
   assert.equal(deletedMap.pendingTransfer, true);
   assert.equal(existsSync(join(assetDirectory, "map.jpg")), false);
-  assert.match(deletedMap.backup, /^species-explorer\/asset-backups\/Amsel\/map\/map-deleted-/);
+  assert.equal(deletedMap.backup, "species-explorer/asset-backups/Amsel/map");
   assert.equal(existsSync(join(repoRoot, ...deletedMap.backup.split("/"))), true);
+  assert.equal(existsSync(join(repoRoot, ...deletedMap.backup.split("/"), "map.jpg")), true);
+  assert.equal(existsSync(join(repoRoot, ...deletedMap.backup.split("/"), "backup.json")), true);
   const registryAfterMap = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
   assert.equal(registryAfterMap.assets.Amsel.map, undefined);
   const documentationAfterMap = await readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8");
   assert.doesNotMatch(documentationAfterMap, /species-assets\/Amsel\/map\.jpg/);
+
+  const restoreMapResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(restoreMapResponse.status, 200);
+  const restoredMap = await restoreMapResponse.json();
+  assert.equal(restoredMap.restored, true);
+  assert.equal(restoredMap.assetType, "map");
+  assert.equal(restoredMap.pendingTransfer, true);
+  assert.equal(existsSync(join(assetDirectory, "map.jpg")), true);
+  const registryAfterMapRestore = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registryAfterMapRestore.assets.Amsel.map.manual, true);
+  assert.equal(registryAfterMapRestore.assets.Amsel.map.source, "https://example.com/map");
+  const documentationAfterMapRestore = await readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8");
+  assert.match(documentationAfterMapRestore, /species-assets\/Amsel\/map\.jpg/);
+
+  const secondDeleteMapResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(secondDeleteMapResponse.status, 200);
 
   const deleteSoundResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/delete`, {
     method: "POST",
@@ -1726,11 +1754,12 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
   assert.equal(existsSync(join(assetDirectory, "sound.mp3")), false);
   assert.equal(existsSync(join(assetDirectory, "credits.json")), false);
   assert.equal(existsSync(join(assetDirectory, "spectrogram.webp")), false);
-  assert.match(deletedSound.backup, /^species-explorer\/asset-backups\/Amsel\/sound\/sound-deleted-/);
+  assert.equal(deletedSound.backup, "species-explorer/asset-backups/Amsel/sound");
   const soundBackupDirectory = join(repoRoot, ...deletedSound.backup.split("/"));
   assert.equal(existsSync(join(soundBackupDirectory, "sound.mp3")), true);
   assert.equal(existsSync(join(soundBackupDirectory, "credits.json")), true);
   assert.equal(existsSync(join(soundBackupDirectory, "spectrogram.webp")), true);
+  assert.equal(existsSync(join(soundBackupDirectory, "backup.json")), true);
   const registryAfterSound = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
   assert.equal(registryAfterSound.assets.Amsel.spectrogram, undefined);
   assert.equal(registryAfterSound.assets.Amsel.sound.manual, false);
@@ -1750,10 +1779,11 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
   assert.equal(deletedPortrait.pendingTransfer, true);
   assert.equal(existsSync(join(assetDirectory, "portrait.webp")), false);
   assert.equal(existsSync(join(assetDirectory, "portrait.json")), false);
-  assert.match(deletedPortrait.backup, /^species-explorer\/asset-backups\/Amsel\/portrait\/portrait-deleted-/);
+  assert.equal(deletedPortrait.backup, "species-explorer/asset-backups/Amsel/portrait");
   const portraitBackupDirectory = join(repoRoot, ...deletedPortrait.backup.split("/"));
   assert.equal(existsSync(join(portraitBackupDirectory, "portrait.webp")), true);
   assert.equal(existsSync(join(portraitBackupDirectory, "portrait.json")), true);
+  assert.equal(existsSync(join(portraitBackupDirectory, "backup.json")), true);
   const registryAfterPortrait = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
   assert.equal(registryAfterPortrait.assets.Amsel.portrait, undefined);
 
@@ -2167,7 +2197,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /renderPersistentPipelineStatus\(status\)/);
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
-  assert.match(appSource, /Bisherige manuelle Karte behalten/);
+  assert.match(appSource, /Bisherige \$\{asset\.previousManual \? "manuelle" : "automatische"\} Karte behalten/);
   assert.match(appSource, /Gefundenen Sound übernehmen \(\$\{soundKind\}\)/);
   assert.match(appSource, /Sound nicht übernehmen/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
@@ -2291,8 +2321,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function rejectCurrentSoundAsset\(id\)/);
   assert.match(serverSource, /Reject sound source for/);
   assert.match(serverSource, /async function publishSoundAssetChanges\(species,/);
-  assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 3/);
+  assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 1/);
   assert.match(serverSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
+  assert.match(serverSource, /async function writeManagedAssetBackup/);
+  assert.match(serverSource, /async function restoreSpeciesAsset\(id, assetType\)/);
+  assert.match(serverSource, /restoreSpeciesAsset\(id, "map"\)/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
@@ -2385,7 +2418,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appSource, /function inlineEditButton\(section\)/);
   assert.match(appSource, /function inlineDeleteButton\(assetType, label\)/);
+  assert.match(appSource, /function inlineRestoreButton\(assetType, backup = null\)/);
   assert.match(appSource, /function sectionActions\(editSection = ""/);
+  assert.match(appSource, /\/assets\/\$\{assetType\}\/restore/);
+  assert.match(cssSource, /\.inline-restore-open/);
   assert.match(appSource, /inlineEditButton\("manual"\)/);
   assert.match(appSource, /species\.inInput \? "map" : ""/);
   assert.match(appSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);

@@ -10,7 +10,7 @@ import {
 import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
-import { extname, join, normalize, resolve, sep } from "node:path";
+import { extname, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -83,7 +83,7 @@ const MAX_PORTRAIT_BYTES = 20 * 1024 * 1024;
 const MAX_PORTRAIT_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAX_PORTRAIT_INSTRUCTIONS_LENGTH = 800;
 const BACKUP_RETENTION_COUNT = 20;
-const ASSET_BACKUP_RETENTION_COUNT = 3;
+const ASSET_BACKUP_RETENTION_COUNT = 1;
 const ASSET_BACKUP_GLOBAL_BYTES = 500 * 1024 * 1024;
 const PIPELINE_LOG_RETENTION_COUNT = 20;
 const PIPELINE_LOG_LINE_LIMIT = 400;
@@ -664,6 +664,64 @@ function compactTimestamp(date = new Date()) {
   return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
 
+function repoRelativePath(repoRoot, filePath) {
+  return relative(repoRoot, filePath).replace(/\\/g, "/");
+}
+
+function assetBackupFileNames(assetType) {
+  if (assetType === "map") return ["map.jpg"];
+  if (assetType === "sound") return ["sound.mp3", "credits.json", "spectrogram.webp"];
+  if (assetType === "portrait") return ["portrait.webp", "portrait.json"];
+  return [];
+}
+
+async function readBackupMetadata(backupPath) {
+  const metadataPath = join(backupPath, "backup.json");
+  try {
+    return JSON.parse(await readFile(metadataPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+async function writeManagedAssetBackup({
+  repoRoot,
+  assetBackupRoot,
+  species,
+  assetType,
+  files,
+  metadata = {},
+}) {
+  const backupDirectory = join(assetBackupRoot, species.safeName, assetType);
+  const tempDirectory = join(assetBackupRoot, species.safeName, `${assetType}.tmp-${randomUUID()}`);
+  await rm(tempDirectory, { recursive: true, force: true });
+  await mkdir(tempDirectory, { recursive: true });
+  try {
+    for (const file of files) {
+      if (!file.buffer?.length) continue;
+      await writeFile(join(tempDirectory, file.fileName), file.buffer);
+    }
+    await writeFile(
+      join(tempDirectory, "backup.json"),
+      `${JSON.stringify({
+        version: 1,
+        assetType,
+        safeName: species.safeName,
+        germanName: species.germanName,
+        createdAt: new Date().toISOString(),
+        ...metadata,
+      }, null, 2)}\n`,
+      "utf8",
+    );
+    await rm(backupDirectory, { recursive: true, force: true });
+    await rename(tempDirectory, backupDirectory);
+    return repoRelativePath(repoRoot, backupDirectory);
+  } catch (error) {
+    await rm(tempDirectory, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+}
+
 async function pruneSpeciesListBackups(backupDir, keepCount = BACKUP_RETENTION_COUNT) {
   const entries = await readdir(backupDir, { withFileTypes: true });
   const candidates = entries
@@ -701,11 +759,39 @@ async function collectManagedAssetBackups(assetBackupRoot) {
     const assetDirectories = await readdir(speciesPath, { withFileTypes: true });
     for (const assetDirectory of assetDirectories) {
       if (!assetDirectory.isDirectory()) continue;
+      if (!["map", "sound", "portrait"].includes(assetDirectory.name)) continue;
       const assetPath = join(speciesPath, assetDirectory.name);
       const files = await readdir(assetPath, { withFileTypes: true });
+      const directFileNames = assetBackupFileNames(assetDirectory.name);
+      const directBackupFiles = files.filter((file) => file.isFile() && directFileNames.includes(file.name));
+      if (directBackupFiles.length) {
+        let bytes = 0;
+        let mtimeMs = 0;
+        for (const backupFile of directBackupFiles) {
+          const details = await stat(join(assetPath, backupFile.name));
+          bytes += details.size;
+          mtimeMs = Math.max(mtimeMs, details.mtimeMs);
+        }
+        const metadata = await readBackupMetadata(assetPath);
+        collected.push({
+          backupPath: assetPath,
+          species: speciesDirectory.name,
+          assetType: assetDirectory.name,
+          name: "latest",
+          bytes,
+          mtimeMs,
+          metadata,
+        });
+        continue;
+      }
+
       for (const file of files) {
         const backupPath = join(assetPath, file.name);
-        if (file.isFile() && /^map-\d{8}T\d{6}Z-[0-9a-f]{8}\.jpg$/.test(file.name)) {
+        if (
+          file.isFile()
+          && assetDirectory.name === "map"
+          && /^map(?:-deleted)?-\d{8}T\d{6}Z-[0-9a-f]{8}\.jpg$/.test(file.name)
+        ) {
           const details = await stat(backupPath);
           collected.push({
             backupPath,
@@ -714,17 +800,18 @@ async function collectManagedAssetBackups(assetBackupRoot) {
             name: file.name,
             bytes: details.size,
             mtimeMs: details.mtimeMs,
+            metadata: {},
           });
         } else if (
           file.isDirectory()
           && assetDirectory.name === "sound"
-          && /^sound-\d{8}T\d{6}Z-[0-9a-f]{8}$/.test(file.name)
+          && /^sound(?:-deleted|-rejected)?-\d{8}T\d{6}Z-[0-9a-f]{8}$/.test(file.name)
         ) {
           const backupFiles = await readdir(backupPath, { withFileTypes: true });
           let bytes = 0;
           let mtimeMs = 0;
           for (const backupFile of backupFiles) {
-            if (!backupFile.isFile() || !["sound.mp3", "credits.json", "spectrogram.webp"].includes(backupFile.name)) {
+            if (!backupFile.isFile() || !assetBackupFileNames("sound").includes(backupFile.name)) {
               continue;
             }
             const details = await stat(join(backupPath, backupFile.name));
@@ -738,17 +825,18 @@ async function collectManagedAssetBackups(assetBackupRoot) {
             name: file.name,
             bytes,
             mtimeMs,
+            metadata: await readBackupMetadata(backupPath),
           });
         } else if (
           file.isDirectory()
           && assetDirectory.name === "portrait"
-          && /^portrait-\d{8}T\d{6}Z-[0-9a-f]{8}$/.test(file.name)
+          && /^portrait(?:-deleted)?-\d{8}T\d{6}Z-[0-9a-f]{8}$/.test(file.name)
         ) {
           const backupFiles = await readdir(backupPath, { withFileTypes: true });
           let bytes = 0;
           let mtimeMs = 0;
           for (const backupFile of backupFiles) {
-            if (!backupFile.isFile() || !["portrait.webp", "portrait.json"].includes(backupFile.name)) {
+            if (!backupFile.isFile() || !assetBackupFileNames("portrait").includes(backupFile.name)) {
               continue;
             }
             const details = await stat(join(backupPath, backupFile.name));
@@ -762,6 +850,7 @@ async function collectManagedAssetBackups(assetBackupRoot) {
             name: file.name,
             bytes,
             mtimeMs,
+            metadata: await readBackupMetadata(backupPath),
           });
         }
       }
@@ -801,6 +890,29 @@ async function pruneAssetBackups(assetBackupRoot) {
     kept: backups.length - removePaths.size,
     removed: removePaths.size,
     bytes: retainedBytes,
+  };
+}
+
+async function latestAssetBackup(assetBackupRoot, repoRoot, safeName, assetType) {
+  const backups = await collectManagedAssetBackups(assetBackupRoot);
+  const candidates = backups
+    .filter((backup) => backup.species === safeName && backup.assetType === assetType)
+    .sort((left, right) => right.mtimeMs - left.mtimeMs || right.name.localeCompare(left.name));
+  const backup = candidates[0] ?? null;
+  if (!backup) {
+    return {
+      exists: false,
+      path: "",
+      updatedAt: "",
+      bytes: 0,
+    };
+  }
+  return {
+    exists: true,
+    path: repoRelativePath(repoRoot, backup.backupPath),
+    updatedAt: new Date(backup.mtimeMs).toISOString(),
+    bytes: backup.bytes,
+    metadata: backup.metadata ?? {},
   };
 }
 
@@ -1550,12 +1662,14 @@ async function buildExplorerRevision(repoRoot) {
 }
 
 export async function buildExplorerModel(repoRoot = REPO_ROOT) {
-  const [inputList, generatedList, report, manualMapMarkdown, assetOverrides] = await Promise.all([
+  const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
+  const [inputList, generatedList, report, manualMapMarkdown, assetOverrides, collectedAssetBackups] = await Promise.all([
     readJson(join(repoRoot, "species_list.json")),
     readJson(join(repoRoot, "speciesData.json")),
     readJson(join(repoRoot, "fehlende_elemente_report.json")),
     readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8"),
     readJson(join(repoRoot, "species-assets-overrides.json")).catch(() => ({ version: 1, assets: {} })),
+    collectManagedAssetBackups(assetBackupRoot).catch(() => []),
   ]);
 
   if (!Array.isArray(inputList) || !Array.isArray(generatedList)) {
@@ -1581,6 +1695,29 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       .filter(Boolean),
   );
   const allKeys = new Set([...inputByScientificName.keys(), ...generatedByScientificName.keys()]);
+  const latestBackupsByKey = new Map();
+  for (const backup of collectedAssetBackups) {
+    const key = `${backup.species}:${backup.assetType}`;
+    const current = latestBackupsByKey.get(key);
+    if (!current || backup.mtimeMs > current.mtimeMs) latestBackupsByKey.set(key, backup);
+  }
+  const publicBackup = (safeName, assetType) => {
+    const backup = latestBackupsByKey.get(`${safeName}:${assetType}`);
+    if (!backup) {
+      return {
+        exists: false,
+        path: "",
+        updatedAt: "",
+        bytes: 0,
+      };
+    }
+    return {
+      exists: true,
+      path: repoRelativePath(repoRoot, backup.backupPath),
+      updatedAt: new Date(backup.mtimeMs).toISOString(),
+      bytes: backup.bytes,
+    };
+  };
   const species = [];
 
   for (const key of allKeys) {
@@ -1771,6 +1908,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           manualReason: mapOverride?.reason ?? "",
           source: mapOverride?.source ?? "",
           sha256: mapOverride?.sha256 ?? "",
+          backup: publicBackup(safeName, "map"),
         },
         sound: {
           ...sound,
@@ -1778,6 +1916,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           manuallyAdded: isManualSound,
           manualReason: soundOverride?.reason ?? "",
           sha256: soundOverride?.sha256 ?? "",
+          backup: publicBackup(safeName, "sound"),
         },
         credits: { ...creditsFile, url: `/assets/${encodeURIComponent(safeName)}/credits.json` },
         spectrogram: {
@@ -1814,6 +1953,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
             portraitOverride?.promptVersion
             ?? portraitMetadata?.prompt_version
             ?? "",
+          backup: publicBackup(safeName, "portrait"),
         },
       },
       credits,
@@ -2694,6 +2834,7 @@ export async function createExplorerServer({
           previousLicense: type === "sound"
             ? String(previousCredits.license ?? "").trim()
             : "",
+          previousManual: registry.assets?.[target.safeName]?.[type]?.manual === true,
           override: structuredClone(registry.assets?.[target.safeName]?.[type] ?? null),
           spectrogramOverride: type === "sound"
             ? structuredClone(registry.assets?.[target.safeName]?.spectrogram ?? null)
@@ -2752,6 +2893,7 @@ export async function createExplorerServer({
             previousLicense: type === "sound"
               ? String(before.previousLicense ?? "").trim()
               : "",
+            previousManual: Boolean(before.previousManual),
             reviewMode: plan.mode,
             isNc,
             sourceLabel: type === "sound"
@@ -3865,17 +4007,23 @@ export async function createExplorerServer({
     try {
       const assetDirectory = join(repoRoot, "species-assets", species.safeName);
       await mkdir(assetDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
       if (source.mapBuffer.length) {
-        const backupDirectory = join(assetBackupRoot, species.safeName, "map");
-        await mkdir(backupDirectory, { recursive: true });
         const currentHash = createHash("sha256").update(source.mapBuffer).digest("hex");
-        const backupName = `map-${compactTimestamp()}-${currentHash.slice(0, 8)}.jpg`;
-        const backupPath = join(backupDirectory, backupName);
-        await writeFile(backupPath, source.mapBuffer);
-        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/map/${backupName}`;
+        backupRelativePath = await writeManagedAssetBackup({
+          repoRoot,
+          assetBackupRoot,
+          species,
+          assetType: "map",
+          files: [{ fileName: "map.jpg", buffer: source.mapBuffer }],
+          metadata: {
+            action: "replace",
+            sha256: currentHash,
+            override: registry.assets?.[species.safeName]?.map ?? null,
+          },
+        });
       }
 
-      const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
       registry.assets[species.safeName] ??= {};
@@ -4200,27 +4348,31 @@ export async function createExplorerServer({
       const spectrogramSha256 = createHash("sha256").update(stagedSpectrogramBuffer).digest("hex");
 
       await mkdir(source.assetDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
       if (source.soundBuffer.length || source.creditsBuffer.length || source.spectrogramBuffer.length) {
-        const backupDirectory = join(assetBackupRoot, species.safeName, "sound");
-        await mkdir(backupDirectory, { recursive: true });
         const currentHash = createHash("sha256")
           .update(source.soundBuffer)
           .update(source.creditsBuffer)
           .digest("hex");
-        const backupName = `sound-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
-        const backupPath = join(backupDirectory, backupName);
-        await mkdir(backupPath, { recursive: true });
-        for (const [fileName, buffer] of [
-          ["sound.mp3", source.soundBuffer],
-          ["credits.json", source.creditsBuffer],
-          ["spectrogram.webp", source.spectrogramBuffer],
-        ]) {
-          if (buffer.length) await writeFile(join(backupPath, fileName), buffer);
-        }
-        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/sound/${backupName}`;
+        backupRelativePath = await writeManagedAssetBackup({
+          repoRoot,
+          assetBackupRoot,
+          species,
+          assetType: "sound",
+          files: [
+            { fileName: "sound.mp3", buffer: source.soundBuffer },
+            { fileName: "credits.json", buffer: source.creditsBuffer },
+            { fileName: "spectrogram.webp", buffer: source.spectrogramBuffer },
+          ],
+          metadata: {
+            action: "replace",
+            sha256: currentHash,
+            override: registry.assets?.[species.safeName]?.sound ?? null,
+            spectrogramOverride: registry.assets?.[species.safeName]?.spectrogram ?? null,
+          },
+        });
       }
 
-      const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
       registry.spectrogramGenerator = {
@@ -4367,27 +4519,31 @@ export async function createExplorerServer({
     const reportText = await readFile(reportPath, "utf8").catch(() => "");
     try {
       await mkdir(source.assetDirectory, { recursive: true });
-      const backupDirectory = join(assetBackupRoot, species.safeName, "sound");
-      await mkdir(backupDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
       const currentHash = createHash("sha256")
         .update(source.soundBuffer)
         .update(source.creditsBuffer)
         .update(source.spectrogramBuffer)
         .digest("hex");
-      const backupName = `sound-rejected-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
-      const backupPath = join(backupDirectory, backupName);
-      await mkdir(backupPath, { recursive: true });
-      for (const [fileName, buffer] of [
-        ["sound.mp3", source.soundBuffer],
-        ["credits.json", source.creditsBuffer],
-        ["spectrogram.webp", source.spectrogramBuffer],
-      ]) {
-        if (buffer.length) await writeFile(join(backupPath, fileName), buffer);
-      }
-      backupRelativePath = `species-explorer/asset-backups/${species.safeName}/sound/${backupName}`;
+      backupRelativePath = await writeManagedAssetBackup({
+        repoRoot,
+        assetBackupRoot,
+        species,
+        assetType: "sound",
+        files: [
+          { fileName: "sound.mp3", buffer: source.soundBuffer },
+          { fileName: "credits.json", buffer: source.creditsBuffer },
+          { fileName: "spectrogram.webp", buffer: source.spectrogramBuffer },
+        ],
+        metadata: {
+          action: "reject",
+          sha256: currentHash,
+          override: registry.assets?.[species.safeName]?.sound ?? null,
+          spectrogramOverride: registry.assets?.[species.safeName]?.spectrogram ?? null,
+        },
+      });
 
       const rejectedSource = rejectedSoundSourceFromCredits({ safeName: species.safeName });
-      const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
       registry.assets[species.safeName] ??= {};
@@ -4752,24 +4908,27 @@ export async function createExplorerServer({
     let backupRelativePath = "";
     try {
       await mkdir(source.assetDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
       if (source.portraitBuffer.length || source.metadataBuffer.length) {
-        const backupDirectory = join(assetBackupRoot, species.safeName, "portrait");
-        await mkdir(backupDirectory, { recursive: true });
         const currentHash = createHash("sha256")
           .update(source.portraitBuffer)
           .update(source.metadataBuffer)
           .digest("hex");
-        const backupName = `portrait-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
-        const backupPath = join(backupDirectory, backupName);
-        await mkdir(backupPath, { recursive: true });
-        if (source.portraitBuffer.length) {
-          await writeFile(join(backupPath, "portrait.webp"), source.portraitBuffer);
-        }
-        if (source.metadataBuffer.length) {
-          await writeFile(join(backupPath, "portrait.json"), source.metadataBuffer);
-        }
-        backupRelativePath =
-          `species-explorer/asset-backups/${species.safeName}/portrait/${backupName}`;
+        backupRelativePath = await writeManagedAssetBackup({
+          repoRoot,
+          assetBackupRoot,
+          species,
+          assetType: "portrait",
+          files: [
+            { fileName: "portrait.webp", buffer: source.portraitBuffer },
+            { fileName: "portrait.json", buffer: source.metadataBuffer },
+          ],
+          metadata: {
+            action: "replace",
+            sha256: currentHash,
+            override: registry.assets?.[species.safeName]?.portrait ?? null,
+          },
+        });
       }
 
       const approvedAt = new Date().toISOString();
@@ -4797,7 +4956,6 @@ export async function createExplorerServer({
       };
       const metadataText = `${JSON.stringify(metadata, null, 2)}\n`;
       const metadataSha256 = createHash("sha256").update(metadataText).digest("hex");
-      const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
       registry.assets[species.safeName] ??= {};
@@ -4947,27 +5105,26 @@ export async function createExplorerServer({
     assetWriteActive = true;
     try {
       closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(source.assetDirectory)));
-      const backupDirectory = join(assetBackupRoot, species.safeName, assetType);
-      await mkdir(backupDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
       const currentHash = createHash("sha256")
         .update(Buffer.concat(backupFiles.map((entry) => entry.buffer)))
         .digest("hex");
-      if (assetType === "map") {
-        const backupName = `map-deleted-${compactTimestamp()}-${currentHash.slice(0, 8)}.jpg`;
-        const backupPath = join(backupDirectory, backupName);
-        await writeFile(backupPath, source.mapBuffer);
-        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/map/${backupName}`;
-      } else {
-        const backupName = `${assetType}-deleted-${compactTimestamp()}-${currentHash.slice(0, 8)}`;
-        const backupPath = join(backupDirectory, backupName);
-        await mkdir(backupPath, { recursive: true });
-        for (const entry of backupFiles) {
-          if (entry.buffer.length) await writeFile(join(backupPath, entry.fileName), entry.buffer);
-        }
-        backupRelativePath = `species-explorer/asset-backups/${species.safeName}/${assetType}/${backupName}`;
-      }
+      backupRelativePath = await writeManagedAssetBackup({
+        repoRoot,
+        assetBackupRoot,
+        species,
+        assetType,
+        files: backupFiles,
+        metadata: {
+          action: "delete",
+          sha256: currentHash,
+          override: registry.assets?.[species.safeName]?.[assetType] ?? null,
+          spectrogramOverride: assetType === "sound"
+            ? registry.assets?.[species.safeName]?.spectrogram ?? null
+            : null,
+        },
+      });
 
-      const registry = JSON.parse(source.registryText);
       registry.version = 1;
       registry.assets ??= {};
       registry.assets[species.safeName] ??= {};
@@ -5056,6 +5213,142 @@ export async function createExplorerServer({
         backup: backupRelativePath,
         backupRetention,
         backupCleanupWarning,
+        species: model.species.find((entry) => entry.id === id) ?? null,
+        summary: model.summary,
+        validation: model.validation,
+        pendingTransfer: true,
+      };
+    } finally {
+      assetWriteActive = false;
+    }
+  }
+
+  async function restoreSpeciesAsset(id, assetType) {
+    cleanupPreviewTokens();
+    if (!["map", "sound", "portrait"].includes(assetType)) {
+      const error = new Error("Assettyp muss Karte, Sound oder Artporträt sein");
+      error.statusCode = 400;
+      throw error;
+    }
+    if (assetWriteActive || pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review") {
+      const error = new Error("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+
+    const latestBackup = await latestAssetBackup(assetBackupRoot, repoRoot, species.safeName, assetType);
+    if (!latestBackup.exists) {
+      const error = new Error("Für dieses Asset ist keine lokale Sicherung vorhanden");
+      error.statusCode = 404;
+      throw error;
+    }
+    const backupPath = resolve(repoRoot, latestBackup.path);
+    const allowedBackupRoot = `${resolve(assetBackupRoot, species.safeName, assetType)}${sep}`;
+    const backupAsDirectory = existsSync(backupPath) && statSync(backupPath).isDirectory();
+    if (
+      !`${backupPath}${backupAsDirectory ? sep : ""}`.startsWith(allowedBackupRoot)
+      && backupPath !== resolve(assetBackupRoot, species.safeName, assetType)
+    ) {
+      const error = new Error("Unsicherer Sicherungspfad");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const source = assetType === "map"
+      ? await mapAssetSourceRevision(species)
+      : assetType === "sound"
+        ? await soundAssetSourceRevision(species)
+        : await portraitAssetSourceRevision(species);
+    const reportPath = join(repoRoot, "fehlende_elemente_report.json");
+    const reportText = await readFile(reportPath, "utf8").catch(() => "");
+    const documentationText = assetType === "map" ? source.documentationText : "";
+    const fileNames = assetBackupFileNames(assetType);
+    const backupFiles = [];
+    for (const fileName of fileNames) {
+      const filePath = backupAsDirectory ? join(backupPath, fileName) : backupPath;
+      if (assetType !== "map" && !backupAsDirectory) continue;
+      if (!existsSync(filePath)) continue;
+      backupFiles.push({ fileName, buffer: await readFile(filePath) });
+    }
+    if (!backupFiles.length) {
+      const error = new Error("Die lokale Sicherung enthält keine wiederherstellbaren Dateien");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    assetWriteActive = true;
+    try {
+      closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(source.assetDirectory)));
+      await mkdir(source.assetDirectory, { recursive: true });
+      const registry = JSON.parse(source.registryText);
+      registry.version = 1;
+      registry.assets ??= {};
+      registry.assets[species.safeName] ??= {};
+      const metadata = latestBackup.metadata ?? await readBackupMetadata(backupAsDirectory ? backupPath : join(backupPath, ".."));
+      if (metadata.override && typeof metadata.override === "object") {
+        registry.assets[species.safeName][assetType] = metadata.override;
+      } else {
+        delete registry.assets[species.safeName][assetType];
+      }
+      if (assetType === "sound") {
+        if (metadata.spectrogramOverride && typeof metadata.spectrogramOverride === "object") {
+          registry.assets[species.safeName].spectrogram = metadata.spectrogramOverride;
+        } else {
+          delete registry.assets[species.safeName].spectrogram;
+        }
+      }
+      if (Object.keys(registry.assets[species.safeName]).length === 0) {
+        delete registry.assets[species.safeName];
+      }
+      const nextRegistryText = `${JSON.stringify(registry, null, 2)}\n`;
+      const nextDocumentationText = assetType === "map"
+        ? synchronizeManualMapDocumentation(documentationText, registry)
+        : "";
+      const registryTempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      const documentationTempPath = assetType === "map"
+        ? `${manualMapOverridesPath}.tmp-${randomUUID()}`
+        : "";
+
+      try {
+        for (const file of backupFiles) {
+          await writeFile(join(source.assetDirectory, file.fileName), file.buffer);
+        }
+        await writeFile(registryTempPath, nextRegistryText, "utf8");
+        await rename(registryTempPath, assetOverridesPath);
+        if (assetType === "map") {
+          await writeFile(documentationTempPath, nextDocumentationText, "utf8");
+          await rename(documentationTempPath, manualMapOverridesPath);
+        }
+      } catch (error) {
+        await unlink(registryTempPath).catch(() => {});
+        if (documentationTempPath) await unlink(documentationTempPath).catch(() => {});
+        await writeFile(assetOverridesPath, source.registryText, "utf8");
+        if (assetType === "map") await writeFile(manualMapOverridesPath, documentationText, "utf8");
+        throw error;
+      }
+
+      if ((assetType === "map" || assetType === "sound") && rebuildReportAfterAssetSave) {
+        const reportRun = await runCommandCapture(process.execPath, [join(repoRoot, "update.mjs"), "--report-only"]);
+        if (reportRun.code !== 0) {
+          await writeFile(assetOverridesPath, source.registryText, "utf8");
+          if (assetType === "map") await writeFile(manualMapOverridesPath, documentationText, "utf8");
+          if (reportText) await writeFile(reportPath, reportText, "utf8");
+          throw new Error(`Report-Abgleich nach Wiederherstellung fehlgeschlagen: ${reportRun.stderr || reportRun.stdout}`);
+        }
+      }
+
+      await refreshModel({ force: true });
+      return {
+        ok: true,
+        restored: true,
+        assetType,
+        backup: latestBackup.path,
         species: model.species.find((entry) => entry.id === id) ?? null,
         summary: model.summary,
         validation: model.validation,
@@ -5925,19 +6218,19 @@ export async function createExplorerServer({
       const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
       const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
       const mapAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete)$/,
+        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete|restore)$/,
       );
       const mapPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
       );
       const soundAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete)$/,
+        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete|restore)$/,
       );
       const soundPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
       );
       const portraitAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete)$/,
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete|restore)$/,
       );
       const portraitPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
@@ -5999,6 +6292,8 @@ export async function createExplorerServer({
         });
         const result = action === "preview"
           ? await previewMapAsset(id, payload)
+          : action === "restore"
+            ? await restoreSpeciesAsset(id, "map")
           : action === "delete"
             ? await deleteSpeciesAsset(id, "map")
           : await saveMapAsset(id, payload);
@@ -6016,6 +6311,8 @@ export async function createExplorerServer({
           ? await previewSoundAsset(id, payload)
           : action === "reject"
             ? await rejectCurrentSoundAsset(id)
+            : action === "restore"
+              ? await restoreSpeciesAsset(id, "sound")
             : action === "delete"
               ? await deleteSpeciesAsset(id, "sound")
             : await saveSoundAsset(id, payload);
@@ -6035,6 +6332,8 @@ export async function createExplorerServer({
           ? createPortraitPrompt(id, payload)
           : action === "preview"
             ? await previewPortraitAsset(id, payload)
+            : action === "restore"
+              ? await restoreSpeciesAsset(id, "portrait")
             : action === "delete"
               ? await deleteSpeciesAsset(id, "portrait")
             : await savePortraitAsset(id, payload);

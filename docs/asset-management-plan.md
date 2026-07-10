@@ -114,7 +114,7 @@ Umgesetzt:
 - atomarer Austausch von `species-assets/<SafeName>/map.jpg`
 - `manual: true`, `protectFromPipeline: true`, Quelle, Grund, Importdatum und SHA-256 im Override-Register
 - gemeinsamer Abgleich der menschenlesbaren Karten-Dokumentation
-- höchstens drei verwaltete Kartenbackups je Art und globale Obergrenze von 500 MB
+- genau eine letzte verwaltete Sicherung je Art und Assettyp sowie globale Obergrenze von 500 MB
 - lokale Vormerkung von Karte, Register, Dokumentation und Report; Commit und Push gesammelt ueber
   `Änderungen übertragen`
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
@@ -183,7 +183,7 @@ Umgesetzt:
 - gemeinsamer Ersatz von `sound.mp3`, `credits.json` und `spectrogram.webp`
 - `manual: true`, `protectFromPipeline: true`, Quellangaben, Credits-Hash und Sound-SHA-256 im Override-Register
 - Spektrogrammstatus `stale: false` mit Sound- und Spektrogramm-SHA-256
-- höchstens drei verwaltete Soundpaket-Backups je Art und gemeinsame globale Backupgrenze von 500 MB
+- genau eine letzte verwaltete Sicherung je Art und Assettyp sowie gemeinsame globale Backupgrenze von 500 MB
 - lokale Vormerkung von Sound, Credits, Spektrogramm, Override-Register und Report; Commit und Push gesammelt ueber
   `Änderungen übertragen`
 - Abbruch vor dem Import, wenn bereits fremde Dateien im Git-Index vorgemerkt sind
@@ -288,6 +288,9 @@ Erweiterung seit 2026-07-04:
   `sound.rejectedSources` erhalten
 - Artportrait löscht `portrait.webp` und `portrait.json` sowie den Portrait-Override
 - vor jedem Löschen wird unter `species-explorer/asset-backups/<SafeName>/<Assettyp>/` gesichert
+- pro Art und Assettyp bleibt genau eine letzte Sicherung mit Originaldateinamen und `backup.json` erhalten; ein
+  erneutes Löschen oder Ersetzen überschreibt diese Sicherung
+- vorhandene Sicherungen können in der jeweiligen Asset-Kopfzeile über `Wiederherstellen` zurückkopiert werden
 - die Löschung bleibt lokal vorgemerkt und wird zusammen mit anderen offenen Änderungen über `Änderungen übertragen`
   veröffentlicht
 

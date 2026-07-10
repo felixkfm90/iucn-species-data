@@ -178,8 +178,11 @@ species-explorer/asset-backups/<SafeName>/portrait/
 
 Es gelten:
 
-- höchstens drei verwaltete Backups pro Art und Assettyp
+- genau eine letzte verwaltete Sicherung pro Art und Assettyp; ein erneutes Ersetzen oder Löschen überschreibt sie
 - globale Obergrenze 500 MB
+
+Wenn eine Portrait-Sicherung vorhanden ist, kann sie in der Artseite über `Wiederherstellen` zurückkopiert werden.
+Ohne Sicherung ist der Button deaktiviert.
 
 Nach erfolgreicher Speicherung werden nur folgende Dateien vorgemerkt:
 

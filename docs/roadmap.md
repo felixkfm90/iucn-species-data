@@ -434,7 +434,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   technisch lokal umgesetzt: JPEG bis 20 MB als Datei oder direkter signierter JPEG-Link,
   Signatur-/Struktur-/Abmessungsprüfung, Alt-/Neu-Vorschau, Quelle, Pflegegrund, Staging, Vorschau-Token, Schutz
   gegen parallele Änderungen, atomarer Austausch und manuelle
-  Kennzeichnung. Pro Art bleiben höchstens drei Kartenbackups erhalten; global gilt 500 MB. Nach erfolgreichem
+  Kennzeichnung. Seit 2026-07-10 bleibt pro Art und Assettyp genau die letzte verwaltete Sicherung erhalten; global
+  gilt 500 MB. Nach erfolgreichem
   Speichern bleiben Karte, Override-Register, Kartendokumentation und Report lokal vorgemerkt und werden ueber
   `Änderungen übertragen` gemeinsam committed und gepusht. Beim Prüfen
   wird die neue Karte vollständig in den Vorschau-Rahmen eingepasst. `Bearbeiten` steht seit 2026-06-30 direkt an den
@@ -482,10 +483,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Stufen erhalten und optisch überarbeitet werden.
     Seit 2026-07-05 können einzelne Assets gezielt gelöscht werden: Karte, Soundpaket und Artportrait werden vor dem
     Entfernen unter `species-explorer/asset-backups/` gesichert, aus Override-Register beziehungsweise
-    Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Die Löschknöpfe stehen sichtbar
+    Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Seit 2026-07-10 bleibt pro Art und
+    Assettyp genau eine letzte Sicherung mit Originaldateinamen und `backup.json` erhalten; erneutes Löschen oder
+    Ersetzen überschreibt diese Sicherung. In den Asset-Kopfzeilen steht zusätzlich `Wiederherstellen`: gelb aktiv bei
+    vorhandener Sicherung, deaktiviert mit Hinweis, wenn keine Sicherung existiert. Die Löschknöpfe stehen sichtbar
     neben `Bearbeiten` in den jeweiligen Asset-Kopfzeilen. Beim Soundpaket bleiben bereits gemerkte abgelehnte
     Quellen unter `sound.rejectedSources` erhalten. Beim Artportrait-Import kann eine geprüfte Vorschau verworfen
-    und das bisherige Portrait beibehalten werden.
+    und das bisherige Portrait beibehalten werden. Soundvergleichsdialoge stoppen andere offene Audioplayer, sobald
+    ein neuer Player gestartet wird.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
   versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im

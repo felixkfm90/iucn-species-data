@@ -1156,7 +1156,8 @@ button:focus-visible {
 }
 
 .inline-edit-open,
-.inline-delete-open {
+.inline-delete-open,
+.inline-restore-open {
   align-self: center;
   padding: 6px 9px;
   color: var(--green);
@@ -1171,6 +1172,20 @@ button:focus-visible {
   color: var(--red);
   background: var(--red-soft);
   border-color: #dfb2b2;
+}
+
+.inline-restore-open {
+  color: #8a5b00;
+  background: #fff3c4;
+  border-color: #e6c56c;
+}
+
+.inline-restore-open:disabled {
+  color: #87918d;
+  background: #f1f4f2;
+  border-color: #d5ddda;
+  cursor: help;
+  opacity: 0.85;
 }
 
 .map-frame {

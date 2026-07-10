@@ -531,7 +531,8 @@ Aktuelle Planung:
   JPEG-Struktur und Abmessungen, legt eine zehn Minuten gueltige Alt-/Neu-Vorschau im ignorierten Stagingbereich an
   und schuetzt gegen parallele Aenderungen. Beim Speichern wird die alte Karte gesichert, `map.jpg` atomar ersetzt,
   der manuelle Pipeline-Schutz samt SHA-256 im Override-Register gesetzt und die Kartendokumentation aktualisiert.
-  Pro Art bleiben hoechstens drei verwaltete Kartenbackups, global hoechstens 500 MB. Nach erfolgreichem Austausch
+  Pro Art und Assettyp bleibt seit 2026-07-10 genau die letzte verwaltete Sicherung erhalten; global gilt weiter
+  500 MB. Nach erfolgreichem Austausch
   bleiben Karte, Register, Dokumentation und Report lokal vorgemerkt und werden gesammelt ueber
   `Änderungen übertragen` committed und gepusht.
   Die technische Grundlage fuer 7.7.3 Sound-/Credits-Verwaltung ist ebenfalls lokal umgesetzt. Der allgemeine
@@ -549,8 +550,8 @@ Aktuelle Planung:
   einem erneuten unveraenderten Lauf keine Zeitstempel. Der bestehende Bestand wurde am 2026-06-20 migriert:
   45 von 45 vorhandenen Spektrogrammen sind hashregistriert und verifiziert, 0 sind veraltet. Der manuelle Pipeline-Schutz wird
   beim Soundimport gesetzt. Danach bleiben die betroffenen Assetpfade lokal vorgemerkt und werden gesammelt ueber
-  `Änderungen übertragen` committed und gepusht. Pro Art bleiben
-  hoechstens drei verwaltete Soundpaket-Backups; Karten- und Soundbackups teilen sich die globale Obergrenze von
+  `Änderungen übertragen` committed und gepusht. Pro Art und Assettyp bleibt seit 2026-07-10 genau die letzte
+  verwaltete Sicherung erhalten; Karten-, Sound- und Portraitsicherungen teilen sich die globale Obergrenze von
   500 MB. Die Loeschaktionen fuer Verbreitungskarte, Artportraet und Soundpaket stehen direkt in den
   Asset-Kopfzeilen der Artseite neben `Bearbeiten`; beim Artportraet-Import kann eine gepruefte Vorschau verworfen
   und das bisherige Portrait beibehalten werden.
@@ -619,8 +620,12 @@ Aktuelle Planung:
   bis zum Abschluss stabil. Seit 2026-07-04 koennen Verbreitungskarte, Soundpaket und Artportrait einzeln aus der
   Artbearbeitung geloescht werden. Vor dem Loeschen wird unter `species-explorer/asset-backups/` gesichert; Karten-
   Overrides und Kartendokumentation werden synchron entfernt, beim Soundpaket bleiben bereits gemerkte
-  `sound.rejectedSources` erhalten. Die Loeschung bleibt lokal offen und wird ueber `Änderungen übertragen`
-  veroeffentlicht. Seit 2026-07-05 ist auch das Umbenennen des deutschen Artnamens inklusive Assetname/SafeName,
+  `sound.rejectedSources` erhalten. Seit 2026-07-10 bleibt pro Art und Assettyp genau eine letzte Sicherung mit
+  Originaldateinamen und `backup.json` erhalten; erneutes Loeschen oder Ersetzen ueberschreibt diese Sicherung.
+  Vorhandene Sicherungen koennen direkt in der Asset-Kopfzeile per `Wiederherstellen` zurueckkopiert werden, ohne
+  Sicherung ist der Button deaktiviert. Die Loeschung oder Wiederherstellung bleibt lokal offen und wird ueber
+  `Änderungen übertragen` veroeffentlicht. Soundvergleichsdialoge stoppen andere offene Audioplayer, sobald ein
+  neuer Player gestartet wird. Seit 2026-07-05 ist auch das Umbenennen des deutschen Artnamens inklusive Assetname/SafeName,
   Ordner, Override-Eintraegen, Assessment-Zuordnung, Report und Dokumentation umgesetzt.
   Naechste priorisierte Ausbauschritte: allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten
   strukturieren; Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen;

@@ -93,6 +93,28 @@ erfolgreichem Lauf nicht wiederherstellbar.
 - Der Listeneintrag allein wird noch nicht automatisch veröffentlicht. Der anschließende Pipeline- oder
   Bereinigungslauf committed und pusht die bereinigten Daten automatisch.
 
+## 3. Einzelne Assets löschen und wiederherstellen
+
+In den Asset-Kopfzeilen der Artseite können Verbreitungskarte, Soundpaket und Artportrait einzeln gelöscht werden.
+Das betrifft nur die gewählte Art und nicht den Arteintrag selbst.
+
+Vor dem Löschen legt der Explorer unter `species-explorer/asset-backups/<SafeName>/<Assettyp>/` eine lokale Sicherung
+mit den Originaldateinamen an:
+
+- Karte: `map.jpg`
+- Soundpaket: `sound.mp3`, `credits.json`, `spectrogram.webp`
+- Artportrait: `portrait.webp`, `portrait.json`
+- zusätzlich jeweils `backup.json` mit Metadaten und vorherigem Pflegezustand
+
+Pro Art und Assettyp bleibt genau eine Sicherung erhalten. Ein erneutes Löschen oder Ersetzen überschreibt die
+bisherige Sicherung. Dadurch müllt der lokale Sicherungsordner nicht zu und ein späteres manuelles Wiedereinfügen
+hat wieder die normalen Produktdateinamen.
+
+Ist eine Sicherung vorhanden, zeigt die Artseite beim jeweiligen Asset `Wiederherstellen`. Ohne Sicherung ist der
+Button deaktiviert und weist per Tooltip darauf hin, dass keine lokale Sicherung vorhanden ist. Eine
+Wiederherstellung kopiert die Dateien zurück, stellt den vorherigen Override-Zustand wieder her, baut bei Karte oder
+Sound den Report neu auf und merkt die Änderung lokal für `Änderungen übertragen` vor.
+
 ## Kommandozeile
 
 Nur Vorschau:

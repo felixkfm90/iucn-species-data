@@ -608,7 +608,10 @@ Neue-Art-Feinschliff seit 2026-07-04:
 Gezieltes Asset-Löschen seit 2026-07-04:
 
 - Verbreitungskarte, Soundpaket und Artportrait können einzeln aus der Artbearbeitung gelöscht werden.
-- Vor dem Löschen wird in `species-explorer/asset-backups/` gesichert.
+- Vor dem Löschen wird in `species-explorer/asset-backups/<SafeName>/<Assettyp>/` gesichert.
+- Pro Art und Assettyp bleibt genau eine letzte Sicherung mit Originaldateinamen und `backup.json` erhalten.
+- Wenn eine Sicherung vorhanden ist, kann das Asset direkt aus der Kopfzeile wiederhergestellt werden; ohne
+  Sicherung ist `Wiederherstellen` deaktiviert.
 - Kartenlöschung entfernt auch den Karten-Override und synchronisiert die Kartendokumentation.
 - Soundlöschung entfernt Sound, Credits und Spektrogramm, erhält aber abgelehnte Quellen unter
   `sound.rejectedSources`.
