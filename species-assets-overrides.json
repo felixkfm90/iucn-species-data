@@ -1072,11 +1072,6 @@
         "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
         "metadataSha256": "ea1d42af2c3751ec18c9c5d312d72cf97253c038387b9dc183a2ab62de0824d0"
       },
-      "map": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-10T15:12:40.885Z"
-      },
       "sound": {
         "rejectedSources": [
           {
@@ -1130,6 +1125,11 @@
         "spectrogramSha256": "10014ff66c161c8f17636e1b06a0e6462912f71f5e8ffc5b6e90a3d4b67b9ee2",
         "generatedAt": "2026-07-10T15:06:21.403Z",
         "verifiedAt": "2026-07-10T15:06:21.410Z"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-10T15:12:40.885Z"
       }
     }
   },
