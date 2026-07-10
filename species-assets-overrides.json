@@ -184,30 +184,6 @@
         "verifiedAt": "2026-06-30T17:10:32.718Z"
       }
     },
-    "Alpenstrandlaeufer": {
-      "spectrogram": {
-        "stale": false,
-        "soundSha256": "1df753721ee80fb201dee34f33222b62dde1ea5989e73e00b2a9fd722d6f5a5d",
-        "spectrogramSha256": "423dc5ec60b50db5f949073271e0b1ff98b1c17fa11d3207d561cdf21925a3e2",
-        "generatedAt": "2026-06-15T13:03:01.459Z",
-        "verifiedAt": "2026-06-20T18:35:37.702Z"
-      },
-      "portrait": {
-        "managedBy": "species-explorer",
-        "source": "ChatGPT",
-        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.0.0",
-        "importedAt": "2026-06-21T17:29:29.714Z",
-        "approvedAt": "2026-06-21T17:29:32.493Z",
-        "sha256": "d45810f1ba00a33c863815c47b7f25bb67e6a4f174456db572230e9ae80ed8c2",
-        "metadataSha256": "4f75e5f278992b82a5e2bf0d792f403b570bfe92e0f72c403fcfa4425ed0d4ca"
-      },
-      "map": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-03T12:50:09.268Z"
-      }
-    },
     "Amsel": {
       "spectrogram": {
         "stale": false,

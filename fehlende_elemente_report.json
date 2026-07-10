@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-07T15:57:58.085Z",
+  "generatedAt": "2026-07-10T14:42:00.577Z",
   "counts": {
     "totalSpecies": 48,
     "missingSoundMp3": 1,
     "missingSoundCredits": 0,
-    "missingMap": 0,
+    "missingMap": 1,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 1,
+    "missingSpeciesAssets": 2,
     "ncSoundLicensesAll": 4
   },
   "missing": {
@@ -17,8 +17,17 @@
       "Grüner Leguan"
     ],
     "soundCredits": [],
-    "maps": [],
+    "maps": [
+      "Alpenstrandläufer"
+    ],
     "speciesAssets": [
+      {
+        "german": "Alpenstrandläufer",
+        "safeName": "Alpenstrandlaeufer",
+        "missing": [
+          "map.jpg"
+        ]
+      },
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",
