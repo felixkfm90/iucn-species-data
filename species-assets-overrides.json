@@ -1062,16 +1062,6 @@
       }
     },
     "Loewe": {
-      "portrait": {
-        "managedBy": "species-explorer",
-        "source": "ChatGPT",
-        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.1.0",
-        "importedAt": "2026-07-10T15:04:07.585Z",
-        "approvedAt": "2026-07-10T15:04:11.355Z",
-        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "ea1d42af2c3751ec18c9c5d312d72cf97253c038387b9dc183a2ab62de0824d0"
-      },
       "sound": {
         "rejectedSources": [
           {
@@ -1130,6 +1120,16 @@
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-07-10T18:27:26.662Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-10T15:04:07.585Z",
+        "approvedAt": "2026-07-10T15:04:11.355Z",
+        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
+        "metadataSha256": "ea1d42af2c3751ec18c9c5d312d72cf97253c038387b9dc183a2ab62de0824d0"
       }
     }
   },
