@@ -1102,5 +1102,28 @@
     "Species": "glandarius",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-07-10"
+  },
+  {
+    "URLSlug": "pantheraleo",
+    "Wissenschaftlicher Name": "Panthera leo",
+    "Deutscher Name": "Löwe",
+    "Gewicht": "Männchen: ca. 150–250 kg; Weibchen: ca. 110–180 kg",
+    "Größe": "ca. 140–250 cm",
+    "Lebenserwartung": "ca. 10–14 Jahre",
+    "Assessment ID": 280792135,
+    "Status": "VU",
+    "Trend": "Abnehmend",
+    "Kategorie": "Gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "6,98 Jahre",
+    "Kingdom": "ANIMALIA",
+    "Phylum": "CHORDATA",
+    "Class": "MAMMALIA",
+    "Order": "CARNIVORA",
+    "Family": "FELIDAE",
+    "Genus": "Panthera",
+    "Species": "leo",
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-07-10"
   }
 ]
