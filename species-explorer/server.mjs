@@ -99,6 +99,7 @@ const MIME_TYPES = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".jpg": "image/jpeg",
+  ".png": "image/png",
   ".mp3": "audio/mpeg",
   ".webp": "image/webp",
 };
@@ -2302,6 +2303,18 @@ function safeAssetPath(pathname, repoRoot) {
   const assetRoot = join(repoRoot, "species-assets");
   const path = normalize(join(assetRoot, safeName, fileName));
   return path.startsWith(assetRoot) ? path : null;
+}
+
+function safeGraphicsPath(pathname, repoRoot) {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length !== 3 || parts[0] !== "graphics") return null;
+  const directory = decodeURIComponent(parts[1]);
+  const fileName = decodeURIComponent(parts[2]);
+  if (!new Set(["catagory", "trend"]).has(directory)) return null;
+  if (!/^[A-Za-z0-9_-]+\.png$/.test(fileName)) return null;
+  const graphicsRoot = join(repoRoot, "graphics");
+  const path = normalize(join(graphicsRoot, directory, fileName));
+  return path.startsWith(graphicsRoot) ? path : null;
 }
 
 function parseByteRange(rangeHeader, size) {
@@ -6620,6 +6633,11 @@ export async function createExplorerServer({
 
       if (url.pathname.startsWith("/assets/")) {
         await sendFile(request, response, safeAssetPath(url.pathname, repoRoot));
+        return;
+      }
+
+      if (url.pathname.startsWith("/graphics/")) {
+        await sendFile(request, response, safeGraphicsPath(url.pathname, repoRoot));
         return;
       }
 

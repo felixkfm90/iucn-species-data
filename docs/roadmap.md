@@ -267,6 +267,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `species-sound.js?v=1.0.24` die Anzeige auf 78 Pixel beziehungsweise 68 Pixel mobil; die Assets bleiben
   unveraendert. Die dokumentierte Footer-Version ist inzwischen `species-sound.js?v=1.0.25`; sie korrigiert die
   Meldung fuer fehlende Tierstimmen auf `Keine Tierstimme verfügbar` ohne Schlusspunkt.
+  Seit 2026-07-11 wechseln die drei Medienbereiche bei schmalen Desktopfenstern unter 1200 Pixel kontrolliert in
+  eine einspaltige Darstellung. Bei geringer Fensterhoehe sind Kopfzeile, Zusammenfassung und Validierung kompakter,
+  damit die getrennt scrollbar bleibenden Arten- und Detailbereiche nutzbar bleiben. Manuelle Maennchen-/Weibchen-
+  Werte erscheinen untereinander; IUCN-Kategorie und Populationstrend werden im Detailbereich zusaetzlich mit den
+  lokalen Status- und Trendsymbolen dargestellt.
 - 7.3 Validierung und Statusdashboard erweitern: erledigt am 2026-06-19, siehe `docs/desktop-app-plan.md`.
   Das read-only Dashboard vergleicht `species_list.json`, `speciesData.json`, `fehlende_elemente_report.json` und
   die tatsaechlichen Dateien unter `species-assets/`. Datenabweichungen, Assetprobleme und alle Probleme sind getrennt

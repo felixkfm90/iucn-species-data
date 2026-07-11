@@ -226,6 +226,7 @@ Teststand:
 - `POST /api/species` liefert 405
 - Desktop-Sichtpruefung bei 1440 x 1000 Pixeln
 - responsive Sichtpruefung bei 500 x 900 Pixeln
+- responsive Sichtpruefung bei 1090 x 729 Pixeln fuer das kleinste praktisch genutzte Desktopfenster
 - gerenderter DOM enthaelt Artenzahl, Detaildaten, Karte, Spektrogramm und Read-only-Hinweis
 - Nachbesserung vom 2026-06-18:
   - Verbreitungskarten werden ohne festen 16:9-Rahmen im vollstaendigen Originalseitenverhaeltnis angezeigt.
@@ -243,6 +244,10 @@ Teststand:
     WebP-Dateien werden dafuer nicht neu erzeugt.
   - Das Datum `Daten abgerufen` steht im Detailkopf statt in der IUCN-Datentabelle.
   - Der Statusfilter zeigt deutsche Bezeichnungen mit IUCN-Kuerzel, zum Beispiel `Gefaehrdet (VU)`.
+  - Seit 2026-07-11 zeigen Artkopf und IUCN-Daten die vorhandenen lokalen Status- beziehungsweise Trendsymbole.
+    Nach Geschlecht getrennte Groessen- und Gewichtswerte stehen in zwei Zeilen. Unter 1200 Pixel Fensterbreite
+    werden Karte, Tierstimme und Artportrait untereinander angeordnet; bei geringer Fensterhoehe werden die festen
+    Kopf-, Zusammenfassungs- und Validierungsbereiche verdichtet.
   - Eine manuell hinzugefuegte Karte wird direkt in der Zeile `Karte` markiert. Die generische Assetkennzeichnung
     kann spaeter auch fuer manuell hinzugefuegte Sounds verwendet werden.
   - Browsermessung: Scrollposition vor/nach Artwechsel jeweils `900`; Rotfuchs-Karte im gleichen Seitenverhaeltnis

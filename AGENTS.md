@@ -330,6 +330,12 @@ Aktuelle Planung:
   Tierstimmen-Bereich ist zugunsten des spaeteren Artportraets kompakt; seit 2026-07-10 stehen
   Verbreitungskarte, Tierstimme und Artportraet als drei gleich grosse Medienbereiche nebeneinander. Die
   Quellen-/Lizenzdaten der Tierstimme sind im Explorer direkt sichtbar.
+  Seit 2026-07-11 werden diese Medienbereiche unter 1200 Pixel Fensterbreite untereinander dargestellt. Bei
+  geringer Fensterhoehe werden die festen Kopf-, Zusammenfassungs- und Validierungsbereiche verdichtet, damit die
+  getrennten Scrollflaechen fuer Artenliste und Details nutzbar bleiben. Geschlechtsspezifische Groessen- und
+  Gewichtswerte stehen in getrennten Zeilen. Lokale IUCN-Status- und Trendsymbole werden im Artkopf sowie neben
+  Kategorie und Trend angezeigt; der lokale Server liefert dafuer ausschliesslich die freigegebenen PNG-Dateien
+  unter `graphics/catagory/` und `graphics/trend/` aus.
   Der lokale Server liefert Assets mit HTTP-Byte-Range-Unterstuetzung aus, damit MP3-Spruenge nicht auf Position 0
   zurueckfallen.
   Das Explorer-Spektrogramm ist auf 64 bis 84 Pixel

@@ -314,6 +314,14 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
   assert.equal(assetResponse.headers.get("accept-ranges"), "bytes");
 
+  const statusIconResponse = await fetch(`${baseUrl}/graphics/catagory/EN.png`);
+  assert.equal(statusIconResponse.status, 200);
+  assert.equal(statusIconResponse.headers.get("content-type"), "image/png");
+  assert.ok((await statusIconResponse.arrayBuffer()).byteLength > 0);
+
+  const invalidGraphicResponse = await fetch(`${baseUrl}/graphics/../species_list.json`);
+  assert.equal(invalidGraphicResponse.status, 404);
+
   const rangedSoundResponse = await fetch(`${baseUrl}/assets/Amsel/sound.mp3`, {
     headers: { Range: "bytes=100-199" },
   });
@@ -2149,6 +2157,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appSource, /Gefährdet/);
   assert.match(appSource, /IUCN-Daten abgerufen/);
+  assert.match(appSource, /function formatSexSpecificDataValue\(value\)/);
+  assert.match(appSource, /class="sex-specific-value"/);
+  assert.match(appSource, /class="iucn-heading-status"/);
+  assert.match(appSource, /class="iucn-data-icon/);
+  assert.match(appSource, /\/graphics\/catagory\/\$\{encodeURIComponent\(code\)\}\.png/);
+  assert.match(appSource, /\/graphics\/trend\/\$\{encodeURIComponent\(fileName\)\}/);
   assert.match(appSource, /class="audio-credits" open/);
   assert.match(appSource, /Keine Karte vorhanden/);
   assert.doesNotMatch(appSource, /Keine bisherige Karte vorhanden/);
@@ -2592,6 +2606,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(cssSource, /@media \(max-width:\s*1200px\)[\s\S]*?\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*1fr/s);
+  assert.match(cssSource, /@media \(max-height:\s*780px\)[\s\S]*?\.validation-card small\s*\{[^}]*display:\s*none/s);
+  assert.match(cssSource, /\.sex-specific-value\s*\{[^}]*display:\s*grid/s);
+  assert.match(cssSource, /\.iucn-heading-status\s*\{/);
+  assert.match(cssSource, /\.iucn-data-value\s*\{[^}]*display:\s*inline-flex/s);
   assert.doesNotMatch(cssSource, /\.detail-side-stack\s*\{/);
   assert.doesNotMatch(appSource, /detail-side-stack/);
   assert.match(
@@ -2635,6 +2654,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.delete-assets-option\s*\{/);
   assert.match(cssSource, /\.delete-assets-option input\s*\{[^}]*width:\s*16px/s);
   assert.match(serverSource, /mode:\s*preview\.mode/);
+  assert.match(serverSource, /function safeGraphicsPath\(pathname, repoRoot\)/);
   assert.match(cssSource, /button\.danger/);
   assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);

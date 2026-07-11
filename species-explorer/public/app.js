@@ -44,6 +44,14 @@ const IUCN_STATUS_LABELS = {
   EW: "In der Natur ausgestorben",
   EX: "Ausgestorben",
 };
+const IUCN_STATUS_ICON_CODES = new Set(["DD", "LC", "NT", "VU", "EN", "CR", "EW", "EX"]);
+const IUCN_TREND_ICON_FILES = {
+  abnehmend: "abnehmend.png",
+  stabil: "stabil.png",
+  zunehmend: "zunehmend.png",
+  unbekannt: "nodata.png",
+  "n/a": "nodata.png",
+};
 
 const elements = {
   speciesCount: document.querySelector("#species-count"),
@@ -683,9 +691,49 @@ function dataRows(entries) {
   return entries.map(([label, value]) => `
     <div class="data-row">
       <dt>${escapeHtml(label)}</dt>
-      <dd>${escapeHtml(value)}</dd>
+      <dd>${value?.trustedHtml === true ? value.html : escapeHtml(value)}</dd>
     </div>
   `).join("");
+}
+
+function trustedDataValue(html) {
+  return { trustedHtml: true, html };
+}
+
+function formatSexSpecificDataValue(value) {
+  const text = String(value ?? "").trim();
+  const match = text.match(/^Männchen\s*:?\s*(.*?)\s*;?\s*Weibchen\s*:?\s*(.*)$/iu);
+  if (!match) return text;
+  return trustedDataValue(`
+    <span class="sex-specific-value">
+      <span>Männchen ${escapeHtml(match[1].trim())}</span>
+      <span>Weibchen ${escapeHtml(match[2].trim())}</span>
+    </span>
+  `);
+}
+
+function iucnStatusIconUrl(status) {
+  const code = String(status ?? "").trim().toUpperCase();
+  return IUCN_STATUS_ICON_CODES.has(code)
+    ? `/graphics/catagory/${encodeURIComponent(code)}.png`
+    : "";
+}
+
+function iucnTrendIconUrl(trend) {
+  const key = String(trend ?? "").trim().toLocaleLowerCase("de-DE");
+  const fileName = IUCN_TREND_ICON_FILES[key];
+  return fileName ? `/graphics/trend/${encodeURIComponent(fileName)}` : "";
+}
+
+function iconDataValue(value, iconUrl, iconClass = "") {
+  const text = String(value ?? "").trim() || "Unbekannt";
+  if (!iconUrl) return text;
+  return trustedDataValue(`
+    <span class="iucn-data-value">
+      <img class="iucn-data-icon ${escapeHtml(iconClass)}" src="${escapeHtml(iconUrl)}" alt="">
+      <span>${escapeHtml(text)}</span>
+    </span>
+  `);
 }
 
 function inlineEditButton(section) {
@@ -4766,8 +4814,16 @@ function renderDetail(species) {
     species.assets.spectrogram,
     species.assets.spectrogram?.soundSha256,
   );
+  const statusIconUrl = iucnStatusIconUrl(species.iucn.status);
+  const statusTitle = formatIucnStatus(species.iucn.status);
+  const trendIconUrl = iucnTrendIconUrl(species.iucn.trend);
   const badges = [
-    `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
+    statusIconUrl
+      ? `<span class="iucn-heading-status" title="${escapeHtml(statusTitle)}">
+          <img src="${escapeHtml(statusIconUrl)}" alt="">
+          <span class="visually-hidden">${escapeHtml(statusTitle)}</span>
+        </span>`
+      : `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
     species.assetIssues.length
       ? `<span class="status-pill error">${species.assetIssues.length} Assetproblem(e)</span>`
       : `<span class="status-pill ok">Assets vollständig</span>`,
@@ -4908,8 +4964,8 @@ function renderDetail(species) {
         </div>
         <dl class="data-list">
           ${dataRows([
-            ["Größe", species.manual.size],
-            ["Gewicht", species.manual.weight],
+            ["Größe", formatSexSpecificDataValue(species.manual.size)],
+            ["Gewicht", formatSexSpecificDataValue(species.manual.weight)],
             ["Lebenserwartung", species.manual.lifeExpectancy],
             ["URL-Slug", species.slug || "Unbekannt"],
             ["Assetname", species.safeName],
@@ -4921,8 +4977,8 @@ function renderDetail(species) {
         <h3 class="section-title">IUCN-Daten</h3>
         <dl class="data-list">
           ${dataRows([
-            ["Kategorie", species.iucn.category],
-            ["Trend", species.iucn.trend],
+            ["Kategorie", iconDataValue(species.iucn.category, statusIconUrl)],
+            ["Trend", iconDataValue(species.iucn.trend, trendIconUrl, "trend")],
             ["Population", species.iucn.population],
             ["Generationsdauer", species.iucn.generationLength],
             ["Assessment ID", species.iucn.assessmentId],

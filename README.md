@@ -213,11 +213,13 @@ Der Explorer zeigt:
 - Karte, Sound, Credits und Spektrogramm je Art
 - optionales, manuell freigegebenes KI-Artportraet aus `portrait.webp` und `portrait.json`
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
-- drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet
+- drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet; bei schmalen
+  Desktopfenstern unter 1200 Pixel stehen sie lesbar untereinander statt in drei zu engen Spalten
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und standardmaessig sichtbaren Quellen-/Lizenzdaten
 - Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle
-- IUCN-Abrufdatum im Kopf der Detailansicht
+- IUCN-Abrufdatum im Kopf der Detailansicht sowie grafische IUCN-Status- und Trendsymbole im Artkopf und in den
+  IUCN-Daten
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf
@@ -564,6 +566,9 @@ Medienbereichen nebeneinander; das Spektrogramm ist dort auf `64px` bis `84px` A
 Quellen-/Lizenzdaten sind direkt sichtbar. Ein vorhandenes 4:5-Artportraet wird in die feste Portraitzelle
 eingepasst und vergroessert die Medienzeile nicht. Die vollstaendige Darstellung bleibt sichtbar; fuer Details
 steht die Portrait-Lightbox bereit.
+Bei geringer Fensterhoehe werden Kopfzeile, Zusammenfassung und Validierungsdashboard automatisch verdichtet,
+damit Artenliste und Detailansicht eine nutzbare eigene Scrollflaeche behalten. Nach Maennchen und Weibchen
+getrennte manuelle Groessen- oder Gewichtswerte stehen in der Detailansicht jeweils in eigenen Zeilen.
 Der Footer mit Version `1.0.24` wurde von Felix am 2026-06-19 live erfolgreich getestet. Die dokumentierte
 Folgeversion `species-sound.js?v=1.0.25` korrigiert die Squarespace-Meldung fuer fehlende Tonquellen auf
 `Keine Tierstimme verfügbar` ohne Schlusspunkt.
