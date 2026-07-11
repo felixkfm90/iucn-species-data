@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-06-29
+Stand: 2026-07-11
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -568,6 +568,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
   Seit 2026-07-05 werden Pages-Läufe in der gemeinsamen `pages`-Concurrency-Gruppe nicht mehr abgebrochen, sondern
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
+- 7.9.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
+  `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
+  konsistent; 23 Explorer-Tests und 25 JS-/MJS-Syntaxpruefungen bestehen. Vor dem Taxonomie-Redesign wird ein
+  getrenntes Stabilisierungspaket umgesetzt: zwoelf als MP3 benannte WAV/PCM-Dateien migrieren und kuenftig zentral
+  validieren, die schreibenden localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen absichern sowie
+  verpflichtende Test-, Daten-, Assetformat- und Groessenpruefungen vor den Pages-Deploy setzen. Danach werden
+  aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in getrennten Schritten konsolidiert.
 
 ## Phase 8 - Ausbau
 

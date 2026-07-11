@@ -679,6 +679,11 @@ Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`. D
 entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit
 Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
+Vor dem Taxonomie-Redesign wurde der aktuelle Gesamtstand am 2026-07-11 erneut nicht-destruktiv geprueft. Der
+priorisierte Befund mit Daten-, Code-, Datei-, Dokumentations-, Sicherheits- und CI-Analyse steht unter
+`docs/audits/2026-07-repository-audit.md`. Die Daten und Reports sind konsistent; vor groesseren Erweiterungen werden
+zuerst Audioformat, localhost-Schreibschutz und verpflichtende Pages-Qualitaetspruefungen stabilisiert.
+
 Phase 7.9 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.

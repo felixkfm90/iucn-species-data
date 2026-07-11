@@ -1,0 +1,441 @@
+# Repository-Audit vor der Taxonomie-Erweiterung
+
+Stand: 2026-07-11  
+Repository: `felixkfm90/iucn-species-data`  
+Geprüfter Branch: `main`  
+Geprüfter Stand: `11d0eb8`
+
+## Ziel und Ergebnis
+
+Dieses Audit bewertet Code, Datenstruktur, Dateien, Dokumentation, Tests, CI und lokale Betriebsabläufe als
+Grundlage für weitere Erweiterungen. Es wurden keine produktiven Daten oder Assets gelöscht, konvertiert oder
+umbenannt.
+
+Das Projekt ist funktional und die aktuelle Datenbasis ist intern konsistent. Für eine belastbare Grundlage vor
+dem Taxonomie-Redesign bestehen aber drei prioritäre technische Blocker:
+
+1. Zwölf Dateien mit der Endung `sound.mp3` enthalten tatsächlich unkomprimiertes WAV/PCM. Sie verursachen rund
+   153,84 MiB und blähen das GitHub-Pages-Artefakt auf 229,92 MiB auf.
+2. Der lokale Schreibserver bindet korrekt nur an `127.0.0.1`, schützt schreibende Endpunkte aber nicht global
+   durch Same-Origin-/Host-/Sitzungsprüfungen. Einzelne Asset-Lösch- und Wiederherstellungsrouten sind ohne
+   Vorschau-Token erreichbar. Der Kartenimport kann außerdem beliebige HTTP-/HTTPS-Ziele serverseitig abrufen.
+3. Der Pages-Workflow baut und deployt, führt davor aber weder Tests noch Daten-, Assetformat- oder Größenprüfungen
+   aus. Fehlerhafte beziehungsweise unnötig große Assets erreichen deshalb erst den Deployment-Schritt.
+
+Die Taxonomie-Spezifikation in `docs/taxonomy-redesign-handoff.md` ist fachlich und technisch grundsätzlich
+anschlussfähig. Das Redesign sollte erst nach dem unten beschriebenen Stabilisierungspaket begonnen werden.
+
+## Prüfumfang
+
+Geprüft wurden insbesondere:
+
+- Git- und Repository-Zustand;
+- alle getrackten JS-/MJS-Dateien auf Syntax;
+- Explorer-Modell, lokale APIs und Explorer-Testbestand;
+- `species_list.json`, `speciesData.json`, Reports, Register und Art-Assetordner;
+- reale Audioformate unabhängig von der Dateiendung;
+- Abhängigkeiten und `package-lock.json`;
+- lokaler Schreibserver und Electron-Sicherheitskonfiguration;
+- GitHub-Pages-Workflow und Artefaktaufbau;
+- Dateigrößen, Binärdateien, Duplikate, lokale Laufzeitreste und Zeilenenden;
+- aktuelle und historische Projektdokumentation;
+- Taxonomie-Übergabe als nächster geplanter Erweiterungsschritt.
+
+## Verifizierter Ist-Stand
+
+### Daten und Assets
+
+| Prüfung | Ergebnis |
+|---|---:|
+| Arten in Eingabeliste | 49 |
+| Arten in generierter Datenbank | 49 |
+| Karten | 49 |
+| Artporträts | 49 |
+| Sounds / Credits / Spektrogramme | 48 / 48 / 48 |
+| Explorer-Assetprobleme | 0 |
+| bewusst fehlende Tierstimme | 1, Grüner Leguan |
+| manuell gepflegte Karten | 5 |
+| NC-Sounds | 6 |
+| Reportprüfungen | 9 von 9 konsistent |
+
+Die fünf aktuell manuell gepflegten Karten sind:
+
+- Blaukehlchen
+- Fischertukan
+- Panama-Kapuzineraffe
+- Rotfuchs
+- Waldkauz
+
+Die sechs aktuell erkannten NC-Sounds sind:
+
+- Bisamratte
+- Brauenmotmot
+- Geoffroy-Klammeraffe
+- Großtrappe
+- Löwe
+- Scharlachara
+
+Zusätzliche Datenprüfungen ergaben:
+
+- keine doppelten IDs, deutschen Namen, wissenschaftlichen Namen oder SafeNames;
+- keine verwaisten Einträge in `species-assets-overrides.json` oder `lastSavedAssessmentId.json`;
+- zu jedem vorhandenen Sound existieren Credits;
+- alle 104 getrackten JSON-Dateien sind syntaktisch gültig;
+- die kontrollierte Groß-/Kleinschreibung der vorhandenen Taxonomiefelder ist konsistent.
+
+### Tests und Syntax
+
+| Befehl / Prüfung | Ergebnis |
+|---|---|
+| `npm.cmd run --silent test:explorer` | 23 von 23 Tests erfolgreich |
+| `npm.cmd run --silent audit:site -- --skip-live --skip-pages` | erfolgreich, Daten und Report konsistent |
+| `node --check` über alle getrackten JS-/MJS-Dateien | 25 von 25 erfolgreich |
+| `npm audit --json` | 0 bekannte Schwachstellen beim Auditlauf |
+| getrackte Dateien ab 1 KiB auf SHA-256-Duplikate | 333 geprüft, 0 Duplikatgruppen |
+
+Die Abfrage verfügbarer neuer Paketversionen konnte wegen der begrenzten externen Toolverbindung nicht verifiziert
+werden. Das ist kein Projektfehler; die Sicherheitsprüfung der installierten Abhängigkeiten war erfolgreich.
+
+## Priorisierte Befunde
+
+## P0 – vor neuen Funktionsblöcken beheben
+
+### A1. Zwölf WAV-Dateien tragen fälschlich die Endung `.mp3`
+
+`ffprobe` erkennt bei zwölf produktiven `sound.mp3`-Dateien das Containerformat `wav`. Zusammen belegen diese
+Dateien 153,84 MiB für rund 718,6 Sekunden Audio. Die 36 echten MP3-Dateien belegen zusammen nur 30,95 MiB.
+
+| Art | Ist-Format | Größe | Dauer | Bitrate |
+|---|---|---:|---:|---:|
+| Graugans | WAV/PCM | 38,90 MiB | 141,6 s | 2304 kbit/s |
+| Buntspecht | WAV/PCM | 36,89 MiB | 100,7 s | 3072 kbit/s |
+| Blaukehlchen | WAV/PCM | 33,17 MiB | 197,1 s | 1411 kbit/s |
+| Blässhuhn | WAV/PCM | 11,69 MiB | 42,5 s | 2304 kbit/s |
+| Kleiber | WAV/PCM | 10,72 MiB | 63,7 s | 1411 kbit/s |
+| Kohlmeise | WAV/PCM | 7,50 MiB | 54,7 s | 1152 kbit/s |
+| Bergfink | WAV/PCM | 4,20 MiB | 15,3 s | 2306 kbit/s |
+| Eisvogel | WAV/PCM | 2,97 MiB | 35,3 s | 706 kbit/s |
+| Papageientaucher | WAV/PCM | 2,62 MiB | 31,1 s | 707 kbit/s |
+| Waldkauz | WAV/PCM | 1,96 MiB | 10,7 s | 1536 kbit/s |
+| Geoffroy-Klammeraffe | WAV/PCM | 1,88 MiB | 11,2 s | 1411 kbit/s |
+| Reh | WAV/PCM | 1,35 MiB | 14,7 s | 768 kbit/s |
+
+Ursache im Code:
+
+- `saveSoundRecording()` lädt Xeno-Canto-Dateien und schreibt die Bytes ungeprüft als `sound.mp3`.
+- `saveInatSoundRecording()` hat denselben ungeprüften Schreibpfad.
+- Nur der Commons-Pfad ruft derzeit `isMp3Buffer()` auf.
+- Der manuelle Explorer-Upload prüft das Format bereits strenger; die Pipeline tut dies nicht einheitlich.
+
+Auswirkung:
+
+- Das auf dem geprüften Basisstand erzeugte Pages-Artefakt umfasst 359 Dateien und 229,92 MiB; mit diesem
+  zusätzlich veröffentlichten Auditbericht sind es 360 Dateien bei weiterhin rund 229,9 MiB.
+- Bei einer kontrollierten MP3-Konvertierung mit etwa 160 kbit/s würden die zwölf Dateien voraussichtlich nur rund
+  13,7 MiB belegen. Das Artefakt könnte dadurch grob auf 90 MiB sinken.
+- Die großen Binärdateien erhöhen Push-, Backup-, Checkout- und Pages-Synchronisationslast und sind eine plausible
+  Hauptursache der wiederholt erst nach Rerun erfolgreichen Pages-Deployments.
+- Die Dateiendung verspricht Browsern einen anderen Inhalt als tatsächlich ausgeliefert wird.
+
+Empfohlene Behebung als eigener, rücksetzbarer Migrationsschritt:
+
+1. NAS-Backup plus lokales Backup prüfen.
+2. Einen zentralen Audio-Inspektor für alle automatischen Quellen einführen.
+3. Nicht-MP3-Quellen entweder kontrolliert nach MP3 konvertieren oder als Kandidat ablehnen; niemals nur umbenennen.
+4. Die zwölf Bestandsdateien nach MP3 konvertieren.
+5. Spektrogramme und Sound-Hashregister neu erzeugen; Credits inhaltlich erhalten.
+6. Vollständigen Daten-/Assetaudit ausführen.
+7. Pages-Artefaktgröße als CI-Budget prüfen, empfohlen zunächst maximal 120 MiB.
+8. Migration in einem separaten Commit veröffentlichen und Pages kontrollieren.
+
+### A2. Schreibende localhost-API braucht eine Browser-Sicherheitsgrenze
+
+Positiv:
+
+- Der Server bindet ausschließlich an `127.0.0.1`.
+- Electron verwendet `nodeIntegration: false`, `contextIsolation: true` und `sandbox: true`.
+- Vorschau-/Speicherabläufe verwenden an vielen Stellen kurzlebige Tokens und Revisionsprüfungen.
+- Uploadgrößen und manuell importierte Bild-/Audiodateien werden begrenzt und geprüft.
+
+Offene Lücke:
+
+- Der zentrale Request-Handler prüft weder `Origin` noch `Host` oder `Sec-Fetch-Site`.
+- `readJsonBody()` akzeptiert JSON-Inhalt unabhängig vom `Content-Type`.
+- Asset-`delete`- und `restore`-Routen führen Änderungen ohne Vorschau-Token aus.
+- Backup-Einstellungen und Backup-Start besitzen keine Sitzungsauthentisierung.
+- Ein externer Browserkontext kann einfache Cross-Origin-POSTs absenden, auch wenn er die Antwort wegen CORS nicht
+  lesen darf.
+- Beim Kartenimport wird jede syntaktisch gültige HTTP-/HTTPS-URL serverseitig abgerufen. Private, lokale und
+  Link-Local-Ziele werden nicht blockiert.
+
+Empfohlene Behebung:
+
+1. Pro Serverstart ein zufälliges Sitzungstoken erzeugen und für jede schreibende Route verlangen.
+2. `Host` auf den verwalteten lokalen Host/Port begrenzen und bei Browser-POSTs nur dieselbe `Origin` akzeptieren.
+3. Für JSON-Routen `Content-Type: application/json` erzwingen.
+4. Löschen und Wiederherstellen ebenfalls über Vorschau-/Bestätigungstoken absichern.
+5. Beim URL-Import nach DNS-Auflösung Loopback-, private, Link-Local- und Metadatenziele blockieren; nur öffentliche
+   HTTP-/HTTPS-Ziele zulassen.
+6. Positive und negative Integrationstests für diese Grenze ergänzen.
+7. `safePublicPath()` und vergleichbare Pfadprüfungen auf `path.relative()` mit echter Verzeichnisgrenze umstellen,
+   statt nur Stringpräfixe zu vergleichen.
+
+### A3. GitHub Pages besitzt keine Qualitätsbarriere vor dem Deployment
+
+Der Workflow `.github/workflows/pages.yml` führt aktuell nur diese Schritte aus:
+
+1. Checkout
+2. Pages-Konfiguration
+3. `node scripts/prepare-pages-artifact.mjs`
+4. Artefakt-Upload
+5. Pages-Deployment
+
+Nicht enthalten sind:
+
+- eine explizite, reproduzierbare Node-Version;
+- `npm ci`;
+- Syntaxprüfungen;
+- Explorer-Tests;
+- lokaler Daten-/Reportaudit;
+- Prüfung, ob Dateiendung und echtes Medienformat übereinstimmen;
+- Dateigrößen- oder Gesamtartefaktbudget;
+- Prüfung auf unerwartete öffentliche Dateien.
+
+Dadurch kann ein formal baubares, aber fachlich oder technisch ungeeignetes Paket bis zum Pages-Sync gelangen.
+
+Empfohlene Behebung:
+
+- separaten `quality`-Job mit festgelegter Node-LTS-Version einführen;
+- `npm ci`, Syntaxcheck, Explorer-Tests und lokalen Audit ausführen;
+- einen neuen Assetvalidator für Audio-, Karten-, Portrait- und Spektrogrammformate ausführen;
+- erst danach das Pages-Artefakt erzeugen;
+- Größe und erlaubte Pfade des Artefakts prüfen;
+- Deployment ausschließlich von einem erfolgreichen Quality-/Build-Job abhängig machen.
+
+## P1 – Stabilisierung direkt danach
+
+### A4. Server und Oberfläche sind zu großen Monolithen gewachsen
+
+| Datei | Zeilen | benannte Funktionen | API-Referenzen |
+|---|---:|---:|---:|
+| `species-explorer/server.mjs` | 6722 | 80 | 26 |
+| `species-explorer/public/app.js` | 5659 | 80 | 50 |
+| `species-explorer/server.test.mjs` | 2676 | 5 Hilfsfunktionen | 72 |
+| `update.mjs` | 1990 | 78 | 4 |
+
+Die Funktionalität ist getestet, aber Änderungen an Dialogen, Pipeline, Assetverwaltung und CRUD greifen inzwischen
+in dieselben sehr großen Dateien. Das erhöht Seiteneffekte und erschwert gezielte Tests.
+
+Empfohlene Modulgrenzen:
+
+- Server: HTTP/Routing, Modellaufbau, Arten-CRUD, Asset-I/O, Pipeline-Orchestrierung, Backups/Publikation, Sicherheit.
+- Oberfläche: Zustands-/API-Schicht, Medienkarten, Bearbeitungsdialoge, Neue-Art-Assistent, Pipeline-Dialoge,
+  gemeinsamer Modal- und Audio-Controller.
+- Pipeline: IUCN-, Xeno-Canto-, Commons- und iNaturalist-Adapter sowie zentrale Assetvalidierung.
+
+Kein Big-Bang-Umbau: zuerst Charakterisierungstests ergänzen, dann Modul für Modul extrahieren. Eine vollständige
+Explorer-Zerlegung muss das Taxonomie-Frontend nicht blockieren; neue Funktionen sollten den Monolithen aber nicht
+weiter vergrößern.
+
+### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
+
+| Pfad | Dateien | Größe | Alter / Einordnung |
+|---|---:|---:|---|
+| `Testlauf/` | 3 | < 0,01 MiB | Chrome-Reste vom 2026-07-01 |
+| `species-explorer/cleanup-trash/` | 16 | 4,27 MiB | vier alte Löwe-Bereinigungsläufe vom 2026-07-01 |
+| `species-explorer/pipeline-asset-backups/` | 3 | 0,55 MiB | alter Löwe-Pipelinebestand vom 2026-07-01 |
+| `species-explorer/staging/` | 8 | 10,38 MiB | Eingabe-/Renderreste vom 2026-06-28 bis 2026-07-11 |
+
+Diese Pfade sind korrekt ignoriert und landen nicht in Git oder NAS-Backups. Sie belegen aber, dass Abbruch-, Fehler-
+oder Windows-Sperrfälle temporäre Daten zurücklassen.
+
+Empfehlung:
+
+- verwaltete Staging-/Trash-Einträge mit Manifest und Erstellzeit versehen;
+- beim App-Start ausschließlich eindeutig verwaltete, abgelaufene Einträge entfernen;
+- nach erfolgreichen Läufen nochmals best-effort bereinigen;
+- fremde Dateien nie pauschal löschen;
+- Aufbewahrungsregeln je Pfad dokumentieren und testen.
+
+Bewusst behalten werden sollen:
+
+- `node_modules/` und `local-tools/`, weil der vollständige NAS-Restore ohne erneute manuelle Installation starten
+  soll;
+- verwaltete Eingabelistenbackups und Logs im vorgesehenen Limit;
+- `asset-backups/` als je Asset wiederherstellbare Sicherung. Die Aufbewahrung ist nach logischen Sicherungen und
+  nicht nach der reinen Dateizahl zu bewerten.
+
+### A6. Dokumentation enthält aktuelle Widersprüche und zu viel Verlauf an mehreren Stellen
+
+Die 28 Markdown-Dateien umfassen rund 6724 Zeilen. Besonders viel aktueller Zustand und Historie wird parallel in
+`README.md`, `AGENTS.md`, `docs/roadmap.md` und `docs/desktop-app-plan.md` gepflegt.
+
+Bestätigte aktuelle Widersprüche:
+
+- `AGENTS.md` und `README.md` nennen fünf NC-Sounds; Report und Explorer melden sechs.
+- Großtrappe fehlt in den aktuellen NC-Listen, obwohl die aktuelle Quelle NC ist.
+- `AGENTS.md` nennt Löwe als manuell gepflegte Karte; tatsächlich ist Panama-Kapuzineraffe manuell geschützt.
+- `AGENTS.md` beschreibt Großtrappe als freie Commons-Quelle; aktuelle Credits und Report weisen Xeno-Canto mit
+  NC-Lizenz aus.
+- `README.md` enthält zusätzlich einen älteren Abschnitt mit vier manuellen Karten und 46 Spektrogrammen.
+- `docs/sound-license-review.md` ist ein Auditstand vom 2026-06-17, wirkt ohne deutliche Archivkennzeichnung aber
+  wie aktueller Zustand.
+- `docs/add-species-workflow.md` nennt in einem Abschnitt weiterhin 46 Einträge.
+- `docs/roadmap.md` trägt im Kopf noch den Stand 2026-06-29, obwohl Juli-Erweiterungen dokumentiert sind.
+- `AGENTS.md` nennt den letzten vollständigen Pipelinecheck vom 2026-06-20; ein vollständiger 49-Arten-Lauf ist in
+  den Logs vom 2026-07-10 belegt.
+
+Empfohlene Dokumentationsstruktur:
+
+- maschinenlesbare Daten und ein generierter aktueller Status sind die einzige Quelle für Zähler und aktive Listen;
+- `AGENTS.md`: Arbeitsregeln, Architektur, aktuelle Blocker und kurze Übergabe;
+- `README.md`: Installation, Bedienung und Betriebsablauf;
+- `docs/roadmap.md`: nur Gegenwart und Zukunft;
+- erledigte Phasenverläufe in `docs/archive/` verschieben oder klar als historisch kennzeichnen;
+- Detaildokumente bleiben themenspezifisch;
+- datierte Auditberichte bleiben unter `docs/audits/` unverändert als Zeitaufnahme erhalten.
+
+### A7. Zeilenenden sind nicht festgelegt und teilweise innerhalb einer Datei gemischt
+
+Es gibt keine `.gitattributes`. Unter 166 geprüften Textdateien wurden erkannt:
+
+- 149 reine LF-Dateien;
+- 4 reine CRLF-Dateien;
+- 13 Dateien mit gemischten Zeilenenden.
+
+Betroffen sind unter anderem `AGENTS.md`, `README.md`, `docs/roadmap.md`, `app.css`, `server.test.mjs`,
+`species-core.js`, `species-status.js`, `species-taxonomy.js` und `update.mjs`. Das erklärt wiederkehrende
+Git-Warnungen und erzeugt unnötig große beziehungsweise schwer lesbare Diffs.
+
+Empfehlung:
+
+- `.gitattributes` für JS, MJS, JSON, Markdown, HTML, CSS und YAML mit LF einführen;
+- Windows-Startskripte bei Bedarf ausdrücklich auf CRLF festlegen;
+- einmalige Normalisierung in einem separaten Commit nach Backup durchführen;
+- keine Zeilenendennormalisierung mit einer Funktionsänderung mischen.
+
+## P2 – Qualitätsverbesserungen ohne unmittelbare Blockade
+
+### A8. Das Pages-Artefakt veröffentlicht mehr als die Laufzeit benötigt
+
+`prepare-pages-artifact.mjs` kopiert die kompletten Verzeichnisse `species-assets`, `graphics` und `docs`. Dadurch
+werden auch interne Betriebsdokumente und die PSD-Quelldatei `graphics/catagory/Alternativ/Blaupause.psd`
+öffentlich ausgeliefert. Das ist kein akutes Sicherheitsleck, aber unnötig und erschwert eine klare Definition des
+öffentlichen Produkts.
+
+Empfehlung: eine explizite Positivliste für produktive Module, JSON-Daten, Medien und wirklich öffentlich benötigte
+Dokumente verwenden. `docs/` und Designquellen standardmäßig nicht deployen. Der generierte Index verwendet außerdem
+noch die alte Bezeichnung `IUCN Species Data`; das sollte mit dem Produktnamen `Arten-Explorer` beziehungsweise der
+reinen Datenbasis bewusst vereinheitlicht werden.
+
+### A9. Tests sind umfangreich, aber zentral und teilweise quelltextgebunden
+
+Die 23 Explorer-Tests besitzen viele wertvolle Integrationsfälle. Gleichzeitig enthält die einzige Testdatei 384
+`assert.equal`- und 504 `assert.match`-Aufrufe, aber nur einen `assert.rejects`-Fall. Ein Teil der Assertions prüft
+Quelltext-/CSS-Muster statt ausschließlich beobachtbares Verhalten.
+
+Empfehlung:
+
+- Tests nach Modell, API-Sicherheit, Arten-CRUD, Assetverwaltung, Pipeline, Backup und UI-Vertrag aufteilen;
+- mehr negative API-, Fehler- und Parallelitätsfälle ergänzen;
+- statische Vertragsprüfungen nur dort behalten, wo kein günstiger Verhaltenstest möglich ist;
+- einen konventionellen `npm test`-Alias hinzufügen.
+
+### A10. Format-, Schema- und Stilwerkzeuge fehlen
+
+Aktuell existieren keine zentrale JSON-Schema-/Datenvalidierung, kein Linter, kein Formatter und kein Typecheck.
+Die bestehenden manuellen Prüfungen sind gut, werden aber nicht automatisch bei jedem Push erzwungen.
+
+Empfehlung:
+
+- zuerst kleine projektspezifische Validatoren für Artenliste, generierte Daten, Overrides und Medienformate;
+- danach ESLint/Prettier oder eine bewusst schlanke Alternative in einem eigenen, mechanischen Schritt;
+- keine großflächige Formatierung zusammen mit funktionalen Änderungen.
+
+### A11. Große Binärhistorie bleibt auch nach einer Medienkorrektur bestehen
+
+Aktuell sind 385 Dateien mit zusammen rund 231,02 MiB getrackt. Davon entfallen 184,79 MiB auf Dateien mit der
+Endung `.mp3`. Die Git-Objektdatenbank belegt rund 408,16 MiB in Packs plus 15,68 MiB lose Objekte.
+
+Die Audio-Konvertierung reduziert den aktuellen Stand, aber nicht automatisch die vorhandene Git-Historie.
+Empfehlung: zunächst keine riskante History-Rewrite-Aktion. Nach der Formatmigration Wachstum beobachten und erst
+dann entscheiden, ob Git LFS, externer Objektspeicher oder eine kontrollierte Historienbereinigung erforderlich ist.
+
+## Dateistruktur: Was bleiben darf und was bereinigt werden sollte
+
+### Sinnvoll und konsistent
+
+- `species-assets/<SafeName>/` ist die einzige produktive Art-Assetstruktur.
+- Karten, Sound, Credits, Spektrogramm und Portrait sind artweise gebündelt.
+- Es wurden keine byteidentischen getrackten Duplikate ab 1 KiB gefunden.
+- `graphics/catagory/` und `graphics/catagory/Alternativ/` werden derzeit von Explorer und Squarespace
+  unterschiedlich referenziert; keine spontane Umbenennung oder Löschung.
+- `node_modules/`, `_site/`, lokale Werkzeuge, Logs und Arbeitsbackups sind korrekt ignoriert.
+
+### Kontrolliert aufräumen
+
+- alte verwaltete Einträge aus `Testlauf/`, `cleanup-trash/`, `pipeline-asset-backups/` und `staging/`;
+- öffentliche Pages-Ausgabe auf tatsächlich benötigte Dateien begrenzen;
+- historische Dokumentation klar archivieren;
+- Zeilenenden über `.gitattributes` vereinheitlichen.
+
+## Bewertung der Taxonomie-Übergabe
+
+`docs/taxonomy-redesign-handoff.md` beißt sich nach der letzten Klarstellung nicht mit dem aktuellen Datenmodell:
+
+- die Ausgabe bleibt dynamisches HTML/CSS;
+- wissenschaftliche Rohwerte bleiben erhalten;
+- deutsche Anzeigenamen werden zentral zugeordnet;
+- `Subphylum` wird nur aus einem tatsächlich vorhandenen Datenwert übernommen;
+- bei fehlendem Unterstamm wird die Stufe vollständig ausgelassen;
+- sieben und acht Ebenen müssen funktionieren;
+- Squarespace-Container und Versionierungsprozess bleiben erhalten.
+
+Vor der Umsetzung ist lediglich technisch zu verifizieren, ob die IUCN-API für die betroffenen Taxa überhaupt ein
+stabiles Unterstammfeld liefert. Falls nicht, bleibt die Stufe wie festgelegt aus den Daten und aus der Darstellung
+entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
+
+## Empfohlene Reihenfolge
+
+### Stabilisierungspaket A – blockiert neue größere Erweiterungen
+
+1. Audioformatprüfung zentralisieren und zwölf WAV-als-MP3-Dateien kontrolliert migrieren.
+2. Medienformatvalidator und Artefaktgrößenbudget ergänzen.
+3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
+4. CI-Quality-Job vor den Pages-Build setzen.
+5. Vollständigen Test-, Audit- und Pages-Lauf durchführen.
+
+### Stabilisierungspaket B – direkt danach
+
+1. aktuelle Zähler und Listen in AGENTS/README aus einer Quelle korrigieren;
+2. historische Dokumente kennzeichnen beziehungsweise archivieren;
+3. verwaltete lokale Altlasten sicher bereinigen und Aufbewahrung automatisieren;
+4. `.gitattributes` in einem getrennten Normalisierungscommit einführen.
+
+### Danach
+
+1. Taxonomie-Redesign nach der vorhandenen Übergabe umsetzen;
+2. bei berührten Monolithen nur klar abgegrenzte Module extrahieren;
+3. weitere Explorer-Funktionen erst auf der abgesicherten CI-/Assetbasis aufbauen.
+
+## Definition „bereit für Taxonomie"
+
+Die Grundlage ist bereit, wenn:
+
+- jede `sound.mp3` auch technisch ein MP3 ist;
+- der Pages-Build ein festes Assetformat- und Größenbudget durchsetzt;
+- alle schreibenden localhost-Routen eine einheitliche Browser-/Sitzungsgrenze besitzen;
+- CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;
+- der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt;
+- verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind;
+- ein vollständiger lokaler Lauf, ein erfolgreicher Pages-Deploy und der Squarespace-Sichttest abgeschlossen sind.
+
+## Während des Audits bereits erledigt
+
+Der separat gemeldete responsive UI-Fehler wurde vor Abschluss des Audits behoben und veröffentlicht:
+
+- Medienkarten sind benannte Inline-Size-Container.
+- Bei schmalen Karten stehen Bearbeiten, Wiederherstellen und Löschen gemeinsam in einer dreispaltigen Aktionszeile
+  unter dem Titel.
+- 23 Explorer-Tests und die visuelle Prüfung mit rund 499 Pixel breiten Medienkarten waren erfolgreich.
+- Commit: `11d0eb8 Stabilize responsive media card actions`.

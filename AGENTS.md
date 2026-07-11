@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-10
+Stand: 2026-07-11
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -667,5 +667,12 @@ Aktuelle Planung:
   Umfang und Rotation, Start per Klick, Fortschritt in Prozent, Prozessausgabe, Abschlussmeldung und
   Schliesswarnung bei laufendem Backup. Der lokale Zielpfad kann ueber `Backup-Pfad einstellen` geaendert werden;
   die rechnerabhaengige Einstellung liegt ignoriert in `species-explorer/local-settings.json`.
+  Vor dem Taxonomie-Redesign wurde am 2026-07-11 ein vollstaendiger Repository-, Code-, Daten-, Datei-,
+  Dokumentations-, Test- und CI-Audit abgeschlossen: `docs/audits/2026-07-repository-audit.md`. Die Datenbasis ist
+  konsistent und alle 23 Explorer-Tests bestehen. Vor groesseren Erweiterungen sind jedoch die dort beschriebenen
+  P0-Punkte umzusetzen: zwoelf WAV/PCM-Dateien mit falscher `.mp3`-Endung kontrolliert migrieren, die schreibende
+  localhost-API durch eine einheitliche Browser-/Sitzungsgrenze absichern und den Pages-Workflow um verpflichtende
+  Qualitaets-, Assetformat- und Groessenpruefungen ergaenzen. Danach folgen Dokumentationskonsolidierung,
+  Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
