@@ -62,10 +62,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "c03882a54d8cd83f1641bdfad06238225e7607b66af8282312d3905cf75d6f53",
-        "spectrogramSha256": "43a9d8cf99e37bbf7ef26f431d05fb2d678340c2d0188ff5386420ef222bb08a",
-        "generatedAt": "2026-06-15T13:03:13.712Z",
-        "verifiedAt": "2026-06-20T18:35:37.782Z"
+        "soundSha256": "3e11ddf3e585dc843e7b0f622b43d7ace088902ea2e334ec48c99c7ef5e4ec3f",
+        "spectrogramSha256": "5ed10d7e91c588c3ec9d23f463126e16a690e1279197f39f1c082bb6a6398ebc",
+        "generatedAt": "2026-07-11T08:59:54.069Z",
+        "verifiedAt": "2026-07-11T08:59:54.075Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -76,6 +76,21 @@
         "approvedAt": "2026-06-21T18:02:56.667Z",
         "sha256": "0a106b1b04e2e8e5eec615f453c979be11d52d046cb3dca08e981814cee655a8",
         "metadataSha256": "9adf4d8faeb745d79a647792d5b162d614b8d127ed17df9e478fc9380d134500"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-europ%C3%A4ischer_Strau%C3%9F.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-europ%C3%A4ischer_Strau%C3%9F.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-11T08:59:47.441Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-11T09:00:13.890Z"
       }
     },
     "Kernbeisser": {
