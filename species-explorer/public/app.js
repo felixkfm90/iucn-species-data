@@ -462,6 +462,19 @@ function createFlag(label, className, title = "") {
   return span;
 }
 
+function createIndicatorIcon(url, title, className = "") {
+  if (!url) return null;
+  const span = document.createElement("span");
+  span.className = `species-list-indicator ${className}`.trim();
+  span.title = title;
+  span.setAttribute("aria-label", title);
+  const image = document.createElement("img");
+  image.src = url;
+  image.alt = "";
+  span.append(image);
+  return span;
+}
+
 function updateSummary(summary) {
   elements.speciesCount.textContent = summary.speciesCount;
   elements.assetIssues.textContent = summary.missingCoreAssets;
@@ -664,6 +677,18 @@ function renderSpeciesList() {
     item.querySelector("em").textContent = species.scientificName;
 
     const flags = item.querySelector(".species-item-flags");
+    const statusIndicator = createIndicatorIcon(
+      iucnStatusIconUrl(species.iucn.status),
+      formatIucnStatus(species.iucn.status),
+      "status",
+    );
+    const trendIndicator = createIndicatorIcon(
+      iucnTrendIconUrl(species.iucn.trend),
+      `Populationstrend: ${species.iucn.trend || "Unbekannt"}`,
+      "trend",
+    );
+    if (statusIndicator) flags.append(statusIndicator);
+    if (trendIndicator) flags.append(trendIndicator);
     if (species.inconsistencies.length) {
       flags.append(createFlag("!", "issue", species.inconsistencies.join(", ")));
     }
@@ -4817,6 +4842,7 @@ function renderDetail(species) {
   const statusIconUrl = iucnStatusIconUrl(species.iucn.status);
   const statusTitle = formatIucnStatus(species.iucn.status);
   const trendIconUrl = iucnTrendIconUrl(species.iucn.trend);
+  const trendTitle = `Populationstrend: ${species.iucn.trend || "Unbekannt"}`;
   const badges = [
     statusIconUrl
       ? `<span class="iucn-heading-status" title="${escapeHtml(statusTitle)}">
@@ -4824,6 +4850,12 @@ function renderDetail(species) {
           <span class="visually-hidden">${escapeHtml(statusTitle)}</span>
         </span>`
       : `<span class="status-pill">${escapeHtml(species.iucn.status)}</span>`,
+    trendIconUrl
+      ? `<span class="iucn-heading-trend" title="${escapeHtml(trendTitle)}">
+          <img src="${escapeHtml(trendIconUrl)}" alt="">
+          <span class="visually-hidden">${escapeHtml(trendTitle)}</span>
+        </span>`
+      : "",
     species.assetIssues.length
       ? `<span class="status-pill error">${species.assetIssues.length} Assetproblem(e)</span>`
       : `<span class="status-pill ok">Assets vollständig</span>`,

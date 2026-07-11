@@ -213,13 +213,13 @@ Der Explorer zeigt:
 - Karte, Sound, Credits und Spektrogramm je Art
 - optionales, manuell freigegebenes KI-Artportraet aus `portrait.webp` und `portrait.json`
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
-- drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet; bei schmalen
-  Desktopfenstern unter 1200 Pixel stehen sie lesbar untereinander statt in drei zu engen Spalten
+- drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet; sobald der rechte
+  Detailbereich weniger als 1320 Pixel Platz hat, stehen sie lesbar untereinander statt in drei zu engen Spalten
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und standardmaessig sichtbaren Quellen-/Lizenzdaten
 - Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle
-- IUCN-Abrufdatum im Kopf der Detailansicht sowie grafische IUCN-Status- und Trendsymbole im Artkopf und in den
-  IUCN-Daten
+- IUCN-Abrufdatum im Kopf der Detailansicht sowie grafische IUCN-Status- und Trendsymbole im Artkopf, in der linken
+  Artenliste und in den IUCN-Daten
 - deutsche Statusbezeichnungen mit IUCN-Kuerzel im Statusfilter
 - manuell hinzugefuegte Assets direkt in der jeweiligen Assetzeile gekennzeichnet
 - Pipeline-Steuerung fuer neue/fehlende Arten oder einen vollstaendigen Lauf

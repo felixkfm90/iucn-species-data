@@ -244,10 +244,12 @@ Teststand:
     WebP-Dateien werden dafuer nicht neu erzeugt.
   - Das Datum `Daten abgerufen` steht im Detailkopf statt in der IUCN-Datentabelle.
   - Der Statusfilter zeigt deutsche Bezeichnungen mit IUCN-Kuerzel, zum Beispiel `Gefaehrdet (VU)`.
-  - Seit 2026-07-11 zeigen Artkopf und IUCN-Daten die vorhandenen lokalen Status- beziehungsweise Trendsymbole.
-    Nach Geschlecht getrennte Groessen- und Gewichtswerte stehen in zwei Zeilen. Unter 1200 Pixel Fensterbreite
-    werden Karte, Tierstimme und Artportrait untereinander angeordnet; bei geringer Fensterhoehe werden die festen
-    Kopf-, Zusammenfassungs- und Validierungsbereiche verdichtet.
+  - Seit 2026-07-11 zeigen Artkopf, linke Artenliste und IUCN-Daten die vorhandenen lokalen Status- beziehungsweise
+    Trendsymbole. Nach Geschlecht getrennte Groessen- und Gewichtswerte stehen in zwei Zeilen. Sobald der rechte
+    Detailbereich weniger als 1320 Pixel Platz hat, werden Karte, Tierstimme und Artportrait untereinander
+    angeordnet; bei geringer Fensterhoehe werden die festen Kopf-, Zusammenfassungs- und Validierungsbereiche
+    verdichtet. Die Umschaltung orientiert sich damit am tatsaechlich nutzbaren Detailbereich, bevor Player oder
+    Assetaktionen umbrechen beziehungsweise abgeschnitten werden.
   - Eine manuell hinzugefuegte Karte wird direkt in der Zeile `Karte` markiert. Die generische Assetkennzeichnung
     kann spaeter auch fuer manuell hinzugefuegte Sounds verwendet werden.
   - Browsermessung: Scrollposition vor/nach Artwechsel jeweils `900`; Rotfuchs-Karte im gleichen Seitenverhaeltnis

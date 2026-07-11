@@ -967,6 +967,25 @@ button:focus-visible {
   gap: 4px;
 }
 
+.species-list-indicator {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.species-list-indicator img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.species-list-indicator.trend img {
+  border-radius: 3px;
+}
+
 .flag,
 .status-pill {
   display: inline-flex;
@@ -1010,6 +1029,8 @@ button:focus-visible {
   overflow-y: auto;
   overflow-anchor: none;
   padding: 20px;
+  container-type: inline-size;
+  container-name: species-detail;
 }
 
 .empty-state,
@@ -1078,7 +1099,8 @@ button:focus-visible {
   gap: 6px;
 }
 
-.iucn-heading-status {
+.iucn-heading-status,
+.iucn-heading-trend {
   position: relative;
   width: 30px;
   height: 30px;
@@ -1087,11 +1109,16 @@ button:focus-visible {
   place-items: center;
 }
 
-.iucn-heading-status img {
+.iucn-heading-status img,
+.iucn-heading-trend img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
+}
+
+.iucn-heading-trend img {
+  border-radius: 5px;
 }
 
 .detail-fetched-at {
@@ -1196,6 +1223,10 @@ button:focus-visible {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 7px;
+}
+
+.section-heading > .inline-edit-open {
+  margin-right: 10px;
 }
 
 .inline-edit-open,
@@ -3070,6 +3101,26 @@ button:focus-visible {
   font-size: 0.85rem;
 }
 
+@container species-detail (max-width: 1320px) {
+  .detail-media-layout {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+
+  .detail-media-layout > .map-panel,
+  .detail-media-layout > .audio-section,
+  .detail-media-layout > .species-image-panel {
+    height: auto;
+  }
+
+  .species-image-panel,
+  .map-frame,
+  .audio-body {
+    height: min(62vh, 560px);
+    min-height: 0;
+  }
+}
+
 @media (max-width: 1200px) {
   .app-header {
     min-height: 66px;
@@ -3101,23 +3152,6 @@ button:focus-visible {
     width: 150px;
   }
 
-  .detail-media-layout {
-    grid-template-columns: 1fr;
-    grid-auto-rows: auto;
-  }
-
-  .detail-media-layout > .map-panel,
-  .detail-media-layout > .audio-section,
-  .detail-media-layout > .species-image-panel {
-    height: auto;
-  }
-
-  .species-image-panel,
-  .map-frame,
-  .audio-body {
-    height: min(62vh, 560px);
-    min-height: 0;
-  }
 }
 
 @media (max-width: 960px) {

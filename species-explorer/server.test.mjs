@@ -2160,7 +2160,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function formatSexSpecificDataValue\(value\)/);
   assert.match(appSource, /class="sex-specific-value"/);
   assert.match(appSource, /class="iucn-heading-status"/);
+  assert.match(appSource, /class="iucn-heading-trend"/);
   assert.match(appSource, /class="iucn-data-icon/);
+  assert.match(appSource, /function createIndicatorIcon\(url, title, className = ""\)/);
+  assert.match(appSource, /species-list-indicator/);
   assert.match(appSource, /\/graphics\/catagory\/\$\{encodeURIComponent\(code\)\}\.png/);
   assert.match(appSource, /\/graphics\/trend\/\$\{encodeURIComponent\(fileName\)\}/);
   assert.match(appSource, /class="audio-credits" open/);
@@ -2606,11 +2609,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /\["Kartenpflege"/);
   assert.doesNotMatch(appSource, /\["Daten abgerufen", species\.iucn\.fetchedAt\]/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(cssSource, /@media \(max-width:\s*1200px\)[\s\S]*?\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*1fr/s);
+  assert.match(cssSource, /\.detail-panel\s*\{[^}]*container-name:\s*species-detail/s);
+  assert.match(cssSource, /@container species-detail \(max-width:\s*1320px\)[\s\S]*?\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.match(cssSource, /@media \(max-height:\s*780px\)[\s\S]*?\.validation-card small\s*\{[^}]*display:\s*none/s);
   assert.match(cssSource, /\.sex-specific-value\s*\{[^}]*display:\s*grid/s);
-  assert.match(cssSource, /\.iucn-heading-status\s*\{/);
+  assert.match(cssSource, /\.iucn-heading-status,\s*\.iucn-heading-trend\s*\{/);
+  assert.match(cssSource, /\.species-list-indicator\s*\{/);
   assert.match(cssSource, /\.iucn-data-value\s*\{[^}]*display:\s*inline-flex/s);
+  assert.match(cssSource, /\.section-heading > \.inline-edit-open\s*\{[^}]*margin-right:\s*10px/s);
   assert.doesNotMatch(cssSource, /\.detail-side-stack\s*\{/);
   assert.doesNotMatch(appSource, /detail-side-stack/);
   assert.match(
