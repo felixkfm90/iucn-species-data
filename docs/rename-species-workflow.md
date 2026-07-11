@@ -1,6 +1,6 @@
 # Artnamen umbenennen
 
-Stand: 2026-07-05
+Stand: 2026-07-11
 
 Dieser Workflow ist fuer Faelle gedacht, in denen sich der deutsche Artname oder bewusst auch der wissenschaftliche
 Name aendert. Der deutsche Name kann direkt bearbeitet werden. Der wissenschaftliche Name ist zunaechst gesperrt und
@@ -16,10 +16,12 @@ direkt betroffen sein kann.
 5. Bei Bedarf das Schloss am Feld `Wissenschaftlicher Name` oeffnen.
 6. Warnung bestaetigen: Die Aenderung aendert den URL-Slug und kann sich direkt auf die Website auswirken.
 7. Wissenschaftlichen Namen im Format `Gattung art` eintragen.
-8. `Aenderungen pruefen` ausfuehren und Diff kontrollieren. Bei wissenschaftlicher Umbenennung erscheint auch der
+8. Groesse, Gewicht und Lebenserwartung bei Bedarf in den strukturierten Wert-/Einheitenfeldern anpassen. Groesse
+   und Gewicht koennen getrennt nach Maennchen und Weibchen gepflegt werden.
+9. `Aenderungen pruefen` ausfuehren und Diff kontrollieren. Bei wissenschaftlicher Umbenennung erscheint auch der
    neue URL-Slug in der Vorschau.
-9. `Jetzt speichern` speichert lokal.
-10. Danach ueber `Änderungen übertragen` veroeffentlichen.
+10. `Jetzt speichern` speichert lokal.
+11. Danach ueber `Änderungen übertragen` veroeffentlichen.
 
 ## Technischer Ablauf
 

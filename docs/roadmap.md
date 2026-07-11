@@ -321,7 +321,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Weitere Arten koennen nach einem erfolgreichen Speichern ohne Seitenneuladen angelegt werden. Haubentaucher und
   Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28 bereinigt. Löwe wurde
   nach einem erneuten Neue-Art-Test wieder produktiv angelegt. Eichelhäher wurde danach ebenfalls über den
-  Neue-Art-Assistenten produktiv ergänzt. Aktuell stehen 48 Arten in `species_list.json`.
+  Neue-Art-Assistenten produktiv ergänzt. Aktuell stehen 49 Arten in `species_list.json`.
 - 7.6 Pipeline- und Audit-Steuerung: abgeschlossen am 2026-06-20. Vollständige und selektive App-Läufe,
     Prozessanzeige, Assetentscheidung, automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere
     Dialogbedienung und Soundstopp wurden praktisch geprüft, siehe `docs/pipeline-control-plan.md`.
@@ -417,7 +417,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Vor der Löschung entlädt die Oberfläche alle Detailmedien und wartet bei Sofortloeschung kurz, damit Windows keine
   produktiven Assetdateien sperrt.
   Frühere Löwe-Testzwischenstände können über den Löschdialog vollständig bereinigt werden; aktuell ist Löwe wieder
-  produktiv angelegt und der Explorer meldet nach Eichelhäher aktuell 48/48 Arten.
+  produktiv angelegt und der Explorer meldet aktuell 49/49 Arten.
   Beim gezielten Sound-Alternativlauf im Bearbeitungsdialog und vor globalen `nc-sounds`-Läufen werden alle
   Audioplayer entladen; der aktuelle Bearbeitungsplayer wird aus dem DOM ersetzt und kurz freigegeben, damit eine
   pausierte Vorschau unter Windows keine produktive MP3-Dateisperre hält. Temporäre Pipeline-Backupordner, die
@@ -474,11 +474,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     direkt in den Asset-Kopfzeilen der Artseite umgesetzt. Deutschen und wissenschaftlichen Artnamen umbenennen ist seit 2026-07-05 umgesetzt; der
     wissenschaftliche Name ist per Schloss geschützt und ändert nach Warnbestätigung den URL-Slug mit.
     Assetname/SafeName, Assetordner, Override-Einträge, Assessment-Zuordnung, Report, Kartendokumentation und
-    lokale Metadaten werden konsistent mitgeführt. Details: `docs/rename-species-workflow.md`. Offen bleiben:
-    allgemeine Daten im
-    Bearbeitungsdialog in strukturierte Männchen-/Weibchen-Felder wie im Neue-Art-Assistenten aufteilen; Taxonomie-
-    Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten; Artportrait auf der Squarespace-Artseite
-    einbinden.
+    lokale Metadaten werden konsistent mitgeführt. Details: `docs/rename-species-workflow.md`.
+    Seit 2026-07-11 nutzt der Bearbeitungsdialog fuer allgemeine Daten dieselben strukturierten Wert-/Einheitenfelder
+    und die unabhaengige Maennchen-/Weibchen-Trennung wie der Neue-Art-Assistent. Die Taxonomiewerte in
+    `speciesData.json` sind fuer bestehende Daten normalisiert und werden von `update.mjs` kuenftig einheitlich
+    lesbar geschrieben. Offen bleiben: Taxonomie-Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten;
+    Artportrait auf der Squarespace-Artseite einbinden.
     Seit 2026-07-04 sind die Feinschliffe aus dem Neue-Art-Test `Scharlachara` umgesetzt: Karte im Schritt `Karte`
     per Vergrößern/Lightbox prüfbar, sichtbarer Lizenzstatus `frei`/`NC` im Sound-Prüfschritt, derselbe
     Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich und stabiler Hintergrund-Detailbereich während des

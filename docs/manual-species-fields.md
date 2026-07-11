@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-06-14
+Stand: 2026-07-11
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -22,6 +22,18 @@ oder die fuer die Artseiten redaktionell kontrolliert bleiben sollen.
 
 ## Anzeige
 
+Im Arten-Explorer werden Groesse, Gewicht und Lebenserwartung im Bearbeitungsdialog wie beim Neue-Art-Assistenten
+strukturiert erfasst:
+
+- `ca.` wird automatisch vorangestellt;
+- Groesse nutzt `mm`, `cm` oder `m`;
+- Gewicht nutzt `g`, `kg` oder `t`;
+- Lebenserwartung nutzt `Tage`, `Monate` oder `Jahre` und wird bei `1` automatisch in den Singular gesetzt;
+- Groesse und Gewicht koennen unabhaengig voneinander nach Maennchen und Weibchen getrennt werden.
+
+Bestehende Angaben in der frueheren Schreibweise `Maennchen ... Weibchen ...` werden beim Oeffnen erkannt. Beim
+naechsten Speichern verwendet der Explorer einheitlich `Maennchen: ...; Weibchen: ...`.
+
 `species-info.js` zeigt die manuelle `Lebenserwartung` oberhalb der aus IUCN stammenden `Generationsdauer` an.
 Technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als `Unbekannt`
 angezeigt. Das ist reine Frontend-Anzeigeformatierung; die Rohdaten in `speciesData.json` bleiben unveraendert.
@@ -38,6 +50,11 @@ Reihenfolge in der Info-Box:
 ## Pipeline-Verhalten
 
 `update.mjs` uebernimmt `life_expectancy` aus `species_list.json` bei jedem Lauf neu in `speciesData.json`.
+
+Die von IUCN gelieferten Taxonomiewerte fuer Reich, Stamm, Klasse, Ordnung und Familie werden vor dem Schreiben in
+eine lesbare Gross-/Kleinschreibung ueberfuehrt, zum Beispiel `ANIMALIA` zu `Animalia`. Das einmalige Skript
+`node scripts/normalize-taxonomy-data.mjs` fuehrt dieselbe Normalisierung fuer bestehende Datensaetze aus und legt
+vorher eine lokale Sicherung unter `species-explorer/backups/` an.
 
 Falls ein IUCN-Abruf unvollstaendig ist und auf vorhandene Daten zurueckgefallen wird, werden Groesse, Gewicht und
 Lebenserwartung trotzdem aus der aktuellen `species_list.json` aktualisiert.

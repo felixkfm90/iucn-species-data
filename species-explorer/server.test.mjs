@@ -202,6 +202,15 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.species.filter((entry) => entry.isManualMap).length, expectedManualMapCount);
   assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, expectedManualMapCount);
   assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
+  assert.ok(model.species.every((entry) => (
+    [
+      entry.taxonomy.kingdom,
+      entry.taxonomy.phylum,
+      entry.taxonomy.className,
+      entry.taxonomy.order,
+      entry.taxonomy.family,
+    ].every((value) => value === "Unbekannt" || !/^[A-ZÄÖÜ\s-]+$/.test(value))
+  )));
   assert.equal(
     model.species.filter((entry) => entry.assetIssues.includes("Artporträt fehlt")).length,
     expectedMissingPortraitCount,
@@ -2383,7 +2392,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
   assert.match(appSource, /Taxonomie ist gesperrt\./);
-  assert.match(appSource, /Wissenschaftlichen Namen wirklich entsperren/);
+  assert.match(appSource, /URL-Slug entsperren\?/);
+  assert.match(appSource, /Ja, entsperren/);
+  assert.match(appSource, /function parseManualMeasurement/);
+  assert.match(appSource, /function composeManualSexedMeasurement/);
+  assert.match(appSource, /class="edit-fields new-species-fields manual-species-fields"/);
+  assert.match(appSource, /data-measurement="\$\{escapeHtml\(kind\)\}"/);
+  assert.match(appSource, /form\.elements\.sizeSexed/);
+  assert.match(appSource, /form\.elements\.weightSexed/);
+  assert.match(appSource, /name="lifeExpectancyUnit"/);
+  assert.match(serverSource, /function formatTaxonomyName\(value\)/);
+  assert.match(updateSource, /function normalizeTaxonomyFields\(entry\)/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
   assert.match(appSource, /class="map-auto-search-button"/);

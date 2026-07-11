@@ -133,6 +133,141 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const MANUAL_SIZE_UNITS = ["mm", "cm", "m"];
+const MANUAL_WEIGHT_UNITS = ["g", "kg", "t"];
+const MANUAL_AGE_UNITS = ["Tage", "Monate", "Jahre"];
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function canonicalAgeUnit(unit) {
+  return {
+    Tag: "Tage",
+    Tage: "Tage",
+    Monat: "Monate",
+    Monate: "Monate",
+    Jahr: "Jahre",
+    Jahre: "Jahre",
+  }[String(unit ?? "")] || "Jahre";
+}
+
+function parseManualMeasurement(rawValue, units, defaultUnit, { age = false } = {}) {
+  const text = String(rawValue ?? "").trim();
+  const allUnits = age
+    ? ["Monate", "Jahre", "Tage", "Monat", "Jahr", "Tag"]
+    : units;
+  const unitPattern = [...allUnits]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join("|");
+  const sexedMatch = text.match(new RegExp(
+    `^Männchen\\s*:?\\s*(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})\\s*;?\\s*`
+      + `Weibchen\\s*:?\\s*(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})$`,
+    "iu",
+  ));
+  const normalizeUnit = (unit) => (age ? canonicalAgeUnit(unit) : String(unit || defaultUnit));
+  if (sexedMatch) {
+    return {
+      sexed: true,
+      value: "",
+      unit: defaultUnit,
+      maleValue: sexedMatch[1].trim(),
+      maleUnit: normalizeUnit(sexedMatch[2]),
+      femaleValue: sexedMatch[3].trim(),
+      femaleUnit: normalizeUnit(sexedMatch[4]),
+    };
+  }
+  const sharedMatch = text.match(new RegExp(
+    `^(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})$`,
+    "iu",
+  ));
+  return {
+    sexed: false,
+    value: sharedMatch ? sharedMatch[1].trim() : text.replace(/^ca\.?\s*/iu, "").trim(),
+    unit: normalizeUnit(sharedMatch?.[2] || defaultUnit),
+    maleValue: "",
+    maleUnit: defaultUnit,
+    femaleValue: "",
+    femaleUnit: defaultUnit,
+  };
+}
+
+function stripManualMeasureInput(value, units = []) {
+  let text = String(value ?? "").trim().replace(/^ca\.?\s*/iu, "").trim();
+  for (const unit of units) {
+    text = text.replace(new RegExp(`\\s*${escapeRegExp(unit)}\\.?$`, "iu"), "").trim();
+  }
+  return text;
+}
+
+function singularManualAgeUnit(value, unit) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  if (!/^1(?:\.0+)?$/.test(normalized)) return unit;
+  return { Tage: "Tag", Monate: "Monat", Jahre: "Jahr" }[unit] || unit;
+}
+
+function formatManualMeasurement(value, unit, { units = [], age = false } = {}) {
+  const cleaned = stripManualMeasureInput(value, units);
+  if (!cleaned) return "";
+  const finalUnit = age ? singularManualAgeUnit(cleaned, unit) : unit;
+  return `ca. ${cleaned} ${finalUnit}`;
+}
+
+function composeManualSexedMeasurement(male, maleUnit, female, femaleUnit, options = {}) {
+  return `Männchen: ${formatManualMeasurement(male, maleUnit, options)}; `
+    + `Weibchen: ${formatManualMeasurement(female, femaleUnit, options)}`;
+}
+
+function renderUnitOptions(units, selectedUnit) {
+  return units.map((unit) => (
+    `<option value="${escapeHtml(unit)}"${unit === selectedUnit ? " selected" : ""}>${escapeHtml(unit)}</option>`
+  )).join("");
+}
+
+function renderManualMeasurementEditor({ kind, label, parsed, units }) {
+  return `
+    <div class="new-species-measurement" data-measurement="${escapeHtml(kind)}">
+      <label class="new-species-sex-toggle">
+        <input type="checkbox" name="${escapeHtml(kind)}Sexed"${parsed.sexed ? " checked" : ""}>
+        <span>${escapeHtml(label)} nach Männchen/Weibchen unterscheiden</span>
+      </label>
+      <label data-field="${escapeHtml(kind)}"${parsed.sexed ? " hidden" : ""}>
+        <span>${escapeHtml(label)}</span>
+        <span class="new-species-value-unit compact-unit">
+          <span aria-hidden="true">ca.</span>
+          <input name="${escapeHtml(kind)}" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.value)}">
+          <select name="${escapeHtml(kind)}Unit" aria-label="${escapeHtml(label)}seinheit">
+            ${renderUnitOptions(units, parsed.unit)}
+          </select>
+        </span>
+      </label>
+      <div class="new-species-sexed-fields" data-sexed-fields="${escapeHtml(kind)}"${parsed.sexed ? "" : " hidden"}>
+        <label data-field="${escapeHtml(kind)}Male">
+          <span>${escapeHtml(label)} Männchen</span>
+          <span class="new-species-value-unit compact-unit">
+            <span aria-hidden="true">ca.</span>
+            <input name="${escapeHtml(kind)}Male" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.maleValue)}">
+            <select name="${escapeHtml(kind)}MaleUnit" aria-label="${escapeHtml(label)}seinheit Männchen">
+              ${renderUnitOptions(units, parsed.maleUnit)}
+            </select>
+          </span>
+        </label>
+        <label data-field="${escapeHtml(kind)}Female">
+          <span>${escapeHtml(label)} Weibchen</span>
+          <span class="new-species-value-unit compact-unit">
+            <span aria-hidden="true">ca.</span>
+            <input name="${escapeHtml(kind)}Female" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.femaleValue)}">
+            <select name="${escapeHtml(kind)}FemaleUnit" aria-label="${escapeHtml(label)}seinheit Weibchen">
+              ${renderUnitOptions(units, parsed.femaleUnit)}
+            </select>
+          </span>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
 function formatPendingFileStatus(status) {
   const value = String(status || "").trim();
   if (!value || value.includes("M")) return "geändert";
@@ -3454,6 +3589,116 @@ function setupSpeciesEditor(species) {
     saveButton.disabled = true;
   };
 
+  const manualFieldLabel = (fieldKey) => form.querySelector(`.manual-edit-section [data-field="${fieldKey}"]`);
+
+  const clearManualFieldErrors = () => {
+    for (const label of form.querySelectorAll(".manual-edit-section [data-field]")) {
+      label.classList.remove("field-error");
+      label.querySelector(".field-error-text")?.remove();
+    }
+  };
+
+  const applyManualFieldErrors = (fieldErrors = {}) => {
+    clearManualFieldErrors();
+    for (const [fieldKey, errors] of Object.entries(fieldErrors)) {
+      const label = manualFieldLabel(fieldKey);
+      if (!label) continue;
+      label.classList.add("field-error");
+      const errorText = document.createElement("small");
+      errorText.className = "field-error-text";
+      errorText.textContent = Array.isArray(errors) ? errors.join(" · ") : String(errors);
+      label.append(errorText);
+    }
+  };
+
+  const updateManualMeasurementMode = (kind) => {
+    const checked = form.elements[`${kind}Sexed`]?.checked === true;
+    const sharedLabel = manualFieldLabel(kind);
+    const sexedFields = form.querySelector(`.manual-edit-section [data-sexed-fields="${kind}"]`);
+    if (sharedLabel) sharedLabel.hidden = checked;
+    if (sexedFields) sexedFields.hidden = !checked;
+  };
+
+  const editableValues = () => {
+    const formData = new FormData(form);
+    const sizeSexed = formData.get("sizeSexed") === "on";
+    const weightSexed = formData.get("weightSexed") === "on";
+    return {
+      germanName: formData.get("germanName"),
+      scientificName: formData.get("scientificName"),
+      scientificNameUnlocked: scientificNameInput?.dataset.unlocked === "true",
+      size: sizeSexed
+        ? composeManualSexedMeasurement(
+          formData.get("sizeMale"),
+          formData.get("sizeMaleUnit"),
+          formData.get("sizeFemale"),
+          formData.get("sizeFemaleUnit"),
+          { units: MANUAL_SIZE_UNITS },
+        )
+        : formatManualMeasurement(formData.get("size"), formData.get("sizeUnit"), {
+          units: MANUAL_SIZE_UNITS,
+        }),
+      weight: weightSexed
+        ? composeManualSexedMeasurement(
+          formData.get("weightMale"),
+          formData.get("weightMaleUnit"),
+          formData.get("weightFemale"),
+          formData.get("weightFemaleUnit"),
+          { units: MANUAL_WEIGHT_UNITS },
+        )
+        : formatManualMeasurement(formData.get("weight"), formData.get("weightUnit"), {
+          units: MANUAL_WEIGHT_UNITS,
+        }),
+      lifeExpectancy: formatManualMeasurement(
+        formData.get("lifeExpectancy"),
+        formData.get("lifeExpectancyUnit"),
+        { units: ["Tag", "Tage", "Monat", "Monate", "Jahr", "Jahre"], age: true },
+      ),
+    };
+  };
+
+  const validateEditableFields = () => {
+    const formData = new FormData(form);
+    const errors = {};
+    const add = (fieldKey, text) => {
+      errors[fieldKey] ??= [];
+      errors[fieldKey].push(text);
+    };
+    if (!String(formData.get("germanName") ?? "").trim()) {
+      add("germanName", "Deutscher Name darf nicht leer sein");
+    }
+    if (!String(formData.get("scientificName") ?? "").trim()) {
+      add("scientificName", "Wissenschaftlicher Name darf nicht leer sein");
+    }
+    if (formData.get("sizeSexed") === "on") {
+      if (!stripManualMeasureInput(formData.get("sizeMale"), MANUAL_SIZE_UNITS)) {
+        add("sizeMale", "Größe Männchen darf nicht leer sein");
+      }
+      if (!stripManualMeasureInput(formData.get("sizeFemale"), MANUAL_SIZE_UNITS)) {
+        add("sizeFemale", "Größe Weibchen darf nicht leer sein");
+      }
+    } else if (!stripManualMeasureInput(formData.get("size"), MANUAL_SIZE_UNITS)) {
+      add("size", "Größe darf nicht leer sein");
+    }
+    if (formData.get("weightSexed") === "on") {
+      if (!stripManualMeasureInput(formData.get("weightMale"), MANUAL_WEIGHT_UNITS)) {
+        add("weightMale", "Gewicht Männchen darf nicht leer sein");
+      }
+      if (!stripManualMeasureInput(formData.get("weightFemale"), MANUAL_WEIGHT_UNITS)) {
+        add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
+      }
+    } else if (!stripManualMeasureInput(formData.get("weight"), MANUAL_WEIGHT_UNITS)) {
+      add("weight", "Gewicht darf nicht leer sein");
+    }
+    if (!stripManualMeasureInput(
+      formData.get("lifeExpectancy"),
+      ["Tag", "Tage", "Monat", "Monate", "Jahr", "Jahre"],
+    )) {
+      add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
+    }
+    return errors;
+  };
+
   const setMapMessage = (text = "", type = "") => {
     if (!mapMessage) return;
     mapMessage.textContent = text;
@@ -3596,6 +3841,7 @@ function setupSpeciesEditor(species) {
 
   const openEditor = (section = "manual") => {
     const activeSection = ["manual", "portrait", "map", "sound"].includes(section) ? section : "manual";
+    form.reset();
     resetPreview();
     resetMapPreview();
     resetSoundPreview();
@@ -3605,7 +3851,12 @@ function setupSpeciesEditor(species) {
     setMapMessage();
     setSoundMessage();
     setPortraitMessage();
-    if (activeSection === "manual") resetScientificNameLock();
+    if (activeSection === "manual") {
+      resetScientificNameLock();
+      clearManualFieldErrors();
+      updateManualMeasurementMode("size");
+      updateManualMeasurementMode("weight");
+    }
     dialog.dataset.activeSection = activeSection;
     const title = dialog.querySelector("#edit-dialog-title");
     if (title) title.textContent = sectionLabels[activeSection] || `${species.germanName} bearbeiten`;
@@ -3626,7 +3877,7 @@ function setupSpeciesEditor(species) {
     });
   }
 
-  scientificNameUnlockButton?.addEventListener("click", () => {
+  scientificNameUnlockButton?.addEventListener("click", async () => {
     const alreadyUnlocked = scientificNameInput?.dataset.unlocked === "true";
     if (alreadyUnlocked) {
       setScientificNameUnlocked(false);
@@ -3635,9 +3886,14 @@ function setupSpeciesEditor(species) {
       setMessage("Wissenschaftlicher Name wurde wieder gesperrt.", "info");
       return;
     }
-    const confirmed = window.confirm(
-      "Achtung: Eine Änderung des wissenschaftlichen Namens ändert den URL-Slug und kann sich direkt auf die Website auswirken. Wissenschaftlichen Namen wirklich entsperren?",
-    );
+    const confirmed = await showQuickConfirm({
+      eyebrow: "WISSENSCHAFTLICHER NAME",
+      title: "URL-Slug entsperren?",
+      message: "Eine Änderung des wissenschaftlichen Namens ändert den URL-Slug und kann sich direkt auf die Website auswirken.",
+      confirmLabel: "Ja, entsperren",
+      cancelLabel: "Nein",
+      danger: true,
+    });
     if (!confirmed) return;
     setScientificNameUnlocked(true);
     scientificNameInput?.focus();
@@ -3692,16 +3948,27 @@ function setupSpeciesEditor(species) {
       setMapMessage("Kartenauswahl oder Angaben geändert. Bitte die Vorschau erneut erstellen.", "info");
       return;
     }
+    clearManualFieldErrors();
     resetPreview();
     setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
   });
+
+  form.elements.sizeSexed?.addEventListener("change", () => updateManualMeasurementMode("size"));
+  form.elements.weightSexed?.addEventListener("change", () => updateManualMeasurementMode("weight"));
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     resetPreview();
     setBusy(true);
     setMessage("Änderungen werden geprüft…", "info");
-    const formData = new FormData(form);
+    const fieldErrors = validateEditableFields();
+    if (Object.keys(fieldErrors).length) {
+      applyManualFieldErrors(fieldErrors);
+      setMessage("Bitte die markierten Eingaben korrigieren.", "error");
+      setBusy(false);
+      return;
+    }
+    clearManualFieldErrors();
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/preview`,
@@ -3709,14 +3976,7 @@ function setupSpeciesEditor(species) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            values: {
-              germanName: formData.get("germanName"),
-              scientificName: formData.get("scientificName"),
-              scientificNameUnlocked: scientificNameInput?.dataset.unlocked === "true",
-              size: formData.get("size"),
-              weight: formData.get("weight"),
-              lifeExpectancy: formData.get("lifeExpectancy"),
-            },
+            values: editableValues(),
           }),
         },
       );
@@ -4477,6 +4737,22 @@ function setupSpeciesDelete(species) {
 
 function renderDetail(species) {
   const browserMapUrl = iucnDistributionMapUrl(species);
+  const editableSize = parseManualMeasurement(
+    species.manual.size,
+    MANUAL_SIZE_UNITS,
+    "cm",
+  );
+  const editableWeight = parseManualMeasurement(
+    species.manual.weight,
+    MANUAL_WEIGHT_UNITS,
+    "g",
+  );
+  const editableLifeExpectancy = parseManualMeasurement(
+    species.manual.lifeExpectancy,
+    MANUAL_AGE_UNITS,
+    "Jahre",
+    { age: true },
+  );
   const detailMapUrl = versionedAssetUrl(species.assets.map.url, species.assets.map);
   const detailPortraitUrl = versionedAssetUrl(species.assets.portrait.url, species.assets.portrait);
   const soundVersion = assetVersionKey(
@@ -4713,18 +4989,17 @@ function renderDetail(species) {
             </div>
           </header>
 
-          <div class="edit-fields">
-            <label>
+          <div class="edit-fields new-species-fields manual-species-fields">
+            <label data-field="germanName">
               <span>Deutscher Name</span>
-              <input name="germanName" required maxlength="160" value="${escapeHtml(species.germanName)}">
+              <input name="germanName" maxlength="160" value="${escapeHtml(species.germanName)}">
             </label>
-            <label class="scientific-name-field">
+            <label class="scientific-name-field" data-field="scientificName">
               <span>Wissenschaftlicher Name</span>
               <div class="locked-input-row">
                 <input
                   class="scientific-name-input"
                   name="scientificName"
-                  required
                   maxlength="201"
                   readonly
                   data-unlocked="false"
@@ -4741,22 +5016,33 @@ function renderDetail(species) {
                 Änderung ändert den URL-Slug und kann sich direkt auf die Website auswirken.
               </small>
             </label>
-            <label>
-              <span>Größe</span>
-              <input name="size" required maxlength="240" value="${escapeHtml(species.manual.size)}">
-            </label>
-            <label>
-              <span>Gewicht</span>
-              <input name="weight" required maxlength="240" value="${escapeHtml(species.manual.weight)}">
-            </label>
-            <label>
+            ${renderManualMeasurementEditor({
+              kind: "size",
+              label: "Größe",
+              parsed: editableSize,
+              units: MANUAL_SIZE_UNITS,
+            })}
+            ${renderManualMeasurementEditor({
+              kind: "weight",
+              label: "Gewicht",
+              parsed: editableWeight,
+              units: MANUAL_WEIGHT_UNITS,
+            })}
+            <label data-field="lifeExpectancy">
               <span>Lebenserwartung</span>
-              <input
-                name="lifeExpectancy"
-                required
-                maxlength="240"
-                value="${escapeHtml(species.manual.lifeExpectancy)}"
-              >
+              <span class="new-species-value-unit age-unit">
+                <span aria-hidden="true">ca.</span>
+                <input
+                  name="lifeExpectancy"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="off"
+                  value="${escapeHtml(editableLifeExpectancy.value)}"
+                >
+                <select name="lifeExpectancyUnit" aria-label="Alterseinheit">
+                  ${renderUnitOptions(MANUAL_AGE_UNITS, editableLifeExpectancy.unit)}
+                </select>
+              </span>
             </label>
           </div>
 

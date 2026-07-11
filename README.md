@@ -274,8 +274,12 @@ Phase 7.4 stellt je Art einen Bearbeiten-Dialog bereit. `Löschen` steht im Artk
 direkt an den bearbeitbaren Bereichen `Manuelle Daten`, `Artporträt`, `Verbreitungskarte` und `Tierstimme`; der
 Dialog öffnet jeweils nur den gewählten Bereich, damit nicht alle Pflegefelder gleichzeitig sichtbar sind:
 
-- editierbar: `size`, `weight`, `life_expectancy`
-- gesperrt: deutscher Name, Gattung, Art und alle generierten IUCN-Felder
+- editierbar: deutscher Name, wissenschaftlicher Name nach bewusster Schlossfreigabe, `size`, `weight` und
+  `life_expectancy`
+- Groesse, Gewicht und Lebenserwartung verwenden dieselben Wert-/Einheitenfelder wie der Neue-Art-Assistent;
+  Groesse und Gewicht lassen sich unabhaengig nach Maennchen und Weibchen trennen
+- gesperrt bleiben alle automatisch generierten IUCN-Felder und die Taxonomiestufen ausser dem bewusst
+  freigegebenen wissenschaftlichen Namen
 - `POST /api/species/<Slug>/preview`: validiert und erzeugt eine zehn Minuten gueltige Diff-Vorschau
 - `POST /api/species/<Slug>/save`: akzeptiert nur ein gueltiges Vorschau-Token
 - parallele Aenderungen an `species_list.json` machen die Vorschau ungueltig
@@ -284,10 +288,8 @@ Dialog öffnet jeweils nur den gewählten Bereich, damit nicht alle Pflegefelder
 - nach jedem erfolgreichen Speichern bleiben automatisch nur die neuesten 20 verwalteten Backups erhalten; andere
   Dateien im Ordner werden nicht geloescht
 - nach dem Speichern zeigt das Dashboard erwartete Datenabweichungen, bis `node update.mjs` separat ausgefuehrt wurde
-- der Bearbeitungsdialog weist auf gesperrte Taxonomie- und Namensfelder hin, ohne eine interne Phasennummer zu nennen
-
-Namensaenderungen, Taxonomieaenderungen, Assetpfade, Pipeline-Aufrufe und Git-Aktionen sind nicht Bestandteil von
-Phase 7.4.
+- der wissenschaftliche Name ist per Schloss geschuetzt; die Warnbestaetigung nennt die direkte Auswirkung auf den
+  URL-Slug und die Website
 
 Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch lokal umgesetzt und seit
 2026-06-28 als Schrittassistent erweitert:
@@ -326,7 +328,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - 23 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 48 Arten in `species_list.json` und `speciesData.json`. Löwe und Eichelhäher sind nach den
+Aktuell stehen 49 Arten in `species_list.json` und `speciesData.json`. Löwe und Eichelhäher sind nach den
 Neue-Art-Tests produktiv vorhanden.
 
 Phase 7.6 ist technisch lokal vorbereitet:
@@ -437,7 +439,7 @@ Priorisierte Bedienungs- und Ausbauschritte:
    und lokale Metadaten konsistent. Beim deutschen Namen wandern Assetname/SafeName, Assetordner, Override-Einträge,
    Assessment-Zuordnung, Report und Kartendokumentation mit. Details: `docs/rename-species-workflow.md`.
 3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
-   Männchen/Weibchen, Wert und Einheit aufteilen.
+   Männchen/Weibchen, Wert und Einheit aufteilen: seit 2026-07-11 umgesetzt.
 4. Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
    überarbeiten.
 5. Artportrait auf der Squarespace-Artseite einbinden.
@@ -693,15 +695,15 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-07-10:
+Aktueller lokaler Stand vom 2026-07-11:
 
-- 48 Eintraege in `species_list.json`
-- 48 Arten in der letzten Pipeline-Ausgabe
-- 48 Karten, 47 Sounds, 47 Credits und 47 Spektrogramme
-- 48 Artportraits; 0 Portrait-Assetprobleme
-- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf
+- 49 Eintraege in `species_list.json`
+- 49 Arten in der letzten Pipeline-Ausgabe
+- 49 Karten, 48 Sounds, 48 Credits und 48 Spektrogramme
+- 49 Artportraits; 0 Portrait-Assetprobleme
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf
 - 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
-- 4 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Scharlachara`
+- 5 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`, `Scharlachara`
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

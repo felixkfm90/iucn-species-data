@@ -693,6 +693,18 @@ function valueOrUnknown(value) {
   return value;
 }
 
+function formatTaxonomyName(value) {
+  const text = String(value ?? "").trim();
+  if (!text || ["n/a", "unbekannt"].includes(text.toLocaleLowerCase("de"))) {
+    return valueOrUnknown(value);
+  }
+  return text
+    .toLocaleLowerCase("de")
+    .replace(/(^|[\s-])([\p{L}])/gu, (_match, prefix, letter) => (
+      `${prefix}${letter.toLocaleUpperCase("de")}`
+    ));
+}
+
 function hashText(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -2013,11 +2025,11 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         fetchedAt: valueOrUnknown(generated?.["Daten abgerufen"]),
       },
       taxonomy: {
-        kingdom: valueOrUnknown(generated?.Kingdom),
-        phylum: valueOrUnknown(generated?.Phylum),
-        className: valueOrUnknown(generated?.Class),
-        order: valueOrUnknown(generated?.Order),
-        family: valueOrUnknown(generated?.Family),
+        kingdom: formatTaxonomyName(generated?.Kingdom),
+        phylum: formatTaxonomyName(generated?.Phylum),
+        className: formatTaxonomyName(generated?.Class),
+        order: formatTaxonomyName(generated?.Order),
+        family: formatTaxonomyName(generated?.Family),
         genus: valueOrUnknown(generated?.Genus ?? input?.genus),
         species: valueOrUnknown(generated?.Species ?? input?.species),
       },

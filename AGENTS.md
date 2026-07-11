@@ -62,27 +62,29 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 48 Eintraege in `species_list.json`
-- 48 aktive Arten
-- 48 Arten in `speciesData.json`
-- 48 Karten
-- 48 Art-Assetordner
-- 47 MP3-Dateien
-- 47 Credits-Dateien
-- 47 Spektrogramm-Dateien
-- 48 Artportraets
+- 49 Eintraege in `species_list.json`
+- 49 aktive Arten
+- 49 Arten in `speciesData.json`
+- 49 Karten
+- 49 Art-Assetordner
+- 48 MP3-Dateien
+- 48 Credits-Dateien
+- 48 Spektrogramm-Dateien
+- 49 Artportraets
 - 0 Assetprobleme im Explorer-Modell
 - 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
   Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
-- 4 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
+- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
   - `Blaukehlchen`
   - `Fischertukan`
+  - `Loewe`
   - `Rotfuchs`
   - `Waldkauz`
-- 4 aktive NC-Soundlizenzen laut Report:
+- 5 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
+  - `Loewe`
   - `Scharlachara`
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
@@ -350,13 +352,15 @@ Aktuelle Planung:
   bleiben im Desktopfenster sichtbar; darunter scrollen linke Artenliste und rechter Detailbereich getrennt. Beim
   Artwechsel springt nur der rechte Detailbereich wieder an den Anfang, waehrend die Scrollposition der linken
   Artenliste erhalten bleibt.
-  Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft: Bestehende Arten erlauben nur die
-  Bearbeitung von Groesse, Gewicht und
-  Lebenserwartung. Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn
+  Phase 7.4 ist seit 2026-06-19 abgeschlossen und von Felix visuell geprueft. Im Bereich `Allgemeine Daten` sind
+  deutscher Name, der bewusst entsperrbare wissenschaftliche Name, Groesse, Gewicht und Lebenserwartung editierbar.
+  Seit 2026-07-11 verwenden Groesse, Gewicht und Lebenserwartung dieselben strukturierten Wert-/Einheitenfelder wie
+  der Neue-Art-Assistent; Groesse und Gewicht koennen unabhaengig nach Maennchen und Weibchen getrennt werden.
+  Vor dem Speichern sind Validierung und Diff-Vorschau Pflicht; Vorschau-Token laufen nach zehn
   Minuten ab und werden bei parallelen Dateiaenderungen ungueltig. Vor jedem Schreiben entsteht eine ignorierte
   Sicherung unter `species-explorer/backups/`. Automatisch bleiben nur die neuesten 20 verwalteten Backups erhalten;
-  fremde Dateien im Ordner werden nicht geloescht. Name, Taxonomie, neue Arten, Pipeline und Git bleiben gesperrt
-  bzw. separat. Die Phase-7.4-Pruefungen sind Teil der inzwischen sechs erfolgreichen Explorer-Tests.
+  fremde Dateien im Ordner werden nicht geloescht. Automatische IUCN-Felder, neue Arten, Pipeline und Git bleiben
+  gesperrt bzw. separat. Die Phase-7.4-Pruefungen sind Teil der Explorer-Tests.
   Der Speichertest, die Korrektur des Testwerts und die robuste Erfolgsmeldung wurden geprueft.
   `Loeschen` steht als Artaktion oben rechts im Detailkopf. `Bearbeiten` steht seit 2026-06-30 direkt an den
   bearbeitbaren Bereichen `Manuelle Daten`, `Artportraet`, `Verbreitungskarte` und `Tierstimme`; der
@@ -631,9 +635,11 @@ Aktuelle Planung:
   `Änderungen übertragen` veroeffentlicht. Soundvergleichsdialoge stoppen andere offene Audioplayer, sobald ein
   neuer Player gestartet wird. Seit 2026-07-05 ist auch das Umbenennen des deutschen Artnamens inklusive Assetname/SafeName,
   Ordner, Override-Eintraegen, Assessment-Zuordnung, Report und Dokumentation umgesetzt.
-  Naechste priorisierte Ausbauschritte: allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten
-  strukturieren; Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische Ueberarbeitung ergaenzen;
-  Artportrait auf der Squarespace-Artseite einbinden.
+  Seit 2026-07-11 sind die Taxonomiewerte fuer Reich, Stamm, Klasse, Ordnung und Familie in bestehenden Daten
+  normalisiert; `update.mjs` schreibt auch kuenftige IUCN-Daten in lesbarer Gross-/Kleinschreibung. Das einmalige
+  Migrationsskript sichert `speciesData.json` vorher unter `species-explorer/backups/`.
+  Naechste priorisierte Ausbauschritte: Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische
+  Ueberarbeitung ergaenzen; Artportrait auf der Squarespace-Artseite einbinden.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.

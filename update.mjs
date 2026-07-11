@@ -72,6 +72,28 @@ function logError(msg) {
   fs.appendFileSync("errors.log", `[${new Date().toISOString()}] ${msg}\n`);
 }
 
+function formatTaxonomyName(value) {
+  const text = String(value ?? "").trim();
+  if (!text || text.toLocaleLowerCase("de") === "n/a") return text || "n/a";
+  return text
+    .toLocaleLowerCase("de")
+    .replace(/(^|[\s-])([\p{L}])/gu, (_match, prefix, letter) => (
+      `${prefix}${letter.toLocaleUpperCase("de")}`
+    ));
+}
+
+function normalizeTaxonomyFields(entry) {
+  if (!entry || typeof entry !== "object") return entry;
+  return {
+    ...entry,
+    Kingdom: formatTaxonomyName(entry.Kingdom),
+    Phylum: formatTaxonomyName(entry.Phylum),
+    Class: formatTaxonomyName(entry.Class),
+    Order: formatTaxonomyName(entry.Order),
+    Family: formatTaxonomyName(entry.Family),
+  };
+}
+
 function parsePipelineArgs(rawArgs) {
   const parsed = { mode: "all", dryRun: false, reportOnly: false, targetSlugs: [] };
   for (const arg of rawArgs) {
@@ -348,12 +370,12 @@ function hasUsableSpeciesData(entry) {
 }
 
 function preserveExistingSpeciesData(existing, inputSpecies) {
-  return {
+  return normalizeTaxonomyFields({
     ...existing,
     Gewicht: inputSpecies.weight || existing.Gewicht,
     Größe: inputSpecies.size || existing.Größe,
     Lebenserwartung: inputSpecies.life_expectancy || existing.Lebenserwartung || "n/a",
-  };
+  });
 }
 
 // IUCN GET mit Token
@@ -476,11 +498,11 @@ async function fetchSpeciesData(genus, species, german, size, weight, lifeExpect
       Kategorie: assessmentInfo.category,
       Populationgröße: populationFormatted,
       Generationsdauer: generationFormatted,
-      Kingdom: taxon.kingdom_name || "n/a",
-      Phylum: taxon.phylum_name || "n/a",
-      Class: taxon.class_name || "n/a",
-      Order: taxon.order_name || "n/a",
-      Family: taxon.family_name || "n/a",
+      Kingdom: formatTaxonomyName(taxon.kingdom_name),
+      Phylum: formatTaxonomyName(taxon.phylum_name),
+      Class: formatTaxonomyName(taxon.class_name),
+      Order: formatTaxonomyName(taxon.order_name),
+      Family: formatTaxonomyName(taxon.family_name),
       Genus: taxon.genus_name || "n/a",
       Species: taxon.species_name || "n/a",
       "Letztes IUCN Update": globalAssessment.year_published || "n/a",
