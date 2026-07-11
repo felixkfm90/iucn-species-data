@@ -64,14 +64,9 @@ Ein Feld für den Unterstamm gehört derzeit nicht zum regulären Schema. Vor de
 3. `normalizeTaxonomyFields()` um `Subphylum` erweitern.
 4. Bestehende Datensätze kontrolliert migrieren oder durch einen Pipeline-Lauf aktualisieren.
 
-### Zulässiger Fallback
+### Kein abgeleiteter Fallback
 
-Falls IUCN keinen Unterstamm liefert, darf `Wirbeltiere` nicht pauschal für jede Art hartcodiert werden. Stattdessen ist eine nachvollziehbare zentrale Ableitung zulässig, beispielsweise nur für eindeutig zu `Vertebrata` gehörende Klassen. Diese Logik muss:
-
-- zentral statt im Markup liegen,
-- für spätere Wirbellose offen bleiben,
-- getestet und dokumentiert sein,
-- bei nicht eindeutiger Zuordnung den Unterstamm ausblenden.
+Falls IUCN keinen echten Unterstammwert liefert, wird die Stufe für diese Art vollständig ausgeblendet. Weder `Wirbeltiere` noch ein anderer Unterstamm darf aus Klasse, Stamm oder anderen Taxonomiefeldern abgeleitet oder pauschal hartcodiert werden. Dadurch bleiben auch andere mögliche Unterstämme fachlich korrekt behandelbar.
 
 Die Darstellung muss deshalb mit sieben oder acht Stufen stabil funktionieren. Eine fehlende Unterstamm-Zeile wird vollständig entfernt; es darf keine leere farbige Stufe entstehen.
 
@@ -211,7 +206,7 @@ Die Aufgabe ist abgeschlossen, wenn:
 - die alte Taxonomie-Pyramide durch die neue dynamische Komponente ersetzt ist;
 - alle sichtbaren Rangbezeichnungen deutsch sind;
 - deutsche Werte verwendet werden, sofern eine zentrale Übersetzung vorhanden ist;
-- `Unterstamm` fachlich sauber datengetrieben oder eindeutig abgeleitet eingebunden ist;
+- `Unterstamm` ausschließlich aus einem tatsächlich vorhandenen Datenwert eingebunden und andernfalls vollständig ausgeblendet ist;
 - sieben und acht Stufen ohne Leerzeile funktionieren;
 - die Komponente auf Desktop und Mobil ohne Überlauf lesbar ist;
 - kein statisches Taxonomie-Bild als funktionaler Ersatz eingebaut wurde;

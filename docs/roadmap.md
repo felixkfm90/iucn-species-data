@@ -486,6 +486,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     und die unabhaengige Maennchen-/Weibchen-Trennung wie der Neue-Art-Assistent. Die Taxonomiewerte in
     `speciesData.json` sind fuer bestehende Daten normalisiert und werden von `update.mjs` kuenftig einheitlich
     lesbar geschrieben. Offen bleiben: Taxonomie-Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten;
+    ein Unterstamm wird dabei nur aus einem echten vorhandenen Datenwert angezeigt und sonst ausgelassen;
     Artportrait auf der Squarespace-Artseite einbinden.
     Seit 2026-07-04 sind die Feinschliffe aus dem Neue-Art-Test `Scharlachara` umgesetzt: Karte im Schritt `Karte`
     per Vergrößern/Lightbox prüfbar, sichtbarer Lizenzstatus `frei`/`NC` im Sound-Prüfschritt, derselbe

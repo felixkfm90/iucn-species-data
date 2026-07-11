@@ -443,7 +443,8 @@ Priorisierte Bedienungs- und Ausbauschritte:
 3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
    Männchen/Weibchen, Wert und Einheit aufteilen: seit 2026-07-11 umgesetzt.
 4. Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
-   überarbeiten.
+   überarbeiten. Der Unterstamm wird nur bei einem echten vorhandenen Datenwert angezeigt; es gibt keine pauschale
+   oder aus anderen Rängen abgeleitete Ersatzstufe.
 5. Artportrait auf der Squarespace-Artseite einbinden.
 
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.

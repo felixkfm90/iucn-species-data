@@ -647,7 +647,9 @@ Aktuelle Planung:
   normalisiert; `update.mjs` schreibt auch kuenftige IUCN-Daten in lesbarer Gross-/Kleinschreibung. Das einmalige
   Migrationsskript sichert `speciesData.json` vorher unter `species-explorer/backups/`.
   Naechste priorisierte Ausbauschritte: Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische
-  Ueberarbeitung ergaenzen; Artportrait auf der Squarespace-Artseite einbinden.
+  Ueberarbeitung ergaenzen; ein Unterstamm darf nur aus einem tatsaechlich vorhandenen Datenwert angezeigt und
+  andernfalls vollstaendig ausgelassen werden, ohne Ableitung aus anderen Taxonomierangen; Artportrait auf der
+  Squarespace-Artseite einbinden.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
