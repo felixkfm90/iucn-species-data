@@ -214,7 +214,8 @@ Der Explorer zeigt:
 - optionales, manuell freigegebenes KI-Artportraet aus `portrait.webp` und `portrait.json`
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
 - drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet; sobald der rechte
-  Detailbereich weniger als 1320 Pixel Platz hat, stehen sie lesbar untereinander statt in drei zu engen Spalten
+  Detailbereich weniger als 1320 Pixel Platz hat, stehen sie lesbar untereinander statt in drei zu engen Spalten;
+  in schmalen Drittelkarten stehen Titel und die gemeinsam ausgerichtete Aktionszeile untereinander
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und standardmaessig sichtbaren Quellen-/Lizenzdaten
 - Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle

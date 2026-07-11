@@ -1185,6 +1185,8 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-name: detail-media-card;
+  container-type: inline-size;
 }
 
 .detail-media-layout > .audio-section {
@@ -1223,6 +1225,28 @@ button:focus-visible {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 7px;
+}
+
+@container detail-media-card (max-width: 600px) {
+  .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .section-heading-actions {
+    width: 100%;
+    margin: 0;
+    padding: 0 10px 9px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .section-heading-actions button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .section-heading > .inline-edit-open {

@@ -331,7 +331,9 @@ Aktuelle Planung:
   Verbreitungskarte, Tierstimme und Artportraet als drei gleich grosse Medienbereiche nebeneinander. Die
   Quellen-/Lizenzdaten der Tierstimme sind im Explorer direkt sichtbar.
   Seit 2026-07-11 werden diese Medienbereiche bei weniger als 1320 Pixel nutzbarer Breite im rechten Detailbereich
-  untereinander dargestellt. Bei geringer Fensterhoehe werden die festen Kopf-, Zusammenfassungs- und
+  untereinander dargestellt. In der dreispaltigen Ansicht wechseln schmale Einzelkarten auf einen zweizeiligen
+  Kartenkopf: Titel oben, alle drei Assetaktionen gemeinsam in einer gleichmaessigen Zeile darunter. Bei geringer
+  Fensterhoehe werden die festen Kopf-, Zusammenfassungs- und
   Validierungsbereiche verdichtet, damit die
   getrennten Scrollflaechen fuer Artenliste und Details nutzbar bleiben. Geschlechtsspezifische Groessen- und
   Gewichtswerte stehen in getrennten Zeilen. Lokale IUCN-Status- und Trendsymbole werden im Artkopf sowie neben

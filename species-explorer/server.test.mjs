@@ -2623,6 +2623,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     cssSource,
     /\.detail-media-layout > \.map-panel,[\s\S]*?\.detail-media-layout > \.species-image-panel\s*\{[^}]*flex-direction:\s*column/s,
   );
+  assert.match(
+    cssSource,
+    /\.detail-media-layout > \.map-panel,[\s\S]*?\.detail-media-layout > \.species-image-panel\s*\{[^}]*container-name:\s*detail-media-card[^}]*container-type:\s*inline-size/s,
+  );
+  assert.match(
+    cssSource,
+    /@container detail-media-card \(max-width:\s*600px\)[\s\S]*?\.section-heading-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s,
+  );
   assert.match(cssSource, /\.species-image-panel\s*\{[^}]*overflow:\s*hidden/s);
   assert.match(
     cssSource,

@@ -268,7 +268,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   unveraendert. Die dokumentierte Footer-Version ist inzwischen `species-sound.js?v=1.0.25`; sie korrigiert die
   Meldung fuer fehlende Tierstimmen auf `Keine Tierstimme verfügbar` ohne Schlusspunkt.
   Seit 2026-07-11 wechseln die drei Medienbereiche bei weniger als 1320 Pixel verfuegbarem Platz im rechten
-  Detailbereich kontrolliert in eine einspaltige Darstellung. Bei geringer Fensterhoehe sind Kopfzeile,
+  Detailbereich kontrolliert in eine einspaltige Darstellung. Bleibt die Dreispaltenansicht aktiv, ordnen schmale
+  Medienkarten ihren Titel und alle Assetaktionen in zwei stabilen Zeilen an, statt einzelne Buttons umbrechen zu
+  lassen. Bei geringer Fensterhoehe sind Kopfzeile,
   Zusammenfassung und Validierung kompakter,
   damit die getrennt scrollbar bleibenden Arten- und Detailbereiche nutzbar bleiben. Manuelle Maennchen-/Weibchen-
   Werte erscheinen untereinander; IUCN-Kategorie und Populationstrend werden im Detailbereich zusaetzlich mit den
