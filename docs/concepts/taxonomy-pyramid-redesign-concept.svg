@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Konzeptgrafik für eine modernisierte Taxonomie-Darstellung</title>
+  <desc id="desc">Achtstufige Taxonomie mit deutschem Rang und deutschem Anzeigewert: Reich Tiere, Stamm Chordatiere, Unterstamm Wirbeltiere, Klasse Vögel, Ordnung Spechtvögel, Familie Tukane, Gattung Ramphastos und Art Sulfuratus.</desc>
+  <defs>
+    <linearGradient id="arrowGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#123f7a"/>
+      <stop offset="1" stop-color="#4f92d1"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#1686ef"/><stop offset="1" stop-color="#0561bb"/></linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#39c94d"/><stop offset="1" stop-color="#229936"/></linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2bc3d8"/><stop offset="1" stop-color="#1491ad"/></linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ff9f19"/><stop offset="1" stop-color="#ef7b00"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ef3530"/><stop offset="1" stop-color="#c91619"/></linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9151ce"/><stop offset="1" stop-color="#6c2fa7"/></linearGradient>
+    <linearGradient id="brown" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#a96b2c"/><stop offset="1" stop-color="#784315"/></linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ef55ad"/><stop offset="1" stop-color="#cf2d83"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#17324d" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .rank { font: 700 37px/1.2 Arial, Helvetica, sans-serif; fill: #12345f; }
+      .value { font: 700 43px/1.2 Arial, Helvetica, sans-serif; fill: #fff; text-anchor: middle; dominant-baseline: middle; paint-order: stroke; stroke: rgba(0,0,0,.12); stroke-width: 2px; }
+      .symbol { fill: none; stroke: #123f70; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .watermark { fill: #fff; opacity: .16; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#f8fafc"/>
+
+  <!-- Vertikaler Taxonomie-Pfeil -->
+  <g filter="url(#shadow)">
+    <rect x="36" y="34" width="108" height="782" rx="22" fill="url(#arrowGradient)"/>
+    <path d="M18 805 H162 L90 880 Z" fill="url(#arrowGradient)" stroke="#2d6aa4" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <text x="91" y="435" transform="rotate(-90 91 435)" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" text-anchor="middle">Taxonomie</text>
+
+  <!-- Reich -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="34" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="79" r="25" fill="#e9f2fb"/>
+    <path class="symbol" d="M229 86 H271 M233 84 L238 65 L250 77 L262 65 L267 84 M236 91 H264"/>
+    <text class="rank" x="322" y="91">Reich</text>
+    <rect x="560" y="49" width="7" height="60" rx="4" fill="#147bd6"/>
+    <path d="M600 34 H1535 L1518 124 H617 Z" fill="url(#blue)"/>
+    <path class="watermark" d="M1425 59 C1465 40 1500 46 1511 53 C1494 83 1466 99 1439 99 C1448 83 1455 70 1468 59 C1451 67 1439 78 1428 92 C1419 80 1417 68 1425 59 Z"/>
+    <text class="value" x="1068" y="80">Tiere</text>
+  </g>
+
+  <!-- Stamm -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="137" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="182" r="25" fill="#eaf8ed"/>
+    <path class="symbol" d="M250 201 V166 M250 178 L236 166 M250 183 L265 169 M238 166 L232 160 M265 169 L271 162"/>
+    <text class="rank" x="322" y="194">Stamm</text>
+    <rect x="560" y="152" width="7" height="60" rx="4" fill="#2cb341"/>
+    <path d="M635 137 H1500 L1483 227 H652 Z" fill="url(#green)"/>
+    <path class="watermark" d="M1405 157 C1432 170 1460 190 1483 210 M1419 151 C1440 177 1461 199 1488 214 M1424 164 L1440 158 M1438 181 L1457 175 M1455 198 L1473 190" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <text class="value" x="1068" y="183">Chordatiere</text>
+  </g>
+
+  <!-- Unterstamm -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="240" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="285" r="25" fill="#e8f8fb"/>
+    <path class="symbol" d="M250 259 V311 M236 266 H264 M237 278 H263 M237 290 H263 M238 302 H262"/>
+    <text class="rank" x="322" y="297" font-size="34">Unterstamm</text>
+    <rect x="560" y="255" width="7" height="60" rx="4" fill="#21abc4"/>
+    <path d="M670 240 H1465 L1448 330 H687 Z" fill="url(#teal)"/>
+    <path class="watermark" d="M1387 264 C1412 252 1433 270 1418 286 C1400 304 1434 320 1454 300 C1471 283 1490 295 1483 315" stroke="#fff" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <text class="value" x="1068" y="286">Wirbeltiere</text>
+  </g>
+
+  <!-- Klasse -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="343" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="388" r="25" fill="#fff2e4"/>
+    <path class="symbol" d="M230 372 H270 M236 378 H264 M238 378 V404 M248 378 V404 M260 378 V404 M232 405 H268"/>
+    <text class="rank" x="322" y="400">Klasse</text>
+    <rect x="560" y="358" width="7" height="60" rx="4" fill="#f38a0e"/>
+    <path d="M705 343 H1430 L1413 433 H722 Z" fill="url(#orange)"/>
+    <path class="watermark" d="M1340 406 C1379 362 1418 356 1436 367 C1418 389 1394 405 1365 413 L1342 418 Z M1366 402 L1398 377"/>
+    <text class="value" x="1068" y="389">Vögel</text>
+  </g>
+
+  <!-- Ordnung -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="446" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="491" r="25" fill="#fde9e9"/>
+    <path class="symbol" d="M250 468 V481 M228 481 H272 M228 481 V495 M250 481 V495 M272 481 V495 M220 495 H236 V510 H220 Z M242 495 H258 V510 H242 Z M264 495 H280 V510 H264 Z"/>
+    <text class="rank" x="322" y="503">Ordnung</text>
+    <rect x="560" y="461" width="7" height="60" rx="4" fill="#db2525"/>
+    <path d="M740 446 H1395 L1378 536 H757 Z" fill="url(#red)"/>
+    <path class="watermark" d="M1296 511 C1324 466 1364 466 1381 482 C1368 483 1357 491 1351 501 C1345 513 1332 522 1317 526 Z M1376 481 L1406 472 L1387 494 Z"/>
+    <text class="value" x="1068" y="492">Spechtvögel</text>
+  </g>
+
+  <!-- Familie -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="549" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="594" r="25" fill="#f2eafa"/>
+    <circle cx="250" cy="580" r="8" fill="#123f70"/><circle cx="232" cy="584" r="7" fill="#123f70"/><circle cx="268" cy="584" r="7" fill="#123f70"/>
+    <path d="M229 613 C229 597 241 593 250 593 C259 593 271 597 271 613 Z M216 613 C216 601 224 597 233 597 M284 613 C284 601 276 597 267 597" fill="#123f70"/>
+    <text class="rank" x="322" y="606">Familie</text>
+    <rect x="560" y="564" width="7" height="60" rx="4" fill="#7f3bb8"/>
+    <path d="M775 549 H1360 L1343 639 H792 Z" fill="url(#purple)"/>
+    <g class="watermark"><circle cx="1278" cy="575" r="13"/><circle cx="1310" cy="579" r="11"/><circle cx="1248" cy="579" r="11"/><path d="M1250 625 C1250 597 1265 590 1278 590 C1291 590 1306 597 1306 625 Z"/><path d="M1218 625 C1218 606 1230 599 1248 599 M1340 625 C1340 606 1328 599 1310 599"/></g>
+    <text class="value" x="1068" y="595">Tukane</text>
+  </g>
+
+  <!-- Gattung -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="652" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="697" r="25" fill="#f7efe7"/>
+    <path class="symbol" d="M250 717 V687 M250 698 C235 699 229 690 229 679 C242 677 250 684 250 698 Z M250 690 C265 691 272 682 272 671 C258 670 250 677 250 690 Z"/>
+    <text class="rank" x="322" y="709">Gattung</text>
+    <rect x="560" y="667" width="7" height="60" rx="4" fill="#8a511f"/>
+    <path d="M810 652 H1325 L1308 742 H827 Z" fill="url(#brown)"/>
+    <path class="watermark" d="M1225 714 C1240 678 1270 671 1290 687 C1275 690 1265 701 1259 716 Z M1283 686 C1306 678 1319 684 1326 697 C1313 701 1301 702 1289 697 Z"/>
+    <text class="value" x="1068" y="698">Ramphastos</text>
+  </g>
+
+  <!-- Art -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="755" width="405" height="90" rx="18" fill="#fff"/>
+    <circle cx="250" cy="800" r="25" fill="#fceaf5"/>
+    <path class="symbol" d="M228 810 C233 783 251 772 272 780 C268 801 253 815 228 810 Z M235 806 C247 796 257 789 269 782"/>
+    <text class="rank" x="322" y="812">Art</text>
+    <rect x="560" y="770" width="7" height="60" rx="4" fill="#df3b98"/>
+    <path d="M845 755 H1290 L1273 845 H862 Z" fill="url(#pink)"/>
+    <path class="watermark" d="M1191 824 C1197 790 1218 776 1245 783 C1238 812 1221 827 1191 824 Z M1198 819 C1213 805 1224 795 1240 786"/>
+    <text class="value" x="1068" y="801" font-style="italic">Sulfuratus</text>
+  </g>
+</svg>
