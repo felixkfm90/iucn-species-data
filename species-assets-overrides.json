@@ -24,10 +24,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "54ec5a1fb0d9909747375b05a90048912992b6de43f98188475aabf603af6b22",
-        "spectrogramSha256": "9407d01d3c933e4978f923ecbe8666ec6b02b0c9cec9c552031c1021c3f38e94",
-        "generatedAt": "2026-06-29T16:40:54.252Z",
-        "verifiedAt": "2026-06-29T16:40:54.278Z"
+        "soundSha256": "6c8f74289181b5659da6b92ee39fb73d4306aebcbf926b77404f7bddcbcf1dbb",
+        "spectrogramSha256": "ca23fc135ecebbbfbae4a5ebf54040fdb5f72dd454e0a2cc8a041afdf93fb24f",
+        "generatedAt": "2026-07-12T10:46:26.576Z",
+        "verifiedAt": "2026-07-12T10:46:31.183Z"
       }
     },
     "Fischertukan": {
@@ -125,10 +125,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "ef21e0cef41a6c718ab332affdd55ac3a6fec615d30bc96e8b881e30c6ec2639",
-        "spectrogramSha256": "08f42b7193792343dc7288eccee2fc97d12241eb52ec4a4214fcfac82f0d5d69",
-        "generatedAt": "2026-06-15T13:03:19.473Z",
-        "verifiedAt": "2026-06-20T18:35:37.808Z"
+        "soundSha256": "f0166d3de8d8545ffe9bca797d7bcd9553204604f58c29cbbc241f9728951bab",
+        "spectrogramSha256": "d5f9d1b511d4095157215ff70559e8f18aabceea8b34489c90bfefe8dcd10550",
+        "generatedAt": "2026-07-12T10:46:30.978Z",
+        "verifiedAt": "2026-07-12T10:46:31.192Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -193,10 +193,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "f5190edbb172fa384a48053fa7496deeea541fc6ec21d08db58c1bf36c744234",
-        "spectrogramSha256": "fa28b7a3892af81192c4b2e60d47cc73f727ee1c64a1c263d75bfb0fcb9b25f0",
-        "generatedAt": "2026-06-30T17:10:32.710Z",
-        "verifiedAt": "2026-06-30T17:10:32.718Z"
+        "soundSha256": "af9a23f93a7cdf2935286b7cdf28aeac4a66bc2e936ba0e222bb91a9c365b327",
+        "spectrogramSha256": "6150d821cbc8f1c2b524f8b27665e041bf0599558eabfa0f4f4b86dfcca5c5d4",
+        "generatedAt": "2026-07-12T10:46:31.176Z",
+        "verifiedAt": "2026-07-12T10:46:31.194Z"
       }
     },
     "Amsel": {
@@ -283,10 +283,10 @@
     "Bergfink": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "2623d2c3172dcb2616e7c1339157a6e0266c35d229b1569b51ec4d5f4706e4c8",
-        "spectrogramSha256": "67e8577b2c18104c709eafa1860f62f0d7c9dc9ae5a08186c45be5a97319c334",
-        "generatedAt": "2026-06-15T13:03:03.067Z",
-        "verifiedAt": "2026-06-20T18:35:37.707Z"
+        "soundSha256": "282586e3ace45446d6cc4a8ebbc307287c2da2ec75f846fcc11dbb67357c568a",
+        "spectrogramSha256": "53041e4d08c4f9ffa4acb7483b73dc9036ea0408ad1fa4053742e3130035d7cc",
+        "generatedAt": "2026-07-12T10:46:24.415Z",
+        "verifiedAt": "2026-07-12T10:46:31.180Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -321,10 +321,10 @@
     "Blaesshuhn": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "0264401cde08a0ded21ff931ecef95c1cc3dc9e8a38e02ccc390810a46453d3d",
-        "spectrogramSha256": "be2e81727a73ce7acb136af905b0dcaced9557b33afa9f920099db2f4069f330",
-        "generatedAt": "2026-06-15T13:03:03.799Z",
-        "verifiedAt": "2026-06-20T18:35:37.716Z"
+        "soundSha256": "152e21c6c9c03f3f1f0585ee834cbcf927f256d7ace6b160dc0aed2ec204f5c9",
+        "spectrogramSha256": "384cd4606a63d3cd19ec092e2d0e1e8d1f67b832413130554391db958381579e",
+        "generatedAt": "2026-07-12T10:46:24.906Z",
+        "verifiedAt": "2026-07-12T10:46:31.181Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -440,10 +440,10 @@
     "Buntspecht": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "a75078ed747961790ab4449b5118b46e96a939e05cd4acb053318cf774a125d9",
-        "spectrogramSha256": "217b2f20316a701290b2c6755e48387092ceab6ae2a87a593a1f8e78784dda4e",
-        "generatedAt": "2026-06-15T13:03:08.508Z",
-        "verifiedAt": "2026-06-20T18:35:37.746Z"
+        "soundSha256": "d34f2e6f59c0ad6c0f3a640f9532efe44893c00eff17d35b7d8bc0a26c41bc68",
+        "spectrogramSha256": "1f87d73be331c579d0f25841c8158bc2abe1eaaccaf268d93d987058214fc103",
+        "generatedAt": "2026-07-12T10:46:27.597Z",
+        "verifiedAt": "2026-07-12T10:46:31.185Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -459,10 +459,10 @@
     "Eisvogel": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "a4e6b47ee2dfcf72457e6ab0e99fe2284ddbd0f192cd8dac3bf95c2d633016b4",
-        "spectrogramSha256": "43f8006aa39f456665b71e65ab62f4cc0240c7d438ed42b5a039e5a1a683f78f",
-        "generatedAt": "2026-06-15T13:03:08.788Z",
-        "verifiedAt": "2026-06-20T18:35:37.749Z"
+        "soundSha256": "46aef95c37960edef64c757a427b28c17932f6e5f56bb06baba5a654eba44691",
+        "spectrogramSha256": "a6ebb48fdf0a8f85f7ad800205c853723f4e6e666a929585ab70e2eadb212758",
+        "generatedAt": "2026-07-12T10:46:27.889Z",
+        "verifiedAt": "2026-07-12T10:46:31.186Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -516,10 +516,10 @@
     "Geoffroy-Klammeraffe": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "6091c895303b109abacedb8cdde954a1ec36758de423bb780927b9674d2998a0",
-        "spectrogramSha256": "a8f6db8b9f6effe2734879beefc021ecf1c1e0e154502974e53c83ebba1d6a84",
-        "generatedAt": "2026-07-05T08:05:56.006Z",
-        "verifiedAt": "2026-07-05T08:05:56.366Z"
+        "soundSha256": "f1b7951bfa70e48357910c410aa7ef246cffd46a771e418afb45b4d0522261f2",
+        "spectrogramSha256": "b177beb568e6286590c0031bb03bd09c76c0bf75d2feb08a941a7c6124e28c44",
+        "generatedAt": "2026-07-12T10:46:28.094Z",
+        "verifiedAt": "2026-07-12T10:46:31.186Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -578,10 +578,10 @@
     "Graugans": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "c90eb7fe5753ad9348385c8e8293f068b03fc3ba919963c75e5033588674f616",
-        "spectrogramSha256": "75cbd08de3ea987030960e9692c88fca1d1e1804352fec2a406b380ee1abcb22",
-        "generatedAt": "2026-06-15T13:03:12.942Z",
-        "verifiedAt": "2026-06-20T18:35:37.781Z"
+        "soundSha256": "0fa8f675e5374b01ff62415d298fd532c6b03059b5e9f2dc9e2f8a05429b3e28",
+        "spectrogramSha256": "e266750c51cfed7b7e47e93dc80d93ba127e4ceb18db61134eb7cadbe23275d0",
+        "generatedAt": "2026-07-12T10:46:29.414Z",
+        "verifiedAt": "2026-07-12T10:46:31.189Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -673,10 +673,10 @@
     "Kleiber": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "81e7d9186c27eed0b97cc8f2aa4b7917c677f78014853a1bf099673e6c69d004",
-        "spectrogramSha256": "f87b2a59de6837a17f6e30d47b172b343a3346e8dfd4dad8fe764a957983c590",
-        "generatedAt": "2026-06-15T13:03:17.009Z",
-        "verifiedAt": "2026-06-20T18:35:37.796Z"
+        "soundSha256": "70e22b4a51c44f12a8355386ccca7087563e90cf0ac222ca7181391a4884bf89",
+        "spectrogramSha256": "5566f30f89ad5f19075c4ff5fd32f1605a9ec660a022f96431d045c4ecda025c",
+        "generatedAt": "2026-07-12T10:46:30.053Z",
+        "verifiedAt": "2026-07-12T10:46:31.190Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -692,10 +692,10 @@
     "Kohlmeise": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "f8ff936761ec712cd5cf7220e012c1072e9e41c64686af59be18b2cb0cc1c7ec",
-        "spectrogramSha256": "cac60ae00dd1575baba61227cd49fe866fc1a99dd81023810b97a17b4ed80c1b",
-        "generatedAt": "2026-06-15T13:03:17.454Z",
-        "verifiedAt": "2026-06-20T18:35:37.802Z"
+        "soundSha256": "6245da478427e6627e3d5dec3d5b3d101bc4ef9c6e89fff7c67726e3b0b8e142",
+        "spectrogramSha256": "a17c5964061dcb17f5052222b27e2684c6c46e3e97fe571f52d19b68b1b980b9",
+        "generatedAt": "2026-07-12T10:46:30.518Z",
+        "verifiedAt": "2026-07-12T10:46:31.191Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -792,10 +792,10 @@
     "Papageientaucher": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "8ac5ae12028ad49ad5d7ae7c7de8f44f07ecfb36fa589b6806c7b94f3290d9fc",
-        "spectrogramSha256": "f8c10f6ecb47f45d3604128960efa4e224c8e79d068bc93e6d583b12609a87d6",
-        "generatedAt": "2026-06-15T13:03:19.082Z",
-        "verifiedAt": "2026-06-20T18:35:37.807Z"
+        "soundSha256": "7d3d10b3a29492679328ac60c49641bab091cdce8732649b0d6c55e1c74fc017",
+        "spectrogramSha256": "33ecf56df2f41bcef2b0933970a7c45677e1af101ab4bb7dafb077500fb92b39",
+        "generatedAt": "2026-07-12T10:46:30.801Z",
+        "verifiedAt": "2026-07-12T10:46:31.191Z"
       },
       "portrait": {
         "managedBy": "species-explorer",

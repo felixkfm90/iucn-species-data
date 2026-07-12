@@ -4,6 +4,11 @@ import os from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
+import {
+  audioFormatLabel,
+  detectAudioFormat,
+  isMp3Buffer,
+} from "./scripts/audio-format.mjs";
 
 const nativeFetch = globalThis.fetch;
 if (typeof nativeFetch !== "function") {
@@ -928,14 +933,13 @@ function isOpenCommercialLicense(lic) {
   );
 }
 
-function isMp3Buffer(buffer) {
-  return (
-    buffer.length >= 3 &&
-    (
-      (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) ||
-      (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0)
-    )
+function validateDownloadedMp3(buffer, source, german) {
+  if (isMp3Buffer(buffer)) return true;
+  const format = audioFormatLabel(detectAudioFormat(buffer));
+  console.warn(
+    `⚠ ${source}-Datei für ${german} ist technisch ${format} und kein gültiges MP3; Kandidat wird übersprungen.`,
   );
+  return false;
 }
 
 function readSoundLicense(creditsPath) {
@@ -1557,8 +1561,9 @@ async function saveSoundRecording({
       return "retry";
     }
 
-    const buffer = await audioRes.arrayBuffer();
-    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    const buffer = Buffer.from(await audioRes.arrayBuffer());
+    if (!validateDownloadedMp3(buffer, "Xeno-Canto", german)) return "retry";
+    fs.writeFileSync(tempMp3, buffer);
     await replaceExistingFileWithTemp(tempMp3, mp3Path);
     replacedSound = true;
 
@@ -1607,10 +1612,7 @@ async function saveCommonsSoundRecording({ genus, species, german, mp3Path, cred
     }
 
     const buffer = Buffer.from(await audioRes.arrayBuffer());
-    if (!isMp3Buffer(buffer)) {
-      console.warn("⚠ Commons-Datei ist kein gültiges MP3, Treffer wird übersprungen.");
-      return "retry";
-    }
+    if (!validateDownloadedMp3(buffer, "Commons", german)) return "retry";
 
     fs.writeFileSync(tempMp3, buffer);
     await replaceExistingFileWithTemp(tempMp3, mp3Path);
@@ -1663,8 +1665,9 @@ async function saveInatSoundRecording({ genus, species, german, mp3Path, credits
       return "retry";
     }
 
-    const buffer = await audioRes.arrayBuffer();
-    fs.writeFileSync(tempMp3, Buffer.from(buffer));
+    const buffer = Buffer.from(await audioRes.arrayBuffer());
+    if (!validateDownloadedMp3(buffer, "iNaturalist", german)) return "retry";
+    fs.writeFileSync(tempMp3, buffer);
     await replaceExistingFileWithTemp(tempMp3, mp3Path);
     replacedSound = true;
 

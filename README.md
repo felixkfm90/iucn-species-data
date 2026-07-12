@@ -65,6 +65,8 @@ Versionierte Referenzen liegen unter:
 - `docs/asset-review-workflow.md`
 - `docs/monthly-site-audit.md`
 - `docs/audits/2026-06-site-audit.md`
+- `docs/audits/2026-07-repository-audit.md`
+- `docs/audio-format-validation.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
@@ -688,8 +690,12 @@ natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit Affiliate/Shop/r
 
 Vor dem Taxonomie-Redesign wurde der aktuelle Gesamtstand am 2026-07-11 erneut nicht-destruktiv geprueft. Der
 priorisierte Befund mit Daten-, Code-, Datei-, Dokumentations-, Sicherheits- und CI-Analyse steht unter
-`docs/audits/2026-07-repository-audit.md`. Die Daten und Reports sind konsistent; vor groesseren Erweiterungen werden
-zuerst Audioformat, localhost-Schreibschutz und verpflichtende Pages-Qualitaetspruefungen stabilisiert.
+`docs/audits/2026-07-repository-audit.md`. Die Daten und Reports sind konsistent. Der erste P0-Punkt wurde am
+2026-07-12 abgeschlossen: Alle 48 vorhandenen Tierstimmen sind technisch gepruefte MP3-Dateien, automatische
+Downloads, Uploads und Wiederherstellungen verwenden einen gemeinsamen Formatpruefer und das Pages-Artefakt sank
+von rund 229,9 auf 89,86 MiB. Pruefung und Migration sind unter `docs/audio-format-validation.md` dokumentiert.
+Offen bleiben die Absicherung der localhost-Schreib-API sowie verpflichtende Assetformat-, Test- und
+Groessenpruefungen vor dem Pages-Deployment.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

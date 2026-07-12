@@ -1,6 +1,6 @@
 # Repository-Audit vor der Taxonomie-Erweiterung
 
-Stand: 2026-07-11  
+Stand: 2026-07-12
 Repository: `felixkfm90/iucn-species-data`  
 Geprüfter Branch: `main`  
 Geprüfter Stand: `11d0eb8`
@@ -147,6 +147,21 @@ Empfohlene Behebung als eigener, rücksetzbarer Migrationsschritt:
 6. Vollständigen Daten-/Assetaudit ausführen.
 7. Pages-Artefaktgröße als CI-Budget prüfen, empfohlen zunächst maximal 120 MiB.
 8. Migration in einem separaten Commit veröffentlichen und Pages kontrollieren.
+
+Umsetzung am 2026-07-12:
+
+- Der zentrale Inspektor `scripts/audio-format.mjs` verlangt mehrere aufeinanderfolgende gültige MPEG-Frames und
+  wird von Pipeline, Explorer-Upload und Asset-Wiederherstellung gemeinsam verwendet.
+- Xeno-Canto-, Commons- und iNaturalist-Kandidaten werden vor dem Schreiben geprüft; Nicht-MP3-Daten werden nicht
+  mehr lediglich mit einer `.mp3`-Endung gespeichert.
+- Die zwölf WAV/PCM-Dateien wurden mit rücksetzbarer lokaler Sicherung nach MP3 migriert. Ihre Gesamtgröße sank von
+  153,84 auf 13,72 MiB, also um 140,12 MiB; die maximale Dauerabweichung lag bei rund 0,001 Sekunden.
+- Alle 48 vorhandenen `sound.mp3` sind technisch gültige MP3-Dateien. Credits blieben unverändert, zwölf
+  Spektrogramme und die zugehörigen Sound-Hashes wurden neu erzeugt.
+- 4 Audioformat-Tests, 23 Explorer-Tests, 28 JS-/MJS-Syntaxprüfungen, Report-Neuaufbau und lokaler Gesamtaudit
+  bestehen. Das kontrollierte Pages-Artefakt umfasst 361 Dateien und 89,86 MiB.
+- Details und Rückfallweg stehen in `docs/audio-format-validation.md`. Das 120-MiB-CI-Budget bleibt Bestandteil von
+  A3 und ist noch nicht umgesetzt.
 
 ### A2. Schreibende localhost-API braucht eine Browser-Sicherheitsgrenze
 
@@ -399,7 +414,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 
 ### Stabilisierungspaket A – blockiert neue größere Erweiterungen
 
-1. Audioformatprüfung zentralisieren und zwölf WAV-als-MP3-Dateien kontrolliert migrieren.
+1. Audioformatprüfung zentralisieren und zwölf WAV-als-MP3-Dateien kontrolliert migrieren. **Erledigt 2026-07-12.**
 2. Medienformatvalidator und Artefaktgrößenbudget ergänzen.
 3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
 4. CI-Quality-Job vor den Pages-Build setzen.
@@ -422,7 +437,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 
 Die Grundlage ist bereit, wenn:
 
-- jede `sound.mp3` auch technisch ein MP3 ist;
+- jede `sound.mp3` auch technisch ein MP3 ist; **erfüllt 2026-07-12**
 - der Pages-Build ein festes Assetformat- und Größenbudget durchsetzt;
 - alle schreibenden localhost-Routen eine einheitliche Browser-/Sitzungsgrenze besitzen;
 - CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;

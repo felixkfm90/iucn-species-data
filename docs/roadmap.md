@@ -598,9 +598,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
 - 7.10.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
   `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
-  konsistent; 23 Explorer-Tests und 25 JS-/MJS-Syntaxpruefungen bestehen. Vor dem Taxonomie-Redesign wird ein
-  getrenntes Stabilisierungspaket umgesetzt: zwoelf als MP3 benannte WAV/PCM-Dateien migrieren und kuenftig zentral
-  validieren, die schreibenden localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen absichern sowie
+  konsistent; 23 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
+  zwoelf als MP3 benannte WAV/PCM-Dateien wurden kontrolliert migriert, alle 48 vorhandenen Sounds zentral geprueft
+  und zwoelf Spektrogramme sowie Hashwerte neu erzeugt. Das Pages-Artefakt sank von rund 229,9 auf 89,86 MiB;
+  Details stehen in `docs/audio-format-validation.md`. Vor dem Taxonomie-Redesign werden noch die schreibenden
+  localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen abgesichert sowie
   verpflichtende Test-, Daten-, Assetformat- und Groessenpruefungen vor den Pages-Deploy setzen. Danach werden
   aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in getrennten Schritten konsolidiert.
 

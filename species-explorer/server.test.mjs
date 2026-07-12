@@ -49,10 +49,14 @@ function createTestJpeg(width = 3, height = 2) {
 }
 
 function createTestMp3(seed = 1) {
+  const frameLength = 417;
+  const frame = Buffer.alloc(frameLength, seed);
+  Buffer.from([0xff, 0xfb, 0x90, 0x64]).copy(frame, 0);
   return Buffer.concat([
     Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
-    Buffer.from([0xff, 0xfb, 0x90, 0x64]),
-    Buffer.alloc(512, seed),
+    frame,
+    frame,
+    frame,
   ]);
 }
 
@@ -147,7 +151,7 @@ async function createEditableFixture() {
     writeFile(join(root, "fehlende_elemente_report.json"), `${JSON.stringify(report, null, 2)}\n`),
     writeFile(join(root, "docs", "manual-map-overrides.md"), "# Keine manuellen Karten\n"),
     writeFile(join(assetDir, "map.jpg"), Buffer.alloc(256)),
-    writeFile(join(assetDir, "sound.mp3"), Buffer.alloc(2048)),
+    writeFile(join(assetDir, "sound.mp3"), createTestMp3(1)),
     writeFile(join(assetDir, "spectrogram.webp"), Buffer.alloc(256)),
     writeFile(join(assetDir, "credits.json"), JSON.stringify({
       source: "Test",
@@ -1367,7 +1371,10 @@ test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fe
 test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüpftes Spektrogramm", async (context) => {
   const mp3 = createTestMp3(7);
   const webp = createTestWebp(9);
-  assert.deepEqual(inspectMp3(mp3), { signature: "ID3 + MPEG frame", frameOffset: 10 });
+  const mp3Inspection = inspectMp3(mp3);
+  assert.equal(mp3Inspection.signature, "ID3 + MPEG frames");
+  assert.equal(mp3Inspection.frameOffset, 10);
+  assert.equal(mp3Inspection.verifiedFrames, 3);
   assert.deepEqual(inspectWebp(webp), { signature: "RIFF/WEBP" });
   assert.throws(() => inspectWebp(Buffer.from("kein webp")), /WebP/);
   assert.throws(
@@ -1802,6 +1809,40 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
   assert.equal(registryAfterSound.assets.Amsel.sound.protectFromPipeline, false);
   assert.equal(registryAfterSound.assets.Amsel.sound.rejectedSources.length, 1);
   assert.equal(registryAfterSound.assets.Amsel.sound.rejectedSources[0].key, "xeno-canto:123");
+
+  await writeFile(
+    join(soundBackupDirectory, "sound.mp3"),
+    Buffer.concat([Buffer.from("RIFF", "ascii"), Buffer.alloc(4), Buffer.from("WAVE", "ascii"), Buffer.alloc(32)]),
+  );
+  const invalidSoundRestoreResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(invalidSoundRestoreResponse.status, 409);
+  const invalidSoundRestore = await invalidSoundRestoreResponse.json();
+  assert.match(invalidSoundRestore.error, /kein gültiges MP3/);
+  assert.equal(existsSync(join(assetDirectory, "sound.mp3")), false);
+
+  await writeFile(join(soundBackupDirectory, "sound.mp3"), createTestMp3(9));
+  const restoreSoundResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/restore`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(restoreSoundResponse.status, 200);
+  const restoredSound = await restoreSoundResponse.json();
+  assert.equal(restoredSound.restored, true);
+  assert.equal(restoredSound.assetType, "sound");
+  assert.equal(existsSync(join(assetDirectory, "sound.mp3")), true);
+  inspectMp3(await readFile(join(assetDirectory, "sound.mp3")));
+
+  const secondDeleteSoundResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  assert.equal(secondDeleteSoundResponse.status, 200);
 
   const deletePortraitResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete`, {
     method: "POST",

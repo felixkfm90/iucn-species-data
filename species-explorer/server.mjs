@@ -22,6 +22,7 @@ import {
   renderSpectrogram,
   resolveFfmpegPath,
 } from "../scripts/spectrogram-renderer.mjs";
+import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
 import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
@@ -382,55 +383,7 @@ export function inspectPng(buffer) {
 }
 
 export function inspectMp3(buffer) {
-  if (!Buffer.isBuffer(buffer) || buffer.length < 4) {
-    throw new Error("MP3-Datei ist zu klein oder unlesbar");
-  }
-
-  let scanStart = 0;
-  let hasId3 = false;
-  if (buffer.length >= 10 && buffer.subarray(0, 3).toString("ascii") === "ID3") {
-    hasId3 = true;
-    const sizeBytes = buffer.subarray(6, 10);
-    if ([...sizeBytes].some((value) => value > 0x7f)) {
-      throw new Error("ID3-Kopf ist beschädigt");
-    }
-    const tagSize = (
-      (sizeBytes[0] << 21)
-      | (sizeBytes[1] << 14)
-      | (sizeBytes[2] << 7)
-      | sizeBytes[3]
-    );
-    const footerBytes = (buffer[5] & 0x10) === 0x10 ? 10 : 0;
-    scanStart = 10 + tagSize + footerBytes;
-    if (scanStart >= buffer.length - 3) {
-      throw new Error("MP3-Datei enthält nur ID3-Daten, aber keinen Audiostream");
-    }
-  }
-
-  const scanLimit = Math.min(buffer.length - 3, scanStart + 64 * 1024);
-  for (let index = scanStart; index <= scanLimit; index += 1) {
-    const byte1 = buffer[index + 1];
-    const byte2 = buffer[index + 2];
-    const version = (byte1 >> 3) & 0x03;
-    const layer = (byte1 >> 1) & 0x03;
-    const bitrate = (byte2 >> 4) & 0x0f;
-    const sampleRate = (byte2 >> 2) & 0x03;
-    if (
-      buffer[index] === 0xff
-      && (byte1 & 0xe0) === 0xe0
-      && version !== 0x01
-      && layer !== 0x00
-      && bitrate !== 0x00
-      && bitrate !== 0x0f
-      && sampleRate !== 0x03
-    ) {
-      return {
-        signature: hasId3 ? "ID3 + MPEG frame" : "MPEG frame",
-        frameOffset: index,
-      };
-    }
-  }
-  throw new Error("Kein plausibler MPEG-Audioframe gefunden");
+  return inspectMp3Buffer(buffer);
 }
 
 export function inspectWebp(buffer) {
@@ -5427,6 +5380,23 @@ export async function createExplorerServer({
       const error = new Error("Die lokale Sicherung enthält keine wiederherstellbaren Dateien");
       error.statusCode = 409;
       throw error;
+    }
+    if (assetType === "sound") {
+      const soundBackup = backupFiles.find((file) => file.fileName === "sound.mp3");
+      if (!soundBackup) {
+        const error = new Error("Die lokale Soundsicherung enthält keine sound.mp3");
+        error.statusCode = 409;
+        throw error;
+      }
+      try {
+        inspectMp3Buffer(soundBackup.buffer);
+      } catch (inspectionError) {
+        const error = new Error(
+          `Die lokale Soundsicherung enthält kein gültiges MP3 und wird nicht wiederhergestellt: ${inspectionError.message}`,
+        );
+        error.statusCode = 409;
+        throw error;
+      }
     }
 
     assetWriteActive = true;

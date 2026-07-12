@@ -67,7 +67,7 @@ Lokale Arbeitsoberflaeche:
 - 49 Arten in `speciesData.json`
 - 49 Karten
 - 49 Art-Assetordner
-- 48 MP3-Dateien
+- 48 technisch gepruefte MP3-Dateien
 - 48 Credits-Dateien
 - 48 Spektrogramm-Dateien
 - 49 Artportraets
@@ -80,10 +80,11 @@ Lokale Arbeitsoberflaeche:
   - `Loewe`
   - `Rotfuchs`
   - `Waldkauz`
-- 5 aktive NC-Soundlizenzen laut Report:
+- 6 aktive NC-Soundlizenzen laut Report:
   - `Bisamratte`
   - `Brauenmotmot`
   - `Geoffroy-Klammeraffe`
+  - `Grosstrappe`
   - `Loewe`
   - `Scharlachara`
 
@@ -679,10 +680,13 @@ Aktuelle Planung:
   die rechnerabhaengige Einstellung liegt ignoriert in `species-explorer/local-settings.json`.
   Vor dem Taxonomie-Redesign wurde am 2026-07-11 ein vollstaendiger Repository-, Code-, Daten-, Datei-,
   Dokumentations-, Test- und CI-Audit abgeschlossen: `docs/audits/2026-07-repository-audit.md`. Die Datenbasis ist
-  konsistent und alle 23 Explorer-Tests bestehen. Vor groesseren Erweiterungen sind jedoch die dort beschriebenen
-  P0-Punkte umzusetzen: zwoelf WAV/PCM-Dateien mit falscher `.mp3`-Endung kontrolliert migrieren, die schreibende
-  localhost-API durch eine einheitliche Browser-/Sitzungsgrenze absichern und den Pages-Workflow um verpflichtende
-  Qualitaets-, Assetformat- und Groessenpruefungen ergaenzen. Danach folgen Dokumentationskonsolidierung,
+  konsistent und alle 23 Explorer-Tests bestehen. Der Audio-P0-Punkt wurde am 2026-07-12 abgeschlossen:
+  `scripts/audio-format.mjs` prueft automatische Downloads, Uploads und Wiederherstellungen zentral, zwoelf
+  WAV/PCM-Bestandsdateien wurden ruecksetzbar nach MP3 migriert und ihre Spektrogramme sowie Sound-Hashes neu
+  erzeugt. Alle 48 vorhandenen Tierstimmen sind nun echte MP3-Dateien; das Pages-Artefakt sank von rund 229,9 auf
+  89,86 MiB. Details: `docs/audio-format-validation.md`. Vor groesseren Erweiterungen bleiben die schreibende
+  localhost-API durch eine einheitliche Browser-/Sitzungsgrenze abzusichern und der Pages-Workflow um verpflichtende
+  Qualitaets-, Assetformat- und Groessenpruefungen zu ergaenzen. Danach folgen Dokumentationskonsolidierung,
   Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
