@@ -601,9 +601,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   konsistent; 23 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
   zwoelf als MP3 benannte WAV/PCM-Dateien wurden kontrolliert migriert, alle 48 vorhandenen Sounds zentral geprueft
   und zwoelf Spektrogramme sowie Hashwerte neu erzeugt. Das Pages-Artefakt sank von rund 229,9 auf 89,86 MiB;
-  Details stehen in `docs/audio-format-validation.md`. Vor dem Taxonomie-Redesign werden noch die schreibenden
-  localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen abgesichert sowie
-  verpflichtende Test-, Daten-, Assetformat- und Groessenpruefungen vor den Pages-Deploy setzen. Danach werden
+  Details stehen in `docs/audio-format-validation.md`. Der zweite P0-Stabilisierungspunkt wurde am 2026-07-12
+  umgesetzt: Karten, Portraits, Sounds, Credits, Spektrogramme und veröffentlichte PNG-Grafiken werden vor dem
+  Pages-Bau anhand ihres Dateiinhalts validiert. Das kontrolliert anpassbare Größenbudget liegt zunächst bei
+  120 MiB und stoppt einen zu großen Build vor dem Upload; siehe `docs/media-asset-validation.md`. Vor dem
+  Taxonomie-Redesign werden noch die schreibenden localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen
+  abgesichert und ein vollständiger CI-Quality-Job mit Syntax-, Test- und Datenprüfungen eingeführt. Danach werden
   aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in getrennten Schritten konsolidiert.
 
 ## Phase 8 - Ausbau

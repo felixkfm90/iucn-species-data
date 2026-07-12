@@ -68,5 +68,6 @@ Nach der Migration wurden erfolgreich ausgeführt:
 - Spektrogramm-Neuaufbau für alle zwölf migrierten Arten;
 - kontrollierter Pages-Artefaktbau.
 
-Der noch offene nächste Auditpunkt ist die verpflichtende Einbindung der Formatprüfung und eines anfänglichen
-120-MiB-Größenbudgets in den GitHub-Pages-Quality-Job.
+Die verpflichtende Formatprüfung und das anfängliche 120-MiB-Größenbudget wurden anschließend umgesetzt und sind
+unter `docs/media-asset-validation.md` dokumentiert. Offen bleibt der vollständige GitHub-Pages-Quality-Job mit
+Syntax-, Test- und Datenaudit.

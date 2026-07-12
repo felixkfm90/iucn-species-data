@@ -415,7 +415,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 ### Stabilisierungspaket A – blockiert neue größere Erweiterungen
 
 1. Audioformatprüfung zentralisieren und zwölf WAV-als-MP3-Dateien kontrolliert migrieren. **Erledigt 2026-07-12.**
-2. Medienformatvalidator und Artefaktgrößenbudget ergänzen.
+2. Medienformatvalidator und Artefaktgrößenbudget ergänzen. **Erledigt 2026-07-12.**
 3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
 4. CI-Quality-Job vor den Pages-Build setzen.
 5. Vollständigen Test-, Audit- und Pages-Lauf durchführen.
@@ -438,7 +438,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 Die Grundlage ist bereit, wenn:
 
 - jede `sound.mp3` auch technisch ein MP3 ist; **erfüllt 2026-07-12**
-- der Pages-Build ein festes Assetformat- und Größenbudget durchsetzt;
+- der Pages-Build ein festes Assetformat- und Größenbudget durchsetzt; **erfüllt 2026-07-12**
 - alle schreibenden localhost-Routen eine einheitliche Browser-/Sitzungsgrenze besitzen;
 - CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;
 - der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt;

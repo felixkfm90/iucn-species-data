@@ -684,9 +684,14 @@ Aktuelle Planung:
   `scripts/audio-format.mjs` prueft automatische Downloads, Uploads und Wiederherstellungen zentral, zwoelf
   WAV/PCM-Bestandsdateien wurden ruecksetzbar nach MP3 migriert und ihre Spektrogramme sowie Sound-Hashes neu
   erzeugt. Alle 48 vorhandenen Tierstimmen sind nun echte MP3-Dateien; das Pages-Artefakt sank von rund 229,9 auf
-  89,86 MiB. Details: `docs/audio-format-validation.md`. Vor groesseren Erweiterungen bleiben die schreibende
-  localhost-API durch eine einheitliche Browser-/Sitzungsgrenze abzusichern und der Pages-Workflow um verpflichtende
-  Qualitaets-, Assetformat- und Groessenpruefungen zu ergaenzen. Danach folgen Dokumentationskonsolidierung,
+  89,86 MiB. Details: `docs/audio-format-validation.md`. Der zweite P0-Stabilisierungspunkt wurde am selben Tag
+  umgesetzt:
+  `scripts/validate-media-assets.mjs` prüft die tatsächlichen Formate und Abmessungen von Karten, Portraits,
+  Spektrogrammen und PNG-Grafiken sowie MP3- und Credits-Pakete. Der Pages-Bau stoppt vor dem Upload oberhalb des
+  anfänglichen, kontrolliert anpassbaren 120-MiB-Budgets; Details: `docs/media-asset-validation.md`. Vor groesseren
+  Erweiterungen bleiben die schreibende localhost-API durch eine einheitliche Browser-/Sitzungsgrenze abzusichern
+  und ein vollständiger CI-Quality-Job mit Syntax-, Test- und Datenaudit einzuführen. Danach folgen
+  Dokumentationskonsolidierung,
   Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.

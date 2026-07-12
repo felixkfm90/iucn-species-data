@@ -4,6 +4,17 @@ import path from "node:path";
 const root = process.cwd();
 const outArg = process.argv.find((arg) => arg.startsWith("--out="));
 const outDir = path.resolve(root, outArg ? outArg.slice("--out=".length) : "_site");
+const maxBytesArg = process.argv.find((arg) => arg.startsWith("--max-bytes="));
+const maxMibArg = process.argv.find((arg) => arg.startsWith("--max-mib="));
+const DEFAULT_MAX_BYTES = 120 * 1024 * 1024;
+const maxBytes = parsePositiveInteger(
+  maxBytesArg
+    ? maxBytesArg.slice("--max-bytes=".length)
+    : maxMibArg
+      ? Number(maxMibArg.slice("--max-mib=".length)) * 1024 * 1024
+      : process.env.PAGES_MAX_BYTES || DEFAULT_MAX_BYTES,
+  "Pages-Größenbudget",
+);
 
 const requiredFiles = [
   "species-core.js",
@@ -84,6 +95,14 @@ function formatBytes(bytes) {
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
+function parsePositiveInteger(value, label) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+    throw new Error(`${label} muss eine positive ganze Bytezahl sein: ${value}`);
+  }
+  return parsed;
+}
+
 for (const entry of [...requiredFiles, ...requiredDirs]) {
   await assertPresent(entry);
 }
@@ -126,6 +145,12 @@ await writeFile(
 );
 
 const stats = await collectStats(outDir);
+if (stats.bytes > maxBytes) {
+  throw new Error(
+    `Pages-Artefakt überschreitet das Größenbudget: ${formatBytes(stats.bytes)} von maximal ${formatBytes(maxBytes)}.`,
+  );
+}
 console.log(`Pages-Artefakt vorbereitet: ${outDir}`);
 console.log(`Dateien: ${stats.files}`);
 console.log(`Größe: ${formatBytes(stats.bytes)}`);
+console.log(`Größenbudget: ${formatBytes(maxBytes)}`);

@@ -3,6 +3,7 @@
   "scripts": {
     "audio:check": "node scripts/migrate-audio-assets.mjs --check",
     "audio:migrate": "node scripts/migrate-audio-assets.mjs --write",
+    "assets:check": "node scripts/validate-media-assets.mjs",
     "audit:site": "node scripts/monthly-site-audit.mjs",
     "backup:nas": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1",
     "backup:nas:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -DryRun",
@@ -13,6 +14,7 @@
     "species:desktop:shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File species-explorer/desktop/install-shortcut.ps1",
     "species:explorer": "node species-explorer/server.mjs",
     "test:audio": "node --test --test-isolation=none scripts/audio-format.test.mjs",
+    "test:media": "node --test --test-isolation=none scripts/validate-media-assets.test.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },
   "devDependencies": {

@@ -67,6 +67,7 @@ Versionierte Referenzen liegen unter:
 - `docs/audits/2026-06-site-audit.md`
 - `docs/audits/2026-07-repository-audit.md`
 - `docs/audio-format-validation.md`
+- `docs/media-asset-validation.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
@@ -694,8 +695,11 @@ priorisierte Befund mit Daten-, Code-, Datei-, Dokumentations-, Sicherheits- und
 2026-07-12 abgeschlossen: Alle 48 vorhandenen Tierstimmen sind technisch gepruefte MP3-Dateien, automatische
 Downloads, Uploads und Wiederherstellungen verwenden einen gemeinsamen Formatpruefer und das Pages-Artefakt sank
 von rund 229,9 auf 89,86 MiB. Pruefung und Migration sind unter `docs/audio-format-validation.md` dokumentiert.
-Offen bleiben die Absicherung der localhost-Schreib-API sowie verpflichtende Assetformat-, Test- und
-Groessenpruefungen vor dem Pages-Deployment.
+Der zweite P0-Stabilisierungspunkt wurde ebenfalls am 2026-07-12 umgesetzt: `scripts/validate-media-assets.mjs`
+prüft Karten, Portraits, Sounds, Credits, Spektrogramme und veröffentlichte PNG-Grafiken anhand des Dateiinhalts. Der Pages-Bauer
+erzwingt vor dem Upload ein anfängliches, kontrolliert anpassbares 120-MiB-Größenbudget. Details:
+`docs/media-asset-validation.md`. Offen bleiben die Absicherung der localhost-Schreib-API sowie der vollständige
+CI-Quality-Job mit Syntax-, Test- und Datenaudit vor dem Pages-Deployment.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
