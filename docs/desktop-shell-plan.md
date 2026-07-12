@@ -1,6 +1,6 @@
 # Browserunabhängiger Arten-Explorer
 
-Stand: 2026-06-27
+Stand: 2026-07-12
 
 ## Ziel
 
@@ -126,5 +126,6 @@ stoppt den Server wieder kontrolliert.
 
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
 - Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App abgeschlossen und von Felix getestet
-- Phase 7.9: Synology NAS, Backup und Restore-Test
+- Phase 7.9: globale Taxonomiedatenbank und Lightroom-Integration planen und schrittweise prüfen
+- Phase 7.10: Synology NAS, Backup, Mehrgerätebetrieb und Restore-Test
 - Phase 8: weiterer funktionaler Ausbau

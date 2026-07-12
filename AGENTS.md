@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-11
+Stand: 2026-07-12
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -621,8 +621,8 @@ Aktuelle Planung:
   Launcher `species-explorer/desktop/start-explorer.vbs` nutzt. Dadurch startet die App per Doppelklick ohne
   dauerhaft sichtbares PowerShell-Fenster. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
   `npm.cmd run --silent test:explorer` umfasst jetzt 19 Tests.
-  Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock verschieben sich auf Phase 7.9.
-  Vor Phase 7.9 wurde am 2026-06-28 ein nicht-destruktiver Projektkonsolidierungs-Audit gestartet:
+  Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock verschieben sich auf Phase 7.10.
+  Vor Phase 7.10 wurde am 2026-06-28 ein nicht-destruktiver Projektkonsolidierungs-Audit gestartet:
   `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker; Bereinigungskandidaten sind `Testlauf/`,
   `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten waren die
   Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
@@ -656,7 +656,17 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 7.9 wurde am 2026-06-28 gestartet, siehe `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
+  Phase 7.9 `Globale Taxonomiedatenbank und Lightroom-Integration` ist seit 2026-07-12 geplant, siehe
+  `docs/global-taxonomy-lightroom-plan.md`. Eine umfangreiche lokale Taxonomie soll spaeter als getrennte Referenz-
+  und Suchdatenbank dienen; `species_list.json` und `speciesData.json` bleiben die bestaetigte produktive
+  Datenbasis. Catalogue of Life, GBIF und begruendete Alternativen werden zuerst ergebnisoffen verglichen. Quelle,
+  lokale Speichertechnik und Lightroom-Anbindung sind noch nicht festgelegt. Die grosse Referenzdatenbank darf
+  weder in Git noch in das GitHub-Pages-Artefakt gelangen und bestehende Arten nicht still veraendern. Vor einer
+  technischen Umsetzung werden die P0-Stabilisierungspunkte aus dem Repository-Audit abgeschlossen. Die
+  Teilphasen 7.9.1 bis 7.9.9 reichen von Quellenvergleich und begrenztem Importprototyp bis zum Lightroom-MVP und
+  zur ausdruecklichen Uebergabe der Datenverteilung an Phase 7.10.
+  Phase 7.10 wurde am 2026-06-28 unter der damaligen Nummer 7.9 gestartet, siehe
+  `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
   vollstaendiges ZIP-Restore-Backup und der Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch.
   `restore-start.cmd` ist der erste technische Baustein: Nach dem Entpacken eines NAS-Backups prueft das Skript

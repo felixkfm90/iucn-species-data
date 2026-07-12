@@ -1,4 +1,4 @@
-# Projektkonsolidierungs-Audit vor Phase 7.9
+# Projektkonsolidierungs-Audit vor Phase 7.10
 
 Stand: 2026-06-28
 
@@ -76,7 +76,7 @@ werden:
 
 ## Struktur- und Refactoring-Kandidaten
 
-Diese Punkte sind keine Fehler, aber sinnvoll vor oder waehrend Phase 7.9 zu klaeren:
+Diese Punkte sind keine Fehler, aber sinnvoll vor oder waehrend Phase 7.10 zu klaeren:
 
 1. `node-fetch` pruefen und kontrolliert entfernen oder ersetzen
    - `npm.cmd ls --depth=0` zeigt `node-fetch` als Dependency
@@ -99,7 +99,7 @@ Diese Punkte sind keine Fehler, aber sinnvoll vor oder waehrend Phase 7.9 zu kla
    - aktuell bleiben alte `pipeline-asset-backups` nach abgeschlossenen Laeufen liegen
    - vor Mehrgeraete-Betrieb sollte klar sein, wann diese Ordner automatisch geloescht werden
 
-5. Installer/Portable Paket erst nach 7.9
+5. Installer/Portable Paket erst nach 7.10
    - sinnvoll, aber erst nachdem NAS, Locking, Backup und Restore geklaert sind
 
 ## Nicht anfassen
@@ -115,7 +115,7 @@ Diese Bereiche sind produktiv oder bewusst lokal:
 - `node_modules/`
 - `local-tools/ffmpeg`, solange kein alternatives FFmpeg-Konzept beschlossen ist
 
-## Empfehlung vor Phase 7.9
+## Empfehlung vor Phase 7.10
 
 Empfohlene Reihenfolge aus dem Audit:
 
@@ -125,7 +125,7 @@ Empfohlene Reihenfolge aus dem Audit:
    - `species-explorer/pipeline-asset-backups/`
 2. Kleine Dependency-Bereinigung:
    - `node-fetch` kontrolliert entfernen, wenn Tests weiterhin gruen bleiben
-3. Phase 7.9 planen:
+3. Phase 7.10 planen:
    - Ein-Rechner-Hauptworkflow vs. Zwei-Rechner-Arbeit
    - NAS als Backup, Mirror oder aktive Arbeitsbasis
    - Bearbeitungs-Lock
@@ -166,7 +166,7 @@ Offen bleiben bewusst:
 
 ## Fazit
 
-Es gibt keinen kritischen Blocker fuer Phase 7.9. Der Projektzustand ist konsistent. Vor der NAS-/Mehrgeraete-Stufe
+Es gibt keinen kritischen Blocker fuer Phase 7.10. Der Projektzustand ist konsistent. Vor der NAS-/Mehrgeraete-Stufe
 wurden die lokalen Altlasten bereinigt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Die
 naechsten offenen Strukturfragen betreffen FFmpeg-/Installer-Konzept, Log-/Temp-Retention und das
 Mehrgeraete-/Backup-Modell.

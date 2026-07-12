@@ -1,6 +1,6 @@
 # Desktop App / Arten-Explorer
 
-Stand: 2026-06-20
+Stand: 2026-07-12
 
 Ziel von Phase 7: Eine lokale Bedienoberflaeche schaffen, mit der Arten, manuelle Daten, Assets, Sounds, Karten,
 Credits, Reports und Pipeline-Status gepflegt bzw. geprueft werden koennen, ohne direkt in JSON-Dateien und Ordnern
@@ -645,7 +645,17 @@ Priorisierte nächste Ausbauschritte:
 - belegte Ports, Serverabstürze und zweite schreibende Instanzen verständlich behandeln
 - technische Detailplanung: `docs/desktop-shell-plan.md`
 
-### 7.9 Synology NAS und automatisiertes Backup
+### 7.9 Globale Taxonomiedatenbank und Lightroom-Integration
+
+- umfangreiche globale Taxonomiedaten als getrennte lokale Referenz- und Suchdatenbank planen
+- Catalogue of Life, GBIF und begruendete Alternativen vergleichen, ohne die Quelle vorzeitig festzulegen
+- kontrollierte Explorer-Suche und Uebernahme mit Quellen-, Versions- und Konfliktanzeige konzipieren
+- produktiven Artenbestand nicht still oder automatisch veraendern
+- deutsches Lightroom-Classic-Plug-in erst nach einer SDK- und Metadaten-Machbarkeitspruefung umsetzen
+- reproduzierbare Referenzdaten von eigenen, sicherungsrelevanten Taxonomieentscheidungen trennen
+- Detailplanung: `docs/global-taxonomy-lightroom-plan.md`
+
+### 7.10 Synology NAS und automatisiertes Backup
 
 - NAS als Backup/Mirror konzipieren
 - Backup-Skript oder Synology-Job definieren

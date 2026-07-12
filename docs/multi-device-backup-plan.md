@@ -1,12 +1,18 @@
-# Phase 7.9 - Mehrgeraete, Git-Update, Locking und NAS-Backup
+# Phase 7.10 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-06-28
+Stand: 2026-07-12
 
 ## Ziel
 
 Die lokale Arten-Explorer-App soll auf mehreren Windows-Rechnern nutzbar sein, ohne dass Daten verloren gehen oder
 parallele Bearbeitungen einander ueberschreiben. GitHub bleibt die zentrale versionierte Wahrheit. Das NAS wird als
 vollstaendiges Restore-Backup genutzt, nicht als aktive Arbeitskopie.
+
+Die Phase wurde am 2026-07-12 von 7.9 auf 7.10 umnummeriert, weil davor die neue Phase 7.9
+`Globale Taxonomiedatenbank und Lightroom-Integration` eingeordnet wurde. Inhalt, Status und bereits umgesetzte
+NAS-/Backup-Entscheidungen bleiben unveraendert. Teilphase 7.9.9 muss vor dem weiteren Mehrgeraeteausbau klaeren,
+wie reproduzierbare Referenzdaten und eigene Taxonomieentscheidungen verteilt beziehungsweise gesichert werden.
+Details: `docs/global-taxonomy-lightroom-plan.md`.
 
 ## Grundentscheidung
 

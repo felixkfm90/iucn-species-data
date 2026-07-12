@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-06-28
+Stand: 2026-07-12
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -11,6 +11,12 @@ Neue Arten werden nicht automatisch vorgeschlagen oder automatisch in `species_l
 Die Artenauswahl bleibt redaktionell manuell. Die Pipeline verarbeitet nur Arten, die von Felix bestaetigt und in
 `species_list.json` gespeichert wurden. Phase 7.5 bildet diesen bisher direkten JSON-Schritt kontrolliert ueber den
 lokalen Arten-Explorer ab.
+
+Phase 7.9 plant spaeter optional eine globale lokale Taxonomiesuche als Referenz fuer den Neue-Art-Assistenten.
+Bis Datenquelle, lokales Datenmodell, Vorschau, Konfliktbehandlung und Migration freigegeben sind, bleibt der hier
+beschriebene manuelle und bestaetigungspflichtige Ablauf unveraendert. Eine Referenzdatenbank darf keine Art still
+anlegen und keine vorhandene Art automatisch ueberschreiben. Details:
+`docs/global-taxonomy-lightroom-plan.md`.
 
 ## Manuell zu pflegen
 

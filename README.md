@@ -66,6 +66,7 @@ Versionierte Referenzen liegen unter:
 - `docs/monthly-site-audit.md`
 - `docs/audits/2026-06-site-audit.md`
 - `docs/desktop-app-plan.md`
+- `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -673,18 +674,24 @@ der Launcher eine kurze Windows-Meldung mit dem Hinweis auf `npm.cmd install`.
 Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api/summary` und laedt die bestehende
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
-In Phase 7 folgen
-spaeter Synology-NAS-Migration bzw. Spiegelung und automatisiertes Backup. Vor Phase 7.9 wurde ein
-Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`. Dabei wurden lokale Altlasten
-entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit
-Affiliate/Shop/rechtlicher Folgepruefung geplant.
+
+Phase 7.9 plant eine globale lokale Taxonomie-Referenzdatenbank und ein spaeteres eigenes deutschsprachiges
+Lightroom-Classic-Plug-in. Catalogue of Life, GBIF und begruendete Alternativen werden zuerst ergebnisoffen
+verglichen. Der produktive Artenbestand bleibt getrennt; eine Referenzdatenbank darf weder `species_list.json` noch
+`speciesData.json` still veraendern und wird nicht ueber Git oder GitHub Pages verteilt. Details:
+`docs/global-taxonomy-lightroom-plan.md`.
+
+Die Synology-NAS-Migration beziehungsweise Spiegelung, der Mehrgeraetebetrieb und automatisierte Restore-Backups
+sind durch die neue Roadmap-Reihenfolge Phase 7.10. Vor Phase 7.10 wurde ein Projektkonsolidierungs-Audit umgesetzt:
+`docs/project-consolidation-audit.md`. Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf
+natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung geplant.
 
 Vor dem Taxonomie-Redesign wurde der aktuelle Gesamtstand am 2026-07-11 erneut nicht-destruktiv geprueft. Der
 priorisierte Befund mit Daten-, Code-, Datei-, Dokumentations-, Sicherheits- und CI-Analyse steht unter
 `docs/audits/2026-07-repository-audit.md`. Die Daten und Reports sind konsistent; vor groesseren Erweiterungen werden
 zuerst Audioformat, localhost-Schreibschutz und verpflichtende Pages-Qualitaetspruefungen stabilisiert.
 
-Phase 7.9 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
+Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.
 

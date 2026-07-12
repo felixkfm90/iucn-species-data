@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-11
+Stand: 2026-07-12
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -542,14 +542,42 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.8.1 Projektkonsolidierungs-Audit vor NAS/Mehrgeraete: gestartet am 2026-06-28, siehe
-  `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer 7.9. Bereinigungskandidaten sind
+  `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer 7.10. Bereinigungskandidaten sind
   `Testlauf/`, `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten waren
   die Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
   Nach Felix' Freigabe wurden `Testlauf/`, `errors.log` und `species-explorer/pipeline-asset-backups/` geloescht.
   `node-fetch` wurde aus `package.json` und `package-lock.json` entfernt; ein danach gefundener Pipeline-Importfehler
   wurde durch Umstellung von `update.mjs` auf natives Node-`fetch` korrigiert. Node.js 18 oder neuer ist damit
   Voraussetzung. Tests, JS-/MJS-Syntax und lokaler Site-Audit sind danach erfolgreich.
-- 7.9 Synology NAS, Mehrgeraete und automatisiertes Backup: gestartet am 2026-06-28, siehe
+- 7.9 Globale Taxonomiedatenbank und Lightroom-Integration
+  Status: geplant. Details: `docs/global-taxonomy-lightroom-plan.md`. Ziel ist eine umfangreiche lokale Referenz-
+  und Suchdatenbank fuer
+  wissenschaftliche Namen, Synonyme, Taxonomiehierarchien und kontrolliert belegte deutsche Bezeichnungen. Der
+  bestehende produktive Artenbestand in `species_list.json` und `speciesData.json` bleibt davon getrennt und wird
+  weder still noch automatisch geaendert. Datenquelle, lokale Speichertechnik und Lightroom-Anbindung bleiben bis
+  zu den vorgesehenen Vergleichs- und Prototypphasen ausdruecklich offen. Die vollstaendige Referenzdatenbank wird
+  nicht in Git aufgenommen und nicht ueber GitHub Pages ausgeliefert. Vor technischer Umsetzung werden die P0-
+  Stabilisierungspunkte aus `docs/audits/2026-07-repository-audit.md` abgeschlossen.
+  Geplante Teilphasen:
+  - 7.9.1 Anforderungen und Quellenvergleich: Catalogue of Life, GBIF und begruendete Alternativen anhand einer
+    gemeinsamen Qualitaets-, Lizenz-, Versions- und Betriebs-Matrix vergleichen.
+  - 7.9.2 Lokales Datenbank- und Importkonzept: Speicherort, Schema, Suche, Provenienz, Import, Versionierung,
+    Rollback sowie Git-/Pages-Ausschluss festlegen; SQLite bleibt bis dahin nur ein Kandidat.
+  - 7.9.3 Import-Prototyp mit begrenztem Testbestand: Datenqualitaet, Synonyme, deutsche Namen, Suchleistung,
+    Speicherbedarf und Fehlerfaelle mit repraesentativen Taxa messen.
+  - 7.9.4 Explorer-Such- und Uebernahmekonzept: Treffervergleich, Quellenanzeige, Vorschau, Konfliktbehandlung,
+    Ablehnung und manuelles Fallback definieren, ohne den aktuellen Assistenten vorzeitig umzubauen.
+  - 7.9.5 Vollstaendiger lokaler Import und Aktualisierungsworkflow: erst nach Freigabe der vorherigen Ergebnisse;
+    mit Verifikation, atomarem Austausch, Fortschritt und Rollback.
+  - 7.9.6 Lightroom-SDK- und Metadaten-Machbarkeitspruefung: SDK-Grenzen, XMP-/Katalogverhalten,
+    Metadatenmodell und Datenuebertragungsweg vergleichen.
+  - 7.9.7 Deutsches Lightroom-Plug-in als MVP: deutsche Suche, Taxonomievorschau, stabile Projekt-Art-ID und
+    kontrollierte Metadatenuebernahme auf ausgewaehlte Fotos.
+  - 7.9.8 Erweiterte Lightroom-Funktionen: Referenzbilder, Sammlungen, Lifelist, Statistiken und Exporte erst nach
+    erfolgreichem MVP einzeln bewerten.
+  - 7.9.9 Vorbereitung fuer Mehrgeraetebetrieb: Verteilung und Versionsabgleich der reproduzierbaren Referenzdaten
+    sowie Sicherung eigener Uebersetzungen und Taxonomie-Mappings klaeren und an Phase 7.10 uebergeben.
+- 7.10 Synology NAS, Mehrgeraete und automatisiertes Backup: gestartet am 2026-06-28, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt zentrale versionierte Wahrheit, die App
   bearbeitet lokale Projektordner pfadunabhaengig, NAS wird als vollstaendiges ZIP-Restore-Backup genutzt und der
   Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch statt in `main`. Der erste technische
@@ -560,7 +588,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Datenbank-Dialog eingebunden: Vorschau mit Zielpfad, Umfang und Rotation, Start per Klick, Fortschritt in Prozent,
   Prozessausgabe, Abschlussmeldung und Schliesswarnung bei laufendem Backup. Der lokale Zielpfad kann in der App ueber
   `Backup-Pfad einstellen` geaendert werden und liegt nicht versioniert in `species-explorer/local-settings.json`.
-- 7.9.1 GitHub-Pages-Stabilisierung: umgesetzt am 2026-07-04. Das Repository nutzt nicht mehr das
+- 7.10.1 GitHub-Pages-Stabilisierung: umgesetzt am 2026-07-04. Das Repository nutzt nicht mehr das
   legacy Branch-Deployment aus `main:/`, sondern ein eigenes GitHub-Actions-Deployment unter
   `.github/workflows/pages.yml`. `scripts/prepare-pages-artifact.mjs` baut dafuer ein kontrolliertes `_site/`-Artefakt
   mit Frontend-JavaScript, JSON-Daten, `species-assets/`, `graphics/`, `docs/`, `README.md` und `.nojekyll`.
@@ -568,7 +596,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
   Seit 2026-07-05 werden Pages-Läufe in der gemeinsamen `pages`-Concurrency-Gruppe nicht mehr abgebrochen, sondern
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
-- 7.9.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
+- 7.10.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
   `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
   konsistent; 23 Explorer-Tests und 25 JS-/MJS-Syntaxpruefungen bestehen. Vor dem Taxonomie-Redesign wird ein
   getrenntes Stabilisierungspaket umgesetzt: zwoelf als MP3 benannte WAV/PCM-Dateien migrieren und kuenftig zentral
