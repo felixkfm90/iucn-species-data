@@ -145,7 +145,7 @@ Empfohlene Behebung als eigener, rücksetzbarer Migrationsschritt:
 4. Die zwölf Bestandsdateien nach MP3 konvertieren.
 5. Spektrogramme und Sound-Hashregister neu erzeugen; Credits inhaltlich erhalten.
 6. Vollständigen Daten-/Assetaudit ausführen.
-7. Pages-Artefaktgröße als CI-Budget prüfen, empfohlen zunächst maximal 120 MiB.
+7. Pages-Artefaktgröße über Einzelgrenzen und ein mit der Artenzahl wachsendes CI-Budget prüfen.
 8. Migration in einem separaten Commit veröffentlichen und Pages kontrollieren.
 
 Umsetzung am 2026-07-12:
@@ -158,12 +158,12 @@ Umsetzung am 2026-07-12:
   153,84 auf 13,72 MiB, also um 140,12 MiB; die maximale Dauerabweichung lag bei rund 0,001 Sekunden.
 - Alle 48 vorhandenen `sound.mp3` sind technisch gültige MP3-Dateien. Credits blieben unverändert, zwölf
   Spektrogramme und die zugehörigen Sound-Hashes wurden neu erzeugt.
-- 4 Audioformat-Tests, 23 Explorer-Tests, 28 JS-/MJS-Syntaxprüfungen, Report-Neuaufbau und lokaler Gesamtaudit
+- 4 Audioformat-Tests, inzwischen 24 Explorer-Tests, 28 JS-/MJS-Syntaxprüfungen, Report-Neuaufbau und lokaler Gesamtaudit
   bestehen. Das kontrollierte Pages-Artefakt umfasst 361 Dateien und 89,86 MiB.
-- Details und Rückfallweg stehen in `docs/audio-format-validation.md`. Das 120-MiB-CI-Budget bleibt Bestandteil von
-  A3 und ist noch nicht umgesetzt.
+- Details und Rückfallweg stehen in `docs/audio-format-validation.md`. Der Medienvalidator und das dynamische
+  Pages-Größenbudget wurden anschließend als eigener Stabilisierungspunkt umgesetzt.
 
-### A2. Schreibende localhost-API braucht eine Browser-Sicherheitsgrenze
+### A2. Schreibende localhost-API erhält eine Browser-Sicherheitsgrenze
 
 Positiv:
 
@@ -195,25 +195,39 @@ Empfohlene Behebung:
 7. `safePublicPath()` und vergleichbare Pfadprüfungen auf `path.relative()` mit echter Verzeichnisgrenze umstellen,
    statt nur Stringpräfixe zu vergleichen.
 
-### A3. GitHub Pages besitzt keine Qualitätsbarriere vor dem Deployment
+Umsetzung am 2026-07-12:
 
-Der Workflow `.github/workflows/pages.yml` führt aktuell nur diese Schritte aus:
+- `species-explorer/request-security.mjs` bündelt die Sicherheitsgrenze unabhängig von einzelnen Fachrouten.
+- Pro Serverstart entsteht ein zufälliges 256-Bit-Sitzungstoken. Alle POST-Routen verlangen es zusammen mit
+  `application/json`; Host, Origin und `Sec-Fetch-Site` werden zentral geprüft.
+- Asset-Löschen und -Wiederherstellen verwenden zusätzliche kurzlebige, einmalige und an Art, Assettyp sowie Aktion
+  gebundene Bestätigungstoken.
+- Karten-URLs und jede Weiterleitung werden vor dem Abruf per DNS-Auflösung gegen lokale, private, Link-Local-,
+  Metadaten-, Dokumentations-, Multicast- und reservierte Ziele geprüft. Auch eingebettete IPv4-Adressen in IPv6
+  werden berücksichtigt. Der Windows-Fallback bleibt auf den bekannten IUCN-Endpunkt begrenzt.
+- Öffentliche Dateien, Artassets, Grafiken und Sicherungspfade verwenden `path.relative()` statt Stringpräfixen.
+- 24 Explorer-Integrationstests und 3 dedizierte Sicherheitstests bestehen. Die Bedienung bleibt für Browser- und
+  Desktop-App transparent; Squarespace ist nicht betroffen. Details: `docs/explorer-api-security.md`.
+
+### A3. GitHub Pages besitzt noch keine vollständige Qualitätsbarriere vor dem Deployment
+
+Der Workflow `.github/workflows/pages.yml` wurde während der Stabilisierung bereits teilweise gehärtet und führt
+aktuell diese Schritte aus:
 
 1. Checkout
-2. Pages-Konfiguration
-3. `node scripts/prepare-pages-artifact.mjs`
-4. Artefakt-Upload
-5. Pages-Deployment
+2. Node.js 24 einrichten
+3. Medienformate und feste Einzelgrößen prüfen
+4. Pages-Konfiguration
+5. kontrolliertes Artefakt mit dynamischem Gesamtbudget bauen
+6. Artefakt-Upload
+7. Pages-Deployment
 
-Nicht enthalten sind:
+Noch nicht enthalten sind:
 
-- eine explizite, reproduzierbare Node-Version;
 - `npm ci`;
 - Syntaxprüfungen;
 - Explorer-Tests;
 - lokaler Daten-/Reportaudit;
-- Prüfung, ob Dateiendung und echtes Medienformat übereinstimmen;
-- Dateigrößen- oder Gesamtartefaktbudget;
 - Prüfung auf unerwartete öffentliche Dateien.
 
 Dadurch kann ein formal baubares, aber fachlich oder technisch ungeeignetes Paket bis zum Pages-Sync gelangen.
@@ -345,8 +359,8 @@ reinen Datenbasis bewusst vereinheitlicht werden.
 
 ### A9. Tests sind umfangreich, aber zentral und teilweise quelltextgebunden
 
-Die 23 Explorer-Tests besitzen viele wertvolle Integrationsfälle. Gleichzeitig enthält die einzige Testdatei 384
-`assert.equal`- und 504 `assert.match`-Aufrufe, aber nur einen `assert.rejects`-Fall. Ein Teil der Assertions prüft
+Die inzwischen 24 Explorer-Tests besitzen viele wertvolle Integrationsfälle. Gleichzeitig enthält die zentrale
+Testdatei zahlreiche quelltextgebundene Assertions. Ein Teil der Assertions prüft
 Quelltext-/CSS-Muster statt ausschließlich beobachtbares Verhalten.
 
 Empfehlung:
@@ -417,6 +431,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 1. Audioformatprüfung zentralisieren und zwölf WAV-als-MP3-Dateien kontrolliert migrieren. **Erledigt 2026-07-12.**
 2. Medienformatvalidator und Artefaktgrößenbudget ergänzen. **Erledigt 2026-07-12.**
 3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
+   **Erledigt 2026-07-12.**
 4. CI-Quality-Job vor den Pages-Build setzen.
 5. Vollständigen Test-, Audit- und Pages-Lauf durchführen.
 
@@ -438,8 +453,10 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 Die Grundlage ist bereit, wenn:
 
 - jede `sound.mp3` auch technisch ein MP3 ist; **erfüllt 2026-07-12**
-- der Pages-Build ein festes Assetformat- und Größenbudget durchsetzt; **erfüllt 2026-07-12**
+- der Pages-Build verbindliche Assetformat-/Einzelgrenzen und ein dynamisch skalierendes Gesamtbudget durchsetzt;
+  **erfüllt 2026-07-12**
 - alle schreibenden localhost-Routen eine einheitliche Browser-/Sitzungsgrenze besitzen;
+  **erfüllt 2026-07-12**
 - CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;
 - der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt;
 - verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind;

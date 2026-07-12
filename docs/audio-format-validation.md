@@ -61,13 +61,13 @@ erfolgreichen Commit, Pages-Deployment und praktischen Hörtest erhalten.
 Nach der Migration wurden erfolgreich ausgeführt:
 
 - 4 Audioformat-Tests;
-- 23 Explorer-Tests;
+- 24 Explorer-Tests;
 - Syntaxprüfung aller 28 getrackten JS-/MJS-Dateien;
 - lokaler Gesamt-Audit ohne Live-/Pages-Netzprüfung;
 - Report-Neuaufbau;
 - Spektrogramm-Neuaufbau für alle zwölf migrierten Arten;
 - kontrollierter Pages-Artefaktbau.
 
-Die verpflichtende Formatprüfung und das anfängliche 120-MiB-Größenbudget wurden anschließend umgesetzt und sind
-unter `docs/media-asset-validation.md` dokumentiert. Offen bleibt der vollständige GitHub-Pages-Quality-Job mit
-Syntax-, Test- und Datenaudit.
+Die verpflichtende Formatprüfung, feste Einzelgrenzen je Asset/Artpaket und das mit der Artenzahl wachsende
+Pages-Gesamtbudget wurden anschließend umgesetzt und sind unter `docs/media-asset-validation.md` dokumentiert.
+Offen bleibt der vollständige GitHub-Pages-Quality-Job mit Syntax-, Test- und Datenaudit.

@@ -31,6 +31,7 @@ const state = {
   dataRevision: "",
   dataRevisionTimer: null,
   dataLoading: false,
+  sessionToken: "",
 };
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 const IUCN_STATUS_LABELS = {
@@ -937,8 +938,27 @@ function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   document.body.classList.add("explorer-modal-open");
 }
 
-async function fetchJson(url, options) {
-  const response = await fetch(url, options);
+async function ensureSessionToken() {
+  if (state.sessionToken) return state.sessionToken;
+  const response = await fetch("/api/session", { credentials: "same-origin" });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.token) {
+    throw new Error(payload.error || "Explorer-Sitzung konnte nicht gestartet werden");
+  }
+  state.sessionToken = payload.token;
+  return state.sessionToken;
+}
+
+async function fetchJson(url, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const secureOptions = { ...options, credentials: "same-origin" };
+  if (!["GET", "HEAD"].includes(method)) {
+    const headers = new Headers(options.headers || {});
+    headers.set("Content-Type", "application/json");
+    headers.set("X-Species-Explorer-Session", await ensureSessionToken());
+    secureOptions.headers = headers;
+  }
+  const response = await fetch(url, secureOptions);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(payload.error || "Anfrage ist fehlgeschlagen");
@@ -4246,12 +4266,16 @@ function setupSpeciesEditor(species) {
         state.portraitCleanup = null;
       }
       if (assetType === "sound") await releaseCurrentSoundAudio();
+      const confirmation = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/delete-preview`,
+        { method: "POST", body: "{}" },
+      );
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/delete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: "{}",
+          body: JSON.stringify({ token: confirmation.token }),
         },
       );
       state.notice =
@@ -4307,12 +4331,16 @@ function setupSpeciesEditor(species) {
         state.portraitCleanup = null;
       }
       if (assetType === "sound") await releaseCurrentSoundAudio();
+      const confirmation = await fetchJson(
+        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/restore-preview`,
+        { method: "POST", body: "{}" },
+      );
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/restore`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: "{}",
+          body: JSON.stringify({ token: confirmation.token }),
         },
       );
       state.notice =
@@ -5655,4 +5683,6 @@ setupAssetReview();
 setupBackupSettings();
 setupPipelineControl();
 setupNewSpeciesCreator();
-loadData().finally(() => monitorProjectRevision());
+ensureSessionToken()
+  .then(() => loadData())
+  .finally(() => monitorProjectRevision());

@@ -56,6 +56,7 @@ Lokale Arbeitsoberflaeche:
 
 - `species-explorer/server.mjs`: lokaler Server auf `127.0.0.1:4177` mit begrenzter `species_list.json`-Bearbeitung
 - `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
+- `species-explorer/request-security.mjs`: zentrale Sitzungs-, Browser-, URL-Ziel- und Pfadgrenze der lokalen API
 - `species-explorer/server.test.mjs`: Modell-, API-, Schreibschutz-, Backup-, Such- und Filtertests
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
@@ -535,7 +536,7 @@ Aktuelle Planung:
   Nach dem Speichern einer neuen Art startet der selektive Lauf fuer genau diese Art automatisch. Externe Änderungen durch `update_local.bat`,
   CLI-Aufrufe oder andere Prozesse werden über eine Dateirevision erkannt. Der Server baut sein Modell automatisch
   neu auf; die Browseroberfläche prüft alle fünf Sekunden `GET /api/revision` und lädt bei Änderungen selbstständig
-  neu. 23 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
+  neu. 24 Explorer-Tests sind erfolgreich. Ein vollständiger externer Pipeline-Lauf und ein produktiver
   selektiver App-Lauf fuer den Hoeckerschwan wurden am 2026-06-20 erfolgreich abgeschlossen. Start,
   Prozessanzeige, Assetentscheidung sowie automatischer Commit `55fda06` und Push funktionierten. Die danach
   ergaenzte Karten-Grossansicht, sichere Dialogbedienung, Soundstopp und Bereinigung wurden von Felix praktisch
@@ -680,17 +681,23 @@ Aktuelle Planung:
   die rechnerabhaengige Einstellung liegt ignoriert in `species-explorer/local-settings.json`.
   Vor dem Taxonomie-Redesign wurde am 2026-07-11 ein vollstaendiger Repository-, Code-, Daten-, Datei-,
   Dokumentations-, Test- und CI-Audit abgeschlossen: `docs/audits/2026-07-repository-audit.md`. Die Datenbasis ist
-  konsistent und alle 23 Explorer-Tests bestehen. Der Audio-P0-Punkt wurde am 2026-07-12 abgeschlossen:
+  konsistent. Der Audio-P0-Punkt wurde am 2026-07-12 abgeschlossen:
   `scripts/audio-format.mjs` prueft automatische Downloads, Uploads und Wiederherstellungen zentral, zwoelf
   WAV/PCM-Bestandsdateien wurden ruecksetzbar nach MP3 migriert und ihre Spektrogramme sowie Sound-Hashes neu
   erzeugt. Alle 48 vorhandenen Tierstimmen sind nun echte MP3-Dateien; das Pages-Artefakt sank von rund 229,9 auf
   89,86 MiB. Details: `docs/audio-format-validation.md`. Der zweite P0-Stabilisierungspunkt wurde am selben Tag
   umgesetzt:
   `scripts/validate-media-assets.mjs` prüft die tatsächlichen Formate und Abmessungen von Karten, Portraits,
-  Spektrogrammen und PNG-Grafiken sowie MP3- und Credits-Pakete. Der Pages-Bau stoppt vor dem Upload oberhalb des
-  anfänglichen, kontrolliert anpassbaren 120-MiB-Budgets; Details: `docs/media-asset-validation.md`. Vor groesseren
-  Erweiterungen bleiben die schreibende localhost-API durch eine einheitliche Browser-/Sitzungsgrenze abzusichern
-  und ein vollständiger CI-Quality-Job mit Syntax-, Test- und Datenaudit einzuführen. Danach folgen
+  Spektrogrammen und PNG-Grafiken sowie MP3- und Credits-Pakete. Einzelgrenzen je Asset und Artpaket erkennen
+  Ausreisser; das Pages-Gesamtbudget wächst ohne manuellen Eingriff mit 12 MiB Grundbedarf plus 2,5 MiB je Art und
+  besitzt ein 500-MiB-Notfalllimit. Aktuell stehen 89,86 MiB einem Budget von 134,5 MiB gegenüber; Details:
+  `docs/media-asset-validation.md`. Der dritte P0-Stabilisierungspunkt wurde am selben Tag abgeschlossen: Alle
+  schreibenden localhost-Routen verlangen ein pro Serverstart neues Sitzungstoken und werden zentral auf lokalen
+  Host, Same-Origin, Fetch-Site und JSON-Content-Type geprüft. Asset-Löschen und -Wiederherstellen verwenden
+  zusätzliche Einmaltokens, Karten-URLs werden einschließlich Weiterleitungen nach DNS-Auflösung gegen lokale und
+  private Ziele geprüft und Dateipfade nutzen echte Verzeichnisgrenzen. 24 Explorer- und 3 dedizierte
+  Sicherheitstests bestehen; Details: `docs/explorer-api-security.md`. Vor groesseren Erweiterungen bleibt ein
+  vollständiger CI-Quality-Job mit Syntax-, Test- und Datenaudit einzuführen. Danach folgen
   Dokumentationskonsolidierung,
   Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
 - Phase 8 - Ausbau:

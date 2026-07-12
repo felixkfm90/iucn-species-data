@@ -15,6 +15,7 @@
     "species:explorer": "node species-explorer/server.mjs",
     "test:audio": "node --test --test-isolation=none scripts/audio-format.test.mjs",
     "test:media": "node --test --test-isolation=none scripts/validate-media-assets.test.mjs",
+    "test:security": "node --test --test-isolation=none species-explorer/request-security.test.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },
   "devDependencies": {

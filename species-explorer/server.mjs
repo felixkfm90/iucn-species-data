@@ -24,6 +24,14 @@ import {
 } from "../scripts/spectrogram-renderer.mjs";
 import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
 import {
+  assertBrowserReadContext,
+  assertLocalRequestHost,
+  assertPublicHttpUrl,
+  assertWriteRequest,
+  createSessionToken,
+  isPathInside,
+} from "./request-security.mjs";
+import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
   portraitPromptSha256,
@@ -1059,18 +1067,26 @@ try {
 }
 
 async function fetchMapPreviewSource(source) {
-  const parsed = new URL(source);
+  let parsed = await assertPublicHttpUrl(source);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), MAP_SOURCE_FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(source, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        Accept: "image/jpeg,image/*;q=0.8,*/*;q=0.5",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
-    });
+    let response;
+    for (let redirects = 0; redirects <= 5; redirects += 1) {
+      response = await fetch(parsed, {
+        redirect: "manual",
+        signal: controller.signal,
+        headers: {
+          Accept: "image/jpeg,image/*;q=0.8,*/*;q=0.5",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        },
+      });
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get("location");
+      if (!location) throw new Error("Karten-URL lieferte eine Weiterleitung ohne Ziel");
+      if (redirects === 5) throw new Error("Karten-URL enthält zu viele Weiterleitungen");
+      parsed = await assertPublicHttpUrl(new URL(location, parsed));
+    }
     if (!response.ok) {
       const host = parsed.hostname.toLowerCase();
       if (response.status === 403 && host.includes("iucnredlist.org")) {
@@ -2242,9 +2258,14 @@ function sendText(response, statusCode, text) {
 }
 
 function safePublicPath(pathname) {
-  const requested = pathname === "/" ? "index.html" : pathname.slice(1);
+  let requested;
+  try {
+    requested = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
+  } catch {
+    return null;
+  }
   const path = normalize(join(PUBLIC_DIR, requested));
-  return path.startsWith(PUBLIC_DIR) ? path : null;
+  return isPathInside(PUBLIC_DIR, path) ? path : null;
 }
 
 function safeAssetPath(pathname, repoRoot) {
@@ -2255,7 +2276,7 @@ function safeAssetPath(pathname, repoRoot) {
   if (sanitizeAssetName(safeName) !== safeName || !ASSET_FILES.has(fileName)) return null;
   const assetRoot = join(repoRoot, "species-assets");
   const path = normalize(join(assetRoot, safeName, fileName));
-  return path.startsWith(assetRoot) ? path : null;
+  return isPathInside(assetRoot, path) ? path : null;
 }
 
 function safeGraphicsPath(pathname, repoRoot) {
@@ -2267,7 +2288,7 @@ function safeGraphicsPath(pathname, repoRoot) {
   if (!/^[A-Za-z0-9_-]+\.png$/.test(fileName)) return null;
   const graphicsRoot = join(repoRoot, "graphics");
   const path = normalize(join(graphicsRoot, directory, fileName));
-  return path.startsWith(graphicsRoot) ? path : null;
+  return isPathInside(graphicsRoot, path) ? path : null;
 }
 
 function parseByteRange(rangeHeader, size) {
@@ -2382,11 +2403,13 @@ export async function createExplorerServer({
   spectrogramRenderer = renderSpectrogram,
   portraitRenderer = renderPortrait,
   mapImageRenderer = renderMapJpeg,
+  sessionProtection = true,
 } = {}) {
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
   let modelRefreshPromise = null;
   const previewTokens = new Map();
+  const sessionToken = createSessionToken();
   const speciesListPath = join(repoRoot, "species_list.json");
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
@@ -3044,7 +3067,7 @@ export async function createExplorerServer({
     const backupPath = asset?.backupFiles?.[fileName] ?? "";
     const resolvedBackupPath = resolve(backupPath);
     const allowedRoot = `${resolve(pipelineAssetBackupRoot, runId, safeName)}${sep}`;
-    if (!backupPath || !resolvedBackupPath.startsWith(allowedRoot)) {
+    if (!backupPath || !isPathInside(allowedRoot, resolvedBackupPath)) {
       sendText(response, 404, "Nicht gefunden");
       return;
     }
@@ -3489,8 +3512,8 @@ export async function createExplorerServer({
         const allowedAssetRoot = `${resolve(repoRoot, "species-assets", asset.safeName)}${sep}`;
         const targetPath = resolve(repoRoot, "species-assets", asset.safeName, fileName);
         if (
-          (backupPath && !`${resolvedBackupPath}`.startsWith(allowedBackupRoot))
-          || !`${targetPath}`.startsWith(allowedAssetRoot)
+          (backupPath && !isPathInside(allowedBackupRoot, resolvedBackupPath))
+          || !isPathInside(allowedAssetRoot, targetPath)
         ) {
           throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
         }
@@ -5135,6 +5158,58 @@ export async function createExplorerServer({
     }
   }
 
+  function createAssetMutationPreview(id, assetType, operation) {
+    cleanupPreviewTokens();
+    if (!["map", "sound", "portrait"].includes(assetType)) {
+      const error = new Error("Assettyp muss Karte, Sound oder Artporträt sein");
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!["delete", "restore"].includes(operation)) {
+      const error = new Error("Assetaktion ist ungültig");
+      error.statusCode = 400;
+      throw error;
+    }
+    const species = findEditableSpecies(model, id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const token = randomUUID();
+    previewTokens.set(token, {
+      type: "asset-mutation",
+      id,
+      assetType,
+      operation,
+      expiresAt: Date.now() + PREVIEW_TOKEN_TTL_MS,
+    });
+    return { ok: true, token, assetType, operation, expiresInSeconds: PREVIEW_TOKEN_TTL_MS / 1000 };
+  }
+
+  function consumeAssetMutationToken(payload, id, assetType, operation) {
+    cleanupPreviewTokens();
+    const token = String(payload?.token || "");
+    const preview = previewTokens.get(token);
+    if (
+      !preview
+      || preview.type !== "asset-mutation"
+      || preview.id !== id
+      || preview.assetType !== assetType
+      || preview.operation !== operation
+    ) {
+      const error = new Error("Bestätigung ist abgelaufen oder passt nicht zu dieser Assetaktion");
+      error.statusCode = 409;
+      throw error;
+    }
+    previewTokens.delete(token);
+  }
+
+  async function runConfirmedAssetMutation(payload, id, assetType, operation, action) {
+    if (sessionProtection) consumeAssetMutationToken(payload, id, assetType, operation);
+    return action();
+  }
+
   async function deleteSpeciesAsset(id, assetType) {
     cleanupPreviewTokens();
     if (!["map", "sound", "portrait"].includes(assetType)) {
@@ -5204,7 +5279,7 @@ export async function createExplorerServer({
 
     assetWriteActive = true;
     try {
-      closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(source.assetDirectory)));
+      closeActiveFileStreams((filePath) => isPathInside(source.assetDirectory, filePath, { allowRoot: true }));
       const registry = JSON.parse(source.registryText);
       const currentHash = createHash("sha256")
         .update(Buffer.concat(backupFiles.map((entry) => entry.buffer)))
@@ -5352,8 +5427,7 @@ export async function createExplorerServer({
     const allowedBackupRoot = `${resolve(assetBackupRoot, species.safeName, assetType)}${sep}`;
     const backupAsDirectory = existsSync(backupPath) && statSync(backupPath).isDirectory();
     if (
-      !`${backupPath}${backupAsDirectory ? sep : ""}`.startsWith(allowedBackupRoot)
-      && backupPath !== resolve(assetBackupRoot, species.safeName, assetType)
+      !isPathInside(allowedBackupRoot, backupPath, { allowRoot: true })
     ) {
       const error = new Error("Unsicherer Sicherungspfad");
       error.statusCode = 409;
@@ -5401,7 +5475,7 @@ export async function createExplorerServer({
 
     assetWriteActive = true;
     try {
-      closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(source.assetDirectory)));
+      closeActiveFileStreams((filePath) => isPathInside(source.assetDirectory, filePath, { allowRoot: true }));
       await mkdir(source.assetDirectory, { recursive: true });
       const registry = JSON.parse(source.registryText);
       registry.version = 1;
@@ -6262,7 +6336,7 @@ export async function createExplorerServer({
     let assetDirectoryMoved = false;
     try {
       if (safeNameChanged && existsSync(oldAssetDirectory)) {
-        closeActiveFileStreams((filePath) => resolve(filePath).startsWith(resolve(oldAssetDirectory)));
+        closeActiveFileStreams((filePath) => isPathInside(oldAssetDirectory, filePath, { allowRoot: true }));
         await rename(oldAssetDirectory, newAssetDirectory);
         assetDirectoryMoved = true;
       }
@@ -6331,23 +6405,42 @@ export async function createExplorerServer({
 
   const server = createHttpServer(async (request, response) => {
     try {
-      const url = new URL(request.url, `http://${host}:${port}`);
+      const expectedOrigin = assertLocalRequestHost(request, host);
+      const url = new URL(request.url, expectedOrigin);
+      if (url.origin !== expectedOrigin) {
+        const error = new Error("Absolute oder fremde Anfrage-URL ist nicht erlaubt");
+        error.statusCode = 400;
+        throw error;
+      }
+      if (url.pathname === "/api/session") {
+        if (request.method !== "GET") {
+          response.setHeader("Allow", "GET");
+          sendText(response, 405, "Sitzungsinformationen sind nur lesbar");
+          return;
+        }
+        assertBrowserReadContext(request, expectedOrigin);
+        sendJson(response, 200, { token: sessionToken });
+        return;
+      }
+      if (request.method === "POST") {
+        assertWriteRequest(request, { expectedOrigin, sessionToken, sessionProtection });
+      }
       const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
       const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
       const mapAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete|restore)$/,
+        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete-preview|delete|restore-preview|restore)$/,
       );
       const mapPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
       );
       const soundAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete|restore)$/,
+        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete-preview|delete|restore-preview|restore)$/,
       );
       const soundPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
       );
       const portraitAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete|restore)$/,
+        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete-preview|delete|restore-preview|restore)$/,
       );
       const portraitPreviewFileRoute = url.pathname.match(
         /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
@@ -6409,10 +6502,14 @@ export async function createExplorerServer({
         });
         const result = action === "preview"
           ? await previewMapAsset(id, payload)
+          : action === "delete-preview"
+            ? createAssetMutationPreview(id, "map", "delete")
+          : action === "restore-preview"
+            ? createAssetMutationPreview(id, "map", "restore")
           : action === "restore"
-            ? await restoreSpeciesAsset(id, "map")
+            ? await runConfirmedAssetMutation(payload, id, "map", "restore", () => restoreSpeciesAsset(id, "map"))
           : action === "delete"
-            ? await deleteSpeciesAsset(id, "map")
+            ? await runConfirmedAssetMutation(payload, id, "map", "delete", () => deleteSpeciesAsset(id, "map"))
           : await saveMapAsset(id, payload);
         sendJson(response, 200, result);
         return;
@@ -6426,12 +6523,16 @@ export async function createExplorerServer({
         });
         const result = action === "preview"
           ? await previewSoundAsset(id, payload)
+          : action === "delete-preview"
+            ? createAssetMutationPreview(id, "sound", "delete")
+          : action === "restore-preview"
+            ? createAssetMutationPreview(id, "sound", "restore")
           : action === "reject"
             ? await rejectCurrentSoundAsset(id)
             : action === "restore"
-              ? await restoreSpeciesAsset(id, "sound")
+              ? await runConfirmedAssetMutation(payload, id, "sound", "restore", () => restoreSpeciesAsset(id, "sound"))
             : action === "delete"
-              ? await deleteSpeciesAsset(id, "sound")
+              ? await runConfirmedAssetMutation(payload, id, "sound", "delete", () => deleteSpeciesAsset(id, "sound"))
             : await saveSoundAsset(id, payload);
         sendJson(response, 200, result);
         return;
@@ -6449,10 +6550,14 @@ export async function createExplorerServer({
           ? createPortraitPrompt(id, payload)
           : action === "preview"
             ? await previewPortraitAsset(id, payload)
+            : action === "delete-preview"
+              ? createAssetMutationPreview(id, "portrait", "delete")
+            : action === "restore-preview"
+              ? createAssetMutationPreview(id, "portrait", "restore")
             : action === "restore"
-              ? await restoreSpeciesAsset(id, "portrait")
+              ? await runConfirmedAssetMutation(payload, id, "portrait", "restore", () => restoreSpeciesAsset(id, "portrait"))
             : action === "delete"
-              ? await deleteSpeciesAsset(id, "portrait")
+              ? await runConfirmedAssetMutation(payload, id, "portrait", "delete", () => deleteSpeciesAsset(id, "portrait"))
             : await savePortraitAsset(id, payload);
         sendJson(response, 200, result);
         return;

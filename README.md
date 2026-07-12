@@ -68,6 +68,7 @@ Versionierte Referenzen liegen unter:
 - `docs/audits/2026-07-repository-audit.md`
 - `docs/audio-format-validation.md`
 - `docs/media-asset-validation.md`
+- `docs/explorer-api-security.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
@@ -332,7 +333,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - Text kann in Eingabefeldern über den Dialogrand hinaus markiert werden, ohne dass der Dialog schließt oder die
   Eingaben verloren gehen.
 - Vor der Anlage schliesst `X`/`Abbrechen` den Dialog ohne Speicherung und verwirft die Eingaben.
-- 23 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
+- 24 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Aktuell stehen 49 Arten in `species_list.json` und `speciesData.json`. Löwe und Eichelhäher sind nach den
@@ -407,6 +408,7 @@ Tests:
 
 ```bash
 npm.cmd run --silent test:explorer
+npm.cmd run --silent test:security
 ```
 
 Phase 7.7.2 Kartenverwaltung ist seit 2026-06-20 umgesetzt. Produktive Kartenimporte werden erst
@@ -504,7 +506,7 @@ Spektrogramm-SHA-256 werden in `species-assets-overrides.json` gespeichert und b
 aktuellen Dateien geprüft. Der vorhandene Bestand wurde ohne Neurendering registriert: 46 von 46 vorhandenen
 Spektrogrammen sind verifiziert, keines ist veraltet. Unveränderte Generatorläufe erzeugen keine erneuten
 Registeränderungen.
-23 Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
+24 Explorer-Tests sind erfolgreich. Phase 7.7 wurde am 2026-06-21 nach technischer Prüfung, produktivem
 Portraitimport und visueller Freigabe der Asset- und Detailoberfläche abgeschlossen. Ein unnötiger produktiver
 Austausch eines bereits gültigen Sounds ist kein verbleibendes Abschlusskriterium.
 
@@ -697,9 +699,17 @@ Downloads, Uploads und Wiederherstellungen verwenden einen gemeinsamen Formatpru
 von rund 229,9 auf 89,86 MiB. Pruefung und Migration sind unter `docs/audio-format-validation.md` dokumentiert.
 Der zweite P0-Stabilisierungspunkt wurde ebenfalls am 2026-07-12 umgesetzt: `scripts/validate-media-assets.mjs`
 prüft Karten, Portraits, Sounds, Credits, Spektrogramme und veröffentlichte PNG-Grafiken anhand des Dateiinhalts. Der Pages-Bauer
-erzwingt vor dem Upload ein anfängliches, kontrolliert anpassbares 120-MiB-Größenbudget. Details:
-`docs/media-asset-validation.md`. Offen bleiben die Absicherung der localhost-Schreib-API sowie der vollständige
-CI-Quality-Job mit Syntax-, Test- und Datenaudit vor dem Pages-Deployment.
+erzwingt vor dem Upload Einzelgrenzen je Asset und Artpaket sowie ein mit der Artenzahl wachsendes Gesamtbudget:
+12 MiB Grundbedarf plus 2,5 MiB je Art, begrenzt durch ein 500-MiB-Notfalllimit. Der aktuelle Bestand nutzt
+89,86 von automatisch berechneten 134,5 MiB. Details: `docs/media-asset-validation.md`.
+
+Der dritte P0-Stabilisierungspunkt ist ebenfalls abgeschlossen. Der lokale Explorer erzeugt pro Serverstart eine
+neue Sitzung, schützt alle POST-Routen zentral durch Sitzungs-, Host-, Same-Origin-, Fetch-Site- und
+JSON-Content-Type-Prüfungen und verlangt für Asset-Löschen/-Wiederherstellen zusätzliche Einmaltokens. Der
+Kartenimport blockiert nach DNS-Auflösung private, lokale, Link-Local- und Metadatenziele und kontrolliert jedes
+Weiterleitungsziel; Dateipfade werden über echte Verzeichnisgrenzen geprüft. Details und negative Integrationstests:
+`docs/explorer-api-security.md`. Offen bleibt der vollständige CI-Quality-Job mit Syntax-, Test- und Datenaudit vor
+dem Pages-Deployment.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

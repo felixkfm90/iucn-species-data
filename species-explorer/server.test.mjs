@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { createServer as createHttpServer } from "node:http";
+import { request as httpRequest } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import {
   buildExplorerModel,
-  createExplorerServer,
+  createExplorerServer as createProtectedExplorerServer,
   formatSpectrogramPipelineLog,
   inspectJpeg,
   inspectMp3,
@@ -31,6 +31,29 @@ import {
   stopManagedExplorerServer,
 } from "./desktop/server-lifecycle.mjs";
 await import("./public/filter.js");
+
+const createExplorerServer = (options = {}) => createProtectedExplorerServer({
+  ...options,
+  sessionProtection: false,
+});
+
+function requestStatusWithHost(baseUrl, pathname, hostHeader) {
+  const target = new URL(pathname, baseUrl);
+  return new Promise((resolveRequest, rejectRequest) => {
+    const request = httpRequest({
+      hostname: target.hostname,
+      port: target.port,
+      path: target.pathname,
+      method: "GET",
+      headers: { Host: hostHeader },
+    }, (response) => {
+      response.resume();
+      response.on("end", () => resolveRequest(response.statusCode));
+    });
+    request.on("error", rejectRequest);
+    request.end();
+  });
+}
 
 function createTestJpeg(width = 3, height = 2) {
   return Buffer.from([
@@ -344,8 +367,104 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
     method: "POST",
     body: "{}",
   });
-  assert.equal(writeResponse.status, 405);
-  assert.match(await writeResponse.text(), /definierte/);
+  assert.equal(writeResponse.status, 415);
+  assert.match(await writeResponse.text(), /application\/json/);
+});
+
+test("Schreibende API verlangt lokale Sitzung, gleiche Origin und Bestätigungstoken", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  await Promise.all([
+    writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.webp"), createTestWebp(7)),
+    writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.json"), "{}\n"),
+  ]);
+  const app = await createProtectedExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const wrongHostStatus = await requestStatusWithHost(baseUrl, "/api/summary", `localhost:${address.port}`);
+  assert.equal(wrongHostStatus, 421);
+
+  const crossSiteSession = await fetch(`${baseUrl}/api/session`, {
+    headers: { Origin: "https://example.com", "Sec-Fetch-Site": "cross-site" },
+  });
+  assert.equal(crossSiteSession.status, 403);
+
+  const sessionResponse = await fetch(`${baseUrl}/api/session`);
+  assert.equal(sessionResponse.status, 200);
+  const { token } = await sessionResponse.json();
+  assert.ok(token);
+
+  const noSession = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: baseUrl },
+    body: JSON.stringify({ reset: true }),
+  });
+  assert.equal(noSession.status, 403);
+
+  const crossOrigin = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "https://example.com",
+      "Sec-Fetch-Site": "cross-site",
+      "X-Species-Explorer-Session": token,
+    },
+    body: JSON.stringify({ reset: true }),
+  });
+  assert.equal(crossOrigin.status, 403);
+
+  const invalidContentType = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain",
+      Origin: baseUrl,
+      "X-Species-Explorer-Session": token,
+    },
+    body: JSON.stringify({ reset: true }),
+  });
+  assert.equal(invalidContentType.status, 415);
+
+  const secureHeaders = {
+    "Content-Type": "application/json",
+    Origin: baseUrl,
+    "Sec-Fetch-Site": "same-origin",
+    "X-Species-Explorer-Session": token,
+  };
+  const validWrite = await fetch(`${baseUrl}/api/settings/backup`, {
+    method: "POST",
+    headers: secureHeaders,
+    body: JSON.stringify({ reset: true }),
+  });
+  assert.equal(validWrite.status, 200);
+
+  const directDelete = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete`, {
+    method: "POST",
+    headers: secureHeaders,
+    body: "{}",
+  });
+  assert.equal(directDelete.status, 409);
+
+  const deletePreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete-preview`, {
+    method: "POST",
+    headers: secureHeaders,
+    body: "{}",
+  });
+  assert.equal(deletePreviewResponse.status, 200);
+  const deletePreview = await deletePreviewResponse.json();
+  const confirmedDelete = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete`, {
+    method: "POST",
+    headers: secureHeaders,
+    body: JSON.stringify({ token: deletePreview.token }),
+  });
+  assert.equal(confirmedDelete.status, 200);
+  const reusedDelete = await fetch(`${baseUrl}/api/species/turdusmerula/assets/portrait/delete`, {
+    method: "POST",
+    headers: secureHeaders,
+    body: JSON.stringify({ token: deletePreview.token }),
+  });
+  assert.equal(reusedDelete.status, 409);
 });
 
 test("Server erkennt bereits laufenden Explorer auf belegtem Port", async (context) => {
@@ -1218,21 +1337,7 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.deepEqual(pngPreview.newMap.dimensions, { width: 320, height: 210 });
   assert.equal(pngPreview.source, "");
 
-  const linkedJpeg = createTestJpeg(800, 500);
-  const sourceServer = createHttpServer((request, response) => {
-    response.writeHead(200, {
-      "Content-Type": "image/jpeg",
-      "Content-Length": String(linkedJpeg.length),
-    });
-    response.end(linkedJpeg);
-  });
-  await new Promise((resolve, reject) => {
-    sourceServer.once("error", reject);
-    sourceServer.listen(0, "127.0.0.1", resolve);
-  });
-  context.after(() => sourceServer.close());
-  const sourceAddress = sourceServer.address();
-  const sourceUrl = `http://127.0.0.1:${sourceAddress.port}/iucn-map.jpg?Authorization=test`;
+  const sourceUrl = "http://127.0.0.1:8123/iucn-map.jpg?Authorization=test";
   const linkPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1243,11 +1348,9 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
       source: sourceUrl,
     }),
   });
-  assert.equal(linkPreviewResponse.status, 200);
+  assert.equal(linkPreviewResponse.status, 400);
   const linkPreview = await linkPreviewResponse.json();
-  assert.deepEqual(linkPreview.newMap.dimensions, { width: 800, height: 500 });
-  assert.equal(linkPreview.newMap.bytes, linkedJpeg.length);
-  assert.equal(linkPreview.source, sourceUrl);
+  assert.match(linkPreview.details.join(" "), /Private, lokale|nicht erlaubt/);
 
   const previewFile = await fetch(`${baseUrl}${preview.newMap.url}`);
   assert.equal(previewFile.status, 200);

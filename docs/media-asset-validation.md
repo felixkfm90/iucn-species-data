@@ -30,34 +30,47 @@ npm.cmd run --silent test:media
 npm.cmd run --silent assets:check
 ```
 
-## Größenbudget
+## Einzelgrenzen und dynamisches Größenbudget
 
-`scripts/prepare-pages-artifact.mjs` misst das vollständig vorbereitete `_site/`-Verzeichnis. Das Standardbudget
-beträgt 120 MiB. Wird es überschritten, endet der Build mit einer verständlichen Meldung, bevor das Artefakt zu
-GitHub Pages hochgeladen wird.
+Der Medienvalidator begrenzt Ausreißer unabhängig vom Gesamtbestand:
+
+- Karte: 2 MiB;
+- Artportrait: 2 MiB;
+- Tierstimme: 10 MiB;
+- Credits: 128 KiB;
+- Spektrogramm: 0,5 MiB;
+- veröffentlichte PNG-Grafik: 2 MiB;
+- vollständiges Artpaket: 15 MiB.
+
+`scripts/prepare-pages-artifact.mjs` misst zusätzlich das vollständig vorbereitete `_site/`-Verzeichnis. Sein
+Budget wächst automatisch mit dem fachlichen Artenbestand: 12 MiB Grundbedarf plus 2,5 MiB je Eintrag in
+`species_list.json`. Ein absolutes Notfalllimit von 500 MiB schützt zusätzlich vor einem grundsätzlich entgleisten
+Artefakt. Wird eine Grenze überschritten, endet der Build mit einer verständlichen Meldung, bevor Daten zu GitHub
+Pages hochgeladen werden.
 
 ```powershell
-npm.cmd run --silent pages:prepare -- --max-mib=120
+npm.cmd run --silent pages:prepare -- --base-mib=12 --per-species-mib=2.5 --absolute-max-mib=500
 ```
 
-Alternativ sind `--max-bytes=<Bytes>` oder die Umgebungsvariable `PAGES_MAX_BYTES` möglich. Der Workflow setzt die
-Grenze sichtbar in `.github/workflows/pages.yml`.
+Für einen gezielten Test kann das dynamische Modell mit `--max-mib=<MiB>`, `--max-bytes=<Bytes>` oder der
+Umgebungsvariable `PAGES_MAX_BYTES` durch eine feste Grenze ersetzt werden. Der Workflow setzt alle produktiven
+Werte sichtbar in `.github/workflows/pages.yml`.
 
-120 MiB sind keine technische Plattformgrenze und keine Obergrenze für die zukünftige fachliche Datenbank. Es ist
-eine anpassbare Frühwarnschwelle. Wenn der reguläre Artenbestand die Grenze erreicht, werden zunächst aktuelle
-Artefaktgröße und größte Dateien geprüft. Ist das Wachstum fachlich plausibel und alle Formate sind korrekt, wird
-der Workflowwert in einem dokumentierten Commit kontrolliert erhöht. Lokale Daten werden bei einer Überschreitung
-weder verändert noch gelöscht.
+Das dynamische Budget ist keine technische Plattformgrenze. Normales Wachstum durch zusätzliche Arten vergrößert
+die Grenze ohne manuellen Eingriff. Nur wenn der durchschnittliche Speicher je Art dauerhaft über 2,5 MiB steigt,
+werden aktuelle Artefaktgröße und größte Dateien geprüft. Ist eine fachliche Anpassung tatsächlich nötig, können
+die offen dokumentierten Faktoren kontrolliert geändert werden. Lokale Daten werden bei einer Überschreitung weder
+verändert noch gelöscht.
 
-Der Stand vom 2026-07-12 umfasst 362 Dateien mit 89,86 MiB und besitzt damit rund 30 MiB Reserve. Die geplante
-globale Taxonomiereferenz aus Phase 7.9 bleibt vollständig außerhalb von Git und GitHub Pages und belastet dieses
-Budget nicht.
+Der Stand vom 2026-07-12 umfasst 364 Dateien mit 89,86 MiB bei einem automatisch berechneten Budget von 134,5 MiB.
+Die geplante globale Taxonomiereferenz aus Phase 7.9 bleibt vollständig außerhalb von Git und GitHub Pages und
+belastet dieses Budget nicht.
 
 ## CI-Ablauf
 
 Der Pages-Build verwendet Node.js 24 und führt vor Artefaktbau und Upload `assets:check` aus. Danach baut
-`pages:prepare` das Artefakt mit dem expliziten 120-MiB-Budget. Ein Medien- oder Größenfehler verhindert daher den
-Upload und den Deploy-Job.
+`pages:prepare` das Artefakt mit dem expliziten dynamischen Budgetmodell. Ein Medien- oder Größenfehler verhindert
+daher den Upload und den Deploy-Job.
 
 Der folgende Auditpunkt ergänzt darüber hinaus einen vollständigen Quality-Job mit Installation, Syntaxprüfung,
 Explorer-/Medientests und lokalem Datenaudit. Diese umfassendere CI-Barriere bleibt getrennt, damit ihre Fehler

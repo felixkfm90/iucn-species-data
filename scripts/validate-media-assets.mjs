@@ -5,6 +5,16 @@ import { inspectMp3Buffer } from "./audio-format.mjs";
 
 const modulePath = fileURLToPath(import.meta.url);
 const isCli = path.resolve(process.argv[1] || "") === modulePath;
+const MIB = 1024 * 1024;
+export const MEDIA_LIMITS = Object.freeze({
+  map: 2 * MIB,
+  portrait: 2 * MIB,
+  sound: 10 * MIB,
+  credits: 128 * 1024,
+  spectrogram: 512 * 1024,
+  graphic: 2 * MIB,
+  speciesPackage: 15 * MIB,
+});
 
 export function inspectJpeg(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
@@ -85,8 +95,16 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
     const safeName = sanitizeAssetName(germanName);
     expectedSafeNames.add(safeName);
     const assetDir = path.join(repoRoot, "species-assets", safeName);
-    validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, results, errors);
-    validateRequiredImage(path.join(assetDir, "portrait.webp"), "Artportrait", inspectWebp, results, errors);
+    validateDirectorySize(assetDir, germanName, MEDIA_LIMITS.speciesPackage, errors);
+    validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors);
+    validateRequiredImage(
+      path.join(assetDir, "portrait.webp"),
+      "Artportrait",
+      inspectWebp,
+      MEDIA_LIMITS.portrait,
+      results,
+      errors,
+    );
 
     const soundFiles = ["sound.mp3", "credits.json", "spectrogram.webp"];
     if (allowedMissingSounds.has(germanName)) {
@@ -100,9 +118,16 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
       continue;
     }
 
-    validateRequiredSound(path.join(assetDir, "sound.mp3"), results, errors);
-    validateRequiredJson(path.join(assetDir, "credits.json"), "Sound-Credits", results, errors);
-    validateRequiredImage(path.join(assetDir, "spectrogram.webp"), "Spektrogramm", inspectWebp, results, errors);
+    validateRequiredSound(path.join(assetDir, "sound.mp3"), MEDIA_LIMITS.sound, results, errors);
+    validateRequiredJson(path.join(assetDir, "credits.json"), "Sound-Credits", MEDIA_LIMITS.credits, results, errors);
+    validateRequiredImage(
+      path.join(assetDir, "spectrogram.webp"),
+      "Spektrogramm",
+      inspectWebp,
+      MEDIA_LIMITS.spectrogram,
+      results,
+      errors,
+    );
   }
 
   const assetRoot = path.join(repoRoot, "species-assets");
@@ -117,7 +142,7 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
   const graphicsRoot = path.join(repoRoot, "graphics");
   if (fs.existsSync(graphicsRoot)) {
     for (const filePath of walkFiles(graphicsRoot).filter((item) => path.extname(item).toLowerCase() === ".png")) {
-      validateRequiredImage(filePath, "Grafik", inspectPng, results, errors);
+      validateRequiredImage(filePath, "Grafik", inspectPng, MEDIA_LIMITS.graphic, results, errors);
     }
   }
 
@@ -129,16 +154,18 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
       errors: errors.length,
       allowedMissingSounds: allowedMissingSounds.size,
     },
+    limitsBytes: MEDIA_LIMITS,
     errors,
     results,
   };
 }
 
-function validateRequiredImage(filePath, label, inspector, results, errors) {
+function validateRequiredImage(filePath, label, inspector, maxBytes, results, errors) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: ${label} fehlt.`);
     return;
   }
+  if (!validateFileSize(filePath, label, maxBytes, errors)) return;
   const inspected = inspector(fs.readFileSync(filePath));
   if (!inspected.valid) {
     errors.push(`${relative(filePath)}: ${label} ist ungültig (${inspected.reason}).`);
@@ -147,11 +174,12 @@ function validateRequiredImage(filePath, label, inspector, results, errors) {
   results.push({ path: relative(filePath), type: inspected.format, width: inspected.width, height: inspected.height });
 }
 
-function validateRequiredSound(filePath, results, errors) {
+function validateRequiredSound(filePath, maxBytes, results, errors) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: Tierstimme fehlt.`);
     return;
   }
+  if (!validateFileSize(filePath, "Tierstimme", maxBytes, errors)) return;
   try {
     const inspected = inspectMp3Buffer(fs.readFileSync(filePath));
     results.push({
@@ -165,17 +193,40 @@ function validateRequiredSound(filePath, results, errors) {
   }
 }
 
-function validateRequiredJson(filePath, label, results, errors) {
+function validateRequiredJson(filePath, label, maxBytes, results, errors) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: ${label} fehlen.`);
     return;
   }
+  if (!validateFileSize(filePath, label, maxBytes, errors)) return;
   try {
     JSON.parse(fs.readFileSync(filePath, "utf8"));
     results.push({ path: relative(filePath), type: "json" });
   } catch (error) {
     errors.push(`${relative(filePath)}: ${label} sind kein gültiges JSON (${error.message}).`);
   }
+}
+
+function validateFileSize(filePath, label, maxBytes, errors) {
+  const bytes = fs.statSync(filePath).size;
+  if (bytes <= maxBytes) return true;
+  errors.push(`${relative(filePath)}: ${label} ist mit ${formatMib(bytes)} größer als erlaubt (${formatMib(maxBytes)}).`);
+  return false;
+}
+
+function validateDirectorySize(dirPath, germanName, maxBytes, errors) {
+  if (!fs.existsSync(dirPath)) {
+    errors.push(`${germanName}: Assetordner fehlt.`);
+    return;
+  }
+  const bytes = walkFiles(dirPath).reduce((sum, filePath) => sum + fs.statSync(filePath).size, 0);
+  if (bytes > maxBytes) {
+    errors.push(`${germanName}: gesamtes Artpaket ist mit ${formatMib(bytes)} größer als erlaubt (${formatMib(maxBytes)}).`);
+  }
+}
+
+function formatMib(bytes) {
+  return `${(bytes / MIB).toFixed(2)} MiB`;
 }
 
 function dimensionsResult(format, width, height) {
@@ -237,6 +288,7 @@ if (isCli) {
   console.log(JSON.stringify({
     ok: report.ok,
     counts: report.counts,
+    limitsBytes: report.limitsBytes,
     errors: report.errors,
     ...(process.argv.includes("--verbose") ? { results: report.results } : {}),
   }, null, 2));

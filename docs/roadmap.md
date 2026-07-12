@@ -322,7 +322,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   uebernommen oder uebersprungen werden. Neue Sounds werden mit Spektrogramm angezeigt und koennen uebernommen,
   uebersprungen oder abgelehnt werden. Abgelehnte Sounds starten automatisch die nächste gezielte Soundsuche, bis
   eine Quelle akzeptiert wird oder keine taugliche Quelle mehr vorhanden ist.
-  23 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
+  24 Explorer-Tests sind erfolgreich; die echte Artenliste wird in den Schreibtests
   nicht veraendert. Der lokale Server wurde mit dem neuen Stand neu gestartet und liefert Aktion, Dialog und alle
   Pflichtfelder mit Beispieltexten aus. Klickbare, noch offene Schritte sind blau, abgeschlossene Schritte gruen und
   gesperrte Schritte grau markiert. Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem
@@ -598,15 +598,19 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
 - 7.10.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
   `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
-  konsistent; 23 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
+  konsistent; 24 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
   zwoelf als MP3 benannte WAV/PCM-Dateien wurden kontrolliert migriert, alle 48 vorhandenen Sounds zentral geprueft
   und zwoelf Spektrogramme sowie Hashwerte neu erzeugt. Das Pages-Artefakt sank von rund 229,9 auf 89,86 MiB;
   Details stehen in `docs/audio-format-validation.md`. Der zweite P0-Stabilisierungspunkt wurde am 2026-07-12
   umgesetzt: Karten, Portraits, Sounds, Credits, Spektrogramme und veröffentlichte PNG-Grafiken werden vor dem
-  Pages-Bau anhand ihres Dateiinhalts validiert. Das kontrolliert anpassbare Größenbudget liegt zunächst bei
-  120 MiB und stoppt einen zu großen Build vor dem Upload; siehe `docs/media-asset-validation.md`. Vor dem
-  Taxonomie-Redesign werden noch die schreibenden localhost-Endpunkte durch Same-Origin-/Sitzungspruefungen
-  abgesichert und ein vollständiger CI-Quality-Job mit Syntax-, Test- und Datenprüfungen eingeführt. Danach werden
+  Pages-Bau anhand ihres Dateiinhalts validiert. Feste Einzelgrenzen je Asset und Artpaket erkennen Ausreisser; das
+  Gesamtbudget wächst automatisch mit 12 MiB Grundbedarf plus 2,5 MiB je Art und besitzt ein 500-MiB-Notfalllimit.
+  Der aktuelle Bestand nutzt 89,86 von 134,5 MiB; siehe `docs/media-asset-validation.md`. Der dritte
+  P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen: Der localhost-Explorer schützt alle schreibenden
+  Endpunkte durch Server-Sitzung, Host-/Same-Origin-/Fetch-Site-/Content-Type-Prüfung, Asset-Einmaltokens,
+  öffentlichen URL-Zielschutz und echte Dateipfadgrenzen. 24 Explorer- und 3 Sicherheitstests bestehen; siehe
+  `docs/explorer-api-security.md`. Vor dem Taxonomie-Redesign wird noch ein vollständiger CI-Quality-Job mit
+  Syntax-, Test- und Datenprüfungen eingeführt. Danach werden
   aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in getrennten Schritten konsolidiert.
 
 ## Phase 8 - Ausbau

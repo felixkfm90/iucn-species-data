@@ -1,4 +1,4 @@
-import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
@@ -6,14 +6,24 @@ const outArg = process.argv.find((arg) => arg.startsWith("--out="));
 const outDir = path.resolve(root, outArg ? outArg.slice("--out=".length) : "_site");
 const maxBytesArg = process.argv.find((arg) => arg.startsWith("--max-bytes="));
 const maxMibArg = process.argv.find((arg) => arg.startsWith("--max-mib="));
-const DEFAULT_MAX_BYTES = 120 * 1024 * 1024;
-const maxBytes = parsePositiveInteger(
-  maxBytesArg
-    ? maxBytesArg.slice("--max-bytes=".length)
-    : maxMibArg
-      ? Number(maxMibArg.slice("--max-mib=".length)) * 1024 * 1024
-      : process.env.PAGES_MAX_BYTES || DEFAULT_MAX_BYTES,
-  "Pages-Größenbudget",
+const baseMibArg = process.argv.find((arg) => arg.startsWith("--base-mib="));
+const perSpeciesMibArg = process.argv.find((arg) => arg.startsWith("--per-species-mib="));
+const absoluteMaxMibArg = process.argv.find((arg) => arg.startsWith("--absolute-max-mib="));
+const fixedMaxBytes = maxBytesArg
+  ? parsePositiveInteger(maxBytesArg.slice("--max-bytes=".length), "Festes Pages-Größenbudget")
+  : maxMibArg
+    ? mibToBytes(maxMibArg.slice("--max-mib=".length), "Festes Pages-Größenbudget")
+    : process.env.PAGES_MAX_BYTES
+      ? parsePositiveInteger(process.env.PAGES_MAX_BYTES, "Festes Pages-Größenbudget")
+      : null;
+const baseBytes = mibToBytes(baseMibArg?.slice("--base-mib=".length) ?? 12, "Pages-Grundbudget");
+const perSpeciesBytes = mibToBytes(
+  perSpeciesMibArg?.slice("--per-species-mib=".length) ?? 2.5,
+  "Pages-Budget je Art",
+);
+const absoluteMaxBytes = mibToBytes(
+  absoluteMaxMibArg?.slice("--absolute-max-mib=".length) ?? 500,
+  "Absolutes Pages-Notfalllimit",
 );
 
 const requiredFiles = [
@@ -103,9 +113,24 @@ function parsePositiveInteger(value, label) {
   return parsed;
 }
 
+function mibToBytes(value, label) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${label} muss eine positive MiB-Zahl sein: ${value}`);
+  }
+  return Math.round(parsed * 1024 * 1024);
+}
+
 for (const entry of [...requiredFiles, ...requiredDirs]) {
   await assertPresent(entry);
 }
+
+const speciesList = JSON.parse(await readFile(path.join(root, "species_list.json"), "utf8"));
+if (!Array.isArray(speciesList) || speciesList.length < 1) {
+  throw new Error("Pages-Größenbudget kann nicht berechnet werden: species_list.json ist leer oder ungültig.");
+}
+const calculatedMaxBytes = baseBytes + (speciesList.length * perSpeciesBytes);
+const maxBytes = Math.min(fixedMaxBytes ?? calculatedMaxBytes, absoluteMaxBytes);
 
 if (outDir === root || !outDir.startsWith(root + path.sep)) {
   throw new Error(`Ungültiges Pages-Ausgabeverzeichnis: ${outDir}`);
@@ -154,3 +179,8 @@ console.log(`Pages-Artefakt vorbereitet: ${outDir}`);
 console.log(`Dateien: ${stats.files}`);
 console.log(`Größe: ${formatBytes(stats.bytes)}`);
 console.log(`Größenbudget: ${formatBytes(maxBytes)}`);
+console.log(
+  fixedMaxBytes
+    ? `Budgetmodell: feste Prüfgrenze, absolutes Notfalllimit ${formatBytes(absoluteMaxBytes)}`
+    : `Budgetmodell: ${formatBytes(baseBytes)} Grundbedarf + ${formatBytes(perSpeciesBytes)} × ${speciesList.length} Arten; absolutes Notfalllimit ${formatBytes(absoluteMaxBytes)}`,
+);

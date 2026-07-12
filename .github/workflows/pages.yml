@@ -35,7 +35,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Prepare static artifact
-        run: npm run --silent pages:prepare -- --max-mib=120
+        run: npm run --silent pages:prepare -- --base-mib=12 --per-species-mib=2.5 --absolute-max-mib=500
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
