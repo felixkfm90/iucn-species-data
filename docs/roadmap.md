@@ -620,8 +620,10 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   für bekannte Laufzeitablagen. Details: `docs/documentation-lifecycle.md` und `docs/temp-retention.md`. Die
   kontrollierte Zeilenendennormalisierung wurde anschließend in einem getrennten Commit abgeschlossen:
   `.gitattributes` erzwingt LF für plattformunabhängige Dateien, CRLF für Windows-Skripte und schützt Binärdateien
-  vor Textkonvertierung. Stabilisierungspaket B ist damit umgesetzt; es folgt die abschließende Veröffentlichung
-  und danach das Taxonomie-Redesign.
+  vor Textkonvertierung. Stabilisierungspaket B wurde mit GitHub-Actions-Lauf `29265285193` veröffentlicht: Quality,
+  Artefaktbau und Pages-Deployment waren beim ersten Versuch erfolgreich. Der anschließende Live-Audit über 120
+  Squarespace-Seiten sowie die geprüften GitHub-Pages-Dateien war fehlerfrei. Als nächster Funktionsschritt folgt
+  das Taxonomie-Redesign.
   Der fünfte P0-Punkt wurde am 2026-07-13 mit 37 Syntaxprüfungen, 38 automatisierten Tests, 49 Arten, 263 geprüften
   Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
   GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.

@@ -740,6 +740,8 @@ Laufzeitreste beim Start und nach Pipeline-Läufen sowie alle verwalteten Reste 
 neue temporäre Ablagen gehören Eigentümerschaft, Lebenszyklus, Aufbewahrungsgrenze und Tests verpflichtend zur
 Implementierung. Details: `docs/temp-retention.md`. `.gitattributes` legt außerdem repositoryweit LF für
 plattformunabhängige Textdateien, CRLF für Windows-Skripte und unveränderte Behandlung von Binärdateien fest.
+Stabilisierungspaket B wurde mit dem beim ersten Versuch erfolgreichen GitHub-Actions-Lauf `29265285193` und einem
+fehlerfreien Live-Audit über 120 Squarespace-Sitemapseiten abgeschlossen.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

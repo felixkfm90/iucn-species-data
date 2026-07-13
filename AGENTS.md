@@ -698,6 +698,8 @@ Aktuelle Planung:
   definieren; Details: `docs/temp-retention.md`.
   `.gitattributes` ist die verbindliche Zeilenendenregel: LF für plattformunabhängige Quell-, Daten- und
   Dokumentdateien, CRLF für Windows-Start-/Wartungsskripte und keine Textkonvertierung für Binärformate.
+  Stabilisierungspaket B wurde mit dem beim ersten Versuch erfolgreichen GitHub-Actions-Lauf `29265285193` und
+  einem fehlerfreien Live-Audit über 120 Squarespace-Sitemapseiten abgeschlossen.
   Der fünfte P0-Stabilisierungspunkt wurde am 2026-07-13 abgeschlossen: 37 Syntaxprüfungen, 38 automatisierte Tests,
   49 Arten und 263 Medien bestanden lokal; der vollständige Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne
   Abruf- oder HTTP-Fehler und bestätigte die geprüften GitHub-Pages-Dateien. GitHub-Actions-Lauf `29258080649`

@@ -497,9 +497,11 @@ Die Grundlage ist bereit, wenn:
 - verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind; **erfüllt 2026-07-13**
 - ein vollständiger lokaler Lauf, ein erfolgreicher Pages-Deploy und der Squarespace-Sichttest abgeschlossen sind.
 
-Stabilisierungspaket B ist damit technisch und dokumentarisch abgeschlossen. Vor dem Taxonomie-Redesign bleibt nur
-die abschließende Veröffentlichung mit erfolgreichem Quality-/Pages-Lauf und die Sichtprüfung des unveränderten
-Explorers beziehungsweise der Squarespace-Seite.
+Stabilisierungspaket B ist damit technisch, dokumentarisch und betrieblich abgeschlossen. Der GitHub-Actions-Lauf
+`29265285193` bestand Quality, Artefaktbau und Pages-Deployment beim ersten Versuch. Die Quality-Barriere prüfte
+41 JavaScript-/MJS-Dateien, 42 automatisierte Tests, 49 Arten und 263 Medien ohne Fehler. Der anschließende
+Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne Abruf-, HTTP-, Titel- oder Metadatenfehler und bestätigte
+alle geprüften GitHub-Pages-Module und Beispielassets mit HTTP 200.
 
 ## Während des Audits bereits erledigt
 
