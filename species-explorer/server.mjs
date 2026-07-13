@@ -40,6 +40,7 @@ import {
   DEFAULT_PORTRAIT_OPTIONS,
   renderPortrait,
 } from "../scripts/portrait-renderer.mjs";
+import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -2405,6 +2406,7 @@ export async function createExplorerServer({
   mapImageRenderer = renderMapJpeg,
   sessionProtection = true,
 } = {}) {
+  await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
   let modelRefreshPromise = null;
@@ -3253,6 +3255,7 @@ export async function createExplorerServer({
     await writeFile(logPath, `${pipelineState.log.join("\n")}\n`, "utf8");
     pipelineState.logFile = `species-explorer/logs/${logName}`;
     await prunePipelineLogs(pipelineLogDir).catch(() => {});
+    await cleanupManagedExplorerTemp({ repoRoot, phase: "maintenance" }).catch(() => {});
     await refreshModel({ force: true });
   }
 
@@ -6739,12 +6742,15 @@ export async function createExplorerServer({
         });
       });
     },
-    close() {
-      return new Promise((resolveClose, reject) => {
+    async close() {
+      await new Promise((resolveClose, reject) => {
         server.closeIdleConnections?.();
         server.closeAllConnections?.();
         server.close((error) => (error ? reject(error) : resolveClose()));
       });
+      closeActiveFileStreams();
+      previewTokens.clear();
+      await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" }).catch(() => {});
     },
   };
 }

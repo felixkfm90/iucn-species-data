@@ -257,6 +257,8 @@ weiter vergrößern.
 
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 
+**Erledigt am 2026-07-13.**
+
 | Pfad | Dateien | Größe | Alter / Einordnung |
 |---|---:|---:|---|
 | `Testlauf/` | 3 | < 0,01 MiB | Chrome-Reste vom 2026-07-01 |
@@ -287,7 +289,19 @@ Bewusst behalten werden sollen:
 - `asset-backups/` als je Asset wiederherstellbare Sicherung. Die Aufbewahrung ist nach logischen Sicherungen und
   nicht nach der reinen Dateizahl zu bewerten.
 
+Umsetzung:
+
+- `species-explorer/temp-retention.mjs` ist die zentrale Registry für ausschließlich eindeutig verwaltete Einträge.
+- Start und Wartung entfernen Einträge erst nach 24 Stunden; kontrolliertes Schließen entfernt alle registrierten
+  Laufzeitreste best-effort. Fremde Dateien und wiederherstellbare Sicherungen bleiben unberührt.
+- Die Registry ist in Serverstart, Pipeline-Abschluss und Server-Shutdown eingebunden; `temp:check`, `temp:cleanup`
+  und eigene Tests decken Vorschau, Aufbewahrungsfrist und Schutz fremder Dateien ab.
+- Für jede künftige temporäre Ablage sind Eigentümerschaft, Namensgrenze, Lebenszyklus, Sperrverhalten,
+  Aufbewahrungsgrenze und Tests Pflicht. Details: `docs/temp-retention.md`.
+
 ### A6. Dokumentation enthält aktuelle Widersprüche und zu viel Verlauf an mehreren Stellen
+
+**Erledigt am 2026-07-13.**
 
 Die 28 Markdown-Dateien umfassen rund 6724 Zeilen. Besonders viel aktueller Zustand und Historie wird parallel in
 `README.md`, `AGENTS.md`, `docs/roadmap.md` und `docs/desktop-app-plan.md` gepflegt.
@@ -316,6 +330,15 @@ Empfohlene Dokumentationsstruktur:
 - erledigte Phasenverläufe in `docs/archive/` verschieben oder klar als historisch kennzeichnen;
 - Detaildokumente bleiben themenspezifisch;
 - datierte Auditberichte bleiben unter `docs/audits/` unverändert als Zeitaufnahme erhalten.
+
+Umsetzung:
+
+- `docs/project-status.md` wird aus dem Explorer-Modell erzeugt und ist die einzige aktuelle Quelle für Zähler und
+  aktive Pflege-/Hinweislisten.
+- `status:check` ist Teil von `quality:ci` und blockiert einen Pages-Build bei veraltetem Status.
+- README, AGENTS und aktive Detaildokumente verweisen auf diese Quelle statt Zähler zu duplizieren.
+- Historische Planungs- und Lizenzdokumente sind sichtbar als Zeitaufnahme gekennzeichnet. Die dauerhafte
+  Zuständigkeitsregel steht in `docs/documentation-lifecycle.md`.
 
 ### A7. Zeilenenden sind nicht festgelegt und teilweise innerhalb einer Datei gemischt
 
@@ -435,11 +458,11 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 
 ### Stabilisierungspaket B – direkt danach
 
-1. aktuelle Zähler und Listen in AGENTS/README aus einer Quelle korrigieren;
-2. historische Dokumente kennzeichnen beziehungsweise archivieren;
+1. aktuelle Zähler und Listen in AGENTS/README aus einer Quelle korrigieren; **erledigt 2026-07-13**
+2. historische Dokumente kennzeichnen beziehungsweise archivieren; **erledigt 2026-07-13**
 3. verwaltete lokale Altlasten sicher bereinigen und Aufbewahrung automatisieren. Dazu gehören die Bereinigung nach
    erfolgreichen Abläufen, beim kontrollierten Explorer-Schließen und beim nächsten Start nach einem Abbruch sowie
-   verbindliche Lebenszyklusregeln für alle künftigen temporären Ablagen;
+   verbindliche Lebenszyklusregeln für alle künftigen temporären Ablagen; **erledigt 2026-07-13**
 4. `.gitattributes` in einem getrennten Normalisierungscommit einführen.
 
 ### Danach
@@ -459,8 +482,8 @@ Die Grundlage ist bereit, wenn:
   **erfüllt 2026-07-12**
 - CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;
   **erfüllt 2026-07-13**
-- der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt;
-- verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind;
+- der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt; **erfüllt 2026-07-13**
+- verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind; **erfüllt 2026-07-13**
 - ein vollständiger lokaler Lauf, ein erfolgreicher Pages-Deploy und der Squarespace-Sichttest abgeschlossen sind.
 
 ## Während des Audits bereits erledigt

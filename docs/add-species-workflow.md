@@ -202,14 +202,15 @@ Technischer Stand vom 2026-06-29:
 - Der neu gestartete lokale Server liefert den Dialog und alle Formularfelder aus.
 - Die Bedienung wurde am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktueller redaktioneller Stand:
+Historische Workflow-Prüfungen:
 
-- 46 Eintraege in `species_list.json`
 - Haubentaucher und Höckerschwan wurden nach den produktiven Workflow-Tests wieder entfernt und am 2026-06-28
   bereinigt
 - Löwe wurde am 2026-06-30 fuer einen sauberen erneuten Neue-Art-Test wieder vollständig entfernt
 - nach dauerhafter Löschung der generierten Daten und Assets kann dieselbe Art ohne alte Slug-, Daten- oder
   Assetordner-Kollision erneut angelegt werden
+
+Der aktuelle Artenumfang steht ausschließlich in `docs/project-status.md`.
 
 ## Formularverhalten
 

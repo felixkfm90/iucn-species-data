@@ -18,6 +18,9 @@ Bei jedem technischen Schritt pruefen und bei Bedarf aktualisieren:
 - `docs/roadmap.md` fuer Status, naechste Schritte und Priorisierung
 - passende Detaildokumente unter `docs/`, z. B. CSS-, Sound-, Repo-, Desktop-App- oder Squarespace-Doku
 
+Die Zuständigkeiten, historischen Kennzeichnungen und die einzige Quelle für aktuelle Zähler sind verbindlich in
+`docs/documentation-lifecycle.md` festgelegt.
+
 Wenn eine JS-Datei geaendert wird, muss auch `docs/squarespace-footer.html` bzw. die Squarespace-`?v=`-Version
 geprueft werden. Wenn CSS geaendert wird, muss `docs/squarespace-custom.css` mit dem echten Squarespace-Stand
 abgeglichen werden.
@@ -63,31 +66,10 @@ Lokale Arbeitsoberflaeche:
 
 ## Aktueller Projektstand
 
-- 49 Eintraege in `species_list.json`
-- 49 aktive Arten
-- 49 Arten in `speciesData.json`
-- 49 Karten
-- 49 Art-Assetordner
-- 48 technisch gepruefte MP3-Dateien
-- 48 Credits-Dateien
-- 48 Spektrogramm-Dateien
-- 49 Artportraets
-- 0 Assetprobleme im Explorer-Modell
-- 1 Soundhinweis `S`: `Gruener Leguan` hat nach vollstaendigem Pipeline-Lauf keine verwendbare automatische
-  Tonquelle. Sound, Credits und Spektrogramm fehlen dort bewusst und zaehlen nicht als Assetproblem.
-- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf:
-  - `Blaukehlchen`
-  - `Fischertukan`
-  - `Loewe`
-  - `Rotfuchs`
-  - `Waldkauz`
-- 6 aktive NC-Soundlizenzen laut Report:
-  - `Bisamratte`
-  - `Brauenmotmot`
-  - `Geoffroy-Klammeraffe`
-  - `Grosstrappe`
-  - `Loewe`
-  - `Scharlachara`
+Aktuelle Zähler sowie die aktiven Listen für manuelle Karten, NC-Sounds und bewusst fehlende Tierstimmen stehen
+ausschließlich in der automatisch erzeugten Datei `docs/project-status.md`. Sie wird mit `npm run status:sync`
+aktualisiert; `npm run status:check` und der CI-Quality-Job verhindern eine Veröffentlichung mit veraltetem Status.
+Zahlen in datierten Audit- oder Verlaufsabschnitten sind historische Zeitaufnahmen.
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
 
@@ -707,11 +689,13 @@ Aktuelle Planung:
   Syntaxcheck, den gemeinsamen `npm test`-Einstieg, Audio-/Medienvalidierung sowie Projekt- und lokalen Datenaudit
   aus. Der Pages-Build hängt davon ab und vergleicht `_site/` anschließend exakt mit einer zentralen öffentlichen
   Dateifreigabe; Designquellen, Sicherungen und unbekannte Assetdateien werden abgewiesen. Der aktuelle Stand umfasst
-  364 öffentliche Dateien mit 89,72 MiB. Details: `docs/ci-quality-gate.md`. Danach folgen Dokumentationskonsolidierung,
-  Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte. Die Temp-Retention umfasst
-  ausdrücklich die Bereinigung nicht mehr benötigter verwalteter Dateien nach erfolgreichen Abläufen, beim
-  kontrollierten Explorer-Schließen und beim nächsten Start nach einem Abbruch. Neue temporäre Ablagen müssen von
-  Anfang an Eigentümerschaft, Lebenszyklus, Sperrverhalten, Aufbewahrungsgrenze und Tests definieren.
+  364 öffentliche Dateien mit 89,72 MiB. Details: `docs/ci-quality-gate.md`. Die anschließende
+  Dokumentationskonsolidierung verwendet `docs/project-status.md` als einzige aktuelle Zählerquelle und ist unter
+  `docs/documentation-lifecycle.md` verbindlich geregelt. Die zentrale Temp-Retention
+  `species-explorer/temp-retention.mjs` bereinigt eindeutig verwaltete, abgelaufene Dateien beim Start und nach
+  Pipeline-Läufen sowie alle verwalteten Laufzeitreste beim kontrollierten Explorer-Schließen. Neue temporäre
+  Ablagen müssen von Anfang an Eigentümerschaft, Lebenszyklus, Sperrverhalten, Aufbewahrungsgrenze und Tests
+  definieren; Details: `docs/temp-retention.md`.
   Der fünfte P0-Stabilisierungspunkt wurde am 2026-07-13 abgeschlossen: 37 Syntaxprüfungen, 38 automatisierte Tests,
   49 Arten und 263 Medien bestanden lokal; der vollständige Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne
   Abruf- oder HTTP-Fehler und bestätigte die geprüften GitHub-Pages-Dateien. GitHub-Actions-Lauf `29258080649`

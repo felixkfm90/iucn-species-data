@@ -1,5 +1,9 @@
 # Sound License Review
 
+> **Historische Zeitaufnahme vom 2026-06-17.** Lizenzangaben und Zähler in diesem Bericht bilden ausschließlich den
+> damaligen Prüfstand ab. Aktive NC-Soundlizenzen stehen heute automatisch erzeugt in `docs/project-status.md`; die
+> Einzelquelle einer Art bleibt in `species-assets/<SafeName>/credits.json` maßgeblich.
+
 Stand: 2026-06-17
 
 Quelle:

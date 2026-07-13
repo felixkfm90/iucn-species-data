@@ -117,8 +117,8 @@ Vor dem Start zeigt die App:
 ### Manuelle und fehlende Karten erneut suchen
 
 Der Kartensuchlauf wählt Arten aus, deren Karte in `species-assets-overrides.json` als manuell geschützt markiert
-ist, sowie Arten mit fehlender `map.jpg`. Aktuell sind vier Karten manuell geschützt; fehlende Karten werden bei
-Bedarf zusätzlich verarbeitet.
+ist, sowie Arten mit fehlender `map.jpg`. Die aktuelle Liste steht in `docs/project-status.md`; fehlende Karten
+werden bei Bedarf zusätzlich verarbeitet.
 
 - IUCN-Daten und Sounds bleiben unverändert.
 - Die vorhandene Karte wird vorübergehend lokal gesichert.

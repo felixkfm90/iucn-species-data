@@ -225,7 +225,7 @@ http://127.0.0.1:4177
 
 Der Explorer zeigt:
 
-- alle 48 aktuellen Arten aus Eingabe und Pipeline mit Suche und Filtern
+- alle Arten aus Eingabe und Pipeline mit Suche und Filtern; der aktuelle Umfang steht in `docs/project-status.md`
 - lokal gebrandete Oberflaeche `Arten-Explorer` mit FN-Wildlife-&-Travel-Logo in der Kopfzeile
 - kompaktes Validierungsdashboard fuer Eingabe/Pipeline, Assetstruktur, Report-Abgleich und besondere Pflege
 - manuelle Felder aus `species_list.json`
@@ -254,8 +254,7 @@ Der Explorer zeigt:
   Dieser Übertragungsbutton bleibt auch im Lesemodus sichtbar, damit offene Änderungen vor dem Beenden
   veröffentlicht werden können.
 - getrennte Filter fuer Datenabweichungen, Assetprobleme und alle Validierungshinweise
-- vier aktive NC-Sounds
-- vier manuell gepflegte Karten
+- aktuelle NC-Sounds und manuell gepflegte Karten aus dem automatisch erzeugten Projektstatus
 - fehlende oder inkonsistente Daten und Assets
 - Bearbeiten von Groesse, Gewicht und Lebenserwartung bestehender Arten
 - kontrolliertes Ersetzen einer Verbreitungskarte mit JPEG-/PNG-Upload, automatischer PNG-zu-JPEG-Konvertierung,
@@ -351,8 +350,7 @@ Phase 7.5 zum kontrollierten Anlegen neuer Arten ist seit 2026-06-19 technisch l
 - 24 Explorer-Tests sind erfolgreich; die echte Artenliste bleibt bei den Schreibtests unveraendert.
 - Die Bedienung wurde mit Haubentaucher und Höckerschwan praktisch geprüft.
 
-Aktuell stehen 49 Arten in `species_list.json` und `speciesData.json`. Löwe und Eichelhäher sind nach den
-Neue-Art-Tests produktiv vorhanden.
+Den aktuellen Arten- und Assetumfang erzeugt `npm run status:sync` unter `docs/project-status.md`.
 
 Phase 7.6 ist technisch lokal vorbereitet:
 
@@ -576,13 +574,12 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 
-Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Aktuell sind vier Karten wegen
-korrupter IUCN-Kartendaten oder lokal blockiertem signiertem Kartenabruf als manuell gepflegte Overrides markiert:
-`Blaukehlchen`, `Fischertukan`, `Rotfuchs` und `Waldkauz`. Großtrappe, Kernbeißer, Reh und Löwe werden seit der bestätigten Übernahme funktionierender automatischer
-Karten am 2026-06-20 wieder durch die Pipeline gepflegt.
+Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Die aktuell geschützten Karten stehen
+automatisch erzeugt in `docs/project-status.md`; frühere Übernahmen und Statuswechsel bleiben in den datierten
+Verlaufsdokumenten nachvollziehbar.
 
-Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Aktueller Stand: 46 produktive
-`species-assets/<SafeName>/spectrogram.webp`-Assets sind erzeugt und `species-sound.js` nutzt sie, wenn vorhanden.
+Spektrogramme fuer Tierstimmen sind in `docs/spectrogram-plan.md` dokumentiert. Die aktuelle Anzahl steht in
+`docs/project-status.md`; `species-sound.js` nutzt vorhandene `species-assets/<SafeName>/spectrogram.webp`-Assets.
 Seit `species-sound.js?v=1.0.24` werden sie auf Squarespace flacher dargestellt, ohne die WebP-Dateien neu zu
 erzeugen. Im Arten-Explorer stehen Verbreitungskarte, Tierstimme und Artportraet in drei gleich grossen
 Medienbereichen nebeneinander; das Spektrogramm ist dort auf `64px` bis `84px` Anzeigehoehe begrenzt und die
@@ -736,10 +733,12 @@ vollständige Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne Abruf- ode
 geprüften GitHub-Pages-Dateien. Der GitHub-Actions-Lauf `29258080649` bestand Quality, Artefaktbau und
 Pages-Deployment beim ersten Versuch; Explorer und Squarespace-Detailseite wurden zusätzlich visuell geprüft.
 
-Als nachfolgender P1-Stabilisierungspunkt wird die lokale Temp-Retention vereinheitlicht. Verwaltete, nicht mehr
-benötigte Dateien sollen nach erfolgreichen Abläufen und beim kontrollierten Explorer-Schließen entfernt werden;
-Reste nach Abbruch oder Windows-Dateisperre werden beim nächsten Start erneut geprüft. Für neue temporäre Ablagen
-gehören Eigentümerschaft, Lebenszyklus, Aufbewahrungsgrenze und Tests künftig verpflichtend zur Implementierung.
+Die nachfolgende P1-Dokumentationskonsolidierung und Temp-Retention sind umgesetzt. `docs/project-status.md` ist die
+einzige aktuelle Zähler- und Listenquelle; `docs/documentation-lifecycle.md` trennt aktuelle Betriebsdokumente von
+historischen Zeitaufnahmen. `species-explorer/temp-retention.mjs` entfernt eindeutig verwaltete, abgelaufene
+Laufzeitreste beim Start und nach Pipeline-Läufen sowie alle verwalteten Reste beim kontrollierten Schließen. Für
+neue temporäre Ablagen gehören Eigentümerschaft, Lebenszyklus, Aufbewahrungsgrenze und Tests verpflichtend zur
+Implementierung. Details: `docs/temp-retention.md`.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
@@ -764,15 +763,16 @@ er in `species-explorer/local-settings.json`, das nicht in Git landet.
 
 ## Aktueller Datenstand
 
-Aktueller lokaler Stand vom 2026-07-11:
+Aktuelle Zähler und aktive Pflege-/Hinweislisten stehen ausschließlich in `docs/project-status.md`. Die Datei wird
+aus den produktiven Daten und Assets erzeugt:
 
-- 49 Eintraege in `species_list.json`
-- 49 Arten in der letzten Pipeline-Ausgabe
-- 49 Karten, 48 Sounds, 48 Credits und 48 Spektrogramme
-- 49 Artportraits; 0 Portrait-Assetprobleme
-- 5 manuell gepflegte Karten wegen korrupter IUCN-Kartendaten oder zuletzt lokal blockiertem signiertem Kartenabruf
-- 1 Soundhinweis `S`: `Grüner Leguan` hat aktuell keine verwendbare automatische Tonquelle
-- 5 aktive NC-Soundlizenzen: `Bisamratte`, `Brauenmotmot`, `Geoffroy-Klammeraffe`, `Löwe`, `Scharlachara`
+```bash
+npm.cmd run status:sync
+npm.cmd run status:check
+```
+
+Der Quality-Job führt `status:check` aus und stoppt bei einer Abweichung. Historische Zahlen in datierten Audit- und
+Verlaufsabschnitten bleiben als Zeitaufnahme erhalten und dürfen nicht als aktueller Datenstand verwendet werden.
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

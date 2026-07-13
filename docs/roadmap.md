@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-12
+Stand: 2026-07-13
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -614,10 +614,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   sowie Projekt- und lokalen Datenaudit aus. Der Pages-Build startet nur danach und validiert zusätzlich jeden
   öffentlichen Artefaktpfad gegen eine gemeinsame Freigabeliste. Der aktuelle Stand umfasst 364 Dateien mit
   89,72 MiB; Photoshop-Designquellen bleiben im Repository, aber außerhalb von `_site/`. Details:
-  `docs/ci-quality-gate.md`. Danach werden aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in
-  getrennten Schritten konsolidiert. Die Temp-Retention muss nicht mehr benötigte verwaltete Dateien nach
-  erfolgreichen Abläufen und beim kontrollierten Explorer-Schließen entfernen, Abbruchreste beim nächsten Start
-  behandeln und denselben dokumentierten Lebenszyklus für jede künftig ergänzte temporäre Ablage erzwingen.
+  `docs/ci-quality-gate.md`. Die anschließende Dokumentationskonsolidierung und Temp-Retention wurden am 2026-07-13
+  umgesetzt: `docs/project-status.md` ist die einzige aktuelle Zählerquelle, historische Dokumente sind als
+  Zeitaufnahme gekennzeichnet und `species-explorer/temp-retention.mjs` verwaltet die sicheren Aufbewahrungsregeln
+  für bekannte Laufzeitablagen. Details: `docs/documentation-lifecycle.md` und `docs/temp-retention.md`. Als letzter
+  getrennt zu commitender Stabilisierungsschritt folgt die kontrollierte Zeilenendennormalisierung.
   Der fünfte P0-Punkt wurde am 2026-07-13 mit 37 Syntaxprüfungen, 38 automatisierten Tests, 49 Arten, 263 geprüften
   Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
   GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.

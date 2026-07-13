@@ -1,5 +1,9 @@
 # Desktop App / Arten-Explorer
 
+> **Historisches Planungs- und Verlaufsdokument.** Dieses Dokument hält Entscheidungen und Umsetzungsschritte der
+> Phase 7 fest. Der aktuelle Betriebsablauf steht in `README.md`, der aktuelle Projektstatus in
+> `docs/project-status.md` und die weitere Priorisierung in `docs/roadmap.md`.
+
 Stand: 2026-07-12
 
 Ziel von Phase 7: Eine lokale Bedienoberflaeche schaffen, mit der Arten, manuelle Daten, Assets, Sounds, Karten,
