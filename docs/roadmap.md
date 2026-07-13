@@ -593,10 +593,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
   GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.
   Auditpunkt A4 wurde am 2026-07-13 begonnen. Die Verwaltung wiederherstellbarer Asset-Sicherungen, ihrer
-  Metadaten sowie der Aufbewahrung von Asset-, Eingabelisten- und Pipeline-Sicherungen liegt jetzt im eigenständigen
-  Modul `species-explorer/asset-backups.mjs`. Drei direkte Modultests ergänzen die bestehenden API-Tests; der
-  gemeinsame Testeinstieg umfasst damit 45 Tests. Weitere Modulgrenzen werden weiterhin schrittweise und ohne
-  Big-Bang-Umbau gezogen.
+  Metadaten sowie der Aufbewahrung von Asset-, Eingabelisten- und Pipeline-Sicherungen liegt im eigenständigen Modul
+  `species-explorer/asset-backups.mjs`. Der zweite verhaltensneutrale Schnitt bündelt Felddefinitionen,
+  Namensnormalisierung, Artenvalidierung, Kollisionsprüfungen, Bearbeitungsdiffs und Reportvergleiche in
+  `species-explorer/species-model.mjs`. Acht direkte Modultests ergänzen die 24 Explorer-Integrationstests; der
+  gemeinsame Testeinstieg umfasst damit 50 Tests. Der Server sank im zweiten Schnitt von 6.557 auf 6.052 Zeilen.
+  Als nächste sichere Modulgrenze folgt HTTP/Routing; weitere Grenzen werden ohne Big-Bang-Umbau gezogen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

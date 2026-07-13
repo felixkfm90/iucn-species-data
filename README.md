@@ -743,9 +743,11 @@ fehlerfreien Live-Audit über 120 Squarespace-Sitemapseiten abgeschlossen.
 
 Auditpunkt A4 wird seit 2026-07-13 schrittweise und verhaltensneutral umgesetzt. Der erste Modulschnitt verschiebt
 die Verwaltung wiederherstellbarer Asset-Sicherungen sowie die Aufbewahrung von Eingabelisten- und Pipeline-
-Sicherungen aus `species-explorer/server.mjs` nach `species-explorer/asset-backups.mjs`. Drei direkte Modultests
-ergaenzen die bestehenden Integrationspruefungen; der gemeinsame Testeinstieg umfasst jetzt 45 Tests. A4 bleibt bis
-zur weiteren Trennung von Modell-/Validierungslogik, HTTP/Routing und Oberflaeche offen.
+Sicherungen aus `species-explorer/server.mjs` nach `species-explorer/asset-backups.mjs`. Der zweite Schnitt buendelt
+Felddefinitionen, Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche
+in `species-explorer/species-model.mjs`. Acht direkte Modultests ergaenzen die 24 Explorer-Integrationstests; der
+gemeinsame Testeinstieg umfasst jetzt 50 Tests. `server.mjs` sank im zweiten Schnitt von 6.557 auf 6.052 Zeilen. A4
+bleibt bis zur weiteren Trennung von HTTP/Routing und Oberflaeche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

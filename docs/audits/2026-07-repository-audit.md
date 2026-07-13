@@ -265,8 +265,15 @@ Umsetzungsstand am 2026-07-13:
 - Drei direkte Charakterisierungstests prüfen Überschreiben des letzten Assetstands, Metadaten und
   Wiederauffindbarkeit, Retention sowie den Schutz fremder Dateien. Die bestehenden 24 Explorer-Integrationstests
   bleiben unverändert erfolgreich.
-- A4 bleibt offen. Als nächste sichere Grenzen folgen Modell-/Validierungslogik, HTTP/Routing und anschließend die
-  großen Oberflächenbereiche. Jeder Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
+- Der zweite verhaltensneutrale Modulschnitt ist abgeschlossen. `species-explorer/species-model.mjs` bündelt
+  Felddefinitionen, Namens- und Taxonomienormalisierung, Validierung neuer und vorhandener Arten,
+  Kollisionsprüfungen, Bearbeitungsdiffs, Umbenennungsprüfungen sowie Report- und Planprojektionen.
+- `species-explorer/server.mjs` sank dadurch von 6.557 auf 6.052 Zeilen. Fünf direkte Modelltests prüfen
+  Normalisierung, neue Arten, Datei- und Datenkollisionen, Bearbeitungs-/Umbenennungsdiffs sowie öffentliche
+  Report- und Plandaten. Gemeinsam mit den drei Backuptests und den 24 Explorer-Integrationstests umfasst der
+  vollständige Testeinstieg jetzt 50 Tests.
+- A4 bleibt offen. Als nächste sichere Grenze folgt HTTP/Routing, anschließend werden die großen
+  Oberflächenbereiche getrennt. Jeder Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 

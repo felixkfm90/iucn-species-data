@@ -706,9 +706,11 @@ Aktuelle Planung:
   bestand Quality, Artefaktbau und Pages-Deployment beim ersten Versuch. Stabilisierungspaket A ist abgeschlossen.
   Auditpunkt A4 wird seit 2026-07-13 in kleinen, verhaltensneutralen Modulschnitten bearbeitet. Der erste Schnitt
   verschiebt Asset-Sicherungen, Sicherungsmetadaten und die Aufbewahrung von Asset-, Eingabelisten- und Pipeline-
-  Sicherungen nach `species-explorer/asset-backups.mjs`. Drei direkte Modultests ergaenzen die bestehenden
-  Integrationspruefungen; der gemeinsame Testeinstieg umfasst 45 Tests. A4 bleibt offen, bis Modell-/Validierung,
-  HTTP/Routing und Oberflaeche weiter getrennt sind.
+  Sicherungen nach `species-explorer/asset-backups.mjs`. Der zweite Schnitt verschiebt Felddefinitionen,
+  Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche nach
+  `species-explorer/species-model.mjs`. Acht direkte Modultests ergaenzen die 24 Explorer-Integrationspruefungen;
+  der gemeinsame Testeinstieg umfasst 50 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 6.052 Zeilen.
+  A4 bleibt offen, bis HTTP/Routing und Oberflaeche weiter getrennt sind.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

@@ -2263,6 +2263,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     gitignoreSource,
     assetOverrides,
     assetBackupsSource,
+    speciesModelSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
@@ -2280,6 +2281,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("../.gitignore", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("./asset-backups.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./species-model.mjs", import.meta.url), "utf8"),
   ]);
 
   assert.match(appSource, /class="map-image"/);
@@ -2564,7 +2566,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /form\.elements\.sizeSexed/);
   assert.match(appSource, /form\.elements\.weightSexed/);
   assert.match(appSource, /name="lifeExpectancyUnit"/);
-  assert.match(serverSource, /function formatTaxonomyName\(value\)/);
+  assert.match(speciesModelSource, /function formatTaxonomyName\(value\)/);
   assert.match(updateSource, /function normalizeTaxonomyFields\(entry\)/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(appSource, /class="map-edit-section"/);
