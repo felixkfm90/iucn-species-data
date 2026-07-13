@@ -342,6 +342,8 @@ Umsetzung:
 
 ### A7. Zeilenenden sind nicht festgelegt und teilweise innerhalb einer Datei gemischt
 
+**Erledigt am 2026-07-13.**
+
 Es gibt keine `.gitattributes`. Unter 166 geprüften Textdateien wurden erkannt:
 
 - 149 reine LF-Dateien;
@@ -358,6 +360,15 @@ Empfehlung:
 - Windows-Startskripte bei Bedarf ausdrücklich auf CRLF festlegen;
 - einmalige Normalisierung in einem separaten Commit nach Backup durchführen;
 - keine Zeilenendennormalisierung mit einer Funktionsänderung mischen.
+
+Umsetzung:
+
+- `.gitattributes` erzwingt LF für plattformunabhängige Quell-, Daten- und Dokumentdateien, CRLF für
+  Windows-Start-/Wartungsskripte und deaktiviert Textkonvertierung für alle produktiven Binärformate.
+- Die Arbeitskopie wurde in einem getrennten mechanischen Schritt normalisiert. Die Kontrolle ergab 188 korrekte
+  LF-Dateien, vier korrekte CRLF-Dateien und keine gemischte oder falsch formatierte Textdatei.
+- Der Regel-Commit `dbddf9b` enthält ausschließlich `.gitattributes`; Funktionsänderungen wurden im vorherigen
+  Commit getrennt gehalten.
 
 ## P2 – Qualitätsverbesserungen ohne unmittelbare Blockade
 
@@ -463,7 +474,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 3. verwaltete lokale Altlasten sicher bereinigen und Aufbewahrung automatisieren. Dazu gehören die Bereinigung nach
    erfolgreichen Abläufen, beim kontrollierten Explorer-Schließen und beim nächsten Start nach einem Abbruch sowie
    verbindliche Lebenszyklusregeln für alle künftigen temporären Ablagen; **erledigt 2026-07-13**
-4. `.gitattributes` in einem getrennten Normalisierungscommit einführen.
+4. `.gitattributes` in einem getrennten Normalisierungscommit einführen. **erledigt 2026-07-13**
 
 ### Danach
 
@@ -485,6 +496,10 @@ Die Grundlage ist bereit, wenn:
 - der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt; **erfüllt 2026-07-13**
 - verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind; **erfüllt 2026-07-13**
 - ein vollständiger lokaler Lauf, ein erfolgreicher Pages-Deploy und der Squarespace-Sichttest abgeschlossen sind.
+
+Stabilisierungspaket B ist damit technisch und dokumentarisch abgeschlossen. Vor dem Taxonomie-Redesign bleibt nur
+die abschließende Veröffentlichung mit erfolgreichem Quality-/Pages-Lauf und die Sichtprüfung des unveränderten
+Explorers beziehungsweise der Squarespace-Seite.
 
 ## Während des Audits bereits erledigt
 

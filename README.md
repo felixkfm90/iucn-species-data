@@ -738,7 +738,8 @@ einzige aktuelle Zähler- und Listenquelle; `docs/documentation-lifecycle.md` tr
 historischen Zeitaufnahmen. `species-explorer/temp-retention.mjs` entfernt eindeutig verwaltete, abgelaufene
 Laufzeitreste beim Start und nach Pipeline-Läufen sowie alle verwalteten Reste beim kontrollierten Schließen. Für
 neue temporäre Ablagen gehören Eigentümerschaft, Lebenszyklus, Aufbewahrungsgrenze und Tests verpflichtend zur
-Implementierung. Details: `docs/temp-retention.md`.
+Implementierung. Details: `docs/temp-retention.md`. `.gitattributes` legt außerdem repositoryweit LF für
+plattformunabhängige Textdateien, CRLF für Windows-Skripte und unveränderte Behandlung von Binärdateien fest.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

@@ -5,6 +5,9 @@ Stand: 2026-06-18
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
 
+Repositoryweite Text- und Binärregeln stehen in `.gitattributes`: plattformunabhängige Quell-, Daten- und
+Dokumentdateien verwenden LF, Windows-Start-/Wartungsskripte CRLF und Medien werden nie als Text normalisiert.
+
 ## Kurzfazit
 
 Der aktuelle Repo-Inhalt ist fuer den bestehenden Betrieb weitgehend notwendig. Das Repository ist nicht nur Quellcode,
