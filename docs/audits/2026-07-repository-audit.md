@@ -271,9 +271,13 @@ Empfehlung:
 
 - verwaltete Staging-/Trash-Einträge mit Manifest und Erstellzeit versehen;
 - beim App-Start ausschließlich eindeutig verwaltete, abgelaufene Einträge entfernen;
+- beim kontrollierten Schließen des Explorers sowie unmittelbar nach erfolgreichen Arbeitsabläufen alle eindeutig
+  zugeordneten und nicht mehr benötigten temporären Einträge best-effort entfernen;
 - nach erfolgreichen Läufen nochmals best-effort bereinigen;
 - fremde Dateien nie pauschal löschen;
-- Aufbewahrungsregeln je Pfad dokumentieren und testen.
+- Aufbewahrungsregeln je Pfad dokumentieren und testen;
+- für jede künftig eingeführte temporäre Ablage bereits bei der Implementierung Eigentümerschaft, Lebenszyklus,
+  Bereinigungszeitpunkt, Fehler-/Sperrverhalten und maximale Aufbewahrung festlegen und testen.
 
 Bewusst behalten werden sollen:
 
@@ -422,13 +426,20 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
    **Erledigt 2026-07-12.**
 4. CI-Quality-Job vor den Pages-Build setzen. **Erledigt 2026-07-13.**
-5. Vollständigen Test-, Audit- und Pages-Lauf durchführen.
+5. Vollständigen Test-, Audit- und Pages-Lauf durchführen. **Erledigt 2026-07-13.** Der gemeinsame Quality-Einstieg
+   prüfte 37 JavaScript-/MJS-Dateien, 38 automatisierte Tests, 49 Arten und 263 Medien ohne Fehler. Der vollständige
+   Live-Audit rief 120 Squarespace-Sitemapseiten ohne Abruf- oder HTTP-Fehler ab und bestätigte die geprüften
+   GitHub-Pages-Module und Beispielassets mit HTTP 200. Der GitHub-Actions-Lauf `29258080649` bestand Quality,
+   Artefaktbau und Pages-Deployment beim ersten Versuch; Explorer und Squarespace-Detailseite wurden zusätzlich
+   visuell geprüft. Stabilisierungspaket A ist damit abgeschlossen.
 
 ### Stabilisierungspaket B – direkt danach
 
 1. aktuelle Zähler und Listen in AGENTS/README aus einer Quelle korrigieren;
 2. historische Dokumente kennzeichnen beziehungsweise archivieren;
-3. verwaltete lokale Altlasten sicher bereinigen und Aufbewahrung automatisieren;
+3. verwaltete lokale Altlasten sicher bereinigen und Aufbewahrung automatisieren. Dazu gehören die Bereinigung nach
+   erfolgreichen Abläufen, beim kontrollierten Explorer-Schließen und beim nächsten Start nach einem Abbruch sowie
+   verbindliche Lebenszyklusregeln für alle künftigen temporären Ablagen;
 4. `.gitattributes` in einem getrennten Normalisierungscommit einführen.
 
 ### Danach

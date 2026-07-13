@@ -615,7 +615,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   öffentlichen Artefaktpfad gegen eine gemeinsame Freigabeliste. Der aktuelle Stand umfasst 364 Dateien mit
   89,72 MiB; Photoshop-Designquellen bleiben im Repository, aber außerhalb von `_site/`. Details:
   `docs/ci-quality-gate.md`. Danach werden aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in
-  getrennten Schritten konsolidiert.
+  getrennten Schritten konsolidiert. Die Temp-Retention muss nicht mehr benötigte verwaltete Dateien nach
+  erfolgreichen Abläufen und beim kontrollierten Explorer-Schließen entfernen, Abbruchreste beim nächsten Start
+  behandeln und denselben dokumentierten Lebenszyklus für jede künftig ergänzte temporäre Ablage erzwingen.
+  Der fünfte P0-Punkt wurde am 2026-07-13 mit 37 Syntaxprüfungen, 38 automatisierten Tests, 49 Arten, 263 geprüften
+  Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
+  GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.
 
 ## Phase 8 - Ausbau
 

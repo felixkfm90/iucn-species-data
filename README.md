@@ -730,6 +730,17 @@ gebaut, seine erlaubten Pfade geprüft und das Deployment freigegeben. Die öffe
 aus `_site/` entfernt; der aktuelle Stand umfasst 364 Dateien mit 89,72 MiB. Details:
 `docs/ci-quality-gate.md`.
 
+Der fünfte und letzte P0-Punkt des Stabilisierungspakets A wurde am 2026-07-13 abgenommen. Der gemeinsame
+Quality-Einstieg prüfte 37 JavaScript-/MJS-Dateien, 38 automatisierte Tests, 49 Arten und 263 Medien ohne Fehler. Der
+vollständige Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne Abruf- oder HTTP-Fehler und bestätigte die
+geprüften GitHub-Pages-Dateien. Der GitHub-Actions-Lauf `29258080649` bestand Quality, Artefaktbau und
+Pages-Deployment beim ersten Versuch; Explorer und Squarespace-Detailseite wurden zusätzlich visuell geprüft.
+
+Als nachfolgender P1-Stabilisierungspunkt wird die lokale Temp-Retention vereinheitlicht. Verwaltete, nicht mehr
+benötigte Dateien sollen nach erfolgreichen Abläufen und beim kontrollierten Explorer-Schließen entfernt werden;
+Reste nach Abbruch oder Windows-Dateisperre werden beim nächsten Start erneut geprüft. Für neue temporäre Ablagen
+gehören Eigentümerschaft, Lebenszyklus, Aufbewahrungsgrenze und Tests künftig verpflichtend zur Implementierung.
+
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.

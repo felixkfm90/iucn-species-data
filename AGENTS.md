@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-12
+Stand: 2026-07-13
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -708,6 +708,13 @@ Aktuelle Planung:
   aus. Der Pages-Build hängt davon ab und vergleicht `_site/` anschließend exakt mit einer zentralen öffentlichen
   Dateifreigabe; Designquellen, Sicherungen und unbekannte Assetdateien werden abgewiesen. Der aktuelle Stand umfasst
   364 öffentliche Dateien mit 89,72 MiB. Details: `docs/ci-quality-gate.md`. Danach folgen Dokumentationskonsolidierung,
-  Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
+  Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte. Die Temp-Retention umfasst
+  ausdrücklich die Bereinigung nicht mehr benötigter verwalteter Dateien nach erfolgreichen Abläufen, beim
+  kontrollierten Explorer-Schließen und beim nächsten Start nach einem Abbruch. Neue temporäre Ablagen müssen von
+  Anfang an Eigentümerschaft, Lebenszyklus, Sperrverhalten, Aufbewahrungsgrenze und Tests definieren.
+  Der fünfte P0-Stabilisierungspunkt wurde am 2026-07-13 abgeschlossen: 37 Syntaxprüfungen, 38 automatisierte Tests,
+  49 Arten und 263 Medien bestanden lokal; der vollständige Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne
+  Abruf- oder HTTP-Fehler und bestätigte die geprüften GitHub-Pages-Dateien. GitHub-Actions-Lauf `29258080649`
+  bestand Quality, Artefaktbau und Pages-Deployment beim ersten Versuch. Stabilisierungspaket A ist abgeschlossen.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
