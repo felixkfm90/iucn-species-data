@@ -4,7 +4,7 @@ Stand: 2026-07-12
 
 Status: geplant, noch keine technische Festlegung und keine produktive Implementierung
 
-Roadmap: Phase 7.9
+Roadmap: Phase 9
 
 ## Ziel und Abgrenzung
 
@@ -60,12 +60,12 @@ localhost-API absichern und verpflichtende CI-Qualitätsprüfungen einführen. D
 Stabilisierungsarbeiten nicht umgehen oder verzweigen.
 
 Das bereits geplante Redesign der Taxonomie-Pyramide ist ein getrenntes Thema. Es verbessert die dynamische
-HTML-/CSS-Ausgabe vorhandener Taxonomiedaten. Phase 7.9 plant dagegen Herkunft, Suche, Speicherung und kontrollierte
+HTML-/CSS-Ausgabe vorhandener Taxonomiedaten. Phase 9 plant dagegen Herkunft, Suche, Speicherung und kontrollierte
 Übernahme einer viel größeren Referenzdatenbasis.
 
 ## B. Zu prüfende Taxonomiequellen
 
-Mindestens folgende Kandidaten werden in Phase 7.9.1 anhand derselben Kriterien untersucht:
+Mindestens folgende Kandidaten werden in Phase 9.1 anhand derselben Kriterien untersucht:
 
 | Kandidat | Rolle in der Prüfung | Noch zu klären |
 | --- | --- | --- |
@@ -245,7 +245,7 @@ der Neue-Art-Assistent dann anbieten:
 Für bestehende Arten ist ein getrenntes Prüfwerkzeug zu planen. Es darf Abweichungen melden und Vorschläge machen,
 aber keine Massenänderung ohne artweise oder ausdrücklich bestätigte Sammelentscheidung ausführen.
 
-Der aktuelle Neue-Art-Assistent bleibt bis Phase 7.9.4 funktional unverändert. `docs/add-species-workflow.md` bleibt
+Der aktuelle Neue-Art-Assistent bleibt bis Phase 9.4 funktional unverändert. `docs/add-species-workflow.md` bleibt
 bis zu einer späteren, getesteten Migration die maßgebliche Bedienbeschreibung.
 
 ## G. Aktualisierung der globalen Datenbank
@@ -271,8 +271,8 @@ Projekt-Art. Nach einem Update können lediglich neue Prüfhinweise oder Verglei
 
 ## H. Verhältnis zum Multi-Computer-Support
 
-Phase 7.9 wird bewusst vor Phase 7.10 „Synology NAS, Mehrgeräte und automatisiertes Backup“ eingeordnet. In
-Teilphase 7.9.9 müssen vor dem weiteren Mehrgeräteausbau folgende Entscheidungen dokumentiert sein:
+Phase 9 wird bewusst vor Phase 10 „Synology NAS, Mehrgeräte und automatisiertes Backup“ eingeordnet. In
+Teilphase 9.9 müssen vor dem weiteren Mehrgeräteausbau folgende Entscheidungen dokumentiert sein:
 
 - Wird die globale Referenzdatenbank auf jedem Rechner separat installiert?
 - Wird eine geprüfte Datenbankversion vom NAS kopiert?
@@ -288,7 +288,7 @@ Projektdateien behandelt. Eigene Ergänzungen, Übersetzungen, Auswahlentscheidu
 projektbezogene Mappings sind dagegen unersetzbar und müssen in Backup, Restore und späteren Mehrgeräteabgleich
 einbezogen werden.
 
-Die bisherigen Entscheidungen aus `docs/multi-device-backup-plan.md` bleiben unverändert. Phase 7.9.9 ergänzt nur
+Die bisherigen Entscheidungen aus `docs/multi-device-backup-plan.md` bleiben unverändert. Phase 9.9 ergänzt nur
 die noch fehlende Übergabe für Referenzdaten und projektspezifische Taxonomieentscheidungen.
 
 ## I. Eigenes deutschsprachiges Lightroom-Classic-Plug-in
@@ -320,7 +320,7 @@ Zu prüfende Funktionen:
 - später optional Statistiken und Lifelist-Funktionen
 
 Noch offen bleibt, ob Lightroom direkt lesend auf eine lokale Datenbank, auf eine Explorer-API oder auf eine
-kompakte Exportdatei zugreift. Die Entscheidung folgt erst aus Phase 7.9.6 und muss Offline-Verhalten,
+kompakte Exportdatei zugreift. Die Entscheidung folgt erst aus Phase 9.6 und muss Offline-Verhalten,
 Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksichtigen.
 
 ## J. Sicherheits- und Qualitätsregeln
@@ -342,7 +342,7 @@ Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksi
 
 ## Geplante Teilphasen
 
-### 7.9.1 Anforderungen und Quellenvergleich
+### 9.1 Anforderungen und Quellenvergleich
 
 - Catalogue of Life, GBIF und begründete Alternativen mit einer einheitlichen Matrix vergleichen
 - Lizenz, Datenmodell, Umfang, Namen, IDs, Versionierung und Updateweg prüfen
@@ -351,7 +351,7 @@ Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksi
 
 Ergebnis: freigegebene Entscheidungsvorlage für Quelle beziehungsweise Quellenstrategie.
 
-### 7.9.2 Lokales Datenbank- und Importkonzept
+### 9.2 Lokales Datenbank- und Importkonzept
 
 - Speicherort und Pfadunabhängigkeit
 - Datenbankschema und Provenienzmodell
@@ -362,7 +362,7 @@ Ergebnis: freigegebene Entscheidungsvorlage für Quelle beziehungsweise Quellens
 
 Ergebnis: verbindlicher technischer Entwurf, noch ohne vollständigen Datenimport.
 
-### 7.9.3 Import-Prototyp mit begrenztem Testbestand
+### 9.3 Import-Prototyp mit begrenztem Testbestand
 
 - nur ein repräsentativer Testbestand verschiedener Artengruppen
 - wissenschaftliche Namen, Synonyme, Hierarchien und deutsche Namen prüfen
@@ -371,7 +371,7 @@ Ergebnis: verbindlicher technischer Entwurf, noch ohne vollständigen Datenimpor
 
 Ergebnis: Messbericht und Freigabe- oder Änderungsentscheidung für das Konzept.
 
-### 7.9.4 Explorer-Such- und Übernahmekonzept
+### 9.4 Explorer-Such- und Übernahmekonzept
 
 - Suche, Trefferliste und Mehrdeutigkeiten
 - Taxonomie- und Quellenvorschau
@@ -381,9 +381,9 @@ Ergebnis: Messbericht und Freigabe- oder Änderungsentscheidung für das Konzept
 
 Ergebnis: abgestimmter Bedien- und API-Entwurf vor Umbau des Neue-Art-Assistenten.
 
-### 7.9.5 Vollständiger lokaler Import und Aktualisierungsworkflow
+### 9.5 Vollständiger lokaler Import und Aktualisierungsworkflow
 
-- erst nach Freigabe von 7.9.1 bis 7.9.4
+- erst nach Freigabe von 9.1 bis 9.4
 - vollständiger Download und Import
 - Verifikation, Qualitätsgate und Suchindex
 - Updatefunktion, atomarer Austausch und Rollback
@@ -391,7 +391,7 @@ Ergebnis: abgestimmter Bedien- und API-Entwurf vor Umbau des Neue-Art-Assistente
 
 Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin getrennt von Git/Pages.
 
-### 7.9.6 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
+### 9.6 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 
 - technische SDK-Grenzen und unterstützte Lightroom-Versionen prüfen
 - Datenübertragungswege vergleichen
@@ -400,7 +400,7 @@ Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin 
 
 Ergebnis: dokumentierte Architekturentscheidung für das Plug-in.
 
-### 7.9.7 Deutsches Lightroom-Plug-in als MVP
+### 9.7 Deutsches Lightroom-Plug-in als MVP
 
 - deutsche Oberfläche
 - Artensuche und Taxonomievorschau
@@ -410,7 +410,7 @@ Ergebnis: dokumentierte Architekturentscheidung für das Plug-in.
 
 Ergebnis: getestetes MVP ohne konkurrierende Stammdatenpflege.
 
-### 7.9.8 Erweiterte Lightroom-Funktionen
+### 9.8 Erweiterte Lightroom-Funktionen
 
 Erst nach erfolgreichem MVP bewerten:
 
@@ -422,13 +422,13 @@ Erst nach erfolgreichem MVP bewerten:
 
 Ergebnis: einzeln priorisierte Erweiterungen statt eines unkontrollierten Funktionsblocks.
 
-### 7.9.9 Vorbereitung für Mehrgerätebetrieb
+### 9.9 Vorbereitung für Mehrgerätebetrieb
 
 - Datenbankverteilung und Versionsabgleich entscheiden
 - Sicherung eigener Ergänzungen und Mappings festlegen
 - reproduzierbare und unersetzbare Daten technisch trennen
 - Installations-, Restore- und Konfliktfälle dokumentieren
-- Übergabe an Phase 7.10 aktualisieren
+- Übergabe an Phase 10 aktualisieren
 
 Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 
@@ -466,10 +466,10 @@ Keine dieser Entscheidungen wird durch dieses Planungsdokument vorweggenommen.
 
 ## Definition of Done für die Planungsphase
 
-- Phase 7.9 ist vor der bisherigen NAS-/Mehrgerätephase in der Roadmap eingeordnet.
-- Die bisherige NAS-/Mehrgerätephase und ihre Unterpunkte sind ohne Inhaltsverlust auf 7.10 umnummeriert.
+- Phase 9 ist vor der NAS-/Mehrgerätephase in der Roadmap eingeordnet.
+- Die NAS-/Mehrgerätephase folgt als Phase 10.
 - Anforderungen, Kandidaten, Datenmodell, Integration, Update, Lightroom und Sicherheitsregeln sind dokumentiert.
-- Die Teilphasen 7.9.1 bis 7.9.9 besitzen klare Ergebnisse und Freigabepunkte.
+- Die Teilphasen 9.1 bis 9.9 besitzen klare Ergebnisse und Freigabepunkte.
 - Offene Entscheidungen sind ausdrücklich als offen gekennzeichnet.
 - Bestehender produktiver Artenbestand und globale Referenzdatenbank sind eindeutig getrennt.
 - Es wurden keine Programmdateien, produktiven Daten, Abhängigkeiten oder großen Datenbankdateien verändert.

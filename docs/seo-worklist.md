@@ -28,7 +28,6 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - `URL prüfen`: URL ist nicht sauber erreichbar oder strukturell auffällig.
 - `eingetragen, nicht öffentlich`: SEO-Werte sind laut Felix in Squarespace eingetragen, die Seite ist aber noch nicht frei erreichbar.
 - `umgesetzt, live prüfen`: In Squarespace laut Felix umgesetzt; nicht erneut bearbeiten, sondern nach Veröffentlichung/live Crawl prüfen.
-- `bewusst geparkt`: Inhalt ist im Datenbestand aktiv, soll aber noch nicht öffentlich sichtbar sein.
 
 ## Aktueller Kurzbefund
 
@@ -37,9 +36,8 @@ Das globale Squarespace-Seitentitelformat hängt den Website-Namen an Seiten an.
 - 44 von 44 per aktueller Sitemap gefundenen Wildlife-Artseiten passen live.
 - Die zwei vorher offenen Reise-Detailseiten `/reisen/2020-kreta/cretamaris` und `/reisen/2024-costarica/riobebedero` wurden am 2026-05-30 live nachgeprüft und passen jetzt.
 - `/reisen/2024-costarica` wurde am 2026-06-01 live nachgeprüft und passt jetzt.
-- `Kohlmeise` ist laut Felix bewusst geparkt und wird spaeter aktiviert, wenn die Art auf Instagram gepostet wird.
-  Der erwartete Pfad `/wildlife/heimische-tierwelt/parusmajor` liefert deshalb aktuell bewusst 404 und ist nicht als
-  aktiver SEO-Fehler zu behandeln.
+- Der fruehere Sonderstatus der `Kohlmeise` ist aufgehoben. Die Art wird wie alle anderen Arten im regulaeren
+  Live-Audit bewertet.
 - Der alte Pfad `/2019-griechenland` liefert am 2026-06-01 weiter 404; die funktionierende Zielseite ist
   `/reisen/2019-griechenland`. Felix hat den alten Bildlink entfernt; die Reiseübersicht enthält jetzt keinen
   `href="/2019-griechenland"` mehr.
@@ -228,12 +226,7 @@ aktuellen Stand akzeptiert.
 
 ## Bewusst geparkte aktive Arten
 
-Diese Arten sind in `species_list.json` aktiv, sollen aber bewusst noch nicht öffentlich sichtbar sein. Sie gelten nicht
-als aktueller SEO-Fehler, solange sie absichtlich geparkt sind.
-
-| Status | Erwartete URL | Art | Empfehlung |
-| --- | --- | --- | --- |
-| bewusst geparkt | [Link](https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/parusmajor) | Kohlmeise (Parus major) | Spaeter aktivieren, wenn Felix die Art auf Instagram postet. Bis dahin kein SEO-Handlungsbedarf. |
+Aktuell ist keine Art bewusst geparkt. Der fruehere Kohlmeise-Sonderstatus ist aufgehoben.
 
 ## Legacy-/Beacon-URLs außerhalb der Sitemap
 

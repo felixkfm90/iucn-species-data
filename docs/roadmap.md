@@ -77,8 +77,8 @@ Status: erledigt
   Worklist als `umgesetzt, live pruefen` markiert. `/reisen/2024-costarica` ist seit Felix' Freigabe am 2026-06-01
   oeffentlich erreichbar und passt live. Live-Audit vom 2026-05-30 plus Nachpruefung vom 2026-06-01: 118
   dokumentierte URLs/Seiten passen, alle 44 per aktueller Sitemap auffindbaren Wildlife-Artseiten passen live, und die
-  zuvor offenen Reise-Wortlautabweichungen sind erledigt. `Kohlmeise` ist laut Felix bewusst geparkt und wird erst
-  spaeter aktiviert, wenn die Art auf Instagram gepostet wird. Der alte Pfad `/2019-griechenland` liefert weiter 404,
+  zuvor offenen Reise-Wortlautabweichungen sind erledigt. Der fruehere Sonderstatus der `Kohlmeise` ist aufgehoben;
+  die Art wird in den regulaeren Live-Audits behandelt. Der alte Pfad `/2019-griechenland` liefert weiter 404,
   ist nach Felix' Korrektur aber nicht mehr aus der Reiseuebersicht verlinkt. Laut Felix existieren keine Altlinks;
   ein Redirect ist deshalb aktuell nicht noetig. Bild-Alt-Texte und optionale Bildtitel wurden am 2026-06-01 auditiert:
   `docs/image-alt-audit.md`. Nachpruefung vom 2026-06-14: Der Capri-Link auf `/reisen/2021-neapel` wurde von Felix
@@ -542,53 +542,17 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Seit 2026-06-27 meldet der direkte Browser-/Servermodus einen bereits laufenden Explorer verständlich mit der
   bestehenden URL statt mit einem rohen `EADDRINUSE`-Stacktrace abzubrechen.
 - 7.8.1 Projektkonsolidierungs-Audit vor NAS/Mehrgeraete: gestartet am 2026-06-28, siehe
-  `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer 7.10. Bereinigungskandidaten sind
+  `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker fuer die damals folgende Ausbauplanung.
+  Bereinigungskandidaten sind
   `Testlauf/`, `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten waren
   die Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
   Nach Felix' Freigabe wurden `Testlauf/`, `errors.log` und `species-explorer/pipeline-asset-backups/` geloescht.
   `node-fetch` wurde aus `package.json` und `package-lock.json` entfernt; ein danach gefundener Pipeline-Importfehler
   wurde durch Umstellung von `update.mjs` auf natives Node-`fetch` korrigiert. Node.js 18 oder neuer ist damit
   Voraussetzung. Tests, JS-/MJS-Syntax und lokaler Site-Audit sind danach erfolgreich.
-- 7.9 Globale Taxonomiedatenbank und Lightroom-Integration
-  Status: geplant. Details: `docs/global-taxonomy-lightroom-plan.md`. Ziel ist eine umfangreiche lokale Referenz-
-  und Suchdatenbank fuer
-  wissenschaftliche Namen, Synonyme, Taxonomiehierarchien und kontrolliert belegte deutsche Bezeichnungen. Der
-  bestehende produktive Artenbestand in `species_list.json` und `speciesData.json` bleibt davon getrennt und wird
-  weder still noch automatisch geaendert. Datenquelle, lokale Speichertechnik und Lightroom-Anbindung bleiben bis
-  zu den vorgesehenen Vergleichs- und Prototypphasen ausdruecklich offen. Die vollstaendige Referenzdatenbank wird
-  nicht in Git aufgenommen und nicht ueber GitHub Pages ausgeliefert. Vor technischer Umsetzung werden die P0-
-  Stabilisierungspunkte aus `docs/audits/2026-07-repository-audit.md` abgeschlossen.
-  Geplante Teilphasen:
-  - 7.9.1 Anforderungen und Quellenvergleich: Catalogue of Life, GBIF und begruendete Alternativen anhand einer
-    gemeinsamen Qualitaets-, Lizenz-, Versions- und Betriebs-Matrix vergleichen.
-  - 7.9.2 Lokales Datenbank- und Importkonzept: Speicherort, Schema, Suche, Provenienz, Import, Versionierung,
-    Rollback sowie Git-/Pages-Ausschluss festlegen; SQLite bleibt bis dahin nur ein Kandidat.
-  - 7.9.3 Import-Prototyp mit begrenztem Testbestand: Datenqualitaet, Synonyme, deutsche Namen, Suchleistung,
-    Speicherbedarf und Fehlerfaelle mit repraesentativen Taxa messen.
-  - 7.9.4 Explorer-Such- und Uebernahmekonzept: Treffervergleich, Quellenanzeige, Vorschau, Konfliktbehandlung,
-    Ablehnung und manuelles Fallback definieren, ohne den aktuellen Assistenten vorzeitig umzubauen.
-  - 7.9.5 Vollstaendiger lokaler Import und Aktualisierungsworkflow: erst nach Freigabe der vorherigen Ergebnisse;
-    mit Verifikation, atomarem Austausch, Fortschritt und Rollback.
-  - 7.9.6 Lightroom-SDK- und Metadaten-Machbarkeitspruefung: SDK-Grenzen, XMP-/Katalogverhalten,
-    Metadatenmodell und Datenuebertragungsweg vergleichen.
-  - 7.9.7 Deutsches Lightroom-Plug-in als MVP: deutsche Suche, Taxonomievorschau, stabile Projekt-Art-ID und
-    kontrollierte Metadatenuebernahme auf ausgewaehlte Fotos.
-  - 7.9.8 Erweiterte Lightroom-Funktionen: Referenzbilder, Sammlungen, Lifelist, Statistiken und Exporte erst nach
-    erfolgreichem MVP einzeln bewerten.
-  - 7.9.9 Vorbereitung fuer Mehrgeraetebetrieb: Verteilung und Versionsabgleich der reproduzierbaren Referenzdaten
-    sowie Sicherung eigener Uebersetzungen und Taxonomie-Mappings klaeren und an Phase 7.10 uebergeben.
-- 7.10 Synology NAS, Mehrgeraete und automatisiertes Backup: gestartet am 2026-06-28, siehe
-  `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt zentrale versionierte Wahrheit, die App
-  bearbeitet lokale Projektordner pfadunabhaengig, NAS wird als vollstaendiges ZIP-Restore-Backup genutzt und der
-  Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch statt in `main`. Der erste technische
-  Baustein ist `restore-start.cmd`: Nach dem Entpacken eines NAS-Backups prueft das Skript Node.js 18+, richtet die
-  Desktop-Verknuepfung ein und startet die App. Als NAS-Zielpfad wurde `W:\Website Datenbank Backup` festgelegt.
-  Der Backup-Kern ist als `scripts/nas-backup.ps1` mit `npm.cmd run backup:nas:dry-run` und
-  `npm.cmd run backup:nas` vorbereitet. In der Desktop-App ist `NAS-Backup erstellen` als manuelle Wartungsaktion im
-  Datenbank-Dialog eingebunden: Vorschau mit Zielpfad, Umfang und Rotation, Start per Klick, Fortschritt in Prozent,
-  Prozessausgabe, Abschlussmeldung und Schliesswarnung bei laufendem Backup. Der lokale Zielpfad kann in der App ueber
-  `Backup-Pfad einstellen` geaendert werden und liegt nicht versioniert in `species-explorer/local-settings.json`.
-- 7.10.1 GitHub-Pages-Stabilisierung: umgesetzt am 2026-07-04. Das Repository nutzt nicht mehr das
+- Die frueher hier eingeordneten Vorplanungen fuer Taxonomiedatenbank/Lightroom und Mehrgeraetebetrieb sind ohne
+  inhaltlichen Verlust in die eigenstaendigen Phasen 9 und 10 weiter unten sowie in deren Detailplaene verschoben.
+- 7.9 GitHub-Pages-Stabilisierung: umgesetzt am 2026-07-04. Das Repository nutzt nicht mehr das
   legacy Branch-Deployment aus `main:/`, sondern ein eigenes GitHub-Actions-Deployment unter
   `.github/workflows/pages.yml`. `scripts/prepare-pages-artifact.mjs` baut dafuer ein kontrolliertes `_site/`-Artefakt
   mit Frontend-JavaScript, JSON-Daten, `species-assets/`, `graphics/`, `docs/`, `README.md` und `.nojekyll`.
@@ -596,7 +560,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
   Seit 2026-07-05 werden Pages-Läufe in der gemeinsamen `pages`-Concurrency-Gruppe nicht mehr abgebrochen, sondern
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
-- 7.10.2 Repository-Grundlagenaudit vor Taxonomie: abgeschlossen am 2026-07-11, siehe
+- 7.10 Repository-Grundlagenaudit vor Taxonomie: P0 abgeschlossen, verbleibende technische Verbesserungen in Arbeit;
+  siehe
   `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
   konsistent; 24 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
   zwoelf als MP3 benannte WAV/PCM-Dateien wurden kontrolliert migriert, alle 48 vorhandenen Sounds zentral geprueft
@@ -622,19 +587,57 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `.gitattributes` erzwingt LF für plattformunabhängige Dateien, CRLF für Windows-Skripte und schützt Binärdateien
   vor Textkonvertierung. Stabilisierungspaket B wurde mit GitHub-Actions-Lauf `29265285193` veröffentlicht: Quality,
   Artefaktbau und Pages-Deployment waren beim ersten Versuch erfolgreich. Der anschließende Live-Audit über 120
-  Squarespace-Seiten sowie die geprüften GitHub-Pages-Dateien war fehlerfrei. Als nächster Funktionsschritt folgt
-  das Taxonomie-Redesign.
+  Squarespace-Seiten sowie die geprüften GitHub-Pages-Dateien war fehlerfrei. Vor dem nächsten Funktionsschritt
+  werden die verbleibenden Auditpunkte A4 sowie A8 bis A11 abgeschlossen; damit endet Phase 7.
   Der fünfte P0-Punkt wurde am 2026-07-13 mit 37 Syntaxprüfungen, 38 automatisierten Tests, 49 Arten, 263 geprüften
   Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
   GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.
+  Auditpunkt A4 wurde am 2026-07-13 begonnen. Die Verwaltung wiederherstellbarer Asset-Sicherungen, ihrer
+  Metadaten sowie der Aufbewahrung von Asset-, Eingabelisten- und Pipeline-Sicherungen liegt jetzt im eigenständigen
+  Modul `species-explorer/asset-backups.mjs`. Drei direkte Modultests ergänzen die bestehenden API-Tests; der
+  gemeinsame Testeinstieg umfasst damit 45 Tests. Weitere Modulgrenzen werden weiterhin schrittweise und ohne
+  Big-Bang-Umbau gezogen.
 
-## Phase 8 - Ausbau
+## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
+
+Status: geplant
+
+- Taxonomie-Pyramide nach `docs/taxonomy-redesign-handoff.md` als dynamische, responsive und barrierearme
+  HTML-/CSS-Komponente modernisieren.
+- Wissenschaftliche Rohwerte beibehalten und deutsche Anzeigenamen zentral übersetzen.
+- Sieben und acht Taxonomiestufen unterstützen; `Unterstamm` nur bei einem tatsächlich vorhandenen Datenwert
+  anzeigen.
+- Artporträts auf den Squarespace-Artseiten einbinden.
+- Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
+- Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche
+  festlegen, daraus lokal das finale MP3 erzeugen und das Spektrogramm konsistent neu aufbauen.
+
+Phase 8 ist erst abgeschlossen, wenn Taxonomie-Pyramide und diese Funktionswünsche umgesetzt, getestet,
+dokumentiert und veröffentlicht sind. Der frühere Kohlmeisen-Wartepunkt ist überholt und kein Roadmap-Punkt mehr.
+
+## Phase 9 - Globale Taxonomiedatenbank und Lightroom
+
+Status: geplant
+
+Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
+lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
+Aktualisierungsworkflow, Lightroom-Machbarkeitsprüfung, deutsches Lightroom-Plug-in als MVP, optionale
+Lightroom-Erweiterungen und die Übergabe der Datenverteilung an Phase 10.
+
+## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
+
+Status: teilweise vorbereitet
+
+Die verbindliche Detailplanung steht in `docs/multi-device-backup-plan.md`. Vorhanden sind der manuelle NAS-Backup-
+und Restore-Kern. Offen bleiben insbesondere automatische App-Aktualisierung, Benutzer-/Geräteidentität,
+Bearbeitungssperre, Konflikt- und Wiederherstellungsabläufe, geplante Sicherungsautomatik und ein vollständiger
+Installer für weitere Computer.
+
+## Phase 11 - Weitere Erweiterungen
 
 Status: geplant
 
 - Affiliate-Links auf relevanten Seiten vorbereiten und kennzeichnen.
-- Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch pruefen.
-- Rechtliche Folgepruefung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
-  durchfuehren.
-- Optional: Soundzuschnitt für manuelle oder automatisch gefundene Tierstimmen planen. Ziel wäre Start- und Endpunkt
-  im Spektrogramm zu setzen und daraus lokal ein finales MP3 samt neuem Spektrogramm zu erzeugen.
+- Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch prüfen.
+- Rechtliche Folgeprüfung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
+  durchführen.

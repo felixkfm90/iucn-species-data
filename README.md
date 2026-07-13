@@ -534,8 +534,8 @@ Neue Arten werden nicht automatisch vorgeschlagen. Ausgewaehlte Arten koennen ko
 SEO- und KI-Findbarkeit werden in `docs/seo-worklist.md` gepflegt. Die Datei basiert auf einem Live-Sitemap-Audit und
 enthaelt je URL den aktuellen SEO-Titel, die aktuelle Meta-Beschreibung, einen konsistenten Vorschlag und einen Status.
 Beim Live-Audit vom 2026-05-30 passen alle per Sitemap auffindbaren Wildlife-Artseiten. Offene SEO-Restpunkte sind in
-der Worklist markiert. `Kohlmeise` ist bewusst geparkt und wird spaeter aktiviert, wenn Felix die Art auf Instagram
-postet. Die Costa-Rica-Uebersicht, Graureiher-Artseite und korrigierte Griechenland-Verlinkung wurden am 2026-06-01
+der Worklist markiert. Der fruehere Sonderstatus der `Kohlmeise` ist aufgehoben; die Art wird wie alle anderen Arten
+in den regulaeren Live-Audits behandelt. Die Costa-Rica-Uebersicht, Graureiher-Artseite und korrigierte Griechenland-Verlinkung wurden am 2026-06-01
 live nachgeprueft und passen. Am 2026-06-14 wurde ein Vollcrawl der internen Links durchgefuehrt; der gefundene
 Capri-Linkfehler wurde von Felix korrigiert und live nachgeprueft. Details stehen in `docs/seo-worklist.md`.
 Bild-Alt-Texte und optionale Bildtitel wurden in `docs/image-alt-audit.md` auditiert. Nachpruefung vom 2026-06-15:
@@ -692,16 +692,14 @@ Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 
-Phase 7.9 plant eine globale lokale Taxonomie-Referenzdatenbank und ein spaeteres eigenes deutschsprachiges
-Lightroom-Classic-Plug-in. Catalogue of Life, GBIF und begruendete Alternativen werden zuerst ergebnisoffen
-verglichen. Der produktive Artenbestand bleibt getrennt; eine Referenzdatenbank darf weder `species_list.json` noch
-`speciesData.json` still veraendern und wird nicht ueber Git oder GitHub Pages verteilt. Details:
-`docs/global-taxonomy-lightroom-plan.md`.
+Die verbleibenden technischen Verbesserungen aus dem Repository-Audit schliessen Phase 7 ab. Danach folgen in der
+verbindlichen Reihenfolge Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits und Soundeditor, Phase 9 mit globaler
+lokaler Taxonomie-Referenzdatenbank und Lightroom-Integration, Phase 10 mit Mehrgeraetebetrieb, automatischen
+Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und Abschlusskriterien stehen in
+`docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md` und `docs/multi-device-backup-plan.md`.
 
-Die Synology-NAS-Migration beziehungsweise Spiegelung, der Mehrgeraetebetrieb und automatisierte Restore-Backups
-sind durch die neue Roadmap-Reihenfolge Phase 7.10. Vor Phase 7.10 wurde ein Projektkonsolidierungs-Audit umgesetzt:
-`docs/project-consolidation-audit.md`. Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf
-natives Node-`fetch` umgestellt. Phase 8 bleibt fuer Ausbau mit Affiliate/Shop/rechtlicher Folgepruefung geplant.
+Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
+Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.
 
 Vor dem Taxonomie-Redesign wurde der aktuelle Gesamtstand am 2026-07-11 erneut nicht-destruktiv geprueft. Der
 priorisierte Befund mit Daten-, Code-, Datei-, Dokumentations-, Sicherheits- und CI-Analyse steht unter
@@ -743,7 +741,13 @@ plattformunabhängige Textdateien, CRLF für Windows-Skripte und unveränderte B
 Stabilisierungspaket B wurde mit dem beim ersten Versuch erfolgreichen GitHub-Actions-Lauf `29265285193` und einem
 fehlerfreien Live-Audit über 120 Squarespace-Sitemapseiten abgeschlossen.
 
-Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
+Auditpunkt A4 wird seit 2026-07-13 schrittweise und verhaltensneutral umgesetzt. Der erste Modulschnitt verschiebt
+die Verwaltung wiederherstellbarer Asset-Sicherungen sowie die Aufbewahrung von Eingabelisten- und Pipeline-
+Sicherungen aus `species-explorer/server.mjs` nach `species-explorer/asset-backups.mjs`. Drei direkte Modultests
+ergaenzen die bestehenden Integrationspruefungen; der gemeinsame Testeinstieg umfasst jetzt 45 Tests. A4 bleibt bis
+zur weiteren Trennung von Modell-/Validierungslogik, HTTP/Routing und Oberflaeche offen.
+
+Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.
 

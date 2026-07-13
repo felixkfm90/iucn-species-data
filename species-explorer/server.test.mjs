@@ -2262,6 +2262,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     packageSource,
     gitignoreSource,
     assetOverrides,
+    assetBackupsSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
@@ -2278,6 +2279,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../.gitignore", import.meta.url), "utf8"),
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
+    readFile(new URL("./asset-backups.mjs", import.meta.url), "utf8"),
   ]);
 
   assert.match(appSource, /class="map-image"/);
@@ -2515,9 +2517,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function rejectCurrentSoundAsset\(id\)/);
   assert.match(serverSource, /Reject sound source for/);
   assert.match(serverSource, /async function publishSoundAssetChanges\(species,/);
-  assert.match(serverSource, /ASSET_BACKUP_RETENTION_COUNT = 1/);
-  assert.match(serverSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
-  assert.match(serverSource, /async function writeManagedAssetBackup/);
+  assert.match(assetBackupsSource, /ASSET_BACKUP_RETENTION_COUNT = 1/);
+  assert.match(assetBackupsSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
+  assert.match(assetBackupsSource, /async function writeManagedAssetBackup/);
   assert.match(serverSource, /async function restoreSpeciesAsset\(id, assetType\)/);
   assert.match(serverSource, /restoreSpeciesAsset\(id, "map"\)/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);

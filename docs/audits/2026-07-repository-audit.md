@@ -255,6 +255,19 @@ Kein Big-Bang-Umbau: zuerst Charakterisierungstests ergänzen, dann Modul für M
 Explorer-Zerlegung muss das Taxonomie-Frontend nicht blockieren; neue Funktionen sollten den Monolithen aber nicht
 weiter vergrößern.
 
+Umsetzungsstand am 2026-07-13:
+
+- Der erste verhaltensneutrale Modulschnitt ist abgeschlossen. `species-explorer/asset-backups.mjs` bündelt
+  Dateinamensregeln, Metadaten, Schreiben, Auffinden und Aufbewahrung wiederherstellbarer Asset-Sicherungen sowie
+  die begrenzte Aufbewahrung von Eingabelistenbackups und Pipeline-Logs.
+- `species-explorer/server.mjs` verwendet ausschließlich dieses Modul; rund 250 Zeilen Sicherungsimplementierung
+  wurden aus dem Server entfernt.
+- Drei direkte Charakterisierungstests prüfen Überschreiben des letzten Assetstands, Metadaten und
+  Wiederauffindbarkeit, Retention sowie den Schutz fremder Dateien. Die bestehenden 24 Explorer-Integrationstests
+  bleiben unverändert erfolgreich.
+- A4 bleibt offen. Als nächste sichere Grenzen folgen Modell-/Validierungslogik, HTTP/Routing und anschließend die
+  großen Oberflächenbereiche. Jeder Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
+
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 
 **Erledigt am 2026-07-13.**
