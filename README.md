@@ -42,6 +42,9 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `scripts/generate-spectrograms.mjs`: Generator fuer optionale Tierstimmen-Spektrogramme unter
   `species-assets/<SafeName>/spectrogram.webp`
 - `scripts/prepare-pages-artifact.mjs`: baut das kontrollierte GitHub-Pages-Artefakt unter `_site/`
+- `scripts/check-syntax.mjs`: parserbasierter Syntaxcheck für alle versionierten JavaScript-/MJS-Quellen
+- `scripts/validate-project-state.mjs`: verbindlicher lokaler Daten-, Report-, Override- und Zuordnungscheck
+- `scripts/validate-pages-artifact.mjs`: vergleicht `_site/` exakt mit der öffentlichen Dateifreigabe
 - `.github/workflows/pages.yml`: eigenes GitHub-Actions-Deployment fuer GitHub Pages
 - `species-explorer/`: lokale Web-App fuer Arten, Daten, Karten, Sounds, Credits, Validierung und kontrollierte
   Pflege manueller Artenfelder
@@ -69,6 +72,7 @@ Versionierte Referenzen liegen unter:
 - `docs/audio-format-validation.md`
 - `docs/media-asset-validation.md`
 - `docs/explorer-api-security.md`
+- `docs/ci-quality-gate.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
@@ -106,6 +110,11 @@ benoetigten statischen Dateien:
 - `docs/`
 - `README.md`
 - `.nojekyll`
+
+Vor dem Build muss der getrennte Job `Quality checks` erfolgreich sein. Er installiert den gesperrten
+Abhängigkeitsstand, prüft Syntax, alle Testgruppen, Audio-/Medienformate, Daten-/Reportkonsistenz und den lokalen
+Monatsaudit. Der Build prüft anschließend die öffentliche Dateifreigabe; Photoshop-Designquellen, Sicherungen und
+unbekannte Assetdateien gelangen nicht in `_site/`. Details: `docs/ci-quality-gate.md`.
 
 Die GitHub-Pages-Einstellung muss auf `Source: GitHub Actions` stehen. Falls GitHub wieder auf Branch-Deployment
 zeigt, laeuft erneut der alte Standardprozess ueber `main:/` und kann beim Deploy-Schritt sporadisch fehlschlagen.
@@ -177,6 +186,12 @@ Nur lokaler Repo-/Assetcheck ohne Netzwerk:
 
 ```bash
 npm.cmd run --silent audit:site -- --skip-live --skip-pages
+```
+
+Vollständiges lokales CI-Qualitätsgate:
+
+```bash
+npm.cmd run --silent quality:ci
 ```
 
 Der Audit-Befehl schreibt keine Datei, sondern gibt JSON aus. Zwischenergebnisse gehoeren bei Bedarf nach
@@ -708,8 +723,12 @@ neue Sitzung, schützt alle POST-Routen zentral durch Sitzungs-, Host-, Same-Ori
 JSON-Content-Type-Prüfungen und verlangt für Asset-Löschen/-Wiederherstellen zusätzliche Einmaltokens. Der
 Kartenimport blockiert nach DNS-Auflösung private, lokale, Link-Local- und Metadatenziele und kontrolliert jedes
 Weiterleitungsziel; Dateipfade werden über echte Verzeichnisgrenzen geprüft. Details und negative Integrationstests:
-`docs/explorer-api-security.md`. Offen bleibt der vollständige CI-Quality-Job mit Syntax-, Test- und Datenaudit vor
-dem Pages-Deployment.
+`docs/explorer-api-security.md`. Der vierte P0-Stabilisierungspunkt wurde am 2026-07-13 abgeschlossen: Ein eigener
+Quality-Job führt vor dem Pages-Build Installation, Syntaxprüfung, den gemeinsamen `npm test`-Einstieg,
+Audio-/Medienvalidierung sowie Projekt- und lokalen Datenaudit aus. Erst danach werden das kontrollierte Artefakt
+gebaut, seine erlaubten Pfade geprüft und das Deployment freigegeben. Die öffentliche Photoshop-Designquelle wurde
+aus `_site/` entfernt; der aktuelle Stand umfasst 364 Dateien mit 89,72 MiB. Details:
+`docs/ci-quality-gate.md`.
 
 Phase 7.10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

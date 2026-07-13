@@ -1,6 +1,7 @@
 {
   "main": "species-explorer/desktop/main.mjs",
   "scripts": {
+    "audit:project": "node scripts/validate-project-state.mjs",
     "audio:check": "node scripts/migrate-audio-assets.mjs --check",
     "audio:migrate": "node scripts/migrate-audio-assets.mjs --write",
     "assets:check": "node scripts/validate-media-assets.mjs",
@@ -8,13 +9,18 @@
     "backup:nas": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1",
     "backup:nas:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -DryRun",
     "cleanup:species": "node scripts/species-cleanup.mjs",
+    "check:syntax": "node --experimental-vm-modules --no-warnings scripts/check-syntax.mjs",
     "generate:spectrograms": "node scripts/generate-spectrograms.mjs",
     "pages:prepare": "node scripts/prepare-pages-artifact.mjs",
+    "pages:check": "node scripts/validate-pages-artifact.mjs",
+    "quality:ci": "npm run --silent check:syntax && npm run --silent test && npm run --silent audio:check && npm run --silent assets:check && npm run --silent audit:project && npm run --silent audit:site -- --skip-live --skip-pages",
     "species:desktop": "electron species-explorer/desktop/main.mjs",
     "species:desktop:shortcut": "powershell -NoProfile -ExecutionPolicy Bypass -File species-explorer/desktop/install-shortcut.ps1",
     "species:explorer": "node species-explorer/server.mjs",
+    "test": "npm run --silent test:audio && npm run --silent test:media && npm run --silent test:pages && npm run --silent test:security && npm run --silent test:explorer",
     "test:audio": "node --test --test-isolation=none scripts/audio-format.test.mjs",
     "test:media": "node --test --test-isolation=none scripts/validate-media-assets.test.mjs",
+    "test:pages": "node --test --test-isolation=none scripts/pages-artifact-policy.test.mjs",
     "test:security": "node --test --test-isolation=none species-explorer/request-security.test.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
   },

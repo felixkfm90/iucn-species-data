@@ -1,5 +1,6 @@
 import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { listPublishableSourceFiles } from "./pages-artifact-policy.mjs";
 
 const root = process.cwd();
 const outArg = process.argv.find((arg) => arg.startsWith("--out="));
@@ -25,46 +26,6 @@ const absoluteMaxBytes = mibToBytes(
   absoluteMaxMibArg?.slice("--absolute-max-mib=".length) ?? 500,
   "Absolutes Pages-Notfalllimit",
 );
-
-const requiredFiles = [
-  "species-core.js",
-  "species-info.js",
-  "species-taxonomy.js",
-  "species-status.js",
-  "species-sound.js",
-  "map-loader.js",
-  "search.js",
-  "sort.js",
-  "lightbox-zoom.js",
-  "speciesData.json",
-  "species_list.json",
-  "fehlende_elemente_report.json",
-  "lastSavedAssessmentId.json",
-  "species-assets-overrides.json",
-  "README.md",
-];
-
-const requiredDirs = [
-  "species-assets",
-  "graphics",
-  "docs",
-];
-
-async function exists(source) {
-  try {
-    await stat(source);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function assertPresent(relativePath) {
-  const fullPath = path.join(root, relativePath);
-  if (!(await exists(fullPath))) {
-    throw new Error(`Pages-Artefakt kann nicht gebaut werden: ${relativePath} fehlt.`);
-  }
-}
 
 async function copyEntry(relativePath) {
   const source = path.join(root, relativePath);
@@ -121,9 +82,7 @@ function mibToBytes(value, label) {
   return Math.round(parsed * 1024 * 1024);
 }
 
-for (const entry of [...requiredFiles, ...requiredDirs]) {
-  await assertPresent(entry);
-}
+const publishableSourceFiles = await listPublishableSourceFiles(root);
 
 const speciesList = JSON.parse(await readFile(path.join(root, "species_list.json"), "utf8"));
 if (!Array.isArray(speciesList) || speciesList.length < 1) {
@@ -139,11 +98,7 @@ if (outDir === root || !outDir.startsWith(root + path.sep)) {
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
-for (const entry of requiredFiles) {
-  await copyEntry(entry);
-}
-
-for (const entry of requiredDirs) {
+for (const entry of publishableSourceFiles) {
   await copyEntry(entry);
 }
 

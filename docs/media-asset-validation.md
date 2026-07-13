@@ -62,16 +62,14 @@ werden aktuelle Artefaktgröße und größte Dateien geprüft. Ist eine fachlich
 die offen dokumentierten Faktoren kontrolliert geändert werden. Lokale Daten werden bei einer Überschreitung weder
 verändert noch gelöscht.
 
-Der Stand vom 2026-07-12 umfasst 364 Dateien mit 89,86 MiB bei einem automatisch berechneten Budget von 134,5 MiB.
+Der Stand vom 2026-07-13 umfasst 364 Dateien mit 89,72 MiB bei einem automatisch berechneten Budget von 134,5 MiB.
 Die geplante globale Taxonomiereferenz aus Phase 7.9 bleibt vollständig außerhalb von Git und GitHub Pages und
 belastet dieses Budget nicht.
 
 ## CI-Ablauf
 
-Der Pages-Build verwendet Node.js 24 und führt vor Artefaktbau und Upload `assets:check` aus. Danach baut
-`pages:prepare` das Artefakt mit dem expliziten dynamischen Budgetmodell. Ein Medien- oder Größenfehler verhindert
-daher den Upload und den Deploy-Job.
-
-Der folgende Auditpunkt ergänzt darüber hinaus einen vollständigen Quality-Job mit Installation, Syntaxprüfung,
-Explorer-/Medientests und lokalem Datenaudit. Diese umfassendere CI-Barriere bleibt getrennt, damit ihre Fehler
-eindeutig vom hier abgeschlossenen Medien-/Größenschutz unterscheidbar sind.
+Der Pages-Workflow verwendet Node.js 24. Der getrennte Quality-Job führt `assets:check` zusammen mit Syntaxprüfung,
+allen Testgruppen, Audioformatprüfung und Datenaudit aus. Erst danach baut `pages:prepare` das Artefakt mit dem
+expliziten dynamischen Budgetmodell; `pages:check` prüft anschließend dessen vollständige öffentliche Pfadliste.
+Ein Qualitäts-, Medien-, Größen- oder Pfadfehler verhindert daher Artefakt-Upload und Deploy-Job. Details zum
+Gesamtablauf stehen in `docs/ci-quality-gate.md`.

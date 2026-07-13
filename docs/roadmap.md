@@ -609,9 +609,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen: Der localhost-Explorer schützt alle schreibenden
   Endpunkte durch Server-Sitzung, Host-/Same-Origin-/Fetch-Site-/Content-Type-Prüfung, Asset-Einmaltokens,
   öffentlichen URL-Zielschutz und echte Dateipfadgrenzen. 24 Explorer- und 3 Sicherheitstests bestehen; siehe
-  `docs/explorer-api-security.md`. Vor dem Taxonomie-Redesign wird noch ein vollständiger CI-Quality-Job mit
-  Syntax-, Test- und Datenprüfungen eingeführt. Danach werden
-  aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in getrennten Schritten konsolidiert.
+  `docs/explorer-api-security.md`. Der vierte P0-Stabilisierungspunkt wurde am 2026-07-13 abgeschlossen: Ein
+  vorgelagerter GitHub-Actions-Quality-Job führt Installation, Syntaxprüfung, alle Testgruppen, Audio-/Mediencheck
+  sowie Projekt- und lokalen Datenaudit aus. Der Pages-Build startet nur danach und validiert zusätzlich jeden
+  öffentlichen Artefaktpfad gegen eine gemeinsame Freigabeliste. Der aktuelle Stand umfasst 364 Dateien mit
+  89,72 MiB; Photoshop-Designquellen bleiben im Repository, aber außerhalb von `_site/`. Details:
+  `docs/ci-quality-gate.md`. Danach werden aktuelle Dokumentation, verwaltete Temp-Retention und Zeilenenden in
+  getrennten Schritten konsolidiert.
 
 ## Phase 8 - Ausbau
 

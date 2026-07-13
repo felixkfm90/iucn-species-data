@@ -209,37 +209,26 @@ Umsetzung am 2026-07-12:
 - 24 Explorer-Integrationstests und 3 dedizierte Sicherheitstests bestehen. Die Bedienung bleibt für Browser- und
   Desktop-App transparent; Squarespace ist nicht betroffen. Details: `docs/explorer-api-security.md`.
 
-### A3. GitHub Pages besitzt noch keine vollständige Qualitätsbarriere vor dem Deployment
+### A3. GitHub Pages besitzt eine vollständige Qualitätsbarriere vor dem Deployment
 
-Der Workflow `.github/workflows/pages.yml` wurde während der Stabilisierung bereits teilweise gehärtet und führt
-aktuell diese Schritte aus:
+**Erledigt am 2026-07-13.**
 
-1. Checkout
-2. Node.js 24 einrichten
-3. Medienformate und feste Einzelgrößen prüfen
-4. Pages-Konfiguration
-5. kontrolliertes Artefakt mit dynamischem Gesamtbudget bauen
-6. Artefakt-Upload
-7. Pages-Deployment
+Der Workflow `.github/workflows/pages.yml` besitzt jetzt drei strikt abhängige Jobs:
 
-Noch nicht enthalten sind:
+1. `Quality checks`: Node.js 24, `npm ci --ignore-scripts`, Syntaxprüfung, gemeinsamer `npm test`-Einstieg,
+   Audio-/Medienvalidator, Projektzustandsprüfung und lokaler Monatsaudit;
+2. `Build Pages artifact`: kontrollierter Artefaktbau mit dynamischem Größenbudget und exakter Pfadprüfung;
+3. `Deploy to GitHub Pages`: nur nach erfolgreichem Quality- und Build-Job.
 
-- `npm ci`;
-- Syntaxprüfungen;
-- Explorer-Tests;
-- lokaler Daten-/Reportaudit;
-- Prüfung auf unerwartete öffentliche Dateien.
+`scripts/validate-project-state.mjs` nutzt das Explorer-Modell als fachliche Quelle und ergänzt Duplikat-, Override-
+und Assessment-Prüfungen. Bewusst fehlende Sounds und abweichende Assessment-Zuordnungen manuell gepflegter Karten
+bleiben fachlich zulässig. `scripts/pages-artifact-policy.mjs` wird gemeinsam von Builder und Prüfer verwendet;
+zusätzliche, fehlende oder symbolisch verlinkte Dateien führen vor dem Upload zum Fehler. Die Photoshop-Designquelle
+unter `graphics/` bleibt versioniert, wird aber nicht mehr veröffentlicht.
 
-Dadurch kann ein formal baubares, aber fachlich oder technisch ungeeignetes Paket bis zum Pages-Sync gelangen.
-
-Empfohlene Behebung:
-
-- separaten `quality`-Job mit festgelegter Node-LTS-Version einführen;
-- `npm ci`, Syntaxcheck, Explorer-Tests und lokalen Audit ausführen;
-- einen neuen Assetvalidator für Audio-, Karten-, Portrait- und Spektrogrammformate ausführen;
-- erst danach das Pages-Artefakt erzeugen;
-- Größe und erlaubte Pfade des Artefakts prüfen;
-- Deployment ausschließlich von einem erfolgreichen Quality-/Build-Job abhängig machen.
+Der lokale Teststand umfasst 37 Syntaxdateien, 38 automatisierte Tests, 48 geprüfte MP3-Dateien, 263 geprüfte
+Medien sowie 49 konsistente Arten. Das Pages-Artefakt enthält 364 freigegebene Dateien mit 89,72 MiB bei einem
+dynamischen Budget von 134,5 MiB. Details: `docs/ci-quality-gate.md`.
 
 ## P1 – Stabilisierung direkt danach
 
@@ -432,7 +421,7 @@ entfernt. Es gibt keinen fachlich abgeleiteten Fallback.
 2. Medienformatvalidator und Artefaktgrößenbudget ergänzen. **Erledigt 2026-07-12.**
 3. localhost-Schreibserver durch Sitzungstoken, Same-Origin-/Host-Prüfung und URL-Zielschutz härten.
    **Erledigt 2026-07-12.**
-4. CI-Quality-Job vor den Pages-Build setzen.
+4. CI-Quality-Job vor den Pages-Build setzen. **Erledigt 2026-07-13.**
 5. Vollständigen Test-, Audit- und Pages-Lauf durchführen.
 
 ### Stabilisierungspaket B – direkt danach
@@ -458,6 +447,7 @@ Die Grundlage ist bereit, wenn:
 - alle schreibenden localhost-Routen eine einheitliche Browser-/Sitzungsgrenze besitzen;
   **erfüllt 2026-07-12**
 - CI Syntax, Explorer-Tests, lokalen Audit und Assetvalidator vor dem Deployment ausführt;
+  **erfüllt 2026-07-13**
 - der aktuelle Dokumentationsstand mit dem maschinenlesbaren Report übereinstimmt;
 - verwaltete Staging-/Trash-Reste kontrolliert bereinigt sind;
 - ein vollständiger lokaler Lauf, ein erfolgreicher Pages-Deploy und der Squarespace-Sichttest abgeschlossen sind.

@@ -225,6 +225,12 @@ Nur lokaler Repo-/Assetcheck ohne Netzwerk:
 npm.cmd run --silent audit:site -- --skip-live --skip-pages
 ```
 
+Vollständiges lokales CI-Qualitätsgate:
+
+```bash
+npm.cmd run --silent quality:ci
+```
+
 Das Audit-Skript `scripts/monthly-site-audit.mjs` schreibt keine Datei, sondern gibt JSON auf stdout aus. Temporare
 Zwischenergebnisse gehoeren nach `Testlauf/` und werden nach Abschluss geloescht oder als zusammengefasster Bericht
 unter `docs/audits/` dokumentiert.
@@ -696,9 +702,12 @@ Aktuelle Planung:
   Host, Same-Origin, Fetch-Site und JSON-Content-Type geprüft. Asset-Löschen und -Wiederherstellen verwenden
   zusätzliche Einmaltokens, Karten-URLs werden einschließlich Weiterleitungen nach DNS-Auflösung gegen lokale und
   private Ziele geprüft und Dateipfade nutzen echte Verzeichnisgrenzen. 24 Explorer- und 3 dedizierte
-  Sicherheitstests bestehen; Details: `docs/explorer-api-security.md`. Vor groesseren Erweiterungen bleibt ein
-  vollständiger CI-Quality-Job mit Syntax-, Test- und Datenaudit einzuführen. Danach folgen
-  Dokumentationskonsolidierung,
+  Sicherheitstests bestehen; Details: `docs/explorer-api-security.md`. Der vierte P0-Stabilisierungspunkt wurde am
+  2026-07-13 abgeschlossen: Der getrennte GitHub-Actions-Job `Quality checks` führt `npm ci`, einen parserbasierten
+  Syntaxcheck, den gemeinsamen `npm test`-Einstieg, Audio-/Medienvalidierung sowie Projekt- und lokalen Datenaudit
+  aus. Der Pages-Build hängt davon ab und vergleicht `_site/` anschließend exakt mit einer zentralen öffentlichen
+  Dateifreigabe; Designquellen, Sicherungen und unbekannte Assetdateien werden abgewiesen. Der aktuelle Stand umfasst
+  364 öffentliche Dateien mit 89,72 MiB. Details: `docs/ci-quality-gate.md`. Danach folgen Dokumentationskonsolidierung,
   Temp-Retention und Zeilenendennormalisierung als getrennte Stabilisierungsschritte.
 - Phase 8 - Ausbau:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung.
