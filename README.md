@@ -762,8 +762,15 @@ aus `app.js` herausgelöst. Vier direkte Frontend-Grundlagentests erhöhen den g
 Größen-, Datums-, IUCN-, Asset- und Lizenzformatierung, Datenzeilen sowie versionsbasierte Medien-URLs. Fünf
 direkte Präsentationstests erhöhen den gemeinsamen Testeinstieg auf 68 Tests; `app.js` sank dabei weiter auf
 5.389 Zeilen. Die lokale Explorer-Anbindung lädt das Modul vor `app.js`; Squarespace-Module, Footer-Versionen und
-Custom CSS wurden durch diesen lokalen A4-Schnitt nicht verändert. A4 bleibt für die weitere schrittweise Trennung
-der fachlichen Oberflächenbereiche offen.
+Custom CSS wurden durch diesen lokalen A4-Schnitt nicht verändert. Der siebte Schnitt führt
+`species-explorer/public/app-measurements.js` als gemeinsame Messwertgrenze für Größe, Gewicht und
+Lebenserwartung ein. Neue-Art-Assistent und allgemeiner Bearbeitungsdialog verwenden jetzt dieselben Einheiten-,
+Parsing-, Singular-/Plural-, Formatierungs- und Formularhelfer; die zuvor doppelte Neue-Art-Implementierung ist
+entfallen. Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf 73 Tests, und `app.js` sank weiter
+auf 5.241 Zeilen. Dabei wurde zugleich die Einheitenentfernung längenbasiert korrigiert, sodass `kg` nicht mehr
+fälschlich als `k` stehen bleibt, wenn `g` ebenfalls zulässig ist. Das Modul wird lokal nach der Präsentationsgrenze
+und vor `app.js` geladen. Squarespace-Module, Footer-Versionen und Custom CSS blieben auch in diesem Schnitt
+unverändert. A4 bleibt für die weitere schrittweise Trennung der fachlichen Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

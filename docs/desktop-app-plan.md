@@ -41,13 +41,16 @@ species-explorer/
     app.css
     app-foundation.js
     app-presentation.js
+    app-measurements.js
     app.js
 ```
 
 Die inzwischen umgesetzte Browsergrenze trennt `app-foundation.js` für Zustand, Sitzung und API-Zugriffe von
 `app-presentation.js` für zustandsfreie, direkt getestete Formatierungs-, IUCN-, Lizenz-, Datenzeilen- und
-Medien-URL-Helfer. `app.js` koordiniert weiterhin DOM-Ereignisse, Dialoge, Player und fachliche Abläufe. Die
-Reihenfolge im HTML ist verbindlich: Foundation und Presentation müssen vor `app.js` geladen werden.
+Medien-URL-Helfer. `app-measurements.js` ergänzt die gemeinsame, direkt getestete Einheiten-, Parsing-,
+Formatierungs- und Formulargrenze für Größe, Gewicht und Lebenserwartung. `app.js` koordiniert weiterhin
+DOM-Ereignisse, Dialoge, Player und fachliche Abläufe. Die Reihenfolge im HTML ist verbindlich: Foundation,
+Presentation und Measurements müssen in dieser Reihenfolge vor `app.js` geladen werden.
 
 Moeglicher npm-Befehl:
 
@@ -216,10 +219,12 @@ species-explorer/
     app.css
     app-foundation.js
     app-presentation.js
+    app-measurements.js
     filter.js
     app.js
   app-foundation.test.mjs
   app-presentation.test.mjs
+  app-measurements.test.mjs
 ```
 
 API:

@@ -346,6 +346,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(presentationResponse.headers.get("content-type"), /javascript/);
   assert.match(await presentationResponse.text(), /formatSexSpecificDataValue/);
 
+  const measurementsResponse = await fetch(`${baseUrl}/app-measurements.js`);
+  assert.equal(measurementsResponse.status, 200);
+  assert.match(measurementsResponse.headers.get("content-type"), /javascript/);
+  assert.match(await measurementsResponse.text(), /parseManualMeasurement/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2260,6 +2265,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     appFoundationSource,
     appPresentationSource,
+    appMeasurementsSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2282,6 +2288,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2305,14 +2312,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
   assert.match(appPresentationSource, /function formatSexSpecificDataValue\(value\)/);
   assert.match(appPresentationSource, /function versionedAssetUrl\(/);
+  assert.match(appMeasurementsSource, /function parseManualMeasurement\(/);
+  assert.match(appMeasurementsSource, /function renderManualMeasurementEditor\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
+  assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2379,8 +2389,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /placeholder="80-110"/);
   assert.match(htmlSource, /placeholder="3"/);
   assert.doesNotMatch(htmlSource, /placeholder="ca\. 23,5-29 cm"/);
-  assert.match(appSource, /const formatMeasureValue = /);
-  assert.match(appSource, /const singularAgeUnit = /);
+  assert.match(appMeasurementsSource, /function formatManualMeasurement\(/);
+  assert.match(appMeasurementsSource, /function singularManualAgeUnit\(/);
   assert.match(appSource, /state\.renderPersistentPipelineStatus\?\.\(status\)/);
   assert.doesNotMatch(
     appSource,
@@ -2590,10 +2600,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Taxonomie ist gesperrt\./);
   assert.match(appSource, /URL-Slug entsperren\?/);
   assert.match(appSource, /Ja, entsperren/);
-  assert.match(appSource, /function parseManualMeasurement/);
-  assert.match(appSource, /function composeManualSexedMeasurement/);
+  assert.match(appMeasurementsSource, /function parseManualMeasurement/);
+  assert.match(appMeasurementsSource, /function composeManualSexedMeasurement/);
   assert.match(appSource, /class="edit-fields new-species-fields manual-species-fields"/);
-  assert.match(appSource, /data-measurement="\$\{escapeHtml\(kind\)\}"/);
+  assert.match(appMeasurementsSource, /data-measurement="\$\{escapeHtml\(kind\)\}"/);
   assert.match(appSource, /form\.elements\.sizeSexed/);
   assert.match(appSource, /form\.elements\.weightSexed/);
   assert.match(appSource, /name="lifeExpectancyUnit"/);

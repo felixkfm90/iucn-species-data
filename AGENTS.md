@@ -728,7 +728,14 @@ Aktuelle Planung:
   Größen-, Datums-, IUCN-, Asset- und Lizenzformatierung, Datenzeilen sowie versionsbasierte Medien-URLs liegen
   nicht mehr im Oberflächenmonolithen. Fünf direkte Präsentationstests erhöhen den gemeinsamen Testeinstieg auf
   68 Tests; `app.js` sank weiter auf 5.389 Zeilen. Das Modul wird lokal vor `app.js` geladen. Squarespace-JavaScript,
-  Footer-Versionen und Squarespace-CSS wurden in diesem Schnitt nicht geändert.
+  Footer-Versionen und Squarespace-CSS wurden in diesem Schnitt nicht geändert. Der siebte A4-Schnitt führt
+  `species-explorer/public/app-measurements.js` als zustandsfreie Messwertgrenze ein. Größe, Gewicht und
+  Lebenserwartung werden in Neue-Art-Assistent und Bearbeitungsdialog nun mit denselben Einheiten-, Parsing-,
+  Singular-/Plural-, Formatierungs- und Formularhelfern verarbeitet; die doppelte Neue-Art-Logik wurde entfernt.
+  Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf 73 Tests; `app.js` sank weiter auf 5.241
+  Zeilen. Die Tests sichern auch die längenbasierte Einheitenerkennung ab, damit `kg` bei ebenfalls erlaubtem `g`
+  vollständig entfernt wird. Das lokale HTML lädt Foundation, Presentation und Measurements in dieser Reihenfolge
+  vor `app.js`. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

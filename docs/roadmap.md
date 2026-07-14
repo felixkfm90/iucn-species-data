@@ -611,8 +611,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `public/app.js` sank von 5.688 auf 5.583 Zeilen. Der zweite Oberflächenschnitt ist ebenfalls abgeschlossen:
   `species-explorer/public/app-presentation.js` enthält die reinen Anzeige-, IUCN-, Lizenz-, Datenzeilen- und
   Medien-URL-Helfer. Fünf direkte Tests erhöhen den gemeinsamen Testeinstieg auf 68 Tests; `public/app.js` sank
-  weiter auf 5.389 Zeilen. Squarespace-Module, Footer und Custom CSS blieben unverändert. Als nächste A4-Grenze
-  folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen Charakterisierungstests.
+  weiter auf 5.389 Zeilen. Der dritte Oberflächenschnitt ist ebenfalls abgeschlossen:
+  `species-explorer/public/app-measurements.js` bündelt die Einheiten, das Einlesen bestehender gemeinsamer und
+  geschlechtsspezifischer Werte, Singular-/Pluralformatierung sowie das Formular-Markup für Größe, Gewicht und
+  Lebenserwartung. Neue-Art-Assistent und Bearbeitungsdialog verwenden diese gemeinsame Grenze; die doppelte
+  Formatierungslogik wurde entfernt. Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf 73 Tests;
+  `public/app.js` sank weiter auf 5.241 Zeilen. Die Tests decken zusätzlich die zuvor fehlerhafte Entfernung von
+  `kg` bei gleichzeitig erlaubtem `g` ab. Squarespace-Module, Footer und Custom CSS blieben unverändert. Als nächste
+  A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen
+  Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

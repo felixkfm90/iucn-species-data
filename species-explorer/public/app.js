@@ -2,6 +2,8 @@ const explorerFoundation = window.SpeciesExplorerFoundation;
 if (!explorerFoundation) throw new Error("Explorer-Grundlage konnte nicht geladen werden.");
 const explorerPresentation = window.SpeciesExplorerPresentation;
 if (!explorerPresentation) throw new Error("Explorer-Anzeigehelfer konnten nicht geladen werden.");
+const explorerMeasurements = window.SpeciesExplorerMeasurements;
+if (!explorerMeasurements) throw new Error("Explorer-Messwerthelfer konnten nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -39,6 +41,17 @@ const {
   assetVersionKey,
   versionedAssetUrl,
 } = explorerPresentation;
+const {
+  MANUAL_SIZE_UNITS,
+  MANUAL_WEIGHT_UNITS,
+  MANUAL_AGE_UNITS,
+  parseManualMeasurement,
+  stripManualMeasureInput,
+  formatManualMeasurement,
+  composeManualSexedMeasurement,
+  renderUnitOptions,
+  renderManualMeasurementEditor,
+} = explorerMeasurements;
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 
 const elements = {
@@ -111,141 +124,6 @@ const elements = {
   detailPanel: document.querySelector("#detail-panel"),
   itemTemplate: document.querySelector("#species-item-template"),
 };
-
-const MANUAL_SIZE_UNITS = ["mm", "cm", "m"];
-const MANUAL_WEIGHT_UNITS = ["g", "kg", "t"];
-const MANUAL_AGE_UNITS = ["Tage", "Monate", "Jahre"];
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function canonicalAgeUnit(unit) {
-  return {
-    Tag: "Tage",
-    Tage: "Tage",
-    Monat: "Monate",
-    Monate: "Monate",
-    Jahr: "Jahre",
-    Jahre: "Jahre",
-  }[String(unit ?? "")] || "Jahre";
-}
-
-function parseManualMeasurement(rawValue, units, defaultUnit, { age = false } = {}) {
-  const text = String(rawValue ?? "").trim();
-  const allUnits = age
-    ? ["Monate", "Jahre", "Tage", "Monat", "Jahr", "Tag"]
-    : units;
-  const unitPattern = [...allUnits]
-    .sort((a, b) => b.length - a.length)
-    .map(escapeRegExp)
-    .join("|");
-  const sexedMatch = text.match(new RegExp(
-    `^Männchen\\s*:?\\s*(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})\\s*;?\\s*`
-      + `Weibchen\\s*:?\\s*(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})$`,
-    "iu",
-  ));
-  const normalizeUnit = (unit) => (age ? canonicalAgeUnit(unit) : String(unit || defaultUnit));
-  if (sexedMatch) {
-    return {
-      sexed: true,
-      value: "",
-      unit: defaultUnit,
-      maleValue: sexedMatch[1].trim(),
-      maleUnit: normalizeUnit(sexedMatch[2]),
-      femaleValue: sexedMatch[3].trim(),
-      femaleUnit: normalizeUnit(sexedMatch[4]),
-    };
-  }
-  const sharedMatch = text.match(new RegExp(
-    `^(?:ca\\.?\\s*)?(.+?)\\s*(${unitPattern})$`,
-    "iu",
-  ));
-  return {
-    sexed: false,
-    value: sharedMatch ? sharedMatch[1].trim() : text.replace(/^ca\.?\s*/iu, "").trim(),
-    unit: normalizeUnit(sharedMatch?.[2] || defaultUnit),
-    maleValue: "",
-    maleUnit: defaultUnit,
-    femaleValue: "",
-    femaleUnit: defaultUnit,
-  };
-}
-
-function stripManualMeasureInput(value, units = []) {
-  let text = String(value ?? "").trim().replace(/^ca\.?\s*/iu, "").trim();
-  for (const unit of units) {
-    text = text.replace(new RegExp(`\\s*${escapeRegExp(unit)}\\.?$`, "iu"), "").trim();
-  }
-  return text;
-}
-
-function singularManualAgeUnit(value, unit) {
-  const normalized = String(value ?? "").trim().replace(",", ".");
-  if (!/^1(?:\.0+)?$/.test(normalized)) return unit;
-  return { Tage: "Tag", Monate: "Monat", Jahre: "Jahr" }[unit] || unit;
-}
-
-function formatManualMeasurement(value, unit, { units = [], age = false } = {}) {
-  const cleaned = stripManualMeasureInput(value, units);
-  if (!cleaned) return "";
-  const finalUnit = age ? singularManualAgeUnit(cleaned, unit) : unit;
-  return `ca. ${cleaned} ${finalUnit}`;
-}
-
-function composeManualSexedMeasurement(male, maleUnit, female, femaleUnit, options = {}) {
-  return `Männchen: ${formatManualMeasurement(male, maleUnit, options)}; `
-    + `Weibchen: ${formatManualMeasurement(female, femaleUnit, options)}`;
-}
-
-function renderUnitOptions(units, selectedUnit) {
-  return units.map((unit) => (
-    `<option value="${escapeHtml(unit)}"${unit === selectedUnit ? " selected" : ""}>${escapeHtml(unit)}</option>`
-  )).join("");
-}
-
-function renderManualMeasurementEditor({ kind, label, parsed, units }) {
-  return `
-    <div class="new-species-measurement" data-measurement="${escapeHtml(kind)}">
-      <label class="new-species-sex-toggle">
-        <input type="checkbox" name="${escapeHtml(kind)}Sexed"${parsed.sexed ? " checked" : ""}>
-        <span>${escapeHtml(label)} nach Männchen/Weibchen unterscheiden</span>
-      </label>
-      <label data-field="${escapeHtml(kind)}"${parsed.sexed ? " hidden" : ""}>
-        <span>${escapeHtml(label)}</span>
-        <span class="new-species-value-unit compact-unit">
-          <span aria-hidden="true">ca.</span>
-          <input name="${escapeHtml(kind)}" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.value)}">
-          <select name="${escapeHtml(kind)}Unit" aria-label="${escapeHtml(label)}seinheit">
-            ${renderUnitOptions(units, parsed.unit)}
-          </select>
-        </span>
-      </label>
-      <div class="new-species-sexed-fields" data-sexed-fields="${escapeHtml(kind)}"${parsed.sexed ? "" : " hidden"}>
-        <label data-field="${escapeHtml(kind)}Male">
-          <span>${escapeHtml(label)} Männchen</span>
-          <span class="new-species-value-unit compact-unit">
-            <span aria-hidden="true">ca.</span>
-            <input name="${escapeHtml(kind)}Male" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.maleValue)}">
-            <select name="${escapeHtml(kind)}MaleUnit" aria-label="${escapeHtml(label)}seinheit Männchen">
-              ${renderUnitOptions(units, parsed.maleUnit)}
-            </select>
-          </span>
-        </label>
-        <label data-field="${escapeHtml(kind)}Female">
-          <span>${escapeHtml(label)} Weibchen</span>
-          <span class="new-species-value-unit compact-unit">
-            <span aria-hidden="true">ca.</span>
-            <input name="${escapeHtml(kind)}Female" type="text" maxlength="80" autocomplete="off" value="${escapeHtml(parsed.femaleValue)}">
-            <select name="${escapeHtml(kind)}FemaleUnit" aria-label="${escapeHtml(label)}seinheit Weibchen">
-              ${renderUnitOptions(units, parsed.femaleUnit)}
-            </select>
-          </span>
-        </label>
-      </div>
-    </div>
-  `;
-}
 
 function formatPendingFileStatus(status) {
   const value = String(status || "").trim();
@@ -2337,40 +2215,6 @@ function setupNewSpeciesCreator() {
     if (sexedFields) sexedFields.hidden = !checked;
   };
 
-  const sizeUnits = ["mm", "cm", "m"];
-  const weightUnits = ["kg", "g", "t"];
-  const ageUnits = ["Tage", "Tag", "Monate", "Monat", "Jahre", "Jahr"];
-
-  const escapeRegExp = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  const stripMeasureInput = (value, units = []) => {
-    let text = String(value ?? "").trim();
-    text = text.replace(/^ca\.?\s*/i, "").trim();
-    for (const unit of units) {
-      text = text.replace(new RegExp(`\\s*${escapeRegExp(unit)}\\.?$`, "i"), "").trim();
-    }
-    return text;
-  };
-
-  const singularAgeUnit = (value, unit) => {
-    const normalized = String(value ?? "").trim().replace(",", ".");
-    if (!/^1(?:\.0+)?$/.test(normalized)) return unit;
-    return { Tage: "Tag", Monate: "Monat", Jahre: "Jahr" }[unit] || unit;
-  };
-
-  const formatMeasureValue = (value, unit, { units = [], age = false } = {}) => {
-    const cleaned = stripMeasureInput(value, units);
-    if (!cleaned) return "";
-    const finalUnit = age ? singularAgeUnit(cleaned, unit) : unit;
-    return `ca. ${cleaned} ${finalUnit}`;
-  };
-
-  const composeSexedValue = (male, maleUnit, female, femaleUnit, options = {}) => {
-    const maleValue = formatMeasureValue(male, maleUnit, options);
-    const femaleValue = formatMeasureValue(female, femaleUnit, options);
-    return `Männchen: ${maleValue}; Weibchen: ${femaleValue}`;
-  };
-
   const speciesValues = () => {
     const formData = new FormData(form);
     const sizeSexed = formData.get("sizeSexed") === "on";
@@ -2379,27 +2223,35 @@ function setupNewSpeciesCreator() {
       german: formData.get("german"),
       scientificName: formData.get("scientificName"),
       size: sizeSexed
-        ? composeSexedValue(
+        ? composeManualSexedMeasurement(
           formData.get("sizeMale"),
           formData.get("sizeMaleUnit"),
           formData.get("sizeFemale"),
           formData.get("sizeFemaleUnit"),
-          { units: sizeUnits },
+          { units: MANUAL_SIZE_UNITS },
         )
-        : formatMeasureValue(formData.get("size"), formData.get("sizeUnit"), { units: sizeUnits }),
+        : formatManualMeasurement(formData.get("size"), formData.get("sizeUnit"), {
+          units: MANUAL_SIZE_UNITS,
+        }),
       weight: weightSexed
-        ? composeSexedValue(
+        ? composeManualSexedMeasurement(
           formData.get("weightMale"),
           formData.get("weightMaleUnit"),
           formData.get("weightFemale"),
           formData.get("weightFemaleUnit"),
-          { units: weightUnits },
+          { units: MANUAL_WEIGHT_UNITS },
         )
-        : formatMeasureValue(formData.get("weight"), formData.get("weightUnit"), { units: weightUnits }),
-      lifeExpectancy: formatMeasureValue(formData.get("lifeExpectancy"), formData.get("lifeExpectancyUnit"), {
-        units: ageUnits,
-        age: true,
-      }),
+        : formatManualMeasurement(formData.get("weight"), formData.get("weightUnit"), {
+          units: MANUAL_WEIGHT_UNITS,
+        }),
+      lifeExpectancy: formatManualMeasurement(
+        formData.get("lifeExpectancy"),
+        formData.get("lifeExpectancyUnit"),
+        {
+          units: MANUAL_AGE_UNITS,
+          age: true,
+        },
+      ),
     };
   };
 
@@ -2417,18 +2269,18 @@ function setupNewSpeciesCreator() {
       if (!String(formData.get(fieldKey) ?? "").trim()) add(fieldKey, `${label} darf nicht leer sein`);
     }
     if (formData.get("sizeSexed") === "on") {
-      if (!stripMeasureInput(formData.get("sizeMale"), sizeUnits)) add("sizeMale", "Größe Männchen darf nicht leer sein");
-      if (!stripMeasureInput(formData.get("sizeFemale"), sizeUnits)) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
-    } else if (!stripMeasureInput(formData.get("size"), sizeUnits)) {
+      if (!stripManualMeasureInput(formData.get("sizeMale"), MANUAL_SIZE_UNITS)) add("sizeMale", "Größe Männchen darf nicht leer sein");
+      if (!stripManualMeasureInput(formData.get("sizeFemale"), MANUAL_SIZE_UNITS)) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
+    } else if (!stripManualMeasureInput(formData.get("size"), MANUAL_SIZE_UNITS)) {
       add("size", "Größe darf nicht leer sein");
     }
     if (formData.get("weightSexed") === "on") {
-      if (!stripMeasureInput(formData.get("weightMale"), weightUnits)) add("weightMale", "Gewicht Männchen darf nicht leer sein");
-      if (!stripMeasureInput(formData.get("weightFemale"), weightUnits)) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
-    } else if (!stripMeasureInput(formData.get("weight"), weightUnits)) {
+      if (!stripManualMeasureInput(formData.get("weightMale"), MANUAL_WEIGHT_UNITS)) add("weightMale", "Gewicht Männchen darf nicht leer sein");
+      if (!stripManualMeasureInput(formData.get("weightFemale"), MANUAL_WEIGHT_UNITS)) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
+    } else if (!stripManualMeasureInput(formData.get("weight"), MANUAL_WEIGHT_UNITS)) {
       add("weight", "Gewicht darf nicht leer sein");
     }
-    if (!stripMeasureInput(formData.get("lifeExpectancy"), ageUnits)) {
+    if (!stripManualMeasureInput(formData.get("lifeExpectancy"), MANUAL_AGE_UNITS)) {
       add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
     }
     return errors;
@@ -3474,7 +3326,7 @@ function setupSpeciesEditor(species) {
       lifeExpectancy: formatManualMeasurement(
         formData.get("lifeExpectancy"),
         formData.get("lifeExpectancyUnit"),
-        { units: ["Tag", "Tage", "Monat", "Monate", "Jahr", "Jahre"], age: true },
+        { units: MANUAL_AGE_UNITS, age: true },
       ),
     };
   };
@@ -3514,7 +3366,7 @@ function setupSpeciesEditor(species) {
     }
     if (!stripManualMeasureInput(
       formData.get("lifeExpectancy"),
-      ["Tag", "Tage", "Monat", "Monate", "Jahr", "Jahre"],
+      MANUAL_AGE_UNITS,
     )) {
       add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
     }

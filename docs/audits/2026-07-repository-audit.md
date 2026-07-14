@@ -306,6 +306,15 @@ Umsetzungsstand am 2026-07-14:
   Lizenzanzeigen sowie deterministische Asset-URLs. Der gemeinsame vollständige Testeinstieg umfasst damit jetzt
   68 Tests. `public/app.js` sank von 5.583 auf 5.389 Zeilen. Squarespace-Laufzeitdateien, Footer-Versionen und
   Custom CSS blieben unberührt.
+- Der siebte kontrollierte Modulschnitt bündelt in
+  `species-explorer/public/app-measurements.js` alle Einheiten-, Parsing-, Singular-/Plural-, Formatierungs- und
+  Formularhelfer für Größe, Gewicht und Lebenserwartung. Neue-Art-Assistent und allgemeiner Bearbeitungsdialog
+  verwenden dieselbe Implementierung; die lokale Doppelung im Assistenten wurde entfernt.
+- Fünf direkte Messwerttests prüfen unveränderliche Einheitendefinitionen, gemeinsame und ältere Freitextwerte,
+  geschlechtsspezifische Werte, Singular-/Pluralformatierung und sicher maskiertes Formular-Markup. Sie decken
+  zugleich den behobenen Altfehler ab, bei dem wegen der Einheitenreihenfolge aus `kg` nur das abschließende `g`
+  entfernt wurde. Der gemeinsame Testeinstieg umfasst damit 73 Tests; `public/app.js` sank von 5.389 auf 5.241
+  Zeilen. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unberührt.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
