@@ -290,8 +290,15 @@ Umsetzungsstand am 2026-07-14:
   `portrait-preview` wird dabei ausdrücklich getrennt von der allgemeinen Artenvorschau geprüft.
 - `species-explorer/server.mjs` sank dadurch von 5.858 auf 5.654 Zeilen. Gemeinsam mit den dreizehn vorhandenen
   Modultests und den 24 Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 59 Tests.
-- A4 bleibt offen. Als nächste sichere Grenze werden die großen Oberflächenbereiche getrennt. Jeder Schnitt erhält
-  vor der nächsten Extraktion eigene Verhaltensprüfungen.
+- Der fünfte verhaltensneutrale Modulschnitt beginnt die Oberflächentrennung.
+  `species-explorer/public/app-foundation.js` bündelt die unabhängige Zustandsfabrik, den einmaligen Sitzungsaufbau,
+  geschützte JSON-Anfragen, das konsistente Laden der fünf Explorer-Datenendpunkte und die Revisionsabfrage.
+  `public/app.js` enthält keine direkten `fetch()`-Aufrufe mehr und sank von 5.688 auf 5.583 Zeilen.
+- Vier direkte Frontend-Grundlagentests prüfen unabhängige Zustände, Session-Caching und Schreibheader,
+  Schnappschussreihenfolge sowie strukturierte Fehler und Revisionsausfälle. Gemeinsam mit den 17 bisherigen
+  Modultests und den 24 Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 63 Tests.
+- A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
+  Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 

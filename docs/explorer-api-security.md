@@ -18,7 +18,8 @@ und Backupoperationen sowie den aktuellen Laufzustand bereit.
 
 Bei jedem Serverstart entsteht ein zufälliges 256-Bit-Sitzungstoken. Die Explorer-Oberfläche lädt es einmalig über
 `GET /api/session`, bewahrt es nur im Arbeitsspeicher der Seite auf und sendet es bei jeder POST-Anfrage im Header
-`X-Species-Explorer-Session`.
+`X-Species-Explorer-Session`. Diese Browsergrenze liegt zentral und direkt getestet in
+`species-explorer/public/app-foundation.js`; `public/app.js` verwendet nur den dort erzeugten API-Client.
 
 Der Server prüft:
 
@@ -31,7 +32,7 @@ Der Server prüft:
 - CORS wird nicht geöffnet.
 
 Ein Serverneustart macht alte Sitzungstoken automatisch ungültig. Beim normalen Browser- und Desktop-App-Start ist
-keine Benutzereingabe erforderlich; `public/app.js` baut die Sitzung selbst auf.
+keine Benutzereingabe erforderlich; die lokale Explorer-Grundlage baut die Sitzung selbst auf.
 
 ## Bestätigung besonders kritischer Assetaktionen
 
@@ -71,6 +72,7 @@ Assetänderungen gezielt freigegeben werden.
 npm.cmd run --silent test:security
 npm.cmd run --silent test:http
 npm.cmd run --silent test:router
+npm.cmd run --silent test:frontend-foundation
 npm.cmd run --silent test:explorer
 ```
 
@@ -78,6 +80,10 @@ Geprüft werden unter anderem falscher Host, Cross-Site-Kontext, fehlendes Sitzu
 positive Schreibanfrage, Löschung ohne und mit Bestätigungstoken, private Karten-URL, private und öffentliche
 DNS-Auflösung, echte Pfadgrenzen, JSON-Body-Limits, eindeutige Routenpriorität, Fachoperationsdelegation,
 Vorschaudateien, strukturierte Fehlerantworten, Antwortheader und Byte-Range-Dateiauslieferung.
+
+Die Frontend-Grundlagentests prüfen zusätzlich, dass der Sitzungstoken nur einmal geladen, nur bei schreibenden
+Anfragen gesetzt, das gemeinsame Explorer-Datenpaket vollständig geladen und API-Fehler strukturiert weitergegeben
+werden.
 
 Squarespace-Footer und Squarespace-CSS sind von diesem Schritt nicht betroffen, weil sich die Änderung nur auf den
 lokalen Explorer-Server und dessen lokale Oberfläche bezieht.

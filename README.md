@@ -753,7 +753,12 @@ Asset-, Grafik- und Public-Dateien nach `species-explorer/request-router.mjs`. D
 `portrait-preview` ist dort explizit und getrennt von der allgemeinen Artenvorschau getestet. Siebzehn direkte
 Modultests ergänzen die 24 Explorer-Integrationstests; der gemeinsame Testeinstieg umfasst jetzt 59 Tests.
 `server.mjs` sank über die vier Schnitte von 6.557 auf 5.654 Zeilen. HTTP-Basis und Routenzuordnung sind damit
-getrennt; A4 bleibt bis zur schrittweisen Trennung der großen Oberflächenbereiche offen.
+getrennt. Der fünfte Schnitt beginnt die Oberflächentrennung mit
+`species-explorer/public/app-foundation.js`: Zustandsinitialisierung, Sitzungstoken, geschützte JSON-Anfragen,
+gemeinsames Laden von Zusammenfassung/Validierung/Arten/Revision/offenen Änderungen und die Revisionsabfrage sind
+aus `app.js` herausgelöst. Vier direkte Frontend-Grundlagentests erhöhen den gemeinsamen Testeinstieg auf 63 Tests;
+`app.js` sank dabei von 5.688 auf 5.583 Zeilen. A4 bleibt für die weitere schrittweise Trennung der fachlichen
+Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

@@ -39,6 +39,7 @@ species-explorer/
   public/
     index.html
     app.css
+    app-foundation.js
     app.js
 ```
 
@@ -207,8 +208,10 @@ species-explorer/
   public/
     index.html
     app.css
+    app-foundation.js
     filter.js
     app.js
+  app-foundation.test.mjs
 ```
 
 API:

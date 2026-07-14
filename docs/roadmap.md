@@ -605,7 +605,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   der gemeinsame Testeinstieg
   umfasst damit 59 Tests. Der Server sank über die vier Schnitte von 6.557 auf 5.654 Zeilen. Als nächste sichere
   Grenze folgt die Oberfläche, die ohne Big-Bang-Umbau in Zustands-/API-Schicht und fachliche Bereiche getrennt
-  wird.
+  wird. Der erste Oberflächenschnitt ist abgeschlossen: `species-explorer/public/app-foundation.js` enthält die
+  unabhängige Zustandsfabrik sowie den zentralen Browser-API-Client für Sitzung, geschützte JSON-Anfragen,
+  Explorer-Datenpaket und Revision. Vier direkte Tests erhöhen den gemeinsamen Testeinstieg auf 63 Tests;
+  `public/app.js` sank von 5.688 auf 5.583 Zeilen. Als nächste A4-Grenze folgt ein kleiner, fachlich geschlossener
+  Oberflächenbereich mit eigenen Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

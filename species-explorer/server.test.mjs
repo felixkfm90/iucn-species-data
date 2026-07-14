@@ -336,6 +336,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.equal(validation.assets.issueSpeciesCount, expectedModel.validation.assets.issueSpeciesCount);
   assert.equal(validation.report.consistent, expectedModel.validation.report.consistent);
 
+  const foundationResponse = await fetch(`${baseUrl}/app-foundation.js`);
+  assert.equal(foundationResponse.status, 200);
+  assert.match(foundationResponse.headers.get("content-type"), /javascript/);
+  assert.match(await foundationResponse.text(), /createExplorerApiClient/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2248,6 +2253,7 @@ test("Suche und Filter finden Namen, Slugs und Projektkennzeichnungen", async ()
 test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", async () => {
   const [
     appSource,
+    appFoundationSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2268,6 +2274,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     requestRouterSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2289,6 +2296,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   ]);
 
   assert.match(appSource, /class="map-image"/);
+  assert.match(htmlSource, /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/);
+  assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
+  assert.match(appFoundationSource, /function createExplorerApiClient\(/);
+  assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
+  assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
   assert.doesNotMatch(htmlSource, /IUCN Species Data/);
@@ -2326,7 +2338,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Artporträts: \$\{missingPortraitCount\} von/);
   assert.match(appSource, /Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden/);
   assert.match(appSource, /updateValidation/);
-  assert.match(appSource, /fetch\("\/api\/validation"\)/);
+  assert.match(appFoundationSource, /validation: "\/api\/validation"/);
   assert.match(appSource, /class="edit-dialog"/);
   assert.match(appSource, /\/preview/);
   assert.match(appSource, /\/save/);
@@ -2423,7 +2435,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Bearbeitungsmodus 🔓/);
   assert.match(appSource, /Lesemodus 🔒/);
   assert.match(appSource, /function monitorProjectRevision\(\)/);
-  assert.match(appSource, /fetch\("\/api\/revision"\)/);
+  assert.match(appFoundationSource, /revision: "\/api\/revision"/);
+  assert.match(appSource, /const current = await fetchRevision\(\)/);
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
   assert.match(appSource, /pendingRevisionReload/);
   assert.match(appSource, /function hasOpenDialog\(\)/);
@@ -2578,7 +2591,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-auto-search-button"/);
   assert.match(appSource, /openPipelinePreview\("manual-maps"/);
   assert.match(appSource, /silent: true/);
-  assert.match(appSource, /fetch\("\/api\/pending-changes"\)/);
+  assert.match(appFoundationSource, /pendingChanges: "\/api\/pending-changes"/);
   assert.match(appSource, /refreshExplorerModelOnly\(\{ reload: true \}\)/);
   assert.match(serverSource, /async function fetchMapPreviewSourceWithPowerShell\(source\)/);
   assert.match(serverSource, /MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3/);
@@ -2648,7 +2661,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /function formatPendingFileStatus/);
   assert.match(appSource, /showQuickConfirm/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
-  assert.match(appSource, /\/api\/pending-changes/);
+  assert.match(appFoundationSource, /\/api\/pending-changes/);
   assert.match(appSource, /beforeunload/);
   assert.match(appSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
   assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);

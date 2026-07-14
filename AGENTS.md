@@ -719,7 +719,11 @@ Aktuelle Planung:
   `species-explorer/request-router.mjs`. Die Neue-Art-Route `portrait-preview` ist dort explizit und getrennt von
   der allgemeinen Artenvorschau getestet. Siebzehn direkte Modultests ergänzen die 24 Explorer-Integrationsprüfungen;
   der gemeinsame Testeinstieg umfasst 59 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 5.654 Zeilen.
-  HTTP-Basis und Routenzuordnung sind getrennt; A4 bleibt offen, bis die Oberfläche weiter modularisiert ist.
+  HTTP-Basis und Routenzuordnung sind getrennt. Der fünfte A4-Schnitt extrahiert mit
+  `species-explorer/public/app-foundation.js` die Zustandsinitialisierung, den Sitzungstoken, geschützte
+  JSON-Anfragen, das gemeinsame Explorer-Datenpaket und die Revisionsabfrage aus `public/app.js`. Vier direkte
+  Frontend-Grundlagentests ergänzen den Testeinstieg auf 63 Tests; `app.js` sank von 5.688 auf 5.583 Zeilen. A4
+  bleibt offen, bis weitere fachliche Oberflächenbereiche schrittweise modularisiert sind.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

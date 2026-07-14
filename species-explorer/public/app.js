@@ -1,38 +1,18 @@
-const state = {
-  species: [],
-  filtered: [],
-  selectedId: "",
-  audioCleanup: null,
-  mapCleanup: null,
-  portraitCleanup: null,
-  notice: "",
-  editMode: false,
-  databaseNeedsUpdate: true,
-  validationNeedsUpdate: true,
-  pendingChanges: null,
-  openPipelinePreview: null,
-  openAssetReview: null,
-  holdNewSpeciesBackground: false,
-  newSpeciesPipelineActive: false,
-  pipelineWasRunning: false,
-  silentPipelineContext: null,
-  pipelineStatusSnapshot: null,
-  pipelinePollTimer: null,
-  backupWasRunning: false,
-  backupStatusSnapshot: null,
-  backupPollTimer: null,
-  settingsSnapshot: null,
-  assetReviewRunId: "",
-  assetReviewSignature: "",
-  assetReviewAwaitingRetry: false,
-  reloadAfterAssetReviewClose: false,
-  reloadAfterEditClose: false,
-  pendingRevisionReload: false,
-  dataRevision: "",
-  dataRevisionTimer: null,
-  dataLoading: false,
-  sessionToken: "",
-};
+const explorerFoundation = window.SpeciesExplorerFoundation;
+if (!explorerFoundation) throw new Error("Explorer-Grundlage konnte nicht geladen werden.");
+const state = explorerFoundation.createInitialExplorerState();
+const explorerApi = explorerFoundation.createExplorerApiClient({
+  getSessionToken: () => state.sessionToken,
+  setSessionToken: (token) => {
+    state.sessionToken = token;
+  },
+});
+const {
+  ensureSessionToken,
+  fetchJson,
+  loadExplorerSnapshot,
+  fetchRevision,
+} = explorerApi;
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 const IUCN_STATUS_LABELS = {
   NE: "Nicht bewertet",
@@ -938,37 +918,6 @@ function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   document.body.classList.add("explorer-modal-open");
 }
 
-async function ensureSessionToken() {
-  if (state.sessionToken) return state.sessionToken;
-  const response = await fetch("/api/session", { credentials: "same-origin" });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload.token) {
-    throw new Error(payload.error || "Explorer-Sitzung konnte nicht gestartet werden");
-  }
-  state.sessionToken = payload.token;
-  return state.sessionToken;
-}
-
-async function fetchJson(url, options = {}) {
-  const method = String(options.method || "GET").toUpperCase();
-  const secureOptions = { ...options, credentials: "same-origin" };
-  if (!["GET", "HEAD"].includes(method)) {
-    const headers = new Headers(options.headers || {});
-    headers.set("Content-Type", "application/json");
-    headers.set("X-Species-Explorer-Session", await ensureSessionToken());
-    secureOptions.headers = headers;
-  }
-  const response = await fetch(url, secureOptions);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(payload.error || "Anfrage ist fehlgeschlagen");
-    error.details = payload.details || [];
-    error.fieldErrors = payload.fieldErrors || {};
-    throw error;
-  }
-  return payload;
-}
-
 function cacheBustedUrl(url, key = Date.now()) {
   if (!url) return "";
   const separator = url.includes("?") ? "&" : "?";
@@ -1009,36 +958,10 @@ function versionedAssetUrl(url, asset = {}, ...extraParts) {
 }
 
 async function refreshExplorerModelOnly({ reload = false } = {}) {
-  if (reload) await fetch("/api/reload");
-  const [
-    summaryResponse,
-    validationResponse,
-    speciesResponse,
-    revisionResponse,
-    pendingChangesResponse,
-  ] = await Promise.all([
-    fetch("/api/summary"),
-    fetch("/api/validation"),
-    fetch("/api/species"),
-    fetch("/api/revision"),
-    fetch("/api/pending-changes"),
-  ]);
-  if (
-    !summaryResponse.ok
-    || !validationResponse.ok
-    || !speciesResponse.ok
-    || !revisionResponse.ok
-    || !pendingChangesResponse.ok
-  ) {
-    throw new Error("Lokale Daten konnten nicht aktualisiert werden.");
-  }
-  const [summary, validation, species, revision, pendingChanges] = await Promise.all([
-    summaryResponse.json(),
-    validationResponse.json(),
-    speciesResponse.json(),
-    revisionResponse.json(),
-    pendingChangesResponse.json(),
-  ]);
+  const { summary, validation, species, revision, pendingChanges } = await loadExplorerSnapshot({
+    reload,
+    failureMessage: "Lokale Daten konnten nicht aktualisiert werden.",
+  });
   state.dataRevision = revision.revision;
   state.species = species;
   updateSummary(summary);
@@ -5575,37 +5498,10 @@ async function loadData({ reload = false } = {}) {
   elements.reloadButton.disabled = true;
   elements.reloadButton.textContent = "Lädt…";
   try {
-    if (reload) await fetch("/api/reload");
-    const [
-      summaryResponse,
-      validationResponse,
-      speciesResponse,
-      revisionResponse,
-      pendingChangesResponse,
-    ] = await Promise.all([
-      fetch("/api/summary"),
-      fetch("/api/validation"),
-      fetch("/api/species"),
-      fetch("/api/revision"),
-      fetch("/api/pending-changes"),
-    ]);
-    if (
-      !summaryResponse.ok
-      || !validationResponse.ok
-      || !speciesResponse.ok
-      || !revisionResponse.ok
-      || !pendingChangesResponse.ok
-    ) {
-      throw new Error("Lokale Daten konnten nicht geladen werden.");
-    }
-
-    const [summary, validation, species, revision, pendingChanges] = await Promise.all([
-      summaryResponse.json(),
-      validationResponse.json(),
-      speciesResponse.json(),
-      revisionResponse.json(),
-      pendingChangesResponse.json(),
-    ]);
+    const { summary, validation, species, revision, pendingChanges } = await loadExplorerSnapshot({
+      reload,
+      failureMessage: "Lokale Daten konnten nicht geladen werden.",
+    });
     state.dataRevision = revision.revision;
     state.species = species;
     updateSummary(summary);
@@ -5645,9 +5541,8 @@ async function loadData({ reload = false } = {}) {
 
 async function monitorProjectRevision() {
   try {
-    const response = await fetch("/api/revision");
-    if (!response.ok) return;
-    const current = await response.json();
+    const current = await fetchRevision();
+    if (!current) return;
     if (state.dataRevision && current.revision !== state.dataRevision && !state.dataLoading) {
       if (hasOpenDialog()) {
         state.pendingRevisionReload = true;
