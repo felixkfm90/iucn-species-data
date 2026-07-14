@@ -747,9 +747,13 @@ Sicherungen aus `species-explorer/server.mjs` nach `species-explorer/asset-backu
 Felddefinitionen, Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche
 in `species-explorer/species-model.mjs`. Der dritte Schnitt verlagert JSON-Body-Limits, Antworthelfer, sichere
 Pfadauflösung, MIME-Typen, Byte-Range-Dateiauslieferung und die Freigabe aktiver Dateistreams nach
-`species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24 Explorer-Integrationstests; der
-gemeinsame Testeinstieg umfasst jetzt 55 Tests. `server.mjs` sank über die drei Schnitte von 6.557 auf 5.858 Zeilen.
-Die HTTP-Basis ist damit getrennt; A4 bleibt bis zur weiteren Trennung des Routings und der Oberfläche offen.
+`species-explorer/http-routing.mjs`. Der vierte Schnitt verlagert die vollständige Methoden-/Pfadzuordnung,
+Sitzungs- und Schreibgrenze, Body-Limit-Auswahl, Fehlerantworten sowie die Auslieferentscheidung für Vorschau-,
+Asset-, Grafik- und Public-Dateien nach `species-explorer/request-router.mjs`. Die Neue-Art-Route
+`portrait-preview` ist dort explizit und getrennt von der allgemeinen Artenvorschau getestet. Siebzehn direkte
+Modultests ergänzen die 24 Explorer-Integrationstests; der gemeinsame Testeinstieg umfasst jetzt 59 Tests.
+`server.mjs` sank über die vier Schnitte von 6.557 auf 5.654 Zeilen. HTTP-Basis und Routenzuordnung sind damit
+getrennt; A4 bleibt bis zur schrittweisen Trennung der großen Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

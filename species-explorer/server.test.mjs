@@ -2265,6 +2265,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     assetBackupsSource,
     speciesModelSource,
     httpRoutingSource,
+    requestRouterSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
@@ -2284,6 +2285,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./asset-backups.mjs", import.meta.url), "utf8"),
     readFile(new URL("./species-model.mjs", import.meta.url), "utf8"),
     readFile(new URL("./http-routing.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./request-router.mjs", import.meta.url), "utf8"),
   ]);
 
   assert.match(appSource, /class="map-image"/);
@@ -2425,7 +2427,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
   assert.match(appSource, /pendingRevisionReload/);
   assert.match(appSource, /function hasOpenDialog\(\)/);
-  assert.match(serverSource, /url\.pathname === "\/api\/revision"/);
+  assert.match(serverSource, /createExplorerRequestHandler/);
+  assert.match(requestRouterSource, /"\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
   assert.match(serverSource, /publishAfterAssetOnlyNoAssets/);
   assert.match(serverSource, /Weitere Soundquelle suchen/);
@@ -2467,11 +2470,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function previewNasBackup/);
   assert.match(serverSource, /local-settings\.json/);
   assert.match(serverSource, /async function saveBackupSettings/);
-  assert.match(serverSource, /url\.pathname === "\/api\/settings"/);
-  assert.match(serverSource, /url\.pathname === "\/api\/settings\/backup"/);
+  assert.match(requestRouterSource, /"\/api\/settings"/);
+  assert.match(requestRouterSource, /"\/api\/settings\/backup"/);
   assert.match(serverSource, /function startNasBackup/);
   assert.match(serverSource, /executeNasBackupRun/);
-  assert.match(serverSource, /url\.pathname === "\/api\/backup\/status"/);
+  assert.match(requestRouterSource, /"\/api\/backup\/status"/);
   assert.match(desktopMainSource, /getExplorerBackupStatus/);
   assert.match(serverLifecycleSource, /isBackupBlockingShutdown/);
   assert.match(packageSource, /species:desktop:shortcut/);
@@ -2479,8 +2482,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function previewNewSpeciesPortrait\(payload\)/);
   assert.match(serverSource, /Git-Commit/);
   assert.match(serverSource, /\["push"\]/);
-  assert.match(serverSource, /\/api\/pipeline\/assets\/review/);
-  assert.match(serverSource, /\/api\/pipeline\/assets\/backup-file/);
+  assert.match(requestRouterSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(requestRouterSource, /\/api\/pipeline\/assets\/backup-file/);
   assert.match(serverSource, /pipeline-asset-backups/);
   assert.match(serverSource, /sendPipelineBackupFile/);
   assert.match(serverSource, /"map\.jpg",\s*"sound\.mp3",\s*"spectrogram\.webp"/);
@@ -2513,7 +2516,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /async function readPendingProjectChanges\(\)/);
   assert.match(serverSource, /const match = line\.match/);
   assert.match(serverSource, /path: \(match\?\.\[2\]/);
-  assert.match(serverSource, /url\.pathname === "\/api\/pending-changes"/);
+  assert.match(requestRouterSource, /"\/api\/pending-changes"/);
   assert.match(serverSource, /Transfer pending Explorer changes/);
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
   assert.match(serverSource, /async function previewSoundAsset\(id, payload\)/);
@@ -2525,7 +2528,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(assetBackupsSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
   assert.match(assetBackupsSource, /async function writeManagedAssetBackup/);
   assert.match(serverSource, /async function restoreSpeciesAsset\(id, assetType\)/);
-  assert.match(serverSource, /restoreSpeciesAsset\(id, "map"\)/);
+  assert.match(serverSource, /restoreSpeciesAsset\(id, assetType\)/);
   assert.match(serverSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);

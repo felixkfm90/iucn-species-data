@@ -61,6 +61,7 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
 - `species-explorer/request-security.mjs`: zentrale Sitzungs-, Browser-, URL-Ziel- und Pfadgrenze der lokalen API
 - `species-explorer/http-routing.mjs`: JSON-/HTTP-Antworten, sichere Auslieferung lokaler Dateien und Byte-Ranges
+- `species-explorer/request-router.mjs`: zentrale Methoden-/Pfadzuordnung, Body-Limits und Antwortdelegation
 - `species-explorer/species-model.mjs`: Artenvalidierung, Normalisierung, Kollisionen, Diffs und öffentliche Projektionen
 - `species-explorer/asset-backups.mjs`: wiederherstellbare Asset-Sicherungen und begrenzte Backup-/Log-Aufbewahrung
 - `species-explorer/server.test.mjs`: Modell-, API-, Schreibschutz-, Backup-, Such- und Filtertests
@@ -713,9 +714,12 @@ Aktuelle Planung:
   Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche nach
   `species-explorer/species-model.mjs`. Der dritte Schnitt verschiebt JSON-Anfragegrenzen, HTTP-Antworten, sichere
   öffentliche/Asset-/Grafikpfade, MIME-Typen, Byte-Range-Dateiauslieferung und aktive Dateistreams nach
-  `species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24 Explorer-Integrationsprüfungen;
-  der gemeinsame Testeinstieg umfasst 55 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 5.858 Zeilen.
-  Die HTTP-Basis ist getrennt; A4 bleibt offen, bis Routenzuordnung und Oberfläche weiter modularisiert sind.
+  `species-explorer/http-routing.mjs`. Der vierte Schnitt verschiebt Methoden-/Pfadzuordnung, Sitzungs- und
+  Schreibgrenze, Body-Limit-Auswahl, Fehlerantworten und die Entscheidung über lokale Dateiauslieferung nach
+  `species-explorer/request-router.mjs`. Die Neue-Art-Route `portrait-preview` ist dort explizit und getrennt von
+  der allgemeinen Artenvorschau getestet. Siebzehn direkte Modultests ergänzen die 24 Explorer-Integrationsprüfungen;
+  der gemeinsame Testeinstieg umfasst 59 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 5.654 Zeilen.
+  HTTP-Basis und Routenzuordnung sind getrennt; A4 bleibt offen, bis die Oberfläche weiter modularisiert ist.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

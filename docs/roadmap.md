@@ -598,10 +598,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Namensnormalisierung, Artenvalidierung, Kollisionsprüfungen, Bearbeitungsdiffs und Reportvergleiche in
   `species-explorer/species-model.mjs`. Der dritte verhaltensneutrale Schnitt bündelt JSON-Anfragegrenzen,
   HTTP-Antworten, sichere öffentliche/Asset-/Grafikpfade, MIME-Typen, Byte-Range-Dateiauslieferung und aktive
-  Dateistreams in `species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24
-  Explorer-Integrationstests; der gemeinsame Testeinstieg umfasst damit 55 Tests. Der Server sank über die drei
-  Schnitte von 6.557 auf 5.858 Zeilen. Als nächste sichere Grenze folgt die Routenzuordnung; anschließend wird die
-  Oberfläche ohne Big-Bang-Umbau weiter getrennt.
+  Dateistreams in `species-explorer/http-routing.mjs`. Der vierte kontrollierte Schnitt bündelt Methoden- und
+  Pfadzuordnung, Sicherheitsdelegation, Body-Limit-Auswahl, Fehlerantworten sowie Vorschau-/Dateiauslieferung in
+  `species-explorer/request-router.mjs`. Die Neue-Art-Route `portrait-preview` ist dort explizit und getrennt von
+  der allgemeinen Artenvorschau getestet. Siebzehn direkte Modultests ergänzen die 24 Explorer-Integrationstests;
+  der gemeinsame Testeinstieg
+  umfasst damit 59 Tests. Der Server sank über die vier Schnitte von 6.557 auf 5.654 Zeilen. Als nächste sichere
+  Grenze folgt die Oberfläche, die ohne Big-Bang-Umbau in Zustands-/API-Schicht und fachliche Bereiche getrennt
+  wird.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

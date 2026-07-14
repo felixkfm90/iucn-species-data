@@ -23,10 +23,7 @@ import {
 } from "../scripts/spectrogram-renderer.mjs";
 import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
 import {
-  assertBrowserReadContext,
-  assertLocalRequestHost,
   assertPublicHttpUrl,
-  assertWriteRequest,
   createSessionToken,
   isPathInside,
 } from "./request-security.mjs";
@@ -79,16 +76,11 @@ import {
   valueOrUnknown,
 } from "./species-model.mjs";
 import {
-  MAX_JSON_BODY_BYTES,
   closeActiveFileStreams,
-  readJsonBody,
-  safeAssetPath,
-  safeGraphicsPath,
-  safePublicPath,
   sendFile,
-  sendJson,
   sendText,
 } from "./http-routing.mjs";
+import { createExplorerRequestHandler } from "./request-router.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -5462,328 +5454,132 @@ export async function createExplorerServer({
     };
   }
 
-  const server = createHttpServer(async (request, response) => {
-    try {
-      const expectedOrigin = assertLocalRequestHost(request, host);
-      const url = new URL(request.url, expectedOrigin);
-      if (url.origin !== expectedOrigin) {
-        const error = new Error("Absolute oder fremde Anfrage-URL ist nicht erlaubt");
-        error.statusCode = 400;
-        throw error;
-      }
-      if (url.pathname === "/api/session") {
-        if (request.method !== "GET") {
-          response.setHeader("Allow", "GET");
-          sendText(response, 405, "Sitzungsinformationen sind nur lesbar");
-          return;
-        }
-        assertBrowserReadContext(request, expectedOrigin);
-        sendJson(response, 200, { token: sessionToken });
-        return;
-      }
-      if (request.method === "POST") {
-        assertWriteRequest(request, { expectedOrigin, sessionToken, sessionProtection });
-      }
-      const editRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
-      const deleteRoute = url.pathname.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
-      const mapAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/map\/(preview|save|delete-preview|delete|restore-preview|restore)$/,
-      );
-      const mapPreviewFileRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/map\/preview-file$/,
-      );
-      const soundAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/(preview|save|reject|delete-preview|delete|restore-preview|restore)$/,
-      );
-      const soundPreviewFileRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/sound\/preview-file$/,
-      );
-      const portraitAssetRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/(prompt|preview|save|delete-preview|delete|restore-preview|restore)$/,
-      );
-      const portraitPreviewFileRoute = url.pathname.match(
-        /^\/api\/species\/([^/]+)\/assets\/portrait\/preview-file$/,
-      );
-
-      if (
-        (request.method === "GET" || request.method === "HEAD")
-        && mapPreviewFileRoute
-      ) {
+  const requestHandler = createExplorerRequestHandler({
+    host,
+    sessionToken,
+    sessionProtection,
+    repoRoot,
+    publicDir: PUBLIC_DIR,
+    bodyLimits: {
+      map: MAX_MAP_PREVIEW_BODY_BYTES,
+      sound: MAX_SOUND_PREVIEW_BODY_BYTES,
+      portrait: MAX_PORTRAIT_PREVIEW_BODY_BYTES,
+    },
+    operations: {
+      previewAssetFile({ assetType, id, token }) {
         cleanupPreviewTokens();
-        const id = decodeURIComponent(mapPreviewFileRoute[1]);
-        const token = String(url.searchParams.get("token") ?? "");
+        const expectedType = {
+          map: "map-asset",
+          sound: "sound-asset",
+          portrait: "portrait-asset",
+        }[assetType];
         const preview = previewTokens.get(token);
-        if (!preview || preview.type !== "map-asset" || preview.id !== id) {
-          sendText(response, 404, "Kartenvorschau nicht gefunden");
-          return;
+        return preview && preview.type === expectedType && preview.id === id
+          ? preview.stagingPath
+          : null;
+      },
+      async asset({ assetType, id, action, payload }) {
+        if (action === "delete-preview" || action === "restore-preview") {
+          return createAssetMutationPreview(
+            id,
+            assetType,
+            action === "delete-preview" ? "delete" : "restore",
+          );
         }
-        await sendFile(request, response, preview.stagingPath);
-        return;
-      }
-
-      if (
-        (request.method === "GET" || request.method === "HEAD")
-        && soundPreviewFileRoute
-      ) {
-        cleanupPreviewTokens();
-        const id = decodeURIComponent(soundPreviewFileRoute[1]);
-        const token = String(url.searchParams.get("token") ?? "");
-        const preview = previewTokens.get(token);
-        if (!preview || preview.type !== "sound-asset" || preview.id !== id) {
-          sendText(response, 404, "Soundvorschau nicht gefunden");
-          return;
+        if (action === "delete" || action === "restore") {
+          const operation = action;
+          return runConfirmedAssetMutation(payload, id, assetType, operation, () => (
+            operation === "delete"
+              ? deleteSpeciesAsset(id, assetType)
+              : restoreSpeciesAsset(id, assetType)
+          ));
         }
-        await sendFile(request, response, preview.stagingPath);
-        return;
-      }
-
-      if (
-        (request.method === "GET" || request.method === "HEAD")
-        && portraitPreviewFileRoute
-      ) {
-        cleanupPreviewTokens();
-        const id = decodeURIComponent(portraitPreviewFileRoute[1]);
-        const token = String(url.searchParams.get("token") ?? "");
-        const preview = previewTokens.get(token);
-        if (!preview || preview.type !== "portrait-asset" || preview.id !== id) {
-          sendText(response, 404, "Artporträt-Vorschau nicht gefunden");
-          return;
+        if (assetType === "map") {
+          return action === "preview"
+            ? previewMapAsset(id, payload)
+            : saveMapAsset(id, payload);
         }
-        await sendFile(request, response, preview.stagingPath);
-        return;
-      }
-
-      if (request.method === "POST" && mapAssetRoute) {
-        const id = decodeURIComponent(mapAssetRoute[1]);
-        const action = mapAssetRoute[2];
-        const payload = await readJsonBody(request, {
-          maxBytes: action === "preview" ? MAX_MAP_PREVIEW_BODY_BYTES : MAX_JSON_BODY_BYTES,
-        });
-        const result = action === "preview"
-          ? await previewMapAsset(id, payload)
-          : action === "delete-preview"
-            ? createAssetMutationPreview(id, "map", "delete")
-          : action === "restore-preview"
-            ? createAssetMutationPreview(id, "map", "restore")
-          : action === "restore"
-            ? await runConfirmedAssetMutation(payload, id, "map", "restore", () => restoreSpeciesAsset(id, "map"))
-          : action === "delete"
-            ? await runConfirmedAssetMutation(payload, id, "map", "delete", () => deleteSpeciesAsset(id, "map"))
-          : await saveMapAsset(id, payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && soundAssetRoute) {
-        const id = decodeURIComponent(soundAssetRoute[1]);
-        const action = soundAssetRoute[2];
-        const payload = await readJsonBody(request, {
-          maxBytes: action === "preview" ? MAX_SOUND_PREVIEW_BODY_BYTES : MAX_JSON_BODY_BYTES,
-        });
-        const result = action === "preview"
-          ? await previewSoundAsset(id, payload)
-          : action === "delete-preview"
-            ? createAssetMutationPreview(id, "sound", "delete")
-          : action === "restore-preview"
-            ? createAssetMutationPreview(id, "sound", "restore")
-          : action === "reject"
-            ? await rejectCurrentSoundAsset(id)
-            : action === "restore"
-              ? await runConfirmedAssetMutation(payload, id, "sound", "restore", () => restoreSpeciesAsset(id, "sound"))
-            : action === "delete"
-              ? await runConfirmedAssetMutation(payload, id, "sound", "delete", () => deleteSpeciesAsset(id, "sound"))
-            : await saveSoundAsset(id, payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && portraitAssetRoute) {
-        const id = decodeURIComponent(portraitAssetRoute[1]);
-        const action = portraitAssetRoute[2];
-        const payload = await readJsonBody(request, {
-          maxBytes: action === "preview"
-            ? MAX_PORTRAIT_PREVIEW_BODY_BYTES
-            : MAX_JSON_BODY_BYTES,
-        });
-        const result = action === "prompt"
-          ? createPortraitPrompt(id, payload)
-          : action === "preview"
-            ? await previewPortraitAsset(id, payload)
-            : action === "delete-preview"
-              ? createAssetMutationPreview(id, "portrait", "delete")
-            : action === "restore-preview"
-              ? createAssetMutationPreview(id, "portrait", "restore")
-            : action === "restore"
-              ? await runConfirmedAssetMutation(payload, id, "portrait", "restore", () => restoreSpeciesAsset(id, "portrait"))
-            : action === "delete"
-              ? await runConfirmedAssetMutation(payload, id, "portrait", "delete", () => deleteSpeciesAsset(id, "portrait"))
-            : await savePortraitAsset(id, payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (
-        request.method === "POST"
-        && (url.pathname === "/api/pipeline/preview" || url.pathname === "/api/pipeline/start")
-      ) {
-        const payload = await readJsonBody(request);
-        const result = url.pathname.endsWith("/preview")
-          ? await previewPipeline(payload)
-          : await startPipeline(payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && url.pathname === "/api/settings/backup") {
-        const payload = await readJsonBody(request);
-        sendJson(response, 200, await saveBackupSettings(payload));
-        return;
-      }
-
-      if (
-        request.method === "POST"
-        && (url.pathname === "/api/backup/preview" || url.pathname === "/api/backup/start")
-      ) {
-        const payload = await readJsonBody(request);
-        const result = url.pathname.endsWith("/preview")
-          ? await previewNasBackup()
+        if (assetType === "sound") {
+          if (action === "reject") return rejectCurrentSoundAsset(id);
+          return action === "preview"
+            ? previewSoundAsset(id, payload)
+            : saveSoundAsset(id, payload);
+        }
+        if (action === "prompt") return createPortraitPrompt(id, payload);
+        return action === "preview"
+          ? previewPortraitAsset(id, payload)
+          : savePortraitAsset(id, payload);
+      },
+      async pipeline({ action, payload }) {
+        return action === "preview"
+          ? previewPipeline(payload)
+          : startPipeline(payload);
+      },
+      async backupSettings({ payload }) {
+        return saveBackupSettings(payload);
+      },
+      async backup({ action, payload }) {
+        return action === "preview"
+          ? previewNasBackup()
           : startNasBackup(payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && url.pathname === "/api/pipeline/assets/review") {
-        const payload = await readJsonBody(request);
-        sendJson(response, 200, await savePipelineAssetReview(payload));
-        return;
-      }
-
-      if (
-        request.method === "POST"
-        && (
-          url.pathname === "/api/species/new/preview"
-          || url.pathname === "/api/species/new/save"
-          || url.pathname === "/api/species/new/portrait-prompt"
-          || url.pathname === "/api/species/new/portrait-preview"
-        )
-      ) {
-        const payload = await readJsonBody(request, {
-          maxBytes: url.pathname.endsWith("/portrait-preview")
-            ? MAX_PORTRAIT_PREVIEW_BODY_BYTES
-            : MAX_JSON_BODY_BYTES,
-        });
-        const result = url.pathname.endsWith("/preview")
-          ? await previewNewSpecies(payload)
-          : url.pathname.endsWith("/portrait-prompt")
-            ? createNewSpeciesPortraitPrompt(payload)
-            : url.pathname.endsWith("/portrait-preview")
-              ? await previewNewSpeciesPortrait(payload)
-              : await saveNewSpecies(payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && deleteRoute) {
-        const id = decodeURIComponent(deleteRoute[1]);
-        const payload = await readJsonBody(request);
-        const result = deleteRoute[2] === "preview"
-          ? await previewSpeciesDelete(id)
-          : await saveSpeciesDelete(id, payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method === "POST" && editRoute) {
-        const id = decodeURIComponent(editRoute[1]);
-        const payload = await readJsonBody(request);
-        const result = editRoute[2] === "preview"
-          ? await previewSpeciesEdit(id, payload)
-          : await saveSpeciesEdit(id, payload);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      if (request.method !== "GET" && request.method !== "HEAD") {
-        response.setHeader("Allow", "GET, HEAD, POST");
-        sendText(response, 405, "Nur definierte Lese- und Bearbeitungsrouten sind erlaubt.");
-        return;
-      }
-
-      if (url.pathname === "/api/summary") {
-        await refreshModel();
-        sendJson(response, 200, model.summary);
-        return;
-      }
-
-      if (url.pathname === "/api/species") {
-        await refreshModel();
-        sendJson(response, 200, model.species);
-        return;
-      }
-
-      if (url.pathname === "/api/validation") {
-        await refreshModel();
-        sendJson(response, 200, model.validation);
-        return;
-      }
-
-      if (url.pathname === "/api/revision") {
-        const changed = await refreshModel();
-        sendJson(response, 200, { revision: modelRevision, changed });
-        return;
-      }
-
-      if (url.pathname === "/api/pending-changes") {
-        await refreshModel();
-        sendJson(response, 200, await pendingChangesPayload());
-        return;
-      }
-
-      if (url.pathname === "/api/settings") {
-        sendJson(response, 200, publicSettingsPayload());
-        return;
-      }
-
-      if (url.pathname === "/api/pipeline/status") {
-        sendJson(response, 200, pipelineState);
-        return;
-      }
-
-      if (request.method === "GET" && url.pathname === "/api/pipeline/assets/backup-file") {
+      },
+      async pipelineAssetReview({ payload }) {
+        return savePipelineAssetReview(payload);
+      },
+      async newSpecies({ action, payload }) {
+        if (action === "preview") return previewNewSpecies(payload);
+        if (action === "portrait-prompt") return createNewSpeciesPortraitPrompt(payload);
+        if (action === "portrait-preview") return previewNewSpeciesPortrait(payload);
+        return saveNewSpecies(payload);
+      },
+      async deleteSpecies({ id, action, payload }) {
+        return action === "preview"
+          ? previewSpeciesDelete(id)
+          : saveSpeciesDelete(id, payload);
+      },
+      async editSpecies({ id, action, payload }) {
+        return action === "preview"
+          ? previewSpeciesEdit(id, payload)
+          : saveSpeciesEdit(id, payload);
+      },
+      async read({ resource }) {
+        if (resource === "summary") {
+          await refreshModel();
+          return model.summary;
+        }
+        if (resource === "species") {
+          await refreshModel();
+          return model.species;
+        }
+        if (resource === "validation") {
+          await refreshModel();
+          return model.validation;
+        }
+        if (resource === "revision") {
+          const changed = await refreshModel();
+          return { revision: modelRevision, changed };
+        }
+        if (resource === "pending-changes") {
+          await refreshModel();
+          return pendingChangesPayload();
+        }
+        if (resource === "settings") return publicSettingsPayload();
+        if (resource === "pipeline-status") return pipelineState;
+        if (resource === "backup-status") return backupState;
+        if (resource === "reload") {
+          await refreshModel({ force: true });
+          return { ok: true, summary: model.summary };
+        }
+        const error = new Error("Unbekannte Leseoperation");
+        error.statusCode = 404;
+        throw error;
+      },
+      async pipelineBackupFile({ url, request, response }) {
         await sendPipelineBackupFile(url, request, response);
-        return;
-      }
-
-      if (url.pathname === "/api/backup/status") {
-        sendJson(response, 200, backupState);
-        return;
-      }
-
-      if (url.pathname === "/api/reload") {
-        await refreshModel({ force: true });
-        sendJson(response, 200, { ok: true, summary: model.summary });
-        return;
-      }
-
-      if (url.pathname.startsWith("/assets/")) {
-        await sendFile(request, response, safeAssetPath(url.pathname, repoRoot));
-        return;
-      }
-
-      if (url.pathname.startsWith("/graphics/")) {
-        await sendFile(request, response, safeGraphicsPath(url.pathname, repoRoot));
-        return;
-      }
-
-      await sendFile(request, response, safePublicPath(url.pathname, PUBLIC_DIR));
-    } catch (error) {
-      sendJson(response, error.statusCode ?? 500, {
-        error: error.message,
-        details: error.details ?? [],
-        fieldErrors: error.fieldErrors ?? {},
-      });
-    }
+      },
+    },
   });
+  const server = createHttpServer(requestHandler);
 
   return {
     host,

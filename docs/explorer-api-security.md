@@ -10,6 +10,9 @@ private oder Link-Local-Netze missbraucht werden.
 
 Die Browser-, Sitzungs-, URL- und allgemeine Pfadgrenze liegt in `species-explorer/request-security.mjs`.
 Die darauf aufbauende HTTP-Dateigrenze liegt in `species-explorer/http-routing.mjs`.
+Die zentrale Methoden-/Pfadzuordnung und ihre Delegation an Fachoperationen liegt in
+`species-explorer/request-router.mjs`. `server.mjs` stellt dem Router nur die konkreten Arten-, Asset-, Pipeline-
+und Backupoperationen sowie den aktuellen Laufzustand bereit.
 
 ## Sitzung und Browsergrenze
 
@@ -67,12 +70,14 @@ Assetänderungen gezielt freigegeben werden.
 ```powershell
 npm.cmd run --silent test:security
 npm.cmd run --silent test:http
+npm.cmd run --silent test:router
 npm.cmd run --silent test:explorer
 ```
 
 Geprüft werden unter anderem falscher Host, Cross-Site-Kontext, fehlendes Sitzungstoken, falscher Content-Type,
 positive Schreibanfrage, Löschung ohne und mit Bestätigungstoken, private Karten-URL, private und öffentliche
-DNS-Auflösung, echte Pfadgrenzen, JSON-Body-Limits, Antwortheader und Byte-Range-Dateiauslieferung.
+DNS-Auflösung, echte Pfadgrenzen, JSON-Body-Limits, eindeutige Routenpriorität, Fachoperationsdelegation,
+Vorschaudateien, strukturierte Fehlerantworten, Antwortheader und Byte-Range-Dateiauslieferung.
 
 Squarespace-Footer und Squarespace-CSS sind von diesem Schritt nicht betroffen, weil sich die Änderung nur auf den
 lokalen Explorer-Server und dessen lokale Oberfläche bezieht.

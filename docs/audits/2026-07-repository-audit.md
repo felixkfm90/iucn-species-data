@@ -280,8 +280,18 @@ Umsetzungsstand am 2026-07-14:
   Body-Limits und Fehlercodes, Pfadgrenzen, Byte-Range-Auswertung, Antwortheader sowie vollständige, HEAD-, Range-,
   Fehler- und Nicht-gefunden-Dateiantworten. Gemeinsam mit den acht vorhandenen Modultests und den 24
   Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 55 Tests.
-- A4 bleibt offen. Als nächste sichere Grenze folgt die eigentliche Routenzuordnung, anschließend werden die großen
-  Oberflächenbereiche getrennt. Jeder Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
+- Der vierte kontrollierte Modulschnitt ist abgeschlossen. `species-explorer/request-router.mjs` übernimmt die
+  vollständige Methoden-/Pfadzuordnung, Browser- und Schreibschutzdelegation, aktionsabhängige Body-Limits,
+  strukturierte Fehlerantworten sowie die Auswahl der freigegebenen Vorschau-, Asset-, Grafik- und Public-Dateien.
+  Fachoperationen und veränderlicher Laufzustand verbleiben bewusst in `server.mjs` und werden als benannte
+  Operationen injiziert.
+- Vier direkte Routertests prüfen eindeutige Routen und den Vorrang der Neue-Art-Endpunkte, Lese- und statische
+  Antworten, dekodierte Schreibdelegation und Body-Limits sowie Vorschau- und Fehlerantworten. Die Neue-Art-Route
+  `portrait-preview` wird dabei ausdrücklich getrennt von der allgemeinen Artenvorschau geprüft.
+- `species-explorer/server.mjs` sank dadurch von 5.858 auf 5.654 Zeilen. Gemeinsam mit den dreizehn vorhandenen
+  Modultests und den 24 Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 59 Tests.
+- A4 bleibt offen. Als nächste sichere Grenze werden die großen Oberflächenbereiche getrennt. Jeder Schnitt erhält
+  vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 
