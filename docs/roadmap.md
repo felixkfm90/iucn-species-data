@@ -596,9 +596,12 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Metadaten sowie der Aufbewahrung von Asset-, Eingabelisten- und Pipeline-Sicherungen liegt im eigenständigen Modul
   `species-explorer/asset-backups.mjs`. Der zweite verhaltensneutrale Schnitt bündelt Felddefinitionen,
   Namensnormalisierung, Artenvalidierung, Kollisionsprüfungen, Bearbeitungsdiffs und Reportvergleiche in
-  `species-explorer/species-model.mjs`. Acht direkte Modultests ergänzen die 24 Explorer-Integrationstests; der
-  gemeinsame Testeinstieg umfasst damit 50 Tests. Der Server sank im zweiten Schnitt von 6.557 auf 6.052 Zeilen.
-  Als nächste sichere Modulgrenze folgt HTTP/Routing; weitere Grenzen werden ohne Big-Bang-Umbau gezogen.
+  `species-explorer/species-model.mjs`. Der dritte verhaltensneutrale Schnitt bündelt JSON-Anfragegrenzen,
+  HTTP-Antworten, sichere öffentliche/Asset-/Grafikpfade, MIME-Typen, Byte-Range-Dateiauslieferung und aktive
+  Dateistreams in `species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24
+  Explorer-Integrationstests; der gemeinsame Testeinstieg umfasst damit 55 Tests. Der Server sank über die drei
+  Schnitte von 6.557 auf 5.858 Zeilen. Als nächste sichere Grenze folgt die Routenzuordnung; anschließend wird die
+  Oberfläche ohne Big-Bang-Umbau weiter getrennt.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

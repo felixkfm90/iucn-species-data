@@ -255,7 +255,7 @@ Kein Big-Bang-Umbau: zuerst Charakterisierungstests ergänzen, dann Modul für M
 Explorer-Zerlegung muss das Taxonomie-Frontend nicht blockieren; neue Funktionen sollten den Monolithen aber nicht
 weiter vergrößern.
 
-Umsetzungsstand am 2026-07-13:
+Umsetzungsstand am 2026-07-14:
 
 - Der erste verhaltensneutrale Modulschnitt ist abgeschlossen. `species-explorer/asset-backups.mjs` bündelt
   Dateinamensregeln, Metadaten, Schreiben, Auffinden und Aufbewahrung wiederherstellbarer Asset-Sicherungen sowie
@@ -272,7 +272,15 @@ Umsetzungsstand am 2026-07-13:
   Normalisierung, neue Arten, Datei- und Datenkollisionen, Bearbeitungs-/Umbenennungsdiffs sowie öffentliche
   Report- und Plandaten. Gemeinsam mit den drei Backuptests und den 24 Explorer-Integrationstests umfasst der
   vollständige Testeinstieg jetzt 50 Tests.
-- A4 bleibt offen. Als nächste sichere Grenze folgt HTTP/Routing, anschließend werden die großen
+- Der dritte verhaltensneutrale Modulschnitt ist abgeschlossen. `species-explorer/http-routing.mjs` bündelt
+  JSON-Anfragegrenzen, JSON-/Textantworten, sichere öffentliche/Asset-/Grafikpfade, MIME-Typen,
+  Byte-Range-Dateiauslieferung und das Freigeben aktiver Dateistreams. Fehlerhaft URL-kodierte Pfade werden
+  kontrolliert abgewiesen.
+- `species-explorer/server.mjs` sank dadurch von 6.052 auf 5.858 Zeilen. Fünf direkte HTTP-Tests prüfen
+  Body-Limits und Fehlercodes, Pfadgrenzen, Byte-Range-Auswertung, Antwortheader sowie vollständige, HEAD-, Range-,
+  Fehler- und Nicht-gefunden-Dateiantworten. Gemeinsam mit den acht vorhandenen Modultests und den 24
+  Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 55 Tests.
+- A4 bleibt offen. Als nächste sichere Grenze folgt die eigentliche Routenzuordnung, anschließend werden die großen
   Oberflächenbereiche getrennt. Jeder Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert

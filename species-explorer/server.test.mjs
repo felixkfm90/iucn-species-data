@@ -2264,6 +2264,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     assetOverrides,
     assetBackupsSource,
     speciesModelSource,
+    httpRoutingSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
@@ -2282,6 +2283,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("./asset-backups.mjs", import.meta.url), "utf8"),
     readFile(new URL("./species-model.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./http-routing.mjs", import.meta.url), "utf8"),
   ]);
 
   assert.match(appSource, /class="map-image"/);
@@ -2816,7 +2818,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.delete-assets-option\s*\{/);
   assert.match(cssSource, /\.delete-assets-option input\s*\{[^}]*width:\s*16px/s);
   assert.match(serverSource, /mode:\s*preview\.mode/);
-  assert.match(serverSource, /function safeGraphicsPath\(pathname, repoRoot\)/);
+  assert.match(httpRoutingSource, /function safeGraphicsPath\(pathname, repoRoot\)/);
+  assert.match(serverSource, /from "\.\/http-routing\.mjs"/);
   assert.match(cssSource, /button\.danger/);
   assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);

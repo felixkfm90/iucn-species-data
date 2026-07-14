@@ -745,9 +745,11 @@ Auditpunkt A4 wird seit 2026-07-13 schrittweise und verhaltensneutral umgesetzt.
 die Verwaltung wiederherstellbarer Asset-Sicherungen sowie die Aufbewahrung von Eingabelisten- und Pipeline-
 Sicherungen aus `species-explorer/server.mjs` nach `species-explorer/asset-backups.mjs`. Der zweite Schnitt buendelt
 Felddefinitionen, Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche
-in `species-explorer/species-model.mjs`. Acht direkte Modultests ergaenzen die 24 Explorer-Integrationstests; der
-gemeinsame Testeinstieg umfasst jetzt 50 Tests. `server.mjs` sank im zweiten Schnitt von 6.557 auf 6.052 Zeilen. A4
-bleibt bis zur weiteren Trennung von HTTP/Routing und Oberflaeche offen.
+in `species-explorer/species-model.mjs`. Der dritte Schnitt verlagert JSON-Body-Limits, Antworthelfer, sichere
+Pfadauflösung, MIME-Typen, Byte-Range-Dateiauslieferung und die Freigabe aktiver Dateistreams nach
+`species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24 Explorer-Integrationstests; der
+gemeinsame Testeinstieg umfasst jetzt 55 Tests. `server.mjs` sank über die drei Schnitte von 6.557 auf 5.858 Zeilen.
+Die HTTP-Basis ist damit getrennt; A4 bleibt bis zur weiteren Trennung des Routings und der Oberfläche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

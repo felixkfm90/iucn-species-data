@@ -1,6 +1,6 @@
 # Sicherheitsgrenze der lokalen Explorer-API
 
-Stand: 2026-07-12
+Stand: 2026-07-14
 
 ## Ziel und Bedrohungsmodell
 
@@ -8,7 +8,8 @@ Der Arten-Explorer bindet weiterhin ausschließlich an `127.0.0.1`. Trotzdem dar
 keine schreibenden Anfragen an den lokalen Dienst auslösen und der Kartenimport darf nicht als Zugriff auf lokale,
 private oder Link-Local-Netze missbraucht werden.
 
-Die zentrale Implementierung liegt in `species-explorer/request-security.mjs`.
+Die Browser-, Sitzungs-, URL- und allgemeine Pfadgrenze liegt in `species-explorer/request-security.mjs`.
+Die darauf aufbauende HTTP-Dateigrenze liegt in `species-explorer/http-routing.mjs`.
 
 ## Sitzung und Browsergrenze
 
@@ -56,16 +57,22 @@ Der spezielle Windows-WebRequest-Fallback bleibt auf den bekannten öffentlichen
 `path.relative()`-Verzeichnisgrenzen. Ähnlich benannte Nachbarverzeichnisse werden dadurch nicht mehr über einen
 reinen Stringpräfix akzeptiert.
 
+Das HTTP-Basismodul begrenzt außerdem JSON-Anfragegrößen, weist ungültig URL-kodierte Pfade kontrolliert ab und
+liefert lokale Dateien nur aus den freigegebenen Public-, Asset- und Grafikpfaden aus. MP3- und andere Dateien
+unterstützen vollständige, `HEAD`- und standardkonforme Byte-Range-Antworten; aktive Streams können vor
+Assetänderungen gezielt freigegeben werden.
+
 ## Tests
 
 ```powershell
 npm.cmd run --silent test:security
+npm.cmd run --silent test:http
 npm.cmd run --silent test:explorer
 ```
 
 Geprüft werden unter anderem falscher Host, Cross-Site-Kontext, fehlendes Sitzungstoken, falscher Content-Type,
 positive Schreibanfrage, Löschung ohne und mit Bestätigungstoken, private Karten-URL, private und öffentliche
-DNS-Auflösung sowie echte Pfadgrenzen.
+DNS-Auflösung, echte Pfadgrenzen, JSON-Body-Limits, Antwortheader und Byte-Range-Dateiauslieferung.
 
 Squarespace-Footer und Squarespace-CSS sind von diesem Schritt nicht betroffen, weil sich die Änderung nur auf den
 lokalen Explorer-Server und dessen lokale Oberfläche bezieht.

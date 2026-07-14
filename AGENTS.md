@@ -60,6 +60,9 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/server.mjs`: lokaler Server auf `127.0.0.1:4177` mit begrenzter `species_list.json`-Bearbeitung
 - `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
 - `species-explorer/request-security.mjs`: zentrale Sitzungs-, Browser-, URL-Ziel- und Pfadgrenze der lokalen API
+- `species-explorer/http-routing.mjs`: JSON-/HTTP-Antworten, sichere Auslieferung lokaler Dateien und Byte-Ranges
+- `species-explorer/species-model.mjs`: Artenvalidierung, Normalisierung, Kollisionen, Diffs und öffentliche Projektionen
+- `species-explorer/asset-backups.mjs`: wiederherstellbare Asset-Sicherungen und begrenzte Backup-/Log-Aufbewahrung
 - `species-explorer/server.test.mjs`: Modell-, API-, Schreibschutz-, Backup-, Such- und Filtertests
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
@@ -708,9 +711,11 @@ Aktuelle Planung:
   verschiebt Asset-Sicherungen, Sicherungsmetadaten und die Aufbewahrung von Asset-, Eingabelisten- und Pipeline-
   Sicherungen nach `species-explorer/asset-backups.mjs`. Der zweite Schnitt verschiebt Felddefinitionen,
   Namensnormalisierung, Artenvalidierung, Kollisionspruefungen, Bearbeitungsdiffs und Reportvergleiche nach
-  `species-explorer/species-model.mjs`. Acht direkte Modultests ergaenzen die 24 Explorer-Integrationspruefungen;
-  der gemeinsame Testeinstieg umfasst 50 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 6.052 Zeilen.
-  A4 bleibt offen, bis HTTP/Routing und Oberflaeche weiter getrennt sind.
+  `species-explorer/species-model.mjs`. Der dritte Schnitt verschiebt JSON-Anfragegrenzen, HTTP-Antworten, sichere
+  öffentliche/Asset-/Grafikpfade, MIME-Typen, Byte-Range-Dateiauslieferung und aktive Dateistreams nach
+  `species-explorer/http-routing.mjs`. Dreizehn direkte Modultests ergänzen die 24 Explorer-Integrationsprüfungen;
+  der gemeinsame Testeinstieg umfasst 55 Tests. `species-explorer/server.mjs` sank dabei von 6.557 auf 5.858 Zeilen.
+  Die HTTP-Basis ist getrennt; A4 bleibt offen, bis Routenzuordnung und Oberfläche weiter modularisiert sind.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

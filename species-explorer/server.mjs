@@ -1,6 +1,5 @@
 import {
   copyFileSync,
-  createReadStream,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -10,7 +9,7 @@ import {
 import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
-import { dirname, extname, join, normalize, resolve, sep } from "node:path";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -79,22 +78,24 @@ import {
   validateScientificRename,
   valueOrUnknown,
 } from "./species-model.mjs";
+import {
+  MAX_JSON_BODY_BYTES,
+  closeActiveFileStreams,
+  readJsonBody,
+  safeAssetPath,
+  safeGraphicsPath,
+  safePublicPath,
+  sendFile,
+  sendJson,
+  sendText,
+} from "./http-routing.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
 const PUBLIC_DIR = join(APP_DIR, "public");
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4177;
-const ASSET_FILES = new Set([
-  "map.jpg",
-  "sound.mp3",
-  "credits.json",
-  "spectrogram.webp",
-  "portrait.webp",
-  "portrait.json",
-]);
 const PREVIEW_TOKEN_TTL_MS = 10 * 60 * 1000;
-const MAX_JSON_BODY_BYTES = 16 * 1024;
 const MAX_MAP_BYTES = 20 * 1024 * 1024;
 const MAX_MAP_PREVIEW_BODY_BYTES = 28 * 1024 * 1024;
 const MAP_SOURCE_FETCH_TIMEOUT_MS = 30_000;
@@ -111,26 +112,6 @@ const DEFAULT_NAS_BACKUP_ROOT = "W:\\Website Datenbank Backup";
 const LOCAL_SETTINGS_FILE = "local-settings.json";
 const execFileAsync = promisify(execFile);
 const MAX_BACKUP_ROOT_LENGTH = 500;
-
-const MIME_TYPES = {
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".jpg": "image/jpeg",
-  ".png": "image/png",
-  ".mp3": "audio/mpeg",
-  ".webp": "image/webp",
-};
-const activeFileStreams = new Set();
-
-function closeActiveFileStreams(predicate = () => true) {
-  for (const entry of [...activeFileStreams]) {
-    if (!predicate(entry.path)) continue;
-    entry.stream.destroy();
-    activeFileStreams.delete(entry);
-  }
-}
 
 export function formatSpectrogramPipelineLog(stdoutText) {
   const raw = String(stdoutText ?? "").trim();
@@ -948,29 +929,6 @@ async function writeTextAtomic(filePath, nextText) {
   }
 }
 
-async function readJsonBody(request, { maxBytes = MAX_JSON_BODY_BYTES } = {}) {
-  const chunks = [];
-  let bytes = 0;
-
-  for await (const chunk of request) {
-    bytes += chunk.length;
-    if (bytes > maxBytes) {
-      const error = new Error("Anfrage ist zu groß");
-      error.statusCode = 413;
-      throw error;
-    }
-    chunks.push(chunk);
-  }
-
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
-  } catch {
-    const error = new Error("Ungültige JSON-Anfrage");
-    error.statusCode = 400;
-    throw error;
-  }
-}
-
 async function buildExplorerRevision(repoRoot) {
   const parts = [];
   const trackedFiles = [
@@ -1490,158 +1448,6 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   };
 
   return { summary, validation, species };
-}
-
-function sendJson(response, statusCode, payload) {
-  response.writeHead(statusCode, {
-    "Content-Type": MIME_TYPES[".json"],
-    "Cache-Control": "no-store",
-  });
-  response.end(JSON.stringify(payload));
-}
-
-function sendText(response, statusCode, text) {
-  response.writeHead(statusCode, {
-    "Content-Type": "text/plain; charset=utf-8",
-    "Cache-Control": "no-store",
-  });
-  response.end(text);
-}
-
-function safePublicPath(pathname) {
-  let requested;
-  try {
-    requested = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
-  } catch {
-    return null;
-  }
-  const path = normalize(join(PUBLIC_DIR, requested));
-  return isPathInside(PUBLIC_DIR, path) ? path : null;
-}
-
-function safeAssetPath(pathname, repoRoot) {
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length !== 3 || parts[0] !== "assets") return null;
-  const safeName = decodeURIComponent(parts[1]);
-  const fileName = parts[2];
-  if (sanitizeAssetName(safeName) !== safeName || !ASSET_FILES.has(fileName)) return null;
-  const assetRoot = join(repoRoot, "species-assets");
-  const path = normalize(join(assetRoot, safeName, fileName));
-  return isPathInside(assetRoot, path) ? path : null;
-}
-
-function safeGraphicsPath(pathname, repoRoot) {
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length !== 3 || parts[0] !== "graphics") return null;
-  const directory = decodeURIComponent(parts[1]);
-  const fileName = decodeURIComponent(parts[2]);
-  if (!new Set(["catagory", "trend"]).has(directory)) return null;
-  if (!/^[A-Za-z0-9_-]+\.png$/.test(fileName)) return null;
-  const graphicsRoot = join(repoRoot, "graphics");
-  const path = normalize(join(graphicsRoot, directory, fileName));
-  return isPathInside(graphicsRoot, path) ? path : null;
-}
-
-function parseByteRange(rangeHeader, size) {
-  const match = String(rangeHeader ?? "").match(/^bytes=(\d*)-(\d*)$/);
-  if (!match) return null;
-
-  const [, rawStart, rawEnd] = match;
-  if (!rawStart && !rawEnd) return null;
-
-  let start;
-  let end;
-  if (!rawStart) {
-    const suffixLength = Number(rawEnd);
-    if (!Number.isInteger(suffixLength) || suffixLength <= 0) return null;
-    start = Math.max(0, size - suffixLength);
-    end = size - 1;
-  } else {
-    start = Number(rawStart);
-    end = rawEnd ? Number(rawEnd) : size - 1;
-  }
-
-  if (
-    !Number.isInteger(start)
-    || !Number.isInteger(end)
-    || start < 0
-    || end < start
-    || start >= size
-  ) {
-    return null;
-  }
-
-  return { start, end: Math.min(end, size - 1) };
-}
-
-async function sendFile(request, response, path) {
-  if (!path || !existsSync(path)) {
-    sendText(response, 404, "Nicht gefunden");
-    return;
-  }
-
-  const details = await stat(path);
-  if (!details.isFile()) {
-    sendText(response, 404, "Nicht gefunden");
-    return;
-  }
-
-  const baseHeaders = {
-    "Content-Type": MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream",
-    "Cache-Control": "no-store",
-    "Accept-Ranges": "bytes",
-  };
-  const rangeHeader = request.headers.range;
-
-  const streamFile = (options) => {
-    const stream = createReadStream(path, options);
-    const entry = { path, stream };
-    activeFileStreams.add(entry);
-    const cleanup = () => {
-      activeFileStreams.delete(entry);
-      stream.destroy();
-    };
-    response.on("close", cleanup);
-    response.on("finish", cleanup);
-    stream.on("close", cleanup);
-    stream.on("error", cleanup);
-    stream.pipe(response);
-  };
-
-  if (rangeHeader) {
-    const range = parseByteRange(rangeHeader, details.size);
-    if (!range) {
-      response.writeHead(416, {
-        ...baseHeaders,
-        "Content-Range": `bytes */${details.size}`,
-      });
-      response.end();
-      return;
-    }
-
-    const contentLength = range.end - range.start + 1;
-    response.writeHead(206, {
-      ...baseHeaders,
-      "Content-Length": contentLength,
-      "Content-Range": `bytes ${range.start}-${range.end}/${details.size}`,
-    });
-    if (request.method === "HEAD") {
-      response.end();
-      return;
-    }
-    streamFile(range);
-    return;
-  }
-
-  response.writeHead(200, {
-    ...baseHeaders,
-    "Content-Length": details.size,
-  });
-  if (request.method === "HEAD") {
-    response.end();
-    return;
-  }
-  streamFile();
 }
 
 export async function createExplorerServer({
@@ -5969,7 +5775,7 @@ export async function createExplorerServer({
         return;
       }
 
-      await sendFile(request, response, safePublicPath(url.pathname));
+      await sendFile(request, response, safePublicPath(url.pathname, PUBLIC_DIR));
     } catch (error) {
       sendJson(response, error.statusCode ?? 500, {
         error: error.message,
