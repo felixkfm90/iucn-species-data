@@ -30,7 +30,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
-| `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` enthält Fachoperationen und Laufzustand; `request-security.mjs`, `http-routing.mjs`, `request-router.mjs`, `species-model.mjs` und `asset-backups.mjs` bilden die getrennten Sicherheits-, HTTP-, Routing-, Modell- und Sicherungsgrenzen. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze der Browseroberfläche. |
+| `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` enthält Fachoperationen und Laufzustand; `request-security.mjs`, `http-routing.mjs`, `request-router.mjs`, `species-model.mjs` und `asset-backups.mjs` bilden die getrennten Sicherheits-, HTTP-, Routing-, Modell- und Sicherungsgrenzen. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze der Browseroberfläche. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |

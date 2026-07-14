@@ -723,7 +723,12 @@ Aktuelle Planung:
   `species-explorer/public/app-foundation.js` die Zustandsinitialisierung, den Sitzungstoken, geschützte
   JSON-Anfragen, das gemeinsame Explorer-Datenpaket und die Revisionsabfrage aus `public/app.js`. Vier direkte
   Frontend-Grundlagentests ergänzen den Testeinstieg auf 63 Tests; `app.js` sank von 5.688 auf 5.583 Zeilen. A4
-  bleibt offen, bis weitere fachliche Oberflächenbereiche schrittweise modularisiert sind.
+  bleibt offen, bis weitere fachliche Oberflächenbereiche schrittweise modularisiert sind. Der sechste A4-Schnitt
+  führt `species-explorer/public/app-presentation.js` als reine Anzeigegrenze ein: HTML-/URL-Sicherheit,
+  Größen-, Datums-, IUCN-, Asset- und Lizenzformatierung, Datenzeilen sowie versionsbasierte Medien-URLs liegen
+  nicht mehr im Oberflächenmonolithen. Fünf direkte Präsentationstests erhöhen den gemeinsamen Testeinstieg auf
+  68 Tests; `app.js` sank weiter auf 5.389 Zeilen. Das Modul wird lokal vor `app.js` geladen. Squarespace-JavaScript,
+  Footer-Versionen und Squarespace-CSS wurden in diesem Schnitt nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

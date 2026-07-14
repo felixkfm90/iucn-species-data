@@ -608,8 +608,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   wird. Der erste Oberflächenschnitt ist abgeschlossen: `species-explorer/public/app-foundation.js` enthält die
   unabhängige Zustandsfabrik sowie den zentralen Browser-API-Client für Sitzung, geschützte JSON-Anfragen,
   Explorer-Datenpaket und Revision. Vier direkte Tests erhöhen den gemeinsamen Testeinstieg auf 63 Tests;
-  `public/app.js` sank von 5.688 auf 5.583 Zeilen. Als nächste A4-Grenze folgt ein kleiner, fachlich geschlossener
-  Oberflächenbereich mit eigenen Charakterisierungstests.
+  `public/app.js` sank von 5.688 auf 5.583 Zeilen. Der zweite Oberflächenschnitt ist ebenfalls abgeschlossen:
+  `species-explorer/public/app-presentation.js` enthält die reinen Anzeige-, IUCN-, Lizenz-, Datenzeilen- und
+  Medien-URL-Helfer. Fünf direkte Tests erhöhen den gemeinsamen Testeinstieg auf 68 Tests; `public/app.js` sank
+  weiter auf 5.389 Zeilen. Squarespace-Module, Footer und Custom CSS blieben unverändert. Als nächste A4-Grenze
+  folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

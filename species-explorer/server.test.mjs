@@ -341,6 +341,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(foundationResponse.headers.get("content-type"), /javascript/);
   assert.match(await foundationResponse.text(), /createExplorerApiClient/);
 
+  const presentationResponse = await fetch(`${baseUrl}/app-presentation.js`);
+  assert.equal(presentationResponse.status, 200);
+  assert.match(presentationResponse.headers.get("content-type"), /javascript/);
+  assert.match(await presentationResponse.text(), /formatSexSpecificDataValue/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2254,6 +2259,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   const [
     appSource,
     appFoundationSource,
+    appPresentationSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2275,6 +2281,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2296,10 +2303,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   ]);
 
   assert.match(appSource, /class="map-image"/);
-  assert.match(htmlSource, /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/);
+  assert.match(
+    htmlSource,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+  );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
+  assert.match(appPresentationSource, /function formatSexSpecificDataValue\(value\)/);
+  assert.match(appPresentationSource, /function versionedAssetUrl\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
+  assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2319,17 +2332,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     /const seekFromPointer = async \(event\) => \{[\s\S]*audio\.currentTime = progress \* audio\.duration;[\s\S]*await audio\.play\(\)/,
   );
-  assert.match(appSource, /Gefährdet/);
+  assert.match(appPresentationSource, /Gefährdet/);
   assert.match(appSource, /IUCN-Daten abgerufen/);
-  assert.match(appSource, /function formatSexSpecificDataValue\(value\)/);
-  assert.match(appSource, /class="sex-specific-value"/);
+  assert.match(appPresentationSource, /function formatSexSpecificDataValue\(value\)/);
+  assert.match(appPresentationSource, /class="sex-specific-value"/);
   assert.match(appSource, /class="iucn-heading-status"/);
   assert.match(appSource, /class="iucn-heading-trend"/);
-  assert.match(appSource, /class="iucn-data-icon/);
+  assert.match(appPresentationSource, /class="iucn-data-icon/);
   assert.match(appSource, /function createIndicatorIcon\(url, title, className = ""\)/);
   assert.match(appSource, /species-list-indicator/);
-  assert.match(appSource, /\/graphics\/catagory\/\$\{encodeURIComponent\(code\)\}\.png/);
-  assert.match(appSource, /\/graphics\/trend\/\$\{encodeURIComponent\(fileName\)\}/);
+  assert.match(appPresentationSource, /\/graphics\/catagory\/\$\{encodeURIComponent\(code\)\}\.png/);
+  assert.match(appPresentationSource, /\/graphics\/trend\/\$\{encodeURIComponent\(fileName\)\}/);
   assert.match(appSource, /class="audio-credits" open/);
   assert.match(appSource, /Keine Karte vorhanden/);
   assert.doesNotMatch(appSource, /Keine bisherige Karte vorhanden/);
@@ -2343,8 +2356,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/preview/);
   assert.match(appSource, /\/save/);
   assert.match(appSource, /Diff-Vorschau/);
-  assert.match(appSource, /function backupRetentionText\(result\)/);
-  assert.match(appSource, /if \(!retention\) return ""/);
+  assert.match(appPresentationSource, /function backupRetentionText\(result\)/);
+  assert.match(appPresentationSource, /if \(!retention\) return ""/);
   assert.match(appSource, /function setupNewSpeciesCreator\(\)/);
   assert.match(appSource, /function setupSafeBackdropClose\(dialog, close\)/);
   assert.match(
@@ -2508,7 +2521,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /rejectedSources: preservedSoundRejections/);
   assert.match(appSource, /async function refreshOpenSoundEditor/);
   assert.match(appSource, /await notifySilentPipelineContext\(status\)/);
-  assert.match(appSource, /function versionedAssetUrl/);
+  assert.match(appPresentationSource, /function versionedAssetUrl/);
   assert.match(appSource, /species\.assets\.spectrogram\?\.soundSha256/);
   assert.match(appSource, /assetReviewAwaitingRetry/);
   assert.match(appSource, /Gefundener Sound wurde abgelehnt und gemerkt\. Nächster Sound wird gesucht/);
@@ -2616,7 +2629,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Sound, Credits und Spektrogramm lokal gesichert und ersetzt/);
   assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
   assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
-  assert.match(appSource, /Soundhash geprüft/);
+  assert.match(appPresentationSource, /Soundhash geprüft/);
   assert.match(cssSource, /\.sound-compare-grid/);
   assert.match(appSource, /class="portrait-prompt-button"/);
   assert.match(appSource, /class="portrait-copy-button"/);

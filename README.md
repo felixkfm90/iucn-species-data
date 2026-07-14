@@ -757,8 +757,13 @@ getrennt. Der fünfte Schnitt beginnt die Oberflächentrennung mit
 `species-explorer/public/app-foundation.js`: Zustandsinitialisierung, Sitzungstoken, geschützte JSON-Anfragen,
 gemeinsames Laden von Zusammenfassung/Validierung/Arten/Revision/offenen Änderungen und die Revisionsabfrage sind
 aus `app.js` herausgelöst. Vier direkte Frontend-Grundlagentests erhöhen den gemeinsamen Testeinstieg auf 63 Tests;
-`app.js` sank dabei von 5.688 auf 5.583 Zeilen. A4 bleibt für die weitere schrittweise Trennung der fachlichen
-Oberflächenbereiche offen.
+`app.js` sank dabei von 5.688 auf 5.583 Zeilen. Der sechste Schnitt ergänzt
+`species-explorer/public/app-presentation.js` als reine, direkt testbare Anzeigegrenze für HTML-/URL-Sicherheit,
+Größen-, Datums-, IUCN-, Asset- und Lizenzformatierung, Datenzeilen sowie versionsbasierte Medien-URLs. Fünf
+direkte Präsentationstests erhöhen den gemeinsamen Testeinstieg auf 68 Tests; `app.js` sank dabei weiter auf
+5.389 Zeilen. Die lokale Explorer-Anbindung lädt das Modul vor `app.js`; Squarespace-Module, Footer-Versionen und
+Custom CSS wurden durch diesen lokalen A4-Schnitt nicht verändert. A4 bleibt für die weitere schrittweise Trennung
+der fachlichen Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

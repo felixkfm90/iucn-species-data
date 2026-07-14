@@ -297,6 +297,15 @@ Umsetzungsstand am 2026-07-14:
 - Vier direkte Frontend-Grundlagentests prüfen unabhängige Zustände, Session-Caching und Schreibheader,
   Schnappschussreihenfolge sowie strukturierte Fehler und Revisionsausfälle. Gemeinsam mit den 17 bisherigen
   Modultests und den 24 Explorer-Integrationstests umfasst der vollständige Testeinstieg jetzt 63 Tests.
+- Der sechste verhaltensneutrale Modulschnitt trennt reine Präsentationslogik in
+  `species-explorer/public/app-presentation.js`: HTML- und URL-Sicherheit, Größen-/Datumsformatierung,
+  IUCN-Bezeichnungen und lokale Symbolpfade, Assetstatus, geschlechtsspezifische Datenzeilen,
+  Soundlizenzkennzeichnung sowie versionsbasierte Medien-URLs. Das Modul besitzt keinen veränderlichen Zustand und
+  steuert weder Dialoge noch Audio-/DOM-Ereignisse.
+- Fünf direkte Präsentationstests prüfen sichere Ausgaben, Formatierung, vertrauenswürdige Datenzeilen, IUCN- und
+  Lizenzanzeigen sowie deterministische Asset-URLs. Der gemeinsame vollständige Testeinstieg umfasst damit jetzt
+  68 Tests. `public/app.js` sank von 5.583 auf 5.389 Zeilen. Squarespace-Laufzeitdateien, Footer-Versionen und
+  Custom CSS blieben unberührt.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
