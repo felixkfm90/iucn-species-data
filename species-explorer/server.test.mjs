@@ -351,6 +351,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(measurementsResponse.headers.get("content-type"), /javascript/);
   assert.match(await measurementsResponse.text(), /parseManualMeasurement/);
 
+  const dialogsResponse = await fetch(`${baseUrl}/app-dialogs.js`);
+  assert.equal(dialogsResponse.status, 200);
+  assert.match(dialogsResponse.headers.get("content-type"), /javascript/);
+  assert.match(await dialogsResponse.text(), /createDialogController/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2266,6 +2271,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appFoundationSource,
     appPresentationSource,
     appMeasurementsSource,
+    appDialogsSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2289,6 +2295,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2312,7 +2319,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2320,9 +2327,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appPresentationSource, /function versionedAssetUrl\(/);
   assert.match(appMeasurementsSource, /function parseManualMeasurement\(/);
   assert.match(appMeasurementsSource, /function renderManualMeasurementEditor\(/);
+  assert.match(appDialogsSource, /function createDialogController\(/);
+  assert.match(appDialogsSource, /function releaseMediaWithin\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
+  assert.match(appSource, /window\.SpeciesExplorerDialogs/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2369,15 +2379,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appPresentationSource, /function backupRetentionText\(result\)/);
   assert.match(appPresentationSource, /if \(!retention\) return ""/);
   assert.match(appSource, /function setupNewSpeciesCreator\(\)/);
-  assert.match(appSource, /function setupSafeBackdropClose\(dialog, close\)/);
+  assert.match(appDialogsSource, /function setupSafeBackdropClose\(dialog, close\)/);
   assert.match(
-    appSource,
+    appDialogsSource,
     /startedOnBackdrop = event\.target === dialog;[\s\S]*startedOnBackdrop && event\.target === dialog/,
   );
   assert.doesNotMatch(
-    appSource,
+    appDialogsSource,
     /dialog\.addEventListener\("click",\s*\(event\)\s*=>\s*\{\s*if \(event\.target === dialog\)/,
   );
+  assert.doesNotMatch(appSource, /function setupSafeBackdropClose\(/);
   assert.match(appSource, /\/api\/species\/new\/preview/);
   assert.match(appSource, /\/api\/species\/new\/save/);
   assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
@@ -2398,7 +2409,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appSource, /let maxStepReached = 1/);
   assert.match(appSource, /indicator\.addEventListener\("click"/);
-  assert.match(appSource, /newSpeciesPipelineActive\) return;[\s\S]*form\.reset\(\);[\s\S]*resetAll\(\);/);
+  assert.match(
+    appSource,
+    /beforeClose: \(\) => \{[\s\S]*newSpeciesPipelineActive\) return false;[\s\S]*form\.reset\(\);[\s\S]*resetAll\(\);/,
+  );
   assert.match(cssSource, /\.new-species-value-unit/);
   assert.match(cssSource, /\.new-species-steps li\.reachable/);
   assert.match(appSource, /Artportrait wird lokal übernommen/);
@@ -2447,11 +2461,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /openMapLightbox/);
   assert.match(
     appSource,
-    /const stopAssetReviewAudio = \(\) => \{[\s\S]*audio\.pause\(\);[\s\S]*audio\.currentTime = 0;/,
+    /const stopAssetReviewAudio = \(\) => \{[\s\S]*releaseMediaWithin\(elements\.assetReviewList\);/,
   );
   assert.match(
     appSource,
-    /dialog\.addEventListener\("close", \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
+    /const reviewController = createDialogController\(\{[\s\S]*afterClose: \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
   );
   assert.match(appSource, /Datenbank aktuell/);
   assert.match(appSource, /Datenbank-Aktionen/);

@@ -315,6 +315,16 @@ Umsetzungsstand am 2026-07-14:
   zugleich den behobenen Altfehler ab, bei dem wegen der Einheitenreihenfolge aus `kg` nur das abschließende `g`
   entfernt wurde. Der gemeinsame Testeinstieg umfasst damit 73 Tests; `public/app.js` sank von 5.389 auf 5.241
   Zeilen. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unberührt.
+- Der achte kontrollierte Oberflächenschnitt bündelt mit `species-explorer/public/app-dialogs.js` die gemeinsamen
+  Dialogregeln: modales Öffnen und Schließen, sichere Hintergrundklicks, Escape-Behandlung, Schließsperren,
+  Körperklassen und das Freigeben von Audio-/Videoquellen. Datenbank-, Backup-, Pipeline-, Neue-Art-,
+  Bearbeitungs-, Lösch-, Karten-, Portrait-, Assetprüf- und Bestätigungsdialoge verwenden diese Grenze; ihre
+  fachlichen Speichervorgänge und Sperrbedingungen bleiben in `public/app.js`.
+- Fünf direkte Dialogtests prüfen Öffnen/Schließen, sichere Hintergrundklicks, Escape- und Busy-Sperren,
+  Schaltflächen-Lebenszyklen sowie Medienfreigabe. Zusammen mit den bestehenden Tests umfasst der gemeinsame
+  Testeinstieg 78 Tests; `public/app.js` sank weiter auf 5.159 Zeilen. Ein realer lokaler Browsertest deckte
+  Datenbankdialog, Neue-Art-Assistent, Karten-Lightbox, Bereichsbearbeitung und Bestätigungsdialog ab. Es wurden
+  keine Squarespace-Laufzeitdateien, Footer-Versionen oder Custom-CSS-Dateien geändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

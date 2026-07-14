@@ -618,8 +618,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Formatierungslogik wurde entfernt. Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf 73 Tests;
   `public/app.js` sank weiter auf 5.241 Zeilen. Die Tests decken zusätzlich die zuvor fehlerhafte Entfernung von
   `kg` bei gleichzeitig erlaubtem `g` ab. Squarespace-Module, Footer und Custom CSS blieben unverändert. Als nächste
-  A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen
-  Charakterisierungstests.
+  A4-Grenze wurde die gemeinsame Dialogsteuerung extrahiert: `species-explorer/public/app-dialogs.js` verwaltet
+  modales Öffnen/Schließen, sichere Hintergrundklicks, Escape- und Busy-Sperren, Körperklassen sowie das Freigeben
+  von Medienquellen. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `public/app.js`
+  sank auf 5.159 Zeilen. Datenbank-, Backup-, Pipeline-, Neue-Art-, Bearbeitungs-, Lösch-, Karten-, Portrait-,
+  Assetprüf- und Bestätigungsdialoge verwenden dieselbe Grenze. Squarespace-Module, Footer und Custom CSS blieben
+  unverändert. Als nächste A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit
+  eigenen Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

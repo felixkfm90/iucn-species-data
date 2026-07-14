@@ -4,6 +4,8 @@ const explorerPresentation = window.SpeciesExplorerPresentation;
 if (!explorerPresentation) throw new Error("Explorer-Anzeigehelfer konnten nicht geladen werden.");
 const explorerMeasurements = window.SpeciesExplorerMeasurements;
 if (!explorerMeasurements) throw new Error("Explorer-Messwerthelfer konnten nicht geladen werden.");
+const explorerDialogs = window.SpeciesExplorerDialogs;
+if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -52,6 +54,12 @@ const {
   renderUnitOptions,
   renderManualMeasurementEditor,
 } = explorerMeasurements;
+const {
+  openDialog,
+  createDialogController,
+  releaseAudioElement,
+  releaseMediaWithin,
+} = explorerDialogs;
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 
 const elements = {
@@ -185,21 +193,6 @@ function waitForAudioMetadata(audio) {
   });
 }
 
-function setupSafeBackdropClose(dialog, close) {
-  let startedOnBackdrop = false;
-  dialog.addEventListener("pointerdown", (event) => {
-    startedOnBackdrop = event.target === dialog;
-  });
-  dialog.addEventListener("pointercancel", () => {
-    startedOnBackdrop = false;
-  });
-  dialog.addEventListener("click", (event) => {
-    const shouldClose = startedOnBackdrop && event.target === dialog;
-    startedOnBackdrop = false;
-    if (shouldClose) close();
-  });
-}
-
 function setupEditingMode() {
   const applyMode = (enabled) => {
     state.editMode = enabled;
@@ -237,23 +230,30 @@ function showQuickConfirm({
         </div>
       </form>
     `;
-    const closeWith = (value) => {
-      if (dialog.open) dialog.close();
-      dialog.remove();
-      resolve(value);
-    };
-    dialog.addEventListener("cancel", (event) => {
-      event.preventDefault();
-      closeWith(false);
+    let result = false;
+    let settled = false;
+    const controller = createDialogController({
+      dialog,
+      closeOnBackdrop: true,
+      closeOnEscape: true,
+      afterClose: () => {
+        dialog.remove();
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      },
     });
-    dialog.querySelector(".quick-confirm-cancel")?.addEventListener("click", () => closeWith(false));
+    dialog.querySelector(".quick-confirm-cancel")?.addEventListener("click", () => {
+      result = false;
+      controller.close("cancel");
+    });
     dialog.querySelector(".quick-confirm-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
-      closeWith(true);
+      result = true;
+      controller.close("confirm");
     });
-    setupSafeBackdropClose(dialog, () => closeWith(false));
     document.body.append(dialog);
-    dialog.showModal();
+    controller.open();
     dialog.querySelector(".quick-confirm-ok")?.focus();
   });
 }
@@ -625,10 +625,8 @@ function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   image.alt = alt;
   mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
   resetScrollableToTop(mapLightbox);
-  if (typeof mapLightbox.showModal === "function") mapLightbox.showModal();
-  else mapLightbox.setAttribute("open", "");
+  openDialog(mapLightbox, { bodyClass: "explorer-modal-open" });
   resetScrollableToTop(mapLightbox);
-  document.body.classList.add("explorer-modal-open");
 }
 
 function resetScrollableToTop(element) {
@@ -754,29 +752,10 @@ function selectSpecies(id) {
   requestAnimationFrame(() => window.scrollTo(scrollPosition));
 }
 
-function releaseAudioElement(audio, { replace = false } = {}) {
-  if (!audio) return null;
-  audio.pause();
-  try {
-    audio.currentTime = 0;
-  } catch {}
-  audio.removeAttribute("src");
-  audio.load();
-  if (!replace || !audio.parentNode) return audio;
-  const releasedAudio = audio.cloneNode(false);
-  releasedAudio.controls = audio.controls;
-  releasedAudio.preload = "none";
-  releasedAudio.className = audio.className;
-  audio.parentNode.replaceChild(releasedAudio, audio);
-  return releasedAudio;
-}
-
 async function releaseAllAudioElements() {
   state.audioCleanup?.();
   state.audioCleanup = null;
-  for (const audio of document.querySelectorAll("audio")) {
-    releaseAudioElement(audio, { replace: true });
-  }
+  releaseMediaWithin(document, { replace: true });
   await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
@@ -802,13 +781,7 @@ function releaseDetailMedia() {
   state.portraitCleanup?.();
   state.portraitCleanup = null;
 
-  for (const audio of elements.detailPanel.querySelectorAll("audio")) {
-    releaseAudioElement(audio, { replace: true });
-  }
-  for (const image of elements.detailPanel.querySelectorAll("img")) {
-    image.removeAttribute("src");
-    image.removeAttribute("srcset");
-  }
+  releaseMediaWithin(elements.detailPanel, { replace: true, includeImages: true });
 }
 
 function hasOpenDialog() {
@@ -924,27 +897,22 @@ function setupMapZoom(species) {
   const closeButton = elements.detailPanel.querySelector(".map-lightbox-close");
   if (!trigger || !dialog || !closeButton) return;
 
+  const controller = createDialogController({
+    dialog,
+    closeButtons: [closeButton],
+    bodyClass: "explorer-modal-open",
+  });
   const open = () => {
     resetScrollableToTop(dialog);
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    controller.open();
     resetScrollableToTop(dialog);
-    document.body.classList.add("explorer-modal-open");
-  };
-
-  const close = () => {
-    if (dialog.open && typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-    document.body.classList.remove("explorer-modal-open");
   };
 
   trigger.addEventListener("click", open);
-  closeButton.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
-  dialog.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
 
   state.mapCleanup = () => {
-    if (dialog.open) close();
+    controller.close("cleanup");
+    controller.destroy();
   };
 }
 
@@ -957,25 +925,21 @@ function setupPortraitZoom() {
   const closeButton = elements.detailPanel.querySelector(".portrait-lightbox-close");
   if (!trigger || !dialog || !closeButton) return;
 
+  const controller = createDialogController({
+    dialog,
+    closeButtons: [closeButton],
+    bodyClass: "explorer-modal-open",
+  });
   const open = () => {
     resetScrollableToTop(dialog);
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    controller.open();
     resetScrollableToTop(dialog);
-    document.body.classList.add("explorer-modal-open");
-  };
-  const close = () => {
-    if (dialog.open && typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-    document.body.classList.remove("explorer-modal-open");
   };
 
   trigger.addEventListener("click", open);
-  closeButton.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
-  dialog.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
   state.portraitCleanup = () => {
-    if (dialog.open) close();
+    controller.close("cleanup");
+    controller.destroy();
   };
 }
 
@@ -986,18 +950,17 @@ function setupAssetReview() {
   const mapLightboxImage = elements.assetReviewMapLightboxImage;
 
   const stopAssetReviewAudio = () => {
-    for (const audio of elements.assetReviewList.querySelectorAll("audio")) {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.removeAttribute("src");
-      audio.load();
-    }
+    releaseMediaWithin(elements.assetReviewList);
   };
 
+  const mapLightboxController = createDialogController({
+    dialog: mapLightbox,
+    closeButtons: [elements.assetReviewMapLightboxClose],
+    bodyClass: "explorer-modal-open",
+  });
+
   const closeMapLightbox = () => {
-    if (mapLightbox.open && typeof mapLightbox.close === "function") mapLightbox.close();
-    else mapLightbox.removeAttribute("open");
-    document.body.classList.remove("explorer-modal-open");
+    mapLightboxController.close("programmatic");
   };
 
   const openMapLightbox = (trigger) => {
@@ -1009,10 +972,8 @@ function setupAssetReview() {
     mapLightboxImage.alt = alt;
     mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
     resetScrollableToTop(mapLightbox);
-    if (typeof mapLightbox.showModal === "function") mapLightbox.showModal();
-    else mapLightbox.setAttribute("open", "");
+    mapLightboxController.open();
     resetScrollableToTop(mapLightbox);
-    document.body.classList.add("explorer-modal-open");
   };
 
   const setMessage = (text = "", type = "") => {
@@ -1021,10 +982,27 @@ function setupAssetReview() {
     elements.assetReviewMessage.hidden = !text;
   };
 
-  const closeReviewDialog = () => {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
+  const reviewController = createDialogController({
+    dialog,
+    closeOnBackdrop: false,
+    closeOnEscape: false,
+    afterClose: () => {
+      stopAssetReviewAudio();
+      closeMapLightbox();
+      state.assetReviewAwaitingRetry = false;
+      state.assetReviewSignature = "";
+      form.dataset.closeOnly = "false";
+      elements.assetReviewSave.textContent = "Entscheidung speichern";
+      if (state.reloadAfterAssetReviewClose || state.pendingRevisionReload) {
+        const forceReload = state.reloadAfterAssetReviewClose;
+        state.reloadAfterAssetReviewClose = false;
+        state.pendingRevisionReload = false;
+        void loadData({ reload: forceReload });
+      }
+    },
+  });
+
+  const closeReviewDialog = () => reviewController.close("programmatic");
 
   const reviewSignature = (assets = []) => JSON.stringify(
     assets.map((asset) => [
@@ -1186,10 +1164,7 @@ function setupAssetReview() {
         : "Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.",
       "info",
     );
-    if (!dialog.open) {
-      if (typeof dialog.showModal === "function") dialog.showModal();
-      else dialog.setAttribute("open", "");
-    }
+    reviewController.open();
     for (const item of elements.assetReviewList.querySelectorAll(".asset-review-sound-preview")) {
       const audio = item.querySelector("audio");
       const marker = item.querySelector(".asset-review-progress-marker");
@@ -1204,7 +1179,6 @@ function setupAssetReview() {
     }
   };
 
-  dialog.addEventListener("cancel", (event) => event.preventDefault());
   elements.assetReviewList.addEventListener("click", (event) => {
     const trigger = event.target.closest(".asset-review-map-trigger");
     if (trigger) openMapLightbox(trigger);
@@ -1219,23 +1193,6 @@ function setupAssetReview() {
       audio.currentTime = progress * audio.duration;
       if (marker) marker.style.left = `${progress * 100}%`;
       audio.play().catch(() => {});
-    }
-  });
-  elements.assetReviewMapLightboxClose.addEventListener("click", closeMapLightbox);
-  setupSafeBackdropClose(mapLightbox, closeMapLightbox);
-  mapLightbox.addEventListener("close", () => document.body.classList.remove("explorer-modal-open"));
-  dialog.addEventListener("close", () => {
-    stopAssetReviewAudio();
-    closeMapLightbox();
-    state.assetReviewAwaitingRetry = false;
-    state.assetReviewSignature = "";
-    form.dataset.closeOnly = "false";
-    elements.assetReviewSave.textContent = "Entscheidung speichern";
-    if (state.reloadAfterAssetReviewClose || state.pendingRevisionReload) {
-      const forceReload = state.reloadAfterAssetReviewClose;
-      state.reloadAfterAssetReviewClose = false;
-      state.pendingRevisionReload = false;
-      void loadData({ reload: forceReload });
     }
   });
   state.finishAssetReviewWaiting = (status) => {
@@ -1320,16 +1277,8 @@ function setupBackupSettings() {
     elements.settingsMessage.hidden = !text;
   };
 
-  const close = () => {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
-
-  const showDialog = () => {
-    if (dialog.open) return;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
-  };
+  const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
+  const showDialog = () => dialogController.open();
 
   const applySettings = (settings) => {
     state.settingsSnapshot = settings;
@@ -1371,9 +1320,6 @@ function setupBackupSettings() {
     elements.backupRootInput.value = defaultBackupRoot;
     setMessage("Standardpfad wird beim Speichern verwendet.", "info");
   });
-
-  for (const button of cancelButtons) button.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1428,16 +1374,8 @@ function setupPipelineControl() {
     elements.pipelineMessage.hidden = !text;
   };
 
-  const close = () => {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
-
-  const showDialog = () => {
-    if (dialog.open) return;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
-  };
+  const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
+  const showDialog = () => dialogController.open();
 
   const setPipelineButtonsDisabled = (disabled) => {
     for (const button of elements.pipelineButtons) button.disabled = disabled;
@@ -2069,8 +2007,6 @@ function setupPipelineControl() {
     if (statusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
     else if (backupStatusPresentation(state.backupStatusSnapshot || {})) showBackupStatusDialog(state.backupStatusSnapshot);
   });
-  for (const button of cancelButtons) button.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (previewKind === "backup") {
@@ -2365,12 +2301,7 @@ function setupNewSpeciesCreator() {
   };
 
   const stopInlineReviewAudio = () => {
-    for (const audio of soundReview.querySelectorAll("audio")) {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.removeAttribute("src");
-      audio.load();
-    }
+    releaseMediaWithin(soundReview);
   };
 
   const setInlineMapMessage = (text = "", type = "") => {
@@ -2895,26 +2826,26 @@ function setupNewSpeciesCreator() {
     }
   };
 
-  const close = () => {
-    if (busy || pipelineBusy || state.newSpeciesPipelineActive) return;
-    form.reset();
-    state.holdNewSpeciesBackground = false;
-    resetAll();
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
+  const dialogController = createDialogController({
+    dialog,
+    closeButtons,
+    beforeClose: () => {
+      if (busy || pipelineBusy || state.newSpeciesPipelineActive) return false;
+      form.reset();
+      state.holdNewSpeciesBackground = false;
+      resetAll();
+      return true;
+    },
+  });
+  const close = () => dialogController.close("programmatic");
 
   openButton.addEventListener("click", () => {
     form.reset();
     resetAll();
     state.holdNewSpeciesBackground = true;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    dialogController.open();
     form.elements.german.focus();
   });
-
-  for (const button of closeButtons) button.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
 
   form.elements.sizeSexed?.addEventListener("change", () => {
     updateMeasurementMode("size");
@@ -3174,8 +3105,6 @@ function setupNewSpeciesCreator() {
   });
 
   saveButton.addEventListener("click", () => {
-    form.reset();
-    resetAll();
     close();
   });
 }
@@ -3534,8 +3463,7 @@ function setupSpeciesEditor(species) {
     dialog.dataset.activeSection = activeSection;
     const title = dialog.querySelector("#edit-dialog-title");
     if (title) title.textContent = sectionLabels[activeSection] || `${species.germanName} bearbeiten`;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    dialogController.open();
   };
 
   mapBrowserLink?.addEventListener("click", () => {
@@ -3577,12 +3505,6 @@ function setupSpeciesEditor(species) {
     );
   });
 
-  const closeEditDialog = () => {
-    stopSoundPreviewAudio();
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
-
   const runDeferredEditorReload = () => {
     const forceReload = state.reloadAfterEditClose;
     if (!forceReload && !state.pendingRevisionReload) return;
@@ -3592,15 +3514,16 @@ function setupSpeciesEditor(species) {
     void loadData({ reload: forceReload });
   };
 
-  for (const button of closeButtons) {
-    button.addEventListener("click", closeEditDialog);
-  }
-
-  setupSafeBackdropClose(dialog, closeEditDialog);
-  dialog.addEventListener("close", () => {
-    stopSoundPreviewAudio();
-    runDeferredEditorReload();
+  const dialogController = createDialogController({
+    dialog,
+    closeButtons,
+    beforeClose: () => {
+      stopSoundPreviewAudio();
+      return true;
+    },
+    afterClose: runDeferredEditorReload,
   });
+  const closeEditDialog = () => dialogController.close("programmatic");
 
   form.addEventListener("input", (event) => {
     if (event.target.closest(".sound-edit-section")) {
@@ -3697,7 +3620,7 @@ function setupSpeciesEditor(species) {
         + "Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
         + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
       if (result.species?.id) state.selectedId = result.species.id;
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       setMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -3797,7 +3720,7 @@ function setupSpeciesEditor(species) {
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
         : `Karte wurde lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       setMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -3864,7 +3787,7 @@ function setupSpeciesEditor(species) {
         + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
         + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
         + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       config.message([error.message, ...(error.details || [])].join(" · "), "error");
@@ -3928,7 +3851,7 @@ function setupSpeciesEditor(species) {
         `${config.label} wurde aus der lokalen Sicherung wiederhergestellt.`
         + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
         + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht.";
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       config.message([error.message, ...(error.details || [])].join(" · "), "error");
@@ -4113,7 +4036,7 @@ function setupSpeciesEditor(species) {
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
         : `Sound und Credits wurden lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
       stopSoundPreviewAudio();
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -4244,7 +4167,7 @@ function setupSpeciesEditor(species) {
           + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`
         : `Artporträt wurde lokal gespeichert. Veröffentliche die Änderung später mit „Änderungen übertragen“. ${result.publicationError || ""}`;
-      if (typeof dialog.close === "function") dialog.close();
+      closeEditDialog();
       await loadData({ reload: true });
     } catch (error) {
       setPortraitMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -4321,10 +4244,8 @@ function setupSpeciesDelete(species) {
     message.className = `edit-message delete-message${type ? ` ${type}` : ""}`;
     message.hidden = !text;
   };
-  const close = () => {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-  };
+  const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
+  const close = () => dialogController.close("programmatic");
   const updateDeleteMode = () => {
     const permanent = deleteAssetsOption.checked;
     confirmButton.textContent = permanent
@@ -4343,8 +4264,7 @@ function setupSpeciesDelete(species) {
     confirmButton.disabled = true;
     effects.replaceChildren();
     setMessage("Auswirkungen werden geprüft…", "info");
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
+    dialogController.open();
     try {
       const result = await fetchJson(
         `/api/species/${encodeURIComponent(species.id)}/delete/preview`,
@@ -4371,8 +4291,6 @@ function setupSpeciesDelete(species) {
   });
 
   deleteAssetsOption.addEventListener("change", updateDeleteMode);
-  for (const button of cancelButtons) button.addEventListener("click", close);
-  setupSafeBackdropClose(dialog, close);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!previewToken) return;

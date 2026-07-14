@@ -770,7 +770,13 @@ entfallen. Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf
 auf 5.241 Zeilen. Dabei wurde zugleich die Einheitenentfernung längenbasiert korrigiert, sodass `kg` nicht mehr
 fälschlich als `k` stehen bleibt, wenn `g` ebenfalls zulässig ist. Das Modul wird lokal nach der Präsentationsgrenze
 und vor `app.js` geladen. Squarespace-Module, Footer-Versionen und Custom CSS blieben auch in diesem Schnitt
-unverändert. A4 bleibt für die weitere schrittweise Trennung der fachlichen Oberflächenbereiche offen.
+unverändert. Der achte Schnitt ergänzt `species-explorer/public/app-dialogs.js` als gemeinsame Dialog- und
+Medienfreigabegrenze. Sie vereinheitlicht modales Öffnen/Schließen, sichere Hintergrundklicks, Escape- und
+Busy-Sperren, Körperklassen sowie das Stoppen und Entladen von Audio-/Videoquellen. Die fachlichen Aktionen bleiben
+im jeweiligen Ablauf. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `app.js` sank auf
+5.159 Zeilen. Die lokale HTML-Reihenfolge lädt Dialogs nach Measurements und vor `app.js`. Squarespace-Module,
+Footer und Custom CSS blieben unverändert. A4 bleibt für die weitere schrittweise Trennung der fachlichen
+Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

@@ -735,7 +735,11 @@ Aktuelle Planung:
   Fünf direkte Messwerttests erhöhen den gemeinsamen Testeinstieg auf 73 Tests; `app.js` sank weiter auf 5.241
   Zeilen. Die Tests sichern auch die längenbasierte Einheitenerkennung ab, damit `kg` bei ebenfalls erlaubtem `g`
   vollständig entfernt wird. Das lokale HTML lädt Foundation, Presentation und Measurements in dieser Reihenfolge
-  vor `app.js`. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  vor `app.js`. Der achte A4-Schnitt ergänzt `species-explorer/public/app-dialogs.js` als gemeinsame Grenze für
+  modales Öffnen/Schließen, sichere Hintergrundklicks, Escape- und Busy-Sperren, Körperklassen sowie das Freigeben
+  von Medienquellen. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `app.js` sank auf
+  5.159 Zeilen. Das lokale HTML lädt Dialogs nach Measurements und vor `app.js`. Squarespace-JavaScript,
+  Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
