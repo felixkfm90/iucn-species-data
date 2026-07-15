@@ -255,7 +255,7 @@ Kein Big-Bang-Umbau: zuerst Charakterisierungstests ergänzen, dann Modul für M
 Explorer-Zerlegung muss das Taxonomie-Frontend nicht blockieren; neue Funktionen sollten den Monolithen aber nicht
 weiter vergrößern.
 
-Umsetzungsstand am 2026-07-14:
+Umsetzungsstand am 2026-07-15:
 
 - Der erste verhaltensneutrale Modulschnitt ist abgeschlossen. `species-explorer/asset-backups.mjs` bündelt
   Dateinamensregeln, Metadaten, Schreiben, Auffinden und Aufbewahrung wiederherstellbarer Asset-Sicherungen sowie
@@ -345,6 +345,16 @@ Umsetzungsstand am 2026-07-14:
   Tests; `public/app.js` sank auf 4.760 Zeilen. Der lokale Server liefert das Modul explizit aus, das HTML lädt es
   nach der Mediengrenze und vor `app.js`, und ein realer lokaler Browsertest bestätigte 49 geladene Arten ohne
   Konsolenfehler. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Der elfte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-pipeline.js` als reine
+  Präsentationsgrenze für Datenbank- und Pipelineaktionen ein. Modusbezeichnungen, Datenbankstatus,
+  Pipeline-/Backup-Zustände, Übertragungs-, Bereinigungs- und Backupvorschauen sowie das automatische Nachführen
+  der Prozessausgabe liegen nicht mehr in `public/app.js`; API-Aufrufe, Laufsteuerung und veränderlicher Zustand
+  bleiben dort.
+- Sieben direkte Pipeline-Anzeigetests prüfen Statusprioritäten, Lauf- und Backupmeldungen, sichere Vorschauen,
+  Dateistatusbezeichnungen und das automatische Scrollen der Prozessausgabe. Der gemeinsame Testeinstieg umfasst
+  damit 96 Tests; `public/app.js` sank auf 4.598 Zeilen. Der Explorer liefert das neue Modul aus und lädt es nach
+  der Assetprüfung vor `app.js`; ein lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export.
+  Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

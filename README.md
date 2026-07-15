@@ -786,6 +786,12 @@ Entscheidungstexte, Karten-Lightbox, Spektrogramm-Scrubbing, Fortschrittsmarker 
 API-Aufrufe und Speichern bleiben in `app.js`. Fünf direkte Tests erhöhen den gemeinsamen Testeinstieg auf 89 Tests;
 `app.js` sank auf 4.760 Zeilen. Das Modul wird nach Media und vor `app.js` geladen. Ein realer lokaler Browsertest
 bestätigte 49 geladene Arten ohne Konsolenfehler. Squarespace-Module, Footer und Custom CSS blieben unverändert.
+Der elfte Schnitt ergänzt `species-explorer/public/app-pipeline.js` als direkt testbare Präsentationsgrenze für
+Modus- und Datenbankstatus, Pipeline-/Backupmeldungen, sichere Aktionsvorschauen und die automatisch nachgeführte
+Prozessausgabe. Laufsteuerung, API-Aufrufe und Zustand verbleiben in `app.js`. Sieben direkte Tests erhöhen den
+gemeinsamen Testeinstieg auf 96 Tests; `app.js` sank auf 4.598 Zeilen. Das Modul wird nach Asset Review und vor
+`app.js` geladen. Ein lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export. Squarespace-Module,
+Footer und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

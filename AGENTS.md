@@ -752,6 +752,13 @@ Aktuelle Planung:
   Testeinstieg auf 89 Tests; `app.js` sank auf 4.760 Zeilen. Das lokale HTML lädt Asset Review nach Media und vor
   `app.js`. Ein realer lokaler Browsertest bestätigte 49 geladene Arten ohne Konsolenfehler. Squarespace-
   JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der elfte A4-Schnitt ergänzt `species-explorer/public/app-pipeline.js` als Präsentationsgrenze für
+  Modusbezeichnungen, Datenbankstatus, Pipeline-/Backupmeldungen, sichere Aktionsvorschauen und die automatisch
+  nachgeführte Prozessausgabe. API-Aufrufe, Laufsteuerung und Zustand verbleiben in `app.js`. Sieben direkte
+  Pipeline-Anzeigetests erhöhen den gemeinsamen Testeinstieg auf 96 Tests; `app.js` sank auf 4.598 Zeilen. Das
+  lokale HTML lädt das Modul nach Asset Review und vor `app.js`; ein lokaler HTTP-Smoke-Test bestätigte
+  Hauptseite, Modulreferenz und Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht
+  geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

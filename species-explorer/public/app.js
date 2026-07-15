@@ -10,6 +10,8 @@ const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
 if (!explorerAssetReview) throw new Error("Explorer-Assetprüfung konnte nicht geladen werden.");
+const explorerPipeline = window.SpeciesExplorerPipeline;
+if (!explorerPipeline) throw new Error("Explorer-Pipelineanzeige konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -87,6 +89,24 @@ const {
   createAssetReviewMediaController,
 } = explorerAssetReview;
 const { renderAssetReviewList } = createAssetReviewRenderer({ escapeHtml });
+const {
+  pipelineModeLabel,
+  backupLabel,
+  resolveDatabaseStatus,
+  databaseStatusLabel,
+  createPipelineStatusPresenters,
+  createPipelinePreviewRenderer,
+  renderProcessLog,
+} = explorerPipeline;
+const {
+  pipelineStatusPresentation,
+  backupStatusPresentation,
+  persistentStatusPresentation,
+} = createPipelineStatusPresenters({ formatBytes });
+const {
+  renderPipelinePreview,
+  renderBackupPreview,
+} = createPipelinePreviewRenderer({ escapeHtml, formatBytes });
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 
 const elements = {
@@ -159,15 +179,6 @@ const elements = {
   detailPanel: document.querySelector("#detail-panel"),
   itemTemplate: document.querySelector("#species-item-template"),
 };
-
-function formatPendingFileStatus(status) {
-  const value = String(status || "").trim();
-  if (!value || value.includes("M")) return "geändert";
-  if (value.includes("A") || value === "??") return "neu";
-  if (value.includes("D")) return "gelöscht";
-  if (value.includes("R")) return "umbenannt";
-  return value;
-}
 
 function iucnDistributionMapUrl(species) {
   const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
@@ -319,35 +330,16 @@ function setValidationCardState(card, ok) {
   card.classList.toggle("error", !ok);
 }
 
-function updateProcessLog(lines = []) {
-  const logLines = Array.isArray(lines) ? lines : [];
-  elements.pipelineLogDetails.hidden = logLines.length === 0;
-  elements.pipelineLog.textContent = logLines.join("\n");
-  if (!elements.pipelineLogDetails.hidden) {
-    requestAnimationFrame(() => {
-      elements.pipelineLog.scrollTop = elements.pipelineLog.scrollHeight;
-    });
-  }
-}
-
 function renderDatabaseStatus(stateName = "") {
-  const activeBackupStatus = state.backupStatusSnapshot?.status === "running" ? "backup" : "";
-  const activePipelineStatus = state.pipelineStatusSnapshot?.status === "running"
-    ? "running"
-    : state.pipelineStatusSnapshot?.status === "awaiting-review"
-      ? "review"
-      : state.pipelineStatusSnapshot?.status === "failed"
-        ? "failed"
-        : "";
-  const status = stateName || activeBackupStatus || activePipelineStatus || (state.databaseNeedsUpdate ? "outdated" : "current");
+  const status = resolveDatabaseStatus({
+    explicitStatus: stateName,
+    backupStatus: state.backupStatusSnapshot?.status,
+    pipelineStatus: state.pipelineStatusSnapshot?.status,
+    databaseNeedsUpdate: state.databaseNeedsUpdate,
+  });
   elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
   elements.pipelineStatus.className = `pipeline-status-text ${status}`;
-  if (status === "running") elements.pipelineStatus.textContent = "Aktualisierung läuft";
-  else if (status === "review") elements.pipelineStatus.textContent = "Neue Assets prüfen";
-  else if (status === "failed") elements.pipelineStatus.textContent = "Datenbank aktualisieren";
-  else if (status === "current") elements.pipelineStatus.textContent = "Datenbank aktuell";
-  else if (status === "outdated") elements.pipelineStatus.textContent = "Änderungen übertragen";
-  else elements.pipelineStatus.textContent = "Datenbank aktualisieren";
+  elements.pipelineStatus.textContent = databaseStatusLabel(status);
 }
 
 function updateValidation(validation) {
@@ -958,17 +950,6 @@ function setupPipelineControl() {
   let previewKind = "";
   let backupForceStart = false;
 
-  const modeLabel = (mode) => ({
-    missing: "Neue/Unvollständige Arten aktualisieren",
-    all: "Alle Arten vollständig aktualisieren",
-    "manual-maps": "Manuelle und fehlende Karten erneut suchen",
-    "nc-sounds": "NC- und fehlende Sounds erneut suchen",
-    transfer: "Änderungen übertragen",
-    cleanup: "Verwaiste Daten und Assets dauerhaft löschen",
-  }[mode] || mode);
-
-  const backupLabel = () => "NAS-Backup erstellen";
-
   const setMessage = (text = "", type = "") => {
     elements.pipelineMessage.textContent = text;
     elements.pipelineMessage.className = `edit-message pipeline-message${type ? ` ${type}` : ""}`;
@@ -988,91 +969,12 @@ function setupPipelineControl() {
     footerCloseButton.textContent = active ? "Fenster schließen" : "Abbrechen";
   };
 
-  const statusPresentation = (status) => {
-    if (status.status === "running") {
-      return {
-        className: "running",
-        title: "Pipeline-Lauf läuft gerade",
-        detail: `${modeLabel(status.mode)} · ${status.phase || "Verarbeitung läuft"}`,
-        message: "Pipeline-Lauf läuft gerade. Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter.",
-        messageType: "info",
-      };
-    }
-    if (status.status === "awaiting-review") {
-      return {
-        className: "review",
-        title: "Pipeline-Lauf wartet auf Prüfung",
-        detail: `${modeLabel(status.mode)} · neue Karten oder Sounds müssen geprüft werden`,
-        message: "Der Pipeline-Lauf wartet auf die Prüfung der neuen Karten und Sounds.",
-        messageType: "info",
-      };
-    }
-    if (status.status === "completed") {
-      return {
-        className: "completed",
-        title: "Pipeline-Lauf abgeschlossen",
-        detail: status.gitPublished
-          ? `${modeLabel(status.mode)} · Verarbeitung, Commit und Push sind abgeschlossen`
-          : `${modeLabel(status.mode)} · Verarbeitung ist abgeschlossen`,
-        message: status.gitPublished
-          ? "Pipeline-Lauf abgeschlossen. Änderungen wurden committed und gepusht."
-          : "Pipeline-Lauf abgeschlossen.",
-        messageType: "success",
-      };
-    }
-    if (status.status === "failed") {
-      return {
-        className: "failed",
-        title: "Pipeline-Lauf fehlgeschlagen",
-        detail: status.error || `${modeLabel(status.mode)} wurde nicht erfolgreich abgeschlossen`,
-        message: `Pipeline-Lauf fehlgeschlagen${status.error ? `: ${status.error}` : "."}`,
-        messageType: "error",
-      };
-    }
-    return null;
-  };
-
-  const backupStatusPresentation = (status) => {
-    if (status.status === "running") {
-      return {
-        className: "running",
-        title: "NAS-Backup läuft gerade",
-        detail: `${Math.max(0, Math.min(100, Math.round(status.percent || 0)))}% · ${status.phase || "Backup läuft"}`,
-        message: "NAS-Backup läuft gerade. Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter.",
-        messageType: "info",
-      };
-    }
-    if (status.status === "completed") {
-      return {
-        className: "completed",
-        title: status.skipped ? "NAS-Backup nicht erforderlich" : "NAS-Backup abgeschlossen",
-        detail: status.skipped
-          ? (status.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt")
-          : `${formatBytes(status.totalBytes)} · ${status.archivePath || status.backupRoot}`,
-        message: status.skipped
-          ? (status.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt.")
-          : "NAS-Backup abgeschlossen.",
-        messageType: "success",
-      };
-    }
-    if (status.status === "failed") {
-      return {
-        className: "failed",
-        title: "NAS-Backup fehlgeschlagen",
-        detail: status.error || "Backup wurde nicht erfolgreich abgeschlossen",
-        message: `NAS-Backup fehlgeschlagen${status.error ? `: ${status.error}` : "."}`,
-        messageType: "error",
-      };
-    }
-    return null;
-  };
-
   const renderPersistentPipelineStatus = (status) => {
-    const backupPresentation = backupStatusPresentation(state.backupStatusSnapshot || {});
-    const backupFirst = state.backupStatusSnapshot?.status === "running" || state.backupWasRunning;
-    const presentation = backupFirst
-      ? backupPresentation || statusPresentation(status)
-      : statusPresentation(status) || backupPresentation;
+    const presentation = persistentStatusPresentation({
+      pipelineStatus: status,
+      backupStatus: state.backupStatusSnapshot || {},
+      backupWasRunning: state.backupWasRunning,
+    });
     elements.pipelineRunNotice.hidden = !presentation;
     elements.pipelineRunNotice.className = `pipeline-run-notice${presentation ? ` ${presentation.className}` : ""}`;
     if (!presentation) return;
@@ -1082,12 +984,12 @@ function setupPipelineControl() {
   state.renderPersistentPipelineStatus = renderPersistentPipelineStatus;
 
   const showStatusDialog = (status) => {
-    const presentation = statusPresentation(status);
+    const presentation = pipelineStatusPresentation(status);
     if (!presentation) return;
     previewToken = "";
     previewMode = status.mode;
     elements.pipelineDialogTitle.textContent = presentation.title;
-    elements.pipelineDialogDescription.textContent = modeLabel(status.mode);
+    elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode);
     elements.pipelineModeChoice.hidden = true;
     elements.pipelinePreview.hidden = true;
     elements.pipelineStartButton.hidden = true;
@@ -1139,89 +1041,17 @@ function setupPipelineControl() {
     showDialog();
   };
 
-  const renderPreview = (result) => {
-    if (result.mode === "cleanup") {
-      const assetRows = result.obsoleteAssetDirectories.map((entry) => `
-        <li><strong>${escapeHtml(entry.path)}</strong> · ${escapeHtml(formatBytes(entry.bytes))}</li>
-      `).join("");
-      const dataRows = result.obsoleteData.map((entry) => `
-        <li><strong>${escapeHtml(entry.germanName)}</strong> · ${escapeHtml(entry.scientificName)}</li>
-      `).join("");
-      elements.pipelinePreviewContent.innerHTML = result.hasWork
-        ? `
-          <p><strong>${result.obsoleteData.length}</strong> veraltete Datensätze,
-            <strong>${result.obsoleteAssetDirectories.length}</strong> verwaiste Assetordner und
-            <strong>${result.obsoleteAssessmentKeys.length}</strong> alte Assessment-Zuordnungen sowie
-            <strong>${result.obsoleteOverrideKeys.length}</strong> verwaiste Pflegeeinträge.</p>
-          ${dataRows ? `<h5>Datensätze</h5><ul>${dataRows}</ul>` : ""}
-          ${assetRows ? `<h5>Assetordner</h5><ul>${assetRows}</ul>` : ""}
-        `
-        : "<p>Keine verwaisten Daten oder Assetordner gefunden.</p>";
-      elements.pipelineWarning.textContent =
-        "Dauerhaft löschen: Die aufgelisteten Daten und Dateien sind danach nicht wiederherstellbar.";
-      return;
-    }
-
-    const targetRows = result.targets.map((entry) => `
-      <li>
-        <strong>${escapeHtml(entry.germanName)}</strong>
-        <span>${escapeHtml(entry.scientificName)} · ${escapeHtml(entry.reasons.join(", "))}</span>
-      </li>
-    `).join("");
-    const removedRows = result.removed.map((entry) => `
-      <li><strong>${escapeHtml(entry.germanName)}</strong> · wird aus der Pipeline-Ausgabe entfernt</li>
-    `).join("");
-    const pendingFiles = Array.isArray(result.pendingFiles) ? result.pendingFiles : [];
-    const pendingFileRows = pendingFiles.slice(0, 12).map((entry) => `
-      <li><strong>${escapeHtml(formatPendingFileStatus(entry.status))}</strong> · ${escapeHtml(entry.path)}</li>
-    `).join("");
-    const pendingMoreRows = pendingFiles.length > 12
-      ? `<li>${pendingFiles.length - 12} weitere Datei(en)</li>`
-      : "";
-    const affectedSpeciesCount = Number.isFinite(result.affectedSpeciesCount)
-      ? result.affectedSpeciesCount
-      : result.targetCount;
-    const transferSummary = result.mode === "transfer"
-      ? `
-        <p>
-          <strong>${affectedSpeciesCount}</strong> Art(en) betroffen:
-          <strong>${result.targetCount}</strong> mit geänderten Eingabefeldern,
-          <strong>${result.pendingFileCount || 0}</strong> lokale Dateiänderung(en).
-        </p>
-      `
-      : `<p><strong>${result.targetCount}</strong> von ${result.inputCount} Arten werden verarbeitet.</p>`;
-    elements.pipelinePreviewContent.innerHTML = `
-      ${transferSummary}
-      ${targetRows ? `<ul class="pipeline-target-list">${targetRows}</ul>` : result.mode === "transfer" && pendingFiles.length ? "" : "<p>Keine Zielarten gefunden.</p>"}
-      ${pendingFileRows || pendingMoreRows ? `<h5>Lokale Dateiänderungen</h5><ul>${pendingFileRows}${pendingMoreRows}</ul>` : ""}
-      ${removedRows ? `<h5>Aus Ausgabe entfernen</h5><ul>${removedRows}</ul>` : ""}
-    `;
-    elements.pipelineWarning.textContent =
-      result.mode === "transfer"
-        ? "Nach erfolgreicher Übertragung werden die gesammelten Änderungen committed und gepusht."
-        : "Nach erfolgreichem Lauf werden die Pipeline-Änderungen automatisch committed und gepusht.";
+  const applyPipelinePreview = (result) => {
+    const preview = renderPipelinePreview(result);
+    elements.pipelinePreviewContent.innerHTML = preview.html;
+    elements.pipelineWarning.textContent = preview.warning;
   };
 
-  const renderBackupPreview = (result) => {
-    backupForceStart = result.skipped === true;
-    elements.pipelinePreviewContent.innerHTML = result.skipped
-      ? `
-        <p><strong>Kein neues Backup erforderlich.</strong></p>
-        <p>${escapeHtml(result.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt.")}</p>
-        <p>Letztes Backup: <strong>${escapeHtml(result.archivePath || "Unbekannt")}</strong></p>
-      `
-      : `
-        <p><strong>${result.fileCount}</strong> Dateien werden als ZIP gesichert.</p>
-        <ul>
-          <li>Ziel: <strong>${escapeHtml(result.backupRoot)}</strong></li>
-          <li>Voraussichtliche Rohdatenmenge: <strong>${escapeHtml(formatBytes(result.totalBytes))}</strong></li>
-          <li>Geplante Datei: <strong>${escapeHtml(result.archivePath)}</strong></li>
-          <li>Backup-Rotation entfernt danach: <strong>${result.retentionWouldRemove}</strong> alte Datei(en)</li>
-        </ul>
-      `;
-    elements.pipelineWarning.textContent = result.skipped
-      ? "Du kannst trotzdem manuell ein neues Backup erzwingen."
-      : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent.";
+  const applyBackupPreview = (result) => {
+    const preview = renderBackupPreview(result);
+    backupForceStart = preview.forceStart;
+    elements.pipelinePreviewContent.innerHTML = preview.html;
+    elements.pipelineWarning.textContent = preview.warning;
   };
 
   async function startCurrentPipelinePreview() {
@@ -1250,9 +1080,9 @@ function setupPipelineControl() {
       elements.pipelineStartButton.hidden = true;
       elements.pipelinePreview.hidden = true;
       setDialogCloseMode(true);
-      const presentation = statusPresentation(startedStatus);
+      const presentation = pipelineStatusPresentation(startedStatus);
       elements.pipelineDialogTitle.textContent = presentation.title;
-      elements.pipelineDialogDescription.textContent = modeLabel(startedStatus.mode);
+      elements.pipelineDialogDescription.textContent = pipelineModeLabel(startedStatus.mode);
       setMessage(presentation.message, presentation.messageType);
       renderPersistentPipelineStatus(startedStatus);
       await refreshPipelineStatus();
@@ -1309,7 +1139,7 @@ function setupPipelineControl() {
       ? "Änderungen übertragen"
       : options.speciesRefresh
         ? "Art aktualisieren"
-        : modeLabel(mode);
+        : pipelineModeLabel(mode);
     elements.pipelineDialogDescription.textContent =
       options.transfer
         ? "Geänderte Eingabefelder und lokal gespeicherte Assets werden ohne externe Suche übertragen."
@@ -1331,7 +1161,7 @@ function setupPipelineControl() {
         body: JSON.stringify({ mode, targetSlugs: options.targetSlugs || [] }),
       });
       previewToken = result.token;
-      renderPreview(result);
+      applyPipelinePreview(result);
       elements.pipelinePreview.hidden = false;
       elements.pipelineStartButton.hidden = false;
       elements.pipelineStartButton.disabled = !result.hasWork || !result.tokensAvailable;
@@ -1382,7 +1212,7 @@ function setupPipelineControl() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      renderBackupPreview(result);
+      applyBackupPreview(result);
       elements.pipelinePreview.hidden = false;
       elements.pipelineStartButton.hidden = false;
       elements.pipelineStartButton.disabled = false;
@@ -1486,24 +1316,28 @@ function setupPipelineControl() {
       else renderDatabaseStatus();
       renderPersistentPipelineStatus(status);
       elements.pipelineStatusDetail.textContent = active
-        ? `${modeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
+        ? `${pipelineModeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
         : status.completedAt
-          ? `${modeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
+          ? `${pipelineModeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
           : "Kein Lauf aktiv.";
       elements.pipelineStatusDetail.className = `pipeline-dialog-status${
         status.status === "awaiting-review" ? " review" : status.status !== "idle" ? ` ${status.status}` : ""
       }`;
-      updateProcessLog(status.log);
+      renderProcessLog({
+        details: elements.pipelineLogDetails,
+        log: elements.pipelineLog,
+        lines: status.log,
+      });
 
       if (dialog.open && active) {
-        const presentation = statusPresentation(status);
+        const presentation = pipelineStatusPresentation(status);
         setDialogCloseMode(true);
         setMessage(presentation.message, presentation.messageType);
       } else if (dialog.open && state.pipelineWasRunning && !active) {
-        const presentation = statusPresentation(status);
+        const presentation = pipelineStatusPresentation(status);
         if (presentation) {
           elements.pipelineDialogTitle.textContent = presentation.title;
-          elements.pipelineDialogDescription.textContent = modeLabel(status.mode);
+          elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode);
           setDialogCloseMode(true);
           setMessage(presentation.message, presentation.messageType);
         }
@@ -1563,7 +1397,11 @@ function setupPipelineControl() {
             ? `${backupLabel()} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
             : "Kein Backup aktiv.";
         elements.pipelineStatusDetail.className = `pipeline-dialog-status${status.status !== "idle" ? ` ${status.status}` : ""}`;
-        updateProcessLog(status.log);
+        renderProcessLog({
+          details: elements.pipelineLogDetails,
+          log: elements.pipelineLog,
+          lines: status.log,
+        });
       }
 
       state.backupWasRunning = active;
@@ -1605,7 +1443,7 @@ function setupPipelineControl() {
     openChooser();
   });
   elements.pipelineRunNoticeOpen.addEventListener("click", () => {
-    if (statusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
+    if (pipelineStatusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
     else if (backupStatusPresentation(state.backupStatusSnapshot || {})) showBackupStatusDialog(state.backupStatusSnapshot);
   });
   form.addEventListener("submit", async (event) => {

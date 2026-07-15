@@ -366,6 +366,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(assetReviewResponse.headers.get("content-type"), /javascript/);
   assert.match(await assetReviewResponse.text(), /createAssetReviewRenderer/);
 
+  const pipelineResponse = await fetch(`${baseUrl}/app-pipeline.js`);
+  assert.equal(pipelineResponse.status, 200);
+  assert.match(pipelineResponse.headers.get("content-type"), /javascript/);
+  assert.match(await pipelineResponse.text(), /createPipelineStatusPresenters/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2284,6 +2289,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appDialogsSource,
     appMediaSource,
     appAssetReviewSource,
+    appPipelineSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2310,6 +2316,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2333,7 +2340,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2348,12 +2355,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /function bindImageZoom\(/);
   assert.match(appAssetReviewSource, /function createAssetReviewRenderer\(/);
   assert.match(appAssetReviewSource, /function createAssetReviewMediaController\(/);
+  assert.match(appPipelineSource, /function createPipelineStatusPresenters\(/);
+  assert.match(appPipelineSource, /function createPipelinePreviewRenderer\(/);
+  assert.match(appPipelineSource, /function renderProcessLog\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.match(appSource, /window\.SpeciesExplorerDialogs/);
   assert.match(appSource, /window\.SpeciesExplorerMedia/);
   assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
+  assert.match(appSource, /window\.SpeciesExplorerPipeline/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2453,7 +2464,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /autoStart/);
   assert.match(appSource, /startCurrentPipelinePreview/);
   assert.match(htmlSource, /Manuelle und fehlende Karten erneut suchen/);
-  assert.match(appSource, /NC- und fehlende Sounds erneut suchen/);
+  assert.match(appPipelineSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
   assert.doesNotMatch(appSource, /strikten Ein-Bild-Regel/);
   assert.doesNotMatch(appSource, /mit „Weiter“ folgt jeweils die nächste/);
@@ -2462,9 +2473,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Sound fehlt oder wird manuell gepflegt/);
   assert.match(htmlSource, /id="pipeline-run-notice"/);
   assert.match(htmlSource, /pipeline-dialog-close-button/);
-  assert.match(appSource, /Pipeline-Lauf läuft gerade/);
-  assert.match(appSource, /Pipeline-Lauf abgeschlossen/);
-  assert.match(appSource, /Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter/);
+  assert.match(appPipelineSource, /Pipeline-Lauf läuft gerade/);
+  assert.match(appPipelineSource, /Pipeline-Lauf abgeschlossen/);
+  assert.match(appPipelineSource, /Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter/);
   assert.match(appSource, /footerCloseButton\.textContent = active \? "Fenster schließen" : "Abbrechen"/);
   assert.match(appSource, /renderPersistentPipelineStatus\(status\)/);
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
@@ -2484,7 +2495,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     /const reviewController = createDialogController\(\{[\s\S]*afterClose: \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
   );
-  assert.match(appSource, /Datenbank aktuell/);
+  assert.match(appPipelineSource, /Datenbank aktuell/);
   assert.match(appSource, /Datenbank-Aktionen/);
   assert.match(appSource, /Bearbeitungsmodus 🔓/);
   assert.match(appSource, /Lesemodus 🔒/);
@@ -2532,7 +2543,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /\/api\/backup\/start/);
   assert.match(appSource, /\/api\/backup\/status/);
   assert.match(appSource, /Backup trotzdem erstellen/);
-  assert.match(appSource, /backupStatusPresentation/);
+  assert.match(appPipelineSource, /function backupStatusPresentation/);
   assert.match(cssSource, /\.database-status\.backup/);
   assert.match(serverSource, /async function previewNasBackup/);
   assert.match(serverSource, /local-settings\.json/);
@@ -2712,7 +2723,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /openPipelinePreview\("all",/);
   assert.match(appSource, /Automatische Aktualisierung für/);
   assert.match(appSource, /silent:\s*true/);
-  assert.match(appSource, /function formatPendingFileStatus/);
+  assert.match(appPipelineSource, /function formatPendingFileStatus/);
   assert.match(appSource, /showQuickConfirm/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
   assert.match(appFoundationSource, /\/api\/pending-changes/);
