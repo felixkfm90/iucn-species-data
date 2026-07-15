@@ -792,6 +792,13 @@ Prozessausgabe. Laufsteuerung, API-Aufrufe und Zustand verbleiben in `app.js`. S
 gemeinsamen Testeinstieg auf 96 Tests; `app.js` sank auf 4.598 Zeilen. Das Modul wird nach Asset Review und vor
 `app.js` geladen. Ein lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export. Squarespace-Module,
 Footer und Custom CSS blieben unverändert.
+Der zwölfte Schnitt ergänzt `species-explorer/public/app-dashboard.js` als direkt testbare Grenze für
+Zusammenfassung, Validierungsdarstellung, Statusfilter und Artenliste. Unveränderliche Präsentationsmodelle halten
+Status-, Trend-, Asset- und Pflegehinweise getrennt; die DOM-Steuerung bewahrt die Scrollposition der Artenliste und
+delegiert nur die Artauswahl zurück an `app.js`. Sechs direkte Dashboardtests erhöhen den gemeinsamen Testeinstieg
+auf 102 Tests; `app.js` sank auf 4.398 Zeilen. Das Modul wird nach `filter.js` und vor `app.js` geladen. Ein echter
+lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200. Squarespace-Module,
+Footer und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

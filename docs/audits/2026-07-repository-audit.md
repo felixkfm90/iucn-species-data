@@ -355,6 +355,16 @@ Umsetzungsstand am 2026-07-15:
   damit 96 Tests; `public/app.js` sank auf 4.598 Zeilen. Der Explorer liefert das neue Modul aus und lädt es nach
   der Assetprüfung vor `app.js`; ein lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export.
   Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Der zwölfte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-dashboard.js` als Grenze für
+  Zusammenfassung, Validierungsdarstellung, Statusfilter und Artenliste ein. Das Modul übersetzt die Modelldaten in
+  unveränderliche Präsentationsmodelle, rendert Status-/Trendsymbole und Pflegehinweise und hält die Scrollposition
+  der Artenliste. Datenabruf, Detailansicht und Artauswahl bleiben bewusst in `public/app.js`.
+- Sechs direkte Dashboardtests prüfen konsistenten und fehlerhaften Validierungsstatus, die Trennung von Asset-,
+  Sound- und Reporthinweisen, Status-/Trend-/Pflegekennzeichen, alphabetisch deutsche Statusfilter sowie
+  Zusammenfassung, Filterung, Listenrendering, Scrollposition und Artauswahl. Der gemeinsame Testeinstieg umfasst
+  damit 102 Tests; `public/app.js` sank auf 4.398 Zeilen. Das lokale HTML lädt das Modul nach `filter.js` und vor
+  `app.js`; ein echter HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200.
+  Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

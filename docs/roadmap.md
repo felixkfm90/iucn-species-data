@@ -641,6 +641,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `app.js` geladen; ein lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export. Squarespace-
   Module, Footer und Custom CSS blieben unverändert. Als nächste A4-Grenze folgt erneut ein kleiner, fachlich
   geschlossener Oberflächenbereich mit eigenen Charakterisierungstests.
+  Der zwölfte kontrollierte A4-Schnitt führt `species-explorer/public/app-dashboard.js` als gemeinsame Grenze für
+  Zusammenfassung, Validierungsdarstellung, deutsche Statusfilter und Artenliste ein. Status-, Trend-, Asset- und
+  Pflegehinweise werden als unveränderliche Präsentationsmodelle erzeugt; Listenrendering, Scrollposition und
+  Auswahlweitergabe liegen im Dashboardcontroller. Sechs direkte Dashboardtests erhöhen den gemeinsamen
+  Testeinstieg auf 102 Tests; `app.js` sank auf 4.398 Zeilen. Das lokale HTML lädt das Modul nach `filter.js` und vor
+  `app.js`; ein echter lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200.
+  Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene
+  Modulschnitte offen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

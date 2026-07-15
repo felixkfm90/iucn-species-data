@@ -759,6 +759,13 @@ Aktuelle Planung:
   lokale HTML lädt das Modul nach Asset Review und vor `app.js`; ein lokaler HTTP-Smoke-Test bestätigte
   Hauptseite, Modulreferenz und Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht
   geändert.
+  Der zwölfte A4-Schnitt ergänzt `species-explorer/public/app-dashboard.js` als gemeinsame Grenze für
+  Zusammenfassung, Validierungsdarstellung, Statusfilter und Artenliste. Status-, Trend-, Asset- und Pflegehinweise
+  werden als unveränderliche Präsentationsmodelle erzeugt; der Dashboardcontroller rendert Filter und Artenliste,
+  hält deren Scrollposition und delegiert die Artauswahl zurück an `app.js`. Sechs direkte Dashboardtests erhöhen
+  den gemeinsamen Testeinstieg auf 102 Tests; `app.js` sank auf 4.398 Zeilen. Das lokale HTML lädt das Modul nach
+  `filter.js` und vor `app.js`; ein echter lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export
+  jeweils mit HTTP 200. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

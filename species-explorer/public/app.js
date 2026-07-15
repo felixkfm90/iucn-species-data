@@ -12,6 +12,8 @@ const explorerAssetReview = window.SpeciesExplorerAssetReview;
 if (!explorerAssetReview) throw new Error("Explorer-Assetprüfung konnte nicht geladen werden.");
 const explorerPipeline = window.SpeciesExplorerPipeline;
 if (!explorerPipeline) throw new Error("Explorer-Pipelineanzeige konnte nicht geladen werden.");
+const explorerDashboard = window.SpeciesExplorerDashboard;
+if (!explorerDashboard) throw new Error("Explorer-Dashboard konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -296,40 +298,6 @@ function showQuickConfirm({
   });
 }
 
-function createFlag(label, className, title = "") {
-  const span = document.createElement("span");
-  span.className = `flag ${className}`;
-  span.textContent = label;
-  if (title) span.title = title;
-  return span;
-}
-
-function createIndicatorIcon(url, title, className = "") {
-  if (!url) return null;
-  const span = document.createElement("span");
-  span.className = `species-list-indicator ${className}`.trim();
-  span.title = title;
-  span.setAttribute("aria-label", title);
-  const image = document.createElement("img");
-  image.src = url;
-  image.alt = "";
-  span.append(image);
-  return span;
-}
-
-function updateSummary(summary) {
-  elements.speciesCount.textContent = summary.speciesCount;
-  elements.assetIssues.textContent = summary.missingCoreAssets;
-  elements.ncCount.textContent = summary.ncSoundCount;
-  elements.manualMapCount.textContent = summary.manualMapCount;
-  elements.reportDate.textContent = formatDate(summary.reportGeneratedAt);
-}
-
-function setValidationCardState(card, ok) {
-  card.classList.toggle("ok", ok);
-  card.classList.toggle("error", !ok);
-}
-
 function renderDatabaseStatus(stateName = "") {
   const status = resolveDatabaseStatus({
     explicitStatus: stateName,
@@ -342,194 +310,26 @@ function renderDatabaseStatus(stateName = "") {
   elements.pipelineStatus.textContent = databaseStatusLabel(status);
 }
 
-function updateValidation(validation) {
-  const isOk = validation.status === "ok";
-  state.validationNeedsUpdate = !isOk;
-  state.databaseNeedsUpdate = state.validationNeedsUpdate || Boolean(state.pendingChanges?.hasPendingChanges);
-  renderDatabaseStatus();
-  elements.validationOverall.textContent = isOk
-    ? "Alle Prüfungen bestanden"
-    : `${validation.issueCount} Prüfhinweis(e)`;
-  elements.validationOverall.classList.toggle("ok", isOk);
-  elements.validationOverall.classList.toggle("error", !isOk);
-
-  const dataOk = validation.data.issueSpeciesCount === 0;
-  elements.validationData.textContent = `${validation.data.inputCount} / ${validation.data.generatedCount}`;
-  elements.validationDataDetail.textContent = dataOk
-    ? "Eingabe und Pipeline stimmen überein"
-    : `${validation.data.issueSpeciesCount} Art(en) mit Datenabweichung`;
-  setValidationCardState(elements.validationDataCard, dataOk);
-
-  const assetsOk = validation.assets.issueSpeciesCount === 0;
-  const missingPortraitCount = validation.special.missingPortraitCount ?? 0;
-  const missingSoundKnownCount = validation.special.missingSoundKnownCount ?? 0;
-  const manualSoundCount = validation.special.manualSoundCount ?? 0;
-  elements.validationAssets.textContent = missingPortraitCount
-    ? `${validation.assets.completeSpeciesCount} vollständig · ${missingPortraitCount} Portraits fehlen`
-    : `${validation.assets.completeSpeciesCount} vollständig`;
-  elements.validationAssetsDetail.textContent = assetsOk
-    ? (missingSoundKnownCount || manualSoundCount
-      ? `Kernassets vollständig · ${[
-          missingSoundKnownCount ? pluralize(missingSoundKnownCount, "fehlender Sound", "fehlende Sounds") : "",
-          manualSoundCount ? pluralize(manualSoundCount, "manueller Sound", "manuelle Sounds") : "",
-        ].filter(Boolean).join(" · ")}`
-      : "Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden")
-    : `${validation.assets.issueSpeciesCount} unvollständige Assetordner`;
-  setValidationCardState(elements.validationAssetsCard, assetsOk);
-
-  elements.validationReport.textContent = validation.report.consistent ? "Konsistent" : "Abweichung";
-  elements.validationReportDetail.textContent = validation.report.consistent
-    ? `${validation.report.checks.length} Reportprüfungen bestanden`
-    : `${validation.report.issueCount} Reportproblem(e)`;
-  setValidationCardState(elements.validationReportCard, validation.report.consistent);
-
-  elements.validationSpecial.textContent =
-    `${validation.special.manualMapCount} Karten · ${validation.special.ncSoundCount} NC`
-    + `${manualSoundCount ? ` · ${pluralize(manualSoundCount, "manueller Sound", "manuelle Sounds")}` : ""}`
-    + `${missingSoundKnownCount ? ` · ${pluralize(missingSoundKnownCount, "fehlender Sound", "fehlende Sounds")}` : ""}`;
-
-  const detailItems = [];
-  if (!dataOk) {
-    detailItems.push(
-      `Daten: ${validation.data.inputOnlyCount} nur in der Eingabeliste, `
-      + `${validation.data.generatedOnlyCount} nur in speciesData.json, `
-      + `${validation.data.mismatchSpeciesCount} Art(en) mit Feldabweichung`,
-    );
-  }
-  if (!assetsOk) {
-    const available = validation.assets.available;
-    detailItems.push(
-      `Assets vorhanden: ${available.maps} Karten, ${available.sounds} Sounds, `
-      + `${available.credits} Credits, ${available.spectrograms} Spektrogramme, `
-      + `${available.portraits} Artporträts`,
-    );
-    if (missingPortraitCount) {
-      detailItems.push(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`);
-    }
-    if (missingSoundKnownCount) {
-      detailItems.push(
-        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`,
-      );
-    }
-    if (manualSoundCount) {
-      detailItems.push(
-        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`,
-      );
-    }
-  } else {
-    if (missingSoundKnownCount) {
-      detailItems.push(
-        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`,
-      );
-    }
-    if (manualSoundCount) {
-      detailItems.push(
-        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`,
-      );
-    }
-  }
-  for (const check of validation.report.checks.filter((entry) => !entry.ok)) {
-    const parts = [];
-    if (check.missingFromReport.length) {
-      parts.push(`${check.missingFromReport.length} fehlen im Report: ${check.missingFromReport.join(", ")}`);
-    }
-    if (check.staleInReport.length) {
-      parts.push(`${check.staleInReport.length} stehen nur im Report: ${check.staleInReport.join(", ")}`);
-    }
-    detailItems.push(`${check.label}: ${parts.join("; ")}`);
-  }
-  detailItems.push(...validation.report.counterIssues.map((issue) => `Report-Zähler: ${issue}`));
-
-  elements.validationDetails.hidden = detailItems.length === 0;
-  elements.validationDetails.innerHTML = detailItems.length
-    ? `<ul>${detailItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
-    : "";
-}
-
-function updatePendingChanges(pendingChanges = {}) {
-  state.pendingChanges = pendingChanges;
-  state.databaseNeedsUpdate = state.validationNeedsUpdate || Boolean(pendingChanges.hasPendingChanges);
-  renderDatabaseStatus();
-}
-
-function populateStatusFilter() {
-  const current = elements.statusFilter.value;
-  const statuses = [...new Set(state.species.map((entry) => entry.iucn.status))]
-    .filter(Boolean)
-    .sort((a, b) => formatIucnStatus(a).localeCompare(formatIucnStatus(b), "de"));
-  elements.statusFilter.replaceChildren(new Option("Alle", ""));
-  for (const status of statuses) {
-    elements.statusFilter.add(new Option(formatIucnStatus(status), status));
-  }
-  elements.statusFilter.value = current;
-}
-
-function applyFilters() {
-  state.filtered = globalThis.SpeciesExplorerFilters.filterSpecies(state.species, {
-    query: elements.search.value,
-    status: elements.statusFilter.value,
-    flag: elements.flagFilter.value,
-  });
-
-  renderSpeciesList();
-}
-
-function renderSpeciesList() {
-  const previousScrollTop = elements.speciesList.scrollTop;
-  elements.speciesList.replaceChildren();
-  elements.visibleCount.textContent = `${state.filtered.length} ${state.filtered.length === 1 ? "Art" : "Arten"}`;
-
-  if (state.filtered.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "no-results";
-    empty.textContent = "Keine Art passt zu den Filtern.";
-    elements.speciesList.append(empty);
-    return;
-  }
-
-  for (const species of state.filtered) {
-    const item = elements.itemTemplate.content.firstElementChild.cloneNode(true);
-    item.dataset.id = species.id;
-    item.classList.toggle("active", species.id === state.selectedId);
-    item.setAttribute("aria-selected", String(species.id === state.selectedId));
-    item.querySelector("strong").textContent = species.germanName;
-    item.querySelector("em").textContent = species.scientificName;
-
-    const flags = item.querySelector(".species-item-flags");
-    const statusIndicator = createIndicatorIcon(
-      iucnStatusIconUrl(species.iucn.status),
-      formatIucnStatus(species.iucn.status),
-      "status",
-    );
-    const trendIndicator = createIndicatorIcon(
-      iucnTrendIconUrl(species.iucn.trend),
-      `Populationstrend: ${species.iucn.trend || "Unbekannt"}`,
-      "trend",
-    );
-    if (statusIndicator) flags.append(statusIndicator);
-    if (trendIndicator) flags.append(trendIndicator);
-    if (species.inconsistencies.length) {
-      flags.append(createFlag("!", "issue", species.inconsistencies.join(", ")));
-    }
-    if (species.isNcSound) {
-      flags.append(createFlag("NC", "nc", "Non-Commercial-Soundlizenz"));
-    }
-    if (species.isManualMap) {
-      flags.append(createFlag("K", "map", "Manuell gepflegte Karte"));
-    }
-    if (species.soundCareHint) {
-      flags.append(createFlag("S", "sound", "Sound fehlt oder wird manuell gepflegt"));
-    }
-    if (species.missingPortrait) {
-      flags.append(createFlag("P", "portrait", "Artporträt fehlt"));
-    }
-
-    item.addEventListener("click", () => selectSpecies(species.id));
-    elements.speciesList.append(item);
-  }
-
-  elements.speciesList.scrollTop = previousScrollTop;
-}
+const {
+  updateSummary,
+  updateValidation,
+  updatePendingChanges,
+  populateStatusFilter,
+  applyFilters,
+  renderSpeciesList,
+} = explorerDashboard.createDashboardController({
+  state,
+  elements,
+  formatDate,
+  formatIucnStatus,
+  pluralize,
+  escapeHtml,
+  iucnStatusIconUrl,
+  iucnTrendIconUrl,
+  filterSpecies: globalThis.SpeciesExplorerFilters.filterSpecies,
+  renderDatabaseStatus,
+  onSpeciesSelect: (id) => selectSpecies(id),
+});
 
 function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   const mapLightbox = elements.assetReviewMapLightbox;
