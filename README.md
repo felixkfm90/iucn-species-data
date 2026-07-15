@@ -775,8 +775,12 @@ Medienfreigabegrenze. Sie vereinheitlicht modales Öffnen/Schließen, sichere Hi
 Busy-Sperren, Körperklassen sowie das Stoppen und Entladen von Audio-/Videoquellen. Die fachlichen Aktionen bleiben
 im jeweiligen Ablauf. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `app.js` sank auf
 5.159 Zeilen. Die lokale HTML-Reihenfolge lädt Dialogs nach Measurements und vor `app.js`. Squarespace-Module,
-Footer und Custom CSS blieben unverändert. A4 bleibt für die weitere schrittweise Trennung der fachlichen
-Oberflächenbereiche offen.
+Footer und Custom CSS blieben unverändert. Der neunte Schnitt führt `species-explorer/public/app-media.js` als
+gemeinsame Grenze für Karten- und Portrait-Markup, Bereichsaktionen, Audioplayer und Medien-Lightboxen ein. Sechs
+direkte Medientests erhöhen den gemeinsamen Testeinstieg auf 84 Tests; `app.js` sank auf 4.936 Zeilen. Das lokale
+HTML lädt Media nach Dialogs und vor `app.js`; ein realer lokaler Browsertest bestätigte Datenladung,
+Medienaktionen und beide Lightboxen. Squarespace-Module, Footer und Custom CSS blieben auch dabei unverändert. A4
+bleibt für die weitere schrittweise Trennung der fachlichen Oberflächenbereiche offen.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

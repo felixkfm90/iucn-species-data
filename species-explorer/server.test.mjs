@@ -356,6 +356,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(dialogsResponse.headers.get("content-type"), /javascript/);
   assert.match(await dialogsResponse.text(), /createDialogController/);
 
+  const mediaResponse = await fetch(`${baseUrl}/app-media.js`);
+  assert.equal(mediaResponse.status, 200);
+  assert.match(mediaResponse.headers.get("content-type"), /javascript/);
+  assert.match(await mediaResponse.text(), /createMediaRenderers/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2272,6 +2277,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appPresentationSource,
     appMeasurementsSource,
     appDialogsSource,
+    appMediaSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2296,6 +2302,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2316,10 +2323,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./request-router.mjs", import.meta.url), "utf8"),
   ]);
 
-  assert.match(appSource, /class="map-image"/);
+  assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2329,27 +2336,31 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMeasurementsSource, /function renderManualMeasurementEditor\(/);
   assert.match(appDialogsSource, /function createDialogController\(/);
   assert.match(appDialogsSource, /function releaseMediaWithin\(/);
+  assert.match(appMediaSource, /function createMediaRenderers\(/);
+  assert.match(appMediaSource, /function bindAudioPlayer\(/);
+  assert.match(appMediaSource, /function bindImageZoom\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.match(appSource, /window\.SpeciesExplorerDialogs/);
+  assert.match(appSource, /window\.SpeciesExplorerMedia/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
   assert.doesNotMatch(htmlSource, /IUCN Species Data/);
   assert.match(cssSource, /\.map-image\s*\{[^}]*object-fit:\s*contain/s);
-  assert.match(appSource, /map-zoom-trigger/);
+  assert.match(appMediaSource, /map-zoom-trigger/);
   assert.match(appSource, /map-lightbox/);
-  assert.match(appSource, /function resetScrollableToTop\(element\)/);
+  assert.match(appMediaSource, /function resetScrollableToTop\(element/);
   assert.match(appSource, /resetScrollableToTop\(elements\.detailPanel\)/);
-  assert.match(appSource, /species-image-placeholder/);
+  assert.match(appMediaSource, /species-image-placeholder/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns/s);
   assert.match(appSource, /class="explorer-audio"/);
   assert.match(appSource, /class="audio-visual"/);
   assert.match(appSource, /audio-progress-marker/);
-  assert.match(appSource, /requestAnimationFrame/);
+  assert.match(appMediaSource, /requestAnimationFrame/);
   assert.match(
-    appSource,
+    appMediaSource,
     /const seekFromPointer = async \(event\) => \{[\s\S]*audio\.currentTime = progress \* audio\.duration;[\s\S]*await audio\.play\(\)/,
   );
   assert.match(appPresentationSource, /Gefährdet/);
@@ -2679,16 +2690,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
   );
-  assert.match(appSource, /function inlineEditButton\(section\)/);
-  assert.match(appSource, /function inlineDeleteButton\(assetType, label\)/);
-  assert.match(appSource, /function inlineRestoreButton\(assetType, backup = null\)/);
-  assert.match(appSource, /function sectionActions\(editSection = ""/);
+  assert.match(appMediaSource, /function inlineEditButton\(section\)/);
+  assert.match(appMediaSource, /function inlineDeleteButton\(assetType, label\)/);
+  assert.match(appMediaSource, /function inlineRestoreButton\(assetType, backup = null\)/);
+  assert.match(appMediaSource, /function sectionActions\(/);
   assert.match(appSource, /\/assets\/\$\{assetType\}\/restore/);
   assert.match(cssSource, /\.inline-restore-open/);
   assert.match(appSource, /inlineEditButton\("manual"\)/);
   assert.match(appSource, /species\.inInput \? "map" : ""/);
   assert.match(appSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);
-  assert.match(appSource, /sectionActions\(species\.inInput \? "portrait" : ""/);
+  assert.match(appMediaSource, /sectionActions\([\s\S]*species\.inInput \? "portrait" : ""/);
   assert.match(appSource, /Bisheriges Artporträt beibehalten/);
   assert.match(appSource, /class="refresh-species-open"/);
   assert.match(appSource, /Art aktualisieren/);
@@ -2700,7 +2711,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
   assert.match(appFoundationSource, /\/api\/pending-changes/);
   assert.match(appSource, /beforeunload/);
-  assert.match(appSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
+  assert.match(appMediaSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
   assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);
   assert.match(cssSource, /\.edit-dialog\[data-active-section="map"\]\s+\.manual-edit-section/);
   assert.match(appSource, /const saveAndStartPipeline = async \(\) =>/);

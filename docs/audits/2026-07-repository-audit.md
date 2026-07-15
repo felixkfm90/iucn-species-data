@@ -325,6 +325,15 @@ Umsetzungsstand am 2026-07-14:
   Testeinstieg 78 Tests; `public/app.js` sank weiter auf 5.159 Zeilen. Ein realer lokaler Browsertest deckte
   Datenbankdialog, Neue-Art-Assistent, Karten-Lightbox, Bereichsbearbeitung und Bestätigungsdialog ab. Es wurden
   keine Squarespace-Laufzeitdateien, Footer-Versionen oder Custom-CSS-Dateien geändert.
+- Der neunte kontrollierte Oberflächenschnitt trennt mit `species-explorer/public/app-media.js` die Darstellung der
+  Karten- und Portraitbereiche sowie die dazugehörigen Audio- und Lightbox-Controller. Die Mediengrenze verwendet
+  weiterhin die zentralen Präsentations- und Dialoghelfer; fachliche Bearbeitungs- und Speicherabläufe bleiben in
+  `public/app.js`.
+- Sechs direkte Medientests prüfen Zeitformatierung, Karten- und Portrait-Markup, sichere Ausgabewerte,
+  Scrollrücksetzung, Audiozustände und den Lightbox-Lebenszyklus. Der gemeinsame Testeinstieg umfasst damit 84
+  Tests; `public/app.js` sank auf 4.936 Zeilen. Ein realer lokaler Browsertest bestätigte Datenladung,
+  Medienaktionen sowie Öffnen und Schließen von Karten- und Portrait-Lightbox. Squarespace-Laufzeitdateien,
+  Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

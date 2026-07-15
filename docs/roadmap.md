@@ -623,8 +623,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   von Medienquellen. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `public/app.js`
   sank auf 5.159 Zeilen. Datenbank-, Backup-, Pipeline-, Neue-Art-, Bearbeitungs-, Lösch-, Karten-, Portrait-,
   Assetprüf- und Bestätigungsdialoge verwenden dieselbe Grenze. Squarespace-Module, Footer und Custom CSS blieben
-  unverändert. Als nächste A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit
-  eigenen Charakterisierungstests.
+  unverändert. Der nächste kontrollierte A4-Schnitt führt `species-explorer/public/app-media.js` als gemeinsame
+  Mediengrenze ein: Karten- und Portrait-Markup, Bereichsaktionen, der Explorer-Audioplayer sowie Karten- und
+  Portrait-Lightbox liegen nicht mehr im Oberflächenmonolithen. Sechs direkte Medientests erhöhen den gemeinsamen
+  Testeinstieg auf 84 Tests; `public/app.js` sank auf 4.936 Zeilen. Ein realer lokaler Browsertest bestätigte
+  Datenladung, Medienaktionen und beide Lightboxen. Squarespace-Module, Footer und Custom CSS blieben unverändert.
+  Als nächste A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen
+  Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

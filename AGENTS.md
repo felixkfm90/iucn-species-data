@@ -739,7 +739,12 @@ Aktuelle Planung:
   modales Öffnen/Schließen, sichere Hintergrundklicks, Escape- und Busy-Sperren, Körperklassen sowie das Freigeben
   von Medienquellen. Fünf direkte Dialogtests erhöhen den gemeinsamen Testeinstieg auf 78 Tests; `app.js` sank auf
   5.159 Zeilen. Das lokale HTML lädt Dialogs nach Measurements und vor `app.js`. Squarespace-JavaScript,
-  Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Footer-Versionen und Squarespace-CSS wurden nicht geändert. Der neunte A4-Schnitt ergänzt
+  `species-explorer/public/app-media.js` als Mediengrenze für Karten- und Portraitdarstellung, die gemeinsamen
+  Bereichsaktionen, den Explorer-Audioplayer und die Karten-/Portrait-Lightbox. Sechs direkte Medientests erhöhen
+  den gemeinsamen Testeinstieg auf 84 Tests; `app.js` sank auf 4.936 Zeilen. Das lokale HTML lädt Media nach
+  Dialogs und vor `app.js`. Ein realer lokaler Browsertest bestätigte Datenladung, Medienaktionen und beide
+  Lightboxen. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

@@ -6,6 +6,8 @@ const explorerMeasurements = window.SpeciesExplorerMeasurements;
 if (!explorerMeasurements) throw new Error("Explorer-Messwerthelfer konnten nicht geladen werden.");
 const explorerDialogs = window.SpeciesExplorerDialogs;
 if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
+const explorerMedia = window.SpeciesExplorerMedia;
+if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -60,6 +62,23 @@ const {
   releaseAudioElement,
   releaseMediaWithin,
 } = explorerDialogs;
+const {
+  formatTime,
+  resetScrollableToTop,
+  createMediaRenderers,
+  bindAudioPlayer,
+  bindImageZoom,
+} = explorerMedia;
+const {
+  inlineEditButton,
+  sectionActions,
+  mapPanel,
+  speciesImagePanel,
+} = createMediaRenderers({
+  escapeHtml,
+  formatBytes,
+  versionedAssetUrl,
+});
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 
 const elements = {
@@ -512,110 +531,6 @@ function renderSpeciesList() {
   elements.speciesList.scrollTop = previousScrollTop;
 }
 
-function inlineEditButton(section) {
-  return `
-    <button class="inline-edit-open edit-species-open edit-only" type="button" data-edit-section="${escapeHtml(section)}">
-      Bearbeiten
-    </button>
-  `;
-}
-
-function inlineDeleteButton(assetType, label) {
-  return `
-    <button class="inline-delete-open ${escapeHtml(assetType)}-delete-button danger edit-only" type="button">
-      ${escapeHtml(label)}
-    </button>
-  `;
-}
-
-function inlineRestoreButton(assetType, backup = null) {
-  const hasBackup = backup?.exists === true;
-  const title = hasBackup
-    ? `Letzte lokale Sicherung wiederherstellen (${formatBytes(backup.bytes || 0)})`
-    : "Keine lokale Sicherung vorhanden";
-  return `
-    <button
-      class="inline-restore-open ${escapeHtml(assetType)}-restore-button edit-only${hasBackup ? " available" : ""}"
-      type="button"
-      data-asset-type="${escapeHtml(assetType)}"
-      title="${escapeHtml(title)}"
-      ${hasBackup ? "" : "disabled"}
-    >
-      Wiederherstellen
-    </button>
-  `;
-}
-
-function sectionActions(editSection = "", deleteAssetType = "", deleteLabel = "", restoreAssetType = "", restoreBackup = null) {
-  const actions = [];
-  if (editSection) actions.push(inlineEditButton(editSection));
-  if (restoreAssetType) actions.push(inlineRestoreButton(restoreAssetType, restoreBackup));
-  if (deleteAssetType && deleteLabel) actions.push(inlineDeleteButton(deleteAssetType, deleteLabel));
-  return actions.length ? `<div class="section-heading-actions edit-only">${actions.join("")}</div>` : "";
-}
-
-function mapPanel(asset, alt, editSection = "") {
-  const mapUrl = versionedAssetUrl(asset.url, asset);
-  const content = asset.exists
-    ? `
-      <button class="map-zoom-trigger" type="button" aria-label="Verbreitungskarte vergrößern">
-        <img class="map-image" src="${escapeHtml(mapUrl)}" alt="${escapeHtml(alt)}">
-        <span class="map-zoom-hint">Vergrößern</span>
-      </button>
-    `
-    : `<span class="media-missing">Nicht vorhanden</span>`;
-  return `
-    <section class="map-panel">
-      <div class="section-heading">
-        <h3 class="section-title">Verbreitungskarte${asset.exists ? ` · ${formatBytes(asset.bytes)}` : ""}</h3>
-        ${sectionActions(editSection, editSection && asset.exists ? "map" : "", "Karte löschen", editSection ? "map" : "", asset.backup)}
-      </div>
-      <div class="map-frame">${content}</div>
-    </section>
-  `;
-}
-
-function speciesImagePanel(species) {
-  const portrait = species.assets.portrait;
-  if (portrait?.exists) {
-    const portraitUrl = versionedAssetUrl(portrait.url, portrait);
-    return `
-      <section class="species-image-panel">
-        <div class="section-heading">
-          <h3 class="section-title">Artporträt · ${formatBytes(portrait.bytes)}</h3>
-          ${sectionActions(
-            species.inInput ? "portrait" : "",
-            species.inInput ? "portrait" : "",
-            "Artporträt löschen",
-            species.inInput ? "portrait" : "",
-            portrait.backup,
-          )}
-        </div>
-        <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
-          <img
-            class="species-portrait-image"
-            src="${escapeHtml(portraitUrl)}"
-            alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
-          >
-          <span class="map-zoom-hint">Vergrößern</span>
-        </button>
-      </section>
-    `;
-  }
-  return `
-    <section class="species-image-panel">
-      <div class="section-heading">
-        <h3 class="section-title">Artporträt</h3>
-        ${sectionActions(species.inInput ? "portrait" : "", "", "", species.inInput ? "portrait" : "", portrait?.backup)}
-      </div>
-      <div class="species-image-placeholder">
-        <strong>${escapeHtml(species.germanName)}</strong>
-        <span>Noch kein geprüftes Artporträt vorhanden</span>
-      </div>
-    </section>
-  `;
-}
-
 function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   const mapLightbox = elements.assetReviewMapLightbox;
   const image = elements.assetReviewMapLightboxImage;
@@ -627,16 +542,6 @@ function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   resetScrollableToTop(mapLightbox);
   openDialog(mapLightbox, { bodyClass: "explorer-modal-open" });
   resetScrollableToTop(mapLightbox);
-}
-
-function resetScrollableToTop(element) {
-  if (!element) return;
-  element.scrollTop = 0;
-  element.scrollLeft = 0;
-  requestAnimationFrame(() => {
-    element.scrollTop = 0;
-    element.scrollLeft = 0;
-  });
 }
 
 async function refreshExplorerModelOnly({ reload = false } = {}) {
@@ -788,159 +693,31 @@ function hasOpenDialog() {
   return Boolean(document.querySelector("dialog[open]"));
 }
 
-function formatTime(value) {
-  if (!Number.isFinite(value) || value < 0) return "0:00";
-  const minutes = Math.floor(value / 60);
-  const seconds = Math.floor(value % 60);
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
 function setupAudioPlayer() {
   state.audioCleanup?.();
-  state.audioCleanup = null;
-
-  const audio = elements.detailPanel.querySelector(".explorer-audio");
-  if (!audio) return;
-
-  const playButton = elements.detailPanel.querySelector(".audio-play-toggle");
-  const visual = elements.detailPanel.querySelector(".audio-visual");
-  const marker = elements.detailPanel.querySelector(".audio-progress-marker");
-  const time = elements.detailPanel.querySelector(".audio-time");
-  const volume = elements.detailPanel.querySelector(".audio-volume");
-  let animationFrame = 0;
-
-  const updateProgress = () => {
-    const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-    const progress = duration > 0 ? Math.min(1, Math.max(0, audio.currentTime / duration)) : 0;
-    marker.style.left = `${progress * 100}%`;
-    time.textContent = `${formatTime(audio.currentTime)} / ${formatTime(duration)}`;
-  };
-
-  const animate = () => {
-    updateProgress();
-    if (!audio.paused && !audio.ended) animationFrame = requestAnimationFrame(animate);
-  };
-
-  const updatePlayState = () => {
-    const playing = !audio.paused && !audio.ended;
-    playButton.textContent = playing ? "Ⅱ" : "▶";
-    playButton.setAttribute("aria-label", playing ? "Pause" : "Abspielen");
-    playButton.classList.toggle("playing", playing);
-    cancelAnimationFrame(animationFrame);
-    if (playing) animationFrame = requestAnimationFrame(animate);
-    else updateProgress();
-  };
-
-  const togglePlayback = async () => {
-    if (audio.paused || audio.ended) {
-      try {
-        await audio.play();
-      } catch {
-        updatePlayState();
-      }
-    } else {
-      audio.pause();
-    }
-  };
-
-  const seekFromPointer = async (event) => {
-    if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
-    const rect = visual.getBoundingClientRect();
-    const progress = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-    audio.currentTime = progress * audio.duration;
-    updateProgress();
-    try {
-      await audio.play();
-    } catch {
-      updatePlayState();
-    }
-  };
-
-  playButton.addEventListener("click", togglePlayback);
-  visual.addEventListener("click", seekFromPointer);
-  visual.addEventListener("keydown", (event) => {
-    if (event.key === " " || event.key === "Enter") {
-      event.preventDefault();
-      togglePlayback();
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      const direction = event.key === "ArrowLeft" ? -1 : 1;
-      audio.currentTime = Math.min(audio.duration || 0, Math.max(0, audio.currentTime + direction * 5));
-      updateProgress();
-    }
-  });
-  volume.addEventListener("input", () => {
-    audio.volume = Number(volume.value);
-  });
-  audio.addEventListener("loadedmetadata", updateProgress);
-  audio.addEventListener("durationchange", updateProgress);
-  audio.addEventListener("timeupdate", updateProgress);
-  audio.addEventListener("play", updatePlayState);
-  audio.addEventListener("pause", updatePlayState);
-  audio.addEventListener("ended", updatePlayState);
-  updatePlayState();
-
-  state.audioCleanup = () => {
-    cancelAnimationFrame(animationFrame);
-    audio.pause();
-    audio.removeAttribute("src");
-    audio.load();
-  };
+  state.audioCleanup = bindAudioPlayer({ root: elements.detailPanel });
 }
 
-function setupMapZoom(species) {
+function setupMapZoom() {
   state.mapCleanup?.();
-  state.mapCleanup = null;
-
-  const trigger = elements.detailPanel.querySelector(".map-zoom-trigger");
-  const dialog = elements.detailPanel.querySelector(".map-lightbox");
-  const closeButton = elements.detailPanel.querySelector(".map-lightbox-close");
-  if (!trigger || !dialog || !closeButton) return;
-
-  const controller = createDialogController({
-    dialog,
-    closeButtons: [closeButton],
-    bodyClass: "explorer-modal-open",
+  state.mapCleanup = bindImageZoom({
+    root: elements.detailPanel,
+    triggerSelector: ".map-zoom-trigger",
+    dialogSelector: ".map-lightbox:not(.portrait-lightbox)",
+    closeSelector: ".map-lightbox-close:not(.portrait-lightbox-close)",
+    createDialogController,
   });
-  const open = () => {
-    resetScrollableToTop(dialog);
-    controller.open();
-    resetScrollableToTop(dialog);
-  };
-
-  trigger.addEventListener("click", open);
-
-  state.mapCleanup = () => {
-    controller.close("cleanup");
-    controller.destroy();
-  };
 }
 
 function setupPortraitZoom() {
   state.portraitCleanup?.();
-  state.portraitCleanup = null;
-
-  const trigger = elements.detailPanel.querySelector(".portrait-zoom-trigger");
-  const dialog = elements.detailPanel.querySelector(".portrait-lightbox");
-  const closeButton = elements.detailPanel.querySelector(".portrait-lightbox-close");
-  if (!trigger || !dialog || !closeButton) return;
-
-  const controller = createDialogController({
-    dialog,
-    closeButtons: [closeButton],
-    bodyClass: "explorer-modal-open",
+  state.portraitCleanup = bindImageZoom({
+    root: elements.detailPanel,
+    triggerSelector: ".portrait-zoom-trigger",
+    dialogSelector: ".portrait-lightbox",
+    closeSelector: ".portrait-lightbox-close",
+    createDialogController,
   });
-  const open = () => {
-    resetScrollableToTop(dialog);
-    controller.open();
-    resetScrollableToTop(dialog);
-  };
-
-  trigger.addEventListener("click", open);
-  state.portraitCleanup = () => {
-    controller.close("cleanup");
-    controller.destroy();
-  };
 }
 
 function setupAssetReview() {
@@ -5062,7 +4839,7 @@ function renderDetail(species) {
   `;
 
   setupAudioPlayer();
-  setupMapZoom(species);
+  setupMapZoom();
   setupPortraitZoom();
   setupSpeciesEditor(species);
   setupSpeciesRefresh(species);
