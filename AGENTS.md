@@ -745,6 +745,13 @@ Aktuelle Planung:
   den gemeinsamen Testeinstieg auf 84 Tests; `app.js` sank auf 4.936 Zeilen. Das lokale HTML lädt Media nach
   Dialogs und vor `app.js`. Ein realer lokaler Browsertest bestätigte Datenladung, Medienaktionen und beide
   Lightboxen. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der zehnte A4-Schnitt ergänzt `species-explorer/public/app-asset-review.js` als fachliche Grenze für den
+  Karten-/Soundvergleich nach Pipeline-Läufen. Sicheres Vergleichs-Markup, Entscheidungstexte, Karten-Lightbox,
+  Spektrogramm-Scrubbing, Fortschrittsmarker und Medienfreigabe liegen nicht mehr in `app.js`; Pipelinezustand,
+  API-Aufrufe, Folgesuche und Speichern verbleiben dort. Fünf direkte Assetprüftests erhöhen den gemeinsamen
+  Testeinstieg auf 89 Tests; `app.js` sank auf 4.760 Zeilen. Das lokale HTML lädt Asset Review nach Media und vor
+  `app.js`. Ein realer lokaler Browsertest bestätigte 49 geladene Arten ohne Konsolenfehler. Squarespace-
+  JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

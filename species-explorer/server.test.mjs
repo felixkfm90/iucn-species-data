@@ -361,6 +361,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(mediaResponse.headers.get("content-type"), /javascript/);
   assert.match(await mediaResponse.text(), /createMediaRenderers/);
 
+  const assetReviewResponse = await fetch(`${baseUrl}/app-asset-review.js`);
+  assert.equal(assetReviewResponse.status, 200);
+  assert.match(assetReviewResponse.headers.get("content-type"), /javascript/);
+  assert.match(await assetReviewResponse.text(), /createAssetReviewRenderer/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2278,6 +2283,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appMeasurementsSource,
     appDialogsSource,
     appMediaSource,
+    appAssetReviewSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2303,6 +2309,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2326,7 +2333,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2339,11 +2346,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /function createMediaRenderers\(/);
   assert.match(appMediaSource, /function bindAudioPlayer\(/);
   assert.match(appMediaSource, /function bindImageZoom\(/);
+  assert.match(appAssetReviewSource, /function createAssetReviewRenderer\(/);
+  assert.match(appAssetReviewSource, /function createAssetReviewMediaController\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.match(appSource, /window\.SpeciesExplorerDialogs/);
   assert.match(appSource, /window\.SpeciesExplorerMedia/);
+  assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2459,21 +2469,17 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /renderPersistentPipelineStatus\(status\)/);
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
-  assert.match(appSource, /Bisherige \$\{asset\.previousManual \? "manuelle" : "automatische"\} Karte behalten/);
-  assert.match(appSource, /Gefundenen Sound übernehmen \(\$\{soundKind\}\)/);
-  assert.match(appSource, /Sound nicht übernehmen/);
+  assert.match(appAssetReviewSource, /Bisherige \$\{asset\.previousManual \? "manuelle" : "automatische"\} Karte behalten/);
+  assert.match(appAssetReviewSource, /Gefundenen Sound übernehmen \(\$\{soundKind\}\)/);
+  assert.match(appAssetReviewSource, /Sound nicht übernehmen/);
   assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
   assert.match(appSource, /function setupAssetReview\(\)/);
-  assert.match(appSource, /class="asset-review-map-trigger"/);
-  assert.match(appSource, /class="asset-review-map-compare"/);
-  assert.match(appSource, /Bisherige Karte/);
-  assert.match(appSource, /Gefundene Karte/);
-  assert.match(appSource, /mapLightboxImage\.onload = \(\) => resetScrollableToTop\(mapLightbox\)/);
-  assert.match(appSource, /openMapLightbox/);
-  assert.match(
-    appSource,
-    /const stopAssetReviewAudio = \(\) => \{[\s\S]*releaseMediaWithin\(elements\.assetReviewList\);/,
-  );
+  assert.match(appAssetReviewSource, /class="asset-review-map-trigger"/);
+  assert.match(appAssetReviewSource, /class="asset-review-map-compare"/);
+  assert.match(appAssetReviewSource, /Bisherige Karte/);
+  assert.match(appAssetReviewSource, /Gefundene Karte/);
+  assert.match(appAssetReviewSource, /mapLightboxImage\.onload = \(\) => resetScrollableToTop\(mapLightbox\)/);
+  assert.match(appAssetReviewSource, /const stopAudio = \(\) =>/);
   assert.match(
     appSource,
     /const reviewController = createDialogController\(\{[\s\S]*afterClose: \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
@@ -2793,8 +2799,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="asset-review-list"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox-image"/);
-  assert.match(appSource, /value="reject"/);
-  assert.match(appSource, /Gefundenen Sound ablehnen und weiter suchen/);
+  assert.match(appAssetReviewSource, /value="reject"/);
+  assert.match(appAssetReviewSource, /Gefundenen Sound ablehnen und weiter suchen/);
   assert.match(appSource, /decision:\s*formData\.get/);
   assert.match(appSource, /audio\.removeAttribute\("src"\)/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);

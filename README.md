@@ -780,7 +780,12 @@ gemeinsame Grenze für Karten- und Portrait-Markup, Bereichsaktionen, Audioplaye
 direkte Medientests erhöhen den gemeinsamen Testeinstieg auf 84 Tests; `app.js` sank auf 4.936 Zeilen. Das lokale
 HTML lädt Media nach Dialogs und vor `app.js`; ein realer lokaler Browsertest bestätigte Datenladung,
 Medienaktionen und beide Lightboxen. Squarespace-Module, Footer und Custom CSS blieben auch dabei unverändert. A4
-bleibt für die weitere schrittweise Trennung der fachlichen Oberflächenbereiche offen.
+bleibt für die weitere schrittweise Trennung der fachlichen Oberflächenbereiche offen. Der zehnte Schnitt ergänzt
+`species-explorer/public/app-asset-review.js` als eigenständige Grenze für sichere Karten-/Soundvergleiche,
+Entscheidungstexte, Karten-Lightbox, Spektrogramm-Scrubbing, Fortschrittsmarker und Medienfreigabe. Pipelinezustand,
+API-Aufrufe und Speichern bleiben in `app.js`. Fünf direkte Tests erhöhen den gemeinsamen Testeinstieg auf 89 Tests;
+`app.js` sank auf 4.760 Zeilen. Das Modul wird nach Media und vor `app.js` geladen. Ein realer lokaler Browsertest
+bestätigte 49 geladene Arten ohne Konsolenfehler. Squarespace-Module, Footer und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

@@ -8,6 +8,8 @@ const explorerDialogs = window.SpeciesExplorerDialogs;
 if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
 const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
+const explorerAssetReview = window.SpeciesExplorerAssetReview;
+if (!explorerAssetReview) throw new Error("Explorer-Assetprüfung konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -79,6 +81,12 @@ const {
   formatBytes,
   versionedAssetUrl,
 });
+const {
+  reviewSignature,
+  createAssetReviewRenderer,
+  createAssetReviewMediaController,
+} = explorerAssetReview;
+const { renderAssetReviewList } = createAssetReviewRenderer({ escapeHtml });
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 
 const elements = {
@@ -723,35 +731,17 @@ function setupPortraitZoom() {
 function setupAssetReview() {
   const dialog = elements.assetReviewDialog;
   const form = elements.assetReviewForm;
-  const mapLightbox = elements.assetReviewMapLightbox;
-  const mapLightboxImage = elements.assetReviewMapLightboxImage;
-
-  const stopAssetReviewAudio = () => {
-    releaseMediaWithin(elements.assetReviewList);
-  };
-
-  const mapLightboxController = createDialogController({
-    dialog: mapLightbox,
-    closeButtons: [elements.assetReviewMapLightboxClose],
-    bodyClass: "explorer-modal-open",
+  const assetReviewMediaController = createAssetReviewMediaController({
+    list: elements.assetReviewList,
+    mapLightbox: elements.assetReviewMapLightbox,
+    mapLightboxImage: elements.assetReviewMapLightboxImage,
+    mapLightboxClose: elements.assetReviewMapLightboxClose,
+    createDialogController,
+    releaseMediaWithin,
+    resetScrollableToTop,
   });
-
-  const closeMapLightbox = () => {
-    mapLightboxController.close("programmatic");
-  };
-
-  const openMapLightbox = (trigger) => {
-    const url = trigger.dataset.mapUrl;
-    const alt = trigger.dataset.mapAlt || "Neue Verbreitungskarte";
-    if (!url) return;
-    mapLightboxImage.onload = () => resetScrollableToTop(mapLightbox);
-    mapLightboxImage.src = url;
-    mapLightboxImage.alt = alt;
-    mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
-    resetScrollableToTop(mapLightbox);
-    mapLightboxController.open();
-    resetScrollableToTop(mapLightbox);
-  };
+  const stopAssetReviewAudio = assetReviewMediaController.stopAudio;
+  const closeMapLightbox = assetReviewMediaController.closeMapLightbox;
 
   const setMessage = (text = "", type = "") => {
     elements.assetReviewMessage.textContent = text;
@@ -781,19 +771,6 @@ function setupAssetReview() {
 
   const closeReviewDialog = () => reviewController.close("programmatic");
 
-  const reviewSignature = (assets = []) => JSON.stringify(
-    assets.map((asset) => [
-      asset.safeName,
-      asset.type,
-      asset.file,
-      asset.url,
-      asset.spectrogramUrl,
-      asset.previousUrl,
-      asset.previousSpectrogramUrl,
-      asset.sourceLabel,
-    ]),
-  );
-
   const openReview = (status) => {
     if (!status.reviewAssets?.length) return;
     const nextSignature = reviewSignature(status.reviewAssets);
@@ -807,132 +784,7 @@ function setupAssetReview() {
     elements.assetReviewSave.textContent = "Entscheidung speichern";
     elements.assetReviewSave.disabled = false;
     const retryMode = status.mode === "manual-maps" || status.mode === "nc-sounds";
-    const decisionLabels = (asset) => {
-      if (asset.type === "map") {
-        return {
-          automatic: status.mode === "manual-maps"
-            ? "Automatische Karte übernehmen"
-            : "Karte automatisch pflegen",
-          manual: status.mode === "manual-maps" && asset.previouslyExisting === false
-            ? "Neue Karte nicht übernehmen"
-            : status.mode === "manual-maps"
-              ? `Bisherige ${asset.previousManual ? "manuelle" : "automatische"} Karte behalten`
-              : "Manuell pflegen und schützen",
-        };
-      }
-      const soundKind = asset.isNc ? "NC" : "frei";
-      return {
-        automatic: `Gefundenen Sound übernehmen (${soundKind})`,
-        manual: status.mode === "nc-sounds" && asset.previouslyExisting === false
-          ? "Sound nicht übernehmen"
-          : status.mode === "nc-sounds"
-            ? "Bisherigen Sound behalten"
-            : "Manuell pflegen und schützen",
-      };
-    };
-    elements.assetReviewList.innerHTML = status.reviewAssets.map((asset, index) => {
-      const labels = decisionLabels(asset);
-      const currentSoundKind = asset.previousSourceLabel || (asset.previousIsNc === true ? "NC" : "frei");
-      const foundSoundKind = asset.sourceLabel || (asset.isNc ? "NC" : "frei");
-      const metaLine = asset.type === "sound"
-        ? `${asset.scientificName} · gefundener Sound: ${foundSoundKind}`
-        : `${asset.scientificName} · ${asset.file}`;
-      return `
-      <article class="asset-review-item" data-index="${index}" data-type="${escapeHtml(asset.type)}">
-        <div class="asset-review-preview">
-          ${asset.type === "map"
-            ? `
-              <div class="asset-review-map-compare">
-                <div class="asset-review-map-preview">
-                  <strong>Bisherige Karte</strong>
-                  ${asset.previousUrl ? `
-                    <button
-                      class="asset-review-map-trigger"
-                      type="button"
-                      data-map-url="${escapeHtml(asset.previousUrl)}"
-                      data-map-alt="${escapeHtml(`bisherige Karte ${asset.germanName}`)}"
-                      aria-label="Bisherige Karte ${escapeHtml(asset.germanName)} vergrößern"
-                    >
-                      <img src="${escapeHtml(asset.previousUrl)}" alt="${escapeHtml(`Bisherige Karte ${asset.germanName}`)}">
-                      <span class="asset-review-zoom-hint">Vergrößern</span>
-                    </button>
-                  ` : `<span class="asset-review-no-map">Keine Karte vorhanden</span>`}
-                </div>
-                <div class="asset-review-map-preview">
-                  <strong>Gefundene Karte</strong>
-                  <button
-                    class="asset-review-map-trigger"
-                    type="button"
-                    data-map-url="${escapeHtml(asset.url)}"
-                    data-map-alt="${escapeHtml(`gefundene Karte ${asset.germanName}`)}"
-                    aria-label="Gefundene Karte ${escapeHtml(asset.germanName)} vergrößern"
-                  >
-                    <img src="${escapeHtml(asset.url)}" alt="${escapeHtml(`Gefundene Karte ${asset.germanName}`)}">
-                    <span class="asset-review-zoom-hint">Vergrößern</span>
-                  </button>
-                </div>
-              </div>
-            `
-            : `
-              <div class="asset-review-sound-compare">
-                ${asset.previousUrl ? `
-                  <div class="asset-review-sound-preview">
-                    <strong>Aktueller Sound (${escapeHtml(currentSoundKind)})</strong>
-                    ${asset.previousSpectrogramUrl ? `
-                      <button
-                        class="asset-review-spectrogram"
-                        type="button"
-                        aria-label="Im bisherigen Spektrogramm von ${escapeHtml(asset.germanName)} springen"
-                      >
-                        <img src="${escapeHtml(asset.previousSpectrogramUrl)}" alt="${escapeHtml(`Bisheriges Spektrogramm ${asset.germanName}`)}">
-                        <span class="asset-review-progress-marker"></span>
-                      </button>
-                    ` : `<span class="asset-review-no-spectrogram">Bisheriges Spektrogramm nicht vorhanden</span>`}
-                    <audio controls preload="metadata" src="${escapeHtml(asset.previousUrl)}"></audio>
-                  </div>
-                ` : ""}
-                <div class="asset-review-sound-preview">
-                  <strong>Gefundener Sound (${escapeHtml(foundSoundKind)})</strong>
-                  ${asset.spectrogramUrl ? `
-                    <button
-                      class="asset-review-spectrogram"
-                      type="button"
-                      aria-label="Im Spektrogramm von ${escapeHtml(asset.germanName)} springen"
-                    >
-                      <img src="${escapeHtml(asset.spectrogramUrl)}" alt="${escapeHtml(`Spektrogramm ${asset.germanName}`)}">
-                      <span class="asset-review-progress-marker"></span>
-                    </button>
-                  ` : `<span class="asset-review-no-spectrogram">Spektrogramm noch nicht vorhanden</span>`}
-                  <audio controls preload="metadata" src="${escapeHtml(asset.url)}"></audio>
-                </div>
-              </div>
-            `}
-        </div>
-        <div class="asset-review-copy">
-          <div>
-            <strong>${escapeHtml(asset.germanName)} · ${escapeHtml(asset.label)}</strong>
-            <p>${escapeHtml(metaLine)}</p>
-          </div>
-          <div class="asset-review-options">
-            <label>
-              <input type="radio" name="asset-${index}" value="automatic" required>
-              ${escapeHtml(labels.automatic)}
-            </label>
-            <label>
-              <input type="radio" name="asset-${index}" value="manual" required>
-              ${escapeHtml(labels.manual)}
-            </label>
-            ${asset.type === "sound" ? `
-              <label>
-                <input type="radio" name="asset-${index}" value="reject" required>
-                Gefundenen Sound ablehnen und weiter suchen
-              </label>
-            ` : ""}
-          </div>
-        </div>
-      </article>
-    `;
-    }).join("");
+    elements.assetReviewList.innerHTML = renderAssetReviewList(status);
     form.dataset.runId = status.runId;
     form.dataset.assets = JSON.stringify(status.reviewAssets);
     setMessage(
@@ -942,36 +794,8 @@ function setupAssetReview() {
       "info",
     );
     reviewController.open();
-    for (const item of elements.assetReviewList.querySelectorAll(".asset-review-sound-preview")) {
-      const audio = item.querySelector("audio");
-      const marker = item.querySelector(".asset-review-progress-marker");
-      if (!audio || !marker) continue;
-      const updateMarker = () => {
-        const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-        marker.style.left = `${Math.min(1, Math.max(0, progress)) * 100}%`;
-      };
-      audio.addEventListener("timeupdate", updateMarker);
-      audio.addEventListener("loadedmetadata", updateMarker);
-      audio.addEventListener("seeked", updateMarker);
-    }
+    assetReviewMediaController.bindRenderedMedia();
   };
-
-  elements.assetReviewList.addEventListener("click", (event) => {
-    const trigger = event.target.closest(".asset-review-map-trigger");
-    if (trigger) openMapLightbox(trigger);
-    const spectrogram = event.target.closest(".asset-review-spectrogram");
-    if (spectrogram) {
-      const item = spectrogram.closest(".asset-review-sound-preview");
-      const audio = item?.querySelector("audio");
-      const marker = spectrogram.querySelector(".asset-review-progress-marker");
-      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
-      const rect = spectrogram.getBoundingClientRect();
-      const progress = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-      audio.currentTime = progress * audio.duration;
-      if (marker) marker.style.left = `${progress * 100}%`;
-      audio.play().catch(() => {});
-    }
-  });
   state.finishAssetReviewWaiting = (status) => {
     if (!dialog.open || !state.assetReviewAwaitingRetry) return false;
     const failed = status.status === "failed";

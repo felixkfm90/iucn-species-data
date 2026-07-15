@@ -628,7 +628,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Portrait-Lightbox liegen nicht mehr im Oberflächenmonolithen. Sechs direkte Medientests erhöhen den gemeinsamen
   Testeinstieg auf 84 Tests; `public/app.js` sank auf 4.936 Zeilen. Ein realer lokaler Browsertest bestätigte
   Datenladung, Medienaktionen und beide Lightboxen. Squarespace-Module, Footer und Custom CSS blieben unverändert.
-  Als nächste A4-Grenze folgt erneut ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen
+  Der nächste kontrollierte A4-Schnitt führt `species-explorer/public/app-asset-review.js` als fachliche Grenze
+  für Karten-/Soundvergleich, Entscheidungstexte, Karten-Lightbox, Spektrogramm-Scrubbing, Fortschrittsmarker und
+  Medienfreigabe ein. Pipelinezustand, API-Aufrufe, Folgesuche und Speichern bleiben in `app.js`. Fünf direkte
+  Assetprüftests erhöhen den gemeinsamen Testeinstieg auf 89 Tests; `app.js` sank auf 4.760 Zeilen. Das lokale HTML
+  lädt Asset Review nach Media und vor `app.js`; ein realer lokaler Browsertest bestätigte 49 geladene Arten ohne
+  Konsolenfehler. Squarespace-Module, Footer und Custom CSS blieben unverändert. Als nächste A4-Grenze folgt erneut
+  ein kleiner, fachlich geschlossener Oberflächenbereich mit eigenen
   Charakterisierungstests.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau

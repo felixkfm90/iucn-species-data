@@ -334,6 +334,17 @@ Umsetzungsstand am 2026-07-14:
   Tests; `public/app.js` sank auf 4.936 Zeilen. Ein realer lokaler Browsertest bestätigte Datenladung,
   Medienaktionen sowie Öffnen und Schließen von Karten- und Portrait-Lightbox. Squarespace-Laufzeitdateien,
   Footer-Versionen und Custom CSS blieben unverändert.
+- Der zehnte kontrollierte Oberflächenschnitt führt
+  `species-explorer/public/app-asset-review.js` als fachliche Grenze für den Karten-/Soundvergleich nach
+  Pipeline-Läufen ein. Das Modul rendert sichere Entscheidungsansichten, unterscheidet bisherigen manuellen oder
+  automatischen Kartenbestand und freie beziehungsweise NC-Sounds und steuert Karten-Lightbox,
+  Spektrogramm-Scrubbing, Fortschrittsmarker sowie die Medienfreigabe. Pipelinezustand, API-Aufrufe,
+  Folge-Suchläufe und Speichern der Entscheidung bleiben bewusst in `public/app.js`.
+- Fünf direkte Assetprüftests decken Signaturwechsel, Entscheidungstexte, Karten- und Soundvergleich,
+  Pfadunterdrückung sowie Mediensteuerung und Listener-Freigabe ab. Der gemeinsame Testeinstieg umfasst damit 89
+  Tests; `public/app.js` sank auf 4.760 Zeilen. Der lokale Server liefert das Modul explizit aus, das HTML lädt es
+  nach der Mediengrenze und vor `app.js`, und ein realer lokaler Browsertest bestätigte 49 geladene Arten ohne
+  Konsolenfehler. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
