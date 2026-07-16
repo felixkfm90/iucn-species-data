@@ -32,6 +32,27 @@ test("Pipeline-Bezeichnungen und Datenbankstatus bleiben eindeutig", () => {
   assert.equal(pipeline.databaseStatusLabel("unknown"), "Datenbank aktualisieren");
 });
 
+test("Soundsuchergebnis unterscheidet ausgeschöpfte Quellen, Bestand und Dateisperre", () => {
+  const missing = pipeline.soundSearchOutcome([
+    "↩ Abgelehnte Soundquelle wird übersprungen für Gepard: commons:1",
+    "Bereits abgelehnte Soundquellen wurden übersprungen; keine weitere geeignete Soundalternative gefunden.",
+  ]);
+  assert.equal(missing.noAlternative, true);
+  assert.equal(missing.rejectedSourcesSkipped, true);
+  assert.match(missing.message, /unterstützten, lizenzgeprüften Quellen/);
+  assert.match(missing.message, /keine Tierstimme hinterlegt/);
+
+  const existing = pipeline.soundSearchOutcome(
+    ["Keine weitere geeignete Soundalternative gefunden."],
+    { hasCurrentSound: true },
+  );
+  assert.match(existing.message, /bisherige Sound bleibt erhalten/);
+
+  const locked = pipeline.soundSearchOutcome(["Sounddatei ist noch geöffnet oder gesperrt"]);
+  assert.equal(locked.soundLocked, true);
+  assert.equal(locked.messageType, "error");
+});
+
 test("Datenbankstatus priorisiert explizite, Backup- und Pipelinezustände", () => {
   assert.equal(pipeline.resolveDatabaseStatus({
     explicitStatus: "failed",

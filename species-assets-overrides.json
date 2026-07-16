@@ -1141,10 +1141,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-07-10T15:04:07.585Z",
-        "approvedAt": "2026-07-10T15:04:11.355Z",
-        "sha256": "f7dddaee1d0dd20d2f54329e4ccfe5b6e7dc7aa2ecb328b2f7d9f58660d2bb29",
-        "metadataSha256": "ea1d42af2c3751ec18c9c5d312d72cf97253c038387b9dc183a2ab62de0824d0"
+        "importedAt": "2026-07-16T14:44:22.423Z",
+        "approvedAt": "2026-07-16T14:44:29.280Z",
+        "sha256": "87a20c41b9ea50878db481909f05cdae580d5a62d658d5293e3a59f1cc1c04e7",
+        "metadataSha256": "9301d946f135d1ddfa9bad0c861b2d9ba892bb71f7b7e46c80e17f7addc73fd0"
       }
     },
     "Gepard": {

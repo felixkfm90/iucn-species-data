@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-13
+Stand: 2026-07-16
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -74,6 +74,8 @@ Aktuelle Zähler sowie die aktiven Listen für manuelle Karten, NC-Sounds und be
 ausschließlich in der automatisch erzeugten Datei `docs/project-status.md`. Sie wird mit `npm run status:sync`
 aktualisiert; `npm run status:check` und der CI-Quality-Job verhindern eine Veröffentlichung mit veraltetem Status.
 Zahlen in datierten Audit- oder Verlaufsabschnitten sind historische Zeitaufnahmen.
+Vor automatischen Pipeline-, Karten-, Sound- und Portrait-Veröffentlichungen synchronisiert der Explorer diese
+Datei selbst und nimmt sie in denselben Commit auf. Bei manuellen Repo-Änderungen bleibt `status:sync` Pflicht.
 
 Der Sound-Suchlauf prueft vorhandene NC-Sounds bei jedem Update erneut auf freie Alternativen:
 
@@ -85,6 +87,9 @@ Im Asset-Pruefdialog abgelehnte Soundquellen werden in `species-assets-overrides
 `sound.rejectedSources` gespeichert. `update.mjs` ueberspringt diese Xeno-Canto-, Wikimedia-Commons- oder
 iNaturalist-Quelle bei spaeteren Suchlaeufen, damit ein ausdruecklich abgelehnter Sound nicht erneut vorgeschlagen
 wird.
+Sind alle unterstützten und lizenzgeprüften Kandidaten ausgeschöpft, bleibt der jeweilige Assistent beziehungsweise
+Bearbeitungsdialog geöffnet und meldet den Zustand ausdrücklich. Die Meldung behauptet nicht, dass außerhalb der
+angebundenen Quellen keine Aufnahme existiert.
 
 Aktuell ersetzte freie Quellen:
 

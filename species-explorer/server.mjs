@@ -2169,6 +2169,13 @@ export async function createExplorerServer({
     }
 
     code = await runPipelineChild(
+      process.execPath,
+      [join(repoRoot, "scripts", "project-status.mjs")],
+      "Projektstatus synchronisieren",
+    );
+    if (code !== 0) return code;
+
+    code = await runPipelineChild(
       "git",
       [
         "add",
@@ -2179,6 +2186,7 @@ export async function createExplorerServer({
         "lastSavedAssessmentId.json",
         "species-assets-overrides.json",
         "docs/manual-map-overrides.md",
+        "docs/project-status.md",
         "species-assets",
       ],
       "Git-Dateien vormerken",
@@ -2749,6 +2757,16 @@ export async function createExplorerServer({
     });
   }
 
+  async function synchronizeProjectStatusForPublication() {
+    const result = await runCommandCapture(
+      process.execPath,
+      [join(repoRoot, "scripts", "project-status.mjs")],
+    );
+    if (result.code !== 0) {
+      throw new Error(`Projektstatus konnte nicht synchronisiert werden: ${result.stderr || result.stdout}`);
+    }
+  }
+
   function powershellExecutable() {
     return process.platform === "win32" ? "powershell.exe" : "pwsh";
   }
@@ -2972,6 +2990,7 @@ export async function createExplorerServer({
       "species-assets-overrides.json",
       "docs/manual-map-overrides.md",
       "fehlende_elemente_report.json",
+      "docs/project-status.md",
     ];
     const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
     if (stagedBefore.code !== 0) {
@@ -2979,6 +2998,7 @@ export async function createExplorerServer({
         "Vor dem Kartenimport waren bereits Dateien vorgemerkt. Commit und Push wurden nicht gestartet.",
       );
     }
+    await synchronizeProjectStatusForPublication();
     const staged = await runCommandCapture("git", ["add", "--", ...paths]);
     if (staged.code !== 0) {
       throw new Error(`Git-Dateien konnten nicht vorgemerkt werden: ${staged.stderr || staged.stdout}`);
@@ -3292,6 +3312,7 @@ export async function createExplorerServer({
       `species-assets/${species.safeName}/credits.json`,
       `species-assets/${species.safeName}/spectrogram.webp`,
       "species-assets-overrides.json",
+      "docs/project-status.md",
     ];
     if (includeReport) paths.push("fehlende_elemente_report.json");
     const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
@@ -3300,6 +3321,7 @@ export async function createExplorerServer({
         "Vor dem Soundimport waren bereits Dateien vorgemerkt. Commit und Push wurden nicht gestartet.",
       );
     }
+    await synchronizeProjectStatusForPublication();
     const staged = await runCommandCapture("git", ["add", "--", ...paths]);
     if (staged.code !== 0) {
       throw new Error(`Git-Dateien konnten nicht vorgemerkt werden: ${staged.stderr || staged.stdout}`);
@@ -3809,6 +3831,7 @@ export async function createExplorerServer({
       `species-assets/${species.safeName}/portrait.webp`,
       `species-assets/${species.safeName}/portrait.json`,
       "species-assets-overrides.json",
+      "docs/project-status.md",
     ];
     const stagedBefore = await runCommandCapture("git", ["diff", "--cached", "--quiet"]);
     if (stagedBefore.code !== 0) {
@@ -3816,6 +3839,7 @@ export async function createExplorerServer({
         "Vor der Porträtübernahme waren bereits Dateien vorgemerkt. Commit und Push wurden nicht gestartet.",
       );
     }
+    await synchronizeProjectStatusForPublication();
     const staged = await runCommandCapture("git", ["add", "--", ...paths]);
     if (staged.code !== 0) {
       throw new Error(`Porträtdateien konnten nicht vorgemerkt werden: ${staged.stderr || staged.stdout}`);

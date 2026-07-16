@@ -1,6 +1,6 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-07-05
+Stand: 2026-07-16
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
@@ -61,6 +61,9 @@ Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezie
 Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
 Pro Art koennen beliebig viele Soundquellen abgelehnt werden; jede Quellkennung bleibt gespeichert. Diese Liste
 bleibt auch erhalten, wenn spaeter ein anderer gefundener Sound uebernommen wird.
+Sind alle unterstützten und lizenzgeprüften Kandidaten ausgeschöpft, meldet der Explorer diesen Zustand eindeutig.
+Die Meldung bedeutet nicht, dass außerhalb der angebundenen Quellen keine Aufnahme existiert. Ohne bisherigen Sound
+bleibt die Art bewusst ohne Tierstimme; mit bisherigem Sound bleibt das vorhandene Paket unverändert.
 Wenn ein gefundener Kandidat wegen Download-, Format- oder Transcode-Problemen nicht übernommen werden kann, wird
 nur dieser Kandidat für den aktuellen Lauf temporär übersprungen und die nächste Quelle geprüft. Wenn Windows die
 produktive `sound.mp3` noch durch einen Player sperrt, stoppt der Lauf mit einer verständlichen Dateisperrenmeldung,
@@ -105,7 +108,8 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
   befüllt.
 - Wenn im Sound-Prüfdialog eine gefundene Alternative abgelehnt wird, bleibt der Dialog geöffnet, zeigt den laufenden
   nächsten Suchlauf an und wird beim nächsten Kandidaten im selben Fenster neu befüllt. Er schließt erst nach
-  Übernahme des Kandidaten, nach Behalten des bisherigen Sounds oder wenn keine weitere Alternative verfügbar ist.
+  Übernahme des Kandidaten oder nach Behalten des bisherigen Sounds. Wenn keine weitere Alternative verfügbar ist,
+  bleibt er in einem erklärten Abschlusszustand geöffnet und wird erst mit `Fenster schließen` beendet.
 - Die Detailansicht nutzt für Sound, Spektrogramm, Karte und Portrait versionsbasierte lokale URLs. Bei Sound und
   Spektrogramm basiert diese Version unter anderem auf den gespeicherten Spektrogramm-Hashes, damit nach einem
   Austausch keine alte Spektrogrammdatei aus dem Browsercache neben dem neuen MP3 angezeigt wird.

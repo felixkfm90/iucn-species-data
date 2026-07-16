@@ -2607,6 +2607,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /path: \(match\?\.\[2\]/);
   assert.match(requestRouterSource, /"\/api\/pending-changes"/);
   assert.match(serverSource, /Transfer pending Explorer changes/);
+  assert.match(serverSource, /Projektstatus synchronisieren/);
+  assert.match(serverSource, /synchronizeProjectStatusForPublication/);
+  assert.match(serverSource, /"docs\/project-status\.md"/);
   assert.match(serverSource, /async function publishMapAssetChanges\(species\)/);
   assert.match(serverSource, /async function previewSoundAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveSoundAsset\(id, payload\)/);

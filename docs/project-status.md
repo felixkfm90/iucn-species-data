@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-07-12T10:48:19.073Z`
+Report-Datenstand: `2026-07-16T13:57:39.512Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 49 |
-| Aktive Arten | 49 |
-| Arten in `speciesData.json` | 49 |
-| Vollständige Art-Assetordner | 49 |
-| Karten | 49 |
+| Eingaben in `species_list.json` | 50 |
+| Aktive Arten | 50 |
+| Arten in `speciesData.json` | 50 |
+| Vollständige Art-Assetordner | 50 |
+| Karten | 50 |
 | Sounds | 48 |
 | Credits | 48 |
 | Spektrogramme | 48 |
-| Artporträts | 49 |
+| Artporträts | 50 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
@@ -38,6 +38,7 @@ Report-Datenstand: `2026-07-12T10:48:19.073Z`
 - Löwe
 - Scharlachara
 
-## Bewusst fehlende Tierstimmen (1)
+## Bewusst fehlende Tierstimmen (2)
 
+- Gepard
 - Grüner Leguan

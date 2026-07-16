@@ -96,6 +96,7 @@ const {
   backupLabel,
   resolveDatabaseStatus,
   databaseStatusLabel,
+  soundSearchOutcome,
   createPipelineStatusPresenters,
   createPipelinePreviewRenderer,
   renderProcessLog,
@@ -591,18 +592,17 @@ function setupAssetReview() {
   state.finishAssetReviewWaiting = (status) => {
     if (!dialog.open || !state.assetReviewAwaitingRetry) return false;
     const failed = status.status === "failed";
-    const logText = (status.log || []).join("\n");
-    const noAlternative =
-      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine weitere Soundquelle|Keine weitere Soundalternative|Keine freie Alternative gefunden|keine weitere taugliche Quelle/i
-        .test(logText);
+    const reviewedAssets = JSON.parse(form.dataset.assets || "[]");
+    const reviewedSound = reviewedAssets.find((asset) => asset.type === "sound");
+    const outcome = soundSearchOutcome(status.log, {
+      hasCurrentSound: reviewedSound?.previouslyExisting === true,
+    });
     stopAssetReviewAudio();
     setMessage(
       failed
         ? status.error || "Sound-Suchlauf fehlgeschlagen. Der bisherige Sound bleibt erhalten."
-        : noAlternative
-        ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden; der bisherige Sound bleibt erhalten."
-        : "Sound-Suchlauf abgeschlossen. Der bisherige Sound bleibt erhalten.",
-      failed ? "error" : "info",
+        : outcome.message || "Sound-Suchlauf abgeschlossen. Der bisherige Sound bleibt erhalten.",
+      failed ? "error" : outcome.messageType,
     );
     form.dataset.closeOnly = "true";
     elements.assetReviewSave.textContent = "Fenster schließen";
@@ -1052,11 +1052,11 @@ function setupPipelineControl() {
     if (status.status !== "completed") return false;
 
     const logText = (status.log || []).join("\n");
-    const noAlternative =
-      /Keine neue automatische Alternative gefunden|Keine neue geeignete Soundalternative|Keine neue automatisch abrufbare Karte|Keine weitere Soundalternative|Keine freie Alternative gefunden/i
-        .test(logText);
-    const soundLocked = /Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText);
-    const rejectedSourcesSkipped = /Abgelehnte Soundquelle wird übersprungen/i.test(logText);
+    const noMapAlternative =
+      /Keine neue automatisch abrufbare Karte|Keine gültige Kartendatei|keine direkt speicherbare Karte/i.test(logText);
+    const soundOutcome = soundSearchOutcome(status.log, {
+      hasCurrentSound: context.hasCurrentSound === true,
+    });
     if (context.section === "map") {
       try {
         await refreshExplorerModelOnly({ reload: true });
@@ -1068,14 +1068,14 @@ function setupPipelineControl() {
         return true;
       }
       setEditorMessage(
-        noAlternative
+        noMapAlternative
           ? "Kartensuchlauf abgeschlossen. Lokal wurde keine direkt speicherbare Karte gefunden. Bitte „IUCN-Karte im Browser öffnen“ nutzen, den sichtbaren Backblaze-JPEG-Link ins Quellenfeld kopieren und „Karte prüfen“ wählen."
           : "Kartensuchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
-        noAlternative ? "info" : "success",
+        noMapAlternative ? "info" : "success",
       );
     } else {
       let refreshedSoundEditor = false;
-      if (!soundLocked && !noAlternative) {
+      if (!soundOutcome.soundLocked && !soundOutcome.noAlternative) {
         try {
           refreshedSoundEditor = await refreshOpenSoundEditor(context.speciesId);
         } catch (error) {
@@ -1087,16 +1087,12 @@ function setupPipelineControl() {
         }
       }
       setEditorMessage(
-        soundLocked
-          ? "Sound-Suchlauf abgeschlossen. Die Sounddatei war noch geöffnet oder gesperrt; bitte Wiedergabe/Fenster schließen und erneut suchen."
-          : rejectedSourcesSkipped && noAlternative
-          ? "Sound-Suchlauf abgeschlossen. Bereits abgelehnte Soundquellen wurden übersprungen; keine weitere geeignete Alternative gefunden."
-          : noAlternative
-          ? "Sound-Suchlauf abgeschlossen. Es wurde keine weitere geeignete Soundalternative gefunden."
+        soundOutcome.message
+          ? soundOutcome.message
           : refreshedSoundEditor
           ? "Sound-Suchlauf abgeschlossen. Der aktuelle Sound und die Credits wurden im geöffneten Fenster aktualisiert."
           : "Sound-Suchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
-        soundLocked ? "error" : noAlternative ? "info" : "success",
+        soundOutcome.message ? soundOutcome.messageType : "success",
       );
     }
     return true;
@@ -1854,9 +1850,13 @@ function setupNewSpeciesCreator() {
     state.pipelineWasRunning = false;
     if (status?.status === "completed" && status.gitPublished) state.notice = "";
     await loadData({ reload: true });
+    const createdSpecies = newSpeciesData();
+    const soundOutcome = soundSearchOutcome(status?.log, {
+      hasCurrentSound: createdSpecies?.assets?.sound?.exists === true,
+    });
     completed = true;
     setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
-    setPipelineMessage();
+    setPipelineMessage(soundOutcome.noAlternative ? soundOutcome.message : "", soundOutcome.messageType);
     setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} ist erfolgreich angelegt.`, "success");
     doneSection.hidden = false;
     showStep(4);
@@ -3143,7 +3143,12 @@ function setupSpeciesEditor(species) {
         targetSlugs: [species.id],
         autoStart: true,
         silent: true,
-        context: { source: "editor", section: "sound", speciesId: species.id },
+        context: {
+          source: "editor",
+          section: "sound",
+          speciesId: species.id,
+          hasCurrentSound: species.assets?.sound?.exists === true,
+        },
       });
     } catch (error) {
       state.silentPipelineContext = null;
@@ -3164,7 +3169,12 @@ function setupSpeciesEditor(species) {
         targetSlugs: [species.id],
         autoStart: true,
         silent: true,
-        context: { source: "editor", section: "sound", speciesId: species.id },
+        context: {
+          source: "editor",
+          section: "sound",
+          speciesId: species.id,
+          hasCurrentSound: species.assets?.sound?.exists === true,
+        },
       });
       setSoundMessage(
         result?.noWork

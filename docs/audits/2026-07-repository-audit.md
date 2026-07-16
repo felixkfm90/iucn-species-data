@@ -616,6 +616,17 @@ Stabilisierungspaket B ist damit technisch, dokumentarisch und betrieblich abges
 Live-Audit erreichte 120 Squarespace-Sitemapseiten ohne Abruf-, HTTP-, Titel- oder Metadatenfehler und bestätigte
 alle geprüften GitHub-Pages-Module und Beispielassets mit HTTP 200.
 
+## Eingeschobene CI-/Soundkorrektur vom 2026-07-16
+
+- Der Explorer erzeugt `docs/project-status.md` vor automatischen Pipeline-, Karten-, Sound- und
+  Portrait-Veröffentlichungen neu und nimmt die Datei in denselben Commit auf. Damit kann eine neu angelegte Art
+  nicht mehr erst im CI-Quality-Job an einem veralteten dokumentierten Projektstatus scheitern.
+- Der Pages-Workflow verwendet `actions/checkout@v5` und `actions/setup-node@v6`; die frühere
+  Node-20-Abkündigungswarnung der Actions entfällt.
+- Die Soundoberfläche unterscheidet nun Dateisperren von ausgeschöpften unterstützten Quellen. Nach der Ablehnung
+  aller für Gepard auffindbaren, lizenzgeprüften Kandidaten bleibt der Dialog offen und erklärt den Abschluss, ohne
+  daraus abzuleiten, dass außerhalb der angebundenen Quellen keine Aufnahme existiert.
+
 ## Während des Audits bereits erledigt
 
 Der separat gemeldete responsive UI-Fehler wurde vor Abschluss des Audits behoben und veröffentlicht:

@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-13
+Stand: 2026-07-16
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -649,6 +649,11 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `app.js`; ein echter lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200.
   Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene
   Modulschnitte offen.
+  Eine eingeschobene CI-/Soundkorrektur vom 2026-07-16 synchronisiert `docs/project-status.md` vor jeder
+  automatischen Explorer-Veröffentlichung und nimmt die Datei in denselben Commit auf. Der Pages-Workflow verwendet
+  `actions/checkout@v5` und `actions/setup-node@v6`. Wenn nach mehreren Ablehnungen keine weitere Soundquelle aus
+  den unterstützten, lizenzgeprüften Quellen verfügbar ist, bleibt der Neue-Art- beziehungsweise
+  Tierstimmen-Dialog geöffnet und zeigt einen eindeutigen Abschluss statt einer irreführenden Erfolgsmeldung.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

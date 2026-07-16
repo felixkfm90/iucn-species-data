@@ -1,6 +1,6 @@
 # CI-Qualitätsgate vor GitHub Pages
 
-Stand: 2026-07-13
+Stand: 2026-07-16
 
 ## Ziel
 
@@ -18,15 +18,18 @@ Ein Fehler im Quality-Job verhindert damit sowohl den Artefakt-Upload als auch d
 
 ## Quality-Job
 
-Der Job `quality` in `.github/workflows/pages.yml` verwendet Node.js 24 und führt aus:
+Der Job `quality` in `.github/workflows/pages.yml` verwendet Node.js 24. `actions/checkout@v5` und
+`actions/setup-node@v6` laufen ebenfalls nativ auf einer aktuellen Node-Laufzeit, sodass die frühere
+Node-20-Abkündigungswarnung nicht mehr entsteht. Der Job führt aus:
 
 1. `npm ci --ignore-scripts` auf Grundlage von `package-lock.json`;
-2. `check:syntax` für alle 37 JavaScript-/MJS-Quelldateien außerhalb lokaler Laufzeit- und Sicherungsordner;
+2. `check:syntax` für alle JavaScript-/MJS-Quelldateien außerhalb lokaler Laufzeit- und Sicherungsordner;
 3. `npm test` als gemeinsamer Einstieg für Audio-, Medien-, Pages-, Sicherheits- und Explorer-Tests;
-4. `audio:check` für alle 48 vorhandenen Tierstimmen;
+4. `audio:check` für alle vorhandenen Tierstimmen;
 5. `assets:check` für die produktiven Karten-, Portrait-, Sound-, Credits-, Spektrogramm- und Grafikdateien;
 6. `audit:project` für Artenlisten, generierte Daten, Report, Overrides und Assessment-Zuordnungen;
-7. den bestehenden lokalen Monatsaudit ohne Netzwerkzugriff.
+7. `status:check` für den automatisch dokumentierten Projektstand;
+8. den bestehenden lokalen Monatsaudit ohne Netzwerkzugriff.
 
 Bewusst fehlende Sounds aus dem Report bleiben zulässig. Abweichende Karten-Assessment-Zuordnungen sind nur bei
 ausdrücklich manuell gepflegten Karten zulässig. Doppelte wissenschaftliche Namen, deutsche Namen oder URL-Slugs,
@@ -48,8 +51,12 @@ Photoshop-Datei `graphics/catagory/Alternativ/Blaupause.psd` bleibt im Repositor
 aber bewusst nicht mehr in `_site/` kopiert. `pages:check` vergleicht das fertige Artefakt exakt mit der freigegebenen
 Quelle und weist fehlende, zusätzliche oder symbolisch verlinkte Dateien zurück.
 
-Der geprüfte Stand umfasst 364 öffentliche Dateien mit 89,72 MiB. Das dynamische Budget beträgt bei 49 Arten
-134,5 MiB; das absolute Notfalllimit bleibt 500 MiB.
+Aktuelle Arten-, Asset- und Pflegezähler stehen ausschließlich in `docs/project-status.md`. Das dynamische
+Artefaktbudget wächst mit dem Artenbestand; das absolute Notfalllimit bleibt 500 MiB.
+
+Vor automatischen Git-Veröffentlichungen aus dem Arten-Explorer wird `docs/project-status.md` serverseitig neu
+erzeugt und gemeinsam mit den Daten- und Assetänderungen vorgemerkt. `status:check` bleibt zusätzlich die
+unabhängige CI-Barriere für manuelle Git-Arbeiten und unerwartete Abweichungen.
 
 ## Lokale Befehle
 

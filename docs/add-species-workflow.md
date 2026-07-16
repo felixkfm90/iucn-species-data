@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-07-12
+Stand: 2026-07-16
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -146,6 +146,11 @@ Wenn ein Sound gefunden wird, wird er im selben Dialog mit Audioplayer und Spekt
 Spektrogramm setzt die Wiedergabeposition. Der Sound kann übernommen, übersprungen oder abgelehnt werden.
 Bei Ablehnung speichert der Explorer die Quellkennung und startet automatisch die nächste gezielte Soundsuche fuer
 diese Art. Es können beliebig viele Soundquellen pro Art abgelehnt werden.
+
+Wenn danach kein weiterer Kandidat aus den unterstützten und lizenzgeprüften Quellen verfügbar ist, bleibt der
+Assistent geöffnet und zeigt diesen Abschluss ausdrücklich an. Die Meldung behauptet bewusst nicht, dass es
+weltweit keine Aufnahme gibt. Die Art kann ohne Tierstimme abgeschlossen werden; der fehlende Sound bleibt als
+sichtbarer Pflegehinweis erhalten.
 
 Nach Abschluss erscheint im Dialog die Erfolgsmeldung `Neue Art: <Name> wurde angelegt`.
 

@@ -834,6 +834,10 @@ npm.cmd run status:check
 Der Quality-Job führt `status:check` aus und stoppt bei einer Abweichung. Historische Zahlen in datierten Audit- und
 Verlaufsabschnitten bleiben als Zeitaufnahme erhalten und dürfen nicht als aktueller Datenstand verwendet werden.
 
+Bei automatischen Veröffentlichungen aus dem Arten-Explorer wird der Projektstatus vor dem Commit neu erzeugt und
+gemeinsam veröffentlicht. Die beiden Befehle bleiben für manuelle Daten-/Assetänderungen und lokale Prüfungen
+verbindlich.
+
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 
 ## Tests nach Frontend-Aenderungen

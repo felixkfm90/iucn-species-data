@@ -54,6 +54,59 @@
     return DATABASE_STATUS_LABELS[status] || "Datenbank aktualisieren";
   }
 
+  function soundSearchOutcome(logLines = [], { hasCurrentSound = false } = {}) {
+    const logText = Array.isArray(logLines) ? logLines.join("\n") : String(logLines ?? "");
+    const soundLocked = /Sounddatei .*gesperrt|noch geöffnet oder gesperrt|Datei gesperrt/i.test(logText);
+    const rejectedSourcesSkipped = /Abgelehnte Soundquelle wird übersprungen|Bereits abgelehnte Soundquellen wurden übersprungen/i
+      .test(logText);
+    const noAlternative = [
+      /Keine neue automatische Alternative gefunden/i,
+      /Keine neue geeignete Soundalternative/i,
+      /Keine weitere geeignete Soundalternative/i,
+      /Keine weitere Soundalternative/i,
+      /Keine weitere Soundquelle/i,
+      /Keine freie Alternative gefunden/i,
+      /keine weitere taugliche Quelle/i,
+    ].some((pattern) => pattern.test(logText));
+
+    if (soundLocked) {
+      return {
+        logText,
+        soundLocked,
+        rejectedSourcesSkipped,
+        noAlternative: false,
+        message: "Sound-Suche abgeschlossen. Die Sounddatei war noch geöffnet oder gesperrt; bitte Wiedergabe oder Fenster schließen und erneut suchen.",
+        messageType: "error",
+      };
+    }
+
+    if (noAlternative) {
+      const skippedMessage = rejectedSourcesSkipped
+        ? " Bereits abgelehnte Kandidaten wurden übersprungen."
+        : "";
+      const finalMessage = hasCurrentSound
+        ? " Der bisherige Sound bleibt erhalten."
+        : " Für diese Art bleibt vorerst keine Tierstimme hinterlegt.";
+      return {
+        logText,
+        soundLocked,
+        rejectedSourcesSkipped,
+        noAlternative,
+        message: `Sound-Suche abgeschlossen.${skippedMessage} In den unterstützten, lizenzgeprüften Quellen wurde keine weitere geeignete Aufnahme gefunden.${finalMessage}`,
+        messageType: "info",
+      };
+    }
+
+    return {
+      logText,
+      soundLocked,
+      rejectedSourcesSkipped,
+      noAlternative,
+      message: "",
+      messageType: "success",
+    };
+  }
+
   function createPipelineStatusPresenters({ formatBytes } = {}) {
     if (typeof formatBytes !== "function") {
       throw new TypeError("Pipeline-Statusanzeige benötigt formatBytes als Funktion.");
@@ -283,6 +336,7 @@
     formatPendingFileStatus,
     resolveDatabaseStatus,
     databaseStatusLabel,
+    soundSearchOutcome,
     createPipelineStatusPresenters,
     createPipelinePreviewRenderer,
     renderProcessLog,
