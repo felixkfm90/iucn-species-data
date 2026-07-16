@@ -1,20 +1,21 @@
 {
-  "generatedAt": "2026-07-12T10:48:19.073Z",
+  "generatedAt": "2026-07-16T13:55:54.446Z",
   "counts": {
-    "totalSpecies": 49,
-    "missingSoundMp3": 1,
+    "totalSpecies": 50,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 1,
+    "missingSpeciesAssets": 2,
     "ncSoundLicensesAll": 6
   },
   "missing": {
     "soundMp3": [
-      "Grüner Leguan"
+      "Grüner Leguan",
+      "Gepard"
     ],
     "soundCredits": [],
     "maps": [],
@@ -22,6 +23,15 @@
       {
         "german": "Grüner Leguan",
         "safeName": "Gruener Leguan",
+        "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
+      {
+        "german": "Gepard",
+        "safeName": "Gepard",
         "missing": [
           "sound.mp3",
           "credits.json",

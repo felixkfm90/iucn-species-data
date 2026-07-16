@@ -1125,5 +1125,28 @@
     "Species": "leo",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-07-10"
+  },
+  {
+    "URLSlug": "acinonyxjubatus",
+    "Wissenschaftlicher Name": "Acinonyx jubatus",
+    "Deutscher Name": "Gepard",
+    "Gewicht": "ca. 35-65 kg",
+    "Größe": "ca. 110-150 cm",
+    "Lebenserwartung": "ca. 10-12 Jahre",
+    "Assessment ID": 124366642,
+    "Status": "VU",
+    "Trend": "Abnehmend",
+    "Kategorie": "Gefährdet",
+    "Populationgröße": "6.517",
+    "Generationsdauer": "4,9 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Mammalia",
+    "Order": "Carnivora",
+    "Family": "Felidae",
+    "Genus": "Acinonyx",
+    "Species": "jubatus",
+    "Letztes IUCN Update": "2022",
+    "Daten abgerufen": "2026-07-16"
   }
 ]

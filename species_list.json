@@ -390,5 +390,13 @@
     "size": "ca. 140–250 cm",
     "weight": "Männchen: ca. 150–250 kg; Weibchen: ca. 110–180 kg",
     "life_expectancy": "ca. 10–14 Jahre"
+  },
+  {
+    "german": "Gepard",
+    "genus": "Acinonyx",
+    "species": "jubatus",
+    "size": "ca. 110-150 cm",
+    "weight": "ca. 35-65 kg",
+    "life_expectancy": "ca. 10-12 Jahre"
   }
 ]
