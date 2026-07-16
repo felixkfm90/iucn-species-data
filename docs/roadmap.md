@@ -654,6 +654,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `actions/checkout@v5` und `actions/setup-node@v6`. Wenn nach mehreren Ablehnungen keine weitere Soundquelle aus
   den unterstützten, lizenzgeprüften Quellen verfügbar ist, bleibt der Neue-Art- beziehungsweise
   Tierstimmen-Dialog geöffnet und zeigt einen eindeutigen Abschluss statt einer irreführenden Erfolgsmeldung.
+  Der dreizehnte kontrollierte A4-Schnitt führt `species-explorer/public/app-settings.js` als geschlossene Grenze
+  für den lokalen Backup-Pfad-Einstellungsdialog ein. Laden, Normalisierung, Standardpfad, Statusmeldungen und
+  Speichern liegen im neuen Controller; API-Kommunikation und Dialoggrundlage werden injiziert. Vier direkte
+  Einstellungstests erhöhen den gemeinsamen Testeinstieg auf 107 Tests; `app.js` sank von 4.408 auf 4.334 Zeilen.
+  Das lokale HTML lädt das Modul nach `app-dialogs.js` und vor `app-media.js`; der Explorer-Smoke-Test prüft
+  Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für
+  weitere kleine, fachlich geschlossene Modulschnitte offen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

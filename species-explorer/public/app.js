@@ -6,6 +6,8 @@ const explorerMeasurements = window.SpeciesExplorerMeasurements;
 if (!explorerMeasurements) throw new Error("Explorer-Messwerthelfer konnten nicht geladen werden.");
 const explorerDialogs = window.SpeciesExplorerDialogs;
 if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
+const explorerSettings = window.SpeciesExplorerSettings;
+if (!explorerSettings) throw new Error("Explorer-Einstellungen konnten nicht geladen werden.");
 const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
@@ -68,6 +70,7 @@ const {
   releaseAudioElement,
   releaseMediaWithin,
 } = explorerDialogs;
+const { setupBackupSettings } = explorerSettings;
 const {
   formatTime,
   resetScrollableToTop,
@@ -656,88 +659,6 @@ function setupAssetReview() {
   });
 
   state.openAssetReview = openReview;
-}
-
-function setupBackupSettings() {
-  const dialog = elements.settingsDialog;
-  const form = elements.settingsForm;
-  if (!dialog || !form) return;
-  const cancelButtons = [...dialog.querySelectorAll(".settings-cancel")];
-
-  const setMessage = (text = "", type = "") => {
-    elements.settingsMessage.textContent = text;
-    elements.settingsMessage.className = `edit-message settings-message${type ? ` ${type}` : ""}`;
-    elements.settingsMessage.hidden = !text;
-  };
-
-  const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
-  const showDialog = () => dialogController.open();
-
-  const applySettings = (settings) => {
-    state.settingsSnapshot = settings;
-    elements.backupRootInput.value = settings.backupRoot || "";
-    elements.backupRootDefault.textContent = settings.defaultBackupRoot || "W:\\Website Datenbank Backup";
-  };
-
-  const loadSettings = async () => {
-    const settings = await fetchJson("/api/settings");
-    applySettings(settings);
-    return settings;
-  };
-
-  const openSettings = async () => {
-    setMessage("Einstellungen werden geladen...", "info");
-    elements.settingsSaveButton.disabled = true;
-    showDialog();
-    try {
-      const settings = await loadSettings();
-      setMessage(
-        settings.hasCustomBackupRoot
-          ? "Eigener Backup-Pfad ist aktiv."
-          : "Der Standardpfad ist aktiv.",
-        "info",
-      );
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-    } finally {
-      elements.settingsSaveButton.disabled = false;
-    }
-  };
-
-  for (const button of elements.settingsButtons) {
-    button.addEventListener("click", openSettings);
-  }
-
-  elements.settingsResetButton.addEventListener("click", () => {
-    const defaultBackupRoot = state.settingsSnapshot?.defaultBackupRoot || "W:\\Website Datenbank Backup";
-    elements.backupRootInput.value = defaultBackupRoot;
-    setMessage("Standardpfad wird beim Speichern verwendet.", "info");
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    elements.settingsSaveButton.disabled = true;
-    setMessage("Backup-Pfad wird gespeichert...", "info");
-    const requestedBackupRoot = elements.backupRootInput.value.trim();
-    const defaultBackupRoot = state.settingsSnapshot?.defaultBackupRoot || "";
-    try {
-      const settings = await fetchJson("/api/settings/backup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          requestedBackupRoot === defaultBackupRoot
-            ? { reset: true }
-            : { backupRoot: requestedBackupRoot },
-        ),
-      });
-      applySettings(settings);
-      setMessage("Backup-Pfad gespeichert.", "success");
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-    } finally {
-      elements.settingsSaveButton.disabled = false;
-    }
-  });
 }
 
 function setupPipelineControl() {
@@ -4400,7 +4321,12 @@ window.addEventListener("beforeunload", (event) => {
 
 setupEditingMode();
 setupAssetReview();
-setupBackupSettings();
+setupBackupSettings({
+  state,
+  elements,
+  fetchJson,
+  createDialogController,
+});
 setupPipelineControl();
 setupNewSpeciesCreator();
 ensureSessionToken()

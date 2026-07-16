@@ -356,6 +356,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(dialogsResponse.headers.get("content-type"), /javascript/);
   assert.match(await dialogsResponse.text(), /createDialogController/);
 
+  const settingsResponse = await fetch(`${baseUrl}/app-settings.js`);
+  assert.equal(settingsResponse.status, 200);
+  assert.match(settingsResponse.headers.get("content-type"), /javascript/);
+  assert.match(await settingsResponse.text(), /createBackupSettingsController/);
+
   const mediaResponse = await fetch(`${baseUrl}/app-media.js`);
   assert.equal(mediaResponse.status, 200);
   assert.match(mediaResponse.headers.get("content-type"), /javascript/);
@@ -2292,6 +2297,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appPresentationSource,
     appMeasurementsSource,
     appDialogsSource,
+    appSettingsSource,
     appMediaSource,
     appAssetReviewSource,
     appPipelineSource,
@@ -2320,6 +2326,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-settings.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
@@ -2347,7 +2354,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2357,6 +2364,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMeasurementsSource, /function renderManualMeasurementEditor\(/);
   assert.match(appDialogsSource, /function createDialogController\(/);
   assert.match(appDialogsSource, /function releaseMediaWithin\(/);
+  assert.match(appSettingsSource, /function createBackupSettingsController\(/);
+  assert.match(appSettingsSource, /function setupBackupSettings\(/);
   assert.match(appMediaSource, /function createMediaRenderers\(/);
   assert.match(appMediaSource, /function bindAudioPlayer\(/);
   assert.match(appMediaSource, /function bindImageZoom\(/);
@@ -2372,6 +2381,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.match(appSource, /window\.SpeciesExplorerDialogs/);
+  assert.match(appSource, /window\.SpeciesExplorerSettings/);
   assert.match(appSource, /window\.SpeciesExplorerMedia/);
   assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
   assert.match(appSource, /window\.SpeciesExplorerPipeline/);
@@ -2547,9 +2557,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /data-settings-action="backup-path"/);
   assert.match(htmlSource, /id="settings-dialog"/);
   assert.match(htmlSource, /Backup-Pfad einstellen/);
-  assert.match(appSource, /function setupBackupSettings\(\)/);
-  assert.match(appSource, /\/api\/settings/);
-  assert.match(appSource, /\/api\/settings\/backup/);
+  assert.match(appSettingsSource, /function setupBackupSettings\(/);
+  assert.match(appSettingsSource, /\/api\/settings/);
+  assert.match(appSettingsSource, /\/api\/settings\/backup/);
   assert.match(appSource, /\/api\/backup\/preview/);
   assert.match(appSource, /\/api\/backup\/start/);
   assert.match(appSource, /\/api\/backup\/status/);

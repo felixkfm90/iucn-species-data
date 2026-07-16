@@ -365,6 +365,16 @@ Umsetzungsstand am 2026-07-15:
   damit 102 Tests; `public/app.js` sank auf 4.398 Zeilen. Das lokale HTML lädt das Modul nach `filter.js` und vor
   `app.js`; ein echter HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200.
   Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Der dreizehnte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-settings.js` als Grenze für
+  den lokalen Backup-Pfad-Einstellungsdialog ein. Das Modul erzeugt die Darstellung für Standard- und
+  benutzerdefinierten Pfad und steuert Laden, Zurücksetzen, Statusmeldungen und Speichern. API-Kommunikation,
+  Anwendungszustand und Dialoggrundlage werden injiziert; serverseitige Einstellung und Dateisystem bleiben
+  unverändert.
+- Vier direkte Einstellungstests prüfen Standard- und benutzerdefinierte Darstellung, einmalige Ereignisbindung,
+  Laden, Zurücksetzen auf den Standardpfad und verständliche API-Fehler. Der gemeinsame Testeinstieg umfasst damit
+  107 Tests; `public/app.js` sank von 4.408 auf 4.334 Zeilen. Das lokale HTML lädt das Modul nach `app-dialogs.js`
+  und vor `app-media.js`; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export.
+  Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

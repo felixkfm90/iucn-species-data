@@ -799,6 +799,12 @@ delegiert nur die Artauswahl zurück an `app.js`. Sechs direkte Dashboardtests e
 auf 102 Tests; `app.js` sank auf 4.398 Zeilen. Das Modul wird nach `filter.js` und vor `app.js` geladen. Ein echter
 lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export jeweils mit HTTP 200. Squarespace-Module,
 Footer und Custom CSS blieben unverändert.
+Der dreizehnte Schnitt ergänzt `species-explorer/public/app-settings.js` als direkt testbare Grenze für den lokalen
+Backup-Pfad-Einstellungsdialog. Laden, Standardpfad, Statusmeldungen und Speichern werden vom neuen Controller
+gesteuert; die konkrete API-Kommunikation bleibt über `fetchJson` injiziert. Vier direkte Einstellungstests erhöhen
+den gemeinsamen Testeinstieg auf 107 Tests; `app.js` sank von 4.408 auf 4.334 Zeilen. Das Modul wird nach
+`app-dialogs.js` und vor `app-media.js` geladen; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export.
+Squarespace-Module, Footer und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

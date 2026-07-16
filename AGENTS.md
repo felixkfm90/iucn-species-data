@@ -771,6 +771,13 @@ Aktuelle Planung:
   den gemeinsamen Testeinstieg auf 102 Tests; `app.js` sank auf 4.398 Zeilen. Das lokale HTML lädt das Modul nach
   `filter.js` und vor `app.js`; ein echter lokaler HTTP-Smoke-Test bestätigte Hauptseite, Modulreferenz und Export
   jeweils mit HTTP 200. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der dreizehnte A4-Schnitt ergänzt `species-explorer/public/app-settings.js` als geschlossene Grenze für den
+  lokalen Backup-Pfad-Einstellungsdialog. Das Modul lädt und normalisiert die lokale Einstellung, steuert
+  Standardpfad, Statusmeldungen und Speichern und hält die API-Aufrufe hinter einem injizierten `fetchJson`.
+  Vier direkte Einstellungstests erhöhen den gemeinsamen Testeinstieg auf 107 Tests; `app.js` sank von 4.408 auf
+  4.334 Zeilen. Das lokale HTML lädt das Modul nach `app-dialogs.js` und vor `app-media.js`; der Explorer-Smoke-Test
+  prüft Auslieferung, Reihenfolge und Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden
+  nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
