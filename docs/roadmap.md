@@ -677,6 +677,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `app-dashboard.js` und vor `app-species-actions.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
   Export. Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich
   geschlossene Modulschnitte offen.
+  Der sechzehnte kontrollierte A4-Schnitt führt `species-explorer/public/app-asset-maintenance.js` als gemeinsame
+  Grenze für das Löschen und Wiederherstellen einzelner Karten-, Portrait- und Soundpakete ein. Bestätigung,
+  Medienfreigabe, Sicherungs-API, Erfolgsmeldung, Fehlerfreigabe und Datenreload liegen im Controller; die
+  vorhandenen Bereichsanzeigen werden injiziert. Sechs direkte Asset-Wartungstests erhöhen den gemeinsamen
+  Testeinstieg auf 125 Tests; `app.js` sank von 4.107 auf 4.007 Zeilen. Das lokale HTML lädt das Modul nach
+  `app-species-actions.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
+  Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich
+  geschlossene Modulschnitte offen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

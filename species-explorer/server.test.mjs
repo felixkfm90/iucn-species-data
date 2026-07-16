@@ -391,6 +391,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(speciesActionsResponse.headers.get("content-type"), /javascript/);
   assert.match(await speciesActionsResponse.text(), /createSpeciesActionsController/);
 
+  const assetMaintenanceResponse = await fetch(`${baseUrl}/app-asset-maintenance.js`);
+  assert.equal(assetMaintenanceResponse.status, 200);
+  assert.match(assetMaintenanceResponse.headers.get("content-type"), /javascript/);
+  assert.match(await assetMaintenanceResponse.text(), /createAssetMaintenanceController/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2314,6 +2319,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appDashboardSource,
     appLifecycleSource,
     appSpeciesActionsSource,
+    appAssetMaintenanceSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2345,6 +2351,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-asset-maintenance.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2372,7 +2379,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(
     htmlSource,
-    /<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app-lifecycle\.js" defer><\/script>[\s\S]*<script src="\/app-species-actions\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app-lifecycle\.js" defer><\/script>[\s\S]*<script src="\/app-species-actions\.js" defer><\/script>[\s\S]*<script src="\/app-asset-maintenance\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2401,6 +2408,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSpeciesActionsSource, /function refreshConfirmation\(/);
   assert.match(appSpeciesActionsSource, /function deleteModePresentation\(/);
   assert.match(appSpeciesActionsSource, /function createSpeciesActionsController\(/);
+  assert.match(appAssetMaintenanceSource, /function assetMaintenancePresentation\(/);
+  assert.match(appAssetMaintenanceSource, /function deletedAssetNotice\(/);
+  assert.match(appAssetMaintenanceSource, /function restoredAssetNotice\(/);
+  assert.match(appAssetMaintenanceSource, /function createAssetMaintenanceController\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
@@ -2412,6 +2423,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.SpeciesExplorerDashboard/);
   assert.match(appSource, /window\.SpeciesExplorerLifecycle/);
   assert.match(appSource, /window\.SpeciesExplorerSpeciesActions/);
+  assert.match(appSource, /window\.SpeciesExplorerAssetMaintenance/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2761,7 +2773,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /function inlineDeleteButton\(assetType, label\)/);
   assert.match(appMediaSource, /function inlineRestoreButton\(assetType, backup = null\)/);
   assert.match(appMediaSource, /function sectionActions\(/);
-  assert.match(appSource, /\/assets\/\$\{assetType\}\/restore/);
+  assert.match(appAssetMaintenanceSource, /\/assets\/\$\{assetType\}\/restore/);
+  assert.match(appAssetMaintenanceSource, /\/assets\/\$\{assetType\}\/delete/);
   assert.match(cssSource, /\.inline-restore-open/);
   assert.match(appSource, /inlineEditButton\("manual"\)/);
   assert.match(appSource, /species\.inInput \? "map" : ""/);

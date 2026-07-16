@@ -819,6 +819,13 @@ injiziert; Pipeline-, Neue-Art- und Bearbeitungsabläufe bleiben fachlich unver�
 den gemeinsamen Testeinstieg auf 119 Tests; `app.js` sank von 4.193 auf 4.107 Zeilen. Das Modul wird nach
 `app-dashboard.js` und vor `app-species-actions.js` geladen; der Explorer-Smoke-Test prüft Auslieferung,
 Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben unverändert.
+Der sechzehnte Schnitt ergänzt `species-explorer/public/app-asset-maintenance.js` als direkt testbare Grenze für
+das Löschen und Wiederherstellen einzelner Karten-, Portrait- und Soundpakete. Der Controller übernimmt
+Bestätigung, Medienfreigabe, Sicherungsaufrufe, Erfolgsmeldungen, Fehlerfreigabe und abschließenden Reload; die
+vorhandenen Bereichsanzeigen werden injiziert. Sechs direkte Tests erhöhen den gemeinsamen Testeinstieg auf 125
+Tests; `app.js` sank von 4.107 auf 4.007 Zeilen. Das Modul wird nach `app-species-actions.js` und vor `app.js`
+geladen; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom
+CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

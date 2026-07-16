@@ -792,6 +792,13 @@ Aktuelle Planung:
   auf 119 Tests; `app.js` sank von 4.193 auf 4.107 Zeilen. Das lokale HTML lädt das Modul nach
   `app-dashboard.js` und vor `app-species-actions.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
   Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der sechzehnte A4-Schnitt ergänzt `species-explorer/public/app-asset-maintenance.js` als geschlossene Grenze für
+  das Löschen und Wiederherstellen einzelner Karten-, Portrait- und Soundpakete im Art-Bearbeitungsdialog. Die
+  gemeinsame Bestätigung, Medienfreigabe, Sicherungs-API, Erfolgsmeldung, Fehlerfreigabe und Datenneuladung liegen
+  im neuen Controller; die bereichsspezifische Anzeige wird injiziert. Sechs direkte Asset-Wartungstests erhöhen
+  den gemeinsamen Testeinstieg auf 125 Tests; `app.js` sank von 4.107 auf 4.007 Zeilen. Das lokale HTML lädt das
+  Modul nach `app-species-actions.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
+  Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

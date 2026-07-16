@@ -10,6 +10,8 @@ const explorerSettings = window.SpeciesExplorerSettings;
 if (!explorerSettings) throw new Error("Explorer-Einstellungen konnten nicht geladen werden.");
 const explorerSpeciesActions = window.SpeciesExplorerSpeciesActions;
 if (!explorerSpeciesActions) throw new Error("Explorer-Artaktionen konnten nicht geladen werden.");
+const explorerAssetMaintenance = window.SpeciesExplorerAssetMaintenance;
+if (!explorerAssetMaintenance) throw new Error("Explorer-Asset-Wartung konnte nicht geladen werden.");
 const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
@@ -76,6 +78,7 @@ const {
 } = explorerDialogs;
 const { setupBackupSettings } = explorerSettings;
 const { createSpeciesActionsController } = explorerSpeciesActions;
+const { createAssetMaintenanceController } = explorerAssetMaintenance;
 const {
   formatTime,
   resetScrollableToTop,
@@ -2684,6 +2687,39 @@ function setupSpeciesEditor(species) {
   });
   const closeEditDialog = () => dialogController.close("programmatic");
 
+  const assetMaintenanceController = createAssetMaintenanceController({
+    state,
+    species,
+    fetchJson,
+    loadData,
+    releaseCurrentSoundAudio,
+    closeEditor: closeEditDialog,
+    sections: {
+      map: {
+        message: setMapMessage,
+        busy: setMapBusy,
+        reset: resetMapPreview,
+        deleteButton: mapDeleteButton,
+        restoreButton: mapRestoreButton,
+      },
+      portrait: {
+        message: setPortraitMessage,
+        busy: setPortraitBusy,
+        reset: resetPortraitPreview,
+        deleteButton: portraitDeleteButton,
+        restoreButton: portraitRestoreButton,
+      },
+      sound: {
+        message: setSoundMessage,
+        busy: setSoundBusy,
+        reset: resetSoundPreview,
+        deleteButton: soundDeleteButton,
+        restoreButton: soundRestoreButton,
+      },
+    },
+  });
+  assetMaintenanceController.bind();
+
   form.addEventListener("input", (event) => {
     if (event.target.closest(".sound-edit-section")) {
       resetSoundPreview();
@@ -2886,141 +2922,6 @@ function setupSpeciesEditor(species) {
       setMapBusy(false);
     }
   });
-
-  const deleteSingleAsset = async (assetType) => {
-    const config = {
-      map: {
-        label: "Verbreitungskarte",
-        message: setMapMessage,
-        busy: setMapBusy,
-        reset: resetMapPreview,
-        confirm:
-          "Verbreitungskarte dauerhaft löschen? Die Karte wird lokal gesichert, danach fehlt sie bis zur nächsten automatischen Suche oder manuellen Übernahme.",
-      },
-      portrait: {
-        label: "Artporträt",
-        message: setPortraitMessage,
-        busy: setPortraitBusy,
-        reset: resetPortraitPreview,
-        confirm:
-          "Artporträt dauerhaft löschen? Das Porträt wird lokal gesichert, danach fehlt es bis zum nächsten manuellen Import.",
-      },
-      sound: {
-        label: "Soundpaket",
-        message: setSoundMessage,
-        busy: setSoundBusy,
-        reset: resetSoundPreview,
-        confirm:
-          "Sound, Credits und Spektrogramm dauerhaft löschen? Das Paket wird lokal gesichert, danach fehlt die Tierstimme bis zur nächsten Suche oder manuellen Übernahme.",
-      },
-    }[assetType];
-    if (!config) return;
-    if (!window.confirm(config.confirm)) return;
-    config.reset();
-    config.busy(true);
-    config.message(`${config.label} wird lokal gesichert und gelöscht …`, "info");
-    try {
-      if (assetType === "map") {
-        state.mapCleanup?.();
-        state.mapCleanup = null;
-      }
-      if (assetType === "portrait") {
-        state.portraitCleanup?.();
-        state.portraitCleanup = null;
-      }
-      if (assetType === "sound") await releaseCurrentSoundAudio();
-      const confirmation = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/delete-preview`,
-        { method: "POST", body: "{}" },
-      );
-      const result = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: confirmation.token }),
-        },
-      );
-      state.notice =
-        `${result.label || config.label} wurde gelöscht.`
-        + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
-        + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
-        + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
-      closeEditDialog();
-      await loadData({ reload: true });
-    } catch (error) {
-      config.message([error.message, ...(error.details || [])].join(" · "), "error");
-      config.busy(false);
-    }
-  };
-
-  mapDeleteButton?.addEventListener("click", () => deleteSingleAsset("map"));
-  portraitDeleteButton?.addEventListener("click", () => deleteSingleAsset("portrait"));
-  soundDeleteButton?.addEventListener("click", () => deleteSingleAsset("sound"));
-
-  const restoreSingleAsset = async (assetType) => {
-    const config = {
-      map: {
-        label: "Verbreitungskarte",
-        message: setMapMessage,
-        busy: setMapBusy,
-        reset: resetMapPreview,
-      },
-      portrait: {
-        label: "Artporträt",
-        message: setPortraitMessage,
-        busy: setPortraitBusy,
-        reset: resetPortraitPreview,
-      },
-      sound: {
-        label: "Soundpaket",
-        message: setSoundMessage,
-        busy: setSoundBusy,
-        reset: resetSoundPreview,
-      },
-    }[assetType];
-    if (!config) return;
-    if (!window.confirm(`${config.label} aus der letzten lokalen Sicherung wiederherstellen?`)) return;
-    config.reset();
-    config.busy(true);
-    config.message(`${config.label} wird aus der letzten lokalen Sicherung wiederhergestellt …`, "info");
-    try {
-      if (assetType === "map") {
-        state.mapCleanup?.();
-        state.mapCleanup = null;
-      }
-      if (assetType === "portrait") {
-        state.portraitCleanup?.();
-        state.portraitCleanup = null;
-      }
-      if (assetType === "sound") await releaseCurrentSoundAudio();
-      const confirmation = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/restore-preview`,
-        { method: "POST", body: "{}" },
-      );
-      const result = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/assets/${assetType}/restore`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: confirmation.token }),
-        },
-      );
-      state.notice =
-        `${config.label} wurde aus der lokalen Sicherung wiederhergestellt.`
-        + `${result.backup ? ` Sicherung: ${result.backup}.` : ""}`
-        + " Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht.";
-      closeEditDialog();
-      await loadData({ reload: true });
-    } catch (error) {
-      config.message([error.message, ...(error.details || [])].join(" · "), "error");
-      config.busy(false);
-    }
-  };
-
-  mapRestoreButton?.addEventListener("click", () => restoreSingleAsset("map"));
-  portraitRestoreButton?.addEventListener("click", () => restoreSingleAsset("portrait"));
-  soundRestoreButton?.addEventListener("click", () => restoreSingleAsset("sound"));
 
   portraitKeepButton?.addEventListener("click", () => {
     resetPortraitPreview();

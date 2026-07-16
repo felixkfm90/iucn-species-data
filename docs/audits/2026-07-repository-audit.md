@@ -394,6 +394,15 @@ Umsetzungsstand am 2026-07-15:
   Zeilen. Das lokale HTML lädt das Modul nach `app-dashboard.js` und vor `app-species-actions.js`; Explorer-
   Smoke-Tests prüfen Auslieferung, Reihenfolge und Export. Squarespace-Laufzeitdateien, Footer-Versionen und Custom
   CSS blieben unverändert.
+- Der sechzehnte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-asset-maintenance.js` als
+  geschlossene Grenze für das Löschen und Wiederherstellen einzelner Karten-, Portrait- und Soundpakete ein.
+  Bestätigung, Medienfreigabe, Sicherungsaufrufe, Erfolgsmeldung, Fehlerfreigabe und Datenreload liegen im neuen
+  Controller; die bereichsspezifischen Anzeige-Callbacks werden injiziert.
+- Sechs direkte Asset-Wartungstests prüfen Texte, Abbruch ohne Seiteneffekt, Kartenlöschung mit Medienfreigabe,
+  verständliche Sound-Sperrfehler, Portrait-Wiederherstellung und die einmalige Bindung aller sechs Aktionen. Der
+  gemeinsame Testeinstieg umfasst damit 125 Tests; `public/app.js` sank von 4.107 auf 4.007 Zeilen. Das lokale HTML
+  lädt das Modul nach `app-species-actions.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung,
+  Reihenfolge und Export. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
