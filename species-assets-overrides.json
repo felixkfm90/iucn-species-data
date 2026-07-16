@@ -1183,6 +1183,16 @@
           }
         ],
         "updatedAt": "2026-07-16T13:55:54.293Z"
+      },
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-16T14:09:00.638Z",
+        "approvedAt": "2026-07-16T14:09:03.268Z",
+        "sha256": "9082d60f27d826f2b86ec27bd293f228d38ab431472dc77a2ea4ed017aedb8fb",
+        "metadataSha256": "514d3cd31fc45ef64d5b39abc122e106bf814595049877f2eceba45af8bca896"
       }
     }
   },
