@@ -381,6 +381,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(dashboardResponse.headers.get("content-type"), /javascript/);
   assert.match(await dashboardResponse.text(), /createDashboardController/);
 
+  const speciesActionsResponse = await fetch(`${baseUrl}/app-species-actions.js`);
+  assert.equal(speciesActionsResponse.status, 200);
+  assert.match(speciesActionsResponse.headers.get("content-type"), /javascript/);
+  assert.match(await speciesActionsResponse.text(), /createSpeciesActionsController/);
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2302,6 +2307,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appAssetReviewSource,
     appPipelineSource,
     appDashboardSource,
+    appSpeciesActionsSource,
     cssSource,
     htmlSource,
     serverSource,
@@ -2331,6 +2337,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
     readFile(new URL("./server.mjs", import.meta.url), "utf8"),
@@ -2356,6 +2363,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     htmlSource,
     /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
+  assert.match(
+    htmlSource,
+    /<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app-species-actions\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+  );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
   assert.match(appPresentationSource, /function formatSexSpecificDataValue\(value\)/);
@@ -2377,6 +2388,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appDashboardSource, /function createValidationPresentation\(/);
   assert.match(appDashboardSource, /function createSpeciesListItemPresentation\(/);
   assert.match(appDashboardSource, /function createDashboardController\(/);
+  assert.match(appSpeciesActionsSource, /function refreshConfirmation\(/);
+  assert.match(appSpeciesActionsSource, /function deleteModePresentation\(/);
+  assert.match(appSpeciesActionsSource, /function createSpeciesActionsController\(/);
   assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
@@ -2386,6 +2400,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
   assert.match(appSource, /window\.SpeciesExplorerPipeline/);
   assert.match(appSource, /window\.SpeciesExplorerDashboard/);
+  assert.match(appSource, /window\.SpeciesExplorerSpeciesActions/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
@@ -2654,11 +2669,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /forceAlternativeSearch[\s\S]*fallbackStages[\s\S]*Weitere Soundalternative gefunden/);
   assert.match(updateSource, /--species=/);
   assert.equal(assetOverrides.assets.Blaukehlchen.map.manual, true);
-  assert.match(appSource, /function setupSpeciesDelete\(species\)/);
-  assert.match(appSource, /\/delete\/preview/);
-  assert.match(appSource, /\/delete\/save/);
+  assert.match(appSpeciesActionsSource, /function setupSpeciesDelete\(species\)/);
+  assert.match(appSpeciesActionsSource, /\/delete\/preview/);
+  assert.match(appSpeciesActionsSource, /\/delete\/save/);
   assert.match(appSource, /class="delete-assets-now"/);
-  assert.match(appSource, /deleteAssets/);
+  assert.match(appSpeciesActionsSource, /deleteAssets/);
   assert.match(appSource, /function releaseDetailMedia\(\)/);
   assert.match(appSource, /releaseDetailMedia\(\)/);
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
@@ -2744,9 +2759,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /Bisheriges Artporträt beibehalten/);
   assert.match(appSource, /class="refresh-species-open"/);
   assert.match(appSource, /Art aktualisieren/);
-  assert.match(appSource, /openPipelinePreview\("all",/);
-  assert.match(appSource, /Automatische Aktualisierung für/);
-  assert.match(appSource, /silent:\s*true/);
+  assert.match(appSpeciesActionsSource, /openPipelinePreview\("all",/);
+  assert.match(appSpeciesActionsSource, /Automatische Aktualisierung für/);
+  assert.match(appSpeciesActionsSource, /silent:\s*true/);
   assert.match(appPipelineSource, /function formatPendingFileStatus/);
   assert.match(appSource, /showQuickConfirm/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);

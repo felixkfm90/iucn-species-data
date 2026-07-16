@@ -778,6 +778,13 @@ Aktuelle Planung:
   4.334 Zeilen. Das lokale HTML lädt das Modul nach `app-dialogs.js` und vor `app-media.js`; der Explorer-Smoke-Test
   prüft Auslieferung, Reihenfolge und Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden
   nicht geändert.
+  Der vierzehnte A4-Schnitt ergänzt `species-explorer/public/app-species-actions.js` als fachliche Grenze für
+  `Art aktualisieren` und das kontrollierte Entfernen beziehungsweise dauerhafte Löschen einer Art. Bestätigungs-,
+  Vorschau-, Löschmodus- und Erfolgstexte sowie die Ereignissteuerung liegen im neuen Controller; Pipelineaufruf,
+  API-Client, Dialoggrundlage, Medienfreigabe und erneutes Datenladen werden injiziert. Fünf direkte Tests erhöhen
+  den gemeinsamen Testeinstieg auf 112 Tests; `app.js` sank von 4.334 auf 4.193 Zeilen. Das lokale HTML lädt das
+  Modul nach `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
+  Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

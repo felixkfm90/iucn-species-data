@@ -661,6 +661,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Das lokale HTML lädt das Modul nach `app-dialogs.js` und vor `app-media.js`; der Explorer-Smoke-Test prüft
   Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für
   weitere kleine, fachlich geschlossene Modulschnitte offen.
+  Der vierzehnte kontrollierte A4-Schnitt führt `species-explorer/public/app-species-actions.js` als fachliche
+  Grenze für `Art aktualisieren` und den Art-Löschdialog ein. Bestätigungs-, Vorschau-, Löschmodus- und
+  Erfolgstexte sowie die Ereignissteuerung liegen im neuen Controller; Pipelineaufruf, API-Client,
+  Dialoggrundlage, Medienfreigabe und Datenreload werden injiziert. Fünf direkte Tests erhöhen den gemeinsamen
+  Testeinstieg auf 112 Tests; `app.js` sank von 4.334 auf 4.193 Zeilen. Das lokale HTML lädt das Modul nach
+  `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
+  Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene
+  Modulschnitte offen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

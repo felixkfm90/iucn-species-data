@@ -8,6 +8,8 @@ const explorerDialogs = window.SpeciesExplorerDialogs;
 if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
 const explorerSettings = window.SpeciesExplorerSettings;
 if (!explorerSettings) throw new Error("Explorer-Einstellungen konnten nicht geladen werden.");
+const explorerSpeciesActions = window.SpeciesExplorerSpeciesActions;
+if (!explorerSpeciesActions) throw new Error("Explorer-Artaktionen konnten nicht geladen werden.");
 const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
@@ -71,6 +73,7 @@ const {
   releaseMediaWithin,
 } = explorerDialogs;
 const { setupBackupSettings } = explorerSettings;
+const { createSpeciesActionsController } = explorerSpeciesActions;
 const {
   formatTime,
   resetScrollableToTop,
@@ -3346,164 +3349,20 @@ function setupSpeciesEditor(species) {
   });
 }
 
-function setupSpeciesRefresh(species) {
-  const openButton = elements.detailPanel.querySelector(".refresh-species-open");
-  if (!openButton) return;
-  openButton.addEventListener("click", async () => {
-    if (!state.openPipelinePreview) return;
-    const confirmed = await showQuickConfirm({
-      eyebrow: "Art aktualisieren",
-      title: "Automatische Aktualisierung",
-      message: `Automatische Aktualisierung für ${species.germanName} wirklich ausführen?`,
-      confirmLabel: "Ja, aktualisieren",
-      cancelLabel: "Abbrechen",
-    });
-    if (!confirmed) return;
-    openButton.disabled = true;
-    try {
-      const result = await state.openPipelinePreview("all", {
-        targetSlugs: [species.id],
-        silent: true,
-        speciesRefresh: true,
-      });
-      if (result?.noWork) {
-        await showQuickConfirm({
-          title: "Keine Aktualisierung gestartet",
-          message: result.message,
-          confirmLabel: "OK",
-          cancelLabel: "",
-        });
-      }
-    } catch (error) {
-      await showQuickConfirm({
-        title: "Aktualisierung konnte nicht gestartet werden",
-        message: error.message,
-        confirmLabel: "OK",
-        cancelLabel: "",
-      });
-    } finally {
-      openButton.disabled = false;
-    }
-  });
-}
-
-function setupSpeciesDelete(species) {
-  const dialog = elements.detailPanel.querySelector(".delete-dialog");
-  const openButton = elements.detailPanel.querySelector(".delete-species-open");
-  const form = elements.detailPanel.querySelector(".delete-form");
-  const message = elements.detailPanel.querySelector(".delete-message");
-  const effects = elements.detailPanel.querySelector(".delete-effects");
-  const deleteAssetsOption = elements.detailPanel.querySelector(".delete-assets-now");
-  const deleteWarning = elements.detailPanel.querySelector(".delete-assets-warning");
-  const confirmButton = elements.detailPanel.querySelector(".delete-confirm");
-  const cancelButtons = [...elements.detailPanel.querySelectorAll(".delete-cancel")];
-  if (
-    !dialog
-    || !openButton
-    || !form
-    || !message
-    || !effects
-    || !deleteAssetsOption
-    || !deleteWarning
-    || !confirmButton
-  ) return;
-  let previewToken = "";
-
-  const setMessage = (text = "", type = "") => {
-    message.textContent = text;
-    message.className = `edit-message delete-message${type ? ` ${type}` : ""}`;
-    message.hidden = !text;
-  };
-  const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
-  const close = () => dialogController.close("programmatic");
-  const updateDeleteMode = () => {
-    const permanent = deleteAssetsOption.checked;
-    confirmButton.textContent = permanent
-      ? "Art und Daten dauerhaft löschen"
-      : "Aus Artenliste entfernen";
-    deleteWarning.textContent = permanent
-      ? "Dauerhaft: Generierte Daten, Assetordner und zugehörige Pflegeinformationen werden sofort gelöscht und sind nicht wiederherstellbar."
-      : "Ohne Auswahl bleiben generierte Daten und Assets bis zum separaten Bereinigungslauf bestehen.";
-    deleteWarning.classList.toggle("danger", permanent);
-  };
-
-  openButton.addEventListener("click", async () => {
-    previewToken = "";
-    deleteAssetsOption.checked = false;
-    updateDeleteMode();
-    confirmButton.disabled = true;
-    effects.replaceChildren();
-    setMessage("Auswirkungen werden geprüft…", "info");
-    dialogController.open();
-    try {
-      const result = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/delete/preview`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: "{}",
-        },
-      );
-      previewToken = result.token;
-      effects.innerHTML = `<ul>${result.effects.map((effect) => `<li>${escapeHtml(effect)}</li>`).join("")}</ul>`;
-      if (result.requiresAssetDeletion) {
-        deleteAssetsOption.checked = true;
-        deleteAssetsOption.disabled = true;
-      } else {
-        deleteAssetsOption.disabled = !result.assetDirectoryExists && !species.inGenerated;
-      }
-      updateDeleteMode();
-      confirmButton.disabled = false;
-      setMessage("Löschvorschau ist bereit.", "success");
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-    }
-  });
-
-  deleteAssetsOption.addEventListener("change", updateDeleteMode);
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!previewToken) return;
-    const deleteAssets = deleteAssetsOption.checked;
-    releaseDetailMedia();
-    if (deleteAssets) await new Promise((resolve) => setTimeout(resolve, 800));
-    confirmButton.disabled = true;
-    setMessage(
-      deleteAssets
-        ? "Art, generierte Daten und Assets werden dauerhaft gelöscht…"
-        : "Art wird aus der Eingabeliste entfernt…",
-      "info",
-    );
-    try {
-      const result = await fetchJson(
-        `/api/species/${encodeURIComponent(species.id)}/delete/save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: previewToken, deleteAssets }),
-        },
-      );
-      state.notice =
-        (result.inputEntryRemoved
-          ? `${result.deleted.germanName} wurde aus der Eingabeliste entfernt.`
-          : `${result.deleted.germanName} war bereits aus der Eingabeliste entfernt.`)
-        + (result.backup ? ` Sicherung: ${result.backup}.` : "")
-        + backupRetentionText(result)
-        + (result.permanentCleanup
-          ? " Generierte Daten und Assetordner wurden dauerhaft gelöscht."
-          : ` Assetordner bleibt erhalten: ${result.assetDirectoryPreserved}.`)
-        + (result.pipelineRequired
-          ? " Ein Pipeline- oder Bereinigungslauf entfernt die Art aus den generierten Daten."
-          : "");
-      state.selectedId = "";
-      close();
-      await loadData();
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-      confirmButton.disabled = false;
-    }
-  });
-}
+const {
+  setupSpeciesRefresh,
+  setupSpeciesDelete,
+} = createSpeciesActionsController({
+  state,
+  elements,
+  fetchJson,
+  showQuickConfirm,
+  createDialogController,
+  escapeHtml,
+  backupRetentionText,
+  releaseDetailMedia,
+  loadData,
+});
 
 function renderDetail(species) {
   const browserMapUrl = iucnDistributionMapUrl(species);

@@ -375,6 +375,15 @@ Umsetzungsstand am 2026-07-15:
   107 Tests; `public/app.js` sank von 4.408 auf 4.334 Zeilen. Das lokale HTML lädt das Modul nach `app-dialogs.js`
   und vor `app-media.js`; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export.
   Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Der vierzehnte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-species-actions.js` als
+  fachliche Grenze für `Art aktualisieren` und den Art-Löschdialog ein. Das Modul steuert Bestätigung, gezielten
+  stillen Artlauf, Löschvorschau, optionale dauerhafte Assetbereinigung, verständliche Fehler und die abschließende
+  Erfolgsmeldung. API-Client, Pipelineaufruf, Dialoggrundlage, Medienfreigabe und Datenreload werden injiziert.
+- Fünf direkte Artaktionstests prüfen Texte und Löschmodi, gezielte Pipelineparameter, Fehlerfreigabe der
+  Schaltfläche, maskierte Löschfolgen sowie dauerhaftes Löschen mit Medienfreigabe und Reload. Der gemeinsame
+  Testeinstieg umfasst damit 112 Tests; `public/app.js` sank von 4.334 auf 4.193 Zeilen. Das lokale HTML lädt das
+  Modul nach `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
+  Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

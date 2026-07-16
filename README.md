@@ -805,6 +805,13 @@ gesteuert; die konkrete API-Kommunikation bleibt über `fetchJson` injiziert. Vi
 den gemeinsamen Testeinstieg auf 107 Tests; `app.js` sank von 4.408 auf 4.334 Zeilen. Das Modul wird nach
 `app-dialogs.js` und vor `app-media.js` geladen; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export.
 Squarespace-Module, Footer und Custom CSS blieben unverändert.
+Der vierzehnte Schnitt ergänzt `species-explorer/public/app-species-actions.js` als direkt testbare Grenze für
+`Art aktualisieren` sowie Vorschau und Speichern des Art-Löschdialogs. Der Controller erhält Pipelineaufruf,
+API-Client, Dialogsteuerung, Medienfreigabe und Datenreload als Abhängigkeiten; reine Bestätigungs-, Löschmodus- und
+Erfolgstexte liegen ebenfalls im Modul. Fünf direkte Tests erhöhen den gemeinsamen Testeinstieg auf 112 Tests;
+`app.js` sank von 4.334 auf 4.193 Zeilen. Das Modul wird nach `app-dashboard.js` und vor `app.js` geladen; der
+Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben
+unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
