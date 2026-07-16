@@ -18,6 +18,8 @@ const explorerPipeline = window.SpeciesExplorerPipeline;
 if (!explorerPipeline) throw new Error("Explorer-Pipelineanzeige konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
 if (!explorerDashboard) throw new Error("Explorer-Dashboard konnte nicht geladen werden.");
+const explorerLifecycle = window.SpeciesExplorerLifecycle;
+if (!explorerLifecycle) throw new Error("Explorer-Lebenszyklus konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
   getSessionToken: () => state.sessionToken,
@@ -240,21 +242,6 @@ function waitForAudioMetadata(audio) {
   });
 }
 
-function setupEditingMode() {
-  const applyMode = (enabled) => {
-    state.editMode = enabled;
-    document.body.classList.toggle("edit-mode", enabled);
-    elements.editModeToggle.setAttribute("aria-pressed", String(enabled));
-    elements.editModeToggle.textContent = enabled ? "Bearbeitungsmodus 🔓" : "Lesemodus 🔒";
-    elements.editModeToggle.title = enabled
-      ? "In den Lesemodus wechseln"
-      : "Bearbeitungsfunktionen einblenden";
-  };
-
-  elements.editModeToggle.addEventListener("click", () => applyMode(!state.editMode));
-  applyMode(false);
-}
-
 function showQuickConfirm({
   eyebrow = "",
   title = "Bestätigen",
@@ -338,6 +325,30 @@ const {
   onSpeciesSelect: (id) => selectSpecies(id),
 });
 
+const {
+  refreshExplorerModelOnly,
+  loadData,
+  start: startLifecycle,
+} = explorerLifecycle.createExplorerLifecycleController({
+  state,
+  elements,
+  documentRef: document,
+  windowRef: window,
+  requestedSpeciesId,
+  ensureSessionToken,
+  loadExplorerSnapshot,
+  fetchRevision,
+  updateSummary,
+  updateValidation,
+  updatePendingChanges,
+  populateStatusFilter,
+  applyFilters,
+  renderSpeciesList,
+  selectSpecies,
+  hasOpenDialog: () => hasOpenDialog(),
+  escapeHtml,
+});
+
 function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   const mapLightbox = elements.assetReviewMapLightbox;
   const image = elements.assetReviewMapLightboxImage;
@@ -349,21 +360,6 @@ function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
   resetScrollableToTop(mapLightbox);
   openDialog(mapLightbox, { bodyClass: "explorer-modal-open" });
   resetScrollableToTop(mapLightbox);
-}
-
-async function refreshExplorerModelOnly({ reload = false } = {}) {
-  const { summary, validation, species, revision, pendingChanges } = await loadExplorerSnapshot({
-    reload,
-    failureMessage: "Lokale Daten konnten nicht aktualisiert werden.",
-  });
-  state.dataRevision = revision.revision;
-  state.species = species;
-  updateSummary(summary);
-  updateValidation(validation);
-  updatePendingChanges(pendingChanges);
-  populateStatusFilter();
-  applyFilters();
-  return { summary, validation, species, revision, pendingChanges };
 }
 
 async function refreshOpenSoundEditor(speciesId) {
@@ -4098,87 +4094,6 @@ function renderDetail(species) {
   setupSpeciesDelete(species);
 }
 
-async function loadData({ reload = false } = {}) {
-  state.dataLoading = true;
-  elements.reloadButton.disabled = true;
-  elements.reloadButton.textContent = "Lädt…";
-  try {
-    const { summary, validation, species, revision, pendingChanges } = await loadExplorerSnapshot({
-      reload,
-      failureMessage: "Lokale Daten konnten nicht geladen werden.",
-    });
-    state.dataRevision = revision.revision;
-    state.species = species;
-    updateSummary(summary);
-    updateValidation(validation);
-    updatePendingChanges(pendingChanges);
-    populateStatusFilter();
-    applyFilters();
-
-    const selectedExists = state.species.some((entry) => entry.id === state.selectedId);
-    const next = selectedExists
-      ? state.selectedId
-      : state.species.some((entry) => entry.id === requestedSpeciesId)
-        ? requestedSpeciesId
-        : state.filtered[0]?.id || state.species[0]?.id;
-    if (next) {
-      const holdBackgroundDetail = state.holdNewSpeciesBackground && elements.newSpeciesDialog?.open;
-      if (holdBackgroundDetail) {
-        state.selectedId = next;
-        renderSpeciesList();
-      } else {
-        selectSpecies(next);
-      }
-    }
-  } catch (error) {
-    elements.detailPanel.innerHTML = `
-      <div class="error-state">
-        <h2>Daten konnten nicht geladen werden</h2>
-        <p>${escapeHtml(error.message)}</p>
-      </div>
-    `;
-  } finally {
-    state.dataLoading = false;
-    elements.reloadButton.disabled = false;
-    elements.reloadButton.textContent = "Aktualisieren";
-  }
-}
-
-async function monitorProjectRevision() {
-  try {
-    const current = await fetchRevision();
-    if (!current) return;
-    if (state.dataRevision && current.revision !== state.dataRevision && !state.dataLoading) {
-      if (hasOpenDialog()) {
-        state.pendingRevisionReload = true;
-      } else {
-        await loadData();
-      }
-    } else if (!state.dataRevision) {
-      state.dataRevision = current.revision;
-    }
-  } catch {
-    // Der nächste Intervall versucht die Verbindung erneut.
-  } finally {
-    clearTimeout(state.dataRevisionTimer);
-    state.dataRevisionTimer = setTimeout(monitorProjectRevision, 5000);
-  }
-}
-
-elements.search.addEventListener("input", applyFilters);
-elements.statusFilter.addEventListener("change", applyFilters);
-elements.flagFilter.addEventListener("change", applyFilters);
-elements.reloadButton.addEventListener("click", () => loadData({ reload: true }));
-window.addEventListener("beforeunload", (event) => {
-  const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
-    || state.pipelineStatusSnapshot?.status === "awaiting-review";
-  const backupActive = state.backupStatusSnapshot?.status === "running";
-  if (!state.pendingChanges?.hasPendingChanges || pipelineActive || backupActive) return;
-  event.preventDefault();
-  event.returnValue = "";
-});
-
-setupEditingMode();
 setupAssetReview();
 setupBackupSettings({
   state,
@@ -4188,6 +4103,4 @@ setupBackupSettings({
 });
 setupPipelineControl();
 setupNewSpeciesCreator();
-ensureSessionToken()
-  .then(() => loadData())
-  .finally(() => monitorProjectRevision());
+void startLifecycle();

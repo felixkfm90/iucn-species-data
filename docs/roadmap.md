@@ -669,6 +669,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
   Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene
   Modulschnitte offen.
+  Der fünfzehnte kontrollierte A4-Schnitt führt `species-explorer/public/app-lifecycle.js` als gemeinsame Grenze
+  für Bearbeitungsmodus, Explorer-Schnappschüsse, initiale Artauswahl, Revisionsüberwachung und Schließwarnung bei
+  offenen Änderungen ein. Dashboard-Callbacks und Detailauswahl werden injiziert; Pipeline-, Neue-Art- und
+  Bearbeitungsfachlogik bleiben unverändert. Sieben direkte Lebenszyklustests erhöhen den gemeinsamen Testeinstieg
+  auf 119 Tests; `app.js` sank von 4.193 auf 4.107 Zeilen. Das lokale HTML lädt das Modul nach
+  `app-dashboard.js` und vor `app-species-actions.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
+  Export. Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich
+  geschlossene Modulschnitte offen.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

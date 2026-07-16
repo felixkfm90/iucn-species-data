@@ -381,6 +381,11 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(dashboardResponse.headers.get("content-type"), /javascript/);
   assert.match(await dashboardResponse.text(), /createDashboardController/);
 
+  const lifecycleResponse = await fetch(`${baseUrl}/app-lifecycle.js`);
+  assert.equal(lifecycleResponse.status, 200);
+  assert.match(lifecycleResponse.headers.get("content-type"), /javascript/);
+  assert.match(await lifecycleResponse.text(), /createExplorerLifecycleController/);
+
   const speciesActionsResponse = await fetch(`${baseUrl}/app-species-actions.js`);
   assert.equal(speciesActionsResponse.status, 200);
   assert.match(speciesActionsResponse.headers.get("content-type"), /javascript/);
@@ -2307,6 +2312,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appAssetReviewSource,
     appPipelineSource,
     appDashboardSource,
+    appLifecycleSource,
     appSpeciesActionsSource,
     cssSource,
     htmlSource,
@@ -2337,6 +2343,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app.css", import.meta.url), "utf8"),
     readFile(new URL("./public/index.html", import.meta.url), "utf8"),
@@ -2365,7 +2372,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(
     htmlSource,
-    /<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app-species-actions\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app-lifecycle\.js" defer><\/script>[\s\S]*<script src="\/app-species-actions\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(appFoundationSource, /function createInitialExplorerState\(\)/);
   assert.match(appFoundationSource, /function createExplorerApiClient\(/);
@@ -2388,6 +2395,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appDashboardSource, /function createValidationPresentation\(/);
   assert.match(appDashboardSource, /function createSpeciesListItemPresentation\(/);
   assert.match(appDashboardSource, /function createDashboardController\(/);
+  assert.match(appLifecycleSource, /function createExplorerLifecycleController\(/);
+  assert.match(appLifecycleSource, /async function refreshExplorerModelOnly\(/);
+  assert.match(appLifecycleSource, /async function monitorProjectRevision\(/);
   assert.match(appSpeciesActionsSource, /function refreshConfirmation\(/);
   assert.match(appSpeciesActionsSource, /function deleteModePresentation\(/);
   assert.match(appSpeciesActionsSource, /function createSpeciesActionsController\(/);
@@ -2400,6 +2410,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
   assert.match(appSource, /window\.SpeciesExplorerPipeline/);
   assert.match(appSource, /window\.SpeciesExplorerDashboard/);
+  assert.match(appSource, /window\.SpeciesExplorerLifecycle/);
   assert.match(appSource, /window\.SpeciesExplorerSpeciesActions/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
@@ -2492,7 +2503,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
   assert.match(appSource, /function setupPipelineControl\(\)/);
-  assert.match(appSource, /function setupEditingMode\(\)/);
+  assert.match(appLifecycleSource, /function setupEditingMode\(\)/);
   assert.match(appSource, /\/api\/pipeline\/preview/);
   assert.match(appSource, /\/api\/pipeline\/start/);
   assert.match(appSource, /\/api\/pipeline\/status/);
@@ -2533,13 +2544,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appPipelineSource, /Datenbank aktuell/);
   assert.match(appSource, /Datenbank-Aktionen/);
-  assert.match(appSource, /Bearbeitungsmodus 🔓/);
-  assert.match(appSource, /Lesemodus 🔒/);
-  assert.match(appSource, /function monitorProjectRevision\(\)/);
+  assert.match(appLifecycleSource, /Bearbeitungsmodus 🔓/);
+  assert.match(appLifecycleSource, /Lesemodus 🔒/);
+  assert.match(appLifecycleSource, /function monitorProjectRevision\(/);
   assert.match(appFoundationSource, /revision: "\/api\/revision"/);
-  assert.match(appSource, /const current = await fetchRevision\(\)/);
-  assert.match(appSource, /setTimeout\(monitorProjectRevision,\s*5000\)/);
-  assert.match(appSource, /pendingRevisionReload/);
+  assert.match(appLifecycleSource, /const current = await fetchRevision\(\)/);
+  assert.match(appLifecycleSource, /setTimeoutImpl\(\(\) =>/);
+  assert.match(appLifecycleSource, /pendingRevisionReload/);
   assert.match(appSource, /function hasOpenDialog\(\)/);
   assert.match(serverSource, /createExplorerRequestHandler/);
   assert.match(requestRouterSource, /"\/api\/revision"/);
@@ -2766,7 +2777,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /showQuickConfirm/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
   assert.match(appFoundationSource, /\/api\/pending-changes/);
-  assert.match(appSource, /beforeunload/);
+  assert.match(appLifecycleSource, /beforeunload/);
   assert.match(appMediaSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
   assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);
   assert.match(cssSource, /\.edit-dialog\[data-active-section="map"\]\s+\.manual-edit-section/);

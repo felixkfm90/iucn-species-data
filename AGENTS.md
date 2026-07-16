@@ -785,6 +785,13 @@ Aktuelle Planung:
   den gemeinsamen Testeinstieg auf 112 Tests; `app.js` sank von 4.334 auf 4.193 Zeilen. Das lokale HTML lädt das
   Modul nach `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
   Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der fünfzehnte A4-Schnitt ergänzt `species-explorer/public/app-lifecycle.js` als gemeinsame Grenze für
+  Bearbeitungsmodus, Explorer-Schnappschüsse, initiale Artauswahl, Revisionsüberwachung und die Schließwarnung bei
+  offenen Änderungen. Dashboard-Aktualisierungen und Artauswahl werden injiziert; Pipeline-, Assistenten- und
+  Bearbeitungsfachlogik bleiben unverändert. Sieben direkte Lebenszyklustests erhöhen den gemeinsamen Testeinstieg
+  auf 119 Tests; `app.js` sank von 4.193 auf 4.107 Zeilen. Das lokale HTML lädt das Modul nach
+  `app-dashboard.js` und vor `app-species-actions.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
+  Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

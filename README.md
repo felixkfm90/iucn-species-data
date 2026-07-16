@@ -812,6 +812,13 @@ Erfolgstexte liegen ebenfalls im Modul. Fünf direkte Tests erhöhen den gemeins
 `app.js` sank von 4.334 auf 4.193 Zeilen. Das Modul wird nach `app-dashboard.js` und vor `app.js` geladen; der
 Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben
 unverändert.
+Der fünfzehnte Schnitt ergänzt `species-explorer/public/app-lifecycle.js` als direkt testbare Grenze für
+Bearbeitungsmodus, konsistentes Laden und Verteilen des Explorer-Schnappschusses, initiale Artauswahl,
+Revisionsüberwachung und die Schließwarnung bei offenen Änderungen. Dashboard-Callbacks und Detailauswahl werden
+injiziert; Pipeline-, Neue-Art- und Bearbeitungsabläufe bleiben fachlich unverändert. Sieben direkte Tests erhöhen
+den gemeinsamen Testeinstieg auf 119 Tests; `app.js` sank von 4.193 auf 4.107 Zeilen. Das Modul wird nach
+`app-dashboard.js` und vor `app-species-actions.js` geladen; der Explorer-Smoke-Test prüft Auslieferung,
+Reihenfolge und Export. Squarespace-Module, Footer und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

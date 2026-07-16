@@ -384,6 +384,16 @@ Umsetzungsstand am 2026-07-15:
   Testeinstieg umfasst damit 112 Tests; `public/app.js` sank von 4.334 auf 4.193 Zeilen. Das lokale HTML lädt das
   Modul nach `app-dashboard.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und Export.
   Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Der fünfzehnte kontrollierte Oberflächenschnitt führt `species-explorer/public/app-lifecycle.js` als gemeinsame
+  Grenze für Bearbeitungsmodus, konsistente Explorer-Schnappschüsse, initiale Artauswahl, Revisionsüberwachung und
+  Schließwarnung bei offenen Änderungen ein. Dashboard-Aktualisierung und Detailauswahl werden als Abhängigkeiten
+  injiziert; Pipeline-, Neue-Art- und Bearbeitungsfachlogik bleiben unverändert.
+- Sieben direkte Lebenszyklustests prüfen Modusdarstellung, Warnbedingungen, Auswahlpriorität, einmalige
+  Ereignisbindung, Schnappschussverteilung, stabilen Assistenten-Hintergrund, maskierte Ladefehler und verzögerte
+  Revisionsupdates. Der gemeinsame Testeinstieg umfasst damit 119 Tests; `public/app.js` sank von 4.193 auf 4.107
+  Zeilen. Das lokale HTML lädt das Modul nach `app-dashboard.js` und vor `app-species-actions.js`; Explorer-
+  Smoke-Tests prüfen Auslieferung, Reihenfolge und Export. Squarespace-Laufzeitdateien, Footer-Versionen und Custom
+  CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
