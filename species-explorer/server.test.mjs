@@ -351,10 +351,35 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(measurementsResponse.headers.get("content-type"), /javascript/);
   assert.match(await measurementsResponse.text(), /parseManualMeasurement/);
 
+  const editorFilesResponse = await fetch(`${baseUrl}/app-editor-files.js`);
+  assert.equal(editorFilesResponse.status, 200);
+  assert.match(editorFilesResponse.headers.get("content-type"), /javascript/);
+  assert.match(await editorFilesResponse.text(), /waitForAudioMetadata/);
+
   const dialogsResponse = await fetch(`${baseUrl}/app-dialogs.js`);
   assert.equal(dialogsResponse.status, 200);
   assert.match(dialogsResponse.headers.get("content-type"), /javascript/);
   assert.match(await dialogsResponse.text(), /createDialogController/);
+
+  const confirmationResponse = await fetch(`${baseUrl}/app-confirmation.js`);
+  assert.equal(confirmationResponse.status, 200);
+  assert.match(confirmationResponse.headers.get("content-type"), /javascript/);
+  assert.match(await confirmationResponse.text(), /createQuickConfirm/);
+
+  const formFeedbackResponse = await fetch(`${baseUrl}/app-form-feedback.js`);
+  assert.equal(formFeedbackResponse.status, 200);
+  assert.match(formFeedbackResponse.headers.get("content-type"), /javascript/);
+  assert.match(await formFeedbackResponse.text(), /createFieldFeedbackController/);
+
+  const newSpeciesFormResponse = await fetch(`${baseUrl}/app-new-species-form.js`);
+  assert.equal(newSpeciesFormResponse.status, 200);
+  assert.match(newSpeciesFormResponse.headers.get("content-type"), /javascript/);
+  assert.match(await newSpeciesFormResponse.text(), /createNewSpeciesFormModel/);
+
+  const editorFormResponse = await fetch(`${baseUrl}/app-editor-form.js`);
+  assert.equal(editorFormResponse.status, 200);
+  assert.match(editorFormResponse.headers.get("content-type"), /javascript/);
+  assert.match(await editorFormResponse.text(), /createEditorFormModel/);
 
   const settingsResponse = await fetch(`${baseUrl}/app-settings.js`);
   assert.equal(settingsResponse.status, 200);
@@ -366,10 +391,25 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(mediaResponse.headers.get("content-type"), /javascript/);
   assert.match(await mediaResponse.text(), /createMediaRenderers/);
 
+  const detailMediaResponse = await fetch(`${baseUrl}/app-detail-media.js`);
+  assert.equal(detailMediaResponse.status, 200);
+  assert.match(detailMediaResponse.headers.get("content-type"), /javascript/);
+  assert.match(await detailMediaResponse.text(), /createDetailMediaController/);
+
+  const selectionResponse = await fetch(`${baseUrl}/app-selection.js`);
+  assert.equal(selectionResponse.status, 200);
+  assert.match(selectionResponse.headers.get("content-type"), /javascript/);
+  assert.match(await selectionResponse.text(), /createSpeciesSelectionController/);
+
   const assetReviewResponse = await fetch(`${baseUrl}/app-asset-review.js`);
   assert.equal(assetReviewResponse.status, 200);
   assert.match(assetReviewResponse.headers.get("content-type"), /javascript/);
   assert.match(await assetReviewResponse.text(), /createAssetReviewRenderer/);
+
+  const assetReviewWorkflowResponse = await fetch(`${baseUrl}/app-asset-review-workflow.js`);
+  assert.equal(assetReviewWorkflowResponse.status, 200);
+  assert.match(assetReviewWorkflowResponse.headers.get("content-type"), /javascript/);
+  assert.match(await assetReviewWorkflowResponse.text(), /setupAssetReviewWorkflow/);
 
   const pipelineResponse = await fetch(`${baseUrl}/app-pipeline.js`);
   assert.equal(pipelineResponse.status, 200);
@@ -2311,10 +2351,18 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appFoundationSource,
     appPresentationSource,
     appMeasurementsSource,
+    appEditorFilesSource,
     appDialogsSource,
+    appConfirmationSource,
+    appFormFeedbackSource,
+    appNewSpeciesFormSource,
+    appEditorFormSource,
     appSettingsSource,
     appMediaSource,
+    appDetailMediaSource,
+    appSelectionSource,
     appAssetReviewSource,
+    appAssetReviewWorkflowSource,
     appPipelineSource,
     appDashboardSource,
     appLifecycleSource,
@@ -2343,10 +2391,18 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-presentation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-files.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dialogs.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-confirmation.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-form-feedback.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-new-species-form.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-form.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-settings.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-detail-media.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-selection.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-asset-review-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
@@ -2375,7 +2431,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-editor-files\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-confirmation\.js" defer><\/script>[\s\S]*<script src="\/app-form-feedback\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-form\.js" defer><\/script>[\s\S]*<script src="\/app-editor-form\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-detail-media\.js" defer><\/script>[\s\S]*<script src="\/app-selection\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(
     htmlSource,
@@ -2387,15 +2443,29 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appPresentationSource, /function versionedAssetUrl\(/);
   assert.match(appMeasurementsSource, /function parseManualMeasurement\(/);
   assert.match(appMeasurementsSource, /function renderManualMeasurementEditor\(/);
+  assert.match(appEditorFilesSource, /function iucnDistributionMapUrl\(/);
+  assert.match(appEditorFilesSource, /function fileToBase64\(/);
+  assert.match(appEditorFilesSource, /function waitForAudioMetadata\(/);
   assert.match(appDialogsSource, /function createDialogController\(/);
   assert.match(appDialogsSource, /function releaseMediaWithin\(/);
+  assert.match(appConfirmationSource, /function createQuickConfirm\(/);
+  assert.match(appFormFeedbackSource, /function createMessageSetter\(/);
+  assert.match(appFormFeedbackSource, /function createFieldFeedbackController\(/);
+  assert.match(appNewSpeciesFormSource, /function createNewSpeciesFormModel\(/);
+  assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);
   assert.match(appSettingsSource, /function setupBackupSettings\(/);
   assert.match(appMediaSource, /function createMediaRenderers\(/);
   assert.match(appMediaSource, /function bindAudioPlayer\(/);
   assert.match(appMediaSource, /function bindImageZoom\(/);
+  assert.match(appDetailMediaSource, /function createDetailMediaController\(/);
+  assert.match(appDetailMediaSource, /async function refreshOpenSoundEditor\(/);
+  assert.match(appDetailMediaSource, /function bindExclusiveAudioPlayback\(/);
+  assert.match(appSelectionSource, /function createSpeciesSelectionController\(/);
+  assert.match(appSelectionSource, /function selectSpecies\(/);
   assert.match(appAssetReviewSource, /function createAssetReviewRenderer\(/);
   assert.match(appAssetReviewSource, /function createAssetReviewMediaController\(/);
+  assert.match(appAssetReviewWorkflowSource, /function setupAssetReviewWorkflow\(/);
   assert.match(appPipelineSource, /function createPipelineStatusPresenters\(/);
   assert.match(appPipelineSource, /function createPipelinePreviewRenderer\(/);
   assert.match(appPipelineSource, /function renderProcessLog\(/);
@@ -2416,9 +2486,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /window\.SpeciesExplorerPresentation/);
   assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
   assert.match(appSource, /window\.SpeciesExplorerDialogs/);
+  assert.match(appSource, /window\.SpeciesExplorerFormFeedback/);
+  assert.match(appSource, /window\.SpeciesExplorerNewSpeciesForm/);
+  assert.match(appSource, /window\.SpeciesExplorerEditorForm/);
   assert.match(appSource, /window\.SpeciesExplorerSettings/);
   assert.match(appSource, /window\.SpeciesExplorerMedia/);
+  assert.match(appSource, /window\.SpeciesExplorerDetailMedia/);
+  assert.match(appSource, /window\.SpeciesExplorerSelection/);
   assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
+  assert.match(appSource, /window\.SpeciesExplorerAssetReviewWorkflow/);
   assert.match(appSource, /window\.SpeciesExplorerPipeline/);
   assert.match(appSource, /window\.SpeciesExplorerDashboard/);
   assert.match(appSource, /window\.SpeciesExplorerLifecycle/);
@@ -2432,7 +2508,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /map-zoom-trigger/);
   assert.match(appSource, /map-lightbox/);
   assert.match(appMediaSource, /function resetScrollableToTop\(element/);
-  assert.match(appSource, /resetScrollableToTop\(elements\.detailPanel\)/);
+  assert.match(appSelectionSource, /resetScrollableToTop\(elements\.detailPanel\)/);
   assert.match(appMediaSource, /species-image-placeholder/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns/s);
   assert.match(appSource, /class="explorer-audio"/);
@@ -2551,7 +2627,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appAssetReviewSource, /mapLightboxImage\.onload = \(\) => resetScrollableToTop\(mapLightbox\)/);
   assert.match(appAssetReviewSource, /const stopAudio = \(\) =>/);
   assert.match(
-    appSource,
+    appAssetReviewWorkflowSource,
     /const reviewController = createDialogController\(\{[\s\S]*afterClose: \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
   );
   assert.match(appPipelineSource, /Datenbank aktuell/);
@@ -2563,7 +2639,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appLifecycleSource, /const current = await fetchRevision\(\)/);
   assert.match(appLifecycleSource, /setTimeoutImpl\(\(\) =>/);
   assert.match(appLifecycleSource, /pendingRevisionReload/);
-  assert.match(appSource, /function hasOpenDialog\(\)/);
+  assert.match(appSelectionSource, /function hasOpenDialog\(\)/);
   assert.match(serverSource, /createExplorerRequestHandler/);
   assert.match(requestRouterSource, /"\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
@@ -2630,14 +2706,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /sound\.rejectedSources|rejectedSources/);
   assert.match(serverSource, /preservedSoundRejections/);
   assert.match(serverSource, /rejectedSources: preservedSoundRejections/);
-  assert.match(appSource, /async function refreshOpenSoundEditor/);
+  assert.match(appDetailMediaSource, /async function refreshOpenSoundEditor/);
   assert.match(appSource, /await notifySilentPipelineContext\(status\)/);
   assert.match(appPresentationSource, /function versionedAssetUrl/);
   assert.match(appSource, /species\.assets\.spectrogram\?\.soundSha256/);
-  assert.match(appSource, /assetReviewAwaitingRetry/);
-  assert.match(appSource, /Gefundener Sound wurde abgelehnt und gemerkt\. Nächster Sound wird gesucht/);
-  assert.match(appSource, /state\.finishAssetReviewWaiting/);
-  assert.match(appSource, /form\.dataset\.closeOnly === "true"/);
+  assert.match(appAssetReviewWorkflowSource, /assetReviewAwaitingRetry/);
+  assert.match(appAssetReviewWorkflowSource, /Gefundener Sound wurde abgelehnt und gemerkt\. Nächster Sound wird gesucht/);
+  assert.match(appAssetReviewWorkflowSource, /state\.finishAssetReviewWaiting/);
+  assert.match(appAssetReviewWorkflowSource, /form\.dataset\.closeOnly === "true"/);
   assert.match(cleanupSource, /cleanup-trash/);
   assert.match(serverSource, /assetCompositeHash/);
   assert.match(serverSource, /wasAssetSavedInCurrentPipelineLog/);
@@ -2697,8 +2773,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSpeciesActionsSource, /\/delete\/save/);
   assert.match(appSource, /class="delete-assets-now"/);
   assert.match(appSpeciesActionsSource, /deleteAssets/);
-  assert.match(appSource, /function releaseDetailMedia\(\)/);
-  assert.match(appSource, /releaseDetailMedia\(\)/);
+  assert.match(appDetailMediaSource, /function releaseDetailMedia\(\)/);
+  assert.match(appSpeciesActionsSource, /releaseDetailMedia\(\)/);
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
   assert.match(appSource, /Taxonomie ist gesperrt\./);
@@ -2736,7 +2812,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSource, /class="sound-auto-search-button"/);
   assert.match(appSource, /openPipelinePreview\("nc-sounds"/);
   assert.match(appSource, /const releaseCurrentSoundAudio = async/);
-  assert.match(appSource, /async function releaseAllAudioElements\(\)/);
+  assert.match(appDetailMediaSource, /async function releaseAllAudioElements\(\)/);
   assert.match(appSource, /await releaseAllAudioElements\(\)/);
   assert.match(appSource, /class="sound-preview-button"/);
   assert.match(appSource, /class="sound-save-button"/);
@@ -2875,7 +2951,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="asset-review-map-lightbox-image"/);
   assert.match(appAssetReviewSource, /value="reject"/);
   assert.match(appAssetReviewSource, /Gefundenen Sound ablehnen und weiter suchen/);
-  assert.match(appSource, /decision:\s*formData\.get/);
+  assert.match(appAssetReviewWorkflowSource, /decision:\s*formData\.get/);
   assert.match(appSource, /audio\.removeAttribute\("src"\)/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);
   assert.match(htmlSource, /class="validation-dashboard"/);
@@ -2965,6 +3041,6 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(httpRoutingSource, /function safeGraphicsPath\(pathname, repoRoot\)/);
   assert.match(serverSource, /from "\.\/http-routing\.mjs"/);
   assert.match(cssSource, /button\.danger/);
-  assert.match(appSource, /window\.scrollTo\(scrollPosition\)/);
+  assert.match(appSelectionSource, /windowRef\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);
 });

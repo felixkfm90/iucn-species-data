@@ -799,6 +799,16 @@ Aktuelle Planung:
   den gemeinsamen Testeinstieg auf 125 Tests; `app.js` sank von 4.107 auf 4.007 Zeilen. Das lokale HTML lädt das
   Modul nach `app-species-actions.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung, Reihenfolge und
   Export. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Die A4-Schnitte 17 bis 24 wurden am 2026-07-17 in einem kontrollierten Sammellauf umgesetzt. Acht neue, jeweils
+  direkt getestete Browsermodule trennen weitere klar abgegrenzte Aufgaben aus `public/app.js`:
+  `app-editor-files.js` (Datei-/Metadatenvorbereitung), `app-confirmation.js` (Bestätigungsdialog),
+  `app-detail-media.js` (Detail-Lightboxen und Audiofreigabe), `app-selection.js` (Artauswahl und Scrollzustand),
+  `app-asset-review-workflow.js` (Assetprüfablauf), `app-form-feedback.js` (Formularmeldungen und Feldfehler),
+  `app-new-species-form.js` (Werteaufbau/Validierung des Neue-Art-Assistenten) und `app-editor-form.js`
+  (Werteaufbau/Validierung der allgemeinen Artbearbeitung). 45 direkte Tests erhöhen den gemeinsamen Testeinstieg
+  von 125 auf 170 Tests; `app.js` sank von 4.007 auf 3.504 Zeilen. Das lokale HTML lädt alle Abhängigkeiten in
+  expliziter Reihenfolge, der Explorer-Integrationstest prüft Auslieferung, Export und Moduleigentümer und bestand
+  mit 24 von 24 Prüfungen. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS blieben unverändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

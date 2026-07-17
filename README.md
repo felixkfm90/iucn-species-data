@@ -827,6 +827,15 @@ Tests; `app.js` sank von 4.107 auf 4.007 Zeilen. Das Modul wird nach `app-specie
 geladen; der Explorer-Smoke-Test prüft Auslieferung, Reihenfolge und Export. Squarespace-Module, Footer und Custom
 CSS blieben unverändert.
 
+Die Schnitte 17 bis 24 wurden am 2026-07-17 gemeinsam, aber einzeln getestet umgesetzt. Neu hinzugekommen sind
+`app-editor-files.js`, `app-confirmation.js`, `app-detail-media.js`, `app-selection.js`,
+`app-asset-review-workflow.js`, `app-form-feedback.js`, `app-new-species-form.js` und `app-editor-form.js`. Sie
+übernehmen Datei-/Metadatenvorbereitung, Bestätigungen, Detailmedien, Artauswahl, den Assetprüfablauf,
+Formularrückmeldungen sowie Werteaufbau und Validierung der beiden Artenformulare. 45 direkte Tests erhöhen den
+gemeinsamen Testeinstieg von 125 auf 170 Tests; `app.js` sank von 4.007 auf 3.504 Zeilen. Der Explorer-
+Integrationstest bestand mit 24 von 24 Prüfungen. Die Squarespace-Module, Footer-Versionen und das Custom CSS
+wurden durch diese lokalen Explorer-Schnitte nicht verändert.
+
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.

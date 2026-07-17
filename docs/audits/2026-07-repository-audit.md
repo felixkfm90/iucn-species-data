@@ -403,6 +403,16 @@ Umsetzungsstand am 2026-07-15:
   gemeinsame Testeinstieg umfasst damit 125 Tests; `public/app.js` sank von 4.107 auf 4.007 Zeilen. Das lokale HTML
   lädt das Modul nach `app-species-actions.js` und vor `app.js`; Explorer-Smoke-Tests prüfen Auslieferung,
   Reihenfolge und Export. Squarespace-Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
+- Die Oberflächenschnitte 17 bis 24 wurden am 2026-07-17 nacheinander implementiert und jeweils direkt getestet:
+  `app-editor-files.js`, `app-confirmation.js`, `app-detail-media.js`, `app-selection.js`,
+  `app-asset-review-workflow.js`, `app-form-feedback.js`, `app-new-species-form.js` und `app-editor-form.js`.
+  Zusammen kapseln sie Datei-/Metadatenvorbereitung, Bestätigungsdialog, Detailmedien, Artauswahl, Assetprüfablauf,
+  Formularrückmeldung sowie Werteaufbau und Validierung beider Artenformulare. 45 neue direkte Tests erhöhen den
+  gemeinsamen Testeinstieg von 125 auf 170 Tests; `public/app.js` sank von 4.007 auf 3.504 Zeilen. Der aktualisierte
+  Explorer-Integrationstest bestand mit 24 von 24 Prüfungen und ordnet Architekturprüfungen nun den tatsächlichen
+  Moduleigentümern zu. Das vollständige lokale Qualitätsgate sowie ein Browser-Smoke-Test mit Artwechsel,
+  Karten-Lightbox, Bearbeitungsformular und Kurzbestätigung bestanden ohne Konsolenfehler. Squarespace-
+  Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 

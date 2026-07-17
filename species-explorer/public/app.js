@@ -4,8 +4,18 @@ const explorerPresentation = window.SpeciesExplorerPresentation;
 if (!explorerPresentation) throw new Error("Explorer-Anzeigehelfer konnten nicht geladen werden.");
 const explorerMeasurements = window.SpeciesExplorerMeasurements;
 if (!explorerMeasurements) throw new Error("Explorer-Messwerthelfer konnten nicht geladen werden.");
+const explorerEditorFiles = window.SpeciesExplorerEditorFiles;
+if (!explorerEditorFiles) throw new Error("Explorer-Dateihelfer konnten nicht geladen werden.");
 const explorerDialogs = window.SpeciesExplorerDialogs;
 if (!explorerDialogs) throw new Error("Explorer-Dialogsteuerung konnte nicht geladen werden.");
+const explorerConfirmation = window.SpeciesExplorerConfirmation;
+if (!explorerConfirmation) throw new Error("Explorer-Bestätigungsdialog konnte nicht geladen werden.");
+const explorerFormFeedback = window.SpeciesExplorerFormFeedback;
+if (!explorerFormFeedback) throw new Error("Explorer-Formularrückmeldung konnte nicht geladen werden.");
+const explorerNewSpeciesForm = window.SpeciesExplorerNewSpeciesForm;
+if (!explorerNewSpeciesForm) throw new Error("Explorer-Neue-Art-Formular konnte nicht geladen werden.");
+const explorerEditorForm = window.SpeciesExplorerEditorForm;
+if (!explorerEditorForm) throw new Error("Explorer-Bearbeitungsformular konnte nicht geladen werden.");
 const explorerSettings = window.SpeciesExplorerSettings;
 if (!explorerSettings) throw new Error("Explorer-Einstellungen konnten nicht geladen werden.");
 const explorerSpeciesActions = window.SpeciesExplorerSpeciesActions;
@@ -14,8 +24,14 @@ const explorerAssetMaintenance = window.SpeciesExplorerAssetMaintenance;
 if (!explorerAssetMaintenance) throw new Error("Explorer-Asset-Wartung konnte nicht geladen werden.");
 const explorerMedia = window.SpeciesExplorerMedia;
 if (!explorerMedia) throw new Error("Explorer-Mediensteuerung konnte nicht geladen werden.");
+const explorerDetailMedia = window.SpeciesExplorerDetailMedia;
+if (!explorerDetailMedia) throw new Error("Explorer-Detailmedien konnten nicht geladen werden.");
+const explorerSelection = window.SpeciesExplorerSelection;
+if (!explorerSelection) throw new Error("Explorer-Artauswahl konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
 if (!explorerAssetReview) throw new Error("Explorer-Assetprüfung konnte nicht geladen werden.");
+const explorerAssetReviewWorkflow = window.SpeciesExplorerAssetReviewWorkflow;
+if (!explorerAssetReviewWorkflow) throw new Error("Explorer-Assetprüfablauf konnte nicht geladen werden.");
 const explorerPipeline = window.SpeciesExplorerPipeline;
 if (!explorerPipeline) throw new Error("Explorer-Pipelineanzeige konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
@@ -71,11 +87,23 @@ const {
   renderManualMeasurementEditor,
 } = explorerMeasurements;
 const {
+  iucnDistributionMapUrl,
+  fileToBase64,
+  waitForAudioMetadata,
+} = explorerEditorFiles;
+const {
   openDialog,
   createDialogController,
   releaseAudioElement,
   releaseMediaWithin,
 } = explorerDialogs;
+const { createQuickConfirm } = explorerConfirmation;
+const {
+  createMessageSetter,
+  createFieldFeedbackController,
+} = explorerFormFeedback;
+const { createNewSpeciesFormModel } = explorerNewSpeciesForm;
+const { createEditorFormModel } = explorerEditorForm;
 const { setupBackupSettings } = explorerSettings;
 const { createSpeciesActionsController } = explorerSpeciesActions;
 const { createAssetMaintenanceController } = explorerAssetMaintenance;
@@ -86,6 +114,8 @@ const {
   bindAudioPlayer,
   bindImageZoom,
 } = explorerMedia;
+const { createDetailMediaController } = explorerDetailMedia;
+const { createSpeciesSelectionController } = explorerSelection;
 const {
   inlineEditButton,
   sectionActions,
@@ -101,6 +131,7 @@ const {
   createAssetReviewRenderer,
   createAssetReviewMediaController,
 } = explorerAssetReview;
+const { setupAssetReviewWorkflow } = explorerAssetReviewWorkflow;
 const { renderAssetReviewList } = createAssetReviewRenderer({ escapeHtml });
 const {
   pipelineModeLabel,
@@ -194,106 +225,11 @@ const elements = {
   itemTemplate: document.querySelector("#species-item-template"),
 };
 
-function iucnDistributionMapUrl(species) {
-  const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
-  return /^\d+$/.test(assessmentId)
-    ? `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`
-    : "";
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      const value = String(reader.result ?? "");
-      const commaIndex = value.indexOf(",");
-      if (commaIndex < 0) {
-        reject(new Error("Datei konnte nicht gelesen werden"));
-        return;
-      }
-      resolve(value.slice(commaIndex + 1));
-    });
-    reader.addEventListener("error", () => reject(reader.error || new Error("Datei konnte nicht gelesen werden")));
-    reader.readAsDataURL(file);
-  });
-}
-
-function waitForAudioMetadata(audio) {
-  if (Number.isFinite(audio.duration) && audio.duration > 0) return Promise.resolve(audio.duration);
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error("MP3-Metadaten konnten nicht gelesen werden"));
-    }, 8000);
-    const cleanup = () => {
-      clearTimeout(timeout);
-      audio.removeEventListener("loadedmetadata", onLoaded);
-      audio.removeEventListener("error", onError);
-    };
-    const onLoaded = () => {
-      cleanup();
-      if (Number.isFinite(audio.duration) && audio.duration > 0) resolve(audio.duration);
-      else reject(new Error("MP3-Dauer ist ungültig"));
-    };
-    const onError = () => {
-      cleanup();
-      reject(new Error("MP3-Datei kann im Browser nicht abgespielt werden"));
-    };
-    audio.addEventListener("loadedmetadata", onLoaded, { once: true });
-    audio.addEventListener("error", onError, { once: true });
-    audio.load();
-  });
-}
-
-function showQuickConfirm({
-  eyebrow = "",
-  title = "Bestätigen",
-  message = "",
-  confirmLabel = "Ja",
-  cancelLabel = "Abbrechen",
-  danger = false,
-} = {}) {
-  return new Promise((resolve) => {
-    const dialog = document.createElement("dialog");
-    dialog.className = "edit-dialog quick-confirm-dialog";
-    dialog.innerHTML = `
-      <form method="dialog" class="quick-confirm-form">
-        ${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ""}
-        <h2>${escapeHtml(title)}</h2>
-        ${message ? `<p>${escapeHtml(message)}</p>` : ""}
-        <div class="dialog-actions">
-          ${cancelLabel ? `<button class="quick-confirm-cancel" type="button">${escapeHtml(cancelLabel)}</button>` : ""}
-          <button class="quick-confirm-ok ${danger ? "danger" : ""}" type="submit">${escapeHtml(confirmLabel)}</button>
-        </div>
-      </form>
-    `;
-    let result = false;
-    let settled = false;
-    const controller = createDialogController({
-      dialog,
-      closeOnBackdrop: true,
-      closeOnEscape: true,
-      afterClose: () => {
-        dialog.remove();
-        if (settled) return;
-        settled = true;
-        resolve(result);
-      },
-    });
-    dialog.querySelector(".quick-confirm-cancel")?.addEventListener("click", () => {
-      result = false;
-      controller.close("cancel");
-    });
-    dialog.querySelector(".quick-confirm-form")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      result = true;
-      controller.close("confirm");
-    });
-    document.body.append(dialog);
-    controller.open();
-    dialog.querySelector(".quick-confirm-ok")?.focus();
-  });
-}
+const showQuickConfirm = createQuickConfirm({
+  documentRef: document,
+  escapeHtml,
+  createDialogController,
+});
 
 function renderDatabaseStatus(stateName = "") {
   const status = resolveDatabaseStatus({
@@ -306,6 +242,19 @@ function renderDatabaseStatus(stateName = "") {
   elements.pipelineStatus.className = `pipeline-status-text ${status}`;
   elements.pipelineStatus.textContent = databaseStatusLabel(status);
 }
+
+const {
+  selectSpecies,
+  hasOpenDialog,
+} = createSpeciesSelectionController({
+  state,
+  elements,
+  windowRef: window,
+  documentRef: document,
+  URLClass: URL,
+  renderDetail,
+  resetScrollableToTop,
+});
 
 const {
   updateSummary,
@@ -352,315 +301,48 @@ const {
   escapeHtml,
 });
 
-function openSharedMapLightbox(url, alt = "Verbreitungskarte") {
-  const mapLightbox = elements.assetReviewMapLightbox;
-  const image = elements.assetReviewMapLightboxImage;
-  if (!mapLightbox || !image || !url) return;
-  image.onload = () => resetScrollableToTop(mapLightbox);
-  image.src = url;
-  image.alt = alt;
-  mapLightbox.setAttribute("aria-label", `Vergrößerte ${alt}`);
-  resetScrollableToTop(mapLightbox);
-  openDialog(mapLightbox, { bodyClass: "explorer-modal-open" });
-  resetScrollableToTop(mapLightbox);
-}
-
-async function refreshOpenSoundEditor(speciesId) {
-  const editDialog = elements.detailPanel.querySelector(".edit-dialog[open]");
-  if (!editDialog || editDialog.dataset.activeSection !== "sound") return false;
-  const { species } = await refreshExplorerModelOnly({ reload: true });
-  const updatedSpecies = species.find((entry) => entry.id === speciesId);
-  if (!updatedSpecies) return false;
-
-  const form = editDialog.querySelector(".edit-form");
-  const soundFields = editDialog.querySelector(".sound-edit-fields");
-  let currentPreview = editDialog.querySelector(".current-sound-preview");
-  if (updatedSpecies.assets.sound.exists) {
-    if (!currentPreview && soundFields) {
-      currentPreview = document.createElement("section");
-      currentPreview.className = "current-sound-preview";
-      soundFields.before(currentPreview);
-    }
-    if (currentPreview) {
-      releaseAudioElement(currentPreview.querySelector("audio"), { replace: false });
-      const cacheKey = [
-        updatedSpecies.assets.sound.sha256,
-        updatedSpecies.assets.sound.bytes,
-        updatedSpecies.assets.spectrogram?.soundSha256,
-        Date.now(),
-      ].filter(Boolean).join("-");
-      currentPreview.innerHTML = `
-        <div>
-          <strong>Aktueller Sound</strong>
-          <span>${escapeHtml(updatedSpecies.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
-        </div>
-        <audio
-          class="current-sound-audio"
-          controls
-          preload="metadata"
-          src="${escapeHtml(cacheBustedUrl(updatedSpecies.assets.sound.url, cacheKey))}"
-        ></audio>
-      `;
-    }
-  } else if (currentPreview) {
-    releaseAudioElement(currentPreview.querySelector("audio"), { replace: false });
-    currentPreview.remove();
-  }
-
-  const setField = (name, value) => {
-    const field = form?.querySelector(`[name="${name}"]`);
-    if (field) field.value = value || "";
-  };
-  const credits = updatedSpecies.credits || {};
-  setField("soundRecordist", credits.recordist);
-  setField("soundSource", credits.source);
-  setField("soundUrl", credits.url);
-  setField("soundLicense", credits.license);
-  setField("soundCountry", credits.country);
-  setField("soundLocation", credits.location);
-  setField("soundQuality", credits.quality);
-  setField("soundNotes", credits.notes);
-
-  const reasonInput = editDialog.querySelector(".sound-reason-input");
-  if (reasonInput) reasonInput.value = updatedSpecies.assets.sound.manualReason || "";
-  const careState = editDialog.querySelector(".sound-care-state");
-  if (careState) careState.textContent = updatedSpecies.assets.sound.manuallyAdded
-    ? "Manuell geschützt"
-    : "Automatische Pflege";
-  const autoSearchButton = editDialog.querySelector(".sound-auto-search-button");
-  if (autoSearchButton) autoSearchButton.textContent = updatedSpecies.assets.sound.exists
-    ? "Alternative suchen"
-    : "Automatisch suchen";
-
-  const preview = editDialog.querySelector(".sound-edit-preview");
-  if (preview) preview.hidden = true;
-  for (const audio of editDialog.querySelectorAll(".sound-preview-current, .sound-preview-new")) {
-    releaseAudioElement(audio, { replace: false });
-  }
-  const saveButton = editDialog.querySelector(".sound-save-button");
-  if (saveButton) saveButton.disabled = true;
-  const creditsPreview = editDialog.querySelector(".sound-credits-preview");
-  if (creditsPreview) creditsPreview.replaceChildren();
-  return true;
-}
-
-function selectSpecies(id) {
-  const species = state.species.find((entry) => entry.id === id);
-  if (!species) return;
-  const scrollPosition = { left: window.scrollX, top: window.scrollY };
-  state.selectedId = id;
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set("species", id);
-  window.history.replaceState(null, "", nextUrl);
-  for (const item of elements.speciesList.querySelectorAll(".species-item")) {
-    const active = item.dataset.id === id;
-    item.classList.toggle("active", active);
-    item.setAttribute("aria-selected", String(active));
-  }
-  renderDetail(species);
-  resetScrollableToTop(elements.detailPanel);
-  window.scrollTo(scrollPosition);
-  requestAnimationFrame(() => window.scrollTo(scrollPosition));
-}
-
-async function releaseAllAudioElements() {
-  state.audioCleanup?.();
-  state.audioCleanup = null;
-  releaseMediaWithin(document, { replace: true });
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-}
-
-document.addEventListener("play", (event) => {
-  const current = event.target;
-  if (!(current instanceof HTMLAudioElement)) return;
-  for (const audio of document.querySelectorAll("audio")) {
-    if (audio === current) continue;
-    audio.pause();
-    try {
-      audio.currentTime = 0;
-    } catch {
-      // currentTime kann bei noch nicht geladenen Audiodateien gesperrt sein.
-    }
-  }
-}, true);
-
-function releaseDetailMedia() {
-  state.audioCleanup?.();
-  state.audioCleanup = null;
-  state.mapCleanup?.();
-  state.mapCleanup = null;
-  state.portraitCleanup?.();
-  state.portraitCleanup = null;
-
-  releaseMediaWithin(elements.detailPanel, { replace: true, includeImages: true });
-}
-
-function hasOpenDialog() {
-  return Boolean(document.querySelector("dialog[open]"));
-}
-
-function setupAudioPlayer() {
-  state.audioCleanup?.();
-  state.audioCleanup = bindAudioPlayer({ root: elements.detailPanel });
-}
-
-function setupMapZoom() {
-  state.mapCleanup?.();
-  state.mapCleanup = bindImageZoom({
-    root: elements.detailPanel,
-    triggerSelector: ".map-zoom-trigger",
-    dialogSelector: ".map-lightbox:not(.portrait-lightbox)",
-    closeSelector: ".map-lightbox-close:not(.portrait-lightbox-close)",
-    createDialogController,
-  });
-}
-
-function setupPortraitZoom() {
-  state.portraitCleanup?.();
-  state.portraitCleanup = bindImageZoom({
-    root: elements.detailPanel,
-    triggerSelector: ".portrait-zoom-trigger",
-    dialogSelector: ".portrait-lightbox",
-    closeSelector: ".portrait-lightbox-close",
-    createDialogController,
-  });
-}
+const detailMediaController = createDetailMediaController({
+  state,
+  elements,
+  documentRef: document,
+  AudioElementClass: HTMLAudioElement,
+  refreshExplorerModelOnly,
+  escapeHtml,
+  cacheBustedUrl,
+  releaseAudioElement,
+  releaseMediaWithin,
+  resetScrollableToTop,
+  openDialog,
+  bindAudioPlayer,
+  bindImageZoom,
+  createDialogController,
+});
+const {
+  openSharedMapLightbox,
+  refreshOpenSoundEditor,
+  releaseAllAudioElements,
+  releaseDetailMedia,
+  setupAudioPlayer,
+  setupMapZoom,
+  setupPortraitZoom,
+} = detailMediaController;
+detailMediaController.bindExclusiveAudioPlayback();
 
 function setupAssetReview() {
-  const dialog = elements.assetReviewDialog;
-  const form = elements.assetReviewForm;
-  const assetReviewMediaController = createAssetReviewMediaController({
-    list: elements.assetReviewList,
-    mapLightbox: elements.assetReviewMapLightbox,
-    mapLightboxImage: elements.assetReviewMapLightboxImage,
-    mapLightboxClose: elements.assetReviewMapLightboxClose,
+  return setupAssetReviewWorkflow({
+    state,
+    elements,
+    createAssetReviewMediaController,
     createDialogController,
     releaseMediaWithin,
     resetScrollableToTop,
+    loadData,
+    reviewSignature,
+    renderAssetReviewList,
+    soundSearchOutcome,
+    fetchJson,
+    FormDataClass: FormData,
   });
-  const stopAssetReviewAudio = assetReviewMediaController.stopAudio;
-  const closeMapLightbox = assetReviewMediaController.closeMapLightbox;
-
-  const setMessage = (text = "", type = "") => {
-    elements.assetReviewMessage.textContent = text;
-    elements.assetReviewMessage.className = `edit-message asset-review-message${type ? ` ${type}` : ""}`;
-    elements.assetReviewMessage.hidden = !text;
-  };
-
-  const reviewController = createDialogController({
-    dialog,
-    closeOnBackdrop: false,
-    closeOnEscape: false,
-    afterClose: () => {
-      stopAssetReviewAudio();
-      closeMapLightbox();
-      state.assetReviewAwaitingRetry = false;
-      state.assetReviewSignature = "";
-      form.dataset.closeOnly = "false";
-      elements.assetReviewSave.textContent = "Entscheidung speichern";
-      if (state.reloadAfterAssetReviewClose || state.pendingRevisionReload) {
-        const forceReload = state.reloadAfterAssetReviewClose;
-        state.reloadAfterAssetReviewClose = false;
-        state.pendingRevisionReload = false;
-        void loadData({ reload: forceReload });
-      }
-    },
-  });
-
-  const closeReviewDialog = () => reviewController.close("programmatic");
-
-  const openReview = (status) => {
-    if (!status.reviewAssets?.length) return;
-    const nextSignature = reviewSignature(status.reviewAssets);
-    if (state.assetReviewRunId === status.runId && state.assetReviewSignature === nextSignature && dialog.open) {
-      return;
-    }
-    state.assetReviewRunId = status.runId;
-    state.assetReviewSignature = nextSignature;
-    state.assetReviewAwaitingRetry = false;
-    form.dataset.closeOnly = "false";
-    elements.assetReviewSave.textContent = "Entscheidung speichern";
-    elements.assetReviewSave.disabled = false;
-    const retryMode = status.mode === "manual-maps" || status.mode === "nc-sounds";
-    elements.assetReviewList.innerHTML = renderAssetReviewList(status);
-    form.dataset.runId = status.runId;
-    form.dataset.assets = JSON.stringify(status.reviewAssets);
-    setMessage(
-      retryMode
-        ? "Bitte für jede gefundene Alternative festlegen, ob sie übernommen, abgelehnt oder der bisherige Bestand behalten wird."
-        : "Bitte für jede neue Karte und jeden neuen Sound eine Pflegeart auswählen.",
-      "info",
-    );
-    reviewController.open();
-    assetReviewMediaController.bindRenderedMedia();
-  };
-  state.finishAssetReviewWaiting = (status) => {
-    if (!dialog.open || !state.assetReviewAwaitingRetry) return false;
-    const failed = status.status === "failed";
-    const reviewedAssets = JSON.parse(form.dataset.assets || "[]");
-    const reviewedSound = reviewedAssets.find((asset) => asset.type === "sound");
-    const outcome = soundSearchOutcome(status.log, {
-      hasCurrentSound: reviewedSound?.previouslyExisting === true,
-    });
-    stopAssetReviewAudio();
-    setMessage(
-      failed
-        ? status.error || "Sound-Suchlauf fehlgeschlagen. Der bisherige Sound bleibt erhalten."
-        : outcome.message || "Sound-Suchlauf abgeschlossen. Der bisherige Sound bleibt erhalten.",
-      failed ? "error" : outcome.messageType,
-    );
-    form.dataset.closeOnly = "true";
-    elements.assetReviewSave.textContent = "Fenster schließen";
-    elements.assetReviewSave.disabled = false;
-    state.assetReviewAwaitingRetry = false;
-    return true;
-  };
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (form.dataset.closeOnly === "true") {
-      closeReviewDialog();
-      return;
-    }
-    const assets = JSON.parse(form.dataset.assets || "[]");
-    const formData = new FormData(form);
-    const choices = assets.map((asset, index) => ({
-      safeName: asset.safeName,
-      type: asset.type,
-      decision: formData.get(`asset-${index}`),
-      manual: formData.get(`asset-${index}`) === "manual",
-    }));
-    const rejectedSound = choices.some((choice) => choice.type === "sound" && choice.decision === "reject");
-    elements.assetReviewSave.disabled = true;
-    setMessage("Pflegeentscheidungen werden gespeichert…", "info");
-    try {
-      await fetchJson("/api/pipeline/assets/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          runId: form.dataset.runId,
-          choices,
-        }),
-      });
-      if (rejectedSound) {
-        state.assetReviewAwaitingRetry = true;
-        stopAssetReviewAudio();
-        setMessage(
-          "Gefundener Sound wurde abgelehnt und gemerkt. Nächster Sound wird gesucht …",
-          "info",
-        );
-      } else {
-        closeReviewDialog();
-        setMessage();
-      }
-    } catch (error) {
-      setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-      elements.assetReviewSave.disabled = false;
-    } finally {
-      if (!rejectedSound && form.dataset.closeOnly !== "true") elements.assetReviewSave.disabled = false;
-    }
-  });
-
-  state.openAssetReview = openReview;
 }
 
 function setupPipelineControl() {
@@ -1255,130 +937,36 @@ function setupNewSpeciesCreator() {
   let inlinePipelinePollTimer = null;
   let maxStepReached = 1;
 
-  const setMessage = (text = "", type = "") => {
-    message.textContent = text;
-    message.className = `edit-message new-species-message${type ? ` ${type}` : ""}`;
-    message.hidden = !text;
-  };
+  const setMessage = createMessageSetter(message, "edit-message new-species-message");
+  const setPortraitMessage = createMessageSetter(
+    portraitMessage,
+    "edit-message new-species-portrait-message",
+  );
+  const setPipelineMessage = createMessageSetter(
+    pipelineMessage,
+    "edit-message new-species-pipeline-message",
+  );
+  const setFinishMessage = createMessageSetter(
+    finishMessage,
+    "edit-message new-species-finish-message",
+  );
+  const {
+    fieldLabel,
+    clearFieldErrors,
+    applyFieldErrors,
+    updateMeasurementMode,
+  } = createFieldFeedbackController({ form, documentRef: document });
 
-  const setPortraitMessage = (text = "", type = "") => {
-    portraitMessage.textContent = text;
-    portraitMessage.className = `edit-message new-species-portrait-message${type ? ` ${type}` : ""}`;
-    portraitMessage.hidden = !text;
-  };
-
-  const setPipelineMessage = (text = "", type = "") => {
-    pipelineMessage.textContent = text;
-    pipelineMessage.className = `edit-message new-species-pipeline-message${type ? ` ${type}` : ""}`;
-    pipelineMessage.hidden = !text;
-  };
-
-  const setFinishMessage = (text = "", type = "") => {
-    finishMessage.textContent = text;
-    finishMessage.className = `edit-message new-species-finish-message${type ? ` ${type}` : ""}`;
-    finishMessage.hidden = !text;
-  };
-
-  const fieldLabel = (fieldKey) => form.querySelector(`[data-field="${fieldKey}"]`);
-
-  const clearFieldErrors = () => {
-    for (const label of form.querySelectorAll("[data-field]")) {
-      label.classList.remove("field-error");
-      label.querySelector(".field-error-text")?.remove();
-    }
-  };
-
-  const applyFieldErrors = (fieldErrors = {}) => {
-    clearFieldErrors();
-    for (const [fieldKey, errors] of Object.entries(fieldErrors)) {
-      const label = fieldLabel(fieldKey);
-      if (!label) continue;
-      label.classList.add("field-error");
-      const text = document.createElement("small");
-      text.className = "field-error-text";
-      text.textContent = Array.isArray(errors) ? errors.join(" · ") : String(errors);
-      label.append(text);
-    }
-  };
-
-  const updateMeasurementMode = (kind) => {
-    const checked = form.elements[`${kind}Sexed`]?.checked === true;
-    const sharedLabel = fieldLabel(kind);
-    const sexedFields = form.querySelector(`[data-sexed-fields="${kind}"]`);
-    if (sharedLabel) sharedLabel.hidden = checked;
-    if (sexedFields) sexedFields.hidden = !checked;
-  };
-
-  const speciesValues = () => {
-    const formData = new FormData(form);
-    const sizeSexed = formData.get("sizeSexed") === "on";
-    const weightSexed = formData.get("weightSexed") === "on";
-    return {
-      german: formData.get("german"),
-      scientificName: formData.get("scientificName"),
-      size: sizeSexed
-        ? composeManualSexedMeasurement(
-          formData.get("sizeMale"),
-          formData.get("sizeMaleUnit"),
-          formData.get("sizeFemale"),
-          formData.get("sizeFemaleUnit"),
-          { units: MANUAL_SIZE_UNITS },
-        )
-        : formatManualMeasurement(formData.get("size"), formData.get("sizeUnit"), {
-          units: MANUAL_SIZE_UNITS,
-        }),
-      weight: weightSexed
-        ? composeManualSexedMeasurement(
-          formData.get("weightMale"),
-          formData.get("weightMaleUnit"),
-          formData.get("weightFemale"),
-          formData.get("weightFemaleUnit"),
-          { units: MANUAL_WEIGHT_UNITS },
-        )
-        : formatManualMeasurement(formData.get("weight"), formData.get("weightUnit"), {
-          units: MANUAL_WEIGHT_UNITS,
-        }),
-      lifeExpectancy: formatManualMeasurement(
-        formData.get("lifeExpectancy"),
-        formData.get("lifeExpectancyUnit"),
-        {
-          units: MANUAL_AGE_UNITS,
-          age: true,
-        },
-      ),
-    };
-  };
-
-  const localFieldErrors = () => {
-    const formData = new FormData(form);
-    const errors = {};
-    const add = (fieldKey, text) => {
-      errors[fieldKey] ??= [];
-      errors[fieldKey].push(text);
-    };
-    for (const [fieldKey, label] of [
-      ["german", "Deutscher Name"],
-      ["scientificName", "Wissenschaftlicher Name"],
-    ]) {
-      if (!String(formData.get(fieldKey) ?? "").trim()) add(fieldKey, `${label} darf nicht leer sein`);
-    }
-    if (formData.get("sizeSexed") === "on") {
-      if (!stripManualMeasureInput(formData.get("sizeMale"), MANUAL_SIZE_UNITS)) add("sizeMale", "Größe Männchen darf nicht leer sein");
-      if (!stripManualMeasureInput(formData.get("sizeFemale"), MANUAL_SIZE_UNITS)) add("sizeFemale", "Größe Weibchen darf nicht leer sein");
-    } else if (!stripManualMeasureInput(formData.get("size"), MANUAL_SIZE_UNITS)) {
-      add("size", "Größe darf nicht leer sein");
-    }
-    if (formData.get("weightSexed") === "on") {
-      if (!stripManualMeasureInput(formData.get("weightMale"), MANUAL_WEIGHT_UNITS)) add("weightMale", "Gewicht Männchen darf nicht leer sein");
-      if (!stripManualMeasureInput(formData.get("weightFemale"), MANUAL_WEIGHT_UNITS)) add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
-    } else if (!stripManualMeasureInput(formData.get("weight"), MANUAL_WEIGHT_UNITS)) {
-      add("weight", "Gewicht darf nicht leer sein");
-    }
-    if (!stripManualMeasureInput(formData.get("lifeExpectancy"), MANUAL_AGE_UNITS)) {
-      add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
-    }
-    return errors;
-  };
+  const { speciesValues, localFieldErrors } = createNewSpeciesFormModel({
+    form,
+    FormDataClass: FormData,
+    composeManualSexedMeasurement,
+    formatManualMeasurement,
+    stripManualMeasureInput,
+    sizeUnits: MANUAL_SIZE_UNITS,
+    weightUnits: MANUAL_WEIGHT_UNITS,
+    ageUnits: MANUAL_AGE_UNITS,
+  });
 
   const markSpeciesInputsChanged = () => {
     previewToken = "";
@@ -2341,11 +1929,7 @@ function setupSpeciesEditor(species) {
   let portraitPreviewToken = "";
   let portraitPromptText = "";
 
-  const setMessage = (text = "", type = "") => {
-    message.textContent = text;
-    message.className = `edit-message${type ? ` ${type}` : ""}`;
-    message.hidden = !text;
-  };
+  const setMessage = createMessageSetter(message);
 
   const resetPreview = () => {
     previewToken = "";
@@ -2354,115 +1938,28 @@ function setupSpeciesEditor(species) {
     saveButton.disabled = true;
   };
 
-  const manualFieldLabel = (fieldKey) => form.querySelector(`.manual-edit-section [data-field="${fieldKey}"]`);
+  const {
+    fieldLabel: manualFieldLabel,
+    clearFieldErrors: clearManualFieldErrors,
+    applyFieldErrors: applyManualFieldErrors,
+    updateMeasurementMode: updateManualMeasurementMode,
+  } = createFieldFeedbackController({
+    form,
+    documentRef: document,
+    scope: ".manual-edit-section",
+  });
 
-  const clearManualFieldErrors = () => {
-    for (const label of form.querySelectorAll(".manual-edit-section [data-field]")) {
-      label.classList.remove("field-error");
-      label.querySelector(".field-error-text")?.remove();
-    }
-  };
-
-  const applyManualFieldErrors = (fieldErrors = {}) => {
-    clearManualFieldErrors();
-    for (const [fieldKey, errors] of Object.entries(fieldErrors)) {
-      const label = manualFieldLabel(fieldKey);
-      if (!label) continue;
-      label.classList.add("field-error");
-      const errorText = document.createElement("small");
-      errorText.className = "field-error-text";
-      errorText.textContent = Array.isArray(errors) ? errors.join(" · ") : String(errors);
-      label.append(errorText);
-    }
-  };
-
-  const updateManualMeasurementMode = (kind) => {
-    const checked = form.elements[`${kind}Sexed`]?.checked === true;
-    const sharedLabel = manualFieldLabel(kind);
-    const sexedFields = form.querySelector(`.manual-edit-section [data-sexed-fields="${kind}"]`);
-    if (sharedLabel) sharedLabel.hidden = checked;
-    if (sexedFields) sexedFields.hidden = !checked;
-  };
-
-  const editableValues = () => {
-    const formData = new FormData(form);
-    const sizeSexed = formData.get("sizeSexed") === "on";
-    const weightSexed = formData.get("weightSexed") === "on";
-    return {
-      germanName: formData.get("germanName"),
-      scientificName: formData.get("scientificName"),
-      scientificNameUnlocked: scientificNameInput?.dataset.unlocked === "true",
-      size: sizeSexed
-        ? composeManualSexedMeasurement(
-          formData.get("sizeMale"),
-          formData.get("sizeMaleUnit"),
-          formData.get("sizeFemale"),
-          formData.get("sizeFemaleUnit"),
-          { units: MANUAL_SIZE_UNITS },
-        )
-        : formatManualMeasurement(formData.get("size"), formData.get("sizeUnit"), {
-          units: MANUAL_SIZE_UNITS,
-        }),
-      weight: weightSexed
-        ? composeManualSexedMeasurement(
-          formData.get("weightMale"),
-          formData.get("weightMaleUnit"),
-          formData.get("weightFemale"),
-          formData.get("weightFemaleUnit"),
-          { units: MANUAL_WEIGHT_UNITS },
-        )
-        : formatManualMeasurement(formData.get("weight"), formData.get("weightUnit"), {
-          units: MANUAL_WEIGHT_UNITS,
-        }),
-      lifeExpectancy: formatManualMeasurement(
-        formData.get("lifeExpectancy"),
-        formData.get("lifeExpectancyUnit"),
-        { units: MANUAL_AGE_UNITS, age: true },
-      ),
-    };
-  };
-
-  const validateEditableFields = () => {
-    const formData = new FormData(form);
-    const errors = {};
-    const add = (fieldKey, text) => {
-      errors[fieldKey] ??= [];
-      errors[fieldKey].push(text);
-    };
-    if (!String(formData.get("germanName") ?? "").trim()) {
-      add("germanName", "Deutscher Name darf nicht leer sein");
-    }
-    if (!String(formData.get("scientificName") ?? "").trim()) {
-      add("scientificName", "Wissenschaftlicher Name darf nicht leer sein");
-    }
-    if (formData.get("sizeSexed") === "on") {
-      if (!stripManualMeasureInput(formData.get("sizeMale"), MANUAL_SIZE_UNITS)) {
-        add("sizeMale", "Größe Männchen darf nicht leer sein");
-      }
-      if (!stripManualMeasureInput(formData.get("sizeFemale"), MANUAL_SIZE_UNITS)) {
-        add("sizeFemale", "Größe Weibchen darf nicht leer sein");
-      }
-    } else if (!stripManualMeasureInput(formData.get("size"), MANUAL_SIZE_UNITS)) {
-      add("size", "Größe darf nicht leer sein");
-    }
-    if (formData.get("weightSexed") === "on") {
-      if (!stripManualMeasureInput(formData.get("weightMale"), MANUAL_WEIGHT_UNITS)) {
-        add("weightMale", "Gewicht Männchen darf nicht leer sein");
-      }
-      if (!stripManualMeasureInput(formData.get("weightFemale"), MANUAL_WEIGHT_UNITS)) {
-        add("weightFemale", "Gewicht Weibchen darf nicht leer sein");
-      }
-    } else if (!stripManualMeasureInput(formData.get("weight"), MANUAL_WEIGHT_UNITS)) {
-      add("weight", "Gewicht darf nicht leer sein");
-    }
-    if (!stripManualMeasureInput(
-      formData.get("lifeExpectancy"),
-      MANUAL_AGE_UNITS,
-    )) {
-      add("lifeExpectancy", "Lebenserwartung darf nicht leer sein");
-    }
-    return errors;
-  };
+  const { editableValues, validateEditableFields } = createEditorFormModel({
+    form,
+    scientificNameInput,
+    FormDataClass: FormData,
+    composeManualSexedMeasurement,
+    formatManualMeasurement,
+    stripManualMeasureInput,
+    sizeUnits: MANUAL_SIZE_UNITS,
+    weightUnits: MANUAL_WEIGHT_UNITS,
+    ageUnits: MANUAL_AGE_UNITS,
+  });
 
   const setMapMessage = (text = "", type = "") => {
     if (!mapMessage) return;

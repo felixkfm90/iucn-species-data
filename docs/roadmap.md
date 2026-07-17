@@ -686,6 +686,16 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Squarespace-Module, Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich
   geschlossene Modulschnitte offen.
 
+  Die kontrollierten A4-Schnitte 17 bis 24 wurden am 2026-07-17 in einem Sammellauf umgesetzt und nach jedem
+  Schnitt direkt geprüft. `app-editor-files.js`, `app-confirmation.js`, `app-detail-media.js`, `app-selection.js`,
+  `app-asset-review-workflow.js`, `app-form-feedback.js`, `app-new-species-form.js` und `app-editor-form.js`
+  übernehmen Datei-/Metadatenvorbereitung, Bestätigungen, Detailmedien, Artauswahl, Assetprüfablauf,
+  Formularrückmeldung und die beiden Artenformularmodelle. 45 direkte Tests erhöhen den gemeinsamen Testeinstieg
+  von 125 auf 170 Tests; `app.js` sank von 4.007 auf 3.504 Zeilen. Der Explorer-Integrationstest bestand mit 24
+  von 24 Prüfungen. HTML-Ladereihenfolge, Modulauslieferung und Exporte sind abgesichert; Squarespace-Module,
+  Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene Modulschnitte
+  offen.
+
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
 Status: geplant
