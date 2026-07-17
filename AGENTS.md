@@ -809,6 +809,17 @@ Aktuelle Planung:
   von 125 auf 170 Tests; `app.js` sank von 4.007 auf 3.504 Zeilen. Das lokale HTML lädt alle Abhängigkeiten in
   expliziter Reihenfolge, der Explorer-Integrationstest prüft Auslieferung, Export und Moduleigentümer und bestand
   mit 24 von 24 Prüfungen. Squarespace-JavaScript, Footer-Versionen und Squarespace-CSS blieben unverändert.
+  Die Oberflächenschnitte 25 bis 33 schließen am 2026-07-17 die unter Auditpunkt A4 geplante Explorer-
+  Oberflächenzerlegung ab. `app-pipeline-workflow.js`, `app-backup-workflow.js`,
+  `app-new-species-workflow.js`, `app-species-editor.js`, die vier Teil-Editoren `app-editor-general.js`,
+  `app-editor-map.js`, `app-editor-sound.js`, `app-editor-portrait.js` sowie `app-detail-view.js` übernehmen
+  Pipeline-, Backup-, Neue-Art-, Bearbeitungs- und Detailabläufe. Der Datenbankstatus liegt im Dashboardmodul; der
+  Assetprüfablauf wird ohne lokale Zwischenhülle direkt verdrahtet. `public/app.js` sank dadurch von 3.504 auf 509
+  Zeilen und ist nur noch Kompositionswurzel. Vier neue Architekturtests sichern Exporte, Zuständigkeiten,
+  Ladereihenfolge und die Größenbegrenzung der Verdrahtungsdatei; der Explorer-Integrationstest prüft zusätzlich
+  die HTTP-Auslieferung aller neuen Module und bestand mit 24 von 24 Prüfungen. Die Oberflächenhälfte von A4 ist
+  damit abgeschlossen. Eine spätere Server-/Pipeline-Zerlegung bleibt getrennt davon möglich. Squarespace-
+  JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

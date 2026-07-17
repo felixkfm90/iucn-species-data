@@ -836,6 +836,14 @@ gemeinsamen Testeinstieg von 125 auf 170 Tests; `app.js` sank von 4.007 auf 3.50
 Integrationstest bestand mit 24 von 24 Prüfungen. Die Squarespace-Module, Footer-Versionen und das Custom CSS
 wurden durch diese lokalen Explorer-Schnitte nicht verändert.
 
+Die Oberflächenschnitte 25 bis 33 schließen am 2026-07-17 die geplante Explorer-Oberflächenzerlegung ab.
+Pipeline- und Backupsteuerung, Neue-Art-Assistent, Arteditor, allgemeine Daten, Karte, Sound, Portrait und
+Detailansicht liegen nun in eigenen Browsermodulen. `species-explorer/public/app.js` sank von 3.504 auf 509 Zeilen
+und verdrahtet nur noch Zustand, Controller und Lebenszyklus. Vier direkte Architekturtests verhindern eine
+Rückverlagerung der Großblöcke, sichern Exporte und HTML-Ladereihenfolge; der Explorer-Integrationstest liefert alle
+neuen Module per HTTP aus und bestand mit 24 von 24 Prüfungen. Damit ist der Oberflächenteil von Auditpunkt A4
+abgeschlossen. Squarespace-Module, Footer-Versionen und Custom CSS wurden nicht geändert.
+
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.

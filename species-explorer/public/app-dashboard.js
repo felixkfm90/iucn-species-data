@@ -176,7 +176,8 @@
     iucnStatusIconUrl,
     iucnTrendIconUrl,
     filterSpecies,
-    renderDatabaseStatus,
+    resolveDatabaseStatus,
+    databaseStatusLabel,
     onSpeciesSelect,
     documentRef = global.document,
     OptionConstructor = global.Option,
@@ -189,7 +190,8 @@
       iucnStatusIconUrl,
       iucnTrendIconUrl,
       filterSpecies,
-      renderDatabaseStatus,
+      resolveDatabaseStatus,
+      databaseStatusLabel,
       onSpeciesSelect,
     })) {
       if (typeof dependency !== "function") {
@@ -198,6 +200,18 @@
     }
     if (!state || !elements || !documentRef || typeof OptionConstructor !== "function") {
       throw new TypeError("Dashboard benötigt Zustand, Elemente, Dokument und Option-Konstruktor.");
+    }
+
+    function renderDatabaseStatus(stateName = "") {
+      const status = resolveDatabaseStatus({
+        explicitStatus: stateName,
+        backupStatus: state.backupStatusSnapshot?.status,
+        pipelineStatus: state.pipelineStatusSnapshot?.status,
+        databaseNeedsUpdate: state.databaseNeedsUpdate,
+      });
+      elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
+      elements.pipelineStatus.className = `pipeline-status-text ${status}`;
+      elements.pipelineStatus.textContent = databaseStatusLabel(status);
     }
 
     const setValidationCardState = (card, ok) => {
@@ -331,6 +345,7 @@
       populateStatusFilter,
       applyFilters,
       renderSpeciesList,
+      renderDatabaseStatus,
     });
   }
 

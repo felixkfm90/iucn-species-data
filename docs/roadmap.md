@@ -696,6 +696,16 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Footer und Custom CSS blieben unverändert. A4 bleibt für weitere kleine, fachlich geschlossene Modulschnitte
   offen.
 
+  Die A4-Oberflächenschnitte 25 bis 33 wurden am 2026-07-17 gemeinsam abgeschlossen. Pipeline- und Backupablauf,
+  Neue-Art-Assistent, Arteditor, allgemeine Daten, Karte, Sound, Portrait und Detailansicht liegen in neun
+  eigenständigen Browsermodulen. Der Datenbankstatus wurde dem Dashboard zugeordnet und der Assetprüfablauf wird
+  direkt verdrahtet. `public/app.js` sank von 3.504 auf 509 Zeilen und ist nur noch Kompositionswurzel. Vier direkte
+  Architekturtests sichern Modulbesitz, Exporte, Ladereihenfolge und die Größenbegrenzung der Verdrahtungsdatei;
+  der Explorer-Integrationstest bestand mit 24 von 24 Prüfungen und prüft die HTTP-Auslieferung aller neuen Module.
+  Die Explorer-Oberfläche ist damit unter A4 vollständig modularisiert. Eine weitere Server-/Pipeline-Zerlegung
+  bleibt als getrennte technische Verbesserung offen. Squarespace-Module, Footer und Custom CSS blieben
+  unverändert.
+
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
 Status: geplant

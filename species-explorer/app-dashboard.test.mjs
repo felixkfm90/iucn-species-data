@@ -126,6 +126,8 @@ function createElements() {
     "ncCount",
     "manualMapCount",
     "reportDate",
+    "pipelineMenuButton",
+    "pipelineStatus",
     "validationOverall",
     "validationDataCard",
     "validationData",
@@ -172,9 +174,11 @@ function createController({ state, elements, filterSpecies, onSpeciesSelect = ()
     iucnStatusIconUrl: (status) => status ? `/status/${status}.png` : "",
     iucnTrendIconUrl: (trend) => trend ? `/trend/${trend}.png` : "",
     filterSpecies,
-    renderDatabaseStatus: () => {
+    resolveDatabaseStatus: () => {
       state.renderDatabaseStatusCalls = (state.renderDatabaseStatusCalls || 0) + 1;
+      return "needs-update";
     },
+    databaseStatusLabel: (status) => status,
     onSpeciesSelect,
     documentRef: { createElement: (tagName) => new FakeElement(tagName) },
     OptionConstructor: FakeOption,

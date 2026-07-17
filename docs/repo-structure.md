@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-07-14
+Stand: 2026-07-17
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -36,6 +36,13 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |
 | `scripts/prepare-pages-artifact.mjs` | Baut das kontrollierte `_site/`-Artefakt fuer GitHub Pages. |
 | `.github/workflows/pages.yml` | Eigenes GitHub-Actions-Deployment fuer GitHub Pages. |
+
+Die lokale Explorer-Oberflaeche verwendet `public/app.js` nur als Kompositionswurzel. Pipeline und Backup,
+Neue-Art-Assistent, Arteditor, allgemeine Daten, Karte, Sound, Portrait und Detailansicht liegen in den fachlichen
+Modulen `app-pipeline-workflow.js`, `app-backup-workflow.js`, `app-new-species-workflow.js`,
+`app-species-editor.js`, `app-editor-general.js`, `app-editor-map.js`, `app-editor-sound.js`,
+`app-editor-portrait.js` und `app-detail-view.js`. Neue Funktionen werden der passenden Grenze zugeordnet und nicht
+wieder als Grossblock in `app.js` eingebaut.
 
 ## Muss versioniert bleiben, obwohl generiert
 

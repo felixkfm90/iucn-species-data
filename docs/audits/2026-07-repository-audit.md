@@ -416,6 +416,20 @@ Umsetzungsstand am 2026-07-15:
 - A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
+Ergänzung vom 2026-07-17:
+
+- Die Oberflächenschnitte 25 bis 33 schließen die geplante Explorer-Oberflächenzerlegung ab:
+  `app-pipeline-workflow.js`, `app-backup-workflow.js`, `app-new-species-workflow.js`, `app-species-editor.js`,
+  `app-editor-general.js`, `app-editor-map.js`, `app-editor-sound.js`, `app-editor-portrait.js` und
+  `app-detail-view.js` übernehmen die zuvor noch in `public/app.js` verbliebenen fachlichen Großblöcke.
+- `public/app.js` sank von 3.504 auf 509 Zeilen und dient nur noch als Kompositionswurzel. Der Datenbankstatus liegt
+  im Dashboardmodul; der Assetprüfablauf benötigt keine zusätzliche lokale Zwischenfunktion mehr.
+- Vier direkte Architekturtests sichern Exportgrenzen, Moduleigentum, HTML-Ladereihenfolge und verhindern eine
+  Rückverlagerung der Großblöcke. Der Explorer-Integrationstest prüft die HTTP-Auslieferung aller neuen Module und
+  bestand mit 24 von 24 Prüfungen.
+- Der Oberflächenteil von A4 ist abgeschlossen. A4 bleibt ausschließlich für eine spätere fachliche Zerlegung der
+  weiterhin großen Server-/Pipeline-Dateien offen; dies blockiert den nächsten Funktionsschritt nicht.
+
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 
 **Erledigt am 2026-07-13.**

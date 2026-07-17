@@ -436,6 +436,24 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
   assert.match(assetMaintenanceResponse.headers.get("content-type"), /javascript/);
   assert.match(await assetMaintenanceResponse.text(), /createAssetMaintenanceController/);
 
+  const workflowModules = [
+    ["app-new-species-workflow.js", "createNewSpeciesWorkflowController"],
+    ["app-editor-map.js", "createMapEditorController"],
+    ["app-editor-sound.js", "createSoundEditorController"],
+    ["app-editor-portrait.js", "createPortraitEditorController"],
+    ["app-editor-general.js", "createGeneralEditorController"],
+    ["app-species-editor.js", "createSpeciesEditorController"],
+    ["app-detail-view.js", "createDetailViewRenderer"],
+    ["app-backup-workflow.js", "createBackupWorkflowController"],
+    ["app-pipeline-workflow.js", "createPipelineWorkflowController"],
+  ];
+  for (const [fileName, factoryName] of workflowModules) {
+    const response = await fetch(`${baseUrl}/${fileName}`);
+    assert.equal(response.status, 200, fileName);
+    assert.match(response.headers.get("content-type"), /javascript/, fileName);
+    assert.match(await response.text(), new RegExp(factoryName), fileName);
+  }
+
   const assetResponse = await fetch(`${baseUrl}/assets/Amsel/map.jpg`);
   assert.equal(assetResponse.status, 200);
   assert.equal(assetResponse.headers.get("content-type"), "image/jpeg");
@@ -2356,14 +2374,23 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appConfirmationSource,
     appFormFeedbackSource,
     appNewSpeciesFormSource,
+    appNewSpeciesWorkflowSource,
     appEditorFormSource,
+    appEditorGeneralSource,
+    appEditorMapSource,
+    appEditorSoundSource,
+    appEditorPortraitSource,
+    appSpeciesEditorSource,
     appSettingsSource,
     appMediaSource,
     appDetailMediaSource,
+    appDetailViewSource,
     appSelectionSource,
     appAssetReviewSource,
     appAssetReviewWorkflowSource,
     appPipelineSource,
+    appBackupWorkflowSource,
+    appPipelineWorkflowSource,
     appDashboardSource,
     appLifecycleSource,
     appSpeciesActionsSource,
@@ -2396,14 +2423,23 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-confirmation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-form-feedback.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-new-species-form.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-new-species-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-form.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-general.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-map.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-sound.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-portrait.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-species-editor.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-settings.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-media.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-detail-media.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-detail-view.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-selection.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-asset-review.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-asset-review-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-backup-workflow.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-pipeline-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
@@ -2427,6 +2463,21 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./http-routing.mjs", import.meta.url), "utf8"),
     readFile(new URL("./request-router.mjs", import.meta.url), "utf8"),
   ]);
+
+  const modularAppSource = [
+    appSource,
+    appNewSpeciesWorkflowSource,
+    appEditorGeneralSource,
+    appEditorMapSource,
+    appEditorSoundSource,
+    appEditorPortraitSource,
+    appSpeciesEditorSource,
+    appDetailViewSource,
+    appBackupWorkflowSource,
+    appPipelineWorkflowSource,
+    appAssetReviewWorkflowSource,
+    appDashboardSource,
+  ].join("\n");
 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
@@ -2482,70 +2533,70 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appAssetMaintenanceSource, /function deletedAssetNotice\(/);
   assert.match(appAssetMaintenanceSource, /function restoredAssetNotice\(/);
   assert.match(appAssetMaintenanceSource, /function createAssetMaintenanceController\(/);
-  assert.match(appSource, /explorerFoundation\.createInitialExplorerState\(\)/);
-  assert.match(appSource, /window\.SpeciesExplorerPresentation/);
-  assert.match(appSource, /window\.SpeciesExplorerMeasurements/);
-  assert.match(appSource, /window\.SpeciesExplorerDialogs/);
-  assert.match(appSource, /window\.SpeciesExplorerFormFeedback/);
-  assert.match(appSource, /window\.SpeciesExplorerNewSpeciesForm/);
-  assert.match(appSource, /window\.SpeciesExplorerEditorForm/);
-  assert.match(appSource, /window\.SpeciesExplorerSettings/);
-  assert.match(appSource, /window\.SpeciesExplorerMedia/);
-  assert.match(appSource, /window\.SpeciesExplorerDetailMedia/);
-  assert.match(appSource, /window\.SpeciesExplorerSelection/);
-  assert.match(appSource, /window\.SpeciesExplorerAssetReview/);
-  assert.match(appSource, /window\.SpeciesExplorerAssetReviewWorkflow/);
-  assert.match(appSource, /window\.SpeciesExplorerPipeline/);
-  assert.match(appSource, /window\.SpeciesExplorerDashboard/);
-  assert.match(appSource, /window\.SpeciesExplorerLifecycle/);
-  assert.match(appSource, /window\.SpeciesExplorerSpeciesActions/);
-  assert.match(appSource, /window\.SpeciesExplorerAssetMaintenance/);
+  assert.match(modularAppSource, /explorerFoundation\.createInitialExplorerState\(\)/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerPresentation/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerMeasurements/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerDialogs/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerFormFeedback/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerNewSpeciesForm/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerEditorForm/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerSettings/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerMedia/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerDetailMedia/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerSelection/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerAssetReview/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerAssetReviewWorkflow/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerPipeline/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerDashboard/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerLifecycle/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerSpeciesActions/);
+  assert.match(modularAppSource, /window\.SpeciesExplorerAssetMaintenance/);
   assert.doesNotMatch(appSource, /async function ensureSessionToken\(\)/);
   assert.match(htmlSource, /class="header-logo"/);
   assert.match(htmlSource, /fn-wildlife-travel-logo-glow\.jpg/);
   assert.doesNotMatch(htmlSource, /IUCN Species Data/);
   assert.match(cssSource, /\.map-image\s*\{[^}]*object-fit:\s*contain/s);
   assert.match(appMediaSource, /map-zoom-trigger/);
-  assert.match(appSource, /map-lightbox/);
+  assert.match(modularAppSource, /map-lightbox/);
   assert.match(appMediaSource, /function resetScrollableToTop\(element/);
   assert.match(appSelectionSource, /resetScrollableToTop\(elements\.detailPanel\)/);
   assert.match(appMediaSource, /species-image-placeholder/);
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns/s);
-  assert.match(appSource, /class="explorer-audio"/);
-  assert.match(appSource, /class="audio-visual"/);
-  assert.match(appSource, /audio-progress-marker/);
+  assert.match(modularAppSource, /class="explorer-audio"/);
+  assert.match(modularAppSource, /class="audio-visual"/);
+  assert.match(modularAppSource, /audio-progress-marker/);
   assert.match(appMediaSource, /requestAnimationFrame/);
   assert.match(
     appMediaSource,
     /const seekFromPointer = async \(event\) => \{[\s\S]*audio\.currentTime = progress \* audio\.duration;[\s\S]*await audio\.play\(\)/,
   );
   assert.match(appPresentationSource, /Gefährdet/);
-  assert.match(appSource, /IUCN-Daten abgerufen/);
+  assert.match(modularAppSource, /IUCN-Daten abgerufen/);
   assert.match(appPresentationSource, /function formatSexSpecificDataValue\(value\)/);
   assert.match(appPresentationSource, /class="sex-specific-value"/);
-  assert.match(appSource, /class="iucn-heading-status"/);
-  assert.match(appSource, /class="iucn-heading-trend"/);
+  assert.match(modularAppSource, /class="iucn-heading-status"/);
+  assert.match(modularAppSource, /class="iucn-heading-trend"/);
   assert.match(appPresentationSource, /class="iucn-data-icon/);
   assert.match(appDashboardSource, /const createIndicatorIcon = \(\{ url, title, className \}\) =>/);
   assert.match(appDashboardSource, /species-list-indicator/);
   assert.match(appPresentationSource, /\/graphics\/catagory\/\$\{encodeURIComponent\(code\)\}\.png/);
   assert.match(appPresentationSource, /\/graphics\/trend\/\$\{encodeURIComponent\(fileName\)\}/);
-  assert.match(appSource, /class="audio-credits" open/);
-  assert.match(appSource, /Keine Karte vorhanden/);
+  assert.match(modularAppSource, /class="audio-credits" open/);
+  assert.match(modularAppSource, /Keine Karte vorhanden/);
   assert.doesNotMatch(appSource, /Keine bisherige Karte vorhanden/);
-  assert.match(appSource, /assetStatusText\(species\.assets\.map\)/);
+  assert.match(modularAppSource, /assetStatusText\(species\.assets\.map\)/);
   assert.match(appDashboardSource, /Portraits fehlen/);
   assert.match(appDashboardSource, /Artporträts: \$\{missingPortraitCount\} von/);
   assert.match(appDashboardSource, /Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden/);
   assert.match(appDashboardSource, /function updateValidation\(validation\)/);
   assert.match(appFoundationSource, /validation: "\/api\/validation"/);
-  assert.match(appSource, /class="edit-dialog"/);
-  assert.match(appSource, /\/preview/);
-  assert.match(appSource, /\/save/);
-  assert.match(appSource, /Diff-Vorschau/);
+  assert.match(modularAppSource, /class="edit-dialog"/);
+  assert.match(modularAppSource, /\/preview/);
+  assert.match(modularAppSource, /\/save/);
+  assert.match(modularAppSource, /Diff-Vorschau/);
   assert.match(appPresentationSource, /function backupRetentionText\(result\)/);
   assert.match(appPresentationSource, /if \(!retention\) return ""/);
-  assert.match(appSource, /function setupNewSpeciesCreator\(\)/);
+  assert.match(modularAppSource, /function setupNewSpeciesCreator\(\)/);
   assert.match(appDialogsSource, /function setupSafeBackdropClose\(dialog, close\)/);
   assert.match(
     appDialogsSource,
@@ -2556,10 +2607,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /dialog\.addEventListener\("click",\s*\(event\)\s*=>\s*\{\s*if \(event\.target === dialog\)/,
   );
   assert.doesNotMatch(appSource, /function setupSafeBackdropClose\(/);
-  assert.match(appSource, /\/api\/species\/new\/preview/);
-  assert.match(appSource, /\/api\/species\/new\/save/);
-  assert.match(appSource, /\/api\/species\/new\/portrait-prompt/);
-  assert.match(appSource, /\/api\/species\/new\/portrait-preview/);
+  assert.match(modularAppSource, /\/api\/species\/new\/preview/);
+  assert.match(modularAppSource, /\/api\/species\/new\/save/);
+  assert.match(modularAppSource, /\/api\/species\/new\/portrait-prompt/);
+  assert.match(modularAppSource, /\/api\/species\/new\/portrait-preview/);
   assert.match(htmlSource, /name="sizeUnit"/);
   assert.match(htmlSource, /name="weightUnit"/);
   assert.match(htmlSource, /name="lifeExpectancyUnit"/);
@@ -2569,35 +2620,35 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(htmlSource, /placeholder="ca\. 23,5-29 cm"/);
   assert.match(appMeasurementsSource, /function formatManualMeasurement\(/);
   assert.match(appMeasurementsSource, /function singularManualAgeUnit\(/);
-  assert.match(appSource, /state\.renderPersistentPipelineStatus\?\.\(status\)/);
+  assert.match(modularAppSource, /state\.renderPersistentPipelineStatus\?\.\(status\)/);
   assert.doesNotMatch(
     appSource,
     /async function pollInlinePipelineStatus\(\)[\s\S]*?[^.]renderPersistentPipelineStatus\(status\)/,
   );
-  assert.match(appSource, /let maxStepReached = 1/);
-  assert.match(appSource, /indicator\.addEventListener\("click"/);
+  assert.match(modularAppSource, /let maxStepReached = 1/);
+  assert.match(modularAppSource, /indicator\.addEventListener\("click"/);
   assert.match(
-    appSource,
+    modularAppSource,
     /beforeClose: \(\) => \{[\s\S]*newSpeciesPipelineActive\) return false;[\s\S]*form\.reset\(\);[\s\S]*resetAll\(\);/,
   );
   assert.match(cssSource, /\.new-species-value-unit/);
   assert.match(cssSource, /\.new-species-steps li\.reachable/);
-  assert.match(appSource, /Artportrait wird lokal übernommen/);
-  assert.match(appSource, /publish:\s*false/);
-  assert.match(appSource, /Artportrait wird für diese neue Art übersprungen/);
+  assert.match(modularAppSource, /Artportrait wird lokal übernommen/);
+  assert.match(modularAppSource, /publish:\s*false/);
+  assert.match(modularAppSource, /Artportrait wird für diese neue Art übersprungen/);
   assert.doesNotMatch(
-    appSource,
+    modularAppSource,
     /portraitSkipButton\.addEventListener\("click", \(\) => \{[\s\S]*?saveAndStartPipeline\(\);[\s\S]*?\}\);/,
   );
   assert.doesNotMatch(appSource, /Artporträt übernehmen und danach Commit und Push ausführen/);
-  assert.match(appSource, /function setupPipelineControl\(\)/);
+  assert.match(modularAppSource, /function setupPipelineControl\(\)/);
   assert.match(appLifecycleSource, /function setupEditingMode\(\)/);
-  assert.match(appSource, /\/api\/pipeline\/preview/);
-  assert.match(appSource, /\/api\/pipeline\/start/);
-  assert.match(appSource, /\/api\/pipeline\/status/);
-  assert.match(appSource, /\/api\/pipeline\/assets\/review/);
-  assert.match(appSource, /autoStart/);
-  assert.match(appSource, /startCurrentPipelinePreview/);
+  assert.match(modularAppSource, /\/api\/pipeline\/preview/);
+  assert.match(modularAppSource, /\/api\/pipeline\/start/);
+  assert.match(modularAppSource, /\/api\/pipeline\/status/);
+  assert.match(modularAppSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(modularAppSource, /autoStart/);
+  assert.match(modularAppSource, /startCurrentPipelinePreview/);
   assert.match(htmlSource, /Manuelle und fehlende Karten erneut suchen/);
   assert.match(appPipelineSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
@@ -2611,15 +2662,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appPipelineSource, /Pipeline-Lauf läuft gerade/);
   assert.match(appPipelineSource, /Pipeline-Lauf abgeschlossen/);
   assert.match(appPipelineSource, /Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter/);
-  assert.match(appSource, /footerCloseButton\.textContent = active \? "Fenster schließen" : "Abbrechen"/);
-  assert.match(appSource, /renderPersistentPipelineStatus\(status\)/);
+  assert.match(modularAppSource, /footerCloseButton\.textContent = active \? "Fenster schließen" : "Abbrechen"/);
+  assert.match(modularAppSource, /renderPersistentPipelineStatus\(status\)/);
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
   assert.match(appAssetReviewSource, /Bisherige \$\{asset\.previousManual \? "manuelle" : "automatische"\} Karte behalten/);
   assert.match(appAssetReviewSource, /Gefundenen Sound übernehmen \(\$\{soundKind\}\)/);
   assert.match(appAssetReviewSource, /Sound nicht übernehmen/);
-  assert.match(appSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
-  assert.match(appSource, /function setupAssetReview\(\)/);
+  assert.match(modularAppSource, /status\.status === "completed" && status\.gitPublished\) state\.notice = ""/);
+  assert.doesNotMatch(appSource, /function setupAssetReview\(\)/);
+  assert.match(appAssetReviewWorkflowSource, /function setupAssetReviewWorkflow\(/);
   assert.match(appAssetReviewSource, /class="asset-review-map-trigger"/);
   assert.match(appAssetReviewSource, /class="asset-review-map-compare"/);
   assert.match(appAssetReviewSource, /Bisherige Karte/);
@@ -2631,7 +2683,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /const reviewController = createDialogController\(\{[\s\S]*afterClose: \(\) => \{[\s\S]*stopAssetReviewAudio\(\);/,
   );
   assert.match(appPipelineSource, /Datenbank aktuell/);
-  assert.match(appSource, /Datenbank-Aktionen/);
+  assert.match(modularAppSource, /Datenbank-Aktionen/);
   assert.match(appLifecycleSource, /Bearbeitungsmodus 🔓/);
   assert.match(appLifecycleSource, /Lesemodus 🔒/);
   assert.match(appLifecycleSource, /function monitorProjectRevision\(/);
@@ -2674,10 +2726,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSettingsSource, /function setupBackupSettings\(/);
   assert.match(appSettingsSource, /\/api\/settings/);
   assert.match(appSettingsSource, /\/api\/settings\/backup/);
-  assert.match(appSource, /\/api\/backup\/preview/);
-  assert.match(appSource, /\/api\/backup\/start/);
-  assert.match(appSource, /\/api\/backup\/status/);
-  assert.match(appSource, /Backup trotzdem erstellen/);
+  assert.match(modularAppSource, /\/api\/backup\/preview/);
+  assert.match(modularAppSource, /\/api\/backup\/start/);
+  assert.match(modularAppSource, /\/api\/backup\/status/);
+  assert.match(modularAppSource, /Backup trotzdem erstellen/);
   assert.match(appPipelineSource, /function backupStatusPresentation/);
   assert.match(cssSource, /\.database-status\.backup/);
   assert.match(serverSource, /async function previewNasBackup/);
@@ -2707,9 +2759,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /preservedSoundRejections/);
   assert.match(serverSource, /rejectedSources: preservedSoundRejections/);
   assert.match(appDetailMediaSource, /async function refreshOpenSoundEditor/);
-  assert.match(appSource, /await notifySilentPipelineContext\(status\)/);
+  assert.match(modularAppSource, /await notifySilentPipelineContext\(status\)/);
   assert.match(appPresentationSource, /function versionedAssetUrl/);
-  assert.match(appSource, /species\.assets\.spectrogram\?\.soundSha256/);
+  assert.match(modularAppSource, /species\.assets\.spectrogram\?\.soundSha256/);
   assert.match(appAssetReviewWorkflowSource, /assetReviewAwaitingRetry/);
   assert.match(appAssetReviewWorkflowSource, /Gefundener Sound wurde abgelehnt und gemerkt\. Nächster Sound wird gesucht/);
   assert.match(appAssetReviewWorkflowSource, /state\.finishAssetReviewWaiting/);
@@ -2771,62 +2823,62 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSpeciesActionsSource, /function setupSpeciesDelete\(species\)/);
   assert.match(appSpeciesActionsSource, /\/delete\/preview/);
   assert.match(appSpeciesActionsSource, /\/delete\/save/);
-  assert.match(appSource, /class="delete-assets-now"/);
+  assert.match(modularAppSource, /class="delete-assets-now"/);
   assert.match(appSpeciesActionsSource, /deleteAssets/);
   assert.match(appDetailMediaSource, /function releaseDetailMedia\(\)/);
   assert.match(appSpeciesActionsSource, /releaseDetailMedia\(\)/);
   assert.match(serverSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(serverSource, /Art ist bereits aus der Eingabeliste entfernt/);
-  assert.match(appSource, /Taxonomie ist gesperrt\./);
-  assert.match(appSource, /URL-Slug entsperren\?/);
-  assert.match(appSource, /Ja, entsperren/);
+  assert.match(modularAppSource, /Taxonomie ist gesperrt\./);
+  assert.match(modularAppSource, /URL-Slug entsperren\?/);
+  assert.match(modularAppSource, /Ja, entsperren/);
   assert.match(appMeasurementsSource, /function parseManualMeasurement/);
   assert.match(appMeasurementsSource, /function composeManualSexedMeasurement/);
-  assert.match(appSource, /class="edit-fields new-species-fields manual-species-fields"/);
+  assert.match(modularAppSource, /class="edit-fields new-species-fields manual-species-fields"/);
   assert.match(appMeasurementsSource, /data-measurement="\$\{escapeHtml\(kind\)\}"/);
-  assert.match(appSource, /form\.elements\.sizeSexed/);
-  assert.match(appSource, /form\.elements\.weightSexed/);
-  assert.match(appSource, /name="lifeExpectancyUnit"/);
+  assert.match(modularAppSource, /form\.elements\.sizeSexed/);
+  assert.match(modularAppSource, /form\.elements\.weightSexed/);
+  assert.match(modularAppSource, /name="lifeExpectancyUnit"/);
   assert.match(speciesModelSource, /function formatTaxonomyName\(value\)/);
   assert.match(updateSource, /function normalizeTaxonomyFields\(entry\)/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
-  assert.match(appSource, /class="map-edit-section"/);
-  assert.match(appSource, /class="map-auto-search-button"/);
-  assert.match(appSource, /openPipelinePreview\("manual-maps"/);
-  assert.match(appSource, /silent: true/);
+  assert.match(modularAppSource, /class="map-edit-section"/);
+  assert.match(modularAppSource, /class="map-auto-search-button"/);
+  assert.match(modularAppSource, /openPipelinePreview\("manual-maps"/);
+  assert.match(modularAppSource, /silent: true/);
   assert.match(appFoundationSource, /pendingChanges: "\/api\/pending-changes"/);
-  assert.match(appSource, /refreshExplorerModelOnly\(\{ reload: true \}\)/);
+  assert.match(modularAppSource, /refreshExplorerModelOnly\(\{ reload: true \}\)/);
   assert.match(serverSource, /async function fetchMapPreviewSourceWithPowerShell\(source\)/);
   assert.match(serverSource, /MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3/);
-  assert.match(appSource, /direkter Karten-JPEG-Link/);
-  assert.match(appSource, /class="map-preview-button"/);
-  assert.match(appSource, /class="map-save-button"/);
-  assert.match(appSource, /Karte wird lokal gesichert und ersetzt/);
+  assert.match(modularAppSource, /direkter Karten-JPEG-Link/);
+  assert.match(modularAppSource, /class="map-preview-button"/);
+  assert.match(modularAppSource, /class="map-save-button"/);
+  assert.match(modularAppSource, /Karte wird lokal gesichert und ersetzt/);
   assert.match(cssSource, /\.map-compare-grid/);
   assert.match(
     cssSource,
     /\.map-compare-frame img\s*\{[^}]*width:\s*100% !important[^}]*height:\s*auto !important[^}]*object-fit:\s*contain !important/s,
   );
   assert.match(cssSource, /\.new-species-manual-map/);
-  assert.match(appSource, /class="sound-edit-section"/);
-  assert.match(appSource, /class="sound-auto-search-button"/);
-  assert.match(appSource, /openPipelinePreview\("nc-sounds"/);
-  assert.match(appSource, /const releaseCurrentSoundAudio = async/);
+  assert.match(modularAppSource, /class="sound-edit-section"/);
+  assert.match(modularAppSource, /class="sound-auto-search-button"/);
+  assert.match(modularAppSource, /openPipelinePreview\("nc-sounds"/);
+  assert.match(modularAppSource, /const releaseCurrentSoundAudio = async/);
   assert.match(appDetailMediaSource, /async function releaseAllAudioElements\(\)/);
-  assert.match(appSource, /await releaseAllAudioElements\(\)/);
-  assert.match(appSource, /class="sound-preview-button"/);
-  assert.match(appSource, /class="sound-save-button"/);
-  assert.match(appSource, /Sound, Credits und Spektrogramm lokal gesichert und ersetzt/);
-  assert.match(appSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
-  assert.match(appSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
+  assert.match(modularAppSource, /await releaseAllAudioElements\(\)/);
+  assert.match(modularAppSource, /class="sound-preview-button"/);
+  assert.match(modularAppSource, /class="sound-save-button"/);
+  assert.match(modularAppSource, /Sound, Credits und Spektrogramm lokal gesichert und ersetzt/);
+  assert.match(modularAppSource, /Spektrogramm wird erzeugt; danach werden Sound, Credits und Spektrogramm/);
+  assert.match(modularAppSource, /Das neue Spektrogramm wurde automatisch erzeugt/);
   assert.match(appPresentationSource, /Soundhash geprüft/);
   assert.match(cssSource, /\.sound-compare-grid/);
-  assert.match(appSource, /class="portrait-prompt-button"/);
-  assert.match(appSource, /class="portrait-copy-button"/);
-  assert.match(appSource, /class="portrait-file-input"/);
-  assert.match(appSource, /class="portrait-preview-button"/);
-  assert.match(appSource, /\/assets\/portrait\/prompt/);
-  assert.match(appSource, /\/assets\/portrait\/preview/);
+  assert.match(modularAppSource, /class="portrait-prompt-button"/);
+  assert.match(modularAppSource, /class="portrait-copy-button"/);
+  assert.match(modularAppSource, /class="portrait-file-input"/);
+  assert.match(modularAppSource, /class="portrait-preview-button"/);
+  assert.match(modularAppSource, /\/assets\/portrait\/prompt/);
+  assert.match(modularAppSource, /\/assets\/portrait\/preview/);
   assert.doesNotMatch(appSource, /\/assets\/portrait\/generate/);
   assert.match(cssSource, /\.portrait-compare-frame\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/s);
   assert.match(
@@ -2842,7 +2894,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.asset-file-field input\[type="file"\]/);
   assert.match(cssSource, /\.asset-reason-field textarea/);
   assert.doesNotMatch(
-    appSource,
+    modularAppSource,
     /<div class="section-actions detail-actions edit-only"[\s\S]*edit-species-open[\s\S]*delete-species-open/,
   );
   assert.match(appMediaSource, /function inlineEditButton\(section\)/);
@@ -2852,33 +2904,33 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appAssetMaintenanceSource, /\/assets\/\$\{assetType\}\/restore/);
   assert.match(appAssetMaintenanceSource, /\/assets\/\$\{assetType\}\/delete/);
   assert.match(cssSource, /\.inline-restore-open/);
-  assert.match(appSource, /inlineEditButton\("manual"\)/);
-  assert.match(appSource, /species\.inInput \? "map" : ""/);
-  assert.match(appSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);
+  assert.match(modularAppSource, /inlineEditButton\("manual"\)/);
+  assert.match(modularAppSource, /species\.inInput \? "map" : ""/);
+  assert.match(modularAppSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);
   assert.match(appMediaSource, /sectionActions\([\s\S]*species\.inInput \? "portrait" : ""/);
-  assert.match(appSource, /Bisheriges Artporträt beibehalten/);
-  assert.match(appSource, /class="refresh-species-open"/);
-  assert.match(appSource, /Art aktualisieren/);
+  assert.match(modularAppSource, /Bisheriges Artporträt beibehalten/);
+  assert.match(modularAppSource, /class="refresh-species-open"/);
+  assert.match(modularAppSource, /Art aktualisieren/);
   assert.match(appSpeciesActionsSource, /openPipelinePreview\("all",/);
   assert.match(appSpeciesActionsSource, /Automatische Aktualisierung für/);
   assert.match(appSpeciesActionsSource, /silent:\s*true/);
   assert.match(appPipelineSource, /function formatPendingFileStatus/);
-  assert.match(appSource, /showQuickConfirm/);
+  assert.match(modularAppSource, /showQuickConfirm/);
   assert.match(cssSource, /body:not\(\.edit-mode\) \.header-edit-slot:not\(\.database-status\)/);
   assert.match(appFoundationSource, /\/api\/pending-changes/);
   assert.match(appLifecycleSource, /beforeunload/);
   assert.match(appMediaSource, /data-edit-section="\$\{escapeHtml\(section\)\}"/);
-  assert.match(appSource, /dialog\.dataset\.activeSection = activeSection/);
+  assert.match(modularAppSource, /dialog\.dataset\.activeSection = activeSection/);
   assert.match(cssSource, /\.edit-dialog\[data-active-section="map"\]\s+\.manual-edit-section/);
-  assert.match(appSource, /const saveAndStartPipeline = async \(\) =>/);
-  assert.match(appSource, /state\.newSpeciesPipelineActive = true/);
-  assert.match(appSource, /\/api\/pipeline\/preview/);
-  assert.match(appSource, /\/api\/pipeline\/start/);
-  assert.match(appSource, /\/api\/pipeline\/assets\/review/);
-  assert.match(appSource, /data-new-species-map-decision="reject"/);
-  assert.match(appSource, /data-new-species-sound-decision="reject"/);
+  assert.match(modularAppSource, /const saveAndStartPipeline = async \(\) =>/);
+  assert.match(modularAppSource, /state\.newSpeciesPipelineActive = true/);
+  assert.match(modularAppSource, /\/api\/pipeline\/preview/);
+  assert.match(modularAppSource, /\/api\/pipeline\/start/);
+  assert.match(modularAppSource, /\/api\/pipeline\/assets\/review/);
+  assert.match(modularAppSource, /data-new-species-map-decision="reject"/);
+  assert.match(modularAppSource, /data-new-species-sound-decision="reject"/);
   assert.doesNotMatch(
-    appSource,
+    modularAppSource,
     /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\],\s*autoStart:\s*true\s*\}\)/,
   );
   assert.match(htmlSource, /Lesemodus 🔒\s*<\/button>/);
@@ -2915,9 +2967,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Karte,\s*Sound und Spektrogramm geprüft oder erstellt/);
   assert.match(htmlSource, /new-species-map-review/);
   assert.match(htmlSource, /new-species-sound-review/);
-  assert.match(appSource, /Manuell per URL einfügen/);
-  assert.match(appSource, /new-species-map-source-input/);
-  assert.match(appSource, /pipelineRunId:\s*inlineRunId/);
+  assert.match(modularAppSource, /Manuell per URL einfügen/);
+  assert.match(modularAppSource, /new-species-map-source-input/);
+  assert.match(modularAppSource, /pipelineRunId:\s*inlineRunId/);
   assert.match(serverSource, /allowDuringCurrentReview/);
   assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
   assert.doesNotMatch(htmlSource, /species-info\.json/);
@@ -2936,8 +2988,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Lesemodus 🔒/);
   assert.match(htmlSource, /id="pipeline-menu-button"/);
   assert.match(htmlSource, /Datenbank aktualisieren/);
-  assert.match(appSource, /Änderungen übertragen/);
-  assert.match(appSource, /openPreview\("transfer", \{ transfer: true \}\)/);
+  assert.match(modularAppSource, /Änderungen übertragen/);
+  assert.match(modularAppSource, /openPreview\("transfer", \{ transfer: true \}\)/);
   assert.match(htmlSource, /id="pipeline-mode-choice"/);
   assert.match(htmlSource, /Datenbank-Aktionen/);
   assert.match(htmlSource, /Daten aktualisieren/);
@@ -2952,7 +3004,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appAssetReviewSource, /value="reject"/);
   assert.match(appAssetReviewSource, /Gefundenen Sound ablehnen und weiter suchen/);
   assert.match(appAssetReviewWorkflowSource, /decision:\s*formData\.get/);
-  assert.match(appSource, /audio\.removeAttribute\("src"\)/);
+  assert.match(modularAppSource, /audio\.removeAttribute\("src"\)/);
   assert.doesNotMatch(htmlSource, /class="pipeline-control"/);
   assert.match(htmlSource, /class="validation-dashboard"/);
   assert.doesNotMatch(htmlSource, /Phase 7\.3/);
@@ -3011,8 +3063,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /elements\.speciesPanel\.style\.height = `\$\{targetHeight\}px`/);
   assert.doesNotMatch(appSource, /window\.addEventListener\("resize", syncSpeciesPanelHeight\)/);
   assert.match(cssSource, /\.audio-visual\s*\{[^}]*height:\s*clamp\(64px,\s*4\.5vw,\s*84px\)/s);
-  assert.match(appSource, /JPEG- oder PNG-Datei bis 20 MB oder direkter Karten-JPEG-Link/);
-  assert.match(appSource, /accept="\.jpg,\.jpeg,\.png,image\/jpeg,image\/png"/);
+  assert.match(modularAppSource, /JPEG- oder PNG-Datei bis 20 MB oder direkter Karten-JPEG-Link/);
+  assert.match(modularAppSource, /accept="\.jpg,\.jpeg,\.png,image\/jpeg,image\/png"/);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
   assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
