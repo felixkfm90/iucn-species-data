@@ -15,7 +15,10 @@ export function previewRouteFiles(repoRoot = resolve(scriptDirectory, "..")) {
     ["/preview.js", join(previewRoot, "preview.js")],
     ["/squarespace-custom.css", join(repoRoot, "docs", "squarespace-custom.css")],
     ["/docs/squarespace-custom.css", join(repoRoot, "docs", "squarespace-custom.css")],
+    ["/species-info.js", join(repoRoot, "species-info.js")],
     ["/species-taxonomy.js", join(repoRoot, "species-taxonomy.js")],
+    ["/species-status.js", join(repoRoot, "species-status.js")],
+    ["/species-portrait.js", join(repoRoot, "species-portrait.js")],
     ["/speciesData.json", join(repoRoot, "speciesData.json")],
     [
       "/taxonomy-concept.svg",
@@ -31,7 +34,13 @@ export function resolvePreviewFile(pathname, repoRoot) {
   } catch {
     return null;
   }
-  return previewRouteFiles(repoRoot).get(decodedPath) ?? null;
+  const fixedRoute = previewRouteFiles(repoRoot).get(decodedPath);
+  if (fixedRoute) return fixedRoute;
+
+  const portraitMatch = decodedPath.match(/^\/species-assets\/([^/]+)\/portrait\.webp$/);
+  const assetName = portraitMatch?.[1] || "";
+  if (!assetName || assetName.includes("..") || !/^[A-Za-z0-9._ -]+$/.test(assetName)) return null;
+  return join(repoRoot, "species-assets", assetName, "portrait.webp");
 }
 
 export function createSquarespacePreviewServer({ repoRoot } = {}) {

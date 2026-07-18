@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-const [statusSource, mapSource, lightboxSource] = await Promise.all([
+const [statusSource, portraitSource, mapSource, lightboxSource] = await Promise.all([
   readFile(new URL("../species-status.js", import.meta.url), "utf8"),
+  readFile(new URL("../species-portrait.js", import.meta.url), "utf8"),
   readFile(new URL("../map-loader.js", import.meta.url), "utf8"),
   readFile(new URL("../lightbox-zoom.js", import.meta.url), "utf8"),
 ]);
@@ -11,6 +12,10 @@ const [statusSource, mapSource, lightboxSource] = await Promise.all([
 test("Status- und Trendsymbole benennen ihre sichtbare Bedeutung", () => {
   assert.match(statusSource, /alt="IUCN-Status: \$\{categoryText\}"/);
   assert.match(statusSource, /alt="Populationstrend: \$\{trendText\}"/);
+});
+
+test("Artporträt benennt die dargestellte Art", () => {
+  assert.match(portraitSource, /alt="Artporträt – \$\{speciesName\}"/);
 });
 
 test("Karten-Vollbild übernimmt den Alternativtext der Ausgangskarte", () => {

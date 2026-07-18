@@ -675,9 +675,9 @@ Priorisierte nächste Ausbauschritte:
    per Schloss geschützt; nach Warnbestätigung werden wissenschaftlicher Name, Genus/Species und URL-Slug
    konsistent angepasst. Beim deutschen Namen werden Assetname/SafeName, Assetordner, Override-Einträge,
    Assessment-Zuordnung, Report und Kartendokumentation mitgeführt. Details: `docs/rename-species-workflow.md`.
-3. Allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten strukturieren.
-4. Taxonomie-Pyramide um deutsche Übersetzungen der einzelnen Stufen ergänzen und optisch überarbeiten.
-5. Artportrait auf der Squarespace-Artseite einbinden.
+3. Allgemeine Daten im Bearbeitungsdialog wie im Neue-Art-Assistenten strukturieren: seit 2026-07-11 umgesetzt.
+4. Taxonomie-Pyramide um deutsche Anzeigenamen ergänzen und optisch überarbeiten: seit 2026-07-18 umgesetzt.
+5. Artportrait auf der Squarespace-Artseite einbinden: seit 2026-07-18 umgesetzt.
 
 ### 7.8 Browserunabhängiger Desktop-Wrapper
 

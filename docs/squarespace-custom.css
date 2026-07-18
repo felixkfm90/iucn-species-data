@@ -17,11 +17,22 @@
   box-sizing: border-box;
 }
 
-/* FLEX-WRAPPER - gleiche Hoehe Desktop */
+/* Modulraster der Artseite */
 #species-output {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-areas:
+    "info taxonomy"
+    "status taxonomy";
   gap: 16px;
-  align-items: flex-start;
+  align-items: start;
+}
+
+#species-output.species-output--has-portrait {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 1fr);
+  grid-template-areas:
+    "info taxonomy portrait"
+    "status taxonomy portrait";
 }
 
 /* ================================ */
@@ -29,9 +40,10 @@
 /* ================================ */
 
 #species-info {
-  flex: 1.1;
+  grid-area: info;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 #species-info p {
@@ -44,14 +56,14 @@
 /* ================================ */
 
 #species-taxonomy {
-  flex: 1.35;
+  grid-area: taxonomy;
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
 .taxonomy-frame {
-  --taxonomy-frame-padding: clamp(10px, 1.2vw, 16px);
+  --taxonomy-frame-padding: clamp(8px, 0.9vw, 12px);
   flex: 1;
   padding: var(--taxonomy-frame-padding);
   overflow: hidden;
@@ -71,16 +83,16 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  width: clamp(34px, 3.7vw, 48px);
-  flex: 0 0 clamp(34px, 3.7vw, 48px);
+  width: clamp(30px, 2.8vw, 38px);
+  flex: 0 0 clamp(30px, 2.8vw, 38px);
   margin: 0;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.18) 0, rgba(255,255,255,0.035) 24%, rgba(0,0,0,0.2) 100%),
     linear-gradient(90deg, #111314 0, #292d2f 52%, #111314 100%);
   border: 0;
-  border-radius: 12px 12px 0 0;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), 50% 100%, 0 calc(100% - 18px));
+  border-radius: 10px 10px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), 50% 100%, 0 calc(100% - 12px));
   box-shadow:
     inset 0 0 0 1px rgba(0,0,0,0.72),
     inset 0 1px 0 rgba(255,255,255,0.22),
@@ -109,13 +121,13 @@
   position: absolute;
   top: 0;
   right: 0;
-  bottom: 18px;
+  bottom: 12px;
   left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: clamp(0.68rem, 0.88vw, 0.8rem);
+  font-size: clamp(0.62rem, 0.72vw, 0.72rem);
   font-weight: 800;
   letter-spacing: 0.035em;
   writing-mode: vertical-rl;
@@ -145,20 +157,20 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
-  min-height: clamp(54px, 4.8vw, 70px);
+  min-height: clamp(34px, 3vw, 42px);
 }
 
 .taxonomy-stage {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: clamp(38px, 3.5vw, 52px) 1px minmax(0, 1fr);
-  gap: clamp(9px, 1vw, 14px);
+  grid-template-columns: clamp(28px, 2.5vw, 34px) 1px minmax(0, 1fr);
+  gap: clamp(6px, 0.75vw, 10px);
   align-items: center;
   width: 100%;
   min-width: 0;
-  min-height: clamp(50px, 4.3vw, 64px);
-  padding: 5px clamp(11px, 1.35vw, 18px) 5px clamp(8px, 0.9vw, 12px);
+  min-height: clamp(32px, 2.7vw, 40px);
+  padding: 2px clamp(8px, 1vw, 12px) 2px clamp(6px, 0.7vw, 9px);
   overflow: hidden;
   clip-path: polygon(
     0 0,
@@ -171,7 +183,7 @@
     linear-gradient(180deg, rgba(255,255,255,0.42) 0, rgba(255,255,255,0.14) 18%, rgba(255,255,255,0.02) 45%, rgba(0,0,0,0.16) 100%),
     linear-gradient(90deg, var(--taxonomy-start), var(--taxonomy-end));
   border: 2px solid rgba(255,255,255,0.62);
-  border-radius: clamp(13px, 1.25vw, 18px);
+  border-radius: clamp(9px, 0.9vw, 13px);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.65),
     inset 0 -4px 7px rgba(0,0,0,0.16);
@@ -195,8 +207,8 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: clamp(36px, 3.1vw, 46px);
-  height: clamp(36px, 3.1vw, 46px);
+  width: clamp(26px, 2.2vw, 32px);
+  height: clamp(26px, 2.2vw, 32px);
   color: #fff;
   background: rgba(0,0,0,0.17);
   border: 1px solid rgba(255,255,255,0.13);
@@ -217,7 +229,7 @@
 .taxonomy-rank-label {
   display: inline;
   margin-right: 0.28em;
-  font-size: clamp(0.78rem, 1vw, 1rem);
+  font-size: clamp(0.68rem, 0.82vw, 0.86rem);
   font-weight: 800;
   line-height: 1.12;
 }
@@ -239,7 +251,7 @@
 .taxonomy-value {
   display: inline;
   min-width: 0;
-  font-size: clamp(0.78rem, 1vw, 1rem);
+  font-size: clamp(0.68rem, 0.82vw, 0.86rem);
   font-weight: 500;
   line-height: 1.12;
   overflow-wrap: anywhere;
@@ -307,18 +319,17 @@
 /* ================================ */
 
 #species-status {
-  flex: 1;
+  grid-area: status;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  min-width: 0;
 }
 
 .status-trend-wrapper {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
 }
 
 .info-box {
@@ -330,13 +341,68 @@
   background: #f9f9f9;
   padding: 12px;
   gap: 6px;
-  min-width: 125px;
+  min-width: 0;
 }
 
 .info-box p {
   margin: 0;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+#species-status .info-box img {
+  width: clamp(52px, 5vw, 72px);
+  height: clamp(52px, 5vw, 72px);
+  object-fit: contain;
+}
+
+/* ================================ */
+/* 4. ARTPORTRAET                   */
+/* ================================ */
+
+#species-portrait {
+  grid-area: portrait;
+  display: flex;
+  min-width: 0;
+  align-self: stretch;
+}
+
+#species-portrait[hidden] {
+  display: none;
+}
+
+.species-portrait-frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+}
+
+.species-portrait-title {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.species-portrait-media {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  overflow: hidden;
+  background: #faf6ec;
+  border-radius: 7px;
+}
+
+.species-portrait-image {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  height: 100%;
+  max-height: 580px;
+  object-fit: contain;
 }
 
 /* ================================ */
@@ -447,13 +513,27 @@
 
 @media (min-width: 769px) and (max-width: 1100px) {
   #species-output {
-    flex-direction: column !important;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy";
+    align-items: start;
+  }
+
+  #species-output.species-output--has-portrait {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "portrait";
   }
 
   #species-info,
   #species-taxonomy,
-  #species-status {
+  #species-status,
+  #species-portrait {
     width: 100%;
   }
 
@@ -466,46 +546,56 @@
   }
 
   .taxonomy-direction {
-    width: 40px;
-    flex-basis: 40px;
+    width: 34px;
+    flex-basis: 34px;
   }
 
   .taxonomy-level {
-    min-height: 52px;
+    min-height: 36px;
   }
 
   .taxonomy-stage {
-    grid-template-columns: 36px 1px minmax(0, 1fr);
-    gap: 9px;
-    min-height: 48px;
-    padding: 6px 8px;
+    grid-template-columns: 28px 1px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 34px;
+    padding: 3px 8px;
   }
 
   .taxonomy-icon-wrap {
-    width: 34px;
-    height: 34px;
+    width: 26px;
+    height: 26px;
   }
 
   .taxonomy-rank-label,
   .taxonomy-value {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 }
 
 @media (max-width: 768px) {
   #species-output {
-    flex-direction: column !important;
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy";
+    align-items: start;
+  }
+
+  #species-output.species-output--has-portrait {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "portrait";
   }
 
   #species-info,
   #species-taxonomy,
-  #species-status {
+  #species-status,
+  #species-portrait {
     width: 100%;
-  }
-
-  .status-trend-wrapper {
-    flex-direction: column;
   }
 
   #species-sound .species-sound-frame {
@@ -518,29 +608,38 @@
   }
 
   .taxonomy-direction {
-    width: 34px;
-    flex-basis: 34px;
+    width: 30px;
+    flex-basis: 30px;
   }
 
   .taxonomy-level {
-    min-height: 52px;
+    min-height: 36px;
   }
 
   .taxonomy-stage {
-    grid-template-columns: 32px 1px minmax(0, 1fr);
-    gap: 8px;
-    min-height: 48px;
-    padding: 5px 8px;
+    grid-template-columns: 26px 1px minmax(0, 1fr);
+    gap: 6px;
+    min-height: 34px;
+    padding: 3px 7px;
   }
 
   .taxonomy-icon-wrap {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
 
   .taxonomy-rank-label,
   .taxonomy-value {
-    font-size: clamp(0.72rem, 3.2vw, 0.9rem);
+    font-size: clamp(0.68rem, 3vw, 0.82rem);
+  }
+
+  .species-portrait-media {
+    min-height: 0;
+  }
+
+  .species-portrait-image {
+    max-width: 420px;
+    height: auto;
   }
 
 }

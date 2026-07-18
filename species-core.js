@@ -71,6 +71,7 @@ window.SpeciesCore = (function () {
       sound: `${ASSET_BASE}/species-assets/${encodedName}/sound.mp3`,
       credits: `${ASSET_BASE}/species-assets/${encodedName}/credits.json`,
       spectrogram: `${ASSET_BASE}/species-assets/${encodedName}/spectrogram.webp`,
+      portrait: `${ASSET_BASE}/species-assets/${encodedName}/portrait.webp`,
     };
   }
 

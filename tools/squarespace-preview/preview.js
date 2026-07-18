@@ -18,6 +18,34 @@
     return params.get("species") || fallbackSlug;
   }
 
+  function sanitizeAssetName(input) {
+    return String(input ?? "")
+      .replace(/ä/g, "ae")
+      .replace(/ö/g, "oe")
+      .replace(/ü/g, "ue")
+      .replace(/Ä/g, "Ae")
+      .replace(/Ö/g, "Oe")
+      .replace(/Ü/g, "Ue")
+      .replace(/ß/g, "ss")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\/\\:*?"<>|]/g, "_")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^[.\s_-]+|[.\s_-]+$/g, "") || "unknown";
+  }
+
+  function getSpeciesAssetPaths(dataOrName) {
+    const name = typeof dataOrName === "string"
+      ? dataOrName
+      : dataOrName?.["Deutscher Name"] || dataOrName?.["Wissenschaftlicher Name"] || "";
+    const safeName = sanitizeAssetName(name);
+    return {
+      safeName,
+      portrait: `/species-assets/${encodeURIComponent(safeName)}/portrait.webp`,
+    };
+  }
+
   async function getSpeciesList() {
     if (!speciesListPromise) {
       speciesListPromise = fetch("/speciesData.json", { cache: "no-store" })
@@ -43,6 +71,8 @@
 
   window.SpeciesCore = {
     getCurrentSlug: currentSlug,
+    sanitizeAssetName,
+    getSpeciesAssetPaths,
     getSpeciesList,
     getSpeciesData,
   };
@@ -99,15 +129,16 @@
     loadPreview();
   }
 
-  function renderPlaceholder(container, title, rows) {
-    container.innerHTML = `
-      <div class="frame-box preview-placeholder-frame">
-        <h2>${escapeHtml(title)}</h2>
-        <dl>
-          ${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}
-        </dl>
-      </div>
-    `;
+  function loadModule(source) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `${source}?preview=${Date.now()}`;
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener("error", () => reject(new Error(`Vorschaumodul fehlt: ${source}`)), {
+        once: true,
+      });
+      document.body.appendChild(script);
+    });
   }
 
   async function initializeCanvas() {
@@ -116,20 +147,10 @@
     document.title = `${species["Deutscher Name"]} · lokale Taxonomie-Vorschau`;
     document.getElementById("preview-species-title").textContent = species["Deutscher Name"];
     document.getElementById("preview-species-scientific").textContent = species["Wissenschaftlicher Name"];
-    renderPlaceholder(document.getElementById("species-info"), "Allgemeine Daten", [
-      ["Größe", species.Größe],
-      ["Gewicht", species.Gewicht],
-      ["Lebenserwartung", species.Lebenserwartung],
-    ]);
-    renderPlaceholder(document.getElementById("species-status"), "IUCN-Daten", [
-      ["Kategorie", species.Kategorie],
-      ["Trend", species.Trend],
-      ["Population", species.Populationgröße],
-    ]);
-
-    const taxonomyScript = document.createElement("script");
-    taxonomyScript.src = `/species-taxonomy.js?preview=${Date.now()}`;
-    document.body.appendChild(taxonomyScript);
+    await loadModule("/species-info.js");
+    await loadModule("/species-status.js");
+    await loadModule("/species-taxonomy.js");
+    await loadModule("/species-portrait.js");
   }
 
   (embedded ? initializeCanvas() : initializeControls()).catch((error) => {

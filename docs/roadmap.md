@@ -487,14 +487,14 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     Seit 2026-07-11 nutzt der Bearbeitungsdialog fuer allgemeine Daten dieselben strukturierten Wert-/Einheitenfelder
     und die unabhaengige Maennchen-/Weibchen-Trennung wie der Neue-Art-Assistent. Die Taxonomiewerte in
     `speciesData.json` sind fuer bestehende Daten normalisiert und werden von `update.mjs` kuenftig einheitlich
-    lesbar geschrieben. Offen bleiben: Taxonomie-Pyramide mit deutschen Stufenübersetzungen optisch überarbeiten;
-    ein Unterstamm wird dabei nur aus einem echten vorhandenen Datenwert angezeigt und sonst ausgelassen;
-    Artportrait auf der Squarespace-Artseite einbinden.
+    lesbar geschrieben. Seit 2026-07-18 sind auch die Taxonomie-Pyramide mit deutschen Anzeigenamen, der nur bei
+    echtem Datenwert sichtbare Unterstamm sowie das Artportrait im responsiven Squarespace-Artseitenlayout
+    umgesetzt.
     Seit 2026-07-04 sind die Feinschliffe aus dem Neue-Art-Test `Scharlachara` umgesetzt: Karte im Schritt `Karte`
     per Vergrößern/Lightbox prüfbar, sichtbarer Lizenzstatus `frei`/`NC` im Sound-Prüfschritt, derselbe
     Lizenzstatus im ausgeklappten Tierstimmen-Quellenbereich und stabiler Hintergrund-Detailbereich während des
-    Neue-Art-Assistenten. Offen bleibt: Die Taxonomie-Pyramide soll später deutsche Übersetzungen der einzelnen
-    Stufen erhalten und optisch überarbeitet werden.
+    Neue-Art-Assistenten. Die Taxonomie-Pyramide wurde am 2026-07-18 mit deutschen Anzeigenamen und responsiver
+    Darstellung umgesetzt.
     Seit 2026-07-05 können einzelne Assets gezielt gelöscht werden: Karte, Soundpaket und Artportrait werden vor dem
     Entfernen unter `species-explorer/asset-backups/` gesichert, aus Override-Register beziehungsweise
     Kartendokumentation entfernt und für `Änderungen übertragen` lokal vorgemerkt. Seit 2026-07-10 bleibt pro Art und
@@ -773,9 +773,14 @@ Status: in Arbeit seit 2026-07-18
   Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
   kontrollierte Übernahme nach `main` und der erste Pages-Lauf waren erfolgreich. Das Modul lädt das notwendige
   Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
-  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.3`. Details:
+  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.4`. Details:
   `docs/taxonomy-redesign-handoff.md`.
-- Artporträts auf den Squarespace-Artseiten einbinden.
+- Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte
+  Allgemeine Daten und direkt darunter Status/Trend, die zweite Spalte die kompakte Taxonomie und die dritte das
+  Artporträt. Tablet und Mobil stapeln die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das
+  Layout automatisch auf zwei Spalten zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.0`
+  dynamisch erzeugt; bestehende Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind
+  außerdem `species-core.js?v=1.0.5` und `species-taxonomy.js?v=1.0.4`.
 - Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
 - Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche
   festlegen, daraus lokal das finale MP3 erzeugen und das Spektrogramm konsistent neu aufbauen.

@@ -49,6 +49,7 @@ Frontend-Module:
 - `species-info.js`: Info-Box
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
+- `species-portrait.js`: optionales Artportraet und responsiver Layout-Fallback
 - `species-sound.js`: native Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Lautstaerke,
   Abspielgeschwindigkeit, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
@@ -663,10 +664,10 @@ Aktuelle Planung:
   Seit 2026-07-11 sind die Taxonomiewerte fuer Reich, Stamm, Klasse, Ordnung und Familie in bestehenden Daten
   normalisiert; `update.mjs` schreibt auch kuenftige IUCN-Daten in lesbarer Gross-/Kleinschreibung. Das einmalige
   Migrationsskript sichert `speciesData.json` vorher unter `species-explorer/backups/`.
-  Naechste priorisierte Ausbauschritte: Taxonomie-Pyramide um deutsche Stufenuebersetzungen sowie eine optische
-  Ueberarbeitung ergaenzen; ein Unterstamm darf nur aus einem tatsaechlich vorhandenen Datenwert angezeigt und
-  andernfalls vollstaendig ausgelassen werden, ohne Ableitung aus anderen Taxonomierangen; Artportrait auf der
-  Squarespace-Artseite einbinden.
+  Die anschliessenden Phase-8-Schritte sind seit 2026-07-18 umgesetzt: Die Taxonomie-Pyramide verwendet deutsche
+  Anzeigenamen und zeigt einen Unterstamm nur aus einem tatsaechlich vorhandenen Datenwert. Das Artportrait ist in
+  das responsive Squarespace-Artseitenlayout integriert; Status und Trend stehen auf Desktop direkt unter den
+  allgemeinen Daten.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
@@ -891,8 +892,13 @@ Aktuelle Planung:
   drei Vorschaugrößen visuell freigegeben. Der freigegebene Stand wurde nach `main` übernommen und der erste
   Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
   kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
-  Footer-Version ist `species-taxonomy.js?v=1.0.3`. Danach folgen Artportraits auf Squarespace, kontrollierte
-  Taxonomiebearbeitung und fest eingeplanter Soundeditor.
+  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.4`. Artportraits sind seit 2026-07-18
+  ebenfalls in die Squarespace-Artseite integriert: Auf grossen Bildschirmen stehen Allgemeine Daten mit
+  Status/Trend darunter links, die kompaktere Taxonomie mittig und das Portrait rechts. Tablet und Mobil stapeln
+  die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
+  `species-portrait.js` erzeugt den Portraitcontainer dynamisch, sodass bestehende Artseiten keine manuelle
+  HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind `species-core.js?v=1.0.5` und
+  `species-portrait.js?v=1.0.0`. Danach folgen kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:

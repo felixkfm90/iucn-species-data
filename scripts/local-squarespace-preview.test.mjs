@@ -10,6 +10,11 @@ import {
 test("Vorschau erlaubt ausschließlich die festgelegten lokalen Dateien", () => {
   const repoRoot = "D:\\IUCN_Datenbank";
   assert.match(resolvePreviewFile("/species-taxonomy.js", repoRoot), /species-taxonomy\.js$/);
+  assert.match(resolvePreviewFile("/species-portrait.js", repoRoot), /species-portrait\.js$/);
+  assert.match(
+    resolvePreviewFile("/species-assets/Amsel/portrait.webp", repoRoot),
+    /species-assets[\\/]Amsel[\\/]portrait\.webp$/,
+  );
   assert.match(
     resolvePreviewFile("/docs/squarespace-custom.css", repoRoot),
     /squarespace-custom\.css$/,
@@ -17,6 +22,7 @@ test("Vorschau erlaubt ausschließlich die festgelegten lokalen Dateien", () => 
   assert.match(resolvePreviewFile("/taxonomy-concept.svg", repoRoot), /taxonomy-pyramid-redesign-concept\.svg$/);
   assert.equal(resolvePreviewFile("/../package.json", repoRoot), null);
   assert.equal(resolvePreviewFile("/%2e%2e/package.json", repoRoot), null);
+  assert.equal(resolvePreviewFile("/species-assets/%2e%2e/portrait.webp", repoRoot), null);
 });
 
 test("Vorschau-Port wird begrenzt und kontrolliert gelesen", () => {

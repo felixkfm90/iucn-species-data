@@ -32,6 +32,7 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `species-taxonomy.js`: responsive Taxonomie-Pyramide mit zentralen deutschen Anzeigenamen und optionalem
   Unterstamm
 - `species-status.js`: IUCN-Status und Populationstrend
+- `species-portrait.js`: optionales Artporträt mit automatischem Layout-Fallback bei fehlendem Portrait
 - `species-sound.js`: native Tierstimmen-Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Lautstaerke,
   Abspielgeschwindigkeit, Credits und Lizenzhinweisen
 - `map-loader.js`: Verbreitungskarte
@@ -158,6 +159,11 @@ einem Großbuchstaben, werden aber nicht vollständig großgeschrieben. Auf Desk
 vollbreiten Taxonomierahmen zentriert. Rang und Wert teilen in jeder Stufe eine gemeinsame typografische Grundlinie;
 Desktop und Tablet verwenden denselben dezenten Zehn-Pixel-Verjüngungsschritt und dieselbe weiche Rundung. Mobil
 berechnet aus der verfügbaren Breite einen sicheren Schritt von höchstens zehn Pixeln.
+Auf großen Bildschirmen bildet `#species-output` drei Spalten: Allgemeine Daten und direkt darunter Status/Trend
+links, die kompakte Taxonomie mittig und das Artporträt rechts. Tablet und Mobil ordnen dieselben Bereiche
+untereinander an. Fehlt `portrait.webp`, bleibt automatisch die zweispaltige Ansicht ohne leeren Portraitbereich
+erhalten. `species-portrait.js` erzeugt seinen Container dynamisch; bestehende Squarespace-Artseiten brauchen daher
+keine zusätzliche manuelle HTML-Änderung.
 Vor Livegang folgen zusätzlich eine nicht öffentlich verlinkte Squarespace-Testseite, die ausdrückliche Freigabe
 durch Felix, der erfolgreiche Pages-Lauf nach der Übernahme in `main` und erst danach die produktive
 Squarespace-`?v=`-Erhöhung. Der vollständige Ablauf steht in `docs/phase-8-preview-release.md`.
@@ -514,7 +520,9 @@ Priorisierte Bedienungs- und Ausbauschritte:
    Mobilbreite freigegeben und nach `main` übernommen. Der Unterstamm wird nur bei einem echten vorhandenen
    Datenwert angezeigt; es gibt keine pauschale oder aus anderen Rängen abgeleitete Ersatzstufe. Das Modul lädt sein
    freigegebenes CSS aus demselben Pages-Artefakt, damit Markup und Darstellung gemeinsam veröffentlicht werden.
-5. Artportrait auf der Squarespace-Artseite einbinden.
+5. Artportrait auf der Squarespace-Artseite einbinden: seit 2026-07-18 umgesetzt. Auf Desktop steht es rechts neben
+   der Taxonomie; Status und Trend stehen links direkt unter den allgemeinen Daten. Tablet und Mobil stapeln die
+   Bereiche, bei fehlendem Portrait greift ein Layout-Fallback ohne Leerfläche.
 
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.
 Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenzstatus `frei` oder `NC` sichtbar
@@ -620,8 +628,11 @@ Die Asset-Struktur wurde in Phase 6.8 umgesetzt; Details stehen in `docs/asset-s
 `portrait.webp` und `portrait.json` ist die einzige produktive Struktur. Noch fehlende Portraitdateien gelten im
 Arten-Explorer als Assetproblem. Die alten Ordner
 `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
-GitHub-Pages-Deploy und Live-Test sind im Squarespace-Footer `species-core.js?v=1.0.4`,
+GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
+Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-taxonomy.js?v=1.0.4` und
+`species-portrait.js?v=1.0.0` dokumentiert; diese Versionen werden erst nach erfolgreichem Pages-Deployment im
+produktiven Squarespace-Footer aktiviert.
 
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Die aktuell geschützten Karten stehen
 automatisch erzeugt in `docs/project-status.md`; frühere Übernahmen und Statuswechsel bleiben in den datierten

@@ -7,6 +7,7 @@ export const PAGE_SOURCE_FILES = Object.freeze([
   "species-taxonomy.js",
   "docs/squarespace-custom.css",
   "species-status.js",
+  "species-portrait.js",
   "species-sound.js",
   "map-loader.js",
   "search.js",
