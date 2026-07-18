@@ -1,21 +1,27 @@
 import fs from "fs";
 import path from "path";
-import os from "node:os";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
 import {
   audioFormatLabel,
   detectAudioFormat,
   isMp3Buffer,
 } from "./scripts/audio-format.mjs";
+import { createIucnDataAdapter } from "./scripts/iucn-data-adapter.mjs";
+import { createIucnMapAdapter } from "./scripts/iucn-map-adapter.mjs";
+import { createXenoCantoAdapter } from "./scripts/xeno-canto-adapter.mjs";
+import { createWikimediaCommonsAudioAdapter } from "./scripts/wikimedia-commons-audio-adapter.mjs";
+import { createINaturalistAudioAdapter } from "./scripts/inaturalist-audio-adapter.mjs";
+import {
+  inatLicenseUrl,
+  isNcLicense,
+  normalizeLicenseUrl,
+} from "./scripts/sound-source-license.mjs";
 
 const nativeFetch = globalThis.fetch;
 if (typeof nativeFetch !== "function") {
   throw new Error("Diese Pipeline benoetigt Node.js 18 oder neuer, weil natives fetch verwendet wird.");
 }
 const fetch = nativeFetch.bind(globalThis);
-const execFileAsync = promisify(execFile);
 
 // =======================
 // KONFIG / ORDNER
@@ -27,11 +33,6 @@ const XENO_TOKEN = process.env.XENO_TOKEN;
 
 const BASE = "https://api.iucnredlist.org/api/v4";
 const RATE_LIMIT = 400;
-const IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS = 3;
-const IUCN_MAP_POWERSHELL_RETRY_DELAY_MS = 1500;
-
-// Xeno multi-page
-const MAX_XENO_PAGES = 5;
 const SOUND_CANDIDATE_RETRY_LIMIT = 12;
 
 // Assessment-ID Trackfile (für Karten-Caching)
@@ -50,24 +51,6 @@ if (fs.existsSync(ASSET_OVERRIDES_FILE)) {
     console.warn(`⚠ Asset-Overrides konnten nicht gelesen werden: ${error.message}`);
   }
 }
-
-const CATEGORY_MAP = {
-  LC: "Nicht gefährdet",
-  NT: "Potentiell gefährdet",
-  VU: "Gefährdet",
-  EN: "Stark gefährdet",
-  CR: "Vom Aussterben bedroht",
-  EW: "In freier Wildbahn ausgestorben",
-  EX: "Ausgestorben",
-  DD: "Keine ausreichende Datenlage",
-};
-
-const TREND_MAP = {
-  Increasing: "Zunehmend",
-  Stable: "Stabil",
-  Decreasing: "Abnehmend",
-  Unknown: "Unbekannt",
-};
 
 // =======================
 // HELFER
@@ -383,882 +366,88 @@ function preserveExistingSpeciesData(existing, inputSpecies) {
   });
 }
 
-// IUCN GET mit Token
-async function iucnGET(pathname) {
-  const url = `${BASE}${pathname}`;
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
-    });
-
-    if (res.ok) return res.json();
-
-    // Rate limit handling
-    if (res.status === 429) {
-      // IUCN sagt explizit 60 Sekunden warten
-      console.warn(`⏳ IUCN 429 (Rate Limit). Warte 60 Sekunden… (${url})`);
-      await sleep(60000);
-      continue;
-    }
-
-    // Andere Fehler
-    const body = await res.text().catch(() => "");
-    console.error(`❌ IUCN HTTP ${res.status} bei ${url}${body ? ` | ${body.slice(0, 200)}` : ""}`);
-    return null;
-  }
-
-  console.error(`❌ IUCN: mehrfach 429 erhalten, Abbruch: ${url}`);
-  return null;
-}
-
-// =======================
-// IUCN ASSESSMENT
-// =======================
-
-async function getAssessmentData(assessmentId) {
-  try {
-    const res = await fetch(`${BASE}/assessment/${assessmentId}`, {
-      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/json" },
-    });
-
-    if (!res.ok) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
-
-    const data = await res.json();
-    const assessment = data.population_trend ? data : data.result ? data.result[0] : null;
-
-    if (!assessment) return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
-
-    const trendEN = assessment.population_trend?.description?.en || "Unknown";
-    const categoryCode = assessment.red_list_category?.code || "DD";
-    const population = assessment.supplementary_info?.population_size || "n/a";
-    const generation = assessment.supplementary_info?.generational_length || "n/a";
-
-    const trend = TREND_MAP[trendEN] || "Unbekannt";
-    const category = CATEGORY_MAP[categoryCode] || "Keine ausreichende Datenlage";
-
-    return { trend, category, population, generation };
-  } catch (err) {
-    logError("Fehler bei Assessment " + assessmentId + ": " + err.message);
-    return { trend: "n/a", category: "n/a", population: "n/a", generation: "n/a" };
-  }
-}
-
-// Eine Art abrufen
-async function fetchSpeciesData(genus, species, german, size, weight, lifeExpectancy) {
-  const scientific = `${genus} ${species}`;
-  const URLSlug = `${genus}${species}`.toLowerCase();
-
-  try {
-    console.log(`→ Suche Taxon für ${german} (${scientific})`);
-
-    const taxonData = await iucnGET(
-      `/taxa/scientific_name?genus_name=${encodeURIComponent(genus)}&species_name=${encodeURIComponent(species)}`
-    );
-
-    if (!taxonData?.taxon) {
-      console.error(`❌ Kein Treffer für ${scientific}`);
-      logError("Kein Treffer: " + scientific);
-      return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
-    }
-
-    const taxon = taxonData.taxon;
-    const resolvedName = taxon.scientific_name;
-
-    const globalAssessment = taxonData.assessments?.find((a) =>
-      a.scopes?.some((s) => s.description?.en === "Global")
-    );
-
-    if (!globalAssessment) {
-      console.error(`❌ Keine globale Assessment-ID für ${resolvedName}`);
-      logError("Keine globale Assessment-ID: " + resolvedName);
-      return emptyEntry(resolvedName, german, { size, weight, lifeExpectancy });
-    }
-
-    const assessmentId = globalAssessment.assessment_id;
-    const assessmentInfo = await getAssessmentData(assessmentId);
-
-    let populationFormatted = assessmentInfo.population;
-    if (typeof populationFormatted === "string") {
-      populationFormatted = populationFormatted.replace(/\d+/g, (n) =>
-        Number(n).toLocaleString("de-DE")
-      );
-    }
-
-    let generationFormatted = assessmentInfo.generation;
-    if (generationFormatted !== "n/a") {
-      generationFormatted = generationFormatted.toString().replace(".", ",") + " Jahre";
-    }
-
-    return {
-      URLSlug,
-      "Wissenschaftlicher Name": resolvedName,
-      "Deutscher Name": german,
-      Gewicht: weight,
-      Größe: size,
-      Lebenserwartung: lifeExpectancy || "n/a",
-      "Assessment ID": assessmentId,
-      Status: globalAssessment.red_list_category_code || "n/a",
-      Trend: assessmentInfo.trend,
-      Kategorie: assessmentInfo.category,
-      Populationgröße: populationFormatted,
-      Generationsdauer: generationFormatted,
-      Kingdom: formatTaxonomyName(taxon.kingdom_name),
-      Phylum: formatTaxonomyName(taxon.phylum_name),
-      Class: formatTaxonomyName(taxon.class_name),
-      Order: formatTaxonomyName(taxon.order_name),
-      Family: formatTaxonomyName(taxon.family_name),
-      Genus: taxon.genus_name || "n/a",
-      Species: taxon.species_name || "n/a",
-      "Letztes IUCN Update": globalAssessment.year_published || "n/a",
-      "Daten abgerufen": new Date().toISOString().slice(0, 10),
-    };
-  } catch (err) {
-    console.error(`❌ Fehler bei ${scientific}: ${err}`);
-    logError("Fehler bei " + scientific + ": " + err.message);
-    return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
-  }
-}
+const iucnDataAdapter = createIucnDataAdapter({
+  fetch,
+  token: TOKEN,
+  sleep,
+  logError,
+  emptyEntry,
+  formatTaxonomyName,
+  baseUrl: BASE,
+});
+const { iucnGET, fetchSpeciesData } = iucnDataAdapter;
 
 // =======================
 // MAP: pro Art
 // =======================
 
-function isJpegBuffer(buffer) {
-  return buffer.length >= 4
-    && buffer[0] === 0xff
-    && buffer[1] === 0xd8
-    && buffer[buffer.length - 2] === 0xff
-    && buffer[buffer.length - 1] === 0xd9;
-}
-
-function numericId(value) {
-  const text = String(value ?? "").trim();
-  return /^\d+$/.test(text) ? text : "";
-}
-
-function taxonIdFromTaxon(taxon) {
-  if (!taxon || typeof taxon !== "object") return "";
-  for (const key of ["sis_id", "sis_taxon_id", "taxon_id", "taxonid", "taxonId", "id"]) {
-    const id = numericId(taxon[key]);
-    if (id) return id;
-  }
-  return "";
-}
-
-async function findIucnTaxonIdForMap(entry) {
-  const direct = taxonIdFromTaxon(entry) || numericId(entry["Taxon ID"]);
-  if (direct) return direct;
-  const genus = String(entry.Genus ?? "").trim();
-  const species = String(entry.Species ?? "").trim();
-  if (!genus || !species || genus === "n/a" || species === "n/a") return "";
-  const taxonData = await iucnGET(
-    `/taxa/scientific_name?genus_name=${encodeURIComponent(genus)}&species_name=${encodeURIComponent(species)}`
-  );
-  return taxonIdFromTaxon(taxonData?.taxon);
-}
-
-function normalizeIucnPageHtml(html) {
-  return String(html ?? "")
-    .replace(/\\u0022/g, "\"")
-    .replace(/\\u0026/g, "&")
-    .replace(/\\u002F/gi, "/")
-    .replace(/\\u003D/gi, "=")
-    .replace(/\\u003F/gi, "?")
-    .replace(/\\\//g, "/")
-    .replace(/&amp;/g, "&");
-}
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function iucnMapHeaders(url) {
-  const host = new URL(url).hostname.toLowerCase();
-  const headers = {
-    Accept: "image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7",
-    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-  };
-  if (TOKEN && (host === "api.iucnredlist.org" || host === "www.iucnredlist.org" || host.endsWith(".iucnredlist.org"))) {
-    headers.Authorization = `Bearer ${TOKEN}`;
-  }
-  return headers;
-}
-
-function canUsePowerShellMapFetch(url) {
-  if (process.platform !== "win32") return false;
-  const parsed = new URL(url);
-  return parsed.hostname.toLowerCase() === "www.iucnredlist.org"
-    && parsed.pathname.includes("/api/v4/assessments/")
-    && parsed.pathname.endsWith("/distribution_map/jpg");
-}
-
-function removeQuietly(filePath) {
-  try {
-    if (fs.existsSync(filePath)) fs.rmSync(filePath, { recursive: true, force: true });
-  } catch {
-    // Temp-Dateien sind fuer den naechsten Lauf nicht relevant.
-  }
-}
-
-async function fetchJpegWithPowerShell(url) {
-  if (!canUsePowerShellMapFetch(url)) return null;
-
-  const script = `
-$Uri = $env:IUCN_MAP_URL
-$OutFile = $env:IUCN_MAP_OUTFILE
-if (-not $Uri -or -not $OutFile) {
-  throw 'IUCN_MAP_URL oder IUCN_MAP_OUTFILE fehlt.'
-}
-$headers = @{
-  Accept = 'image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7'
-  'Accept-Language' = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
-  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
-}
-if ($env:IUCN_TOKEN) {
-  $headers.Authorization = 'Bearer ' + $env:IUCN_TOKEN
-}
-try {
-  $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
-  $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
-  $status = 200
-  $contentType = ''
-  if ($response) {
-    if ($response.StatusCode) { $status = [int]$response.StatusCode }
-    if ($response.Headers -and $response.Headers['Content-Type']) {
-      $contentType = ($response.Headers['Content-Type'] -join ';')
-    }
-  }
-  [pscustomobject]@{
-    status = $status
-    contentType = $contentType
-    length = [int64]$file.Length
-  } | ConvertTo-Json -Compress
-  exit 0
-} catch {
-  $status = $null
-  if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
-  [pscustomobject]@{
-    status = $status
-    error = $_.Exception.Message
-  } | ConvertTo-Json -Compress
-  exit 1
-}
-`.trim();
-
-  let lastMessage = "";
-  for (let attempt = 1; attempt <= IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS; attempt++) {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "iucn-map-"));
-    const tempFile = path.join(tempDir, "map.jpg");
-    try {
-      const { stdout } = await execFileAsync(
-        "powershell.exe",
-        ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
-        {
-          env: {
-            ...process.env,
-            IUCN_MAP_URL: url,
-            IUCN_MAP_OUTFILE: tempFile,
-          },
-          maxBuffer: 1024 * 1024,
-          timeout: 60_000,
-        },
-      );
-      const info = JSON.parse(String(stdout || "{}"));
-      const buffer = fs.existsSync(tempFile) ? fs.readFileSync(tempFile) : Buffer.alloc(0);
-      if (info.status === 200 && buffer.length >= 10_000 && isJpegBuffer(buffer)) {
-        console.log(
-          attempt > 1
-            ? `↪ IUCN-Karte über Windows-WebRequest-Fallback geladen (Versuch ${attempt}).`
-            : "↪ IUCN-Karte über Windows-WebRequest-Fallback geladen.",
-        );
-        return buffer;
-      }
-      lastMessage = `keine gültige Karte (${info.status ?? "unbekannt"})`;
-    } catch (err) {
-      const output = String(err.stdout || err.stderr || "").trim();
-      lastMessage = err.message;
-      if (output) {
-        try {
-          const parsed = JSON.parse(output);
-          lastMessage = parsed.error || lastMessage;
-        } catch {
-          lastMessage = output.slice(0, 200);
-        }
-      }
-    } finally {
-      removeQuietly(tempDir);
-    }
-    if (attempt < IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS) {
-      console.warn(
-        `⚠ Windows-WebRequest-Fallback für IUCN-Karte fehlgeschlagen (Versuch ${attempt}/${IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS}): ${lastMessage}. Neuer Versuch folgt.`,
-      );
-      await sleep(IUCN_MAP_POWERSHELL_RETRY_DELAY_MS * attempt);
-    }
-  }
-  console.warn(`⚠ Windows-WebRequest-Fallback für IUCN-Karte nicht nutzbar: ${lastMessage || "unbekannter Fehler"}`);
-  return null;
-}
-
-function normalizeCachedMapUrl(rawUrl) {
-  const cleaned = normalizeIucnPageHtml(rawUrl)
-    .replace(/%26/gi, "&")
-    .replace(/%3D/gi, "=")
-    .replace(/\\+"/g, "")
-    .replace(/[)"',;]+$/g, "")
-    .trim();
-  if (!cleaned) return "";
-  if (cleaned.startsWith("//")) return `https:${cleaned}`;
-  if (cleaned.startsWith("/file/cached-individual-maps/")) return `https://f002.backblazeb2.com${cleaned}`;
-  if (cleaned.startsWith("cached-individual-maps/")) return `https://f002.backblazeb2.com/file/${cleaned}`;
-  return cleaned;
-}
-
-function extractCachedIucnMapUrls(text, cacheFile = "") {
-  const normalized = normalizeIucnPageHtml(text);
-  const filePattern = cacheFile ? escapeRegExp(cacheFile) : "T\\d+A\\d+\\.jpg";
-  const patterns = [
-    new RegExp(`https?:\\/\\/[^"'\\s<>]+cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
-    new RegExp(`\\/file\\/cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
-    new RegExp(`cached-individual-maps\\/${filePattern}[^"'\\s<>]*`, "gi"),
-  ];
-  const urls = [];
-  const seen = new Set();
-  for (const pattern of patterns) {
-    for (const match of normalized.matchAll(pattern)) {
-      const url = normalizeCachedMapUrl(match[0]);
-      if (!url || seen.has(url)) continue;
-      seen.add(url);
-      urls.push(url);
-    }
-  }
-  return urls;
-}
-
-async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
-  if (seen.has(url)) return null;
-  seen.add(url);
-
-  let res;
-  try {
-    res = await fetch(url, {
-      headers: iucnMapHeaders(url),
-      redirect: "follow",
-    });
-  } catch (err) {
-    const host = new URL(url).hostname;
-    const fallback = await fetchJpegWithPowerShell(url);
-    if (fallback) return fallback;
-    console.warn(`⚠ JPEG-Abruf bei ${host} fehlgeschlagen: ${err.message}`);
-    return null;
-  }
-
-  if (!res.ok) {
-    const host = new URL(url).hostname;
-    const body = await res.text().catch(() => "");
-    for (const candidate of extractCachedIucnMapUrls(body, cacheFile)) {
-      const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
-      if (cached) return cached;
-    }
-    const fallback = await fetchJpegWithPowerShell(url);
-    if (fallback) return fallback;
-    if (res.status === 403 && host.includes("iucnredlist.org")) {
-      console.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403); prüfe Cache-/Backblaze-Fallback.");
-    } else if (res.status === 401 && host.includes("backblazeb2.com")) {
-      console.warn("⚠ IUCN-Cache-Datei benötigt einen signierten Backblaze-Link; öffentlicher Cachepfad ist nicht direkt abrufbar.");
-    } else {
-      console.warn(`⚠ JPEG-Abruf fehlgeschlagen (${res.status}) bei ${host}.`);
-    }
-    return null;
-  }
-
-  const buffer = Buffer.from(await res.arrayBuffer());
-  if (buffer.length >= 10_000 && isJpegBuffer(buffer)) return buffer;
-
-  const contentType = res.headers.get("content-type") || "";
-  if (/text|json|html/i.test(contentType) || buffer.length < 2_000_000) {
-    const body = buffer.toString("utf8");
-    for (const candidate of extractCachedIucnMapUrls(body, cacheFile)) {
-      const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
-      if (cached) return cached;
-    }
-  }
-  const fallback = await fetchJpegWithPowerShell(url);
-  if (fallback) return fallback;
-  const host = new URL(url).hostname;
-  console.warn(`⚠ JPEG-Abruf bei ${host} lieferte keine gültige Kartendatei.`);
-  return null;
-}
-
-async function fetchCachedIucnMap(entry, assessmentId, name) {
-  const taxonId = await findIucnTaxonIdForMap(entry);
-  if (!taxonId) return null;
-  const cacheFile = `T${taxonId}A${assessmentId}.jpg`;
-  const pageUrl = `https://www.iucnredlist.org/species/${taxonId}/${assessmentId}`;
-  try {
-    const pageRes = await fetch(pageUrl, {
-      headers: {
-        Accept: "text/html,application/xhtml+xml",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
-    });
-    if (pageRes.ok) {
-      const html = normalizeIucnPageHtml(await pageRes.text());
-      for (const candidate of extractCachedIucnMapUrls(html, cacheFile)) {
-        const cached = await fetchValidJpeg(candidate, { cacheFile });
-        if (cached) {
-          console.log(`↪ IUCN-Karte über Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
-          return cached;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn(`⚠ IUCN-Cache-Seite für ${name} nicht nutzbar: ${err.message}`);
-  }
-
-  try {
-    const publicUrl = `https://f002.backblazeb2.com/file/cached-individual-maps/${cacheFile}`;
-    const cached = await fetchValidJpeg(publicUrl, { cacheFile });
-    if (cached) {
-      console.log(`↪ IUCN-Karte über öffentlichen Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
-      return cached;
-    }
-  } catch (err) {
-    console.warn(`⚠ IUCN-Cache-Datei für ${name} nicht nutzbar: ${err.message}`);
-  }
-  return null;
-}
-
-async function downloadMapForSpecies(
-  s,
-  { force = false, allowManual = false, recordAssessment = true } = {},
-) {
-  const name = s["Deutscher Name"] || s["Wissenschaftlicher Name"];
-  const safeName = sanitizeAssetName(name);
-  const assessmentId = s["Assessment ID"];
-
-  if (!assessmentId || assessmentId === "n/a") {
-    console.log(`⚠ Überspringe ${name}, keine gültige Assessment-ID.`);
-    return "n/a";
-  }
-
-  const assetDir = speciesAssetDir(safeName);
-  ensureDir(assetDir);
-  const filePath = path.join(assetDir, "map.jpg");
-  const tempFilePath = filePath + ".tmp";
-
-  if (fs.existsSync(filePath) && isManualAsset(safeName, "map") && !allowManual) {
-    console.log(`ℹ Manuell gepflegte Karte für ${name} ist geschützt, überspringe Download.`);
-    return "ok";
-  }
-
-  if (!force && fs.existsSync(filePath) && lastSavedAssessmentId[safeName] === assessmentId) {
-    console.log(`ℹ Karte für ${name} ist bereits aktuell, überspringe Download.`);
-    return "ok";
-  }
-
-  console.log(`→ Lade Karte für ${name} (${assessmentId})`);
-
-  try {
-    const cacheFile = numericId(s.sis_id || s.sis_taxon_id || s.taxon_id || s["Taxon ID"])
-      ? `T${numericId(s.sis_id || s.sis_taxon_id || s.taxon_id || s["Taxon ID"])}A${assessmentId}.jpg`
-      : "";
-    const directUrls = [
-      `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`,
-      `${BASE}/assessments/${assessmentId}/distribution_map/jpg`,
-    ];
-    let buffer = null;
-    for (const directUrl of directUrls) {
-      buffer = await fetchValidJpeg(directUrl, { cacheFile });
-      if (buffer) break;
-    }
-    if (!buffer) {
-      console.warn(`⚠ Direkte IUCN-Karte für ${name} nicht gefunden oder ungültig; versuche Cache-Fallback.`);
-      buffer = await fetchCachedIucnMap(s, assessmentId, name);
-    }
-    if (!buffer) {
-      console.warn(`⚠ Keine gültige Kartendatei für ${name} gefunden; vorhandene Karte bleibt erhalten.`);
-      return "missing";
-    }
-    fs.writeFileSync(tempFilePath, buffer);
-    fs.renameSync(tempFilePath, filePath);
-
-    console.log(`✔ Karte gespeichert: ${filePath}`);
-
-    if (recordAssessment) {
-      lastSavedAssessmentId[safeName] = assessmentId;
-      fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
-    }
-    return "ok";
-  } catch (err) {
-    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-    console.error(`❌ Fehler beim Download der Karte für ${name}: ${err.message}`);
-    logError(`Fehler beim Download der Karte für ${name}: ${err.message}`);
-    return "error";
-  }
-}
-
+const { downloadMapForSpecies } = createIucnMapAdapter({
+  fetch,
+  token: TOKEN,
+  iucnGET,
+  sleep,
+  sanitizeAssetName,
+  speciesAssetDir,
+  ensureDir,
+  isManualAsset,
+  isAssessmentCurrent: (safeName, assessmentId) => lastSavedAssessmentId[safeName] === assessmentId,
+  recordAssessment: (safeName, assessmentId) => {
+    lastSavedAssessmentId[safeName] = assessmentId;
+    fs.writeFileSync(ASSESSMENT_TRACK_FILE, JSON.stringify(lastSavedAssessmentId, null, 2));
+  },
+  logError,
+  baseUrl: BASE,
+});
 // =======================
 // XENO-CANTO + COMMONS + iNATURALIST SOUNDS (Open first, NC fallback) - MULTI PAGE
 // =======================
 
-function normalizeLicenseUrl(lic) {
-  if (!lic) return "";
-  if (lic.startsWith("//")) return "https:" + lic;
-  return lic;
-}
-
-function isNcLicense(lic) {
-  const s = String(lic || "").toLowerCase();
-  return (
-    s.includes("by-nc") ||
-    s.includes("noncommercial") ||
-    s.includes("non-commercial")
-  );
-}
-
-function isOpenCommercialLicense(lic) {
-  const s = String(lic || "").toLowerCase();
-  if (!s || isNcLicense(s)) return false;
-
-  return (
-    s.includes("creativecommons.org/licenses/by/") ||
-    s.includes("creativecommons.org/licenses/by-sa/") ||
-    s.includes("creativecommons.org/licenses/by-nd/") ||
-    s.includes("creativecommons.org/publicdomain/zero/") ||
-    s.includes("public-domain") ||
-    s.includes("cc0") ||
-    /\bcc-by(-sa|-nd)?\b/.test(s)
-  );
-}
-
 function validateDownloadedMp3(buffer, source, german) {
   if (isMp3Buffer(buffer)) return true;
   const format = audioFormatLabel(detectAudioFormat(buffer));
-  console.warn(
-    `⚠ ${source}-Datei für ${german} ist technisch ${format} und kein gültiges MP3; Kandidat wird übersprungen.`,
-  );
+  console.warn("⚠ " + source + "-Datei für " + german + " ist technisch " + format + " und kein gültiges MP3; Kandidat wird übersprungen.");
   return false;
 }
 
 function readSoundLicense(creditsPath) {
   if (!fs.existsSync(creditsPath)) return "";
-
   try {
     const credits = JSON.parse(fs.readFileSync(creditsPath, "utf8"));
     return normalizeLicenseUrl(credits.license || "");
-  } catch (err) {
-    logError(`Credits konnten nicht gelesen werden (${creditsPath}): ${err.message}`);
+  } catch (error) {
+    logError("Credits konnten nicht gelesen werden (" + creditsPath + "): " + error.message);
     return "";
   }
 }
 
-function buildXenoQuery(genus, species, qLetter, len2535) {
-  const parts = [`gen:${genus}`, `sp:${species}`];
-  if (qLetter) parts.push(`q:${qLetter}`);
-  if (len2535) parts.push(`len:25-35`);
-  return parts.join(" ");
-}
+const { findRecordingByStage } = createXenoCantoAdapter({
+  fetch,
+  token: XENO_TOKEN,
+  sleep,
+});
 
-async function fetchXenoPage(query, page) {
-  const apiUrl =
-    `https://xeno-canto.org/api/3/recordings?query=${encodeURIComponent(query)}` +
-    `&key=${encodeURIComponent(XENO_TOKEN)}&page=${page}`;
-
-  try {
-    const res = await fetch(apiUrl);
-    if (!res.ok) return { ok: false, status: res.status, recordings: [], apiUrl };
-
-    const data = await res.json();
-    const recs = Array.isArray(data.recordings) ? data.recordings : [];
-    const numPages = Number(data.numPages || data.num_pages || data.pages || 0) || null;
-
-    return { ok: true, status: res.status, recordings: recs, apiUrl, numPages };
-  } catch (e) {
-    return { ok: false, status: 0, recordings: [], apiUrl, error: e.message };
-  }
-}
-
-async function findRecordingByStage(genus, species, stage, { isRejected = () => false } = {}) {
-  const query = buildXenoQuery(genus, species, stage.q, stage.len2535);
-
-  let maxPages = MAX_XENO_PAGES;
-  for (let page = 1; page <= maxPages; page++) {
-    const resp = await fetchXenoPage(query, page);
-
-    if (!resp.ok) {
-      console.warn(`⚠ Xeno-Canto API Fehler ${resp.status} für ${genus} ${species} (page ${page})`);
-      await sleep(150);
-      continue;
-    }
-
-    if (resp.numPages && resp.numPages < maxPages) maxPages = resp.numPages;
-
-    if (!resp.recordings.length) {
-      await sleep(80);
-      continue;
-    }
-
-    if (stage.openOnly) {
-      const open = resp.recordings.find((r) => !isNcLicense(r.lic) && !isRejected(r));
-      if (open) return { rec: open, query, page };
-    } else {
-      const recording = resp.recordings.find((r) => !isRejected(r));
-      if (recording) return { rec: recording, query, page };
-    }
-
-    await sleep(80);
-  }
-
-  return null;
-}
-
-function stripHtml(value) {
-  return String(value || "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#039;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .trim();
-}
-
-function commonsMetaValue(meta, key) {
-  return stripHtml(meta?.[key]?.value || "");
-}
-
-function commonsMp3Url(fileUrl) {
-  if (!fileUrl) return "";
-  if (/\.mp3($|\?)/i.test(fileUrl)) return fileUrl;
-
-  const fileName = fileUrl.split("/").pop();
-  if (!fileName || !/\.(ogg|oga)$/i.test(fileName)) return "";
-
-  return fileUrl.replace("/wikipedia/commons/", "/wikipedia/commons/transcoded/") + `/${fileName}.mp3`;
-}
-
-async function isReachableMp3(url) {
-  if (!url) return false;
-
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    return res.ok;
-  } catch (_) {
-    return false;
-  }
-}
-
-function isExactCommonsSpecies(hit, genus, species) {
-  const scientific = `${genus} ${species}`.toLowerCase();
-  const scientificUnderscore = `${genus}_${species}`.toLowerCase();
-  const haystack = [hit.title, hit.description, hit.categories, hit.objectName].join(" ").toLowerCase();
-
-  return haystack.includes(scientific) || haystack.includes(scientificUnderscore);
-}
-
-async function fetchCommonsAudioCandidates(query) {
-  const apiUrl =
-    "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*" +
-    "&generator=search&gsrnamespace=6&gsrlimit=20" +
-    `&gsrsearch=${encodeURIComponent(query)}` +
-    "&prop=imageinfo&iiprop=url|mime|extmetadata";
-
-  try {
-    const res = await fetch(apiUrl, {
-      headers: { "User-Agent": "fnwildlifetravel-iucn-sound-updater/1.0" },
-    });
-    if (!res.ok) return [];
-
-    const data = await res.json();
-    const pages = Object.values(data.query?.pages || {});
-
-    return pages
-      .map((page) => {
-        const info = page.imageinfo?.[0] || {};
-        const meta = info.extmetadata || {};
-        const licenseUrl = normalizeLicenseUrl(commonsMetaValue(meta, "LicenseUrl"));
-        const licenseShort = commonsMetaValue(meta, "LicenseShortName");
-        const usageTerms = commonsMetaValue(meta, "UsageTerms");
-        const mp3Url = commonsMp3Url(info.url || "");
-
-        return {
-          query,
-          title: page.title || "",
-          fileUrl: info.url || "",
-          mp3Url,
-          descriptionUrl: info.descriptionurl || "",
-          mime: info.mime || "",
-          license: licenseUrl || licenseShort || usageTerms,
-          licenseShort,
-          artist: commonsMetaValue(meta, "Artist"),
-          credit: commonsMetaValue(meta, "Credit"),
-          description: commonsMetaValue(meta, "ImageDescription"),
-          categories: commonsMetaValue(meta, "Categories"),
-          objectName: commonsMetaValue(meta, "ObjectName"),
-        };
-      })
-      .filter((hit) => {
-        const looksAudio =
-          String(hit.mime || "").startsWith("audio/") ||
-          /\.(mp3|ogg|oga|wav|flac|opus)$/i.test(hit.title) ||
-          /\.(mp3|ogg|oga|wav|flac|opus)$/i.test(hit.fileUrl);
-
-        return looksAudio && isOpenCommercialLicense(hit.license) && hit.mp3Url;
-      });
-  } catch (err) {
-    logError(`Commons-Suche fehlgeschlagen (${query}): ${err.message}`);
-    return [];
-  }
-}
-
-function scoreCommonsHit(hit, genus, species) {
-  const scientific = `${genus} ${species}`.toLowerCase();
-  const scientificUnderscore = `${genus}_${species}`.toLowerCase();
-  const title = String(hit.title || "").toLowerCase();
-  const description = String(hit.description || "").toLowerCase();
-  const categories = String(hit.categories || "").toLowerCase();
-
-  let score = 0;
-  if (title.includes(scientific) || title.includes(scientificUnderscore)) score += 50;
-  if (description.includes(scientific) || description.includes(scientificUnderscore)) score += 20;
-  if (categories.includes(scientific) || categories.includes(scientificUnderscore)) score += 10;
-  if (String(hit.license || "").toLowerCase().includes("/by/")) score += 3;
-  if (String(hit.license || "").toLowerCase().includes("/by-sa/")) score += 2;
-  return score;
-}
-
+const commonsAudioAdapter = createWikimediaCommonsAudioAdapter({ fetch, sleep, logError });
 async function findCommonsRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
-  const queries = [
-    `${genus} ${species} audio`,
-    `${genus} ${species} sound`,
-    `${genus} ${species} call`,
-  ];
-
-  const candidates = [];
-  const seen = new Set();
-
-  for (const query of queries) {
-    const hits = await fetchCommonsAudioCandidates(query);
-    for (const hit of hits) {
-      const key = hit.descriptionUrl || hit.fileUrl || hit.title;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      if (!isExactCommonsSpecies(hit, genus, species)) continue;
-      if (isRejectedSoundCandidate(safeName, commonsRejectionKey(hit), german, extraRejectedKeys)) continue;
-      candidates.push(hit);
-    }
-    await sleep(150);
-  }
-
-  candidates.sort((a, b) => scoreCommonsHit(b, genus, species) - scoreCommonsHit(a, genus, species));
-
-  for (const hit of candidates) {
-    if (await isReachableMp3(hit.mp3Url)) return hit;
-  }
-
-  if (candidates.length) {
-    console.log(`⚠ Commons-Treffer für ${german}, aber kein erreichbarer MP3-Transcode.`);
-  }
-
-  return null;
-}
-
-function inatLicenseUrl(code) {
-  const value = String(code || "").toLowerCase().replace(/^cc-/, "");
-  if (!value) return "";
-  if (value === "cc0" || value === "public-domain") return "https://creativecommons.org/publicdomain/zero/1.0/";
-  if (value === "by") return "https://creativecommons.org/licenses/by/4.0/";
-  if (value === "by-sa") return "https://creativecommons.org/licenses/by-sa/4.0/";
-  if (value === "by-nd") return "https://creativecommons.org/licenses/by-nd/4.0/";
-  return code;
-}
-
-function inatSounds(observation) {
-  const direct = Array.isArray(observation.sounds) ? observation.sounds : [];
-  const nested = Array.isArray(observation.observation_sounds)
-    ? observation.observation_sounds.map((entry) => entry.sound).filter(Boolean)
-    : [];
-
-  return [...direct, ...nested];
-}
-
-function inatSoundUrl(sound) {
-  return sound.file_url || sound.fileUrl || sound.url || sound.original_url || "";
-}
-
-function isDirectMp3Sound(sound) {
-  const contentType = String(sound.file_content_type || "").toLowerCase();
-  const url = inatSoundUrl(sound);
-  return contentType.includes("audio/mpeg") || /\.mp3($|\?)/i.test(url);
-}
-
-async function fetchInatObservations(genus, species, qualityGrade) {
-  const scientific = `${genus} ${species}`;
-  const params = new URLSearchParams({
-    taxon_name: scientific,
-    sounds: "true",
-    per_page: "100",
-    order_by: "created_at",
-    order: "desc",
+  return commonsAudioAdapter.findRecording(genus, species, german, {
+    isRejected: (hit) => isRejectedSoundCandidate(
+      safeName,
+      commonsRejectionKey(hit),
+      german,
+      extraRejectedKeys,
+    ),
   });
-  if (qualityGrade) params.set("quality_grade", qualityGrade);
-
-  const apiUrl = `https://api.inaturalist.org/v1/observations?${params.toString()}`;
-
-  try {
-    const res = await fetch(apiUrl, {
-      headers: { "User-Agent": "fnwildlifetravel-iucn-sound-updater/1.0" },
-    });
-    if (!res.ok) return { ok: false, status: res.status, results: [], apiUrl };
-
-    const data = await res.json();
-    return { ok: true, status: res.status, results: Array.isArray(data.results) ? data.results : [], apiUrl };
-  } catch (err) {
-    logError(`iNaturalist-Suche fehlgeschlagen (${scientific}): ${err.message}`);
-    return { ok: false, status: 0, results: [], apiUrl };
-  }
 }
 
+const inaturalistAudioAdapter = createINaturalistAudioAdapter({ fetch, sleep, logError });
 async function findInatRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
-  const scientific = `${genus} ${species}`.toLowerCase();
-  const qualityPasses = ["research", "needs_id", ""];
-  const seen = new Set();
-
-  for (const qualityGrade of qualityPasses) {
-    const resp = await fetchInatObservations(genus, species, qualityGrade);
-    if (!resp.ok) {
-      console.warn(`⚠ iNaturalist API Fehler ${resp.status} für ${genus} ${species}`);
-      await sleep(250);
-      continue;
-    }
-
-    for (const observation of resp.results) {
-      const taxonName = String(observation.taxon?.name || "").toLowerCase();
-      if (taxonName !== scientific) continue;
-
-      for (const sound of inatSounds(observation)) {
-        const url = inatSoundUrl(sound);
-        const key = sound.uuid || sound.id || url;
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-
-        const license = sound.license_code || sound.license || "";
-        if (!isOpenCommercialLicense(license)) continue;
-        if (!isDirectMp3Sound(sound)) continue;
-        const candidate = { observation, sound, url, qualityGrade: qualityGrade || "any" };
-        if (isRejectedSoundCandidate(safeName, inatRejectionKey(candidate), german, extraRejectedKeys)) continue;
-        if (!(await isReachableMp3(url))) continue;
-
-        return candidate;
-      }
-    }
-
-    await sleep(250);
-  }
-
-  console.log(`ℹ Keine freie iNaturalist-MP3 gefunden für ${german}.`);
-  return null;
+  return inaturalistAudioAdapter.findRecording(genus, species, german, {
+    isRejected: (hit) => isRejectedSoundCandidate(
+      safeName,
+      inatRejectionKey(hit),
+      german,
+      extraRejectedKeys,
+    ),
+  });
 }
 
 async function tryXenoStageCandidates({

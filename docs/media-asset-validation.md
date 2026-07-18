@@ -1,6 +1,6 @@
 # Medienprüfung und Pages-Größenbudget
 
-Stand: 2026-07-12
+Stand: 2026-07-18
 
 ## Zweck
 
@@ -65,6 +65,12 @@ verändert noch gelöscht.
 Der Stand vom 2026-07-13 umfasst 364 Dateien mit 89,72 MiB bei einem automatisch berechneten Budget von 134,5 MiB.
 Die geplante globale Taxonomiereferenz aus Phase 7.9 bleibt vollständig außerhalb von Git und GitHub Pages und
 belastet dieses Budget nicht.
+
+Unabhängig vom öffentlichen Artefakt prüft `size:check` den versionierten Projektstand mit 20 MiB Grundbedarf plus
+2,5 MiB je Art und ebenfalls 500 MiB absolutem Limit. Bei 50 Arten nutzt der Stand vom 2026-07-18 92,6 von
+145,0 MiB. Die lokale Git-Packhistorie wird nur beobachtet: Warnung ab 500 MiB und verpflichtende
+Speicherplanung ab 750 MiB. Ein History-Rewrite erfolgt niemals automatisch. Details:
+`docs/repository-quality-gates.md`.
 
 ## CI-Ablauf
 

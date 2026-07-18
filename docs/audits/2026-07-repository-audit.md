@@ -413,7 +413,8 @@ Umsetzungsstand am 2026-07-15:
   Moduleigentümern zu. Das vollständige lokale Qualitätsgate sowie ein Browser-Smoke-Test mit Artwechsel,
   Karten-Lightbox, Bearbeitungsformular und Kurzbestätigung bestanden ohne Konsolenfehler. Squarespace-
   Laufzeitdateien, Footer-Versionen und Custom CSS blieben unverändert.
-- A4 bleibt offen. Als nächste sichere Grenze wird ein fachlich geschlossener Oberflächenbereich getrennt. Jeder
+- Zwischenstand: A4 blieb an dieser Stelle noch offen. Als nächste sichere Grenze wurde ein fachlich geschlossener
+  Oberflächenbereich getrennt. Jeder
   Schnitt erhält vor der nächsten Extraktion eigene Verhaltensprüfungen.
 
 Ergänzung vom 2026-07-17:
@@ -583,6 +584,11 @@ Dokumente verwenden. `docs/` und Designquellen standardmäßig nicht deployen. D
 noch die alte Bezeichnung `IUCN Species Data`; das sollte mit dem Produktnamen `Arten-Explorer` beziehungsweise der
 reinen Datenbasis bewusst vereinheitlicht werden.
 
+**Erledigt am 2026-07-18.** Builder und Prüfer verwenden dieselbe Positivliste. Das Artefakt enthält keine
+Repository-Dokumentation und kein `README.md` mehr; Artassets werden auf bekannte Laufzeitdateien und Grafiken auf
+PNG begrenzt. Der generierte Index heißt `Arten-Explorer`. Der lokale Gegencheck umfasste 331 freigegebene Dateien
+mit 90,4 MiB und exakt übereinstimmender Soll-/Ist-Pfadliste.
+
 ### A9. Tests sind umfangreich, aber zentral und teilweise quelltextgebunden
 
 Die inzwischen 24 Explorer-Tests besitzen viele wertvolle Integrationsfälle. Gleichzeitig enthält die zentrale
@@ -596,6 +602,12 @@ Empfehlung:
 - statische Vertragsprüfungen nur dort behalten, wo kein günstiger Verhaltenstest möglich ist;
 - einen konventionellen `npm test`-Alias hinzufügen.
 
+**Erledigt am 2026-07-18.** Die API-Integration ist in Serverbasis, Artenabläufe, Assets sowie Bereinigung/Suche
+aufgeteilt. Der große Oberflächenvertrag bleibt bewusst separat, weil er Modulbesitz, Browser-Ladereihenfolge und
+Auslieferung prüft. Die fünf Explorer-Testdateien bestanden gemeinsam mit 21 von 21 Prüfungen. Sechs direkte Tests
+decken zusätzlich IUCN-, Karten-, Xeno-Canto-, Commons-, iNaturalist- und Lizenzadapter ab. `npm test` bleibt der
+gemeinsame Einstieg.
+
 ### A10. Format-, Schema- und Stilwerkzeuge fehlen
 
 Aktuell existieren keine zentrale JSON-Schema-/Datenvalidierung, kein Linter, kein Formatter und kein Typecheck.
@@ -607,6 +619,11 @@ Empfehlung:
 - danach ESLint/Prettier oder eine bewusst schlanke Alternative in einem eigenen, mechanischen Schritt;
 - keine großflächige Formatierung zusammen mit funktionalen Änderungen.
 
+**Erledigt am 2026-07-18.** `check:style` prüft ohne automatische Umschreibung Kodierung, Abschlusszeile,
+nachgestellte Leerzeichen und Tabs. `check:schema` validiert Artenliste, generierte Artdaten, Overrides,
+Assessment-Zuordnungen und Fehlreport fachlich. Direkte Tests sichern beide Werkzeuge; `quality:ci` führt sie vor
+den übrigen Tests aus. Eine repositoryweite Neuformatierung wurde bewusst nicht vorgenommen.
+
 ### A11. Große Binärhistorie bleibt auch nach einer Medienkorrektur bestehen
 
 Aktuell sind 385 Dateien mit zusammen rund 231,02 MiB getrackt. Davon entfallen 184,79 MiB auf Dateien mit der
@@ -615,6 +632,20 @@ Endung `.mp3`. Die Git-Objektdatenbank belegt rund 408,16 MiB in Packs plus 15,6
 Die Audio-Konvertierung reduziert den aktuellen Stand, aber nicht automatisch die vorhandene Git-Historie.
 Empfehlung: zunächst keine riskante History-Rewrite-Aktion. Nach der Formatmigration Wachstum beobachten und erst
 dann entscheiden, ob Git LFS, externer Objektspeicher oder eine kontrollierte Historienbereinigung erforderlich ist.
+
+**Erledigt am 2026-07-18.** Der aktuelle Projektstand besitzt ein flexibles Budget von 20 MiB Grundbedarf plus
+2,5 MiB je Art und ein absolutes 500-MiB-Limit. Bei 50 Arten werden 92,6 von 145,0 MiB genutzt. Die lokale
+Git-Packhistorie liegt bei 434,5 MiB und wird unabhängig davon beobachtet: Warnung ab 500 MiB, verpflichtende
+Speicherplanung ab 750 MiB. Es erfolgt kein automatischer History-Rewrite. Details und Rückfallgrenzen stehen in
+`docs/repository-quality-gates.md`.
+
+## Abschluss der technischen Restpunkte am 2026-07-18
+
+Auditpunkt A4 wurde mit der Auslagerung der IUCN-, Karten-, Xeno-Canto-, Wikimedia-Commons-, iNaturalist- und
+Lizenzlogik aus `update.mjs` vollständig geschlossen. `update.mjs` sank von 1.992 auf 1.181 Zeilen und bleibt die
+Pipeline-Orchestrierung. Die vier API-Testbereiche umfassen nun 453, 734, 777 und 333 Zeilen statt einer zentralen
+2.102-Zeilen-Datei; der eigenständige UI-Vertrag umfasst 798 Zeilen. A8 bis A11 sind ebenfalls umgesetzt und Teil
+des gemeinsamen Qualitätsgates. Es bleibt kein technischer Audit-Blocker vor Phase 8 offen.
 
 ## Dateistruktur: Was bleiben darf und was bereinigt werden sollte
 

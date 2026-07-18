@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-16
+Stand: 2026-07-18
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -34,7 +34,8 @@ Zentrale Dateien:
 
 - `species_list.json`: manuelle Artenliste und Input fuer die Pipeline, inklusive Groesse, Gewicht und
   Lebenserwartung
-- `update.mjs`: Datenpipeline fuer IUCN, Karten, Xeno-Canto, Wikimedia Commons, iNaturalist, Sounds und Reports
+- `update.mjs`: Orchestrierung der Datenpipeline; externe Anbieter liegen in direkt getesteten Adaptern unter
+  `scripts/*-adapter.mjs`
 - `speciesData.json`: generierte Datenbank fuer die Frontend-Module
 - `species-assets-overrides.json`: maschinenlesbarer Schutzstatus fuer manuell gepflegte Karten und Sounds
 - `species-assets/<Artname>/map.jpg`: primaere Verbreitungskarte pro Art
@@ -71,7 +72,8 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/project-publication.mjs` und `backup-service.mjs`: Git-Übertragung, offene Änderungen,
   Backup-Einstellungen und NAS-Sicherung
 - `species-explorer/asset-backups.mjs`: wiederherstellbare Asset-Sicherungen und begrenzte Backup-/Log-Aufbewahrung
-- `species-explorer/server.test.mjs`: API-, Schreibschutz-, Backup-, Such- und Filterintegrationstests
+- `species-explorer/server.test.mjs`, `server-species-workflows.test.mjs`, `server-assets.test.mjs` und
+  `server-cleanup-search.test.mjs`: fachlich getrennte API-Integrationstests
 - `species-explorer/explorer-ui-contract.test.mjs`: Oberflächen-, Modulbesitz- und Auslieferungsverträge
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
@@ -230,6 +232,10 @@ Vollständiges lokales CI-Qualitätsgate:
 npm.cmd run --silent quality:ci
 ```
 
+Das Qualitätsgate umfasst zusätzlich `check:style`, `check:schema` und `size:check`. Das flexible
+Repository-Budget wächst mit der Artenzahl; die Git-Historie wird getrennt und ohne automatischen Rewrite
+beobachtet. Details: `docs/repository-quality-gates.md`.
+
 Das Audit-Skript `scripts/monthly-site-audit.mjs` schreibt keine Datei, sondern gibt JSON auf stdout aus. Temporare
 Zwischenergebnisse gehoeren nach `Testlauf/` und werden nach Abschluss geloescht oder als zusammengefasster Bericht
 unter `docs/audits/` dokumentiert.
@@ -328,7 +334,7 @@ Aktuelle Planung:
   `Keine Tierstimme verfügbar` ohne Schlusspunkt. Der Footer mit `1.0.24` wurde von Felix am 2026-06-19 angepasst
   und live erfolgreich getestet.
 - Phase 7 - Desktop-App / Arten-Explorer:
-  in Arbeit seit 2026-06-17. Die technische Basis steht in `docs/desktop-app-plan.md`.
+  abgeschlossen am 2026-07-18. Die technische Basis steht in `docs/desktop-app-plan.md`.
   Entscheidung fuer den Start: lokale Node-Web-App mit Browseroberflaeche.
   Phase 7.2 ist seit 2026-06-18 erledigt: read-only Prototyp mit 45 Arten, Suche, Filtern, Detaildaten, Karte, Sound,
   Credits, Spektrogramm und Assetstatus. Karten werden vollstaendig im Originalseitenverhaeltnis angezeigt.
@@ -848,6 +854,10 @@ Aktuelle Planung:
   auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 784 Zeilen. Alle 21 Explorer-Prüfungen
   bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-JavaScript,
   Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der technische Abschlusslauf vom 2026-07-18 trennt zusätzlich die externen IUCN-, Karten-, Xeno-Canto-,
+  Wikimedia-Commons- und iNaturalist-Anbieter aus `update.mjs`, teilt die API-Integrationstests in vier fachliche
+  Dateien und schließt A8 bis A11 mit enger Pages-Positivliste, Style-/Schema-Gates und flexiblem Größenbudget.
+  Phase 7 ist damit abgeschlossen; vor Phase 8 bleibt kein technischer Audit-Blocker offen.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

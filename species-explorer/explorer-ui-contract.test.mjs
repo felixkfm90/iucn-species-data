@@ -47,6 +47,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     portraitAssetWorkflowSource,
     assetMaintenanceSource,
     updateSource,
+    iucnDataAdapterSource,
+    iucnMapAdapterSource,
+    xenoAdapterSource,
+    commonsAdapterSource,
+    inaturalistAdapterSource,
     desktopLauncherSource,
     shortcutInstallerSource,
     desktopMainSource,
@@ -110,6 +115,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./portrait-asset-workflow.mjs", import.meta.url), "utf8"),
     readFile(new URL("./asset-maintenance.mjs", import.meta.url), "utf8"),
     readFile(new URL("../update.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/iucn-data-adapter.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/iucn-map-adapter.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/xeno-canto-adapter.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/wikimedia-commons-audio-adapter.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/inaturalist-audio-adapter.mjs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/start-explorer.vbs", import.meta.url), "utf8"),
     readFile(new URL("./desktop/install-shortcut.ps1", import.meta.url), "utf8"),
     readFile(new URL("./desktop/main.mjs", import.meta.url), "utf8"),
@@ -484,20 +494,24 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(assetWorkflowSource, /async function restoreSpeciesAsset\(id, assetType\)/);
   assert.match(assetWorkflowSource, /restoreSpeciesAsset\(id, assetType\)/);
   assert.match(projectPublicationSource, /"docs\/manual-map-overrides\.md"/);
-  assert.match(updateSource, /isManualAsset\(safeName, "map"\)/);
+  assert.match(iucnMapAdapterSource, /isManualAsset\(safeName, "map"\)/);
   assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
   assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
-  assert.match(updateSource, /function iucnMapHeaders\(url\)/);
-  assert.match(updateSource, /headers\.Authorization = `Bearer \$\{TOKEN\}`/);
-  assert.match(updateSource, /async function fetchJpegWithPowerShell\(url\)/);
-  assert.match(updateSource, /IUCN_MAP_POWERSHELL_RETRY_ATTEMPTS = 3/);
-  assert.match(updateSource, /Neuer Versuch folgt/);
-  assert.match(updateSource, /IUCN_MAP_URL/);
-  assert.match(updateSource, /Invoke-WebRequest -UseBasicParsing/);
-  assert.match(updateSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
-  assert.match(updateSource, /cached-individual-maps/);
-  assert.match(updateSource, /\$\{BASE\}\/assessments\/\$\{assessmentId\}\/distribution_map\/jpg/);
-  assert.match(updateSource, /fetchValidJpeg\(directUrl, \{ cacheFile \}\)/);
+  assert.match(iucnDataAdapterSource, /createIucnDataAdapter/);
+  assert.match(iucnMapAdapterSource, /function requestHeaders\(url\)/);
+  assert.match(iucnMapAdapterSource, /headers\.Authorization = `Bearer \$\{token\}`/);
+  assert.match(iucnMapAdapterSource, /async function fetchWithPowerShell\(url\)/);
+  assert.match(iucnMapAdapterSource, /powerShellRetryAttempts = 3/);
+  assert.match(iucnMapAdapterSource, /Neuer Versuch folgt/);
+  assert.match(iucnMapAdapterSource, /IUCN_MAP_URL/);
+  assert.match(iucnMapAdapterSource, /Invoke-WebRequest -UseBasicParsing/);
+  assert.match(iucnMapAdapterSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
+  assert.match(iucnMapAdapterSource, /cached-individual-maps/);
+  assert.match(iucnMapAdapterSource, /\$\{baseUrl\}\/assessments\/\$\{assessmentId\}\/distribution_map\/jpg/);
+  assert.match(iucnMapAdapterSource, /fetchValidJpeg\(url, \{ cacheFile \}\)/);
+  assert.match(xenoAdapterSource, /createXenoCantoAdapter/);
+  assert.match(commonsAdapterSource, /createWikimediaCommonsAudioAdapter/);
+  assert.match(inaturalistAdapterSource, /createINaturalistAudioAdapter/);
   assert.match(updateSource, /args\.mode === "manual-maps"/);
   assert.match(updateSource, /args\.mode === "nc-sounds"/);
   assert.match(updateSource, /rejectedSoundKeys/);

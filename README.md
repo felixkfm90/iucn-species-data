@@ -43,6 +43,9 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
   `species-assets/<SafeName>/spectrogram.webp`
 - `scripts/prepare-pages-artifact.mjs`: baut das kontrollierte GitHub-Pages-Artefakt unter `_site/`
 - `scripts/check-syntax.mjs`: parserbasierter Syntaxcheck für alle versionierten JavaScript-/MJS-Quellen
+- `scripts/check-source-style.mjs`: schlanke Kodierungs-, Zeilenenden-, Leerzeichen- und Tabprüfung
+- `scripts/validate-data-schema.mjs`: fachliche Schema-Prüfung der zentralen JSON-Datenbestände
+- `scripts/repository-size-budget.mjs`: flexibles Größenbudget und Beobachtung der lokalen Git-Packhistorie
 - `scripts/validate-project-state.mjs`: verbindlicher lokaler Daten-, Report-, Override- und Zuordnungscheck
 - `scripts/validate-pages-artifact.mjs`: vergleicht `_site/` exakt mit der öffentlichen Dateifreigabe
 - `.github/workflows/pages.yml`: eigenes GitHub-Actions-Deployment fuer GitHub Pages
@@ -73,6 +76,7 @@ Versionierte Referenzen liegen unter:
 - `docs/media-asset-validation.md`
 - `docs/explorer-api-security.md`
 - `docs/ci-quality-gate.md`
+- `docs/repository-quality-gates.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/manual-map-overrides.md`
@@ -99,17 +103,17 @@ GitHub Pages wird nicht mehr aus dem kompletten Branch-Root gebaut. Das Repo nut
 GitHub-Actions-Deployment unter `.github/workflows/pages.yml`.
 
 Der Workflow erzeugt mit `npm.cmd run pages:prepare` beziehungsweise `node scripts/prepare-pages-artifact.mjs` ein
-kontrolliertes `_site/`-Artefakt. Veröffentlicht werden nur die fuer Squarespace und die Projektdokumentation
-benoetigten statischen Dateien:
+kontrolliertes `_site/`-Artefakt. Veröffentlicht werden nur die fuer Squarespace benötigten Laufzeitdateien:
 
 - Frontend-JavaScript aus dem Repo-Root
 - `speciesData.json`, `species_list.json`, `fehlende_elemente_report.json`, `lastSavedAssessmentId.json` und
   `species-assets-overrides.json`
 - `species-assets/`
-- `graphics/`
-- `docs/`
-- `README.md`
+- freigegebene PNG-Laufzeitgrafiken unter `graphics/`
 - `.nojekyll`
+
+Repository-Dokumentation, `README.md`, lokale Sicherungen, unbekannte Assetdateien und Designquellen bleiben
+außerhalb des öffentlichen Artefakts.
 
 Vor dem Build muss der getrennte Job `Quality checks` erfolgreich sein. Er installiert den gesperrten
 Abhängigkeitsstand, prüft Syntax, alle Testgruppen, Audio-/Medienformate, Daten-/Reportkonsistenz und den lokalen
@@ -215,8 +219,8 @@ Bearbeiten ausgewaehlter Felder in `species_list.json`:
 
 `species-explorer/server.mjs` ist dabei nur noch die Kompositions- und HTTP-Adapterwurzel. CRUD, Karten-, Sound-,
 Portrait- und Assetpflege, Pipeline, Git-Veröffentlichung und NAS-Sicherung liegen in getrennten Fachmodulen.
-`server.test.mjs` prüft die zusammengesetzten API-Abläufe; `explorer-ui-contract.test.mjs` sichert getrennt die
-Oberflächen-, Modulbesitz- und Auslieferungsverträge.
+Die zusammengesetzten API-Abläufe sind in Serverbasis, Artenabläufe, Assets sowie Bereinigung/Suche aufgeteilt;
+`explorer-ui-contract.test.mjs` sichert getrennt die Oberflächen-, Modulbesitz- und Auslieferungsverträge.
 
 ```bash
 npm.cmd run species:explorer
@@ -697,7 +701,8 @@ Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 
-Die verbleibenden technischen Verbesserungen aus dem Repository-Audit schliessen Phase 7 ab. Danach folgen in der
+Die technischen Verbesserungen aus dem Repository-Audit wurden am 2026-07-18 abgeschlossen und schließen Phase 7
+ab. Danach folgen in der
 verbindlichen Reihenfolge Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits und Soundeditor, Phase 9 mit globaler
 lokaler Taxonomie-Referenzdatenbank und Lightroom-Integration, Phase 10 mit Mehrgeraetebetrieb, automatischen
 Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und Abschlusskriterien stehen in

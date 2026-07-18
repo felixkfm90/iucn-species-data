@@ -24,7 +24,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `README.md` | GitHub-Startseite und Projektueberblick. Nicht nach `docs/` verschieben. |
 | `AGENTS.md` | Arbeitsregeln und Uebergabe fuer Codex/Agenten. Muss schnell auffindbar bleiben. |
 | `species-core.js`, `species-info.js`, `species-taxonomy.js`, `species-status.js`, `species-sound.js`, `map-loader.js`, `search.js`, `sort.js`, `lightbox-zoom.js` | Werden im Squarespace-Footer direkt aus dem Repo-Root ueber GitHub Pages geladen. Verschieben wuerde Footer-Aenderungen erfordern. |
-| `update.mjs` | Zentrale lokale Datenpipeline. |
+| `update.mjs` | Orchestriert die lokale Datenpipeline; externe Quellen liegen in `scripts/*-adapter.mjs`. |
 | `species_list.json` | Manuelle Eingabeliste fuer die Pipeline: Name, Taxon, Groesse, Gewicht und Lebenserwartung. |
 | `speciesData.json` | Wird von den Frontend-Modulen ueber GitHub Pages geladen. |
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
@@ -47,9 +47,10 @@ wieder als Grossblock in `app.js` eingebaut.
 Der lokale Server verwendet dieselben Eigentumsregeln: Neue Modell-, CRUD-, Medien-, Pipeline-, Publikations-,
 Backup-, Dokumentations- oder Formatierungslogik wird dem vorhandenen Fachmodul zugeordnet und nicht wieder in
 `server.mjs` eingebaut. `server-test-fixtures.mjs` enthält ausschließlich wiederverwendbare Testfixtures; direkte
-Modultests liegen neben dem jeweiligen Modul. `server.test.mjs` bleibt der End-to-End-Integrationstest für die
-zusammengesetzten lokalen API-Abläufe. `explorer-ui-contract.test.mjs` prüft getrennt Browseroberfläche,
-Modulzuständigkeiten und HTTP-Auslieferungsverträge.
+Modultests liegen neben dem jeweiligen Modul. Zusammengesetzte API-Abläufe sind in `server.test.mjs`,
+`server-species-workflows.test.mjs`, `server-assets.test.mjs` und `server-cleanup-search.test.mjs` fachlich
+aufgeteilt. `explorer-ui-contract.test.mjs` prüft getrennt Browseroberfläche, Modulzuständigkeiten und
+HTTP-Auslieferungsverträge.
 
 ## Muss versioniert bleiben, obwohl generiert
 
@@ -82,6 +83,10 @@ Modulzuständigkeiten und HTTP-Auslieferungsverträge.
 `Testlauf/` darf waehrend eines aktiven Themas Skripte, Reports oder andere Zwischenstaende enthalten. Nach Abschluss
 des Themas wird der Ordner wieder geleert; produktive Artefakte werden stattdessen in die passende Repo-Struktur oder
 Dokumentation uebernommen.
+
+Das Pages-Artefakt enthält weder `README.md` noch `docs/`. Öffentlich sind nur die explizit freigegebenen
+Frontendmodule, zentralen JSON-Dateien, Artassets und benötigten PNG-Grafiken. Repositoryweite Style-, Schema- und
+Größenregeln stehen in `docs/repository-quality-gates.md`.
 
 ## Dokumentationsstruktur
 

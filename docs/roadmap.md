@@ -212,7 +212,7 @@ Frontend-Loader sind auf diesen Stand abgeglichen.
 
 ## Phase 7 - Desktop-App / Arten-Explorer
 
-Status: in Arbeit seit 2026-06-17
+Status: abgeschlossen am 2026-07-18
 
 Ziel: Eine lokale Desktop-App und eine robustere lokale Betriebsumgebung erstellen, damit Arten, Daten, Sounds, Karten,
 Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien und Ordnern suchen zu muessen.
@@ -556,11 +556,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   legacy Branch-Deployment aus `main:/`, sondern ein eigenes GitHub-Actions-Deployment unter
   `.github/workflows/pages.yml`. `scripts/prepare-pages-artifact.mjs` baut dafuer ein kontrolliertes `_site/`-Artefakt
   mit Frontend-JavaScript, JSON-Daten, `species-assets/`, `graphics/`, `docs/`, `README.md` und `.nojekyll`.
+  Seit dem Abschlussaudit vom 2026-07-18 ist diese frühere Freigabe enger: `docs/` und `README.md` werden nicht mehr
+  veröffentlicht; unter `graphics/` sind nur benötigte PNG-Laufzeitdateien erlaubt.
   Ziel ist, die wiederholten Deploy-Fehler `Deployment failed, try again later` nach erfolgreichem Build und erstem
   Artefakt-Upload zu vermeiden. GitHub Pages muss dafuer auf `Source: GitHub Actions` stehen.
   Seit 2026-07-05 werden Pages-Läufe in der gemeinsamen `pages`-Concurrency-Gruppe nicht mehr abgebrochen, sondern
   serialisiert. Dadurch soll ein neuer Push keinen noch synchronisierenden Pages-Deploy überholen.
-- 7.10 Repository-Grundlagenaudit vor Taxonomie: P0 abgeschlossen, verbleibende technische Verbesserungen in Arbeit;
+- 7.10 Repository-Grundlagenaudit vor Taxonomie: vollständig abgeschlossen am 2026-07-18;
   siehe
   `docs/audits/2026-07-repository-audit.md`. Ergebnis: Daten, Reports und vorhandene Assetzuordnungen sind
   konsistent; 24 Explorer-Tests bestehen. Der erste P0-Stabilisierungspunkt wurde am 2026-07-12 abgeschlossen:
@@ -588,7 +590,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   vor Textkonvertierung. Stabilisierungspaket B wurde mit GitHub-Actions-Lauf `29265285193` veröffentlicht: Quality,
   Artefaktbau und Pages-Deployment waren beim ersten Versuch erfolgreich. Der anschließende Live-Audit über 120
   Squarespace-Seiten sowie die geprüften GitHub-Pages-Dateien war fehlerfrei. Vor dem nächsten Funktionsschritt
-  werden die verbleibenden Auditpunkte A4 sowie A8 bis A11 abgeschlossen; damit endet Phase 7.
+  wurden die verbleibenden Auditpunkte A4 sowie A8 bis A11 am 2026-07-18 abgeschlossen; damit endet Phase 7.
   Der fünfte P0-Punkt wurde am 2026-07-13 mit 37 Syntaxprüfungen, 38 automatisierten Tests, 49 Arten, 263 geprüften
   Medien, einem vollständigen Live-Audit über 120 Squarespace-Sitemapseiten und dem beim ersten Versuch erfolgreichen
   GitHub-Actions-Lauf `29258080649` abgeschlossen. Stabilisierungspaket A ist damit vollständig erledigt.
@@ -724,6 +726,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   sank von 4.408 auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 784 Zeilen. Alle 21
   Explorer-Prüfungen bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-Module,
   Footer und Custom CSS blieben unverändert.
+
+  Der abschließende Phase-7-Auditlauf lagerte zusätzlich die externen Datenanbieter aus `update.mjs` in direkt
+  getestete IUCN-, Karten-, Xeno-Canto-, Wikimedia-Commons- und iNaturalist-Adapter aus. Die zentrale
+  Serverintegration wurde in vier fachliche Testdateien geteilt. Das Pages-Artefakt veröffentlicht nur noch
+  Laufzeitmodule, zentrale JSON-Daten, freigegebene Artassets und PNG-Grafiken; README und `docs/` bleiben intern.
+  Schlanke Style- und Datenschema-Prüfungen sowie ein mit der Artenzahl wachsendes Repository-Größenbudget sind
+  Bestandteil von `quality:ci`. Der lokale Projektstand nutzt 92,6 von 145,0 MiB; die Git-Packhistorie wird bei
+  434,5 MiB beobachtet, aber nicht riskant umgeschrieben. A4 und A8 bis A11 sind damit ohne Restblocker
+  abgeschlossen. Details: `docs/repository-quality-gates.md` und `docs/audits/2026-07-repository-audit.md`.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

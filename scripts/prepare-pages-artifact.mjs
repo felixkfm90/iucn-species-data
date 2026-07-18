@@ -110,10 +110,10 @@ await writeFile(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IUCN Species Data</title>
+  <title>Arten-Explorer – Datenbasis</title>
 </head>
 <body>
-  <h1>IUCN Species Data</h1>
+  <h1>Arten-Explorer</h1>
   <p>Statische Daten- und Assetbasis für die Squarespace-Wildlife-Seiten.</p>
   <ul>
     <li><a href="./speciesData.json">speciesData.json</a></li>

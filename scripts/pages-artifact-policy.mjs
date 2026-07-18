@@ -16,13 +16,11 @@ export const PAGE_SOURCE_FILES = Object.freeze([
   "fehlende_elemente_report.json",
   "lastSavedAssessmentId.json",
   "species-assets-overrides.json",
-  "README.md",
 ]);
 
 export const PAGE_SOURCE_DIRS = Object.freeze([
   "species-assets",
   "graphics",
-  "docs",
 ]);
 
 export const PAGE_GENERATED_FILES = Object.freeze([
@@ -38,8 +36,6 @@ const SPECIES_ASSET_FILES = new Set([
   "credits.json",
   "spectrogram.webp",
 ]);
-
-const DOC_EXTENSIONS = new Set([".md", ".html", ".css", ".svg"]);
 
 export function normalizeArtifactPath(relativePath) {
   return String(relativePath ?? "")
@@ -58,9 +54,6 @@ export function isPublishableSourcePath(relativePath) {
   }
   if (parts[0] === "graphics") {
     return parts.length >= 2 && path.posix.extname(normalized).toLowerCase() === ".png";
-  }
-  if (parts[0] === "docs") {
-    return parts.length >= 2 && DOC_EXTENSIONS.has(path.posix.extname(normalized).toLowerCase());
   }
   return false;
 }

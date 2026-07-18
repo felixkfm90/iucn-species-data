@@ -19,6 +19,9 @@ test("Pages-Pfadregeln erlauben nur Laufzeitdateien", () => {
   assert.equal(isPublishableSourcePath("species-assets/Amsel/map.jpg.deleted"), false);
   assert.equal(isPublishableSourcePath("graphics/catagory/LC.png"), true);
   assert.equal(isPublishableSourcePath("graphics/catagory/Alternativ/Blaupause.psd"), false);
+  assert.equal(isPublishableSourcePath("README.md"), false);
+  assert.equal(isPublishableSourcePath("docs/roadmap.md"), false);
+  assert.equal(isPublishableSourcePath("docs/squarespace-custom.css"), false);
   assert.equal(isIgnoredDesignSource("graphics/catagory/Alternativ/Blaupause.psd"), true);
   assert.equal(isAllowedArtifactPath(".nojekyll"), true);
   assert.equal(isAllowedArtifactPath("species-explorer/local-settings.json"), false);
@@ -60,7 +63,6 @@ async function createFixture() {
   await mkdir(path.join(root, "graphics", "catagory", "Alternativ"), { recursive: true });
   await writeFile(path.join(root, "graphics", "catagory", "LC.png"), "fixture");
   await writeFile(path.join(root, "graphics", "catagory", "Alternativ", "Blaupause.psd"), "design");
-  await writeFile(path.join(root, "docs", "roadmap.md"), "fixture\n");
   return root;
 }
 
