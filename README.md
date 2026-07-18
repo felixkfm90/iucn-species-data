@@ -866,7 +866,7 @@ Explorer-Integrationstest geprüft. Anlegen, Löschen und Bearbeiten liegen in `
 `project-publication.mjs` und `backup-service.mjs` trennen Git-Übertragung und NAS-Sicherung. Der große
 Oberflächen-/Quellvertrag wurde aus `server.test.mjs` nach `explorer-ui-contract.test.mjs` verschoben. Dadurch ist
 `server.mjs` mit 566 Zeilen nur noch Kompositions- und Adapterwurzel; `server.test.mjs` umfasst 2.102 Zeilen und der
-getrennte UI-Vertrag 785 Zeilen. Der gemeinsame Explorer-Test bestand mit 21 von 21 Prüfungen. Auditpunkt A4 ist
+getrennte UI-Vertrag 784 Zeilen. Der gemeinsame Explorer-Test bestand mit 21 von 21 Prüfungen. Auditpunkt A4 ist
 damit abgeschlossen. Squarespace-Module, Footer-Versionen und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale

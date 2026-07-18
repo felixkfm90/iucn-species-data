@@ -721,7 +721,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Assetprüfung und Veröffentlichung. `project-publication.mjs` und `backup-service.mjs` trennen offene Änderungen,
   Git-Übertragung, lokale Einstellungen und NAS-Sicherung. Der Oberflächen-/Quellvertrag liegt nun in
   `explorer-ui-contract.test.mjs`, während `server.test.mjs` die zusammengesetzten API-Abläufe prüft. `server.mjs`
-  sank von 4.408 auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 785 Zeilen. Alle 21
+  sank von 4.408 auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 784 Zeilen. Alle 21
   Explorer-Prüfungen bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-Module,
   Footer und Custom CSS blieben unverändert.
 

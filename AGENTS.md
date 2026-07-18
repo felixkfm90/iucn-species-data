@@ -845,7 +845,7 @@ Aktuelle Planung:
   Laufzustand, Assetprüfung und Veröffentlichung; `project-publication.mjs` und `backup-service.mjs` trennen
   offene Änderungen, Git-Übertragung, Einstellungen und NAS-Sicherung. Der Oberflächen-/Quellvertrag liegt in
   `explorer-ui-contract.test.mjs`, die API-Integration weiterhin in `server.test.mjs`. `server.mjs` sank von 4.408
-  auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 785 Zeilen. Alle 21 Explorer-Prüfungen
+  auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 784 Zeilen. Alle 21 Explorer-Prüfungen
   bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-JavaScript,
   Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
