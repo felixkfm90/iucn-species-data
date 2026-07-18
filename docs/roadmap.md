@@ -775,12 +775,16 @@ Status: in Arbeit seit 2026-07-18
   Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
   unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.4`. Details:
   `docs/taxonomy-redesign-handoff.md`.
-- Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte
-  Allgemeine Daten und direkt darunter Status/Trend, die zweite Spalte die kompakte Taxonomie und die dritte das
-  Artporträt. Tablet und Mobil stapeln die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das
-  Layout automatisch auf zwei Spalten zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.0`
-  dynamisch erzeugt; bestehende Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind
-  außerdem `species-core.js?v=1.0.5` und `species-taxonomy.js?v=1.0.4`.
+- Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte die
+  Taxonomie, die zweite Allgemeine Daten und direkt darunter Status/Trend und die dritte das Artporträt ohne eigene
+  sichtbare Überschrift. Die Tierstimme spannt darunter über die ersten beiden Spalten. Der Taxonomierahmen endet
+  bündig mit Status/Trend und zentriert die kompakte Einheit aus Pfeil und Pyramide vertikal. Der Pfeil besitzt
+  exakt die Höhe der sichtbaren Taxonomiestufen. Die gemeinsamen Wertspalten der allgemeinen Daten
+  bleiben auch bei unabhängig geschlechtsspezifischer Größe und/oder Gewicht ausgerichtet. Tablet und Mobil stapeln
+  die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das Layout automatisch auf zwei Spalten
+  zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
+  Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-taxonomy.js?v=1.0.4`.
 - Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
 - Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche
   festlegen, daraus lokal das finale MP3 erzeugen und das Spektrogramm konsistent neu aufbauen.

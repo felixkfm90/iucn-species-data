@@ -20,19 +20,33 @@
 /* Modulraster der Artseite */
 #species-output {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(300px, 1.08fr);
   grid-template-areas:
-    "info taxonomy"
-    "status taxonomy";
+    "taxonomy info"
+    "taxonomy status";
   gap: 16px;
   align-items: start;
 }
 
-#species-output.species-output--has-portrait {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 1fr);
+#species-output.species-output--has-sound {
   grid-template-areas:
-    "info taxonomy portrait"
-    "status taxonomy portrait";
+    "taxonomy info"
+    "taxonomy status"
+    "sound sound";
+}
+
+#species-output.species-output--has-portrait {
+  grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr) minmax(320px, 1fr);
+  grid-template-areas:
+    "taxonomy info portrait"
+    "taxonomy status portrait";
+}
+
+#species-output.species-output--has-portrait.species-output--has-sound {
+  grid-template-areas:
+    "taxonomy info portrait"
+    "taxonomy status portrait"
+    "sound sound portrait";
 }
 
 /* ================================ */
@@ -51,6 +65,30 @@
   line-height: 2;
 }
 
+.species-info-name {
+  margin-bottom: 10px !important;
+}
+
+.species-info-row {
+  display: grid;
+  grid-template-columns: clamp(150px, 42%, 175px) minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+  margin: 4px 0;
+  line-height: 2;
+}
+
+.species-info-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.species-info-values {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 /* ================================ */
 /* 2. TAXONOMIE-PYRAMIDE            */
 /* ================================ */
@@ -60,6 +98,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  align-self: stretch;
 }
 
 .taxonomy-frame {
@@ -70,9 +109,12 @@
 }
 
 .taxonomy-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
   justify-content: center;
-  gap: var(--taxonomy-frame-padding);
+  align-content: center;
+  align-items: stretch;
+  column-gap: var(--taxonomy-frame-padding);
   height: 100%;
 }
 
@@ -380,17 +422,12 @@
   margin: 0;
 }
 
-.species-portrait-title {
-  margin: 0 0 10px;
-  font-weight: 700;
-}
-
 .species-portrait-media {
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: 260px;
+  min-height: 520px;
   overflow: hidden;
   background: #faf6ec;
   border-radius: 7px;
@@ -399,9 +436,7 @@
 .species-portrait-image {
   display: block;
   width: 100%;
-  max-width: 460px;
   height: 100%;
-  max-height: 580px;
   object-fit: contain;
 }
 
@@ -420,6 +455,11 @@
   In Squarespace muss fuer die Soundbar nur der Rahmenstil aus .frame-box vorhanden
   bleiben. Alte WaveSurfer-/Waveform-Regeln koennen entfernt werden.
 */
+
+#species-sound {
+  grid-area: sound;
+  min-width: 0;
+}
 
 #species-sound .species-sound-frame {
   padding: 14px;
@@ -521,6 +561,14 @@
     align-items: start;
   }
 
+  #species-output.species-output--has-sound {
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "sound";
+  }
+
   #species-output.species-output--has-portrait {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -530,10 +578,20 @@
       "portrait";
   }
 
+  #species-output.species-output--has-portrait.species-output--has-sound {
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "portrait"
+      "sound";
+  }
+
   #species-info,
   #species-taxonomy,
   #species-status,
-  #species-portrait {
+  #species-portrait,
+  #species-sound {
     width: 100%;
   }
 
@@ -582,6 +640,14 @@
     align-items: start;
   }
 
+  #species-output.species-output--has-sound {
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "sound";
+  }
+
   #species-output.species-output--has-portrait {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -591,15 +657,30 @@
       "portrait";
   }
 
+  #species-output.species-output--has-portrait.species-output--has-sound {
+    grid-template-areas:
+      "info"
+      "status"
+      "taxonomy"
+      "portrait"
+      "sound";
+  }
+
   #species-info,
   #species-taxonomy,
   #species-status,
-  #species-portrait {
+  #species-portrait,
+  #species-sound {
     width: 100%;
   }
 
   #species-sound .species-sound-frame {
     width: 100%;
+  }
+
+  .species-info-row {
+    grid-template-columns: clamp(132px, 44%, 150px) minmax(0, 1fr);
+    column-gap: 8px;
   }
 
   .taxonomy-frame {

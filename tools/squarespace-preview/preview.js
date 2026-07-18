@@ -40,9 +40,13 @@
       ? dataOrName
       : dataOrName?.["Deutscher Name"] || dataOrName?.["Wissenschaftlicher Name"] || "";
     const safeName = sanitizeAssetName(name);
+    const assetRoot = `/species-assets/${encodeURIComponent(safeName)}`;
     return {
       safeName,
-      portrait: `/species-assets/${encodeURIComponent(safeName)}/portrait.webp`,
+      portrait: `${assetRoot}/portrait.webp`,
+      sound: `${assetRoot}/sound.mp3`,
+      credits: `${assetRoot}/credits.json`,
+      spectrogram: `${assetRoot}/spectrogram.webp`,
     };
   }
 
@@ -151,6 +155,7 @@
     await loadModule("/species-status.js");
     await loadModule("/species-taxonomy.js");
     await loadModule("/species-portrait.js");
+    await loadModule("/species-sound.js");
   }
 
   (embedded ? initializeCanvas() : initializeControls()).catch((error) => {

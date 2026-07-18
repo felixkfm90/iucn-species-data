@@ -47,9 +47,14 @@ Die Oberfläche bietet:
 - Neuladen nach einer Code- oder CSS-Änderung;
 - Öffnen der gewählten Artvorschau in einem eigenen Fenster.
 
-Die Artvorschau lädt neben Info, Status und Taxonomie auch das optionale produktive Artportrait. Desktop zeigt
-Allgemeine Daten mit Status/Trend darunter links, Taxonomie mittig und Portrait rechts. Tablet und Mobil stapeln
-dieselben Bereiche. Fehlt ein Portrait, darf kein leerer dritter Bereich bleiben.
+Die Artvorschau lädt neben Info, Status und Taxonomie auch Tierstimme und optionales produktives Artportrait.
+Desktop zeigt die Taxonomie links, Allgemeine Daten mit Status/Trend darunter in der Mitte, die Tierstimme unter
+diesen beiden Spalten und das Portrait ohne sichtbare Überschrift rechts. Der Taxonomierahmen folgt automatisch der
+Höhe der mittleren beiden Bereiche; die kompakte Einheit aus Pfeil und Pyramide bleibt darin zentriert. Der Pfeil
+hat dabei exakt die Höhe der sichtbaren Taxonomiestufen und wird nicht auf die volle Rahmenhöhe gestreckt.
+Einheitliche und geschlechtsspezifische
+Größen- oder Gewichtswerte müssen dieselbe Wertspalte verwenden. Tablet und Mobil stapeln dieselben Bereiche.
+Fehlt ein Portrait, darf kein leerer dritter Bereich bleiben.
 
 Die Vorschau simuliert die für die Artseite relevanten Squarespace-Container und verwendet die echten Dateien des
 aktuellen Git-Branches. Squarespace-Navigation, Template-Chrome und fremde Squarespace-Skripte werden nicht
@@ -70,9 +75,9 @@ npm.cmd run --silent test:preview
    branchbezogenen Modul-URLs prüfen. Die öffentliche Footer-Version bleibt dabei unverändert.
 5. Felix bestätigt den sichtbaren Endstand ausdrücklich.
 6. Erst danach den freigegebenen Stand nach `main` übernehmen und den erfolgreichen GitHub-Pages-Lauf abwarten.
-7. Erst nach erfolgreichem Pages-Deployment die produktiven Versionen von `species-core.js`,
+7. Erst nach erfolgreichem Pages-Deployment die produktiven Versionen von `species-core.js`, `species-info.js`,
    `species-taxonomy.js` und `species-portrait.js` in Squarespace und `docs/squarespace-footer.html` gemeinsam
-   erhöhen. Für diesen Stand sind `1.0.5`, `1.0.4` und `1.0.0` dokumentiert.
+   erhöhen. Für diesen Stand sind `1.0.5`, `1.0.6`, `1.0.4` und `1.0.1` dokumentiert.
 8. Öffentliche Desktop- und Mobilseite prüfen. Erst diese Prüfung schließt die Veröffentlichung ab.
 
 Ohne ausdrückliche Freigabe in Schritt 5 wird weder nach `main` übernommen noch die produktive Squarespace-Version

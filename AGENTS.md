@@ -893,12 +893,18 @@ Aktuelle Planung:
   Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
   kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
   Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.4`. Artportraits sind seit 2026-07-18
-  ebenfalls in die Squarespace-Artseite integriert: Auf grossen Bildschirmen stehen Allgemeine Daten mit
-  Status/Trend darunter links, die kompaktere Taxonomie mittig und das Portrait rechts. Tablet und Mobil stapeln
-  die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
-  `species-portrait.js` erzeugt den Portraitcontainer dynamisch, sodass bestehende Artseiten keine manuelle
-  HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind `species-core.js?v=1.0.5` und
-  `species-portrait.js?v=1.0.0`. Danach folgen kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
+  ebenfalls in die Squarespace-Artseite integriert: Auf grossen Bildschirmen steht die Taxonomie links, Allgemeine
+  Daten mit Status/Trend darunter in der Mitte und das Portrait ohne sichtbare Ueberschrift ueber die volle Hoehe
+  rechts. Die Tierstimme steht unter den beiden linken Spalten. Der Taxonomierahmen endet buendig mit Status/Trend
+  und zentriert die kompakte Einheit aus Pfeil und Pyramide vertikal. Der Pfeil beginnt und endet exakt mit den
+  sichtbaren Taxonomiestufen und wird nicht auf die volle Rahmenhoehe gestreckt. Einheitliche sowie nach
+  Maennchen/Weibchen getrennte Groessen- und
+  Gewichtswerte nutzen eine gemeinsame Wertspalte und koennen unabhaengig voneinander wachsen. Tablet und Mobil
+  stapeln die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
+  `species-portrait.js` erzeugt den Portraitcontainer dynamisch und ordnet den vorhandenen Soundcontainer ein,
+  sodass bestehende Artseiten keine manuelle HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-portrait.js?v=1.0.1`. Danach folgen
+  kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:

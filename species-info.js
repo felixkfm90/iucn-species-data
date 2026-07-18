@@ -37,24 +37,37 @@
       if (text.includes("Männchen") && text.includes("Weibchen")) {
         const m = text.match(/Männchen\s*:?\s*(.*?)\s*Weibchen/i)?.[1]?.trim() || "";
         const w = text.match(/Weibchen\s*:?\s*(.+)$/i)?.[1]?.trim() || "";
-        if (!m || !w) return `<p>${safeLabel}: ${escapeHtml(text)}</p>`;
+        if (!m || !w) {
+          return `
+            <div class="species-info-row">
+              <span class="species-info-label">${safeLabel}:</span>
+              <span class="species-info-values">${escapeHtml(text)}</span>
+            </div>`;
+        }
         return `
-          <div style="display:grid; grid-template-columns:120px auto; row-gap:4px;">
-            <span>${safeLabel}:</span><span>Männchen: ${escapeHtml(m)}</span>
-            <span></span><span>Weibchen: ${escapeHtml(w)}</span>
+          <div class="species-info-row species-info-row--split">
+            <span class="species-info-label">${safeLabel}:</span>
+            <span class="species-info-values">
+              <span>Männchen: ${escapeHtml(m)}</span>
+              <span>Weibchen: ${escapeHtml(w)}</span>
+            </span>
           </div>`;
       }
-      return `<p>${safeLabel}: ${escapeHtml(text)}</p>`;
+      return `
+        <div class="species-info-row">
+          <span class="species-info-label">${safeLabel}:</span>
+          <span class="species-info-values">${escapeHtml(text)}</span>
+        </div>`;
     }
 
     container.innerHTML = `
       <div class="frame-box left-frame">
-        <p>Name: ${escapeHtml(data["Deutscher Name"])} – ${escapeHtml(data["Wissenschaftlicher Name"])}</p>
+        <p class="species-info-name">Name: ${escapeHtml(data["Deutscher Name"])} – ${escapeHtml(data["Wissenschaftlicher Name"])}</p>
         ${renderInfoRow("Größe", data.Größe)}
         ${renderInfoRow("Gewicht", data.Gewicht)}
         ${renderInfoRow("Lebenserwartung", lifeExpectancy)}
-        <p>Generationsdauer: ${escapeHtml(displayValue(generationDuration))}</p>
-        <p>Populationsgröße: ${escapeHtml(displayValue(data["Populationgröße"]))}</p>
+        ${renderInfoRow("Generationsdauer", displayValue(generationDuration))}
+        ${renderInfoRow("Populationsgröße", displayValue(data["Populationgröße"]))}
       </div>
     `;
   } catch (e) {

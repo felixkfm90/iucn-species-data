@@ -19,6 +19,7 @@ export function previewRouteFiles(repoRoot = resolve(scriptDirectory, "..")) {
     ["/species-taxonomy.js", join(repoRoot, "species-taxonomy.js")],
     ["/species-status.js", join(repoRoot, "species-status.js")],
     ["/species-portrait.js", join(repoRoot, "species-portrait.js")],
+    ["/species-sound.js", join(repoRoot, "species-sound.js")],
     ["/speciesData.json", join(repoRoot, "speciesData.json")],
     [
       "/taxonomy-concept.svg",
@@ -37,10 +38,13 @@ export function resolvePreviewFile(pathname, repoRoot) {
   const fixedRoute = previewRouteFiles(repoRoot).get(decodedPath);
   if (fixedRoute) return fixedRoute;
 
-  const portraitMatch = decodedPath.match(/^\/species-assets\/([^/]+)\/portrait\.webp$/);
-  const assetName = portraitMatch?.[1] || "";
+  const assetMatch = decodedPath.match(
+    /^\/species-assets\/([^/]+)\/(portrait\.webp|sound\.mp3|credits\.json|spectrogram\.webp)$/,
+  );
+  const assetName = assetMatch?.[1] || "";
+  const assetFile = assetMatch?.[2] || "";
   if (!assetName || assetName.includes("..") || !/^[A-Za-z0-9._ -]+$/.test(assetName)) return null;
-  return join(repoRoot, "species-assets", assetName, "portrait.webp");
+  return join(repoRoot, "species-assets", assetName, assetFile);
 }
 
 export function createSquarespacePreviewServer({ repoRoot } = {}) {

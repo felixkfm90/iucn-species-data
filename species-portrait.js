@@ -4,6 +4,12 @@
   const output = document.getElementById("species-output");
   if (!output || !window.SpeciesCore) return;
 
+  const soundContainer = document.getElementById("species-sound");
+  if (soundContainer) {
+    if (soundContainer.parentElement !== output) output.appendChild(soundContainer);
+    output.classList.add("species-output--has-sound");
+  }
+
   let container = document.getElementById("species-portrait");
   if (!container) {
     container = document.createElement("div");
@@ -36,7 +42,6 @@
     container.hidden = false;
     container.innerHTML = `
       <figure class="frame-box species-portrait-frame">
-        <figcaption class="species-portrait-title">Artporträt</figcaption>
         <div class="species-portrait-media">
           <img
             class="species-portrait-image"

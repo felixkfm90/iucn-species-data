@@ -11,9 +11,22 @@ test("Vorschau erlaubt ausschließlich die festgelegten lokalen Dateien", () => 
   const repoRoot = "D:\\IUCN_Datenbank";
   assert.match(resolvePreviewFile("/species-taxonomy.js", repoRoot), /species-taxonomy\.js$/);
   assert.match(resolvePreviewFile("/species-portrait.js", repoRoot), /species-portrait\.js$/);
+  assert.match(resolvePreviewFile("/species-sound.js", repoRoot), /species-sound\.js$/);
   assert.match(
     resolvePreviewFile("/species-assets/Amsel/portrait.webp", repoRoot),
     /species-assets[\\/]Amsel[\\/]portrait\.webp$/,
+  );
+  assert.match(
+    resolvePreviewFile("/species-assets/Amsel/sound.mp3", repoRoot),
+    /species-assets[\\/]Amsel[\\/]sound\.mp3$/,
+  );
+  assert.match(
+    resolvePreviewFile("/species-assets/Amsel/credits.json", repoRoot),
+    /species-assets[\\/]Amsel[\\/]credits\.json$/,
+  );
+  assert.match(
+    resolvePreviewFile("/species-assets/Amsel/spectrogram.webp", repoRoot),
+    /species-assets[\\/]Amsel[\\/]spectrogram\.webp$/,
   );
   assert.match(
     resolvePreviewFile("/docs/squarespace-custom.css", repoRoot),
@@ -23,6 +36,7 @@ test("Vorschau erlaubt ausschließlich die festgelegten lokalen Dateien", () => 
   assert.equal(resolvePreviewFile("/../package.json", repoRoot), null);
   assert.equal(resolvePreviewFile("/%2e%2e/package.json", repoRoot), null);
   assert.equal(resolvePreviewFile("/species-assets/%2e%2e/portrait.webp", repoRoot), null);
+  assert.equal(resolvePreviewFile("/species-assets/Amsel/map.jpg", repoRoot), null);
 });
 
 test("Vorschau-Port wird begrenzt und kontrolliert gelesen", () => {
