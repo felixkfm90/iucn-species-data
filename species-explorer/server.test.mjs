@@ -1,22 +1,28 @@
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import {
-  buildExplorerModel,
   createExplorerServer as createProtectedExplorerServer,
-  formatSpectrogramPipelineLog,
+  isExplorerAlreadyReachable,
+} from "./server.mjs";
+import { buildExplorerModel } from "./explorer-model.mjs";
+import {
   inspectJpeg,
   inspectMp3,
   inspectPng,
   inspectWebp,
-  isExplorerAlreadyReachable,
-  synchronizeManualMapDocumentation,
-} from "./server.mjs";
+} from "./media-assets.mjs";
+import {
+  createEditableFixture,
+  createTestJpeg,
+  createTestMp3,
+  createTestPng,
+  createTestWebp,
+} from "./server-test-fixtures.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
 import {
@@ -55,265 +61,7 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
   });
 }
 
-function createTestJpeg(width = 3, height = 2) {
-  return Buffer.from([
-    0xff, 0xd8,
-    0xff, 0xe0, 0x00, 0x0e,
-    0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01,
-    0xff, 0xc0, 0x00, 0x11, 0x08,
-    (height >> 8) & 0xff, height & 0xff,
-    (width >> 8) & 0xff, width & 0xff,
-    0x03,
-    0x01, 0x11, 0x00,
-    0x02, 0x11, 0x00,
-    0x03, 0x11, 0x00,
-    0xff, 0xd9,
-  ]);
-}
 
-function createTestMp3(seed = 1) {
-  const frameLength = 417;
-  const frame = Buffer.alloc(frameLength, seed);
-  Buffer.from([0xff, 0xfb, 0x90, 0x64]).copy(frame, 0);
-  return Buffer.concat([
-    Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
-    frame,
-    frame,
-    frame,
-  ]);
-}
-
-function createTestWebp(seed = 1) {
-  return Buffer.concat([
-    Buffer.from("RIFF", "ascii"),
-    Buffer.from([0x08, 0x00, 0x00, 0x00]),
-    Buffer.from("WEBP", "ascii"),
-    Buffer.alloc(8, seed),
-  ]);
-}
-
-function createTestPng(width = 1120, height = 1400) {
-  const buffer = Buffer.alloc(33);
-  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buffer, 0);
-  buffer.writeUInt32BE(13, 8);
-  buffer.write("IHDR", 12, "ascii");
-  buffer.writeUInt32BE(width, 16);
-  buffer.writeUInt32BE(height, 20);
-  buffer[24] = 8;
-  buffer[25] = 2;
-  return buffer;
-}
-
-async function createEditableFixture() {
-  const root = await mkdtemp(join(tmpdir(), "species-explorer-edit-"));
-  const assetDir = join(root, "species-assets", "Amsel");
-  await mkdir(join(root, "docs"), { recursive: true });
-  await mkdir(assetDir, { recursive: true });
-
-  const inputList = [{
-    german: "Amsel",
-    genus: "Turdus",
-    species: "merula",
-    size: "ca. 23,5-29 cm",
-    weight: "ca. 80-110 g",
-    life_expectancy: "ca. 3 Jahre",
-  }];
-  const generatedList = [{
-    URLSlug: "turdusmerula",
-    "Wissenschaftlicher Name": "Turdus merula",
-    "Deutscher Name": "Amsel",
-    Gewicht: "ca. 80-110 g",
-    Größe: "ca. 23,5-29 cm",
-    Lebenserwartung: "ca. 3 Jahre",
-    "Assessment ID": 1,
-    Status: "LC",
-    Trend: "Stabil",
-    Kategorie: "Nicht gefährdet",
-    Populationgröße: "Unbekannt",
-    Generationsdauer: "4 Jahre",
-    Kingdom: "ANIMALIA",
-    Phylum: "CHORDATA",
-    Class: "AVES",
-    Order: "PASSERIFORMES",
-    Family: "TURDIDAE",
-    Genus: "Turdus",
-    Species: "merula",
-    "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-06-19",
-  }];
-  const report = {
-    generatedAt: "2026-06-19T00:00:00.000Z",
-    counts: {
-      totalSpecies: 1,
-      missingSoundMp3: 0,
-      missingSoundCredits: 0,
-      missingMap: 0,
-      missingAssessmentId: 0,
-      missingStatus: 0,
-      missingCategory: 0,
-      missingTrend: 0,
-      missingSpeciesAssets: 0,
-      ncSoundLicensesAll: 0,
-    },
-    missing: {
-      soundMp3: [],
-      soundCredits: [],
-      maps: [],
-      speciesAssets: [],
-      assessmentId: [],
-      status: [],
-      category: [],
-      trend: [],
-    },
-    ncSoundLicensesAll: [],
-  };
-
-  await Promise.all([
-    writeFile(join(root, "species_list.json"), `${JSON.stringify(inputList, null, 2)}\n`),
-    writeFile(join(root, "speciesData.json"), `${JSON.stringify(generatedList, null, 2)}\n`),
-    writeFile(join(root, "fehlende_elemente_report.json"), `${JSON.stringify(report, null, 2)}\n`),
-    writeFile(join(root, "docs", "manual-map-overrides.md"), "# Keine manuellen Karten\n"),
-    writeFile(join(assetDir, "map.jpg"), Buffer.alloc(256)),
-    writeFile(join(assetDir, "sound.mp3"), createTestMp3(1)),
-    writeFile(join(assetDir, "spectrogram.webp"), Buffer.alloc(256)),
-    writeFile(join(assetDir, "credits.json"), JSON.stringify({
-      source: "Test",
-      license: "https://creativecommons.org/licenses/by/4.0/",
-    })),
-  ]);
-
-  return root;
-}
-
-test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
-  const [model, inputList, generatedList] = await Promise.all([
-    buildExplorerModel(),
-    readFile(new URL("../species_list.json", import.meta.url), "utf8").then(JSON.parse),
-    readFile(new URL("../speciesData.json", import.meta.url), "utf8").then(JSON.parse),
-  ]);
-  const key = (entry, genusKey, speciesKey) =>
-    `${entry[genusKey] ?? ""} ${entry[speciesKey] ?? ""}`.trim().toLocaleLowerCase("de");
-  const inputKeys = new Set(inputList.map((entry) => key(entry, "genus", "species")));
-  const generatedKeys = new Set(generatedList.map((entry) => key(entry, "Genus", "Species")));
-  const expectedInputOnly = [...inputKeys].filter((entry) => !generatedKeys.has(entry)).length;
-  const expectedGeneratedOnly = [...generatedKeys].filter((entry) => !inputKeys.has(entry)).length;
-  const expectedSpeciesCount = new Set([...inputKeys, ...generatedKeys]).size;
-  const expectedPortraitCount = model.species.filter((entry) => entry.assets.portrait.exists).length;
-  const expectedMissingPortraitCount = expectedSpeciesCount - expectedPortraitCount;
-  const expectedNcSoundCount = model.species.filter((entry) => entry.isNcSound).length;
-  const expectedManualMapCount = model.species.filter((entry) => entry.isManualMap).length;
-
-  assert.equal(model.summary.speciesCount, expectedSpeciesCount);
-  assert.equal(model.summary.inputCount, inputList.length);
-  assert.equal(model.summary.generatedCount, generatedList.length);
-  assert.equal(model.summary.missingCoreAssets, model.validation.assets.issueSpeciesCount);
-  assert.equal(model.summary.missingPortraitCount, expectedMissingPortraitCount);
-  assert.equal(model.validation.assets.available.portraits, expectedPortraitCount);
-  assert.equal(
-    model.validation.assets.completeSpeciesCount + model.validation.assets.issueSpeciesCount,
-    expectedSpeciesCount,
-  );
-  assert.ok(model.validation.assets.issueSpeciesCount >= expectedMissingPortraitCount);
-  assert.equal(model.summary.ncSoundCount, expectedNcSoundCount);
-  assert.equal(model.summary.manualMapCount, expectedManualMapCount);
-  assert.equal(model.summary.readOnly, false);
-  assert.equal(model.summary.editingEnabled, true);
-  assert.equal(model.summary.editableFile, "species_list.json");
-  assert.equal(model.validation.data.inputCount, inputList.length);
-  assert.equal(model.validation.data.generatedCount, generatedList.length);
-  assert.equal(model.validation.data.inputOnlyCount, expectedInputOnly);
-  assert.equal(model.validation.data.generatedOnlyCount, expectedGeneratedOnly);
-  assert.equal(model.validation.report.checks.length, 9);
-  assert.equal(model.validation.report.consistent, model.validation.report.issueCount === 0);
-  assert.equal(model.species.filter((entry) => entry.isNcSound).length, expectedNcSoundCount);
-  assert.equal(model.species.filter((entry) => entry.isManualMap).length, expectedManualMapCount);
-  assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, expectedManualMapCount);
-  assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
-  assert.ok(model.species.every((entry) => (
-    [
-      entry.taxonomy.kingdom,
-      entry.taxonomy.phylum,
-      entry.taxonomy.className,
-      entry.taxonomy.order,
-      entry.taxonomy.family,
-    ].every((value) => value === "Unbekannt" || !/^[A-ZÄÖÜ\s-]+$/.test(value))
-  )));
-  assert.equal(
-    model.species.filter((entry) => entry.assetIssues.includes("Artporträt fehlt")).length,
-    expectedMissingPortraitCount,
-  );
-  assert.equal(
-    model.validation.data.issueSpeciesCount,
-    model.species.filter((entry) => entry.dataIssues.length > 0).length,
-  );
-  assert.equal(
-    model.validation.assets.issueSpeciesCount,
-    model.species.filter((entry) => entry.assetIssues.length > 0).length,
-  );
-});
-
-test("Bekannt fehlender Sound ist Pflegehinweis statt Assetproblem", async (context) => {
-  const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
-  const assetDir = join(repoRoot, "species-assets", "Amsel");
-  await Promise.all([
-    rm(join(assetDir, "sound.mp3"), { force: true }),
-    rm(join(assetDir, "credits.json"), { force: true }),
-    rm(join(assetDir, "spectrogram.webp"), { force: true }),
-  ]);
-  const report = JSON.parse(await readFile(join(repoRoot, "fehlende_elemente_report.json"), "utf8"));
-  report.counts.missingSoundMp3 = 1;
-  report.counts.missingSpeciesAssets = 1;
-  report.missing.soundMp3 = ["Amsel"];
-  report.missing.speciesAssets = [{
-    german: "Amsel",
-    safeName: "Amsel",
-    missing: ["sound.mp3", "credits.json", "spectrogram.webp"],
-  }];
-  await writeFile(join(repoRoot, "fehlende_elemente_report.json"), `${JSON.stringify(report, null, 2)}\n`);
-
-  const model = await buildExplorerModel(repoRoot);
-  const species = model.species[0];
-  assert.equal(species.soundMissingKnown, true);
-  assert.equal(species.soundCareHint, true);
-  assert.match(species.careHints.join(" "), /keine verwendbare Quelle/);
-  assert.doesNotMatch(species.assetIssues.join(" "), /Sound fehlt|Credits fehlen|Spektrogramm fehlt/);
-  assert.equal(model.validation.special.soundCareCount, 1);
-  assert.equal(model.validation.special.missingSoundKnownCount, 1);
-  assert.equal(
-    model.validation.report.checks.find((entry) => entry.key === "soundMp3").ok,
-    true,
-  );
-});
-
-test("Spektrogramm-Prozessausgabe wird für die App lesbar zusammengefasst", () => {
-  const output = formatSpectrogramPipelineLog(JSON.stringify({
-    results: [
-      {
-        safeName: "Amsel",
-        status: "skip",
-        inputBytes: 2048,
-        outputBytes: 512,
-      },
-      {
-        safeName: "Grüner Leguan",
-        status: "missing-mp3",
-      },
-      {
-        safeName: "Bachstelze",
-        status: "generated",
-        inputBytes: 4096,
-        outputBytes: 700,
-      },
-    ],
-    hashRegistry: { updated: 2, changed: true },
-  }));
-  assert.match(output, /Amsel\n  Sound: vorhanden\n  Spektrogramm: vorhanden/);
-  assert.match(output, /Grüner Leguan\n  Sound: fehlt\n  Spektrogramm: übersprungen/);
-  assert.match(output, /Bachstelze\n  Sound: vorhanden\n  Spektrogramm: wurde erstellt/);
-  assert.match(output, /Zusammenfassung: 1 erstellt, 1 vorhanden, 1 ohne Sound, 0 Fehler/);
-  assert.doesNotMatch(output, /"safeName"/);
-});
 
 test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", async (context) => {
   const expectedModel = await buildExplorerModel();
@@ -1341,33 +1089,7 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
   assert.equal(transferIgnoresMissingAssetsPlan.targetCount, 0);
 });
 
-test("Automatisch übernommene Karten verlassen die manuelle Pflege", async (context) => {
-  const markdown = [
-    "# Manual Map Overrides",
-    "",
-    "Stand: 2026-06-17",
-    "",
-    "Aktuell sind 2 Karten als manuell gepflegt dokumentiert.",
-    "",
-    "| Art | SafeName | Datei |",
-    "|---|---|---|",
-    "| Amsel | Amsel | `species-assets/Amsel/map.jpg` |",
-    "| Drossel | Drossel | `species-assets/Drossel/map.jpg` |",
-    "",
-  ].join("\n");
-  const registry = {
-    version: 1,
-    assets: {
-      Amsel: { map: { manual: false } },
-      Drossel: { map: { manual: true } },
-    },
-  };
-  const synchronized = synchronizeManualMapDocumentation(markdown, registry, "2026-06-20");
-  assert.doesNotMatch(synchronized, /species-assets\/Amsel\/map\.jpg/);
-  assert.match(synchronized, /species-assets\/Drossel\/map\.jpg/);
-  assert.match(synchronized, /Stand: 2026-06-20/);
-  assert.match(synchronized, /Aktuell sind 1 Karte als manuell gepflegt dokumentiert\./);
-
+test("Explorer-Modell zählt automatisch übernommene Karten nicht als manuell", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));
   await Promise.all([
@@ -2413,6 +2135,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     speciesModelSource,
     httpRoutingSource,
     requestRouterSource,
+    explorerModelSource,
+    assetFilesSource,
+    manualMapDocumentationSource,
+    pipelineLogSource,
+    mediaAssetsSource,
   ] = await Promise.all([
     readFile(new URL("./public/app.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-foundation.js", import.meta.url), "utf8"),
@@ -2462,6 +2189,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./species-model.mjs", import.meta.url), "utf8"),
     readFile(new URL("./http-routing.mjs", import.meta.url), "utf8"),
     readFile(new URL("./request-router.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./explorer-model.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./asset-files.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./manual-map-documentation.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./pipeline-log.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./media-assets.mjs", import.meta.url), "utf8"),
   ]);
 
   const modularAppSource = [
@@ -2693,6 +2425,18 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appLifecycleSource, /pendingRevisionReload/);
   assert.match(appSelectionSource, /function hasOpenDialog\(\)/);
   assert.match(serverSource, /createExplorerRequestHandler/);
+  assert.match(serverSource, /from "\.\/explorer-model\.mjs"/);
+  assert.match(serverSource, /from "\.\/manual-map-documentation\.mjs"/);
+  assert.match(serverSource, /from "\.\/pipeline-log\.mjs"/);
+  assert.match(serverSource, /from "\.\/media-assets\.mjs"/);
+  assert.match(explorerModelSource, /export async function buildExplorerModel/);
+  assert.match(explorerModelSource, /SPECIES_ASSET_FILE_NAMES/);
+  assert.match(assetFilesSource, /export const SPECIES_ASSET_FILE_NAMES/);
+  assert.match(manualMapDocumentationSource, /export function synchronizeManualMapDocumentation/);
+  assert.match(pipelineLogSource, /export function formatSpectrogramPipelineLog/);
+  assert.match(mediaAssetsSource, /export async function validateMapPreviewPayload/);
+  assert.match(mediaAssetsSource, /export function validateSoundPreviewPayload/);
+  assert.match(mediaAssetsSource, /export function validatePortraitPreviewPayload/);
   assert.match(requestRouterSource, /"\/api\/revision"/);
   assert.match(serverSource, /async function refreshModel/);
   assert.match(serverSource, /publishAfterAssetOnlyNoAssets/);
@@ -2773,7 +2517,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(serverSource, /reviewMode:\s*plan\.mode/);
   assert.match(serverSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
   assert.match(serverSource, /synchronizeStoredManualMapDocumentation/);
-  assert.match(serverSource, /typeof mapOverride\?\.manual === "boolean"/);
+  assert.match(explorerModelSource, /typeof mapOverride\?\.manual === "boolean"/);
   assert.match(serverSource, /async function previewMapAsset\(id, payload\)/);
   assert.match(serverSource, /async function saveMapAsset\(id, payload\)/);
   assert.match(serverSource, /publishAssetChanges = false/);
@@ -2848,8 +2592,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /silent: true/);
   assert.match(appFoundationSource, /pendingChanges: "\/api\/pending-changes"/);
   assert.match(modularAppSource, /refreshExplorerModelOnly\(\{ reload: true \}\)/);
-  assert.match(serverSource, /async function fetchMapPreviewSourceWithPowerShell\(source\)/);
-  assert.match(serverSource, /MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3/);
+  assert.match(mediaAssetsSource, /async function fetchMapPreviewSourceWithPowerShell\(source\)/);
+  assert.match(mediaAssetsSource, /MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS = 3/);
   assert.match(modularAppSource, /direkter Karten-JPEG-Link/);
   assert.match(modularAppSource, /class="map-preview-button"/);
   assert.match(modularAppSource, /class="map-save-button"/);

@@ -1,19 +1,11 @@
 import { createReadStream, existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { isSpeciesAssetFileName } from "./asset-files.mjs";
 import { isPathInside } from "./request-security.mjs";
 import { sanitizeAssetName } from "./species-model.mjs";
 
 export const MAX_JSON_BODY_BYTES = 16 * 1024;
-
-const ASSET_FILES = new Set([
-  "map.jpg",
-  "sound.mp3",
-  "credits.json",
-  "spectrogram.webp",
-  "portrait.webp",
-  "portrait.json",
-]);
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -97,7 +89,7 @@ export function safeAssetPath(pathname, repoRoot) {
     return null;
   }
   const fileName = parts[2];
-  if (sanitizeAssetName(safeName) !== safeName || !ASSET_FILES.has(fileName)) return null;
+  if (sanitizeAssetName(safeName) !== safeName || !isSpeciesAssetFileName(fileName)) return null;
   const assetRoot = join(repoRoot, "species-assets");
   const path = normalize(join(assetRoot, safeName, fileName));
   return isPathInside(assetRoot, path) ? path : null;

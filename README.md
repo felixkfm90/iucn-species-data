@@ -844,6 +844,15 @@ Rückverlagerung der Großblöcke, sichern Exporte und HTML-Ladereihenfolge; der
 neuen Module per HTTP aus und bestand mit 24 von 24 Prüfungen. Damit ist der Oberflächenteil von Auditpunkt A4
 abgeschlossen. Squarespace-Module, Footer-Versionen und Custom CSS wurden nicht geändert.
 
+Am 2026-07-18 folgte der erste serverseitige A4-Folgeschnitt. `explorer-model.mjs`, `media-assets.mjs`,
+`pipeline-log.mjs`, `manual-map-documentation.mjs` und `asset-files.mjs` trennen Explorer-Modell und Revision,
+Medienprüfung und Kartenimport, lesbare Spektrogramm-Prozessausgabe, Kartendokumentation und die kanonische
+Assetdateiliste aus `server.mjs`. Wiederverwendbare binäre Fixtures liegen in `server-test-fixtures.mjs`; direkte
+Modultests wurden aus dem großen Serverintegrationstest herausgelöst. Zwölf neue direkte Prüfungen und die
+verbleibenden 21 Serverintegrationstests sichern das Verhalten. Der Schnitt behebt zugleich eine still
+übergangene Assetrevision und reduziert `server.mjs` von 5.678 auf 4.408 Zeilen sowie `server.test.mjs` von 3.098
+auf 2.842 Zeilen. Squarespace-Module, Footer-Versionen und Custom CSS blieben unverändert.
+
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.

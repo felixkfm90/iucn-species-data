@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-07-17
+Stand: 2026-07-18
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -30,7 +30,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
-| `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` enthält Fachoperationen und Laufzustand; `request-security.mjs`, `http-routing.mjs`, `request-router.mjs`, `species-model.mjs` und `asset-backups.mjs` bilden die getrennten Sicherheits-, HTTP-, Routing-, Modell- und Sicherungsgrenzen. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze, `public/app-measurements.js` die gemeinsame Messwert-/Formulargrenze und `public/app-dialogs.js` die gemeinsame Modal-/Medienfreigabegrenze. |
+| `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` enthält die verbleibenden Fachoperationen und den Laufzustand. `request-security.mjs`, `http-routing.mjs` und `request-router.mjs` bilden Sicherheits-, HTTP- und Routinggrenzen; `species-model.mjs` validiert einzelne Arteinträge, während `explorer-model.mjs` das vollständige read-only Explorer-Modell und seine Revision aufbaut. `media-assets.mjs`, `asset-files.mjs`, `asset-backups.mjs`, `pipeline-log.mjs` und `manual-map-documentation.mjs` besitzen Medienprüfung, Assetdateiliste, Sicherungen, Prozessausgabe und Kartendokumentation. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze, `public/app-measurements.js` die gemeinsame Messwert-/Formulargrenze und `public/app-dialogs.js` die gemeinsame Modal-/Medienfreigabegrenze. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |
@@ -43,6 +43,12 @@ Modulen `app-pipeline-workflow.js`, `app-backup-workflow.js`, `app-new-species-w
 `app-species-editor.js`, `app-editor-general.js`, `app-editor-map.js`, `app-editor-sound.js`,
 `app-editor-portrait.js` und `app-detail-view.js`. Neue Funktionen werden der passenden Grenze zugeordnet und nicht
 wieder als Grossblock in `app.js` eingebaut.
+
+Der lokale Server verwendet dieselben Eigentumsregeln: Neue Modell-, Medien-, Dokumentations- oder
+Formatierungslogik wird dem vorhandenen Fachmodul zugeordnet und nicht wieder in `server.mjs` eingebaut.
+`server-test-fixtures.mjs` enthält ausschließlich wiederverwendbare Testfixtures; direkte Modultests liegen neben
+dem jeweiligen Modul. `server.test.mjs` bleibt der End-to-End-Integrationstest für die zusammengesetzten lokalen
+API-Abläufe.
 
 ## Muss versioniert bleiben, obwohl generiert
 

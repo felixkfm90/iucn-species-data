@@ -706,6 +706,15 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   bleibt als getrennte technische Verbesserung offen. Squarespace-Module, Footer und Custom CSS blieben
   unverändert.
 
+  Der erste nachgelagerte Serverschnitt wurde am 2026-07-18 abgeschlossen. Explorer-Modell und Revision,
+  Medienformatprüfung und Kartenimport, Spektrogramm-Prozessausgabe, manuelle Kartendokumentation sowie die
+  kanonische Assetdateiliste liegen nun in eigenen direkt getesteten Modulen. Gemeinsame binäre Testfixtures wurden
+  aus `server.test.mjs` ausgelagert; 12 direkte Modultests und 21 Serverintegrationstests sichern die neuen
+  Grenzen. Dabei wurde behoben, dass die frühere Revisionsbildung Assetänderungen wegen einer undefinierten
+  Dateiliste still übergehen konnte. `server.mjs` sank von 5.678 auf 4.408 Zeilen, `server.test.mjs` von 3.098 auf
+  2.842 Zeilen. A4 bleibt für kleine, einzeln geprüfte Schnitte an CRUD-, Pipeline-, Backup-/Publikations- und
+  Adapterlogik offen. Squarespace-Module, Footer und Custom CSS blieben unverändert.
+
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
 Status: geplant

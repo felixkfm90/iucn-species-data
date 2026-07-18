@@ -430,6 +430,30 @@ Ergänzung vom 2026-07-17:
 - Der Oberflächenteil von A4 ist abgeschlossen. A4 bleibt ausschließlich für eine spätere fachliche Zerlegung der
   weiterhin großen Server-/Pipeline-Dateien offen; dies blockiert den nächsten Funktionsschritt nicht.
 
+Ergänzung vom 2026-07-18 – erster nachgelagerter Serverschnitt:
+
+- `species-explorer/explorer-model.mjs` übernimmt den vollständigen read-only Explorer-Modellaufbau und die
+  Revisionsbildung. `scripts/project-status.mjs` und `scripts/validate-project-state.mjs` importieren diese Grenze
+  direkt und laden dafür nicht länger den ausführbaren HTTP-Server.
+- `species-explorer/media-assets.mjs` bündelt die Formatprüfung und Vorschauvalidierung für JPEG, PNG, WebP und
+  MP3 sowie Kartenimport, PNG-zu-JPEG-Konvertierung und den kontrollierten Windows-Fallback für IUCN-Karten.
+- `species-explorer/pipeline-log.mjs` formatiert die Spektrogramm-Ausgabe; die Synchronisierung der manuellen
+  Kartendokumentation liegt in `species-explorer/manual-map-documentation.mjs`.
+- `species-explorer/asset-files.mjs` ist die einzige serverseitige Liste der zulässigen Art-Assetdateien und wird
+  von Modellrevision und HTTP-Auslieferung gemeinsam verwendet. Dadurch wurde ein still übergangener Fehler
+  beseitigt: Die frühere Revisionsbildung referenzierte eine nicht vorhandene lokale Assetliste und konnte deshalb
+  Änderungen unter `species-assets/` als unverändert behandeln.
+- `species-explorer/server-test-fixtures.mjs` stellt die binären Testdateien und editierbaren Projektfixtures für
+  direkte Modul- und Serverintegrationstests bereit. Die früher in `server.test.mjs` eingebetteten Modell-,
+  Log- und Dokumentationsprüfungen wurden den neuen Eigentümermodulen zugeordnet.
+- Zwölf direkte Tests in vier neuen Testdateien prüfen Modell und Assetrevision, Pipeline-Log, manuelle
+  Kartendokumentation sowie Medienformate und Vorschauvalidierung. Die verbleibenden 21 Serverintegrationstests
+  sichern API, Schreibschutz, Backup-, Such- und Filterabläufe.
+- `species-explorer/server.mjs` sank in diesem Schnitt von 5.678 auf 4.408 Zeilen; `server.test.mjs` von 3.098 auf
+  2.842 Zeilen. A4 bleibt für weitere kleine Schnitte an Arten-CRUD, Pipeline-Orchestrierung, Backup/Publikation
+  und den externen Pipeline-Adaptern offen. Squarespace-JavaScript, Footer-Versionen und Custom CSS wurden nicht
+  geändert.
+
 ### A5. Lokale temporäre Ablagen werden nicht zuverlässig geleert
 
 **Erledigt am 2026-07-13.**

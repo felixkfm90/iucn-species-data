@@ -820,6 +820,16 @@ Aktuelle Planung:
   die HTTP-Auslieferung aller neuen Module und bestand mit 24 von 24 Prüfungen. Die Oberflächenhälfte von A4 ist
   damit abgeschlossen. Eine spätere Server-/Pipeline-Zerlegung bleibt getrennt davon möglich. Squarespace-
   JavaScript, Footer-Versionen und Squarespace-CSS wurden nicht geändert.
+  Der erste nachgelagerte Serverschnitt wurde am 2026-07-18 abgeschlossen. `explorer-model.mjs` besitzt den
+  vollständigen Explorer-Modellaufbau und die Revision, `media-assets.mjs` Medienprüfung und Kartenimport,
+  `pipeline-log.mjs` die Spektrogramm-Prozessausgabe, `manual-map-documentation.mjs` die Kartendokumentation und
+  `asset-files.mjs` die kanonische Assetdateiliste. `server-test-fixtures.mjs` stellt gemeinsame binäre Fixtures
+  bereit; direkte Modell-, Log-, Dokumentations- und Medienprüfungen liegen nun neben ihren Eigentümermodulen.
+  Zwölf direkte Tests und 21 verbleibende Serverintegrationstests sichern die Grenzen. Dabei wurde ein stiller
+  Revisionsfehler behoben, durch den Änderungen an Art-Assets übersehen werden konnten. `server.mjs` sank von
+  5.678 auf 4.408 Zeilen und `server.test.mjs` von 3.098 auf 2.842 Zeilen. A4 bleibt für weitere kleine Schnitte an
+  CRUD-, Pipeline-, Backup-/Publikations- und Adapterlogik offen. Squarespace-JavaScript, Footer-Versionen und
+  Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
