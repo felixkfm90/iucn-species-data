@@ -869,10 +869,9 @@ Aktuelle Planung:
   Status-Icon-Sätze unter `graphics/catagory/` und `graphics/catagory/Alternativ/` werden von Explorer
   beziehungsweise Squarespace benötigt und bleiben an ihren Live-Pfaden. Details:
   `docs/audits/2026-07-pre-phase-8-audit.md`.
-  Der externe Abschlusscrawl fand außerhalb des Repositorys einen statischen Squarespace-Link von
-  `/wildlife/namibia` auf die noch nicht vorhandene Gepard-Seite `/wildlife/namibia/acinonyxjubatus`. Vor ihrer
-  öffentlichen Nutzung muss diese Seite im CMS angelegt oder der Button dort entfernt werden; dies ist kein
-  technischer Repository-Blocker für Phase 8.
+  Die im externen Abschlusscrawl zunächst noch nicht erreichbare Gepard-Seite
+  `/wildlife/namibia/acinonyxjubatus` wurde anschließend in Squarespace live geschaltet und mit HTTP 200 sowie dem
+  erwarteten Artinhalt nachgeprüft. Vor Phase 8 bleibt damit auch kein externer Link-Blocker offen.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

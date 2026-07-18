@@ -741,10 +741,9 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Dabei wurden die letzten dynamischen Alternativtexte im Squarespace-Frontend ergänzt, lokale Pipeline- und
   Desktop-Logs begrenzt, die beiden absichtlich getrennten Status-Icon-Sätze dokumentiert und veraltete
   Abschlussaussagen bereinigt. Electron wurde innerhalb der bestehenden Hauptversion auf 42.7.0 aktualisiert.
-  Es bleibt kein technischer Repository-Blocker vor Phase 8. Als getrennter externer Inhaltshinweis verweist die
-  Squarespace-Namibia-Seite derzeit auf eine noch nicht vorhandene Gepard-Detailseite; diese CMS-Verlinkung ist vor
-  ihrer öffentlichen Nutzung in Squarespace anzulegen oder zu entfernen. Details:
-  `docs/audits/2026-07-pre-phase-8-audit.md`.
+  Die Gepard-Detailseite wurde während der externen Nachprüfung in Squarespace live geschaltet und antwortet wie
+  die übrigen internen Linkziele mit HTTP 200. Es bleibt kein technischer Repository- oder externer Link-Blocker vor
+  Phase 8. Details: `docs/audits/2026-07-pre-phase-8-audit.md`.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

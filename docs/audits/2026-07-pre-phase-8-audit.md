@@ -113,17 +113,16 @@ Die Abschlussprüfung ist lokal vollständig bestanden:
   Frontendmodule werden danach mit HTTP 200 und dem neuen Quellstand ausgeliefert; `speciesData.json` enthält live
   50 Arten.
 
-### Externer Squarespace-Inhaltshinweis
+### Externe Squarespace-Nachprüfung
 
-Fünf interne Pfade außerhalb der Sitemap sind erreichbare System-, Asset- oder Weiterleitungspfade. Der statische
-Button auf `/wildlife/namibia` verweist jedoch auf `/wildlife/namibia/acinonyxjubatus`, während diese Gepard-Seite
-aktuell HTTP 404 liefert. Das ist kein Repository-, Daten- oder Deploymentfehler und kann aus diesem Repository
-nicht sicher entschieden werden: Vor einer öffentlichen Verlinkung muss die Squarespace-Detailseite angelegt oder
-der dortige Button entfernt werden.
+Die sechs internen Pfade außerhalb der Sitemap wurden einzeln aufgerufen. System-, Asset- und Weiterleitungspfade
+antworten mit HTTP 200. Die zunächst noch nicht erreichbare Gepard-Seite
+`/wildlife/namibia/acinonyxjubatus` wurde anschließend in Squarespace live geschaltet und liefert bei der finalen
+Nachprüfung ebenfalls HTTP 200 sowie den erwarteten Inhalt für `Gepard` beziehungsweise `Acinonyx jubatus`.
 
 ## Ergebnis
 
 Alle während des Audits gefundenen lokalen Code-, Struktur- und Dokumentationspunkte sind bereinigt. Der
 Repository-Stand ist technisch für Phase 8 freigegeben. Commit, GitHub-Actions-Qualitätsgate, Pages-Bau und
-Live-Auslieferung sind erfolgreich abgeschlossen. Der separat ausgewiesene Squarespace-Link zur Gepard-Seite
-betrifft ausschließlich den externen CMS-Inhalt und nicht die Phase-8-Codebasis.
+Live-Auslieferung sind erfolgreich abgeschlossen. Auch die externe Squarespace-Nachprüfung enthält keinen offenen
+Link- oder Inhaltsfehler mehr.
