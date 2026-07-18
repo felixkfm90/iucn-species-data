@@ -10,6 +10,10 @@ import {
 test("Vorschau erlaubt ausschließlich die festgelegten lokalen Dateien", () => {
   const repoRoot = "D:\\IUCN_Datenbank";
   assert.match(resolvePreviewFile("/species-taxonomy.js", repoRoot), /species-taxonomy\.js$/);
+  assert.match(
+    resolvePreviewFile("/docs/squarespace-custom.css", repoRoot),
+    /squarespace-custom\.css$/,
+  );
   assert.match(resolvePreviewFile("/taxonomy-concept.svg", repoRoot), /taxonomy-pyramid-redesign-concept\.svg$/);
   assert.equal(resolvePreviewFile("/../package.json", repoRoot), null);
   assert.equal(resolvePreviewFile("/%2e%2e/package.json", repoRoot), null);

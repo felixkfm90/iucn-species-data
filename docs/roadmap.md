@@ -771,8 +771,9 @@ Status: in Arbeit seit 2026-07-18
   denselben dezenten Zehn-Pixel-Verjüngungsschritt und dieselbe weiche Rundung; mobil wird dieser Schritt bei Bedarf
   automatisch verkleinert. Anzeigenamen beginnen mit einem Großbuchstaben und werden nicht vollständig großgeschrieben.
   Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
-  kontrollierte Übernahme nach `main`, der erfolgreiche Pages-Lauf und anschließend die produktive
-  Footer-Versionierung bilden den noch laufenden Veröffentlichungsabschluss. Details:
+  kontrollierte Übernahme nach `main` und der erste Pages-Lauf waren erfolgreich. Das Modul lädt das notwendige
+  Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
+  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.3`. Details:
   `docs/taxonomy-redesign-handoff.md`.
 - Artporträts auf den Squarespace-Artseiten einbinden.
 - Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.

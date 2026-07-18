@@ -888,9 +888,10 @@ Aktuelle Planung:
   einem Großbuchstaben; bekannte Rohwerte werden zentral deutsch übersetzt. Ein echter `Subphylum`-Wert wird als
   `Unterstamm` angezeigt, fehlende Werte erzeugen keine Leerzeile. Sieben und acht Stufen sind automatisiert und in
   der lokalen Vorschau ohne horizontalen Überlauf geprüft. Felix hat den lokalen Endentwurf am 2026-07-18 in allen
-  drei Vorschaugrößen visuell freigegeben. Der produktive Footer bleibt bis zum erfolgreichen Pages-Deployment des
-  freigegebenen `main`-Stands unverändert auf `species-taxonomy.js?v=1.0.2`; anschließend wird die neue
-  Cache-Version in Squarespace aktiviert. Danach folgen Artportraits auf Squarespace, kontrollierte
+  drei Vorschaugrößen visuell freigegeben. Der freigegebene Stand wurde nach `main` übernommen und der erste
+  Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
+  kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
+  Footer-Version ist `species-taxonomy.js?v=1.0.3`. Danach folgen Artportraits auf Squarespace, kontrollierte
   Taxonomiebearbeitung und fest eingeplanter Soundeditor.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.

@@ -2,6 +2,8 @@
   "use strict";
 
   const EMPTY_VALUES = new Set(["", "-", "n/a", "na", "null", "undefined", "unknown"]);
+  const TAXONOMY_STYLESHEET_ID = "species-taxonomy-styles";
+  const TAXONOMY_STYLESHEET_PATH = "docs/squarespace-custom.css";
 
   const TAXONOMY_LEVELS = Object.freeze([
     { key: "Kingdom", rank: "Reich", className: "kingdom", icon: "globe" },
@@ -113,6 +115,45 @@
       "\"": "&quot;",
       "'": "&#39;",
     }[character]));
+  }
+
+  function resolveTaxonomyStylesheetUrl() {
+    const source = global.document?.currentScript?.src;
+    if (!source || typeof global.URL !== "function") return "";
+    const scriptUrl = new global.URL(source, global.document?.baseURI);
+    const stylesheetUrl = new global.URL(TAXONOMY_STYLESHEET_PATH, scriptUrl);
+    stylesheetUrl.search = scriptUrl.search;
+    return stylesheetUrl.href;
+  }
+
+  function ensureTaxonomyStyles() {
+    const document = global.document;
+    if (!document?.createElement || !document.head) return Promise.resolve(true);
+
+    const stylesheetUrl = resolveTaxonomyStylesheetUrl();
+    if (!stylesheetUrl) return Promise.resolve(true);
+
+    const existing = document.getElementById(TAXONOMY_STYLESHEET_ID);
+    if (existing?.sheet || existing?.dataset?.loaded === "true") return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      const link = existing || document.createElement("link");
+      let settled = false;
+      const finish = (loaded) => {
+        if (settled) return;
+        settled = true;
+        if (loaded) link.dataset.loaded = "true";
+        resolve(loaded);
+      };
+
+      link.id = TAXONOMY_STYLESHEET_ID;
+      link.rel = "stylesheet";
+      link.href = stylesheetUrl;
+      link.addEventListener("load", () => finish(true), { once: true });
+      link.addEventListener("error", () => finish(false), { once: true });
+      if (!existing) document.head.append(link);
+      global.setTimeout?.(() => finish(Boolean(link.sheet)), 8000);
+    });
   }
 
   function normalizedValue(value) {
@@ -336,6 +377,10 @@
     const container = global.document?.getElementById("species-taxonomy");
     if (!container) return;
     try {
+      const stylesLoaded = await ensureTaxonomyStyles();
+      if (!stylesLoaded) {
+        throw new Error("Die Taxonomie-Darstellung konnte nicht geladen werden.");
+      }
       const data = await global.SpeciesCore.getSpeciesData();
       container.innerHTML = renderMarkup(data);
       watchTaxonomyLayout(container);

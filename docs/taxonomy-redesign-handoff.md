@@ -140,8 +140,9 @@ Icons vorzugsweise als lokale Inline-SVGs, CSS-Masken oder einfache CSS-Formen u
 - Automatisierte Tests decken sieben Stufen, einen echten Unterstamm, technische Leerwerte, unbekannte
   Übersetzungen, HTML-Escaping und Adapter-/Schemaschnittstellen ab.
 - Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Der
-  produktive Footer bleibt bis zum erfolgreichen Pages-Deployment des freigegebenen `main`-Stands unverändert auf
-  `species-taxonomy.js?v=1.0.2`; erst danach wird die neue Cache-Version in Squarespace aktiviert.
+  freigegebene Stand wurde nach `main` übernommen und der erste Pages-Lauf war erfolgreich. Das Modul lädt das
+  zugehörige Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt, damit Markup und Gestaltung künftig atomar
+  veröffentlicht werden. Die dokumentierte produktive Cache-Version ist `species-taxonomy.js?v=1.0.3`.
 
 ## Betroffene Dateien
 

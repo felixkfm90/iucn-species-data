@@ -14,6 +14,7 @@ export function previewRouteFiles(repoRoot = resolve(scriptDirectory, "..")) {
     ["/preview.css", join(previewRoot, "preview.css")],
     ["/preview.js", join(previewRoot, "preview.js")],
     ["/squarespace-custom.css", join(repoRoot, "docs", "squarespace-custom.css")],
+    ["/docs/squarespace-custom.css", join(repoRoot, "docs", "squarespace-custom.css")],
     ["/species-taxonomy.js", join(repoRoot, "species-taxonomy.js")],
     ["/speciesData.json", join(repoRoot, "speciesData.json")],
     [

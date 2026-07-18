@@ -21,7 +21,7 @@ test("Pages-Pfadregeln erlauben nur Laufzeitdateien", () => {
   assert.equal(isPublishableSourcePath("graphics/catagory/Alternativ/Blaupause.psd"), false);
   assert.equal(isPublishableSourcePath("README.md"), false);
   assert.equal(isPublishableSourcePath("docs/roadmap.md"), false);
-  assert.equal(isPublishableSourcePath("docs/squarespace-custom.css"), false);
+  assert.equal(isPublishableSourcePath("docs/squarespace-custom.css"), true);
   assert.equal(isIgnoredDesignSource("graphics/catagory/Alternativ/Blaupause.psd"), true);
   assert.equal(isAllowedArtifactPath(".nojekyll"), true);
   assert.equal(isAllowedArtifactPath("species-explorer/local-settings.json"), false);

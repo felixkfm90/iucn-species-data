@@ -510,9 +510,10 @@ Priorisierte Bedienungs- und Ausbauschritte:
    Assessment-Zuordnung, Report und Kartendokumentation mit. Details: `docs/rename-species-workflow.md`.
 3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
    Männchen/Weibchen, Wert und Einheit aufteilen: seit 2026-07-11 umgesetzt.
-4. Taxonomie-Pyramide mit deutschen Anzeigenamen und neuer responsiver Darstellung: im geschützten Phase-8-
-   Arbeitsbranch umgesetzt und lokal in Abnahme. Der Unterstamm wird nur bei einem echten vorhandenen Datenwert
-   angezeigt; es gibt keine pauschale oder aus anderen Rängen abgeleitete Ersatzstufe.
+4. Taxonomie-Pyramide mit deutschen Anzeigenamen und neuer responsiver Darstellung: lokal in Desktop-, Tablet- und
+   Mobilbreite freigegeben und nach `main` übernommen. Der Unterstamm wird nur bei einem echten vorhandenen
+   Datenwert angezeigt; es gibt keine pauschale oder aus anderen Rängen abgeleitete Ersatzstufe. Das Modul lädt sein
+   freigegebenes CSS aus demselben Pages-Artefakt, damit Markup und Darstellung gemeinsam veröffentlicht werden.
 5. Artportrait auf der Squarespace-Artseite einbinden.
 
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.

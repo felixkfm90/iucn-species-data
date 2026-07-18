@@ -18,6 +18,14 @@ nicht öffentlich verlinkten Squarespace-Testseite und durch Felix freigegeben w
 - Die produktive Squarespace-`?v=`-Version bleibt bis zur Endfreigabe unverändert. Dadurch verwendet die Website
   weiterhin den zuletzt freigegebenen GitHub-Pages-Stand.
 
+### Atomare Taxonomie-Auslieferung
+
+`species-taxonomy.js` lädt vor dem ersten Rendern den freigegebenen Stand von
+`docs/squarespace-custom.css` aus demselben GitHub-Pages-Artefakt. Das Stylesheet ist deshalb ausdrücklich Teil der
+Pages-Positivliste. Markup und notwendiges CSS werden damit gemeinsam veröffentlicht; ein neuer Modulstand kann auf
+Squarespace nicht mehr vorübergehend mit veraltetem Taxonomie-CSS als unformatierte Symbolfolge erscheinen. Die
+Squarespace-CSS-Kopie bleibt weiterhin die dokumentierte Gestaltungsreferenz.
+
 ## Lokale Vorschau
 
 Start im Repository-Ordner:
