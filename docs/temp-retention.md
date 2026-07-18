@@ -1,6 +1,6 @@
 # Aufbewahrung temporärer Explorer-Dateien
 
-Stand: 2026-07-13
+Stand: 2026-07-18
 
 `species-explorer/temp-retention.mjs` ist die zentrale Registry und Bereinigung für eindeutig verwaltete temporäre
 Dateien. Fremde Dateien sowie wiederherstellbare Sicherungen werden nie pauschal gelöscht.
@@ -24,9 +24,15 @@ anzutasten.
 
 - `species-explorer/backups/`: verwaltete Sicherungen der Eingabeliste;
 - `species-explorer/asset-backups/`: je Asset wiederherstellbare Sicherung;
-- `species-explorer/logs/`: begrenzte Prozesshistorie;
+- `species-explorer/logs/`: begrenzte Prozesshistorie. Pipeline-Läufe bleiben auf 20 Dateien begrenzt,
+  `pipeline-errors.log` ist auf 256 KiB begrenzt und `desktop-launch.log` wird bei jedem Desktopstart
+  überschrieben;
 - `Testlauf/nas-backup-dry/`: kontrolliertes Testziel des Backup-Prozesses;
 - `node_modules/` und `local-tools/`: Bestandteil eines vollständig startfähigen NAS-Restores.
+
+Der frühere Root-Log `errors.log` wird nicht mehr erzeugt. Pipelinefehler schreibt `update.mjs` über
+`scripts/pipeline-error-log.mjs` in den vorhandenen Explorer-Logordner. Ein vorhandener lokaler Altbestand kann
+gefahrlos gelöscht werden.
 
 ## Bedienung und Tests
 

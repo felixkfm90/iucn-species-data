@@ -1,16 +1,20 @@
 # Asset-Verwaltung im Arten-Explorer
 
-Stand: 2026-06-21
+Stand: 2026-07-18
 
 Status: Phase 7.7 am 2026-06-21 abgeschlossen und von Felix freigegeben.
+
+> Abgeschlossenes Planungs- und Umsetzungsdokument. Aktuelle Assetzähler stehen ausschließlich in
+> `docs/project-status.md`; aktuelle Struktur- und Qualitätsregeln stehen in `docs/repo-structure.md` und
+> `docs/media-asset-validation.md`.
 
 Ziel von Phase 7.7: Karten, Sounds, Credits und Spektrogramme kontrolliert je Art ersetzen oder pflegen, ohne
 beliebige Dateisystemzugriffe zu erlauben und ohne manuelle Assets beim naechsten Pipeline-Lauf unbemerkt zu
 ueberschreiben.
 
-Der Einstieg erfolgt über die allgemeine Aktion `Bearbeiten` oben rechts im Artkopf. Dort werden neben den bereits
-vorhandenen manuellen Eingaben später auch Karte, Sound/Credits, Spektrogramm und Artporträt verwaltet. Die
-Schaltflächen sind deshalb bewusst nicht mehr dem Abschnitt `Manuelle Daten` zugeordnet.
+Der Einstieg erfolgt über die Bereichsaktionen direkt an `Manuelle Daten`, `Verbreitungskarte`, `Tierstimme` und
+`Artporträt`. Löschen und Wiederherstellen stehen ebenfalls im jeweiligen Medienkopf; der Artkopf bleibt für
+`Art aktualisieren` und das vollständige Löschen der Art reserviert.
 
 ## Ausgangslage
 
@@ -69,7 +73,7 @@ Regeln:
 
 ### 7.7.2 Karten ersetzen
 
-Status: technisch lokal umgesetzt am 2026-06-20; produktiver Import und visuelle Bedienprüfung stehen noch aus.
+Status: umgesetzt, produktiv erprobt und visuell freigegeben.
 
 Der Kartenimport ist im bereichsbezogenen `Bearbeiten`-Dialog der Art integriert. Auf der Detailseite steht
 `Bearbeiten` direkt an den Bereichen `Manuelle Daten`, `Artporträt`, `Verbreitungskarte` und `Tierstimme`; der
@@ -99,7 +103,8 @@ Vorgesehene Grenze:
 
 - Produktdatei bleibt immer `map.jpg`; Upload akzeptiert JPEG und PNG
 - maximal 20 MB
-- keine Loeschfunktion in der ersten Version
+- die ursprüngliche Erstversion hatte noch keine Löschfunktion; seit 2026-07-04 sind Löschen und Wiederherstellen
+  kontrolliert im jeweiligen Medienkopf umgesetzt
 
 Umgesetzt:
 
@@ -128,7 +133,7 @@ Umgesetzt:
 
 ### 7.7.3 Sound und Credits als gemeinsames Paket
 
-Status: technisch lokal umgesetzt am 2026-06-20; produktiver Import und visuelle Bedienprüfung stehen noch aus.
+Status: umgesetzt, produktiv erprobt und visuell freigegeben.
 
 Ein Sound darf nur zusammen mit vollstaendigen Credits ersetzt werden.
 Im Bearbeitungsmodus kann ein vorhandener aktueller Sound außerdem ausdrücklich abgelehnt werden, wenn die Quelle
@@ -307,7 +312,8 @@ Erweiterung seit 2026-07-04:
 - Schutz gegen parallele Aenderungen durch Datei-Hash
 - atomarer Austausch ueber temporaere Datei
 - kein automatischer Pipeline-Start
-- nach bestätigtem und erfolgreichem Assetaustausch automatischer, eng begrenzter Git-Commit und Push
+- nach bestätigtem Assetaustausch lokale Vormerkung; Veröffentlichung gesammelt und bewusst über
+  `Änderungen übertragen`
 
 Geplanter lokaler Stagingpfad:
 
@@ -321,7 +327,7 @@ Der Ordner wird ignoriert und nach Abschluss oder bei abgelaufenen Uploads berei
 
 Assetbackups sind groesser als `species_list.json`-Backups und brauchen eine strengere Regel:
 
-- hoechstens 3 verwaltete Versionen je Art und Assettyp
+- genau eine verwaltete letzte Version je Art und Assettyp; erneutes Ersetzen oder Löschen überschreibt sie
 - zusaetzliche globale Obergrenze von 500 MB fuer verwaltete Assetbackups
 - bei Ueberschreitung werden die aeltesten verwalteten Assetbackups entfernt
 - fremde Dateien werden niemals automatisch geloescht
@@ -329,11 +335,11 @@ Assetbackups sind groesser als `species_list.json`-Backups und brauchen eine str
 
 ## Bedienoberflaeche
 
-Im Bereich `Assetstatus` erhaelt jede unterstuetzte Zeile eine Aktion:
+Im Kopf jedes unterstützten Medienbereichs stehen die passenden Aktionen:
 
-- `Ansehen`
-- `Ersetzen`
-- spaeter optional `Vorherige Version wiederherstellen`
+- `Bearbeiten`
+- `Löschen`
+- `Wiederherstellen`, wenn eine Sicherung vorhanden ist
 
 Vor dem Speichern zeigt die App:
 
@@ -363,7 +369,8 @@ Vor dem Speichern zeigt die App:
 7. deutschen Artnamen inklusive SafeName, Assetordner, Overrides, Assessment-Zuordnung, Report und Dokumentation
    umbenennen: umgesetzt
 
-Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erweiterungen.
+Die Restore-Funktion und die grundlegenden Assetaktionen sind umgesetzt. Weitergehende Bearbeitung, insbesondere
+der fest geplante Soundeditor aus Phase 8, bleibt ein eigener Funktionsschritt.
 
 ## Testplan
 
@@ -380,7 +387,7 @@ Restore-Funktion und weitergehende Assetaktionen bleiben mögliche spätere Erwe
 - Fehlgeschlagene Spektrogramm-Erzeugung verändert keine Produktivdatei.
 - Erfolgreicher Soundwechsel erzeugt ein neues WebP und registriert beide SHA-256-Hashes.
 - Nachträgliche Änderung an Sound oder Spektrogramm wird als `Spektrogramm veraltet` erkannt.
-- Backup-Retention behaelt hoechstens 3 Versionen je Art/Asset und respektiert die globale Groessengrenze.
+- Backup-Retention behält genau eine letzte Version je Art/Asset und respektiert die globale Größengrenze.
 - Fremde Dateien in Staging- oder Backupordnern werden nicht automatisch geloescht.
 - Projektvalidierung wird nach dem Import automatisch neu geladen.
 - Erfolgreicher Kartenaustausch wird lokal vorgemerkt und mit Karte, Override-Register, Kartendokumentation und

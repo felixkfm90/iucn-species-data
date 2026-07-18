@@ -1,6 +1,6 @@
 # Audioformat-Prüfung und Bestandsmigration
 
-Stand: 2026-07-12
+Stand: 2026-07-18
 
 ## Ziel
 
@@ -70,4 +70,5 @@ Nach der Migration wurden erfolgreich ausgeführt:
 
 Die verpflichtende Formatprüfung, feste Einzelgrenzen je Asset/Artpaket und das mit der Artenzahl wachsende
 Pages-Gesamtbudget wurden anschließend umgesetzt und sind unter `docs/media-asset-validation.md` dokumentiert.
-Offen bleibt der vollständige GitHub-Pages-Quality-Job mit Syntax-, Test- und Datenaudit.
+Der vollständige Quality-Job mit Syntax-, Test-, Daten-, Audio-, Medien-, Größen- und Site-Audit ist Bestandteil
+von `quality:ci` und des GitHub-Pages-Workflows. Der frühere offene Abschlusscheck ist damit erledigt.

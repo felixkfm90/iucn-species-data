@@ -1,6 +1,6 @@
 # Image Alt Text Audit
 
-Stand: 2026-06-15
+Stand: 2026-07-18
 
 Ziel: Bild-Alternativtexte und optionale Bildtitel der oeffentlichen Squarespace-Seiten pruefen. Der Audit aendert keine
 Live-Seite automatisch; die Umsetzung erfolgt in Squarespace-Bildbloecken, Galerien oder spaeter gezielt in den
@@ -124,12 +124,13 @@ Einordnung:
 | Datei | Befund | Empfehlung |
 |---|---|---|
 | `map-loader.js` | Kartenbild hat `alt="Verbreitungskarte – ${germanName}"`. | Passt grundsaetzlich. Spaeter optional wissenschaftlichen Namen ergaenzen. |
-| `map-loader.js` | Fullscreen-Kartenbild per `new Image()` hat aktuell keinen expliziten Alt-Text. | Niedrige Prioritaet; bei naechster Frontend-Runde setzen. |
-| `species-status.js` | Status-/Trend-Icons haben generische Alt-Texte `IUCN Status Icon` und `Populationstrend Icon`. | Mittlere Prioritaet; spaeter dynamisch mit Status/Trend befuellen, z. B. `IUCN-Status: Least Concern`. |
-| `lightbox-zoom.js` | Zoom-Bild hat generisches `alt="Vollbild / Zoom"`. | Mittlere Prioritaet; spaeter Original-Alt-Text des geoeffneten Bildes uebernehmen, falls verfuegbar. |
+| `map-loader.js` | Das Fullscreen-Kartenbild übernimmt seit `v=1.0.8` den Alternativtext der Ausgangskarte. | Erledigt. |
+| `species-status.js` | Status-/Trend-Icons nennen seit `v=1.0.9` den sichtbaren Status beziehungsweise Trend dynamisch. | Erledigt. |
+| `lightbox-zoom.js` | Das Zoom-Bild übernimmt seit `v=1.0.7` den Original-Alternativtext; nur ohne vorhandenen Text greift ein verständlicher Fallback. | Erledigt. |
 
-Diese Punkte brauchen einen Code-Patch und danach eine Footer-`?v=`-Pruefung. Sie sind nicht Teil der reinen
-Squarespace-Bildpflege.
+Die drei dynamischen Punkte wurden im Abschlussaudit vor Phase 8 umgesetzt und durch
+`scripts/squarespace-accessibility.test.mjs` gegen Regressionen abgesichert. Die dokumentierten Footer-Versionen
+stehen in `docs/squarespace-footer.html`.
 
 ## Priorisierte Umsetzung
 
@@ -140,7 +141,7 @@ Squarespace-Bildpflege.
    live nicht mehr sichtbar.
 4. Neue Regel fuer kuenftige Bilder: beim Upload oder Einbau direkt entscheiden, ob das Bild dekorativ ist oder einen
    kurzen, konkreten Alt-Text braucht.
-5. Spaeter in einer kleinen Frontend-Runde die dynamischen Icon-/Lightbox-/Fullscreen-Alt-Texte verbessern.
+5. Dynamische Icon-, Lightbox- und Fullscreen-Alt-Texte: am 2026-07-18 erledigt.
 
 ## Umsetzungshinweise fuer Squarespace
 

@@ -1,9 +1,12 @@
 # Repository-Audit vor der Taxonomie-Erweiterung
 
-Stand: 2026-07-12
+Stand: 2026-07-18
 Repository: `felixkfm90/iucn-species-data`  
 Geprüfter Branch: `main`  
 Geprüfter Stand: `11d0eb8`
+
+> Fortlaufender technischer Phase-7-Audit. Der abschließende, erneut vollständig ausgeführte Übergabeaudit vor
+> Phase 8 ist als unveränderliche Zeitaufnahme unter `docs/audits/2026-07-pre-phase-8-audit.md` dokumentiert.
 
 ## Ziel und Ergebnis
 

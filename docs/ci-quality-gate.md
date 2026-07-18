@@ -25,14 +25,15 @@ Node-20-Abkündigungswarnung nicht mehr entsteht. Der Job führt aus:
 1. `npm ci --ignore-scripts` auf Grundlage von `package-lock.json`;
 2. `check:syntax` für alle JavaScript-/MJS-Quelldateien außerhalb lokaler Laufzeit- und Sicherungsordner;
 3. `check:style` für Kodierung, Abschlusszeile, nachgestellte Leerzeichen und Tabs;
-4. `check:schema` für Artenliste, generierte Artdaten, Overrides, Assessment-Zuordnungen und Fehlreport;
-5. `npm test` als gemeinsamer Einstieg für direkte Modul-, Vertrags- und Integrationstests;
-6. `audio:check` für alle vorhandenen Tierstimmen;
-7. `assets:check` für die produktiven Karten-, Portrait-, Sound-, Credits-, Spektrogramm- und Grafikdateien;
-8. `size:check` für das flexible Größenbudget des versionierten Projektstands und die Historienbeobachtung;
-9. `audit:project` für Artenlisten, generierte Daten, Report, Overrides und Assessment-Zuordnungen;
-10. `status:check` für den automatisch dokumentierten Projektstand;
-11. den bestehenden lokalen Monatsaudit ohne Netzwerkzugriff.
+4. `check:docs` für lokale Markdown-Links und ausdrücklich genannte Dokumentpfade;
+5. `check:schema` für Artenliste, generierte Artdaten, Overrides, Assessment-Zuordnungen und Fehlreport;
+6. `npm test` als gemeinsamer Einstieg für direkte Modul-, Vertrags- und Integrationstests;
+7. `audio:check` für alle vorhandenen Tierstimmen;
+8. `assets:check` für die produktiven Karten-, Portrait-, Sound-, Credits-, Spektrogramm- und Grafikdateien;
+9. `size:check` für das flexible Größenbudget des versionierten Projektstands und die Historienbeobachtung;
+10. `audit:project` für Artenlisten, generierte Daten, Report, Overrides und Assessment-Zuordnungen;
+11. `status:check` für den automatisch dokumentierten Projektstand;
+12. den bestehenden lokalen Monatsaudit ohne Netzwerkzugriff.
 
 Bewusst fehlende Sounds aus dem Report bleiben zulässig. Abweichende Karten-Assessment-Zuordnungen sind nur bei
 ausdrücklich manuell gepflegten Karten zulässig. Doppelte wissenschaftliche Namen, deutsche Namen oder URL-Slugs,
@@ -74,6 +75,7 @@ Einzelne Ebenen:
 ```powershell
 npm.cmd run --silent check:syntax
 npm.cmd run --silent check:style
+npm.cmd run --silent check:docs
 npm.cmd run --silent check:schema
 npm.cmd run --silent test
 npm.cmd run --silent size:check
@@ -87,8 +89,10 @@ werden und verändert keine Projekt- oder Assetdaten.
 
 ## Abgrenzung
 
-Die Änderung betrifft ausschließlich Repository-Prüfung und GitHub-Pages-Bau. Squarespace-JavaScript und Custom CSS
-wurden nicht geändert; Footer- oder `?v=`-Versionen bleiben deshalb unverändert.
+Das CI-Gate prüft Repository und GitHub-Pages-Bau. Seit dem Abschlussaudit vor Phase 8 laufen darüber zusätzlich
+Vertragstests für die dynamischen Alternativtexte der Squarespace-Module. Die zugehörigen Änderungen verwenden im
+dokumentierten Footer `species-status.js?v=1.0.9`, `map-loader.js?v=1.0.8` und
+`lightbox-zoom.js?v=1.0.7`. Das Squarespace-CSS bleibt unverändert.
 
 Die vollständigen Regeln, Adapter- und Testgrenzen sowie die Schwellen für die lokale Git-Historie stehen in
 `docs/repository-quality-gates.md`.

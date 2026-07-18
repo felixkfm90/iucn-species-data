@@ -11,6 +11,7 @@ import { createIucnMapAdapter } from "./scripts/iucn-map-adapter.mjs";
 import { createXenoCantoAdapter } from "./scripts/xeno-canto-adapter.mjs";
 import { createWikimediaCommonsAudioAdapter } from "./scripts/wikimedia-commons-audio-adapter.mjs";
 import { createINaturalistAudioAdapter } from "./scripts/inaturalist-audio-adapter.mjs";
+import { appendPipelineErrorLog } from "./scripts/pipeline-error-log.mjs";
 import {
   inatLicenseUrl,
   isNcLicense,
@@ -57,7 +58,7 @@ if (fs.existsSync(ASSET_OVERRIDES_FILE)) {
 // =======================
 
 function logError(msg) {
-  fs.appendFileSync("errors.log", `[${new Date().toISOString()}] ${msg}\n`);
+  appendPipelineErrorLog(msg);
 }
 
 function formatTaxonomyName(value) {

@@ -31,7 +31,7 @@ End If
 
 shell.CurrentDirectory = repoRoot
 command = "cmd.exe /d /c " & Quote(Quote(electronCmd) & " " & Quote(mainScript) & _
-  " >> " & Quote(logFile) & " 2>&1")
+  " > " & Quote(logFile) & " 2>&1")
 shell.Run command, 0, False
 
 Function Quote(value)

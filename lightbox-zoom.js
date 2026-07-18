@@ -168,7 +168,7 @@
   overlay.id = "gz-overlay";
   overlay.innerHTML = `
     <button id="gz-close" aria-label="Schließen">×</button>
-    <img id="gz-img" alt="Vollbild / Zoom">
+    <img id="gz-img" alt="Vergrößerte Bildansicht">
   `;
   document.body.appendChild(overlay);
 
@@ -270,7 +270,7 @@
     scale = nextScale;
   }
 
-  function openZoom(src) {
+  function openZoom(src, altText) {
     if (!src) return;
 
     // bei neuem Bild Basisgröße neu messen
@@ -282,6 +282,7 @@
       }, 0);
     };
 
+    zoomImg.alt = altText || "Vergrößerte Bildansicht";
     zoomImg.src = src;
     overlay.classList.add("open");
     reset();
@@ -299,6 +300,7 @@
   function closeZoom() {
     overlay.classList.remove("open");
     zoomImg.src = "";
+    zoomImg.alt = "Vergrößerte Bildansicht";
     document.documentElement.classList.remove("gz-noscroll");
     document.body.classList.remove("gz-noscroll");
 
@@ -507,7 +509,8 @@
 
       const img = findLightboxImg(r);
       const src = largestSrcFromImg(img);
-      openZoom(src);
+      const altText = img?.getAttribute("alt") || "";
+      openZoom(src, altText);
     });
   }
 

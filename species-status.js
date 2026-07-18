@@ -61,13 +61,13 @@
         <div class="status-trend-wrapper">
           <div class="info-box">
             <p>Status</p>
-            <img src="${ASSET_BASE}/graphics/catagory/Alternativ/${statusIcon}" height="80" alt="IUCN Status Icon">
+            <img src="${ASSET_BASE}/graphics/catagory/Alternativ/${statusIcon}" height="80" alt="IUCN-Status: ${categoryText}">
             <p>${categoryText}${statusKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
 
           <div class="info-box">
             <p>Trend</p>
-            <img src="${ASSET_BASE}/graphics/trend/${trendIcon}" height="80" alt="Populationstrend Icon">
+            <img src="${ASSET_BASE}/graphics/trend/${trendIcon}" height="80" alt="Populationstrend: ${trendText}">
             <p>${trendText}${trendKnown ? "" : " (Fallback-Icon)"}</p>
           </div>
         </div>

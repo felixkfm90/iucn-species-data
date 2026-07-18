@@ -155,7 +155,7 @@ Spaeter sinnvoll:
 - `npm.cmd run --silent audit:site -- --skip-live --skip-pages` ausfuehren
 - `npm.cmd run --silent generate:spectrograms` ausfuehren
 - Ergebnis-JSON in der UI anzeigen
-- Fehler aus `errors.log` lesbar darstellen
+- Fehler aus dem begrenzten lokalen Log `species-explorer/logs/pipeline-errors.log` lesbar darstellen
 
 Diese Funktionen brauchen klare Schutzmechanismen:
 

@@ -111,7 +111,8 @@ Schließen nach.
 `species:desktop:shortcut` erstellt eine Desktop-Verknüpfung `Arten-Explorer.lnk`. Sie verweist auf
 `wscript.exe` und startet `start-explorer.vbs`, damit beim Doppelklick kein dauerhaft sichtbares PowerShell- oder
 Konsolenfenster offen bleibt. Die Prozessausgabe landet bei Bedarf in
-`species-explorer/logs/desktop-launch.log`.
+`species-explorer/logs/desktop-launch.log`. Die Datei wird bei jedem Start überschrieben, sodass genau der letzte
+Start diagnostizierbar bleibt und der Launcher-Log nicht unbegrenzt wächst.
 
 Der Desktop-Lifecycle ist über den Explorer-Test abgedeckt:
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-16
+Stand: 2026-07-18
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -735,6 +735,16 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Bestandteil von `quality:ci`. Der lokale Projektstand nutzt 92,6 von 145,0 MiB; die Git-Packhistorie wird bei
   434,5 MiB beobachtet, aber nicht riskant umgeschrieben. A4 und A8 bis A11 sind damit ohne Restblocker
   abgeschlossen. Details: `docs/repository-quality-gates.md` und `docs/audits/2026-07-repository-audit.md`.
+
+  Vor dem Start von Phase 8 wurde am 2026-07-18 ein vollständiger Abschlussaudit wiederholt. Daten, Reports,
+  Medien, Abhängigkeiten, Sicherheit, Dokumentation, Ordnerstruktur und alle Qualitätsgates wurden erneut geprüft.
+  Dabei wurden die letzten dynamischen Alternativtexte im Squarespace-Frontend ergänzt, lokale Pipeline- und
+  Desktop-Logs begrenzt, die beiden absichtlich getrennten Status-Icon-Sätze dokumentiert und veraltete
+  Abschlussaussagen bereinigt. Electron wurde innerhalb der bestehenden Hauptversion auf 42.7.0 aktualisiert.
+  Es bleibt kein technischer Repository-Blocker vor Phase 8. Als getrennter externer Inhaltshinweis verweist die
+  Squarespace-Namibia-Seite derzeit auf eine noch nicht vorhandene Gepard-Detailseite; diese CMS-Verlinkung ist vor
+  ihrer öffentlichen Nutzung in Squarespace anzulegen oder zu entfernen. Details:
+  `docs/audits/2026-07-pre-phase-8-audit.md`.
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 

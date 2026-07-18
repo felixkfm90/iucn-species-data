@@ -15,11 +15,12 @@ Veröffentlichung erkannt.
 
 1. Syntaxprüfung aller JavaScript-/MJS-Quellen;
 2. schlanke Quelltextregeln für Kodierung, Zeilenenden, nachgestellte Leerzeichen und Tabs;
-3. Schema- und Konsistenzprüfung der fünf zentralen JSON-Datenbestände;
-4. alle direkten Modul-, Vertrags- und Integrationstests;
-5. Audio- und Medienformatprüfung mit Einzelgrenzen;
-6. flexibles Größenbudget des versionierten Projektstands;
-7. Projekt-, Status- und lokaler Site-Audit.
+3. Prüfung lokaler Markdown-Links und ausdrücklich genannter Dokumentpfade;
+4. Schema- und Konsistenzprüfung der fünf zentralen JSON-Datenbestände;
+5. alle direkten Modul-, Vertrags- und Integrationstests;
+6. Audio- und Medienformatprüfung mit Einzelgrenzen;
+7. flexibles Größenbudget des versionierten Projektstands;
+8. Projekt-, Status- und lokaler Site-Audit.
 
 Die Style-Prüfung formatiert keine Dateien automatisch. Sie schützt nur klare, repositoryweite Grundregeln und
 vermeidet damit einen riskanten, großflächigen Formatierungsumbau. Generierte JSON-Dateien werden nicht als
@@ -48,6 +49,15 @@ Die Explorer-API-Integration ist fachlich aufgeteilt:
 Statische Vertragsprüfungen bleiben nur dort bestehen, wo sie Modulbesitz, Browser-Ladereihenfolge oder
 ausgelieferte Quellverträge günstiger und zuverlässiger absichern als ein vollständiger Browser-End-to-End-Test.
 
+Zusätzliche repositoryweite Regressionstests sichern Querschnittsgrenzen:
+
+- `scripts/squarespace-accessibility.test.mjs`: dynamische Alternativtexte für IUCN-Status, Trend, Karten-Vollbild
+  und Bild-Lightbox;
+- `scripts/pipeline-error-log.test.mjs`: fehlertoleranter Pipeline-Fehlerlog und feste 256-KiB-Grenze.
+
+Beide Tests laufen über `test:quality-tools` und damit automatisch als Bestandteil von `npm test` und
+`quality:ci`.
+
 ## Öffentliche Pages-Dateien
 
 Das kontrollierte `_site/`-Artefakt enthält ausschließlich die produktiven Frontendmodule, zentralen JSON-Daten,
@@ -74,6 +84,7 @@ Wartungsfenster und ein getesteter Restore verpflichtend.
 
 ```powershell
 npm.cmd run --silent check:style
+npm.cmd run --silent check:docs
 npm.cmd run --silent check:schema
 npm.cmd run --silent test:providers
 npm.cmd run --silent test:size-budget
@@ -84,4 +95,6 @@ npm.cmd run --silent quality:ci
 ```
 
 `_site/` ist ein ignoriertes, vollständig reproduzierbares Prüfartefakt und wird nach lokalen Builds wieder entfernt.
-Squarespace-JavaScript, Footer-Versionen und Custom CSS wurden durch diese Repository-Grenzen nicht verändert.
+Das Abschlussaudit vor Phase 8 hat zusätzlich die dynamischen Alternativtexte der Squarespace-Module abgesichert.
+Deshalb sind im dokumentierten Footer `species-status.js?v=1.0.9`, `map-loader.js?v=1.0.8` und
+`lightbox-zoom.js?v=1.0.7` verbindlich. Das Squarespace-CSS bleibt unverändert.

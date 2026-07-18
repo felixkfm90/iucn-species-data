@@ -46,6 +46,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `scripts/check-source-style.mjs`: schlanke Kodierungs-, Zeilenenden-, Leerzeichen- und Tabprüfung
 - `scripts/validate-data-schema.mjs`: fachliche Schema-Prüfung der zentralen JSON-Datenbestände
 - `scripts/repository-size-budget.mjs`: flexibles Größenbudget und Beobachtung der lokalen Git-Packhistorie
+- `scripts/pipeline-error-log.mjs`: fehlertoleranter, auf 256 KiB begrenzter Pipeline-Fehlerlog unter
+  `species-explorer/logs/`
 - `scripts/validate-project-state.mjs`: verbindlicher lokaler Daten-, Report-, Override- und Zuordnungscheck
 - `scripts/validate-pages-artifact.mjs`: vergleicht `_site/` exakt mit der öffentlichen Dateifreigabe
 - `.github/workflows/pages.yml`: eigenes GitHub-Actions-Deployment fuer GitHub Pages
@@ -72,6 +74,7 @@ Versionierte Referenzen liegen unter:
 - `docs/monthly-site-audit.md`
 - `docs/audits/2026-06-site-audit.md`
 - `docs/audits/2026-07-repository-audit.md`
+- `docs/audits/2026-07-pre-phase-8-audit.md`
 - `docs/audio-format-validation.md`
 - `docs/media-asset-validation.md`
 - `docs/explorer-api-security.md`
@@ -90,6 +93,11 @@ Dokumentation ist Teil der Definition of Done: Ein Roadmap-Schritt gilt erst als
 
 Bei jeder Aenderung an einer eingebundenen JavaScript-Datei muss in Squarespace die jeweilige `?v=`-Version erhoeht
 werden, damit Browser- und GitHub-Pages-Caches sicher umgangen werden.
+
+Der Abschlussaudit vor Phase 8 hat Daten, Medien, Abhängigkeiten, Sicherheit, Ordnerstruktur, Dokumentation und
+Qualitätsgates erneut geprüft. Die Squarespace-Module verwenden seit dem dokumentierten Footerstand vom
+2026-07-18 dynamische Alternativtexte für Status/Trend und übernehmen vorhandene Alternativtexte in Karten- und
+Galerie-Vollbilder. Details: `docs/audits/2026-07-pre-phase-8-audit.md`.
 
 Das Squarespace Custom CSS enthaelt seit 2026-06-14 einen Mobile-only-Override fuer Grid-Galerien: Galerien mit mehr
 als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert.
@@ -197,6 +205,9 @@ Vollständiges lokales CI-Qualitätsgate:
 ```bash
 npm.cmd run --silent quality:ci
 ```
+
+Lokale Dokumentverweise lassen sich zusätzlich gezielt mit `npm.cmd run --silent check:docs` prüfen; derselbe
+Check ist Bestandteil von `quality:ci`.
 
 Der Audit-Befehl schreibt keine Datei, sondern gibt JSON aus. Zwischenergebnisse gehoeren bei Bedarf nach
 `Testlauf/`; gespeicherte Monatsberichte liegen unter `docs/audits/`.

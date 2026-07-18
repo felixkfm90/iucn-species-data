@@ -79,14 +79,14 @@
 
       if (isMobile && img) {
         img.style.cursor = "zoom-in";
-        img.addEventListener("click", () => openFullscreen(imgUrl));
+        img.addEventListener("click", () => openFullscreen(imgUrl, img.alt));
       }
     } catch (_) {
       outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfuegbar.</p>${sourceHtml()}`;
     }
   }
 
-  function openFullscreen(src) {
+  function openFullscreen(src, altText) {
     const overlay = document.createElement("div");
     Object.assign(overlay.style, {
       position: "fixed",
@@ -101,6 +101,7 @@
 
     const img = new Image();
     img.src = src;
+    img.alt = altText || "Vergrößerte Verbreitungskarte";
     Object.assign(img.style, {
       maxWidth: "95vw",
       maxHeight: "95vh",

@@ -2,6 +2,10 @@
 
 Stand: 2026-06-28
 
+> Historische Zeitaufnahme. Aktuelle Struktur-, Qualitäts- und Aufbewahrungsregeln stehen in
+> `docs/repo-structure.md`, `docs/repository-quality-gates.md` und `docs/temp-retention.md`; der Abschlussaudit vor
+> Phase 8 steht in `docs/audits/2026-07-pre-phase-8-audit.md`.
+
 ## Ziel
 
 Vor Synology-NAS, Mehrgeraete-Arbeit und Backup/Restore wird der aktuelle Projektzustand geprueft, damit keine

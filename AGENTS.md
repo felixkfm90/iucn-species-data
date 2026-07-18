@@ -77,6 +77,8 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/explorer-ui-contract.test.mjs`: Oberflächen-, Modulbesitz- und Auslieferungsverträge
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
+- `scripts/pipeline-error-log.mjs`: fehlertoleranter, auf 256 KiB begrenzter Pipeline-Fehlerlog im lokalen
+  Explorer-Logordner
 
 ## Aktueller Projektstand
 
@@ -858,6 +860,19 @@ Aktuelle Planung:
   Wikimedia-Commons- und iNaturalist-Anbieter aus `update.mjs`, teilt die API-Integrationstests in vier fachliche
   Dateien und schließt A8 bis A11 mit enger Pages-Positivliste, Style-/Schema-Gates und flexiblem Größenbudget.
   Phase 7 ist damit abgeschlossen; vor Phase 8 bleibt kein technischer Audit-Blocker offen.
+  Ein erneuter vollständiger Abschlussaudit vor Phase 8 bestätigte am 2026-07-18 Daten-, Report-, Medien-,
+  Sicherheits- und Strukturkonsistenz. Die letzten dynamischen Alternativtexte in `species-status.js`,
+  `map-loader.js` und `lightbox-zoom.js` sind umgesetzt und durch einen Qualitätsvertrag abgesichert; der
+  dokumentierte Squarespace-Footer verwendet dafür `species-status.js?v=1.0.9`, `map-loader.js?v=1.0.8` und
+  `lightbox-zoom.js?v=1.0.7`. Pipelinefehler liegen nicht mehr als unbegrenzter Root-Log vor, sondern begrenzt unter
+  `species-explorer/logs/pipeline-errors.log`; der Desktop-Startlog wird pro Start überschrieben. Die getrennten
+  Status-Icon-Sätze unter `graphics/catagory/` und `graphics/catagory/Alternativ/` werden von Explorer
+  beziehungsweise Squarespace benötigt und bleiben an ihren Live-Pfaden. Details:
+  `docs/audits/2026-07-pre-phase-8-audit.md`.
+  Der externe Abschlusscrawl fand außerhalb des Repositorys einen statischen Squarespace-Link von
+  `/wildlife/namibia` auf die noch nicht vorhandene Gepard-Seite `/wildlife/namibia/acinonyxjubatus`. Vor ihrer
+  öffentlichen Nutzung muss diese Seite im CMS angelegt oder der Button dort entfernt werden; dies ist kein
+  technischer Repository-Blocker für Phase 8.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

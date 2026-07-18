@@ -59,14 +59,14 @@ HTTP-Auslieferungsverträge.
 | `species-assets/` | Einzige GitHub-Pages-Assetquelle pro Art: Karte, Sound, Credits und Spektrogramm. |
 | `graphics/trend/` | Trend-Icons fuer `species-status.js`. |
 | `graphics/catagory/Alternativ/` | Status-Icons fuer `species-status.js`; Ordnername nicht ohne Pfadmigration aendern. |
+| `graphics/catagory/*.png` | Eigenständiger Status-Icon-Satz des lokalen Arten-Explorers. Er ist nicht identisch mit dem Squarespace-Satz. |
 
 ## Bleibt vorerst versioniert, aber spaeter pruefen
 
 | Datei / Ordner | Befund | Entscheidung |
 |---|---|---|
-| `graphics/catagory/*.png` | Aktuell nutzt das Frontend `graphics/catagory/Alternativ/*.png`. | Nicht loeschen, bis Status-Icon-Pfade separat geprueft wurden. |
-| `graphics/catagory/Alternativ/Blaupause.psd` | Vermutlich Quelldatei fuer Status-Icons. | Vorerst behalten; spaeter entscheiden, ob Designquellen in `graphics/source/` gehoeren. |
-| grosse MP3-Dateien in `species-assets/` | Einige Dateien sind gross, aber unter GitHub-Grenzen und live benoetigt. | Nicht entfernen; optional spaeter gezielt komprimieren oder neu beziehen. |
+| `graphics/catagory/Alternativ/Blaupause.psd` | Bearbeitbare Designquelle des Squarespace-Statussatzes. | Behalten; die Pages-Positivliste schließt PSD-Dateien zuverlässig von der Veröffentlichung aus. |
+| Medien in `species-assets/` | Laufzeitdaten sind für GitHub Pages erforderlich. | Einzeldatei-, Artpaket- und mitwachsende Gesamtgrenzen werden automatisiert durch `assets:check` und `size:check` erzwungen. |
 
 ## Gehoert nicht ins Repo
 
@@ -74,7 +74,7 @@ HTTP-Auslieferungsverträge.
 |---|---|
 | `node_modules/` | lokal installiert, ignoriert |
 | `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
-| `errors.log` | lokaler Laufzeitlog, ignoriert |
+| `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |
 | `Testlauf/` | temporare Tests, ignoriert und nach Tests wieder leer zu halten |

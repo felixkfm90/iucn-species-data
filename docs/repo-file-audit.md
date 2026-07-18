@@ -2,6 +2,10 @@
 
 Stand: 2026-06-17
 
+> Historische Bestandsaufnahme aus Phase 5. Der aktuelle Strukturvertrag steht in `docs/repo-structure.md`; der
+> Abschlussaudit vor Phase 8 steht in `docs/audits/2026-07-pre-phase-8-audit.md`. Insbesondere ist die damalige
+> Vermutung zu `graphics/catagory/*.png` überholt: Dieser Icon-Satz wird vom lokalen Arten-Explorer genutzt.
+
 Ziel dieses Audits: Dateibestand, lokale Altlasten, generierte Assets und Strukturentscheidungen fuer Phase 5 bewerten,
 ohne direkt Dateien zu loeschen oder Pfade umzubauen.
 
