@@ -755,11 +755,25 @@ Status: in Arbeit seit 2026-07-18
   Eine nicht öffentlich verlinkte Squarespace-Testseite bleibt die zweite visuelle Abnahmestufe. Details:
   `docs/phase-8-preview-release.md`.
 
-- Taxonomie-Pyramide nach `docs/taxonomy-redesign-handoff.md` als dynamische, responsive und barrierearme
-  HTML-/CSS-Komponente modernisieren.
-- Wissenschaftliche Rohwerte beibehalten und deutsche Anzeigenamen zentral übersetzen.
-- Sieben und acht Taxonomiestufen unterstützen; `Unterstamm` nur bei einem tatsächlich vorhandenen Datenwert
-  anzeigen.
+- Die Taxonomie-Pyramide ist im Arbeitsbranch als dynamische, responsive und barrierearme HTML-/CSS-Komponente
+  umgesetzt. Wissenschaftliche Rohwerte bleiben erhalten, bekannte Werte werden zentral deutsch angezeigt und
+  unbekannte Werte fallen auf den normalisierten Rohwert zurück. Sieben und acht Stufen sind automatisiert sowie
+  lokal in Desktop-, Tablet- und Mobilbreite geprüft. Der IUCN-v4-Adapter übernimmt einen echten
+  `subphylum_name`-Wert, falls die API ihn liefert; andernfalls bleibt `Unterstamm` vollständig ausgeblendet.
+  Der lokale Entwurf verwendet vollständige farbige Rang-/Wertbalken mit generischen Inline-SVGs und Trennlinie.
+  Der längste einzeilige Inhalt bestimmt die erforderliche Ausgangsbreite; ein konstanter Abstand zwischen den
+  Stufenbreiten bildet anschließend gerade diagonale Außenkanten. Jede Stufe ist zusätzlich als leichtes Trapez
+  geformt, dessen Unterkante bündig in die nächste Oberkante übergeht. Desktop und Tablet zentrieren die kompakte
+  Gruppe im vollbreiten Taxonomierahmen; mobil nutzt die erste Stufe die verfügbare Restbreite und berechnet den
+  größtmöglichen sicheren Verjüngungsschritt. Die Balken liegen ohne Zwischenraum aneinander; links reicht
+  ein nahtloser anthrazit-schwarzer Taxonomiepfeil unabhängig von sieben oder acht Ebenen exakt von der ersten bis
+  zur letzten Stufe. Rang und Wert verwenden eine gemeinsame typografische Grundlinie. Desktop und Tablet teilen
+  denselben dezenten Zehn-Pixel-Verjüngungsschritt und dieselbe weiche Rundung; mobil wird dieser Schritt bei Bedarf
+  automatisch verkleinert. Anzeigenamen beginnen mit einem Großbuchstaben und werden nicht vollständig großgeschrieben.
+  Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
+  kontrollierte Übernahme nach `main`, der erfolgreiche Pages-Lauf und anschließend die produktive
+  Footer-Versionierung bilden den noch laufenden Veröffentlichungsabschluss. Details:
+  `docs/taxonomy-redesign-handoff.md`.
 - Artporträts auf den Squarespace-Artseiten einbinden.
 - Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
 - Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche

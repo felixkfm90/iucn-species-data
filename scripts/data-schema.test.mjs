@@ -24,6 +24,35 @@ test("Generiertes Schema erkennt fehlende Kernfelder", () => {
   assert.ok(issues.some((issue) => issue.includes("Assessment ID")));
 });
 
+test("Generiertes Schema akzeptiert optionalen Unterstamm nur als Text", () => {
+  const completeEntry = {
+    "Deutscher Name": "Amsel",
+    "Wissenschaftlicher Name": "Turdus merula",
+    URLSlug: "turdusmerula",
+    Assetname: "Amsel",
+    Gewicht: "ca. 100 g",
+    Größe: "ca. 24 cm",
+    Lebenserwartung: "ca. 3 Jahre",
+    Status: "Least Concern",
+    Kategorie: "Nicht gefährdet",
+    Trend: "Zunehmend",
+    Kingdom: "Animalia",
+    Phylum: "Chordata",
+    Subphylum: "Vertebrata",
+    Class: "Aves",
+    Order: "Passeriformes",
+    Family: "Turdidae",
+    Genus: "Turdus",
+    Species: "merula",
+    "Assessment ID": 123,
+  };
+  assert.deepEqual(validateSpeciesDataSchema([completeEntry]), []);
+  assert.match(
+    validateSpeciesDataSchema([{ ...completeEntry, Subphylum: 42 }]).join(" "),
+    /Subphylum/,
+  );
+});
+
 test("Override-Schema prüft manuelle Kennzeichnung und abgelehnte Soundquellen", () => {
   assert.deepEqual(validateAssetOverridesSchema({
     version: 1,

@@ -57,6 +57,9 @@ export function validateSpeciesDataSchema(value) {
     for (const field of GENERATED_STRING_FIELDS) {
       requireString(entry[field], `speciesData.json[${index}].${field}`, issues);
     }
+    if (entry.Subphylum !== undefined) {
+      requireString(entry.Subphylum, `speciesData.json[${index}].Subphylum`, issues);
+    }
     const assessmentId = entry["Assessment ID"];
     if (!(typeof assessmentId === "number" || (typeof assessmentId === "string" && assessmentId.trim()))) {
       issues.push(`speciesData.json[${index}].Assessment ID muss Zahl oder nicht leere Zeichenfolge sein.`);

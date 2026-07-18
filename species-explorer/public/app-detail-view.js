@@ -260,6 +260,9 @@
               ${dataRows([
                 ["Reich", species.taxonomy.kingdom],
                 ["Stamm", species.taxonomy.phylum],
+                ...(species.taxonomy.subphylum === "Unbekannt"
+                  ? []
+                  : [["Unterstamm", species.taxonomy.subphylum]]),
                 ["Klasse", species.taxonomy.className],
                 ["Ordnung", species.taxonomy.order],
                 ["Familie", species.taxonomy.family],

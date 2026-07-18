@@ -36,7 +36,9 @@
   async function getSpeciesData(slug = currentSlug()) {
     const species = (await getSpeciesList()).find((entry) => entry.URLSlug === slug);
     if (!species) throw new Error("Art wurde in der lokalen Datenbank nicht gefunden");
-    return species;
+    return params.get("subphylum") === "1"
+      ? { ...species, Subphylum: species.Subphylum || "Vertebrata" }
+      : species;
   }
 
   window.SpeciesCore = {
@@ -45,11 +47,12 @@
     getSpeciesData,
   };
 
-  function embeddedUrl(slug) {
+  function embeddedUrl(slug, simulateSubphylum = false) {
     const url = new URL(window.location.href);
     url.search = "";
     url.searchParams.set("embed", "1");
     url.searchParams.set("species", slug || currentSlug());
+    if (simulateSubphylum) url.searchParams.set("subphylum", "1");
     url.searchParams.set("reload", Date.now().toString());
     return url;
   }
@@ -60,6 +63,7 @@
     const frame = document.getElementById("preview-frame");
     const reloadButton = document.getElementById("preview-reload");
     const newWindowLink = document.getElementById("preview-new-window");
+    const subphylumCheckbox = document.getElementById("preview-subphylum");
     const widthButtons = [...document.querySelectorAll("[data-preview-width]")];
     const speciesList = await getSpeciesList();
 
@@ -73,12 +77,13 @@
     select.value = currentSlug();
 
     function loadPreview() {
-      const url = embeddedUrl(select.value);
+      const url = embeddedUrl(select.value, subphylumCheckbox.checked);
       frame.src = url.href;
       newWindowLink.href = url.href;
     }
 
     select.addEventListener("change", loadPreview);
+    subphylumCheckbox.addEventListener("change", loadPreview);
     reloadButton.addEventListener("click", loadPreview);
     widthButtons.forEach((button) => {
       button.addEventListener("click", () => {

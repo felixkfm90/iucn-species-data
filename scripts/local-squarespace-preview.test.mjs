@@ -38,8 +38,10 @@ test("lokaler Vorschau-Server liefert Branch-Dateien nur lesend aus", async (con
   ]);
 
   assert.equal(pageResponse.status, 200);
+  assert.match(pageResponse.headers.get("cache-control") || "", /no-store/);
   assert.match(await pageResponse.text(), /Lokale Squarespace-Vorschau/);
   assert.equal(dataResponse.status, 200);
+  assert.match(dataResponse.headers.get("cache-control") || "", /no-store/);
   assert.ok(Array.isArray(await dataResponse.json()));
   assert.equal(missingResponse.status, 404);
   assert.equal(writeResponse.status, 405);

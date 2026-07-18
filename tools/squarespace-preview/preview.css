@@ -19,7 +19,7 @@ body {
 
 .preview-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(220px, 320px) auto auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 320px) auto auto auto auto;
   gap: 16px;
   align-items: end;
   padding: 18px;
@@ -42,10 +42,26 @@ body {
 }
 
 .preview-species-field,
-.preview-widths {
+.preview-widths,
+.preview-subphylum-field {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin: 0;
+}
+
+.preview-subphylum-field {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #76ac98;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.preview-subphylum-field input {
+  width: 18px;
+  height: 18px;
   margin: 0;
 }
 
