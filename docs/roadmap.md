@@ -715,6 +715,16 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   2.842 Zeilen. A4 bleibt für kleine, einzeln geprüfte Schnitte an CRUD-, Pipeline-, Backup-/Publikations- und
   Adapterlogik offen. Squarespace-Module, Footer und Custom CSS blieben unverändert.
 
+  Die fünf verbleibenden A4-Pakete wurden anschließend am 2026-07-18 abgeschlossen. CRUD-Operationen liegen in
+  `species-create.mjs`, `species-delete.mjs` und `species-edit.mjs`; Karten-, Sound-, Portrait- und allgemeine
+  Assetpflege in vier eigenen Workflowmodulen. `pipeline-controller.mjs` besitzt Pipelineplanung, Laufzustand,
+  Assetprüfung und Veröffentlichung. `project-publication.mjs` und `backup-service.mjs` trennen offene Änderungen,
+  Git-Übertragung, lokale Einstellungen und NAS-Sicherung. Der Oberflächen-/Quellvertrag liegt nun in
+  `explorer-ui-contract.test.mjs`, während `server.test.mjs` die zusammengesetzten API-Abläufe prüft. `server.mjs`
+  sank von 4.408 auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 785 Zeilen. Alle 21
+  Explorer-Prüfungen bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-Module,
+  Footer und Custom CSS blieben unverändert.
+
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
 Status: geplant

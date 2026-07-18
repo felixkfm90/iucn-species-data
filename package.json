@@ -57,7 +57,7 @@
     "test:security": "node --test --test-isolation=none species-explorer/request-security.test.mjs",
     "test:status": "node --test --test-isolation=none scripts/project-status.test.mjs",
     "test:temp": "node --test --test-isolation=none species-explorer/temp-retention.test.mjs",
-    "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs"
+    "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs species-explorer/explorer-ui-contract.test.mjs"
   },
   "devDependencies": {
     "electron": "^42.5.0"

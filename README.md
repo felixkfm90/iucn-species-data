@@ -213,6 +213,11 @@ Tokens und API-Schluessel duerfen nicht im Repository oder Browser-JavaScript ge
 Der Arten-Explorer begann in Phase 7.2 als read-only Arbeitsoberflaeche und erlaubt seit Phase 7.4 das kontrollierte
 Bearbeiten ausgewaehlter Felder in `species_list.json`:
 
+`species-explorer/server.mjs` ist dabei nur noch die Kompositions- und HTTP-Adapterwurzel. CRUD, Karten-, Sound-,
+Portrait- und Assetpflege, Pipeline, Git-Veröffentlichung und NAS-Sicherung liegen in getrennten Fachmodulen.
+`server.test.mjs` prüft die zusammengesetzten API-Abläufe; `explorer-ui-contract.test.mjs` sichert getrennt die
+Oberflächen-, Modulbesitz- und Auslieferungsverträge.
+
 ```bash
 npm.cmd run species:explorer
 ```
@@ -852,6 +857,17 @@ Modultests wurden aus dem großen Serverintegrationstest herausgelöst. Zwölf n
 verbleibenden 21 Serverintegrationstests sichern das Verhalten. Der Schnitt behebt zugleich eine still
 übergangene Assetrevision und reduziert `server.mjs` von 5.678 auf 4.408 Zeilen sowie `server.test.mjs` von 3.098
 auf 2.842 Zeilen. Squarespace-Module, Footer-Versionen und Custom CSS blieben unverändert.
+
+Die fünf abschließenden serverseitigen A4-Pakete wurden danach einzeln umgesetzt und nach jedem Paket mit dem
+Explorer-Integrationstest geprüft. Anlegen, Löschen und Bearbeiten liegen in `species-create.mjs`,
+`species-delete.mjs` und `species-edit.mjs`. Karten-, Sound- und Portraitabläufe sowie Assetpflege liegen in
+`map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und `asset-maintenance.mjs`.
+`pipeline-controller.mjs` besitzt Pipelinezustand, Prozesssteuerung, Assetprüfung und Veröffentlichung;
+`project-publication.mjs` und `backup-service.mjs` trennen Git-Übertragung und NAS-Sicherung. Der große
+Oberflächen-/Quellvertrag wurde aus `server.test.mjs` nach `explorer-ui-contract.test.mjs` verschoben. Dadurch ist
+`server.mjs` mit 566 Zeilen nur noch Kompositions- und Adapterwurzel; `server.test.mjs` umfasst 2.102 Zeilen und der
+getrennte UI-Vertrag 785 Zeilen. Der gemeinsame Explorer-Test bestand mit 21 von 21 Prüfungen. Auditpunkt A4 ist
+damit abgeschlossen. Squarespace-Module, Footer-Versionen und Custom CSS blieben unverändert.
 
 Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als

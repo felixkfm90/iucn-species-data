@@ -57,14 +57,22 @@ Frontend-Module:
 
 Lokale Arbeitsoberflaeche:
 
-- `species-explorer/server.mjs`: lokaler Server auf `127.0.0.1:4177` mit begrenzter `species_list.json`-Bearbeitung
+- `species-explorer/server.mjs`: schlanke Kompositionswurzel des lokalen Servers auf `127.0.0.1:4177`
 - `species-explorer/public/`: Artenliste, Suche, Filter und Detailansicht
 - `species-explorer/request-security.mjs`: zentrale Sitzungs-, Browser-, URL-Ziel- und Pfadgrenze der lokalen API
 - `species-explorer/http-routing.mjs`: JSON-/HTTP-Antworten, sichere Auslieferung lokaler Dateien und Byte-Ranges
 - `species-explorer/request-router.mjs`: zentrale Methoden-/Pfadzuordnung, Body-Limits und Antwortdelegation
 - `species-explorer/species-model.mjs`: Artenvalidierung, Normalisierung, Kollisionen, Diffs und öffentliche Projektionen
+- `species-explorer/species-create.mjs`, `species-delete.mjs`, `species-edit.mjs`: Anlegen, Löschen und Bearbeiten
+  von Arten als getrennte Fachoperationen
+- `species-explorer/map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und
+  `asset-maintenance.mjs`: Vorschau, Übernahme, Ablehnung, Löschung und Wiederherstellung einzelner Assets
+- `species-explorer/pipeline-controller.mjs`: Pipeline-Planung, Prozesszustand, Assetprüfung und Veröffentlichung
+- `species-explorer/project-publication.mjs` und `backup-service.mjs`: Git-Übertragung, offene Änderungen,
+  Backup-Einstellungen und NAS-Sicherung
 - `species-explorer/asset-backups.mjs`: wiederherstellbare Asset-Sicherungen und begrenzte Backup-/Log-Aufbewahrung
-- `species-explorer/server.test.mjs`: Modell-, API-, Schreibschutz-, Backup-, Such- und Filtertests
+- `species-explorer/server.test.mjs`: API-, Schreibschutz-, Backup-, Such- und Filterintegrationstests
+- `species-explorer/explorer-ui-contract.test.mjs`: Oberflächen-, Modulbesitz- und Auslieferungsverträge
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
 
@@ -830,6 +838,16 @@ Aktuelle Planung:
   5.678 auf 4.408 Zeilen und `server.test.mjs` von 3.098 auf 2.842 Zeilen. A4 bleibt für weitere kleine Schnitte an
   CRUD-, Pipeline-, Backup-/Publikations- und Adapterlogik offen. Squarespace-JavaScript, Footer-Versionen und
   Squarespace-CSS wurden nicht geändert.
+  Die fünf verbleibenden serverseitigen A4-Pakete wurden am 2026-07-18 einzeln ausgelagert und nach jedem Paket
+  geprüft. `species-create.mjs`, `species-delete.mjs` und `species-edit.mjs` besitzen die CRUD-Abläufe.
+  `map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und
+  `asset-maintenance.mjs` besitzen die Medienabläufe. `pipeline-controller.mjs` kapselt Pipelineplanung,
+  Laufzustand, Assetprüfung und Veröffentlichung; `project-publication.mjs` und `backup-service.mjs` trennen
+  offene Änderungen, Git-Übertragung, Einstellungen und NAS-Sicherung. Der Oberflächen-/Quellvertrag liegt in
+  `explorer-ui-contract.test.mjs`, die API-Integration weiterhin in `server.test.mjs`. `server.mjs` sank von 4.408
+  auf 566 Zeilen, `server.test.mjs` auf 2.102 Zeilen; der UI-Vertrag umfasst 785 Zeilen. Alle 21 Explorer-Prüfungen
+  bestanden nach dem Gesamtschnitt. Auditpunkt A4 ist damit abgeschlossen. Squarespace-JavaScript,
+  Footer-Versionen und Squarespace-CSS wurden nicht geändert.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
   dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
   Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.

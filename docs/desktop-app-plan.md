@@ -36,6 +36,16 @@ Start als schlanke lokale Web-App:
 ```text
 species-explorer/
   server.mjs
+  species-create.mjs
+  species-delete.mjs
+  species-edit.mjs
+  map-asset-workflow.mjs
+  sound-asset-workflow.mjs
+  portrait-asset-workflow.mjs
+  asset-maintenance.mjs
+  pipeline-controller.mjs
+  project-publication.mjs
+  backup-service.mjs
   public/
     index.html
     app.css
@@ -46,14 +56,12 @@ species-explorer/
     app.js
 ```
 
-Die inzwischen umgesetzte Browsergrenze trennt `app-foundation.js` für Zustand, Sitzung und API-Zugriffe von
-`app-presentation.js` für zustandsfreie, direkt getestete Formatierungs-, IUCN-, Lizenz-, Datenzeilen- und
-Medien-URL-Helfer. `app-measurements.js` ergänzt die gemeinsame, direkt getestete Einheiten-, Parsing-,
-Formatierungs- und Formulargrenze für Größe, Gewicht und Lebenserwartung. `app-dialogs.js` vereinheitlicht
-modales Öffnen/Schließen, sichere Hintergrundklicks, Escape-/Busy-Sperren, Körperklassen und Medienfreigabe.
-`app.js` koordiniert weiterhin DOM-Ereignisse, Player und fachliche Abläufe. Die Reihenfolge im HTML ist
-verbindlich: Foundation, Presentation, Measurements und Dialogs müssen in dieser Reihenfolge vor `app.js` geladen
-werden.
+Die umgesetzte Browsergrenze trennt Zustand/API, Darstellung, Messwerte, Dialoge und die fachlichen Abläufe in
+eigenständige Module; `app.js` verdrahtet sie nur noch als Kompositionswurzel. Auch der lokale Server ist nach
+denselben Eigentumsregeln aufgebaut: `server.mjs` verdrahtet Modell, Router und Fachservices. CRUD, Medienabläufe,
+Assetpflege, Pipeline, Projektveröffentlichung und Backup liegen in den oben genannten Modulen. Neue Fachlogik wird
+nicht wieder in `app.js` oder `server.mjs` eingebaut. Die im HTML dokumentierte Modulreihenfolge bleibt
+verbindlich.
 
 Moeglicher npm-Befehl:
 
@@ -217,6 +225,17 @@ Dateien:
 species-explorer/
   server.mjs
   server.test.mjs
+  explorer-ui-contract.test.mjs
+  species-create.mjs
+  species-delete.mjs
+  species-edit.mjs
+  map-asset-workflow.mjs
+  sound-asset-workflow.mjs
+  portrait-asset-workflow.mjs
+  asset-maintenance.mjs
+  pipeline-controller.mjs
+  project-publication.mjs
+  backup-service.mjs
   public/
     index.html
     app.css
