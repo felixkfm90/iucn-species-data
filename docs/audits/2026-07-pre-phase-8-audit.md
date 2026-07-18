@@ -107,6 +107,11 @@ Die Abschlussprüfung ist lokal vollständig bestanden:
   Detailbereich zurück, und die Karten-Lightbox lässt sich öffnen und schließen. Die Browserkonsole blieb ohne
   Warnung oder Fehler.
 - Temporäre Prüfartefakte wurden danach entfernt; der Aufbewahrungscheck meldet keinen Restbestand.
+- Der Auditstand wurde mit Commit `273e92b` veröffentlicht. Im
+  [GitHub-Actions-Lauf 29643719906](https://github.com/felixkfm90/iucn-species-data/actions/runs/29643719906)
+  waren Qualitätsprüfung, Pages-Artefaktbau und Deployment beim ersten Versuch erfolgreich. Die drei geänderten
+  Frontendmodule werden danach mit HTTP 200 und dem neuen Quellstand ausgeliefert; `speciesData.json` enthält live
+  50 Arten.
 
 ### Externer Squarespace-Inhaltshinweis
 
@@ -119,6 +124,6 @@ der dortige Button entfernt werden.
 ## Ergebnis
 
 Alle während des Audits gefundenen lokalen Code-, Struktur- und Dokumentationspunkte sind bereinigt. Der
-Repository-Stand ist technisch für Phase 8 freigegeben. Nach Commit und Push wird als letzter Betriebscheck der
-GitHub-Actions-Lauf bis zur erfolgreichen Live-Auslieferung überwacht. Der separat ausgewiesene Squarespace-Link
-zur Gepard-Seite betrifft ausschließlich den externen CMS-Inhalt und nicht die Phase-8-Codebasis.
+Repository-Stand ist technisch für Phase 8 freigegeben. Commit, GitHub-Actions-Qualitätsgate, Pages-Bau und
+Live-Auslieferung sind erfolgreich abgeschlossen. Der separat ausgewiesene Squarespace-Link zur Gepard-Seite
+betrifft ausschließlich den externen CMS-Inhalt und nicht die Phase-8-Codebasis.
