@@ -1,0 +1,214 @@
+:root {
+  color: #18231f;
+  background: #edf2f0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.preview-controls {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.preview-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 320px) auto auto auto auto;
+  gap: 16px;
+  align-items: end;
+  padding: 18px;
+  color: #fff;
+  background: #12211c;
+  border-radius: 12px;
+}
+
+.preview-toolbar h1,
+.preview-toolbar p {
+  margin: 0;
+}
+
+.preview-kicker {
+  color: #a8d9c6;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preview-species-field,
+.preview-widths,
+.preview-subphylum-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+
+.preview-subphylum-field {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #76ac98;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.preview-subphylum-field input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.preview-species-field {
+  flex-direction: column;
+  align-items: stretch;
+  font-weight: 700;
+}
+
+.preview-widths {
+  padding: 0;
+  border: 0;
+}
+
+.preview-widths legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.preview-toolbar select,
+.preview-toolbar button,
+.preview-toolbar a {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #76ac98;
+  border-radius: 7px;
+  color: #fff;
+  background: #1d6e52;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.preview-toolbar select {
+  color: #18231f;
+  background: #fff;
+}
+
+.preview-toolbar button[aria-pressed="true"] {
+  color: #12211c;
+  background: #b9ead7;
+}
+
+.preview-note {
+  margin: 12px 0;
+  color: #40564e;
+}
+
+.preview-stage {
+  display: flex;
+  justify-content: center;
+  min-height: 860px;
+  padding: 18px;
+  overflow: auto;
+  background: #dbe4e0;
+  border: 1px solid #c0cec8;
+  border-radius: 12px;
+}
+
+#preview-frame {
+  width: min(1280px, 100%);
+  height: 820px;
+  background: #fff;
+  border: 1px solid #9bada6;
+  box-shadow: 0 12px 30px rgba(18, 33, 28, 0.16);
+  transition: width 180ms ease;
+}
+
+.preview-canvas {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.preview-canvas h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+#preview-species-scientific {
+  margin: 4px 0 24px;
+  color: #54655f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+}
+
+.preview-local-badge {
+  display: inline-block;
+  margin: 0 0 16px;
+  padding: 6px 10px;
+  color: #755200;
+  background: #fff0bd;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.preview-placeholder-frame {
+  min-height: 300px;
+}
+
+.preview-placeholder-frame h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.preview-placeholder-frame dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 14px;
+  margin: 0;
+}
+
+.preview-placeholder-frame dt {
+  font-weight: 700;
+}
+
+.preview-placeholder-frame dd {
+  margin: 0;
+}
+
+html[data-preview-mode="controls"] .preview-canvas,
+html[data-preview-mode="canvas"] .preview-controls {
+  display: none;
+}
+
+@media (max-width: 1050px) {
+  .preview-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .preview-controls,
+  .preview-canvas {
+    padding: 12px;
+  }
+
+  .preview-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-widths {
+    flex-wrap: wrap;
+  }
+}

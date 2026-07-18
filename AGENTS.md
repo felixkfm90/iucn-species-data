@@ -873,8 +873,25 @@ Aktuelle Planung:
   `/wildlife/namibia/acinonyxjubatus` wurde anschließend in Squarespace live geschaltet und mit HTTP 200 sowie dem
   erwarteten Artinhalt nachgeprüft. Vor Phase 8 bleibt damit auch kein externer Link-Blocker offen.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
-  dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
-  Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
+  in Arbeit seit 2026-07-18. Phase-8-Änderungen entstehen auf einem separaten Arbeitsbranch und werden über die
+  nur lesende lokale Squarespace-nahe Vorschau unter `127.0.0.1:4188` in Desktop-, Tablet- und Mobilbreite geprüft.
+  Danach folgen eine nicht öffentlich verlinkte Squarespace-Testseite und die ausdrückliche Freigabe durch Felix;
+  erst dann sind Übernahme nach `main`, erfolgreicher Pages-Lauf und produktive Footer-`?v=`-Erhöhung erlaubt.
+  Details: `docs/phase-8-preview-release.md`. Die dynamische Taxonomie-Pyramide ist im Arbeitsbranch umgesetzt:
+  vollständige farbige Rang-/Wertbalken mit generischen Inline-SVGs, inhaltsabhängiger Ausgangsbreite, konstanter
+  stufenweiser Verjüngung und bündig ineinandergreifender Trapezform, ohne vertikalen Zwischenraum und mit einem
+  nahtlosen anthrazit-schwarzen Pfeil über die gesamte Höhe. Auf Desktop und Tablet ist die kompakte Gesamtgruppe im
+  vollbreiten Rahmen zentriert; mobil nutzt die erste Stufe die verfügbare Restbreite und der größtmögliche sichere
+  Verjüngungsschritt hält alle Inhalte vollständig. Rangbezeichnung und Wert teilen in jeder Zeile eine gemeinsame
+  typografische Grundlinie. Desktop und Tablet verwenden denselben dezenten Zehn-Pixel-Verjüngungsschritt und
+  dieselbe weiche Rundung; mobil wird dieser Schritt bei Bedarf automatisch verkleinert. Anzeigenamen beginnen mit
+  einem Großbuchstaben; bekannte Rohwerte werden zentral deutsch übersetzt. Ein echter `Subphylum`-Wert wird als
+  `Unterstamm` angezeigt, fehlende Werte erzeugen keine Leerzeile. Sieben und acht Stufen sind automatisiert und in
+  der lokalen Vorschau ohne horizontalen Überlauf geprüft. Felix hat den lokalen Endentwurf am 2026-07-18 in allen
+  drei Vorschaugrößen visuell freigegeben. Der produktive Footer bleibt bis zum erfolgreichen Pages-Deployment des
+  freigegebenen `main`-Stands unverändert auf `species-taxonomy.js?v=1.0.2`; anschließend wird die neue
+  Cache-Version in Squarespace aktiviert. Danach folgen Artportraits auf Squarespace, kontrollierte
+  Taxonomiebearbeitung und fest eingeplanter Soundeditor.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:

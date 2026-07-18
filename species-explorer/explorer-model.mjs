@@ -349,6 +349,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       taxonomy: {
         kingdom: formatTaxonomyName(generated?.Kingdom),
         phylum: formatTaxonomyName(generated?.Phylum),
+        subphylum: formatTaxonomyName(generated?.Subphylum),
         className: formatTaxonomyName(generated?.Class),
         order: formatTaxonomyName(generated?.Order),
         family: formatTaxonomyName(generated?.Family),

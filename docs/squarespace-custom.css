@@ -1,7 +1,7 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-06-16
-  Soll-Stand nach Soundbar-Mute-Toggle und Mobile-Galerie-Override.
+  Stand: 2026-07-18
+  Soll-Stand inklusive responsiver Taxonomie-Pyramide fuer Phase 8.
 */
 
 /* ================================ */
@@ -44,81 +44,263 @@
 /* ================================ */
 
 #species-taxonomy {
-  flex: 1;
+  flex: 1.35;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-.pyramid-frame {
-  position: relative;
+.taxonomy-frame {
+  --taxonomy-frame-padding: clamp(10px, 1.2vw, 16px);
+  flex: 1;
+  padding: var(--taxonomy-frame-padding);
   overflow: hidden;
-  padding: 0;
-  flex: 1;
 }
 
-.pyramid-inner {
-  padding: 16px 12px 16px 45px;
-  box-sizing: border-box;
-}
-
-/* Pfeil */
-.arrow-container {
-  position: absolute;
-  left: 12px;
-  top: 0;
+.taxonomy-layout {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  gap: var(--taxonomy-frame-padding);
+  height: 100%;
+}
+
+.taxonomy-direction {
+  position: relative;
+  display: flex;
+  align-self: stretch;
   align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: clamp(34px, 3.7vw, 48px);
+  flex: 0 0 clamp(34px, 3.7vw, 48px);
+  margin: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18) 0, rgba(255,255,255,0.035) 24%, rgba(0,0,0,0.2) 100%),
+    linear-gradient(90deg, #111314 0, #292d2f 52%, #111314 100%);
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), 50% 100%, 0 calc(100% - 18px));
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 1px 0 0 rgba(255,255,255,0.05),
+    inset -1px 0 0 rgba(255,255,255,0.05),
+    inset 0 -5px 8px rgba(0,0,0,0.24);
+  filter:
+    drop-shadow(0 0 1px rgba(0,0,0,0.7))
+    drop-shadow(0 4px 4px rgba(23, 50, 77, 0.24));
   pointer-events: none;
 }
 
-.arrow-shaft {
-  width: 1.3em;
-  background: black;
-  flex-grow: 1;
+.taxonomy-direction::before {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  left: 4px;
+  height: 20%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0));
+  border-radius: 9px 9px 50% 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.taxonomy-direction span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 18px;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.arrow-text {
-  color: white;
-  font-weight: bold;
-  transform: rotate(-90deg);
+  color: #fff;
+  font-size: clamp(0.68rem, 0.88vw, 0.8rem);
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
   white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.22);
 }
 
-.arrow-tip {
-  width: 0;
-  height: 0;
-  border-left: 0.65em solid transparent;
-  border-right: 0.65em solid transparent;
-  border-top: 0.75em solid black;
-}
-
-/* Pyramide */
-.taxonomy-pyramid {
+.taxonomy-levels {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  flex: 0 1 auto;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.pyramid-step {
-  text-align: center;
-  color: white;
-  font-weight: bold;
-  border-radius: 4px;
-  padding: 4px 6px;
+.taxonomy-level {
+  --taxonomy-accent: #147bd6;
+  --taxonomy-start: #1686ef;
+  --taxonomy-end: #0561bb;
+  display: flex;
+  position: relative;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(54px, 4.8vw, 70px);
+}
+
+.taxonomy-stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: clamp(38px, 3.5vw, 52px) 1px minmax(0, 1fr);
+  gap: clamp(9px, 1vw, 14px);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(50px, 4.3vw, 64px);
+  padding: 5px clamp(11px, 1.35vw, 18px) 5px clamp(8px, 0.9vw, 12px);
+  overflow: hidden;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--taxonomy-taper-half, 5px)) 100%,
+    var(--taxonomy-taper-half, 5px) 100%
+  );
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.42) 0, rgba(255,255,255,0.14) 18%, rgba(255,255,255,0.02) 45%, rgba(0,0,0,0.16) 100%),
+    linear-gradient(90deg, var(--taxonomy-start), var(--taxonomy-end));
+  border: 2px solid rgba(255,255,255,0.62);
+  border-radius: clamp(13px, 1.25vw, 18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    inset 0 -4px 7px rgba(0,0,0,0.16);
+}
+
+.taxonomy-stage::before {
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  right: 9px;
+  left: 9px;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.27), rgba(255,255,255,0));
+  border-radius: 999px 999px 45% 45%;
+  content: "";
+  pointer-events: none;
+}
+
+.taxonomy-icon-wrap {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: clamp(36px, 3.1vw, 46px);
+  height: clamp(36px, 3.1vw, 46px);
+  color: #fff;
+  background: rgba(0,0,0,0.17);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.14);
+}
+
+.taxonomy-icon {
+  width: 66%;
+  height: 66%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.taxonomy-rank-label {
+  display: inline;
+  margin-right: 0.28em;
+  font-size: clamp(0.78rem, 1vw, 1rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.taxonomy-stage-divider {
+  width: 1px;
+  height: 68%;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 1px 0 0 rgba(0,0,0,0.09);
+}
+
+.taxonomy-copy {
+  display: block;
+  min-width: 0;
+  line-height: 1.12;
   white-space: nowrap;
 }
 
-.step-kingdom { background:#1f77b4; }
-.step-phylum  { background:#2ca02c; }
-.step-class   { background:#ff7f0e; }
-.step-order   { background:#d62728; }
-.step-family  { background:#9467bd; }
-.step-genus   { background:#8c564b; }
-.step-species { background:#e377c2; }
+.taxonomy-value {
+  display: inline;
+  min-width: 0;
+  font-size: clamp(0.78rem, 1vw, 1rem);
+  font-weight: 500;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.taxonomy-level--phylum {
+  --taxonomy-accent: #2cb341;
+  --taxonomy-start: #39c94d;
+  --taxonomy-end: #229936;
+}
+
+.taxonomy-level--subphylum {
+  --taxonomy-accent: #21abc4;
+  --taxonomy-start: #2bc3d8;
+  --taxonomy-end: #1491ad;
+}
+
+.taxonomy-level--class {
+  --taxonomy-accent: #f38a0e;
+  --taxonomy-start: #ff9f19;
+  --taxonomy-end: #ef7b00;
+}
+
+.taxonomy-level--order {
+  --taxonomy-accent: #db2525;
+  --taxonomy-start: #ef3530;
+  --taxonomy-end: #c91619;
+}
+
+.taxonomy-level--family {
+  --taxonomy-accent: #7f3bb8;
+  --taxonomy-start: #9151ce;
+  --taxonomy-end: #6c2fa7;
+}
+
+.taxonomy-level--genus {
+  --taxonomy-accent: #8a511f;
+  --taxonomy-start: #a96b2c;
+  --taxonomy-end: #784315;
+}
+
+.taxonomy-level--species {
+  --taxonomy-accent: #df3b98;
+  --taxonomy-start: #ef55ad;
+  --taxonomy-end: #cf2d83;
+}
+
+.taxonomy-levels--wrapped .taxonomy-copy {
+  white-space: normal;
+}
+
+.taxonomy-empty,
+.taxonomy-error {
+  width: 100%;
+  margin: 0;
+}
+
+.taxonomy-error {
+  color: #a51d1d;
+}
 
 /* ================================ */
 /* 3. STATUS & TREND                */
@@ -263,6 +445,53 @@
 /* MOBILE                           */
 /* ================================ */
 
+@media (min-width: 769px) and (max-width: 1100px) {
+  #species-output {
+    flex-direction: column !important;
+    align-items: stretch;
+  }
+
+  #species-info,
+  #species-taxonomy,
+  #species-status {
+    width: 100%;
+  }
+
+  .taxonomy-frame {
+    --taxonomy-frame-padding: 12px;
+    width: 100%;
+    margin: 0;
+    padding: var(--taxonomy-frame-padding);
+    box-sizing: border-box;
+  }
+
+  .taxonomy-direction {
+    width: 40px;
+    flex-basis: 40px;
+  }
+
+  .taxonomy-level {
+    min-height: 52px;
+  }
+
+  .taxonomy-stage {
+    grid-template-columns: 36px 1px minmax(0, 1fr);
+    gap: 9px;
+    min-height: 48px;
+    padding: 6px 8px;
+  }
+
+  .taxonomy-icon-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .taxonomy-rank-label,
+  .taxonomy-value {
+    font-size: 0.82rem;
+  }
+}
+
 @media (max-width: 768px) {
   #species-output {
     flex-direction: column !important;
@@ -282,6 +511,38 @@
   #species-sound .species-sound-frame {
     width: 100%;
   }
+
+  .taxonomy-frame {
+    --taxonomy-frame-padding: 10px;
+    padding: var(--taxonomy-frame-padding);
+  }
+
+  .taxonomy-direction {
+    width: 34px;
+    flex-basis: 34px;
+  }
+
+  .taxonomy-level {
+    min-height: 52px;
+  }
+
+  .taxonomy-stage {
+    grid-template-columns: 32px 1px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 48px;
+    padding: 5px 8px;
+  }
+
+  .taxonomy-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .taxonomy-rank-label,
+  .taxonomy-value {
+    font-size: clamp(0.72rem, 3.2vw, 0.9rem);
+  }
+
 }
 
 /* Mobile Squarespace-Galerien: Desktop bleibt unveraendert, mobil eine Spalte */

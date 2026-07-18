@@ -55,6 +55,7 @@ test("IUCN-Datenadapter normalisiert Assessment und Taxonomie", async () => {
             scientific_name: "Turdus merula",
             kingdom_name: "ANIMALIA",
             phylum_name: "CHORDATA",
+            subphylum_name: "VERTEBRATA",
             class_name: "AVES",
             order_name: "PASSERIFORMES",
             family_name: "TURDIDAE",
@@ -83,6 +84,7 @@ test("IUCN-Datenadapter normalisiert Assessment und Taxonomie", async () => {
   assert.equal(result.Populationgröße, "1.000-2.000");
   assert.equal(result.Generationsdauer, "4,5 Jahre");
   assert.equal(result.Kingdom, "Animalia");
+  assert.equal(result.Subphylum, "Vertebrata");
   assert.equal(result["Daten abgerufen"], "2026-07-18");
   assert.equal(requests.length, 2);
 });

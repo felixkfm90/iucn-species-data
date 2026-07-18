@@ -1,6 +1,6 @@
 # Codex-Übergabe: Taxonomie-Pyramide modernisieren
 
-Stand: 2026-07-11
+Stand: 2026-07-18
 
 ## Ziel
 
@@ -55,14 +55,23 @@ Der aktuelle Datenbestand enthält regulär:
 - `Genus`
 - `Species`
 
-Ein Feld für den Unterstamm gehört derzeit nicht zum regulären Schema. Vor der Umsetzung prüfen, ob der IUCN-Taxon-Datensatz ein verlässliches Feld wie `subphylum_name` liefert.
+Ein Feld für den Unterstamm gehört derzeit nicht zum regulären Bestand. Die Prüfung der offiziellen IUCN-API-v4-
+OpenAPI-Beschreibung am 2026-07-18 ergab kein dokumentiertes Feld `subphylum_name`. Der Datenadapter liest dieses
+Feld trotzdem kontrolliert ein, falls IUCN es künftig oder für einzelne Datensätze ausliefert. Fehlt es, wird der
+technische Leerwert `n/a` erzeugt und in der Oberfläche vollständig ausgeblendet.
 
-### Bevorzugte Lösung
+### Umgesetzte Lösung
 
-1. Liefert die IUCN-API einen stabilen Unterstammwert, diesen in `update.mjs` als `Subphylum` übernehmen.
-2. `emptyEntry()` ebenfalls um `Subphylum: "n/a"` ergänzen.
-3. `normalizeTaxonomyFields()` um `Subphylum` erweitern.
-4. Bestehende Datensätze kontrolliert migrieren oder durch einen Pipeline-Lauf aktualisieren.
+1. `scripts/iucn-data-adapter.mjs` übernimmt einen tatsächlich gelieferten Wert `taxon.subphylum_name` als
+   `Subphylum`.
+2. `emptyEntry()` erzeugt `Subphylum: "n/a"`; `normalizeTaxonomyFields()` und das kontrollierte
+   Normalisierungsskript behandeln den Rang wie die übrigen höheren Taxonomiestufen.
+3. Datenschema, Explorer-Modell und Detailansicht akzeptieren den optionalen Rang. Der Explorer zeigt ihn nur bei
+   einem verwertbaren Wert.
+4. Bestehende Datensätze ohne Feld bleiben gültig. Der nächste reguläre Pipeline-Lauf ergänzt den technischen
+   Leerwert, solange die API keinen echten Unterstamm liefert.
+5. Die lokale Squarespace-Vorschau kann `Vertebrata` ausschließlich zu Testzwecken simulieren; diese Simulation
+   verändert weder `speciesData.json` noch produktive Daten.
 
 ### Kein abgeleiteter Fallback
 
@@ -91,20 +100,50 @@ Nicht vorhandene Übersetzungen fallen kontrolliert auf den normalisierten wisse
 
 ## Visuelles Soll
 
-Die Konzeptgrafik ist die maßgebliche optische Referenz. Umzusetzen sind insbesondere:
+Die Konzeptgrafik ist die maßgebliche optische Referenz. Der im lokalen Vorschauprozess gemeinsam präzisierte
+Endentwurf besteht aus:
 
-- links ein vertikaler blauer Pfeil mit der Beschriftung `Taxonomie`, Pfeilrichtung nach unten;
-- daneben pro Stufe ein heller, abgerundeter Rangbereich mit Icon und deutscher Rangbezeichnung;
-- zwischen Rangbereich und Wert eine schmale farbige Akzentlinie;
-- rechts farbige, abgerundete und nach unten schmaler werdende Stufen;
-- dezente Schatten und leichte Tiefenwirkung, keine überladene 3D-Optik;
-- klare kontrastreiche Typografie;
-- gleichmäßige vertikale Abstände und saubere Ausrichtung aller Zeilen;
-- optional dezente dekorative Symbole innerhalb der farbigen Stufen, sofern sie ohne externe Bildabhängigkeiten umgesetzt werden können.
+- links einem schlanken, anthrazit-schwarzen Pfeil mit der normal groß-/kleingeschriebenen vertikalen Beschriftung
+  `Taxonomie` und einer nahtlos
+  ausgeformten Spitze nach unten;
+- exakt gleicher Ober- und Unterkante von Pfeil und erster beziehungsweise letzter sichtbarer Taxonomiestufe;
+- einer auf Desktop und Tablet zentrierten kompakten Gesamtgruppe; nur mobil entspricht der Abstand vom Pfeil zur
+  breitesten ersten Stufe dem Abstand dieser Stufe zum rechten Rahmen;
+- einer vollständigen, farbigen und leicht glänzenden Stufe je Rang;
+- einem generischen Rangsymbol in einem abgedunkelten Kreis, einer schmalen weißen Trennlinie sowie Rang und Wert
+  innerhalb derselben Stufe;
+- zentrierten, dynamisch berechneten Breiten. Der längste einzeilig benötigte Rang-/Wertinhalt bestimmt zusammen mit
+  seiner Rangtiefe die Ausgangsbreite; anschließend nimmt jede Stufe um denselben Betrag ab, damit beide Außenkanten
+  eine gleichmäßige diagonale Flucht bilden;
+- einer leichten Trapezform je Stufe: Die Unterkante ist auf beiden Seiten um den halben Verjüngungsschritt
+  eingerückt und geht dadurch bündig in die Oberkante der nächsten Stufe über;
+- direkt aneinanderliegenden Stufen ohne vertikalen Zwischenraum, damit sieben und acht Ebenen kompakt bleiben;
+- einer gemeinsamen typografischen Grundlinie für Rang und Wert sowie identischer Trapez-/Eckenbehandlung in allen
+  drei responsiven Ansichten;
+- dezenter Tiefenwirkung und kontrastreicher weißer Typografie ohne überladene 3D-Optik.
+
+Die sichtbaren Werte werden nicht vollständig großgeschrieben. Sie beginnen mit einem Großbuchstaben und werden
+danach normal geschrieben, beispielsweise `Reich: Tiere`.
 
 Icons vorzugsweise als lokale Inline-SVGs, CSS-Masken oder einfache CSS-Formen umsetzen. Keine externen Icon-CDNs und keine neuen Drittanbieter- oder Trackingdienste einführen.
 
-## Voraussichtlich betroffene Dateien
+## Umsetzungsstand im Arbeitsbranch
+
+- `species-taxonomy.js` rendert die Stufen aus einer zentralen Konfiguration, übersetzt bekannte wissenschaftliche
+  Werte zentral ins Deutsche und fällt bei unbekannten Werten auf den normalisierten Rohwert zurück.
+- Die Ausgabe verwendet semantische Listelemente, echte Texte und dekorative Inline-SVGs ohne externe Abhängigkeit.
+- Die generischen Rangicons bleiben unabhängig von Tiergruppe und Art verständlich. Für `Klasse` wird deshalb ein
+  neutrales Ebenen-/Schichten-Symbol statt eines Vogel-, Säugetier- oder Fischsymbols verwendet.
+- Die CSS-Ausgabe ist für drei Spalten auf großen Desktops, eine lesbare einspaltige Tabletansicht sowie Mobilbreiten
+  bis 320 Pixel geprüft. Sieben und acht Stufen erzeugen keine horizontale Seitenscrollleiste; der Pfeil endet in
+  beiden Fällen exakt mit der letzten Stufe.
+- Automatisierte Tests decken sieben Stufen, einen echten Unterstamm, technische Leerwerte, unbekannte
+  Übersetzungen, HTML-Escaping und Adapter-/Schemaschnittstellen ab.
+- Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Der
+  produktive Footer bleibt bis zum erfolgreichen Pages-Deployment des freigegebenen `main`-Stands unverändert auf
+  `species-taxonomy.js?v=1.0.2`; erst danach wird die neue Cache-Version in Squarespace aktiviert.
+
+## Betroffene Dateien
 
 - `species-taxonomy.js`
 - `update.mjs`, falls `Subphylum` in das Datenmodell aufgenommen wird
@@ -121,18 +160,20 @@ Icons vorzugsweise als lokale Inline-SVGs, CSS-Masken oder einfache CSS-Formen u
 - Bestehendes `escapeHtml()` beibehalten oder gleichwertig absichern.
 - Stufen aus einer Datenstruktur erzeugen, nicht acht fast identische HTML-Zeilen fest verdrahten.
 - Nur Stufen mit verwertbarem Wert rendern.
-- Die bisherige textbasierte Breitenmessung `adjustPyramidWidth()` darf ersetzt werden, wenn CSS die Breiten responsiv und stabil steuert.
-- Resize-Listener nur verwenden, wenn CSS allein nicht ausreicht.
+- Die Breitenmessung ermittelt den tatsächlichen einzeiligen Platzbedarf jeder Stufe. Aus dem größten Bedarf
+  einschließlich Rangtiefe wird die Ausgangsbreite berechnet; alle Folgestufen erhalten denselben Verjüngungsschritt.
+- Größenänderungen werden mit einem lokalen `ResizeObserver` nachgeführt; ein globaler Resize-Listener dient nur als
+  Fallback für Browser ohne `ResizeObserver`.
 - Keine globalen Variablen außerhalb des bestehenden Modulrahmens einführen.
 
 Empfohlene Struktur:
 
 ```js
 const levels = [
-  { key: "Kingdom", rank: "Reich", className: "kingdom", icon: "crown" },
+  { key: "Kingdom", rank: "Reich", className: "kingdom", icon: "globe" },
   { key: "Phylum", rank: "Stamm", className: "phylum", icon: "branch" },
   { key: "Subphylum", rank: "Unterstamm", className: "subphylum", icon: "spine" },
-  { key: "Class", rank: "Klasse", className: "class", icon: "column" },
+  { key: "Class", rank: "Klasse", className: "class", icon: "layers" },
   { key: "Order", rank: "Ordnung", className: "order", icon: "hierarchy" },
   { key: "Family", rank: "Familie", className: "family", icon: "group" },
   { key: "Genus", rank: "Gattung", className: "genus", icon: "sprout" },
@@ -153,14 +194,28 @@ const levels = [
 
 ### Desktop
 
-- Drei klar erkennbare Bereiche: Pfeil, Rangspalte, Wertstufen.
+- Zwei klar erkennbare Bereiche: der vertikale Taxonomiepfeil und die einheitlichen farbigen Rang-/Wertstufen.
+- Die kompakte Gesamtgruppe aus Pfeil und Stufen ist im Taxonomierahmen horizontal zentriert.
 - Alle acht Stufen innerhalb des vorhandenen Taxonomie-Rahmens lesbar.
 - Keine abgeschnittenen Texte und keine horizontale Überlappung.
+
+### Tablet
+
+- Zwischen 769 und 1100 Pixeln werden allgemeine Daten, Taxonomie und IUCN-Daten untereinander angeordnet.
+- Der Taxonomierahmen nutzt dieselbe volle Breite wie allgemeine Daten und IUCN-Daten. Die darin zentrierte
+  Pfeil-/Stufengruppe bleibt anhand des längsten einzeiligen Inhalts so kompakt wie möglich.
+- Desktop und Tablet verwenden denselben dezenten Verjüngungsschritt von zehn Pixeln und dieselbe weiche Rundung,
+  damit die Tabletstaffel optisch der freigegebenen Desktopdarstellung entspricht.
+- Die Tabletansicht erzeugt keine horizontale Seitenscrollleiste.
 
 ### Mobil
 
 - Innerhalb der vorhandenen einspaltigen Mobilansicht funktionieren.
 - Pfeil und Rangspalte dürfen schmaler werden.
+- Nur mobil nutzt die erste Stufe die gesamte verfügbare Restbreite; ihr Abstand zum Pfeil entspricht dem Abstand
+  zum rechten Rahmen. Aus den einzeiligen Platzbedarfen aller Folgestufen wird der größtmögliche gemeinsame
+  Verjüngungsschritt bis maximal zehn Pixel berechnet. Falls selbst vier Pixel nicht ohne Platzmangel möglich sind,
+  wird kontrolliert umgebrochen statt Inhalt abzuschneiden.
 - Lange Werte dürfen die Komponente nicht sprengen. Bevorzugt Schriftgröße mit `clamp()` reduzieren; nur falls erforderlich kontrolliert umbrechen.
 - Keine horizontale Seitenscrollleiste erzeugen.
 
@@ -179,6 +234,9 @@ Mindestens prüfen:
 1. Syntax:
    - `node --check species-taxonomy.js`
    - bei Pipeline-Änderung `node --check update.mjs`
+   - `npm.cmd run --silent test:taxonomy`
+   - `npm.cmd run --silent test:providers`
+   - `npm.cmd run --silent test:explorer-model`
 2. Datenfälle:
    - Art mit acht vollständigen Stufen;
    - Art ohne Unterstamm;
@@ -186,6 +244,7 @@ Mindestens prüfen:
    - technischer Leerwert beziehungsweise `n/a`;
    - sehr langer Familien-, Gattungs- oder Artname.
 3. Layout:
+   - lokale Squarespace-nahe Vorschau mit `npm.cmd run --silent preview:squarespace` starten;
    - Desktop in der bestehenden Drei-Spalten-Artseite;
    - Tablet;
    - Smartphone unter 768 Pixel;
@@ -195,9 +254,16 @@ Mindestens prüfen:
    - `/wildlife/heimische-tierwelt/acanthisflammea`
    - eine Costa-Rica-Art, insbesondere Fischertukan, falls aktiv.
 5. Cache und Versionierung:
+   - Umsetzung ausschließlich im Phase-8-Arbeitsbranch;
+   - lokale Vorschau und anschließend nicht öffentlich verlinkte Squarespace-Testseite abnehmen;
+   - ausdrückliche Freigabe durch Felix abwarten;
+   - erst danach nach `main` übernehmen;
    - GitHub-Pages-Deployment abwarten;
    - erst danach `species-taxonomy.js?v=...` in Squarespace beziehungsweise `docs/squarespace-footer.html` erhöhen;
    - Live-Seite erneut prüfen.
+
+Der verbindliche Ablauf und die Rückfallregel stehen in `docs/phase-8-preview-release.md`. Ohne ausdrückliche
+Freigabe bleibt der produktive Squarespace-Footer unverändert.
 
 ## Akzeptanzkriterien
 

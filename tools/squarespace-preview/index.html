@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de" data-preview-mode="controls">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lokale Squarespace-Vorschau</title>
+    <link rel="stylesheet" href="/squarespace-custom.css">
+    <link rel="stylesheet" href="/preview.css">
+    <script src="/preview.js" defer></script>
+  </head>
+  <body>
+    <main class="preview-controls" aria-labelledby="preview-title">
+      <header class="preview-toolbar">
+        <div>
+          <p class="preview-kicker">Nur lokal · aktueller Git-Branch</p>
+          <h1 id="preview-title">Squarespace-Vorschau</h1>
+        </div>
+        <label class="preview-species-field">
+          <span>Art auswählen</span>
+          <select id="preview-species"></select>
+        </label>
+        <fieldset class="preview-widths">
+          <legend>Ansicht</legend>
+          <button type="button" data-preview-width="1280">Desktop</button>
+          <button type="button" data-preview-width="820">Tablet</button>
+          <button type="button" data-preview-width="390">Mobil</button>
+        </fieldset>
+        <label class="preview-subphylum-field">
+          <input id="preview-subphylum" type="checkbox">
+          <span>Unterstamm simulieren</span>
+        </label>
+        <button type="button" id="preview-reload">Neu laden</button>
+        <a id="preview-new-window" target="_blank" rel="noopener">In eigenem Fenster öffnen</a>
+      </header>
+      <p class="preview-note">
+        Diese Vorschau verwendet lokale Branch-Dateien. Sie verändert weder GitHub Pages noch Squarespace.
+      </p>
+      <section class="preview-stage" aria-label="Responsive Seitenvorschau">
+        <iframe id="preview-frame" title="Lokale Vorschau der Taxonomie-Pyramide"></iframe>
+      </section>
+    </main>
+
+    <main class="preview-canvas" aria-label="Squarespace-nahe Modulansicht">
+      <p class="preview-local-badge">Lokale Vorschau · nicht live</p>
+      <h1 id="preview-species-title">Taxonomie-Vorschau</h1>
+      <p id="preview-species-scientific"></p>
+      <div id="species-output">
+        <div id="species-info"></div>
+        <div id="species-taxonomy"></div>
+        <div id="species-status"></div>
+      </div>
+    </main>
+  </body>
+</html>

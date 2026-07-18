@@ -60,6 +60,7 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
     [
       entry.taxonomy.kingdom,
       entry.taxonomy.phylum,
+      entry.taxonomy.subphylum,
       entry.taxonomy.className,
       entry.taxonomy.order,
       entry.taxonomy.family,

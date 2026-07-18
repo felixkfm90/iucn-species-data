@@ -6,7 +6,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DATA_PATH = path.join(REPO_ROOT, "speciesData.json");
 const BACKUP_DIR = path.join(REPO_ROOT, "species-explorer", "backups");
-const TAXONOMY_FIELDS = ["Kingdom", "Phylum", "Class", "Order", "Family"];
+const TAXONOMY_FIELDS = ["Kingdom", "Phylum", "Subphylum", "Class", "Order", "Family"];
 
 function formatTaxonomyName(value) {
   const text = String(value ?? "").trim();

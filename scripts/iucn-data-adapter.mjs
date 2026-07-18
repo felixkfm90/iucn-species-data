@@ -121,6 +121,7 @@ export function createIucnDataAdapter({
         Generationsdauer: generation,
         Kingdom: formatTaxonomyName(taxon.kingdom_name),
         Phylum: formatTaxonomyName(taxon.phylum_name),
+        Subphylum: formatTaxonomyName(taxon.subphylum_name),
         Class: formatTaxonomyName(taxon.class_name),
         Order: formatTaxonomyName(taxon.order_name),
         Family: formatTaxonomyName(taxon.family_name),

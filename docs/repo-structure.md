@@ -35,6 +35,8 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |
 | `scripts/prepare-pages-artifact.mjs` | Baut das kontrollierte `_site/`-Artefakt fuer GitHub Pages. |
+| `scripts/local-squarespace-preview.mjs` | Nur lesender lokaler Vorschau-Server fuer Phase-8-Module auf `127.0.0.1:4188`; veröffentlicht nichts. |
+| `tools/squarespace-preview/` | Versionierte Vorschauhülle für Artwahl und Desktop-/Tablet-/Mobilansicht; kein Bestandteil des Pages-Artefakts. |
 | `.github/workflows/pages.yml` | Eigenes GitHub-Actions-Deployment fuer GitHub Pages. |
 
 Die lokale Explorer-Oberflaeche verwendet `public/app.js` nur als Kompositionswurzel. Pipeline und Backup,
@@ -127,6 +129,15 @@ Größenregeln stehen in `docs/repository-quality-gates.md`.
 - `AGENTS.md` nicht nach `docs/` verschieben.
 
 ## Lokaler Workflow
+
+Phase-8-Artseitenmodule lokal und ohne Veröffentlichung prüfen:
+
+```bash
+npm.cmd run --silent preview:squarespace
+```
+
+Die Vorschau ist anschließend unter `http://127.0.0.1:4188/` erreichbar. Ihr Positivlisten- und Nur-Lese-Vertrag
+wird mit `npm.cmd run --silent test:preview` geprüft. Freigaberegeln: `docs/phase-8-preview-release.md`.
 
 Empfohlener Normalfall:
 

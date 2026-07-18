@@ -29,7 +29,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `species-assets-overrides.json`: maschinenlesbarer Schutz für manuell gepflegte Karten und Sounds
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
 - `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
-- `species-taxonomy.js`: Taxonomie-Pyramide
+- `species-taxonomy.js`: responsive Taxonomie-Pyramide mit zentralen deutschen Anzeigenamen und optionalem
+  Unterstamm
 - `species-status.js`: IUCN-Status und Populationstrend
 - `species-sound.js`: native Tierstimmen-Soundbar mit vorbereitetem Spektrogramm, Canvas-Fallback, Lautstaerke,
   Abspielgeschwindigkeit, Credits und Lizenzhinweisen
@@ -133,6 +134,33 @@ zeigt, laeuft erneut der alte Standardprozess ueber `main:/` und kann beim Deplo
 Der Pages-Workflow nutzt eine gemeinsame `pages`-Concurrency-Gruppe ohne Abbruch laufender Deployments. Kurz
 hintereinander ausgelöste Veröffentlichungen werden dadurch serialisiert statt einen bereits laufenden
 Pages-Deploy im Hintergrund zu überholen.
+
+## Geschützte Phase-8-Vorschau
+
+Phase-8-Änderungen entstehen auf einem separaten Arbeitsbranch und werden vor der Freigabe nicht nach `main`
+übernommen. Eine lokale, nur lesende Squarespace-nahe Artseitenvorschau startet mit:
+
+```powershell
+npm.cmd run --silent preview:squarespace
+```
+
+Unter `http://127.0.0.1:4188/` können Art, Desktop-, Tablet- und Mobilbreite ausgewählt werden. Die Vorschau lädt
+die echten Taxonomie-, CSS- und Artdaten des aktuellen Branches, verändert aber weder GitHub Pages noch Squarespace.
+Der aktuelle Phase-8-Entwurf zeigt jede Taxonomiestufe als vollständigen farbigen Balken mit generischem Rangicon,
+Trennlinie, deutschem Rang und Wert. Der längste einzeilige Rang-/Wertinhalt bestimmt die erforderliche
+Ausgangsbreite; daraus entsteht mit einem konstanten Abstand je Stufe eine gleichmäßige diagonale Verjüngung. Die
+Balken liegen platzsparend Kante an Kante. Links begleitet ein durchgehender
+anthrazit-schwarzer Pfeil die sichtbaren sieben beziehungsweise acht Stufen exakt von der ersten bis zur letzten
+Kante. Nur in der Mobilansicht nutzt der oberste Balken die verfügbare Restbreite vollständig; die Abstände zum
+Pfeil und zum rechten Rahmen bleiben dabei gleich. Der größtmögliche gemeinsame Verjüngungsschritt, bei dem die
+weiteren Inhalte vollständig bleiben, erzeugt auch dort eine klar erkennbare Schräge. Sichtbare Werte beginnen mit
+einem Großbuchstaben, werden aber nicht vollständig großgeschrieben. Auf Desktop und Tablet ist die kompakte Gruppe aus Pfeil und Balken im
+vollbreiten Taxonomierahmen zentriert. Rang und Wert teilen in jeder Stufe eine gemeinsame typografische Grundlinie;
+Desktop und Tablet verwenden denselben dezenten Zehn-Pixel-Verjüngungsschritt und dieselbe weiche Rundung. Mobil
+berechnet aus der verfügbaren Breite einen sicheren Schritt von höchstens zehn Pixeln.
+Vor Livegang folgen zusätzlich eine nicht öffentlich verlinkte Squarespace-Testseite, die ausdrückliche Freigabe
+durch Felix, der erfolgreiche Pages-Lauf nach der Übernahme in `main` und erst danach die produktive
+Squarespace-`?v=`-Erhöhung. Der vollständige Ablauf steht in `docs/phase-8-preview-release.md`.
 
 Artseiten brauchen diese Container:
 
@@ -482,9 +510,9 @@ Priorisierte Bedienungs- und Ausbauschritte:
    Assessment-Zuordnung, Report und Kartendokumentation mit. Details: `docs/rename-species-workflow.md`.
 3. Allgemeine Daten im Bearbeitungsdialog analog zum Neue-Art-Assistenten in strukturierte Felder für
    Männchen/Weibchen, Wert und Einheit aufteilen: seit 2026-07-11 umgesetzt.
-4. Taxonomie-Pyramide später um deutsche Übersetzungen der einzelnen Stufen ergänzen und die Darstellung optisch
-   überarbeiten. Der Unterstamm wird nur bei einem echten vorhandenen Datenwert angezeigt; es gibt keine pauschale
-   oder aus anderen Rängen abgeleitete Ersatzstufe.
+4. Taxonomie-Pyramide mit deutschen Anzeigenamen und neuer responsiver Darstellung: im geschützten Phase-8-
+   Arbeitsbranch umgesetzt und lokal in Abnahme. Der Unterstamm wird nur bei einem echten vorhandenen Datenwert
+   angezeigt; es gibt keine pauschale oder aus anderen Rängen abgeleitete Ersatzstufe.
 5. Artportrait auf der Squarespace-Artseite einbinden.
 
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.
