@@ -186,6 +186,7 @@ Mindestens prüfen:
    - technischer Leerwert beziehungsweise `n/a`;
    - sehr langer Familien-, Gattungs- oder Artname.
 3. Layout:
+   - lokale Squarespace-nahe Vorschau mit `npm.cmd run --silent preview:squarespace` starten;
    - Desktop in der bestehenden Drei-Spalten-Artseite;
    - Tablet;
    - Smartphone unter 768 Pixel;
@@ -195,9 +196,16 @@ Mindestens prüfen:
    - `/wildlife/heimische-tierwelt/acanthisflammea`
    - eine Costa-Rica-Art, insbesondere Fischertukan, falls aktiv.
 5. Cache und Versionierung:
+   - Umsetzung ausschließlich im Phase-8-Arbeitsbranch;
+   - lokale Vorschau und anschließend nicht öffentlich verlinkte Squarespace-Testseite abnehmen;
+   - ausdrückliche Freigabe durch Felix abwarten;
+   - erst danach nach `main` übernehmen;
    - GitHub-Pages-Deployment abwarten;
    - erst danach `species-taxonomy.js?v=...` in Squarespace beziehungsweise `docs/squarespace-footer.html` erhöhen;
    - Live-Seite erneut prüfen.
+
+Der verbindliche Ablauf und die Rückfallregel stehen in `docs/phase-8-preview-release.md`. Ohne ausdrückliche
+Freigabe bleibt der produktive Squarespace-Footer unverändert.
 
 ## Akzeptanzkriterien
 

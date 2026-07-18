@@ -873,8 +873,13 @@ Aktuelle Planung:
   `/wildlife/namibia/acinonyxjubatus` wurde anschließend in Squarespace live geschaltet und mit HTTP 200 sowie dem
   erwarteten Artinhalt nachgeprüft. Vor Phase 8 bleibt damit auch kein externer Link-Blocker offen.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
-  dynamische Taxonomie-Pyramide mit optionalem Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten,
-  Artportraits auf Squarespace, kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
+  in Arbeit seit 2026-07-18. Phase-8-Änderungen entstehen auf einem separaten Arbeitsbranch und werden über die
+  nur lesende lokale Squarespace-nahe Vorschau unter `127.0.0.1:4188` in Desktop-, Tablet- und Mobilbreite geprüft.
+  Danach folgen eine nicht öffentlich verlinkte Squarespace-Testseite und die ausdrückliche Freigabe durch Felix;
+  erst dann sind Übernahme nach `main`, erfolgreicher Pages-Lauf und produktive Footer-`?v=`-Erhöhung erlaubt.
+  Details: `docs/phase-8-preview-release.md`. Inhaltlich folgen dynamische Taxonomie-Pyramide mit optionalem
+  Unterstamm, deutsche Anzeigenamen bei unveraenderten Rohwerten, Artportraits auf Squarespace, kontrollierte
+  Taxonomiebearbeitung und fest eingeplanter Soundeditor.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:

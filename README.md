@@ -134,6 +134,21 @@ Der Pages-Workflow nutzt eine gemeinsame `pages`-Concurrency-Gruppe ohne Abbruch
 hintereinander ausgelöste Veröffentlichungen werden dadurch serialisiert statt einen bereits laufenden
 Pages-Deploy im Hintergrund zu überholen.
 
+## Geschützte Phase-8-Vorschau
+
+Phase-8-Änderungen entstehen auf einem separaten Arbeitsbranch und werden vor der Freigabe nicht nach `main`
+übernommen. Eine lokale, nur lesende Squarespace-nahe Artseitenvorschau startet mit:
+
+```powershell
+npm.cmd run --silent preview:squarespace
+```
+
+Unter `http://127.0.0.1:4188/` können Art, Desktop-, Tablet- und Mobilbreite ausgewählt werden. Die Vorschau lädt
+die echten Taxonomie-, CSS- und Artdaten des aktuellen Branches, verändert aber weder GitHub Pages noch Squarespace.
+Vor Livegang folgen zusätzlich eine nicht öffentlich verlinkte Squarespace-Testseite, die ausdrückliche Freigabe
+durch Felix, der erfolgreiche Pages-Lauf nach der Übernahme in `main` und erst danach die produktive
+Squarespace-`?v=`-Erhöhung. Der vollständige Ablauf steht in `docs/phase-8-preview-release.md`.
+
 Artseiten brauchen diese Container:
 
 ```html

@@ -747,7 +747,13 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
-Status: geplant
+Status: in Arbeit seit 2026-07-18
+
+- Der geschützte Vorschau- und Veröffentlichungsablauf ist eingerichtet: Entwicklung auf einem eigenen
+  Phase-8-Branch, lokale Squarespace-nahe Artseitenvorschau mit Artwahl sowie Desktop-/Tablet-/Mobilbreite,
+  automatisierter Positivlisten-/Nur-Lese-Vertrag und ausdrückliche Freigabe vor jeder Übernahme nach `main`.
+  Eine nicht öffentlich verlinkte Squarespace-Testseite bleibt die zweite visuelle Abnahmestufe. Details:
+  `docs/phase-8-preview-release.md`.
 
 - Taxonomie-Pyramide nach `docs/taxonomy-redesign-handoff.md` als dynamische, responsive und barrierearme
   HTML-/CSS-Komponente modernisieren.
