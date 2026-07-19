@@ -1198,5 +1198,29 @@
     "Species": "jubatus",
     "Letztes IUCN Update": "2022",
     "Daten abgerufen": "2026-07-19"
+  },
+  {
+    "URLSlug": "actophilornisafricanus",
+    "Wissenschaftlicher Name": "Actophilornis africanus",
+    "Deutscher Name": "Blaustirn-Blatthühnchen",
+    "Gewicht": "ca. 110–290 g",
+    "Größe": "ca. 23–31 cm",
+    "Lebenserwartung": "ca. 8–10 Jahre",
+    "Assessment ID": 265020215,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "667.000-667.000",
+    "Generationsdauer": "5,2 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Subphylum": "n/a",
+    "Class": "Aves",
+    "Order": "Charadriiformes",
+    "Family": "Jacanidae",
+    "Genus": "Actophilornis",
+    "Species": "africanus",
+    "Letztes IUCN Update": "2024",
+    "Daten abgerufen": "2026-07-19"
   }
 ]

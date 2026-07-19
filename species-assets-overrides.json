@@ -1215,6 +1215,35 @@
         "sha256": "9082d60f27d826f2b86ec27bd293f228d38ab431472dc77a2ea4ed017aedb8fb",
         "metadataSha256": "514d3cd31fc45ef64d5b39abc122e106bf814595049877f2eceba45af8bca896"
       }
+    },
+    "Blaustirn-Blatthuehnchen": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-19T08:20:05.987Z",
+        "approvedAt": "2026-07-19T08:20:10.310Z",
+        "sha256": "0cae7f2619e4160239c292c687e6a439fdb7b864ffc1d2f869125710374e27aa",
+        "metadataSha256": "a4f23a2f4c2112b14e5724a712310cde8dcba01e5a17f5caf2a7fd8cc39f6f2b"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "56945aa39ce48b1e75baa2a1b79703ed8150414c4ed0737be84d0d83e9a0131c",
+        "spectrogramSha256": "95682318ff68097cb6c0eda70e8d26a0e7f3e5344cc39bdd175552d83a7b3211",
+        "generatedAt": "2026-07-19T08:20:24.522Z",
+        "verifiedAt": "2026-07-19T08:20:24.527Z"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-19T08:20:52.791Z"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-19T08:20:52.791Z"
+      }
     }
   },
   "spectrogramGenerator": {

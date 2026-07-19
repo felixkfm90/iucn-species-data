@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Actophilornis africanus",
+  "german_name": "Blaustirn-Blatthühnchen",
+  "recordist": "Bernard BOUSQUET",
+  "country": "Uganda",
+  "location": "Busiro (near  Ziba), Wilaya ya Wakiso, Mkoa wa Kati",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/1053164",
+  "rejectionKey": "xeno-canto:1053164",
+  "notes": "Stage 7 (openOnly=false, q=A, len25-35=false) | query=\"gen:Actophilornis sp:africanus q:A\" | page=1"
+}

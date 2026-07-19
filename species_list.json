@@ -398,5 +398,13 @@
     "size": "ca. 110-150 cm",
     "weight": "ca. 35-65 kg",
     "life_expectancy": "ca. 10-12 Jahre"
+  },
+  {
+    "german": "Blaustirn-Blatthühnchen",
+    "genus": "Actophilornis",
+    "species": "africanus",
+    "size": "ca. 23–31 cm",
+    "weight": "ca. 110–290 g",
+    "life_expectancy": "ca. 8–10 Jahre"
   }
 ]
