@@ -1210,10 +1210,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-07-16T14:09:00.638Z",
-        "approvedAt": "2026-07-16T14:09:03.268Z",
-        "sha256": "9082d60f27d826f2b86ec27bd293f228d38ab431472dc77a2ea4ed017aedb8fb",
-        "metadataSha256": "514d3cd31fc45ef64d5b39abc122e106bf814595049877f2eceba45af8bca896"
+        "importedAt": "2026-07-19T08:47:50.094Z",
+        "approvedAt": "2026-07-19T08:47:54.586Z",
+        "sha256": "12d0841aa8977b69bd17ae57d76f4014d150ff05cd976b37c3c21c0ac7f8b160",
+        "metadataSha256": "a5a87f50f43f9f7eeb588125fccf56af21cf21f367f4174007ced3f07f8fc888"
       }
     },
     "Blaustirn-Blatthuehnchen": {
