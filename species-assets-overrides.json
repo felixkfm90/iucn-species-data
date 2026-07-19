@@ -476,11 +476,11 @@
         "managedBy": "species-explorer",
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
-        "promptVersion": "1.0.0",
-        "importedAt": "2026-06-21T17:54:10.832Z",
-        "approvedAt": "2026-06-21T17:54:48.855Z",
-        "sha256": "3dd06f0518004f9622276e204d0201d12f5cb08b2d78b0bc0726d00c82879c13",
-        "metadataSha256": "32a17bd5f5c9b4f4a48dfff671504dae7113afa54971d056ceeb417d82e41afb"
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-19T08:50:19.457Z",
+        "approvedAt": "2026-07-19T08:50:27.909Z",
+        "sha256": "929ca8187acf4f02123a1b71e730271b93bafade9e9e2e3ac06bd69c6d1ef45b",
+        "metadataSha256": "cf1fbb4ee52c6f97e59285318db0da86647d5132158fd72840c783c73ef6b5fa"
       },
       "sound": {
         "manual": false,
