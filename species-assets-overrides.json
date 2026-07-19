@@ -86,11 +86,19 @@
             "recordist": "Jeuwre",
             "license": "https://creativecommons.org/licenses/by-sa/4.0",
             "rejectedAt": "2026-07-11T08:59:47.441Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:G%C5%82os_dropa.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:G%C5%82os_dropa.ogg",
+            "recordist": "Bezdzwiek",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-19T06:59:06.498Z"
           }
         ],
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-11T09:00:13.890Z"
+        "updatedAt": "2026-07-19T06:59:06.498Z"
       }
     },
     "Kernbeisser": {
@@ -459,10 +467,10 @@
     "Eisvogel": {
       "spectrogram": {
         "stale": false,
-        "soundSha256": "46aef95c37960edef64c757a427b28c17932f6e5f56bb06baba5a654eba44691",
-        "spectrogramSha256": "a6ebb48fdf0a8f85f7ad800205c853723f4e6e666a929585ab70e2eadb212758",
-        "generatedAt": "2026-07-12T10:46:27.889Z",
-        "verifiedAt": "2026-07-12T10:46:31.186Z"
+        "soundSha256": "f948df6e8e69817d2087c79e104547f1e581171422181441f7c1db606e58e696",
+        "spectrogramSha256": "26c26e7a7ebde155988bb891fadbf7b0e8038be532f50539eab6331581c979ac",
+        "generatedAt": "2026-07-19T06:47:29.957Z",
+        "verifiedAt": "2026-07-19T06:47:29.962Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -473,6 +481,11 @@
         "approvedAt": "2026-06-21T17:54:48.855Z",
         "sha256": "3dd06f0518004f9622276e204d0201d12f5cb08b2d78b0bc0726d00c82879c13",
         "metadataSha256": "32a17bd5f5c9b4f4a48dfff671504dae7113afa54971d056ceeb417d82e41afb"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-19T06:47:46.279Z"
       }
     },
     "Eurasisches Eichhoernchen": {
@@ -1118,11 +1131,19 @@
             "recordist": "Stein Ø. Nilsen",
             "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
             "rejectedAt": "2026-07-10T15:06:12.885Z"
+          },
+          {
+            "key": "wikimedia-commons:https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
+            "source": "Wikimedia Commons",
+            "url": "https://commons.wikimedia.org/wiki/File:De-Tigon.ogg",
+            "recordist": "Jeuwre",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0",
+            "rejectedAt": "2026-07-19T06:59:06.502Z"
           }
         ],
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-10T15:06:31.551Z"
+        "updatedAt": "2026-07-19T06:59:06.498Z"
       },
       "spectrogram": {
         "stale": false,

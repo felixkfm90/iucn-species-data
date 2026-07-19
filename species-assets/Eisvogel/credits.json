@@ -1,12 +1,13 @@
 {
   "scientific_name": "Alcedo atthis",
   "german_name": "Eisvogel",
-  "recordist": "Noé Ferrari",
+  "recordist": "Sonothèque ADVL",
   "country": "France",
-  "location": "Arrondissement d'Abbeville (near  Abbeville), Somme, Hauts-de-France",
-  "quality": "A",
-  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "location": "Miniac-Morvan, Ille-et-Vilaine, Bretagne",
+  "quality": "B",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
   "source": "xeno-canto.org",
-  "url": "https://xeno-canto.org/1085936",
-  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Alcedo sp:atthis q:A\" | page=1"
+  "url": "https://xeno-canto.org/1080048",
+  "rejectionKey": "xeno-canto:1080048",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Alcedo sp:atthis q:B\" | page=1"
 }
