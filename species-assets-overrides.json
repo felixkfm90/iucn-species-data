@@ -815,10 +815,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-06-21T18:54:41.027Z",
-        "approvedAt": "2026-06-21T18:54:47.916Z",
-        "sha256": "8d12bbb24797e9690043b5dff48f9d6b6a17901685208cd051e51fd0855c13fe",
-        "metadataSha256": "8b104f9937df8ef50eacb097195e2dc4a32b38f42a1f55b25592607a5af77a60"
+        "importedAt": "2026-07-19T09:32:42.975Z",
+        "approvedAt": "2026-07-19T09:32:46.702Z",
+        "sha256": "888f486434f940719ec095b1cd4b6d33fdcb91eb934b65e7dce3a41fd5a36a36",
+        "metadataSha256": "5e8c2078e2cbd058859f15a46d69eaa26717faad19ead4b01ba224bc9cd0efa8"
       }
     },
     "Quetzal": {
@@ -1210,10 +1210,10 @@
         "source": "ChatGPT",
         "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
         "promptVersion": "1.1.0",
-        "importedAt": "2026-07-19T08:47:50.094Z",
-        "approvedAt": "2026-07-19T08:47:54.586Z",
-        "sha256": "12d0841aa8977b69bd17ae57d76f4014d150ff05cd976b37c3c21c0ac7f8b160",
-        "metadataSha256": "a5a87f50f43f9f7eeb588125fccf56af21cf21f367f4174007ced3f07f8fc888"
+        "importedAt": "2026-07-19T08:54:45.704Z",
+        "approvedAt": "2026-07-19T08:54:57.377Z",
+        "sha256": "8f0b170101e9d7ec386102b1099ea8284a9613439cae4cf60f2110f8d4eec127",
+        "metadataSha256": "805f8f7ab4973f7bce3cc1462af1777717b91c123aba209f7c35d668c5956a55"
       }
     },
     "Blaustirn-Blatthuehnchen": {
