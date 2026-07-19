@@ -637,8 +637,9 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6`,
-`species-taxonomy.js?v=1.0.4` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
-erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert.
+`species-taxonomy.js?v=1.0.5` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
+erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert. Die Taxonomie-Version erneuert zugleich
+den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS.
 
 Manuell gepflegte Karten werden in `docs/manual-map-overrides.md` dokumentiert. Die aktuell geschützten Karten stehen
 automatisch erzeugt in `docs/project-status.md`; frühere Übernahmen und Statuswechsel bleiben in den datierten

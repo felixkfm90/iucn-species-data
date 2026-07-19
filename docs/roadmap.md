@@ -773,7 +773,8 @@ Status: in Arbeit seit 2026-07-18
   Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
   kontrollierte Übernahme nach `main` und der erste Pages-Lauf waren erfolgreich. Das Modul lädt das notwendige
   Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
-  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.4`. Details:
+  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.5`; sie
+  aktualisiert zugleich den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS. Details:
   `docs/taxonomy-redesign-handoff.md`.
 - Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte die
   Taxonomie, die zweite Allgemeine Daten und direkt darunter Status/Trend und die dritte das Artporträt ohne eigene
@@ -784,7 +785,7 @@ Status: in Arbeit seit 2026-07-18
   die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das Layout automatisch auf zwei Spalten
   zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
   Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-taxonomy.js?v=1.0.4`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-taxonomy.js?v=1.0.5`.
 - Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
 - Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche
   festlegen, daraus lokal das finale MP3 erzeugen und das Spektrogramm konsistent neu aufbauen.

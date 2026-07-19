@@ -77,7 +77,8 @@ npm.cmd run --silent test:preview
 6. Erst danach den freigegebenen Stand nach `main` übernehmen und den erfolgreichen GitHub-Pages-Lauf abwarten.
 7. Erst nach erfolgreichem Pages-Deployment die produktiven Versionen von `species-core.js`, `species-info.js`,
    `species-taxonomy.js` und `species-portrait.js` in Squarespace und `docs/squarespace-footer.html` gemeinsam
-   erhöhen. Für diesen Stand sind `1.0.5`, `1.0.6`, `1.0.4` und `1.0.1` dokumentiert.
+   erhöhen. Für diesen Stand sind `1.0.5`, `1.0.6`, `1.0.5` und `1.0.1` dokumentiert. Die Taxonomie-Version
+   `1.0.5` erneuert zugleich den Cache-Schlüssel des von diesem Modul geladenen Artseiten-CSS.
 8. Öffentliche Desktop- und Mobilseite prüfen. Erst diese Prüfung schließt die Veröffentlichung ab.
 
 Ohne ausdrückliche Freigabe in Schritt 5 wird weder nach `main` übernommen noch die produktive Squarespace-Version

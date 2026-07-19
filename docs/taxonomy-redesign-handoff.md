@@ -142,7 +142,8 @@ Icons vorzugsweise als lokale Inline-SVGs, CSS-Masken oder einfache CSS-Formen u
 - Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Der
   freigegebene Stand wurde nach `main` übernommen und der erste Pages-Lauf war erfolgreich. Das Modul lädt das
   zugehörige Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt, damit Markup und Gestaltung künftig atomar
-  veröffentlicht werden. Die dokumentierte produktive Cache-Version ist `species-taxonomy.js?v=1.0.4`.
+  veröffentlicht werden. Die dokumentierte produktive Cache-Version ist `species-taxonomy.js?v=1.0.5`; derselbe
+  Cache-Schlüssel wird an das dynamisch geladene Artseiten-CSS weitergereicht.
 
 ## Betroffene Dateien
 

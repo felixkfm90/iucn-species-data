@@ -892,7 +892,8 @@ Aktuelle Planung:
   drei Vorschaugrößen visuell freigegeben. Der freigegebene Stand wurde nach `main` übernommen und der erste
   Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
   kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
-  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.4`. Artportraits sind seit 2026-07-18
+  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.5`; derselbe Cache-Schluessel wird fuer
+  das dynamisch geladene Artseiten-CSS verwendet. Artportraits sind seit 2026-07-18
   ebenfalls in die Squarespace-Artseite integriert: Auf grossen Bildschirmen steht die Taxonomie links, Allgemeine
   Daten mit Status/Trend darunter in der Mitte und das Portrait ohne sichtbare Ueberschrift ueber die volle Hoehe
   rechts. Die Tierstimme steht unter den beiden linken Spalten. Der Taxonomierahmen endet buendig mit Status/Trend
