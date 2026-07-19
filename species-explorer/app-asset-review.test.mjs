@@ -104,6 +104,28 @@ test("Entscheidungstexte unterscheiden Laufart, bisherigen Kartenstatus und Soun
     },
   );
   assert.deepEqual(
+    { ...renderer.decisionLabels("all", {
+      type: "map",
+      previouslyExisting: true,
+      previousManual: true,
+    }) },
+    {
+      automatic: "Automatische Karte übernehmen",
+      manual: "Bisherige manuelle Karte behalten",
+    },
+  );
+  assert.deepEqual(
+    { ...renderer.decisionLabels("all", {
+      type: "sound",
+      isNc: false,
+      previouslyExisting: true,
+    }) },
+    {
+      automatic: "Gefundenen Sound übernehmen (frei)",
+      manual: "Bisherigen Sound behalten",
+    },
+  );
+  assert.deepEqual(
     { ...renderer.decisionLabels("manual-maps", {
       type: "map",
       previouslyExisting: true,

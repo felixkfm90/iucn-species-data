@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { sanitizeAssetName } from "./species-model.mjs";
+import { childProcessEnvironment } from "./child-process-environment.mjs";
 
 const TRACKED_PROJECT_PATHS = Object.freeze([
   "species_list.json",
@@ -24,7 +25,7 @@ export function createProjectPublicationService({ repoRoot }) {
     return new Promise((resolveRun) => {
       const child = spawn(command, args, {
         cwd: repoRoot,
-        env: process.env,
+        env: childProcessEnvironment(command),
         windowsHide: true,
       });
       const stdout = [];

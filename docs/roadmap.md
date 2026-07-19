@@ -745,6 +745,20 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   die übrigen internen Linkziele mit HTTP 200. Es bleibt kein technischer Repository- oder externer Link-Blocker vor
   Phase 8. Details: `docs/audits/2026-07-pre-phase-8-audit.md`.
 
+### Betriebskorrektur nach Phase 7 (2026-07-19)
+
+- Der im Electron-Wrapper festhaengende Abschluss von Pipeline- und Transferlaeufen ist behoben. Interne
+  JavaScript-Hilfsprozesse werden bei `process.execPath === electron.exe` mit `ELECTRON_RUN_AS_NODE=1` gestartet.
+  Ein echter Transferlauf erreichte danach Statusabgleich, Commit und Push; der dabei veroeffentlichte Datencommit
+  ist `7fc4e65`.
+- Wikimedia-Commons-Ablehnungen werden auf eine kanonische `File:`-Identitaet normalisiert. Anders kodierte URLs
+  derselben bereits abgelehnten Aufnahme werden nicht erneut als neuer Kandidat angeboten.
+- `Alle Arten aktualisieren` prueft nun auch manuell geschuetzte Karten. Eine gefundene automatische Karte wird mit
+  der bestehenden manuellen Karte verglichen und erst nach der ausdruecklichen Entscheidung uebernommen.
+- Der aktuelle Squarespace-CSS-Stand bleibt `docs/squarespace-custom.css`. Der alte Stand vom 2026-05-27 darf nicht
+  parallel aktiv sein, sondern muss bei der Uebernahme vollstaendig ersetzt werden. Die Footer-Versionen wurden
+  durch diese rein lokale Pipelinekorrektur nicht geaendert.
+
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
 Status: in Arbeit seit 2026-07-18

@@ -679,6 +679,17 @@ Priorisierte nächste Ausbauschritte:
 4. Taxonomie-Pyramide um deutsche Anzeigenamen ergänzen und optisch überarbeiten: seit 2026-07-18 umgesetzt.
 5. Artportrait auf der Squarespace-Artseite einbinden: seit 2026-07-18 umgesetzt.
 
+### Betriebskorrektur vom 2026-07-19
+
+- Interne Node-Hilfsprozesse erhalten im Electron-Betrieb `ELECTRON_RUN_AS_NODE=1`. Dadurch beendet sich der
+  Projektstatus-Abgleich und der Pipeline- beziehungsweise Transferlauf erreicht wieder Commit und Push.
+- Der Korrekturstand wurde mit einem echten Transfer offener Eisvogel-Assets bis zum erfolgreichen Git-Push
+  geprueft; der Datencommit lautet `7fc4e65`.
+- Wikimedia-Commons-Ablehnungen werden ueber ihre kanonische Dateiidentitaet erkannt, damit dieselbe bereits
+  abgelehnte Aufnahme nicht wegen einer anders kodierten URL erneut vorgeschlagen wird.
+- Der Komplettlauf prueft manuell geschuetzte Karten erneut und verlangt vor einer Umstellung auf automatische
+  Pflege eine Kartenvergleichsentscheidung.
+
 ### 7.8 Browserunabhängiger Desktop-Wrapper
 
 - bestehende Node-/Weboberfläche in einem eigenen Windows-App-Fenster betreiben

@@ -104,6 +104,14 @@ Sind alle unterstützten und lizenzgeprüften Kandidaten ausgeschöpft, bleibt d
 Bearbeitungsdialog geöffnet und meldet den Zustand ausdrücklich. Die Meldung behauptet nicht, dass außerhalb der
 angebundenen Quellen keine Aufnahme existiert.
 
+Wikimedia-Commons-Ablehnungen werden kanonisch auf die jeweilige `File:`-Identitaet normalisiert. Prozentkodierte
+URLs, Beschreibungspfade und Titelvarianten derselben Datei duerfen deshalb nicht als neue Quelle erscheinen.
+
+Interne JavaScript-Hilfsprozesse des Electron-Wrappers muessen ueber
+`species-explorer/child-process-environment.mjs` gestartet werden. Wenn `process.execPath` auf Electron zeigt, setzt
+der Helper `ELECTRON_RUN_AS_NODE=1`; andernfalls kann ein erfolgreich ausgegebener Statusabgleich den Prozess offen
+halten und Commit/Push blockieren.
+
 Aktuell ersetzte freie Quellen:
 
 - `Eurasisches Eichhoernchen`: freie Xeno-Canto-Alternative

@@ -1,6 +1,6 @@
 # CSS Layout Audit
 
-Stand: 2026-06-16
+Stand: 2026-07-19
 
 Quelle:
 
@@ -9,6 +9,14 @@ Quelle:
 - Detailseite: `/wildlife/heimische-tierwelt/acanthisflammea`
 - Uebersichtsseite: `/wildlife/island`
 - Startseite: `/`
+
+## Verbindliche Squarespace-Uebernahme
+
+`docs/squarespace-custom.css` ist eine vollstaendige Referenz und kein Zusatzfragment. Der alte Squarespace-Stand
+vom 2026-05-27 enthaelt unter anderem ein Flex-Layout fuer `#species-output` und fruehe Taxonomie-Regeln. Er darf
+nicht parallel zum aktuellen Grid-/Taxonomie-Stand aktiv bleiben. Beim naechsten Abgleich wird deshalb der gesamte
+Inhalt unter Squarespace Custom CSS durch `docs/squarespace-custom.css` ersetzt. Der Footer bleibt davon getrennt
+und wird ausschliesslich aus `docs/squarespace-footer.html` uebernommen.
 
 ## Kurzfazit
 

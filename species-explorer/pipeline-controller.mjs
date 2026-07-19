@@ -23,6 +23,8 @@ import { formatSpectrogramPipelineLog } from "./pipeline-log.mjs";
 import { isNonCommercialLicense } from "./media-assets.mjs";
 import { closeActiveFileStreams, sendFile, sendText } from "./http-routing.mjs";
 import { isPathInside } from "./request-security.mjs";
+import { childProcessEnvironment } from "./child-process-environment.mjs";
+import { normalizeSoundRejectionKey } from "../scripts/sound-rejection-key.mjs";
 
 export function createPipelineController({
   repoRoot,
@@ -278,13 +280,15 @@ export function createPipelineController({
 
   function soundRejectionKeyFromCredits(credits) {
     const explicit = String(credits?.rejectionKey ?? "").trim();
-    if (explicit) return explicit;
+    if (explicit) return normalizeSoundRejectionKey(explicit);
     const source = String(credits?.source ?? "").toLocaleLowerCase("de");
     const url = String(credits?.url ?? "").trim();
     const notes = String(credits?.notes ?? "").trim();
     const xenoMatch = url.match(/xeno-canto\.org\/(\d+)/i) || notes.match(/xeno-canto\.org\/(\d+)/i);
     if (source.includes("xeno") && xenoMatch) return `xeno-canto:${xenoMatch[1]}`;
-    if (source.includes("wikimedia")) return `wikimedia-commons:${url || notes}`;
+    if (source.includes("wikimedia")) {
+      return normalizeSoundRejectionKey(`wikimedia-commons:${url || notes}`);
+    }
     if (source.includes("inaturalist")) {
       const observation = notes.match(/Observation=([^|\s]+)/i)?.[1] ?? "";
       const sound = notes.match(/sound=([^|\s]+)/i)?.[1] ?? "";
@@ -320,8 +324,16 @@ export function createPipelineController({
     const existing = Array.isArray(next.rejectedSources) ? next.rejectedSources : [];
     const byKey = new Map(existing
       .filter((entry) => entry && typeof entry === "object")
-      .map((entry) => [String(entry.key ?? ""), entry]));
-    byKey.set(rejectedSource.key, rejectedSource);
+      .map((entry) => {
+        const key = normalizeSoundRejectionKey(entry.key);
+        return [key, { ...entry, key }];
+      })
+      .filter(([key]) => key));
+    const normalizedRejectedSource = {
+      ...rejectedSource,
+      key: normalizeSoundRejectionKey(rejectedSource.key),
+    };
+    byKey.set(normalizedRejectedSource.key, normalizedRejectedSource);
     next.rejectedSources = [...byKey.values()].filter((entry) => String(entry.key ?? "").trim());
     return next;
   }
@@ -405,7 +417,7 @@ export function createPipelineController({
         const refreshedByPipeline = exists
           && before.exists
           && !changed
-          && plan.mode === "manual-maps"
+          && (plan.mode === "manual-maps" || (plan.mode === "all" && before.previousManual))
           && type === "map"
           && wasAssetSavedInCurrentPipelineLog(target.safeName, type);
         if ((!before.exists && exists) || changed || refreshedByPipeline) {
@@ -498,7 +510,7 @@ export function createPipelineController({
       let stdoutBuffer = "";
       const child = spawn(command, args, {
         cwd: repoRoot,
-        env: process.env,
+        env: childProcessEnvironment(command),
         windowsHide: true,
       });
       runtime.process = child;
@@ -951,7 +963,11 @@ export function createPipelineController({
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
       const rejectAsset = choice.decision === "reject";
       const rejectSound = rejectAsset && asset.type === "sound";
-      if ((retryMode && choice.decision === "manual") || rejectAsset) {
+      const keepPreviousAsset = choice.decision === "manual" && asset.previouslyExisting === true;
+      const skipNewRetryCandidate = retryMode
+        && choice.decision === "manual"
+        && asset.previouslyExisting !== true;
+      if (keepPreviousAsset || skipNewRetryCandidate || rejectAsset) {
         const rejectedSource = rejectSound ? rejectedSoundSourceFromCredits(asset) : null;
         const previous = await restoreOrRemovePipelineAsset(asset);
         registry.assets[asset.safeName] ??= {};
@@ -1017,13 +1033,14 @@ export function createPipelineController({
       }
     }
 
-    if (runtime.state.mode === "manual-maps") {
+    const reviewedMaps = runtime.state.reviewAssets.filter((asset) => asset.type === "map");
+    if (reviewedMaps.length) {
       await synchronizeStoredManualMapDocumentation(registry);
     }
 
-    if (runtime.state.mode === "manual-maps" && acceptedAny) {
+    if (reviewedMaps.length && acceptedAny) {
       const assessmentIds = await readJson(assessmentIdsPath).catch(() => ({}));
-      for (const asset of runtime.state.reviewAssets) {
+      for (const asset of reviewedMaps) {
         const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
         if (choice.decision === "manual" || choice.decision === "reject") continue;
         const species = getModel().species.find((entry) => entry.safeName === asset.safeName);

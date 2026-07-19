@@ -17,6 +17,10 @@ import {
   isNcLicense,
   normalizeLicenseUrl,
 } from "./scripts/sound-source-license.mjs";
+import {
+  commonsSoundRejectionKey,
+  normalizeSoundRejectionKey,
+} from "./scripts/sound-rejection-key.mjs";
 
 const nativeFetch = globalThis.fetch;
 if (typeof nativeFetch !== "function") {
@@ -198,15 +202,18 @@ function rejectedSoundKeys(safeName) {
   const sources = assetOverrides.assets?.[safeName]?.sound?.rejectedSources;
   if (!Array.isArray(sources)) return new Set();
   return new Set(sources
-    .map((entry) => String(entry?.key ?? "").trim())
+    .map((entry) => normalizeSoundRejectionKey(entry?.key))
     .filter(Boolean));
 }
 
 function isRejectedSoundCandidate(safeName, key, german, extraRejectedKeys = new Set()) {
-  const normalizedKey = String(key ?? "").trim();
+  const normalizedKey = normalizeSoundRejectionKey(key);
   if (!normalizedKey) return false;
   const rejected = rejectedSoundKeys(safeName);
-  if (!rejected.has(normalizedKey) && !extraRejectedKeys.has(normalizedKey)) return false;
+  const temporaryRejected = new Set(
+    [...extraRejectedKeys].map((entry) => normalizeSoundRejectionKey(entry)).filter(Boolean),
+  );
+  if (!rejected.has(normalizedKey) && !temporaryRejected.has(normalizedKey)) return false;
   console.log(`↩ Abgelehnte Soundquelle wird übersprungen für ${german}: ${normalizedKey}`);
   return true;
 }
@@ -219,7 +226,7 @@ function xenoRejectionKey(recording) {
 }
 
 function commonsRejectionKey(hit) {
-  return `wikimedia-commons:${hit.descriptionUrl || hit.fileUrl || hit.mp3Url || hit.title || "unknown"}`;
+  return commonsSoundRejectionKey(hit);
 }
 
 function inatRejectionKey(hit) {
@@ -230,13 +237,15 @@ function inatRejectionKey(hit) {
 
 function soundRejectionKeyFromCredits(credits) {
   const explicit = String(credits?.rejectionKey ?? "").trim();
-  if (explicit) return explicit;
+  if (explicit) return normalizeSoundRejectionKey(explicit);
   const source = String(credits?.source ?? "").toLocaleLowerCase("de");
   const url = String(credits?.url ?? "").trim();
   const notes = String(credits?.notes ?? "").trim();
   const xenoMatch = url.match(/xeno-canto\.org\/(\d+)/i) || notes.match(/xeno-canto\.org\/(\d+)/i);
   if (source.includes("xeno") && xenoMatch) return `xeno-canto:${xenoMatch[1]}`;
-  if (source.includes("wikimedia")) return `wikimedia-commons:${url || notes}`;
+  if (source.includes("wikimedia")) {
+    return normalizeSoundRejectionKey(`wikimedia-commons:${url || notes}`);
+  }
   if (source.includes("inaturalist")) {
     const observation = notes.match(/Observation=([^|\s]+)/i)?.[1] ?? "";
     const sound = notes.match(/sound=([^|\s]+)/i)?.[1] ?? "";
@@ -1129,11 +1138,13 @@ function printReportToConsole(report) {
           s.german,
           { forceAlternativeSearch: forceSoundAlternativeSearch },
         );
+      const recheckProtectedMap = args.mode === "all"
+        && isManualAsset(sanitizeAssetName(s.german), "map");
       const mapStatus = args.mode === "nc-sounds"
         ? "ok"
         : await downloadMapForSpecies(
           data,
-          args.mode === "manual-maps"
+          args.mode === "manual-maps" || recheckProtectedMap
             ? { force: true, allowManual: true, recordAssessment: false }
             : undefined,
         );

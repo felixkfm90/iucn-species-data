@@ -16,6 +16,10 @@ import {
   isOpenCommercialLicense,
   normalizeLicenseUrl,
 } from "./sound-source-license.mjs";
+import {
+  commonsSoundRejectionKey,
+  normalizeSoundRejectionKey,
+} from "./sound-rejection-key.mjs";
 
 const noWait = async () => {};
 
@@ -36,6 +40,13 @@ test("Sound-Lizenzregeln unterscheiden frei und NC", () => {
   assert.equal(isOpenCommercialLicense("https://creativecommons.org/licenses/by/4.0/"), true);
   assert.equal(isOpenCommercialLicense("CC-BY-NC"), false);
   assert.equal(inatLicenseUrl("cc-by-sa"), "https://creativecommons.org/licenses/by-sa/4.0/");
+});
+
+test("Commons-Ablehnungen erkennen URL- und Titelschreibweisen als dieselbe Quelle", () => {
+  const encodedUrl = "wikimedia-commons:https://commons.wikimedia.org/wiki/File:G%C5%82os_dropa.ogg";
+  const titleKey = commonsSoundRejectionKey({ title: "File:Głos dropa.ogg" });
+  assert.equal(normalizeSoundRejectionKey(encodedUrl), "wikimedia-commons:File:Głos_dropa.ogg");
+  assert.equal(titleKey, normalizeSoundRejectionKey(encodedUrl));
 });
 
 test("IUCN-Datenadapter normalisiert Assessment und Taxonomie", async () => {

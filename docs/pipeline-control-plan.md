@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-07-04
+Stand: 2026-07-19
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -107,6 +107,18 @@ node update.mjs
 
 Alle Eintraege aus `species_list.json` werden verarbeitet. Dieser Lauf bleibt fuer regelmaessige Gesamtabgleiche,
 Lizenzsuche, IUCN-Aktualisierungen und den Monatscheck erforderlich.
+
+Manuell geschuetzte Karten werden in diesem Modus nicht mehr still uebersprungen. Der Lauf versucht fuer sie eine
+aktuelle automatische Karte zu laden und zeigt bei Erfolg die bisherige manuelle und die gefundene automatische
+Karte nebeneinander. Die bestehende Karte bleibt erhalten, bis die Entscheidung ausdruecklich gespeichert wurde.
+
+### Electron-Prozessgrenze
+
+Der Desktop-Wrapper verwendet fuer interne Node-Skripte ebenfalls `process.execPath`. Unter Electron ist dieser
+Pfad jedoch `electron.exe`. Deshalb fuegen `pipeline-controller.mjs` und `project-publication.mjs` fuer genau diese
+Unterprozesse `ELECTRON_RUN_AS_NODE=1` ein. Ohne diese Prozessgrenze konnte `scripts/project-status.mjs` zwar die
+Erfolgsmeldung ausgeben, aber offen bleiben; der Lauf erreichte dadurch Git-Commit und Git-Push nicht. Die Korrektur
+ist direkt getestet und wurde am 2026-07-19 mit einem echten Transfer bis zum Push geprueft.
 
 Vor dem Start zeigt die App:
 

@@ -104,6 +104,12 @@ Galerie-Vollbilder. Details: `docs/audits/2026-07-pre-phase-8-audit.md`.
 Das Squarespace Custom CSS enthaelt seit 2026-06-14 einen Mobile-only-Override fuer Grid-Galerien: Galerien mit mehr
 als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert.
 
+Der verbindliche aktuelle Gesamtstand fuer Squarespace liegt in `docs/squarespace-custom.css`. Ein aelterer
+Custom-CSS-Stand darf dort nicht zusaetzlich stehen bleiben oder an den neuen Stand angehaengt werden, weil sich
+insbesondere die alten Flex- und Taxonomie-Regeln mit dem aktuellen Grid-Layout ueberschneiden. Bei einer
+Uebernahme wird der bisherige Squarespace-CSS-Inhalt deshalb vollstaendig durch diese Referenz ersetzt. Der
+dokumentierte Footer steht getrennt in `docs/squarespace-footer.html`.
+
 Die Artseiten-Info-Box zeigt technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` als `Unbekannt` an,
 ohne die Rohdaten in `speciesData.json` umzuschreiben.
 
@@ -969,6 +975,19 @@ Verlaufsabschnitten bleiben als Zeitaufnahme erhalten und dürfen nicht als aktu
 Bei automatischen Veröffentlichungen aus dem Arten-Explorer wird der Projektstatus vor dem Commit neu erzeugt und
 gemeinsam veröffentlicht. Die beiden Befehle bleiben für manuelle Daten-/Assetänderungen und lokale Prüfungen
 verbindlich.
+
+### Desktop-Prozesse und automatische Veroeffentlichung
+
+Wenn der Arten-Explorer in Electron laeuft, werden interne JavaScript-Hilfsprozesse mit
+`ELECTRON_RUN_AS_NODE=1` gestartet. Dadurch beendet sich insbesondere der Projektstatus-Abgleich nach seiner
+Erfolgsausgabe wirklich und Git-Commit sowie Git-Push koennen anschliessend ausgefuehrt werden. Der Fehler, bei dem
+ein Lauf nach `Projektstatus aktualisiert` dauerhaft aktiv blieb, ist damit behoben und durch einen eigenen Test
+abgesichert. Ein echter Transferlauf wurde am 2026-07-19 bis zum erfolgreichen Push geprueft.
+
+Abgelehnte Wikimedia-Commons-Sounds werden anhand ihrer kanonischen `File:`-Identitaet verglichen. Kodierte URLs,
+Beschreibungspfade und Titelvarianten derselben Datei gelten dadurch als dieselbe bereits abgelehnte Quelle. Ein
+vollstaendiger Lauf prueft ausserdem manuell geschuetzte Karten erneut. Eine gefundene automatische Karte wird der
+bisherigen manuellen Karte gegenuebergestellt und erst nach der ausdruecklichen Pflegeentscheidung uebernommen.
 
 Weitere Arten werden bei Bedarf kontrolliert ueber den Arten-Explorer in `species_list.json` ergaenzt.
 

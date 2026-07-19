@@ -31,13 +31,14 @@
 
     function decisionLabels(mode, asset) {
       if (asset.type === "map") {
+        const comparesExistingMap = asset.previouslyExisting === true;
         return {
-          automatic: mode === "manual-maps"
+          automatic: mode === "manual-maps" || comparesExistingMap
             ? "Automatische Karte übernehmen"
             : "Karte automatisch pflegen",
-          manual: mode === "manual-maps" && asset.previouslyExisting === false
+          manual: mode === "manual-maps" && !comparesExistingMap
             ? "Neue Karte nicht übernehmen"
-            : mode === "manual-maps"
+            : comparesExistingMap
               ? `Bisherige ${asset.previousManual ? "manuelle" : "automatische"} Karte behalten`
               : "Manuell pflegen und schützen",
         };
@@ -45,9 +46,9 @@
       const soundKind = asset.isNc ? "NC" : "frei";
       return {
         automatic: `Gefundenen Sound übernehmen (${soundKind})`,
-        manual: mode === "nc-sounds" && asset.previouslyExisting === false
+        manual: mode === "nc-sounds" && asset.previouslyExisting !== true
           ? "Sound nicht übernehmen"
-          : mode === "nc-sounds"
+          : asset.previouslyExisting === true
             ? "Bisherigen Sound behalten"
             : "Manuell pflegen und schützen",
       };

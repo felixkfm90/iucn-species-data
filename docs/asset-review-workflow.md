@@ -1,6 +1,6 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-07-16
+Stand: 2026-07-19
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
@@ -56,6 +56,10 @@ Bei der ausdrücklichen Sound-Ablehnung wird die neue Quelle in `species-assets-
 iNaturalist-Soundkennung mit dieser Liste und schlägt dieselbe Quelle nicht erneut vor. Wenn vorher kein Sound
 vorhanden war, werden die neu erzeugten `sound.mp3`, `credits.json` und `spectrogram.webp` wieder entfernt und der
 Report danach neu aufgebaut.
+
+Commons-Quellen werden dabei nicht mehr ueber die rohe URL verglichen, sondern auf eine kanonische
+`wikimedia-commons:File:<Titel>`-Identitaet normalisiert. Damit werden zum Beispiel ein prozentkodierter
+Beschreibungspfad und derselbe bereits dekodierte Dateititel als identische Ablehnung erkannt.
 
 Nach einer Sound-Ablehnung startet der Explorer automatisch einen weiteren gezielten Sound-Suchlauf fuer dieselbe
 Art. Die Suche läuft weiter, bis Felix eine Quelle übernimmt oder keine weitere taugliche Quelle mehr gefunden wird.
@@ -118,6 +122,10 @@ Im normalen Bearbeitungsdialog kann außerdem je Art ein gezielter Suchlauf gest
 Der globale Wartungslauf `Manuelle und fehlende Karten erneut suchen` verarbeitet weiterhin manuell geschützte und
 fehlende Karten. Die artweise Suche im Bearbeitungsdialog ist zusätzlich bewusst breiter und kann für jede einzelne
 Art gestartet werden.
+
+Auch `Alle Arten aktualisieren` prueft manuell geschuetzte Karten. Wenn eine automatische Karte gefunden wird,
+erscheint derselbe Vergleich wie im Wartungslauf. `Bisherige manuelle Karte behalten` stellt die vorherige Datei
+wieder her; `Automatische Karte uebernehmen` hebt den manuellen Schutz erst mit der gespeicherten Entscheidung auf.
 
 Beim Neue-Art-Assistenten nutzt Schritt `Karte` denselben manuellen URL-Workflow wie der Kartenabschnitt im
 Bearbeitungsdialog. Wenn der erste automatische Kartenlauf wegen eines temporären IUCN-/Backblaze-Fehlers keine
