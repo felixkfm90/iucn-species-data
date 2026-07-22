@@ -41,7 +41,7 @@ const POST_ROUTES = new Map([
 
 const ASSET_ACTIONS = {
   map: "preview|save|delete-preview|delete|restore-preview|restore",
-  sound: "preview|save|reject|delete-preview|delete|restore-preview|restore",
+  sound: "preview|edit-preview|save|reject|delete-preview|delete|restore-preview|restore",
   portrait: "prompt|preview|save|delete-preview|delete|restore-preview|restore",
 };
 
@@ -91,6 +91,10 @@ export function matchExplorerRoute(method, pathname) {
     const deleteRoute = normalizedPath.match(/^\/api\/species\/([^/]+)\/delete\/(preview|save)$/);
     if (deleteRoute) {
       return { name: "delete-species", encodedId: deleteRoute[1], action: deleteRoute[2] };
+    }
+    const taxonomyRoute = normalizedPath.match(/^\/api\/species\/([^/]+)\/taxonomy\/(preview|save)$/);
+    if (taxonomyRoute) {
+      return { name: "edit-taxonomy", encodedId: taxonomyRoute[1], action: taxonomyRoute[2] };
     }
     const editRoute = normalizedPath.match(/^\/api\/species\/([^/]+)\/(preview|save)$/);
     if (editRoute) {
@@ -230,12 +234,14 @@ export function createExplorerRequestHandler({
         return;
       }
 
-      if (route.name === "delete-species" || route.name === "edit-species") {
+      if (["delete-species", "edit-species", "edit-taxonomy"].includes(route.name)) {
         const id = decodeRouteId(route.encodedId);
         const payload = await readJsonBody(request);
-        const operation = route.name === "delete-species"
-          ? operations.deleteSpecies
-          : operations.editSpecies;
+        const operation = {
+          "delete-species": operations.deleteSpecies,
+          "edit-species": operations.editSpecies,
+          "edit-taxonomy": operations.editTaxonomy,
+        }[route.name];
         sendJson(response, 200, await operation({ id, action: route.action, payload }));
         return;
       }

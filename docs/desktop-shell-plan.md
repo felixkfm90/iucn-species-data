@@ -1,6 +1,6 @@
 # Browserunabhängiger Arten-Explorer
 
-Stand: 2026-07-12
+Stand: 2026-07-22
 
 ## Ziel
 
@@ -114,19 +114,27 @@ Konsolenfenster offen bleibt. Die Prozessausgabe landet bei Bedarf in
 `species-explorer/logs/desktop-launch.log`. Die Datei wird bei jedem Start überschrieben, sodass genau der letzte
 Start diagnostizierbar bleibt und der Launcher-Log nicht unbegrenzt wächst.
 
+Seit 2026-07-22 nutzt auch ein erneuter Doppelklick denselben verständlichen Ablauf: Electron erkennt die bereits
+laufende Instanz und aktiviert deren Fenster. Ein minimiertes Fenster wird wiederhergestellt, ein verborgenes
+Fenster eingeblendet und anschließend fokussiert beziehungsweise in den Vordergrund geholt. Falls der zweite Start
+noch vor dem ersten sichtbaren Fenster eintrifft, wird die Aktivierung vorgemerkt und bei `ready-to-show`
+nachgeholt. Eine zweite schreibende Explorer-Instanz entsteht nicht.
+
 Der Desktop-Lifecycle ist über den Explorer-Test abgedeckt:
 
 ```bash
 npm.cmd run --silent test:explorer
+npm.cmd run --silent test:desktop
 ```
 
 Der Test startet den verwalteten Server auf einem freien Port, prüft `/api/summary`, liest den Pipeline-Status und
-stoppt den Server wieder kontrolliert.
+stoppt den Server wieder kontrolliert. Der separate Desktop-Test prüft Wiederherstellen, Einblenden, Fokussieren
+und den sicheren Umgang mit fehlenden oder bereits zerstörten Fenstern.
 
 ## Phasenfolge
 
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
 - Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App abgeschlossen und von Felix getestet
-- Phase 7.9: globale Taxonomiedatenbank und Lightroom-Integration planen und schrittweise prüfen
-- Phase 7.10: Synology NAS, Backup, Mehrgerätebetrieb und Restore-Test
-- Phase 8: weiterer funktionaler Ausbau
+- Phase 8: Taxonomie-Pyramide, Squarespace-Portrait, kontrollierte Taxonomiebearbeitung und Soundeditor abgeschlossen
+- Phase 9: globale Taxonomiedatenbank und Lightroom-Integration planen und schrittweise prüfen
+- Phase 10: Synology NAS, Backup, Mehrgerätebetrieb und Restore-Test

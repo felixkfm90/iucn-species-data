@@ -773,3 +773,87 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
   assert.ok(amsel.assetIssues.includes("Spektrogramm fehlt"));
   assert.ok(amsel.assetIssues.includes("Artporträt fehlt"));
 });
+
+test("Soundeditor setzt mehrere Abschnitte zusammen und bewahrt Credits und Lizenz", async (context) => {
+  const editedMp3 = createTestMp3(11);
+  const webp = createTestWebp(13);
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const originalCredits = JSON.parse(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "credits.json"), "utf8"),
+  );
+  const app = await createExplorerServer({
+    repoRoot,
+    port: 0,
+    publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false,
+    soundDurationProbe: async () => 12,
+    soundSegmentRenderer: async ({ outputPath, segments, durationSeconds }) => {
+      assert.equal(durationSeconds, 12);
+      assert.deepEqual(segments, [
+        { start: 1, end: 2.5 },
+        { start: 7, end: 9 },
+      ]);
+      await writeFile(outputPath, editedMp3);
+      return {
+        duration: 12,
+        outputDuration: 3.5,
+        segments: [
+          { start: 1, end: 2.5, duration: 1.5 },
+          { start: 7, end: 9, duration: 2 },
+        ],
+        outputBytes: editedMp3.length,
+      };
+    },
+    spectrogramRenderer: async ({ outputPath }) => {
+      await writeFile(outputPath, webp);
+      return { outputBytes: webp.length };
+    },
+  });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+
+  const previewResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/sound/edit-preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        segments: [
+          { start: 1, end: 2.5 },
+          { start: 7, end: 9 },
+        ],
+      }),
+    },
+  );
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.equal(preview.edit.originalDuration, 12);
+  assert.equal(preview.edit.outputDuration, 3.5);
+  assert.equal(preview.newSound.bytes, editedMp3.length);
+  assert.equal(preview.newSound.credits.url, originalCredits.url);
+  assert.equal(preview.newSound.credits.license, originalCredits.license);
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  assert.deepEqual(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "sound.mp3")),
+    editedMp3,
+  );
+  const savedCredits = JSON.parse(
+    await readFile(join(repoRoot, "species-assets", "Amsel", "credits.json"), "utf8"),
+  );
+  assert.equal(savedCredits.url, originalCredits.url);
+  assert.equal(savedCredits.license, originalCredits.license);
+  const registry = JSON.parse(
+    await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"),
+  );
+  assert.equal(registry.assets.Amsel.sound.edit.outputDuration, 3.5);
+  assert.equal(registry.assets.Amsel.sound.edit.segments.length, 2);
+  assert.equal(registry.assets.Amsel.spectrogram.stale, false);
+});

@@ -536,6 +536,16 @@ Priorisierte Bedienungs- und Ausbauschritte:
    der Taxonomie; Status und Trend stehen links direkt unter den allgemeinen Daten. Tablet und Mobil stapeln die
    Bereiche, bei fehlendem Portrait greift ein Layout-Fallback ohne Leerfläche.
 
+Phase 8 ist seit 2026-07-22 vollständig abgeschlossen. Im Taxonomiebereich können Reich, Stamm, optionaler
+Unterstamm, Klasse, Ordnung und Familie nach Pflichtvorschau und mit Änderungsgrund korrigiert werden. Manuelle
+Korrekturen bleiben bei der nächsten Pipeline erhalten und können auf den automatischen Stand zurückgesetzt werden.
+Details: `docs/taxonomy-edit-workflow.md`.
+
+Der Tierstimmen-Editor kann einen vorhandenen Sound aus bis zu 20 frei gewählten Zeitabschnitten neu
+zusammensetzen. Vor dem Speichern wird eine lokale FFmpeg-Vorschau erzeugt und dem bisherigen Sound
+gegenübergestellt. Quellen- und Lizenzangaben bleiben erhalten; Soundpaket, Sicherung und Spektrogramm werden
+konsistent aktualisiert. Details: `docs/sound-editor.md`.
+
 Seit 2026-07-04 umgesetzt: Im Neue-Art-Schritt `Karte` ist die gefundene oder manuell geprüfte Karte vergrößerbar.
 Im Neue-Art-Sound-Prüfschritt und im Tierstimmen-Quellenbereich wird der Lizenzstatus `frei` oder `NC` sichtbar
 angezeigt. Während des Neue-Art-Assistenten wird der Detailbereich im Hintergrund erst nach Abschluss neu gerendert,
@@ -765,10 +775,15 @@ Der Desktop-Wrapper startet den lokalen Explorer-Server selbst, wartet auf `/api
 Oberflaeche im eigenen App-Fenster. `npm.cmd run species:explorer` bleibt als direkter Browser-/Servermodus fuer
 Debugging verfuegbar. Details: `docs/desktop-shell-plan.md`.
 
+Wird die Desktop-Verknüpfung erneut gestartet, während Electron bereits läuft, aktiviert der zweite Start das
+vorhandene Explorer-Fenster. Ein minimiertes Fenster wird wiederhergestellt, ein verborgenes Fenster eingeblendet
+und anschließend fokussiert; eine zweite schreibende App-Instanz entsteht nicht.
+
 Die technischen Verbesserungen aus dem Repository-Audit wurden am 2026-07-18 abgeschlossen und schließen Phase 7
-ab. Danach folgen in der
-verbindlichen Reihenfolge Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits und Soundeditor, Phase 9 mit globaler
-lokaler Taxonomie-Referenzdatenbank und Lightroom-Integration, Phase 10 mit Mehrgeraetebetrieb, automatischen
+ab. Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits, kontrollierter Taxonomiebearbeitung und Soundeditor wurde
+am 2026-07-22 abgeschlossen. Danach folgen in der
+verbindlichen Reihenfolge Phase 9 mit globaler lokaler Taxonomie-Referenzdatenbank und Lightroom-Integration,
+Phase 10 mit Mehrgeraetebetrieb, automatischen
 Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und Abschlusskriterien stehen in
 `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md` und `docs/multi-device-backup-plan.md`.
 

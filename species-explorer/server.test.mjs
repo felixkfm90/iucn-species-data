@@ -190,6 +190,7 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
     ["app-editor-sound.js", "createSoundEditorController"],
     ["app-editor-portrait.js", "createPortraitEditorController"],
     ["app-editor-general.js", "createGeneralEditorController"],
+    ["app-editor-taxonomy.js", "createTaxonomyEditorController"],
     ["app-species-editor.js", "createSpeciesEditorController"],
     ["app-detail-view.js", "createDetailViewRenderer"],
     ["app-backup-workflow.js", "createBackupWorkflowController"],

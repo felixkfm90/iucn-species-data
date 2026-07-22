@@ -1,3 +1,5 @@
+import { validateTaxonomyOverrideRegistry } from "./taxonomy-overrides.mjs";
+
 const GENERATED_STRING_FIELDS = Object.freeze([
   "URLSlug",
   "Wissenschaftlicher Name",
@@ -100,6 +102,11 @@ export function validateAssetOverridesSchema(value) {
     }
   }
   return issues;
+}
+
+export function validateTaxonomyOverridesSchema(value) {
+  return validateTaxonomyOverrideRegistry(value)
+    .map((issue) => `species-taxonomy-overrides.json: ${issue}`);
 }
 
 export function validateAssessmentMapSchema(value) {

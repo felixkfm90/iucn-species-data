@@ -79,6 +79,7 @@ export async function buildExplorerRevision(repoRoot) {
     "speciesData.json",
     "fehlende_elemente_report.json",
     "species-assets-overrides.json",
+    "species-taxonomy-overrides.json",
     join("docs", "manual-map-overrides.md"),
   ];
 
@@ -118,12 +119,21 @@ export async function buildExplorerRevision(repoRoot) {
 
 export async function buildExplorerModel(repoRoot = REPO_ROOT) {
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
-  const [inputList, generatedList, report, manualMapMarkdown, assetOverrides, collectedAssetBackups] = await Promise.all([
+  const [
+    inputList,
+    generatedList,
+    report,
+    manualMapMarkdown,
+    assetOverrides,
+    taxonomyOverrides,
+    collectedAssetBackups,
+  ] = await Promise.all([
     readJson(join(repoRoot, "species_list.json")),
     readJson(join(repoRoot, "speciesData.json")),
     readJson(join(repoRoot, "fehlende_elemente_report.json")),
     readFile(join(repoRoot, "docs", "manual-map-overrides.md"), "utf8"),
     readJson(join(repoRoot, "species-assets-overrides.json")).catch(() => ({ version: 1, assets: {} })),
+    readJson(join(repoRoot, "species-taxonomy-overrides.json")).catch(() => ({ version: 1, species: {} })),
     collectManagedAssetBackups(assetBackupRoot).catch(() => []),
   ]);
 
@@ -323,6 +333,10 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     }
     inconsistencies.push(...dataIssues, ...assetIssues);
 
+    const taxonomyOverride = taxonomyOverrides.species?.[
+      String(generated?.URLSlug ?? key.replace(/\s+/g, "")).toLocaleLowerCase("de")
+    ] ?? null;
+
     species.push({
       id: generated?.URLSlug ?? key.replace(/\s+/g, ""),
       germanName,
@@ -355,6 +369,9 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         family: formatTaxonomyName(generated?.Family),
         genus: valueOrUnknown(generated?.Genus ?? input?.genus),
         species: valueOrUnknown(generated?.Species ?? input?.species),
+        manuallyEdited: Boolean(taxonomyOverride),
+        manualReason: taxonomyOverride?.reason ?? "",
+        automaticFields: taxonomyOverride?.automaticFields ?? null,
       },
       assets: {
         map: {

@@ -57,6 +57,7 @@ function createOperations(calls, previewPath = null) {
     newSpecies: record("newSpecies"),
     deleteSpecies: record("deleteSpecies"),
     editSpecies: record("editSpecies"),
+    editTaxonomy: record("editTaxonomy"),
     read: record("read"),
     pipelineBackupFile: async ({ response }) => {
       calls.push({ name: "pipelineBackupFile" });
@@ -77,6 +78,11 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     encodedId: "Amsel",
     action: "preview",
   });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/species/Amsel/taxonomy/preview"), {
+    name: "edit-taxonomy",
+    encodedId: "Amsel",
+    action: "preview",
+  });
   assert.deepEqual(matchExplorerRoute("POST", "/api/species/L%C3%B6we/delete/save"), {
     name: "delete-species",
     encodedId: "L%C3%B6we",
@@ -87,6 +93,12 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     encodedId: "Amsel",
     assetType: "sound",
     action: "reject",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/species/Amsel/assets/sound/edit-preview"), {
+    name: "asset",
+    encodedId: "Amsel",
+    assetType: "sound",
+    action: "edit-preview",
   });
   assert.deepEqual(matchExplorerRoute("HEAD", "/api/species/Amsel/assets/map/preview-file"), {
     name: "asset-preview-file",

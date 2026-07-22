@@ -8,6 +8,7 @@ import {
   startManagedExplorerServer,
   stopManagedExplorerServer,
 } from "./server-lifecycle.mjs";
+import { activateExplorerWindow } from "./window-activation.mjs";
 
 const WINDOW_TITLE = "Arten-Explorer";
 const START_PAGE = "data:text/html;charset=utf-8,"
@@ -50,6 +51,7 @@ const START_PAGE = "data:text/html;charset=utf-8,"
 let mainWindow = null;
 let managedServer = null;
 let quitting = false;
+let pendingSecondInstanceActivation = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -68,7 +70,12 @@ function createWindow() {
   });
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadURL(START_PAGE);
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show();
+    if (pendingSecondInstanceActivation && activateExplorerWindow(mainWindow)) {
+      pendingSecondInstanceActivation = false;
+    }
+  });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedAppUrl(url)) return { action: "allow" };
@@ -202,9 +209,7 @@ if (!gotSingleInstanceLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
-    if (!mainWindow) return;
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
+    if (!activateExplorerWindow(mainWindow)) pendingSecondInstanceActivation = true;
   });
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();

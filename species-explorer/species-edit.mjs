@@ -27,6 +27,7 @@ export function createSpeciesEditOperations({
   repoRoot,
   speciesListPath,
   assetOverridesPath,
+  taxonomyOverridesPath,
   assessmentIdsPath,
   manualMapOverridesPath,
   backupDir,
@@ -194,12 +195,14 @@ export function createSpeciesEditOperations({
     const [
       speciesDataText,
       registryText,
+      taxonomyRegistryText,
       assessmentText,
       reportText,
       manualMapText,
     ] = await Promise.all([
       readFile(speciesDataPath, "utf8").catch(() => "[]\n"),
       readFile(assetOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "assets": {}\n}\n'),
+      readFile(taxonomyOverridesPath, "utf8").catch(() => '{\n  "version": 1,\n  "species": {}\n}\n'),
       readFile(assessmentIdsPath, "utf8").catch(() => "{}\n"),
       readFile(reportPath, "utf8").catch(() => ""),
       readFile(manualMapOverridesPath, "utf8").catch(() => ""),
@@ -207,6 +210,9 @@ export function createSpeciesEditOperations({
     const speciesData = JSON.parse(speciesDataText);
     const registry = JSON.parse(registryText);
     registry.assets ??= {};
+    const taxonomyRegistry = JSON.parse(taxonomyRegistryText);
+    taxonomyRegistry.version = 1;
+    taxonomyRegistry.species ??= {};
     const assessmentIds = JSON.parse(assessmentText);
     const report = reportText ? JSON.parse(reportText) : null;
     const renameErrors = validateGermanRename({
@@ -284,6 +290,7 @@ export function createSpeciesEditOperations({
     };
 
     let registryChanged = false;
+    let taxonomyRegistryChanged = false;
     let assessmentChanged = false;
     let speciesDataChanged = false;
     let reportChanged = false;
@@ -338,6 +345,12 @@ export function createSpeciesEditOperations({
       }
     }
 
+    if (scientificNameChanged && taxonomyRegistry.species[oldSlug]) {
+      taxonomyRegistry.species[newSlug] = taxonomyRegistry.species[oldSlug];
+      if (newSlug !== oldSlug) delete taxonomyRegistry.species[oldSlug];
+      taxonomyRegistryChanged = true;
+    }
+
     const metadataUpdates = [];
     if ((germanNameChanged || scientificNameChanged) && existsSync(oldAssetDirectory)) {
       metadataUpdates.push("credits.json", "portrait.json");
@@ -354,6 +367,7 @@ export function createSpeciesEditOperations({
       await writeJsonAtomic(speciesListPath, inputList);
       if (speciesDataChanged) await writeJsonAtomic(speciesDataPath, speciesData);
       if (registryChanged) await writeJsonAtomic(assetOverridesPath, registry);
+      if (taxonomyRegistryChanged) await writeJsonAtomic(taxonomyOverridesPath, taxonomyRegistry);
       if (assessmentChanged) await writeJsonAtomic(assessmentIdsPath, assessmentIds);
       if (reportChanged && report) await writeJsonAtomic(reportPath, report);
       if (manualMapTextNext !== manualMapText) await writeTextAtomic(manualMapOverridesPath, manualMapTextNext);
@@ -375,6 +389,9 @@ export function createSpeciesEditOperations({
       await writeFile(speciesListPath, sourceText, "utf8").catch(() => {});
       if (speciesDataChanged) await writeFile(speciesDataPath, speciesDataText, "utf8").catch(() => {});
       if (registryChanged) await writeFile(assetOverridesPath, registryText, "utf8").catch(() => {});
+      if (taxonomyRegistryChanged) {
+        await writeFile(taxonomyOverridesPath, taxonomyRegistryText, "utf8").catch(() => {});
+      }
       if (assessmentChanged) await writeFile(assessmentIdsPath, assessmentText, "utf8").catch(() => {});
       if (reportChanged && reportText) await writeFile(reportPath, reportText, "utf8").catch(() => {});
       if (manualMapTextNext !== manualMapText) {

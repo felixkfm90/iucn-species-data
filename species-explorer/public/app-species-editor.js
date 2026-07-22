@@ -31,6 +31,7 @@
       createSoundEditorController,
       createPortraitEditorController,
       createGeneralEditorController,
+      createTaxonomyEditorController,
       backupRetentionText,
     } = dependencies;
 
@@ -79,6 +80,10 @@
       const soundAutoSearchButton = elements.detailPanel.querySelector(".sound-auto-search-button");
       const soundDeleteButton = elements.detailPanel.querySelector(".sound-delete-button");
       const soundRestoreButton = elements.detailPanel.querySelector(".sound-restore-button");
+      const soundSegmentEditor = elements.detailPanel.querySelector(".sound-segment-editor");
+      const soundSegmentList = elements.detailPanel.querySelector(".sound-segment-list");
+      const soundSegmentAddButton = elements.detailPanel.querySelector(".sound-segment-add");
+      const soundSegmentPreviewButton = elements.detailPanel.querySelector(".sound-segment-preview-button");
       const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
       const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
       const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
@@ -96,6 +101,14 @@
       const portraitSaveButton = elements.detailPanel.querySelector(".portrait-save-button");
       const portraitDeleteButton = elements.detailPanel.querySelector(".portrait-delete-button");
       const portraitRestoreButton = elements.detailPanel.querySelector(".portrait-restore-button");
+      const taxonomyFields = [...elements.detailPanel.querySelectorAll("[data-taxonomy-field]")];
+      const taxonomyReasonInput = elements.detailPanel.querySelector(".taxonomy-reason-input");
+      const taxonomyMessage = elements.detailPanel.querySelector(".taxonomy-edit-message");
+      const taxonomyPreview = elements.detailPanel.querySelector(".taxonomy-edit-preview");
+      const taxonomyPreviewRows = elements.detailPanel.querySelector(".taxonomy-edit-preview-rows");
+      const taxonomyPreviewButton = elements.detailPanel.querySelector(".taxonomy-preview-button");
+      const taxonomySaveButton = elements.detailPanel.querySelector(".taxonomy-save-button");
+      const taxonomyRestoreButton = elements.detailPanel.querySelector(".taxonomy-restore-button");
       if (!dialog || !openButtons.length || !closeButtons.length || !form || !preview || !previewRows) return;
 
       const mapEditorController = createMapEditorController({
@@ -147,6 +160,10 @@
         soundRejectCurrentButton,
         soundAutoSearchButton,
         soundDeleteButton,
+        soundSegmentEditor,
+        soundSegmentList,
+        soundSegmentAddButton,
+        soundSegmentPreviewButton,
         soundFileInput,
         soundReasonInput,
         releaseAllAudioElements,
@@ -236,26 +253,53 @@
         setMessage,
       } = generalEditorController;
 
+      const taxonomyEditorController = createTaxonomyEditorController({
+        species,
+        state,
+        fields: taxonomyFields,
+        reasonInput: taxonomyReasonInput,
+        message: taxonomyMessage,
+        preview: taxonomyPreview,
+        previewRows: taxonomyPreviewRows,
+        previewButton: taxonomyPreviewButton,
+        saveButton: taxonomySaveButton,
+        restoreButton: taxonomyRestoreButton,
+        closeButtons,
+        fetchJson,
+        escapeHtml,
+        backupRetentionText,
+        closeEditDialog: () => closeEditDialog(),
+        loadData,
+      });
+      const {
+        setMessage: setTaxonomyMessage,
+        resetPreview: resetTaxonomyPreview,
+        handleInput: handleTaxonomyInput,
+      } = taxonomyEditorController;
+
 
       const sectionLabels = {
         manual: "Allgemeine Daten bearbeiten",
         portrait: "Artporträt bearbeiten",
         map: "Verbreitungskarte bearbeiten",
         sound: "Tierstimme bearbeiten",
+        taxonomy: "Taxonomie bearbeiten",
       };
 
       const openEditor = (section = "manual") => {
-        const activeSection = ["manual", "portrait", "map", "sound"].includes(section) ? section : "manual";
+        const activeSection = ["manual", "portrait", "map", "sound", "taxonomy"].includes(section) ? section : "manual";
         form.reset();
         resetPreview();
         resetMapPreview();
         resetSoundPreview();
         resetPortraitPreview();
         resetPortraitPrompt();
+        resetTaxonomyPreview();
         setMessage();
         setMapMessage();
         setSoundMessage();
         setPortraitMessage();
+        setTaxonomyMessage();
         if (activeSection === "manual") {
           resetGeneralEditorForOpen();
         }
@@ -326,9 +370,18 @@
       assetMaintenanceController.bind();
 
       form.addEventListener("input", (event) => {
+        if (event.target.closest(".taxonomy-edit-section")) {
+          handleTaxonomyInput();
+          return;
+        }
         if (event.target.closest(".sound-edit-section")) {
           resetSoundPreview();
-          setSoundMessage("Sound oder Credits geändert. Bitte die Vorschau erneut erstellen.", "info");
+          setSoundMessage(
+            event.target.closest(".sound-segment-editor")
+              ? "Schnittmarken geändert. Bitte die Schnittvorschau erneut erstellen."
+              : "Sound oder Credits geändert. Bitte die Vorschau erneut erstellen.",
+            "info",
+          );
           return;
         }
         if (event.target.closest(".portrait-edit-section")) {

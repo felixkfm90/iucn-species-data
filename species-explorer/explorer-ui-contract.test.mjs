@@ -16,6 +16,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appNewSpeciesWorkflowSource,
     appEditorFormSource,
     appEditorGeneralSource,
+    appEditorTaxonomySource,
     appEditorMapSource,
     appEditorSoundSource,
     appEditorPortraitSource,
@@ -84,6 +85,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-new-species-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-form.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-general.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-editor-taxonomy.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-map.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-sound.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-portrait.js", import.meta.url), "utf8"),
@@ -152,6 +154,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appSource,
     appNewSpeciesWorkflowSource,
     appEditorGeneralSource,
+    appEditorTaxonomySource,
     appEditorMapSource,
     appEditorSoundSource,
     appEditorPortraitSource,
@@ -529,7 +532,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appSpeciesActionsSource, /releaseDetailMedia\(\)/);
   assert.match(speciesDeleteSource, /requiresAssetDeletion:\s*!species\.inInput/);
   assert.match(speciesDeleteSource, /Art ist bereits aus der Eingabeliste entfernt/);
-  assert.match(modularAppSource, /Taxonomie ist gesperrt\./);
+  assert.match(modularAppSource, /Taxonomie bearbeiten/);
+  assert.match(modularAppSource, /Automatische Werte wiederherstellen/);
+  assert.match(modularAppSource, /taxonomy\/preview/);
+  assert.match(modularAppSource, /taxonomy\/save/);
   assert.match(modularAppSource, /URL-Slug entsperren\?/);
   assert.match(modularAppSource, /Ja, entsperren/);
   assert.match(appMeasurementsSource, /function parseManualMeasurement/);

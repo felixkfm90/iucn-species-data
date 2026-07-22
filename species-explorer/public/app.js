@@ -28,6 +28,8 @@ const explorerPortraitEditor = window.SpeciesExplorerPortraitEditor;
 if (!explorerPortraitEditor) throw new Error("Explorer-Porträtbearbeitung konnte nicht geladen werden.");
 const explorerGeneralEditor = window.SpeciesExplorerGeneralEditor;
 if (!explorerGeneralEditor) throw new Error("Explorer-Allgemeindatenbearbeitung konnte nicht geladen werden.");
+const explorerTaxonomyEditor = window.SpeciesExplorerTaxonomyEditor;
+if (!explorerTaxonomyEditor) throw new Error("Explorer-Taxonomiebearbeitung konnte nicht geladen werden.");
 const explorerSettings = window.SpeciesExplorerSettings;
 if (!explorerSettings) throw new Error("Explorer-Einstellungen konnten nicht geladen werden.");
 const explorerSpeciesActions = window.SpeciesExplorerSpeciesActions;
@@ -480,6 +482,7 @@ const { setupSpeciesEditor } = explorerSpeciesEditor.createSpeciesEditorControll
   createSoundEditorController: explorerSoundEditor.createSoundEditorController,
   createPortraitEditorController: explorerPortraitEditor.createPortraitEditorController,
   createGeneralEditorController: explorerGeneralEditor.createGeneralEditorController,
+  createTaxonomyEditorController: explorerTaxonomyEditor.createTaxonomyEditorController,
   backupRetentionText,
 });
 

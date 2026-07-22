@@ -255,7 +255,10 @@
           </section>
 
           <section class="data-section">
-            <h3 class="section-title">Taxonomie</h3>
+            <div class="section-heading">
+              <h3 class="section-title">Taxonomie</h3>
+              ${species.inGenerated ? inlineEditButton("taxonomy") : ""}
+            </div>
             <dl class="data-list">
               ${dataRows([
                 ["Reich", species.taxonomy.kingdom],
@@ -302,7 +305,7 @@
             <header class="edit-dialog-header">
               <div>
                 <h3 id="edit-dialog-title">${escapeHtml(species.germanName)} bearbeiten</h3>
-                <p>${escapeHtml(species.scientificName)} · Taxonomie ist gesperrt.</p>
+                <p>${escapeHtml(species.scientificName)} · Name und automatische Daten werden kontrolliert bearbeitet.</p>
               </div>
               <button class="edit-cancel edit-close" type="button" aria-label="Bearbeiten schließen">×</button>
             </header>
@@ -388,6 +391,53 @@
                   Speichern merkt die Änderung lokal vor. Veröffentlichung erfolgt anschließend über „Änderungen übertragen“.
                 </p>
               </section>
+            </section>
+
+            <section class="taxonomy-edit-section">
+              <header>
+                <div>
+                  <h4>Taxonomie bearbeiten</h4>
+                  <p>Gattung und Art bleiben an den wissenschaftlichen Namen gekoppelt. Manuelle Fachbezeichnungen bleiben bei Pipeline-Läufen erhalten.</p>
+                </div>
+                ${species.taxonomy.manuallyEdited ? '<span class="taxonomy-care-state">Manuell angepasst</span>' : ""}
+              </header>
+
+              <div class="taxonomy-edit-fields">
+                ${[
+                  ["Kingdom", "Reich", species.taxonomy.kingdom, false],
+                  ["Phylum", "Stamm", species.taxonomy.phylum, false],
+                  ["Subphylum", "Unterstamm · optional", species.taxonomy.subphylum === "Unbekannt" ? "" : species.taxonomy.subphylum, true],
+                  ["Class", "Klasse", species.taxonomy.className, false],
+                  ["Order", "Ordnung", species.taxonomy.order, false],
+                  ["Family", "Familie", species.taxonomy.family, false],
+                ].map(([key, label, value]) => `
+                  <label data-field="${key}">
+                    <span>${label}</span>
+                    <input data-taxonomy-field="${key}" maxlength="160" value="${escapeHtml(value)}">
+                  </label>
+                `).join("")}
+                <label class="taxonomy-reason-field" data-field="reason">
+                  <span>Änderungsgrund</span>
+                  <textarea class="taxonomy-reason-input" maxlength="500" rows="2" placeholder="Warum wird die automatische Taxonomie angepasst?">${escapeHtml(species.taxonomy.manualReason || "")}</textarea>
+                </label>
+              </div>
+
+              <p class="edit-message taxonomy-edit-message" hidden></p>
+              <section class="edit-preview taxonomy-edit-preview" hidden>
+                <h4>Diff-Vorschau</h4>
+                <div class="edit-table-wrap">
+                  <table>
+                    <thead><tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr></thead>
+                    <tbody class="taxonomy-edit-preview-rows"></tbody>
+                  </table>
+                </div>
+                <p class="edit-warning">Speichern merkt die Änderung lokal vor. Veröffentlichung erfolgt über „Änderungen übertragen“.</p>
+              </section>
+              <div class="taxonomy-edit-actions">
+                ${species.taxonomy.manuallyEdited ? '<button class="taxonomy-restore-button" type="button">Automatische Werte wiederherstellen</button>' : ""}
+                <button class="taxonomy-preview-button" type="button">Änderungen prüfen</button>
+                <button class="taxonomy-save-button" type="button" disabled>Jetzt speichern</button>
+              </div>
             </section>
 
               <section class="portrait-edit-section">
@@ -590,6 +640,35 @@
                     <span>${escapeHtml(species.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
                   </div>
                   <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
+                </section>
+
+                <section class="sound-segment-editor">
+                  <header>
+                    <div>
+                      <h5>Sound zuschneiden</h5>
+                      <p>Ein oder mehrere Abschnitte festlegen. Mehrere Abschnitte werden in der angezeigten Reihenfolge zusammengesetzt.</p>
+                    </div>
+                    <button class="sound-segment-add" type="button">Abschnitt hinzufügen</button>
+                  </header>
+                  <div class="sound-segment-list">
+                    <div class="sound-segment-row">
+                      <strong>Abschnitt 1</strong>
+                      <label>
+                        <span>Start (Sekunden)</span>
+                        <input class="sound-segment-start" type="number" min="0" step="0.01" value="0">
+                      </label>
+                      <button class="sound-segment-use-start" type="button">Aktuelle Position</button>
+                      <label>
+                        <span>Ende (Sekunden)</span>
+                        <input class="sound-segment-end" type="number" min="0" step="0.01" placeholder="Soundende">
+                      </label>
+                      <button class="sound-segment-use-end" type="button">Aktuelle Position</button>
+                      <button class="sound-segment-remove danger" type="button" disabled>Entfernen</button>
+                    </div>
+                  </div>
+                  <div class="sound-segment-actions">
+                    <button class="sound-segment-preview-button" type="button">Schnittvorschau erstellen</button>
+                  </div>
                 </section>
               ` : ""}
 

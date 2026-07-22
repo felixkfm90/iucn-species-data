@@ -9,6 +9,7 @@ const TRACKED_PROJECT_PATHS = Object.freeze([
   "fehlende_elemente_report.json",
   "lastSavedAssessmentId.json",
   "species-assets-overrides.json",
+  "species-taxonomy-overrides.json",
   "docs/manual-map-overrides.md",
   "species-assets",
 ]);

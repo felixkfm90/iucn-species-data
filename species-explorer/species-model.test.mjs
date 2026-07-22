@@ -260,6 +260,7 @@ test("Reportvergleiche, Metadaten und oeffentliche Plaene bleiben auf API-Daten 
     obsoleteAssetDirectories: [],
     obsoleteAssessmentKeys: ["Amsel"],
     obsoleteOverrideKeys: [],
+    obsoleteTaxonomyOverrideKeys: [],
     reclaimableBytes: 42,
     hasWork: true,
   }), {
@@ -269,6 +270,7 @@ test("Reportvergleiche, Metadaten und oeffentliche Plaene bleiben auf API-Daten 
     obsoleteAssetDirectories: [],
     obsoleteAssessmentKeys: ["Amsel"],
     obsoleteOverrideKeys: [],
+    obsoleteTaxonomyOverrideKeys: [],
     reclaimableBytes: 42,
     hasWork: true,
   });

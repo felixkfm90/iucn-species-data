@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-18
+Stand: 2026-07-22
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -882,7 +882,7 @@ Aktuelle Planung:
   `/wildlife/namibia/acinonyxjubatus` wurde anschließend in Squarespace live geschaltet und mit HTTP 200 sowie dem
   erwarteten Artinhalt nachgeprüft. Vor Phase 8 bleibt damit auch kein externer Link-Blocker offen.
 - Phase 8 - Taxonomie-Pyramide und Funktionsausbau:
-  in Arbeit seit 2026-07-18. Phase-8-Änderungen entstehen auf einem separaten Arbeitsbranch und werden über die
+  abgeschlossen am 2026-07-22. Phase-8-Änderungen entstanden über die
   nur lesende lokale Squarespace-nahe Vorschau unter `127.0.0.1:4188` in Desktop-, Tablet- und Mobilbreite geprüft.
   Danach folgen eine nicht öffentlich verlinkte Squarespace-Testseite und die ausdrückliche Freigabe durch Felix;
   erst dann sind Übernahme nach `main`, erfolgreicher Pages-Lauf und produktive Footer-`?v=`-Erhöhung erlaubt.
@@ -912,8 +912,20 @@ Aktuelle Planung:
   stapeln die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
   `species-portrait.js` erzeugt den Portraitcontainer dynamisch und ordnet den vorhandenen Soundcontainer ein,
   sodass bestehende Artseiten keine manuelle HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-portrait.js?v=1.0.1`. Danach folgen
-  kontrollierte Taxonomiebearbeitung und fest eingeplanter Soundeditor.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-portrait.js?v=1.0.1`.
+  Seit 2026-07-22 kann der Explorer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie kontrolliert
+  korrigieren. Ein Änderungsgrund, Vorschau-Token, Quell-Hashes und lokale Sicherung sind Pflicht. Manuelle Werte
+  stehen getrennt in `species-taxonomy-overrides.json`, werden nach dem automatischen Datenabruf erneut angewendet
+  und können auf die zuletzt bekannten automatischen Werte zurückgesetzt werden. Gattung und Art bleiben dem
+  geschützten Workflow für wissenschaftliche Namensänderungen zugeordnet. Details:
+  `docs/taxonomy-edit-workflow.md`.
+  Der Phase-8-Soundeditor verarbeitet bis zu 20 frei gewählte Start-/Endabschnitte in der eingegebenen Reihenfolge.
+  FFmpeg erzeugt eine geprüfte MP3-Vorschau; vor der Übernahme stehen bisheriger und bearbeiteter Sound zum direkten
+  Vergleich bereit. Beim Speichern bleiben Quellen- und Lizenzdaten erhalten, das bisherige Soundpaket wird
+  gesichert und das Spektrogramm aus der neuen MP3 neu erzeugt. Details: `docs/sound-editor.md`.
+  Ein zweiter Start der Electron-Verknüpfung öffnet keine weitere Instanz, sondern stellt das vorhandene Fenster
+  wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
+  und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
   getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:

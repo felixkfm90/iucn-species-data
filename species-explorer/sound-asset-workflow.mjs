@@ -10,6 +10,7 @@ import {
 import { pruneAssetBackups, writeManagedAssetBackup } from "./asset-backups.mjs";
 import { findEditableSpecies } from "./species-model.mjs";
 import {
+  inspectMp3,
   inspectWebp,
   isNonCommercialLicense,
   validateSoundPreviewPayload,
@@ -32,6 +33,8 @@ export function createSoundAssetOperations({
   publishAssetChanges,
   rebuildReportAfterAssetSave,
   spectrogramRenderer,
+  soundDurationProbe,
+  soundSegmentRenderer,
   runCommandCapture,
   synchronizeProjectStatusForPublication,
   rejectedSoundSourceFromCredits,
@@ -190,6 +193,124 @@ export function createSoundAssetOperations({
     };
   }
 
+  async function previewEditedSoundAsset(id, payload) {
+    cleanupPreviewTokens();
+    if (getPipelineProcess() || getPipelineState().status === "running" || getPipelineState().status === "awaiting-review") {
+      const error = new Error("Während eines Pipeline-Laufs können keine Sounds bearbeitet werden");
+      error.statusCode = 409;
+      throw error;
+    }
+    const species = findEditableSpecies(getModel(), id);
+    if (!species?.inInput) {
+      const error = new Error("Art wurde nicht gefunden oder ist nicht bearbeitbar");
+      error.statusCode = species ? 409 : 404;
+      throw error;
+    }
+    const source = await soundAssetSourceRevision(species);
+    if (!source.soundBuffer.length || !source.creditsBuffer.length) {
+      const error = new Error("Für diese Art ist kein vollständiges Soundpaket vorhanden");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    let credits;
+    try {
+      credits = JSON.parse(source.creditsBuffer.toString("utf8"));
+    } catch {
+      const error = new Error("Die vorhandenen Sound-Credits sind ungültig");
+      error.statusCode = 409;
+      throw error;
+    }
+    const ffmpegPath = resolveFfmpegPath({ repoRoot });
+    const durationSeconds = await soundDurationProbe({
+      inputPath: source.soundPath,
+      ffmpegPath,
+    });
+    const token = randomUUID();
+    const expiresAt = Date.now() + previewTokenTtlMs;
+    await mkdir(assetStagingRoot, { recursive: true });
+    const stagingPath = join(assetStagingRoot, `${token}.mp3`);
+    let rendered;
+    try {
+      rendered = await soundSegmentRenderer({
+        inputPath: source.soundPath,
+        outputPath: stagingPath,
+        segments: payload?.segments,
+        durationSeconds,
+        ffmpegPath,
+      });
+      inspectMp3(await readFile(stagingPath));
+    } catch (error) {
+      await unlink(stagingPath).catch(() => {});
+      error.statusCode ??= 400;
+      throw error;
+    }
+
+    const stagedBuffer = await readFile(stagingPath);
+    const registry = JSON.parse(source.registryText);
+    const soundOverride = registry.assets?.[species.safeName]?.sound ?? {};
+    const sha256 = createHash("sha256").update(stagedBuffer).digest("hex");
+    const normalizedCredits = {
+      ...credits,
+      scientific_name: species.scientificName,
+      german_name: species.germanName,
+    };
+    const creditsText = `${JSON.stringify(normalizedCredits, null, 2)}\n`;
+    const creditsSha256 = createHash("sha256").update(creditsText).digest("hex");
+    const isNc = soundOverride.isNc ?? isNonCommercialLicense(normalizedCredits.license);
+    const reason = "Sound in der App zugeschnitten; Quellen- und Lizenzdaten unverändert übernommen.";
+    previewTokens.set(token, {
+      type: "sound-asset",
+      id,
+      safeName: species.safeName,
+      reason,
+      originalName: soundOverride.originalFileName || "sound.mp3",
+      credits: normalizedCredits,
+      creditsText,
+      creditsSha256,
+      stagingPath,
+      sha256,
+      bytes: stagedBuffer.length,
+      sourceRevision: source.revision,
+      expiresAt,
+      isNc,
+      edit: {
+        originalDuration: rendered.duration,
+        outputDuration: rendered.outputDuration,
+        segments: rendered.segments,
+      },
+    });
+    return {
+      token,
+      expiresAt: new Date(expiresAt).toISOString(),
+      species: {
+        id: species.id,
+        germanName: species.germanName,
+        scientificName: species.scientificName,
+      },
+      currentSound: {
+        exists: true,
+        bytes: source.soundBuffer.length,
+        url: `/assets/${encodeURIComponent(species.safeName)}/sound.mp3?current=${token}`,
+        credits: species.credits ?? normalizedCredits,
+      },
+      newSound: {
+        bytes: stagedBuffer.length,
+        sha256,
+        url: `/api/species/${encodeURIComponent(id)}/assets/sound/preview-file?token=${encodeURIComponent(token)}`,
+        credits: normalizedCredits,
+        isNc,
+      },
+      edit: previewTokens.get(token).edit,
+      reason,
+      warnings: [
+        "Die Abschnitte werden in der angegebenen Reihenfolge zu einem neuen MP3 zusammengesetzt.",
+        "Quellen- und Lizenzdaten bleiben unverändert erhalten.",
+        "Beim Speichern werden das bisherige Soundpaket gesichert und das Spektrogramm neu erzeugt.",
+      ],
+    };
+  }
+
   async function saveSoundAsset(id, payload) {
     cleanupPreviewTokens();
     const token = String(payload?.token ?? "");
@@ -327,6 +448,7 @@ export function createSoundAssetOperations({
         sha256: preview.sha256,
         creditsSha256: preview.creditsSha256,
         isNc: preview.isNc,
+        ...(preview.edit ? { edit: preview.edit } : {}),
       };
       registry.assets[species.safeName].spectrogram = {
         stale: false,
@@ -562,6 +684,7 @@ export function createSoundAssetOperations({
 
   return {
     previewSoundAsset,
+    previewEditedSoundAsset,
     saveSoundAsset,
     rejectCurrentSoundAsset,
     soundAssetSourceRevision,

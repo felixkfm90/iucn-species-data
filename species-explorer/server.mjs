@@ -5,6 +5,10 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { renderSpectrogram } from "../scripts/spectrogram-renderer.mjs";
+import {
+  probeSoundDuration,
+  renderSoundSegments,
+} from "../scripts/sound-segment-editor.mjs";
 import { createSessionToken } from "./request-security.mjs";
 import { renderPortrait } from "../scripts/portrait-renderer.mjs";
 import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
@@ -18,6 +22,7 @@ import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
 import { createSpeciesDeleteOperations } from "./species-delete.mjs";
 import { createSpeciesEditOperations } from "./species-edit.mjs";
+import { createTaxonomyEditOperations } from "./taxonomy-edit.mjs";
 import { createMapAssetOperations } from "./map-asset-workflow.mjs";
 import { createSoundAssetOperations } from "./sound-asset-workflow.mjs";
 import { createPortraitAssetOperations } from "./portrait-asset-workflow.mjs";
@@ -78,6 +83,8 @@ export async function createExplorerServer({
   rebuildReportAfterAssetSave = true,
   nasBackupRoot = process.env.IUCN_NAS_BACKUP_DIR || DEFAULT_NAS_BACKUP_ROOT,
   spectrogramRenderer = renderSpectrogram,
+  soundDurationProbe = probeSoundDuration,
+  soundSegmentRenderer = renderSoundSegments,
   portraitRenderer = renderPortrait,
   mapImageRenderer = renderMapJpeg,
   sessionProtection = true,
@@ -89,7 +96,9 @@ export async function createExplorerServer({
   const previewTokens = new Map();
   const sessionToken = createSessionToken();
   const speciesListPath = join(repoRoot, "species_list.json");
+  const speciesDataPath = join(repoRoot, "speciesData.json");
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
+  const taxonomyOverridesPath = join(repoRoot, "species-taxonomy-overrides.json");
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
   const manualMapOverridesPath = join(repoRoot, "docs", "manual-map-overrides.md");
   const backupDir = join(repoRoot, "species-explorer", "backups");
@@ -267,12 +276,15 @@ export async function createExplorerServer({
   });
   const {
     previewSoundAsset,
+    previewEditedSoundAsset,
     saveSoundAsset,
     rejectCurrentSoundAsset,
     soundAssetSourceRevision,
   } = createSoundAssetOperations({
     ...assetOperationContext,
     spectrogramRenderer,
+    soundDurationProbe,
+    soundSegmentRenderer,
     rejectedSoundSourceFromCredits,
     addRejectedSoundSource,
   });
@@ -351,6 +363,7 @@ export async function createExplorerServer({
     repoRoot,
     speciesListPath,
     assetOverridesPath,
+    taxonomyOverridesPath,
     assessmentIdsPath,
     manualMapOverridesPath,
     backupDir,
@@ -364,6 +377,23 @@ export async function createExplorerServer({
     readJson,
     writeJsonAtomic,
     writeTextAtomic,
+  });
+
+  const {
+    previewTaxonomyEdit,
+    saveTaxonomyEdit,
+  } = createTaxonomyEditOperations({
+    speciesDataPath,
+    taxonomyOverridesPath,
+    backupDir,
+    previewTokens,
+    previewTokenTtlMs: PREVIEW_TOKEN_TTL_MS,
+    cleanupPreviewTokens,
+    getModel: () => model,
+    refreshModel,
+    hashText,
+    compactTimestamp,
+    writeJsonAtomic,
   });
 
   const requestHandler = createExplorerRequestHandler({
@@ -413,6 +443,7 @@ export async function createExplorerServer({
         }
         if (assetType === "sound") {
           if (action === "reject") return rejectCurrentSoundAsset(id);
+          if (action === "edit-preview") return previewEditedSoundAsset(id, payload);
           return action === "preview"
             ? previewSoundAsset(id, payload)
             : saveSoundAsset(id, payload);
@@ -453,6 +484,11 @@ export async function createExplorerServer({
         return action === "preview"
           ? previewSpeciesEdit(id, payload)
           : saveSpeciesEdit(id, payload);
+      },
+      async editTaxonomy({ id, action, payload }) {
+        return action === "preview"
+          ? previewTaxonomyEdit(id, payload)
+          : saveTaxonomyEdit(id, payload);
       },
       async read({ resource }) {
         if (resource === "summary") {

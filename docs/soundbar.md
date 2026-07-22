@@ -1,6 +1,6 @@
 # Soundbar
 
-Stand: 2026-06-19
+Stand: 2026-07-22
 
 Ziel von Phase 5.4 und Phase 6.7: Der Tierstimmen-Player soll sich wie eine ordentliche kompakte Soundbar anfuehlen:
 klare Play-Bedienung, grafische Tonspur, stabile Wiedergabe, Lautstaerke- und Tempo-Regler, reduzierte sichtbare
@@ -77,11 +77,18 @@ Aktuelle Umsetzung:
 Das ist stabiler fuer Squarespace und mobile Geraete als eine vollstaendige Spektrogramm-Berechnung bei jedem
 Seitenaufruf.
 
-Aktueller Stand:
+Aktuelle Zähler stehen ausschließlich in `docs/project-status.md`. Der Zielstil bleibt ein heller Hintergrund mit
+dunklen Graustufen-Frequenzspuren, Rand oben und unten sowie einem Frequenzbereich bis 18 kHz.
 
-- 47 produktive `spectrogram.webp`-Dateien erzeugt.
-- Gesamtgroesse: ca. 1,22 MB.
-- Zielstil: heller Hintergrund, dunkle Graustufen-Frequenzspuren, Rand oben/unten, Frequenzbereich bis 18 kHz.
+## Soundeditor im Arten-Explorer
+
+Seit Phase 8 kann ein vorhandener Sound direkt im lokalen Arten-Explorer zugeschnitten werden. Bis zu 20
+Start-/Endabschnitte werden in der eingegebenen Reihenfolge zu einer neuen MP3 zusammengesetzt. Die serverseitige
+FFmpeg-Vorschau steht dem bisherigen Sound vor dem Speichern gegenüber; die Player stoppen sich gegenseitig.
+
+Bei der Übernahme bleiben Quelle, Urheber, Original-URL und Lizenz unverändert. Das bisherige Soundpaket wird lokal
+gesichert, `sound.mp3` ersetzt und `spectrogram.webp` aus der neuen Datei neu erzeugt. Details und Grenzwerte stehen
+in `docs/sound-editor.md`.
 
 ## Squarespace-Anpassung
 

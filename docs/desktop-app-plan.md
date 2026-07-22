@@ -4,7 +4,7 @@
 > Phase 7 fest. Der aktuelle Betriebsablauf steht in `README.md`, der aktuelle Projektstatus in
 > `docs/project-status.md` und die weitere Priorisierung in `docs/roadmap.md`.
 
-Stand: 2026-07-12
+Stand: 2026-07-22
 
 Ziel von Phase 7: Eine lokale Bedienoberflaeche schaffen, mit der Arten, manuelle Daten, Assets, Sounds, Karten,
 Credits, Reports und Pipeline-Status gepflegt bzw. geprueft werden koennen, ohne direkt in JSON-Dateien und Ordnern
@@ -696,7 +696,21 @@ Priorisierte nächste Ausbauschritte:
 - lokalen Server automatisch starten, per Healthcheck überwachen und beim Schließen kontrolliert beenden
 - kein manuelles Browserfenster und kein manuelles Öffnen von `127.0.0.1:4177`
 - belegte Ports, Serverabstürze und zweite schreibende Instanzen verständlich behandeln
+- seit 2026-07-22 aktiviert ein zweiter Start das bereits vorhandene Fenster: minimierte Fenster werden
+  wiederhergestellt, verborgene eingeblendet und anschließend fokussiert
+- die Aktivierungslogik ist in `desktop/window-activation.mjs` getrennt und über `npm.cmd run --silent test:desktop`
+  direkt geprüft
 - technische Detailplanung: `docs/desktop-shell-plan.md`
+
+### Phase-8-Erweiterungen im Explorer
+
+- Kontrollierte Taxonomiebearbeitung für Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie mit
+  Änderungsgrund, Diff-Vorschau, Quell-Hashschutz, lokaler Sicherung und Wiederherstellung der automatischen Werte.
+  Manuelle Overrides überleben spätere Pipeline-Läufe. Details: `docs/taxonomy-edit-workflow.md`.
+- Soundeditor für bis zu 20 Start-/Endabschnitte. Eine FFmpeg-Vorschau wird vor der Übernahme mit dem bisherigen
+  Sound verglichen; Credits und Lizenz bleiben erhalten, Soundpaket und Spektrogramm werden konsistent neu aufgebaut.
+  Details: `docs/sound-editor.md`.
+- Phase 8 ist nach Unit-, API-, UI-, Desktop- und vollständigem Qualitätslauf am 2026-07-22 abgeschlossen.
 
 ### 7.9 Globale Taxonomiedatenbank und Lightroom-Integration
 

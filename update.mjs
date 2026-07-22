@@ -21,6 +21,12 @@ import {
   commonsSoundRejectionKey,
   normalizeSoundRejectionKey,
 } from "./scripts/sound-rejection-key.mjs";
+import {
+  applyTaxonomyOverride,
+  createEmptyTaxonomyOverrideRegistry,
+  synchronizeAutomaticTaxonomyFields,
+  validateTaxonomyOverrideRegistry,
+} from "./scripts/taxonomy-overrides.mjs";
 
 const nativeFetch = globalThis.fetch;
 if (typeof nativeFetch !== "function") {
@@ -43,6 +49,7 @@ const SOUND_CANDIDATE_RETRY_LIMIT = 12;
 // Assessment-ID Trackfile (für Karten-Caching)
 const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
 const ASSET_OVERRIDES_FILE = "./species-assets-overrides.json";
+const TAXONOMY_OVERRIDES_FILE = "./species-taxonomy-overrides.json";
 let lastSavedAssessmentId = {};
 if (fs.existsSync(ASSESSMENT_TRACK_FILE)) {
   lastSavedAssessmentId = JSON.parse(fs.readFileSync(ASSESSMENT_TRACK_FILE, "utf8"));
@@ -55,6 +62,15 @@ if (fs.existsSync(ASSET_OVERRIDES_FILE)) {
   } catch (error) {
     console.warn(`⚠ Asset-Overrides konnten nicht gelesen werden: ${error.message}`);
   }
+}
+let taxonomyOverrides = createEmptyTaxonomyOverrideRegistry();
+if (fs.existsSync(TAXONOMY_OVERRIDES_FILE)) {
+  const parsed = JSON.parse(fs.readFileSync(TAXONOMY_OVERRIDES_FILE, "utf8"));
+  const issues = validateTaxonomyOverrideRegistry(parsed);
+  if (issues.length) {
+    throw new Error(`Taxonomie-Overrides sind ungültig: ${issues.join(" ")}`);
+  }
+  taxonomyOverrides = parsed;
 }
 
 // =======================
@@ -1179,10 +1195,15 @@ function printReportToConsole(report) {
     if (assetOnlyMode) {
       console.log("✔ Gezielter Asset-Suchlauf abgeschlossen; Artendaten bleiben unverändert.");
     } else {
-      atomicWriteJson("speciesData.json", output);
+      const automaticTaxonomyEntries = output.filter((entry) => targetSlugs.has(entry?.URLSlug));
+      const taxonomySync = synchronizeAutomaticTaxonomyFields(automaticTaxonomyEntries, taxonomyOverrides);
+      taxonomyOverrides = taxonomySync.registry;
+      if (taxonomySync.changed) atomicWriteJson(TAXONOMY_OVERRIDES_FILE, taxonomyOverrides);
+      const effectiveOutput = output.map((entry) => applyTaxonomyOverride(entry, taxonomyOverrides));
+      atomicWriteJson("speciesData.json", effectiveOutput);
       console.log("✔ speciesData.json aktualisiert!");
 
-      const report = createMissingElementsReport(output);
+      const report = createMissingElementsReport(effectiveOutput);
       atomicWriteJson("fehlende_elemente_report.json", report);
       printReportToConsole(report);
       console.log("✔ fehlende_elemente_report.json erstellt!");

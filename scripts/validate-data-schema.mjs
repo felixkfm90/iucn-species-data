@@ -6,12 +6,14 @@ import {
   validateMissingReportSchema,
   validateSpeciesDataSchema,
   validateSpeciesListSchema,
+  validateTaxonomyOverridesSchema,
 } from "./data-schema.mjs";
 
 const validators = Object.freeze([
   ["species_list.json", validateSpeciesListSchema],
   ["speciesData.json", validateSpeciesDataSchema],
   ["species-assets-overrides.json", validateAssetOverridesSchema],
+  ["species-taxonomy-overrides.json", validateTaxonomyOverridesSchema],
   ["lastSavedAssessmentId.json", validateAssessmentMapSchema],
   ["fehlende_elemente_report.json", validateMissingReportSchema],
 ]);
@@ -36,5 +38,5 @@ if (issues.length) {
   issues.forEach((issue) => console.error(`- ${issue}`));
   process.exitCode = 1;
 } else {
-  console.log("Datenschema-Prüfung bestanden: fünf zentrale JSON-Datenbestände entsprechen den Projektverträgen.");
+  console.log("Datenschema-Prüfung bestanden: sechs zentrale JSON-Datenbestände entsprechen den Projektverträgen.");
 }

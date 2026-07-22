@@ -9,6 +9,7 @@ const moduleDefinitions = [
   ["app-new-species-workflow.js", "SpeciesExplorerNewSpeciesWorkflow", "createNewSpeciesWorkflowController"],
   ["app-species-editor.js", "SpeciesExplorerSpeciesEditor", "createSpeciesEditorController"],
   ["app-editor-general.js", "SpeciesExplorerGeneralEditor", "createGeneralEditorController"],
+  ["app-editor-taxonomy.js", "SpeciesExplorerTaxonomyEditor", "createTaxonomyEditorController"],
   ["app-editor-map.js", "SpeciesExplorerMapEditor", "createMapEditorController"],
   ["app-editor-sound.js", "SpeciesExplorerSoundEditor", "createSoundEditorController"],
   ["app-editor-portrait.js", "SpeciesExplorerPortraitEditor", "createPortraitEditorController"],
@@ -40,6 +41,7 @@ test("fachliche Blöcke liegen in ihren eigenen Modulen", () => {
   assert.match(sources.get("app-species-editor.js"), /function setupSpeciesEditor\(species\)/);
   assert.doesNotMatch(sources.get("app-species-editor.js"), /let previewToken/);
   assert.match(sources.get("app-editor-general.js"), /let previewToken/);
+  assert.match(sources.get("app-editor-taxonomy.js"), /let previewToken/);
   assert.match(sources.get("app-editor-map.js"), /mapPreviewToken/);
   assert.match(sources.get("app-editor-sound.js"), /soundPreviewToken/);
   assert.match(sources.get("app-editor-portrait.js"), /portraitPreviewToken/);
@@ -65,6 +67,7 @@ test("HTML lädt alle Fachmodule vor app.js in Abhängigkeitsreihenfolge", () =>
     "app-editor-sound.js",
     "app-editor-portrait.js",
     "app-editor-general.js",
+    "app-editor-taxonomy.js",
     "app-species-editor.js",
     "app-detail-view.js",
     "app-backup-workflow.js",

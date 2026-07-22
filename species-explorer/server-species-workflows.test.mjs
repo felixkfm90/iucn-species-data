@@ -160,6 +160,82 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   assert.equal(validation.data.mismatchSpeciesCount, 1);
 });
 
+test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückgesetzt werden", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  context.after(() => app.close());
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const fields = {
+    Kingdom: "Animalia",
+    Phylum: "Chordata",
+    Subphylum: "Vertebrata",
+    Class: "Aves",
+    Order: "Passeriformes",
+    Family: "Drosselartige",
+  };
+
+  const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/taxonomy/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields, reason: "Geprüfte taxonomische Fachquelle" }),
+  });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.ok(preview.changes.some((change) => change.key === "Subphylum"));
+  assert.ok(preview.changes.some((change) => change.key === "Family"));
+
+  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/taxonomy/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: preview.token }),
+  });
+  assert.equal(saveResponse.status, 200);
+  const saved = await saveResponse.json();
+  assert.equal(saved.restoredAutomatic, false);
+  assert.match(saved.backup, /^species-explorer\/backups\/taxonomy-/);
+
+  const editedData = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
+  assert.equal(editedData[0].Subphylum, "Vertebrata");
+  assert.equal(editedData[0].Family, "Drosselartige");
+  const editedRegistry = JSON.parse(
+    await readFile(join(repoRoot, "species-taxonomy-overrides.json"), "utf8"),
+  );
+  assert.equal(editedRegistry.species.turdusmerula.fields.Family, "Drosselartige");
+  assert.equal(editedRegistry.species.turdusmerula.automaticFields.Family, "Turdidae");
+  const editedSpecies = await (await fetch(`${baseUrl}/api/species`)).json();
+  assert.equal(editedSpecies[0].taxonomy.manuallyEdited, true);
+  assert.equal(editedSpecies[0].taxonomy.family, "Drosselartige");
+
+  const restorePreviewResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/taxonomy/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ restoreAutomatic: true }),
+    },
+  );
+  assert.equal(restorePreviewResponse.status, 200);
+  const restorePreview = await restorePreviewResponse.json();
+  assert.equal(restorePreview.restoreAutomatic, true);
+  const restoreResponse = await fetch(`${baseUrl}/api/species/turdusmerula/taxonomy/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: restorePreview.token }),
+  });
+  assert.equal(restoreResponse.status, 200);
+  assert.equal((await restoreResponse.json()).restoredAutomatic, true);
+
+  const restoredData = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
+  assert.equal(restoredData[0].Subphylum, "");
+  assert.equal(restoredData[0].Family, "Turdidae");
+  const restoredRegistry = JSON.parse(
+    await readFile(join(repoRoot, "species-taxonomy-overrides.json"), "utf8"),
+  );
+  assert.equal(restoredRegistry.species.turdusmerula, undefined);
+});
+
 test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträgen umbenannt werden", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));

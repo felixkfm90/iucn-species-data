@@ -1962,21 +1962,93 @@ button:focus-visible {
 }
 
 .edit-dialog[data-active-section="manual"] .portrait-edit-section,
+.edit-dialog[data-active-section="manual"] .taxonomy-edit-section,
 .edit-dialog[data-active-section="manual"] .map-edit-section,
 .edit-dialog[data-active-section="manual"] .sound-edit-section,
 .edit-dialog[data-active-section="portrait"] .manual-edit-section,
+.edit-dialog[data-active-section="portrait"] .taxonomy-edit-section,
 .edit-dialog[data-active-section="portrait"] .map-edit-section,
 .edit-dialog[data-active-section="portrait"] .sound-edit-section,
 .edit-dialog[data-active-section="portrait"] .manual-edit-actions,
 .edit-dialog[data-active-section="map"] .manual-edit-section,
+.edit-dialog[data-active-section="map"] .taxonomy-edit-section,
 .edit-dialog[data-active-section="map"] .portrait-edit-section,
 .edit-dialog[data-active-section="map"] .sound-edit-section,
 .edit-dialog[data-active-section="map"] .manual-edit-actions,
 .edit-dialog[data-active-section="sound"] .manual-edit-section,
+.edit-dialog[data-active-section="sound"] .taxonomy-edit-section,
 .edit-dialog[data-active-section="sound"] .portrait-edit-section,
 .edit-dialog[data-active-section="sound"] .map-edit-section,
-.edit-dialog[data-active-section="sound"] .manual-edit-actions {
+.edit-dialog[data-active-section="sound"] .manual-edit-actions,
+.edit-dialog[data-active-section="taxonomy"] .manual-edit-section,
+.edit-dialog[data-active-section="taxonomy"] .portrait-edit-section,
+.edit-dialog[data-active-section="taxonomy"] .map-edit-section,
+.edit-dialog[data-active-section="taxonomy"] .sound-edit-section,
+.edit-dialog[data-active-section="taxonomy"] .manual-edit-actions {
   display: none;
+}
+
+.taxonomy-edit-section {
+  margin-top: 6px;
+}
+
+.taxonomy-edit-section > header {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.taxonomy-edit-section h4 {
+  margin: 0 0 3px;
+  font-size: 0.9rem;
+}
+
+.taxonomy-edit-section header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.taxonomy-care-state {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.taxonomy-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.taxonomy-edit-fields label {
+  display: grid;
+  gap: 5px;
+}
+
+.taxonomy-edit-fields label > span {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.taxonomy-reason-field {
+  grid-column: 1 / -1;
+}
+
+.taxonomy-edit-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .portrait-edit-section,
@@ -2709,6 +2781,93 @@ button:focus-visible {
   min-height: 38px;
 }
 
+.sound-segment-editor {
+  margin: 0 0 14px;
+  padding: 11px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.sound-segment-editor > header {
+  margin-bottom: 9px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sound-segment-editor h5 {
+  margin: 0 0 3px;
+  font-size: 0.8rem;
+}
+
+.sound-segment-editor header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.sound-segment-list {
+  display: grid;
+  gap: 7px;
+}
+
+.sound-segment-row {
+  display: grid;
+  grid-template-columns: minmax(76px, auto) minmax(100px, 1fr) auto minmax(100px, 1fr) auto auto;
+  gap: 7px;
+  align-items: end;
+}
+
+.sound-segment-row strong {
+  align-self: center;
+  font-size: 0.74rem;
+}
+
+.sound-segment-row label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.sound-segment-row label span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.sound-segment-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  color: #17211d;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.sound-segment-editor button {
+  padding: 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.sound-segment-actions {
+  margin-top: 9px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sound-segment-preview-button {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
 .sound-edit-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3376,6 +3535,10 @@ button:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .taxonomy-edit-fields {
+    grid-template-columns: 1fr;
+  }
+
   .header-status {
     grid-template-columns: 1fr 1fr;
   }
@@ -3436,6 +3599,24 @@ button:focus-visible {
 
   .sound-edit-section > header {
     flex-direction: column;
+  }
+
+  .sound-segment-editor > header,
+  .sound-segment-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sound-segment-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sound-segment-row > strong {
+    grid-column: 1 / -1;
+  }
+
+  .sound-segment-row .sound-segment-remove {
+    grid-column: 1 / -1;
   }
 
   .map-edit-fields,

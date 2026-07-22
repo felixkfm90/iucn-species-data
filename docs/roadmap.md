@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-18
+Stand: 2026-07-22
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -761,7 +761,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
 
 ## Phase 8 - Taxonomie-Pyramide und Funktionsausbau
 
-Status: in Arbeit seit 2026-07-18
+Status: abgeschlossen am 2026-07-22
 
 - Der geschützte Vorschau- und Veröffentlichungsablauf ist eingerichtet: Entwicklung auf einem eigenen
   Phase-8-Branch, lokale Squarespace-nahe Artseitenvorschau mit Artwahl sowie Desktop-/Tablet-/Mobilbreite,
@@ -800,12 +800,25 @@ Status: in Arbeit seit 2026-07-18
   zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
   Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
   `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-taxonomy.js?v=1.0.5`.
-- Taxonomie im Arten-Explorer kontrolliert bearbeitbar machen.
-- Einen fest eingeplanten Soundeditor umsetzen: Start-/Endpunkte und später bei Bedarf mehrere Teilbereiche
-  festlegen, daraus lokal das finale MP3 erzeugen und das Spektrogramm konsistent neu aufbauen.
+- Die Taxonomie ist seit 2026-07-22 im Arten-Explorer kontrolliert bearbeitbar. Reich, Stamm, optionaler Unterstamm,
+  Klasse, Ordnung und Familie verwenden einen verpflichtenden Änderungsgrund sowie den bestehenden
+  Vorschau-/Hash-/Backup-Schutz. Manuelle Korrekturen liegen getrennt in `species-taxonomy-overrides.json`, bleiben
+  bei späteren Pipeline-Läufen erhalten und können auf den zuletzt bekannten automatischen Stand zurückgesetzt
+  werden. Umbenennung, Löschung, Bereinigung, Schema und Veröffentlichung führen das Register mit. Details:
+  `docs/taxonomy-edit-workflow.md`.
+- Der Soundeditor ist seit 2026-07-22 umgesetzt. Bis zu 20 Start-/Endabschnitte können aus dem vorhandenen Sound
+  gewählt und in der eingegebenen Reihenfolge zu einer lokalen FFmpeg-Vorschau zusammengesetzt werden. Der
+  bisherige und der bearbeitete Sound sind vor der Übernahme vergleichbar; beim Speichern bleiben Quelle und Lizenz
+  erhalten, Soundpaket und Spektrogramm werden gemeinsam gesichert beziehungsweise neu aufgebaut. Details:
+  `docs/sound-editor.md`.
+- Ein erneuter Start über die Desktop-Verknüpfung aktiviert seit 2026-07-22 die bereits laufende Electron-Instanz:
+  ein minimiertes Fenster wird wiederhergestellt, ein verborgenes eingeblendet und anschließend fokussiert. Dadurch
+  entsteht keine zweite schreibende Explorer-Instanz.
+- Die neuen Fachmodule besitzen direkte Unit-, API-, UI-Vertrags- und Integrationstests. Der vollständige lokale
+  Qualitätslauf einschließlich Schema-, Medien-, Status-, Dokumentations-, Größen- und Offline-Auditprüfungen ist
+  Bestandteil des Phase-8-Abschlusses.
 
-Phase 8 ist erst abgeschlossen, wenn Taxonomie-Pyramide und diese Funktionswünsche umgesetzt, getestet,
-dokumentiert und veröffentlicht sind. Der frühere Kohlmeisen-Wartepunkt ist überholt und kein Roadmap-Punkt mehr.
+Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überholt und kein Roadmap-Punkt mehr.
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 

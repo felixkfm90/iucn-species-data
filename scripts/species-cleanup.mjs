@@ -330,6 +330,10 @@ export function buildCleanupPlan(repoRoot = process.cwd()) {
     path.join(repoRoot, "species-assets-overrides.json"),
     { version: 1, assets: {} },
   );
+  const taxonomyOverrides = readJson(
+    path.join(repoRoot, "species-taxonomy-overrides.json"),
+    { version: 1, species: {} },
+  );
   const inputSlugs = new Set(
     speciesList.map((entry) => `${entry.genus ?? ""}${entry.species ?? ""}`.toLocaleLowerCase("de")),
   );
@@ -361,6 +365,9 @@ export function buildCleanupPlan(repoRoot = process.cwd()) {
   const obsoleteOverrideKeys = Object.keys(assetOverrides.assets ?? {})
     .filter((safeName) => !inputSafeNames.has(safeName))
     .sort((a, b) => a.localeCompare(b, "de"));
+  const obsoleteTaxonomyOverrideKeys = Object.keys(taxonomyOverrides.species ?? {})
+    .filter((slug) => !inputSlugs.has(slug.toLocaleLowerCase("de")))
+    .sort((a, b) => a.localeCompare(b, "de"));
 
   return {
     mode: "cleanup",
@@ -370,12 +377,14 @@ export function buildCleanupPlan(repoRoot = process.cwd()) {
     obsoleteAssetDirectories,
     obsoleteAssessmentKeys,
     obsoleteOverrideKeys,
+    obsoleteTaxonomyOverrideKeys,
     reclaimableBytes: obsoleteAssetDirectories.reduce((sum, entry) => sum + entry.bytes, 0),
     hasWork:
       obsoleteData.length > 0
       || obsoleteAssetDirectories.length > 0
       || obsoleteAssessmentKeys.length > 0
-      || obsoleteOverrideKeys.length > 0,
+      || obsoleteOverrideKeys.length > 0
+      || obsoleteTaxonomyOverrideKeys.length > 0,
   };
 }
 
@@ -387,10 +396,12 @@ export function runCleanup(repoRoot = process.cwd()) {
   const reportPath = path.join(repoRoot, "fehlende_elemente_report.json");
   const assessmentPath = path.join(repoRoot, "lastSavedAssessmentId.json");
   const assetOverridesPath = path.join(repoRoot, "species-assets-overrides.json");
+  const taxonomyOverridesPath = path.join(repoRoot, "species-taxonomy-overrides.json");
   const speciesData = readJson(speciesDataPath, []);
   const speciesList = readJson(path.join(repoRoot, "species_list.json"), []);
   const assessmentIds = readJson(assessmentPath, {});
   const assetOverrides = readJson(assetOverridesPath, { version: 1, assets: {} });
+  const taxonomyOverrides = readJson(taxonomyOverridesPath, { version: 1, species: {} });
   const inputSlugs = new Set(
     speciesList.map((entry) => `${entry.genus ?? ""}${entry.species ?? ""}`.toLocaleLowerCase("de")),
   );
@@ -408,6 +419,14 @@ export function runCleanup(repoRoot = process.cwd()) {
       Object.entries(assetOverrides.assets ?? {}).filter(([safeName]) => inputSafeNames.has(safeName)),
     ),
   };
+  const filteredTaxonomyOverrides = {
+    ...taxonomyOverrides,
+    version: 1,
+    species: Object.fromEntries(
+      Object.entries(taxonomyOverrides.species ?? {})
+        .filter(([slug]) => inputSlugs.has(slug.toLocaleLowerCase("de"))),
+    ),
+  };
 
   const trashRunDirectory = uniqueCleanupTrashRunDirectory(repoRoot);
   const stagedAssetDirectories = [];
@@ -419,6 +438,7 @@ export function runCleanup(repoRoot = process.cwd()) {
     atomicWriteJson(speciesDataPath, filteredData);
     atomicWriteJson(assessmentPath, filteredAssessmentIds);
     atomicWriteJson(assetOverridesPath, filteredAssetOverrides);
+    atomicWriteJson(taxonomyOverridesPath, filteredTaxonomyOverrides);
     atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
   } catch (error) {
     restoreStagedAssetDirectories(stagedAssetDirectories);
@@ -459,9 +479,11 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
   const reportPath = path.join(repoRoot, "fehlende_elemente_report.json");
   const assessmentPath = path.join(repoRoot, "lastSavedAssessmentId.json");
   const assetOverridesPath = path.join(repoRoot, "species-assets-overrides.json");
+  const taxonomyOverridesPath = path.join(repoRoot, "species-taxonomy-overrides.json");
   const speciesData = readJson(speciesDataPath, []);
   const assessmentIds = readJson(assessmentPath, {});
   const assetOverrides = readJson(assetOverridesPath, { version: 1, assets: {} });
+  const taxonomyOverrides = readJson(taxonomyOverridesPath, { version: 1, species: {} });
   const filteredData = speciesData.filter((entry) => (
     String(entry.URLSlug ?? "").toLocaleLowerCase("de") !== normalizedSlug
     && sanitizeAssetName(entry["Deutscher Name"]) !== normalizedSafeName
@@ -469,6 +491,7 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
   const generatedDataDeleted = filteredData.length !== speciesData.length;
   const assessmentDeleted = Object.hasOwn(assessmentIds, normalizedSafeName);
   const overrideDeleted = Object.hasOwn(assetOverrides.assets ?? {}, normalizedSafeName);
+  const taxonomyOverrideDeleted = Object.hasOwn(taxonomyOverrides.species ?? {}, normalizedSlug);
   const trashRunDirectory = uniqueCleanupTrashRunDirectory(repoRoot);
   const stagedAssetDirectory = stageAssetDirectory(repoRoot, normalizedSafeName, trashRunDirectory);
   const assetDirectoryDeleted = stagedAssetDirectory.existed;
@@ -477,11 +500,15 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
   assetOverrides.version = 1;
   assetOverrides.assets ??= {};
   delete assetOverrides.assets[normalizedSafeName];
+  taxonomyOverrides.version = 1;
+  taxonomyOverrides.species ??= {};
+  delete taxonomyOverrides.species[normalizedSlug];
 
   try {
     atomicWriteJson(speciesDataPath, filteredData);
     atomicWriteJson(assessmentPath, assessmentIds);
     atomicWriteJson(assetOverridesPath, assetOverrides);
+    atomicWriteJson(taxonomyOverridesPath, taxonomyOverrides);
     atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
   } catch (error) {
     restoreStagedAssetDirectories([stagedAssetDirectory]);
@@ -498,6 +525,7 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
     generatedDataDeleted,
     assessmentDeleted,
     overrideDeleted,
+    taxonomyOverrideDeleted,
     assetDirectoryDeleted,
     pendingDeleteDirectories,
   };

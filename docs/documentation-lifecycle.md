@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-07-18
+Stand: 2026-07-22
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -33,7 +33,7 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 2. Die fachlich betroffenen Dokumente aktualisieren; keine aktuellen Zähler in README oder AGENTS kopieren.
 3. Bei Dokumentänderungen `npm.cmd run --silent check:docs` ausführen.
 4. `npm.cmd run status:check` beziehungsweise `npm.cmd run quality:ci` ausführen.
-4. Erst danach committen und veröffentlichen.
+5. Erst danach committen und veröffentlichen.
 
 Der GitHub-Actions-Quality-Job führt `status:check` vor jedem Pages-Build aus. Ein veralteter Projektstatus blockiert
 damit die Veröffentlichung.

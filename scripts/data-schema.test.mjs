@@ -4,6 +4,7 @@ import {
   validateAssetOverridesSchema,
   validateSpeciesDataSchema,
   validateSpeciesListSchema,
+  validateTaxonomyOverridesSchema,
 } from "./data-schema.mjs";
 
 test("Eingabe-Schema verlangt alle sechs manuellen Artfelder", () => {
@@ -60,4 +61,30 @@ test("Override-Schema prüft manuelle Kennzeichnung und abgelehnte Soundquellen"
   }), []);
   const issues = validateAssetOverridesSchema({ version: 1, assets: { Amsel: { map: { manual: "ja" } } } });
   assert.match(issues.join(" "), /boolesch/);
+});
+
+test("Taxonomie-Override-Schema prüft Felder und automatische Ausgangswerte", () => {
+  const fields = {
+    Kingdom: "Tiere",
+    Phylum: "Chordatiere",
+    Subphylum: "Wirbeltiere",
+    Class: "Vögel",
+    Order: "Sperlingsvögel",
+    Family: "Drosseln",
+  };
+  assert.deepEqual(validateTaxonomyOverridesSchema({
+    version: 1,
+    species: {
+      turdusmerula: {
+        fields,
+        automaticFields: fields,
+        reason: "Deutsche Fachbezeichnungen geprüft",
+        updatedAt: "2026-07-22T00:00:00.000Z",
+      },
+    },
+  }), []);
+  assert.match(
+    validateTaxonomyOverridesSchema({ version: 1, species: { turdusmerula: {} } }).join(" "),
+    /automaticFields/,
+  );
 });

@@ -125,11 +125,13 @@ export function publicCleanupPlan(plan) {
       plan.obsoleteData.length
       + plan.obsoleteAssetDirectories.length
       + plan.obsoleteAssessmentKeys.length
-      + plan.obsoleteOverrideKeys.length,
+      + plan.obsoleteOverrideKeys.length
+      + (plan.obsoleteTaxonomyOverrideKeys?.length ?? 0),
     obsoleteData: plan.obsoleteData,
     obsoleteAssetDirectories: plan.obsoleteAssetDirectories,
     obsoleteAssessmentKeys: plan.obsoleteAssessmentKeys,
     obsoleteOverrideKeys: plan.obsoleteOverrideKeys,
+    obsoleteTaxonomyOverrideKeys: plan.obsoleteTaxonomyOverrideKeys ?? [],
     reclaimableBytes: plan.reclaimableBytes,
     hasWork: plan.hasWork,
   };

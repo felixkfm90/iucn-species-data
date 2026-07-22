@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-07-18
+Stand: 2026-07-22
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -27,6 +27,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `update.mjs` | Orchestriert die lokale Datenpipeline; externe Quellen liegen in `scripts/*-adapter.mjs`. |
 | `species_list.json` | Manuelle Eingabeliste fuer die Pipeline: Name, Taxon, Groesse, Gewicht und Lebenserwartung. |
 | `speciesData.json` | Wird von den Frontend-Modulen ueber GitHub Pages geladen. |
+| `species-taxonomy-overrides.json` | Kontrollierte manuelle Taxonomiekorrekturen und zuletzt bekannte automatische Vergleichswerte. |
 | `fehlende_elemente_report.json` | Aktueller Qualitaets- und Lizenzreport. |
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
@@ -42,9 +43,15 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 Die lokale Explorer-Oberflaeche verwendet `public/app.js` nur als Kompositionswurzel. Pipeline und Backup,
 Neue-Art-Assistent, Arteditor, allgemeine Daten, Karte, Sound, Portrait und Detailansicht liegen in den fachlichen
 Modulen `app-pipeline-workflow.js`, `app-backup-workflow.js`, `app-new-species-workflow.js`,
-`app-species-editor.js`, `app-editor-general.js`, `app-editor-map.js`, `app-editor-sound.js`,
+`app-species-editor.js`, `app-editor-general.js`, `app-editor-taxonomy.js`, `app-editor-map.js`, `app-editor-sound.js`,
 `app-editor-portrait.js` und `app-detail-view.js`. Neue Funktionen werden der passenden Grenze zugeordnet und nicht
 wieder als Grossblock in `app.js` eingebaut.
+
+Die kontrollierte Taxonomiebearbeitung liegt serverseitig in `species-explorer/taxonomy-edit.mjs`; Normalisierung,
+Override-Register und Pipeline-Wiederanwendung gehören `scripts/taxonomy-overrides.mjs`. Der Mehrabschnitt-
+Soundeditor verwendet `scripts/sound-segment-editor.mjs`, während Vorschau und geschütztes Speichern im bestehenden
+`species-explorer/sound-asset-workflow.mjs` bleiben. Die Aktivierung einer bereits laufenden Desktop-Instanz liegt
+getrennt in `species-explorer/desktop/window-activation.mjs`.
 
 Der lokale Server verwendet dieselben Eigentumsregeln: Neue Modell-, CRUD-, Medien-, Pipeline-, Publikations-,
 Backup-, Dokumentations- oder Formatierungslogik wird dem vorhandenen Fachmodul zugeordnet und nicht wieder in
@@ -105,6 +112,8 @@ Größenregeln stehen in `docs/repository-quality-gates.md`.
   - `manual-map-overrides.md`: manuell gepflegte Karten wegen korrupter IUCN-Kartendaten
   - `spectrogram-plan.md`: Konzept fuer spaetere Spektrogramm-Assets der Tierstimmen
   - `manual-species-fields.md`: manuell gepflegte Artenfelder
+  - `taxonomy-edit-workflow.md`: kontrollierte Taxonomiekorrektur und Pipeline-Wiederanwendung
+  - `sound-editor.md`: Mehrabschnitt-Soundeditor, FFmpeg-Vorschau und geschützte Übernahme
   - `add-species-workflow.md`: manueller Ablauf fuer neue Arten
   - `sound-license-review.md`: Soundquellen und NC-Lizenzen
   - `css-layout-audit.md`: CSS-/Layout-Befunde
