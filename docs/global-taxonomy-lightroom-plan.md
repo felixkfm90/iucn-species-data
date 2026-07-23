@@ -2,7 +2,7 @@
 
 Stand: 2026-07-23
 
-Status: Phase 9.1 abgeschlossen; Phase 9.2 als nächster Schritt; noch keine produktive Implementierung
+Status: Phase 9.1 und 9.2 abgeschlossen; Phase 9.3 als nächster Schritt; noch kein produktiver Vollimport
 
 Roadmap: Phase 9
 
@@ -27,9 +27,11 @@ Der aktuelle produktive Artenbestand bleibt davon getrennt:
 - URL-Slugs, Assetnamen und Assetpfade ändern sich nicht allein aufgrund einer neuen Taxonomieversion.
 - Die globale Datenbank wird weder in Git aufgenommen noch über GitHub Pages ausgeliefert.
 
-Dieses Dokument beschreibt Anforderungen, Architekturvarianten, Entscheidungspunkte, Risiken und Teilphasen. Die
-Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt.
-Datenbanktechnik, Importarchitektur und Lightroom-Anbindung werden in den nachfolgenden Teilphasen entschieden.
+Dieses Dokument beschreibt Anforderungen, Architektur, Entscheidungspunkte, Risiken und Teilphasen. Die
+Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt. Speichertechnik,
+Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unter
+`docs/local-taxonomy-database-design.md` entworfen. Lightroom-Anbindung und Mehrgeräteverteilung werden in den
+nachfolgenden Teilphasen entschieden.
 
 ## A. Ausgangslage
 
@@ -105,36 +107,22 @@ CoL-Hierarchie oder bestätigte Projektdaten still überschreiben.
 
 ## C. Lokale Speicherung
 
-Eine lokale indexierte Datenbank, beispielsweise SQLite, ist ein zu prüfender Kandidat, aber noch keine
-Festlegung. Verglichen werden mindestens:
+Phase 9.2 hat SQLite über das in der Electron-Laufzeit verfügbare Modul `node:sqlite` als lokale Speichertechnik
+festgelegt. Der verbindliche technische Entwurf steht in `docs/local-taxonomy-database-design.md`.
 
-1. eine einzelne lokale Datenbankdatei mit geeigneten Indizes,
-2. eine andere eingebettete Such-/Datenbanktechnik,
-3. ein kompakter, vorgenerierter read-only Suchindex zusätzlich zu getrennten Quelldaten.
+Wesentliche Entscheidungen:
 
-Die Bewertung muss Installation, Wartbarkeit, Suchgeschwindigkeit, Datenmenge, atomare Updates, Lightroom-Zugriff
-und Verteilung auf mehrere Rechner berücksichtigen.
+- pfadunabhängiger Standardspeicher unter `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy`
+- versionierte, unveränderliche read-only Release-Datenbanken
+- vollständiger Import und Test in einem getrennten Stagingordner
+- atomare Aktivierung über eine kleine `active.json`
+- genau eine freigegebene Vorversion für Rollback
+- Präfixindizes für Vorschläge ab dem ersten Zeichen und FTS5 für weiterführende Suche
+- große reproduzierbare Quelle, Datenbank und Indizes außerhalb von Git, Pages und normalen Projekt-Backups
+- kleine unersetzbare Projektzuordnungen später in `species-reference-mappings.json`
+- kontrollierte Temp-Bereinigung nach Erfolg, Abbruch oder diagnostiziertem Fehler
 
-Unabhängig von der späteren Technik gelten folgende Anforderungen:
-
-- Speicherort außerhalb des Git-Repositories und außerhalb des Pages-Artefakts
-- pfadunabhängige lokale Konfiguration statt festem Laufwerksbuchstaben
-- keine vollständigen Quelldownloads, Importdateien oder Datenbanken in GitHub
-- Suche nach wissenschaftlichem Namen, deutschem Namen, Synonym und Taxon-ID
-- Präfix- und gegebenenfalls Volltextsuche mit messbarer Antwortzeit
-- dokumentiertes Schema und kontrollierte Schema-Migrationen
-- Fortschritt für Download, Entpacken, Prüfen, Importieren und Indexieren
-- Prüfung des freien Speicherplatzes vor Beginn
-- sicherer Abbruch und, soweit sinnvoll, Wiederaufnahme
-- Checksummen und Plausibilitätsprüfung der Quelldateien
-- Speicherung von Quellenversion und Importzeitpunkt
-- Testimport in einen neuen Zielbestand
-- atomarer Wechsel von alter zu neuer freigegebener Version
-- Rollback auf die zuletzt funktionierende Version
-- definierte Aufbewahrung von höchstens einer notwendigen Vorversion, sofern Tests nichts anderes erfordern
-- kontrollierte Bereinigung temporärer Download- und Importdateien
-
-Eine mögliche, noch unverbindliche Datenflussvariante ist:
+Der verbindliche Datenfluss lautet:
 
 ```text
 versionierte Quelldatei
@@ -149,8 +137,8 @@ projektbezogene Entscheidungen
   -> getrennte kleine, sicherungsrelevante Projektdatei/-datenbank
 ```
 
-Die Trennung der reproduzierbaren Quelldaten von eigenen, nicht reproduzierbaren Entscheidungen ist eine
-verbindliche Anforderung; ihre konkrete Dateiform bleibt offen.
+Die große Referenzdatenbank bleibt eine Such- und Vorschlagsquelle. `species_list.json` und `speciesData.json`
+bleiben der bestätigte produktive Bestand.
 
 ## D. Datenmodell und Herkunftsnachweise
 
@@ -179,7 +167,11 @@ Das spätere Konzept muss mindestens folgende Informationen speichern oder einde
 - Lizenz- und Attributionsinformation
 - Match-, Konflikt- und Zuordnungsstatus
 
-Als konzeptionelle, nicht verbindliche Entitäten sind zu prüfen:
+Phase 9.2 konkretisiert diese Informationen in den verbindlichen Tabellen `source_release`, `source_dataset`,
+`taxon`, `taxon_name`, `vernacular_name`, `external_identifier` und `search_term`. Der vollständige Vertrag steht
+in `docs/local-taxonomy-database-design.md`.
+
+Die folgenden früheren konzeptionellen Entitäten werden dadurch abgedeckt:
 
 - `source_release`: Quelle, Version, Veröffentlichung, Lizenz, Checksumme
 - `taxon`: Quellen-ID, Rang, akzeptierter Status, Elternbeziehung
@@ -230,9 +222,11 @@ deutschen Übersetzung bevorzugt werden.
 
 ## F. Integration in den Arten-Explorer
 
-Die spätere Integration wird erst nach Quellen-, Datenmodell- und Importentscheidung umgesetzt. Konzeptionell soll
-der Neue-Art-Assistent dann anbieten:
+Die spätere Integration wird erst nach dem begrenzten Importprototyp umgesetzt. Der Neue-Art-Assistent soll dann
+anbieten:
 
+- Reichsauswahl mit `Tiere (Animalia)` als Standard und weiteren Reichen aus der Referenzdatenbank
+- bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem eingegebenen Zeichen
 - globale Suche nach wissenschaftlichem Namen
 - Suche nach deutschem Namen, sofern belegt vorhanden
 - Trefferliste bei mehreren passenden Taxa
@@ -247,6 +241,8 @@ der Neue-Art-Assistent dann anbieten:
 - Möglichkeit, Treffer abzulehnen oder manuell weiterzuarbeiten
 - Offline-Suche nach vollständig abgeschlossenem lokalem Import
 - verständlichen Zustand bei fehlender, beschädigter oder veralteter Referenzdatenbank
+- bei einem Tier ohne bestätigten deutschen Namen einen gezielten Button `Animalia.bio manuell prüfen`, der eine
+  browserbasierte Einzelfallrecherche öffnet, ohne die Website automatisiert abzurufen oder zu scrapen
 
 Für bestehende Arten ist ein getrenntes Prüfwerkzeug zu planen. Es darf Abweichungen melden und Vorschläge machen,
 aber keine Massenänderung ohne artweise oder ausdrücklich bestätigte Sammelentscheidung ausführen.
@@ -364,14 +360,23 @@ Wikidata, Animalia.bio und IUCN.
 
 ### 9.2 Lokales Datenbank- und Importkonzept
 
-- Speicherort und Pfadunabhängigkeit
-- Datenbankschema und Provenienzmodell
-- Suchindizes und erwartete Performance
-- Import-, Versions-, Rollback- und Temp-Konzept
-- Speicherbedarf und Git-/Pages-Ausschluss
-- Trennung reproduzierbarer Referenzdaten von eigenen Entscheidungen
+- **Abgeschlossen am 2026-07-23.**
+- SQLite über `node:sqlite` ist als lokale, gekapselte Speichertechnik festgelegt.
+- Standardspeicher, lokale Pfadkonfiguration, unveränderliche Releaseordner, Staging, atomare Aktivierung und eine
+  Rollbackversion sind definiert.
+- Schema und Provenienzmodell bilden beliebige Ränge, akzeptierte Namen, Synonyme, Vernakularnamen, Quellen,
+  Releases und externe IDs ab.
+- B-Tree-Präfixsuche unterstützt Vorschläge ab dem ersten Zeichen; FTS5 ergänzt mehrteilige Suche.
+- Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und
+  bidirektionale Vorschläge deutsch ↔ wissenschaftlich.
+- Bei einem Tier ohne bestätigten deutschen Namen ist eine gezielte manuelle Animalia.bio-Recherche vorgesehen;
+  automatisierter Abruf oder Scraping bleibt ausgeschlossen.
+- Große Referenzdaten werden aus Git, Pages und normalen Projekt-Backups ausgeschlossen; kleine eigene
+  Projektentscheidungen werden separat versioniert.
+- Der verbindliche Entwurf steht in `docs/local-taxonomy-database-design.md`; es erfolgte noch kein produktiver
+  Vollimport.
 
-Ergebnis: verbindlicher technischer Entwurf, noch ohne vollständigen Datenimport.
+Ergebnis: implementierungsreife technische Architektur vor dem begrenzten Phase-9.3-Prototyp.
 
 ### 9.3 Import-Prototyp mit begrenztem Testbestand
 
@@ -445,26 +450,20 @@ Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 
 ## Verbleibende Architekturentscheidungen
 
-Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Vor den jeweiligen
-nachfolgenden Implementierungsphasen müssen noch diese Entscheidungen ausdrücklich getroffen werden:
+Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Phase 9.2 hat
+Lizenz-/Attributionsspeicherung, lokale Speichertechnik, Suchindizes, Schema, Speicherort, Vollimportstrategie und
+Sicherungsgrenze verbindlich geklärt. Vor den jeweiligen späteren Implementierungsphasen bleiben ausdrücklich:
 
-1. konkrete Umsetzung des Lizenz- und Attributionsmodells in Datenbank und Oberfläche
-2. lokale Speichertechnik und Suchindex
-3. Schema für Synonyme, Hierarchien, Sprachdaten und Provenienz
-4. Speicherort und Installationsweg
-5. Vollimport gegenüber möglichen inkrementellen Updates
-6. Sicherungsgrenze zwischen reproduzierbaren Referenzdaten und eigenen Projektentscheidungen
-7. Konfliktworkflow für bestehende Arten
-8. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
-9. Metadaten- und XMP-Modell in Lightroom
-10. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
+1. Konfliktworkflow für bestehende Arten
+2. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
+3. Metadaten- und XMP-Modell in Lightroom
+4. optionales NAS-Paket für die große Referenzdatenbank
+5. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
 
-Die Punkte 1 bis 6 werden zuerst im technischen Entwurf von Phase 9.2 konkretisiert.
-
-## Nicht Bestandteil von Phase 9.1
+## Nicht Bestandteil von Phase 9.1 und 9.2
 
 - kein vollständiger Catalogue-of-Life-, WoRMS- oder anderer Quelldownload
-- keine SQLite- oder andere produktive Datenbank
+- keine produktiv aktivierte SQLite-Datenbank
 - keine produktive Taxonomie-API
 - keine Änderung an `species_list.json` oder `speciesData.json`
 - keine funktionale Änderung an `update.mjs`

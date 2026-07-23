@@ -17,6 +17,9 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 - `docs/taxonomy-source-decision.md` ist die verbindliche Quellen-, Prioritäts- und Konfliktentscheidung für
   Phase 9.1. Änderungen an der globalen Taxonomiestrategie müssen dort und im Phase-9-Plan gemeinsam dokumentiert
   werden.
+- `docs/local-taxonomy-database-design.md` ist die verbindliche Speicher-, Schema-, Such-, Import- und
+  Rollbackarchitektur für Phase 9.2. Änderungen an lokaler Taxonomiedatenbank, Reichsauswahl, Autocomplete,
+  Animalia-Fallback oder Referenzdatenpfaden müssen dort und im Phase-9-Plan gemeinsam dokumentiert werden.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

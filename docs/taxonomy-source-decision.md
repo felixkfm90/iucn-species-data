@@ -2,7 +2,7 @@
 
 Stand: 2026-07-23
 
-Status: Phase 9.1 abgeschlossen; verbindliche Grundlage für Phase 9.2
+Status: Phase 9.1 abgeschlossen; verbindliche Grundlage für Phase 9.2 und alle folgenden Importphasen
 
 ## 1. Ergebnis
 
@@ -260,6 +260,8 @@ Phase 9.2 erstellt auf dieser Grundlage den verbindlichen technischen Entwurf f�
 - Ausschluss der großen Referenzdaten aus Git, Pages und normalen Projekt-Commits,
 - getrennte Sicherung eigener Übersetzungen, Projektzuordnungen und Entscheidungen.
 
-Noch nicht entschieden sind damit insbesondere Datenbanktechnik, konkreter Installationspfad, Indexdesign,
-vollständiger Speicherbedarf, Lightroom-Zugriffsweg und spätere Datenverteilung auf mehrere Computer. Diese Punkte
-gehören ausdrücklich in die nachfolgenden Teilphasen.
+Diese Übergabe wurde am 2026-07-23 mit `docs/local-taxonomy-database-design.md` abgeschlossen. Darin sind
+Datenbanktechnik, lokaler Installationspfad, Indexdesign, Import-, Staging- und Rollbackablauf sowie die Trennung
+von Referenz- und Projektdaten verbindlich festgelegt. Der tatsächliche Speicherbedarf wird in Phase 9.3 gemessen.
+Lightroom-Zugriffsweg und spätere Datenverteilung auf mehrere Computer bleiben Themen der dafür vorgesehenen
+Teilphasen.

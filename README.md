@@ -85,6 +85,7 @@ Versionierte Referenzen liegen unter:
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/taxonomy-source-decision.md`
+- `docs/local-taxonomy-database-design.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -785,11 +786,17 @@ ab. Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits, kontrollierter Taxono
 am 2026-07-22 abgeschlossen. Phase 9 hat am 2026-07-23 mit dem abgeschlossenen Quellenvergleich begonnen:
 Catalogue of Life XR ist die globale Primärreferenz, WoRMS ergänzt marine Taxa, GBIF dient als Diensteschicht und
 Wikidata ausschließlich als optionale Namens-/ID-Vorschlagsquelle. Animalia.bio bleibt ohne dokumentierte
-maschinelle Schnittstelle eine manuelle Referenz. Der nächste Schritt ist Phase 9.2 mit lokalem Datenbank- und
-Importkonzept; ein produktiver Taxonomieimport wurde noch nicht ausgeführt. Danach folgen Phase 10 mit
+maschinelle Schnittstelle eine manuelle Referenz. Phase 9.2 hat SQLite, lokales Release-/Stagingmodell,
+Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich festgelegt. Der spätere
+Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und bidirektionale Vorschläge
+deutsch ↔ wissenschaftlich ab dem ersten Zeichen. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine
+gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden; die Website wird nicht automatisiert
+ausgelesen. Als Nächstes folgt der begrenzte Phase-9.3-Importprototyp; ein produktiver Vollimport wurde noch nicht
+ausgeführt. Danach folgen Phase 10 mit
 Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
-`docs/taxonomy-source-decision.md` und `docs/multi-device-backup-plan.md`.
+`docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md` und
+`docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

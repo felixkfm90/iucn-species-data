@@ -27,3 +27,7 @@ species-explorer/pending-asset-review.json
 species-explorer/pipeline-asset-backups/
 species-explorer/staging/
 species-explorer/asset-backups/
+
+# Local global-taxonomy downloads, staging data, databases and indexes
+taxonomy-data/
+species-explorer/taxonomy-data/

@@ -822,7 +822,7 @@ Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überhol
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 
-Status: in Arbeit; Phase 9.1 abgeschlossen
+Status: in Arbeit; Phase 9.1 und 9.2 abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
 lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
@@ -833,9 +833,19 @@ Phase 9.1 wurde am 2026-07-23 ohne produktiven Datenimport abgeschlossen. Die ve
 `docs/taxonomy-source-decision.md` legt Catalogue of Life XR als globale Primärreferenz fest. WoRMS validiert und
 ergänzt marine beziehungsweise brackische Taxa; GBIF bleibt Diensteschicht für Alt-IDs, Taxonabgleich und
 Vorkommensdaten. Wikidata darf quellenmarkierte deutsche Namens- und ID-Vorschläge liefern, während Animalia.bio
-ohne dokumentierte API oder versionierten Bulk-Export nur manuell verwendet wird. Als Nächstes folgt Phase 9.2:
-lokale Speichertechnik, Datenbankschema, Provenienzmodell, Suchindizes, Import, Staging, Rollback und
-Git-/Pages-Ausschluss verbindlich entwerfen.
+ohne dokumentierte API oder versionierten Bulk-Export nur manuell verwendet wird.
+
+Phase 9.2 wurde am 2026-07-23 ebenfalls ohne produktiven Datenimport abgeschlossen. Der verbindliche Entwurf in
+`docs/local-taxonomy-database-design.md` legt SQLite über `node:sqlite`, einen pfadunabhängigen lokalen
+Releasespeicher, Staging und atomare Aktivierung, genau eine Rollbackversion, das Provenienzschema sowie
+B-Tree-Präfix- und FTS5-Suche fest. Die große Referenz bleibt außerhalb von Git, Pages und normalen
+Projekt-Backups; kleine unersetzbare Projektzuordnungen werden später getrennt versioniert. Im Neue-Art-Assistenten
+ist `Tiere (Animalia)` als Reich vorausgewählt. Deutsche und wissenschaftliche Eingaben liefern nach jedem Zeichen
+gegenseitige Vorschläge. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine gezielte manuelle
+Animalia.bio-Recherche geöffnet werden, ohne automatisierten Abruf oder Scraping.
+
+Als Nächstes folgt Phase 9.3: ein begrenzter, reproduzierbarer Importprototyp mit den festgelegten Testtaxa,
+Messung von Speicherbedarf und Suchlatenz sowie Tests für Staging, Abbruch, Aktivierung und Rollback.
 
 ## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
 

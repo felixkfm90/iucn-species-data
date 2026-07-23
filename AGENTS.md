@@ -688,9 +688,15 @@ Aktuelle Planung:
   quellenmarkierte Namens-/ID-Vorschläge liefern; Animalia.bio bleibt ohne dokumentierte maschinelle Schnittstelle
   eine manuelle Referenz. `species_list.json` und `speciesData.json` bleiben die bestätigte produktive Datenbasis.
   Die große Referenzdatenbank darf weder in Git noch in das GitHub-Pages-Artefakt gelangen und bestehende Arten
-  nicht still verändern. Phase 9.2 entwirft als Nächstes Speichertechnik, Schema, Provenienz, Import, Staging,
-  Rollback und Suchindizes. Die Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp
-  bis zum Lightroom-MVP und zur ausdrücklichen Übergabe der Datenverteilung an Phase 10.
+  nicht still verändern. Phase 9.2 ist seit 2026-07-23 abgeschlossen; der verbindliche Entwurf steht in
+  `docs/local-taxonomy-database-design.md`. Vorgesehen sind SQLite über `node:sqlite`, ein pfadunabhängiger lokaler
+  Release-/Stagingspeicher, atomare Aktivierung, eine Rollbackversion, getrennte Projektzuordnungen sowie
+  Präfix-/FTS5-Suche. Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als
+  Vorauswahl und bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem Zeichen. Für Tiere ohne
+  bestätigten deutschen Namen ist eine gezielte manuelle Animalia.bio-Recherche vorgesehen; automatisierter
+  Abruf oder Scraping bleibt ausgeschlossen. Als Nächstes folgt der begrenzte Phase-9.3-Importprototyp. Die
+  Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp bis zum Lightroom-MVP und zur
+  ausdrücklichen Übergabe der Datenverteilung an Phase 10.
   Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
@@ -929,8 +935,9 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
-  Phase 9.1 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. Als Nächstes
-  folgen lokales Datenbank-/Importkonzept, Prototyp, Aktualisierungsworkflow und Lightroom-MVP.
+  Phase 9.1 und 9.2 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. SQLite,
+  lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind verbindlich entworfen. Als
+  Nächstes folgen der begrenzte Importprototyp, Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
 - Phase 11 - Weitere Erweiterungen:
