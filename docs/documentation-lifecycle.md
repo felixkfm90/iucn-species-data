@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-07-22
+Stand: 2026-07-23
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -14,6 +14,9 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 - `AGENTS.md` enthält Arbeitsregeln, Architektur, aktuelle Blocker und die kompakte Projektübergabe.
 - `README.md` beschreibt Installation, Bedienung und Betrieb.
 - `docs/roadmap.md` beschreibt Gegenwart, nächste Schritte und Priorisierung.
+- `docs/taxonomy-source-decision.md` ist die verbindliche Quellen-, Prioritäts- und Konfliktentscheidung für
+  Phase 9.1. Änderungen an der globalen Taxonomiestrategie müssen dort und im Phase-9-Plan gemeinsam dokumentiert
+  werden.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

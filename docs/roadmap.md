@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-22
+Stand: 2026-07-23
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -822,12 +822,20 @@ Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überhol
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 
-Status: geplant
+Status: in Arbeit; Phase 9.1 abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
 lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
 Aktualisierungsworkflow, Lightroom-Machbarkeitsprüfung, deutsches Lightroom-Plug-in als MVP, optionale
 Lightroom-Erweiterungen und die Übergabe der Datenverteilung an Phase 10.
+
+Phase 9.1 wurde am 2026-07-23 ohne produktiven Datenimport abgeschlossen. Die verbindliche Quellenentscheidung in
+`docs/taxonomy-source-decision.md` legt Catalogue of Life XR als globale Primärreferenz fest. WoRMS validiert und
+ergänzt marine beziehungsweise brackische Taxa; GBIF bleibt Diensteschicht für Alt-IDs, Taxonabgleich und
+Vorkommensdaten. Wikidata darf quellenmarkierte deutsche Namens- und ID-Vorschläge liefern, während Animalia.bio
+ohne dokumentierte API oder versionierten Bulk-Export nur manuell verwendet wird. Als Nächstes folgt Phase 9.2:
+lokale Speichertechnik, Datenbankschema, Provenienzmodell, Suchindizes, Import, Staging, Rollback und
+Git-/Pages-Ausschluss verbindlich entwerfen.
 
 ## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
 

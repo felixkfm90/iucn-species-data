@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-22
+Stand: 2026-07-23
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -680,15 +680,17 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 9 `Globale Taxonomiedatenbank und Lightroom-Integration` ist seit 2026-07-12 geplant, siehe
-  `docs/global-taxonomy-lightroom-plan.md`. Eine umfangreiche lokale Taxonomie soll spaeter als getrennte Referenz-
-  und Suchdatenbank dienen; `species_list.json` und `speciesData.json` bleiben die bestaetigte produktive
-  Datenbasis. Catalogue of Life, GBIF und begruendete Alternativen werden zuerst ergebnisoffen verglichen. Quelle,
-  lokale Speichertechnik und Lightroom-Anbindung sind noch nicht festgelegt. Die grosse Referenzdatenbank darf
-  weder in Git noch in das GitHub-Pages-Artefakt gelangen und bestehende Arten nicht still veraendern. Vor einer
-  technischen Umsetzung werden die P0-Stabilisierungspunkte aus dem Repository-Audit abgeschlossen. Die
-  Teilphasen 9.1 bis 9.9 reichen von Quellenvergleich und begrenztem Importprototyp bis zum Lightroom-MVP und
-  zur ausdruecklichen Uebergabe der Datenverteilung an Phase 10.
+  Phase 9 `Globale Taxonomiedatenbank und Lightroom-Integration` ist seit 2026-07-23 in Arbeit, siehe
+  `docs/global-taxonomy-lightroom-plan.md`. Phase 9.1 ist abgeschlossen; die verbindliche Quellenentscheidung steht
+  in `docs/taxonomy-source-decision.md`. Catalogue of Life XR ist die globale Primärreferenz. Der im XR
+  unterscheidbare Base-Kern bildet eine höhere Vertrauensstufe; WoRMS ergänzt und validiert marine beziehungsweise
+  brackische Taxa. GBIF bleibt Diensteschicht für Alt-IDs, Taxonabgleich und Vorkommensdaten. Wikidata darf nur
+  quellenmarkierte Namens-/ID-Vorschläge liefern; Animalia.bio bleibt ohne dokumentierte maschinelle Schnittstelle
+  eine manuelle Referenz. `species_list.json` und `speciesData.json` bleiben die bestätigte produktive Datenbasis.
+  Die große Referenzdatenbank darf weder in Git noch in das GitHub-Pages-Artefakt gelangen und bestehende Arten
+  nicht still verändern. Phase 9.2 entwirft als Nächstes Speichertechnik, Schema, Provenienz, Import, Staging,
+  Rollback und Suchindizes. Die Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp
+  bis zum Lightroom-MVP und zur ausdrücklichen Übergabe der Datenverteilung an Phase 10.
   Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
@@ -927,7 +929,8 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
-  getrennte lokale Referenzdatenbank, Import-/Aktualisierungsworkflow und Lightroom-MVP.
+  Phase 9.1 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. Als Nächstes
+  folgen lokales Datenbank-/Importkonzept, Prototyp, Aktualisierungsworkflow und Lightroom-MVP.
 - Phase 10 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
 - Phase 11 - Weitere Erweiterungen:

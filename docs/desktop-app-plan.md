@@ -712,15 +712,17 @@ Priorisierte nächste Ausbauschritte:
   Details: `docs/sound-editor.md`.
 - Phase 8 ist nach Unit-, API-, UI-, Desktop- und vollständigem Qualitätslauf am 2026-07-22 abgeschlossen.
 
-### 7.9 Globale Taxonomiedatenbank und Lightroom-Integration
+### Frühere Planung 7.9 – heute Phase 9: Globale Taxonomiedatenbank und Lightroom-Integration
 
 - umfangreiche globale Taxonomiedaten als getrennte lokale Referenz- und Suchdatenbank planen
-- Catalogue of Life, GBIF und begruendete Alternativen vergleichen, ohne die Quelle vorzeitig festzulegen
+- Phase 9.1 hat Catalogue of Life, GBIF, WoRMS, Wikidata und Animalia.bio verglichen; CoL XR ist die globale
+  Primärreferenz und WoRMS die marine Fachergänzung
 - kontrollierte Explorer-Suche und Uebernahme mit Quellen-, Versions- und Konfliktanzeige konzipieren
 - produktiven Artenbestand nicht still oder automatisch veraendern
 - deutsches Lightroom-Classic-Plug-in erst nach einer SDK- und Metadaten-Machbarkeitspruefung umsetzen
 - reproduzierbare Referenzdaten von eigenen, sicherungsrelevanten Taxonomieentscheidungen trennen
-- Detailplanung: `docs/global-taxonomy-lightroom-plan.md`
+- Detailplanung: `docs/global-taxonomy-lightroom-plan.md`; Quellenentscheidung:
+  `docs/taxonomy-source-decision.md`
 
 ### 7.10 Synology NAS und automatisiertes Backup
 

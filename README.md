@@ -84,6 +84,7 @@ Versionierte Referenzen liegen unter:
 - `docs/repository-quality-gates.md`
 - `docs/desktop-app-plan.md`
 - `docs/global-taxonomy-lightroom-plan.md`
+- `docs/taxonomy-source-decision.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -781,11 +782,14 @@ und anschließend fokussiert; eine zweite schreibende App-Instanz entsteht nicht
 
 Die technischen Verbesserungen aus dem Repository-Audit wurden am 2026-07-18 abgeschlossen und schließen Phase 7
 ab. Phase 8 mit Taxonomie-Pyramide, Squarespace-Portraits, kontrollierter Taxonomiebearbeitung und Soundeditor wurde
-am 2026-07-22 abgeschlossen. Danach folgen in der
-verbindlichen Reihenfolge Phase 9 mit globaler lokaler Taxonomie-Referenzdatenbank und Lightroom-Integration,
-Phase 10 mit Mehrgeraetebetrieb, automatischen
-Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und Abschlusskriterien stehen in
-`docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md` und `docs/multi-device-backup-plan.md`.
+am 2026-07-22 abgeschlossen. Phase 9 hat am 2026-07-23 mit dem abgeschlossenen Quellenvergleich begonnen:
+Catalogue of Life XR ist die globale Primärreferenz, WoRMS ergänzt marine Taxa, GBIF dient als Diensteschicht und
+Wikidata ausschließlich als optionale Namens-/ID-Vorschlagsquelle. Animalia.bio bleibt ohne dokumentierte
+maschinelle Schnittstelle eine manuelle Referenz. Der nächste Schritt ist Phase 9.2 mit lokalem Datenbank- und
+Importkonzept; ein produktiver Taxonomieimport wurde noch nicht ausgeführt. Danach folgen Phase 10 mit
+Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
+Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
+`docs/taxonomy-source-decision.md` und `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

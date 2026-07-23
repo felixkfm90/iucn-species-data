@@ -1,8 +1,8 @@
 # Globale Taxonomiedatenbank und Lightroom-Integration
 
-Stand: 2026-07-12
+Stand: 2026-07-23
 
-Status: geplant, noch keine technische Festlegung und keine produktive Implementierung
+Status: Phase 9.1 abgeschlossen; Phase 9.2 als nächster Schritt; noch keine produktive Implementierung
 
 Roadmap: Phase 9
 
@@ -27,8 +27,9 @@ Der aktuelle produktive Artenbestand bleibt davon getrennt:
 - URL-Slugs, Assetnamen und Assetpfade ändern sich nicht allein aufgrund einer neuen Taxonomieversion.
 - Die globale Datenbank wird weder in Git aufgenommen noch über GitHub Pages ausgeliefert.
 
-Dieses Dokument beschreibt Anforderungen, Architekturvarianten, Entscheidungspunkte, Risiken und Teilphasen. Es
-legt noch keine endgültige Datenquelle, Datenbanktechnik oder Lightroom-Anbindung fest.
+Dieses Dokument beschreibt Anforderungen, Architekturvarianten, Entscheidungspunkte, Risiken und Teilphasen. Die
+Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt.
+Datenbanktechnik, Importarchitektur und Lightroom-Anbindung werden in den nachfolgenden Teilphasen entschieden.
 
 ## A. Ausgangslage
 
@@ -54,25 +55,29 @@ Projektbezogene Entscheidungen
   = eigene Namen, Übersetzungen, Ablehnungen und Quellenzuordnungen
 ```
 
-Vor einer technischen Umsetzung werden die P0-Punkte aus
-`docs/audits/2026-07-repository-audit.md` abgeschlossen: Assetformat und Pages-Größe stabilisieren, die schreibende
-localhost-API absichern und verpflichtende CI-Qualitätsprüfungen einführen. Die neue Referenzdatenbank darf diese
-Stabilisierungsarbeiten nicht umgehen oder verzweigen.
+Die P0-Punkte aus `docs/audits/2026-07-repository-audit.md` wurden vor Phase 9 abgeschlossen: Assetformat und
+Pages-Größe sind stabilisiert, die schreibende localhost-API ist abgesichert und verpflichtende
+CI-Qualitätsprüfungen sind eingeführt. Die neue Referenzdatenbank darf diese Schutzmechanismen nicht umgehen oder
+verzweigen.
 
-Das bereits geplante Redesign der Taxonomie-Pyramide ist ein getrenntes Thema. Es verbessert die dynamische
-HTML-/CSS-Ausgabe vorhandener Taxonomiedaten. Phase 9 plant dagegen Herkunft, Suche, Speicherung und kontrollierte
-Übernahme einer viel größeren Referenzdatenbasis.
+Das in Phase 8 abgeschlossene Redesign der Taxonomie-Pyramide ist ein getrenntes Thema. Es verbessert die
+dynamische HTML-/CSS-Ausgabe vorhandener Taxonomiedaten. Phase 9 plant dagegen Herkunft, Suche, Speicherung und
+kontrollierte Übernahme einer viel größeren Referenzdatenbasis.
 
-## B. Zu prüfende Taxonomiequellen
+## B. Geprüfte Taxonomiequellen
 
-Mindestens folgende Kandidaten werden in Phase 9.1 anhand derselben Kriterien untersucht:
+Phase 9.1 hat die Kandidaten anhand derselben Kriterien untersucht. Die vollständige Matrix, Quellenbelege,
+Prioritätsregeln und Testtaxa stehen in `docs/taxonomy-source-decision.md`.
 
-| Kandidat | Rolle in der Prüfung | Noch zu klären |
+| Kandidat | Ergebnis aus Phase 9.1 | Vorgesehene Rolle |
 | --- | --- | --- |
-| Catalogue of Life | Kandidat für einen breit angelegten globalen Taxonomiebestand | Abdeckung, Versionierbarkeit, Lizenz, IDs, Synonyme, Namen, Download und Importaufwand |
-| GBIF Backbone beziehungsweise GBIF Species-Daten | Kandidat für globale Suche, Taxon-IDs und Namensabgleich | Datenmodell, Versionen, Lizenz, Synonyme, Hierarchien, Download und Aktualisierung |
-| Weitere globale Quelle | Nur aufnehmen, wenn ein dokumentierter Mehrwert gegenüber den Hauptkandidaten besteht | zusätzlicher Umfang, bessere Kuratierung, bessere Namen oder geringerer Betriebsaufwand |
-| WoRMS oder andere Fachquelle | Optionale Ergänzung für klar abgegrenzte Artengruppen | fachlicher Mehrwert, Überschneidungen, Prioritätsregeln und Lizenzkompatibilität |
+| Catalogue of Life Extended Release | breitester reproduzierbarer globaler Bestand; Base-Herkunft bleibt unterscheidbar | primäre globale Referenz |
+| Catalogue of Life Base Release | fachlich stärker kuratierter Kern des XR-Bestands | Vertrauensstufe innerhalb des XR-Imports, kein zweiter Parallelbestand |
+| GBIF | aktuelle Website-Taxonomie basiert selbst auf CoL XR; alter Backbone wird nicht weitergeführt | Alt-ID-Mapping, Taxonabgleich, Vorkommensdaten und Kartenbezüge |
+| WoRMS | fachlich spezialisierte Quelle mit AphiaIDs, Synonymen und Hierarchien für Meerestiere | zusätzliche Validierung mariner und brackischer Taxa |
+| Wikidata | breite mehrsprachige Labels und externe IDs, aber keine taxonomische Autorität | optionale quellenmarkierte Namens- und ID-Vorschläge |
+| Animalia.bio | redaktionell nützlich, aber ohne dokumentierte öffentliche API und versionierten Bulk-Export | ausschließlich manuelle Referenz, kein Scraping |
+| IUCN Red List | bestehende Quelle für Assessments und Schutzdaten, keine globale Taxonomie | Gefährdungs- und Assessmentdaten angelegter Projektarten |
 
 Für jeden Kandidaten entsteht eine nachvollziehbare Entscheidungsmatrix mit mindestens diesen Prüfpunkten:
 
@@ -94,8 +99,9 @@ Für jeden Kandidaten entsteht eine nachvollziehbare Entscheidungsmatrix mit min
 - Importdauer, Speicherbedarf und Betriebsaufwand
 - Verhalten bei Mehrdeutigkeiten und widersprüchlichen Quellen
 
-In diesem Planungsschritt wird keine Quelle ausgewählt. Auch eine Kombination mehrerer Quellen ist erst nach einer
-schriftlichen Prioritäts-, Provenienz- und Konfliktregel zulässig.
+Die Kombination ist streng hierarchisch: CoL XR liefert den globalen Grundbestand; WoRMS validiert Meerestiere;
+GBIF, Wikidata, Animalia.bio und IUCN besitzen klar abgegrenzte Ergänzungsrollen. Keine Ergänzungsquelle darf die
+CoL-Hierarchie oder bestätigte Projektdaten still überschreiben.
 
 ## C. Lokale Speicherung
 
@@ -344,12 +350,17 @@ Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksi
 
 ### 9.1 Anforderungen und Quellenvergleich
 
-- Catalogue of Life, GBIF und begründete Alternativen mit einer einheitlichen Matrix vergleichen
-- Lizenz, Datenmodell, Umfang, Namen, IDs, Versionierung und Updateweg prüfen
-- repräsentative Beispiel-Taxa und Problemfälle festlegen
-- Entscheidungsvorlage erstellen, ohne bereits produktiv zu importieren
+- **Abgeschlossen am 2026-07-23.**
+- Catalogue of Life, GBIF, WoRMS, Wikidata, Animalia.bio und die bestehende IUCN-Rolle wurden mit einer
+  einheitlichen Matrix verglichen.
+- Lizenz, Datenmodell, Umfang, Namen, IDs, Versionierung und Updatewege wurden auf Basis offizieller
+  Anbieterinformationen bewertet.
+- Repräsentative Beispiel-Taxa und Problemfälle für den begrenzten Prototyp sind festgelegt.
+- Die verbindliche Entscheidung steht in `docs/taxonomy-source-decision.md`; es erfolgte noch kein produktiver
+  Import.
 
-Ergebnis: freigegebene Entscheidungsvorlage für Quelle beziehungsweise Quellenstrategie.
+Ergebnis: CoL XR als globale Primärreferenz, WoRMS als marine Fachergänzung und klar begrenzte Rollen für GBIF,
+Wikidata, Animalia.bio und IUCN.
 
 ### 9.2 Lokales Datenbank- und Importkonzept
 
@@ -432,27 +443,27 @@ Ergebnis: einzeln priorisierte Erweiterungen statt eines unkontrollierten Funkti
 
 Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 
-## Offene Architekturentscheidungen
+## Verbleibende Architekturentscheidungen
 
-Vor der jeweiligen Implementierungsphase müssen mindestens diese Entscheidungen ausdrücklich getroffen werden:
+Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Vor den jeweiligen
+nachfolgenden Implementierungsphasen müssen noch diese Entscheidungen ausdrücklich getroffen werden:
 
-1. primäre globale Quelle, ergänzende Quellen und Prioritätsregeln
-2. Lizenz- und Attributionsmodell je verwendeter Quelle
-3. lokale Speichertechnik und Suchindex
-4. Schema für Synonyme, Hierarchien, Sprachdaten und Provenienz
-5. Speicherort und Installationsweg
-6. Vollimport gegenüber möglichem inkrementellem Update
-7. Sicherungsgrenze zwischen reproduzierbaren Referenzdaten und eigenen Projektentscheidungen
-8. Konfliktworkflow für bestehende Arten
-9. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
-10. Metadaten- und XMP-Modell in Lightroom
-11. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
+1. konkrete Umsetzung des Lizenz- und Attributionsmodells in Datenbank und Oberfläche
+2. lokale Speichertechnik und Suchindex
+3. Schema für Synonyme, Hierarchien, Sprachdaten und Provenienz
+4. Speicherort und Installationsweg
+5. Vollimport gegenüber möglichen inkrementellen Updates
+6. Sicherungsgrenze zwischen reproduzierbaren Referenzdaten und eigenen Projektentscheidungen
+7. Konfliktworkflow für bestehende Arten
+8. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
+9. Metadaten- und XMP-Modell in Lightroom
+10. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
 
-Keine dieser Entscheidungen wird durch dieses Planungsdokument vorweggenommen.
+Die Punkte 1 bis 6 werden zuerst im technischen Entwurf von Phase 9.2 konkretisiert.
 
-## Nicht Bestandteil dieses Planungsschritts
+## Nicht Bestandteil von Phase 9.1
 
-- kein vollständiger Catalogue-of-Life- oder GBIF-Download
+- kein vollständiger Catalogue-of-Life-, WoRMS- oder anderer Quelldownload
 - keine SQLite- oder andere produktive Datenbank
 - keine produktive Taxonomie-API
 - keine Änderung an `species_list.json` oder `speciesData.json`
