@@ -1,0 +1,28 @@
+taxonID	sourceID	name	transliteration	language	preferred	country	area	referenceID	remarks
+7CYVX	col-sector-2183	Amsel	Amsel	deu	true			a4a33dcd-1f22-4bc4-aba4-2b5ffd440acf
+7CYVX	col-sector-65865	Schwarzdrossel	Schwarzdrossel	deu	false		Germany | Austria		Contributed by pelagicgraf
+R6J7	col-sector-65865	Distelfink	Distelfink	deu	true		Germany | Austria		Contributed by Philipp Pavelka
+R6J7	col-sector-2183	Stieglitz	Stieglitz	deu	false			a4a33dcd-1f22-4bc4-aba4-2b5ffd440acf
+32NH2	col-sector-2185	Blaumeise	Blaumeise	deu	true
+4TZJZ	col-sector-41434	Mittelamerika-Totenkopfaffe	Mittelamerika-Totenkopfaffe	deu	true
+4TZJZ	col-sector-65865	Mittelamerikanischer Totenkopfaffe	Mittelamerikanischer Totenkopfaffe	deu	false		Germany | Austria		Contributed by pelagicgraf
+4TZJZ	col-sector-65865	Rotrücken-Totenkopfaffe	Rotruecken-Totenkopfaffe	deu	false		Germany | Austria		Contributed by pelagicgraf
+3YWY2	col-sector-2183	Buckelwal	Buckelwal	deu	true
+3YWY2	col-sector-2183	Knurrwal	Knurrwal	deu	false
+3YWY2	col-sector-2183	Pflockfisch	Pflockfisch	deu	false
+3YWY2	col-sector-2183	langhaendige Wal	langhaendige Wal	deu	false
+4Y5CH	col-sector-60427	Seezunge	Seezunge	deu	true			9a72e1f6-2096-4985-a863-fac1a967df23
+4Y5CH	col-sector-60427	Zunge	Zunge	deu	false			501260e8-a205-42d3-b7dc-fe45c00afed9
+HRM8	col-sector-1290	gemeiner Seestern	gemeiner Seestern	deu	true			93e85595-787c-47cd-8992-629bdfd43287
+HRM8	col-sector-1290	gemeiner Seestern	gemeiner Seestern	deu	false			1705bb99-27c8-408c-a89d-aeb519431339
+3WDNW	col-sector-65865	Siebenarmiger Seestern	Siebenarmiger Seestern	deu	true		Germany | Austria		Contributed by Hayashi Sakura
+38FSW	col-sector-1290	roter Seestern	roter Seestern	deu	true
+4R5YN	col-sector-2305	Stiel-Eiche	Stiel-Eiche	deu	true	DE
+5TYZ9	col-sector-65866	Fliegenpilz	Fliegenpilz	deu	true
+62D8D	col-sector-65865	Nachtaffen	Nachtaffen	deu	true		Germany | Austria		Contributed by pelagicgraf
+5K5L8	col-sector-65865	Asiatischer Löwe	Asiatischer Loewe	deu	true		Austria | Germany	08098cea-aed4-4933-8c7b-7aba29629b26	Contributed by Bobby McCabe
+5K5L8	col-sector-65865	Berberlöwe	Berberloewe	deu	false		Germany | Austria		Contributed by pelagicgraf
+5K5L8	col-sector-65865	Indischer Löwe	Indischer Loewe	deu	false		Austria | Germany	fad8a23b-a6bb-4ae5-b7a1-4b4605526681	Contributed by Bobby McCabe
+5K5L8	col-sector-65865	Nordlöwe	Nordloewe	deu	false		Germany | Austria		Contributed by pelagicgraf
+5K5L8	col-sector-65865	Persischer Löwe	Persischer Loewe	deu	false		Austria | Germany	3d1a2b5c-87c2-489e-9868-2a23772c6627	Contributed by Bobby McCabe
+4RKVF	col-sector-2304	Mauritius-Dronte	Mauritius-Dronte	deu	true	DE

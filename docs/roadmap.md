@@ -822,7 +822,7 @@ Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überhol
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 
-Status: in Arbeit; Phase 9.1 und 9.2 abgeschlossen
+Status: in Arbeit; Phase 9.1 bis 9.3 abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
 lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
@@ -844,8 +844,19 @@ ist `Tiere (Animalia)` als Reich vorausgewählt. Deutsche und wissenschaftliche 
 gegenseitige Vorschläge. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine gezielte manuelle
 Animalia.bio-Recherche geöffnet werden, ohne automatisierten Abruf oder Scraping.
 
-Als Nächstes folgt Phase 9.3: ein begrenzter, reproduzierbarer Importprototyp mit den festgelegten Testtaxa,
-Messung von Speicherbedarf und Suchlatenz sowie Tests für Staging, Abbruch, Aktivierung und Rollback.
+Phase 9.3 wurde am 2026-07-23 ohne produktiven Vollimport abgeschlossen. Der unter
+`docs/taxonomy-import-prototype.md` dokumentierte Prototyp importiert eine kleine, festgeschriebene
+CoL-XR-/WoRMS-Fixture streamend in SQLite, validiert Schema, Provenienz, Synonyme, Homonyme und Suchindizes und
+aktiviert nur vollständig geprüfte immutable Releases. Abbruch, beschädigte Kandidaten, Fehler nach Aktivierung und
+Rollback sind direkt getestet. Deutsch-wissenschaftliche Ein-Zeichen-Präfixe, Reichsfilter mit `Animalia` als
+Standard sowie eine bewusste Suche über alle Reiche funktionieren ohne stille Trefferauswahl. Messwerte zu Import,
+Speicher und Latenz gelten ausschließlich für den begrenzten Testbestand und werden nicht auf den Vollbestand
+hochgerechnet. Produktive Arten, Assets, Pages und Squarespace bleiben unverändert.
+
+Als Nächstes folgt Phase 9.4: ein verbindlicher Bedien- und API-Entwurf für Reichsauswahl, Vorschlagsliste,
+Mehrdeutigkeiten, Taxonomie-/Quellenvorschau, kontrollierte Übernahme, manuelle Eingabe und Offlinezustände im
+Neue-Art-Assistenten. Erst danach wird in Phase 9.5 der vollständige lokale Import- und Aktualisierungsworkflow
+umgesetzt.
 
 ## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
 

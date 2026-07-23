@@ -2,7 +2,7 @@
 
 Stand: 2026-07-23
 
-Status: Phase 9.2 abgeschlossen; verbindlicher technischer Entwurf, noch kein produktiver Vollimport
+Status: Phase 9.2 abgeschlossen und in Phase 9.3 prototypisch bestätigt; noch kein produktiver Vollimport
 
 Roadmap: Phase 9.2
 
@@ -516,8 +516,8 @@ Referenz bleibt lesbar, solange ihre Integrität bestätigt ist.
 
 ## 13. Übergabe an Phase 9.3
 
-Phase 9.3 baut keinen Vollbestand für den täglichen Betrieb, sondern einen begrenzten, reproduzierbaren
-Importprototyp. Er muss:
+Phase 9.3 hat keinen Vollbestand für den täglichen Betrieb gebaut, sondern einen begrenzten, reproduzierbaren
+Importprototyp. Für ihn galten folgende Anforderungen:
 
 - ein festgeschriebenes CoL-XR-ColDP-Release verwenden
 - die in `docs/taxonomy-source-decision.md` festgelegten Testtaxa importieren
@@ -531,8 +531,10 @@ Importprototyp. Er muss:
 - Importabbruch, fehlerhaften Kandidaten, Aktivierung und Rollback testen
 - bestätigen, dass keine produktive Projektdatei und kein Pages-Artefakt verändert wird
 
-Erst nach diesen Messungen werden Vollimport, genaue lokale Speicherreserve und produktive Explorer-Integration
-freigegeben.
+Diese Punkte sind am 2026-07-23 abgeschlossen worden. Ergebnisse, Messwerte, Module und direkte Tests stehen in
+`docs/taxonomy-import-prototype.md`. Das Architekturkonzept ist damit für den Bedien- und API-Entwurf in Phase 9.4
+freigegeben. Vollimport, genaue lokale Speicherreserve und produktive Explorer-Integration bleiben bis zur
+Abnahme von Phase 9.4 gesperrt.
 
 ## 14. Nach Phase 9.2 bewusst offene Entscheidungen
 

@@ -32,6 +32,9 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
 | `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` ist nur noch Kompositions- und HTTP-Adapterwurzel. `request-security.mjs`, `http-routing.mjs` und `request-router.mjs` bilden Sicherheits-, HTTP- und Routinggrenzen; `species-model.mjs` validiert einzelne Arteinträge, während `explorer-model.mjs` das vollständige read-only Explorer-Modell und seine Revision aufbaut. CRUD liegt in `species-create.mjs`, `species-delete.mjs` und `species-edit.mjs`; Medienabläufe liegen in `map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und `asset-maintenance.mjs`. `pipeline-controller.mjs`, `project-publication.mjs` und `backup-service.mjs` besitzen Pipeline, Veröffentlichung und NAS-Sicherung. `media-assets.mjs`, `asset-files.mjs`, `asset-backups.mjs`, `pipeline-log.mjs` und `manual-map-documentation.mjs` besitzen Medienprüfung, Assetdateiliste, Sicherungen, Prozessausgabe und Kartendokumentation. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze, `public/app-measurements.js` die gemeinsame Messwert-/Formulargrenze und `public/app-dialogs.js` die gemeinsame Modal-/Medienfreigabegrenze. |
+| `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenzkern für lokalen Speicher, Fixture-Prüfung, SQLite-Schema, Import, Suchtext und read-only Suche. Er ist noch nicht an produktive Explorer-Routen oder den Neue-Art-Assistenten angeschlossen. |
+| `scripts/taxonomy-prototype*.mjs` | Reproduzierbarer begrenzter Phase-9.3-Import, Fixture-Erzeugung und End-to-End-Test. |
+| `scripts/fixtures/taxonomy/` | Kleine versionierte Testdaten mit Release-Metadaten und Prüfsummen; keine vollständige Taxonomiedatenbank. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
 | `scripts/spectrogram-renderer.mjs` | Gemeinsamer FFmpeg-Renderer fuer CLI-Generator und manuellen Soundimport im Arten-Explorer. |
@@ -83,6 +86,7 @@ HTTP-Auslieferungsverträge.
 |---|---|
 | `node_modules/` | lokal installiert, ignoriert |
 | `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
+| `taxonomy-data/`, `species-explorer/taxonomy-data/` | lokale, reproduzierbare Taxonomie-Releases und SQLite-Dateien; ignoriert und nie Bestandteil von Pages |
 | `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |

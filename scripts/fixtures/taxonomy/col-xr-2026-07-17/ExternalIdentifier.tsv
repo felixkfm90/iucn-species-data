@@ -1,0 +1,377 @@
+taxonID	type	identifier	source	release
+7CYVX	col	7CYVX	Catalogue of Life	COL26.7 XR
+7CYVX	worms	urn:lsid:marinespecies.org:taxname:558602	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	avibase	eurbla	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	taxref	4117	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	taicol	taicol: 110792	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	dyntaxa	urn:lsid:dyntaxa.se:Taxon:102998	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	inat	12716	Catalogue of Life identifier mapping	COL26.7 XR
+7CYVX	wikidata	Q25234	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	col	647VS	Catalogue of Life	COL26.7 XR
+647VS	worms	urn:lsid:marinespecies.org:taxname:558599	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	taxref	198744	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	taicol	x6X5	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1001574	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	irmng	urn:lsid:irmng.org:taxname:1021838	Catalogue of Life identifier mapping	COL26.7 XR
+647VS	wikidata	Q115661	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	col	T4K9X	Catalogue of Life	COL26.7 XR
+T4K9X	worms	urn:lsid:marinespecies.org:taxname:196049	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	avibase	turdid1	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	taxref	186139	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	taicol	x6X3	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002106	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	irmng	urn:lsid:irmng.org:taxname:108421	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	inat	15977	Catalogue of Life identifier mapping	COL26.7 XR
+T4K9X	wikidata	Q26050	Catalogue of Life identifier mapping	COL26.7 XR
+3RL	col	3RL	Catalogue of Life	COL26.7 XR
+V2	col	V2	Catalogue of Life	COL26.7 XR
+9CK8W	col	9CK8W	Catalogue of Life	COL26.7 XR
+8VVWB	col	8VVWB	Catalogue of Life	COL26.7 XR
+8V4V5	col	8V4V5	Catalogue of Life	COL26.7 XR
+8V4V3	col	8V4V3	Catalogue of Life	COL26.7 XR
+CH2	col	CH2	Catalogue of Life	COL26.7 XR
+N	col	N	Catalogue of Life	COL26.7 XR
+CS5HF	col	CS5HF	Catalogue of Life	COL26.7 XR
+R6J7	col	R6J7	Catalogue of Life	COL26.7 XR
+R6J7	worms	urn:lsid:marinespecies.org:taxname:558536	Catalogue of Life identifier mapping	COL26.7 XR
+R6J7	avibase	eurgol	Catalogue of Life identifier mapping	COL26.7 XR
+R6J7	taxref	4583	Catalogue of Life identifier mapping	COL26.7 XR
+R6J7	dyntaxa	urn:lsid:dyntaxa.se:Taxon:103043	Catalogue of Life identifier mapping	COL26.7 XR
+R6J7	inat	9398	Catalogue of Life identifier mapping	COL26.7 XR
+R6J7	wikidata	Q25418	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	col	62KHQ	Catalogue of Life	COL26.7 XR
+62KHQ	worms	urn:lsid:marinespecies.org:taxname:232061	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	taxref	190350	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1001602	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	irmng	urn:lsid:irmng.org:taxname:1031448	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	inat	9358	Catalogue of Life identifier mapping	COL26.7 XR
+62KHQ	wikidata	Q27757	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	col	6244D	Catalogue of Life	COL26.7 XR
+6244D	worms	urn:lsid:marinespecies.org:taxname:159390	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	avibase	fringi1	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	taxref	186130	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	taicol	x827	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002121	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	dyntaxa	urn:lsid:dyntaxa.se:TaxonName:59687	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	irmng	urn:lsid:irmng.org:taxname:109947	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	inat	9079	Catalogue of Life identifier mapping	COL26.7 XR
+6244D	wikidata	Q160835	Catalogue of Life identifier mapping	COL26.7 XR
+32NH2	col	32NH2	Catalogue of Life	COL26.7 XR
+32NH2	avibase	blutit	Catalogue of Life identifier mapping	COL26.7 XR
+32NH2	taxref	534742	Catalogue of Life identifier mapping	COL26.7 XR
+32NH2	dyntaxa	urn:lsid:dyntaxa.se:Taxon:103025	Catalogue of Life identifier mapping	COL26.7 XR
+32NH2	inat	144849	Catalogue of Life identifier mapping	COL26.7 XR
+32NH2	wikidata	Q25404	Catalogue of Life identifier mapping	COL26.7 XR
+3XN8	col	3XN8	Catalogue of Life	COL26.7 XR
+3XN8	taxref	836858	Catalogue of Life identifier mapping	COL26.7 XR
+3XN8	dyntaxa	urn:lsid:dyntaxa.se:Taxon:6001990	Catalogue of Life identifier mapping	COL26.7 XR
+3XN8	irmng	urn:lsid:irmng.org:taxname:1292947	Catalogue of Life identifier mapping	COL26.7 XR
+3XN8	inat	144357	Catalogue of Life identifier mapping	COL26.7 XR
+3XN8	wikidata	Q133565	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	col	626B2	Catalogue of Life	COL26.7 XR
+626B2	worms	urn:lsid:marinespecies.org:taxname:558564	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	avibase	parida1	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	taxref	186141	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	taicol	xDR2	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002112	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	irmng	urn:lsid:irmng.org:taxname:104694	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	inat	13547	Catalogue of Life identifier mapping	COL26.7 XR
+626B2	wikidata	Q168473	Catalogue of Life identifier mapping	COL26.7 XR
+4TZJZ	col	4TZJZ	Catalogue of Life	COL26.7 XR
+4TZJZ	inat	43425	Catalogue of Life identifier mapping	COL26.7 XR
+7BQ9	col	7BQ9	Catalogue of Life	COL26.7 XR
+7BQ9	taxref	443562	Catalogue of Life identifier mapping	COL26.7 XR
+7BQ9	irmng	urn:lsid:irmng.org:taxname:1022051	Catalogue of Life identifier mapping	COL26.7 XR
+7BQ9	inat	43423	Catalogue of Life identifier mapping	COL26.7 XR
+628NK	col	628NK	Catalogue of Life	COL26.7 XR
+7TZ	col	7TZ	Catalogue of Life	COL26.7 XR
+7TZ	taxref	443491	Catalogue of Life identifier mapping	COL26.7 XR
+7TZ	irmng	urn:lsid:irmng.org:taxname:104395	Catalogue of Life identifier mapping	COL26.7 XR
+7TZ	inat	43399	Catalogue of Life identifier mapping	COL26.7 XR
+4PM	col	4PM	Catalogue of Life	COL26.7 XR
+4DT	col	4DT	Catalogue of Life	COL26.7 XR
+3W7	col	3W7	Catalogue of Life	COL26.7 XR
+LG	col	LG	Catalogue of Life	COL26.7 XR
+6226C	col	6226C	Catalogue of Life	COL26.7 XR
+6224G	col	6224G	Catalogue of Life	COL26.7 XR
+3YWY2	col	3YWY2	Catalogue of Life	COL26.7 XR
+3YWY2	worms	urn:lsid:marinespecies.org:taxname:137092	Catalogue of Life identifier mapping	COL26.7 XR
+3YWY2	taxref	60867	Catalogue of Life identifier mapping	COL26.7 XR
+3YWY2	taicol	taicol: 78498	Catalogue of Life identifier mapping	COL26.7 XR
+3YWY2	dyntaxa	urn:lsid:dyntaxa.se:Taxon:233172	Catalogue of Life identifier mapping	COL26.7 XR
+3YWY2	inat	41566	Catalogue of Life identifier mapping	COL26.7 XR
+3YWY2	wikidata	Q132905	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	col	62ZBS	Catalogue of Life	COL26.7 XR
+62ZBS	worms	urn:lsid:marinespecies.org:taxname:137014	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	taxref	194532	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	taicol	x3MP8	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1008686	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	irmng	urn:lsid:irmng.org:taxname:1319463	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	inat	41565	Catalogue of Life identifier mapping	COL26.7 XR
+62ZBS	wikidata	Q12771348	Catalogue of Life identifier mapping	COL26.7 XR
+722	col	722	Catalogue of Life	COL26.7 XR
+722	worms	urn:lsid:marinespecies.org:taxname:136979	Catalogue of Life identifier mapping	COL26.7 XR
+722	taxref	186226	Catalogue of Life identifier mapping	COL26.7 XR
+722	taicol	x3BBX	Catalogue of Life identifier mapping	COL26.7 XR
+722	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002167	Catalogue of Life identifier mapping	COL26.7 XR
+722	irmng	urn:lsid:irmng.org:taxname:104001	Catalogue of Life identifier mapping	COL26.7 XR
+722	inat	41546	Catalogue of Life identifier mapping	COL26.7 XR
+722	wikidata	Q232829	Catalogue of Life identifier mapping	COL26.7 XR
+62396	col	62396	Catalogue of Life	COL26.7 XR
+WP	col	WP	Catalogue of Life	COL26.7 XR
+4Y5CH	col	4Y5CH	Catalogue of Life	COL26.7 XR
+4Y5CH	worms	urn:lsid:marinespecies.org:taxname:127160	Catalogue of Life identifier mapping	COL26.7 XR
+4Y5CH	tsn	173002	Catalogue of Life identifier mapping	COL26.7 XR
+4Y5CH	taxref	70648	Catalogue of Life identifier mapping	COL26.7 XR
+4Y5CH	inat	55396	Catalogue of Life identifier mapping	COL26.7 XR
+4Y5CH	wikidata	Q27773	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	col	KVLM5	Catalogue of Life	COL26.7 XR
+KVLM5	worms	urn:lsid:marinespecies.org:taxname:126132	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	tsn	173000	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	taxref	197734	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	taicol	x38LB	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	irmng	urn:lsid:irmng.org:taxname:1298302	Catalogue of Life identifier mapping	COL26.7 XR
+KVLM5	wikidata	Q531725	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	col	KVSH7	Catalogue of Life	COL26.7 XR
+KVSH7	worms	urn:lsid:marinespecies.org:taxname:125581	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	tsn	172980	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	taxref	185891	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	taicol	x4WQ	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	irmng	urn:lsid:irmng.org:taxname:114064	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	inat	55397	Catalogue of Life identifier mapping	COL26.7 XR
+KVSH7	wikidata	Q736867	Catalogue of Life identifier mapping	COL26.7 XR
+622V4	col	622V4	Catalogue of Life	COL26.7 XR
+8V4VD	col	8V4VD	Catalogue of Life	COL26.7 XR
+KTWM8	col	KTWM8	Catalogue of Life	COL26.7 XR
+8VR36	col	8VR36	Catalogue of Life	COL26.7 XR
+HRM8	col	HRM8	Catalogue of Life	COL26.7 XR
+HRM8	worms	urn:lsid:marinespecies.org:taxname:123776	Catalogue of Life identifier mapping	COL26.7 XR
+HRM8	tsn	157220	Catalogue of Life identifier mapping	COL26.7 XR
+HRM8	taxref	28405	Catalogue of Life identifier mapping	COL26.7 XR
+HRM8	dyntaxa	urn:lsid:dyntaxa.se:Taxon:217671	Catalogue of Life identifier mapping	COL26.7 XR
+HRM8	inat	120138	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	col	7NPX9	Catalogue of Life	COL26.7 XR
+7NPX9	worms	urn:lsid:marinespecies.org:taxname:123219	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	tsn	157215	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	taxref	189560	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	taicol	x3QQ4	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1004743	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	irmng	urn:lsid:irmng.org:taxname:1330147	Catalogue of Life identifier mapping	COL26.7 XR
+7NPX9	inat	48903	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	col	7NG2H	Catalogue of Life	COL26.7 XR
+7NG2H	worms	urn:lsid:marinespecies.org:taxname:123121	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	tsn	157212	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	taxref	188481	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	taicol	xC66	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2001919	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	irmng	urn:lsid:irmng.org:taxname:100545	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	inat	47671	Catalogue of Life identifier mapping	COL26.7 XR
+7NG2H	wikidata	Q135542	Catalogue of Life identifier mapping	COL26.7 XR
+7NFB5	col	7NFB5	Catalogue of Life	COL26.7 XR
+7NF5X	col	7NF5X	Catalogue of Life	COL26.7 XR
+8VLBK	col	8VLBK	Catalogue of Life	COL26.7 XR
+8VLBJ	col	8VLBJ	Catalogue of Life	COL26.7 XR
+B8V3Q	col	B8V3Q	Catalogue of Life	COL26.7 XR
+7NF2N	col	7NF2N	Catalogue of Life	COL26.7 XR
+CHN	col	CHN	Catalogue of Life	COL26.7 XR
+3WDNW	col	3WDNW	Catalogue of Life	COL26.7 XR
+3WDNW	worms	urn:lsid:marinespecies.org:taxname:123920	Catalogue of Life identifier mapping	COL26.7 XR
+3WDNW	tsn	156872	Catalogue of Life identifier mapping	COL26.7 XR
+3WDNW	taxref	379371	Catalogue of Life identifier mapping	COL26.7 XR
+3WDNW	dyntaxa	urn:lsid:dyntaxa.se:Taxon:217680	Catalogue of Life identifier mapping	COL26.7 XR
+3WDNW	inat	363970	Catalogue of Life identifier mapping	COL26.7 XR
+3WDNW	wikidata	Q2014285	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	col	7PCMQ	Catalogue of Life	COL26.7 XR
+7PCMQ	worms	urn:lsid:marinespecies.org:taxname:123260	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	tsn	156865	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	taxref	357843	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	taicol	x59T	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1004751	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	irmng	urn:lsid:irmng.org:taxname:1335011	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	inat	122245	Catalogue of Life identifier mapping	COL26.7 XR
+7PCMQ	wikidata	Q3200764	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	col	7NJKG	Catalogue of Life	COL26.7 XR
+7NJKG	worms	urn:lsid:marinespecies.org:taxname:123129	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	tsn	156864	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	taxref	351772	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	taicol	x59R	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2001912	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	irmng	urn:lsid:irmng.org:taxname:101560	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	inat	122244	Catalogue of Life identifier mapping	COL26.7 XR
+7NJKG	wikidata	Q3266368	Catalogue of Life identifier mapping	COL26.7 XR
+7NFDG	col	7NFDG	Catalogue of Life	COL26.7 XR
+7NF63	col	7NF63	Catalogue of Life	COL26.7 XR
+38FSW	col	38FSW	Catalogue of Life	COL26.7 XR
+38FSW	worms	urn:lsid:marinespecies.org:taxname:125161	Catalogue of Life identifier mapping	COL26.7 XR
+38FSW	tsn	157183	Catalogue of Life identifier mapping	COL26.7 XR
+38FSW	taxref	386293	Catalogue of Life identifier mapping	COL26.7 XR
+845Y3	col	845Y3	Catalogue of Life	COL26.7 XR
+7NXXF	col	7NXXF	Catalogue of Life	COL26.7 XR
+7NXXF	worms	urn:lsid:marinespecies.org:taxname:123275	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	tsn	157179	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	taxref	357851	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	taicol	x7S8	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	irmng	urn:lsid:irmng.org:taxname:1036446	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	inat	117445	Catalogue of Life identifier mapping	COL26.7 XR
+7NXXF	wikidata	Q2422911	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	col	7NHFD	Catalogue of Life	COL26.7 XR
+7NHFD	worms	urn:lsid:marinespecies.org:taxname:123132	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	tsn	157151	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	taxref	351775	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	taicol	x7S6	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2001916	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	irmng	urn:lsid:irmng.org:taxname:101377	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	inat	47666	Catalogue of Life identifier mapping	COL26.7 XR
+7NHFD	wikidata	Q146640	Catalogue of Life identifier mapping	COL26.7 XR
+7NFG4	col	7NFG4	Catalogue of Life	COL26.7 XR
+7NF62	col	7NF62	Catalogue of Life	COL26.7 XR
+LW68N	col	LW68N	Catalogue of Life	COL26.7 XR
+LLSWG	col	LLSWG	Catalogue of Life	COL26.7 XR
+4R5YN	col	4R5YN	Catalogue of Life	COL26.7 XR
+4R5YN	wfo	wfo-0000292858	Catalogue of Life identifier mapping	COL26.7 XR
+4R5YN	vascan	5969	Catalogue of Life identifier mapping	COL26.7 XR
+4R5YN	dyntaxa	urn:lsid:dyntaxa.se:Taxon:221406	Catalogue of Life identifier mapping	COL26.7 XR
+4R5YN	grin	30739	Catalogue of Life identifier mapping	COL26.7 XR
+4R5YN	tpl	kew-174750	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	col	8W2YL	Catalogue of Life	COL26.7 XR
+8W2YL	wfo	wfo-4000032377	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	vascan	1609	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	taicol	x37FB	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	dyntaxa	urn:lsid:dyntaxa.se:Taxon:1006232	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	grin	gen:10203	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	tpl	x4KW	Catalogue of Life identifier mapping	COL26.7 XR
+8W2YL	inat	47851	Catalogue of Life identifier mapping	COL26.7 XR
+V58RW	col	V58RW	Catalogue of Life	COL26.7 XR
+NPBN9	col	NPBN9	Catalogue of Life	COL26.7 XR
+NPBN9	wfo	wfo-7000000231	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	vascan	133	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	taicol	x35BF	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002757	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	grin	fam:441	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	tpl	x4KT	Catalogue of Life identifier mapping	COL26.7 XR
+NPBN9	inat	47852	Catalogue of Life identifier mapping	COL26.7 XR
+384	col	384	Catalogue of Life	COL26.7 XR
+MG	col	MG	Catalogue of Life	COL26.7 XR
+TP	col	TP	Catalogue of Life	COL26.7 XR
+CMQ8S	col	CMQ8S	Catalogue of Life	COL26.7 XR
+P	col	P	Catalogue of Life	COL26.7 XR
+7KPMG	col	7KPMG	Catalogue of Life	COL26.7 XR
+7KPMG	wfo	wfo-0000292879	Catalogue of Life identifier mapping	COL26.7 XR
+7KPMG	grin	402769	Catalogue of Life identifier mapping	COL26.7 XR
+7KPMG	tpl	kew-174771	Catalogue of Life identifier mapping	COL26.7 XR
+7KPMG	inat	1551900	Catalogue of Life identifier mapping	COL26.7 XR
+5TYZ9	col	5TYZ9	Catalogue of Life	COL26.7 XR
+5TYZ9	worms	urn:lsid:marinespecies.org:taxname:1456971	Catalogue of Life identifier mapping	COL26.7 XR
+5TYZ9	dyntaxa	urn:lsid:dyntaxa.se:Taxon:236537	Catalogue of Life identifier mapping	COL26.7 XR
+5TYZ9	wikidata	Q131227	Catalogue of Life identifier mapping	COL26.7 XR
+T7Z	col	T7Z	Catalogue of Life	COL26.7 XR
+T7Z	worms	urn:lsid:marinespecies.org:taxname:1456970	Catalogue of Life identifier mapping	COL26.7 XR
+T7Z	taicol	xJJY	Catalogue of Life identifier mapping	COL26.7 XR
+T7Z	inat	48419	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	col	68Y	Catalogue of Life	COL26.7 XR
+68Y	tsn	623896	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	taicol	xJJW	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2003516	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	dyntaxa	urn:lsid:dyntaxa.se:TaxonName:147326	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	inat	118249	Catalogue of Life identifier mapping	COL26.7 XR
+68Y	wikidata	Q734651	Catalogue of Life identifier mapping	COL26.7 XR
+N8	col	N8	Catalogue of Life	COL26.7 XR
+7C	col	7C	Catalogue of Life	COL26.7 XR
+BM	col	BM	Catalogue of Life	COL26.7 XR
+F	col	F	Catalogue of Life	COL26.7 XR
+NT3L7	col	NT3L7	Catalogue of Life	COL26.7 XR
+CS33H	col	CS33H	Catalogue of Life	COL26.7 XR
+CS33H	taicol	x447V	Catalogue of Life identifier mapping	COL26.7 XR
+CS33H	inat	450838	Catalogue of Life identifier mapping	COL26.7 XR
+CS33H	wikidata	Q311055	Catalogue of Life identifier mapping	COL26.7 XR
+CRYWR	col	CRYWR	Catalogue of Life	COL26.7 XR
+CRYW5	col	CRYW5	Catalogue of Life	COL26.7 XR
+BQ	col	BQ	Catalogue of Life	COL26.7 XR
+CSWBG	col	CSWBG	Catalogue of Life	COL26.7 XR
+CTJJY	col	CTJJY	Catalogue of Life	COL26.7 XR
+CRRY6	col	CRRY6	Catalogue of Life	COL26.7 XR
+CS33N	col	CS33N	Catalogue of Life	COL26.7 XR
+VB8KH	col	VB8KH	Catalogue of Life	COL26.7 XR
+VB8KH	wikidata	Q21365241	Catalogue of Life identifier mapping	COL26.7 XR
+VBHYP	col	VBHYP	Catalogue of Life	COL26.7 XR
+FXV	col	FXV	Catalogue of Life	COL26.7 XR
+FXV	wfo	wfo-7000000543	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	taicol	x32FK	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002723	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	grin	fam:998	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	tpl	x36R	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	inat	59992	Catalogue of Life identifier mapping	COL26.7 XR
+FXV	wikidata	Q327639	Catalogue of Life identifier mapping	COL26.7 XR
+3ZX	col	3ZX	Catalogue of Life	COL26.7 XR
+9CJW7	col	9CJW7	Catalogue of Life	COL26.7 XR
+9CJW7	wfo	wfo-4000002563	Catalogue of Life identifier mapping	COL26.7 XR
+9CJW7	grin	gen:805	Catalogue of Life identifier mapping	COL26.7 XR
+9CJW7	tpl	xNB8	Catalogue of Life identifier mapping	COL26.7 XR
+9CJW7	inat	141529	Catalogue of Life identifier mapping	COL26.7 XR
+9CJW7	wikidata	Q2662073	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	col	623QT	Catalogue of Life	COL26.7 XR
+623QT	wfo	wfo-7000000323	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	vascan	132	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	taicol	xHXX	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002765	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	grin	fam:440	Catalogue of Life identifier mapping	COL26.7 XR
+623QT	inat	47122	Catalogue of Life identifier mapping	COL26.7 XR
+383	col	383	Catalogue of Life	COL26.7 XR
+62D8D	col	62D8D	Catalogue of Life	COL26.7 XR
+62D8D	taxref	645119	Catalogue of Life identifier mapping	COL26.7 XR
+62D8D	irmng	urn:lsid:irmng.org:taxname:1277034	Catalogue of Life identifier mapping	COL26.7 XR
+62D8D	inat	43412	Catalogue of Life identifier mapping	COL26.7 XR
+6JD	col	6JD	Catalogue of Life	COL26.7 XR
+6JD	taxref	645118	Catalogue of Life identifier mapping	COL26.7 XR
+6JD	irmng	urn:lsid:irmng.org:taxname:119706	Catalogue of Life identifier mapping	COL26.7 XR
+6JD	inat	846189	Catalogue of Life identifier mapping	COL26.7 XR
+5K5L8	col	5K5L8	Catalogue of Life	COL26.7 XR
+5K5L8	inat	557485	Catalogue of Life identifier mapping	COL26.7 XR
+4CGXP	col	4CGXP	Catalogue of Life	COL26.7 XR
+4CGXP	taxref	644245	Catalogue of Life identifier mapping	COL26.7 XR
+4CGXP	inat	41964	Catalogue of Life identifier mapping	COL26.7 XR
+6DBT	col	6DBT	Catalogue of Life	COL26.7 XR
+6DBT	taxref	199710	Catalogue of Life identifier mapping	COL26.7 XR
+6DBT	taicol	x45SB	Catalogue of Life identifier mapping	COL26.7 XR
+6DBT	irmng	urn:lsid:irmng.org:taxname:1330102	Catalogue of Life identifier mapping	COL26.7 XR
+6DBT	inat	41962	Catalogue of Life identifier mapping	COL26.7 XR
+628LP	col	628LP	Catalogue of Life	COL26.7 XR
+623RM	col	623RM	Catalogue of Life	COL26.7 XR
+623RM	worms	urn:lsid:marinespecies.org:taxname:1460004	Catalogue of Life identifier mapping	COL26.7 XR
+623RM	taxref	186221	Catalogue of Life identifier mapping	COL26.7 XR
+623RM	taicol	xFKC	Catalogue of Life identifier mapping	COL26.7 XR
+623RM	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002152	Catalogue of Life identifier mapping	COL26.7 XR
+623RM	irmng	urn:lsid:irmng.org:taxname:104889	Catalogue of Life identifier mapping	COL26.7 XR
+623RM	inat	41944	Catalogue of Life identifier mapping	COL26.7 XR
+4DL	col	4DL	Catalogue of Life	COL26.7 XR
+VS	col	VS	Catalogue of Life	COL26.7 XR
+4RKVF	col	4RKVF	Catalogue of Life	COL26.7 XR
+4RKVF	avibase	dodo1	Catalogue of Life identifier mapping	COL26.7 XR
+4RKVF	inat	2713	Catalogue of Life identifier mapping	COL26.7 XR
+4RKVF	wikidata	Q43502	Catalogue of Life identifier mapping	COL26.7 XR
+7773	col	7773	Catalogue of Life	COL26.7 XR
+7773	irmng	urn:lsid:irmng.org:taxname:1345409	Catalogue of Life identifier mapping	COL26.7 XR
+V9STH	col	V9STH	Catalogue of Life	COL26.7 XR
+8GD	col	8GD	Catalogue of Life	COL26.7 XR
+8GD	worms	urn:lsid:marinespecies.org:taxname:196065	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	avibase	columb2	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	taxref	186076	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	taicol	xBJP	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	dyntaxa	urn:lsid:dyntaxa.se:Taxon:2002088	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	irmng	urn:lsid:irmng.org:taxname:101600	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	inat	2715	Catalogue of Life identifier mapping	COL26.7 XR
+8GD	wikidata	Q10856	Catalogue of Life identifier mapping	COL26.7 XR
+Z8	col	Z8	Catalogue of Life	COL26.7 XR
+TPJ7K	col	TPJ7K	Catalogue of Life	COL26.7 XR
+TPJ7K	inat	339939	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ7K	wikidata	Q13098211	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ6N	col	TPJ6N	Catalogue of Life	COL26.7 XR
+TPJ6N	irmng	urn:lsid:irmng.org:taxname:1206683	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ6N	inat	339942	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ6N	wikidata	Q14332	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ65	col	TPJ65	Catalogue of Life	COL26.7 XR
+TPJ65	irmng	urn:lsid:irmng.org:taxname:116228	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ65	inat	339941	Catalogue of Life identifier mapping	COL26.7 XR
+TPJ65	wikidata	Q131050	Catalogue of Life identifier mapping	COL26.7 XR
+CW2V8	col	CW2V8	Catalogue of Life	COL26.7 XR
+NFR9H	col	NFR9H	Catalogue of Life	COL26.7 XR

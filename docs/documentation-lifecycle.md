@@ -20,6 +20,9 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 - `docs/local-taxonomy-database-design.md` ist die verbindliche Speicher-, Schema-, Such-, Import- und
   Rollbackarchitektur für Phase 9.2. Änderungen an lokaler Taxonomiedatenbank, Reichsauswahl, Autocomplete,
   Animalia-Fallback oder Referenzdatenpfaden müssen dort und im Phase-9-Plan gemeinsam dokumentiert werden.
+- `docs/taxonomy-import-prototype.md` dokumentiert Implementierung, Fixture, Messwerte, Tests und Grenzen des
+  begrenzten Phase-9.3-Prototyps. Produktive Integrationen dürfen daraus erst nach dem Bedien- und API-Entwurf in
+  Phase 9.4 abgeleitet werden.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

@@ -76,6 +76,11 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/server.test.mjs`, `server-species-workflows.test.mjs`, `server-assets.test.mjs` und
   `server-cleanup-search.test.mjs`: fachlich getrennte API-Integrationstests
 - `species-explorer/explorer-ui-contract.test.mjs`: Oberflächen-, Modulbesitz- und Auslieferungsverträge
+- `species-explorer/taxonomy-storage.mjs`, `taxonomy-fixture.mjs`, `taxonomy-schema.mjs`,
+  `taxonomy-import.mjs`, `taxonomy-store.mjs` und `taxonomy-search-text.mjs`: gekapselter Phase-9-Referenzkern für
+  lokalen SQLite-Speicher, begrenzten Import und read-only Suche; noch ohne produktive Explorer-Route
+- `scripts/taxonomy-prototype.mjs`, `taxonomy-prototype-fetch.mjs` und
+  `scripts/fixtures/taxonomy/`: reproduzierbarer Phase-9.3-Prototyp und kleine versionierte Testfixture
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
 - `scripts/pipeline-error-log.mjs`: fehlertoleranter, auf 256 KiB begrenzter Pipeline-Fehlerlog im lokalen
@@ -694,7 +699,15 @@ Aktuelle Planung:
   Präfix-/FTS5-Suche. Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als
   Vorauswahl und bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem Zeichen. Für Tiere ohne
   bestätigten deutschen Namen ist eine gezielte manuelle Animalia.bio-Recherche vorgesehen; automatisierter
-  Abruf oder Scraping bleibt ausgeschlossen. Als Nächstes folgt der begrenzte Phase-9.3-Importprototyp. Die
+  Abruf oder Scraping bleibt ausgeschlossen. Phase 9.3 ist seit 2026-07-23 abgeschlossen; der Mess- und
+  Implementierungsbericht steht in `docs/taxonomy-import-prototype.md`. Eine kleine festgeschriebene
+  CoL-XR-/WoRMS-Fixture bestätigt streamenden SQLite-Import, Quellenprovenienz, Präfix-/FTS5-Suche,
+  Mehrdeutigkeiten, atomare Aktivierung und Rollback. Die Fixture liegt unter `scripts/fixtures/taxonomy/`; die
+  erzeugte Referenzdatenbank bleibt lokal und ignoriert. `npm.cmd run --silent taxonomy:prototype -- --reset
+  --json` führt den isolierten Prototyp unter `Testlauf/` aus, `npm.cmd run --silent test:taxonomy-prototype` die
+  direkten Tests. Messwerte dieses begrenzten Bestands dürfen nicht linear auf den etwa 1,3 GB großen XR-Vollbestand
+  hochgerechnet werden. Als Nächstes folgt Phase 9.4 mit dem Bedien- und API-Entwurf für Suche, Vorschau,
+  Mehrdeutigkeiten und kontrollierte Übernahme im Neue-Art-Assistenten. Die
   Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp bis zum Lightroom-MVP und zur
   ausdrücklichen Übergabe der Datenverteilung an Phase 10.
   Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
@@ -935,9 +948,10 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
-  Phase 9.1 und 9.2 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. SQLite,
-  lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind verbindlich entworfen. Als
-  Nächstes folgen der begrenzte Importprototyp, Aktualisierungsworkflow und Lightroom-MVP.
+  Phase 9.1 bis 9.3 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. SQLite,
+  lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
+  begrenzten reproduzierbaren Importprototyp bestätigt. Als Nächstes folgen Bedien-/API-Entwurf, vollständiger
+  lokaler Import- und Aktualisierungsworkflow sowie Lightroom-Machbarkeit und -MVP.
 - Phase 10 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
 - Phase 11 - Weitere Erweiterungen:

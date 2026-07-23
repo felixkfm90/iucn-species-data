@@ -86,6 +86,7 @@ Versionierte Referenzen liegen unter:
 - `docs/global-taxonomy-lightroom-plan.md`
 - `docs/taxonomy-source-decision.md`
 - `docs/local-taxonomy-database-design.md`
+- `docs/taxonomy-import-prototype.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -259,6 +260,19 @@ Check ist Bestandteil von `quality:ci`.
 
 Der Audit-Befehl schreibt keine Datei, sondern gibt JSON aus. Zwischenergebnisse gehoeren bei Bedarf nach
 `Testlauf/`; gespeicherte Monatsberichte liegen unter `docs/audits/`.
+
+## Begrenzter Taxonomieprototyp
+
+Der Phase-9.3-Prototyp importiert ausschließlich die kleine versionierte Testfixture in einen ignorierten
+Arbeitsordner unter `Testlauf/`. Er verändert keine produktiven Arten:
+
+```bash
+npm.cmd run --silent taxonomy:prototype -- --reset --json
+npm.cmd run --silent test:taxonomy-prototype
+```
+
+Architektur, Quellen, Messwerte und Grenzen stehen in `docs/taxonomy-import-prototype.md`. Der vollständige
+CoL-XR-Bestand ist noch nicht installiert und darf nicht in Git oder GitHub Pages aufgenommen werden.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
@@ -791,11 +805,16 @@ Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich 
 Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und bidirektionale Vorschläge
 deutsch ↔ wissenschaftlich ab dem ersten Zeichen. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine
 gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden; die Website wird nicht automatisiert
-ausgelesen. Als Nächstes folgt der begrenzte Phase-9.3-Importprototyp; ein produktiver Vollimport wurde noch nicht
-ausgeführt. Danach folgen Phase 10 mit
+ausgelesen. Phase 9.3 hat den begrenzten, reproduzierbaren Importprototyp am 2026-07-23 abgeschlossen. Eine kleine
+versionierte CoL-XR-/WoRMS-Fixture bestätigt den streamenden SQLite-Import, atomare Aktivierung, Rollback,
+Ein-Zeichen-Präfixsuche, deutsch-wissenschaftliche Vorschläge, Synonyme, Homonyme und Quellenprovenienz. Der
+Prototyp bleibt vollständig von produktiven Arten, GitHub Pages und Squarespace getrennt; ein Vollimport wurde noch
+nicht ausgeführt. Als Nächstes folgt Phase 9.4 mit Bedien- und API-Entwurf für Suche, Mehrdeutigkeiten, Vorschau und
+kontrollierte Übernahme im Neue-Art-Assistenten. Danach folgen Phase 10 mit
 Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
-`docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md` und
+`docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
+`docs/taxonomy-import-prototype.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

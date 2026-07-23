@@ -1,0 +1,124 @@
+ID	sourceID	parentID	scientificName	authorship	rank	status	code	extinct	environment	kingdom	alternativeID	colTrustTier
+32NH2	col-sector-1507	3XN8	Cyanistes caeruleus	(Linnaeus, 1758)	species	accepted	zoological	false		Animalia	avibase:blutit,taxref:534742,dyntaxa:urn:lsid:dyntaxa.se:Taxon:103025,inat:144849,wikidata:Q25404	base
+383	col-sector-66227	MG	Fabales	Bromhead	order	accepted	botanical			Plantae		base
+384	col-sector-66228	MG	Fagales	Engl.	order	accepted	botanical			Plantae		base
+38FSW	col-sector-1290	845Y3	Echinaster (Echinaster) sepositus	(Retzius, 1783)	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:125161,tsn:157183,taxref:386293	base
+3BGTD	col-sector-39707	CS33N	Escherichia coli	(Migula, 1895) Castellani & Chalmers, 1919	species	synonym	botanical			Pseudomonadati	inat:450837	xr-supplement
+3RL	col-sector-1507	V2	Passeriformes		order	accepted	zoological	false		Animalia		base
+3W7	col-sector-1508	LG	Primates	Linnaeus, 1758	order	accepted	zoological	false		Animalia		base
+3WDNW	col-sector-1290	7PCMQ	Luidia ciliaris	(Philippi, 1837)	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123920,tsn:156872,taxref:379371,dyntaxa:urn:lsid:dyntaxa.se:Taxon:217680,inat:363970,wikidata:Q2014285	base
+3XN8	col-sector-1507	626B2	Cyanistes	Kaup, 1829	genus	accepted	zoological	false		Animalia	taxref:836858,dyntaxa:urn:lsid:dyntaxa.se:Taxon:6001990,irmng:urn:lsid:irmng.org:taxname:1292947,inat:144357,wikidata:Q133565	base
+3YWY2	col-sector-1508	62ZBS	Megaptera novaeangliae	(Borowski, 1781)	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:137092,taxref:60867,taicol:taicol: 78498,dyntaxa:urn:lsid:dyntaxa.se:Taxon:233172,inat:41566,wikidata:Q132905	base
+3ZX	col-sector-66254	MG	Santalales	R.Br. ex Bercht. & J.Presl	order	accepted	botanical			Plantae		base
+4CGXP	col-sector-1508	6DBT	Panthera leo	(Linnaeus, 1758)	species	accepted	zoological	false		Animalia	taxref:644245,inat:41964	base
+4DL	col-sector-1508	VS	Feliformia	Kretzoi, 1945	suborder	accepted	zoological	false		Animalia		base
+4DT	col-sector-1508	3W7	Haplorrhini	Pocock, 1918	suborder	accepted	zoological	false		Animalia		base
+4PM	col-sector-1508	4DT	Simiiformes	Haeckel, 1866	infraorder	accepted	zoological	false		Animalia		base
+4R5YN	col-sector-66228	8W2YL	Quercus robur	L.	species	accepted	botanical			Plantae	wfo:wfo-0000292858,vascan:5969,dyntaxa:urn:lsid:dyntaxa.se:Taxon:221406,grin:30739,tpl:kew-174750	base
+4RKVF	col-sector-1507	7773	Raphus cucullatus	(Linnaeus, 1758)	species	accepted	zoological	true		Animalia	avibase:dodo1,inat:2713,wikidata:Q43502	base
+4TZJZ	col-sector-1508	7BQ9	Saimiri oerstedii	(Reinhardt, 1872)	species	accepted	zoological	false		Animalia	inat:43425	base
+4Y5CH	col-sector-60427	KVLM5	Solea solea	(Linnaeus, 1758)	species	accepted	zoological			Animalia	worms:urn:lsid:marinespecies.org:taxname:127160,tsn:173002,taxref:70648,inat:55396,wikidata:Q27773	base
+5K5L8	col-sector-1508	4CGXP	Panthera leo leo	(Linnaeus, 1758)	subspecies	accepted	zoological	true		Animalia	inat:557485	base
+5K5LD	col-sector-1508	5K5L8	Panthera leo persica	(Meyer, 1826)	subspecies	synonym	zoological			Animalia		base
+5TYZ9	col-sector-663	T7Z	Amanita muscaria	(L.) Lam.	species	accepted	botanical	false		Fungi	worms:urn:lsid:marinespecies.org:taxname:1456971,dyntaxa:urn:lsid:dyntaxa.se:Taxon:236537,wikidata:Q131227	base
+6224G	col-sector-1508	9CK8W	Mammalia	Linnaeus, 1758	class	accepted	zoological	false		Animalia		base
+6226C	col-sector-1508	6224G	Theria	Parker & Haswell, 1897	subclass	accepted	zoological	false		Animalia		base
+622V4	col-sector-60427	8V4VD	Pleuronectiformes		order	accepted	zoological			Animalia		base
+62396	col-sector-1508	WP	Mysticeti	Flower, 1864	suborder	accepted	zoological	false		Animalia		base
+623QT	col-sector-66262	383	Fabaceae	Lindl.	family	accepted	botanical			Plantae	wfo:wfo-7000000323,vascan:132,taicol:xHXX,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002765,grin:fam:440,inat:47122	base
+623RM	col-sector-1508	4DL	Felidae	Fischer de Waldheim, 1817	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:1460004,taxref:186221,taicol:xFKC,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002152,irmng:urn:lsid:irmng.org:taxname:104889,inat:41944	base
+6244D	col-sector-1507	3RL	Fringillidae	Leach, 1820	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:159390,avibase:fringi1,taxref:186130,taicol:x827,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002121,dyntaxa:urn:lsid:dyntaxa.se:TaxonName:59687,irmng:urn:lsid:irmng.org:taxname:109947,inat:9079,wikidata:Q160835	base
+626B2	col-sector-1507	3RL	Paridae	Vigors, 1825	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:558564,avibase:parida1,taxref:186141,taicol:xDR2,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002112,irmng:urn:lsid:irmng.org:taxname:104694,inat:13547,wikidata:Q168473	base
+628LP	col-sector-1508	623RM	Pantherinae	Pocock, 1917	subfamily	accepted	zoological	false		Animalia		base
+628NK	col-sector-1508	7TZ	Saimiriinae	Miller, 1812	subfamily	accepted	zoological	false		Animalia		base
+62D8D	col-sector-1508	6JD	Aotus	Illiger, 1811	genus	accepted	zoological	false		Animalia	taxref:645119,irmng:urn:lsid:irmng.org:taxname:1277034,inat:43412	base
+62KHQ	col-sector-1507	6244D	Carduelis	Brisson, 1760	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:232061,taxref:190350,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1001602,irmng:urn:lsid:irmng.org:taxname:1031448,inat:9358,wikidata:Q27757	base
+62ZBS	col-sector-1508	722	Megaptera	Gray, 1846	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:137014,taxref:194532,taicol:x3MP8,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1008686,irmng:urn:lsid:irmng.org:taxname:1319463,inat:41565,wikidata:Q12771348	base
+647VS	col-sector-1507	T4K9X	Turdus	Linnaeus, 1758	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:558599,taxref:198744,taicol:x6X5,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1001574,irmng:urn:lsid:irmng.org:taxname:1021838,wikidata:Q115661	base
+68Y	col-sector-663	N8	Amanitaceae	E.-J.Gilbert	family	accepted	botanical			Fungi	tsn:623896,taicol:xJJW,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2003516,dyntaxa:urn:lsid:dyntaxa.se:TaxonName:147326,inat:118249,wikidata:Q734651	base
+6DBT	col-sector-1508	628LP	Panthera	Oken, 1816	genus	accepted	zoological	false		Animalia	taxref:199710,taicol:x45SB,irmng:urn:lsid:irmng.org:taxname:1330102,inat:41962	base
+6JD	col-sector-1508	4PM	Aotidae	Elliot, 1913	family	accepted	zoological	false		Animalia	taxref:645118,irmng:urn:lsid:irmng.org:taxname:119706,inat:846189	base
+722	col-sector-1508	62396	Balaenopteridae	Gray, 1864	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:136979,taxref:186226,taicol:x3BBX,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002167,irmng:urn:lsid:irmng.org:taxname:104001,inat:41546,wikidata:Q232829	base
+7773	col-sector-1507	V9STH	Raphus	Brisson, 1760	genus	accepted	zoological	true		Animalia	irmng:urn:lsid:irmng.org:taxname:1345409	base
+7BQ9	col-sector-1508	628NK	Saimiri	Voigt in G. Cuvier, 1831	genus	accepted	zoological	false		Animalia	taxref:443562,irmng:urn:lsid:irmng.org:taxname:1022051,inat:43423	base
+7C	col-sector-663	BM	Agaricomycetes		class	accepted	botanical			Fungi		base
+7CYVX	col-sector-1507	647VS	Turdus merula	Linnaeus, 1758	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:558602,avibase:eurbla,taxref:4117,taicol:taicol: 110792,dyntaxa:urn:lsid:dyntaxa.se:Taxon:102998,inat:12716,wikidata:Q25234	base
+7KPMG	col-sector-66228	4R5YN	Quercus robur subsp. brutia	(Ten.) O.Schwarz	subspecies	accepted	botanical			Plantae	wfo:wfo-0000292879,grin:402769,tpl:kew-174771,inat:1551900	base
+7NF2N	col-xr-315834	CHN	Asterozoa		subphylum	accepted				Animalia		base
+7NF5X	col-sector-1290	8VLBK	Forcipulatacea	Blake, 1987	superorder	accepted	zoological	false		Animalia		base
+7NF62	col-sector-1290	8VLBK	Spinulosacea	Blake, 1987	superorder	accepted	zoological	false		Animalia		base
+7NF63	col-sector-1290	8VLBK	Valvatacea	Blake, 1987	superorder	accepted	zoological	false		Animalia		base
+7NFB5	col-sector-1290	7NF5X	Forcipulatida	Perrier, 1884	order	accepted	zoological	false		Animalia		base
+7NFDG	col-sector-1290	7NF63	Paxillosida	Perrier, 1884	order	accepted	zoological	false		Animalia		base
+7NFG4	col-sector-1290	7NF62	Spinulosida	Perrier, 1884	order	accepted	zoological	false		Animalia		base
+7NG2H	col-sector-1290	7NFB5	Asteriidae	Gray, 1840	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123121,tsn:157212,taxref:188481,taicol:xC66,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2001919,irmng:urn:lsid:irmng.org:taxname:100545,inat:47671,wikidata:Q135542	base
+7NHFD	col-sector-1290	7NFG4	Echinasteridae	Verrill, 1867	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123132,tsn:157151,taxref:351775,taicol:x7S6,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2001916,irmng:urn:lsid:irmng.org:taxname:101377,inat:47666,wikidata:Q146640	base
+7NJKG	col-sector-1290	7NFDG	Luidiidae	Sladen, 1889	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123129,tsn:156864,taxref:351772,taicol:x59R,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2001912,irmng:urn:lsid:irmng.org:taxname:101560,inat:122244,wikidata:Q3266368	base
+7NPX9	col-sector-1290	7NG2H	Asterias	Linnaeus, 1758	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123219,tsn:157215,taxref:189560,taicol:x3QQ4,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1004743,irmng:urn:lsid:irmng.org:taxname:1330147,inat:48903	base
+7NXXF	col-sector-1290	7NHFD	Echinaster	Müller & Troschel, 1840	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123275,tsn:157179,taxref:357851,taicol:x7S8,irmng:urn:lsid:irmng.org:taxname:1036446,inat:117445,wikidata:Q2422911	base
+7PCMQ	col-sector-1290	7NJKG	Luidia	Forbes, 1839	genus	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123260,tsn:156865,taxref:357843,taicol:x59T,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1004751,irmng:urn:lsid:irmng.org:taxname:1335011,inat:122245,wikidata:Q3200764	base
+7TZ	col-sector-1508	4PM	Cebidae	Bonaparte, 1831	family	accepted	zoological	false		Animalia	taxref:443491,irmng:urn:lsid:irmng.org:taxname:104395,inat:43399	base
+845Y3	col-sector-1290	7NXXF	Echinaster (Echinaster)	Müller & Troschel, 1840	subgenus	accepted	zoological	false		Animalia		base
+8GD	col-sector-1507	Z8	Columbidae	Illiger, 1811	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:196065,avibase:columb2,taxref:186076,taicol:xBJP,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002088,irmng:urn:lsid:irmng.org:taxname:101600,inat:2715,wikidata:Q10856	base
+8V4V3	col-xr-315834	CH2	Vertebrata		subphylum	accepted				Animalia		base
+8V4V5	col-xr-315834	8V4V3	Gnathostomata		infraphylum	accepted				Animalia		base
+8V4VD	col-sector-60427	KTWM8	Teleostei		class	accepted	zoological			Animalia		base
+8VLBJ	col-sector-1290	B8V3Q	Ambuloasteroidea	Blake & Hagdorn, 2003	subclass	accepted	zoological	false		Animalia		base
+8VLBK	col-sector-1290	8VLBJ	Neoasteroidea	Gale, 1987	infraclass	accepted	zoological	false		Animalia		base
+8VR36	col-sector-60427	8VVWB	Actinopterygii		gigaclass	accepted	zoological			Animalia		base
+8VVWB	col-xr-315834	8V4V5	Osteichthyes		parvphylum	accepted				Animalia		base
+8W2YL	col-sector-66228	V58RW	Quercus	L.	genus	accepted	botanical			Plantae	wfo:wfo-4000032377,vascan:1609,taicol:x37FB,dyntaxa:urn:lsid:dyntaxa.se:Taxon:1006232,grin:gen:10203,tpl:x4KW,inat:47851	base
+9CJW7	col-sector-66262	623QT	Aotus	Sm.	genus	accepted	botanical			Plantae	wfo:wfo-4000002563,grin:gen:805,tpl:xNB8,inat:141529,wikidata:Q2662073	base
+9CK8W	col-xr-315834	8VVWB	Tetrapoda		megaclass	accepted				Animalia		base
+B8V3Q	col-sector-1290	7NF2N	Asteroidea	de Blainville, 1830	class	accepted	zoological	false		Animalia		base
+BM	col-sector-663	F	Basidiomycota		phylum	accepted	botanical			Fungi		base
+BQ	col-sector-59057	CSWBG	Gammaproteobacteria	Garrity et al., 2005	class	accepted	bacterial			Pseudomonadati		base
+CH2	col-xr-315834	N	Chordata		phylum	accepted				Animalia		base
+CHN	col-xr-315834	N	Echinodermata		phylum	accepted				Animalia		base
+CMQ8S	col-xr-315834	P	Pteridobiotina	Britton & Brown	subkingdom	accepted				Plantae		base
+CRRY6	col-xr-315834		Bacteria	Woese et al., 2024	domain	accepted						base
+CRYW5	col-sector-59057	BQ	Enterobacterales	Adeolu et al., 2016	order	accepted	bacterial			Pseudomonadati		base
+CRYWR	col-sector-59057	CRYW5	Enterobacteriaceae	Rahn, 1937 (Approved Lists 1980)	family	accepted	bacterial			Pseudomonadati		base
+CS33H	col-sector-59057	CRYWR	Escherichia	Castellani & Chalmers, 1919 (Approved Lists 1980)	genus	accepted	bacterial			Pseudomonadati	taicol:x447V,inat:450838,wikidata:Q311055	base
+CS33N	col-sector-59057	CS33H	Escherichia coli	(Migula, 1895) Castellani & Chalmers 1919 (Approved Lists 1980)	species	accepted	bacterial			Pseudomonadati		base
+CS5HF	col-xr-315834		Eukaryota	(Chatton, 1925) Whittaker & Margulis, 1978	domain	accepted						base
+CSWBG	col-sector-59057	CTJJY	Pseudomonadota	Garrity et al., 2021	phylum	accepted	bacterial			Pseudomonadati		base
+CTJJY	col-sector-59057	CRRY6	Pseudomonadati	(Gibbons & Murray, 1978) Oren & Göker 2024	kingdom	accepted	bacterial			Pseudomonadati		base
+CW2V8	col-sector-2207	NFR9H	Saurischia		order	accepted	zoological	false		Animalia		xr-supplement
+F	col-sector-663	CS5HF	Fungi		kingdom	accepted	botanical			Fungi		base
+FXV	col-sector-66254	3ZX	Santalaceae	R.Br.	family	accepted	botanical			Plantae	wfo:wfo-7000000543,taicol:x32FK,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002723,grin:fam:998,tpl:x36R,inat:59992,wikidata:Q327639	base
+HRM8	col-sector-1290	7NPX9	Asterias rubens	Linnaeus, 1758	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:123776,tsn:157220,taxref:28405,dyntaxa:urn:lsid:dyntaxa.se:Taxon:217671,inat:120138	base
+KTWM8	col-sector-60427	8VR36	Actinopteri		superclass	accepted	zoological	false		Animalia		base
+KVLM5	col-sector-60427	KVSH7	Solea	Quensel, 1806	genus	accepted	zoological			Animalia	worms:urn:lsid:marinespecies.org:taxname:126132,tsn:173000,taxref:197734,taicol:x38LB,irmng:urn:lsid:irmng.org:taxname:1298302,wikidata:Q531725	base
+KVSH7	col-sector-60427	622V4	Soleidae	Bonaparte, 1833	family	accepted	zoological			Animalia	worms:urn:lsid:marinespecies.org:taxname:125581,tsn:172980,taxref:185891,taicol:x4WQ,irmng:urn:lsid:irmng.org:taxname:114064,inat:55397,wikidata:Q736867	base
+LG	col-sector-1508	6226C	Eutheria	Gill, 1872	infraclass	accepted	zoological	false		Animalia		base
+LLSWG	col-sector-2278	N	Asterias	Linnæus, 1758	genus	provisionally accepted	zoological			Animalia		xr-supplement
+LMN82	col-sector-2270	5TYZ9	Amanita muscaria	(L. ex Fr.) Hooker	species	synonym				Fungi		xr-supplement
+LMN83	col-sector-2270	5TYZ9	Amanita muscaria	(L.) Pers.	species	synonym				Fungi		xr-supplement
+LW68N	col-sector-2278	LLSWG	Asterias rubens	Linnæus, 1758	species	provisionally accepted	zoological			Animalia		xr-supplement
+LW68P	col-sector-2225	3WDNW	Asterias rubens	Johnston, 1836	species	synonym				Animalia	taxref:587840	xr-supplement
+LW68Q	col-sector-2225	38FSW	Asterias rubens	Olivi, 1792	species	synonym				Animalia	taxref:587839	xr-supplement
+MG	col-xr-315834	TP	Magnoliopsida		class	accepted				Plantae		base
+N	col-xr-315834	CS5HF	Animalia		kingdom	accepted				Animalia		base
+N8	col-sector-663	7C	Agaricales		order	accepted	botanical			Fungi		base
+NFR9H	col-sector-2207	9CK8W	Dinosauria		superorder	accepted	zoological	false		Animalia		xr-supplement
+NPBN9	col-sector-66228	384	Fagaceae	Dumort.	family	accepted	botanical			Plantae	wfo:wfo-7000000231,vascan:133,taicol:x35BF,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002757,grin:fam:441,tpl:x4KT,inat:47852	base
+NT3L7	col-sector-44432	CS33H	Escherichia coli	BL	species	accepted	botanical			Pseudomonadati		xr-supplement
+P	col-xr-315834	CS5HF	Plantae		kingdom	accepted				Plantae		base
+R6J7	col-sector-1507	62KHQ	Carduelis carduelis	(Linnaeus, 1758)	species	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:558536,avibase:eurgol,taxref:4583,dyntaxa:urn:lsid:dyntaxa.se:Taxon:103043,inat:9398,wikidata:Q25418	base
+SFTX6	col-sector-49811	7KPMG	Quercus robur	Asso	species	synonym	botanical			Plantae	wfo:wfo-0001275587-2026-06	xr-supplement
+T4K9X	col-sector-1507	3RL	Turdidae	Rafinesque, 1815	family	accepted	zoological	false		Animalia	worms:urn:lsid:marinespecies.org:taxname:196049,avibase:turdid1,taxref:186139,taicol:x6X3,dyntaxa:urn:lsid:dyntaxa.se:Taxon:2002106,irmng:urn:lsid:irmng.org:taxname:108421,inat:15977,wikidata:Q26050	base
+T7Z	col-sector-663	68Y	Amanita	Dill. ex Boehm., 1760	genus	accepted	botanical			Fungi	worms:urn:lsid:marinespecies.org:taxname:1456970,taicol:xJJY,inat:48419	base
+TP	col-xr-315834	CMQ8S	Tracheophyta		phylum	accepted				Plantae		base
+TPJ65	col-sector-61175	CW2V8	Tyrannosauridae	Osborn, 1906	family	accepted	zoological	true		Animalia	irmng:urn:lsid:irmng.org:taxname:116228,inat:339941,wikidata:Q131050	xr-supplement
+TPJ6N	col-sector-61175	TPJ65	Tyrannosaurus	Osborn, 1905	genus	accepted	zoological	true		Animalia	irmng:urn:lsid:irmng.org:taxname:1206683,inat:339942,wikidata:Q14332	xr-supplement
+TPJ7K	col-sector-2278	TPJ6N	Tyrannosaurus rex	Osborn, 1905	species	provisionally accepted	zoological			Animalia	inat:339939,wikidata:Q13098211	xr-supplement
+V2	col-sector-1507	9CK8W	Aves		class	accepted	zoological	false		Animalia		base
+V58RW	col-sector-66228	NPBN9	Quercoideae	Irvine	subfamily	accepted	botanical			Plantae		base
+V9STH	col-sector-1507	8GD	Raphinae		subfamily	accepted	zoological	false		Animalia		base
+VB8KH	col-sector-44527	VBHYP	Escherichia coli	(Migula, 1895) Castellani & Chalmers	species	accepted	botanical			Plantae	wikidata:Q21365241	xr-supplement
+VBHYP	col-sector-44527	FXV	Escherichia		genus	provisionally accepted				Plantae		xr-supplement
+VJFGD	col-sector-1507	32NH2	Parus caeruleus	Linnaeus, 1758	species	synonym	zoological			Animalia	worms:urn:lsid:marinespecies.org:taxname:558567,avibase:syn:21143,taxref:3760,dyntaxa:urn:lsid:dyntaxa.se:TaxonName:40694,wikidata:Q25689712	base
+VS	col-sector-1508	LG	Carnivora	Bowdich, 1821	order	accepted	zoological	false		Animalia		base
+WP	col-sector-1508	LG	Cetacea	Brisson, 1762	order	accepted	zoological	false		Animalia		base
+Z8	col-sector-1507	V2	Columbiformes		order	accepted	zoological	false		Animalia		base

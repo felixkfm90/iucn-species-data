@@ -2,7 +2,7 @@
 
 Stand: 2026-07-23
 
-Status: Phase 9.1 abgeschlossen; verbindliche Grundlage für Phase 9.2 und alle folgenden Importphasen
+Status: Phase 9.1 abgeschlossen und in Phase 9.3 prototypisch bestätigt; verbindliche Grundlage aller Importphasen
 
 ## 1. Ergebnis
 
@@ -246,6 +246,9 @@ Der spätere begrenzte Prototyp gilt nur dann als fachlich erfolgreich, wenn:
 - Offline-Suche, Importdauer und Speicherbedarf gemessen werden,
 - Abbruch und Rollback keine halbfertige Referenz aktivieren,
 - keine produktive Projektdatei, kein Asset und kein GitHub-Pages-Artefakt verändert wird.
+
+Diese Kriterien wurden am 2026-07-23 mit dem begrenzten Prototyp erfüllt. Der vollständige Nachweis mit
+Fixture-Metadaten, WoRMS-Vergleichen, Messwerten und Tests steht in `docs/taxonomy-import-prototype.md`.
 
 ## 10. Übergabe an Phase 9.2
 

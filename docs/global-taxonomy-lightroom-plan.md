@@ -2,7 +2,7 @@
 
 Stand: 2026-07-23
 
-Status: Phase 9.1 und 9.2 abgeschlossen; Phase 9.3 als nächster Schritt; noch kein produktiver Vollimport
+Status: Phase 9.1 bis 9.3 abgeschlossen; Phase 9.4 als nächster Schritt; noch kein produktiver Vollimport
 
 Roadmap: Phase 9
 
@@ -30,8 +30,9 @@ Der aktuelle produktive Artenbestand bleibt davon getrennt:
 Dieses Dokument beschreibt Anforderungen, Architektur, Entscheidungspunkte, Risiken und Teilphasen. Die
 Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt. Speichertechnik,
 Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unter
-`docs/local-taxonomy-database-design.md` entworfen. Lightroom-Anbindung und Mehrgeräteverteilung werden in den
-nachfolgenden Teilphasen entschieden.
+`docs/local-taxonomy-database-design.md` entworfen und in Phase 9.3 mit dem begrenzten, unter
+`docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Lightroom-Anbindung und
+Mehrgeräteverteilung werden in den nachfolgenden Teilphasen entschieden.
 
 ## A. Ausgangslage
 
@@ -380,12 +381,24 @@ Ergebnis: implementierungsreife technische Architektur vor dem begrenzten Phase-
 
 ### 9.3 Import-Prototyp mit begrenztem Testbestand
 
-- nur ein repräsentativer Testbestand verschiedener Artengruppen
-- wissenschaftliche Namen, Synonyme, Hierarchien und deutsche Namen prüfen
-- Suchleistung, Datenqualität, Importdauer und Speicherbedarf messen
-- Fehler-, Abbruch- und Rollbackfälle testen
+- **Abgeschlossen am 2026-07-23.**
+- Eine kleine versionierte Fixture aus `COL26.7 XR`, dem zugehörigen Base-Abgleich und drei WoRMS-Vergleichen deckt
+  Tiere, Pflanzen, Pilze, Bakterien, Synonyme, Homonyme, Unterart und ausgestorbene Taxa ab.
+- Der Import liest ColDP-TSV-Dateien streamend, prüft Manifest, Header, Dateigrößen und SHA-256-Werte und schreibt
+  erst in eine isolierte Staging-Datenbank.
+- SQLite-Schema, B-Tree-Präfixindizes, FTS5, Provenienz, Hierarchie, externe Kennungen und deutsche Namen sind mit
+  direkten Tests verifiziert.
+- Aktivierung, beschädigter Kandidat, Abbruch, Fehler nach Zeigerumschaltung und Rollback lassen die letzte
+  geprüfte Version intakt.
+- Die Offline-Suche demonstriert `Animalia` als Standard, bewusste Suche über alle Reiche, deutsch ↔
+  wissenschaftlich ab dem ersten Zeichen und keine stille Auswahl bei Mehrdeutigkeiten.
+- Importzeit, Datenbank- und Indexgröße, Speicherverbrauch sowie kalte und warme Suchlatenz sind im Messbericht
+  festgehalten. Die Werte gelten nur für die begrenzte Fixture und werden nicht auf den Vollbestand hochgerechnet.
+- Produktionsdaten, Explorer-Oberfläche, GitHub Pages und Squarespace wurden nicht verändert.
+- Der vollständige Bericht steht in `docs/taxonomy-import-prototype.md`.
 
-Ergebnis: Messbericht und Freigabe- oder Änderungsentscheidung für das Konzept.
+Ergebnis: Das technische Konzept ist für den Bedien- und API-Entwurf in Phase 9.4 freigegeben. Ein produktiver
+Vollimport bleibt bis nach der Freigabe von 9.4 gesperrt.
 
 ### 9.4 Explorer-Such- und Übernahmekonzept
 
@@ -452,7 +465,8 @@ Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 
 Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Phase 9.2 hat
 Lizenz-/Attributionsspeicherung, lokale Speichertechnik, Suchindizes, Schema, Speicherort, Vollimportstrategie und
-Sicherungsgrenze verbindlich geklärt. Vor den jeweiligen späteren Implementierungsphasen bleiben ausdrücklich:
+Sicherungsgrenze verbindlich geklärt; Phase 9.3 hat diese Grenzen mit einem begrenzten Prototyp bestätigt. Vor den
+jeweiligen späteren Implementierungsphasen bleiben ausdrücklich:
 
 1. Konfliktworkflow für bestehende Arten
 2. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
@@ -460,7 +474,7 @@ Sicherungsgrenze verbindlich geklärt. Vor den jeweiligen späteren Implementier
 4. optionales NAS-Paket für die große Referenzdatenbank
 5. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
 
-## Nicht Bestandteil von Phase 9.1 und 9.2
+## Nicht Bestandteil von Phase 9.1 bis 9.3
 
 - kein vollständiger Catalogue-of-Life-, WoRMS- oder anderer Quelldownload
 - keine produktiv aktivierte SQLite-Datenbank
@@ -474,7 +488,7 @@ Sicherungsgrenze verbindlich geklärt. Vor den jeweiligen späteren Implementier
 - keine Migration bestehender Taxonomie
 - keine Änderung an NAS-, Backup- oder Mehrgerätefunktionen
 
-## Definition of Done für die Planungsphase
+## Definition of Done für Quellen-, Architektur- und Prototypphase
 
 - Phase 9 ist vor der NAS-/Mehrgerätephase in der Roadmap eingeordnet.
 - Die NAS-/Mehrgerätephase folgt als Phase 10.
@@ -482,4 +496,5 @@ Sicherungsgrenze verbindlich geklärt. Vor den jeweiligen späteren Implementier
 - Die Teilphasen 9.1 bis 9.9 besitzen klare Ergebnisse und Freigabepunkte.
 - Offene Entscheidungen sind ausdrücklich als offen gekennzeichnet.
 - Bestehender produktiver Artenbestand und globale Referenzdatenbank sind eindeutig getrennt.
-- Es wurden keine Programmdateien, produktiven Daten, Abhängigkeiten oder großen Datenbankdateien verändert.
+- Der begrenzte Prototyp besitzt direkte Tests und reproduzierbare Messwerte.
+- Produktive Daten, Abhängigkeiten und große Datenbankdateien wurden nicht verändert.

@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": 1,
+  "generatedAt": "2026-07-23T18:11:13.810Z",
+  "boundedPrototype": true,
+  "release": {
+    "source": "Catalogue of Life",
+    "datasetKey": 315834,
+    "alias": "COL26.7 XR",
+    "releaseId": "col-xr-2026-07-17",
+    "issued": "2026-07-17",
+    "doi": "10.48580/dgykv",
+    "attempt": 607,
+    "format": "ColDP",
+    "coldpVersion": "1.2"
+  },
+  "baseRelease": {
+    "source": "Catalogue of Life",
+    "datasetKey": 315777,
+    "alias": "COL26.7",
+    "releaseId": "col-base-2026-07-14",
+    "issued": "2026-07-14",
+    "doi": "10.48580/dgyhw",
+    "attempt": 606
+  },
+  "sourceUrls": {
+    "checklistBank": "https://api.checklistbank.org/dataset/315834",
+    "worms": "https://www.marinespecies.org/rest/",
+    "coldpSpecification": "https://github.com/CatalogueOfLife/coldp"
+  },
+  "license": "CC BY 4.0; integrated source provenance remains attributable.",
+  "testQueries": [
+    {
+      "query": "Turdus merula",
+      "matchType": "variant",
+      "candidateIds": [
+        "7CYVX"
+      ]
+    },
+    {
+      "query": "Carduelis carduelis",
+      "matchType": "variant",
+      "candidateIds": [
+        "R6J7"
+      ]
+    },
+    {
+      "query": "Cyanistes caeruleus",
+      "matchType": "variant",
+      "candidateIds": [
+        "32NH2"
+      ]
+    },
+    {
+      "query": "Parus caeruleus",
+      "matchType": "variant",
+      "candidateIds": [
+        "VJFGD"
+      ]
+    },
+    {
+      "query": "Saimiri oerstedii",
+      "matchType": "variant",
+      "candidateIds": [
+        "4TZJZ"
+      ]
+    },
+    {
+      "query": "Megaptera novaeangliae",
+      "matchType": "variant",
+      "candidateIds": [
+        "3YWY2"
+      ]
+    },
+    {
+      "query": "Solea solea",
+      "matchType": "variant",
+      "candidateIds": [
+        "4Y5CH"
+      ]
+    },
+    {
+      "query": "Asterias rubens",
+      "matchType": "variant",
+      "candidateIds": [
+        "HRM8",
+        "LW68P",
+        "LW68Q",
+        "LW68N"
+      ]
+    },
+    {
+      "query": "Quercus robur",
+      "matchType": "variant",
+      "candidateIds": [
+        "4R5YN",
+        "SFTX6"
+      ]
+    },
+    {
+      "query": "Amanita muscaria",
+      "matchType": "variant",
+      "candidateIds": [
+        "5TYZ9",
+        "LMN82",
+        "LMN83"
+      ]
+    },
+    {
+      "query": "Escherichia coli",
+      "matchType": "ambiguous",
+      "candidateIds": [
+        "NT3L7",
+        "CS33N",
+        "3BGTD",
+        "VB8KH"
+      ]
+    },
+    {
+      "query": "Aotus",
+      "matchType": "ambiguous",
+      "candidateIds": [
+        "9CJW7",
+        "62D8D"
+      ]
+    },
+    {
+      "query": "Panthera leo persica",
+      "matchType": "variant",
+      "candidateIds": [
+        "5K5LD"
+      ]
+    },
+    {
+      "query": "Raphus cucullatus",
+      "matchType": "variant",
+      "candidateIds": [
+        "4RKVF"
+      ]
+    },
+    {
+      "query": "Tyrannosaurus rex",
+      "matchType": "variant",
+      "candidateIds": [
+        "TPJ7K"
+      ]
+    }
+  ],
+  "counts": {
+    "nameUsages": 123,
+    "vernacularNames": 27,
+    "externalIdentifiers": 376,
+    "wormsComparisons": 3
+  },
+  "files": {
+    "NameUsage.tsv": {
+      "bytes": 18462,
+      "sha256": "722d9aec25840862b9489bc8ba2744cfd9847f0fd03dc2088f41a38d2b0e5a3f"
+    },
+    "VernacularName.tsv": {
+      "bytes": 2630,
+      "sha256": "990ac23016eada35b9e8835f69bbb12c7f9625a58670b5e03d7376355926eacc"
+    },
+    "ExternalIdentifier.tsv": {
+      "bytes": 25025,
+      "sha256": "00b8b5e25e0ff89681a972b923b25be696619793be3a4c19c61817a160d11890"
+    },
+    "WormsComparison.tsv": {
+      "bytes": 1014,
+      "sha256": "d2d2435c2d8efea543f444739ae55153f9cea59ada91d9409a9b7378fd9818a5"
+    },
+    "metadata.yaml": {
+      "bytes": 272,
+      "sha256": "69770c3e35efcdf71543221524788ba6cfe8a00297ff27dd9d4ebdcec565dc90"
+    }
+  }
+}
