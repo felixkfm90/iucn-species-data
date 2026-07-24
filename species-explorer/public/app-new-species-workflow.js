@@ -8,6 +8,7 @@
       createMessageSetter,
       createFieldFeedbackController,
       createNewSpeciesFormModel,
+      createTaxonomyReferenceController,
       composeManualSexedMeasurement,
       formatManualMeasurement,
       stripManualMeasureInput,
@@ -135,6 +136,14 @@
         setMessage("Eingaben geändert. Bitte erneut prüfen.", "info");
         updateButtons();
       };
+
+      const taxonomyReference = createTaxonomyReferenceController({
+        root: dialog,
+        form,
+        fetchJson,
+        escapeHtml,
+        onNamesChanged: markSpeciesInputsChanged,
+      });
 
       const canAdvanceFromPortrait = () => portraitSkipped || Boolean(portraitPreviewToken);
 
@@ -490,6 +499,7 @@
         setPipelineStepState();
         resetPortraitPrompt();
         resetPortraitPreview();
+        taxonomyReference.reset();
         setMessage("Bitte Eingaben ausfüllen und auf „Eingaben prüfen“ klicken.", "info");
         setPortraitMessage();
         setPipelineMessage();
@@ -751,6 +761,7 @@
         resetAll();
         state.holdNewSpeciesBackground = true;
         dialogController.open();
+        void taxonomyReference.initialize();
         form.elements.german.focus();
       });
 

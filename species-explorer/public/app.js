@@ -14,6 +14,8 @@ const explorerFormFeedback = window.SpeciesExplorerFormFeedback;
 if (!explorerFormFeedback) throw new Error("Explorer-Formularrückmeldung konnte nicht geladen werden.");
 const explorerNewSpeciesForm = window.SpeciesExplorerNewSpeciesForm;
 if (!explorerNewSpeciesForm) throw new Error("Explorer-Neue-Art-Formular konnte nicht geladen werden.");
+const explorerTaxonomyReference = window.SpeciesExplorerTaxonomyReference;
+if (!explorerTaxonomyReference) throw new Error("Explorer-Taxonomiereferenz konnte nicht geladen werden.");
 const explorerNewSpeciesWorkflow = window.SpeciesExplorerNewSpeciesWorkflow;
 if (!explorerNewSpeciesWorkflow) throw new Error("Explorer-Neue-Art-Ablauf konnte nicht geladen werden.");
 const explorerEditorForm = window.SpeciesExplorerEditorForm;
@@ -420,6 +422,7 @@ const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWo
   createMessageSetter,
   createFieldFeedbackController,
   createNewSpeciesFormModel,
+  createTaxonomyReferenceController: explorerTaxonomyReference.createTaxonomyReferenceController,
   composeManualSexedMeasurement,
   formatManualMeasurement,
   stripManualMeasureInput,

@@ -106,6 +106,21 @@ export function matchExplorerRoute(method, pathname) {
     return { name: "method-not-allowed" };
   }
 
+  const taxonomyResource = normalizedPath.match(
+    /^\/api\/taxonomy\/(status|kingdoms|search)$/,
+  );
+  if (taxonomyResource) {
+    return { name: "taxonomy-read", resource: taxonomyResource[1] };
+  }
+  const taxonomyTaxon = normalizedPath.match(/^\/api\/taxonomy\/taxa\/([^/]+)$/);
+  if (taxonomyTaxon) {
+    return {
+      name: "taxonomy-read",
+      resource: "taxon",
+      encodedReference: taxonomyTaxon[1],
+    };
+  }
+
   const resource = READ_RESOURCES.get(normalizedPath);
   if (resource) return { name: "read", resource };
   if (normalizedMethod === "GET" && normalizedPath === "/api/pipeline/assets/backup-file") {
@@ -254,6 +269,18 @@ export function createExplorerRequestHandler({
 
       if (route.name === "read") {
         sendJson(response, 200, await operations.read({ resource: route.resource }));
+        return;
+      }
+
+      if (route.name === "taxonomy-read") {
+        const reference = route.encodedReference
+          ? decodeRouteId(route.encodedReference)
+          : "";
+        sendJson(response, 200, await operations.taxonomyRead({
+          resource: route.resource,
+          reference,
+          searchParams: url.searchParams,
+        }));
         return;
       }
 

@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-07-23
+Stand: 2026-07-24
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -23,6 +23,8 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 - `docs/taxonomy-import-prototype.md` dokumentiert Implementierung, Fixture, Messwerte, Tests und Grenzen des
   begrenzten Phase-9.3-Prototyps. Produktive Integrationen dürfen daraus erst nach dem Bedien- und API-Entwurf in
   Phase 9.4 abgeleitet werden.
+- `docs/taxonomy-explorer-integration.md` ist der verbindliche Bedien-, API-, Fehler- und Übernahmevertrag der
+  read-only Taxonomiereferenz im Neue-Art-Assistenten aus Phase 9.4.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-07-16
+Stand: 2026-07-24
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -12,11 +12,9 @@ Die Artenauswahl bleibt redaktionell manuell. Die Pipeline verarbeitet nur Arten
 `species_list.json` gespeichert wurden. Phase 7.5 bildet diesen bisher direkten JSON-Schritt kontrolliert ueber den
 lokalen Arten-Explorer ab.
 
-Phase 7.9 plant spaeter optional eine globale lokale Taxonomiesuche als Referenz fuer den Neue-Art-Assistenten.
-Bis Datenquelle, lokales Datenmodell, Vorschau, Konfliktbehandlung und Migration freigegeben sind, bleibt der hier
-beschriebene manuelle und bestaetigungspflichtige Ablauf unveraendert. Eine Referenzdatenbank darf keine Art still
-anlegen und keine vorhandene Art automatisch ueberschreiben. Details:
-`docs/global-taxonomy-lightroom-plan.md`.
+Phase 9.4 ergänzt diesen Ablauf optional um eine lokale read-only Taxonomiesuche. Die Referenz darf keine Art still
+anlegen und keine vorhandene Art automatisch überschreiben. Details stehen in
+`docs/taxonomy-explorer-integration.md`.
 
 ## Manuell zu pflegen
 
@@ -62,6 +60,18 @@ vorherige Eingaben oder Pruefansichten erneut zu sehen.
 ### Schritt 1: Allgemeine Daten pruefen
 
 Die App zeigt keine internen Dateinamen mehr im Dialogkopf. Anwender sehen nur die fachlichen Schritte.
+
+Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie die beiden Namensfelder:
+
+- `Tiere (Animalia)` ist als Reich vorausgewählt; `Alle Reiche` muss bewusst gewählt werden.
+- Der deutsche Name sucht nach belegten deutschen Namen.
+- Der wissenschaftliche Name sucht nach akzeptierten Namen und Synonymen.
+- Die Trefferliste zeigt mehrere Möglichkeiten, ohne einen Treffer automatisch auszuwählen.
+- Ein ausgewählter Treffer zeigt Hierarchie, Quelle, Release, Quellen-ID und Namensstatus.
+- Erst `Vorschlag übernehmen` füllt die Namensfelder; danach bleibt `Eingaben prüfen` verpflichtend.
+- Im Neue-Art-Assistenten werden nur Treffer mit dem Rang `Art` angeboten.
+- Fehlt für ein Tier ein belegter deutscher Name, kann eine manuelle Animalia.bio-Suche geöffnet werden.
+- Fehlt die lokale Referenz oder ist sie nicht lesbar, bleiben alle Felder manuell nutzbar.
 
 Vor dem naechsten Schritt prueft die App lokal und danach der Server:
 
@@ -175,14 +185,20 @@ und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
 
 API:
 
+- `GET /api/taxonomy/status`: meldet Verfügbarkeit und aktiven Referenzstand, ohne die Artanlage zu blockieren
+- `GET /api/taxonomy/kingdoms`: liefert die Reichsauswahl mit `Animalia` als Standard
+- `GET /api/taxonomy/search`: liefert höchstens zwölf read-only Vorschläge
+- `GET /api/taxonomy/taxa/:id`: liefert Detailvorschau, Hierarchie und Quelleninformationen
 - `POST /api/species/new/preview`: validiert alle Felder und Kollisionen, schreibt aber keine Datei
 - `POST /api/species/new/portrait-prompt`: erzeugt den Einzelprompt aus den geprueften Artdaten
 - `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
 
-Technischer Stand vom 2026-06-29:
+Technischer Stand vom 2026-07-24:
 
 - Formular, Vorschau und Speichern sind lokal umgesetzt.
+- Die optionale lokale Taxonomiereferenz ist bidirektional in Schritt 1 integriert. Sie schreibt keine Projektdaten
+  und kann jederzeit zugunsten der manuellen Eingabe verlassen werden.
 - Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt, Kartenpruefung sowie
   Sound-/Abschluss-Schritt.
 - Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle
@@ -203,8 +219,7 @@ Technischer Stand vom 2026-06-29:
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
   unveraendert.
-- 19 Explorer-Tests sind erfolgreich.
-- Der neu gestartete lokale Server liefert den Dialog und alle Formularfelder aus.
+- Direkte Service-, Routing-, UI-Vertrags- und Workflowtests sichern Referenzsuche und bisherigen Assistenten ab.
 - Die Bedienung wurde am 2026-06-20 mit Haubentaucher und Höckerschwan praktisch geprüft.
 
 Historische Workflow-Prüfungen:

@@ -158,14 +158,50 @@
 
         <section class="new-species-step active" data-new-species-step="1">
           <div class="edit-fields new-species-fields">
-            <label data-field="german">
-              <span>Deutscher Name</span>
-              <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
-            </label>
-            <label data-field="scientificName">
-              <span>Wissenschaftlicher Name</span>
-              <input name="scientificName" type="text" maxlength="201" autocomplete="off" placeholder="Turdus Merula">
-            </label>
+            <section class="taxonomy-reference" aria-labelledby="taxonomy-reference-title">
+              <header class="taxonomy-reference-header">
+                <div>
+                  <h4 id="taxonomy-reference-title">Taxonomiereferenz · optional</h4>
+                  <p>
+                    Namen manuell eingeben oder beim Tippen einen passenden Eintrag auswählen.
+                    Ein Vorschlag wird nie automatisch übernommen.
+                  </p>
+                </div>
+                <span class="taxonomy-reference-status" data-state="loading">Referenz wird geprüft …</span>
+              </header>
+
+              <div class="taxonomy-reference-controls">
+                <label>
+                  <span>Reich</span>
+                  <select class="taxonomy-reference-kingdom" aria-label="Reich für die Namenssuche" disabled>
+                    <option value="Animalia">Tiere (Animalia)</option>
+                  </select>
+                </label>
+                <button class="taxonomy-reference-manual" type="button">Manuell eingeben</button>
+              </div>
+
+              <div class="taxonomy-reference-name-fields">
+                <label data-field="german">
+                  <span>Deutscher Name</span>
+                  <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
+                </label>
+                <label data-field="scientificName">
+                  <span>Wissenschaftlicher Name</span>
+                  <input name="scientificName" type="text" maxlength="201" autocomplete="off" placeholder="Turdus Merula">
+                </label>
+              </div>
+
+              <p class="taxonomy-reference-message info" role="status">
+                Die Verfügbarkeit der lokalen Taxonomiereferenz wird geprüft.
+              </p>
+              <div class="taxonomy-reference-results" role="listbox" aria-label="Namensvorschläge" hidden></div>
+              <section class="taxonomy-reference-selection" aria-label="Ausgewählter Taxonomievorschlag" hidden>
+                <div class="taxonomy-reference-selection-content"></div>
+                <div class="taxonomy-reference-selection-actions">
+                  <button class="taxonomy-reference-apply" type="button" disabled>Vorschlag übernehmen</button>
+                </div>
+              </section>
+            </section>
 
             <div class="new-species-measurement" data-measurement="size">
               <label class="new-species-sex-toggle">
@@ -557,6 +593,7 @@
     <script src="/app-confirmation.js" defer></script>
     <script src="/app-form-feedback.js" defer></script>
     <script src="/app-new-species-form.js" defer></script>
+    <script src="/app-taxonomy-reference.js" defer></script>
     <script src="/app-new-species-workflow.js" defer></script>
     <script src="/app-editor-form.js" defer></script>
     <script src="/app-editor-map.js" defer></script>

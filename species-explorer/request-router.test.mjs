@@ -58,6 +58,7 @@ function createOperations(calls, previewPath = null) {
     deleteSpecies: record("deleteSpecies"),
     editSpecies: record("editSpecies"),
     editTaxonomy: record("editTaxonomy"),
+    taxonomyRead: record("taxonomyRead"),
     read: record("read"),
     pipelineBackupFile: async ({ response }) => {
       calls.push({ name: "pipelineBackupFile" });
@@ -109,6 +110,19 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "read",
     resource: "revision",
   });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/status"), {
+    name: "taxonomy-read",
+    resource: "status",
+  });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/search"), {
+    name: "taxonomy-read",
+    resource: "search",
+  });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/taxa/col%3A123"), {
+    name: "taxonomy-read",
+    resource: "taxon",
+    encodedReference: "col%3A123",
+  });
   assert.deepEqual(matchExplorerRoute("DELETE", "/api/species/Amsel"), {
     name: "method-not-allowed",
   });
@@ -147,6 +161,28 @@ test("Handler liefert Sitzung, Lesedaten und freigegebene statische Dateien", as
   assert.equal(summaryResponse.status, 200);
   assert.equal((await summaryResponse.json()).resource, "summary");
   assert.deepEqual(calls.at(-1), { name: "read", resource: "summary" });
+
+  const taxonomyResponse = await fetch(
+    `${baseUrl}/api/taxonomy/search?q=Stieglitz&kind=vernacular&kingdomId=Animalia&limit=12`,
+  );
+  assert.equal(taxonomyResponse.status, 200);
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyRead",
+    resource: "search",
+    reference: "",
+    searchParams: new URLSearchParams(
+      "q=Stieglitz&kind=vernacular&kingdomId=Animalia&limit=12",
+    ),
+  });
+
+  const taxonResponse = await fetch(`${baseUrl}/api/taxonomy/taxa/col%3A123`);
+  assert.equal(taxonResponse.status, 200);
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyRead",
+    resource: "taxon",
+    reference: "col:123",
+    searchParams: new URLSearchParams(),
+  });
 
   assert.equal(await (await fetch(`${baseUrl}/`)).text(), "Explorer");
   assert.equal(await (await fetch(`${baseUrl}/assets/Amsel/map.jpg`)).text(), "map");

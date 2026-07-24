@@ -13,6 +13,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appConfirmationSource,
     appFormFeedbackSource,
     appNewSpeciesFormSource,
+    appTaxonomyReferenceSource,
     appNewSpeciesWorkflowSource,
     appEditorFormSource,
     appEditorGeneralSource,
@@ -82,6 +83,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-confirmation.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-form-feedback.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-new-species-form.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-taxonomy-reference.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-new-species-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-form.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-general.js", import.meta.url), "utf8"),
@@ -152,6 +154,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
 
   const modularAppSource = [
     appSource,
+    appTaxonomyReferenceSource,
     appNewSpeciesWorkflowSource,
     appEditorGeneralSource,
     appEditorTaxonomySource,
@@ -169,7 +172,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-editor-files\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-confirmation\.js" defer><\/script>[\s\S]*<script src="\/app-form-feedback\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-form\.js" defer><\/script>[\s\S]*<script src="\/app-editor-form\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-detail-media\.js" defer><\/script>[\s\S]*<script src="\/app-selection\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-editor-files\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-confirmation\.js" defer><\/script>[\s\S]*<script src="\/app-form-feedback\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-form\.js" defer><\/script>[\s\S]*<script src="\/app-taxonomy-reference\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-editor-form\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-detail-media\.js" defer><\/script>[\s\S]*<script src="\/app-selection\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(
     htmlSource,
@@ -190,6 +193,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appFormFeedbackSource, /function createMessageSetter\(/);
   assert.match(appFormFeedbackSource, /function createFieldFeedbackController\(/);
   assert.match(appNewSpeciesFormSource, /function createNewSpeciesFormModel\(/);
+  assert.match(appTaxonomyReferenceSource, /function createTaxonomyReferenceController\(/);
+  assert.match(appTaxonomyReferenceSource, /Vorschlag ausgewählt/);
+  assert.match(appTaxonomyReferenceSource, /Manuell bei Animalia\.bio suchen/);
   assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);
   assert.match(appSettingsSource, /function setupBackupSettings\(/);
@@ -649,6 +655,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Sound &amp; Abschluss|Sound & Abschluss/);
   assert.match(htmlSource, /name="german"/);
   assert.match(htmlSource, /name="scientificName"/);
+  assert.match(htmlSource, /class="taxonomy-reference-kingdom"/);
+  assert.match(htmlSource, /Tiere \(Animalia\)/);
+  assert.match(htmlSource, /Vorschlag übernehmen/);
+  assert.match(htmlSource, /Manuell eingeben/);
   assert.match(htmlSource, /name="sizeSexed"/);
   assert.match(htmlSource, /name="sizeMale"/);
   assert.match(htmlSource, /name="sizeFemale"/);
@@ -773,6 +783,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /accept="\.jpg,\.jpeg,\.png,image\/jpeg,image\/png"/);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
+  assert.match(cssSource, /\.taxonomy-reference\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
+  assert.match(cssSource, /\.taxonomy-reference-results\s*\{[^}]*overflow-y:\s*auto/s);
   assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
   assert.match(cssSource, /\.edit-fields label\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);

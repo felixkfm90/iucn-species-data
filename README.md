@@ -274,6 +274,26 @@ npm.cmd run --silent test:taxonomy-prototype
 Architektur, Quellen, Messwerte und Grenzen stehen in `docs/taxonomy-import-prototype.md`. Der vollständige
 CoL-XR-Bestand ist noch nicht installiert und darf nicht in Git oder GitHub Pages aufgenommen werden.
 
+## Taxonomiereferenz im Neue-Art-Assistenten
+
+Phase 9.4 bindet den aktiven lokalen Referenzbestand read-only in Schritt 1 von `Neue Art` ein. `Tiere (Animalia)`
+ist vorausgewählt; über `Alle Reiche` kann bewusst global gesucht werden. Deutscher und wissenschaftlicher Name
+liefern beim Tippen gegenseitige Vorschläge. Ein Treffer wird erst nach Auswahl mit Hierarchie, Quelle, Release,
+ID und Namensstatus angezeigt und nur über `Vorschlag übernehmen` in die Felder geschrieben. Die normale
+Eingabeprüfung und Kollisionskontrolle bleibt danach Pflicht.
+
+Fehlt oder scheitert die lokale Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für Tiere ohne
+belegten deutschen Namen wird ausschließlich ein manueller Animalia.bio-Suchlink angeboten. Die Integration
+schreibt keine Projektart, ändert keine bestehende Art und ist nicht Bestandteil von GitHub Pages oder Squarespace.
+
+Fokussierte Tests:
+
+```bash
+npm.cmd run --silent test:taxonomy-reference
+```
+
+Bedien- und API-Vertrag: `docs/taxonomy-explorer-integration.md`.
+
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
 Wikimedia-Commons-Audiodateien mit erreichbarem MP3-Transcode und danach nach freien iNaturalist-MP3-Aufnahmen.
@@ -809,12 +829,14 @@ ausgelesen. Phase 9.3 hat den begrenzten, reproduzierbaren Importprototyp am 202
 versionierte CoL-XR-/WoRMS-Fixture bestätigt den streamenden SQLite-Import, atomare Aktivierung, Rollback,
 Ein-Zeichen-Präfixsuche, deutsch-wissenschaftliche Vorschläge, Synonyme, Homonyme und Quellenprovenienz. Der
 Prototyp bleibt vollständig von produktiven Arten, GitHub Pages und Squarespace getrennt; ein Vollimport wurde noch
-nicht ausgeführt. Als Nächstes folgt Phase 9.4 mit Bedien- und API-Entwurf für Suche, Mehrdeutigkeiten, Vorschau und
-kontrollierte Übernahme im Neue-Art-Assistenten. Danach folgen Phase 10 mit
+nicht ausgeführt. Phase 9.4 hat am 2026-07-24 die lokale read-only API und die kontrollierte Referenzsuche in den
+Neue-Art-Assistenten integriert. Kein Treffer wird automatisch gewählt; nur bestätigte Arteinträge gelangen in die
+Namensfelder und die bisherige Prüfung bleibt maßgeblich. Als Nächstes folgt Phase 9.5 mit vollständigem lokalem
+Import, Aktualisierung, Fortschritt, atomarer Aktivierung und Rollback. Danach folgen Phase 10 mit
 Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
-`docs/taxonomy-import-prototype.md` und
+`docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

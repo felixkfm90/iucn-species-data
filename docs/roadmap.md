@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-23
+Stand: 2026-07-24
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -822,7 +822,7 @@ Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überhol
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 
-Status: in Arbeit; Phase 9.1 bis 9.3 abgeschlossen
+Status: in Arbeit; Phase 9.1 bis 9.4 abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
 lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
@@ -853,10 +853,18 @@ Standard sowie eine bewusste Suche über alle Reiche funktionieren ohne stille T
 Speicher und Latenz gelten ausschließlich für den begrenzten Testbestand und werden nicht auf den Vollbestand
 hochgerechnet. Produktive Arten, Assets, Pages und Squarespace bleiben unverändert.
 
-Als Nächstes folgt Phase 9.4: ein verbindlicher Bedien- und API-Entwurf für Reichsauswahl, Vorschlagsliste,
-Mehrdeutigkeiten, Taxonomie-/Quellenvorschau, kontrollierte Übernahme, manuelle Eingabe und Offlinezustände im
-Neue-Art-Assistenten. Erst danach wird in Phase 9.5 der vollständige lokale Import- und Aktualisierungsworkflow
-umgesetzt.
+Phase 9.4 wurde am 2026-07-24 abgeschlossen. Der Neue-Art-Assistent besitzt jetzt eine optionale lokale read-only
+Taxonomiereferenz mit `Tiere (Animalia)` als Standard und bewusster Suche über alle Reiche. Deutsche und
+wissenschaftliche Eingaben liefern nach jedem Zeichen Vorschläge; Mehrdeutigkeiten bleiben als Liste sichtbar und
+kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen, Synonym, Hierarchie, Quelle,
+Release, Quellen-ID und Vertrauensstufe. Erst `Vorschlag übernehmen` füllt die Namensfelder, danach bleiben die
+bisherige Eingabeprüfung, Kollisionsprüfung und Speicherung verpflichtend. Im Neue-Art-Assistenten werden nur
+echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle Anlage vollständig funktionsfähig;
+Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen nur als manuelle Suche geöffnet. Der verbindliche
+Vertrag steht in `docs/taxonomy-explorer-integration.md`.
+
+Als Nächstes folgt Phase 9.5 mit vollständigem lokalem Download, geprüftem Import, Suchindex, Fortschrittsanzeige,
+atomarer Aktivierung und Rollback. Die Referenz bleibt außerhalb von Git, GitHub Pages und produktiven Artdaten.
 
 ## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
 

@@ -1,8 +1,8 @@
 # Globale Taxonomiedatenbank und Lightroom-Integration
 
-Stand: 2026-07-23
+Stand: 2026-07-24
 
-Status: Phase 9.1 bis 9.3 abgeschlossen; Phase 9.4 als nächster Schritt; noch kein produktiver Vollimport
+Status: Phase 9.1 bis 9.4 abgeschlossen; Phase 9.5 als nächster Schritt; noch kein produktiver Vollimport
 
 Roadmap: Phase 9
 
@@ -31,8 +31,10 @@ Dieses Dokument beschreibt Anforderungen, Architektur, Entscheidungspunkte, Risi
 Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt. Speichertechnik,
 Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unter
 `docs/local-taxonomy-database-design.md` entworfen und in Phase 9.3 mit dem begrenzten, unter
-`docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Lightroom-Anbindung und
-Mehrgeräteverteilung werden in den nachfolgenden Teilphasen entschieden.
+`docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Phase 9.4 hat die lokale read-only
+API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verbindliche Vertrag steht in
+`docs/taxonomy-explorer-integration.md`. Lightroom-Anbindung und Mehrgeräteverteilung werden in den nachfolgenden
+Teilphasen entschieden.
 
 ## A. Ausgangslage
 
@@ -223,8 +225,8 @@ deutschen Übersetzung bevorzugt werden.
 
 ## F. Integration in den Arten-Explorer
 
-Die spätere Integration wird erst nach dem begrenzten Importprototyp umgesetzt. Der Neue-Art-Assistent soll dann
-anbieten:
+Die read-only Integration wurde in Phase 9.4 nach dem begrenzten Importprototyp umgesetzt. Der Neue-Art-Assistent
+bietet:
 
 - Reichsauswahl mit `Tiere (Animalia)` als Standard und weiteren Reichen aus der Referenzdatenbank
 - bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem eingegebenen Zeichen
@@ -245,11 +247,12 @@ anbieten:
 - bei einem Tier ohne bestätigten deutschen Namen einen gezielten Button `Animalia.bio manuell prüfen`, der eine
   browserbasierte Einzelfallrecherche öffnet, ohne die Website automatisiert abzurufen oder zu scrapen
 
-Für bestehende Arten ist ein getrenntes Prüfwerkzeug zu planen. Es darf Abweichungen melden und Vorschläge machen,
+Für bestehende Arten ist weiterhin ein getrenntes Prüfwerkzeug zu planen. Es darf Abweichungen melden und Vorschläge machen,
 aber keine Massenänderung ohne artweise oder ausdrücklich bestätigte Sammelentscheidung ausführen.
 
-Der aktuelle Neue-Art-Assistent bleibt bis Phase 9.4 funktional unverändert. `docs/add-species-workflow.md` bleibt
-bis zu einer späteren, getesteten Migration die maßgebliche Bedienbeschreibung.
+Die Referenzsuche ändert nur die Namensvorbereitung in Schritt 1. Die bisherige Validierung, Kollisionsprüfung,
+Vorschau und bestätigte Speicherung bleiben maßgeblich. `docs/add-species-workflow.md` beschreibt den Gesamtprozess;
+`docs/taxonomy-explorer-integration.md` beschreibt die neue Referenzgrenze.
 
 ## G. Aktualisierung der globalen Datenbank
 
@@ -402,17 +405,30 @@ Vollimport bleibt bis nach der Freigabe von 9.4 gesperrt.
 
 ### 9.4 Explorer-Such- und Übernahmekonzept
 
-- Suche, Trefferliste und Mehrdeutigkeiten
-- Taxonomie- und Quellenvorschau
-- kontrollierte Übernahme und Konfliktbehandlung
-- Ablehnung, manuelles Fallback und Offline-Zustände
-- keine produktive Änderung ohne Vorschau und Bestätigung
+- **Abgeschlossen am 2026-07-24.**
+- Vier lokale read-only Endpunkte liefern Status, Reiche, Suche und Taxondetails aus dem aktiven SQLite-Release.
+- Deutsche und wissenschaftliche Eingaben suchen bidirektional nach jedem Zeichen; ältere Antworten dürfen neue
+  Eingaben nicht überschreiben.
+- `Tiere (Animalia)` ist Standard, `Alle Reiche` muss bewusst gewählt werden.
+- Trefferliste und Detailvorschau zeigen Rang, akzeptierten Namen, Synonym, Klassifikation, Quelle, Release,
+  Quellen-ID und Vertrauensstufe.
+- Kein Treffer wird still ausgewählt. Erst `Vorschlag übernehmen` füllt die Namensfelder; die bestehende
+  Eingabeprüfung und Speicherung bleiben danach verpflichtend.
+- Der Neue-Art-Assistent bietet ausschließlich Taxa mit Rang `Art` an. Unterarten bleiben vorbereitet, aber bis
+  zur kontrollierten Erweiterung des dreiteiligen Namens- und Slugmodells gesperrt.
+- Fehlende oder beschädigte Referenzdaten blockieren die manuelle Artanlage nicht.
+- Für Tiere ohne belegten deutschen Namen wird nur eine manuelle Animalia.bio-Suche angeboten; es findet kein
+  automatischer Abruf statt.
+- Bestehende Projektarten, `species_list.json`, `speciesData.json`, GitHub Pages und Squarespace werden durch die
+  Suche nicht verändert.
+- Bedien-, API-, Fehler- und Testvertrag: `docs/taxonomy-explorer-integration.md`.
 
-Ergebnis: abgestimmter Bedien- und API-Entwurf vor Umbau des Neue-Art-Assistenten.
+Ergebnis: getestete read-only Explorer-Integration auf Basis des begrenzten Referenzbestands. Der vollständige
+lokale Referenzimport ist für Phase 9.5 freigegeben.
 
 ### 9.5 Vollständiger lokaler Import und Aktualisierungsworkflow
 
-- erst nach Freigabe von 9.1 bis 9.4
+- freigegeben nach Abschluss von 9.1 bis 9.4
 - vollständiger Download und Import
 - Verifikation, Qualitätsgate und Suchindex
 - Updatefunktion, atomarer Austausch und Rollback
@@ -465,8 +481,9 @@ Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 
 Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Phase 9.2 hat
 Lizenz-/Attributionsspeicherung, lokale Speichertechnik, Suchindizes, Schema, Speicherort, Vollimportstrategie und
-Sicherungsgrenze verbindlich geklärt; Phase 9.3 hat diese Grenzen mit einem begrenzten Prototyp bestätigt. Vor den
-jeweiligen späteren Implementierungsphasen bleiben ausdrücklich:
+Sicherungsgrenze verbindlich geklärt; Phase 9.3 hat diese Grenzen mit einem begrenzten Prototyp bestätigt und
+Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Vor den jeweiligen späteren Implementierungsphasen
+bleiben ausdrücklich:
 
 1. Konfliktworkflow für bestehende Arten
 2. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export

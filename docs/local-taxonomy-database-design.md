@@ -1,8 +1,9 @@
 # Lokale Taxonomiedatenbank – Architektur für Phase 9.2
 
-Stand: 2026-07-23
+Stand: 2026-07-24
 
-Status: Phase 9.2 abgeschlossen und in Phase 9.3 prototypisch bestätigt; noch kein produktiver Vollimport
+Status: Phase 9.2 abgeschlossen, in Phase 9.3 prototypisch bestätigt und in Phase 9.4 read-only integriert;
+noch kein produktiver Vollimport
 
 Roadmap: Phase 9.2
 
@@ -444,15 +445,20 @@ offiziell dokumentiert und im Prototyp belegt sind.
 - Animalia.bio wird nicht automatisch abgerufen.
 - IUCN-Daten werden erst nach Bestätigung einer Projektart über die bestehende Pipeline ergänzt.
 
-## 10. Geplante lokale API-Verträge
+## 10. Lokale API-Verträge
 
-Die konkrete API wird erst in Phase 9.4 implementiert. Der Architekturvertrag sieht vor:
+Phase 9.4 hat die vier Leseendpunkte implementiert:
 
 ```text
 GET  /api/taxonomy/status
 GET  /api/taxonomy/kingdoms
 GET  /api/taxonomy/search
 GET  /api/taxonomy/taxa/:id
+```
+
+Die schreibenden Verwaltungsendpunkte bleiben Phase 9.5 vorbehalten:
+
+```text
 POST /api/taxonomy/import/preview
 POST /api/taxonomy/import/start
 POST /api/taxonomy/activate
@@ -468,8 +474,9 @@ kingdomId=<lokale Referenz>
 limit=12
 ```
 
-Die Endpunkte verwenden die bestehende localhost-Sitzungs- und Origin-Grenze. Import, Aktivierung und Rollback
-sind schreibende Exklusivoperationen und verwenden dieselbe zentrale Prozesssperre wie andere lang laufende
+Die Endpunkte verwenden die bestehende localhost-Sitzungs- und Origin-Grenze. Die Phase-9.4-Endpunkte öffnen nur
+den aktiven Referenzbestand und schreiben keine Projekt- oder Referenzdatei. Import, Aktivierung und Rollback sind
+spätere schreibende Exklusivoperationen und verwenden dieselbe zentrale Prozesssperre wie andere lang laufende
 Datenbankaktionen.
 
 ## 11. Leistungs- und Qualitätsziele
@@ -533,8 +540,16 @@ Importprototyp. Für ihn galten folgende Anforderungen:
 
 Diese Punkte sind am 2026-07-23 abgeschlossen worden. Ergebnisse, Messwerte, Module und direkte Tests stehen in
 `docs/taxonomy-import-prototype.md`. Das Architekturkonzept ist damit für den Bedien- und API-Entwurf in Phase 9.4
-freigegeben. Vollimport, genaue lokale Speicherreserve und produktive Explorer-Integration bleiben bis zur
-Abnahme von Phase 9.4 gesperrt.
+freigegeben worden.
+
+Phase 9.4 wurde am 2026-07-24 abgeschlossen. `species-explorer/taxonomy-reference-service.mjs` bindet den aktiven
+read-only Speicher an die lokale API an. Der Neue-Art-Assistent bietet die bidirektionale Suche mit Animalia als
+Standard, bewusster Treffer- und Übernahmeentscheidung, vollständiger Quellen-/Hierarchievorschau sowie
+nicht blockierendem manuellen Fallback an. Im Artformular werden nur Taxa mit Rang `Art` angeboten; die allgemeine
+Lese-API bleibt rangneutral. Der vollständige Bedien- und Fehlervertrag steht in
+`docs/taxonomy-explorer-integration.md`.
+
+Vollimport, genaue lokale Speicherreserve und schreibender Aktualisierungsworkflow bleiben bis Phase 9.5 gesperrt.
 
 ## 14. Nach Phase 9.2 bewusst offene Entscheidungen
 
@@ -545,7 +560,6 @@ Folgende Punkte werden nicht vorweggenommen:
 - Lightroom-XMP- und Metadatenmodell
 - optionales dediziertes NAS-Paket für die große Referenzdatenbank
 - Verteilung und Mindestversion im späteren Mehrgerätebetrieb
-- endgültige Gestaltung der Suchtreffer im Neue-Art-Assistenten
 
 ## 15. Offizielle technische Referenzen
 

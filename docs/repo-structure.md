@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-07-22
+Stand: 2026-07-24
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -32,7 +32,8 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `lastSavedAssessmentId.json` | Pipeline-Zustand fuer Kartenaktualisierung. |
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
 | `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` ist nur noch Kompositions- und HTTP-Adapterwurzel. `request-security.mjs`, `http-routing.mjs` und `request-router.mjs` bilden Sicherheits-, HTTP- und Routinggrenzen; `species-model.mjs` validiert einzelne Arteinträge, während `explorer-model.mjs` das vollständige read-only Explorer-Modell und seine Revision aufbaut. CRUD liegt in `species-create.mjs`, `species-delete.mjs` und `species-edit.mjs`; Medienabläufe liegen in `map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und `asset-maintenance.mjs`. `pipeline-controller.mjs`, `project-publication.mjs` und `backup-service.mjs` besitzen Pipeline, Veröffentlichung und NAS-Sicherung. `media-assets.mjs`, `asset-files.mjs`, `asset-backups.mjs`, `pipeline-log.mjs` und `manual-map-documentation.mjs` besitzen Medienprüfung, Assetdateiliste, Sicherungen, Prozessausgabe und Kartendokumentation. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze, `public/app-measurements.js` die gemeinsame Messwert-/Formulargrenze und `public/app-dialogs.js` die gemeinsame Modal-/Medienfreigabegrenze. |
-| `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenzkern für lokalen Speicher, Fixture-Prüfung, SQLite-Schema, Import, Suchtext und read-only Suche. Er ist noch nicht an produktive Explorer-Routen oder den Neue-Art-Assistenten angeschlossen. |
+| `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenzkern für lokalen Speicher, Fixture-Prüfung, SQLite-Schema, Import, Suchtext und read-only Suche. `taxonomy-reference-service.mjs` stellt die freigegebenen Leseoperationen für Status, Reiche, Suche und Taxondetails bereit. |
+| `species-explorer/public/app-taxonomy-reference.js` | Optionale bidirektionale Taxonomievorschläge im Neue-Art-Assistenten mit `Animalia` als Standard, bewusster Trefferübernahme und nicht blockierendem manuellen Fallback. |
 | `scripts/taxonomy-prototype*.mjs` | Reproduzierbarer begrenzter Phase-9.3-Import, Fixture-Erzeugung und End-to-End-Test. |
 | `scripts/fixtures/taxonomy/` | Kleine versionierte Testdaten mit Release-Metadaten und Prüfsummen; keine vollständige Taxonomiedatenbank. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |

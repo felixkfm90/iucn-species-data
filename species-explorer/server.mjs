@@ -30,6 +30,8 @@ import { createAssetMaintenanceOperations } from "./asset-maintenance.mjs";
 import { createPipelineController } from "./pipeline-controller.mjs";
 import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
+import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
+import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -88,6 +90,7 @@ export async function createExplorerServer({
   portraitRenderer = renderPortrait,
   mapImageRenderer = renderMapJpeg,
   sessionProtection = true,
+  taxonomyRoot = process.env.IUCN_TAXONOMY_DIR || defaultTaxonomyRoot(),
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   let model = await buildExplorerModel(repoRoot);
@@ -108,6 +111,7 @@ export async function createExplorerServer({
   const assetStagingRoot = join(repoRoot, "species-explorer", "staging");
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
+  const taxonomyReference = createTaxonomyReferenceService({ taxonomyRoot });
   let pipelineProcess = null;
   let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
@@ -522,6 +526,22 @@ export async function createExplorerServer({
         error.statusCode = 404;
         throw error;
       },
+      async taxonomyRead({ resource, reference, searchParams }) {
+        if (resource === "status") return taxonomyReference.status();
+        if (resource === "kingdoms") return taxonomyReference.kingdoms();
+        if (resource === "search") {
+          return taxonomyReference.search({
+            query: searchParams.get("q"),
+            kind: searchParams.get("kind") || "all",
+            kingdomId: searchParams.get("kingdomId") || "Animalia",
+            limit: searchParams.get("limit") || 12,
+          });
+        }
+        if (resource === "taxon") return taxonomyReference.taxon(reference);
+        const error = new Error("Unbekannte Taxonomie-Leseoperation");
+        error.statusCode = 404;
+        throw error;
+      },
       async pipelineBackupFile({ url, request, response }) {
         await sendPipelineBackupFile(url, request, response);
       },
@@ -549,6 +569,7 @@ export async function createExplorerServer({
         server.close((error) => (error ? reject(error) : resolveClose()));
       });
       closeActiveFileStreams();
+      taxonomyReference.close();
       previewTokens.clear();
       await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" }).catch(() => {});
     },
