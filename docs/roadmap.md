@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-24
+Stand: 2026-07-25
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -774,6 +774,9 @@ Status: abgeschlossen am 2026-07-22
   unbekannte Werte fallen auf den normalisierten Rohwert zurück. Sieben und acht Stufen sind automatisiert sowie
   lokal in Desktop-, Tablet- und Mobilbreite geprüft. Der IUCN-v4-Adapter übernimmt einen echten
   `subphylum_name`-Wert, falls die API ihn liefert; andernfalls bleibt `Unterstamm` vollständig ausgeblendet.
+  Seit 2026-07-25 entfernt der gemeinsame Taxonomie-Schreibpfad fehlende optionale Unterstämme auch aus
+  `speciesData.json`; dadurch können weder Pipeline noch manuelles Zurücksetzen leere `Subphylum`-Felder
+  veröffentlichen.
   Der lokale Entwurf verwendet vollständige farbige Rang-/Wertbalken mit generischen Inline-SVGs und Trennlinie.
   Der längste einzeilige Inhalt bestimmt die erforderliche Ausgangsbreite; ein konstanter Abstand zwischen den
   Stufenbreiten bildet anschließend gerade diagonale Außenkanten. Jede Stufe ist zusätzlich als leichtes Trapez

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   applyTaxonomyOverride,
   createEmptyTaxonomyOverrideRegistry,
+  mergeNormalizedTaxonomyFields,
   normalizeTaxonomyFields,
   synchronizeAutomaticTaxonomyFields,
   validateTaxonomyOverrideRegistry,
@@ -25,6 +26,23 @@ test("normalisiert Taxonomiewerte und erlaubt leeren Unterstamm", () => {
     Order: "Carnivora",
     Family: "Felidae",
   });
+});
+
+test("veröffentlicht einen optional leeren Unterstamm nicht in speciesData", () => {
+  const entry = {
+    URLSlug: "turdusmerula",
+    Kingdom: "Animalia",
+    Phylum: "Chordata",
+    Subphylum: "",
+    Class: "Aves",
+    Order: "Passeriformes",
+    Family: "Turdidae",
+  };
+  const merged = mergeNormalizedTaxonomyFields(entry);
+  const applied = applyTaxonomyOverride(entry, createEmptyTaxonomyOverrideRegistry());
+
+  assert.equal(Object.hasOwn(merged, "Subphylum"), false);
+  assert.equal(Object.hasOwn(applied, "Subphylum"), false);
 });
 
 test("wendet einen Override anhand des URL-Slugs an", () => {

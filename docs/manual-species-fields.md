@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-07-11
+Stand: 2026-07-25
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -51,8 +51,10 @@ Reihenfolge in der Info-Box:
 
 `update.mjs` uebernimmt `life_expectancy` aus `species_list.json` bei jedem Lauf neu in `speciesData.json`.
 
-Die von IUCN gelieferten Taxonomiewerte fuer Reich, Stamm, Klasse, Ordnung und Familie werden vor dem Schreiben in
-eine lesbare Gross-/Kleinschreibung ueberfuehrt, zum Beispiel `ANIMALIA` zu `Animalia`. Das einmalige Skript
+Die von IUCN gelieferten Taxonomiewerte fuer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie werden
+vor dem Schreiben in eine lesbare Gross-/Kleinschreibung ueberfuehrt, zum Beispiel `ANIMALIA` zu `Animalia`.
+Ein fehlender Unterstamm bleibt als optionales Feld vollständig aus `speciesData.json` entfernt; weder leere
+Zeichenfolgen noch `n/a` werden dafür veröffentlicht. Das einmalige Skript
 `node scripts/normalize-taxonomy-data.mjs` fuehrt dieselbe Normalisierung fuer bestehende Datensaetze aus und legt
 vorher eine lokale Sicherung unter `species-explorer/backups/` an.
 

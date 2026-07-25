@@ -1,22 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mergeNormalizedTaxonomyFields } from "./taxonomy-overrides.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DATA_PATH = path.join(REPO_ROOT, "speciesData.json");
 const BACKUP_DIR = path.join(REPO_ROOT, "species-explorer", "backups");
-const TAXONOMY_FIELDS = ["Kingdom", "Phylum", "Subphylum", "Class", "Order", "Family"];
-
-function formatTaxonomyName(value) {
-  const text = String(value ?? "").trim();
-  if (!text || text.toLocaleLowerCase("de") === "n/a") return text || "n/a";
-  return text
-    .toLocaleLowerCase("de")
-    .replace(/(^|[\s-])([\p{L}])/gu, (_match, prefix, letter) => (
-      `${prefix}${letter.toLocaleUpperCase("de")}`
-    ));
-}
 
 function compactTimestamp(date = new Date()) {
   return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
@@ -28,14 +18,8 @@ if (!Array.isArray(entries)) throw new Error("speciesData.json muss ein Array en
 
 let changedEntries = 0;
 const normalized = entries.map((entry) => {
-  let changed = false;
-  const next = { ...entry };
-  for (const field of TAXONOMY_FIELDS) {
-    const value = formatTaxonomyName(entry?.[field]);
-    if (value !== entry?.[field]) changed = true;
-    next[field] = value;
-  }
-  if (changed) changedEntries += 1;
+  const next = mergeNormalizedTaxonomyFields(entry);
+  if (JSON.stringify(next) !== JSON.stringify(entry)) changedEntries += 1;
   return next;
 });
 

@@ -29,6 +29,15 @@ export function normalizeTaxonomyFields(source = {}) {
   ]));
 }
 
+export function mergeNormalizedTaxonomyFields(entry, source = entry) {
+  const normalizedFields = normalizeTaxonomyFields(source);
+  const result = { ...entry, ...normalizedFields };
+  for (const field of EDITABLE_TAXONOMY_FIELDS) {
+    if (field.optional && !normalizedFields[field.key]) delete result[field.key];
+  }
+  return result;
+}
+
 export function validateTaxonomyOverrideRegistry(value) {
   const issues = [];
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -76,10 +85,7 @@ export function applyTaxonomyOverride(entry, registry) {
   if (!entry || typeof entry !== "object") return entry;
   const slug = String(entry.URLSlug ?? "").trim().toLocaleLowerCase("de");
   const override = registry?.species?.[slug];
-  return {
-    ...entry,
-    ...normalizeTaxonomyFields(override?.fields ?? entry),
-  };
+  return mergeNormalizedTaxonomyFields(entry, override?.fields ?? entry);
 }
 
 export function synchronizeAutomaticTaxonomyFields(entries, registry) {

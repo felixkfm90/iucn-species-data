@@ -1,6 +1,6 @@
 # Codex-Übergabe: Taxonomie-Pyramide modernisieren
 
-Stand: 2026-07-18
+Stand: 2026-07-25
 
 ## Ziel
 
@@ -58,18 +58,19 @@ Der aktuelle Datenbestand enthält regulär:
 Ein Feld für den Unterstamm gehört derzeit nicht zum regulären Bestand. Die Prüfung der offiziellen IUCN-API-v4-
 OpenAPI-Beschreibung am 2026-07-18 ergab kein dokumentiertes Feld `subphylum_name`. Der Datenadapter liest dieses
 Feld trotzdem kontrolliert ein, falls IUCN es künftig oder für einzelne Datensätze ausliefert. Fehlt es, wird der
-technische Leerwert `n/a` erzeugt und in der Oberfläche vollständig ausgeblendet.
+optionale Rang nicht in `speciesData.json` veröffentlicht und in der Oberfläche vollständig ausgeblendet.
 
 ### Umgesetzte Lösung
 
 1. `scripts/iucn-data-adapter.mjs` übernimmt einen tatsächlich gelieferten Wert `taxon.subphylum_name` als
    `Subphylum`.
-2. `emptyEntry()` erzeugt `Subphylum: "n/a"`; `normalizeTaxonomyFields()` und das kontrollierte
-   Normalisierungsskript behandeln den Rang wie die übrigen höheren Taxonomiestufen.
+2. Interne Fallback- und Override-Strukturen dürfen `Subphylum` als `n/a` beziehungsweise leere Zeichenfolge
+   führen. Beim Schreiben von `speciesData.json` entfernt `mergeNormalizedTaxonomyFields()` diese technischen
+   Leerwerte; das kontrollierte Normalisierungsskript verwendet dieselbe zentrale Regel.
 3. Datenschema, Explorer-Modell und Detailansicht akzeptieren den optionalen Rang. Der Explorer zeigt ihn nur bei
    einem verwertbaren Wert.
-4. Bestehende Datensätze ohne Feld bleiben gültig. Der nächste reguläre Pipeline-Lauf ergänzt den technischen
-   Leerwert, solange die API keinen echten Unterstamm liefert.
+4. Bestehende Datensätze ohne Feld bleiben gültig. Reguläre Pipeline-Läufe lassen den optionalen Rang weiterhin
+   weg, solange die API keinen echten Unterstamm liefert.
 5. Die lokale Squarespace-Vorschau kann `Vertebrata` ausschließlich zu Testzwecken simulieren; diese Simulation
    verändert weder `speciesData.json` noch produktive Daten.
 

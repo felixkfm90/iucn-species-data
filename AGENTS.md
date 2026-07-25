@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-24
+Stand: 2026-07-25
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -680,7 +680,10 @@ Aktuelle Planung:
   normalisiert; `update.mjs` schreibt auch kuenftige IUCN-Daten in lesbarer Gross-/Kleinschreibung. Das einmalige
   Migrationsskript sichert `speciesData.json` vorher unter `species-explorer/backups/`.
   Die anschliessenden Phase-8-Schritte sind seit 2026-07-18 umgesetzt: Die Taxonomie-Pyramide verwendet deutsche
-  Anzeigenamen und zeigt einen Unterstamm nur aus einem tatsaechlich vorhandenen Datenwert. Das Artportrait ist in
+  Anzeigenamen und zeigt einen Unterstamm nur aus einem tatsaechlich vorhandenen Datenwert. Fehlende optionale
+  Unterstämme werden seit 2026-07-25 im gemeinsamen Pipeline-/Bearbeitungsschreibpfad vollständig aus
+  `speciesData.json` entfernt; leere Zeichenfolgen bleiben ausschließlich in internen Formular- und
+  Override-Strukturen zulässig. Das Artportrait ist in
   das responsive Squarespace-Artseitenlayout integriert; Status und Trend stehen auf Desktop direkt unter den
   allgemeinen Daten.
   Die Assetformulare wurden am 2026-06-21 kompakter ausgerichtet: Karten- und MP3-Dateieingabe haben dieselbe

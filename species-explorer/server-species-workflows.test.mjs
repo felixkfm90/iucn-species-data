@@ -228,7 +228,7 @@ test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückge
   assert.equal((await restoreResponse.json()).restoredAutomatic, true);
 
   const restoredData = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
-  assert.equal(restoredData[0].Subphylum, "");
+  assert.equal(Object.hasOwn(restoredData[0], "Subphylum"), false);
   assert.equal(restoredData[0].Family, "Turdidae");
   const restoredRegistry = JSON.parse(
     await readFile(join(repoRoot, "species-taxonomy-overrides.json"), "utf8"),

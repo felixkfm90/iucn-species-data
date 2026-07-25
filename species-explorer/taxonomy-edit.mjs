@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   EDITABLE_TAXONOMY_FIELDS,
   createEmptyTaxonomyOverrideRegistry,
+  mergeNormalizedTaxonomyFields,
   normalizeTaxonomyFields,
   validateTaxonomyOverrideRegistry,
 } from "../scripts/taxonomy-overrides.mjs";
@@ -177,7 +178,10 @@ export function createTaxonomyEditOperations({
       throw error;
     }
     const generatedIndex = state.speciesData.indexOf(state.generated);
-    state.speciesData[generatedIndex] = { ...state.generated, ...preview.fields };
+    state.speciesData[generatedIndex] = mergeNormalizedTaxonomyFields(
+      state.generated,
+      preview.fields,
+    );
     state.registry.version = 1;
     state.registry.species ??= {};
     const previousOverride = state.registry.species[state.species.id] ?? null;

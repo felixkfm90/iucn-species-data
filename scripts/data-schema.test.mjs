@@ -48,6 +48,12 @@ test("Generiertes Schema akzeptiert optionalen Unterstamm nur als Text", () => {
     "Assessment ID": 123,
   };
   assert.deepEqual(validateSpeciesDataSchema([completeEntry]), []);
+  const { Subphylum: _omittedSubphylum, ...withoutSubphylum } = completeEntry;
+  assert.deepEqual(validateSpeciesDataSchema([withoutSubphylum]), []);
+  assert.match(
+    validateSpeciesDataSchema([{ ...completeEntry, Subphylum: "" }]).join(" "),
+    /Subphylum/,
+  );
   assert.match(
     validateSpeciesDataSchema([{ ...completeEntry, Subphylum: 42 }]).join(" "),
     /Subphylum/,
