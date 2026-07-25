@@ -1229,10 +1229,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "56945aa39ce48b1e75baa2a1b79703ed8150414c4ed0737be84d0d83e9a0131c",
-        "spectrogramSha256": "95682318ff68097cb6c0eda70e8d26a0e7f3e5344cc39bdd175552d83a7b3211",
-        "generatedAt": "2026-07-19T08:20:24.522Z",
-        "verifiedAt": "2026-07-19T08:20:24.527Z"
+        "soundSha256": "eea809f6f5b06f56f6ff440e863ec9580c57893832a8884671d52800c080d2e8",
+        "spectrogramSha256": "6c80d92d23405c0ead7b46996912623c384f3709dfc0579cb6e315c366a948f1",
+        "generatedAt": "2026-07-25T09:08:41.289Z",
+        "verifiedAt": "2026-07-25T09:08:42.833Z"
       },
       "map": {
         "manual": false,
@@ -1242,7 +1242,7 @@
       "sound": {
         "manual": false,
         "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-07-19T08:20:52.791Z"
+        "updatedAt": "2026-07-25T09:13:12.100Z"
       }
     },
     "Gaukler": {
