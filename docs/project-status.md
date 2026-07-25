@@ -21,13 +21,9 @@ Report-Datenstand: `2026-07-25T09:13:12.342Z`
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Manuell gepflegte Karten (5)
+## Manuell gepflegte Karten (1)
 
 - Blaukehlchen
-- Fischertukan
-- Panama-Kapuzineraffe
-- Rotfuchs
-- Waldkauz
 
 ## Aktive NC-Soundlizenzen (8)
 

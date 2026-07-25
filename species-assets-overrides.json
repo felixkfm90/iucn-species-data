@@ -32,9 +32,9 @@
     },
     "Fischertukan": {
       "map": {
-        "manual": true,
-        "reason": "IUCN liefert korrupte Kartendaten.",
-        "updatedAt": "2026-06-17"
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-25T09:19:54.204Z"
       },
       "spectrogram": {
         "stale": false,
@@ -151,9 +151,9 @@
     },
     "Rotfuchs": {
       "map": {
-        "manual": true,
-        "reason": "IUCN liefert korrupte Kartendaten.",
-        "updatedAt": "2026-06-17"
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-25T09:19:54.204Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -180,9 +180,9 @@
     },
     "Waldkauz": {
       "map": {
-        "manual": true,
-        "reason": "IUCN liefert korrupte Kartendaten.",
-        "updatedAt": "2026-06-17"
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-25T09:19:54.204Z"
       },
       "portrait": {
         "managedBy": "species-explorer",
@@ -797,9 +797,9 @@
         "metadataSha256": "b17f9d64552e430e25cf8625b2249a31519c0842cf34197ea2b1c08cb7f8deea"
       },
       "map": {
-        "manual": true,
-        "reason": "Nach Pipeline-Import von Felix als manuell gepflegt markiert.",
-        "updatedAt": "2026-07-10T14:52:41.295Z"
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-25T09:19:54.204Z"
       }
     },
     "Papageientaucher": {
