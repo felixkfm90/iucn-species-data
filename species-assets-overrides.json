@@ -1244,6 +1244,35 @@
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-07-19T08:20:52.791Z"
       }
+    },
+    "Gaukler": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-07-25T08:18:51.492Z",
+        "approvedAt": "2026-07-25T08:18:55.744Z",
+        "sha256": "e7b55ac27bf6e03f9bc1b095d27c85ef3314936c5a8dd860aca20490662d72a8",
+        "metadataSha256": "0dc467616a892e7bc71ced91b7fad36d40a8753dc6defbee092cca0028a00b18"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "06f633cc99c01b64c98d7a6dbb12274a2d6b58ee80f278480b9e08b143f6f0d0",
+        "spectrogramSha256": "b87f0eba743135a4037a5200961d44a318258aacfdb55d53a2df7c693a0038d3",
+        "generatedAt": "2026-07-25T08:19:07.438Z",
+        "verifiedAt": "2026-07-25T08:19:07.443Z"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-07-25T08:19:30.015Z"
+      },
+      "sound": {
+        "manual": true,
+        "reason": "Nach Pipeline-Import von Felix als manuell gepflegt markiert.",
+        "updatedAt": "2026-07-25T08:19:30.015Z"
+      }
     }
   },
   "spectrogramGenerator": {

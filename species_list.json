@@ -406,5 +406,13 @@
     "size": "ca. 23–31 cm",
     "weight": "ca. 110–290 g",
     "life_expectancy": "ca. 8–10 Jahre"
+  },
+  {
+    "german": "Gaukler",
+    "genus": "Terathopius",
+    "species": "ecaudatus",
+    "size": "ca. 55-70 cm",
+    "weight": "ca. 1,8-3,0 kg",
+    "life_expectancy": "ca. 20-30 Jahre"
   }
 ]

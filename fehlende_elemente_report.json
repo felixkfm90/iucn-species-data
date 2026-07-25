@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-19T08:20:24.615Z",
+  "generatedAt": "2026-07-25T08:19:07.531Z",
   "counts": {
-    "totalSpecies": 51,
+    "totalSpecies": 52,
     "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 2,
-    "ncSoundLicensesAll": 7
+    "ncSoundLicensesAll": 8
   },
   "missing": {
     "soundMp3": [
@@ -48,6 +48,7 @@
     "Bisamratte",
     "Blaustirn-Blatthühnchen",
     "Brauenmotmot",
+    "Gaukler",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
     "Löwe",

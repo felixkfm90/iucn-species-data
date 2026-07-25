@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-07-19T08:20:24.615Z`
+Report-Datenstand: `2026-07-25T08:19:07.531Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 51 |
-| Aktive Arten | 51 |
-| Arten in `speciesData.json` | 51 |
-| Vollständige Art-Assetordner | 51 |
-| Karten | 51 |
-| Sounds | 49 |
-| Credits | 49 |
-| Spektrogramme | 49 |
-| Artporträts | 51 |
+| Eingaben in `species_list.json` | 52 |
+| Aktive Arten | 52 |
+| Arten in `speciesData.json` | 52 |
+| Vollständige Art-Assetordner | 52 |
+| Karten | 52 |
+| Sounds | 50 |
+| Credits | 50 |
+| Spektrogramme | 50 |
+| Artporträts | 52 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
@@ -29,11 +29,12 @@ Report-Datenstand: `2026-07-19T08:20:24.615Z`
 - Rotfuchs
 - Waldkauz
 
-## Aktive NC-Soundlizenzen (7)
+## Aktive NC-Soundlizenzen (8)
 
 - Bisamratte
 - Blaustirn-Blatthühnchen
 - Brauenmotmot
+- Gaukler
 - Geoffroy-Klammeraffe
 - Großtrappe
 - Löwe

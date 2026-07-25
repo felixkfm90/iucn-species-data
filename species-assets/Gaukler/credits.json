@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Terathopius ecaudatus",
+  "german_name": "Gaukler",
+  "recordist": "Fernand DEROUSSEN",
+  "country": "Tanzania",
+  "location": "Ngorongoro, Arusha",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by-nc-nd/3.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/132437",
+  "rejectionKey": "xeno-canto:132437",
+  "notes": "Stage 8 (openOnly=false, q=B, len25-35=true) | query=\"gen:Terathopius sp:ecaudatus q:B len:25-35\" | page=1"
+}
