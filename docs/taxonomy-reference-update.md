@@ -2,8 +2,8 @@
 
 Stand: 2026-07-26
 
-Status: Phase 9.5 technisch umgesetzt; der erste produktive Lauf wurde vor dem Import sicher abgebrochen,
-das reale Archivlimit ist korrigiert und die erneute ausdrückliche Installation steht aus
+Status: Phase 9.5 technisch umgesetzt; zwei reale Paketabweichungen wurden sicher erkannt und korrigiert,
+die erneute ausdrückliche Installation steht aus
 
 ## Ziel
 
@@ -68,6 +68,9 @@ Der Vollimport:
 
 - liest das ColDP-Paket streamend und in begrenzten Transaktionen,
 - behandelt `NameUsage.tsv` als Pflichtdatei und `VernacularName.tsv` als optionale Datei,
+- normalisiert die offiziellen ColDP-Namensräume `col:` und `clb:` beim Lesen der TSV-Kopfzeilen, sodass sowohl
+  die unpräfixierten Testfixtures als auch reale ColDP-1.2-Exporte mit Spalten wie `col:ID`,
+  `col:scientificName` und `clb:merged` denselben internen Feldvertrag verwenden,
 - erzeugt eine lokale SQLite-Datenbank mit Präfix- und FTS5-Suchindex,
 - validiert Schema, Fremdschlüssel, Elternbeziehungen, Zyklen, Suchindex und Manifest,
 - installiert einen unveränderlichen Releaseordner und
@@ -177,8 +180,9 @@ npm.cmd run --silent test:taxonomy-maintenance
 ```
 
 Der Testbestand deckt Releaseerkennung, Cache, URL-Grenzen, sicheren Vollimport, optionale Vernakularnamen,
-Aktivierungssperre vor dem Artenvergleich, eindeutige Synonyme, Mehrdeutigkeiten, fehlende Arten, stabile
-Quellen-ID-Zuordnungen, unveränderte Projektdateien, Fortschritt und Rollback ab.
+offizielle `col:`-/`clb:`-Spaltennamen, Aktivierungssperre vor dem Artenvergleich, eindeutige Synonyme,
+Mehrdeutigkeiten, fehlende Arten, stabile Quellen-ID-Zuordnungen, unveränderte Projektdateien, Fortschritt und
+Rollback ab.
 
 Ein mehrere Gigabyte großer Produktionsdownload ist bewusst kein automatischer Testbestand. Die Mechanik wird mit
 der versionierten Fixture reproduzierbar geprüft; die erste echte Vollinstallation wird im Explorer ausdrücklich

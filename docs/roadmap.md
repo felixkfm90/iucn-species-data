@@ -892,6 +892,12 @@ dauerhaft und öffnet einmalig eine eindeutige Abschlussbestätigung. Der Vertra
 `docs/taxonomy-reference-update.md`. Der erneute reale Vollimport bleibt ein bewusst gestarteter lokaler
 Betriebstest und lädt keine Massendaten in Git oder GitHub Pages.
 
+Der zweite reale Versuch erreichte anschließend die Paketprüfung und machte eine weitere zulässige
+ColDP-1.2-Variante sichtbar: Das XR-Paket verwendet in den TSV-Kopfzeilen offizielle Namensräume wie `col:` und
+`clb:`. Paketvalidator und streamender Import normalisieren diese Präfixe jetzt gemeinsam; ein direkter
+Importtest mit namespaced `NameUsage.tsv` und `VernacularName.tsv` verhindert die Regression. Die bisherige
+Referenz blieb auch bei diesem Fehler unverändert.
+
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
 

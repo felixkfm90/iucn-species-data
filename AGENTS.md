@@ -742,7 +742,10 @@ Aktuelle Planung:
   zu knappen Limit von 20.000 Archiveinträgen sicher beendet. Entpacken und nachgelagerte Paketprüfung verwenden
   nun dieselbe Grenze von 50.000 Dateien und decken die realen 21.100 Einträge mit Reserve ab; Größen-,
   Kompressions-, Verschachtelungs- und Dateitypgrenzen bleiben zusätzlich erhalten. Eine Teilreferenz wurde nicht
-  aktiviert. Fehlt die lokale Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
+  aktiviert. Der zweite reale Versuch erreichte die Paketprüfung und zeigte, dass der aktuelle XR-Export seine
+  ColDP-1.2-Spalten mit `col:` beziehungsweise `clb:` qualifiziert. Paketvalidator und TSV-Iterator normalisieren
+  diese offiziellen Namensräume jetzt gemeinsam; unpräfixierte Fixtures bleiben kompatibel. Fehlt die lokale
+  Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
   Startprüfung einmalig direkt an; `Später` hält die manuelle Wartungsaktion verfügbar. Technische Importfehler
   werden ohne Stacktrace als verständlicher Grund angezeigt. Nach einer erfolgreichen Aktivierung bleiben Release
   und Importzähler sichtbar und ein einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der

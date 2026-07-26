@@ -15,6 +15,10 @@ import {
   activateTaxonomyRelease,
   readActiveTaxonomyPointer,
 } from "./taxonomy-storage.mjs";
+import {
+  iterateTaxonomyTsv,
+  parseTaxonomyTsvHeaders,
+} from "./taxonomy-fixture.mjs";
 
 const FIXTURE_DIRECTORY = path.resolve(
   "scripts",
@@ -46,6 +50,18 @@ async function temporaryRoot(context, prefix) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
+}
+
+async function addOfficialColdpNamespaces(filePath) {
+  const text = await fs.readFile(filePath, "utf8");
+  const newlineIndex = text.indexOf("\n");
+  const header = (newlineIndex >= 0 ? text.slice(0, newlineIndex) : text)
+    .replace(/\r$/, "")
+    .split("\t")
+    .map((name) => `col:${name}`)
+    .join("\t");
+  const remainder = newlineIndex >= 0 ? text.slice(newlineIndex + 1) : "";
+  await fs.writeFile(filePath, `${header}\n${remainder}`, "utf8");
 }
 
 test("Vollimport bleibt bis nach dem konfliktfreien Projektabgleich inaktiv", async (context) => {
@@ -181,4 +197,45 @@ test("Vernakularnamen sind im ColDP-Paket optional", async (context) => {
   assert.equal(taxonomyPackage.files["VernacularName.tsv"], null);
   assert.equal(taxonomyPackage.headers.vernacularName, null);
   assert.ok(taxonomyPackage.files["NameUsage.tsv"]);
+});
+
+test("offizielle ColDP-Namensräume werden bei Prüfung und Import normalisiert", async (context) => {
+  assert.deepEqual(
+    parseTaxonomyTsvHeaders(
+      "col:ID\tcol:scientificName\tcol:rank\tcol:status\tclb:merged",
+    ),
+    ["ID", "scientificName", "rank", "status", "merged"],
+  );
+  const root = await temporaryRoot(context, "taxonomy-package-namespaces-");
+  const fixtureCopy = path.join(root, "fixture");
+  await fs.cp(FIXTURE_DIRECTORY, fixtureCopy, { recursive: true });
+  await Promise.all([
+    addOfficialColdpNamespaces(path.join(fixtureCopy, "NameUsage.tsv")),
+    addOfficialColdpNamespaces(path.join(fixtureCopy, "VernacularName.tsv")),
+  ]);
+
+  const taxonomyPackage = await validateTaxonomyPackage(fixtureCopy, {
+    release: fullRelease("col-full-namespaced"),
+    archive: {},
+  });
+  assert.ok(taxonomyPackage.headers.nameUsage.includes("ID"));
+  assert.ok(taxonomyPackage.headers.nameUsage.includes("scientificName"));
+  assert.ok(taxonomyPackage.headers.vernacularName.includes("taxonID"));
+
+  const rows = iterateTaxonomyTsv(taxonomyPackage.files["NameUsage.tsv"]);
+  const first = await rows.next();
+  await rows.return();
+  assert.ok(first.value.ID);
+  assert.ok(first.value.scientificName);
+
+  const taxonomyRoot = path.join(root, "taxonomy");
+  const imported = await importFullTaxonomyRelease({
+    packageDirectory: fixtureCopy,
+    taxonomyRoot,
+    release: fullRelease("col-full-namespaced"),
+    archive: {},
+    operationId: "test-namespaced-import",
+  });
+  assert.equal(imported.manifest.counts.rawNameUsages, 123);
+  assert.ok(imported.manifest.counts.vernacularNames > 0);
 });

@@ -34,6 +34,27 @@ function splitTsvLine(line) {
   return line.replace(/\r$/, "").split("\t");
 }
 
+export function normalizeTaxonomyTsvHeader(value) {
+  return String(value ?? "")
+    .replace(/^\uFEFF/, "")
+    .replace(/^(?:col|clb):/i, "");
+}
+
+export function parseTaxonomyTsvHeaders(line) {
+  const headers = splitTsvLine(line).map(normalizeTaxonomyTsvHeader);
+  const duplicates = headers.filter(
+    (header, index) => header && headers.indexOf(header) !== index,
+  );
+  if (duplicates.length) {
+    throw new Error(
+      `TSV-Kopf enthält nach der ColDP-Normalisierung doppelte Spalten: ${
+        [...new Set(duplicates)].join(", ")
+      }`,
+    );
+  }
+  return headers;
+}
+
 async function sha256File(filePath, signal) {
   const hash = crypto.createHash("sha256");
   const stream = createReadStream(filePath);
@@ -71,7 +92,7 @@ export async function* iterateTaxonomyTsv(filePath, { signal } = {}) {
       lineNumber += 1;
       assertNotAborted(signal);
       if (!headers) {
-        headers = splitTsvLine(line);
+        headers = parseTaxonomyTsvHeaders(line);
         continue;
       }
       if (!line) continue;
@@ -135,7 +156,7 @@ export async function validateTaxonomyFixture(fixtureDirectory, { signal } = {})
       throw new Error(`SHA-256-Prüfsumme von ${fileName} stimmt nicht überein.`);
     }
     if (expectedHeaders) {
-      const actualHeaders = splitTsvLine(await readFirstLine(filePath));
+      const actualHeaders = parseTaxonomyTsvHeaders(await readFirstLine(filePath));
       const missingHeaders = expectedHeaders.filter((header) => !actualHeaders.includes(header));
       if (missingHeaders.length) {
         throw new Error(

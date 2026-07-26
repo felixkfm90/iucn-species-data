@@ -5,6 +5,7 @@ import path from "node:path";
 import readline from "node:readline";
 
 import { TAXONOMY_ARCHIVE_LIMITS } from "./taxonomy-archive.mjs";
+import { parseTaxonomyTsvHeaders } from "./taxonomy-fixture.mjs";
 import { assertTaxonomyReleaseId } from "./taxonomy-storage.mjs";
 
 const REQUIRED_HEADERS = Object.freeze({
@@ -17,10 +18,6 @@ export const TAXONOMY_PACKAGE_LIMITS = Object.freeze({
   maxFiles: TAXONOMY_ARCHIVE_LIMITS.maxEntries,
   maxDirectoryDepth: 6,
 });
-
-function splitHeader(line) {
-  return line.replace(/^\uFEFF/, "").replace(/\r$/, "").split("\t");
-}
 
 async function readFirstLine(filePath) {
   const stream = createReadStream(filePath, { encoding: "utf8" });
@@ -72,7 +69,7 @@ function findUniqueFile(files, fileName, required) {
 }
 
 async function validateHeaders(filePath, fileName, expectedHeaders) {
-  const headers = splitHeader(await readFirstLine(filePath));
+  const headers = parseTaxonomyTsvHeaders(await readFirstLine(filePath));
   const missing = expectedHeaders.filter((header) => !headers.includes(header));
   if (missing.length) {
     throw new Error(`${fileName} enthält nicht alle Pflichtspalten: ${missing.join(", ")}`);

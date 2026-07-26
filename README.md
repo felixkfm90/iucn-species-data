@@ -306,6 +306,10 @@ Fortschritt angezeigt. Das sichere Entpacken erlaubt höchstens 50.000 Archivein
 CoL-XR-Umfang von 21.100 Einträgen abgedeckt, ohne die übrigen Größen- und Kompressionsgrenzen zu öffnen. Die
 vorherige aktive Referenz bleibt als Rollbackversion erhalten.
 
+Reale ColDP-1.2-Exporte kennzeichnen Tabellenfelder mit Namensräumen wie `col:ID`, `col:scientificName` und
+`clb:merged`. Der Importer normalisiert diese offiziellen Präfixe beim Lesen; die lokale Datenbank und die kleinen
+unpräfixierten Testfixtures verwenden dadurch weiterhin denselben internen Feldvertrag.
+
 Die lokale SQLite-Datenbank enthält akzeptierte Taxa und ihre Hierarchie, vorhandene Zwischenränge,
 wissenschaftliche Namen und Synonyme, gebräuchliche beziehungsweise deutsche Namen soweit geliefert, externe
 Kennungen sowie Release- und Quellenprovenienz. Größe, Gewicht, Lebenserwartung, IUCN-Daten, Karten, Sounds und
