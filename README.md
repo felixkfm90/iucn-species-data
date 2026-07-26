@@ -867,10 +867,13 @@ nicht ausgeführt. Phase 9.4 hat am 2026-07-24 die lokale read-only API und die 
 Neue-Art-Assistenten integriert. Kein Treffer wird automatisch gewählt; nur bestätigte Arteinträge gelangen in die
 Namensfelder und die bisherige Prüfung bleibt maßgeblich. Phase 9.5 stellt seit 2026-07-26 den vollständigen
 lokalen Import, die nicht blockierende Versionsprüfung beim Start, Fortschritt, den sicheren Abgleich vorhandener
-Arten, atomare Aktivierung und Rollback bereit. Ein echter Vollbestand wird erst durch die ausdrücklich gestartete
-erste lokale Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Als Nächstes
-folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Danach folgen Phase 10 mit
-Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
+Arten, atomare Aktivierung und Rollback bereit. Entpacken und Paketprüfung verwenden dieselbe auf 50.000 Dateien
+begrenzte Sicherheitsrichtlinie; technische Import-Stacktraces werden in der Oberfläche auf den verständlichen
+Fehlergrund reduziert. Fehlt die Taxonomiedatenbank oder ist sie veraltet, bietet der Explorer die Aktualisierung
+nach der Startprüfung direkt an. Ein echter Vollbestand wird erst durch diese ausdrücklich bestätigte lokale
+Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Als Nächstes folgt Phase 9.6
+mit realem Betriebstest, Rollbackprüfung und umfassendem Abschlussaudit. Phase 10 umfasst ausschließlich Lightroom,
+Phase 11 Mehrgeraetebetrieb, automatische Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
 `docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md`,
@@ -1043,7 +1046,12 @@ Oberflächen-/Quellvertrag wurde aus `server.test.mjs` nach `explorer-ui-contrac
 getrennte UI-Vertrag 784 Zeilen. Der gemeinsame Explorer-Test bestand mit 21 von 21 Prüfungen. Auditpunkt A4 ist
 damit abgeschlossen. Squarespace-Module, Footer-Versionen und Custom CSS blieben unverändert.
 
-Phase 10 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
+Jede große Phase endet verbindlich mit einem umfassenden Audit von Code, Daten/Schemata, Dateistruktur,
+Dokumentation, Tests/Qualitätsgate sowie den betroffenen Betriebs-, Backup-, Restore- und
+Veröffentlichungsabläufen. Erst nach Bereinigung oder ausdrücklich begründeter Verschiebung aller Befunde gilt die
+Phase als abgeschlossen.
+
+Phase 11 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
 vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.
 

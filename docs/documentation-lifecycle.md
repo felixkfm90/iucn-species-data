@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-07-24
+Stand: 2026-07-26
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -45,6 +45,21 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 3. Bei Dokumentänderungen `npm.cmd run --silent check:docs` ausführen.
 4. `npm.cmd run status:check` beziehungsweise `npm.cmd run quality:ci` ausführen.
 5. Erst danach committen und veröffentlichen.
+
+## Pflicht am Ende jeder großen Phase
+
+Keine große Projektphase gilt als abgeschlossen, bevor ein umfassendes Abschlussaudit durchgeführt, dokumentiert
+und bereinigt wurde. Das Audit umfasst mindestens:
+
+- Codequalität, Verantwortungsgrenzen, Modularisierung und vermeidbare Doppelungen
+- Datenmodell, Schema, Migrationen und Rückwärtsverträglichkeit
+- Ordnerstruktur, ungenutzte Dateien sowie temporäre Arbeits- und Build-Artefakte
+- Dokumentationsstand, Widersprüche, lokale Verweise und aktuelle Betriebsabläufe
+- automatisierte Tests, vollständiges Qualitätsgate und den produktiven Veröffentlichungsweg
+- Backup, Wiederherstellung und betrieblich relevante Fehlerszenarien
+
+Gefundene Punkte werden innerhalb der Phase behoben oder mit Begründung, Zielphase und überprüfbarem
+Abnahmekriterium in `docs/roadmap.md` verschoben.
 
 Der GitHub-Actions-Quality-Job führt `status:check` vor jedem Pages-Build aus. Ein veralteter Projektstatus blockiert
 damit die Veröffentlichung.

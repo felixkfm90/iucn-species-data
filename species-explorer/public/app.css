@@ -463,14 +463,14 @@ button.danger,
 }
 
 .taxonomy-maintenance-panel {
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
   display: grid;
-  gap: 9px;
+  gap: 6px;
 }
 
 .taxonomy-maintenance-copy {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .taxonomy-maintenance-copy strong {
@@ -483,23 +483,23 @@ button.danger,
   margin: 0;
   color: var(--text-muted);
   font-size: 0.72rem;
-  line-height: 1.45;
+  line-height: 1.3;
 }
 
 .taxonomy-maintenance-progress {
   width: 100%;
-  height: 12px;
+  height: 8px;
   accent-color: var(--green);
 }
 
 .taxonomy-maintenance-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .taxonomy-maintenance-actions button {
-  min-height: 42px;
+  min-height: 34px;
   justify-content: center;
   text-align: center;
 }
@@ -528,6 +528,20 @@ button.danger,
 .pipeline-mode-choice button span {
   color: var(--text-muted);
   font-size: 0.74rem;
+}
+
+.taxonomy-maintenance-group summary {
+  padding: 8px 10px 6px;
+}
+
+.pipeline-mode-choice .taxonomy-maintenance-actions button {
+  min-height: 34px;
+  padding: 7px 8px;
+  display: block;
+  color: var(--green);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .settings-help {

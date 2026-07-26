@@ -8,6 +8,7 @@ import {
   TAXONOMY_ARCHIVE_LIMITS,
   validateArchiveEntryName,
 } from "./taxonomy-archive.mjs";
+import { TAXONOMY_PACKAGE_LIMITS } from "./taxonomy-package.mjs";
 
 function createSuccessfulSpawn(capture) {
   return (_command, args, options) => {
@@ -36,6 +37,11 @@ function createSuccessfulSpawn(capture) {
 test("Archivgrenze erlaubt den realen CoL-Umfang mit Sicherheitsreserve", () => {
   assert.ok(TAXONOMY_ARCHIVE_LIMITS.maxEntries >= 50_000);
   assert.ok(TAXONOMY_ARCHIVE_LIMITS.maxEntries > 21_100);
+  assert.equal(
+    TAXONOMY_PACKAGE_LIMITS.maxFiles,
+    TAXONOMY_ARCHIVE_LIMITS.maxEntries,
+    "Entpack- und Paketprüfung müssen dieselbe Dateigrenze verwenden.",
+  );
   assert.equal(TAXONOMY_ARCHIVE_LIMITS.maxExpandedBytes, 24 * 1024 ** 3);
   assert.equal(TAXONOMY_ARCHIVE_LIMITS.maxCompressionRatio, 300);
 });

@@ -823,14 +823,22 @@ Status: abgeschlossen am 2026-07-22
 
 Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überholt und kein Roadmap-Punkt mehr.
 
-## Phase 9 - Globale Taxonomiedatenbank und Lightroom
+### Verbindliche Abschlussregel für große Phasen
+
+Keine große Phase gilt als abgeschlossen, bevor ein umfassendes Abschlussaudit durchgeführt, dokumentiert und
+erfolgreich geprüft wurde. Das Audit umfasst mindestens Code und Modularisierung, Daten und Schemata,
+Datei-/Ordnerstruktur einschließlich temporärer Artefakte, Dokumentation und Widerspruchsfreiheit, direkte und
+übergreifende Tests, das vollständige Qualitätsgate sowie die relevanten Betriebs-, Backup-, Restore- und
+Veröffentlichungsabläufe. Gefundene offene Punkte werden vor dem Phasenabschluss bereinigt oder mit Begründung und
+klarer Zielphase dokumentiert.
+
+## Phase 9 - Globale Taxonomiedatenbank
 
 Status: in Arbeit; Phase 9.1 bis 9.5 technisch abgeschlossen
 
-Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
-lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
-Aktualisierungsworkflow, Lightroom-Machbarkeitsprüfung, deutsches Lightroom-Plug-in als MVP, optionale
-Lightroom-Erweiterungen und die Übergabe der Datenverteilung an Phase 10.
+Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst ausschließlich
+Quellenvergleich, lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen
+Import-/Aktualisierungsworkflow und das umfassende Abschlussaudit. Lightroom beginnt getrennt in Phase 10.
 
 Phase 9.1 wurde am 2026-07-23 ohne produktiven Datenimport abgeschlossen. Die verbindliche Quellenentscheidung in
 `docs/taxonomy-source-decision.md` legt Catalogue of Life XR als globale Primärreferenz fest. WoRMS validiert und
@@ -875,24 +883,42 @@ eindeutige Synonyme werden nur vorgeschlagen und mehrdeutige oder fehlende Treff
 Prüfung markiert. Namen, Slugs, Assetpfade und Projektdateien werden nie automatisch geändert. Erst nach
 erfolgreichem Vergleich wird die Referenz atomar aktiviert; die vorherige Version bleibt für Rollback erhalten.
 Der erste echte Vollimportversuch lud das Archiv vollständig, wurde aber vor dem Import am anfänglichen
-20.000-Einträge-Limit sicher beendet. Das auf 50.000 begrenzte, weiterhin durch Gesamtgröße und Kompressionsrate
-geschützte Limit deckt die realen 21.100 Archiveinträge nun ab. Nach erfolgreicher Aktivierung zeigt die Oberfläche
-Release und Importzähler dauerhaft und öffnet einmalig eine eindeutige Abschlussbestätigung. Der Vertrag steht in
+20.000-Einträge-Limit sicher beendet. Entpacken und nachgelagerte Paketprüfung verwenden jetzt dieselbe Grenze von
+50.000 Dateien; Gesamtgröße, Kompressionsrate, Verschachtelung und Dateitypen bleiben zusätzlich begrenzt. Damit
+sind die realen 21.100 Archiveinträge mit Sicherheitsreserve abgedeckt. Bei fehlender oder veralteter Referenz
+bietet der Explorer die Aktualisierung nach der Startprüfung einmalig direkt an; `Später` lässt den manuellen Start
+unter `Datenbank-Aktionen` verfügbar. Nach erfolgreicher Aktivierung zeigt die Oberfläche Release und Importzähler
+dauerhaft und öffnet einmalig eine eindeutige Abschlussbestätigung. Der Vertrag steht in
 `docs/taxonomy-reference-update.md`. Der erneute reale Vollimport bleibt ein bewusst gestarteter lokaler
 Betriebstest und lädt keine Massendaten in Git oder GitHub Pages.
 
-Als Nächstes folgt Phase 9.6 mit der Lightroom-SDK- und Metadaten-Machbarkeitsprüfung.
+Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
+umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
 
-## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
+## Phase 10 - Lightroom-Integration
+
+Status: geplant
+
+Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
+
+- 10.1: Lightroom-SDK-, Versions-, Metadaten-, XMP-, Offline- und Performance-Machbarkeitsprüfung;
+- 10.2: Architekturentscheidung für read-only Datenbankzugriff, lokale Explorer-API oder kontrollierten Export;
+- 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Artensuche, Taxonomievorschau, stabiler Projekt-Art-ID und
+  Übernahme auf ausgewählte Fotos;
+- 10.4: erst nach erfolgreichem MVP einzeln priorisierte Erweiterungen wie Referenzbilder, Sammlungen, Lifelist,
+  Statistiken und Konfliktprüfung;
+- 10.5: umfassendes Phase-10-Abschlussaudit.
+
+## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
 
 Status: teilweise vorbereitet
 
 Die verbindliche Detailplanung steht in `docs/multi-device-backup-plan.md`. Vorhanden sind der manuelle NAS-Backup-
 und Restore-Kern. Offen bleiben insbesondere automatische App-Aktualisierung, Benutzer-/Geräteidentität,
 Bearbeitungssperre, Konflikt- und Wiederherstellungsabläufe, geplante Sicherungsautomatik und ein vollständiger
-Installer für weitere Computer.
+Installer für weitere Computer. Den Abschluss bildet ein umfassendes Phase-11-Audit.
 
-## Phase 11 - Weitere Erweiterungen
+## Phase 12 - Weitere Erweiterungen
 
 Status: geplant
 
@@ -900,3 +926,4 @@ Status: geplant
 - Shop-/Kalender- oder Verkaufsintegration konzeptionell und technisch prüfen.
 - Rechtliche Folgeprüfung nach neuen externen Diensten, Affiliate-Links, Shopfunktionen oder Zahlungs-/Bestellwegen
   durchführen.
+- Phase mit einem umfassenden Abschlussaudit beenden.

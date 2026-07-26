@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-25
+Stand: 2026-07-26
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -20,6 +20,12 @@ Bei jedem technischen Schritt pruefen und bei Bedarf aktualisieren:
 
 Die Zuständigkeiten, historischen Kennzeichnungen und die einzige Quelle für aktuelle Zähler sind verbindlich in
 `docs/documentation-lifecycle.md` festgelegt.
+
+Jede große Phase endet verbindlich mit einem umfassenden Audit. Dieses prüft mindestens Code und Modularisierung,
+Daten und Schemata, Datei-/Ordnerstruktur einschließlich temporärer Dateien, Dokumentation und Widersprüche,
+direkte sowie übergreifende Tests, das vollständige Qualitätsgate und die relevanten Betriebs-, Backup-, Restore-
+und Veröffentlichungsabläufe. Gefundene Befunde werden vor dem Phasenabschluss bereinigt oder begründet einer
+späteren Phase zugeordnet.
 
 Wenn eine JS-Datei geaendert wird, muss auch `docs/squarespace-footer.html` bzw. die Squarespace-`?v=`-Version
 geprueft werden. Wenn CSS geaendert wird, muss `docs/squarespace-custom.css` mit dem echten Squarespace-Stand
@@ -658,8 +664,9 @@ Aktuelle Planung:
   Launcher `species-explorer/desktop/start-explorer.vbs` nutzt. Dadurch startet die App per Doppelklick ohne
   dauerhaft sichtbares PowerShell-Fenster. Der Desktop-Lifecycle ist im Explorer-Test abgedeckt;
   `npm.cmd run --silent test:explorer` umfasst jetzt 19 Tests.
-  Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock sind fuer Phase 10 vorgesehen.
-  Vor Phase 10 wurde am 2026-06-28 ein nicht-destruktiver Projektkonsolidierungs-Audit gestartet:
+  Details: `docs/desktop-shell-plan.md`. NAS/Backup und Mehrgeraete-Lock sind fuer Phase 11 vorgesehen.
+  Vor der damaligen Mehrgerätevorplanung wurde am 2026-06-28 ein nicht-destruktiver Projektkonsolidierungs-Audit
+  gestartet:
   `docs/project-consolidation-audit.md`. Ergebnis: kein kritischer Blocker; Bereinigungskandidaten sind `Testlauf/`,
   `errors.log` und ein alter `species-explorer/pipeline-asset-backups/`-Lauf. Strukturkandidaten waren die
   Dependency `node-fetch`, Log-/Temp-Retention und das spaetere FFmpeg-/Installer-Konzept.
@@ -696,7 +703,7 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 9 `Globale Taxonomiedatenbank und Lightroom-Integration` ist seit 2026-07-23 in Arbeit, siehe
+  Phase 9 `Globale Taxonomiedatenbank` ist seit 2026-07-23 in Arbeit, siehe
   `docs/global-taxonomy-lightroom-plan.md`. Phase 9.1 ist abgeschlossen; die verbindliche Quellenentscheidung steht
   in `docs/taxonomy-source-decision.md`. Catalogue of Life XR ist die globale Primärreferenz. Der im XR
   unterscheidbare Base-Kern bildet eine höhere Vertrauensstufe; WoRMS ergänzt und validiert marine beziehungsweise
@@ -732,15 +739,19 @@ Aktuelle Planung:
   Hierarchie und vorhandene Zwischenränge, wissenschaftliche Namen und Synonyme, gebräuchliche Namen soweit im
   Release geliefert, externe Kennungen sowie Quellen- und Releaseprovenienz; Projektfachdaten und Assets bleiben
   getrennt. Der erste echte Vollimportversuch lud das Archiv vollständig, wurde aber vor dem Import am anfänglich
-  zu knappen Limit von 20.000 Archiveinträgen sicher beendet. Das korrigierte Limit von 50.000 deckt die realen
-  21.100 Einträge mit Reserve ab; Größen- und Kompressionsgrenzen bleiben unverändert. Eine Teilreferenz wurde
-  nicht aktiviert. Nach einer erfolgreichen Aktivierung bleiben Release und Importzähler sichtbar und ein
-  einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der verbindliche Konflikt- und
-  Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte Vollimport bleibt ein bewusst
-  gestarteter lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Die
-  Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp bis zum Lightroom-MVP und zur
-  ausdrücklichen Übergabe der Datenverteilung an Phase 10.
-  Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
+  zu knappen Limit von 20.000 Archiveinträgen sicher beendet. Entpacken und nachgelagerte Paketprüfung verwenden
+  nun dieselbe Grenze von 50.000 Dateien und decken die realen 21.100 Einträge mit Reserve ab; Größen-,
+  Kompressions-, Verschachtelungs- und Dateitypgrenzen bleiben zusätzlich erhalten. Eine Teilreferenz wurde nicht
+  aktiviert. Fehlt die lokale Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
+  Startprüfung einmalig direkt an; `Später` hält die manuelle Wartungsaktion verfügbar. Technische Importfehler
+  werden ohne Stacktrace als verständlicher Grund angezeigt. Nach einer erfolgreichen Aktivierung bleiben Release
+  und Importzähler sichtbar und ein einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der
+  verbindliche Konflikt- und Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte
+  Vollimport bleibt ein bewusst gestarteter lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit Betriebstest,
+  Rollbackprüfung und umfassendem Phase-9-Abschlussaudit.
+  Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP, optionale Erweiterungen und das
+  Phase-10-Abschlussaudit.
+  Phase 11 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
   vollstaendiges ZIP-Restore-Backup und der Bearbeitungs-Lock liegt spaeter in einem separaten `app-lock`-Branch.
@@ -977,16 +988,19 @@ Aktuelle Planung:
   Ein zweiter Start der Electron-Verknüpfung öffnet keine weitere Instanz, sondern stellt das vorhandene Fenster
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
-- Phase 9 - Globale Taxonomiedatenbank und Lightroom:
+- Phase 9 - Globale Taxonomiedatenbank:
   Phase 9.1 bis 9.5 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
   Fachergänzung. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, Reichsauswahl, bidirektionale Vorschläge,
   Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten getestet integriert. Der vollständige
   lokale Import- und Aktualisierungsworkflow prüft beim Start nur Metadaten, vergleicht bestehende Arten ohne
-  automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Als Nächstes folgen
-  Lightroom-Machbarkeit und -MVP.
-- Phase 10 - Mehrere Computer:
+  automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Als Nächstes folgen realer
+  Vollimport-/Rollbacktest und das umfassende Phase-9-Abschlussaudit.
+- Phase 10 - Lightroom:
+  SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
+  Erweiterungen und umfassendes Abschlussaudit.
+- Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
-- Phase 11 - Weitere Erweiterungen:
+- Phase 12 - Weitere Erweiterungen:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung. Der fruehere Kohlmeisen-Wartepunkt ist aufgehoben.

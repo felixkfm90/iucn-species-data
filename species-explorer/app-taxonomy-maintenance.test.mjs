@@ -93,6 +93,52 @@ function completedStatus() {
   };
 }
 
+function availableUpdateStatus({ installed = false } = {}) {
+  return {
+    status: "idle",
+    phase: "",
+    action: "",
+    active: false,
+    message: "Noch keine Aktualisierung gestartet.",
+    progressPercent: null,
+    startedAt: "",
+    completedAt: "",
+    releaseId: installed ? "col-old-release" : "",
+    latest: {
+      releaseId: "col-xr-2026-07-17-315834",
+      alias: "COL26.7 XR",
+      issued: "2026-07-17",
+    },
+    reference: installed
+      ? {
+        available: true,
+        releaseId: "col-old-release",
+        source: { releaseId: "col-old-release", alias: "COL26.6 XR" },
+      }
+      : { available: false },
+    updateAvailable: true,
+    latestCheckedAt: "2026-07-26T09:59:00.000Z",
+    rollbackAvailable: false,
+    latestInstalled: false,
+  };
+}
+
+function updatePreview() {
+  return {
+    hasWork: true,
+    latest: availableUpdateStatus().latest,
+    warning: "Download und Import können einige Zeit dauern.",
+    requiredFreeBytes: 12 * 1024 ** 3,
+    token: "preview-token",
+  };
+}
+
+async function flushAsyncWork() {
+  for (let index = 0; index < 6; index += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
+
 test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenster angezeigt", async () => {
   const visible = elements();
   const confirmations = [];
@@ -150,4 +196,63 @@ test("bereits vor dem Öffnen abgeschlossene Läufe erzeugen kein nachträgliche
   await controller.refresh();
   await Promise.resolve();
   assert.equal(confirmations.length, 0);
+});
+
+test("beim Start wird eine fehlende Referenz einmalig zur Installation angeboten", async () => {
+  const confirmations = [];
+  const requests = [];
+  const status = availableUpdateStatus();
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: elements(),
+    fetchJson: async (url, options) => {
+      requests.push({ url, options });
+      if (url.endsWith("/preview")) return updatePreview();
+      if (url.endsWith("/start")) return activeStatus();
+      return status;
+    },
+    formatBytes: () => "12 GB",
+    showQuickConfirm: async (options) => {
+      confirmations.push(options);
+      return true;
+    },
+    renderDatabaseStatus() {},
+  });
+
+  controller.setup();
+  await flushAsyncWork();
+  assert.equal(confirmations.length, 1);
+  assert.equal(confirmations[0].title, "Keine Taxonomiedatenbank installiert");
+  assert.equal(confirmations[0].confirmLabel, "Jetzt aktualisieren");
+  assert.equal(confirmations[0].cancelLabel, "Später");
+  assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 1);
+});
+
+test("eine verschobene Aktualisierung wird beim selben Start nicht erneut angeboten", async () => {
+  const confirmations = [];
+  const requests = [];
+  const status = availableUpdateStatus({ installed: true });
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: elements(),
+    fetchJson: async (url, options) => {
+      requests.push({ url, options });
+      if (url.endsWith("/preview")) return updatePreview();
+      return status;
+    },
+    formatBytes: () => "12 GB",
+    showQuickConfirm: async (options) => {
+      confirmations.push(options);
+      return false;
+    },
+    renderDatabaseStatus() {},
+  });
+
+  controller.setup();
+  await flushAsyncWork();
+  await controller.refresh();
+  await flushAsyncWork();
+  assert.equal(confirmations.length, 1);
+  assert.equal(confirmations[0].title, "Taxonomiedatenbank ist veraltet");
+  assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 0);
 });

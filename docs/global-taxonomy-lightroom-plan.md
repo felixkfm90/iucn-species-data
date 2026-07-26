@@ -1,10 +1,11 @@
-# Globale Taxonomiedatenbank und Lightroom-Integration
+# Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
 Stand: 2026-07-26
 
-Status: Phase 9.1 bis 9.5 technisch abgeschlossen; erste produktive Vollinstallation noch nicht gestartet
+Status: Phase 9.1 bis 9.5 technisch abgeschlossen; erste produktive Vollinstallation und Phase-9-Abschlussaudit
+noch offen; Lightroom beginnt getrennt in Phase 10
 
-Roadmap: Phase 9
+Roadmap: Phase 9 und Phase 10
 
 ## Ziel und Abgrenzung
 
@@ -27,15 +28,18 @@ Der aktuelle produktive Artenbestand bleibt davon getrennt:
 - URL-Slugs, Assetnamen und Assetpfade ändern sich nicht allein aufgrund einer neuen Taxonomieversion.
 - Die globale Datenbank wird weder in Git aufgenommen noch über GitHub Pages ausgeliefert.
 
-Dieses Dokument beschreibt Anforderungen, Architektur, Entscheidungspunkte, Risiken und Teilphasen. Die
+Dieses Dokument beschreibt die gemeinsame fachliche Schnittstelle, ordnet die Umsetzung aber verbindlich in zwei
+getrennte Phasen ein: Phase 9 liefert und auditiert die globale Taxonomiereferenz; Phase 10 prüft und implementiert
+erst danach die Lightroom-Integration. Die
 Quellenstrategie wurde in Phase 9.1 verbindlich unter `docs/taxonomy-source-decision.md` festgelegt. Speichertechnik,
 Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unter
 `docs/local-taxonomy-database-design.md` entworfen und in Phase 9.3 mit dem begrenzten, unter
 `docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Phase 9.4 hat die lokale read-only
 API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verbindliche Vertrag steht in
 `docs/taxonomy-explorer-integration.md`. Phase 9.5 setzt den vollständigen lokalen Installations- und
-Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Lightroom-Anbindung und
-Mehrgeräteverteilung werden in den nachfolgenden Teilphasen entschieden.
+Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 schließt die Taxonomiephase mit
+realem Betriebstest, Rollbackprüfung und umfassendem Audit ab. Lightroom-Anbindung folgt in Phase 10,
+Mehrgeräteverteilung in Phase 11.
 
 ## A. Ausgangslage
 
@@ -284,8 +288,9 @@ Explorer-Start; vollständiger Download und Import bleiben ausdrücklich bestät
 
 ## H. Verhältnis zum Multi-Computer-Support
 
-Phase 9 wird bewusst vor Phase 10 „Synology NAS, Mehrgeräte und automatisiertes Backup“ eingeordnet. In
-Teilphase 9.9 müssen vor dem weiteren Mehrgeräteausbau folgende Entscheidungen dokumentiert sein:
+Die Taxonomiedatenbank aus Phase 9 und die Lightroom-Integration aus Phase 10 werden bewusst vor Phase 11
+„Synology NAS, Mehrgeräte und automatisiertes Backup“ eingeordnet. In Phase 11 müssen vor dem eigentlichen
+Mehrgeräteausbau folgende Entscheidungen dokumentiert sein:
 
 - Wird die globale Referenzdatenbank auf jedem Rechner separat installiert?
 - Wird eine geprüfte Datenbankversion vom NAS kopiert?
@@ -301,10 +306,10 @@ Projektdateien behandelt. Eigene Ergänzungen, Übersetzungen, Auswahlentscheidu
 projektbezogene Mappings sind dagegen unersetzbar und müssen in Backup, Restore und späteren Mehrgeräteabgleich
 einbezogen werden.
 
-Die bisherigen Entscheidungen aus `docs/multi-device-backup-plan.md` bleiben unverändert. Phase 9.9 ergänzt nur
-die noch fehlende Übergabe für Referenzdaten und projektspezifische Taxonomieentscheidungen.
+Die bisherigen Entscheidungen aus `docs/multi-device-backup-plan.md` bleiben unverändert. Phase 11 ergänzt die
+noch fehlende Übergabe für Referenzdaten, Lightroom-Daten und projektspezifische Taxonomieentscheidungen.
 
-## I. Eigenes deutschsprachiges Lightroom-Classic-Plug-in
+## I. Phase 10: eigenes deutschsprachiges Lightroom-Classic-Plug-in
 
 Das spätere Plug-in wird eigenständig für dieses Projekt geplant. Es entsteht nicht durch Kopieren oder
 Rückentwicklung eines fremden Plug-ins.
@@ -333,7 +338,7 @@ Zu prüfende Funktionen:
 - später optional Statistiken und Lifelist-Funktionen
 
 Noch offen bleibt, ob Lightroom direkt lesend auf eine lokale Datenbank, auf eine Explorer-API oder auf eine
-kompakte Exportdatei zugreift. Die Entscheidung folgt erst aus Phase 9.6 und muss Offline-Verhalten,
+kompakte Exportdatei zugreift. Die Entscheidung folgt erst aus Phase 10.1 und muss Offline-Verhalten,
 Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksichtigen.
 
 ## J. Sicherheits- und Qualitätsregeln
@@ -450,16 +455,36 @@ Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin 
 echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest. Verbindlicher Vertrag:
 `docs/taxonomy-reference-update.md`.
 
-### 9.6 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
+### 9.6 Realer Betriebstest und umfassendes Abschlussaudit
+
+- Vollreferenz mit dem echten CoL-XR-Paket installieren
+- Suchindizes, Zähler, Zwischenränge und Stichproben gegen die Quelle prüfen
+- Konfliktabgleich vorhandener Projektarten kontrollieren
+- Abbruch, fehlerhafte Pakete, atomare Aktivierung und Rollback praktisch prüfen
+- Code, Daten/Schemata, Datei-/Ordnerstruktur, Dokumentation, Tests, Qualitätsgate sowie Betriebs- und
+  Wiederherstellungsabläufe vollständig auditieren
+- alle Befunde bereinigen oder begründet einer späteren Phase zuordnen
+
+Ergebnis: Phase 9 kann erst nach dokumentiert bestandenem Audit abgeschlossen werden.
+
+### 10.1 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 
 - technische SDK-Grenzen und unterstützte Lightroom-Versionen prüfen
 - Datenübertragungswege vergleichen
-- Projekt-Art-ID und Metadatenmodell festlegen
 - XMP-, Katalog-, Offline- und Performanceverhalten testen
 
-Ergebnis: dokumentierte Architekturentscheidung für das Plug-in.
+Ergebnis: dokumentierter Machbarkeitsbericht mit belastbaren technischen Grenzen.
 
-### 9.7 Deutsches Lightroom-Plug-in als MVP
+### 10.2 Architekturentscheidung
+
+- read-only Zugriff über SQLite, lokale Explorer-API und kontrollierten Export vergleichen
+- Projekt-Art-ID und Metadatenmodell festlegen
+- Cache-, Offline-, Aktualisierungs- und Konfliktverhalten entscheiden
+- Installations-, Backup- und Restoregrenzen zur späteren Phase 11 dokumentieren
+
+Ergebnis: verbindliche Architekturentscheidung für das Plug-in.
+
+### 10.3 Deutsches Lightroom-Plug-in als MVP
 
 - deutsche Oberfläche
 - Artensuche und Taxonomievorschau
@@ -469,7 +494,7 @@ Ergebnis: dokumentierte Architekturentscheidung für das Plug-in.
 
 Ergebnis: getestetes MVP ohne konkurrierende Stammdatenpflege.
 
-### 9.8 Erweiterte Lightroom-Funktionen
+### 10.4 Erweiterte Lightroom-Funktionen
 
 Erst nach erfolgreichem MVP bewerten:
 
@@ -481,15 +506,13 @@ Erst nach erfolgreichem MVP bewerten:
 
 Ergebnis: einzeln priorisierte Erweiterungen statt eines unkontrollierten Funktionsblocks.
 
-### 9.9 Vorbereitung für Mehrgerätebetrieb
+### 10.5 Umfassendes Lightroom-Abschlussaudit
 
-- Datenbankverteilung und Versionsabgleich entscheiden
-- Sicherung eigener Ergänzungen und Mappings festlegen
-- reproduzierbare und unersetzbare Daten technisch trennen
-- Installations-, Restore- und Konfliktfälle dokumentieren
-- Übergabe an Phase 10 aktualisieren
+- Plug-in-Code, Datenmodell, XMP-/Katalogverhalten, Dateistruktur und Dokumentation prüfen
+- Direkt-, Integrations-, Offline-, Performance-, Installations- und Restore-Tests ausführen
+- alle Befunde bereinigen oder begründet Phase 11 beziehungsweise Phase 12 zuordnen
 
-Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
+Ergebnis: Phase 10 kann erst nach dokumentiert bestandenem Audit abgeschlossen werden.
 
 ## Verbleibende Architekturentscheidungen
 
@@ -502,8 +525,8 @@ ausdrücklich:
 
 1. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
 2. Metadaten- und XMP-Modell in Lightroom
-3. optionales NAS-Paket für die große Referenzdatenbank
-4. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
+3. optionales NAS-Paket für die große Referenzdatenbank in Phase 11
+4. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb der Phase 11
 
 ## Nicht Bestandteil von Phase 9.1 bis 9.3
 
@@ -519,13 +542,15 @@ ausdrücklich:
 - keine Migration bestehender Taxonomie
 - keine Änderung an NAS-, Backup- oder Mehrgerätefunktionen
 
-## Definition of Done für Quellen-, Architektur- und Prototypphase
+## Definition of Done für Phase 9 und Übergabe an Phase 10
 
-- Phase 9 ist vor der NAS-/Mehrgerätephase in der Roadmap eingeordnet.
-- Die NAS-/Mehrgerätephase folgt als Phase 10.
+- Phase 9 umfasst ausschließlich Taxonomiereferenz und Abschlussaudit.
+- Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, MVP, optionale Erweiterungen und Abschlussaudit.
+- Die NAS-/Mehrgerätephase folgt als Phase 11.
 - Anforderungen, Kandidaten, Datenmodell, Integration, Update, Lightroom und Sicherheitsregeln sind dokumentiert.
-- Die Teilphasen 9.1 bis 9.9 besitzen klare Ergebnisse und Freigabepunkte.
+- Die Teilphasen 9.1 bis 9.6 sowie 10.1 bis 10.5 besitzen klare Ergebnisse und Freigabepunkte.
 - Offene Entscheidungen sind ausdrücklich als offen gekennzeichnet.
 - Bestehender produktiver Artenbestand und globale Referenzdatenbank sind eindeutig getrennt.
 - Der begrenzte Prototyp besitzt direkte Tests und reproduzierbare Messwerte.
 - Produktive Daten, Abhängigkeiten und große Datenbankdateien wurden nicht verändert.
+- Keine Phase wird ohne dokumentiertes umfassendes Abschlussaudit als abgeschlossen markiert.

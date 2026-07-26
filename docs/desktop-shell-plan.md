@@ -136,5 +136,6 @@ und den sicheren Umgang mit fehlenden oder bereits zerstörten Fenstern.
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
 - Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App abgeschlossen und von Felix getestet
 - Phase 8: Taxonomie-Pyramide, Squarespace-Portrait, kontrollierte Taxonomiebearbeitung und Soundeditor abgeschlossen
-- Phase 9: globale Taxonomiedatenbank und Lightroom-Integration planen und schrittweise prüfen
-- Phase 10: Synology NAS, Backup, Mehrgerätebetrieb und Restore-Test
+- Phase 9: globale Taxonomiedatenbank einschließlich umfassendem Abschlussaudit
+- Phase 10: Lightroom-Machbarkeit, Plug-in-MVP und umfassendes Abschlussaudit
+- Phase 11: Synology NAS, Backup, Mehrgerätebetrieb, Restore-Test und umfassendes Abschlussaudit

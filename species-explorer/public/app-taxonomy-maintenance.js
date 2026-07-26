@@ -80,6 +80,9 @@
     let pollTimer = null;
     let observedUpdateRun = "";
     let acknowledgedCompletion = "";
+    let startupOfferEnabled = false;
+    let startupOfferHandled = false;
+    let startupOfferPending = false;
 
     function setActionMessage(message, type = "") {
       if (typeof state.setPipelineMessage === "function") {
@@ -183,6 +186,7 @@
       else renderDatabaseStatus();
 
       showCompletedUpdate(status);
+      void maybeOfferStartupUpdate(status);
       clearTimeout(pollTimer);
       pollTimer = active || (!status.latestCheckedAt && !status.latestCheckError)
         ? setTimeout(refresh, active ? 1000 : 2500)
@@ -195,6 +199,68 @@
       } catch (error) {
         elements.taxonomyMaintenanceSummary.textContent = "Taxonomiestatus nicht verfügbar";
         elements.taxonomyMaintenanceDetail.textContent = error.message;
+      }
+    }
+
+    async function beginUpdate(result) {
+      const status = await fetchJson("/api/taxonomy/update/start", {
+        method: "POST",
+        body: JSON.stringify({ token: result.token }),
+      });
+      preview = null;
+      render(status);
+      setActionMessage(
+        "Taxonomie-Aktualisierung läuft. Das Fenster kann geöffnet bleiben; der Fortschritt wird hier angezeigt.",
+        "info",
+      );
+    }
+
+    async function maybeOfferStartupUpdate(status) {
+      if (
+        !startupOfferEnabled
+        || startupOfferHandled
+        || startupOfferPending
+        || status.active
+        || !status.updateAvailable
+        || !status.latest
+        || !status.latestCheckedAt
+      ) {
+        return;
+      }
+      startupOfferPending = true;
+      try {
+        const result = preview?.hasWork ? preview : await createPreview();
+        if (!result.hasWork) return;
+        const hasReference = status.reference?.available === true;
+        const confirmed = await showQuickConfirm({
+          eyebrow: "Taxonomiereferenz",
+          title: hasReference
+            ? "Taxonomiedatenbank ist veraltet"
+            : "Keine Taxonomiedatenbank installiert",
+          message: [
+            hasReference
+              ? `${releaseLabel(result.latest)} ist verfügbar.`
+              : `${releaseLabel(result.latest)} kann jetzt installiert werden.`,
+            result.warning,
+            `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`,
+            "Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.",
+          ].filter(Boolean).join(" "),
+          confirmLabel: "Jetzt aktualisieren",
+          cancelLabel: "Später",
+        });
+        if (confirmed) {
+          await beginUpdate(result);
+        } else {
+          setActionMessage(
+            "Die Taxonomiedatenbank kann später unter „Datenbank-Aktionen“ aktualisiert werden.",
+            "info",
+          );
+        }
+      } catch (error) {
+        setActionMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      } finally {
+        startupOfferHandled = true;
+        startupOfferPending = false;
       }
     }
 
@@ -241,16 +307,7 @@
           confirmLabel: "Download und Import starten",
         });
         if (!confirmed) return;
-        const status = await fetchJson("/api/taxonomy/update/start", {
-          method: "POST",
-          body: JSON.stringify({ token: result.token }),
-        });
-        preview = null;
-        render(status);
-        setActionMessage(
-          "Taxonomie-Aktualisierung läuft. Das Fenster kann geöffnet bleiben; der Fortschritt wird hier angezeigt.",
-          "info",
-        );
+        await beginUpdate(result);
       } catch (error) {
         setActionMessage([error.message, ...(error.details || [])].join(" · "), "error");
         await refresh();
@@ -282,6 +339,7 @@
       elements.taxonomyUpdateButton.addEventListener("click", () => void startUpdate());
       elements.taxonomyRollbackButton.addEventListener("click", () => void rollback());
       state.refreshTaxonomyMaintenanceStatus = refresh;
+      startupOfferEnabled = true;
       void refresh();
     }
 

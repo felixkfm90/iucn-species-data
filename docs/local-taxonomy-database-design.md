@@ -184,7 +184,7 @@ species-explorer/taxonomy-data/
 
 Die normale tägliche Projekt-ZIP-Sicherung enthält diese reproduzierbaren Massendaten nicht. Ob eine fertig
 importierte Referenzdatenbank später zusätzlich als eigenes NAS-Paket verteilt und wiederhergestellt wird, wird in
-Phase 9.9 gemeinsam mit dem Mehrgerätebetrieb entschieden.
+Phase 11 gemeinsam mit dem Mehrgerätebetrieb entschieden.
 
 ### 5.2 Kleine unersetzbare Projektentscheidungen
 
@@ -559,10 +559,10 @@ ausdrücklich gestartete lokale Wartungsaktion.
 
 Folgende Punkte werden nicht vorweggenommen:
 
-- endgültiger Lightroom-Zugriffsweg: SQLite, read-only Explorer-API oder kompakter Export
-- Lightroom-XMP- und Metadatenmodell
-- optionales dediziertes NAS-Paket für die große Referenzdatenbank
-- Verteilung und Mindestversion im späteren Mehrgerätebetrieb
+- Phase 10: endgültiger Lightroom-Zugriffsweg über SQLite, read-only Explorer-API oder kompakten Export
+- Phase 10: Lightroom-XMP- und Metadatenmodell
+- Phase 11: optionales dediziertes NAS-Paket für die große Referenzdatenbank
+- Phase 11: Verteilung und Mindestversion im späteren Mehrgerätebetrieb
 
 ## 15. Offizielle technische Referenzen
 

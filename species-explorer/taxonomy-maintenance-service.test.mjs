@@ -4,7 +4,28 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
+import {
+  createTaxonomyMaintenanceService,
+  taxonomyMaintenanceInternals,
+} from "./taxonomy-maintenance-service.mjs";
+
+test("Importfehler werden ohne technischen Stacktrace angezeigt", () => {
+  assert.equal(
+    taxonomyMaintenanceInternals.summarizeImportFailure(
+      [
+        "Error: Das entpackte CoL-Paket enthält zu viele Dateien.",
+        "    at walkFiles (file:///D:/IUCN_Datenbank/species-explorer/taxonomy-package.mjs:50:15)",
+        "    at async validateTaxonomyPackage (file:///D:/IUCN_Datenbank/species-explorer/taxonomy-package.mjs:94:27)",
+      ].join("\n"),
+      1,
+    ),
+    "Das entpackte CoL-Paket enthält zu viele Dateien.",
+  );
+  assert.equal(
+    taxonomyMaintenanceInternals.summarizeImportFailure("", 7),
+    "Der Taxonomieimport wurde mit Code 7 beendet.",
+  );
+});
 
 async function waitForTerminal(service) {
   const deadline = Date.now() + 2_000;

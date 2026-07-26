@@ -114,6 +114,17 @@ function parseChildLine(line, onProgress) {
   return null;
 }
 
+function summarizeImportFailure(stderr, code) {
+  const lines = String(stderr || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const errorLine = lines.find((line) => /^error:\s*/i.test(line));
+  if (errorLine) return errorLine.replace(/^error:\s*/i, "");
+  const readableLine = lines.find((line) => !/^at\s+/i.test(line));
+  return readableLine || `Der Taxonomieimport wurde mit Code ${code} beendet.`;
+}
+
 export class TaxonomyMaintenanceService {
   constructor({
     taxonomyRoot,
@@ -504,9 +515,7 @@ export class TaxonomyMaintenanceService {
       child.once("close", (code) => {
         lines.close();
         if (code !== 0) {
-          reject(new Error(
-            stderr.trim() || `Der Taxonomieimport wurde mit Code ${code} beendet.`,
-          ));
+          reject(new Error(summarizeImportFailure(stderr, code)));
           return;
         }
         if (!result?.releaseId) {
@@ -571,4 +580,5 @@ export const taxonomyMaintenanceInternals = Object.freeze({
   progressPercent,
   parseChildLine,
   removeWorkDirectory,
+  summarizeImportFailure,
 });

@@ -47,21 +47,22 @@ abgerufen. Die Prüfung:
 - verwendet einen lokalen Zwölf-Stunden-Cache,
 - lädt kein vollständiges Exportarchiv herunter,
 - beeinträchtigt den Explorer bei Netzwerkfehlern nicht und
-- zeigt im Bereich `Datenbank-Aktionen > Taxonomiereferenz`, ob eine neuere Version verfügbar ist.
+- bietet bei fehlender oder veralteter Referenz einmalig direkt `Jetzt aktualisieren` oder `Später` an.
 
-Der vollständige Download beginnt erst nach `Referenz aktualisieren`, einer aktuellen Vorschau und einer
-ausdrücklichen Bestätigung.
+`Später` unterdrückt die Nachfrage für den aktuellen App-Start; der manuelle Auslöser im kompakten Bereich
+`Datenbank-Aktionen > Taxonomiereferenz` bleibt verfügbar. Der vollständige Download beginnt erst nach einer
+aktuellen Vorschau und ausdrücklicher Bestätigung.
 
 ## Download, Import und Aktivierung
 
 Der Explorer reserviert vor einer Erstinstallation mindestens 12 GB freien Speicher. Das komprimierte Archiv darf
 höchstens 2,5 GB groß sein. Beim sicheren Entpacken gelten zusätzlich Grenzen für Pfadtiefe, Dateianzahl,
 entpackte Gesamtgröße und Kompressionsverhältnis; Pfadausbrüche und symbolische Links werden abgewiesen.
-Die Dateianzahl ist auf 50.000 Archiveinträge begrenzt. Der erste echte CoL-XR-Download enthielt 21.100 Einträge
-und überschritt damit das anfänglich zu knapp angesetzte Limit von 20.000. Der Lauf wurde vor Import und
-Aktivierung sicher beendet, alle Arbeitsdateien wurden entfernt und keine Teilreferenz übernommen. Das korrigierte
-Limit lässt den realen Umfang mit Sicherheitsreserve zu, während die weiteren Größen- und Kompressionsgrenzen
-unverändert gelten.
+Entpacken und nachgelagerte Paketprüfung verwenden dieselbe Dateigrenze von 50.000 Einträgen. Der erste echte
+CoL-XR-Download enthielt 21.100 Einträge und überschritt damit das anfänglich in beiden Stufen zu knapp angesetzte
+Limit von 20.000. Der Lauf wurde vor Import und Aktivierung sicher beendet, alle Arbeitsdateien wurden entfernt und
+keine Teilreferenz übernommen. Das vereinheitlichte Limit lässt den realen Umfang mit Sicherheitsreserve zu,
+während Größen-, Kompressions-, Verschachtelungs- und Dateitypgrenzen unverändert gelten.
 
 Der Vollimport:
 
@@ -79,7 +80,8 @@ Assetoperationen dürfen nicht parallel laufen.
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
 Namen sowie dem Hinweis, dass keine bestehenden Projektdaten automatisch verändert wurden. Nach einem Fehler
-bleiben stattdessen Fehlerursache und die weiterhin aktive bisherige Referenz eindeutig sichtbar.
+bleiben stattdessen die verständlich zusammengefasste Fehlerursache und die weiterhin aktive bisherige Referenz
+eindeutig sichtbar; interne JavaScript-Stacktraces werden nicht in die Oberfläche übernommen.
 
 ## Konflikte bei vorhandenen Arten
 
@@ -143,7 +145,7 @@ Der Referenzbestand liegt pfadunabhängig unter:
 
 Er enthält Releaseordner, aktiven Zeiger, eine Rollbackversion, Versionsprüfungs-Cache und temporäre
 Arbeitsverzeichnisse. Der Bestand ist reproduzierbar und gehört nicht in normale Projekt-ZIP-Backups. Die spätere
-Verteilung auf mehrere Rechner wird in Phase 9.9 beziehungsweise Phase 10 entschieden.
+Verteilung auf mehrere Rechner wird in Phase 11 entschieden.
 
 ## Lokale API
 

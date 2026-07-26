@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import readline from "node:readline";
 
+import { TAXONOMY_ARCHIVE_LIMITS } from "./taxonomy-archive.mjs";
 import { assertTaxonomyReleaseId } from "./taxonomy-storage.mjs";
 
 const REQUIRED_HEADERS = Object.freeze({
@@ -12,8 +13,10 @@ const REQUIRED_HEADERS = Object.freeze({
 const OPTIONAL_HEADERS = Object.freeze({
   "VernacularName.tsv": ["taxonID", "name", "language"],
 });
-const MAX_PACKAGE_FILES = 20_000;
-const MAX_DIRECTORY_DEPTH = 6;
+export const TAXONOMY_PACKAGE_LIMITS = Object.freeze({
+  maxFiles: TAXONOMY_ARCHIVE_LIMITS.maxEntries,
+  maxDirectoryDepth: 6,
+});
 
 function splitHeader(line) {
   return line.replace(/^\uFEFF/, "").replace(/\r$/, "").split("\t");
@@ -32,7 +35,7 @@ async function readFirstLine(filePath) {
 }
 
 async function walkFiles(root, relative = "", depth = 0, result = []) {
-  if (depth > MAX_DIRECTORY_DEPTH) {
+  if (depth > TAXONOMY_PACKAGE_LIMITS.maxDirectoryDepth) {
     throw new Error("Das entpackte CoL-Paket ist unerwartet tief verschachtelt.");
   }
   const directory = path.join(root, relative);
@@ -46,7 +49,7 @@ async function walkFiles(root, relative = "", depth = 0, result = []) {
       await walkFiles(root, nextRelative, depth + 1, result);
     } else if (entry.isFile()) {
       result.push(path.join(root, nextRelative));
-      if (result.length > MAX_PACKAGE_FILES) {
+      if (result.length > TAXONOMY_PACKAGE_LIMITS.maxFiles) {
         throw new Error("Das entpackte CoL-Paket enthält zu viele Dateien.");
       }
     }

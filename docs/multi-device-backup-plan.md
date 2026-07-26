@@ -1,4 +1,4 @@
-# Phase 10 - Mehrgeraete, Git-Update, Locking und NAS-Backup
+# Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
 Stand: 2026-07-12
 
@@ -8,11 +8,12 @@ Die lokale Arten-Explorer-App soll auf mehreren Windows-Rechnern nutzbar sein, o
 parallele Bearbeitungen einander ueberschreiben. GitHub bleibt die zentrale versionierte Wahrheit. Das NAS wird als
 vollstaendiges Restore-Backup genutzt, nicht als aktive Arbeitskopie.
 
-Die Phase wurde am 2026-07-13 entsprechend der verbindlichen Gesamtroadmap als Phase 10 eingeordnet. Inhalt, Status
-und bereits umgesetzte NAS-/Backup-Entscheidungen bleiben unveraendert. Teilphase 9.9 muss vor dem weiteren
-Mehrgeraeteausbau klaeren,
-wie reproduzierbare Referenzdaten und eigene Taxonomieentscheidungen verteilt beziehungsweise gesichert werden.
-Details: `docs/global-taxonomy-lightroom-plan.md`.
+Die Phase wurde am 2026-07-26 entsprechend der verbindlichen Gesamtroadmap als Phase 11 eingeordnet. Inhalt, Status
+und bereits umgesetzte NAS-/Backup-Entscheidungen bleiben unveraendert. Phase 9 schließt zuerst die globale
+Taxonomiereferenz einschließlich Abschlussaudit ab; Phase 10 behandelt anschließend Lightroom einschließlich
+Abschlussaudit. Zu Beginn von Phase 11 wird verbindlich entschieden, wie reproduzierbare Referenzdaten, eigene
+Taxonomieentscheidungen und Lightroom-Projektdaten verteilt beziehungsweise gesichert werden. Details:
+`docs/global-taxonomy-lightroom-plan.md`.
 
 ## Grundentscheidung
 
