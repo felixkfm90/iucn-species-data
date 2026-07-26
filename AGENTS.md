@@ -744,7 +744,11 @@ Aktuelle Planung:
   Kompressions-, Verschachtelungs- und Dateitypgrenzen bleiben zusätzlich erhalten. Eine Teilreferenz wurde nicht
   aktiviert. Der zweite reale Versuch erreichte die Paketprüfung und zeigte, dass der aktuelle XR-Export seine
   ColDP-1.2-Spalten mit `col:` beziehungsweise `clb:` qualifiziert. Paketvalidator und TSV-Iterator normalisieren
-  diese offiziellen Namensräume jetzt gemeinsam; unpräfixierte Fixtures bleiben kompatibel. Fehlt die lokale
+  diese offiziellen Namensräume jetzt gemeinsam; unpräfixierte Fixtures bleiben kompatibel. Der dritte reale Versuch
+  erreichte den Import der optionalen gebräuchlichen Namen und fand mindestens eine Quellzeile, deren `taxonID`
+  im selben XR-Release nicht existiert. Einzelne solche verwaisten Namen werden jetzt ohne Ersatzzuordnung gezählt
+  und sicher übersprungen; mehr als 10.000 oder nach den ersten 25 Einzelfällen mehr als 0,5 Prozent blockieren das
+  Paket weiterhin. Die Abschlussbestätigung nennt die Zahl transparent. Fehlt die lokale
   Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
   Startprüfung einmalig direkt an; `Später` hält die manuelle Wartungsaktion verfügbar. Technische Importfehler
   werden ohne Stacktrace als verständlicher Grund angezeigt. Nach einer erfolgreichen Aktivierung bleiben Release

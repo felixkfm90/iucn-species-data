@@ -29,6 +29,9 @@ const MATERIALIZED_STATUSES = Object.freeze([
   "bare name",
 ]);
 const DEFAULT_BATCH_SIZE = 50_000;
+const MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES = 25;
+const MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO = 0.005;
+const ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES = 10_000;
 
 function parseNullableBoolean(value) {
   const normalized = String(value ?? "").trim().toLocaleLowerCase("en");
@@ -234,7 +237,11 @@ async function importVernacularNames(database, taxonomyPackage, {
       0,
       "Dieses Referenzpaket enthält keine gebräuchlichen Namen",
     );
-    return 0;
+    return {
+      sourceRows: 0,
+      imported: 0,
+      skippedUnknownTaxa: 0,
+    };
   }
   const target = database.prepare(`
     SELECT id, trust_tier
@@ -253,7 +260,9 @@ async function importVernacularNames(database, taxonomyPackage, {
       preferred, country, area, reference_id, remarks, source_dataset_id, verified
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `);
-  const count = await importInBatches({
+  let imported = 0;
+  let skippedUnknownTaxa = 0;
+  const sourceRows = await importInBatches({
     database,
     iterator: iterateTaxonomyTsv(filePath, { signal }),
     signal,
@@ -266,7 +275,8 @@ async function importVernacularNames(database, taxonomyPackage, {
       }
       const accepted = target.get(taxonId, taxonId);
       if (!accepted) {
-        throw new Error(`Vernakularname verweist auf unbekanntes Taxon ${taxonId}.`);
+        skippedUnknownTaxa += 1;
+        return;
       }
       const sourceId = String(row.sourceID ?? "").trim();
       insert.run(
@@ -283,6 +293,7 @@ async function importVernacularNames(database, taxonomyPackage, {
         String(row.remarks ?? "").trim() || null,
         ensureDataset(sourceId, accepted.trust_tier),
       );
+      imported += 1;
     },
     onBatch(current) {
       reportProgress(
@@ -290,18 +301,41 @@ async function importVernacularNames(database, taxonomyPackage, {
         "vernacular-names",
         current,
         null,
-        `${current.toLocaleString("de-DE")} gebräuchliche Namen importiert`,
+        `${imported.toLocaleString("de-DE")} gebräuchliche Namen importiert`,
       );
     },
   });
+  const orphanRatio = sourceRows > 0 ? skippedUnknownTaxa / sourceRows : 0;
+  if (
+    skippedUnknownTaxa > ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES
+    || (
+      skippedUnknownTaxa > MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES
+      && orphanRatio > MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO
+    )
+  ) {
+    throw new Error(
+      `VernacularName.tsv enthält zu viele nicht zuordenbare Taxonverweise: ${
+        skippedUnknownTaxa.toLocaleString("de-DE")
+      } von ${sourceRows.toLocaleString("de-DE")}.`,
+    );
+  }
   reportProgress(
     onProgress,
     "vernacular-names",
-    count,
-    count,
-    `${count.toLocaleString("de-DE")} gebräuchliche Namen importiert`,
+    sourceRows,
+    sourceRows,
+    [
+      `${imported.toLocaleString("de-DE")} gebräuchliche Namen importiert`,
+      skippedUnknownTaxa
+        ? `${skippedUnknownTaxa.toLocaleString("de-DE")} verwaiste Zuordnung(en) sicher übersprungen`
+        : "",
+    ].filter(Boolean).join("; "),
   );
-  return count;
+  return {
+    sourceRows,
+    imported,
+    skippedUnknownTaxa,
+  };
 }
 
 function splitAlternativeIdentifiers(value) {
@@ -492,7 +526,7 @@ async function buildFullDatabase({
     signal?.throwIfAborted();
     reportProgress(onProgress, "materialize", 0, 1, "Taxa und Synonyme werden verknüpft");
     materializeTaxa(database);
-    const vernacularNames = await importVernacularNames(database, taxonomyPackage, {
+    const vernacularImport = await importVernacularNames(database, taxonomyPackage, {
       ensureDataset: nameImport.ensureDataset,
       signal,
       onProgress,
@@ -509,7 +543,7 @@ async function buildFullDatabase({
     buildTaxonomySearchIndexes(database);
     const validation = validateFullTaxonomyDatabase(database, {
       importedNameUsages: nameImport.count,
-      importedVernacularNames: vernacularNames,
+      importedVernacularNames: vernacularImport.imported,
     });
     reportProgress(onProgress, "compact", 0, 1, "Importtabelle wird entfernt und Datenbank verdichtet");
     database.exec("DROP TABLE raw_name_usage; VACUUM; PRAGMA optimize;");
@@ -520,7 +554,11 @@ async function buildFullDatabase({
       );
     }
     return {
-      validation,
+      validation: {
+        ...validation,
+        vernacularNameSourceRows: vernacularImport.sourceRows,
+        vernacularNamesSkippedUnknownTaxa: vernacularImport.skippedUnknownTaxa,
+      },
       measurements: measureTaxonomyDatabase(database),
       importDurationMs: Number((performance.now() - startedAt).toFixed(2)),
       peakRssEstimateBytes: Math.max(initialRss, process.memoryUsage().rss),
@@ -619,4 +657,7 @@ export const taxonomyFullImportInternals = Object.freeze({
   identifierType,
   normalizedStatus,
   normalizedTrustTier,
+  MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES,
+  MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO,
+  ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES,
 });

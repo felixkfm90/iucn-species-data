@@ -64,6 +64,22 @@ async function addOfficialColdpNamespaces(filePath) {
   await fs.writeFile(filePath, `${header}\n${remainder}`, "utf8");
 }
 
+async function appendOrphanVernacularNames(filePath, count) {
+  const rows = Array.from({ length: count }, (_, index) => [
+    `missing-taxon-${index + 1}`,
+    "test-source",
+    `Verwaister Testname ${index + 1}`,
+    "",
+    "deu",
+    "false",
+    "",
+    "",
+    "",
+    "Regressionstest",
+  ].join("\t"));
+  await fs.appendFile(filePath, `\n${rows.join("\n")}\n`, "utf8");
+}
+
 test("Vollimport bleibt bis nach dem konfliktfreien Projektabgleich inaktiv", async (context) => {
   const root = await temporaryRoot(context, "taxonomy-full-import-");
   const taxonomyRoot = path.join(root, "taxonomy");
@@ -238,4 +254,48 @@ test("offizielle ColDP-Namensräume werden bei Prüfung und Import normalisiert"
   });
   assert.equal(imported.manifest.counts.rawNameUsages, 123);
   assert.ok(imported.manifest.counts.vernacularNames > 0);
+});
+
+test("einzelne verwaiste Vernakularnamen werden gezählt und sicher übersprungen", async (context) => {
+  const root = await temporaryRoot(context, "taxonomy-orphan-vernacular-");
+  const fixtureCopy = path.join(root, "fixture");
+  await fs.cp(FIXTURE_DIRECTORY, fixtureCopy, { recursive: true });
+  await appendOrphanVernacularNames(
+    path.join(fixtureCopy, "VernacularName.tsv"),
+    1,
+  );
+
+  const imported = await importFullTaxonomyRelease({
+    packageDirectory: fixtureCopy,
+    taxonomyRoot: path.join(root, "taxonomy"),
+    release: fullRelease("col-full-orphan-vernacular"),
+    archive: {},
+    operationId: "test-orphan-vernacular",
+  });
+  assert.equal(imported.manifest.counts.vernacularNamesSkippedUnknownTaxa, 1);
+  assert.equal(
+    imported.manifest.counts.vernacularNameSourceRows,
+    imported.manifest.counts.vernacularNames + 1,
+  );
+});
+
+test("systematisch verwaiste Vernakularnamen blockieren die Referenz", async (context) => {
+  const root = await temporaryRoot(context, "taxonomy-invalid-vernacular-");
+  const fixtureCopy = path.join(root, "fixture");
+  await fs.cp(FIXTURE_DIRECTORY, fixtureCopy, { recursive: true });
+  await appendOrphanVernacularNames(
+    path.join(fixtureCopy, "VernacularName.tsv"),
+    26,
+  );
+
+  await assert.rejects(
+    importFullTaxonomyRelease({
+      packageDirectory: fixtureCopy,
+      taxonomyRoot: path.join(root, "taxonomy"),
+      release: fullRelease("col-full-invalid-vernacular"),
+      archive: {},
+      operationId: "test-invalid-vernacular",
+    }),
+    /zu viele nicht zuordenbare Taxonverweise/,
+  );
 });

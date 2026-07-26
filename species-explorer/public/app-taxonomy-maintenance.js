@@ -49,6 +49,12 @@
     ]
       .filter(([key]) => Number.isFinite(Number(counts[key])))
       .map(([key, label]) => `${Number(counts[key]).toLocaleString("de-DE")} ${label}`);
+    const skippedUnknownTaxa = Number(counts.vernacularNamesSkippedUnknownTaxa);
+    if (Number.isFinite(skippedUnknownTaxa) && skippedUnknownTaxa > 0) {
+      values.push(
+        `${skippedUnknownTaxa.toLocaleString("de-DE")} nicht zuordenbare Namen übersprungen`,
+      );
+    }
     return values.length ? values.join(" · ") : "";
   }
 

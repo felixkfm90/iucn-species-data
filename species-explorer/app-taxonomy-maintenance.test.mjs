@@ -86,6 +86,7 @@ function completedStatus() {
         taxa: 2_500_000,
         scientificNames: 7_800_000,
         vernacularNames: 800_000,
+        vernacularNamesSkippedUnknownTaxa: 1,
       },
     },
     updateAvailable: false,
@@ -170,6 +171,7 @@ test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenst
   assert.match(confirmations[0].message, /2\.500\.000 Taxa/);
   assert.match(visible.taxonomyMaintenanceSummary.textContent, /erfolgreich übernommen/);
   assert.match(visible.taxonomyMaintenanceDetail.textContent, /7\.800\.000 wissenschaftliche Namen/);
+  assert.match(visible.taxonomyMaintenanceDetail.textContent, /1 nicht zuordenbare Namen übersprungen/);
   assert.deepEqual(messages.at(-1), {
     message: "Taxonomiereferenz erfolgreich übernommen.",
     type: "success",

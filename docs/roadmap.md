@@ -898,6 +898,14 @@ ColDP-1.2-Variante sichtbar: Das XR-Paket verwendet in den TSV-Kopfzeilen offizi
 Importtest mit namespaced `NameUsage.tsv` und `VernacularName.tsv` verhindert die Regression. Die bisherige
 Referenz blieb auch bei diesem Fehler unverändert.
 
+Der dritte reale Versuch erreichte den Import der optionalen gebräuchlichen Namen. Dabei enthielt der offizielle
+XR-Export mindestens einen `VernacularName`-Eintrag, dessen `taxonID` im selben Release weder als Taxon noch als
+wissenschaftlicher Name existiert. Solche einzelnen verwaisten Zusatzzeilen werden jetzt ohne Ersatzzuordnung
+gezählt und sicher übersprungen. Eine absolute Grenze von 10.000 sowie eine relative Grenze von 0,5 Prozent nach
+den ersten 25 Einzelfällen verhindern, dass eine grundsätzlich inkonsistente Referenz aktiviert wird. Die
+Abschlussbestätigung nennt die Zahl der übersprungenen Namen transparent; zwei Regressionstests decken
+Einzelfall und systematischen Paketfehler ab. Die bisherige Referenz blieb erneut unverändert.
+
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
 

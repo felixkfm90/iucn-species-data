@@ -310,6 +310,12 @@ Reale ColDP-1.2-Exporte kennzeichnen Tabellenfelder mit Namensräumen wie `col:I
 `clb:merged`. Der Importer normalisiert diese offiziellen Präfixe beim Lesen; die lokale Datenbank und die kleinen
 unpräfixierten Testfixtures verwenden dadurch weiterhin denselben internen Feldvertrag.
 
+Einzelne optionale Zeilen aus `VernacularName.tsv`, deren `taxonID` im selben Release weder als Taxon noch als
+wissenschaftlicher Name existiert, werden ohne Ersatzzuordnung gezählt und übersprungen. Eine absolute Grenze von
+10.000 sowie eine relative Grenze von 0,5 Prozent nach den ersten 25 Einzelfällen verhindert, dass eine
+grundsätzlich inkonsistente Referenz aktiviert wird. Der Explorer nennt die Zahl übersprungener Namen nach der
+Aktivierung ausdrücklich.
+
 Die lokale SQLite-Datenbank enthält akzeptierte Taxa und ihre Hierarchie, vorhandene Zwischenränge,
 wissenschaftliche Namen und Synonyme, gebräuchliche beziehungsweise deutsche Namen soweit geliefert, externe
 Kennungen sowie Release- und Quellenprovenienz. Größe, Gewicht, Lebenserwartung, IUCN-Daten, Karten, Sounds und

@@ -2,7 +2,7 @@
 
 Stand: 2026-07-26
 
-Status: Phase 9.5 technisch umgesetzt; zwei reale Paketabweichungen wurden sicher erkannt und korrigiert,
+Status: Phase 9.5 technisch umgesetzt; drei reale Paketabweichungen wurden sicher erkannt und korrigiert,
 die erneute ausdrückliche Installation steht aus
 
 ## Ziel
@@ -71,6 +71,11 @@ Der Vollimport:
 - normalisiert die offiziellen ColDP-Namensräume `col:` und `clb:` beim Lesen der TSV-Kopfzeilen, sodass sowohl
   die unpräfixierten Testfixtures als auch reale ColDP-1.2-Exporte mit Spalten wie `col:ID`,
   `col:scientificName` und `clb:merged` denselben internen Feldvertrag verwenden,
+- überspringt einzelne gebräuchliche Namen nur dann, wenn ihre `taxonID` im selben Release weder als Taxon noch
+  als wissenschaftlicher Name existiert; diese verwaisten optionalen Zusatzdaten werden gezählt und niemals einem
+  anderen Taxon zugeordnet,
+- blockiert das Paket weiterhin, wenn mehr als 10.000 solcher Verweise auftreten oder wenn nach den ersten
+  25 Einzelfällen mehr als 0,5 Prozent der Vernakularnamenszeilen betroffen sind,
 - erzeugt eine lokale SQLite-Datenbank mit Präfix- und FTS5-Suchindex,
 - validiert Schema, Fremdschlüssel, Elternbeziehungen, Zyklen, Suchindex und Manifest,
 - installiert einen unveränderlichen Releaseordner und
@@ -82,7 +87,8 @@ Assetoperationen dürfen nicht parallel laufen.
 
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
-Namen sowie dem Hinweis, dass keine bestehenden Projektdaten automatisch verändert wurden. Nach einem Fehler
+Namen, der gegebenenfalls gezählten Anzahl sicher übersprungener verwaister Namen sowie dem Hinweis, dass keine
+bestehenden Projektdaten automatisch verändert wurden. Nach einem Fehler
 bleiben stattdessen die verständlich zusammengefasste Fehlerursache und die weiterhin aktive bisherige Referenz
 eindeutig sichtbar; interne JavaScript-Stacktraces werden nicht in die Oberfläche übernommen.
 
@@ -180,9 +186,9 @@ npm.cmd run --silent test:taxonomy-maintenance
 ```
 
 Der Testbestand deckt Releaseerkennung, Cache, URL-Grenzen, sicheren Vollimport, optionale Vernakularnamen,
-offizielle `col:`-/`clb:`-Spaltennamen, Aktivierungssperre vor dem Artenvergleich, eindeutige Synonyme,
-Mehrdeutigkeiten, fehlende Arten, stabile Quellen-ID-Zuordnungen, unveränderte Projektdateien, Fortschritt und
-Rollback ab.
+offizielle `col:`-/`clb:`-Spaltennamen, einzeln tolerierte und systematisch blockierte verwaiste
+Vernakularnamen, Aktivierungssperre vor dem Artenvergleich, eindeutige Synonyme, Mehrdeutigkeiten, fehlende Arten,
+stabile Quellen-ID-Zuordnungen, unveränderte Projektdateien, Fortschritt und Rollback ab.
 
 Ein mehrere Gigabyte großer Produktionsdownload ist bewusst kein automatischer Testbestand. Die Mechanik wird mit
 der versionierten Fixture reproduzierbar geprüft; die erste echte Vollinstallation wird im Explorer ausdrücklich
