@@ -874,8 +874,12 @@ geprüft. Anschließend werden alle bestehenden Projektarten klassifiziert: eind
 eindeutige Synonyme werden nur vorgeschlagen und mehrdeutige oder fehlende Treffer ohne Vorauswahl zur manuellen
 Prüfung markiert. Namen, Slugs, Assetpfade und Projektdateien werden nie automatisch geändert. Erst nach
 erfolgreichem Vergleich wird die Referenz atomar aktiviert; die vorherige Version bleibt für Rollback erhalten.
-Der Vertrag steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt ein bewusst
-gestarteter lokaler Betriebstest und lädt keine Massendaten in Git oder GitHub Pages.
+Der erste echte Vollimportversuch lud das Archiv vollständig, wurde aber vor dem Import am anfänglichen
+20.000-Einträge-Limit sicher beendet. Das auf 50.000 begrenzte, weiterhin durch Gesamtgröße und Kompressionsrate
+geschützte Limit deckt die realen 21.100 Archiveinträge nun ab. Nach erfolgreicher Aktivierung zeigt die Oberfläche
+Release und Importzähler dauerhaft und öffnet einmalig eine eindeutige Abschlussbestätigung. Der Vertrag steht in
+`docs/taxonomy-reference-update.md`. Der erneute reale Vollimport bleibt ein bewusst gestarteter lokaler
+Betriebstest und lädt keine Massendaten in Git oder GitHub Pages.
 
 Als Nächstes folgt Phase 9.6 mit der Lightroom-SDK- und Metadaten-Machbarkeitsprüfung.
 

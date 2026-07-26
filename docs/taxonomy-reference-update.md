@@ -2,8 +2,8 @@
 
 Stand: 2026-07-26
 
-Status: Phase 9.5 technisch umgesetzt; erster vollständiger produktiver Download bleibt eine ausdrücklich
-gestartete lokale Installation
+Status: Phase 9.5 technisch umgesetzt; der erste produktive Lauf wurde vor dem Import sicher abgebrochen,
+das reale Archivlimit ist korrigiert und die erneute ausdrückliche Installation steht aus
 
 ## Ziel
 
@@ -19,6 +19,24 @@ Projektabgleich strikt getrennt:
 3. Alle vorhandenen Einträge aus `species_list.json` werden gegen den neuen Release verglichen.
 4. Erst nach einem technisch erfolgreichen Vergleich wird der aktive Referenzzeiger atomar umgeschaltet.
 5. `species_list.json`, `speciesData.json`, Namen, Slugs, Assetnamen, Assetordner und Overrides bleiben unverändert.
+
+## Inhalt der lokalen Referenzdatenbank
+
+Die SQLite-Referenz enthält aus dem jeweils aktivierten Catalogue-of-Life-XR-Release:
+
+- akzeptierte Taxa aller enthaltenen Reiche mit stabiler Quellen-ID, Rang und Elternbeziehung,
+- die vollständige verfügbare Hierarchie einschließlich vorhandener Zwischenränge wie Unterstamm oder Unterart,
+- akzeptierte wissenschaftliche Namen, Autorenschaft, Synonyme und weitere Namensbeziehungen,
+- gebräuchliche Namen einschließlich deutscher Namen, soweit sie im Quellrelease geliefert werden,
+- Angaben zu ausgestorbenen Taxa, Umwelt und taxonomischem Code, soweit vorhanden,
+- externe Identifikatoren aus dem Referenzpaket,
+- Release, Quelldatensatz, Lizenz und Vertrauensstufe als Provenienz sowie
+- normalisierte Präfix- und FTS5-Suchbegriffe für deutsche und wissenschaftliche Vorschläge.
+
+Die Tabelle für einen späteren WoRMS-Abgleich ist vorbereitet, wird durch den reinen CoL-Vollimport aber noch nicht
+automatisch befüllt. Projektfachdaten wie Größe, Gewicht, Lebenserwartung, IUCN-Kategorie, Population und Trend
+sowie Karten, Sounds und Artportraits gehören bewusst nicht in diese Referenz. Sie verbleiben in den bestehenden
+Projektdateien und Assetordnern.
 
 ## Prüfung beim Start
 
@@ -39,6 +57,11 @@ ausdrücklichen Bestätigung.
 Der Explorer reserviert vor einer Erstinstallation mindestens 12 GB freien Speicher. Das komprimierte Archiv darf
 höchstens 2,5 GB groß sein. Beim sicheren Entpacken gelten zusätzlich Grenzen für Pfadtiefe, Dateianzahl,
 entpackte Gesamtgröße und Kompressionsverhältnis; Pfadausbrüche und symbolische Links werden abgewiesen.
+Die Dateianzahl ist auf 50.000 Archiveinträge begrenzt. Der erste echte CoL-XR-Download enthielt 21.100 Einträge
+und überschritt damit das anfänglich zu knapp angesetzte Limit von 20.000. Der Lauf wurde vor Import und
+Aktivierung sicher beendet, alle Arbeitsdateien wurden entfernt und keine Teilreferenz übernommen. Das korrigierte
+Limit lässt den realen Umfang mit Sicherheitsreserve zu, während die weiteren Größen- und Kompressionsgrenzen
+unverändert gelten.
 
 Der Vollimport:
 
@@ -52,6 +75,11 @@ Der Vollimport:
 Die Oberfläche zeigt einen zusammengefassten Fortschritt für Download, Entpacken, Import, Indexierung,
 Projektvergleich und Aktivierung. Taxonomieaktualisierung, normale Datenpipeline, Backup und schreibende
 Assetoperationen dürfen nicht parallel laufen.
+
+Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
+ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
+Namen sowie dem Hinweis, dass keine bestehenden Projektdaten automatisch verändert wurden. Nach einem Fehler
+bleiben stattdessen Fehlerursache und die weiterhin aktive bisherige Referenz eindeutig sichtbar.
 
 ## Konflikte bei vorhandenen Arten
 

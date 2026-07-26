@@ -7,6 +7,12 @@ const SCRIPT_PATH = fileURLToPath(
   new URL("../scripts/extract-taxonomy-archive.ps1", import.meta.url),
 );
 
+export const TAXONOMY_ARCHIVE_LIMITS = Object.freeze({
+  maxExpandedBytes: 24 * 1024 ** 3,
+  maxEntries: 50_000,
+  maxCompressionRatio: 300,
+});
+
 export function validateArchiveEntryName(value) {
   const name = String(value ?? "");
   if (
@@ -45,6 +51,12 @@ export async function extractTaxonomyArchive({
       path.resolve(archivePath),
       "-DestinationPath",
       path.resolve(destinationPath),
+      "-MaxExpandedBytes",
+      String(TAXONOMY_ARCHIVE_LIMITS.maxExpandedBytes),
+      "-MaxEntries",
+      String(TAXONOMY_ARCHIVE_LIMITS.maxEntries),
+      "-MaxCompressionRatio",
+      String(TAXONOMY_ARCHIVE_LIMITS.maxCompressionRatio),
     ], {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],

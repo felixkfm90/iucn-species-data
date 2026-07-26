@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$DestinationPath,
   [long]$MaxExpandedBytes = 25769803776,
-  [int]$MaxEntries = 20000,
+  [int]$MaxEntries = 50000,
   [int]$MaxCompressionRatio = 300
 )
 

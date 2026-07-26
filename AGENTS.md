@@ -728,9 +728,16 @@ Aktuelle Planung:
   und ausdrücklicher Bestätigung. Download, sichere Extraktion, streamender SQLite-Import, Suchindex,
   Qualitätsgate, Fortschritt, Projektartenabgleich, atomare Aktivierung und Rollback sind umgesetzt. Eindeutige
   Synonyme erzeugen nur Vorschläge; mehrdeutige oder fehlende Treffer bleiben manuell. Bestehende Namen, Slugs,
-  Assets und Projektdateien werden niemals automatisch verändert. Der verbindliche Konflikt- und Betriebsvertrag
-  steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt ein bewusst gestarteter
-  lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Die
+  Assets und Projektdateien werden niemals automatisch verändert. Die lokale SQLite-Referenz enthält Taxa,
+  Hierarchie und vorhandene Zwischenränge, wissenschaftliche Namen und Synonyme, gebräuchliche Namen soweit im
+  Release geliefert, externe Kennungen sowie Quellen- und Releaseprovenienz; Projektfachdaten und Assets bleiben
+  getrennt. Der erste echte Vollimportversuch lud das Archiv vollständig, wurde aber vor dem Import am anfänglich
+  zu knappen Limit von 20.000 Archiveinträgen sicher beendet. Das korrigierte Limit von 50.000 deckt die realen
+  21.100 Einträge mit Reserve ab; Größen- und Kompressionsgrenzen bleiben unverändert. Eine Teilreferenz wurde
+  nicht aktiviert. Nach einer erfolgreichen Aktivierung bleiben Release und Importzähler sichtbar und ein
+  einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der verbindliche Konflikt- und
+  Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte Vollimport bleibt ein bewusst
+  gestarteter lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Die
   Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp bis zum Lightroom-MVP und zur
   ausdrücklichen Übergabe der Datenverteilung an Phase 10.
   Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe

@@ -40,6 +40,34 @@
     ].filter(Boolean).join(" ");
   }
 
+  function referenceCountsText(reference) {
+    const counts = reference?.counts || {};
+    const values = [
+      ["taxa", "Taxa"],
+      ["scientificNames", "wissenschaftliche Namen"],
+      ["vernacularNames", "gebräuchliche Namen"],
+    ]
+      .filter(([key]) => Number.isFinite(Number(counts[key])))
+      .map(([key, label]) => `${Number(counts[key]).toLocaleString("de-DE")} ${label}`);
+    return values.length ? values.join(" · ") : "";
+  }
+
+  function updateRunKey(status) {
+    return [
+      String(status?.releaseId || ""),
+      String(status?.startedAt || ""),
+    ].join("|");
+  }
+
+  function updateCompletionKey(status) {
+    if (status?.status !== "completed" || status?.action !== "update") return "";
+    return [
+      String(status.releaseId || ""),
+      String(status.startedAt || ""),
+      String(status.completedAt || ""),
+    ].join("|");
+  }
+
   function createTaxonomyMaintenanceController({
     state,
     elements,
@@ -50,6 +78,8 @@
   } = {}) {
     let preview = null;
     let pollTimer = null;
+    let observedUpdateRun = "";
+    let acknowledgedCompletion = "";
 
     function setActionMessage(message, type = "") {
       if (typeof state.setPipelineMessage === "function") {
@@ -57,9 +87,40 @@
       }
     }
 
+    function showCompletedUpdate(status) {
+      if (status.active && status.action === "update") {
+        observedUpdateRun = updateRunKey(status);
+        return;
+      }
+      const completionKey = updateCompletionKey(status);
+      if (!completionKey || !observedUpdateRun || completionKey === acknowledgedCompletion) return;
+      if (updateRunKey(status) !== observedUpdateRun) return;
+      acknowledgedCompletion = completionKey;
+      observedUpdateRun = "";
+      const release = status.reference?.source || status.latest || {
+        releaseId: status.releaseId,
+      };
+      const counts = referenceCountsText(status.reference);
+      setActionMessage("Taxonomiereferenz erfolgreich übernommen.", "success");
+      void showQuickConfirm({
+        eyebrow: "Taxonomiereferenz",
+        title: "Neue Datenbank erfolgreich übernommen",
+        message: [
+          `${releaseLabel(release)} ist jetzt aktiv.`,
+          counts ? `Enthalten: ${counts}.` : "",
+          status.message,
+          "Bestehende Projektdaten wurden nicht automatisch verändert.",
+        ].filter(Boolean).join(" "),
+        confirmLabel: "Verstanden",
+        cancelLabel: "",
+      });
+    }
+
     function render(status) {
       state.taxonomyMaintenanceSnapshot = status;
       const active = status.active === true;
+      const completedUpdate = status.status === "completed" && status.action === "update";
+      const failedUpdate = status.status === "failed" && status.action === "update";
       const reference = status.reference || {};
       const latest = status.latest;
       const activeLabel = reference.available
@@ -75,12 +136,28 @@
 
       elements.taxonomyMaintenanceSummary.textContent = active
         ? status.message
-        : status.updateAvailable
-          ? `Neue Taxonomiereferenz verfügbar: ${releaseLabel(latest)}`
-          : activeLabel;
+        : failedUpdate
+          ? "Taxonomie-Aktualisierung fehlgeschlagen"
+          : completedUpdate
+            ? `Taxonomiereferenz erfolgreich übernommen: ${
+              releaseLabel(reference.source || { releaseId: status.releaseId })
+            }`
+            : status.updateAvailable
+              ? `Neue Taxonomiereferenz verfügbar: ${releaseLabel(latest)}`
+              : activeLabel;
       elements.taxonomyMaintenanceDetail.textContent = active
         ? `${status.message} Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten.`
-        : `${activeLabel} ${latestLabel}`;
+        : failedUpdate
+          ? `${status.message} ${status.error || ""}`.trim()
+          : completedUpdate
+            ? [
+              status.message,
+              referenceCountsText(reference)
+                ? `Enthalten: ${referenceCountsText(reference)}.`
+                : "",
+              "Bestehende Projektdaten wurden nicht automatisch verändert.",
+            ].filter(Boolean).join(" ")
+            : `${activeLabel} ${latestLabel}`;
 
       elements.taxonomyMaintenanceProgress.hidden = !active;
       if (active) {
@@ -105,6 +182,7 @@
       if (active) renderDatabaseStatus("running");
       else renderDatabaseStatus();
 
+      showCompletedUpdate(status);
       clearTimeout(pollTimer);
       pollTimer = active || (!status.latestCheckedAt && !status.latestCheckError)
         ? setTimeout(refresh, active ? 1000 : 2500)

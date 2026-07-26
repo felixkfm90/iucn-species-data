@@ -302,7 +302,15 @@ Phase 9.5 ergänzt im Bereich `Datenbank-Aktionen > Taxonomiereferenz` den volls
 Catalogue-of-Life-XR-Import. Beim Explorer-Start werden nur kleine Release-Metadaten geprüft; ein Download von
 mehr als 1 GB beginnt ausschließlich nach einer Vorschau und ausdrücklicher Bestätigung. Download, sicheres
 Entpacken, SQLite-Import, Suchindex, Qualitätsprüfung, Projektartenabgleich und atomare Aktivierung werden mit
-Fortschritt angezeigt. Die vorherige aktive Referenz bleibt als Rollbackversion erhalten.
+Fortschritt angezeigt. Das sichere Entpacken erlaubt höchstens 50.000 Archiveinträge; damit ist der reale
+CoL-XR-Umfang von 21.100 Einträgen abgedeckt, ohne die übrigen Größen- und Kompressionsgrenzen zu öffnen. Die
+vorherige aktive Referenz bleibt als Rollbackversion erhalten.
+
+Die lokale SQLite-Datenbank enthält akzeptierte Taxa und ihre Hierarchie, vorhandene Zwischenränge,
+wissenschaftliche Namen und Synonyme, gebräuchliche beziehungsweise deutsche Namen soweit geliefert, externe
+Kennungen sowie Release- und Quellenprovenienz. Größe, Gewicht, Lebenserwartung, IUCN-Daten, Karten, Sounds und
+Portraits bleiben getrennte Projektdaten. Nach erfolgreicher Aktivierung zeigt der Explorer Release und
+Importzähler dauerhaft und bestätigt die Übernahme zusätzlich einmalig in einem Abschlussfenster.
 
 Vor der Aktivierung werden alle bestehenden Arten verglichen. Eindeutig akzeptierte Namen bleiben grün,
 eindeutige Synonyme erscheinen nur als Umbenennungsvorschlag und mehrdeutige oder fehlende Treffer als manuelle
