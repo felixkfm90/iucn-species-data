@@ -33,6 +33,7 @@
       backupWasRunning: false,
       backupStatusSnapshot: null,
       backupPollTimer: null,
+      taxonomyMaintenanceSnapshot: null,
       settingsSnapshot: null,
       assetReviewRunId: "",
       assetReviewSignature: "",

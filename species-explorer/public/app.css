@@ -462,6 +462,54 @@ button.danger,
   gap: 8px;
 }
 
+.taxonomy-maintenance-panel {
+  padding: 0 10px 10px;
+  display: grid;
+  gap: 9px;
+}
+
+.taxonomy-maintenance-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.taxonomy-maintenance-copy strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.taxonomy-maintenance-copy span,
+.taxonomy-maintenance-conflicts {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.taxonomy-maintenance-progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--green);
+}
+
+.taxonomy-maintenance-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.taxonomy-maintenance-actions button {
+  min-height: 42px;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .taxonomy-maintenance-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .action-group-danger summary strong {
   color: var(--red);
 }

@@ -32,6 +32,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appPipelineSource,
     appBackupWorkflowSource,
     appPipelineWorkflowSource,
+    appTaxonomyMaintenanceSource,
     appDashboardSource,
     appLifecycleSource,
     appSpeciesActionsSource,
@@ -102,6 +103,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-pipeline.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-backup-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-pipeline-workflow.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-taxonomy-maintenance.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
@@ -165,6 +167,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appDetailViewSource,
     appBackupWorkflowSource,
     appPipelineWorkflowSource,
+    appTaxonomyMaintenanceSource,
     appAssetReviewWorkflowSource,
     appDashboardSource,
   ].join("\n");
@@ -172,7 +175,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appMediaSource, /class="map-image"/);
   assert.match(
     htmlSource,
-    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-editor-files\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-confirmation\.js" defer><\/script>[\s\S]*<script src="\/app-form-feedback\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-form\.js" defer><\/script>[\s\S]*<script src="\/app-taxonomy-reference\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-editor-form\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-detail-media\.js" defer><\/script>[\s\S]*<script src="\/app-selection\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
+    /<script src="\/app-foundation\.js" defer><\/script>[\s\S]*<script src="\/app-presentation\.js" defer><\/script>[\s\S]*<script src="\/app-measurements\.js" defer><\/script>[\s\S]*<script src="\/app-editor-files\.js" defer><\/script>[\s\S]*<script src="\/app-dialogs\.js" defer><\/script>[\s\S]*<script src="\/app-confirmation\.js" defer><\/script>[\s\S]*<script src="\/app-form-feedback\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-form\.js" defer><\/script>[\s\S]*<script src="\/app-taxonomy-reference\.js" defer><\/script>[\s\S]*<script src="\/app-new-species-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-editor-form\.js" defer><\/script>[\s\S]*<script src="\/app-settings\.js" defer><\/script>[\s\S]*<script src="\/app-media\.js" defer><\/script>[\s\S]*<script src="\/app-detail-media\.js" defer><\/script>[\s\S]*<script src="\/app-selection\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review\.js" defer><\/script>[\s\S]*<script src="\/app-asset-review-workflow\.js" defer><\/script>[\s\S]*<script src="\/app-pipeline\.js" defer><\/script>[\s\S]*<script src="\/app-taxonomy-maintenance\.js" defer><\/script>[\s\S]*<script src="\/filter\.js" defer><\/script>[\s\S]*<script src="\/app-dashboard\.js" defer><\/script>[\s\S]*<script src="\/app\.js" defer><\/script>/,
   );
   assert.match(
     htmlSource,
@@ -213,6 +216,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appPipelineSource, /function createPipelineStatusPresenters\(/);
   assert.match(appPipelineSource, /function createPipelinePreviewRenderer\(/);
   assert.match(appPipelineSource, /function renderProcessLog\(/);
+  assert.match(
+    appTaxonomyMaintenanceSource,
+    /function createTaxonomyMaintenanceController\(/,
+  );
+  assert.match(appTaxonomyMaintenanceSource, /\/api\/taxonomy\/update\/preview/);
+  assert.match(appTaxonomyMaintenanceSource, /keine Artdaten automatisch geändert/);
+  assert.match(htmlSource, /data-taxonomy-action="check"/);
+  assert.match(htmlSource, /data-taxonomy-action="update"/);
+  assert.match(htmlSource, /data-taxonomy-action="rollback"/);
   assert.match(appDashboardSource, /function createValidationPresentation\(/);
   assert.match(appDashboardSource, /function createSpeciesListItemPresentation\(/);
   assert.match(appDashboardSource, /function createDashboardController\(/);

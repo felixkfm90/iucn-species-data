@@ -1,8 +1,8 @@
 # Globale Taxonomiedatenbank und Lightroom-Integration
 
-Stand: 2026-07-24
+Stand: 2026-07-26
 
-Status: Phase 9.1 bis 9.4 abgeschlossen; Phase 9.5 als nächster Schritt; noch kein produktiver Vollimport
+Status: Phase 9.1 bis 9.5 technisch abgeschlossen; erste produktive Vollinstallation noch nicht gestartet
 
 Roadmap: Phase 9
 
@@ -33,8 +33,9 @@ Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unte
 `docs/local-taxonomy-database-design.md` entworfen und in Phase 9.3 mit dem begrenzten, unter
 `docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Phase 9.4 hat die lokale read-only
 API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verbindliche Vertrag steht in
-`docs/taxonomy-explorer-integration.md`. Lightroom-Anbindung und Mehrgeräteverteilung werden in den nachfolgenden
-Teilphasen entschieden.
+`docs/taxonomy-explorer-integration.md`. Phase 9.5 setzt den vollständigen lokalen Installations- und
+Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Lightroom-Anbindung und
+Mehrgeräteverteilung werden in den nachfolgenden Teilphasen entschieden.
 
 ## A. Ausgangslage
 
@@ -247,8 +248,10 @@ bietet:
 - bei einem Tier ohne bestätigten deutschen Namen einen gezielten Button `Animalia.bio manuell prüfen`, der eine
   browserbasierte Einzelfallrecherche öffnet, ohne die Website automatisiert abzurufen oder zu scrapen
 
-Für bestehende Arten ist weiterhin ein getrenntes Prüfwerkzeug zu planen. Es darf Abweichungen melden und Vorschläge machen,
-aber keine Massenänderung ohne artweise oder ausdrücklich bestätigte Sammelentscheidung ausführen.
+Für bestehende Arten führt Phase 9.5 vor jeder Aktivierung einen getrennten Abgleich aus. Er meldet eindeutige
+Synonyme als Vorschlag sowie mehrdeutige oder fehlende Treffer als manuelle Prüfung. Er verändert keine Art und
+trifft keine stille Auswahl. Eine spätere fachlich bestätigte Umbenennung läuft weiterhin über den geschützten
+artweisen Umbenennungsworkflow.
 
 Die Referenzsuche ändert nur die Namensvorbereitung in Schritt 1. Die bisherige Validierung, Kollisionsprüfung,
 Vorschau und bestätigte Speicherung bleiben maßgeblich. `docs/add-species-workflow.md` beschreibt den Gesamtprozess;
@@ -274,6 +277,10 @@ Der Aktualisierungsworkflow soll mindestens vorsehen:
 
 Ein Update der Referenzdatenbank startet nicht automatisch die produktive IUCN-/Asset-Pipeline und ändert keine
 Projekt-Art. Nach einem Update können lediglich neue Prüfhinweise oder Vergleichsvorschläge entstehen.
+
+Dieser Ablauf ist seit Phase 9.5 umgesetzt. Die kleine Versionsprüfung startet nicht blockierend beim
+Explorer-Start; vollständiger Download und Import bleiben ausdrücklich bestätigte Wartungsaktionen. Details:
+`docs/taxonomy-reference-update.md`.
 
 ## H. Verhältnis zum Multi-Computer-Support
 
@@ -428,13 +435,20 @@ lokale Referenzimport ist für Phase 9.5 freigegeben.
 
 ### 9.5 Vollständiger lokaler Import und Aktualisierungsworkflow
 
-- freigegeben nach Abschluss von 9.1 bis 9.4
-- vollständiger Download und Import
+- **Technisch abgeschlossen am 2026-07-26.**
+- nicht blockierende Versionsprüfung beim Start mit lokalem Zwölf-Stunden-Cache
+- vollständiger Download erst nach Vorschau und ausdrücklicher Bestätigung
+- begrenzte, sichere Extraktion und streamender SQLite-Vollimport
 - Verifikation, Qualitätsgate und Suchindex
-- Updatefunktion, atomarer Austausch und Rollback
+- vollständiger Abgleich der bestehenden Projektarten ohne automatische Änderung
+- sichtbare eindeutige Synonymvorschläge sowie manuelle Mehrdeutigkeits-/Fehlhinweise
+- atomarer Austausch und genau eine Rollbackversion
 - verständliche Fortschritts- und Fehleranzeige im Explorer
+- fokussierter, reproduzierbarer Fixture-Test ohne automatischen Gigabyte-Download
 
-Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin getrennt von Git/Pages.
+Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin getrennt von Git/Pages. Die erste
+echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest. Verbindlicher Vertrag:
+`docs/taxonomy-reference-update.md`.
 
 ### 9.6 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 
@@ -482,14 +496,14 @@ Ergebnis: verbindliche Schnittstelle zur bestehenden Mehrgeräte-/NAS-Planung.
 Die primäre Quelle, Ergänzungsrollen und Prioritätsregeln wurden in Phase 9.1 entschieden. Phase 9.2 hat
 Lizenz-/Attributionsspeicherung, lokale Speichertechnik, Suchindizes, Schema, Speicherort, Vollimportstrategie und
 Sicherungsgrenze verbindlich geklärt; Phase 9.3 hat diese Grenzen mit einem begrenzten Prototyp bestätigt und
-Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Vor den jeweiligen späteren Implementierungsphasen
-bleiben ausdrücklich:
+Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Phase 9.5 hat Vollimport, Aktualisierung und den
+Konfliktworkflow für bestehende Arten umgesetzt. Vor den jeweiligen späteren Implementierungsphasen bleiben
+ausdrücklich:
 
-1. Konfliktworkflow für bestehende Arten
-2. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
-3. Metadaten- und XMP-Modell in Lightroom
-4. optionales NAS-Paket für die große Referenzdatenbank
-5. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
+1. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
+2. Metadaten- und XMP-Modell in Lightroom
+3. optionales NAS-Paket für die große Referenzdatenbank
+4. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb
 
 ## Nicht Bestandteil von Phase 9.1 bis 9.3
 

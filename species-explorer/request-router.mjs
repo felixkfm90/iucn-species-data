@@ -32,6 +32,9 @@ const POST_ROUTES = new Map([
   ["/api/settings/backup", { name: "backup-settings", action: "save" }],
   ["/api/backup/preview", { name: "backup", action: "preview" }],
   ["/api/backup/start", { name: "backup", action: "start" }],
+  ["/api/taxonomy/update/preview", { name: "taxonomy-maintenance", action: "preview" }],
+  ["/api/taxonomy/update/start", { name: "taxonomy-maintenance", action: "start" }],
+  ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
   ["/api/pipeline/assets/review", { name: "pipeline-asset-review", action: "save" }],
   ["/api/species/new/preview", { name: "new-species", action: "preview" }],
   ["/api/species/new/save", { name: "new-species", action: "save" }],
@@ -230,6 +233,16 @@ export function createExplorerRequestHandler({
       if (route.name === "backup") {
         const payload = await readJsonBody(request);
         sendJson(response, 200, await operations.backup({ action: route.action, payload }));
+        return;
+      }
+
+      if (route.name === "taxonomy-maintenance") {
+        const payload = await readJsonBody(request);
+        sendJson(
+          response,
+          200,
+          await operations.taxonomyMaintenance({ action: route.action, payload }),
+        );
         return;
       }
 

@@ -121,6 +121,54 @@ export async function writeActiveTaxonomyPointer(
   return pointer;
 }
 
+async function assertInstalledRelease(taxonomyRoot, releaseId) {
+  const normalizedReleaseId = assertTaxonomyReleaseId(releaseId);
+  const [databaseStats, manifestText] = await Promise.all([
+    fs.stat(taxonomyDatabasePath(taxonomyRoot, normalizedReleaseId)),
+    fs.readFile(taxonomyReleaseManifestPath(taxonomyRoot, normalizedReleaseId), "utf8"),
+  ]);
+  if (!databaseStats.isFile() || databaseStats.size <= 0) {
+    throw new Error(`Taxonomie-Release ${normalizedReleaseId} enthält keine gültige Datenbank.`);
+  }
+  const manifest = JSON.parse(manifestText);
+  if (
+    manifest?.releaseId !== normalizedReleaseId
+    || manifest?.validation?.integrity !== "ok"
+    || manifest?.validation?.foreignKeys !== "ok"
+    || manifest?.validation?.hierarchyCycles !== "none"
+    || (
+      manifest?.boundedPrototype !== true
+      && manifest?.validation?.projectSpeciesCompared !== true
+    )
+  ) {
+    throw new Error(`Taxonomie-Release ${normalizedReleaseId} besitzt kein gültiges Prüfmanifest.`);
+  }
+  return manifest;
+}
+
+export async function activateTaxonomyRelease(
+  taxonomyRoot,
+  releaseId,
+  { now = () => new Date() } = {},
+) {
+  const root = path.resolve(taxonomyRoot);
+  const activeRelease = assertTaxonomyReleaseId(releaseId);
+  await assertInstalledRelease(root, activeRelease);
+  const previousPointer = await readActiveTaxonomyPointer(root);
+  if (previousPointer?.activeRelease === activeRelease) {
+    return previousPointer;
+  }
+  const pointer = await writeActiveTaxonomyPointer(root, {
+    activeRelease,
+    previousRelease: previousPointer?.activeRelease ?? null,
+  }, now);
+  await pruneTaxonomyReleases(root, [
+    pointer.activeRelease,
+    pointer.previousRelease,
+  ]);
+  return pointer;
+}
+
 export async function listTaxonomyReleaseIds(taxonomyRoot) {
   const releasesRoot = path.join(path.resolve(taxonomyRoot), "releases");
   try {

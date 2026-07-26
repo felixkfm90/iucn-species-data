@@ -315,7 +315,7 @@ function buildSearchTerms(database) {
   for (const row of database.prepare(`
     SELECT id, source_id, scientific_name, trust_tier, kingdom
     FROM taxon
-  `).all()) {
+  `).iterate()) {
     add({
       taxonId: row.id,
       sourceNameId: row.source_id,
@@ -335,7 +335,7 @@ function buildSearchTerms(database) {
     FROM taxon_name name
     JOIN taxon ON taxon.id = name.taxon_id
     WHERE name.relationship <> 'accepted'
-  `).all()) {
+  `).iterate()) {
     add({
       taxonId: row.taxon_id,
       sourceNameId: row.source_name_id,
@@ -352,7 +352,7 @@ function buildSearchTerms(database) {
       taxon.trust_tier, taxon.kingdom
     FROM vernacular_name name
     JOIN taxon ON taxon.id = name.taxon_id
-  `).all()) {
+  `).iterate()) {
     add({
       taxonId: row.taxon_id,
       sourceNameId: row.source_name_id,
@@ -371,7 +371,7 @@ function buildSearchTerms(database) {
       identifier.identifier, taxon.trust_tier, taxon.kingdom
     FROM external_identifier identifier
     JOIN taxon ON taxon.id = identifier.taxon_id
-  `).all()) {
+  `).iterate()) {
     add({
       taxonId: row.taxon_id,
       sourceNameId: `identifier:${row.id}`,

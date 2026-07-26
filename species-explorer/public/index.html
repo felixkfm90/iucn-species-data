@@ -461,6 +461,36 @@
             </div>
           </details>
 
+          <details class="action-group taxonomy-maintenance-group" open>
+            <summary>
+              <strong>Taxonomiereferenz</strong>
+              <span>Catalogue of Life prüfen, aktualisieren oder wiederherstellen</span>
+            </summary>
+            <div class="taxonomy-maintenance-panel">
+              <div class="taxonomy-maintenance-copy">
+                <strong id="taxonomy-maintenance-summary">Versionsstand wird geprüft…</strong>
+                <span id="taxonomy-maintenance-detail">
+                  Beim Start werden nur Release-Metadaten abgerufen.
+                </span>
+              </div>
+              <progress
+                id="taxonomy-maintenance-progress"
+                class="taxonomy-maintenance-progress"
+                max="100"
+                value="0"
+                hidden
+              ></progress>
+              <p id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></p>
+              <div class="taxonomy-maintenance-actions">
+                <button type="button" data-taxonomy-action="check">Auf neue Version prüfen</button>
+                <button type="button" data-taxonomy-action="update" disabled>Referenz aktualisieren</button>
+                <button type="button" data-taxonomy-action="rollback" disabled>
+                  Vorherige Version wiederherstellen
+                </button>
+              </div>
+            </div>
+          </details>
+
           <details class="action-group" open>
             <summary>
               <strong>Backup und Einstellungen</strong>
@@ -612,6 +642,7 @@
     <script src="/app-pipeline.js" defer></script>
     <script src="/app-backup-workflow.js" defer></script>
     <script src="/app-pipeline-workflow.js" defer></script>
+    <script src="/app-taxonomy-maintenance.js" defer></script>
     <script src="/filter.js" defer></script>
     <script src="/app-dashboard.js" defer></script>
     <script src="/app-lifecycle.js" defer></script>

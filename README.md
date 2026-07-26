@@ -87,6 +87,8 @@ Versionierte Referenzen liegen unter:
 - `docs/taxonomy-source-decision.md`
 - `docs/local-taxonomy-database-design.md`
 - `docs/taxonomy-import-prototype.md`
+- `docs/taxonomy-explorer-integration.md`
+- `docs/taxonomy-reference-update.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -293,6 +295,29 @@ npm.cmd run --silent test:taxonomy-reference
 ```
 
 Bedien- und API-Vertrag: `docs/taxonomy-explorer-integration.md`.
+
+## Taxonomiereferenz installieren und aktualisieren
+
+Phase 9.5 ergänzt im Bereich `Datenbank-Aktionen > Taxonomiereferenz` den vollständigen lokalen
+Catalogue-of-Life-XR-Import. Beim Explorer-Start werden nur kleine Release-Metadaten geprüft; ein Download von
+mehr als 1 GB beginnt ausschließlich nach einer Vorschau und ausdrücklicher Bestätigung. Download, sicheres
+Entpacken, SQLite-Import, Suchindex, Qualitätsprüfung, Projektartenabgleich und atomare Aktivierung werden mit
+Fortschritt angezeigt. Die vorherige aktive Referenz bleibt als Rollbackversion erhalten.
+
+Vor der Aktivierung werden alle bestehenden Arten verglichen. Eindeutig akzeptierte Namen bleiben grün,
+eindeutige Synonyme erscheinen nur als Umbenennungsvorschlag und mehrdeutige oder fehlende Treffer als manuelle
+Prüfung. Der Aktualisierungslauf ändert niemals automatisch `species_list.json`, `speciesData.json`, deutsche oder
+wissenschaftliche Namen, URL-Slugs, Assetnamen, Assetordner oder Overrides. Fachliche Hinweise können daher die
+neue read-only Referenz nicht beschädigen; technische Import- oder Vergleichsfehler verhindern dagegen die
+Aktivierung und lassen die bisherige Version aktiv.
+
+Fokussierte Prüfung:
+
+```bash
+npm.cmd run --silent test:taxonomy-maintenance
+```
+
+Der vollständige Betriebs-, Konflikt- und Rollbackvertrag steht in `docs/taxonomy-reference-update.md`.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
@@ -832,12 +857,16 @@ Ein-Zeichen-Präfixsuche, deutsch-wissenschaftliche Vorschläge, Synonyme, Homon
 Prototyp bleibt vollständig von produktiven Arten, GitHub Pages und Squarespace getrennt; ein Vollimport wurde noch
 nicht ausgeführt. Phase 9.4 hat am 2026-07-24 die lokale read-only API und die kontrollierte Referenzsuche in den
 Neue-Art-Assistenten integriert. Kein Treffer wird automatisch gewählt; nur bestätigte Arteinträge gelangen in die
-Namensfelder und die bisherige Prüfung bleibt maßgeblich. Als Nächstes folgt Phase 9.5 mit vollständigem lokalem
-Import, Aktualisierung, Fortschritt, atomarer Aktivierung und Rollback. Danach folgen Phase 10 mit
+Namensfelder und die bisherige Prüfung bleibt maßgeblich. Phase 9.5 stellt seit 2026-07-26 den vollständigen
+lokalen Import, die nicht blockierende Versionsprüfung beim Start, Fortschritt, den sicheren Abgleich vorhandener
+Arten, atomare Aktivierung und Rollback bereit. Ein echter Vollbestand wird erst durch die ausdrücklich gestartete
+erste lokale Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Als Nächstes
+folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Danach folgen Phase 10 mit
 Mehrgeraetebetrieb, automatischen Updates und NAS-Restore sowie Phase 11 mit weiteren Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
-`docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md` und
+`docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md`,
+`docs/taxonomy-reference-update.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

@@ -81,6 +81,12 @@ Lokale Arbeitsoberflaeche:
   lokalen SQLite-Speicher, begrenzten Import und read-only Suche
 - `species-explorer/taxonomy-reference-service.mjs` und `public/app-taxonomy-reference.js`: lokale read-only
   Taxonomie-API sowie bidirektionale Vorschläge und kontrollierte Übernahme im Neue-Art-Assistenten
+- `species-explorer/taxonomy-release-client.mjs`, `taxonomy-archive.mjs`, `taxonomy-package.mjs`,
+  `taxonomy-full-import.mjs` und `taxonomy-maintenance-service.mjs`: Releaseprüfung, begrenzter Download, sichere
+  Extraktion, streamender Vollimport, Projektartenabgleich, Aktivierung und Rollback
+- `species-explorer/taxonomy-project-conflicts.mjs`, `public/app-taxonomy-maintenance.js` und
+  `species-reference-mappings.json`: sichtbare Konflikthinweise ohne stille Projektänderung sowie stabile,
+  ausdrücklich bestätigte CoL-Zuordnungen
 - `scripts/taxonomy-prototype.mjs`, `taxonomy-prototype-fetch.mjs` und
   `scripts/fixtures/taxonomy/`: reproduzierbarer Phase-9.3-Prototyp und kleine versionierte Testfixture
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
@@ -717,8 +723,14 @@ Aktuelle Planung:
   Hierarchievorschau. Nur Taxa mit Rang `Art` werden im Formular angeboten; ohne lesbare Referenz bleibt die
   manuelle Eingabe vollständig nutzbar. Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen ausschließlich
   als manueller Suchlink geöffnet. Der verbindliche Vertrag steht in
-  `docs/taxonomy-explorer-integration.md`. Als Nächstes folgt Phase 9.5 mit vollständigem lokalem Import,
-  Aktualisierungsworkflow, atomarer Aktivierung und Rollback. Die
+  `docs/taxonomy-explorer-integration.md`. Phase 9.5 ist seit 2026-07-26 technisch abgeschlossen. Der Explorer
+  prüft beim Start nur die kleinen CoL-Release-Metadaten und lädt den vollständigen XR-Bestand erst nach Vorschau
+  und ausdrücklicher Bestätigung. Download, sichere Extraktion, streamender SQLite-Import, Suchindex,
+  Qualitätsgate, Fortschritt, Projektartenabgleich, atomare Aktivierung und Rollback sind umgesetzt. Eindeutige
+  Synonyme erzeugen nur Vorschläge; mehrdeutige oder fehlende Treffer bleiben manuell. Bestehende Namen, Slugs,
+  Assets und Projektdateien werden niemals automatisch verändert. Der verbindliche Konflikt- und Betriebsvertrag
+  steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt ein bewusst gestarteter
+  lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit der Lightroom-Machbarkeitsprüfung. Die
   Teilphasen 9.1 bis 9.9 reichen vom Quellenvergleich und begrenzten Importprototyp bis zum Lightroom-MVP und zur
   ausdrücklichen Übergabe der Datenverteilung an Phase 10.
   Phase 10 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
@@ -959,11 +971,14 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank und Lightroom:
-  Phase 9.1 bis 9.4 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine Fachergänzung. SQLite,
+  Phase 9.1 bis 9.5 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
+  Fachergänzung. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, Reichsauswahl, bidirektionale Vorschläge,
-  Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten getestet integriert. Als Nächstes folgen
-  vollständiger lokaler Import- und Aktualisierungsworkflow sowie Lightroom-Machbarkeit und -MVP.
+  Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten getestet integriert. Der vollständige
+  lokale Import- und Aktualisierungsworkflow prüft beim Start nur Metadaten, vergleicht bestehende Arten ohne
+  automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Als Nächstes folgen
+  Lightroom-Machbarkeit und -MVP.
 - Phase 10 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
 - Phase 11 - Weitere Erweiterungen:

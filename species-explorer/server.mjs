@@ -31,6 +31,7 @@ import { createPipelineController } from "./pipeline-controller.mjs";
 import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
+import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
@@ -100,6 +101,7 @@ export async function createExplorerServer({
   const sessionToken = createSessionToken();
   const speciesListPath = join(repoRoot, "species_list.json");
   const speciesDataPath = join(repoRoot, "speciesData.json");
+  const speciesReferenceMappingsPath = join(repoRoot, "species-reference-mappings.json");
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
   const taxonomyOverridesPath = join(repoRoot, "species-taxonomy-overrides.json");
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
@@ -112,6 +114,7 @@ export async function createExplorerServer({
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   const taxonomyReference = createTaxonomyReferenceService({ taxonomyRoot });
+  let taxonomyMaintenanceService = null;
   let pipelineProcess = null;
   let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
@@ -178,8 +181,12 @@ export async function createExplorerServer({
     }
   }
 
-  function isPipelineActive() {
+  function isPipelineProcessActive() {
     return pipelineProcess || pipelineState.status === "running" || pipelineState.status === "awaiting-review";
+  }
+
+  function isPipelineActive() {
+    return Boolean(isPipelineProcessActive() || taxonomyMaintenanceService?.isActive());
   }
 
   const {
@@ -205,6 +212,20 @@ export async function createExplorerServer({
     isPipelineActive,
     isAssetWriteActive: () => assetWriteActive,
   });
+
+  taxonomyMaintenanceService = createTaxonomyMaintenanceService({
+    taxonomyRoot,
+    repoRoot,
+    referenceService: taxonomyReference,
+    mappingsPath: speciesReferenceMappingsPath,
+    speciesListPath,
+    isProjectBusy: () => Boolean(
+      isPipelineProcessActive()
+      || isBackupActive()
+      || assetWriteActive
+    ),
+  });
+  void taxonomyMaintenanceService.startupCheck();
 
   const pipelineRuntime = {
     get state() { return pipelineState; },
@@ -334,9 +355,7 @@ export async function createExplorerServer({
     hashText,
     compactTimestamp,
     isPipelineBusy: () => Boolean(
-      pipelineProcess
-      || pipelineState.status === "running"
-      || pipelineState.status === "awaiting-review"
+      isPipelineActive()
     ),
     isAssetWriteActive: () => assetWriteActive,
     portraitAssetSourceRevision,
@@ -527,7 +546,7 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyRead({ resource, reference, searchParams }) {
-        if (resource === "status") return taxonomyReference.status();
+        if (resource === "status") return taxonomyMaintenanceService.status();
         if (resource === "kingdoms") return taxonomyReference.kingdoms();
         if (resource === "search") {
           return taxonomyReference.search({
@@ -539,6 +558,14 @@ export async function createExplorerServer({
         }
         if (resource === "taxon") return taxonomyReference.taxon(reference);
         const error = new Error("Unbekannte Taxonomie-Leseoperation");
+        error.statusCode = 404;
+        throw error;
+      },
+      async taxonomyMaintenance({ action, payload }) {
+        if (action === "preview") return taxonomyMaintenanceService.previewUpdate();
+        if (action === "start") return taxonomyMaintenanceService.startUpdate(payload);
+        if (action === "rollback") return taxonomyMaintenanceService.rollback();
+        const error = new Error("Unbekannte Taxonomie-Wartungsoperation");
         error.statusCode = 404;
         throw error;
       },
@@ -569,6 +596,7 @@ export async function createExplorerServer({
         server.close((error) => (error ? reject(error) : resolveClose()));
       });
       closeActiveFileStreams();
+      await taxonomyMaintenanceService.close();
       taxonomyReference.close();
       previewTokens.clear();
       await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" }).catch(() => {});

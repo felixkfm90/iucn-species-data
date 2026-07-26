@@ -39,6 +39,7 @@
         elements.pipelineMessage.className = `edit-message pipeline-message${type ? ` ${type}` : ""}`;
         elements.pipelineMessage.hidden = !text;
       };
+      state.setPipelineMessage = setMessage;
 
       const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
       const showDialog = () => dialogController.open();
@@ -47,6 +48,7 @@
         for (const button of elements.pipelineButtons) button.disabled = disabled;
         for (const button of elements.backupButtons) button.disabled = disabled;
         for (const button of elements.settingsButtons) button.disabled = disabled;
+        for (const button of elements.taxonomyButtons) button.disabled = disabled;
       };
 
       const setDialogCloseMode = (active) => {
@@ -130,6 +132,7 @@
         setDialogCloseMode(false);
         setMessage();
         showDialog();
+        void state.refreshTaxonomyMaintenanceStatus?.();
       };
 
       const applyPipelinePreview = (result) => {
@@ -424,12 +427,17 @@
         const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
           || state.pipelineStatusSnapshot?.status === "awaiting-review";
         const backupActive = state.backupStatusSnapshot?.status === "running";
+        const taxonomyActive = state.taxonomyMaintenanceSnapshot?.active === true;
         if (pipelineActive) {
           showStatusDialog(state.pipelineStatusSnapshot);
           return;
         }
         if (backupActive) {
           backupController.showStatusDialog(state.backupStatusSnapshot);
+          return;
+        }
+        if (taxonomyActive) {
+          openChooser();
           return;
         }
         if (state.databaseNeedsUpdate) {

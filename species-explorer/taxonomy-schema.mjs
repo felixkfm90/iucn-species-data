@@ -188,18 +188,26 @@ export function buildTaxonomySearchIndexes(database) {
 }
 
 function validateParentCycles(database) {
-  const rows = database.prepare("SELECT id, parent_id FROM taxon").all();
-  const parents = new Map(rows.map((row) => [row.id, row.parent_id]));
-  for (const row of rows) {
-    const visited = new Set();
-    let current = row.id;
-    while (current !== null && current !== undefined) {
-      if (visited.has(current)) {
-        throw new Error(`Elternzyklus beim Taxon ${row.id} erkannt.`);
-      }
-      visited.add(current);
-      current = parents.get(current);
+  const maximumId = Number(scalar(database, "SELECT COALESCE(MAX(id), 0) FROM taxon"));
+  if (!maximumId) return;
+  const parents = new Int32Array(maximumId + 1);
+  const state = new Uint8Array(maximumId + 1);
+  for (const row of database.prepare("SELECT id, parent_id FROM taxon").iterate()) {
+    parents[row.id] = Number(row.parent_id) || 0;
+  }
+  for (let start = 1; start <= maximumId; start += 1) {
+    if (state[start] !== 0) continue;
+    const path = [];
+    let current = start;
+    while (current && state[current] === 0) {
+      state[current] = 1;
+      path.push(current);
+      current = parents[current];
     }
+    if (current && state[current] === 1) {
+      throw new Error(`Elternzyklus beim Taxon ${start} erkannt.`);
+    }
+    for (const taxonId of path) state[taxonId] = 2;
   }
 }
 
@@ -291,6 +299,80 @@ export function validateTaxonomyDatabase(database, fixtureManifest) {
     externalIdentifiers: scalar(database, "SELECT COUNT(*) FROM external_identifier"),
     searchTerms: searchCount,
     wormsComparisons: wormsCount,
+  };
+}
+
+export function validateFullTaxonomyDatabase(database, {
+  importedNameUsages,
+  importedVernacularNames,
+} = {}) {
+  const integrity = scalar(database, "PRAGMA integrity_check");
+  if (integrity !== "ok") {
+    throw new Error(`SQLite-Integritätsprüfung fehlgeschlagen: ${integrity}`);
+  }
+  const foreignKeyError = database.prepare("PRAGMA foreign_key_check").get();
+  if (foreignKeyError) {
+    throw new Error(
+      `SQLite-Fremdschlüsselprüfung meldet mindestens einen Fehler in ${foreignKeyError.table}.`,
+    );
+  }
+  const rawNameUsages = Number(scalar(database, "SELECT COUNT(*) FROM raw_name_usage"));
+  if (
+    Number.isInteger(importedNameUsages)
+    && importedNameUsages >= 0
+    && rawNameUsages !== importedNameUsages
+  ) {
+    throw new Error(
+      `NameUsage-Zähler weicht ab: ${rawNameUsages} statt ${importedNameUsages}.`,
+    );
+  }
+  const vernacularNames = Number(scalar(database, "SELECT COUNT(*) FROM vernacular_name"));
+  if (
+    Number.isInteger(importedVernacularNames)
+    && importedVernacularNames >= 0
+    && vernacularNames !== importedVernacularNames
+  ) {
+    throw new Error(
+      `Vernakularnamen-Zähler weicht ab: ${vernacularNames} statt ${importedVernacularNames}.`,
+    );
+  }
+  const taxa = Number(scalar(database, "SELECT COUNT(*) FROM taxon"));
+  const scientificNames = Number(scalar(database, "SELECT COUNT(*) FROM taxon_name"));
+  const searchTerms = Number(scalar(database, "SELECT COUNT(*) FROM search_term"));
+  const ftsTerms = Number(scalar(database, "SELECT COUNT(*) FROM search_term_fts"));
+  if (!taxa || scientificNames < taxa) {
+    throw new Error("Die vollständige Taxonomiereferenz enthält keine belastbare akzeptierte Taxonmenge.");
+  }
+  const unresolvedNames = Number(scalar(database, `
+    SELECT COUNT(*)
+    FROM raw_name_usage raw
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM taxon_name name
+      WHERE name.source_name_id = raw.source_id
+    )
+  `));
+  if (unresolvedNames) {
+    throw new Error(
+      `${unresolvedNames} wissenschaftliche Namen konnten keinem akzeptierten Taxon zugeordnet werden.`,
+    );
+  }
+  if (!searchTerms || ftsTerms !== searchTerms) {
+    throw new Error("Der FTS5-Suchindex ist nicht vollständig.");
+  }
+  validateParentCycles(database);
+  return {
+    rawNameUsages,
+    taxa,
+    scientificNames,
+    vernacularNames,
+    externalIdentifiers: Number(
+      scalar(database, "SELECT COUNT(*) FROM external_identifier"),
+    ),
+    searchTerms,
+    wormsComparisons: Number(
+      scalar(database, "SELECT COUNT(*) FROM worms_comparison"),
+    ),
   };
 }
 

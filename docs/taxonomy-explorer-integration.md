@@ -1,8 +1,8 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-24
+Stand: 2026-07-26
 
-Status: Phase 9.4 abgeschlossen; vollständiger Referenzimport folgt in Phase 9.5
+Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation und Aktualisierung
 
 ## Ziel
 
@@ -76,16 +76,28 @@ Die Endpunkte laufen innerhalb der bestehenden localhost-, Origin- und Sitzungsg
 öffnen nur den über den aktiven Releasezeiger freigegebenen SQLite-Bestand. Ändert sich der aktive Release, wird der
 read-only Speicher beim nächsten Zugriff kontrolliert neu geöffnet.
 
-Schreibende Endpunkte für Download, Import, Aktivierung und Rollback sind ausdrücklich nicht Teil von Phase 9.4.
-Sie werden erst mit dem vollständigen Installations- und Aktualisierungsworkflow in Phase 9.5 umgesetzt.
+Schreibende Endpunkte für Download, Import, Aktivierung und Rollback sind ausdrücklich nicht Teil der
+Phase-9.4-Referenzsuche. Phase 9.5 stellt sie getrennt im Wartungsbereich bereit:
+
+```text
+POST /api/taxonomy/update/preview
+POST /api/taxonomy/update/start
+POST /api/taxonomy/update/rollback
+```
+
+Der vollständige Installations-, Konflikt- und Rollbackvertrag steht in
+`docs/taxonomy-reference-update.md`. Die Wartung verändert weder Formularwerte noch bestehende Projektarten.
 
 ## Technische Zuständigkeiten
 
 - `species-explorer/taxonomy-reference-service.mjs`: Validierung, aktiver read-only Speicher, Status, Reiche, Suche
   und Taxondetails
+- `species-explorer/taxonomy-maintenance-service.mjs`: Versionsprüfung, Vollimportsteuerung, Projektabgleich,
+  Aktivierung und Rollback
 - `species-explorer/request-router.mjs`: lokale GET-/HEAD-Routen
 - `species-explorer/public/app-taxonomy-reference.js`: Darstellung, verzögerte bidirektionale Suche, bewusste
   Auswahl und Übernahme
+- `species-explorer/public/app-taxonomy-maintenance.js`: Wartungsstatus, Fortschritt, Konflikthinweise und Rollback
 - `species-explorer/public/app-new-species-workflow.js`: Einbindung in Schritt 1 und Zurücksetzen beim Schließen
 - `species-explorer/taxonomy-reference-service.test.mjs`: Service- und Fixture-Nachweis
 - `species-explorer/app-taxonomy-reference.test.mjs`: zustandsfreie URL-, Status- und Darstellungsverträge

@@ -56,6 +56,8 @@ const explorerBackupWorkflow = window.SpeciesExplorerBackupWorkflow;
 if (!explorerBackupWorkflow) throw new Error("Explorer-Backupablauf konnte nicht geladen werden.");
 const explorerPipelineWorkflow = window.SpeciesExplorerPipelineWorkflow;
 if (!explorerPipelineWorkflow) throw new Error("Explorer-Pipelineablauf konnte nicht geladen werden.");
+const explorerTaxonomyMaintenance = window.SpeciesExplorerTaxonomyMaintenance;
+if (!explorerTaxonomyMaintenance) throw new Error("Explorer-Taxonomiewartung konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
 if (!explorerDashboard) throw new Error("Explorer-Dashboard konnte nicht geladen werden.");
 const explorerLifecycle = window.SpeciesExplorerLifecycle;
@@ -206,6 +208,14 @@ const elements = {
   pipelineButtons: [...document.querySelectorAll("[data-pipeline-mode]")],
   backupButtons: [...document.querySelectorAll("[data-backup-action]")],
   settingsButtons: [...document.querySelectorAll("[data-settings-action]")],
+  taxonomyButtons: [...document.querySelectorAll("[data-taxonomy-action]")],
+  taxonomyMaintenanceSummary: document.querySelector("#taxonomy-maintenance-summary"),
+  taxonomyMaintenanceDetail: document.querySelector("#taxonomy-maintenance-detail"),
+  taxonomyMaintenanceProgress: document.querySelector("#taxonomy-maintenance-progress"),
+  taxonomyMaintenanceConflicts: document.querySelector("#taxonomy-maintenance-conflicts"),
+  taxonomyCheckButton: document.querySelector("[data-taxonomy-action='check']"),
+  taxonomyUpdateButton: document.querySelector("[data-taxonomy-action='update']"),
+  taxonomyRollbackButton: document.querySelector("[data-taxonomy-action='rollback']"),
   pipelineStatus: document.querySelector("#pipeline-status"),
   pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
   pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
@@ -415,6 +425,15 @@ const { setupPipelineControl } = explorerPipelineWorkflow.createPipelineWorkflow
   renderProcessLog,
   createBackupWorkflowController: explorerBackupWorkflow.createBackupWorkflowController,
 });
+const { setup: setupTaxonomyMaintenance } =
+  explorerTaxonomyMaintenance.createTaxonomyMaintenanceController({
+    state,
+    elements,
+    fetchJson,
+    formatBytes,
+    showQuickConfirm,
+    renderDatabaseStatus,
+  });
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
   state,
@@ -511,5 +530,6 @@ setupBackupSettings({
   createDialogController,
 });
 setupPipelineControl();
+setupTaxonomyMaintenance();
 setupNewSpeciesCreator();
 void startLifecycle();

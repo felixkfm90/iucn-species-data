@@ -59,6 +59,7 @@ function createOperations(calls, previewPath = null) {
     editSpecies: record("editSpecies"),
     editTaxonomy: record("editTaxonomy"),
     taxonomyRead: record("taxonomyRead"),
+    taxonomyMaintenance: record("taxonomyMaintenance"),
     read: record("read"),
     pipelineBackupFile: async ({ response }) => {
       calls.push({ name: "pipelineBackupFile" });
@@ -113,6 +114,18 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
   assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/status"), {
     name: "taxonomy-read",
     resource: "status",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/preview"), {
+    name: "taxonomy-maintenance",
+    action: "preview",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/start"), {
+    name: "taxonomy-maintenance",
+    action: "start",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/rollback"), {
+    name: "taxonomy-maintenance",
+    action: "rollback",
   });
   assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/search"), {
     name: "taxonomy-read",
@@ -237,6 +250,13 @@ test("Schreibaktionen werden begrenzt, dekodiert und an Fachoperationen delegier
     id: "Amsel",
     action: "save",
     payload: { confirmed: true },
+  });
+
+  await post("/api/taxonomy/update/start", { token: "preview-token" });
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyMaintenance",
+    action: "start",
+    payload: { token: "preview-token" },
   });
 
   const oversizedResponse = await post(

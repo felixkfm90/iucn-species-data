@@ -5,6 +5,11 @@ import vm from "node:vm";
 
 const moduleDefinitions = [
   ["app-pipeline-workflow.js", "SpeciesExplorerPipelineWorkflow", "createPipelineWorkflowController"],
+  [
+    "app-taxonomy-maintenance.js",
+    "SpeciesExplorerTaxonomyMaintenance",
+    "createTaxonomyMaintenanceController",
+  ],
   ["app-backup-workflow.js", "SpeciesExplorerBackupWorkflow", "createBackupWorkflowController"],
   ["app-new-species-workflow.js", "SpeciesExplorerNewSpeciesWorkflow", "createNewSpeciesWorkflowController"],
   ["app-species-editor.js", "SpeciesExplorerSpeciesEditor", "createSpeciesEditorController"],
@@ -72,6 +77,7 @@ test("HTML lädt alle Fachmodule vor app.js in Abhängigkeitsreihenfolge", () =>
     "app-detail-view.js",
     "app-backup-workflow.js",
     "app-pipeline-workflow.js",
+    "app-taxonomy-maintenance.js",
     "app.js",
   ];
   let previous = -1;

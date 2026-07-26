@@ -1,9 +1,9 @@
 # Lokale Taxonomiedatenbank – Architektur für Phase 9.2
 
-Stand: 2026-07-24
+Stand: 2026-07-26
 
 Status: Phase 9.2 abgeschlossen, in Phase 9.3 prototypisch bestätigt und in Phase 9.4 read-only integriert;
-noch kein produktiver Vollimport
+Phase 9.5 technisch umgesetzt, noch kein ausdrücklich gestarteter produktiver Vollimport
 
 Roadmap: Phase 9.2
 
@@ -456,13 +456,12 @@ GET  /api/taxonomy/search
 GET  /api/taxonomy/taxa/:id
 ```
 
-Die schreibenden Verwaltungsendpunkte bleiben Phase 9.5 vorbehalten:
+Phase 9.5 hat diese schreibenden Verwaltungsendpunkte umgesetzt:
 
 ```text
-POST /api/taxonomy/import/preview
-POST /api/taxonomy/import/start
-POST /api/taxonomy/activate
-POST /api/taxonomy/rollback
+POST /api/taxonomy/update/preview
+POST /api/taxonomy/update/start
+POST /api/taxonomy/update/rollback
 ```
 
 Beispielparameter der Suche:
@@ -476,8 +475,8 @@ limit=12
 
 Die Endpunkte verwenden die bestehende localhost-Sitzungs- und Origin-Grenze. Die Phase-9.4-Endpunkte öffnen nur
 den aktiven Referenzbestand und schreiben keine Projekt- oder Referenzdatei. Import, Aktivierung und Rollback sind
-spätere schreibende Exklusivoperationen und verwenden dieselbe zentrale Prozesssperre wie andere lang laufende
-Datenbankaktionen.
+schreibende Exklusivoperationen und verwenden dieselbe zentrale Prozesssperre wie andere lang laufende
+Datenbankaktionen. Aktivierung erfolgt nur nach technischem Qualitätsgate und vollständigem Projektartenabgleich.
 
 ## 11. Leistungs- und Qualitätsziele
 
@@ -549,13 +548,17 @@ nicht blockierendem manuellen Fallback an. Im Artformular werden nur Taxa mit Ra
 Lese-API bleibt rangneutral. Der vollständige Bedien- und Fehlervertrag steht in
 `docs/taxonomy-explorer-integration.md`.
 
-Vollimport, genaue lokale Speicherreserve und schreibender Aktualisierungsworkflow bleiben bis Phase 9.5 gesperrt.
+Phase 9.5 wurde am 2026-07-26 technisch umgesetzt. Der Vollimport reserviert mindestens 12 GB freien Speicher,
+begrenzt Download und Extraktion, importiert in einen unveränderlichen Kandidaten, vergleicht danach alle
+Projektarten und aktiviert erst anschließend atomar. Eindeutige Synonyme bleiben Vorschläge; mehrdeutige oder
+fehlende Treffer werden nicht ausgewählt. Projektdateien, Namen, Slugs und Assets bleiben unverändert. Der
+vollständige Vertrag steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt eine
+ausdrücklich gestartete lokale Wartungsaktion.
 
 ## 14. Nach Phase 9.2 bewusst offene Entscheidungen
 
 Folgende Punkte werden nicht vorweggenommen:
 
-- konkreter Konflikt- und Sammelprüfworkflow für bestehende Projektarten
 - endgültiger Lightroom-Zugriffsweg: SQLite, read-only Explorer-API oder kompakter Export
 - Lightroom-XMP- und Metadatenmodell
 - optionales dediziertes NAS-Paket für die große Referenzdatenbank

@@ -825,7 +825,7 @@ Phase 8 ist damit abgeschlossen. Der frühere Kohlmeisen-Wartepunkt ist überhol
 
 ## Phase 9 - Globale Taxonomiedatenbank und Lightroom
 
-Status: in Arbeit; Phase 9.1 bis 9.4 abgeschlossen
+Status: in Arbeit; Phase 9.1 bis 9.5 technisch abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst Quellenvergleich,
 lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen Import- und
@@ -866,8 +866,18 @@ echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle
 Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen nur als manuelle Suche geöffnet. Der verbindliche
 Vertrag steht in `docs/taxonomy-explorer-integration.md`.
 
-Als Nächstes folgt Phase 9.5 mit vollständigem lokalem Download, geprüftem Import, Suchindex, Fortschrittsanzeige,
-atomarer Aktivierung und Rollback. Die Referenz bleibt außerhalb von Git, GitHub Pages und produktiven Artdaten.
+Phase 9.5 wurde am 2026-07-26 technisch abgeschlossen. Der Explorer prüft beim Start nicht blockierend und mit
+Zwölf-Stunden-Cache ausschließlich die aktuelle CoL-Release-Metadatenantwort. Vollständiger Download und
+streamender SQLite-Import beginnen nur nach Vorschau und ausdrücklicher Bestätigung. Archivgrenzen, sichere
+Extraktion, Schema, Fremdschlüssel, Hierarchie, Suchindex und Datenbankintegrität werden vor der Aktivierung
+geprüft. Anschließend werden alle bestehenden Projektarten klassifiziert: eindeutige Namen bleiben unverändert,
+eindeutige Synonyme werden nur vorgeschlagen und mehrdeutige oder fehlende Treffer ohne Vorauswahl zur manuellen
+Prüfung markiert. Namen, Slugs, Assetpfade und Projektdateien werden nie automatisch geändert. Erst nach
+erfolgreichem Vergleich wird die Referenz atomar aktiviert; die vorherige Version bleibt für Rollback erhalten.
+Der Vertrag steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt ein bewusst
+gestarteter lokaler Betriebstest und lädt keine Massendaten in Git oder GitHub Pages.
+
+Als Nächstes folgt Phase 9.6 mit der Lightroom-SDK- und Metadaten-Machbarkeitsprüfung.
 
 ## Phase 10 - Mehrere Computer, Git-Update und NAS-Restore
 

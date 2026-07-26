@@ -98,6 +98,11 @@ export class TaxonomyReferenceService {
     this.activeRelease = "";
   }
 
+  reset() {
+    this.assertOpen();
+    this.closeStore();
+  }
+
   close() {
     if (this.closed) return;
     this.closeStore();
