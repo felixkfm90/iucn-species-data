@@ -65,6 +65,39 @@ test("Trefferdarstellung trennt deutschen Namen, akzeptierten Namen und Synonym"
   assert.equal(result.taxonId, "42");
 });
 
+test("englischer Name wird ohne deutschen Namen sichtbar als Ersatz gekennzeichnet", () => {
+  const result = taxonomyReference.taxonomyResultPresentation({
+    taxonId: 84,
+    germanName: null,
+    englishName: "Red fox",
+    acceptedScientificName: "Vulpes vulpes",
+    matchedTerm: "Vulpes vulpes",
+    kingdom: { label: "Tiere" },
+    rank: "species",
+    hasVerifiedGermanName: false,
+  });
+  assert.equal(result.title, "Red fox");
+  assert.equal(result.subtitle, "Vulpes vulpes");
+  assert.equal(result.usesEnglishFallback, true);
+  assert.equal(result.note, "Englischer Ersatzname");
+
+  const detail = taxonomyReference.taxonomyDetailPresentation({
+    scientific_name: "Vulpes vulpes",
+    germanNames: [],
+    englishNames: [{ name: "Red fox" }],
+    hierarchy: [],
+  }, {
+    germanName: null,
+    englishName: "Red fox",
+    hasVerifiedGermanName: false,
+  });
+  assert.equal(detail.germanName, "");
+  assert.equal(detail.englishName, "Red fox");
+  assert.equal(detail.displayName, "Red fox");
+  assert.equal(detail.nameToApply, "Red fox");
+  assert.equal(detail.usesEnglishFallback, true);
+});
+
 test("Detaildarstellung liefert Hierarchie, Quelle und manuellen Animalia-Fallback", () => {
   const detail = taxonomyReference.taxonomyDetailPresentation({
     scientific_name: "Carduelis carduelis",

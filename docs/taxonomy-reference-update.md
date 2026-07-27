@@ -1,8 +1,8 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-07-26
+Stand: 2026-07-27
 
-Status: Phase 9.5 technisch umgesetzt; drei reale Paketabweichungen wurden sicher erkannt und korrigiert,
+Status: Phase 9.5 technisch umgesetzt; reale Paketabweichungen wurden sicher erkannt und korrigiert,
 die erneute ausdrückliche Installation steht aus
 
 ## Ziel
@@ -27,7 +27,8 @@ Die SQLite-Referenz enthält aus dem jeweils aktivierten Catalogue-of-Life-XR-Re
 - akzeptierte Taxa aller enthaltenen Reiche mit stabiler Quellen-ID, Rang und Elternbeziehung,
 - die vollständige verfügbare Hierarchie einschließlich vorhandener Zwischenränge wie Unterstamm oder Unterart,
 - akzeptierte wissenschaftliche Namen, Autorenschaft, Synonyme und weitere Namensbeziehungen,
-- gebräuchliche Namen einschließlich deutscher Namen, soweit sie im Quellrelease geliefert werden,
+- gebräuchliche Namen einschließlich getrennt erkannter deutscher und englischer Namen, soweit sie im
+  Quellrelease geliefert werden,
 - Angaben zu ausgestorbenen Taxa, Umwelt und taxonomischem Code, soweit vorhanden,
 - externe Identifikatoren aus dem Referenzpaket,
 - Release, Quelldatensatz, Lizenz und Vertrauensstufe als Provenienz sowie
@@ -74,8 +75,10 @@ Der Vollimport:
 - überspringt einzelne gebräuchliche Namen nur dann, wenn ihre `taxonID` im selben Release weder als Taxon noch
   als wissenschaftlicher Name existiert; diese verwaisten optionalen Zusatzdaten werden gezählt und niemals einem
   anderen Taxon zugeordnet,
-- blockiert das Paket weiterhin, wenn mehr als 10.000 solcher Verweise auftreten oder wenn nach den ersten
-  25 Einzelfällen mehr als 0,5 Prozent der Vernakularnamenszeilen betroffen sind,
+- berechnet die zulässige Obergrenze abhängig von der Größe der optionalen Namensdatei: mindestens 25 Zeilen,
+  höchstens ein Prozent aller Vernakularnamenszeilen und zusätzlich absolut höchstens 100.000,
+- toleriert damit den real beobachteten Befund von 12.294 nicht zuordenbaren Verweisen unter
+  1.996.915 `VernacularName.tsv`-Zeilen, blockiert aber weiterhin eine systematisch inkonsistente Referenz,
 - erzeugt eine lokale SQLite-Datenbank mit Präfix- und FTS5-Suchindex,
 - validiert Schema, Fremdschlüssel, Elternbeziehungen, Zyklen, Suchindex und Manifest,
 - installiert einen unveränderlichen Releaseordner und
@@ -84,6 +87,21 @@ Der Vollimport:
 Die Oberfläche zeigt einen zusammengefassten Fortschritt für Download, Entpacken, Import, Indexierung,
 Projektvergleich und Aktivierung. Taxonomieaktualisierung, normale Datenpipeline, Backup und schreibende
 Assetoperationen dürfen nicht parallel laufen.
+
+## Sprachfallback bei gebräuchlichen Namen
+
+Die nicht zuordenbaren Verweise aus `VernacularName.tsv` sind fehlerhafte optionale Quellzeilen und nicht mit
+fehlenden deutschen Übersetzungen gleichzusetzen. Für alle gültig zugeordneten Taxa gilt unabhängig davon:
+
+1. Ein bestätigter deutscher Vernakularname wird bevorzugt.
+2. Fehlt Deutsch, wird ein vorhandener englischer Vernakularname sichtbar als `Englischer Ersatzname`
+   vorgeschlagen.
+3. Fehlen beide Sprachen, bleibt nur der wissenschaftliche Name und die manuelle Namenseingabe.
+4. Liefert ein späterer Release erstmals Deutsch, erhält dieser Name bei künftigen Suchen automatisch Vorrang.
+5. Bereits bestätigte Projektarten werden dabei nicht still umbenannt. Eine Änderung bleibt eine bewusste
+   Übernahme beziehungsweise nutzt den geschützten Umbenennungsworkflow.
+
+Für Tierarten ohne bestätigten deutschen Namen bleibt die manuelle Animalia.bio-Recherche zusätzlich verfügbar.
 
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen

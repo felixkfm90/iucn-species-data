@@ -715,9 +715,10 @@ Aktuelle Planung:
   `docs/local-taxonomy-database-design.md`. Vorgesehen sind SQLite über `node:sqlite`, ein pfadunabhängiger lokaler
   Release-/Stagingspeicher, atomare Aktivierung, eine Rollbackversion, getrennte Projektzuordnungen sowie
   Präfix-/FTS5-Suche. Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als
-  Vorauswahl und bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem Zeichen. Für Tiere ohne
-  bestätigten deutschen Namen ist eine gezielte manuelle Animalia.bio-Recherche vorgesehen; automatisierter
-  Abruf oder Scraping bleibt ausgeschlossen. Phase 9.3 ist seit 2026-07-23 abgeschlossen; der Mess- und
+  Vorauswahl und bidirektionale Vorschläge deutsch beziehungsweise ersatzweise englisch ↔ wissenschaftlich nach
+  jedem Zeichen. Fehlt ein bestätigter deutscher Name, wird ein vorhandener englischer Vernakularname sichtbar als
+  Ersatz gekennzeichnet; für Tiere bleibt zusätzlich eine gezielte manuelle Animalia.bio-Recherche vorgesehen.
+  Automatisierter Abruf oder Scraping bleibt ausgeschlossen. Phase 9.3 ist seit 2026-07-23 abgeschlossen; der Mess- und
   Implementierungsbericht steht in `docs/taxonomy-import-prototype.md`. Eine kleine festgeschriebene
   CoL-XR-/WoRMS-Fixture bestätigt streamenden SQLite-Import, Quellenprovenienz, Präfix-/FTS5-Suche,
   Mehrdeutigkeiten, atomare Aktivierung und Rollback. Die Fixture liegt unter `scripts/fixtures/taxonomy/`; die
@@ -737,7 +738,8 @@ Aktuelle Planung:
   Synonyme erzeugen nur Vorschläge; mehrdeutige oder fehlende Treffer bleiben manuell. Bestehende Namen, Slugs,
   Assets und Projektdateien werden niemals automatisch verändert. Die lokale SQLite-Referenz enthält Taxa,
   Hierarchie und vorhandene Zwischenränge, wissenschaftliche Namen und Synonyme, gebräuchliche Namen soweit im
-  Release geliefert, externe Kennungen sowie Quellen- und Releaseprovenienz; Projektfachdaten und Assets bleiben
+  Release geliefert, darunter getrennt erkannte deutsche und englische Namen, externe Kennungen sowie Quellen- und
+  Releaseprovenienz; Projektfachdaten und Assets bleiben
   getrennt. Der erste echte Vollimportversuch lud das Archiv vollständig, wurde aber vor dem Import am anfänglich
   zu knappen Limit von 20.000 Archiveinträgen sicher beendet. Entpacken und nachgelagerte Paketprüfung verwenden
   nun dieselbe Grenze von 50.000 Dateien und decken die realen 21.100 Einträge mit Reserve ab; Größen-,
@@ -747,8 +749,12 @@ Aktuelle Planung:
   diese offiziellen Namensräume jetzt gemeinsam; unpräfixierte Fixtures bleiben kompatibel. Der dritte reale Versuch
   erreichte den Import der optionalen gebräuchlichen Namen und fand mindestens eine Quellzeile, deren `taxonID`
   im selben XR-Release nicht existiert. Einzelne solche verwaisten Namen werden jetzt ohne Ersatzzuordnung gezählt
-  und sicher übersprungen; mehr als 10.000 oder nach den ersten 25 Einzelfällen mehr als 0,5 Prozent blockieren das
-  Paket weiterhin. Die Abschlussbestätigung nennt die Zahl transparent. Fehlt die lokale
+  und sicher übersprungen. Nach dem realen Befund von 12.294 nicht zuordenbaren Verweisen unter
+  1.996.915 Namenszeilen gilt eine skalierende Grenze von mindestens 25, höchstens einem Prozent der Quelldatei und
+  absolut höchstens 100.000; größere Abweichungen blockieren das Paket weiterhin. Für gültige Taxa hat Deutsch
+  Vorrang, andernfalls wird ein vorhandener englischer Name sichtbar als Ersatz angeboten. Ein später verfügbarer
+  deutscher Name wird künftig bevorzugt, ändert bestehende Projektarten aber niemals still. Die
+  Abschlussbestätigung nennt die Zahl transparent. Fehlt die lokale
   Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
   Startprüfung einmalig direkt an; `Später` hält die manuelle Wartungsaktion verfügbar. Technische Importfehler
   werden ohne Stacktrace als verständlicher Grund angezeigt. Nach einer erfolgreichen Aktivierung bleiben Release

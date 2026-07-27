@@ -1,6 +1,6 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-26
+Stand: 2026-07-27
 
 Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation und Aktualisierung
 
@@ -10,7 +10,8 @@ Der erste Schritt des Neue-Art-Assistenten kann eine lokal installierte Taxonomi
 durchsuchen. Die Referenz unterstützt die Eingabe, ersetzt aber weder die redaktionelle Entscheidung noch die
 bisherige Artenvalidierung:
 
-- Eingaben im Feld `Deutscher Name` suchen nach deutschen Namen.
+- Eingaben im Feld `Deutscher Name` suchen nach gebräuchlichen Namen; deutsche Treffer werden bevorzugt,
+  englische Namen dienen nur sichtbar gekennzeichnet als Ersatz.
 - Eingaben im Feld `Wissenschaftlicher Name` suchen nach wissenschaftlichen Namen und Synonymen.
 - `Tiere (Animalia)` ist vorausgewählt.
 - Über `Alle Reiche` kann bewusst im gesamten installierten Referenzbestand gesucht werden.
@@ -25,8 +26,8 @@ eine Projektart anlegen.
 
 1. Der Assistent prüft beim Öffnen, ob eine aktive lokale Referenz vorhanden und lesbar ist.
 2. Nach jedem eingegebenen Zeichen startet nach einer kurzen Verzögerung die passende Suche.
-3. Mehrere Treffer werden als Liste mit deutschem Namen, akzeptiertem wissenschaftlichem Namen, Rang, Reich und
-   gegebenenfalls Synonymhinweis angezeigt.
+3. Mehrere Treffer werden als Liste mit bevorzugtem deutschen oder sichtbar gekennzeichnetem englischen
+   Ersatznamen, akzeptiertem wissenschaftlichem Namen, Rang, Reich und gegebenenfalls Synonymhinweis angezeigt.
 4. Ein Klick auf einen Treffer lädt die vollständigen lokal verfügbaren Details.
 5. Die Vorschau zeigt Taxonomiehierarchie, Quelle, Release, Quellen-ID, Namensstatus und Vertrauensstufe.
 6. Erst `Vorschlag übernehmen` füllt die beiden Namensfelder.
@@ -38,15 +39,21 @@ können in der allgemeinen Referenz-API gefunden werden, werden in diesem Formul
 Unterarten sind im Referenzschema vorbereitet, bleiben für einen späteren kontrollierten Ausbau gesperrt, weil der
 aktuelle Projektworkflow bewusst exakt zweiteilige wissenschaftliche Artnamen verlangt.
 
-## Deutsche Namen und Animalia.bio
+## Deutsche Namen, englischer Ersatz und Animalia.bio
 
 Ein deutscher Name wird nur übernommen, wenn er in der lokalen Referenz als deutscher Vernakularname belegt ist.
 Wurde über den deutschen Suchbegriff ein konkreter bestätigter Name ausgewählt, bleibt genau dieser Name erhalten,
 auch wenn die Quelle weitere deutsche Namen für dasselbe Taxon führt.
 
-Fehlt bei einem Tier ein bestätigter deutscher Name, zeigt die Detailvorschau einen gezielten Link für eine manuelle
-Suche bei Animalia.bio. Die Website wird nicht automatisiert abgerufen oder ausgewertet. Der Benutzer trägt einen
-geprüften deutschen Namen anschließend selbst ein.
+Fehlt ein bestätigter deutscher Name, verwendet die Treffer- und Detailvorschau einen vorhandenen englischen
+Vernakularnamen als klar gekennzeichneten `Englischen Ersatznamen`. Dieser kann bewusst in das aktuelle
+Anzeigenamensfeld übernommen und anschließend redaktionell geprüft werden. Liefert ein späterer Release einen
+deutschen Namen, wird Deutsch bei künftigen Suchen bevorzugt; vorhandene Projektarten werden nicht automatisch
+umbenannt.
+
+Bei einem Tier ohne bestätigten deutschen Namen zeigt die Detailvorschau außerdem einen gezielten Link für eine
+manuelle Suche bei Animalia.bio. Die Website wird nicht automatisiert abgerufen oder ausgewertet. Der Benutzer kann
+einen geprüften deutschen Namen anschließend selbst eintragen.
 
 ## Fehler- und Offlineverhalten
 

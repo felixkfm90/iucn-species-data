@@ -51,20 +51,32 @@
   function taxonomyResultPresentation(result = {}) {
     const scientificName = String(result.acceptedScientificName || "").trim();
     const germanName = String(result.germanName || "").trim();
+    const englishName = String(result.englishName || "").trim();
+    const displayName = germanName || englishName;
+    const usesEnglishFallback = !germanName && Boolean(englishName);
     const matchedTerm = String(result.matchedTerm || "").trim();
     const synonym = result.synonym?.scientificName
       ? `Gefunden als Synonym: ${result.synonym.scientificName}`
       : "";
+    const note = [
+      synonym,
+      usesEnglishFallback ? "Englischer Ersatzname" : "",
+      !synonym
+        && matchedTerm
+        && matchedTerm !== displayName
+        && matchedTerm !== scientificName
+        ? `Treffer: ${matchedTerm}`
+        : "",
+    ].filter(Boolean).join(" · ");
     return {
-      title: germanName || scientificName || matchedTerm || "Unbenanntes Taxon",
+      title: displayName || scientificName || matchedTerm || "Unbenanntes Taxon",
       scientificName,
       germanName,
-      subtitle: germanName && scientificName ? scientificName : "",
-      note: synonym || (
-        matchedTerm && matchedTerm !== germanName && matchedTerm !== scientificName
-          ? `Treffer: ${matchedTerm}`
-          : ""
-      ),
+      englishName,
+      displayName,
+      usesEnglishFallback,
+      subtitle: displayName && scientificName ? scientificName : "",
+      note,
       kingdom: result.kingdom?.label || result.kingdom?.scientificName || "",
       rank: RANK_LABELS[String(result.rank || "").toLowerCase()]
         || String(result.rank || ""),
@@ -81,6 +93,11 @@
       : "";
     const germanName = selectedGermanName
       || String(detail.germanNames?.[0]?.name || "").trim();
+    const selectedEnglishName = String(selectedResult.englishName || "").trim();
+    const englishName = selectedEnglishName
+      || String(detail.englishNames?.[0]?.name || "").trim();
+    const displayName = germanName || englishName;
+    const usesEnglishFallback = !germanName && Boolean(englishName);
     const scientificName = String(detail.scientific_name || "").trim();
     const hierarchy = Array.isArray(detail.hierarchy)
       ? detail.hierarchy
@@ -93,6 +110,10 @@
       : [];
     return {
       germanName,
+      englishName,
+      displayName,
+      usesEnglishFallback,
+      nameToApply: displayName,
       scientificName,
       hierarchy,
       source: String(detail.source || "Catalogue of Life"),
@@ -244,6 +265,9 @@
         ? `
           <p class="taxonomy-reference-fallback">
             Kein verifizierter deutscher Name in der lokalen Referenz.
+            ${view.usesEnglishFallback
+              ? `Vorläufig wird der englische Name <strong>${escape(view.englishName)}</strong> verwendet.`
+              : ""}
             <a href="${escape(view.manualGermanNameFallback.url)}" target="_blank" rel="noopener noreferrer">
               Manuell bei Animalia.bio suchen
             </a>
@@ -260,7 +284,7 @@
         : "";
       selectionContent.innerHTML = `
         <div class="taxonomy-reference-selection-heading">
-          <strong>${escape(view.germanName || "Deutscher Name manuell ergänzen")}</strong>
+          <strong>${escape(view.displayName || "Deutschen Namen manuell ergänzen")}</strong>
           <em>${escape(view.scientificName)}</em>
         </div>
         ${synonym}
@@ -430,13 +454,15 @@
       if (!selectedDetail) return;
       const view = taxonomyDetailPresentation(selectedDetail, selectedResult);
       scientificInput.value = view.scientificName;
-      if (view.germanName) germanInput.value = view.germanName;
+      if (view.nameToApply) germanInput.value = view.nameToApply;
       onNamesChanged();
       clearResults();
       setMessage(
         view.germanName
           ? "Deutscher und wissenschaftlicher Name wurden übernommen. Bitte alle Angaben anschließend prüfen."
-          : "Der wissenschaftliche Name wurde übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen.",
+          : view.usesEnglishFallback
+            ? "Englischer Ersatzname und wissenschaftlicher Name wurden übernommen. Bitte den Namen prüfen; ein später verfügbarer deutscher Name wird künftig bevorzugt vorgeschlagen."
+            : "Der wissenschaftliche Name wurde übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen.",
         "success",
       );
     });

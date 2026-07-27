@@ -30,8 +30,19 @@ const MATERIALIZED_STATUSES = Object.freeze([
 ]);
 const DEFAULT_BATCH_SIZE = 50_000;
 const MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES = 25;
-const MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO = 0.005;
-const ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES = 10_000;
+const MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO = 0.01;
+const ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES = 100_000;
+
+function maxToleratedOrphanVernacularNames(sourceRows) {
+  const normalizedSourceRows = Math.max(0, Number(sourceRows) || 0);
+  return Math.min(
+    ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES,
+    Math.max(
+      MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES,
+      Math.ceil(normalizedSourceRows * MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO),
+    ),
+  );
+}
 
 function parseNullableBoolean(value) {
   const normalized = String(value ?? "").trim().toLocaleLowerCase("en");
@@ -305,18 +316,14 @@ async function importVernacularNames(database, taxonomyPackage, {
       );
     },
   });
-  const orphanRatio = sourceRows > 0 ? skippedUnknownTaxa / sourceRows : 0;
-  if (
-    skippedUnknownTaxa > ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES
-    || (
-      skippedUnknownTaxa > MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES
-      && orphanRatio > MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO
-    )
-  ) {
+  const toleratedOrphans = maxToleratedOrphanVernacularNames(sourceRows);
+  if (skippedUnknownTaxa > toleratedOrphans) {
     throw new Error(
       `VernacularName.tsv enthält zu viele nicht zuordenbare Taxonverweise: ${
         skippedUnknownTaxa.toLocaleString("de-DE")
-      } von ${sourceRows.toLocaleString("de-DE")}.`,
+      } von ${sourceRows.toLocaleString("de-DE")} (zulässig: höchstens ${
+        toleratedOrphans.toLocaleString("de-DE")
+      }).`,
     );
   }
   reportProgress(
@@ -657,6 +664,7 @@ export const taxonomyFullImportInternals = Object.freeze({
   identifierType,
   normalizedStatus,
   normalizedTrustTier,
+  maxToleratedOrphanVernacularNames,
   MAX_TOLERATED_ORPHAN_VERNACULAR_NAMES,
   MAX_TOLERATED_ORPHAN_VERNACULAR_RATIO,
   ABSOLUTE_MAX_ORPHAN_VERNACULAR_NAMES,

@@ -852,8 +852,9 @@ Releasespeicher, Staging und atomare Aktivierung, genau eine Rollbackversion, da
 B-Tree-Präfix- und FTS5-Suche fest. Die große Referenz bleibt außerhalb von Git, Pages und normalen
 Projekt-Backups; kleine unersetzbare Projektzuordnungen werden später getrennt versioniert. Im Neue-Art-Assistenten
 ist `Tiere (Animalia)` als Reich vorausgewählt. Deutsche und wissenschaftliche Eingaben liefern nach jedem Zeichen
-gegenseitige Vorschläge. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine gezielte manuelle
-Animalia.bio-Recherche geöffnet werden, ohne automatisierten Abruf oder Scraping.
+gegenseitige Vorschläge. Fehlt ein bestätigter deutscher Name, dient ein vorhandener englischer Vernakularname
+sichtbar gekennzeichnet als Ersatz; bei einem Tier kann zusätzlich eine gezielte manuelle Animalia.bio-Recherche
+geöffnet werden, ohne automatisierten Abruf oder Scraping.
 
 Phase 9.3 wurde am 2026-07-23 ohne produktiven Vollimport abgeschlossen. Der unter
 `docs/taxonomy-import-prototype.md` dokumentierte Prototyp importiert eine kleine, festgeschriebene
@@ -871,8 +872,9 @@ kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen,
 Release, Quellen-ID und Vertrauensstufe. Erst `Vorschlag übernehmen` füllt die Namensfelder, danach bleiben die
 bisherige Eingabeprüfung, Kollisionsprüfung und Speicherung verpflichtend. Im Neue-Art-Assistenten werden nur
 echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle Anlage vollständig funktionsfähig;
-Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen nur als manuelle Suche geöffnet. Der verbindliche
-Vertrag steht in `docs/taxonomy-explorer-integration.md`.
+bei fehlendem belegtem deutschen Namen wird ein englischer Name klar als Ersatz gekennzeichnet. Animalia.bio wird
+für betroffene Tiernamen zusätzlich nur als manuelle Suche geöffnet. Der verbindliche Vertrag steht in
+`docs/taxonomy-explorer-integration.md`.
 
 Phase 9.5 wurde am 2026-07-26 technisch abgeschlossen. Der Explorer prüft beim Start nicht blockierend und mit
 Zwölf-Stunden-Cache ausschließlich die aktuelle CoL-Release-Metadatenantwort. Vollständiger Download und
@@ -901,10 +903,14 @@ Referenz blieb auch bei diesem Fehler unverändert.
 Der dritte reale Versuch erreichte den Import der optionalen gebräuchlichen Namen. Dabei enthielt der offizielle
 XR-Export mindestens einen `VernacularName`-Eintrag, dessen `taxonID` im selben Release weder als Taxon noch als
 wissenschaftlicher Name existiert. Solche einzelnen verwaisten Zusatzzeilen werden jetzt ohne Ersatzzuordnung
-gezählt und sicher übersprungen. Eine absolute Grenze von 10.000 sowie eine relative Grenze von 0,5 Prozent nach
-den ersten 25 Einzelfällen verhindern, dass eine grundsätzlich inkonsistente Referenz aktiviert wird. Die
-Abschlussbestätigung nennt die Zahl der übersprungenen Namen transparent; zwei Regressionstests decken
-Einzelfall und systematischen Paketfehler ab. Die bisherige Referenz blieb erneut unverändert.
+gezählt und sicher übersprungen. Nach dem realen Befund von 12.294 nicht zuordenbaren Verweisen unter
+1.996.915 optionalen Namenszeilen verwendet die Prüfung eine größenabhängige Obergrenze: mindestens 25, höchstens
+ein Prozent der Quelldatei und absolut höchstens 100.000 Zeilen. Damit bleibt ein systematischer Paketfehler
+blockierend, ohne kleine relative Unstimmigkeiten eines Millionenbestands mit fehlenden deutschen Namen zu
+verwechseln. Für gültige Taxa wird Deutsch bevorzugt und ein vorhandener englischer Name nur sichtbar als Ersatz
+angeboten. Die Abschlussbestätigung nennt die Zahl der übersprungenen Namen transparent; Regressionstests decken
+Einzelfall, realistische Skalierung, Sprachfallback und systematischen Paketfehler ab. Die bisherige Referenz blieb
+erneut unverändert.
 
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.

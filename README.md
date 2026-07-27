@@ -284,9 +284,12 @@ liefern beim Tippen gegenseitige Vorschläge. Ein Treffer wird erst nach Auswahl
 ID und Namensstatus angezeigt und nur über `Vorschlag übernehmen` in die Felder geschrieben. Die normale
 Eingabeprüfung und Kollisionskontrolle bleibt danach Pflicht.
 
-Fehlt oder scheitert die lokale Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für Tiere ohne
-belegten deutschen Namen wird ausschließlich ein manueller Animalia.bio-Suchlink angeboten. Die Integration
-schreibt keine Projektart, ändert keine bestehende Art und ist nicht Bestandteil von GitHub Pages oder Squarespace.
+Fehlt oder scheitert die lokale Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für ein gültiges Taxon
+ohne belegten deutschen Namen wird – sofern im Release vorhanden – der englische Vernakularname sichtbar als
+`Englischer Ersatzname` vorgeschlagen. Deutsch hat immer Vorrang; ergänzt ein späterer Release einen deutschen
+Namen, wird dieser bei künftigen Suchen bevorzugt. Bestehende Projektarten werden dadurch niemals still umbenannt.
+Für Tiere bleibt zusätzlich der manuelle Animalia.bio-Suchlink verfügbar. Die Integration schreibt keine
+Projektart, ändert keine bestehende Art und ist nicht Bestandteil von GitHub Pages oder Squarespace.
 
 Fokussierte Tests:
 
@@ -311,13 +314,16 @@ Reale ColDP-1.2-Exporte kennzeichnen Tabellenfelder mit Namensräumen wie `col:I
 unpräfixierten Testfixtures verwenden dadurch weiterhin denselben internen Feldvertrag.
 
 Einzelne optionale Zeilen aus `VernacularName.tsv`, deren `taxonID` im selben Release weder als Taxon noch als
-wissenschaftlicher Name existiert, werden ohne Ersatzzuordnung gezählt und übersprungen. Eine absolute Grenze von
-10.000 sowie eine relative Grenze von 0,5 Prozent nach den ersten 25 Einzelfällen verhindert, dass eine
-grundsätzlich inkonsistente Referenz aktiviert wird. Der Explorer nennt die Zahl übersprungener Namen nach der
-Aktivierung ausdrücklich.
+wissenschaftlicher Name existiert, werden ohne Ersatzzuordnung gezählt und übersprungen. Die zulässige Zahl wächst
+kontrolliert mit der Quelldatei: mindestens 25 Zeilen, höchstens ein Prozent aller
+`VernacularName.tsv`-Zeilen und zusätzlich absolut höchstens 100.000. Damit werden vereinzelte fehlerhafte optionale
+Zusatznamen in sehr großen offiziellen Releases toleriert, während ein systematisch inkonsistentes Paket weiterhin
+blockiert wird. Der reale Befund von 12.294 nicht zuordenbaren Verweisen unter 1.996.915 Namenszeilen liegt innerhalb
+dieser Grenze. Der Explorer nennt die Zahl übersprungener Namen nach der Aktivierung ausdrücklich.
 
 Die lokale SQLite-Datenbank enthält akzeptierte Taxa und ihre Hierarchie, vorhandene Zwischenränge,
-wissenschaftliche Namen und Synonyme, gebräuchliche beziehungsweise deutsche Namen soweit geliefert, externe
+wissenschaftliche Namen und Synonyme, gebräuchliche Namen soweit geliefert, darunter getrennt erkannte deutsche
+und englische Namen, externe
 Kennungen sowie Release- und Quellenprovenienz. Größe, Gewicht, Lebenserwartung, IUCN-Daten, Karten, Sounds und
 Portraits bleiben getrennte Projektdaten. Nach erfolgreicher Aktivierung zeigt der Explorer Release und
 Importzähler dauerhaft und bestätigt die Übernahme zusätzlich einmalig in einem Abschlussfenster.
@@ -867,9 +873,10 @@ Wikidata ausschließlich als optionale Namens-/ID-Vorschlagsquelle. Animalia.bio
 maschinelle Schnittstelle eine manuelle Referenz. Phase 9.2 hat SQLite, lokales Release-/Stagingmodell,
 Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich festgelegt. Der spätere
 Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und bidirektionale Vorschläge
-deutsch ↔ wissenschaftlich ab dem ersten Zeichen. Fehlt bei einem Tier ein bestätigter deutscher Name, kann eine
-gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden; die Website wird nicht automatisiert
-ausgelesen. Phase 9.3 hat den begrenzten, reproduzierbaren Importprototyp am 2026-07-23 abgeschlossen. Eine kleine
+deutsch beziehungsweise ersatzweise englisch ↔ wissenschaftlich ab dem ersten Zeichen. Fehlt ein bestätigter
+deutscher Name, wird ein vorhandener englischer Vernakularname sichtbar als Ersatz gekennzeichnet; bei Tieren kann
+zusätzlich eine gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden. Die Website wird nicht
+automatisiert ausgelesen. Phase 9.3 hat den begrenzten, reproduzierbaren Importprototyp am 2026-07-23 abgeschlossen. Eine kleine
 versionierte CoL-XR-/WoRMS-Fixture bestätigt den streamenden SQLite-Import, atomare Aktivierung, Rollback,
 Ein-Zeichen-Präfixsuche, deutsch-wissenschaftliche Vorschläge, Synonyme, Homonyme und Quellenprovenienz. Der
 Prototyp bleibt vollständig von produktiven Arten, GitHub Pages und Squarespace getrennt; ein Vollimport wurde noch

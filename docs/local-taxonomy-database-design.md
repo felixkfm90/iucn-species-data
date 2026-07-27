@@ -319,8 +319,9 @@ Die Suche arbeitet in beiden Feldern:
 
 - Eingabe `Stieg...` im deutschen Feld schlägt beispielsweise `Stieglitz – Carduelis carduelis` vor.
 - Eingabe `Card...` im wissenschaftlichen Feld schlägt denselben akzeptierten Treffer und – falls belegt – den
-  deutschen Namen vor.
-- Akzeptierte wissenschaftliche Namen, Synonyme, deutsche Namen und Quellen-IDs sind suchbar.
+  deutschen, andernfalls einen englischen Ersatznamen vor.
+- Akzeptierte wissenschaftliche Namen, Synonyme, deutsche und englische Vernakularnamen sowie Quellen-IDs sind
+  suchbar.
 - Ein Synonym wird als `eingegebener Name → akzeptierter Name` dargestellt.
 - Mehrere Taxa werden als Trefferliste angezeigt; kein Treffer wird still ausgewählt.
 
@@ -353,11 +354,12 @@ Die Treffer werden bevorzugt nach folgender Reihenfolge sortiert:
 3. Präfix des akzeptierten wissenschaftlichen Namens
 4. Präfix eines bestätigten deutschen Namens
 5. wissenschaftliches Synonym
-6. weitere quellenmarkierte Vernakular- oder ID-Treffer
+6. englischer Vernakularname, wenn für das Taxon kein deutscher Name vorliegt
+7. weitere quellenmarkierte Vernakular- oder ID-Treffer
 
 Jeder Treffer zeigt:
 
-- deutschen Namen, sofern belegt
+- deutschen Namen, sofern belegt, sonst einen sichtbar als Ersatz gekennzeichneten englischen Namen
 - akzeptierten wissenschaftlichen Namen
 - Rang
 - akzeptiert oder Synonym
@@ -373,7 +375,7 @@ Fokussieren oder Überfahren erzeugt keine produktive Änderung.
 Ein bestätigter Treffer kann später folgende Vorschau füllen:
 
 - wissenschaftlicher Name
-- belegter deutscher Name
+- belegter deutscher Name oder – nur wenn Deutsch fehlt – gekennzeichneter englischer Ersatzname
 - Gattung, Art und gegebenenfalls Unterart
 - vollständige verfügbare Klassifikation
 - Quellen-IDs und Release
@@ -383,26 +385,31 @@ Der vorhandene Prüfen-/Vorschau-/Speichern-Ablauf bleibt Pflicht. Eine Unterart
 ändert aber nur dann den wissenschaftlichen Projektnamen und den URL-Slug, wenn der Benutzer ausdrücklich diese
 Unterart statt der Art als Projekt-Taxon auswählt.
 
-## 8. Fehlender deutscher Name und Animalia.bio
+## 8. Fehlender deutscher Name, englischer Ersatz und Animalia.bio
 
 Ja, bei einem Tier ohne bestätigten deutschen Namen kann gezielt auf Animalia.bio recherchiert werden. Weil
 Animalia.bio keine dokumentierte öffentliche API und keinen versionierten Bulk-Export anbietet, erfolgt dies
 bewusst nicht als Hintergrundabruf.
 
-Der spätere Ablauf lautet:
+Der Ablauf lautet:
 
 1. Die lokale Suche findet ein Tier-Taxon, aber keinen ausreichend belegten deutschen Namen.
-2. Der Assistent zeigt `Kein bestätigter deutscher Name in der Referenzdatenbank`.
-3. Zusätzlich erscheint der Button `Animalia.bio manuell prüfen`.
-4. Der Button öffnet im Systembrowser eine auf Animalia.bio begrenzte Suche mit dem wissenschaftlichen Namen,
+2. Ist ein englischer Vernakularname belegt, zeigt der Assistent ihn als `Englischer Ersatzname` an und erlaubt
+   seine bewusste vorläufige Übernahme.
+3. Der Assistent zeigt zusätzlich `Kein bestätigter deutscher Name in der Referenzdatenbank`.
+4. Zusätzlich erscheint der Button `Animalia.bio manuell prüfen`.
+5. Der Button öffnet im Systembrowser eine auf Animalia.bio begrenzte Suche mit dem wissenschaftlichen Namen,
    beispielsweise eine Suchanfrage nach `site:animalia.bio/de "Panthera leo"`.
-5. Die App scrapt, parst und importiert die Zielseite nicht.
-6. Der Benutzer kann einen dort nachvollziehbar gefundenen Namen manuell eintragen.
-7. Bei Übernahme werden Quellen-URL, Kennzeichnung `manuelle Referenz` und Bestätigung in den kleinen
+6. Die App scrapt, parst und importiert die Zielseite nicht.
+7. Der Benutzer kann einen dort nachvollziehbar gefundenen Namen manuell eintragen.
+8. Bei Übernahme werden Quellen-URL, Kennzeichnung `manuelle Referenz` und Bestätigung in den kleinen
    Projektzuordnungen gespeichert.
 
 Der Button wird nur für Taxa im Reich Animalia und nur bei fehlendem bestätigtem deutschen Namen angeboten. Ein
 fehlendes Suchergebnis ist kein Datenbankfehler und blockiert die vorhandene manuelle Eingabe nicht.
+Ergänzt ein späterer Referenzrelease einen deutschen Namen, wird dieser in neuen Suchergebnissen gegenüber dem
+englischen Ersatz bevorzugt. Bereits angelegte Projektarten bleiben unverändert, bis eine Umbenennung ausdrücklich
+bestätigt wird.
 
 ## 9. Import- und Aktualisierungsablauf
 

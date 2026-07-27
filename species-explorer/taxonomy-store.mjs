@@ -16,6 +16,25 @@ import {
 } from "./taxonomy-storage.mjs";
 
 const SEARCH_KINDS = new Set(["all", "scientific", "vernacular", "identifier"]);
+const GERMAN_LANGUAGE_CODES = new Set(["de", "deu", "ger"]);
+const ENGLISH_LANGUAGE_CODES = new Set(["en", "eng"]);
+
+function normalizedLanguage(value) {
+  return String(value ?? "").trim().toLocaleLowerCase("en");
+}
+
+function languageMatches(value, codes, prefix) {
+  const language = normalizedLanguage(value);
+  return codes.has(language) || language.startsWith(`${prefix}-`);
+}
+
+function isGermanLanguage(value) {
+  return languageMatches(value, GERMAN_LANGUAGE_CODES, "de");
+}
+
+function isEnglishLanguage(value) {
+  return languageMatches(value, ENGLISH_LANGUAGE_CODES, "en");
+}
 
 function prefixUpperBound(value) {
   return `${value}\u{10ffff}`;
@@ -50,7 +69,21 @@ export class TaxonomyStore {
     this.preferredGermanStatement = this.database.prepare(`
       SELECT name, preferred, source_dataset_id, reference_id
       FROM vernacular_name
-      WHERE taxon_id = ? AND language IN ('de', 'deu', 'ger')
+      WHERE taxon_id = ?
+        AND (
+          LOWER(language) IN ('de', 'deu', 'ger')
+          OR LOWER(language) LIKE 'de-%'
+        )
+      ORDER BY preferred DESC, LENGTH(name), name COLLATE NOCASE
+    `);
+    this.preferredEnglishStatement = this.database.prepare(`
+      SELECT name, preferred, source_dataset_id, reference_id
+      FROM vernacular_name
+      WHERE taxon_id = ?
+        AND (
+          LOWER(language) IN ('en', 'eng')
+          OR LOWER(language) LIKE 'en-%'
+        )
       ORDER BY preferred DESC, LENGTH(name), name COLLATE NOCASE
     `);
   }
@@ -104,8 +137,16 @@ export class TaxonomyStore {
   }
 
   germanNames(taxonId) {
+    return this.preferredNames(this.preferredGermanStatement, taxonId);
+  }
+
+  englishNames(taxonId) {
+    return this.preferredNames(this.preferredEnglishStatement, taxonId);
+  }
+
+  preferredNames(statement, taxonId) {
     const seen = new Set();
-    return this.preferredGermanStatement.all(taxonId)
+    return statement.all(taxonId)
       .map(plain)
       .filter((entry) => {
         const key = normalizeTaxonomySearchTerm(entry.name);
@@ -117,8 +158,17 @@ export class TaxonomyStore {
 
   formatSearchResult(row) {
     const germanNames = this.germanNames(row.taxon_id);
-    const matchedGermanName = row.term_type === "vernacular" ? row.term : null;
+    const englishNames = this.englishNames(row.taxon_id);
+    const matchedGermanName = row.term_type === "vernacular" && isGermanLanguage(row.language)
+      ? row.term
+      : null;
+    const matchedEnglishName = row.term_type === "vernacular" && isEnglishLanguage(row.language)
+      ? row.term
+      : null;
     const germanName = matchedGermanName ?? germanNames[0]?.name ?? null;
+    const englishName = matchedEnglishName ?? englishNames[0]?.name ?? null;
+    const displayName = germanName ?? englishName;
+    const displayNameLanguage = germanName ? "de" : (englishName ? "en" : null);
     const hasVerifiedGermanName = germanNames.length > 0;
     const synonym = row.term_type === "scientific_synonym";
     return {
@@ -126,6 +176,11 @@ export class TaxonomyStore {
       sourceId: row.source_id,
       germanName,
       germanNames: germanNames.map((entry) => entry.name),
+      englishName,
+      englishNames: englishNames.map((entry) => entry.name),
+      displayName,
+      displayNameLanguage,
+      usesEnglishFallback: displayNameLanguage === "en",
       acceptedScientificName: row.scientific_name,
       matchedTerm: row.term,
       matchType: row.term_type,
@@ -183,6 +238,7 @@ export class TaxonomyStore {
         term.taxon_id,
         term.term,
         term.term_type,
+        term.language,
         term.preferred,
         term.sort_score,
         taxon.source_id,
@@ -235,6 +291,7 @@ export class TaxonomyStore {
         term.taxon_id,
         term.term,
         term.term_type,
+        term.language,
         term.preferred,
         term.sort_score,
         taxon.source_id,
@@ -346,11 +403,18 @@ export class TaxonomyStore {
       this.database.prepare("SELECT * FROM worms_comparison WHERE taxon_id = ?").get(row.id),
     );
     const germanNames = this.germanNames(row.id);
+    const englishNames = this.englishNames(row.id);
+    const germanName = germanNames[0]?.name ?? null;
+    const englishName = englishNames[0]?.name ?? null;
     return {
       ...plain(row),
       hierarchy,
       scientificNames,
       germanNames,
+      englishNames,
+      displayName: germanName ?? englishName,
+      displayNameLanguage: germanName ? "de" : (englishName ? "en" : null),
+      usesEnglishFallback: !germanName && Boolean(englishName),
       identifiers,
       worms,
       manualGermanNameFallback: row.kingdom === "Animalia" && !germanNames.length

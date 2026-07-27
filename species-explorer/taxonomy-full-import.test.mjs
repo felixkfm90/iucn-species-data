@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { importFullTaxonomyRelease } from "./taxonomy-full-import.mjs";
+import {
+  importFullTaxonomyRelease,
+  taxonomyFullImportInternals,
+} from "./taxonomy-full-import.mjs";
 import {
   compareProjectSpeciesWithTaxonomyRelease,
   readProjectTaxonomyConflictReport,
@@ -19,6 +22,7 @@ import {
   iterateTaxonomyTsv,
   parseTaxonomyTsvHeaders,
 } from "./taxonomy-fixture.mjs";
+import { openTaxonomyStore } from "./taxonomy-store.mjs";
 
 const FIXTURE_DIRECTORY = path.resolve(
   "scripts",
@@ -298,4 +302,80 @@ test("systematisch verwaiste Vernakularnamen blockieren die Referenz", async (co
     }),
     /zu viele nicht zuordenbare Taxonverweise/,
   );
+});
+
+test("Vernakularnamen-Toleranz wächst begrenzt mit der Quelldatei", () => {
+  assert.equal(
+    taxonomyFullImportInternals.maxToleratedOrphanVernacularNames(26),
+    25,
+  );
+  assert.equal(
+    taxonomyFullImportInternals.maxToleratedOrphanVernacularNames(1_996_915),
+    19_970,
+  );
+  assert.equal(
+    taxonomyFullImportInternals.maxToleratedOrphanVernacularNames(50_000_000),
+    100_000,
+  );
+});
+
+test("englischer Vernakularname dient nur ohne deutschen Namen als sichtbarer Ersatz", async (context) => {
+  const root = await temporaryRoot(context, "taxonomy-english-fallback-");
+  const fixtureCopy = path.join(root, "fixture");
+  await fs.cp(FIXTURE_DIRECTORY, fixtureCopy, { recursive: true });
+  await fs.appendFile(
+    path.join(fixtureCopy, "VernacularName.tsv"),
+    [
+      "",
+      "TPJ7K\tcol-sector-2278\tT. rex\t\teng\ttrue\t\t\t\tEnglischer Fallbacktest",
+      "7CYVX\tcol-sector-2183\tCommon blackbird\t\teng\ttrue\t\t\t\tDeutsch-hat-Vorrang-Test",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const taxonomyRoot = path.join(root, "taxonomy");
+  const releaseId = "col-full-english-fallback";
+  await importFullTaxonomyRelease({
+    packageDirectory: fixtureCopy,
+    taxonomyRoot,
+    release: fullRelease(releaseId),
+    archive: {},
+    operationId: "test-english-fallback",
+  });
+  const store = await openTaxonomyStore({ taxonomyRoot, releaseId });
+  try {
+    const scientific = store.search({
+      query: "Tyrannosaurus rex",
+      kind: "scientific",
+    }).results[0];
+    assert.equal(scientific.germanName, null);
+    assert.equal(scientific.englishName, "T. rex");
+    assert.equal(scientific.displayName, "T. rex");
+    assert.equal(scientific.displayNameLanguage, "en");
+    assert.equal(scientific.usesEnglishFallback, true);
+
+    const english = store.search({
+      query: "T. rex",
+      kind: "vernacular",
+    }).results[0];
+    assert.equal(english.germanName, null);
+    assert.equal(english.englishName, "T. rex");
+
+    const detail = store.taxon(scientific.taxonId);
+    assert.equal(detail.germanNames.length, 0);
+    assert.equal(detail.englishNames[0].name, "T. rex");
+    assert.equal(detail.usesEnglishFallback, true);
+
+    const germanPreferred = store.search({
+      query: "Turdus merula",
+      kind: "scientific",
+    }).results[0];
+    assert.equal(germanPreferred.germanName, "Amsel");
+    assert.equal(germanPreferred.englishName, "Common blackbird");
+    assert.equal(germanPreferred.displayName, "Amsel");
+    assert.equal(germanPreferred.displayNameLanguage, "de");
+    assert.equal(germanPreferred.usesEnglishFallback, false);
+  } finally {
+    store.close();
+  }
 });
