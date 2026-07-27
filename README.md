@@ -315,8 +315,8 @@ unpräfixierten Testfixtures verwenden dadurch weiterhin denselben internen Feld
 
 Einzelne optionale Zeilen aus `VernacularName.tsv`, deren `taxonID` im selben Release weder als Taxon noch als
 wissenschaftlicher Name existiert, werden ohne Ersatzzuordnung gezählt und übersprungen. Die zulässige Zahl wächst
-kontrolliert mit der Quelldatei: mindestens 25 Zeilen, höchstens ein Prozent aller
-`VernacularName.tsv`-Zeilen und zusätzlich absolut höchstens 100.000. Damit werden vereinzelte fehlerhafte optionale
+kontrolliert mit der Quelldatei: 25 Zeilen Grundtoleranz, bei größeren Dateien ein Prozent aller
+`VernacularName.tsv`-Zeilen und zusätzlich eine absolute Obergrenze von 100.000. Damit werden vereinzelte fehlerhafte optionale
 Zusatznamen in sehr großen offiziellen Releases toleriert, während ein systematisch inkonsistentes Paket weiterhin
 blockiert wird. Der reale Befund von 12.294 nicht zuordenbaren Verweisen unter 1.996.915 Namenszeilen liegt innerhalb
 dieser Grenze. Der Explorer nennt die Zahl übersprungener Namen nach der Aktivierung ausdrücklich.

@@ -750,8 +750,8 @@ Aktuelle Planung:
   erreichte den Import der optionalen gebräuchlichen Namen und fand mindestens eine Quellzeile, deren `taxonID`
   im selben XR-Release nicht existiert. Einzelne solche verwaisten Namen werden jetzt ohne Ersatzzuordnung gezählt
   und sicher übersprungen. Nach dem realen Befund von 12.294 nicht zuordenbaren Verweisen unter
-  1.996.915 Namenszeilen gilt eine skalierende Grenze von mindestens 25, höchstens einem Prozent der Quelldatei und
-  absolut höchstens 100.000; größere Abweichungen blockieren das Paket weiterhin. Für gültige Taxa hat Deutsch
+  1.996.915 Namenszeilen gilt eine skalierende Grenze von 25 Zeilen Grundtoleranz, bei größeren Dateien einem
+  Prozent der Quelldatei und absolut höchstens 100.000; größere Abweichungen blockieren das Paket weiterhin. Für gültige Taxa hat Deutsch
   Vorrang, andernfalls wird ein vorhandener englischer Name sichtbar als Ersatz angeboten. Ein später verfügbarer
   deutscher Name wird künftig bevorzugt, ändert bestehende Projektarten aber niemals still. Die
   Abschlussbestätigung nennt die Zahl transparent. Fehlt die lokale

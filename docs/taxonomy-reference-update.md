@@ -75,8 +75,9 @@ Der Vollimport:
 - überspringt einzelne gebräuchliche Namen nur dann, wenn ihre `taxonID` im selben Release weder als Taxon noch
   als wissenschaftlicher Name existiert; diese verwaisten optionalen Zusatzdaten werden gezählt und niemals einem
   anderen Taxon zugeordnet,
-- berechnet die zulässige Obergrenze abhängig von der Größe der optionalen Namensdatei: mindestens 25 Zeilen,
-  höchstens ein Prozent aller Vernakularnamenszeilen und zusätzlich absolut höchstens 100.000,
+- berechnet die zulässige Obergrenze abhängig von der Größe der optionalen Namensdatei: 25 Zeilen
+  Grundtoleranz, bei größeren Dateien ein Prozent aller Vernakularnamenszeilen und zusätzlich eine absolute
+  Obergrenze von 100.000,
 - toleriert damit den real beobachteten Befund von 12.294 nicht zuordenbaren Verweisen unter
   1.996.915 `VernacularName.tsv`-Zeilen, blockiert aber weiterhin eine systematisch inkonsistente Referenz,
 - erzeugt eine lokale SQLite-Datenbank mit Präfix- und FTS5-Suchindex,

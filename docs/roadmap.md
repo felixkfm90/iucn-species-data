@@ -904,8 +904,8 @@ Der dritte reale Versuch erreichte den Import der optionalen gebräuchlichen Nam
 XR-Export mindestens einen `VernacularName`-Eintrag, dessen `taxonID` im selben Release weder als Taxon noch als
 wissenschaftlicher Name existiert. Solche einzelnen verwaisten Zusatzzeilen werden jetzt ohne Ersatzzuordnung
 gezählt und sicher übersprungen. Nach dem realen Befund von 12.294 nicht zuordenbaren Verweisen unter
-1.996.915 optionalen Namenszeilen verwendet die Prüfung eine größenabhängige Obergrenze: mindestens 25, höchstens
-ein Prozent der Quelldatei und absolut höchstens 100.000 Zeilen. Damit bleibt ein systematischer Paketfehler
+1.996.915 optionalen Namenszeilen verwendet die Prüfung eine größenabhängige Obergrenze: 25 Zeilen Grundtoleranz,
+bei größeren Dateien ein Prozent der Quelldatei und absolut höchstens 100.000 Zeilen. Damit bleibt ein systematischer Paketfehler
 blockierend, ohne kleine relative Unstimmigkeiten eines Millionenbestands mit fehlenden deutschen Namen zu
 verwechseln. Für gültige Taxa wird Deutsch bevorzugt und ein vorhandener englischer Name nur sichtbar als Ersatz
 angeboten. Die Abschlussbestätigung nennt die Zahl der übersprungenen Namen transparent; Regressionstests decken
