@@ -668,6 +668,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /name="german"/);
   assert.match(htmlSource, /name="scientificName"/);
   assert.match(htmlSource, /class="taxonomy-reference-kingdom"/);
+  assert.match(htmlSource, /class="taxonomy-reference-search"/);
   assert.match(htmlSource, /Tiere \(Animalia\)/);
   assert.match(htmlSource, /Vorschlag übernehmen/);
   assert.match(htmlSource, /Manuell eingeben/);
@@ -701,6 +702,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(assetWorkflowSource, /allowDuringCurrentReview/);
   assert.doesNotMatch(htmlSource, /SPECIES_LIST\.JSON/);
   assert.doesNotMatch(htmlSource, /species-info\.json/);
+  assert.match(htmlSource, />Taxonomiereferenz</);
+  assert.doesNotMatch(htmlSource, /Taxonomiereferenz\s*·\s*optional/);
   assert.match(
     htmlSource,
     /data-pipeline-mode="all"[\s\S]*data-pipeline-mode="missing"[\s\S]*data-pipeline-mode="manual-maps"/,
@@ -761,6 +764,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(cssSource, /\.detail-panel\s*\{[^}]*container-name:\s*species-detail/s);
   assert.match(cssSource, /@container species-detail \(max-width:\s*1320px\)[\s\S]*?\.detail-media-layout\s*\{[^}]*grid-template-columns:\s*1fr/s);
+  assert.match(
+    cssSource,
+    /@container species-detail \(max-width:\s*1320px\)[\s\S]*?\.portrait-zoom-trigger,[\s\S]*?\.species-image-placeholder\s*\{[^}]*height:\s*clamp\(240px,\s*42cqw,\s*380px\)[^}]*flex:\s*0\s+0\s+auto/s,
+  );
+  assert.match(
+    cssSource,
+    /@container species-detail \(max-width:\s*1320px\)[\s\S]*?\.audio-body\s*\{[^}]*height:\s*auto[^}]*overflow:\s*visible/s,
+  );
   assert.match(cssSource, /@media \(max-height:\s*780px\)[\s\S]*?\.validation-card small\s*\{[^}]*display:\s*none/s);
   assert.match(cssSource, /\.sex-specific-value\s*\{[^}]*display:\s*grid/s);
   assert.match(cssSource, /\.iucn-heading-status,\s*\.iucn-heading-trend\s*\{/);
@@ -796,7 +807,11 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /\.new-species-fields\s*\{[^}]*align-items:\s*start/s);
   assert.match(cssSource, /\.taxonomy-reference\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
-  assert.match(cssSource, /\.taxonomy-reference-results\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(
+    cssSource,
+    /\.taxonomy-reference-results\s*\{[^}]*position:\s*absolute[^}]*max-height:\s*184px[^}]*overflow-y:\s*auto/s,
+  );
+  assert.match(appTaxonomyReferenceSource, /function sortTaxonomyKingdoms\(/);
   assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
   assert.match(cssSource, /\.edit-fields label\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);

@@ -133,6 +133,7 @@ test("Vollimport bleibt bis nach dem konfliktfreien Projektabgleich inaktiv", as
     total: 3,
     exact: 1,
     suggestions: 1,
+    referenceGaps: 0,
     ambiguous: 0,
     missing: 1,
     blocking: 0,
@@ -203,6 +204,34 @@ test("bestätigte Zuordnungen bleiben über die stabile Quellen-ID gültig", () 
   assert.equal(result.severity, "ok");
   assert.equal(result.candidate.sourceId, "COL:stable-id");
   assert.equal(result.candidate.scientificName, "Neuer akzeptierter Name");
+});
+
+test("vorhandene Unterarten kennzeichnen eine CoL-Lücke auf Artstufe", () => {
+  const result = taxonomyProjectConflictInternals.classifySpecies({
+    entry: {
+      german: "Eurasisches Eichhörnchen",
+      genus: "Sciurus",
+      species: "vulgaris",
+    },
+    mappedTarget: null,
+    accepted: [],
+    synonyms: [],
+    descendants: [
+      {
+        taxon_id: 8,
+        source_id: "COL:subspecies",
+        scientific_name: "Sciurus vulgaris alpinus",
+        rank: "subspecies",
+        status: "accepted",
+        kingdom: "Animalia",
+      },
+    ],
+  });
+  assert.equal(result.classification, "reference-gap");
+  assert.equal(result.severity, "warning");
+  assert.equal(result.automaticChange, false);
+  assert.equal(result.relatedTaxa[0].scientificName, "Sciurus vulgaris alpinus");
+  assert.match(result.message, /Art fehlt im CoL-Release/);
 });
 
 test("Vernakularnamen sind im ColDP-Paket optional", async (context) => {

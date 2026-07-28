@@ -1,6 +1,6 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-27
+Stand: 2026-07-28
 
 Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation und Aktualisierung
 
@@ -57,7 +57,8 @@ einen geprüften deutschen Namen anschließend selbst eintragen.
 
 ## Fehler- und Offlineverhalten
 
-Die Taxonomiereferenz ist eine optionale Hilfsfunktion:
+Die Taxonomiereferenz ist bei installierter Datenbank der reguläre geführte Eingabeweg. Die manuelle Eingabe bleibt
+als ausfallsicherer Fallback erhalten:
 
 - Fehlt die lokale Datenbank, zeigt der Assistent `Manuelle Eingabe`.
 - Ist der aktive Releasezeiger oder die Datenbank beschädigt, wird die Referenzsuche deaktiviert.
@@ -65,8 +66,16 @@ Die Taxonomiereferenz ist eine optionale Hilfsfunktion:
 - Die normale manuelle Prüfung und Artanlage bleibt vollständig verfügbar.
 - Ein Referenzfehler startet keine Pipeline, erzeugt keinen Commit und ändert keine Art- oder Assetdatei.
 
+Der Statusendpunkt liefert Wartungs- und Referenzzustand gemeinsam. Der Assistent verwendet ausdrücklich das
+verschachtelte Objekt `reference`; dadurch deaktivieren neutrale Wartungsmeldungen wie
+`Noch keine Aktualisierung gestartet` weder Suche noch Reichsauswahl. Nach erfolgreicher Initialisierung enthält
+die Reichsauswahl alle im aktiven Release vorhandenen Reiche sowie `Alle Reiche`. Die sichtbaren Bezeichnungen
+stehen alphabetisch; `Tiere (Animalia)` bleibt unabhängig davon die vorausgewählte Standardsuche.
+
 Wenn während des Tippens mehrere Anfragen laufen, darf nur die Antwort der neuesten Eingabe die Trefferliste
-aktualisieren.
+aktualisieren. Die Treffer erscheinen in einem kompakten, überlagernden Scrollbereich unter den Namensfeldern.
+Unterschiedliche Trefferzahlen verändern deshalb weder die Dialoghöhe noch die Position der folgenden
+Eingabefelder. Ausführliche Hierarchie- und Quelldaten werden weiterhin erst nach bewusster Auswahl eingeblendet.
 
 ## Read-only API
 
@@ -133,6 +142,21 @@ Die kleine Phase-9.3-Fixture weist zusätzlich bidirektional nach:
 - `Carduelis ...` → belegter deutscher Name
 - `Animalia` als Standard und bewusste Suche über alle Reiche
 - vollständige Detailansicht mit Quelle, Release und Hierarchie
+
+Der reale Referenzbestand weist außerdem einen zulässigen Sonderfall auf: Eine Projektart kann auf Artstufe im
+Release fehlen, während zugehörige Unterarten vorhanden sind. Der Projektabgleich kennzeichnet dies als
+`Referenzlücke`, nimmt keine Unterart als Ersatz und ändert keine Projektdaten. `Sciurus vulgaris` ist der aktuell
+bekannte reale Fall.
+
+Im Wartungsbereich wird die installierte Referenz genau einmal als `Aktive Referenz` angezeigt. Die folgende
+Detailzeile nennt nur die neueste verfügbare Version. Arten mit Konflikten oder Referenzlücken stehen nach
+`Manuell zu prüfen:` in einer eigenen Zeile, damit die Information auch bei mehreren Arten lesbar bleibt.
+
+Die aktive vollständige Datenbank liegt außerhalb des Repositorys unter
+`%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\releases\<Release>\taxonomy.sqlite`. Sie darf zur
+Analyse mit einem SQLite-Werkzeug nur lesend geöffnet werden. Direkte Änderungen wären beim nächsten Release
+verloren; bestätigte Sonderzuordnungen gehören in `species-reference-mappings.json`, zusätzliche fachliche
+Fallbackquellen in die kontrollierte Import- und Konfliktschicht.
 
 ## Abgrenzung zu Squarespace
 

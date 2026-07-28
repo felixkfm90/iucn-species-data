@@ -273,8 +273,8 @@ npm.cmd run --silent taxonomy:prototype -- --reset --json
 npm.cmd run --silent test:taxonomy-prototype
 ```
 
-Architektur, Quellen, Messwerte und Grenzen stehen in `docs/taxonomy-import-prototype.md`. Der vollständige
-CoL-XR-Bestand ist noch nicht installiert und darf nicht in Git oder GitHub Pages aufgenommen werden.
+Architektur, Quellen, Messwerte und Grenzen des Prototyps stehen in `docs/taxonomy-import-prototype.md`. Der
+vollständige CoL-XR-Bestand ist lokal installiert, bleibt aber weiterhin außerhalb von Git und GitHub Pages.
 
 ## Taxonomiereferenz im Neue-Art-Assistenten
 
@@ -284,7 +284,12 @@ liefern beim Tippen gegenseitige Vorschläge. Ein Treffer wird erst nach Auswahl
 ID und Namensstatus angezeigt und nur über `Vorschlag übernehmen` in die Felder geschrieben. Die normale
 Eingabeprüfung und Kollisionskontrolle bleibt danach Pflicht.
 
-Fehlt oder scheitert die lokale Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für ein gültiges Taxon
+Die Referenzsuche ist bei installierter Datenbank der reguläre geführte Eingabeweg; manuelle Eingabe bleibt als
+bewusster Fallback verfügbar. Der Assistent wertet dafür den Referenzstatus innerhalb des gemeinsamen
+Wartungsstatus aus und lädt anschließend alle im Release vorhandenen Reiche. Die Reichsauswahl ist nach der
+sichtbaren deutschen Bezeichnung sortiert. Suchtreffer stehen in einer kompakten, überlagernden Liste, damit der
+Dialog beim Tippen nicht mit jeder Trefferzahl seine Höhe verändert. Fehlt oder scheitert die lokale
+Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für ein gültiges Taxon
 ohne belegten deutschen Namen wird – sofern im Release vorhanden – der englische Vernakularname sichtbar als
 `Englischer Ersatzname` vorgeschlagen. Deutsch hat immer Vorrang; ergänzt ein späterer Release einen deutschen
 Namen, wird dieser bei künftigen Suchen bevorzugt. Bestehende Projektarten werden dadurch niemals still umbenannt.
@@ -330,10 +335,16 @@ Importzähler dauerhaft und bestätigt die Übernahme zusätzlich einmalig in ei
 
 Vor der Aktivierung werden alle bestehenden Arten verglichen. Eindeutig akzeptierte Namen bleiben grün,
 eindeutige Synonyme erscheinen nur als Umbenennungsvorschlag und mehrdeutige oder fehlende Treffer als manuelle
-Prüfung. Der Aktualisierungslauf ändert niemals automatisch `species_list.json`, `speciesData.json`, deutsche oder
+Prüfung. Fehlt eine Artstufe im CoL-Release, obwohl zugehörige Unterarten enthalten sind, zeigt der Explorer dies
+getrennt als `Referenzlücke` statt irreführend als unbekannte Art; die Projektart bleibt unverändert. Der
+Aktualisierungslauf ändert niemals automatisch `species_list.json`, `speciesData.json`, deutsche oder
 wissenschaftliche Namen, URL-Slugs, Assetnamen, Assetordner oder Overrides. Fachliche Hinweise können daher die
 neue read-only Referenz nicht beschädigen; technische Import- oder Vergleichsfehler verhindern dagegen die
 Aktivierung und lassen die bisherige Version aktiv.
+
+Der Wartungsbereich trennt installierte und neueste Version ohne Textdopplung: oben steht die aktive Referenz, in
+der Detailzeile ausschließlich die neueste verfügbare Version. `Manuell zu prüfen` beginnt bei vorhandenen
+Konflikten oder Referenzlücken in einer eigenen Zeile.
 
 Fokussierte Prüfung:
 
@@ -386,7 +397,9 @@ Der Explorer zeigt:
 - Karten vollstaendig im jeweiligen Originalseitenverhaeltnis
 - drei gleichwertige Medienbereiche fuer Verbreitungskarte, Tierstimme und Artportraet; sobald der rechte
   Detailbereich weniger als 1320 Pixel Platz hat, stehen sie lesbar untereinander statt in drei zu engen Spalten;
-  in schmalen Drittelkarten stehen Titel und die gemeinsam ausgerichtete Aktionszeile untereinander
+  in schmalen Drittelkarten stehen Titel und die gemeinsam ausgerichtete Aktionszeile untereinander; in der
+  Einspaltenansicht bleibt das anklickbar vergrößerbare Portrait kompakt und die Tierstimme wächst nur bis zum
+  tatsächlichen Inhalt
 - kompakter Tierstimmen-Player mit integriertem Spektrogramm, Play/Pause, Zeit, Lautstaerke, Scrubbing,
   Positionsmarker und standardmaessig sichtbaren Quellen-/Lizenzdaten
 - Klick ins Spektrogramm setzt die Position und startet die Wiedergabe sofort an dieser Stelle

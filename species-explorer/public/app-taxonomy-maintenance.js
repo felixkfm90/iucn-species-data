@@ -12,6 +12,7 @@
     const parts = [
       `${conflicts.exact || 0} eindeutig`,
       `${conflicts.suggestions || 0} Umbenennungsvorschläge`,
+      `${conflicts.referenceGaps || 0} Referenzlücken`,
       `${conflicts.ambiguous || 0} mehrdeutig`,
       `${conflicts.missing || 0} nicht gefunden`,
     ];
@@ -30,6 +31,9 @@
             .join(" / ");
           return `${label}: mehrdeutig${candidates ? ` (${candidates})` : ""}`;
         }
+        if (entry.classification === "reference-gap") {
+          return `${label}: Artstufe fehlt in CoL, zugehörige Unterarten sind vorhanden`;
+        }
         return `${label}: nicht gefunden`;
       })
       .join(", ");
@@ -37,7 +41,7 @@
       `Abgleich vorhandener Arten: ${parts.join(" · ")}.`,
       affected ? `Manuell zu prüfen: ${affected}.` : "",
       "Es wurden keine Artdaten automatisch geändert.",
-    ].filter(Boolean).join(" ");
+    ].filter(Boolean).join("\n");
   }
 
   function referenceCountsText(reference) {
@@ -151,11 +155,9 @@
             ? `Taxonomiereferenz erfolgreich übernommen: ${
               releaseLabel(reference.source || { releaseId: status.releaseId })
             }`
-            : status.updateAvailable
-              ? `Neue Taxonomiereferenz verfügbar: ${releaseLabel(latest)}`
-              : activeLabel;
+            : activeLabel;
       elements.taxonomyMaintenanceDetail.textContent = active
-        ? `${status.message} Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten.`
+        ? "Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten."
         : failedUpdate
           ? `${status.message} ${status.error || ""}`.trim()
           : completedUpdate
@@ -166,7 +168,7 @@
                 : "",
               "Bestehende Projektdaten wurden nicht automatisch verändert.",
             ].filter(Boolean).join(" ")
-            : `${activeLabel} ${latestLabel}`;
+            : latestLabel;
 
       elements.taxonomyMaintenanceProgress.hidden = !active;
       if (active) {
@@ -353,6 +355,7 @@
   }
 
   global.SpeciesExplorerTaxonomyMaintenance = Object.freeze({
+    conflictText,
     createTaxonomyMaintenanceController,
   });
 })(globalThis);

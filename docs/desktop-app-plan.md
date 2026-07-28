@@ -294,6 +294,11 @@ Teststand:
     Assetaktionen umbrechen beziehungsweise abgeschnitten werden. In noch dreispaltig dargestellten Medienkarten
     mit hoechstens 600 Pixel Breite stehen Titel und alle drei Assetaktionen in zwei getrennten Zeilen; kein
     einzelner Loeschbutton rutscht mehr allein nach unten.
+  - Seit 2026-07-28 bleibt das Artportrait in der einspaltigen Tablet-/Schmalansicht kompakt und kann wie die Karte
+    per Klick vergrößert werden. Der Tierstimmenbereich verwendet dort keine künstliche feste Medienhöhe mehr und
+    endet direkt nach Player und Quellenangaben.
+  - Die Taxonomiereferenz zeigt die aktive und die neueste verfügbare Version in getrennten Zeilen ohne
+    Wiederholung. Manuell zu prüfende Referenzkonflikte beginnen zur besseren Lesbarkeit in einer eigenen Zeile.
   - Eine manuell hinzugefuegte Karte wird direkt in der Zeile `Karte` markiert. Die generische Assetkennzeichnung
     kann spaeter auch fuer manuell hinzugefuegte Sounds verwendet werden.
   - Browsermessung: Scrollposition vor/nach Artwechsel jeweils `900`; Rotfuchs-Karte im gleichen Seitenverhaeltnis

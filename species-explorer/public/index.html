@@ -161,9 +161,9 @@
             <section class="taxonomy-reference" aria-labelledby="taxonomy-reference-title">
               <header class="taxonomy-reference-header">
                 <div>
-                  <h4 id="taxonomy-reference-title">Taxonomiereferenz · optional</h4>
+                  <h4 id="taxonomy-reference-title">Taxonomiereferenz</h4>
                   <p>
-                    Namen manuell eingeben oder beim Tippen einen passenden Eintrag auswählen.
+                    Beim Tippen einen passenden Referenzeintrag auswählen oder bei Bedarf manuell eingeben.
                     Ein Vorschlag wird nie automatisch übernommen.
                   </p>
                 </div>
@@ -180,21 +180,23 @@
                 <button class="taxonomy-reference-manual" type="button">Manuell eingeben</button>
               </div>
 
-              <div class="taxonomy-reference-name-fields">
-                <label data-field="german">
-                  <span>Deutscher Name</span>
-                  <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
-                </label>
-                <label data-field="scientificName">
-                  <span>Wissenschaftlicher Name</span>
-                  <input name="scientificName" type="text" maxlength="201" autocomplete="off" placeholder="Turdus Merula">
-                </label>
-              </div>
+              <div class="taxonomy-reference-search">
+                <div class="taxonomy-reference-name-fields">
+                  <label data-field="german">
+                    <span>Deutscher Name</span>
+                    <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
+                  </label>
+                  <label data-field="scientificName">
+                    <span>Wissenschaftlicher Name</span>
+                    <input name="scientificName" type="text" maxlength="201" autocomplete="off" placeholder="Turdus Merula">
+                  </label>
+                </div>
 
-              <p class="taxonomy-reference-message info" role="status">
-                Die Verfügbarkeit der lokalen Taxonomiereferenz wird geprüft.
-              </p>
-              <div class="taxonomy-reference-results" role="listbox" aria-label="Namensvorschläge" hidden></div>
+                <p class="taxonomy-reference-message info" role="status">
+                  Die Verfügbarkeit der lokalen Taxonomiereferenz wird geprüft.
+                </p>
+                <div class="taxonomy-reference-results" role="listbox" aria-label="Namensvorschläge" hidden></div>
+              </div>
               <section class="taxonomy-reference-selection" aria-label="Ausgewählter Taxonomievorschlag" hidden>
                 <div class="taxonomy-reference-selection-content"></div>
                 <div class="taxonomy-reference-selection-actions">

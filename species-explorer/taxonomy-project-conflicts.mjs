@@ -44,6 +44,7 @@ function classifySpecies({
   accepted,
   synonyms,
   mappedTarget,
+  descendants = [],
 }) {
   const currentScientificName = scientificName(entry);
   const base = {
@@ -98,6 +99,18 @@ function classifySpecies({
       candidates: [...uniqueTargets.values()].map(candidatePayload),
     };
   }
+  if (descendants.length > 0) {
+    return {
+      ...base,
+      classification: "reference-gap",
+      severity: "warning",
+      message:
+        "Die Art fehlt im CoL-Release als eigener Datensatz; zugehörige Unterarten sind vorhanden. "
+        + "Der Projektname bleibt unverändert.",
+      relatedTaxa: descendants.map(candidatePayload),
+      automaticChange: false,
+    };
+  }
   return {
     ...base,
     classification: "missing",
@@ -142,10 +155,11 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
     SELECT
       accepted.id AS taxon_id, accepted.source_id, accepted.scientific_name,
       accepted.rank, accepted.status, accepted.kingdom
-    FROM taxon_name name
-    JOIN taxon accepted ON accepted.id = name.taxon_id
-    WHERE name.scientific_name = ? COLLATE NOCASE
-      AND name.relationship NOT IN ('accepted', 'standalone')
+    FROM search_term term
+    JOIN taxon accepted ON accepted.id = term.taxon_id
+    WHERE term.kingdom = 'Animalia'
+      AND term.term_type = 'scientific_synonym'
+      AND term.normalized = ?
       AND (accepted.kingdom = 'Animalia' OR accepted.kingdom IS NULL OR accepted.kingdom = '')
     ORDER BY accepted.source_id
   `);
@@ -158,17 +172,41 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
       AND (kingdom = 'Animalia' OR kingdom IS NULL OR kingdom = '')
     LIMIT 1
   `);
+  const descendantStatement = database.prepare(`
+    SELECT
+      id AS taxon_id, source_id, scientific_name, rank, status, kingdom
+    FROM taxon
+    WHERE scientific_name >= ? COLLATE NOCASE
+      AND scientific_name < ? COLLATE NOCASE
+      AND rank IN ('subspecies', 'variety', 'form')
+      AND status IN ('accepted', 'provisionally accepted')
+      AND (kingdom = 'Animalia' OR kingdom IS NULL OR kingdom = '')
+    ORDER BY scientific_name, source_id
+    LIMIT 5
+  `);
   try {
     const results = species.map((entry) => {
       const currentName = scientificName(entry);
       const mapping = mappings[normalizeTaxonomySearchTerm(currentName)] ?? null;
+      const mappedTarget = mapping?.sourceId
+        ? mappedStatement.get(String(mapping.sourceId))
+        : null;
+      const accepted = mappedTarget ? [] : acceptedStatement.all(currentName);
+      const synonyms = mappedTarget || accepted.length
+        ? []
+        : synonymStatement.all(normalizeTaxonomySearchTerm(currentName));
+      const descendantPrefix = `${currentName} `;
       return classifySpecies({
         entry,
-        accepted: acceptedStatement.all(currentName),
-        synonyms: synonymStatement.all(currentName),
-        mappedTarget: mapping?.sourceId
-          ? mappedStatement.get(String(mapping.sourceId))
-          : null,
+        accepted,
+        synonyms,
+        mappedTarget,
+        descendants: mappedTarget || accepted.length || synonyms.length
+          ? []
+          : descendantStatement.all(
+            descendantPrefix,
+            `${descendantPrefix}\uffff`,
+          ),
       });
     });
     const summary = {
@@ -178,6 +216,9 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
       )).length,
       suggestions: results.filter(
         (entry) => entry.classification === "accepted-name-change",
+      ).length,
+      referenceGaps: results.filter(
+        (entry) => entry.classification === "reference-gap",
       ).length,
       ambiguous: results.filter((entry) => entry.classification === "ambiguous").length,
       missing: results.filter((entry) => entry.classification === "missing").length,
@@ -191,6 +232,7 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
         existingSpeciesChangedAutomatically: false,
         uniqueSynonymsAreSuggestionsOnly: true,
         ambiguousMatchesAreNeverSelectedAutomatically: true,
+        speciesLevelReferenceGapsRecognized: true,
         activationBlockedByProjectConflicts: false,
       },
       summary,

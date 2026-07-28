@@ -238,7 +238,26 @@ export class TaxonomyMaintenanceService {
     }
   }
 
-  startupCheck() {
+  async refreshProjectComparisonIfNeeded() {
+    const pointer = await this.readPointer(this.taxonomyRoot);
+    const activeRelease = pointer?.activeRelease || "";
+    if (!activeRelease) return null;
+    const report = await readProjectTaxonomyConflictReport({
+      taxonomyRoot: this.taxonomyRoot,
+      releaseId: activeRelease,
+    });
+    if (report?.policy?.speciesLevelReferenceGapsRecognized === true) return report;
+    return this.compareProjectSpecies({
+      taxonomyRoot: this.taxonomyRoot,
+      releaseId: activeRelease,
+      speciesListPath: this.speciesListPath,
+      mappingsPath: this.mappingsPath,
+      now: this.now,
+    });
+  }
+
+  async startupCheck() {
+    await this.refreshProjectComparisonIfNeeded().catch(() => null);
     return this.checkLatest({ force: false, visible: false }).catch(() => null);
   }
 
@@ -464,7 +483,10 @@ export class TaxonomyMaintenanceService {
         status: "completed",
         completedAt: this.now().toISOString(),
         progressPercent: 100,
-        message: conflicts.summary.suggestions || conflicts.summary.ambiguous || conflicts.summary.missing
+        message: conflicts.summary.suggestions
+          || conflicts.summary.referenceGaps
+          || conflicts.summary.ambiguous
+          || conflicts.summary.missing
           ? "Referenz aktualisiert. Hinweise zu bestehenden Arten warten auf manuelle Prüfung."
           : "Referenz aktualisiert. Alle bestehenden Arten stimmen eindeutig überein.",
         error: "",

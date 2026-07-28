@@ -42,6 +42,46 @@ test("Fehlende Referenz wird als manuelle, nicht blockierende Eingabe dargestell
   );
 });
 
+test("der Assistent verwendet den verschachtelten Referenzstatus der Wartungs-API", () => {
+  const status = {
+    status: "idle",
+    message: "Noch keine Aktualisierung gestartet.",
+    reference: {
+      available: true,
+      releaseId: "col-xr-2026-07-17-315834",
+    },
+  };
+  assert.deepEqual(
+    { ...taxonomyReference.taxonomyReferenceStatus(status) },
+    { ...status.reference },
+  );
+  assert.equal(
+    taxonomyReference.taxonomyAvailabilityPresentation(status).state,
+    "available",
+  );
+});
+
+test("Reiche werden nach ihrer sichtbaren deutschen Bezeichnung sortiert", () => {
+  const sorted = taxonomyReference.sortTaxonomyKingdoms([
+    { id: "Animalia", label: "Tiere (Animalia)" },
+    { id: "Plantae", label: "Pflanzen (Plantae)" },
+    { id: "Chromista", label: "Chromisten (Chromista)" },
+    { id: "Fungi", label: "Pilze (Fungi)" },
+  ], {
+    includesAllOption: true,
+  });
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(sorted)),
+    [
+      { id: "all", label: "Alle Reiche" },
+      { id: "Chromista", label: "Chromisten (Chromista)" },
+      { id: "Plantae", label: "Pflanzen (Plantae)" },
+      { id: "Fungi", label: "Pilze (Fungi)" },
+      { id: "Animalia", label: "Tiere (Animalia)" },
+    ],
+  );
+});
+
 test("Trefferdarstellung trennt deutschen Namen, akzeptierten Namen und Synonym", () => {
   const result = taxonomyReference.taxonomyResultPresentation({
     taxonId: 42,

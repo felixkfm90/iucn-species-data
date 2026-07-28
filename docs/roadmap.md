@@ -865,8 +865,9 @@ Standard sowie eine bewusste Suche über alle Reiche funktionieren ohne stille T
 Speicher und Latenz gelten ausschließlich für den begrenzten Testbestand und werden nicht auf den Vollbestand
 hochgerechnet. Produktive Arten, Assets, Pages und Squarespace bleiben unverändert.
 
-Phase 9.4 wurde am 2026-07-24 abgeschlossen. Der Neue-Art-Assistent besitzt jetzt eine optionale lokale read-only
-Taxonomiereferenz mit `Tiere (Animalia)` als Standard und bewusster Suche über alle Reiche. Deutsche und
+Phase 9.4 wurde am 2026-07-24 abgeschlossen. Der Neue-Art-Assistent besitzt jetzt eine lokale read-only
+Taxonomiereferenz als regulären geführten Eingabeweg mit manueller Rückfallebene, `Tiere (Animalia)` als Standard
+und bewusster Suche über alle Reiche. Deutsche und
 wissenschaftliche Eingaben liefern nach jedem Zeichen Vorschläge; Mehrdeutigkeiten bleiben als Liste sichtbar und
 kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen, Synonym, Hierarchie, Quelle,
 Release, Quellen-ID und Vertrauensstufe. Erst `Vorschlag übernehmen` füllt die Namensfelder, danach bleiben die
@@ -911,6 +912,17 @@ verwechseln. Für gültige Taxa wird Deutsch bevorzugt und ein vorhandener engli
 angeboten. Die Abschlussbestätigung nennt die Zahl der übersprungenen Namen transparent; Regressionstests decken
 Einzelfall, realistische Skalierung, Sprachfallback und systematischen Paketfehler ab. Die bisherige Referenz blieb
 erneut unverändert.
+
+Am 2026-07-28 wurde die reale Explorer-Anbindung nachgeschärft: Der Neue-Art-Assistent liest den verfügbaren
+Referenzbestand aus dem verschachtelten Wartungsstatus, lädt damit wieder alle Reiche und liefert bidirektionale
+Vorschläge wie `Gepard`/`Acinonyx jubatus`. Die Reichsauswahl ist alphabetisch sortiert; die kompakte
+Trefferliste überlagert die folgenden Felder, sodass der Dialog beim Tippen nicht mehr springt. Laufende
+Aktualisierungen wiederholen den Fortschrittstitel nicht mehr in der Detailzeile. Im Ruhezustand steht die aktive
+Referenz nur in der Überschrift; die Detailzeile nennt ausschließlich die neueste verfügbare Version.
+`Manuell zu prüfen` beginnt in einer eigenen Zeile. Der Projektabgleich
+unterscheidet echte unbekannte Namen von einer CoL-Referenzlücke auf
+Artstufe, wenn passende Unterarten vorhanden sind; `Sciurus vulgaris` bleibt dadurch unverändert und wird
+verständlich als Referenzlücke gemeldet.
 
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.

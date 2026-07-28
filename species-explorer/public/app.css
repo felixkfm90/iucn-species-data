@@ -486,6 +486,10 @@ button.danger,
   line-height: 1.3;
 }
 
+.taxonomy-maintenance-conflicts {
+  white-space: pre-line;
+}
+
 .taxonomy-maintenance-progress {
   width: 100%;
   height: 8px;
@@ -1925,9 +1929,18 @@ button:focus-visible {
   gap: 10px;
 }
 
+.taxonomy-reference-search {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
 .taxonomy-reference-message {
   margin: 0;
+  min-height: 30px;
   padding: 7px 9px;
+  display: flex;
+  align-items: center;
   border-radius: 4px;
   font-size: 0.73rem;
   line-height: 1.4;
@@ -1954,10 +1967,20 @@ button:focus-visible {
 }
 
 .taxonomy-reference-results {
-  max-height: 230px;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 184px;
+  padding: 4px;
   display: grid;
-  gap: 6px;
+  gap: 3px;
   overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  box-shadow: 0 10px 26px rgb(20 39 32 / 18%);
 }
 
 .taxonomy-reference-results[hidden],
@@ -1967,11 +1990,12 @@ button:focus-visible {
 
 .taxonomy-reference-result {
   width: 100%;
-  padding: 9px 10px;
-  display: flex;
+  min-height: 44px;
+  padding: 6px 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   text-align: left;
   background: #fff;
   border: 1px solid var(--line);
@@ -1986,14 +2010,24 @@ button:focus-visible {
 
 .taxonomy-reference-result-main,
 .taxonomy-reference-result-meta {
+  min-width: 0;
   display: grid;
-  gap: 2px;
+  gap: 1px;
+}
+
+.taxonomy-reference-result-main strong,
+.taxonomy-reference-result-main em,
+.taxonomy-reference-result-meta span,
+.taxonomy-reference-result-meta small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .taxonomy-reference-result-main em,
 .taxonomy-reference-result-meta {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .taxonomy-reference-result-meta {
@@ -3615,11 +3649,29 @@ button:focus-visible {
     height: auto;
   }
 
-  .species-image-panel,
-  .map-frame,
-  .audio-body {
+  .map-frame {
     height: min(62vh, 560px);
     min-height: 0;
+  }
+
+  .species-image-panel {
+    height: auto;
+  }
+
+  .portrait-zoom-trigger,
+  .species-image-placeholder {
+    height: clamp(240px, 42cqw, 380px);
+    flex: 0 0 auto;
+  }
+
+  .audio-body {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .audio-credits {
+    overflow: visible;
   }
 }
 
@@ -3929,13 +3981,12 @@ button:focus-visible {
   }
 
   .taxonomy-reference-result {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
   }
 
   .taxonomy-reference-result-meta {
-    justify-items: start;
-    text-align: left;
+    justify-items: end;
+    text-align: right;
   }
 
   .taxonomy-reference-manual,

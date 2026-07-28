@@ -1008,7 +1008,14 @@ Aktuelle Planung:
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, Reichsauswahl, bidirektionale Vorschläge,
   Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten getestet integriert. Der vollständige
   lokale Import- und Aktualisierungsworkflow prüft beim Start nur Metadaten, vergleicht bestehende Arten ohne
-  automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Als Nächstes folgen realer
+  automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Seit 2026-07-28 liest der
+  Neue-Art-Assistent den verfügbaren Referenzbestand korrekt aus dem verschachtelten Wartungsstatus, lädt alle
+  vorhandenen, alphabetisch sortierten Reiche und liefert wieder bidirektionale Vorschläge in einer kompakten,
+  überlagernden Trefferliste ohne springende Dialoghöhe. Fehlende Artstufen mit vorhandenen Unterarten
+  werden als CoL-Referenzlücke statt als unbekannte Art ausgewiesen und führen zu keiner automatischen Zuordnung.
+  Der Wartungsbereich zeigt die aktive Referenz einmalig in der Überschrift und darunter nur die neueste
+  verfügbare Version; manuell zu prüfende Arten beginnen in einer eigenen Zeile.
+  Als Nächstes folgen realer
   Vollimport-/Rollbacktest und das umfassende Phase-9-Abschlussaudit.
 - Phase 10 - Lightroom:
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte

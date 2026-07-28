@@ -33,7 +33,8 @@
   }
 
   function taxonomyAvailabilityPresentation(status = {}) {
-    if (status.available) {
+    const referenceStatus = taxonomyReferenceStatus(status);
+    if (referenceStatus.available) {
       return {
         state: "available",
         label: "Referenz verfügbar",
@@ -43,9 +44,30 @@
     return {
       state: "unavailable",
       label: "Manuelle Eingabe",
-      message: status.message
+      message: referenceStatus.message
         || "Die Taxonomiereferenz ist derzeit nicht verfügbar. Namen können weiterhin manuell eingegeben werden.",
     };
+  }
+
+  function taxonomyReferenceStatus(status = {}) {
+    return status.reference && typeof status.reference === "object"
+      ? status.reference
+      : status;
+  }
+
+  function sortTaxonomyKingdoms(values = [], { includesAllOption = false } = {}) {
+    const kingdoms = (Array.isArray(values) ? values : []).map((kingdom) => ({
+      id: String(kingdom?.id || ""),
+      label: String(kingdom?.label || kingdom?.id || ""),
+    }));
+    if (includesAllOption) {
+      kingdoms.push({ id: "all", label: "Alle Reiche" });
+    }
+    return kingdoms.sort((left, right) => left.label.localeCompare(
+      right.label,
+      "de",
+      { numeric: true, sensitivity: "base" },
+    ));
   }
 
   function taxonomyResultPresentation(result = {}) {
@@ -211,17 +233,14 @@
     const renderKingdoms = (payload = {}) => {
       kingdomSelect.replaceChildren();
       defaultKingdom = payload.defaultKingdom || "Animalia";
-      for (const kingdom of payload.values || []) {
+      const kingdoms = sortTaxonomyKingdoms(payload.values, {
+        includesAllOption: payload.includesAllOption,
+      });
+      for (const kingdom of kingdoms) {
         const option = document.createElement("option");
         option.value = kingdom.id;
         option.textContent = kingdom.label;
         option.selected = kingdom.id === defaultKingdom;
-        kingdomSelect.append(option);
-      }
-      if (payload.includesAllOption) {
-        const option = document.createElement("option");
-        option.value = "all";
-        option.textContent = "Alle Reiche";
         kingdomSelect.append(option);
       }
       kingdomSelect.value = defaultKingdom;
@@ -396,7 +415,7 @@
         const status = await fetchJson("/api/taxonomy/status");
         if (version !== requestVersion) return;
         setAvailability(status);
-        if (!status.available) return;
+        if (!available) return;
         const kingdoms = await fetchJson("/api/taxonomy/kingdoms");
         if (version !== requestVersion) return;
         renderKingdoms(kingdoms);
@@ -475,7 +494,9 @@
 
   global.SpeciesExplorerTaxonomyReference = Object.freeze({
     taxonomySearchUrl,
+    taxonomyReferenceStatus,
     taxonomyAvailabilityPresentation,
+    sortTaxonomyKingdoms,
     taxonomyResultPresentation,
     taxonomyDetailPresentation,
     createTaxonomyReferenceController,

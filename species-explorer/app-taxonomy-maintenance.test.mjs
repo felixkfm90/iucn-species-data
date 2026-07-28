@@ -182,6 +182,72 @@ test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenst
   assert.equal(confirmations.length, 1);
 });
 
+test("laufende Aktualisierung wiederholt den Fortschrittstitel nicht in der Detailzeile", async () => {
+  const visible = elements();
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => activeStatus(),
+    formatBytes: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  await controller.refresh();
+  assert.equal(
+    visible.taxonomyMaintenanceSummary.textContent,
+    "Taxonomiereferenz wird heruntergeladen",
+  );
+  assert.equal(
+    visible.taxonomyMaintenanceDetail.textContent,
+    "Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten.",
+  );
+});
+
+test("installierte und neueste Referenz werden ohne Dopplung getrennt angezeigt", async () => {
+  const visible = elements();
+  const status = availableUpdateStatus({ installed: true });
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => status,
+    formatBytes: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  await controller.refresh();
+  assert.equal(visible.taxonomyMaintenanceSummary.textContent, "Aktive Referenz: COL26.6 XR");
+  assert.equal(
+    visible.taxonomyMaintenanceDetail.textContent,
+    "Neueste verfügbare Version: COL26.7 XR vom 17.07.2026.",
+  );
+});
+
+test("CoL-Lücken auf Artstufe werden nicht als unbekannte Projektart bezeichnet", () => {
+  const message = maintenance.conflictText(
+    {
+      exact: 51,
+      suggestions: 0,
+      referenceGaps: 1,
+      ambiguous: 0,
+      missing: 0,
+    },
+    [{
+      germanName: "Eurasisches Eichhörnchen",
+      scientificName: "Sciurus vulgaris",
+      classification: "reference-gap",
+    }],
+  );
+  assert.match(message, /1 Referenzlücken/);
+  assert.match(
+    message,
+    /Eurasisches Eichhörnchen: Artstufe fehlt in CoL, zugehörige Unterarten sind vorhanden/,
+  );
+  assert.match(message, /\.\nManuell zu prüfen:/);
+  assert.doesNotMatch(message, /Eurasisches Eichhörnchen: nicht gefunden/);
+});
+
 test("bereits vor dem Öffnen abgeschlossene Läufe erzeugen kein nachträgliches Popup", async () => {
   const confirmations = [];
   const controller = maintenance.createTaxonomyMaintenanceController({
