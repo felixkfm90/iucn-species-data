@@ -16,11 +16,13 @@ test("Such-URL begrenzt die Suche auf Richtung, Reich und Ergebniszahl", () => {
     query: "Stieglitz & Zeisig",
     kind: "vernacular",
     kingdomId: "Animalia",
+    language: "de",
+    rank: "species",
     limit: 12,
   });
   assert.equal(
     url,
-    "/api/taxonomy/search?q=Stieglitz%20%26%20Zeisig&kind=vernacular&kingdomId=Animalia&limit=12",
+    "/api/taxonomy/search?q=Stieglitz%20%26%20Zeisig&kind=vernacular&kingdomId=Animalia&language=de&rank=species&limit=12",
   );
 });
 
@@ -61,7 +63,7 @@ test("der Assistent verwendet den verschachtelten Referenzstatus der Wartungs-AP
   );
 });
 
-test("Reiche werden nach ihrer sichtbaren deutschen Bezeichnung sortiert", () => {
+test("Alle Reiche und Animalia stehen vor den alphabetisch sortierten übrigen Reichen", () => {
   const sorted = taxonomyReference.sortTaxonomyKingdoms([
     { id: "Animalia", label: "Tiere (Animalia)" },
     { id: "Plantae", label: "Pflanzen (Plantae)" },
@@ -74,10 +76,10 @@ test("Reiche werden nach ihrer sichtbaren deutschen Bezeichnung sortiert", () =>
     JSON.parse(JSON.stringify(sorted)),
     [
       { id: "all", label: "Alle Reiche" },
+      { id: "Animalia", label: "Tiere (Animalia)" },
       { id: "Chromista", label: "Chromisten (Chromista)" },
       { id: "Plantae", label: "Pflanzen (Plantae)" },
       { id: "Fungi", label: "Pilze (Fungi)" },
-      { id: "Animalia", label: "Tiere (Animalia)" },
     ],
   );
 });

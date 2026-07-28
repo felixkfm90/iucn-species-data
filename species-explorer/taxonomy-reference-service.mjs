@@ -4,6 +4,20 @@ import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { openTaxonomyStore } from "./taxonomy-store.mjs";
 
 const SEARCH_KINDS = new Set(["all", "scientific", "vernacular", "identifier"]);
+const SEARCH_LANGUAGES = new Set(["all", "de", "en"]);
+const SEARCH_RANKS = new Set([
+  "all",
+  "kingdom",
+  "phylum",
+  "subphylum",
+  "class",
+  "order",
+  "family",
+  "subfamily",
+  "genus",
+  "species",
+  "subspecies",
+]);
 const MAX_QUERY_LENGTH = 160;
 const MAX_REFERENCE_LENGTH = 160;
 const MAX_KINGDOM_LENGTH = 100;
@@ -29,11 +43,15 @@ function normalizeSearchOptions({
   query,
   kind = "all",
   kingdomId = "Animalia",
+  language = "all",
+  rank = "all",
   limit = MAX_RESULTS,
 } = {}) {
   const normalizedQuery = String(query ?? "").trim();
   const normalizedKind = String(kind ?? "all").trim().toLowerCase();
   const normalizedKingdom = String(kingdomId ?? "Animalia").trim() || "Animalia";
+  const normalizedLanguage = String(language ?? "all").trim().toLowerCase() || "all";
+  const normalizedRank = String(rank ?? "all").trim().toLowerCase() || "all";
   const parsedLimit = Number(limit);
 
   if (!normalizedQuery) {
@@ -51,6 +69,12 @@ function normalizeSearchOptions({
   if (normalizedKingdom.length > MAX_KINGDOM_LENGTH) {
     throw createHttpError("Die Reichskennung ist zu lang.", 400);
   }
+  if (!SEARCH_LANGUAGES.has(normalizedLanguage)) {
+    throw createHttpError("Die gewählte Taxonomie-Suchsprache wird nicht unterstützt.", 400);
+  }
+  if (!SEARCH_RANKS.has(normalizedRank)) {
+    throw createHttpError("Der gewählte Taxonomie-Rang wird nicht unterstützt.", 400);
+  }
   if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > MAX_RESULTS) {
     throw createHttpError(`Es sind zwischen 1 und ${MAX_RESULTS} Vorschläge erlaubt.`, 400);
   }
@@ -59,6 +83,8 @@ function normalizeSearchOptions({
     query: normalizedQuery,
     kind: normalizedKind,
     kingdom: normalizedKingdom,
+    language: normalizedLanguage,
+    rank: normalizedRank,
     limit: parsedLimit,
   };
 }

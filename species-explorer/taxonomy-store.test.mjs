@@ -5,6 +5,10 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 
 import { importTaxonomyPrototype } from "./taxonomy-import.mjs";
+import {
+  loadNodeSqlite,
+  taxonomyDatabasePath,
+} from "./taxonomy-storage.mjs";
 import { openTaxonomyStore } from "./taxonomy-store.mjs";
 
 const FIXTURE_DIRECTORY = path.resolve(
@@ -54,6 +58,77 @@ test("deutsche und wissenschaftliche Präfixe funktionieren ab einem Zeichen", (
     kind: "scientific",
   });
   assert.equal(scientific.results[0].germanNames.includes("Stieglitz"), true);
+});
+
+test("deutsche Namenssuche ignoriert fremdsprachige Vernakularnamen", async () => {
+  const { DatabaseSync } = await loadNodeSqlite();
+  const writableDatabase = new DatabaseSync(
+    taxonomyDatabasePath(store.taxonomyRoot, store.releaseId),
+  );
+  try {
+    const taxon = writableDatabase.prepare(`
+      SELECT id, kingdom, trust_tier
+      FROM taxon
+      WHERE scientific_name = 'Carduelis carduelis'
+    `).get();
+    writableDatabase.prepare(`
+      INSERT INTO search_term (
+        taxon_id, source_name_id, term, normalized, folded, german_key,
+        term_type, language, accepted, preferred, trust_tier, kingdom, sort_score
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      taxon.id,
+      "test:nld:geparelde-dwerguil",
+      "Geparelde Dwerguil",
+      "geparelde dwerguil",
+      "geparelde dwerguil",
+      "geparelde dwerguil",
+      "vernacular",
+      "nld",
+      1,
+      1,
+      taxon.trust_tier,
+      taxon.kingdom,
+      20,
+    );
+
+    const general = store.search({
+      query: "gepar",
+      kind: "all",
+      kingdom: "Animalia",
+      rank: "species",
+    });
+    assert.equal(general.results[0].matchedTerm, "Geparelde Dwerguil");
+
+    const german = store.search({
+      query: "gepar",
+      kind: "vernacular",
+      kingdom: "Animalia",
+      language: "de",
+      rank: "species",
+    });
+    assert.deepEqual(german.results, []);
+  } finally {
+    writableDatabase.prepare(`
+      DELETE FROM search_term
+      WHERE source_name_id = 'test:nld:geparelde-dwerguil'
+    `).run();
+    writableDatabase.close();
+  }
+});
+
+test("Artsuche lässt Gattungen und Unterarten das Trefferlimit nicht belegen", () => {
+  const scientific = store.search({
+    query: "Panthera",
+    kind: "scientific",
+    kingdom: "Animalia",
+    rank: "species",
+  });
+  assert.ok(scientific.results.length > 0);
+  assert.ok(scientific.results.every((entry) => entry.rank === "species"));
+  assert.ok(scientific.results.some(
+    (entry) => entry.acceptedScientificName === "Panthera leo",
+  ));
 });
 
 test("Synonyme führen nachvollziehbar zum akzeptierten Namen", () => {

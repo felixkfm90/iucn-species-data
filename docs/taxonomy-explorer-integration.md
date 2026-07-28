@@ -10,8 +10,9 @@ Der erste Schritt des Neue-Art-Assistenten kann eine lokal installierte Taxonomi
 durchsuchen. Die Referenz unterstützt die Eingabe, ersetzt aber weder die redaktionelle Entscheidung noch die
 bisherige Artenvalidierung:
 
-- Eingaben im Feld `Deutscher Name` suchen nach gebräuchlichen Namen; deutsche Treffer werden bevorzugt,
-  englische Namen dienen nur sichtbar gekennzeichnet als Ersatz.
+- Eingaben im Feld `Deutscher Name` suchen ausschließlich in ausdrücklich deutsch gekennzeichneten
+  Vernakularnamen. Anderssprachige Trivialnamen dürfen keinen scheinbar deutschen Treffer erzeugen; englische
+  Namen dienen nur nach einer wissenschaftlichen Suche sichtbar gekennzeichnet als Ersatz.
 - Eingaben im Feld `Wissenschaftlicher Name` suchen nach wissenschaftlichen Namen und Synonymen.
 - `Tiere (Animalia)` ist vorausgewählt.
 - Über `Alle Reiche` kann bewusst im gesamten installierten Referenzbestand gesucht werden.
@@ -34,8 +35,13 @@ eine Projektart anlegen.
 7. Danach bleiben `Eingaben prüfen`, Kollisionsprüfung, Vorschau und Speicherung des bisherigen Assistenten
    unverändert verpflichtend.
 
-Der Neue-Art-Assistent übernimmt nur Treffer mit dem Rang `Art`. Gattungen, Familien oder andere höhere Ränge
-können in der allgemeinen Referenz-API gefunden werden, werden in diesem Formular aber nicht als neue Art angeboten.
+Der Neue-Art-Assistent fragt bereits an der read-only API ausschließlich Treffer mit dem Rang `Art` ab. Gattungen,
+Unterarten, Familien oder andere Ränge belegen deshalb nicht mehr das begrenzte Trefferfenster. Bei zwölf sichtbaren
+Treffern fordert der Assistent zum Ergänzen des Suchbegriffs auf; beispielsweise führt `Glaucidium p` zuverlässig
+zu `Perlkauz – Glaucidium perlatum`.
+Die Referenz-API bleibt für allgemeine Abfragen mehrsprachig. Nur das sichtbare Feld `Deutscher Name` sendet
+`language=de`; dadurch bleiben englische Ersatznamen für andere Referenzansichten verfügbar, während etwa ein
+niederländischer Name keinen deutschen Vorschlag erzeugen kann.
 Unterarten sind im Referenzschema vorbereitet, bleiben für einen späteren kontrollierten Ausbau gesperrt, weil der
 aktuelle Projektworkflow bewusst exakt zweiteilige wissenschaftliche Artnamen verlangt.
 
@@ -69,8 +75,9 @@ als ausfallsicherer Fallback erhalten:
 Der Statusendpunkt liefert Wartungs- und Referenzzustand gemeinsam. Der Assistent verwendet ausdrücklich das
 verschachtelte Objekt `reference`; dadurch deaktivieren neutrale Wartungsmeldungen wie
 `Noch keine Aktualisierung gestartet` weder Suche noch Reichsauswahl. Nach erfolgreicher Initialisierung enthält
-die Reichsauswahl alle im aktiven Release vorhandenen Reiche sowie `Alle Reiche`. Die sichtbaren Bezeichnungen
-stehen alphabetisch; `Tiere (Animalia)` bleibt unabhängig davon die vorausgewählte Standardsuche.
+die Reichsauswahl alle im aktiven Release vorhandenen Reiche sowie `Alle Reiche`. `Alle Reiche` steht ganz oben,
+direkt gefolgt vom vorausgewählten `Tiere (Animalia)`; die übrigen Reiche sind nach ihrer sichtbaren deutschen
+Bezeichnung alphabetisch sortiert.
 
 Wenn während des Tippens mehrere Anfragen laufen, darf nur die Antwort der neuesten Eingabe die Trefferliste
 aktualisieren. Die Treffer erscheinen in einem kompakten, überlagernden Scrollbereich unter den Namensfeldern.
@@ -84,7 +91,7 @@ Phase 9.4 stellt ausschließlich diese lokalen Leseendpunkte bereit:
 ```text
 GET /api/taxonomy/status
 GET /api/taxonomy/kingdoms
-GET /api/taxonomy/search?q=<Text>&kind=<vernacular|scientific|all>&kingdomId=<Reich>&limit=12
+GET /api/taxonomy/search?q=<Text>&kind=<vernacular|scientific|all>&kingdomId=<Reich>&language=<all|de|en>&rank=<Rang>&limit=12
 GET /api/taxonomy/taxa/:id
 ```
 

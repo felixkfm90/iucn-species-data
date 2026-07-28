@@ -19,12 +19,16 @@
     query,
     kind = "all",
     kingdomId = "Animalia",
+    language = "all",
+    rank = "species",
     limit = 12,
   } = {}) {
     const parameters = [
       ["q", String(query ?? "").trim()],
       ["kind", String(kind || "all")],
       ["kingdomId", String(kingdomId || "Animalia")],
+      ["language", String(language || "all")],
+      ["rank", String(rank || "species")],
       ["limit", String(limit)],
     ];
     return `/api/taxonomy/search?${parameters
@@ -63,10 +67,18 @@
     if (includesAllOption) {
       kingdoms.push({ id: "all", label: "Alle Reiche" });
     }
-    return kingdoms.sort((left, right) => left.label.localeCompare(
-      right.label,
-      "de",
-      { numeric: true, sensitivity: "base" },
+    const priority = (kingdom) => {
+      if (kingdom.id === "all") return 0;
+      if (kingdom.id === "Animalia") return 1;
+      return 2;
+    };
+    return kingdoms.sort((left, right) => (
+      priority(left) - priority(right)
+      || left.label.localeCompare(
+        right.label,
+        "de",
+        { numeric: true, sensitivity: "base" },
+      )
     ));
   }
 
@@ -371,6 +383,8 @@
           query,
           kind,
           kingdomId: kingdomSelect.value || defaultKingdom,
+          language: kind === "vernacular" ? "de" : "all",
+          rank: "species",
           limit: 12,
         }));
         if (version !== requestVersion) return;
@@ -380,7 +394,9 @@
         renderResults();
         setMessage(
           searchResults.length
-            ? `${searchResults.length} ${searchResults.length === 1 ? "Vorschlag" : "Vorschläge"} gefunden. Bitte einen Eintrag auswählen.`
+            ? searchResults.length >= 12
+              ? "12 Vorschläge werden angezeigt. Bitte den Suchbegriff weiter ergänzen oder einen Eintrag auswählen."
+              : `${searchResults.length} ${searchResults.length === 1 ? "Vorschlag" : "Vorschläge"} gefunden. Bitte einen Eintrag auswählen.`
             : "Kein passender Arteintrag in der lokalen Referenz gefunden. Die manuelle Eingabe bleibt möglich.",
           searchResults.length ? "success" : "warning",
         );

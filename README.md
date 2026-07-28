@@ -286,8 +286,12 @@ Eingabeprüfung und Kollisionskontrolle bleibt danach Pflicht.
 
 Die Referenzsuche ist bei installierter Datenbank der reguläre geführte Eingabeweg; manuelle Eingabe bleibt als
 bewusster Fallback verfügbar. Der Assistent wertet dafür den Referenzstatus innerhalb des gemeinsamen
-Wartungsstatus aus und lädt anschließend alle im Release vorhandenen Reiche. Die Reichsauswahl ist nach der
-sichtbaren deutschen Bezeichnung sortiert. Suchtreffer stehen in einer kompakten, überlagernden Liste, damit der
+Wartungsstatus aus und lädt anschließend alle im Release vorhandenen Reiche. `Alle Reiche` steht oben,
+`Tiere (Animalia)` direkt danach; alle übrigen Reiche sind nach der sichtbaren deutschen Bezeichnung sortiert.
+Das deutsche Namensfeld fordert über einen expliziten API-Sprachfilter nur deutsch gekennzeichnete
+Vernakularnamen an, während die allgemeine Referenzsuche mehrsprachig bleibt. Der Neue-Art-Assistent begrenzt
+seine API-Suche bereits auf echte Arteinträge. Gattungen und Unterarten verdrängen dadurch keine Arten
+aus dem Trefferlimit. Suchtreffer stehen in einer kompakten, überlagernden Liste, damit der
 Dialog beim Tippen nicht mit jeder Trefferzahl seine Höhe verändert. Fehlt oder scheitert die lokale
 Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für ein gültiges Taxon
 ohne belegten deutschen Namen wird – sofern im Release vorhanden – der englische Vernakularname sichtbar als

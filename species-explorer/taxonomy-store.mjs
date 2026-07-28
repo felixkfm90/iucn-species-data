@@ -16,6 +16,20 @@ import {
 } from "./taxonomy-storage.mjs";
 
 const SEARCH_KINDS = new Set(["all", "scientific", "vernacular", "identifier"]);
+const SEARCH_LANGUAGES = new Set(["all", "de", "en"]);
+const SEARCH_RANKS = new Set([
+  "all",
+  "kingdom",
+  "phylum",
+  "subphylum",
+  "class",
+  "order",
+  "family",
+  "subfamily",
+  "genus",
+  "species",
+  "subspecies",
+]);
 const GERMAN_LANGUAGE_CODES = new Set(["de", "deu", "ger"]);
 const ENGLISH_LANGUAGE_CODES = new Set(["en", "eng"]);
 
@@ -51,6 +65,40 @@ function termTypeFilter(kind) {
   if (kind === "vernacular") return ["vernacular"];
   if (kind === "identifier") return ["external_identifier"];
   return null;
+}
+
+function appendSearchFilters({
+  filters,
+  params,
+  kind,
+  kingdom,
+  language,
+  rank,
+}) {
+  if (kingdom && kingdom !== "all") {
+    filters.push("term.kingdom = ?");
+    params.push(kingdom);
+  }
+  const types = termTypeFilter(kind);
+  if (types) {
+    filters.push(`term.term_type IN (${types.map(() => "?").join(", ")})`);
+    params.push(...types);
+  }
+  if (language === "de") {
+    filters.push(`(
+      LOWER(term.language) IN ('de', 'deu', 'ger')
+      OR LOWER(term.language) LIKE 'de-%'
+    )`);
+  } else if (language === "en") {
+    filters.push(`(
+      LOWER(term.language) IN ('en', 'eng')
+      OR LOWER(term.language) LIKE 'en-%'
+    )`);
+  }
+  if (rank && rank !== "all") {
+    filters.push("LOWER(taxon.rank) = ?");
+    params.push(rank);
+  }
 }
 
 function plain(value) {
@@ -212,7 +260,16 @@ export class TaxonomyStore {
     };
   }
 
-  prefixRows({ normalized, folded, germanKey, kind, kingdom, limit }) {
+  prefixRows({
+    normalized,
+    folded,
+    germanKey,
+    kind,
+    kingdom,
+    language,
+    rank,
+    limit,
+  }) {
     const filters = [];
     const params = [
       normalized,
@@ -222,15 +279,14 @@ export class TaxonomyStore {
       germanKey,
       prefixUpperBound(germanKey),
     ];
-    if (kingdom && kingdom !== "all") {
-      filters.push("term.kingdom = ?");
-      params.push(kingdom);
-    }
-    const types = termTypeFilter(kind);
-    if (types) {
-      filters.push(`term.term_type IN (${types.map(() => "?").join(", ")})`);
-      params.push(...types);
-    }
+    appendSearchFilters({
+      filters,
+      params,
+      kind,
+      kingdom,
+      language,
+      rank,
+    });
     params.push(normalized, folded, germanKey, limit * 8);
     return this.database.prepare(`
       SELECT
@@ -269,21 +325,27 @@ export class TaxonomyStore {
     `).all(...params);
   }
 
-  ftsRows({ normalized, kind, kingdom, limit }) {
+  ftsRows({
+    normalized,
+    kind,
+    kingdom,
+    language,
+    rank,
+    limit,
+  }) {
     const tokens = normalized.split(" ").filter(Boolean);
     if (!tokens.length) return [];
     const match = tokens.map((token) => `"${token.replace(/"/g, "\"\"")}"*`).join(" AND ");
     const filters = [];
     const params = [match];
-    if (kingdom && kingdom !== "all") {
-      filters.push("term.kingdom = ?");
-      params.push(kingdom);
-    }
-    const types = termTypeFilter(kind);
-    if (types) {
-      filters.push(`term.term_type IN (${types.map(() => "?").join(", ")})`);
-      params.push(...types);
-    }
+    appendSearchFilters({
+      filters,
+      params,
+      kind,
+      kingdom,
+      language,
+      rank,
+    });
     params.push(limit * 8);
     return this.database.prepare(`
       SELECT
@@ -319,10 +381,16 @@ export class TaxonomyStore {
     query,
     kind = "all",
     kingdom = "Animalia",
+    language = "all",
+    rank = "all",
     limit = 12,
   } = {}) {
     this.assertOpen();
     if (!SEARCH_KINDS.has(kind)) throw new Error(`Unbekannte Taxonomie-Suchart: ${kind}`);
+    if (!SEARCH_LANGUAGES.has(language)) {
+      throw new Error(`Unbekannte Taxonomie-Suchsprache: ${language}`);
+    }
+    if (!SEARCH_RANKS.has(rank)) throw new Error(`Unbekannter Taxonomie-Rang: ${rank}`);
     const normalized = normalizeTaxonomySearchTerm(query);
     const maximum = normalizeLimit(limit);
     if (!normalized) {
@@ -330,6 +398,8 @@ export class TaxonomyStore {
         query: "",
         kind,
         kingdom,
+        language,
+        rank,
         limit: maximum,
         results: [],
         selected: null,
@@ -342,6 +412,8 @@ export class TaxonomyStore {
       germanKey: germanTaxonomySearchKey(query),
       kind,
       kingdom,
+      language,
+      rank,
       limit: maximum,
     };
     const rows = this.prefixRows(searchInput);
@@ -364,6 +436,8 @@ export class TaxonomyStore {
       normalizedQuery: normalized,
       kind,
       kingdom,
+      language,
+      rank,
       limit: maximum,
       results,
       selected: null,

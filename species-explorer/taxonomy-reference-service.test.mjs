@@ -68,6 +68,8 @@ test("aktive Referenz liefert Reichsauswahl, bidirektionale Suche und Taxondetai
     query: "Stieg",
     kind: "vernacular",
     kingdomId: "Animalia",
+    language: "de",
+    rank: "species",
     limit: 12,
   });
   assert.equal(german.results[0].germanName, "Stieglitz");
@@ -77,6 +79,7 @@ test("aktive Referenz liefert Reichsauswahl, bidirektionale Suche und Taxondetai
     query: "Card",
     kind: "scientific",
     kingdomId: "Animalia",
+    rank: "species",
     limit: 12,
   });
   const speciesResult = scientific.results.find(
@@ -107,6 +110,14 @@ test("Suchparameter und unbekannte Taxa werden an der API-Grenze validiert", asy
   await assert.rejects(
     service.search({ query: "Amsel", kind: "unknown" }),
     (error) => error.statusCode === 400 && /Suchart/.test(error.message),
+  );
+  await assert.rejects(
+    service.search({ query: "Amsel", rank: "unknown" }),
+    (error) => error.statusCode === 400 && /Rang/.test(error.message),
+  );
+  await assert.rejects(
+    service.search({ query: "Amsel", language: "unknown" }),
+    (error) => error.statusCode === 400 && /Suchsprache/.test(error.message),
   );
   await assert.rejects(
     service.search({ query: "Amsel", limit: 13 }),

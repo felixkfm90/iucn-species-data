@@ -915,7 +915,12 @@ erneut unverändert.
 
 Am 2026-07-28 wurde die reale Explorer-Anbindung nachgeschärft: Der Neue-Art-Assistent liest den verfügbaren
 Referenzbestand aus dem verschachtelten Wartungsstatus, lädt damit wieder alle Reiche und liefert bidirektionale
-Vorschläge wie `Gepard`/`Acinonyx jubatus`. Die Reichsauswahl ist alphabetisch sortiert; die kompakte
+Vorschläge wie `Gepard`/`Acinonyx jubatus`. `Alle Reiche` und das vorausgewählte `Tiere (Animalia)` stehen vor den
+alphabetisch sortierten übrigen Reichen. Das deutsche Eingabefeld berücksichtigt ausschließlich deutsch
+gekennzeichnete Vernakularnamen über einen expliziten Sprachparameter; die allgemeine Referenzsuche bleibt
+mehrsprachig. Die Neue-Art-Suche wird serverseitig auf den Rang `Art` begrenzt, damit
+anderssprachige Namen, Gattungen und Unterarten keine falschen beziehungsweise verdrängten Treffer verursachen.
+Die kompakte
 Trefferliste überlagert die folgenden Felder, sodass der Dialog beim Tippen nicht mehr springt. Laufende
 Aktualisierungen wiederholen den Fortschrittstitel nicht mehr in der Detailzeile. Im Ruhezustand steht die aktive
 Referenz nur in der Überschrift; die Detailzeile nennt ausschließlich die neueste verfügbare Version.
