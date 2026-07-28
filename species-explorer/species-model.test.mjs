@@ -42,6 +42,7 @@ function baseSpecies(overrides = {}) {
     slug: "turdusmerula",
     safeName: "Amsel",
     germanName: "Amsel",
+    englishName: "Eurasian Blackbird",
     scientificName: "Turdus merula",
     taxonomy: { genus: "Turdus", species: "merula" },
     manual: {
@@ -73,6 +74,7 @@ test("Namen, Assetnamen und Taxonomiewerte werden stabil normalisiert", () => {
 test("Neue Arten werden feldweise validiert und in das Eingabeformat abgeleitet", () => {
   const validation = validateNewSpeciesValues({
     german: "Amsel",
+    english: "Eurasian Blackbird",
     scientificName: "tURDUS MERULA",
     size: "ca. 23,5-29 cm",
     weight: "ca. 80-110 g",
@@ -85,6 +87,7 @@ test("Neue Arten werden feldweise validiert und in das Eingabeformat abgeleitet"
   const built = buildNewSpeciesEntry(validation.values);
   assert.deepEqual(built.entry, {
     german: "Amsel",
+    english: "Eurasian Blackbird",
     genus: "Turdus",
     species: "merula",
     size: "ca. 23,5-29 cm",
@@ -134,6 +137,7 @@ test("Bearbeitungsdiffs und Umbenennungen erkennen gezielte Aenderungen und Koll
   const species = baseSpecies();
   const inputEntry = {
     german: "Amsel",
+    english: "Eurasian Blackbird",
     genus: "Turdus",
     species: "merula",
     size: "ca. 23,5-29 cm",
@@ -142,7 +146,12 @@ test("Bearbeitungsdiffs und Umbenennungen erkennen gezielte Aenderungen und Koll
   };
   const inputList = [
     inputEntry,
-    { german: "Singdrossel", genus: "Turdus", species: "philomelos" },
+    {
+      german: "Singdrossel",
+      english: "Song Thrush",
+      genus: "Turdus",
+      species: "philomelos",
+    },
   ];
   const model = {
     species: [
@@ -160,6 +169,7 @@ test("Bearbeitungsdiffs und Umbenennungen erkennen gezielte Aenderungen und Koll
 
   const validation = validateEditableValues({
     germanName: "Schwarzdrossel",
+    englishName: "Eurasian Blackbird",
     scientificName: "Turdus merula",
     size: "ca. 24-30 cm",
     weight: "ca. 80-110 g",

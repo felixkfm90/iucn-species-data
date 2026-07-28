@@ -454,6 +454,7 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
   const beforeText = await readFile(speciesListPath, "utf8");
   const validValues = {
     german: "Testvogel",
+    english: "Test Bird",
     scientificName: "Testus Avis",
     size: "ca. 20 cm",
     weight: "ca. 50 g",
@@ -520,6 +521,7 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
   assert.ok(preview.token);
   assert.deepEqual(preview.entry, {
     german: "Testvogel",
+    english: "Test Bird",
     genus: "Testus",
     species: "avis",
     size: "ca. 20 cm",

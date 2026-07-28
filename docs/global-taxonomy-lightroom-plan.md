@@ -233,8 +233,9 @@ deutschen Übersetzung bevorzugt werden.
 Die read-only Integration wurde in Phase 9.4 nach dem begrenzten Importprototyp umgesetzt. Der Neue-Art-Assistent
 bietet:
 
-- Reichsauswahl mit `Tiere (Animalia)` als Standard und weiteren Reichen aus der Referenzdatenbank
-- bidirektionale Vorschläge deutsch ↔ wissenschaftlich nach jedem eingegebenen Zeichen
+- lokal konfigurierbare Reichsauswahl mit `Tiere (Animalia)` als erstem Standard und weiteren Reichen aus der
+  Referenzdatenbank
+- getrennte Vorschläge für deutsche, englische und wissenschaftliche Namen nach 300 Millisekunden
 - globale Suche nach wissenschaftlichem Namen
 - Suche nach deutschem Namen, sofern belegt vorhanden
 - Trefferliste bei mehreren passenden Taxa
@@ -383,8 +384,8 @@ Wikidata, Animalia.bio und IUCN.
 - Schema und Provenienzmodell bilden beliebige Ränge, akzeptierte Namen, Synonyme, Vernakularnamen, Quellen,
   Releases und externe IDs ab.
 - B-Tree-Präfixsuche unterstützt Vorschläge ab dem ersten Zeichen; FTS5 ergänzt mehrteilige Suche.
-- Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und
-  bidirektionale Vorschläge deutsch ↔ wissenschaftlich.
+- Der Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als erster Vorauswahl, eine lokale
+  Sichtbarkeitseinstellung und getrennte Vorschläge für deutsche, englische und wissenschaftliche Namen.
 - Bei einem Tier ohne bestätigten deutschen Namen ist eine gezielte manuelle Animalia.bio-Recherche vorgesehen;
   automatisierter Abruf oder Scraping bleibt ausgeschlossen.
 - Große Referenzdaten werden aus Git, Pages und normalen Projekt-Backups ausgeschlossen; kleine eigene

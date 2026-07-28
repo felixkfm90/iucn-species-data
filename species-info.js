@@ -63,6 +63,7 @@
     container.innerHTML = `
       <div class="frame-box left-frame">
         <p class="species-info-name">Name: ${escapeHtml(data["Deutscher Name"])} – ${escapeHtml(data["Wissenschaftlicher Name"])}</p>
+        ${renderInfoRow("Englischer Name", data["Englischer Name"])}
         ${renderInfoRow("Größe", data.Größe)}
         ${renderInfoRow("Gewicht", data.Gewicht)}
         ${renderInfoRow("Lebenserwartung", lifeExpectancy)}

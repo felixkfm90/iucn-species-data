@@ -282,6 +282,7 @@ export function createSpeciesEditOperations({
     inputList[inputIndex] = {
       ...currentEntry,
       german: values.germanName,
+      english: values.englishName,
       genus: values.genus,
       species: values.species,
       size: values.size,
@@ -301,10 +302,16 @@ export function createSpeciesEditOperations({
       || scientificKey(entry?.Genus, entry?.Species)
         === scientificKey(species.taxonomy.genus, species.taxonomy.species)
     ));
-    if (generatedIndex >= 0 && (germanNameChanged || scientificNameChanged)) {
+    const englishNameChanged =
+      normalizeComparable(currentEntry.english) !== normalizeComparable(values.englishName);
+    if (
+      generatedIndex >= 0
+      && (germanNameChanged || englishNameChanged || scientificNameChanged)
+    ) {
       speciesData[generatedIndex] = {
         ...speciesData[generatedIndex],
         ...(germanNameChanged ? { "Deutscher Name": newGermanName } : {}),
+        ...(englishNameChanged ? { "Englischer Name": values.englishName } : {}),
         ...(scientificNameChanged
           ? {
               "Wissenschaftlicher Name": newScientificName,

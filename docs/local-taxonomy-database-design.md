@@ -309,23 +309,26 @@ Mindestens erforderlich sind:
 Der Neue-Art-Assistent erhält ein Dropdown `Reich`. Die Einträge kommen aus der installierten Referenzdatenbank.
 
 - `Tiere (Animalia)` ist standardmäßig vorausgewählt, weil der aktuelle Arten-Explorer primär Tierarten verwaltet.
-- Weitere verfügbare Reiche, beispielsweise Pflanzen oder Pilze, können bewusst gewählt werden.
-- Eine Option `Alle Reiche` bleibt für Homonyme und unsichere Fälle verfügbar.
+- Ein Zahnrad erlaubt, Animalia und weitere verfügbare Reiche lokal ein- oder auszublenden.
+- Das Dropdown enthält nur ausgewählte Reiche; sie stehen unter `Alle Reiche` alphabetisch nach sichtbarem Namen.
+- `Alle Reiche` durchsucht ausschließlich diese ausgewählte Menge und nie still ausgeblendete Reiche.
 - Die Auswahl filtert Treffer, verändert aber keine bereits bestätigte Projektart.
 
 ### 7.2 Bidirektionale Vorschläge
 
-Die Suche arbeitet in beiden Feldern:
+Die Suche arbeitet in drei getrennten Feldern:
 
 - Eingabe `Stieg...` im deutschen Feld schlägt beispielsweise `Stieglitz – Carduelis carduelis` vor.
-- Eingabe `Card...` im wissenschaftlichen Feld schlägt denselben akzeptierten Treffer und – falls belegt – den
-  deutschen, andernfalls einen englischen Ersatznamen vor.
+- Eingabe `Goldf...` im englischen Feld schlägt beispielsweise `European Goldfinch – Carduelis carduelis` vor
+  und zeigt dazu den belegten deutschen Namen.
+- Eingabe `Card...` im wissenschaftlichen Feld schlägt denselben akzeptierten Treffer und die verfügbaren
+  deutschen sowie englischen Namen vor.
 - Akzeptierte wissenschaftliche Namen, Synonyme, deutsche und englische Vernakularnamen sowie Quellen-IDs sind
   suchbar.
 - Ein Synonym wird als `eingegebener Name → akzeptierter Name` dargestellt.
 - Mehrere Taxa werden als Trefferliste angezeigt; kein Treffer wird still ausgewählt.
 
-Nach jedem Eingabeereignis wird mit ungefähr 150 Millisekunden Verzögerung gesucht. Ältere noch laufende Anfragen
+Nach jedem Eingabeereignis wird mit 300 Millisekunden Verzögerung gesucht. Ältere noch laufende Anfragen
 werden verworfen; nur die Antwort zur neuesten Eingabe darf die Liste aktualisieren.
 
 ### 7.3 Suche ab dem ersten Zeichen
@@ -335,8 +338,8 @@ Auch ein einzelnes Zeichen ist zulässig. Damit diese Suche bei Millionen Namen 
 1. Ein normalisierter B-Tree-Präfixindex liefert bereits ab einem Zeichen höchstens zwölf Ergebnisse innerhalb
    des ausgewählten Reichs.
 2. Ab mehreren Zeichen ergänzt FTS5 die Suche für mehrteilige Begriffe und weitere Treffer.
-3. Eine Trigramm-Substring-Suche wird nur übernommen, wenn der Prototyp in Phase 9.3 ihren zusätzlichen
-   Speicherbedarf und Nutzen rechtfertigt.
+3. Ab drei Zeichen ergänzt eine begrenzte indexgestützte Teiltreffersuche den Präfix-/FTS-Bestand, wenn noch nicht
+   genug Taxa gefunden wurden. Exakte Treffer unterdrücken unpassende unscharfe Ergebnisse.
 
 Die Normalisierung berücksichtigt:
 
@@ -349,17 +352,16 @@ Die Normalisierung berücksichtigt:
 
 Die Treffer werden bevorzugt nach folgender Reihenfolge sortiert:
 
-1. exakter akzeptierter wissenschaftlicher Name
-2. exakter bestätigter deutscher Name
-3. Präfix des akzeptierten wissenschaftlichen Namens
-4. Präfix eines bestätigten deutschen Namens
-5. wissenschaftliches Synonym
-6. englischer Vernakularname, wenn für das Taxon kein deutscher Name vorliegt
-7. weitere quellenmarkierte Vernakular- oder ID-Treffer
+1. exakter akzeptierter wissenschaftlicher, deutscher oder englischer Name passend zum aktiven Feld
+2. Präfix des akzeptierten wissenschaftlichen Namens
+3. Präfix eines bestätigten deutschen beziehungsweise englischen Namens passend zum aktiven Feld
+4. wissenschaftliches Synonym
+5. begrenzte FTS-/Teiltreffer
+6. weitere quellenmarkierte Vernakular- oder ID-Treffer
 
 Jeder Treffer zeigt:
 
-- deutschen Namen, sofern belegt, sonst einen sichtbar als Ersatz gekennzeichneten englischen Namen
+- deutschen Namen, sofern belegt, sonst den englischen Namen oder den wissenschaftlichen Namen als Trefferüberschrift
 - akzeptierten wissenschaftlichen Namen
 - Rang
 - akzeptiert oder Synonym
@@ -375,7 +377,8 @@ Fokussieren oder Überfahren erzeugt keine produktive Änderung.
 Ein bestätigter Treffer kann später folgende Vorschau füllen:
 
 - wissenschaftlicher Name
-- belegter deutscher Name oder – nur wenn Deutsch fehlt – gekennzeichneter englischer Ersatzname
+- belegter deutscher Name
+- belegter englischer Name
 - Gattung, Art und gegebenenfalls Unterart
 - vollständige verfügbare Klassifikation
 - Quellen-IDs und Release
@@ -385,7 +388,7 @@ Der vorhandene Prüfen-/Vorschau-/Speichern-Ablauf bleibt Pflicht. Eine Unterart
 ändert aber nur dann den wissenschaftlichen Projektnamen und den URL-Slug, wenn der Benutzer ausdrücklich diese
 Unterart statt der Art als Projekt-Taxon auswählt.
 
-## 8. Fehlender deutscher Name, englischer Ersatz und Animalia.bio
+## 8. Fehlende deutsche oder englische Namen und Animalia.bio
 
 Ja, bei einem Tier ohne bestätigten deutschen Namen kann gezielt auf Animalia.bio recherchiert werden. Weil
 Animalia.bio keine dokumentierte öffentliche API und keinen versionierten Bulk-Export anbietet, erfolgt dies
@@ -394,22 +397,22 @@ bewusst nicht als Hintergrundabruf.
 Der Ablauf lautet:
 
 1. Die lokale Suche findet ein Tier-Taxon, aber keinen ausreichend belegten deutschen Namen.
-2. Ist ein englischer Vernakularname belegt, zeigt der Assistent ihn als `Englischer Ersatzname` an und erlaubt
-   seine bewusste vorläufige Übernahme.
-3. Der Assistent zeigt zusätzlich `Kein bestätigter deutscher Name in der Referenzdatenbank`.
-4. Zusätzlich erscheint der Button `Animalia.bio manuell prüfen`.
-5. Der Button öffnet im Systembrowser eine auf Animalia.bio begrenzte Suche mit dem wissenschaftlichen Namen,
+2. Ist ein englischer Vernakularname belegt, füllt eine bewusste Übernahme ausschließlich das eigenständige Feld
+   `Englischer Name`.
+3. Der deutsche Pflichtwert bleibt manuell zu ergänzen; das englische Feld ersetzt ihn nicht.
+4. Der Assistent zeigt zusätzlich `Kein bestätigter deutscher Name in der Referenzdatenbank`.
+5. Zusätzlich erscheint der Button `Animalia.bio manuell prüfen`.
+6. Der Button öffnet im Systembrowser eine auf Animalia.bio begrenzte Suche mit dem wissenschaftlichen Namen,
    beispielsweise eine Suchanfrage nach `site:animalia.bio/de "Panthera leo"`.
-6. Die App scrapt, parst und importiert die Zielseite nicht.
-7. Der Benutzer kann einen dort nachvollziehbar gefundenen Namen manuell eintragen.
-8. Bei Übernahme werden Quellen-URL, Kennzeichnung `manuelle Referenz` und Bestätigung in den kleinen
+7. Die App scrapt, parst und importiert die Zielseite nicht.
+8. Der Benutzer kann einen dort nachvollziehbar gefundenen Namen manuell eintragen.
+9. Bei Übernahme werden Quellen-URL, Kennzeichnung `manuelle Referenz` und Bestätigung in den kleinen
    Projektzuordnungen gespeichert.
 
 Der Button wird nur für Taxa im Reich Animalia und nur bei fehlendem bestätigtem deutschen Namen angeboten. Ein
 fehlendes Suchergebnis ist kein Datenbankfehler und blockiert die vorhandene manuelle Eingabe nicht.
-Ergänzt ein späterer Referenzrelease einen deutschen Namen, wird dieser in neuen Suchergebnissen gegenüber dem
-englischen Ersatz bevorzugt. Bereits angelegte Projektarten bleiben unverändert, bis eine Umbenennung ausdrücklich
-bestätigt wird.
+Ergänzt ein späterer Referenzrelease einen deutschen oder englischen Namen, erscheint er in neuen Suchergebnissen.
+Bereits angelegte Projektarten bleiben unverändert, bis eine Änderung ausdrücklich bestätigt wird.
 
 ## 9. Import- und Aktualisierungsablauf
 
@@ -549,10 +552,11 @@ Diese Punkte sind am 2026-07-23 abgeschlossen worden. Ergebnisse, Messwerte, Mod
 freigegeben worden.
 
 Phase 9.4 wurde am 2026-07-24 abgeschlossen. `species-explorer/taxonomy-reference-service.mjs` bindet den aktiven
-read-only Speicher an die lokale API an. Der Neue-Art-Assistent bietet die bidirektionale Suche mit Animalia als
-Standard, bewusster Treffer- und Übernahmeentscheidung, vollständiger Quellen-/Hierarchievorschau sowie
-nicht blockierendem manuellen Fallback an. Im Artformular werden nur Taxa mit Rang `Art` angeboten; die allgemeine
-Lese-API bleibt rangneutral. Der vollständige Bedien- und Fehlervertrag steht in
+read-only Speicher an die lokale API an. Der Neue-Art-Assistent bietet getrennte Vorschläge für deutsche,
+englische und wissenschaftliche Namen, eine lokal konfigurierbare Reichsauswahl, bewusste Treffer- und
+Übernahmeentscheidung, vollständige Quellen-/Hierarchievorschau sowie einen nicht blockierenden manuellen
+Fallback an. Im Artformular werden nur Taxa mit Rang `Art` angeboten; die allgemeine Lese-API bleibt rangneutral.
+Der vollständige Bedien- und Fehlervertrag steht in
 `docs/taxonomy-explorer-integration.md`.
 
 Phase 9.5 wurde am 2026-07-26 technisch umgesetzt. Der Vollimport reserviert mindestens 12 GB freien Speicher,

@@ -75,7 +75,7 @@ export function createIucnDataAdapter({
     }
   }
 
-  async function fetchSpeciesData(genus, species, german, size, weight, lifeExpectancy) {
+  async function fetchSpeciesData(genus, species, german, english, size, weight, lifeExpectancy) {
     const scientific = `${genus} ${species}`;
     const URLSlug = `${genus}${species}`.toLowerCase();
     try {
@@ -86,7 +86,7 @@ export function createIucnDataAdapter({
       if (!taxonData?.taxon) {
         logger.error(`❌ Kein Treffer für ${scientific}`);
         logError(`Kein Treffer: ${scientific}`);
-        return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
+        return emptyEntry(scientific, german, english, { size, weight, lifeExpectancy });
       }
       const taxon = taxonData.taxon;
       const resolvedName = taxon.scientific_name;
@@ -95,7 +95,7 @@ export function createIucnDataAdapter({
       if (!globalAssessment) {
         logger.error(`❌ Keine globale Assessment-ID für ${resolvedName}`);
         logError(`Keine globale Assessment-ID: ${resolvedName}`);
-        return emptyEntry(resolvedName, german, { size, weight, lifeExpectancy });
+        return emptyEntry(resolvedName, german, english, { size, weight, lifeExpectancy });
       }
       const assessmentId = globalAssessment.assessment_id;
       const assessmentInfo = await getAssessmentData(assessmentId);
@@ -110,6 +110,7 @@ export function createIucnDataAdapter({
         URLSlug,
         "Wissenschaftlicher Name": resolvedName,
         "Deutscher Name": german,
+        "Englischer Name": english,
         Gewicht: weight,
         Größe: size,
         Lebenserwartung: lifeExpectancy || "n/a",
@@ -133,7 +134,7 @@ export function createIucnDataAdapter({
     } catch (error) {
       logger.error(`❌ Fehler bei ${scientific}: ${error}`);
       logError(`Fehler bei ${scientific}: ${error.message}`);
-      return emptyEntry(scientific, german, { size, weight, lifeExpectancy });
+      return emptyEntry(scientific, german, english, { size, weight, lifeExpectancy });
     }
   }
 

@@ -8,8 +8,8 @@ GitHub Pages Base:
 
 ## Datenfluss
 
-`species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus die Artennamen, Groesse, Gewicht und
-manuell gepflegte Lebenserwartung und erzeugt bzw.
+`species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus deutsche, englische und
+wissenschaftliche Artennamen, Groesse, Gewicht und manuell gepflegte Lebenserwartung und erzeugt bzw.
 aktualisiert:
 
 - `speciesData.json`
@@ -278,27 +278,31 @@ vollständige CoL-XR-Bestand ist lokal installiert, bleibt aber weiterhin außer
 
 ## Taxonomiereferenz im Neue-Art-Assistenten
 
-Phase 9.4 bindet den aktiven lokalen Referenzbestand read-only in Schritt 1 von `Neue Art` ein. `Tiere (Animalia)`
-ist vorausgewählt; über `Alle Reiche` kann bewusst global gesucht werden. Deutscher und wissenschaftlicher Name
-liefern beim Tippen gegenseitige Vorschläge. Ein Treffer wird erst nach Auswahl mit Hierarchie, Quelle, Release,
-ID und Namensstatus angezeigt und nur über `Vorschlag übernehmen` in die Felder geschrieben. Die normale
-Eingabeprüfung und Kollisionskontrolle bleibt danach Pflicht.
+Phase 9.4 bindet den aktiven lokalen Referenzbestand read-only in Schritt 1 von `Neue Art` ein. Der Assistent
+führt drei eigenständige Pflichtfelder: `Deutscher Name`, `Englischer Name` und `Wissenschaftlicher Name`.
+Jedes Feld durchsucht beim Tippen die passende Sprache beziehungsweise wissenschaftliche Namen und Synonyme.
+Die Suche startet 300 Millisekunden nach der letzten Eingabe; ältere Anfragen dürfen die aktuelle Trefferliste
+nicht mehr überschreiben. Ein Treffer wird erst nach Auswahl mit Hierarchie, Quelle, Release, ID und Namensstatus
+angezeigt und nur über `Vorschlag übernehmen` in die drei Namensfelder geschrieben. Die normale Eingabeprüfung und
+Kollisionskontrolle bleibt danach Pflicht.
 
-Die Referenzsuche ist bei installierter Datenbank der reguläre geführte Eingabeweg; manuelle Eingabe bleibt als
-bewusster Fallback verfügbar. Der Assistent wertet dafür den Referenzstatus innerhalb des gemeinsamen
-Wartungsstatus aus und lädt anschließend alle im Release vorhandenen Reiche. `Alle Reiche` steht oben,
-`Tiere (Animalia)` direkt danach; alle übrigen Reiche sind nach der sichtbaren deutschen Bezeichnung sortiert.
-Das deutsche Namensfeld fordert über einen expliziten API-Sprachfilter nur deutsch gekennzeichnete
-Vernakularnamen an, während die allgemeine Referenzsuche mehrsprachig bleibt. Der Neue-Art-Assistent begrenzt
-seine API-Suche bereits auf echte Arteinträge. Gattungen und Unterarten verdrängen dadurch keine Arten
-aus dem Trefferlimit. Suchtreffer stehen in einer kompakten, überlagernden Liste, damit der
-Dialog beim Tippen nicht mit jeder Trefferzahl seine Höhe verändert. Fehlt oder scheitert die lokale
-Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Für ein gültiges Taxon
-ohne belegten deutschen Namen wird – sofern im Release vorhanden – der englische Vernakularname sichtbar als
-`Englischer Ersatzname` vorgeschlagen. Deutsch hat immer Vorrang; ergänzt ein späterer Release einen deutschen
-Namen, wird dieser bei künftigen Suchen bevorzugt. Bestehende Projektarten werden dadurch niemals still umbenannt.
-Für Tiere bleibt zusätzlich der manuelle Animalia.bio-Suchlink verfügbar. Die Integration schreibt keine
-Projektart, ändert keine bestehende Art und ist nicht Bestandteil von GitHub Pages oder Squarespace.
+Die Referenzsuche ist bei installierter Datenbank der reguläre geführte Eingabeweg; alle drei Felder bleiben
+gleichzeitig direkt manuell beschreibbar. Über das Zahnrad neben der Reichsauswahl wird lokal festgelegt, welche
+Reiche im Dropdown erscheinen. Beim ersten Start ist nur `Tiere (Animalia)` ausgewählt, kann dort aber ebenfalls
+abgewählt werden. `Alle Reiche` steht vor den alphabetisch sortierten sichtbaren Reichen und durchsucht
+ausschließlich diese Auswahl; ausgeblendete Reiche werden weder angezeigt noch einbezogen.
+Das deutsche und englische Namensfeld verwenden explizite Sprachfilter. Die wissenschaftliche Suche berücksichtigt
+akzeptierte Namen und Synonyme. Der Neue-Art-Assistent begrenzt seine API-Suche auf echte Arteinträge; exakte
+Treffer werden gegenüber unpassenden Teiltreffern bevorzugt. Gattungen und Unterarten verdrängen dadurch keine
+Arten aus dem Trefferlimit. Suchtreffer stehen weiterhin in einer kompakten, schwebenden Liste über dem Formular,
+damit der Dialog beim Tippen nicht mit jeder Trefferzahl seine Höhe verändert.
+
+Fehlt oder scheitert die lokale Referenz, bleibt die manuelle Artanlage vollständig nutzbar. Deutsche und
+englische Namen werden getrennt gespeichert; Englisch ist kein Ersatz im deutschen Datenfeld. Fehlt in der
+Referenz ein deutscher Name, kann ein vorhandener englischer Name übernommen und der deutsche Name redaktionell
+ergänzt werden. Ein späterer Referenzrelease benennt bestehende Projektarten niemals still um. Für Tiere bleibt
+zusätzlich der manuelle Animalia.bio-Suchlink verfügbar. Die Referenzintegration selbst ändert keine bestehende
+Projektart und ist nicht Bestandteil von GitHub Pages oder Squarespace.
 
 Fokussierte Tests:
 
@@ -755,7 +759,7 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
 GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
-Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6`,
+Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7`,
 `species-taxonomy.js?v=1.0.5` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
 erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert. Die Taxonomie-Version erneuert zugleich
 den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS.
@@ -888,11 +892,12 @@ am 2026-07-22 abgeschlossen. Phase 9 hat am 2026-07-23 mit dem abgeschlossenen Q
 Catalogue of Life XR ist die globale Primärreferenz, WoRMS ergänzt marine Taxa, GBIF dient als Diensteschicht und
 Wikidata ausschließlich als optionale Namens-/ID-Vorschlagsquelle. Animalia.bio bleibt ohne dokumentierte
 maschinelle Schnittstelle eine manuelle Referenz. Phase 9.2 hat SQLite, lokales Release-/Stagingmodell,
-Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich festgelegt. Der spätere
-Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als Vorauswahl und bidirektionale Vorschläge
-deutsch beziehungsweise ersatzweise englisch ↔ wissenschaftlich ab dem ersten Zeichen. Fehlt ein bestätigter
-deutscher Name, wird ein vorhandener englischer Vernakularname sichtbar als Ersatz gekennzeichnet; bei Tieren kann
-zusätzlich eine gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden. Die Website wird nicht
+Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich festgelegt. Der
+Neue-Art-Assistent führt deutsche, englische und wissenschaftliche Namen getrennt und sucht nach 300 Millisekunden
+in der passenden Namensart. `Tiere (Animalia)` ist nur beim ersten Start vorausgewählt; über das Zahnrad werden die
+im Dropdown und in `Alle Reiche` berücksichtigten Reiche lokal festgelegt. Fehlt ein bestätigter deutscher Name,
+kann der englische Name unabhängig davon übernommen und der deutsche Pflichtwert redaktionell ergänzt werden; bei
+Tieren kann zusätzlich eine gezielte manuelle Animalia.bio-Recherche im Browser geöffnet werden. Die Website wird nicht
 automatisiert ausgelesen. Phase 9.3 hat den begrenzten, reproduzierbaren Importprototyp am 2026-07-23 abgeschlossen. Eine kleine
 versionierte CoL-XR-/WoRMS-Fixture bestätigt den streamenden SQLite-Import, atomare Aktivierung, Rollback,
 Ein-Zeichen-Präfixsuche, deutsch-wissenschaftliche Vorschläge, Synonyme, Homonyme und Quellenprovenienz. Der

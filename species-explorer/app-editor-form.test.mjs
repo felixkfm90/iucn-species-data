@@ -42,6 +42,7 @@ function createModel(values = {}, { unlocked = false } = {}) {
 test("Bearbeitungswerte enthalten Namen, Sperrstatus und gemeinsame Messwerte", () => {
   const fixture = createModel({
     germanName: "Löwe",
+    englishName: "Lion",
     scientificName: "Panthera leo",
     size: "140-250",
     sizeUnit: "cm",
@@ -52,6 +53,7 @@ test("Bearbeitungswerte enthalten Namen, Sperrstatus und gemeinsame Messwerte", 
   }, { unlocked: true });
   const result = fixture.model.editableValues();
   assert.equal(result.germanName, "Löwe");
+  assert.equal(result.englishName, "Lion");
   assert.equal(result.scientificName, "Panthera leo");
   assert.equal(result.scientificNameUnlocked, true);
   assert.equal(result.size, "shared:140-250|cm");
@@ -83,6 +85,7 @@ test("Größe und Gewicht können im Bearbeitungsdialog unabhängig getrennt wer
 test("Vollständige Bearbeitungseingaben erzeugen keine Feldfehler", () => {
   const fixture = createModel({
     germanName: "Amsel",
+    englishName: "Eurasian Blackbird",
     scientificName: "Turdus merula",
     size: "23-29",
     weight: "80-110",
@@ -93,6 +96,7 @@ test("Vollständige Bearbeitungseingaben erzeugen keine Feldfehler", () => {
 
 test("Leere gemeinsame Bearbeitungsfelder werden feldgenau erklärt", () => {
   const errors = createModel().model.validateEditableFields();
+  assert.equal(errors.englishName[0], "Englischer Name darf nicht leer sein");
   assert.equal(errors.germanName[0], "Deutscher Name darf nicht leer sein");
   assert.equal(errors.scientificName[0], "Wissenschaftlicher Name darf nicht leer sein");
   assert.equal(errors.size[0], "Größe darf nicht leer sein");

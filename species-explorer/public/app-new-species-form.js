@@ -35,6 +35,7 @@
       const weightSexed = formData.get("weightSexed") === "on";
       return {
         german: formData.get("german"),
+        english: formData.get("english"),
         scientificName: formData.get("scientificName"),
         size: sizeSexed
           ? composeManualSexedMeasurement(
@@ -75,6 +76,7 @@
       };
       for (const [fieldKey, label] of [
         ["german", "Deutscher Name"],
+        ["english", "Englischer Name"],
         ["scientificName", "Wissenschaftlicher Name"],
       ]) {
         if (!String(formData.get(fieldKey) ?? "").trim()) add(fieldKey, `${label} darf nicht leer sein`);

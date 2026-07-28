@@ -46,7 +46,7 @@ test("fehlende Referenzdaten blockieren die manuelle Artanlage nicht", async (co
   );
 });
 
-test("aktive Referenz liefert Reichsauswahl, bidirektionale Suche und Taxondetails", async (context) => {
+test("aktive Referenz liefert Reichsauswahl, Drei-Feld-Suche und Taxondetails", async (context) => {
   const { root, taxonomyRoot } = await temporaryTaxonomyRoot(context, "taxonomy-reference-ready-");
   await importTaxonomyPrototype({
     fixtureDirectory: FIXTURE_DIRECTORY,

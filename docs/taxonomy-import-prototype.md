@@ -54,7 +54,7 @@ Website nicht automatisiert.
 Die Fixture enthält unter anderem:
 
 - `Turdus merula` / Amsel für deutsch-wissenschaftliche Suche,
-- `Carduelis carduelis` / Stieglitz für bidirektionale Vorschläge,
+- `Carduelis carduelis` / Stieglitz für getrennte deutsche und wissenschaftliche Vorschläge,
 - `Cyanistes caeruleus` sowie das Synonym `Parus caeruleus`,
 - `Saimiri oerstedii` als bestehende Projektart,
 - `Megaptera novaeangliae`, `Solea solea` und `Asterias rubens` für WoRMS-Vergleiche,

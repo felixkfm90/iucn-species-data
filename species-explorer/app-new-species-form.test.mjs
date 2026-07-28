@@ -41,6 +41,7 @@ function createModel(values = {}) {
 test("Gemeinsame Messwerte und Alter werden mit den richtigen Einheiten aufgebaut", () => {
   const fixture = createModel({
     german: "Löwe",
+    english: "Lion",
     scientificName: "Panthera leo",
     size: "140-250",
     sizeUnit: "cm",
@@ -51,6 +52,7 @@ test("Gemeinsame Messwerte und Alter werden mit den richtigen Einheiten aufgebau
   });
   const result = fixture.model.speciesValues();
   assert.equal(result.german, "Löwe");
+  assert.equal(result.english, "Lion");
   assert.equal(result.scientificName, "Panthera leo");
   assert.equal(result.size, "shared:140-250|cm");
   assert.equal(result.weight, "shared:110-250|kg");
@@ -80,6 +82,7 @@ test("Größe und Gewicht können unabhängig geschlechtsspezifisch aufgebaut we
 test("Vollständige Eingaben erzeugen keine lokalen Feldfehler", () => {
   const fixture = createModel({
     german: "Amsel",
+    english: "Eurasian Blackbird",
     scientificName: "Turdus merula",
     size: "23-29",
     weight: "80-110",
@@ -90,6 +93,7 @@ test("Vollständige Eingaben erzeugen keine lokalen Feldfehler", () => {
 
 test("Leere Namen und gemeinsame Messwerte werden feldgenau erklärt", () => {
   const errors = createModel().model.localFieldErrors();
+  assert.equal(errors.english[0], "Englischer Name darf nicht leer sein");
   assert.equal(errors.german[0], "Deutscher Name darf nicht leer sein");
   assert.equal(errors.scientificName[0], "Wissenschaftlicher Name darf nicht leer sein");
   assert.equal(errors.size[0], "Größe darf nicht leer sein");

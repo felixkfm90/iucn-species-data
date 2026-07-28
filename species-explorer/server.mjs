@@ -553,6 +553,7 @@ export async function createExplorerServer({
             query: searchParams.get("q"),
             kind: searchParams.get("kind") || "all",
             kingdomId: searchParams.get("kingdomId") || "Animalia",
+            kingdomIds: searchParams.get("kingdomIds"),
             language: searchParams.get("language") || "all",
             rank: searchParams.get("rank") || "all",
             limit: searchParams.get("limit") || 12,

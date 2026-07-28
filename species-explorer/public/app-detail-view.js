@@ -170,6 +170,9 @@
               <div class="detail-badges">${badges}</div>
             </div>
             <p class="scientific-name">${escapeHtml(species.scientificName)}</p>
+            ${species.englishName && species.englishName !== "Unbekannt"
+              ? `<p class="english-name">${escapeHtml(species.englishName)}</p>`
+              : ""}
           </div>
           <div class="detail-meta">
             ${species.inInput ? `
@@ -314,7 +317,7 @@
               <header>
                 <div>
                   <h4>Allgemeine Daten bearbeiten</h4>
-                  <p>Deutscher Name, wissenschaftlicher Name, Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
+                  <p>Deutscher, englischer und wissenschaftlicher Name sowie Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
                 </div>
               </header>
 
@@ -322,6 +325,10 @@
                 <label data-field="germanName">
                   <span>Deutscher Name</span>
                   <input name="germanName" maxlength="160" value="${escapeHtml(species.germanName)}">
+                </label>
+                <label data-field="englishName">
+                  <span>Englischer Name</span>
+                  <input name="englishName" maxlength="160" value="${escapeHtml(species.englishName)}">
                 </label>
                 <label class="scientific-name-field" data-field="scientificName">
                   <span>Wissenschaftlicher Name</span>

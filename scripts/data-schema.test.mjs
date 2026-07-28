@@ -7,9 +7,10 @@ import {
   validateTaxonomyOverridesSchema,
 } from "./data-schema.mjs";
 
-test("Eingabe-Schema verlangt alle sechs manuellen Artfelder", () => {
+test("Eingabe-Schema verlangt alle sieben manuellen Artfelder", () => {
   assert.deepEqual(validateSpeciesListSchema([{
     german: "Amsel",
+    english: "Eurasian Blackbird",
     genus: "Turdus",
     species: "merula",
     size: "ca. 24 cm",
@@ -28,6 +29,7 @@ test("Generiertes Schema erkennt fehlende Kernfelder", () => {
 test("Generiertes Schema akzeptiert optionalen Unterstamm nur als Text", () => {
   const completeEntry = {
     "Deutscher Name": "Amsel",
+    "Englischer Name": "Eurasian Blackbird",
     "Wissenschaftlicher Name": "Turdus merula",
     URLSlug: "turdusmerula",
     Assetname: "Amsel",

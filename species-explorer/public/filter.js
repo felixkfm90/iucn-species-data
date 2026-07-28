@@ -9,6 +9,7 @@
     return species.filter((entry) => {
       const matchesQuery = !normalizedQuery || [
         entry.germanName,
+        entry.englishName,
         entry.scientificName,
         entry.slug,
         entry.safeName,

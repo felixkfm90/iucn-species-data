@@ -11,11 +11,13 @@ durchsuchen. Die Referenz unterstützt die Eingabe, ersetzt aber weder die redak
 bisherige Artenvalidierung:
 
 - Eingaben im Feld `Deutscher Name` suchen ausschließlich in ausdrücklich deutsch gekennzeichneten
-  Vernakularnamen. Anderssprachige Trivialnamen dürfen keinen scheinbar deutschen Treffer erzeugen; englische
-  Namen dienen nur nach einer wissenschaftlichen Suche sichtbar gekennzeichnet als Ersatz.
+  Vernakularnamen. Anderssprachige Trivialnamen dürfen keinen scheinbar deutschen Treffer erzeugen.
+- Eingaben im eigenständigen Feld `Englischer Name` suchen ausschließlich in englisch gekennzeichneten
+  Vernakularnamen.
 - Eingaben im Feld `Wissenschaftlicher Name` suchen nach wissenschaftlichen Namen und Synonymen.
-- `Tiere (Animalia)` ist vorausgewählt.
-- Über `Alle Reiche` kann bewusst im gesamten installierten Referenzbestand gesucht werden.
+- Beim ersten Start ist nur `Tiere (Animalia)` sichtbar und vorausgewählt.
+- Über das Zahnrad können Animalia und alle weiteren verfügbaren Reiche lokal ein- oder ausgeblendet werden.
+- `Alle Reiche` durchsucht ausschließlich die ausgewählten und damit sichtbaren Reiche.
 - Kein Suchergebnis wird automatisch ausgewählt oder gespeichert.
 - Die manuelle Eingabe bleibt jederzeit möglich.
 
@@ -26,12 +28,12 @@ eine Projektart anlegen.
 ## Bedienablauf
 
 1. Der Assistent prüft beim Öffnen, ob eine aktive lokale Referenz vorhanden und lesbar ist.
-2. Nach jedem eingegebenen Zeichen startet nach einer kurzen Verzögerung die passende Suche.
-3. Mehrere Treffer werden als Liste mit bevorzugtem deutschen oder sichtbar gekennzeichnetem englischen
-   Ersatznamen, akzeptiertem wissenschaftlichem Namen, Rang, Reich und gegebenenfalls Synonymhinweis angezeigt.
+2. Nach dem letzten eingegebenen Zeichen startet nach 300 Millisekunden die sprachlich passende Suche.
+3. Mehrere Treffer werden als Liste mit deutschem oder englischem Anzeigenamen, akzeptiertem wissenschaftlichem
+   Namen, Rang, Reich und gegebenenfalls Synonymhinweis angezeigt.
 4. Ein Klick auf einen Treffer lädt die vollständigen lokal verfügbaren Details.
 5. Die Vorschau zeigt Taxonomiehierarchie, Quelle, Release, Quellen-ID, Namensstatus und Vertrauensstufe.
-6. Erst `Vorschlag übernehmen` füllt die beiden Namensfelder.
+6. Erst `Vorschlag übernehmen` füllt den deutschen, englischen und wissenschaftlichen Namen.
 7. Danach bleiben `Eingaben prüfen`, Kollisionsprüfung, Vorschau und Speicherung des bisherigen Assistenten
    unverändert verpflichtend.
 
@@ -39,22 +41,23 @@ Der Neue-Art-Assistent fragt bereits an der read-only API ausschließlich Treffe
 Unterarten, Familien oder andere Ränge belegen deshalb nicht mehr das begrenzte Trefferfenster. Bei zwölf sichtbaren
 Treffern fordert der Assistent zum Ergänzen des Suchbegriffs auf; beispielsweise führt `Glaucidium p` zuverlässig
 zu `Perlkauz – Glaucidium perlatum`.
-Die Referenz-API bleibt für allgemeine Abfragen mehrsprachig. Nur das sichtbare Feld `Deutscher Name` sendet
-`language=de`; dadurch bleiben englische Ersatznamen für andere Referenzansichten verfügbar, während etwa ein
-niederländischer Name keinen deutschen Vorschlag erzeugen kann.
+Die Referenz-API bleibt für allgemeine Abfragen mehrsprachig. Das sichtbare Feld `Deutscher Name` sendet
+`language=de`, das Feld `Englischer Name` sendet `language=en`. Dadurch kann etwa ein niederländischer Name
+weder als deutscher noch als englischer Vorschlag erscheinen. Exakte Namen werden gegenüber unscharfen
+Teiltreffern bevorzugt; `Gepard` liefert deshalb nicht zusätzlich einen nur entfernt passenden Perlkauz.
 Unterarten sind im Referenzschema vorbereitet, bleiben für einen späteren kontrollierten Ausbau gesperrt, weil der
 aktuelle Projektworkflow bewusst exakt zweiteilige wissenschaftliche Artnamen verlangt.
 
-## Deutsche Namen, englischer Ersatz und Animalia.bio
+## Deutsche und englische Namen sowie Animalia.bio
 
 Ein deutscher Name wird nur übernommen, wenn er in der lokalen Referenz als deutscher Vernakularname belegt ist.
 Wurde über den deutschen Suchbegriff ein konkreter bestätigter Name ausgewählt, bleibt genau dieser Name erhalten,
 auch wenn die Quelle weitere deutsche Namen für dasselbe Taxon führt.
 
-Fehlt ein bestätigter deutscher Name, verwendet die Treffer- und Detailvorschau einen vorhandenen englischen
-Vernakularnamen als klar gekennzeichneten `Englischen Ersatznamen`. Dieser kann bewusst in das aktuelle
-Anzeigenamensfeld übernommen und anschließend redaktionell geprüft werden. Liefert ein späterer Release einen
-deutschen Namen, wird Deutsch bei künftigen Suchen bevorzugt; vorhandene Projektarten werden nicht automatisch
+Englische Namen werden unabhängig vom deutschen Anzeigenamen im Feld `Englischer Name` gepflegt. Fehlt ein
+bestätigter deutscher Name, kann ein vorhandener englischer Vernakularname trotzdem übernommen werden; der
+deutsche Pflichtwert wird anschließend redaktionell ergänzt. Ein englischer Name überschreibt das deutsche Feld
+nicht. Liefert ein späterer Release einen deutschen Namen, werden vorhandene Projektarten nicht automatisch
 umbenannt.
 
 Bei einem Tier ohne bestätigten deutschen Namen zeigt die Detailvorschau außerdem einen gezielten Link für eine
@@ -66,7 +69,8 @@ einen geprüften deutschen Namen anschließend selbst eintragen.
 Die Taxonomiereferenz ist bei installierter Datenbank der reguläre geführte Eingabeweg. Die manuelle Eingabe bleibt
 als ausfallsicherer Fallback erhalten:
 
-- Fehlt die lokale Datenbank, zeigt der Assistent `Manuelle Eingabe`.
+- Fehlt die lokale Datenbank, zeigt der Assistent `Manuelle Eingabe`; ein eigener Umschaltknopf ist nicht nötig,
+  weil die drei Namensfelder jederzeit direkt beschreibbar bleiben.
 - Ist der aktive Releasezeiger oder die Datenbank beschädigt, wird die Referenzsuche deaktiviert.
 - Bereits eingetragene Formularwerte bleiben erhalten.
 - Die normale manuelle Prüfung und Artanlage bleibt vollständig verfügbar.
@@ -75,12 +79,15 @@ als ausfallsicherer Fallback erhalten:
 Der Statusendpunkt liefert Wartungs- und Referenzzustand gemeinsam. Der Assistent verwendet ausdrücklich das
 verschachtelte Objekt `reference`; dadurch deaktivieren neutrale Wartungsmeldungen wie
 `Noch keine Aktualisierung gestartet` weder Suche noch Reichsauswahl. Nach erfolgreicher Initialisierung enthält
-die Reichsauswahl alle im aktiven Release vorhandenen Reiche sowie `Alle Reiche`. `Alle Reiche` steht ganz oben,
-direkt gefolgt vom vorausgewählten `Tiere (Animalia)`; die übrigen Reiche sind nach ihrer sichtbaren deutschen
-Bezeichnung alphabetisch sortiert.
+die Reichseinstellung alle im aktiven Release vorhandenen Reiche. Das Zahnrad speichert die Auswahl nur lokal auf
+dem jeweiligen Rechner. Beim ersten Start ist ausschließlich Animalia aktiv, kann aber ebenfalls abgewählt
+werden. Das Dropdown enthält `Alle Reiche` zuerst und danach nur die ausgewählten Reiche alphabetisch nach ihrer
+sichtbaren Bezeichnung. Sind keine Reiche ausgewählt, bleibt die Referenzsuche inaktiv, die manuelle Eingabe aber
+vollständig nutzbar.
 
 Wenn während des Tippens mehrere Anfragen laufen, darf nur die Antwort der neuesten Eingabe die Trefferliste
-aktualisieren. Die Treffer erscheinen in einem kompakten, überlagernden Scrollbereich unter den Namensfeldern.
+aktualisieren. Jede Eingabe wartet 300 Millisekunden, bevor eine Anfrage beginnt. Die Treffer erscheinen in einem
+kompakten, schwebenden Scrollbereich unter den Namensfeldern.
 Unterschiedliche Trefferzahlen verändern deshalb weder die Dialoghöhe noch die Position der folgenden
 Eingabefelder. Ausführliche Hierarchie- und Quelldaten werden weiterhin erst nach bewusster Auswahl eingeblendet.
 
@@ -92,6 +99,7 @@ Phase 9.4 stellt ausschließlich diese lokalen Leseendpunkte bereit:
 GET /api/taxonomy/status
 GET /api/taxonomy/kingdoms
 GET /api/taxonomy/search?q=<Text>&kind=<vernacular|scientific|all>&kingdomId=<Reich>&language=<all|de|en>&rank=<Rang>&limit=12
+GET /api/taxonomy/search?q=<Text>&kind=<...>&kingdomIds=<Reich1,Reich2>&language=<...>&rank=<Rang>&limit=12
 GET /api/taxonomy/taxa/:id
 ```
 
@@ -118,8 +126,8 @@ Der vollständige Installations-, Konflikt- und Rollbackvertrag steht in
 - `species-explorer/taxonomy-maintenance-service.mjs`: Versionsprüfung, Vollimportsteuerung, Projektabgleich,
   Aktivierung und Rollback
 - `species-explorer/request-router.mjs`: lokale GET-/HEAD-Routen
-- `species-explorer/public/app-taxonomy-reference.js`: Darstellung, verzögerte bidirektionale Suche, bewusste
-  Auswahl und Übernahme
+- `species-explorer/public/app-taxonomy-reference.js`: Darstellung, lokale Reichseinstellung, verzögerte
+  Drei-Feld-Suche, bewusste Auswahl und Übernahme
 - `species-explorer/public/app-taxonomy-maintenance.js`: Wartungsstatus, Fortschritt, Konflikthinweise und Rollback
 - `species-explorer/public/app-new-species-workflow.js`: Einbindung in Schritt 1 und Zurücksetzen beim Schließen
 - `species-explorer/taxonomy-reference-service.test.mjs`: Service- und Fixture-Nachweis
@@ -143,11 +151,14 @@ npm.cmd run --silent test:explorer
 npm.cmd run --silent quality:ci
 ```
 
-Die kleine Phase-9.3-Fixture weist zusätzlich bidirektional nach:
+Die kleine Phase-9.3-Fixture und die direkten Explorer-Tests weisen zusätzlich nach:
 
 - `Stieglitz` → `Carduelis carduelis`
 - `Carduelis ...` → belegter deutscher Name
-- `Animalia` als Standard und bewusste Suche über alle Reiche
+- englische Vernakularnamen als eigenständige Suche und Projektfelder
+- `Animalia` als erster lokaler Standard, frei konfigurierbare sichtbare Reiche und eine darauf begrenzte Suche
+  über `Alle Reiche`
+- exakte Treffer, wissenschaftliche Gattungspräfixe und deutsche Teiltreffer wie `toko`
 - vollständige Detailansicht mit Quelle, Release und Hierarchie
 
 Der reale Referenzbestand weist außerdem einen zulässigen Sonderfall auf: Eine Projektart kann auf Artstufe im
@@ -167,5 +178,7 @@ Fallbackquellen in die kontrollierte Import- und Konfliktschicht.
 
 ## Abgrenzung zu Squarespace
 
-Die Referenzsuche ist ausschließlich Bestandteil des lokalen Arten-Explorers. Phase 9.4 ändert keine
-Squarespace-Container, keine Footer-Skripte, kein Custom CSS und keine produktive Artseite.
+Die Referenzsuche und Reichseinstellung sind ausschließlich Bestandteil des lokalen Arten-Explorers. Das getrennte
+Projektfeld `english` wird dagegen in `species_list.json` und `speciesData.json` gespeichert und auf der
+Squarespace-Artseite über `species-info.js` angezeigt. Dafür ändert sich nur die dokumentierte
+`species-info.js`-Footer-Version; Squarespace-Container und Custom CSS bleiben unverändert.

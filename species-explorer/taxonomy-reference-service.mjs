@@ -21,6 +21,7 @@ const SEARCH_RANKS = new Set([
 const MAX_QUERY_LENGTH = 160;
 const MAX_REFERENCE_LENGTH = 160;
 const MAX_KINGDOM_LENGTH = 100;
+const MAX_KINGDOMS = 64;
 const MAX_RESULTS = 12;
 
 function createHttpError(message, statusCode, details = []) {
@@ -43,6 +44,7 @@ function normalizeSearchOptions({
   query,
   kind = "all",
   kingdomId = "Animalia",
+  kingdomIds = null,
   language = "all",
   rank = "all",
   limit = MAX_RESULTS,
@@ -50,6 +52,15 @@ function normalizeSearchOptions({
   const normalizedQuery = String(query ?? "").trim();
   const normalizedKind = String(kind ?? "all").trim().toLowerCase();
   const normalizedKingdom = String(kingdomId ?? "Animalia").trim() || "Animalia";
+  const normalizedKingdoms = (
+    Array.isArray(kingdomIds)
+      ? kingdomIds
+      : typeof kingdomIds === "string"
+        ? kingdomIds.split(",")
+        : []
+  )
+    .map((value) => String(value ?? "").trim())
+    .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
   const normalizedLanguage = String(language ?? "all").trim().toLowerCase() || "all";
   const normalizedRank = String(rank ?? "all").trim().toLowerCase() || "all";
   const parsedLimit = Number(limit);
@@ -69,6 +80,12 @@ function normalizeSearchOptions({
   if (normalizedKingdom.length > MAX_KINGDOM_LENGTH) {
     throw createHttpError("Die Reichskennung ist zu lang.", 400);
   }
+  if (
+    normalizedKingdoms.length > MAX_KINGDOMS
+    || normalizedKingdoms.some((value) => value.length > MAX_KINGDOM_LENGTH)
+  ) {
+    throw createHttpError("Die Auswahl der Reiche ist ungültig.", 400);
+  }
   if (!SEARCH_LANGUAGES.has(normalizedLanguage)) {
     throw createHttpError("Die gewählte Taxonomie-Suchsprache wird nicht unterstützt.", 400);
   }
@@ -82,7 +99,8 @@ function normalizeSearchOptions({
   return {
     query: normalizedQuery,
     kind: normalizedKind,
-    kingdom: normalizedKingdom,
+    kingdom: normalizedKingdoms.length ? "all" : normalizedKingdom,
+    kingdoms: normalizedKingdoms.length ? normalizedKingdoms : null,
     language: normalizedLanguage,
     rank: normalizedRank,
     limit: parsedLimit,

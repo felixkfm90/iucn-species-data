@@ -474,7 +474,7 @@ Aktueller Pruefstand:
 - 6 Explorer-Tests erfolgreich
 - echte Projektdatei bleibt bei den Schreibtests unveraendert
 - lokaler Server auf `127.0.0.1:4177` mit dem neuen Stand neu gestartet
-- HTML-Auslieferung enthaelt Aktion, Dialog und alle fuenf Pflichtfelder mit Beispieltexten
+- HTML-Auslieferung enthaelt Aktion, Dialog und alle sechs Formular-Pflichtfelder mit Beispieltexten
 - nach erfolgreichem Speichern wird die Aktion wieder freigegeben; weitere Arten koennen ohne Seitenneuladen
   angelegt werden
 - Eingabedialoge schließen bei einer Textmarkierung über den Fensterrand nicht mehr versehentlich; ein

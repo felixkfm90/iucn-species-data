@@ -325,12 +325,13 @@ async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function emptyEntry(scientific, german = scientific, manual = {}) {
+function emptyEntry(scientific, german = scientific, english = "Unbekannt", manual = {}) {
   const URLSlug = scientific.toLowerCase().replace(/\s+/g, "");
   return {
     URLSlug,
     "Wissenschaftlicher Name": scientific,
     "Deutscher Name": german,
+    "Englischer Name": english,
     Gewicht: manual.weight || "n/a",
     Größe: manual.size || "n/a",
     Lebenserwartung: manual.lifeExpectancy || "n/a",
@@ -388,6 +389,7 @@ function hasUsableSpeciesData(entry) {
 function preserveExistingSpeciesData(existing, inputSpecies) {
   return normalizeTaxonomyFields({
     ...existing,
+    "Englischer Name": inputSpecies.english || existing["Englischer Name"],
     Gewicht: inputSpecies.weight || existing.Gewicht,
     Größe: inputSpecies.size || existing.Größe,
     Lebenserwartung: inputSpecies.life_expectancy || existing.Lebenserwartung || "n/a",
@@ -1134,7 +1136,15 @@ function printReportToConsole(report) {
 
       let data = assetOnlyMode && existingData
         ? preserveExistingSpeciesData(existingData, s)
-        : await fetchSpeciesData(s.genus, s.species, s.german, s.size, s.weight, s.life_expectancy);
+        : await fetchSpeciesData(
+          s.genus,
+          s.species,
+          s.german,
+          s.english,
+          s.size,
+          s.weight,
+          s.life_expectancy,
+        );
 
       if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {
         console.warn(`⚠ Verwende vorhandene Daten für ${s.german}, neuer Abruf war unvollständig.`);

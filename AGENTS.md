@@ -86,7 +86,8 @@ Lokale Arbeitsoberflaeche:
   `taxonomy-import.mjs`, `taxonomy-store.mjs` und `taxonomy-search-text.mjs`: gekapselter Phase-9-Referenzkern für
   lokalen SQLite-Speicher, begrenzten Import und read-only Suche
 - `species-explorer/taxonomy-reference-service.mjs` und `public/app-taxonomy-reference.js`: lokale read-only
-  Taxonomie-API sowie bidirektionale Vorschläge und kontrollierte Übernahme im Neue-Art-Assistenten
+  Taxonomie-API sowie Vorschläge für deutsche, englische und wissenschaftliche Namen, lokale Reichsauswahl und
+  kontrollierte Übernahme im Neue-Art-Assistenten
 - `species-explorer/taxonomy-release-client.mjs`, `taxonomy-archive.mjs`, `taxonomy-package.mjs`,
   `taxonomy-full-import.mjs` und `taxonomy-maintenance-service.mjs`: Releaseprüfung, begrenzter Download, sichere
   Extraktion, streamender Vollimport, Projektartenabgleich, Aktivierung und Rollback
@@ -95,6 +96,8 @@ Lokale Arbeitsoberflaeche:
   ausdrücklich bestätigte CoL-Zuordnungen
 - `scripts/taxonomy-prototype.mjs`, `taxonomy-prototype-fetch.mjs` und
   `scripts/fixtures/taxonomy/`: reproduzierbarer Phase-9.3-Prototyp und kleine versionierte Testfixture
+- `scripts/backfill-english-species-names.mjs`: kontrollierte, standardmäßig schreibgeschützte Ergänzung
+  englischer Artnamen aus exakten iNaturalist-Taxa und der lokalen CoL-Referenz
 - `scripts/pipeline-selection.mjs`: Zielartenauswahl fuer vollstaendige und gezielte Pipeline-Laeufe
 - `scripts/species-cleanup.mjs`: Vorschau und dauerhafte Bereinigung verwaister Daten und Assetordner
 - `scripts/pipeline-error-log.mjs`: fehlertoleranter, auf 256 KiB begrenzter Pipeline-Fehlerlog im lokalen
@@ -429,7 +432,8 @@ Aktuelle Planung:
   Phase 7.5 ist seit 2026-06-20 abgeschlossen und durch das erneute Anlegen von Haubentaucher und Hoeckerschwan
   praktisch geprueft.
   Neue Arten werden kontrolliert nach `docs/add-species-workflow.md` angelegt. Erfasst werden
-  deutscher Name, wissenschaftlicher Name, Groesse, Gewicht und Lebenserwartung. Der wissenschaftliche Name wird
+  deutscher Name, englischer Name, wissenschaftlicher Name, Groesse, Gewicht und Lebenserwartung. Der
+  wissenschaftliche Name wird
   im Hintergrund in Gattung und Artepitheton getrennt und normalisiert. Duplikate, Slug-/SafeName-Kollisionen
   sowie vorhandene Assetordner werden vor einer vollstaendigen JSON-Vorschau geprueft.
   Speicherung nutzt den Backup-/Token-/Hashschutz aus 7.4. Nach dem Abschluss startet der Explorer automatisch den
@@ -715,9 +719,10 @@ Aktuelle Planung:
   `docs/local-taxonomy-database-design.md`. Vorgesehen sind SQLite über `node:sqlite`, ein pfadunabhängiger lokaler
   Release-/Stagingspeicher, atomare Aktivierung, eine Rollbackversion, getrennte Projektzuordnungen sowie
   Präfix-/FTS5-Suche. Der spätere Neue-Art-Assistent erhält ein Reich-Dropdown mit `Tiere (Animalia)` als
-  Vorauswahl und bidirektionale Vorschläge deutsch beziehungsweise ersatzweise englisch ↔ wissenschaftlich nach
-  jedem Zeichen. Fehlt ein bestätigter deutscher Name, wird ein vorhandener englischer Vernakularname sichtbar als
-  Ersatz gekennzeichnet; für Tiere bleibt zusätzlich eine gezielte manuelle Animalia.bio-Recherche vorgesehen.
+  Vorauswahl und Vorschläge für deutsche, englische sowie wissenschaftliche Namen. Deutsche und englische
+  Vernakularnamen werden als getrennte Projektfelder geführt. Fehlt ein bestätigter deutscher Name, kann ein
+  vorhandener englischer Name übernommen werden, ohne das deutsche Feld still zu ersetzen; für Tiere bleibt
+  zusätzlich eine gezielte manuelle Animalia.bio-Recherche vorgesehen.
   Automatisierter Abruf oder Scraping bleibt ausgeschlossen. Phase 9.3 ist seit 2026-07-23 abgeschlossen; der Mess- und
   Implementierungsbericht steht in `docs/taxonomy-import-prototype.md`. Eine kleine festgeschriebene
   CoL-XR-/WoRMS-Fixture bestätigt streamenden SQLite-Import, Quellenprovenienz, Präfix-/FTS5-Suche,
@@ -726,8 +731,9 @@ Aktuelle Planung:
   --json` führt den isolierten Prototyp unter `Testlauf/` aus, `npm.cmd run --silent test:taxonomy-prototype` die
   direkten Tests. Messwerte dieses begrenzten Bestands dürfen nicht linear auf den etwa 1,3 GB großen XR-Vollbestand
   hochgerechnet werden. Phase 9.4 ist seit 2026-07-24 abgeschlossen. Vier lokale read-only Endpunkte liefern
-  Status, Reiche, Suche und Taxondetails aus dem aktiven Release. Der Neue-Art-Assistent bietet `Animalia` als
-  Standard, bidirektionale Vorschläge, eine bewusste Treffer- und Übernahmeentscheidung sowie Quellen- und
+  Status, Reiche, Suche und Taxondetails aus dem aktiven Release. Der Neue-Art-Assistent bietet `Animalia` beim
+  ersten Start als sichtbaren Standard, getrennte Vorschläge für drei Namensfelder, eine bewusste Treffer- und
+  Übernahmeentscheidung sowie Quellen- und
   Hierarchievorschau. Nur Taxa mit Rang `Art` werden im Formular angeboten; ohne lesbare Referenz bleibt die
   manuelle Eingabe vollständig nutzbar. Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen ausschließlich
   als manueller Suchlink geöffnet. Der verbindliche Vertrag steht in
@@ -751,9 +757,9 @@ Aktuelle Planung:
   im selben XR-Release nicht existiert. Einzelne solche verwaisten Namen werden jetzt ohne Ersatzzuordnung gezählt
   und sicher übersprungen. Nach dem realen Befund von 12.294 nicht zuordenbaren Verweisen unter
   1.996.915 Namenszeilen gilt eine skalierende Grenze von 25 Zeilen Grundtoleranz, bei größeren Dateien einem
-  Prozent der Quelldatei und absolut höchstens 100.000; größere Abweichungen blockieren das Paket weiterhin. Für gültige Taxa hat Deutsch
-  Vorrang, andernfalls wird ein vorhandener englischer Name sichtbar als Ersatz angeboten. Ein später verfügbarer
-  deutscher Name wird künftig bevorzugt, ändert bestehende Projektarten aber niemals still. Die
+  Prozent der Quelldatei und absolut höchstens 100.000; größere Abweichungen blockieren das Paket weiterhin.
+  Deutsche und englische Namen gültiger Taxa bleiben getrennt verfügbar. Ein später verfügbarer deutscher Name
+  ändert bestehende Projektarten niemals still. Die
   Abschlussbestätigung nennt die Zahl transparent. Fehlt die lokale
   Referenz oder ist sie veraltet, bietet der Explorer die Aktualisierung nach der
   Startprüfung einmalig direkt an; `Später` hält die manuelle Wartungsaktion verfügbar. Technische Importfehler
@@ -987,7 +993,7 @@ Aktuelle Planung:
   stapeln die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
   `species-portrait.js` erzeugt den Portraitcontainer dynamisch und ordnet den vorhandenen Soundcontainer ein,
   sodass bestehende Artseiten keine manuelle HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-portrait.js?v=1.0.1`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7` und `species-portrait.js?v=1.0.1`.
   Seit 2026-07-22 kann der Explorer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie kontrolliert
   korrigieren. Ein Änderungsgrund, Vorschau-Token, Quell-Hashes und lokale Sicherung sind Pflicht. Manuelle Werte
   stehen getrennt in `species-taxonomy-overrides.json`, werden nach dem automatischen Datenabruf erneut angewendet
@@ -1005,21 +1011,28 @@ Aktuelle Planung:
   Phase 9.1 bis 9.5 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
   Fachergänzung. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
-  begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, Reichsauswahl, bidirektionale Vorschläge,
-  Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten getestet integriert. Der vollständige
+  begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, konfigurierbare Reichsauswahl, getrennte
+  Vorschläge für drei Namensfelder, Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten
+  getestet integriert. Der vollständige
   lokale Import- und Aktualisierungsworkflow prüft beim Start nur Metadaten, vergleicht bestehende Arten ohne
   automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Seit 2026-07-28 liest der
-  Neue-Art-Assistent den verfügbaren Referenzbestand korrekt aus dem verschachtelten Wartungsstatus, lädt alle
-  vorhandenen Reiche und liefert wieder bidirektionale Vorschläge in einer kompakten, überlagernden Trefferliste
-  ohne springende Dialoghöhe. `Alle Reiche` steht vor dem vorausgewählten `Tiere (Animalia)`; die übrigen Reiche
-  folgen alphabetisch. Das deutsche Eingabefeld fordert über einen expliziten API-Sprachparameter nur ausdrücklich
-  deutsch gekennzeichnete Vernakularnamen an; die allgemeine Referenzsuche bleibt mehrsprachig. Der
+  Neue-Art-Assistent den verfügbaren Referenzbestand korrekt aus dem verschachtelten Wartungsstatus. Deutscher,
+  englischer und wissenschaftlicher Name besitzen eigene Such- und Pflichtfelder. Die Suche startet 300
+  Millisekunden nach der letzten Eingabe; Ergebnisse bleiben in einer kompakten, überlagernden Trefferliste ohne
+  springende Dialoghöhe. Über das Zahnrad wird lokal festgelegt, welche Reiche im Dropdown und in `Alle Reiche`
+  berücksichtigt werden. Beim ersten Start ist nur `Tiere (Animalia)` sichtbar, kann aber ebenfalls abgewählt
+  werden. `Alle Reiche` steht vor den alphabetisch sortierten sichtbaren Reichen. Deutsche und englische
+  Eingabefelder fordern über explizite API-Sprachparameter nur die jeweilige Sprache an. Der
   Neue-Art-Assistent begrenzt die API-Abfrage bereits auf Rang `Art`, damit anderssprachige
   Trivialnamen, Gattungen und Unterarten keine falschen oder verdrängten Vorschläge erzeugen. Fehlende Artstufen
   mit vorhandenen Unterarten
   werden als CoL-Referenzlücke statt als unbekannte Art ausgewiesen und führen zu keiner automatischen Zuordnung.
   Der Wartungsbereich zeigt die aktive Referenz einmalig in der Überschrift und darunter nur die neueste
   verfügbare Version; manuell zu prüfende Arten beginnen in einer eigenen Zeile.
+  Alle 52 bestehenden Projektarten besitzen seit 2026-07-28 einen separat gepflegten englischen Namen in
+  `species_list.json` und `speciesData.json`. Die kontrollierte Ergänzung ist über
+  `npm.cmd run --silent taxonomy:backfill-english` standardmäßig als Vorschau und nur mit `-- --write` schreibend
+  verfügbar; vor dem Schreiben entsteht eine lokale Sicherung.
   Als Nächstes folgen realer
   Vollimport-/Rollbacktest und das umfassende Phase-9-Abschlussaudit.
 - Phase 10 - Lightroom:

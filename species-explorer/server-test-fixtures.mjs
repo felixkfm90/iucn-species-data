@@ -59,6 +59,7 @@ export async function createEditableFixture() {
 
   const inputList = [{
     german: "Amsel",
+    english: "Eurasian Blackbird",
     genus: "Turdus",
     species: "merula",
     size: "ca. 23,5-29 cm",
@@ -69,6 +70,7 @@ export async function createEditableFixture() {
     URLSlug: "turdusmerula",
     "Wissenschaftlicher Name": "Turdus merula",
     "Deutscher Name": "Amsel",
+    "Englischer Name": "Eurasian Blackbird",
     Gewicht: "ca. 80-110 g",
     Größe: "ca. 23,5-29 cm",
     Lebenserwartung: "ca. 3 Jahre",

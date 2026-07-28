@@ -89,17 +89,19 @@ Die Oberfläche zeigt einen zusammengefassten Fortschritt für Download, Entpack
 Projektvergleich und Aktivierung. Taxonomieaktualisierung, normale Datenpipeline, Backup und schreibende
 Assetoperationen dürfen nicht parallel laufen.
 
-## Sprachfallback bei gebräuchlichen Namen
+## Getrennte gebräuchliche Namen
 
 Die nicht zuordenbaren Verweise aus `VernacularName.tsv` sind fehlerhafte optionale Quellzeilen und nicht mit
 fehlenden deutschen Übersetzungen gleichzusetzen. Für alle gültig zugeordneten Taxa gilt unabhängig davon:
 
-1. Ein bestätigter deutscher Vernakularname wird bevorzugt.
-2. Fehlt Deutsch, wird ein vorhandener englischer Vernakularname sichtbar als `Englischer Ersatzname`
-   vorgeschlagen.
-3. Fehlen beide Sprachen, bleibt nur der wissenschaftliche Name und die manuelle Namenseingabe.
-4. Liefert ein späterer Release erstmals Deutsch, erhält dieser Name bei künftigen Suchen automatisch Vorrang.
-5. Bereits bestätigte Projektarten werden dabei nicht still umbenannt. Eine Änderung bleibt eine bewusste
+1. Bestätigte deutsche Vernakularnamen werden nur für das Feld `Deutscher Name` vorgeschlagen.
+2. Bestätigte englische Vernakularnamen werden unabhängig davon für das Feld `Englischer Name` vorgeschlagen.
+3. Fehlt eine der Sprachen, bleibt das zugehörige Pflichtfeld redaktionell manuell zu ergänzen; die andere Sprache
+   überschreibt es nicht.
+4. Fehlen beide Sprachen, bleibt der wissenschaftliche Name als Referenz für die manuelle Namenseingabe.
+5. Liefert ein späterer Release erstmals einen deutschen oder englischen Namen, erscheint dieser nur bei künftigen
+   Suchen als Vorschlag.
+6. Bereits bestätigte Projektarten werden dabei nicht still umbenannt. Eine Änderung bleibt eine bewusste
    Übernahme beziehungsweise nutzt den geschützten Umbenennungsworkflow.
 
 Für Tierarten ohne bestätigten deutschen Namen bleibt die manuelle Animalia.bio-Recherche zusätzlich verfügbar.

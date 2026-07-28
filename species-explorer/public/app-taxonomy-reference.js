@@ -14,11 +14,13 @@
     subspecies: "Unterart",
   });
   const NEW_SPECIES_ALLOWED_RANKS = new Set(["species"]);
+  const KINGDOM_SETTINGS_STORAGE_KEY = "species-explorer.taxonomy.visible-kingdoms.v1";
 
   function taxonomySearchUrl({
     query,
     kind = "all",
     kingdomId = "Animalia",
+    kingdomIds = null,
     language = "all",
     rank = "species",
     limit = 12,
@@ -26,11 +28,15 @@
     const parameters = [
       ["q", String(query ?? "").trim()],
       ["kind", String(kind || "all")],
-      ["kingdomId", String(kingdomId || "Animalia")],
       ["language", String(language || "all")],
       ["rank", String(rank || "species")],
       ["limit", String(limit)],
     ];
+    if (Array.isArray(kingdomIds)) {
+      parameters.push(["kingdomIds", kingdomIds.map((value) => String(value)).join(",")]);
+    } else {
+      parameters.push(["kingdomId", String(kingdomId || "Animalia")]);
+    }
     return `/api/taxonomy/search?${parameters
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
       .join("&")}`;
@@ -67,11 +73,7 @@
     if (includesAllOption) {
       kingdoms.push({ id: "all", label: "Alle Reiche" });
     }
-    const priority = (kingdom) => {
-      if (kingdom.id === "all") return 0;
-      if (kingdom.id === "Animalia") return 1;
-      return 2;
-    };
+    const priority = (kingdom) => (kingdom.id === "all" ? 0 : 1);
     return kingdoms.sort((left, right) => (
       priority(left) - priority(right)
       || left.label.localeCompare(
@@ -80,6 +82,20 @@
         { numeric: true, sensitivity: "base" },
       )
     ));
+  }
+
+  function normalizeSelectedKingdomIds(values, availableValues) {
+    const available = new Set(
+      (Array.isArray(availableValues) ? availableValues : [])
+        .map((entry) => String(entry?.id || entry || "").trim())
+        .filter(Boolean),
+    );
+    const selected = [];
+    for (const value of Array.isArray(values) ? values : []) {
+      const id = String(value || "").trim();
+      if (available.has(id) && !selected.includes(id)) selected.push(id);
+    }
+    return selected;
   }
 
   function taxonomyResultPresentation(result = {}) {
@@ -94,7 +110,7 @@
       : "";
     const note = [
       synonym,
-      usesEnglishFallback ? "Englischer Ersatzname" : "",
+      usesEnglishFallback ? "Englischer Name" : "",
       !synonym
         && matchedTerm
         && matchedTerm !== displayName
@@ -175,7 +191,7 @@
     fetchJson,
     escapeHtml,
     onNamesChanged = () => {},
-    debounceMs = 160,
+    debounceMs = 300,
   } = {}) {
     const section = root?.querySelector?.(".taxonomy-reference");
     if (!section || !form || typeof fetchJson !== "function") {
@@ -192,8 +208,24 @@
     const selection = section.querySelector(".taxonomy-reference-selection");
     const selectionContent = section.querySelector(".taxonomy-reference-selection-content");
     const applyButton = section.querySelector(".taxonomy-reference-apply");
-    const manualButton = section.querySelector(".taxonomy-reference-manual");
+    const kingdomSettings = section.querySelector(".taxonomy-reference-kingdom-settings");
+    const kingdomSettingsToggle = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-toggle",
+    );
+    const kingdomSettingsPanel = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-panel",
+    );
+    const kingdomSettingsList = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-list",
+    );
+    const kingdomSettingsMessage = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-message",
+    );
+    const kingdomSettingsSave = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-save",
+    );
     const germanInput = form.elements.german;
+    const englishInput = form.elements.english;
     const scientificInput = form.elements.scientificName;
     const escape = typeof escapeHtml === "function"
       ? escapeHtml
@@ -205,10 +237,13 @@
 
     let available = false;
     let defaultKingdom = "Animalia";
+    let allKingdoms = [];
+    let selectedKingdomIds = [];
     let searchTimer = null;
     let requestVersion = 0;
     let activeInput = null;
     let activeKind = "all";
+    let activeLanguage = "all";
     let searchResults = [];
     let selectedResult = null;
     let selectedDetail = null;
@@ -225,6 +260,7 @@
       statusBadge.textContent = presentation.label;
       statusBadge.dataset.state = presentation.state;
       kingdomSelect.disabled = !available;
+      if (kingdomSettingsToggle) kingdomSettingsToggle.disabled = !available;
       setMessage(presentation.message, available ? "info" : "warning");
     };
 
@@ -242,20 +278,98 @@
       applyButton.disabled = true;
     };
 
-    const renderKingdoms = (payload = {}) => {
+    const loadStoredKingdomIds = () => {
+      try {
+        const stored = global.localStorage?.getItem?.(KINGDOM_SETTINGS_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const storeSelectedKingdomIds = () => {
+      try {
+        global.localStorage?.setItem?.(
+          KINGDOM_SETTINGS_STORAGE_KEY,
+          JSON.stringify(selectedKingdomIds),
+        );
+      } catch {
+        // Die lokale Auswahl bleibt für diese Sitzung aktiv.
+      }
+    };
+
+    const currentSearchKingdomIds = () => {
+      if (kingdomSelect.value === "all") return [...selectedKingdomIds];
+      return selectedKingdomIds.includes(kingdomSelect.value)
+        ? [kingdomSelect.value]
+        : [];
+    };
+
+    const renderKingdomSelect = ({ preferredValue = "" } = {}) => {
       kingdomSelect.replaceChildren();
-      defaultKingdom = payload.defaultKingdom || "Animalia";
-      const kingdoms = sortTaxonomyKingdoms(payload.values, {
-        includesAllOption: payload.includesAllOption,
+      const visibleKingdoms = allKingdoms.filter(
+        (kingdom) => selectedKingdomIds.includes(kingdom.id),
+      );
+      const kingdoms = sortTaxonomyKingdoms(visibleKingdoms, {
+        includesAllOption: visibleKingdoms.length > 0,
       });
+      if (!kingdoms.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Keine Reiche ausgewählt";
+        kingdomSelect.append(option);
+        kingdomSelect.disabled = true;
+        return;
+      }
       for (const kingdom of kingdoms) {
         const option = document.createElement("option");
         option.value = kingdom.id;
         option.textContent = kingdom.label;
-        option.selected = kingdom.id === defaultKingdom;
         kingdomSelect.append(option);
       }
-      kingdomSelect.value = defaultKingdom;
+      const fallbackValue = selectedKingdomIds.includes(defaultKingdom)
+        ? defaultKingdom
+        : "all";
+      kingdomSelect.value = kingdoms.some((entry) => entry.id === preferredValue)
+        ? preferredValue
+        : fallbackValue;
+      kingdomSelect.disabled = !available;
+    };
+
+    const setKingdomSettingsMessage = (text = "", type = "info") => {
+      if (!kingdomSettingsMessage) return;
+      kingdomSettingsMessage.textContent = text;
+      kingdomSettingsMessage.className =
+        `taxonomy-reference-kingdom-settings-message ${type}`;
+      kingdomSettingsMessage.hidden = !text;
+    };
+
+    const renderKingdomSettings = () => {
+      if (!kingdomSettingsList) return;
+      const kingdoms = sortTaxonomyKingdoms(allKingdoms);
+      kingdomSettingsList.innerHTML = kingdoms.map((kingdom) => `
+        <label>
+          <input
+            type="checkbox"
+            value="${escape(kingdom.id)}"
+            ${selectedKingdomIds.includes(kingdom.id) ? "checked" : ""}
+          >
+          <span>${escape(kingdom.label)}</span>
+        </label>
+      `).join("");
+      setKingdomSettingsMessage();
+    };
+
+    const renderKingdoms = (payload = {}) => {
+      defaultKingdom = payload.defaultKingdom || "Animalia";
+      allKingdoms = sortTaxonomyKingdoms(payload.values);
+      const storedSelection = loadStoredKingdomIds();
+      selectedKingdomIds = normalizeSelectedKingdomIds(
+        storedSelection === null ? [defaultKingdom] : storedSelection,
+        allKingdoms,
+      );
+      renderKingdomSelect({ preferredValue: defaultKingdom });
+      renderKingdomSettings();
     };
 
     const renderResults = () => {
@@ -363,7 +477,7 @@
       }
     };
 
-    const performSearch = async (input, kind) => {
+    const performSearch = async (input, kind, language, version) => {
       if (!available) return;
       const query = String(input?.value || "").trim();
       if (!query) {
@@ -375,15 +489,24 @@
         );
         return;
       }
-      const version = ++requestVersion;
+      const kingdomIds = currentSearchKingdomIds();
+      if (!kingdomIds.length) {
+        clearResults();
+        clearSelection();
+        setMessage(
+          "Für die Referenzsuche ist derzeit kein Reich eingeblendet. Die Namen können weiterhin manuell eingegeben werden.",
+          "warning",
+        );
+        return;
+      }
       clearSelection();
       setMessage("Passende Namen werden gesucht …", "info");
       try {
         const payload = await fetchJson(taxonomySearchUrl({
           query,
           kind,
-          kingdomId: kingdomSelect.value || defaultKingdom,
-          language: kind === "vernacular" ? "de" : "all",
+          kingdomIds,
+          language,
           rank: "species",
           limit: 12,
         }));
@@ -410,14 +533,19 @@
       }
     };
 
-    const scheduleSearch = (input, kind) => {
+    const scheduleSearch = (input, kind, language = "all") => {
       activeInput = input;
       activeKind = kind;
+      activeLanguage = language;
+      const version = ++requestVersion;
       clearTimeout(searchTimer);
       clearResults();
       clearSelection();
+      if (String(input?.value || "").trim()) {
+        setMessage("Eingabe erkannt. Die Suche startet gleich …", "info");
+      }
       searchTimer = setTimeout(() => {
-        void performSearch(input, kind);
+        void performSearch(input, kind, language, version);
       }, debounceMs);
     };
 
@@ -450,9 +578,14 @@
       clearTimeout(searchTimer);
       activeInput = null;
       activeKind = "all";
+      activeLanguage = "all";
       clearResults();
       clearSelection();
-      if (kingdomSelect.options.length) kingdomSelect.value = defaultKingdom;
+      if (kingdomSelect.options.length) {
+        kingdomSelect.value = selectedKingdomIds.includes(defaultKingdom)
+          ? defaultKingdom
+          : "all";
+      }
       if (available) {
         setMessage(
           "Beim Tippen werden passende Namen aus der lokalen Taxonomiereferenz vorgeschlagen.",
@@ -461,13 +594,22 @@
       }
     };
 
-    germanInput.addEventListener("input", () => scheduleSearch(germanInput, "vernacular"));
+    germanInput.addEventListener(
+      "input",
+      () => scheduleSearch(germanInput, "vernacular", "de"),
+    );
+    englishInput.addEventListener(
+      "input",
+      () => scheduleSearch(englishInput, "vernacular", "en"),
+    );
     scientificInput.addEventListener(
       "input",
-      () => scheduleSearch(scientificInput, "scientific"),
+      () => scheduleSearch(scientificInput, "scientific", "all"),
     );
     kingdomSelect.addEventListener("change", () => {
-      if (activeInput?.value?.trim()) scheduleSearch(activeInput, activeKind);
+      if (activeInput?.value?.trim()) {
+        scheduleSearch(activeInput, activeKind, activeLanguage);
+      }
     });
     resultsContainer.addEventListener("click", (event) => {
       const button = event.target.closest("[data-taxon-id]");
@@ -477,27 +619,64 @@
       );
       if (result) void selectResult(result);
     });
-    manualButton.addEventListener("click", () => {
-      requestVersion += 1;
-      clearTimeout(searchTimer);
-      clearResults();
-      clearSelection();
-      setMessage("Manuelle Eingabe ist aktiv. Die normale Eingabeprüfung bleibt unverändert.", "info");
-      germanInput.focus();
+    kingdomSettingsToggle?.addEventListener("click", () => {
+      const willOpen = kingdomSettingsPanel?.hidden !== false;
+      if (kingdomSettingsPanel) kingdomSettingsPanel.hidden = !willOpen;
+      kingdomSettingsToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (willOpen) renderKingdomSettings();
+    });
+    kingdomSettingsSave?.addEventListener("click", () => {
+      const previousValue = kingdomSelect.value;
+      const checkedValues = [...kingdomSettingsList.querySelectorAll("input:checked")]
+        .map((input) => input.value);
+      selectedKingdomIds = normalizeSelectedKingdomIds(checkedValues, allKingdoms);
+      storeSelectedKingdomIds();
+      renderKingdomSelect({ preferredValue: previousValue });
+      if (kingdomSettingsPanel) kingdomSettingsPanel.hidden = true;
+      kingdomSettingsToggle?.setAttribute("aria-expanded", "false");
+      setKingdomSettingsMessage();
+      if (!selectedKingdomIds.length) {
+        requestVersion += 1;
+        clearTimeout(searchTimer);
+        clearResults();
+        clearSelection();
+        setMessage(
+          "Keine Reiche eingeblendet. Die Namensfelder können weiterhin manuell ausgefüllt werden.",
+          "warning",
+        );
+      } else if (activeInput?.value?.trim()) {
+        scheduleSearch(activeInput, activeKind, activeLanguage);
+      } else {
+        setMessage(
+          "Die sichtbaren Reiche wurden gespeichert. Beim Tippen werden passende Namen vorgeschlagen.",
+          "success",
+        );
+      }
+    });
+    global.document?.addEventListener?.("click", (event) => {
+      if (
+        kingdomSettingsPanel?.hidden === false
+        && kingdomSettings
+        && !kingdomSettings.contains(event.target)
+      ) {
+        kingdomSettingsPanel.hidden = true;
+        kingdomSettingsToggle?.setAttribute("aria-expanded", "false");
+      }
     });
     applyButton.addEventListener("click", () => {
       if (!selectedDetail) return;
       const view = taxonomyDetailPresentation(selectedDetail, selectedResult);
       scientificInput.value = view.scientificName;
-      if (view.nameToApply) germanInput.value = view.nameToApply;
+      if (view.germanName) germanInput.value = view.germanName;
+      if (view.englishName) englishInput.value = view.englishName;
       onNamesChanged();
       clearResults();
       setMessage(
         view.germanName
-          ? "Deutscher und wissenschaftlicher Name wurden übernommen. Bitte alle Angaben anschließend prüfen."
+          ? "Deutscher, englischer und wissenschaftlicher Name wurden übernommen. Bitte alle Angaben anschließend prüfen."
           : view.usesEnglishFallback
-            ? "Englischer Ersatzname und wissenschaftlicher Name wurden übernommen. Bitte den Namen prüfen; ein später verfügbarer deutscher Name wird künftig bevorzugt vorgeschlagen."
-            : "Der wissenschaftliche Name wurde übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen.",
+            ? "Englischer und wissenschaftlicher Name wurden übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen."
+            : "Der wissenschaftliche Name wurde übernommen. Bitte deutschen und englischen Namen ergänzen und alle Angaben prüfen.",
         "success",
       );
     });
@@ -513,6 +692,7 @@
     taxonomyReferenceStatus,
     taxonomyAvailabilityPresentation,
     sortTaxonomyKingdoms,
+    normalizeSelectedKingdomIds,
     taxonomyResultPresentation,
     taxonomyDetailPresentation,
     createTaxonomyReferenceController,

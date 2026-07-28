@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-07-25
+Stand: 2026-07-28
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -14,6 +14,7 @@ oder die fuer die Artseiten redaktionell kontrolliert bleiben sollen.
 | Feld | Pflicht | Herkunft | Verwendung |
 |---|---|---|---|
 | `german` | ja | manuell | Deutscher Name, Assetname und Anzeige |
+| `english` | ja | Referenzvorschlag oder manuell | Englischer Name, Suche und Anzeige |
 | `genus` | ja | manuell | IUCN-Abfrage, Slug und wissenschaftlicher Name |
 | `species` | ja | manuell | IUCN-Abfrage, Slug und wissenschaftlicher Name |
 | `size` | ja | manuell | Wird als `Groesse` in `speciesData.json` geschrieben |
@@ -34,22 +35,25 @@ strukturiert erfasst:
 Bestehende Angaben in der frueheren Schreibweise `Maennchen ... Weibchen ...` werden beim Oeffnen erkannt. Beim
 naechsten Speichern verwendet der Explorer einheitlich `Maennchen: ...; Weibchen: ...`.
 
-`species-info.js` zeigt die manuelle `Lebenserwartung` oberhalb der aus IUCN stammenden `Generationsdauer` an.
+Der Arten-Explorer zeigt den englischen Namen im Artkopf. `species-info.js` zeigt ihn auf der Squarespace-Artseite
+als eigene Zeile und die manuelle `Lebenserwartung` oberhalb der aus IUCN stammenden `Generationsdauer` an.
 Technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als `Unbekannt`
 angezeigt. Das ist reine Frontend-Anzeigeformatierung; die Rohdaten in `speciesData.json` bleiben unveraendert.
 
 Reihenfolge in der Info-Box:
 
 1. Name
-2. Groesse
-3. Gewicht
-4. Lebenserwartung
-5. Generationsdauer
-6. Populationsgroesse
+2. Englischer Name
+3. Groesse
+4. Gewicht
+5. Lebenserwartung
+6. Generationsdauer
+7. Populationsgroesse
 
 ## Pipeline-Verhalten
 
-`update.mjs` uebernimmt `life_expectancy` aus `species_list.json` bei jedem Lauf neu in `speciesData.json`.
+`update.mjs` uebernimmt `english` und `life_expectancy` aus `species_list.json` bei jedem Lauf neu in
+`speciesData.json`.
 
 Die von IUCN gelieferten Taxonomiewerte fuer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie werden
 vor dem Schreiben in eine lesbare Gross-/Kleinschreibung ueberfuehrt, zum Beispiel `ANIMALIA` zu `Animalia`.
@@ -65,6 +69,7 @@ Lebenserwartung trotzdem aus der aktuellen `species_list.json` aktualisiert.
 
 Neue Arten sollen in `species_list.json` nur dann als vollstaendig gelten, wenn diese manuellen Felder gesetzt sind:
 
+- `english`
 - `size`
 - `weight`
 - `life_expectancy`

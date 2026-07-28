@@ -4,6 +4,7 @@ const GENERATED_STRING_FIELDS = Object.freeze([
   "URLSlug",
   "Wissenschaftlicher Name",
   "Deutscher Name",
+  "Englischer Name",
   "Gewicht",
   "Größe",
   "Lebenserwartung",
@@ -42,7 +43,7 @@ export function validateSpeciesListSchema(value) {
   value.forEach((entry, index) => {
     requireObject(entry, `species_list.json[${index}]`, issues);
     if (!isObject(entry)) return;
-    for (const field of ["german", "genus", "species", "size", "weight", "life_expectancy"]) {
+    for (const field of ["german", "english", "genus", "species", "size", "weight", "life_expectancy"]) {
       requireString(entry[field], `species_list.json[${index}].${field}`, issues);
     }
   });

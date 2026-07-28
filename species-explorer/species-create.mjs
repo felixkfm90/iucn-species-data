@@ -193,6 +193,7 @@ export function createSpeciesCreateOperations({
     const species = {
       id: derived.slug,
       germanName: entry.german,
+      englishName: entry.english,
       scientificName: derived.scientificName,
       safeName: derived.safeName,
     };

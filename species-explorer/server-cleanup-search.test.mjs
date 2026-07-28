@@ -180,6 +180,7 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
     body: JSON.stringify({
       values: {
         german: "Amsel",
+        english: "Eurasian Blackbird",
         scientificName: "Turdus merula",
         size: "ca. 23,5-29 cm",
         weight: "ca. 80-110 g",

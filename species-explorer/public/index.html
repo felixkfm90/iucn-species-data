@@ -177,7 +177,34 @@
                     <option value="Animalia">Tiere (Animalia)</option>
                   </select>
                 </label>
-                <button class="taxonomy-reference-manual" type="button">Manuell eingeben</button>
+                <div class="taxonomy-reference-kingdom-settings">
+                  <button
+                    class="taxonomy-reference-kingdom-settings-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="taxonomy-reference-kingdom-settings-panel"
+                    title="Sichtbare Reiche einstellen"
+                    disabled
+                  >⚙</button>
+                  <section
+                    id="taxonomy-reference-kingdom-settings-panel"
+                    class="taxonomy-reference-kingdom-settings-panel"
+                    aria-label="Sichtbare Reiche einstellen"
+                    hidden
+                  >
+                    <header>
+                      <strong>Sichtbare Reiche</strong>
+                      <small>Nur ausgewählte Reiche erscheinen in der Liste und in „Alle Reiche“.</small>
+                    </header>
+                    <div class="taxonomy-reference-kingdom-settings-list"></div>
+                    <p class="taxonomy-reference-kingdom-settings-message" role="status" hidden></p>
+                    <div class="taxonomy-reference-kingdom-settings-actions">
+                      <button class="taxonomy-reference-kingdom-settings-save" type="button">
+                        Übernehmen
+                      </button>
+                    </div>
+                  </section>
+                </div>
               </div>
 
               <div class="taxonomy-reference-search">
@@ -185,6 +212,10 @@
                   <label data-field="german">
                     <span>Deutscher Name</span>
                     <input name="german" type="text" maxlength="160" autocomplete="off" placeholder="Amsel">
+                  </label>
+                  <label data-field="english">
+                    <span>Englischer Name</span>
+                    <input name="english" type="text" maxlength="160" autocomplete="off" placeholder="Common Blackbird">
                   </label>
                   <label data-field="scientificName">
                     <span>Wissenschaftlicher Name</span>

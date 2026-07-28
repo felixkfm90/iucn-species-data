@@ -802,7 +802,7 @@ Status: abgeschlossen am 2026-07-22
   die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das Layout automatisch auf zwei Spalten
   zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
   Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.6` und `species-taxonomy.js?v=1.0.5`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7` und `species-taxonomy.js?v=1.0.5`.
 - Die Taxonomie ist seit 2026-07-22 im Arten-Explorer kontrolliert bearbeitbar. Reich, Stamm, optionaler Unterstamm,
   Klasse, Ordnung und Familie verwenden einen verpflichtenden Änderungsgrund sowie den bestehenden
   Vorschau-/Hash-/Backup-Schutz. Manuelle Korrekturen liegen getrennt in `species-taxonomy-overrides.json`, bleiben
@@ -866,14 +866,16 @@ Speicher und Latenz gelten ausschließlich für den begrenzten Testbestand und w
 hochgerechnet. Produktive Arten, Assets, Pages und Squarespace bleiben unverändert.
 
 Phase 9.4 wurde am 2026-07-24 abgeschlossen. Der Neue-Art-Assistent besitzt jetzt eine lokale read-only
-Taxonomiereferenz als regulären geführten Eingabeweg mit manueller Rückfallebene, `Tiere (Animalia)` als Standard
-und bewusster Suche über alle Reiche. Deutsche und
-wissenschaftliche Eingaben liefern nach jedem Zeichen Vorschläge; Mehrdeutigkeiten bleiben als Liste sichtbar und
+Taxonomiereferenz als regulären geführten Eingabeweg mit vollständig manueller Rückfallebene. Deutsche, englische
+und wissenschaftliche Eingaben liefern nach 300 Millisekunden passende Vorschläge; Mehrdeutigkeiten bleiben als
+Liste sichtbar und
 kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen, Synonym, Hierarchie, Quelle,
 Release, Quellen-ID und Vertrauensstufe. Erst `Vorschlag übernehmen` füllt die Namensfelder, danach bleiben die
-bisherige Eingabeprüfung, Kollisionsprüfung und Speicherung verpflichtend. Im Neue-Art-Assistenten werden nur
-echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle Anlage vollständig funktionsfähig;
-bei fehlendem belegtem deutschen Namen wird ein englischer Name klar als Ersatz gekennzeichnet. Animalia.bio wird
+bisherige Eingabeprüfung, Kollisionsprüfung und Speicherung verpflichtend. Beim ersten Start ist nur
+`Tiere (Animalia)` sichtbar; über das Zahnrad lassen sich Animalia und weitere Reiche lokal ein- oder ausblenden.
+`Alle Reiche` berücksichtigt ausschließlich diese sichtbare Auswahl. Im Neue-Art-Assistenten werden nur
+echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle Anlage vollständig funktionsfähig.
+Deutsche und englische Namen werden unabhängig gespeichert; Animalia.bio wird
 für betroffene Tiernamen zusätzlich nur als manuelle Suche geöffnet. Der verbindliche Vertrag steht in
 `docs/taxonomy-explorer-integration.md`.
 
@@ -914,20 +916,28 @@ Einzelfall, realistische Skalierung, Sprachfallback und systematischen Paketfehl
 erneut unverändert.
 
 Am 2026-07-28 wurde die reale Explorer-Anbindung nachgeschärft: Der Neue-Art-Assistent liest den verfügbaren
-Referenzbestand aus dem verschachtelten Wartungsstatus, lädt damit wieder alle Reiche und liefert bidirektionale
-Vorschläge wie `Gepard`/`Acinonyx jubatus`. `Alle Reiche` und das vorausgewählte `Tiere (Animalia)` stehen vor den
-alphabetisch sortierten übrigen Reichen. Das deutsche Eingabefeld berücksichtigt ausschließlich deutsch
-gekennzeichnete Vernakularnamen über einen expliziten Sprachparameter; die allgemeine Referenzsuche bleibt
-mehrsprachig. Die Neue-Art-Suche wird serverseitig auf den Rang `Art` begrenzt, damit
+Referenzbestand aus dem verschachtelten Wartungsstatus und liefert Vorschläge für deutsche, englische und
+wissenschaftliche Namen. Das deutsche und das englische Eingabefeld berücksichtigen über explizite
+Sprachparameter ausschließlich die jeweilige Sprache. Eine lokale Zahnradeinstellung bestimmt, welche Reiche
+sichtbar sind; nur Animalia ist anfänglich aktiv, aber nicht unveränderlich. `Alle Reiche` steht zuerst und
+durchsucht nur diese Auswahl. Die Neue-Art-Suche wird serverseitig auf den Rang `Art` begrenzt, damit
 anderssprachige Namen, Gattungen und Unterarten keine falschen beziehungsweise verdrängten Treffer verursachen.
-Die kompakte
-Trefferliste überlagert die folgenden Felder, sodass der Dialog beim Tippen nicht mehr springt. Laufende
+Exakte Treffer unterdrücken unpassende unscharfe Ergebnisse; Präfix-, FTS- und begrenzte Teiltreffersuche decken
+unter anderem `Gepard`, `glaucidium` und `toko` ab. Die Suche startet 300 Millisekunden nach der letzten Eingabe.
+Die kompakte Trefferliste überlagert die folgenden Felder unverändert, sodass der Dialog beim Tippen nicht
+springt. Laufende
 Aktualisierungen wiederholen den Fortschrittstitel nicht mehr in der Detailzeile. Im Ruhezustand steht die aktive
 Referenz nur in der Überschrift; die Detailzeile nennt ausschließlich die neueste verfügbare Version.
 `Manuell zu prüfen` beginnt in einer eigenen Zeile. Der Projektabgleich
 unterscheidet echte unbekannte Namen von einer CoL-Referenzlücke auf
 Artstufe, wenn passende Unterarten vorhanden sind; `Sciurus vulgaris` bleibt dadurch unverändert und wird
 verständlich als Referenzlücke gemeldet.
+
+Alle 52 bestehenden Arten erhielten in demselben Schritt einen separat gespeicherten englischen Namen. Die
+kontrollierte Ergänzung verwendet exakte iNaturalist-Taxa mit lokaler CoL-Rückfallebene, legt vor schreibenden
+Läufen eine Sicherung an und ist als Vorschau über `npm.cmd run --silent taxonomy:backfill-english` reproduzierbar.
+Der englische Name wird im Explorer-Artkopf, in der Suche und über `species-info.js?v=1.0.7` auf der Artseite
+verwendet. Die Änderung benötigt kein neues Squarespace-CSS.
 
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.

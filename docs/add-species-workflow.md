@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-07-24
+Stand: 2026-07-28
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -23,6 +23,7 @@ Eine neue Art wird in `species_list.json` als JSON-Objekt ergaenzt:
 ```json
 {
   "german": "Deutscher Name",
+  "english": "English name",
   "genus": "Genus",
   "species": "species",
   "size": "ca. ...",
@@ -34,6 +35,7 @@ Eine neue Art wird in `species_list.json` als JSON-Objekt ergaenzt:
 Regeln:
 
 - `german`: deutscher Anzeigename und Basis fuer Sound-/Karten-Assetnamen.
+- `english`: eigenständiger englischer Anzeigename und Suchbegriff.
 - `genus`: wissenschaftliche Gattung, erster Buchstabe gross.
 - `species`: Artepitheton klein schreiben.
 - `size`: manuelle Groessenangabe.
@@ -49,6 +51,7 @@ Der Arten-Explorer stellt in der Artenliste die Aktion `Neue Art` bereit.
 Formularfelder:
 
 - deutscher Name (`german`)
+- englischer Name (`english`)
 - wissenschaftlicher Name als zwei Woerter, zum Beispiel `Turdus Merula`
 - Groesse (`size`), optional getrennt nach Maennchen und Weibchen
 - Gewicht (`weight`), optional getrennt nach Maennchen und Weibchen
@@ -61,21 +64,28 @@ vorherige Eingaben oder Pruefansichten erneut zu sehen.
 
 Die App zeigt keine internen Dateinamen mehr im Dialogkopf. Anwender sehen nur die fachlichen Schritte.
 
-Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie die beiden Namensfelder:
+Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie alle drei Namensfelder:
 
-- `Tiere (Animalia)` ist als Reich vorausgewählt; `Alle Reiche` muss bewusst gewählt werden.
+- Beim ersten Start ist nur `Tiere (Animalia)` sichtbar und vorausgewählt. Das Zahnrad kann Animalia abwählen
+  und weitere Reiche ein- oder ausblenden.
+- Das Dropdown enthält `Alle Reiche` zuerst und danach ausschließlich die ausgewählten Reiche in alphabetischer
+  Reihenfolge. `Alle Reiche` durchsucht nur diese sichtbare Auswahl.
 - Der deutsche Name sucht nach belegten deutschen Namen.
+- Der englische Name sucht nach belegten englischen Namen.
 - Der wissenschaftliche Name sucht nach akzeptierten Namen und Synonymen.
+- Die Suche beginnt 300 Millisekunden nach der letzten Eingabe. Ältere Antworten werden verworfen.
 - Die Trefferliste zeigt mehrere Möglichkeiten, ohne einen Treffer automatisch auszuwählen.
+- Sie schwebt über den folgenden Feldern, sodass die Höhe des Assistenten beim Suchen unverändert bleibt.
 - Ein ausgewählter Treffer zeigt Hierarchie, Quelle, Release, Quellen-ID und Namensstatus.
-- Erst `Vorschlag übernehmen` füllt die Namensfelder; danach bleibt `Eingaben prüfen` verpflichtend.
+- Erst `Vorschlag übernehmen` füllt deutsche, englische und wissenschaftliche Namensfelder; danach bleibt
+  `Eingaben prüfen` verpflichtend.
 - Im Neue-Art-Assistenten werden nur Treffer mit dem Rang `Art` angeboten.
 - Fehlt für ein Tier ein belegter deutscher Name, kann eine manuelle Animalia.bio-Suche geöffnet werden.
 - Fehlt die lokale Referenz oder ist sie nicht lesbar, bleiben alle Felder manuell nutzbar.
 
 Vor dem naechsten Schritt prueft die App lokal und danach der Server:
 
-- alle fuenf Pflichtfelder sind gefuellt
+- alle sechs Formular-Pflichtfelder sind gefuellt
 - wissenschaftlicher Name besteht genau aus Gattung und Artepitheton
 - beide Namensbestandteile enthalten nur Buchstaben oder Bindestriche
 - wissenschaftlicher Name ist noch nicht vorhanden
@@ -186,19 +196,23 @@ und bleibt sichtbar, bis die Pipeline erfolgreich gelaufen ist.
 API:
 
 - `GET /api/taxonomy/status`: meldet Verfügbarkeit und aktiven Referenzstand, ohne die Artanlage zu blockieren
-- `GET /api/taxonomy/kingdoms`: liefert die Reichsauswahl mit `Animalia` als Standard
-- `GET /api/taxonomy/search`: liefert höchstens zwölf read-only Vorschläge
+- `GET /api/taxonomy/kingdoms`: liefert alle verfügbaren Reiche mit `Animalia` als erstem lokalen Standard
+- `GET /api/taxonomy/search`: liefert höchstens zwölf read-only Vorschläge und akzeptiert ein einzelnes
+  `kingdomId` oder mehrere kommagetrennte `kingdomIds`
 - `GET /api/taxonomy/taxa/:id`: liefert Detailvorschau, Hierarchie und Quelleninformationen
 - `POST /api/species/new/preview`: validiert alle Felder und Kollisionen, schreibt aber keine Datei
 - `POST /api/species/new/portrait-prompt`: erzeugt den Einzelprompt aus den geprueften Artdaten
 - `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
 
-Technischer Stand vom 2026-07-24:
+Technischer Stand vom 2026-07-28:
 
 - Formular, Vorschau und Speichern sind lokal umgesetzt.
-- Die optionale lokale Taxonomiereferenz ist bidirektional in Schritt 1 integriert. Sie schreibt keine Projektdaten
-  und kann jederzeit zugunsten der manuellen Eingabe verlassen werden.
+- Die lokale Taxonomiereferenz ist in Schritt 1 integriert. Alle Namensfelder bleiben auch bei installierter
+  Referenz direkt manuell beschreibbar.
+- Deutsche, englische und wissenschaftliche Eingaben durchsuchen getrennt die passende Namensart. Ein Zahnrad
+  begrenzt lokal die sichtbaren und durch `Alle Reiche` durchsuchten Reiche; nur Animalia ist anfänglich aktiv.
+- Die 300-ms-Suche verwendet eine schwebende Ergebnisliste und lässt die Dialoghöhe unverändert.
 - Das Formular verwendet einen Schrittassistenten mit Datenpruefung, optionalem Portraitschritt, Kartenpruefung sowie
   Sound-/Abschluss-Schritt.
 - Das Formular verwendet ein gemeinsames Feld fuer den wissenschaftlichen Namen und zeigt Beispieltexte fuer alle

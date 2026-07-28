@@ -36,6 +36,7 @@
       const weightSexed = formData.get("weightSexed") === "on";
       return {
         germanName: formData.get("germanName"),
+        englishName: formData.get("englishName"),
         scientificName: formData.get("scientificName"),
         scientificNameUnlocked: scientificNameInput?.dataset?.unlocked === "true",
         size: sizeSexed
@@ -77,6 +78,9 @@
       };
       if (!String(formData.get("germanName") ?? "").trim()) {
         add("germanName", "Deutscher Name darf nicht leer sein");
+      }
+      if (!String(formData.get("englishName") ?? "").trim()) {
+        add("englishName", "Englischer Name darf nicht leer sein");
       }
       if (!String(formData.get("scientificName") ?? "").trim()) {
         add("scientificName", "Wissenschaftlicher Name darf nicht leer sein");

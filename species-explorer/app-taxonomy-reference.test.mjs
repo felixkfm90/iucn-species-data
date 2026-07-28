@@ -22,7 +22,18 @@ test("Such-URL begrenzt die Suche auf Richtung, Reich und Ergebniszahl", () => {
   });
   assert.equal(
     url,
-    "/api/taxonomy/search?q=Stieglitz%20%26%20Zeisig&kind=vernacular&kingdomId=Animalia&language=de&rank=species&limit=12",
+    "/api/taxonomy/search?q=Stieglitz%20%26%20Zeisig&kind=vernacular&language=de&rank=species&limit=12&kingdomId=Animalia",
+  );
+  assert.equal(
+    taxonomyReference.taxonomySearchUrl({
+      query: "Toko",
+      kind: "vernacular",
+      kingdomIds: ["Animalia", "Plantae"],
+      language: "de",
+      rank: "species",
+      limit: 12,
+    }),
+    "/api/taxonomy/search?q=Toko&kind=vernacular&language=de&rank=species&limit=12&kingdomIds=Animalia%2CPlantae",
   );
 });
 
@@ -63,7 +74,7 @@ test("der Assistent verwendet den verschachtelten Referenzstatus der Wartungs-AP
   );
 });
 
-test("Alle Reiche und Animalia stehen vor den alphabetisch sortierten übrigen Reichen", () => {
+test("Alle Reiche steht vor den alphabetisch sortierten sichtbaren Reichen", () => {
   const sorted = taxonomyReference.sortTaxonomyKingdoms([
     { id: "Animalia", label: "Tiere (Animalia)" },
     { id: "Plantae", label: "Pflanzen (Plantae)" },
@@ -76,10 +87,10 @@ test("Alle Reiche und Animalia stehen vor den alphabetisch sortierten übrigen R
     JSON.parse(JSON.stringify(sorted)),
     [
       { id: "all", label: "Alle Reiche" },
-      { id: "Animalia", label: "Tiere (Animalia)" },
       { id: "Chromista", label: "Chromisten (Chromista)" },
       { id: "Plantae", label: "Pflanzen (Plantae)" },
       { id: "Fungi", label: "Pilze (Fungi)" },
+      { id: "Animalia", label: "Tiere (Animalia)" },
     ],
   );
 });
@@ -107,7 +118,7 @@ test("Trefferdarstellung trennt deutschen Namen, akzeptierten Namen und Synonym"
   assert.equal(result.taxonId, "42");
 });
 
-test("englischer Name wird ohne deutschen Namen sichtbar als Ersatz gekennzeichnet", () => {
+test("englischer Name bleibt ohne deutschen Namen als eigenes Namensfeld erkennbar", () => {
   const result = taxonomyReference.taxonomyResultPresentation({
     taxonId: 84,
     germanName: null,
@@ -121,7 +132,7 @@ test("englischer Name wird ohne deutschen Namen sichtbar als Ersatz gekennzeichn
   assert.equal(result.title, "Red fox");
   assert.equal(result.subtitle, "Vulpes vulpes");
   assert.equal(result.usesEnglishFallback, true);
-  assert.equal(result.note, "Englischer Ersatzname");
+  assert.equal(result.note, "Englischer Name");
 
   const detail = taxonomyReference.taxonomyDetailPresentation({
     scientific_name: "Vulpes vulpes",

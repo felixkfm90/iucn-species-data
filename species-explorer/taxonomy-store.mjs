@@ -32,6 +32,7 @@ const SEARCH_RANKS = new Set([
 ]);
 const GERMAN_LANGUAGE_CODES = new Set(["de", "deu", "ger"]);
 const ENGLISH_LANGUAGE_CODES = new Set(["en", "eng"]);
+const PREFERRED_ENGLISH_SOURCE_IDS = new Set(["2144"]);
 
 function normalizedLanguage(value) {
   return String(value ?? "").trim().toLocaleLowerCase("en");
@@ -48,6 +49,30 @@ function isGermanLanguage(value) {
 
 function isEnglishLanguage(value) {
   return languageMatches(value, ENGLISH_LANGUAGE_CODES, "en");
+}
+
+function englishNameSortScore(entry) {
+  const name = String(entry?.name ?? "").trim();
+  let score = 0;
+  if (!PREFERRED_ENGLISH_SOURCE_IDS.has(String(entry?.source_dataset_id ?? ""))) {
+    score += 100;
+  }
+  if (String(entry?.source_dataset_id ?? "") === "catalogue-of-life-xr") {
+    score += 40;
+  }
+  if (!entry?.preferred) score += 5;
+  if (/^(?:[A-Z]\s*){2,6}$/.test(name) || /^[A-Z]{2,6}$/.test(name)) {
+    score += 1000;
+  }
+  if (/^\\/.test(name) || /[[\]{}]/.test(name)) score += 500;
+  if (/^[a-z][a-z-]{2,}$/.test(name)) score += 30;
+  return score;
+}
+
+function compareEnglishNames(left, right) {
+  return englishNameSortScore(left) - englishNameSortScore(right)
+    || String(left.name).length - String(right.name).length
+    || String(left.name).localeCompare(String(right.name), "en", { sensitivity: "base" });
 }
 
 function prefixUpperBound(value) {
@@ -72,10 +97,17 @@ function appendSearchFilters({
   params,
   kind,
   kingdom,
+  kingdoms,
   language,
   rank,
 }) {
-  if (kingdom && kingdom !== "all") {
+  const selectedKingdoms = Array.isArray(kingdoms)
+    ? [...new Set(kingdoms.map((value) => String(value || "").trim()).filter(Boolean))]
+    : [];
+  if (selectedKingdoms.length) {
+    filters.push(`term.kingdom IN (${selectedKingdoms.map(() => "?").join(", ")})`);
+    params.push(...selectedKingdoms);
+  } else if (kingdom && kingdom !== "all") {
     filters.push("term.kingdom = ?");
     params.push(kingdom);
   }
@@ -189,7 +221,8 @@ export class TaxonomyStore {
   }
 
   englishNames(taxonId) {
-    return this.preferredNames(this.preferredEnglishStatement, taxonId);
+    return this.preferredNames(this.preferredEnglishStatement, taxonId)
+      .sort(compareEnglishNames);
   }
 
   preferredNames(statement, taxonId) {
@@ -266,6 +299,7 @@ export class TaxonomyStore {
     germanKey,
     kind,
     kingdom,
+    kingdoms,
     language,
     rank,
     limit,
@@ -284,6 +318,7 @@ export class TaxonomyStore {
       params,
       kind,
       kingdom,
+      kingdoms,
       language,
       rank,
     });
@@ -329,6 +364,7 @@ export class TaxonomyStore {
     normalized,
     kind,
     kingdom,
+    kingdoms,
     language,
     rank,
     limit,
@@ -343,6 +379,7 @@ export class TaxonomyStore {
       params,
       kind,
       kingdom,
+      kingdoms,
       language,
       rank,
     });
@@ -377,10 +414,68 @@ export class TaxonomyStore {
     `).all(...params);
   }
 
+  containsRows({
+    normalized,
+    folded,
+    germanKey,
+    kind,
+    kingdom,
+    kingdoms,
+    language,
+    rank,
+    limit,
+  }) {
+    const filters = [];
+    const params = [normalized, folded, germanKey];
+    appendSearchFilters({
+      filters,
+      params,
+      kind,
+      kingdom,
+      kingdoms,
+      language,
+      rank,
+    });
+    params.push(limit * 16);
+    return this.database.prepare(`
+      SELECT
+        term.id AS term_id,
+        term.taxon_id,
+        term.term,
+        term.term_type,
+        term.language,
+        term.preferred,
+        term.sort_score,
+        taxon.source_id,
+        taxon.scientific_name,
+        taxon.rank,
+        taxon.status,
+        taxon.extinct,
+        taxon.kingdom,
+        taxon.trust_tier
+      FROM search_term term
+      JOIN taxon ON taxon.id = term.taxon_id
+      WHERE (
+        INSTR(term.normalized, ?) > 0
+        OR INSTR(term.folded, ?) > 0
+        OR INSTR(term.german_key, ?) > 0
+      )
+      ${filters.length ? `AND ${filters.join(" AND ")}` : ""}
+      ORDER BY
+        term.sort_score,
+        CASE WHEN term.trust_tier = 'base' THEN 0 ELSE 1 END,
+        LENGTH(term.normalized),
+        term.normalized,
+        taxon.source_id
+      LIMIT ?
+    `).all(...params);
+  }
+
   search({
     query,
     kind = "all",
     kingdom = "Animalia",
+    kingdoms = null,
     language = "all",
     rank = "all",
     limit = 12,
@@ -412,16 +507,32 @@ export class TaxonomyStore {
       germanKey: germanTaxonomySearchKey(query),
       kind,
       kingdom,
+      kingdoms,
       language,
       rank,
       limit: maximum,
     };
-    const rows = this.prefixRows(searchInput);
-    if (rows.length < maximum && normalized.length >= 2) {
-      const seenTerms = new Set(rows.map((row) => row.term_id));
-      for (const row of this.ftsRows(searchInput)) {
-        if (!seenTerms.has(row.term_id)) rows.push(row);
+    let rows = this.prefixRows(searchInput);
+    const exactRows = rows.filter((row) => (
+      normalizeTaxonomySearchTerm(row.term) === normalized
+      || foldTaxonomySearchTerm(row.term) === searchInput.folded
+      || germanTaxonomySearchKey(row.term) === searchInput.germanKey
+    ));
+    if (exactRows.length) rows = exactRows;
+    const seenTerms = new Set(rows.map((row) => row.term_id));
+    const distinctTaxonCount = () => new Set(rows.map((row) => row.taxon_id)).size;
+    const appendRows = (additionalRows) => {
+      for (const row of additionalRows) {
+        if (seenTerms.has(row.term_id)) continue;
+        seenTerms.add(row.term_id);
+        rows.push(row);
       }
+    };
+    if (!exactRows.length && distinctTaxonCount() < maximum && normalized.length >= 2) {
+      appendRows(this.ftsRows(searchInput));
+    }
+    if (!exactRows.length && distinctTaxonCount() < maximum && normalized.length >= 3) {
+      appendRows(this.containsRows(searchInput));
     }
     const seenTaxa = new Set();
     const results = [];
@@ -436,6 +547,7 @@ export class TaxonomyStore {
       normalizedQuery: normalized,
       kind,
       kingdom,
+      kingdoms: Array.isArray(kingdoms) ? [...kingdoms] : null,
       language,
       rank,
       limit: maximum,

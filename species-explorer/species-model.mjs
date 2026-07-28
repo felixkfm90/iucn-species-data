@@ -8,6 +8,13 @@ export const EDITABLE_NAME_FIELD = {
   maxLength: 160,
 };
 
+export const EDITABLE_ENGLISH_FIELD = {
+  key: "englishName",
+  sourceKey: "english",
+  label: "Englischer Name",
+  maxLength: 160,
+};
+
 export const EDITABLE_SCIENTIFIC_FIELD = {
   key: "scientificName",
   label: "Wissenschaftlicher Name",
@@ -27,6 +34,7 @@ export const EDITABLE_FIELD_DEFINITIONS = [
 
 export const NEW_SPECIES_FIELD_DEFINITIONS = [
   { key: "german", label: "Deutscher Name", maxLength: 160 },
+  { key: "english", label: "Englischer Name", maxLength: 160 },
   { key: "scientificName", label: "Wissenschaftlicher Name", maxLength: 201 },
   ...EDITABLE_FIELD_DEFINITIONS.map((field) => ({
     key: field.key,
@@ -206,6 +214,15 @@ export function validateEditableValues(payload, species = null) {
   values.germanName = germanName.value;
   errors.push(...germanName.errors);
 
+  const englishName = validateFieldValue(
+    EDITABLE_ENGLISH_FIELD,
+    payload && Object.hasOwn(payload, EDITABLE_ENGLISH_FIELD.key)
+      ? payload?.[EDITABLE_ENGLISH_FIELD.key]
+      : species?.englishName,
+  );
+  values.englishName = englishName.value;
+  errors.push(...englishName.errors);
+
   const scientificName = normalizeScientificName(
     payload && Object.hasOwn(payload, EDITABLE_SCIENTIFIC_FIELD.key)
       ? payload?.[EDITABLE_SCIENTIFIC_FIELD.key]
@@ -280,6 +297,7 @@ export function buildNewSpeciesEntry(values) {
   return {
     entry: {
       german: values.german,
+      english: values.english,
       genus: values.genus,
       species: values.species,
       size: values.size,
@@ -353,6 +371,11 @@ export function buildEditChanges(inputEntry, values) {
     before: valueOrUnknown(inputEntry[EDITABLE_NAME_FIELD.sourceKey]),
     after: values[EDITABLE_NAME_FIELD.key],
   }, {
+    field: EDITABLE_ENGLISH_FIELD.label,
+    key: EDITABLE_ENGLISH_FIELD.key,
+    before: valueOrUnknown(inputEntry[EDITABLE_ENGLISH_FIELD.sourceKey]),
+    after: values[EDITABLE_ENGLISH_FIELD.key],
+  }, {
     field: EDITABLE_SCIENTIFIC_FIELD.label,
     key: EDITABLE_SCIENTIFIC_FIELD.key,
     before: valueOrUnknown(`${inputEntry.genus ?? ""} ${inputEntry.species ?? ""}`.trim()),
@@ -376,7 +399,12 @@ export function buildEditChanges(inputEntry, values) {
 }
 
 export function editChangesRequirePipelineTransfer(changes) {
-  const directRenameKeys = new Set([EDITABLE_NAME_FIELD.key, EDITABLE_SCIENTIFIC_FIELD.key, "urlSlug"]);
+  const directRenameKeys = new Set([
+    EDITABLE_NAME_FIELD.key,
+    EDITABLE_ENGLISH_FIELD.key,
+    EDITABLE_SCIENTIFIC_FIELD.key,
+    "urlSlug",
+  ]);
   return changes.some((change) => !directRenameKeys.has(change.key));
 }
 

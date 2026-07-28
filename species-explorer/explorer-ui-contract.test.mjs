@@ -666,12 +666,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Karte/);
   assert.match(htmlSource, /Sound &amp; Abschluss|Sound & Abschluss/);
   assert.match(htmlSource, /name="german"/);
+  assert.match(htmlSource, /name="english"/);
   assert.match(htmlSource, /name="scientificName"/);
   assert.match(htmlSource, /class="taxonomy-reference-kingdom"/);
   assert.match(htmlSource, /class="taxonomy-reference-search"/);
   assert.match(htmlSource, /Tiere \(Animalia\)/);
   assert.match(htmlSource, /Vorschlag übernehmen/);
-  assert.match(htmlSource, /Manuell eingeben/);
+  assert.match(htmlSource, /class="taxonomy-reference-kingdom-settings-toggle"/);
+  assert.doesNotMatch(htmlSource, /id="taxonomy-reference-manual"/);
   assert.match(htmlSource, /name="sizeSexed"/);
   assert.match(htmlSource, /name="sizeMale"/);
   assert.match(htmlSource, /name="sizeFemale"/);

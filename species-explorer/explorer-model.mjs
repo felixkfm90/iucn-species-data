@@ -189,6 +189,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     const input = inputByScientificName.get(key) ?? null;
     const generated = generatedByScientificName.get(key) ?? null;
     const germanName = generated?.["Deutscher Name"] ?? input?.german ?? "Unbekannt";
+    const englishName = generated?.["Englischer Name"] ?? input?.english ?? "Unbekannt";
     const scientificName = generated?.["Wissenschaftlicher Name"]
       ?? `${input?.genus ?? ""} ${input?.species ?? ""}`.trim()
       ?? "Unbekannt";
@@ -236,6 +237,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       const expectedSlug = `${input.genus ?? ""}${input.species ?? ""}`.toLocaleLowerCase("de");
       const comparisons = [
         compareValues("Deutscher Name", input.german, generated["Deutscher Name"]),
+        compareValues("Englischer Name", input.english, generated["Englischer Name"]),
         compareValues("Wissenschaftlicher Name", expectedScientificName, generated["Wissenschaftlicher Name"]),
         compareValues("Größe", input.size, generated["Größe"]),
         compareValues("Gewicht", input.weight, generated.Gewicht),
@@ -340,6 +342,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     species.push({
       id: generated?.URLSlug ?? key.replace(/\s+/g, ""),
       germanName,
+      englishName,
       scientificName,
       safeName,
       slug: generated?.URLSlug ?? "",
