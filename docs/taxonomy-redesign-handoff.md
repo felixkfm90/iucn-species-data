@@ -143,8 +143,10 @@ Icons vorzugsweise als lokale Inline-SVGs, CSS-Masken oder einfache CSS-Formen u
 - Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Der
   freigegebene Stand wurde nach `main` übernommen und der erste Pages-Lauf war erfolgreich. Das Modul lädt das
   zugehörige Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt, damit Markup und Gestaltung künftig atomar
-  veröffentlicht werden. Die dokumentierte produktive Cache-Version ist `species-taxonomy.js?v=1.0.6`; derselbe
-  Cache-Schlüssel wird an das dynamisch geladene Artseiten-CSS weitergereicht.
+  veröffentlicht werden. Die dokumentierte produktive Cache-Version ist `species-taxonomy.js?v=1.0.7`; derselbe
+  Cache-Schlüssel wird an das dynamisch geladene Artseiten-CSS weitergereicht. Seit 2026-07-29 setzen die Stufen
+  zusätzlich ausdrücklich `box-sizing: border-box`, damit ihre per JavaScript berechneten Außenbreiten in der
+  lokalen Vorschau und innerhalb des Squarespace-Boxmodells identisch bleiben.
 
 ## Betroffene Dateien
 

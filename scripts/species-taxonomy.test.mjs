@@ -4,6 +4,10 @@ import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const source = await readFile(new URL("../species-taxonomy.js", import.meta.url), "utf8");
+const taxonomyCss = await readFile(
+  new URL("../docs/squarespace-custom.css", import.meta.url),
+  "utf8",
+);
 
 const baseTaxonomy = Object.freeze({
   Kingdom: "Animalia",
@@ -112,4 +116,11 @@ test("Mobil reduziert den gemeinsamen Schritt nur so weit wie für einzeilige In
   assert.equal(result.taperStep, 6);
   assert.equal(result.wrapped, false);
   assert.deepEqual([...result.widths], [220, 214, 208, 202]);
+});
+
+test("Taxonomiestufen verwenden unabhängig vom Squarespace-Boxmodell ihre berechnete Außenbreite", () => {
+  assert.match(
+    taxonomyCss,
+    /\.taxonomy-stage\s*\{[^}]*box-sizing:\s*border-box;/s,
+  );
 });

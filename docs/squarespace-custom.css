@@ -1,6 +1,6 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-07-18
+  Stand: 2026-07-29
   Soll-Stand inklusive responsiver Taxonomie-Pyramide fuer Phase 8.
 */
 
@@ -201,6 +201,7 @@
 .taxonomy-stage {
   position: relative;
   isolation: isolate;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: clamp(28px, 2.5vw, 34px) 1px minmax(0, 1fr);
   gap: clamp(6px, 0.75vw, 10px);

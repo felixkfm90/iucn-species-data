@@ -171,6 +171,9 @@ einem Großbuchstaben, werden aber nicht vollständig großgeschrieben. Auf Desk
 vollbreiten Taxonomierahmen zentriert. Rang und Wert teilen in jeder Stufe eine gemeinsame typografische Grundlinie;
 Desktop und Tablet verwenden denselben dezenten Zehn-Pixel-Verjüngungsschritt und dieselbe weiche Rundung. Mobil
 berechnet aus der verfügbaren Breite einen sicheren Schritt von höchstens zehn Pixeln.
+Die Stufen setzen ihr Boxmodell ausdrücklich auf `border-box`, damit Squarespace Innenabstände und Rahmen nicht
+zusätzlich auf die von JavaScript berechnete Breite aufschlägt und die diagonalen Außenkanten live genauso verlaufen
+wie in der lokalen Vorschau.
 Auf großen Bildschirmen bildet `#species-output` drei Spalten: die Taxonomie links, Allgemeine Daten mit
 Status/Trend darunter in der Mitte und das Artporträt über die volle Höhe rechts. Die Tierstimme steht unter den
 beiden linken Spalten. Der Taxonomierahmen endet bündig mit Status/Trend; die kompakte Einheit aus Pfeil und
@@ -763,7 +766,7 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8`,
-`species-taxonomy.js?v=1.0.6` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
+`species-taxonomy.js?v=1.0.7` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
 erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert. Die Taxonomie-Version erneuert zugleich
 den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS.
 

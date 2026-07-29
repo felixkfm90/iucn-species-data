@@ -790,7 +790,9 @@ Status: abgeschlossen am 2026-07-22
   Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
   kontrollierte Übernahme nach `main` und der erste Pages-Lauf waren erfolgreich. Das Modul lädt das notwendige
   Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
-  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.6`; sie
+  unterschiedlichem Stand live gehen. Seit 2026-07-29 verwendet jede Stufe ausdrücklich `border-box`, damit
+  Squarespace Padding und Rahmen nicht zusätzlich auf die berechnete Balkenbreite aufschlägt. Die dokumentierte
+  Footer-Version ist `species-taxonomy.js?v=1.0.7`; sie
   aktualisiert zugleich den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS. Details:
   `docs/taxonomy-redesign-handoff.md`.
 - Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte die
@@ -802,7 +804,7 @@ Status: abgeschlossen am 2026-07-22
   die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das Layout automatisch auf zwei Spalten
   zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
   Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8` und `species-taxonomy.js?v=1.0.6`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8` und `species-taxonomy.js?v=1.0.7`.
 - Die Taxonomie ist seit 2026-07-22 im Arten-Explorer kontrolliert bearbeitbar. Reich, Stamm, optionaler Unterstamm,
   Klasse, Ordnung und Familie verwenden einen verpflichtenden Änderungsgrund sowie den bestehenden
   Vorschau-/Hash-/Backup-Schutz. Manuelle Korrekturen liegen getrennt in `species-taxonomy-overrides.json`, bleiben
