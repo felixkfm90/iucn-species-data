@@ -1,6 +1,6 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-28
+Stand: 2026-07-29
 
 Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation und Aktualisierung
 
@@ -17,6 +17,8 @@ bisherige Artenvalidierung:
 - Eingaben im Feld `Wissenschaftlicher Name` suchen nach wissenschaftlichen Namen und Synonymen.
 - Beim ersten Start ist nur `Tiere (Animalia)` sichtbar und vorausgewählt.
 - Über das Zahnrad können Animalia und alle weiteren verfügbaren Reiche lokal ein- oder ausgeblendet werden.
+- Die Zahnradeinstellung besitzt eine eigene Filtereingabe und eine höhenbegrenzte, scrollbar bleibende Liste.
+  Checkbox und sichtbarer Reichsname stehen platzsparend in derselben Zeile.
 - `Alle Reiche` durchsucht ausschließlich die ausgewählten und damit sichtbaren Reiche.
 - Kein Suchergebnis wird automatisch ausgewählt oder gespeichert.
 - Die manuelle Eingabe bleibt jederzeit möglich.
@@ -84,6 +86,10 @@ dem jeweiligen Rechner. Beim ersten Start ist ausschließlich Animalia aktiv, ka
 werden. Das Dropdown enthält `Alle Reiche` zuerst und danach nur die ausgewählten Reiche alphabetisch nach ihrer
 sichtbaren Bezeichnung. Sind keine Reiche ausgewählt, bleibt die Referenzsuche inaktiv, die manuelle Eingabe aber
 vollständig nutzbar.
+
+Die Reichseinstellung filtert nur die sichtbare Auswahlliste; sie ändert weder den installierten Referenzbestand
+noch bereits gespeicherte Projektarten. Die Liste bleibt auch bei vielen Reichen in einem begrenzten Scrollbereich,
+damit der Neue-Art-Assistent nicht über die Fensterhöhe hinauswächst.
 
 Wenn während des Tippens mehrere Anfragen laufen, darf nur die Antwort der neuesten Eingabe die Trefferliste
 aktualisieren. Jede Eingabe wartet 300 Millisekunden, bevor eine Anfrage beginnt. Die Treffer erscheinen in einem

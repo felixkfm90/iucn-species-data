@@ -25,6 +25,7 @@ async function renderInfo(data) {
 
 const commonData = {
   "Deutscher Name": "Löwe",
+  "Englischer Name": "Lion",
   "Wissenschaftlicher Name": "Panthera leo",
   Größe: "ca. 140–250 cm",
   Gewicht: "Männchen: ca. 150–250 kg; Weibchen: ca. 110–180 kg",
@@ -41,6 +42,11 @@ test("einheitliche und geschlechtsspezifische Werte nutzen dieselbe Wertspalte",
   assert.match(html, /<span>Männchen: ca\. 150–250 kg;<\/span>/);
   assert.match(html, /<span>Weibchen: ca\. 110–180 kg<\/span>/);
   assert.doesNotMatch(html, /style=/);
+  assert.ok(html.indexOf("Deutscher Name") < html.indexOf("Englischer Name"));
+  assert.ok(html.indexOf("Englischer Name") < html.indexOf("Lateinischer Name"));
+  assert.ok(html.indexOf("Lateinischer Name") < html.indexOf("Größe"));
+  assert.doesNotMatch(html, />Wissenschaftlicher Name:/);
+  assert.doesNotMatch(html, /species-info-name/);
 });
 
 test("Größe und Gewicht können gleichzeitig getrennte Werte enthalten", async () => {

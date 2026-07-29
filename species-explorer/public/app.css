@@ -1952,6 +1952,7 @@ button:focus-visible {
   max-height: min(440px, calc(100vh - 180px));
   padding: 12px;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   gap: 10px;
   overflow: hidden;
   background: #fff;
@@ -1974,24 +1975,50 @@ button:focus-visible {
   line-height: 1.35;
 }
 
+.taxonomy-reference-kingdom-settings-filter {
+  display: grid;
+  gap: 4px;
+}
+
+.taxonomy-reference-kingdom-settings-filter > span {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.taxonomy-reference-kingdom-settings-filter input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 9px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
+}
+
 .taxonomy-reference-kingdom-settings-list {
   min-height: 0;
+  max-height: min(280px, 42vh);
   display: grid;
   gap: 2px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
-.taxonomy-reference-kingdom-settings-list label {
+.edit-fields .taxonomy-reference-kingdom-settings-list label {
   min-height: 34px;
   padding: 5px 7px;
-  display: flex;
-  grid-template-columns: none;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   border-radius: 4px;
 }
 
-.taxonomy-reference-kingdom-settings-list label:hover {
+.edit-fields .taxonomy-reference-kingdom-settings-list label:hover {
   background: var(--surface-muted);
 }
 
@@ -1999,6 +2026,16 @@ button:focus-visible {
   width: 16px;
   height: 16px;
   margin: 0;
+}
+
+.edit-fields .taxonomy-reference-kingdom-settings-list label > span {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-transform: none;
 }
 
 .taxonomy-reference-kingdom-settings-message {

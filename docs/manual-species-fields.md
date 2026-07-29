@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-07-28
+Stand: 2026-07-29
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -35,20 +35,24 @@ strukturiert erfasst:
 Bestehende Angaben in der frueheren Schreibweise `Maennchen ... Weibchen ...` werden beim Oeffnen erkannt. Beim
 naechsten Speichern verwendet der Explorer einheitlich `Maennchen: ...; Weibchen: ...`.
 
-Der Arten-Explorer zeigt den englischen Namen im Artkopf. `species-info.js` zeigt ihn auf der Squarespace-Artseite
-als eigene Zeile und die manuelle `Lebenserwartung` oberhalb der aus IUCN stammenden `Generationsdauer` an.
+Der Arten-Explorer zeigt den englischen Namen im Artkopf. `species-info.js` zeigt deutschen, englischen und
+wissenschaftlichen Namen auf der Squarespace-Artseite als getrennte Zeilen an. Die sichtbare Bezeichnung
+`Lateinischer Name` hält die Zeile auch auf schmalen Ansichten kompakt; intern bleibt das Datenfeld unverändert
+`Wissenschaftlicher Name`. Die manuelle `Lebenserwartung` steht oberhalb der aus IUCN stammenden
+`Generationsdauer`.
 Technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` werden in der Artseiten-Info-Box als `Unbekannt`
 angezeigt. Das ist reine Frontend-Anzeigeformatierung; die Rohdaten in `speciesData.json` bleiben unveraendert.
 
 Reihenfolge in der Info-Box:
 
-1. Name
+1. Deutscher Name
 2. Englischer Name
-3. Groesse
-4. Gewicht
-5. Lebenserwartung
-6. Generationsdauer
-7. Populationsgroesse
+3. Lateinischer Name
+4. Groesse
+5. Gewicht
+6. Lebenserwartung
+7. Generationsdauer
+8. Populationsgroesse
 
 ## Pipeline-Verhalten
 

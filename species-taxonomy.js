@@ -373,6 +373,10 @@
     }
   }
 
+  global.SpeciesTaxonomyLayout = Object.freeze({
+    calculateStageWidths,
+  });
+
   async function renderTaxonomy() {
     const container = global.document?.getElementById("species-taxonomy");
     if (!container) return;

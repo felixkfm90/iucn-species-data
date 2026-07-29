@@ -673,6 +673,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Tiere \(Animalia\)/);
   assert.match(htmlSource, /Vorschlag übernehmen/);
   assert.match(htmlSource, /class="taxonomy-reference-kingdom-settings-toggle"/);
+  assert.match(htmlSource, /class="taxonomy-reference-kingdom-settings-filter-input"/);
   assert.doesNotMatch(htmlSource, /id="taxonomy-reference-manual"/);
   assert.match(htmlSource, /name="sizeSexed"/);
   assert.match(htmlSource, /name="sizeMale"/);
@@ -814,6 +815,16 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     /\.taxonomy-reference-results\s*\{[^}]*position:\s*absolute[^}]*max-height:\s*184px[^}]*overflow-y:\s*auto/s,
   );
   assert.match(appTaxonomyReferenceSource, /function sortTaxonomyKingdoms\(/);
+  assert.match(appTaxonomyReferenceSource, /function filterTaxonomyKingdoms\(/);
+  assert.match(appTaxonomyReferenceSource, /const TAXONOMY_SEARCH_DEBOUNCE_MS = 300/);
+  assert.match(
+    cssSource,
+    /\.taxonomy-reference-kingdom-settings-list\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/s,
+  );
+  assert.match(
+    cssSource,
+    /\.edit-fields \.taxonomy-reference-kingdom-settings-list label\s*\{[^}]*grid-template-columns:\s*18px minmax\(0,\s*1fr\)/s,
+  );
   assert.match(cssSource, /\.new-species-steps\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
   assert.match(cssSource, /\.edit-fields label\[hidden\]\s*\{[^}]*display:\s*none !important/s);
   assert.match(cssSource, /\.new-species-json\s*\{[^}]*white-space:\s*pre-wrap/s);

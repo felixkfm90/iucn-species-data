@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-07-28
+Stand: 2026-07-29
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -68,6 +68,8 @@ Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie alle drei N
 
 - Beim ersten Start ist nur `Tiere (Animalia)` sichtbar und vorausgewählt. Das Zahnrad kann Animalia abwählen
   und weitere Reiche ein- oder ausblenden.
+- Im Zahnrad-Dialog können die verfügbaren Reiche gefiltert werden. Die kompakte Liste bleibt scrollbar; Checkbox
+  und Reichsname stehen in einer Zeile.
 - Das Dropdown enthält `Alle Reiche` zuerst und danach ausschließlich die ausgewählten Reiche in alphabetischer
   Reihenfolge. `Alle Reiche` durchsucht nur diese sichtbare Auswahl.
 - Der deutsche Name sucht nach belegten deutschen Namen.

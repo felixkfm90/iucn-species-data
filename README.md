@@ -28,7 +28,8 @@ Squarespace enthaelt auf den Artseiten nur Container. Die Inhalte werden im Brow
 - `AGENTS.md`: aktuelle Projektuebergabe und verbindliche Arbeitsregeln
 - `species-assets-overrides.json`: maschinenlesbarer Schutz für manuell gepflegte Karten und Sounds
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
-- `species-info.js`: Info-Box fuer Name, Groesse, Gewicht, Lebenserwartung, Generationsdauer und Population
+- `species-info.js`: Info-Box fuer deutschen, englischen und lateinischen Namen, Groesse, Gewicht,
+  Lebenserwartung, Generationsdauer und Population
 - `species-taxonomy.js`: responsive Taxonomie-Pyramide mit zentralen deutschen Anzeigenamen und optionalem
   Unterstamm
 - `species-status.js`: IUCN-Status und Populationstrend
@@ -291,6 +292,8 @@ gleichzeitig direkt manuell beschreibbar. Über das Zahnrad neben der Reichsausw
 Reiche im Dropdown erscheinen. Beim ersten Start ist nur `Tiere (Animalia)` ausgewählt, kann dort aber ebenfalls
 abgewählt werden. `Alle Reiche` steht vor den alphabetisch sortierten sichtbaren Reichen und durchsucht
 ausschließlich diese Auswahl; ausgeblendete Reiche werden weder angezeigt noch einbezogen.
+Der Einstellungsdialog bietet dafür eine Filtereingabe sowie eine kompakte scrollbar begrenzte Liste mit
+Checkbox und Reichsname in derselben Zeile.
 Das deutsche und englische Namensfeld verwenden explizite Sprachfilter. Die wissenschaftliche Suche berücksichtigt
 akzeptierte Namen und Synonyme. Der Neue-Art-Assistent begrenzt seine API-Suche auf echte Arteinträge; exakte
 Treffer werden gegenüber unpassenden Teiltreffern bevorzugt. Gattungen und Unterarten verdrängen dadurch keine
@@ -759,8 +762,8 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 `Verbreitungskarten/` und `sounds/` wurden am 2026-06-17 entfernt. Nach
 GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
-Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7`,
-`species-taxonomy.js?v=1.0.5` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
+Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8`,
+`species-taxonomy.js?v=1.0.6` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
 erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert. Die Taxonomie-Version erneuert zugleich
 den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS.
 

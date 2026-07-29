@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-26
+Stand: 2026-07-29
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -52,7 +52,8 @@ Zentrale Dateien:
 Frontend-Module:
 
 - `species-core.js`: gemeinsamer Datenloader, Slug-Ermittlung, Cache und Assetnamen-Sanitizer
-- `species-info.js`: Info-Box
+- `species-info.js`: Info-Box mit getrennten Zeilen fuer deutschen, englischen und lateinischen Namen sowie
+  manuelle und IUCN-Artdaten
 - `species-taxonomy.js`: Taxonomie-Pyramide
 - `species-status.js`: IUCN-Status und Populationstrend
 - `species-portrait.js`: optionales Artportraet und responsiver Layout-Fallback
@@ -981,7 +982,7 @@ Aktuelle Planung:
   drei Vorschaugrößen visuell freigegeben. Der freigegebene Stand wurde nach `main` übernommen und der erste
   Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
   kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
-  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.5`; derselbe Cache-Schluessel wird fuer
+  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.6`; derselbe Cache-Schluessel wird fuer
   das dynamisch geladene Artseiten-CSS verwendet. Artportraits sind seit 2026-07-18
   ebenfalls in die Squarespace-Artseite integriert: Auf grossen Bildschirmen steht die Taxonomie links, Allgemeine
   Daten mit Status/Trend darunter in der Mitte und das Portrait ohne sichtbare Ueberschrift ueber die volle Hoehe
@@ -993,7 +994,7 @@ Aktuelle Planung:
   stapeln die Bereiche; fehlt `portrait.webp`, bleibt die zweispaltige Ansicht ohne leeren Portraitbereich bestehen.
   `species-portrait.js` erzeugt den Portraitcontainer dynamisch und ordnet den vorhandenen Soundcontainer ein,
   sodass bestehende Artseiten keine manuelle HTML-Ergaenzung brauchen. Dokumentierte Footer-Versionen sind
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7` und `species-portrait.js?v=1.0.1`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8` und `species-portrait.js?v=1.0.1`.
   Seit 2026-07-22 kann der Explorer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie kontrolliert
   korrigieren. Ein Änderungsgrund, Vorschau-Token, Quell-Hashes und lokale Sicherung sind Pflicht. Manuelle Werte
   stehen getrennt in `species-taxonomy-overrides.json`, werden nach dem automatischen Datenabruf erneut angewendet
@@ -1029,6 +1030,10 @@ Aktuelle Planung:
   werden als CoL-Referenzlücke statt als unbekannte Art ausgewiesen und führen zu keiner automatischen Zuordnung.
   Der Wartungsbereich zeigt die aktive Referenz einmalig in der Überschrift und darunter nur die neueste
   verfügbare Version; manuell zu prüfende Arten beginnen in einer eigenen Zeile.
+  Seit 2026-07-29 besitzt die Reichseinstellung zusätzlich eine Filtereingabe und eine kompakte, scrollbar
+  begrenzte Liste mit Checkbox und Reichsname in derselben Zeile. Alle drei Namensfelder verwenden denselben
+  300-ms-Suchrhythmus. Auf der Artseite stehen deutscher, englischer und lateinischer Name jeweils in einer
+  eigenen Zeile; das interne Feld bleibt `Wissenschaftlicher Name`.
   Alle 52 bestehenden Projektarten besitzen seit 2026-07-28 einen separat gepflegten englischen Namen in
   `species_list.json` und `speciesData.json`. Die kontrollierte Ergänzung ist über
   `npm.cmd run --silent taxonomy:backfill-english` standardmäßig als Vorschau und nur mit `-- --write` schreibend

@@ -15,6 +15,16 @@ const baseTaxonomy = Object.freeze({
   Species: "merula",
 });
 
+function loadTaxonomyContext() {
+  const context = vm.createContext({
+    document: {
+      getElementById: () => null,
+    },
+  });
+  new vm.Script(source, { filename: "species-taxonomy.js" }).runInContext(context);
+  return context;
+}
+
 async function renderTaxonomy(dataOrError) {
   const container = { innerHTML: "" };
   const context = vm.createContext({
@@ -73,4 +83,33 @@ test("Fehlermeldungen werden als Text und nicht als HTML ausgegeben", async () =
   const markup = await renderTaxonomy(new Error("<img src=x onerror=alert(1)>"));
   assert.doesNotMatch(markup, /<img/);
   assert.match(markup, /&lt;img src=x onerror=alert\(1\)&gt;/);
+});
+
+test("Desktop und Tablet erhalten eine gleichmäßige Verjüngung von zehn Pixeln", () => {
+  const context = loadTaxonomyContext();
+  const result = context.SpeciesTaxonomyLayout.calculateStageWidths(
+    [142, 181, 154, 162, 159, 130, 105],
+    420,
+    false,
+  );
+  assert.equal(result.taperStep, 10);
+  assert.equal(result.wrapped, false);
+  assert.deepEqual(
+    [...result.widths].map((width, index, values) => (
+      index ? values[index - 1] - width : 10
+    )),
+    [10, 10, 10, 10, 10, 10, 10],
+  );
+});
+
+test("Mobil reduziert den gemeinsamen Schritt nur so weit wie für einzeilige Inhalte nötig", () => {
+  const context = loadTaxonomyContext();
+  const result = context.SpeciesTaxonomyLayout.calculateStageWidths(
+    [220, 214, 208, 202],
+    220,
+    true,
+  );
+  assert.equal(result.taperStep, 6);
+  assert.equal(result.wrapped, false);
+  assert.deepEqual([...result.widths], [220, 214, 208, 202]);
 });

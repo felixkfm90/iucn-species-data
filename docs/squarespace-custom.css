@@ -65,10 +65,6 @@
   line-height: 2;
 }
 
-.species-info-name {
-  margin-bottom: 10px !important;
-}
-
 .species-info-row {
   display: grid;
   grid-template-columns: clamp(150px, 42%, 175px) minmax(0, 1fr);
@@ -679,8 +675,12 @@
   }
 
   .species-info-row {
-    grid-template-columns: clamp(132px, 44%, 150px) minmax(0, 1fr);
+    grid-template-columns: minmax(145px, 46%) minmax(0, 1fr);
     column-gap: 8px;
+  }
+
+  .species-info-label {
+    white-space: nowrap;
   }
 
   .taxonomy-frame {

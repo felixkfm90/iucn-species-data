@@ -95,6 +95,49 @@ test("Alle Reiche steht vor den alphabetisch sortierten sichtbaren Reichen", () 
   );
 });
 
+test("Reichsfilter durchsucht deutsche und wissenschaftliche Bezeichnungen", () => {
+  const values = [
+    { id: "Animalia", label: "Tiere (Animalia)" },
+    { id: "Plantae", label: "Pflanzen (Plantae)" },
+    { id: "Chromista", label: "Chromisten (Chromista)" },
+  ];
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(taxonomyReference.filterTaxonomyKingdoms(values, "tier"))),
+    [{ id: "Animalia", label: "Tiere (Animalia)" }],
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(taxonomyReference.filterTaxonomyKingdoms(values, "plantae"))),
+    [{ id: "Plantae", label: "Pflanzen (Plantae)" }],
+  );
+});
+
+test("alle Namensfelder verwenden dieselbe Suchverzögerung von 300 Millisekunden", () => {
+  const callbacks = [];
+  const cleared = [];
+  const calls = [];
+  let nextTimerId = 0;
+  const scheduler = taxonomyReference.createTaxonomySearchScheduler(
+    (...args) => calls.push(args),
+    {
+      setTimeoutFn(callback, delay) {
+        callbacks.push({ id: ++nextTimerId, callback, delay });
+        return nextTimerId;
+      },
+      clearTimeoutFn(timerId) {
+        cleared.push(timerId);
+      },
+    },
+  );
+
+  scheduler.schedule("deutsch", "vernacular", "de");
+  scheduler.schedule("english", "vernacular", "en");
+  assert.equal(scheduler.delayMs, 300);
+  assert.deepEqual(callbacks.map(({ delay }) => delay), [300, 300]);
+  assert.deepEqual(cleared, [1]);
+  callbacks[1].callback();
+  assert.deepEqual(calls, [["english", "vernacular", "en"]]);
+});
+
 test("Trefferdarstellung trennt deutschen Namen, akzeptierten Namen und Synonym", () => {
   const result = taxonomyReference.taxonomyResultPresentation({
     taxonId: 42,

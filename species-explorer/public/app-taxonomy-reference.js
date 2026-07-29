@@ -15,6 +15,7 @@
   });
   const NEW_SPECIES_ALLOWED_RANKS = new Set(["species"]);
   const KINGDOM_SETTINGS_STORAGE_KEY = "species-explorer.taxonomy.visible-kingdoms.v1";
+  const TAXONOMY_SEARCH_DEBOUNCE_MS = 300;
 
   function taxonomySearchUrl({
     query,
@@ -82,6 +83,49 @@
         { numeric: true, sensitivity: "base" },
       )
     ));
+  }
+
+  function normalizedFilterText(value) {
+    return String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("de");
+  }
+
+  function filterTaxonomyKingdoms(values = [], query = "") {
+    const normalizedQuery = normalizedFilterText(query);
+    const kingdoms = sortTaxonomyKingdoms(values);
+    if (!normalizedQuery) return kingdoms;
+    return kingdoms.filter((kingdom) => normalizedFilterText(
+      `${kingdom.label} ${kingdom.id}`,
+    ).includes(normalizedQuery));
+  }
+
+  function createTaxonomySearchScheduler(callback, {
+    delayMs = TAXONOMY_SEARCH_DEBOUNCE_MS,
+    setTimeoutFn = global.setTimeout?.bind(global),
+    clearTimeoutFn = global.clearTimeout?.bind(global),
+  } = {}) {
+    let timer = null;
+    const cancel = () => {
+      if (timer !== null && typeof clearTimeoutFn === "function") {
+        clearTimeoutFn(timer);
+      }
+      timer = null;
+    };
+    const schedule = (...args) => {
+      cancel();
+      if (typeof setTimeoutFn !== "function") {
+        callback(...args);
+        return;
+      }
+      timer = setTimeoutFn(() => {
+        timer = null;
+        callback(...args);
+      }, delayMs);
+    };
+    return Object.freeze({ cancel, schedule, delayMs });
   }
 
   function normalizeSelectedKingdomIds(values, availableValues) {
@@ -191,7 +235,7 @@
     fetchJson,
     escapeHtml,
     onNamesChanged = () => {},
-    debounceMs = 300,
+    debounceMs = TAXONOMY_SEARCH_DEBOUNCE_MS,
   } = {}) {
     const section = root?.querySelector?.(".taxonomy-reference");
     if (!section || !form || typeof fetchJson !== "function") {
@@ -218,6 +262,9 @@
     const kingdomSettingsList = section.querySelector(
       ".taxonomy-reference-kingdom-settings-list",
     );
+    const kingdomSettingsFilter = section.querySelector(
+      ".taxonomy-reference-kingdom-settings-filter-input",
+    );
     const kingdomSettingsMessage = section.querySelector(
       ".taxonomy-reference-kingdom-settings-message",
     );
@@ -239,7 +286,6 @@
     let defaultKingdom = "Animalia";
     let allKingdoms = [];
     let selectedKingdomIds = [];
-    let searchTimer = null;
     let requestVersion = 0;
     let activeInput = null;
     let activeKind = "all";
@@ -348,7 +394,7 @@
       if (!kingdomSettingsList) return;
       const kingdoms = sortTaxonomyKingdoms(allKingdoms);
       kingdomSettingsList.innerHTML = kingdoms.map((kingdom) => `
-        <label>
+        <label data-kingdom-id="${escape(kingdom.id)}">
           <input
             type="checkbox"
             value="${escape(kingdom.id)}"
@@ -358,6 +404,24 @@
         </label>
       `).join("");
       setKingdomSettingsMessage();
+    };
+
+    const applyKingdomSettingsFilter = () => {
+      if (!kingdomSettingsList) return;
+      const visibleIds = new Set(
+        filterTaxonomyKingdoms(allKingdoms, kingdomSettingsFilter?.value)
+          .map((kingdom) => kingdom.id),
+      );
+      let visibleCount = 0;
+      for (const label of kingdomSettingsList.querySelectorAll("[data-kingdom-id]")) {
+        const visible = visibleIds.has(label.dataset.kingdomId);
+        label.hidden = !visible;
+        if (visible) visibleCount += 1;
+      }
+      setKingdomSettingsMessage(
+        visibleCount ? "" : "Keine passenden Reiche gefunden.",
+        visibleCount ? "info" : "warning",
+      );
     };
 
     const renderKingdoms = (payload = {}) => {
@@ -533,25 +597,29 @@
       }
     };
 
+    const searchScheduler = createTaxonomySearchScheduler(
+      (input, kind, language, version) => {
+        void performSearch(input, kind, language, version);
+      },
+      { delayMs: debounceMs },
+    );
+
     const scheduleSearch = (input, kind, language = "all") => {
       activeInput = input;
       activeKind = kind;
       activeLanguage = language;
       const version = ++requestVersion;
-      clearTimeout(searchTimer);
       clearResults();
       clearSelection();
       if (String(input?.value || "").trim()) {
         setMessage("Eingabe erkannt. Die Suche startet gleich …", "info");
       }
-      searchTimer = setTimeout(() => {
-        void performSearch(input, kind, language, version);
-      }, debounceMs);
+      searchScheduler.schedule(input, kind, language, version);
     };
 
     const initialize = async () => {
       const version = ++requestVersion;
-      clearTimeout(searchTimer);
+      searchScheduler.cancel();
       statusBadge.textContent = "Referenz wird geprüft …";
       statusBadge.dataset.state = "loading";
       kingdomSelect.disabled = true;
@@ -575,7 +643,7 @@
 
     const reset = () => {
       requestVersion += 1;
-      clearTimeout(searchTimer);
+      searchScheduler.cancel();
       activeInput = null;
       activeKind = "all";
       activeLanguage = "all";
@@ -623,8 +691,14 @@
       const willOpen = kingdomSettingsPanel?.hidden !== false;
       if (kingdomSettingsPanel) kingdomSettingsPanel.hidden = !willOpen;
       kingdomSettingsToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
-      if (willOpen) renderKingdomSettings();
+      if (willOpen) {
+        if (kingdomSettingsFilter) kingdomSettingsFilter.value = "";
+        renderKingdomSettings();
+        applyKingdomSettingsFilter();
+        kingdomSettingsFilter?.focus();
+      }
     });
+    kingdomSettingsFilter?.addEventListener("input", applyKingdomSettingsFilter);
     kingdomSettingsSave?.addEventListener("click", () => {
       const previousValue = kingdomSelect.value;
       const checkedValues = [...kingdomSettingsList.querySelectorAll("input:checked")]
@@ -637,7 +711,7 @@
       setKingdomSettingsMessage();
       if (!selectedKingdomIds.length) {
         requestVersion += 1;
-        clearTimeout(searchTimer);
+        searchScheduler.cancel();
         clearResults();
         clearSelection();
         setMessage(
@@ -692,6 +766,9 @@
     taxonomyReferenceStatus,
     taxonomyAvailabilityPresentation,
     sortTaxonomyKingdoms,
+    filterTaxonomyKingdoms,
+    createTaxonomySearchScheduler,
+    TAXONOMY_SEARCH_DEBOUNCE_MS,
     normalizeSelectedKingdomIds,
     taxonomyResultPresentation,
     taxonomyDetailPresentation,

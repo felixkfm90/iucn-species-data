@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-25
+Stand: 2026-07-29
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -790,7 +790,7 @@ Status: abgeschlossen am 2026-07-22
   Felix hat den lokalen Endentwurf am 2026-07-18 in Desktop-, Tablet- und Mobilbreite visuell freigegeben. Die
   kontrollierte Übernahme nach `main` und der erste Pages-Lauf waren erfolgreich. Das Modul lädt das notwendige
   Taxonomie-CSS vor dem Rendern aus demselben Pages-Artefakt; dadurch können Markup und Gestaltung nicht mehr mit
-  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.5`; sie
+  unterschiedlichem Stand live gehen. Die dokumentierte Footer-Version ist `species-taxonomy.js?v=1.0.6`; sie
   aktualisiert zugleich den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS. Details:
   `docs/taxonomy-redesign-handoff.md`.
 - Artporträts sind seit 2026-07-18 in die Squarespace-Artseiten eingebunden. Auf Desktop zeigt die erste Spalte die
@@ -802,7 +802,7 @@ Status: abgeschlossen am 2026-07-22
   die Bereiche ohne horizontalen Überlauf. Fehlt ein Portrait, fällt das Layout automatisch auf zwei Spalten
   zurück. Der Portraitcontainer wird von `species-portrait.js?v=1.0.1` dynamisch erzeugt; bestehende
   Squarespace-Artseiten benötigen keine HTML-Nachpflege. Gemeinsam dokumentiert sind außerdem
-  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.7` und `species-taxonomy.js?v=1.0.5`.
+  `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8` und `species-taxonomy.js?v=1.0.6`.
 - Die Taxonomie ist seit 2026-07-22 im Arten-Explorer kontrolliert bearbeitbar. Reich, Stamm, optionaler Unterstamm,
   Klasse, Ordnung und Familie verwenden einen verpflichtenden Änderungsgrund sowie den bestehenden
   Vorschau-/Hash-/Backup-Schutz. Manuelle Korrekturen liegen getrennt in `species-taxonomy-overrides.json`, bleiben
@@ -923,7 +923,8 @@ sichtbar sind; nur Animalia ist anfänglich aktiv, aber nicht unveränderlich. `
 durchsucht nur diese Auswahl. Die Neue-Art-Suche wird serverseitig auf den Rang `Art` begrenzt, damit
 anderssprachige Namen, Gattungen und Unterarten keine falschen beziehungsweise verdrängten Treffer verursachen.
 Exakte Treffer unterdrücken unpassende unscharfe Ergebnisse; Präfix-, FTS- und begrenzte Teiltreffersuche decken
-unter anderem `Gepard`, `glaucidium` und `toko` ab. Die Suche startet 300 Millisekunden nach der letzten Eingabe.
+unter anderem `Gepard`, `glaucidium` und `toko` ab. Die Suche startet für deutsche, englische und
+wissenschaftliche Namen 300 Millisekunden nach der letzten Eingabe.
 Die kompakte Trefferliste überlagert die folgenden Felder unverändert, sodass der Dialog beim Tippen nicht
 springt. Laufende
 Aktualisierungen wiederholen den Fortschrittstitel nicht mehr in der Detailzeile. Im Ruhezustand steht die aktive
@@ -936,8 +937,10 @@ verständlich als Referenzlücke gemeldet.
 Alle 52 bestehenden Arten erhielten in demselben Schritt einen separat gespeicherten englischen Namen. Die
 kontrollierte Ergänzung verwendet exakte iNaturalist-Taxa mit lokaler CoL-Rückfallebene, legt vor schreibenden
 Läufen eine Sicherung an und ist als Vorschau über `npm.cmd run --silent taxonomy:backfill-english` reproduzierbar.
-Der englische Name wird im Explorer-Artkopf, in der Suche und über `species-info.js?v=1.0.7` auf der Artseite
-verwendet. Die Änderung benötigt kein neues Squarespace-CSS.
+Der englische Name wird im Explorer-Artkopf, in der Suche und über `species-info.js?v=1.0.8` auf der Artseite
+verwendet. Auf der Artseite stehen deutscher, englischer und lateinischer Name jeweils in einer eigenen kompakten
+Zeile. Die Reichseinstellung im Neue-Art-Assistenten besitzt eine Filtereingabe und eine begrenzte scrollbar
+bleibende Liste; Checkbox und Reichsname stehen in derselben Zeile.
 
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
