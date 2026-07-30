@@ -1122,7 +1122,10 @@ Phase als abgeschlossen.
 
 Phase 11 plant Mehrgeraete-Betrieb und NAS-Restore-Backups. Grundentscheidung: GitHub bleibt die zentrale
 versionierte Wahrheit, jeder Rechner arbeitet lokal in seinem eigenen Projektordner, das NAS dient als
-vollstaendiges ZIP-Backup. Details: `docs/multi-device-backup-plan.md`.
+vollstaendiges ZIP-Backup. Im späteren Installer-Konzept wird außerdem erneut bewertet, ob die große lokale
+Taxonomiereferenz weiterhin unter `%LOCALAPPDATA%` oder optional auf einem anderen lokalen Laufwerk gespeichert
+werden soll. Bis dahin bleibt der aktuelle Standardspeicherort unverändert. Details:
+`docs/multi-device-backup-plan.md`.
 
 Nach einem Restore aus einem NAS-ZIP kann `restore-start.cmd` im entpackten Projektordner per Doppelklick gestartet
 werden. Das Skript prueft Node.js 18+, bietet bei fehlenden `node_modules` ein `npm install` an, erstellt die

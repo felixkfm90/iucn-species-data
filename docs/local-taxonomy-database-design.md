@@ -119,6 +119,13 @@ Der Pfad wird zur Laufzeit ermittelt und niemals aus `D:\IUCN_Datenbank` oder ei
 abgeleitet. Ein späterer Einstellungsdialog darf ihn über die bereits ignorierte lokale Datei
 `species-explorer/local-settings.json` ändern. Nur absolute lokale Windows- oder UNC-Pfade sind zulässig.
 
+Bis zum späteren Installer-Konzept bleibt dieser Standardspeicherort unverändert. In Phase 11 wird erneut geprüft,
+ob `%LOCALAPPDATA%` auch für eine reguläre Installation der sinnvollste Standard ist oder ob der Installer optional
+ein anderes lokales Laufwerk anbieten soll. Eine solche Auswahl muss den erforderlichen Speicherplatz vorab prüfen,
+eine vorhandene Referenz kontrolliert migrieren und bei einem Fehler den bisherigen aktiven Speicherort
+beibehalten. Die große reproduzierbare Referenzdatenbank darf auch dann nicht unbemerkt im Git-Arbeitsverzeichnis,
+im Pages-Artefakt oder in normalen Projekt-Backups landen.
+
 ### 4.2 Verzeichnisstruktur
 
 ```text

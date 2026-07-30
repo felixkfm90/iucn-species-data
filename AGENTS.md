@@ -1060,5 +1060,9 @@ Aktuelle Planung:
   Erweiterungen und umfassendes Abschlussaudit.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
+  Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt
+  `%LOCALAPPDATA%` unveraendert. Eine optionale Laufwerkswahl braucht Speicherplatz-, Migrations-,
+  Integritaets- und Rueckfallpruefung und darf die Referenz nicht in Git, Pages oder normale Projekt-Backups
+  verschieben.
 - Phase 12 - Weitere Erweiterungen:
   Affiliate-Links, Shop/Kalender und rechtliche Folgepruefung. Der fruehere Kohlmeisen-Wartepunkt ist aufgehoben.

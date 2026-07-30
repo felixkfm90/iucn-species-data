@@ -979,7 +979,11 @@ Status: teilweise vorbereitet
 Die verbindliche Detailplanung steht in `docs/multi-device-backup-plan.md`. Vorhanden sind der manuelle NAS-Backup-
 und Restore-Kern. Offen bleiben insbesondere automatische App-Aktualisierung, Benutzer-/Geräteidentität,
 Bearbeitungssperre, Konflikt- und Wiederherstellungsabläufe, geplante Sicherungsautomatik und ein vollständiger
-Installer für weitere Computer. Den Abschluss bildet ein umfassendes Phase-11-Audit.
+Installer für weitere Computer. Beim Installer wird außerdem erneut geprüft, ob die große Taxonomiereferenz
+weiterhin standardmäßig unter `%LOCALAPPDATA%` liegen oder optional auf einem anderen lokalen Laufwerk gespeichert
+werden soll. Eine Pfadänderung muss Speicherplatz, Migration, Integrität und sicheren Rückfall abdecken, ohne die
+Referenz in Git, Pages oder normale Projekt-Backups aufzunehmen. Den Abschluss bildet ein umfassendes
+Phase-11-Audit.
 
 ## Phase 12 - Weitere Erweiterungen
 
