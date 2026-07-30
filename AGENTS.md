@@ -100,6 +100,10 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/taxonomy-project-conflicts.mjs`, `public/app-taxonomy-maintenance.js` und
   `species-reference-mappings.json`: sichtbare Konflikthinweise ohne stille Projektänderung sowie stabile,
   ausdrücklich bestätigte CoL-Zuordnungen
+- `species-explorer/taxonomy-master-storage.mjs`, `taxonomy-master-schema.mjs`,
+  `taxonomy-master-model.mjs` und `taxonomy-master.test.mjs`: getrennte Phase-9.6-Masterdatenbank-Grundlage mit
+  stabilen IDs, versionierten Quellenständen, Feldprovenienz, Konflikten, Projektverknüpfungen und
+  `Sciurus vulgaris`-Regression; die aktive CoL-Vollreferenz bleibt unverändert
 - `scripts/taxonomy-prototype.mjs`, `taxonomy-prototype-fetch.mjs` und
   `scripts/fixtures/taxonomy/`: reproduzierbarer Phase-9.3-Prototyp und kleine versionierte Testfixture
 - `scripts/backfill-english-species-names.mjs`: kontrollierte, standardmäßig schreibgeschützte Ergänzung
@@ -780,8 +784,13 @@ Aktuelle Planung:
   funktionierenden Stand. Eigene redaktionelle Korrekturen werden getrennt in
   `taxonomy-reference-corrections.json` versioniert, haben Vorrang und bleiben über CoL-Aktualisierungen hinweg
   erhalten. Der Wartungsablauf aktualisiert CoL und Ergänzungen gemeinsam oder bei aktuellem CoL nur die
-  Ergänzungsschicht. Als Nächstes folgt Phase 9.6 mit Betriebstest,
-  Rollbackprüfung und umfassendem Phase-9-Abschlussaudit.
+  Ergänzungsschicht. Phase 9.6 ist seit 2026-07-30 als getrennte Masterdatenbank-Grundlage abgeschlossen. Sie
+  führt stabile anbieterunabhängige Taxon-IDs, versionierte Quellenstände, Taxon-, Namens- und Feldaussagen,
+  Konflikte sowie stabile Projekt-Slug-Verknüpfungen ein, ohne den aktiven CoL-Vollbestand oder die produktive
+  Suche zu verändern. Die reale CoL-Lücke `Sciurus vulgaris` ist als Regression festgeschrieben. Als Nächstes
+  folgt Phase 9.7 mit relevanten Anbieter-Ausschnitten und der verlustfreien Migration der bisherigen
+  Ergänzungen, Korrekturen und Projektzuordnungen. Phase 9.8 bis 9.10 ergänzen Merge-/Konfliktlogik,
+  Explorer-Umschaltung und realen Aktivierungs-/Rollbackbetrieb; Phase 9.11 ist das umfassende Abschlussaudit.
   Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP, optionale Erweiterungen und das
   Phase-10-Abschlussaudit.
   Phase 11 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
@@ -1024,7 +1033,7 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank:
-  Phase 9.1 bis 9.5 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
+  Phase 9.1 bis 9.6 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
   Fachergänzung. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, konfigurierbare Reichsauswahl, getrennte
@@ -1053,8 +1062,12 @@ Aktuelle Planung:
   `species_list.json` und `speciesData.json`. Die kontrollierte Ergänzung ist über
   `npm.cmd run --silent taxonomy:backfill-english` standardmäßig als Vorschau und nur mit `-- --write` schreibend
   verfügbar; vor dem Schreiben entsteht eine lokale Sicherung.
-  Als Nächstes folgen realer
-  Vollimport-/Rollbacktest und das umfassende Phase-9-Abschlussaudit.
+  Phase 9.6 ergänzt eine davon getrennte, noch nicht produktiv aktivierte Master-SQLite mit stabilen
+  anbieterunabhängigen Taxon-IDs, versionierten Quellenständen, Feldprovenienz, Konflikten und
+  Projektverknüpfungen. Der aktive CoL-Vollbestand bleibt unverändert; `Sciurus vulgaris` ist als reale
+  Referenzlücken-Regression abgedeckt. Als Nächstes folgt Phase 9.7 mit relevanten Anbieter-Ausschnitten und der
+  Migration der bisherigen Ergänzungen und Korrekturen. Merge-/Konfliktworkflow, Explorer-Umschaltung, realer
+  Aktivierungs-/Rollbackbetrieb und Abschlussaudit folgen in Phase 9.8 bis 9.11.
 - Phase 10 - Lightroom:
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.

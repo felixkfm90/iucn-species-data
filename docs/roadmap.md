@@ -836,11 +836,12 @@ klarer Zielphase dokumentiert.
 
 ## Phase 9 - Globale Taxonomiedatenbank
 
-Status: in Arbeit; Phase 9.1 bis 9.5 einschließlich Ergänzungsnamen technisch abgeschlossen
+Status: in Arbeit; Phase 9.1 bis 9.6 einschließlich Masterdatenbank-Grundlage abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst ausschließlich
 Quellenvergleich, lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen
-Import-/Aktualisierungsworkflow und das umfassende Abschlussaudit. Lightroom beginnt getrennt in Phase 10.
+Import-/Aktualisierungsworkflow, Masterdatenbank, Anbieter-Ausschnitte, Zusammenführungs-/Konfliktworkflow und das
+umfassende Abschlussaudit. Lightroom beginnt getrennt in Phase 10.
 
 Phase 9.1 wurde am 2026-07-23 ohne produktiven Datenimport abgeschlossen. Die verbindliche Quellenentscheidung in
 `docs/taxonomy-source-decision.md` legt Catalogue of Life XR als globale Primärreferenz fest. WoRMS validiert und
@@ -955,8 +956,28 @@ Vollabgleichzeitpunkt. Eigene redaktionelle Korrekturen liegen versioniert in
 Der Wartungsablauf aktualisiert bei Bedarf CoL und Ergänzungen gemeinsam oder bei bereits aktuellem CoL nur die
 Ergänzungsschicht. Der Vertrag steht in `docs/taxonomy-reference-supplements.md`.
 
-Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
-umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
+Phase 9.6 ist seit 2026-07-30 als Masterdatenbank-Grundlage abgeschlossen. Die vollständige CoL-XR-Datenbank bleibt
+unverändert und read-only; eine physisch getrennte Master-SQLite kann künftig relevante versionierte
+Anbieter-Ausschnitte, Projektzuordnungen und manuelle Aussagen mit Feldprovenienz zusammenführen. Das Schema besitzt
+stabile anbieterunabhängige Master-IDs, aktive/vorherige Quellenstände, Taxon- und Namensaussagen, genau eine
+ausgewählte Aussage je Feld und Sprache, explizite Konflikte sowie stabile Projekt-Slug-Verknüpfungen. Ein
+Regressionstest bildet die reale CoL-Artlücke `Sciurus vulgaris` ab und bestätigt, dass eine später gelieferte
+exakte CoL-Art an dieselbe Master-ID gebunden wird, ohne Projektart oder URL-Slug zu ändern. Phase 9.6 migriert
+noch keine produktiven Daten und schaltet weder Explorer-Suche noch Squarespace um. Der vollständige Vertrag steht
+in `docs/taxonomy-master-database-design.md`.
+
+Die verbleibende Phase 9 wird in kontrollierte Schritte aufgeteilt:
+
+- 9.7: versionierte relevante Ausschnitte von iNaturalist, GBIF, WoRMS und Wikidata importieren und bestehende
+  Ergänzungen, Korrekturen und Projektzuordnungen in einen Master-Kandidaten überführen;
+- 9.8: Merge-, Diff-, Veraltungs- und Konfliktregeln einschließlich manueller Schutzentscheidungen umsetzen;
+- 9.9: Explorer-Suche, Neue-Art-Assistent und Wartungsoberfläche kontrolliert auf die aktive Masteransicht
+  umstellen;
+- 9.10: produktionsnahen Import, atomare Aktivierung, Fehlerfall und Rollback prüfen;
+- 9.11: umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
+
+Als Nächstes folgt Phase 9.7. Die bisherige Ergänzungsnamensschicht bleibt bis zu ihrer geprüften Migration
+unverändert aktiv.
 
 ## Phase 10 - Lightroom-Integration
 

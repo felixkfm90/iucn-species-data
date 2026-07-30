@@ -2,9 +2,9 @@
 
 Stand: 2026-07-30
 
-Status: technisch umgesetzt; Bestandteil der Phase-9-Referenzsuche
+Status: technisch umgesetzt und bis zur geprüften Phase-9.7-Migration aktive Übergangsschicht
 
-## Ziel und feste Grenze
+## Aktueller Übergangsvertrag
 
 Catalogue of Life (CoL) bleibt die unveränderliche taxonomische Primärreferenz. Externe Dienste dürfen den lokalen
 CoL-Bestand nicht durch eigene Taxa, Hierarchien oder Synonymbeziehungen ersetzen. Sie ergänzen ausschließlich
@@ -18,6 +18,12 @@ Ein externer Treffer wird deshalb nur gespeichert, wenn:
 
 Ohne exakte CoL-Zuordnung wird ein externer Treffer verworfen. Damit können iNaturalist, GBIF, WoRMS oder Wikidata
 keine fremde Art in die lokale Referenz einschleusen.
+
+Diese strikte Artgrenze beschreibt den bis Phase 9.6 produktiv verwendeten `supplements.json`-Ablauf. Sie ist
+nicht das endgültige Masterdatenmodell: Phase 9.6 hat dafür eine separate SQLite-Grundlage geschaffen, die echte
+CoL-Lücken künftig als quellenbelegte `reference-gap`-Taxa abbilden kann, ohne CoL selbst zu verändern. Erst
+Phase 9.7 migriert vorhandene Ergänzungen und Korrekturen in einen geprüften Master-Kandidaten. Bis zu dessen
+Aktivierung bleibt der hier dokumentierte Ablauf unverändert maßgeblich.
 
 ## Ergänzungsquellen
 
@@ -150,3 +156,7 @@ npm.cmd run --silent test:router
 Abgedeckt sind die vier Anbieteradapter, Sprachcodes, exakte CoL-Zuordnung, Trefferpriorität, Provenienz,
 Offline-/Teilausfall, letzter funktionierender Cache, eigener Vollabgleichzeitpunkt, Korrekturvorrang,
 serverseitige Eingabegrenzen, Zurücksetzen, direkte Trefferauswahl, kombinierte Wartung und lokale API-Routen.
+
+Die spätere Migration in die Masterdatenbank muss Cacheeinträge, Quellen-IDs, Korrekturvorrang und
+Projektzuordnungen verlustfrei erhalten. Der Zielvertrag steht in
+`docs/taxonomy-master-database-design.md`.

@@ -1,9 +1,10 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-07-26
+Stand: 2026-07-30
 
-Status: Phase 9.1 bis 9.5 technisch abgeschlossen; erste produktive Vollinstallation und Phase-9-Abschlussaudit
-noch offen; Lightroom beginnt getrennt in Phase 10
+Status: Phase 9.1 bis 9.6 abgeschlossen; Masterdatenbank-Grundlage umgesetzt, Anbieter-Ausschnitte,
+Zusammenführung, produktive Umschaltung und Phase-9-Abschlussaudit noch offen; Lightroom beginnt getrennt in
+Phase 10
 
 Roadmap: Phase 9 und Phase 10
 
@@ -37,9 +38,13 @@ Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unte
 `docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Phase 9.4 hat die lokale read-only
 API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verbindliche Vertrag steht in
 `docs/taxonomy-explorer-integration.md`. Phase 9.5 setzt den vollständigen lokalen Installations- und
-Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 schließt die Taxonomiephase mit
-realem Betriebstest, Rollbackprüfung und umfassendem Audit ab. Lightroom-Anbindung folgt in Phase 10,
-Mehrgeräteverteilung in Phase 11.
+Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 ergänzt nach
+`docs/taxonomy-master-database-design.md` eine physisch getrennte Masterdatenbank-Grundlage mit stabilen IDs,
+versionierten Quellenaussagen, Feldprovenienz, Konflikten und Projektverknüpfungen. Die aktive CoL-Vollreferenz
+bleibt dabei unverändert. Phase 9.7 bis 9.10 bauen Anbieter-Ausschnitte, Merge-/Konfliktlogik,
+Explorer-Integration und den realen Aktivierungs-/Rollbackbetrieb darauf auf; Phase 9.11 schließt die
+Taxonomiephase mit einem umfassenden Audit ab. Lightroom-Anbindung folgt in Phase 10, Mehrgeräteverteilung in
+Phase 11.
 
 ## A. Ausgangslage
 

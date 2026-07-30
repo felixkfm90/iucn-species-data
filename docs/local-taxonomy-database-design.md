@@ -1,9 +1,9 @@
 # Lokale Taxonomiedatenbank – Architektur für Phase 9.2
 
-Stand: 2026-07-26
+Stand: 2026-07-30
 
 Status: Phase 9.2 abgeschlossen, in Phase 9.3 prototypisch bestätigt und in Phase 9.4 read-only integriert;
-Phase 9.5 technisch umgesetzt, noch kein ausdrücklich gestarteter produktiver Vollimport
+Phase 9.5 produktiv installiert und in Phase 9.6 um eine getrennte Masterdatenbank-Grundlage ergänzt
 
 Roadmap: Phase 9.2
 
@@ -26,6 +26,11 @@ species-reference-mappings.json
 
 Die Referenzdatenbank darf keine bestehende Art, URL, Taxonomie oder Assetstruktur still ändern. Ein Suchtreffer
 wird erst nach ausdrücklicher Auswahl in den vorhandenen Vorschau- und Bestätigungsworkflow übernommen.
+
+Die seit Phase 9.6 ergänzte Masterdatenbank liegt physisch neben den unveränderlichen CoL-Releases. Sie ersetzt
+weder den CoL-Vollbestand noch dieses Referenzschema, sondern führt künftig ausschließlich belegte Aussagen,
+relevante Anbieter-Ausschnitte, Projektzuordnungen und manuelle Korrekturen zusammen. Datenmodell und
+Migrationsgrenze stehen in `docs/taxonomy-master-database-design.md`.
 
 Die Quellenstrategie aus `docs/taxonomy-source-decision.md` bleibt verbindlich:
 

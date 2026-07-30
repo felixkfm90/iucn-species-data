@@ -91,6 +91,7 @@ Versionierte Referenzen liegen unter:
 - `docs/taxonomy-explorer-integration.md`
 - `docs/taxonomy-reference-update.md`
 - `docs/taxonomy-reference-supplements.md`
+- `docs/taxonomy-master-database-design.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -386,6 +387,15 @@ sichtbaren gebräuchlichen Namen eines vorhandenen CoL-Taxons und bleiben bei Co
 Ergänzungsnamen; ist CoL bereits aktuell, kann ausschließlich die Ergänzungsschicht erneuert werden.
 
 Details, Datenvertrag, API und Tests stehen in `docs/taxonomy-reference-supplements.md`.
+
+Phase 9.6 ergänzt daneben eine noch nicht produktiv aktivierte Masterdatenbank-Grundlage. Die vollständige
+CoL-XR-Referenz bleibt read-only; stabile anbieterunabhängige Master-IDs verbinden künftig relevante versionierte
+Ausschnitte von iNaturalist, GBIF, WoRMS und Wikidata mit Projektzuordnungen und geschützten manuellen Aussagen.
+Feldprovenienz, Konflikte, veraltete Quellenstände und Rollback bleiben ausdrücklich nachvollziehbar. Der
+Regressionstest für `Sciurus vulgaris` bestätigt, dass eine reale CoL-Artlücke aus exakten externen Belegen
+geschlossen und später ohne neue Projektart oder geänderten URL-Slug an eine nachgelieferte CoL-Art gebunden
+werden kann. Die bestehende Suche und Ergänzungsschicht bleiben bis zur geprüften Migration in Phase 9.7 aktiv.
+Details: `docs/taxonomy-master-database-design.md`.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
@@ -935,18 +945,24 @@ Arten, atomare Aktivierung und Rollback bereit. Entpacken und Paketprüfung verw
 begrenzte Sicherheitsrichtlinie; technische Import-Stacktraces werden in der Oberfläche auf den verständlichen
 Fehlergrund reduziert. Fehlt die Taxonomiedatenbank oder ist sie veraltet, bietet der Explorer die Aktualisierung
 nach der Startprüfung direkt an. Ein echter Vollbestand wird erst durch diese ausdrücklich bestätigte lokale
-Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Als Nächstes folgt Phase 9.6
-mit realem Betriebstest, Rollbackprüfung und umfassendem Abschlussaudit. Seit 2026-07-30 ergänzt eine getrennte
-Namensschicht fehlende deutsche und englische CoL-Namen über die offiziellen Schnittstellen von iNaturalist, GBIF,
+Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Seit 2026-07-30 ergänzt eine
+getrennte Namensschicht fehlende deutsche und englische CoL-Namen über die offiziellen Schnittstellen von
+iNaturalist, GBIF,
 WoRMS und Wikidata. Externe Kandidaten werden nur nach exakter CoL-Artzuordnung gespeichert, letzte funktionierende
 Caches bleiben bei Ausfällen erhalten und eigene Korrekturen liegen getrennt versioniert in
 `taxonomy-reference-corrections.json`. Die Trefferauswahl im Neue-Art-Assistenten übernimmt alle drei Namen direkt
-und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr. Phase 10 umfasst ausschließlich Lightroom,
+und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr. Phase 9.6 hat die davon
+getrennte Masterdatenbank-Grundlage mit stabilen IDs, Quellenständen, Feldprovenienz, Konflikten und
+Projektverknüpfungen umgesetzt. Sie migriert noch keine produktiven Daten und verändert die aktive CoL-Datenbank
+nicht. Als Nächstes folgt Phase 9.7 mit versionierten relevanten Anbieter-Ausschnitten und der verlustfreien
+Migration der bisherigen Ergänzungen und Korrekturen; Merge-/Konfliktlogik, Explorer-Umschaltung,
+Produktivbetrieb/Rollback und Abschlussaudit folgen in 9.8 bis 9.11. Phase 10 umfasst ausschließlich Lightroom,
 Phase 11 Mehrgeraetebetrieb, automatische Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
 `docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md`,
-`docs/taxonomy-reference-update.md`, `docs/taxonomy-reference-supplements.md` und
+`docs/taxonomy-reference-update.md`, `docs/taxonomy-reference-supplements.md`,
+`docs/taxonomy-master-database-design.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

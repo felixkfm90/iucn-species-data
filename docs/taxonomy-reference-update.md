@@ -3,7 +3,8 @@
 Stand: 2026-07-30
 
 Status: Phase 9.5 technisch umgesetzt; reale Paketabweichungen wurden sicher erkannt und korrigiert, eine getrennte
-Ergänzungsnamensschicht ist integriert und der vollständige Betriebstest bleibt Bestandteil von Phase 9.6
+Ergänzungsnamensschicht ist integriert; Phase 9.6 ergänzt eine getrennte Masterdatenbank-Grundlage, ohne den
+bestehenden CoL-Aktualisierungsablauf umzuschalten
 
 ## Ziel
 
@@ -113,6 +114,11 @@ CoL-Datenbank importiert. Ein lokaler Cache bewahrt Quellen, Vertrauensgewichtun
 Aktualisierung fehl, bleibt der letzte funktionierende Bestand aktiv. Eigene Korrekturen werden getrennt
 versioniert und überleben sowohl einen neuen Ergänzungslauf als auch einen neuen CoL-Release. Der vollständige
 Vertrag steht in `docs/taxonomy-reference-supplements.md`.
+
+Die ab Phase 9.6 vorbereitete Masterdatenbank ändert diesen sicheren CoL-Releaseablauf nicht. Sie liegt separat,
+verweist mit versionierter Provenienz auf CoL und weitere Anbieter und wird erst nach späterer Migration,
+Konfliktprüfung und atomarer Aktivierung für die Explorer-Suche verwendet. Details:
+`docs/taxonomy-master-database-design.md`.
 
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
