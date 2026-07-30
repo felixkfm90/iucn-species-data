@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-29
+Stand: 2026-07-30
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -88,7 +88,12 @@ Lokale Arbeitsoberflaeche:
   lokalen SQLite-Speicher, begrenzten Import und read-only Suche
 - `species-explorer/taxonomy-reference-service.mjs` und `public/app-taxonomy-reference.js`: lokale read-only
   Taxonomie-API sowie Vorschläge für deutsche, englische und wissenschaftliche Namen, lokale Reichsauswahl und
-  kontrollierte Übernahme im Neue-Art-Assistenten
+  direkte kontrollierte Übernahme im Neue-Art-Assistenten
+- `species-explorer/taxonomy-display-names.mjs`, `taxonomy-supplement-providers.mjs` und
+  `taxonomy-supplement-service.mjs`: zentrale deutsche Taxonomieanzeigen, offizielle iNaturalist-, GBIF-, WoRMS-
+  und Wikidata-Adapter sowie lokaler letzter-funktionierender Ergänzungscache mit CoL-Artgrenze
+- `taxonomy-reference-corrections.json`: versionierte eigene deutsche beziehungsweise englische Namenskorrekturen
+  für eindeutig vorhandene CoL-Arten; die CoL-Primärreferenz selbst bleibt unverändert
 - `species-explorer/taxonomy-release-client.mjs`, `taxonomy-archive.mjs`, `taxonomy-package.mjs`,
   `taxonomy-full-import.mjs` und `taxonomy-maintenance-service.mjs`: Releaseprüfung, begrenzter Download, sichere
   Extraktion, streamender Vollimport, Projektartenabgleich, Aktivierung und Rollback
@@ -733,8 +738,8 @@ Aktuelle Planung:
   direkten Tests. Messwerte dieses begrenzten Bestands dürfen nicht linear auf den etwa 1,3 GB großen XR-Vollbestand
   hochgerechnet werden. Phase 9.4 ist seit 2026-07-24 abgeschlossen. Vier lokale read-only Endpunkte liefern
   Status, Reiche, Suche und Taxondetails aus dem aktiven Release. Der Neue-Art-Assistent bietet `Animalia` beim
-  ersten Start als sichtbaren Standard, getrennte Vorschläge für drei Namensfelder, eine bewusste Treffer- und
-  Übernahmeentscheidung sowie Quellen- und
+  ersten Start als sichtbaren Standard und getrennte Vorschläge für drei Namensfelder. Ein bewusster Klick auf
+  einen Treffer schließt die Ergebnisliste, übernimmt alle drei Namen direkt und zeigt Quellen- und
   Hierarchievorschau. Nur Taxa mit Rang `Art` werden im Formular angeboten; ohne lesbare Referenz bleibt die
   manuelle Eingabe vollständig nutzbar. Animalia.bio wird bei fehlendem belegtem deutschen Tiernamen ausschließlich
   als manueller Suchlink geöffnet. Der verbindliche Vertrag steht in
@@ -767,7 +772,15 @@ Aktuelle Planung:
   werden ohne Stacktrace als verständlicher Grund angezeigt. Nach einer erfolgreichen Aktivierung bleiben Release
   und Importzähler sichtbar und ein einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der
   verbindliche Konflikt- und Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte
-  Vollimport bleibt ein bewusst gestarteter lokaler Betriebstest. Als Nächstes folgt Phase 9.6 mit Betriebstest,
+  Vollimport bleibt ein bewusst gestarteter lokaler Betriebstest.
+  Seit 2026-07-30 ergänzt eine getrennte, in `docs/taxonomy-reference-supplements.md` dokumentierte Namensschicht
+  fehlende deutsche und englische CoL-Namen über offizielle iNaturalist-, GBIF-, WoRMS- und Wikidata-Schnittstellen.
+  Anbieterergebnisse werden nur nach exakter eindeutiger Zuordnung zu einer vorhandenen CoL-Art gespeichert; externe
+  Taxa oder Hierarchien dürfen die Primärreferenz nicht verändern. Der lokale Cache bewahrt bei Ausfällen den letzten
+  funktionierenden Stand. Eigene redaktionelle Korrekturen werden getrennt in
+  `taxonomy-reference-corrections.json` versioniert, haben Vorrang und bleiben über CoL-Aktualisierungen hinweg
+  erhalten. Der Wartungsablauf aktualisiert CoL und Ergänzungen gemeinsam oder bei aktuellem CoL nur die
+  Ergänzungsschicht. Als Nächstes folgt Phase 9.6 mit Betriebstest,
   Rollbackprüfung und umfassendem Phase-9-Abschlussaudit.
   Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP, optionale Erweiterungen und das
   Phase-10-Abschlussaudit.

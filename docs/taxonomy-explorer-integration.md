@@ -1,8 +1,8 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-29
+Stand: 2026-07-30
 
-Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation und Aktualisierung
+Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation, Aktualisierung und kontrollierte Ergänzungsnamen
 
 ## Ziel
 
@@ -33,10 +33,11 @@ eine Projektart anlegen.
 2. Nach dem letzten eingegebenen Zeichen startet nach 300 Millisekunden die sprachlich passende Suche.
 3. Mehrere Treffer werden als Liste mit deutschem oder englischem Anzeigenamen, akzeptiertem wissenschaftlichem
    Namen, Rang, Reich und gegebenenfalls Synonymhinweis angezeigt.
-4. Ein Klick auf einen Treffer lädt die vollständigen lokal verfügbaren Details.
-5. Die Vorschau zeigt Taxonomiehierarchie, Quelle, Release, Quellen-ID, Namensstatus und Vertrauensstufe.
-6. Erst `Vorschlag übernehmen` füllt den deutschen, englischen und wissenschaftlichen Namen.
-7. Danach bleiben `Eingaben prüfen`, Kollisionsprüfung, Vorschau und Speicherung des bisherigen Assistenten
+4. Ein Klick auf einen Treffer schließt die schwebende Liste und füllt den deutschen, englischen sowie
+   wissenschaftlichen Namen direkt.
+5. Die darunter sichtbare Vorschau zeigt Taxonomiehierarchie, Quelle, Release, Quellen-ID, Namensstatus,
+   Vertrauensstufe und gegebenenfalls Ergänzungsprovenienz.
+6. Danach bleiben `Eingaben prüfen`, Kollisionsprüfung, Vorschau und Speicherung des bisherigen Assistenten
    unverändert verpflichtend.
 
 Der Neue-Art-Assistent fragt bereits an der read-only API ausschließlich Treffer mit dem Rang `Art` ab. Gattungen,
@@ -65,6 +66,13 @@ umbenannt.
 Bei einem Tier ohne bestätigten deutschen Namen zeigt die Detailvorschau außerdem einen gezielten Link für eine
 manuelle Suche bei Animalia.bio. Die Website wird nicht automatisiert abgerufen oder ausgewertet. Der Benutzer kann
 einen geprüften deutschen Namen anschließend selbst eintragen.
+
+Fehlen deutsche oder englische CoL-Namen, darf die Suche zusätzlich die offiziellen Schnittstellen von
+iNaturalist, GBIF, WoRMS und Wikidata abfragen. Ein externer Namenskandidat erscheint nur, wenn sein
+wissenschaftlicher Name eindeutig einer vorhandenen CoL-Art zugeordnet werden kann. Die zentrale Hierarchie zeigt
+deutsche Anzeigenamen zusammen mit dem wissenschaftlichen Rohwert, zum Beispiel `Katzen (Felidae)`. Eigene
+redaktionelle Korrekturen überlagern nur sichtbare Namensvorschläge und verändern CoL nicht. Der vollständige
+Daten-, Cache- und Korrekturvertrag steht in `docs/taxonomy-reference-supplements.md`.
 
 ## Fehler- und Offlineverhalten
 
@@ -111,7 +119,8 @@ GET /api/taxonomy/taxa/:id
 
 Die Endpunkte laufen innerhalb der bestehenden localhost-, Origin- und Sitzungsgrenzen des Arten-Explorers. Sie
 öffnen nur den über den aktiven Releasezeiger freigegebenen SQLite-Bestand. Ändert sich der aktive Release, wird der
-read-only Speicher beim nächsten Zugriff kontrolliert neu geöffnet.
+read-only Speicher beim nächsten Zugriff kontrolliert neu geöffnet. Such- und Detailantworten dürfen zusätzlich
+die getrennte, exakt auf CoL-Arten begrenzte Ergänzungsprovenienz enthalten.
 
 Schreibende Endpunkte für Download, Import, Aktivierung und Rollback sind ausdrücklich nicht Teil der
 Phase-9.4-Referenzsuche. Phase 9.5 stellt sie getrennt im Wartungsbereich bereit:
@@ -120,6 +129,8 @@ Phase-9.4-Referenzsuche. Phase 9.5 stellt sie getrennt im Wartungsbereich bereit
 POST /api/taxonomy/update/preview
 POST /api/taxonomy/update/start
 POST /api/taxonomy/update/rollback
+POST /api/taxonomy/corrections/save
+POST /api/taxonomy/corrections/reset
 ```
 
 Der vollständige Installations-, Konflikt- und Rollbackvertrag steht in
@@ -128,12 +139,17 @@ Der vollständige Installations-, Konflikt- und Rollbackvertrag steht in
 ## Technische Zuständigkeiten
 
 - `species-explorer/taxonomy-reference-service.mjs`: Validierung, aktiver read-only Speicher, Status, Reiche, Suche
-  und Taxondetails
+  und Taxondetails einschließlich Ergänzungsoverlay
+- `species-explorer/taxonomy-display-names.mjs`: zentrale deutsche Rang- und Taxonanzeigen bei unveränderten
+  wissenschaftlichen Rohwerten
+- `species-explorer/taxonomy-supplement-providers.mjs`: begrenzte offizielle Anbieteradapter
+- `species-explorer/taxonomy-supplement-service.mjs`: exakte CoL-Zuordnung, lokaler Cache, Provenienz und eigene
+  Korrekturen
 - `species-explorer/taxonomy-maintenance-service.mjs`: Versionsprüfung, Vollimportsteuerung, Projektabgleich,
   Aktivierung und Rollback
 - `species-explorer/request-router.mjs`: lokale GET-/HEAD-Routen
 - `species-explorer/public/app-taxonomy-reference.js`: Darstellung, lokale Reichseinstellung, verzögerte
-  Drei-Feld-Suche, bewusste Auswahl und Übernahme
+  Drei-Feld-Suche und direkte bewusste Trefferauswahl
 - `species-explorer/public/app-taxonomy-maintenance.js`: Wartungsstatus, Fortschritt, Konflikthinweise und Rollback
 - `species-explorer/public/app-new-species-workflow.js`: Einbindung in Schritt 1 und Zurücksetzen beim Schließen
 - `species-explorer/taxonomy-reference-service.test.mjs`: Service- und Fixture-Nachweis
@@ -166,6 +182,7 @@ Die kleine Phase-9.3-Fixture und die direkten Explorer-Tests weisen zusätzlich 
   über `Alle Reiche`
 - exakte Treffer, wissenschaftliche Gattungspräfixe und deutsche Teiltreffer wie `toko`
 - vollständige Detailansicht mit Quelle, Release und Hierarchie
+- exakte CoL-Zuordnung externer gebräuchlicher Namen, letzter funktionierender Cache und Korrekturvorrang
 
 Der reale Referenzbestand weist außerdem einen zulässigen Sonderfall auf: Eine Projektart kann auf Artstufe im
 Release fehlen, während zugehörige Unterarten vorhanden sind. Der Projektabgleich kennzeichnet dies als

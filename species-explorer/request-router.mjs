@@ -35,6 +35,8 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/update/preview", { name: "taxonomy-maintenance", action: "preview" }],
   ["/api/taxonomy/update/start", { name: "taxonomy-maintenance", action: "start" }],
   ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
+  ["/api/taxonomy/corrections/save", { name: "taxonomy-correction", action: "save" }],
+  ["/api/taxonomy/corrections/reset", { name: "taxonomy-correction", action: "reset" }],
   ["/api/pipeline/assets/review", { name: "pipeline-asset-review", action: "save" }],
   ["/api/species/new/preview", { name: "new-species", action: "preview" }],
   ["/api/species/new/save", { name: "new-species", action: "save" }],
@@ -242,6 +244,16 @@ export function createExplorerRequestHandler({
           response,
           200,
           await operations.taxonomyMaintenance({ action: route.action, payload }),
+        );
+        return;
+      }
+
+      if (route.name === "taxonomy-correction") {
+        const payload = await readJsonBody(request);
+        sendJson(
+          response,
+          200,
+          await operations.taxonomyCorrection({ action: route.action, payload }),
         );
         return;
       }

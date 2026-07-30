@@ -62,6 +62,10 @@ function activeStatus() {
     latestCheckedAt: "2026-07-26T09:59:00.000Z",
     rollbackAvailable: false,
     latestInstalled: false,
+    catalogueUpdateAvailable: true,
+    supplementUpdateAvailable: false,
+    updateCatalogue: true,
+    updateSupplements: true,
   };
 }
 
@@ -91,6 +95,10 @@ function completedStatus() {
     },
     updateAvailable: false,
     latestInstalled: true,
+    catalogueUpdateAvailable: false,
+    supplementUpdateAvailable: false,
+    updateCatalogue: true,
+    updateSupplements: true,
   };
 }
 
@@ -121,6 +129,8 @@ function availableUpdateStatus({ installed = false } = {}) {
     latestCheckedAt: "2026-07-26T09:59:00.000Z",
     rollbackAvailable: false,
     latestInstalled: false,
+    catalogueUpdateAvailable: true,
+    supplementUpdateAvailable: false,
   };
 }
 
@@ -131,6 +141,8 @@ function updatePreview() {
     warning: "Download und Import können einige Zeit dauern.",
     requiredFreeBytes: 12 * 1024 ** 3,
     token: "preview-token",
+    updateCatalogue: true,
+    updateSupplements: true,
   };
 }
 
@@ -323,4 +335,47 @@ test("eine verschobene Aktualisierung wird beim selben Start nicht erneut angebo
   assert.equal(confirmations.length, 1);
   assert.equal(confirmations[0].title, "Taxonomiedatenbank ist veraltet");
   assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 0);
+});
+
+test("veraltete Ergänzungsnamen werden ohne vorgetäuschtes CoL-Update dargestellt", async () => {
+  const visible = elements();
+  const status = {
+    ...availableUpdateStatus({ installed: true }),
+    updateAvailable: true,
+    catalogueUpdateAvailable: false,
+    supplementUpdateAvailable: true,
+    latestInstalled: true,
+    reference: {
+      available: true,
+      releaseId: "col-xr-2026-07-17-315834",
+      source: availableUpdateStatus().latest,
+      supplements: {
+        available: true,
+        stale: true,
+        entryCount: 42,
+      },
+    },
+  };
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => status,
+    formatBytes: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  await controller.refresh();
+  assert.equal(
+    visible.taxonomyUpdateButton.textContent,
+    "Ergänzungsnamen aktualisieren",
+  );
+  assert.equal(
+    visible.taxonomyMaintenanceSummary.textContent,
+    "Aktive Referenz: COL26.7 XR vom 17.07.2026",
+  );
+  assert.equal(
+    visible.taxonomyMaintenanceDetail.textContent,
+    "Neueste verfügbare Version: COL26.7 XR vom 17.07.2026.",
+  );
 });

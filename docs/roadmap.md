@@ -836,7 +836,7 @@ klarer Zielphase dokumentiert.
 
 ## Phase 9 - Globale Taxonomiedatenbank
 
-Status: in Arbeit; Phase 9.1 bis 9.5 technisch abgeschlossen
+Status: in Arbeit; Phase 9.1 bis 9.5 einschließlich Ergänzungsnamen technisch abgeschlossen
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst ausschließlich
 Quellenvergleich, lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen
@@ -872,8 +872,9 @@ Taxonomiereferenz als regulären geführten Eingabeweg mit vollständig manuelle
 und wissenschaftliche Eingaben liefern nach 300 Millisekunden passende Vorschläge; Mehrdeutigkeiten bleiben als
 Liste sichtbar und
 kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen, Synonym, Hierarchie, Quelle,
-Release, Quellen-ID und Vertrauensstufe. Erst `Vorschlag übernehmen` füllt die Namensfelder, danach bleiben die
-bisherige Eingabeprüfung, Kollisionsprüfung und Speicherung verpflichtend. Beim ersten Start ist nur
+Release, Quellen-ID und Vertrauensstufe. Ein Klick auf einen Treffer schließt die schwebende Liste und füllt
+deutschen, englischen und wissenschaftlichen Namen direkt; danach bleiben die bisherige Eingabeprüfung,
+Kollisionsprüfung und Speicherung verpflichtend. Beim ersten Start ist nur
 `Tiere (Animalia)` sichtbar; über das Zahnrad lassen sich Animalia und weitere Reiche lokal ein- oder ausblenden.
 `Alle Reiche` berücksichtigt ausschließlich diese sichtbare Auswahl. Im Neue-Art-Assistenten werden nur
 echte Arteinträge angeboten. Ohne lesbare Referenzdatenbank bleibt die manuelle Anlage vollständig funktionsfähig.
@@ -943,6 +944,16 @@ Der englische Name wird im Explorer-Artkopf, in der Suche und über `species-inf
 verwendet. Auf der Artseite stehen deutscher, englischer und lateinischer Name jeweils in einer eigenen kompakten
 Zeile. Die Reichseinstellung im Neue-Art-Assistenten besitzt eine Filtereingabe und eine begrenzte scrollbar
 bleibende Liste; Checkbox und Reichsname stehen in derselben Zeile.
+
+Seit 2026-07-30 ergänzt eine strikt getrennte Namensschicht fehlende deutsche und englische CoL-Vernakularnamen
+über die offiziellen Schnittstellen von iNaturalist, GBIF, WoRMS und Wikidata. Ein Kandidat wird nur gespeichert,
+wenn sein wissenschaftlicher Name eindeutig auf eine vorhandene CoL-Art verweist; Taxa, Hierarchien und Synonyme
+der Anbieter werden nicht in CoL übernommen. Der lokale Cache speichert Quellen, Gewichtung und Prüfzeitpunkte,
+behält bei Anbieterfehlern den letzten funktionierenden Stand und besitzt einen vom Suchcache getrennten
+Vollabgleichzeitpunkt. Eigene redaktionelle Korrekturen liegen versioniert in
+`taxonomy-reference-corrections.json`, haben Vorrang vor automatisch ergänzten Namen und überleben neue CoL-Releases.
+Der Wartungsablauf aktualisiert bei Bedarf CoL und Ergänzungen gemeinsam oder bei bereits aktuellem CoL nur die
+Ergänzungsschicht. Der Vertrag steht in `docs/taxonomy-reference-supplements.md`.
 
 Als Nächstes folgt Phase 9.6: vollständiger realer Betriebstest der Referenzinstallation, Rollbackprüfung und
 umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.

@@ -90,6 +90,7 @@ Versionierte Referenzen liegen unter:
 - `docs/taxonomy-import-prototype.md`
 - `docs/taxonomy-explorer-integration.md`
 - `docs/taxonomy-reference-update.md`
+- `docs/taxonomy-reference-supplements.md`
 - `docs/manual-map-overrides.md`
 - `docs/manual-species-fields.md`
 - `docs/add-species-workflow.md`
@@ -287,8 +288,9 @@ führt drei eigenständige Pflichtfelder: `Deutscher Name`, `Englischer Name` un
 Jedes Feld durchsucht beim Tippen die passende Sprache beziehungsweise wissenschaftliche Namen und Synonyme.
 Die Suche startet 300 Millisekunden nach der letzten Eingabe; ältere Anfragen dürfen die aktuelle Trefferliste
 nicht mehr überschreiben. Ein Treffer wird erst nach Auswahl mit Hierarchie, Quelle, Release, ID und Namensstatus
-angezeigt und nur über `Vorschlag übernehmen` in die drei Namensfelder geschrieben. Die normale Eingabeprüfung und
-Kollisionskontrolle bleibt danach Pflicht.
+angezeigt. Ein Klick auf den Treffer schließt die schwebende Liste und schreibt deutschen, englischen sowie
+wissenschaftlichen Namen direkt in die drei Namensfelder. Die normale Eingabeprüfung und Kollisionskontrolle bleibt
+danach Pflicht.
 
 Die Referenzsuche ist bei installierter Datenbank der reguläre geführte Eingabeweg; alle drei Felder bleiben
 gleichzeitig direkt manuell beschreibbar. Über das Zahnrad neben der Reichsauswahl wird lokal festgelegt, welche
@@ -367,6 +369,23 @@ npm.cmd run --silent test:taxonomy-maintenance
 ```
 
 Der vollständige Betriebs-, Konflikt- und Rollbackvertrag steht in `docs/taxonomy-reference-update.md`.
+
+## Ergänzungsnamen und eigene Taxonomiekorrekturen
+
+Catalogue of Life bleibt die unveränderliche taxonomische Primärreferenz. Fehlen dort gebräuchliche Namen, fragt
+der Explorer die offiziellen Schnittstellen von iNaturalist, GBIF, WoRMS und Wikidata ab. Übernommen werden nur
+deutsche oder englische Namen, deren wissenschaftlicher Name exakt und eindeutig einer CoL-Art zugeordnet werden
+kann. Die externen Quellen dürfen weder fremde Taxa noch eigene Hierarchien in den lokalen CoL-Bestand einfügen.
+Animalia.bio bleibt mangels dokumentierter freigegebener API eine manuelle Recherchehilfe.
+
+Die Ergänzungen liegen mit Quelle, Quellen-ID, Vertrauensgewichtung und Prüfzeitpunkt in einem ignorierten lokalen
+Cache. Ein vollständiger Ausfall der Anbieter überschreibt den letzten funktionierenden Bestand nicht. Eigene
+redaktionelle Korrekturen werden getrennt in `taxonomy-reference-corrections.json` versioniert, überlagern nur die
+sichtbaren gebräuchlichen Namen eines vorhandenen CoL-Taxons und bleiben bei CoL-Aktualisierungen erhalten.
+`Datenbank-Aktionen > Taxonomiereferenz` aktualisiert bei einer neuen CoL-Version anschließend auch die
+Ergänzungsnamen; ist CoL bereits aktuell, kann ausschließlich die Ergänzungsschicht erneuert werden.
+
+Details, Datenvertrag, API und Tests stehen in `docs/taxonomy-reference-supplements.md`.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
@@ -917,12 +936,17 @@ begrenzte Sicherheitsrichtlinie; technische Import-Stacktraces werden in der Obe
 Fehlergrund reduziert. Fehlt die Taxonomiedatenbank oder ist sie veraltet, bietet der Explorer die Aktualisierung
 nach der Startprüfung direkt an. Ein echter Vollbestand wird erst durch diese ausdrücklich bestätigte lokale
 Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Als Nächstes folgt Phase 9.6
-mit realem Betriebstest, Rollbackprüfung und umfassendem Abschlussaudit. Phase 10 umfasst ausschließlich Lightroom,
+mit realem Betriebstest, Rollbackprüfung und umfassendem Abschlussaudit. Seit 2026-07-30 ergänzt eine getrennte
+Namensschicht fehlende deutsche und englische CoL-Namen über die offiziellen Schnittstellen von iNaturalist, GBIF,
+WoRMS und Wikidata. Externe Kandidaten werden nur nach exakter CoL-Artzuordnung gespeichert, letzte funktionierende
+Caches bleiben bei Ausfällen erhalten und eigene Korrekturen liegen getrennt versioniert in
+`taxonomy-reference-corrections.json`. Die Trefferauswahl im Neue-Art-Assistenten übernimmt alle drei Namen direkt
+und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr. Phase 10 umfasst ausschließlich Lightroom,
 Phase 11 Mehrgeraetebetrieb, automatische Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und
 Abschlusskriterien stehen in `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
 `docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md`,
-`docs/taxonomy-reference-update.md` und
+`docs/taxonomy-reference-update.md`, `docs/taxonomy-reference-supplements.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

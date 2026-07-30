@@ -32,6 +32,7 @@ import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
+import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
@@ -102,6 +103,10 @@ export async function createExplorerServer({
   const speciesListPath = join(repoRoot, "species_list.json");
   const speciesDataPath = join(repoRoot, "speciesData.json");
   const speciesReferenceMappingsPath = join(repoRoot, "species-reference-mappings.json");
+  const taxonomyReferenceCorrectionsPath = join(
+    repoRoot,
+    "taxonomy-reference-corrections.json",
+  );
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
   const taxonomyOverridesPath = join(repoRoot, "species-taxonomy-overrides.json");
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
@@ -113,7 +118,14 @@ export async function createExplorerServer({
   const assetStagingRoot = join(repoRoot, "species-explorer", "staging");
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
-  const taxonomyReference = createTaxonomyReferenceService({ taxonomyRoot });
+  const taxonomySupplements = createTaxonomySupplementService({
+    taxonomyRoot,
+    correctionsPath: taxonomyReferenceCorrectionsPath,
+  });
+  const taxonomyReference = createTaxonomyReferenceService({
+    taxonomyRoot,
+    supplementService: taxonomySupplements,
+  });
   let taxonomyMaintenanceService = null;
   let pipelineProcess = null;
   let assetWriteActive = false;
@@ -217,6 +229,7 @@ export async function createExplorerServer({
     taxonomyRoot,
     repoRoot,
     referenceService: taxonomyReference,
+    supplementService: taxonomySupplements,
     mappingsPath: speciesReferenceMappingsPath,
     speciesListPath,
     isProjectBusy: () => Boolean(
@@ -569,6 +582,13 @@ export async function createExplorerServer({
         if (action === "start") return taxonomyMaintenanceService.startUpdate(payload);
         if (action === "rollback") return taxonomyMaintenanceService.rollback();
         const error = new Error("Unbekannte Taxonomie-Wartungsoperation");
+        error.statusCode = 404;
+        throw error;
+      },
+      async taxonomyCorrection({ action, payload }) {
+        if (action === "save") return taxonomyReference.saveCorrection(payload);
+        if (action === "reset") return taxonomyReference.resetCorrection(payload);
+        const error = new Error("Unbekannte Taxonomie-Korrekturoperation");
         error.statusCode = 404;
         throw error;
       },

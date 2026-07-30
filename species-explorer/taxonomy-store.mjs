@@ -557,6 +557,45 @@ export class TaxonomyStore {
     };
   }
 
+  findTaxonByScientificName(scientificName, { rank = "species" } = {}) {
+    this.assertOpen();
+    const value = String(scientificName ?? "").trim();
+    if (!value) return null;
+    const normalizedRank = String(rank ?? "").trim().toLocaleLowerCase("en");
+    const row = this.database.prepare(`
+      SELECT taxon.*
+      FROM taxon_name
+      JOIN taxon ON taxon.id = taxon_name.taxon_id
+      WHERE taxon_name.scientific_name = ? COLLATE NOCASE
+        AND (? = '' OR LOWER(taxon.rank) = ?)
+      ORDER BY
+        CASE WHEN taxon_name.relationship = 'accepted' THEN 0 ELSE 1 END,
+        CASE WHEN taxon.status = 'accepted' THEN 0 ELSE 1 END,
+        taxon.id
+      LIMIT 1
+    `).get(value, normalizedRank, normalizedRank);
+    if (!row) return null;
+    return this.formatSearchResult({
+      term_id: `scientific:${row.id}`,
+      taxon_id: row.id,
+      term: value,
+      term_type: value.toLocaleLowerCase("en") === String(row.scientific_name)
+        .toLocaleLowerCase("en")
+        ? "accepted_scientific"
+        : "scientific_synonym",
+      language: null,
+      preferred: 1,
+      sort_score: 0,
+      source_id: row.source_id,
+      scientific_name: row.scientific_name,
+      rank: row.rank,
+      status: row.status,
+      extinct: row.extinct,
+      kingdom: row.kingdom,
+      trust_tier: row.trust_tier,
+    });
+  }
+
   taxon(reference) {
     this.assertOpen();
     const value = String(reference ?? "").trim();

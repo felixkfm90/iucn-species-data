@@ -1910,8 +1910,7 @@ button:focus-visible {
   font: inherit;
 }
 
-.taxonomy-reference-kingdom-settings-toggle,
-.taxonomy-reference-apply {
+.taxonomy-reference-kingdom-settings-toggle {
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid #aebdb7;
@@ -2057,16 +2056,6 @@ button:focus-visible {
   border: 1px solid var(--green);
   border-radius: 4px;
   font-weight: 750;
-}
-
-.taxonomy-reference-apply {
-  color: #fff;
-  background: var(--green);
-  border-color: var(--green);
-}
-
-.taxonomy-reference-apply:disabled {
-  opacity: 0.5;
 }
 
 .taxonomy-reference-name-fields {
@@ -2229,7 +2218,8 @@ button:focus-visible {
 .taxonomy-reference-source,
 .taxonomy-reference-selection-meta,
 .taxonomy-reference-synonym,
-.taxonomy-reference-fallback {
+.taxonomy-reference-fallback,
+.taxonomy-reference-supplement {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.7rem;
@@ -2246,9 +2236,91 @@ button:focus-visible {
   font-weight: 750;
 }
 
-.taxonomy-reference-selection-actions {
+.taxonomy-reference-supplement {
+  padding: 7px 9px;
+  color: #365f50;
+  background: #f1f8f5;
+  border-left: 3px solid #8abca7;
+  border-radius: 3px;
+}
+
+.taxonomy-reference-correction {
+  padding: 8px 9px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.taxonomy-reference-correction summary {
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.taxonomy-reference-correction-fields {
+  margin-top: 9px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.taxonomy-reference-correction-fields label {
+  display: grid;
+  gap: 4px;
+}
+
+.taxonomy-reference-correction-fields label > span {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.taxonomy-reference-correction-fields input {
+  min-height: 36px;
+  width: 100%;
+  padding: 7px 9px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.taxonomy-reference-correction-note {
+  grid-column: 1 / -1;
+}
+
+.taxonomy-reference-correction-actions {
+  margin-top: 9px;
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.taxonomy-reference-correction-actions button {
+  min-height: 36px;
+  padding: 7px 11px;
+  color: #fff;
+  background: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  font-weight: 750;
+}
+
+.taxonomy-reference-correction-actions button.secondary {
+  color: var(--text);
+  background: #fff;
+  border-color: var(--line-strong);
+}
+
+.taxonomy-reference-correction-actions button:disabled {
+  color: var(--text-muted);
+  background: #eef1ef;
+  border-color: var(--line);
+  cursor: not-allowed;
 }
 
 .edit-fields label,
@@ -4135,12 +4207,25 @@ button:focus-visible {
     text-align: right;
   }
 
-  .taxonomy-reference-apply {
-    width: 100%;
-  }
-
   .taxonomy-reference-controls {
     grid-template-columns: minmax(0, 1fr) 42px;
+  }
+
+  .taxonomy-reference-correction-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .taxonomy-reference-correction-note {
+    grid-column: auto;
+  }
+
+  .taxonomy-reference-correction-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .taxonomy-reference-correction-actions button {
+    width: 100%;
   }
 
   .map-edit-section > header {

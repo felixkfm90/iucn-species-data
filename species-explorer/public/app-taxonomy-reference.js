@@ -198,7 +198,11 @@
         .map((entry) => ({
           label: RANK_LABELS[String(entry.rank || "").toLowerCase()]
             || String(entry.rank || "Stufe"),
-          value: String(entry.scientific_name || "").trim(),
+          value: String(
+            entry.germanName && entry.germanName !== entry.scientificName
+              ? `${entry.germanName} (${entry.scientificName})`
+              : entry.displayName || entry.scientificName || entry.scientific_name || "",
+          ).trim(),
         }))
         .filter((entry) => entry.value)
       : [];
@@ -226,6 +230,7 @@
         }
         : null,
       manualGermanNameFallback: detail.manualGermanNameFallback || null,
+      supplement: detail.supplement || null,
     };
   }
 
@@ -251,7 +256,6 @@
     const resultsContainer = section.querySelector(".taxonomy-reference-results");
     const selection = section.querySelector(".taxonomy-reference-selection");
     const selectionContent = section.querySelector(".taxonomy-reference-selection-content");
-    const applyButton = section.querySelector(".taxonomy-reference-apply");
     const kingdomSettings = section.querySelector(".taxonomy-reference-kingdom-settings");
     const kingdomSettingsToggle = section.querySelector(
       ".taxonomy-reference-kingdom-settings-toggle",
@@ -321,7 +325,6 @@
       selectedDetail = null;
       selectionContent.replaceChildren();
       selection.hidden = true;
-      applyButton.disabled = true;
     };
 
     const loadStoredKingdomIds = () => {
@@ -491,6 +494,20 @@
           </p>
         `
         : "";
+      const sourceNames = [
+        ...(view.supplement?.nameSources?.german || []),
+        ...(view.supplement?.nameSources?.english || []),
+      ];
+      const supplementSources = [...new Set(sourceNames
+        .map((entry) => String(entry.source || "").trim())
+        .filter(Boolean))];
+      const supplement = supplementSources.length
+        ? `
+          <p class="taxonomy-reference-supplement">
+            Namen ergänzt durch: ${escape(supplementSources.join(", "))}
+          </p>
+        `
+        : "";
       selectionContent.innerHTML = `
         <div class="taxonomy-reference-selection-heading">
           <strong>${escape(view.displayName || "Deutschen Namen manuell ergänzen")}</strong>
@@ -510,18 +527,63 @@
           ${view.releaseId ? ` · Stand: ${escape(view.releaseId)}` : ""}
           ${view.sourceId ? ` · ID: ${escape(view.sourceId)}` : ""}
         </p>
+        ${supplement}
         ${fallback}
+        <details class="taxonomy-reference-correction">
+          <summary>Eigenen Namen korrigieren</summary>
+          <div class="taxonomy-reference-correction-fields">
+            <label>
+              <span>Deutscher Name</span>
+              <input name="correctionGermanName" type="text" maxlength="120" value="${escape(view.germanName)}">
+            </label>
+            <label>
+              <span>Englischer Name</span>
+              <input name="correctionEnglishName" type="text" maxlength="120" value="${escape(view.englishName)}">
+            </label>
+            <label class="taxonomy-reference-correction-note">
+              <span>Hinweis · optional</span>
+              <input name="correctionNote" type="text" maxlength="240" value="${escape(view.supplement?.note || "")}">
+            </label>
+          </div>
+          <div class="taxonomy-reference-correction-actions">
+            <button type="button" data-taxonomy-correction="save">Korrektur speichern</button>
+            <button
+              type="button"
+              class="secondary"
+              data-taxonomy-correction="reset"
+              ${view.supplement?.correction ? "" : "disabled"}
+            >
+              Eigene Korrektur zurücksetzen
+            </button>
+          </div>
+        </details>
       `;
       selection.hidden = false;
-      applyButton.disabled = !view.scientificName;
+    };
+
+    const applySelectedNames = () => {
+      if (!selectedDetail) return;
+      const view = taxonomyDetailPresentation(selectedDetail, selectedResult);
+      scientificInput.value = view.scientificName;
+      if (view.germanName) germanInput.value = view.germanName;
+      if (view.englishName) englishInput.value = view.englishName;
+      onNamesChanged();
+      setMessage(
+        view.germanName
+          ? "Deutscher, englischer und wissenschaftlicher Name wurden übernommen. Bitte alle Angaben anschließend prüfen."
+          : view.usesEnglishFallback
+            ? "Englischer und wissenschaftlicher Name wurden übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen."
+            : "Der wissenschaftliche Name wurde übernommen. Bitte deutschen und englischen Namen ergänzen und alle Angaben prüfen.",
+        "success",
+      );
     };
 
     const selectResult = async (result) => {
       const version = ++requestVersion;
       selectedResult = result;
       selectedDetail = null;
+      clearResults();
       selection.hidden = false;
-      applyButton.disabled = true;
       selectionContent.textContent = "Taxondetails werden geladen …";
       try {
         const detail = await fetchJson(
@@ -530,10 +592,7 @@
         if (version !== requestVersion) return;
         selectedDetail = detail;
         renderSelection();
-        setMessage(
-          "Vorschlag ausgewählt. Die Eingabefelder ändern sich erst mit „Vorschlag übernehmen“.",
-          "info",
-        );
+        applySelectedNames();
       } catch (error) {
         if (version !== requestVersion) return;
         clearSelection();
@@ -737,22 +796,59 @@
         kingdomSettingsToggle?.setAttribute("aria-expanded", "false");
       }
     });
-    applyButton.addEventListener("click", () => {
-      if (!selectedDetail) return;
+    selectionContent.addEventListener("click", async (event) => {
+      const action = event.target.closest("[data-taxonomy-correction]")?.dataset
+        .taxonomyCorrection;
+      if (!action || !selectedDetail) return;
       const view = taxonomyDetailPresentation(selectedDetail, selectedResult);
-      scientificInput.value = view.scientificName;
-      if (view.germanName) germanInput.value = view.germanName;
-      if (view.englishName) englishInput.value = view.englishName;
-      onNamesChanged();
-      clearResults();
-      setMessage(
-        view.germanName
-          ? "Deutscher, englischer und wissenschaftlicher Name wurden übernommen. Bitte alle Angaben anschließend prüfen."
-          : view.usesEnglishFallback
-            ? "Englischer und wissenschaftlicher Name wurden übernommen. Bitte den deutschen Namen ergänzen und alle Angaben prüfen."
-            : "Der wissenschaftliche Name wurde übernommen. Bitte deutschen und englischen Namen ergänzen und alle Angaben prüfen.",
-        "success",
-      );
+      const button = event.target.closest("button");
+      button.disabled = true;
+      try {
+        if (action === "save") {
+          selectedDetail = await fetchJson("/api/taxonomy/corrections/save", {
+            method: "POST",
+            body: JSON.stringify({
+              scientificName: view.scientificName,
+              germanName: selectionContent.querySelector(
+                "[name='correctionGermanName']",
+              )?.value || "",
+              englishName: selectionContent.querySelector(
+                "[name='correctionEnglishName']",
+              )?.value || "",
+              note: selectionContent.querySelector("[name='correctionNote']")?.value || "",
+            }),
+          });
+          selectedResult = {
+            ...selectedResult,
+            germanName: selectedDetail.germanNames?.[0]?.name || null,
+            englishName: selectedDetail.englishNames?.[0]?.name || null,
+            hasVerifiedGermanName: Boolean(selectedDetail.germanNames?.[0]?.name),
+          };
+          renderSelection();
+          applySelectedNames();
+          setMessage("Die eigene Namenskorrektur wurde gespeichert und übernommen.", "success");
+        } else {
+          await fetchJson("/api/taxonomy/corrections/reset", {
+            method: "POST",
+            body: JSON.stringify({ scientificName: view.scientificName }),
+          });
+          selectedDetail = await fetchJson(
+            `/api/taxonomy/taxa/${encodeURIComponent(selectedResult.taxonId)}`,
+          );
+          selectedResult = {
+            ...selectedResult,
+            germanName: selectedDetail.germanNames?.[0]?.name || null,
+            englishName: selectedDetail.englishNames?.[0]?.name || null,
+            hasVerifiedGermanName: Boolean(selectedDetail.germanNames?.[0]?.name),
+          };
+          renderSelection();
+          applySelectedNames();
+          setMessage("Die eigene Namenskorrektur wurde zurückgesetzt.", "success");
+        }
+      } catch (error) {
+        setMessage(error.message || "Die Namenskorrektur konnte nicht gespeichert werden.", "error");
+        button.disabled = false;
+      }
     });
 
     return Object.freeze({

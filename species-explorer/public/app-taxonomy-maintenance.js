@@ -114,12 +114,20 @@
         releaseId: status.releaseId,
       };
       const counts = referenceCountsText(status.reference);
-      setActionMessage("Taxonomiereferenz erfolgreich übernommen.", "success");
+      const catalogueChanged = status.updateCatalogue === true;
+      setActionMessage(
+        catalogueChanged
+          ? "Taxonomiereferenz erfolgreich übernommen."
+          : "Ergänzungsnamen erfolgreich aktualisiert.",
+        "success",
+      );
       void showQuickConfirm({
         eyebrow: "Taxonomiereferenz",
-        title: "Neue Datenbank erfolgreich übernommen",
+        title: catalogueChanged
+          ? "Neue Datenbank erfolgreich übernommen"
+          : "Ergänzungsnamen erfolgreich aktualisiert",
         message: [
-          `${releaseLabel(release)} ist jetzt aktiv.`,
+          catalogueChanged ? `${releaseLabel(release)} ist jetzt aktiv.` : "",
           counts ? `Enthalten: ${counts}.` : "",
           status.message,
           "Bestehende Projektdaten wurden nicht automatisch verändert.",
@@ -152,9 +160,11 @@
         : failedUpdate
           ? "Taxonomie-Aktualisierung fehlgeschlagen"
           : completedUpdate
-            ? `Taxonomiereferenz erfolgreich übernommen: ${
-              releaseLabel(reference.source || { releaseId: status.releaseId })
-            }`
+            ? status.updateCatalogue
+              ? `Taxonomiereferenz erfolgreich übernommen: ${
+                releaseLabel(reference.source || { releaseId: status.releaseId })
+              }`
+              : "Ergänzungsnamen erfolgreich aktualisiert"
             : activeLabel;
       elements.taxonomyMaintenanceDetail.textContent = active
         ? "Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten."
@@ -186,9 +196,13 @@
       elements.taxonomyCheckButton.disabled = active;
       elements.taxonomyUpdateButton.disabled = active || !status.updateAvailable;
       elements.taxonomyRollbackButton.disabled = active || !status.rollbackAvailable;
-      elements.taxonomyUpdateButton.textContent = status.latestInstalled
-        ? "Geprüfte Version aktivieren"
-        : "Referenz aktualisieren";
+      elements.taxonomyUpdateButton.textContent = status.catalogueUpdateAvailable
+        ? status.latestInstalled
+          ? "Geprüfte CoL-Version aktivieren"
+          : "Referenz aktualisieren"
+        : status.supplementUpdateAvailable
+          ? "Ergänzungsnamen aktualisieren"
+          : "Referenz aktualisieren";
 
       if (active) renderDatabaseStatus("running");
       else renderDatabaseStatus();
@@ -242,15 +256,21 @@
         const hasReference = status.reference?.available === true;
         const confirmed = await showQuickConfirm({
           eyebrow: "Taxonomiereferenz",
-          title: hasReference
-            ? "Taxonomiedatenbank ist veraltet"
-            : "Keine Taxonomiedatenbank installiert",
+          title: result.updateCatalogue
+            ? hasReference
+              ? "Taxonomiedatenbank ist veraltet"
+              : "Keine Taxonomiedatenbank installiert"
+            : "Ergänzungsnamen sind veraltet",
           message: [
-            hasReference
+            result.updateCatalogue && hasReference
               ? `${releaseLabel(result.latest)} ist verfügbar.`
-              : `${releaseLabel(result.latest)} kann jetzt installiert werden.`,
+              : result.updateCatalogue
+                ? `${releaseLabel(result.latest)} kann jetzt installiert werden.`
+                : "",
             result.warning,
-            `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`,
+            result.updateCatalogue
+              ? `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`
+              : "",
             "Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.",
           ].filter(Boolean).join(" "),
           confirmLabel: "Jetzt aktualisieren",
@@ -289,8 +309,10 @@
         const result = await createPreview();
         setActionMessage(
           result.hasWork
-            ? `Neue Taxonomiereferenz verfügbar: ${releaseLabel(result.latest)}.`
-            : "Die Taxonomiereferenz ist aktuell.",
+            ? result.updateCatalogue
+              ? `Neue CoL-Referenz verfügbar: ${releaseLabel(result.latest)}.`
+              : "CoL ist aktuell; Ergänzungsnamen können aktualisiert werden."
+            : "Die Taxonomiereferenz einschließlich der Ergänzungsnamen ist aktuell.",
           result.hasWork ? "info" : "success",
         );
       } catch (error) {
@@ -303,16 +325,27 @@
       try {
         const result = preview?.hasWork ? preview : await createPreview();
         if (!result.hasWork) {
-          setActionMessage("Die Taxonomiereferenz ist bereits aktuell.", "success");
+          setActionMessage(
+            "Die Taxonomiereferenz einschließlich der Ergänzungsnamen ist bereits aktuell.",
+            "success",
+          );
           return;
         }
         const confirmed = await showQuickConfirm({
           eyebrow: "Taxonomiereferenz",
-          title: `${releaseLabel(result.latest)} installieren?`,
-          message: `${result.warning} Benötigt werden mindestens ${
-            formatBytes(result.requiredFreeBytes)
-          } freier Speicher. Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.`,
-          confirmLabel: "Download und Import starten",
+          title: result.updateCatalogue
+            ? `${releaseLabel(result.latest)} installieren?`
+            : "Ergänzungsnamen aktualisieren?",
+          message: [
+            result.warning,
+            result.updateCatalogue
+              ? `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`
+              : "",
+            "Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.",
+          ].filter(Boolean).join(" "),
+          confirmLabel: result.updateCatalogue
+            ? "Download und Import starten"
+            : "Ergänzungsnamen aktualisieren",
         });
         if (!confirmed) return;
         await beginUpdate(result);

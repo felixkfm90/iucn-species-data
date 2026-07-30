@@ -177,3 +177,93 @@ test("Fehler vor der Aktivierung lassen die bisherige Referenz aktiv", async (co
   assert.match(failed.error, /Konfliktabgleichfehler/);
   assert.equal(pointer.activeRelease, "col-old-release");
 });
+
+test("aktuelle CoL-Daten können unabhängig um Ergänzungsnamen aktualisiert werden", async (context) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-maintenance-supplements-"));
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.writeFile(
+    path.join(root, "species_list.json"),
+    `${JSON.stringify([{
+      german: "Stieglitz",
+      genus: "Carduelis",
+      species: "carduelis",
+    }], null, 2)}\n`,
+    "utf8",
+  );
+  const release = latestRelease();
+  const sequence = [];
+  const referenceService = {
+    reset() {
+      throw new Error("Die CoL-Referenz darf bei einem reinen Ergänzungslauf nicht neu geladen werden.");
+    },
+    async status() {
+      return {
+        available: true,
+        releaseId: release.releaseId,
+        boundedPrototype: false,
+        source: release,
+        supplements: {
+          available: true,
+          stale: true,
+          entryCount: 1,
+        },
+      };
+    },
+    async requireStore() {
+      return { name: "mock-store" };
+    },
+  };
+  const supplementService = {
+    async refreshKnown({ scientificNames, store, onProgress }) {
+      sequence.push("supplements");
+      assert.deepEqual(scientificNames, ["Carduelis carduelis"]);
+      assert.equal(store.name, "mock-store");
+      onProgress({
+        current: 1,
+        total: 1,
+        message: "Ergänzungsquellen wurden geprüft",
+      });
+      return {
+        targetCount: 1,
+        imported: 2,
+        refreshedTargets: 1,
+        preservedTargets: 0,
+        warnings: [],
+        preservedPreviousCache: false,
+      };
+    },
+  };
+  const service = createTaxonomyMaintenanceService({
+    taxonomyRoot: path.join(root, "taxonomy"),
+    repoRoot: root,
+    referenceService,
+    supplementService,
+    discoverRelease: async () => ({
+      checkedAt: "2026-07-30T08:00:00.000Z",
+      latest: release,
+    }),
+    listReleases: async () => [release.releaseId],
+    readPointer: async () => ({
+      activeRelease: release.releaseId,
+      previousRelease: null,
+    }),
+    activateRelease: async () => {
+      throw new Error("Ein reiner Ergänzungslauf darf CoL nicht neu aktivieren.");
+    },
+  });
+  context.after(() => service.close());
+
+  const preview = await service.previewUpdate();
+  assert.equal(preview.hasWork, true);
+  assert.equal(preview.updateCatalogue, false);
+  assert.equal(preview.updateSupplements, true);
+  assert.equal(preview.downloadRequired, false);
+
+  await service.startUpdate({ token: preview.token });
+  const completed = await waitForTerminal(service);
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.updateCatalogue, false);
+  assert.equal(completed.updateSupplements, true);
+  assert.deepEqual(sequence, ["supplements"]);
+  assert.match(completed.message, /Ergänzungsnamen wurden aktualisiert/);
+});

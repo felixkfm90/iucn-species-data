@@ -1,9 +1,9 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-07-27
+Stand: 2026-07-30
 
-Status: Phase 9.5 technisch umgesetzt; reale Paketabweichungen wurden sicher erkannt und korrigiert,
-die erneute ausdrückliche Installation steht aus
+Status: Phase 9.5 technisch umgesetzt; reale Paketabweichungen wurden sicher erkannt und korrigiert, eine getrennte
+Ergänzungsnamensschicht ist integriert und der vollständige Betriebstest bleibt Bestandteil von Phase 9.6
 
 ## Ziel
 
@@ -106,6 +106,14 @@ fehlenden deutschen Übersetzungen gleichzusetzen. Für alle gültig zugeordnete
 
 Für Tierarten ohne bestätigten deutschen Namen bleibt die manuelle Animalia.bio-Recherche zusätzlich verfügbar.
 
+Automatisierte Ergänzungen stammen ausschließlich aus den offiziellen Schnittstellen von iNaturalist, GBIF, WoRMS
+und Wikidata. Sie dürfen nur deutsche oder englische Namen ergänzen, wenn der gelieferte wissenschaftliche Name
+eindeutig als Art in der aktiven CoL-Referenz existiert. Externe Taxa, Hierarchien oder Synonyme werden nicht in die
+CoL-Datenbank importiert. Ein lokaler Cache bewahrt Quellen, Vertrauensgewichtung und Prüfzeitpunkt; schlägt die
+Aktualisierung fehl, bleibt der letzte funktionierende Bestand aktiv. Eigene Korrekturen werden getrennt
+versioniert und überleben sowohl einen neuen Ergänzungslauf als auch einen neuen CoL-Release. Der vollständige
+Vertrag steht in `docs/taxonomy-reference-supplements.md`.
+
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
 Namen, der gegebenenfalls gezählten Anzahl sicher übersprungener verwaister Namen sowie dem Hinweis, dass keine
@@ -174,7 +182,8 @@ Der Referenzbestand liegt pfadunabhängig unter:
 ```
 
 Er enthält Releaseordner, aktiven Zeiger, eine Rollbackversion, Versionsprüfungs-Cache und temporäre
-Arbeitsverzeichnisse. Der Bestand ist reproduzierbar und gehört nicht in normale Projekt-ZIP-Backups. Die spätere
+Arbeitsverzeichnisse sowie den reproduzierbaren Ergänzungsnamencache. Der Bestand gehört nicht in normale
+Projekt-ZIP-Backups. Die spätere
 Verteilung auf mehrere Rechner wird in Phase 11 entschieden.
 
 ## Lokale API
@@ -194,6 +203,8 @@ Verwaltungsendpunkte aus Phase 9.5:
 POST /api/taxonomy/update/preview
 POST /api/taxonomy/update/start
 POST /api/taxonomy/update/rollback
+POST /api/taxonomy/corrections/save
+POST /api/taxonomy/corrections/reset
 ```
 
 Alle Endpunkte verwenden die vorhandene localhost-, Origin- und Sitzungsgrenze des Arten-Explorers.
@@ -204,12 +215,16 @@ Fokussierter Test:
 
 ```powershell
 npm.cmd run --silent test:taxonomy-maintenance
+npm.cmd run --silent test:taxonomy-reference
 ```
 
 Der Testbestand deckt Releaseerkennung, Cache, URL-Grenzen, sicheren Vollimport, optionale Vernakularnamen,
 offizielle `col:`-/`clb:`-Spaltennamen, einzeln tolerierte und systematisch blockierte verwaiste
 Vernakularnamen, Aktivierungssperre vor dem Artenvergleich, eindeutige Synonyme, Mehrdeutigkeiten, fehlende Arten,
 stabile Quellen-ID-Zuordnungen, unveränderte Projektdateien, Fortschritt und Rollback ab.
+Die Referenztests decken zusätzlich die vier Ergänzungsanbieter, Sprachcodes, exakte CoL-Artzuordnung,
+Trefferpriorität, Provenienz, Offline-/Teilausfall, letzter funktionierender Cache, eigene Korrekturen und
+serverseitige Eingabegrenzen ab.
 
 Ein mehrere Gigabyte großer Produktionsdownload ist bewusst kein automatischer Testbestand. Die Mechanik wird mit
 der versionierten Fixture reproduzierbar geprüft; die erste echte Vollinstallation wird im Explorer ausdrücklich

@@ -36,7 +36,7 @@
     "test:info": "node --test --test-isolation=none scripts/species-info.test.mjs",
     "test:taxonomy": "node --test --test-isolation=none scripts/species-taxonomy.test.mjs scripts/taxonomy-overrides.test.mjs",
     "test:taxonomy-prototype": "node --no-warnings --test --test-isolation=none scripts/taxonomy-prototype.test.mjs species-explorer/taxonomy-import.test.mjs species-explorer/taxonomy-store.test.mjs",
-    "test:taxonomy-reference": "node --no-warnings --test --test-isolation=none species-explorer/taxonomy-reference-service.test.mjs species-explorer/app-taxonomy-reference.test.mjs",
+    "test:taxonomy-reference": "node --no-warnings --test --test-isolation=none species-explorer/taxonomy-reference-service.test.mjs species-explorer/taxonomy-supplement-providers.test.mjs species-explorer/taxonomy-supplement-service.test.mjs species-explorer/app-taxonomy-reference.test.mjs",
     "test:taxonomy-maintenance": "node --no-warnings --test --test-isolation=none species-explorer/taxonomy-archive.test.mjs species-explorer/taxonomy-release-client.test.mjs species-explorer/taxonomy-full-import.test.mjs species-explorer/taxonomy-maintenance-service.test.mjs species-explorer/app-taxonomy-maintenance.test.mjs",
     "test:portrait": "node --test --test-isolation=none scripts/species-portrait.test.mjs",
     "test:preview": "node --test --test-isolation=none scripts/local-squarespace-preview.test.mjs",

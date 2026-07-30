@@ -35,6 +35,7 @@ const ACTIVE_STATUSES = new Set([
   "importing",
   "comparing",
   "activating",
+  "supplementing",
   "rolling-back",
 ]);
 
@@ -56,8 +57,11 @@ function initialState() {
     completedAt: "",
     releaseId: "",
     latest: null,
+    updateCatalogue: false,
+    updateSupplements: false,
     conflicts: null,
     conflictDetails: null,
+    supplementRefresh: null,
     error: "",
   };
 }
@@ -67,16 +71,17 @@ function progressPercent({ phase, current, total }) {
     ? Math.max(0, Math.min(1, Number(current) / Number(total)))
     : 0;
   const ranges = {
-    download: [0, 20],
-    extract: [20, 30],
-    "name-usages": [30, 65],
-    materialize: [65, 72],
-    "vernacular-names": [72, 82],
-    "search-index": [82, 90],
-    compact: [90, 94],
-    complete: [94, 95],
-    compare: [95, 98],
-    activate: [98, 100],
+    download: [0, 18],
+    extract: [18, 27],
+    "name-usages": [27, 58],
+    materialize: [58, 65],
+    "vernacular-names": [65, 75],
+    "search-index": [75, 83],
+    compact: [83, 86],
+    complete: [86, 87],
+    compare: [87, 91],
+    activate: [91, 94],
+    supplements: [94, 100],
     rollback: [0, 100],
   };
   const [start, end] = ranges[phase] ?? [0, 100];
@@ -130,6 +135,7 @@ export class TaxonomyMaintenanceService {
     taxonomyRoot,
     repoRoot,
     referenceService,
+    supplementService = null,
     mappingsPath = path.join(repoRoot || "", "species-reference-mappings.json"),
     speciesListPath = path.join(repoRoot || "", "species_list.json"),
     discoverRelease = discoverLatestCatalogueRelease,
@@ -152,6 +158,7 @@ export class TaxonomyMaintenanceService {
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.repoRoot = path.resolve(repoRoot);
     this.referenceService = referenceService;
+    this.supplementService = supplementService;
     this.mappingsPath = path.resolve(mappingsPath);
     this.speciesListPath = path.resolve(speciesListPath);
     this.discoverRelease = discoverRelease;
@@ -269,6 +276,20 @@ export class TaxonomyMaintenanceService {
     ]);
     const activeRelease = pointer?.activeRelease || reference?.releaseId || "";
     const latestRelease = this.latest?.releaseId || "";
+    const catalogueUpdateAvailable = Boolean(
+      latestRelease
+      && (
+        latestRelease !== activeRelease
+        || reference?.boundedPrototype === true
+      )
+    );
+    const supplements = reference?.supplements || null;
+    const supplementUpdateAvailable = Boolean(
+      activeRelease
+      && this.supplementService
+      && supplements?.available === true
+      && supplements?.stale === true
+    );
     const conflictReport = activeRelease
       ? await readProjectTaxonomyConflictReport({
         taxonomyRoot: this.taxonomyRoot,
@@ -280,13 +301,10 @@ export class TaxonomyMaintenanceService {
       activeRelease,
       previousRelease: pointer?.previousRelease || null,
       installedReleases,
-      updateAvailable: Boolean(
-        latestRelease
-        && (
-          latestRelease !== activeRelease
-          || reference?.boundedPrototype === true
-        )
-      ),
+      supplements,
+      catalogueUpdateAvailable,
+      supplementUpdateAvailable,
+      updateAvailable: catalogueUpdateAvailable || supplementUpdateAvailable,
       latestInstalled: Boolean(latestRelease && installedReleases.includes(latestRelease)),
       persistedConflicts: conflictReport?.summary ?? null,
       persistedConflictDetails: conflictReport?.results
@@ -316,32 +334,70 @@ export class TaxonomyMaintenanceService {
     };
   }
 
+  async projectScientificNames() {
+    const entries = JSON.parse(await fs.readFile(this.speciesListPath, "utf8"));
+    if (!Array.isArray(entries)) {
+      throw new Error("Die Artenliste ist für die Ergänzungsaktualisierung ungültig.");
+    }
+    return [...new Set(entries.map((entry) => (
+      [entry?.genus, entry?.species]
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean)
+        .join(" ")
+    )).filter((value) => value.includes(" ")))];
+  }
+
   async previewUpdate() {
     this.assertOpen();
     if (this.isActive()) {
       throw createHttpError("Eine Taxonomie-Aktualisierung läuft bereits.", 409);
     }
-    await this.checkLatest({ force: true, visible: true });
+    let releaseCheckError = null;
+    try {
+      await this.checkLatest({ force: true, visible: true });
+    } catch (error) {
+      releaseCheckError = error;
+    }
     const installed = await this.installedStatus();
-    const hasWork = installed.updateAvailable;
+    if (releaseCheckError && !installed.supplementUpdateAvailable) {
+      throw releaseCheckError;
+    }
+    const updateCatalogue = installed.catalogueUpdateAvailable;
+    const updateSupplements = Boolean(
+      this.supplementService
+      && (updateCatalogue || installed.supplementUpdateAvailable)
+    );
+    const hasWork = updateCatalogue || updateSupplements;
+    const targetRelease = updateCatalogue
+      ? this.latest
+      : installed.reference?.source || { releaseId: installed.activeRelease };
     const token = hasWork ? crypto.randomUUID() : "";
     this.preview = hasWork
       ? {
         token,
-        releaseId: this.latest.releaseId,
-        expiresAt: Date.now() + PREVIEW_TTL_MS,
+        releaseId: targetRelease.releaseId,
+        updateCatalogue,
+        updateSupplements,
+        expiresAt: this.now().getTime() + PREVIEW_TTL_MS,
       }
       : null;
+    const warning = updateCatalogue
+      ? updateSupplements
+        ? "Die vollständige CoL-Referenz umfasst mehrere Millionen Namen. Anschließend werden fehlende deutsche und englische Namen aus iNaturalist, GBIF, WoRMS und Wikidata ergänzt. Der Download kann deutlich über 1 GB groß sein und der Import längere Zeit dauern."
+        : "Die vollständige CoL-Referenz umfasst mehrere Millionen Namen. Der Download kann deutlich über 1 GB groß sein und der Import längere Zeit dauern."
+      : updateSupplements
+        ? "Catalogue of Life ist aktuell. Ergänzungsnamen aus iNaturalist, GBIF, WoRMS und Wikidata werden neu geprüft; die letzte funktionierende lokale Ergänzungsreferenz bleibt bei Quellenfehlern erhalten."
+        : "Die installierte Taxonomiereferenz einschließlich der Ergänzungsnamen ist aktuell.";
     return {
       token,
       hasWork,
-      latest: this.latest,
+      latest: targetRelease,
       ...installed,
+      updateCatalogue,
+      updateSupplements,
       requiredFreeBytes: REQUIRED_FREE_BYTES,
-      downloadRequired: hasWork && !installed.latestInstalled,
-      warning: hasWork
-        ? "Die vollständige Referenz umfasst mehrere Millionen Namen. Der Download kann deutlich über 1 GB groß sein und der Import längere Zeit dauern."
-        : "Die installierte Taxonomiereferenz ist aktuell.",
+      downloadRequired: updateCatalogue && !installed.latestInstalled,
+      warning,
       conflictPolicy: {
         exactNames: "werden unverändert bestätigt",
         uniqueSynonyms: "werden nur als Vorschlag angezeigt",
@@ -366,129 +422,204 @@ export class TaxonomyMaintenanceService {
     if (
       !this.preview
       || this.preview.token !== token
-      || this.preview.expiresAt <= Date.now()
-      || this.preview.releaseId !== this.latest?.releaseId
+      || this.preview.expiresAt <= this.now().getTime()
+      || (
+        this.preview.updateCatalogue
+        && this.preview.releaseId !== this.latest?.releaseId
+      )
     ) {
       throw createHttpError("Die Aktualisierungsvorschau ist abgelaufen. Bitte erneut prüfen.", 409);
     }
-    const release = this.latest;
+    const operation = {
+      ...this.preview,
+      release: this.preview.updateCatalogue
+        ? this.latest
+        : {
+          releaseId: this.preview.releaseId,
+        },
+    };
     this.preview = null;
     this.state = {
       ...initialState(),
-      status: "downloading",
-      phase: "download",
+      status: operation.updateCatalogue ? "downloading" : "supplementing",
+      phase: operation.updateCatalogue ? "download" : "supplements",
       action: "update",
-      message: "Taxonomiereferenz wird vorbereitet…",
+      message: operation.updateCatalogue
+        ? "CoL-Referenz wird vorbereitet…"
+        : "Ergänzungsquellen werden vorbereitet…",
       progressPercent: 0,
       startedAt: this.now().toISOString(),
-      releaseId: release.releaseId,
-      latest: release,
+      releaseId: operation.release.releaseId,
+      latest: operation.release,
+      updateCatalogue: operation.updateCatalogue,
+      updateSupplements: operation.updateSupplements,
     };
-    void this.runUpdate(release);
+    void this.runUpdate(operation);
     return this.status();
   }
 
-  async runUpdate(release) {
+  async runUpdate({
+    release,
+    updateCatalogue = true,
+    updateSupplements = false,
+  }) {
     const operationId = crypto.randomUUID();
     const workDirectory = path.join(this.workRoot, `update-${operationId}`);
     const archivePath = path.join(workDirectory, "catalogue-of-life.zip");
     const packageDirectory = path.join(workDirectory, "package");
     try {
       this.assertProjectReady();
-      const installedReleases = await this.listReleases(this.taxonomyRoot);
-      if (!installedReleases.includes(release.releaseId)) {
-        const freeBytes = await this.diskBytes(this.taxonomyRoot);
-        if (freeBytes < REQUIRED_FREE_BYTES) {
-          throw createHttpError(
-            "Für den vollständigen Taxonomieimport ist nicht genügend freier Speicher vorhanden.",
-            507,
-            [
-              `Erforderlich: mindestens ${(REQUIRED_FREE_BYTES / 1024 ** 3).toFixed(0)} GB frei.`,
-              `Verfügbar: ${(freeBytes / 1024 ** 3).toFixed(1)} GB.`,
-            ],
-          );
+      let conflicts = null;
+      if (updateCatalogue) {
+        const installedReleases = await this.listReleases(this.taxonomyRoot);
+        if (!installedReleases.includes(release.releaseId)) {
+          const freeBytes = await this.diskBytes(this.taxonomyRoot);
+          if (freeBytes < REQUIRED_FREE_BYTES) {
+            throw createHttpError(
+              "Für den vollständigen Taxonomieimport ist nicht genügend freier Speicher vorhanden.",
+              507,
+              [
+                `Erforderlich: mindestens ${(REQUIRED_FREE_BYTES / 1024 ** 3).toFixed(0)} GB frei.`,
+                `Verfügbar: ${(freeBytes / 1024 ** 3).toFixed(1)} GB.`,
+              ],
+            );
+          }
+          await fs.mkdir(workDirectory, { recursive: true });
+          const archive = await this.downloadArchive({
+            release,
+            targetPath: archivePath,
+            onProgress: (entry) => this.updateProgress(entry),
+          });
+          this.state.status = "extracting";
+          this.updateProgress({
+            phase: "extract",
+            current: 0,
+            total: 1,
+            message: "Referenzpaket wird sicher entpackt",
+          });
+          await this.extractArchive({
+            archivePath,
+            destinationPath: packageDirectory,
+            onProgress: (entry) => this.updateProgress(entry),
+          });
+          const releasePath = path.join(workDirectory, "release.json");
+          const archiveMetadataPath = path.join(workDirectory, "archive.json");
+          await Promise.all([
+            atomicWriteJson(releasePath, release),
+            atomicWriteJson(archiveMetadataPath, archive),
+          ]);
+          this.state.status = "importing";
+          await this.runImportChild({
+            packageDirectory,
+            releasePath,
+            archiveMetadataPath,
+          });
         }
-        await fs.mkdir(workDirectory, { recursive: true });
-        const archive = await this.downloadArchive({
-          release,
-          targetPath: archivePath,
-          onProgress: (entry) => this.updateProgress(entry),
-        });
-        this.state.status = "extracting";
+
+        this.state.status = "comparing";
         this.updateProgress({
-          phase: "extract",
+          phase: "compare",
           current: 0,
           total: 1,
-          message: "Referenzpaket wird sicher entpackt",
+          message: "Vorhandene Arten werden konfliktfrei abgeglichen",
         });
-        await this.extractArchive({
-          archivePath,
-          destinationPath: packageDirectory,
-          onProgress: (entry) => this.updateProgress(entry),
+        conflicts = await this.compareProjectSpecies({
+          taxonomyRoot: this.taxonomyRoot,
+          releaseId: release.releaseId,
+          speciesListPath: this.speciesListPath,
+          mappingsPath: this.mappingsPath,
+          now: this.now,
         });
-        const releasePath = path.join(workDirectory, "release.json");
-        const archiveMetadataPath = path.join(workDirectory, "archive.json");
-        await Promise.all([
-          atomicWriteJson(releasePath, release),
-          atomicWriteJson(archiveMetadataPath, archive),
-        ]);
-        this.state.status = "importing";
-        await this.runImportChild({
-          packageDirectory,
-          releasePath,
-          archiveMetadataPath,
+        this.state.conflicts = conflicts.summary;
+        this.state.conflictDetails = conflicts.results.filter(
+          (entry) => entry.severity !== "ok",
+        );
+        this.updateProgress({
+          phase: "compare",
+          current: 1,
+          total: 1,
+          message: "Vorhandene Arten wurden geprüft; keine Projektdaten wurden verändert",
+        });
+
+        this.state.status = "activating";
+        this.updateProgress({
+          phase: "activate",
+          current: 0,
+          total: 1,
+          message: "Geprüfte CoL-Referenz wird atomar aktiviert",
+        });
+        this.referenceService.reset();
+        await this.activateRelease(this.taxonomyRoot, release.releaseId, { now: this.now });
+        this.updateProgress({
+          phase: "activate",
+          current: 1,
+          total: 1,
+          message: "Neue CoL-Referenz ist aktiv",
         });
       }
 
-      this.state.status = "comparing";
-      this.updateProgress({
-        phase: "compare",
-        current: 0,
-        total: 1,
-        message: "Vorhandene Arten werden konfliktfrei abgeglichen",
-      });
-      const conflicts = await this.compareProjectSpecies({
-        taxonomyRoot: this.taxonomyRoot,
-        releaseId: release.releaseId,
-        speciesListPath: this.speciesListPath,
-        mappingsPath: this.mappingsPath,
-        now: this.now,
-      });
-      this.state.conflicts = conflicts.summary;
-      this.state.conflictDetails = conflicts.results.filter((entry) => entry.severity !== "ok");
-      this.updateProgress({
-        phase: "compare",
-        current: 1,
-        total: 1,
-        message: "Vorhandene Arten wurden geprüft; keine Projektdaten wurden verändert",
-      });
+      let supplementRefresh = null;
+      if (updateSupplements && this.supplementService) {
+        this.state.status = "supplementing";
+        this.updateProgress({
+          phase: "supplements",
+          current: 0,
+          total: 1,
+          message: "Ergänzungsquellen werden vorbereitet",
+        });
+        try {
+          const store = await this.referenceService.requireStore();
+          supplementRefresh = await this.supplementService.refreshKnown({
+            store,
+            scientificNames: await this.projectScientificNames(),
+            onProgress: (entry) => this.updateProgress({
+              phase: "supplements",
+              ...entry,
+            }),
+          });
+        } catch (error) {
+          supplementRefresh = {
+            targetCount: 0,
+            imported: 0,
+            warnings: [error.message],
+            preservedPreviousCache: true,
+          };
+        }
+        this.state.supplementRefresh = supplementRefresh;
+      }
 
-      this.state.status = "activating";
-      this.updateProgress({
-        phase: "activate",
-        current: 0,
-        total: 1,
-        message: "Geprüfte Referenz wird atomar aktiviert",
-      });
-      this.referenceService.reset();
-      await this.activateRelease(this.taxonomyRoot, release.releaseId, { now: this.now });
-      this.updateProgress({
-        phase: "activate",
-        current: 1,
-        total: 1,
-        message: "Neue Taxonomiereferenz ist aktiv",
-      });
+      const supplementWarnings = supplementRefresh?.warnings || [];
+      const supplementsUnavailable = Boolean(
+        updateSupplements
+        && supplementRefresh
+        && supplementRefresh.targetCount > 0
+        && supplementRefresh.refreshedTargets === 0,
+      );
+      const conflictWarnings = conflicts && (
+        conflicts.summary.suggestions
+        || conflicts.summary.referenceGaps
+        || conflicts.summary.ambiguous
+        || conflicts.summary.missing
+      );
+      const completedMessage = updateCatalogue
+        ? conflictWarnings
+          ? "CoL-Referenz aktualisiert. Hinweise zu bestehenden Arten warten auf manuelle Prüfung."
+          : "CoL-Referenz aktualisiert. Alle bestehenden Arten stimmen eindeutig überein."
+        : supplementsUnavailable
+          ? "Die Ergänzungsnamen konnten nicht neu abgerufen werden."
+          : "Ergänzungsnamen wurden aktualisiert.";
       this.state = {
         ...this.state,
         status: "completed",
         completedAt: this.now().toISOString(),
         progressPercent: 100,
-        message: conflicts.summary.suggestions
-          || conflicts.summary.referenceGaps
-          || conflicts.summary.ambiguous
-          || conflicts.summary.missing
-          ? "Referenz aktualisiert. Hinweise zu bestehenden Arten warten auf manuelle Prüfung."
-          : "Referenz aktualisiert. Alle bestehenden Arten stimmen eindeutig überein.",
+        message: supplementsUnavailable
+          ? `${completedMessage} Der letzte funktionierende lokale Stand bleibt aktiv.`
+          : supplementWarnings.length
+            ? `${completedMessage} ${supplementWarnings.length} Quellenhinweis(e) wurden protokolliert; vorhandene letzte funktionierende Einträge bleiben erhalten.`
+          : updateSupplements
+            ? `${completedMessage} Ergänzungsnamen aus iNaturalist, GBIF, WoRMS und Wikidata sind geprüft.`
+            : completedMessage,
         error: "",
       };
     } catch (error) {

@@ -197,7 +197,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appFormFeedbackSource, /function createFieldFeedbackController\(/);
   assert.match(appNewSpeciesFormSource, /function createNewSpeciesFormModel\(/);
   assert.match(appTaxonomyReferenceSource, /function createTaxonomyReferenceController\(/);
-  assert.match(appTaxonomyReferenceSource, /Vorschlag ausgewählt/);
+  assert.match(appTaxonomyReferenceSource, /wurden übernommen\. Bitte alle Angaben anschließend prüfen/);
   assert.match(appTaxonomyReferenceSource, /Manuell bei Animalia\.bio suchen/);
   assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);
@@ -671,7 +671,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /class="taxonomy-reference-kingdom"/);
   assert.match(htmlSource, /class="taxonomy-reference-search"/);
   assert.match(htmlSource, /Tiere \(Animalia\)/);
-  assert.match(htmlSource, /Vorschlag übernehmen/);
+  assert.doesNotMatch(htmlSource, /Vorschlag übernehmen/);
+  assert.match(modularAppSource, /\/api\/taxonomy\/corrections\/save/);
+  assert.match(modularAppSource, /\/api\/taxonomy\/corrections\/reset/);
+  assert.match(modularAppSource, /applySelectedNames\(\)/);
   assert.match(htmlSource, /class="taxonomy-reference-kingdom-settings-toggle"/);
   assert.match(htmlSource, /class="taxonomy-reference-kingdom-settings-filter-input"/);
   assert.doesNotMatch(htmlSource, /id="taxonomy-reference-manual"/);

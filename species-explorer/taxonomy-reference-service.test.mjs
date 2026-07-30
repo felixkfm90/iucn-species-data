@@ -94,6 +94,119 @@ test("aktive Referenz liefert Reichsauswahl, Drei-Feld-Suche und Taxondetails", 
   assert.ok(detail.hierarchy.length > 1);
 });
 
+test("Ergänzungsnamen werden nach exaktem Eigennamen priorisiert und direkt am CoL-Taxon angezeigt", async (context) => {
+  const { root, taxonomyRoot } = await temporaryTaxonomyRoot(
+    context,
+    "taxonomy-reference-supplement-",
+  );
+  await importTaxonomyPrototype({
+    fixtureDirectory: FIXTURE_DIRECTORY,
+    taxonomyRoot,
+  });
+  const correctionCalls = [];
+  const supplementService = {
+    async status() {
+      return {
+        available: true,
+        stale: false,
+        entryCount: 1,
+        correctionCount: 0,
+      };
+    },
+    async search({ store }) {
+      const base = store.findTaxonByScientificName("Carduelis carduelis", {
+        rank: "species",
+      });
+      return [{
+        ...base,
+        germanName: "Distelfink",
+        germanNames: ["Distelfink", ...(base.germanNames || [])],
+        englishName: "European goldfinch",
+        englishNames: ["European goldfinch"],
+        displayName: "Distelfink",
+        displayNameLanguage: "de",
+        matchedTerm: "Distelfink",
+        matchType: "supplement_vernacular",
+        source: "Eigene Korrektur",
+        supplementSources: ["Eigene Korrektur"],
+        supplementScore: -20,
+        hasVerifiedGermanName: true,
+      }];
+    },
+    async augmentTaxon(detail) {
+      return {
+        ...detail,
+        germanNames: [{
+          name: "Distelfink",
+          source: "Eigene Korrektur",
+          confidence: 1,
+        }],
+        englishNames: [{
+          name: "European goldfinch",
+          source: "iNaturalist",
+          confidence: 0.86,
+        }],
+        supplement: {
+          sources: ["Eigene Korrektur", "iNaturalist"],
+          correction: true,
+        },
+      };
+    },
+    async saveCorrection(payload) {
+      correctionCalls.push({ action: "save", payload });
+    },
+    async resetCorrection(scientificName) {
+      correctionCalls.push({ action: "reset", scientificName });
+      return { removed: true };
+    },
+  };
+  const service = createTaxonomyReferenceService({
+    taxonomyRoot,
+    supplementService,
+  });
+  registerCleanup(context, service, root);
+
+  const search = await service.search({
+    query: "Distelfink",
+    kind: "vernacular",
+    kingdomId: "Animalia",
+    language: "de",
+    rank: "species",
+    limit: 12,
+  });
+  assert.equal(search.results[0].germanName, "Distelfink");
+  assert.equal(search.results[0].acceptedScientificName, "Carduelis carduelis");
+  assert.equal(search.results[0].source, "Eigene Korrektur");
+
+  const detail = await service.taxon(search.results[0].taxonId);
+  assert.equal(detail.germanNames[0].name, "Distelfink");
+  assert.equal(detail.englishNames[0].name, "European goldfinch");
+  const kingdom = detail.hierarchy.find((entry) => entry.rank === "kingdom");
+  assert.equal(kingdom.displayName, "Tiere");
+  assert.equal(kingdom.scientificName, "Animalia");
+
+  await service.saveCorrection({
+    scientificName: "Carduelis carduelis",
+    germanName: "Distelfink",
+  });
+  assert.equal(correctionCalls[0].payload.scientificName, "Carduelis carduelis");
+  assert.deepEqual(
+    await service.resetCorrection({ scientificName: "Carduelis carduelis" }),
+    { ok: true, removed: true },
+  );
+  await assert.rejects(
+    service.resetCorrection({ scientificName: "nicht-vorhanden" }),
+    (error) => error.statusCode === 400 && /CoL-Referenz/.test(error.message),
+  );
+  await assert.rejects(
+    service.saveCorrection({
+      scientificName: "Carduelis carduelis",
+      germanName: "D".repeat(121),
+    }),
+    (error) => error.statusCode === 400 && /höchstens 120 Zeichen/.test(error.message),
+  );
+});
+
 test("Suchparameter und unbekannte Taxa werden an der API-Grenze validiert", async (context) => {
   const { root, taxonomyRoot } = await temporaryTaxonomyRoot(context, "taxonomy-reference-validation-");
   await importTaxonomyPrototype({

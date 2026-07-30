@@ -60,6 +60,7 @@ function createOperations(calls, previewPath = null) {
     editTaxonomy: record("editTaxonomy"),
     taxonomyRead: record("taxonomyRead"),
     taxonomyMaintenance: record("taxonomyMaintenance"),
+    taxonomyCorrection: record("taxonomyCorrection"),
     read: record("read"),
     pipelineBackupFile: async ({ response }) => {
       calls.push({ name: "pipelineBackupFile" });
@@ -126,6 +127,14 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/rollback"), {
     name: "taxonomy-maintenance",
     action: "rollback",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/corrections/save"), {
+    name: "taxonomy-correction",
+    action: "save",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/corrections/reset"), {
+    name: "taxonomy-correction",
+    action: "reset",
   });
   assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/search"), {
     name: "taxonomy-read",
@@ -257,6 +266,19 @@ test("Schreibaktionen werden begrenzt, dekodiert und an Fachoperationen delegier
     name: "taxonomyMaintenance",
     action: "start",
     payload: { token: "preview-token" },
+  });
+
+  await post("/api/taxonomy/corrections/save", {
+    scientificName: "Panthera pardus",
+    germanName: "Leopard",
+  });
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyCorrection",
+    action: "save",
+    payload: {
+      scientificName: "Panthera pardus",
+      germanName: "Leopard",
+    },
   });
 
   const oversizedResponse = await post(
