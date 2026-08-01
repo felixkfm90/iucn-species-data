@@ -263,6 +263,9 @@ test("Sciurus vulgaris bleibt bei einer CoL-Lücke ein einziges stabiles Mastert
       fieldAssertions: 2,
       openConflicts: 1,
       projectLinks: 1,
+      statuses: 0,
+      sliceMemberships: 0,
+      decisions: 0,
     });
     assert.equal(
       database.prepare(`

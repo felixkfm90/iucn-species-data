@@ -58,6 +58,8 @@ const explorerPipelineWorkflow = window.SpeciesExplorerPipelineWorkflow;
 if (!explorerPipelineWorkflow) throw new Error("Explorer-Pipelineablauf konnte nicht geladen werden.");
 const explorerTaxonomyMaintenance = window.SpeciesExplorerTaxonomyMaintenance;
 if (!explorerTaxonomyMaintenance) throw new Error("Explorer-Taxonomiewartung konnte nicht geladen werden.");
+const explorerTaxonomyMaster = window.SpeciesExplorerTaxonomyMaster;
+if (!explorerTaxonomyMaster) throw new Error("Explorer-Taxonomie-Mastersteuerung konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
 if (!explorerDashboard) throw new Error("Explorer-Dashboard konnte nicht geladen werden.");
 const explorerLifecycle = window.SpeciesExplorerLifecycle;
@@ -216,6 +218,14 @@ const elements = {
   taxonomyCheckButton: document.querySelector("[data-taxonomy-action='check']"),
   taxonomyUpdateButton: document.querySelector("[data-taxonomy-action='update']"),
   taxonomyRollbackButton: document.querySelector("[data-taxonomy-action='rollback']"),
+  taxonomyMasterSummary: document.querySelector("#taxonomy-master-summary"),
+  taxonomyMasterDetail: document.querySelector("#taxonomy-master-detail"),
+  taxonomyMasterProgress: document.querySelector("#taxonomy-master-progress"),
+  taxonomyMasterDiff: document.querySelector("#taxonomy-master-diff"),
+  taxonomyMasterConflicts: document.querySelector("#taxonomy-master-conflicts"),
+  taxonomyMasterBuildButton: document.querySelector("[data-taxonomy-master-action='build']"),
+  taxonomyMasterActivateButton: document.querySelector("[data-taxonomy-master-action='activate']"),
+  taxonomyMasterRollbackButton: document.querySelector("[data-taxonomy-master-action='rollback']"),
   pipelineStatus: document.querySelector("#pipeline-status"),
   pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
   pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
@@ -434,6 +444,15 @@ const { setup: setupTaxonomyMaintenance } =
     showQuickConfirm,
     renderDatabaseStatus,
   });
+const { setup: setupTaxonomyMaster } =
+  explorerTaxonomyMaster.createTaxonomyMasterController({
+    state,
+    elements,
+    fetchJson,
+    escapeHtml,
+    showQuickConfirm,
+    renderDatabaseStatus,
+  });
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
   state,
@@ -531,5 +550,6 @@ setupBackupSettings({
 });
 setupPipelineControl();
 setupTaxonomyMaintenance();
+setupTaxonomyMaster();
 setupNewSpeciesCreator();
 void startLifecycle();

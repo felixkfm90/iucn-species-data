@@ -152,8 +152,14 @@
     const synonym = result.synonym?.scientificName
       ? `Gefunden als Synonym: ${result.synonym.scientificName}`
       : "";
+    const masterStatuses = Array.isArray(result.masterStatuses)
+      ? result.masterStatuses
+        .map((entry) => String(entry?.label || entry?.id || "").trim())
+        .filter(Boolean)
+      : [];
     const note = [
       synonym,
+      result.referenceGap === true ? "CoL-Referenzlücke" : "",
       usesEnglishFallback ? "Englischer Name" : "",
       !synonym
         && matchedTerm
@@ -175,6 +181,8 @@
       rank: RANK_LABELS[String(result.rank || "").toLowerCase()]
         || String(result.rank || ""),
       source: String(result.source || ""),
+      masterStatuses,
+      referenceGap: result.referenceGap === true,
       releaseId: String(result.releaseId || ""),
       taxonId: String(result.taxonId ?? ""),
       hasVerifiedGermanName: result.hasVerifiedGermanName === true,
@@ -231,6 +239,12 @@
         : null,
       manualGermanNameFallback: detail.manualGermanNameFallback || null,
       supplement: detail.supplement || null,
+      masterStatuses: (Array.isArray(detail.masterStatuses)
+        ? detail.masterStatuses
+        : selectedResult.masterStatuses || [])
+        .map((entry) => String(entry?.label || entry?.id || "").trim())
+        .filter(Boolean),
+      referenceGap: detail.referenceGap === true || selectedResult.referenceGap === true,
     };
   }
 
@@ -458,6 +472,7 @@
                 ? `<span>${escape([view.rank, view.kingdom].filter(Boolean).join(" · "))}</span>`
                 : ""}
               ${view.note ? `<small>${escape(view.note)}</small>` : ""}
+              ${view.source ? `<small>${escape(view.source)}</small>` : ""}
             </span>
           </button>
         `;
@@ -519,6 +534,8 @@
             view.rank,
             view.status === "accepted" ? "Akzeptierter Name" : view.status,
             view.trustTier === "base" ? "Basisquelle" : view.trustTier,
+            view.referenceGap ? "CoL-Referenzlücke" : "",
+            ...view.masterStatuses,
           ].filter(Boolean).join(" · "))}
         </p>
         <dl class="taxonomy-reference-hierarchy">${hierarchy}</dl>

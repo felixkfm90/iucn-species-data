@@ -25,6 +25,29 @@ const MATCH_STATES = new Set([
   "conflict",
   "stale",
 ]);
+const MASTER_STATUSES = new Set([
+  "col-confirmed",
+  "col-reference-gap",
+  "externally-confirmed",
+  "conflicting",
+  "stale",
+  "manually-protected",
+]);
+const SLICE_REASONS = new Set([
+  "project-species",
+  "col-reference-gap",
+  "missing-name",
+  "missing-hierarchy",
+  "searched-taxon",
+  "manual-correction",
+]);
+const VERSION_CHANGE_STATES = new Set([
+  "new",
+  "unchanged",
+  "changed",
+  "removed",
+  "restored",
+]);
 
 function requiredText(value, label) {
   const text = String(value ?? "").normalize("NFKC").trim();
@@ -70,6 +93,19 @@ export function createMasterTaxonId(randomUuid = () => crypto.randomUUID()) {
     throw new Error("Die erzeugte Master-Taxon-ID ist keine gültige UUID.");
   }
   return `mtx_${compact}`;
+}
+
+export function createStableMasterTaxonId({
+  scientificName,
+  rank,
+  kingdom = "",
+} = {}) {
+  const identity = [
+    normalizeTaxonomySearchTerm(requiredText(scientificName, "Wissenschaftlicher Name")),
+    requiredText(rank, "Rang").toLocaleLowerCase("en"),
+    normalizeTaxonomySearchTerm(kingdom),
+  ].join("|");
+  return `mtx_${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 32)}`;
 }
 
 export function registerProviderRelease(database, {
@@ -240,7 +276,10 @@ export function addProviderTaxonAssertion(database, {
   kingdom = null,
   matchState = "unlinked",
   payloadSha256 = null,
+  hierarchy = {},
   importedAt,
+  retrievedAt = importedAt,
+  versionChangeState = "new",
 }) {
   const normalizedName = requiredText(scientificName, "Wissenschaftlicher Quellenname");
   const result = database.prepare(`
@@ -257,8 +296,11 @@ export function addProviderTaxonAssertion(database, {
       kingdom,
       match_state,
       payload_sha256,
+      hierarchy_json,
+      retrieved_at,
+      version_change_state,
       imported_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     requiredText(releaseId, "Release-ID"),
     requiredText(providerRecordId, "Anbieter-Datensatz-ID"),
@@ -272,9 +314,64 @@ export function addProviderTaxonAssertion(database, {
     optionalText(kingdom),
     enumValue(matchState, MATCH_STATES, "Zuordnungsstatus"),
     optionalText(payloadSha256),
+    JSON.stringify(hierarchy ?? {}),
+    isoTimestamp(retrievedAt, "Abrufzeitpunkt"),
+    enumValue(versionChangeState, VERSION_CHANGE_STATES, "Versionsvergleich"),
     isoTimestamp(importedAt, "Importzeitpunkt"),
   );
   return Number(result.lastInsertRowid);
+}
+
+export function addProviderSliceMembership(database, {
+  providerTaxonAssertionId,
+  relevanceReason,
+  observedAt,
+}) {
+  database.prepare(`
+    INSERT OR IGNORE INTO provider_slice_membership (
+      provider_taxon_assertion_id,
+      relevance_reason,
+      observed_at
+    ) VALUES (?, ?, ?)
+  `).run(
+    Number(providerTaxonAssertionId),
+    enumValue(relevanceReason, SLICE_REASONS, "Relevanzgrund"),
+    isoTimestamp(observedAt, "Beobachtungszeitpunkt"),
+  );
+}
+
+export function setMasterTaxonStatus(database, {
+  masterTaxonId,
+  statusName,
+  statusDetail = null,
+  updatedAt,
+  active = true,
+}) {
+  const normalizedMasterTaxonId = requiredText(masterTaxonId, "Master-Taxon-ID");
+  const normalizedStatus = enumValue(statusName, MASTER_STATUSES, "Masterstatus");
+  if (!active) {
+    database.prepare(`
+      DELETE FROM master_taxon_status
+      WHERE master_taxon_id = ? AND status_name = ?
+    `).run(normalizedMasterTaxonId, normalizedStatus);
+    return;
+  }
+  database.prepare(`
+    INSERT INTO master_taxon_status (
+      master_taxon_id,
+      status_name,
+      status_detail,
+      updated_at
+    ) VALUES (?, ?, ?, ?)
+    ON CONFLICT (master_taxon_id, status_name) DO UPDATE SET
+      status_detail = excluded.status_detail,
+      updated_at = excluded.updated_at
+  `).run(
+    normalizedMasterTaxonId,
+    normalizedStatus,
+    optionalText(statusDetail),
+    isoTimestamp(updatedAt, "Statuszeitpunkt"),
+  );
 }
 
 export function addProviderNameAssertion(database, {
@@ -285,8 +382,15 @@ export function addProviderNameAssertion(database, {
   preferred = false,
   verified = false,
 }) {
-  const normalizedName = requiredText(name, "Quellenname");
-  const result = database.prepare(`
+  const normalizedName = requiredText(name, "Quellenname").replace(/\s+/g, " ");
+  const normalizedSearchName = normalizeTaxonomySearchTerm(normalizedName);
+  const normalizedLanguage = String(language ?? "").trim().toLocaleLowerCase("en");
+  const normalizedNameKind = enumValue(
+    nameKind,
+    new Set(["scientific", "synonym", "vernacular", "label"]),
+    "Namensart",
+  );
+  database.prepare(`
     INSERT INTO provider_name_assertion (
       provider_taxon_assertion_id,
       name,
@@ -296,20 +400,46 @@ export function addProviderNameAssertion(database, {
       preferred,
       verified
     ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (
+      provider_taxon_assertion_id,
+      normalized_name,
+      language,
+      name_kind
+    ) DO UPDATE SET
+      name = CASE
+        WHEN excluded.verified > provider_name_assertion.verified
+          OR (
+            excluded.verified = provider_name_assertion.verified
+            AND excluded.preferred > provider_name_assertion.preferred
+          )
+        THEN excluded.name
+        ELSE provider_name_assertion.name
+      END,
+      preferred = MAX(provider_name_assertion.preferred, excluded.preferred),
+      verified = MAX(provider_name_assertion.verified, excluded.verified)
   `).run(
     Number(providerTaxonAssertionId),
     normalizedName,
-    normalizeTaxonomySearchTerm(normalizedName),
-    String(language ?? "").trim().toLocaleLowerCase("en"),
-    enumValue(
-      nameKind,
-      new Set(["scientific", "synonym", "vernacular", "label"]),
-      "Namensart",
-    ),
+    normalizedSearchName,
+    normalizedLanguage,
+    normalizedNameKind,
     preferred ? 1 : 0,
     verified ? 1 : 0,
   );
-  return Number(result.lastInsertRowid);
+  const result = database.prepare(`
+    SELECT assertion_id
+    FROM provider_name_assertion
+    WHERE provider_taxon_assertion_id = ?
+      AND normalized_name = ?
+      AND language = ?
+      AND name_kind = ?
+  `).get(
+    Number(providerTaxonAssertionId),
+    normalizedSearchName,
+    normalizedLanguage,
+    normalizedNameKind,
+  );
+  return Number(result.assertion_id);
 }
 
 export function addMasterFieldAssertion(database, {
@@ -471,6 +601,117 @@ export function addMasterConflict(database, {
     optionalText(resolutionNote),
   );
   return conflictId;
+}
+
+export function addMasterTaxonAlias(database, {
+  masterTaxonId,
+  name,
+  rank = null,
+  kingdom = null,
+  aliasType = "synonym",
+  sourceAssertionId = null,
+}) {
+  const normalizedName = requiredText(name, "Aliasname");
+  const result = database.prepare(`
+    INSERT INTO master_taxon_alias (
+      master_taxon_id,
+      name,
+      normalized_name,
+      rank,
+      kingdom,
+      alias_type,
+      source_assertion_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (master_taxon_id, normalized_name, alias_type) DO UPDATE SET
+      name = excluded.name,
+      rank = COALESCE(excluded.rank, master_taxon_alias.rank),
+      kingdom = COALESCE(excluded.kingdom, master_taxon_alias.kingdom),
+      source_assertion_id = COALESCE(
+        excluded.source_assertion_id,
+        master_taxon_alias.source_assertion_id
+      )
+  `).run(
+    requiredText(masterTaxonId, "Master-Taxon-ID"),
+    normalizedName,
+    normalizeTaxonomySearchTerm(normalizedName),
+    optionalText(rank)?.toLocaleLowerCase("en") ?? null,
+    optionalText(kingdom),
+    enumValue(
+      aliasType,
+      new Set(["former-name", "synonym", "project-name"]),
+      "Aliasart",
+    ),
+    sourceAssertionId == null ? null : Number(sourceAssertionId),
+  );
+  return Number(result.lastInsertRowid || 0);
+}
+
+export function resolveMasterConflict(database, {
+  conflictId,
+  conflictState,
+  resolvedAt,
+  resolutionNote = null,
+}) {
+  const state = enumValue(
+    conflictState,
+    new Set(["resolved-keep", "resolved-accept", "resolved-manual", "dismissed"]),
+    "Konfliktentscheidung",
+  );
+  const result = database.prepare(`
+    UPDATE master_conflict
+    SET conflict_state = ?, resolved_at = ?, resolution_note = ?
+    WHERE conflict_id = ?
+  `).run(
+    state,
+    isoTimestamp(resolvedAt, "Entscheidungszeitpunkt"),
+    optionalText(resolutionNote),
+    requiredText(conflictId, "Konflikt-ID"),
+  );
+  if (Number(result.changes) !== 1) {
+    throw new Error(`Konflikt ${conflictId} wurde nicht gefunden.`);
+  }
+  return conflictId;
+}
+
+export function addMasterDecision(database, {
+  decisionId,
+  masterTaxonId,
+  conflictId = null,
+  fieldName = null,
+  language = "",
+  decisionType,
+  selectedAssertionId = null,
+  decidedAt,
+  note = null,
+}) {
+  database.prepare(`
+    INSERT INTO master_decision (
+      decision_id,
+      master_taxon_id,
+      conflict_id,
+      field_name,
+      language,
+      decision_type,
+      selected_assertion_id,
+      decided_at,
+      note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    requiredText(decisionId, "Entscheidungs-ID"),
+    requiredText(masterTaxonId, "Master-Taxon-ID"),
+    optionalText(conflictId),
+    optionalText(fieldName),
+    String(language ?? "").trim().toLocaleLowerCase("en"),
+    enumValue(
+      decisionType,
+      new Set(["keep-current", "accept-candidate", "add-alias", "protect-manual"]),
+      "Entscheidungsart",
+    ),
+    selectedAssertionId == null ? null : Number(selectedAssertionId),
+    isoTimestamp(decidedAt, "Entscheidungszeitpunkt"),
+    optionalText(note),
+  );
+  return decisionId;
 }
 
 export function linkProjectTaxon(database, {

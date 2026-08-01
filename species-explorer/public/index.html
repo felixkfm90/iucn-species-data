@@ -527,6 +527,38 @@
                   Vorherige Version wiederherstellen
                 </button>
               </div>
+              <section class="taxonomy-master-maintenance" aria-labelledby="taxonomy-master-title">
+                <div class="taxonomy-master-heading">
+                  <strong id="taxonomy-master-title">Taxonomie-Masterdatenbank</strong>
+                  <span>CoL, Anbieter-Ausschnitte und eigene Korrekturen kontrolliert zusammenführen</span>
+                </div>
+                <div class="taxonomy-master-copy">
+                  <strong id="taxonomy-master-summary">Masterstatus wird geprüft…</strong>
+                  <span id="taxonomy-master-detail">
+                    Änderungen werden zuerst als prüfbarer Kandidat aufgebaut.
+                  </span>
+                </div>
+                <progress
+                  id="taxonomy-master-progress"
+                  class="taxonomy-maintenance-progress"
+                  max="100"
+                  value="0"
+                  hidden
+                ></progress>
+                <div id="taxonomy-master-diff" class="taxonomy-master-diff" hidden></div>
+                <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
+                <div class="taxonomy-maintenance-actions taxonomy-master-actions">
+                  <button type="button" data-taxonomy-master-action="build">
+                    Master-Kandidat erstellen
+                  </button>
+                  <button type="button" data-taxonomy-master-action="activate" disabled>
+                    Geprüften Kandidaten aktivieren
+                  </button>
+                  <button type="button" data-taxonomy-master-action="rollback" disabled>
+                    Vorherigen Master wiederherstellen
+                  </button>
+                </div>
+              </section>
             </div>
           </details>
 
@@ -682,6 +714,7 @@
     <script src="/app-backup-workflow.js" defer></script>
     <script src="/app-pipeline-workflow.js" defer></script>
     <script src="/app-taxonomy-maintenance.js" defer></script>
+    <script src="/app-taxonomy-master.js" defer></script>
     <script src="/filter.js" defer></script>
     <script src="/app-dashboard.js" defer></script>
     <script src="/app-lifecycle.js" defer></script>

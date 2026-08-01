@@ -83,6 +83,24 @@ export function createTaxonomyMasterSchema(database) {
     CREATE INDEX master_taxon_name_idx
       ON master_taxon(canonical_name_normalized, rank, kingdom);
 
+    CREATE TABLE master_taxon_status (
+      master_taxon_id TEXT NOT NULL
+        REFERENCES master_taxon(master_taxon_id) ON DELETE CASCADE,
+      status_name TEXT NOT NULL CHECK (
+        status_name IN (
+          'col-confirmed',
+          'col-reference-gap',
+          'externally-confirmed',
+          'conflicting',
+          'stale',
+          'manually-protected'
+        )
+      ),
+      status_detail TEXT,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (master_taxon_id, status_name)
+    ) WITHOUT ROWID;
+
     CREATE TABLE provider_taxon_assertion (
       assertion_id INTEGER PRIMARY KEY,
       release_id TEXT NOT NULL REFERENCES provider_release(release_id),
@@ -106,6 +124,11 @@ export function createTaxonomyMasterSchema(database) {
         )
       ),
       payload_sha256 TEXT,
+      hierarchy_json TEXT NOT NULL DEFAULT '{}',
+      retrieved_at TEXT NOT NULL,
+      version_change_state TEXT NOT NULL DEFAULT 'new' CHECK (
+        version_change_state IN ('new', 'unchanged', 'changed', 'removed', 'restored')
+      ),
       imported_at TEXT NOT NULL,
       UNIQUE (release_id, provider_record_id),
       CHECK (match_state IN ('unlinked', 'conflict') OR master_taxon_id IS NOT NULL)
@@ -116,6 +139,23 @@ export function createTaxonomyMasterSchema(database) {
 
     CREATE INDEX provider_taxon_name_idx
       ON provider_taxon_assertion(scientific_name_normalized, rank, kingdom);
+
+    CREATE TABLE provider_slice_membership (
+      provider_taxon_assertion_id INTEGER NOT NULL
+        REFERENCES provider_taxon_assertion(assertion_id) ON DELETE CASCADE,
+      relevance_reason TEXT NOT NULL CHECK (
+        relevance_reason IN (
+          'project-species',
+          'col-reference-gap',
+          'missing-name',
+          'missing-hierarchy',
+          'searched-taxon',
+          'manual-correction'
+        )
+      ),
+      observed_at TEXT NOT NULL,
+      PRIMARY KEY (provider_taxon_assertion_id, relevance_reason)
+    ) WITHOUT ROWID;
 
     CREATE TABLE provider_name_assertion (
       assertion_id INTEGER PRIMARY KEY,
@@ -248,6 +288,21 @@ export function createTaxonomyMasterSchema(database) {
 
     CREATE INDEX project_taxon_master_idx
       ON project_taxon_link(master_taxon_id, link_state);
+
+    CREATE TABLE master_decision (
+      decision_id TEXT PRIMARY KEY,
+      master_taxon_id TEXT NOT NULL
+        REFERENCES master_taxon(master_taxon_id) ON DELETE CASCADE,
+      conflict_id TEXT REFERENCES master_conflict(conflict_id),
+      field_name TEXT,
+      language TEXT NOT NULL DEFAULT '',
+      decision_type TEXT NOT NULL CHECK (
+        decision_type IN ('keep-current', 'accept-candidate', 'add-alias', 'protect-manual')
+      ),
+      selected_assertion_id INTEGER REFERENCES master_field_assertion(assertion_id),
+      decided_at TEXT NOT NULL,
+      note TEXT
+    ) WITHOUT ROWID;
   `);
   database.prepare(`
     INSERT INTO master_schema_info (key, value)
@@ -318,6 +373,16 @@ export function validateTaxonomyMasterDatabase(database) {
       `${exactColWithoutSource} Mastertaxa behaupten eine exakte CoL-Referenz ohne aktive Quellenzeile.`,
     );
   }
+  const invalidProviderSnapshots = Number(scalar(database, `
+    SELECT COUNT(*)
+    FROM provider_taxon_assertion
+    WHERE retrieved_at = '' OR hierarchy_json = ''
+  `));
+  if (invalidProviderSnapshots) {
+    throw new Error(
+      `${invalidProviderSnapshots} Anbieter-Ausschnitte besitzen keinen Abrufzeitpunkt oder keine Hierarchieprovenienz.`,
+    );
+  }
   return {
     sourceReleases: Number(scalar(database, "SELECT COUNT(*) FROM provider_release")),
     masterTaxa: Number(scalar(database, "SELECT COUNT(*) FROM master_taxon")),
@@ -329,5 +394,11 @@ export function validateTaxonomyMasterDatabase(database) {
       "SELECT COUNT(*) FROM master_conflict WHERE conflict_state = 'open'",
     )),
     projectLinks: Number(scalar(database, "SELECT COUNT(*) FROM project_taxon_link")),
+    statuses: Number(scalar(database, "SELECT COUNT(*) FROM master_taxon_status")),
+    sliceMemberships: Number(scalar(
+      database,
+      "SELECT COUNT(*) FROM provider_slice_membership",
+    )),
+    decisions: Number(scalar(database, "SELECT COUNT(*) FROM master_decision")),
   };
 }

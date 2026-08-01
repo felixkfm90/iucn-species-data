@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-07-26
+Stand: 2026-08-01
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -25,6 +25,10 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   Phase 9.4 abgeleitet werden.
 - `docs/taxonomy-explorer-integration.md` ist der verbindliche Bedien-, API-, Fehler- und Übernahmevertrag der
   read-only Taxonomiereferenz im Neue-Art-Assistenten aus Phase 9.4.
+- `docs/taxonomy-master-database-design.md` ist der verbindliche Daten-, Quellen-, Zusammenführungs-, Konflikt-,
+  Aktivierungs-, Rollback- und Betriebsvertrag der Phase-9-Masterdatenbank aus 9.6 bis 9.12.
+- `docs/audits/2026-08-phase-9-audit.md` ist die unveränderliche Abschlussaufnahme der realen Phase-9-Migration,
+  Messwerte, Regressionen und Qualitätsprüfung.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

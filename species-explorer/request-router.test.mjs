@@ -60,6 +60,7 @@ function createOperations(calls, previewPath = null) {
     editTaxonomy: record("editTaxonomy"),
     taxonomyRead: record("taxonomyRead"),
     taxonomyMaintenance: record("taxonomyMaintenance"),
+    taxonomyMaster: record("taxonomyMaster"),
     taxonomyCorrection: record("taxonomyCorrection"),
     read: record("read"),
     pipelineBackupFile: async ({ response }) => {
@@ -126,6 +127,26 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
   });
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/rollback"), {
     name: "taxonomy-maintenance",
+    action: "rollback",
+  });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/master/status"), {
+    name: "taxonomy-read",
+    resource: "master-status",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/build"), {
+    name: "taxonomy-master",
+    action: "build",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/conflicts/decide"), {
+    name: "taxonomy-master",
+    action: "decide",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/activate"), {
+    name: "taxonomy-master",
+    action: "activate",
+  });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/rollback"), {
+    name: "taxonomy-master",
     action: "rollback",
   });
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/corrections/save"), {
@@ -266,6 +287,13 @@ test("Schreibaktionen werden begrenzt, dekodiert und an Fachoperationen delegier
     name: "taxonomyMaintenance",
     action: "start",
     payload: { token: "preview-token" },
+  });
+
+  await post("/api/taxonomy/master/build", { refreshProviders: true });
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyMaster",
+    action: "build",
+    payload: { refreshProviders: true },
   });
 
   await post("/api/taxonomy/corrections/save", {

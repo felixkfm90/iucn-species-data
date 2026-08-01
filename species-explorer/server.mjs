@@ -32,6 +32,7 @@ import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
+import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 
@@ -127,6 +128,7 @@ export async function createExplorerServer({
     supplementService: taxonomySupplements,
   });
   let taxonomyMaintenanceService = null;
+  let taxonomyMasterService = null;
   let pipelineProcess = null;
   let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
@@ -198,7 +200,11 @@ export async function createExplorerServer({
   }
 
   function isPipelineActive() {
-    return Boolean(isPipelineProcessActive() || taxonomyMaintenanceService?.isActive());
+    return Boolean(
+      isPipelineProcessActive()
+      || taxonomyMaintenanceService?.isActive()
+      || taxonomyMasterService?.isActive(),
+    );
   }
 
   const {
@@ -236,6 +242,20 @@ export async function createExplorerServer({
       isPipelineProcessActive()
       || isBackupActive()
       || assetWriteActive
+      || taxonomyMasterService?.isActive()
+    ),
+  });
+  taxonomyMasterService = createTaxonomyMasterService({
+    taxonomyRoot,
+    referenceService: taxonomyReference,
+    supplementService: taxonomySupplements,
+    speciesListPath,
+    correctionsPath: taxonomyReferenceCorrectionsPath,
+    isProjectBusy: () => Boolean(
+      isPipelineProcessActive()
+      || isBackupActive()
+      || assetWriteActive
+      || taxonomyMaintenanceService?.isActive()
     ),
   });
   void taxonomyMaintenanceService.startupCheck();
@@ -559,6 +579,7 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyRead({ resource, reference, searchParams }) {
+        if (resource === "master-status") return taxonomyMasterService.status();
         if (resource === "status") return taxonomyMaintenanceService.status();
         if (resource === "kingdoms") return taxonomyReference.kingdoms();
         if (resource === "search") {
@@ -592,6 +613,15 @@ export async function createExplorerServer({
         error.statusCode = 404;
         throw error;
       },
+      async taxonomyMaster({ action, payload }) {
+        if (action === "build") return taxonomyMasterService.startBuild(payload);
+        if (action === "decide") return taxonomyMasterService.decide(payload);
+        if (action === "activate") return taxonomyMasterService.activate(payload);
+        if (action === "rollback") return taxonomyMasterService.rollback(payload);
+        const error = new Error("Unbekannte Masterdatenbank-Operation");
+        error.statusCode = 404;
+        throw error;
+      },
       async pipelineBackupFile({ url, request, response }) {
         await sendPipelineBackupFile(url, request, response);
       },
@@ -619,6 +649,7 @@ export async function createExplorerServer({
         server.close((error) => (error ? reject(error) : resolveClose()));
       });
       closeActiveFileStreams();
+      await taxonomyMasterService.close();
       await taxonomyMaintenanceService.close();
       taxonomyReference.close();
       previewTokens.clear();

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const TAXONOMY_MASTER_SCHEMA_VERSION = 1;
+export const TAXONOMY_MASTER_SCHEMA_VERSION = 2;
 
 export function taxonomyMasterRoot(taxonomyRoot) {
   return path.join(path.resolve(taxonomyRoot), "master");
@@ -33,4 +33,8 @@ export function taxonomyMasterDatabasePath(taxonomyRoot, slot = "active") {
 
 export function taxonomyMasterManifestPath(taxonomyRoot, slot = "active") {
   return path.join(path.dirname(taxonomyMasterDatabasePath(taxonomyRoot, slot)), "manifest.json");
+}
+
+export function taxonomyMasterProviderRoot(taxonomyRoot) {
+  return path.join(taxonomyMasterRoot(taxonomyRoot), "providers");
 }

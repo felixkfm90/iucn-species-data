@@ -30,6 +30,61 @@ function acceptedScientificName(value) {
     .replace(/\s{2,}/g, " ");
 }
 
+function hierarchyFromRecord(entry = {}) {
+  const aliases = {
+    kingdom: ["kingdom"],
+    phylum: ["phylum"],
+    subphylum: ["subphylum", "subphylum_name"],
+    class: ["class", "class_name"],
+    order: ["order", "order_name"],
+    suborder: ["suborder", "suborder_name"],
+    family: ["family", "family_name"],
+    subfamily: ["subfamily", "subfamily_name"],
+    genus: ["genus", "genus_name"],
+    species: ["species", "valid_name", "accepted"],
+    subspecies: ["subspecies"],
+  };
+  return Object.fromEntries(Object.entries(aliases).flatMap(([rank, keys]) => {
+    const value = keys.map((key) => trimmed(entry[key])).find(Boolean);
+    return value ? [[rank, acceptedScientificName(value)]] : [];
+  }));
+}
+
+function candidateNames({ germanName = null, englishName = null } = {}) {
+  return [
+    germanName ? {
+      name: germanName,
+      language: "de",
+      nameKind: "vernacular",
+      preferred: true,
+      verified: true,
+    } : null,
+    englishName ? {
+      name: englishName,
+      language: "en",
+      nameKind: "vernacular",
+      preferred: true,
+      verified: true,
+    } : null,
+  ].filter(Boolean);
+}
+
+function providerCandidate(value = {}) {
+  return {
+    ...value,
+    rank: trimmed(value.rank || "species").toLocaleLowerCase("en"),
+    kingdom: trimmed(value.kingdom),
+    taxonomicStatus: trimmed(value.taxonomicStatus || "accepted").toLocaleLowerCase("en"),
+    acceptedProviderRecordId: trimmed(value.acceptedProviderRecordId),
+    parentProviderRecordId: trimmed(value.parentProviderRecordId),
+    hierarchy: value.hierarchy || {},
+    names: value.names || candidateNames(value),
+    externalIds: value.externalIds || {},
+    environment: trimmed(value.environment || "unknown").toLocaleLowerCase("en"),
+    retrievedAt: value.retrievedAt || new Date().toISOString(),
+  };
+}
+
 function uniqueCandidates(values) {
   const seen = new Set();
   return values.filter((entry) => {
@@ -95,7 +150,7 @@ export async function searchINaturalistTaxa({
     };
   }));
   return uniqueCandidates(payloads.flatMap(({ locale, payload }) => (
-    (payload?.results || []).map((entry) => ({
+    (payload?.results || []).map((entry) => providerCandidate({
       scientificName: acceptedScientificName(entry.name),
       germanName: locale === "de" ? trimmed(entry.preferred_common_name) || null : null,
       englishName: locale === "en"
@@ -104,6 +159,12 @@ export async function searchINaturalistTaxa({
       source: "iNaturalist",
       providerId: trimmed(entry.id),
       confidence: 0.86,
+      rank: entry.rank,
+      kingdom: entry.iconic_taxon_name === "Animalia" ? "Animalia" : "",
+      taxonomicStatus: entry.is_active === false ? "inactive" : "accepted",
+      parentProviderRecordId: entry.parent_id,
+      hierarchy: hierarchyFromRecord(entry),
+      externalIds: { inaturalist: trimmed(entry.id) },
     }))
   )));
 }
@@ -141,16 +202,25 @@ export async function searchGbifTaxa({
     const nameForLanguage = (wanted) => vernacularNames.find(
       (name) => normalizedLanguage(name.language) === wanted && trimmed(name.vernacularName),
     )?.vernacularName;
-    return {
+    const germanName = language === "en" ? null : trimmed(nameForLanguage("de")) || null;
+    const englishName = language === "de" ? null : trimmed(nameForLanguage("en")) || null;
+    return providerCandidate({
       scientificName: acceptedScientificName(
         entry.accepted || entry.canonicalName || entry.scientificName,
       ),
-      germanName: language === "en" ? null : trimmed(nameForLanguage("de")) || null,
-      englishName: language === "de" ? null : trimmed(nameForLanguage("en")) || null,
+      germanName,
+      englishName,
       source: "GBIF",
       providerId: trimmed(key),
       confidence: 0.82,
-    };
+      rank: entry.rank,
+      kingdom: entry.kingdom,
+      taxonomicStatus: entry.taxonomicStatus || entry.status,
+      acceptedProviderRecordId: entry.acceptedKey || key,
+      parentProviderRecordId: entry.parentKey,
+      hierarchy: hierarchyFromRecord(entry),
+      externalIds: { gbif: trimmed(key) },
+    });
   }));
   return uniqueCandidates(detailed);
 }
@@ -186,22 +256,44 @@ export async function searchWormsTaxa({
     const firstName = (wanted) => (Array.isArray(vernaculars) ? vernaculars : []).find(
       (name) => normalizedLanguage(name.language_code) === wanted && trimmed(name.vernacular),
     )?.vernacular;
-    return {
+    const germanName = language === "en" ? null : trimmed(firstName("de")) || null;
+    const englishName = language === "de" ? null : trimmed(firstName("en")) || null;
+    return providerCandidate({
       scientificName: acceptedScientificName(
         entry.valid_name || entry.scientificname,
       ),
-      germanName: language === "en" ? null : trimmed(firstName("de")) || null,
-      englishName: language === "de" ? null : trimmed(firstName("en")) || null,
+      germanName,
+      englishName,
       source: "WoRMS",
       providerId: trimmed(entry.valid_AphiaID || entry.AphiaID),
       confidence: 0.9,
-    };
+      rank: entry.rank,
+      kingdom: entry.kingdom,
+      taxonomicStatus: entry.status,
+      acceptedProviderRecordId: entry.valid_AphiaID || entry.AphiaID,
+      parentProviderRecordId: entry.parentNameUsageID || entry.parent_AphiaID,
+      hierarchy: hierarchyFromRecord(entry),
+      externalIds: { worms: trimmed(entry.valid_AphiaID || entry.AphiaID) },
+      environment: entry.isMarine ? "marine" : entry.isBrackish ? "brackish" : "unknown",
+    });
   }));
   return uniqueCandidates(detailed);
 }
 
 function wikidataClaimValue(entity, property) {
   return entity?.claims?.[property]?.[0]?.mainsnak?.datavalue?.value;
+}
+
+function wikidataExternalIds(entity, wikidataId) {
+  const identifiers = {
+    wikidata: wikidataId,
+    gbif: wikidataClaimValue(entity, "P846"),
+    inaturalist: wikidataClaimValue(entity, "P3151"),
+    worms: wikidataClaimValue(entity, "P850"),
+  };
+  return Object.fromEntries(Object.entries(identifiers)
+    .map(([key, value]) => [key, trimmed(value)])
+    .filter(([, value]) => Boolean(value)));
 }
 
 export async function searchWikidataTaxa({
@@ -237,14 +329,18 @@ export async function searchWikidataTaxa({
   const details = await fetchJson(fetchImpl, detailUrl, { timeoutMs });
   return uniqueCandidates(ids.map((id) => {
     const entity = details?.entities?.[id] || {};
-    return {
+    const germanName = language === "en" ? null : trimmed(entity.labels?.de?.value) || null;
+    const englishName = language === "de" ? null : trimmed(entity.labels?.en?.value) || null;
+    return providerCandidate({
       scientificName: acceptedScientificName(wikidataClaimValue(entity, "P225")),
-      germanName: language === "en" ? null : trimmed(entity.labels?.de?.value) || null,
-      englishName: language === "de" ? null : trimmed(entity.labels?.en?.value) || null,
+      germanName,
+      englishName,
       source: "Wikidata",
       providerId: id,
       confidence: 0.76,
-    };
+      rank: "species",
+      externalIds: wikidataExternalIds(entity, id),
+    });
   }));
 }
 

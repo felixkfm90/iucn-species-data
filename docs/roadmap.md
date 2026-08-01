@@ -836,7 +836,7 @@ klarer Zielphase dokumentiert.
 
 ## Phase 9 - Globale Taxonomiedatenbank
 
-Status: in Arbeit; Phase 9.1 bis 9.6 einschließlich Masterdatenbank-Grundlage abgeschlossen
+Status: abgeschlossen am 2026-08-01
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst ausschließlich
 Quellenvergleich, lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen
@@ -956,28 +956,33 @@ Vollabgleichzeitpunkt. Eigene redaktionelle Korrekturen liegen versioniert in
 Der Wartungsablauf aktualisiert bei Bedarf CoL und Ergänzungen gemeinsam oder bei bereits aktuellem CoL nur die
 Ergänzungsschicht. Der Vertrag steht in `docs/taxonomy-reference-supplements.md`.
 
-Phase 9.6 ist seit 2026-07-30 als Masterdatenbank-Grundlage abgeschlossen. Die vollständige CoL-XR-Datenbank bleibt
-unverändert und read-only; eine physisch getrennte Master-SQLite kann künftig relevante versionierte
-Anbieter-Ausschnitte, Projektzuordnungen und manuelle Aussagen mit Feldprovenienz zusammenführen. Das Schema besitzt
-stabile anbieterunabhängige Master-IDs, aktive/vorherige Quellenstände, Taxon- und Namensaussagen, genau eine
-ausgewählte Aussage je Feld und Sprache, explizite Konflikte sowie stabile Projekt-Slug-Verknüpfungen. Ein
-Regressionstest bildet die reale CoL-Artlücke `Sciurus vulgaris` ab und bestätigt, dass eine später gelieferte
-exakte CoL-Art an dieselbe Master-ID gebunden wird, ohne Projektart oder URL-Slug zu ändern. Phase 9.6 migriert
-noch keine produktiven Daten und schaltet weder Explorer-Suche noch Squarespace um. Der vollständige Vertrag steht
-in `docs/taxonomy-master-database-design.md`.
+Phase 9.6 bis 9.12 wurden am 2026-08-01 zusammenhängend abgeschlossen:
 
-Die verbleibende Phase 9 wird in kontrollierte Schritte aufgeteilt:
+- 9.6 führte die physisch getrennte Master-SQLite mit stabilen anbieterunabhängigen Taxon-IDs, Quellenständen,
+  Feldprovenienz, Konflikten, Status und stabilen Projektverknüpfungen ein;
+- 9.7 setzte die verbindliche Priorität aus geschützten Projektwerten, CoL XR, WoRMS für marine/brackische Taxa,
+  GBIF/iNaturalist und Wikidata um. Hierarchien werden nicht still überschrieben, Unterarten nicht hochgestuft und
+  neuere Aussagen nicht automatisch bevorzugt;
+- 9.8 migrierte die bisherige Ergänzungsschicht in versionierte relevante Anbieter-Ausschnitte. Vollständige
+  Parallelbestände von GBIF, iNaturalist, WoRMS oder Wikidata werden nicht gespiegelt;
+- 9.9 ergänzte Kandidaten-Diff, Konfliktvorschau, ausdrückliche Entscheidungen, atomare Aktivierung und genau eine
+  Rollbackversion;
+- 9.10 stellte Neue-Art-Suche und Wartung bevorzugt auf die aktive Masteransicht um. Die Suche bleibt für lokal
+  enthaltene Taxa offline; ohne Masterdatenbank greift weiterhin die bisherige sichere Referenzsuche;
+- 9.11 sichert `Sciurus vulgaris`, Homonyme, Synonyme, Anbieter-Ausfälle, verschwundene Quelleneinträge, doppelte
+  Anbieterzeilen und unterbrochene Aktivierungen als Regressionen ab;
+- 9.12 migrierte den echten lokalen Bestand: 52 von 52 Projektarten sind korrekt verknüpft, ein echter
+  Aktivierungs-/Rollbacklauf war erfolgreich und hinterließ keine temporären Importartefakte. Der Masterbereich
+  belegt rund 13,87 MiB; exakte Offline-Abfragen benötigen nach der abschließenden Optimierung im Mittel rund
+  1,55 ms pro Projektart.
 
-- 9.7: versionierte relevante Ausschnitte von iNaturalist, GBIF, WoRMS und Wikidata importieren und bestehende
-  Ergänzungen, Korrekturen und Projektzuordnungen in einen Master-Kandidaten überführen;
-- 9.8: Merge-, Diff-, Veraltungs- und Konfliktregeln einschließlich manueller Schutzentscheidungen umsetzen;
-- 9.9: Explorer-Suche, Neue-Art-Assistent und Wartungsoberfläche kontrolliert auf die aktive Masteransicht
-  umstellen;
-- 9.10: produktionsnahen Import, atomare Aktivierung, Fehlerfall und Rollback prüfen;
-- 9.11: umfassendes Phase-9-Abschlussaudit nach der verbindlichen Abschlussregel.
+CoL XR bleibt vollständig, unverändert und read-only. Die aktive Masterdatenbank enthält 496 relevante Taxa,
+2.134 versionierte Anbieteraussagen, 5.709 Namen und 10.189 Feldprovenienzen. Projektarten, URL-Slugs und Assets
+wurden durch die Migration nicht umbenannt. Architektur und Betrieb stehen in
+`docs/taxonomy-master-database-design.md`; der vollständige Abschlussaudit steht in
+`docs/audits/2026-08-phase-9-audit.md`.
 
-Als Nächstes folgt Phase 9.7. Die bisherige Ergänzungsnamensschicht bleibt bis zu ihrer geprüften Migration
-unverändert aktiv.
+Als Nächstes folgt Phase 10 mit der getrennten Lightroom-Machbarkeitsprüfung.
 
 ## Phase 10 - Lightroom-Integration
 

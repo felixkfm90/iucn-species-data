@@ -100,10 +100,15 @@ Lokale Arbeitsoberflaeche:
 - `species-explorer/taxonomy-project-conflicts.mjs`, `public/app-taxonomy-maintenance.js` und
   `species-reference-mappings.json`: sichtbare Konflikthinweise ohne stille Projektänderung sowie stabile,
   ausdrücklich bestätigte CoL-Zuordnungen
-- `species-explorer/taxonomy-master-storage.mjs`, `taxonomy-master-schema.mjs`,
-  `taxonomy-master-model.mjs` und `taxonomy-master.test.mjs`: getrennte Phase-9.6-Masterdatenbank-Grundlage mit
-  stabilen IDs, versionierten Quellenständen, Feldprovenienz, Konflikten, Projektverknüpfungen und
-  `Sciurus vulgaris`-Regression; die aktive CoL-Vollreferenz bleibt unverändert
+- `species-explorer/taxonomy-master-storage.mjs`, `taxonomy-master-schema.mjs`, `taxonomy-master-model.mjs`,
+  `taxonomy-master-store.mjs`, `taxonomy-master-rules.mjs`, `taxonomy-master-slices.mjs`,
+  `taxonomy-master-candidate.mjs`, `taxonomy-master-lifecycle.mjs` und `taxonomy-master-service.mjs`: getrennte,
+  produktiv aktivierte Phase-9-Masterdatenbank mit stabilen IDs, versionierten Anbieterständen, Feldprovenienz,
+  Konflikten, Projektverknüpfungen, atomarer Aktivierung und Rollback; die aktive CoL-Vollreferenz bleibt
+  unverändert und read-only
+- `scripts/taxonomy-master-migrate.mjs`: kontrollierte reale Migration der CoL-Referenz, Anbieter-Ausschnitte,
+  Ergänzungen und Projektarten in einen verifizierten Master-Kandidaten mit optionaler Aktivierung und
+  Rollbacktest
 - `scripts/taxonomy-prototype.mjs`, `taxonomy-prototype-fetch.mjs` und
   `scripts/fixtures/taxonomy/`: reproduzierbarer Phase-9.3-Prototyp und kleine versionierte Testfixture
 - `scripts/backfill-english-species-names.mjs`: kontrollierte, standardmäßig schreibgeschützte Ergänzung
@@ -717,7 +722,7 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 9 `Globale Taxonomiedatenbank` ist seit 2026-07-23 in Arbeit, siehe
+  Phase 9 `Globale Taxonomiedatenbank` wurde am 2026-08-01 abgeschlossen, siehe
   `docs/global-taxonomy-lightroom-plan.md`. Phase 9.1 ist abgeschlossen; die verbindliche Quellenentscheidung steht
   in `docs/taxonomy-source-decision.md`. Catalogue of Life XR ist die globale Primärreferenz. Der im XR
   unterscheidbare Base-Kern bildet eine höhere Vertrauensstufe; WoRMS ergänzt und validiert marine beziehungsweise
@@ -784,15 +789,16 @@ Aktuelle Planung:
   funktionierenden Stand. Eigene redaktionelle Korrekturen werden getrennt in
   `taxonomy-reference-corrections.json` versioniert, haben Vorrang und bleiben über CoL-Aktualisierungen hinweg
   erhalten. Der Wartungsablauf aktualisiert CoL und Ergänzungen gemeinsam oder bei aktuellem CoL nur die
-  Ergänzungsschicht. Phase 9.6 ist seit 2026-07-30 als getrennte Masterdatenbank-Grundlage abgeschlossen. Sie
-  führt stabile anbieterunabhängige Taxon-IDs, versionierte Quellenstände, Taxon-, Namens- und Feldaussagen,
-  Konflikte sowie stabile Projekt-Slug-Verknüpfungen ein, ohne den aktiven CoL-Vollbestand oder die produktive
-  Suche zu verändern. Die reale CoL-Lücke `Sciurus vulgaris` ist als Regression festgeschrieben. Als Nächstes
-  folgt Phase 9.7 mit relevanten Anbieter-Ausschnitten und der verlustfreien Migration der bisherigen
-  Ergänzungen, Korrekturen und Projektzuordnungen. Phase 9.8 bis 9.10 ergänzen Merge-/Konfliktlogik,
-  Explorer-Umschaltung und realen Aktivierungs-/Rollbackbetrieb; Phase 9.11 ist das umfassende Abschlussaudit.
-  Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP, optionale Erweiterungen und das
-  Phase-10-Abschlussaudit.
+  Ergänzungsschicht. Phase 9.6 bis 9.12 sind seit 2026-08-01 abgeschlossen. Die getrennte Masterdatenbank führt
+  stabile anbieterunabhängige Taxon-IDs, versionierte Anbieter-Ausschnitte, Taxon-, Namens- und Feldaussagen,
+  Konflikte sowie stabile Projekt-Slug-Verknüpfungen. Updates werden zuerst als Kandidat aufgebaut und erst nach
+  Prüfung atomar aktiviert; die vorherige Version bleibt als Rollback erhalten. Die Explorer-Suche bevorzugt die
+  aktive Masteransicht und bleibt für lokal vorhandene Einträge offline. Die reale CoL-Lücke `Sciurus vulgaris`,
+  Homonyme, Synonyme, Anbieter-Ausfälle, verschwundene Quellen, doppelte Anbieterzeilen und unterbrochene
+  Aktivierungen sind als Regressionen festgeschrieben. Die reale Migration ordnete alle 52 Projektarten ohne
+  fehlende oder abweichende Verknüpfung ein. Abschlussbericht:
+  `docs/audits/2026-08-phase-9-audit.md`. Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP,
+  optionale Erweiterungen und das Phase-10-Abschlussaudit.
   Phase 11 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
@@ -1033,7 +1039,7 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank:
-  Phase 9.1 bis 9.6 technisch abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
+  Phase 9.1 bis 9.12 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
   Fachergänzung. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, konfigurierbare Reichsauswahl, getrennte
@@ -1062,12 +1068,13 @@ Aktuelle Planung:
   `species_list.json` und `speciesData.json`. Die kontrollierte Ergänzung ist über
   `npm.cmd run --silent taxonomy:backfill-english` standardmäßig als Vorschau und nur mit `-- --write` schreibend
   verfügbar; vor dem Schreiben entsteht eine lokale Sicherung.
-  Phase 9.6 ergänzt eine davon getrennte, noch nicht produktiv aktivierte Master-SQLite mit stabilen
+  Phase 9.6 bis 9.12 ergänzen eine davon getrennte, produktiv aktivierte Master-SQLite mit stabilen
   anbieterunabhängigen Taxon-IDs, versionierten Quellenständen, Feldprovenienz, Konflikten und
-  Projektverknüpfungen. Der aktive CoL-Vollbestand bleibt unverändert; `Sciurus vulgaris` ist als reale
-  Referenzlücken-Regression abgedeckt. Als Nächstes folgt Phase 9.7 mit relevanten Anbieter-Ausschnitten und der
-  Migration der bisherigen Ergänzungen und Korrekturen. Merge-/Konfliktworkflow, Explorer-Umschaltung, realer
-  Aktivierungs-/Rollbackbetrieb und Abschlussaudit folgen in Phase 9.8 bis 9.11.
+  Projektverknüpfungen. Der aktive CoL-Vollbestand bleibt unverändert und read-only. Relevante Anbieter-Ausschnitte,
+  verlustfreie Migration, verbindliche Merge-Regeln, Konfliktvorschau, Explorer-Umschaltung, realer
+  Aktivierungs-/Rollbackbetrieb und Abschlussaudit sind seit 2026-08-01 abgeschlossen. `Sciurus vulgaris` ist als
+  reale Referenzlücken-Regression abgedeckt. Das Betriebs- und Datenmodell steht in
+  `docs/taxonomy-master-database-design.md`, der Phasenabschluss in `docs/audits/2026-08-phase-9-audit.md`.
 - Phase 10 - Lightroom:
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.

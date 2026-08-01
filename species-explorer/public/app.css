@@ -548,6 +548,114 @@ button.danger,
   text-align: center;
 }
 
+.taxonomy-master-maintenance {
+  margin-top: 4px;
+  padding: 9px;
+  display: grid;
+  gap: 7px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.taxonomy-master-heading,
+.taxonomy-master-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.taxonomy-master-heading strong {
+  color: var(--green);
+  font-size: 0.8rem;
+}
+
+.taxonomy-master-heading span,
+.taxonomy-master-copy span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.taxonomy-master-copy strong {
+  color: var(--text);
+  font-size: 0.76rem;
+}
+
+.taxonomy-master-diff {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.taxonomy-master-diff[hidden],
+.taxonomy-master-conflicts[hidden] {
+  display: none !important;
+}
+
+.taxonomy-master-diff-item {
+  padding: 6px 7px;
+  display: grid;
+  gap: 1px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.taxonomy-master-diff-item strong {
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+.taxonomy-master-diff-item span {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.taxonomy-master-conflicts {
+  display: grid;
+  gap: 6px;
+}
+
+.taxonomy-master-conflict {
+  padding: 7px;
+  display: grid;
+  gap: 5px;
+  background: var(--surface);
+  border: 1px solid var(--amber);
+  border-radius: 4px;
+}
+
+.taxonomy-master-conflict-copy {
+  display: grid;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.taxonomy-master-conflict-copy strong {
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+.taxonomy-master-conflict-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.taxonomy-master-conflict-actions select,
+.taxonomy-master-conflict-actions button {
+  min-height: 32px;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 720px) {
+  .taxonomy-master-diff,
+  .taxonomy-master-conflict-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .settings-help {
   margin: 8px 0 0;
   color: var(--text-muted);

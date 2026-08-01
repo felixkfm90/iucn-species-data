@@ -3,6 +3,7 @@ import path from "node:path";
 import { taxonomyHierarchyDisplayEntry } from "./taxonomy-display-names.mjs";
 import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { openTaxonomyStore } from "./taxonomy-store.mjs";
+import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
 import {
   foldTaxonomySearchTerm,
   germanTaxonomySearchKey,
@@ -213,20 +214,56 @@ function mergeSearchResults(query, baseResults, supplementResults, limit) {
     .map(({ referenceScore, ...result }) => result);
 }
 
+function scientificResultKey(result = {}) {
+  return [
+    normalizeTaxonomySearchTerm(result.acceptedScientificName || result.scientificName),
+    String(result.rank || "").trim().toLowerCase(),
+    String(result.kingdom?.id || result.kingdom || "").trim().toLowerCase(),
+  ].join("|");
+}
+
+function mergeMasterAndReferenceResults(query, masterResults, referenceResults, limit) {
+  const merged = new Map();
+  for (const result of masterResults) {
+    merged.set(scientificResultKey(result), result);
+  }
+  for (const result of referenceResults) {
+    const key = scientificResultKey(result);
+    if (!merged.has(key)) merged.set(key, result);
+  }
+  return [...merged.values()]
+    .map((result) => ({ ...result, referenceScore: searchResultScore(query, result) }))
+    .sort((left, right) => (
+      left.referenceScore - right.referenceScore
+      || (left.masterTaxonId ? -1 : 0) - (right.masterTaxonId ? -1 : 0)
+      || String(left.displayName || left.acceptedScientificName || "").localeCompare(
+        String(right.displayName || right.acceptedScientificName || ""),
+        "de",
+        { sensitivity: "base" },
+      )
+    ))
+    .slice(0, limit)
+    .map(({ referenceScore, ...result }) => result);
+}
+
 export class TaxonomyReferenceService {
   constructor({
     taxonomyRoot,
     openStore = openTaxonomyStore,
+    openMasterStore = openTaxonomyMasterStore,
     readPointer = readActiveTaxonomyPointer,
     supplementService = null,
   } = {}) {
     if (!taxonomyRoot) throw new TypeError("Taxonomie-Zielpfad fehlt.");
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.openStore = openStore;
+    this.openMasterStore = openMasterStore;
     this.readPointer = readPointer;
     this.supplementService = supplementService;
     this.store = null;
+    this.masterStore = null;
     this.activeRelease = "";
+    this.activeMasterCandidate = "";
     this.closed = false;
   }
 
@@ -240,6 +277,9 @@ export class TaxonomyReferenceService {
     this.store?.close?.();
     this.store = null;
     this.activeRelease = "";
+    this.masterStore?.close?.();
+    this.masterStore = null;
+    this.activeMasterCandidate = "";
   }
 
   reset() {
@@ -273,10 +313,36 @@ export class TaxonomyReferenceService {
     return this.store;
   }
 
+  async ensureMasterStore() {
+    this.assertOpen();
+    const opened = await this.openMasterStore({
+      taxonomyRoot: this.taxonomyRoot,
+      slot: "active",
+    });
+    if (!opened || opened.available === false) {
+      this.masterStore?.close?.();
+      this.masterStore = null;
+      this.activeMasterCandidate = "";
+      return null;
+    }
+    const candidateId = String(opened.status?.().candidateId || "");
+    if (this.masterStore && this.activeMasterCandidate === candidateId) {
+      opened.close?.();
+      return this.masterStore;
+    }
+    this.masterStore?.close?.();
+    this.masterStore = opened;
+    this.activeMasterCandidate = candidateId;
+    return this.masterStore;
+  }
+
   async status() {
     try {
-      const store = await this.ensureStore();
-      if (!store) {
+      const [store, masterStore] = await Promise.all([
+        this.ensureStore(),
+        this.ensureMasterStore(),
+      ]);
+      if (!store && !masterStore) {
         return unavailablePayload(
           "not-installed",
           "Noch keine lokale Taxonomiereferenz installiert. Die Namen können weiterhin manuell eingegeben werden.",
@@ -295,7 +361,11 @@ export class TaxonomyReferenceService {
         }
       }
       return {
-        ...store.status(),
+        ...(store?.status?.() || {}),
+        master: masterStore?.status?.() || {
+          available: false,
+          reason: "not-installed",
+        },
         supplements,
         message: "Die lokale Taxonomiereferenz ist einsatzbereit.",
         manualEntryAvailable: true,
@@ -330,17 +400,42 @@ export class TaxonomyReferenceService {
 
   async kingdoms() {
     const store = await this.requireStore();
+    const masterStore = await this.ensureMasterStore();
+    const reference = store.kingdoms();
+    const master = masterStore?.kingdoms?.() || { values: [] };
+    const values = new Map();
+    for (const entry of [...master.values, ...reference.values]) {
+      const current = values.get(entry.id);
+      values.set(entry.id, {
+        ...entry,
+        taxonCount: Math.max(Number(current?.taxonCount || 0), Number(entry.taxonCount || 0)),
+      });
+    }
     return {
       available: true,
-      ...store.kingdoms(),
+      ...reference,
+      values: [...values.values()].sort((left, right) => (
+        (left.id === "Animalia" ? -1 : right.id === "Animalia" ? 1 : 0)
+        || left.label.localeCompare(right.label, "de", { sensitivity: "base" })
+      )),
     };
   }
 
   async search(options) {
     const searchOptions = normalizeSearchOptions(options);
     const store = await this.requireStore();
+    const masterStore = await this.ensureMasterStore();
+    const master = masterStore
+      ? masterStore.search(searchOptions)
+      : { results: [] };
     const base = store.search(searchOptions);
-    const baseHasExactMatch = base.results.some(
+    const localResults = mergeMasterAndReferenceResults(
+      searchOptions.query,
+      master.results,
+      base.results,
+      searchOptions.limit,
+    );
+    const baseHasExactMatch = localResults.some(
       (result) => searchResultScore(searchOptions.query, result) < 0,
     );
     const supplements = this.supplementService
@@ -358,7 +453,7 @@ export class TaxonomyReferenceService {
       : [];
     const results = mergeSearchResults(
       searchOptions.query,
-      base.results,
+      localResults,
       supplements,
       searchOptions.limit,
     );
@@ -367,13 +462,17 @@ export class TaxonomyReferenceService {
       ...base,
       results,
       ambiguous: results.length > 1,
+      masterAvailable: Boolean(masterStore),
     };
   }
 
   async taxon(reference) {
     const normalizedReference = normalizeTaxonReference(reference);
     const store = await this.requireStore();
-    let result = store.taxon(normalizedReference);
+    const masterStore = await this.ensureMasterStore();
+    let result = normalizedReference.startsWith("mtx_")
+      ? masterStore?.taxon(normalizedReference)
+      : store.taxon(normalizedReference);
     if (!result) {
       throw createHttpError("Das ausgewählte Taxon wurde nicht gefunden.", 404);
     }
@@ -384,17 +483,20 @@ export class TaxonomyReferenceService {
       ...result,
       hierarchy: (result.hierarchy || []).map(taxonomyHierarchyDisplayEntry),
     };
-    const status = store.status();
+    const status = normalizedReference.startsWith("mtx_")
+      ? masterStore.status()
+      : store.status();
     return {
       available: true,
       ...result,
-      releaseId: status.releaseId,
-      source: "Catalogue of Life",
+      releaseId: status.releaseId || status.candidateId,
+      source: result.source || "Catalogue of Life",
     };
   }
 
   async saveCorrection(payload = {}) {
     const store = await this.requireStore();
+    const masterStore = await this.ensureMasterStore();
     if (!this.supplementService) {
       throw createHttpError("Eigene Taxonomiekorrekturen sind nicht eingerichtet.", 503);
     }
@@ -420,12 +522,14 @@ export class TaxonomyReferenceService {
         400,
       );
     }
-    const taxon = store.findTaxonByScientificName(scientificName, {
+    const taxon = masterStore?.findTaxonByScientificName(scientificName, {
+      rank: "species",
+    }) || store.findTaxonByScientificName(scientificName, {
       rank: "species",
     });
     if (!taxon) {
       throw createHttpError(
-        "Der wissenschaftliche Name ist in der aktiven CoL-Referenz nicht eindeutig vorhanden.",
+        "Der wissenschaftliche Name ist in der aktiven Taxonomiereferenz nicht eindeutig vorhanden.",
         400,
       );
     }
@@ -443,8 +547,11 @@ export class TaxonomyReferenceService {
       throw createHttpError("Eigene Taxonomiekorrekturen sind nicht eingerichtet.", 503);
     }
     const store = await this.requireStore();
+    const masterStore = await this.ensureMasterStore();
     const normalizedScientificName = normalizeCorrectionScientificName(scientificName);
-    const taxon = store.findTaxonByScientificName(normalizedScientificName, {
+    const taxon = masterStore?.findTaxonByScientificName(normalizedScientificName, {
+      rank: "species",
+    }) || store.findTaxonByScientificName(normalizedScientificName, {
       rank: "species",
     });
     if (!taxon) {
@@ -466,3 +573,8 @@ export class TaxonomyReferenceService {
 export function createTaxonomyReferenceService(options) {
   return new TaxonomyReferenceService(options);
 }
+
+export const taxonomyReferenceServiceInternals = Object.freeze({
+  mergeMasterAndReferenceResults,
+  scientificResultKey,
+});

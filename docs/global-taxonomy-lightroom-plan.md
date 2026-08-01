@@ -1,9 +1,8 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-07-30
+Stand: 2026-08-01
 
-Status: Phase 9.1 bis 9.6 abgeschlossen; Masterdatenbank-Grundlage umgesetzt, Anbieter-Ausschnitte,
-Zusammenführung, produktive Umschaltung und Phase-9-Abschlussaudit noch offen; Lightroom beginnt getrennt in
+Status: Phase 9.1 bis 9.12 abgeschlossen, real migriert, aktiviert und auditiert; Lightroom beginnt getrennt in
 Phase 10
 
 Roadmap: Phase 9 und Phase 10
@@ -38,13 +37,12 @@ Schema, Suche, Import, Staging und Rollback wurden in Phase 9.2 verbindlich unte
 `docs/taxonomy-import-prototype.md` dokumentierten Importprototyp bestätigt. Phase 9.4 hat die lokale read-only
 API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verbindliche Vertrag steht in
 `docs/taxonomy-explorer-integration.md`. Phase 9.5 setzt den vollständigen lokalen Installations- und
-Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 ergänzt nach
-`docs/taxonomy-master-database-design.md` eine physisch getrennte Masterdatenbank-Grundlage mit stabilen IDs,
-versionierten Quellenaussagen, Feldprovenienz, Konflikten und Projektverknüpfungen. Die aktive CoL-Vollreferenz
-bleibt dabei unverändert. Phase 9.7 bis 9.10 bauen Anbieter-Ausschnitte, Merge-/Konfliktlogik,
-Explorer-Integration und den realen Aktivierungs-/Rollbackbetrieb darauf auf; Phase 9.11 schließt die
-Taxonomiephase mit einem umfassenden Audit ab. Lightroom-Anbindung folgt in Phase 10, Mehrgeräteverteilung in
-Phase 11.
+Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 bis 9.12 ergänzen nach
+`docs/taxonomy-master-database-design.md` die physisch getrennte Masterdatenbank mit stabilen IDs, versionierten
+Anbieterausschnitten, Feldprovenienz, Zusammenführungs- und Konfliktregeln, Explorer-Integration, atomarer
+Aktivierung und Rollback. Die aktive CoL-Vollreferenz bleibt dabei unverändert und read-only. Die reale Migration
+und das umfassende Abschlussaudit sind unter `docs/audits/2026-08-phase-9-audit.md` dokumentiert.
+Lightroom-Anbindung folgt in Phase 10, Mehrgeräteverteilung in Phase 11.
 
 ## A. Ausgangslage
 
@@ -461,17 +459,74 @@ Ergebnis: lokal installierbarer und aktualisierbarer Referenzbestand, weiterhin 
 echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest. Verbindlicher Vertrag:
 `docs/taxonomy-reference-update.md`.
 
-### 9.6 Realer Betriebstest und umfassendes Abschlussaudit
+### 9.6 Masterdatenbank und stabile Identitäten
 
-- Vollreferenz mit dem echten CoL-XR-Paket installieren
-- Suchindizes, Zähler, Zwischenränge und Stichproben gegen die Quelle prüfen
-- Konfliktabgleich vorhandener Projektarten kontrollieren
-- Abbruch, fehlerhafte Pakete, atomare Aktivierung und Rollback praktisch prüfen
-- Code, Daten/Schemata, Datei-/Ordnerstruktur, Dokumentation, Tests, Qualitätsgate sowie Betriebs- und
-  Wiederherstellungsabläufe vollständig auditieren
-- alle Befunde bereinigen oder begründet einer späteren Phase zuordnen
+- **Abgeschlossen am 2026-08-01.**
+- physisch getrennte Master-SQLite mit stabilen anbieterunabhängigen Taxon-IDs
+- versionierte Quellenstände, Taxon-, Namens- und Feldaussagen sowie Projektverknüpfungen
+- nachvollziehbare Zustände `durch CoL bestätigt`, `CoL-Referenzlücke`, `extern bestätigt`, `widersprüchlich`,
+  `veraltet` und `manuell geschützt`
+- CoL-Vollreferenz bleibt unverändert, read-only und separat aktiv
 
-Ergebnis: Phase 9 kann erst nach dokumentiert bestandenem Audit abgeschlossen werden.
+### 9.7 Verbindliche Zusammenführungsregeln
+
+- **Abgeschlossen am 2026-08-01.**
+- Priorität: manuell bestätigte Projektdaten, CoL XR, WoRMS für marine/brackische Taxa, GBIF/iNaturalist für
+  Lücken und Abgleich, Wikidata für gebräuchliche Namen und externe IDs
+- keine stille Hierarchieänderung, keine automatische Hochstufung von Unterarten und kein Vorrang allein aufgrund
+  eines neueren Zeitstempels
+- Synonyme und alternative Namen bleiben erhalten; entfernte Quelleneinträge werden zunächst als veraltet markiert
+
+### 9.8 Versionierte Anbieter-Ausschnitte
+
+- **Abgeschlossen am 2026-08-01.**
+- lokale, versionierte Ausschnitte aus iNaturalist, GBIF, WoRMS und Wikidata für Projektarten, CoL-Lücken,
+  recherchierte Taxa und eigene Korrekturen
+- Anbieter-ID, wissenschaftlicher Name, Rang, Hierarchie, deutsche/englische Namen, Abrufzeitpunkt und
+  Versionsstatus werden einzeln gespeichert
+- der bisherige Ergänzungscache wurde kontrolliert übernommen; vollständige Fremdbestände werden nicht gespiegelt
+
+### 9.9 Master-Kandidat, Konflikte und Rollback
+
+- **Abgeschlossen am 2026-08-01.**
+- Updates bauen zunächst einen getrennten Kandidaten aus CoL, Anbieter-Ausschnitten und manuellen Korrekturen
+- Vorschau umfasst neue Taxa, geschlossene Lücken, Namens- und Hierarchieänderungen, Synonyme, veraltete Einträge
+  sowie Konflikte mit Projektarten
+- Aktivierung erfolgt erst nach Prüfung atomar; genau eine vorherige Masterversion bleibt als Rollback erhalten
+
+### 9.10 Explorer-Integration
+
+- **Abgeschlossen am 2026-08-01.**
+- Neue-Art-Suche verwendet bevorzugt die aktive Masterdatenbank und bleibt für lokal enthaltene Einträge offline
+- Treffer zeigen Quelle, Status und CoL-Referenzlücken; ohne aktive Masterdatenbank greift die bisherige
+  Referenzsuche sicher weiter
+- kontrollierte Entscheidungen unterstützen bisherigen Wert, neuen Wert, Alias und dauerhaften manuellen Schutz
+- Aktualisierung, Fortschritt, Abschlussmeldung und Rollback sind in die lokale Wartung eingebunden
+
+### 9.11 Verbindliche Regressionen
+
+- **Abgeschlossen am 2026-08-01.**
+- `Sciurus vulgaris` wird genau einmal als Art mit Status `CoL-Referenzlücke` geführt, obwohl CoL im geprüften
+  Bestand nur zugehörige Unterarten enthält
+- ein späterer CoL-Artbeleg schließt dieselbe Lücke, ohne einen zweiten Masterdatensatz, Projekt-Slug oder
+  Assetpfad zu erzeugen
+- weitere Regressionen decken Homonyme, Synonyme, Umbenennungen, Anbieter-Ausfälle, verschwundene Quellen,
+  doppelte Anbieterzeilen und unterbrochene Aktivierungen ab
+
+### 9.12 Reale Migration und umfassendes Abschlussaudit
+
+- **Abgeschlossen am 2026-08-01.**
+- alle 52 Projektarten wurden ohne fehlende oder abweichende Projektverknüpfung migriert
+- aktive Masteransicht: 496 relevante Taxa, 2.134 Anbieteraussagen, 5.709 Namen, 1.033 Aliasse und 10.189
+  Feldprovenienzen
+- reale Aktivierung und Rückkehr zur vorherigen Version wurden erfolgreich ausgeführt; temporäre Importartefakte
+  blieben danach keine zurück
+- gesamter Master-Speicherbedarf: rund 13,87 MiB; exakte Suche über alle Projektarten im Mittel rund 1,55 ms
+- Code, Daten/Schemata, Datei-/Ordnerstruktur, Dokumentation, Tests, Qualitätsgate sowie Betriebs-, Aktivierungs-
+  und Wiederherstellungsabläufe wurden auditiert
+
+Ergebnis: Phase 9 ist abgeschlossen. Details stehen in `docs/taxonomy-master-database-design.md` und
+`docs/audits/2026-08-phase-9-audit.md`.
 
 ### 10.1 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 
@@ -554,7 +609,7 @@ ausdrücklich:
 - Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, MVP, optionale Erweiterungen und Abschlussaudit.
 - Die NAS-/Mehrgerätephase folgt als Phase 11.
 - Anforderungen, Kandidaten, Datenmodell, Integration, Update, Lightroom und Sicherheitsregeln sind dokumentiert.
-- Die Teilphasen 9.1 bis 9.6 sowie 10.1 bis 10.5 besitzen klare Ergebnisse und Freigabepunkte.
+- Die Teilphasen 9.1 bis 9.12 sowie 10.1 bis 10.5 besitzen klare Ergebnisse und Freigabepunkte.
 - Offene Entscheidungen sind ausdrücklich als offen gekennzeichnet.
 - Bestehender produktiver Artenbestand und globale Referenzdatenbank sind eindeutig getrennt.
 - Der begrenzte Prototyp besitzt direkte Tests und reproduzierbare Messwerte.

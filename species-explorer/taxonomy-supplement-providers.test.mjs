@@ -30,6 +30,9 @@ test("iNaturalist liefert getrennte deutsche und englische Ergänzungsnamen", as
         results: [{
           id: 41970,
           name: "Panthera pardus",
+          rank: "species",
+          iconic_taxon_name: "Animalia",
+          parent_id: 41969,
           preferred_common_name: locale === "de" ? "Leopard" : "Leopard",
         }],
       });
@@ -41,6 +44,10 @@ test("iNaturalist liefert getrennte deutsche und englische Ergänzungsnamen", as
   assert.ok(results.some((entry) => entry.germanName === "Leopard"));
   assert.ok(results.some((entry) => entry.englishName === "Leopard"));
   assert.ok(results.every((entry) => entry.scientificName === "Panthera pardus"));
+  assert.ok(results.every((entry) => entry.rank === "species"));
+  assert.ok(results.every((entry) => entry.kingdom === "Animalia"));
+  assert.ok(results.every((entry) => entry.externalIds.inaturalist === "41970"));
+  assert.ok(results.every((entry) => Number.isFinite(Date.parse(entry.retrievedAt))));
 });
 
 test("GBIF erkennt deutsche und englische ISO-639-3-Sprachcodes", async () => {
@@ -61,6 +68,10 @@ test("GBIF erkennt deutsche und englische ISO-639-3-Sprachcodes", async () => {
           key: 5219404,
           acceptedKey: 5219404,
           rank: "SPECIES",
+          kingdom: "Animalia",
+          phylum: "Chordata",
+          family: "Felidae",
+          genus: "Panthera",
           accepted: "Panthera pardus (Linnaeus, 1758)",
         }],
       });
@@ -72,6 +83,8 @@ test("GBIF erkennt deutsche und englische ISO-639-3-Sprachcodes", async () => {
   assert.equal(results[0].germanName, "Leopard");
   assert.equal(results[0].englishName, "Leopard");
   assert.equal(results[0].source, "GBIF");
+  assert.equal(results[0].hierarchy.family, "Felidae");
+  assert.equal(results[0].externalIds.gbif, "5219404");
 });
 
 test("WoRMS übernimmt gültige Namen und ger/eng-Vernakularnamen", async () => {
@@ -90,6 +103,8 @@ test("WoRMS übernimmt gültige Namen und ger/eng-Vernakularnamen", async () => 
         AphiaID: 137094,
         valid_AphiaID: 137094,
         rank: "Species",
+        kingdom: "Animalia",
+        isMarine: true,
         valid_name: "Delphinus delphis",
       }]);
     },
@@ -99,6 +114,8 @@ test("WoRMS übernimmt gültige Namen und ger/eng-Vernakularnamen", async () => 
   assert.equal(results[0].germanName, "Gemeiner Delfin");
   assert.equal(results[0].englishName, "Common dolphin");
   assert.equal(results[0].source, "WoRMS");
+  assert.equal(results[0].environment, "marine");
+  assert.equal(results[0].externalIds.worms, "137094");
 });
 
 test("Wikidata verwendet ausschließlich Taxonname P225 und Sprachlabels", async () => {
@@ -122,6 +139,7 @@ test("Wikidata verwendet ausschließlich Taxonname P225 und Sprachlabels", async
                   datavalue: { value: "Panthera pardus" },
                 },
               }],
+              P846: [{ mainsnak: { datavalue: { value: "5219404" } } }],
             },
           },
         },
@@ -134,4 +152,6 @@ test("Wikidata verwendet ausschließlich Taxonname P225 und Sprachlabels", async
   assert.equal(results[0].germanName, "Leopard");
   assert.equal(results[0].englishName, "Leopard");
   assert.equal(results[0].source, "Wikidata");
+  assert.equal(results[0].externalIds.wikidata, "Q34706");
+  assert.equal(results[0].externalIds.gbif, "5219404");
 });

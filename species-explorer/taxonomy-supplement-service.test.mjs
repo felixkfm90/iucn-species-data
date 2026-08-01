@@ -9,6 +9,10 @@ import {
   taxonomyHierarchyDisplayEntry,
 } from "./taxonomy-display-names.mjs";
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
+import {
+  listProviderSliceVersions,
+  readProviderSlice,
+} from "./taxonomy-master-slices.mjs";
 
 function mockTaxon(scientificName) {
   if (String(scientificName).toLocaleLowerCase("en") !== "panthera pardus") return null;
@@ -68,6 +72,15 @@ function leopardProvider() {
     source: "iNaturalist",
     providerId: "41970",
     confidence: 0.86,
+    rank: "species",
+    kingdom: "Animalia",
+    hierarchy: {
+      kingdom: "Animalia",
+      family: "Felidae",
+      genus: "Panthera",
+      species: "Panthera pardus",
+    },
+    externalIds: { inaturalist: "41970" },
   }];
 }
 
@@ -88,6 +101,7 @@ test("Suchergänzungen bewahren CoL als Basis und markieren keinen Vollabgleich"
 
   const status = await service.status();
   assert.equal(status.entryCount, 1);
+  assert.equal(status.providerRecordCount, 1);
   assert.equal(status.stale, true);
   assert.equal(status.lastFullRefreshAt, "");
 
@@ -106,7 +120,7 @@ test("Suchergänzungen bewahren CoL als Basis und markieren keinen Vollabgleich"
 });
 
 test("vollständiger Ergänzungsabgleich setzt einen eigenen Aktualisierungszeitpunkt", async (context) => {
-  const { service } = await temporaryService(context, {
+  const { service, taxonomyRoot } = await temporaryService(context, {
     providers: [leopardProvider],
   });
   const result = await service.refreshKnown({
@@ -119,6 +133,49 @@ test("vollständiger Ergänzungsabgleich setzt einen eigenen Aktualisierungszeit
   assert.equal(result.preservedTargets, 0);
   assert.equal(result.status.stale, false);
   assert.equal(result.status.lastFullRefreshAt, "2026-07-30T10:00:00.000Z");
+  assert.equal(result.providerSliceCount, 1);
+  const versions = await listProviderSliceVersions(taxonomyRoot, "inaturalist");
+  assert.equal(versions.length, 1);
+  const slice = await readProviderSlice(taxonomyRoot, "inaturalist", versions[0]);
+  assert.equal(slice.records[0].scientificName, "Panthera pardus");
+  assert.equal(slice.records[0].hierarchy.family, "Felidae");
+  assert.equal(slice.records[0].externalIds.inaturalist, "41970");
+});
+
+test("CoL-Referenzlücken bleiben als versionierte Anbieter-Ausschnitte erhalten", async (context) => {
+  const gapProvider = async function searchGbifTaxa() {
+    return [{
+      scientificName: "Sciurus vulgaris",
+      germanName: "Eurasisches Eichhörnchen",
+      englishName: "Eurasian red squirrel",
+      source: "GBIF",
+      providerId: "5219535",
+      confidence: 0.9,
+      rank: "species",
+      kingdom: "Animalia",
+      hierarchy: { family: "Sciuridae", genus: "Sciurus" },
+      externalIds: { gbif: "5219535" },
+    }];
+  };
+  const { service, taxonomyRoot } = await temporaryService(context, {
+    providers: [gapProvider],
+  });
+
+  const result = await service.refreshKnown({
+    scientificNames: ["Sciurus vulgaris"],
+    store: mockStore(),
+  });
+  assert.equal(result.imported, 1);
+  assert.equal(result.status.entryCount, 0);
+  assert.equal(result.status.providerRecordCount, 1);
+  const versions = await listProviderSliceVersions(taxonomyRoot, "gbif");
+  const slice = await readProviderSlice(taxonomyRoot, "gbif", versions[0]);
+  assert.deepEqual(slice.records[0].relevanceReasons.sort(), [
+    "col-reference-gap",
+    "project-species",
+    "searched-taxon",
+  ]);
+  assert.equal(slice.records[0].names[0].name, "Eurasisches Eichhörnchen");
 });
 
 test("Ausfall aller Quellen überschreibt den letzten funktionierenden Cache nicht", async (context) => {

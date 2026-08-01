@@ -37,6 +37,10 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
   ["/api/taxonomy/corrections/save", { name: "taxonomy-correction", action: "save" }],
   ["/api/taxonomy/corrections/reset", { name: "taxonomy-correction", action: "reset" }],
+  ["/api/taxonomy/master/build", { name: "taxonomy-master", action: "build" }],
+  ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],
+  ["/api/taxonomy/master/activate", { name: "taxonomy-master", action: "activate" }],
+  ["/api/taxonomy/master/rollback", { name: "taxonomy-master", action: "rollback" }],
   ["/api/pipeline/assets/review", { name: "pipeline-asset-review", action: "save" }],
   ["/api/species/new/preview", { name: "new-species", action: "preview" }],
   ["/api/species/new/save", { name: "new-species", action: "save" }],
@@ -116,6 +120,9 @@ export function matchExplorerRoute(method, pathname) {
   );
   if (taxonomyResource) {
     return { name: "taxonomy-read", resource: taxonomyResource[1] };
+  }
+  if (normalizedPath === "/api/taxonomy/master/status") {
+    return { name: "taxonomy-read", resource: "master-status" };
   }
   const taxonomyTaxon = normalizedPath.match(/^\/api\/taxonomy\/taxa\/([^/]+)$/);
   if (taxonomyTaxon) {
@@ -254,6 +261,16 @@ export function createExplorerRequestHandler({
           response,
           200,
           await operations.taxonomyCorrection({ action: route.action, payload }),
+        );
+        return;
+      }
+
+      if (route.name === "taxonomy-master") {
+        const payload = await readJsonBody(request);
+        sendJson(
+          response,
+          200,
+          await operations.taxonomyMaster({ action: route.action, payload }),
         );
         return;
       }

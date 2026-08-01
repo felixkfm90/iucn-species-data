@@ -1,36 +1,30 @@
-# Taxonomie-Masterdatenbank – Datenmodell für Phase 9.6
+# Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-07-30
+Stand: 2026-08-01
 
-Status: Phase 9.6 abgeschlossen; Schema-, Modell- und Regressionstest-Grundlage umgesetzt, noch keine produktive
-Migration oder Umschaltung der Explorer-Suche
+Status: umgesetzt, real migriert, aktiviert und geprüft
 
 ## Ziel
 
-Die vollständige lokale Catalogue-of-Life-XR-Referenz bleibt die unveränderte, read-only Primärquelle. Daneben
-entsteht eine deutlich kleinere Masterdatenbank, die belegte Aussagen aus mehreren Quellen zusammenführen kann,
-ohne die Quelldatenbanken umzuschreiben:
+Die vollständige lokale Catalogue-of-Life-XR-Referenz bleibt unverändert und read-only. Eine getrennte,
+wesentlich kleinere Masterdatenbank verbindet diese Primärreferenz mit relevanten versionierten Ausschnitten
+weiterer Anbieter sowie ausdrücklich bestätigten Projekt- und Korrekturwerten:
 
 ```text
 vollständige CoL-XR-Referenz (read-only)
   + relevante, versionierte Ausschnitte weiterer Anbieter
-  + ausdrücklich bestätigte Projekt- und manuelle Aussagen
-  -> lokale Taxonomie-Masterdatenbank
+  + bestätigte Projekt- und manuelle Aussagen
+  -> prüfbarer Master-Kandidat
+  -> atomar aktivierte lokale Masterdatenbank
 ```
 
-Die Masterdatenbank soll insbesondere echte CoL-Lücken, fehlende gebräuchliche Namen, spätere Quellenupdates und
-redaktionelle Korrekturen kontrolliert abbilden. Eine neuere Anbieterdatei gewinnt niemals allein aufgrund ihres
-Datums. Bestehende Projektarten, wissenschaftliche Namen, URL-Slugs und Assetpfade bleiben ohne ausdrückliche
-Bestätigung unverändert.
+Die Masterdatenbank schließt belegte CoL-Lücken, ergänzt Namen und Hierarchiestufen und bewahrt zugleich bestehende
+Projektarten, URL-Slugs und Assetpfade. Ein neuer Quellenstand wird nie allein aufgrund seines Datums als fachlich
+richtiger behandelt.
 
-Phase 9.6 definiert und testet nur diese Datenmodell-Grundlage. Der aktive CoL-Bestand unter
-`taxonomy/releases/`, `species_list.json`, `speciesData.json`, die Explorer-Suche und Squarespace werden nicht
-migriert oder umgeschaltet.
+## Speichergrenze und Versionen
 
-## Speichergrenze
-
-Die Masterdatenbank liegt im bereits pfadunabhängigen lokalen Taxonomiebereich, aber physisch getrennt von den
-unveränderlichen CoL-Releases:
+Die Daten liegen außerhalb von Repository, GitHub Pages und normalem Projekt-Backup:
 
 ```text
 %LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\
@@ -41,145 +35,163 @@ unveränderlichen CoL-Releases:
     previous\taxonomy-master.sqlite
 ```
 
-Jeder Slot besitzt zusätzlich ein `manifest.json`. `staging` ist für einen vollständig aufgebauten und geprüften
-Kandidaten vorgesehen; `active` und `previous` bilden die spätere atomare Aktivierungs- und Rollbackgrenze.
-Phase 9.6 erzeugt an diesen Pfaden noch keine produktive Datei.
+Jeder Slot besitzt ein `manifest.json`. `staging` enthält einen vollständig aufgebauten Kandidaten. Erst nach
+Schema-, Integritäts-, Projekt- und Konfliktprüfung wird er atomar nach `active` verschoben. Genau eine vorherige
+Version bleibt unter `previous` für Rollback erhalten. Abgebrochene Aktivierungen stellen den vorherigen Stand
+automatisch wieder her; temporäre Staging- und Rollbackverzeichnisse werden bereinigt.
 
-Die Speicherortentscheidung wird beim späteren Installer nochmals geprüft. Bis dahin bleiben große lokale
-Referenzen und die Masterdatenbank außerhalb des Repositorys und der NAS-Projekt-ZIP.
+Die Speicherortentscheidung wird beim späteren Installer erneut geprüft.
 
-## Quellenstrategie
+## Quellen und lokale Ausschnitte
 
 | Quelle | Lokaler Umfang | Aufgabe |
 | --- | --- | --- |
 | Catalogue of Life XR | vollständig, versioniert, read-only | globale Primärreferenz |
-| iNaturalist | versionierter relevanter Ausschnitt | exakte Taxa und gebräuchliche Namen |
-| GBIF | versionierter relevanter Ausschnitt | exakte Taxa, IDs und Namensabgleich |
-| WoRMS | versionierter relevanter Ausschnitt | marine und brackische Taxa |
-| Wikidata | versionierter relevanter Ausschnitt | quellenmarkierte Labels und externe IDs |
+| WoRMS | relevanter versionierter Ausschnitt | marine und brackische Taxa |
+| GBIF | relevanter versionierter Ausschnitt | Taxonlücken, IDs und Abgleich |
+| iNaturalist | relevanter versionierter Ausschnitt | Taxonlücken und gebräuchliche Namen |
+| Wikidata | relevanter versionierter Ausschnitt | deutsche/englische Namen und externe IDs |
 | Projekt | versionierte Projektzuordnung | stabile Verbindung zu Art und URL-Slug |
-| Manuell | versionierte redaktionelle Aussage | ausdrücklich geschützte Korrektur |
+| Manuell | versionierte redaktionelle Aussage | geschützte Korrektur |
 
-Ein relevanter Ausschnitt umfasst nur Datensätze, die mindestens einen dieser Gründe erfüllen:
+Ein Anbieter-Ausschnitt wird nur für vorhandene Projektarten, CoL-Referenzlücken, fehlende Namen oder
+Hierarchiestufen, im Explorer recherchierte Taxa und eigene bestätigte Korrekturen gespeichert. Die vollständigen
+GBIF-, iNaturalist-, WoRMS- und Wikidata-Bestände werden nicht gespiegelt.
 
-- CoL besitzt für das gesuchte Taxon oder Feld eine Lücke,
-- eine vorhandene Projektart benötigt die Aussage,
-- ein Taxon wurde im Explorer gesucht oder ausdrücklich vorgemerkt,
-- eine manuelle Korrektur oder Konfliktentscheidung verweist darauf.
+Jeder Ausschnitt enthält Anbieter und ID, wissenschaftlichen Namen, Rang, Hierarchie, deutsche und englische Namen,
+Abrufzeitpunkt, Anbieterstand, Quellen-URL/Lizenz und den Zustand gegenüber der vorherigen Version. Entfernte
+Quellenzeilen bleiben als `removed` beziehungsweise `stale` nachvollziehbar.
 
-Die Ausschnitte sind keine unversionierten Suchcaches. Jeder importierte Datensatz verweist auf einen
-`provider_release` mit Anbieter, Version, Umfang, Importzeitpunkt, optionaler Prüfsumme, Quelle und Lizenz.
+## Stabile Master-ID und Zustände
 
-## Stabile Master-ID
+Jedes zusammengeführte Taxon besitzt eine anbieterunabhängige ID `mtx_<UUID>`. Anbieter-IDs, Namen und Projekt-Slugs
+sind Aussagen oder Verknüpfungen und können die Master-ID nicht ersetzen.
 
-Jedes zusammengeführte Taxon erhält eine anbieterunabhängige ID im Format `mtx_<UUID>`. Anbieter-IDs, ein
-wissenschaftlicher Name und ein Projekt-Slug sind Attribute beziehungsweise Verknüpfungen, aber nicht die
-Master-ID selbst.
+Folgende kombinierbare Zustände werden geführt:
 
-Dadurch kann eine zunächst durch GBIF, iNaturalist oder Wikidata belegte CoL-Lücke später an eine neu gelieferte
-CoL-Art gebunden werden, ohne:
+- `col-confirmed`: durch CoL bestätigt;
+- `col-reference-gap`: exakte Art ist durch andere Quellen bestätigt, fehlt aber in CoL;
+- `externally-confirmed`: mindestens eine geeignete externe Quelle bestätigt das Taxon;
+- `conflicting`: relevante Aussagen widersprechen sich;
+- `stale`: eine zuvor vorhandene Quellenaussage fehlt im neuen Quellenstand;
+- `manually-protected`: ein Feld ist ausdrücklich redaktionell geschützt.
 
-- eine zweite Projektart anzulegen,
-- den vorhandenen URL-Slug zu ändern,
-- Assets umzubenennen oder
-- die Master-ID auszutauschen.
+## Tabellen und Provenienz
 
-## Tabellen und Zuständigkeiten
+- `provider_release`: versionierter Quellenstand mit Anbieter, Version, Umfang, Prüfsumme, Zeitpunkt und Lizenz;
+- `master_taxon`: stabile ID, kanonischer wissenschaftlicher Name, Rang, Reich und Lebenszyklus;
+- `provider_taxon_assertion`: unveränderte Taxonaussage eines Anbieter-Releases;
+- `provider_slice_membership`: Grund, weshalb eine Anbieterzeile lokal gespeichert wird;
+- `provider_name_assertion`: wissenschaftliche, synonyme und gebräuchliche Namen mit Sprache;
+- `master_taxon_alias`: erhaltene Synonyme, frühere und projektbezogene Namen;
+- `master_field_assertion`: einzelne Feldwerte mit Herkunft, Release, Konfidenz und Prüfstatus;
+- `master_taxon_status`: kombinierbare Masterzustände;
+- `master_conflict`: geänderte, entfernte, mehrdeutige oder zurückgekehrte Aussagen;
+- `project_taxon_link`: stabile Verbindung zwischen Projektart, URL-Slug und Master-ID;
+- `master_decision`: nachvollziehbare Entscheidungen zum Behalten, Übernehmen, Alias oder manuellen Schutz.
 
-### `provider_release`
-
-Versioniert jeden vollständigen oder ausschnittsweisen Quellenstand. Pro Anbieter darf höchstens ein Release
-`active` und eines `previous` sein. Ältere vorherige Stände werden `archived`; fehlerhafte Kandidaten können
-`failed` bleiben.
-
-### `master_taxon`
-
-Enthält die stabile Master-ID, den kanonischen wissenschaftlichen Namen, Rang, Reich und Lebenszyklusstatus.
-`reference_state` unterscheidet:
-
-- `exact-col`: exakte Art in der aktiven CoL-Referenz,
-- `reference-gap`: anderweitig exakt belegtes Taxon, dessen Artstufe in CoL fehlt,
-- `external-only`: noch nicht mit CoL verbunden,
-- `manual`: bewusst manuell angelegtes Mastertaxon.
-
-Taxa werden bei Quellenverlust als `stale` oder `deprecated` markiert und nicht blind gelöscht.
-
-### `provider_taxon_assertion` und `provider_name_assertion`
-
-Speichern die unveränderte Aussage eines konkreten Anbieter-Releases einschließlich Anbieter-ID, Name, Rang,
-Status, Zuordnungszustand und gebräuchlichen beziehungsweise synonymen Namen. Eine Anbieterzeile kann bewusst
-unverknüpft oder konfliktbehaftet bleiben.
-
-### `master_field_assertion`
-
-Speichert einzelne Feldwerte mit Sprache, Herkunft, Quellenrelease, optionaler Konfidenz und Prüfstatus. Pro
-Mastertaxon, Feld und Sprache kann höchstens eine Aussage ausgewählt sein. Quellenfelder müssen auf die passende
-Taxonzeile desselben Releases verweisen. Manuelle und projektbezogene Aussagen bleiben davon getrennt.
-
-Ein neues Quellenrelease darf eine ausgewählte manuelle Aussage nur als Konfliktkandidaten ergänzen, nicht
-automatisch ersetzen.
-
-### `master_conflict`
-
-Hält Änderungen, entfernte Quellen, mehrdeutige Zuordnungen, CoL-Lücken und das spätere Wiedererscheinen einer
-CoL-Referenz nachvollziehbar fest. Konflikte bleiben offen, bis eine Entscheidung `behalten`, `übernehmen`,
-`manuell` oder `verwerfen` gespeichert wurde.
-
-### `project_taxon_link`
-
-Verbindet eine Projektart und ihren bestehenden URL-Slug mit genau einer stabilen Master-ID. Diese Zuordnung ist
-die Schutzgrenze gegen stille Umbenennungen und doppelte Projektarten.
+Damit ist für jeden ausgewählten Namen, Rang und Hierarchiewert nachvollziehbar, aus welchem Quellenstand er stammt.
 
 ## Verbindliche Zusammenführungsregeln
 
-1. CoL bleibt Primärreferenz, wird aber nie durch Master- oder Anbieterdaten verändert.
-2. Exakte Taxonzuordnung berücksichtigt mindestens wissenschaftlichen Namen, Rang und Reich.
-3. Eine Unterart darf eine fehlende Artstufe nicht ersetzen.
-4. Ein neueres Quellenrelease ist ein Kandidat und kein automatischer Gewinner.
-5. Ausgewählte manuelle oder projektbezogene Werte bleiben ausgewählt, bis sie ausdrücklich geändert werden.
-6. Entfernte Quellendatensätze werden als veraltet markiert; abhängige Mastertaxa werden nicht blind gelöscht.
-7. Jede ausgewählte Aussage besitzt nachvollziehbare Releaseprovenienz.
-8. Eine Kandidatendatenbank darf erst nach Schema-, Fremdschlüssel-, Integritäts-, Konflikt- und Projektabgleich
-   aktiviert werden.
-9. Bei einem Fehler bleibt die bisherige aktive Masterdatenbank unverändert; die vorherige Version bleibt für
-   Rollback erhalten.
+1. Ausdrücklich geschützte Projekt- und manuelle Werte haben Vorrang.
+2. CoL XR ist die globale Primärreferenz.
+3. WoRMS ist nur für marine und brackische Taxa die bevorzugte Fachergänzung.
+4. GBIF und iNaturalist ergänzen Taxonlücken und dienen dem Abgleich.
+5. Wikidata ergänzt deutsche/englische Namen und externe IDs.
+6. Eine Unterart wird niemals automatisch zur fehlenden Art hochgestuft.
+7. Eine vorhandene Hierarchie wird nicht still überschrieben.
+8. Synonyme, frühere Namen und alternative Namen bleiben erhalten.
+9. Entfernte Anbieterzeilen werden zunächst als veraltet markiert statt gelöscht.
+10. Widersprüche werden als Konflikt zur Prüfung angezeigt.
+11. Ein neuerer Quellenstand gewinnt nicht automatisch.
+12. Exakte Zuordnungen berücksichtigen mindestens wissenschaftlichen Namen, Rang und Reich. Die Reichssynonyme
+    `Animalia`, `Animal`, `Animals` und `Metazoa` werden dabei kontrolliert als dasselbe Reich behandelt; echte
+    reichsübergreifende Homonyme bleiben getrennt.
 
-## Regressionsfall `Sciurus vulgaris`
+## Kandidat, Konflikte und Aktivierung
 
-Der Testfall bildet die reale CoL-Lücke ausdrücklich ab:
+Ein Update baut immer zuerst einen neuen Master-Kandidaten aus aktueller CoL-Referenz, Anbieter-Ausschnitten,
+Projektzuordnungen und Korrekturen. Die Vorschau zeigt insbesondere:
 
-1. Das aktive CoL-Release enthält passende Unterarten, aber keine exakte Artzeile `Sciurus vulgaris`.
-2. GBIF `8211070`, iNaturalist `46001` und Wikidata `Q4388` belegen dieselbe Art.
-3. Es entsteht genau ein Mastertaxon mit `reference-gap`.
-4. Deutscher Name `Eurasisches Eichhörnchen`, englischer Name `Eurasian Red Squirrel` und der bestehende
-   Projekt-Slug `sciurusvulgaris` werden mit Provenienz an diese ID gebunden.
-5. Liefert ein späteres CoL-Release die exakte Art, wird sie an dieselbe Master-ID angefügt und der Status auf
-   `exact-col` gesetzt.
-6. Projektart und URL-Slug bleiben unverändert.
+- neue Taxa und geschlossene CoL-Lücken;
+- geänderte wissenschaftliche, deutsche und englische Namen;
+- neue Synonyme;
+- entfernte oder veraltete Quelleneinträge;
+- Hierarchieänderungen;
+- Konflikte mit vorhandenen Projektarten.
 
-Der Test verhindert insbesondere, dass eine vorhandene Unterart fälschlich zur Art hochgestuft oder beim späteren
-CoL-Nachtrag eine zweite Art angelegt wird.
+Offene blockierende Konflikte verhindern die Aktivierung. In der Explorer-Oberfläche stehen die Entscheidungen
+`bisherigen Wert behalten`, `neuen Wert übernehmen`, `als Alias ergänzen` und `dauerhaft manuell schützen` zur
+Verfügung. Erst eine bestätigte, konfliktfreie Vorschau wird atomar aktiviert.
 
-## Implementierung
+## Explorer-Integration
 
-- `species-explorer/taxonomy-master-storage.mjs`: pfadunabhängige aktive, Kandidaten- und vorherige Slots
-- `species-explorer/taxonomy-master-schema.mjs`: SQLite-Schema, Constraints und Integritätsprüfung
-- `species-explorer/taxonomy-master-model.mjs`: stabile IDs, Releaselebenszyklus, Aussagen, Auswahl, Konflikte und
-  Projektverknüpfungen
-- `species-explorer/taxonomy-master.test.mjs`: Release-, Schutz- und `Sciurus vulgaris`-Regressionen
+Der Neue-Art-Assistent sucht bevorzugt in der aktiven Masterdatenbank. Für alle lokal enthaltenen Einträge ist die
+Suche vollständig offline. Treffer zeigen Namen, Rang, Reich, Quellen und Masterstatus; eine CoL-Referenzlücke wird
+verständlich gekennzeichnet. Falls noch keine Masterdatenbank installiert ist, bleibt die bisherige lokale
+CoL-/Ergänzungssuche als sichere Rückfallebene erhalten.
 
-Fokussierter Test:
+Unter `Datenbank-Aktionen > Taxonomiereferenz` kann ein neuer Master-Kandidat aufgebaut, geprüft, bestätigt
+aktiviert oder auf die vorherige Version zurückgerollt werden. Fortschritt und Abschlusszustand bleiben im Dialog
+sichtbar.
+
+## Regression `Sciurus vulgaris`
+
+Der reale Sonderfall ist verbindlich abgesichert:
+
+1. CoL enthält im verwendeten Stand nur zugehörige Unterarten, aber keine exakte Artzeile `Sciurus vulgaris`.
+2. GBIF und iNaturalist bestätigen die Art; Wikidata liefert den deutschen Namen.
+3. `Animalia`, `Metazoa` und ein fehlender Reichswert werden zu genau einem Projekt-Taxon zusammengeführt.
+4. Es entsteht genau eine stabile Master-ID mit `col-reference-gap`.
+5. Der bestehende Projekt-Slug `sciurusvulgaris` bleibt unverändert.
+6. Liefert CoL später die exakte Art, wird nur die Referenzlücke geschlossen; es entsteht kein zweiter Datensatz.
+
+Weitere Tests decken Homonyme, Synonyme, manuell geschützte Werte, doppelte Anbieter-IDs, Anbieter-Ausfälle,
+entfernte Quelleneinträge, unterbrochene Aktivierung und Rollback ab.
+
+## Reale Migration vom 1. August 2026
+
+Der produktionsnahe Lauf wurde mit echter CoL-Vollreferenz und echten Anbieter-Ausschnitten ausgeführt:
+
+| Messwert | Ergebnis |
+| --- | ---: |
+| Projektarten geprüft/verknüpft | 52 / 52 |
+| fehlende Projektarten / fehlerhafte Links | 0 / 0 |
+| Mastertaxa | 496 |
+| Anbieter-Aussagen | 2.134 |
+| Namen / Aliasse | 5.709 / 1.033 |
+| Feldprovenienzen | 10.189 |
+| CoL-Vollreferenz | 4.639.747 Taxa |
+| iNaturalist-/GBIF-/WoRMS-/Wikidata-Ausschnitt | 211 / 1.333 / 69 / 317 |
+| aktiver SQLite-Bestand | ca. 5,94 MiB |
+| gesamter Masterbereich einschließlich Rollback | ca. 13,87 MiB |
+| exakte Offline-Abfrage nach Optimierung | Ø ca. 1,55 ms pro Projektart |
+| temporäre Importartefakte nach Abschluss | 0 |
+
+Ein echter zweiter Kandidat wurde aktiviert und anschließend erfolgreich auf die zuvor aktive Version
+zurückgerollt. Die aktive CoL-Vollreferenz, Projektarten, Slugs und Assets blieben unverändert.
+
+## Implementierung und Tests
+
+Zentrale Module:
+
+- `taxonomy-master-schema.mjs`, `taxonomy-master-model.mjs`, `taxonomy-master-store.mjs`;
+- `taxonomy-master-rules.mjs`, `taxonomy-master-slices.mjs`, `taxonomy-master-candidate.mjs`;
+- `taxonomy-master-lifecycle.mjs`, `taxonomy-master-service.mjs`;
+- `public/app-taxonomy-master.js` und die Master-Routen im lokalen Server;
+- `scripts/taxonomy-master-migrate.mjs` für Migration, Verifikation, Messung, Aufräumen und Rollbacktest.
+
+Fokussierte Prüfung:
 
 ```powershell
 npm.cmd run --silent test:taxonomy-master
 ```
 
-## Nächste Schritte
+Reale, ausdrücklich bestätigte Migration:
 
-- Phase 9.7: versionierte relevante Anbieter-Ausschnitte importieren und die bestehende Ergänzungs-/Korrekturschicht
-  ohne Datenverlust in einen Master-Kandidaten überführen.
-- Phase 9.8: regelbasierten Merge-, Diff-, Veraltungs- und Konfliktworkflow umsetzen.
-- Phase 9.9: Explorer-Suche, Neue-Art-Assistent und Wartungsdialog kontrolliert auf die aktive Masteransicht
-  umstellen.
-- Phase 9.10: echten Import, Aktivierung, Fehlerfall und Rollback mit produktionsnahen Daten prüfen.
-- Phase 9.11: umfassendes Phase-9-Abschlussaudit nach der verbindlichen Auditregel.
+```powershell
+npm.cmd run --silent taxonomy:master:migrate -- --activate --verify-rollback
+```
+
+Der vollständige Abschlussaudit steht in `docs/audits/2026-08-phase-9-audit.md`.
