@@ -466,5 +466,14 @@
     "weight": "ca. 1,8-3,0 kg",
     "life_expectancy": "ca. 20-30 Jahre",
     "english": "Bateleur"
+  },
+  {
+    "german": "Gabelracke",
+    "english": "Lilac-breasted Roller",
+    "genus": "Coracias",
+    "species": "caudatus",
+    "size": "ca. 35-38 cm",
+    "weight": "ca. 90-140 g",
+    "life_expectancy": "ca. 8-12 Jahre"
   }
 ]

@@ -1246,5 +1246,29 @@
     "Letztes IUCN Update": "2020",
     "Daten abgerufen": "2026-07-25",
     "Englischer Name": "Bateleur"
+  },
+  {
+    "URLSlug": "coraciascaudatus",
+    "Wissenschaftlicher Name": "Coracias caudatus",
+    "Deutscher Name": "Gabelracke",
+    "Englischer Name": "Lilac-breasted Roller",
+    "Gewicht": "ca. 90-140 g",
+    "Größe": "ca. 35-38 cm",
+    "Lebenserwartung": "ca. 8-12 Jahre",
+    "Assessment ID": 263602096,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "U",
+    "Generationsdauer": "4,28 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Coraciiformes",
+    "Family": "Coraciidae",
+    "Genus": "Coracias",
+    "Species": "caudatus",
+    "Letztes IUCN Update": "2024",
+    "Daten abgerufen": "2026-08-02"
   }
 ]
