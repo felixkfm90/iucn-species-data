@@ -1270,5 +1270,29 @@
     "Species": "caudatus",
     "Letztes IUCN Update": "2024",
     "Daten abgerufen": "2026-08-02"
+  },
+  {
+    "URLSlug": "pteroglossustorquatus",
+    "Wissenschaftlicher Name": "Pteroglossus torquatus",
+    "Deutscher Name": "Halsbandarassari",
+    "Englischer Name": "Collared Aracari",
+    "Gewicht": "ca. 180-275 g",
+    "Größe": "ca. 38-43 cm",
+    "Lebenserwartung": "ca. 15-20 Jahre",
+    "Assessment ID": 168665137,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "U",
+    "Generationsdauer": "4,84 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Piciformes",
+    "Family": "Ramphastidae",
+    "Genus": "Pteroglossus",
+    "Species": "torquatus",
+    "Letztes IUCN Update": "2023",
+    "Daten abgerufen": "2026-08-03"
   }
 ]

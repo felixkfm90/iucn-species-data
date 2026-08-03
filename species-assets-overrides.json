@@ -1302,6 +1302,35 @@
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-08-02T10:44:11.269Z"
       }
+    },
+    "Halsbandarassari": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "1.1.0",
+        "importedAt": "2026-08-03T15:01:32.563Z",
+        "approvedAt": "2026-08-03T15:01:42.099Z",
+        "sha256": "dfb27f693958f5bc61a7a3d089fa8fafd80e0331f68659b6b45e7d76ef7c25f4",
+        "metadataSha256": "767f28b724925044c6c55700f3dad1a8a8fdb47e0e31025676208924b7a45ae8"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "9b5f628f527b670aaef3143fe910e37a42a55619e5df185f019d879cf4907bc4",
+        "spectrogramSha256": "7df25ddc1d95b22e994d32e66176a93211b3b6c7efc5ccd9e0effe7fb58fb3dd",
+        "generatedAt": "2026-08-03T15:01:58.012Z",
+        "verifiedAt": "2026-08-03T15:01:58.017Z"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-08-03T15:02:33.466Z"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-08-03T15:02:33.466Z"
+      }
     }
   },
   "spectrogramGenerator": {

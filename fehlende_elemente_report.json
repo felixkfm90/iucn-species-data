@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-02T10:49:11.170Z",
+  "generatedAt": "2026-08-03T15:01:58.098Z",
   "counts": {
-    "totalSpecies": 53,
+    "totalSpecies": 54,
     "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 2,
-    "ncSoundLicensesAll": 8
+    "ncSoundLicensesAll": 9
   },
   "missing": {
     "soundMp3": [
@@ -51,6 +51,7 @@
     "Gaukler",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
+    "Halsbandarassari",
     "Löwe",
     "Scharlachara"
   ]

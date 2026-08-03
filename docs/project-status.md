@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-08-02T10:49:11.170Z`
+Report-Datenstand: `2026-08-03T15:01:58.098Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 53 |
-| Aktive Arten | 53 |
-| Arten in `speciesData.json` | 53 |
-| Vollständige Art-Assetordner | 53 |
-| Karten | 53 |
-| Sounds | 51 |
-| Credits | 51 |
-| Spektrogramme | 51 |
-| Artporträts | 53 |
+| Eingaben in `species_list.json` | 54 |
+| Aktive Arten | 54 |
+| Arten in `speciesData.json` | 54 |
+| Vollständige Art-Assetordner | 54 |
+| Karten | 54 |
+| Sounds | 52 |
+| Credits | 52 |
+| Spektrogramme | 52 |
+| Artporträts | 54 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
@@ -25,7 +25,7 @@ Report-Datenstand: `2026-08-02T10:49:11.170Z`
 
 - Blaukehlchen
 
-## Aktive NC-Soundlizenzen (8)
+## Aktive NC-Soundlizenzen (9)
 
 - Bisamratte
 - Blaustirn-Blatthühnchen
@@ -33,6 +33,7 @@ Report-Datenstand: `2026-08-02T10:49:11.170Z`
 - Gaukler
 - Geoffroy-Klammeraffe
 - Großtrappe
+- Halsbandarassari
 - Löwe
 - Scharlachara
 

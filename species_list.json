@@ -475,5 +475,14 @@
     "size": "ca. 35-38 cm",
     "weight": "ca. 90-140 g",
     "life_expectancy": "ca. 8-12 Jahre"
+  },
+  {
+    "german": "Halsbandarassari",
+    "english": "Collared Aracari",
+    "genus": "Pteroglossus",
+    "species": "torquatus",
+    "size": "ca. 38-43 cm",
+    "weight": "ca. 180-275 g",
+    "life_expectancy": "ca. 15-20 Jahre"
   }
 ]
