@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-07-29
+Stand: 2026-08-09
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,

@@ -1,6 +1,6 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-08
+Stand: 2026-08-09
 
 Status: Phase 9.1 bis 9.12, der erweiterte reale Neuaufbau, der Betriebstest und das umfassende Abschlussaudit sind
 seit 2026-08-09 abgeschlossen. Lightroom beginnt getrennt in Phase 10.
@@ -498,7 +498,8 @@ echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest
 
 ### 9.8 Versionierte Anbieterbestände und -ausschnitte
 
-- **Technisch erweitert am 2026-08-08; realer Neuaufbau läuft.**
+- **Abgeschlossen am 2026-08-09.** Der reale Neuaufbau und Betriebstest sind Bestandteil des freigegebenen
+  Phase-9-Masterbestands.
 - breiter lokaler, versionierter iNaturalist-Namens- und Artlückenausschnitt für alle gegen CoL erkannten
   Artlücken sowie CoL-Arten mit fehlenden deutschen oder englischen Namen
 - relevante, versionierte Ausschnitte aus GBIF, WoRMS und Wikidata für Projektarten, CoL-Lücken, recherchierte

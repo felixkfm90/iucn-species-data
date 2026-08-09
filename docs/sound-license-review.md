@@ -12,9 +12,9 @@ Quelle:
 - `species-assets/*/credits.json`
 - `speciesData.json`
 
-## Kurzfazit
+## Historisches Kurzfazit
 
-Alle aktiven Arten haben laut Report Sounddatei und Credits. Der aktuelle Report nennt 3 aktive Arten mit
+Alle damals aktiven Arten hatten laut Report Sounddatei und Credits. Der damalige Report nannte 3 aktive Arten mit
 Non-Commercial-Lizenzhinweis. Diese Sounds sollten vor kommerzieller Nutzung ersetzt, entfernt oder rechtlich geklaert
 werden.
 
@@ -39,7 +39,7 @@ Breitere Suchen in Xeno-Canto, Wikimedia Commons und iNaturalist ergaben fuer di
 verwendbare freie MP3-Alternative. Ein Commons-Treffer fuer `Bisamratte` ist nur eine Aussprachedatei und wurde deshalb
 nicht verwendet.
 
-## Aktive NC-Lizenzen laut Report
+## Damals aktive NC-Lizenzen laut Report
 
 | Art | Wissenschaftlicher Name | Lizenz | Quelle |
 |---|---|---|---|
@@ -47,7 +47,10 @@ nicht verwendet.
 | Brauenmotmot | Eumomota superciliosa | CC BY-NC-ND 2.5 | https://xeno-canto.org/11684 |
 | Geoffroy-Klammeraffe | Ateles geoffroyi | CC BY-NC-ND 4.0 | https://xeno-canto.org/1009734 |
 
-## Empfohlene naechste Schritte
+## Damals empfohlene naechste Schritte
+
+Diese Liste dokumentiert ausschließlich die damalige Prüfung. Aktuelle Maßnahmen werden aus
+`docs/project-status.md`, `fehlende_elemente_report.json` und den jeweiligen `credits.json` abgeleitet.
 
 1. Fuer die 3 aktiven NC-Sounds offene Alternativen suchen, bevorzugt CC0, CC BY oder CC BY-SA.
 2. Wenn keine offene Alternative verfuegbar ist, Sound auf der Website entfernen oder ausdruecklich rechtlich pruefen.
