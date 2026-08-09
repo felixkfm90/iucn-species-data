@@ -37,6 +37,7 @@ const PROVIDER_LABELS = Object.freeze({
   gbif: "GBIF",
   worms: "WoRMS",
   wikidata: "Wikidata",
+  animalia: "Animalia",
   manual: "Eigene Korrektur",
   project: "Arten-Explorer",
 });
@@ -119,6 +120,11 @@ export class TaxonomyMasterStore {
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.slot = slot;
     this.closed = false;
+    this.hasSearchIndex = Boolean(this.database.prepare(`
+      SELECT 1 AS available
+      FROM sqlite_master
+      WHERE type = 'table' AND name = 'master_search_term'
+    `).get());
     this.taxonRows = this.database.prepare(`
       SELECT * FROM master_taxon
       WHERE lifecycle_state != 'deprecated'
@@ -127,6 +133,29 @@ export class TaxonomyMasterStore {
     this.taxonRow = this.database.prepare(`
       SELECT * FROM master_taxon WHERE master_taxon_id = ?
     `);
+    this.indexedSearchRows = this.hasSearchIndex ? Object.fromEntries([
+      ["normalized", "normalized_term"],
+      ["folded", "folded_term"],
+      ["german", "german_key"],
+    ].map(([variant, column]) => [variant, this.database.prepare(`
+      SELECT taxon.*, term.term, term.term_kind, term.language,
+        term.source_provider, term.weight, term.${column} AS matched_index_value
+      FROM master_search_term term
+      JOIN master_taxon taxon ON taxon.master_taxon_id = term.master_taxon_id
+      WHERE taxon.lifecycle_state != 'deprecated'
+        AND term.${column} >= ?
+        AND term.${column} < ?
+      ORDER BY term.${column}, term.weight,
+        taxon.canonical_name_normalized, taxon.master_taxon_id
+      LIMIT ?
+    `)])) : null;
+    this.kingdomCounts = this.database.prepare(`
+      SELECT kingdom, COUNT(*) AS count
+      FROM master_taxon
+      WHERE lifecycle_state != 'deprecated' AND kingdom != ''
+      GROUP BY kingdom
+      ORDER BY kingdom
+    `);
     this.exactCanonicalRows = this.database.prepare(`
       SELECT taxon.*, taxon.canonical_scientific_name AS matched_name,
         'accepted_scientific' AS matched_type
@@ -134,6 +163,19 @@ export class TaxonomyMasterStore {
       WHERE taxon.lifecycle_state != 'deprecated'
         AND taxon.canonical_name_normalized = ?
     `);
+    this.exactIndexedSearchRows = this.hasSearchIndex ? this.database.prepare(`
+      SELECT taxon.*, term.term AS matched_name,
+        CASE
+          WHEN term.term_kind = 'synonym' THEN 'scientific_synonym'
+          ELSE 'accepted_scientific'
+        END AS matched_type
+      FROM master_search_term term
+      JOIN master_taxon taxon ON taxon.master_taxon_id = term.master_taxon_id
+      WHERE taxon.lifecycle_state != 'deprecated'
+        AND term.normalized_term = ?
+        AND term.term_kind IN ('scientific', 'synonym')
+      ORDER BY term.weight, taxon.canonical_name_normalized, taxon.master_taxon_id
+    `) : null;
     this.exactSelectedScientificRows = this.database.prepare(`
       SELECT taxon.*, field.field_value AS matched_name,
         'accepted_scientific' AS matched_type
@@ -420,6 +462,75 @@ export class TaxonomyMasterStore {
   } = {}) {
     this.assertOpen();
     const maximum = Math.max(1, Math.min(100, Number(limit) || 12));
+    if (this.indexedSearchRows) {
+      const queryVariants = [
+        normalized(query),
+        foldTaxonomySearchTerm(query),
+        germanTaxonomySearchKey(query),
+      ];
+      if (!queryVariants.some(Boolean)) return {
+        query: String(query ?? ""), normalizedQuery: normalized(query), kind, kingdom,
+        kingdoms: Array.isArray(kingdoms) ? [...kingdoms] : null,
+        language, rank, limit: maximum, results: [], selected: null,
+        ambiguous: false, source: "Taxonomie-Masterdatenbank",
+      };
+      const rowLimit = Math.min(2_000, Math.max(100, maximum * 30));
+      const rows = [
+        ["normalized", queryVariants[0]],
+        ["folded", queryVariants[1]],
+        ["german", queryVariants[2]],
+      ].flatMap(([variant, value]) => value
+        ? this.indexedSearchRows[variant].all(value, `${value}\uffff`, rowLimit)
+          .map((row) => ({
+            ...row,
+            search_score: Number(row.weight) + (row.matched_index_value === value ? 0 : 10),
+          }))
+        : [])
+        .sort((left, right) => (
+          left.search_score - right.search_score
+          || left.canonical_name_normalized.localeCompare(right.canonical_name_normalized, "en")
+          || left.master_taxon_id.localeCompare(right.master_taxon_id, "en")
+        ));
+      const allowedKinds = kind === "all"
+        ? null
+        : kind === "scientific"
+          ? new Set(["scientific", "synonym"])
+          : kind === "vernacular"
+            ? new Set(["vernacular", "project"])
+            : new Set(["identifier"]);
+      const seen = new Set();
+      const results = [];
+      for (const row of rows) {
+        if (seen.has(row.master_taxon_id)) continue;
+        if (!matchesKingdom(row, { kingdom, kingdoms })) continue;
+        if (rank !== "all" && row.rank !== rank) continue;
+        if (allowedKinds && !allowedKinds.has(row.term_kind)) continue;
+        if (language !== "all" && row.term_kind === "vernacular" && row.language !== language) continue;
+        const taxon = this.compactTaxon(row);
+        const type = row.term_kind === "synonym"
+          ? "scientific_synonym"
+          : row.term_kind === "scientific"
+            ? "accepted_scientific"
+            : row.term_kind;
+        results.push(this.formatSearchResult(taxon, { value: row.term, type }));
+        seen.add(row.master_taxon_id);
+        if (results.length === maximum) break;
+      }
+      return {
+        query: String(query ?? ""),
+        normalizedQuery: normalized(query),
+        kind,
+        kingdom,
+        kingdoms: Array.isArray(kingdoms) ? [...kingdoms] : null,
+        language,
+        rank,
+        limit: maximum,
+        results,
+        selected: null,
+        ambiguous: results.length > 1,
+        source: "Taxonomie-Masterdatenbank",
+      };
+    }
     const ranked = [];
     for (const row of this.taxonRows.all()) {
       const taxon = this.compactTaxon(row);
@@ -465,11 +576,17 @@ export class TaxonomyMasterStore {
     this.assertOpen();
     const query = normalized(scientificName);
     if (!query) return null;
-    const rows = uniqueBy([
-      ...this.exactCanonicalRows.all(query),
-      ...this.exactSelectedScientificRows.all(query),
-      ...this.exactAliasRows.all(query),
-    ].map(plain), (row) => `${row.master_taxon_id}|${row.matched_type}`);
+    const exactRows = this.exactIndexedSearchRows
+      ? this.exactIndexedSearchRows.all(query)
+      : [
+        ...this.exactCanonicalRows.all(query),
+        ...this.exactSelectedScientificRows.all(query),
+        ...this.exactAliasRows.all(query),
+      ];
+    const rows = uniqueBy(
+      exactRows.map(plain),
+      (row) => `${row.master_taxon_id}|${row.matched_type}`,
+    );
     const matches = [];
     for (const row of rows) {
       const taxon = this.compactTaxon(row);
@@ -562,12 +679,10 @@ export class TaxonomyMasterStore {
 
   kingdoms() {
     this.assertOpen();
-    const counts = new Map();
-    for (const row of this.taxonRows.all()) {
-      if (!row.kingdom) continue;
-      counts.set(row.kingdom, (counts.get(row.kingdom) || 0) + 1);
-    }
-    const values = [...counts].map(([scientificName, taxonCount]) => ({
+    const values = this.kingdomCounts.all().map((row) => ({
+      scientificName: row.kingdom,
+      taxonCount: Number(row.count),
+    })).map(({ scientificName, taxonCount }) => ({
       id: scientificName,
       scientificName,
       label: `${germanTaxonomyDisplayName("kingdom", scientificName) || scientificName} (${scientificName})`,
@@ -593,7 +708,7 @@ export async function openTaxonomyMasterStore({ taxonomyRoot, slot = "active" } 
     const { DatabaseSync } = await loadNodeSqlite();
     const database = new DatabaseSync(databasePath, { readOnly: true });
     try {
-      validateTaxonomyMasterDatabase(database);
+      validateTaxonomyMasterDatabase(database, { full: false });
       return new TaxonomyMasterStore({ database, manifest, taxonomyRoot, slot });
     } catch (error) {
       database.close();

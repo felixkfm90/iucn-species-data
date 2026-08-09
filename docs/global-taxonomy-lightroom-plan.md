@@ -1,9 +1,9 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-01
+Stand: 2026-08-08
 
-Status: Phase 9.1 bis 9.12 abgeschlossen, real migriert, aktiviert und auditiert; Lightroom beginnt getrennt in
-Phase 10
+Status: Phase 9.1 bis 9.12, der erweiterte reale Neuaufbau, der Betriebstest und das umfassende Abschlussaudit sind
+seit 2026-08-09 abgeschlossen. Lightroom beginnt getrennt in Phase 10.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -40,8 +40,9 @@ API und die kontrollierte Übernahme im Neue-Art-Assistenten umgesetzt; der verb
 Aktualisierungsworkflow nach `docs/taxonomy-reference-update.md` um. Phase 9.6 bis 9.12 ergänzen nach
 `docs/taxonomy-master-database-design.md` die physisch getrennte Masterdatenbank mit stabilen IDs, versionierten
 Anbieterausschnitten, Feldprovenienz, Zusammenführungs- und Konfliktregeln, Explorer-Integration, atomarer
-Aktivierung und Rollback. Die aktive CoL-Vollreferenz bleibt dabei unverändert und read-only. Die reale Migration
-und das umfassende Abschlussaudit sind unter `docs/audits/2026-08-phase-9-audit.md` dokumentiert.
+Aktivierung und Rollback. Die aktive CoL-Vollreferenz bleibt dabei unverändert und read-only. Der alte kleine
+Masterlauf vom 2026-08-01 ist nur eine historische technische Basis. Der erweiterte reale Neuaufbau und das
+umfassende Abschlussaudit vom 2026-08-09 ersetzen dessen Messwerte und Freigabe.
 Lightroom-Anbindung folgt in Phase 10, Mehrgeräteverteilung in Phase 11.
 
 ## A. Ausgangslage
@@ -86,10 +87,11 @@ Prioritätsregeln und Testtaxa stehen in `docs/taxonomy-source-decision.md`.
 | --- | --- | --- |
 | Catalogue of Life Extended Release | breitester reproduzierbarer globaler Bestand; Base-Herkunft bleibt unterscheidbar | primäre globale Referenz |
 | Catalogue of Life Base Release | fachlich stärker kuratierter Kern des XR-Bestands | Vertrauensstufe innerhalb des XR-Imports, kein zweiter Parallelbestand |
+| iNaturalist | großer, versioniert abrufbarer Namens- und Taxonbestand | breiter lokaler Artlücken- und Namensausschnitt für CoL-Lücken sowie fehlende deutsche/englische Namen |
 | GBIF | aktuelle Website-Taxonomie basiert selbst auf CoL XR; alter Backbone wird nicht weitergeführt | Alt-ID-Mapping, Taxonabgleich, Vorkommensdaten und Kartenbezüge |
 | WoRMS | fachlich spezialisierte Quelle mit AphiaIDs, Synonymen und Hierarchien für Meerestiere | zusätzliche Validierung mariner und brackischer Taxa |
 | Wikidata | breite mehrsprachige Labels und externe IDs, aber keine taxonomische Autorität | optionale quellenmarkierte Namens- und ID-Vorschläge |
-| Animalia.bio | redaktionell nützlich, aber ohne dokumentierte öffentliche API und versionierten Bulk-Export | ausschließlich manuelle Referenz, kein Scraping |
+| Animalia.bio | redaktionell nützlich, aber ohne dokumentierte öffentliche API und versionierten Bulk-Export | kontrollierter, quellenbelegter letzter Fallback für verbleibende Tierlücken; kein automatisches Scraping |
 | IUCN Red List | bestehende Quelle für Assessments und Schutzdaten, keine globale Taxonomie | Gefährdungs- und Assessmentdaten angelegter Projektarten |
 
 Für jeden Kandidaten entsteht eine nachvollziehbare Entscheidungsmatrix mit mindestens diesen Prüfpunkten:
@@ -112,8 +114,24 @@ Für jeden Kandidaten entsteht eine nachvollziehbare Entscheidungsmatrix mit min
 - Importdauer, Speicherbedarf und Betriebsaufwand
 - Verhalten bei Mehrdeutigkeiten und widersprüchlichen Quellen
 
-Die Kombination ist streng hierarchisch: CoL XR liefert den globalen Grundbestand; WoRMS validiert Meerestiere;
-GBIF, Wikidata, Animalia.bio und IUCN besitzen klar abgegrenzte Ergänzungsrollen. Keine Ergänzungsquelle darf die
+Die lokale Masterdatenbank wird verbindlich in dieser Reihenfolge aufgebaut:
+
+```text
+CoL XR
++ iNaturalist-Namensbestand
++ GBIF-Namen und Kennungen
++ WoRMS für marine Taxa
++ Wikidata-Taxonauszug
++ Animalia für restliche belegte Lücken
++ eigene Korrekturen
+────────────────────────────────────
+= lokale Masterdatenbank
+```
+
+CoL XR liefert den vollständigen globalen Primärbestand. iNaturalist wird nicht nur bedarfsgesteuert verwendet,
+sondern als breiter lokaler, versionierter Artlücken- und Namensausschnitt importiert. GBIF, WoRMS und Wikidata
+liefern relevante versionierte Ausschnitte; Animalia ergänzt nur danach verbleibende, kontrolliert belegte
+Tierlücken. Eigene bestätigte Korrekturen besitzen den höchsten Vorrang. Keine Ergänzungsquelle darf die
 CoL-Hierarchie oder bestätigte Projektdaten still überschreiben.
 
 ## C. Lokale Speicherung
@@ -238,7 +256,7 @@ bietet:
 
 - lokal konfigurierbare Reichsauswahl mit `Tiere (Animalia)` als erstem Standard und weiteren Reichen aus der
   Referenzdatenbank
-- getrennte Vorschläge für deutsche, englische und wissenschaftliche Namen nach 300 Millisekunden
+- getrennte Vorschläge für deutsche, englische und wissenschaftliche Namen nach 500 Millisekunden
 - globale Suche nach wissenschaftlichem Namen
 - Suche nach deutschem Namen, sofern belegt vorhanden
 - Trefferliste bei mehreren passenden Taxa
@@ -428,8 +446,9 @@ Vollimport bleibt bis nach der Freigabe von 9.4 gesperrt.
 - `Tiere (Animalia)` ist Standard, `Alle Reiche` muss bewusst gewählt werden.
 - Trefferliste und Detailvorschau zeigen Rang, akzeptierten Namen, Synonym, Klassifikation, Quelle, Release,
   Quellen-ID und Vertrauensstufe.
-- Kein Treffer wird still ausgewählt. Erst `Vorschlag übernehmen` füllt die Namensfelder; die bestehende
-  Eingabeprüfung und Speicherung bleiben danach verpflichtend.
+- Ein bewusst angeklickter Treffer schließt die schwebende Trefferliste und füllt deutschen, englischen und
+  wissenschaftlichen Namen direkt. Die bestehende Eingabeprüfung und Speicherung bleiben danach verpflichtend;
+  ein zusätzlicher Button `Vorschlag übernehmen` ist nicht erforderlich.
 - Der Neue-Art-Assistent bietet ausschließlich Taxa mit Rang `Art` an. Unterarten bleiben vorbereitet, aber bis
   zur kontrollierten Erweiterung des dreiteiligen Namens- und Slugmodells gesperrt.
 - Fehlende oder beschädigte Referenzdaten blockieren die manuelle Artanlage nicht.
@@ -477,14 +496,18 @@ echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest
   eines neueren Zeitstempels
 - Synonyme und alternative Namen bleiben erhalten; entfernte Quelleneinträge werden zunächst als veraltet markiert
 
-### 9.8 Versionierte Anbieter-Ausschnitte
+### 9.8 Versionierte Anbieterbestände und -ausschnitte
 
-- **Abgeschlossen am 2026-08-01.**
-- lokale, versionierte Ausschnitte aus iNaturalist, GBIF, WoRMS und Wikidata für Projektarten, CoL-Lücken,
-  recherchierte Taxa und eigene Korrekturen
+- **Technisch erweitert am 2026-08-08; realer Neuaufbau läuft.**
+- breiter lokaler, versionierter iNaturalist-Namens- und Artlückenausschnitt für alle gegen CoL erkannten
+  Artlücken sowie CoL-Arten mit fehlenden deutschen oder englischen Namen
+- relevante, versionierte Ausschnitte aus GBIF, WoRMS und Wikidata für Projektarten, CoL-Lücken, recherchierte
+  Taxa und eigene Korrekturen
+- kontrollierte, quellenbelegte Animalia-Einzelfälle als letzter Fallback für danach verbleibende Tierlücken
 - Anbieter-ID, wissenschaftlicher Name, Rang, Hierarchie, deutsche/englische Namen, Abrufzeitpunkt und
   Versionsstatus werden einzeln gespeichert
-- der bisherige Ergänzungscache wurde kontrolliert übernommen; vollständige Fremdbestände werden nicht gespiegelt
+- der bisherige Ergänzungscache wird kontrolliert übernommen; vollständige GBIF-, WoRMS-, Wikidata- und
+  Animalia-Bestände werden nicht gespiegelt
 
 ### 9.9 Master-Kandidat, Konflikte und Rollback
 
@@ -513,20 +536,24 @@ echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest
 - weitere Regressionen decken Homonyme, Synonyme, Umbenennungen, Anbieter-Ausfälle, verschwundene Quellen,
   doppelte Anbieterzeilen und unterbrochene Aktivierungen ab
 
-### 9.12 Reale Migration und umfassendes Abschlussaudit
+### 9.12 Reale Migration und Betriebstest
 
-- **Abgeschlossen am 2026-08-01.**
-- alle 52 Projektarten wurden ohne fehlende oder abweichende Projektverknüpfung migriert
-- aktive Masteransicht: 496 relevante Taxa, 2.134 Anbieteraussagen, 5.709 Namen, 1.033 Aliasse und 10.189
-  Feldprovenienzen
-- reale Aktivierung und Rückkehr zur vorherigen Version wurden erfolgreich ausgeführt; temporäre Importartefakte
-  blieben danach keine zurück
-- gesamter Master-Speicherbedarf: rund 13,87 MiB; exakte Suche über alle Projektarten im Mittel rund 1,55 ms
-- Code, Daten/Schemata, Datei-/Ordnerstruktur, Dokumentation, Tests, Qualitätsgate sowie Betriebs-, Aktivierungs-
-  und Wiederherstellungsabläufe wurden auditiert
+- **Abgeschlossen am 2026-08-09.**
+- Der kleine Lauf vom 2026-08-01 mit 496 Taxa war eine historische technische Basis und ist keine Freigabe des
+  nun geforderten breiten Offline-Masters.
+- Der reale Lauf migrierte den vollständigen CoL-XR-Primärbestand zusammen mit dem breiten iNaturalist-Lücken- und
+  Namensbestand, relevanten GBIF-/WoRMS-/Wikidata-Ausschnitten, kontrollierten Animalia-Fällen und eigenen
+  Korrekturen.
+- Nachgewiesen sind 54 von 54 vollständige Projektverknüpfungen, die reale Regression `Sciurus vulgaris`, die
+  Offline-Suche, Anbieter- und Feldprovenienz, Konfliktvorschau, unterbrochene Läufe, atomare Aktivierung,
+  Rollback, Suchlatenz, Speicherbedarf und Temp-Bereinigung.
+- Der aktive Kandidat enthält 273.505 Master-Taxa, 430.675 Anbieteraussagen, 1.762.462 Namen und 7.108.393
+  Suchbegriffe. Exakte repräsentative Offline-Suchen benötigen etwa 1 bis 7 ms.
+- Aktive und vorherige SQLite-Datei belegen jeweils rund 5.773 MiB; der gesamte Masterbereich einschließlich
+  Anbieterständen belegt rund 12.453 MiB.
 
-Ergebnis: Phase 9 ist abgeschlossen. Details stehen in `docs/taxonomy-master-database-design.md` und
-`docs/audits/2026-08-phase-9-audit.md`.
+Ergebnis: technisch und betrieblich geprüfter lokaler Master. Das vollständige Abschlussaudit ist unter
+`docs/audits/2026-08-phase-9-closing-audit.md` dokumentiert und schließt Phase 9 ab.
 
 ### 10.1 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 

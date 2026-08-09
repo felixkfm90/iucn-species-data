@@ -1,6 +1,7 @@
 import path from "node:path";
 
-export const TAXONOMY_MASTER_SCHEMA_VERSION = 2;
+export const TAXONOMY_MASTER_SCHEMA_VERSION = 3;
+export const READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS = Object.freeze([2, 3]);
 
 export function taxonomyMasterRoot(taxonomyRoot) {
   return path.join(path.resolve(taxonomyRoot), "master");

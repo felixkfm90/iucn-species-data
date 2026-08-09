@@ -6,7 +6,8 @@ import { compareProviderRecord } from "./taxonomy-master-rules.mjs";
 import { taxonomyMasterProviderRoot } from "./taxonomy-master-storage.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
-export const TAXONOMY_PROVIDER_SLICE_SCHEMA_VERSION = 1;
+export const TAXONOMY_PROVIDER_SLICE_SCHEMA_VERSION = 2;
+const READABLE_PROVIDER_SLICE_SCHEMA_VERSIONS = new Set([1, 2]);
 
 const PROVIDER_ALIASES = new Map([
   ["catalogue-of-life", "catalogue-of-life"],
@@ -17,6 +18,8 @@ const PROVIDER_ALIASES = new Map([
   ["gbif", "gbif"],
   ["worms", "worms"],
   ["wikidata", "wikidata"],
+  ["animalia", "animalia"],
+  ["animalia.bio", "animalia"],
   ["eigene korrektur", "manual"],
   ["manual", "manual"],
   ["project", "project"],
@@ -112,6 +115,7 @@ export function normalizeProviderSliceRecord(value = {}, {
       value.providerRecordId || value.providerId,
       "Anbieter-Datensatz-ID",
     ),
+    colTaxonId: cleanText(value.colTaxonId),
     scientificName: requiredText(value.scientificName, "Wissenschaftlicher Name"),
     rank: cleanText(value.rank || "species").toLocaleLowerCase("en"),
     kingdom: cleanText(value.kingdom),
@@ -128,6 +132,11 @@ export function normalizeProviderSliceRecord(value = {}, {
     environment: cleanText(value.environment || "unknown").toLocaleLowerCase("en"),
     retrievedAt: recordRetrievedAt,
     relevanceReasons: reasons.length ? reasons : ["searched-taxon"],
+    queryKeys: unique(
+      (Array.isArray(value.queryKeys) ? value.queryKeys : [])
+        .map((entry) => cleanText(entry).toLocaleLowerCase("en")),
+    ),
+    selectedForMaster: Boolean(value.selectedForMaster),
     versionChangeState: cleanText(value.versionChangeState || "new").toLocaleLowerCase("en"),
   };
   normalized.payloadSha256 = crypto.createHash("sha256")
@@ -160,14 +169,20 @@ export async function readProviderSlice(taxonomyRoot, provider, providerVersion)
   ]);
   const manifest = JSON.parse(manifestText);
   const records = JSON.parse(recordsText);
-  if (manifest.schemaVersion !== TAXONOMY_PROVIDER_SLICE_SCHEMA_VERSION || !Array.isArray(records)) {
+  if (!READABLE_PROVIDER_SLICE_SCHEMA_VERSIONS.has(Number(manifest.schemaVersion)) || !Array.isArray(records)) {
     throw new Error("Der Anbieter-Ausschnitt besitzt ein nicht unterstütztes Format.");
   }
   const checksum = crypto.createHash("sha256").update(recordsText).digest("hex");
   if (manifest.checksumSha256 !== checksum || manifest.recordCount !== records.length) {
     throw new Error("Der Anbieter-Ausschnitt ist unvollständig oder verändert.");
   }
-  return { manifest, records };
+  return {
+    manifest,
+    records: records.map((record) => normalizeProviderSliceRecord(record, {
+      provider: manifest.provider,
+      retrievedAt: manifest.retrievedAt,
+    })),
+  };
 }
 
 export async function listProviderSliceVersions(taxonomyRoot, provider) {
@@ -186,6 +201,34 @@ export async function listProviderSliceVersions(taxonomyRoot, provider) {
   }
 }
 
+export async function latestProviderSliceVersion(taxonomyRoot, provider, {
+  excludeVersion = "",
+} = {}) {
+  const versions = await listProviderSliceVersions(taxonomyRoot, provider);
+  const excluded = cleanText(excludeVersion);
+  const candidates = await Promise.all(versions
+    .filter((version) => version !== excluded)
+    .map(async (version) => {
+      try {
+        const manifest = JSON.parse(await fs.readFile(
+          providerSliceManifestPath(taxonomyRoot, provider, version),
+          "utf8",
+        ));
+        const timestamp = Date.parse(manifest.retrievedAt || manifest.issuedAt || "");
+        return {
+          version,
+          timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+        };
+      } catch {
+        return { version, timestamp: 0 };
+      }
+    }));
+  return candidates.sort((left, right) => (
+    left.timestamp - right.timestamp
+    || left.version.localeCompare(right.version, "en")
+  )).at(-1)?.version || null;
+}
+
 export async function writeProviderSlice(taxonomyRoot, {
   provider,
   providerVersion,
@@ -195,14 +238,15 @@ export async function writeProviderSlice(taxonomyRoot, {
   sourceUrl = null,
   license = null,
   metadata = {},
+  preserveUnmentioned = false,
 } = {}) {
   const normalizedProvider = canonicalMasterProvider(provider);
   if (!normalizedProvider) throw new Error(`Unbekannter Taxonomieanbieter: ${provider}`);
   const normalizedVersion = requiredText(providerVersion, "Anbieterversion");
   const normalizedRetrievedAt = isoTimestamp(retrievedAt, "Abrufzeitpunkt");
-  const versions = (await listProviderSliceVersions(taxonomyRoot, normalizedProvider))
-    .filter((version) => version !== safeSegment(normalizedVersion, "Anbieterversion"));
-  const previousVersion = versions.at(-1) || null;
+  const previousVersion = await latestProviderSliceVersion(taxonomyRoot, normalizedProvider, {
+    excludeVersion: safeSegment(normalizedVersion, "Anbieterversion"),
+  });
   const previous = previousVersion
     ? await readProviderSlice(taxonomyRoot, normalizedProvider, previousVersion)
     : { records: [] };
@@ -218,10 +262,13 @@ export async function writeProviderSlice(taxonomyRoot, {
   }
   for (const previousRecord of previous.records) {
     if (currentById.has(previousRecord.providerRecordId)) continue;
+    const retainedState = previousRecord.versionChangeState === "removed"
+      ? "removed"
+      : "unchanged";
     currentById.set(previousRecord.providerRecordId, {
       ...previousRecord,
       retrievedAt: normalizedRetrievedAt,
-      versionChangeState: "removed",
+      versionChangeState: preserveUnmentioned ? retainedState : "removed",
     });
   }
   const normalizedRecords = [...currentById.values()].sort((left, right) => (
@@ -253,6 +300,7 @@ export async function writeProviderSlice(taxonomyRoot, {
     activeRecordCount: normalizedRecords.filter((record) => record.versionChangeState !== "removed").length,
     checksumSha256,
     metadata,
+    preserveUnmentioned: Boolean(preserveUnmentioned),
   };
   await atomicWriteJson(
     providerSliceManifestPath(taxonomyRoot, normalizedProvider, normalizedVersion),

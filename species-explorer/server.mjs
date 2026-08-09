@@ -33,6 +33,7 @@ import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
 import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import { createTaxonomyProviderRefreshService } from "./taxonomy-provider-refresh-service.mjs";
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 
@@ -125,6 +126,11 @@ export async function createExplorerServer({
   });
   const taxonomyReference = createTaxonomyReferenceService({
     taxonomyRoot,
+    supplementService: taxonomySupplements,
+  });
+  const taxonomyProviderRefresh = createTaxonomyProviderRefreshService({
+    taxonomyRoot,
+    repoRoot,
     supplementService: taxonomySupplements,
   });
   let taxonomyMaintenanceService = null;
@@ -236,6 +242,7 @@ export async function createExplorerServer({
     repoRoot,
     referenceService: taxonomyReference,
     supplementService: taxonomySupplements,
+    providerRefreshService: taxonomyProviderRefresh,
     mappingsPath: speciesReferenceMappingsPath,
     speciesListPath,
     isProjectBusy: () => Boolean(

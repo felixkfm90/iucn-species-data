@@ -26,6 +26,10 @@ import {
   validateTaxonomyMasterDatabase,
 } from "./taxonomy-master-schema.mjs";
 import {
+  assertTaxonomyMasterContent,
+  isMasterSpeciesCandidate,
+} from "./taxonomy-taxon-quality.mjs";
+import {
   TAXONOMY_MASTER_SCHEMA_VERSION,
   taxonomyMasterActiveDirectory,
   taxonomyMasterCandidateDirectory,
@@ -33,7 +37,11 @@ import {
   taxonomyMasterManifestPath,
   taxonomyMasterRoot,
 } from "./taxonomy-master-storage.mjs";
-import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
+import {
+  foldTaxonomySearchTerm,
+  germanTaxonomySearchKey,
+  normalizeTaxonomySearchTerm,
+} from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 
 const SOURCE_FIELDS = new Set([
@@ -46,6 +54,7 @@ const SOURCE_FIELDS = new Set([
   "inaturalist-id",
   "worms-id",
   "wikidata-id",
+  "animalia-id",
 ]);
 
 function cleanText(value) {
@@ -65,12 +74,31 @@ const KINGDOM_IDENTITY_ALIASES = new Map([
   ["animalia", "Animalia"],
   ["animals", "Animalia"],
   ["metazoa", "Animalia"],
+  ["viridiplantae", "Plantae"],
 ]);
 
 function canonicalKingdomIdentity(value) {
   const kingdom = cleanText(value);
   if (!kingdom) return "";
   return KINGDOM_IDENTITY_ALIASES.get(normalized(kingdom)) || kingdom;
+}
+
+function uniqueColKingdomByGenus(records = []) {
+  const kingdomsByGenus = new Map();
+  for (const record of records) {
+    const [genus] = cleanText(record.scientificName).split(/\s+/u);
+    const kingdom = canonicalKingdomIdentity(record.kingdom);
+    if (!genus || !kingdom) continue;
+    const key = normalized(genus);
+    const kingdoms = kingdomsByGenus.get(key) || new Set();
+    kingdoms.add(kingdom);
+    kingdomsByGenus.set(key, kingdoms);
+  }
+  return new Map(
+    [...kingdomsByGenus.entries()]
+      .filter(([, kingdoms]) => kingdoms.size === 1)
+      .map(([genus, kingdoms]) => [genus, [...kingdoms][0]]),
+  );
 }
 
 function identityKey({ scientificName, rank = "species", kingdom = "" } = {}) {
@@ -210,15 +238,22 @@ function sourceRelease(value, fallback = {}) {
   return release;
 }
 
-function ensureGroup(groups, value) {
+function registerBaseIdentityGroup(groupsByBaseIdentity, group) {
+  const key = baseIdentityKey(group);
+  const matches = groupsByBaseIdentity.get(key) || new Set();
+  matches.add(group);
+  groupsByBaseIdentity.set(key, matches);
+}
+
+function ensureGroup(groups, groupsByBaseIdentity, value) {
   const scientificName = cleanText(value.scientificName);
   const rank = normalizeRank(value.rank);
   const kingdom = canonicalKingdomIdentity(value.kingdom);
   const key = identityKey({ scientificName, rank, kingdom });
   let group = groups.get(key);
-  const sameTaxonGroups = () => [...groups.values()].filter((entry) => (
-    baseIdentityKey(entry) === baseIdentityKey({ scientificName, rank })
-  ));
+  const sameTaxonGroups = () => [
+    ...(groupsByBaseIdentity.get(baseIdentityKey({ scientificName, rank })) || []),
+  ];
   if (!group && !kingdom) {
     const matches = sameTaxonGroups();
     const projectMatches = matches.filter((entry) => entry.projects.length || entry.corrections.length);
@@ -248,6 +283,7 @@ function ensureGroup(groups, value) {
       corrections: [],
     };
     groups.set(key, group);
+    registerBaseIdentityGroup(groupsByBaseIdentity, group);
   } else if (!group.kingdom && kingdom) {
     group.kingdom = kingdom;
   }
@@ -314,7 +350,7 @@ function mergeSourceRecord(left, right) {
     && normalized(left.kingdom) !== normalized(right.kingdom)
   ) {
     throw new Error(
-      `Anbieter-Datensatz ${left.provider}:${left.providerRecordId} besitzt widersprÃ¼chliche Reiche.`,
+      `Anbieter-Datensatz ${left.provider}:${left.providerRecordId} besitzt widersprüchliche Reiche.`,
     );
   }
   const later = Date.parse(right.retrievedAt || 0) >= Date.parse(left.retrievedAt || 0)
@@ -398,20 +434,23 @@ function activeState(databasePath, DatabaseSync) {
   try {
     database = new DatabaseSync(databasePath, { readOnly: true });
   } catch {
-    return { taxa: new Map(), fields: new Map(), aliases: [], decisions: [] };
+    return {
+      taxa: new Map(),
+      fieldsFor: () => [],
+      aliasesFor: () => [],
+      close: () => {},
+    };
   }
-  try {
-    const taxa = new Map(database.prepare(`
-      SELECT master.master_taxon_id, master.canonical_scientific_name,
-        master.rank, master.kingdom, master.reference_state, master.lifecycle_state,
-        COUNT(source.assertion_id) AS source_count
-      FROM master_taxon master
-      LEFT JOIN provider_taxon_assertion source
-        ON source.master_taxon_id = master.master_taxon_id
-      GROUP BY master.master_taxon_id
-    `).all().map((row) => [row.master_taxon_id, { ...row }]));
-    const fields = new Map();
-    for (const row of database.prepare(`
+  const taxa = new Map(database.prepare(`
+    SELECT master.master_taxon_id, master.canonical_scientific_name,
+      master.rank, master.kingdom, master.reference_state, master.lifecycle_state,
+      COUNT(source.assertion_id) AS source_count
+    FROM master_taxon master
+    LEFT JOIN provider_taxon_assertion source
+      ON source.master_taxon_id = master.master_taxon_id
+    GROUP BY master.master_taxon_id
+  `).all().map((row) => [row.master_taxon_id, { ...row }]));
+  const fieldsStatement = database.prepare(`
       SELECT field.*, release.provider, release.provider_version,
         source.provider_record_id, source.scientific_name AS source_scientific_name,
         source.rank AS source_rank, source.kingdom AS source_kingdom,
@@ -421,20 +460,20 @@ function activeState(databasePath, DatabaseSync) {
       LEFT JOIN provider_taxon_assertion source
         ON source.assertion_id = field.provider_taxon_assertion_id
       WHERE field.selected = 1
-    `).all()) {
-      const list = fields.get(row.master_taxon_id) || [];
-      list.push({ ...row });
-      fields.set(row.master_taxon_id, list);
-    }
-    return {
-      taxa,
-      fields,
-      aliases: database.prepare("SELECT * FROM master_taxon_alias").all().map((row) => ({ ...row })),
-      decisions: database.prepare("SELECT * FROM master_decision").all().map((row) => ({ ...row })),
-    };
-  } finally {
-    database.close();
+        AND field.master_taxon_id = ?
+    `);
+  const aliases = new Map();
+  for (const row of database.prepare("SELECT * FROM master_taxon_alias").iterate()) {
+    const list = aliases.get(row.master_taxon_id) || [];
+    list.push({ ...row });
+    aliases.set(row.master_taxon_id, list);
   }
+  return {
+    taxa,
+    fieldsFor: (masterTaxonId) => fieldsStatement.all(masterTaxonId).map((row) => ({ ...row })),
+    aliasesFor: (masterTaxonId) => aliases.get(masterTaxonId) || [],
+    close: () => database.close(),
+  };
 }
 
 function summarizeDatabase(database) {
@@ -451,8 +490,159 @@ function summarizeDatabase(database) {
     aliases: Number(database.prepare("SELECT COUNT(*) AS count FROM master_taxon_alias").get().count),
     fields: Number(database.prepare("SELECT COUNT(*) AS count FROM master_field_assertion").get().count),
     conflicts: Number(database.prepare("SELECT COUNT(*) AS count FROM master_conflict WHERE conflict_state = 'open'").get().count),
+    searchTerms: Number(database.prepare("SELECT COUNT(*) AS count FROM master_search_term").get().count),
     statuses,
   };
+}
+
+function searchTokens(value) {
+  const text = cleanText(value);
+  if (!text) return [];
+  return [...new Set(text.split(/[^\p{L}\p{N}]+/u).filter((entry) => entry.length >= 2))];
+}
+
+function rebuildMasterSearchTerms(database) {
+  database.exec("DELETE FROM master_search_term");
+  const insert = database.prepare(`
+    INSERT OR IGNORE INTO master_search_term (
+      master_taxon_id,
+      term,
+      normalized_term,
+      folded_term,
+      german_key,
+      term_kind,
+      language,
+      source_provider,
+      weight
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const add = ({
+    masterTaxonId,
+    term,
+    termKind,
+    language = "",
+    provider,
+    weight,
+    tokenize = false,
+  }) => {
+    const values = tokenize ? [cleanText(term), ...searchTokens(term)] : [cleanText(term)];
+    for (const value of [...new Set(values.filter(Boolean))]) {
+      insert.run(
+        masterTaxonId,
+        value,
+        normalizeTaxonomySearchTerm(value),
+        foldTaxonomySearchTerm(value),
+        germanTaxonomySearchKey(value),
+        termKind,
+        language,
+        provider,
+        Number(weight) + (value === cleanText(term) ? 0 : 12),
+      );
+    }
+  };
+  for (const row of database.prepare(`
+    SELECT master_taxon_id, canonical_scientific_name
+    FROM master_taxon
+    WHERE lifecycle_state != 'deprecated'
+  `).iterate()) {
+    add({
+      masterTaxonId: row.master_taxon_id,
+      term: row.canonical_scientific_name,
+      termKind: "scientific",
+      provider: "catalogue-of-life",
+      weight: 0,
+      tokenize: true,
+    });
+  }
+  for (const row of database.prepare(`
+    SELECT field.master_taxon_id, field.field_name, field.field_value, field.language,
+      release.provider
+    FROM master_field_assertion field
+    JOIN provider_release release ON release.release_id = field.release_id
+    WHERE field.selected = 1
+  `).iterate()) {
+    const identifier = row.field_name.endsWith("-id");
+    const vernacular = ["german-name", "english-name"].includes(row.field_name);
+    add({
+      masterTaxonId: row.master_taxon_id,
+      term: row.field_value,
+      termKind: identifier ? "identifier" : (vernacular ? "vernacular" : "scientific"),
+      language: row.language || "",
+      provider: row.provider,
+      weight: vernacular ? 2 : (identifier ? 25 : 1),
+      tokenize: vernacular || row.field_name === "scientific-name",
+    });
+  }
+  for (const row of database.prepare(`
+    SELECT alias.master_taxon_id, alias.name, alias.alias_type,
+      COALESCE(release.provider, 'project') AS provider
+    FROM master_taxon_alias alias
+    LEFT JOIN provider_taxon_assertion source
+      ON source.assertion_id = alias.source_assertion_id
+    LEFT JOIN provider_release release ON release.release_id = source.release_id
+  `).iterate()) {
+    add({
+      masterTaxonId: row.master_taxon_id,
+      term: row.name,
+      termKind: row.alias_type === "project-name" ? "project" : "synonym",
+      provider: row.provider,
+      weight: row.alias_type === "project-name" ? 3 : 8,
+      tokenize: true,
+    });
+  }
+  for (const row of database.prepare(`
+    SELECT source.master_taxon_id, name.name, name.language, name.name_kind,
+      name.preferred, name.verified, release.provider
+    FROM provider_name_assertion name
+    JOIN provider_taxon_assertion source
+      ON source.assertion_id = name.provider_taxon_assertion_id
+    JOIN provider_release release ON release.release_id = source.release_id
+    WHERE source.version_change_state != 'removed'
+  `).iterate()) {
+    const termKind = ["scientific", "synonym"].includes(row.name_kind)
+      ? row.name_kind
+      : "vernacular";
+    add({
+      masterTaxonId: row.master_taxon_id,
+      term: row.name,
+      termKind,
+      language: row.language || "",
+      provider: row.provider,
+      weight: termKind === "vernacular"
+        ? (row.verified ? 4 : (row.preferred ? 6 : 10))
+        : (termKind === "synonym" ? 8 : 2),
+      tokenize: true,
+    });
+  }
+  for (const row of database.prepare(`
+    SELECT source.master_taxon_id, source.provider_record_id, release.provider
+    FROM provider_taxon_assertion source
+    JOIN provider_release release ON release.release_id = source.release_id
+    WHERE source.version_change_state != 'removed'
+  `).iterate()) {
+    add({
+      masterTaxonId: row.master_taxon_id,
+      term: row.provider_record_id,
+      termKind: "identifier",
+      provider: row.provider,
+      weight: 25,
+    });
+  }
+  for (const row of database.prepare(`
+    SELECT master_taxon_id, project_taxon_key, project_slug, scientific_name_at_link
+    FROM project_taxon_link
+  `).iterate()) {
+    for (const term of [row.project_taxon_key, row.project_slug, row.scientific_name_at_link]) {
+      add({
+        masterTaxonId: row.master_taxon_id,
+        term,
+        termKind: "project",
+        provider: "project",
+        weight: 1,
+        tokenize: true,
+      });
+    }
+  }
 }
 
 function selectedFieldMap(database) {
@@ -565,6 +755,7 @@ export async function buildTaxonomyMasterCandidate({
   providerSlices = [],
   projectTaxa = [],
   corrections = [],
+  retainedTaxa = [],
   now = () => new Date(),
 } = {}) {
   if (!taxonomyRoot) throw new Error("Taxonomie-Zielpfad fehlt.");
@@ -576,6 +767,11 @@ export async function buildTaxonomyMasterCandidate({
   }, { importedAt: timestamp });
   const normalizedProjects = projectTaxa.map(normalizeProjectTaxon);
   const normalizedCorrections = corrections.map(normalizeCorrection).filter(Boolean);
+  const normalizedRetainedTaxa = retainedTaxa.map((entry) => ({
+    scientificName: cleanText(entry.scientificName),
+    rank: normalizeRank(entry.rank),
+    kingdom: cleanText(entry.kingdom),
+  })).filter((entry) => entry.scientificName);
   const normalizedSlices = providerSlices.map((slice) => ({
     release: sourceRelease({
       provider: slice.manifest?.provider,
@@ -593,12 +789,23 @@ export async function buildTaxonomyMasterCandidate({
     records: slice.records || [],
   }));
   const groups = new Map();
-  for (const project of normalizedProjects) ensureGroup(groups, project).projects.push(project);
-  for (const correction of normalizedCorrections) ensureGroup(groups, correction).corrections.push(correction);
+  const groupsByBaseIdentity = new Map();
+  for (const project of normalizedProjects) {
+    ensureGroup(groups, groupsByBaseIdentity, project).projects.push(project);
+  }
+  for (const correction of normalizedCorrections) {
+    ensureGroup(groups, groupsByBaseIdentity, correction).corrections.push(correction);
+  }
+  for (const retained of normalizedRetainedTaxa) {
+    ensureGroup(groups, groupsByBaseIdentity, retained).retained = true;
+  }
   const normalizedColRecords = deduplicateSourceRecords(colRecords.map((record) => normalizeColRecord(record, {
     importedAt: normalizedColRelease.importedAt,
-  })));
-  for (const record of normalizedColRecords) ensureGroup(groups, record).records.push(record);
+  }))).filter(isMasterSpeciesCandidate);
+  const colKingdomByGenus = uniqueColKingdomByGenus(normalizedColRecords);
+  for (const record of normalizedColRecords) {
+    ensureGroup(groups, groupsByBaseIdentity, record).records.push(record);
+  }
   for (const slice of normalizedSlices) {
     const normalizedRecords = deduplicateSourceRecords(slice.records.map((record) => ({
         ...record,
@@ -612,22 +819,38 @@ export async function buildTaxonomyMasterCandidate({
         externalIds: record.externalIds || {},
         relevanceReasons: record.relevanceReasons || ["searched-taxon"],
         versionChangeState: cleanText(record.versionChangeState || "unchanged"),
-      })));
+      }))).filter(isMasterSpeciesCandidate);
     for (const normalizedRecord of normalizedRecords) {
-      if (normalizedRecord.scientificName) ensureGroup(groups, normalizedRecord).records.push(normalizedRecord);
+      if (normalizedRecord.scientificName) {
+        ensureGroup(groups, groupsByBaseIdentity, normalizedRecord).records.push(normalizedRecord);
+      }
     }
   }
 
   const { DatabaseSync } = await loadNodeSqlite();
   const activePath = taxonomyMasterDatabasePath(taxonomyRoot, "active");
   const previousState = activeState(activePath, DatabaseSync);
+  const previousByIdentity = new Map();
+  const previousByBaseIdentity = new Map();
   for (const previousTaxon of previousState.taxa.values()) {
-    const group = ensureGroup(groups, {
+    const identity = identityKey({
       scientificName: previousTaxon.canonical_scientific_name,
       rank: previousTaxon.rank,
       kingdom: previousTaxon.kingdom,
     });
-    group.previousTaxon = previousTaxon;
+    previousByIdentity.set(identity, previousTaxon);
+    const baseIdentity = baseIdentityKey({
+      scientificName: previousTaxon.canonical_scientific_name,
+      rank: previousTaxon.rank,
+    });
+    const matches = previousByBaseIdentity.get(baseIdentity) || [];
+    matches.push(previousTaxon);
+    previousByBaseIdentity.set(baseIdentity, matches);
+  }
+  for (const group of groups.values()) {
+    const exactPrevious = previousByIdentity.get(group.key);
+    const baseMatches = previousByBaseIdentity.get(baseIdentityKey(group)) || [];
+    group.previousTaxon = exactPrevious || (baseMatches.length === 1 ? baseMatches[0] : null);
   }
   const temporaryDirectory = path.join(
     taxonomyMasterRoot(taxonomyRoot),
@@ -641,6 +864,14 @@ export async function buildTaxonomyMasterCandidate({
     database = new DatabaseSync(databasePath);
     try {
     createTaxonomyMasterSchema(database);
+    // Der reale Masterbestand umfasst mehrere hunderttausend Taxa und noch
+    // deutlich mehr Namens-, Herkunfts- und Suchzeilen. Ohne eine gemeinsame
+    // Transaktion bestaetigt SQLite jeden einzelnen INSERT separat; ein
+    // vollstaendiger Kandidatenbau wuerde dadurch viele Stunden dauern. Die
+    // Staging-Datenbank ist fuer den Aufbau exklusiv, deshalb darf der gesamte
+    // konsistente Kandidat atomar geschrieben werden. Ein Fehler oder das
+    // Schliessen vor COMMIT verwirft die unvollstaendige Transaktion.
+    database.exec("BEGIN IMMEDIATE");
     const releases = [normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)];
     releases.push({
       releaseId: `project-${timestamp}`,
@@ -684,8 +915,12 @@ export async function buildTaxonomyMasterCandidate({
         && activeRecords.length === 0
       );
       const removedOnly = sourceRemoved && !group.projects.length && !group.corrections.length;
-      const kingdom = cleanText(
-        group.projects[0]?.kingdom || exactCol?.kingdom || activeRecords.find((record) => record.kingdom)?.kingdom,
+      const [groupGenus] = cleanText(group.scientificName).split(/\s+/u);
+      const kingdom = canonicalKingdomIdentity(
+        group.projects[0]?.kingdom
+        || exactCol?.kingdom
+        || activeRecords.find((record) => record.kingdom)?.kingdom
+        || colKingdomByGenus.get(normalized(groupGenus)),
       );
       const masterTaxonId = createStableMasterTaxonId({
         scientificName: exactCol?.scientificName || group.scientificName,
@@ -694,6 +929,7 @@ export async function buildTaxonomyMasterCandidate({
       });
       const referenceGapContext = Boolean(
         group.projects.length
+        || externalProviders.size
         || oldTaxon?.reference_state === "reference-gap"
         || activeRecords.some((record) => (
           (record.relevanceReasons || []).includes("col-reference-gap")
@@ -735,7 +971,10 @@ export async function buildTaxonomyMasterCandidate({
           scientificName: record.scientificName,
           rank: record.rank,
           taxonomicStatus: record.taxonomicStatus || null,
-          kingdom: record.kingdom || kingdom,
+          // Die Anbieterbehauptung bleibt roh und nachvollziehbar. Eine sicher
+          // aus CoL-Gattungsevidenz abgeleitete Masterzuordnung darf nicht so
+          // aussehen, als haette der externe Anbieter sie selbst geliefert.
+          kingdom: record.kingdom || null,
           matchState,
           payloadSha256: record.payloadSha256 || null,
           hierarchy: record.hierarchy || {},
@@ -878,7 +1117,8 @@ export async function buildTaxonomyMasterCandidate({
         }
       }
       const previousMasterTaxon = previousState.taxa.get(masterTaxonId) || oldTaxon;
-      const currentFields = previousState.fields.get(masterTaxonId) || [];
+      const previousMasterTaxonId = previousMasterTaxon?.master_taxon_id || masterTaxonId;
+      const currentFields = previousState.fieldsFor(previousMasterTaxonId);
       let groupBlockingConflictCount = 0;
       const byField = new Map();
       for (const candidate of fieldCandidates.filter(Boolean)) {
@@ -983,7 +1223,12 @@ export async function buildTaxonomyMasterCandidate({
           groupBlockingConflictCount += 1;
         }
       }
-      if (!exactCol) {
+      const referenceGapNeedsReview = !exactCol && Boolean(
+        group.projects.length
+        || group.corrections.length
+        || previousMasterTaxon
+      );
+      if (referenceGapNeedsReview) {
         const conflictId = shaId("gap", masterTaxonId, group.scientificName);
         addMasterConflict(database, {
           conflictId,
@@ -1029,7 +1274,7 @@ export async function buildTaxonomyMasterCandidate({
           updatedAt: timestamp,
         });
       }
-      for (const alias of previousState.aliases.filter((entry) => entry.master_taxon_id === masterTaxonId)) {
+      for (const alias of previousState.aliasesFor(previousMasterTaxonId)) {
         addMasterTaxonAlias(database, {
           masterTaxonId,
           name: alias.name,
@@ -1039,7 +1284,9 @@ export async function buildTaxonomyMasterCandidate({
         });
       }
     }
+    rebuildMasterSearchTerms(database);
     const validation = validateTaxonomyMasterDatabase(database);
+    const contentQuality = assertTaxonomyMasterContent(database);
     const currentSnapshot = snapshotFromDatabase(database);
     let previousSnapshot = null;
     try {
@@ -1064,8 +1311,10 @@ export async function buildTaxonomyMasterCandidate({
       summary,
       diff,
       validation,
+      contentQuality,
       requiresConfirmation: true,
     };
+    database.exec("COMMIT");
     } finally {
       database.close();
     }
@@ -1081,6 +1330,8 @@ export async function buildTaxonomyMasterCandidate({
     }
     await fs.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
     throw error;
+  } finally {
+    previousState.close();
   }
 }
 
@@ -1127,5 +1378,6 @@ export const taxonomyMasterCandidateInternals = Object.freeze({
   normalizeProjectTaxon,
   normalizeCorrection,
   normalizeColRecord,
+  rebuildMasterSearchTerms,
   diffSnapshots,
 });

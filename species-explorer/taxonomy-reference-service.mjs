@@ -3,6 +3,7 @@ import path from "node:path";
 import { taxonomyHierarchyDisplayEntry } from "./taxonomy-display-names.mjs";
 import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { openTaxonomyStore } from "./taxonomy-store.mjs";
+import { readTaxonomyMasterManifest } from "./taxonomy-master-candidate.mjs";
 import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
 import {
   foldTaxonomySearchTerm,
@@ -251,6 +252,7 @@ export class TaxonomyReferenceService {
     taxonomyRoot,
     openStore = openTaxonomyStore,
     openMasterStore = openTaxonomyMasterStore,
+    readMasterManifest = readTaxonomyMasterManifest,
     readPointer = readActiveTaxonomyPointer,
     supplementService = null,
   } = {}) {
@@ -258,6 +260,7 @@ export class TaxonomyReferenceService {
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.openStore = openStore;
     this.openMasterStore = openMasterStore;
+    this.readMasterManifest = readMasterManifest;
     this.readPointer = readPointer;
     this.supplementService = supplementService;
     this.store = null;
@@ -315,6 +318,13 @@ export class TaxonomyReferenceService {
 
   async ensureMasterStore() {
     this.assertOpen();
+    const activeManifest = await this.readMasterManifest(this.taxonomyRoot, "active");
+    const activeCandidateId = String(activeManifest?.candidateId || "");
+    if (
+      this.masterStore
+      && activeCandidateId
+      && this.activeMasterCandidate === activeCandidateId
+    ) return this.masterStore;
     const opened = await this.openMasterStore({
       taxonomyRoot: this.taxonomyRoot,
       slot: "active",
@@ -325,7 +335,7 @@ export class TaxonomyReferenceService {
       this.activeMasterCandidate = "";
       return null;
     }
-    const candidateId = String(opened.status?.().candidateId || "");
+    const candidateId = String(opened.status?.().candidateId || activeCandidateId);
     if (this.masterStore && this.activeMasterCandidate === candidateId) {
       opened.close?.();
       return this.masterStore;
@@ -472,7 +482,9 @@ export class TaxonomyReferenceService {
     const masterStore = await this.ensureMasterStore();
     let result = normalizedReference.startsWith("mtx_")
       ? masterStore?.taxon(normalizedReference)
-      : store.taxon(normalizedReference);
+      : normalizedReference.startsWith("stx_")
+        ? await this.supplementService?.taxon(normalizedReference)
+        : store.taxon(normalizedReference);
     if (!result) {
       throw createHttpError("Das ausgewählte Taxon wurde nicht gefunden.", 404);
     }
@@ -485,12 +497,50 @@ export class TaxonomyReferenceService {
     };
     const status = normalizedReference.startsWith("mtx_")
       ? masterStore.status()
-      : store.status();
+      : normalizedReference.startsWith("stx_")
+        ? { releaseId: "Versionierter Ergänzungsausschnitt" }
+        : store.status();
     return {
       available: true,
       ...result,
       releaseId: status.releaseId || status.candidateId,
       source: result.source || "Catalogue of Life",
+    };
+  }
+
+  async markResearched(payload = {}) {
+    if (!this.supplementService) {
+      throw createHttpError("Versionierte Taxonomieergänzungen sind nicht eingerichtet.", 503);
+    }
+    const scientificName = normalizeCorrectionScientificName(payload.scientificName);
+    const rank = normalizeCorrectionText(payload.rank || "species", "Der Rang", 40)
+      .toLocaleLowerCase("en");
+    if (!SEARCH_RANKS.has(rank) || rank === "all") {
+      throw createHttpError("Der gewählte Taxonomierang kann nicht gespeichert werden.", 400);
+    }
+    const kingdom = normalizeCorrectionText(payload.kingdom, "Das Reich", MAX_KINGDOM_LENGTH);
+    const sourceReference = normalizeCorrectionText(
+      payload.sourceReference,
+      "Die Quellenkennung",
+      MAX_REFERENCE_LENGTH,
+    );
+    const taxon = await this.supplementService.findTaxonByScientificName(scientificName);
+    if (!taxon) {
+      throw createHttpError(
+        "Der ausgewählte externe Taxontreffer ist nicht mehr im lokalen Ergänzungscache vorhanden.",
+        404,
+      );
+    }
+    const selected = await this.supplementService.markResearchedTaxon({
+      scientificName: taxon.acceptedScientificName,
+      rank: taxon.rank || rank,
+      kingdom: taxon.kingdom?.scientificName || kingdom,
+      sourceReference: sourceReference || taxon.sourceId,
+    });
+    return {
+      ok: true,
+      selected,
+      taxon: await this.taxon(taxon.taxonId),
     };
   }
 
@@ -526,7 +576,7 @@ export class TaxonomyReferenceService {
       rank: "species",
     }) || store.findTaxonByScientificName(scientificName, {
       rank: "species",
-    });
+    }) || await this.supplementService.findTaxonByScientificName?.(scientificName);
     if (!taxon) {
       throw createHttpError(
         "Der wissenschaftliche Name ist in der aktiven Taxonomiereferenz nicht eindeutig vorhanden.",
@@ -553,7 +603,7 @@ export class TaxonomyReferenceService {
       rank: "species",
     }) || store.findTaxonByScientificName(normalizedScientificName, {
       rank: "species",
-    });
+    }) || await this.supplementService.findTaxonByScientificName?.(normalizedScientificName);
     if (!taxon) {
       throw createHttpError(
         "Der wissenschaftliche Name ist in der aktiven CoL-Referenz nicht eindeutig vorhanden.",

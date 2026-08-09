@@ -836,7 +836,7 @@ klarer Zielphase dokumentiert.
 
 ## Phase 9 - Globale Taxonomiedatenbank
 
-Status: abgeschlossen am 2026-08-01
+Status: abgeschlossen am 2026-08-09
 
 Die verbindliche Detailplanung steht in `docs/global-taxonomy-lightroom-plan.md`. Phase 9 umfasst ausschließlich
 Quellenvergleich, lokales Datenbank- und Importkonzept, begrenzten Prototyp, Explorer-Integration, vollständigen
@@ -870,7 +870,7 @@ hochgerechnet. Produktive Arten, Assets, Pages und Squarespace bleiben unveränd
 
 Phase 9.4 wurde am 2026-07-24 abgeschlossen. Der Neue-Art-Assistent besitzt jetzt eine lokale read-only
 Taxonomiereferenz als regulären geführten Eingabeweg mit vollständig manueller Rückfallebene. Deutsche, englische
-und wissenschaftliche Eingaben liefern nach 300 Millisekunden passende Vorschläge; Mehrdeutigkeiten bleiben als
+und wissenschaftliche Eingaben liefern nach 500 Millisekunden passende Vorschläge; Mehrdeutigkeiten bleiben als
 Liste sichtbar und
 kein Treffer wird still ausgewählt. Die Detailansicht zeigt akzeptierten Namen, Synonym, Hierarchie, Quelle,
 Release, Quellen-ID und Vertrauensstufe. Ein Klick auf einen Treffer schließt die schwebende Liste und füllt
@@ -928,7 +928,7 @@ durchsucht nur diese Auswahl. Die Neue-Art-Suche wird serverseitig auf den Rang 
 anderssprachige Namen, Gattungen und Unterarten keine falschen beziehungsweise verdrängten Treffer verursachen.
 Exakte Treffer unterdrücken unpassende unscharfe Ergebnisse; Präfix-, FTS- und begrenzte Teiltreffersuche decken
 unter anderem `Gepard`, `glaucidium` und `toko` ab. Die Suche startet für deutsche, englische und
-wissenschaftliche Namen 300 Millisekunden nach der letzten Eingabe.
+wissenschaftliche Namen 500 Millisekunden nach der letzten Eingabe.
 Die kompakte Trefferliste überlagert die folgenden Felder unverändert, sodass der Dialog beim Tippen nicht
 springt. Laufende
 Aktualisierungen wiederholen den Fortschrittstitel nicht mehr in der Detailzeile. Im Ruhezustand steht die aktive
@@ -956,33 +956,52 @@ Vollabgleichzeitpunkt. Eigene redaktionelle Korrekturen liegen versioniert in
 Der Wartungsablauf aktualisiert bei Bedarf CoL und Ergänzungen gemeinsam oder bei bereits aktuellem CoL nur die
 Ergänzungsschicht. Der Vertrag steht in `docs/taxonomy-reference-supplements.md`.
 
-Phase 9.6 bis 9.12 wurden am 2026-08-01 zusammenhängend abgeschlossen:
+Phase 9.6 bis 9.12 wurden zunächst am 2026-08-01 mit einem kleinen relevanten Masterbestand umgesetzt und am
+2026-08-08 auf die verbindliche lokale Quellenarchitektur erweitert:
 
 - 9.6 führte die physisch getrennte Master-SQLite mit stabilen anbieterunabhängigen Taxon-IDs, Quellenständen,
   Feldprovenienz, Konflikten, Status und stabilen Projektverknüpfungen ein;
 - 9.7 setzte die verbindliche Priorität aus geschützten Projektwerten, CoL XR, WoRMS für marine/brackische Taxa,
   GBIF/iNaturalist und Wikidata um. Hierarchien werden nicht still überschrieben, Unterarten nicht hochgestuft und
   neuere Aussagen nicht automatisch bevorzugt;
-- 9.8 migrierte die bisherige Ergänzungsschicht in versionierte relevante Anbieter-Ausschnitte. Vollständige
-  Parallelbestände von GBIF, iNaturalist, WoRMS oder Wikidata werden nicht gespiegelt;
+- 9.8 migrierte die bisherige Ergänzungsschicht in versionierte Anbieterstände. iNaturalist wird als breiter
+  lokaler CoL-Artlücken-/Namensbestand geführt; GBIF, WoRMS und Wikidata bleiben relevante Ausschnitte. Animalia
+  ist ein kontrollierter, quellenbelegter letzter Fallback; eigene Korrekturen bleiben getrennt versioniert;
 - 9.9 ergänzte Kandidaten-Diff, Konfliktvorschau, ausdrückliche Entscheidungen, atomare Aktivierung und genau eine
   Rollbackversion;
 - 9.10 stellte Neue-Art-Suche und Wartung bevorzugt auf die aktive Masteransicht um. Die Suche bleibt für lokal
   enthaltene Taxa offline; ohne Masterdatenbank greift weiterhin die bisherige sichere Referenzsuche;
 - 9.11 sichert `Sciurus vulgaris`, Homonyme, Synonyme, Anbieter-Ausfälle, verschwundene Quelleneinträge, doppelte
   Anbieterzeilen und unterbrochene Aktivierungen als Regressionen ab;
-- 9.12 migrierte den echten lokalen Bestand: 52 von 52 Projektarten sind korrekt verknüpft, ein echter
-  Aktivierungs-/Rollbacklauf war erfolgreich und hinterließ keine temporären Importartefakte. Der Masterbereich
-  belegt rund 13,87 MiB; exakte Offline-Abfragen benötigen nach der abschließenden Optimierung im Mittel rund
-  1,55 ms pro Projektart.
+- 9.12 ordnet den echten lokalen Bestand ein, misst Speicherbedarf und Suche, prüft Offline-Betrieb, unterbrochene
+  Updates, atomare Aktivierung, Rollback und temporäre Importartefakte. Der reale Kandidat
+  `master-20260809091930709` enthält 273.505 Master-Taxa, 430.675 Anbieteraussagen, 1.762.462 Namen und 7.108.393
+  Suchbegriffe. Alle 54 Projektarten sind eindeutig verknüpft; repräsentative exakte Offline-Suchen benötigen
+  etwa 1 bis 7 ms. Aktive und vorherige SQLite-Datei belegen jeweils rund 5.773 MiB. Rollback und erneute
+  Aktivierung wurden praktisch durchgeführt.
 
-CoL XR bleibt vollständig, unverändert und read-only. Die aktive Masterdatenbank enthält 496 relevante Taxa,
-2.134 versionierte Anbieteraussagen, 5.709 Namen und 10.189 Feldprovenienzen. Projektarten, URL-Slugs und Assets
-wurden durch die Migration nicht umbenannt. Architektur und Betrieb stehen in
-`docs/taxonomy-master-database-design.md`; der vollständige Abschlussaudit steht in
-`docs/audits/2026-08-phase-9-audit.md`.
+Verbindlich ist damit:
 
-Als Nächstes folgt Phase 10 mit der getrennten Lightroom-Machbarkeitsprüfung.
+```text
+CoL XR
++ iNaturalist-Namens- und Lückenbestand
++ GBIF-Namen und Kennungen
++ WoRMS für marine und brackische Taxa
++ Wikidata-Taxonauszug
++ kontrollierter Animalia-Fallback
++ eigene Korrekturen
+= lokale Masterdatenbank
+```
+
+CoL XR bleibt vollständig, unverändert und read-only. Projektarten, URL-Slugs und Assets werden durch die
+Migration nicht still umbenannt. Architektur und Betrieb stehen in `docs/taxonomy-master-database-design.md`.
+`docs/audits/2026-08-phase-9-audit.md` bleibt die historische Aufnahme des früheren kleinen Bestands. Ein neues
+umfassendes Abschlussaudit wurde nach dem realen Neuaufbau unter
+`docs/audits/2026-08-phase-9-closing-audit.md` bestanden. Dabei wurden der zuvor zu hohe Speicherbedarf des
+Kandidatenaufbaus, uneinheitliche Reichswerte, die Betriebsverifikation und zurückgebliebene Testartefakte
+bereinigt. Es bestehen keine offenen Phase-9-Punkte.
+
+Als nächster großer Schritt folgt Phase 10 mit der getrennten Lightroom-Machbarkeitsprüfung.
 
 ## Phase 10 - Lightroom-Integration
 

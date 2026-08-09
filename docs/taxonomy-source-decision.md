@@ -1,8 +1,31 @@
 # Quellenentscheidung für die globale Taxonomiereferenz
 
-Stand: 2026-07-23
+Stand: 2026-08-08
 
-Status: Phase 9.1 abgeschlossen und in Phase 9.3 prototypisch bestätigt; verbindliche Grundlage aller Importphasen
+Status: Phase 9.1 abgeschlossen und für den erweiterten lokalen Masterbestand fortgeschrieben; verbindliche
+Grundlage aller Importphasen
+
+## Fortschreibung für den lokalen Masterbestand
+
+Die ursprüngliche Quellenbewertung bleibt gültig. Für die inzwischen umgesetzte lokale Masterdatenbank ist die
+operative Reihenfolge verbindlich erweitert:
+
+```text
+CoL XR
++ iNaturalist-Namens- und Lückenbestand
++ GBIF-Namen und Kennungen
++ WoRMS für marine und brackische Taxa
++ Wikidata-Taxonauszug
++ kontrollierter Animalia-Fallback für danach verbleibende Tierlücken
++ eigene Korrekturen
+= lokale Masterdatenbank
+```
+
+CoL bleibt vollständig und read-only. Der breite iNaturalist-Ausschnitt nimmt pro Version exakte Arten auf, die
+in CoL fehlen, sowie deutsche oder englische Namen, die einer vorhandenen CoL-Art fehlen. GBIF, WoRMS und
+Wikidata bleiben auf fachlich relevante, versionierte Ausschnitte begrenzt. Animalia wird mangels freigegebener
+maschineller Schnittstelle nicht gescrapt; belegte Einzelfälle werden kontrolliert versioniert. Eigene
+Korrekturen haben höchste Priorität. Details stehen in `docs/taxonomy-master-database-design.md`.
 
 ## 1. Ergebnis
 
@@ -15,14 +38,18 @@ Für die spätere lokale Taxonomiereferenz gilt folgende Quellenstrategie:
    die erweiterte Zusammenführung ergänzt wurden.
 3. **WoRMS** ist die fachliche Ergänzungs- und Validierungsquelle für marine und brackische Taxa. WoRMS überschreibt
    CoL nicht still. Abweichungen werden mit beiden Quellen-IDs sichtbar als Konflikt dargestellt.
-4. **GBIF** ist keine zweite aktuelle Primärtaxonomie. GBIF wird für die Zuordnung alter GBIF-Backbone-IDs, spätere
+4. **iNaturalist** liefert einen versionierten breiten Art-/Namensausschnitt für exakte CoL-Artlücken sowie
+   fehlende deutsche und englische Namen. Dieser Ausschnitt wird lokal gespeichert, damit die Lücken ohne
+   vorherige Einzelsuche offline auffindbar sind.
+5. **GBIF** ist keine zweite aktuelle Primärtaxonomie. GBIF wird für die Zuordnung alter GBIF-Backbone-IDs, spätere
    Vorkommensabfragen und Kartenbezüge genutzt. Die aktuelle GBIF-Webtaxonomie basiert selbst auf CoL XR.
-5. **Wikidata** darf später ausschließlich deutsche Namensvorschläge, Aliasse und externe Kennungen ergänzen.
+6. **Wikidata** darf später ausschließlich deutsche Namensvorschläge, Aliasse und externe Kennungen ergänzen.
    Wikidata ist keine taxonomische Autorität; jeder Vorschlag bleibt quellenmarkiert und bestätigungspflichtig.
-6. **Animalia.bio** bleibt eine manuell nutzbare redaktionelle Referenz für Tiere. Es erfolgt kein automatisches
+7. **Animalia.bio** bleibt eine manuell nutzbare redaktionelle Referenz für Tiere. Es erfolgt kein automatisches
    Auslesen und kein Scraping, solange keine dokumentierte öffentliche API, kein versionierter Bulk-Export und
-   keine belastbare maschinelle Nutzungsvereinbarung vorliegen.
-7. **IUCN Red List** bleibt die bestehende Quelle für Gefährdungs- und Assessmentdaten der tatsächlich angelegten
+   keine belastbare maschinelle Nutzungsvereinbarung vorliegen. Kontrolliert belegte Einzelfälle dürfen als letzter
+   lokaler Fallback versioniert werden.
+8. **IUCN Red List** bleibt die bestehende Quelle für Gefährdungs- und Assessmentdaten der tatsächlich angelegten
    Projektarten. IUCN ist nicht der globale Taxonomie-Backbone.
 
 Phase 9.1 führt noch keinen produktiven Download oder Import aus. `species_list.json`, `speciesData.json`, Assets,
@@ -134,10 +161,11 @@ Taxonomie-Backbone.
 | --- | --- | --- | --- | --- | --- |
 | CoL XR | globaler All-life-Ansatz über zahlreiche taxonomische Reiche | akzeptierte Namen, Synonyme, Ränge, Elternbeziehungen und Provenienz | monatliche/jährliche versionierte Releases; ColDP/DwCA; CC BY 4.0 mit Quellenprovenienz | teilweise, nicht vollständig | **primärer globaler Referenzbestand** |
 | CoL Base | globaler kuratierter Kern | fachlich stärker kuratierter, überschneidungsarmer Kern | Teil von XR unterscheidbar; eigene versionierte Releases | teilweise | Vertrauensstufe innerhalb des XR-Imports |
+| iNaturalist | globaler Community-Taxonomie- und Namensbestand | Arteinträge und gebräuchliche Namen | versionierter DwC-Taxonomieexport | deutsch und englisch | breiter lokaler CoL-Lücken-/Namensbestand |
 | GBIF | globaler Daten- und Vorkommensdienst | aktueller Website-Backbone basiert auf CoL XR; Alt-IDs weiterhin relevant | APIs, Alt-ID-Mapping und Occurrence-Dienste | teilweise | Diensteschicht, kein zweiter Backbone |
 | WoRMS | marine und brackische Taxa | hohe Fachspezialisierung, AphiaID, Synonyme, Hierarchie, Quellen | REST für Einzelabfragen; vollständiger Dump nur nach Antrag und Bedingungen | teilweise | marine Validierung und Ergänzung |
 | Wikidata | global, heterogen | Labels, Aliasse und externe IDs; keine verlässliche Primärhierarchie | API/SPARQL/Dumps; CC0 | breit, aber uneinheitlich | optionale Namens- und ID-Vorschläge |
-| Animalia.bio | Tiere, redaktionell | sichtbare Profile und Klassifikation, kein dokumentierter Massenzugriff | kein freigegebener versionierter Bulk-/API-Weg festgestellt | mehrsprachige Redaktion | ausschließlich manuelle Referenz |
+| Animalia.bio | Tiere, redaktionell | sichtbare Profile und Klassifikation, kein dokumentierter Massenzugriff | kein freigegebener versionierter Bulk-/API-Weg festgestellt | mehrsprachige Redaktion | manuelle Referenz und kontrollierter letzter Fallback |
 | IUCN | bewertete Arten | Assessment-Taxon und Schutzdaten, keine vollständige globale Taxonomie | bestehende API-Anbindung | nicht maßgeblich | Schutzstatus und bestehende Projektdaten |
 
 ### 4.1 Größen- und Betriebsbewertung
@@ -150,9 +178,10 @@ gemessen.
 
 Für WoRMS genügt in Phase 9.3 die artweise API-Prüfung der marinen Testtaxa. Ein vollständiger WoRMS-Dump würde
 zusätzliche Vertrags-, Import- und Aktualisierungspflichten auslösen und ist nicht Teil des ersten Prototyps.
-GBIF, Wikidata und Animalia.bio werden ebenfalls nicht als parallele Vollbestände importiert. Damit bleibt der
-erste technische Entwurf auf genau einen globalen Primärbestand plus kleine, klar abgegrenzte Ergänzungsabfragen
-beschränkt.
+GBIF, Wikidata und Animalia.bio werden nicht als parallele Vollbestände importiert. iNaturalist ist die bewusste
+Ausnahme: Sein lokaler Ausschnitt umfasst alle im Snapshot erkannten exakten CoL-Artlücken und fehlenden
+deutschen/englischen CoL-Namen. Damit bleibt CoL der einzige vollständige Primärbestand, während häufig benötigte
+Lücken bereits offline geschlossen werden.
 
 ## 5. Prioritäts- und Konfliktregeln
 

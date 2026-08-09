@@ -166,6 +166,39 @@ export class TaxonomyStore {
         )
       ORDER BY preferred DESC, LENGTH(name), name COLLATE NOCASE
     `);
+    // Der akzeptierte wissenschaftliche Name liegt direkt in `taxon` und ist
+    // dort indexiert. Ein Einstieg ueber `taxon_name.scientific_name` wuerde
+    // mangels passendem Index bei jedem Ergaenzungstreffer den gesamten
+    // CoL-Namensbestand durchsuchen und damit den Electron-Hauptprozess
+    // blockieren.
+    this.exactScientificTaxonStatement = this.database.prepare(`
+      SELECT taxon.*
+      FROM taxon
+      WHERE taxon.scientific_name = ? COLLATE NOCASE
+        AND (? = '' OR LOWER(taxon.rank) = ?)
+      ORDER BY
+        CASE WHEN taxon.status = 'accepted' THEN 0 ELSE 1 END,
+        taxon.id
+      LIMIT 1
+    `);
+    this.taxonByIdStatement = this.database.prepare("SELECT * FROM taxon WHERE id = ?");
+    this.taxonBySourceIdStatement = this.database.prepare("SELECT * FROM taxon WHERE source_id = ?");
+    this.taxonParentByIdStatement = this.database.prepare("SELECT * FROM taxon WHERE id = ?");
+    this.taxonNamesStatement = this.database.prepare(`
+      SELECT source_name_id, scientific_name, authorship, rank, status, relationship, trust_tier
+      FROM taxon_name
+      WHERE taxon_id = ?
+      ORDER BY CASE WHEN relationship = 'accepted' THEN 0 ELSE 1 END, scientific_name
+    `);
+    this.taxonIdentifiersStatement = this.database.prepare(`
+      SELECT identifier_type, identifier, source, source_release
+      FROM external_identifier
+      WHERE taxon_id = ?
+      ORDER BY identifier_type, identifier
+    `);
+    this.taxonWormsStatement = this.database.prepare(
+      "SELECT * FROM worms_comparison WHERE taxon_id = ?",
+    );
   }
 
   assertOpen() {
@@ -531,9 +564,11 @@ export class TaxonomyStore {
     if (!exactRows.length && distinctTaxonCount() < maximum && normalized.length >= 2) {
       appendRows(this.ftsRows(searchInput));
     }
-    if (!exactRows.length && distinctTaxonCount() < maximum && normalized.length >= 3) {
-      appendRows(this.containsRows(searchInput));
-    }
+    // Kein unindexierter INSTR-Rueckfall auf dem CoL-Vollbestand: Bei einem
+    // unbekannten Begriff wuerde er Millionen Suchterme synchron scannen und
+    // damit den Electron-Hauptprozess blockieren. Praefix- und FTS-Suche sind
+    // indexiert; weitere Teilworttreffer kommen aus dem kleinen Masterbestand
+    // beziehungsweise den asynchron abgefragten Ergaenzungsquellen.
     const seenTaxa = new Set();
     const results = [];
     for (const row of rows) {
@@ -562,27 +597,17 @@ export class TaxonomyStore {
     const value = String(scientificName ?? "").trim();
     if (!value) return null;
     const normalizedRank = String(rank ?? "").trim().toLocaleLowerCase("en");
-    const row = this.database.prepare(`
-      SELECT taxon.*
-      FROM taxon_name
-      JOIN taxon ON taxon.id = taxon_name.taxon_id
-      WHERE taxon_name.scientific_name = ? COLLATE NOCASE
-        AND (? = '' OR LOWER(taxon.rank) = ?)
-      ORDER BY
-        CASE WHEN taxon_name.relationship = 'accepted' THEN 0 ELSE 1 END,
-        CASE WHEN taxon.status = 'accepted' THEN 0 ELSE 1 END,
-        taxon.id
-      LIMIT 1
-    `).get(value, normalizedRank, normalizedRank);
+    const row = this.exactScientificTaxonStatement.get(
+      value,
+      normalizedRank,
+      normalizedRank,
+    );
     if (!row) return null;
     return this.formatSearchResult({
       term_id: `scientific:${row.id}`,
       taxon_id: row.id,
       term: value,
-      term_type: value.toLocaleLowerCase("en") === String(row.scientific_name)
-        .toLocaleLowerCase("en")
-        ? "accepted_scientific"
-        : "scientific_synonym",
+      term_type: "accepted_scientific",
       language: null,
       preferred: 1,
       sort_score: 0,
@@ -600,33 +625,20 @@ export class TaxonomyStore {
     this.assertOpen();
     const value = String(reference ?? "").trim();
     const row = /^\d+$/.test(value)
-      ? this.database.prepare("SELECT * FROM taxon WHERE id = ?").get(Number(value))
-      : this.database.prepare("SELECT * FROM taxon WHERE source_id = ?").get(value);
+      ? this.taxonByIdStatement.get(Number(value))
+      : this.taxonBySourceIdStatement.get(value);
     if (!row) return null;
     const hierarchy = [];
-    const parentStatement = this.database.prepare("SELECT * FROM taxon WHERE id = ?");
     let current = row;
     const visited = new Set();
     while (current && !visited.has(current.id)) {
       visited.add(current.id);
       hierarchy.unshift(plain(current));
-      current = current.parent_id ? parentStatement.get(current.parent_id) : null;
+      current = current.parent_id ? this.taxonParentByIdStatement.get(current.parent_id) : null;
     }
-    const scientificNames = this.database.prepare(`
-      SELECT source_name_id, scientific_name, authorship, rank, status, relationship, trust_tier
-      FROM taxon_name
-      WHERE taxon_id = ?
-      ORDER BY CASE WHEN relationship = 'accepted' THEN 0 ELSE 1 END, scientific_name
-    `).all(row.id).map(plain);
-    const identifiers = this.database.prepare(`
-      SELECT identifier_type, identifier, source, source_release
-      FROM external_identifier
-      WHERE taxon_id = ?
-      ORDER BY identifier_type, identifier
-    `).all(row.id).map(plain);
-    const worms = plain(
-      this.database.prepare("SELECT * FROM worms_comparison WHERE taxon_id = ?").get(row.id),
-    );
+    const scientificNames = this.taxonNamesStatement.all(row.id).map(plain);
+    const identifiers = this.taxonIdentifiersStatement.all(row.id).map(plain);
+    const worms = plain(this.taxonWormsStatement.get(row.id));
     const germanNames = this.germanNames(row.id);
     const englishNames = this.englishNames(row.id);
     const germanName = germanNames[0]?.name ?? null;

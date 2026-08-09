@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 
@@ -7,6 +8,7 @@ export const TAXONOMY_IMPORTER_VERSION = 1;
 export const TAXONOMY_POINTER_SCHEMA_VERSION = 1;
 
 const RELEASE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,100}$/i;
+const atomicWriteLocks = new Map();
 
 export function assertTaxonomyReleaseId(value) {
   const releaseId = String(value ?? "").trim();
@@ -75,33 +77,45 @@ export async function readActiveTaxonomyPointer(taxonomyRoot) {
 
 export async function atomicWriteJson(filePath, value) {
   const absolutePath = path.resolve(filePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  const temporaryPath = `${absolutePath}.${process.pid}.${Date.now()}.tmp`;
-  await fs.writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-  try {
-    await fs.rename(temporaryPath, absolutePath);
-  } catch (error) {
-    if (!["EEXIST", "EPERM"].includes(error?.code)) {
-      await fs.rm(temporaryPath, { force: true });
-      throw error;
-    }
-    const previousPath = `${absolutePath}.previous`;
-    await fs.rm(previousPath, { force: true });
+  const previousWrite = atomicWriteLocks.get(absolutePath) || Promise.resolve();
+  const currentWrite = previousWrite.catch(() => {}).then(async () => {
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    const temporaryPath = `${absolutePath}.${process.pid}.${Date.now()}.${randomUUID()}.tmp`;
     try {
-      await fs.rename(absolutePath, previousPath);
-    } catch (renameError) {
-      if (renameError?.code !== "ENOENT") throw renameError;
-    }
-    try {
-      await fs.rename(temporaryPath, absolutePath);
-      await fs.rm(previousPath, { force: true });
-    } catch (replaceError) {
+      await fs.writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
       try {
-        await fs.rename(previousPath, absolutePath);
-      } catch {
-        // The original error below remains the actionable failure.
+        await fs.rename(temporaryPath, absolutePath);
+      } catch (error) {
+        if (!["EEXIST", "EPERM"].includes(error?.code)) throw error;
+        const previousPath = `${absolutePath}.previous`;
+        await fs.rm(previousPath, { force: true });
+        try {
+          await fs.rename(absolutePath, previousPath);
+        } catch (renameError) {
+          if (renameError?.code !== "ENOENT") throw renameError;
+        }
+        try {
+          await fs.rename(temporaryPath, absolutePath);
+          await fs.rm(previousPath, { force: true });
+        } catch (replaceError) {
+          try {
+            await fs.rename(previousPath, absolutePath);
+          } catch {
+            // The original error below remains the actionable failure.
+          }
+          throw replaceError;
+        }
       }
-      throw replaceError;
+    } finally {
+      await fs.rm(temporaryPath, { force: true }).catch(() => {});
+    }
+  });
+  atomicWriteLocks.set(absolutePath, currentWrite);
+  try {
+    await currentWrite;
+  } finally {
+    if (atomicWriteLocks.get(absolutePath) === currentWrite) {
+      atomicWriteLocks.delete(absolutePath);
     }
   }
 }

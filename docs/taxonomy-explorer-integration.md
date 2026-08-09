@@ -1,8 +1,10 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-07-30
+Stand: 2026-08-08
 
-Status: Phase 9.4 abgeschlossen; Phase 9.5 ergänzt Installation, Aktualisierung und kontrollierte Ergänzungsnamen
+Status: Phase 9.4/9.5 bilden den sicheren Referenzfallback. Seit Phase 9.10 durchsucht der Assistent bevorzugt die
+aktive lokale Masterdatenbank aus vollständigem CoL XR, breitem iNaturalist-Lücken-/Namensbestand, relevanten
+GBIF-/WoRMS-/Wikidata-Ausschnitten, kontrollierten Animalia-Fällen und eigenen Korrekturen.
 
 ## Ziel
 
@@ -30,7 +32,7 @@ eine Projektart anlegen.
 ## Bedienablauf
 
 1. Der Assistent prüft beim Öffnen, ob eine aktive lokale Referenz vorhanden und lesbar ist.
-2. Nach dem letzten eingegebenen Zeichen startet nach 300 Millisekunden die sprachlich passende Suche.
+2. Nach dem letzten eingegebenen Zeichen startet nach 500 Millisekunden die sprachlich passende Suche.
 3. Mehrere Treffer werden als Liste mit deutschem oder englischem Anzeigenamen, akzeptiertem wissenschaftlichem
    Namen, Rang, Reich und gegebenenfalls Synonymhinweis angezeigt.
 4. Ein Klick auf einen Treffer schließt die schwebende Liste und füllt den deutschen, englischen sowie
@@ -51,7 +53,7 @@ Teiltreffern bevorzugt; `Gepard` liefert deshalb nicht zusätzlich einen nur ent
 Unterarten sind im Referenzschema vorbereitet, bleiben für einen späteren kontrollierten Ausbau gesperrt, weil der
 aktuelle Projektworkflow bewusst exakt zweiteilige wissenschaftliche Artnamen verlangt.
 
-## Deutsche und englische Namen sowie Animalia.bio
+## Deutsche und englische Namen sowie Ergänzungsquellen
 
 Ein deutscher Name wird nur übernommen, wenn er in der lokalen Referenz als deutscher Vernakularname belegt ist.
 Wurde über den deutschen Suchbegriff ein konkreter bestätigter Name ausgewählt, bleibt genau dieser Name erhalten,
@@ -63,25 +65,29 @@ deutsche Pflichtwert wird anschließend redaktionell ergänzt. Ein englischer Na
 nicht. Liefert ein späterer Release einen deutschen Namen, werden vorhandene Projektarten nicht automatisch
 umbenannt.
 
-Bei einem Tier ohne bestätigten deutschen Namen zeigt die Detailvorschau außerdem einen gezielten Link für eine
-manuelle Suche bei Animalia.bio. Die Website wird nicht automatisiert abgerufen oder ausgewertet. Der Benutzer kann
-einen geprüften deutschen Namen anschließend selbst eintragen.
+Die aktive Masterdatenbank enthält CoL-Namenslücken und CoL-Artlücken bereits lokal: Ein breiter versionierter
+iNaturalist-Ausschnitt ergänzt CoL-Arten ohne deutschen oder englischen Namen und wissenschaftlich eindeutig
+erkannte Arten, die im CoL-Release fehlen. Relevante versionierte GBIF-, WoRMS- und Wikidata-Ausschnitte ergänzen
+Kennungen, marine Taxa und gebräuchliche Namen. Dadurch bleiben bereits importierte Ergänzungen auch ohne
+Internetverbindung auffindbar. Treffer nennen Anbieter, Anbieterstand, Quellen-ID, Feldprovenienz und Status wie
+`CoL-Referenzlücke` oder `extern bestätigt`.
 
-Fehlen deutsche oder englische CoL-Namen, darf die Suche zusätzlich die offiziellen Schnittstellen von
-iNaturalist, GBIF, WoRMS und Wikidata abfragen. Ein externer Namenskandidat erscheint nur, wenn sein
-wissenschaftlicher Name eindeutig einer vorhandenen CoL-Art zugeordnet werden kann. Die zentrale Hierarchie zeigt
-deutsche Anzeigenamen zusammen mit dem wissenschaftlichen Rohwert, zum Beispiel `Katzen (Felidae)`. Eigene
-redaktionelle Korrekturen überlagern nur sichtbare Namensvorschläge und verändern CoL nicht. Der vollständige
-Daten-, Cache- und Korrekturvertrag steht in `docs/taxonomy-reference-supplements.md`.
+Animalia besitzt keine für dieses Projekt freigegebene dokumentierte API und keinen versionierten Bulk-Export.
+Danach verbleibende, fachlich belegte Tierlücken können deshalb nur kontrolliert und mit Quellenbeleg in den
+versionierten Animalia-Fallback übernommen werden; automatisches Scraping findet nicht statt. Der manuelle
+Animalia-Suchlink bleibt als redaktioneller Rechercheweg verfügbar. Eigene bestätigte Korrekturen überlagern
+Anbietervorschläge, verändern die CoL-Primärreferenz aber nicht. Der vollständige Daten-, Cache- und
+Korrekturvertrag steht in `docs/taxonomy-reference-supplements.md`.
 
 ## Fehler- und Offlineverhalten
 
-Die Taxonomiereferenz ist bei installierter Datenbank der reguläre geführte Eingabeweg. Die manuelle Eingabe bleibt
-als ausfallsicherer Fallback erhalten:
+Die aktive Masterdatenbank ist der reguläre geführte Eingabeweg. Die CoL-Referenz und die manuelle Eingabe bleiben
+als ausfallsichere Fallbacks erhalten:
 
 - Fehlt die lokale Datenbank, zeigt der Assistent `Manuelle Eingabe`; ein eigener Umschaltknopf ist nicht nötig,
   weil die drei Namensfelder jederzeit direkt beschreibbar bleiben.
-- Ist der aktive Releasezeiger oder die Datenbank beschädigt, wird die Referenzsuche deaktiviert.
+- Ist der aktive Masterzeiger beschädigt, fällt die Suche auf die unveränderte aktive CoL-Referenz zurück. Ist auch
+  diese nicht lesbar, wird die Referenzsuche deaktiviert.
 - Bereits eingetragene Formularwerte bleiben erhalten.
 - Die normale manuelle Prüfung und Artanlage bleibt vollständig verfügbar.
 - Ein Referenzfehler startet keine Pipeline, erzeugt keinen Commit und ändert keine Art- oder Assetdatei.
@@ -100,7 +106,7 @@ noch bereits gespeicherte Projektarten. Die Liste bleibt auch bei vielen Reichen
 damit der Neue-Art-Assistent nicht über die Fensterhöhe hinauswächst.
 
 Wenn während des Tippens mehrere Anfragen laufen, darf nur die Antwort der neuesten Eingabe die Trefferliste
-aktualisieren. Jede Eingabe wartet 300 Millisekunden, bevor eine Anfrage beginnt. Die Treffer erscheinen in einem
+aktualisieren. Jede Eingabe wartet 500 Millisekunden, bevor eine Anfrage beginnt. Die Treffer erscheinen in einem
 kompakten, schwebenden Scrollbereich unter den Namensfeldern.
 Unterschiedliche Trefferzahlen verändern deshalb weder die Dialoghöhe noch die Position der folgenden
 Eingabefelder. Ausführliche Hierarchie- und Quelldaten werden weiterhin erst nach bewusster Auswahl eingeblendet.
@@ -118,9 +124,10 @@ GET /api/taxonomy/taxa/:id
 ```
 
 Die Endpunkte laufen innerhalb der bestehenden localhost-, Origin- und Sitzungsgrenzen des Arten-Explorers. Sie
-öffnen nur den über den aktiven Releasezeiger freigegebenen SQLite-Bestand. Ändert sich der aktive Release, wird der
-read-only Speicher beim nächsten Zugriff kontrolliert neu geöffnet. Such- und Detailantworten dürfen zusätzlich
-die getrennte, exakt auf CoL-Arten begrenzte Ergänzungsprovenienz enthalten.
+öffnen bevorzugt den atomar aktivierten Masterbestand; ohne aktiven Master verwenden sie die über den aktiven
+Releasezeiger freigegebene CoL-SQLite. Ändert sich der aktive Stand, wird der read-only Speicher beim nächsten
+Zugriff kontrolliert neu geöffnet. Such- und Detailantworten enthalten Quellen- und Feldprovenienz auch für
+CoL-Referenzlücken.
 
 Schreibende Endpunkte für Download, Import, Aktivierung und Rollback sind ausdrücklich nicht Teil der
 Phase-9.4-Referenzsuche. Phase 9.5 stellt sie getrennt im Wartungsbereich bereit:
@@ -182,7 +189,8 @@ Die kleine Phase-9.3-Fixture und die direkten Explorer-Tests weisen zusätzlich 
   über `Alle Reiche`
 - exakte Treffer, wissenschaftliche Gattungspräfixe und deutsche Teiltreffer wie `toko`
 - vollständige Detailansicht mit Quelle, Release und Hierarchie
-- exakte CoL-Zuordnung externer gebräuchlicher Namen, letzter funktionierender Cache und Korrekturvorrang
+- lokal importierte iNaturalist-Artlücken und Namenslücken, relevante Anbieterprovenienz, letzter funktionierender
+  Anbieterstand und Korrekturvorrang
 
 Der reale Referenzbestand weist außerdem einen zulässigen Sonderfall auf: Eine Projektart kann auf Artstufe im
 Release fehlen, während zugehörige Unterarten vorhanden sind. Der Projektabgleich kennzeichnet dies als

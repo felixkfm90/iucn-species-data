@@ -824,7 +824,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appTaxonomyReferenceSource, /function sortTaxonomyKingdoms\(/);
   assert.match(appTaxonomyReferenceSource, /function filterTaxonomyKingdoms\(/);
-  assert.match(appTaxonomyReferenceSource, /const TAXONOMY_SEARCH_DEBOUNCE_MS = 300/);
+  assert.match(appTaxonomyReferenceSource, /const TAXONOMY_SEARCH_DEBOUNCE_MS = 500/);
+  assert.match(appTaxonomyReferenceSource, /activeSearchController\?\.abort\?\.\(\)/);
+  assert.match(appTaxonomyReferenceSource, /signal:\s*controller\.signal/);
   assert.match(
     cssSource,
     /\.taxonomy-reference-kingdom-settings-list\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/s,

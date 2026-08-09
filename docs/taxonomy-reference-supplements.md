@@ -1,10 +1,10 @@
 # Ergänzungsnamen und eigene Taxonomiekorrekturen
 
-Stand: 2026-07-30
+Stand: 2026-08-08
 
-Status: technisch umgesetzt und bis zur geprüften Phase-9.7-Migration aktive Übergangsschicht
+Status: technisch umgesetzt; als letzter funktionierender Online-Cache und Zubringer zur Masterdatenbank erhalten
 
-## Aktueller Übergangsvertrag
+## Rolle neben der Masterdatenbank
 
 Catalogue of Life (CoL) bleibt die unveränderliche taxonomische Primärreferenz. Externe Dienste dürfen den lokalen
 CoL-Bestand nicht durch eigene Taxa, Hierarchien oder Synonymbeziehungen ersetzen. Sie ergänzen ausschließlich
@@ -19,11 +19,11 @@ Ein externer Treffer wird deshalb nur gespeichert, wenn:
 Ohne exakte CoL-Zuordnung wird ein externer Treffer verworfen. Damit können iNaturalist, GBIF, WoRMS oder Wikidata
 keine fremde Art in die lokale Referenz einschleusen.
 
-Diese strikte Artgrenze beschreibt den bis Phase 9.6 produktiv verwendeten `supplements.json`-Ablauf. Sie ist
-nicht das endgültige Masterdatenmodell: Phase 9.6 hat dafür eine separate SQLite-Grundlage geschaffen, die echte
-CoL-Lücken künftig als quellenbelegte `reference-gap`-Taxa abbilden kann, ohne CoL selbst zu verändern. Erst
-Phase 9.7 migriert vorhandene Ergänzungen und Korrekturen in einen geprüften Master-Kandidaten. Bis zu dessen
-Aktivierung bleibt der hier dokumentierte Ablauf unverändert maßgeblich.
+Diese strikte Artgrenze beschreibt den weiterhin vorhandenen `supplements.json`-Cache. Er ist nicht mehr die
+vollständige lokale Taxonomie: Die getrennte Masterdatenbank darf zusätzlich quellenbelegte CoL-Artlücken führen.
+Sie übernimmt außerdem den breiten, versionierten iNaturalist-Lücken-/Namensbestand und versionierte relevante
+Ausschnitte aus GBIF, WoRMS und Wikidata. `supplements.json` bleibt als fehlertoleranter Online-Zubringer und als
+sichere Rückfallebene erhalten; produktiv gesucht wird bevorzugt in der aktiven Masterdatenbank.
 
 ## Ergänzungsquellen
 
@@ -41,7 +41,9 @@ gespeicherte Korrekturen besitzen Vorrang. Exakte deutsche Eigennamen werden vor
 einsortiert; beispielsweise steht `Leopard` vor `Leopard-Drückerfisch`.
 
 Animalia.bio besitzt keine für dieses Projekt freigegebene dokumentierte API und wird daher nicht automatisiert
-ausgelesen. Der vorhandene Link bleibt eine manuelle Recherchehilfe.
+ausgelesen oder gescrapt. Der vorhandene Link bleibt eine manuelle Recherchehilfe. Fachlich belegte letzte
+Tierlücken können kontrolliert in `taxonomy-animalia-fallbacks.json` hinterlegt und dadurch beim nächsten
+Masteraufbau mit Quelle, Zeitpunkt und Version lokal übernommen werden.
 
 ## Speicherung und Provenienz
 
@@ -92,9 +94,11 @@ der wissenschaftliche Name eindeutig in der aktiven CoL-Referenz als Art vorhand
 
 ## Suche und Auswahl im Neue-Art-Assistenten
 
-Der Assistent durchsucht nach einer Eingabepause von 300 Millisekunden zuerst CoL und den vorhandenen lokalen
-Ergänzungscache. Fehlt ein exakter lokaler Namensmatch und besteht der Suchbegriff aus mindestens drei Zeichen,
-werden die Ergänzungsquellen abgefragt.
+Der Assistent durchsucht nach einer Eingabepause von 500 Millisekunden zuerst die aktive lokale Masterdatenbank.
+Ist sie nicht verfügbar, folgen CoL und der vorhandene lokale Ergänzungscache als Rückfallebene. Fehlt dort ein
+exakter lokaler Namensmatch und besteht der Suchbegriff aus mindestens drei Zeichen, können die
+Ergänzungsquellen abgefragt werden. Eine neue Eingabe bricht die vorherige Anfrage ab; nur das Ergebnis der
+neuesten Eingabe darf sichtbar werden.
 
 Ein Klick auf einen Treffer:
 
@@ -117,8 +121,10 @@ unverändert.
 - bei aktueller CoL-Version ausschließlich Ergänzungsnamen aktualisieren oder
 - ohne Änderung abbrechen.
 
-Ein Ergänzungsabgleich umfasst die wissenschaftlichen Namen aller Projektarten sowie bereits lokal bekannte oder
-korrigierte Taxa. Die normale Suche kann weitere Namen bei Bedarf in den lokalen Cache aufnehmen.
+Ein Ergänzungsabgleich umfasst die wissenschaftlichen Namen aller Projektarten sowie bereits lokal bekannte,
+recherchierte oder korrigierte Taxa. Die normale Suche kann weitere Namen in den letzten funktionierenden Cache
+aufnehmen. Beim Masteraufbau werden diese relevanten Stände versioniert; unabhängig davon enthält der breite
+iNaturalist-Ausschnitt bereits alle dort bestätigten CoL-Artlücken und fehlenden deutschen/englischen CoL-Namen.
 
 Die Aktualisierung ändert niemals automatisch `species_list.json`, `speciesData.json`, Namen, Slugs,
 Assetordner oder Overrides. Erst die bewusste Auswahl im Neue-Art-Assistenten beziehungsweise ein geschützter
@@ -157,6 +163,5 @@ Abgedeckt sind die vier Anbieteradapter, Sprachcodes, exakte CoL-Zuordnung, Tref
 Offline-/Teilausfall, letzter funktionierender Cache, eigener Vollabgleichzeitpunkt, Korrekturvorrang,
 serverseitige Eingabegrenzen, Zurücksetzen, direkte Trefferauswahl, kombinierte Wartung und lokale API-Routen.
 
-Die spätere Migration in die Masterdatenbank muss Cacheeinträge, Quellen-IDs, Korrekturvorrang und
-Projektzuordnungen verlustfrei erhalten. Der Zielvertrag steht in
-`docs/taxonomy-master-database-design.md`.
+Die Migration in die Masterdatenbank erhält Cacheeinträge, Quellen-IDs, Korrekturvorrang und Projektzuordnungen
+verlustfrei. Der maßgebliche Ziel- und Betriebsvertrag steht in `docs/taxonomy-master-database-design.md`.

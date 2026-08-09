@@ -1,4 +1,7 @@
-import { TAXONOMY_MASTER_SCHEMA_VERSION } from "./taxonomy-master-storage.mjs";
+import {
+  READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS,
+  TAXONOMY_MASTER_SCHEMA_VERSION,
+} from "./taxonomy-master-storage.mjs";
 
 export const TAXONOMY_MASTER_PROVIDERS = Object.freeze([
   "catalogue-of-life",
@@ -6,6 +9,7 @@ export const TAXONOMY_MASTER_PROVIDERS = Object.freeze([
   "gbif",
   "worms",
   "wikidata",
+  "animalia",
   "manual",
   "project",
 ]);
@@ -35,6 +39,7 @@ export function createTaxonomyMasterSchema(database) {
           'gbif',
           'worms',
           'wikidata',
+          'animalia',
           'manual',
           'project'
         )
@@ -289,6 +294,52 @@ export function createTaxonomyMasterSchema(database) {
     CREATE INDEX project_taxon_master_idx
       ON project_taxon_link(master_taxon_id, link_state);
 
+    CREATE TABLE master_search_term (
+      search_term_id INTEGER PRIMARY KEY,
+      master_taxon_id TEXT NOT NULL
+        REFERENCES master_taxon(master_taxon_id) ON DELETE CASCADE,
+      term TEXT NOT NULL,
+      normalized_term TEXT NOT NULL,
+      folded_term TEXT NOT NULL,
+      german_key TEXT NOT NULL,
+      term_kind TEXT NOT NULL CHECK (
+        term_kind IN ('scientific', 'synonym', 'vernacular', 'identifier', 'project')
+      ),
+      language TEXT NOT NULL DEFAULT '',
+      source_provider TEXT NOT NULL CHECK (
+        source_provider IN (
+          'catalogue-of-life',
+          'inaturalist',
+          'gbif',
+          'worms',
+          'wikidata',
+          'animalia',
+          'manual',
+          'project'
+        )
+      ),
+      weight INTEGER NOT NULL DEFAULT 100 CHECK (weight >= 0),
+      UNIQUE (
+        master_taxon_id,
+        normalized_term,
+        term_kind,
+        language,
+        source_provider
+      )
+    );
+
+    CREATE INDEX master_search_normalized_idx
+      ON master_search_term(normalized_term, weight, master_taxon_id);
+
+    CREATE INDEX master_search_folded_idx
+      ON master_search_term(folded_term, weight, master_taxon_id);
+
+    CREATE INDEX master_search_german_idx
+      ON master_search_term(german_key, weight, master_taxon_id);
+
+    CREATE INDEX master_search_taxon_idx
+      ON master_search_term(master_taxon_id, term_kind, language);
+
     CREATE TABLE master_decision (
       decision_id TEXT PRIMARY KEY,
       master_taxon_id TEXT NOT NULL
@@ -310,7 +361,22 @@ export function createTaxonomyMasterSchema(database) {
   `).run(String(TAXONOMY_MASTER_SCHEMA_VERSION));
 }
 
-export function validateTaxonomyMasterDatabase(database) {
+export function validateTaxonomyMasterDatabase(database, { full = true } = {}) {
+  const schemaVersion = Number(scalar(
+    database,
+    "SELECT value FROM master_schema_info WHERE key = 'schemaVersion'",
+  ));
+  if (!READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS.includes(schemaVersion)) {
+    throw new Error(
+      `Masterdatenbank-Schemaversion ${schemaVersion || "(fehlt)"} wird nicht unterstützt.`,
+    );
+  }
+  // Aktive Masterstände wurden vor der atomaren Aktivierung vollständig geprüft.
+  // Beim normalen read-only Öffnen reicht deshalb der schnelle Schemavertrag;
+  // PRAGMA integrity_check über mehrere GiB gehört ausschließlich zu Build,
+  // Aktivierung, Rollback-Audit und ausdrücklichen Wartungsprüfungen.
+  if (!full) return { schemaVersion, validationMode: "schema-only" };
+
   const integrity = scalar(database, "PRAGMA integrity_check");
   if (integrity !== "ok") {
     throw new Error(`Masterdatenbank-Integritätsprüfung fehlgeschlagen: ${integrity}`);
@@ -319,15 +385,6 @@ export function validateTaxonomyMasterDatabase(database) {
   if (foreignKeyErrors.length) {
     throw new Error(
       `Masterdatenbank-Fremdschlüsselprüfung meldet ${foreignKeyErrors.length} Fehler.`,
-    );
-  }
-  const schemaVersion = Number(scalar(
-    database,
-    "SELECT value FROM master_schema_info WHERE key = 'schemaVersion'",
-  ));
-  if (schemaVersion !== TAXONOMY_MASTER_SCHEMA_VERSION) {
-    throw new Error(
-      `Masterdatenbank-Schemaversion ${schemaVersion || "(fehlt)"} wird nicht unterstützt.`,
     );
   }
   const invalidSelectedFields = Number(scalar(database, `
@@ -383,7 +440,14 @@ export function validateTaxonomyMasterDatabase(database) {
       `${invalidProviderSnapshots} Anbieter-Ausschnitte besitzen keinen Abrufzeitpunkt oder keine Hierarchieprovenienz.`,
     );
   }
+  const hasSearchTerms = Boolean(database.prepare(`
+    SELECT 1
+    FROM sqlite_master
+    WHERE type = 'table' AND name = 'master_search_term'
+  `).get());
   return {
+    schemaVersion,
+    validationMode: "full",
     sourceReleases: Number(scalar(database, "SELECT COUNT(*) FROM provider_release")),
     masterTaxa: Number(scalar(database, "SELECT COUNT(*) FROM master_taxon")),
     sourceTaxa: Number(scalar(database, "SELECT COUNT(*) FROM provider_taxon_assertion")),
@@ -400,5 +464,8 @@ export function validateTaxonomyMasterDatabase(database) {
       "SELECT COUNT(*) FROM provider_slice_membership",
     )),
     decisions: Number(scalar(database, "SELECT COUNT(*) FROM master_decision")),
+    searchTerms: hasSearchTerms
+      ? Number(scalar(database, "SELECT COUNT(*) FROM master_search_term"))
+      : 0,
   };
 }

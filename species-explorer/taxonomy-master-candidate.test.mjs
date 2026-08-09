@@ -200,6 +200,55 @@ test("9.9 behandelt eine dokumentierte CoL-Referenzlücke als Hinweis statt Akti
   }
 });
 
+test("ergänzt ein fehlendes Anbieter-Reich nur aus einer eindeutigen CoL-Gattungszuordnung", async (t) => {
+  const root = await createRoot(t);
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [{
+      providerRecordId: "col-iguana-iguana",
+      scientificName: "Iguana iguana",
+      rank: "species",
+      kingdom: "Animalia",
+    }],
+    providerSlices: [{
+      manifest: {
+        provider: "wikidata",
+        providerVersion: "2026-08-01",
+        retrievedAt: FIRST.toISOString(),
+      },
+      records: [{
+        providerRecordId: "Q-iguana-melanoderma",
+        scientificName: "Iguana melanoderma",
+        rank: "species",
+        kingdom: "",
+      }],
+    }],
+    now: () => FIRST,
+  });
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    assert.equal(
+      database.prepare(`
+        SELECT kingdom
+        FROM master_taxon
+        WHERE canonical_scientific_name = 'Iguana melanoderma'
+      `).get().kingdom,
+      "Animalia",
+    );
+    assert.equal(
+      database.prepare(`
+        SELECT kingdom
+        FROM provider_taxon_assertion
+        WHERE provider_record_id = 'Q-iguana-melanoderma'
+      `).get().kingdom,
+      null,
+    );
+  } finally {
+    database.close();
+  }
+});
+
 test("9.9 stellt bei einer unterbrochenen Aktivierung die bisherige Version wieder her", async (t) => {
   const root = await createRoot(t);
   await buildFirstActive(root);
@@ -236,4 +285,110 @@ test("9.9 stellt bei einer unterbrochenen Aktivierung die bisherige Version wied
   const activeAfter = await readTaxonomyMasterManifest(root, "active");
   assert.equal(activeAfter.candidateId, activeBefore.candidateId);
   assert.equal(selectedField(root, "active", "family").field_value, "Felidae");
+});
+
+test("der reale Masterimport verwirft als Art markierte Quellzeilen ohne kanonischen Binomen", async (t) => {
+  const root = await createRoot(t);
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [
+      leopardRecord(),
+      {
+        providerRecordId: "col-invalid-species",
+        scientificName: "Mammalia incertae sedis",
+        rank: "species",
+        kingdom: "Animalia",
+      },
+    ],
+    providerSlices: [{
+      manifest: {
+        provider: "gbif",
+        providerVersion: "2026-08-01",
+        retrievedAt: FIRST.toISOString(),
+      },
+      records: [{
+        providerRecordId: "gbif-invalid-species",
+        scientificName: "Unclassified",
+        rank: "species",
+        kingdom: "Animalia",
+      }],
+    }],
+    projectTaxa: [projectLeopard()],
+    now: () => FIRST,
+  });
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    assert.deepEqual(
+      database.prepare(`
+        SELECT canonical_scientific_name
+        FROM master_taxon
+        ORDER BY canonical_scientific_name
+      `).all().map((entry) => entry.canonical_scientific_name),
+      ["Panthera pardus"],
+    );
+  } finally {
+    database.close();
+  }
+});
+
+test("kanonisiert abweichende Anbieter-Reichsnamen nur im Master und erhält den Rohwert", async (t) => {
+  const root = await createRoot(t);
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [leopardRecord()],
+    providerSlices: [{
+      manifest: {
+        provider: "gbif",
+        providerVersion: "2026-08-01",
+        retrievedAt: FIRST.toISOString(),
+      },
+      records: [
+        {
+          providerRecordId: "gbif-animal",
+          scientificName: "Actophilornis africana",
+          rank: "species",
+          kingdom: "Animal",
+        },
+        {
+          providerRecordId: "gbif-plant",
+          scientificName: "Acaena anserinifolia",
+          rank: "species",
+          kingdom: "Viridiplantae",
+        },
+      ],
+    }],
+    projectTaxa: [projectLeopard()],
+    now: () => FIRST,
+  });
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    assert.deepEqual(
+      database.prepare(`
+        SELECT canonical_scientific_name, kingdom
+        FROM master_taxon
+        WHERE canonical_scientific_name IN ('Actophilornis africana', 'Acaena anserinifolia')
+        ORDER BY canonical_scientific_name
+      `).all().map((entry) => ({ ...entry })),
+      [
+        { canonical_scientific_name: "Acaena anserinifolia", kingdom: "Plantae" },
+        { canonical_scientific_name: "Actophilornis africana", kingdom: "Animalia" },
+      ],
+    );
+    assert.deepEqual(
+      database.prepare(`
+        SELECT scientific_name, kingdom
+        FROM provider_taxon_assertion
+        WHERE provider_record_id IN ('gbif-animal', 'gbif-plant')
+        ORDER BY scientific_name
+      `).all().map((entry) => ({ ...entry })),
+      [
+        { scientific_name: "Acaena anserinifolia", kingdom: "Viridiplantae" },
+        { scientific_name: "Actophilornis africana", kingdom: "Animal" },
+      ],
+    );
+  } finally {
+    database.close();
+  }
 });

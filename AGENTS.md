@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-07-30
+Stand: 2026-08-09
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -90,8 +90,12 @@ Lokale Arbeitsoberflaeche:
   Taxonomie-API sowie Vorschläge für deutsche, englische und wissenschaftliche Namen, lokale Reichsauswahl und
   direkte kontrollierte Übernahme im Neue-Art-Assistenten
 - `species-explorer/taxonomy-display-names.mjs`, `taxonomy-supplement-providers.mjs` und
-  `taxonomy-supplement-service.mjs`: zentrale deutsche Taxonomieanzeigen, offizielle iNaturalist-, GBIF-, WoRMS-
-  und Wikidata-Adapter sowie lokaler letzter-funktionierender Ergänzungscache mit CoL-Artgrenze
+  `taxonomy-supplement-service.mjs`: zentrale deutsche Taxonomieanzeigen, offizielle GBIF-, WoRMS- und
+  Wikidata-Adapter sowie lokaler letzter-funktionierender Ergänzungscache
+- `species-explorer/taxonomy-inaturalist-client.mjs`, `taxonomy-inaturalist-snapshot.mjs`,
+  `taxonomy-provider-refresh-service.mjs`, `taxonomy-animalia-fallback.mjs`, `taxonomy-csv.mjs` und
+  `taxonomy-taxon-quality.mjs`: breiter versionierter iNaturalist-Namens-/Artlückenausschnitt, koordinierte
+  Anbieteraktualisierung, kontrollierte Animalia-Fälle sowie gemeinsame Import- und Qualitätsgrenzen
 - `taxonomy-reference-corrections.json`: versionierte eigene deutsche beziehungsweise englische Namenskorrekturen
   für eindeutig vorhandene CoL-Arten; die CoL-Primärreferenz selbst bleibt unverändert
 - `species-explorer/taxonomy-release-client.mjs`, `taxonomy-archive.mjs`, `taxonomy-package.mjs`,
@@ -722,13 +726,16 @@ Aktuelle Planung:
   intrinsische Hoehe. Der Pflegegrund spannt auf Desktop exakt ueber zwei linke Feldzeilen. Im Soundformular stehen
   Quelle neben Original-URL, Lizenz neben Land und Ort neben Qualitaet; Notizen bleiben ueber beide Spalten.
   Auf schmalen Ansichten werden alle Felder weiterhin einspaltig dargestellt.
-  Phase 9 `Globale Taxonomiedatenbank` wurde am 2026-08-01 abgeschlossen, siehe
-  `docs/global-taxonomy-lightroom-plan.md`. Phase 9.1 ist abgeschlossen; die verbindliche Quellenentscheidung steht
-  in `docs/taxonomy-source-decision.md`. Catalogue of Life XR ist die globale Primärreferenz. Der im XR
-  unterscheidbare Base-Kern bildet eine höhere Vertrauensstufe; WoRMS ergänzt und validiert marine beziehungsweise
-  brackische Taxa. GBIF bleibt Diensteschicht für Alt-IDs, Taxonabgleich und Vorkommensdaten. Wikidata darf nur
-  quellenmarkierte Namens-/ID-Vorschläge liefern; Animalia.bio bleibt ohne dokumentierte maschinelle Schnittstelle
-  eine manuelle Referenz. `species_list.json` und `speciesData.json` bleiben die bestätigte produktive Datenbasis.
+  Phase 9 `Globale Taxonomiedatenbank` ist seit 2026-08-09 vollständig abgeschlossen. Der erweiterte reale
+  Masterneuaufbau, Aktivierung, Rollback, Betriebstest und das davon getrennte umfassende Abschlussaudit sind
+  bestanden, siehe `docs/global-taxonomy-lightroom-plan.md` und
+  `docs/audits/2026-08-phase-9-closing-audit.md`.
+  Phase 9.1 ist abgeschlossen; die verbindliche Quellenentscheidung steht in `docs/taxonomy-source-decision.md`.
+  Catalogue of Life XR ist der vollständige Primärbestand. Ein breiter iNaturalist-Ausschnitt ergänzt fehlende
+  Namen und CoL-Artlücken offline; GBIF ergänzt Namen und Kennungen, WoRMS marine und brackische Taxa und Wikidata
+  deutsche beziehungsweise englische Namen sowie externe IDs. Danach verbleibende belegte Tierlücken können
+  kontrolliert aus Animalia ergänzt werden. Eigene Korrekturen besitzen Vorrang. `species_list.json` und
+  `speciesData.json` bleiben die bestätigte produktive Datenbasis.
   Die große Referenzdatenbank darf weder in Git noch in das GitHub-Pages-Artefakt gelangen und bestehende Arten
   nicht still verändern. Phase 9.2 ist seit 2026-07-23 abgeschlossen; der verbindliche Entwurf steht in
   `docs/local-taxonomy-database-design.md`. Vorgesehen sind SQLite über `node:sqlite`, ein pfadunabhängiger lokaler
@@ -782,23 +789,23 @@ Aktuelle Planung:
   und Importzähler sichtbar und ein einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der
   verbindliche Konflikt- und Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte
   Vollimport bleibt ein bewusst gestarteter lokaler Betriebstest.
-  Seit 2026-07-30 ergänzt eine getrennte, in `docs/taxonomy-reference-supplements.md` dokumentierte Namensschicht
-  fehlende deutsche und englische CoL-Namen über offizielle iNaturalist-, GBIF-, WoRMS- und Wikidata-Schnittstellen.
-  Anbieterergebnisse werden nur nach exakter eindeutiger Zuordnung zu einer vorhandenen CoL-Art gespeichert; externe
-  Taxa oder Hierarchien dürfen die Primärreferenz nicht verändern. Der lokale Cache bewahrt bei Ausfällen den letzten
-  funktionierenden Stand. Eigene redaktionelle Korrekturen werden getrennt in
-  `taxonomy-reference-corrections.json` versioniert, haben Vorrang und bleiben über CoL-Aktualisierungen hinweg
-  erhalten. Der Wartungsablauf aktualisiert CoL und Ergänzungen gemeinsam oder bei aktuellem CoL nur die
-  Ergänzungsschicht. Phase 9.6 bis 9.12 sind seit 2026-08-01 abgeschlossen. Die getrennte Masterdatenbank führt
-  stabile anbieterunabhängige Taxon-IDs, versionierte Anbieter-Ausschnitte, Taxon-, Namens- und Feldaussagen,
-  Konflikte sowie stabile Projekt-Slug-Verknüpfungen. Updates werden zuerst als Kandidat aufgebaut und erst nach
-  Prüfung atomar aktiviert; die vorherige Version bleibt als Rollback erhalten. Die Explorer-Suche bevorzugt die
-  aktive Masteransicht und bleibt für lokal vorhandene Einträge offline. Die reale CoL-Lücke `Sciurus vulgaris`,
-  Homonyme, Synonyme, Anbieter-Ausfälle, verschwundene Quellen, doppelte Anbieterzeilen und unterbrochene
-  Aktivierungen sind als Regressionen festgeschrieben. Die reale Migration ordnete alle 52 Projektarten ohne
-  fehlende oder abweichende Verknüpfung ein. Abschlussbericht:
-  `docs/audits/2026-08-phase-9-audit.md`. Phase 10 umfasst ausschließlich Lightroom-Machbarkeit, Lightroom-MVP,
-  optionale Erweiterungen und das Phase-10-Abschlussaudit.
+  Seit 2026-07-30 bestand zunächst eine getrennte Namensschicht. Seit 2026-08-08 wird sie in die verbindliche,
+  physisch getrennte Masterdatenbank überführt. Lokal versioniert werden CoL XR, ein breiter iNaturalist-Namens-
+  und Artlückenausschnitt, relevante GBIF-, WoRMS- und Wikidata-Ausschnitte, kontrollierte Animalia-Fälle und
+  eigene Korrekturen. Die vollständige CoL-SQLite bleibt unverändert und read-only. Stabile
+  anbieterunabhängige Taxon-IDs verbinden Taxon-, Namens- und Feldaussagen, Konflikte sowie stabile
+  Projekt-Slug-Verknüpfungen. Updates werden zuerst als Kandidat aufgebaut und erst nach Prüfung atomar aktiviert;
+  die vorherige Version bleibt als Rollback erhalten. Die Explorer-Suche bevorzugt die aktive Masteransicht und
+  bleibt für alle lokal enthaltenen Einträge offline. Die reale CoL-Lücke `Sciurus vulgaris`, Homonyme, Synonyme,
+  Anbieter-Ausfälle, verschwundene Quellen, doppelte Anbieterzeilen und unterbrochene Aktivierungen sind als
+  Regressionen festgeschrieben. Das Audit `docs/audits/2026-08-phase-9-audit.md` dokumentiert nur den früheren
+  kleinen Ausgangsbestand. Der maßgebliche reale Abschluss steht in
+  `docs/audits/2026-08-phase-9-closing-audit.md`: 273.505 Master-Taxa, 7.108.393 Suchbegriffe, 54 von 54 verknüpfte
+  Projektarten, bestandene Offline-Suche und praktisch verifizierter Rollback. Atomare Taxonomie-Zeiger- und
+  Versionscache-Schreibvorgänge sind je Zieldatei serialisiert und verwenden kollisionsfreie temporäre Dateien;
+  der reale Explorer-Start im freigegebenen AppData-Pfad wurde ohne gespeicherten Prüfungsfehler verifiziert.
+  Phase 10 mit Lightroom ist der
+  nächste große Schritt.
   Phase 11 wurde am 2026-06-28 unter einer frueheren Nummerierung gestartet, siehe
   `docs/multi-device-backup-plan.md`. Beschlossen ist: GitHub bleibt
   zentrale versionierte Wahrheit, jeder Rechner arbeitet lokal in einem beliebigen Projektordner, das NAS dient als
@@ -1039,8 +1046,8 @@ Aktuelle Planung:
   wieder her, blendet es bei Bedarf ein und fokussiert es. Der Abschlussstand wird durch direkte Unit-, API-, UI-
   und Desktop-Tests sowie das vollständige Qualitätsgate abgesichert.
 - Phase 9 - Globale Taxonomiedatenbank:
-  Phase 9.1 bis 9.12 abgeschlossen; CoL XR ist die globale Primärreferenz, WoRMS die marine
-  Fachergänzung. SQLite,
+  abgeschlossen am 2026-08-09. Phase 9.1 bis 9.12, der erweiterte reale Neuaufbau und das separate umfassende
+  Abschlussaudit sind bestanden. CoL XR ist der vollständige Primärbestand. SQLite,
   lokaler Release-/Stagingaufbau, Schema, Provenienz, Suchindizes und Rollback sind entworfen und mit einem
   begrenzten reproduzierbaren Importprototyp bestätigt. Read-only API, konfigurierbare Reichsauswahl, getrennte
   Vorschläge für drei Namensfelder, Detailvorschau und kontrollierte Übernahme sind im Neue-Art-Assistenten
@@ -1048,7 +1055,7 @@ Aktuelle Planung:
   lokale Import- und Aktualisierungsworkflow prüft beim Start nur Metadaten, vergleicht bestehende Arten ohne
   automatische Änderungen und aktiviert neue Releases atomar mit Rollback. Seit 2026-07-28 liest der
   Neue-Art-Assistent den verfügbaren Referenzbestand korrekt aus dem verschachtelten Wartungsstatus. Deutscher,
-  englischer und wissenschaftlicher Name besitzen eigene Such- und Pflichtfelder. Die Suche startet 300
+  englischer und wissenschaftlicher Name besitzen eigene Such- und Pflichtfelder. Die Suche startet 500
   Millisekunden nach der letzten Eingabe; Ergebnisse bleiben in einer kompakten, überlagernden Trefferliste ohne
   springende Dialoghöhe. Über das Zahnrad wird lokal festgelegt, welche Reiche im Dropdown und in `Alle Reiche`
   berücksichtigt werden. Beim ersten Start ist nur `Tiere (Animalia)` sichtbar, kann aber ebenfalls abgewählt
@@ -1062,19 +1069,19 @@ Aktuelle Planung:
   verfügbare Version; manuell zu prüfende Arten beginnen in einer eigenen Zeile.
   Seit 2026-07-29 besitzt die Reichseinstellung zusätzlich eine Filtereingabe und eine kompakte, scrollbar
   begrenzte Liste mit Checkbox und Reichsname in derselben Zeile. Alle drei Namensfelder verwenden denselben
-  300-ms-Suchrhythmus. Auf der Artseite stehen deutscher, englischer und lateinischer Name jeweils in einer
+  500-ms-Suchrhythmus. Auf der Artseite stehen deutscher, englischer und lateinischer Name jeweils in einer
   eigenen Zeile; das interne Feld bleibt `Wissenschaftlicher Name`.
-  Alle 52 bestehenden Projektarten besitzen seit 2026-07-28 einen separat gepflegten englischen Namen in
+  Alle bestehenden Projektarten besitzen seit 2026-07-28 einen separat gepflegten englischen Namen in
   `species_list.json` und `speciesData.json`. Die kontrollierte Ergänzung ist über
   `npm.cmd run --silent taxonomy:backfill-english` standardmäßig als Vorschau und nur mit `-- --write` schreibend
   verfügbar; vor dem Schreiben entsteht eine lokale Sicherung.
-  Phase 9.6 bis 9.12 ergänzen eine davon getrennte, produktiv aktivierte Master-SQLite mit stabilen
-  anbieterunabhängigen Taxon-IDs, versionierten Quellenständen, Feldprovenienz, Konflikten und
-  Projektverknüpfungen. Der aktive CoL-Vollbestand bleibt unverändert und read-only. Relevante Anbieter-Ausschnitte,
-  verlustfreie Migration, verbindliche Merge-Regeln, Konfliktvorschau, Explorer-Umschaltung, realer
-  Aktivierungs-/Rollbackbetrieb und Abschlussaudit sind seit 2026-08-01 abgeschlossen. `Sciurus vulgaris` ist als
-  reale Referenzlücken-Regression abgedeckt. Das Betriebs- und Datenmodell steht in
-  `docs/taxonomy-master-database-design.md`, der Phasenabschluss in `docs/audits/2026-08-phase-9-audit.md`.
+  Phase 9.6 bis 9.12 ergänzen eine davon getrennte Master-SQLite mit stabilen anbieterunabhängigen Taxon-IDs,
+  versionierten Quellenständen, Feldprovenienz, Konflikten und Projektverknüpfungen. Der aktive CoL-Vollbestand
+  bleibt unverändert und read-only. Verbindliche lokale Quellen sind CoL XR, ein breiter iNaturalist-Namens- und
+  Artlückenausschnitt, relevante GBIF-, WoRMS- und Wikidata-Ausschnitte, kontrollierte Animalia-Fälle und eigene
+  Korrekturen. `Sciurus vulgaris` ist als reale Referenzlücken-Regression abgedeckt. Das Betriebs- und Datenmodell
+  steht in `docs/taxonomy-master-database-design.md`; das frühere Audit ist eine historische Aufnahme des kleinen
+  Bestands. Der maßgebliche Phasenabschluss steht in `docs/audits/2026-08-phase-9-closing-audit.md`.
 - Phase 10 - Lightroom:
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.

@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import {
+  createTaxonomyMasterService,
+  taxonomyMasterServiceInternals,
+} from "./taxonomy-master-service.mjs";
 
 const NOW = new Date("2026-08-01T12:00:00.000Z");
 
@@ -66,6 +69,62 @@ function lifecycle({ blocking = false } = {}) {
     canRollback: false,
   };
 }
+
+test("breite Anbieter-Ausschnitte vermeiden erneute CoL-Suchen für bekannte IDs und Referenzlücken", async () => {
+  const searched = [];
+  const loaded = [];
+  const store = {
+    status() {
+      return {
+        releaseId: "col-2026-07",
+        importedAt: NOW.toISOString(),
+        counts: { taxa: 4_700_000 },
+        source: {},
+      };
+    },
+    findTaxonByScientificName(scientificName) {
+      searched.push(scientificName);
+      return null;
+    },
+    taxon(taxonId) {
+      loaded.push(String(taxonId));
+      return {
+        source_id: String(taxonId),
+        scientific_name: "Panthera pardus",
+        rank: "species",
+        kingdom: { scientificName: "Animalia" },
+        hierarchy: [],
+        germanNames: [],
+        englishNames: [],
+      };
+    },
+  };
+  const providerSlices = [{
+    records: [
+      {
+        scientificName: "Panthera pardus",
+        colTaxonId: "42",
+        relevanceReasons: ["missing-name"],
+      },
+      {
+        scientificName: "Sciurus vulgaris",
+        colTaxonId: "",
+        relevanceReasons: ["col-reference-gap"],
+      },
+    ],
+  }];
+
+  const records = await taxonomyMasterServiceInternals.collectColRecords(
+    store,
+    ["Panthera pardus", "Sciurus vulgaris", "Coracias caudatus"],
+    () => {},
+    { providerSlices },
+  );
+
+  assert.deepEqual(loaded, ["42"]);
+  assert.deepEqual(searched, ["Coracias caudatus"]);
+  assert.equal(records.length, 1);
+});
 
 test("9.10 baut Anbieter-Ausschnitte fortschrittlich auf und wartet auf ausdrückliche Aktivierung", async (t) => {
   const fixture = await createFixture(t);
@@ -151,6 +210,49 @@ test("9.10 bewahrt bei einem fehlgeschlagenen Kandidaten die aktive Referenz", a
   assert.match(failed.error, /simulierter Importabbruch/);
   assert.equal(failed.lifecycle.active.candidateId, "master-bisher");
   assert.equal(reference.resetCount, 0);
+  await service.close();
+});
+
+test("9.10 verwendet für echte Updates den zentralen Quellenkoordinator", async (t) => {
+  const fixture = await createFixture(t);
+  const refreshCalls = [];
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: fixture.root,
+    referenceService: {
+      async requireStore() { return referenceStore(); },
+      reset() {},
+    },
+    supplementService: {
+      async selectedTaxa() {
+        return [{ scientificName: "Sciurus vulgaris" }];
+      },
+    },
+    providerRefreshService: {
+      async refresh(options) {
+        refreshCalls.push(options);
+        options.onProgress({ current: 100, total: 100, message: "Quellen lokal aktualisiert" });
+        return { warnings: [] };
+      },
+      async close() {},
+    },
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    now: () => NOW,
+    async buildCandidate() { return { candidateId: "master-provider-test" }; },
+    async inspectLifecycle() { return lifecycle(); },
+  });
+
+  service.startBuild({
+    refreshProviders: true,
+    inaturalistArchivePath: "D:/cache/inaturalist.zip",
+  });
+  await service.runPromise;
+
+  assert.equal(refreshCalls.length, 1);
+  assert.equal(refreshCalls[0].projectTaxa[0].scientificName, "Panthera pardus");
+  assert.equal(refreshCalls[0].researchedTaxa[0].scientificName, "Sciurus vulgaris");
+  assert.equal(refreshCalls[0].inaturalistArchivePath, "D:/cache/inaturalist.zip");
+  assert.equal((await service.status()).status, "ready");
   await service.close();
 });
 

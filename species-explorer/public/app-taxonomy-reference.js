@@ -15,7 +15,7 @@
   });
   const NEW_SPECIES_ALLOWED_RANKS = new Set(["species"]);
   const KINGDOM_SETTINGS_STORAGE_KEY = "species-explorer.taxonomy.visible-kingdoms.v1";
-  const TAXONOMY_SEARCH_DEBOUNCE_MS = 300;
+  const TAXONOMY_SEARCH_DEBOUNCE_MS = 500;
 
   function taxonomySearchUrl({
     query,
@@ -311,6 +311,12 @@
     let searchResults = [];
     let selectedResult = null;
     let selectedDetail = null;
+    let activeSearchController = null;
+
+    const abortActiveSearch = () => {
+      activeSearchController?.abort?.();
+      activeSearchController = null;
+    };
 
     const setMessage = (text = "", type = "info") => {
       message.textContent = text;
@@ -641,6 +647,10 @@
       }
       clearSelection();
       setMessage("Passende Namen werden gesucht …", "info");
+      const controller = typeof global.AbortController === "function"
+        ? new global.AbortController()
+        : null;
+      activeSearchController = controller;
       try {
         const payload = await fetchJson(taxonomySearchUrl({
           query,
@@ -649,7 +659,7 @@
           language,
           rank: "species",
           limit: 12,
-        }));
+        }), controller ? { signal: controller.signal } : undefined);
         if (version !== requestVersion) return;
         searchResults = (payload.results || []).filter((result) => (
           NEW_SPECIES_ALLOWED_RANKS.has(String(result.rank || "").toLowerCase())
@@ -665,11 +675,14 @@
         );
       } catch (error) {
         if (version !== requestVersion) return;
+        if (error?.name === "AbortError") return;
         clearResults();
         setMessage(
           error.message || "Die lokale Taxonomiesuche ist derzeit nicht verfügbar.",
           "warning",
         );
+      } finally {
+        if (activeSearchController === controller) activeSearchController = null;
       }
     };
 
@@ -681,6 +694,7 @@
     );
 
     const scheduleSearch = (input, kind, language = "all") => {
+      abortActiveSearch();
       activeInput = input;
       activeKind = kind;
       activeLanguage = language;
@@ -695,6 +709,7 @@
 
     const initialize = async () => {
       const version = ++requestVersion;
+      abortActiveSearch();
       searchScheduler.cancel();
       statusBadge.textContent = "Referenz wird geprüft …";
       statusBadge.dataset.state = "loading";
@@ -719,6 +734,7 @@
 
     const reset = () => {
       requestVersion += 1;
+      abortActiveSearch();
       searchScheduler.cancel();
       activeInput = null;
       activeKind = "all";
@@ -787,6 +803,7 @@
       setKingdomSettingsMessage();
       if (!selectedKingdomIds.length) {
         requestVersion += 1;
+        abortActiveSearch();
         searchScheduler.cancel();
         clearResults();
         clearSelection();

@@ -8,6 +8,7 @@ export const MASTER_PROVIDER_PRIORITY = Object.freeze({
   gbif: 600,
   inaturalist: 550,
   wikidata: 500,
+  animalia: 450,
 });
 
 export const MASTER_STATUS_LABELS = Object.freeze({
@@ -40,6 +41,7 @@ const EXTERNAL_ID_FIELDS = new Set([
   "inaturalist-id",
   "worms-id",
   "wikidata-id",
+  "animalia-id",
 ]);
 const MARINE_ENVIRONMENTS = new Set(["marine", "brackish"]);
 
@@ -55,6 +57,9 @@ export function providerFieldPriority(provider, {
   const field = String(fieldName || "").toLowerCase();
   if (!(source in MASTER_PROVIDER_PRIORITY)) return Number.NEGATIVE_INFINITY;
   if (source === "wikidata" && !NAME_FIELDS.has(field) && !EXTERNAL_ID_FIELDS.has(field)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  if (source === "animalia" && !NAME_FIELDS.has(field) && !EXTERNAL_ID_FIELDS.has(field)) {
     return Number.NEGATIVE_INFINITY;
   }
   if (source === "worms" && !MARINE_ENVIRONMENTS.has(String(environment).toLowerCase())) {
@@ -105,6 +110,13 @@ export function chooseFieldAssertion({
   environment = "terrestrial",
 } = {}) {
   if (!candidate) throw new TypeError("Kandidat fehlt.");
+  const candidatePriority = providerFieldPriority(candidate.provider, {
+    fieldName: candidate.fieldName,
+    environment,
+  });
+  if (!Number.isFinite(candidatePriority)) {
+    return { action: "reject", reason: "provider-not-authoritative-for-field" };
+  }
   if (!current) {
     return { action: "select", reason: "empty-field" };
   }
@@ -121,13 +133,6 @@ export function chooseFieldAssertion({
     fieldName: current.fieldName,
     environment,
   });
-  const candidatePriority = providerFieldPriority(candidate.provider, {
-    fieldName: candidate.fieldName,
-    environment,
-  });
-  if (!Number.isFinite(candidatePriority)) {
-    return { action: "reject", reason: "provider-not-authoritative-for-field" };
-  }
   if (candidatePriority > currentPriority) {
     return { action: "conflict", reason: "higher-priority-candidate-requires-review" };
   }

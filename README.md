@@ -287,7 +287,7 @@ vollständige CoL-XR-Bestand ist lokal installiert, bleibt aber weiterhin außer
 Phase 9.4 bindet den aktiven lokalen Referenzbestand read-only in Schritt 1 von `Neue Art` ein. Der Assistent
 führt drei eigenständige Pflichtfelder: `Deutscher Name`, `Englischer Name` und `Wissenschaftlicher Name`.
 Jedes Feld durchsucht beim Tippen die passende Sprache beziehungsweise wissenschaftliche Namen und Synonyme.
-Die Suche startet 300 Millisekunden nach der letzten Eingabe; ältere Anfragen dürfen die aktuelle Trefferliste
+Die Suche startet 500 Millisekunden nach der letzten Eingabe; ältere Anfragen dürfen die aktuelle Trefferliste
 nicht mehr überschreiben. Ein Treffer wird erst nach Auswahl mit Hierarchie, Quelle, Release, ID und Namensstatus
 angezeigt. Ein Klick auf den Treffer schließt die schwebende Liste und schreibt deutschen, englischen sowie
 wissenschaftlichen Namen direkt in die drei Namensfelder. Die normale Eingabeprüfung und Kollisionskontrolle bleibt
@@ -373,30 +373,33 @@ Der vollständige Betriebs-, Konflikt- und Rollbackvertrag steht in `docs/taxono
 
 ## Ergänzungsnamen und eigene Taxonomiekorrekturen
 
-Catalogue of Life bleibt die unveränderliche taxonomische Primärreferenz. Fehlen dort gebräuchliche Namen, fragt
-der Explorer die offiziellen Schnittstellen von iNaturalist, GBIF, WoRMS und Wikidata ab. Übernommen werden nur
-deutsche oder englische Namen, deren wissenschaftlicher Name exakt und eindeutig einer CoL-Art zugeordnet werden
-kann. Die externen Quellen dürfen weder fremde Taxa noch eigene Hierarchien in den lokalen CoL-Bestand einfügen.
-Animalia.bio bleibt mangels dokumentierter freigegebener API eine manuelle Recherchehilfe.
+Catalogue of Life XR bleibt die vollständige, unveränderliche taxonomische Primärreferenz. Die lokale
+Masterdatenbank ergänzt diesen Bestand proaktiv und versioniert: Ein breiter iNaturalist-Namens- und
+Artlückenbestand schließt offline nutzbare CoL-Lücken; GBIF ergänzt Namen und Kennungen, WoRMS marine und
+brackische Taxa und Wikidata deutsche beziehungsweise englische Namen sowie externe IDs. Danach verbleibende,
+belegte Tierlücken können kontrolliert aus Animalia übernommen werden. Eigene Korrekturen besitzen den höchsten
+Vorrang. Keine Ergänzungsquelle verändert die CoL-SQLite selbst.
 
-Die Ergänzungen liegen mit Quelle, Quellen-ID, Vertrauensgewichtung und Prüfzeitpunkt in einem ignorierten lokalen
-Cache. Ein vollständiger Ausfall der Anbieter überschreibt den letzten funktionierenden Bestand nicht. Eigene
-redaktionelle Korrekturen werden getrennt in `taxonomy-reference-corrections.json` versioniert, überlagern nur die
-sichtbaren gebräuchlichen Namen eines vorhandenen CoL-Taxons und bleiben bei CoL-Aktualisierungen erhalten.
-`Datenbank-Aktionen > Taxonomiereferenz` aktualisiert bei einer neuen CoL-Version anschließend auch die
-Ergänzungsnamen; ist CoL bereits aktuell, kann ausschließlich die Ergänzungsschicht erneuert werden.
+Jede Aussage speichert Anbieter, Anbieter-ID, Quellenstand, Abrufzeitpunkt, Status und Feldprovenienz. Die
+vollständigen Bestände von GBIF, WoRMS und Wikidata werden nicht gespiegelt; lokal liegen versionierte relevante
+Ausschnitte. Der iNaturalist-Ausschnitt ist bewusst breiter und enthält CoL-Artlücken sowie fehlende deutsche oder
+englische Namen, damit diese Treffer ohne Internetverbindung verfügbar bleiben. Ein Anbieterausfall überschreibt
+den letzten funktionierenden Stand nicht. Eigene redaktionelle Korrekturen liegen getrennt in
+`taxonomy-reference-corrections.json` und bleiben bei Anbieter- und CoL-Aktualisierungen erhalten.
 
 Details, Datenvertrag, API und Tests stehen in `docs/taxonomy-reference-supplements.md`.
 
-Phase 9.6 bis 9.12 haben daraus eine produktiv aktivierte, physisch getrennte Masterdatenbank aufgebaut. Die
-vollständige CoL-XR-Referenz bleibt read-only; stabile anbieterunabhängige Master-IDs verbinden relevante,
-versionierte Ausschnitte von iNaturalist, GBIF, WoRMS und Wikidata mit Projektzuordnungen und geschützten manuellen
-Aussagen. Feldprovenienz, Konflikte, veraltete Quellenstände, Kandidatenvorschau, atomare Aktivierung und Rollback
-bleiben ausdrücklich nachvollziehbar. Der Regressionstest für `Sciurus vulgaris` bestätigt, dass eine reale
+Phase 9.6 bis 9.12 bauen daraus eine physisch getrennte Masterdatenbank auf. Die vollständige CoL-XR-Referenz
+bleibt read-only; stabile anbieterunabhängige Master-IDs verbinden CoL, den breiten iNaturalist-Ausschnitt,
+relevante Ausschnitte aus GBIF, WoRMS und Wikidata, kontrollierte Animalia-Fälle sowie geschützte eigene
+Korrekturen. Feldprovenienz, Konflikte, veraltete Quellenstände, Kandidatenvorschau, atomare Aktivierung und
+Rollback bleiben nachvollziehbar. Der Regressionstest für `Sciurus vulgaris` bestätigt, dass eine reale
 CoL-Artlücke aus exakten externen Belegen geschlossen und später ohne neue Projektart oder geänderten URL-Slug an
 eine nachgelieferte CoL-Art gebunden werden kann. Die Explorer-Suche verwendet bevorzugt die aktive Masteransicht
-und bleibt für lokal vorhandene Einträge offline. Details: `docs/taxonomy-master-database-design.md` und
-`docs/audits/2026-08-phase-9-audit.md`.
+und bleibt für alle darin enthaltenen Einträge offline. Das frühere Audit dokumentiert nur den kleinen
+Ausgangsbestand. Der erweiterte reale Neuaufbau und das eigene Phase-9-Abschlussaudit wurden am 2026-08-09
+erfolgreich abgeschlossen. Details stehen in `docs/taxonomy-master-database-design.md` und
+`docs/audits/2026-08-phase-9-closing-audit.md`.
 
 Der Sound-Teil der Pipeline bevorzugt freie Xeno-Canto-Aufnahmen. Wenn fuer einen vorhandenen NC-Sound keine freie
 Xeno-Canto-Alternative gefunden wird, sucht `update.mjs` zusaetzlich nach exakt zugeordneten freien
@@ -929,7 +932,7 @@ Catalogue of Life XR ist die globale Primärreferenz, WoRMS ergänzt marine Taxa
 Wikidata ausschließlich als optionale Namens-/ID-Vorschlagsquelle. Animalia.bio bleibt ohne dokumentierte
 maschinelle Schnittstelle eine manuelle Referenz. Phase 9.2 hat SQLite, lokales Release-/Stagingmodell,
 Provenienzschema, Präfix-/Volltextsuche, Rollback und Datengrenzen verbindlich festgelegt. Der
-Neue-Art-Assistent führt deutsche, englische und wissenschaftliche Namen getrennt und sucht nach 300 Millisekunden
+Neue-Art-Assistent führt deutsche, englische und wissenschaftliche Namen getrennt und sucht nach 500 Millisekunden
 in der passenden Namensart. `Tiere (Animalia)` ist nur beim ersten Start vorausgewählt; über das Zahnrad werden die
 im Dropdown und in `Alle Reiche` berücksichtigten Reiche lokal festgelegt. Fehlt ein bestätigter deutscher Name,
 kann der englische Name unabhängig davon übernommen und der deutsche Pflichtwert redaktionell ergänzt werden; bei
@@ -947,23 +950,24 @@ begrenzte Sicherheitsrichtlinie; technische Import-Stacktraces werden in der Obe
 Fehlergrund reduziert. Fehlt die Taxonomiedatenbank oder ist sie veraltet, bietet der Explorer die Aktualisierung
 nach der Startprüfung direkt an. Ein echter Vollbestand wird erst durch diese ausdrücklich bestätigte lokale
 Installation geladen; automatisierte Tests verwenden weiterhin die kleine Fixture. Seit 2026-07-30 ergänzt eine
-getrennte Namensschicht fehlende deutsche und englische CoL-Namen über die offiziellen Schnittstellen von
-iNaturalist, GBIF,
-WoRMS und Wikidata. Externe Kandidaten werden nur nach exakter CoL-Artzuordnung gespeichert, letzte funktionierende
-Caches bleiben bei Ausfällen erhalten und eigene Korrekturen liegen getrennt versioniert in
-`taxonomy-reference-corrections.json`. Die Trefferauswahl im Neue-Art-Assistenten übernimmt alle drei Namen direkt
-und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr. Phase 9.6 bis 9.12 haben
-die getrennte Masterdatenbank mit stabilen IDs, versionierten Anbieterständen, Feldprovenienz, Konfliktvorschau,
-Projektverknüpfungen, atomarer Aktivierung und Rollback fertiggestellt. Die reale Migration ordnete alle 52
-Projektarten ohne fehlende oder abweichende Verknüpfung ein. Die aktive CoL-Vollreferenz bleibt unverändert und
-read-only; die Explorer-Suche verwendet bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die
-bisherige Referenz zurück. Phase 10 umfasst ausschließlich Lightroom, Phase 11 Mehrgeraetebetrieb, automatische
+getrennte Namensschicht fehlende deutsche und englische CoL-Namen. Seit 2026-08-08 wird daraus der verbindliche
+lokale Master aufgebaut: vollständiges CoL XR, ein breiter iNaturalist-Namens-/Artlückenausschnitt, relevante
+versionierte GBIF-, WoRMS- und Wikidata-Ausschnitte, kontrollierte Animalia-Fälle und eigene Korrekturen. Letzte
+funktionierende Anbieterstände bleiben bei Ausfällen erhalten. Die Trefferauswahl im Neue-Art-Assistenten übernimmt
+alle drei Namen direkt und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr.
+Phase 9.6 bis 9.12 stellen stabile IDs, Feldprovenienz, Konfliktvorschau, Projektverknüpfungen, atomare Aktivierung
+und Rollback bereit. Die aktive CoL-Vollreferenz bleibt unverändert und read-only; die Explorer-Suche verwendet
+bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die bisherige Referenz zurück. Der aktive reale
+Master enthält 273.505 Taxa und 7.108.393 Suchbegriffe; alle 54 Projektarten sind eindeutig verknüpft. Aktivierung,
+Rollback, Offline-Suche, Speicher- und Temporärverhalten wurden praktisch geprüft. Das umfassende Audit unter
+`docs/audits/2026-08-phase-9-closing-audit.md` schließt Phase 9 ab. Phase 10 umfasst ausschließlich Lightroom,
+Phase 11 Mehrgeraetebetrieb, automatische
 Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlusskriterien stehen in
 `docs/roadmap.md`, `docs/global-taxonomy-lightroom-plan.md`,
 `docs/taxonomy-source-decision.md`, `docs/local-taxonomy-database-design.md`,
 `docs/taxonomy-import-prototype.md`, `docs/taxonomy-explorer-integration.md`,
 `docs/taxonomy-reference-update.md`, `docs/taxonomy-reference-supplements.md`,
-`docs/taxonomy-master-database-design.md`, `docs/audits/2026-08-phase-9-audit.md` und
+`docs/taxonomy-master-database-design.md` und
 `docs/multi-device-backup-plan.md`.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.

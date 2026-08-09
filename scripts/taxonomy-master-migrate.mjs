@@ -4,7 +4,13 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import { createTaxonomyMasterService } from "../species-explorer/taxonomy-master-service.mjs";
-import { taxonomyMasterDatabasePath, taxonomyMasterRoot } from "../species-explorer/taxonomy-master-storage.mjs";
+import { createTaxonomyProviderRefreshService } from "../species-explorer/taxonomy-provider-refresh-service.mjs";
+import {
+  taxonomyMasterActiveDirectory,
+  taxonomyMasterCandidateDirectory,
+  taxonomyMasterDatabasePath,
+  taxonomyMasterRoot,
+} from "../species-explorer/taxonomy-master-storage.mjs";
 import { openTaxonomyMasterStore } from "../species-explorer/taxonomy-master-store.mjs";
 import { createTaxonomyReferenceService } from "../species-explorer/taxonomy-reference-service.mjs";
 import { createTaxonomySupplementService } from "../species-explorer/taxonomy-supplement-service.mjs";
@@ -24,14 +30,110 @@ function optionValue(args, name, fallback = "") {
 }
 
 function parseOptions(args = process.argv.slice(2)) {
+  const inaturalistArchive = optionValue(args, "inaturalist-archive");
+  const inaturalistPackage = optionValue(args, "inaturalist-package");
   return {
     repoRoot: path.resolve(optionValue(args, "repo-root", DEFAULT_REPO_ROOT)),
     taxonomyRoot: path.resolve(optionValue(args, "taxonomy-root", defaultTaxonomyRoot())),
     refreshProviders: args.includes("--refresh-providers"),
     activate: args.includes("--activate"),
     verifyRollback: args.includes("--verify-rollback"),
+    rollbackOnly: args.includes("--rollback-only"),
+    inaturalistArchivePath: inaturalistArchive ? path.resolve(inaturalistArchive) : "",
+    inaturalistPackageDirectory: inaturalistPackage ? path.resolve(inaturalistPackage) : "",
+    inaturalistProviderVersion: optionValue(args, "inaturalist-version"),
+    forceInaturalist: args.includes("--force-inaturalist"),
     json: args.includes("--json"),
   };
+}
+
+async function stageRollbackProbe(taxonomyRoot, { now = () => new Date() } = {}) {
+  const activeDirectory = taxonomyMasterActiveDirectory(taxonomyRoot);
+  const stagingDirectory = taxonomyMasterCandidateDirectory(taxonomyRoot);
+  const activeDatabase = taxonomyMasterDatabasePath(taxonomyRoot, "active");
+  const stagingDatabase = taxonomyMasterDatabasePath(taxonomyRoot, "staging");
+  const activeManifestPath = path.join(activeDirectory, "manifest.json");
+  const stagingManifestPath = path.join(stagingDirectory, "manifest.json");
+  const activeManifest = JSON.parse(await fs.readFile(activeManifestPath, "utf8"));
+  const timestamp = now().toISOString();
+  const candidateId = `${activeManifest.candidateId}-rollback-probe-${timestamp.replace(/[^0-9]/g, "").slice(0, 17)}`;
+  await fs.rm(stagingDirectory, { recursive: true, force: true });
+  await fs.mkdir(stagingDirectory, { recursive: true });
+  let storageMode = "hardlink";
+  try {
+    await fs.link(activeDatabase, stagingDatabase);
+  } catch (error) {
+    if (!["EPERM", "EXDEV", "ENOTSUP", "EACCES"].includes(error?.code)) throw error;
+    storageMode = "copy";
+    await fs.copyFile(activeDatabase, stagingDatabase);
+  }
+  await fs.writeFile(stagingManifestPath, `${JSON.stringify({
+    ...activeManifest,
+    candidateId,
+    createdAt: timestamp,
+    state: "staging",
+    requiresConfirmation: true,
+    rollbackProbe: true,
+  }, null, 2)}\n`, "utf8");
+  return { candidateId, storageMode };
+}
+
+async function verifyRealRollback({ master, taxonomyRoot, species, report }) {
+  const firstVerification = report.verification || await verifyStore({
+    taxonomyRoot,
+    species,
+    slot: "active",
+  });
+  const firstCandidateId = firstVerification.status.candidateId;
+  const probe = await stageRollbackProbe(taxonomyRoot);
+  let probeActivated = false;
+  try {
+    const stagingVerification = await verifyStore({
+      taxonomyRoot,
+      species,
+      slot: "staging",
+    });
+    if (stagingVerification.missing.length || stagingVerification.projectLinkMismatches.length) {
+      throw new Error("Der Rollback-Prüfkandidat enthält nicht alle Projektverknüpfungen.");
+    }
+    // Die Aktivierung selbst führt die verbindliche Vollprüfung des
+    // Kandidaten durch. Eine vorherige Statusabfrage würde dieselbe mehrere
+    // GiB große Datenbank nur ein zweites Mal vollständig prüfen.
+    await master.activate({ confirmed: true });
+    probeActivated = true;
+    const secondStore = await openTaxonomyMasterStore({ taxonomyRoot });
+    let secondCandidateId;
+    try {
+      secondCandidateId = secondStore.status().candidateId;
+    } finally {
+      secondStore.close();
+    }
+    if (secondCandidateId === firstCandidateId) {
+      throw new Error("Der Rollbacktest konnte keine zweite Masterversion unterscheiden.");
+    }
+    await master.rollback({ confirmed: true });
+    probeActivated = false;
+    const restored = await verifyStore({ taxonomyRoot, species, slot: "active" });
+    const result = {
+      tested: true,
+      storageMode: probe.storageMode,
+      probeCandidateId: probe.candidateId,
+      restoredCandidateId: restored.status.candidateId,
+      expectedCandidateId: firstCandidateId,
+      successful: restored.status.candidateId === firstCandidateId
+        && restored.missing.length === 0
+        && restored.projectLinkMismatches.length === 0,
+    };
+    if (!result.successful) throw new Error("Der reale Rollbacktest ist fehlgeschlagen.");
+    return result;
+  } catch (error) {
+    if (probeActivated) {
+      await master.rollback({ confirmed: true }).catch(() => {});
+    } else {
+      await fs.rm(taxonomyMasterCandidateDirectory(taxonomyRoot), { recursive: true, force: true }).catch(() => {});
+    }
+    throw error;
+  }
 }
 
 async function directoryBytes(root) {
@@ -155,10 +257,16 @@ export async function runTaxonomyMasterMigration(options = parseOptions()) {
     taxonomyRoot: options.taxonomyRoot,
     supplementService: supplements,
   });
+  const providerRefresh = createTaxonomyProviderRefreshService({
+    taxonomyRoot: options.taxonomyRoot,
+    repoRoot: options.repoRoot,
+    supplementService: supplements,
+  });
   const master = createTaxonomyMasterService({
     taxonomyRoot: options.taxonomyRoot,
     referenceService: reference,
     supplementService: supplements,
+    providerRefreshService: providerRefresh,
     speciesListPath,
     correctionsPath,
   });
@@ -175,7 +283,40 @@ export async function runTaxonomyMasterMigration(options = parseOptions()) {
     report.cleanedTemporaryArtifacts = await cleanupTemporaryArtifacts(
       taxonomyMasterRoot(options.taxonomyRoot),
     );
-    master.startBuild({ refreshProviders: options.refreshProviders });
+    if (options.rollbackOnly) {
+      report.verification = await verifyStore({
+        taxonomyRoot: options.taxonomyRoot,
+        species,
+        slot: "active",
+      });
+      if (report.verification.missing.length || report.verification.projectLinkMismatches.length) {
+        throw new Error("Die aktive Masterdatenbank ist vor dem Rollbacktest nicht vollständig verknüpft.");
+      }
+      report.rollback = await verifyRealRollback({
+        master,
+        taxonomyRoot: options.taxonomyRoot,
+        species,
+        report,
+      });
+      report.storage = await directoryBytes(taxonomyMasterRoot(options.taxonomyRoot));
+      report.activeDatabaseBytes = (await fs.stat(
+        taxonomyMasterDatabasePath(options.taxonomyRoot, "active"),
+      )).size;
+      report.temporaryArtifacts = await listTemporaryArtifacts(taxonomyMasterRoot(options.taxonomyRoot));
+      if (report.temporaryArtifacts.length) {
+        throw new Error(`Temporäre Masterartefakte wurden nicht bereinigt: ${report.temporaryArtifacts.join(", ")}`);
+      }
+      report.completedAt = new Date().toISOString();
+      report.success = true;
+      return report;
+    }
+    master.startBuild({
+      refreshProviders: options.refreshProviders,
+      inaturalistArchivePath: options.inaturalistArchivePath,
+      inaturalistPackageDirectory: options.inaturalistPackageDirectory,
+      inaturalistProviderVersion: options.inaturalistProviderVersion,
+      forceInaturalist: options.forceInaturalist,
+    });
     report.build = await waitForBuild(master);
     const lifecycle = report.build.lifecycle;
     report.conflicts = {
@@ -214,35 +355,12 @@ export async function runTaxonomyMasterMigration(options = parseOptions()) {
     rollbackOnFailure = false;
     if (options.verifyRollback) {
       if (!options.activate) throw new Error("Der Rollbacktest setzt --activate voraus.");
-      master.startBuild({ refreshProviders: false });
-      await waitForBuild(master);
-      const secondLifecycle = (await master.status()).lifecycle;
-      if (secondLifecycle.blockingConflicts.length) {
-        throw new Error("Der Rollbacktest erzeugte unerwartete fachliche Konflikte.");
-      }
-      const firstCandidateId = report.verification.status.candidateId;
-      await master.activate({ confirmed: true });
-      rollbackOnFailure = true;
-      const secondStore = await openTaxonomyMasterStore({ taxonomyRoot: options.taxonomyRoot });
-      const secondCandidateId = secondStore.status().candidateId;
-      secondStore.close();
-      if (secondCandidateId === firstCandidateId) {
-        throw new Error("Der Rollbacktest konnte keine zweite Masterversion unterscheiden.");
-      }
-      await master.rollback({ confirmed: true });
-      rollbackOnFailure = false;
-      const restored = await openTaxonomyMasterStore({ taxonomyRoot: options.taxonomyRoot });
-      try {
-        report.rollback = {
-          tested: true,
-          restoredCandidateId: restored.status().candidateId,
-          expectedCandidateId: firstCandidateId,
-          successful: restored.status().candidateId === firstCandidateId,
-        };
-      } finally {
-        restored.close();
-      }
-      if (!report.rollback.successful) throw new Error("Der reale Rollbacktest ist fehlgeschlagen.");
+      report.rollback = await verifyRealRollback({
+        master,
+        taxonomyRoot: options.taxonomyRoot,
+        species,
+        report,
+      });
     }
     report.storage = await directoryBytes(taxonomyMasterRoot(options.taxonomyRoot));
     report.activeDatabaseBytes = options.activate
@@ -299,5 +417,6 @@ export const taxonomyMasterMigrationInternals = Object.freeze({
   listTemporaryArtifacts,
   parseOptions,
   projectSpecies,
+  stageRollbackProbe,
   verifyStore,
 });

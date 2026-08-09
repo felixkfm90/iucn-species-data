@@ -338,15 +338,9 @@ export async function activateTaxonomyMasterCandidate(taxonomyRoot, {
     throw new Error(`${blocking.length} widersprüchliche Änderung(en) müssen vor der Aktivierung entschieden werden.`);
   }
 
-  const { DatabaseSync } = await loadNodeSqlite();
-  const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "staging"), {
-    readOnly: true,
-  });
-  try {
-    validateTaxonomyMasterDatabase(database);
-  } finally {
-    database.close();
-  }
+  // inspectTaxonomyMasterCandidate hat unmittelbar zuvor bereits die
+  // vollständige Integritäts-, Fremdschlüssel- und Fachprüfung ausgeführt.
+  // Eine zweite Vollprüfung wäre bei produktiven Masterständen unnötig teuer.
 
   const timestamp = now().toISOString();
   await updateSlotManifest(taxonomyRoot, "staging", {

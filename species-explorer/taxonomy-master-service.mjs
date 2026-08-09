@@ -9,11 +9,15 @@ import {
   rollbackTaxonomyMaster,
 } from "./taxonomy-master-lifecycle.mjs";
 import {
-  listProviderSliceVersions,
+  latestProviderSliceVersion,
   readProviderSlice,
 } from "./taxonomy-master-slices.mjs";
+import {
+  canonicalSpeciesName,
+  isMasterSpeciesCandidate,
+} from "./taxonomy-taxon-quality.mjs";
 
-const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata"]);
+const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const ACTIVE_STATUSES = new Set(["refreshing", "building", "activating", "rolling-back"]);
 
 function initialState() {
@@ -77,12 +81,38 @@ function correctionsFromDocument(document) {
 async function latestProviderSlices(taxonomyRoot) {
   const slices = [];
   for (const provider of PROVIDERS) {
-    const versions = await listProviderSliceVersions(taxonomyRoot, provider);
-    const latest = versions.at(-1);
+    const latest = await latestProviderSliceVersion(taxonomyRoot, provider);
     if (!latest) continue;
     slices.push(await readProviderSlice(taxonomyRoot, provider, latest));
   }
   return slices;
+}
+
+function activeMasterProviderSlices(slices) {
+  return slices.map((slice) => ({
+    ...slice,
+    records: (slice.records || []).filter((record) => (
+      record.versionChangeState !== "removed"
+      &&
+      isMasterSpeciesCandidate(record)
+      && (
+        record.selectedForMaster
+        || (record.relevanceReasons || []).some((reason) => [
+          "col-reference-gap",
+          "project-species",
+          "missing-name",
+          "missing-hierarchy",
+          "manual-correction",
+        ].includes(reason))
+      )
+    )),
+  }));
+}
+
+function providerScientificNames(slices) {
+  return slices.flatMap((slice) => slice.records || [])
+    .map((record) => canonicalSpeciesName(record.scientificName))
+    .filter(Boolean);
 }
 
 function normalizeColTaxon(detail, result, status) {
@@ -108,13 +138,39 @@ function normalizeColTaxon(detail, result, status) {
   };
 }
 
-async function collectColRecords(store, scientificNames, onProgress = () => {}) {
+async function collectColRecords(
+  store,
+  scientificNames,
+  onProgress = () => {},
+  { providerSlices = [] } = {},
+) {
   const status = store.status();
   const records = [];
+  const knownColTaxonIds = new Map();
+  const knownColReferenceGaps = new Set();
+  for (const slice of providerSlices) {
+    for (const record of slice.records || []) {
+      const scientificName = canonicalSpeciesName(record.scientificName);
+      if (!scientificName) continue;
+      if (record.colTaxonId) knownColTaxonIds.set(scientificName, record.colTaxonId);
+      if ((record.relevanceReasons || []).includes("col-reference-gap")) {
+        knownColReferenceGaps.add(scientificName);
+      }
+    }
+  }
   const names = [...new Set(scientificNames.map(cleanText).filter(Boolean))];
   for (let index = 0; index < names.length; index += 1) {
     const scientificName = names[index];
     onProgress({ current: index, total: names.length, scientificName });
+    if (knownColReferenceGaps.has(scientificName) && !knownColTaxonIds.has(scientificName)) {
+      continue;
+    }
+    const knownColTaxonId = knownColTaxonIds.get(scientificName);
+    if (knownColTaxonId) {
+      const detail = store.taxon(knownColTaxonId);
+      if (detail) records.push(normalizeColTaxon(detail, null, status));
+      continue;
+    }
     const result = store.findTaxonByScientificName(scientificName, { rank: "species" });
     if (!result) continue;
     const detail = store.taxon(result.taxonId || result.sourceId);
@@ -142,6 +198,7 @@ export class TaxonomyMasterService {
     taxonomyRoot,
     referenceService,
     supplementService,
+    providerRefreshService = null,
     speciesListPath,
     correctionsPath,
     isProjectBusy = () => false,
@@ -158,6 +215,7 @@ export class TaxonomyMasterService {
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.referenceService = referenceService;
     this.supplementService = supplementService;
+    this.providerRefreshService = providerRefreshService;
     this.speciesListPath = path.resolve(speciesListPath);
     this.correctionsPath = path.resolve(correctionsPath);
     this.isProjectBusy = isProjectBusy;
@@ -208,7 +266,8 @@ export class TaxonomyMasterService {
     };
   }
 
-  startBuild({ refreshProviders = true } = {}) {
+  startBuild(options = {}) {
+    const refreshProviders = options.refreshProviders !== false;
     this.assertAvailable();
     const startedAt = this.now().toISOString();
     this.state = {
@@ -221,11 +280,11 @@ export class TaxonomyMasterService {
       progressPercent: 0,
       startedAt,
     };
-    this.runPromise = this.runBuild({ refreshProviders }).catch(() => null);
+    this.runPromise = this.runBuild({ ...options, refreshProviders }).catch(() => null);
     return this.status();
   }
 
-  async runBuild({ refreshProviders = true } = {}) {
+  async runBuild({ refreshProviders = true, ...providerOptions } = {}) {
     try {
       const [speciesList, correctionsDocument] = await Promise.all([
         readJson(this.speciesListPath, []),
@@ -233,34 +292,60 @@ export class TaxonomyMasterService {
       ]);
       const projectTaxa = projectTaxaFromSpeciesList(speciesList);
       const corrections = correctionsFromDocument(correctionsDocument);
+      const researchedTaxa = this.supplementService?.selectedTaxa
+        ? await this.supplementService.selectedTaxa()
+        : [];
       const store = await this.referenceService.requireStore();
       const warnings = [];
-      if (refreshProviders && this.supplementService) {
+      if (refreshProviders && this.providerRefreshService) {
+        const refreshed = await this.providerRefreshService.refresh({
+          projectTaxa,
+          corrections,
+          researchedTaxa,
+          store,
+          ...providerOptions,
+          onProgress: ({ current = 0, total = 100, message = "" } = {}) => {
+            this.state.status = "refreshing";
+            this.state.message = message || "Anbieter-Ausschnitte werden aktualisiert.";
+            this.state.progressPercent = Math.round(
+              (Number(current) / Math.max(1, Number(total))) * 45,
+            );
+          },
+        });
+        warnings.push(...(refreshed.warnings || []));
+      } else if (refreshProviders && this.supplementService) {
         const refreshed = await this.supplementService.refreshKnown({
-          scientificNames: [
-            ...projectTaxa.map((entry) => entry.scientificName),
-            ...corrections.map((entry) => entry.scientificName),
-          ],
+          scientificNames: projectTaxa.map((entry) => entry.scientificName),
           store,
           onProgress: ({ current = 0, total = 1, message = "" } = {}) => {
             this.state.status = "refreshing";
             this.state.message = message || "Anbieter-Ausschnitte werden aktualisiert.";
-            this.state.progressPercent = Math.round((Number(current) / Math.max(1, Number(total))) * 45);
+            this.state.progressPercent = Math.round(
+              (Number(current) / Math.max(1, Number(total))) * 45,
+            );
           },
         });
         warnings.push(...(refreshed.warnings || []));
       }
       this.state.status = "building";
       this.state.message = "Master-Kandidat wird aus CoL, Anbieter-Ausschnitten und eigenen Korrekturen aufgebaut.";
-      const providerSlices = await latestProviderSlices(this.taxonomyRoot);
-      const scientificNames = [
-        ...projectTaxa.map((entry) => entry.scientificName),
-        ...corrections.map((entry) => entry.scientificName),
-        ...providerSlices.flatMap((slice) => slice.records.map((record) => record.scientificName)),
-      ];
-      const colRecords = await collectColRecords(store, scientificNames, ({ current, total }) => {
-        this.state.progressPercent = 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 35);
-      });
+      const providerSlices = activeMasterProviderSlices(
+        await latestProviderSlices(this.taxonomyRoot),
+      );
+      const targetNames = [...new Set([
+        ...projectTaxa.map((entry) => canonicalSpeciesName(entry.scientificName)),
+        ...corrections.map((entry) => canonicalSpeciesName(entry.scientificName)),
+        ...researchedTaxa.map((entry) => canonicalSpeciesName(entry.scientificName)),
+        ...providerScientificNames(providerSlices),
+      ].filter(Boolean))];
+      const colRecords = await collectColRecords(
+        store,
+        targetNames,
+        ({ current, total }) => {
+          this.state.progressPercent = 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 35);
+        },
+        { providerSlices },
+      );
       const manifest = await this.buildCandidate({
         taxonomyRoot: this.taxonomyRoot,
         colRelease: releaseFromStoreStatus(store.status()),
@@ -268,6 +353,7 @@ export class TaxonomyMasterService {
         providerSlices,
         projectTaxa,
         corrections,
+        retainedTaxa: researchedTaxa,
         now: this.now,
       });
       const lifecycle = await this.inspectLifecycle(this.taxonomyRoot);
@@ -383,6 +469,7 @@ export class TaxonomyMasterService {
 
   async close() {
     this.closed = true;
+    await this.providerRefreshService?.close?.();
     await this.runPromise?.catch?.(() => null);
   }
 }
@@ -392,6 +479,7 @@ export function createTaxonomyMasterService(options) {
 }
 
 export const taxonomyMasterServiceInternals = Object.freeze({
+  activeMasterProviderSlices,
   collectColRecords,
   correctionsFromDocument,
   latestProviderSlices,

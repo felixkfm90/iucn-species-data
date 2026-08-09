@@ -1,9 +1,9 @@
 # Lokale Taxonomiedatenbank – Architektur für Phase 9.2
 
-Stand: 2026-07-30
+Stand: 2026-08-08
 
-Status: Phase 9.2 abgeschlossen, in Phase 9.3 prototypisch bestätigt und in Phase 9.4 read-only integriert;
-Phase 9.5 produktiv installiert und in Phase 9.6 um eine getrennte Masterdatenbank-Grundlage ergänzt
+Status: Historischer Referenzschicht-Entwurf aus Phase 9.2, in Phase 9.3 bis 9.5 umgesetzt. Der aktuelle
+zusammengeführte Mastervertrag steht ausschließlich in `docs/taxonomy-master-database-design.md`.
 
 Roadmap: Phase 9.2
 
@@ -28,18 +28,20 @@ Die Referenzdatenbank darf keine bestehende Art, URL, Taxonomie oder Assetstrukt
 wird erst nach ausdrücklicher Auswahl in den vorhandenen Vorschau- und Bestätigungsworkflow übernommen.
 
 Die seit Phase 9.6 ergänzte Masterdatenbank liegt physisch neben den unveränderlichen CoL-Releases. Sie ersetzt
-weder den CoL-Vollbestand noch dieses Referenzschema, sondern führt künftig ausschließlich belegte Aussagen,
-relevante Anbieter-Ausschnitte, Projektzuordnungen und manuelle Korrekturen zusammen. Datenmodell und
-Migrationsgrenze stehen in `docs/taxonomy-master-database-design.md`.
+weder den CoL-Vollbestand noch dieses Referenzschema, sondern führt CoL XR, einen breiten versionierten
+iNaturalist-Artlücken-/Namensbestand, relevante GBIF-/WoRMS-/Wikidata-Ausschnitte, kontrollierte Animalia-Fälle,
+Projektzuordnungen und eigene Korrekturen zusammen. Datenmodell und Migrationsgrenze stehen verbindlich in
+`docs/taxonomy-master-database-design.md`.
 
 Die Quellenstrategie aus `docs/taxonomy-source-decision.md` bleibt verbindlich:
 
 - Catalogue of Life Extended Release als globaler Primärbestand
 - Catalogue of Life Base als höhere Vertrauensstufe innerhalb des XR-Bestands
+- iNaturalist als breiter lokaler, versionierter CoL-Artlücken- und Namensbestand
 - WoRMS als zusätzliche Validierung und Ergänzung mariner beziehungsweise brackischer Taxa
-- GBIF als Diensteschicht für Alt-IDs, Taxonabgleich und Vorkommensdaten
-- Wikidata nur als quellenmarkierte Vorschlagsquelle für deutsche Namen und externe IDs
-- Animalia.bio ausschließlich als gezielt geöffnete manuelle Referenz
+- GBIF als relevante versionierte Ergänzung für Alt-IDs und Taxonabgleich
+- Wikidata als relevanter versionierter Taxon-, Namens- und ID-Ausschnitt
+- Animalia als kontrollierter, quellenbelegter letzter Fallback; kein automatisches Scraping
 - IUCN weiterhin ausschließlich für Schutz-, Assessment- und Verbreitungsdaten
 
 ## 2. Abgrenzung von Phase 9.2
@@ -340,7 +342,7 @@ Die Suche arbeitet in drei getrennten Feldern:
 - Ein Synonym wird als `eingegebener Name → akzeptierter Name` dargestellt.
 - Mehrere Taxa werden als Trefferliste angezeigt; kein Treffer wird still ausgewählt.
 
-Nach jedem Eingabeereignis wird mit 300 Millisekunden Verzögerung gesucht. Ältere noch laufende Anfragen
+Nach jedem Eingabeereignis wird mit 500 Millisekunden Verzögerung gesucht. Ältere noch laufende Anfragen
 werden verworfen; nur die Antwort zur neuesten Eingabe darf die Liste aktualisieren.
 
 ### 7.3 Suche ab dem ersten Zeichen
@@ -400,9 +402,11 @@ Der vorhandene Prüfen-/Vorschau-/Speichern-Ablauf bleibt Pflicht. Eine Unterart
 ändert aber nur dann den wissenschaftlichen Projektnamen und den URL-Slug, wenn der Benutzer ausdrücklich diese
 Unterart statt der Art als Projekt-Taxon auswählt.
 
-## 8. Fehlende deutsche oder englische Namen und Animalia.bio
+## 8. Historischer manueller Animalia-Rechercheweg
 
-Ja, bei einem Tier ohne bestätigten deutschen Namen kann gezielt auf Animalia.bio recherchiert werden. Weil
+Dieser Abschnitt beschreibt den sicheren Phase-9.2-Ausgangsweg. Im aktuellen Master werden Lücken zuerst lokal aus
+iNaturalist und den relevanten GBIF-/WoRMS-/Wikidata-Ausschnitten geschlossen. Bei einem danach weiterhin
+unvollständigen Tier kann gezielt auf Animalia.bio recherchiert werden. Weil
 Animalia.bio keine dokumentierte öffentliche API und keinen versionierten Bulk-Export anbietet, erfolgt dies
 bewusst nicht als Hintergrundabruf.
 
@@ -575,10 +579,11 @@ Phase 9.5 wurde am 2026-07-26 technisch umgesetzt. Der Vollimport reserviert min
 begrenzt Download und Extraktion, importiert in einen unveränderlichen Kandidaten, vergleicht danach alle
 Projektarten und aktiviert erst anschließend atomar. Eindeutige Synonyme bleiben Vorschläge; mehrdeutige oder
 fehlende Treffer werden nicht ausgewählt. Projektdateien, Namen, Slugs und Assets bleiben unverändert. Der
-vollständige Vertrag steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation bleibt eine
-ausdrücklich gestartete lokale Wartungsaktion.
+vollständige Vertrag steht in `docs/taxonomy-reference-update.md`. Die erste echte Vollinstallation und der darauf
+aufbauende produktive Master-Neuaufbau wurden am 2026-08-09 als ausdrücklich gestartete lokale Wartungsaktionen
+erfolgreich durchgeführt; Aktivierung und Rollback sind praktisch verifiziert.
 
-## 14. Nach Phase 9.2 bewusst offene Entscheidungen
+## 14. Bewusst späteren Phasen zugeordnete Entscheidungen
 
 Folgende Punkte werden nicht vorweggenommen:
 

@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-07-29
+Stand: 2026-08-08
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -12,8 +12,9 @@ Die Artenauswahl bleibt redaktionell manuell. Die Pipeline verarbeitet nur Arten
 `species_list.json` gespeichert wurden. Phase 7.5 bildet diesen bisher direkten JSON-Schritt kontrolliert ueber den
 lokalen Arten-Explorer ab.
 
-Phase 9.4 ergänzt diesen Ablauf optional um eine lokale read-only Taxonomiesuche. Die Referenz darf keine Art still
-anlegen und keine vorhandene Art automatisch überschreiben. Details stehen in
+Phase 9 ergänzt diesen Ablauf um die lokale read-only Taxonomiesuche. Sie verwendet bevorzugt die aktive
+Masterdatenbank und bleibt für deren Inhalt offline nutzbar. Die Referenz darf keine Art still anlegen und keine
+vorhandene Art automatisch überschreiben. Details stehen in
 `docs/taxonomy-explorer-integration.md`.
 
 ## Manuell zu pflegen
@@ -75,14 +76,16 @@ Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie alle drei N
 - Der deutsche Name sucht nach belegten deutschen Namen.
 - Der englische Name sucht nach belegten englischen Namen.
 - Der wissenschaftliche Name sucht nach akzeptierten Namen und Synonymen.
-- Die Suche beginnt 300 Millisekunden nach der letzten Eingabe. Ältere Antworten werden verworfen.
+- Die Suche beginnt 500 Millisekunden nach der letzten Eingabe. Ältere Antworten werden verworfen.
 - Die Trefferliste zeigt mehrere Möglichkeiten, ohne einen Treffer automatisch auszuwählen.
 - Sie schwebt über den folgenden Feldern, sodass die Höhe des Assistenten beim Suchen unverändert bleibt.
-- Ein ausgewählter Treffer zeigt Hierarchie, Quelle, Release, Quellen-ID und Namensstatus.
-- Erst `Vorschlag übernehmen` füllt deutsche, englische und wissenschaftliche Namensfelder; danach bleibt
-  `Eingaben prüfen` verpflichtend.
+- Ein Klick auf einen Treffer schließt die schwebende Trefferliste, füllt deutsche, englische und
+  wissenschaftliche Namensfelder direkt und zeigt Hierarchie, Quelle, Release, Quellen-ID und Namensstatus.
+  `Eingaben prüfen` bleibt danach verpflichtend.
 - Im Neue-Art-Assistenten werden nur Treffer mit dem Rang `Art` angeboten.
-- Fehlt für ein Tier ein belegter deutscher Name, kann eine manuelle Animalia.bio-Suche geöffnet werden.
+- CoL-Art- und Namenslücken können aus dem lokalen versionierten iNaturalist-Bestand sowie den relevanten
+  GBIF-/WoRMS-/Wikidata-Ausschnitten erscheinen. Danach verbleibende belegte Tierlücken können kontrolliert aus
+  Animalia ergänzt werden; der manuelle Animalia-Recherchelink bleibt verfügbar.
 - Fehlt die lokale Referenz oder ist sie nicht lesbar, bleiben alle Felder manuell nutzbar.
 
 Vor dem naechsten Schritt prueft die App lokal und danach der Server:

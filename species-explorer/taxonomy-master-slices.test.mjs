@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
+  latestProviderSliceVersion,
   legacySupplementsToProviderRecords,
   listProviderSliceVersions,
   readProviderSlice,
@@ -60,6 +61,30 @@ test("Anbieter-Ausschnitte bewahren Version, Provenienz und entfernte Datensätz
     assert.equal(second.records.find((record) => record.providerRecordId === "5219404").versionChangeState, "removed");
     const reread = await readProviderSlice(root, "gbif", "2026-08");
     assert.equal(reread.manifest.checksumSha256, second.manifest.checksumSha256);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("der neueste Anbieterstand wird nach Abrufzeit statt Versionsname gewählt", async () => {
+  const root = await temporaryRoot();
+  try {
+    await writeProviderSlice(root, {
+      provider: "wikidata",
+      providerVersion: "z-alter-stand",
+      retrievedAt: FIRST,
+      records: [],
+    });
+    await writeProviderSlice(root, {
+      provider: "wikidata",
+      providerVersion: "a-neuer-stand",
+      retrievedAt: SECOND,
+      records: [],
+    });
+    assert.equal(
+      await latestProviderSliceVersion(root, "wikidata"),
+      "a-neuer-stand",
+    );
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

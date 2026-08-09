@@ -108,6 +108,19 @@ test("Quellenaktivierung bewahrt genau eine vorherige Version", () => {
   }
 });
 
+test("read-only Öffnen prüft den Schemavertrag ohne teure Vollintegritätsprüfung", () => {
+  const database = openDatabase();
+  try {
+    assert.deepEqual(validateTaxonomyMasterDatabase(database, { full: false }), {
+      schemaVersion: 3,
+      validationMode: "schema-only",
+    });
+    assert.equal(validateTaxonomyMasterDatabase(database).validationMode, "full");
+  } finally {
+    database.close();
+  }
+});
+
 test("Sciurus vulgaris bleibt bei einer CoL-Lücke ein einziges stabiles Mastertaxon", () => {
   const database = openDatabase();
   try {
@@ -256,6 +269,8 @@ test("Sciurus vulgaris bleibt bei einer CoL-Lücke ein einziges stabiles Mastert
 
     const gapValidation = validateTaxonomyMasterDatabase(database);
     assert.deepEqual(gapValidation, {
+      schemaVersion: 3,
+      validationMode: "full",
       sourceReleases: 5,
       masterTaxa: 1,
       sourceTaxa: 5,
@@ -266,6 +281,7 @@ test("Sciurus vulgaris bleibt bei einer CoL-Lücke ein einziges stabiles Mastert
       statuses: 0,
       sliceMemberships: 0,
       decisions: 0,
+      searchTerms: 0,
     });
     assert.equal(
       database.prepare(`

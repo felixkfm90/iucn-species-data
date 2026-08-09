@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -16,15 +17,36 @@ import {
 } from "./taxonomy-master-slices.mjs";
 import { compareProviderRecord } from "./taxonomy-master-rules.mjs";
 
-const CACHE_SCHEMA_VERSION = 2;
+const CACHE_SCHEMA_VERSION = 3;
 const CORRECTION_SCHEMA_VERSION = 1;
 const QUERY_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_QUERY_HISTORY = 500;
 const MAX_SUPPLEMENT_ENTRIES = 10_000;
 const MAX_PROVIDER_RECORDS = 25_000;
+const MAX_RESEARCHED_TAXA = 5_000;
 const MAX_SCIENTIFIC_NAME_LENGTH = 160;
 const MAX_VERNACULAR_NAME_LENGTH = 120;
 const MAX_CORRECTION_NOTE_LENGTH = 240;
+const PROVIDER_SOURCE_LABELS = Object.freeze({
+  worms: "WoRMS",
+  gbif: "GBIF",
+  inaturalist: "iNaturalist",
+  wikidata: "Wikidata",
+});
+const HIERARCHY_RANKS = Object.freeze([
+  "kingdom",
+  "phylum",
+  "subphylum",
+  "class",
+  "subclass",
+  "order",
+  "suborder",
+  "family",
+  "subfamily",
+  "genus",
+  "species",
+  "subspecies",
+]);
 
 function normalizedScientificName(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
@@ -43,6 +65,21 @@ function emptyCache() {
     queries: {},
     entries: [],
     providerRecords: [],
+    researchedTaxa: [],
+  };
+}
+
+function normalizeResearchedTaxon(value = {}) {
+  const scientificName = cleanName(value.scientificName);
+  if (!scientificName) return null;
+  return {
+    scientificName,
+    rank: String(value.rank || "species").trim().toLocaleLowerCase("en"),
+    kingdom: cleanName(value.kingdom) || "",
+    sourceReference: cleanName(value.sourceReference) || "",
+    selectedAt: value.selectedAt && Number.isFinite(Date.parse(value.selectedAt))
+      ? new Date(value.selectedAt).toISOString()
+      : "",
   };
 }
 
@@ -107,6 +144,7 @@ function normalizedProviderRecord(candidate, {
   query,
   taxon = null,
   relevanceReasons = [],
+  selectedForMaster = false,
 } = {}) {
   const provider = canonicalMasterProvider(normalizedSourceName(candidate));
   const providerRecordId = String(candidate?.providerId || "").trim();
@@ -129,7 +167,6 @@ function normalizedProviderRecord(candidate, {
     } : null,
   ].filter(Boolean));
   const reasons = new Set([
-    "searched-taxon",
     ...relevanceReasons,
     ...(!taxon ? ["col-reference-gap"] : []),
     ...(!names.length ? ["missing-name"] : []),
@@ -154,12 +191,58 @@ function normalizedProviderRecord(candidate, {
     retrievedAt: candidate.retrievedAt || checkedAt,
     relevanceReasons: [...reasons],
     queryKeys: [normalizeTaxonomySearchTerm(query)].filter(Boolean),
+    selectedForMaster: Boolean(selectedForMaster),
     colTaxonId: taxon?.taxonId || "",
     colMatched: Boolean(taxon),
     firstSeenAt: checkedAt,
     lastSeenAt: checkedAt,
     versionChangeState: "new",
   };
+}
+
+function providerSourceLabel(provider) {
+  return PROVIDER_SOURCE_LABELS[canonicalMasterProvider(provider)] || String(provider || "").trim();
+}
+
+function supplementTaxonId({ scientificName, rank, kingdom }) {
+  const identity = [
+    normalizedScientificName(scientificName),
+    String(rank || "species").trim().toLocaleLowerCase("en"),
+    normalizedScientificName(kingdom),
+  ].join("|");
+  return `stx_${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 24)}`;
+}
+
+function providerRecordPriority(record) {
+  const provider = canonicalMasterProvider(record?.provider);
+  const environment = String(record?.environment || "").toLocaleLowerCase("en");
+  if ((environment === "marine" || environment === "brackish") && provider === "worms") return 0;
+  return ({ worms: 1, gbif: 2, inaturalist: 3, wikidata: 4 })[provider] ?? 10;
+}
+
+function nameRecordsFromProviderRecords(records, language) {
+  return mergeNameRecords([], records.flatMap((record) => (
+    (record.names || [])
+      .filter((name) => name.language === language)
+      .map((name) => ({
+        name: name.name,
+        source: providerSourceLabel(record.provider),
+        providerId: record.providerRecordId,
+        confidence: name.verified ? 0.9 : 0.75,
+        checkedAt: record.retrievedAt || record.lastSeenAt || "",
+      }))
+  )));
+}
+
+function mergedProviderHierarchy(records, scientificName, rank) {
+  const result = {};
+  for (const record of [...records].sort((left, right) => (
+    providerRecordPriority(right) - providerRecordPriority(left)
+  ))) {
+    Object.assign(result, record.hierarchy || {});
+  }
+  result[String(rank || "species").toLocaleLowerCase("en")] = scientificName;
+  return result;
 }
 
 function flattenLegacyProviderRecords(cache) {
@@ -332,6 +415,9 @@ export class TaxonomySupplementService {
           providerRecords: Array.isArray(cache?.providerRecords)
             ? cache.providerRecords
             : flattenLegacyProviderRecords(cache || {}),
+          researchedTaxa: (Array.isArray(cache?.researchedTaxa) ? cache.researchedTaxa : [])
+            .map(normalizeResearchedTaxon)
+            .filter(Boolean),
         };
         this.legacyCache = legacyCache;
         this.corrections = {
@@ -365,6 +451,7 @@ export class TaxonomySupplementService {
       lastFullRefreshAt: this.cache.lastFullRefreshAt || "",
       entryCount: this.cache.entries.length,
       providerRecordCount: this.cache.providerRecords.length,
+      researchedTaxonCount: this.cache.researchedTaxa.length,
       correctionCount: this.corrections.entries.length,
       providers: ["iNaturalist", "GBIF", "WoRMS", "Wikidata"],
       stale: !Number.isFinite(lastFullRefreshAt)
@@ -402,6 +489,91 @@ export class TaxonomySupplementService {
     return [...byScientificName.values()];
   }
 
+  providerOnlyEntries() {
+    const grouped = new Map();
+    for (const record of this.cache.providerRecords) {
+      if (
+        record.versionChangeState === "removed"
+        || record.colMatched
+        || String(record.rank || "").toLocaleLowerCase("en") !== "species"
+      ) continue;
+      const scientificName = cleanName(record.scientificName);
+      if (!scientificName) continue;
+      const rank = String(record.rank || "species").toLocaleLowerCase("en");
+      const kingdom = cleanName(record.kingdom) || "";
+      const key = `${normalizedScientificName(scientificName)}|${rank}|${normalizedScientificName(kingdom)}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(record);
+    }
+
+    return [...grouped.values()].map((records) => {
+      const ordered = [...records].sort((left, right) => (
+        providerRecordPriority(left) - providerRecordPriority(right)
+      ));
+      const primary = ordered[0];
+      const scientificName = cleanName(primary.scientificName);
+      const rank = String(primary.rank || "species").toLocaleLowerCase("en");
+      const kingdom = cleanName(primary.kingdom) || "";
+      const correction = this.corrections.entries.find(
+        (entry) => normalizedScientificName(entry.scientificName)
+          === normalizedScientificName(scientificName),
+      );
+      const correctionOverlay = correction ? correctionAsSupplement(correction) : null;
+      const germanNames = mergeNameRecords(
+        nameRecordsFromProviderRecords(ordered, "de"),
+        correctionOverlay?.germanNames || [],
+      );
+      const englishNames = mergeNameRecords(
+        nameRecordsFromProviderRecords(ordered, "en"),
+        correctionOverlay?.englishNames || [],
+      );
+      const providers = [...new Set(ordered.map((record) => providerSourceLabel(record.provider)))];
+      return {
+        taxonId: supplementTaxonId({ scientificName, rank, kingdom }),
+        sourceId: String(primary.providerRecordId || ""),
+        acceptedScientificName: scientificName,
+        scientificName,
+        rank,
+        status: "accepted",
+        trustTier: "supplement",
+        kingdom: {
+          id: kingdom,
+          scientificName: kingdom,
+          label: kingdom === "Animalia" ? "Tiere" : kingdom,
+        },
+        hierarchy: mergedProviderHierarchy(ordered, scientificName, rank),
+        germanName: germanNames[0]?.name || null,
+        germanNames,
+        englishName: englishNames[0]?.name || null,
+        englishNames,
+        displayName: germanNames[0]?.name || englishNames[0]?.name || scientificName,
+        displayNameLanguage: germanNames[0]?.name ? "de" : englishNames[0]?.name ? "en" : "scientific",
+        usesEnglishFallback: !germanNames[0]?.name && Boolean(englishNames[0]?.name),
+        hasVerifiedGermanName: Boolean(germanNames[0]?.name),
+        referenceGap: true,
+        masterStatuses: [
+          { id: "col-reference-gap", label: "CoL-Referenzlücke" },
+          { id: "externally-confirmed", label: "Extern bestätigt" },
+          ...(correction ? [{ id: "manually-protected", label: "Manuell geschützt" }] : []),
+        ],
+        supplementSources: providers,
+        source: providers.join(", "),
+        records: ordered,
+        correction: Boolean(correction),
+        correctionNote: correction?.note || null,
+      };
+    });
+  }
+
+  findProviderOnlyTaxon(reference) {
+    const normalizedReference = String(reference || "").trim();
+    const normalizedScientific = normalizedScientificName(reference);
+    return this.providerOnlyEntries().find((entry) => (
+      entry.taxonId === normalizedReference
+      || normalizedScientificName(entry.scientificName) === normalizedScientific
+    )) || null;
+  }
+
   queryCacheKey({ query, kind, language, kingdoms }) {
     return [
       normalizeTaxonomySearchTerm(query),
@@ -424,6 +596,7 @@ export class TaxonomySupplementService {
     this.cache.queries = Object.fromEntries(queryEntries);
     this.cache.entries = this.cache.entries.slice(0, MAX_SUPPLEMENT_ENTRIES);
     this.cache.providerRecords = this.cache.providerRecords.slice(0, MAX_PROVIDER_RECORDS);
+    this.cache.researchedTaxa = this.cache.researchedTaxa.slice(0, MAX_RESEARCHED_TAXA);
     const writtenAt = this.now().toISOString();
     this.cache.updatedAt = writtenAt;
     if (fullRefresh) this.cache.lastFullRefreshAt = writtenAt;
@@ -471,12 +644,14 @@ export class TaxonomySupplementService {
     query,
     taxon,
     relevanceReasons = [],
+    selectedForMaster = false,
   } = {}) {
     const incoming = normalizedProviderRecord(candidate, {
       checkedAt,
       query,
       taxon,
       relevanceReasons,
+      selectedForMaster,
     });
     if (!incoming) return null;
     const key = providerKey(incoming.provider, incoming.providerRecordId);
@@ -497,6 +672,7 @@ export class TaxonomySupplementService {
         ...incoming.queryKeys,
       ])],
       firstSeenAt: current?.firstSeenAt || incoming.firstSeenAt,
+      selectedForMaster: Boolean(current?.selectedForMaster || incoming.selectedForMaster),
       versionChangeState: current?.versionChangeState === "removed"
         ? "restored"
         : compareProviderRecord(current, incoming),
@@ -539,6 +715,10 @@ export class TaxonomySupplementService {
           ...metadata,
           source: "taxonomy-supplement-service",
         },
+        // Der Online-Ergänzungsdienst aktualisiert immer nur eine endliche
+        // Suchmenge. Nicht erneut abgefragte, bereits versionierte Taxa dürfen
+        // deshalb nicht als entfernt markiert werden.
+        preserveUnmentioned: true,
       }));
     }
     return written;
@@ -553,6 +733,7 @@ export class TaxonomySupplementService {
     force = false,
     relevanceReasons = [],
     markMissing = false,
+    selectExactResult = false,
   } = {}) {
     await this.load();
     const key = this.queryCacheKey({ query, kind, language, kingdoms });
@@ -589,6 +770,8 @@ export class TaxonomySupplementService {
       );
       const seenKeys = new Set();
       for (const candidate of result.value || []) {
+        const exactTarget = normalizedScientificName(candidate.scientificName)
+          === normalizedScientificName(query);
         const taxon = store.findTaxonByScientificName(candidate.scientificName, {
           rank: "species",
         });
@@ -603,7 +786,8 @@ export class TaxonomySupplementService {
           checkedAt,
           query,
           taxon,
-          relevanceReasons,
+          relevanceReasons: exactTarget ? relevanceReasons : [],
+          selectedForMaster: selectExactResult && exactTarget,
         });
         if (!providerRecord) continue;
         providerNamesForResult.add(providerRecord.provider);
@@ -673,7 +857,7 @@ export class TaxonomySupplementService {
         language,
         kingdoms,
         store,
-        relevanceReasons: ["searched-taxon"],
+        relevanceReasons: [],
       }).catch(() => null);
     }
     const results = [];
@@ -741,6 +925,64 @@ export class TaxonomySupplementService {
         supplementScore: best.score,
       });
     }
+    for (const entry of this.providerOnlyEntries()) {
+      if (rank !== "all" && entry.rank !== rank) continue;
+      if (
+        selectedKingdoms.length
+        && !selectedKingdoms.includes(entry.kingdom.scientificName)
+      ) continue;
+      const terms = [];
+      if (kind === "all" || kind === "vernacular") {
+        terms.push(
+          ...entry.germanNames
+            .filter(() => language === "all" || language === "de")
+            .map((record) => ({ ...record, language: "de" })),
+          ...entry.englishNames
+            .filter(() => language === "all" || language === "en")
+            .map((record) => ({ ...record, language: "en" })),
+        );
+      }
+      if (kind === "all" || kind === "scientific") {
+        terms.push({
+          name: entry.acceptedScientificName,
+          source: entry.source,
+          confidence: 1,
+          language: "scientific",
+        });
+      }
+      if (kind === "identifier") {
+        terms.push(...entry.records.flatMap((record) => (
+          Object.values(record.externalIds || {}).map((value) => ({
+            name: String(value),
+            source: providerSourceLabel(record.provider),
+            confidence: 1,
+            language: "identifier",
+          }))
+        )));
+      }
+      let best = null;
+      for (const term of terms) {
+        const score = matchScore(query, term.name, term.language, term.source);
+        if (!Number.isFinite(score)) continue;
+        if (!best || score < best.score) best = { ...term, score };
+      }
+      if (!best) continue;
+      results.push({
+        ...entry,
+        matchedTerm: best.name,
+        matchType: best.language === "scientific"
+          ? "accepted_scientific"
+          : best.language === "identifier"
+            ? "identifier"
+            : "supplement_vernacular",
+        supplementScore: best.score,
+        nameSources: {
+          german: entry.germanNames,
+          english: entry.englishNames,
+        },
+        manualGermanNameFallback: null,
+      });
+    }
     return results
       .sort((left, right) => (
         left.supplementScore - right.supplementScore
@@ -751,6 +993,52 @@ export class TaxonomySupplementService {
         )
       ))
       .slice(0, Number(limit) || 12);
+  }
+
+  async taxon(reference) {
+    await this.load();
+    const entry = this.findProviderOnlyTaxon(reference);
+    if (!entry) return null;
+    const hierarchy = HIERARCHY_RANKS.flatMap((rank) => {
+      const scientificName = cleanName(entry.hierarchy?.[rank]);
+      return scientificName ? [{ rank, scientific_name: scientificName }] : [];
+    });
+    return {
+      taxonId: entry.taxonId,
+      source_id: entry.sourceId,
+      scientific_name: entry.scientificName,
+      accepted_scientific_name: entry.acceptedScientificName,
+      rank: entry.rank,
+      status: entry.status,
+      trust_tier: entry.trustTier,
+      kingdom: entry.kingdom,
+      hierarchy,
+      germanNames: entry.germanNames,
+      englishNames: entry.englishNames,
+      displayName: entry.displayName,
+      displayNameLanguage: entry.displayNameLanguage,
+      usesEnglishFallback: entry.usesEnglishFallback,
+      referenceGap: true,
+      masterStatuses: entry.masterStatuses,
+      source: entry.source,
+      supplement: {
+        sources: entry.supplementSources,
+        nameSources: {
+          german: entry.germanNames,
+          english: entry.englishNames,
+        },
+        correction: entry.correction,
+        note: entry.correctionNote,
+      },
+      manualGermanNameFallback: entry.germanName ? null : {
+        url: `https://animalia.bio/de/search?q=${encodeURIComponent(entry.scientificName)}`,
+      },
+    };
+  }
+
+  async findTaxonByScientificName(scientificName) {
+    await this.load();
+    return this.findProviderOnlyTaxon(scientificName);
   }
 
   async augmentTaxon(detail) {
@@ -794,6 +1082,58 @@ export class TaxonomySupplementService {
       },
       manualGermanNameFallback: germanNames.length ? null : detail.manualGermanNameFallback,
     };
+  }
+
+  async selectedScientificNames() {
+    return [...new Set((await this.selectedTaxa())
+      .map((entry) => cleanName(entry.scientificName))
+      .filter(Boolean))];
+  }
+
+  async selectedTaxa() {
+    await this.load();
+    return this.cache.researchedTaxa.map((entry) => ({ ...entry }));
+  }
+
+  async markResearchedTaxon({
+    scientificName,
+    rank = "species",
+    kingdom = "",
+    sourceReference = "",
+  } = {}) {
+    await this.load();
+    const normalized = normalizeResearchedTaxon({
+      scientificName,
+      rank,
+      kingdom,
+      sourceReference,
+      selectedAt: this.now().toISOString(),
+    });
+    if (!normalized) throw new Error("Der wissenschaftliche Name fehlt.");
+    const key = normalizedScientificName(normalized.scientificName);
+    const previous = this.cache.researchedTaxa.find(
+      (entry) => normalizedScientificName(entry.scientificName) === key,
+    );
+    this.cache.researchedTaxa = this.cache.researchedTaxa.filter(
+      (entry) => normalizedScientificName(entry.scientificName) !== key,
+    );
+    this.cache.researchedTaxa.unshift({ ...previous, ...normalized });
+    for (const record of this.cache.providerRecords) {
+      if (normalizedScientificName(record.scientificName) !== key) continue;
+      record.selectedForMaster = true;
+      record.relevanceReasons = [...new Set([
+        ...(record.relevanceReasons || []),
+        "searched-taxon",
+      ])];
+    }
+    await this.persistCache();
+    await this.writeProviderSlices({
+      providers: [...new Set(this.cache.providerRecords
+        .filter((record) => normalizedScientificName(record.scientificName) === key)
+        .map((record) => record.provider))],
+      metadata: { reason: "researched-taxon-selection" },
+    });
+    return normalized;
   }
 
   async saveCorrection({
@@ -878,13 +1218,17 @@ export class TaxonomySupplementService {
 
   async refreshKnown({ scientificNames = [], store, onProgress = () => {} } = {}) {
     await this.load();
+    const projectNames = new Set(scientificNames.map(normalizedScientificName).filter(Boolean));
+    const correctionNames = new Set(
+      this.corrections.entries.map((entry) => normalizedScientificName(entry.scientificName)),
+    );
+    const researchedNames = new Set(
+      this.cache.researchedTaxa.map((entry) => normalizedScientificName(entry.scientificName)),
+    );
     const targets = [...new Set([
       ...scientificNames,
-      ...this.cache.entries.map((entry) => entry.scientificName),
-      ...this.cache.providerRecords
-        .filter((entry) => entry.versionChangeState !== "removed")
-        .map((entry) => entry.scientificName),
       ...this.corrections.entries.map((entry) => entry.scientificName),
+      ...this.cache.researchedTaxa.map((entry) => entry.scientificName),
     ].map(cleanName).filter(Boolean))];
     const warnings = [];
     let imported = 0;
@@ -899,6 +1243,12 @@ export class TaxonomySupplementService {
     }
     for (let index = 0; index < targets.length; index += 1) {
       const scientificName = targets[index];
+      const targetKey = normalizedScientificName(scientificName);
+      const relevanceReasons = [
+        "searched-taxon",
+        ...(projectNames.has(targetKey) ? ["project-species"] : []),
+        ...(correctionNames.has(targetKey) ? ["manual-correction"] : []),
+      ];
       onProgress({
         current: index,
         total: targets.length,
@@ -911,7 +1261,7 @@ export class TaxonomySupplementService {
         kingdoms: null,
         store,
         force: true,
-        relevanceReasons: ["project-species"],
+        relevanceReasons,
         markMissing: true,
       }).catch((error) => ({
         refreshed: false,

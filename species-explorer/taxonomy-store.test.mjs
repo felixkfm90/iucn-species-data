@@ -205,3 +205,42 @@ test("Ergebnislimit ist auf zwölf Vorschläge begrenzt", () => {
   assert.equal(result.limit, 12);
   assert.ok(result.results.length <= 12);
 });
+
+test("unbekannte Artnamen lösen keinen unindexierten Vollscan aus", () => {
+  const originalContainsRows = store.containsRows;
+  store.containsRows = () => {
+    throw new Error("Unindexierter Teilwortscan darf nicht aufgerufen werden.");
+  };
+  try {
+    const startedAt = Date.now();
+    const result = store.search({
+      query: "Gabelracke",
+      kind: "vernacular",
+      language: "de",
+      kingdom: "Animalia",
+      rank: "species",
+    });
+    assert.deepEqual(result.results, []);
+    assert.ok(Date.now() - startedAt < 1_000);
+  } finally {
+    store.containsRows = originalContainsRows;
+  }
+});
+
+test("wissenschaftliche Ergänzungsnamen werden über den Taxonindex zugeordnet", () => {
+  const plan = store.database.prepare(`
+    EXPLAIN QUERY PLAN
+    SELECT taxon.*
+    FROM taxon
+    WHERE taxon.scientific_name = ? COLLATE NOCASE
+      AND (? = '' OR LOWER(taxon.rank) = ?)
+    LIMIT 1
+  `).all("Panthera leo", "species", "species");
+  assert.ok(plan.some((entry) => String(entry.detail).includes("taxon_scientific_idx")));
+
+  const result = store.findTaxonByScientificName("Panthera leo", {
+    rank: "species",
+  });
+  assert.equal(result.acceptedScientificName, "Panthera leo");
+  assert.equal(result.matchType, "accepted_scientific");
+});

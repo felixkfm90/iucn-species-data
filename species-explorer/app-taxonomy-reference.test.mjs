@@ -111,7 +111,7 @@ test("Reichsfilter durchsucht deutsche und wissenschaftliche Bezeichnungen", () 
   );
 });
 
-test("alle Namensfelder verwenden dieselbe Suchverzögerung von 300 Millisekunden", () => {
+test("alle Namensfelder verwenden dieselbe Suchverzögerung von 500 Millisekunden", () => {
   const callbacks = [];
   const cleared = [];
   const calls = [];
@@ -131,8 +131,8 @@ test("alle Namensfelder verwenden dieselbe Suchverzögerung von 300 Millisekunde
 
   scheduler.schedule("deutsch", "vernacular", "de");
   scheduler.schedule("english", "vernacular", "en");
-  assert.equal(scheduler.delayMs, 300);
-  assert.deepEqual(callbacks.map(({ delay }) => delay), [300, 300]);
+  assert.equal(scheduler.delayMs, 500);
+  assert.deepEqual(callbacks.map(({ delay }) => delay), [500, 500]);
   assert.deepEqual(cleared, [1]);
   callbacks[1].callback();
   assert.deepEqual(calls, [["english", "vernacular", "en"]]);
