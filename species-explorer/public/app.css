@@ -468,6 +468,30 @@ button.danger,
   gap: 6px;
 }
 
+.taxonomy-database-overview {
+  padding: 8px 9px;
+  display: grid;
+  gap: 2px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.taxonomy-database-overview strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.taxonomy-database-overview span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.taxonomy-controller-output[hidden] {
+  display: none !important;
+}
+
 .taxonomy-maintenance-copy {
   display: grid;
   gap: 2px;
@@ -487,7 +511,39 @@ button.danger,
 }
 
 .taxonomy-maintenance-conflicts {
+  display: grid;
+  gap: 6px;
+  white-space: normal;
+}
+
+.taxonomy-project-conflict-summary {
   white-space: pre-line;
+}
+
+.taxonomy-project-conflict {
+  padding: 7px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--amber);
+  border-radius: 4px;
+}
+
+.taxonomy-project-conflict-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.taxonomy-project-conflict-copy strong {
+  color: var(--text);
+  font-size: 0.74rem;
+}
+
+.taxonomy-project-conflict button {
+  min-height: 32px;
+  white-space: nowrap;
 }
 
 .taxonomy-maintenance-progress {
@@ -557,6 +613,23 @@ button.danger,
   border: 0;
   border-top: 1px solid var(--line);
   border-radius: 0;
+}
+
+.taxonomy-database-primary-copy {
+  padding-bottom: 4px;
+}
+
+.taxonomy-database-version-copy {
+  padding-top: 5px;
+  border-top: 1px solid var(--line);
+}
+
+.taxonomy-database-version-copy strong {
+  font-size: 0.72rem;
+}
+
+.taxonomy-database-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .taxonomy-master-copy {
@@ -650,8 +723,186 @@ button.danger,
 
 @media (max-width: 720px) {
   .taxonomy-master-diff,
-  .taxonomy-master-conflict-actions {
+  .taxonomy-master-conflict-actions,
+  .taxonomy-project-conflict,
+  .taxonomy-database-actions {
     grid-template-columns: 1fr;
+  }
+
+  .taxonomy-project-conflict button {
+    white-space: normal;
+  }
+}
+
+.taxonomy-database-dialog {
+  width: min(940px, calc(100vw - 24px));
+}
+
+.taxonomy-database-form {
+  display: grid;
+  gap: 12px;
+}
+
+.taxonomy-database-search-label {
+  display: grid;
+  gap: 5px;
+}
+
+.taxonomy-database-search-label span,
+.taxonomy-database-correction-fields span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.taxonomy-database-results {
+  max-height: 260px;
+  overflow: auto;
+  display: grid;
+  gap: 5px;
+}
+
+.taxonomy-database-results[hidden],
+.taxonomy-database-detail[hidden] {
+  display: none !important;
+}
+
+.taxonomy-database-results button {
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-align: left;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.taxonomy-database-results button:hover,
+.taxonomy-database-results button:focus-visible {
+  border-color: var(--green);
+}
+
+.taxonomy-database-results button span {
+  display: grid;
+  gap: 1px;
+}
+
+.taxonomy-database-results button em,
+.taxonomy-database-results button small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.taxonomy-database-detail {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.taxonomy-database-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taxonomy-database-detail-header div {
+  display: grid;
+  gap: 2px;
+}
+
+.taxonomy-database-detail-header em,
+.taxonomy-database-detail-header span,
+.taxonomy-database-source,
+.taxonomy-database-readonly-note,
+.taxonomy-database-correction p {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.taxonomy-database-hierarchy {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.taxonomy-database-hierarchy div {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.taxonomy-database-hierarchy dt {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.taxonomy-database-hierarchy dd {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+}
+
+.taxonomy-database-source,
+.taxonomy-database-readonly-note,
+.taxonomy-database-correction p {
+  margin: 0;
+}
+
+.taxonomy-database-correction {
+  padding-top: 8px;
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.taxonomy-database-correction h4 {
+  margin: 0;
+}
+
+.taxonomy-database-correction-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.taxonomy-database-correction-fields label {
+  display: grid;
+  gap: 4px;
+}
+
+.taxonomy-database-correction-fields label:last-child {
+  grid-column: 1 / -1;
+}
+
+.taxonomy-database-correction-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .taxonomy-database-results button,
+  .taxonomy-database-hierarchy,
+  .taxonomy-database-correction-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .taxonomy-database-correction-fields label:last-child {
+    grid-column: auto;
+  }
+
+  .taxonomy-database-detail-header,
+  .taxonomy-database-correction-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

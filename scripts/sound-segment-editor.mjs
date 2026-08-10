@@ -11,6 +11,13 @@ function roundedSeconds(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function parseSegmentSeconds(value) {
+  if (typeof value === "string") {
+    return Number(value.trim().replace(",", "."));
+  }
+  return Number(value);
+}
+
 export function normalizeSoundSegments(rawSegments, durationSeconds) {
   const duration = Number(durationSeconds);
   if (!Number.isFinite(duration) || duration <= 0) {
@@ -24,8 +31,8 @@ export function normalizeSoundSegments(rawSegments, durationSeconds) {
   }
 
   const segments = rawSegments.map((entry, index) => {
-    const start = Number(entry?.start);
-    const end = Number(entry?.end);
+    const start = parseSegmentSeconds(entry?.start);
+    const end = parseSegmentSeconds(entry?.end);
     const label = `Abschnitt ${index + 1}`;
     if (!Number.isFinite(start) || !Number.isFinite(end)) {
       throw new Error(`${label}: Start und Ende müssen Zahlen sein`);

@@ -34,6 +34,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appPipelineWorkflowSource,
     appTaxonomyMaintenanceSource,
     appTaxonomyMasterSource,
+    appTaxonomyDatabaseSource,
     appDashboardSource,
     appLifecycleSource,
     appSpeciesActionsSource,
@@ -106,6 +107,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-pipeline-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-taxonomy-maintenance.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-taxonomy-master.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-taxonomy-database.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-lifecycle.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-species-actions.js", import.meta.url), "utf8"),
@@ -171,6 +173,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appPipelineWorkflowSource,
     appTaxonomyMaintenanceSource,
     appTaxonomyMasterSource,
+    appTaxonomyDatabaseSource,
     appAssetReviewWorkflowSource,
     appDashboardSource,
   ].join("\n");
@@ -203,6 +206,15 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appTaxonomyReferenceSource, /wurden übernommen\. Bitte alle Angaben anschließend prüfen/);
   assert.match(appTaxonomyReferenceSource, /Manuell bei Animalia\.bio suchen/);
   assert.match(appTaxonomyMasterSource, /function createTaxonomyMasterController\(/);
+  assert.match(appTaxonomyDatabaseSource, /function createTaxonomyDatabaseController\(/);
+  assert.match(htmlSource, /id="taxonomy-database-dialog"/);
+  assert.match(htmlSource, /id="taxonomy-database-overview-summary"/);
+  assert.match(appTaxonomyDatabaseSource, /function renderOverview\(\)/);
+  assert.match(appTaxonomyMaintenanceSource, /accept-external-reference-gap/);
+  assert.match(appEditorSoundSource, /const preferredPositionAudio = \(\) =>/);
+  assert.match(appEditorSoundSource, /liveSoundCurrentAudio/);
+  assert.match(appEditorSoundSource, /\.sound-segment-start/);
+  assert.match(appEditorSoundSource, /Number\(normalizedValue\) === 0/);
   assert.match(appTaxonomyMasterSource, /Dauerhaft manuell sch\u00fctzen/);
   assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);

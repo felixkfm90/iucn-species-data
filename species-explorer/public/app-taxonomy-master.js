@@ -161,6 +161,7 @@
 
     function render(status = {}) {
       state.taxonomyMasterSnapshot = status;
+      state.renderTaxonomyDatabaseOverview?.();
       const lifecycle = status.lifecycle || {};
       const active = status.active === true || ACTIVE_STATES.has(status.status);
       elements.taxonomyMasterSummary.textContent = masterSummary(status);
@@ -188,6 +189,8 @@
       } catch (error) {
         elements.taxonomyMasterSummary.textContent = "Masterstatus nicht verfügbar";
         elements.taxonomyMasterDetail.textContent = error.message;
+        state.taxonomyMasterSnapshot = { status: "failed", error: error.message };
+        state.renderTaxonomyDatabaseOverview?.();
       }
     }
 

@@ -44,6 +44,7 @@ function classifySpecies({
   accepted,
   synonyms,
   mappedTarget,
+  externalMapping,
   descendants = [],
 }) {
   const currentScientificName = scientificName(entry);
@@ -51,6 +52,15 @@ function classifySpecies({
     germanName: String(entry?.german ?? "").trim(),
     scientificName: currentScientificName,
   };
+  if (accepted.length === 1) {
+    return {
+      ...base,
+      classification: "exact-accepted",
+      severity: "ok",
+      message: "Wissenschaftlicher Name ist im neuen Release eindeutig akzeptiert.",
+      candidate: candidatePayload(accepted[0]),
+    };
+  }
   if (mappedTarget) {
     return {
       ...base,
@@ -60,13 +70,23 @@ function classifySpecies({
       candidate: candidatePayload(mappedTarget),
     };
   }
-  if (accepted.length === 1) {
+  if (externalMapping) {
     return {
       ...base,
-      classification: "exact-accepted",
+      classification: "externally-confirmed-reference-gap",
       severity: "ok",
-      message: "Wissenschaftlicher Name ist im neuen Release eindeutig akzeptiert.",
-      candidate: candidatePayload(accepted[0]),
+      message: "CoL-Referenzlücke wurde bewusst durch die aktive Masterdatenbank bestätigt.",
+      candidate: {
+        taxonId: String(externalMapping.masterTaxonId || ""),
+        scientificName: String(externalMapping.scientificName || currentScientificName),
+        rank: String(externalMapping.rank || "species"),
+        sourceProviders: Array.isArray(externalMapping.sourceProviders)
+          ? externalMapping.sourceProviders
+          : [],
+        statuses: Array.isArray(externalMapping.statuses)
+          ? externalMapping.statuses
+          : [],
+      },
     };
   }
   if (accepted.length > 1) {
@@ -188,10 +208,15 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
     const results = species.map((entry) => {
       const currentName = scientificName(entry);
       const mapping = mappings[normalizeTaxonomySearchTerm(currentName)] ?? null;
-      const mappedTarget = mapping?.sourceId
+      const accepted = acceptedStatement.all(currentName);
+      const mappedTarget = accepted.length === 0 && mapping?.sourceId
         ? mappedStatement.get(String(mapping.sourceId))
         : null;
-      const accepted = mappedTarget ? [] : acceptedStatement.all(currentName);
+      const externalMapping = accepted.length === 0
+        && mapping?.sourceType === "master"
+        && mapping?.masterTaxonId
+        ? mapping
+        : null;
       const synonyms = mappedTarget || accepted.length
         ? []
         : synonymStatement.all(normalizeTaxonomySearchTerm(currentName));
@@ -201,7 +226,8 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
         accepted,
         synonyms,
         mappedTarget,
-        descendants: mappedTarget || accepted.length || synonyms.length
+        externalMapping,
+        descendants: mappedTarget || externalMapping || accepted.length || synonyms.length
           ? []
           : descendantStatement.all(
             descendantPrefix,
@@ -212,7 +238,9 @@ export async function compareProjectSpeciesWithTaxonomyRelease({
     const summary = {
       total: results.length,
       exact: results.filter((entry) => (
-        entry.classification === "exact-accepted" || entry.classification === "mapped"
+        entry.classification === "exact-accepted"
+        || entry.classification === "mapped"
+        || entry.classification === "externally-confirmed-reference-gap"
       )).length,
       suggestions: results.filter(
         (entry) => entry.classification === "accepted-name-change",

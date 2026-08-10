@@ -506,11 +506,25 @@
               <span>Aktualität, Umfang und Konflikte verwalten</span>
             </summary>
             <div class="taxonomy-maintenance-panel">
-              <div class="taxonomy-maintenance-copy">
-                <strong id="taxonomy-maintenance-summary">Versionsstand wird geprüft…</strong>
-                <span id="taxonomy-maintenance-detail">
-                  Beim Start werden nur Release-Metadaten abgerufen.
+              <div class="taxonomy-database-overview" aria-live="polite">
+                <strong id="taxonomy-database-overview-summary">Datenbankstatus wird geprüft…</strong>
+                <span id="taxonomy-database-overview-detail">
+                  Umfang, Aktualität und Konflikte werden zusammengeführt.
                 </span>
+              </div>
+              <div class="taxonomy-controller-output" hidden>
+                <div class="taxonomy-master-copy taxonomy-database-primary-copy">
+                <strong id="taxonomy-master-summary">Datenbankumfang wird geprüft…</strong>
+                <span id="taxonomy-master-detail">
+                  Aktualisierungen werden vor der Übernahme auf Konflikte geprüft.
+                </span>
+                </div>
+                <div class="taxonomy-maintenance-copy taxonomy-database-version-copy">
+                  <strong id="taxonomy-maintenance-summary">Versionsstand wird geprüft…</strong>
+                  <span id="taxonomy-maintenance-detail">
+                    Beim Start werden nur Release-Metadaten abgerufen.
+                  </span>
+                </div>
               </div>
               <progress
                 id="taxonomy-maintenance-progress"
@@ -519,42 +533,35 @@
                 value="0"
                 hidden
               ></progress>
-              <p id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></p>
-              <div class="taxonomy-maintenance-actions">
+              <progress
+                id="taxonomy-master-progress"
+                class="taxonomy-maintenance-progress"
+                max="100"
+                value="0"
+                hidden
+              ></progress>
+              <div id="taxonomy-master-diff" class="taxonomy-master-diff" hidden></div>
+              <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
+              <div id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></div>
+              <div class="taxonomy-maintenance-actions taxonomy-database-actions">
                 <button type="button" data-taxonomy-action="check">Auf neue Version prüfen</button>
                 <button type="button" data-taxonomy-action="update" disabled>Datenbank aktualisieren</button>
-                <button type="button" data-taxonomy-action="rollback" disabled>
+                <button type="button" data-taxonomy-master-action="build">
+                  Aktualisierung prüfen
+                </button>
+                <button type="button" data-taxonomy-master-action="activate" disabled>
+                  Geprüfte Aktualisierung übernehmen
+                </button>
+                <button type="button" data-taxonomy-master-action="rollback" disabled>
+                  Vorherigen Stand wiederherstellen
+                </button>
+                <button type="button" data-taxonomy-database-action="open">
+                  Datenbank ansehen und korrigieren
+                </button>
+                <button type="button" data-taxonomy-action="rollback" hidden disabled>
                   Vorherigen Grunddatenstand wiederherstellen
                 </button>
               </div>
-              <section class="taxonomy-master-maintenance" aria-label="Prüfung und Übernahme der Aktualisierung">
-                <div class="taxonomy-master-copy">
-                  <strong id="taxonomy-master-summary">Datenbankumfang wird geprüft…</strong>
-                  <span id="taxonomy-master-detail">
-                    Aktualisierungen werden vor der Übernahme auf Konflikte geprüft.
-                  </span>
-                </div>
-                <progress
-                  id="taxonomy-master-progress"
-                  class="taxonomy-maintenance-progress"
-                  max="100"
-                  value="0"
-                  hidden
-                ></progress>
-                <div id="taxonomy-master-diff" class="taxonomy-master-diff" hidden></div>
-                <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
-                <div class="taxonomy-maintenance-actions taxonomy-master-actions">
-                  <button type="button" data-taxonomy-master-action="build">
-                    Änderungen prüfen
-                  </button>
-                  <button type="button" data-taxonomy-master-action="activate" disabled>
-                    Geprüfte Aktualisierung übernehmen
-                  </button>
-                  <button type="button" data-taxonomy-master-action="rollback" disabled>
-                    Vorherigen Gesamtstand wiederherstellen
-                  </button>
-                </div>
-              </section>
             </div>
           </details>
 
@@ -645,6 +652,41 @@
       </form>
     </dialog>
 
+    <dialog
+      id="taxonomy-database-dialog"
+      class="edit-dialog taxonomy-database-dialog"
+      aria-labelledby="taxonomy-database-dialog-title"
+    >
+      <form class="edit-form taxonomy-database-form" method="dialog">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Taxonomiedatenbank</p>
+            <h3 id="taxonomy-database-dialog-title">Datenbank ansehen und Namen korrigieren</h3>
+            <p>
+              Wissenschaftliche Taxonomie wird nur angezeigt. Deutsche und englische Namen
+              können kontrolliert als eigene Korrektur gepflegt werden.
+            </p>
+          </div>
+          <button class="edit-close taxonomy-database-close" type="button" aria-label="Dialog schließen">×</button>
+        </header>
+        <label class="taxonomy-database-search-label">
+          <span>Taxon suchen</span>
+          <input
+            id="taxonomy-database-search"
+            type="search"
+            autocomplete="off"
+            placeholder="Deutscher, englischer oder wissenschaftlicher Name"
+          >
+        </label>
+        <p id="taxonomy-database-message" class="edit-message" hidden></p>
+        <div id="taxonomy-database-results" class="taxonomy-database-results" hidden></div>
+        <section id="taxonomy-database-detail" class="taxonomy-database-detail" hidden></section>
+        <div class="edit-actions">
+          <button class="taxonomy-database-close" type="button">Fenster schließen</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="asset-review-dialog" class="edit-dialog asset-review-dialog" aria-labelledby="asset-review-title">
       <form id="asset-review-form" class="edit-form">
         <header class="edit-dialog-header">
@@ -711,6 +753,7 @@
     <script src="/app-pipeline-workflow.js" defer></script>
     <script src="/app-taxonomy-maintenance.js" defer></script>
     <script src="/app-taxonomy-master.js" defer></script>
+    <script src="/app-taxonomy-database.js" defer></script>
     <script src="/filter.js" defer></script>
     <script src="/app-dashboard.js" defer></script>
     <script src="/app-lifecycle.js" defer></script>

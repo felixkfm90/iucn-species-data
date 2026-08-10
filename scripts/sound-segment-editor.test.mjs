@@ -42,6 +42,20 @@ test("erzeugt einen FFmpeg-Filter für Einzel- und Mehrfachschnitt", () => {
   );
 });
 
+test("verarbeitet deutsche Dezimalkommas als echte Schnittpositionen", () => {
+  const result = normalizeSoundSegments([
+    { start: "02,35", end: "25,48" },
+  ], 40);
+  assert.deepEqual(result.segments, [
+    { start: 2.35, end: 25.48, duration: 23.13 },
+  ]);
+  assert.equal(result.outputDuration, 23.13);
+  assert.equal(
+    buildSoundSegmentFilter(result.segments),
+    "[0:a]atrim=start=2.35:end=25.48,asetpts=PTS-STARTPTS[a0];[a0]anull[outa]",
+  );
+});
+
 test("ermittelt FFprobe neben einem expliziten FFmpeg-Pfad", () => {
   assert.equal(resolveFfprobePath("ffmpeg"), "ffprobe");
 });

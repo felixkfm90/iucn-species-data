@@ -60,6 +60,8 @@ const explorerTaxonomyMaintenance = window.SpeciesExplorerTaxonomyMaintenance;
 if (!explorerTaxonomyMaintenance) throw new Error("Explorer-Taxonomiewartung konnte nicht geladen werden.");
 const explorerTaxonomyMaster = window.SpeciesExplorerTaxonomyMaster;
 if (!explorerTaxonomyMaster) throw new Error("Explorer-Taxonomie-Mastersteuerung konnte nicht geladen werden.");
+const explorerTaxonomyDatabase = window.SpeciesExplorerTaxonomyDatabase;
+if (!explorerTaxonomyDatabase) throw new Error("Explorer-Taxonomiedatenbankansicht konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
 if (!explorerDashboard) throw new Error("Explorer-Dashboard konnte nicht geladen werden.");
 const explorerLifecycle = window.SpeciesExplorerLifecycle;
@@ -226,6 +228,14 @@ const elements = {
   taxonomyMasterBuildButton: document.querySelector("[data-taxonomy-master-action='build']"),
   taxonomyMasterActivateButton: document.querySelector("[data-taxonomy-master-action='activate']"),
   taxonomyMasterRollbackButton: document.querySelector("[data-taxonomy-master-action='rollback']"),
+  taxonomyDatabaseOverviewSummary: document.querySelector("#taxonomy-database-overview-summary"),
+  taxonomyDatabaseOverviewDetail: document.querySelector("#taxonomy-database-overview-detail"),
+  taxonomyDatabaseOpenButton: document.querySelector("[data-taxonomy-database-action='open']"),
+  taxonomyDatabaseDialog: document.querySelector("#taxonomy-database-dialog"),
+  taxonomyDatabaseSearch: document.querySelector("#taxonomy-database-search"),
+  taxonomyDatabaseMessage: document.querySelector("#taxonomy-database-message"),
+  taxonomyDatabaseResults: document.querySelector("#taxonomy-database-results"),
+  taxonomyDatabaseDetail: document.querySelector("#taxonomy-database-detail"),
   pipelineStatus: document.querySelector("#pipeline-status"),
   pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
   pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
@@ -441,6 +451,7 @@ const { setup: setupTaxonomyMaintenance } =
     elements,
     fetchJson,
     formatBytes,
+    escapeHtml,
     showQuickConfirm,
     renderDatabaseStatus,
   });
@@ -452,6 +463,15 @@ const { setup: setupTaxonomyMaster } =
     escapeHtml,
     showQuickConfirm,
     renderDatabaseStatus,
+  });
+const { setup: setupTaxonomyDatabase } =
+  explorerTaxonomyDatabase.createTaxonomyDatabaseController({
+    state,
+    elements,
+    fetchJson,
+    escapeHtml,
+    createDialogController,
+    taxonomyReference: explorerTaxonomyReference,
   });
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
@@ -551,5 +571,6 @@ setupBackupSettings({
 setupPipelineControl();
 setupTaxonomyMaintenance();
 setupTaxonomyMaster();
+setupTaxonomyDatabase();
 setupNewSpeciesCreator();
 void startLifecycle();

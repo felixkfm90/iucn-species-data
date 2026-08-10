@@ -974,8 +974,14 @@ Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal st
 Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang
 `Taxa · deutsche Namen · englische Namen`. Die sichere interne Kandidaten-, Konflikt-, Aktivierungs- und
 Rollbackarchitektur bleibt bestehen. Konflikte mit vorhandenen Arten werden mit Lösungsvorschlag angezeigt und
-niemals still übernommen. Im Tierstimmeneditor besitzen bisheriger Sound und Schnittvorschau jeweils das passende
-Spektrogramm; MP3 und Spektrogramm werden bereits vor der Übernahme gemeinsam geprüft. Auf einspaltigen
+niemals still übernommen. Eine bestätigte externe Artlücke kann direkt am Konflikthinweis mit der Masterdatenbank
+verknüpft werden; ein späterer exakter CoL-Treffer erhält automatisch wieder Vorrang. Über
+`Datenbank ansehen und korrigieren` lässt sich der aktive Offline-Bestand durchsuchen. Seine wissenschaftliche
+Taxonomie bleibt schreibgeschützt, während deutsche und englische Namen kontrolliert als eigene, updatefeste
+Korrektur gespeichert oder zurückgesetzt werden können. Im Tierstimmeneditor besitzen bisheriger Sound und
+Schnittvorschau jeweils das passende Spektrogramm; MP3 und Spektrogramm werden bereits vor der Übernahme gemeinsam
+geprüft. Start- und Endzeiten akzeptieren Punkt oder deutsches Dezimalkomma; ein unveränderter Startwert `0` wird
+beim Fokussieren geleert. Auf einspaltigen
 Squarespace-Artseiten gilt die Reihenfolge Portrait, Infos, Status, Taxonomie und Sound. Die zentralen deutschen
 Taxonomieanzeigen wurden für die aktuell verwendeten Reiche, Stämme, Klassen, Ordnungen, Familien und Gattungen
 ergänzt; der Tooltip enthält nur den unveränderten wissenschaftlichen Rohwert.

@@ -611,6 +611,9 @@ export async function createExplorerServer({
         if (action === "preview") return taxonomyMaintenanceService.previewUpdate();
         if (action === "start") return taxonomyMaintenanceService.startUpdate(payload);
         if (action === "rollback") return taxonomyMaintenanceService.rollback();
+        if (action === "decide-project-conflict") {
+          return taxonomyMaintenanceService.decideProjectConflict(payload);
+        }
         const error = new Error("Unbekannte Taxonomie-Wartungsoperation");
         error.statusCode = 404;
         throw error;

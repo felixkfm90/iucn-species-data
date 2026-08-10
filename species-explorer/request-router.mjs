@@ -35,6 +35,7 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/update/preview", { name: "taxonomy-maintenance", action: "preview" }],
   ["/api/taxonomy/update/start", { name: "taxonomy-maintenance", action: "start" }],
   ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
+  ["/api/taxonomy/project-conflicts/decide", { name: "taxonomy-maintenance", action: "decide-project-conflict" }],
   ["/api/taxonomy/corrections/save", { name: "taxonomy-correction", action: "save" }],
   ["/api/taxonomy/corrections/reset", { name: "taxonomy-correction", action: "reset" }],
   ["/api/taxonomy/master/build", { name: "taxonomy-master", action: "build" }],

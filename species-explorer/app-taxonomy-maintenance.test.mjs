@@ -20,6 +20,7 @@ function element() {
   return {
     disabled: false,
     hidden: false,
+    innerHTML: "",
     textContent: "",
     value: 0,
     addEventListener() {},
@@ -262,6 +263,39 @@ test("CoL-Lücken auf Artstufe werden nicht als unbekannte Projektart bezeichnet
   );
   assert.match(message, /\.\nManuell zu prüfen:/);
   assert.doesNotMatch(message, /Eurasisches Eichhörnchen: nicht gefunden/);
+});
+
+test("entscheidbare Referenzlücken werden mit Lösungsvorschlag angezeigt", async () => {
+  const visible = elements();
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => ({
+      ...availableUpdateStatus({ installed: true }),
+      conflicts: {
+        total: 52,
+        exact: 51,
+        suggestions: 0,
+        referenceGaps: 1,
+        ambiguous: 0,
+        missing: 0,
+      },
+      conflictDetails: [{
+        germanName: "Eurasisches Eichhörnchen",
+        scientificName: "Sciurus vulgaris",
+        classification: "reference-gap",
+      }],
+    }),
+    formatBytes: (value) => String(value),
+    escapeHtml: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  await controller.refresh();
+  assert.equal(visible.taxonomyMaintenanceConflicts.hidden, false);
+  assert.match(visible.taxonomyMaintenanceConflicts.innerHTML, /Eurasisches Eichhörnchen/);
+  assert.match(visible.taxonomyMaintenanceConflicts.innerHTML, /Mit Masterdatenbank bestätigen/);
 });
 
 test("bereits vor dem Öffnen abgeschlossene Läufe erzeugen kein nachträgliches Popup", async () => {

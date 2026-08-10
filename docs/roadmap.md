@@ -1005,8 +1005,13 @@ Als nächster großer Schritt folgt Phase 10 mit der getrennten Lightroom-Machba
 
 Vor Phase 10 wurde am 10. August 2026 ein Stabilisierungspaket abgeschlossen: Die zwei technisch getrennten
 Taxonomiespeicher erscheinen als eine anwenderseitige `Taxonomiedatenbank` mit dynamischen Taxa-/Namenszählern,
-Konflikten, Lösungsvorschlägen und bestätigungspflichtiger Übernahme. Der Tierstimmeneditor erzeugt das
-Spektrogramm bereits für die Schnittvorschau und zeigt bisherigen sowie bearbeiteten Sound konsistent an. Das
+Konflikten, Lösungsvorschlägen und bestätigungspflichtiger Übernahme. Der aktive Bestand kann in der App durchsucht
+werden; eigene deutsche und englische Namenskorrekturen bleiben von späteren Quellenupdates geschützt. Die reale
+CoL-Referenzlücke `Sciurus vulgaris` kann bewusst mit dem extern bestätigten Mastertaxon verknüpft werden, ohne
+Projektname, Slug oder Assets zu verändern. Der Tierstimmeneditor erzeugt das
+Spektrogramm bereits für die Schnittvorschau und zeigt bisherigen sowie bearbeiteten Sound konsistent an. Punkt und
+deutsches Dezimalkomma werden als Schnittpositionen unterstützt; die Positionsübernahme nutzt den Sound im
+Bearbeitungsdialog statt eines eventuell noch vorhandenen Hintergrundplayers. Das
 einspaltige Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Sound; ein tatsächlich leerer mobiler
 Squarespace-Codeblock zwischen Sound und Folgeinhalt wird gezielt entfernt. Deutsche Taxonomieanzeigen der aktuell
 verwendeten Ränge wurden vervollständigt, während Tooltips ausschließlich den wissenschaftlichen Rohwert nennen.

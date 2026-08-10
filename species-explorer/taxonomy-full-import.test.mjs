@@ -234,6 +234,56 @@ test("vorhandene Unterarten kennzeichnen eine CoL-Lücke auf Artstufe", () => {
   assert.match(result.message, /Art fehlt im CoL-Release/);
 });
 
+test("bewusst bestätigte Masterarten schließen eine CoL-Referenzlücke", () => {
+  const result = taxonomyProjectConflictInternals.classifySpecies({
+    entry: {
+      german: "Eurasisches Eichhörnchen",
+      genus: "Sciurus",
+      species: "vulgaris",
+    },
+    accepted: [],
+    synonyms: [],
+    mappedTarget: null,
+    externalMapping: {
+      masterTaxonId: "mtx-sciurus-vulgaris",
+      scientificName: "Sciurus vulgaris",
+      rank: "species",
+      sourceProviders: ["gbif", "inaturalist", "wikidata"],
+      statuses: ["col-reference-gap", "externally-confirmed"],
+    },
+  });
+  assert.equal(result.classification, "externally-confirmed-reference-gap");
+  assert.equal(result.severity, "ok");
+  assert.equal(result.candidate.taxonId, "mtx-sciurus-vulgaris");
+});
+
+test("ein späterer exakter CoL-Treffer ersetzt die frühere Master-Lückenbestätigung", () => {
+  const result = taxonomyProjectConflictInternals.classifySpecies({
+    entry: {
+      german: "Eurasisches Eichhörnchen",
+      genus: "Sciurus",
+      species: "vulgaris",
+    },
+    accepted: [{
+      taxon_id: 9,
+      source_id: "COL:future-species",
+      scientific_name: "Sciurus vulgaris",
+      rank: "species",
+      status: "accepted",
+      kingdom: "Animalia",
+    }],
+    synonyms: [],
+    mappedTarget: null,
+    externalMapping: {
+      masterTaxonId: "mtx-sciurus-vulgaris",
+      scientificName: "Sciurus vulgaris",
+      rank: "species",
+    },
+  });
+  assert.equal(result.classification, "exact-accepted");
+  assert.equal(result.candidate.sourceId, "COL:future-species");
+});
+
 test("Vernakularnamen sind im ColDP-Paket optional", async (context) => {
   const root = await temporaryRoot(context, "taxonomy-package-optional-");
   const fixtureCopy = path.join(root, "fixture");

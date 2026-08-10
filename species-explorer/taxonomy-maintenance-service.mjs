@@ -23,6 +23,7 @@ import {
   readActiveTaxonomyPointer,
   taxonomyReleaseManifestPath,
 } from "./taxonomy-storage.mjs";
+import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 
 const IMPORT_SCRIPT = fileURLToPath(
   new URL("../scripts/taxonomy-full-import.mjs", import.meta.url),
@@ -142,6 +143,7 @@ export class TaxonomyMaintenanceService {
     downloadArchive = downloadCatalogueArchive,
     extractArchive = extractTaxonomyArchive,
     compareProjectSpecies = compareProjectSpeciesWithTaxonomyRelease,
+    readProjectConflicts = readProjectTaxonomyConflictReport,
     activateRelease = activateTaxonomyRelease,
     rollbackRelease = rollbackTaxonomyRelease,
     listReleases = listTaxonomyReleaseIds,
@@ -165,6 +167,7 @@ export class TaxonomyMaintenanceService {
     this.downloadArchive = downloadArchive;
     this.extractArchive = extractArchive;
     this.compareProjectSpecies = compareProjectSpecies;
+    this.readProjectConflicts = readProjectConflicts;
     this.activateRelease = activateRelease;
     this.rollbackRelease = rollbackRelease;
     this.listReleases = listReleases;
@@ -249,7 +252,7 @@ export class TaxonomyMaintenanceService {
     const pointer = await this.readPointer(this.taxonomyRoot);
     const activeRelease = pointer?.activeRelease || "";
     if (!activeRelease) return null;
-    const report = await readProjectTaxonomyConflictReport({
+    const report = await this.readProjectConflicts({
       taxonomyRoot: this.taxonomyRoot,
       releaseId: activeRelease,
     });
@@ -291,7 +294,7 @@ export class TaxonomyMaintenanceService {
       && supplements?.stale === true
     );
     const conflictReport = activeRelease
-      ? await readProjectTaxonomyConflictReport({
+      ? await this.readProjectConflicts({
         taxonomyRoot: this.taxonomyRoot,
         releaseId: activeRelease,
       })
@@ -332,6 +335,94 @@ export class TaxonomyMaintenanceService {
         ambiguousMatchesAreNeverSelectedAutomatically: true,
       },
     };
+  }
+
+  async decideProjectConflict({ action, scientificName } = {}) {
+    this.assertOpen();
+    this.assertProjectReady();
+    if (this.isActive()) {
+      throw createHttpError("Während einer Taxonomie-Aktualisierung können keine Konflikte entschieden werden.", 409);
+    }
+    if (action !== "accept-external-reference-gap") {
+      throw createHttpError("Unbekannte Konfliktentscheidung.", 400);
+    }
+    const normalizedName = normalizeTaxonomySearchTerm(scientificName);
+    if (!normalizedName) throw createHttpError("Der wissenschaftliche Name fehlt.", 400);
+
+    const pointer = await this.readPointer(this.taxonomyRoot);
+    const activeRelease = pointer?.activeRelease || "";
+    if (!activeRelease) throw createHttpError("Es ist keine Taxonomiedatenbank aktiv.", 409);
+    const report = await this.readProjectConflicts({
+      taxonomyRoot: this.taxonomyRoot,
+      releaseId: activeRelease,
+    });
+    const conflict = report?.results?.find((entry) => (
+      normalizeTaxonomySearchTerm(entry.scientificName) === normalizedName
+      && entry.classification === "reference-gap"
+    ));
+    if (!conflict) {
+      throw createHttpError("Für diese Art liegt keine entscheidbare CoL-Referenzlücke vor.", 409);
+    }
+
+    const search = await this.referenceService.search({
+      query: scientificName,
+      kind: "scientific",
+      kingdomId: "Animalia",
+      rank: "species",
+      limit: 12,
+    });
+    const exact = (search?.results || []).find((entry) => (
+      normalizeTaxonomySearchTerm(entry.acceptedScientificName) === normalizedName
+      && entry.rank === "species"
+    ));
+    const statusIds = (exact?.masterStatuses || []).map((entry) => (
+      typeof entry === "string" ? entry : entry?.id
+    )).filter(Boolean);
+    if (
+      !exact?.masterTaxonId
+      || !statusIds.includes("col-reference-gap")
+      || !statusIds.includes("externally-confirmed")
+    ) {
+      throw createHttpError(
+        "Die aktive Masterdatenbank bestätigt diese Art nicht eindeutig als externe CoL-Referenzlücke.",
+        409,
+      );
+    }
+
+    let document = { schemaVersion: 1, mappings: {} };
+    try {
+      const parsed = JSON.parse(await fs.readFile(this.mappingsPath, "utf8"));
+      if (parsed?.schemaVersion === 1 && parsed.mappings && typeof parsed.mappings === "object") {
+        document = parsed;
+      }
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    document.mappings[normalizedName] = {
+      sourceType: "master",
+      masterTaxonId: exact.masterTaxonId,
+      scientificName: exact.acceptedScientificName,
+      rank: exact.rank,
+      sourceProviders: exact.sourceProviders || [],
+      statuses: statusIds,
+      decision: action,
+      confirmedAt: this.now().toISOString(),
+    };
+    await atomicWriteJson(this.mappingsPath, document);
+    const nextReport = await this.compareProjectSpecies({
+      taxonomyRoot: this.taxonomyRoot,
+      releaseId: activeRelease,
+      speciesListPath: this.speciesListPath,
+      mappingsPath: this.mappingsPath,
+      now: this.now,
+    });
+    this.state = {
+      ...this.state,
+      conflicts: nextReport.summary,
+      conflictDetails: nextReport.results.filter((entry) => entry.severity !== "ok"),
+      message: `${conflict.germanName || conflict.scientificName} wurde durch die Masterdatenbank bestätigt.`,
+    };
+    return this.status();
   }
 
   async projectScientificNames() {

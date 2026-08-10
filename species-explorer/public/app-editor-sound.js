@@ -157,10 +157,10 @@
     };
 
     const preferredPositionAudio = () => {
-      if (liveCurrentSoundAudio && Number.isFinite(liveCurrentSoundAudio.duration) && liveCurrentSoundAudio.duration > 0) {
-        return liveCurrentSoundAudio;
+      if (liveSoundCurrentAudio && Number.isFinite(liveSoundCurrentAudio.duration) && liveSoundCurrentAudio.duration > 0) {
+        return liveSoundCurrentAudio;
       }
-      return liveSoundCurrentAudio;
+      return liveCurrentSoundAudio;
     };
 
     const segmentRows = () => [...(soundSegmentList?.querySelectorAll(".sound-segment-row") || [])];
@@ -181,9 +181,9 @@
       row.className = "sound-segment-row";
       row.innerHTML = `
         <strong></strong>
-        <label><span>Start (Sekunden)</span><input class="sound-segment-start" type="number" min="0" step="0.01"></label>
+        <label><span>Start (Sekunden)</span><input class="sound-segment-start" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <button class="sound-segment-use-start" type="button">Aktuelle Position</button>
-        <label><span>Ende (Sekunden)</span><input class="sound-segment-end" type="number" min="0" step="0.01" placeholder="Soundende"></label>
+        <label><span>Ende (Sekunden)</span><input class="sound-segment-end" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Soundende"></label>
         <button class="sound-segment-use-end" type="button">Aktuelle Position</button>
         <button class="sound-segment-remove danger" type="button">Entfernen</button>
       `;
@@ -194,9 +194,10 @@
     };
 
     const initializeSegmentEnd = async () => {
-      if (!soundSegmentEditor || !liveCurrentSoundAudio) return;
+      const audio = preferredPositionAudio();
+      if (!soundSegmentEditor || !audio) return;
       try {
-        const duration = await waitForAudioMetadata(liveCurrentSoundAudio);
+        const duration = await waitForAudioMetadata(audio);
         const endInput = soundSegmentList?.querySelector(".sound-segment-end");
         if (endInput && !endInput.value) endInput.value = duration.toFixed(2);
       } catch {
@@ -243,12 +244,20 @@
       setSoundMessage("Aktuelle Abspielposition übernommen. Bitte die Schnittvorschau erstellen.", "info");
     });
 
+    soundSegmentList?.addEventListener("focusin", (event) => {
+      const input = event.target.closest(".sound-segment-start");
+      if (!input) return;
+      const normalizedValue = String(input.value || "").trim().replace(",", ".");
+      if (normalizedValue && Number(normalizedValue) === 0) input.value = "";
+    });
+
     soundSegmentPreviewButton?.addEventListener("click", async () => {
       resetSoundPreview();
       setSoundBusy(true);
       setSoundMessage("Schnittvorschau wird erzeugt …", "info");
       try {
-        const duration = await waitForAudioMetadata(liveCurrentSoundAudio);
+        const audio = preferredPositionAudio();
+        const duration = await waitForAudioMetadata(audio);
         const segments = segmentRows().map((row) => ({
           start: row.querySelector(".sound-segment-start").value,
           end: row.querySelector(".sound-segment-end").value || duration,

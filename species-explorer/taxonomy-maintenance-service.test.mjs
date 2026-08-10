@@ -27,6 +27,84 @@ test("Importfehler werden ohne technischen Stacktrace angezeigt", () => {
   );
 });
 
+test("CoL-Referenzlücken können bewusst durch den aktiven Master bestätigt werden", async (context) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-conflict-decision-"));
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const mappingsPath = path.join(root, "species-reference-mappings.json");
+  const conflictReport = {
+    summary: {
+      total: 1,
+      exact: 0,
+      suggestions: 0,
+      referenceGaps: 1,
+      ambiguous: 0,
+      missing: 0,
+    },
+    results: [{
+      germanName: "Eurasisches Eichhörnchen",
+      scientificName: "Sciurus vulgaris",
+      classification: "reference-gap",
+      severity: "warning",
+    }],
+  };
+  const service = createTaxonomyMaintenanceService({
+    taxonomyRoot: path.join(root, "taxonomy"),
+    repoRoot: root,
+    mappingsPath,
+    speciesListPath: path.join(root, "species_list.json"),
+    referenceService: {
+      reset() {},
+      async status() {
+        return { available: true, releaseId: "col-active", boundedPrototype: false };
+      },
+      async search() {
+        return {
+          results: [{
+            masterTaxonId: "mtx-sciurus-vulgaris",
+            acceptedScientificName: "Sciurus vulgaris",
+            rank: "species",
+            sourceProviders: ["gbif", "inaturalist", "wikidata"],
+            masterStatuses: ["col-reference-gap", "externally-confirmed"],
+          }],
+        };
+      },
+    },
+    readPointer: async () => ({ activeRelease: "col-active", previousRelease: null }),
+    listReleases: async () => ["col-active"],
+    readProjectConflicts: async () => conflictReport,
+    compareProjectSpecies: async () => ({
+      summary: {
+        total: 1,
+        exact: 1,
+        suggestions: 0,
+        referenceGaps: 0,
+        ambiguous: 0,
+        missing: 0,
+      },
+      results: [{
+        germanName: "Eurasisches Eichhörnchen",
+        scientificName: "Sciurus vulgaris",
+        classification: "externally-confirmed-reference-gap",
+        severity: "ok",
+      }],
+    }),
+    now: () => new Date("2026-08-10T10:00:00.000Z"),
+  });
+  context.after(() => service.close());
+
+  const status = await service.decideProjectConflict({
+    action: "accept-external-reference-gap",
+    scientificName: "Sciurus vulgaris",
+  });
+  const mappings = JSON.parse(await fs.readFile(mappingsPath, "utf8"));
+  assert.equal(
+    mappings.mappings["sciurus vulgaris"].masterTaxonId,
+    "mtx-sciurus-vulgaris",
+  );
+  assert.equal(status.conflicts.referenceGaps, 0);
+  assert.equal(status.conflictDetails.length, 0);
+});
+
 async function waitForTerminal(service) {
   const deadline = Date.now() + 2_000;
   while (Date.now() < deadline) {

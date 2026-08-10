@@ -667,12 +667,12 @@
                       <strong>Abschnitt 1</strong>
                       <label>
                         <span>Start (Sekunden)</span>
-                        <input class="sound-segment-start" type="number" min="0" step="0.01" value="0">
+                        <input class="sound-segment-start" type="number" min="0" step="0.01" inputmode="decimal" value="0">
                       </label>
                       <button class="sound-segment-use-start" type="button">Aktuelle Position</button>
                       <label>
                         <span>Ende (Sekunden)</span>
-                        <input class="sound-segment-end" type="number" min="0" step="0.01" placeholder="Soundende">
+                        <input class="sound-segment-end" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Soundende">
                       </label>
                       <button class="sound-segment-use-end" type="button">Aktuelle Position</button>
                       <button class="sound-segment-remove danger" type="button" disabled>Entfernen</button>

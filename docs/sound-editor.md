@@ -18,6 +18,12 @@ angegebenen Reihenfolge zu einer neuen MP3 zusammensetzen. Quellen- und Lizenzan
 Die Player stoppen sich gegenseitig, damit beim Vergleich nie beide Sounds gleichzeitig laufen. Vor serverseitigen
 Operationen wird die aktuelle Audiodatei im Browser freigegeben, um Windows-Dateisperren zu vermeiden.
 
+Zeitwerte dürfen mit Punkt oder deutschem Dezimalkomma eingegeben werden. So wird beispielsweise `02,35` als
+2,35 Sekunden und nicht als Start bei null verarbeitet. Der anfängliche Startwert `0` wird beim Fokussieren des
+Felds geleert, solange er noch nicht geändert wurde; bereits eingegebene positive Startwerte bleiben erhalten.
+Für die Schaltflächen `Aktuelle Position` und die Vorschau ist der Player im Bearbeitungsdialog maßgeblich, nicht
+ein eventuell noch im Hintergrund vorhandener Player der Artseite.
+
 Die Schnittvorschau erzeugt seit dem 10. August 2026 bereits im geschützten Vorschauschritt das zur bearbeiteten
 MP3 gehörende Spektrogramm. Bisheriger und neuer Sound werden dadurch jeweils mit dem passenden Spektrogramm und
 einem funktionsfähigen Player angezeigt. Erst wenn MP3 und WebP gemeinsam geprüft sind, wird die Übernahme
@@ -45,5 +51,5 @@ verwendete Abschnitte.
 - `npm.cmd run --silent test:explorer`
 - `npm.cmd run --silent quality:ci`
 
-Die Tests prüfen unter anderem Abschnittsvalidierung, Filteraufbau, mehrere Segmente, Längenlimits, die geschützte
-Vorschau sowie die gemeinsame Übernahme von Sound, Credits und neuem Spektrogramm.
+Die Tests prüfen unter anderem Abschnittsvalidierung, Filteraufbau, deutsche Dezimalkommas, mehrere Segmente,
+Längenlimits, die geschützte Vorschau sowie die gemeinsame Übernahme von Sound, Credits und neuem Spektrogramm.

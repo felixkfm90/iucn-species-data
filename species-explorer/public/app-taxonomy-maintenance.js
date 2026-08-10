@@ -83,6 +83,7 @@
     elements,
     fetchJson,
     formatBytes,
+    escapeHtml,
     showQuickConfirm,
     renderDatabaseStatus,
   } = {}) {
@@ -98,6 +99,48 @@
       if (typeof state.setPipelineMessage === "function") {
         state.setPipelineMessage(message, type);
       }
+    }
+
+    function renderProjectConflicts(status) {
+      const details = Array.isArray(status.conflictDetails) ? status.conflictDetails : [];
+      const summary = conflictText(status.conflicts, []);
+      if (!summary && !details.length) {
+        elements.taxonomyMaintenanceConflicts.hidden = true;
+        elements.taxonomyMaintenanceConflicts.innerHTML = "";
+        return;
+      }
+      const cards = details.map((entry) => {
+        const label = entry.germanName || entry.scientificName || "Unbekannte Art";
+        if (entry.classification === "reference-gap") {
+          return `
+            <article class="taxonomy-project-conflict" data-project-conflict="${escapeHtml(entry.scientificName)}">
+              <div class="taxonomy-project-conflict-copy">
+                <strong>${escapeHtml(label)}</strong>
+                <span>Die Artstufe fehlt in CoL; zugehörige Unterarten sind vorhanden.</span>
+                <span class="taxonomy-master-conflict-recommendation">
+                  Lösungsvorschlag: eindeutige Bestätigung der aktiven Masterdatenbank übernehmen.
+                </span>
+              </div>
+              <button type="button" data-project-conflict-action="accept-external-reference-gap">
+                Mit Masterdatenbank bestätigen
+              </button>
+            </article>
+          `;
+        }
+        return `
+          <article class="taxonomy-project-conflict">
+            <div class="taxonomy-project-conflict-copy">
+              <strong>${escapeHtml(label)}</strong>
+              <span>${escapeHtml(entry.message || "Dieser Eintrag muss geprüft werden.")}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+      elements.taxonomyMaintenanceConflicts.hidden = false;
+      elements.taxonomyMaintenanceConflicts.innerHTML = `
+        <span class="taxonomy-project-conflict-summary">${escapeHtml(summary)}</span>
+        ${cards}
+      `;
     }
 
     function showCompletedUpdate(status) {
@@ -139,6 +182,7 @@
 
     function render(status) {
       state.taxonomyMaintenanceSnapshot = status;
+      state.renderTaxonomyDatabaseOverview?.();
       const active = status.active === true;
       const completedUpdate = status.status === "completed" && status.action === "update";
       const failedUpdate = status.status === "failed" && status.action === "update";
@@ -182,9 +226,7 @@
         }
       }
 
-      const conflicts = conflictText(status.conflicts, status.conflictDetails);
-      elements.taxonomyMaintenanceConflicts.hidden = !conflicts;
-      elements.taxonomyMaintenanceConflicts.textContent = conflicts;
+      renderProjectConflicts(status);
 
       elements.taxonomyCheckButton.disabled = active;
       elements.taxonomyUpdateButton.disabled = active || !status.updateAvailable;
@@ -214,6 +256,8 @@
       } catch (error) {
         elements.taxonomyMaintenanceSummary.textContent = "Taxonomiestatus nicht verfügbar";
         elements.taxonomyMaintenanceDetail.textContent = error.message;
+        state.taxonomyMaintenanceSnapshot = { status: "failed", error: error.message };
+        state.renderTaxonomyDatabaseOverview?.();
       }
     }
 
@@ -368,10 +412,39 @@
       }
     }
 
+    async function decideProjectConflict(event) {
+      const button = event.target.closest("[data-project-conflict-action]");
+      if (!button) return;
+      const card = button.closest("[data-project-conflict]");
+      const scientificName = card?.dataset.projectConflict || "";
+      if (!scientificName) return;
+      button.disabled = true;
+      try {
+        render(await fetchJson("/api/taxonomy/project-conflicts/decide", {
+          method: "POST",
+          body: JSON.stringify({
+            action: button.dataset.projectConflictAction,
+            scientificName,
+          }),
+        }));
+        setActionMessage(
+          `${scientificName} wurde durch die aktive Masterdatenbank bestätigt.`,
+          "success",
+        );
+      } catch (error) {
+        button.disabled = false;
+        setActionMessage(error.message, "error");
+      }
+    }
+
     function setup() {
       elements.taxonomyCheckButton.addEventListener("click", () => void checkForUpdate());
       elements.taxonomyUpdateButton.addEventListener("click", () => void startUpdate());
       elements.taxonomyRollbackButton.addEventListener("click", () => void rollback());
+      elements.taxonomyMaintenanceConflicts.addEventListener(
+        "click",
+        (event) => void decideProjectConflict(event),
+      );
       state.refreshTaxonomyMaintenanceStatus = refresh;
       startupOfferEnabled = true;
       void refresh();

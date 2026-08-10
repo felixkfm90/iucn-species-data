@@ -1086,8 +1086,13 @@ Aktuelle Planung:
   Vor dem Start wurde am 2026-08-10 das verbindliche Stabilisierungspaket abgeschlossen. In der Oberfläche bilden
   CoL-Referenz und Master eine gemeinsame `Taxonomiedatenbank`; intern bleiben Kandidat, Konfliktprüfung,
   Aktivierung und Rollback getrennt. Der Umfang wird als `Taxa · deutsche Namen · englische Namen` direkt aus der
-  Master-SQLite ermittelt. Bestehende Arten werden nie still geändert. Der Soundeditor erzeugt MP3 und
-  Spektrogramm bereits im Vorschauschritt und zeigt beide Vergleichsseiten vollständig an. Das mobile
+  Master-SQLite ermittelt. Bestehende Arten werden nie still geändert. Sichtbare Konflikte können über einen
+  begründeten Lösungsvorschlag ausdrücklich entschieden werden. Die aktive Masterdatenbank ist in einem eigenen
+  Dialog durchsuchbar; wissenschaftliche Taxonomie bleibt read-only, deutsche und englische Namen können als
+  versionierte eigene Korrektur gepflegt werden. Der Soundeditor erzeugt MP3 und Spektrogramm bereits im
+  Vorschauschritt und zeigt beide Vergleichsseiten vollständig an. Dezimalkommas werden als echte Sekundenwerte
+  interpretiert; ein noch unveränderter Startwert `0` wird beim Fokussieren geleert, positive Werte bleiben stehen.
+  Das mobile
   Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Sound. Deutsche Taxonomieanzeigen decken die
   aktuell verwendeten Ränge ab; der Tooltip zeigt ausschließlich den wissenschaftlichen Rohwert.
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
