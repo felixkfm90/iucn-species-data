@@ -1,6 +1,6 @@
 # Soundeditor im Arten-Explorer
 
-Stand: 2026-07-22
+Stand: 2026-08-10
 
 Der Soundeditor schneidet vorhandene Tierstimmen lokal und kann mehrere ausgewählte Zeitabschnitte in der
 angegebenen Reihenfolge zu einer neuen MP3 zusammensetzen. Quellen- und Lizenzangaben bleiben unverändert erhalten.
@@ -17,6 +17,11 @@ angegebenen Reihenfolge zu einer neuen MP3 zusammensetzen. Quellen- und Lizenzan
 
 Die Player stoppen sich gegenseitig, damit beim Vergleich nie beide Sounds gleichzeitig laufen. Vor serverseitigen
 Operationen wird die aktuelle Audiodatei im Browser freigegeben, um Windows-Dateisperren zu vermeiden.
+
+Die Schnittvorschau erzeugt seit dem 10. August 2026 bereits im geschützten Vorschauschritt das zur bearbeiteten
+MP3 gehörende Spektrogramm. Bisheriger und neuer Sound werden dadurch jeweils mit dem passenden Spektrogramm und
+einem funktionsfähigen Player angezeigt. Erst wenn MP3 und WebP gemeinsam geprüft sind, wird die Übernahme
+freigegeben. Ein fehlgeschlagenes Spektrogramm verändert keine Produktivdatei.
 
 ## Technischer Ablauf
 

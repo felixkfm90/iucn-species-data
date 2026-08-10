@@ -117,15 +117,15 @@
       const catalogueChanged = status.updateCatalogue === true;
       setActionMessage(
         catalogueChanged
-          ? "Taxonomiereferenz erfolgreich übernommen."
-          : "Ergänzungsnamen erfolgreich aktualisiert.",
+          ? "Taxonomiedatenbank erfolgreich aktualisiert."
+          : "Namensbestand erfolgreich aktualisiert.",
         "success",
       );
       void showQuickConfirm({
-        eyebrow: "Taxonomiereferenz",
+        eyebrow: "Taxonomiedatenbank",
         title: catalogueChanged
           ? "Neue Datenbank erfolgreich übernommen"
-          : "Ergänzungsnamen erfolgreich aktualisiert",
+          : "Namensbestand erfolgreich aktualisiert",
         message: [
           catalogueChanged ? `${releaseLabel(release)} ist jetzt aktiv.` : "",
           counts ? `Enthalten: ${counts}.` : "",
@@ -145,10 +145,8 @@
       const reference = status.reference || {};
       const latest = status.latest;
       const activeLabel = reference.available
-        ? `${reference.boundedPrototype ? "Testreferenz" : "Aktive Referenz"}: ${
-          releaseLabel(reference.source || { releaseId: reference.releaseId })
-        }`
-        : "Noch keine lokale Taxonomiereferenz installiert.";
+        ? "Datenbank aktuell"
+        : "Noch keine lokale Taxonomiedatenbank installiert.";
       const latestLabel = latest
         ? `Neueste verfügbare Version: ${releaseLabel(latest)}.`
         : status.latestCheckError
@@ -156,15 +154,13 @@
           : "Neueste Version wird im Hintergrund geprüft…";
 
       elements.taxonomyMaintenanceSummary.textContent = active
-        ? status.message
+        ? "Taxonomiedatenbank wird aktualisiert"
         : failedUpdate
           ? "Taxonomie-Aktualisierung fehlgeschlagen"
           : completedUpdate
             ? status.updateCatalogue
-              ? `Taxonomiereferenz erfolgreich übernommen: ${
-                releaseLabel(reference.source || { releaseId: status.releaseId })
-              }`
-              : "Ergänzungsnamen erfolgreich aktualisiert"
+              ? "Taxonomiedatenbank erfolgreich aktualisiert"
+              : "Namensbestand erfolgreich aktualisiert"
             : activeLabel;
       elements.taxonomyMaintenanceDetail.textContent = active
         ? "Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten."
@@ -173,9 +169,6 @@
           : completedUpdate
             ? [
               status.message,
-              referenceCountsText(reference)
-                ? `Enthalten: ${referenceCountsText(reference)}.`
-                : "",
               "Bestehende Projektdaten wurden nicht automatisch verändert.",
             ].filter(Boolean).join(" ")
             : latestLabel;
@@ -198,11 +191,11 @@
       elements.taxonomyRollbackButton.disabled = active || !status.rollbackAvailable;
       elements.taxonomyUpdateButton.textContent = status.catalogueUpdateAvailable
         ? status.latestInstalled
-          ? "Geprüfte CoL-Version aktivieren"
-          : "Referenz aktualisieren"
+          ? "Geprüfte Version übernehmen"
+          : "Datenbank aktualisieren"
         : status.supplementUpdateAvailable
-          ? "Ergänzungsnamen aktualisieren"
-          : "Referenz aktualisieren";
+          ? "Namensbestand aktualisieren"
+          : "Datenbank aktualisieren";
 
       if (active) renderDatabaseStatus("running");
       else renderDatabaseStatus();
@@ -255,12 +248,12 @@
         if (!result.hasWork) return;
         const hasReference = status.reference?.available === true;
         const confirmed = await showQuickConfirm({
-          eyebrow: "Taxonomiereferenz",
+          eyebrow: "Taxonomiedatenbank",
           title: result.updateCatalogue
             ? hasReference
               ? "Taxonomiedatenbank ist veraltet"
               : "Keine Taxonomiedatenbank installiert"
-            : "Ergänzungsnamen sind veraltet",
+            : "Namensbestand ist veraltet",
           message: [
             result.updateCatalogue && hasReference
               ? `${releaseLabel(result.latest)} ist verfügbar.`
@@ -304,15 +297,15 @@
 
     async function checkForUpdate() {
       elements.taxonomyCheckButton.disabled = true;
-      setActionMessage("Taxonomiereferenz wird geprüft…", "info");
+      setActionMessage("Taxonomiedatenbank wird geprüft…", "info");
       try {
         const result = await createPreview();
         setActionMessage(
           result.hasWork
             ? result.updateCatalogue
-              ? `Neue CoL-Referenz verfügbar: ${releaseLabel(result.latest)}.`
-              : "CoL ist aktuell; Ergänzungsnamen können aktualisiert werden."
-            : "Die Taxonomiereferenz einschließlich der Ergänzungsnamen ist aktuell.",
+              ? `Neuere Datenbankversion verfügbar: ${releaseLabel(result.latest)}.`
+              : "Ein neuer Namensbestand ist verfügbar."
+            : "Die Taxonomiedatenbank ist aktuell.",
           result.hasWork ? "info" : "success",
         );
       } catch (error) {
@@ -326,16 +319,16 @@
         const result = preview?.hasWork ? preview : await createPreview();
         if (!result.hasWork) {
           setActionMessage(
-            "Die Taxonomiereferenz einschließlich der Ergänzungsnamen ist bereits aktuell.",
+            "Die Taxonomiedatenbank ist bereits aktuell.",
             "success",
           );
           return;
         }
         const confirmed = await showQuickConfirm({
-          eyebrow: "Taxonomiereferenz",
+          eyebrow: "Taxonomiedatenbank",
           title: result.updateCatalogue
             ? `${releaseLabel(result.latest)} installieren?`
-            : "Ergänzungsnamen aktualisieren?",
+            : "Namensbestand aktualisieren?",
           message: [
             result.warning,
             result.updateCatalogue
@@ -345,7 +338,7 @@
           ].filter(Boolean).join(" "),
           confirmLabel: result.updateCatalogue
             ? "Download und Import starten"
-            : "Ergänzungsnamen aktualisieren",
+            : "Namensbestand aktualisieren",
         });
         if (!confirmed) return;
         await beginUpdate(result);
@@ -357,10 +350,10 @@
 
     async function rollback() {
       const confirmed = await showQuickConfirm({
-        eyebrow: "Taxonomiereferenz",
-        title: "Vorherige Version wiederherstellen?",
-        message: "Nur die lokale Referenz wird zurückgeschaltet. Arten, Namen, Slugs und Assets bleiben unverändert.",
-        confirmLabel: "Vorherige Version wiederherstellen",
+        eyebrow: "Taxonomiedatenbank",
+        title: "Vorherigen Grunddatenstand wiederherstellen?",
+        message: "Der lokale Grunddatenstand wird zurückgeschaltet. Arten, Namen, Slugs und Assets bleiben unverändert.",
+        confirmLabel: "Grunddatenstand wiederherstellen",
       });
       if (!confirmed) return;
       try {
@@ -368,7 +361,7 @@
           method: "POST",
           body: "{}",
         }));
-        setActionMessage("Vorherige Taxonomiereferenz wurde wiederhergestellt.", "success");
+        setActionMessage("Vorheriger Grunddatenstand wurde wiederhergestellt.", "success");
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();

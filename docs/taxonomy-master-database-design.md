@@ -237,3 +237,19 @@ npm.cmd run --silent taxonomy:master:verify -- --json
 Das frühere Audit `docs/audits/2026-08-phase-9-audit.md` bleibt als historische Aufnahme des kleinen
 Masterbestands erhalten. Der erweiterte reale Bestand und der vollständige Phasenabschluss sind im maßgeblichen
 Bericht `docs/audits/2026-08-phase-9-closing-audit.md` dokumentiert.
+
+## Bedienoberfläche vor Phase 10
+
+Die technische Trennung zwischen read-only CoL-Referenz und aktivem Master bleibt für sichere Updates und
+Rollback erhalten. In der Anwenderoberfläche werden beide seit dem 10. August 2026 als eine
+`Taxonomiedatenbank` geführt. Der Normalzustand zeigt nur:
+
+```text
+273.505 Taxa · <Anzahl> deutsche Namen · <Anzahl> englische Namen
+```
+
+Die Namenszähler werden direkt aus der aktiven beziehungsweise geprüften Master-SQLite ermittelt. Eine
+Aktualisierung erzeugt weiterhin zuerst einen Kandidaten. Konflikte mit bereits angelegten Arten zeigen den
+bisherigen und neuen Wert, einen begründeten Lösungsvorschlag und die vier bestehenden Entscheidungen. Ohne
+Bestätigung verändert sich keine Projektart. Zusätzliche Namen aus einer älteren Quelle bleiben erhalten, wenn
+ein neuer Quellenstand sie nicht mehr liefert; entfernte Aussagen werden zunächst als veraltet behandelt.

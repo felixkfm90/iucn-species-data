@@ -70,6 +70,8 @@
       const currentSoundAudio = elements.detailPanel.querySelector(".current-sound-audio");
       const soundCurrentAudio = elements.detailPanel.querySelector(".sound-preview-current");
       const soundNewAudio = elements.detailPanel.querySelector(".sound-preview-new");
+      const soundCurrentSpectrogram = elements.detailPanel.querySelector(".sound-preview-current-spectrogram");
+      const soundNewSpectrogram = elements.detailPanel.querySelector(".sound-preview-new-spectrogram");
       const soundCurrentMeta = elements.detailPanel.querySelector(".sound-current-meta");
       const soundNewMeta = elements.detailPanel.querySelector(".sound-new-meta");
       const soundCreditsPreview = elements.detailPanel.querySelector(".sound-credits-preview");
@@ -149,6 +151,8 @@
         currentSoundAudio,
         soundCurrentAudio,
         soundNewAudio,
+        soundCurrentSpectrogram,
+        soundNewSpectrogram,
         soundMessage,
         soundPreview,
         soundCurrentMeta,

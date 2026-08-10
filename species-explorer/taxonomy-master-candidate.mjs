@@ -484,6 +484,16 @@ function summarizeDatabase(database) {
   `).all().map((row) => [row.status_name, Number(row.count)]));
   return {
     taxa: Number(database.prepare("SELECT COUNT(*) AS count FROM master_taxon").get().count),
+    germanNames: Number(database.prepare(`
+      SELECT COUNT(DISTINCT master_taxon_id) AS count
+      FROM master_field_assertion
+      WHERE selected = 1 AND field_name = 'german-name'
+    `).get().count),
+    englishNames: Number(database.prepare(`
+      SELECT COUNT(DISTINCT master_taxon_id) AS count
+      FROM master_field_assertion
+      WHERE selected = 1 AND field_name = 'english-name'
+    `).get().count),
     projectTaxa: Number(database.prepare("SELECT COUNT(*) AS count FROM project_taxon_link").get().count),
     providerAssertions: Number(database.prepare("SELECT COUNT(*) AS count FROM provider_taxon_assertion").get().count),
     names: Number(database.prepare("SELECT COUNT(*) AS count FROM provider_name_assertion").get().count),

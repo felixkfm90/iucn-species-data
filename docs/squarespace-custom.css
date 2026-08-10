@@ -1,6 +1,6 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-07-29
+  Stand: 2026-08-10
   Soll-Stand inklusive responsiver Taxonomie-Pyramide fuer Phase 8.
 */
 
@@ -569,18 +569,18 @@
   #species-output.species-output--has-portrait {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
+      "portrait"
       "info"
       "status"
-      "taxonomy"
-      "portrait";
+      "taxonomy";
   }
 
   #species-output.species-output--has-portrait.species-output--has-sound {
     grid-template-areas:
+      "portrait"
       "info"
       "status"
       "taxonomy"
-      "portrait"
       "sound";
   }
 
@@ -648,18 +648,18 @@
   #species-output.species-output--has-portrait {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
+      "portrait"
       "info"
       "status"
-      "taxonomy"
-      "portrait";
+      "taxonomy";
   }
 
   #species-output.species-output--has-portrait.species-output--has-sound {
     grid-template-areas:
+      "portrait"
       "info"
       "status"
       "taxonomy"
-      "portrait"
       "sound";
   }
 
@@ -673,6 +673,7 @@
 
   #species-sound .species-sound-frame {
     width: 100%;
+    margin-bottom: 0;
   }
 
   .species-info-row {
@@ -722,6 +723,15 @@
   .species-portrait-image {
     max-width: 420px;
     height: auto;
+  }
+
+  /*
+    Squarespace kann leere Codebloecke als hohe Rasterzellen stehen lassen.
+    Nur wirklich inhaltslose Container werden mobil ausgeblendet; Codebloecke
+    mit einem Element, Script oder sichtbaren Inhalt bleiben unangetastet.
+  */
+  .fe-block:has(> .sqs-block-code .sqs-code-container:not(:has(*))) {
+    display: none !important;
   }
 
 }

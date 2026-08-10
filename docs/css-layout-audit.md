@@ -68,3 +68,11 @@ Mobile bei 390 x 844:
 3. Eine echte Android-Pinch-Geste kann mit dem Browser-Tool nicht vollstaendig simuliert werden; der mobile Smoke-Test
    prueft Button, Overlay, Bildladung und No-Scroll-Zustand.
 4. CSS-Aufraeumen sollte weiterhin nur mit sichtbarem Anlass passieren, nicht als vorsorglicher Umbau.
+
+## Mobile Artseite ab 10. August 2026
+
+Bei einspaltigem Layout ist die verbindliche Reihenfolge `Portrait`, `Infos`, `Status`, `Taxonomie`, `Sound`.
+Der Soundrahmen erzeugt keinen zusätzlichen unteren Außenabstand. Squarespace-Rasterzellen mit einem tatsächlich
+leeren Codeblock werden mobil ausgeblendet; Codeblöcke mit Elementen, Skripten oder sichtbarem Inhalt bleiben
+unangetastet. Damit entfällt der zuvor sichtbare Leerraum zwischen Tierstimme und nachfolgendem Textblock, ohne
+produktive Wildlife-Module pauschal zu verstecken.

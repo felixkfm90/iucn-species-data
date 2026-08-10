@@ -90,12 +90,21 @@
               <strong>Aktueller Sound</strong>
               <span>${escapeHtml(updatedSpecies.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
             </div>
-            <audio
-              class="current-sound-audio"
-              controls
-              preload="metadata"
-              src="${escapeHtml(cacheBustedUrl(updatedSpecies.assets.sound.url, cacheKey))}"
-            ></audio>
+            <div class="current-sound-media">
+              ${updatedSpecies.assets.spectrogram?.exists
+                ? `<img
+                    class="current-sound-spectrogram"
+                    src="${escapeHtml(cacheBustedUrl(updatedSpecies.assets.spectrogram.url, cacheKey))}"
+                    alt="Spektrogramm des aktuellen Sounds"
+                  >`
+                : `<span class="sound-spectrogram-missing">Kein Spektrogramm vorhanden</span>`}
+              <audio
+                class="current-sound-audio"
+                controls
+                preload="metadata"
+                src="${escapeHtml(cacheBustedUrl(updatedSpecies.assets.sound.url, cacheKey))}"
+              ></audio>
+            </div>
           `;
         }
       } else if (currentPreview) {

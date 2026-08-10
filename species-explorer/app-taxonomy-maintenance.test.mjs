@@ -181,11 +181,15 @@ test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenst
   assert.equal(confirmations[0].title, "Neue Datenbank erfolgreich übernommen");
   assert.equal(confirmations[0].cancelLabel, "");
   assert.match(confirmations[0].message, /2\.500\.000 Taxa/);
-  assert.match(visible.taxonomyMaintenanceSummary.textContent, /erfolgreich übernommen/);
-  assert.match(visible.taxonomyMaintenanceDetail.textContent, /7\.800\.000 wissenschaftliche Namen/);
-  assert.match(visible.taxonomyMaintenanceDetail.textContent, /1 nicht zuordenbare Namen übersprungen/);
+  assert.equal(
+    visible.taxonomyMaintenanceSummary.textContent,
+    "Taxonomiedatenbank erfolgreich aktualisiert",
+  );
+  assert.match(visible.taxonomyMaintenanceDetail.textContent, /Bestehende Projektdaten wurden nicht automatisch verändert/);
+  assert.match(confirmations[0].message, /7\.800\.000 wissenschaftliche Namen/);
+  assert.match(confirmations[0].message, /1 nicht zuordenbare Namen übersprungen/);
   assert.deepEqual(messages.at(-1), {
-    message: "Taxonomiereferenz erfolgreich übernommen.",
+    message: "Taxonomiedatenbank erfolgreich aktualisiert.",
     type: "success",
   });
 
@@ -208,7 +212,7 @@ test("laufende Aktualisierung wiederholt den Fortschrittstitel nicht in der Deta
   await controller.refresh();
   assert.equal(
     visible.taxonomyMaintenanceSummary.textContent,
-    "Taxonomiereferenz wird heruntergeladen",
+    "Taxonomiedatenbank wird aktualisiert",
   );
   assert.equal(
     visible.taxonomyMaintenanceDetail.textContent,
@@ -229,7 +233,7 @@ test("installierte und neueste Referenz werden ohne Dopplung getrennt angezeigt"
   });
 
   await controller.refresh();
-  assert.equal(visible.taxonomyMaintenanceSummary.textContent, "Aktive Referenz: COL26.6 XR");
+  assert.equal(visible.taxonomyMaintenanceSummary.textContent, "Datenbank aktuell");
   assert.equal(
     visible.taxonomyMaintenanceDetail.textContent,
     "Neueste verfügbare Version: COL26.7 XR vom 17.07.2026.",
@@ -368,11 +372,11 @@ test("veraltete Ergänzungsnamen werden ohne vorgetäuschtes CoL-Update dargeste
   await controller.refresh();
   assert.equal(
     visible.taxonomyUpdateButton.textContent,
-    "Ergänzungsnamen aktualisieren",
+    "Namensbestand aktualisieren",
   );
   assert.equal(
     visible.taxonomyMaintenanceSummary.textContent,
-    "Aktive Referenz: COL26.7 XR vom 17.07.2026",
+    "Datenbank aktuell",
   );
   assert.equal(
     visible.taxonomyMaintenanceDetail.textContent,

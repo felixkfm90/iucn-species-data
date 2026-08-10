@@ -53,40 +53,51 @@
 
   function masterSummary(status = {}) {
     const lifecycle = status.lifecycle || {};
-    const candidate = lifecycle.candidate;
-    const active = lifecycle.active;
-    if (ACTIVE_STATES.has(status.status)) return status.message || "Master-Abgleich läuft.";
-    if (status.status === "failed") return "Master-Abgleich fehlgeschlagen";
-    if (candidate) {
-      const count = Number(candidate.summary?.taxa || 0);
-      const blocking = listLength(lifecycle.blockingConflicts);
-      return blocking
-        ? `${count.toLocaleString("de-DE")} Taxa im Kandidaten · ${blocking} Entscheidung(en) offen`
-        : `${count.toLocaleString("de-DE")} Taxa im Kandidaten · bereit zur Aktivierung`;
-    }
-    if (active) {
-      const count = Number(active.summary?.taxa || 0);
-      return `Aktiver Master: ${count.toLocaleString("de-DE")} Taxa`;
-    }
-    return "Noch keine Masterdatenbank aktiviert";
+    const snapshot = lifecycle.candidate || lifecycle.active;
+    if (!snapshot) return "Noch keine Taxonomiedatenbank aktiviert";
+    const summary = snapshot.summary || {};
+    return [
+      `${Number(summary.taxa || 0).toLocaleString("de-DE")} Taxa`,
+      `${Number(summary.germanNames || 0).toLocaleString("de-DE")} deutsche Namen`,
+      `${Number(summary.englishNames || 0).toLocaleString("de-DE")} englische Namen`,
+    ].join(" · ");
   }
 
   function masterDetail(status = {}) {
     const lifecycle = status.lifecycle || {};
-    if (status.error) return `${status.message || "Fehler"} ${status.error}`.trim();
+    if (status.error) return `Aktualisierung fehlgeschlagen. ${status.error}`.trim();
+    if (ACTIVE_STATES.has(status.status)) {
+      return status.message || "Aktualisierung wird vorbereitet und geprüft.";
+    }
     if (lifecycle.candidate) {
-      return "Der Kandidat verändert keine Projektart still. Erst die ausdrückliche Aktivierung ersetzt den aktiven Master.";
+      const blocking = listLength(lifecycle.blockingConflicts);
+      return blocking
+        ? `${blocking} Konflikt(e) benötigen eine Entscheidung. Vorhandene Arten werden nicht automatisch geändert.`
+        : "Die geprüfte Aktualisierung ist bereit zur Übernahme. Vorhandene Arten werden nicht automatisch geändert.";
     }
     if (lifecycle.active) {
-      const activated = lifecycle.active.activatedAt
-        ? new Date(lifecycle.active.activatedAt).toLocaleString("de-DE")
-        : "unbekannt";
-      return `Aktiviert: ${activated}. Anbieterstände und Feldherkunft sind lokal versioniert.`;
+      return "Datenbank aktuell. Quellenstände und eigene Korrekturen sind lokal versioniert.";
     }
-    return status.message || "Erstelle zunächst einen prüfbaren Kandidaten aus CoL und den lokalen Anbieter-Ausschnitten.";
+    return status.message || "Erstelle zunächst eine prüfbare Aktualisierung.";
+  }
+
+  function conflictRecommendation(conflict = {}) {
+    const hasCurrent = Boolean(cleanText(conflict.current_value));
+    const hasCandidate = Boolean(cleanText(conflict.candidate_value));
+    if (conflict.conflict_type === "reference-returned" && hasCandidate) {
+      return { decision: "accept-candidate", text: "Neuen bestätigten Wert übernehmen" };
+    }
+    if (conflict.conflict_type === "source-removed") {
+      return { decision: "keep-current", text: "Bisherigen Wert behalten, bis eine neue Bestätigung vorliegt" };
+    }
+    if (!hasCurrent && hasCandidate) {
+      return { decision: "accept-candidate", text: "Fehlenden Wert aus der neuen Quelle ergänzen" };
+    }
+    return { decision: "keep-current", text: "Bisherigen Projektwert behalten und fachlich prüfen" };
   }
 
   function conflictPresentation(conflict = {}) {
+    const recommendation = conflictRecommendation(conflict);
     return {
       id: cleanText(conflict.conflict_id),
       species: cleanText(conflict.canonical_scientific_name) || "Unbekanntes Taxon",
@@ -94,6 +105,7 @@
       type: CONFLICT_LABELS[conflict.conflict_type] || cleanText(conflict.conflict_type),
       currentValue: cleanText(conflict.current_value) || "nicht vorhanden",
       candidateValue: cleanText(conflict.candidate_value) || "nicht vorhanden",
+      recommendation,
       blocking: ["changed-value", "source-removed", "ambiguous-match"].includes(conflict.conflict_type),
     };
   }
@@ -133,11 +145,12 @@
             <strong>${escapeHtml(entry.species)} · ${escapeHtml(entry.field)}</strong>
             <span>${escapeHtml(entry.type)}</span>
             <span>Bisher: ${escapeHtml(entry.currentValue)} · Neu: ${escapeHtml(entry.candidateValue)}</span>
+            <span class="taxonomy-master-conflict-recommendation">Empfehlung: ${escapeHtml(entry.recommendation.text)}</span>
           </div>
           <div class="taxonomy-master-conflict-actions">
             <select aria-label="Entscheidung für ${escapeHtml(entry.species)}">
               ${DECISIONS.map(([value, label]) => (
-                `<option value="${value}">${escapeHtml(label)}</option>`
+                `<option value="${value}"${value === entry.recommendation.decision ? " selected" : ""}>${escapeHtml(label)}</option>`
               )).join("")}
             </select>
             <button type="button" data-master-conflict-save>Entscheidung speichern</button>
@@ -180,10 +193,10 @@
 
     async function build() {
       const confirmed = await showQuickConfirm({
-        eyebrow: "Taxonomie-Masterdatenbank",
-        title: "Neuen Master-Kandidaten erstellen?",
-        message: "CoL, die relevanten Anbieter-Ausschnitte und eigene Korrekturen werden aktualisiert und zu einer prüfbaren Vorschau zusammengeführt. Der aktive Master bleibt unverändert.",
-        confirmLabel: "Kandidaten erstellen",
+        eyebrow: "Taxonomiedatenbank",
+        title: "Datenbankänderungen prüfen?",
+        message: "Neue Quellenstände und eigene Korrekturen werden zu einer prüfbaren Aktualisierung zusammengeführt. Der aktuelle Datenbestand bleibt bis zur Bestätigung aktiv.",
+        confirmLabel: "Prüfung starten",
       });
       if (!confirmed) return;
       try {
@@ -191,7 +204,7 @@
           method: "POST",
           body: JSON.stringify({ refreshProviders: true }),
         }));
-        setActionMessage("Master-Kandidat wird aufgebaut. Der bisherige Master bleibt aktiv.", "info");
+        setActionMessage("Datenbankänderungen werden geprüft. Der aktuelle Stand bleibt aktiv.", "info");
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();
@@ -213,7 +226,7 @@
             decision,
           }),
         }));
-        setActionMessage("Konfliktentscheidung wurde im Master-Kandidaten gespeichert.", "success");
+        setActionMessage("Konfliktentscheidung wurde für die Aktualisierung gespeichert.", "success");
       } catch (error) {
         button.disabled = false;
         setActionMessage(error.message, "error");
@@ -222,10 +235,10 @@
 
     async function activate() {
       const confirmed = await showQuickConfirm({
-        eyebrow: "Taxonomie-Masterdatenbank",
-        title: "Geprüften Master-Kandidaten aktivieren?",
-        message: "Der Kandidat wird atomar aktiviert. Die bisherige Masterversion bleibt für ein Rollback erhalten. Namen, Slugs und Assets vorhandener Projektarten werden nicht automatisch geändert.",
-        confirmLabel: "Master aktivieren",
+        eyebrow: "Taxonomiedatenbank",
+        title: "Geprüfte Aktualisierung übernehmen?",
+        message: "Der geprüfte Stand wird atomar aktiviert. Die bisherige Version bleibt für eine Wiederherstellung erhalten. Namen, Slugs und Assets vorhandener Arten werden nicht automatisch geändert.",
+        confirmLabel: "Aktualisierung übernehmen",
       });
       if (!confirmed) return;
       try {
@@ -233,7 +246,7 @@
           method: "POST",
           body: JSON.stringify({ confirmed: true }),
         }));
-        setActionMessage("Masterdatenbank wurde erfolgreich aktiviert.", "success");
+        setActionMessage("Taxonomiedatenbank wurde erfolgreich aktualisiert.", "success");
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();
@@ -242,10 +255,10 @@
 
     async function rollback() {
       const confirmed = await showQuickConfirm({
-        eyebrow: "Taxonomie-Masterdatenbank",
-        title: "Vorherige Masterversion wiederherstellen?",
-        message: "Die aktive Masterdatenbank wird auf die unmittelbar vorherige geprüfte Version zurückgesetzt. Projektdaten und Assets bleiben unverändert.",
-        confirmLabel: "Vorherigen Master wiederherstellen",
+        eyebrow: "Taxonomiedatenbank",
+        title: "Vorherigen Gesamtstand wiederherstellen?",
+        message: "Die aktive Taxonomiedatenbank wird auf die unmittelbar vorherige geprüfte Version zurückgesetzt. Artdaten und Assets bleiben unverändert.",
+        confirmLabel: "Vorherigen Gesamtstand wiederherstellen",
       });
       if (!confirmed) return;
       try {
@@ -253,7 +266,7 @@
           method: "POST",
           body: JSON.stringify({ confirmed: true }),
         }));
-        setActionMessage("Vorherige Masterversion wurde wiederhergestellt.", "success");
+        setActionMessage("Vorheriger Datenbankstand wurde wiederhergestellt.", "success");
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();
@@ -274,6 +287,7 @@
 
   global.SpeciesExplorerTaxonomyMaster = Object.freeze({
     conflictPresentation,
+    conflictRecommendation,
     masterDiffItems,
     masterSummary,
     createTaxonomyMasterController,

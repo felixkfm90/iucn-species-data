@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-09
+Stand: 2026-08-10
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1017,7 +1017,7 @@ Aktuelle Planung:
   drei Vorschaugrößen visuell freigegeben. Der freigegebene Stand wurde nach `main` übernommen und der erste
   Pages-Lauf war erfolgreich. `species-taxonomy.js` lädt das zugehörige Taxonomie-CSS vor dem Rendern aus demselben
   kontrollierten Pages-Artefakt; dadurch gehen Markup und Gestaltung künftig atomar live. Die dokumentierte
-  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.7`; derselbe Cache-Schluessel wird fuer
+  Footer-Version fuer den neuen Gesamtstand ist `species-taxonomy.js?v=1.0.8`; derselbe Cache-Schluessel wird fuer
   das dynamisch geladene Artseiten-CSS verwendet. Seit 2026-07-29 setzt jede Taxonomiestufe ihr Boxmodell explizit
   auf `border-box`; damit entsprechen die berechneten Außenbreiten auch unter dem Squarespace-Standardboxmodell
   exakt der lokalen Vorschau. Artportraits sind seit 2026-07-18
@@ -1083,6 +1083,13 @@ Aktuelle Planung:
   steht in `docs/taxonomy-master-database-design.md`; das frühere Audit ist eine historische Aufnahme des kleinen
   Bestands. Der maßgebliche Phasenabschluss steht in `docs/audits/2026-08-phase-9-closing-audit.md`.
 - Phase 10 - Lightroom:
+  Vor dem Start wurde am 2026-08-10 das verbindliche Stabilisierungspaket abgeschlossen. In der Oberfläche bilden
+  CoL-Referenz und Master eine gemeinsame `Taxonomiedatenbank`; intern bleiben Kandidat, Konfliktprüfung,
+  Aktivierung und Rollback getrennt. Der Umfang wird als `Taxa · deutsche Namen · englische Namen` direkt aus der
+  Master-SQLite ermittelt. Bestehende Arten werden nie still geändert. Der Soundeditor erzeugt MP3 und
+  Spektrogramm bereits im Vorschauschritt und zeigt beide Vergleichsseiten vollständig an. Das mobile
+  Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Sound. Deutsche Taxonomieanzeigen decken die
+  aktuell verwendeten Ränge ab; der Tooltip zeigt ausschließlich den wissenschaftlichen Rohwert.
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.
 - Phase 11 - Mehrere Computer:

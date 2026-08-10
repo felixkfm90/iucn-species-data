@@ -49,7 +49,7 @@ function readyStatus() {
     active: false,
     lifecycle: {
       candidate: {
-        summary: { taxa: 52 },
+        summary: { taxa: 52, germanNames: 41, englishNames: 49 },
         diff: {
           newTaxa: ["Sciurus vulgaris"],
           closedReferenceGaps: [],
@@ -60,7 +60,7 @@ function readyStatus() {
           removedTaxa: [],
         },
       },
-      active: { summary: { taxa: 51 } },
+      active: { summary: { taxa: 51, germanNames: 40, englishNames: 48 } },
       conflicts: [],
       blockingConflicts: [],
       canActivate: true,
@@ -81,8 +81,11 @@ test("Mastervorschau zeigt Differenzen und gibt nur geprüfte Aktionen frei", ()
   });
 
   controller.render(readyStatus());
-  assert.match(visible.taxonomyMasterSummary.textContent, /52 Taxa/);
-  assert.match(visible.taxonomyMasterSummary.textContent, /bereit zur Aktivierung/);
+  assert.equal(
+    visible.taxonomyMasterSummary.textContent,
+    "52 Taxa · 41 deutsche Namen · 49 englische Namen",
+  );
+  assert.match(visible.taxonomyMasterDetail.textContent, /bereit zur Übernahme/);
   assert.match(visible.taxonomyMasterDiff.innerHTML, /1 Neue Taxa/);
   assert.match(visible.taxonomyMasterDiff.innerHTML, /1 Deutsche\/englische Namen/);
   assert.equal(visible.taxonomyMasterActivateButton.disabled, false);

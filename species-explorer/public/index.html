@@ -502,8 +502,8 @@
 
           <details class="action-group taxonomy-maintenance-group" open>
             <summary>
-              <strong>Taxonomiereferenz</strong>
-              <span>Catalogue of Life prüfen, aktualisieren oder wiederherstellen</span>
+              <strong>Taxonomiedatenbank</strong>
+              <span>Aktualität, Umfang und Konflikte verwalten</span>
             </summary>
             <div class="taxonomy-maintenance-panel">
               <div class="taxonomy-maintenance-copy">
@@ -522,20 +522,16 @@
               <p id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></p>
               <div class="taxonomy-maintenance-actions">
                 <button type="button" data-taxonomy-action="check">Auf neue Version prüfen</button>
-                <button type="button" data-taxonomy-action="update" disabled>Referenz aktualisieren</button>
+                <button type="button" data-taxonomy-action="update" disabled>Datenbank aktualisieren</button>
                 <button type="button" data-taxonomy-action="rollback" disabled>
-                  Vorherige Version wiederherstellen
+                  Vorherigen Grunddatenstand wiederherstellen
                 </button>
               </div>
-              <section class="taxonomy-master-maintenance" aria-labelledby="taxonomy-master-title">
-                <div class="taxonomy-master-heading">
-                  <strong id="taxonomy-master-title">Taxonomie-Masterdatenbank</strong>
-                  <span>CoL, Anbieter-Ausschnitte und eigene Korrekturen kontrolliert zusammenführen</span>
-                </div>
+              <section class="taxonomy-master-maintenance" aria-label="Prüfung und Übernahme der Aktualisierung">
                 <div class="taxonomy-master-copy">
-                  <strong id="taxonomy-master-summary">Masterstatus wird geprüft…</strong>
+                  <strong id="taxonomy-master-summary">Datenbankumfang wird geprüft…</strong>
                   <span id="taxonomy-master-detail">
-                    Änderungen werden zuerst als prüfbarer Kandidat aufgebaut.
+                    Aktualisierungen werden vor der Übernahme auf Konflikte geprüft.
                   </span>
                 </div>
                 <progress
@@ -549,13 +545,13 @@
                 <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
                 <div class="taxonomy-maintenance-actions taxonomy-master-actions">
                   <button type="button" data-taxonomy-master-action="build">
-                    Master-Kandidat erstellen
+                    Änderungen prüfen
                   </button>
                   <button type="button" data-taxonomy-master-action="activate" disabled>
-                    Geprüften Kandidaten aktivieren
+                    Geprüfte Aktualisierung übernehmen
                   </button>
                   <button type="button" data-taxonomy-master-action="rollback" disabled>
-                    Vorherigen Master wiederherstellen
+                    Vorherigen Gesamtstand wiederherstellen
                   </button>
                 </div>
               </section>

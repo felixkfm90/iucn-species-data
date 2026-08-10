@@ -112,6 +112,34 @@ export function createSoundAssetOperations({
     };
   }
 
+  async function createPreviewSpectrogram(token, stagingPath) {
+    const spectrogramStagingPath = join(assetStagingRoot, `${token}.webp`);
+    let renderedSpectrogram;
+    try {
+      renderedSpectrogram = await spectrogramRenderer({
+        inputPath: stagingPath,
+        outputPath: spectrogramStagingPath,
+        ffmpegPath: resolveFfmpegPath({ repoRoot }),
+        options: DEFAULT_SPECTROGRAM_OPTIONS,
+      });
+      const buffer = await readFile(spectrogramStagingPath);
+      inspectWebp(buffer);
+      return {
+        path: spectrogramStagingPath,
+        bytes: buffer.length,
+        sha256: createHash("sha256").update(buffer).digest("hex"),
+        renderedSpectrogram,
+      };
+    } catch (error) {
+      await unlink(spectrogramStagingPath).catch(() => {});
+      const previewError = new Error(
+        `Soundvorschau konnte nicht vollständig erzeugt werden, weil das Spektrogramm fehlt: ${error.message}`,
+      );
+      previewError.statusCode = 500;
+      throw previewError;
+    }
+  }
+
   async function previewSoundAsset(id, payload) {
     cleanupPreviewTokens();
     if (getPipelineProcess() || getPipelineState().status === "running" || getPipelineState().status === "awaiting-review") {
@@ -138,6 +166,13 @@ export function createSoundAssetOperations({
     await mkdir(assetStagingRoot, { recursive: true });
     const stagingPath = join(assetStagingRoot, `${token}.mp3`);
     await writeFile(stagingPath, validated.buffer);
+    let previewSpectrogram;
+    try {
+      previewSpectrogram = await createPreviewSpectrogram(token, stagingPath);
+    } catch (error) {
+      await unlink(stagingPath).catch(() => {});
+      throw error;
+    }
     const source = await soundAssetSourceRevision(species);
     const sha256 = createHash("sha256").update(validated.buffer).digest("hex");
     const creditsText = `${JSON.stringify(validated.credits, null, 2)}\n`;
@@ -152,6 +187,10 @@ export function createSoundAssetOperations({
       creditsText,
       creditsSha256,
       stagingPath,
+      spectrogramStagingPath: previewSpectrogram.path,
+      spectrogramSha256: previewSpectrogram.sha256,
+      spectrogramBytes: previewSpectrogram.bytes,
+      renderedSpectrogram: previewSpectrogram.renderedSpectrogram,
       sha256,
       bytes: validated.buffer.length,
       sourceRevision: source.revision,
@@ -173,6 +212,9 @@ export function createSoundAssetOperations({
           ? `/assets/${encodeURIComponent(species.safeName)}/sound.mp3?current=${token}`
           : "",
         credits: species.credits ?? null,
+        spectrogramUrl: source.spectrogramBuffer.length
+          ? `/assets/${encodeURIComponent(species.safeName)}/spectrogram.webp?current=${token}`
+          : "",
       },
       newSound: {
         bytes: validated.buffer.length,
@@ -180,6 +222,7 @@ export function createSoundAssetOperations({
         url: `/api/species/${encodeURIComponent(id)}/assets/sound/preview-file?token=${encodeURIComponent(token)}`,
         credits: validated.credits,
         isNc: validated.isNc,
+        spectrogramUrl: `/api/species/${encodeURIComponent(id)}/assets/sound/preview-file?token=${encodeURIComponent(token)}&kind=spectrogram`,
       },
       reason: validated.reason,
       warnings: [
@@ -247,6 +290,13 @@ export function createSoundAssetOperations({
     }
 
     const stagedBuffer = await readFile(stagingPath);
+    let previewSpectrogram;
+    try {
+      previewSpectrogram = await createPreviewSpectrogram(token, stagingPath);
+    } catch (error) {
+      await unlink(stagingPath).catch(() => {});
+      throw error;
+    }
     const registry = JSON.parse(source.registryText);
     const soundOverride = registry.assets?.[species.safeName]?.sound ?? {};
     const sha256 = createHash("sha256").update(stagedBuffer).digest("hex");
@@ -269,6 +319,10 @@ export function createSoundAssetOperations({
       creditsText,
       creditsSha256,
       stagingPath,
+      spectrogramStagingPath: previewSpectrogram.path,
+      spectrogramSha256: previewSpectrogram.sha256,
+      spectrogramBytes: previewSpectrogram.bytes,
+      renderedSpectrogram: previewSpectrogram.renderedSpectrogram,
       sha256,
       bytes: stagedBuffer.length,
       sourceRevision: source.revision,
@@ -293,6 +347,9 @@ export function createSoundAssetOperations({
         bytes: source.soundBuffer.length,
         url: `/assets/${encodeURIComponent(species.safeName)}/sound.mp3?current=${token}`,
         credits: species.credits ?? normalizedCredits,
+        spectrogramUrl: source.spectrogramBuffer.length
+          ? `/assets/${encodeURIComponent(species.safeName)}/spectrogram.webp?current=${token}`
+          : "",
       },
       newSound: {
         bytes: stagedBuffer.length,
@@ -300,6 +357,7 @@ export function createSoundAssetOperations({
         url: `/api/species/${encodeURIComponent(id)}/assets/sound/preview-file?token=${encodeURIComponent(token)}`,
         credits: normalizedCredits,
         isNc,
+        spectrogramUrl: `/api/species/${encodeURIComponent(id)}/assets/sound/preview-file?token=${encodeURIComponent(token)}&kind=spectrogram`,
       },
       edit: previewTokens.get(token).edit,
       reason,
@@ -338,6 +396,13 @@ export function createSoundAssetOperations({
       error.statusCode = 409;
       throw error;
     }
+    if (!preview.spectrogramStagingPath || !existsSync(preview.spectrogramStagingPath)) {
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      const error = new Error("Vorgemerktes Spektrogramm fehlt");
+      error.statusCode = 409;
+      throw error;
+    }
     const stagedBuffer = await readFile(preview.stagingPath);
     const stagedHash = createHash("sha256").update(stagedBuffer).digest("hex");
     if (stagedHash !== preview.sha256) {
@@ -346,10 +411,22 @@ export function createSoundAssetOperations({
       error.statusCode = 409;
       throw error;
     }
+    const stagedSpectrogramBuffer = await readFile(preview.spectrogramStagingPath);
+    inspectWebp(stagedSpectrogramBuffer);
+    const spectrogramSha256 = createHash("sha256").update(stagedSpectrogramBuffer).digest("hex");
+    if (spectrogramSha256 !== preview.spectrogramSha256) {
+      previewTokens.delete(token);
+      rmSync(preview.stagingPath, { force: true });
+      rmSync(preview.spectrogramStagingPath, { force: true });
+      const error = new Error("Vorgemerktes Spektrogramm wurde verändert");
+      error.statusCode = 409;
+      throw error;
+    }
     const source = await soundAssetSourceRevision(species);
     if (source.revision !== preview.sourceRevision) {
       previewTokens.delete(token);
       rmSync(preview.stagingPath, { force: true });
+      rmSync(preview.spectrogramStagingPath, { force: true });
       const error = new Error("Sound, Credits oder Pflegeangaben wurden seit der Vorschau geändert");
       error.statusCode = 409;
       throw error;
@@ -367,39 +444,8 @@ export function createSoundAssetOperations({
 
     setAssetWriteActive(true);
     let backupRelativePath = "";
-    const spectrogramStagingPath = join(assetStagingRoot, `${token}.webp`);
+    const spectrogramStagingPath = preview.spectrogramStagingPath;
     try {
-      preview.spectrogramStagingPath = spectrogramStagingPath;
-      let renderedSpectrogram;
-      try {
-        renderedSpectrogram = await spectrogramRenderer({
-          inputPath: preview.stagingPath,
-          outputPath: spectrogramStagingPath,
-          ffmpegPath: resolveFfmpegPath({ repoRoot }),
-          options: DEFAULT_SPECTROGRAM_OPTIONS,
-        });
-      } catch (error) {
-        await unlink(spectrogramStagingPath).catch(() => {});
-        const generationError = new Error(
-          `Sound wurde nicht gespeichert, weil das Spektrogramm nicht erzeugt werden konnte: ${error.message}`,
-        );
-        generationError.statusCode = 500;
-        throw generationError;
-      }
-      let stagedSpectrogramBuffer;
-      try {
-        stagedSpectrogramBuffer = await readFile(spectrogramStagingPath);
-        inspectWebp(stagedSpectrogramBuffer);
-      } catch (error) {
-        await unlink(spectrogramStagingPath).catch(() => {});
-        const validationError = new Error(
-          `Sound wurde nicht gespeichert, weil das erzeugte Spektrogramm ungültig ist: ${error.message}`,
-        );
-        validationError.statusCode = 500;
-        throw validationError;
-      }
-      const spectrogramSha256 = createHash("sha256").update(stagedSpectrogramBuffer).digest("hex");
-
       await mkdir(source.assetDirectory, { recursive: true });
       const registry = JSON.parse(source.registryText);
       if (source.soundBuffer.length || source.creditsBuffer.length || source.spectrogramBuffer.length) {
@@ -523,7 +569,7 @@ export function createSoundAssetOperations({
         gitCommit: publication.commit,
         publicationError,
         spectrogramGenerated: true,
-        spectrogramBytes: renderedSpectrogram.outputBytes ?? stagedSpectrogramBuffer.length,
+        spectrogramBytes: preview.renderedSpectrogram?.outputBytes ?? stagedSpectrogramBuffer.length,
         spectrogramStale: false,
         soundSha256: preview.sha256,
         spectrogramSha256,

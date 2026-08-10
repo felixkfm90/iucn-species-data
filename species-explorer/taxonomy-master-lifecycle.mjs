@@ -125,6 +125,44 @@ function unresolvedBlockingConflicts(database) {
   `).all().map((row) => ({ ...row }));
 }
 
+function readLiveMasterSummary(database) {
+  return {
+    taxa: Number(database.prepare("SELECT COUNT(*) AS count FROM master_taxon").get().count),
+    germanNames: Number(database.prepare(`
+      SELECT COUNT(DISTINCT master_taxon_id) AS count
+      FROM master_field_assertion
+      WHERE selected = 1 AND field_name = 'german-name'
+    `).get().count),
+    englishNames: Number(database.prepare(`
+      SELECT COUNT(DISTINCT master_taxon_id) AS count
+      FROM master_field_assertion
+      WHERE selected = 1 AND field_name = 'english-name'
+    `).get().count),
+  };
+}
+
+async function enrichManifestSummary(taxonomyRoot, slot, manifest) {
+  if (!manifest) return null;
+  const { DatabaseSync } = await loadNodeSqlite();
+  let database;
+  try {
+    database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, slot), {
+      readOnly: true,
+    });
+    return {
+      ...manifest,
+      summary: {
+        ...manifest.summary,
+        ...readLiveMasterSummary(database),
+      },
+    };
+  } catch {
+    return manifest;
+  } finally {
+    database?.close();
+  }
+}
+
 function openConflict(database, conflictId) {
   return database.prepare(`
     SELECT conflict.*, master.canonical_scientific_name, master.rank, master.kingdom,
@@ -172,14 +210,23 @@ async function writeCandidateReviewManifest(taxonomyRoot, database, now) {
 }
 
 export async function inspectTaxonomyMasterLifecycle(taxonomyRoot) {
-  const [candidate, active, previous] = await Promise.all([
+  const [candidate, activeManifest, previousManifest] = await Promise.all([
     inspectTaxonomyMasterCandidate(taxonomyRoot),
     readTaxonomyMasterManifest(taxonomyRoot, "active"),
     readTaxonomyMasterManifest(taxonomyRoot, "previous"),
   ]);
+  const [candidateManifest, active, previous] = await Promise.all([
+    enrichManifestSummary(
+      taxonomyRoot,
+      "staging",
+      candidate.available ? candidate.manifest : null,
+    ),
+    enrichManifestSummary(taxonomyRoot, "active", activeManifest),
+    enrichManifestSummary(taxonomyRoot, "previous", previousManifest),
+  ]);
   const conflicts = candidate.available ? candidate.conflicts : [];
   return {
-    candidate: candidate.available ? candidate.manifest : null,
+    candidate: candidateManifest,
     active,
     previous,
     conflicts,

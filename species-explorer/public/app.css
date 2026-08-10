@@ -549,27 +549,21 @@ button.danger,
 }
 
 .taxonomy-master-maintenance {
-  margin-top: 4px;
-  padding: 9px;
+  margin-top: 1px;
+  padding: 7px 0 0;
   display: grid;
   gap: 7px;
-  background: var(--surface-muted);
-  border: 1px solid var(--line);
-  border-radius: 5px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
-.taxonomy-master-heading,
 .taxonomy-master-copy {
   display: grid;
   gap: 2px;
 }
 
-.taxonomy-master-heading strong {
-  color: var(--green);
-  font-size: 0.8rem;
-}
-
-.taxonomy-master-heading span,
 .taxonomy-master-copy span {
   color: var(--text-muted);
   font-size: 0.7rem;
@@ -635,6 +629,11 @@ button.danger,
 .taxonomy-master-conflict-copy strong {
   color: var(--text);
   font-size: 0.72rem;
+}
+
+.taxonomy-master-conflict-recommendation {
+  color: var(--green);
+  font-weight: 700;
 }
 
 .taxonomy-master-conflict-actions {
@@ -3445,6 +3444,34 @@ button:focus-visible {
   border-radius: 4px;
 }
 
+.current-sound-media {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.current-sound-spectrogram,
+.sound-preview-spectrogram {
+  width: 100%;
+  height: 64px;
+  display: block;
+  object-fit: fill;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.sound-spectrogram-missing {
+  min-height: 50px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 0.7rem;
+}
+
 .current-sound-preview strong {
   display: block;
   font-size: 0.78rem;
@@ -3672,6 +3699,10 @@ button:focus-visible {
 .sound-compare-grid audio {
   width: 100%;
   min-height: 42px;
+}
+
+.sound-compare-grid .sound-preview-spectrogram {
+  margin-bottom: 5px;
 }
 
 .sound-compare-grid figure > p {

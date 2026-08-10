@@ -471,7 +471,7 @@ export async function createExplorerServer({
       portrait: MAX_PORTRAIT_PREVIEW_BODY_BYTES,
     },
     operations: {
-      previewAssetFile({ assetType, id, token }) {
+      previewAssetFile({ assetType, id, token, kind }) {
         cleanupPreviewTokens();
         const expectedType = {
           map: "map-asset",
@@ -479,9 +479,11 @@ export async function createExplorerServer({
           portrait: "portrait-asset",
         }[assetType];
         const preview = previewTokens.get(token);
-        return preview && preview.type === expectedType && preview.id === id
-          ? preview.stagingPath
-          : null;
+        if (!preview || preview.type !== expectedType || preview.id !== id) return null;
+        if (assetType === "sound" && kind === "spectrogram") {
+          return preview.spectrogramStagingPath || null;
+        }
+        return preview.stagingPath;
       },
       async asset({ assetType, id, action, payload }) {
         if (action === "delete-preview" || action === "restore-preview") {

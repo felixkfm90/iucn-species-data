@@ -57,7 +57,8 @@ test("Taxonomie rendert sieben Stufen mit deutschen Anzeigenamen", async () => {
   assert.match(markup, />Drosseln</);
   assert.match(markup, />Echte Drosseln</);
   assert.match(markup, />Merula</);
-  assert.match(markup, /Wissenschaftlicher Wert: Animalia/);
+  assert.match(markup, /title="Animalia"/);
+  assert.doesNotMatch(markup, /Wissenschaftlicher Wert:/);
   assert.equal((markup.match(/class="taxonomy-stage"/g) ?? []).length, 7);
   assert.doesNotMatch(markup, /taxonomy-rank-cell|taxonomy-value-cell/);
 });
@@ -68,6 +69,18 @@ test("Ein echter Unterstamm erzeugt genau eine achte Stufe", async () => {
   assert.match(markup, /data-taxonomy-key="Subphylum"/);
   assert.match(markup, />Unterstamm:</);
   assert.match(markup, />Wirbeltiere</);
+});
+
+test("Deutsche Anzeigenamen und lateinischer Tooltip bleiben getrennt", async () => {
+  const markup = await renderTaxonomy({
+    ...baseTaxonomy,
+    Family: "Scolopacidae",
+    Genus: "Calidris",
+    Species: "alpina",
+  });
+  assert.match(markup, />Gattung:</);
+  assert.match(markup, />Strandläufer</);
+  assert.match(markup, /title="Calidris"/);
 });
 
 test("Leerwerte verschwinden und unbekannte Werte fallen sicher zurück", async () => {

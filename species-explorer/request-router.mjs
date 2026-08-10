@@ -201,6 +201,7 @@ export function createExplorerRequestHandler({
           assetType: route.assetType,
           id,
           token,
+          kind: String(url.searchParams.get("kind") ?? ""),
         });
         if (!stagingPath) {
           sendText(response, 404, ASSET_PREVIEW_MESSAGES[route.assetType]);

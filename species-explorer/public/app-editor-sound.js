@@ -10,6 +10,8 @@
       currentSoundAudio,
       soundCurrentAudio,
       soundNewAudio,
+      soundCurrentSpectrogram,
+      soundNewSpectrogram,
       soundMessage,
       soundPreview,
       soundCurrentMeta,
@@ -39,10 +41,13 @@
     } = dependencies;
     let soundPreviewToken = "";
     let soundBusy = false;
-    const currentSoundSource = currentSoundAudio?.getAttribute("src") || "";
+    let liveCurrentSoundAudio = currentSoundAudio;
+    let liveSoundCurrentAudio = soundCurrentAudio;
+    let liveSoundNewAudio = soundNewAudio;
+    const currentSoundSource = liveCurrentSoundAudio?.getAttribute("src") || "";
 
     const stopSoundPreviewAudio = () => {
-      for (const audio of [currentSoundAudio, soundCurrentAudio, soundNewAudio]) {
+      for (const audio of [liveCurrentSoundAudio, liveSoundCurrentAudio, liveSoundNewAudio]) {
         if (!audio) continue;
         audio.pause();
         audio.currentTime = 0;
@@ -51,12 +56,15 @@
 
     const releaseCurrentSoundAudio = async () => {
       await releaseAllAudioElements();
+      liveCurrentSoundAudio = form.querySelector(".current-sound-audio") || liveCurrentSoundAudio;
+      liveSoundCurrentAudio = form.querySelector(".sound-preview-current") || liveSoundCurrentAudio;
+      liveSoundNewAudio = form.querySelector(".sound-preview-new") || liveSoundNewAudio;
     };
 
     const restoreCurrentSoundAudio = () => {
-      if (!currentSoundAudio || !currentSoundSource) return;
-      currentSoundAudio.src = currentSoundSource;
-      currentSoundAudio.load();
+      if (!liveCurrentSoundAudio || !currentSoundSource) return;
+      liveCurrentSoundAudio.src = currentSoundSource;
+      liveCurrentSoundAudio.load();
     };
 
     const setSoundMessage = (text = "", type = "") => {
@@ -74,10 +82,15 @@
         soundSaveButton.disabled = true;
         soundSaveButton.textContent = "Sound und Credits ersetzen";
       }
-      for (const audio of [soundCurrentAudio, soundNewAudio]) {
+      for (const audio of [liveSoundCurrentAudio, liveSoundNewAudio]) {
         if (!audio) continue;
         audio.removeAttribute("src");
         audio.load();
+      }
+      for (const image of [soundCurrentSpectrogram, soundNewSpectrogram]) {
+        if (!image) continue;
+        image.removeAttribute("src");
+        image.hidden = true;
       }
       if (soundCreditsPreview) soundCreditsPreview.replaceChildren();
     };
@@ -103,10 +116,18 @@
 
     const showSoundPreview = async (result, { edited = false } = {}) => {
       soundPreviewToken = result.token;
-      soundCurrentAudio.hidden = !result.currentSound.exists;
-      if (result.currentSound.exists) soundCurrentAudio.src = result.currentSound.url;
-      soundNewAudio.src = result.newSound.url;
-      const newDuration = await waitForAudioMetadata(soundNewAudio);
+      liveSoundCurrentAudio.hidden = !result.currentSound.exists;
+      if (result.currentSound.exists) liveSoundCurrentAudio.src = result.currentSound.url;
+      liveSoundNewAudio.src = result.newSound.url;
+      if (soundCurrentSpectrogram) {
+        soundCurrentSpectrogram.hidden = !result.currentSound.spectrogramUrl;
+        if (result.currentSound.spectrogramUrl) soundCurrentSpectrogram.src = result.currentSound.spectrogramUrl;
+      }
+      if (soundNewSpectrogram) {
+        soundNewSpectrogram.hidden = !result.newSound.spectrogramUrl;
+        if (result.newSound.spectrogramUrl) soundNewSpectrogram.src = result.newSound.spectrogramUrl;
+      }
+      const newDuration = await waitForAudioMetadata(liveSoundNewAudio);
       soundCurrentMeta.textContent = result.currentSound.exists
         ? formatBytes(result.currentSound.bytes)
         : "Kein bisheriger Sound";
@@ -136,10 +157,10 @@
     };
 
     const preferredPositionAudio = () => {
-      if (currentSoundAudio && Number.isFinite(currentSoundAudio.duration) && currentSoundAudio.duration > 0) {
-        return currentSoundAudio;
+      if (liveCurrentSoundAudio && Number.isFinite(liveCurrentSoundAudio.duration) && liveCurrentSoundAudio.duration > 0) {
+        return liveCurrentSoundAudio;
       }
-      return soundCurrentAudio;
+      return liveSoundCurrentAudio;
     };
 
     const segmentRows = () => [...(soundSegmentList?.querySelectorAll(".sound-segment-row") || [])];
@@ -173,9 +194,9 @@
     };
 
     const initializeSegmentEnd = async () => {
-      if (!soundSegmentEditor || !currentSoundAudio) return;
+      if (!soundSegmentEditor || !liveCurrentSoundAudio) return;
       try {
-        const duration = await waitForAudioMetadata(currentSoundAudio);
+        const duration = await waitForAudioMetadata(liveCurrentSoundAudio);
         const endInput = soundSegmentList?.querySelector(".sound-segment-end");
         if (endInput && !endInput.value) endInput.value = duration.toFixed(2);
       } catch {
@@ -227,7 +248,7 @@
       setSoundBusy(true);
       setSoundMessage("Schnittvorschau wird erzeugt …", "info");
       try {
-        const duration = await waitForAudioMetadata(currentSoundAudio);
+        const duration = await waitForAudioMetadata(liveCurrentSoundAudio);
         const segments = segmentRows().map((row) => ({
           start: row.querySelector(".sound-segment-start").value,
           end: row.querySelector(".sound-segment-end").value || duration,
@@ -255,13 +276,6 @@
       }
     });
 
-    for (const audio of [currentSoundAudio, soundCurrentAudio, soundNewAudio]) {
-      audio?.addEventListener("play", () => {
-        for (const other of [currentSoundAudio, soundCurrentAudio, soundNewAudio]) {
-          if (other && other !== audio) other.pause();
-        }
-      });
-    }
     void initializeSegmentEnd();
 
     soundRejectCurrentButton?.addEventListener("click", async () => {

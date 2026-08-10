@@ -799,7 +799,7 @@ Arten-Explorer als Assetproblem. Die alten Ordner
 GitHub-Pages-Deploy und Live-Test sind für den bisherigen Stand im Squarespace-Footer `species-core.js?v=1.0.4`,
 `map-loader.js?v=1.0.7` und `species-sound.js?v=1.0.22` bestaetigt.
 Für das Phase-8-Artseitenlayout sind `species-core.js?v=1.0.5`, `species-info.js?v=1.0.8`,
-`species-taxonomy.js?v=1.0.7` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
+`species-taxonomy.js?v=1.0.8` und `species-portrait.js?v=1.0.1` dokumentiert; diese Versionen werden erst nach
 erfolgreichem Pages-Deployment im produktiven Squarespace-Footer aktiviert. Die Taxonomie-Version erneuert zugleich
 den Cache-Schlüssel des dynamisch geladenen Artseiten-CSS.
 
@@ -969,6 +969,16 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 `docs/taxonomy-reference-update.md`, `docs/taxonomy-reference-supplements.md`,
 `docs/taxonomy-master-database-design.md` und
 `docs/multi-device-backup-plan.md`.
+
+Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal stabilisiert. Die lokalen
+Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang
+`Taxa · deutsche Namen · englische Namen`. Die sichere interne Kandidaten-, Konflikt-, Aktivierungs- und
+Rollbackarchitektur bleibt bestehen. Konflikte mit vorhandenen Arten werden mit Lösungsvorschlag angezeigt und
+niemals still übernommen. Im Tierstimmeneditor besitzen bisheriger Sound und Schnittvorschau jeweils das passende
+Spektrogramm; MP3 und Spektrogramm werden bereits vor der Übernahme gemeinsam geprüft. Auf einspaltigen
+Squarespace-Artseiten gilt die Reihenfolge Portrait, Infos, Status, Taxonomie und Sound. Die zentralen deutschen
+Taxonomieanzeigen wurden für die aktuell verwendeten Reiche, Stämme, Klassen, Ordnungen, Familien und Gattungen
+ergänzt; der Tooltip enthält nur den unveränderten wissenschaftlichen Rohwert.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

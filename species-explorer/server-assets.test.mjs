@@ -245,16 +245,8 @@ test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fe
       },
     }),
   });
-  assert.equal(previewResponse.status, 200);
-  const preview = await previewResponse.json();
-
-  const saveResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/save`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: preview.token }),
-  });
-  assert.equal(saveResponse.status, 500);
-  assert.match((await saveResponse.json()).error, /Sound wurde nicht gespeichert/);
+  assert.equal(previewResponse.status, 500);
+  assert.match((await previewResponse.json()).error, /Soundvorschau.*Spektrogramm fehlt/);
   assert.deepEqual(await readFile(join(assetDirectory, "sound.mp3")), before.sound);
   assert.deepEqual(await readFile(join(assetDirectory, "credits.json")), before.credits);
   assert.deepEqual(await readFile(join(assetDirectory, "spectrogram.webp")), before.spectrogram);

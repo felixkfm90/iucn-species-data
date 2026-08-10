@@ -646,7 +646,12 @@
                     <strong>Aktueller Sound</strong>
                     <span>${escapeHtml(species.isNcSound ? "NC-Lizenz" : "frei/akzeptiert")}</span>
                   </div>
-                  <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
+                  <div class="current-sound-media">
+                    ${species.assets.spectrogram.exists
+                      ? `<img class="current-sound-spectrogram" src="${escapeHtml(spectrogramUrl)}" alt="Spektrogramm des aktuellen Sounds">`
+                      : `<span class="sound-spectrogram-missing">Kein Spektrogramm vorhanden</span>`}
+                    <audio class="current-sound-audio" controls preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
+                  </div>
                 </section>
 
                 <section class="sound-segment-editor">
@@ -778,11 +783,13 @@
                 <div class="sound-compare-grid">
                   <figure>
                     <figcaption>Bisheriger Sound</figcaption>
+                    <img class="sound-preview-spectrogram sound-preview-current-spectrogram" alt="Spektrogramm des bisherigen Sounds" hidden>
                     <audio class="sound-preview-current" controls preload="metadata"></audio>
                     <p class="sound-current-meta"></p>
                   </figure>
                   <figure>
                     <figcaption>Neuer Sound</figcaption>
+                    <img class="sound-preview-spectrogram sound-preview-new-spectrogram" alt="Spektrogramm des neuen Sounds" hidden>
                     <audio class="sound-preview-new" controls preload="metadata"></audio>
                     <p class="sound-new-meta"></p>
                   </figure>
