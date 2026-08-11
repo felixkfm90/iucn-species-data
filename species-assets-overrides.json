@@ -1316,10 +1316,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "9b5f628f527b670aaef3143fe910e37a42a55619e5df185f019d879cf4907bc4",
-        "spectrogramSha256": "7df25ddc1d95b22e994d32e66176a93211b3b6c7efc5ccd9e0effe7fb58fb3dd",
-        "generatedAt": "2026-08-03T15:01:58.012Z",
-        "verifiedAt": "2026-08-03T15:01:58.017Z"
+        "soundSha256": "a37bd7971795bf1c9a54a009269f1def48644f5fc6a457ec25fcab9da73da8a4",
+        "spectrogramSha256": "797ff414742ce849736b9f16757ca723bc420430db66f82606135c9de9f00f65",
+        "generatedAt": "2026-08-11T17:34:02.112Z",
+        "verifiedAt": "2026-08-11T17:34:02.112Z"
       },
       "map": {
         "manual": false,
@@ -1327,9 +1327,30 @@
         "updatedAt": "2026-08-03T15:02:33.466Z"
       },
       "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-08-03T15:02:33.466Z"
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Sound in der App zugeschnitten; Quellen- und Lizenzdaten unverändert übernommen.",
+        "source": "xeno-canto.org",
+        "originalUrl": "https://xeno-canto.org/1092776",
+        "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+        "germanName": "Halsbandarassari",
+        "originalFileName": "sound.mp3",
+        "importedAt": "2026-08-11T17:34:02.112Z",
+        "updatedAt": "2026-08-11T17:34:02.112Z",
+        "sha256": "a37bd7971795bf1c9a54a009269f1def48644f5fc6a457ec25fcab9da73da8a4",
+        "creditsSha256": "2db65bf3a727475f8271e998af2e32a95f215064dc7941b4b07f003da920589e",
+        "isNc": true,
+        "edit": {
+          "originalDuration": 26.118708,
+          "outputDuration": 23.13,
+          "segments": [
+            {
+              "start": 2.35,
+              "end": 25.48,
+              "duration": 23.13
+            }
+          ]
+        }
       }
     }
   },
@@ -1340,6 +1361,8 @@
     "innerHeight": 200,
     "topPadding": 20,
     "format": "webp",
+    "color": "channel",
+    "scale": "log",
     "gain": 3,
     "stop": 18000,
     "drange": 80,
