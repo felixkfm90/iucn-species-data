@@ -13,10 +13,11 @@ import {
 } from "./server-test-fixtures.mjs";
 
 test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
-  const [model, inputList, generatedList] = await Promise.all([
+  const [model, inputList, generatedList, assetOverrides] = await Promise.all([
     buildExplorerModel(),
     readFile(new URL("../species_list.json", import.meta.url), "utf8").then(JSON.parse),
     readFile(new URL("../speciesData.json", import.meta.url), "utf8").then(JSON.parse),
+    readFile(new URL("../species-assets-overrides.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
   const key = (entry, genusKey, speciesKey) =>
     `${entry[genusKey] ?? ""} ${entry[speciesKey] ?? ""}`.trim().toLocaleLowerCase("de");
@@ -29,6 +30,12 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   const expectedMissingPortraitCount = expectedSpeciesCount - expectedPortraitCount;
   const expectedNcSoundCount = model.species.filter((entry) => entry.isNcSound).length;
   const expectedManualMapCount = model.species.filter((entry) => entry.isManualMap).length;
+  const modelSpeciesNames = new Set(model.species.map((entry) => entry.germanName));
+  const expectedManualSoundCount = Object.entries(assetOverrides.assets ?? {})
+    .filter(([speciesName, assets]) => (
+      modelSpeciesNames.has(speciesName) && assets?.sound?.manual === true
+    ))
+    .length;
 
   assert.equal(model.summary.speciesCount, expectedSpeciesCount);
   assert.equal(model.summary.inputCount, inputList.length);
@@ -55,7 +62,10 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   assert.equal(model.species.filter((entry) => entry.isNcSound).length, expectedNcSoundCount);
   assert.equal(model.species.filter((entry) => entry.isManualMap).length, expectedManualMapCount);
   assert.equal(model.species.filter((entry) => entry.assets.map.manuallyAdded).length, expectedManualMapCount);
-  assert.equal(model.species.filter((entry) => entry.assets.sound.manuallyAdded).length, 0);
+  assert.equal(
+    model.species.filter((entry) => entry.assets.sound.manuallyAdded).length,
+    expectedManualSoundCount,
+  );
   assert.ok(model.species.every((entry) => (
     [
       entry.taxonomy.kingdom,
