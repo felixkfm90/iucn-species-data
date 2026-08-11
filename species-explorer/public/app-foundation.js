@@ -34,6 +34,8 @@
       backupStatusSnapshot: null,
       backupPollTimer: null,
       taxonomyMaintenanceSnapshot: null,
+      taxonomyMasterSnapshot: null,
+      taxonomyDatabaseBusy: false,
       settingsSnapshot: null,
       assetReviewRunId: "",
       assetReviewSignature: "",

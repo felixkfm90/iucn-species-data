@@ -239,7 +239,7 @@
           ? "Namensbestand aktualisieren"
           : "Datenbank aktualisieren";
 
-      if (active) renderDatabaseStatus("running");
+      if (active) renderDatabaseStatus("taxonomy");
       else renderDatabaseStatus();
 
       showCompletedUpdate(status);

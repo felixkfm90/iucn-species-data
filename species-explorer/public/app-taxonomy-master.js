@@ -177,7 +177,7 @@
       elements.taxonomyMasterBuildButton.disabled = active;
       elements.taxonomyMasterActivateButton.disabled = active || !lifecycle.canActivate;
       elements.taxonomyMasterRollbackButton.disabled = active || !lifecycle.canRollback;
-      if (active) renderDatabaseStatus("running");
+      if (active) renderDatabaseStatus("taxonomy");
       else renderDatabaseStatus();
       clearTimeout(pollTimer);
       pollTimer = active ? setTimeout(refresh, 900) : null;

@@ -11,6 +11,7 @@
   });
 
   const DATABASE_STATUS_LABELS = Object.freeze({
+    taxonomy: "Taxonomie-Update läuft",
     running: "Aktualisierung läuft",
     review: "Neue Assets prüfen",
     failed: "Datenbank aktualisieren",

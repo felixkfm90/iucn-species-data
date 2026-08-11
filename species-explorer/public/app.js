@@ -230,6 +230,7 @@ const elements = {
   taxonomyMasterRollbackButton: document.querySelector("[data-taxonomy-master-action='rollback']"),
   taxonomyDatabaseOverviewSummary: document.querySelector("#taxonomy-database-overview-summary"),
   taxonomyDatabaseOverviewDetail: document.querySelector("#taxonomy-database-overview-detail"),
+  taxonomyDatabaseOverview: document.querySelector(".taxonomy-database-overview"),
   taxonomyDatabaseUpdateButton: document.querySelector("[data-taxonomy-database-action='update']"),
   taxonomyDatabaseRollbackButton: document.querySelector("[data-taxonomy-database-action='rollback']"),
   taxonomyDatabaseOpenButton: document.querySelector("[data-taxonomy-database-action='open']"),
@@ -480,6 +481,7 @@ const { setup: setupTaxonomyDatabase } =
     createDialogController,
     taxonomyReference: explorerTaxonomyReference,
     showQuickConfirm,
+    renderDatabaseStatus,
   });
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({

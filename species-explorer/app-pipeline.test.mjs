@@ -29,6 +29,7 @@ test("Pipeline-Bezeichnungen und Datenbankstatus bleiben eindeutig", () => {
   assert.equal(pipeline.pipelineModeLabel("custom"), "custom");
   assert.equal(pipeline.backupLabel(), "NAS-Backup erstellen");
   assert.equal(pipeline.databaseStatusLabel("outdated"), "Änderungen übertragen");
+  assert.equal(pipeline.databaseStatusLabel("taxonomy"), "Taxonomie-Update läuft");
   assert.equal(pipeline.databaseStatusLabel("unknown"), "Datenbank aktualisieren");
 });
 

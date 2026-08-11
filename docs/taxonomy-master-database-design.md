@@ -276,3 +276,10 @@ Technische Zwischenaktionen bleiben intern und getestet, werden aber nicht mehr 
 angezeigt. Die Bestätigung einer CoL-Referenzlücke verwendet zuerst eine exakte Suche nach wissenschaftlichem Namen,
 Rang und Reich in der aktiven Masterdatenbank. `Sciurus vulgaris` wird dadurch eindeutig mit dem vorhandenen,
 durch GBIF und iNaturalist bestätigten Mastertaxon verknüpft.
+
+Seit dem 11. August 2026 prüft `Datenbank aktualisieren` zuerst die verfügbaren CoL- und Anbieterstände. Sind weder
+neue Quelldaten noch ein bereits geprüfter Kandidat vorhanden, meldet der Explorer den aktuellen Stand und startet
+keinen Master-Neuaufbau. Nur ein tatsächliches Update durchläuft Referenzimport, Anbieteraktualisierung,
+Kandidatenbau und Aktivierung. Währenddessen sind der Kopfstatus und der Datenbankstatus gelb als
+`Taxonomie-Update läuft` gekennzeichnet; die bestehende Datenbank bleibt bis zur erfolgreichen Aktivierung lesbar.
+Die drei Aktionen stehen wie im Backup-Bereich als untereinander angeordnete, vollbreite Aktionskarten.

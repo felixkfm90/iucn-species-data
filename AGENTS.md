@@ -1100,7 +1100,10 @@ Aktuelle Planung:
   Aktivierungsschritte werden intern orchestriert. Der Korrekturdialog beginnt mit offenen Prüfungen der
   Projektarten. Referenzlückenbestätigungen verwenden eine exakte aktive Masterabfrage nach wissenschaftlichem
   Namen, Rang und Reich; `Sciurus vulgaris` ist dafür der verbindliche reale Fall. Native Playeraktionen verwerfen
-  eine vorhandene Sound-Schnittvorschau nicht.
+  eine vorhandene Sound-Schnittvorschau nicht. Die drei Aktionen stehen wie die Backup-Aktionen vollbreit
+  untereinander. `Datenbank aktualisieren` prüft zuerst die CoL- und Anbieterstände und startet ohne neue Quelldaten
+  beziehungsweise wartenden Kandidaten keinen Master-Neuaufbau. Ein echter Lauf ist im Kopf und Datenbankblock gelb
+  als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.
 - Phase 11 - Mehrere Computer:

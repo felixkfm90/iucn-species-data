@@ -1021,6 +1021,10 @@ sichtbare Nutzeraktionen, während der sichere mehrstufige Aktualisierungsablauf
 Prüfungen werden im Korrekturdialog vor der Suche angezeigt. Die reale Referenzlücke `Sciurus vulgaris` wird exakt
 im aktiven Master aufgelöst und kann damit ohne Änderung von Name, Slug oder Assets bestätigt werden. Native
 Zeitleistenaktionen im Soundeditor lassen die bereits erzeugte Schnittvorschau bestehen.
+Die Aktionen verwenden nun dieselbe vollbreite Einspalten-Darstellung wie Backup und Einstellungen. Die sichtbare
+Aktualisierung prüft zuerst CoL- und Anbieterstände und überspringt den Master-Neuaufbau vollständig, wenn keine
+neuen Quelldaten und kein geprüfter Kandidat vorliegen. Tatsächliche Taxonomie-Updates werden im Kopf und im
+Datenbankblock gelb als laufender Vorgang angezeigt.
 
 ## Phase 10 - Lightroom-Integration
 

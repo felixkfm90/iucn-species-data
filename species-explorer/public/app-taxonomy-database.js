@@ -53,6 +53,11 @@
     return new Promise((resolve) => global.setTimeout(resolve, duration));
   }
 
+  function taxonomyDatabaseUpdateDecision({ hasCandidate = false, hasWork = false } = {}) {
+    if (hasCandidate) return "activate";
+    return hasWork ? "refresh-and-build" : "current";
+  }
+
   function createTaxonomyDatabaseController({
     state,
     elements,
@@ -61,6 +66,7 @@
     createDialogController,
     taxonomyReference,
     showQuickConfirm,
+    renderDatabaseStatus = () => {},
   } = {}) {
     const dialog = elements.taxonomyDatabaseDialog;
     if (!dialog) return Object.freeze({ setup() {} });
@@ -115,6 +121,8 @@
       const activeDate = formatSnapshotDate(masterLifecycle.active);
       const previousDate = formatSnapshotDate(masterLifecycle.previous);
 
+      elements.taxonomyDatabaseOverview?.classList.toggle("updating", active);
+
       elements.taxonomyDatabaseOverviewSummary.textContent = active
         ? "Taxonomiedatenbank wird aktualisiert"
         : failed
@@ -126,6 +134,13 @@
               : "Noch keine Taxonomiedatenbank aktiviert";
 
       const details = [];
+      if (active) {
+        details.push(
+          cleanText(masterStatus.message)
+          || cleanText(referenceStatus.message)
+          || "Aktualisierung wird vorbereitet",
+        );
+      }
       if (counts) details.push(counts);
       if (updateAvailable && latest) details.push(`Verfügbar: ${latest}`);
       if (blockingConflicts) {
@@ -154,6 +169,7 @@
         : "Kein vorheriger Gesamtstand vorhanden";
       elements.taxonomyDatabaseUpdateButton.disabled = active;
       elements.taxonomyDatabaseRollbackButton.disabled = active || !masterLifecycle.canRollback;
+      renderDatabaseStatus();
     }
 
     state.renderTaxonomyDatabaseOverview = renderOverview;
@@ -225,27 +241,37 @@
       });
       if (!confirmed) return;
       databaseBusy = true;
+      state.taxonomyDatabaseBusy = true;
       renderOverview();
       setActionMessage("Taxonomiedatenbank wird aktualisiert. Der bisherige Stand bleibt bis zum Abschluss aktiv.", "info");
       try {
         let { master } = await refreshSnapshots();
-        if (master.lifecycle?.candidate) {
+        let decision = taxonomyDatabaseUpdateDecision({
+          hasCandidate: Boolean(master.lifecycle?.candidate),
+        });
+        if (decision === "activate") {
           await activateCandidate(master);
         } else {
           const preview = await fetchJson("/api/taxonomy/update/preview", {
             method: "POST",
             body: "{}",
           });
-          if (preview.hasWork) {
-            const started = await fetchJson("/api/taxonomy/update/start", {
-              method: "POST",
-              body: JSON.stringify({ token: preview.token }),
-            });
-            state.taxonomyMaintenanceSnapshot = started;
-            renderOverview();
-            if (referenceIsActive(started)) {
-              await waitUntilIdle("/api/taxonomy/status", referenceIsActive, "Referenzaktualisierung");
-            }
+          decision = taxonomyDatabaseUpdateDecision({ hasWork: preview.hasWork });
+          if (decision === "current") {
+            setActionMessage(
+              "Die Taxonomiedatenbank ist bereits aktuell. Es wurde kein Neuaufbau gestartet.",
+              "success",
+            );
+            return;
+          }
+          const started = await fetchJson("/api/taxonomy/update/start", {
+            method: "POST",
+            body: JSON.stringify({ token: preview.token }),
+          });
+          state.taxonomyMaintenanceSnapshot = started;
+          renderOverview();
+          if (referenceIsActive(started)) {
+            await waitUntilIdle("/api/taxonomy/status", referenceIsActive, "Referenzaktualisierung");
           }
           const building = await fetchJson("/api/taxonomy/master/build", {
             method: "POST",
@@ -265,6 +291,7 @@
         setActionMessage(error.message || "Die Taxonomiedatenbank konnte nicht aktualisiert werden.", "error");
       } finally {
         databaseBusy = false;
+        state.taxonomyDatabaseBusy = false;
         await refreshSnapshots();
       }
     }
@@ -279,6 +306,7 @@
       });
       if (!confirmed) return;
       databaseBusy = true;
+      state.taxonomyDatabaseBusy = true;
       renderOverview();
       try {
         const started = await fetchJson("/api/taxonomy/master/rollback", {
@@ -296,6 +324,7 @@
         setActionMessage(error.message || "Der vorherige Stand konnte nicht wiederhergestellt werden.", "error");
       } finally {
         databaseBusy = false;
+        state.taxonomyDatabaseBusy = false;
         await refreshSnapshots();
       }
     }
@@ -633,5 +662,6 @@
 
   global.SpeciesExplorerTaxonomyDatabase = Object.freeze({
     createTaxonomyDatabaseController,
+    taxonomyDatabaseUpdateDecision,
   });
 })(globalThis);

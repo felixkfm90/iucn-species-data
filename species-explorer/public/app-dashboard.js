@@ -203,8 +203,13 @@
     }
 
     function renderDatabaseStatus(stateName = "") {
+      const taxonomyActive = Boolean(
+        state.taxonomyDatabaseBusy
+        || state.taxonomyMaintenanceSnapshot?.active
+        || state.taxonomyMasterSnapshot?.active,
+      );
       const status = resolveDatabaseStatus({
-        explicitStatus: stateName,
+        explicitStatus: taxonomyActive ? "taxonomy" : stateName,
         backupStatus: state.backupStatusSnapshot?.status,
         pipelineStatus: state.pipelineStatusSnapshot?.status,
         databaseNeedsUpdate: state.databaseNeedsUpdate,

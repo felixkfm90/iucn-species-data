@@ -148,6 +148,7 @@ h1 {
 
 .database-status.running,
 .database-status.backup,
+.database-status.taxonomy,
 .database-status.review {
   color: #17211d;
   background: #f1c75b;
@@ -477,6 +478,16 @@ button.danger,
   border-radius: 5px;
 }
 
+.taxonomy-database-overview.updating {
+  background: #fff3cd;
+  border-color: #d5a62f;
+}
+
+.taxonomy-database-overview.updating strong,
+.taxonomy-database-overview.updating span {
+  color: #6b4b00;
+}
+
 .taxonomy-database-overview strong {
   color: var(--text);
   font-size: 0.8rem;
@@ -556,24 +567,6 @@ button.danger,
   accent-color: var(--green);
 }
 
-.taxonomy-maintenance-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.taxonomy-maintenance-actions button {
-  min-height: 34px;
-  justify-content: center;
-  text-align: center;
-}
-
-@media (max-width: 720px) {
-  .taxonomy-maintenance-actions {
-    grid-template-columns: 1fr;
-  }
-}
-
 .action-group-danger summary strong {
   color: var(--red);
 }
@@ -596,28 +589,6 @@ button.danger,
 
 .taxonomy-maintenance-group summary {
   padding: 8px 10px 6px;
-}
-
-.pipeline-mode-choice .taxonomy-maintenance-actions button {
-  min-height: 34px;
-  padding: 7px 8px;
-  display: grid;
-  gap: 2px;
-  color: var(--green);
-  font-size: 0.72rem;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.pipeline-mode-choice .taxonomy-database-actions button strong {
-  font-size: 0.76rem;
-}
-
-.pipeline-mode-choice .taxonomy-database-actions button span {
-  color: var(--text-muted);
-  font-size: 0.66rem;
-  font-weight: 400;
-  line-height: 1.25;
 }
 
 .taxonomy-master-maintenance {
@@ -645,7 +616,7 @@ button.danger,
 }
 
 .taxonomy-database-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .taxonomy-master-copy {
@@ -740,8 +711,7 @@ button.danger,
 @media (max-width: 720px) {
   .taxonomy-master-diff,
   .taxonomy-master-conflict-actions,
-  .taxonomy-project-conflict,
-  .taxonomy-database-actions {
+  .taxonomy-project-conflict {
     grid-template-columns: 1fr;
   }
 

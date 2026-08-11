@@ -209,6 +209,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appTaxonomyDatabaseSource, /function createTaxonomyDatabaseController\(/);
   assert.match(htmlSource, /id="taxonomy-database-dialog"/);
   assert.match(htmlSource, /id="taxonomy-database-overview-summary"/);
+  assert.match(htmlSource, /class="action-group-buttons taxonomy-database-actions"/);
   assert.equal(
     [...htmlSource.matchAll(/data-taxonomy-database-action=/g)].length,
     3,
@@ -218,6 +219,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /id="taxonomy-database-previous-version"/);
   assert.match(htmlSource, /id="taxonomy-database-review-list"/);
   assert.match(appTaxonomyDatabaseSource, /function renderOverview\(\)/);
+  assert.match(appTaxonomyDatabaseSource, /taxonomyDatabaseUpdateDecision/);
+  assert.match(appTaxonomyDatabaseSource, /kein Neuaufbau gestartet/);
+  assert.match(appFoundationSource, /taxonomyDatabaseBusy:\s*false/);
   assert.match(appTaxonomyDatabaseSource, /\/api\/taxonomy\/review/);
   assert.match(appTaxonomyDatabaseSource, /limit=12/);
   assert.match(appTaxonomyMaintenanceSource, /accept-external-reference-gap/);
@@ -477,6 +481,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /Backup trotzdem erstellen/);
   assert.match(appPipelineSource, /function backupStatusPresentation/);
   assert.match(cssSource, /\.database-status\.backup/);
+  assert.match(cssSource, /\.database-status\.taxonomy/);
+  assert.match(cssSource, /\.taxonomy-database-actions\s*\{[^}]*grid-template-columns:\s*1fr/s);
   assert.match(backupServiceSource, /async function previewNasBackup/);
   assert.match(serverSource, /local-settings\.json/);
   assert.match(backupServiceSource, /async function saveBackupSettings/);

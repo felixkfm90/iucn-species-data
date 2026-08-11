@@ -992,6 +992,10 @@ Aktion führt die weiterhin getrennten technischen Prüf-, Kandidaten- und Aktiv
 Korrekturdialog zeigt zuerst konkrete offene Prüfungen der verwendeten Projektarten und bietet anschließend die
 Suche im aktiven Offline-Bestand. Die CoL-Referenzlücke `Sciurus vulgaris` wird über eine exakte Abfrage der aktiven
 Masterdatenbank bestätigt. Ein Klick in die Zeitleiste der Sound-Schnittvorschau verwirft diese nicht mehr.
+Die drei Datenbankaktionen sind wie die Backup-Aktionen als untereinander angeordnete Karten gestaltet. Vor einem
+Neuaufbau prüft `Datenbank aktualisieren`, ob ein neuer CoL- oder Anbieterstand vorliegt. Ohne neue Quelldaten und
+ohne wartenden Kandidaten wird kein Neuaufbau gestartet. Ein echter Lauf ist im Kopf und im Datenbankblock gelb als
+`Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zum erfolgreichen Abschluss erhalten.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

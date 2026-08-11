@@ -1,4 +1,21 @@
 {
   "schemaVersion": 1,
-  "mappings": {}
+  "mappings": {
+    "sciurus vulgaris": {
+      "sourceType": "master",
+      "masterTaxonId": "mtx_7e5f8e06d8c86c3e062574317f060f55",
+      "scientificName": "Sciurus vulgaris",
+      "rank": "species",
+      "sourceProviders": [
+        "gbif",
+        "inaturalist"
+      ],
+      "statuses": [
+        "col-reference-gap",
+        "externally-confirmed"
+      ],
+      "decision": "accept-external-reference-gap",
+      "confirmedAt": "2026-08-11T16:58:05.580Z"
+    }
+  }
 }
