@@ -986,6 +986,13 @@ Squarespace-Artseiten gilt die Reihenfolge Portrait, Infos, Status, Taxonomie un
 Taxonomieanzeigen wurden für die aktuell verwendeten Reiche, Stämme, Klassen, Ordnungen, Familien und Gattungen
 ergänzt; der Tooltip enthält nur den unveränderten wissenschaftlichen Rohwert.
 
+Seit dem 11. August 2026 ist die Datenbankpflege auf genau drei sichtbare Nutzeraktionen reduziert:
+`Datenbank aktualisieren`, `Vorherigen Stand wiederherstellen` und `Datenbank ansehen und korrigieren`. Die erste
+Aktion führt die weiterhin getrennten technischen Prüf-, Kandidaten- und Aktivierungsschritte automatisch aus. Der
+Korrekturdialog zeigt zuerst konkrete offene Prüfungen der verwendeten Projektarten und bietet anschließend die
+Suche im aktiven Offline-Bestand. Die CoL-Referenzlücke `Sciurus vulgaris` wird über eine exakte Abfrage der aktiven
+Masterdatenbank bestätigt. Ein Klick in die Zeitleiste der Sound-Schnittvorschau verwirft diese nicht mehr.
+
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.
 

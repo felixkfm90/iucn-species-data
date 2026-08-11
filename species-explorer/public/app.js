@@ -230,8 +230,15 @@ const elements = {
   taxonomyMasterRollbackButton: document.querySelector("[data-taxonomy-master-action='rollback']"),
   taxonomyDatabaseOverviewSummary: document.querySelector("#taxonomy-database-overview-summary"),
   taxonomyDatabaseOverviewDetail: document.querySelector("#taxonomy-database-overview-detail"),
+  taxonomyDatabaseUpdateButton: document.querySelector("[data-taxonomy-database-action='update']"),
+  taxonomyDatabaseRollbackButton: document.querySelector("[data-taxonomy-database-action='rollback']"),
   taxonomyDatabaseOpenButton: document.querySelector("[data-taxonomy-database-action='open']"),
+  taxonomyDatabaseCurrentVersion: document.querySelector("#taxonomy-database-current-version"),
+  taxonomyDatabasePreviousVersion: document.querySelector("#taxonomy-database-previous-version"),
   taxonomyDatabaseDialog: document.querySelector("#taxonomy-database-dialog"),
+  taxonomyDatabaseReview: document.querySelector("#taxonomy-database-review"),
+  taxonomyDatabaseReviewSummary: document.querySelector("#taxonomy-database-review-summary"),
+  taxonomyDatabaseReviewList: document.querySelector("#taxonomy-database-review-list"),
   taxonomyDatabaseSearch: document.querySelector("#taxonomy-database-search"),
   taxonomyDatabaseMessage: document.querySelector("#taxonomy-database-message"),
   taxonomyDatabaseResults: document.querySelector("#taxonomy-database-results"),
@@ -472,6 +479,7 @@ const { setup: setupTaxonomyDatabase } =
     escapeHtml,
     createDialogController,
     taxonomyReference: explorerTaxonomyReference,
+    showQuickConfirm,
   });
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({

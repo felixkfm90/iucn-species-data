@@ -476,6 +476,34 @@ export class TaxonomyReferenceService {
     };
   }
 
+  async exactMasterTaxonByScientificName(scientificName, {
+    rank = "species",
+    kingdom = "Animalia",
+  } = {}) {
+    const normalizedScientificName = normalizeCorrectionScientificName(scientificName);
+    const masterStore = await this.ensureMasterStore();
+    if (!masterStore) return null;
+    return masterStore.findTaxonByScientificName(normalizedScientificName, {
+      rank,
+      kingdom,
+    });
+  }
+
+  async review() {
+    const masterStore = await this.ensureMasterStore();
+    if (!masterStore) {
+      return unavailablePayload(
+        "master-unavailable",
+        "Es ist noch keine aktive Taxonomie-Masterdatenbank vorhanden.",
+      );
+    }
+    return {
+      available: true,
+      candidateId: masterStore.status().candidateId,
+      ...masterStore.review(),
+    };
+  }
+
   async taxon(reference) {
     const normalizedReference = normalizeTaxonReference(reference);
     const store = await this.requireStore();

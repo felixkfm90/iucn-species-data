@@ -263,3 +263,16 @@ Projektkonflikte erscheinen unter demselben Datenbankblock. Bei einer eindeutig 
 CoL-Referenzlücke bietet die Oberfläche eine ausdrückliche Verknüpfung mit der stabilen Master-ID an. Die
 Entscheidung wird in `species-reference-mappings.json` dokumentiert. Liefert ein späteres CoL-Release einen
 exakten akzeptierten Arteintrag, hat dieser trotz der vorhandenen Lückenbestätigung automatisch wieder Vorrang.
+
+Seit dem 11. August 2026 zeigt dieser Block genau drei anwenderseitige Aktionen:
+
+1. `Datenbank aktualisieren` führt Versionsprüfung, Referenzimport, Anbieteraktualisierung, Kandidatenbau,
+   Konfliktprüfung und Aktivierung in der sicheren technischen Reihenfolge aus;
+2. `Vorherigen Stand wiederherstellen` setzt den zuletzt aktiven Gesamtstand zurück;
+3. `Datenbank ansehen und korrigieren` öffnet zuerst die offenen Prüfungen der verwendeten Projektarten und danach
+   die Suche im aktiven Offline-Bestand.
+
+Technische Zwischenaktionen bleiben intern und getestet, werden aber nicht mehr als gleichwertige Schaltflächen
+angezeigt. Die Bestätigung einer CoL-Referenzlücke verwendet zuerst eine exakte Suche nach wissenschaftlichem Namen,
+Rang und Reich in der aktiven Masterdatenbank. `Sciurus vulgaris` wird dadurch eindeutig mit dem vorhandenen,
+durch GBIF und iNaturalist bestätigten Mastertaxon verknüpft.

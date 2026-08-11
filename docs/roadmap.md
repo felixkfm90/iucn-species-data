@@ -1016,6 +1016,12 @@ einspaltige Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Soun
 Squarespace-Codeblock zwischen Sound und Folgeinhalt wird gezielt entfernt. Deutsche Taxonomieanzeigen der aktuell
 verwendeten Ränge wurden vervollständigt, während Tooltips ausschließlich den wissenschaftlichen Rohwert nennen.
 
+Am 11. August 2026 wurde dieses Stabilisierungspaket abgeschlossen: Die Taxonomiedatenbank besitzt nur noch drei
+sichtbare Nutzeraktionen, während der sichere mehrstufige Aktualisierungsablauf intern erhalten bleibt. Offene
+Prüfungen werden im Korrekturdialog vor der Suche angezeigt. Die reale Referenzlücke `Sciurus vulgaris` wird exakt
+im aktiven Master aufgelöst und kann damit ohne Änderung von Name, Slug oder Assets bestätigt werden. Native
+Zeitleistenaktionen im Soundeditor lassen die bereits erzeugte Schnittvorschau bestehen.
+
 ## Phase 10 - Lightroom-Integration
 
 Status: geplant

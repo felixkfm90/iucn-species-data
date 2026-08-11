@@ -492,6 +492,10 @@ button.danger,
   display: none !important;
 }
 
+.taxonomy-controller-actions[hidden] {
+  display: none !important;
+}
+
 .taxonomy-maintenance-copy {
   display: grid;
   gap: 2px;
@@ -597,11 +601,23 @@ button.danger,
 .pipeline-mode-choice .taxonomy-maintenance-actions button {
   min-height: 34px;
   padding: 7px 8px;
-  display: block;
+  display: grid;
+  gap: 2px;
   color: var(--green);
   font-size: 0.72rem;
   line-height: 1.2;
   text-align: center;
+}
+
+.pipeline-mode-choice .taxonomy-database-actions button strong {
+  font-size: 0.76rem;
+}
+
+.pipeline-mode-choice .taxonomy-database-actions button span {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .taxonomy-master-maintenance {
@@ -741,6 +757,70 @@ button.danger,
 .taxonomy-database-form {
   display: grid;
   gap: 12px;
+}
+
+.taxonomy-database-review {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.taxonomy-database-review > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taxonomy-database-review h4,
+.taxonomy-database-search-heading {
+  margin: 0;
+}
+
+.taxonomy-database-review header p,
+.taxonomy-database-review-empty {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.taxonomy-database-review-list {
+  display: grid;
+  gap: 6px;
+}
+
+.taxonomy-database-review-item {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+}
+
+.taxonomy-database-review-item > div {
+  display: grid;
+  gap: 2px;
+}
+
+.taxonomy-database-review-item em,
+.taxonomy-database-review-item span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.taxonomy-database-review-item button {
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+.taxonomy-database-review-empty.error {
+  color: var(--red);
 }
 
 .taxonomy-database-search-label {
@@ -891,7 +971,8 @@ button.danger,
 @media (max-width: 720px) {
   .taxonomy-database-results button,
   .taxonomy-database-hierarchy,
-  .taxonomy-database-correction-fields {
+  .taxonomy-database-correction-fields,
+  .taxonomy-database-review-item {
     grid-template-columns: 1fr;
   }
 
@@ -900,9 +981,14 @@ button.danger,
   }
 
   .taxonomy-database-detail-header,
-  .taxonomy-database-correction-actions {
+  .taxonomy-database-correction-actions,
+  .taxonomy-database-review > header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .taxonomy-database-review-item button {
+    white-space: normal;
   }
 }
 

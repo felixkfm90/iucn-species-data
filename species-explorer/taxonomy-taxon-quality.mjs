@@ -51,6 +51,54 @@ function externalProviderCount(database, masterTaxonId) {
   `).get(masterTaxonId)?.count || 0);
 }
 
+export function analyzeProjectTaxonomyMasterDatabase(database) {
+  const projectLinks = database.prepare(`
+    SELECT project.*, taxon.canonical_scientific_name, taxon.reference_state,
+      taxon.kingdom
+    FROM project_taxon_link project
+    JOIN master_taxon taxon ON taxon.master_taxon_id = project.master_taxon_id
+    ORDER BY project.project_slug
+  `).all();
+  const errors = [];
+  const reviewItems = [];
+  for (const project of projectLinks) {
+    if (project.link_state !== "linked") {
+      errors.push({
+        code: "project-link",
+        scientificName: project.canonical_scientific_name,
+        message: `Projektart ${project.project_slug} ist nicht eindeutig verknüpft.`,
+      });
+    }
+    const fields = selectedFields(database, project.master_taxon_id);
+    const missingFields = [
+      ...(!fields.get("german-name|de") ? ["deutscher Name"] : []),
+      ...(!fields.get("english-name|en") ? ["englischer Name"] : []),
+      ...CORE_HIERARCHY_FIELDS
+        .filter((field) => field !== "kingdom" && !fields.get(`${field}|`))
+        .map((field) => `Taxonomiestufe ${field}`),
+      ...(!cleanText(project.kingdom) ? ["Reich"] : []),
+    ];
+    const providerCount = externalProviderCount(database, project.master_taxon_id);
+    if (missingFields.length || (project.reference_state === "reference-gap" && providerCount < 2)) {
+      reviewItems.push({
+        masterTaxonId: project.master_taxon_id,
+        projectSlug: project.project_slug,
+        scientificName: project.canonical_scientific_name,
+        referenceState: project.reference_state,
+        externalProviderCount: providerCount,
+        missingFields,
+        normalizedName: normalizeTaxonomySearchTerm(project.canonical_scientific_name),
+      });
+    }
+  }
+  return {
+    projectTaxonCount: projectLinks.length,
+    errors,
+    reviewItems,
+    valid: errors.length === 0,
+  };
+}
+
 export function analyzeTaxonomyMasterDatabase(database) {
   const taxa = database.prepare(`
     SELECT * FROM master_taxon

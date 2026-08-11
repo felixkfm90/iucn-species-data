@@ -209,12 +209,23 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appTaxonomyDatabaseSource, /function createTaxonomyDatabaseController\(/);
   assert.match(htmlSource, /id="taxonomy-database-dialog"/);
   assert.match(htmlSource, /id="taxonomy-database-overview-summary"/);
+  assert.equal(
+    [...htmlSource.matchAll(/data-taxonomy-database-action=/g)].length,
+    3,
+    "Die sichtbare Taxonomiedatenbank darf genau drei Hauptaktionen anbieten.",
+  );
+  assert.match(htmlSource, /id="taxonomy-database-current-version"/);
+  assert.match(htmlSource, /id="taxonomy-database-previous-version"/);
+  assert.match(htmlSource, /id="taxonomy-database-review-list"/);
   assert.match(appTaxonomyDatabaseSource, /function renderOverview\(\)/);
+  assert.match(appTaxonomyDatabaseSource, /\/api\/taxonomy\/review/);
+  assert.match(appTaxonomyDatabaseSource, /limit=12/);
   assert.match(appTaxonomyMaintenanceSource, /accept-external-reference-gap/);
   assert.match(appEditorSoundSource, /const preferredPositionAudio = \(\) =>/);
   assert.match(appEditorSoundSource, /liveSoundCurrentAudio/);
   assert.match(appEditorSoundSource, /\.sound-segment-start/);
   assert.match(appEditorSoundSource, /Number\(normalizedValue\) === 0/);
+  assert.match(appSpeciesEditorSource, /event\.target\.closest\("audio"\)/);
   assert.match(appTaxonomyMasterSource, /Dauerhaft manuell sch\u00fctzen/);
   assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);

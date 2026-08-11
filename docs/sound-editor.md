@@ -29,6 +29,10 @@ MP3 gehörende Spektrogramm. Bisheriger und neuer Sound werden dadurch jeweils m
 einem funktionsfähigen Player angezeigt. Erst wenn MP3 und WebP gemeinsam geprüft sind, wird die Übernahme
 freigegeben. Ein fehlgeschlagenes Spektrogramm verändert keine Produktivdatei.
 
+Native Playeraktionen innerhalb der Schnittvorschau, insbesondere ein Klick in die Zeitleiste, gelten nicht als
+Formularänderung. Sie dürfen die erzeugte Vorschau deshalb weder verwerfen noch ausblenden. Erst eine echte Änderung
+an Start, Ende, Reihenfolge oder Anzahl der Abschnitte macht eine neue Vorschaugenerierung erforderlich.
+
 ## Technischer Ablauf
 
 - `scripts/sound-segment-editor.mjs` prüft die Abschnitte und erzeugt mit FFmpeg eine MP3-Vorschau.

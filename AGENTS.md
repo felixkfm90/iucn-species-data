@@ -1095,6 +1095,12 @@ Aktuelle Planung:
   Das mobile
   Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Sound. Deutsche Taxonomieanzeigen decken die
   aktuell verwendeten Ränge ab; der Tooltip zeigt ausschließlich den wissenschaftlichen Rohwert.
+  Seit 2026-08-11 zeigt die Taxonomiedatenbank genau drei Nutzeraktionen: `Datenbank aktualisieren`, `Vorherigen
+  Stand wiederherstellen` und `Datenbank ansehen und korrigieren`. Technische Referenz-, Kandidaten- und
+  Aktivierungsschritte werden intern orchestriert. Der Korrekturdialog beginnt mit offenen Prüfungen der
+  Projektarten. Referenzlückenbestätigungen verwenden eine exakte aktive Masterabfrage nach wissenschaftlichem
+  Namen, Rang und Reich; `Sciurus vulgaris` ist dafür der verbindliche reale Fall. Native Playeraktionen verwerfen
+  eine vorhandene Sound-Schnittvorschau nicht.
   SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
   Erweiterungen und umfassendes Abschlussaudit.
 - Phase 11 - Mehrere Computer:

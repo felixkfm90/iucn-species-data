@@ -117,6 +117,10 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "taxonomy-read",
     resource: "status",
   });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/review"), {
+    name: "taxonomy-read",
+    resource: "review",
+  });
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/preview"), {
     name: "taxonomy-maintenance",
     action: "preview",

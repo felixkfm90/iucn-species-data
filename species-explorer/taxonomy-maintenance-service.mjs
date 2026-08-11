@@ -364,17 +364,25 @@ export class TaxonomyMaintenanceService {
       throw createHttpError("Für diese Art liegt keine entscheidbare CoL-Referenzlücke vor.", 409);
     }
 
-    const search = await this.referenceService.search({
-      query: scientificName,
-      kind: "scientific",
-      kingdomId: "Animalia",
-      rank: "species",
-      limit: 12,
-    });
-    const exact = (search?.results || []).find((entry) => (
-      normalizeTaxonomySearchTerm(entry.acceptedScientificName) === normalizedName
-      && entry.rank === "species"
-    ));
+    let exact = typeof this.referenceService.exactMasterTaxonByScientificName === "function"
+      ? await this.referenceService.exactMasterTaxonByScientificName(scientificName, {
+        rank: "species",
+        kingdom: "Animalia",
+      })
+      : null;
+    if (!exact) {
+      const search = await this.referenceService.search({
+        query: scientificName,
+        kind: "scientific",
+        kingdomId: "Animalia",
+        rank: "species",
+        limit: 12,
+      });
+      exact = (search?.results || []).find((entry) => (
+        normalizeTaxonomySearchTerm(entry.acceptedScientificName) === normalizedName
+        && entry.rank === "species"
+      ));
+    }
     const statusIds = (exact?.masterStatuses || []).map((entry) => (
       typeof entry === "string" ? entry : entry?.id
     )).filter(Boolean);

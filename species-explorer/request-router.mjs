@@ -117,7 +117,7 @@ export function matchExplorerRoute(method, pathname) {
   }
 
   const taxonomyResource = normalizedPath.match(
-    /^\/api\/taxonomy\/(status|kingdoms|search)$/,
+    /^\/api\/taxonomy\/(status|kingdoms|search|review)$/,
   );
   if (taxonomyResource) {
     return { name: "taxonomy-read", resource: taxonomyResource[1] };

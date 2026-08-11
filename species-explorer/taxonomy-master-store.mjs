@@ -16,6 +16,7 @@ import {
   normalizeTaxonomySearchTerm,
 } from "./taxonomy-search-text.mjs";
 import { loadNodeSqlite } from "./taxonomy-storage.mjs";
+import { analyzeProjectTaxonomyMasterDatabase } from "./taxonomy-taxon-quality.mjs";
 
 const HIERARCHY_RANKS = Object.freeze([
   "kingdom",
@@ -250,6 +251,14 @@ export class TaxonomyMasterStore {
       SELECT COUNT(*) AS count FROM project_taxon_link
       WHERE master_taxon_id = ?
     `);
+    this.openConflictRows = this.database.prepare(`
+      SELECT conflict.*, taxon.canonical_scientific_name, project.project_slug
+      FROM master_conflict conflict
+      JOIN master_taxon taxon ON taxon.master_taxon_id = conflict.master_taxon_id
+      JOIN project_taxon_link project ON project.master_taxon_id = conflict.master_taxon_id
+      WHERE conflict.conflict_state = 'open'
+      ORDER BY taxon.canonical_name_normalized, conflict.field_name, conflict.conflict_id
+    `);
   }
 
   assertOpen() {
@@ -273,6 +282,15 @@ export class TaxonomyMasterStore {
       schemaVersion: this.manifest.schemaVersion,
       summary: this.manifest.summary || {},
       sources: this.manifest.sources || [],
+    };
+  }
+
+  review() {
+    this.assertOpen();
+    const quality = analyzeProjectTaxonomyMasterDatabase(this.database);
+    return {
+      ...quality,
+      openConflicts: this.openConflictRows.all().map(plain),
     };
   }
 

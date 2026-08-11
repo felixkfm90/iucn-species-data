@@ -57,16 +57,17 @@ test("CoL-Referenzlücken können bewusst durch den aktiven Master bestätigt we
       async status() {
         return { available: true, releaseId: "col-active", boundedPrototype: false };
       },
-      async search() {
+      async exactMasterTaxonByScientificName() {
         return {
-          results: [{
-            masterTaxonId: "mtx-sciurus-vulgaris",
-            acceptedScientificName: "Sciurus vulgaris",
-            rank: "species",
-            sourceProviders: ["gbif", "inaturalist", "wikidata"],
-            masterStatuses: ["col-reference-gap", "externally-confirmed"],
-          }],
+          masterTaxonId: "mtx-sciurus-vulgaris",
+          acceptedScientificName: "Sciurus vulgaris",
+          rank: "species",
+          sourceProviders: ["gbif", "inaturalist", "wikidata"],
+          masterStatuses: ["col-reference-gap", "externally-confirmed"],
         };
+      },
+      async search() {
+        throw new Error("Die allgemeine Suche darf hier nicht verwendet werden.");
       },
     },
     readPointer: async () => ({ activeRelease: "col-active", previousRelease: null }),

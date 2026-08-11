@@ -374,6 +374,7 @@
       assetMaintenanceController.bind();
 
       form.addEventListener("input", (event) => {
+        if (event.target.closest("audio")) return;
         if (event.target.closest(".taxonomy-edit-section")) {
           handleTaxonomyInput();
           return;

@@ -591,6 +591,7 @@ export async function createExplorerServer({
         if (resource === "master-status") return taxonomyMasterService.status();
         if (resource === "status") return taxonomyMaintenanceService.status();
         if (resource === "kingdoms") return taxonomyReference.kingdoms();
+        if (resource === "review") return taxonomyReference.review();
         if (resource === "search") {
           return taxonomyReference.search({
             query: searchParams.get("q"),
