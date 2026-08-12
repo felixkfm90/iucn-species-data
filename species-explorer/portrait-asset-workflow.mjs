@@ -7,6 +7,7 @@ import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
   portraitPromptSha256,
+  validatePortraitOptions,
 } from "../scripts/portrait-generator.mjs";
 import { DEFAULT_PORTRAIT_OPTIONS } from "../scripts/portrait-renderer.mjs";
 import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
@@ -119,6 +120,7 @@ export function createPortraitAssetOperations({
       throw error;
     }
     const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+    const portraitOptionValidation = validatePortraitOptions(payload?.portraitOptions);
     if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
       const error = new Error(
         `Zusätzliche Hinweise dürfen maximal ${MAX_PORTRAIT_INSTRUCTIONS_LENGTH} Zeichen enthalten`,
@@ -126,9 +128,18 @@ export function createPortraitAssetOperations({
       error.statusCode = 400;
       throw error;
     }
+    if (portraitOptionValidation.errors.length) {
+      const error = new Error("Erweiterte Bildvorgaben sind unvollständig");
+      error.statusCode = 400;
+      error.details = portraitOptionValidation.errors;
+      throw error;
+    }
+    const taxonomyClass = String(species.taxonomy?.className ?? "").trim();
     const prompt = buildPortraitPrompt({
       germanName: species.germanName,
       scientificName: species.scientificName,
+      taxonomyClass,
+      portraitOptions: portraitOptionValidation.options,
       additionalInstructions,
     });
     return {
@@ -141,6 +152,8 @@ export function createPortraitAssetOperations({
       prompt,
       promptVersion: PORTRAIT_STANDARD.promptVersion,
       promptSha256: portraitPromptSha256(prompt),
+      portraitOptions: portraitOptionValidation.options,
+      taxonomyClass,
       fileName: `${species.safeName}.png`,
       instructions: [
         "Prompt in ChatGPT einfügen und dort ein Bild erzeugen.",
@@ -209,6 +222,8 @@ export function createPortraitAssetOperations({
         expiresAt,
         importedAt,
         additionalInstructions: validated.additionalInstructions,
+        portraitOptions: validated.portraitOptions,
+        taxonomyClass: validated.taxonomyClass,
         prompt: validated.prompt,
         promptSha256: validated.promptSha256,
         originalName: validated.originalName,
@@ -364,6 +379,8 @@ export function createPortraitAssetOperations({
         product_height: DEFAULT_PORTRAIT_OPTIONS.height,
         product_format: PORTRAIT_STANDARD.outputFormat,
         additional_instructions: preview.additionalInstructions,
+        portrait_options: preview.portraitOptions,
+        taxonomy_class: preview.taxonomyClass,
         imported_at: preview.importedAt,
         approved_at: approvedAt,
         sha256: preview.sha256,

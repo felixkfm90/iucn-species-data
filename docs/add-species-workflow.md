@@ -134,11 +134,18 @@ Die Vorschau zeigt:
 
 Nach erfolgreicher Datenpruefung kann direkt ein Portrait vorbereitet werden:
 
-1. optionale Zusatzhinweise eintragen
-2. Einzelprompt aus den geprueften Artdaten erzeugen und kopieren
-3. genau ein Bild in ChatGPT erzeugen
-4. Bilddatei im Dialog auswaehlen
-5. `Bild pruefen`
+1. optional `Erweiterte Vorgaben für die Bildgenerierung` öffnen und nur gewünschte Abweichungen auswählen
+2. optionale freie Zusatzhinweise eintragen
+3. Einzelprompt aus den geprüften Artdaten, der Taxonomieklasse und allen Bildvorgaben erzeugen und kopieren
+4. genau ein Bild in ChatGPT erzeugen
+5. Bilddatei im Dialog auswählen
+6. `Bild prüfen`
+
+Die Untergruppen der erweiterten Vorgaben sind einzeln ausklappbar. Geschlossene beziehungsweise unveränderte
+Felder bleiben automatisch; das Habitat wird standardmäßig dezent und wissenschaftlich passend angedeutet.
+Klassenabhängige Felder erscheinen nur, wenn die Taxonomiereferenz die Klasse kennt. Ein Gewässertyp wird deshalb
+nur bei fachlich passenden Klassen angeboten. `Prompt erstellen` übernimmt die Auswahl direkt. Bei einer
+Detailaufnahme ist ein freies Detailmotiv Pflicht.
 
 Die Bildpruefung nutzt dieselben Regeln wie die Bearbeitung bestehender Arten: PNG/JPEG/WebP bis 20 MB,
 Mindestgroesse 800x1000 Pixel, 4:5-Seitenverhaeltnis und lokale Umwandlung auf `portrait.webp` in 1280x1600.

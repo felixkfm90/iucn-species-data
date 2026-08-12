@@ -11,6 +11,7 @@ import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
 import {
   buildPortraitPrompt,
   portraitPromptSha256,
+  validatePortraitOptions,
 } from "../scripts/portrait-generator.mjs";
 import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
 import { assertPublicHttpUrl } from "./request-security.mjs";
@@ -204,7 +205,12 @@ export function validatePortraitPreviewPayload(payload, species) {
   const originalName = String(payload?.originalName ?? "").trim();
   const imageBase64 = String(payload?.imageBase64 ?? "").trim();
   const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+  const portraitOptionValidation = validatePortraitOptions(payload?.portraitOptions);
+  const taxonomyClass = String(
+    payload?.taxonomyClass ?? species?.taxonomy?.className ?? species?.taxonomyClass ?? "",
+  ).trim().slice(0, 120);
   const errors = [];
+  errors.push(...portraitOptionValidation.errors);
   if (!originalName) errors.push("Dateiname fehlt");
   if (!imageBase64) errors.push("Bilddatei fehlt");
   if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
@@ -238,6 +244,8 @@ export function validatePortraitPreviewPayload(payload, species) {
   const prompt = buildPortraitPrompt({
     germanName: species.germanName,
     scientificName: species.scientificName,
+    taxonomyClass,
+    portraitOptions: portraitOptionValidation.options,
     additionalInstructions,
   });
   return {
@@ -245,6 +253,8 @@ export function validatePortraitPreviewPayload(payload, species) {
     buffer,
     image,
     additionalInstructions,
+    portraitOptions: portraitOptionValidation.options,
+    taxonomyClass,
     prompt,
     promptSha256: portraitPromptSha256(prompt),
     errors,

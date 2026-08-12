@@ -507,7 +507,7 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
     ein neuer Player gestartet wird.
   7.7.5 Artporträt ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API wurde vollständig entfernt. Der Explorer erzeugt den
-  versionierten Prompt `1.1.0` lokal, kopiert Einzelprompts und importiert anschließend ein im
+  versionierten Prompt `2.0.0` lokal, kopiert Einzelprompts und importiert anschließend ein im
   vorhandenen ChatGPT-Zugang erzeugtes PNG, JPEG oder WebP. Dateisignatur, mindestens 800×1000 Pixel und
   4:5-Seitenverhältnis werden geprüft; FFmpeg vereinheitlicht das Produkt auf `1280x1600` WebP. Bei bestehenden
   Arten führt `Artporträt übernehmen` nach der manuellen Art- und Anatomieprüfung lokale Speicherung und Backup aus;
@@ -517,7 +517,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   die Assetstruktur zeigt die genaue Fehlanzahl und betroffene Arten erhalten die Listenmarkierung `P`. Sie sind
   über `Fehlendes Artporträt` filterbar. Der Sammelprompt-/Datenbankdialog für alle fehlenden Portraits wurde am
   2026-06-27 entfernt, weil ChatGPT daraus wiederholt Collagen oder Mehrfachbilder erzeugte.
-  Version `1.1.0` verbietet Collagen, Raster und Mehrfachansichten ausdrücklich.
+  Version `2.0.0` verbietet Collagen, Raster und Mehrfachansichten ausdrücklich und unterstützt strukturierte,
+  klassenabhängige Bildvorgaben.
   Explorer-Tests sind erfolgreich. Der Neue-Art-Dialog kann seit 2026-06-27 aus den eingegebenen neuen Artdaten
   einen Einzelprompt erzeugen und ein optional sofort erzeugtes Bild nach der Artanlage prüfen und übernehmen.
   Der erste produktive Einzelimport fuer `Alpenbirkenzeisig` wurde am
@@ -1025,6 +1026,14 @@ Die Aktionen verwenden nun dieselbe vollbreite Einspalten-Darstellung wie Backup
 Aktualisierung prüft zuerst CoL- und Anbieterstände und überspringt den Master-Neuaufbau vollständig, wenn keine
 neuen Quelldaten und kein geprüfter Kandidat vorliegen. Tatsächliche Taxonomie-Updates werden im Kopf und im
 Datenbankblock gelb als laufender Vorgang angezeigt.
+
+Am 12. August 2026 wurde der kostenfreie Artportrait-Workflow erweitert. Promptversion `2.0.0` bietet im
+Bearbeitungsdialog und im Neue-Art-Assistenten einen standardmäßig geschlossenen Bereich mit einzeln ausklappbaren,
+strukturierten Bildvorgaben. Motiv, Geschlecht, Lebensstufe, Ausschnitt, Körper-/Blickrichtung, Perspektive,
+Aktivität, Nahrung, Habitat, Tageszeit und Saison können gezielt gesetzt werden; passende Klassen erhalten
+zusätzliche Fachoptionen. Unveränderte Werte bleiben automatisch, das Habitat ist standardmäßig dezent. Eine
+Detailaufnahme verlangt ein benanntes Detailmotiv. Der erzeugte Einzelprompt und `portrait.json` dokumentieren die
+normalisierten Vorgaben und die verwendete Taxonomieklasse.
 
 ## Phase 10 - Lightroom-Integration
 

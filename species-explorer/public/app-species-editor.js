@@ -87,6 +87,7 @@
       const soundSegmentAddButton = elements.detailPanel.querySelector(".sound-segment-add");
       const soundSegmentPreviewButton = elements.detailPanel.querySelector(".sound-segment-preview-button");
       const portraitInstructions = elements.detailPanel.querySelector(".portrait-instructions-input");
+      const portraitOptionsHost = elements.detailPanel.querySelector(".portrait-options-host");
       const portraitMessage = elements.detailPanel.querySelector(".portrait-edit-message");
       const portraitPreview = elements.detailPanel.querySelector(".portrait-edit-preview");
       const portraitCurrentImage = elements.detailPanel.querySelector(".portrait-preview-current");
@@ -192,6 +193,7 @@
         species,
         state,
         closeButtons,
+        portraitOptionsHost,
         portraitInstructions,
         portraitMessage,
         portraitPreview,

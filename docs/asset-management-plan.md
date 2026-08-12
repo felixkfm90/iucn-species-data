@@ -250,7 +250,7 @@ Hinweis `S` (`Sound fehlt/manuell gepflegt`). Beispiel: `Grüner Leguan`.
 Seit 2026-06-21 ist der erste sichere Einzelart-Workflow technisch umgesetzt:
 
 - keine kostenpflichtige Image-API und kein `OPENAI_API_KEY`
-- lokaler versionierter Prompt `1.1.0` mit strikter Ein-Bild-/Anti-Collage-Regel
+- lokaler versionierter Prompt `2.0.0` mit strikter Ein-Bild-/Anti-Collage-Regel und strukturierten Bildvorgaben
 - deutscher und wissenschaftlicher Name automatisch aus der Artenliste
 - optionale artspezifische Zusatzhinweise
 - Prompt anzeigen und kopieren

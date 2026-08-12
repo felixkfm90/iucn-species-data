@@ -1,6 +1,6 @@
 # KI-Artporträts im Arten-Explorer
 
-Stand: 2026-07-04
+Stand: 2026-08-12
 
 ## Entscheidung
 
@@ -23,8 +23,8 @@ späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich
 ## Prompt
 
 Deutscher und wissenschaftlicher Artname stammen aus `species_list.json`. Der verbindliche, versionierte
-Stilprompt steht in `scripts/portrait-generator.mjs`. Promptversion `1.1.0` ergänzt eine verbindliche
-Ein-Bild-Regel:
+Stilprompt steht in `scripts/portrait-generator.mjs`. Promptversion `2.0.0` verbindet die Ein-Bild-Regel mit
+strukturierten, klassenabhängigen Bildvorgaben:
 
 - genau eine einzelne Bilddatei pro Antwort
 - genau eine Art und ein Exemplar
@@ -32,9 +32,28 @@ Ein-Bild-Regel:
 - keine Varianten, Mehrfachansichten, Detail-Inserts oder wiederholten Darstellungen
 - nach einem erzeugten Bild stoppen
 
+Ohne geöffnete erweiterte Vorgaben arbeitet die App automatisch. Nur das Habitat ist als sicherer Standard
+`dezent angedeutet`; es muss wissenschaftlich zur Art passen. `Prompt erstellen` übernimmt die aktuellen Vorgaben
+direkt. Einen separaten Schritt zum Verbessern der Hinweise gibt es nicht.
+
+Der Bereich `Erweiterte Vorgaben für die Bildgenerierung` ist standardmäßig geschlossen und enthält wiederum
+einzeln ausklappbare Gruppen:
+
+- Tier und Motiv: Motivanzahl, Geschlecht, Lebensstufe und Bildausschnitt
+- Körper und Blick: Körperausrichtung sowie davon getrennt Kopf- und Blickrichtung
+- Perspektive und Verhalten: Perspektive, Aktivität und Nahrung oder Beute
+- Umgebung und Licht: Habitatstärke, Tageszeit sowie Saison oder Zustand
+- klassenabhängige Vorgaben, beispielsweise Gefieder und Flügel bei Vögeln, Fell und Sozialform bei Säugetieren
+  oder Gewässertyp bei Fischen
+
+Die Werte werden über eindeutige Einfachauswahlen gewählt. Bei `Detailaufnahme` ist zusätzlich ein Detailmotiv wie
+`Pfote`, `Schnabel`, `Auge`, `Flügel`, `Schuppen` oder `Panzer` Pflicht. Widersprüchliche Kombinationen werden vor
+der Prompt-Erstellung abgewiesen. Der kompakte Kopf nennt, wie viele Vorgaben vom automatischen Standard abweichen.
+
 Die App bietet je Art:
 
 - optionale Zusatzhinweise, etwa Geschlecht, Alters- oder Brutkleid
+- strukturierte erweiterte Vorgaben mit klassenabhängigen Auswahlmöglichkeiten
 - `Prompt erstellen`
 - `Prompt kopieren`
 - sichtbare Promptvorschau
@@ -78,7 +97,7 @@ Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignori
 
 1. Bearbeitungsmodus aktivieren.
 2. Art öffnen und `Bearbeiten` wählen.
-3. Optional Zusatzhinweise eintragen.
+3. Optional einzelne erweiterte Vorgaben aufklappen und auswählen sowie freie Zusatzhinweise eintragen.
 4. `Prompt erstellen` und danach `Prompt kopieren`.
 5. Prompt in ChatGPT einfügen und Bild herunterladen.
 6. Bild in der App auswählen.
@@ -95,7 +114,7 @@ Beim Anlegen einer neuen Art kann der Portraitschritt direkt vorbereitet werden:
 
 1. Deutscher Name, wissenschaftlicher Name, Größe, Gewicht und Lebenserwartung eintragen.
 2. `Art prüfen`; Fehler werden direkt an den betroffenen Feldern angezeigt.
-3. Im Schritt `Artportrait` optional Zusatzhinweise eintragen.
+3. Im Schritt `Artportrait` optional einzelne erweiterte Vorgaben auswählen und Zusatzhinweise eintragen.
 4. `Portrait-Prompt erstellen` und `Prompt kopieren`.
 5. In ChatGPT genau ein Bild erzeugen und herunterladen.
 6. Bild im Neue-Art-Dialog auswählen und mit `Bild prüfen` validieren oder `Artportrait überspringen` wählen.
@@ -162,6 +181,7 @@ species-assets/<SafeName>/portrait.json
 - ursprünglichen Dateinamen, Format und Abmessungen
 - Produktabmessungen und Format
 - optionale Zusatzhinweise
+- normalisierte erweiterte Portraitvorgaben und verwendete Taxonomieklasse
 - Import- und Freigabezeitpunkt
 - SHA-256 der Produktdatei
 

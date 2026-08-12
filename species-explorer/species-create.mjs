@@ -7,6 +7,7 @@ import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
   portraitPromptSha256,
+  validatePortraitOptions,
 } from "../scripts/portrait-generator.mjs";
 import {
   DEFAULT_PORTRAIT_OPTIONS,
@@ -117,11 +118,14 @@ export function createSpeciesCreateOperations({
     cleanupPreviewTokens();
     const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
     const additionalInstructions = String(payload?.additionalInstructions ?? "").trim();
+    const portraitOptionValidation = validatePortraitOptions(payload?.portraitOptions);
+    const taxonomyClass = String(payload?.taxonomyClass ?? "").trim().slice(0, 120);
     if (additionalInstructions.length > MAX_PORTRAIT_INSTRUCTIONS_LENGTH) {
       errors.push(
         `Zusätzliche Hinweise dürfen maximal ${MAX_PORTRAIT_INSTRUCTIONS_LENGTH} Zeichen enthalten`,
       );
     }
+    errors.push(...portraitOptionValidation.errors);
     if (errors.length) {
       const error = new Error("Eingaben sind ungültig");
       error.statusCode = 400;
@@ -134,6 +138,8 @@ export function createSpeciesCreateOperations({
     const prompt = buildPortraitPrompt({
       germanName: entry.german,
       scientificName: derived.scientificName,
+      taxonomyClass,
+      portraitOptions: portraitOptionValidation.options,
       additionalInstructions,
     });
     return {
@@ -145,6 +151,8 @@ export function createSpeciesCreateOperations({
       prompt,
       promptVersion: PORTRAIT_STANDARD.promptVersion,
       promptSha256: portraitPromptSha256(prompt),
+      portraitOptions: portraitOptionValidation.options,
+      taxonomyClass,
       fileName: `${derived.safeName}.png`,
       instructions: [
         "Prompt in ChatGPT einfügen und dort genau ein Bild für diese eine Art erzeugen.",
@@ -196,6 +204,7 @@ export function createSpeciesCreateOperations({
       englishName: entry.english,
       scientificName: derived.scientificName,
       safeName: derived.safeName,
+      taxonomyClass: String(payload?.taxonomyClass ?? "").trim().slice(0, 120),
     };
     const validated = validatePortraitPreviewPayload(payload, species);
     if (validated.errors.length) {
@@ -239,6 +248,8 @@ export function createSpeciesCreateOperations({
         expiresAt,
         importedAt,
         additionalInstructions: validated.additionalInstructions,
+        portraitOptions: validated.portraitOptions,
+        taxonomyClass: validated.taxonomyClass,
         prompt: validated.prompt,
         promptSha256: validated.promptSha256,
         originalName: validated.originalName,

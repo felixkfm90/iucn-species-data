@@ -891,8 +891,11 @@ alle Arten erneut abzurufen.
 Die Assetverwaltung aus Phase 7.7 ist seit 2026-06-21 abgeschlossen. Karten, Sound/Credits,
 Spektrogrammverwaltung und Artportrait-Workflow sind umgesetzt. KI-Artportraets verwenden keine kostenpflichtige Image-API:
 Der Explorer erstellt den Prompt lokal je Art, kopiert diesen Einzelprompt und importiert ein anschliessend selbst
-in ChatGPT erzeugtes PNG, JPEG oder WebP. Promptversion `1.1.0` fordert genau ein Einzelbild an und verbietet
-Collagen, Raster, Kontaktabzuege und Mehrfachansichten. Der Sammelprompt-Workflow wurde entfernt, weil ChatGPT daraus
+in ChatGPT erzeugtes PNG, JPEG oder WebP. Promptversion `2.0.0` fordert genau ein Einzelbild an, verbietet
+Collagen, Raster, Kontaktabzuege und Mehrfachansichten und übernimmt strukturierte Bildvorgaben direkt in den
+Prompt. Der standardmäßig geschlossene Bereich enthält einzeln ausklappbare Gruppen für Motiv, Körper/Blick,
+Perspektive/Verhalten, Umgebung/Licht und klassenabhängige Merkmale. Ohne Anpassung bleibt alles automatisch;
+das wissenschaftlich passende Habitat wird dezent angedeutet. Der Sammelprompt-Workflow wurde entfernt, weil ChatGPT daraus
 wiederholt Collagen erzeugte. Die App prueft Format, Mindestgroesse und 4:5, erzeugt lokal
 `portrait.webp` in `1280x1600` und speichert bei bestehenden Arten wie zuvor nach `Artporträt übernehmen` mit
 Backup, Commit und Push. Der Neue-Art-Dialog kann aus den gerade eingegebenen Daten einen Einzelprompt erzeugen,

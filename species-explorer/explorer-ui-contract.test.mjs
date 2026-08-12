@@ -14,6 +14,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     appFormFeedbackSource,
     appNewSpeciesFormSource,
     appTaxonomyReferenceSource,
+    appPortraitOptionsSource,
     appNewSpeciesWorkflowSource,
     appEditorFormSource,
     appEditorGeneralSource,
@@ -87,6 +88,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     readFile(new URL("./public/app-form-feedback.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-new-species-form.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-taxonomy-reference.js", import.meta.url), "utf8"),
+    readFile(new URL("./public/app-portrait-options.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-new-species-workflow.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-form.js", import.meta.url), "utf8"),
     readFile(new URL("./public/app-editor-general.js", import.meta.url), "utf8"),
@@ -161,6 +163,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   const modularAppSource = [
     appSource,
     appTaxonomyReferenceSource,
+    appPortraitOptionsSource,
     appNewSpeciesWorkflowSource,
     appEditorGeneralSource,
     appEditorTaxonomySource,
@@ -638,6 +641,21 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /\/assets\/portrait\/prompt/);
   assert.match(modularAppSource, /\/assets\/portrait\/preview/);
   assert.doesNotMatch(appSource, /\/assets\/portrait\/generate/);
+  assert.match(htmlSource, /class="new-species-portrait-options-host"/);
+  assert.match(htmlSource, /src="\/app-portrait-options\.js"/);
+  assert.match(modularAppSource, /Erweiterte Vorgaben für die Bildgenerierung/);
+  assert.match(appPortraitOptionsSource, /Tier und Motiv/);
+  assert.match(appPortraitOptionsSource, /Körper und Blick/);
+  assert.match(appPortraitOptionsSource, /Perspektive und Verhalten/);
+  assert.match(appPortraitOptionsSource, /Umgebung und Licht/);
+  assert.match(appPortraitOptionsSource, /Gewässertyp/);
+  assert.match(appPortraitOptionsSource, /Habitat dezent/);
+  assert.match(appPortraitOptionsSource, /data-portrait-detail-subject/);
+  assert.match(appEditorPortraitSource, /portraitOptions:\s*options/);
+  assert.match(appNewSpeciesWorkflowSource, /taxonomyClass:\s*selectedTaxonomyClass\(\)/);
+  assert.match(cssSource, /\.portrait-option-group/);
+  assert.match(cssSource, /\.portrait-detail-subject-field\[hidden\]\s*\{[^}]*display:\s*none/s);
+  assert.match(appPortraitOptionsSource, /Jungtier als Motiv und adultes Lebensstadium widersprechen sich/);
   assert.match(cssSource, /\.portrait-compare-frame\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/s);
   assert.match(
     cssSource,

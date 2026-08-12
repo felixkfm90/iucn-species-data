@@ -204,8 +204,10 @@
     const hierarchy = Array.isArray(detail.hierarchy)
       ? detail.hierarchy
         .map((entry) => ({
+          rank: String(entry.rank || "").toLowerCase(),
           label: RANK_LABELS[String(entry.rank || "").toLowerCase()]
             || String(entry.rank || "Stufe"),
+          scientificName: String(entry.scientificName || entry.scientific_name || "").trim(),
           value: String(
             entry.germanName && entry.germanName !== entry.scientificName
               ? `${entry.germanName} (${entry.scientificName})`
@@ -261,6 +263,7 @@
       return Object.freeze({
         initialize: async () => {},
         reset: () => {},
+        getSelection: () => null,
       });
     }
 
@@ -888,6 +891,11 @@
     return Object.freeze({
       initialize,
       reset,
+      getSelection: () => (
+        selectedDetail && selectedResult
+          ? taxonomyDetailPresentation(selectedDetail, selectedResult)
+          : null
+      ),
     });
   }
 

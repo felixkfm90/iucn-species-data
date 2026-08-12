@@ -58,6 +58,7 @@
       const jsonPreview = dialog.querySelector(".new-species-json");
       const derivedFields = [...dialog.querySelectorAll("[data-derived]")];
       const portraitInstructions = dialog.querySelector(".new-species-portrait-instructions");
+      const portraitOptionsHost = dialog.querySelector(".new-species-portrait-options-host");
       const portraitPromptButton = dialog.querySelector(".new-species-portrait-prompt-button");
       const portraitCopyButton = dialog.querySelector(".new-species-portrait-copy-button");
       const portraitPromptDetails = dialog.querySelector(".new-species-portrait-prompt-details");
@@ -144,6 +145,36 @@
         escapeHtml,
         onNamesChanged: markSpeciesInputsChanged,
       });
+
+      const selectedTaxonomyClass = () => {
+        const selection = taxonomyReference.getSelection?.();
+        const classEntry = selection?.hierarchy?.find((entry) => entry.rank === "class");
+        return classEntry?.scientificName || classEntry?.value || "";
+      };
+
+      const portraitOptions = global.SpeciesExplorerPortraitOptions
+        ?.createPortraitOptionsController({
+          host: portraitOptionsHost,
+          className: "",
+          onChange: () => {
+            resetPortraitPrompt();
+            resetPortraitPreview();
+          },
+        });
+
+      const validatedPortraitOptions = () => {
+        portraitOptions?.setClassName?.(selectedTaxonomyClass());
+        const validation = portraitOptions?.validate?.() || {
+          valid: true,
+          errors: [],
+          value: {},
+        };
+        if (!validation.valid) {
+          setPortraitMessage(validation.errors.join(" · "), "error");
+          return null;
+        }
+        return validation.value;
+      };
 
       const canAdvanceFromPortrait = () => portraitSkipped || Boolean(portraitPreviewToken);
 
@@ -448,6 +479,7 @@
           indicator.classList.toggle("reachable", indicatorStep <= maxStepReached && !active);
         }
         updateFinalPortraitState();
+        if (step === 2) portraitOptions?.setClassName?.(selectedTaxonomyClass());
         updateButtons();
       };
 
@@ -499,6 +531,7 @@
         setPipelineStepState();
         resetPortraitPrompt();
         resetPortraitPreview();
+        portraitOptions?.reset?.();
         taxonomyReference.reset();
         setMessage("Bitte Eingaben ausfüllen und auf „Eingaben prüfen“ klicken.", "info");
         setPortraitMessage();
@@ -512,11 +545,13 @@
 
       const setBusy = (value) => {
         busy = value;
+        portraitOptions?.setBusy?.(value || pipelineBusy);
         updateButtons();
       };
 
       const setPipelineBusy = (value) => {
         pipelineBusy = value;
+        portraitOptions?.setBusy?.(value || busy);
         updateButtons();
       };
 
@@ -865,6 +900,8 @@
 
       portraitPromptButton.addEventListener("click", async () => {
         if (!previewToken) return;
+        const options = validatedPortraitOptions();
+        if (!options) return;
         resetPortraitPrompt();
         resetPortraitPreview();
         setBusy(true);
@@ -876,6 +913,8 @@
             body: JSON.stringify({
               values: speciesValues(),
               additionalInstructions: portraitInstructions.value || "",
+              portraitOptions: options,
+              taxonomyClass: selectedTaxonomyClass(),
             }),
           });
           portraitPromptText = result.prompt;
@@ -914,6 +953,8 @@
 
       portraitPreviewButton.addEventListener("click", async () => {
         if (!previewToken) return;
+        const options = validatedPortraitOptions();
+        if (!options) return;
         resetPortraitPreview();
         const file = portraitFileInput.files?.[0];
         if (!file) {
@@ -936,6 +977,8 @@
               originalName: file.name,
               imageBase64,
               additionalInstructions: portraitInstructions.value || "",
+              portraitOptions: options,
+              taxonomyClass: selectedTaxonomyClass(),
             }),
           });
           portraitPreviewToken = result.token;

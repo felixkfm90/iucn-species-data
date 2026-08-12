@@ -6,6 +6,7 @@
       species,
       state,
       closeButtons,
+      portraitOptionsHost,
       portraitInstructions,
       portraitMessage,
       portraitPreview,
@@ -53,6 +54,29 @@ const resetPortraitPrompt = () => {
   if (portraitCopyButton) portraitCopyButton.disabled = true;
 };
 
+const portraitOptions = global.SpeciesExplorerPortraitOptions
+  ?.createPortraitOptionsController({
+    host: portraitOptionsHost,
+    className: species.taxonomy?.className || "",
+    onChange: () => {
+      resetPortraitPrompt();
+      resetPortraitPreview();
+    },
+  });
+
+const validatedPortraitOptions = () => {
+  const validation = portraitOptions?.validate?.() || {
+    valid: true,
+    errors: [],
+    value: {},
+  };
+  if (!validation.valid) {
+    setPortraitMessage(validation.errors.join(" · "), "error");
+    return null;
+  }
+  return validation.value;
+};
+
 const setPortraitBusy = (busy) => {
   if (portraitPromptButton) portraitPromptButton.disabled = busy;
   if (portraitCopyButton) portraitCopyButton.disabled = busy || !portraitPromptText;
@@ -62,6 +86,7 @@ const setPortraitBusy = (busy) => {
   if (portraitDeleteButton) portraitDeleteButton.disabled = busy;
   if (portraitFileInput) portraitFileInput.disabled = busy;
   if (portraitInstructions) portraitInstructions.disabled = busy;
+  portraitOptions?.setBusy?.(busy);
   for (const button of closeButtons) button.disabled = busy;
 };
 
@@ -73,6 +98,8 @@ portraitKeepButton?.addEventListener("click", () => {
 
 
 portraitPromptButton?.addEventListener("click", async () => {
+  const options = validatedPortraitOptions();
+  if (!options) return;
   resetPortraitPreview();
   setPortraitBusy(true);
   setPortraitMessage("Prompt wird lokal aus den Artdaten erstellt…", "info");
@@ -84,6 +111,7 @@ portraitPromptButton?.addEventListener("click", async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           additionalInstructions: portraitInstructions?.value || "",
+          portraitOptions: options,
         }),
       },
     );
@@ -122,6 +150,8 @@ portraitCopyButton?.addEventListener("click", async () => {
 });
 
 portraitPreviewButton?.addEventListener("click", async () => {
+  const options = validatedPortraitOptions();
+  if (!options) return;
   resetPortraitPreview();
   setPortraitBusy(true);
   setPortraitMessage(
@@ -142,6 +172,7 @@ portraitPreviewButton?.addEventListener("click", async () => {
           originalName: file.name,
           imageBase64,
           additionalInstructions: portraitInstructions?.value || "",
+          portraitOptions: options,
         }),
       },
     );

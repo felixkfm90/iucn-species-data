@@ -653,8 +653,13 @@ Aktuelle Planung:
   und manuell gepflegten Sounds.
   Phase 7.7.5 Artportraet ist seit 2026-06-21 technisch als kostenfreier manueller Workflow umgesetzt. Die zuvor
   vorbereitete kostenpflichtige OpenAI Image API und die Abhaengigkeit von `OPENAI_API_KEY` wurden wieder
-  vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `1.1.0` lokal aus deutschem und
-  wissenschaftlichem Namen sowie optionalen Zusatzhinweisen. Einzelprompts koennen angezeigt und kopiert werden.
+  vollstaendig entfernt. Der Explorer erzeugt den versionierten Prompt `2.0.0` lokal aus deutschem und
+  wissenschaftlichem Namen, Taxonomieklasse, strukturierten Bildvorgaben und optionalen Zusatzhinweisen.
+  `Erweiterte Vorgaben für die Bildgenerierung` ist standardmäßig geschlossen; die Untergruppen für Motiv,
+  Körper/Blick, Perspektive/Verhalten, Umgebung/Licht und klassenabhängige Merkmale sind einzeln ausklappbar.
+  Unveränderte Felder bleiben automatisch, das Habitat wird standardmäßig dezent und fachlich passend angedeutet.
+  Detailaufnahmen verlangen ein freies Detailmotiv. `Prompt erstellen` übernimmt die Auswahl direkt.
+  Einzelprompts koennen angezeigt und kopiert werden.
   Der Sammelprompt-/Datenbankdialog fuer alle fehlenden Portraits wurde am 2026-06-27 entfernt, weil ChatGPT daraus
   wiederholt Collagen oder Mehrfachbilder erzeugte. Die Ein-Bild-Regel verbietet Collagen, Raster,
   Mehrfachansichten und Varianten. Bilder werden deshalb artweise im vorhandenen ChatGPT-Zugang erzeugt und als PNG,

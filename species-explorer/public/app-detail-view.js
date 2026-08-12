@@ -468,6 +468,8 @@
                 <strong>${escapeHtml(species.germanName)} · ${escapeHtml(species.scientificName)}</strong>
               </div>
 
+              <div class="portrait-options-host"></div>
+
               <label class="portrait-instructions-field">
                 <span>Zusätzliche Hinweise · optional</span>
                 <textarea

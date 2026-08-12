@@ -28,6 +28,7 @@ import { buildCleanupPlan, runCleanup, runSpeciesCleanup } from "../scripts/spec
 import {
   PORTRAIT_STANDARD,
   buildPortraitPrompt,
+  normalizePortraitOptions,
   portraitPromptSha256,
 } from "../scripts/portrait-generator.mjs";
 import {
@@ -413,7 +414,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.match(prompt, /Do not create a collage, image grid, contact sheet/);
   assert.match(prompt, /After creating this one image, stop/);
   assert.match(portraitPromptSha256(prompt), /^[0-9a-f]{64}$/);
-  assert.equal(PORTRAIT_STANDARD.promptVersion, "1.1.0");
+  assert.equal(PORTRAIT_STANDARD.promptVersion, "2.0.0");
   assert.equal(PORTRAIT_STANDARD.size, "1280x1600");
   assert.equal(PORTRAIT_STANDARD.outputFormat, "webp");
   const uploadedPng = createTestPng();
@@ -445,6 +446,12 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         additionalInstructions: "Adultes Männchen mit gelbem Schnabel.",
+        portraitOptions: {
+          crop: "full-body",
+          bodyOrientation: "right-profile",
+          habitat: "clear",
+          classOptions: { birdPlumage: "breeding" },
+        },
       }),
     },
   );
@@ -452,6 +459,24 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   const promptResult = await promptResponse.json();
   assert.equal(promptResult.fileName, "Amsel.png");
   assert.match(promptResult.prompt, /Adultes Männchen/);
+  assert.match(promptResult.prompt, /right-facing profile/);
+  assert.match(promptResult.prompt, /adult breeding plumage/);
+  assert.equal(promptResult.portraitOptions.habitat, "clear");
+
+  const invalidDetailResponse = await fetch(
+    `${baseUrl}/api/species/turdusmerula/assets/portrait/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        originalName: "Amsel.png",
+        imageBase64: uploadedPng.toString("base64"),
+        additionalInstructions: "",
+        portraitOptions: { crop: "detail" },
+      }),
+    },
+  );
+  assert.equal(invalidDetailResponse.status, 400);
 
   const missingResponse = await fetch(`${baseUrl}/api/portraits/missing`, {
     method: "POST",
@@ -482,6 +507,12 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
         originalName: "Amsel.png",
         imageBase64: uploadedPng.toString("base64"),
         additionalInstructions: "Adultes Männchen mit gelbem Schnabel.",
+        portraitOptions: {
+          crop: "full-body",
+          bodyOrientation: "right-profile",
+          habitat: "clear",
+          classOptions: { birdPlumage: "breeding" },
+        },
       }),
     },
   );
@@ -530,11 +561,18 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.equal(metadata.scientific_name, "Turdus merula");
   assert.equal(metadata.source, "ChatGPT");
   assert.match(metadata.generation_method, /manuell/i);
-  assert.equal(metadata.prompt_version, "1.1.0");
+  assert.equal(metadata.prompt_version, "2.0.0");
   assert.equal(metadata.original_file_name, "Amsel.png");
   assert.equal(metadata.original_width, 1120);
   assert.equal(metadata.product_width, 1280);
   assert.equal(metadata.additional_instructions, "Adultes Männchen mit gelbem Schnabel.");
+  assert.deepEqual(metadata.portrait_options, normalizePortraitOptions({
+    crop: "full-body",
+    bodyOrientation: "right-profile",
+    habitat: "clear",
+    classOptions: { birdPlumage: "breeding" },
+  }));
+  assert.equal(metadata.taxonomy_class, "Aves");
   assert.match(metadata.prompt_sha256, /^[0-9a-f]{64}$/);
   assert.match(metadata.sha256, /^[0-9a-f]{64}$/);
 
