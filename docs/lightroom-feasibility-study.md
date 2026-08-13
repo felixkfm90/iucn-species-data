@@ -7,22 +7,28 @@ Status: abgeschlossen; Grundlage für Phase 10.2
 ## 1. Ziel und Ergebnis
 
 Der Arten-Explorer kann sinnvoll um ein eigenes deutschsprachiges Lightroom-Classic-Plug-in erweitert werden.
-Das Plug-in soll ausgewählte Fotos kontrolliert mit den bereits geprüften Artnamen und Taxonomiedaten des
-Arten-Explorers versehen. Es bleibt ein Lightroom-Werkzeug und wird keine zweite Taxonomiedatenbank.
+Das Plug-in soll die vollständige aktive lokale Masterdatenbank durchsuchen und ausgewählte Fotos kontrolliert mit
+den dort geprüften Artnamen und Taxonomiedaten versehen. Die jeweilige Art muss dafür nicht bereits im
+Arten-Explorer angelegt sein. Das Plug-in bleibt ein Lightroom-Werkzeug und wird keine zweite fachlich pflegbare
+Taxonomiedatenbank.
 
 Die Machbarkeit ist für ein eng begrenztes MVP bestätigt. Empfohlen wird:
 
 - ein natives Lightroom-Classic-Plug-in in Lua;
-- ein kleiner, versionierter und vom Arten-Explorer erzeugter JSON-Export als read-only Datenquelle;
-- vollständig lokale Suche und Verschlagwortung für den produktiven Artenbestand;
+- ein vollständiges, versioniertes und vom Arten-Explorer erzeugtes read-only Suchpaket des aktiven
+  Taxonomie-Masters;
+- vollständig lokale Suche über alle Taxa sowie alle vorhandenen deutschen, englischen und wissenschaftlichen
+  Namen;
 - eine Vorschau vor jeder Metadatenänderung;
-- hierarchische Lightroom-Schlüsselwörter plus stabile Plug-in-Metadatenfelder;
+- Übernahme des vollständigen verfügbaren Taxonomiepfads als hierarchische Lightroom-Schlüsselwörter plus stabile
+  Plug-in-Metadatenfelder;
+- gemeinsame Zuordnung einer ausgewählten Art zu einem oder beliebig vielen markierten Fotos;
 - keine direkte Änderung der Lightroom-Katalogdatei, der Master-SQLite oder von XMP-Dateien außerhalb der
   Lightroom-Schnittstellen.
 
-Nicht Bestandteil des ersten MVP sind automatische Bilderkennung, iNaturalist-Synchronisation, Lifelist-Statistik
-und ein vollständiger Zugriff auf alle Taxa der großen Masterdatenbank. Diese Funktionen bleiben einzeln
-priorisierbare Erweiterungen.
+Nicht Bestandteil des ersten MVP sind automatische Bilderkennung, iNaturalist-Beobachtungssynchronisation und
+Lifelist-Statistik. Diese Funktionen bleiben einzeln priorisierbare Erweiterungen. Die vollständige Offline-Suche
+über den bereits aufgebauten Taxonomie-Master ist dagegen eine verbindliche MVP-Anforderung.
 
 ## 2. Geprüfte lokale Umgebung
 
@@ -35,7 +41,12 @@ Der vorhandene aktive Taxonomie-Master ist für Lightroom als direkte Datenquell
 - aktive und vorherige SQLite-Version belegen jeweils mehrere GiB;
 - Speicherpfad, Aktivierungszeiger und Rollback gehören dem Arten-Explorer;
 - ein direkter Zugriff würde Lightroom an internes Schema, native SQLite-Unterstützung und Dateipfade koppeln;
-- die im Plug-in benötigten Daten umfassen im MVP nur den produktiven Artenbestand und seine bestätigten Namen.
+- ein direkter Zugriff würde Suchbetrieb und Taxonomieaktualisierung unnötig miteinander koppeln.
+
+Trotzdem muss das Plug-in den vollständigen Master durchsuchen können. Deshalb wird aus jeder aktivierten
+Masterversion ein abgeleitetes, kompaktes und unveränderliches Lightroom-Suchpaket erzeugt. Es ist keine zweite
+fachlich pflegbare Datenbank, sondern ein jederzeit reproduzierbarer Suchindex mit genau derselben Version und
+Provenienz wie der aktive Master.
 
 ## 3. Technische Möglichkeiten und Grenzen des Lightroom SDK
 
@@ -175,49 +186,60 @@ Normalisierung muss bereits im Explorer-Master erfolgen.
 | Variante | Vorteile | Nachteile | Entscheidung |
 | --- | --- | --- | --- |
 | Direkter Zugriff auf Master-SQLite | vollständiger Bestand, keine Exportkopie | native SQLite-Anbindung in Lua, mehrere GiB, Schema-/Pfadkopplung, Sperr- und Updatefragen | für das MVP verworfen |
-| Lokale Explorer-API | aktueller Master, zentrale Suchlogik | Explorer oder Dienst muss laufen; Port-, Firewall-, Start- und Mehrgerätefragen | später optional für Vollsuche |
-| Versionierter kompakter Export | klein, offline, read-only, atomar austauschbar, einfach testbar | Export muss bei Änderungen neu erzeugt werden | verbindliche MVP-Empfehlung |
+| Lokale Explorer-API | aktueller Master, zentrale Suchlogik | Explorer muss laufen; Port-, Firewall-, Start- und Mehrgerätefragen | als Pflichtweg verworfen |
+| Kleine JSON-Datei nur mit Projektarten | sehr klein und einfach | keine Suche nach noch nicht angelegten Arten; erfüllt den Anwendungsfall nicht | verworfen |
+| Vollständiges abgeleitetes Suchpaket plus lokale Suchhilfe | alle Mastertaxa offline, read-only, atomar austauschbar, vom Explorer unabhängig | zusätzlicher Export- und Hilfsprozess; Größe und Startzeit müssen gemessen werden | verbindliche MVP-Empfehlung |
 
-Der Export wird durch den Arten-Explorer erstellt. Lightroom liest ihn ausschließlich. Eine fehlende oder veraltete
-Datei wird verständlich gemeldet; das Plug-in verändert sie nicht.
+Das Suchpaket wird durch den Arten-Explorer aus dem aktiven Master erstellt. Lightroom liest es ausschließlich.
+Eine fehlende oder veraltete Datei wird verständlich gemeldet; das Plug-in verändert sie nicht. Wegen des Umfangs
+von mehreren hunderttausend Taxa und mehr als einer Million Namen darf das Lua-Plug-in nicht bei jedem Start eine
+große JSON-Datei vollständig laden. Phase 10.2 prüft deshalb einen kompakten SQLite-Suchindex mit Volltextindex und
+eine kleine lokale, vom Plug-in gestartete read-only Suchhilfe. Der Arten-Explorer selbst muss für die Suche nicht
+geöffnet sein.
 
 Empfohlener lokaler Pfad:
 
 ```text
 %LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\lightroom\
-  active\species-export.json
-  previous\species-export.json
+  active\manifest.json
+  active\taxonomy-search.sqlite
+  previous\manifest.json
+  previous\taxonomy-search.sqlite
 ```
 
 Dieser Pfad ist eine Planungsentscheidung für Phase 10.2 und darf im Code nicht hart als einziger möglicher Pfad
 vorausgesetzt werden. Der spätere Installer und die Mehrgerätephase müssen ihn konfigurierbar behandeln.
 
-## 6. Vorgesehener Exportvertrag
+## 6. Vorgesehener Suchpaketvertrag
 
-Kopf des Exports:
+Das Manifest des Suchpakets enthält:
 
 - `schemaVersion`
 - `generatedAt`
 - `projectRevision`
 - `masterVersion`
 - `masterActivatedAt`
-- `speciesCount`
+- `taxonCount`
+- `nameCount`
+- `hierarchyCount`
 - `checksum`
 
-Je Art mindestens:
+Je Taxon mindestens:
 
-- stabile `projectSpeciesId`
-- stabile `masterTaxonId`, sofern zugeordnet
+- stabile `masterTaxonId`
+- optionale `projectSpeciesId`, sofern die Art bereits im Explorer angelegt ist
 - deutscher, englischer und akzeptierter wissenschaftlicher Name
-- Synonyme und bestätigte alternative Namen
-- Rang und vollständige verfügbare Hierarchie
+- alle suchbaren Synonyme und bestätigten alternativen Namen samt Sprache und Herkunft
+- Rang und vollständige verfügbare Hierarchie in fachlicher Reihenfolge, einschließlich zusätzlicher Ober-, Unter-
+  und Zwischenränge, sofern sie im Master vorliegen
 - Taxonomiestatus, zum Beispiel `col_confirmed`, `external_confirmed` oder `manual_protected`
 - Herkunft und verwendete Anbieterstände
 - Projekt-Slug nur als Referenz, nicht als dauerhafte Identität
 
-Der Export enthält im MVP nur produktive Explorer-Arten. Dadurch bleibt er klein, schnell und vollständig offline.
-Eine spätere Vollsuche kann über einen getrennten optionalen Dienst oder fachlich begrenzte Zusatzpakete erfolgen,
-ohne den MVP-Vertrag zu brechen.
+Das Suchpaket enthält alle Taxa und Namen der aktiven Masterdatenbank. Bereits angelegte Explorer-Arten werden nur
+zusätzlich markiert; sie begrenzen den Suchumfang nicht. Der Index wird nach einer Masteraktivierung atomar erzeugt
+und erst nach Schema-, Zähler- und Prüfsummenprüfung als `active` freigegeben. Die vorherige Version bleibt als
+Rollback erhalten.
 
 ## 7. Lightroom-Metadatenmodell
 
@@ -238,14 +260,17 @@ FN Wildlife & Travel
                                 └── Art
 ```
 
-Ränge, die für eine Art fehlen, werden ausgelassen. Es werden keine Werte erfunden. Die wissenschaftlichen Werte
-bleiben erhalten; deutsche Anzeigenamen können ergänzend in eigenen Feldern stehen.
+Ränge, die für eine Art fehlen, werden ausgelassen. Es werden keine Werte erfunden. Neben den üblichen Rängen muss
+der Metadatenpfad alle weiteren im Master vorhandenen Ebenen in ihrer fachlichen Reihenfolge übernehmen können,
+zum Beispiel Unterstamm, Überklasse, Unterklasse, Überordnung, Unterordnung, Überfamilie, Unterfamilie, Tribus,
+Untergattung oder Unterart. Die wissenschaftlichen Werte bleiben erhalten; deutsche Anzeigenamen können ergänzend
+in eigenen Feldern stehen.
 
 ### 7.2 Eigene Plug-in-Felder
 
 Vorgesehene stabile Felder:
 
-- Projekt-Art-ID
+- Projekt-Art-ID, nur wenn die Art bereits im Arten-Explorer angelegt ist
 - Master-Taxon-ID
 - deutscher Name
 - englischer Name
@@ -263,63 +288,67 @@ nach einer sichtbaren Konfliktvorschau geändert.
 
 1. Benutzer wählt ein oder mehrere Fotos in Lightroom Classic aus.
 2. `Art zuweisen` öffnet einen deutschen Dialog.
-3. Die lokale Suche findet deutsche, englische und wissenschaftliche Namen im Export.
+3. Die lokale Suche findet deutsche, englische und wissenschaftliche Namen über den vollständigen aktiven
+   Masterbestand, unabhängig davon, ob eine Art bereits im Explorer angelegt ist.
 4. Der Benutzer wählt eine Art.
 5. Die Vorschau zeigt Namen, Hierarchie, Quelle, Exportversion, betroffene Fotos und vorhandene Konflikte.
-6. `Übernehmen` schreibt Schlüsselwörter und Plug-in-Felder in einer Lightroom-Transaktion.
-7. Fortschritt und Abbruch bleiben bei größeren Auswahlen sichtbar.
+6. `Übernehmen` weist dieselbe ausgewählte Art allen aktuell markierten Fotos zu und schreibt Schlüsselwörter sowie
+   Plug-in-Felder in kontrollierten Lightroom-Schreibtransaktionen.
+7. Große Auswahlen werden in definierten Teilmengen verarbeitet; Fortschritt und Abbruch bleiben sichtbar.
 8. Eine Zusammenfassung nennt geändert, übersprungen und fehlgeschlagen.
-9. `Letzte Zuweisung rückgängig machen` entfernt nur die vom Plug-in in diesem Lauf vorgenommenen Änderungen.
+9. `Letzte Zuweisung rückgängig machen` entfernt auf allen betroffenen Fotos nur die vom Plug-in in diesem Lauf
+   vorgenommenen Änderungen.
 
-Beim Start prüft das Plug-in Schema und Prüfsumme des Exports. Eine neue Exportversion wird erst nach erfolgreicher
+Beim Start prüft das Plug-in Schema und Prüfsumme des Suchpakets. Eine neue Version wird erst nach erfolgreicher
 Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 
 ## 9. Anforderungen an Phase 10.2 und 10.3
 
 ### 9.1 Funktionale Mindesttests
 
-- ein Foto und mehrere Fotos verschlagworten;
-- Suche über deutschen, englischen und wissenschaftlichen Namen;
-- Art mit sieben und acht Taxonomiestufen;
+- ein Foto sowie eine gemischte Auswahl vieler Fotos mit derselben Art verschlagworten;
+- Suche über deutschen, englischen und wissenschaftlichen Namen im vollständigen Master, einschließlich einer noch
+  nicht im Explorer angelegten Art;
+- Art mit sieben, acht und zusätzlichen Taxonomiestufen;
 - Art mit CoL-Referenzlücke oder manueller Korrektur;
 - bestehende fremde Schlüsselwörter bleiben unverändert;
 - erneute Zuweisung derselben Art ist idempotent;
 - Konflikt zwischen alter und neuer Taxonomie wird nicht still überschrieben;
 - Abbruch während eines Stapels lässt einen definierten Zustand zurück;
-- fehlender, defekter oder inkompatibler Export wird verständlich gemeldet;
+- fehlendes, defektes oder inkompatibles Suchpaket wird verständlich gemeldet;
 - Offline-Betrieb ohne laufenden Explorer;
 - Rücknahme der letzten Zuweisung.
 
 ### 9.2 Performanceziele für den MVP
 
-- Exportprüfung und Suchindexaufbau ohne merkliche Lightroom-Blockade;
-- Suchreaktion im produktiven Artenbestand praktisch unmittelbar;
+- Suchpaketprüfung und Start der Suchhilfe ohne merkliche Lightroom-Blockade;
+- Suchreaktion im vollständigen Master nach Eingabeverzögerung praktisch unmittelbar;
 - Fortschrittsanzeige bei Stapeln;
 - keine vollständige Fotoanalyse und keine Bilddateikopie;
-- Speicherverbrauch unabhängig von der Größe der Master-SQLite.
+- abgeleitete Paketgröße und Speicherverbrauch werden gemessen und gegen die Master-SQLite dokumentiert.
 
 ### 9.3 Sicherheits- und Betriebsregeln
 
-- Export ist read-only für Lightroom;
-- atomarer Exportwechsel und eine Rollbackversion;
-- keine Tokens, Zugangsdaten oder privaten Pfade im Export;
+- Suchpaket ist read-only für Lightroom;
+- atomarer Suchpaketwechsel und eine Rollbackversion;
+- keine Tokens, Zugangsdaten oder privaten Pfade im Suchpaket;
 - keine Netzwerkpflicht im Kernablauf;
 - keine stillen Metadatenänderungen;
 - vor dem Schreiben vollständige Vorschau und danach Protokoll;
 - Plug-in-Logs enthalten keine Bildinhalte und werden begrenzt aufbewahrt;
-- ein Installer prüft Lightroom-Version, Exportzugriff und Schreibrechte.
+- ein Installer prüft Lightroom-Version, Suchpaketzugriff, Hilfsprozess und Schreibrechte.
 
 ## 10. Priorisierung der Produktideen
 
 ### Für das MVP übernehmen
 
-1. lokale Offline-Suche aus der geprüften Explorer-Datenbasis;
+1. lokale Offline-Suche über sämtliche Taxa und Namen des aktiven Masters;
 2. Mensch bestätigt jeden Arttreffer;
-3. konsistente hierarchische Schlüsselwörter;
+3. konsistente hierarchische Schlüsselwörter für alle vorhandenen Taxonomiestufen;
 4. stabile eigene Metadatenfelder;
-5. Stapelverarbeitung mit Fortschritt und Abbruch;
+5. gemeinsame Zuweisung an ein oder viele ausgewählte Fotos mit Fortschritt und Abbruch;
 6. Konfliktvorschau, Überspringen und Rücknahme;
-7. Exportversion und Herkunft sichtbar machen.
+7. Master-/Suchpaketversion und Herkunft sichtbar machen.
 
 ### Nach dem MVP einzeln bewerten
 
@@ -328,7 +357,6 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 3. Serien- oder Burst-Helfer;
 4. Artportrait als Referenzbild;
 5. sichtbare externe Recherche für unbekannte Arten;
-6. optionaler Zugriff auf die vollständige lokale Master-Suche.
 
 ### Nicht in Phase 10 aufnehmen
 
@@ -341,15 +369,15 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 
 ## 11. Go-/No-Go-Entscheidung
 
-**Go für Phase 10.2 und ein eng begrenztes MVP.**
+**Go für Phase 10.2 und ein kontrolliertes Offline-MVP mit vollständiger Mastersuche.**
 
 Die vorhandene Taxonomie- und Projektstruktur ist fachlich stärker als die in den betrachteten Plug-ins jeweils
 eingebauten Einzellösungen. Der größte Nutzen entsteht deshalb nicht durch das Nachbauen ihrer Bilderkennung oder
 Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-Explorer zu Lightroom.
 
-Phase 10.2 soll den Exportvertrag prototypisch erzeugen, mit einer minimalen Lua-Testoberfläche einlesen und das
-Schreiben eines klar abgegrenzten Testschlüsselworts auf Testfotos verifizieren. Erst danach beginnt das
-vollständige MVP aus Phase 10.3.
+Phase 10.2 soll das vollständige abgeleitete Suchpaket prototypisch erzeugen, Größe und Suchzeit messen, die lokale
+Suchhilfe aus einer minimalen Lua-Testoberfläche ansprechen und das Schreiben des vollständigen Taxonomiepfads auf
+ein sowie mehrere Testfotos verifizieren. Erst danach beginnt das vollständige MVP aus Phase 10.3.
 
 ## 12. Quellen und Produktreferenzen
 

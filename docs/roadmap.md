@@ -1042,13 +1042,15 @@ Status: in Arbeit; Phase 10.1 abgeschlossen, Phase 10.2 als nächster Schritt
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
 - 10.1: **abgeschlossen am 2026-08-13**. Die Studie `docs/lightroom-feasibility-study.md` bestätigt ein natives
-  Lua-Plug-in mit lokalem, versioniertem JSON-Export als read-only Datenquelle. Sie bewertet iNat Publish Pro,
-  LifeListXP, Nomen und Species Tagger, übernimmt passende Bedienideen und grenzt KI-, Cloud- und
-  Direktzugriffsrisiken aus;
-- 10.2: Exportvertrag, stabile Art-/Taxon-IDs, Metadaten- und Schlüsselwortmodell, Prüfsumme, atomarer Wechsel,
-  Rollback und minimale Lua-Lese-/Schreibprobe prototypisch bestätigen;
-- 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Artensuche, Taxonomievorschau, stabiler Projekt-Art-ID und
-  Übernahme auf ausgewählte Fotos;
+  Lua-Plug-in mit einem vollständigen, versionierten read-only Suchpaket aus der aktiven Masterdatenbank und einem
+  kleinen lokalen Suchhelfer. Die Suche umfasst alle lokal vorhandenen Taxa und Namen, nicht nur bereits im
+  Arten-Explorer angelegte Arten. Die Studie bewertet iNat Publish Pro, LifeListXP, Nomen und Species Tagger,
+  übernimmt passende Bedienideen und grenzt KI-, Cloud- und Direktzugriffsrisiken aus;
+- 10.2: vollständiges Suchpaket und Suchhelfer, stabile Master-/Projekt-IDs, komplette Taxonomiehierarchie,
+  Metadaten- und Schlüsselwortmodell, Prüfsumme, atomarer Wechsel, Rollback sowie eine Lua-Lese-/Schreibprobe für
+  ein und mehrere gleichzeitig ausgewählte Fotos prototypisch bestätigen;
+- 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Suche in der vollständigen lokalen Masterdatenbank,
+  Taxonomievorschau, stabiler Master-Taxon-ID und vollständiger Taxonomiezuordnung auf ein oder mehrere Fotos;
 - 10.4: erst nach erfolgreichem MVP einzeln priorisierte Erweiterungen wie Referenzbilder, Sammlungen, Lifelist,
   Statistiken und Konfliktprüfung;
 - 10.5: umfassendes Phase-10-Abschlussaudit.

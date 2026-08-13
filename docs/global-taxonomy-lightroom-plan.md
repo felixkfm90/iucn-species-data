@@ -339,17 +339,15 @@ Rückentwicklung eines fremden Plug-ins.
 Zu prüfende Funktionen:
 
 - vollständig deutsche Oberfläche
-- Suche nach deutschem und wissenschaftlichem Namen
-- Auswahl einer Art aus dem produktiven Explorer-Artenbestand
-- optional spätere Suche in der globalen lokalen Referenzdatenbank
-- Übernahme taxonomischer Metadaten auf ausgewählte Fotos
-- Speicherung einer stabilen Projekt-Art-ID
-- Speicherung von deutschem und wissenschaftlichem Namen
-- Speicherung der verfügbaren bestätigten Taxonomiestufen
-- lokaler read-only Cache der benötigten Explorer-Daten
-- kontrollierte Aktualisierung dieses Caches
+- Suche nach deutschen, englischen und wissenschaftlichen Namen sowie Synonymen in der vollständigen aktiven
+  Masterdatenbank, unabhängig davon, ob die Art bereits im Arten-Explorer angelegt ist
+- Übernahme der vollständigen verfügbaren Taxonomie auf ein oder mehrere gleichzeitig ausgewählte Fotos
+- Speicherung einer stabilen Master-Taxon-ID und, falls vorhanden, zusätzlich der Projekt-Art-ID
+- Speicherung deutscher, englischer und wissenschaftlicher Namen
+- Speicherung aller verfügbaren bestätigten Taxonomiestufen einschließlich optionaler Zwischenränge
+- vollständiges, versioniertes und read-only genutztes Lightroom-Suchpaket aus der aktiven Masterdatenbank
+- kontrollierte und atomare Aktualisierung dieses Suchpakets mit Rollback
 - Nutzbarkeit, wenn der Explorer nicht läuft
-- kleiner, versionierter und read-only genutzter Lightroom-Export aus dem Arten-Explorer
 - keine direkte Bearbeitung der globalen Taxonomiedatenbank aus Lightroom
 - keine konkurrierende Stammdatenpflege in Lightroom
 - Prüfung der Metadatenportabilität
@@ -359,10 +357,11 @@ Zu prüfende Funktionen:
 - später optional ein Referenzbild pro Art
 - später optional Statistiken und Lifelist-Funktionen
 
-Die Machbarkeitsprüfung hat den kontrollierten kompakten Export als bevorzugten MVP-Zugriffsweg bestätigt. Direkter
-SQLite-Zugriff wurde wegen Größe, nativer Treiber-, Schema-, Pfad- und Sperrkopplung verworfen. Eine lokale
-Explorer-API bleibt eine spätere Option für die vollständige Master-Suche, darf aber keine Voraussetzung für den
-Offline-Kern sein. Details und Produktvergleich stehen in `docs/lightroom-feasibility-study.md`.
+Die Machbarkeitsprüfung hat ein vollständig aus der aktiven Masterdatenbank abgeleitetes, kontrolliertes Suchpaket
+als bevorzugten MVP-Zugriffsweg bestätigt. Das Paket enthält einen kompakten SQLite-Suchindex mit allen Taxa,
+Namen und Hierarchien und wird über einen kleinen lokalen read-only Suchhelfer angesprochen. Direkter Zugriff auf
+die interne Master-SQLite wurde wegen Größe, Schema-, Pfad- und Sperrkopplung verworfen. Der Arten-Explorer muss
+für die Offline-Suche nicht laufen. Details und Produktvergleich stehen in `docs/lightroom-feasibility-study.md`.
 
 ## J. Sicherheits- und Qualitätsregeln
 
@@ -567,15 +566,18 @@ Ergebnis: technisch und betrieblich geprüfter lokaler Master. Das vollständige
 - Offline-Suche, menschliche Bestätigung, Hierarchieschlüsselwörter, stabile Metadaten und Stapelverarbeitung sind
   für das MVP vorgesehen; KI-Bilderkennung, Cloud-Zwang und konkurrierende Taxonomiepflege ausdrücklich nicht.
 
-Ergebnis: `docs/lightroom-feasibility-study.md` bestätigt die Machbarkeit und empfiehlt einen kleinen,
-versionierten JSON-Export als read-only Datenquelle.
+Ergebnis: `docs/lightroom-feasibility-study.md` bestätigt die Machbarkeit und empfiehlt ein vollständiges,
+versioniertes read-only Suchpaket aus der aktiven Masterdatenbank mit lokalem Suchhelfer.
 
 ### 10.2 Architekturentscheidung
 
-- den empfohlenen Exportvertrag mit produktiven Explorer-Arten prototypisch erzeugen und validieren
-- stabile Projekt-Art-ID, Master-Taxon-ID, Hierarchie, Namen, Provenienz und Versionsdaten festlegen
+- das vollständige Suchpaket mit allen Taxa, Namen und Hierarchien der aktiven Masterdatenbank prototypisch
+  erzeugen, validieren und hinsichtlich Größe und Suchgeschwindigkeit messen
+- stabilen Suchhelfer-Vertrag sowie Master-Taxon-ID, optionale Projekt-Art-ID, vollständige Hierarchie, Namen,
+  Provenienz und Versionsdaten festlegen
 - atomaren Wechsel, Prüfsumme, Rollback, Offline- und Konfliktverhalten praktisch bestätigen
-- mit einer minimalen Lua-Testoberfläche Exportlesen, Suche und eine abgegrenzte Metadatenänderung verifizieren
+- mit einer minimalen Lua-Testoberfläche die Suche im vollständigen Bestand sowie die komplette
+  Taxonomiezuordnung auf ein und mehrere ausgewählte Testfotos verifizieren
 - Installations-, Backup- und Restoregrenzen zur späteren Phase 11 dokumentieren
 
 Ergebnis: verbindliche Architekturentscheidung für das Plug-in.
@@ -583,10 +585,10 @@ Ergebnis: verbindliche Architekturentscheidung für das Plug-in.
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
 - deutsche Oberfläche
-- Artensuche und Taxonomievorschau
-- Übernahme auf ausgewählte Fotos
-- lokaler read-only Cache
-- stabile Projekt-Art-ID
+- Artensuche in der vollständigen lokalen Masterdatenbank und Taxonomievorschau
+- Übernahme aller verfügbaren Taxonomiestufen auf ein oder mehrere gleichzeitig ausgewählte Fotos
+- versioniertes read-only Suchpaket mit atomarem Wechsel und Rollback
+- stabile Master-Taxon-ID und optionale Projekt-Art-ID
 
 Ergebnis: getestetes MVP ohne konkurrierende Stammdatenpflege.
 
@@ -619,9 +621,9 @@ Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Phase 9.5 hat Vollimp
 Konfliktworkflow für bestehende Arten umgesetzt. Vor den jeweiligen späteren Implementierungsphasen bleiben
 ausdrücklich:
 
-Phase 10.1 hat Exportzugriff und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 muss den genauen
-JSON-Vertrag, die stabilen Feldkennungen, Schlüsselwortwurzel, Konfliktdarstellung und Rücknahme praktisch
-bestätigen. Danach bleiben für Phase 11:
+Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 muss den genauen
+Paket- und API-Vertrag, die stabilen Feldkennungen, vollständige Taxonomiehierarchie, Schlüsselwortwurzel,
+Mehrfachzuordnung, Konfliktdarstellung und Rücknahme praktisch bestätigen. Danach bleiben für Phase 11:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

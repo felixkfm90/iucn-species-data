@@ -975,12 +975,14 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 
 Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
 `docs/lightroom-feasibility-study.md` abgeschlossen. Für das deutsche Lightroom-Classic-MVP ist ein natives
-Lua-Plug-in vorgesehen, das einen kleinen, versionierten JSON-Export der produktiven Explorer-Arten ausschließlich
-liest. Das hält die Artensuche offline und entkoppelt Lightroom von der mehrere GiB großen Master-SQLite, ihren
-internen Pfaden und Aktivierungsständen. Das Plug-in soll hierarchische Schlüsselwörter und stabile eigene
-Metadatenfelder erst nach einer sichtbaren Vorschau schreiben; Lightroom bleibt alleiniger Besitzer von Katalog-
-und XMP-Schreibvorgängen. Automatische KI-Artbestimmung, iNaturalist-Synchronisation, Lifelist und Statistiken sind
-nicht Teil des ersten MVP und werden erst nach dessen erfolgreicher Prüfung einzeln priorisiert.
+Lua-Plug-in vorgesehen, das ein vollständiges, versioniertes read-only Suchpaket aus der aktiven Masterdatenbank
+über einen kleinen lokalen Suchhelfer verwendet. Damit funktioniert die Offline-Suche über alle lokal vorhandenen
+Taxa, deutschen, englischen und wissenschaftlichen Namen sowie Synonyme und ist nicht auf bereits im Arten-Explorer
+angelegte Arten beschränkt. Das Plug-in soll die vollständige verfügbare Taxonomie nach einer sichtbaren Vorschau
+als hierarchische Schlüsselwörter und stabile eigene Metadatenfelder auf ein oder mehrere gleichzeitig ausgewählte
+Fotos schreiben. Lightroom bleibt alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische
+KI-Artbestimmung, iNaturalist-Synchronisation, Lifelist und Statistiken sind nicht Teil des ersten MVP und werden
+erst nach dessen erfolgreicher Prüfung einzeln priorisiert.
 
 Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal stabilisiert. Die lokalen
 Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang

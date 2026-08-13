@@ -1112,11 +1112,14 @@ Aktuelle Planung:
   Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Verbindliche MVP-Empfehlung ist ein natives deutsches Lua-Plug-in mit einem
-  kleinen, versionierten JSON-Export der produktiven Explorer-Arten als read-only Datenquelle. Direkter Zugriff
-  auf die mehrere GiB große Master-SQLite und eine zwingend laufende Explorer-API sind für den MVP verworfen.
-  Lightroom bleibt alleiniger Besitzer von Katalog-, Schlüsselwort- und XMP-Schreibvorgängen. Phase 10.2 erzeugt
-  den Exportvertrag prototypisch und verifiziert ihn mit einer minimalen Lua-Lese-/Schreibprobe. Danach folgen das
-  deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende Abschlussaudit.
+  vollständigen, versionierten read-only Suchpaket aus der aktiven Masterdatenbank und einem kleinen lokalen
+  Suchhelfer. Die Offline-Suche umfasst alle lokal vorhandenen Taxa, Namen und Synonyme und ist nicht auf bereits
+  angelegte Explorer-Arten begrenzt. Direkter Zugriff auf die mehrere GiB große interne Master-SQLite und eine
+  zwingend laufende Explorer-API sind für den MVP verworfen. Lightroom bleibt alleiniger Besitzer von Katalog-,
+  Schlüsselwort- und XMP-Schreibvorgängen. Phase 10.2 erzeugt Suchpaket und Suchhelfer prototypisch und verifiziert
+  die vollständige Taxonomiezuordnung auf ein sowie mehrere gleichzeitig ausgewählte Fotos mit einer minimalen
+  Lua-Lese-/Schreibprobe. Danach folgen das deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende
+  Abschlussaudit.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt
