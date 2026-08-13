@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-08-10
+Stand: 2026-08-13
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1037,12 +1037,16 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 
 ## Phase 10 - Lightroom-Integration
 
-Status: geplant
+Status: in Arbeit; Phase 10.1 abgeschlossen, Phase 10.2 als nächster Schritt
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
-- 10.1: Lightroom-SDK-, Versions-, Metadaten-, XMP-, Offline- und Performance-Machbarkeitsprüfung;
-- 10.2: Architekturentscheidung für read-only Datenbankzugriff, lokale Explorer-API oder kontrollierten Export;
+- 10.1: **abgeschlossen am 2026-08-13**. Die Studie `docs/lightroom-feasibility-study.md` bestätigt ein natives
+  Lua-Plug-in mit lokalem, versioniertem JSON-Export als read-only Datenquelle. Sie bewertet iNat Publish Pro,
+  LifeListXP, Nomen und Species Tagger, übernimmt passende Bedienideen und grenzt KI-, Cloud- und
+  Direktzugriffsrisiken aus;
+- 10.2: Exportvertrag, stabile Art-/Taxon-IDs, Metadaten- und Schlüsselwortmodell, Prüfsumme, atomarer Wechsel,
+  Rollback und minimale Lua-Lese-/Schreibprobe prototypisch bestätigen;
 - 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Artensuche, Taxonomievorschau, stabiler Projekt-Art-ID und
   Übernahme auf ausgewählte Fotos;
 - 10.4: erst nach erfolgreichem MVP einzeln priorisierte Erweiterungen wie Referenzbilder, Sammlungen, Lifelist,

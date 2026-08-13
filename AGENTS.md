@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-10
+Stand: 2026-08-13
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1109,8 +1109,14 @@ Aktuelle Planung:
   untereinander. `Datenbank aktualisieren` prüft zuerst die CoL- und Anbieterstände und startet ohne neue Quelldaten
   beziehungsweise wartenden Kandidaten keinen Master-Neuaufbau. Ein echter Lauf ist im Kopf und Datenbankblock gelb
   als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
-  SDK-/Metadaten-Machbarkeit, Datenzugriffsentscheidung, deutsches Lightroom-Classic-MVP, einzeln priorisierte
-  Erweiterungen und umfassendes Abschlussaudit.
+  Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
+  Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
+  LifeListXP, Nomen und Species Tagger. Verbindliche MVP-Empfehlung ist ein natives deutsches Lua-Plug-in mit einem
+  kleinen, versionierten JSON-Export der produktiven Explorer-Arten als read-only Datenquelle. Direkter Zugriff
+  auf die mehrere GiB große Master-SQLite und eine zwingend laufende Explorer-API sind für den MVP verworfen.
+  Lightroom bleibt alleiniger Besitzer von Katalog-, Schlüsselwort- und XMP-Schreibvorgängen. Phase 10.2 erzeugt
+  den Exportvertrag prototypisch und verifiziert ihn mit einer minimalen Lua-Lese-/Schreibprobe. Danach folgen das
+  deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende Abschlussaudit.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

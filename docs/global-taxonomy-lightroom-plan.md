@@ -1,9 +1,9 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-09
+Stand: 2026-08-13
 
-Status: Phase 9.1 bis 9.12, der erweiterte reale Neuaufbau, der Betriebstest und das umfassende Abschlussaudit sind
-seit 2026-08-09 abgeschlossen. Lightroom beginnt getrennt in Phase 10.
+Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
+2026-08-13 abgeschlossen; Phase 10.2 setzt die empfohlene Exportarchitektur prototypisch um.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -349,7 +349,7 @@ Zu prüfende Funktionen:
 - lokaler read-only Cache der benötigten Explorer-Daten
 - kontrollierte Aktualisierung dieses Caches
 - Nutzbarkeit, wenn der Explorer nicht läuft
-- Exportdatei, read-only API oder direkter read-only Datenbankzugriff als zu vergleichende Verbindung
+- kleiner, versionierter und read-only genutzter Lightroom-Export aus dem Arten-Explorer
 - keine direkte Bearbeitung der globalen Taxonomiedatenbank aus Lightroom
 - keine konkurrierende Stammdatenpflege in Lightroom
 - Prüfung der Metadatenportabilität
@@ -359,9 +359,10 @@ Zu prüfende Funktionen:
 - später optional ein Referenzbild pro Art
 - später optional Statistiken und Lifelist-Funktionen
 
-Noch offen bleibt, ob Lightroom direkt lesend auf eine lokale Datenbank, auf eine Explorer-API oder auf eine
-kompakte Exportdatei zugreift. Die Entscheidung folgt erst aus Phase 10.1 und muss Offline-Verhalten,
-Installationsaufwand, Dateisperren, Mehrgerätebetrieb und SDK-Grenzen berücksichtigen.
+Die Machbarkeitsprüfung hat den kontrollierten kompakten Export als bevorzugten MVP-Zugriffsweg bestätigt. Direkter
+SQLite-Zugriff wurde wegen Größe, nativer Treiber-, Schema-, Pfad- und Sperrkopplung verworfen. Eine lokale
+Explorer-API bleibt eine spätere Option für die vollständige Master-Suche, darf aber keine Voraussetzung für den
+Offline-Kern sein. Details und Produktvergleich stehen in `docs/lightroom-feasibility-study.md`.
 
 ## J. Sicherheits- und Qualitätsregeln
 
@@ -558,17 +559,23 @@ Ergebnis: technisch und betrieblich geprüfter lokaler Master. Das vollständige
 
 ### 10.1 Lightroom-SDK- und Metadaten-Machbarkeitsprüfung
 
-- technische SDK-Grenzen und unterstützte Lightroom-Versionen prüfen
-- Datenübertragungswege vergleichen
-- XMP-, Katalog-, Offline- und Performanceverhalten testen
+- **Abgeschlossen am 2026-08-13.**
+- Die reale Windows-Zielumgebung mit Lightroom Classic 15.5 und die offiziellen Lua-SDK-Grenzen wurden geprüft.
+- Direkte Master-SQLite, lokale Explorer-API und kontrollierter Export wurden verglichen.
+- Lightroom bleibt alleiniger Besitzer von Katalog-, Schlüsselwort- und XMP-Schreibvorgängen.
+- iNat Publish Pro, LifeListXP, Nomen und Species Tagger wurden als Funktionsinspiration bewertet.
+- Offline-Suche, menschliche Bestätigung, Hierarchieschlüsselwörter, stabile Metadaten und Stapelverarbeitung sind
+  für das MVP vorgesehen; KI-Bilderkennung, Cloud-Zwang und konkurrierende Taxonomiepflege ausdrücklich nicht.
 
-Ergebnis: dokumentierter Machbarkeitsbericht mit belastbaren technischen Grenzen.
+Ergebnis: `docs/lightroom-feasibility-study.md` bestätigt die Machbarkeit und empfiehlt einen kleinen,
+versionierten JSON-Export als read-only Datenquelle.
 
 ### 10.2 Architekturentscheidung
 
-- read-only Zugriff über SQLite, lokale Explorer-API und kontrollierten Export vergleichen
-- Projekt-Art-ID und Metadatenmodell festlegen
-- Cache-, Offline-, Aktualisierungs- und Konfliktverhalten entscheiden
+- den empfohlenen Exportvertrag mit produktiven Explorer-Arten prototypisch erzeugen und validieren
+- stabile Projekt-Art-ID, Master-Taxon-ID, Hierarchie, Namen, Provenienz und Versionsdaten festlegen
+- atomaren Wechsel, Prüfsumme, Rollback, Offline- und Konfliktverhalten praktisch bestätigen
+- mit einer minimalen Lua-Testoberfläche Exportlesen, Suche und eine abgegrenzte Metadatenänderung verifizieren
 - Installations-, Backup- und Restoregrenzen zur späteren Phase 11 dokumentieren
 
 Ergebnis: verbindliche Architekturentscheidung für das Plug-in.
@@ -612,10 +619,13 @@ Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Phase 9.5 hat Vollimp
 Konfliktworkflow für bestehende Arten umgesetzt. Vor den jeweiligen späteren Implementierungsphasen bleiben
 ausdrücklich:
 
-1. Zugriff des Lightroom-Plug-ins: Datenbank, read-only API oder Export
-2. Metadaten- und XMP-Modell in Lightroom
-3. optionales NAS-Paket für die große Referenzdatenbank in Phase 11
-4. Verteilung und Versionsabgleich im späteren Mehrgerätebetrieb der Phase 11
+Phase 10.1 hat Exportzugriff und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 muss den genauen
+JSON-Vertrag, die stabilen Feldkennungen, Schlüsselwortwurzel, Konfliktdarstellung und Rücknahme praktisch
+bestätigen. Danach bleiben für Phase 11:
+
+1. optionales NAS-Paket für die große Referenzdatenbank;
+2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;
+3. Installerpfad, Plug-in-Aktualisierung und konfigurierbarer Exportspeicherort.
 
 ## Nicht Bestandteil von Phase 9.1 bis 9.3
 

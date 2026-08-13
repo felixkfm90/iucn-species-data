@@ -973,6 +973,15 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 `docs/taxonomy-master-database-design.md` und
 `docs/multi-device-backup-plan.md`.
 
+Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
+`docs/lightroom-feasibility-study.md` abgeschlossen. Für das deutsche Lightroom-Classic-MVP ist ein natives
+Lua-Plug-in vorgesehen, das einen kleinen, versionierten JSON-Export der produktiven Explorer-Arten ausschließlich
+liest. Das hält die Artensuche offline und entkoppelt Lightroom von der mehrere GiB großen Master-SQLite, ihren
+internen Pfaden und Aktivierungsständen. Das Plug-in soll hierarchische Schlüsselwörter und stabile eigene
+Metadatenfelder erst nach einer sichtbaren Vorschau schreiben; Lightroom bleibt alleiniger Besitzer von Katalog-
+und XMP-Schreibvorgängen. Automatische KI-Artbestimmung, iNaturalist-Synchronisation, Lifelist und Statistiken sind
+nicht Teil des ersten MVP und werden erst nach dessen erfolgreicher Prüfung einzeln priorisiert.
+
 Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal stabilisiert. Die lokalen
 Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang
 `Taxa · deutsche Namen · englische Namen`. Die sichere interne Kandidaten-, Konflikt-, Aktivierungs- und

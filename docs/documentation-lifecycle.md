@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-08-09
+Stand: 2026-08-13
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -33,6 +33,8 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   Phase-9-Abschlussaudit erforderlich.
 - `docs/audits/2026-08-phase-9-closing-audit.md` ist der maßgebliche Abschlussbericht für den real aktivierten
   breiten Masterbestand und die Freigabe von Phase 9.
+- `docs/lightroom-feasibility-study.md` ist die verbindliche Phase-10.1-Entscheidung zu SDK-Grenzen,
+  Produktvergleich, Datenzugriff, Metadatenmodell, MVP-Umfang und ausdrücklich verschobenen Funktionen.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente
