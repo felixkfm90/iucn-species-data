@@ -2,7 +2,7 @@
 
 Stand: 2026-08-13  
 Roadmap: Phase 10.1  
-Status: abgeschlossen; Grundlage für Phase 10.2
+Status: Phase 10.1 abgeschlossen; technischer Phase-10.2-Kern unter `docs/lightroom-search-package.md` umgesetzt
 
 ## 1. Ziel und Ergebnis
 
@@ -193,9 +193,9 @@ Normalisierung muss bereits im Explorer-Master erfolgen.
 Das Suchpaket wird durch den Arten-Explorer aus dem aktiven Master erstellt. Lightroom liest es ausschließlich.
 Eine fehlende oder veraltete Datei wird verständlich gemeldet; das Plug-in verändert sie nicht. Wegen des Umfangs
 von mehreren hunderttausend Taxa und mehr als einer Million Namen darf das Lua-Plug-in nicht bei jedem Start eine
-große JSON-Datei vollständig laden. Phase 10.2 prüft deshalb einen kompakten SQLite-Suchindex mit Volltextindex und
-eine kleine lokale, vom Plug-in gestartete read-only Suchhilfe. Der Arten-Explorer selbst muss für die Suche nicht
-geöffnet sein.
+große JSON-Datei vollständig laden. Phase 10.2 verwendet deshalb einen kompakten SQLite-Suchindex mit
+Volltextindex und eine kleine lokale, vom Plug-in gestartete read-only Suchhilfe. Der Arten-Explorer selbst muss für
+die Suche nicht geöffnet sein.
 
 Empfohlener lokaler Pfad:
 
@@ -207,10 +207,10 @@ Empfohlener lokaler Pfad:
   previous\taxonomy-search.sqlite
 ```
 
-Dieser Pfad ist eine Planungsentscheidung für Phase 10.2 und darf im Code nicht hart als einziger möglicher Pfad
-vorausgesetzt werden. Der spätere Installer und die Mehrgerätephase müssen ihn konfigurierbar behandeln.
+Dieser Pfad ist der implementierte Standard für Phase 10.2, aber über Suchhelfer- und Plug-in-Einstellung
+überschreibbar. Der spätere Installer und die Mehrgerätephase können ihn deshalb konfigurieren.
 
-## 6. Vorgesehener Suchpaketvertrag
+## 6. Umgesetzter Suchpaketvertrag
 
 Das Manifest des Suchpakets enthält:
 
@@ -268,18 +268,20 @@ in eigenen Feldern stehen.
 
 ### 7.2 Eigene Plug-in-Felder
 
-Vorgesehene stabile Felder:
+Umgesetzte stabile Felder:
 
 - Projekt-Art-ID, nur wenn die Art bereits im Arten-Explorer angelegt ist
 - Master-Taxon-ID
 - deutscher Name
 - englischer Name
 - akzeptierter wissenschaftlicher Name
+- Taxonrang
 - Taxonomiepfad
-- Taxonomiestatus
-- Master-/Exportversion
 - Verschlagwortet am
-- Bestätigungsstatus (`manuell bestätigt`)
+
+Master- und Suchpaketversion sowie technische Herkunft bleiben im Paketmanifest und in Diagnoseinformationen. Sie
+werden nicht als normale Fotometadaten geschrieben, weil in Lightroom nur Namen, Identität und Taxonomie relevant
+sind.
 
 Das Plug-in überschreibt keine fremden Schlüsselwörter. Vorhandene eigene Taxonomie-Schlüsselwörter werden nur
 nach einer sichtbaren Konfliktvorschau geändert.
@@ -291,7 +293,7 @@ nach einer sichtbaren Konfliktvorschau geändert.
 3. Die lokale Suche findet deutsche, englische und wissenschaftliche Namen über den vollständigen aktiven
    Masterbestand, unabhängig davon, ob eine Art bereits im Explorer angelegt ist.
 4. Der Benutzer wählt eine Art.
-5. Die Vorschau zeigt Namen, Hierarchie, Quelle, Exportversion, betroffene Fotos und vorhandene Konflikte.
+5. Die Vorschau zeigt Namen, vollständige Hierarchie, betroffene Fotos und vorhandene Konflikte.
 6. `Übernehmen` weist dieselbe ausgewählte Art allen aktuell markierten Fotos zu und schreibt Schlüsselwörter sowie
    Plug-in-Felder in kontrollierten Lightroom-Schreibtransaktionen.
 7. Große Auswahlen werden in definierten Teilmengen verarbeitet; Fortschritt und Abbruch bleiben sichtbar.
@@ -348,7 +350,7 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 4. stabile eigene Metadatenfelder;
 5. gemeinsame Zuweisung an ein oder viele ausgewählte Fotos mit Fortschritt und Abbruch;
 6. Konfliktvorschau, Überspringen und Rücknahme;
-7. Master-/Suchpaketversion und Herkunft sichtbar machen.
+7. Paketstatus und technische Herkunft nur in der Plug-in-Diagnose sichtbar machen.
 
 ### Nach dem MVP einzeln bewerten
 
@@ -369,15 +371,16 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 
 ## 11. Go-/No-Go-Entscheidung
 
-**Go für Phase 10.2 und ein kontrolliertes Offline-MVP mit vollständiger Mastersuche.**
+**Go wurde für Phase 10.2 erteilt; der technische Offline-Prototyp mit vollständiger Mastersuche ist umgesetzt.**
 
 Die vorhandene Taxonomie- und Projektstruktur ist fachlich stärker als die in den betrachteten Plug-ins jeweils
 eingebauten Einzellösungen. Der größte Nutzen entsteht deshalb nicht durch das Nachbauen ihrer Bilderkennung oder
 Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-Explorer zu Lightroom.
 
-Phase 10.2 soll das vollständige abgeleitete Suchpaket prototypisch erzeugen, Größe und Suchzeit messen, die lokale
-Suchhilfe aus einer minimalen Lua-Testoberfläche ansprechen und das Schreiben des vollständigen Taxonomiepfads auf
-ein sowie mehrere Testfotos verifizieren. Erst danach beginnt das vollständige MVP aus Phase 10.3.
+Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
+und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Noch offen ist die
+kontrollierte Schreibprobe des vollständigen Taxonomiepfads auf ein sowie mehrere Fotos in einem separaten
+Lightroom-Testkatalog. Erst nach dieser Abnahme beginnt der Ausbau zum vollständigen MVP aus Phase 10.3.
 
 ## 12. Quellen und Produktreferenzen
 

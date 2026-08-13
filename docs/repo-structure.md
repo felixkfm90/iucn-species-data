@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-08-01
+Stand: 2026-08-13
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -33,10 +33,13 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `package.json`, `package-lock.json` | Reproduzierbare Node-Installation fuer `update.mjs`. |
 | `species-explorer/` | Versionierte lokale Arbeitsoberfläche. `server.mjs` ist nur noch Kompositions- und HTTP-Adapterwurzel. `request-security.mjs`, `http-routing.mjs` und `request-router.mjs` bilden Sicherheits-, HTTP- und Routinggrenzen; `species-model.mjs` validiert einzelne Arteinträge, während `explorer-model.mjs` das vollständige read-only Explorer-Modell und seine Revision aufbaut. CRUD liegt in `species-create.mjs`, `species-delete.mjs` und `species-edit.mjs`; Medienabläufe liegen in `map-asset-workflow.mjs`, `sound-asset-workflow.mjs`, `portrait-asset-workflow.mjs` und `asset-maintenance.mjs`. `pipeline-controller.mjs`, `project-publication.mjs` und `backup-service.mjs` besitzen Pipeline, Veröffentlichung und NAS-Sicherung. `media-assets.mjs`, `asset-files.mjs`, `asset-backups.mjs`, `pipeline-log.mjs` und `manual-map-documentation.mjs` besitzen Medienprüfung, Assetdateiliste, Sicherungen, Prozessausgabe und Kartendokumentation. `public/app-foundation.js` bildet die testbare Zustands-/API-Grenze, `public/app-presentation.js` die zustandsfreie Formatierungs-/Anzeigegrenze, `public/app-measurements.js` die gemeinsame Messwert-/Formulargrenze und `public/app-dialogs.js` die gemeinsame Modal-/Medienfreigabegrenze. |
 | `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenz- und Masterkern für lokalen Speicher, SQLite-Schemata, Import, read-only Suche, stabile Master-IDs, versionierte Anbieter-Ausschnitte, Provenienz, Zusammenführungsregeln, Kandidaten, Konflikte, Projektverknüpfungen, atomare Aktivierung und Rollback. `taxonomy-reference-service.mjs` stellt Status, Reiche, Suche und Taxondetails bereit; `taxonomy-master-service.mjs` schaltet bevorzugt auf die aktive Masteransicht und fällt sicher auf die CoL-Referenz zurück. `taxonomy-storage.mjs` serialisiert atomare Zeiger- und Cache-Schreibvorgänge je Zieldatei; `taxonomy-storage.test.mjs` sichert parallele Windows-Schreibvorgänge ab. |
+| `species-explorer/lightroom-search-*.mjs` | Phase-10.2-Kern für das abgeleitete read-only Lightroom-Suchpaket: Schema, Aufbau, aktiver/vorheriger Stand, Prüfsumme, Suche, Suchhelfer und direkte Tests. Er bearbeitet weder Lightroom-Katalog noch XMP. |
 | `species-explorer/public/app-taxonomy-reference.js`, `app-taxonomy-master.js` | Bidirektionale Taxonomievorschläge im Neue-Art-Assistenten, Quellen-/Statusanzeige, CoL-Lücken, Konfliktentscheidungen und Masterwartung mit nicht blockierendem manuellem Fallback. |
+| `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` | Versionierter deutscher Phase-10.2-Lua-Prototyp. Er verwendet den read-only Suchhelfer und schreibt ausschließlich über das Lightroom-SDK hierarchische Schlüsselwörter sowie stabile Plug-in-Metadaten. |
 | `scripts/taxonomy-prototype*.mjs` | Reproduzierbarer begrenzter Phase-9.3-Import, Fixture-Erzeugung und End-to-End-Test. |
 | `scripts/taxonomy-master-migrate.mjs` | Reale, verifizierte Phase-9.12-Migration in einen Master-Kandidaten mit optionaler Aktivierung, Rollbacktest, JSON-Bericht und Messwerten. |
 | `scripts/taxonomy-master-verify.mjs` | Schreibgeschützte Betriebsprüfung des aktiven realen Masters: Schema, Bestandszähler, Projektverknüpfungen, repräsentative Offline-Suchen und Laufzeiten. |
+| `scripts/lightroom-search-package.mjs` | Wartungs-CLI für Status, Aufbau, Verifikation und isolierte Rollbackprobe des abgeleiteten Lightroom-Suchpakets. |
 | `scripts/fixtures/taxonomy/` | Kleine versionierte Testdaten mit Release-Metadaten und Prüfsummen; keine vollständige Taxonomiedatenbank. |
 | `scripts/monthly-site-audit.mjs` | Reproduzierbarer Monatsaudit fuer Sitemap, interne Links, SEO-Grundfelder, GitHub-Pages-Assets und lokale Assetkonsistenz. |
 | `scripts/generate-spectrograms.mjs` | Generator fuer optionale Tierstimmen-Spektrogramme unter `species-assets/<SafeName>/spectrogram.webp`. |
@@ -90,6 +93,7 @@ HTTP-Auslieferungsverträge.
 | `node_modules/` | lokal installiert, ignoriert |
 | `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
 | `taxonomy-data/`, `species-explorer/taxonomy-data/` | lokale, reproduzierbare Taxonomie-Releases und SQLite-Dateien; ignoriert und nie Bestandteil von Pages |
+| `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\lightroom\` | lokales abgeleitetes Lightroom-Suchpaket mit `active`, `previous` und `staging`; reproduzierbar, nicht versioniert und nicht Bestandteil von Pages |
 | `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |

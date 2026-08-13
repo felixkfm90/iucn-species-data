@@ -974,15 +974,18 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 `docs/multi-device-backup-plan.md`.
 
 Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
-`docs/lightroom-feasibility-study.md` abgeschlossen. Für das deutsche Lightroom-Classic-MVP ist ein natives
-Lua-Plug-in vorgesehen, das ein vollständiges, versioniertes read-only Suchpaket aus der aktiven Masterdatenbank
-über einen kleinen lokalen Suchhelfer verwendet. Damit funktioniert die Offline-Suche über alle lokal vorhandenen
-Taxa, deutschen, englischen und wissenschaftlichen Namen sowie Synonyme und ist nicht auf bereits im Arten-Explorer
-angelegte Arten beschränkt. Das Plug-in soll die vollständige verfügbare Taxonomie nach einer sichtbaren Vorschau
-als hierarchische Schlüsselwörter und stabile eigene Metadatenfelder auf ein oder mehrere gleichzeitig ausgewählte
-Fotos schreiben. Lightroom bleibt alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische
-KI-Artbestimmung, iNaturalist-Synchronisation, Lifelist und Statistiken sind nicht Teil des ersten MVP und werden
-erst nach dessen erfolgreicher Prüfung einzeln priorisiert.
+`docs/lightroom-feasibility-study.md` abgeschlossen. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt:
+Aus der aktiven Masterdatenbank entsteht ein vollständiges, versioniertes read-only Suchpaket, das ein kleiner
+lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der reale Stand enthält 273.505 Taxa und 7.108.393
+Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunden. Ein natives deutsches
+Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als hierarchische
+Schlüsselwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu. Paketprüfung, atomare
+Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet. Noch ausstehend ist
+die kontrollierte Schreibprobe in einem separaten Lightroom-Testkatalog; der persönliche Katalog wurde nicht
+verändert. Details, Befehle und Abnahmeablauf stehen in `docs/lightroom-search-package.md`. Lightroom bleibt
+alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische KI-Artbestimmung,
+iNaturalist-Synchronisation, Lifelist und Statistiken sind nicht Teil des ersten MVP und werden erst nach dessen
+erfolgreicher Prüfung einzeln priorisiert.
 
 Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal stabilisiert. Die lokalen
 Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang

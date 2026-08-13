@@ -1,0 +1,61 @@
+return {
+  schemaVersion = 1,
+  metadataFieldsForPhotos = {
+    {
+      id = "masterTaxonId",
+      title = "Master-Taxon-ID",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "projectTaxonId",
+      title = "Arten-Explorer-ID",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "germanName",
+      title = "Deutscher Artname",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "englishName",
+      title = "Englischer Artname",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "scientificName",
+      title = "Wissenschaftlicher Artname",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "taxonRank",
+      title = "Taxonomischer Rang",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "taxonomyPath",
+      title = "Taxonomiepfad",
+      dataType = "string",
+      searchable = true,
+      browsable = false,
+    },
+    {
+      id = "assignedAt",
+      title = "Taxonomie zugewiesen am",
+      dataType = "string",
+      searchable = false,
+      browsable = false,
+    },
+  },
+}

@@ -3,7 +3,8 @@
 Stand: 2026-08-13
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
-2026-08-13 abgeschlossen; Phase 10.2 setzt die empfohlene Exportarchitektur prototypisch um.
+2026-08-13 abgeschlossen. Der technische Kern von Phase 10.2 ist umgesetzt; offen ist die kontrollierte
+Schreibprobe im separaten Lightroom-Testkatalog.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -569,18 +570,23 @@ Ergebnis: technisch und betrieblich geprüfter lokaler Master. Das vollständige
 Ergebnis: `docs/lightroom-feasibility-study.md` bestätigt die Machbarkeit und empfiehlt ein vollständiges,
 versioniertes read-only Suchpaket aus der aktiven Masterdatenbank mit lokalem Suchhelfer.
 
-### 10.2 Architekturentscheidung
+### 10.2 Suchpaket, Suchhelfer und Plug-in-Prototyp
 
-- das vollständige Suchpaket mit allen Taxa, Namen und Hierarchien der aktiven Masterdatenbank prototypisch
-  erzeugen, validieren und hinsichtlich Größe und Suchgeschwindigkeit messen
-- stabilen Suchhelfer-Vertrag sowie Master-Taxon-ID, optionale Projekt-Art-ID, vollständige Hierarchie, Namen,
-  Provenienz und Versionsdaten festlegen
-- atomaren Wechsel, Prüfsumme, Rollback, Offline- und Konfliktverhalten praktisch bestätigen
-- mit einer minimalen Lua-Testoberfläche die Suche im vollständigen Bestand sowie die komplette
-  Taxonomiezuordnung auf ein und mehrere ausgewählte Testfotos verifizieren
-- Installations-, Backup- und Restoregrenzen zur späteren Phase 11 dokumentieren
+- **Technischer Kern am 2026-08-13 umgesetzt.** Das reale abgeleitete Suchpaket enthält 273.505 Taxa,
+  7.108.393 Suchbegriffe, 1.762.462 Namen, 54 Projektverknüpfungen und 430.675 Anbieterbelege.
+- Schema, Fremdschlüssel, Zähler, SHA-256-Prüfsumme, atomare Aktivierung und isolierter Rollback wurden am realen
+  Bestand geprüft; repräsentative Offline-Suchen lagen lokal ungefähr zwischen 0,6 und 1,8 Millisekunden.
+- Der read-only Suchhelfer besitzt Datei- und Dauerprozessmodus. Das deutsche Lua-Plug-in zeigt die vollständige
+  Taxonomie an und besitzt den kontrollierten Schreibvertrag für ein oder mehrere ausgewählte Fotos.
+- Der Plug-in-Vertrag schreibt nur hierarchische Schlüsselwörter und stabile fachliche Metadaten über das
+  Lightroom-SDK. Paket- und Masterversion bleiben technische Diagnoseinformationen und werden nicht als normale
+  Fotometadaten abgelegt.
+- Automatisierte Tests sichern Suchpaket, Suchhelfer, Modulgrenzen, Konfliktsperre und das Verbot direkter
+  `.lrcat`-, XMP- oder SQLite-Schreibzugriffe.
+- Offen ist die praktische Schreibprobe mit einem und mehreren Fotos in einem separaten Lightroom-Testkatalog.
 
-Ergebnis: verbindliche Architekturentscheidung für das Plug-in.
+Ergebnis: verbindliche Architektur und technischer Prototyp stehen; der Lightroom-Schreibvertrag wartet auf die
+kontrollierte Abnahme nach `docs/lightroom-search-package.md`.
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
@@ -621,9 +627,10 @@ Phase 9.4 den read-only Bedien- und API-Vertrag umgesetzt. Phase 9.5 hat Vollimp
 Konfliktworkflow für bestehende Arten umgesetzt. Vor den jeweiligen späteren Implementierungsphasen bleiben
 ausdrücklich:
 
-Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 muss den genauen
-Paket- und API-Vertrag, die stabilen Feldkennungen, vollständige Taxonomiehierarchie, Schlüsselwortwurzel,
-Mehrfachzuordnung, Konfliktdarstellung und Rücknahme praktisch bestätigen. Danach bleiben für Phase 11:
+Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
+API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie, Schlüsselwortwurzel, Mehrfachzuordnung und
+Konfliktsperre technisch umgesetzt. Noch zu bestätigen sind die realen Lightroom-Katalogschreibvorgänge im
+Testkatalog; die nutzergeführte Rücknahme wird anschließend in Phase 10.3 ausgebaut. Danach bleiben für Phase 11:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

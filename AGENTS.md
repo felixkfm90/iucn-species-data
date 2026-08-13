@@ -1111,14 +1111,17 @@ Aktuelle Planung:
   als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
   Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
-  LifeListXP, Nomen und Species Tagger. Verbindliche MVP-Empfehlung ist ein natives deutsches Lua-Plug-in mit einem
-  vollständigen, versionierten read-only Suchpaket aus der aktiven Masterdatenbank und einem kleinen lokalen
-  Suchhelfer. Die Offline-Suche umfasst alle lokal vorhandenen Taxa, Namen und Synonyme und ist nicht auf bereits
-  angelegte Explorer-Arten begrenzt. Direkter Zugriff auf die mehrere GiB große interne Master-SQLite und eine
-  zwingend laufende Explorer-API sind für den MVP verworfen. Lightroom bleibt alleiniger Besitzer von Katalog-,
-  Schlüsselwort- und XMP-Schreibvorgängen. Phase 10.2 erzeugt Suchpaket und Suchhelfer prototypisch und verifiziert
-  die vollständige Taxonomiezuordnung auf ein sowie mehrere gleichzeitig ausgewählte Fotos mit einer minimalen
-  Lua-Lese-/Schreibprobe. Danach folgen das deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende
+  LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter
+  `docs/lightroom-search-package.md` verbindlich dokumentiert. Das reale, vollständig verifizierte read-only
+  Suchpaket enthält 273.505 Taxa und 7.108.393 Suchbegriffe aus der aktiven Masterdatenbank. Der lokale Suchhelfer
+  funktioniert ohne laufenden Explorer; Paketprüfung, atomare Aktivierung und isolierter Rollback sind praktisch
+  verifiziert. Das versionierte deutsche Lua-Plug-in unter `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` zeigt
+  Namen und vollständige Hierarchie an und besitzt den kontrollierten Vertrag für hierarchische Schlüsselwörter,
+  stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite, `.lrcat` oder XMP ist
+  verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
+  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Offen bleibt die praktische Schreibprobe mit
+  einem und mehreren Fotos in einem separaten Lightroom-Testkatalog. Erst nach dieser Abnahme gilt Phase 10.2 als
+  abgeschlossen; danach folgen das ausgebaute deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende
   Abschlussaudit.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.

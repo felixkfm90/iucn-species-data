@@ -1037,7 +1037,7 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 
 ## Phase 10 - Lightroom-Integration
 
-Status: in Arbeit; Phase 10.1 abgeschlossen, Phase 10.2 als nächster Schritt
+Status: in Arbeit; Phase 10.1 abgeschlossen, technischer Kern von Phase 10.2 umgesetzt, realer Lightroom-Test offen
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1046,9 +1046,12 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   kleinen lokalen Suchhelfer. Die Suche umfasst alle lokal vorhandenen Taxa und Namen, nicht nur bereits im
   Arten-Explorer angelegte Arten. Die Studie bewertet iNat Publish Pro, LifeListXP, Nomen und Species Tagger,
   übernimmt passende Bedienideen und grenzt KI-, Cloud- und Direktzugriffsrisiken aus;
-- 10.2: vollständiges Suchpaket und Suchhelfer, stabile Master-/Projekt-IDs, komplette Taxonomiehierarchie,
-  Metadaten- und Schlüsselwortmodell, Prüfsumme, atomarer Wechsel, Rollback sowie eine Lua-Lese-/Schreibprobe für
-  ein und mehrere gleichzeitig ausgewählte Fotos prototypisch bestätigen;
+- 10.2: **technischer Kern am 2026-08-13 umgesetzt.** Aus dem realen aktiven Master wurde ein vollständig
+  verifiziertes read-only Suchpaket mit 273.505 Taxa und 7.108.393 Suchbegriffen erzeugt. Suchhelfer, stabiles
+  Metadaten-/Schlüsselwortmodell, Prüfsumme, atomarer Wechsel, isolierter Rollback und ein deutsches Lua-Plug-in
+  für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Offen bleibt
+  die kontrollierte Schreibprobe in einem separaten Lightroom-Testkatalog mit einem und mehreren Fotos; Details:
+  `docs/lightroom-search-package.md`;
 - 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Suche in der vollständigen lokalen Masterdatenbank,
   Taxonomievorschau, stabiler Master-Taxon-ID und vollständiger Taxonomiezuordnung auf ein oder mehrere Fotos;
 - 10.4: erst nach erfolgreichem MVP einzeln priorisierte Erweiterungen wie Referenzbilder, Sammlungen, Lifelist,
