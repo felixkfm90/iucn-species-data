@@ -1,5 +1,5 @@
 return {
-  schemaVersion = 1,
+  schemaVersion = 2,
   metadataFieldsForPhotos = {
     {
       id = "masterTaxonId",
@@ -49,6 +49,38 @@ return {
       dataType = "string",
       searchable = true,
       browsable = false,
+    },
+    {
+      id = "taxonomyClass",
+      title = "Klasse (wissenschaftlich)",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "taxonomyFamily",
+      title = "Familie (wissenschaftlich)",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "taxonomyGenus",
+      title = "Gattung (wissenschaftlich)",
+      dataType = "string",
+      searchable = true,
+      browsable = true,
+    },
+    {
+      id = "referenceImage",
+      title = "Art-Referenzbild",
+      dataType = "enum",
+      values = {
+        { value = "no", title = "Nein" },
+        { value = "yes", title = "Ja" },
+      },
+      searchable = true,
+      browsable = true,
     },
     {
       id = "assignedAt",

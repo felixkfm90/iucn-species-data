@@ -1,3 +1,5 @@
+local PluginState = require "PluginState"
+
 local KeywordWriter = {}
 
 local RANK_LABELS = {
@@ -89,6 +91,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
   end
 
   local hierarchyPath = {}
+  local rankValues = {}
   local keywordCount = 0
   catalog:withWriteAccessDo("FN Wildlife Taxonomie zuweisen", function()
     local root = createKeyword(catalog, "FN Wildlife & Travel", nil)
@@ -96,8 +99,12 @@ function KeywordWriter.assign(catalog, photos, taxon)
     local parent = taxonomyRoot
     for _, entry in ipairs(taxon.hierarchy or {}) do
       local value = displayTaxon(entry)
+      local rank = cleanText(entry.rank)
+      if rank ~= "" then
+        rankValues[rank] = cleanText(entry.scientificName)
+      end
       if value ~= "" then
-        local rankLabel = RANK_LABELS[entry.rank] or cleanText(entry.rank)
+        local rankLabel = RANK_LABELS[entry.rank] or rank
         local keywordName = rankLabel .. ": " .. value
         parent = createKeyword(catalog, keywordName, parent)
         table.insert(hierarchyPath, keywordName)
@@ -149,9 +156,14 @@ function KeywordWriter.assign(catalog, photos, taxon)
       )
       photo:setPropertyForPlugin(_PLUGIN, "taxonRank", cleanText(taxon.rank))
       photo:setPropertyForPlugin(_PLUGIN, "taxonomyPath", taxonomyPath)
+      photo:setPropertyForPlugin(_PLUGIN, "taxonomyClass", rankValues.class or "")
+      photo:setPropertyForPlugin(_PLUGIN, "taxonomyFamily", rankValues.family or "")
+      photo:setPropertyForPlugin(_PLUGIN, "taxonomyGenus", rankValues.genus or "")
       photo:setPropertyForPlugin(_PLUGIN, "assignedAt", assignedAt)
     end
   end)
+
+  PluginState.markStatisticsDirty()
 
   return {
     photoCount = #photos,

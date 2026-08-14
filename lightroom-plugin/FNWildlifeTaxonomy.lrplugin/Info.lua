@@ -5,15 +5,27 @@ return {
   LrPluginName = "FN Wildlife Taxonomie",
   LrLibraryMenuItems = {
     {
-      title = "Art und Taxonomie zuweisen ...",
+      title = "Taxonomie zuweisen ...",
       file = "AssignTaxonomy.lua",
+    },
+    {
+      title = "Ausgewähltes Foto als Art-Referenzbild festlegen ...",
+      file = "SetReferenceImage.lua",
+    },
+    {
+      title = "FN Wildlife-Sammlungen einrichten ...",
+      file = "CreateCollections.lua",
+    },
+    {
+      title = "Taxonomie-Statistik ...",
+      file = "ShowStatistics.lua",
     },
   },
   LrMetadataProvider = "MetadataDefinition.lua",
   VERSION = {
     major = 0,
-    minor = 2,
-    revision = 0,
-    build = 1,
+    minor = 3,
+    revision = 4,
+    build = 0,
   },
 }

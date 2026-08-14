@@ -1,9 +1,9 @@
 # Lightroom-Suchpaket und erster Plug-in-Prototyp
 
-Stand: 2026-08-13
-Roadmap: Phase 10.2
-Status: technischer Kern umgesetzt und lokal verifiziert; kontrollierter Schreibtest in einem Lightroom-Testkatalog
-steht noch aus
+Stand: 2026-08-14
+Roadmap: Phase 10.2 bis 10.4
+Status: Suchpaket, Plug-in-Kern und ausgewählte Bedienerweiterungen sind automatisiert verifiziert; die kontrollierte
+Schreib- und Bedienabnahme im bereits vorbereiteten Lightroom-Testkatalog steht noch aus
 
 ## Ziel
 
@@ -109,13 +109,24 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Enthalten sind:
+Das Plug-in trägt die Version `0.3.4`. Enthalten sind:
 
 - `Info.lua`: Manifest, SDK-Grenze und deutscher Bibliotheksmenüpunkt;
 - `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder;
-- `TaxonomyHelper.lua`: Aufruf des read-only Suchhelfers;
+- `TaxonomyHelper.lua`: Aufruf des read-only Suchhelfers; unter Windows wird eine vorhandene Node-Installation
+  auch dann automatisch unter den üblichen Installationspfaden gefunden, wenn Lightroom den System-`PATH` nicht
+  vollständig übernimmt. Der lokale Suchpaketpfad wird unabhängig von Lightroom-Prozessvariablen explizit
+  übergeben. Ein fehlgeschlagener Hilfsprozess liefert eine begrenzte technische Diagnose statt einer
+  abgeschnittenen Sammelmeldung;
+- `Json.lua`: gekapselter JSON-Codec für die Kommunikation mit dem Suchhelfer;
 - `KeywordWriter.lua`: vollständige Hierarchie- und Namensschlüsselwörter sowie Mehrfachzuweisung;
-- `AssignTaxonomy.lua`: deutsche Suche, Trefferauswahl, Taxonomievorschau, Konfliktprüfung und Bestätigung.
+- `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
+  gegliedertes Zuweisungsfenster mit aktueller Lightroom-Auswahl, geprüftem Suchpaketstatus, Suche,
+  Taxonomievorschau, Konfliktprüfung und den zehn zuletzt verwendeten Arten;
+- `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
+- `ReferenceImage.lua` und `SetReferenceImage.lua`: genau ein kontrolliertes Referenzbild je Master-Taxon-ID;
+- `SmartCollections.lua` und `CreateCollections.lua`: wiederholbar einrichtbare intelligente Sammlungen;
+- `Statistics.lua` und `ShowStatistics.lua`: Katalogstatistik mit manuell aktualisierbarem Cache.
 
 Der Prototyp sucht in der vollständigen lokalen Masterableitung und nicht nur in bereits angelegten Explorer-Arten.
 Vor der Zuweisung zeigt er deutsche, englische und wissenschaftliche Namen sowie alle verfügbaren Taxonomiestufen.
@@ -143,7 +154,34 @@ das Plug-in folgende eigene Felder:
 - deutscher, englischer und wissenschaftlicher Name;
 - Taxonrang;
 - vollständiger Taxonomiepfad;
-- Zuweisungszeitpunkt.
+- Zuweisungszeitpunkt;
+- Klasse, Familie und Gattung für Sammlungen und Statistik;
+- Kennzeichen `Art-Referenzbild` mit den Werten `Ja` oder `Nein`.
+
+Die Menüaktion `Taxonomie zuweisen ...` öffnet ein kompaktes schwebendes Arbeitsfenster. Die vier sichtbaren Abschnitte
+`Aktuelle Lightroom-Auswahl`, `Art suchen und auswählen`, `Taxonomie prüfen` und `Taxonomie zuweisen` führen vom
+ausgewählten Foto bis zur bewussten Katalogänderung. Vor der Suche prüft das Fenster das lokale Suchpaket und zeigt
+dessen verfügbaren Taxabestand an. Es bleibt beim Wechsel der Lightroom-Auswahl geöffnet, zeigt die Anzahl und den
+Zuordnungszustand der aktuell markierten Fotos und bringt ein bereits geöffnetes Fenster erneut in den Vordergrund,
+statt ein zweites zu erzeugen. Die Arbeitsfläche nutzt die Fensterbreite und besitzt neben dem Fensterschalter einen
+am unteren rechten Fensterrand verankerten Button `Schließen`. Das reine Öffnen, Suchen und Vorschauen verändert
+keine Bildmetadaten.
+
+`Ausgewähltes Foto als Art-Referenzbild festlegen ...` markiert nach einer verständlichen Bestätigung genau ein
+bereits taxonomisch zugeordnetes Foto als bevorzugtes Beispielfoto seiner `masterTaxonId`. Die Bilddatei wird weder
+kopiert noch verändert; ein früheres Referenzbild derselben Art wird zurückgesetzt. `FN Wildlife-Sammlungen
+einrichten ...`
+erstellt beziehungsweise verwendet den Sammlungssatz `FN Wildlife & Travel` mit den intelligenten Sammlungen
+`Taxonomie zugewiesen`, `Taxonomie fehlt`, `Art-Referenzbilder` und `5-Sterne-Tierbilder`. Die Aktion ist
+wiederholbar und erzeugt keine gleichnamigen Dubletten. `Taxonomie-Statistik ...` zeigt Foto-, Art-, Gattungs-,
+Familien-, Klassen- und Referenzbildzahlen, die Taxonomie-Abdeckung sowie `Am häufigsten fotografierte Arten:` mit
+höchstens zehn Einträgen. Solange noch
+keine Art zugewiesen ist, wird dieser Zustand ausdrücklich angezeigt.
+
+Der Statistikcache ist nur eine Beschleunigung und keine fachliche Datenquelle. Eigene Zuweisungs- und
+Referenzbildaktionen machen ihn automatisch ungültig. Änderungen an Bewertungen oder Plug-in-Feldern außerhalb
+dieser Aktionen werden über `Neu berechnen` ausdrücklich neu eingelesen. Bereits mit einer älteren Plug-in-Version
+zugewiesene Fotos erhalten Klasse, Familie und Gattung erst bei einer erneuten kontrollierten Zuweisung.
 
 Master- oder Suchpaketversionen werden absichtlich nicht als normale Fotometadaten gespeichert. Sie gehören in das
 Paketmanifest und in technische Diagnoseinformationen, weil für die Bildverwaltung nur Taxonomie und Namen relevant
@@ -155,12 +193,22 @@ sind.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. In der Bibliothek ein Testfoto markieren und
-   `Bibliothek > Zusatzmoduloptionen > Art und Taxonomie zuweisen ...` wählen.
-5. Eine Art suchen, Vorschau kontrollieren, zuweisen und Schlüsselwörter sowie Plug-in-Felder prüfen.
-6. Dieselbe Prüfung mit mehreren gleichzeitig ausgewählten Testfotos wiederholen.
-7. Einen Konfliktfall mit einer abweichenden vorhandenen `masterTaxonId` prüfen; der Prototyp muss blockieren.
-8. Lightroom neu starten und prüfen, dass Zuordnung und Schlüsselwörter erhalten bleiben.
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.3.4.0` sowie die vier Menüaktionen ohne
+   Lua-Fehler erscheinen.
+5. In der Bibliothek ein Testfoto markieren und
+   `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen ...` wählen.
+6. Im Zuweisungsfenster die vier gerahmten Schritte und den Hinweis `Lokale Masterdatenbank bereit` prüfen. Eine Art
+   suchen, Vorschau kontrollieren, zuweisen und Schlüsselwörter sowie Plug-in-Felder prüfen. Danach die Auswahl bei
+   geöffnetem Fenster wechseln und den aktualisierten Auswahlhinweis prüfen.
+7. Dieselbe Prüfung mit mehreren gleichzeitig ausgewählten Testfotos wiederholen.
+8. Einen Konfliktfall mit einer abweichenden vorhandenen `masterTaxonId` prüfen; das Plug-in muss blockieren.
+9. Für eine zugewiesene Art nacheinander zwei Fotos als Referenz festlegen. Danach darf nur das zuletzt gewählte
+   Foto `Art-Referenzbild = Ja` besitzen.
+10. `FN Wildlife-Sammlungen einrichten ...` zweimal ausführen und prüfen, dass nur ein Sammlungssatz mit vier
+    intelligenten Sammlungen vorhanden ist.
+11. `Taxonomie-Statistik ...` öffnen, `Neu berechnen` ausführen und Abdeckung, Zahlen, Referenzbildhinweise sowie
+    die höchstens zehn am häufigsten fotografierten Arten prüfen.
+12. Lightroom neu starten und prüfen, dass Zuordnung, Schlüsselwörter, Referenzbild und Sammlungen erhalten bleiben.
 
 Dieser Test darf nicht am persönlichen Produktivkatalog beginnen. Erst nach dem bestandenen Testkataloglauf gilt der
 Lightroom-Schreibvertrag als praktisch bestätigt.
@@ -175,11 +223,17 @@ Automatisch verifiziert sind:
 - atomare Aktivierung und isolierter Rollbacktest;
 - Suchhelfer im Datei- und Dauerprozessmodus;
 - Plug-in-Manifest, Modulgrenzen und Verbot direkter `.lrcat`-/XMP-/SQLite-Zugriffe;
-- vollständige Hierarchie, Mehrfachzuweisung und Konfliktsperre im Lua-Vertrag.
+- vollständige Hierarchie, Mehrfachzuweisung und Konfliktsperre im Lua-Vertrag;
+- schwebendes, gerahmtes Vier-Schritt-Zuweisungsfenster mit Suchpaket-, Einzelfenster-, Auswahlwechsel- und
+  Verlaufskontrakt;
+- eindeutige, bestätigungspflichtige Referenzbildmarkierung, idempotente Sammlungsdefinitionen sowie Statistik-
+  und Cache-Grenzen einschließlich Abdeckung und häufigsten Arten.
 
-Noch offen ist ausschließlich die praktische Phase-10.2-Abnahme in Lightroom Classic mit einem Testkatalog: ein
-Foto, mehrere Fotos, persistierte Schlüsselwörter/Plug-in-Felder und Konfliktsperre. Danach kann Phase 10.2
-abgeschlossen und das Bedien-MVP aus Phase 10.3 ausgebaut werden.
+Noch offen ist die gemeinsame praktische Abnahme in Lightroom Classic mit dem vorbereiteten Testkatalog und den
+123 Testbildern. Sie umfasst zunächst die vier nicht schreibenden Menü-/Fensterprüfungen und danach den vom
+Anwender bewusst gestarteten Schreibtest für ein Foto, mehrere Fotos, Konfliktsperre, Referenzbild, Sammlungen und
+Statistik. Bis dahin gelten Phase 10.2 und das ausgebaute Bedien-MVP aus 10.3/10.4 als technisch, aber noch nicht
+praktisch abgenommen.
 
 ## Betriebs- und Sicherungsgrenze
 

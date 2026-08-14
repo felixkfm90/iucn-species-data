@@ -1119,10 +1119,21 @@ Aktuelle Planung:
   Namen und vollständige Hierarchie an und besitzt den kontrollierten Vertrag für hierarchische Schlüsselwörter,
   stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite, `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
-  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Offen bleibt die praktische Schreibprobe mit
-  einem und mehreren Fotos in einem separaten Lightroom-Testkatalog. Erst nach dieser Abnahme gilt Phase 10.2 als
-  abgeschlossen; danach folgen das ausgebaute deutsche MVP, einzeln priorisierte Erweiterungen und das umfassende
-  Abschlussaudit.
+  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Am 2026-08-14 wurde das Plug-in auf Version
+  `0.3.4` ausgebaut: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet, gliedert Auswahl,
+  Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt den aktuellen
+  Auswahlzustand, nutzt die verfügbare Fensterbreite, besitzt einen unten rechts verankerten Schließen-Button und
+  merkt die zehn zuletzt verwendeten Arten. Der Suchhelfer erkennt unter Windows eine übliche lokale
+  Node-Installation auch dann, wenn Lightroom den System-`PATH` nicht vollständig übernimmt, und erhält den lokalen
+  Suchpaketpfad unabhängig von Lightroom-Prozessvariablen ausdrücklich. Ein fehlgeschlagener Hilfsprozess zeigt eine
+  begrenzte technische Diagnose. Als erste klar abgegrenzte 10.4-Funktionen sind
+  genau ein erklärtes und bestätigungspflichtiges Referenzbild je Master-Taxon-ID, ein idempotenter Satz
+  intelligenter Sammlungen und eine vollständig neu berechenbare Katalogstatistik mit Taxonomie-Abdeckung, den zehn
+  am häufigsten fotografierten Arten und verwerfbarem Cache implementiert. Diese Funktionen sind nur von der
+  read-only Masterableitung abgeleitet und bilden keine zweite Taxonomiepflege. Offen bleibt die praktische
+  Schreib- und Bedienprobe mit einem und mehreren Fotos im vorbereiteten separaten Lightroom-Testkatalog. Erst nach
+  dieser Abnahme gelten der technische Kern und die ausgewählten Erweiterungen als praktisch bestätigt; danach
+  folgen weitere einzeln priorisierte Funktionen und das umfassende Abschlussaudit.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

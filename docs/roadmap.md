@@ -1037,7 +1037,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 
 ## Phase 10 - Lightroom-Integration
 
-Status: in Arbeit; Phase 10.1 abgeschlossen, technischer Kern von Phase 10.2 umgesetzt, realer Lightroom-Test offen
+Status: in Arbeit; Phase 10.1 abgeschlossen, 10.2 bis zum technischen Plug-in-Kern umgesetzt und ausgewählte
+Bausteine aus 10.3/10.4 automatisiert geprüft; gemeinsamer realer Lightroom-Test offen
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1052,10 +1053,22 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Offen bleibt
   die kontrollierte Schreibprobe in einem separaten Lightroom-Testkatalog mit einem und mehreren Fotos; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: deutsches Lightroom-Classic-Plug-in als MVP mit Suche in der vollständigen lokalen Masterdatenbank,
-  Taxonomievorschau, stabiler Master-Taxon-ID und vollständiger Taxonomiezuordnung auf ein oder mehrere Fotos;
-- 10.4: erst nach erfolgreichem MVP einzeln priorisierte Erweiterungen wie Referenzbilder, Sammlungen, Lifelist,
-  Statistiken und Konfliktprüfung;
+- 10.3: **technischer MVP-Ausbau am 2026-08-14 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt bei
+  der Bildauswahl geöffnet, zeigt den aktuellen Auswahlzustand und die zehn zuletzt verwendeten Arten. Version
+  `0.3.4` gliedert Auswahl, lokale Artensuche, Taxonomieprüfung und Zuweisung in vier gerahmte Schritte, nutzt ein
+  kompakteres Fenster mit unten rechts verankertem Schließen-Button und findet Node unter Windows unabhängig vom
+  Lightroom-`PATH`. Der lokale Suchpaketpfad wird explizit übergeben; Fehler des Hilfsprozesses bleiben dadurch
+  diagnostizierbar. Sie prüft den lokalen Suchpaketstatus vor der Bedienfreigabe. Suche, vollständige
+  Taxonomievorschau, stabile
+  Master-Taxon-ID, Mehrfachzuweisung und Konfliktsperre sind automatisiert abgesichert; die gemeinsame Bedien- und
+  Schreibabnahme im Testkatalog ist offen;
+- 10.4: **erster priorisierter Funktionsblock am 2026-08-14 umgesetzt.** Genau ein bestätigungspflichtiges
+  Art-Referenzbild je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine neu berechenbare
+  Katalogstatistik mit Abdeckung, zehn am häufigsten fotografierten Arten und Cache sind implementiert und
+  vertraglich getestet.
+  Lifelist, Export, erweiterte Konfliktauflösung und optionale
+  iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Die praktischen Tests dieser drei Funktionen erfolgen
+  gemeinsam mit 10.2/10.3;
 - 10.5: umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

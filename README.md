@@ -980,12 +980,19 @@ lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der reale Stand ent
 Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunden. Ein natives deutsches
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als hierarchische
 Schlüsselwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu. Paketprüfung, atomare
-Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet. Noch ausstehend ist
-die kontrollierte Schreibprobe in einem separaten Lightroom-Testkatalog; der persönliche Katalog wurde nicht
-verändert. Details, Befehle und Abnahmeablauf stehen in `docs/lightroom-search-package.md`. Lightroom bleibt
-alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische KI-Artbestimmung,
-iNaturalist-Synchronisation, Lifelist und Statistiken sind nicht Teil des ersten MVP und werden erst nach dessen
-erfolgreicher Prüfung einzeln priorisiert.
+Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet. Das Plug-in besitzt
+inzwischen in Version `0.3.4` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster mit aktueller
+Bildauswahl, lokalem Suchpaketstatus, automatischer Windows-Node-Pfaderkennung, explizitem lokalem Suchpaketpfad,
+diagnostizierbarem Hilfsprozess, unten rechts verankertem Schließen-Button und Verlauf. Als klar abgegrenzte
+Erweiterungen sind genau ein bestätigungspflichtiges
+Art-Referenzbild je Art, ein idempotenter Satz intelligenter Sammlungen und eine neu berechenbare Katalogstatistik
+mit Taxonomie-Abdeckung, den zehn am häufigsten fotografierten Arten und verwerfbarem Cache umgesetzt. Noch
+ausstehend ist die
+kontrollierte Schreib-
+und Bedienprobe im separaten Lightroom-Testkatalog; der persönliche Katalog wurde nicht verändert. Details,
+Befehle und Abnahmeablauf stehen in `docs/lightroom-search-package.md`. Lightroom bleibt alleiniger Besitzer von
+Katalog- und XMP-Schreibvorgängen. Automatische KI-Artbestimmung, iNaturalist-Synchronisation, Lifelist und Export
+bleiben spätere, einzeln zu priorisierende Erweiterungen.
 
 Vor dem Start von Phase 10 wurde die Bedienung am 10. August 2026 noch einmal stabilisiert. Die lokalen
 Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit dem kompakten Umfang
