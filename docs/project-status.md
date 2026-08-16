@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-08-11T17:34:02.236Z`
+Report-Datenstand: `2026-08-16T08:16:45.295Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 54 |
-| Aktive Arten | 54 |
-| Arten in `speciesData.json` | 54 |
-| Vollständige Art-Assetordner | 54 |
-| Karten | 54 |
-| Sounds | 52 |
-| Credits | 52 |
-| Spektrogramme | 52 |
-| Artporträts | 54 |
+| Eingaben in `species_list.json` | 55 |
+| Aktive Arten | 55 |
+| Arten in `speciesData.json` | 55 |
+| Vollständige Art-Assetordner | 55 |
+| Karten | 55 |
+| Sounds | 53 |
+| Credits | 53 |
+| Spektrogramme | 53 |
+| Artporträts | 55 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
@@ -25,7 +25,7 @@ Report-Datenstand: `2026-08-11T17:34:02.236Z`
 
 - Blaukehlchen
 
-## Aktive NC-Soundlizenzen (9)
+## Aktive NC-Soundlizenzen (10)
 
 - Bisamratte
 - Blaustirn-Blatthühnchen
@@ -35,6 +35,7 @@ Report-Datenstand: `2026-08-11T17:34:02.236Z`
 - Großtrappe
 - Halsbandarassari
 - Löwe
+- Rotstirnamazone
 - Scharlachara
 
 ## Bewusst fehlende Tierstimmen (2)

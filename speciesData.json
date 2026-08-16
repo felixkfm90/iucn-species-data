@@ -1294,5 +1294,29 @@
     "Species": "torquatus",
     "Letztes IUCN Update": "2023",
     "Daten abgerufen": "2026-08-03"
+  },
+  {
+    "URLSlug": "amazonaautumnalis",
+    "Wissenschaftlicher Name": "Amazona autumnalis",
+    "Deutscher Name": "Rotstirnamazone",
+    "Englischer Name": "Red-lored Parrot",
+    "Gewicht": "ca. 300-450 g",
+    "Größe": "ca. 33-35 cm",
+    "Lebenserwartung": "ca. 30-40 Jahre",
+    "Assessment ID": 132031668,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "12,3 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Psittaciformes",
+    "Family": "Psittacidae",
+    "Genus": "Amazona",
+    "Species": "autumnalis",
+    "Letztes IUCN Update": "2018",
+    "Daten abgerufen": "2026-08-16"
   }
 ]

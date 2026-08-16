@@ -1352,6 +1352,45 @@
           ]
         }
       }
+    },
+    "Rotstirnamazone": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-08-16T08:15:00.667Z",
+        "approvedAt": "2026-08-16T08:15:10.570Z",
+        "sha256": "3b4765403378cd97709dedfe1f6f419ed6ee4934fae4bbb1497592d4084cb0d4",
+        "metadataSha256": "596d659435c1ffa2924f516633db603bf42f4e1a32ff3a58b690d7f15d0db0aa"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-08-16T08:16:17.215Z"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "inaturalist:351867405:1874285",
+            "source": "iNaturalist",
+            "url": "https://www.inaturalist.org/observations/351867405",
+            "recordist": "no rights reserved",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-08-16T08:16:17.215Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-08-16T08:16:45.096Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "3940bb6d780a12e564b7784b50000214e3ea9a2eab0ea8c0e0e797d7c30b4d4e",
+        "spectrogramSha256": "6122b85123bfd3eeb94fd3927cd196cc81230245f111d98a49d26b2c0b6e20ce",
+        "generatedAt": "2026-08-16T08:16:25.328Z",
+        "verifiedAt": "2026-08-16T08:16:25.334Z"
+      }
     }
   },
   "spectrogramGenerator": {
@@ -1361,8 +1400,6 @@
     "innerHeight": 200,
     "topPadding": 20,
     "format": "webp",
-    "color": "channel",
-    "scale": "log",
     "gain": 3,
     "stop": 18000,
     "drange": 80,

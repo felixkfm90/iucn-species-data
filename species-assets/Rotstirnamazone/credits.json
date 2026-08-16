@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Amazona autumnalis",
+  "german_name": "Rotstirnamazone",
+  "recordist": "Brendan Sloan",
+  "country": "Guatemala",
+  "location": "Heloderma Reserve Motagua Valley",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/983253",
+  "rejectionKey": "xeno-canto:983253",
+  "notes": "Stage 6 (openOnly=false, q=A, len25-35=true) | query=\"gen:Amazona sp:autumnalis q:A len:25-35\" | page=1"
+}

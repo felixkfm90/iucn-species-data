@@ -484,5 +484,14 @@
     "size": "ca. 38-43 cm",
     "weight": "ca. 180-275 g",
     "life_expectancy": "ca. 15-20 Jahre"
+  },
+  {
+    "german": "Rotstirnamazone",
+    "english": "Red-lored Parrot",
+    "genus": "Amazona",
+    "species": "autumnalis",
+    "size": "ca. 33-35 cm",
+    "weight": "ca. 300-450 g",
+    "life_expectancy": "ca. 30-40 Jahre"
   }
 ]

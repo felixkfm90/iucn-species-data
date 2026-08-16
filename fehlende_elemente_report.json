@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-11T17:34:02.236Z",
+  "generatedAt": "2026-08-16T08:16:45.295Z",
   "counts": {
-    "totalSpecies": 54,
+    "totalSpecies": 55,
     "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 2,
-    "ncSoundLicensesAll": 9
+    "ncSoundLicensesAll": 10
   },
   "missing": {
     "soundMp3": [
@@ -53,6 +53,7 @@
     "Großtrappe",
     "Halsbandarassari",
     "Löwe",
+    "Rotstirnamazone",
     "Scharlachara"
   ]
 }
