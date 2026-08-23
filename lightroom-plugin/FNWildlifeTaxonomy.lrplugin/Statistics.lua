@@ -1,11 +1,8 @@
 local PluginState = require "PluginState"
+local TaxonomyRanks = require "TaxonomyRanks"
 
 local Statistics = {}
-
-local function cleanText(value)
-  local text = tostring(value or "")
-  return string.match(text, "^%s*(.-)%s*$") or ""
-end
+local cleanText = TaxonomyRanks.cleanText
 
 local function countKeys(values)
   local count = 0
@@ -37,6 +34,24 @@ local function topSpecies(speciesCounts, speciesNames)
   return result
 end
 
+local function classRows(classPhotoCounts, classSpecies)
+  local rows = {}
+  for className, photoCount in pairs(classPhotoCounts) do
+    table.insert(rows, {
+      name = className,
+      photoCount = photoCount,
+      speciesCount = countKeys(classSpecies[className] or {}),
+    })
+  end
+  table.sort(rows, function(left, right)
+    if left.photoCount == right.photoCount then
+      return left.name < right.name
+    end
+    return left.photoCount > right.photoCount
+  end)
+  return rows
+end
+
 function Statistics.scan(catalog, progress)
   local photos = catalog:getAllPhotos()
   local species = {}
@@ -46,6 +61,8 @@ function Statistics.scan(catalog, progress)
   local speciesCounts = {}
   local speciesNames = {}
   local referenceCounts = {}
+  local classPhotoCounts = {}
+  local classSpecies = {}
   local assignedPhotos = 0
 
   catalog:withReadAccessDo(function()
@@ -64,7 +81,12 @@ function Statistics.scan(catalog, progress)
         local className = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyClass"))
         if family ~= "" then families[family] = true end
         if genus ~= "" then genera[genus] = true end
-        if className ~= "" then classes[className] = true end
+        if className ~= "" then
+          classes[className] = true
+          classPhotoCounts[className] = (classPhotoCounts[className] or 0) + 1
+          classSpecies[className] = classSpecies[className] or {}
+          classSpecies[className][masterTaxonId] = true
+        end
         if cleanText(photo:getPropertyForPlugin(_PLUGIN, "referenceImage")) == "yes" then
           referenceCounts[masterTaxonId] = (referenceCounts[masterTaxonId] or 0) + 1
         end
@@ -100,6 +122,7 @@ function Statistics.scan(catalog, progress)
     speciesWithoutReference = missingReferences,
     speciesWithMultipleReferences = duplicateReferences,
     topSpecies = topSpecies(speciesCounts, speciesNames),
+    classBreakdown = classRows(classPhotoCounts, classSpecies),
   }
   PluginState.saveStatisticsCache(catalog, result)
   return result

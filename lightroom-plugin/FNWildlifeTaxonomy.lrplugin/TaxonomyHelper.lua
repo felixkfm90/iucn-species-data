@@ -132,6 +132,43 @@ local function responseError(response)
   return "Die lokale Taxonomie-Suchhilfe meldete einen unbekannten Fehler."
 end
 
+function TaxonomyHelper.searchRoot()
+  local prefs = LrPrefs.prefsForPlugin()
+  local configured = cleanText(prefs.searchRoot)
+  if configured ~= "" then
+    return configured
+  end
+  return defaultSearchRoot(LrPathUtils.getStandardFilePath("temp"))
+end
+
+function TaxonomyHelper.searchPackageStatus()
+  local root = TaxonomyHelper.searchRoot()
+  local activeRoot = root ~= "" and LrPathUtils.child(root, "active") or ""
+  local databasePath = activeRoot ~= ""
+      and LrPathUtils.child(activeRoot, "taxonomy-search.sqlite")
+    or ""
+  local manifestPath = activeRoot ~= "" and LrPathUtils.child(activeRoot, "manifest.json") or ""
+  local status = {
+    root = root,
+    databasePath = databasePath,
+    manifestPath = manifestPath,
+    available = databasePath ~= "" and LrFileUtils.exists(databasePath) == "file",
+    taxonCount = 0,
+    masterVersion = "",
+  }
+  if manifestPath ~= "" and LrFileUtils.exists(manifestPath) == "file" then
+    local content = readTextFile(manifestPath)
+    if content then
+      local ok, manifest = pcall(Json.decode, content)
+      if ok and type(manifest) == "table" then
+        status.taxonCount = tonumber(manifest.taxonCount or 0) or 0
+        status.masterVersion = cleanText(manifest.masterVersion)
+      end
+    end
+  end
+  return status
+end
+
 function TaxonomyHelper.request(payload)
   local prefs = LrPrefs.prefsForPlugin()
   local nodePath = resolveNodePath(prefs.nodePath)
@@ -143,10 +180,7 @@ function TaxonomyHelper.request(payload)
   end
 
   local tempRoot = LrPathUtils.getStandardFilePath("temp")
-  local searchRoot = cleanText(prefs.searchRoot)
-  if searchRoot == "" then
-    searchRoot = defaultSearchRoot(tempRoot)
-  end
+  local searchRoot = TaxonomyHelper.searchRoot()
   if searchRoot == "" then
     error("Der lokale Speicherort des Lightroom-Suchpakets konnte nicht ermittelt werden.")
   end

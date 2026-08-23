@@ -35,6 +35,8 @@ end
 
 local function dashboardText(statistics, cached)
   local lines = {
+    "Lifelist: " .. tostring(statistics.speciesCount or 0) .. " Arten",
+    "",
     "Fotos im Katalog: " .. tostring(statistics.totalPhotos or 0),
     "Mit Taxonomie: " .. tostring(statistics.assignedPhotos or 0),
     "Ohne Taxonomie: " .. tostring(statistics.unassignedPhotos or 0),
@@ -46,11 +48,26 @@ local function dashboardText(statistics, cached)
     "Familien: " .. tostring(statistics.familyCount or 0),
     "Klassen: " .. tostring(statistics.classCount or 0),
     "",
-    "Art-Referenzbilder: " .. tostring(statistics.referenceImageCount or 0),
-    "Arten ohne Referenzbild: " .. tostring(statistics.speciesWithoutReference or 0),
+    "Bevorzugte Artbilder: " .. tostring(statistics.referenceImageCount or 0),
+    "Arten ohne bevorzugtes Artbild: " .. tostring(statistics.speciesWithoutReference or 0),
   }
   if tonumber(statistics.speciesWithMultipleReferences or 0) > 0 then
-    table.insert(lines, "Mehrfache Referenzbilder: " .. tostring(statistics.speciesWithMultipleReferences))
+    table.insert(lines, "Mehrfache bevorzugte Artbilder: " .. tostring(statistics.speciesWithMultipleReferences))
+  end
+  if #(statistics.classBreakdown or {}) > 0 then
+    table.insert(lines, "")
+    table.insert(lines, "Klassenverteilung:")
+    for _, entry in ipairs(statistics.classBreakdown or {}) do
+      table.insert(
+        lines,
+        tostring(entry.name)
+          .. ": "
+          .. tostring(entry.speciesCount)
+          .. " Arten · "
+          .. tostring(entry.photoCount)
+          .. " Fotos"
+      )
+    end
   end
   table.insert(lines, "")
   table.insert(lines, "Am häufigsten fotografierte Arten:")

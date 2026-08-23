@@ -1,8 +1,9 @@
 # Machbarkeitsstudie: Lightroom-Classic-Integration
 
-Stand: 2026-08-13  
+Stand: 2026-08-23
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; technischer Phase-10.2-Kern unter `docs/lightroom-search-package.md` umgesetzt
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.0 sind unter
+`docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
 
@@ -26,9 +27,11 @@ Die Machbarkeit ist für ein eng begrenztes MVP bestätigt. Empfohlen wird:
 - keine direkte Änderung der Lightroom-Katalogdatei, der Master-SQLite oder von XMP-Dateien außerhalb der
   Lightroom-Schnittstellen.
 
-Nicht Bestandteil des ersten MVP sind automatische Bilderkennung, iNaturalist-Beobachtungssynchronisation und
-Lifelist-Statistik. Diese Funktionen bleiben einzeln priorisierbare Erweiterungen. Die vollständige Offline-Suche
-über den bereits aufgebauten Taxonomie-Master ist dagegen eine verbindliche MVP-Anforderung.
+Nicht Bestandteil des ersten MVP waren automatische Bilderkennung, iNaturalist-Beobachtungssynchronisation und
+Lifelist-Statistik. Lifelist-Statistik, Smart-Sammlungen und ein bevorzugtes Artbild wurden inzwischen kontrolliert
+ergänzt. Automatische Bilderkennung und iNaturalist-Beobachtungssynchronisation bleiben spätere, getrennt zu
+bewertende Erweiterungen. Die vollständige Offline-Suche über den bereits aufgebauten Taxonomie-Master bleibt die
+verbindliche Grundlage.
 
 ## 2. Geprüfte lokale Umgebung
 
@@ -352,13 +355,16 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 6. Konfliktvorschau, Überspringen und Rücknahme;
 7. Paketstatus und technische Herkunft nur in der Plug-in-Diagnose sichtbar machen.
 
-### Nach dem MVP einzeln bewerten
+### Nach dem MVP bereits ergänzt
 
 1. Smart Collections und Lifelist-/Statistikauswertung;
-2. iNaturalist-Beobachtungsimport mit Zeit-/GPS-Vergleich;
-3. Serien- oder Burst-Helfer;
-4. Artportrait als Referenzbild;
-5. sichtbare externe Recherche für unbekannte Arten;
+2. ein bevorzugtes Artbild je Art als reine Katalogmarkierung.
+
+### Weiterhin einzeln bewerten
+
+1. iNaturalist-Beobachtungsimport mit Zeit-/GPS-Vergleich;
+2. Serien- oder Burst-Helfer;
+3. sichtbare externe Recherche für unbekannte Arten;
 
 ### Nicht in Phase 10 aufnehmen
 
@@ -378,9 +384,12 @@ eingebauten Einzellösungen. Der größte Nutzen entsteht deshalb nicht durch da
 Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-Explorer zu Lightroom.
 
 Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
-und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Noch offen ist die
-kontrollierte Schreibprobe des vollständigen Taxonomiepfads auf ein sowie mehrere Fotos in einem separaten
-Lightroom-Testkatalog. Erst nach dieser Abnahme beginnt der Ausbau zum vollständigen MVP aus Phase 10.3.
+und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Die kontrollierte
+Zuweisung an ein und mehrere Fotos wurde anschließend in einem separaten Lightroom-Testkatalog praktisch bestätigt.
+Plug-in-Version 0.4.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, einen bewusst schlanken
+Schlüsselwortbaum ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, Lifelist und Statistik,
+Smart-Sammlungen, das bevorzugte Artbild, eine eigene Metadatenansicht sowie eine knappe Plug-in-Diagnose. Vor dem
+nächsten Funktionsblock steht nur noch die visuelle Bedienabnahme dieses 0.4.0-Stands in Lightroom aus.
 
 ## 12. Quellen und Produktreferenzen
 

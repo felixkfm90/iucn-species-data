@@ -1,32 +1,34 @@
 local LrApplication = import "LrApplication"
 local LrBinding = import "LrBinding"
 local LrDialogs = import "LrDialogs"
+local LrPathUtils = import "LrPathUtils"
 local LrTasks = import "LrTasks"
 local LrView = import "LrView"
 
 local KeywordWriter = require "KeywordWriter"
 local PluginState = require "PluginState"
+local Statistics = require "Statistics"
 local TaxonomyHelper = require "TaxonomyHelper"
+local TaxonomyRanks = require "TaxonomyRanks"
 
 local AssignmentWindow = {}
 local bind = LrView.bind
 local activeDialogControls = nil
 
-local function cleanText(value)
-  local text = tostring(value or "")
-  return string.match(text, "^%s*(.-)%s*$") or ""
-end
+local cleanText = TaxonomyRanks.cleanText
 
 local function resultTitle(result)
   local names = {}
+  local seen = {}
   for _, value in ipairs({
     result.germanName,
     result.englishName,
     result.acceptedScientificName,
   }) do
     value = cleanText(value)
-    if value ~= "" then
+    if value ~= "" and not seen[value] then
       table.insert(names, value)
+      seen[value] = true
     end
   end
   return table.concat(names, " · ")
@@ -34,27 +36,44 @@ end
 
 local function previewText(taxon)
   local lines = {
-    "Deutsch: " .. (cleanText(taxon.germanName) ~= "" and taxon.germanName or "nicht vorhanden"),
-    "Englisch: " .. (cleanText(taxon.englishName) ~= "" and taxon.englishName or "nicht vorhanden"),
+    "Deutsch: " .. (cleanText(taxon.germanName) ~= "" and cleanText(taxon.germanName) or "nicht vorhanden"),
+    "Englisch: " .. (cleanText(taxon.englishName) ~= "" and cleanText(taxon.englishName) or "nicht vorhanden"),
     "Wissenschaftlich: " .. cleanText(taxon.acceptedScientificName),
     "",
     "Vollständiger Taxonomiepfad:",
   }
   for _, entry in ipairs(taxon.hierarchy or {}) do
-    local value = cleanText(entry.scientificName)
-    local germanName = cleanText(entry.germanName)
-    if germanName ~= "" and germanName ~= value then
-      value = germanName .. " (" .. value .. ")"
+    local value = TaxonomyRanks.displayTaxon(entry, taxon)
+    if value ~= "" then
+      table.insert(lines, TaxonomyRanks.label(entry.rank) .. ": " .. value)
     end
-    table.insert(lines, KeywordWriter.rankLabel(entry.rank) .. ": " .. value)
   end
   return table.concat(lines, "\n")
+end
+
+local function photoFileName(photo)
+  local ok, value = pcall(function()
+    return photo:getFormattedMetadata("fileName")
+  end)
+  value = ok and cleanText(value) or ""
+  if value ~= "" then
+    return value
+  end
+
+  ok, value = pcall(function()
+    return photo:getRawMetadata("path")
+  end)
+  value = ok and cleanText(value) or ""
+  if value ~= "" then
+    return cleanText(LrPathUtils.leafName(value))
+  end
+  return "Unbenanntes Foto"
 end
 
 local function selectionState(catalog)
   local photos = catalog:getTargetPhotos() or {}
   if #photos == 0 then
-    return photos, "Keine Fotos ausgewählt"
+    return photos, "Keine Fotos ausgewählt", "Keine Datei ausgewählt", 0
   end
 
   local assigned = 0
@@ -71,14 +90,19 @@ local function selectionState(catalog)
     different = different + 1
   end
 
+  local fileLabel = photoFileName(photos[1])
+  if #photos > 1 then
+    fileLabel = fileLabel .. " + " .. tostring(#photos - 1) .. " weitere"
+  end
+
   local text = tostring(#photos) .. " Foto(s) ausgewählt"
   if assigned == 0 then
-    return photos, text .. " · noch ohne Taxonomie"
+    return photos, text .. " · noch ohne Taxonomie", fileLabel, assigned
   end
   if different == 1 and assigned == #photos then
-    return photos, text .. " · bereits einheitlich zugeordnet"
+    return photos, text .. " · bereits einheitlich zugeordnet", fileLabel, assigned
   end
-  return photos, text .. " · " .. tostring(assigned) .. " bereits zugeordnet"
+  return photos, text .. " · " .. tostring(assigned) .. " bereits zugeordnet", fileLabel, assigned
 end
 
 local function recentItems()
@@ -114,21 +138,31 @@ function AssignmentWindow.show(context)
   props.query = ""
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
   props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
+  props.selectionFiles = "Lightroom-Auswahl wird gelesen ..."
   props.selectionStatus = "Lightroom-Auswahl wird gelesen ..."
+  props.lifelistStatus = "Lifelist wird berechnet ..."
   props.resultItems = { { title = "Noch keine Suche", value = "" } }
   props.masterTaxonId = ""
   props.recentItems = recentItems()
   props.recentTaxonId = props.recentItems[1].value
   props.preview = "Noch keine Art ausgewählt."
   props.canAssign = false
+  props.canRemove = false
   props.canSearch = false
   props.packageReady = false
   props.busy = false
 
   local function refreshActions()
     local photos = catalog:getTargetPhotos() or {}
+    local assigned = 0
+    for _, photo in ipairs(photos) do
+      if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
+        assigned = assigned + 1
+      end
+    end
     props.canSearch = props.packageReady and not props.busy
     props.canAssign = currentTaxon ~= nil and #photos > 0 and not props.busy
+    props.canRemove = assigned > 0 and not props.busy
   end
 
   local function setBusy(value)
@@ -137,9 +171,19 @@ function AssignmentWindow.show(context)
   end
 
   local function refreshSelection()
-    local _, status = selectionState(catalog)
+    local _, status, fileLabel = selectionState(catalog)
+    props.selectionFiles = "Datei: " .. fileLabel
     props.selectionStatus = status
     refreshActions()
+  end
+
+  local function refreshLifelist(forceRefresh)
+    local ok, statistics = LrTasks.pcall(Statistics.load, catalog, forceRefresh == true)
+    if ok and statistics then
+      props.lifelistStatus = "Lifelist: " .. tostring(statistics.speciesCount or 0) .. " Arten"
+    else
+      props.lifelistStatus = "Lifelist konnte nicht berechnet werden."
+    end
   end
 
   local function initializeSearchPackage()
@@ -207,7 +251,6 @@ function AssignmentWindow.show(context)
       return
     end
     if not results or #results == 0 then
-      currentTaxon = nil
       props.resultItems = { { title = "Kein passender Eintrag", value = "" } }
       props.masterTaxonId = ""
       props.preview = "Noch keine Art ausgewählt."
@@ -253,9 +296,41 @@ function AssignmentWindow.show(context)
     PluginState.addRecentTaxon(currentTaxon)
     props.recentItems = recentItems()
     props.recentTaxonId = props.recentItems[1].value
-    props.searchStatus = tostring(result.photoCount)
-      .. " Foto(s) wurden vollständig zugeordnet."
+    props.searchStatus = tostring(result.photoCount) .. " Foto(s) wurden vollständig zugeordnet."
     refreshSelection()
+    refreshLifelist(true)
+  end
+
+  local function removeAssignment()
+    local photos = catalog:getTargetPhotos() or {}
+    if #photos == 0 then
+      props.searchStatus = "Bitte mindestens ein zugeordnetes Foto auswählen."
+      return
+    end
+    local choice = LrDialogs.confirm(
+      "Taxonomie entfernen?",
+      "Die FN-Wildlife-Taxonomie wird von den aktuell markierten Fotos entfernt. "
+        .. "Dabei werden die Plug-in-Metadaten und ausschließlich die vom Plug-in verwalteten "
+        .. "Taxonomie-Stichwörter entfernt. Andere Lightroom-Stichwörter und die Bilddateien bleiben unverändert.",
+      "Taxonomie entfernen",
+      "Abbrechen"
+    )
+    if choice ~= "ok" then
+      return
+    end
+
+    setBusy(true)
+    props.searchStatus = "Taxonomie wird entfernt ..."
+    local ok, result = LrTasks.pcall(KeywordWriter.remove, catalog, photos)
+    setBusy(false)
+    if not ok then
+      props.searchStatus = "Taxonomie konnte nicht entfernt werden: " .. tostring(result)
+      return
+    end
+    props.searchStatus = tostring(result.assignmentCount)
+      .. " Taxonomiezuordnung(en) wurden entfernt."
+    refreshSelection()
+    refreshLifelist(true)
   end
 
   local view = factory:column({
@@ -269,13 +344,17 @@ function AssignmentWindow.show(context)
       factory:column({
         spacing = factory:control_spacing(),
         factory:static_text({
-          title = bind("selectionStatus"),
+          title = bind("selectionFiles"),
           width_in_chars = 86,
           fill_horizontal = 1,
+          font = "<system/bold>",
         }),
-        factory:static_text({
-          title = "Die Zuweisung gilt für alle aktuell markierten Fotos.",
+        factory:row({
+          fill_horizontal = 1,
+          factory:static_text({ title = bind("selectionStatus"), fill_horizontal = 1 }),
+          factory:static_text({ title = bind("lifelistStatus") }),
         }),
+        factory:static_text({ title = "Die Zuweisung gilt für alle aktuell markierten Fotos." }),
       }),
     }),
     factory:group_box({
@@ -283,11 +362,7 @@ function AssignmentWindow.show(context)
       fill_horizontal = 1,
       factory:column({
         spacing = factory:control_spacing(),
-        factory:static_text({
-          title = bind("packageStatus"),
-          width_in_chars = 86,
-          fill_horizontal = 1,
-        }),
+        factory:static_text({ title = bind("packageStatus"), width_in_chars = 86, fill_horizontal = 1 }),
         factory:row({
           spacing = factory:control_spacing(),
           fill_horizontal = 1,
@@ -296,6 +371,9 @@ function AssignmentWindow.show(context)
             width_in_chars = 58,
             fill_horizontal = 1,
             immediate = true,
+            action = function()
+              LrTasks.startAsyncTask(search)
+            end,
           }),
           factory:push_button({
             title = "Art suchen",
@@ -325,11 +403,7 @@ function AssignmentWindow.show(context)
             end,
           }),
         }),
-        factory:static_text({
-          title = bind("searchStatus"),
-          width_in_chars = 86,
-          fill_horizontal = 1,
-        }),
+        factory:static_text({ title = bind("searchStatus"), width_in_chars = 86, fill_horizontal = 1 }),
         factory:row({
           spacing = factory:control_spacing(),
           fill_horizontal = 1,
@@ -356,17 +430,15 @@ function AssignmentWindow.show(context)
     factory:group_box({
       title = "3. Taxonomie prüfen",
       fill_horizontal = 1,
-      factory:column({
-        factory:static_text({
-          title = bind("preview"),
-          width_in_chars = 86,
-          height_in_lines = 11,
-          fill_horizontal = 1,
-        }),
+      factory:static_text({
+        title = bind("preview"),
+        width_in_chars = 86,
+        height_in_lines = 11,
+        fill_horizontal = 1,
       }),
     }),
     factory:group_box({
-      title = "4. Taxonomie zuweisen",
+      title = "4. Taxonomie verwalten",
       fill_horizontal = 1,
       factory:row({
         spacing = factory:control_spacing(),
@@ -378,10 +450,15 @@ function AssignmentWindow.show(context)
             LrTasks.startAsyncTask(assign)
           end,
         }),
-        factory:spacer({ fill_horizontal = 1 }),
-        factory:static_text({
-          title = "Das Fenster kann während der Bildauswahl geöffnet bleiben.",
+        factory:push_button({
+          title = "Taxonomie entfernen",
+          enabled = bind("canRemove"),
+          action = function()
+            LrTasks.startAsyncTask(removeAssignment)
+          end,
         }),
+        factory:spacer({ fill_horizontal = 1 }),
+        factory:static_text({ title = "Das Fenster kann während der Bildauswahl geöffnet bleiben." }),
       }),
     }),
     factory:spacer({ fill_vertical = 1 }),
@@ -407,17 +484,20 @@ function AssignmentWindow.show(context)
       title = "FN Wildlife – Taxonomie zuweisen",
       contents = view,
       resizable = true,
-      width = 760,
-      height = 560,
+      width = 800,
+      height = 650,
       blockTask = true,
-      save_frame = "fnWildlifeTaxonomyAssignmentWindowV3",
+      save_frame = "fnWildlifeTaxonomyAssignmentWindowV4",
       selectionChangeObserver = function()
         pcall(refreshSelection)
       end,
       onShow = function(controls)
         activeDialogControls = controls
         pcall(refreshSelection)
-        LrTasks.startAsyncTask(initializeSearchPackage)
+        LrTasks.startAsyncTask(function()
+          refreshLifelist(false)
+          initializeSearchPackage()
+        end)
       end,
       windowWillClose = function()
         activeDialogControls = nil

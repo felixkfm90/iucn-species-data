@@ -27,7 +27,7 @@ LrTasks.startAsyncTask(function()
     if masterTaxonId == "" then
       LrDialogs.message(
         "Zuerst Taxonomie zuweisen",
-        "Ein Art-Referenzbild ist das bevorzugte Beispielfoto einer bereits zugeordneten Art. "
+        "Ein bevorzugtes Artbild ist das ausgewählte Beispielfoto einer bereits zugeordneten Art. "
           .. "Bitte diesem Foto zuerst über „Taxonomie zuweisen ...“ eine Art zuordnen.",
         "info"
       )
@@ -38,12 +38,12 @@ LrTasks.startAsyncTask(function()
     local scientificName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "scientificName"))
     local name = germanName ~= "" and germanName or scientificName
     local choice = LrDialogs.confirm(
-      "Als Art-Referenzbild festlegen?",
+      "Als bevorzugtes Artbild markieren?",
       "Dieses Foto wird als bevorzugtes Beispielfoto für "
         .. name
-        .. " markiert. Ein bisheriges Referenzbild derselben Art wird ersetzt. "
+        .. " markiert. Ein bisher bevorzugtes Artbild derselben Art wird ersetzt. "
         .. "Die Bilddatei wird dabei weder kopiert noch verändert.",
-      "Referenzbild festlegen",
+      "Als bevorzugtes Artbild markieren",
       "Abbrechen"
     )
     if choice ~= "ok" then
@@ -53,12 +53,12 @@ LrTasks.startAsyncTask(function()
     local result = ReferenceImage.assign(catalog, photo)
     local resultName = result.germanName ~= "" and result.germanName or result.scientificName
     LrDialogs.message(
-      "Art-Referenzbild festgelegt",
+      "Bevorzugtes Artbild markiert",
       "Das ausgewählte Foto ist jetzt das bevorzugte Beispielfoto für " .. resultName .. ".",
       "info"
     )
   end)
   if not ok then
-    LrDialogs.message("Referenzbild konnte nicht festgelegt werden", tostring(errorMessage), "warning")
+    LrDialogs.message("Bevorzugtes Artbild konnte nicht markiert werden", tostring(errorMessage), "warning")
   end
 end)

@@ -1,72 +1,116 @@
 local PluginState = require "PluginState"
+local TaxonomyRanks = require "TaxonomyRanks"
 
 local KeywordWriter = {}
 
-local RANK_LABELS = {
-  domain = "Domäne",
-  superkingdom = "Überreich",
-  kingdom = "Reich",
-  subkingdom = "Unterreich",
-  infrakingdom = "Infrareich",
-  superphylum = "Überstamm",
-  phylum = "Stamm",
-  subphylum = "Unterstamm",
-  infraphylum = "Infrastamm",
-  parvphylum = "Parvstamm",
-  superclass = "Überklasse",
-  megaclass = "Megaklasse",
-  class = "Klasse",
-  subclass = "Unterklasse",
-  infraclass = "Infraklasse",
-  parvclass = "Parvklasse",
-  superorder = "Überordnung",
-  order = "Ordnung",
-  suborder = "Unterordnung",
-  infraorder = "Infraordnung",
-  parvorder = "Parvordnung",
-  superfamily = "Überfamilie",
-  family = "Familie",
-  subfamily = "Unterfamilie",
-  tribe = "Tribus",
-  subtribe = "Untertribus",
-  genus = "Gattung",
-  subgenus = "Untergattung",
-  section = "Sektion",
-  species = "Art",
-  subspecies = "Unterart",
-  variety = "Varietät",
-  form = "Form",
+local PLUGIN_KEYWORD_ROOT = "FN Wildlife & Travel"
+local METADATA_FIELDS = {
+  "masterTaxonId",
+  "projectTaxonId",
+  "germanName",
+  "englishName",
+  "scientificName",
+  "taxonRank",
+  "taxonomyPath",
+  "assignedAt",
 }
-
-local function cleanText(value)
-  local text = tostring(value or "")
-  return string.match(text, "^%s*(.-)%s*$") or ""
+for _, rank in ipairs(TaxonomyRanks.all()) do
+  table.insert(METADATA_FIELDS, TaxonomyRanks.metadataFieldId(rank.id))
 end
+
+local cleanText = TaxonomyRanks.cleanText
 
 local function createKeyword(catalog, name, parent)
   return catalog:createKeyword(name, {}, true, parent, true)
 end
 
-local function displayTaxon(entry)
-  local scientificName = cleanText(entry.scientificName)
-  local germanName = cleanText(entry.germanName)
-  if germanName ~= "" and germanName ~= scientificName then
-    return germanName .. " (" .. scientificName .. ")"
-  end
-  return scientificName
+local function keywordName(keyword)
+  local ok, value = pcall(function()
+    return keyword:getName()
+  end)
+  return ok and cleanText(value) or ""
 end
 
-local function addNameKeyword(catalog, photos, namesRoot, language, value)
-  value = cleanText(value)
-  if value == "" then
-    return 0
+local function keywordParent(keyword)
+  local ok, value = pcall(function()
+    return keyword:getParent()
+  end)
+  return ok and value or nil
+end
+
+local function isManagedKeyword(keyword)
+  local current = keyword
+  for _ = 1, 40 do
+    if not current then
+      return false
+    end
+    if keywordName(current) == PLUGIN_KEYWORD_ROOT then
+      return true
+    end
+    current = keywordParent(current)
   end
-  local languageRoot = createKeyword(catalog, language, namesRoot)
-  local keyword = createKeyword(catalog, value, languageRoot)
-  for _, photo in ipairs(photos) do
-    photo:addKeyword(keyword)
+  return false
+end
+
+local function removeManagedKeywords(photo)
+  local removed = 0
+  local keywords = photo:getRawMetadata("keywords") or {}
+  for _, keyword in ipairs(keywords) do
+    if isManagedKeyword(keyword) then
+      photo:removeKeyword(keyword)
+      removed = removed + 1
+    end
   end
-  return 1
+  return removed
+end
+
+local function clearPluginMetadata(photo)
+  for _, field in ipairs(METADATA_FIELDS) do
+    photo:setPropertyForPlugin(_PLUGIN, field, "")
+  end
+  photo:setPropertyForPlugin(_PLUGIN, "referenceImage", "no")
+end
+
+local function utf8Prefix(value, maximumBytes)
+  local text = cleanText(value)
+  if string.len(text) <= maximumBytes then
+    return text
+  end
+  local cut = maximumBytes
+  while cut > 0 do
+    local nextByte = string.byte(text, cut + 1)
+    if not nextByte or nextByte < 128 or nextByte >= 192 then
+      break
+    end
+    cut = cut - 1
+  end
+  return string.sub(text, 1, cut)
+end
+
+local function metadataText(value)
+  -- Lightroom begrenzt indizierte String-Metadaten auf weniger als 512 Byte.
+  return utf8Prefix(value, 460)
+end
+
+local function setText(photo, field, value)
+  photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
+end
+
+local function boundedPath(parts)
+  local kept = {}
+  for _, part in ipairs(parts) do
+    local candidate = table.concat(kept, " > ")
+    if candidate ~= "" then
+      candidate = candidate .. " > " .. part
+    else
+      candidate = part
+    end
+    if string.len(candidate) >= 460 then
+      break
+    end
+    table.insert(kept, part)
+  end
+  return table.concat(kept, " > ")
 end
 
 function KeywordWriter.findConflicts(photos, taxon)
@@ -94,20 +138,23 @@ function KeywordWriter.assign(catalog, photos, taxon)
   local rankValues = {}
   local keywordCount = 0
   catalog:withWriteAccessDo("FN Wildlife Taxonomie zuweisen", function()
-    local root = createKeyword(catalog, "FN Wildlife & Travel", nil)
+    for _, photo in ipairs(photos) do
+      removeManagedKeywords(photo)
+    end
+
+    local root = createKeyword(catalog, PLUGIN_KEYWORD_ROOT, nil)
     local taxonomyRoot = createKeyword(catalog, "Taxonomie", root)
     local parent = taxonomyRoot
     for _, entry in ipairs(taxon.hierarchy or {}) do
-      local value = displayTaxon(entry)
-      local rank = cleanText(entry.rank)
+      local value = TaxonomyRanks.displayTaxon(entry, taxon)
+      local rank = string.lower(cleanText(entry.rank))
       if rank ~= "" then
         rankValues[rank] = cleanText(entry.scientificName)
       end
       if value ~= "" then
-        local rankLabel = RANK_LABELS[entry.rank] or rank
-        local keywordName = rankLabel .. ": " .. value
-        parent = createKeyword(catalog, keywordName, parent)
-        table.insert(hierarchyPath, keywordName)
+        local readableKeyword = utf8Prefix(value, 240)
+        parent = createKeyword(catalog, readableKeyword, parent)
+        table.insert(hierarchyPath, readableKeyword)
         for _, photo in ipairs(photos) do
           photo:addKeyword(parent)
         end
@@ -115,51 +162,24 @@ function KeywordWriter.assign(catalog, photos, taxon)
       end
     end
 
-    local namesRoot = createKeyword(catalog, "Artnamen", root)
-    keywordCount = keywordCount + addNameKeyword(
-      catalog,
-      photos,
-      namesRoot,
-      "Deutsch",
-      taxon.germanName
-    )
-    keywordCount = keywordCount + addNameKeyword(
-      catalog,
-      photos,
-      namesRoot,
-      "Englisch",
-      taxon.englishName
-    )
-    keywordCount = keywordCount + addNameKeyword(
-      catalog,
-      photos,
-      namesRoot,
-      "Wissenschaftlich",
-      taxon.acceptedScientificName
-    )
-
     local projectTaxonId = ""
     if taxon.projectLinks and taxon.projectLinks[1] then
       projectTaxonId = cleanText(taxon.projectLinks[1].project_taxon_key)
     end
     local assignedAt = os.date("!%Y-%m-%dT%H:%M:%SZ")
-    local taxonomyPath = table.concat(hierarchyPath, " > ")
+    local taxonomyPath = boundedPath(hierarchyPath)
     for _, photo in ipairs(photos) do
-      photo:setPropertyForPlugin(_PLUGIN, "masterTaxonId", taxon.masterTaxonId)
-      photo:setPropertyForPlugin(_PLUGIN, "projectTaxonId", projectTaxonId)
-      photo:setPropertyForPlugin(_PLUGIN, "germanName", cleanText(taxon.germanName))
-      photo:setPropertyForPlugin(_PLUGIN, "englishName", cleanText(taxon.englishName))
-      photo:setPropertyForPlugin(
-        _PLUGIN,
-        "scientificName",
-        cleanText(taxon.acceptedScientificName)
-      )
-      photo:setPropertyForPlugin(_PLUGIN, "taxonRank", cleanText(taxon.rank))
-      photo:setPropertyForPlugin(_PLUGIN, "taxonomyPath", taxonomyPath)
-      photo:setPropertyForPlugin(_PLUGIN, "taxonomyClass", rankValues.class or "")
-      photo:setPropertyForPlugin(_PLUGIN, "taxonomyFamily", rankValues.family or "")
-      photo:setPropertyForPlugin(_PLUGIN, "taxonomyGenus", rankValues.genus or "")
-      photo:setPropertyForPlugin(_PLUGIN, "assignedAt", assignedAt)
+      setText(photo, "masterTaxonId", taxon.masterTaxonId)
+      setText(photo, "projectTaxonId", projectTaxonId)
+      setText(photo, "germanName", taxon.germanName)
+      setText(photo, "englishName", taxon.englishName)
+      setText(photo, "scientificName", taxon.acceptedScientificName)
+      setText(photo, "taxonRank", taxon.rank)
+      setText(photo, "taxonomyPath", taxonomyPath)
+      for _, rank in ipairs(TaxonomyRanks.all()) do
+        setText(photo, TaxonomyRanks.metadataFieldId(rank.id), rankValues[rank.id] or "")
+      end
+      setText(photo, "assignedAt", assignedAt)
     end
   end)
 
@@ -172,8 +192,32 @@ function KeywordWriter.assign(catalog, photos, taxon)
   }
 end
 
+function KeywordWriter.remove(catalog, photos)
+  local removedKeywords = 0
+  local removedAssignments = 0
+  catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
+    for _, photo in ipairs(photos) do
+      if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
+        removedAssignments = removedAssignments + 1
+      end
+      removedKeywords = removedKeywords + removeManagedKeywords(photo)
+      clearPluginMetadata(photo)
+    end
+  end)
+  PluginState.markStatisticsDirty()
+  return {
+    photoCount = #photos,
+    assignmentCount = removedAssignments,
+    keywordCount = removedKeywords,
+  }
+end
+
 function KeywordWriter.rankLabel(rank)
-  return RANK_LABELS[rank] or tostring(rank or "")
+  return TaxonomyRanks.label(rank)
+end
+
+function KeywordWriter.displayTaxon(entry, taxon)
+  return TaxonomyRanks.displayTaxon(entry or {}, taxon)
 end
 
 return KeywordWriter

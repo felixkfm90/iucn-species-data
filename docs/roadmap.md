@@ -1037,8 +1037,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 
 ## Phase 10 - Lightroom-Integration
 
-Status: in Arbeit; Phase 10.1 abgeschlossen, 10.2 bis zum technischen Plug-in-Kern umgesetzt und ausgewählte
-Bausteine aus 10.3/10.4 automatisiert geprüft; gemeinsamer realer Lightroom-Test offen
+Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
+separaten Testkatalog bestätigt; Version 0.4.0 und weitere Bausteine aus 10.3/10.4 automatisiert geprüft
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1050,25 +1050,25 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 - 10.2: **technischer Kern am 2026-08-13 umgesetzt.** Aus dem realen aktiven Master wurde ein vollständig
   verifiziertes read-only Suchpaket mit 273.505 Taxa und 7.108.393 Suchbegriffen erzeugt. Suchhelfer, stabiles
   Metadaten-/Schlüsselwortmodell, Prüfsumme, atomarer Wechsel, isolierter Rollback und ein deutsches Lua-Plug-in
-  für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Offen bleibt
-  die kontrollierte Schreibprobe in einem separaten Lightroom-Testkatalog mit einem und mehreren Fotos; Details:
+  für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
+  Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **technischer MVP-Ausbau am 2026-08-14 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt bei
-  der Bildauswahl geöffnet, zeigt den aktuellen Auswahlzustand und die zehn zuletzt verwendeten Arten. Version
-  `0.3.4` gliedert Auswahl, lokale Artensuche, Taxonomieprüfung und Zuweisung in vier gerahmte Schritte, nutzt ein
-  kompakteres Fenster mit unten rechts verankertem Schließen-Button und findet Node unter Windows unabhängig vom
-  Lightroom-`PATH`. Der lokale Suchpaketpfad wird explizit übergeben; Fehler des Hilfsprozesses bleiben dadurch
-  diagnostizierbar. Sie prüft den lokalen Suchpaketstatus vor der Bedienfreigabe. Suche, vollständige
-  Taxonomievorschau, stabile
-  Master-Taxon-ID, Mehrfachzuweisung und Konfliktsperre sind automatisiert abgesichert; die gemeinsame Bedien- und
-  Schreibabnahme im Testkatalog ist offen;
-- 10.4: **erster priorisierter Funktionsblock am 2026-08-14 umgesetzt.** Genau ein bestätigungspflichtiges
-  Art-Referenzbild je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine neu berechenbare
-  Katalogstatistik mit Abdeckung, zehn am häufigsten fotografierten Arten und Cache sind implementiert und
-  vertraglich getestet.
-  Lifelist, Export, erweiterte Konfliktauflösung und optionale
-  iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Die praktischen Tests dieser drei Funktionen erfolgen
-  gemeinsam mit 10.2/10.3;
+- 10.3: **MVP-Ausbau bis Version 0.4.0 am 2026-08-23 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt
+  bei der Bildauswahl geöffnet, zeigt den ersten Dateinamen und bei Mehrfachauswahl die Zahl weiterer Fotos,
+  aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt verwendeten Arten. Die Suche startet per
+  Button oder Eingabetaste. Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; die verwaltete
+  Schlüsselworthierarchie enthält ausschließlich lesbare Namen ohne interne IDs oder technische Rangpräfixe.
+  `Taxonomie entfernen` nimmt die Zuweisung kontrolliert zurück. Der lokale Suchpaketpfad wird explizit übergeben;
+  Node-Erkennung, Fehlerdiagnose, Konfliktsperre und Metadatenlängen sind automatisiert abgesichert. Die eigene
+  Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit den Namen und allen
+  unterstützten Taxonomierängen;
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.0 am 2026-08-23 umgesetzt.** Genau ein
+  bestätigungspflichtiges bevorzugtes Artbild je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine
+  neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
+  Arten und Cache sind implementiert und vertraglich getestet. Der Zusatzmodul-Manager zeigt Version und Status des
+  abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Export, erweiterte
+  Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Vor 10.5 steht die
+  visuelle Bedienabnahme der neuen 0.4.0-Funktionen im Testkatalog;
 - 10.5: umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

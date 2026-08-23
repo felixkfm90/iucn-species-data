@@ -9,7 +9,7 @@ return {
       file = "AssignTaxonomy.lua",
     },
     {
-      title = "Ausgewähltes Foto als Art-Referenzbild festlegen ...",
+      title = "Ausgewähltes Foto als bevorzugtes Artbild markieren ...",
       file = "SetReferenceImage.lua",
     },
     {
@@ -22,10 +22,12 @@ return {
     },
   },
   LrMetadataProvider = "MetadataDefinition.lua",
+  LrMetadataTagsetFactory = "MetadataTagset.lua",
+  LrPluginInfoProvider = "PluginInfoProvider.lua",
   VERSION = {
     major = 0,
-    minor = 3,
-    revision = 4,
+    minor = 4,
+    revision = 0,
     build = 0,
   },
 }
