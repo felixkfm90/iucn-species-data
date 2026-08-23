@@ -1120,7 +1120,7 @@ Aktuelle Planung:
   stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite, `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Am 2026-08-23 wurde das Plug-in auf Version
-  `0.4.0` ausgebaut: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet, gliedert Auswahl,
+  `0.4.0.1` ausgebaut: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet, gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button, unterstützt die Suche per Eingabetaste
   und zeigt den aktuellen Lifelist-Zähler sowie die zehn zuletzt verwendeten Arten. `Taxonomie entfernen` löscht
@@ -1133,10 +1133,13 @@ Aktuelle Planung:
   `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und allen unterstützten
   Taxonomierängen. Der Zusatzmodul-Manager zeigt Version und Zustand des abgeleiteten Suchpakets, aber keine zweite
   Datenbankpflege. Als klar abgegrenzte 10.4-Funktionen sind genau ein erklärtes und bestätigungspflichtiges
-  bevorzugtes Artbild je Master-Taxon-ID, ein idempotenter Satz intelligenter Sammlungen und eine vollständig neu
+  `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz intelligenter Sammlungen und eine vollständig neu
   berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, Klassenübersicht, den zehn am häufigsten
-  fotografierten Arten und verwerfbarem Cache implementiert. Einzel- und Mehrfachzuweisung wurden im separaten
-  Testkatalog praktisch bestätigt; die neue 0.4.0-Oberfläche und Rücknahmefunktion werden nach dem Neuladen des
+  fotografierten Arten und verwerfbarem Cache implementiert. Die Statistik liest die Zuordnungen aus dem
+  Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Bei Zuweisung und Rücknahme werden nur
+  Stichwörter im Plug-in-Zweig `FN Wildlife & Travel > Taxonomie` verwaltet; alle anderen manuellen Stichwörter
+  bleiben unangetastet. Einzel- und Mehrfachzuweisung wurden im separaten
+  Testkatalog praktisch bestätigt; die neue 0.4.0.1-Oberfläche und Rücknahmefunktion werden nach dem Neuladen des
   Zusatzmoduls gemeinsam visuell abgenommen. Danach folgen weitere einzeln priorisierte Funktionen und das
   umfassende Abschlussaudit.
 - Phase 11 - Mehrere Computer:

@@ -22,7 +22,7 @@ function ReferenceImage.assign(catalog, photo)
     end
   end)
 
-  catalog:withWriteAccessDo("Bevorzugtes Artbild markieren", function()
+  catalog:withWriteAccessDo("Favoritenbild der Art markieren", function()
     for _, candidate in ipairs(matchingPhotos) do
       candidate:setPropertyForPlugin(
         _PLUGIN,

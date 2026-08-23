@@ -44,10 +44,13 @@ local function isManagedKeyword(keyword)
     if not current then
       return false
     end
-    if keywordName(current) == PLUGIN_KEYWORD_ROOT then
+    local parent = keywordParent(current)
+    if keywordName(current) == "Taxonomie"
+        and parent
+        and keywordName(parent) == PLUGIN_KEYWORD_ROOT then
       return true
     end
-    current = keywordParent(current)
+    current = parent
   end
   return false
 end
@@ -56,6 +59,8 @@ local function removeManagedKeywords(photo)
   local removed = 0
   local keywords = photo:getRawMetadata("keywords") or {}
   for _, keyword in ipairs(keywords) do
+    -- Ausschließlich der Plug-in-Zweig „FN Wildlife & Travel > Taxonomie“
+    -- wird verwaltet. Alle sonstigen, auch manuell gepflegten Stichwörter bleiben erhalten.
     if isManagedKeyword(keyword) then
       photo:removeKeyword(keyword)
       removed = removed + 1

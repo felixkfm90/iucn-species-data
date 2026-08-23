@@ -27,7 +27,7 @@ LrTasks.startAsyncTask(function()
     if masterTaxonId == "" then
       LrDialogs.message(
         "Zuerst Taxonomie zuweisen",
-        "Ein bevorzugtes Artbild ist das ausgewählte Beispielfoto einer bereits zugeordneten Art. "
+        "Das Favoritenbild der Art ist das ausgewählte Beispielfoto einer bereits zugeordneten Art. "
           .. "Bitte diesem Foto zuerst über „Taxonomie zuweisen ...“ eine Art zuordnen.",
         "info"
       )
@@ -38,12 +38,12 @@ LrTasks.startAsyncTask(function()
     local scientificName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "scientificName"))
     local name = germanName ~= "" and germanName or scientificName
     local choice = LrDialogs.confirm(
-      "Als bevorzugtes Artbild markieren?",
-      "Dieses Foto wird als bevorzugtes Beispielfoto für "
+      "Als Favoritenbild der Art markieren?",
+      "Dieses Foto wird als Favoritenbild für "
         .. name
-        .. " markiert. Ein bisher bevorzugtes Artbild derselben Art wird ersetzt. "
+        .. " markiert. Ein bisheriges Favoritenbild derselben Art wird ersetzt. "
         .. "Die Bilddatei wird dabei weder kopiert noch verändert.",
-      "Als bevorzugtes Artbild markieren",
+      "Als Favoritenbild markieren",
       "Abbrechen"
     )
     if choice ~= "ok" then
@@ -53,12 +53,12 @@ LrTasks.startAsyncTask(function()
     local result = ReferenceImage.assign(catalog, photo)
     local resultName = result.germanName ~= "" and result.germanName or result.scientificName
     LrDialogs.message(
-      "Bevorzugtes Artbild markiert",
-      "Das ausgewählte Foto ist jetzt das bevorzugte Beispielfoto für " .. resultName .. ".",
+      "Favoritenbild der Art markiert",
+      "Das ausgewählte Foto ist jetzt das Favoritenbild für " .. resultName .. ".",
       "info"
     )
   end)
   if not ok then
-    LrDialogs.message("Bevorzugtes Artbild konnte nicht markiert werden", tostring(errorMessage), "warning")
+    LrDialogs.message("Favoritenbild der Art konnte nicht markiert werden", tostring(errorMessage), "warning")
   end
 end)

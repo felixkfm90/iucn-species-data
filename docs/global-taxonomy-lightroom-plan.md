@@ -4,9 +4,9 @@ Stand: 2026-08-23
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.0.1 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung
 wurden im separaten Lightroom-Testkatalog praktisch bestätigt; offen ist die gemeinsame visuelle Bedienabnahme
-der mit 0.4.0 ergänzten Funktionen.
+der mit 0.4.0.1 ergänzten Funktionen.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -357,7 +357,7 @@ Zu prüfende Funktionen:
 - Prüfung von XMP- und Lightroom-Katalogverhalten
 - Prüfung von Möglichkeiten und Grenzen des Lightroom SDK
 - Performancetests mit großen Katalogen
-- genau ein kontrolliertes bevorzugtes Artbild pro Art
+- genau ein kontrolliertes `Favoritenbild der Art` pro Art
 - intelligente Sammlungen und verwerfbar gecachte Katalogstatistiken
 - Lifelist- und Klassenstatistiken sowie höchstens zehn am häufigsten fotografierte Arten
 - später optional weiterführende Export- und Abgleichsfunktionen
@@ -588,15 +588,15 @@ versioniertes read-only Suchpaket aus der aktiven Masterdatenbank mit lokalem Su
 - Automatisierte Tests sichern Suchpaket, Suchhelfer, Modulgrenzen, Konfliktsperre und das Verbot direkter
   `.lrcat`-, XMP- oder SQLite-Schreibzugriffe.
 - Einzel- und Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die neue
-  0.4.0-Oberfläche, kontrollierte Rücknahme und abgeleiteten Katalogfunktionen benötigen noch die gemeinsame
+  0.4.0.1-Oberfläche, kontrollierte Rücknahme und abgeleiteten Katalogfunktionen benötigen noch die gemeinsame
   visuelle Bedienabnahme.
 
 Ergebnis: verbindliche Architektur und technischer Prototyp stehen; der grundlegende Lightroom-Schreibvertrag ist
-praktisch bestätigt. Die vollständige 0.4.0-Bedienabnahme folgt nach `docs/lightroom-search-package.md`.
+praktisch bestätigt. Die vollständige 0.4.0.1-Bedienabnahme folgt nach `docs/lightroom-search-package.md`.
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.0 am 2026-08-23 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
+- **Bis Plug-in-Version 0.4.0.1 am 2026-08-23 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
   Mehrfachzuweisung praktisch bestätigt.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -620,24 +620,28 @@ praktisch bestätigt. Die vollständige 0.4.0-Bedienabnahme folgt nach `docs/lig
   Projekt-Art-ID bleiben unverändert die technische Grundlage.
 
 Ergebnis: automatisiert getestetes MVP ohne konkurrierende Stammdatenpflege; die visuelle Abnahme der neuen
-0.4.0-Bedienfunktionen steht noch aus.
+0.4.0.1-Bedienfunktionen steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.0 am 2026-08-23 technisch umgesetzt; visuelle Abnahme
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.0.1 am 2026-08-23 technisch umgesetzt; visuelle Abnahme
   offen.**
-- Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges bevorzugtes Artbild
+- Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
   Markierung derselben Art zurück. Diese Lightroom-Markierung ist unabhängig vom Artporträt des Arten-Explorers.
 - Der wiederholbar einrichtbare Sammlungssatz `FN Wildlife & Travel` enthält intelligente Sammlungen für
-  zugewiesene und nicht zugewiesene Fotos, bevorzugte Artbilder sowie 5-Sterne-Tierbilder.
-- Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und bevorzugte Artbilder,
+  zugewiesene und nicht zugewiesene Fotos, Favoritenbilder der Arten sowie 5-Sterne-Tierbilder.
+- Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und Favoritenbilder,
   berechnet Taxonomie-Abdeckung und Klassenverteilung und zeigt höchstens zehn am häufigsten fotografierte Arten.
-  Ihr Cache ist verwerfbar und kann jederzeit vollständig neu berechnet werden.
+  Ihr Cache ist verwerfbar und kann jederzeit vollständig neu berechnet werden. Dafür ist kein Import oder Update
+  der Taxonomie-Masterdatenbank nötig; gezählt werden die Plug-in-Zuordnungen im Lightroom-Katalog.
 - Im Zusatzmodul-Manager stehen nur Plug-in-Version und read-only Suchpaketstatus. Aktualisierung, Backup und
   Rollback bleiben zentral im Arten-Explorer und werden nicht im Plug-in dupliziert.
-- Der fachliche Taxonomiestand bleibt ausschließlich im Master/Suchpaket. Bevorzugtes Artbild, Sammlungen und Statistik
+- Der fachliche Taxonomiestand bleibt ausschließlich im Master/Suchpaket. Favoritenbild der Art, Sammlungen und Statistik
   sind abgeleitete Lightroom-Funktionen und bilden keine zweite Stammdatenbank.
+- Eine spätere Ortsauswertung verwendet vorhandene IPTC-Ortsfelder vorrangig, kann GPS kontrolliert per
+  Reverse-Geocoding ergänzen und führt abgeleitete Ortsstichwörter in einem eigenen Plug-in-Zweig. Länder,
+  Regionen, Orte und benutzerdefinierte Fotoplätze dürfen vorhandene manuelle Stichwörter niemals überschreiben.
 - Kontrollierter Export, Konfliktauflösung bestehender Zuordnungen sowie optionale iNaturalist-Anbindung bleiben
   spätere, einzeln zu priorisierende Ausbauschritte.
 
@@ -664,8 +668,8 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie, lesbare Schlüsselwortwurzel,
 Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden im Testkatalog
-bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.0 die nutzergeführte Rücknahme, dynamische Auswahl,
-Lifelist-/Klassenstatistik, bevorzugtes Artbild, Sammlungen, eigene Metadatenansicht und Suchpaketstatus. Offen ist
+bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.0.1 die nutzergeführte Rücknahme, dynamische Auswahl,
+Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und Suchpaketstatus. Offen ist
 deren gemeinsame visuelle Bedienabnahme. Danach bleiben für Phase 11:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;

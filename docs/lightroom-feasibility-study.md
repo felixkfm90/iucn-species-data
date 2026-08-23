@@ -2,7 +2,7 @@
 
 Stand: 2026-08-23
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.0.1 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -28,7 +28,7 @@ Die Machbarkeit ist für ein eng begrenztes MVP bestätigt. Empfohlen wird:
   Lightroom-Schnittstellen.
 
 Nicht Bestandteil des ersten MVP waren automatische Bilderkennung, iNaturalist-Beobachtungssynchronisation und
-Lifelist-Statistik. Lifelist-Statistik, Smart-Sammlungen und ein bevorzugtes Artbild wurden inzwischen kontrolliert
+Lifelist-Statistik. Lifelist-Statistik, Smart-Sammlungen und ein `Favoritenbild der Art` wurden inzwischen kontrolliert
 ergänzt. Automatische Bilderkennung und iNaturalist-Beobachtungssynchronisation bleiben spätere, getrennt zu
 bewertende Erweiterungen. Die vollständige Offline-Suche über den bereits aufgebauten Taxonomie-Master bleibt die
 verbindliche Grundlage.
@@ -358,7 +358,7 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 ### Nach dem MVP bereits ergänzt
 
 1. Smart Collections und Lifelist-/Statistikauswertung;
-2. ein bevorzugtes Artbild je Art als reine Katalogmarkierung.
+2. ein `Favoritenbild der Art` je Art als reine Katalogmarkierung.
 
 ### Weiterhin einzeln bewerten
 
@@ -386,10 +386,10 @@ Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-
 Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
 und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Die kontrollierte
 Zuweisung an ein und mehrere Fotos wurde anschließend in einem separaten Lightroom-Testkatalog praktisch bestätigt.
-Plug-in-Version 0.4.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, einen bewusst schlanken
+Plug-in-Version 0.4.0.1 ergänzt die vollständigen lesbaren Plug-in-Metadaten, einen bewusst schlanken
 Schlüsselwortbaum ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, Lifelist und Statistik,
-Smart-Sammlungen, das bevorzugte Artbild, eine eigene Metadatenansicht sowie eine knappe Plug-in-Diagnose. Vor dem
-nächsten Funktionsblock steht nur noch die visuelle Bedienabnahme dieses 0.4.0-Stands in Lightroom aus.
+Smart-Sammlungen, das `Favoritenbild der Art`, eine eigene Metadatenansicht sowie eine knappe Plug-in-Diagnose. Vor dem
+nächsten Funktionsblock steht nur noch die visuelle Bedienabnahme dieses 0.4.0.1-Stands in Lightroom aus.
 
 ## 12. Quellen und Produktreferenzen
 

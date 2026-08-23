@@ -3,6 +3,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local fields = {
   {
     id = "masterTaxonId",
+    version = 2,
     title = "Interne Master-Taxon-ID",
     dataType = "string",
     searchable = false,
@@ -10,6 +11,7 @@ local fields = {
   },
   {
     id = "projectTaxonId",
+    version = 2,
     title = "Interne Arten-Explorer-ID",
     dataType = "string",
     searchable = false,
@@ -45,6 +47,7 @@ local fields = {
   },
   {
     id = "taxonomyPath",
+    version = 2,
     title = "Interner Taxonomiepfad",
     dataType = "string",
     searchable = false,
@@ -64,7 +67,8 @@ end
 
 table.insert(fields, {
   id = "referenceImage",
-  title = "Bevorzugtes Artbild",
+  version = 2,
+  title = "Favoritenbild der Art",
   dataType = "enum",
   values = {
     { value = "no", title = "Nein" },
@@ -83,6 +87,6 @@ table.insert(fields, {
 })
 
 return {
-  schemaVersion = 3,
+  schemaVersion = 4,
   metadataFieldsForPhotos = fields,
 }

@@ -9,7 +9,7 @@ return {
       file = "AssignTaxonomy.lua",
     },
     {
-      title = "Ausgewähltes Foto als bevorzugtes Artbild markieren ...",
+      title = "Ausgewähltes Foto als Favoritenbild der Art markieren ...",
       file = "SetReferenceImage.lua",
     },
     {
@@ -28,6 +28,6 @@ return {
     major = 0,
     minor = 4,
     revision = 0,
-    build = 0,
+    build = 1,
   },
 }

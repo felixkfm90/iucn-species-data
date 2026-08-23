@@ -48,11 +48,11 @@ local function dashboardText(statistics, cached)
     "Familien: " .. tostring(statistics.familyCount or 0),
     "Klassen: " .. tostring(statistics.classCount or 0),
     "",
-    "Bevorzugte Artbilder: " .. tostring(statistics.referenceImageCount or 0),
-    "Arten ohne bevorzugtes Artbild: " .. tostring(statistics.speciesWithoutReference or 0),
+    "Favoritenbilder der Arten: " .. tostring(statistics.referenceImageCount or 0),
+    "Arten ohne Favoritenbild: " .. tostring(statistics.speciesWithoutReference or 0),
   }
   if tonumber(statistics.speciesWithMultipleReferences or 0) > 0 then
-    table.insert(lines, "Mehrfache bevorzugte Artbilder: " .. tostring(statistics.speciesWithMultipleReferences))
+    table.insert(lines, "Mehrfache Favoritenbilder: " .. tostring(statistics.speciesWithMultipleReferences))
   end
   if #(statistics.classBreakdown or {}) > 0 then
     table.insert(lines, "")

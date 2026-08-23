@@ -1038,7 +1038,7 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.0 und weitere Bausteine aus 10.3/10.4 automatisiert geprüft
+separaten Testkatalog bestätigt; Version 0.4.0.1 und weitere Bausteine aus 10.3/10.4 automatisiert geprüft
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1053,7 +1053,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.0 am 2026-08-23 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt
+- 10.3: **MVP-Ausbau bis Version 0.4.0.1 am 2026-08-23 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt den ersten Dateinamen und bei Mehrfachauswahl die Zahl weiterer Fotos,
   aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt verwendeten Arten. Die Suche startet per
   Button oder Eingabetaste. Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; die verwaltete
@@ -1062,13 +1062,20 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Node-Erkennung, Fehlerdiagnose, Konfliktsperre und Metadatenlängen sind automatisiert abgesichert. Die eigene
   Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit den Namen und allen
   unterstützten Taxonomierängen;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.0 am 2026-08-23 umgesetzt.** Genau ein
-  bestätigungspflichtiges bevorzugtes Artbild je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.0.1 am 2026-08-23 umgesetzt.** Genau ein
+  bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine
   neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
-  Arten und Cache sind implementiert und vertraglich getestet. Der Zusatzmodul-Manager zeigt Version und Status des
+  Arten und Cache sind implementiert und vertraglich getestet. Die Statistik liest den Lightroom-Katalog und
+  benötigt kein Taxonomie-Datenbankupdate. Zuweisung und Rücknahme verwalten ausschließlich den Plug-in-Zweig
+  `FN Wildlife & Travel > Taxonomie`; andere manuelle Stichwörter bleiben erhalten. Der Zusatzmodul-Manager zeigt Version und Status des
   abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Export, erweiterte
-  Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Vor 10.5 steht die
-  visuelle Bedienabnahme der neuen 0.4.0-Funktionen im Testkatalog;
+  Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Eine ebenfalls spätere,
+  getrennt zu priorisierende Ortsauswertung soll vorhandene IPTC-Ortsfelder bevorzugen, GPS nur optional per
+  Reverse-Geocoding ergänzen und abgeleitete Ortsstichwörter ausschließlich unter
+  `FN Wildlife & Travel > Orte` führen. Vorgesehen sind Land, Region/Bundesland, Ort/Kreis und benutzerdefinierte
+  Fotoplätze beziehungsweise Schutzgebiete sowie Statistiken nach diesen Ebenen; manuelle Stichwörter dürfen dabei
+  nicht überschrieben werden. Vor 10.5 steht die
+  visuelle Bedienabnahme der neuen 0.4.0.1-Funktionen im Testkatalog;
 - 10.5: umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

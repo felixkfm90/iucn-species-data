@@ -31,7 +31,7 @@ function SmartCollections.create(catalog)
         rules = { textCriterion("masterTaxonId", "empty"), combine = "intersect" },
       },
       {
-        name = "Bevorzugte Artbilder",
+        name = "Favoritenbilder der Arten",
         rules = { valueCriterion("referenceImage", "yes"), combine = "intersect" },
       },
       {
