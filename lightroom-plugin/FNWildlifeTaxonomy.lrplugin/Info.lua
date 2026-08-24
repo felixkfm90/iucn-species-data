@@ -9,6 +9,10 @@ return {
       file = "AssignTaxonomy.lua",
     },
     {
+      title = "Taxonomie von ausgewählten Fotos entfernen ...",
+      file = "RemoveTaxonomy.lua",
+    },
+    {
       title = "Ausgewähltes Foto als Favoritenbild der Art markieren ...",
       file = "SetReferenceImage.lua",
     },
@@ -22,12 +26,15 @@ return {
     },
   },
   LrMetadataProvider = "MetadataDefinition.lua",
-  LrMetadataTagsetFactory = "MetadataTagset.lua",
+  LrMetadataTagsetFactory = {
+    "MetadataTagset.lua",
+    "MetadataTagsetFull.lua",
+  },
   LrPluginInfoProvider = "PluginInfoProvider.lua",
   VERSION = {
     major = 0,
     minor = 4,
-    revision = 0,
-    build = 1,
+    revision = 1,
+    build = 0,
   },
 }

@@ -981,19 +981,22 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als hierarchische
 Schlüsselwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu. Paketprüfung, atomare
 Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet. Das Plug-in besitzt
-in Version `0.4.0.1` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt den Dateinamen der
+in Version `0.4.1.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt den Dateinamen der
 aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
 Auswahlwechsel, sucht per Button oder Eingabetaste und zeigt den aktuellen `Lifelist`-Stand. Einzel- und
 Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die vollständige verfügbare
 Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Schlüsselwörter enthalten bewusst nur lesbare Namen ohne
 interne IDs oder technische Rangpräfixe. `Taxonomie entfernen` nimmt eine Zuweisung über denselben kontrollierten
-SDK-Weg zurück und hält damit Statistiken und intelligente Sammlungen konsistent.
+SDK-Weg zurück, entfernt die exakt zur Zuweisung gespeicherten Plug-in-Stichwörter und hält damit Statistiken und
+intelligente Sammlungen konsistent. Die Aktion steht sowohl im Bibliotheksmenü als auch im Foto-Kontextmenü unter
+`Plug-in-Extras` bereit; manuelle Stichwörter außerhalb des verwalteten Plug-in-Zweigs bleiben erhalten.
 
 Als abgegrenzte Erweiterungen sind genau ein bestätigungspflichtiges `Favoritenbild der Art` je Art, ein idempotenter
 Satz intelligenter Sammlungen und eine neu berechenbare Katalogstatistik mit `Lifelist`, Taxonomie-Abdeckung,
 Klassenübersicht und den zehn am häufigsten fotografierten Arten umgesetzt. Die eigene Metadatenansicht
-`FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit den lesbaren Namen und allen
-unterstützten Taxonomierängen; technische IDs bleiben ausgeblendet. Der Zusatzmodul-Manager zeigt ausschließlich
+`FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit Namen und den wichtigsten
+Taxonomierängen. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
+technische IDs bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt ausschließlich
 Version und Status des abgeleiteten lokalen Suchpakets, während Datenbankpflege, Updates und Sicherungen zentral im
 Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch und
 benötigt kein Taxonomie-Datenbankupdate. Nur der Plug-in-Zweig `FN Wildlife & Travel > Taxonomie` wird bei einer

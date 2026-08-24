@@ -21,13 +21,17 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   const ranks = await source("TaxonomyRanks.lua");
   assert.match(info, /LrToolkitIdentifier\s*=\s*"de\.fnwildlifetravel\.taxonomy"/);
   assert.match(info, /Taxonomie zuweisen/);
+  assert.match(info, /Taxonomie von ausgewählten Fotos entfernen/);
+  assert.match(info, /file\s*=\s*"RemoveTaxonomy\.lua"/);
   assert.match(info, /Ausgewähltes Foto als Favoritenbild der Art markieren/);
   assert.match(info, /FN Wildlife-Sammlungen einrichten/);
   assert.match(info, /Taxonomie-Statistik/);
   assert.match(info, /LrMetadataProvider\s*=\s*"MetadataDefinition\.lua"/);
-  assert.match(info, /LrMetadataTagsetFactory\s*=\s*"MetadataTagset\.lua"/);
+  assert.match(info, /LrMetadataTagsetFactory\s*=\s*\{/);
+  assert.match(info, /"MetadataTagset\.lua"/);
+  assert.match(info, /"MetadataTagsetFull\.lua"/);
   assert.match(info, /LrPluginInfoProvider\s*=\s*"PluginInfoProvider\.lua"/);
-  assert.match(info, /minor\s*=\s*4[\s\S]*?revision\s*=\s*0[\s\S]*?build\s*=\s*1/);
+  assert.match(info, /minor\s*=\s*4[\s\S]*?revision\s*=\s*1[\s\S]*?build\s*=\s*0/);
   for (const field of [
     "masterTaxonId",
     "projectTaxonId",
@@ -36,6 +40,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     "scientificName",
     "taxonRank",
     "taxonomyPath",
+    "taxonomyKeywordIds",
     "referenceImage",
     "assignedAt",
   ]) {
@@ -43,7 +48,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   }
   assert.match(metadata, /local TaxonomyRanks = require "TaxonomyRanks"/);
   assert.match(metadata, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
-  assert.match(metadata, /schemaVersion\s*=\s*4/);
+  assert.match(metadata, /schemaVersion\s*=\s*5/);
   for (const field of ["masterTaxonId", "projectTaxonId", "taxonomyPath", "referenceImage"]) {
     assert.match(
       metadata,
@@ -51,6 +56,10 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
       `${field} benötigt für die Lightroom-Katalogmigration eine eigene Feldversion`,
     );
   }
+  assert.match(
+    metadata,
+    /id\s*=\s*"taxonomyKeywordIds"[\s\S]*?version\s*=\s*1[\s\S]*?searchable\s*=\s*false/,
+  );
   assert.match(metadata, /title\s*=\s*"Favoritenbild der Art"/);
   for (const rank of [
     "domain",
@@ -144,7 +153,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /" \+ " \.\. tostring\(#photos - 1\) \.\. " weitere"/);
   assert.match(window, /Lifelist: /);
   assert.match(window, /getFormattedMetadata\("fileName"\)/);
-  assert.match(window, /action\s*=\s*function\(\)\s*\n\s*LrTasks\.startAsyncTask\(search\)/);
+  assert.match(window, /local function startSearch\(\)/);
+  assert.match(window, /searchRequestSerial\s*=\s*searchRequestSerial \+ 1/);
+  assert.match(window, /props:addObserver\("query"/);
+  assert.match(window, /immediate\s*=\s*false/);
+  assert.match(window, /validate\s*=\s*function\(_, value\)/);
+  assert.match(window, /props\.query\s*=\s*cleanText\(value\)/);
+  assert.match(window, /startSearch\(\)[\s\S]*?return true, value/);
+  assert.match(window, /title\s*=\s*"Art suchen"[\s\S]*?is_default\s*=\s*true/);
   assert.match(window, /title\s*=\s*"Schließen"/);
   assert.match(window, /activeDialogControls:close\(\)/);
   assert.match(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
@@ -165,9 +181,15 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /photo:setPropertyForPlugin/);
   assert.match(writer, /PLUGIN_KEYWORD_ROOT\s*=\s*"FN Wildlife & Travel"/);
   assert.match(writer, /createKeyword\(catalog, "Taxonomie", root\)/);
-  assert.match(writer, /keywordName\(current\) == "Taxonomie"/);
+  assert.match(writer, /name == "Taxonomie" or name == "Artnamen"/);
   assert.match(writer, /keywordName\(parent\) == PLUGIN_KEYWORD_ROOT/);
-  assert.match(writer, /Alle sonstigen, auch manuell gepflegten Stichwörter bleiben erhalten/);
+  assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
+  assert.match(writer, /taxonomyKeywordIds/);
+  assert.match(writer, /keywordLocalIdentifier/);
+  assert.match(writer, /resolveManagedKeywordTargets/);
+  assert.match(writer, /legacyMetadataValues/);
+  assert.match(writer, /#prefixed < 3 or not containsTableArtifact/);
+  assert.match(writer, /legacyValues\[string\.lower\(name\)\]/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(writer, /PluginState\.markStatisticsDirty/);
@@ -187,6 +209,17 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
   const statistics = await source("ShowStatistics.lua");
   assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?activeDialogControls:close\(\)/);
   assert.match(statistics, /cancelVerb\s*=\s*"Schließen"/);
+});
+
+test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
+  const info = await source("Info.lua");
+  const removal = await source("RemoveTaxonomy.lua");
+  assert.match(info, /Taxonomie von ausgewählten Fotos entfernen/);
+  assert.match(removal, /catalog:getTargetPhotos\(\)/);
+  assert.match(removal, /LrDialogs\.confirm/);
+  assert.match(removal, /KeywordWriter\.remove/);
+  assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
+  assert.match(removal, /Andere Lightroom-Stichwörter/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {
@@ -247,6 +280,8 @@ test("Katalogstatistik ist cachebar und kann ausdrücklich neu berechnet werden"
 
 test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder", async () => {
   const tagset = await source("MetadataTagset.lua");
+  const fullTagset = await source("MetadataTagsetFull.lua");
+  const fields = await source("MetadataTagsetFields.lua");
   const provider = await source("PluginInfoProvider.lua");
   const helper = await source("TaxonomyHelper.lua");
   assert.match(tagset, /FN Wildlife – Foto & Taxonomie/);
@@ -266,20 +301,29 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   ];
   let previousIndex = -1;
   for (const field of standardFields) {
-    const index = tagset.indexOf(`"${field}"`);
+    const index = fields.indexOf(`"${field}"`);
     assert.ok(index > previousIndex, `${field} muss im Standardblock in der erwarteten Reihenfolge stehen`);
     previousIndex = index;
   }
   assert.ok(
-    previousIndex < tagset.indexOf('TOOLKIT_ID .. ".germanName"'),
+    previousIndex < fields.indexOf('TOOLKIT_ID .. ".germanName"'),
     "Standard-Fotometadaten müssen vor den Taxonomiefeldern stehen",
   );
-  assert.match(tagset, /TOOLKIT_ID \.\. "\.germanName"/);
-  assert.match(tagset, /TOOLKIT_ID \.\. "\.englishName"/);
-  assert.match(tagset, /TOOLKIT_ID \.\. "\.scientificName"/);
-  assert.match(tagset, /TaxonomyRanks\.metadataFieldId\(rank\.id\)/);
-  assert.doesNotMatch(tagset, /masterTaxonId|projectTaxonId|taxonomyPath/);
-  assert.match(provider, /Version: 0\.4\.0\.1/);
+  assert.match(fields, /TOOLKIT_ID \.\. "\.germanName"/);
+  assert.match(fields, /TOOLKIT_ID \.\. "\.englishName"/);
+  assert.match(fields, /TOOLKIT_ID \.\. "\.scientificName"/);
+  assert.match(fields, /local COMPACT_RANKS\s*=\s*\{/);
+  for (const rank of ["kingdom", "phylum", "class", "order", "family", "genus", "species", "subspecies"]) {
+    assert.match(fields, new RegExp(`"${rank}"`));
+  }
+  assert.match(fields, /function MetadataTagsetFields\.full\(\)/);
+  assert.match(fields, /TaxonomyRanks\.metadataFieldId\(rank\.id\)/);
+  assert.match(tagset, /MetadataTagsetFields\.compact\(\)/);
+  assert.match(fullTagset, /FN Wildlife – vollständige Taxonomie/);
+  assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
+  const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
+  assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
+  assert.match(provider, /Version: 0\.4\.1\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

@@ -134,6 +134,7 @@ function AssignmentWindow.show(context)
   local factory = LrView.osFactory()
   local props = LrBinding.makePropertyTable(context)
   local currentTaxon = nil
+  local searchRequestSerial = 0
 
   props.query = ""
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
@@ -162,7 +163,11 @@ function AssignmentWindow.show(context)
     end
     props.canSearch = props.packageReady and not props.busy
     props.canAssign = currentTaxon ~= nil and #photos > 0 and not props.busy
-    props.canRemove = assigned > 0 and not props.busy
+    -- Der Button bleibt auch nach einer früheren, nur teilweise erfolgreichen
+    -- Entfernung verfügbar. So können verwaltete Stichwort-Altlasten in einem
+    -- zweiten Durchlauf bereinigt werden, obwohl die Plug-in-Metadaten bereits
+    -- leer sind.
+    props.canRemove = #photos > 0 and not props.busy
   end
 
   local function setBusy(value)
@@ -230,6 +235,9 @@ function AssignmentWindow.show(context)
   end
 
   local function search()
+    if props.busy then
+      return
+    end
     local query = cleanText(props.query)
     if string.len(query) < 2 then
       props.searchStatus = "Bitte mindestens zwei Zeichen eingeben."
@@ -267,6 +275,28 @@ function AssignmentWindow.show(context)
     props.searchStatus = tostring(#results) .. " Treffer gefunden."
     loadTaxon(props.masterTaxonId)
   end
+
+  local function startSearch()
+    searchRequestSerial = searchRequestSerial + 1
+    local requestSerial = searchRequestSerial
+    LrTasks.startAsyncTask(function()
+      -- Lightroom schreibt den Inhalt eines edit_field erst mit Enter oder
+      -- beim Verlassen des Feldes in die gebundene Eigenschaft. Ein Yield
+      -- stellt sicher, dass search() danach wirklich den bestätigten Text
+      -- liest. Die Seriennummer verhindert doppelte Starts durch Feldaktion
+      -- und Standardbutton.
+      LrTasks.yield()
+      if requestSerial == searchRequestSerial then
+        search()
+      end
+    end)
+  end
+
+  props:addObserver("query", function()
+    -- Bei immediate=false wird dieser Beobachter erst ausgelöst, wenn die
+    -- Eingabe mit Enter bestätigt oder das Feld verlassen wurde.
+    startSearch()
+  end)
 
   local function assign()
     if not currentTaxon then
@@ -328,7 +358,9 @@ function AssignmentWindow.show(context)
       return
     end
     props.searchStatus = tostring(result.assignmentCount)
-      .. " Taxonomiezuordnung(en) wurden entfernt."
+      .. " Taxonomiezuordnung(en) und "
+      .. tostring(result.keywordCount)
+      .. " verwaltete Stichwortzuordnung(en) wurden entfernt."
     refreshSelection()
     refreshLifelist(true)
   end
@@ -370,17 +402,26 @@ function AssignmentWindow.show(context)
             value = bind("query"),
             width_in_chars = 58,
             fill_horizontal = 1,
-            immediate = true,
-            action = function()
-              LrTasks.startAsyncTask(search)
+            -- Erst Enter beziehungsweise das Verlassen des Feldes bestätigt
+            -- die Eingabe. Mit immediate=true behandelt Lightroom jeden
+            -- Tastendruck als Änderung, löst aber die Suchaktion nicht sicher
+            -- über die Eingabetaste aus.
+            immediate = false,
+            validate = function(_, value)
+              -- validate wird von Lightroom beim Bestätigen mit Enter sicher
+              -- aufgerufen. Der Wert wird vor dem asynchronen Start explizit
+              -- übernommen, damit search() nicht noch den vorherigen Inhalt
+              -- der gebundenen Eigenschaft liest.
+              props.query = cleanText(value)
+              startSearch()
+              return true, value
             end,
           }),
           factory:push_button({
             title = "Art suchen",
+            is_default = true,
             enabled = bind("canSearch"),
-            action = function()
-              LrTasks.startAsyncTask(search)
-            end,
+            action = startSearch,
           }),
         }),
         factory:row({

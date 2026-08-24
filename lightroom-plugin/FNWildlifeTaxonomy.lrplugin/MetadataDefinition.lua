@@ -53,6 +53,14 @@ local fields = {
     searchable = false,
     browsable = false,
   },
+  {
+    id = "taxonomyKeywordIds",
+    version = 1,
+    title = "Interne Taxonomie-Stichwort-IDs",
+    dataType = "string",
+    searchable = false,
+    browsable = false,
+  },
 }
 
 for _, rank in ipairs(TaxonomyRanks.all()) do
@@ -87,6 +95,6 @@ table.insert(fields, {
 })
 
 return {
-  schemaVersion = 4,
+  schemaVersion = 5,
   metadataFieldsForPhotos = fields,
 }
