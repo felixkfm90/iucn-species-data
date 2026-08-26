@@ -192,6 +192,20 @@ local function appendLegacyValue(values, value)
   end
 end
 
+local function appendLegacyRankValues(values, rank, scientificValue)
+  local scientificName = cleanText(scientificValue)
+  appendLegacyValue(values, scientificName)
+
+  -- Frühere Plug-in-Versionen schrieben je nach Stand entweder den
+  -- wissenschaftlichen Rohwert oder die deutsche Anzeige flach. Beide
+  -- Varianten werden ausschließlich aus der noch gespeicherten Taxonomie
+  -- dieser konkreten Zuweisung abgeleitet.
+  local rankNames = GERMAN_KEYWORD_NAMES[rank.id]
+  if rankNames and scientificName ~= "" then
+    appendLegacyValue(values, rankNames[string.lower(scientificName)])
+  end
+end
+
 local function legacyMetadataValues(photo)
   local values = {}
   for _, field in ipairs({ "germanName", "englishName", "scientificName" }) do
@@ -201,12 +215,35 @@ local function legacyMetadataValues(photo)
     appendLegacyValue(values, part)
   end
   for _, rank in ipairs(TaxonomyRanks.all()) do
-    appendLegacyValue(
+    appendLegacyRankValues(
       values,
+      rank,
       photo:getPropertyForPlugin(_PLUGIN, TaxonomyRanks.metadataFieldId(rank.id))
     )
   end
   return values
+end
+
+local function keywordDepth(keyword)
+  local depth = 0
+  local current = keyword
+  while current and depth < 64 do
+    depth = depth + 1
+    current = keywordParent(current)
+  end
+  return depth
+end
+
+local function sortKeywordsDeepestFirst(targets)
+  table.sort(targets, function(left, right)
+    local leftDepth = keywordDepth(left)
+    local rightDepth = keywordDepth(right)
+    if leftDepth == rightDepth then
+      return keywordName(left) > keywordName(right)
+    end
+    return leftDepth > rightDepth
+  end)
+  return targets
 end
 
 local function malformedLegacyKeywordTargets(photo)
@@ -274,7 +311,7 @@ local function resolveLegacyKeywordTargets(catalog, photo)
     end
     table.insert(targets, parent)
   end
-  return targets
+  return sortKeywordsDeepestFirst(targets)
 end
 
 local function resolveManagedKeywordTargets(catalog, photo)
@@ -310,7 +347,7 @@ local function resolveManagedKeywordTargets(catalog, photo)
     appendUniqueKeyword(targets, seen, keyword)
   end
 
-  return targets
+  return sortKeywordsDeepestFirst(targets)
 end
 
 local function removeManagedKeywords(photo, targets)

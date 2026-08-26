@@ -188,10 +188,19 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /keywordLocalIdentifier/);
   assert.match(writer, /resolveManagedKeywordTargets/);
   assert.match(writer, /legacyMetadataValues/);
+  assert.match(writer, /appendLegacyRankValues/);
+  assert.match(writer, /GERMAN_KEYWORD_NAMES\[rank\.id\]/);
   assert.match(writer, /#prefixed < 3 or not containsTableArtifact/);
   assert.match(writer, /legacyValues\[string\.lower\(name\)\]/);
+  assert.match(writer, /sortKeywordsDeepestFirst/);
+  assert.match(writer, /return leftDepth > rightDepth/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /clearPluginMetadata/);
+  assert.match(
+    writer,
+    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(catalog, photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
+    "Entfernen-Ziele müssen vor dem Schreibzugriff aufgelöst und vor den Plug-in-Metadaten entfernt werden",
+  );
   assert.match(writer, /PluginState\.markStatisticsDirty/);
   assert.match(writer, /utf8Prefix\(value, 460\)/);
   assert.match(writer, /utf8Prefix\(value, 240\)/);
