@@ -17,6 +17,32 @@ local activeDialogControls = nil
 
 local cleanText = TaxonomyRanks.cleanText
 
+local KINGDOM_ITEMS = {
+  { title = "Tiere (Animalia)", value = "Animalia" },
+  { title = "Abadenavirae", value = "Abadenavirae" },
+  { title = "Bacillati", value = "Bacillati" },
+  { title = "Bamfordvirae", value = "Bamfordvirae" },
+  { title = "Chromisten (Chromista)", value = "Chromista" },
+  { title = "Fusobacteriati", value = "Fusobacteriati" },
+  { title = "Helvetiavirae", value = "Helvetiavirae" },
+  { title = "Heunggongvirae", value = "Heunggongvirae" },
+  { title = "Loebvirae", value = "Loebvirae" },
+  { title = "Methanobacteriati", value = "Methanobacteriati" },
+  { title = "Nanobdellati", value = "Nanobdellati" },
+  { title = "Orthornavirae", value = "Orthornavirae" },
+  { title = "Pararnavirae", value = "Pararnavirae" },
+  { title = "Pflanzen (Plantae)", value = "Plantae" },
+  { title = "Pilze (Fungi)", value = "Fungi" },
+  { title = "Promethearchaeati", value = "Promethearchaeati" },
+  { title = "Protozoen (Protozoa)", value = "Protozoa" },
+  { title = "Pseudomonadati", value = "Pseudomonadati" },
+  { title = "Sangervirae", value = "Sangervirae" },
+  { title = "Shotokuvirae", value = "Shotokuvirae" },
+  { title = "Thermoproteati", value = "Thermoproteati" },
+  { title = "Thermotogati", value = "Thermotogati" },
+  { title = "Alle Reiche/Domänen", value = "all" },
+}
+
 local function resultTitle(result)
   local names = {}
   local seen = {}
@@ -137,6 +163,8 @@ function AssignmentWindow.show(context)
   local searchRequestSerial = 0
 
   props.query = ""
+  props.kingdom = "Animalia"
+  props.kingdomItems = KINGDOM_ITEMS
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
   props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
   props.selectionFiles = "Lightroom-Auswahl wird gelesen ..."
@@ -185,7 +213,9 @@ function AssignmentWindow.show(context)
   local function refreshLifelist(forceRefresh)
     local ok, statistics = LrTasks.pcall(Statistics.load, catalog, forceRefresh == true)
     if ok and statistics then
-      props.lifelistStatus = "Lifelist: " .. tostring(statistics.speciesCount or 0) .. " Arten"
+      local speciesCount = tonumber(statistics.speciesCount or 0) or 0
+      local speciesLabel = speciesCount == 1 and "Art" or "Arten"
+      props.lifelistStatus = "Lifelist " .. tostring(speciesCount) .. " " .. speciesLabel
     else
       props.lifelistStatus = "Lifelist konnte nicht berechnet werden."
     end
@@ -250,7 +280,7 @@ function AssignmentWindow.show(context)
     local ok, results = LrTasks.pcall(TaxonomyHelper.request, {
       command = "search",
       query = query,
-      kingdom = "all",
+      kingdom = cleanText(props.kingdom) ~= "" and props.kingdom or "Animalia",
       limit = 30,
     })
     setBusy(false)
@@ -397,6 +427,15 @@ function AssignmentWindow.show(context)
         factory:static_text({ title = bind("packageStatus"), width_in_chars = 86, fill_horizontal = 1 }),
         factory:row({
           spacing = factory:control_spacing(),
+          factory:static_text({ title = "Reich/Domäne:" }),
+          factory:popup_menu({
+            value = bind("kingdom"),
+            items = bind("kingdomItems"),
+            width_in_chars = 32,
+          }),
+        }),
+        factory:row({
+          spacing = factory:control_spacing(),
           fill_horizontal = 1,
           factory:edit_field({
             value = bind("query"),
@@ -407,6 +446,7 @@ function AssignmentWindow.show(context)
             -- Tastendruck als Änderung, löst aber die Suchaktion nicht sicher
             -- über die Eingabetaste aus.
             immediate = false,
+            action = startSearch,
             validate = function(_, value)
               -- validate wird von Lightroom beim Bestätigen mit Enter sicher
               -- aufgerufen. Der Wert wird vor dem asynchronen Start explizit
@@ -471,11 +511,17 @@ function AssignmentWindow.show(context)
     factory:group_box({
       title = "3. Taxonomie prüfen",
       fill_horizontal = 1,
-      factory:static_text({
-        title = bind("preview"),
-        width_in_chars = 86,
-        height_in_lines = 11,
+      factory:scrolled_view({
+        horizontal_scroller = false,
+        vertical_scroller = true,
+        height = 220,
         fill_horizontal = 1,
+        factory:static_text({
+          title = bind("preview"),
+          width_in_chars = 84,
+          height_in_lines = 32,
+          fill_horizontal = 1,
+        }),
       }),
     }),
     factory:group_box({

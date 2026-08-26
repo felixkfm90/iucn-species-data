@@ -9,7 +9,7 @@ return {
       file = "AssignTaxonomy.lua",
     },
     {
-      title = "Taxonomie von ausgewählten Fotos entfernen ...",
+      title = "Taxonomie entfernen",
       file = "RemoveTaxonomy.lua",
     },
     {
@@ -34,7 +34,7 @@ return {
   VERSION = {
     major = 0,
     minor = 4,
-    revision = 1,
+    revision = 2,
     build = 0,
   },
 }

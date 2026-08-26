@@ -21,7 +21,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   const ranks = await source("TaxonomyRanks.lua");
   assert.match(info, /LrToolkitIdentifier\s*=\s*"de\.fnwildlifetravel\.taxonomy"/);
   assert.match(info, /Taxonomie zuweisen/);
-  assert.match(info, /Taxonomie von ausgewählten Fotos entfernen/);
+  assert.match(info, /title = "Taxonomie entfernen"/);
   assert.match(info, /file\s*=\s*"RemoveTaxonomy\.lua"/);
   assert.match(info, /Ausgewähltes Foto als Favoritenbild der Art markieren/);
   assert.match(info, /FN Wildlife-Sammlungen einrichten/);
@@ -31,7 +31,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(info, /"MetadataTagset\.lua"/);
   assert.match(info, /"MetadataTagsetFull\.lua"/);
   assert.match(info, /LrPluginInfoProvider\s*=\s*"PluginInfoProvider\.lua"/);
-  assert.match(info, /minor\s*=\s*4[\s\S]*?revision\s*=\s*1[\s\S]*?build\s*=\s*0/);
+  assert.match(info, /minor\s*=\s*4[\s\S]*?revision\s*=\s*2[\s\S]*?build\s*=\s*0/);
   for (const field of [
     "masterTaxonId",
     "projectTaxonId",
@@ -151,7 +151,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /KeywordWriter\.remove/);
   assert.match(window, /Datei: /);
   assert.match(window, /" \+ " \.\. tostring\(#photos - 1\) \.\. " weitere"/);
-  assert.match(window, /Lifelist: /);
+  assert.match(window, /Lifelist /);
   assert.match(window, /getFormattedMetadata\("fileName"\)/);
   assert.match(window, /local function startSearch\(\)/);
   assert.match(window, /searchRequestSerial\s*=\s*searchRequestSerial \+ 1/);
@@ -214,7 +214,7 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
   const info = await source("Info.lua");
   const removal = await source("RemoveTaxonomy.lua");
-  assert.match(info, /Taxonomie von ausgewählten Fotos entfernen/);
+  assert.match(info, /title = "Taxonomie entfernen"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.remove/);
@@ -271,9 +271,13 @@ test("Katalogstatistik ist cachebar und kann ausdrücklich neu berechnet werden"
   assert.match(statistics, /math\.min\(10, #rows\)/);
   assert.match(dialog, /Neu berechnen/);
   assert.match(dialog, /LrProgressScope/);
-  assert.match(dialog, /Taxonomie-Abdeckung/);
-  assert.match(dialog, /Lifelist:/);
+  assert.match(dialog, /Abdeckung:/);
+  assert.match(dialog, /Lifelist /);
   assert.match(dialog, /Klassenverteilung/);
+  assert.match(dialog, /Art-Favoriten/);
+  assert.match(dialog, /Aves = "Vögel"/);
+  assert.match(dialog, /Mammalia = "Säugetiere"/);
+  assert.match(dialog, /Actinopterygii = "Strahlenflosser"/);
   assert.match(dialog, /Am häufigsten fotografierte Arten/);
   assert.match(dialog, /Noch keine Arten zugewiesen/);
 });

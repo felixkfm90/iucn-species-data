@@ -21,6 +21,40 @@ end
 
 local cleanText = TaxonomyRanks.cleanText
 
+-- Nur fuer die von Lightroom erzeugte Stichworthierarchie. Die
+-- wissenschaftlichen Rohwerte in den Zusatzmodul-Metadaten bleiben davon
+-- unberuehrt.
+local GERMAN_KEYWORD_NAMES = {
+  class = {
+    amphibia = "Amphibien",
+    aves = "Vögel",
+    mammalia = "Säugetiere",
+    reptilia = "Reptilien",
+  },
+  order = {
+    passeriformes = "Sperlingsvögel",
+  },
+  family = {
+    paridae = "Meisen",
+  },
+}
+
+local function taxonomyKeywordName(entry, taxon)
+  local rank = string.lower(cleanText(entry.rank))
+  local scientificName = cleanText(entry.scientificName)
+  local germanName = cleanText(entry.germanName)
+  if germanName == "" and rank == "species" then
+    germanName = cleanText(taxon and taxon.germanName)
+  end
+  if germanName ~= "" then
+    return germanName
+  end
+
+  local rankNames = GERMAN_KEYWORD_NAMES[rank]
+  local translatedName = rankNames and rankNames[string.lower(scientificName)] or nil
+  return translatedName or scientificName
+end
+
 local function createKeyword(catalog, name, parent)
   return catalog:createKeyword(name, {}, true, parent, true)
 end
@@ -379,7 +413,8 @@ function KeywordWriter.assign(catalog, photos, taxon)
     local taxonomyRoot = createKeyword(catalog, "Taxonomie", root)
     local parent = taxonomyRoot
     for _, entry in ipairs(taxon.hierarchy or {}) do
-      local value = TaxonomyRanks.displayTaxon(entry, taxon)
+      local metadataValue = TaxonomyRanks.displayTaxon(entry, taxon)
+      local value = taxonomyKeywordName(entry, taxon)
       local rank = string.lower(cleanText(entry.rank))
       if rank ~= "" then
         rankValues[rank] = cleanText(entry.scientificName)
@@ -387,7 +422,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
       if value ~= "" then
         local readableKeyword = utf8Prefix(value, 240)
         parent = createKeyword(catalog, readableKeyword, parent)
-        table.insert(hierarchyPath, readableKeyword)
+        table.insert(hierarchyPath, utf8Prefix(metadataValue, 240))
         local keywordId = keywordLocalIdentifier(parent)
         if keywordId then
           table.insert(keywordIds, tostring(keywordId))
