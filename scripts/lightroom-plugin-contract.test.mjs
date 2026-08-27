@@ -218,8 +218,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
+  assert.match(writer, /local function managedKeywordMap\(catalog\)/);
+  assert.match(writer, /appendBranch\(child\)/);
   assert.match(writer, /resolveManagedKeywordTargets/);
-  assert.match(writer, /assigned\[id\] and isPluginTaxonomyKeyword\(assigned\[id\]\)/);
+  assert.match(writer, /managedById\[id\] and isPluginTaxonomyKeyword\(managedById\[id\]\)/);
+  assert.match(writer, /preservedKeywordIds\[index\]\[id\]\s*=\s*nil/);
+  assert.match(writer, /keywordId and not preservedKeywordIds\[index\]\[keywordId\]/);
+  assert.match(writer, /table\.concat\(storedKeywordIds, ","\)/);
+  assert.doesNotMatch(writer, /resolveLegacyKeywordTargets|assignedKeywords/);
   assert.doesNotMatch(writer, /name == "Artnamen"/);
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /sortKeywordsDeepestFirst/);

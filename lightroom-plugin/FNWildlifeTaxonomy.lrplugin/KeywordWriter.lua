@@ -117,17 +117,6 @@ local function parseKeywordIds(value)
   return ids
 end
 
-local function splitTaxonomyPath(value)
-  local parts = {}
-  for part in string.gmatch(cleanText(value), "([^>]+)") do
-    local cleaned = cleanText(part)
-    if cleaned ~= "" then
-      table.insert(parts, cleaned)
-    end
-  end
-  return parts
-end
-
 local function assignedKeywordMap(photo)
   local byId = {}
   for _, keyword in ipairs(photo:getRawMetadata("keywords") or {}) do
@@ -137,13 +126,6 @@ local function assignedKeywordMap(photo)
     end
   end
   return byId
-end
-
-local function assignedKeywords(photo)
-  local ok, value = pcall(function()
-    return photo:getRawMetadata("keywords")
-  end)
-  return ok and value or {}
 end
 
 local function appendUniqueKeyword(targets, seen, keyword)
@@ -157,6 +139,33 @@ local function appendUniqueKeyword(targets, seen, keyword)
   end
   seen[key] = true
   table.insert(targets, keyword)
+end
+
+local function managedKeywordMap(catalog)
+  local byId = {}
+  local root = findKeywordByName(catalog:getKeywords(), PLUGIN_KEYWORD_ROOT)
+  if not root then
+    return byId
+  end
+  local taxonomyRoot = findKeywordByName(keywordChildren(root), "Taxonomie")
+  if not taxonomyRoot then
+    return byId
+  end
+
+  local function appendBranch(keyword)
+    local id = keywordLocalIdentifier(keyword)
+    if id then
+      byId[id] = keyword
+    end
+    for _, child in ipairs(keywordChildren(keyword)) do
+      appendBranch(child)
+    end
+  end
+
+  for _, keyword in ipairs(keywordChildren(taxonomyRoot)) do
+    appendBranch(keyword)
+  end
+  return byId
 end
 
 local function isPluginTaxonomyKeyword(keyword)
@@ -196,59 +205,16 @@ local function sortKeywordsDeepestFirst(targets)
   return targets
 end
 
-local function resolveLegacyKeywordTargets(catalog, photo)
-  local targets = {}
-  local path = splitTaxonomyPath(photo:getPropertyForPlugin(_PLUGIN, "taxonomyPath"))
-  if #path == 0 then
-    return targets
-  end
-
-  local root = findKeywordByName(catalog:getKeywords(), PLUGIN_KEYWORD_ROOT)
-  if not root then
-    return targets
-  end
-  local parent = findKeywordByName(keywordChildren(root), "Taxonomie")
-  if not parent then
-    return targets
-  end
-
-  for _, part in ipairs(path) do
-    parent = findKeywordByName(keywordChildren(parent), part)
-    if not parent then
-      break
-    end
-    table.insert(targets, parent)
-  end
-  return sortKeywordsDeepestFirst(targets)
-end
-
 local function resolveManagedKeywordTargets(catalog, photo)
   local targets = {}
   local seen = {}
-  local assigned = assignedKeywordMap(photo)
+  local managedById = managedKeywordMap(catalog)
   local ids = parseKeywordIds(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
   for id in pairs(ids) do
-    if assigned[id] and isPluginTaxonomyKeyword(assigned[id]) then
-      appendUniqueKeyword(targets, seen, assigned[id])
+    if managedById[id] and isPluginTaxonomyKeyword(managedById[id]) then
+      appendUniqueKeyword(targets, seen, managedById[id])
     end
   end
-
-  -- Zusätzlich werden ausschließlich tatsächlich am Foto hängende
-  -- Stichwörter unterhalb des exakten Plug-in-Zweigs aufgelöst. Das deckt
-  -- Kataloge ab, in denen Lightroom keine stabile lokale Kennung geliefert
-  -- hat, ohne gleichnamige manuelle Stichwörter außerhalb des Zweigs zu
-  -- berühren.
-  for _, keyword in ipairs(assignedKeywords(photo)) do
-    if isPluginTaxonomyKeyword(keyword) then
-      appendUniqueKeyword(targets, seen, keyword)
-    end
-  end
-
-  -- Migration bestehender Zuweisungen mit gespeichertem Taxonomiepfad.
-  for _, keyword in ipairs(resolveLegacyKeywordTargets(catalog, photo)) do
-    appendUniqueKeyword(targets, seen, keyword)
-  end
-
   return sortKeywordsDeepestFirst(targets)
 end
 
@@ -335,13 +301,24 @@ function KeywordWriter.assign(catalog, photos, taxon)
   end
 
   local previousKeywordTargets = {}
+  local preservedKeywordIds = {}
   for index, photo in ipairs(photos) do
     previousKeywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
+    preservedKeywordIds[index] = assignedKeywordMap(photo)
+    for _, keyword in ipairs(previousKeywordTargets[index]) do
+      local id = keywordLocalIdentifier(keyword)
+      if id then
+        -- Eine frühere Plug-in-Zuweisung wird gleich entfernt und neu
+        -- geschrieben. Nur echte, schon vor dem Plug-in vorhandene
+        -- Stichwörter bleiben in dieser Schutzmenge.
+        preservedKeywordIds[index][id] = nil
+      end
+    end
   end
 
   local hierarchyPath = {}
   local rankValues = {}
-  local keywordIds = {}
+  local managedKeywords = {}
   local keywordCount = 0
   catalog:withWriteAccessDo("FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
@@ -362,10 +339,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
         local readableKeyword = utf8Prefix(value, 240)
         parent = createKeyword(catalog, readableKeyword, parent)
         table.insert(hierarchyPath, utf8Prefix(metadataValue, 240))
-        local keywordId = keywordLocalIdentifier(parent)
-        if keywordId then
-          table.insert(keywordIds, tostring(keywordId))
-        end
+        table.insert(managedKeywords, parent)
         for _, photo in ipairs(photos) do
           photo:addKeyword(parent)
         end
@@ -379,7 +353,14 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
     local assignedAt = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local taxonomyPath = boundedPath(hierarchyPath)
-    for _, photo in ipairs(photos) do
+    for index, photo in ipairs(photos) do
+      local storedKeywordIds = {}
+      for _, keyword in ipairs(managedKeywords) do
+        local keywordId = keywordLocalIdentifier(keyword)
+        if keywordId and not preservedKeywordIds[index][keywordId] then
+          table.insert(storedKeywordIds, tostring(keywordId))
+        end
+      end
       setText(photo, "masterTaxonId", taxon.masterTaxonId)
       setText(photo, "projectTaxonId", projectTaxonId)
       setText(photo, "germanName", taxon.germanName)
@@ -387,7 +368,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
       setText(photo, "scientificName", taxon.acceptedScientificName)
       setText(photo, "taxonRank", taxon.rank)
       setText(photo, "taxonomyPath", taxonomyPath)
-      setText(photo, "taxonomyKeywordIds", table.concat(keywordIds, ","))
+      setText(photo, "taxonomyKeywordIds", table.concat(storedKeywordIds, ","))
       for _, rank in ipairs(TaxonomyRanks.all()) do
         setText(photo, TaxonomyRanks.metadataFieldId(rank.id), rankValues[rank.id] or "")
       end
