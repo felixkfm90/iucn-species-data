@@ -7,6 +7,27 @@ local function cleanText(value)
   return string.match(text, "^%s*(.-)%s*$") or ""
 end
 
+function ReferenceImage.findExisting(catalog, photo)
+  local masterTaxonId = cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"))
+  if masterTaxonId == "" then
+    return nil
+  end
+
+  local existingPhoto = nil
+  catalog:withReadAccessDo(function()
+    for _, candidate in ipairs(catalog:getAllPhotos()) do
+      if candidate ~= photo
+        and cleanText(candidate:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) == masterTaxonId
+        and cleanText(candidate:getPropertyForPlugin(_PLUGIN, "referenceImage")) == "yes"
+      then
+        existingPhoto = candidate
+        break
+      end
+    end
+  end)
+  return existingPhoto
+end
+
 function ReferenceImage.assign(catalog, photo)
   local masterTaxonId = cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"))
   if masterTaxonId == "" then

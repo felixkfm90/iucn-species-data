@@ -9,6 +9,31 @@ local function cleanText(value)
   return string.match(text, "^%s*(.-)%s*$") or ""
 end
 
+local function formattedMetadata(photo, field)
+  local ok, value = pcall(function()
+    return photo:getFormattedMetadata(field)
+  end)
+  return ok and cleanText(value) or ""
+end
+
+local function photoDescription(photo)
+  local fileName = formattedMetadata(photo, "fileName")
+  local captureTime = formattedMetadata(photo, "dateTimeOriginal")
+  if fileName == "" then
+    local ok, path = pcall(function()
+      return photo:getRawMetadata("path")
+    end)
+    fileName = ok and cleanText(path) or ""
+  end
+  if fileName == "" then
+    fileName = "Bild ohne lesbaren Dateinamen"
+  end
+  if captureTime ~= "" then
+    return fileName .. " (Aufnahme: " .. captureTime .. ")"
+  end
+  return fileName
+end
+
 LrTasks.startAsyncTask(function()
   local ok, errorMessage = LrTasks.pcall(function()
     local catalog = LrApplication.activeCatalog()
@@ -37,17 +62,23 @@ LrTasks.startAsyncTask(function()
     local germanName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "germanName"))
     local scientificName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "scientificName"))
     local name = germanName ~= "" and germanName or scientificName
-    local choice = LrDialogs.confirm(
-      "Als Favoritenbild der Art markieren?",
-      "Dieses Foto wird als Favoritenbild für "
-        .. name
-        .. " markiert. Ein bisheriges Favoritenbild derselben Art wird ersetzt. "
-        .. "Die Bilddatei wird dabei weder kopiert noch verändert.",
-      "Als Favoritenbild markieren",
-      "Abbrechen"
-    )
-    if choice ~= "ok" then
-      return
+    local existingPhoto = ReferenceImage.findExisting(catalog, photo)
+    if existingPhoto then
+      local choice = LrDialogs.confirm(
+        "Art-Favorit ersetzen?",
+        "Für "
+          .. name
+          .. " ist bereits ein Art-Favorit festgelegt. Möchtest du ihn durch das aktuell ausgewählte Bild ersetzen?\n\n"
+          .. "Bisher: "
+          .. photoDescription(existingPhoto)
+          .. "\nNeu: "
+          .. photoDescription(photo),
+        "Ja, ersetzen",
+        "Nein, behalten"
+      )
+      if choice ~= "ok" then
+        return
+      end
     end
 
     local result = ReferenceImage.assign(catalog, photo)
