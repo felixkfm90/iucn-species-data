@@ -414,7 +414,10 @@ function AssignmentWindow.show(context)
         factory:row({
           fill_horizontal = 1,
           factory:static_text({ title = bind("selectionStatus"), fill_horizontal = 1 }),
-          factory:static_text({ title = bind("lifelistStatus") }),
+          factory:static_text({
+            title = bind("lifelistStatus"),
+            font = "<system/bold>",
+          }),
         }),
         factory:static_text({ title = "Die Zuweisung gilt für alle aktuell markierten Fotos." }),
       }),
@@ -514,11 +517,12 @@ function AssignmentWindow.show(context)
       factory:scrolled_view({
         horizontal_scroller = false,
         vertical_scroller = true,
-        height = 220,
+        width = 760,
+        height = 150,
         fill_horizontal = 1,
         factory:static_text({
           title = bind("preview"),
-          width_in_chars = 84,
+          width = 740,
           height_in_lines = 32,
           fill_horizontal = 1,
         }),
