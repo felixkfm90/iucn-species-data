@@ -3,7 +3,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 
 local KeywordWriter = {}
 
-local PLUGIN_KEYWORD_ROOT = "FN Wildlife & Travel"
+local PLUGIN_KEYWORD_SUFFIX = " (FN)"
 local METADATA_FIELDS = {
   "masterTaxonId",
   "projectTaxonId",
@@ -21,7 +21,7 @@ end
 
 local cleanText = TaxonomyRanks.cleanText
 
--- Nur fuer die von Lightroom erzeugte Stichworthierarchie. Die
+-- Nur fuer die von Lightroom erzeugten Stichwörter. Die
 -- wissenschaftlichen Rohwerte in den Zusatzmodul-Metadaten bleiben davon
 -- unberuehrt.
 local GERMAN_KEYWORD_NAMES = {
@@ -83,29 +83,6 @@ local function keywordLocalIdentifier(keyword)
   return value ~= "" and value or nil
 end
 
-local function keywordChildren(keyword)
-  local ok, value = pcall(function()
-    return keyword:getChildren()
-  end)
-  return ok and value or {}
-end
-
-local function keywordParent(keyword)
-  local ok, value = pcall(function()
-    return keyword:getParent()
-  end)
-  return ok and value or nil
-end
-
-local function findKeywordByName(keywords, name)
-  for _, keyword in ipairs(keywords or {}) do
-    if keywordName(keyword) == name then
-      return keyword
-    end
-  end
-  return nil
-end
-
 local function parseKeywordIds(value)
   local ids = {}
   for part in string.gmatch(cleanText(value), "[^,]+") do
@@ -148,58 +125,12 @@ local function appendUniqueKeyword(targets, seen, keyword)
   table.insert(targets, keyword)
 end
 
-local function managedKeywordMap(catalog)
-  local byId = {}
-  local byObject = {}
-  local root = findKeywordByName(catalog:getKeywords(), PLUGIN_KEYWORD_ROOT)
-  if not root then
-    return byId, byObject
-  end
-  local taxonomyRoot = findKeywordByName(keywordChildren(root), "Taxonomie")
-  if not taxonomyRoot then
-    return byId, byObject
-  end
-
-  local function appendBranch(keyword)
-    byObject[keyword] = true
-    local id = keywordLocalIdentifier(keyword)
-    if id then
-      byId[id] = keyword
-    end
-    for _, child in ipairs(keywordChildren(keyword)) do
-      appendBranch(child)
-    end
-  end
-
-  for _, keyword in ipairs(keywordChildren(taxonomyRoot)) do
-    appendBranch(keyword)
-  end
-  return byId, byObject
+local function hasPluginKeywordSuffix(keyword)
+  local name = keywordName(keyword)
+  return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
 end
 
-local function keywordDepth(keyword)
-  local depth = 0
-  local current = keyword
-  while current and depth < 64 do
-    depth = depth + 1
-    current = keywordParent(current)
-  end
-  return depth
-end
-
-local function sortKeywordsDeepestFirst(targets)
-  table.sort(targets, function(left, right)
-    local leftDepth = keywordDepth(left)
-    local rightDepth = keywordDepth(right)
-    if leftDepth == rightDepth then
-      return keywordName(left) > keywordName(right)
-    end
-    return leftDepth > rightDepth
-  end)
-  return targets
-end
-
-local function resolveManagedKeywordTargets(catalog, photo)
+local function resolveManagedKeywordTargets(photo)
   local targets = {}
   local seen = {}
   local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
@@ -207,34 +138,31 @@ local function resolveManagedKeywordTargets(catalog, photo)
     return targets
   end
 
-  local managedById, managedByObject = managedKeywordMap(catalog)
+  local assignedById = assignedKeywordMap(photo)
   local ids = parseKeywordIds(storedIds)
   for id in pairs(ids) do
-    if managedById[id] then
-      appendUniqueKeyword(targets, seen, managedById[id])
+    if assignedById[id] and hasPluginKeywordSuffix(assignedById[id]) then
+      appendUniqueKeyword(targets, seen, assignedById[id])
     end
   end
 
-  -- Manche Lightroom-Stände liefern für dasselbe Stichwortobjekt keine
-  -- stabil übereinstimmende lokale Kennung. Wenn deshalb keine gespeicherte
-  -- ID aufgelöst werden konnte, werden ausschließlich die am Foto hängenden
-  -- Objekte des zuvor exakt gefundenen Plug-in-Zweigs verwendet. Freie
-  -- Stichwörter außerhalb dieses Zweigs können hier nicht hineingeraten.
+  -- Das reservierte Suffix bleibt auch dann eindeutig, wenn Lightroom lokale
+  -- Stichwortkennungen nicht stabil zurückliefert oder ein früherer
+  -- Löschversuch die Plug-in-Metadaten bereits geleert hat.
   if #targets == 0 then
     for _, keyword in ipairs(assignedKeywords(photo)) do
-      local id = keywordLocalIdentifier(keyword)
-      if managedByObject[keyword] or (id and managedById[id]) then
+      if hasPluginKeywordSuffix(keyword) then
         appendUniqueKeyword(targets, seen, keyword)
       end
     end
   end
-  return sortKeywordsDeepestFirst(targets)
+  return targets
 end
 
 local function removeManagedKeywords(photo, targets)
   local removed = 0
   for _, keyword in ipairs(targets or {}) do
-    -- Ausschließlich die zuvor im exakten Plug-in-Zweig aufgelösten
+    -- Ausschließlich eindeutig mit (FN) gekennzeichnete Plug-in-
     -- Stichwortobjekte werden vom Foto getrennt. Alle sonstigen, auch manuell
     -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
     photo:removeKeyword(keyword)
@@ -264,6 +192,11 @@ local function utf8Prefix(value, maximumBytes)
     cut = cut - 1
   end
   return string.sub(text, 1, cut)
+end
+
+local function managedKeywordName(value)
+  local maximumNameBytes = 240 - string.len(PLUGIN_KEYWORD_SUFFIX)
+  return utf8Prefix(value, maximumNameBytes) .. PLUGIN_KEYWORD_SUFFIX
 end
 
 local function metadataText(value)
@@ -316,7 +249,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
   local previousKeywordTargets = {}
   local preservedKeywordIds = {}
   for index, photo in ipairs(photos) do
-    previousKeywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
+    previousKeywordTargets[index] = resolveManagedKeywordTargets(photo)
     preservedKeywordIds[index] = assignedKeywordMap(photo)
     for _, keyword in ipairs(previousKeywordTargets[index]) do
       local id = keywordLocalIdentifier(keyword)
@@ -338,9 +271,6 @@ function KeywordWriter.assign(catalog, photos, taxon)
       removeManagedKeywords(photo, previousKeywordTargets[index])
     end
 
-    local root = createKeyword(catalog, PLUGIN_KEYWORD_ROOT, nil)
-    local taxonomyRoot = createKeyword(catalog, "Taxonomie", root)
-    local parent = taxonomyRoot
     for _, entry in ipairs(taxon.hierarchy or {}) do
       local metadataValue = TaxonomyRanks.displayTaxon(entry, taxon)
       local value = taxonomyKeywordName(entry, taxon)
@@ -349,12 +279,12 @@ function KeywordWriter.assign(catalog, photos, taxon)
         rankValues[rank] = cleanText(entry.scientificName)
       end
       if value ~= "" then
-        local readableKeyword = utf8Prefix(value, 240)
-        parent = createKeyword(catalog, readableKeyword, parent)
+        local readableKeyword = managedKeywordName(value)
+        local keyword = createKeyword(catalog, readableKeyword, nil)
         table.insert(hierarchyPath, utf8Prefix(metadataValue, 240))
-        table.insert(managedKeywords, parent)
+        table.insert(managedKeywords, keyword)
         for _, photo in ipairs(photos) do
-          photo:addKeyword(parent)
+          photo:addKeyword(keyword)
         end
         keywordCount = keywordCount + 1
       end
@@ -407,7 +337,7 @@ function KeywordWriter.remove(catalog, photos)
   local removedAssignments = 0
   local keywordTargets = {}
   for index, photo in ipairs(photos) do
-    keywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
+    keywordTargets[index] = resolveManagedKeywordTargets(photo)
   end
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
     for index, photo in ipairs(photos) do

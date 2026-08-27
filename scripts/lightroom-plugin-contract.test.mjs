@@ -210,39 +210,35 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /catalog:createKeyword/);
   assert.match(writer, /photo:addKeyword/);
   assert.match(writer, /photo:setPropertyForPlugin/);
-  assert.match(writer, /PLUGIN_KEYWORD_ROOT\s*=\s*"FN Wildlife & Travel"/);
-  assert.match(writer, /local root = createKeyword\(catalog, PLUGIN_KEYWORD_ROOT, nil\)/);
-  assert.match(writer, /createKeyword\(catalog, "Taxonomie", root\)/);
-  assert.match(writer, /findKeywordByName\(catalog:getKeywords\(\), PLUGIN_KEYWORD_ROOT\)/);
-  assert.match(writer, /findKeywordByName\(keywordChildren\(root\), "Taxonomie"\)/);
+  assert.match(writer, /PLUGIN_KEYWORD_SUFFIX\s*=\s*" \(FN\)"/);
+  assert.match(writer, /local function managedKeywordName\(value\)/);
+  assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
+  assert.match(writer, /createKeyword\(catalog, readableKeyword, nil\)/);
+  assert.doesNotMatch(writer, /createKeyword\(catalog, "Taxonomie"|PLUGIN_KEYWORD_ROOT/);
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
-  assert.match(writer, /local function managedKeywordMap\(catalog\)/);
-  assert.match(writer, /appendBranch\(child\)/);
   assert.match(writer, /resolveManagedKeywordTargets/);
   assert.match(writer, /if storedIds == "none" then\s*return targets/);
-  assert.match(writer, /if managedById\[id\] then/);
-  assert.match(writer, /managedByObject\[keyword\] or \(id and managedById\[id\]\)/);
+  assert.match(writer, /assignedById\[id\] and hasPluginKeywordSuffix\(assignedById\[id\]\)/);
+  assert.match(writer, /if hasPluginKeywordSuffix\(keyword\) then/);
   assert.match(writer, /#targets == 0/);
   assert.match(writer, /preservedKeywordIds\[index\]\[id\]\s*=\s*nil/);
   assert.match(writer, /keywordId and not preservedKeywordIds\[index\]\[keywordId\]/);
   assert.match(writer, /#storedKeywordIds > 0 and table\.concat\(storedKeywordIds, ","\) or "none"/);
   assert.doesNotMatch(writer, /resolveLegacyKeywordTargets/);
-  assert.doesNotMatch(writer, /name == "Artnamen"/);
+  assert.doesNotMatch(writer, /name == "Artnamen"|keywordParent|keywordChildren/);
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
-  assert.match(writer, /sortKeywordsDeepestFirst/);
-  assert.match(writer, /return leftDepth > rightDepth/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(catalog, photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Entfernen-Ziele müssen vor dem Schreibzugriff aufgelöst und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);
   assert.match(writer, /utf8Prefix\(value, 460\)/);
-  assert.match(writer, /utf8Prefix\(value, 240\)/);
+  assert.match(writer, /maximumNameBytes\s*=\s*240 - string\.len\(PLUGIN_KEYWORD_SUFFIX\)/);
   assert.match(writer, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
   assert.match(writer, /for _, entry in ipairs\(taxon\.hierarchy or \{\}\)/);
   assert.doesNotMatch(writer, /TaxonomyRanks\.label\(entry\.rank\)\s*\.\.\s*": "/);
