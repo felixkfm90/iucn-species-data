@@ -3,7 +3,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local fields = {
   {
     id = "masterTaxonId",
-    version = 2,
+    version = 3,
     title = "Interne Master-Taxon-ID",
     dataType = "string",
     searchable = true,

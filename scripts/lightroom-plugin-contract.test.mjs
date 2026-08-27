@@ -49,7 +49,12 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(metadata, /local TaxonomyRanks = require "TaxonomyRanks"/);
   assert.match(metadata, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
   assert.match(metadata, /schemaVersion\s*=\s*5/);
-  for (const field of ["masterTaxonId", "projectTaxonId", "taxonomyPath", "referenceImage"]) {
+  assert.match(
+    metadata,
+    /id\s*=\s*"masterTaxonId"[\s\S]*?version\s*=\s*3/,
+    "masterTaxonId benötigt nach Änderung der Suchbarkeit eine erhöhte Feldversion",
+  );
+  for (const field of ["projectTaxonId", "taxonomyPath", "referenceImage"]) {
     assert.match(
       metadata,
       new RegExp(`id\\s*=\\s*"${field}"[\\s\\S]*?version\\s*=\\s*2`),
