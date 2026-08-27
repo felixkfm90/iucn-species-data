@@ -176,7 +176,7 @@ Urheber-/Kamera-/Objektiv-/Belichtungsdaten und GPS mit den drei Artnamen und de
 Master-/Projekt-IDs und der technische Taxonomiepfad bleiben in beiden Ansichten ausgeblendet, stehen dem Plug-in
 aber weiterhin stabil zur Verfügung. Master- oder Suchpaketversionen werden nicht auf Fotos geschrieben.
 
-Die Menüaktion `Taxonomie zuweisen ...` öffnet ein kompaktes schwebendes Arbeitsfenster. Die vier sichtbaren Abschnitte
+Die Menüaktion `Taxonomie zuweisen` öffnet ein kompaktes schwebendes Arbeitsfenster. Die vier sichtbaren Abschnitte
 `Aktuelle Lightroom-Auswahl`, `Art suchen und auswählen`, `Taxonomie prüfen` und `Taxonomie verwalten` führen vom
 ausgewählten Foto bis zur bewussten Katalogänderung. Oben steht bei einer Einzelwahl der Dateiname, bei einer
 Mehrfachwahl der erste Dateiname mit `+ X weitere`; die Anzeige wird bei einem Auswahlwechsel im Hintergrund
@@ -230,7 +230,7 @@ sondern zentral im Arten-Explorer verwaltet.
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
-   `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen ...` wählen.
+   `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen` wählen.
 6. Im Zuweisungsfenster Dateiname, Lifelist, die vier gerahmten Schritte und den Hinweis
    `Lokale Masterdatenbank bereit` prüfen. Eine Art per Eingabetaste suchen, Vorschau kontrollieren, zuweisen und
    lesbare Schlüsselwörter sowie vollständige Plug-in-Felder prüfen. Danach die Auswahl bei geöffnetem Fenster

@@ -5,7 +5,7 @@ return {
   LrPluginName = "FN Wildlife Taxonomie",
   LrLibraryMenuItems = {
     {
-      title = "Taxonomie zuweisen ...",
+      title = "Taxonomie zuweisen",
       file = "AssignTaxonomy.lua",
     },
     {

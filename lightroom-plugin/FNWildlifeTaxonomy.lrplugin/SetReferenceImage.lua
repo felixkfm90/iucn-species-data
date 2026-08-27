@@ -53,7 +53,7 @@ LrTasks.startAsyncTask(function()
       LrDialogs.message(
         "Zuerst Taxonomie zuweisen",
         "Das Favoritenbild der Art ist das ausgewählte Beispielfoto einer bereits zugeordneten Art. "
-          .. "Bitte diesem Foto zuerst über „Taxonomie zuweisen ...“ eine Art zuordnen.",
+          .. "Bitte diesem Foto zuerst über „Taxonomie zuweisen“ eine Art zuordnen.",
         "info"
       )
       return
