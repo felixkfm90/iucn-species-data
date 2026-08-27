@@ -211,13 +211,16 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /photo:addKeyword/);
   assert.match(writer, /photo:setPropertyForPlugin/);
   assert.match(writer, /PLUGIN_KEYWORD_SUFFIX\s*=\s*" \(FN\)"/);
-  assert.match(writer, /local function normalizedPluginKeywordName\(value\)/);
-  assert.match(writer, /string\.gsub\(name, "%\*\+\$", ""\)/);
-  assert.match(writer, /return normalizedPluginKeywordName\(value\) ~= nil/);
+  assert.match(writer, /PLUGIN_PARTIAL_KEYWORD_SUFFIX\s*=\s*PLUGIN_KEYWORD_SUFFIX \.\. "\*"/);
+  assert.match(
+    writer,
+    /string\.sub\(name, -string\.len\(PLUGIN_PARTIAL_KEYWORD_SUFFIX\)\)[\s\S]*== PLUGIN_PARTIAL_KEYWORD_SUFFIX/,
+  );
   assert.match(writer, /local function managedKeywordName\(value\)/);
   assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
   assert.match(writer, /createKeyword\(catalog, readableKeyword, nil\)/);
   assert.doesNotMatch(writer, /createKeyword\(catalog, "Taxonomie"|PLUGIN_KEYWORD_ROOT/);
+  assert.match(writer, /Ausschließlich eindeutig mit \(FN\) oder \(FN\)\* gekennzeichnete Plug-in-/);
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
@@ -228,9 +231,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /appendAssignedKeyword\(key\)/);
   assert.match(writer, /appendAssignedKeyword\(value\)/);
   assert.match(writer, /photo:getFormattedMetadata\("keywordTags"\)/);
-  assert.match(writer, /local name = normalizedPluginKeywordName\(keywordName\(candidate\)\)/);
+  assert.match(writer, /if hasPluginKeywordSuffix\(candidate\) then/);
   assert.match(writer, /catalog:getKeywordByLocalIdentifier\(id\)/);
-  assert.match(writer, /local name = normalizedPluginKeywordName\(part\)/);
+  assert.match(writer, /if hasPluginKeywordNameSuffix\(name\) then/);
   assert.doesNotMatch(writer, /catalog:getKeywords\(\)/);
   assert.match(writer, /#storedKeywordIds > 0 and table\.concat\(storedKeywordIds, ","\) or "none"/);
   assert.doesNotMatch(writer, /resolveLegacyKeywordTargets/);
@@ -238,26 +241,19 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /local keyword = createKeyword\(catalog, name, nil\)\s*\n\s*photo:removeKeyword\(keyword\)/);
-  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo, prefetchedKeywords\)/);
-  assert.match(writer, /catalog:batchGetRawMetadata\(photos, \{ "keywords" \}\)/);
-  assert.match(writer, /removeCurrentManagedKeywords\(catalog, photo, prefetched\.keywords\)/);
+  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo\)/);
   assert.match(writer, /local function managedKeywordNamesFromMetadata\(photo\)/);
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "taxonomyPath"\)/);
   assert.match(
     writer,
-    /for _, name in ipairs\(managedKeywordNamesFromMetadata\(photo\)\) do\s*\n\s*removeCandidate\(name, true\)/,
+    /for _, name in ipairs\(managedKeywordNamesFromMetadata\(photo\)\) do\s*\n\s*removeCandidate\(name\)/,
     "Die beim Zuweisen erzeugten Namen müssen vor dem Leeren der Metadaten deterministisch rekonstruiert werden",
   );
-  assert.match(writer, /local isKeywordObject = type\(candidate\) ~= "string"/);
-  assert.match(writer, /local function removeCandidate\(candidate, preserveExactName\)/);
-  assert.match(writer, /local removalName = \(isKeywordObject or preserveExactName\) and candidateName or normalizedName/);
-  assert.match(writer, /local keyword = isKeywordObject and candidate or createKeyword\(catalog, removalName, nil\)/);
-  assert.match(writer, /removeCandidate\(value, true\)/);
-  assert.match(writer, /removeCandidate\(cleanText\(part\), false\)/);
+  assert.match(writer, /local keyword = type\(candidate\) == "string" and createKeyword\(catalog, name, nil\) or candidate/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*withWriteAccessDo[\s\S]*removeCurrentManagedKeywords\(catalog, photo, prefetched\.keywords\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*withWriteAccessDo[\s\S]*removeCurrentManagedKeywords\(catalog, photo\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Stichwörter müssen im selben Schreibzugriff und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);
@@ -282,17 +278,12 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
   const info = await source("Info.lua");
   const removal = await source("RemoveTaxonomy.lua");
-  const assignment = await source("AssignmentWindow.lua");
   assert.match(info, /title = "Taxonomie entfernen"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.remove/);
-  assert.match(removal, /Stichwörter mit der Endung „\(FN\)“/);
-  assert.match(removal, /Lightroom-Stichwörter ohne diese[\s\S]*Kennzeichnung/);
-  assert.match(removal, /Andere Lightroom-Stichwörter blieben erhalten/);
-  assert.match(assignment, /Stichwörter mit der[\s\S]*Endung „\(FN\)“/);
-  assert.match(assignment, /Lightroom-Stichwörter ohne diese[\s\S]*Kennzeichnung/);
-  assert.match(assignment, /Andere Lightroom-Stichwörter blieben erhalten/);
+  assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
+  assert.match(removal, /Andere Lightroom-Stichwörter/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {

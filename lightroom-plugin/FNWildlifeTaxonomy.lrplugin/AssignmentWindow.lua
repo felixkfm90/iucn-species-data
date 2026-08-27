@@ -387,9 +387,8 @@ function AssignmentWindow.show(context)
     local choice = LrDialogs.confirm(
       "Taxonomie entfernen?",
       "Die FN-Wildlife-Taxonomie wird von den aktuell markierten Fotos entfernt. "
-        .. "Dabei werden die Plug-in-Metadaten und alle diesen Fotos zugeordneten Stichwörter mit der "
-        .. "Endung „(FN)“ entfernt. Lightroom-Stichwörter ohne diese Kennzeichnung und die Bilddateien "
-        .. "bleiben unverändert.",
+        .. "Dabei werden die Plug-in-Metadaten und ausschließlich die vom Plug-in verwalteten "
+        .. "Taxonomie-Stichwörter entfernt. Andere Lightroom-Stichwörter und die Bilddateien bleiben unverändert.",
       "Taxonomie entfernen",
       "Abbrechen"
     )
@@ -408,8 +407,7 @@ function AssignmentWindow.show(context)
     props.searchStatus = tostring(result.assignmentCount)
       .. " Taxonomiezuordnung(en) und "
       .. tostring(result.keywordCount)
-      .. " mit „(FN)“ gekennzeichnete Stichwortzuordnung(en) wurden entfernt. "
-      .. "Andere Lightroom-Stichwörter blieben erhalten."
+      .. " verwaltete Stichwortzuordnung(en) wurden entfernt."
     refreshSelection()
     refreshLifelist(true)
   end

@@ -4,6 +4,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local KeywordWriter = {}
 
 local PLUGIN_KEYWORD_SUFFIX = " (FN)"
+local PLUGIN_PARTIAL_KEYWORD_SUFFIX = PLUGIN_KEYWORD_SUFFIX .. "*"
 local METADATA_FIELDS = {
   "masterTaxonId",
   "projectTaxonId",
@@ -127,21 +128,11 @@ local function appendUniqueName(targets, seen, value)
   table.insert(targets, name)
 end
 
-local function normalizedPluginKeywordName(value)
-  local name = cleanText(value)
-  -- In der Stichwortanzeige einer Mehrfachauswahl kennzeichnet Lightroom mit
-  -- einem nachgestellten Sternchen, dass das Stichwort nur auf einem Teil der
-  -- markierten Fotos liegt. Das Sternchen ist kein Bestandteil des echten
-  -- Katalognamens und muss vor dem gezielten Entfernen entfallen.
-  name = cleanText(string.gsub(name, "%*+$", ""))
-  if string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX then
-    return name
-  end
-  return nil
-end
-
 local function hasPluginKeywordNameSuffix(value)
-  return normalizedPluginKeywordName(value) ~= nil
+  local name = cleanText(value)
+  return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
+    or string.sub(name, -string.len(PLUGIN_PARTIAL_KEYWORD_SUFFIX))
+      == PLUGIN_PARTIAL_KEYWORD_SUFFIX
 end
 
 local function hasPluginKeywordSuffix(keyword)
@@ -155,9 +146,8 @@ local function resolveManagedKeywordNames(catalog, photo)
     return photo:getRawMetadata("keywords")
   end)
   local function appendAssignedKeyword(candidate)
-    local name = normalizedPluginKeywordName(keywordName(candidate))
-    if name then
-      appendUniqueName(names, seen, name)
+    if hasPluginKeywordSuffix(candidate) then
+      appendUniqueName(names, seen, keywordName(candidate))
     end
   end
   for key, value in pairs(ok and assigned or {}) do
@@ -176,8 +166,8 @@ local function resolveManagedKeywordNames(catalog, photo)
   end)
   if formattedOk then
     for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      local name = normalizedPluginKeywordName(part)
-      if name then
+      local name = cleanText(part)
+      if hasPluginKeywordNameSuffix(name) then
         appendUniqueName(names, seen, name)
       end
     end
@@ -199,7 +189,7 @@ end
 local function removeManagedKeywords(catalog, photo, names)
   local removed = 0
   for _, name in ipairs(names or {}) do
-    -- Ausschließlich eindeutig mit (FN) gekennzeichnete Plug-in-
+    -- Ausschließlich eindeutig mit (FN) oder (FN)* gekennzeichnete Plug-in-
     -- Stichwortobjekte werden vom Foto getrennt. Alle sonstigen, auch manuell
     -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
     -- createKeyword liefert mit returnExisting=true dasselbe Katalogobjekt,
@@ -243,27 +233,17 @@ local function managedKeywordNamesFromMetadata(photo)
   return names
 end
 
-local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
+local function removeCurrentManagedKeywords(catalog, photo)
   local removed = 0
   local seen = {}
 
-  local function removeCandidate(candidate, preserveExactName)
-    local candidateName = keywordName(candidate)
-    local normalizedName = normalizedPluginKeywordName(candidateName)
-    if not normalizedName then
+  local function removeCandidate(candidate)
+    local name = keywordName(candidate)
+    if not hasPluginKeywordNameSuffix(name) or seen[name] then
       return
     end
-    local isKeywordObject = type(candidate) ~= "string"
-    local removalName = (isKeywordObject or preserveExactName) and candidateName or normalizedName
-    if seen[removalName] then
-      return
-    end
-    seen[removalName] = true
-    -- Ein echtes Lightroom-Stichwortobjekt wird unverändert entfernt. Damit
-    -- wird auch ein tatsächlich auf "(FN)*" endender Katalogname vollständig
-    -- einschließlich Sternchen gelöscht. Nur reine Anzeigezeichenketten
-    -- werden auf den zugrunde liegenden Namen "(FN)" zurückgeführt.
-    local keyword = isKeywordObject and candidate or createKeyword(catalog, removalName, nil)
+    seen[name] = true
+    local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
     photo:removeKeyword(keyword)
     removed = removed + 1
   end
@@ -274,20 +254,15 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   -- noetig, weil Lightroom die zugeordneten Stichwortobjekte nicht in allen
   -- Versionen zuverlaessig ueber getRawMetadata("keywords") zurueckliefert.
   for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
-    removeCandidate(name, true)
-  end
-
-  for key, value in pairs(prefetchedKeywords or {}) do
-    removeCandidate(key, true)
-    removeCandidate(value, true)
+    removeCandidate(name)
   end
 
   local ok, assigned = pcall(function()
     return photo:getRawMetadata("keywords")
   end)
   for key, value in pairs(ok and assigned or {}) do
-    removeCandidate(key, true)
-    removeCandidate(value, true)
+    removeCandidate(key)
+    removeCandidate(value)
   end
 
   local formattedOk, formatted = pcall(function()
@@ -295,7 +270,7 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   end)
   if formattedOk then
     for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      removeCandidate(cleanText(part), false)
+      removeCandidate(cleanText(part))
     end
   end
 
@@ -305,7 +280,7 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
       return catalog:getKeywordByLocalIdentifier(id)
     end)
     if idOk and keyword then
-      removeCandidate(keyword, true)
+      removeCandidate(keyword)
     end
   end
   return removed
@@ -443,18 +418,12 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
-  local prefetchedByPhoto = {}
-  pcall(function()
-    prefetchedByPhoto = catalog:batchGetRawMetadata(photos, { "keywords" }) or {}
-  end)
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
     for _, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1
       end
-      local prefetched = prefetchedByPhoto[photo] or {}
-      removedKeywords = removedKeywords
-        + removeCurrentManagedKeywords(catalog, photo, prefetched.keywords)
+      removedKeywords = removedKeywords + removeCurrentManagedKeywords(catalog, photo)
       clearPluginMetadata(photo)
     end
   end)
