@@ -177,9 +177,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /local LrColor = import "LrColor"/);
   assert.match(window, /background_color\s*=\s*LrColor\(0\.94, 0\.94, 0\.94\)/);
   assert.match(window, /height\s*=\s*150/);
-  assert.match(window, /local function textLineCount\(value\)/);
-  assert.match(window, /props\.previewLineCount = textLineCount\(props\.preview\)/);
-  assert.match(window, /height_in_lines\s*=\s*bind\("previewLineCount"\)/);
+  assert.match(window, /height_in_lines\s*=\s*-1/);
+  assert.doesNotMatch(window, /previewLineCount|textLineCount/);
   assert.doesNotMatch(window, /height_in_lines\s*=\s*32/);
   assert.match(window, /height\s*=\s*540/);
   assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV5"/);

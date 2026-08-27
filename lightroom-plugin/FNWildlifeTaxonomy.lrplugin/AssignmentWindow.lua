@@ -78,11 +78,6 @@ local function previewText(taxon)
   return table.concat(lines, "\n")
 end
 
-local function textLineCount(value)
-  local _, lineBreaks = string.gsub(tostring(value or ""), "\n", "\n")
-  return math.max(1, lineBreaks + 1)
-end
-
 local function photoFileName(photo)
   local ok, value = pcall(function()
     return photo:getFormattedMetadata("fileName")
@@ -181,17 +176,11 @@ function AssignmentWindow.show(context)
   props.recentItems = recentItems()
   props.recentTaxonId = props.recentItems[1].value
   props.preview = "Noch keine Art ausgewählt."
-  props.previewLineCount = textLineCount(props.preview)
   props.canAssign = false
   props.canRemove = false
   props.canSearch = false
   props.packageReady = false
   props.busy = false
-
-  local function setPreview(value)
-    props.preview = tostring(value or "")
-    props.previewLineCount = textLineCount(props.preview)
-  end
 
   local function refreshActions()
     local photos = catalog:getTargetPhotos() or {}
@@ -271,7 +260,7 @@ function AssignmentWindow.show(context)
       return
     end
     currentTaxon = taxon
-    setPreview(previewText(taxon))
+    props.preview = previewText(taxon)
     props.searchStatus = "Art ist zur Zuweisung bereit."
     refreshSelection()
   end
@@ -286,7 +275,7 @@ function AssignmentWindow.show(context)
       return
     end
     currentTaxon = nil
-    setPreview("Noch keine Art ausgewählt.")
+    props.preview = "Noch keine Art ausgewählt."
     setBusy(true)
     props.searchStatus = "Lokale Masterdatenbank wird durchsucht ..."
     local ok, results = LrTasks.pcall(TaxonomyHelper.request, {
@@ -303,7 +292,7 @@ function AssignmentWindow.show(context)
     if not results or #results == 0 then
       props.resultItems = { { title = "Kein passender Eintrag", value = "" } }
       props.masterTaxonId = ""
-      setPreview("Noch keine Art ausgewählt.")
+      props.preview = "Noch keine Art ausgewählt."
       props.searchStatus = "Kein passendes Taxon im lokalen Suchpaket gefunden."
       return
     end
@@ -538,7 +527,7 @@ function AssignmentWindow.show(context)
           factory:static_text({
             title = bind("preview"),
             width = 740,
-            height_in_lines = bind("previewLineCount"),
+            height_in_lines = -1,
             fill_horizontal = 1,
           }),
         }),
