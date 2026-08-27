@@ -218,21 +218,23 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
-  assert.match(writer, /resolveManagedKeywordTargets/);
-  assert.match(writer, /for _, keyword in ipairs\(catalog:getKeywords\(\) or \{\}\) do/);
+  assert.match(writer, /resolveManagedKeywordNames/);
+  assert.match(writer, /photo:getRawMetadata\("keywords"\)/);
+  assert.match(writer, /photo:getFormattedMetadata\("keywordTags"\)/);
   assert.match(writer, /if hasPluginKeywordSuffix\(keyword\) then/);
-  assert.match(writer, /if pluginKeywordsById\[id\] then/);
-  assert.match(writer, /for _, keyword in ipairs\(allPluginKeywords\) do/);
-  assert.match(writer, /#targets == 0/);
+  assert.match(writer, /catalog:getKeywordByLocalIdentifier\(id\)/);
+  assert.match(writer, /if hasPluginKeywordNameSuffix\(name\) then/);
+  assert.doesNotMatch(writer, /catalog:getKeywords\(\)/);
   assert.match(writer, /#storedKeywordIds > 0 and table\.concat\(storedKeywordIds, ","\) or "none"/);
   assert.doesNotMatch(writer, /resolveLegacyKeywordTargets/);
   assert.doesNotMatch(writer, /name == "Artnamen"|keywordParent|keywordChildren/);
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /removeManagedKeywords/);
+  assert.match(writer, /local keyword = createKeyword\(catalog, name, nil\)\s*\n\s*photo:removeKeyword\(keyword\)/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(catalog, photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*keywordNames\[index\] = resolveManagedKeywordNames\(catalog, photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(catalog, photo, keywordNames\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Entfernen-Ziele müssen vor dem Schreibzugriff aufgelöst und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);

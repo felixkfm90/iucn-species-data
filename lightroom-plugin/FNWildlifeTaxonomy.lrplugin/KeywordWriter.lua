@@ -94,78 +94,6 @@ local function parseKeywordIds(value)
   return ids
 end
 
-local function appendUniqueKeyword(targets, seen, keyword)
-  if not keyword then
-    return
-  end
-  local id = keywordLocalIdentifier(keyword)
-  local key = id and ("id:" .. id) or ("object:" .. tostring(keyword))
-  if seen[key] then
-    return
-  end
-  seen[key] = true
-  table.insert(targets, keyword)
-end
-
-local function hasPluginKeywordSuffix(keyword)
-  local name = keywordName(keyword)
-  return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
-end
-
-local function resolveManagedKeywordTargets(catalog, photo)
-  local targets = {}
-  local seen = {}
-  local allPluginKeywords = {}
-  local pluginKeywordsById = {}
-  for _, keyword in ipairs(catalog:getKeywords() or {}) do
-    if hasPluginKeywordSuffix(keyword) then
-      table.insert(allPluginKeywords, keyword)
-      local id = keywordLocalIdentifier(keyword)
-      if id then
-        pluginKeywordsById[id] = keyword
-      end
-    end
-  end
-
-  local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
-  local ids = parseKeywordIds(storedIds)
-  for id in pairs(ids) do
-    if pluginKeywordsById[id] then
-      appendUniqueKeyword(targets, seen, pluginKeywordsById[id])
-    end
-  end
-
-  -- Nach einem früheren fehlgeschlagenen Löschlauf können die Metadaten und
-  -- damit auch die gespeicherten IDs bereits leer sein. Da (FN) für diese
-  -- flachen Plug-in-Stichwörter reserviert ist, dürfen dann alle so
-  -- gekennzeichneten Katalogobjekte als sichere Entfernungsziele dienen.
-  if #targets == 0 then
-    for _, keyword in ipairs(allPluginKeywords) do
-      appendUniqueKeyword(targets, seen, keyword)
-    end
-  end
-  return targets
-end
-
-local function removeManagedKeywords(photo, targets)
-  local removed = 0
-  for _, keyword in ipairs(targets or {}) do
-    -- Ausschließlich eindeutig mit (FN) gekennzeichnete Plug-in-
-    -- Stichwortobjekte werden vom Foto getrennt. Alle sonstigen, auch manuell
-    -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
-    photo:removeKeyword(keyword)
-    removed = removed + 1
-  end
-  return removed
-end
-
-local function clearPluginMetadata(photo)
-  for _, field in ipairs(METADATA_FIELDS) do
-    photo:setPropertyForPlugin(_PLUGIN, field, "")
-  end
-  photo:setPropertyForPlugin(_PLUGIN, "referenceImage", "no")
-end
-
 local function utf8Prefix(value, maximumBytes)
   local text = cleanText(value)
   if string.len(text) <= maximumBytes then
@@ -185,6 +113,87 @@ end
 local function managedKeywordName(value)
   local maximumNameBytes = 240 - string.len(PLUGIN_KEYWORD_SUFFIX)
   return utf8Prefix(value, maximumNameBytes) .. PLUGIN_KEYWORD_SUFFIX
+end
+
+local function appendUniqueName(targets, seen, value)
+  local name = cleanText(value)
+  if name == "" or seen[name] then
+    return
+  end
+  seen[name] = true
+  table.insert(targets, name)
+end
+
+local function hasPluginKeywordNameSuffix(value)
+  local name = cleanText(value)
+  return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
+end
+
+local function hasPluginKeywordSuffix(keyword)
+  return hasPluginKeywordNameSuffix(keywordName(keyword))
+end
+
+local function resolveManagedKeywordNames(catalog, photo)
+  local names = {}
+  local seen = {}
+  local ok, assigned = pcall(function()
+    return photo:getRawMetadata("keywords")
+  end)
+  for _, keyword in pairs(ok and assigned or {}) do
+    if hasPluginKeywordSuffix(keyword) then
+      appendUniqueName(names, seen, keywordName(keyword))
+    end
+  end
+
+  -- Einige Lightroom-Stände liefern die formatierten Stichwort-Tags
+  -- zuverlässiger als die rohen Stichwortobjekte. Da neue Plug-in-
+  -- Stichwörter flach sind, kann die kommagetrennte Anzeige hier gezielt auf
+  -- das reservierte Suffix geprüft werden.
+  local formattedOk, formatted = pcall(function()
+    return photo:getFormattedMetadata("keywordTags")
+  end)
+  if formattedOk then
+    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
+      local name = cleanText(part)
+      if hasPluginKeywordNameSuffix(name) then
+        appendUniqueName(names, seen, name)
+      end
+    end
+  end
+
+  local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
+  local ids = parseKeywordIds(storedIds)
+  for id in pairs(ids) do
+    local ok, keyword = pcall(function()
+      return catalog:getKeywordByLocalIdentifier(id)
+    end)
+    if ok and keyword and hasPluginKeywordSuffix(keyword) then
+      appendUniqueName(names, seen, keywordName(keyword))
+    end
+  end
+  return names
+end
+
+local function removeManagedKeywords(catalog, photo, names)
+  local removed = 0
+  for _, name in ipairs(names or {}) do
+    -- Ausschließlich eindeutig mit (FN) gekennzeichnete Plug-in-
+    -- Stichwortobjekte werden vom Foto getrennt. Alle sonstigen, auch manuell
+    -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
+    -- createKeyword liefert mit returnExisting=true dasselbe Katalogobjekt,
+    -- das auch bei der Zuweisung an photo:addKeyword übergeben wurde.
+    local keyword = createKeyword(catalog, name, nil)
+    photo:removeKeyword(keyword)
+    removed = removed + 1
+  end
+  return removed
+end
+
+local function clearPluginMetadata(photo)
+  for _, field in ipairs(METADATA_FIELDS) do
+    photo:setPropertyForPlugin(_PLUGIN, field, "")
+  end
+  photo:setPropertyForPlugin(_PLUGIN, "referenceImage", "no")
 end
 
 local function metadataText(value)
@@ -234,9 +243,9 @@ function KeywordWriter.assign(catalog, photos, taxon)
     )
   end
 
-  local previousKeywordTargets = {}
+  local previousKeywordNames = {}
   for index, photo in ipairs(photos) do
-    previousKeywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
+    previousKeywordNames[index] = resolveManagedKeywordNames(catalog, photo)
   end
 
   local hierarchyPath = {}
@@ -245,7 +254,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
   local keywordCount = 0
   catalog:withWriteAccessDo("FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
-      removeManagedKeywords(photo, previousKeywordTargets[index])
+      removeManagedKeywords(catalog, photo, previousKeywordNames[index])
     end
 
     for _, entry in ipairs(taxon.hierarchy or {}) do
@@ -312,16 +321,16 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
-  local keywordTargets = {}
+  local keywordNames = {}
   for index, photo in ipairs(photos) do
-    keywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
+    keywordNames[index] = resolveManagedKeywordNames(catalog, photo)
   end
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
     for index, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1
       end
-      removedKeywords = removedKeywords + removeManagedKeywords(photo, keywordTargets[index])
+      removedKeywords = removedKeywords + removeManagedKeywords(catalog, photo, keywordNames[index])
       clearPluginMetadata(photo)
     end
   end)
