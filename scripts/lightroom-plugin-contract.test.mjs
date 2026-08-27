@@ -220,8 +220,11 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /keywordLocalIdentifier/);
   assert.match(writer, /resolveManagedKeywordNames/);
   assert.match(writer, /photo:getRawMetadata\("keywords"\)/);
+  assert.match(writer, /for key, value in pairs\(ok and assigned or \{\}\) do/);
+  assert.match(writer, /appendAssignedKeyword\(key\)/);
+  assert.match(writer, /appendAssignedKeyword\(value\)/);
   assert.match(writer, /photo:getFormattedMetadata\("keywordTags"\)/);
-  assert.match(writer, /if hasPluginKeywordSuffix\(keyword\) then/);
+  assert.match(writer, /if hasPluginKeywordSuffix\(candidate\) then/);
   assert.match(writer, /catalog:getKeywordByLocalIdentifier\(id\)/);
   assert.match(writer, /if hasPluginKeywordNameSuffix\(name\) then/);
   assert.doesNotMatch(writer, /catalog:getKeywords\(\)/);

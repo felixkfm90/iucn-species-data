@@ -139,10 +139,16 @@ local function resolveManagedKeywordNames(catalog, photo)
   local ok, assigned = pcall(function()
     return photo:getRawMetadata("keywords")
   end)
-  for _, keyword in pairs(ok and assigned or {}) do
-    if hasPluginKeywordSuffix(keyword) then
-      appendUniqueName(names, seen, keywordName(keyword))
+  local function appendAssignedKeyword(candidate)
+    if hasPluginKeywordSuffix(candidate) then
+      appendUniqueName(names, seen, keywordName(candidate))
     end
+  end
+  for key, value in pairs(ok and assigned or {}) do
+    -- Lightroom liefert diese Tabelle abhängig von der Version entweder als
+    -- Liste oder als Menge mit dem Stichwortobjekt als Schlüssel.
+    appendAssignedKeyword(key)
+    appendAssignedKeyword(value)
   end
 
   -- Einige Lightroom-Stände liefern die formatierten Stichwort-Tags
