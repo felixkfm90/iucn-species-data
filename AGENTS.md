@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-13
+Stand: 2026-08-27
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1116,17 +1116,20 @@ Aktuelle Planung:
   Suchpaket enthält 273.505 Taxa und 7.108.393 Suchbegriffe aus der aktiven Masterdatenbank. Der lokale Suchhelfer
   funktioniert ohne laufenden Explorer; Paketprüfung, atomare Aktivierung und isolierter Rollback sind praktisch
   verifiziert. Das versionierte deutsche Lua-Plug-in unter `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` zeigt
-  Namen und vollständige Hierarchie an und besitzt den kontrollierten Vertrag für hierarchische Schlüsselwörter,
-  stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite, `.lrcat` oder XMP ist
+  Namen und vollständige Hierarchie an und besitzt den kontrollierten Vertrag für eindeutig mit `(FN)` markierte,
+  flache Lightroom-Stichwörter, stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite,
+  `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
-  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Am 2026-08-24 wurde das Plug-in auf Version
-  `0.4.1.0` ausgebaut: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet, gliedert Auswahl,
+  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-27 praktisch nachgearbeitete
+  Stand trägt Version `0.4.2.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button, unterstützt die Suche per Eingabetaste
   und zeigt den aktuellen Lifelist-Zähler sowie die zehn zuletzt verwendeten Arten. Die Eingabetaste löst die Suche
-  über Feldvalidierung und die Standardaktion aus. `Taxonomie entfernen` steht im Bibliotheksmenü und im
-  Foto-Kontextmenü unter `Plug-in-Extras` bereit; es löscht Plug-in-Metadaten und die exakt bei der Zuweisung
-  gespeicherten beziehungsweise eindeutig migrierbaren Plug-in-Stichwörter kontrolliert über das Lightroom-SDK.
+  über Feldvalidierung und die Standardaktion aus. `Taxonomie entfernen` steht über `Plug-in-Extras`
+  beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; ein Eintrag direkt im normalen Foto-Rechtsklickmenü
+  war im praktischen Test nicht verfügbar. Die Aktion löscht Plug-in-Metadaten und alle eindeutig reservierten
+  Stichwörter mit den Endungen `(FN)` und `(FN)*` von den markierten Fotos kontrolliert über das Lightroom-SDK.
   Der Suchhelfer erkennt unter Windows eine übliche lokale
   Node-Installation auch dann, wenn Lightroom den System-`PATH` nicht vollständig übernimmt, und erhält den lokalen
   Suchpaketpfad unabhängig von Lightroom-Prozessvariablen ausdrücklich. Ein fehlgeschlagener Hilfsprozess zeigt eine
@@ -1136,15 +1139,15 @@ Aktuelle Planung:
   Taxonomierängen; `FN Wildlife – vollständige Taxonomie` zeigt bei Bedarf alle unterstützten Ränge. Technische IDs
   bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt Version und Zustand des abgeleiteten Suchpakets, aber keine zweite
   Datenbankpflege. Als klar abgegrenzte 10.4-Funktionen sind genau ein erklärtes und bestätigungspflichtiges
-  `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz intelligenter Sammlungen und eine vollständig neu
+  `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz aus `Art-Favoriten`, `Taxonomie fehlt` und
+  `Taxonomie zugewiesen` sowie eine vollständig neu
   berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, Klassenübersicht, den zehn am häufigsten
   fotografierten Arten und verwerfbarem Cache implementiert. Die Statistik liest die Zuordnungen aus dem
-  Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Bei Zuweisung und Rücknahme werden nur
-  Stichwörter im Plug-in-Zweig `FN Wildlife & Travel > Taxonomie` verwaltet; alle anderen manuellen Stichwörter
-  bleiben unangetastet. Einzel- und Mehrfachzuweisung wurden im separaten
-  Testkatalog praktisch bestätigt; die neue 0.4.1.0-Oberfläche und Rücknahmefunktion werden nach dem Neuladen des
-  Zusatzmoduls gemeinsam visuell abgenommen. Danach folgen weitere einzeln priorisierte Funktionen und das
-  umfassende Abschlussaudit.
+  Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Die Sammlungen beruhen ausschließlich auf
+  den Plug-in-Metadaten `referenceImage` und `masterTaxonId`, nicht auf normalen Lightroom-Stichwörtern. Andere
+  manuelle Stichwörter und alte flache Stichwörter ohne eindeutige FN-Endung bleiben unangetastet. Einzel- und
+  Mehrfachzuweisung, Fensteraufbau, Favoritenersetzung und Rücknahme wurden im separaten Testkatalog praktisch
+  geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

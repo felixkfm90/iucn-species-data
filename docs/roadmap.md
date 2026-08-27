@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-08-13
+Stand: 2026-08-27
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1038,7 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.1.0 und weitere Bausteine aus 10.3/10.4 automatisiert geprüft
+separaten Testkatalog bestätigt; Version 0.4.2.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
+Bedienabläufe praktisch bestätigt; das umfassende Abschlussaudit 10.5 steht aus
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1053,33 +1054,36 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.1.0 am 2026-08-24 umgesetzt.** Das deutsche schwebende Zuweisungsfenster bleibt
+- 10.3: **MVP-Ausbau bis Version 0.4.2.0 am 2026-08-27 umgesetzt und praktisch nachgearbeitet.** Das deutsche
+  schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt den ersten Dateinamen und bei Mehrfachauswahl die Zahl weiterer Fotos,
   aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt verwendeten Arten. Die Suche startet per
-  Button oder Eingabetaste. Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; die verwaltete
-  Schlüsselworthierarchie enthält ausschließlich lesbare Namen ohne interne IDs oder technische Rangpräfixe.
-  `Taxonomie entfernen` nimmt die Zuweisung kontrolliert zurück. Exakte Plug-in-Stichwort-IDs werden bei jeder
-  Zuweisung gespeichert; Rücknahme entfernt nur diese beziehungsweise eindeutig migrierbare Altbestände und lässt
-  sonstige manuelle Stichwörter unangetastet. Die Aktion ist auch im Foto-Kontextmenü unter `Plug-in-Extras`
-  erreichbar. Der lokale Suchpaketpfad wird explizit übergeben;
+  Button oder Eingabetaste. Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; neu erzeugte
+  Lightroom-Stichwörter sind flach, lesbar und mit der reservierten Endung `(FN)` eindeutig gekennzeichnet.
+  `Taxonomie entfernen` nimmt die Zuweisung kontrolliert zurück und entfernt auf den markierten Fotos Stichwörter
+  mit den Endungen `(FN)` und `(FN)*`; sonstige manuelle sowie alte flache Stichwörter ohne diese Endungen bleiben
+  unangetastet. Die Aktion ist über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar.
+  Ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar. Der lokale
+  Suchpaketpfad wird explizit übergeben;
   Node-Erkennung, Fehlerdiagnose, Konfliktsperre und Metadatenlängen sind automatisiert abgesichert. Die eigene
   kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und
   den wichtigsten Rängen; `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.1.0 am 2026-08-24 umgesetzt.** Genau ein
-  bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, vier idempotente intelligente Sammlungen und eine
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.2.0 am 2026-08-27 umgesetzt.** Genau ein
+  bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
   neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
   Arten und Cache sind implementiert und vertraglich getestet. Die Statistik liest den Lightroom-Katalog und
-  benötigt kein Taxonomie-Datenbankupdate. Zuweisung und Rücknahme verwalten ausschließlich den Plug-in-Zweig
-  `FN Wildlife & Travel > Taxonomie`; andere manuelle Stichwörter bleiben erhalten. Der Zusatzmodul-Manager zeigt Version und Status des
+  benötigt kein Taxonomie-Datenbankupdate. `Art-Favoriten` wertet `referenceImage = yes` aus, `Taxonomie
+  zugewiesen` eine vorhandene `masterTaxonId` und `Taxonomie fehlt` deren Fehlen. Die Sammlungen hängen nicht von
+  Lightroom-Stichwörtern ab. Der Zusatzmodul-Manager zeigt Version und Status des
   abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Export, erweiterte
   Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Eine ebenfalls spätere,
   getrennt zu priorisierende Ortsauswertung soll vorhandene IPTC-Ortsfelder bevorzugen, GPS nur optional per
   Reverse-Geocoding ergänzen und abgeleitete Ortsstichwörter ausschließlich unter
   `FN Wildlife & Travel > Orte` führen. Vorgesehen sind Land, Region/Bundesland, Ort/Kreis und benutzerdefinierte
   Fotoplätze beziehungsweise Schutzgebiete sowie Statistiken nach diesen Ebenen; manuelle Stichwörter dürfen dabei
-  nicht überschrieben werden. Vor 10.5 steht die
-  visuelle Bedienabnahme der neuen 0.4.1.0-Funktionen im Testkatalog;
-- 10.5: umfassendes Phase-10-Abschlussaudit.
+  nicht überschrieben werden. Zuweisungsfenster, Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
+  geprüft;
+- 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
 

@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-08-13
+Stand: 2026-08-27
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -35,9 +35,9 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   breiten Masterbestand und die Freigabe von Phase 9.
 - `docs/lightroom-feasibility-study.md` ist die verbindliche Phase-10.1-Entscheidung zu SDK-Grenzen,
   Produktvergleich, Datenzugriff, Metadatenmodell, MVP-Umfang und ausdrücklich verschobenen Funktionen.
-- `docs/lightroom-search-package.md` ist der verbindliche Phase-10.2-Vertrag für Suchpaket, Suchhelfer,
-  Lua-Prototyp, Lightroom-Schlüsselwörter, Plug-in-Metadaten, Mehrfachzuweisung, Konfliktsperre, Rollback und den
-  noch ausstehenden Abnahmetest im separaten Lightroom-Testkatalog.
+- `docs/lightroom-search-package.md` ist der verbindliche Phase-10.2-bis-10.4-Vertrag für Suchpaket, Suchhelfer,
+  Lua-Plug-in, Lightroom-Stichwörter, Plug-in-Metadaten, Mehrfachzuweisung, Konfliktsperre, Rollback und die
+  praktisch geprüften Bedienabläufe. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 
 ## Historische Dokumente

@@ -978,29 +978,33 @@ Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
 Aus der aktiven Masterdatenbank entsteht ein vollständiges, versioniertes read-only Suchpaket, das ein kleiner
 lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der reale Stand enthält 273.505 Taxa und 7.108.393
 Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunden. Ein natives deutsches
-Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als hierarchische
-Schlüsselwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu. Paketprüfung, atomare
-Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet. Das Plug-in besitzt
-in Version `0.4.1.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt den Dateinamen der
+Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
+markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
+Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
+Das Plug-in besitzt in Version `0.4.2.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
+den Dateinamen der
 aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
 Auswahlwechsel, sucht per Button oder Eingabetaste und zeigt den aktuellen `Lifelist`-Stand. Einzel- und
 Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die vollständige verfügbare
-Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Schlüsselwörter enthalten bewusst nur lesbare Namen ohne
+Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Stichwörter enthalten bewusst nur lesbare Namen ohne
 interne IDs oder technische Rangpräfixe. `Taxonomie entfernen` nimmt eine Zuweisung über denselben kontrollierten
-SDK-Weg zurück, entfernt die exakt zur Zuweisung gespeicherten Plug-in-Stichwörter und hält damit Statistiken und
-intelligente Sammlungen konsistent. Die Aktion steht sowohl im Bibliotheksmenü als auch im Foto-Kontextmenü unter
-`Plug-in-Extras` bereit; manuelle Stichwörter außerhalb des verwalteten Plug-in-Zweigs bleiben erhalten.
+SDK-Weg zurück und entfernt von den markierten Fotos die eindeutig reservierten Stichwörter mit den Endungen
+`(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
+erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
+ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.
 
 Als abgegrenzte Erweiterungen sind genau ein bestätigungspflichtiges `Favoritenbild der Art` je Art, ein idempotenter
-Satz intelligenter Sammlungen und eine neu berechenbare Katalogstatistik mit `Lifelist`, Taxonomie-Abdeckung,
+Satz aus den drei intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` sowie eine
+neu berechenbare Katalogstatistik mit `Lifelist`, Taxonomie-Abdeckung,
 Klassenübersicht und den zehn am häufigsten fotografierten Arten umgesetzt. Die eigene Metadatenansicht
 `FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit Namen und den wichtigsten
 Taxonomierängen. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
 technische IDs bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt ausschließlich
 Version und Status des abgeleiteten lokalen Suchpakets, während Datenbankpflege, Updates und Sicherungen zentral im
 Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch und
-benötigt kein Taxonomie-Datenbankupdate. Nur der Plug-in-Zweig `FN Wildlife & Travel > Taxonomie` wird bei einer
-Zuweisung ersetzt oder entfernt; sonstige manuelle Stichwörter bleiben erhalten. Details, Befehle und Abnahmeablauf
+benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
+`referenceImage` und `masterTaxonId` aus und hängen nicht von Lightroom-Stichwörtern ab. Details, Befehle und
+Abnahmeablauf
 stehen in `docs/lightroom-search-package.md`. Lightroom
 bleibt alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische KI-Artbestimmung,
 iNaturalist-Synchronisation und Export bleiben spätere, einzeln zu priorisierende Erweiterungen.
