@@ -164,7 +164,7 @@ local function isPluginTaxonomyKeyword(keyword)
   local depth = 0
   while current and depth < 64 do
     local name = keywordName(current)
-    if name == "Taxonomie" or name == "Artnamen" then
+    if name == "Taxonomie" then
       local parent = keywordParent(current)
       return parent ~= nil and keywordName(parent) == PLUGIN_KEYWORD_ROOT
     end
@@ -172,56 +172,6 @@ local function isPluginTaxonomyKeyword(keyword)
     depth = depth + 1
   end
   return false
-end
-
-local function legacyRankPrefix(name)
-  for _, rank in ipairs(TaxonomyRanks.all()) do
-    local prefix = rank.label .. ":"
-    if string.sub(name, 1, string.len(prefix)) == prefix then
-      return true
-    end
-  end
-  return false
-end
-
-local function appendLegacyValue(values, value)
-  local cleaned = cleanText(value)
-  if cleaned ~= "" then
-    values[cleaned] = true
-    values[string.lower(cleaned)] = true
-  end
-end
-
-local function appendLegacyRankValues(values, rank, scientificValue)
-  local scientificName = cleanText(scientificValue)
-  appendLegacyValue(values, scientificName)
-
-  -- Frühere Plug-in-Versionen schrieben je nach Stand entweder den
-  -- wissenschaftlichen Rohwert oder die deutsche Anzeige flach. Beide
-  -- Varianten werden ausschließlich aus der noch gespeicherten Taxonomie
-  -- dieser konkreten Zuweisung abgeleitet.
-  local rankNames = GERMAN_KEYWORD_NAMES[rank.id]
-  if rankNames and scientificName ~= "" then
-    appendLegacyValue(values, rankNames[string.lower(scientificName)])
-  end
-end
-
-local function legacyMetadataValues(photo)
-  local values = {}
-  for _, field in ipairs({ "germanName", "englishName", "scientificName" }) do
-    appendLegacyValue(values, photo:getPropertyForPlugin(_PLUGIN, field))
-  end
-  for _, part in ipairs(splitTaxonomyPath(photo:getPropertyForPlugin(_PLUGIN, "taxonomyPath"))) do
-    appendLegacyValue(values, part)
-  end
-  for _, rank in ipairs(TaxonomyRanks.all()) do
-    appendLegacyRankValues(
-      values,
-      rank,
-      photo:getPropertyForPlugin(_PLUGIN, TaxonomyRanks.metadataFieldId(rank.id))
-    )
-  end
-  return values
 end
 
 local function keywordDepth(keyword)
@@ -244,48 +194,6 @@ local function sortKeywordsDeepestFirst(targets)
     return leftDepth > rightDepth
   end)
   return targets
-end
-
-local function malformedLegacyKeywordTargets(photo)
-  local assigned = assignedKeywords(photo)
-  local prefixed = {}
-  local containsTableArtifact = false
-  for _, keyword in ipairs(assigned) do
-    local name = keywordName(keyword)
-    if legacyRankPrefix(name) then
-      table.insert(prefixed, keyword)
-      if string.find(string.lower(name), "table:", 1, true) then
-        containsTableArtifact = true
-      end
-    end
-  end
-
-  -- Eine einzelne, manuell angelegte Beschriftung wie "Art: Vogel" darf nie
-  -- als Plug-in-Altlast gelten. Frühere Plug-in-Versionen sind eindeutig an
-  -- mehreren Rangpräfixen und mindestens einem serialisierten table:-Wert zu
-  -- erkennen.
-  if #prefixed < 3 or not containsTableArtifact then
-    return {}
-  end
-
-  -- Dieselbe frühe Testversion schrieb zusätzlich die reinen Namen flach in
-  -- Lightrooms allgemeine Stichwortliste. Sobald die technische Signatur oben
-  -- eindeutig erkannt wurde, dürfen deshalb auch exakt zu den gespeicherten
-  -- Plug-in-Metadaten gehörende Namenswerte entfernt werden. Freie manuelle
-  -- Stichwörter, die nicht exakt in dieser Taxonomie vorkommen, bleiben
-  -- unangetastet.
-  local legacyValues = legacyMetadataValues(photo)
-  local candidates = {}
-  for _, keyword in ipairs(assigned) do
-    local name = keywordName(keyword)
-    if legacyRankPrefix(name)
-      or legacyValues[name]
-      or legacyValues[string.lower(name)]
-    then
-      table.insert(candidates, keyword)
-    end
-  end
-  return candidates
 end
 
 local function resolveLegacyKeywordTargets(catalog, photo)
@@ -320,7 +228,7 @@ local function resolveManagedKeywordTargets(catalog, photo)
   local assigned = assignedKeywordMap(photo)
   local ids = parseKeywordIds(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
   for id in pairs(ids) do
-    if assigned[id] then
+    if assigned[id] and isPluginTaxonomyKeyword(assigned[id]) then
       appendUniqueKeyword(targets, seen, assigned[id])
     end
   end
@@ -338,12 +246,6 @@ local function resolveManagedKeywordTargets(catalog, photo)
 
   -- Migration bestehender Zuweisungen mit gespeichertem Taxonomiepfad.
   for _, keyword in ipairs(resolveLegacyKeywordTargets(catalog, photo)) do
-    appendUniqueKeyword(targets, seen, keyword)
-  end
-
-  -- Sehr frühe Testversionen legten technische Rangtexte flach an. Diese
-  -- werden nur über ihre eindeutige Mehrfachsignatur entfernt.
-  for _, keyword in ipairs(malformedLegacyKeywordTargets(photo)) do
     appendUniqueKeyword(targets, seen, keyword)
   end
 
