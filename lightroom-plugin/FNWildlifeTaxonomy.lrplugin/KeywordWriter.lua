@@ -198,6 +198,50 @@ local function removeManagedKeywords(catalog, photo, names)
   return removed
 end
 
+local function removeCurrentManagedKeywords(catalog, photo)
+  local removed = 0
+  local seen = {}
+
+  local function removeCandidate(candidate)
+    local name = keywordName(candidate)
+    if not hasPluginKeywordNameSuffix(name) or seen[name] then
+      return
+    end
+    seen[name] = true
+    local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
+    photo:removeKeyword(keyword)
+    removed = removed + 1
+  end
+
+  local ok, assigned = pcall(function()
+    return photo:getRawMetadata("keywords")
+  end)
+  for key, value in pairs(ok and assigned or {}) do
+    removeCandidate(key)
+    removeCandidate(value)
+  end
+
+  local formattedOk, formatted = pcall(function()
+    return photo:getFormattedMetadata("keywordTags")
+  end)
+  if formattedOk then
+    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
+      removeCandidate(cleanText(part))
+    end
+  end
+
+  local storedIds = parseKeywordIds(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
+  for id in pairs(storedIds) do
+    local idOk, keyword = pcall(function()
+      return catalog:getKeywordByLocalIdentifier(id)
+    end)
+    if idOk and keyword then
+      removeCandidate(keyword)
+    end
+  end
+  return removed
+end
+
 local function clearPluginMetadata(photo)
   for _, field in ipairs(METADATA_FIELDS) do
     photo:setPropertyForPlugin(_PLUGIN, field, "")
@@ -330,16 +374,12 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
-  local keywordNames = {}
-  for index, photo in ipairs(photos) do
-    keywordNames[index] = resolveManagedKeywordNames(catalog, photo)
-  end
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
-    for index, photo in ipairs(photos) do
+    for _, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1
       end
-      removedKeywords = removedKeywords + removeManagedKeywords(catalog, photo, keywordNames[index])
+      removedKeywords = removedKeywords + removeCurrentManagedKeywords(catalog, photo)
       clearPluginMetadata(photo)
     end
   end)
