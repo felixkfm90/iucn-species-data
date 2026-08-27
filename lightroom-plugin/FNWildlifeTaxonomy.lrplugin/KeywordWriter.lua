@@ -127,9 +127,21 @@ local function appendUniqueName(targets, seen, value)
   table.insert(targets, name)
 end
 
-local function hasPluginKeywordNameSuffix(value)
+local function normalizedPluginKeywordName(value)
   local name = cleanText(value)
-  return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
+  -- In der Stichwortanzeige einer Mehrfachauswahl kennzeichnet Lightroom mit
+  -- einem nachgestellten Sternchen, dass das Stichwort nur auf einem Teil der
+  -- markierten Fotos liegt. Das Sternchen ist kein Bestandteil des echten
+  -- Katalognamens und muss vor dem gezielten Entfernen entfallen.
+  name = cleanText(string.gsub(name, "%*+$", ""))
+  if string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX then
+    return name
+  end
+  return nil
+end
+
+local function hasPluginKeywordNameSuffix(value)
+  return normalizedPluginKeywordName(value) ~= nil
 end
 
 local function hasPluginKeywordSuffix(keyword)
@@ -143,8 +155,9 @@ local function resolveManagedKeywordNames(catalog, photo)
     return photo:getRawMetadata("keywords")
   end)
   local function appendAssignedKeyword(candidate)
-    if hasPluginKeywordSuffix(candidate) then
-      appendUniqueName(names, seen, keywordName(candidate))
+    local name = normalizedPluginKeywordName(keywordName(candidate))
+    if name then
+      appendUniqueName(names, seen, name)
     end
   end
   for key, value in pairs(ok and assigned or {}) do
@@ -163,8 +176,8 @@ local function resolveManagedKeywordNames(catalog, photo)
   end)
   if formattedOk then
     for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      local name = cleanText(part)
-      if hasPluginKeywordNameSuffix(name) then
+      local name = normalizedPluginKeywordName(part)
+      if name then
         appendUniqueName(names, seen, name)
       end
     end
@@ -230,17 +243,19 @@ local function managedKeywordNamesFromMetadata(photo)
   return names
 end
 
-local function removeCurrentManagedKeywords(catalog, photo)
+local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   local removed = 0
   local seen = {}
 
   local function removeCandidate(candidate)
-    local name = keywordName(candidate)
-    if not hasPluginKeywordNameSuffix(name) or seen[name] then
+    local candidateName = keywordName(candidate)
+    local name = normalizedPluginKeywordName(candidateName)
+    if not name or seen[name] then
       return
     end
     seen[name] = true
-    local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
+    local requiresCatalogLookup = type(candidate) == "string" or name ~= candidateName
+    local keyword = requiresCatalogLookup and createKeyword(catalog, name, nil) or candidate
     photo:removeKeyword(keyword)
     removed = removed + 1
   end
@@ -252,6 +267,11 @@ local function removeCurrentManagedKeywords(catalog, photo)
   -- Versionen zuverlaessig ueber getRawMetadata("keywords") zurueckliefert.
   for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
     removeCandidate(name)
+  end
+
+  for key, value in pairs(prefetchedKeywords or {}) do
+    removeCandidate(key)
+    removeCandidate(value)
   end
 
   local ok, assigned = pcall(function()
@@ -415,12 +435,18 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
+  local prefetchedByPhoto = {}
+  pcall(function()
+    prefetchedByPhoto = catalog:batchGetRawMetadata(photos, { "keywords" }) or {}
+  end)
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
     for _, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1
       end
-      removedKeywords = removedKeywords + removeCurrentManagedKeywords(catalog, photo)
+      local prefetched = prefetchedByPhoto[photo] or {}
+      removedKeywords = removedKeywords
+        + removeCurrentManagedKeywords(catalog, photo, prefetched.keywords)
       clearPluginMetadata(photo)
     end
   end)

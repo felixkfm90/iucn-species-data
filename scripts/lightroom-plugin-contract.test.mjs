@@ -211,6 +211,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /photo:addKeyword/);
   assert.match(writer, /photo:setPropertyForPlugin/);
   assert.match(writer, /PLUGIN_KEYWORD_SUFFIX\s*=\s*" \(FN\)"/);
+  assert.match(writer, /local function normalizedPluginKeywordName\(value\)/);
+  assert.match(writer, /string\.gsub\(name, "%\*\+\$", ""\)/);
+  assert.match(writer, /return normalizedPluginKeywordName\(value\) ~= nil/);
   assert.match(writer, /local function managedKeywordName\(value\)/);
   assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
   assert.match(writer, /createKeyword\(catalog, readableKeyword, nil\)/);
@@ -225,9 +228,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /appendAssignedKeyword\(key\)/);
   assert.match(writer, /appendAssignedKeyword\(value\)/);
   assert.match(writer, /photo:getFormattedMetadata\("keywordTags"\)/);
-  assert.match(writer, /if hasPluginKeywordSuffix\(candidate\) then/);
+  assert.match(writer, /local name = normalizedPluginKeywordName\(keywordName\(candidate\)\)/);
   assert.match(writer, /catalog:getKeywordByLocalIdentifier\(id\)/);
-  assert.match(writer, /if hasPluginKeywordNameSuffix\(name\) then/);
+  assert.match(writer, /local name = normalizedPluginKeywordName\(part\)/);
   assert.doesNotMatch(writer, /catalog:getKeywords\(\)/);
   assert.match(writer, /#storedKeywordIds > 0 and table\.concat\(storedKeywordIds, ","\) or "none"/);
   assert.doesNotMatch(writer, /resolveLegacyKeywordTargets/);
@@ -235,7 +238,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /local keyword = createKeyword\(catalog, name, nil\)\s*\n\s*photo:removeKeyword\(keyword\)/);
-  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo\)/);
+  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo, prefetchedKeywords\)/);
+  assert.match(writer, /catalog:batchGetRawMetadata\(photos, \{ "keywords" \}\)/);
+  assert.match(writer, /removeCurrentManagedKeywords\(catalog, photo, prefetched\.keywords\)/);
   assert.match(writer, /local function managedKeywordNamesFromMetadata\(photo\)/);
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "taxonomyPath"\)/);
   assert.match(
@@ -243,11 +248,12 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
     /for _, name in ipairs\(managedKeywordNamesFromMetadata\(photo\)\) do\s*\n\s*removeCandidate\(name\)/,
     "Die beim Zuweisen erzeugten Namen müssen vor dem Leeren der Metadaten deterministisch rekonstruiert werden",
   );
-  assert.match(writer, /local keyword = type\(candidate\) == "string" and createKeyword\(catalog, name, nil\) or candidate/);
+  assert.match(writer, /local requiresCatalogLookup = type\(candidate\) == "string" or name ~= candidateName/);
+  assert.match(writer, /local keyword = requiresCatalogLookup and createKeyword\(catalog, name, nil\) or candidate/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*withWriteAccessDo[\s\S]*removeCurrentManagedKeywords\(catalog, photo\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*withWriteAccessDo[\s\S]*removeCurrentManagedKeywords\(catalog, photo, prefetched\.keywords\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Stichwörter müssen im selben Schreibzugriff und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);
