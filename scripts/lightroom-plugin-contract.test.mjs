@@ -183,6 +183,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /previewLineVisible/);
   assert.match(window, /visible\s*=\s*bind\("previewLineVisible" \.\. tostring\(index\)\)/);
   assert.match(window, /factory:column\(previewLineViews\)/);
+  assert.doesNotMatch(window, /width\s*=\s*760/);
+  assert.doesNotMatch(window, /width\s*=\s*740/);
   assert.doesNotMatch(window, /height_in_lines\s*=\s*-1/);
   assert.doesNotMatch(window, /previewLineCount|textLineCount/);
   assert.doesNotMatch(window, /height_in_lines\s*=\s*32/);

@@ -419,7 +419,6 @@ function AssignmentWindow.show(context)
     table.insert(previewLineViews, factory:static_text({
       title = bind("previewLine" .. tostring(index)),
       visible = bind("previewLineVisible" .. tostring(index)),
-      width = 740,
       fill_horizontal = 1,
     }))
   end
@@ -548,7 +547,6 @@ function AssignmentWindow.show(context)
         factory:scrolled_view({
           horizontal_scroller = false,
           vertical_scroller = true,
-          width = 760,
           height = 150,
           fill_horizontal = 1,
           background_color = LrColor(0.94, 0.94, 0.94),
