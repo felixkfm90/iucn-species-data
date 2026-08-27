@@ -6,7 +6,7 @@ local fields = {
     version = 2,
     title = "Interne Master-Taxon-ID",
     dataType = "string",
-    searchable = false,
+    searchable = true,
     browsable = false,
   },
   {

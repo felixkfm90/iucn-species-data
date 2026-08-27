@@ -31,16 +31,8 @@ function SmartCollections.create(catalog)
         rules = { textCriterion("masterTaxonId", "empty"), combine = "intersect" },
       },
       {
-        name = "Favoritenbilder der Arten",
+        name = "Art-Favoriten",
         rules = { valueCriterion("referenceImage", "yes"), combine = "intersect" },
-      },
-      {
-        name = "5-Sterne-Tierbilder",
-        rules = {
-          textCriterion("masterTaxonId", "notEmpty"),
-          { criteria = "rating", operation = "==", value = 5 },
-          combine = "intersect",
-        },
       },
     }
     for _, definition in ipairs(definitions) do

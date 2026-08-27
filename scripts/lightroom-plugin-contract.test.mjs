@@ -60,6 +60,10 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     metadata,
     /id\s*=\s*"taxonomyKeywordIds"[\s\S]*?version\s*=\s*1[\s\S]*?searchable\s*=\s*false/,
   );
+  assert.match(
+    metadata,
+    /id\s*=\s*"masterTaxonId"[\s\S]*?searchable\s*=\s*true[\s\S]*?browsable\s*=\s*false/,
+  );
   assert.match(metadata, /title\s*=\s*"Favoritenbild der Art"/);
   for (const rank of [
     "domain",
@@ -238,7 +242,7 @@ test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async (
   assert.match(writer, /Der Prototyp überschreibt diese nicht/);
 });
 
-test("Favoritenbild der Art und Smart-Sammlungen bleiben abgeleitete Lightroom-Funktionen", async () => {
+test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadaten", async () => {
   const metadata = await source("MetadataDefinition.lua");
   const reference = await source("ReferenceImage.lua");
   const referenceAction = await source("SetReferenceImage.lua");
@@ -265,10 +269,20 @@ test("Favoritenbild der Art und Smart-Sammlungen bleiben abgeleitete Lightroom-F
   assert.match(referenceAction, /Bisher:[\s\S]*?Neu:/);
   assert.match(collections, /catalog:createCollectionSet/);
   assert.match(collections, /catalog:createSmartCollection/);
-  assert.match(collections, /Taxonomie zugewiesen/);
-  assert.match(collections, /Taxonomie fehlt/);
-  assert.match(collections, /Favoritenbilder der Arten/);
-  assert.match(collections, /5-Sterne-Tierbilder/);
+  assert.match(
+    collections,
+    /name = "Taxonomie zugewiesen"[\s\S]*?textCriterion\("masterTaxonId", "notEmpty"\)/,
+  );
+  assert.match(
+    collections,
+    /name = "Taxonomie fehlt"[\s\S]*?textCriterion\("masterTaxonId", "empty"\)/,
+  );
+  assert.match(
+    collections,
+    /name = "Art-Favoriten"[\s\S]*?valueCriterion\("referenceImage", "yes"\)/,
+  );
+  assert.doesNotMatch(collections, /Art-Referenzbilder|Favoritenbilder der Arten|5-Sterne-Tierbilder/);
+  assert.doesNotMatch(collections, /criteria\s*=\s*"keywords"|criteria\s*=\s*"keyword"/);
   const combined = `${reference}\n${collections}`;
   assert.doesNotMatch(combined, /TaxonomyHelper|lightroom-search-helper|\.lrcat|sqlite3/i);
 });
