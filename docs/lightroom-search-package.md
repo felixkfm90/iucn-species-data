@@ -2,7 +2,7 @@
 
 Stand: 2026-08-27
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.2.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.3.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
@@ -111,7 +111,9 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.2.0`. Enthalten sind:
+Das Plug-in trägt die Version `0.4.3.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
+nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
 - `Info.lua`: Manifest, SDK-Grenze und deutscher Bibliotheksmenüpunkt;
 - `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder für Namen, Status und alle unterstützten
@@ -234,7 +236,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.2.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.3.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und

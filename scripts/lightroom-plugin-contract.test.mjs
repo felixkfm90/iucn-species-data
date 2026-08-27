@@ -17,6 +17,7 @@ async function source(file) {
 
 test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenvertrag", async () => {
   const info = await source("Info.lua");
+  const provider = await source("PluginInfoProvider.lua");
   const metadata = await source("MetadataDefinition.lua");
   const ranks = await source("TaxonomyRanks.lua");
   assert.match(info, /LrToolkitIdentifier\s*=\s*"de\.fnwildlifetravel\.taxonomy"/);
@@ -31,7 +32,16 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(info, /"MetadataTagset\.lua"/);
   assert.match(info, /"MetadataTagsetFull\.lua"/);
   assert.match(info, /LrPluginInfoProvider\s*=\s*"PluginInfoProvider\.lua"/);
-  assert.match(info, /minor\s*=\s*4[\s\S]*?revision\s*=\s*2[\s\S]*?build\s*=\s*0/);
+  const version = info.match(
+    /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
+  );
+  assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
+  assert.equal(version.slice(1).join("."), "0.4.3.0");
+  assert.match(
+    provider,
+    new RegExp(`Version: ${version.slice(1).join("\\.")}`),
+    "Zusatzmodul-Manager und Info.lua müssen dieselbe Plug-in-Version anzeigen",
+  );
   for (const field of [
     "masterTaxonId",
     "projectTaxonId",
@@ -409,7 +419,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.2\.0/);
+  assert.match(provider, /Version: 0\.4\.3\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

@@ -31,6 +31,11 @@ Wenn eine JS-Datei geaendert wird, muss auch `docs/squarespace-footer.html` bzw.
 geprueft werden. Wenn CSS geaendert wird, muss `docs/squarespace-custom.css` mit dem echten Squarespace-Stand
 abgeglichen werden.
 
+Bei jeder Änderung an einer Datei unter `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` muss die Plug-in-Version in
+`Info.lua` erhöht und dieselbe Version im Zusatzmodul-Manager über `PluginInfoProvider.lua` angezeigt werden. Die
+zugehörige aktuelle Dokumentation und der Lightroom-Vertragstest müssen im selben Commit angepasst werden. Dadurch
+ist nach dem Neuladen im Zusatzmodul-Manager eindeutig erkennbar, ob Lightroom den neuen Stand verwendet.
+
 ## Kurzueberblick
 
 Squarespace ist das sichtbare Frontend/CMS. Die Artseiten enthalten nur Container-IDs. Die dynamischen Inhalte werden
@@ -1121,7 +1126,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-27 praktisch nachgearbeitete
-  Stand trägt Version `0.4.2.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  Stand trägt Version `0.4.3.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button, unterstützt die Suche per Eingabetaste
