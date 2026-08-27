@@ -1,6 +1,5 @@
 local LrApplication = import "LrApplication"
 local LrBinding = import "LrBinding"
-local LrColor = import "LrColor"
 local LrDialogs = import "LrDialogs"
 local LrPathUtils = import "LrPathUtils"
 local LrTasks = import "LrTasks"
@@ -15,7 +14,8 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local AssignmentWindow = {}
 local bind = LrView.bind
 local activeDialogControls = nil
-local PREVIEW_LINE_LIMIT = 64
+local ASSIGNMENT_WINDOW_WIDTH = 960
+local TAXONOMY_PREVIEW_WIDTH = ASSIGNMENT_WINDOW_WIDTH - 30
 
 local cleanText = TaxonomyRanks.cleanText
 
@@ -168,14 +168,11 @@ function AssignmentWindow.show(context)
     local text = tostring(value or "")
     local lines = {}
     for line in string.gmatch(text .. "\n", "(.-)\n") do
-      table.insert(lines, line)
+      table.insert(lines, line == "" and " " or line)
     end
     props.preview = text
-    for index = 1, PREVIEW_LINE_LIMIT do
-      local line = lines[index]
-      props["previewLine" .. tostring(index)] = line == "" and " " or (line or "")
-      props["previewLineVisible" .. tostring(index)] = line ~= nil
-    end
+    props.previewLines = lines
+    props.previewSelection = ""
   end
 
   props.query = ""
@@ -411,18 +408,6 @@ function AssignmentWindow.show(context)
     refreshLifelist(true)
   end
 
-  local previewLineViews = {
-    fill_horizontal = 1,
-    spacing = 0,
-  }
-  for index = 1, PREVIEW_LINE_LIMIT do
-    table.insert(previewLineViews, factory:static_text({
-      title = bind("previewLine" .. tostring(index)),
-      visible = bind("previewLineVisible" .. tostring(index)),
-      fill_horizontal = 1,
-    }))
-  end
-
   local view = factory:column({
     bind_to_object = props,
     spacing = factory:dialog_spacing(),
@@ -544,13 +529,13 @@ function AssignmentWindow.show(context)
       fill_horizontal = 1,
       factory:column({
         fill_horizontal = 1,
-        factory:scrolled_view({
-          horizontal_scroller = false,
-          vertical_scroller = true,
+        factory:simple_list({
+          items = bind("previewLines"),
+          value = bind("previewSelection"),
+          allows_multiple_selection = false,
+          width = TAXONOMY_PREVIEW_WIDTH,
           height = 150,
           fill_horizontal = 1,
-          background_color = LrColor(0.94, 0.94, 0.94),
-          factory:column(previewLineViews),
         }),
       }),
     }),
@@ -599,11 +584,11 @@ function AssignmentWindow.show(context)
     LrDialogs.presentFloatingDialog(_PLUGIN, {
       title = "FN Wildlife – Taxonomie zuweisen",
       contents = view,
-      resizable = true,
-      width = 800,
+      resizable = false,
+      width = ASSIGNMENT_WINDOW_WIDTH,
       height = 540,
       blockTask = true,
-      save_frame = "fnWildlifeTaxonomyAssignmentWindowV5",
+      save_frame = "fnWildlifeTaxonomyAssignmentWindowV6",
       selectionChangeObserver = function()
         pcall(refreshSelection)
       end,
