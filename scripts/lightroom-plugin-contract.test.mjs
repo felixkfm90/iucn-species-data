@@ -298,7 +298,7 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
   assert.match(referenceAction, /"Ja, ersetzen"/);
   assert.match(referenceAction, /"Nein, behalten"/);
   assert.match(referenceAction, /if choice ~= "ok" then\s*return/);
-  assert.match(referenceAction, /Bisher:[\s\S]*?Neu:/);
+  assert.doesNotMatch(referenceAction, /Bisher:|Neu:|photoDescription/);
   assert.match(collections, /catalog:createCollectionSet/);
   assert.match(collections, /catalog:createSmartCollection/);
   assert.match(
