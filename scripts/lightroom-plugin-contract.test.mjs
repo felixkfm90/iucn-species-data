@@ -219,12 +219,11 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
   assert.match(writer, /resolveManagedKeywordTargets/);
-  assert.match(writer, /if storedIds == "none" then\s*return targets/);
-  assert.match(writer, /assignedById\[id\] and hasPluginKeywordSuffix\(assignedById\[id\]\)/);
+  assert.match(writer, /for _, keyword in ipairs\(catalog:getKeywords\(\) or \{\}\) do/);
   assert.match(writer, /if hasPluginKeywordSuffix\(keyword\) then/);
+  assert.match(writer, /if pluginKeywordsById\[id\] then/);
+  assert.match(writer, /for _, keyword in ipairs\(allPluginKeywords\) do/);
   assert.match(writer, /#targets == 0/);
-  assert.match(writer, /preservedKeywordIds\[index\]\[id\]\s*=\s*nil/);
-  assert.match(writer, /keywordId and not preservedKeywordIds\[index\]\[keywordId\]/);
   assert.match(writer, /#storedKeywordIds > 0 and table\.concat\(storedKeywordIds, ","\) or "none"/);
   assert.doesNotMatch(writer, /resolveLegacyKeywordTargets/);
   assert.doesNotMatch(writer, /name == "Artnamen"|keywordParent|keywordChildren/);
@@ -233,7 +232,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*keywordTargets\[index\] = resolveManagedKeywordTargets\(catalog, photo\)[\s\S]*withWriteAccessDo[\s\S]*removeManagedKeywords\(photo, keywordTargets\[index\]\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Entfernen-Ziele müssen vor dem Schreibzugriff aufgelöst und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);

@@ -94,24 +94,6 @@ local function parseKeywordIds(value)
   return ids
 end
 
-local function assignedKeywordMap(photo)
-  local byId = {}
-  for _, keyword in ipairs(photo:getRawMetadata("keywords") or {}) do
-    local id = keywordLocalIdentifier(keyword)
-    if id then
-      byId[id] = keyword
-    end
-  end
-  return byId
-end
-
-local function assignedKeywords(photo)
-  local ok, value = pcall(function()
-    return photo:getRawMetadata("keywords")
-  end)
-  return ok and value or {}
-end
-
 local function appendUniqueKeyword(targets, seen, keyword)
   if not keyword then
     return
@@ -130,30 +112,36 @@ local function hasPluginKeywordSuffix(keyword)
   return string.sub(name, -string.len(PLUGIN_KEYWORD_SUFFIX)) == PLUGIN_KEYWORD_SUFFIX
 end
 
-local function resolveManagedKeywordTargets(photo)
+local function resolveManagedKeywordTargets(catalog, photo)
   local targets = {}
   local seen = {}
-  local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
-  if storedIds == "none" then
-    return targets
-  end
-
-  local assignedById = assignedKeywordMap(photo)
-  local ids = parseKeywordIds(storedIds)
-  for id in pairs(ids) do
-    if assignedById[id] and hasPluginKeywordSuffix(assignedById[id]) then
-      appendUniqueKeyword(targets, seen, assignedById[id])
+  local allPluginKeywords = {}
+  local pluginKeywordsById = {}
+  for _, keyword in ipairs(catalog:getKeywords() or {}) do
+    if hasPluginKeywordSuffix(keyword) then
+      table.insert(allPluginKeywords, keyword)
+      local id = keywordLocalIdentifier(keyword)
+      if id then
+        pluginKeywordsById[id] = keyword
+      end
     end
   end
 
-  -- Das reservierte Suffix bleibt auch dann eindeutig, wenn Lightroom lokale
-  -- Stichwortkennungen nicht stabil zurückliefert oder ein früherer
-  -- Löschversuch die Plug-in-Metadaten bereits geleert hat.
+  local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
+  local ids = parseKeywordIds(storedIds)
+  for id in pairs(ids) do
+    if pluginKeywordsById[id] then
+      appendUniqueKeyword(targets, seen, pluginKeywordsById[id])
+    end
+  end
+
+  -- Nach einem früheren fehlgeschlagenen Löschlauf können die Metadaten und
+  -- damit auch die gespeicherten IDs bereits leer sein. Da (FN) für diese
+  -- flachen Plug-in-Stichwörter reserviert ist, dürfen dann alle so
+  -- gekennzeichneten Katalogobjekte als sichere Entfernungsziele dienen.
   if #targets == 0 then
-    for _, keyword in ipairs(assignedKeywords(photo)) do
-      if hasPluginKeywordSuffix(keyword) then
-        appendUniqueKeyword(targets, seen, keyword)
-      end
+    for _, keyword in ipairs(allPluginKeywords) do
+      appendUniqueKeyword(targets, seen, keyword)
     end
   end
   return targets
@@ -247,19 +235,8 @@ function KeywordWriter.assign(catalog, photos, taxon)
   end
 
   local previousKeywordTargets = {}
-  local preservedKeywordIds = {}
   for index, photo in ipairs(photos) do
-    previousKeywordTargets[index] = resolveManagedKeywordTargets(photo)
-    preservedKeywordIds[index] = assignedKeywordMap(photo)
-    for _, keyword in ipairs(previousKeywordTargets[index]) do
-      local id = keywordLocalIdentifier(keyword)
-      if id then
-        -- Eine frühere Plug-in-Zuweisung wird gleich entfernt und neu
-        -- geschrieben. Nur echte, schon vor dem Plug-in vorhandene
-        -- Stichwörter bleiben in dieser Schutzmenge.
-        preservedKeywordIds[index][id] = nil
-      end
-    end
+    previousKeywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
   end
 
   local hierarchyPath = {}
@@ -300,7 +277,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
       local storedKeywordIds = {}
       for _, keyword in ipairs(managedKeywords) do
         local keywordId = keywordLocalIdentifier(keyword)
-        if keywordId and not preservedKeywordIds[index][keywordId] then
+        if keywordId then
           table.insert(storedKeywordIds, tostring(keywordId))
         end
       end
@@ -337,7 +314,7 @@ function KeywordWriter.remove(catalog, photos)
   local removedAssignments = 0
   local keywordTargets = {}
   for index, photo in ipairs(photos) do
-    keywordTargets[index] = resolveManagedKeywordTargets(photo)
+    keywordTargets[index] = resolveManagedKeywordTargets(catalog, photo)
   end
   catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
     for index, photo in ipairs(photos) do
