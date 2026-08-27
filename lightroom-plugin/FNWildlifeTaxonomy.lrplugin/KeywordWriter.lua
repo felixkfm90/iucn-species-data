@@ -60,6 +60,9 @@ local function createKeyword(catalog, name, parent)
 end
 
 local function keywordName(keyword)
+  if type(keyword) == "string" then
+    return cleanText(keyword)
+  end
   local ok, value = pcall(function()
     return keyword:getName()
   end)

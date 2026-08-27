@@ -218,6 +218,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
   assert.match(writer, /taxonomyKeywordIds/);
   assert.match(writer, /keywordLocalIdentifier/);
+  assert.match(writer, /if type\(keyword\) == "string" then\s*return cleanText\(keyword\)/);
   assert.match(writer, /resolveManagedKeywordNames/);
   assert.match(writer, /photo:getRawMetadata\("keywords"\)/);
   assert.match(writer, /for key, value in pairs\(ok and assigned or \{\}\) do/);
