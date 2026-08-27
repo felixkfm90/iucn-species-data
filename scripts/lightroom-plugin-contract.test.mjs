@@ -180,10 +180,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /local function setPreview\(value\)/);
   assert.match(window, /string\.gmatch\(text \.\. "\\n", "\(\.\-\)\\n"\)/);
   assert.match(window, /props\.previewLines\s*=\s*lines/);
-  assert.match(window, /table\.insert\(lines, line == "" and " " or line\)/);
+  assert.match(window, /title\s*=\s*line == "" and " " or line/);
+  assert.match(window, /value\s*=\s*tostring\(#lines \+ 1\)/);
+  assert.match(window, /props\.previewSelection\s*=\s*\{\}/);
   assert.match(window, /factory:simple_list\(\{/);
   assert.match(window, /items\s*=\s*bind\("previewLines"\)/);
   assert.match(window, /width\s*=\s*TAXONOMY_PREVIEW_WIDTH/);
+  assert.match(window, /background_color\s*=\s*LrColor\(0\.94, 0\.94, 0\.94\)/);
   assert.doesNotMatch(window, /PREVIEW_LINE_LIMIT|previewLineVisible|previewLineViews/);
   assert.doesNotMatch(window, /width\s*=\s*760/);
   assert.doesNotMatch(window, /width\s*=\s*740/);

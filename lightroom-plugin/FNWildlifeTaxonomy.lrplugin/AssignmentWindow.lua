@@ -1,5 +1,6 @@
 local LrApplication = import "LrApplication"
 local LrBinding = import "LrBinding"
+local LrColor = import "LrColor"
 local LrDialogs = import "LrDialogs"
 local LrPathUtils = import "LrPathUtils"
 local LrTasks = import "LrTasks"
@@ -168,11 +169,14 @@ function AssignmentWindow.show(context)
     local text = tostring(value or "")
     local lines = {}
     for line in string.gmatch(text .. "\n", "(.-)\n") do
-      table.insert(lines, line == "" and " " or line)
+      table.insert(lines, {
+        title = line == "" and " " or line,
+        value = tostring(#lines + 1),
+      })
     end
     props.preview = text
     props.previewLines = lines
-    props.previewSelection = ""
+    props.previewSelection = {}
   end
 
   props.query = ""
@@ -536,6 +540,7 @@ function AssignmentWindow.show(context)
           width = TAXONOMY_PREVIEW_WIDTH,
           height = 150,
           fill_horizontal = 1,
+          background_color = LrColor(0.94, 0.94, 0.94),
         }),
       }),
     }),
