@@ -198,6 +198,38 @@ local function removeManagedKeywords(catalog, photo, names)
   return removed
 end
 
+local function managedKeywordNamesFromMetadata(photo)
+  local names = {}
+  local seen = {}
+  local pathParts = {}
+  local taxonomyPath = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyPath"))
+  for part in string.gmatch(taxonomyPath, "([^>]+)") do
+    table.insert(pathParts, cleanText(part))
+  end
+
+  local pathIndex = 1
+  local taxon = {
+    germanName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "germanName")),
+  }
+  for _, rank in ipairs(TaxonomyRanks.all()) do
+    local scientificName = cleanText(
+      photo:getPropertyForPlugin(_PLUGIN, TaxonomyRanks.metadataFieldId(rank.id))
+    )
+    if scientificName ~= "" then
+      local displayName = pathParts[pathIndex] or scientificName
+      local germanName = displayName ~= scientificName and displayName or ""
+      local name = taxonomyKeywordName({
+        rank = rank.id,
+        scientificName = scientificName,
+        germanName = germanName,
+      }, taxon)
+      appendUniqueName(names, seen, managedKeywordName(name))
+      pathIndex = pathIndex + 1
+    end
+  end
+  return names
+end
+
 local function removeCurrentManagedKeywords(catalog, photo)
   local removed = 0
   local seen = {}
@@ -211,6 +243,15 @@ local function removeCurrentManagedKeywords(catalog, photo)
     local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
     photo:removeKeyword(keyword)
     removed = removed + 1
+  end
+
+  -- Der bei der Zuweisung gespeicherte Taxonomiepfad bildet zusammen mit den
+  -- wissenschaftlichen Rangwerten exakt dieselben sichtbaren Namen nach, die
+  -- assign() an createKeyword uebergibt. Dieser deterministische Rueckweg ist
+  -- noetig, weil Lightroom die zugeordneten Stichwortobjekte nicht in allen
+  -- Versionen zuverlaessig ueber getRawMetadata("keywords") zurueckliefert.
+  for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
+    removeCandidate(name)
   end
 
   local ok, assigned = pcall(function()
