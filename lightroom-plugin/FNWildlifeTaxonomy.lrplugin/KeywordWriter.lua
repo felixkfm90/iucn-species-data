@@ -247,15 +247,23 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   local removed = 0
   local seen = {}
 
-  local function removeCandidate(candidate)
+  local function removeCandidate(candidate, preserveExactName)
     local candidateName = keywordName(candidate)
-    local name = normalizedPluginKeywordName(candidateName)
-    if not name or seen[name] then
+    local normalizedName = normalizedPluginKeywordName(candidateName)
+    if not normalizedName then
       return
     end
-    seen[name] = true
-    local requiresCatalogLookup = type(candidate) == "string" or name ~= candidateName
-    local keyword = requiresCatalogLookup and createKeyword(catalog, name, nil) or candidate
+    local isKeywordObject = type(candidate) ~= "string"
+    local removalName = (isKeywordObject or preserveExactName) and candidateName or normalizedName
+    if seen[removalName] then
+      return
+    end
+    seen[removalName] = true
+    -- Ein echtes Lightroom-Stichwortobjekt wird unverändert entfernt. Damit
+    -- wird auch ein tatsächlich auf "(FN)*" endender Katalogname vollständig
+    -- einschließlich Sternchen gelöscht. Nur reine Anzeigezeichenketten
+    -- werden auf den zugrunde liegenden Namen "(FN)" zurückgeführt.
+    local keyword = isKeywordObject and candidate or createKeyword(catalog, removalName, nil)
     photo:removeKeyword(keyword)
     removed = removed + 1
   end
@@ -266,20 +274,20 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   -- noetig, weil Lightroom die zugeordneten Stichwortobjekte nicht in allen
   -- Versionen zuverlaessig ueber getRawMetadata("keywords") zurueckliefert.
   for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
-    removeCandidate(name)
+    removeCandidate(name, true)
   end
 
   for key, value in pairs(prefetchedKeywords or {}) do
-    removeCandidate(key)
-    removeCandidate(value)
+    removeCandidate(key, true)
+    removeCandidate(value, true)
   end
 
   local ok, assigned = pcall(function()
     return photo:getRawMetadata("keywords")
   end)
   for key, value in pairs(ok and assigned or {}) do
-    removeCandidate(key)
-    removeCandidate(value)
+    removeCandidate(key, true)
+    removeCandidate(value, true)
   end
 
   local formattedOk, formatted = pcall(function()
@@ -287,7 +295,7 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
   end)
   if formattedOk then
     for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      removeCandidate(cleanText(part))
+      removeCandidate(cleanText(part), false)
     end
   end
 
@@ -297,7 +305,7 @@ local function removeCurrentManagedKeywords(catalog, photo, prefetchedKeywords)
       return catalog:getKeywordByLocalIdentifier(id)
     end)
     if idOk and keyword then
-      removeCandidate(keyword)
+      removeCandidate(keyword, true)
     end
   end
   return removed

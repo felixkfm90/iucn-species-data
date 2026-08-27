@@ -245,11 +245,15 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "taxonomyPath"\)/);
   assert.match(
     writer,
-    /for _, name in ipairs\(managedKeywordNamesFromMetadata\(photo\)\) do\s*\n\s*removeCandidate\(name\)/,
+    /for _, name in ipairs\(managedKeywordNamesFromMetadata\(photo\)\) do\s*\n\s*removeCandidate\(name, true\)/,
     "Die beim Zuweisen erzeugten Namen müssen vor dem Leeren der Metadaten deterministisch rekonstruiert werden",
   );
-  assert.match(writer, /local requiresCatalogLookup = type\(candidate\) == "string" or name ~= candidateName/);
-  assert.match(writer, /local keyword = requiresCatalogLookup and createKeyword\(catalog, name, nil\) or candidate/);
+  assert.match(writer, /local isKeywordObject = type\(candidate\) ~= "string"/);
+  assert.match(writer, /local function removeCandidate\(candidate, preserveExactName\)/);
+  assert.match(writer, /local removalName = \(isKeywordObject or preserveExactName\) and candidateName or normalizedName/);
+  assert.match(writer, /local keyword = isKeywordObject and candidate or createKeyword\(catalog, removalName, nil\)/);
+  assert.match(writer, /removeCandidate\(value, true\)/);
+  assert.match(writer, /removeCandidate\(cleanText\(part\), false\)/);
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
