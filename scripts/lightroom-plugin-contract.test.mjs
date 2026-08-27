@@ -272,12 +272,17 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
   const info = await source("Info.lua");
   const removal = await source("RemoveTaxonomy.lua");
+  const assignment = await source("AssignmentWindow.lua");
   assert.match(info, /title = "Taxonomie entfernen"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.remove/);
-  assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
-  assert.match(removal, /Andere Lightroom-Stichwörter/);
+  assert.match(removal, /Stichwörter mit der Endung „\(FN\)“/);
+  assert.match(removal, /Lightroom-Stichwörter ohne diese[\s\S]*Kennzeichnung/);
+  assert.match(removal, /Andere Lightroom-Stichwörter blieben erhalten/);
+  assert.match(assignment, /Stichwörter mit der[\s\S]*Endung „\(FN\)“/);
+  assert.match(assignment, /Lightroom-Stichwörter ohne diese[\s\S]*Kennzeichnung/);
+  assert.match(assignment, /Andere Lightroom-Stichwörter blieben erhalten/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {

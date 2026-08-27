@@ -20,9 +20,9 @@ LrTasks.startAsyncTask(function()
     "Taxonomie entfernen?",
     "Die FN-Wildlife-Taxonomie wird von "
       .. tostring(#photos)
-      .. " ausgewählten Foto(s) entfernt. Plug-in-Metadaten und ausschließlich die vom Plug-in "
-      .. "verwalteten Taxonomie-Stichwörter werden entfernt. Andere Lightroom-Stichwörter und "
-      .. "die Bilddateien bleiben unverändert.",
+      .. " ausgewählten Foto(s) entfernt. Dabei werden die Plug-in-Metadaten und alle diesen Fotos "
+      .. "zugeordneten Stichwörter mit der Endung „(FN)“ entfernt. Lightroom-Stichwörter ohne diese "
+      .. "Kennzeichnung und die Bilddateien bleiben unverändert.",
     "Taxonomie entfernen",
     "Abbrechen"
   )
@@ -41,7 +41,8 @@ LrTasks.startAsyncTask(function()
     tostring(result.assignmentCount)
       .. " Taxonomiezuordnung(en) und "
       .. tostring(result.keywordCount)
-      .. " verwaltete Stichwortzuordnung(en) wurden entfernt.",
+      .. " mit „(FN)“ gekennzeichnete Stichwortzuordnung(en) wurden entfernt. "
+      .. "Andere Lightroom-Stichwörter blieben erhalten.",
     "info"
   )
 end)
