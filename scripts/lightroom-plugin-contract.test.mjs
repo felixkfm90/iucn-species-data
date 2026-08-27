@@ -172,9 +172,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /title\s*=\s*"Art suchen"[\s\S]*?is_default\s*=\s*true/);
   assert.match(window, /title\s*=\s*"Schließen"/);
   assert.match(window, /activeDialogControls:close\(\)/);
-  assert.match(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
+  assert.doesNotMatch(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
   assert.match(window, /fill_horizontal\s*=\s*1,\s*\n\s*fill_vertical\s*=\s*1,/);
-  assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV4"/);
+  assert.match(window, /local LrColor = import "LrColor"/);
+  assert.match(window, /background_color\s*=\s*LrColor\(0\.94, 0\.94, 0\.94\)/);
+  assert.match(window, /height\s*=\s*150/);
+  assert.match(window, /height\s*=\s*540/);
+  assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV5"/);
   assert.match(window, /PluginState\.recentTaxa/);
   assert.match(window, /blockTask\s*=\s*true/);
   assert.match(window, /selectionChangeObserver/);

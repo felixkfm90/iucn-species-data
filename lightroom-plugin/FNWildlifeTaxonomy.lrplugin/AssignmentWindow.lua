@@ -1,5 +1,6 @@
 local LrApplication = import "LrApplication"
 local LrBinding = import "LrBinding"
+local LrColor = import "LrColor"
 local LrDialogs = import "LrDialogs"
 local LrPathUtils = import "LrPathUtils"
 local LrTasks = import "LrTasks"
@@ -514,17 +515,21 @@ function AssignmentWindow.show(context)
     factory:group_box({
       title = "3. Taxonomie prüfen",
       fill_horizontal = 1,
-      factory:scrolled_view({
-        horizontal_scroller = false,
-        vertical_scroller = true,
-        width = 760,
-        height = 150,
+      factory:column({
         fill_horizontal = 1,
-        factory:static_text({
-          title = bind("preview"),
-          width = 740,
-          height_in_lines = 32,
+        factory:scrolled_view({
+          horizontal_scroller = false,
+          vertical_scroller = true,
+          width = 760,
+          height = 150,
           fill_horizontal = 1,
+          background_color = LrColor(0.94, 0.94, 0.94),
+          factory:static_text({
+            title = bind("preview"),
+            width = 740,
+            height_in_lines = 32,
+            fill_horizontal = 1,
+          }),
         }),
       }),
     }),
@@ -552,7 +557,6 @@ function AssignmentWindow.show(context)
         factory:static_text({ title = "Das Fenster kann während der Bildauswahl geöffnet bleiben." }),
       }),
     }),
-    factory:spacer({ fill_vertical = 1 }),
     factory:row({
       fill_horizontal = 1,
       factory:spacer({ fill_horizontal = 1 }),
@@ -576,9 +580,9 @@ function AssignmentWindow.show(context)
       contents = view,
       resizable = true,
       width = 800,
-      height = 650,
+      height = 540,
       blockTask = true,
-      save_frame = "fnWildlifeTaxonomyAssignmentWindowV4",
+      save_frame = "fnWildlifeTaxonomyAssignmentWindowV5",
       selectionChangeObserver = function()
         pcall(refreshSelection)
       end,
