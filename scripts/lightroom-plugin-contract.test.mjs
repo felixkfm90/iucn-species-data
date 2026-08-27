@@ -177,7 +177,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /local LrColor = import "LrColor"/);
   assert.match(window, /background_color\s*=\s*LrColor\(0\.94, 0\.94, 0\.94\)/);
   assert.match(window, /height\s*=\s*150/);
-  assert.match(window, /height_in_lines\s*=\s*-1/);
+  assert.match(window, /PREVIEW_LINE_LIMIT\s*=\s*64/);
+  assert.match(window, /local function setPreview\(value\)/);
+  assert.match(window, /string\.gmatch\(text \.\. "\\n", "\(\.\-\)\\n"\)/);
+  assert.match(window, /previewLineVisible/);
+  assert.match(window, /visible\s*=\s*bind\("previewLineVisible" \.\. tostring\(index\)\)/);
+  assert.match(window, /factory:column\(previewLineViews\)/);
+  assert.doesNotMatch(window, /height_in_lines\s*=\s*-1/);
   assert.doesNotMatch(window, /previewLineCount|textLineCount/);
   assert.doesNotMatch(window, /height_in_lines\s*=\s*32/);
   assert.match(window, /height\s*=\s*540/);

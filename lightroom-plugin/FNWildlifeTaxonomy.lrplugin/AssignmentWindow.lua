@@ -15,6 +15,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local AssignmentWindow = {}
 local bind = LrView.bind
 local activeDialogControls = nil
+local PREVIEW_LINE_LIMIT = 64
 
 local cleanText = TaxonomyRanks.cleanText
 
@@ -163,6 +164,20 @@ function AssignmentWindow.show(context)
   local currentTaxon = nil
   local searchRequestSerial = 0
 
+  local function setPreview(value)
+    local text = tostring(value or "")
+    local lines = {}
+    for line in string.gmatch(text .. "\n", "(.-)\n") do
+      table.insert(lines, line)
+    end
+    props.preview = text
+    for index = 1, PREVIEW_LINE_LIMIT do
+      local line = lines[index]
+      props["previewLine" .. tostring(index)] = line == "" and " " or (line or "")
+      props["previewLineVisible" .. tostring(index)] = line ~= nil
+    end
+  end
+
   props.query = ""
   props.kingdom = "Animalia"
   props.kingdomItems = KINGDOM_ITEMS
@@ -175,7 +190,7 @@ function AssignmentWindow.show(context)
   props.masterTaxonId = ""
   props.recentItems = recentItems()
   props.recentTaxonId = props.recentItems[1].value
-  props.preview = "Noch keine Art ausgewählt."
+  setPreview("Noch keine Art ausgewählt.")
   props.canAssign = false
   props.canRemove = false
   props.canSearch = false
@@ -260,7 +275,7 @@ function AssignmentWindow.show(context)
       return
     end
     currentTaxon = taxon
-    props.preview = previewText(taxon)
+    setPreview(previewText(taxon))
     props.searchStatus = "Art ist zur Zuweisung bereit."
     refreshSelection()
   end
@@ -275,7 +290,7 @@ function AssignmentWindow.show(context)
       return
     end
     currentTaxon = nil
-    props.preview = "Noch keine Art ausgewählt."
+    setPreview("Noch keine Art ausgewählt.")
     setBusy(true)
     props.searchStatus = "Lokale Masterdatenbank wird durchsucht ..."
     local ok, results = LrTasks.pcall(TaxonomyHelper.request, {
@@ -292,7 +307,7 @@ function AssignmentWindow.show(context)
     if not results or #results == 0 then
       props.resultItems = { { title = "Kein passender Eintrag", value = "" } }
       props.masterTaxonId = ""
-      props.preview = "Noch keine Art ausgewählt."
+      setPreview("Noch keine Art ausgewählt.")
       props.searchStatus = "Kein passendes Taxon im lokalen Suchpaket gefunden."
       return
     end
@@ -394,6 +409,19 @@ function AssignmentWindow.show(context)
       .. " verwaltete Stichwortzuordnung(en) wurden entfernt."
     refreshSelection()
     refreshLifelist(true)
+  end
+
+  local previewLineViews = {
+    fill_horizontal = 1,
+    spacing = 0,
+  }
+  for index = 1, PREVIEW_LINE_LIMIT do
+    table.insert(previewLineViews, factory:static_text({
+      title = bind("previewLine" .. tostring(index)),
+      visible = bind("previewLineVisible" .. tostring(index)),
+      width = 740,
+      fill_horizontal = 1,
+    }))
   end
 
   local view = factory:column({
@@ -524,12 +552,7 @@ function AssignmentWindow.show(context)
           height = 150,
           fill_horizontal = 1,
           background_color = LrColor(0.94, 0.94, 0.94),
-          factory:static_text({
-            title = bind("preview"),
-            width = 740,
-            height_in_lines = -1,
-            fill_horizontal = 1,
-          }),
+          factory:column(previewLineViews),
         }),
       }),
     }),
