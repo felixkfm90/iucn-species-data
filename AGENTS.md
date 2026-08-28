@@ -1126,7 +1126,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-28 praktisch nachgearbeitete
-  Stand trägt Version `0.4.6.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  Stand trägt Version `0.4.7.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button und zeigt den aktuellen Lifelist-Zähler
@@ -1143,7 +1143,8 @@ Aktuelle Planung:
   begrenzte technische Diagnose. Die vollständige verfügbare Taxonomie wird in stabilen Plug-in-Metadaten geführt;
   Stichwörter enthalten nur lesbare Taxonnamen ohne technische IDs oder Rangpräfixe. Die kompakte Metadatenansicht
   `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und den wichtigsten
-  Taxonomierängen; `FN Wildlife – vollständige Taxonomie` zeigt bei Bedarf alle unterstützten Ränge. Technische IDs
+  Taxonomierängen; die Rangfelder tragen kurze Bezeichnungen wie `Reich` oder `Klasse`, während ihre Werte
+  weiterhin wissenschaftlich bleiben. `FN Wildlife – vollständige Taxonomie` zeigt bei Bedarf alle unterstützten Ränge. Technische IDs
   bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt Version und Zustand des abgeleiteten Suchpakets, aber keine zweite
   Datenbankpflege. Als klar abgegrenzte 10.4-Funktionen sind genau ein erklärtes und bestätigungspflichtiges
   `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz aus `Art-Favoriten`, `Taxonomie fehlt` und

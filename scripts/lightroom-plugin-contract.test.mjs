@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.6.0");
+  assert.equal(version.slice(1).join("."), "0.4.7.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -58,7 +58,12 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   }
   assert.match(metadata, /local TaxonomyRanks = require "TaxonomyRanks"/);
   assert.match(metadata, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
-  assert.match(metadata, /schemaVersion\s*=\s*5/);
+  assert.match(metadata, /schemaVersion\s*=\s*6/);
+  assert.match(
+    metadata,
+    /id\s*=\s*TaxonomyRanks\.metadataFieldId\(rank\.id\)[\s\S]*?version\s*=\s*2[\s\S]*?title\s*=\s*rank\.label/,
+  );
+  assert.doesNotMatch(metadata, /rank\.label\s*\.\.\s*" \(wissenschaftlich\)"/);
   assert.match(
     metadata,
     /id\s*=\s*"masterTaxonId"[\s\S]*?version\s*=\s*3/,
@@ -433,7 +438,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.6\.0/);
+  assert.match(provider, /Version: 0\.4\.7\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

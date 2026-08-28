@@ -66,7 +66,8 @@ local fields = {
 for _, rank in ipairs(TaxonomyRanks.all()) do
   table.insert(fields, {
     id = TaxonomyRanks.metadataFieldId(rank.id),
-    title = rank.label .. " (wissenschaftlich)",
+    version = 2,
+    title = rank.label,
     dataType = "string",
     searchable = true,
     browsable = true,
@@ -95,6 +96,6 @@ table.insert(fields, {
 })
 
 return {
-  schemaVersion = 5,
+  schemaVersion = 6,
   metadataFieldsForPhotos = fields,
 }

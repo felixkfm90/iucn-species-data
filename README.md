@@ -981,7 +981,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.6.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
+Das Plug-in besitzt in Version `0.4.7.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
 den Dateinamen der
 aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
 Auswahlwechsel und zeigt den aktuellen `Lifelist`-Stand. Die Suche wird über `Art suchen` ausgelöst. Das
@@ -1000,7 +1000,8 @@ Satz aus den drei intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` un
 neu berechenbare Katalogstatistik mit `Lifelist`, Taxonomie-Abdeckung,
 Klassenübersicht und den zehn am häufigsten fotografierten Arten umgesetzt. Die eigene Metadatenansicht
 `FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit Namen und den wichtigsten
-Taxonomierängen. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
+Taxonomierängen. Rangfelder heißen dort knapp `Reich`, `Klasse`, `Ordnung` und entsprechend, ohne den redundanten
+Zusatz `(wissenschaftlich)`; gespeichert werden weiterhin die wissenschaftlichen Taxonwerte. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
 technische IDs bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt ausschließlich
 Version und Status des abgeleiteten lokalen Suchpakets, während Datenbankpflege, Updates und Sicherungen zentral im
 Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch und

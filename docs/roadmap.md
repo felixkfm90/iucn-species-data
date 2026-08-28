@@ -1038,7 +1038,7 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.6.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
+separaten Testkatalog bestätigt; Version 0.4.7.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
 Bedienabläufe praktisch bestätigt; das umfassende Abschlussaudit 10.5 steht aus
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1054,7 +1054,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.6.0 am 2026-08-28 umgesetzt und praktisch nachgearbeitet.** Das deutsche
+- 10.3: **MVP-Ausbau bis Version 0.4.7.0 am 2026-08-28 umgesetzt und praktisch nachgearbeitet.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt den ersten Dateinamen und bei Mehrfachauswahl die Zahl weiterer Fotos,
   aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt verwendeten Arten. Die Suche wird über
@@ -1069,8 +1069,9 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Suchpaketpfad wird explizit übergeben;
   Node-Erkennung, Fehlerdiagnose, Konfliktsperre und Metadatenlängen sind automatisiert abgesichert. Die eigene
   kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und
-  den wichtigsten Rängen; `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.6.0 am 2026-08-28 umgesetzt.** Genau ein
+  den wichtigsten Rängen. Die Rangfelder verwenden kurze Titel ohne den redundanten Zusatz `(wissenschaftlich)`;
+  `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.7.0 am 2026-08-28 umgesetzt.** Genau ein
   bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
   neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
   Arten und Cache sind implementiert und vertraglich getestet. Die Statistik liest den Lightroom-Katalog und
