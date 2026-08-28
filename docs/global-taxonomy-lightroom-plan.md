@@ -1,12 +1,12 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-24
+Stand: 2026-08-28
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.1.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung
-wurden im separaten Lightroom-Testkatalog praktisch bestätigt; offen ist die gemeinsame visuelle Bedienabnahme
-der mit 0.4.1.0 ergänzten Funktionen.
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.4.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
+geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -582,39 +582,41 @@ versioniertes read-only Suchpaket aus der aktiven Masterdatenbank mit lokalem Su
   Bestand geprüft; repräsentative Offline-Suchen lagen lokal ungefähr zwischen 0,6 und 1,8 Millisekunden.
 - Der read-only Suchhelfer besitzt Datei- und Dauerprozessmodus. Das deutsche Lua-Plug-in zeigt die vollständige
   Taxonomie an und besitzt den kontrollierten Schreibvertrag für ein oder mehrere ausgewählte Fotos.
-- Der Plug-in-Vertrag schreibt nur hierarchische Schlüsselwörter und stabile fachliche Metadaten über das
+- Der Plug-in-Vertrag schreibt nur eindeutig mit `(FN)` markierte, flache Stichwörter und stabile fachliche
+  Metadaten über das
   Lightroom-SDK. Paket- und Masterversion bleiben technische Diagnoseinformationen und werden nicht als normale
   Fotometadaten abgelegt.
 - Automatisierte Tests sichern Suchpaket, Suchhelfer, Modulgrenzen, Konfliktsperre und das Verbot direkter
   `.lrcat`-, XMP- oder SQLite-Schreibzugriffe.
-- Einzel- und Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die neue
-  0.4.1.0-Oberfläche, kontrollierte Rücknahme und abgeleiteten Katalogfunktionen benötigen noch die gemeinsame
-  visuelle Bedienabnahme.
+- Einzel- und Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Fensteraufbau,
+  Favoritenersetzung und kontrollierte Rücknahme wurden ebenfalls praktisch geprüft.
 
 Ergebnis: verbindliche Architektur und technischer Prototyp stehen; der grundlegende Lightroom-Schreibvertrag ist
-praktisch bestätigt. Die vollständige 0.4.1.0-Bedienabnahme folgt nach `docs/lightroom-search-package.md`.
+praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `docs/lightroom-search-package.md`.
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.1.0 am 2026-08-24 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
+- **Bis Plug-in-Version 0.4.4.0 am 2026-08-28 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
   Mehrfachzuweisung praktisch bestätigt.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
   erkennt unter Windows die lokale Node-Installation unabhängig vom durch Lightroom übergebenen `PATH`, übergibt
   den lokalen Suchpaketpfad ausdrücklich, meldet Hilfsprozessfehler diagnostizierbar und bleibt bei
   Auswahlwechseln geöffnet. Es zeigt Dateiname beziehungsweise ersten Dateinamen plus Anzahl weiterer Fotos,
-  Lifelist, aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an. Die Eingabetaste startet die
-  Suche ohne zusätzlichen Mausklick.
+  Lifelist, aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an. Enter/Return im Suchfeld ruft
+  nach dem dokumentierten SDK-Verhalten denselben Standardbutton und dieselbe Suchaktion wie der Mausklick auf.
 - Die Artensuche verwendet die vollständige lokale Masterdatenbank und zeigt vor der Zuweisung den gesamten
   verfügbaren Taxonomiepfad.
 - Alle verfügbaren Taxonomiestufen werden kontrolliert auf ein oder mehrere gleichzeitig ausgewählte Fotos
   übernommen; abweichende bestehende Master-Taxon-IDs blockieren stille Änderungen. Eine eigene Aktion entfernt
   nach Bestätigung Plug-in-Metadaten und nur die bei der Zuweisung gespeicherten beziehungsweise eindeutig
-  migrierbaren Plug-in-Stichwortverknüpfungen wieder vollständig. Sie steht im Bibliotheksmenü und per Foto-Rechtsklick
-  unter `Plug-in-Extras` bereit; sonstige manuelle Stichwörter bleiben erhalten.
-- Fachliche Plug-in-Metadaten speichern die vollständige strukturierte Taxonomie. Die normale
-  Stichworthierarchie enthält ausschließlich lesbare Taxonnamen ohne interne IDs, Tabellenkennungen oder
-  technische Rangpräfixe. Gemeinsame Rangdefinitionen verhindern Abweichungen zwischen Vorschau, Metadaten,
+  eindeutig mit `(FN)` beziehungsweise `(FN)*` markierten Plug-in-Stichwortverknüpfungen wieder vollständig. Sie
+  steht über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; eine dokumentierte
+  Erweiterung des normalen Foto-Rechtsklickmenüs bietet das geprüfte SDK nicht. Sonstige manuelle Stichwörter
+  bleiben erhalten.
+- Fachliche Plug-in-Metadaten speichern die vollständige strukturierte Taxonomie. Die flachen Lightroom-Stichwörter
+  enthalten lesbare Taxonnamen mit reservierter FN-Endung, aber keine internen IDs, Tabellenkennungen oder
+  technischen Rangpräfixe. Gemeinsame Rangdefinitionen verhindern Abweichungen zwischen Vorschau, Metadaten,
   Stichwörtern und Statistik.
 - Die kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit Namen
   und wichtigen Rängen. `FN Wildlife – vollständige Taxonomie` zeigt bei Bedarf alle unterstützten Ränge.
@@ -622,18 +624,19 @@ praktisch bestätigt. Die vollständige 0.4.1.0-Bedienabnahme folgt nach `docs/l
 - Versioniertes read-only Suchpaket, atomarer Wechsel, Rollback, stabile Master-Taxon-ID und optionale
   Projekt-Art-ID bleiben unverändert die technische Grundlage.
 
-Ergebnis: automatisiert getestetes MVP ohne konkurrierende Stammdatenpflege; die visuelle Abnahme der neuen
-0.4.1.0-Bedienfunktionen steht noch aus.
+Ergebnis: automatisiert getestetes und in den zentralen Bedienabläufen praktisch geprüftes MVP ohne konkurrierende
+Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.1.0 am 2026-08-24 technisch umgesetzt; visuelle Abnahme
-  offen.**
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.4.0 am 2026-08-28 technisch umgesetzt und in den zentralen
+  Bedienabläufen praktisch geprüft.**
 - Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
   Markierung derselben Art zurück. Diese Lightroom-Markierung ist unabhängig vom Artporträt des Arten-Explorers.
-- Der wiederholbar einrichtbare Sammlungssatz `FN Wildlife & Travel` enthält intelligente Sammlungen für
-  zugewiesene und nicht zugewiesene Fotos, Favoritenbilder der Arten sowie 5-Sterne-Tierbilder.
+- Der wiederholbar einrichtbare Sammlungssatz `FN Wildlife & Travel` enthält `Art-Favoriten`, `Taxonomie fehlt`
+  und `Taxonomie zugewiesen`. Die Regeln verwenden ausschließlich `referenceImage` und `masterTaxonId` aus den
+  Plug-in-Metadaten und hängen nicht von normalen Lightroom-Stichwörtern ab.
 - Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und Favoritenbilder,
   berechnet Taxonomie-Abdeckung und Klassenverteilung und zeigt höchstens zehn am häufigsten fotografierte Arten.
   Ihr Cache ist verwerfbar und kann jederzeit vollständig neu berechnet werden. Dafür ist kein Import oder Update
@@ -669,11 +672,11 @@ Konfliktworkflow für bestehende Arten umgesetzt. Vor den jeweiligen späteren I
 ausdrücklich:
 
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
-API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie, lesbare Schlüsselwortwurzel,
-Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden im Testkatalog
-bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.1.0 die nutzergeführte Rücknahme, dynamische Auswahl,
-Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und Suchpaketstatus. Offen ist
-deren gemeinsame visuelle Bedienabnahme. Danach bleiben für Phase 11:
+API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
+flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.4.0 die nutzergeführte Rücknahme, dynamische
+Auswahl, Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
+Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

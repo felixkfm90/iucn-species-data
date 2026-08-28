@@ -1,8 +1,8 @@
 # Machbarkeitsstudie: Lightroom-Classic-Integration
 
-Stand: 2026-08-24
+Stand: 2026-08-28
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.1.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.4.0 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -21,8 +21,8 @@ Die Machbarkeit ist für ein eng begrenztes MVP bestätigt. Empfohlen wird:
 - vollständig lokale Suche über alle Taxa sowie alle vorhandenen deutschen, englischen und wissenschaftlichen
   Namen;
 - eine Vorschau vor jeder Metadatenänderung;
-- Übernahme des vollständigen verfügbaren Taxonomiepfads als hierarchische Lightroom-Schlüsselwörter plus stabile
-  Plug-in-Metadatenfelder;
+- Übernahme des vollständigen verfügbaren Taxonomiepfads als stabile Plug-in-Metadatenfelder und eindeutig mit
+  `(FN)` markierte, flache Lightroom-Stichwörter;
 - gemeinsame Zuordnung einer ausgewählten Art zu einem oder beliebig vielen markierten Fotos;
 - keine direkte Änderung der Lightroom-Katalogdatei, der Master-SQLite oder von XMP-Dateien außerhalb der
   Lightroom-Schnittstellen.
@@ -349,7 +349,7 @@ Prüfung verwendet; die vorherige Version bleibt als Rückfall erhalten.
 
 1. lokale Offline-Suche über sämtliche Taxa und Namen des aktiven Masters;
 2. Mensch bestätigt jeden Arttreffer;
-3. konsistente hierarchische Schlüsselwörter für alle vorhandenen Taxonomiestufen;
+3. konsistente, eindeutig mit `(FN)` markierte Stichwörter für alle vorhandenen Taxonomiestufen;
 4. stabile eigene Metadatenfelder;
 5. gemeinsame Zuweisung an ein oder viele ausgewählte Fotos mit Fortschritt und Abbruch;
 6. Konfliktvorschau, Überspringen und Rücknahme;
@@ -386,12 +386,13 @@ Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-
 Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
 und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Die kontrollierte
 Zuweisung an ein und mehrere Fotos wurde anschließend in einem separaten Lightroom-Testkatalog praktisch bestätigt.
-Plug-in-Version 0.4.1.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, einen bewusst schlanken
-Schlüsselwortbaum ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, Lifelist und Statistik,
+Plug-in-Version 0.4.4.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, eindeutig markierte flache
+Stichwörter ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, Lifelist und Statistik,
 Smart-Sammlungen, das `Favoritenbild der Art`, kompakte und vollständige Metadatenansichten sowie eine knappe
-Plug-in-Diagnose. Exakte Stichwortkennungen machen die Rücknahme neuer Zuweisungen sicher; Bibliotheks- und
-Foto-Kontextmenü verwenden dieselbe Aktion. Vor dem nächsten Funktionsblock steht nur noch die visuelle
-Bedienabnahme dieses 0.4.1.0-Stands in Lightroom aus.
+Plug-in-Diagnose. Die Rücknahme erkennt die reservierten Endungen `(FN)` und `(FN)*`. Die erneute SDK-Prüfung am
+2026-08-28 bestätigt keinen Erweiterungspunkt für das normale Foto-Rechtsklickmenü; die Aktionen bleiben über die
+dokumentierten `Plug-in-Extras`-Menüs erreichbar. Enter/Return im Suchfeld ruft gemäß SDK denselben Standardbutton
+und dieselbe Suchaktion wie der Mausklick auf. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 
 ## 12. Quellen und Produktreferenzen
 

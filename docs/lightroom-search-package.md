@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-08-27
+Stand: 2026-08-28
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.3.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.4.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
@@ -111,7 +111,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.3.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.4.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -132,8 +132,8 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   gespeicherte lokale Kennungen, Einzel-/Mehrfachzuweisung und kontrollierte Rücknahme einschließlich `(FN)*`;
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise `+ X weitere`, Lifelist-Zähler, geprüftem
-  Suchpaketstatus, Suche per Button oder Eingabetaste, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme
-  und den zehn zuletzt verwendeten Arten;
+  Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
+  Arten. Enter im Suchfeld verwendet gemäß SDK denselben Standardbutton und dieselbe Aktion wie `Art suchen`;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
 - `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
@@ -236,7 +236,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.3.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.4.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -293,9 +293,14 @@ Lightroom-Testkatalog praktisch geprüft. Die Sammlungs- und Statistikverträge 
 
 ## Bekannte Einschränkungen und offene Punkte
 
-- Lightroom Classic beziehungsweise das derzeit verwendete SDK stellte im praktischen Test keinen Plug-in-Eintrag
-  direkt im normalen Foto-Rechtsklickmenü bereit. Die Aktionen bleiben über `Plug-in-Extras` beziehungsweise
-  `Bibliothek > Zusatzmoduloptionen` erreichbar. Eine spätere Änderung darf erst nach erneutem SDK-Nachweis erfolgen.
+- Die erneute Prüfung am 2026-08-28 gegen den offiziellen Adobe-SDK-Leitfaden bestätigt nur
+  `LrExportMenuItems`, `LrLibraryMenuItems` und `LrHelpMenuItems` für die jeweiligen `Plug-in-Extras`-Untermenüs.
+  Eine dokumentierte Erweiterung des normalen Foto-Rechtsklickmenüs existiert dort nicht. Die Aktionen bleiben
+  über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar. Eine spätere Änderung darf
+  erst nach einem neuen SDK-Nachweis erfolgen.
+- Der offizielle SDK-Leitfaden bestätigt, dass Enter/Return in einem `edit_field` den Standardbutton des Dialogs
+  aufruft. Version 0.4.4.0 bindet den Suchtext unmittelbar und verwendet für Enter und `Art suchen` exakt dieselbe
+  Aktion; zusätzliche und nicht benötigte Feldaktionen wurden entfernt.
 - Die Taxonomievorschau verwendet wegen der begrenzten und versionsabhängigen Layoutsteuerung des Lightroom-SDK
   eine feste Höhe von 150 Pixeln. Ihre Breite ist an das Fenster gekoppelt; eine zuverlässige dynamische Höhe nach
   exakt vorhandener Zeilenzahl wird nicht vorausgesetzt.
@@ -307,6 +312,9 @@ Lightroom-Testkatalog praktisch geprüft. Die Sammlungs- und Statistikverträge 
 - Phase 10 ist nicht abgeschlossen. Vor dem Abschluss folgen das umfassende Audit nach
   `docs/documentation-lifecycle.md` und die darin vorgesehenen übergreifenden Regressions-, Betriebs-, Backup- und
   Wiederherstellungsprüfungen.
+
+SDK-Nachweis: [Adobe Lightroom Classic SDK Guide](https://ioconsolerykerprodcdn.azureedge.net/static/installers/lr/sdk/2022/cross_platform/v13/doc/Lightroom%20Classic%20SDK%20Guide_1655133965.pdf),
+insbesondere die Abschnitte zu Plug-in-Menüeinträgen und `edit_field`-Steuerelementen.
 
 ## Betriebs- und Sicherungsgrenze
 

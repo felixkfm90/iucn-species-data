@@ -327,23 +327,15 @@ function AssignmentWindow.show(context)
     searchRequestSerial = searchRequestSerial + 1
     local requestSerial = searchRequestSerial
     LrTasks.startAsyncTask(function()
-      -- Lightroom schreibt den Inhalt eines edit_field erst mit Enter oder
-      -- beim Verlassen des Feldes in die gebundene Eigenschaft. Ein Yield
-      -- stellt sicher, dass search() danach wirklich den bestätigten Text
-      -- liest. Die Seriennummer verhindert doppelte Starts durch Feldaktion
-      -- und Standardbutton.
+      -- Das edit_field bindet den Suchtext mit immediate=true. Der kurze
+      -- Yield hält die UI reaktionsfähig; die Seriennummer verhindert
+      -- parallele Starts durch sehr schnelle wiederholte Auslösung.
       LrTasks.yield()
       if requestSerial == searchRequestSerial then
         search()
       end
     end)
   end
-
-  props:addObserver("query", function()
-    -- Bei immediate=false wird dieser Beobachter erst ausgelöst, wenn die
-    -- Eingabe mit Enter bestätigt oder das Feld verlassen wurde.
-    startSearch()
-  end)
 
   local function assign()
     if not currentTaxon then
@@ -461,21 +453,11 @@ function AssignmentWindow.show(context)
             value = bind("query"),
             width_in_chars = 58,
             fill_horizontal = 1,
-            -- Erst Enter beziehungsweise das Verlassen des Feldes bestätigt
-            -- die Eingabe. Mit immediate=true behandelt Lightroom jeden
-            -- Tastendruck als Änderung, löst aber die Suchaktion nicht sicher
-            -- über die Eingabetaste aus.
-            immediate = false,
-            action = startSearch,
-            validate = function(_, value)
-              -- validate wird von Lightroom beim Bestätigen mit Enter sicher
-              -- aufgerufen. Der Wert wird vor dem asynchronen Start explizit
-              -- übernommen, damit search() nicht noch den vorherigen Inhalt
-              -- der gebundenen Eigenschaft liest.
-              props.query = cleanText(value)
-              startSearch()
-              return true, value
-            end,
+            -- Laut Lightroom-SDK ruft Enter/Return in einem edit_field den
+            -- Standardbutton des Dialogs auf. immediate=true hält den
+            -- gebundenen Suchtext vorher auf dem aktuellen Stand; Button und
+            -- Enter verwenden dadurch exakt dieselbe startSearch-Aktion.
+            immediate = true,
           }),
           factory:push_button({
             title = "Art suchen",

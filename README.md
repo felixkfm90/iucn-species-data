@@ -981,10 +981,11 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.3.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
+Das Plug-in besitzt in Version `0.4.4.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
 den Dateinamen der
 aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
-Auswahlwechsel, sucht per Button oder Eingabetaste und zeigt den aktuellen `Lifelist`-Stand. Einzel- und
+Auswahlwechsel und zeigt den aktuellen `Lifelist`-Stand. Enter im Suchfeld ruft nach dem dokumentierten
+Lightroom-SDK-Verhalten denselben Standardbutton und dieselbe Suchaktion wie ein Mausklick auf. Einzel- und
 Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die vollständige verfügbare
 Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Stichwörter enthalten bewusst nur lesbare Namen ohne
 interne IDs oder technische Rangpräfixe. `Taxonomie entfernen` nimmt eine Zuweisung über denselben kontrollierten

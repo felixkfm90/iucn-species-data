@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-27
+Stand: 2026-08-28
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1126,12 +1126,13 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-27 praktisch nachgearbeitete
-  Stand trägt Version `0.4.3.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  Stand trägt Version `0.4.4.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button, unterstützt die Suche per Eingabetaste
-  und zeigt den aktuellen Lifelist-Zähler sowie die zehn zuletzt verwendeten Arten. Die Eingabetaste löst die Suche
-  über Feldvalidierung und die Standardaktion aus. `Taxonomie entfernen` steht über `Plug-in-Extras`
+  und zeigt den aktuellen Lifelist-Zähler sowie die zehn zuletzt verwendeten Arten. Die Eingabetaste löst nach dem
+  dokumentierten SDK-Verhalten im Suchfeld denselben Standardbutton und dieselbe Suchaktion wie der Mausklick aus.
+  `Taxonomie entfernen` steht über `Plug-in-Extras`
   beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; ein Eintrag direkt im normalen Foto-Rechtsklickmenü
   war im praktischen Test nicht verfügbar. Die Aktion löscht Plug-in-Metadaten und alle eindeutig reservierten
   Stichwörter mit den Endungen `(FN)` und `(FN)*` von den markierten Fotos kontrolliert über das Lightroom-SDK.
