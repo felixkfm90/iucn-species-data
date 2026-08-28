@@ -981,7 +981,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.5.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
+Das Plug-in besitzt in Version `0.4.6.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
 den Dateinamen der
 aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
 Auswahlwechsel und zeigt den aktuellen `Lifelist`-Stand. Die Suche wird über `Art suchen` ausgelöst. Das
@@ -1005,8 +1005,10 @@ technische IDs bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager
 Version und Status des abgeleiteten lokalen Suchpakets, während Datenbankpflege, Updates und Sicherungen zentral im
 Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch und
 benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
-`referenceImage` und `masterTaxonId` aus und hängen nicht von Lightroom-Stichwörtern ab. Details, Befehle und
-Abnahmeablauf
+`referenceImage` und `masterTaxonId` aus und hängen nicht von Lightroom-Stichwörtern ab. Beim erneuten Einrichten
+werden bestehende Regeln auf den aktuellen Stand gesetzt; die nicht mehr benötigten Sammlungen
+`5-Sterne-Tierbilder` und `Art-Referenzbilder` werden im verwalteten Sammlungssatz automatisch entfernt. Details,
+Befehle und Abnahmeablauf
 stehen in `docs/lightroom-search-package.md`. Lightroom
 bleibt alleiniger Besitzer von Katalog- und XMP-Schreibvorgängen. Automatische KI-Artbestimmung,
 iNaturalist-Synchronisation und Export bleiben spätere, einzeln zu priorisierende Erweiterungen.

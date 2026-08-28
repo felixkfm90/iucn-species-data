@@ -12,9 +12,14 @@ LrTasks.startAsyncTask(function()
   end
   LrDialogs.message(
     "FN Wildlife-Sammlungen sind bereit",
-    tostring(result)
-      .. " Smart-Sammlungen wurden erstellt oder geprüft. Frühere Sammlungen mit abweichenden "
-      .. "Favoritenbezeichnungen werden nicht automatisch gelöscht und können einmalig manuell entfernt werden.",
+    tostring(result.total)
+      .. " Smart-Sammlungen sind eingerichtet: "
+      .. tostring(result.created)
+      .. " neu erstellt, "
+      .. tostring(result.updated)
+      .. " mit den aktuellen Regeln abgeglichen und "
+      .. tostring(result.removed)
+      .. " nicht mehr benötigte Sammlung(en) entfernt.",
     "info"
   )
 end)

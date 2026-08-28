@@ -1125,8 +1125,8 @@ Aktuelle Planung:
   flache Lightroom-Stichwörter, stabile Plug-in-Metadaten und Mehrfachzuweisung. Direkter Zugriff auf Master-SQLite,
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
-  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-27 praktisch nachgearbeitete
-  Stand trägt Version `0.4.5.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-28 praktisch nachgearbeitete
+  Stand trägt Version `0.4.6.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button und zeigt den aktuellen Lifelist-Zähler
@@ -1151,7 +1151,9 @@ Aktuelle Planung:
   berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, Klassenübersicht, den zehn am häufigsten
   fotografierten Arten und verwerfbarem Cache implementiert. Die Statistik liest die Zuordnungen aus dem
   Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Die Sammlungen beruhen ausschließlich auf
-  den Plug-in-Metadaten `referenceImage` und `masterTaxonId`, nicht auf normalen Lightroom-Stichwörtern. Andere
+  den Plug-in-Metadaten `referenceImage` und `masterTaxonId`, nicht auf normalen Lightroom-Stichwörtern. Beim
+  erneuten Einrichten werden bestehende Regeln aktualisiert; `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden
+  innerhalb des verwalteten Sammlungssatzes entfernt. Andere
   manuelle Stichwörter und alte flache Stichwörter ohne eindeutige FN-Endung bleiben unangetastet. Einzel- und
   Mehrfachzuweisung, Fensteraufbau, Favoritenersetzung und Rücknahme wurden im separaten Testkatalog praktisch
   geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.

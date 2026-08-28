@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.5.0");
+  assert.equal(version.slice(1).join("."), "0.4.6.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -309,6 +309,7 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
   const reference = await source("ReferenceImage.lua");
   const referenceAction = await source("SetReferenceImage.lua");
   const collections = await source("SmartCollections.lua");
+  const collectionAction = await source("CreateCollections.lua");
   assert.match(metadata, /id\s*=\s*"referenceImage"[\s\S]*?dataType\s*=\s*"enum"/);
   assert.match(metadata, /value\s*=\s*"yes"/);
   assert.match(metadata, /value\s*=\s*"no"/);
@@ -331,6 +332,7 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
   assert.doesNotMatch(referenceAction, /Bisher:|Neu:|photoDescription/);
   assert.match(collections, /catalog:createCollectionSet/);
   assert.match(collections, /catalog:createSmartCollection/);
+  assert.match(collections, /criteria = "sdktext:" \.\. TOOLKIT_ID \.\. "\." \.\. field/);
   assert.match(
     collections,
     /name = "Taxonomie zugewiesen"[\s\S]*?textCriterion\("masterTaxonId", "notEmpty"\)/,
@@ -343,7 +345,18 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
     collections,
     /name = "Art-Favoriten"[\s\S]*?valueCriterion\("referenceImage", "yes"\)/,
   );
-  assert.doesNotMatch(collections, /Art-Referenzbilder|Favoritenbilder der Arten|5-Sterne-Tierbilder/);
+  assert.match(collections, /\["5-Sterne-Tierbilder"\] = true/);
+  assert.match(collections, /\["Art-Referenzbilder"\] = true/);
+  assert.doesNotMatch(collections, /name = "5-Sterne-Tierbilder"|name = "Art-Referenzbilder"/);
+  assert.match(collections, /collection:delete\(\)/);
+  assert.match(collections, /existing:setSearchDescription\(definition\.rules\)/);
+  assert.match(
+    collections,
+    /catalog:createSmartCollection\(definition\.name, definition\.rules, collectionSet, false\)/,
+  );
+  assert.match(collectionAction, /mit den aktuellen Regeln abgeglichen/);
+  assert.match(collectionAction, /nicht mehr benötigte Sammlung\(en\) entfernt/);
+  assert.doesNotMatch(collectionAction, /manuell entfernt/);
   assert.doesNotMatch(collections, /criteria\s*=\s*"keywords"|criteria\s*=\s*"keyword"/);
   const combined = `${reference}\n${collections}`;
   assert.doesNotMatch(combined, /TaxonomyHelper|lightroom-search-helper|\.lrcat|sqlite3/i);
@@ -420,7 +433,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.5\.0/);
+  assert.match(provider, /Version: 0\.4\.6\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
