@@ -453,15 +453,14 @@ function AssignmentWindow.show(context)
             value = bind("query"),
             width_in_chars = 58,
             fill_horizontal = 1,
-            -- Laut Lightroom-SDK ruft Enter/Return in einem edit_field den
-            -- Standardbutton des Dialogs auf. immediate=true hält den
-            -- gebundenen Suchtext vorher auf dem aktuellen Stand; Button und
-            -- Enter verwenden dadurch exakt dieselbe startSearch-Aktion.
+            -- immediate=true hält den gebundenen Suchtext für den
+            -- ausdrücklich betätigten Suchbutton auf dem aktuellen Stand.
+            -- presentFloatingDialog stellt keinen SDK-dokumentierten
+            -- Standardbutton oder Enter-/Tastatur-Callback bereit.
             immediate = true,
           }),
           factory:push_button({
             title = "Art suchen",
-            is_default = true,
             enabled = bind("canSearch"),
             action = startSearch,
           }),

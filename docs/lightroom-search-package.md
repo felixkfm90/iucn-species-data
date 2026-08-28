@@ -2,7 +2,7 @@
 
 Stand: 2026-08-28
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.4.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.5.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
@@ -111,7 +111,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.4.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.5.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -133,7 +133,7 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise `+ X weitere`, Lifelist-Zähler, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
-  Arten. Enter im Suchfeld verwendet gemäß SDK denselben Standardbutton und dieselbe Aktion wie `Art suchen`;
+  Arten. Die Suche wird ausdrücklich über `Art suchen` ausgelöst;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
 - `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
@@ -236,13 +236,13 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.4.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.5.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
    `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen` wählen.
 6. Im Zuweisungsfenster Dateiname, Lifelist, die vier gerahmten Schritte und den Hinweis
-   `Lokale Masterdatenbank bereit` prüfen. Eine Art per Eingabetaste suchen, Vorschau kontrollieren, zuweisen und
+   `Lokale Masterdatenbank bereit` prüfen. Eine Art über `Art suchen` suchen, Vorschau kontrollieren, zuweisen und
    lesbare Schlüsselwörter sowie vollständige Plug-in-Felder prüfen. Danach die Auswahl bei geöffnetem Fenster
    wechseln und den aktualisierten Dateinamen prüfen.
 7. Dieselbe Prüfung mit mehreren gleichzeitig ausgewählten Testfotos wiederholen; oben müssen der erste Dateiname
@@ -281,13 +281,13 @@ Automatisch verifiziert sind:
 - Plug-in-Manifest, Modulgrenzen und Verbot direkter `.lrcat`-/XMP-/SQLite-Zugriffe;
 - vollständige Hierarchie in Plug-in-Metadaten, Mehrfachzuweisung, Rücknahme und Konfliktsperre im Lua-Vertrag;
 - schwebendes, gerahmtes Vier-Schritt-Zuweisungsfenster mit Suchpaket-, Einzelfenster-, Auswahlwechsel- und
-  Verlaufskontrakt sowie Dateiname, Lifelist und Suche per Eingabetaste;
+  Verlaufskontrakt sowie Dateiname, Lifelist und ausdrücklich betätigtem Suchbutton;
 - lesbare, längenbegrenzte `(FN)`-Stichwörter sowie vollständige Rang-Metadaten;
 - kompakte und vollständige Metadatenansicht sowie kompakte Suchpaketinformation im Zusatzmodul-Manager;
 - eindeutige, bestätigungspflichtige Markierung eines Favoritenbilds der Art, idempotente Sammlungsdefinitionen sowie
   Statistik- und Cache-Grenzen einschließlich Lifelist, Klassen, Abdeckung und häufigsten Arten.
 
-Einzel- und Mehrfachzuweisung, Suche per Eingabetaste, Fensterbreite und -höhe, Lifelist-Anzeige,
+Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden im vorbereiteten
 Lightroom-Testkatalog praktisch geprüft. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.
 
@@ -298,9 +298,12 @@ Lightroom-Testkatalog praktisch geprüft. Die Sammlungs- und Statistikverträge 
   Eine dokumentierte Erweiterung des normalen Foto-Rechtsklickmenüs existiert dort nicht. Die Aktionen bleiben
   über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar. Eine spätere Änderung darf
   erst nach einem neuen SDK-Nachweis erfolgen.
-- Der offizielle SDK-Leitfaden bestätigt, dass Enter/Return in einem `edit_field` den Standardbutton des Dialogs
-  aufruft. Version 0.4.4.0 bindet den Suchtext unmittelbar und verwendet für Enter und `Art suchen` exakt dieselbe
-  Aktion; zusätzliche und nicht benötigte Feldaktionen wurden entfernt.
+- Der offizielle SDK-Leitfaden beschreibt Enter/Return nur als Aufruf des vom umgebenden Dialog bereitgestellten
+  Standardbuttons. Der praktische Test von Version 0.4.4.0 zeigt, dass dieser Weg im dauerhaft geöffneten
+  `presentFloatingDialog` nicht greift. Für `edit_field` ist kein eigener Enter-/Keydown-Callback dokumentiert;
+  ein Property-Observer erkennt Textänderungen, aber keine Enter-Taste bei unverändertem Text. Version 0.4.5.0
+  entfernt deshalb die wirkungslose, nicht dokumentierte `is_default`-Annahme. Die Suche bleibt über
+  `Art suchen` verfügbar. Ein erzwungener Tastatur-Hook wird nicht eingebaut.
 - Die Taxonomievorschau verwendet wegen der begrenzten und versionsabhängigen Layoutsteuerung des Lightroom-SDK
   eine feste Höhe von 150 Pixeln. Ihre Breite ist an das Fenster gekoppelt; eine zuverlässige dynamische Höhe nach
   exakt vorhandener Zeilenzahl wird nicht vorausgesetzt.

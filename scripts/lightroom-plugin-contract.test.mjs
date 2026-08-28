@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.4.0");
+  assert.equal(version.slice(1).join("."), "0.4.5.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -176,10 +176,11 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /searchRequestSerial\s*=\s*searchRequestSerial \+ 1/);
   assert.match(
     window,
-    /factory:edit_field\(\{[\s\S]*?value\s*=\s*bind\("query"\)[\s\S]*?immediate\s*=\s*true[\s\S]*?\}\),\s*factory:push_button\(\{[\s\S]*?title\s*=\s*"Art suchen"[\s\S]*?is_default\s*=\s*true[\s\S]*?action\s*=\s*startSearch/,
-    "Enter im Suchfeld muss denselben dokumentierten Standardbutton wie der Mausklick verwenden",
+    /factory:edit_field\(\{[\s\S]*?value\s*=\s*bind\("query"\)[\s\S]*?immediate\s*=\s*true[\s\S]*?\}\),\s*factory:push_button\(\{[\s\S]*?title\s*=\s*"Art suchen"[\s\S]*?action\s*=\s*startSearch/,
+    "Suchfeld und Suchbutton müssen denselben unmittelbar gebundenen Suchtext verwenden",
   );
   assert.doesNotMatch(window, /props:addObserver\("query"|validate\s*=\s*function\(_, value\)/);
+  assert.doesNotMatch(window, /is_default\s*=/);
   assert.match(window, /title\s*=\s*"Schließen"/);
   assert.match(window, /activeDialogControls:close\(\)/);
   assert.doesNotMatch(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
@@ -419,7 +420,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.4\.0/);
+  assert.match(provider, /Version: 0\.4\.5\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

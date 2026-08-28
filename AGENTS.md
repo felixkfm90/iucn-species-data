@@ -1126,12 +1126,13 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-27 praktisch nachgearbeitete
-  Stand trägt Version `0.4.4.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  Stand trägt Version `0.4.5.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
-  Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button, unterstützt die Suche per Eingabetaste
-  und zeigt den aktuellen Lifelist-Zähler sowie die zehn zuletzt verwendeten Arten. Die Eingabetaste löst nach dem
-  dokumentierten SDK-Verhalten im Suchfeld denselben Standardbutton und dieselbe Suchaktion wie der Mausklick aus.
+  Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button und zeigt den aktuellen Lifelist-Zähler
+  sowie die zehn zuletzt verwendeten Arten. Die Suche wird über `Art suchen` ausgelöst. Der praktische Test von
+  Version 0.4.4.0 widerlegte die Enter-Annahme: `presentFloatingDialog` besitzt keinen SDK-dokumentierten
+  Standardbutton oder Tastatur-Callback; ein Text-Observer kann Enter nicht von unverändertem Text ableiten.
   `Taxonomie entfernen` steht über `Plug-in-Extras`
   beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; ein Eintrag direkt im normalen Foto-Rechtsklickmenü
   war im praktischen Test nicht verfügbar. Die Aktion löscht Plug-in-Metadaten und alle eindeutig reservierten
