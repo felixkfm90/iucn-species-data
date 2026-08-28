@@ -1008,7 +1008,9 @@ Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach
 benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
 `referenceImage` und `masterTaxonId` aus und hängen nicht von normalen Fotometadaten oder Lightroom-Stichwörtern ab.
 `Taxonomie zugewiesen` erkennt das reservierte Master-ID-Präfix `mtx_`; `Taxonomie fehlt` ist die ausdrücklich
-ausgeschlossene Gegenmenge. Die praktisch umgekehrt ausgewerteten Leerheitsoperationen werden nicht verwendet. Beim erneuten Einrichten
+ausgeschlossene Gegenmenge. Die praktisch umgekehrt ausgewerteten Leerheitsoperationen werden nicht verwendet.
+Im Testkatalog wurden bei 132 Fotos und einer Zuweisung die erwarteten Werte 131 fehlend und eine zugewiesen
+bestätigt. Beim erneuten Einrichten
 werden bestehende Regeln auf den aktuellen Stand gesetzt; die nicht mehr benötigten Sammlungen
 `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden im verwalteten Sammlungssatz automatisch entfernt. Details,
 Befehle und Abnahmeablauf

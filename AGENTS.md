@@ -1160,7 +1160,9 @@ Aktuelle Planung:
   innerhalb des verwalteten Sammlungssatzes entfernt. Andere
   manuelle Stichwörter und alte flache Stichwörter ohne eindeutige FN-Endung bleiben unangetastet. Einzel- und
   Mehrfachzuweisung, Fensteraufbau, Favoritenersetzung und Rücknahme wurden im separaten Testkatalog praktisch
-  geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
+  geprüft. Die komplementären Taxonomiesammlungen wurden mit 132 Fotos und genau einer Zuweisung praktisch als
+  `Taxonomie fehlt = 131` und `Taxonomie zugewiesen = 1` bestätigt. Phase 10 bleibt bis zum umfassenden
+  Abschlussaudit offen.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

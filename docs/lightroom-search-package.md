@@ -299,7 +299,9 @@ Automatisch verifiziert sind:
 
 Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden im vorbereiteten
-Lightroom-Testkatalog praktisch geprüft. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.
+Lightroom-Testkatalog praktisch geprüft. Am 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
+Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
+`Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.
 
 ## Bekannte Einschränkungen und offene Punkte
 

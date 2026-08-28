@@ -1089,7 +1089,8 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   `FN Wildlife & Travel > Orte` führen. Vorgesehen sind Land, Region/Bundesland, Ort/Kreis und benutzerdefinierte
   Fotoplätze beziehungsweise Schutzgebiete sowie Statistiken nach diesen Ebenen; manuelle Stichwörter dürfen dabei
   nicht überschrieben werden. Zuweisungsfenster, Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
-  geprüft;
+  geprüft. Die komplementären Taxonomiesammlungen wurden bei 132 Fotos und einer Zuweisung praktisch mit 131
+  fehlenden und einem zugewiesenen Foto bestätigt;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
