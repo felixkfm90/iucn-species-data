@@ -2,7 +2,7 @@
 
 Stand: 2026-08-28
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.8.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.9.0 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -386,7 +386,7 @@ Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-
 Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
 und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Die kontrollierte
 Zuweisung an ein und mehrere Fotos wurde anschließend in einem separaten Lightroom-Testkatalog praktisch bestätigt.
-Plug-in-Version 0.4.8.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, eindeutig markierte flache
+Plug-in-Version 0.4.9.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, eindeutig markierte flache
 Stichwörter ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, Lifelist und Statistik,
 Smart-Sammlungen, das `Favoritenbild der Art`, kompakte und vollständige Metadatenansichten sowie eine knappe
 Plug-in-Diagnose. Die Rücknahme erkennt die reservierten Endungen `(FN)` und `(FN)*`. Die erneute SDK-Prüfung am

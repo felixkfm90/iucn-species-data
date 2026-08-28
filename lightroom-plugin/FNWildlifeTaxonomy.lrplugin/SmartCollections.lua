@@ -7,11 +7,15 @@ local OBSOLETE_COLLECTION_NAMES = {
   ["Art-Referenzbilder"] = true,
 }
 
-local function textCriterion(field, operation)
-  return {
+local function textCriterion(field, operation, value)
+  local criterion = {
     criteria = "sdktext:" .. TOOLKIT_ID .. "." .. field,
     operation = operation,
   }
+  if value ~= nil then
+    criterion.value = value
+  end
+  return criterion
 end
 
 local function valueCriterion(field, value)
@@ -31,16 +35,14 @@ local function definitions()
     {
       name = "Taxonomie fehlt",
       rules = {
-        textCriterion("masterTaxonId", "empty"),
-        textCriterion("scientificName", "empty"),
-        combine = "union",
+        textCriterion("masterTaxonId", "beginsWith", "mtx_"),
+        combine = "exclude",
       },
     },
     {
       name = "Taxonomie zugewiesen",
       rules = {
-        textCriterion("masterTaxonId", "notEmpty"),
-        textCriterion("scientificName", "notEmpty"),
+        textCriterion("masterTaxonId", "beginsWith", "mtx_"),
         combine = "intersect",
       },
     },

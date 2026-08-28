@@ -14,10 +14,10 @@ return {
     return {
       {
         title = "FN Wildlife Taxonomie",
-        synopsis = "Version 0.4.8.0",
+        synopsis = "Version 0.4.9.0",
         factory:column({
           spacing = factory:control_spacing(),
-          factory:static_text({ title = "Version: 0.4.8.0" }),
+          factory:static_text({ title = "Version: 0.4.9.0" }),
           factory:static_text({ title = statusText(status), width_in_chars = 78 }),
           factory:static_text({
             title = "Suchpaket: " .. (status.root ~= "" and status.root or "nicht ermittelbar"),

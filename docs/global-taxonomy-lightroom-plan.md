@@ -4,7 +4,7 @@ Stand: 2026-08-28
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.8.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.9.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 
@@ -596,7 +596,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.8.0 am 2026-08-28 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
+- **Bis Plug-in-Version 0.4.9.0 am 2026-08-28 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
   Mehrfachzuweisung praktisch bestätigt.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -631,15 +631,16 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.8.0 am 2026-08-28 technisch umgesetzt und in den zentralen
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.9.0 am 2026-08-28 technisch umgesetzt und in den zentralen
   Bedienabläufen praktisch geprüft.**
 - Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
   Markierung derselben Art zurück. Diese Lightroom-Markierung ist unabhängig vom Artporträt des Arten-Explorers.
 - Der wiederholbar einrichtbare Sammlungssatz `FN Wildlife & Travel` enthält `Art-Favoriten`, `Taxonomie fehlt`
-  und `Taxonomie zugewiesen`. Die Regeln verwenden ausschließlich `referenceImage`, `masterTaxonId` und
-  `scientificName` aus den Plug-in-Metadaten. Eine gültige Taxonomie erfordert Master-ID und wissenschaftlichen
-  Namen; fehlt eines davon, gehört das Foto zur Gegenmenge `Taxonomie fehlt`. Normale Fotometadaten und
+  und `Taxonomie zugewiesen`. Die Regeln verwenden ausschließlich `referenceImage` und `masterTaxonId` aus den
+  Plug-in-Metadaten. Eine gültige Taxonomie wird am reservierten Master-ID-Präfix `mtx_` erkannt;
+  `Taxonomie fehlt` ist über `exclude` die Gegenmenge. Die praktisch umgekehrt ausgewerteten Leerheitsoperationen
+  werden vermieden. Normale Fotometadaten und
   Lightroom-Stichwörter bleiben unberücksichtigt. Bereits vorhandene Regeln werden
   aktualisiert; `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden innerhalb dieses Satzes automatisch entfernt.
 - Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und Favoritenbilder,
@@ -679,7 +680,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.8.0 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.9.0 die nutzergeführte Rücknahme, dynamische
 Auswahl, Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 

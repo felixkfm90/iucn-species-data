@@ -1126,7 +1126,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der bis 2026-08-28 praktisch nachgearbeitete
-  Stand trägt Version `0.4.8.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  Stand trägt Version `0.4.9.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl,
   Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt Dateinamen und
   Mehrfachauswahl, besitzt einen unten rechts verankerten Schließen-Button und zeigt den aktuellen Lifelist-Zähler
@@ -1152,9 +1152,10 @@ Aktuelle Planung:
   berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, Klassenübersicht, den zehn am häufigsten
   fotografierten Arten und verwerfbarem Cache implementiert. Die Statistik liest die Zuordnungen aus dem
   Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Die Sammlungen beruhen ausschließlich auf
-  den Plug-in-Metadaten `referenceImage`, `masterTaxonId` und `scientificName`, nicht auf normalen Foto- oder
-  Lightroom-Stichwortmetadaten. Eine gültige Zuweisung erfordert Master-ID und wissenschaftlichen Namen; fehlt
-  eines davon, wird das Foto unter `Taxonomie fehlt` geführt. Beim
+  den Plug-in-Metadaten `referenceImage` und `masterTaxonId`, nicht auf normalen Foto- oder
+  Lightroom-Stichwortmetadaten. Eine gültige Zuweisung wird am reservierten Master-ID-Präfix `mtx_` erkannt;
+  `Taxonomie fehlt` ist die über `exclude` gebildete Gegenmenge. Die in Lightroom praktisch umgekehrt ausgewerteten
+  Operationen `empty` und `notEmpty` werden dafür nicht mehr verwendet. Beim
   erneuten Einrichten werden bestehende Regeln aktualisiert; `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden
   innerhalb des verwalteten Sammlungssatzes entfernt. Andere
   manuelle Stichwörter und alte flache Stichwörter ohne eindeutige FN-Endung bleiben unangetastet. Einzel- und
