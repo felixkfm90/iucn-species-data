@@ -30,11 +30,19 @@ local function definitions()
     },
     {
       name = "Taxonomie fehlt",
-      rules = { textCriterion("masterTaxonId", "empty"), combine = "intersect" },
+      rules = {
+        textCriterion("masterTaxonId", "empty"),
+        textCriterion("scientificName", "empty"),
+        combine = "union",
+      },
     },
     {
       name = "Taxonomie zugewiesen",
-      rules = { textCriterion("masterTaxonId", "notEmpty"), combine = "intersect" },
+      rules = {
+        textCriterion("masterTaxonId", "notEmpty"),
+        textCriterion("scientificName", "notEmpty"),
+        combine = "intersect",
+      },
     },
   }
 end

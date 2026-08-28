@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.7.0");
+  assert.equal(version.slice(1).join("."), "0.4.8.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -340,11 +340,11 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
   assert.match(collections, /criteria = "sdktext:" \.\. TOOLKIT_ID \.\. "\." \.\. field/);
   assert.match(
     collections,
-    /name = "Taxonomie zugewiesen"[\s\S]*?textCriterion\("masterTaxonId", "notEmpty"\)/,
+    /name = "Taxonomie zugewiesen"[\s\S]*?textCriterion\("masterTaxonId", "notEmpty"\)[\s\S]*?textCriterion\("scientificName", "notEmpty"\)[\s\S]*?combine = "intersect"/,
   );
   assert.match(
     collections,
-    /name = "Taxonomie fehlt"[\s\S]*?textCriterion\("masterTaxonId", "empty"\)/,
+    /name = "Taxonomie fehlt"[\s\S]*?textCriterion\("masterTaxonId", "empty"\)[\s\S]*?textCriterion\("scientificName", "empty"\)[\s\S]*?combine = "union"/,
   );
   assert.match(
     collections,
@@ -438,7 +438,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.7\.0/);
+  assert.match(provider, /Version: 0\.4\.8\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
