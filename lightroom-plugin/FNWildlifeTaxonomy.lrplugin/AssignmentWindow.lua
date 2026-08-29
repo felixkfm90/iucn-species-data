@@ -170,6 +170,7 @@ function AssignmentWindow.show(context)
   local props = LrBinding.makePropertyTable(context)
   local currentTaxon = nil
   local searchRequestSerial = 0
+  local selectionRefreshSerial = 0
 
   local function setPreview(value)
     local text = tostring(value or "")
@@ -224,6 +225,20 @@ function AssignmentWindow.show(context)
     props.selectionFiles = selectionLabel
     props.selectionStatus = status
     refreshActions()
+  end
+
+  local function scheduleSelectionRefresh()
+    selectionRefreshSerial = selectionRefreshSerial + 1
+    local requestSerial = selectionRefreshSerial
+    LrTasks.startAsyncTask(function()
+      -- Der Observer selbst läuft nicht zuverlässig in einem Kontext, in dem
+      -- Lightroom-Katalogdaten direkt gelesen werden dürfen. Die kurze Task
+      -- liest nach Abschluss des Auswahlereignisses immer den neuesten Stand.
+      LrTasks.yield()
+      if activeDialogControls and requestSerial == selectionRefreshSerial then
+        refreshSelection()
+      end
+    end)
   end
 
   local function initializeSearchPackage()
@@ -559,7 +574,7 @@ function AssignmentWindow.show(context)
       blockTask = true,
       save_frame = "fnWildlifeTaxonomyAssignmentWindowV6",
       selectionChangeObserver = function()
-        pcall(refreshSelection)
+        scheduleSelectionRefresh()
       end,
       onShow = function(controls)
         activeDialogControls = controls

@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.15.0");
+  assert.equal(version.slice(1).join("."), "0.4.16.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -218,6 +218,11 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /PluginState\.recentTaxa/);
   assert.match(window, /blockTask\s*=\s*true/);
   assert.match(window, /selectionChangeObserver/);
+  assert.match(window, /local function scheduleSelectionRefresh\(\)/);
+  assert.match(window, /selectionRefreshSerial\s*=\s*selectionRefreshSerial \+ 1/);
+  assert.match(window, /LrTasks\.startAsyncTask\(function\(\)[\s\S]*?LrTasks\.yield\(\)[\s\S]*?refreshSelection\(\)/);
+  assert.match(window, /selectionChangeObserver\s*=\s*function\(\)\s*scheduleSelectionRefresh\(\)/);
+  assert.doesNotMatch(window, /selectionChangeObserver\s*=\s*function\(\)\s*pcall\(refreshSelection\)/);
   assert.match(window, /windowWillClose/);
   assert.match(window, /activeDialogControls:toFront\(\)/);
   assert.match(window, /LrTasks\.pcall\(TaxonomyHelper\.request/);
@@ -504,7 +509,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.15\.0/);
+  assert.match(provider, /Version: 0\.4\.16\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

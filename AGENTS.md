@@ -1126,7 +1126,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.15.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.16.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1138,7 +1138,9 @@ Aktuelle Planung:
   innerhalb der bereits gestarteten `LrTask` und wartet mit dem offiziellen SDK-Timeout bis zu zehn Sekunden auf
   einen kurz belegten Katalog. Anders als 0.4.11.0 prüft sie danach zwingend Callback-Ausführung und gespeicherte
   `masterTaxonId`; ein Timeout darf deshalb keine Erfolgsmeldung erzeugen. Die zusätzliche, irreführende
-  Fehlerübersetzung aus 0.4.13.0 bleibt entfernt. Die
+  Fehlerübersetzung aus 0.4.13.0 bleibt entfernt. Version 0.4.16.0 verlagert außerdem die Aktualisierung der
+  Lightroom-Auswahl aus dem Observer in eine kurze `LrTask`, damit Fotozahl und Einzelfotoanzeige unmittelbar nach
+  Strg+A oder einem Einzelklick nachgezogen werden. Die
   Suche wird über `Art suchen` ausgelöst. Der
   praktische Test von
   Version 0.4.4.0 widerlegte die Enter-Annahme: `presentFloatingDialog` besitzt keinen SDK-dokumentierten

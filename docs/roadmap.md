@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.15.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
-Bedienabläufe praktisch bestätigt; der 0.4.15.0-Reparaturstand benötigt noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.16.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
+Bedienabläufe praktisch bestätigt; der Auswahl-Refresh von 0.4.16.0 benötigt noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,11 +1055,12 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.15.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.16.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
-  Mehrfachauswahl die Gesamtzahl, aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt
+  Mehrfachauswahl die Gesamtzahl, aktualisiert den Zustand bei Auswahlwechseln über eine kurze vom Observer
+  gestartete `LrTask` und merkt die zehn zuletzt
   verwendeten Arten. Lifelist und Katalogstatistik bleiben im getrennten Statistikfenster; das Zuweisungsfenster
   startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine katalogweite Berechnung und markiert nur den Cache
   als ungültig. Identische sichtbare `(FN)`-Keywordnamen werden vor dem Schreibzugriff dedupliziert. Damit erzeugen

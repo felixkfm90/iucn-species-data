@@ -4,9 +4,10 @@ Stand: 2026-08-29
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.15.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.16.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
-geprüft; der 0.4.15.0-Reparaturstand benötigt noch den praktischen Folgetest. Phase 10 bleibt bis zum
+geprüft; die Zuweisung von 0.4.15.0 wurde praktisch bestätigt, der Auswahl-Refresh von 0.4.16.0 benötigt noch den
+praktischen Folgetest. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
 
 Roadmap: Phase 9 und Phase 10
@@ -597,13 +598,14 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.15.0 am 2026-08-29 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
-  Mehrfachzuweisung praktisch bestätigt, der 0.4.15.0-Reparaturstand noch nicht praktisch abgenommen.**
+- **Bis Plug-in-Version 0.4.16.0 am 2026-08-29 umgesetzt und automatisiert geprüft; Einzel- und
+  Mehrfachzuweisung mit 0.4.15.0 praktisch bestätigt, der Auswahl-Refresh von 0.4.16.0 noch nicht abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
   erkennt unter Windows die lokale Node-Installation unabhängig vom durch Lightroom übergebenen `PATH`, übergibt
   den lokalen Suchpaketpfad ausdrücklich, meldet Hilfsprozessfehler diagnostizierbar und bleibt bei
-  Auswahlwechseln geöffnet. Es zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt`, bei
+  Auswahlwechseln geöffnet. Der Auswahl-Observer startet für das Kataloglesen eine kurze `LrTask`, damit Strg+A und
+  Einzelklicks die Anzeige unmittelbar aktualisieren. Es zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt`, bei
   Mehrfachauswahl die Gesamtzahl, den aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an.
   Lifelist und Katalogstatistik werden ausschließlich im getrennten Statistikfenster berechnet; Öffnen, Zuweisen
   und Entfernen lösen im Zuweisungsfenster keine katalogweite Statistikberechnung aus. Die Suche wird über
@@ -690,7 +692,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.15.0 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.16.0 die nutzergeführte Rücknahme, dynamische
 Auswahl, die getrennte Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 
