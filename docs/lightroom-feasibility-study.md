@@ -2,7 +2,7 @@
 
 Stand: 2026-08-29
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.12.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.13.0 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -386,15 +386,15 @@ Online-Synchronisation, sondern durch eine sichere Brücke vom geprüften Arten-
 Phase 10.2 hat das vollständige abgeleitete Suchpaket erzeugt, Größe und Suchzeit gemessen, den lokalen Suchhelfer
 und einen minimalen Lua-Prototyp implementiert sowie Aktivierung und Rollback praktisch geprüft. Die kontrollierte
 Zuweisung an ein und mehrere Fotos wurde anschließend in einem separaten Lightroom-Testkatalog praktisch bestätigt.
-Plug-in-Version 0.4.12.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, eindeutig markierte flache
+Plug-in-Version 0.4.13.0 ergänzt die vollständigen lesbaren Plug-in-Metadaten, eindeutig markierte flache
 Stichwörter ohne technische IDs, kontrolliertes Entfernen, dynamische Bildauswahl, die ausschließlich im eigenen
 Statistikfenster berechnete Lifelist und Statistik, Smart-Sammlungen, das `Favoritenbild der Art`, kompakte und
 vollständige Metadatenansichten sowie eine knappe Plug-in-Diagnose. Das Zuweisungsfenster startet keine
 katalogweite Statistikberechnung mehr. Identische sichtbare Stichwortnamen werden vor dem Lightroom-Schreibzugriff
 dedupliziert. Die Rücknahme erkennt die reservierten Endungen `(FN)` und `(FN)*`. Die gesamte Write-Access-
 Operation wird über `LrTasks.pcall` abgesichert; einzelne SDK-Schreibaufrufe erfolgen direkt im Callback. Version
-0.4.12.0 entfernt den in 0.4.11.0 eingeführten optionalen Timeout und prüft Callback-Abschluss und gespeicherte
-`masterTaxonId`, bevor die Zuweisung als erfolgreich gilt. Die erneute SDK-Prüfung am
+0.4.13.0 entfernt den in 0.4.11.0 eingeführten optionalen Timeout, korrigiert den Syntaxfehler aus 0.4.12.0 und
+prüft Callback-Abschluss und gespeicherte `masterTaxonId`, bevor die Zuweisung als erfolgreich gilt. Die erneute SDK-Prüfung am
 2026-08-28 bestätigt keinen Erweiterungspunkt für das normale Foto-Rechtsklickmenü; die Aktionen bleiben über die
 dokumentierten `Plug-in-Extras`-Menüs erreichbar. Der praktische Test widerlegte die Enter-Annahme im dauerhaft
 geöffneten `presentFloatingDialog`: Das SDK dokumentiert dort weder einen Standardbutton noch einen

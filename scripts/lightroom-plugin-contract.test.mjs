@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.12.0");
+  assert.equal(version.slice(1).join("."), "0.4.13.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -238,6 +238,15 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(writer, /WRITE_ACCESS_TIMEOUT_SECONDS|timeout\s*=/);
   assert.match(writer, /local completed = false/);
   assert.match(writer, /callbackResult = callback\(\)[\s\S]*?completed = true/);
+  assert.match(
+    writer,
+    /return catalog:withWriteAccessDo\(actionName, function\(\)[\s\S]*?return callbackResult\s*end\)\s*end\)/,
+  );
+  assert.doesNotMatch(
+    writer,
+    /return catalog:withWriteAccessDo\(actionName, function\(\)[\s\S]*?return callbackResult\s*\}\)/,
+    "Der Lua-Callback von withWriteAccessDo muss mit end) geschlossen werden",
+  );
   assert.match(
     writer,
     /Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt\. Bitte warten und erneut versuchen\./,
@@ -501,7 +510,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.12\.0/);
+  assert.match(provider, /Version: 0\.4\.13\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

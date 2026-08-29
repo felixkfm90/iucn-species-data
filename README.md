@@ -981,7 +981,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.12.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.13.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel. Lifelist und Katalogstatistik bleiben vollständig im getrennten
 Statistikfenster; das Zuweisungsfenster startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine
@@ -999,10 +999,11 @@ kontrollierten SDK-Weg zurück und entfernt von den markierten Fotos die eindeut
 `(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
 erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
 ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.
-Version 0.4.12.0 hält die gesamte Write-Access-Operation in `LrTasks.pcall`, führt die einzelnen SDK-Aufrufe im
+Version 0.4.13.0 hält die gesamte Write-Access-Operation in `LrTasks.pcall`, führt die einzelnen SDK-Aufrufe im
 Lightroom-Schreibcallback aber direkt aus. Der in 0.4.11.0 ergänzte optionale Timeout wurde entfernt, weil er einen
 nicht ausgeführten Callback als scheinbaren Erfolg durchlassen konnte. Callback-Abschluss und gespeicherte
-`masterTaxonId` werden vor der Erfolgsmeldung ausdrücklich geprüft.
+`masterTaxonId` werden vor der Erfolgsmeldung ausdrücklich geprüft. Sie korrigiert den Syntaxfehler im
+Callback-Abschluss von Version 0.4.12.0.
 
 Als abgegrenzte Erweiterungen sind genau ein bestätigungspflichtiges `Favoritenbild der Art` je Art, ein idempotenter
 Satz aus den drei intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` sowie eine

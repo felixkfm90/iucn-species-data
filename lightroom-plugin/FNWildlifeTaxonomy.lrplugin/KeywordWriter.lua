@@ -315,7 +315,7 @@ local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
       local callbackResult = callback()
       completed = true
       return callbackResult
-    })
+    end)
   end)
   if ok and completed then
     return result
