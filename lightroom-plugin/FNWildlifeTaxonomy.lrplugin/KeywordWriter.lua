@@ -1,3 +1,5 @@
+local LrTasks = import "LrTasks"
+
 local PluginState = require "PluginState"
 local TaxonomyRanks = require "TaxonomyRanks"
 
@@ -306,7 +308,9 @@ local function setText(photo, field, value)
 end
 
 local function runWithWriteAccess(catalog, actionName, callback)
-  local ok, result = pcall(function()
+  -- Lightroom-Schreibzugriffe dürfen intern yielden. Ein normales Lua-pcall
+  -- würde diese Task-Grenze unterbrechen und die SDK-Aufrufe unzulässig machen.
+  local ok, result = LrTasks.pcall(function()
     return catalog:withWriteAccessDo(actionName, callback, {
       timeout = WRITE_ACCESS_TIMEOUT_SECONDS,
     })
@@ -414,7 +418,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
   local managedKeywords = {}
   runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
-      local ok, removeError = pcall(
+      local ok, removeError = LrTasks.pcall(
         removeManagedKeywords,
         catalog,
         photo,
@@ -435,7 +439,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
 
     for _, readableKeyword in ipairs(managedKeywordNames) do
-      local ok, keyword = pcall(createKeyword, catalog, readableKeyword, nil)
+      local ok, keyword = LrTasks.pcall(createKeyword, catalog, readableKeyword, nil)
       if not ok or not keyword then
         error(
           assignmentError(
@@ -450,7 +454,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
       end
       table.insert(managedKeywords, keyword)
       for _, photo in ipairs(photos) do
-        local added, addError = pcall(function()
+        local added, addError = LrTasks.pcall(function()
           photo:addKeyword(keyword)
         end)
         if not added then
@@ -485,7 +489,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
 
     local function setAssignmentText(photo, field, value)
-      local ok, setError = pcall(setText, photo, field, value)
+      local ok, setError = LrTasks.pcall(setText, photo, field, value)
       if not ok then
         error(
           assignmentError(

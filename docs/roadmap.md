@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.10.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
-Bedienabläufe praktisch bestätigt; der 0.4.10.0-Folgestand benötigt noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.11.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
+Bedienabläufe praktisch bestätigt; der 0.4.11.0-Reparaturstand benötigt noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,8 +1055,8 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.10.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
-  Grundabläufe wurden praktisch bestätigt, der Folgestand benötigt noch den gezielten Lightroom-Test.** Das deutsche
+- 10.3: **MVP-Ausbau bis Version 0.4.11.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
+  Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
   Mehrfachauswahl die Gesamtzahl, aktualisiert den Zustand bei Auswahlwechseln und merkt die zehn zuletzt
@@ -1066,7 +1066,9 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   die bei Austernfischer beziehungsweise Bartmeise gleich benannten Familien- und Gattungsstufen nur eine
   Stichwortzuweisung pro Foto. Kontextfehler nennen Art, wissenschaftlichen Namen, Keyword beziehungsweise
   Arbeitsschritt und Fotozahl. Ein kurzer Write-Access-Timeout ersetzt Lightrooms technische Belegtmeldung durch
-  einen verständlichen Hinweis. Die Suche wird über
+  einen verständlichen Hinweis. Version 0.4.10.0 legte dabei irrtümlich normales Lua-`pcall` um yieldende
+  Lightroom-SDK-Schreibaufrufe und verursachte `withWriteAccessDo`-/Yield-Fehler. Version 0.4.11.0 verwendet im
+  gesamten Schreibabschnitt `LrTasks.pcall` und sichert diese Task-Grenze im Vertragstest ab. Die Suche wird über
   `Art suchen` ausgelöst. Der praktische Test von Version 0.4.4.0 bestätigte, dass das schwebende Fenster keinen
   SDK-dokumentierten Standardbutton oder Enter-/Tastatur-Callback bereitstellt.
   Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; neu erzeugte

@@ -2,10 +2,10 @@
 
 Stand: 2026-08-29
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.10.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.11.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
-gezielten 0.4.10.0-Korrekturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
+0.4.11.0-Reparaturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
 ## Ziel
@@ -112,7 +112,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.10.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.11.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -215,7 +215,10 @@ Nach Erfolg lautet die Meldung beispielsweise `Von 19 Fotos wurde die Taxonomie 
 Rücknahme verwenden einen Write-Access-Timeout von zehn Sekunden. Ist der Katalog noch durch einen anderen
 Schreibvorgang belegt, erscheint ein verständlicher Wartehinweis statt Lightrooms technischer Lua-Meldung. Beide
 Aktionen markieren den Statistikcache automatisch als ungültig, starten aber keine Neuberechnung im
-Zuweisungsfenster.
+Zuweisungsfenster. Alle potenziell yieldenden SDK-Schreibaufrufe liegen dabei ausschließlich in
+`LrTasks.pcall`. Version 0.4.10.0 hatte sie irrtümlich mit normalem Lua-`pcall` geschützt und dadurch je nach
+Schreibschritt `withWriteAccessDo: must be called from within an LrTask` oder
+`Yielding is not allowed within a C or metamethod call` ausgelöst. Version 0.4.11.0 korrigiert diese Task-Grenze.
 
 `Ausgewähltes Foto als Favoritenbild der Art markieren ...` markiert nach einer verständlichen Bestätigung genau ein
 bereits taxonomisch zugeordnetes Foto als Favoritenbild seiner `masterTaxonId`. Diese Markierung dient
@@ -261,7 +264,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.10.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.11.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -321,9 +324,11 @@ Automatisch verifiziert sind:
 
 Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, die frühere Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden mit den vorherigen
-Plug-in-Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Version 0.4.10.0 entfernt die Lifelist-
-Berechnung aus dem Zuweisungsfenster, dedupliziert sichtbare Keywordnamen und verbessert Auswahl- und
-Erfolgsmeldungen; dieser Folgestand ist automatisiert, aber noch nicht praktisch in Lightroom abgenommen. Am
+Plug-in-Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Version 0.4.10.0 entfernte die Lifelist-
+Berechnung aus dem Zuweisungsfenster, deduplizierte sichtbare Keywordnamen und verbesserte Auswahl- und
+Erfolgsmeldungen, beschädigte aber durch normale Lua-`pcall`-Grenzen den yieldenden Schreibpfad. Version 0.4.11.0
+ersetzt diese Grenzen durch `LrTasks.pcall`; dieser Reparaturstand ist automatisiert, aber noch nicht praktisch in
+Lightroom abgenommen. Am
 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
 Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
 `Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.

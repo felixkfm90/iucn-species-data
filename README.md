@@ -981,7 +981,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.10.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.11.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel. Lifelist und Katalogstatistik bleiben vollständig im getrennten
 Statistikfenster; das Zuweisungsfenster startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine
@@ -999,6 +999,9 @@ kontrollierten SDK-Weg zurück und entfernt von den markierten Fotos die eindeut
 `(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
 erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
 ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.
+Version 0.4.11.0 verwendet für den gesamten yieldenden Lightroom-Schreibpfad ausdrücklich `LrTasks.pcall`.
+Dadurch sind die in 0.4.10.0 aufgetretenen Meldungen zu `withWriteAccessDo` außerhalb einer `LrTask` und zum
+unzulässigen Yield innerhalb eines normalen Lua-`pcall` beseitigt.
 
 Als abgegrenzte Erweiterungen sind genau ein bestätigungspflichtiges `Favoritenbild der Art` je Art, ein idempotenter
 Satz aus den drei intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` sowie eine

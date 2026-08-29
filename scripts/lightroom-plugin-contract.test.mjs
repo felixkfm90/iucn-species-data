@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.10.0");
+  assert.equal(version.slice(1).join("."), "0.4.11.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -228,6 +228,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*LrDialogs\.presentFloatingDialog/);
   assert.doesNotMatch(window, /12 \* 60 \* 60|LrTasks\.sleep\(0\.5\)/);
   assert.match(writer, /catalog:withWriteAccessDo/);
+  assert.match(writer, /local LrTasks = import "LrTasks"/);
+  assert.match(writer, /local ok, result = LrTasks\.pcall\(function\(\)/);
   assert.match(writer, /WRITE_ACCESS_TIMEOUT_SECONDS\s*=\s*10/);
   assert.match(writer, /timeout\s*=\s*WRITE_ACCESS_TIMEOUT_SECONDS/);
   assert.match(
@@ -246,7 +248,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   );
   assert.match(writer, /local function managedKeywordName\(value\)/);
   assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
-  assert.match(writer, /pcall\(createKeyword, catalog, readableKeyword, nil\)/);
+  assert.match(writer, /LrTasks\.pcall\(createKeyword, catalog, readableKeyword, nil\)/);
   const uniqueKeywordListIndex = writer.indexOf("local managedKeywordNames = {}");
   const writeAccessIndex = writer.indexOf(
     'runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen"',
@@ -279,6 +281,12 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /"Stichwort erzeugen"/);
   assert.match(writer, /"Stichwort zum Foto hinzufügen"/);
   assert.match(writer, /"Metadatenfeld " \.\. field \.\. " schreiben"/);
+  const writeSection = writer.slice(writer.indexOf("local function runWithWriteAccess"));
+  assert.doesNotMatch(
+    writeSection,
+    /(^|[^.\w])pcall\(/m,
+    "Yield-fähige Lightroom-Schreibaufrufe dürfen nicht in normalem Lua-pcall liegen",
+  );
   assert.doesNotMatch(writer, /createKeyword\(catalog, "Taxonomie"|PLUGIN_KEYWORD_ROOT/);
   assert.match(writer, /Ausschließlich eindeutig mit \(FN\) oder \(FN\)\* gekennzeichnete Plug-in-/);
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
@@ -484,7 +492,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.10\.0/);
+  assert.match(provider, /Version: 0\.4\.11\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
