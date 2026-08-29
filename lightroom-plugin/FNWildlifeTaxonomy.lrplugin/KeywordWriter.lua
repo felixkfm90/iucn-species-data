@@ -1,5 +1,3 @@
-local LrTasks = import "LrTasks"
-
 local PluginState = require "PluginState"
 local TaxonomyRanks = require "TaxonomyRanks"
 
@@ -7,8 +5,6 @@ local KeywordWriter = {}
 
 local PLUGIN_KEYWORD_SUFFIX = " (FN)"
 local PLUGIN_PARTIAL_KEYWORD_SUFFIX = PLUGIN_KEYWORD_SUFFIX .. "*"
-local WRITE_ACCESS_BUSY_MESSAGE =
-  "Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt. Bitte warten und erneut versuchen."
 local METADATA_FIELDS = {
   "masterTaxonId",
   "projectTaxonId",
@@ -307,28 +303,19 @@ local function setText(photo, field, value)
 end
 
 local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
-  -- Lightroom-Schreibzugriffe dürfen intern yielden. Ein normales Lua-pcall
-  -- würde diese Task-Grenze unterbrechen und die SDK-Aufrufe unzulässig machen.
+  -- Der Aufrufer startet bereits eine LrTask. Der Katalogzugriff bleibt hier
+  -- direkt, damit keine zusätzliche Task- oder Fehlergrenze den SDK-Aufruf
+  -- als blockierten Schreibvorgang erscheinen lässt.
   local completed = false
-  local ok, result = LrTasks.pcall(function()
-    return catalog:withWriteAccessDo(actionName, function()
-      local callbackResult = callback()
-      completed = true
-      return callbackResult
-    end)
+  local result = catalog:withWriteAccessDo(actionName, function()
+    local callbackResult = callback()
+    completed = true
+    return callbackResult
   end)
-  if ok and completed then
+  if completed then
     return result
   end
-  local message = ok
-      and "Lightroom hat den angeforderten Katalog-Schreibvorgang nicht ausgeführt."
-    or tostring(result)
-  local lowerMessage = string.lower(message)
-  if string.find(lowerMessage, "blocked by another write access call", 1, true)
-      or (string.find(lowerMessage, "write access", 1, true)
-        and string.find(lowerMessage, "timeout", 1, true)) then
-    error(WRITE_ACCESS_BUSY_MESSAGE, 0)
-  end
+  local message = "Lightroom hat den angeforderten Katalog-Schreibvorgang nicht ausgeführt."
   if errorFormatter then
     error(errorFormatter(message), 0)
   end
