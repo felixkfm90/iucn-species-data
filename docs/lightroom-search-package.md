@@ -1,11 +1,12 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-08-28
+Stand: 2026-08-29
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.9.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.10.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
-FN-Stichwörter wurden im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Phase 10 bleibt bis zum
-umfassenden Abschlussaudit offen.
+FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
+gezielten 0.4.10.0-Korrekturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
+Abschlussaudit offen.
 
 ## Ziel
 
@@ -111,7 +112,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.9.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.10.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -129,11 +130,14 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   abgeschnittenen Sammelmeldung;
 - `Json.lua`: gekapselter JSON-Codec für die Kommunikation mit dem Suchhelfer;
 - `KeywordWriter.lua`: vollständige fachliche Metadaten, flache und eindeutig mit `(FN)` markierte Stichwörter,
-  gespeicherte lokale Kennungen, Einzel-/Mehrfachzuweisung und kontrollierte Rücknahme einschließlich `(FN)*`;
+  vor dem Schreibzugriff deduplizierte sichtbare Keywordnamen, gespeicherte lokale Kennungen,
+  Einzel-/Mehrfachzuweisung, kontextreiche Schreibfehler, kurzer Write-Access-Timeout und kontrollierte Rücknahme
+  einschließlich `(FN)*`;
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
-  gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise `+ X weitere`, Lifelist-Zähler, geprüftem
+  gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise Gesamtzahl der ausgewählten Fotos, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
-  Arten. Die Suche wird ausdrücklich über `Art suchen` ausgelöst;
+  Arten. Das Fenster startet keine Statistik- oder Lifelist-Berechnung. Die Suche wird ausdrücklich über
+  `Art suchen` ausgelöst;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
 - `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
@@ -184,21 +188,34 @@ aber weiterhin stabil zur Verfügung. Master- oder Suchpaketversionen werden nic
 Die Menüaktion `Taxonomie zuweisen` öffnet ein kompaktes schwebendes Arbeitsfenster. Die vier sichtbaren Abschnitte
 `Aktuelle Lightroom-Auswahl`, `Art suchen und auswählen`, `Taxonomie prüfen` und `Taxonomie verwalten` führen vom
 ausgewählten Foto bis zur bewussten Katalogänderung. Oben steht bei einer Einzelwahl der Dateiname, bei einer
-Mehrfachwahl der erste Dateiname mit `+ X weitere`; die Anzeige wird bei einem Auswahlwechsel im Hintergrund
-aktualisiert. Daneben steht `Lifelist: X Arten`. Vor der Suche prüft das Fenster das lokale Suchpaket und zeigt
-dessen verfügbaren Taxabestand an. Es bleibt beim Wechsel der Lightroom-Auswahl geöffnet und bringt ein bereits
+Einzelwahl ohne verfügbaren Dateinamen `1 Foto ausgewählt` und bei einer Mehrfachwahl ausschließlich
+`X Fotos ausgewählt`; die Anzeige wird bei einem Auswahlwechsel im Hintergrund aktualisiert. Lifelist und
+Katalogstatistik werden in diesem Fenster weder beim Öffnen noch nach Zuweisung oder Rücknahme berechnet. Vor der
+Suche prüft das Fenster das lokale Suchpaket und zeigt dessen verfügbaren Taxabestand an. Es bleibt beim Wechsel der Lightroom-Auswahl geöffnet und bringt ein bereits
 geöffnetes Fenster erneut in den Vordergrund, statt ein zweites zu erzeugen. Der Button `Schließen` sitzt unten
 rechts. Das reine Öffnen, Suchen und Vorschauen verändert keine Bildmetadaten.
 
 `Ausgewählte Art zuweisen` schreibt alle Plug-in-Felder und die lesbaren, flachen `(FN)`-Stichwörter auf sämtliche
-aktuell markierten Fotos. Dabei speichert das Plug-in zusätzlich die lokalen Lightroom-Kennungen seiner erzeugten
-Stichwörter. `Taxonomie entfernen` löscht nach Bestätigung die Plug-in-Felder und trennt auf jedem markierten Foto
+aktuell markierten Fotos. Vor dem Lightroom-Schreibzugriff wird aus allen sichtbaren Namen eine eindeutige
+Keywordliste gebildet. Haben zwei Taxonomiestufen denselben sichtbaren Namen, wird das Keyword nur einmal erzeugt
+und je Foto nur einmal hinzugefügt; der vollständige Taxonomiepfad in den Plug-in-Metadaten bleibt unabhängig davon
+erhalten. Der reale Suchpaketstand enthält diesen Fall bei Austernfischer (`Haematopodidae` und `Haematopus`) sowie
+Bartmeise (`Panuridae` und `Panurus`). Dabei speichert das Plug-in zusätzlich die lokalen Lightroom-Kennungen seiner
+erzeugten Stichwörter. Fehler beim Erzeugen oder Hinzufügen eines Keywords beziehungsweise beim Schreiben eines
+Plug-in-Felds nennen deutschen und wissenschaftlichen Artnamen, Keyword oder Arbeitsschritt sowie die Zahl der
+Fotos. Nach Erfolg meldet das Fenster beispielsweise `19 Fotos wurden Bluthänfling zugewiesen.`
+
+`Taxonomie entfernen` löscht nach Bestätigung die Plug-in-Felder und trennt auf jedem markierten Foto
 die eindeutig reservierten Stichwörter mit den Endungen `(FN)` und `(FN)*`. Die Rücknahme rekonstruiert die bei der
 Zuweisung verwendeten Namen aus den noch vorhandenen Plug-in-Metadaten und prüft ergänzend rohe Stichwortobjekte,
 die formatierte Stichwortanzeige sowie gespeicherte lokale Kennungen. Andere manuelle Stichwörter und alte flache
 Stichwörter ohne FN-Endung bleiben erhalten. Ein manuelles Löschen einzelner Stichwörter in Lightroom entfernt
 dagegen keine Plug-in-Metadaten; für eine vollständige Rücknahme ist deshalb die Plug-in-Aktion zu verwenden.
-Zuweisung und Rücknahme verwerfen den Statistikcache automatisch.
+Nach Erfolg lautet die Meldung beispielsweise `Von 19 Fotos wurde die Taxonomie entfernt.` Zuweisung und
+Rücknahme verwenden einen Write-Access-Timeout von zehn Sekunden. Ist der Katalog noch durch einen anderen
+Schreibvorgang belegt, erscheint ein verständlicher Wartehinweis statt Lightrooms technischer Lua-Meldung. Beide
+Aktionen markieren den Statistikcache automatisch als ungültig, starten aber keine Neuberechnung im
+Zuweisungsfenster.
 
 `Ausgewähltes Foto als Favoritenbild der Art markieren ...` markiert nach einer verständlichen Bestätigung genau ein
 bereits taxonomisch zugeordnetes Foto als Favoritenbild seiner `masterTaxonId`. Diese Markierung dient
@@ -244,17 +261,20 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.9.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.10.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
    `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen` wählen.
-6. Im Zuweisungsfenster Dateiname, Lifelist, die vier gerahmten Schritte und den Hinweis
+6. Im Zuweisungsfenster Dateiname beziehungsweise `1 Foto ausgewählt`, die vier gerahmten Schritte und den Hinweis
    `Lokale Masterdatenbank bereit` prüfen. Eine Art über `Art suchen` suchen, Vorschau kontrollieren, zuweisen und
    lesbare Schlüsselwörter sowie vollständige Plug-in-Felder prüfen. Danach die Auswahl bei geöffnetem Fenster
-   wechseln und den aktualisierten Dateinamen prüfen.
-7. Dieselbe Prüfung mit mehreren gleichzeitig ausgewählten Testfotos wiederholen; oben müssen der erste Dateiname
-   und `+ X weitere` stehen.
+   wechseln und die aktualisierte Einzelanzeige prüfen. Beim Öffnen und nach der Zuweisung darf keine Lifelist-
+   oder Statistikberechnung im Zuweisungsfenster starten.
+7. Dieselbe Prüfung mit mehreren gleichzeitig ausgewählten Testfotos wiederholen; oben muss ausschließlich
+   `X Fotos ausgewählt` stehen. Nach der Zuweisung muss `X Fotos wurden <Deutscher Name> zugewiesen.` erscheinen,
+   nach der Rücknahme `Von X Fotos wurde die Taxonomie entfernt.` Austernfischer und Bartmeise gezielt zuweisen und
+   prüfen, dass die jeweils doppelt benannte Familien-/Gattungsstufe nur ein `(FN)`-Keyword je Foto erzeugt.
 8. Einen Konfliktfall mit einer abweichenden vorhandenen `masterTaxonId` prüfen; das Plug-in muss blockieren.
 9. Eine Zuweisung über `Taxonomie entfernen` zurücknehmen. Die Aktion über `Plug-in-Extras` beziehungsweise
    `Bibliothek > Zusatzmoduloptionen` aufrufen. Ein eigener Eintrag im normalen Foto-Rechtsklickmenü wird nicht
@@ -291,15 +311,20 @@ Automatisch verifiziert sind:
 - Plug-in-Manifest, Modulgrenzen und Verbot direkter `.lrcat`-/XMP-/SQLite-Zugriffe;
 - vollständige Hierarchie in Plug-in-Metadaten, Mehrfachzuweisung, Rücknahme und Konfliktsperre im Lua-Vertrag;
 - schwebendes, gerahmtes Vier-Schritt-Zuweisungsfenster mit Suchpaket-, Einzelfenster-, Auswahlwechsel- und
-  Verlaufskontrakt sowie Dateiname, Lifelist und ausdrücklich betätigtem Suchbutton;
-- lesbare, längenbegrenzte `(FN)`-Stichwörter sowie vollständige Rang-Metadaten;
+  Verlaufskontrakt sowie Einzelfoto-/Mehrfachauswahlanzeige, ohne Statistikstart und mit ausdrücklich betätigtem
+  Suchbutton;
+- lesbare, längenbegrenzte und vor dem Schreibzugriff deduplizierte `(FN)`-Stichwörter, vollständige Rang-
+  Metadaten, kontextreiche Schreibfehler und Write-Access-Timeout;
 - kompakte und vollständige Metadatenansicht sowie kompakte Suchpaketinformation im Zusatzmodul-Manager;
 - eindeutige, bestätigungspflichtige Markierung eines Favoritenbilds der Art, idempotente Sammlungsdefinitionen sowie
   Statistik- und Cache-Grenzen einschließlich Lifelist, Klassen, Abdeckung und häufigsten Arten.
 
-Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, Lifelist-Anzeige,
-Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden im vorbereiteten
-Lightroom-Testkatalog praktisch geprüft. Am 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
+Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, die frühere Lifelist-Anzeige,
+Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden mit den vorherigen
+Plug-in-Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Version 0.4.10.0 entfernt die Lifelist-
+Berechnung aus dem Zuweisungsfenster, dedupliziert sichtbare Keywordnamen und verbessert Auswahl- und
+Erfolgsmeldungen; dieser Folgestand ist automatisiert, aber noch nicht praktisch in Lightroom abgenommen. Am
+2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
 Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
 `Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.
 

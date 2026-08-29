@@ -5,6 +5,9 @@ local KeywordWriter = {}
 
 local PLUGIN_KEYWORD_SUFFIX = " (FN)"
 local PLUGIN_PARTIAL_KEYWORD_SUFFIX = PLUGIN_KEYWORD_SUFFIX .. "*"
+local WRITE_ACCESS_TIMEOUT_SECONDS = 10
+local WRITE_ACCESS_BUSY_MESSAGE =
+  "Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt. Bitte warten und erneut versuchen."
 local METADATA_FIELDS = {
   "masterTaxonId",
   "projectTaxonId",
@@ -302,6 +305,44 @@ local function setText(photo, field, value)
   photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
 end
 
+local function runWithWriteAccess(catalog, actionName, callback)
+  local ok, result = pcall(function()
+    return catalog:withWriteAccessDo(actionName, callback, {
+      timeout = WRITE_ACCESS_TIMEOUT_SECONDS,
+    })
+  end)
+  if ok then
+    return result
+  end
+  local message = tostring(result)
+  local lowerMessage = string.lower(message)
+  if string.find(lowerMessage, "blocked by another write access call", 1, true)
+      or (string.find(lowerMessage, "write access", 1, true)
+        and string.find(lowerMessage, "timeout", 1, true)) then
+    error(WRITE_ACCESS_BUSY_MESSAGE, 0)
+  end
+  error(message, 0)
+end
+
+local function assignmentError(taxon, keyword, step, photoCount, reason)
+  local germanName = cleanText(taxon and taxon.germanName)
+  local scientificName = cleanText(taxon and taxon.acceptedScientificName)
+  local keywordName = cleanText(keyword)
+  local stepName = cleanText(step)
+  return "Taxonomiezuweisung fehlgeschlagen · Deutscher Artname: "
+    .. (germanName ~= "" and germanName or "nicht vorhanden")
+    .. " · Wissenschaftlicher Name: "
+    .. (scientificName ~= "" and scientificName or "nicht vorhanden")
+    .. " · Keyword: "
+    .. (keywordName ~= "" and keywordName or "keines")
+    .. " · Arbeitsschritt: "
+    .. (stepName ~= "" and stepName or "nicht bekannt")
+    .. " · Fotos: "
+    .. tostring(photoCount)
+    .. " · Ursache: "
+    .. tostring(reason)
+end
+
 local function boundedPath(parts)
   local kept = {}
   for _, part in ipairs(parts) do
@@ -335,8 +376,9 @@ function KeywordWriter.assign(catalog, photos, taxon)
   if #conflicts > 0 then
     error(
       tostring(#conflicts)
-        .. " ausgewählte Foto(s) besitzen bereits eine andere Taxonomiezuordnung. "
-        .. "Der Prototyp überschreibt diese nicht."
+        .. (#conflicts == 1 and " ausgewähltes Foto besitzt" or " ausgewählte Fotos besitzen")
+        .. " bereits eine andere Taxonomiezuordnung. "
+        .. "Das Plug-in überschreibt diese nicht."
     )
   end
 
@@ -347,29 +389,82 @@ function KeywordWriter.assign(catalog, photos, taxon)
 
   local hierarchyPath = {}
   local rankValues = {}
+  local managedKeywordNames = {}
+  local seenKeywordNames = {}
+  for _, entry in ipairs(taxon.hierarchy or {}) do
+    local metadataValue = TaxonomyRanks.displayTaxon(entry, taxon)
+    local value = taxonomyKeywordName(entry, taxon)
+    local rank = string.lower(cleanText(entry.rank))
+    if rank ~= "" then
+      rankValues[rank] = cleanText(entry.scientificName)
+    end
+    if metadataValue ~= "" then
+      table.insert(hierarchyPath, utf8Prefix(metadataValue, 240))
+    end
+    if value ~= "" then
+      local readableKeyword = managedKeywordName(value)
+      local keywordKey = string.lower(readableKeyword)
+      if not seenKeywordNames[keywordKey] then
+        seenKeywordNames[keywordKey] = true
+        table.insert(managedKeywordNames, readableKeyword)
+      end
+    end
+  end
+
   local managedKeywords = {}
-  local keywordCount = 0
-  catalog:withWriteAccessDo("FN Wildlife Taxonomie zuweisen", function()
+  runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
-      removeManagedKeywords(catalog, photo, previousKeywordNames[index])
+      local ok, removeError = pcall(
+        removeManagedKeywords,
+        catalog,
+        photo,
+        previousKeywordNames[index]
+      )
+      if not ok then
+        error(
+          assignmentError(
+            taxon,
+            "",
+            "vorhandene (FN)-Stichwörter entfernen",
+            #photos,
+            removeError
+          ),
+          0
+        )
+      end
     end
 
-    for _, entry in ipairs(taxon.hierarchy or {}) do
-      local metadataValue = TaxonomyRanks.displayTaxon(entry, taxon)
-      local value = taxonomyKeywordName(entry, taxon)
-      local rank = string.lower(cleanText(entry.rank))
-      if rank ~= "" then
-        rankValues[rank] = cleanText(entry.scientificName)
+    for _, readableKeyword in ipairs(managedKeywordNames) do
+      local ok, keyword = pcall(createKeyword, catalog, readableKeyword, nil)
+      if not ok or not keyword then
+        error(
+          assignmentError(
+            taxon,
+            readableKeyword,
+            "Stichwort erzeugen",
+            #photos,
+            ok and "Lightroom lieferte kein Stichwortobjekt zurück." or keyword
+          ),
+          0
+        )
       end
-      if value ~= "" then
-        local readableKeyword = managedKeywordName(value)
-        local keyword = createKeyword(catalog, readableKeyword, nil)
-        table.insert(hierarchyPath, utf8Prefix(metadataValue, 240))
-        table.insert(managedKeywords, keyword)
-        for _, photo in ipairs(photos) do
+      table.insert(managedKeywords, keyword)
+      for _, photo in ipairs(photos) do
+        local added, addError = pcall(function()
           photo:addKeyword(keyword)
+        end)
+        if not added then
+          error(
+            assignmentError(
+              taxon,
+              readableKeyword,
+              "Stichwort zum Foto hinzufügen",
+              #photos,
+              addError
+            ),
+            0
+          )
         end
-        keywordCount = keywordCount + 1
       end
     end
 
@@ -379,30 +474,49 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
     local assignedAt = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local taxonomyPath = boundedPath(hierarchyPath)
-    for index, photo in ipairs(photos) do
-      local storedKeywordIds = {}
-      for _, keyword in ipairs(managedKeywords) do
-        local keywordId = keywordLocalIdentifier(keyword)
-        if keywordId then
-          table.insert(storedKeywordIds, tostring(keywordId))
-        end
+    local storedKeywordIds = {}
+    local seenKeywordIds = {}
+    for _, keyword in ipairs(managedKeywords) do
+      local keywordId = keywordLocalIdentifier(keyword)
+      if keywordId and not seenKeywordIds[keywordId] then
+        seenKeywordIds[keywordId] = true
+        table.insert(storedKeywordIds, tostring(keywordId))
       end
-      setText(photo, "masterTaxonId", taxon.masterTaxonId)
-      setText(photo, "projectTaxonId", projectTaxonId)
-      setText(photo, "germanName", taxon.germanName)
-      setText(photo, "englishName", taxon.englishName)
-      setText(photo, "scientificName", taxon.acceptedScientificName)
-      setText(photo, "taxonRank", taxon.rank)
-      setText(photo, "taxonomyPath", taxonomyPath)
-      setText(
+    end
+
+    local function setAssignmentText(photo, field, value)
+      local ok, setError = pcall(setText, photo, field, value)
+      if not ok then
+        error(
+          assignmentError(
+            taxon,
+            "",
+            "Metadatenfeld " .. field .. " schreiben",
+            #photos,
+            setError
+          ),
+          0
+        )
+      end
+    end
+
+    for _, photo in ipairs(photos) do
+      setAssignmentText(photo, "masterTaxonId", taxon.masterTaxonId)
+      setAssignmentText(photo, "projectTaxonId", projectTaxonId)
+      setAssignmentText(photo, "germanName", taxon.germanName)
+      setAssignmentText(photo, "englishName", taxon.englishName)
+      setAssignmentText(photo, "scientificName", taxon.acceptedScientificName)
+      setAssignmentText(photo, "taxonRank", taxon.rank)
+      setAssignmentText(photo, "taxonomyPath", taxonomyPath)
+      setAssignmentText(
         photo,
         "taxonomyKeywordIds",
         #storedKeywordIds > 0 and table.concat(storedKeywordIds, ",") or "none"
       )
       for _, rank in ipairs(TaxonomyRanks.all()) do
-        setText(photo, TaxonomyRanks.metadataFieldId(rank.id), rankValues[rank.id] or "")
+        setAssignmentText(photo, TaxonomyRanks.metadataFieldId(rank.id), rankValues[rank.id] or "")
       end
-      setText(photo, "assignedAt", assignedAt)
+      setAssignmentText(photo, "assignedAt", assignedAt)
     end
   end)
 
@@ -410,7 +524,7 @@ function KeywordWriter.assign(catalog, photos, taxon)
 
   return {
     photoCount = #photos,
-    keywordCount = keywordCount,
+    keywordCount = #managedKeywordNames,
     hierarchyCount = #hierarchyPath,
   }
 end
@@ -418,7 +532,7 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
-  catalog:withWriteAccessDo("FN Wildlife Taxonomie entfernen", function()
+  runWithWriteAccess(catalog, "FN Wildlife Taxonomie entfernen", function()
     for _, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1

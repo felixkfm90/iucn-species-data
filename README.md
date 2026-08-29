@@ -981,16 +981,21 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.9.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es zeigt
-den Dateinamen der
-aktuellen Auswahl beziehungsweise den ersten Dateinamen plus Anzahl weiterer Fotos, aktualisiert sich bei einem
-Auswahlwechsel und zeigt den aktuellen `Lifelist`-Stand. Die Suche wird über `Art suchen` ausgelöst. Das
+Das Plug-in besitzt in Version `0.4.10.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
+und aktualisiert sich bei einem Auswahlwechsel. Lifelist und Katalogstatistik bleiben vollständig im getrennten
+Statistikfenster; das Zuweisungsfenster startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine
+katalogweite Statistikberechnung. Es markiert nach Änderungen nur den Statistikcache als ungültig. Die Suche wird
+über `Art suchen` ausgelöst. Das
 Lightroom-SDK stellt im dauerhaft geöffneten `presentFloatingDialog` keinen dokumentierten Standardbutton oder
 Enter-/Tastatur-Callback für das Suchfeld bereit. Einzel- und
 Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die vollständige verfügbare
 Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Stichwörter enthalten bewusst nur lesbare Namen ohne
-interne IDs oder technische Rangpräfixe. `Taxonomie entfernen` nimmt eine Zuweisung über denselben kontrollierten
-SDK-Weg zurück und entfernt von den markierten Fotos die eindeutig reservierten Stichwörter mit den Endungen
+interne IDs oder technische Rangpräfixe. Vor dem Schreibzugriff dedupliziert das Plug-in identische sichtbare
+`(FN)`-Namen; dadurch werden etwa die bei Austernfischer und Bartmeise gleich benannten Familien- und
+Gattungsstufen nur einmal je Foto hinzugefügt. Schreibzugriffe besitzen einen kurzen Timeout und melden einen
+anderweitig belegten Lightroom-Katalog verständlich. `Taxonomie entfernen` nimmt eine Zuweisung über denselben
+kontrollierten SDK-Weg zurück und entfernt von den markierten Fotos die eindeutig reservierten Stichwörter mit den Endungen
 `(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
 erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
 ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.

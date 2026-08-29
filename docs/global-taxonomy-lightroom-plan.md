@@ -1,12 +1,13 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-28
+Stand: 2026-08-29
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.9.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.10.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
-geprüft. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
+geprüft; die gezielten 0.4.10.0-Korrekturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum
+umfassenden Abschlussaudit offen.
 
 Roadmap: Phase 9 und Phase 10
 
@@ -596,15 +597,17 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.9.0 am 2026-08-28 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
-  Mehrfachzuweisung praktisch bestätigt.**
+- **Bis Plug-in-Version 0.4.10.0 am 2026-08-29 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
+  Mehrfachzuweisung praktisch bestätigt, die gezielten 0.4.10.0-Korrekturen noch nicht praktisch abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
   erkennt unter Windows die lokale Node-Installation unabhängig vom durch Lightroom übergebenen `PATH`, übergibt
   den lokalen Suchpaketpfad ausdrücklich, meldet Hilfsprozessfehler diagnostizierbar und bleibt bei
-  Auswahlwechseln geöffnet. Es zeigt Dateiname beziehungsweise ersten Dateinamen plus Anzahl weiterer Fotos,
-  Lifelist, aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an. Die Suche wird über `Art suchen`
-  ausgelöst. Das dauerhaft geöffnete `presentFloatingDialog` besitzt keinen SDK-dokumentierten Standardbutton oder
+  Auswahlwechseln geöffnet. Es zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt`, bei
+  Mehrfachauswahl die Gesamtzahl, den aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an.
+  Lifelist und Katalogstatistik werden ausschließlich im getrennten Statistikfenster berechnet; Öffnen, Zuweisen
+  und Entfernen lösen im Zuweisungsfenster keine katalogweite Statistikberechnung aus. Die Suche wird über
+  `Art suchen` ausgelöst. Das dauerhaft geöffnete `presentFloatingDialog` besitzt keinen SDK-dokumentierten Standardbutton oder
   Enter-/Tastatur-Callback für das Suchfeld.
 - Die Artensuche verwendet die vollständige lokale Masterdatenbank und zeigt vor der Zuweisung den gesamten
   verfügbaren Taxonomiepfad.
@@ -615,6 +618,11 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   steht über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; eine dokumentierte
   Erweiterung des normalen Foto-Rechtsklickmenüs bietet das geprüfte SDK nicht. Sonstige manuelle Stichwörter
   bleiben erhalten.
+- Vor dem Lightroom-Schreibzugriff entsteht aus den sichtbaren `(FN)`-Namen eine eindeutige Liste. Gleich benannte
+  Familien- und Gattungsstufen wie bei Austernfischer und Bartmeise werden nur einmal je Foto angelegt und
+  zugewiesen; der vollständige Taxonomiepfad in den Plug-in-Metadaten bleibt erhalten. Kontextfehler nennen Art,
+  wissenschaftlichen Namen, Keyword beziehungsweise Arbeitsschritt und Fotozahl. Ein kurzer Write-Access-Timeout
+  meldet einen anderweitig belegten Katalog verständlich.
 - Fachliche Plug-in-Metadaten speichern die vollständige strukturierte Taxonomie. Die flachen Lightroom-Stichwörter
   enthalten lesbare Taxonnamen mit reservierter FN-Endung, aber keine internen IDs, Tabellenkennungen oder
   technischen Rangpräfixe. Gemeinsame Rangdefinitionen verhindern Abweichungen zwischen Vorschau, Metadaten,
@@ -680,8 +688,8 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.9.0 die nutzergeführte Rücknahme, dynamische
-Auswahl, Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.10.0 die nutzergeführte Rücknahme, dynamische
+Auswahl, die getrennte Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;

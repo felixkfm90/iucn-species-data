@@ -8,7 +8,6 @@ local LrView = import "LrView"
 
 local KeywordWriter = require "KeywordWriter"
 local PluginState = require "PluginState"
-local Statistics = require "Statistics"
 local TaxonomyHelper = require "TaxonomyHelper"
 local TaxonomyRanks = require "TaxonomyRanks"
 
@@ -96,7 +95,11 @@ local function photoFileName(photo)
   if value ~= "" then
     return cleanText(LrPathUtils.leafName(value))
   end
-  return "Unbenanntes Foto"
+  return ""
+end
+
+local function photoCountText(count)
+  return tostring(count) .. (count == 1 and " Foto" or " Fotos")
 end
 
 local function selectionState(catalog)
@@ -119,19 +122,22 @@ local function selectionState(catalog)
     different = different + 1
   end
 
-  local fileLabel = photoFileName(photos[1])
-  if #photos > 1 then
-    fileLabel = fileLabel .. " + " .. tostring(#photos - 1) .. " weitere"
+  local selectionLabel
+  if #photos == 1 then
+    local fileName = photoFileName(photos[1])
+    selectionLabel = fileName ~= "" and ("Datei: " .. fileName) or "1 Foto ausgewählt"
+  else
+    selectionLabel = photoCountText(#photos) .. " ausgewählt"
   end
 
-  local text = tostring(#photos) .. " Foto(s) ausgewählt"
+  local text = photoCountText(#photos) .. " ausgewählt"
   if assigned == 0 then
-    return photos, text .. " · noch ohne Taxonomie", fileLabel, assigned
+    return photos, text .. " · noch ohne Taxonomie", selectionLabel, assigned
   end
   if different == 1 and assigned == #photos then
-    return photos, text .. " · bereits einheitlich zugeordnet", fileLabel, assigned
+    return photos, text .. " · bereits einheitlich zugeordnet", selectionLabel, assigned
   end
-  return photos, text .. " · " .. tostring(assigned) .. " bereits zugeordnet", fileLabel, assigned
+  return photos, text .. " · " .. tostring(assigned) .. " bereits zugeordnet", selectionLabel, assigned
 end
 
 local function recentItems()
@@ -186,7 +192,6 @@ function AssignmentWindow.show(context)
   props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
   props.selectionFiles = "Lightroom-Auswahl wird gelesen ..."
   props.selectionStatus = "Lightroom-Auswahl wird gelesen ..."
-  props.lifelistStatus = "Lifelist wird berechnet ..."
   props.resultItems = { { title = "Noch keine Suche", value = "" } }
   props.masterTaxonId = ""
   props.recentItems = recentItems()
@@ -200,12 +205,6 @@ function AssignmentWindow.show(context)
 
   local function refreshActions()
     local photos = catalog:getTargetPhotos() or {}
-    local assigned = 0
-    for _, photo in ipairs(photos) do
-      if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
-        assigned = assigned + 1
-      end
-    end
     props.canSearch = props.packageReady and not props.busy
     props.canAssign = currentTaxon ~= nil and #photos > 0 and not props.busy
     -- Der Button bleibt auch nach einer früheren, nur teilweise erfolgreichen
@@ -221,21 +220,10 @@ function AssignmentWindow.show(context)
   end
 
   local function refreshSelection()
-    local _, status, fileLabel = selectionState(catalog)
-    props.selectionFiles = "Datei: " .. fileLabel
+    local _, status, selectionLabel = selectionState(catalog)
+    props.selectionFiles = selectionLabel
     props.selectionStatus = status
     refreshActions()
-  end
-
-  local function refreshLifelist(forceRefresh)
-    local ok, statistics = LrTasks.pcall(Statistics.load, catalog, forceRefresh == true)
-    if ok and statistics then
-      local speciesCount = tonumber(statistics.speciesCount or 0) or 0
-      local speciesLabel = speciesCount == 1 and "Art" or "Arten"
-      props.lifelistStatus = "Lifelist " .. tostring(speciesCount) .. " " .. speciesLabel
-    else
-      props.lifelistStatus = "Lifelist konnte nicht berechnet werden."
-    end
   end
 
   local function initializeSearchPackage()
@@ -349,8 +337,9 @@ function AssignmentWindow.show(context)
     end
     local conflicts = KeywordWriter.findConflicts(photos, currentTaxon)
     if #conflicts > 0 then
-      props.searchStatus = tostring(#conflicts)
-        .. " Foto(s) besitzen bereits eine andere Taxonomie. Es wurde nichts geändert."
+      props.searchStatus = photoCountText(#conflicts)
+        .. (#conflicts == 1 and " besitzt" or " besitzen")
+        .. " bereits eine andere Taxonomie. Es wurde nichts geändert."
       return
     end
 
@@ -359,15 +348,20 @@ function AssignmentWindow.show(context)
     local ok, result = LrTasks.pcall(KeywordWriter.assign, catalog, photos, currentTaxon)
     setBusy(false)
     if not ok then
-      props.searchStatus = "Zuweisung fehlgeschlagen: " .. tostring(result)
+      props.searchStatus = tostring(result)
       return
     end
     PluginState.addRecentTaxon(currentTaxon)
     props.recentItems = recentItems()
     props.recentTaxonId = props.recentItems[1].value
-    props.searchStatus = tostring(result.photoCount) .. " Foto(s) wurden vollständig zugeordnet."
+    local germanName = cleanText(currentTaxon.germanName)
+    local speciesName = germanName ~= "" and germanName or cleanText(currentTaxon.acceptedScientificName)
+    if result.photoCount == 1 then
+      props.searchStatus = "1 Foto wurde " .. speciesName .. " zugewiesen."
+    else
+      props.searchStatus = tostring(result.photoCount) .. " Fotos wurden " .. speciesName .. " zugewiesen."
+    end
     refreshSelection()
-    refreshLifelist(true)
   end
 
   local function removeAssignment()
@@ -393,15 +387,11 @@ function AssignmentWindow.show(context)
     local ok, result = LrTasks.pcall(KeywordWriter.remove, catalog, photos)
     setBusy(false)
     if not ok then
-      props.searchStatus = "Taxonomie konnte nicht entfernt werden: " .. tostring(result)
+      props.searchStatus = tostring(result)
       return
     end
-    props.searchStatus = tostring(result.assignmentCount)
-      .. " Taxonomiezuordnung(en) und "
-      .. tostring(result.keywordCount)
-      .. " verwaltete Stichwortzuordnung(en) wurden entfernt."
+    props.searchStatus = "Von " .. photoCountText(result.photoCount) .. " wurde die Taxonomie entfernt."
     refreshSelection()
-    refreshLifelist(true)
   end
 
   local view = factory:column({
@@ -420,14 +410,7 @@ function AssignmentWindow.show(context)
           fill_horizontal = 1,
           font = "<system/bold>",
         }),
-        factory:row({
-          fill_horizontal = 1,
-          factory:static_text({ title = bind("selectionStatus"), fill_horizontal = 1 }),
-          factory:static_text({
-            title = bind("lifelistStatus"),
-            font = "<system/bold>",
-          }),
-        }),
+        factory:static_text({ title = bind("selectionStatus"), fill_horizontal = 1 }),
         factory:static_text({ title = "Die Zuweisung gilt für alle aktuell markierten Fotos." }),
       }),
     }),
@@ -580,9 +563,7 @@ function AssignmentWindow.show(context)
       end,
       onShow = function(controls)
         activeDialogControls = controls
-        pcall(refreshSelection)
         LrTasks.startAsyncTask(function()
-          refreshLifelist(false)
           initializeSearchPackage()
         end)
       end,

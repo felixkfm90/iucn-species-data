@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.9.0");
+  assert.equal(version.slice(1).join("."), "0.4.10.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -174,8 +174,10 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /Taxonomie entfernen/);
   assert.match(window, /KeywordWriter\.remove/);
   assert.match(window, /Datei: /);
-  assert.match(window, /" \+ " \.\. tostring\(#photos - 1\) \.\. " weitere"/);
-  assert.match(window, /Lifelist /);
+  assert.match(window, /fileName ~= "" and \("Datei: " \.\. fileName\) or "1 Foto ausgewählt"/);
+  assert.match(window, /selectionLabel = photoCountText\(#photos\) \.\. " ausgewählt"/);
+  assert.doesNotMatch(window, /Unbenanntes Foto|\+ [^\n]*weitere/);
+  assert.doesNotMatch(window, /require "Statistics"|lifelistStatus|refreshLifelist|Lifelist/);
   assert.match(window, /getFormattedMetadata\("fileName"\)/);
   assert.match(window, /local function startSearch\(\)/);
   assert.match(window, /searchRequestSerial\s*=\s*searchRequestSerial \+ 1/);
@@ -220,9 +222,19 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /activeDialogControls:toFront\(\)/);
   assert.match(window, /LrTasks\.pcall\(TaxonomyHelper\.request/);
   assert.match(window, /LrTasks\.pcall\(KeywordWriter\.assign/);
+  assert.match(window, /"1 Foto wurde " \.\. speciesName \.\. " zugewiesen\."/);
+  assert.match(window, /tostring\(result\.photoCount\) \.\. " Fotos wurden " \.\. speciesName \.\. " zugewiesen\."/);
+  assert.match(window, /"Von " \.\. photoCountText\(result\.photoCount\) \.\. " wurde die Taxonomie entfernt\."/);
   assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*LrDialogs\.presentFloatingDialog/);
   assert.doesNotMatch(window, /12 \* 60 \* 60|LrTasks\.sleep\(0\.5\)/);
   assert.match(writer, /catalog:withWriteAccessDo/);
+  assert.match(writer, /WRITE_ACCESS_TIMEOUT_SECONDS\s*=\s*10/);
+  assert.match(writer, /timeout\s*=\s*WRITE_ACCESS_TIMEOUT_SECONDS/);
+  assert.match(
+    writer,
+    /Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt\. Bitte warten und erneut versuchen\./,
+  );
+  assert.match(writer, /blocked by another write access call/);
   assert.match(writer, /catalog:createKeyword/);
   assert.match(writer, /photo:addKeyword/);
   assert.match(writer, /photo:setPropertyForPlugin/);
@@ -234,7 +246,39 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   );
   assert.match(writer, /local function managedKeywordName\(value\)/);
   assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
-  assert.match(writer, /createKeyword\(catalog, readableKeyword, nil\)/);
+  assert.match(writer, /pcall\(createKeyword, catalog, readableKeyword, nil\)/);
+  const uniqueKeywordListIndex = writer.indexOf("local managedKeywordNames = {}");
+  const writeAccessIndex = writer.indexOf(
+    'runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen"',
+  );
+  assert.ok(uniqueKeywordListIndex >= 0 && uniqueKeywordListIndex < writeAccessIndex);
+  assert.match(writer, /local seenKeywordNames = \{\}/);
+  assert.match(writer, /local keywordKey = string\.lower\(readableKeyword\)/);
+  assert.match(
+    writer,
+    /if not seenKeywordNames\[keywordKey\] then\s*seenKeywordNames\[keywordKey\] = true\s*table\.insert\(managedKeywordNames, readableKeyword\)/,
+  );
+  assert.equal(
+    writer.match(/photo:addKeyword\(keyword\)/g)?.length,
+    1,
+    "Jedes eindeutige Stichwort darf im Zuweisungspfad nur einmal pro Foto hinzugefügt werden",
+  );
+  assert.match(writer, /table\.insert\(hierarchyPath, utf8Prefix\(metadataValue, 240\)\)/);
+  assert.match(writer, /local taxonomyPath = boundedPath\(hierarchyPath\)/);
+  assert.match(writer, /local function assignmentError\(taxon, keyword, step, photoCount, reason\)/);
+  for (const label of [
+    "Deutscher Artname",
+    "Wissenschaftlicher Name",
+    "Keyword",
+    "Arbeitsschritt",
+    "Fotos",
+    "Ursache",
+  ]) {
+    assert.match(writer, new RegExp(label));
+  }
+  assert.match(writer, /"Stichwort erzeugen"/);
+  assert.match(writer, /"Stichwort zum Foto hinzufügen"/);
+  assert.match(writer, /"Metadatenfeld " \.\. field \.\. " schreiben"/);
   assert.doesNotMatch(writer, /createKeyword\(catalog, "Taxonomie"|PLUGIN_KEYWORD_ROOT/);
   assert.match(writer, /Ausschließlich eindeutig mit \(FN\) oder \(FN\)\* gekennzeichnete Plug-in-/);
   assert.match(writer, /Alle sonstigen, auch manuell\s+(?:--\s*)?gepflegten Lightroom-Stichwörter bleiben unverändert erhalten/);
@@ -269,7 +313,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*withWriteAccessDo[\s\S]*removeCurrentManagedKeywords\(catalog, photo\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*runWithWriteAccess\(catalog, "FN Wildlife Taxonomie entfernen"[\s\S]*removeCurrentManagedKeywords\(catalog, photo\)[\s\S]*clearPluginMetadata\(photo\)/,
     "Stichwörter müssen im selben Schreibzugriff und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.markStatisticsDirty/);
@@ -300,13 +344,14 @@ test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden"
   assert.match(removal, /KeywordWriter\.remove/);
   assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
   assert.match(removal, /Andere Lightroom-Stichwörter/);
+  assert.match(removal, /"Von "[\s\S]*result\.photoCount[\s\S]*" wurde die Taxonomie entfernt\."/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {
   const writer = await source("KeywordWriter.lua");
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "masterTaxonId"\)/);
   assert.match(writer, /existingId ~= taxon\.masterTaxonId/);
-  assert.match(writer, /Der Prototyp überschreibt diese nicht/);
+  assert.match(writer, /Das Plug-in überschreibt diese nicht/);
 });
 
 test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadaten", async () => {
@@ -439,7 +484,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.9\.0/);
+  assert.match(provider, /Version: 0\.4\.10\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
