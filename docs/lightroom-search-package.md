@@ -2,10 +2,10 @@
 
 Stand: 2026-08-29
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.14.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.15.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
-0.4.14.0-Reparaturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
+0.4.15.0-Reparaturen benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
 ## Ziel
@@ -112,7 +112,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.14.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.15.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -213,9 +213,9 @@ Stichwörter ohne FN-Endung bleiben erhalten. Ein manuelles Löschen einzelner S
 dagegen keine Plug-in-Metadaten; für eine vollständige Rücknahme ist deshalb die Plug-in-Aktion zu verwenden.
 Nach Erfolg lautet die Meldung beispielsweise `Von 19 Fotos wurde die Taxonomie entfernt.` Zuweisung und
 Zuweisung und Rücknahme verwenden direkt `withWriteAccessDo` innerhalb der bereits vom Aufrufer gestarteten
-`LrTask`; die einzelnen SDK-Schreibaufrufe werden im Lightroom-Callback direkt ausgeführt. Timeout, zusätzliche
-Fehlerkapsel und die in 0.4.13.0 irreführende Übersetzung als Katalogbelegung wurden entfernt. Version 0.4.14.0
-prüft den tatsächlichen Callback-Abschluss und liest nach der Zuweisung die
+`LrTask`; die einzelnen SDK-Schreibaufrufe werden im Lightroom-Callback direkt ausgeführt. Ein offizieller
+SDK-Timeout wartet bis zu zehn Sekunden, wenn Lightroom kurzzeitig einen anderen Schreibzugriff hält. Version
+0.4.15.0 prüft danach zwingend den Callback-Abschluss und liest nach der Zuweisung die
 gespeicherte `masterTaxonId` jedes Fotos zurück. Erst danach wird Erfolg gemeldet. Beide Aktionen markieren den
 Statistikcache automatisch als ungültig, starten aber keine Neuberechnung im Zuweisungsfenster.
 
@@ -263,7 +263,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.14.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.15.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -327,9 +327,9 @@ Plug-in-Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Vers
 Berechnung aus dem Zuweisungsfenster, deduplizierte sichtbare Keywordnamen und verbesserte Auswahl- und
 Erfolgsmeldungen, beschädigte aber durch normale Lua-`pcall`-Grenzen den yieldenden Schreibpfad. Version 0.4.11.0
 ersetzte die Task-Grenze, konnte jedoch wegen des optionalen Timeouts einen nicht ausgeführten Schreibcallback als
-Erfolg melden. Version 0.4.14.0 stellt den direkten, zuvor praktisch funktionierenden Write-Access-Aufruf wieder
-her, entfernt die irreführende Katalogbelegtmeldung und prüft Callback-Abschluss sowie gespeicherte
-`masterTaxonId`; dieser Reparaturstand ist automatisiert, aber noch nicht praktisch in Lightroom abgenommen. Am
+Erfolg melden. Version 0.4.15.0 ergänzt zum direkten Write-Access-Aufruf den vom SDK vorgesehenen Zehn-Sekunden-
+Timeout und prüft danach Callback-Abschluss sowie gespeicherte `masterTaxonId`; dieser Reparaturstand ist
+automatisiert, aber noch nicht praktisch in Lightroom abgenommen. Am
 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
 Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
 `Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.

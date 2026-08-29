@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.14.0");
+  assert.equal(version.slice(1).join("."), "0.4.15.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -229,13 +229,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(window, /12 \* 60 \* 60|LrTasks\.sleep\(0\.5\)/);
   assert.match(writer, /catalog:withWriteAccessDo/);
   assert.doesNotMatch(writer, /import "LrTasks"|LrTasks\.pcall/);
-  assert.match(writer, /local result = catalog:withWriteAccessDo\(actionName, function\(\)/);
-  assert.doesNotMatch(writer, /WRITE_ACCESS_TIMEOUT_SECONDS|timeout\s*=/);
+  assert.match(writer, /local result = catalog:withWriteAccessDo\(/);
+  assert.match(writer, /WRITE_ACCESS_TIMEOUT_SECONDS\s*=\s*10/);
+  assert.match(writer, /\{ timeout = WRITE_ACCESS_TIMEOUT_SECONDS \}/);
   assert.match(writer, /local completed = false/);
   assert.match(writer, /callbackResult = callback\(\)[\s\S]*?completed = true/);
   assert.match(
     writer,
-    /local result = catalog:withWriteAccessDo\(actionName, function\(\)[\s\S]*?return callbackResult\s*end\)/,
+    /local result = catalog:withWriteAccessDo\([\s\S]*?function\(\)[\s\S]*?return callbackResult\s*end,[\s\S]*?\{ timeout = WRITE_ACCESS_TIMEOUT_SECONDS \}[\s\S]*?\)/,
   );
   assert.doesNotMatch(
     writer,
@@ -243,6 +244,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
     "Der Lua-Callback von withWriteAccessDo muss mit end) geschlossen werden",
   );
   assert.doesNotMatch(writer, /Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt|blocked by another write access call/);
+  assert.match(writer, /if completed then[\s\S]*return result/);
+  assert.match(writer, /Lightroom konnte den Katalog-Schreibzugriff innerhalb von/);
   assert.match(writer, /catalog:createKeyword/);
   assert.match(writer, /photo:addKeyword/);
   assert.match(writer, /photo:setPropertyForPlugin/);
@@ -501,7 +504,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.14\.0/);
+  assert.match(provider, /Version: 0\.4\.15\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

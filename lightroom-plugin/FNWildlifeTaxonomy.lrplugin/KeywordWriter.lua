@@ -5,6 +5,7 @@ local KeywordWriter = {}
 
 local PLUGIN_KEYWORD_SUFFIX = " (FN)"
 local PLUGIN_PARTIAL_KEYWORD_SUFFIX = PLUGIN_KEYWORD_SUFFIX .. "*"
+local WRITE_ACCESS_TIMEOUT_SECONDS = 10
 local METADATA_FIELDS = {
   "masterTaxonId",
   "projectTaxonId",
@@ -307,15 +308,21 @@ local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
   -- direkt, damit keine zusätzliche Task- oder Fehlergrenze den SDK-Aufruf
   -- als blockierten Schreibvorgang erscheinen lässt.
   local completed = false
-  local result = catalog:withWriteAccessDo(actionName, function()
-    local callbackResult = callback()
-    completed = true
-    return callbackResult
-  end)
+  local result = catalog:withWriteAccessDo(
+    actionName,
+    function()
+      local callbackResult = callback()
+      completed = true
+      return callbackResult
+    end,
+    { timeout = WRITE_ACCESS_TIMEOUT_SECONDS }
+  )
   if completed then
     return result
   end
-  local message = "Lightroom hat den angeforderten Katalog-Schreibvorgang nicht ausgeführt."
+  local message = "Lightroom konnte den Katalog-Schreibzugriff innerhalb von "
+    .. tostring(WRITE_ACCESS_TIMEOUT_SECONDS)
+    .. " Sekunden nicht ausführen. Bitte kurz warten und erneut versuchen."
   if errorFormatter then
     error(errorFormatter(message), 0)
   end

@@ -4,9 +4,9 @@ Stand: 2026-08-29
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.14.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.15.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
-geprüft; der 0.4.14.0-Reparaturstand benötigt noch den praktischen Folgetest. Phase 10 bleibt bis zum
+geprüft; der 0.4.15.0-Reparaturstand benötigt noch den praktischen Folgetest. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
 
 Roadmap: Phase 9 und Phase 10
@@ -597,8 +597,8 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.14.0 am 2026-08-29 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
-  Mehrfachzuweisung praktisch bestätigt, der 0.4.14.0-Reparaturstand noch nicht praktisch abgenommen.**
+- **Bis Plug-in-Version 0.4.15.0 am 2026-08-29 umgesetzt und automatisiert geprüft; grundlegende Einzel- und
+  Mehrfachzuweisung praktisch bestätigt, der 0.4.15.0-Reparaturstand noch nicht praktisch abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
   erkennt unter Windows die lokale Node-Installation unabhängig vom durch Lightroom übergebenen `PATH`, übergibt
@@ -622,9 +622,9 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   Familien- und Gattungsstufen wie bei Austernfischer und Bartmeise werden nur einmal je Foto angelegt und
   zugewiesen; der vollständige Taxonomiepfad in den Plug-in-Metadaten bleibt erhalten. Kontextfehler nennen Art,
   wissenschaftlichen Namen, Keyword beziehungsweise Arbeitsschritt und Fotozahl. Die gesamte Write-Access-
-  Operation verwendet direkt `withWriteAccessDo` innerhalb der vom Aufrufer gestarteten `LrTask`; die einzelnen
-  SDK-Aufrufe laufen direkt im Lightroom-Schreibcallback. Version 0.4.14.0 entfernt zusätzlich die in 0.4.13.0
-  irreführend als Katalogbelegung übersetzte Fehlergrenze und prüft Callback-Abschluss sowie `masterTaxonId`.
+  Operation verwendet direkt `withWriteAccessDo` innerhalb der vom Aufrufer gestarteten `LrTask`; ein SDK-Timeout
+  wartet bis zu zehn Sekunden auf kurzzeitige interne Schreibzugriffe. Version 0.4.15.0 prüft danach zwingend
+  Callback-Abschluss sowie `masterTaxonId`, statt einen nicht ausgeführten Callback als Erfolg zu behandeln.
 - Fachliche Plug-in-Metadaten speichern die vollständige strukturierte Taxonomie. Die flachen Lightroom-Stichwörter
   enthalten lesbare Taxonnamen mit reservierter FN-Endung, aber keine internen IDs, Tabellenkennungen oder
   technischen Rangpräfixe. Gemeinsame Rangdefinitionen verhindern Abweichungen zwischen Vorschau, Metadaten,
@@ -690,7 +690,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.14.0 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.15.0 die nutzergeführte Rücknahme, dynamische
 Auswahl, die getrennte Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 
