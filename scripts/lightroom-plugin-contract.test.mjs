@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.11.0");
+  assert.equal(version.slice(1).join("."), "0.4.12.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -230,8 +230,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /catalog:withWriteAccessDo/);
   assert.match(writer, /local LrTasks = import "LrTasks"/);
   assert.match(writer, /local ok, result = LrTasks\.pcall\(function\(\)/);
-  assert.match(writer, /WRITE_ACCESS_TIMEOUT_SECONDS\s*=\s*10/);
-  assert.match(writer, /timeout\s*=\s*WRITE_ACCESS_TIMEOUT_SECONDS/);
+  assert.equal(
+    writer.match(/LrTasks\.pcall/g)?.length,
+    1,
+    "Nur die gesamte Write-Access-Operation darf yield-fähig gekapselt werden",
+  );
+  assert.doesNotMatch(writer, /WRITE_ACCESS_TIMEOUT_SECONDS|timeout\s*=/);
+  assert.match(writer, /local completed = false/);
+  assert.match(writer, /callbackResult = callback\(\)[\s\S]*?completed = true/);
   assert.match(
     writer,
     /Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt\. Bitte warten und erneut versuchen\./,
@@ -248,7 +254,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   );
   assert.match(writer, /local function managedKeywordName\(value\)/);
   assert.match(writer, /utf8Prefix\(value, maximumNameBytes\) \.\. PLUGIN_KEYWORD_SUFFIX/);
-  assert.match(writer, /LrTasks\.pcall\(createKeyword, catalog, readableKeyword, nil\)/);
+  assert.match(writer, /local keyword = createKeyword\(catalog, readableKeyword, nil\)/);
+  assert.doesNotMatch(writer, /LrTasks\.pcall\(createKeyword|LrTasks\.pcall\(setText/);
   const uniqueKeywordListIndex = writer.indexOf("local managedKeywordNames = {}");
   const writeAccessIndex = writer.indexOf(
     'runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen"',
@@ -281,6 +288,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /"Stichwort erzeugen"/);
   assert.match(writer, /"Stichwort zum Foto hinzufügen"/);
   assert.match(writer, /"Metadatenfeld " \.\. field \.\. " schreiben"/);
+  assert.match(writer, /"Zuweisung verifizieren"/);
+  assert.match(writer, /photo:getPropertyForPlugin\(_PLUGIN, "masterTaxonId"\)/);
   const writeSection = writer.slice(writer.indexOf("local function runWithWriteAccess"));
   assert.doesNotMatch(
     writeSection,
@@ -492,7 +501,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.11\.0/);
+  assert.match(provider, /Version: 0\.4\.12\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

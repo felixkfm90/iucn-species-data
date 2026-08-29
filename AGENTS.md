@@ -1126,7 +1126,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.11.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.12.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1134,10 +1134,11 @@ Aktuelle Planung:
   Entfernen starten im Zuweisungsfenster keine katalogweite Statistikberechnung und markieren nach einer Änderung
   nur den Statistikcache als ungültig. Sichtbar gleiche `(FN)`-Stichwortnamen werden vor dem Lightroom-
   Schreibzugriff dedupliziert, sodass Familie und Gattung etwa bei Austernfischer oder Bartmeise dasselbe
-  Stichwort nicht zweimal anlegen oder zuweisen. Zuweisung und Rücknahme verwenden einen kurzen Write-Access-
-  Timeout und melden einen belegten Katalog verständlich. Version 0.4.11.0 ersetzt die in 0.4.10.0 irrtümlich um
-  yieldende SDK-Schreibaufrufe gelegte normale Lua-`pcall`-Grenze vollständig durch `LrTasks.pcall`; dadurch sind
-  `withWriteAccessDo`, Keywordanlage und Metadatenschreiben wieder innerhalb der Lightroom-Task zulässig. Die
+  Stichwort nicht zweimal anlegen oder zuweisen. Version 0.4.12.0 ruft den Lightroom-Schreibcallback ohne den in
+  0.4.11.0 fehlerhaften optionalen Timeout auf, führt die einzelnen SDK-Schreiboperationen darin direkt aus und
+  bestätigt anschließend sowohl die Callback-Ausführung als auch das gespeicherte `masterTaxonId`. Ein stiller
+  No-op darf deshalb keine Erfolgsmeldung mehr erzeugen. Die gesamte Write-Access-Operation bleibt mit
+  `LrTasks.pcall` innerhalb der Lightroom-Task abgesichert. Die
   Suche wird über `Art suchen` ausgelöst. Der
   praktische Test von
   Version 0.4.4.0 widerlegte die Enter-Annahme: `presentFloatingDialog` besitzt keinen SDK-dokumentierten

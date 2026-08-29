@@ -7,7 +7,6 @@ local KeywordWriter = {}
 
 local PLUGIN_KEYWORD_SUFFIX = " (FN)"
 local PLUGIN_PARTIAL_KEYWORD_SUFFIX = PLUGIN_KEYWORD_SUFFIX .. "*"
-local WRITE_ACCESS_TIMEOUT_SECONDS = 10
 local WRITE_ACCESS_BUSY_MESSAGE =
   "Lightroom ist noch mit einem anderen Katalogvorgang beschäftigt. Bitte warten und erneut versuchen."
 local METADATA_FIELDS = {
@@ -307,23 +306,31 @@ local function setText(photo, field, value)
   photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
 end
 
-local function runWithWriteAccess(catalog, actionName, callback)
+local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
   -- Lightroom-Schreibzugriffe dürfen intern yielden. Ein normales Lua-pcall
   -- würde diese Task-Grenze unterbrechen und die SDK-Aufrufe unzulässig machen.
+  local completed = false
   local ok, result = LrTasks.pcall(function()
-    return catalog:withWriteAccessDo(actionName, callback, {
-      timeout = WRITE_ACCESS_TIMEOUT_SECONDS,
+    return catalog:withWriteAccessDo(actionName, function()
+      local callbackResult = callback()
+      completed = true
+      return callbackResult
     })
   end)
-  if ok then
+  if ok and completed then
     return result
   end
-  local message = tostring(result)
+  local message = ok
+      and "Lightroom hat den angeforderten Katalog-Schreibvorgang nicht ausgeführt."
+    or tostring(result)
   local lowerMessage = string.lower(message)
   if string.find(lowerMessage, "blocked by another write access call", 1, true)
       or (string.find(lowerMessage, "write access", 1, true)
         and string.find(lowerMessage, "timeout", 1, true)) then
     error(WRITE_ACCESS_BUSY_MESSAGE, 0)
+  end
+  if errorFormatter then
+    error(errorFormatter(message), 0)
   end
   error(message, 0)
 end
@@ -416,59 +423,29 @@ function KeywordWriter.assign(catalog, photos, taxon)
   end
 
   local managedKeywords = {}
+  local currentKeyword = ""
+  local currentStep = "Katalog-Schreibzugriff starten"
   runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
-      local ok, removeError = LrTasks.pcall(
-        removeManagedKeywords,
-        catalog,
-        photo,
-        previousKeywordNames[index]
-      )
-      if not ok then
-        error(
-          assignmentError(
-            taxon,
-            "",
-            "vorhandene (FN)-Stichwörter entfernen",
-            #photos,
-            removeError
-          ),
-          0
-        )
-      end
+      currentKeyword = ""
+      currentStep = "vorhandene (FN)-Stichwörter entfernen"
+      removeManagedKeywords(catalog, photo, previousKeywordNames[index])
     end
 
     for _, readableKeyword in ipairs(managedKeywordNames) do
-      local ok, keyword = LrTasks.pcall(createKeyword, catalog, readableKeyword, nil)
-      if not ok or not keyword then
+      currentKeyword = readableKeyword
+      currentStep = "Stichwort erzeugen"
+      local keyword = createKeyword(catalog, readableKeyword, nil)
+      if not keyword then
         error(
-          assignmentError(
-            taxon,
-            readableKeyword,
-            "Stichwort erzeugen",
-            #photos,
-            ok and "Lightroom lieferte kein Stichwortobjekt zurück." or keyword
-          ),
+          "Lightroom lieferte kein Stichwortobjekt zurück.",
           0
         )
       end
       table.insert(managedKeywords, keyword)
       for _, photo in ipairs(photos) do
-        local added, addError = LrTasks.pcall(function()
-          photo:addKeyword(keyword)
-        end)
-        if not added then
-          error(
-            assignmentError(
-              taxon,
-              readableKeyword,
-              "Stichwort zum Foto hinzufügen",
-              #photos,
-              addError
-            ),
-            0
-          )
-        end
+        currentStep = "Stichwort zum Foto hinzufügen"
+        photo:addKeyword(keyword)
       end
     end
 
@@ -489,19 +466,9 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
 
     local function setAssignmentText(photo, field, value)
-      local ok, setError = LrTasks.pcall(setText, photo, field, value)
-      if not ok then
-        error(
-          assignmentError(
-            taxon,
-            "",
-            "Metadatenfeld " .. field .. " schreiben",
-            #photos,
-            setError
-          ),
-          0
-        )
-      end
+      currentKeyword = ""
+      currentStep = "Metadatenfeld " .. field .. " schreiben"
+      setText(photo, field, value)
     end
 
     for _, photo in ipairs(photos) do
@@ -522,7 +489,25 @@ function KeywordWriter.assign(catalog, photos, taxon)
       end
       setAssignmentText(photo, "assignedAt", assignedAt)
     end
+  end, function(reason)
+    return assignmentError(taxon, currentKeyword, currentStep, #photos, reason)
   end)
+
+  for _, photo in ipairs(photos) do
+    local assignedTaxonId = cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"))
+    if assignedTaxonId ~= cleanText(taxon.masterTaxonId) then
+      error(
+        assignmentError(
+          taxon,
+          "",
+          "Zuweisung verifizieren",
+          #photos,
+          "Lightroom hat das Plug-in-Metadatum masterTaxonId nicht gespeichert."
+        ),
+        0
+      )
+    end
+  end
 
   PluginState.markStatisticsDirty()
 
