@@ -1118,7 +1118,9 @@ Aktuelle Planung:
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter
   `docs/lightroom-search-package.md` verbindlich dokumentiert. Das reale, vollständig verifizierte read-only
-  Suchpaket enthält 273.505 Taxa und 7.108.393 Suchbegriffe aus der aktiven Masterdatenbank. Der lokale Suchhelfer
+  Suchpaket enthält seit dem kontrollierten Neuaufbau vom 2026-08-29 273.421 Taxa und 7.103.318 Suchbegriffe aus
+  der aktiven Masterdatenbank. `Macroglossum stellatarum` verwendet dort die eigene Namenskorrektur
+  `Taubenschwänzchen`; der lokale Suchhelfer
   funktioniert ohne laufenden Explorer; Paketprüfung, atomare Aktivierung und isolierter Rollback sind praktisch
   verifiziert. Das versionierte deutsche Lua-Plug-in unter `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` zeigt
   Namen und vollständige Hierarchie an und besitzt den kontrollierten Vertrag für eindeutig mit `(FN)` markierte,
@@ -1126,7 +1128,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.16.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.17.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1140,7 +1142,9 @@ Aktuelle Planung:
   `masterTaxonId`; ein Timeout darf deshalb keine Erfolgsmeldung erzeugen. Die zusätzliche, irreführende
   Fehlerübersetzung aus 0.4.13.0 bleibt entfernt. Version 0.4.16.0 verlagert außerdem die Aktualisierung der
   Lightroom-Auswahl aus dem Observer in eine kurze `LrTask`, damit Fotozahl und Einzelfotoanzeige unmittelbar nach
-  Strg+A oder einem Einzelklick nachgezogen werden. Die
+  Strg+A oder einem Einzelklick nachgezogen werden; dies wurde praktisch bestätigt. Version 0.4.17.0 verarbeitet
+  große Statistikscans in 500-Foto-Leseblöcken und yieldet nur zwischen diesen SDK-Lesezugriffen. Eine sofortige
+  Fortschrittsanzeige macht einen ungültigen Statistikcache sichtbar, bevor das Ergebnisfenster erscheint. Die
   Suche wird über `Art suchen` ausgelöst. Der
   praktische Test von
   Version 0.4.4.0 widerlegte die Enter-Annahme: `presentFloatingDialog` besitzt keinen SDK-dokumentierten

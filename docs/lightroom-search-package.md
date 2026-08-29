@@ -2,11 +2,11 @@
 
 Stand: 2026-08-29
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.16.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.17.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
-Zuweisung mit 0.4.15.0 wurde praktisch bestätigt; der Auswahl-Refresh von 0.4.16.0 benötigt noch den praktischen
-Folgetest. Phase 10 bleibt bis zum umfassenden
+Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 benötigt noch
+den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
 ## Ziel
@@ -72,6 +72,11 @@ Der am 13. August 2026 aus dem aktiven realen Master erzeugte Stand enthält:
 
 Paket-ID: `lightroom-84c9977ebcbf5f3dc38f`.
 
+Am 29. August 2026 wurde nach der bestätigten Namenskorrektur für `Macroglossum stellatarum` der Master
+`master-20260829115042248` aktiviert und das Suchpaket vollständig neu gebaut. Der aktuell aktive Stand
+`lightroom-9e5f0da24b6bc65712de` enthält 273.421 Taxa, 7.103.318 Suchbegriffe, 2.665.697 Hierarchiezeilen und 55
+Projektverknüpfungen. Das vorherige Paket bleibt als kontrollierter Rollbackstand erhalten.
+
 Schema, Zähler, Fremdschlüssel, Manifest und SHA-256-Prüfsumme wurden vollständig geprüft. Ein realer isolierter
 Rollbacktest war erfolgreich; danach blieb dasselbe produktive Paket aktiv und weder `previous` noch `staging`
 enthielten Prüfarbeitsstände.
@@ -82,7 +87,8 @@ Repräsentative Offline-Suchen im realen Bestand lagen lokal ungefähr zwischen 
 - `Lilac-breasted Roller` -> `Coracias caudatus`;
 - `Coracias caudatus`;
 - `Dunlin` -> `Calidris alpina`;
-- `Panthera pardus` -> `Leopard`.
+- `Panthera pardus` -> `Leopard`;
+- `Macroglossum stellatarum` -> `Taubenschwänzchen` statt `Karpfenschwanz`.
 
 ## Befehle
 
@@ -113,7 +119,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.16.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.17.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -246,6 +252,10 @@ Familien-, Klassen- und Favoritenbild-Zahlen, `Lifelist: X Arten`, die Taxonomie
 Klassenübersicht sowie `Am häufigsten fotografierte Arten:` mit höchstens zehn Einträgen. Solange noch
 keine Art zugewiesen ist, wird dieser Zustand ausdrücklich angezeigt.
 
+Bei ungültigem Cache erscheint sofort `Taxonomie-Statistik wird geladen`. Der Katalogscan verarbeitet jeweils 500
+Fotos in einem begrenzten `withReadAccessDo`-Block. Fortschrittsaktualisierung und `LrTasks.yield()` erfolgen erst
+nach dem jeweiligen Block; damit wird kein Yield innerhalb des SDK-Lesecallbacks versucht.
+
 Der Statistikcache ist nur eine Beschleunigung und keine fachliche Datenquelle. Zuweisungs-, Rücknahme- und
 Favoritenbild-Aktionen machen ihn automatisch ungültig. Die Statistik liest die Zuordnungen direkt aus dem
 Lightroom-Katalog; ein erneuter Import oder ein Update der Taxonomie-Masterdatenbank ist dafür nicht erforderlich.
@@ -265,7 +275,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.16.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.17.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -331,8 +341,8 @@ Erfolgsmeldungen, beschädigte aber durch normale Lua-`pcall`-Grenzen den yielde
 ersetzte die Task-Grenze, konnte jedoch wegen des optionalen Timeouts einen nicht ausgeführten Schreibcallback als
 Erfolg melden. Version 0.4.15.0 ergänzt zum direkten Write-Access-Aufruf den vom SDK vorgesehenen Zehn-Sekunden-
 Timeout und prüft danach Callback-Abschluss sowie gespeicherte `masterTaxonId`; die Zuweisung wurde praktisch
-bestätigt. Version 0.4.16.0 verlagert den Auswahl-Refresh in eine kurze `LrTask` und benötigt dafür noch den
-praktischen Folgetest. Am
+bestätigt. Version 0.4.16.0 verlagert den Auswahl-Refresh in eine kurze `LrTask`; dies wurde praktisch bestätigt.
+Version 0.4.17.0 verlagert den Statistik-Yield aus dem SDK-Lesecallback und benötigt noch den praktischen Test. Am
 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
 Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
 `Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.

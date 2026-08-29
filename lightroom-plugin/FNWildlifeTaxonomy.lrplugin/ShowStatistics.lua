@@ -49,18 +49,14 @@ local function percentage(part, total)
 end
 
 local function calculate(catalog, forceRefresh)
-  local scope = nil
-  if forceRefresh then
-    scope = LrProgressScope({ title = "Taxonomie-Statistik wird berechnet" })
-  end
-  local statistics, cached = Statistics.load(catalog, forceRefresh, function(index, total)
-    if scope then
-      scope:setPortionComplete(index, math.max(total, 1))
-    end
+  local scope = LrProgressScope({ title = "Taxonomie-Statistik wird geladen" })
+  local ok, statistics, cached = LrTasks.pcall(Statistics.load, catalog, forceRefresh, function(index, total)
+    scope:setPortionComplete(index, math.max(total, 1))
     LrTasks.yield()
   end)
-  if scope then
-    scope:done()
+  scope:done()
+  if not ok then
+    error(statistics, 0)
   end
   return statistics, cached
 end

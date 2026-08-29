@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.16.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, einzelne
-Bedienabläufe praktisch bestätigt; der Auswahl-Refresh von 0.4.16.0 benötigt noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.17.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+Refresh praktisch bestätigt; der Statistikfix von 0.4.17.0 benötigt noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,7 +1055,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.16.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.17.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
@@ -1087,7 +1087,8 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
   neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
   Arten und Cache sind implementiert und vertraglich getestet. Die Statistik liest den Lightroom-Katalog und
-  benötigt kein Taxonomie-Datenbankupdate. `Art-Favoriten` wertet `referenceImage = yes` aus. `Taxonomie
+  benötigt kein Taxonomie-Datenbankupdate. Seit 0.4.17.0 erfolgt der Scan in 500-Foto-Leseblöcken; Fortschritt und
+  Yield liegen außerhalb von `withReadAccessDo`. `Art-Favoriten` wertet `referenceImage = yes` aus. `Taxonomie
   zugewiesen` erkennt eine gültige Plug-in-Master-ID am Präfix `mtx_`; `Taxonomie fehlt` ist über `exclude` die
   Gegenmenge. Die im praktischen Test umgekehrt ausgewerteten Operationen `empty` und `notEmpty` werden nicht mehr
   verwendet. Die Sammlungen hängen weder von normalen
@@ -1103,6 +1104,33 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   nicht überschrieben werden. Zuweisungsfenster, Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
   geprüft. Die komplementären Taxonomiesammlungen wurden bei 132 Fotos und einer Zuweisung praktisch mit 131
   fehlenden und einem zugewiesenen Foto bestätigt;
+- vor 10.5 noch umzusetzen und praktisch zu prüfen: Export der Lifelist mindestens als CSV sowie ein persistenter,
+  inkrementell gepflegter Statistikindex. Der einmalige initiale Katalogaufbau soll als Hintergrundvorgang mit
+  Fortschritt und Pause/Fortsetzen laufen. Plug-in-eigene Zuweisungs-, Rücknahme- und Favoritenaktionen müssen den
+  Index gezielt aktualisieren. Vor der Umsetzung ist anhand des Lightroom-SDK zu klären, welche außerhalb des
+  Plug-ins vorgenommenen relevanten Metadatenänderungen zuverlässig beobachtet werden können; für nicht sicher
+  beobachtbare Änderungen ist eine kontrollierte Aktualisierungs- oder Neuaufbauaktion vorzusehen. Außerdem soll
+  die Klassenübersicht im Statistikfenster aufklappbar werden und je Klasse wie Vögel oder Säugetiere mindestens
+  deutschen Namen, wissenschaftlichen Namen und Fotoanzahl der enthaltenen Lifelist-Arten zeigen. Das
+  das Lightroom-Zuweisungsfenster für die ausgewählte Art eine Namenskorrektur anstoßen können. Das Plug-in darf die
+  Master-SQLite dabei nicht direkt verändern, sondern muss wissenschaftlichen Namen, aktuellen Namen und Vorschlag
+  kontrolliert an den Arten-Explorer übergeben; dort bleiben Bestätigung, versionierte Korrekturschicht,
+  Master-Kandidatenprüfung und Aktivierung verbindlich. Anschließend sind Suchpaket-Neubau/-Aktivierung und die
+  Erkennung des neuen Paketstands durch das Plug-in in den Ablauf einzubeziehen. Mehrere Korrekturen sollen vor
+  diesem gekoppelten Aktualisierungslauf gesammelt werden können; bei einer einzelnen dringenden Korrektur kann er
+  sofort ausdrücklich gestartet werden. Nach erfolgreicher Paketaktivierung genügt im geöffneten Lightroom-
+  Zuweisungsfenster eine neue Suche, weil jede Anfrage das aktuell aktive Suchpaket neu öffnet; Lightroom oder das
+  Plug-in müssen dafür nicht geschlossen werden. Der Arten-Explorer muss nach einer bestätigten Master-Aktivierung
+  das abgeleitete Lightroom-Suchpaket automatisch neu bauen, vollständig prüfen und atomar aktivieren; ein
+  separater Wartungsbefehl darf im normalen Bedienablauf nicht erforderlich sein. Schlägt dieser Schritt fehl,
+  bleibt das vorherige Suchpaket aktiv und der Explorer meldet den Teilerfolg sowie die notwendige Wiederholung
+  ausdrücklich. Vor dem atomaren Master-Slotwechsel muss der Arten-Explorer unter Windows seine eigenen offenen
+  Lesehandles auf die aktive Master-SQLite schließen und nach erfolgreicher Aktivierung gegen den neuen aktiven
+  Slot wieder öffnen; andernfalls blockiert der laufende Explorer die Umbenennung mit `EPERM`. Der dabei notwendige
+  lange
+  Master-Kandidatenbau und der Lightroom-Paketneubau müssen im Arten-Explorer künftig echte Importphasen,
+  verarbeitete Datensätze und einen belastbaren Prozentfortschritt anzeigen, statt während des CoL-Imports ohne
+  sichtbare Zwischenmeldung zu bleiben;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

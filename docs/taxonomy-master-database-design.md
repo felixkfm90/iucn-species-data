@@ -258,6 +258,9 @@ Der Explorer ergänzt diese kompakte Statusanzeige um `Datenbank ansehen und kor
 die aktive Masteransicht vollständig offline. Hierarchie, Rang, Quellen und Masterstatus sind lesbar, aber nicht
 direkt überschreibbar. Für Art-Taxa können deutsche und englische Namen als eigene Korrektur gespeichert oder
 zurückgesetzt werden; diese Korrekturen stehen bei späteren Aktualisierungen über den Anbieterwerten.
+Der vorhandene Button `Korrektur speichern` in der Taxonomie-Datenbank schreibt diese redaktionelle Schicht. Damit
+die Änderung auch in abgeleiteten Beständen wie dem Lightroom-Suchpaket erscheint, muss anschließend ein neuer
+Master-Kandidat gebaut und aktiviert und danach das Lightroom-Suchpaket neu gebaut und aktiviert werden.
 
 Projektkonflikte erscheinen unter demselben Datenbankblock. Bei einer eindeutig extern bestätigten
 CoL-Referenzlücke bietet die Oberfläche eine ausdrückliche Verknüpfung mit der stabilen Master-ID an. Die

@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.16.0");
+  assert.equal(version.slice(1).join("."), "0.4.17.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -445,6 +445,11 @@ test("Katalogstatistik ist cachebar und kann ausdrücklich neu berechnet werden"
   assert.match(state, /statisticsCacheJson/);
   assert.match(state, /statisticsDirty/);
   assert.match(statistics, /catalog:getAllPhotos\(\)/);
+  assert.match(statistics, /READ_CHUNK_SIZE\s*=\s*500/);
+  assert.match(statistics, /for chunkStart = 1, #photos, READ_CHUNK_SIZE do/);
+  assert.match(statistics, /catalog:withReadAccessDo\(function\(\)[\s\S]*?for index = chunkStart, chunkEnd do[\s\S]*?processPhoto\(index\)[\s\S]*?end\s*end\)/);
+  assert.match(statistics, /end\)\s*-- Yield und Fortschrittsanzeige[\s\S]*?if progress then\s*progress\(chunkEnd, #photos\)/);
+  assert.doesNotMatch(statistics, /catalog:withReadAccessDo\(function\(\)[\s\S]*?LrTasks\.yield\(\)/);
   assert.match(statistics, /speciesCount/);
   assert.match(statistics, /familyCount/);
   assert.match(statistics, /referenceImageCount/);
@@ -453,6 +458,8 @@ test("Katalogstatistik ist cachebar und kann ausdrücklich neu berechnet werden"
   assert.match(statistics, /math\.min\(10, #rows\)/);
   assert.match(dialog, /Neu berechnen/);
   assert.match(dialog, /LrProgressScope/);
+  assert.match(dialog, /Taxonomie-Statistik wird geladen/);
+  assert.match(dialog, /LrTasks\.pcall\(Statistics\.load/);
   assert.match(dialog, /Abdeckung:/);
   assert.match(dialog, /Lifelist /);
   assert.match(dialog, /Klassenverteilung/);
@@ -509,7 +516,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.16\.0/);
+  assert.match(provider, /Version: 0\.4\.17\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

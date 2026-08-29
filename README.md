@@ -960,8 +960,9 @@ funktionierende Anbieterstände bleiben bei Ausfällen erhalten. Die Trefferausw
 alle drei Namen direkt und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr.
 Phase 9.6 bis 9.12 stellen stabile IDs, Feldprovenienz, Konfliktvorschau, Projektverknüpfungen, atomare Aktivierung
 und Rollback bereit. Die aktive CoL-Vollreferenz bleibt unverändert und read-only; die Explorer-Suche verwendet
-bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die bisherige Referenz zurück. Der aktive reale
-Master enthält 273.505 Taxa und 7.108.393 Suchbegriffe; alle 54 Projektarten sind eindeutig verknüpft. Aktivierung,
+bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die bisherige Referenz zurück. Der am 29. August
+2026 aktualisierte aktive reale Master enthält 273.421 Taxa und 7.103.318 Suchbegriffe; alle 55 Projektarten sind
+eindeutig verknüpft. Aktivierung,
 Rollback, Offline-Suche, Speicher- und Temporärverhalten wurden praktisch geprüft. Das umfassende Audit unter
 `docs/audits/2026-08-phase-9-closing-audit.md` schließt Phase 9 ab. Phase 10 umfasst ausschließlich Lightroom,
 Phase 11 Mehrgeraetebetrieb, automatische
@@ -976,12 +977,12 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
 `docs/lightroom-feasibility-study.md` abgeschlossen. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt:
 Aus der aktiven Masterdatenbank entsteht ein vollständiges, versioniertes read-only Suchpaket, das ein kleiner
-lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der reale Stand enthält 273.505 Taxa und 7.108.393
+lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der aktive reale Stand enthält 273.421 Taxa und 7.103.318
 Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunden. Ein natives deutsches
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.16.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.17.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1014,8 +1015,9 @@ Taxonomierängen. Rangfelder heißen dort knapp `Reich`, `Klasse`, `Ordnung` und
 Zusatz `(wissenschaftlich)`; gespeichert werden weiterhin die wissenschaftlichen Taxonwerte. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
 technische IDs bleiben in beiden Ansichten ausgeblendet. Der Zusatzmodul-Manager zeigt ausschließlich
 Version und Status des abgeleiteten lokalen Suchpakets, während Datenbankpflege, Updates und Sicherungen zentral im
-Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch und
-benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
+Arten-Explorer bleiben. Die Statistik aktualisiert ihren verwerfbaren Cache nach Plug-in-Aktionen automatisch,
+scannt einen großen Lightroom-Katalog in 500-Foto-Leseblöcken und yieldet nur zwischen den SDK-Lesezugriffen.
+Sie benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
 `referenceImage` und `masterTaxonId` aus und hängen nicht von normalen Fotometadaten oder Lightroom-Stichwörtern ab.
 `Taxonomie zugewiesen` erkennt das reservierte Master-ID-Präfix `mtx_`; `Taxonomie fehlt` ist die ausdrücklich
 ausgeschlossene Gegenmenge. Die praktisch umgekehrt ausgewerteten Leerheitsoperationen werden nicht verwendet.

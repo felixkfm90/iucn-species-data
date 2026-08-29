@@ -2,10 +2,18 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "scientificName": "Macroglossum stellatarum",
+      "germanName": "Taubenschwänzchen",
+      "englishName": "Eurasian Hummingbird Hawkmoth",
+      "note": "Geläufiger deutscher Artname; ersetzt in der lokalen Masterdarstellung den ungebräuchlichen Namen Karpfenschwanz.",
+      "updatedAt": "2026-08-29T11:49:18.289Z"
+    },
+    {
       "scientificName": "Panthera pardus",
       "germanName": "Leopard",
       "englishName": "Leopard",
-      "note": "Geläufiger deutscher Artname; in der aktiven CoL-Referenz fehlt derzeit ein deutscher Vernakularname."
+      "note": "Geläufiger deutscher Artname; in der aktiven CoL-Referenz fehlt derzeit ein deutscher Vernakularname.",
+      "updatedAt": ""
     }
   ]
 }

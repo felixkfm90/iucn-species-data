@@ -3,6 +3,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 
 local Statistics = {}
 local cleanText = TaxonomyRanks.cleanText
+local READ_CHUNK_SIZE = 500
 
 local function countKeys(values)
   local count = 0
@@ -65,8 +66,9 @@ function Statistics.scan(catalog, progress)
   local classSpecies = {}
   local assignedPhotos = 0
 
-  catalog:withReadAccessDo(function()
-    for index, photo in ipairs(photos) do
+  local function processPhoto(index)
+    local photo = photos[index]
+    if photo then
       local masterTaxonId = cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"))
       if masterTaxonId ~= "" then
         assignedPhotos = assignedPhotos + 1
@@ -91,11 +93,23 @@ function Statistics.scan(catalog, progress)
           referenceCounts[masterTaxonId] = (referenceCounts[masterTaxonId] or 0) + 1
         end
       end
-      if progress and (index % 100 == 0 or index == #photos) then
-        progress(index, #photos)
-      end
     end
-  end)
+  end
+
+  for chunkStart = 1, #photos, READ_CHUNK_SIZE do
+    local chunkEnd = math.min(chunkStart + READ_CHUNK_SIZE - 1, #photos)
+    catalog:withReadAccessDo(function()
+      for index = chunkStart, chunkEnd do
+        processPhoto(index)
+      end
+    end)
+    -- Yield und Fortschrittsanzeige liegen bewusst außerhalb von
+    -- withReadAccessDo. Lightroom erlaubt kein Yield innerhalb dieses
+    -- SDK-Callbacks.
+    if progress then
+      progress(chunkEnd, #photos)
+    end
+  end
 
   local references = 0
   local missingReferences = 0
