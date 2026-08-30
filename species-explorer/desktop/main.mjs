@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
+import { fileURLToPath } from "node:url";
 import {
   getExplorerBackupStatus,
   getExplorerPendingChanges,
@@ -9,6 +10,10 @@ import {
   stopManagedExplorerServer,
 } from "./server-lifecycle.mjs";
 import { activateExplorerWindow } from "./window-activation.mjs";
+import {
+  consumeLightroomCorrectionHandoff,
+  parseLightroomCorrectionRequestIds,
+} from "../lightroom-correction-handoff.mjs";
 
 const WINDOW_TITLE = "Arten-Explorer";
 const START_PAGE = "data:text/html;charset=utf-8,"
@@ -52,6 +57,36 @@ let mainWindow = null;
 let managedServer = null;
 let quitting = false;
 let pendingSecondInstanceActivation = false;
+let explorerPageReady = false;
+const pendingCorrectionRequests = [];
+const handledCorrectionRequestIds = new Set();
+
+function deliverPendingCorrectionRequests() {
+  if (!explorerPageReady || !mainWindow || mainWindow.isDestroyed?.()) return;
+  while (pendingCorrectionRequests.length) {
+    mainWindow.webContents.send("taxonomy-correction-request", pendingCorrectionRequests.shift());
+  }
+}
+
+async function queueCorrectionRequests(args) {
+  for (const requestId of parseLightroomCorrectionRequestIds(args)) {
+    if (handledCorrectionRequestIds.has(requestId)) continue;
+    handledCorrectionRequestIds.add(requestId);
+    try {
+      const request = await consumeLightroomCorrectionHandoff(requestId);
+      if (request) pendingCorrectionRequests.push(request);
+    } catch (error) {
+      await dialog.showMessageBox(mainWindow, {
+        type: "warning",
+        buttons: ["OK"],
+        title: "Lightroom-Korrekturanfrage konnte nicht geöffnet werden",
+        message: "Die aus Lightroom übergebene Artbezeichnung konnte nicht sicher geprüft werden.",
+        detail: error.message,
+      });
+    }
+  }
+  deliverPendingCorrectionRequests();
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -66,6 +101,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      preload: fileURLToPath(new URL("./preload.cjs", import.meta.url)),
     },
   });
   mainWindow.setMenuBarVisibility(false);
@@ -127,9 +163,12 @@ async function showStartupError(error) {
 
 async function restartServerAndLoad() {
   try {
+    explorerPageReady = false;
     await stopManagedExplorerServer(managedServer).catch(() => {});
     managedServer = await startManagedExplorerServer();
     await mainWindow.loadURL(managedServer.baseUrl);
+    explorerPageReady = true;
+    deliverPendingCorrectionRequests();
     if (managedServer.usedFallbackPort) {
       mainWindow.webContents.send?.("desktop-warning", "Port 4177 war belegt; die App nutzt einen freien Ersatzport.");
     }
@@ -201,14 +240,17 @@ async function handleWindowClose(event) {
 
 async function boot() {
   createWindow();
+  const correctionRequests = queueCorrectionRequests(process.argv);
   await restartServerAndLoad();
+  await correctionRequests;
 }
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, commandLine) => {
+    void queueCorrectionRequests(commandLine);
     if (!activateExplorerWindow(mainWindow)) pendingSecondInstanceActivation = true;
   });
   app.on("window-all-closed", () => {

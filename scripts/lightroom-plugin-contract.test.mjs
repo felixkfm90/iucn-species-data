@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.17.0");
+  assert.equal(version.slice(1).join("."), "0.4.19.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -132,6 +132,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   const window = await source("AssignmentWindow.lua");
   const writer = await source("KeywordWriter.lua");
   assert.match(helper, /lightroom-search-helper\.mjs/);
+  assert.match(helper, /lightroom-correction-helper\.mjs/);
   assert.match(helper, /resolveNodePath/);
   assert.doesNotMatch(helper, /(?:os|LrSystemInfo)\.getenv\s*\(/);
   assert.match(helper, /getStandardFilePath\("temp"\)/);
@@ -172,6 +173,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /4\. Taxonomie verwalten/);
   assert.match(window, /Ausgewählte Art zuweisen/);
   assert.match(window, /Taxonomie entfernen/);
+  assert.match(window, /Artbezeichnung korrigieren \.\.\./);
+  assert.match(window, /TaxonomyHelper\.openCorrection/);
+  assert.match(window, /props\.canCorrect = isSpeciesTaxon\(currentTaxon\) and not props\.busy/);
   assert.match(window, /KeywordWriter\.remove/);
   assert.match(window, /Datei: /);
   assert.match(window, /fileName ~= "" and \("Datei: " \.\. fileName\) or "1 Foto ausgewählt"/);
@@ -186,7 +190,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
     /factory:edit_field\(\{[\s\S]*?value\s*=\s*bind\("query"\)[\s\S]*?immediate\s*=\s*true[\s\S]*?\}\),\s*factory:push_button\(\{[\s\S]*?title\s*=\s*"Art suchen"[\s\S]*?action\s*=\s*startSearch/,
     "Suchfeld und Suchbutton müssen denselben unmittelbar gebundenen Suchtext verwenden",
   );
-  assert.doesNotMatch(window, /props:addObserver\("query"|validate\s*=\s*function\(_, value\)/);
+  assert.match(window, /props:addObserver\("query", function\(\)/);
+  assert.match(window, /scheduleAutoSearch\s*=\s*function\(\)/);
+  assert.match(window, /LrTasks\.sleep\(0\.5\)/);
+  assert.match(window, /currentTaxon\s*=\s*nil[\s\S]*?props\.masterTaxonId\s*=\s*""/);
+  assert.match(window, /query ~= "" and query ~= cleanText\(currentTaxonQuery\)/);
+  assert.match(window, /title = "Artauswahl prüfen"|"Artauswahl prüfen"/);
+  assert.doesNotMatch(window, /validate\s*=\s*function\(_, value\)/);
   assert.doesNotMatch(window, /is_default\s*=/);
   assert.match(window, /title\s*=\s*"Schließen"/);
   assert.match(window, /activeDialogControls:close\(\)/);
@@ -213,7 +223,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(window, /height_in_lines\s*=\s*32/);
   assert.match(window, /resizable\s*=\s*false/);
   assert.match(window, /width\s*=\s*ASSIGNMENT_WINDOW_WIDTH/);
-  assert.match(window, /height\s*=\s*540/);
+  assert.match(window, /height\s*=\s*565/);
   assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV6"/);
   assert.match(window, /PluginState\.recentTaxa/);
   assert.match(window, /blockTask\s*=\s*true/);
@@ -227,11 +237,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /activeDialogControls:toFront\(\)/);
   assert.match(window, /LrTasks\.pcall\(TaxonomyHelper\.request/);
   assert.match(window, /LrTasks\.pcall\(KeywordWriter\.assign/);
+  assert.match(window, /local activePackage = TaxonomyHelper\.searchPackageStatus\(\)/);
+  assert.match(window, /selectedPackageId ~= cleanText\(activePackage\.packageId\)/);
+  assert.match(window, /Bitte die Art erneut suchen/);
   assert.match(window, /"1 Foto wurde " \.\. speciesName \.\. " zugewiesen\."/);
   assert.match(window, /tostring\(result\.photoCount\) \.\. " Fotos wurden " \.\. speciesName \.\. " zugewiesen\."/);
   assert.match(window, /"Von " \.\. photoCountText\(result\.photoCount\) \.\. " wurde die Taxonomie entfernt\."/);
   assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*LrDialogs\.presentFloatingDialog/);
-  assert.doesNotMatch(window, /12 \* 60 \* 60|LrTasks\.sleep\(0\.5\)/);
+  assert.doesNotMatch(window, /12 \* 60 \* 60/);
   assert.match(writer, /catalog:withWriteAccessDo/);
   assert.doesNotMatch(writer, /import "LrTasks"|LrTasks\.pcall/);
   assert.match(writer, /local result = catalog:withWriteAccessDo\(/);
@@ -516,7 +529,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.17\.0/);
+  assert.match(provider, /Version: 0\.4\.19\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

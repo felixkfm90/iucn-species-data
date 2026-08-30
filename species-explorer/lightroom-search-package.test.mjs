@@ -81,6 +81,7 @@ function insertTaxon(database, {
   providerRecordId,
   referenceState = "exact-col",
   hierarchy,
+  leadingHierarchy = null,
   projectSlug = null,
 }) {
   const releaseId = `${provider}-fixture`;
@@ -97,6 +98,25 @@ function insertTaxon(database, {
     NOW,
     NOW,
   );
+  if (leadingHierarchy) {
+    database.prepare(`
+      INSERT INTO provider_taxon_assertion (
+        release_id, provider_record_id, master_taxon_id, scientific_name,
+        scientific_name_normalized, rank, kingdom, match_state,
+        hierarchy_json, retrieved_at, version_change_state, imported_at
+      ) VALUES (?, ?, ?, ?, ?, 'species', 'Animalia', ?, ?, ?, 'unchanged', ?)
+    `).run(
+      releaseId,
+      `${providerRecordId}-incomplete`,
+      masterTaxonId,
+      scientificName,
+      normalizeTaxonomySearchTerm(scientificName),
+      referenceState === "reference-gap" ? "reference-gap" : "exact",
+      JSON.stringify(leadingHierarchy),
+      NOW,
+      NOW,
+    );
+  }
   const source = database.prepare(`
     INSERT INTO provider_taxon_assertion (
       release_id, provider_record_id, master_taxon_id, scientific_name,
@@ -117,6 +137,7 @@ function insertTaxon(database, {
   for (const [fieldName, fieldValue, language] of [
     ["german-name", germanName, "de"],
     ["english-name", englishName, "en"],
+    ...Object.entries(hierarchy).map(([rank, name]) => [rank, name, ""]),
   ]) {
     database.prepare(`
       INSERT INTO master_field_assertion (
@@ -229,6 +250,10 @@ async function createMasterFixture(taxonomyRoot, version = "master-fixture-v1") 
       provider: "gbif",
       providerRecordId: "gbif-sciurus",
       referenceState: "reference-gap",
+      leadingHierarchy: {
+        kingdom: "Animalia",
+        species: "Sciurus vulgaris",
+      },
       hierarchy: {
         kingdom: "Animalia",
         phylum: "Chordata",
@@ -247,6 +272,29 @@ async function createMasterFixture(taxonomyRoot, version = "master-fixture-v1") 
       provider: "gbif",
       weight: 8,
     });
+    database.prepare(`
+      INSERT INTO master_taxon_status (
+        master_taxon_id, status_name, status_detail, updated_at
+      ) VALUES ('mtx_sciurus_vulgaris_fixture', 'conflicting', NULL, ?)
+    `).run(NOW);
+    const resolvedAssertion = database.prepare(`
+      SELECT assertion_id
+      FROM master_field_assertion
+      WHERE master_taxon_id = 'mtx_sciurus_vulgaris_fixture'
+        AND field_name = 'german-name'
+      LIMIT 1
+    `).get();
+    database.prepare(`
+      INSERT INTO master_conflict (
+        conflict_id, master_taxon_id, field_name, current_assertion_id,
+        candidate_assertion_id, conflict_type, conflict_state, detected_at,
+        resolved_at, resolution_note
+      ) VALUES (
+        'conflict-resolved-sciurus', 'mtx_sciurus_vulgaris_fixture',
+        'german-name', ?, ?, 'changed-value', 'resolved-accept', ?, ?,
+        'Fixture für bereits entschiedenen Konflikt'
+      )
+    `).run(resolvedAssertion.assertion_id, resolvedAssertion.assertion_id, NOW, NOW);
     insertSearchTerm(database, {
       masterTaxonId: "mtx_calidris_alpina_fixture",
       term: "Common Dunlin Bird",
@@ -302,6 +350,19 @@ test("Lightroom-Suchpaket exportiert vollständige Taxonomie und sucht offline",
       ["kingdom", "phylum", "subphylum", "class", "order", "family", "genus", "species"],
     );
     assert.equal(taxon.hierarchy[0].germanName, "Tiere");
+    const sciurus = store.taxon("mtx_sciurus_vulgaris_fixture");
+    assert.deepEqual(
+      sciurus.hierarchy.map((entry) => entry.rank),
+      ["kingdom", "phylum", "class", "order", "family", "genus", "species"],
+    );
+    assert.equal(
+      sciurus.hierarchy.find((entry) => entry.rank === "phylum").source,
+      "GBIF",
+    );
+    assert.equal(
+      sciurus.statuses.some((entry) => entry.status === "conflicting"),
+      false,
+    );
     assert.throws(
       () => store.database.exec("DELETE FROM taxon"),
       /read-only|readonly/i,

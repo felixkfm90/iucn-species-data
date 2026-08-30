@@ -63,10 +63,28 @@
     hasCandidate = false,
     hasWork = false,
     lightroomPackageNeedsRebuild = false,
+    correctionsPending = false,
+    candidateIncludesCorrections = false,
   } = {}) {
-    if (hasCandidate) return "activate";
+    if (hasCandidate && (!correctionsPending || candidateIncludesCorrections)) return "activate";
+    if (correctionsPending) return "build-corrections";
     if (lightroomPackageNeedsRebuild) return "sync-lightroom";
     return hasWork ? "refresh-and-build" : "current";
+  }
+
+  function lightroomCorrectionResult(request = {}, results = []) {
+    const requestedId = cleanText(request.masterTaxonId);
+    const requestedName = cleanText(request.acceptedScientificName).toLocaleLowerCase("de");
+    if (!requestedId || !requestedName) return null;
+    return results.find((entry) => (
+      cleanText(entry.taxonId) === requestedId
+      && cleanText(entry.scientificName).toLocaleLowerCase("de") === requestedName
+    )) || null;
+  }
+
+  function activeMasterVersion(masterStatus = {}) {
+    const active = masterStatus.lifecycle?.active || {};
+    return cleanText(active.candidateId || active.masterVersion);
   }
 
   function createTaxonomyDatabaseController({
@@ -93,6 +111,9 @@
     let selectedResult = null;
     let selectedDetail = null;
     let databaseBusy = false;
+    let correctionSaved = false;
+    let lightroomCorrectionRequest = null;
+    const queuedLightroomCorrectionRequests = [];
 
     function referenceIsActive(status = {}) {
       return status.active === true;
@@ -119,6 +140,7 @@
       const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus);
       const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error);
       const lightroomPackageNeedsRebuild = masterStatus.lightroomPackage?.needsRebuild === true;
+      const correctionsPending = masterStatus.corrections?.pending === true;
       const partial = masterStatus.status === "partial" || lightroomPackageNeedsRebuild;
       const updateAvailable = referenceStatus.updateAvailable === true;
       const blockingConflicts = Array.isArray(masterLifecycle.blockingConflicts)
@@ -142,6 +164,8 @@
           ? "Lightroom-Suchpaket aktualisieren"
           : failed
           ? "Taxonomiedatenbank prüfen"
+          : correctionsPending
+            ? "Eigene Korrekturen übernehmen"
           : updateAvailable
             ? "Neuere Datenbankversion verfügbar"
             : masterLifecycle.active
@@ -155,6 +179,10 @@
           || cleanText(referenceStatus.message)
           || "Aktualisierung wird vorbereitet",
         );
+        const phase = cleanText(masterStatus.progressPhase || referenceStatus.progressPhase);
+        const percent = Number(masterStatus.progressPercent ?? referenceStatus.progressPercent);
+        if (phase) details.push(`Phase: ${phase}`);
+        if (Number.isFinite(percent)) details.push(`${Math.round(percent)} %`);
       }
       if (counts) details.push(counts);
       if (updateAvailable && latest) details.push(`Verfügbar: ${latest}`);
@@ -163,6 +191,11 @@
       }
       if (projectConflicts) {
         details.push(`${projectConflicts} Projektzuordnung(en) manuell prüfen`);
+      }
+      if (correctionsPending) {
+        details.push(
+          `${Number(masterStatus.corrections?.count || 0)} eigene Namenskorrektur(en) warten auf den Master-Neuaufbau`,
+        );
       }
       if (lightroomPackageNeedsRebuild && masterStatus.status !== "partial") {
         details.push(
@@ -277,6 +310,8 @@
         let decision = taxonomyDatabaseUpdateDecision({
           hasCandidate: Boolean(master.lifecycle?.candidate),
           lightroomPackageNeedsRebuild: master.lightroomPackage?.needsRebuild === true,
+          correctionsPending: master.corrections?.pending === true,
+          candidateIncludesCorrections: master.corrections?.candidateIncludesCurrent === true,
         });
         if (decision === "sync-lightroom") {
           const started = await fetchJson("/api/taxonomy/master/sync-lightroom", {
@@ -293,6 +328,17 @@
             );
           }
         } else if (decision === "activate") {
+          await activateCandidate(master);
+        } else if (decision === "build-corrections") {
+          const building = await fetchJson("/api/taxonomy/master/build", {
+            method: "POST",
+            body: JSON.stringify({ refreshProviders: false }),
+          });
+          state.taxonomyMasterSnapshot = building;
+          renderOverview();
+          master = masterIsActive(building)
+            ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, "Korrektur-Neuaufbau")
+            : building;
           await activateCandidate(master);
         } else {
           const preview = await fetchJson("/api/taxonomy/update/preview", {
@@ -386,11 +432,15 @@
         searchResults = [];
         selectedResult = null;
         selectedDetail = null;
+        correctionSaved = false;
+        lightroomCorrectionRequest = null;
         results.hidden = true;
         results.innerHTML = "";
         detail.hidden = true;
         detail.innerHTML = "";
         setMessage("", "");
+        const nextRequest = queuedLightroomCorrectionRequests.shift();
+        if (nextRequest) global.setTimeout(() => void showLightroomCorrectionRequest(nextRequest), 0);
       },
     });
 
@@ -497,6 +547,25 @@
         <div><dt>${escapeHtml(entry.label)}</dt><dd>${escapeHtml(entry.value)}</dd></div>
       `).join("");
       const correctionAllowed = view.rank === "Art";
+      const currentMasterVersion = activeMasterVersion(state.taxonomyMasterSnapshot);
+      const lightroomOrigin = lightroomCorrectionRequest ? `
+        <p class="taxonomy-database-readonly-note">
+          Aus Lightroom übergeben: ${escapeHtml([
+            lightroomCorrectionRequest.germanName || "kein deutscher Name",
+            lightroomCorrectionRequest.englishName || "kein englischer Name",
+          ].join(" · "))}<br>
+          Suchpaket: ${escapeHtml(lightroomCorrectionRequest.packageId || "unbekannt")}
+          · Masterstand: ${escapeHtml(lightroomCorrectionRequest.masterVersion || "unbekannt")}
+          · Aktiver Masterstand: ${escapeHtml(currentMasterVersion || "unbekannt")}
+        </p>
+      ` : "";
+      const savedActions = correctionSaved ? `
+        <p>Die Korrektur ist gespeichert, aber noch nicht in den aktiven Master- und Lightroom-Paketstand eingebaut.</p>
+        <div class="taxonomy-database-correction-actions">
+          <button type="button" data-taxonomy-database-next="collect">Weitere Korrekturen sammeln</button>
+          <button type="button" data-taxonomy-database-next="update">Datenbank jetzt aktualisieren</button>
+        </div>
+      ` : "";
       detail.innerHTML = `
         <header class="taxonomy-database-detail-header">
           <div>
@@ -513,6 +582,7 @@
         <p class="taxonomy-database-source">
           Quelle: ${escapeHtml(view.source)}${view.releaseId ? ` · Stand: ${escapeHtml(view.releaseId)}` : ""}
         </p>
+        ${lightroomOrigin}
         ${correctionAllowed ? `
           <section class="taxonomy-database-correction">
             <h4>Eigene Namenskorrektur</h4>
@@ -526,6 +596,7 @@
               <button type="button" data-taxonomy-database-correction="save">Korrektur speichern</button>
               <button type="button" data-taxonomy-database-correction="reset" ${view.supplement?.correction ? "" : "disabled"}>Eigene Korrektur zurücksetzen</button>
             </div>
+            ${savedActions}
           </section>
         ` : `
           <p class="taxonomy-database-readonly-note">
@@ -541,6 +612,7 @@
       const version = ++requestVersion;
       selectedResult = null;
       selectedDetail = null;
+      correctionSaved = false;
       detail.hidden = true;
       detail.innerHTML = "";
       if (query.length < 2) {
@@ -577,6 +649,7 @@
       const version = ++requestVersion;
       selectedResult = searchResults.find((entry) => String(entry.taxonId) === taxonId) || null;
       if (!selectedResult) return;
+      correctionSaved = false;
       setMessage("Taxondetails werden geladen …", "info");
       try {
         selectedDetail = await fetchJson(`/api/taxonomy/taxa/${encodeURIComponent(taxonId)}`);
@@ -599,6 +672,65 @@
         === scientificName.toLocaleLowerCase("de")
       ));
       if (exact) await selectTaxon(String(exact.taxonId));
+    }
+
+    function prepareNextCorrection() {
+      correctionSaved = false;
+      lightroomCorrectionRequest = null;
+      searchInput.value = "";
+      searchResults = [];
+      selectedResult = null;
+      selectedDetail = null;
+      renderResults();
+      detail.hidden = true;
+      detail.innerHTML = "";
+      setMessage("Weitere Namenskorrekturen können gesucht und gesammelt werden.", "success");
+      searchInput.focus();
+    }
+
+    function updateDatabaseFromCorrection() {
+      dialogController.close("update-database");
+      global.setTimeout(() => void updateDatabase(), 0);
+    }
+
+    async function showLightroomCorrectionRequest(request) {
+      if (!request || typeof request !== "object") return false;
+      if (dialogController.isOpen()) {
+        queuedLightroomCorrectionRequests.push(request);
+        setMessage(
+          "Eine weitere Lightroom-Korrekturanfrage wartet und wird nach dem Schließen dieses Dialogs geöffnet.",
+          "warning",
+        );
+        return false;
+      }
+      lightroomCorrectionRequest = request;
+      correctionSaved = false;
+      dialogController.open();
+      const snapshots = await refreshSnapshots();
+      searchInput.value = cleanText(request.acceptedScientificName);
+      const matches = await search(request.acceptedScientificName);
+      const exact = lightroomCorrectionResult(request, matches);
+      if (!exact) {
+        setMessage(
+          "Die aus Lightroom übergebene Art stimmt nicht eindeutig mit der aktiven Masterdatenbank überein. Es wurde nichts geändert.",
+          "error",
+        );
+        return false;
+      }
+      await selectTaxon(String(exact.taxonId));
+      const currentVersion = activeMasterVersion(snapshots.master);
+      const stale = Boolean(
+        cleanText(request.masterVersion)
+        && currentVersion
+        && cleanText(request.masterVersion) !== currentVersion
+      );
+      setMessage(
+        stale
+          ? "Das Lightroom-Suchpaket basiert auf einem älteren Masterstand. Bitte prüfe die aktuellen Namen besonders sorgfältig."
+          : "Die aus Lightroom übergebene Art wurde eindeutig im aktiven Masterstand gefunden.",
+        stale ? "warning" : "success",
+      );
+      return true;
     }
 
     async function confirmReferenceGap(scientificName, button) {
@@ -627,6 +759,18 @@
     async function saveCorrection(action, button) {
       if (!selectedDetail) return;
       const view = detailPresentation(selectedDetail, selectedResult);
+      const germanName = detail.querySelector("[name='taxonomyDatabaseGerman']")?.value || "";
+      const englishName = detail.querySelector("[name='taxonomyDatabaseEnglish']")?.value || "";
+      const note = detail.querySelector("[name='taxonomyDatabaseNote']")?.value || "";
+      if (
+        action === "save"
+        && cleanText(germanName) === cleanText(view.germanName)
+        && cleanText(englishName) === cleanText(view.englishName)
+        && cleanText(note) === cleanText(view.supplement?.note)
+      ) {
+        setMessage("Es wurde keine geänderte Artbezeichnung eingegeben.", "warning");
+        return;
+      }
       button.disabled = true;
       try {
         if (action === "save") {
@@ -634,9 +778,9 @@
             method: "POST",
             body: JSON.stringify({
               scientificName: view.scientificName,
-              germanName: detail.querySelector("[name='taxonomyDatabaseGerman']")?.value || "",
-              englishName: detail.querySelector("[name='taxonomyDatabaseEnglish']")?.value || "",
-              note: detail.querySelector("[name='taxonomyDatabaseNote']")?.value || "",
+              germanName,
+              englishName,
+              note,
             }),
           });
           selectedResult = {
@@ -649,6 +793,7 @@
             "Die Namenskorrektur wurde gespeichert. Weitere Korrekturen können gesammelt werden; „Datenbank aktualisieren“ baut sie anschließend gemeinsam in den Masterstand ein.",
             "success",
           );
+          correctionSaved = true;
         } else {
           await fetchJson("/api/taxonomy/corrections/reset", {
             method: "POST",
@@ -664,8 +809,10 @@
             hasVerifiedGermanName: Boolean(selectedDetail.germanNames?.[0]?.name),
           };
           setMessage("Die eigene Namenskorrektur wurde zurückgesetzt.", "success");
+          correctionSaved = false;
         }
         renderDetail();
+        await refreshSnapshots();
         await loadReview();
       } catch (error) {
         button.disabled = false;
@@ -679,6 +826,8 @@
       elements.taxonomyDatabaseRollbackButton.addEventListener("click", () => void rollbackDatabase());
       elements.taxonomyDatabaseOpenButton.addEventListener("click", () => dialogController.open());
       searchInput.addEventListener("input", () => {
+        lightroomCorrectionRequest = null;
+        correctionSaved = false;
         clearTimeout(timer);
         requestVersion += 1;
         timer = setTimeout(() => void search(), SEARCH_DELAY_MS);
@@ -689,7 +838,13 @@
       });
       detail.addEventListener("click", (event) => {
         const button = event.target.closest("[data-taxonomy-database-correction]");
-        if (button) void saveCorrection(button.dataset.taxonomyDatabaseCorrection, button);
+        if (button) {
+          void saveCorrection(button.dataset.taxonomyDatabaseCorrection, button);
+          return;
+        }
+        const nextButton = event.target.closest("[data-taxonomy-database-next]");
+        if (nextButton?.dataset.taxonomyDatabaseNext === "collect") prepareNextCorrection();
+        if (nextButton?.dataset.taxonomyDatabaseNext === "update") updateDatabaseFromCorrection();
       });
       elements.taxonomyDatabaseReviewList.addEventListener("click", (event) => {
         const confirmButton = event.target.closest("[data-taxonomy-review-confirm]");
@@ -703,11 +858,17 @@
       void refreshSnapshots();
     }
 
-    return Object.freeze({ setup, refresh: refreshSnapshots, loadReview });
+    return Object.freeze({
+      setup,
+      refresh: refreshSnapshots,
+      loadReview,
+      openCorrectionRequest: showLightroomCorrectionRequest,
+    });
   }
 
   global.SpeciesExplorerTaxonomyDatabase = Object.freeze({
     createTaxonomyDatabaseController,
+    lightroomCorrectionResult,
     taxonomyDatabaseUpdateDecision,
   });
 })(globalThis);

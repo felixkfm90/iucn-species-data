@@ -141,6 +141,15 @@ function readLiveMasterSummary(database) {
   };
 }
 
+function readMasterStatusCounts(database) {
+  return Object.fromEntries(database.prepare(`
+    SELECT status_name, COUNT(*) AS count
+    FROM master_taxon_status
+    GROUP BY status_name
+    ORDER BY status_name
+  `).all().map((row) => [row.status_name, Number(row.count)]));
+}
+
 async function enrichManifestSummary(taxonomyRoot, slot, manifest) {
   if (!manifest) return null;
   const { DatabaseSync } = await loadNodeSqlite();
@@ -198,6 +207,7 @@ async function writeCandidateReviewManifest(taxonomyRoot, database, now) {
     summary: {
       ...manifest.summary,
       conflicts: open,
+      statuses: readMasterStatusCounts(database),
     },
     review: {
       openConflicts: open,
@@ -338,6 +348,21 @@ export async function decideTaxonomyMasterConflict(taxonomyRoot, {
       resolvedAt: timestamp,
       resolutionNote: cleanText(note) || null,
     });
+    const remainingBlocking = Number(database.prepare(`
+      SELECT COUNT(*) AS count
+      FROM master_conflict
+      WHERE master_taxon_id = ?
+        AND conflict_state = 'open'
+        AND conflict_type IN ('changed-value', 'source-removed', 'ambiguous-match')
+    `).get(conflict.master_taxon_id).count);
+    if (remainingBlocking === 0) {
+      setMasterTaxonStatus(database, {
+        masterTaxonId: conflict.master_taxon_id,
+        statusName: "conflicting",
+        updatedAt: timestamp,
+        active: false,
+      });
+    }
     addMasterDecision(database, {
       decisionId: `decision_${crypto.randomUUID().replaceAll("-", "")}`,
       masterTaxonId: conflict.master_taxon_id,

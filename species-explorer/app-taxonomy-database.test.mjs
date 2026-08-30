@@ -8,7 +8,7 @@ const context = vm.createContext({});
 new vm.Script(source, { filename: "app-taxonomy-database.js" }).runInContext(context);
 const database = context.SpeciesExplorerTaxonomyDatabase;
 
-test("Taxonomiedatenbank baut nur bei Quellupdate einen neuen Masterstand", () => {
+test("Taxonomiedatenbank berücksichtigt Quellen, eigene Korrekturen und Suchpaketstand", () => {
   assert.equal(database.taxonomyDatabaseUpdateDecision(), "current");
   assert.equal(
     database.taxonomyDatabaseUpdateDecision({ hasWork: false }),
@@ -27,10 +27,54 @@ test("Taxonomiedatenbank baut nur bei Quellupdate einen neuen Masterstand", () =
     "sync-lightroom",
   );
   assert.equal(
+    database.taxonomyDatabaseUpdateDecision({ correctionsPending: true }),
+    "build-corrections",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      correctionsPending: true,
+      candidateIncludesCorrections: false,
+    }),
+    "build-corrections",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      correctionsPending: true,
+      candidateIncludesCorrections: true,
+    }),
+    "activate",
+  );
+  assert.equal(
     database.taxonomyDatabaseUpdateDecision({
       hasCandidate: true,
       lightroomPackageNeedsRebuild: true,
     }),
     "activate",
   );
+});
+
+test("Lightroom-Korrekturanfrage verlangt identische Master-ID und wissenschaftlichen Namen", () => {
+  const results = [
+    { taxonId: "mtx_richtig", scientificName: "Macroglossum stellatarum" },
+    { taxonId: "mtx_anders", scientificName: "Macroglossum stellatarum" },
+  ];
+  assert.deepEqual(database.lightroomCorrectionResult({
+    masterTaxonId: "mtx_richtig",
+    acceptedScientificName: "Macroglossum stellatarum",
+  }, results), results[0]);
+  assert.equal(database.lightroomCorrectionResult({
+    masterTaxonId: "mtx_falsch",
+    acceptedScientificName: "Macroglossum stellatarum",
+  }, results), null);
+  assert.equal(database.lightroomCorrectionResult({
+    masterTaxonId: "mtx_richtig",
+    acceptedScientificName: "Macroglossum andere",
+  }, results), null);
+});
+
+test("Korrekturaktualisierung schließt den Dialog vor dem sichtbaren Datenbanklauf", () => {
+  assert.match(source, /dialogController\.close\("update-database"\)/);
+  assert.match(source, /setTimeout\(\(\) => void updateDatabase\(\), 0\)/);
 });

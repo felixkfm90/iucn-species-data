@@ -102,6 +102,10 @@ local function photoCountText(count)
   return tostring(count) .. (count == 1 and " Foto" or " Fotos")
 end
 
+local function isSpeciesTaxon(taxon)
+  return taxon ~= nil and string.lower(cleanText(taxon.rank)) == "species"
+end
+
 local function selectionState(catalog)
   local photos = catalog:getTargetPhotos() or {}
   if #photos == 0 then
@@ -169,8 +173,10 @@ function AssignmentWindow.show(context)
   local factory = LrView.osFactory()
   local props = LrBinding.makePropertyTable(context)
   local currentTaxon = nil
+  local currentTaxonQuery = ""
   local searchRequestSerial = 0
   local selectionRefreshSerial = 0
+  local scheduleAutoSearch = nil
 
   local function setPreview(value)
     local text = tostring(value or "")
@@ -199,6 +205,7 @@ function AssignmentWindow.show(context)
   props.recentTaxonId = props.recentItems[1].value
   setPreview("Noch keine Art ausgewählt.")
   props.canAssign = false
+  props.canCorrect = false
   props.canRemove = false
   props.canSearch = false
   props.packageReady = false
@@ -208,6 +215,7 @@ function AssignmentWindow.show(context)
     local photos = catalog:getTargetPhotos() or {}
     props.canSearch = props.packageReady and not props.busy
     props.canAssign = currentTaxon ~= nil and #photos > 0 and not props.busy
+    props.canCorrect = isSpeciesTaxon(currentTaxon) and not props.busy
     -- Der Button bleibt auch nach einer früheren, nur teilweise erfolgreichen
     -- Entfernung verfügbar. So können verwaltete Stichwort-Altlasten in einem
     -- zweiten Durchlauf bereinigt werden, obwohl die Plug-in-Metadaten bereits
@@ -261,12 +269,16 @@ function AssignmentWindow.show(context)
       props.packageStatus = "Das lokale Taxonomie-Suchpaket ist noch nicht installiert."
     end
     setBusy(false)
+    if props.packageReady and scheduleAutoSearch and string.len(cleanText(props.query)) >= 2 then
+      scheduleAutoSearch()
+    end
   end
 
-  local function loadTaxon(masterTaxonId)
+  local function loadTaxon(masterTaxonId, sourceQuery)
     if cleanText(masterTaxonId) == "" then
       return
     end
+    local requestedQuery = cleanText(sourceQuery)
     setBusy(true)
     props.searchStatus = "Taxonomiedetails werden geladen ..."
     local ok, taxon = LrTasks.pcall(TaxonomyHelper.request, {
@@ -278,7 +290,12 @@ function AssignmentWindow.show(context)
       props.searchStatus = "Taxonomiedetails konnten nicht geladen werden: " .. tostring(taxon)
       return
     end
+    if requestedQuery ~= "" and requestedQuery ~= cleanText(props.query) then
+      props.searchStatus = "Die Sucheingabe wurde geändert. Die neue Suche wird abgewartet."
+      return
+    end
     currentTaxon = taxon
+    currentTaxonQuery = requestedQuery
     setPreview(previewText(taxon))
     props.searchStatus = "Art ist zur Zuweisung bereit."
     refreshSelection()
@@ -304,6 +321,9 @@ function AssignmentWindow.show(context)
       limit = 30,
     })
     setBusy(false)
+    if query ~= cleanText(props.query) then
+      return
+    end
     if not ok then
       props.searchStatus = "Suche fehlgeschlagen: " .. tostring(results)
       return
@@ -323,7 +343,7 @@ function AssignmentWindow.show(context)
     props.resultItems = items
     props.masterTaxonId = items[1].value
     props.searchStatus = tostring(#results) .. " Treffer gefunden."
-    loadTaxon(props.masterTaxonId)
+    loadTaxon(props.masterTaxonId, query)
   end
 
   local function startSearch()
@@ -340,10 +360,73 @@ function AssignmentWindow.show(context)
     end)
   end
 
+  scheduleAutoSearch = function()
+    searchRequestSerial = searchRequestSerial + 1
+    local requestSerial = searchRequestSerial
+    local query = cleanText(props.query)
+    currentTaxon = nil
+    currentTaxonQuery = ""
+    props.masterTaxonId = ""
+    props.resultItems = { { title = "Suche wird aktualisiert", value = "" } }
+    setPreview("Noch keine Art ausgewählt.")
+    props.canAssign = false
+    props.canCorrect = false
+    if string.len(query) < 2 then
+      props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
+      return
+    end
+    props.searchStatus = "Suche startet nach kurzer Eingabepause ..."
+    LrTasks.startAsyncTask(function()
+      LrTasks.sleep(0.5)
+      if activeDialogControls
+          and requestSerial == searchRequestSerial
+          and query == cleanText(props.query) then
+        search()
+      end
+    end)
+  end
+
+  props:addObserver("query", function()
+    scheduleAutoSearch()
+  end)
+
   local function assign()
     if not currentTaxon then
       props.searchStatus = "Bitte zuerst eine Art auswählen."
       return
+    end
+    local selectedPackage = currentTaxon.searchPackage or {}
+    local activePackage = TaxonomyHelper.searchPackageStatus()
+    local selectedPackageId = cleanText(selectedPackage.packageId)
+    local selectedMasterVersion = cleanText(selectedPackage.masterVersion)
+    if not activePackage.available
+        or selectedPackageId == ""
+        or selectedMasterVersion == ""
+        or selectedPackageId ~= cleanText(activePackage.packageId)
+        or selectedMasterVersion ~= cleanText(activePackage.masterVersion) then
+      currentTaxon = nil
+      props.masterTaxonId = ""
+      setPreview("Das Suchpaket wurde aktualisiert. Bitte die Art erneut suchen.")
+      props.searchStatus = "Das lokale Suchpaket hat sich seit der Artauswahl geändert. Bitte die Art erneut suchen."
+      refreshActions()
+      return
+    end
+    local query = cleanText(props.query)
+    if query ~= "" and query ~= cleanText(currentTaxonQuery) then
+      local selectedName = cleanText(currentTaxon.germanName)
+      if selectedName == "" then
+        selectedName = cleanText(currentTaxon.acceptedScientificName)
+      end
+      local choice = LrDialogs.confirm(
+        "Artauswahl prüfen",
+        "Im Suchfeld steht „" .. query .. "“, ausgewählt ist aber „" .. selectedName
+          .. "“. Möchtest du wirklich die ausgewählte Art zuweisen?",
+        "Ausgewählte Art zuweisen",
+        "Abbrechen"
+      )
+      if choice ~= "ok" then
+        return
+      end
     end
     local photos = catalog:getTargetPhotos() or {}
     if #photos == 0 then
@@ -377,6 +460,25 @@ function AssignmentWindow.show(context)
       props.searchStatus = tostring(result.photoCount) .. " Fotos wurden " .. speciesName .. " zugewiesen."
     end
     refreshSelection()
+  end
+
+  local function openCorrection()
+    if not isSpeciesTaxon(currentTaxon) then
+      props.searchStatus = "Bitte zuerst eine Art auswählen."
+      return
+    end
+    setBusy(true)
+    props.searchStatus = "Arten-Explorer wird für die Namenskorrektur geöffnet ..."
+    local ok, result = LrTasks.pcall(
+      TaxonomyHelper.openCorrection,
+      currentTaxon.masterTaxonId
+    )
+    setBusy(false)
+    if not ok or not result or result.launched ~= true then
+      props.searchStatus = "Der Arten-Explorer konnte nicht geöffnet werden: " .. tostring(result)
+      return
+    end
+    props.searchStatus = "Die Artbezeichnung wurde im Arten-Explorer zur Prüfung geöffnet."
   end
 
   local function removeAssignment()
@@ -451,10 +553,9 @@ function AssignmentWindow.show(context)
             value = bind("query"),
             width_in_chars = 58,
             fill_horizontal = 1,
-            -- immediate=true hält den gebundenen Suchtext für den
-            -- ausdrücklich betätigten Suchbutton auf dem aktuellen Stand.
-            -- presentFloatingDialog stellt keinen SDK-dokumentierten
-            -- Standardbutton oder Enter-/Tastatur-Callback bereit.
+            -- immediate=true hält den gebundenen Suchtext aktuell. Ein
+            -- Property-Observer startet nach 0,5 Sekunden Eingabepause
+            -- dieselbe Suche wie der Suchbutton.
             immediate = true,
           }),
           factory:push_button({
@@ -477,8 +578,9 @@ function AssignmentWindow.show(context)
             enabled = bind("canSearch"),
             action = function()
               local id = props.masterTaxonId
+              local query = cleanText(props.query)
               LrTasks.startAsyncTask(function()
-                loadTaxon(id)
+                loadTaxon(id, query)
               end)
             end,
           }),
@@ -499,8 +601,10 @@ function AssignmentWindow.show(context)
             enabled = bind("canSearch"),
             action = function()
               local id = props.recentTaxonId
+              props.query = ""
               LrTasks.startAsyncTask(function()
-                loadTaxon(id)
+                LrTasks.yield()
+                loadTaxon(id, "")
               end)
             end,
           }),
@@ -520,6 +624,17 @@ function AssignmentWindow.show(context)
           height = 150,
           fill_horizontal = 1,
           background_color = LrColor(0.94, 0.94, 0.94),
+        }),
+        factory:row({
+          fill_horizontal = 1,
+          factory:spacer({ fill_horizontal = 1 }),
+          factory:push_button({
+            title = "Artbezeichnung korrigieren ...",
+            enabled = bind("canCorrect"),
+            action = function()
+              LrTasks.startAsyncTask(openCorrection)
+            end,
+          }),
         }),
       }),
     }),
@@ -570,7 +685,7 @@ function AssignmentWindow.show(context)
       contents = view,
       resizable = false,
       width = ASSIGNMENT_WINDOW_WIDTH,
-      height = 540,
+      height = 565,
       blockTask = true,
       save_frame = "fnWildlifeTaxonomyAssignmentWindowV6",
       selectionChangeObserver = function()

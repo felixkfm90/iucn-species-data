@@ -960,8 +960,8 @@ funktionierende Anbieterstände bleiben bei Ausfällen erhalten. Die Trefferausw
 alle drei Namen direkt und schließt die Ergebnisliste; einen zusätzlichen Übernahme-Button gibt es nicht mehr.
 Phase 9.6 bis 9.12 stellen stabile IDs, Feldprovenienz, Konfliktvorschau, Projektverknüpfungen, atomare Aktivierung
 und Rollback bereit. Die aktive CoL-Vollreferenz bleibt unverändert und read-only; die Explorer-Suche verwendet
-bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die bisherige Referenz zurück. Der am 29. August
-2026 aktualisierte aktive reale Master enthält 273.421 Taxa und 7.103.318 Suchbegriffe; alle 55 Projektarten sind
+bevorzugt die aktive Masteransicht und fällt bei Bedarf sicher auf die bisherige Referenz zurück. Der am 30. August
+2026 aktualisierte aktive reale Master enthält 273.421 Taxa und 7.103.327 Suchbegriffe; alle 55 Projektarten sind
 eindeutig verknüpft. Aktivierung,
 Rollback, Offline-Suche, Speicher- und Temporärverhalten wurden praktisch geprüft. Das umfassende Audit unter
 `docs/audits/2026-08-phase-9-closing-audit.md` schließt Phase 9 ab. Phase 10 umfasst ausschließlich Lightroom,
@@ -977,20 +977,21 @@ Updates und NAS-Restore und Phase 12 weitere Erweiterungen. Details und Abschlus
 Phase 10.1 wurde am 2026-08-13 mit der Machbarkeitsstudie
 `docs/lightroom-feasibility-study.md` abgeschlossen. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt:
 Aus der aktiven Masterdatenbank entsteht ein vollständiges, versioniertes read-only Suchpaket, das ein kleiner
-lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der aktive reale Stand enthält 273.421 Taxa und 7.103.318
+lokaler Suchhelfer ohne laufenden Arten-Explorer durchsucht. Der aktive reale Stand enthält 273.421 Taxa und 7.103.327
 Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunden. Ein natives deutsches
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.17.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.19.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
 Statistikfenster; das Zuweisungsfenster startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine
-katalogweite Statistikberechnung. Es markiert nach Änderungen nur den Statistikcache als ungültig. Die Suche wird
-über `Art suchen` ausgelöst. Das
-Lightroom-SDK stellt im dauerhaft geöffneten `presentFloatingDialog` keinen dokumentierten Standardbutton oder
-Enter-/Tastatur-Callback für das Suchfeld bereit. Einzel- und
+katalogweite Statistikberechnung. Es markiert nach Änderungen nur den Statistikcache als ungültig. Neben dem
+Button `Art suchen` startet dieselbe Suche automatisch nach 0,5 Sekunden ohne weitere Eingabe. Jede Textänderung
+verwirft sofort die zuvor gewählte Art; eine zusätzliche Sicherheitsabfrage verhindert die stille Zuweisung einer
+Art, deren Suchtext nicht mehr zum geladenen Treffer gehört. Das Lightroom-SDK stellt im dauerhaft geöffneten
+`presentFloatingDialog` weiterhin keinen dokumentierten Enter-/Tastatur-Callback für das Suchfeld bereit. Einzel- und
 Mehrfachzuweisung wurden im separaten Lightroom-Testkatalog praktisch bestätigt. Die vollständige verfügbare
 Taxonomie liegt in stabilen Plug-in-Metadaten; Lightroom-Stichwörter enthalten bewusst nur lesbare Namen ohne
 interne IDs oder technische Rangpräfixe. Vor dem Schreibzugriff dedupliziert das Plug-in identische sichtbare
@@ -1001,6 +1002,15 @@ kontrollierten SDK-Weg zurück und entfernt von den markierten Fotos die eindeut
 `(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
 erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
 ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.
+Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren ...` die ausgewählte Art über eine kurzlebige,
+einmalig konsumierbare Übergabedatei im Arten-Explorer öffnen. Lightroom erhält dadurch keinen Schreibzugriff auf
+den Master. Der Explorer prüft Master-ID und wissenschaftlichen Namen erneut und speichert Änderungen ausschließlich
+in der versionierten Korrekturschicht. Eigene noch nicht eingebaute Korrekturen werden als eigener Aktualisierungsgrund
+erkannt; der Korrekturdialog wird vor dem ausdrücklich gestarteten Neuaufbau geschlossen, sodass Phase und Prozentwert
+im Datenbankblock sichtbar bleiben. Nach der atomaren Masteraktivierung entsteht automatisch ein neues geprüftes
+Lightroom-Suchpaket. Dessen Hierarchie übernimmt den vollständigen bevorzugten Anbieterpfad als Fallback und
+überschreibt beziehungsweise ergänzt ihn rangweise mit den ausgewählten Master-Feldwerten. Dadurch bleiben
+zusätzliche Zwischenränge erhalten, ohne von einem möglicherweise unvollständigen Einzelbeleg abzuhängen.
 Version 0.4.15.0 verwendet innerhalb der bereits laufenden `LrTask` direkt `withWriteAccessDo` und wartet über den
 offiziellen SDK-Timeout bis zu zehn Sekunden auf einen kurz belegten Katalog. Zusätzliche Fehlerkapsel und die
 irreführende pauschale Übersetzung als Katalogbelegung bleiben entfernt. Callback-Abschluss und gespeicherte
@@ -1061,7 +1071,9 @@ CoL-Zeilen und der Vergleich mit dem bisherigen Stand werden speicherschonend sc
 erhöhtes Node-Heap-Limit ist nicht erforderlich. Vor dem atomaren Aktivieren oder Wiederherstellen schließt der
 Explorer eigene read-only Datenbankhandles und öffnet den neuen aktiven Stand bei der nächsten Abfrage wieder.
 Mehrere eigene Namenskorrekturen können gesammelt und anschließend gemeinsam über `Datenbank aktualisieren`
-eingebaut werden.
+eingebaut werden. Der aktive Master speichert dazu einen Fingerabdruck der enthaltenen Korrekturen; dadurch startet
+`Datenbank aktualisieren` auch ohne neue externe Anbieterstände einen lokalen Kandidatenbau, sobald dieser
+Fingerabdruck abweicht.
 
 Nach einer bestätigten Master-Aktivierung oder Wiederherstellung baut der Arten-Explorer das davon abgeleitete
 Lightroom-Suchpaket automatisch neu, prüft es vollständig und aktiviert es erst danach atomar. Der Paketbau läuft

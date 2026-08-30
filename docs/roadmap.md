@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.17.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
-Refresh praktisch bestätigt; der Statistikfix von 0.4.17.0 benötigt noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.19.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+Refresh praktisch bestätigt; Statistikfix, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,7 +1055,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.17.0 am 2026-08-29 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.19.0 am 2026-08-30 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
@@ -1069,9 +1069,12 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Arbeitsschritt und Fotozahl. Version 0.4.10.0 legte irrtümlich normales Lua-`pcall` um yieldende SDK-Aufrufe;
   0.4.11.0 konnte mit dem optionalen Write-Access-Timeout einen nicht ausgeführten Callback als Erfolg werten.
   Version 0.4.15.0 verwendet direkt `withWriteAccessDo` in der bereits laufenden `LrTask`, wartet über den
-  SDK-Timeout bis zu zehn Sekunden und prüft vor Erfolg Callback-Abschluss sowie `masterTaxonId`. Die Suche wird über
-  `Art suchen` ausgelöst. Der praktische Test von Version 0.4.4.0 bestätigte, dass das schwebende Fenster keinen
-  SDK-dokumentierten Standardbutton oder Enter-/Tastatur-Callback bereitstellt.
+  SDK-Timeout bis zu zehn Sekunden und prüft vor Erfolg Callback-Abschluss sowie `masterTaxonId`. Version 0.4.19.0
+  startet dieselbe Suche wie `Art suchen` nach 0,5 Sekunden Eingabepause, verwirft bei jeder Texteingabe den alten
+  Treffer und verlangt bei einer verbleibenden Abweichung eine ausdrückliche Bestätigung. Der praktische Test von
+  Version 0.4.4.0 bestätigte, dass das schwebende Fenster keinen SDK-dokumentierten Standardbutton oder
+  Enter-/Tastatur-Callback bereitstellt. Der dokumentierte `presentFloatingDialog`-Vertrag bietet ebenfalls keine
+  Option, das Fenster nur innerhalb Lightrooms im Vordergrund zu halten.
   Vollständige Taxonomie wird in stabilen Plug-in-Metadaten gespeichert; neu erzeugte
   Lightroom-Stichwörter sind flach, lesbar und mit der reservierten Endung `(FN)` eindeutig gekennzeichnet.
   `Taxonomie entfernen` nimmt die Zuweisung kontrolliert zurück und entfernt auf den markierten Fotos Stichwörter
@@ -1112,7 +1115,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   beobachtbare Änderungen ist eine kontrollierte Aktualisierungs- oder Neuaufbauaktion vorzusehen. Außerdem soll
   die Klassenübersicht im Statistikfenster aufklappbar werden und je Klasse wie Vögel oder Säugetiere mindestens
   deutschen Namen, wissenschaftlichen Namen und Fotoanzahl der enthaltenen Lifelist-Arten zeigen. Das
-  Lightroom-Zuweisungsfenster soll für die ausgewählte Art eine Namenskorrektur anstoßen können. Das Plug-in darf die
+  Lightroom-Zuweisungsfenster kann seit Version 0.4.18.0 für die ausgewählte Art eine Namenskorrektur anstoßen. Das Plug-in darf die
   Master-SQLite dabei nicht direkt verändern, sondern muss wissenschaftlichen Namen, aktuellen Namen und Vorschlag
   kontrolliert an den Arten-Explorer übergeben; dort bleiben Bestätigung, versionierte Korrekturschicht,
   Master-Kandidatenprüfung und Aktivierung verbindlich. Anschließend sind Suchpaket-Neubau/-Aktivierung und die
@@ -1128,10 +1131,21 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Master-Slotwechsel unter Windows seine eigenen offenen read-only Handles; die nächste Abfrage öffnet den neuen
   aktiven Stand wieder bedarfsgesteuert. Der Master-Kandidatenbau zeigt echte Phasen, verarbeitete Datensätze,
   Gesamtzahl, Laufzeit und
-  einen aus realen Teilfortschritten abgeleiteten Prozentwert. CoL-Zeilen werden schrittweise verarbeitet,
+  einen aus realen Teilfortschritten abgeleiteten Prozentwert. Seit Version 0.4.19.0 werden noch nicht in den
+  aktiven Master eingebaute eigene Korrekturen über einen Fingerabdruck als eigener Aktualisierungsgrund erkannt.
+  Der Korrekturdialog schließt vor dem ausdrücklich gestarteten Lauf, damit dessen Fortschritt sichtbar bleibt.
+  Der Lightroom-Export kombiniert den vollständigen bevorzugten Anbieterpfad mit den rangweise ausgewählten
+  Master-Feldwerten und übernimmt daher auch dann den vollständigen Masterpfad, wenn ein einzelner Anbieterbeleg
+  unvollständig ist, ohne zusätzliche Zwischenränge zu verlieren. CoL-Zeilen werden schrittweise verarbeitet,
   bisherige Aliasse bedarfsgesteuert gelesen und der Kandidatenvergleich erfolgt zeilenweise; der frühere
   Vollaufbau-Abbruch an der normalen Node-Heapgrenze ist damit beseitigt. Der automatische Lightroom-Paketneubau
   verwendet denselben sichtbaren Phasenvertrag für Schema, Export, Indizes, Vollprüfung und Aktivierung;
+- vor 10.5 außerdem umsetzen: reine eigene Namenskorrekturen sollen nicht erneut alle externen Quellen und mehrere
+  Millionen Masteraussagen zusammenführen. Der sichere Schnellweg klont den aktiven Master in einen Kandidaten,
+  ändert ausschließlich die versionierten manuellen Namensfelder und deren Suchbegriffe, aktualisiert den
+  Korrektur-Fingerabdruck, prüft den Kandidaten und aktiviert ihn atomar. Der aktive Master darf nicht direkt
+  verändert werden. Das abgeleitete Lightroom-Suchpaket muss danach weiterhin konsistent neu erzeugt oder in einem
+  getrennt nachgewiesenen atomaren Inkrementallauf aktualisiert werden;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

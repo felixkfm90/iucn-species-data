@@ -13,7 +13,11 @@ import {
 function fakeStore() {
   return {
     closed: false,
-    status: () => ({ available: true, packageId: "fixture" }),
+    status: () => ({
+      available: true,
+      packageId: "fixture",
+      masterVersion: "master-fixture",
+    }),
     search: (query, options) => [{ query, options, masterTaxonId: "mtx_fixture" }],
     taxon: (id) => id === "mtx_fixture" ? { masterTaxonId: id } : null,
     close() { this.closed = true; },
@@ -38,11 +42,12 @@ test("Suchhilfe beantwortet Status, Suche und Taxondetail über einen stabilen J
     });
     assert.equal(search.result[0].query, "Dunlin");
     assert.deepEqual(search.result[0].options, { limit: 8, kingdom: "Animalia" });
-    assert.equal(
-      (await handler.handle({ command: "taxon", masterTaxonId: "mtx_fixture" }))
-        .result.masterTaxonId,
-      "mtx_fixture",
-    );
+    const taxon = await handler.handle({ command: "taxon", masterTaxonId: "mtx_fixture" });
+    assert.equal(taxon.result.masterTaxonId, "mtx_fixture");
+    assert.deepEqual(taxon.result.searchPackage, {
+      packageId: "fixture",
+      masterVersion: "master-fixture",
+    });
     const missing = await handler.handle({ command: "taxon", masterTaxonId: "missing" });
     assert.equal(missing.error.code, "taxon-not-found");
   } finally {

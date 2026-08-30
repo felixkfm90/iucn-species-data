@@ -169,6 +169,20 @@ function normalizeCorrection(value = {}) {
   };
 }
 
+export function taxonomyCorrectionsRevision(corrections = []) {
+  const normalizedCorrections = corrections
+    .map(normalizeCorrection)
+    .filter(Boolean)
+    .sort((left, right) => (
+      normalized(left.scientificName).localeCompare(normalized(right.scientificName), "en")
+      || normalized(left.kingdom).localeCompare(normalized(right.kingdom), "en")
+      || normalized(left.rank).localeCompare(normalized(right.rank), "en")
+    ));
+  return crypto.createHash("sha256")
+    .update(JSON.stringify(normalizedCorrections))
+    .digest("hex");
+}
+
 function normalizeColRecord(value = {}, fallback = {}) {
   const scientificName = cleanText(value.scientificName || value.acceptedScientificName);
   if (!scientificName) throw new Error("CoL-Datensatz ohne wissenschaftlichen Namen.");
@@ -1350,6 +1364,9 @@ export async function buildTaxonomyMasterCandidate({
       candidateId: `master-${timestamp.replace(/[^0-9]/g, "").slice(0, 17)}`,
       createdAt: timestamp,
       state: "staging",
+      inputRevisions: {
+        corrections: taxonomyCorrectionsRevision(normalizedCorrections),
+      },
       sources: releases.map((release) => ({
         provider: release.provider,
         providerVersion: release.providerVersion,

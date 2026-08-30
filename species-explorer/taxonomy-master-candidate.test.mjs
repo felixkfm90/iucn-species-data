@@ -95,6 +95,20 @@ function selectedField(root, slot, fieldName) {
   }
 }
 
+function hasTaxonStatus(root, slot, statusName) {
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, slot), { readOnly: true });
+  try {
+    return Boolean(database.prepare(`
+      SELECT 1
+      FROM master_taxon_status
+      WHERE status_name = ?
+      LIMIT 1
+    `).get(statusName));
+  } finally {
+    database.close();
+  }
+}
+
 test("9.9 erstellt zuerst einen prüfbaren Kandidaten und aktiviert ihn nur bestätigt", async (t) => {
   const root = await createRoot(t);
   const progress = [];
@@ -150,6 +164,7 @@ test("9.9 zeigt Hierarchieänderungen als Konflikt und übernimmt sie erst nach 
     decision: "accept-candidate",
     now: () => SECOND,
   });
+  assert.equal(hasTaxonStatus(root, "staging", "conflicting"), false);
   const lifecycle = await inspectTaxonomyMasterLifecycle(root);
   assert.equal(lifecycle.canActivate, true);
   await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });

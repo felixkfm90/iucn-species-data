@@ -473,7 +473,7 @@ const { setup: setupTaxonomyMaster } =
     showQuickConfirm,
     renderDatabaseStatus,
   });
-const { setup: setupTaxonomyDatabase } =
+const taxonomyDatabaseController =
   explorerTaxonomyDatabase.createTaxonomyDatabaseController({
     state,
     elements,
@@ -484,6 +484,7 @@ const { setup: setupTaxonomyDatabase } =
     showQuickConfirm,
     renderDatabaseStatus,
   });
+const { setup: setupTaxonomyDatabase } = taxonomyDatabaseController;
 
 const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
   state,
@@ -583,5 +584,8 @@ setupPipelineControl();
 setupTaxonomyMaintenance();
 setupTaxonomyMaster();
 setupTaxonomyDatabase();
+window.speciesExplorerDesktop?.onTaxonomyCorrectionRequest?.((request) => {
+  void taxonomyDatabaseController.openCorrectionRequest?.(request);
+});
 setupNewSpeciesCreator();
 void startLifecycle();

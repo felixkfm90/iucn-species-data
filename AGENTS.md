@@ -1128,7 +1128,7 @@ Aktuelle Planung:
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter
   `docs/lightroom-search-package.md` verbindlich dokumentiert. Das reale, vollständig verifizierte read-only
-  Suchpaket enthält seit dem kontrollierten Neuaufbau vom 2026-08-29 273.421 Taxa und 7.103.318 Suchbegriffe aus
+  Suchpaket enthält seit dem kontrollierten Neuaufbau vom 2026-08-30 273.421 Taxa und 7.103.327 Suchbegriffe aus
   der aktiven Masterdatenbank. `Macroglossum stellatarum` verwendet dort die eigene Namenskorrektur
   `Taubenschwänzchen`; der lokale Suchhelfer
   funktioniert ohne laufenden Explorer; Paketprüfung, atomare Aktivierung und isolierter Rollback sind praktisch
@@ -1138,7 +1138,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.17.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.19.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1155,10 +1155,16 @@ Aktuelle Planung:
   Strg+A oder einem Einzelklick nachgezogen werden; dies wurde praktisch bestätigt. Version 0.4.17.0 verarbeitet
   große Statistikscans in 500-Foto-Leseblöcken und yieldet nur zwischen diesen SDK-Lesezugriffen. Eine sofortige
   Fortschrittsanzeige macht einen ungültigen Statistikcache sichtbar, bevor das Ergebnisfenster erscheint. Die
-  Suche wird über `Art suchen` ausgelöst. Der
+  Suche bleibt über `Art suchen` verfügbar und startet zusätzlich nach 0,5 Sekunden Eingabepause. Eine Änderung
+  des Suchtexts verwirft die zuvor geladene Art sofort; vor einer trotzdem abweichenden Zuweisung steht eine
+  ausdrückliche Sicherheitsabfrage. Der
   praktische Test von
   Version 0.4.4.0 widerlegte die Enter-Annahme: `presentFloatingDialog` besitzt keinen SDK-dokumentierten
   Standardbutton oder Tastatur-Callback; ein Text-Observer kann Enter nicht von unverändertem Text ableiten.
+  Derselbe dokumentierte Dialogvertrag bietet auch keine Option, das schwebende Fenster nur gegenüber Lightroom,
+  aber nicht gegenüber anderen Windows-Anwendungen im Vordergrund zu halten. Das Plug-in ruft `toFront()` nur auf,
+  wenn die Menüaktion bei bereits geöffnetem Fenster erneut gewählt wird; weitere Vordergrundsteuerung bleibt dem
+  nativen Lightroom-Fenster überlassen.
   `Taxonomie entfernen` steht über `Plug-in-Extras`
   beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; ein Eintrag direkt im normalen Foto-Rechtsklickmenü
   war im praktischen Test nicht verfügbar. Die Aktion löscht Plug-in-Metadaten und alle eindeutig reservierten
@@ -1189,6 +1195,18 @@ Aktuelle Planung:
   geprüft. Die komplementären Taxonomiesammlungen wurden mit 132 Fotos und genau einer Zuweisung praktisch als
   `Taxonomie fehlt = 131` und `Taxonomie zugewiesen = 1` bestätigt. Phase 10 bleibt bis zum umfassenden
   Abschlussaudit offen.
+  Version 0.4.18.0 ergänzte die abgesicherte Übergabe `Artbezeichnung korrigieren ...` an den Arten-Explorer.
+  Version 0.4.19.0 erkennt gespeicherte, noch nicht im aktiven Master enthaltene Korrekturen über einen
+  revisionsfesten Fingerabdruck als Aktualisierungsgrund, schließt vor dem Sofortlauf den Korrekturdialog für den
+  sichtbaren Fortschritt und baut nach Aktivierung das Lightroom-Suchpaket automatisch neu. Dessen Hierarchie
+  kombiniert den vollständigen bevorzugten Anbieterpfad mit den rangweise ausgewählten Master-Feldwerten; damit
+  hängt etwa `Sciurus vulgaris` nicht mehr von einem unvollständigen Einzelbeleg ab, während zusätzliche
+  Zwischenränge erhalten bleiben. Der aktive Stand `lightroom-ef6cfb4b4851d19063d8` enthält 2.670.983
+  Hierarchiezeilen. Die Korrekturübergabe, der neue Paketstand und die automatische
+  Suche benötigen noch den praktischen Lightroom-/Explorer-Folgetest.
+  Vor dem Abschlussaudit bleibt außerdem der sichere inkrementelle Korrekturlauf offen: Er soll bei reinen eigenen
+  Namensänderungen einen geklonten Kandidaten gezielt aktualisieren, statt sämtliche externen Quellen erneut
+  zusammenzuführen; aktiver Master und Lightroom-Paket dürfen dabei weiterhin nur atomar wechseln.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

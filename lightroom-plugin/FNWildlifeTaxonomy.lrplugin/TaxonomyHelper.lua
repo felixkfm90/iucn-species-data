@@ -47,6 +47,15 @@ local function defaultHelperPath()
   )
 end
 
+local function defaultCorrectionHelperPath()
+  local pluginParent = LrPathUtils.parent(_PLUGIN.path)
+  local repositoryRoot = LrPathUtils.parent(pluginParent)
+  return LrPathUtils.child(
+    repositoryRoot,
+    "species-explorer/lightroom-correction-helper.mjs"
+  )
+end
+
 local function resolveNodePath(configuredPath)
   local configured = cleanText(configuredPath)
   if configured ~= "" then
@@ -154,6 +163,7 @@ function TaxonomyHelper.searchPackageStatus()
     manifestPath = manifestPath,
     available = databasePath ~= "" and LrFileUtils.exists(databasePath) == "file",
     taxonCount = 0,
+    packageId = "",
     masterVersion = "",
   }
   if manifestPath ~= "" and LrFileUtils.exists(manifestPath) == "file" then
@@ -162,6 +172,7 @@ function TaxonomyHelper.searchPackageStatus()
       local ok, manifest = pcall(Json.decode, content)
       if ok and type(manifest) == "table" then
         status.taxonCount = tonumber(manifest.taxonCount or 0) or 0
+        status.packageId = cleanText(manifest.packageId)
         status.masterVersion = cleanText(manifest.masterVersion)
       end
     end
@@ -169,13 +180,15 @@ function TaxonomyHelper.searchPackageStatus()
   return status
 end
 
-function TaxonomyHelper.request(payload)
+local function executeHelperRequest(payload, options)
+  options = options or {}
   local prefs = LrPrefs.prefsForPlugin()
   local nodePath = resolveNodePath(prefs.nodePath)
-  local helperPath = prefs.helperPath or defaultHelperPath()
+  local helperPath = options.helperPath or prefs.helperPath or defaultHelperPath()
+  local helperLabel = options.helperLabel or "Taxonomie-Suchhilfe"
   if not LrFileUtils.exists(helperPath) then
     error(
-      "Die lokale Taxonomie-Suchhilfe wurde nicht gefunden: " .. helperPath
+      "Die lokale " .. helperLabel .. " wurde nicht gefunden: " .. helperPath
     )
   end
 
@@ -207,7 +220,7 @@ function TaxonomyHelper.request(payload)
     local encoded = Json.encode(payload)
     local written, writeError = writeTextFile(requestPath, encoded)
     if not written then
-      error("Die Suchanfrage konnte nicht geschrieben werden: " .. tostring(writeError))
+      error("Die Anfrage konnte nicht geschrieben werden: " .. tostring(writeError))
     end
 
     local helperCommand = table.concat({
@@ -228,7 +241,7 @@ function TaxonomyHelper.request(payload)
     )
     if not commandWritten then
       error(
-        "Der Startbefehl der Taxonomie-Suchhilfe konnte nicht geschrieben werden: "
+        "Der Startbefehl der " .. helperLabel .. " konnte nicht geschrieben werden: "
           .. tostring(commandWriteError)
       )
     end
@@ -247,7 +260,7 @@ function TaxonomyHelper.request(payload)
           and (" Technische Meldung: " .. diagnostic)
         or ""
       error(
-        "Die lokale Taxonomie-Suchhilfe konnte nicht gestartet werden. "
+        "Die lokale " .. helperLabel .. " konnte nicht gestartet werden. "
           .. "Verwendeter Node-Pfad: "
           .. nodePath
           .. ". Suchpaket: "
@@ -259,15 +272,15 @@ function TaxonomyHelper.request(payload)
 
     local responseText, readError = readTextFile(responsePath)
     if not responseText then
-      error("Die Antwort der Taxonomie-Suchhilfe konnte nicht gelesen werden: " .. tostring(readError))
+      error("Die Antwort der " .. helperLabel .. " konnte nicht gelesen werden: " .. tostring(readError))
     end
     if not responseText or responseText == "" then
-      error("Die lokale Taxonomie-Suchhilfe hat keine Antwort gespeichert.")
+      error("Die lokale " .. helperLabel .. " hat keine Antwort gespeichert.")
     end
 
     local decodedOk, response = pcall(Json.decode, responseText)
     if not decodedOk then
-      error("Die Antwort der Taxonomie-Suchhilfe ist kein gültiges JSON.")
+      error("Die Antwort der " .. helperLabel .. " ist kein gültiges JSON.")
     end
     if not response.ok then
       error(responseError(response))
@@ -284,6 +297,22 @@ function TaxonomyHelper.request(payload)
     error(result)
   end
   return result
+end
+
+function TaxonomyHelper.request(payload)
+  return executeHelperRequest(payload, {
+    helperPath = LrPrefs.prefsForPlugin().helperPath or defaultHelperPath(),
+    helperLabel = "Taxonomie-Suchhilfe",
+  })
+end
+
+function TaxonomyHelper.openCorrection(masterTaxonId)
+  return executeHelperRequest({
+    masterTaxonId = cleanText(masterTaxonId),
+  }, {
+    helperPath = defaultCorrectionHelperPath(),
+    helperLabel = "Korrekturübergabe",
+  })
 end
 
 return TaxonomyHelper

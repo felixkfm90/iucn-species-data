@@ -123,6 +123,9 @@ export function chooseFieldAssertion({
   if (normalized(current.fieldValue) === normalized(candidate.fieldValue)) {
     return { action: "retain", reason: "same-value" };
   }
+  if (candidate.originKind === "manual") {
+    return { action: "select", reason: "explicit-manual-correction" };
+  }
   if (current.originKind === "manual" || current.originKind === "project") {
     return { action: "conflict", reason: "protected-current-value" };
   }

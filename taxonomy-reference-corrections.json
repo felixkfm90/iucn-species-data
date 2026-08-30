@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "scientificName": "Amazona autumnalis",
+      "germanName": "Rotstirnamazone",
+      "englishName": "Red-lored Amazon",
+      "note": "Gebräuchliche deutsche Bezeichnung für diese Art, früher Gelbwangenamazone genannt",
+      "updatedAt": "2026-08-30T07:26:47.208Z"
+    },
+    {
       "scientificName": "Macroglossum stellatarum",
       "germanName": "Taubenschwänzchen",
       "englishName": "Eurasian Hummingbird Hawkmoth",

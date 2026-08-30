@@ -8,6 +8,7 @@ import {
   createTaxonomyMasterService,
   taxonomyMasterServiceInternals,
 } from "./taxonomy-master-service.mjs";
+import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 
 const NOW = new Date("2026-08-01T12:00:00.000Z");
 
@@ -69,6 +70,57 @@ function lifecycle({ blocking = false } = {}) {
     canRollback: false,
   };
 }
+
+test("eigene Korrekturen bleiben bis zu einem passenden Masterkandidaten sichtbar offen", async (t) => {
+  const fixture = await createFixture(t);
+  const emptyRevision = taxonomyCorrectionsRevision([]);
+  let lifecycleSnapshot = {
+    ...lifecycle(),
+    candidate: null,
+    active: {
+      candidateId: "master-active",
+      inputRevisions: { corrections: emptyRevision },
+      sources: [{ provider: "manual", recordCount: 0 }],
+    },
+  };
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: fixture.root,
+    referenceService: { async requireStore() { return referenceStore(); } },
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    async inspectLifecycle() { return lifecycleSnapshot; },
+  });
+
+  assert.equal((await service.status()).corrections.pending, false);
+  const entries = [{
+    scientificName: "Panthera pardus",
+    rank: "species",
+    kingdom: "Animalia",
+    germanName: "Leopard",
+    englishName: "Leopard",
+    note: "Geprüfter Name",
+  }];
+  await fs.writeFile(
+    fixture.correctionsPath,
+    `${JSON.stringify({ schemaVersion: 1, entries }, null, 2)}\n`,
+    "utf8",
+  );
+  let status = await service.status();
+  assert.equal(status.corrections.pending, true);
+  assert.equal(status.corrections.candidateIncludesCurrent, false);
+
+  lifecycleSnapshot = {
+    ...lifecycleSnapshot,
+    candidate: {
+      candidateId: "master-candidate",
+      inputRevisions: { corrections: taxonomyCorrectionsRevision(entries) },
+    },
+  };
+  status = await service.status();
+  assert.equal(status.corrections.pending, true);
+  assert.equal(status.corrections.candidateIncludesCurrent, true);
+  await service.close();
+});
 
 test("breite Anbieter-Ausschnitte vermeiden erneute CoL-Suchen für bekannte IDs und Referenzlücken", async () => {
   const searched = [];

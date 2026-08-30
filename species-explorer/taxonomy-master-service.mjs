@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { buildTaxonomyMasterCandidate } from "./taxonomy-master-candidate.mjs";
+import {
+  buildTaxonomyMasterCandidate,
+  taxonomyCorrectionsRevision,
+} from "./taxonomy-master-candidate.mjs";
 import {
   activateTaxonomyMasterCandidate,
   decideTaxonomyMasterConflict,
@@ -321,12 +324,37 @@ export class TaxonomyMasterService {
       canActivate: false,
       canRollback: false,
     }));
-    const lightroomPackage = await this.lightroomPackageStatus(lifecycle);
+    const [lightroomPackage, corrections] = await Promise.all([
+      this.lightroomPackageStatus(lifecycle),
+      this.correctionsStatus(lifecycle),
+    ]);
     return {
       ...this.state,
       active: this.isActive(),
       lifecycle,
       lightroomPackage,
+      corrections,
+    };
+  }
+
+  async correctionsStatus(lifecycle = null) {
+    const snapshot = lifecycle || await this.inspectLifecycle(this.taxonomyRoot);
+    const document = await readJson(this.correctionsPath, { entries: [] });
+    const corrections = correctionsFromDocument(document);
+    const currentRevision = taxonomyCorrectionsRevision(corrections);
+    const activeRevision = cleanText(snapshot.active?.inputRevisions?.corrections);
+    const candidateRevision = cleanText(snapshot.candidate?.inputRevisions?.corrections);
+    const activeManualCount = Number(
+      snapshot.active?.sources?.find((source) => source.provider === "manual")?.recordCount || 0,
+    );
+    const activeCurrent = activeRevision
+      ? activeRevision === currentRevision
+      : corrections.length === 0 && activeManualCount === 0;
+    return {
+      count: corrections.length,
+      pending: !activeCurrent,
+      candidateIncludesCurrent: Boolean(candidateRevision)
+        && candidateRevision === currentRevision,
     };
   }
 

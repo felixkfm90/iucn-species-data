@@ -264,6 +264,12 @@ Master-Kandidat gebaut und aktiviert und danach das Lightroom-Suchpaket neu geba
 Mehrere Namenskorrekturen können vor diesem Neuaufbau gesammelt werden. Die Erfolgsmeldung verweist deshalb
 ausdrücklich auf `Datenbank aktualisieren`; das Speichern einer einzelnen Korrektur behauptet nicht mehr, der
 abgeleitete Master- oder Lightroom-Bestand sei bereits erneuert.
+Seit dem 30. August 2026 enthält jedes Kandidatenmanifest zusätzlich einen deterministischen Fingerabdruck der
+eingebauten Korrekturschicht. Weicht die aktuelle Korrekturdatei davon ab, ist dies unabhängig von externen
+Anbieterständen ein eigener Aktualisierungsgrund. Ein vorhandener älterer Kandidat wird nur aktiviert, wenn sein
+Fingerabdruck bereits dem aktuellen Korrekturstand entspricht; andernfalls entsteht ein neuer lokaler Kandidat.
+Beim ausdrücklich gewählten Sofortlauf schließt der Korrekturdialog, bevor die Bestätigung und der Lauf beginnen,
+damit Phase, Prozentwert und Laufzeit im Datenbankblock sichtbar bleiben.
 
 Projektkonflikte erscheinen unter demselben Datenbankblock. Bei einer eindeutig extern bestätigten
 CoL-Referenzlücke bietet die Oberfläche eine ausdrückliche Verknüpfung mit der stabilen Master-ID an. Die
@@ -311,3 +317,14 @@ Hilfsprozess und zeigt dessen Schema-, Export-, Index-, Prüf- und Aktivierungsp
 Der aktive Suchpaketstand wird über die `masterVersion` mit der aktiven Master-`candidateId` verglichen. Scheitert
 der Paketbau, bleibt das vorherige Suchpaket aktiv; der Masterwechsel wird als Teilerfolg gemeldet und
 `Datenbank aktualisieren` holt gezielt nur die fehlende Ableitung nach.
+Der Hierarchieexport setzt keinen einzelnen Anbieterbeleg als vollständig voraus. Er übernimmt zunächst den
+vollständigen bevorzugten Anbieterpfad und überschreibt beziehungsweise ergänzt jeden im Master ausgewählten Rang.
+Dadurch bleibt beispielsweise der vollständige Pfad von `Sciurus vulgaris` im Lightroom-Paket erhalten, auch wenn
+ein zusätzlicher GBIF-Beleg nur Reich und Art liefert; zusätzliche Zwischenränge anderer Taxa gehen nicht verloren.
+
+Vor dem Phase-10-Abschluss ist für reine Änderungen der versionierten Korrekturschicht ein sicherer inkrementeller
+Kandidatenbau vorgesehen. Er darf den aktiven Slot nicht direkt ändern, sondern klont ihn, ersetzt ausschließlich
+betroffene manuelle Namensbehauptungen und Suchbegriffe, aktualisiert den Korrektur-Fingerabdruck und durchläuft
+Integritätsprüfung sowie atomare Aktivierung. Damit entfällt für einen redaktionellen Namen der vollständige
+Neuimport und die Zusammenführung aller Anbieterzeilen. Die Lightroom-Ableitung bleibt ein eigener geprüfter und
+atomarer Folgeschritt.

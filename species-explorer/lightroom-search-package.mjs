@@ -66,11 +66,11 @@ function packageId(masterVersion, now) {
   return `lightroom-${crypto.createHash("sha256").update(source).digest("hex").slice(0, 20)}`;
 }
 
-function rankPositionSql() {
+function rankPositionSql(fieldExpression = "hierarchy.key") {
   const clauses = Object.entries(RANK_POSITIONS)
     .map(([rank, position]) => `WHEN '${rank}' THEN ${position}`)
     .join(" ");
-  return `CASE lower(hierarchy.key) ${clauses} ELSE 500 END`;
+  return `CASE lower(${fieldExpression}) ${clauses} ELSE 500 END`;
 }
 
 function providerPrioritySql() {
@@ -140,7 +140,17 @@ function populateLightroomSearchDatabase(database, sourcePath, metadata) {
       SELECT status.master_taxon_id, status.status_name, status.status_detail,
         status.updated_at
       FROM master.master_taxon_status status
-      JOIN taxon ON taxon.master_taxon_id = status.master_taxon_id;
+      JOIN taxon ON taxon.master_taxon_id = status.master_taxon_id
+      WHERE status.status_name != 'conflicting'
+        OR EXISTS (
+          SELECT 1
+          FROM master.master_conflict conflict
+          WHERE conflict.master_taxon_id = status.master_taxon_id
+            AND conflict.conflict_state = 'open'
+            AND conflict.conflict_type IN (
+              'changed-value', 'source-removed', 'ambiguous-match'
+            )
+        );
 
       INSERT INTO project_link (
         project_taxon_key, master_taxon_id, project_slug,
@@ -189,6 +199,25 @@ function populateLightroomSearchDatabase(database, sourcePath, metadata) {
       WHERE preferred.hierarchy_priority = 1
         AND hierarchy.type = 'text'
         AND trim(CAST(hierarchy.value AS TEXT)) != '';
+
+      INSERT OR REPLACE INTO hierarchy (
+        master_taxon_id, position, rank, scientific_name, source_provider
+      )
+      SELECT field.master_taxon_id, ${rankPositionSql("field.field_name")},
+        lower(field.field_name), trim(field.field_value), release.provider
+      FROM master.master_field_assertion field
+      JOIN master.provider_release release ON release.release_id = field.release_id
+      JOIN taxon ON taxon.master_taxon_id = field.master_taxon_id
+      WHERE field.selected = 1
+        AND lower(field.field_name) IN (
+          'domain', 'superkingdom', 'kingdom', 'subkingdom', 'infrakingdom',
+          'superphylum', 'phylum', 'subphylum', 'infraphylum', 'parvphylum',
+          'superclass', 'class', 'subclass', 'infraclass', 'parvclass', 'megaclass',
+          'superorder', 'order', 'suborder', 'infraorder', 'parvorder',
+          'superfamily', 'family', 'subfamily', 'tribe', 'subtribe',
+          'genus', 'subgenus', 'species'
+        )
+        AND trim(field.field_value) != '';
 
       INSERT INTO search_term (
         search_term_id, master_taxon_id, term, normalized_term, folded_term,

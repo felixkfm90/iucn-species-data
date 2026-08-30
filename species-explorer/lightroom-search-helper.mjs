@@ -80,7 +80,14 @@ export async function createLightroomSearchRequestHandler({
               code: "taxon-not-found",
             });
           }
-          return success(request, taxon);
+          const status = store.status();
+          return success(request, {
+            ...taxon,
+            searchPackage: {
+              packageId: status.packageId,
+              masterVersion: status.masterVersion,
+            },
+          });
         }
         if (command === "close") {
           this.close();

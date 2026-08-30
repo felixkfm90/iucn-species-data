@@ -2,11 +2,12 @@
 
 Stand: 2026-08-30
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.17.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.19.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
-Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 benötigt noch
-den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
+Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
+Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, der Korrektur-Neuaufbau und die automatische Suche von 0.4.19.0
+benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
 ## Ziel
@@ -33,6 +34,9 @@ aktive Taxonomie-Masterdatenbank (read-only)
 Die fachliche Wahrheit bleibt die Masterdatenbank des Arten-Explorers. Das Suchpaket ist eine reproduzierbare,
 unveränderliche Ableitung und keine zweite pflegbare Taxonomiedatenbank. Es enthält alle nicht veralteten Mastertaxa,
 alle Suchnamen, die vollständige verfügbare Hierarchie, Status, Anbieterbelege und vorhandene Projektverknüpfungen.
+Seit dem Exportstand 0.4.19.0 bildet der vollständige bevorzugte Anbieterpfad den Fallback; rangweise ausgewählte
+Master-Feldwerte überschreiben beziehungsweise ergänzen ihn. Damit kann ein unvollständiger Einzelbeleg nicht mehr
+einen vollständig vorhandenen Masterpfad verkürzen, während zusätzliche Zwischenränge erhalten bleiben.
 
 Lightroom greift weder auf die interne Master-SQLite noch auf den Explorer-Server zu. Der Suchhelfer öffnet das aktive
 Suchpaket ausschließlich read-only. Katalog- und XMP-Dateien werden nie direkt bearbeitet.
@@ -85,9 +89,15 @@ Der am 13. August 2026 aus dem aktiven realen Master erzeugte Stand enthält:
 Paket-ID: `lightroom-84c9977ebcbf5f3dc38f`.
 
 Am 29. August 2026 wurde nach der bestätigten Namenskorrektur für `Macroglossum stellatarum` der Master
-`master-20260829115042248` aktiviert und das Suchpaket vollständig neu gebaut. Der aktuell aktive Stand
+`master-20260829115042248` aktiviert und das Suchpaket vollständig neu gebaut. Der damalige Stand
 `lightroom-9e5f0da24b6bc65712de` enthält 273.421 Taxa, 7.103.318 Suchbegriffe, 2.665.697 Hierarchiezeilen und 55
 Projektverknüpfungen. Das vorherige Paket bleibt als kontrollierter Rollbackstand erhalten.
+
+Am 30. August 2026 wurde `master-20260830105212577` mit drei eigenen Korrekturen aktiviert. Das daraus vollständig
+geprüfte Paket `lightroom-ef6cfb4b4851d19063d8` enthält 273.421 Taxa, 7.103.327 Suchbegriffe, 2.670.983
+Hierarchiezeilen und 55 Projektverknüpfungen. `Amazona autumnalis` liefert bevorzugt `Rotstirnamazone`;
+`Sciurus vulgaris` enthält im Paket den vollständigen Pfad von Reich bis Art. Der vorherige Paketstand bleibt im
+Slot `previous` erhalten.
 
 Schema, Zähler, Fremdschlüssel, Manifest und SHA-256-Prüfsumme wurden vollständig geprüft. Ein realer isolierter
 Rollbacktest war erfolgreich; danach blieb dasselbe produktive Paket aktiv und weder `previous` noch `staging`
@@ -131,7 +141,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.17.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.19.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -146,7 +156,8 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   auch dann automatisch unter den üblichen Installationspfaden gefunden, wenn Lightroom den System-`PATH` nicht
   vollständig übernimmt. Der lokale Suchpaketpfad wird unabhängig von Lightroom-Prozessvariablen explizit
   übergeben. Ein fehlgeschlagener Hilfsprozess liefert eine begrenzte technische Diagnose statt einer
-  abgeschnittenen Sammelmeldung;
+  abgeschnittenen Sammelmeldung. Ein davon getrennter Korrekturhelfer erzeugt für eine ausgewählte Art ausschließlich
+  eine kurzlebige Übergabe an den Arten-Explorer und erhält keinen Schreibzugriff auf Masterdatenbank oder Katalog;
 - `Json.lua`: gekapselter JSON-Codec für die Kommunikation mit dem Suchhelfer;
 - `KeywordWriter.lua`: vollständige fachliche Metadaten, flache und eindeutig mit `(FN)` markierte Stichwörter,
   vor dem Schreibzugriff deduplizierte sichtbare Keywordnamen, gespeicherte lokale Kennungen,
@@ -155,8 +166,10 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise Gesamtzahl der ausgewählten Fotos, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
-  Arten. Das Fenster startet keine Statistik- oder Lifelist-Berechnung. Die Suche wird ausdrücklich über
-  `Art suchen` ausgelöst;
+  Arten. Unter der Vorschau öffnet `Artbezeichnung korrigieren ...` die ausgewählte Art kontrolliert im
+  Arten-Explorer. Vor einer Zuweisung wird geprüft, ob noch dasselbe Suchpaket aktiv ist. Das Fenster startet keine
+  Statistik- oder Lifelist-Berechnung. Die Suche bleibt über `Art suchen` verfügbar und startet zusätzlich nach
+  0,5 Sekunden ohne weitere Eingabe;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
 - `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
@@ -211,9 +224,22 @@ Einzelwahl ohne verfügbaren Dateinamen `1 Foto ausgewählt` und bei einer Mehrf
 `X Fotos ausgewählt`; der Auswahl-Observer startet dazu eine kurze `LrTask`, sodass Strg+A und Einzelklicks den
 Katalog erst im zulässigen Task-Kontext lesen und die Anzeige unmittelbar aktualisieren. Lifelist und
 Katalogstatistik werden in diesem Fenster weder beim Öffnen noch nach Zuweisung oder Rücknahme berechnet. Vor der
-Suche prüft das Fenster das lokale Suchpaket und zeigt dessen verfügbaren Taxabestand an. Es bleibt beim Wechsel der Lightroom-Auswahl geöffnet und bringt ein bereits
+Suche prüft das Fenster das lokale Suchpaket und zeigt dessen verfügbaren Taxabestand an. Jede Änderung des
+Suchtexts verwirft sofort die zuvor geladene Art. Treffen alter Auswahl und aktueller nichtleerer Text trotzdem
+nicht zusammen, verlangt die Zuweisung eine ausdrückliche Bestätigung; das Öffnen einer zuletzt verwendeten Art bei
+leerem Suchfeld benötigt diese Zusatzbestätigung nicht. Es bleibt beim Wechsel der Lightroom-Auswahl geöffnet und bringt ein bereits
 geöffnetes Fenster erneut in den Vordergrund, statt ein zweites zu erzeugen. Der Button `Schließen` sitzt unten
 rechts. Das reine Öffnen, Suchen und Vorschauen verändert keine Bildmetadaten.
+
+`Artbezeichnung korrigieren ...` schreibt weder Masterdaten noch Lightroom-Katalogdaten. Das Plug-in erzeugt eine
+auf Größe und Lebensdauer begrenzte Übergabe mit Master-ID, wissenschaftlichem Namen, sichtbaren Namen sowie Paket-
+und Masterstand. Der Arten-Explorer konsumiert diese Übergabe genau einmal, prüft Master-ID und wissenschaftlichen
+Namen gegen seinen aktiven Master und öffnet erst dann denselben Korrekturdialog wie bei einer manuellen Explorer-
+Suche. Nach dem Speichern kann der Nutzer weitere Korrekturen sammeln oder den Neuaufbau ausdrücklich starten.
+Noch nicht im aktiven Master enthaltene Korrekturen werden über einen im Kandidatenmanifest gespeicherten
+Fingerabdruck erkannt, auch wenn keine externe Quelle neuer ist. Vor dem Sofortlauf schließt der Korrekturdialog,
+sodass Phase, Prozentwert und Laufzeit im Datenbankblock sichtbar bleiben. Erst nach geprüfter Masteraktivierung
+wird das abgeleitete Lightroom-Suchpaket neu gebaut und atomar aktiviert.
 
 `Ausgewählte Art zuweisen` schreibt alle Plug-in-Felder und die lesbaren, flachen `(FN)`-Stichwörter auf sämtliche
 aktuell markierten Fotos. Vor dem Lightroom-Schreibzugriff wird aus allen sichtbaren Namen eine eindeutige
@@ -287,13 +313,14 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.17.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.19.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
    `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen` wählen.
 6. Im Zuweisungsfenster Dateiname beziehungsweise `1 Foto ausgewählt`, die vier gerahmten Schritte und den Hinweis
-   `Lokale Masterdatenbank bereit` prüfen. Eine Art über `Art suchen` suchen, Vorschau kontrollieren, zuweisen und
+   `Lokale Masterdatenbank bereit` prüfen. Eine Art über `Art suchen` und anschließend durch 0,5 Sekunden
+   Eingabepause suchen, Vorschau kontrollieren, zuweisen und
    lesbare Schlüsselwörter sowie vollständige Plug-in-Felder prüfen. Danach die Auswahl bei geöffnetem Fenster
    wechseln und die aktualisierte Einzelanzeige prüfen. Beim Öffnen und nach der Zuweisung darf keine Lifelist-
    oder Statistikberechnung im Zuweisungsfenster starten.
@@ -301,7 +328,9 @@ sondern zentral im Arten-Explorer verwaltet.
    `X Fotos ausgewählt` stehen. Nach der Zuweisung muss `X Fotos wurden <Deutscher Name> zugewiesen.` erscheinen,
    nach der Rücknahme `Von X Fotos wurde die Taxonomie entfernt.` Austernfischer und Bartmeise gezielt zuweisen und
    prüfen, dass die jeweils doppelt benannte Familien-/Gattungsstufe nur ein `(FN)`-Keyword je Foto erzeugt.
-8. Einen Konfliktfall mit einer abweichenden vorhandenen `masterTaxonId` prüfen; das Plug-in muss blockieren.
+8. Nach einer geladenen Art den Suchtext ändern und sofort die Zuweisung versuchen. Die alte Art darf nicht still
+   zugewiesen werden. Zusätzlich einen Konfliktfall mit einer abweichenden vorhandenen `masterTaxonId` prüfen; das
+   Plug-in muss blockieren.
 9. Eine Zuweisung über `Taxonomie entfernen` zurücknehmen. Die Aktion über `Plug-in-Extras` beziehungsweise
    `Bibliothek > Zusatzmoduloptionen` aufrufen. Ein eigener Eintrag im normalen Foto-Rechtsklickmenü wird nicht
    vorausgesetzt. Plug-in-Metadaten und Stichwörter mit `(FN)` beziehungsweise `(FN)*` müssen auf allen markierten
@@ -319,7 +348,12 @@ sondern zentral im Arten-Explorer verwaltet.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
-14. Lightroom neu starten und prüfen, dass Zuordnung, Schlüsselwörter, Favoritenbild der Art und Sammlungen erhalten
+14. Für eine Art `Artbezeichnung korrigieren ...` wählen, die eindeutige Vorbelegung im Explorer prüfen, eine
+    begründete Korrektur speichern und `Datenbank jetzt aktualisieren` wählen. Der Korrekturdialog muss sich vor dem
+    Lauf schließen; Phase und Prozent müssen sichtbar werden. Nach erfolgreicher Master- und Paketaktivierung muss
+    eine neue Lightroom-Suche den korrigierten Namen liefern. Für `Sciurus vulgaris` muss die Vorschau den im Master
+    vorhandenen vollständigen Hierarchiepfad enthalten.
+15. Lightroom neu starten und prüfen, dass Zuordnung, Schlüsselwörter, Favoritenbild der Art und Sammlungen erhalten
     bleiben.
 
 Dieser Test darf nicht am persönlichen Produktivkatalog beginnen. Erst nach dem bestandenen Testkataloglauf gilt der
@@ -337,13 +371,15 @@ Automatisch verifiziert sind:
 - Plug-in-Manifest, Modulgrenzen und Verbot direkter `.lrcat`-/XMP-/SQLite-Zugriffe;
 - vollständige Hierarchie in Plug-in-Metadaten, Mehrfachzuweisung, Rücknahme und Konfliktsperre im Lua-Vertrag;
 - schwebendes, gerahmtes Vier-Schritt-Zuweisungsfenster mit Suchpaket-, Einzelfenster-, Auswahlwechsel- und
-  Verlaufskontrakt sowie Einzelfoto-/Mehrfachauswahlanzeige, ohne Statistikstart und mit ausdrücklich betätigtem
-  Suchbutton;
+  Verlaufskontrakt sowie Einzelfoto-/Mehrfachauswahlanzeige, ohne Statistikstart, mit Suchbutton, verzögerter
+  automatischer Suche, sofortiger Entwertung alter Treffer und Sicherheitsbestätigung;
 - lesbare, längenbegrenzte und vor dem Schreibzugriff deduplizierte `(FN)`-Stichwörter, vollständige Rang-
   Metadaten, kontextreiche Schreibfehler sowie Callback- und Metadatenverifikation des Write-Access;
 - kompakte und vollständige Metadatenansicht sowie kompakte Suchpaketinformation im Zusatzmodul-Manager;
 - eindeutige, bestätigungspflichtige Markierung eines Favoritenbilds der Art, idempotente Sammlungsdefinitionen sowie
   Statistik- und Cache-Grenzen einschließlich Lifelist, Klassen, Abdeckung und häufigsten Arten.
+- abgesicherte einmalige Lightroom-Explorer-Korrekturübergabe, revisionsbasierte Erkennung noch nicht eingebauter
+  Korrekturen und kombinierter Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten.
 
 Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, die frühere Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden mit den vorherigen
@@ -371,7 +407,12 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   `presentFloatingDialog` nicht greift. Für `edit_field` ist kein eigener Enter-/Keydown-Callback dokumentiert;
   ein Property-Observer erkennt Textänderungen, aber keine Enter-Taste bei unverändertem Text. Version 0.4.9.0
   entfernt deshalb die wirkungslose, nicht dokumentierte `is_default`-Annahme. Die Suche bleibt über
-  `Art suchen` verfügbar. Ein erzwungener Tastatur-Hook wird nicht eingebaut.
+  `Art suchen` verfügbar; Version 0.4.19.0 umgeht die Enter-Grenze zusätzlich durch dieselbe automatische Suche nach
+  0,5 Sekunden Eingabepause. Ein erzwungener Tastatur-Hook wird nicht eingebaut.
+- Der dokumentierte `presentFloatingDialog`-Vertrag bietet keine Option, das schwebende Fenster nur relativ zu
+  Lightroom, nicht aber gegenüber anderen Windows-Anwendungen im Vordergrund zu halten. `toFront()` wird nur bei
+  erneutem Aufruf der Plug-in-Aktion verwendet. Das sonstige Vordergrundverhalten bestimmt Lightroom; eine
+  undokumentierte Windows- oder SDK-Funktion wird nicht ergänzt.
 - Die Taxonomievorschau verwendet wegen der begrenzten und versionsabhängigen Layoutsteuerung des Lightroom-SDK
   eine feste Höhe von 150 Pixeln. Ihre Breite ist an das Fenster gekoppelt; eine zuverlässige dynamische Höhe nach
   exakt vorhandener Zeilenzahl wird nicht vorausgesetzt.
@@ -384,6 +425,9 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
 - Der automatische Suchpaketbau benötigt lokal vorübergehend Platz für den neuen Staging-Stand zusätzlich zum
   aktiven und gegebenenfalls vorherigen Paket. Bei einem Fehler bleibt das alte Paket nutzbar, die korrigierten
   Namen stehen Lightroom aber erst nach dem erfolgreichen Wiederholungslauf zur Verfügung.
+- Reine eigene Namenskorrekturen verwenden derzeit noch den vollständigen Master-Kandidatenbau. Vor dem Audit soll
+  ein sicherer inkrementeller Korrekturlauf den aktiven Master in einen Kandidaten klonen und nur betroffene
+  manuelle Namen und Suchbegriffe ändern; eine direkte Änderung des aktiven Slots bleibt verboten.
 - Phase 10 ist nicht abgeschlossen. Vor dem Abschluss folgen das umfassende Audit nach
   `docs/documentation-lifecycle.md` und die darin vorgesehenen übergreifenden Regressions-, Betriebs-, Backup- und
   Wiederherstellungsprüfungen.
