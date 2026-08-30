@@ -223,6 +223,7 @@ const elements = {
   taxonomyMasterSummary: document.querySelector("#taxonomy-master-summary"),
   taxonomyMasterDetail: document.querySelector("#taxonomy-master-detail"),
   taxonomyMasterProgress: document.querySelector("#taxonomy-master-progress"),
+  taxonomyMasterProgressDetail: document.querySelector("#taxonomy-master-progress-detail"),
   taxonomyMasterDiff: document.querySelector("#taxonomy-master-diff"),
   taxonomyMasterConflicts: document.querySelector("#taxonomy-master-conflicts"),
   taxonomyMasterBuildButton: document.querySelector("[data-taxonomy-master-action='build']"),

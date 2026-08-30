@@ -26,6 +26,9 @@ function initialState() {
     action: "",
     message: "Noch kein Master-Abgleich gestartet.",
     progressPercent: null,
+    progressPhase: "",
+    progressCurrent: null,
+    progressTotal: null,
     startedAt: "",
     completedAt: "",
     error: "",
@@ -144,8 +147,25 @@ async function collectColRecords(
   onProgress = () => {},
   { providerSlices = [] } = {},
 ) {
-  const status = store.status();
   const records = [];
+  for await (const record of streamColRecords(
+    store,
+    scientificNames,
+    onProgress,
+    { providerSlices },
+  )) {
+    records.push(record);
+  }
+  return records;
+}
+
+async function* streamColRecords(
+  store,
+  scientificNames,
+  onProgress = () => {},
+  { providerSlices = [] } = {},
+) {
+  const status = store.status();
   const knownColTaxonIds = new Map();
   const knownColReferenceGaps = new Set();
   for (const slice of providerSlices) {
@@ -168,16 +188,15 @@ async function collectColRecords(
     const knownColTaxonId = knownColTaxonIds.get(scientificName);
     if (knownColTaxonId) {
       const detail = store.taxon(knownColTaxonId);
-      if (detail) records.push(normalizeColTaxon(detail, null, status));
+      if (detail) yield normalizeColTaxon(detail, null, status);
       continue;
     }
     const result = store.findTaxonByScientificName(scientificName, { rank: "species" });
     if (!result) continue;
     const detail = store.taxon(result.taxonId || result.sourceId);
-    if (detail) records.push(normalizeColTaxon(detail, result, status));
+    if (detail) yield normalizeColTaxon(detail, result, status);
   }
   onProgress({ current: names.length, total: names.length || 1 });
-  return records;
 }
 
 function releaseFromStoreStatus(status) {
@@ -238,6 +257,30 @@ export class TaxonomyMasterService {
     return ACTIVE_STATUSES.has(this.state.status);
   }
 
+  updateProgress({
+    status = this.state.status,
+    phase = this.state.progressPhase,
+    message = this.state.message,
+    current = null,
+    total = null,
+    percent = this.state.progressPercent,
+  } = {}) {
+    this.state.status = status;
+    this.state.progressPhase = phase;
+    this.state.message = message;
+    this.state.progressCurrent = current !== null
+      && current !== undefined
+      && Number.isFinite(Number(current))
+      ? Number(current)
+      : null;
+    this.state.progressTotal = total !== null
+      && total !== undefined
+      && Number.isFinite(Number(total))
+      ? Number(total)
+      : null;
+    this.state.progressPercent = Number.isFinite(Number(percent)) ? Number(percent) : null;
+  }
+
   assertAvailable() {
     this.assertOpen();
     if (this.isActive() || this.isProjectBusy()) {
@@ -278,6 +321,7 @@ export class TaxonomyMasterService {
         ? "Anbieter-Ausschnitte werden aktualisiert."
         : "Master-Kandidat wird aufgebaut.",
       progressPercent: 0,
+      progressPhase: refreshProviders ? "Anbieterquellen" : "Vorbereitung",
       startedAt,
     };
     this.runPromise = this.runBuild({ ...options, refreshProviders }).catch(() => null);
@@ -305,11 +349,14 @@ export class TaxonomyMasterService {
           store,
           ...providerOptions,
           onProgress: ({ current = 0, total = 100, message = "" } = {}) => {
-            this.state.status = "refreshing";
-            this.state.message = message || "Anbieter-Ausschnitte werden aktualisiert.";
-            this.state.progressPercent = Math.round(
-              (Number(current) / Math.max(1, Number(total))) * 45,
-            );
+            this.updateProgress({
+              status: "refreshing",
+              phase: "Anbieterquellen",
+              message: message || "Anbieter-Ausschnitte werden aktualisiert.",
+              current,
+              total,
+              percent: Math.round((Number(current) / Math.max(1, Number(total))) * 45),
+            });
           },
         });
         warnings.push(...(refreshed.warnings || []));
@@ -318,17 +365,26 @@ export class TaxonomyMasterService {
           scientificNames: projectTaxa.map((entry) => entry.scientificName),
           store,
           onProgress: ({ current = 0, total = 1, message = "" } = {}) => {
-            this.state.status = "refreshing";
-            this.state.message = message || "Anbieter-Ausschnitte werden aktualisiert.";
-            this.state.progressPercent = Math.round(
-              (Number(current) / Math.max(1, Number(total))) * 45,
-            );
+            this.updateProgress({
+              status: "refreshing",
+              phase: "Anbieterquellen",
+              message: message || "Anbieter-Ausschnitte werden aktualisiert.",
+              current,
+              total,
+              percent: Math.round((Number(current) / Math.max(1, Number(total))) * 45),
+            });
           },
         });
         warnings.push(...(refreshed.warnings || []));
       }
-      this.state.status = "building";
-      this.state.message = "Master-Kandidat wird aus CoL, Anbieter-Ausschnitten und eigenen Korrekturen aufgebaut.";
+      this.updateProgress({
+        status: "building",
+        phase: "CoL-Referenz",
+        message: "Relevante CoL-Taxa werden gelesen.",
+        current: 0,
+        total: null,
+        percent: 45,
+      });
       const providerSlices = activeMasterProviderSlices(
         await latestProviderSlices(this.taxonomyRoot),
       );
@@ -338,11 +394,18 @@ export class TaxonomyMasterService {
         ...researchedTaxa.map((entry) => canonicalSpeciesName(entry.scientificName)),
         ...providerScientificNames(providerSlices),
       ].filter(Boolean))];
-      const colRecords = await collectColRecords(
+      const colRecords = streamColRecords(
         store,
         targetNames,
         ({ current, total }) => {
-          this.state.progressPercent = 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 35);
+          this.updateProgress({
+            status: "building",
+            phase: "CoL-Referenz",
+            message: "Relevante CoL-Taxa werden gelesen.",
+            current,
+            total,
+            percent: 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 15),
+          });
         },
         { providerSlices },
       );
@@ -355,6 +418,16 @@ export class TaxonomyMasterService {
         corrections,
         retainedTaxa: researchedTaxa,
         now: this.now,
+        onProgress: ({ phase, message, current, total, percent }) => {
+          this.updateProgress({
+            status: "building",
+            phase,
+            message,
+            current,
+            total,
+            percent,
+          });
+        },
       });
       const lifecycle = await this.inspectLifecycle(this.taxonomyRoot);
       this.state = {
@@ -364,6 +437,9 @@ export class TaxonomyMasterService {
           ? `${lifecycle.blockingConflicts.length} Konflikt(e) müssen vor der Aktivierung entschieden werden.`
           : "Master-Kandidat ist geprüft und kann aktiviert werden.",
         progressPercent: 100,
+        progressPhase: "Abgeschlossen",
+        progressCurrent: null,
+        progressTotal: null,
         completedAt: this.now().toISOString(),
         warnings: [...new Set(warnings)],
         result: { manifest, lifecycle },
@@ -406,14 +482,15 @@ export class TaxonomyMasterService {
       action: "activate",
       message: "Geprüfter Master-Kandidat wird atomar aktiviert.",
       progressPercent: 50,
+      progressPhase: "Aktivierung",
       startedAt: this.now().toISOString(),
     };
     try {
+      if (confirmed) this.referenceService.reset();
       await this.activateCandidate(this.taxonomyRoot, {
         confirmed,
         now: this.now,
       });
-      this.referenceService.reset();
       this.state = {
         ...this.state,
         status: "completed",
@@ -442,11 +519,12 @@ export class TaxonomyMasterService {
       action: "rollback",
       message: "Vorherige Masterversion wird wiederhergestellt.",
       progressPercent: 50,
+      progressPhase: "Wiederherstellung",
       startedAt: this.now().toISOString(),
     };
     try {
+      if (confirmed) this.referenceService.reset();
       await this.rollbackCandidate(this.taxonomyRoot, { confirmed, now: this.now });
-      this.referenceService.reset();
       this.state = {
         ...this.state,
         status: "completed",
@@ -486,4 +564,5 @@ export const taxonomyMasterServiceInternals = Object.freeze({
   normalizeColTaxon,
   projectTaxaFromSpeciesList,
   releaseFromStoreStatus,
+  streamColRecords,
 });

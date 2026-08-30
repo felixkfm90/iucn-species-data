@@ -1056,6 +1056,12 @@ Die drei Datenbankaktionen sind wie die Backup-Aktionen als untereinander angeor
 Neuaufbau prüft `Datenbank aktualisieren`, ob ein neuer CoL- oder Anbieterstand vorliegt. Ohne neue Quelldaten und
 ohne wartenden Kandidaten wird kein Neuaufbau gestartet. Ein echter Lauf ist im Kopf und im Datenbankblock gelb als
 `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zum erfolgreichen Abschluss erhalten.
+Der lange Masteraufbau zeigt dabei seine aktuelle Phase, echte Datensatzzähler und die Laufzeit. Relevante
+CoL-Zeilen und der Vergleich mit dem bisherigen Stand werden speicherschonend schrittweise verarbeitet; ein
+erhöhtes Node-Heap-Limit ist nicht erforderlich. Vor dem atomaren Aktivieren oder Wiederherstellen schließt der
+Explorer eigene read-only Datenbankhandles und öffnet den neuen aktiven Stand bei der nächsten Abfrage wieder.
+Mehrere eigene Namenskorrekturen können gesammelt und anschließend gemeinsam über `Datenbank aktualisieren`
+eingebaut werden.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

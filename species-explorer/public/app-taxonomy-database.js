@@ -602,7 +602,10 @@
             englishName: selectedDetail.englishNames?.[0]?.name || null,
             hasVerifiedGermanName: Boolean(selectedDetail.germanNames?.[0]?.name),
           };
-          setMessage("Die eigene Namenskorrektur wurde gespeichert.", "success");
+          setMessage(
+            "Die Namenskorrektur wurde gespeichert. Weitere Korrekturen können gesammelt werden; „Datenbank aktualisieren“ baut sie anschließend gemeinsam in den Masterstand ein.",
+            "success",
+          );
         } else {
           await fetchJson("/api/taxonomy/corrections/reset", {
             method: "POST",

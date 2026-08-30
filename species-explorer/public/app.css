@@ -567,6 +567,13 @@ button.danger,
   accent-color: var(--green);
 }
 
+.taxonomy-master-progress-detail {
+  margin: -0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .action-group-danger summary strong {
   color: var(--red);
 }

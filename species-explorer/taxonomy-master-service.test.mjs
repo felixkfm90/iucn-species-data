@@ -259,10 +259,14 @@ test("9.10 verwendet für echte Updates den zentralen Quellenkoordinator", async
 test("9.10 aktiviert und rollt ausschließlich nach Bestätigung zurück", async (t) => {
   const fixture = await createFixture(t);
   const calls = [];
+  const events = [];
   const reference = {
     resetCount: 0,
     async requireStore() { return referenceStore(); },
-    reset() { this.resetCount += 1; },
+    reset() {
+      this.resetCount += 1;
+      events.push("reset");
+    },
   };
   const service = createTaxonomyMasterService({
     taxonomyRoot: fixture.root,
@@ -273,11 +277,13 @@ test("9.10 aktiviert und rollt ausschließlich nach Bestätigung zurück", async
     async inspectLifecycle() { return lifecycle(); },
     async activateCandidate(_root, options) {
       calls.push(["activate", options.confirmed]);
+      events.push(`activate:${options.confirmed}`);
       if (!options.confirmed) throw new Error("Bestätigung fehlt");
       return lifecycle();
     },
     async rollbackCandidate(_root, options) {
       calls.push(["rollback", options.confirmed]);
+      events.push(`rollback:${options.confirmed}`);
       if (!options.confirmed) throw new Error("Bestätigung fehlt");
       return lifecycle();
     },
@@ -294,5 +300,12 @@ test("9.10 aktiviert und rollt ausschließlich nach Bestätigung zurück", async
     ["rollback", true],
   ]);
   assert.equal(reference.resetCount, 2);
+  assert.deepEqual(events, [
+    "activate:false",
+    "reset",
+    "activate:true",
+    "reset",
+    "rollback:true",
+  ]);
   await service.close();
 });

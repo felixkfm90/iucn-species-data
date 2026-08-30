@@ -73,7 +73,9 @@ async function buildFirstActive(root) {
   await buildTaxonomyMasterCandidate({
     taxonomyRoot: root,
     colRelease: colRelease("2026-07", FIRST.toISOString()),
-    colRecords: [leopardRecord()],
+    colRecords: (async function* streamFixture() {
+      yield leopardRecord();
+    })(),
     projectTaxa: [projectLeopard()],
     now: () => FIRST,
   });
@@ -95,16 +97,21 @@ function selectedField(root, slot, fieldName) {
 
 test("9.9 erstellt zuerst einen prüfbaren Kandidaten und aktiviert ihn nur bestätigt", async (t) => {
   const root = await createRoot(t);
+  const progress = [];
   const manifest = await buildTaxonomyMasterCandidate({
     taxonomyRoot: root,
     colRelease: colRelease("2026-07", FIRST.toISOString()),
     colRecords: [leopardRecord()],
     projectTaxa: [projectLeopard()],
+    onProgress(entry) { progress.push(entry); },
     now: () => FIRST,
   });
   assert.equal(manifest.state, "staging");
   assert.equal(manifest.requiresConfirmation, true);
   assert.deepEqual(manifest.diff.newTaxa, ["Panthera pardus"]);
+  assert.ok(progress.some((entry) => entry.phase === "Masterdatenbank schreiben"));
+  assert.ok(progress.some((entry) => entry.phase === "Suchindex"));
+  assert.ok(progress.some((entry) => entry.phase === "Abschluss"));
   await assert.rejects(
     activateTaxonomyMasterCandidate(root),
     /ausdrücklich bestätigt/,

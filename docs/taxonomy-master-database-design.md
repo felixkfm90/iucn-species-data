@@ -261,6 +261,9 @@ zurückgesetzt werden; diese Korrekturen stehen bei späteren Aktualisierungen �
 Der vorhandene Button `Korrektur speichern` in der Taxonomie-Datenbank schreibt diese redaktionelle Schicht. Damit
 die Änderung auch in abgeleiteten Beständen wie dem Lightroom-Suchpaket erscheint, muss anschließend ein neuer
 Master-Kandidat gebaut und aktiviert und danach das Lightroom-Suchpaket neu gebaut und aktiviert werden.
+Mehrere Namenskorrekturen können vor diesem Neuaufbau gesammelt werden. Die Erfolgsmeldung verweist deshalb
+ausdrücklich auf `Datenbank aktualisieren`; das Speichern einer einzelnen Korrektur behauptet nicht mehr, der
+abgeleitete Master- oder Lightroom-Bestand sei bereits erneuert.
 
 Projektkonflikte erscheinen unter demselben Datenbankblock. Bei einer eindeutig extern bestätigten
 CoL-Referenzlücke bietet die Oberfläche eine ausdrückliche Verknüpfung mit der stabilen Master-ID an. Die
@@ -286,3 +289,18 @@ keinen Master-Neuaufbau. Nur ein tatsächliches Update durchläuft Referenzimpor
 Kandidatenbau und Aktivierung. Währenddessen sind der Kopfstatus und der Datenbankstatus gelb als
 `Taxonomie-Update läuft` gekennzeichnet; die bestehende Datenbank bleibt bis zur erfolgreichen Aktivierung lesbar.
 Die drei Aktionen stehen wie im Backup-Bereich als untereinander angeordnete, vollbreite Aktionskarten.
+
+Seit dem 29. August 2026 zeigt der Masteraufbau im selben Datenbankblock zusätzlich seine aktuelle Fachphase,
+echte Zähler im Format `verarbeitet von gesamt` und die verstrichene Laufzeit. Sichtbare Phasen sind insbesondere
+Anbieterquellen, CoL-Referenz, Anbieter-Datensätze, Schreiben der Masterdatenbank, Suchindex,
+Änderungsvergleich, Prüfung und Abschluss. Lange JavaScript- und SQLite-Schleifen geben die Ereignisschleife in
+begrenzten Abständen frei, damit Statusabfragen und Oberfläche während des Aufbaus reagieren können.
+
+Der Kandidatenbau verarbeitet die relevanten CoL-Zeilen schrittweise, führt doppelte Anbieterzeilen direkt in den
+jeweiligen Taxongruppen zusammen und liest bisherige Aliasse nur bei Bedarf. Der abschließende Vergleich zwischen
+aktivem Stand und Kandidat läuft zeilenweise statt beide SQLite-Datenbanken vollständig in JavaScript-Maps zu
+duplizieren; dieser Vergleich ist in `species-explorer/taxonomy-master-diff.mjs` vom Kandidatenbau getrennt.
+Dadurch benötigt der Vollaufbau kein erhöhtes Node-Heap-Limit mehr. Vor Aktivierung und Rollback
+schließt der Explorer seine eigenen read-only Referenz- und Masterhandles, bevor Windows die Slotverzeichnisse
+atomar umbenennt; die nächste Suche öffnet den dann aktiven Stand wieder bedarfsgesteuert. Bei einem Fehler bleibt
+der zuvor aktive Stand unverändert verfügbar.

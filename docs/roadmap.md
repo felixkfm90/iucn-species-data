@@ -1112,7 +1112,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   beobachtbare Änderungen ist eine kontrollierte Aktualisierungs- oder Neuaufbauaktion vorzusehen. Außerdem soll
   die Klassenübersicht im Statistikfenster aufklappbar werden und je Klasse wie Vögel oder Säugetiere mindestens
   deutschen Namen, wissenschaftlichen Namen und Fotoanzahl der enthaltenen Lifelist-Arten zeigen. Das
-  das Lightroom-Zuweisungsfenster für die ausgewählte Art eine Namenskorrektur anstoßen können. Das Plug-in darf die
+  Lightroom-Zuweisungsfenster soll für die ausgewählte Art eine Namenskorrektur anstoßen können. Das Plug-in darf die
   Master-SQLite dabei nicht direkt verändern, sondern muss wissenschaftlichen Namen, aktuellen Namen und Vorschlag
   kontrolliert an den Arten-Explorer übergeben; dort bleiben Bestätigung, versionierte Korrekturschicht,
   Master-Kandidatenprüfung und Aktivierung verbindlich. Anschließend sind Suchpaket-Neubau/-Aktivierung und die
@@ -1124,13 +1124,13 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   das abgeleitete Lightroom-Suchpaket automatisch neu bauen, vollständig prüfen und atomar aktivieren; ein
   separater Wartungsbefehl darf im normalen Bedienablauf nicht erforderlich sein. Schlägt dieser Schritt fehl,
   bleibt das vorherige Suchpaket aktiv und der Explorer meldet den Teilerfolg sowie die notwendige Wiederholung
-  ausdrücklich. Vor dem atomaren Master-Slotwechsel muss der Arten-Explorer unter Windows seine eigenen offenen
-  Lesehandles auf die aktive Master-SQLite schließen und nach erfolgreicher Aktivierung gegen den neuen aktiven
-  Slot wieder öffnen; andernfalls blockiert der laufende Explorer die Umbenennung mit `EPERM`. Der dabei notwendige
-  lange
-  Master-Kandidatenbau und der Lightroom-Paketneubau müssen im Arten-Explorer künftig echte Importphasen,
-  verarbeitete Datensätze und einen belastbaren Prozentfortschritt anzeigen, statt während des CoL-Imports ohne
-  sichtbare Zwischenmeldung zu bleiben;
+  ausdrücklich. Seit dem 29. August 2026 schließt der Arten-Explorer vor dem atomaren Master-Slotwechsel unter
+  Windows seine eigenen offenen read-only Handles; die nächste Abfrage öffnet den neuen aktiven Stand wieder
+  bedarfsgesteuert. Der Master-Kandidatenbau zeigt echte Phasen, verarbeitete Datensätze, Gesamtzahl, Laufzeit und
+  einen aus realen Teilfortschritten abgeleiteten Prozentwert. CoL-Zeilen werden schrittweise verarbeitet,
+  bisherige Aliasse bedarfsgesteuert gelesen und der Kandidatenvergleich erfolgt zeilenweise; der frühere
+  Vollaufbau-Abbruch an der normalen Node-Heapgrenze ist damit beseitigt. Offen bleibt, denselben sichtbaren
+  Phasenvertrag auf den automatischen Lightroom-Paketneubau auszudehnen;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

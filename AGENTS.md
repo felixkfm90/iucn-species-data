@@ -111,7 +111,8 @@ Lokale Arbeitsoberflaeche:
   ausdrücklich bestätigte CoL-Zuordnungen
 - `species-explorer/taxonomy-master-storage.mjs`, `taxonomy-master-schema.mjs`, `taxonomy-master-model.mjs`,
   `taxonomy-master-store.mjs`, `taxonomy-master-rules.mjs`, `taxonomy-master-slices.mjs`,
-  `taxonomy-master-candidate.mjs`, `taxonomy-master-lifecycle.mjs` und `taxonomy-master-service.mjs`: getrennte,
+  `taxonomy-master-candidate.mjs`, `taxonomy-master-diff.mjs`, `taxonomy-master-lifecycle.mjs` und
+  `taxonomy-master-service.mjs`: getrennte,
   produktiv aktivierte Phase-9-Masterdatenbank mit stabilen IDs, versionierten Anbieterständen, Feldprovenienz,
   Konflikten, Projektverknüpfungen, atomarer Aktivierung und Rollback; die aktive CoL-Vollreferenz bleibt
   unverändert und read-only
@@ -1114,6 +1115,12 @@ Aktuelle Planung:
   untereinander. `Datenbank aktualisieren` prüft zuerst die CoL- und Anbieterstände und startet ohne neue Quelldaten
   beziehungsweise wartenden Kandidaten keinen Master-Neuaufbau. Ein echter Lauf ist im Kopf und Datenbankblock gelb
   als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
+  Seit 2026-08-29 zeigt der Masteraufbau zusätzlich echte Phasen, verarbeitete/gesamte Datensätze und Laufzeit.
+  CoL-Zeilen, Anbieterzusammenführung und Kandidatenvergleich werden speicherschonend schrittweise verarbeitet.
+  Vor Aktivierung und Rollback schließt der Explorer seine eigenen read-only Masterhandles, damit Windows den
+  atomaren Slotwechsel nicht mit `EPERM` blockiert. Mehrere Namenskorrekturen können vor einem gemeinsamen
+  `Datenbank aktualisieren` gesammelt werden. Der automatische Lightroom-Paketneubau nach Masteraktivierung bleibt
+  der nächste offene Kopplungsschritt.
   Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter

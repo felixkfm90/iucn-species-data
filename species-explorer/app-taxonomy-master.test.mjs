@@ -35,6 +35,7 @@ function elements() {
     taxonomyMasterSummary: element(),
     taxonomyMasterDetail: element(),
     taxonomyMasterProgress: element(),
+    taxonomyMasterProgressDetail: element(),
     taxonomyMasterDiff: element(),
     taxonomyMasterConflicts: element(),
     taxonomyMasterBuildButton: element(),
@@ -130,6 +131,10 @@ test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt"
     active: true,
     message: "Master-Kandidat wird aufgebaut",
     progressPercent: 44,
+    progressPhase: "Masterdatenbank schreiben",
+    progressCurrent: 1200,
+    progressTotal: 3000,
+    startedAt: new Date(Date.now() - 65_000).toISOString(),
     lifecycle: {},
   };
   const controller = masterUi.createTaxonomyMasterController({
@@ -144,6 +149,9 @@ test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt"
   controller.render(status);
   assert.equal(visible.taxonomyMasterProgress.hidden, false);
   assert.equal(visible.taxonomyMasterProgress.value, 44);
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Phase: Masterdatenbank schreiben/);
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /1\.200 von 3\.000/);
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Laufzeit 1:0[45]/);
   assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
   assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
   assert.equal(visible.taxonomyMasterRollbackButton.disabled, true);

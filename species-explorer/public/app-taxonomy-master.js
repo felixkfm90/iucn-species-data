@@ -81,6 +81,32 @@
     return status.message || "Erstelle zunächst eine prüfbare Aktualisierung.";
   }
 
+  function formatElapsed(startedAt) {
+    const started = Date.parse(startedAt || "");
+    if (!Number.isFinite(started)) return "";
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+    const hours = Math.floor(elapsedSeconds / 3600);
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+    const seconds = elapsedSeconds % 60;
+    return hours
+      ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      : `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  function progressDetail(status = {}) {
+    const parts = [];
+    const phase = cleanText(status.progressPhase);
+    if (phase) parts.push(`Phase: ${phase}`);
+    const current = Number(status.progressCurrent);
+    const total = Number(status.progressTotal);
+    if (Number.isFinite(current) && Number.isFinite(total) && total > 0) {
+      parts.push(`${current.toLocaleString("de-DE")} von ${total.toLocaleString("de-DE")}`);
+    }
+    const elapsed = formatElapsed(status.startedAt);
+    if (elapsed) parts.push(`Laufzeit ${elapsed}`);
+    return parts.join(" · ");
+  }
+
   function conflictRecommendation(conflict = {}) {
     const hasCurrent = Boolean(cleanText(conflict.current_value));
     const hasCandidate = Boolean(cleanText(conflict.candidate_value));
@@ -167,6 +193,8 @@
       elements.taxonomyMasterSummary.textContent = masterSummary(status);
       elements.taxonomyMasterDetail.textContent = masterDetail(status);
       elements.taxonomyMasterProgress.hidden = !active;
+      elements.taxonomyMasterProgressDetail.hidden = !active;
+      elements.taxonomyMasterProgressDetail.textContent = active ? progressDetail(status) : "";
       if (active && Number.isFinite(Number(status.progressPercent))) {
         elements.taxonomyMasterProgress.value = Number(status.progressPercent);
       } else if (active) {
@@ -293,6 +321,7 @@
     conflictRecommendation,
     masterDiffItems,
     masterSummary,
+    progressDetail,
     createTaxonomyMasterController,
   });
 })(globalThis);
