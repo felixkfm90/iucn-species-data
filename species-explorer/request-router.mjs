@@ -42,6 +42,7 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],
   ["/api/taxonomy/master/activate", { name: "taxonomy-master", action: "activate" }],
   ["/api/taxonomy/master/rollback", { name: "taxonomy-master", action: "rollback" }],
+  ["/api/taxonomy/master/sync-lightroom", { name: "taxonomy-master", action: "sync-lightroom" }],
   ["/api/pipeline/assets/review", { name: "pipeline-asset-review", action: "save" }],
   ["/api/species/new/preview", { name: "new-species", action: "preview" }],
   ["/api/species/new/save", { name: "new-species", action: "save" }],

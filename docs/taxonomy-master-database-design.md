@@ -304,3 +304,10 @@ Dadurch benötigt der Vollaufbau kein erhöhtes Node-Heap-Limit mehr. Vor Aktivi
 schließt der Explorer seine eigenen read-only Referenz- und Masterhandles, bevor Windows die Slotverzeichnisse
 atomar umbenennt; die nächste Suche öffnet den dann aktiven Stand wieder bedarfsgesteuert. Bei einem Fehler bleibt
 der zuvor aktive Stand unverändert verfügbar.
+
+Seit dem 30. August 2026 endet eine bestätigte Aktivierung oder Wiederherstellung nicht mehr beim Master-Slotwechsel.
+Der Explorer startet anschließend automatisch den reproduzierbaren Lightroom-Suchpaketbau als getrennten
+Hilfsprozess und zeigt dessen Schema-, Export-, Index-, Prüf- und Aktivierungsphase im selben Fortschrittsblock.
+Der aktive Suchpaketstand wird über die `masterVersion` mit der aktiven Master-`candidateId` verglichen. Scheitert
+der Paketbau, bleibt das vorherige Suchpaket aktiv; der Masterwechsel wird als Teilerfolg gemeldet und
+`Datenbank aktualisieren` holt gezielt nur die fehlende Ableitung nach.

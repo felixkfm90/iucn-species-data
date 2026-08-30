@@ -1120,17 +1120,18 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   diesem gekoppelten Aktualisierungslauf gesammelt werden können; bei einer einzelnen dringenden Korrektur kann er
   sofort ausdrücklich gestartet werden. Nach erfolgreicher Paketaktivierung genügt im geöffneten Lightroom-
   Zuweisungsfenster eine neue Suche, weil jede Anfrage das aktuell aktive Suchpaket neu öffnet; Lightroom oder das
-  Plug-in müssen dafür nicht geschlossen werden. Der Arten-Explorer muss nach einer bestätigten Master-Aktivierung
-  das abgeleitete Lightroom-Suchpaket automatisch neu bauen, vollständig prüfen und atomar aktivieren; ein
-  separater Wartungsbefehl darf im normalen Bedienablauf nicht erforderlich sein. Schlägt dieser Schritt fehl,
-  bleibt das vorherige Suchpaket aktiv und der Explorer meldet den Teilerfolg sowie die notwendige Wiederholung
-  ausdrücklich. Seit dem 29. August 2026 schließt der Arten-Explorer vor dem atomaren Master-Slotwechsel unter
-  Windows seine eigenen offenen read-only Handles; die nächste Abfrage öffnet den neuen aktiven Stand wieder
-  bedarfsgesteuert. Der Master-Kandidatenbau zeigt echte Phasen, verarbeitete Datensätze, Gesamtzahl, Laufzeit und
+  Plug-in müssen dafür nicht geschlossen werden. Seit dem 30. August 2026 baut der Arten-Explorer nach einer
+  bestätigten Master-Aktivierung oder Wiederherstellung das abgeleitete Lightroom-Suchpaket automatisch in einem
+  getrennten Hilfsprozess neu, prüft es vollständig und aktiviert es atomar. Schlägt dieser Schritt fehl, bleibt
+  das vorherige Suchpaket aktiv; der Explorer meldet den Teilerfolg ausdrücklich und `Datenbank aktualisieren`
+  wiederholt gezielt nur den Paketbau. Seit dem 29. August 2026 schließt der Arten-Explorer vor dem atomaren
+  Master-Slotwechsel unter Windows seine eigenen offenen read-only Handles; die nächste Abfrage öffnet den neuen
+  aktiven Stand wieder bedarfsgesteuert. Der Master-Kandidatenbau zeigt echte Phasen, verarbeitete Datensätze,
+  Gesamtzahl, Laufzeit und
   einen aus realen Teilfortschritten abgeleiteten Prozentwert. CoL-Zeilen werden schrittweise verarbeitet,
   bisherige Aliasse bedarfsgesteuert gelesen und der Kandidatenvergleich erfolgt zeilenweise; der frühere
-  Vollaufbau-Abbruch an der normalen Node-Heapgrenze ist damit beseitigt. Offen bleibt, denselben sichtbaren
-  Phasenvertrag auf den automatischen Lightroom-Paketneubau auszudehnen;
+  Vollaufbau-Abbruch an der normalen Node-Heapgrenze ist damit beseitigt. Der automatische Lightroom-Paketneubau
+  verwendet denselben sichtbaren Phasenvertrag für Schema, Export, Indizes, Vollprüfung und Aktivierung;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore

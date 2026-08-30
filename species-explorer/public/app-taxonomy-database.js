@@ -4,7 +4,13 @@
   const SEARCH_DELAY_MS = 350;
   const POLL_DELAY_MS = 900;
   const UPDATE_TIMEOUT_MS = 4 * 60 * 60 * 1000;
-  const MASTER_ACTIVE_STATES = new Set(["refreshing", "building", "activating", "rolling-back"]);
+  const MASTER_ACTIVE_STATES = new Set([
+    "refreshing",
+    "building",
+    "activating",
+    "rolling-back",
+    "syncing-lightroom",
+  ]);
 
   function cleanText(value) {
     return String(value ?? "").trim();
@@ -53,8 +59,13 @@
     return new Promise((resolve) => global.setTimeout(resolve, duration));
   }
 
-  function taxonomyDatabaseUpdateDecision({ hasCandidate = false, hasWork = false } = {}) {
+  function taxonomyDatabaseUpdateDecision({
+    hasCandidate = false,
+    hasWork = false,
+    lightroomPackageNeedsRebuild = false,
+  } = {}) {
     if (hasCandidate) return "activate";
+    if (lightroomPackageNeedsRebuild) return "sync-lightroom";
     return hasWork ? "refresh-and-build" : "current";
   }
 
@@ -107,6 +118,8 @@
       const masterLifecycle = masterStatus.lifecycle || {};
       const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus);
       const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error);
+      const lightroomPackageNeedsRebuild = masterStatus.lightroomPackage?.needsRebuild === true;
+      const partial = masterStatus.status === "partial" || lightroomPackageNeedsRebuild;
       const updateAvailable = referenceStatus.updateAvailable === true;
       const blockingConflicts = Array.isArray(masterLifecycle.blockingConflicts)
         ? masterLifecycle.blockingConflicts.length
@@ -125,7 +138,9 @@
 
       elements.taxonomyDatabaseOverviewSummary.textContent = active
         ? "Taxonomiedatenbank wird aktualisiert"
-        : failed
+        : partial
+          ? "Lightroom-Suchpaket aktualisieren"
+          : failed
           ? "Taxonomiedatenbank prüfen"
           : updateAvailable
             ? "Neuere Datenbankversion verfügbar"
@@ -149,9 +164,16 @@
       if (projectConflicts) {
         details.push(`${projectConflicts} Projektzuordnung(en) manuell prüfen`);
       }
+      if (lightroomPackageNeedsRebuild && masterStatus.status !== "partial") {
+        details.push(
+          masterStatus.lightroomPackage?.error
+          || "Das Lightroom-Suchpaket entspricht nicht dem aktiven Masterstand",
+        );
+      }
       if (failed) {
         details.push(
-          masterStatus.error
+          cleanText(masterStatus.message)
+          || masterStatus.error
           || referenceStatus.error
           || referenceStatus.message
           || "Aktualisierung fehlgeschlagen",
@@ -200,6 +222,12 @@
         else state.taxonomyMaintenanceSnapshot = status;
         renderOverview();
         if (!isActive(status)) {
+          if (status.status === "partial") {
+            throw new Error(
+              [status.message, status.error].map(cleanText).filter(Boolean).join(" ")
+              || `${label} wurde nur teilweise abgeschlossen.`,
+            );
+          }
           if (status.status === "failed" || status.error) {
             throw new Error(status.error || status.message || `${label} ist fehlgeschlagen.`);
           }
@@ -248,8 +276,23 @@
         let { master } = await refreshSnapshots();
         let decision = taxonomyDatabaseUpdateDecision({
           hasCandidate: Boolean(master.lifecycle?.candidate),
+          lightroomPackageNeedsRebuild: master.lightroomPackage?.needsRebuild === true,
         });
-        if (decision === "activate") {
+        if (decision === "sync-lightroom") {
+          const started = await fetchJson("/api/taxonomy/master/sync-lightroom", {
+            method: "POST",
+            body: "{}",
+          });
+          state.taxonomyMasterSnapshot = started;
+          renderOverview();
+          if (masterIsActive(started)) {
+            await waitUntilIdle(
+              "/api/taxonomy/master/status",
+              masterIsActive,
+              "Lightroom-Suchpaketaktualisierung",
+            );
+          }
+        } else if (decision === "activate") {
           await activateCandidate(master);
         } else {
           const preview = await fetchJson("/api/taxonomy/update/preview", {

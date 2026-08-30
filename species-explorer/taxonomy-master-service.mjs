@@ -18,7 +18,22 @@ import {
 } from "./taxonomy-taxon-quality.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
-const ACTIVE_STATUSES = new Set(["refreshing", "building", "activating", "rolling-back"]);
+const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
+  schema: "Schema",
+  copy: "Taxonomieexport",
+  index: "Suchindizes",
+  validate: "Paketprüfung",
+  verify: "Vollprüfung",
+  activate: "Vollprüfung und Aktivierung",
+  complete: "Abgeschlossen",
+});
+const ACTIVE_STATUSES = new Set([
+  "refreshing",
+  "building",
+  "activating",
+  "rolling-back",
+  "syncing-lightroom",
+]);
 
 function initialState() {
   return {
@@ -227,6 +242,8 @@ export class TaxonomyMasterService {
     decideConflict = decideTaxonomyMasterConflict,
     activateCandidate = activateTaxonomyMasterCandidate,
     rollbackCandidate = rollbackTaxonomyMaster,
+    inspectLightroomPackages = null,
+    rebuildLightroomPackage = null,
   } = {}) {
     if (!taxonomyRoot || !referenceService || !speciesListPath || !correctionsPath) {
       throw new TypeError("Taxonomiepfad, Referenzdienst, Artenliste und Korrekturdatei sind erforderlich.");
@@ -244,6 +261,8 @@ export class TaxonomyMasterService {
     this.decideConflict = decideConflict;
     this.activateCandidate = activateCandidate;
     this.rollbackCandidate = rollbackCandidate;
+    this.inspectLightroomPackages = inspectLightroomPackages;
+    this.rebuildLightroomPackage = rebuildLightroomPackage;
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
@@ -302,10 +321,47 @@ export class TaxonomyMasterService {
       canActivate: false,
       canRollback: false,
     }));
+    const lightroomPackage = await this.lightroomPackageStatus(lifecycle);
     return {
       ...this.state,
       active: this.isActive(),
       lifecycle,
+      lightroomPackage,
+    };
+  }
+
+  async lightroomPackageStatus(lifecycle = null) {
+    if (typeof this.inspectLightroomPackages !== "function") return null;
+    const snapshot = lifecycle || await this.inspectLifecycle(this.taxonomyRoot);
+    const masterVersion = cleanText(
+      snapshot.active?.candidateId || snapshot.active?.masterVersion,
+    );
+    let packages;
+    try {
+      packages = await this.inspectLightroomPackages();
+    } catch (error) {
+      return {
+        status: "error",
+        needsRebuild: Boolean(masterVersion),
+        masterVersion,
+        packageVersion: "",
+        active: null,
+        previous: null,
+        error: error.message,
+      };
+    }
+    const packageVersion = cleanText(packages?.active?.masterVersion);
+    let status = "current";
+    if (!masterVersion) status = "unavailable";
+    else if (!packages?.active) status = "missing";
+    else if (packageVersion !== masterVersion) status = "stale";
+    return {
+      status,
+      needsRebuild: status === "missing" || status === "stale",
+      masterVersion,
+      packageVersion,
+      active: packages?.active || null,
+      previous: packages?.previous || null,
     };
   }
 
@@ -474,8 +530,11 @@ export class TaxonomyMasterService {
     return this.status();
   }
 
-  async activate({ confirmed = false } = {}) {
+  activate({ confirmed = false } = {}) {
     this.assertAvailable();
+    if (!confirmed) {
+      throw new Error("Die Aktivierung der Masterdatenbank muss ausdrücklich bestätigt werden.");
+    }
     this.state = {
       ...initialState(),
       status: "activating",
@@ -485,34 +544,53 @@ export class TaxonomyMasterService {
       progressPhase: "Aktivierung",
       startedAt: this.now().toISOString(),
     };
+    this.runPromise = this.runActivate({ confirmed }).catch(() => null);
+    return this.status();
+  }
+
+  async runActivate({ confirmed = false } = {}) {
+    let masterActivated = false;
     try {
       if (confirmed) this.referenceService.reset();
       await this.activateCandidate(this.taxonomyRoot, {
         confirmed,
         now: this.now,
       });
+      masterActivated = true;
+      const lightroomResult = await this.rebuildLightroomAfterMasterChange();
       this.state = {
         ...this.state,
         status: "completed",
-        message: "Masterdatenbank wurde erfolgreich aktiviert.",
+        message: lightroomResult
+          ? "Masterdatenbank und Lightroom-Suchpaket wurden erfolgreich aktiviert."
+          : "Masterdatenbank wurde erfolgreich aktiviert.",
         progressPercent: 100,
+        progressPhase: "Abgeschlossen",
         completedAt: this.now().toISOString(),
+        result: lightroomResult ? { lightroomPackage: lightroomResult } : null,
       };
       return this.status();
     } catch (error) {
       this.state = {
         ...this.state,
-        status: "failed",
-        message: "Aktivierung fehlgeschlagen. Die bisherige Masterversion bleibt aktiv.",
+        status: masterActivated ? "partial" : "failed",
+        message: masterActivated
+          ? "Die Masterdatenbank wurde aktiviert, aber das Lightroom-Suchpaket konnte nicht erneuert werden. Das bisherige Suchpaket bleibt aktiv; bitte „Datenbank aktualisieren“ erneut ausführen."
+          : "Aktivierung fehlgeschlagen. Die bisherige Masterversion bleibt aktiv.",
         error: error.message,
         completedAt: this.now().toISOString(),
       };
       throw error;
+    } finally {
+      this.runPromise = null;
     }
   }
 
-  async rollback({ confirmed = false } = {}) {
+  rollback({ confirmed = false } = {}) {
     this.assertAvailable();
+    if (!confirmed) {
+      throw new Error("Die Wiederherstellung der vorherigen Masterversion muss ausdrücklich bestätigt werden.");
+    }
     this.state = {
       ...initialState(),
       status: "rolling-back",
@@ -522,27 +600,114 @@ export class TaxonomyMasterService {
       progressPhase: "Wiederherstellung",
       startedAt: this.now().toISOString(),
     };
+    this.runPromise = this.runRollback({ confirmed }).catch(() => null);
+    return this.status();
+  }
+
+  async runRollback({ confirmed = false } = {}) {
+    let masterRestored = false;
     try {
       if (confirmed) this.referenceService.reset();
       await this.rollbackCandidate(this.taxonomyRoot, { confirmed, now: this.now });
+      masterRestored = true;
+      const lightroomResult = await this.rebuildLightroomAfterMasterChange();
       this.state = {
         ...this.state,
         status: "completed",
-        message: "Vorherige Masterversion wurde erfolgreich wiederhergestellt.",
+        message: lightroomResult
+          ? "Vorherige Masterversion und passendes Lightroom-Suchpaket wurden erfolgreich wiederhergestellt."
+          : "Vorherige Masterversion wurde erfolgreich wiederhergestellt.",
         progressPercent: 100,
+        progressPhase: "Abgeschlossen",
         completedAt: this.now().toISOString(),
+        result: lightroomResult ? { lightroomPackage: lightroomResult } : null,
       };
       return this.status();
     } catch (error) {
       this.state = {
         ...this.state,
-        status: "failed",
-        message: "Wiederherstellung der Masterdatenbank ist fehlgeschlagen.",
+        status: masterRestored ? "partial" : "failed",
+        message: masterRestored
+          ? "Die Masterdatenbank wurde wiederhergestellt, aber das passende Lightroom-Suchpaket konnte nicht aktiviert werden. Das bisherige Suchpaket bleibt aktiv; bitte „Datenbank aktualisieren“ erneut ausführen."
+          : "Wiederherstellung der Masterdatenbank ist fehlgeschlagen.",
         error: error.message,
         completedAt: this.now().toISOString(),
       };
       throw error;
+    } finally {
+      this.runPromise = null;
     }
+  }
+
+  syncLightroomPackage() {
+    this.assertAvailable();
+    if (typeof this.rebuildLightroomPackage !== "function") {
+      throw new Error("Der automatische Lightroom-Suchpaketbau ist nicht konfiguriert.");
+    }
+    this.state = {
+      ...initialState(),
+      status: "syncing-lightroom",
+      action: "sync-lightroom",
+      message: "Lightroom-Suchpaket wird aus der aktiven Masterdatenbank neu aufgebaut.",
+      progressPercent: 0,
+      progressPhase: "Lightroom-Suchpaket",
+      startedAt: this.now().toISOString(),
+    };
+    this.runPromise = this.runLightroomPackageSync().catch(() => null);
+    return this.status();
+  }
+
+  async runLightroomPackageSync() {
+    try {
+      const result = await this.rebuildLightroomAfterMasterChange();
+      this.state = {
+        ...this.state,
+        status: "completed",
+        message: "Lightroom-Suchpaket wurde erfolgreich neu aufgebaut und aktiviert.",
+        progressPercent: 100,
+        progressPhase: "Abgeschlossen",
+        completedAt: this.now().toISOString(),
+        error: "",
+        result: { lightroomPackage: result },
+      };
+      return this.status();
+    } catch (error) {
+      this.state = {
+        ...this.state,
+        status: "partial",
+        message: "Die Masterdatenbank ist aktiv, aber das Lightroom-Suchpaket konnte nicht erneuert werden. Das bisherige Suchpaket bleibt aktiv; bitte „Datenbank aktualisieren“ erneut ausführen.",
+        error: error.message,
+        completedAt: this.now().toISOString(),
+      };
+      throw error;
+    } finally {
+      this.runPromise = null;
+    }
+  }
+
+  async rebuildLightroomAfterMasterChange() {
+    if (typeof this.rebuildLightroomPackage !== "function") return null;
+    this.updateProgress({
+      status: "syncing-lightroom",
+      phase: "Lightroom-Suchpaket",
+      message: "Lightroom-Suchpaket wird aus der aktiven Masterdatenbank neu aufgebaut.",
+      percent: 0,
+    });
+    return this.rebuildLightroomPackage({
+      onProgress: ({ phase = "", message = "", percent = null } = {}) => {
+        const normalizedPhase = cleanText(phase);
+        const phaseLabel = LIGHTROOM_PROGRESS_PHASES[normalizedPhase] || normalizedPhase;
+        this.updateProgress({
+          status: "syncing-lightroom",
+          phase: phaseLabel
+            ? `Lightroom-Suchpaket · ${phaseLabel}`
+            : "Lightroom-Suchpaket",
+          message: cleanText(message)
+            || "Lightroom-Suchpaket wird aufgebaut und geprüft.",
+          percent,
+        });
+      },
+    });
   }
 
   async close() {

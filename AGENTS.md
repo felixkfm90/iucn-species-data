@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-29
+Stand: 2026-08-30
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1119,8 +1119,11 @@ Aktuelle Planung:
   CoL-Zeilen, Anbieterzusammenführung und Kandidatenvergleich werden speicherschonend schrittweise verarbeitet.
   Vor Aktivierung und Rollback schließt der Explorer seine eigenen read-only Masterhandles, damit Windows den
   atomaren Slotwechsel nicht mit `EPERM` blockiert. Mehrere Namenskorrekturen können vor einem gemeinsamen
-  `Datenbank aktualisieren` gesammelt werden. Der automatische Lightroom-Paketneubau nach Masteraktivierung bleibt
-  der nächste offene Kopplungsschritt.
+  `Datenbank aktualisieren` gesammelt werden. Seit 2026-08-30 baut der Explorer nach bestätigter Masteraktivierung
+  oder Wiederherstellung das Lightroom-Suchpaket automatisch in einem getrennten Hilfsprozess neu, prüft es
+  vollständig und aktiviert es atomar. Fortschritt erscheint im bestehenden Datenbankblock. Bei einem Paketfehler
+  bleibt das bisherige Paket aktiv; der Teilerfolg wird gemeldet und `Datenbank aktualisieren` wiederholt nur den
+  fehlenden Paketbau.
   Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter

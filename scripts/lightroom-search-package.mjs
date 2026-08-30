@@ -46,6 +46,7 @@ function parseOptions(args = process.argv.slice(2)) {
     activate: args.includes("--activate"),
     skipChecksum: args.includes("--skip-checksum"),
     json: args.includes("--json"),
+    progressJson: args.includes("--progress-json"),
   };
 }
 
@@ -157,24 +158,58 @@ export async function runLightroomSearchPackageCommand(options) {
     throw new Error(`Unbekannter Lightroom-Suchpaketbefehl: ${options.command}`);
   }
   const progress = [];
+  const reportProgress = (entry) => {
+    progress.push(entry);
+    if (options.progressJson) {
+      process.stdout.write(`${JSON.stringify({ type: "progress", ...entry })}\n`);
+    } else if (!options.json) {
+      process.stdout.write(`[${entry.percent}%] ${entry.message}\n`);
+    }
+  };
+  const buildProgressLimit = options.activate ? 82 : 88;
   const manifest = await buildLightroomSearchPackage({
     taxonomyRoot: options.taxonomyRoot,
     searchRoot: options.searchRoot,
     projectRevision: options.projectRevision || await projectRevision(options.repoRoot),
     onProgress: (entry) => {
-      progress.push(entry);
-      if (!options.json) process.stdout.write(`[${entry.percent}%] ${entry.message}\n`);
+      reportProgress({
+        ...entry,
+        percent: Math.round((Number(entry.percent) / 100) * buildProgressLimit),
+      });
     },
   });
-  const verification = await verifyLightroomSearchPackage({
-    searchRoot: options.searchRoot,
-    slot: "staging",
-    verifyChecksum: !options.skipChecksum,
-  });
+  let verification = null;
   let activation = null;
   if (options.activate) {
+    reportProgress({
+      phase: "activate",
+      percent: 86,
+      message: "Suchpaket wird vor der Aktivierung erneut vollständig geprüft.",
+    });
     activation = await activateLightroomSearchPackage(options.searchRoot, {
       verify: verifier({ skipChecksum: options.skipChecksum }),
+    });
+    verification = activation;
+    reportProgress({
+      phase: "complete",
+      percent: 100,
+      message: "Lightroom-Suchpaket wurde atomar aktiviert.",
+    });
+  } else {
+    reportProgress({
+      phase: "verify",
+      percent: 92,
+      message: "Suchpaket wird unabhängig verifiziert.",
+    });
+    verification = await verifyLightroomSearchPackage({
+      searchRoot: options.searchRoot,
+      slot: "staging",
+      verifyChecksum: !options.skipChecksum,
+    });
+    reportProgress({
+      phase: "complete",
+      percent: 100,
+      message: "Lightroom-Suchpaket ist vollständig geprüft.",
     });
   }
   return { command: "build", manifest, verification, activation, progress };
@@ -183,7 +218,14 @@ export async function runLightroomSearchPackageCommand(options) {
 async function main(args = process.argv.slice(2)) {
   const options = parseOptions(args);
   const result = await runLightroomSearchPackageCommand(options);
-  if (options.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (options.progressJson) {
+    process.stdout.write(`${JSON.stringify({
+      type: "result",
+      command: result.command,
+      packageId: result.activation?.manifest?.packageId || result.manifest?.packageId || "",
+      masterVersion: result.activation?.manifest?.masterVersion || result.manifest?.masterVersion || "",
+    })}\n`);
+  } else if (options.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   else if (options.command === "status") {
     process.stdout.write(`Aktiv: ${result.packages.active?.packageId || "nicht installiert"}\n`);
     process.stdout.write(`Vorher: ${result.packages.previous?.packageId || "nicht vorhanden"}\n`);

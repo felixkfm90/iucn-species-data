@@ -173,7 +173,10 @@ test("9.10 baut Anbieter-Ausschnitte fortschrittlich auf und wartet auf ausdrüc
   assert.equal(buildCalls[0].projectTaxa[0].projectSlug, "pantherapardus");
   assert.equal(reference.resetCount, 0);
 
-  const activated = await service.activate({ confirmed: true });
+  const activationStarted = await service.activate({ confirmed: true });
+  assert.ok(["activating", "completed"].includes(activationStarted.status));
+  await service.runPromise;
+  const activated = await service.status();
   assert.equal(activated.status, "completed");
   assert.equal(reference.resetCount, 1);
   await service.close();
@@ -289,23 +292,125 @@ test("9.10 aktiviert und rollt ausschließlich nach Bestätigung zurück", async
     },
   });
 
-  await assert.rejects(service.activate(), /Bestätigung fehlt/);
-  const activated = await service.activate({ confirmed: true });
+  assert.throws(() => service.activate(), /ausdrücklich bestätigt/);
+  await service.activate({ confirmed: true });
+  await service.runPromise;
+  const activated = await service.status();
   assert.equal(activated.status, "completed");
-  const rolledBack = await service.rollback({ confirmed: true });
+  await service.rollback({ confirmed: true });
+  await service.runPromise;
+  const rolledBack = await service.status();
   assert.equal(rolledBack.status, "completed");
   assert.deepEqual(calls, [
-    ["activate", false],
     ["activate", true],
     ["rollback", true],
   ]);
   assert.equal(reference.resetCount, 2);
   assert.deepEqual(events, [
-    "activate:false",
     "reset",
     "activate:true",
     "reset",
     "rollback:true",
   ]);
+  await service.close();
+});
+
+test("Masteraktivierung baut das passende Lightroom-Suchpaket mit sichtbarem Fortschritt", async (t) => {
+  const fixture = await createFixture(t);
+  let activeMaster = "master-bisher";
+  let activePackage = { packageId: "lightroom-bisher", masterVersion: "master-bisher" };
+  const progress = [];
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: fixture.root,
+    referenceService: {
+      async requireStore() { return referenceStore(); },
+      reset() {},
+    },
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    now: () => NOW,
+    async inspectLifecycle() {
+      return {
+        ...lifecycle(),
+        candidate: null,
+        active: { candidateId: activeMaster },
+      };
+    },
+    async activateCandidate() {
+      activeMaster = "master-neu";
+    },
+    async inspectLightroomPackages() {
+      return { active: activePackage, previous: null };
+    },
+    async rebuildLightroomPackage({ onProgress }) {
+      onProgress({ phase: "copy", percent: 42, message: "Taxa werden exportiert." });
+      progress.push(service.state.progressPhase, service.state.progressPercent);
+      activePackage = { packageId: "lightroom-neu", masterVersion: "master-neu" };
+      return { active: activePackage };
+    },
+  });
+
+  const started = await service.activate({ confirmed: true });
+  assert.ok(["activating", "syncing-lightroom", "completed"].includes(started.status));
+  await service.runPromise;
+  const completed = await service.status();
+
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.lightroomPackage.status, "current");
+  assert.equal(completed.lightroomPackage.active.packageId, "lightroom-neu");
+  assert.deepEqual(progress, ["Lightroom-Suchpaket · Taxonomieexport", 42]);
+  await service.close();
+});
+
+test("fehlgeschlagener Paketneubau bleibt als Teilerfolg gezielt wiederholbar", async (t) => {
+  const fixture = await createFixture(t);
+  let activeMaster = "master-bisher";
+  let activePackage = { packageId: "lightroom-bisher", masterVersion: "master-bisher" };
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: fixture.root,
+    referenceService: {
+      async requireStore() { return referenceStore(); },
+      reset() {},
+    },
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    now: () => NOW,
+    async inspectLifecycle() {
+      return {
+        ...lifecycle(),
+        candidate: null,
+        active: { candidateId: activeMaster },
+      };
+    },
+    async activateCandidate() {
+      activeMaster = "master-neu";
+    },
+    async inspectLightroomPackages() {
+      return { active: activePackage, previous: null };
+    },
+    async rebuildLightroomPackage() {
+      throw new Error("simulierter Paketfehler");
+    },
+  });
+
+  await service.activate({ confirmed: true });
+  await service.runPromise;
+  const partial = await service.status();
+  assert.equal(partial.status, "partial");
+  assert.equal(partial.lightroomPackage.status, "stale");
+  assert.equal(partial.lightroomPackage.needsRebuild, true);
+  assert.equal(partial.lightroomPackage.active.packageId, "lightroom-bisher");
+  assert.match(partial.message, /bisherige Suchpaket bleibt aktiv/);
+
+  service.rebuildLightroomPackage = async () => {
+    activePackage = { packageId: "lightroom-neu", masterVersion: "master-neu" };
+    return { active: activePackage };
+  };
+  await service.syncLightroomPackage();
+  await service.runPromise;
+  const retried = await service.status();
+  assert.equal(retried.status, "completed");
+  assert.equal(retried.lightroomPackage.status, "current");
+  assert.equal(retried.lightroomPackage.active.packageId, "lightroom-neu");
   await service.close();
 });

@@ -33,6 +33,11 @@ import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
 import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import { rebuildLightroomSearchPackage } from "./lightroom-search-update.mjs";
+import {
+  defaultLightroomSearchRoot,
+  inspectLightroomSearchPackages,
+} from "./lightroom-search-storage.mjs";
 import { createTaxonomyProviderRefreshService } from "./taxonomy-provider-refresh-service.mjs";
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
@@ -95,6 +100,7 @@ export async function createExplorerServer({
   mapImageRenderer = renderMapJpeg,
   sessionProtection = true,
   taxonomyRoot = process.env.IUCN_TAXONOMY_DIR || defaultTaxonomyRoot(),
+  lightroomSearchRoot = defaultLightroomSearchRoot(),
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   let model = await buildExplorerModel(repoRoot);
@@ -258,6 +264,14 @@ export async function createExplorerServer({
     supplementService: taxonomySupplements,
     speciesListPath,
     correctionsPath: taxonomyReferenceCorrectionsPath,
+    inspectLightroomPackages: () => inspectLightroomSearchPackages(lightroomSearchRoot),
+    rebuildLightroomPackage: ({ onProgress }) => rebuildLightroomSearchPackage({
+      repoRoot,
+      taxonomyRoot,
+      searchRoot: lightroomSearchRoot,
+      projectRevision: modelRevision,
+      onProgress,
+    }),
     isProjectBusy: () => Boolean(
       isPipelineProcessActive()
       || isBackupActive()
@@ -631,6 +645,7 @@ export async function createExplorerServer({
         if (action === "decide") return taxonomyMasterService.decide(payload);
         if (action === "activate") return taxonomyMasterService.activate(payload);
         if (action === "rollback") return taxonomyMasterService.rollback(payload);
+        if (action === "sync-lightroom") return taxonomyMasterService.syncLightroomPackage();
         const error = new Error("Unbekannte Masterdatenbank-Operation");
         error.statusCode = 404;
         throw error;

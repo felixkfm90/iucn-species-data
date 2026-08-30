@@ -1063,6 +1063,12 @@ Explorer eigene read-only Datenbankhandles und öffnet den neuen aktiven Stand b
 Mehrere eigene Namenskorrekturen können gesammelt und anschließend gemeinsam über `Datenbank aktualisieren`
 eingebaut werden.
 
+Nach einer bestätigten Master-Aktivierung oder Wiederherstellung baut der Arten-Explorer das davon abgeleitete
+Lightroom-Suchpaket automatisch neu, prüft es vollständig und aktiviert es erst danach atomar. Der Paketbau läuft
+in einem getrennten Hilfsprozess; Phase, Prozentwert und Laufzeit bleiben im vorhandenen Datenbankblock sichtbar.
+Scheitert nur dieser letzte Schritt, bleibt das bisherige Lightroom-Paket aktiv. `Datenbank aktualisieren` erkennt
+die abweichende Masterversion und wiederholt gezielt den Paketbau, ohne die Masterdatenbank erneut aufzubauen.
+
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.
 

@@ -22,4 +22,15 @@ test("Taxonomiedatenbank baut nur bei Quellupdate einen neuen Masterstand", () =
     database.taxonomyDatabaseUpdateDecision({ hasCandidate: true, hasWork: false }),
     "activate",
   );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({ lightroomPackageNeedsRebuild: true }),
+    "sync-lightroom",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      lightroomPackageNeedsRebuild: true,
+    }),
+    "activate",
+  );
 });

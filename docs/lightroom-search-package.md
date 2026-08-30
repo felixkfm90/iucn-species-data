@@ -1,6 +1,6 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-08-29
+Stand: 2026-08-30
 Roadmap: Phase 10.2 bis 10.4
 Status: Suchpaket und Plug-in Version 0.4.17.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
@@ -55,6 +55,18 @@ Standardpfad:
 `staging` wird vollständig aufgebaut und geprüft. Erst danach ersetzt es atomar `active`; der zuvor aktive Stand
 wandert nach `previous`. Ein Rollback tauscht `active` und `previous` kontrolliert zurück. Temporäre Rollbackproben
 laufen in einem isolierten Unterordner und verändern den produktiven Zeiger nicht.
+
+Seit dem 30. August 2026 ist dieser Ableitungsschritt in die normale Datenbankpflege des Arten-Explorers
+eingebunden. Nach einer bestätigten Master-Aktivierung oder Master-Wiederherstellung baut der Explorer das
+Lightroom-Suchpaket automatisch in einem getrennten Node-Hilfsprozess neu auf, prüft Datenbank, Zähler und
+SHA-256-Prüfsumme vollständig und aktiviert erst danach den Staging-Slot. Schema, Export, Indizes, Prüfung und
+Aktivierung erscheinen als Phasen im bestehenden Fortschrittsblock; der Explorer-Server bleibt während des
+SQLite-Aufbaus ansprechbar.
+
+Schlägt ausschließlich dieser abgeleitete Schritt fehl, bleibt die bereits aktivierte Masterdatenbank bestehen und
+das bisherige Lightroom-Suchpaket aktiv. Der Explorer kennzeichnet diesen Zustand ausdrücklich als Teilerfolg.
+`Datenbank aktualisieren` erkennt die abweichende `masterVersion` im aktiven Paket und wiederholt dann nur den
+Paketbau; ein erneuter Masteraufbau ist dafür nicht erforderlich.
 
 Der Pfad ist über `--search-root=<Pfad>` beziehungsweise die lokalen Plug-in-Einstellungen überschreibbar. Eine
 spätere Installer- und Mehrgerätephase darf ihn deshalb konfigurieren, ohne das Datenformat zu ändern.
@@ -369,6 +381,9 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   werden deshalb nicht automatisch gelöscht. Andere frühere Smart-Sammlungen mit unbekannten abweichenden Namen
   werden ebenfalls nicht automatisch entfernt; die beiden bekannten Alt-Sammlungen `5-Sterne-Tierbilder` und
   `Art-Referenzbilder` werden dagegen innerhalb des verwalteten Satzes automatisch bereinigt.
+- Der automatische Suchpaketbau benötigt lokal vorübergehend Platz für den neuen Staging-Stand zusätzlich zum
+  aktiven und gegebenenfalls vorherigen Paket. Bei einem Fehler bleibt das alte Paket nutzbar, die korrigierten
+  Namen stehen Lightroom aber erst nach dem erfolgreichen Wiederholungslauf zur Verfügung.
 - Phase 10 ist nicht abgeschlossen. Vor dem Abschluss folgen das umfassende Audit nach
   `docs/documentation-lifecycle.md` und die darin vorgesehenen übergreifenden Regressions-, Betriebs-, Backup- und
   Wiederherstellungsprüfungen.

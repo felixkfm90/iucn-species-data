@@ -156,3 +156,30 @@ test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt"
   assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
   assert.equal(visible.taxonomyMasterRollbackButton.disabled, true);
 });
+
+test("automatischer Lightroom-Paketbau nutzt denselben sichtbaren Fortschrittsblock", () => {
+  const visible = elements();
+  const status = {
+    status: "syncing-lightroom",
+    active: true,
+    message: "Taxa werden exportiert.",
+    progressPercent: 42,
+    progressPhase: "Lightroom-Suchpaket · Taxonomieexport",
+    startedAt: new Date(Date.now() - 10_000).toISOString(),
+    lifecycle: {},
+  };
+  const controller = masterUi.createTaxonomyMasterController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => status,
+    escapeHtml: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterProgress.hidden, false);
+  assert.equal(visible.taxonomyMasterProgress.value, 42);
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Lightroom-Suchpaket · Taxonomieexport/);
+  assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
+});

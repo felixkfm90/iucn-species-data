@@ -157,6 +157,10 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "taxonomy-master",
     action: "rollback",
   });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/sync-lightroom"), {
+    name: "taxonomy-master",
+    action: "sync-lightroom",
+  });
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/corrections/save"), {
     name: "taxonomy-correction",
     action: "save",
@@ -302,6 +306,13 @@ test("Schreibaktionen werden begrenzt, dekodiert und an Fachoperationen delegier
     name: "taxonomyMaster",
     action: "build",
     payload: { refreshProviders: true },
+  });
+
+  await post("/api/taxonomy/master/sync-lightroom", {});
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyMaster",
+    action: "sync-lightroom",
+    payload: {},
   });
 
   await post("/api/taxonomy/corrections/save", {

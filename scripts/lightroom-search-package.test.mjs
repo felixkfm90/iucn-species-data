@@ -13,6 +13,7 @@ test("Lightroom-Suchpaket-CLI trennt Build-, Prüf- und Rollbackoptionen", () =>
     "--search-root=D:/Lightroom",
     "--project-revision=fixture",
     "--json",
+    "--progress-json",
   ]);
   assert.equal(options.command, "build");
   assert.equal(options.activate, true);
@@ -21,6 +22,7 @@ test("Lightroom-Suchpaket-CLI trennt Build-, Prüf- und Rollbackoptionen", () =>
   assert.equal(options.searchRoot, path.resolve("D:/Lightroom"));
   assert.equal(options.projectRevision, "fixture");
   assert.equal(options.json, true);
+  assert.equal(options.progressJson, true);
 });
 
 test("Status ist der sichere Standardbefehl", () => {
@@ -28,4 +30,5 @@ test("Status ist der sichere Standardbefehl", () => {
   assert.equal(options.command, "status");
   assert.equal(options.activate, false);
   assert.equal(options.skipChecksum, false);
+  assert.equal(options.progressJson, false);
 });

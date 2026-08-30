@@ -1,7 +1,13 @@
 (function initializeTaxonomyMaster(global) {
   "use strict";
 
-  const ACTIVE_STATES = new Set(["refreshing", "building", "activating", "rolling-back"]);
+  const ACTIVE_STATES = new Set([
+    "refreshing",
+    "building",
+    "activating",
+    "rolling-back",
+    "syncing-lightroom",
+  ]);
   const FIELD_LABELS = Object.freeze({
     "scientific-name": "wissenschaftlicher Name",
     "german-name": "deutscher Name",
@@ -65,6 +71,13 @@
 
   function masterDetail(status = {}) {
     const lifecycle = status.lifecycle || {};
+    if (status.status === "partial") {
+      return [status.message, status.error].map(cleanText).filter(Boolean).join(" ");
+    }
+    if (status.lightroomPackage?.needsRebuild) {
+      return status.lightroomPackage.error
+        || "Die Masterdatenbank ist aktiv, das Lightroom-Suchpaket muss jedoch neu aufgebaut werden.";
+    }
     if (status.error) return `Aktualisierung fehlgeschlagen. ${status.error}`.trim();
     if (ACTIVE_STATES.has(status.status)) {
       return status.message || "Aktualisierung wird vorbereitet und geprüft.";
@@ -277,7 +290,10 @@
           method: "POST",
           body: JSON.stringify({ confirmed: true }),
         }));
-        setActionMessage("Taxonomiedatenbank wurde erfolgreich aktualisiert.", "success");
+        setActionMessage(
+          "Masterdatenbank wird aktiviert; anschließend wird das Lightroom-Suchpaket neu aufgebaut.",
+          "info",
+        );
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();
@@ -297,7 +313,10 @@
           method: "POST",
           body: JSON.stringify({ confirmed: true }),
         }));
-        setActionMessage("Vorheriger Datenbankstand wurde wiederhergestellt.", "success");
+        setActionMessage(
+          "Vorheriger Masterstand wird wiederhergestellt; anschließend wird das Lightroom-Suchpaket angepasst.",
+          "info",
+        );
       } catch (error) {
         setActionMessage(error.message, "error");
         await refresh();
