@@ -28,7 +28,7 @@ test("Taxonomiedatenbank berücksichtigt Quellen, eigene Korrekturen und Suchpak
   );
   assert.equal(
     database.taxonomyDatabaseUpdateDecision({ correctionsPending: true }),
-    "build-corrections",
+    "apply-corrections",
   );
   assert.equal(
     database.taxonomyDatabaseUpdateDecision({

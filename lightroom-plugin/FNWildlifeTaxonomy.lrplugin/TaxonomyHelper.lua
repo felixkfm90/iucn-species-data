@@ -165,6 +165,7 @@ function TaxonomyHelper.searchPackageStatus()
     taxonCount = 0,
     packageId = "",
     masterVersion = "",
+    correctionRevision = "",
   }
   if manifestPath ~= "" and LrFileUtils.exists(manifestPath) == "file" then
     local content = readTextFile(manifestPath)
@@ -174,6 +175,20 @@ function TaxonomyHelper.searchPackageStatus()
         status.taxonCount = tonumber(manifest.taxonCount or 0) or 0
         status.packageId = cleanText(manifest.packageId)
         status.masterVersion = cleanText(manifest.masterVersion)
+      end
+    end
+  end
+  local correctionPointerPath = root ~= ""
+      and LrPathUtils.child(LrPathUtils.parent(root), "corrections/active.json")
+    or ""
+  if correctionPointerPath ~= "" and LrFileUtils.exists(correctionPointerPath) == "file" then
+    local content = readTextFile(correctionPointerPath)
+    if content then
+      local ok, pointer = pcall(Json.decode, content)
+      if ok and type(pointer) == "table"
+          and cleanText(pointer.basePackageId) == status.packageId
+          and cleanText(pointer.baseMasterVersion) == status.masterVersion then
+        status.correctionRevision = cleanText(pointer.revision)
       end
     end
   end

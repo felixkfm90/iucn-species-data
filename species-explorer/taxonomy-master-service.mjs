@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
+  activateTaxonomyCorrectionRelease,
+  readActiveTaxonomyCorrectionPointer,
+} from "./taxonomy-correction-release.mjs";
+import {
   buildTaxonomyMasterCandidate,
   taxonomyCorrectionsRevision,
 } from "./taxonomy-master-candidate.mjs";
@@ -36,6 +40,7 @@ const ACTIVE_STATUSES = new Set([
   "activating",
   "rolling-back",
   "syncing-lightroom",
+  "applying-corrections",
 ]);
 
 function initialState() {
@@ -238,6 +243,7 @@ export class TaxonomyMasterService {
     providerRefreshService = null,
     speciesListPath,
     correctionsPath,
+    lightroomSearchRoot = null,
     isProjectBusy = () => false,
     now = () => new Date(),
     buildCandidate = buildTaxonomyMasterCandidate,
@@ -247,6 +253,7 @@ export class TaxonomyMasterService {
     rollbackCandidate = rollbackTaxonomyMaster,
     inspectLightroomPackages = null,
     rebuildLightroomPackage = null,
+    activateCorrections = activateTaxonomyCorrectionRelease,
   } = {}) {
     if (!taxonomyRoot || !referenceService || !speciesListPath || !correctionsPath) {
       throw new TypeError("Taxonomiepfad, Referenzdienst, Artenliste und Korrekturdatei sind erforderlich.");
@@ -257,6 +264,7 @@ export class TaxonomyMasterService {
     this.providerRefreshService = providerRefreshService;
     this.speciesListPath = path.resolve(speciesListPath);
     this.correctionsPath = path.resolve(correctionsPath);
+    this.lightroomSearchRoot = lightroomSearchRoot ? path.resolve(lightroomSearchRoot) : null;
     this.isProjectBusy = isProjectBusy;
     this.now = now;
     this.buildCandidate = buildCandidate;
@@ -266,6 +274,7 @@ export class TaxonomyMasterService {
     this.rollbackCandidate = rollbackCandidate;
     this.inspectLightroomPackages = inspectLightroomPackages;
     this.rebuildLightroomPackage = rebuildLightroomPackage;
+    this.activateCorrections = activateCorrections;
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
@@ -344,18 +353,123 @@ export class TaxonomyMasterService {
     const currentRevision = taxonomyCorrectionsRevision(corrections);
     const activeRevision = cleanText(snapshot.active?.inputRevisions?.corrections);
     const candidateRevision = cleanText(snapshot.candidate?.inputRevisions?.corrections);
+    const activeMasterVersion = cleanText(
+      snapshot.active?.candidateId || snapshot.active?.masterVersion,
+    );
+    const correctionPointer = await readActiveTaxonomyCorrectionPointer(this.taxonomyRoot)
+      .catch(() => null);
+    const overlayRevision = correctionPointer?.baseMasterVersion === activeMasterVersion
+      ? cleanText(correctionPointer.revision)
+      : "";
     const activeManualCount = Number(
       snapshot.active?.sources?.find((source) => source.provider === "manual")?.recordCount || 0,
     );
-    const activeCurrent = activeRevision
+    const activeCurrent = overlayRevision === currentRevision || (activeRevision
       ? activeRevision === currentRevision
-      : corrections.length === 0 && activeManualCount === 0;
+      : corrections.length === 0 && activeManualCount === 0);
     return {
       count: corrections.length,
       pending: !activeCurrent,
       candidateIncludesCurrent: Boolean(candidateRevision)
         && candidateRevision === currentRevision,
+      activeRevision: overlayRevision || activeRevision,
+      activationMode: overlayRevision ? "incremental" : "master",
     };
+  }
+
+  async ensureCorrectionBaseline() {
+    if (!this.lightroomSearchRoot) return false;
+    const existing = await readActiveTaxonomyCorrectionPointer(this.taxonomyRoot);
+    if (existing) return false;
+    const lifecycle = await this.inspectLifecycle(this.taxonomyRoot);
+    const activeRevision = cleanText(lifecycle.active?.inputRevisions?.corrections);
+    if (!activeRevision) return false;
+    const document = await readJson(this.correctionsPath, { entries: [] });
+    const corrections = correctionsFromDocument(document);
+    if (taxonomyCorrectionsRevision(corrections) !== activeRevision) return false;
+    const packageStatus = await this.lightroomPackageStatus(lifecycle);
+    if (packageStatus?.status !== "current") return false;
+    await this.activateCorrections({
+      taxonomyRoot: this.taxonomyRoot,
+      searchRoot: this.lightroomSearchRoot,
+      corrections,
+      now: this.now,
+    });
+    this.referenceService.reset();
+    return true;
+  }
+
+  applyCorrections({ confirmed = false } = {}) {
+    this.assertAvailable();
+    if (!confirmed) {
+      throw new Error("Die Aktivierung der eigenen Namenskorrekturen muss ausdrücklich bestätigt werden.");
+    }
+    if (!this.lightroomSearchRoot) {
+      throw new Error("Der gemeinsame Lightroom-Korrekturspeicher ist nicht konfiguriert.");
+    }
+    this.state = {
+      ...initialState(),
+      status: "applying-corrections",
+      action: "apply-corrections",
+      message: "Namenskorrekturen werden gegen Master und Lightroom-Suchpaket geprüft.",
+      progressPercent: 5,
+      progressPhase: "Korrekturen prüfen",
+      startedAt: this.now().toISOString(),
+    };
+    this.runPromise = this.runApplyCorrections().catch(() => null);
+    return this.status();
+  }
+
+  async runApplyCorrections() {
+    try {
+      const document = await readJson(this.correctionsPath, { entries: [] });
+      const corrections = correctionsFromDocument(document);
+      this.updateProgress({
+        status: "applying-corrections",
+        phase: "Gemeinsamen Kandidaten vorbereiten",
+        message: "Betroffene Taxa werden im aktiven Master und Lightroom-Paket abgeglichen.",
+        percent: 30,
+      });
+      const result = await this.activateCorrections({
+        taxonomyRoot: this.taxonomyRoot,
+        searchRoot: this.lightroomSearchRoot,
+        corrections,
+        now: this.now,
+      });
+      this.updateProgress({
+        status: "applying-corrections",
+        phase: "Gemeinsam aktivieren",
+        message: "Geprüfte Korrekturschicht wird für Arten-Explorer und Lightroom freigegeben.",
+        percent: 90,
+      });
+      this.referenceService.reset();
+      this.state = {
+        ...this.state,
+        status: "completed",
+        message: "Namenskorrekturen wurden atomar für Master und Lightroom-Suche aktiviert.",
+        progressPercent: 100,
+        progressPhase: "Abgeschlossen",
+        completedAt: this.now().toISOString(),
+        error: "",
+        result: {
+          correctionRelease: result.release,
+          correctionActivation: result.pointer,
+        },
+      };
+      return this.status();
+    } catch (error) {
+      this.state = {
+        ...this.state,
+        status: "failed",
+        message: "Die Namenskorrekturen konnten nicht aktiviert werden. Der bisherige gemeinsame Stand bleibt aktiv.",
+        progressPercent: null,
+        completedAt: this.now().toISOString(),
+        error: error.message,
+      };
+      throw error;
+    } finally {
+      this.runPromise = null;
+    }
   }
 
   async lightroomPackageStatus(lifecycle = null) {

@@ -86,6 +86,7 @@ export async function createLightroomSearchRequestHandler({
             searchPackage: {
               packageId: status.packageId,
               masterVersion: status.masterVersion,
+              correctionRevision: status.correctionRevision || "",
             },
           });
         }

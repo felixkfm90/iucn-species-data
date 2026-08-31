@@ -5,6 +5,7 @@ import {
   germanTaxonomyDisplayName,
   taxonomyHierarchyDisplayEntry,
 } from "./taxonomy-display-names.mjs";
+import { readActiveTaxonomyCorrectionRelease } from "./taxonomy-correction-release.mjs";
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
 import {
   taxonomyMasterDatabasePath,
@@ -112,7 +113,13 @@ function resultSourceLabel(providers) {
 }
 
 export class TaxonomyMasterStore {
-  constructor({ database, manifest, taxonomyRoot, slot = "active" } = {}) {
+  constructor({
+    database,
+    manifest,
+    taxonomyRoot,
+    slot = "active",
+    correctionRelease = null,
+  } = {}) {
     if (!database || !manifest || !taxonomyRoot) {
       throw new TypeError("Masterdatenbank, Manifest und Taxonomiepfad sind erforderlich.");
     }
@@ -120,6 +127,10 @@ export class TaxonomyMasterStore {
     this.manifest = manifest;
     this.taxonomyRoot = path.resolve(taxonomyRoot);
     this.slot = slot;
+    this.correctionRelease = correctionRelease;
+    this.correctionsByTaxonId = new Map(
+      (correctionRelease?.entries || []).map((entry) => [entry.masterTaxonId, entry]),
+    );
     this.closed = false;
     this.hasSearchIndex = Boolean(this.database.prepare(`
       SELECT 1 AS available
@@ -282,6 +293,8 @@ export class TaxonomyMasterStore {
       schemaVersion: this.manifest.schemaVersion,
       summary: this.manifest.summary || {},
       sources: this.manifest.sources || [],
+      correctionRevision: this.correctionRelease?.revision || "",
+      correctionReleaseId: this.correctionRelease?.releaseId || "",
     };
   }
 
@@ -373,6 +386,29 @@ export class TaxonomyMasterStore {
     const taxon = plain(row);
     const fields = this.fieldMap(taxon.master_taxon_id);
     const names = this.names(taxon.master_taxon_id, fields);
+    const correction = this.correctionsByTaxonId.get(taxon.master_taxon_id);
+    if (correction?.germanName) {
+      names.germanNames = uniqueBy([{
+        name: correction.germanName,
+        source: PROVIDER_LABELS.manual,
+        provider: "manual",
+        providerVersion: this.correctionRelease.releaseId,
+        preferred: true,
+        verified: true,
+        selected: true,
+      }, ...names.germanNames], (entry) => normalized(entry.name));
+    }
+    if (correction?.englishName) {
+      names.englishNames = uniqueBy([{
+        name: correction.englishName,
+        source: PROVIDER_LABELS.manual,
+        provider: "manual",
+        providerVersion: this.correctionRelease.releaseId,
+        preferred: true,
+        verified: true,
+        selected: true,
+      }, ...names.englishNames], (entry) => normalized(entry.name));
+    }
     const aliases = this.aliasRows.all(taxon.master_taxon_id).map(plain);
     const providers = this.providers(taxon.master_taxon_id);
     const statuses = this.statuses(taxon.master_taxon_id);
@@ -392,7 +428,52 @@ export class TaxonomyMasterStore {
       statusIds: statuses.map((entry) => entry.id),
       sourceProviders: [...new Set(providers.map((entry) => entry.provider))],
       fields,
+      correction: correction || null,
     };
+  }
+
+  correctionSearchResults(query, {
+    kind = "all",
+    kingdom = "Animalia",
+    kingdoms = null,
+    language = "all",
+    rank = "all",
+  } = {}) {
+    if (!["all", "vernacular"].includes(kind)) return [];
+    const ranked = [];
+    for (const correction of this.correctionsByTaxonId.values()) {
+      const row = this.taxonRow.get(correction.masterTaxonId);
+      if (!row || !matchesKingdom(row, { kingdom, kingdoms })) continue;
+      if (rank !== "all" && row.rank !== rank) continue;
+      for (const [value, entryLanguage] of [
+        [correction.germanName, "de"],
+        [correction.englishName, "en"],
+      ]) {
+        if (!value || (language !== "all" && language !== entryLanguage)) continue;
+        const score = termScore(query, value);
+        if (!Number.isFinite(score)) continue;
+        ranked.push({
+          taxon: this.compactTaxon(row),
+          match: { value, type: "vernacular" },
+          score,
+        });
+      }
+    }
+    ranked.sort((left, right) => (
+      left.score - right.score
+      || left.taxon.scientificName.localeCompare(right.taxon.scientificName, "en")
+    ));
+    return uniqueBy(
+      ranked.map((entry) => this.formatSearchResult(entry.taxon, entry.match)),
+      (entry) => entry.masterTaxonId,
+    );
+  }
+
+  mergeCorrectionSearchResults(query, results, options, maximum) {
+    return uniqueBy([
+      ...this.correctionSearchResults(query, options),
+      ...results,
+    ], (entry) => entry.masterTaxonId).slice(0, maximum);
   }
 
   searchTerms(taxon, { kind = "all", language = "all" } = {}) {
@@ -534,6 +615,12 @@ export class TaxonomyMasterStore {
         seen.add(row.master_taxon_id);
         if (results.length === maximum) break;
       }
+      const mergedResults = this.mergeCorrectionSearchResults(
+        query,
+        results,
+        { kind, kingdom, kingdoms, language, rank },
+        maximum,
+      );
       return {
         query: String(query ?? ""),
         normalizedQuery: normalized(query),
@@ -543,9 +630,9 @@ export class TaxonomyMasterStore {
         language,
         rank,
         limit: maximum,
-        results,
+        results: mergedResults,
         selected: null,
-        ambiguous: results.length > 1,
+        ambiguous: mergedResults.length > 1,
         source: "Taxonomie-Masterdatenbank",
       };
     }
@@ -574,6 +661,12 @@ export class TaxonomyMasterStore {
       results.push(this.formatSearchResult(entry.taxon, entry.term));
       if (results.length === maximum) break;
     }
+    const mergedResults = this.mergeCorrectionSearchResults(
+      query,
+      results,
+      { kind, kingdom, kingdoms, language, rank },
+      maximum,
+    );
     return {
       query: String(query ?? ""),
       normalizedQuery: normalized(query),
@@ -583,9 +676,9 @@ export class TaxonomyMasterStore {
       language,
       rank,
       limit: maximum,
-      results,
+      results: mergedResults,
       selected: null,
-      ambiguous: results.length > 1,
+      ambiguous: mergedResults.length > 1,
       source: "Taxonomie-Masterdatenbank",
     };
   }
@@ -723,11 +816,23 @@ export async function openTaxonomyMasterStore({ taxonomyRoot, slot = "active" } 
       fs.access(databasePath),
     ]);
     const manifest = JSON.parse(manifestText);
+    const masterVersion = cleanText(manifest.candidateId || manifest.masterVersion);
+    const correctionRelease = slot === "active"
+      ? await readActiveTaxonomyCorrectionRelease(taxonomyRoot, {
+          expectedMasterVersion: masterVersion,
+        })
+      : null;
     const { DatabaseSync } = await loadNodeSqlite();
     const database = new DatabaseSync(databasePath, { readOnly: true });
     try {
       validateTaxonomyMasterDatabase(database, { full: false });
-      return new TaxonomyMasterStore({ database, manifest, taxonomyRoot, slot });
+      return new TaxonomyMasterStore({
+        database,
+        manifest,
+        taxonomyRoot,
+        slot,
+        correctionRelease,
+      });
     } catch (error) {
       database.close();
       throw error;

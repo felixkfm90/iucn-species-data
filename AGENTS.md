@@ -116,6 +116,8 @@ Lokale Arbeitsoberflaeche:
   produktiv aktivierte Phase-9-Masterdatenbank mit stabilen IDs, versionierten Anbieterständen, Feldprovenienz,
   Konflikten, Projektverknüpfungen, atomarer Aktivierung und Rollback; die aktive CoL-Vollreferenz bleibt
   unverändert und read-only
+- `species-explorer/taxonomy-correction-release.mjs`: kleine unveränderliche Namenskorrektur-Releases mit erneuter
+  Identitätsprüfung gegen aktiven Master und aktives Lightroom-Paket sowie gemeinsamem atomarem Aktivierungszeiger
 - `scripts/taxonomy-master-migrate.mjs`: kontrollierte reale Migration der CoL-Referenz, Anbieter-Ausschnitte,
   Ergänzungen und Projektarten in einen verifizierten Master-Kandidaten mit optionaler Aktivierung und
   Rollbacktest
@@ -1138,7 +1140,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.19.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.20.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1204,9 +1206,14 @@ Aktuelle Planung:
   Zwischenränge erhalten bleiben. Der aktive Stand `lightroom-ef6cfb4b4851d19063d8` enthält 2.670.983
   Hierarchiezeilen. Die Korrekturübergabe, der neue Paketstand und die automatische
   Suche benötigen noch den praktischen Lightroom-/Explorer-Folgetest.
-  Vor dem Abschlussaudit bleibt außerdem der sichere inkrementelle Korrekturlauf offen: Er soll bei reinen eigenen
-  Namensänderungen einen geklonten Kandidaten gezielt aktualisieren, statt sämtliche externen Quellen erneut
-  zusammenzuführen; aktiver Master und Lightroom-Paket dürfen dabei weiterhin nur atomar wechseln.
+  Version 0.4.20.0 ergänzt den sicheren Sekundenpfad für reine eigene Namenskorrekturen. Ein kleines
+  unveränderliches Korrektur-Release wird gegen aktive Master-ID, wissenschaftlichen Namen, Rang, Reich,
+  Masterversion und Lightroom-Paket-ID geprüft. Ein einziger atomarer Zeiger aktiviert es anschließend gleichzeitig
+  für Masteransicht und Lightroom-Suchhelfer; die mehrgigabytegroßen Basis-SQLite-Dateien werden nicht kopiert oder
+  verändert. Lightroom öffnet bei der nächsten Suche den neuen Stand ohne Neustart. Eine vor dem Zeigerwechsel
+  geladene Art wird über die geänderte Korrekturrevision vor der Zuweisung gesperrt. Das Zurücksetzen einer bereits
+  in einem früheren Vollmaster fest eingebauten manuellen Aussage bleibt dem vollständigen Kandidatenbau
+  vorbehalten. Der Sekundenpfad ist automatisiert geprüft und benötigt noch den praktischen Lightroom-/Explorer-Test.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { germanTaxonomyDisplayName } from "./taxonomy-display-names.mjs";
+import { readActiveTaxonomyCorrectionRelease } from "./taxonomy-correction-release.mjs";
 import {
   inspectLightroomSearchDatabase,
 } from "./lightroom-search-schema.mjs";
@@ -69,11 +70,21 @@ function ftsPrefixQuery(value) {
 }
 
 export class LightroomSearchStore {
-  constructor({ database, manifest, searchRoot, slot = "active" } = {}) {
+  constructor({
+    database,
+    manifest,
+    searchRoot,
+    slot = "active",
+    correctionRelease = null,
+  } = {}) {
     this.database = database;
     this.manifest = manifest;
     this.searchRoot = path.resolve(searchRoot);
     this.slot = slot;
+    this.correctionRelease = correctionRelease;
+    this.correctionsByTaxonId = new Map(
+      (correctionRelease?.entries || []).map((entry) => [entry.masterTaxonId, entry]),
+    );
     this.closed = false;
     this.prefixStatements = Object.fromEntries([
       ["normalized", "normalized_term"],
@@ -151,7 +162,55 @@ export class LightroomSearchStore {
       taxonCount: this.manifest.taxonCount,
       nameCount: this.manifest.nameCount,
       hierarchyCount: this.manifest.hierarchyCount,
+      correctionRevision: this.correctionRelease?.revision || "",
+      correctionReleaseId: this.correctionRelease?.releaseId || "",
     };
+  }
+
+  correctedRow(row) {
+    const correction = this.correctionsByTaxonId.get(row.master_taxon_id);
+    if (!correction) return row;
+    return {
+      ...row,
+      german_name: correction.germanName || row.german_name,
+      english_name: correction.englishName || row.english_name,
+    };
+  }
+
+  correctionSearchRows(queryValues, kingdom) {
+    const variants = unique(Object.values(queryValues));
+    const rows = [];
+    for (const correction of this.correctionsByTaxonId.values()) {
+      const base = this.taxonRow.get(correction.masterTaxonId);
+      if (!base || (kingdom !== "all" && base.kingdom !== kingdom)) continue;
+      for (const [term, language] of [
+        [correction.germanName, "de"],
+        [correction.englishName, "en"],
+      ]) {
+        if (!term) continue;
+        const row = {
+          ...this.correctedRow(base),
+          term,
+          normalized_term: normalizeTaxonomySearchTerm(term),
+          folded_term: foldTaxonomySearchTerm(term),
+          german_key: germanTaxonomySearchKey(term),
+          term_kind: "vernacular",
+          language,
+          source_provider: "manual",
+          weight: 0,
+          project_linked: 0,
+        };
+        if (!Number.isFinite(scoreCandidate(variants, row))) continue;
+        const matches = [row.normalized_term, row.folded_term, row.german_key]
+          .some((termValue) => variants.some((queryValue) => (
+            termValue === queryValue
+            || termValue.startsWith(queryValue)
+            || termValue.includes(queryValue)
+          )));
+        if (matches) rows.push(row);
+      }
+    }
+    return rows;
   }
 
   search(query, { limit = 12, kingdom = "all" } = {}) {
@@ -177,14 +236,17 @@ export class LightroomSearchStore {
     }
     const ftsQuery = ftsPrefixQuery(value);
     if (ftsQuery) rows.push(...this.ftsStatement.all(ftsQuery, fetchLimit));
+    const correctionRows = this.correctionSearchRows(queryValues, kingdom);
     const best = new Map();
     for (const row of rows) {
       if (kingdom !== "all" && row.kingdom !== kingdom) continue;
       const score = scoreCandidate(variants, row) - (row.project_linked ? 2 : 0);
       const current = best.get(row.master_taxon_id);
-      if (!current || score < current.score) best.set(row.master_taxon_id, { row, score });
+      if (!current || score < current.score) {
+        best.set(row.master_taxon_id, { row: this.correctedRow(row), score });
+      }
     }
-    return [...best.values()]
+    const baseResults = [...best.values()]
       .sort((left, right) => (
         left.score - right.score
         || left.row.accepted_scientific_name.localeCompare(
@@ -207,11 +269,36 @@ export class LightroomSearchStore {
         matchType: matchType(row),
         source: providerLabel(row.source_provider),
       }));
+    const correctionResults = correctionRows
+      .sort((left, right) => (
+        scoreCandidate(variants, left) - scoreCandidate(variants, right)
+        || left.accepted_scientific_name.localeCompare(right.accepted_scientific_name, "en")
+      ))
+      .map((row) => ({
+        masterTaxonId: row.master_taxon_id,
+        germanName: row.german_name || null,
+        englishName: row.english_name || null,
+        acceptedScientificName: row.accepted_scientific_name,
+        rank: row.rank,
+        kingdom: row.kingdom || null,
+        referenceState: row.reference_state,
+        projectLinked: Boolean(row.project_linked),
+        match: row.term,
+        matchType: matchType(row),
+        source: providerLabel(row.source_provider),
+      }));
+    const seen = new Set();
+    return [...correctionResults, ...baseResults].filter((entry) => {
+      if (seen.has(entry.masterTaxonId)) return false;
+      seen.add(entry.masterTaxonId);
+      return true;
+    }).slice(0, safeLimit);
   }
 
   taxon(masterTaxonId) {
     this.assertOpen();
-    const row = this.taxonRow.get(cleanText(masterTaxonId));
+    const baseRow = this.taxonRow.get(cleanText(masterTaxonId));
+    const row = baseRow ? this.correctedRow(baseRow) : null;
     if (!row) return null;
     const hierarchy = this.hierarchyRows.all(row.master_taxon_id).map((entry) => ({
       rank: entry.rank,
@@ -219,7 +306,22 @@ export class LightroomSearchStore {
       germanName: germanTaxonomyDisplayName(entry.rank, entry.scientific_name) || null,
       source: providerLabel(entry.source_provider),
     }));
-    const names = this.nameRows.all(row.master_taxon_id).map((entry) => ({
+    const correction = this.correctionsByTaxonId.get(row.master_taxon_id);
+    const names = [
+      correction?.germanName && {
+        term: correction.germanName,
+        term_kind: "vernacular",
+        language: "de",
+        source_provider: "manual",
+      },
+      correction?.englishName && {
+        term: correction.englishName,
+        term_kind: "vernacular",
+        language: "en",
+        source_provider: "manual",
+      },
+      ...this.nameRows.all(row.master_taxon_id),
+    ].filter(Boolean).map((entry) => ({
       name: entry.term,
       kind: entry.term_kind,
       language: entry.language || null,
@@ -265,13 +367,25 @@ export async function openLightroomSearchStore({ searchRoot, slot = "active" } =
     const manifest = JSON.parse(
       await fs.readFile(lightroomSearchManifestPath(searchRoot, slot), "utf8"),
     );
+    const correctionRelease = slot === "active"
+      ? await readActiveTaxonomyCorrectionRelease(searchRoot, {
+          expectedMasterVersion: manifest.masterVersion,
+          expectedPackageId: manifest.packageId,
+        })
+      : null;
     const { DatabaseSync } = await loadNodeSqlite();
     const database = new DatabaseSync(lightroomSearchDatabasePath(searchRoot, slot), {
       readOnly: true,
     });
     try {
       inspectLightroomSearchDatabase(database, { full: false });
-      return new LightroomSearchStore({ database, manifest, searchRoot, slot });
+      return new LightroomSearchStore({
+        database,
+        manifest,
+        searchRoot,
+        slot,
+        correctionRelease,
+      });
     } catch (error) {
       database.close();
       throw error;

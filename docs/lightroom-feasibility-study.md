@@ -2,7 +2,7 @@
 
 Stand: 2026-08-30
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.19.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.20.0 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis

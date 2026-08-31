@@ -4,10 +4,11 @@ Stand: 2026-08-30
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.19.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.20.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Statistikfix, automatische Suche,
-Korrekturübergabe und daraus abgeleiteter Master-/Paketneuaufbau benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum
+Korrekturübergabe, automatische Suche und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
+Folgetest. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen.
 
 Roadmap: Phase 9 und Phase 10
@@ -598,7 +599,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.19.0 am 2026-08-30 umgesetzt und automatisiert geprüft; Einzel- und
+- **Bis Plug-in-Version 0.4.20.0 am 2026-08-30 umgesetzt und automatisiert geprüft; Einzel- und
   Mehrfachzuweisung sowie Auswahl-Refresh bis 0.4.16.0 praktisch bestätigt, die jüngsten Abläufe noch nicht abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -644,7 +645,9 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   Arten-Explorer. Dort bleiben erneute Identitätsprüfung, versionierte Korrekturschicht, Master-Kandidat und
   atomare Paketaktivierung verbindlich. Version 0.4.19.0 erkennt ausstehende Korrekturen revisionsbasiert auch ohne
   neue Anbieterstände und kombiniert beim Hierarchieexport den vollständigen Anbieterfallback mit den ausgewählten
-  Master-Feldwerten.
+  Master-Feldwerten. Version 0.4.20.0 prüft reine Namenskorrekturen gegen aktive Master- und Paketidentität und
+  aktiviert ein kleines gemeinsames Korrektur-Release über einen einzigen atomaren Zeiger, ohne die Basis-SQLite-
+  Dateien neu aufzubauen.
 
 Ergebnis: automatisiert getestetes und in den zentralen Bedienabläufen praktisch geprüftes MVP ohne konkurrierende
 Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
@@ -700,7 +703,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.19.0 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.20.0 die nutzergeführte Rücknahme, dynamische
 Auswahl, die getrennte Lifelist-/Klassenstatistik, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 

@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { readActiveTaxonomyCorrectionPointer } from "./taxonomy-correction-release.mjs";
+
 import { taxonomyHierarchyDisplayEntry } from "./taxonomy-display-names.mjs";
 import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { openTaxonomyStore } from "./taxonomy-store.mjs";
@@ -254,6 +256,7 @@ export class TaxonomyReferenceService {
     openMasterStore = openTaxonomyMasterStore,
     readMasterManifest = readTaxonomyMasterManifest,
     readPointer = readActiveTaxonomyPointer,
+    readCorrectionPointer = readActiveTaxonomyCorrectionPointer,
     supplementService = null,
   } = {}) {
     if (!taxonomyRoot) throw new TypeError("Taxonomie-Zielpfad fehlt.");
@@ -262,6 +265,7 @@ export class TaxonomyReferenceService {
     this.openMasterStore = openMasterStore;
     this.readMasterManifest = readMasterManifest;
     this.readPointer = readPointer;
+    this.readCorrectionPointer = readCorrectionPointer;
     this.supplementService = supplementService;
     this.store = null;
     this.masterStore = null;
@@ -320,10 +324,15 @@ export class TaxonomyReferenceService {
     this.assertOpen();
     const activeManifest = await this.readMasterManifest(this.taxonomyRoot, "active");
     const activeCandidateId = String(activeManifest?.candidateId || "");
+    const correctionPointer = await this.readCorrectionPointer(this.taxonomyRoot).catch(() => null);
+    const correctionRevision = correctionPointer?.baseMasterVersion === activeCandidateId
+      ? String(correctionPointer.revision || "")
+      : "";
+    const activeStoreKey = `${activeCandidateId}|${correctionRevision}`;
     if (
       this.masterStore
       && activeCandidateId
-      && this.activeMasterCandidate === activeCandidateId
+      && this.activeMasterCandidate === activeStoreKey
     ) return this.masterStore;
     const opened = await this.openMasterStore({
       taxonomyRoot: this.taxonomyRoot,
@@ -335,14 +344,16 @@ export class TaxonomyReferenceService {
       this.activeMasterCandidate = "";
       return null;
     }
-    const candidateId = String(opened.status?.().candidateId || activeCandidateId);
-    if (this.masterStore && this.activeMasterCandidate === candidateId) {
+    const openedStatus = opened.status?.() || {};
+    const candidateId = String(openedStatus.candidateId || activeCandidateId);
+    const openedStoreKey = `${candidateId}|${String(openedStatus.correctionRevision || "")}`;
+    if (this.masterStore && this.activeMasterCandidate === openedStoreKey) {
       opened.close?.();
       return this.masterStore;
     }
     this.masterStore?.close?.();
     this.masterStore = opened;
-    this.activeMasterCandidate = candidateId;
+    this.activeMasterCandidate = openedStoreKey;
     return this.masterStore;
   }
 

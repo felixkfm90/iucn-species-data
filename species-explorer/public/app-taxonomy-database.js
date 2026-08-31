@@ -10,6 +10,7 @@
     "activating",
     "rolling-back",
     "syncing-lightroom",
+    "applying-corrections",
   ]);
 
   function cleanText(value) {
@@ -67,7 +68,7 @@
     candidateIncludesCorrections = false,
   } = {}) {
     if (hasCandidate && (!correctionsPending || candidateIncludesCorrections)) return "activate";
-    if (correctionsPending) return "build-corrections";
+    if (correctionsPending) return hasCandidate ? "build-corrections" : "apply-corrections";
     if (lightroomPackageNeedsRebuild) return "sync-lightroom";
     return hasWork ? "refresh-and-build" : "current";
   }
@@ -194,7 +195,7 @@
       }
       if (correctionsPending) {
         details.push(
-          `${Number(masterStatus.corrections?.count || 0)} eigene Namenskorrektur(en) warten auf den Master-Neuaufbau`,
+          `${Number(masterStatus.corrections?.count || 0)} eigene Namenskorrektur(en) warten auf die gemeinsame Aktivierung`,
         );
       }
       if (lightroomPackageNeedsRebuild && masterStatus.status !== "partial") {
@@ -294,11 +295,15 @@
     }
 
     async function updateDatabase() {
+      const fastCorrection = state.taxonomyMasterSnapshot?.corrections?.pending === true
+        && !state.taxonomyMasterSnapshot?.lifecycle?.candidate;
       const confirmed = await showQuickConfirm({
         eyebrow: "Taxonomiedatenbank",
-        title: "Datenbank aktualisieren?",
-        message: "Neue Quellenstände werden geladen, geprüft und anschließend als neuer Gesamtstand übernommen. Bestehende Arten werden bei Konflikten nicht still verändert.",
-        confirmLabel: "Datenbank aktualisieren",
+        title: fastCorrection ? "Namenskorrekturen aktivieren?" : "Datenbank aktualisieren?",
+        message: fastCorrection
+          ? "Die geänderten Namen werden gegen den aktiven Master und das Lightroom-Suchpaket geprüft und anschließend gemeinsam aktiviert. Der bisherige Stand bleibt bei einem Fehler vollständig aktiv."
+          : "Neue Quellenstände werden geladen, geprüft und anschließend als neuer Gesamtstand übernommen. Bestehende Arten werden bei Konflikten nicht still verändert.",
+        confirmLabel: fastCorrection ? "Korrekturen aktivieren" : "Datenbank aktualisieren",
       });
       if (!confirmed) return;
       databaseBusy = true;
@@ -329,6 +334,20 @@
           }
         } else if (decision === "activate") {
           await activateCandidate(master);
+        } else if (decision === "apply-corrections") {
+          const applying = await fetchJson("/api/taxonomy/master/apply-corrections", {
+            method: "POST",
+            body: JSON.stringify({ confirmed: true }),
+          });
+          state.taxonomyMasterSnapshot = applying;
+          renderOverview();
+          if (masterIsActive(applying)) {
+            await waitUntilIdle(
+              "/api/taxonomy/master/status",
+              masterIsActive,
+              "Korrekturaktivierung",
+            );
+          }
         } else if (decision === "build-corrections") {
           const building = await fetchJson("/api/taxonomy/master/build", {
             method: "POST",
@@ -560,7 +579,7 @@
         </p>
       ` : "";
       const savedActions = correctionSaved ? `
-        <p>Die Korrektur ist gespeichert, aber noch nicht in den aktiven Master- und Lightroom-Paketstand eingebaut.</p>
+        <p>Die Korrektur ist gespeichert, aber noch nicht gemeinsam für Arten-Explorer und Lightroom aktiviert.</p>
         <div class="taxonomy-database-correction-actions">
           <button type="button" data-taxonomy-database-next="collect">Weitere Korrekturen sammeln</button>
           <button type="button" data-taxonomy-database-next="update">Datenbank jetzt aktualisieren</button>
@@ -790,7 +809,7 @@
             hasVerifiedGermanName: Boolean(selectedDetail.germanNames?.[0]?.name),
           };
           setMessage(
-            "Die Namenskorrektur wurde gespeichert. Weitere Korrekturen können gesammelt werden; „Datenbank aktualisieren“ baut sie anschließend gemeinsam in den Masterstand ein.",
+            "Die Namenskorrektur wurde gespeichert. Weitere Korrekturen können gesammelt werden; „Datenbank aktualisieren“ prüft und aktiviert sie anschließend in wenigen Sekunden gemeinsam für Arten-Explorer und Lightroom.",
             "success",
           );
           correctionSaved = true;

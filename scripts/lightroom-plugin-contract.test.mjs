@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.19.0");
+  assert.equal(version.slice(1).join("."), "0.4.20.0");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -239,6 +239,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /LrTasks\.pcall\(KeywordWriter\.assign/);
   assert.match(window, /local activePackage = TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(window, /selectedPackageId ~= cleanText\(activePackage\.packageId\)/);
+  assert.match(
+    window,
+    /selectedCorrectionRevision ~= cleanText\(activePackage\.correctionRevision\)/,
+  );
+  assert.match(helper, /corrections\/active\.json/);
+  assert.match(helper, /pointer\.basePackageId/);
+  assert.match(helper, /pointer\.baseMasterVersion/);
   assert.match(window, /Bitte die Art erneut suchen/);
   assert.match(window, /"1 Foto wurde " \.\. speciesName \.\. " zugewiesen\."/);
   assert.match(window, /tostring\(result\.photoCount\) \.\. " Fotos wurden " \.\. speciesName \.\. " zugewiesen\."/);
@@ -529,7 +536,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.19\.0/);
+  assert.match(provider, /Version: 0\.4\.20\.0/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

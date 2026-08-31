@@ -9,6 +9,10 @@ import {
   buildLightroomSearchPackage,
   verifyLightroomSearchPackage,
 } from "./lightroom-search-package.mjs";
+import {
+  activateTaxonomyCorrectionRelease,
+  readActiveTaxonomyCorrectionPointer,
+} from "./taxonomy-correction-release.mjs";
 import { createTaxonomyMasterSchema } from "./taxonomy-master-schema.mjs";
 import {
   activateLightroomSearchPackage,
@@ -17,6 +21,7 @@ import {
   rollbackLightroomSearchPackage,
 } from "./lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
+import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
 import {
   taxonomyMasterDatabasePath,
   taxonomyMasterManifestPath,
@@ -370,6 +375,119 @@ test("Lightroom-Suchpaket exportiert vollständige Taxonomie und sucht offline",
   } finally {
     store.close();
   }
+});
+
+test("kleine Namenskorrektur wird ohne Basisneubau gemeinsam und atomar aktiviert", async () => {
+  const { taxonomyRoot, searchRoot } = await createRoots();
+  await createMasterFixture(taxonomyRoot);
+  await buildLightroomSearchPackage({ taxonomyRoot, searchRoot });
+  await activateLightroomSearchPackage(searchRoot, {
+    verify: verifyLightroomSearchPackage,
+  });
+  const databasePath = lightroomSearchDatabasePath(searchRoot, "active");
+  const before = await fs.stat(databasePath);
+  const corrections = [{
+    scientificName: "Calidris alpina",
+    rank: "species",
+    kingdom: "Animalia",
+    germanName: "Nordischer Strandläufer",
+    englishName: "Dunlin",
+    note: "Fixture-Korrektur",
+  }];
+  const activated = await activateTaxonomyCorrectionRelease({
+    taxonomyRoot,
+    searchRoot,
+    corrections,
+    now: () => new Date("2026-08-30T12:00:00.000Z"),
+  });
+  assert.equal(activated.release.entries.length, 1);
+  assert.equal(
+    activated.release.entries[0].masterTaxonId,
+    "mtx_calidris_alpina_fixture",
+  );
+  const pointer = await readActiveTaxonomyCorrectionPointer(taxonomyRoot);
+  assert.equal(pointer.activeRelease, activated.release.releaseId);
+  assert.equal(pointer.revision, activated.release.revision);
+
+  const packageStore = await openLightroomSearchStore({ searchRoot });
+  try {
+    assert.equal(packageStore.status().correctionRevision, activated.release.revision);
+    assert.equal(
+      packageStore.search("Nordischer Strand")[0].acceptedScientificName,
+      "Calidris alpina",
+    );
+    assert.equal(
+      packageStore.taxon("mtx_calidris_alpina_fixture").germanName,
+      "Nordischer Strandläufer",
+    );
+  } finally {
+    packageStore.close();
+  }
+  const masterStore = await openTaxonomyMasterStore({ taxonomyRoot });
+  try {
+    assert.equal(masterStore.status().correctionRevision, activated.release.revision);
+    assert.equal(
+      masterStore.search({ query: "Nordischer Strand", kingdom: "all" })
+        .results[0].acceptedScientificName,
+      "Calidris alpina",
+    );
+    assert.equal(
+      masterStore.taxon("mtx_calidris_alpina_fixture").germanNames[0].name,
+      "Nordischer Strandläufer",
+    );
+  } finally {
+    masterStore.close();
+  }
+  const after = await fs.stat(databasePath);
+  assert.equal(after.size, before.size);
+  assert.equal(after.mtimeMs, before.mtimeMs);
+});
+
+test("Schnellweg verweigert das stille Entfernen einer fest eingebauten Korrektur", async () => {
+  const { taxonomyRoot, searchRoot } = await createRoots();
+  await createMasterFixture(taxonomyRoot);
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "active"));
+  try {
+    database.prepare(`
+      INSERT INTO provider_release (
+        release_id, provider, provider_version, data_scope, release_state,
+        imported_at, record_count
+      ) VALUES ('manual-fixture', 'manual', 'fixture', 'manual', 'active', ?, 1)
+    `).run(NOW);
+    database.prepare(`
+      UPDATE master_field_assertion SET selected = 0
+      WHERE master_taxon_id = 'mtx_calidris_alpina_fixture'
+        AND field_name = 'german-name'
+    `).run();
+    database.prepare(`
+      INSERT INTO master_field_assertion (
+        master_taxon_id, field_name, field_value, normalized_value, language,
+        origin_kind, release_id, confidence, review_state, selected,
+        created_at, updated_at
+      ) VALUES (
+        'mtx_calidris_alpina_fixture', 'german-name', 'Eigener Strandläufer',
+        'eigener strandlaufer', 'de', 'manual', 'manual-fixture', 1,
+        'accepted', 1, ?, ?
+      )
+    `).run(NOW, NOW);
+  } finally {
+    database.close();
+  }
+  const manifestPath = taxonomyMasterManifestPath(taxonomyRoot, "active");
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  await fs.writeFile(manifestPath, `${JSON.stringify({
+    ...manifest,
+    sources: [{ provider: "manual", recordCount: 1 }],
+  }, null, 2)}\n`, "utf8");
+  await buildLightroomSearchPackage({ taxonomyRoot, searchRoot });
+  await activateLightroomSearchPackage(searchRoot, {
+    verify: verifyLightroomSearchPackage,
+  });
+  await assert.rejects(
+    activateTaxonomyCorrectionRelease({ taxonomyRoot, searchRoot, corrections: [] }),
+    /vollständigen Master-Neuaufbau/,
+  );
+  assert.equal(await readActiveTaxonomyCorrectionPointer(taxonomyRoot), null);
 });
 
 test("Aktivierung bewahrt genau einen Rollback-Stand", async () => {

@@ -399,11 +399,13 @@ function AssignmentWindow.show(context)
     local activePackage = TaxonomyHelper.searchPackageStatus()
     local selectedPackageId = cleanText(selectedPackage.packageId)
     local selectedMasterVersion = cleanText(selectedPackage.masterVersion)
+    local selectedCorrectionRevision = cleanText(selectedPackage.correctionRevision)
     if not activePackage.available
         or selectedPackageId == ""
         or selectedMasterVersion == ""
         or selectedPackageId ~= cleanText(activePackage.packageId)
-        or selectedMasterVersion ~= cleanText(activePackage.masterVersion) then
+        or selectedMasterVersion ~= cleanText(activePackage.masterVersion)
+        or selectedCorrectionRevision ~= cleanText(activePackage.correctionRevision) then
       currentTaxon = nil
       props.masterTaxonId = ""
       setPreview("Das Suchpaket wurde aktualisiert. Bitte die Art erneut suchen.")

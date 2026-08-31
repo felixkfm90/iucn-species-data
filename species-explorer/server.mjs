@@ -264,6 +264,7 @@ export async function createExplorerServer({
     supplementService: taxonomySupplements,
     speciesListPath,
     correctionsPath: taxonomyReferenceCorrectionsPath,
+    lightroomSearchRoot,
     inspectLightroomPackages: () => inspectLightroomSearchPackages(lightroomSearchRoot),
     rebuildLightroomPackage: ({ onProgress }) => rebuildLightroomSearchPackage({
       repoRoot,
@@ -279,6 +280,7 @@ export async function createExplorerServer({
       || taxonomyMaintenanceService?.isActive()
     ),
   });
+  await taxonomyMasterService.ensureCorrectionBaseline().catch(() => false);
   void taxonomyMaintenanceService.startupCheck();
 
   const pipelineRuntime = {
@@ -642,6 +644,7 @@ export async function createExplorerServer({
       },
       async taxonomyMaster({ action, payload }) {
         if (action === "build") return taxonomyMasterService.startBuild(payload);
+        if (action === "apply-corrections") return taxonomyMasterService.applyCorrections(payload);
         if (action === "decide") return taxonomyMasterService.decide(payload);
         if (action === "activate") return taxonomyMasterService.activate(payload);
         if (action === "rollback") return taxonomyMasterService.rollback(payload);

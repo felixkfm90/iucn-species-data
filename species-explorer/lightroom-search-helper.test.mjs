@@ -47,6 +47,7 @@ test("Suchhilfe beantwortet Status, Suche und Taxondetail über einen stabilen J
     assert.deepEqual(taxon.result.searchPackage, {
       packageId: "fixture",
       masterVersion: "master-fixture",
+      correctionRevision: "",
     });
     const missing = await handler.handle({ command: "taxon", masterTaxonId: "missing" });
     assert.equal(missing.error.code, "taxon-not-found");

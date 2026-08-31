@@ -982,7 +982,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.19.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.20.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1005,10 +1005,12 @@ ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nic
 Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren ...` die ausgewählte Art über eine kurzlebige,
 einmalig konsumierbare Übergabedatei im Arten-Explorer öffnen. Lightroom erhält dadurch keinen Schreibzugriff auf
 den Master. Der Explorer prüft Master-ID und wissenschaftlichen Namen erneut und speichert Änderungen ausschließlich
-in der versionierten Korrekturschicht. Eigene noch nicht eingebaute Korrekturen werden als eigener Aktualisierungsgrund
-erkannt; der Korrekturdialog wird vor dem ausdrücklich gestarteten Neuaufbau geschlossen, sodass Phase und Prozentwert
-im Datenbankblock sichtbar bleiben. Nach der atomaren Masteraktivierung entsteht automatisch ein neues geprüftes
-Lightroom-Suchpaket. Dessen Hierarchie übernimmt den vollständigen bevorzugten Anbieterpfad als Fallback und
+in der versionierten Korrekturschicht. Eigene noch nicht aktive Korrekturen werden als eigener Aktualisierungsgrund
+erkannt; der Korrekturdialog wird vor der ausdrücklich gestarteten Aktivierung geschlossen, sodass Phase und
+Prozentwert im Datenbankblock sichtbar bleiben. Reine neue oder geänderte Namenskorrekturen werden gegen Master und
+Lightroom-Paket auf dieselbe Taxon-ID geprüft und anschließend über einen gemeinsamen atomaren Zeiger innerhalb
+weniger Sekunden für beide Suchen freigegeben. Die großen Basisdatenbanken bleiben unverändert; Lightroom muss nicht
+neu gestartet werden. Dessen Hierarchie übernimmt weiterhin den vollständigen bevorzugten Anbieterpfad als Fallback und
 überschreibt beziehungsweise ergänzt ihn rangweise mit den ausgewählten Master-Feldwerten. Dadurch bleiben
 zusätzliche Zwischenränge erhalten, ohne von einem möglicherweise unvollständigen Einzelbeleg abzuhängen.
 Version 0.4.15.0 verwendet innerhalb der bereits laufenden `LrTask` direkt `withWriteAccessDo` und wartet über den
@@ -1071,9 +1073,11 @@ CoL-Zeilen und der Vergleich mit dem bisherigen Stand werden speicherschonend sc
 erhöhtes Node-Heap-Limit ist nicht erforderlich. Vor dem atomaren Aktivieren oder Wiederherstellen schließt der
 Explorer eigene read-only Datenbankhandles und öffnet den neuen aktiven Stand bei der nächsten Abfrage wieder.
 Mehrere eigene Namenskorrekturen können gesammelt und anschließend gemeinsam über `Datenbank aktualisieren`
-eingebaut werden. Der aktive Master speichert dazu einen Fingerabdruck der enthaltenen Korrekturen; dadurch startet
-`Datenbank aktualisieren` auch ohne neue externe Anbieterstände einen lokalen Kandidatenbau, sobald dieser
-Fingerabdruck abweicht.
+aktiviert werden. Ein Fingerabdruck erkennt die Abweichung auch ohne neue externe Anbieterstände. Für reine neue
+oder weiterhin vorhandene geänderte Namen entsteht nur ein kleines geprüftes Korrektur-Release; ein einzelnes
+atomar geschriebenes Manifest aktiviert es gleichzeitig für Arten-Explorer und Lightroom-Suche. Das Zurücksetzen
+einer bereits in einem früheren Vollmaster fest eingebauten Korrektur verwendet weiterhin den vollständigen
+Kandidatenbau, weil dabei die darunterliegende Anbieterpriorität neu bestimmt werden muss.
 
 Nach einer bestätigten Master-Aktivierung oder Wiederherstellung baut der Arten-Explorer das davon abgeleitete
 Lightroom-Suchpaket automatisch neu, prüft es vollständig und aktiviert es erst danach atomar. Der Paketbau läuft

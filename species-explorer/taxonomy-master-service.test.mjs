@@ -122,6 +122,121 @@ test("eigene Korrekturen bleiben bis zu einem passenden Masterkandidaten sichtba
   await service.close();
 });
 
+test("eigene Korrekturen werden über einen gemeinsamen schnellen Releasepfad aktiviert", async (t) => {
+  const fixture = await createFixture(t);
+  const entries = [{
+    scientificName: "Panthera pardus",
+    rank: "species",
+    kingdom: "Animalia",
+    germanName: "Leopard",
+    englishName: "Leopard",
+    note: "Geprüfter Name",
+  }];
+  await fs.writeFile(
+    fixture.correctionsPath,
+    `${JSON.stringify({ schemaVersion: 1, entries }, null, 2)}\n`,
+    "utf8",
+  );
+  const calls = [];
+  const reference = {
+    resetCount: 0,
+    async requireStore() { return referenceStore(); },
+    reset() { this.resetCount += 1; },
+  };
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: path.join(fixture.root, "taxonomy"),
+    lightroomSearchRoot: path.join(fixture.root, "lightroom"),
+    referenceService: reference,
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    now: () => NOW,
+    async inspectLifecycle() {
+      return {
+        ...lifecycle(),
+        candidate: null,
+        active: {
+          candidateId: "master-active",
+          inputRevisions: { corrections: taxonomyCorrectionsRevision([]) },
+        },
+      };
+    },
+    async activateCorrections(options) {
+      calls.push(options);
+      return {
+        release: { releaseId: "corrections-fixture", entries },
+        pointer: { revision: taxonomyCorrectionsRevision(entries) },
+      };
+    },
+  });
+
+  assert.throws(() => service.applyCorrections(), /ausdrücklich bestätigt/);
+  const started = await service.applyCorrections({ confirmed: true });
+  assert.ok(["applying-corrections", "completed"].includes(started.status));
+  await service.runPromise;
+  const completed = await service.status();
+  assert.equal(completed.status, "completed");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].corrections[0].scientificName, "Panthera pardus");
+  assert.equal(reference.resetCount, 1);
+  await service.close();
+});
+
+test("passender bestehender Vollmaster erhält beim Start eine sichere Korrekturbaseline", async (t) => {
+  const fixture = await createFixture(t);
+  const entries = [{
+    scientificName: "Panthera pardus",
+    rank: "species",
+    kingdom: "Animalia",
+    germanName: "Leopard",
+    englishName: "Leopard",
+    note: "Geprüfter Name",
+  }];
+  await fs.writeFile(
+    fixture.correctionsPath,
+    `${JSON.stringify({ schemaVersion: 1, entries }, null, 2)}\n`,
+    "utf8",
+  );
+  let activations = 0;
+  const reference = {
+    resetCount: 0,
+    async requireStore() { return referenceStore(); },
+    reset() { this.resetCount += 1; },
+  };
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: path.join(fixture.root, "taxonomy"),
+    lightroomSearchRoot: path.join(fixture.root, "lightroom"),
+    referenceService: reference,
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    now: () => NOW,
+    async inspectLifecycle() {
+      return {
+        ...lifecycle(),
+        candidate: null,
+        active: {
+          candidateId: "master-active",
+          inputRevisions: { corrections: taxonomyCorrectionsRevision(entries) },
+        },
+      };
+    },
+    async inspectLightroomPackages() {
+      return {
+        active: { packageId: "package-active", masterVersion: "master-active" },
+        previous: null,
+      };
+    },
+    async activateCorrections() {
+      activations += 1;
+      return {};
+    },
+  });
+
+  assert.equal(await service.ensureCorrectionBaseline(), true);
+  assert.equal(activations, 1);
+  assert.equal(reference.resetCount, 1);
+  await service.close();
+});
+
 test("breite Anbieter-Ausschnitte vermeiden erneute CoL-Suchen für bekannte IDs und Referenzlücken", async () => {
   const searched = [];
   const loaded = [];

@@ -2,11 +2,12 @@
 
 Stand: 2026-08-30
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.19.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.20.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
-Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, der Korrektur-Neuaufbau und die automatische Suche von 0.4.19.0
+Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, die automatische Suche von 0.4.19.0 und die gemeinsame schnelle
+Korrekturaktivierung von 0.4.20.0
 benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
@@ -24,6 +25,8 @@ aktive Taxonomie-Masterdatenbank (read-only)
   -> abgeleitetes Lightroom-Suchpaket
      -> taxonomy-search.sqlite + manifest.json
      -> active / previous / staging
+  -> kleine versionierte Namenskorrektur-Releases
+     -> ein gemeinsamer atomarer Aktivierungszeiger für Masteransicht und Lightroom-Suche
   -> read-only Node-Suchhelfer
   -> deutsches Lua-Plug-in
   -> Lightroom-SDK
@@ -41,6 +44,17 @@ einen vollständig vorhandenen Masterpfad verkürzen, während zusätzliche Zwis
 Lightroom greift weder auf die interne Master-SQLite noch auf den Explorer-Server zu. Der Suchhelfer öffnet das aktive
 Suchpaket ausschließlich read-only. Katalog- und XMP-Dateien werden nie direkt bearbeitet.
 
+Seit Version 0.4.20.0 müssen reine eigene Namenskorrekturen weder die Master-SQLite noch das mehrgigabytegroße
+Lightroom-Basispaket kopieren oder neu aufbauen. Der Explorer löst jedes betroffene Taxon in beiden aktiven
+Datenbanken erneut auf und verlangt dieselbe stabile `masterTaxonId`, denselben wissenschaftlichen Namen sowie
+passende Basisversionen. Erst nach dieser Prüfung schreibt er ein kleines unveränderliches Korrektur-Release.
+Ein einziges atomar ersetztes Manifest unter dem gemeinsamen lokalen Anwendungsdatenordner aktiviert dieses Release
+für Masteransicht und Lightroom-Suchhelfer gleichzeitig. Bis zu diesem Zeigerwechsel lesen beide weiterhin den
+bisherigen Stand; bei einem Fehler wird nichts teilweise aktiviert. Eine neue Lightroom-Suche öffnet den aktuellen
+Stand bei jeder Anfrage neu, sodass weder Lightroom noch das Plug-in neu gestartet werden müssen.
+Beim ersten Explorer-Start mit Version 0.4.20.0 wird ein fehlender Baseline-Zeiger nur erzeugt, wenn Vollmaster-
+Fingerabdruck, aktuelle Korrekturdatei und aktives Lightroom-Paket bereits exakt zusammenpassen.
+
 ## Lokaler Speicher
 
 Standardpfad:
@@ -54,6 +68,11 @@ Standardpfad:
     manifest.json
     taxonomy-search.sqlite
   staging\
+
+%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\corrections\
+  active.json
+  releases\
+    corrections-<Prüfsumme>.json
 ```
 
 `staging` wird vollständig aufgebaut und geprüft. Erst danach ersetzt es atomar `active`; der zuvor aktive Stand
@@ -141,7 +160,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.19.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.20.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -167,7 +186,8 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise Gesamtzahl der ausgewählten Fotos, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
   Arten. Unter der Vorschau öffnet `Artbezeichnung korrigieren ...` die ausgewählte Art kontrolliert im
-  Arten-Explorer. Vor einer Zuweisung wird geprüft, ob noch dasselbe Suchpaket aktiv ist. Das Fenster startet keine
+  Arten-Explorer. Vor einer Zuweisung wird geprüft, ob noch dasselbe Basispaket und dieselbe atomar aktivierte
+  Korrekturrevision aktiv sind. Das Fenster startet keine
   Statistik- oder Lifelist-Berechnung. Die Suche bleibt über `Art suchen` verfügbar und startet zusätzlich nach
   0,5 Sekunden ohne weitere Eingabe;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
@@ -235,11 +255,12 @@ rechts. Das reine Öffnen, Suchen und Vorschauen verändert keine Bildmetadaten.
 auf Größe und Lebensdauer begrenzte Übergabe mit Master-ID, wissenschaftlichem Namen, sichtbaren Namen sowie Paket-
 und Masterstand. Der Arten-Explorer konsumiert diese Übergabe genau einmal, prüft Master-ID und wissenschaftlichen
 Namen gegen seinen aktiven Master und öffnet erst dann denselben Korrekturdialog wie bei einer manuellen Explorer-
-Suche. Nach dem Speichern kann der Nutzer weitere Korrekturen sammeln oder den Neuaufbau ausdrücklich starten.
-Noch nicht im aktiven Master enthaltene Korrekturen werden über einen im Kandidatenmanifest gespeicherten
-Fingerabdruck erkannt, auch wenn keine externe Quelle neuer ist. Vor dem Sofortlauf schließt der Korrekturdialog,
-sodass Phase, Prozentwert und Laufzeit im Datenbankblock sichtbar bleiben. Erst nach geprüfter Masteraktivierung
-wird das abgeleitete Lightroom-Suchpaket neu gebaut und atomar aktiviert.
+Suche. Nach dem Speichern kann der Nutzer weitere Korrekturen sammeln oder die gemeinsame Aktivierung ausdrücklich
+starten. Noch nicht aktive Korrekturen werden über einen deterministischen Fingerabdruck erkannt, auch wenn keine
+externe Quelle neuer ist. Vor dem Sofortlauf schließt der Korrekturdialog, sodass Phase, Prozentwert und Laufzeit im
+Datenbankblock sichtbar bleiben. Für reine Ergänzungen oder Änderungen vorhandener Korrekturen werden nur die
+betroffenen Taxa gegen Master und Lightroom-Paket geprüft und anschließend durch denselben atomaren Zeiger
+freigegeben. Der Vollmaster und das Lightroom-Basispaket bleiben dabei bytegenau unverändert.
 
 `Ausgewählte Art zuweisen` schreibt alle Plug-in-Felder und die lesbaren, flachen `(FN)`-Stichwörter auf sämtliche
 aktuell markierten Fotos. Vor dem Lightroom-Schreibzugriff wird aus allen sichtbaren Namen eine eindeutige
@@ -313,7 +334,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.19.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.20.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -348,10 +369,12 @@ sondern zentral im Arten-Explorer verwaltet.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
-14. Für eine Art `Artbezeichnung korrigieren ...` wählen, die eindeutige Vorbelegung im Explorer prüfen, eine
+14. Für eine Art `Artbezeichnung korrigieren ...` wählen, die eindeutige Vorbelegung im Explorer prüfen, eine neue
     begründete Korrektur speichern und `Datenbank jetzt aktualisieren` wählen. Der Korrekturdialog muss sich vor dem
-    Lauf schließen; Phase und Prozent müssen sichtbar werden. Nach erfolgreicher Master- und Paketaktivierung muss
-    eine neue Lightroom-Suche den korrigierten Namen liefern. Für `Sciurus vulgaris` muss die Vorschau den im Master
+    Lauf schließen; Prüf- und Aktivierungsphase müssen sichtbar werden. Nach wenigen Sekunden muss eine neue
+    Lightroom-Suche den korrigierten Namen liefern, ohne dass die große Master- oder Paketdatei neu aufgebaut wurde.
+    Eine bereits vor der Aktivierung im Zuweisungsfenster geladene Art muss wegen der geänderten Korrekturrevision
+    vor einer Zuweisung erneut gesucht werden. Für `Sciurus vulgaris` muss die Vorschau weiterhin den im Master
     vorhandenen vollständigen Hierarchiepfad enthalten.
 15. Lightroom neu starten und prüfen, dass Zuordnung, Schlüsselwörter, Favoritenbild der Art und Sammlungen erhalten
     bleiben.
@@ -379,7 +402,8 @@ Automatisch verifiziert sind:
 - eindeutige, bestätigungspflichtige Markierung eines Favoritenbilds der Art, idempotente Sammlungsdefinitionen sowie
   Statistik- und Cache-Grenzen einschließlich Lifelist, Klassen, Abdeckung und häufigsten Arten.
 - abgesicherte einmalige Lightroom-Explorer-Korrekturübergabe, revisionsbasierte Erkennung noch nicht eingebauter
-  Korrekturen und kombinierter Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten.
+  Korrekturen, gemeinsame atomare Aktivierung einer kleinen Korrekturschicht ohne Basisneubau und kombinierter
+  Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten.
 
 Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, die frühere Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden mit den vorherigen
@@ -425,9 +449,11 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
 - Der automatische Suchpaketbau benötigt lokal vorübergehend Platz für den neuen Staging-Stand zusätzlich zum
   aktiven und gegebenenfalls vorherigen Paket. Bei einem Fehler bleibt das alte Paket nutzbar, die korrigierten
   Namen stehen Lightroom aber erst nach dem erfolgreichen Wiederholungslauf zur Verfügung.
-- Reine eigene Namenskorrekturen verwenden derzeit noch den vollständigen Master-Kandidatenbau. Vor dem Audit soll
-  ein sicherer inkrementeller Korrekturlauf den aktiven Master in einen Kandidaten klonen und nur betroffene
-  manuelle Namen und Suchbegriffe ändern; eine direkte Änderung des aktiven Slots bleibt verboten.
+- Das Zurücksetzen einer Korrektur, die bereits in einem früheren vollständigen Masterstand als ausgewählter
+  manueller Wert eingebaut wurde, kann nicht allein durch Weglassen in einer kleinen Überlagerung rückgängig gemacht
+  werden. Der Schnellweg erkennt diesen Fall und verweigert eine scheinbare Teilaktivierung; dafür bleibt der
+  vollständige Kandidaten- und Paketneuaufbau erforderlich. Neue Korrekturen und Änderungen weiterhin vorhandener
+  Korrekturen verwenden den Sekundenpfad.
 - Phase 10 ist nicht abgeschlossen. Vor dem Abschluss folgen das umfassende Audit nach
   `docs/documentation-lifecycle.md` und die darin vorgesehenen übergreifenden Regressions-, Betriebs-, Backup- und
   Wiederherstellungsprüfungen.

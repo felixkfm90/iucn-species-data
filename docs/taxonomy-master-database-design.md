@@ -259,17 +259,33 @@ die aktive Masteransicht vollständig offline. Hierarchie, Rang, Quellen und Mas
 direkt überschreibbar. Für Art-Taxa können deutsche und englische Namen als eigene Korrektur gespeichert oder
 zurückgesetzt werden; diese Korrekturen stehen bei späteren Aktualisierungen über den Anbieterwerten.
 Der vorhandene Button `Korrektur speichern` in der Taxonomie-Datenbank schreibt diese redaktionelle Schicht. Damit
-die Änderung auch in abgeleiteten Beständen wie dem Lightroom-Suchpaket erscheint, muss anschließend ein neuer
-Master-Kandidat gebaut und aktiviert und danach das Lightroom-Suchpaket neu gebaut und aktiviert werden.
-Mehrere Namenskorrekturen können vor diesem Neuaufbau gesammelt werden. Die Erfolgsmeldung verweist deshalb
-ausdrücklich auf `Datenbank aktualisieren`; das Speichern einer einzelnen Korrektur behauptet nicht mehr, der
-abgeleitete Master- oder Lightroom-Bestand sei bereits erneuert.
+die Änderung auch in der aktiven Masteransicht und im Lightroom-Suchpaket erscheint, muss sie anschließend über
+`Datenbank aktualisieren` aktiviert werden. Mehrere Namenskorrekturen können davor gesammelt werden. Das Speichern
+einer einzelnen Korrektur behauptet nicht, der abgeleitete Master- oder Lightroom-Bestand sei bereits erneuert.
 Seit dem 30. August 2026 enthält jedes Kandidatenmanifest zusätzlich einen deterministischen Fingerabdruck der
 eingebauten Korrekturschicht. Weicht die aktuelle Korrekturdatei davon ab, ist dies unabhängig von externen
 Anbieterständen ein eigener Aktualisierungsgrund. Ein vorhandener älterer Kandidat wird nur aktiviert, wenn sein
 Fingerabdruck bereits dem aktuellen Korrekturstand entspricht; andernfalls entsteht ein neuer lokaler Kandidat.
 Beim ausdrücklich gewählten Sofortlauf schließt der Korrekturdialog, bevor die Bestätigung und der Lauf beginnen,
 damit Phase, Prozentwert und Laufzeit im Datenbankblock sichtbar bleiben.
+
+Seit dem 30. August 2026 besitzt dieser Ablauf für reine eigene Namenskorrekturen einen getrennten Sekundenpfad.
+`species-explorer/taxonomy-correction-release.mjs` normalisiert die aktuelle Korrekturdatei, löst jedes betroffene
+Taxon unabhängig in aktiver Master- und Lightroom-SQLite auf und verlangt identische stabile Master-ID,
+wissenschaftlichen Namen, Rang, Reich, Masterversion und Paket-ID. Danach wird ein kleines unveränderliches Release
+unter dem gemeinsamen lokalen Korrekturspeicher vorbereitet. Erst ein einzelnes atomar geschriebenes `active.json`
+macht dieses Release gleichzeitig für die Masteransicht und den Lightroom-Suchhelfer sichtbar. Die großen
+Basisdatenbanken bleiben dabei unverändert; schlägt Vorbereitung oder Prüfung fehl, bleibt der alte Zeiger aktiv.
+Die Reader wenden ein Release nur an, wenn seine Basisversion exakt zum geöffneten Master beziehungsweise Paket
+passt. Dadurch kann ein späterer Vollaufbau oder Rollback keine Korrekturschicht auf einen falschen Grundstand legen.
+Fehlt nach dem Upgrade noch ein solcher Zeiger, legt der Explorer beim Start nur dann eine Baseline an, wenn der im
+aktiven Vollmaster gespeicherte Korrektur-Fingerabdruck exakt zur aktuellen Korrekturdatei und zum aktiven
+Lightroom-Paket passt. Damit sind spätere Entfernungen gegenüber einem bekannten Ausgangsbestand erkennbar.
+
+Das Entfernen einer Korrektur, die bereits in einem früheren Vollmaster als ausgewählte manuelle Aussage eingebaut
+wurde, ist bewusst kein Überlagerungsfall: Der Schnellweg erkennt ihn und bricht verständlich ab. Nur der normale
+vollständige Kandidatenbau kann dann die darunterliegende Anbieterpriorität neu bestimmen. Neue Korrekturen und
+Änderungen weiterhin vorhandener Korrekturen benötigen dagegen keinen Vollimport und keinen Lightroom-Paketneubau.
 
 Projektkonflikte erscheinen unter demselben Datenbankblock. Bei einer eindeutig extern bestätigten
 CoL-Referenzlücke bietet die Oberfläche eine ausdrückliche Verknüpfung mit der stabilen Master-ID an. Die
@@ -322,9 +338,8 @@ vollständigen bevorzugten Anbieterpfad und überschreibt beziehungsweise ergän
 Dadurch bleibt beispielsweise der vollständige Pfad von `Sciurus vulgaris` im Lightroom-Paket erhalten, auch wenn
 ein zusätzlicher GBIF-Beleg nur Reich und Art liefert; zusätzliche Zwischenränge anderer Taxa gehen nicht verloren.
 
-Vor dem Phase-10-Abschluss ist für reine Änderungen der versionierten Korrekturschicht ein sicherer inkrementeller
-Kandidatenbau vorgesehen. Er darf den aktiven Slot nicht direkt ändern, sondern klont ihn, ersetzt ausschließlich
-betroffene manuelle Namensbehauptungen und Suchbegriffe, aktualisiert den Korrektur-Fingerabdruck und durchläuft
-Integritätsprüfung sowie atomare Aktivierung. Damit entfällt für einen redaktionellen Namen der vollständige
-Neuimport und die Zusammenführung aller Anbieterzeilen. Die Lightroom-Ableitung bleibt ein eigener geprüfter und
-atomarer Folgeschritt.
+Der inkrementelle Korrekturweg ist vor dem Phase-10-Abschluss umgesetzt. Statt die mehrgigabytegroßen Slots zu
+klonen, hält er die Basisstände unverändert und versioniert nur die betroffenen redaktionellen Namen. Der gemeinsame
+Aktivierungszeiger ist der atomare Commitpunkt für Arten-Explorer und Lightroom. Vollständige Quellenupdates,
+Hierarchieänderungen sowie das Zurücksetzen bereits fest eingebauter manueller Aussagen verwenden weiterhin den
+normalen Kandidaten-, Integritäts-, Paket- und Rollbackablauf.

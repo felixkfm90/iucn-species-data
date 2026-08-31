@@ -1038,7 +1038,7 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.19.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+separaten Testkatalog bestätigt; Version 0.4.20.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
 Refresh praktisch bestätigt; Statistikfix, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
@@ -1055,7 +1055,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.19.0 am 2026-08-30 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.20.0 am 2026-08-30 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
@@ -1140,12 +1140,14 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   bisherige Aliasse bedarfsgesteuert gelesen und der Kandidatenvergleich erfolgt zeilenweise; der frühere
   Vollaufbau-Abbruch an der normalen Node-Heapgrenze ist damit beseitigt. Der automatische Lightroom-Paketneubau
   verwendet denselben sichtbaren Phasenvertrag für Schema, Export, Indizes, Vollprüfung und Aktivierung;
-- vor 10.5 außerdem umsetzen: reine eigene Namenskorrekturen sollen nicht erneut alle externen Quellen und mehrere
-  Millionen Masteraussagen zusammenführen. Der sichere Schnellweg klont den aktiven Master in einen Kandidaten,
-  ändert ausschließlich die versionierten manuellen Namensfelder und deren Suchbegriffe, aktualisiert den
-  Korrektur-Fingerabdruck, prüft den Kandidaten und aktiviert ihn atomar. Der aktive Master darf nicht direkt
-  verändert werden. Das abgeleitete Lightroom-Suchpaket muss danach weiterhin konsistent neu erzeugt oder in einem
-  getrennt nachgewiesenen atomaren Inkrementallauf aktualisiert werden;
+- vor 10.5 umgesetzt: Reine eigene Namenskorrekturen führen seit Version 0.4.20.0 nicht mehr alle externen Quellen
+  und mehrere Millionen Master- beziehungsweise Lightroom-Zeilen erneut zusammen. Der Explorer bereitet ein
+  kleines versioniertes Korrektur-Release vor, prüft jedes Taxon gegen beide aktiven Basisdatenbanken und aktiviert
+  es über einen einzigen gemeinsamen atomaren Zeiger. Damit sehen Arten-Explorer und eine neue Lightroom-Suche
+  denselben Stand, ohne Basisdateien zu verändern oder Lightroom neu zu starten. Ein gespeicherter alter Treffer
+  wird anhand der Korrekturrevision vor der Zuweisung gesperrt. Die Fixture-Prüfung bestätigt außerdem, dass Master-
+  und Paket-SQLite bei diesem Ablauf unverändert bleiben. Das Zurücksetzen einer bereits in einem Vollmaster fest
+  eingebauten manuellen Aussage bleibt bewusst dem vollständigen Kandidatenbau vorbehalten;
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
