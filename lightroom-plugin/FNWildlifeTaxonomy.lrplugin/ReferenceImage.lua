@@ -1,4 +1,5 @@
 local PluginState = require "PluginState"
+local Statistics = require "Statistics"
 
 local ReferenceImage = {}
 
@@ -43,6 +44,11 @@ function ReferenceImage.assign(catalog, photo)
     end
   end)
 
+  local beforeStatistics = {}
+  for index, candidate in ipairs(matchingPhotos) do
+    beforeStatistics[index] = Statistics.photoSnapshot(candidate)
+  end
+
   catalog:withWriteAccessDo("Favoritenbild der Art markieren", function()
     for _, candidate in ipairs(matchingPhotos) do
       candidate:setPropertyForPlugin(
@@ -51,8 +57,12 @@ function ReferenceImage.assign(catalog, photo)
         candidate == photo and "yes" or "no"
       )
     end
+    local afterStatistics = {}
+    for index, candidate in ipairs(matchingPhotos) do
+      afterStatistics[index] = Statistics.photoSnapshot(candidate)
+    end
+    PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end)
-  PluginState.markStatisticsDirty()
 
   return {
     masterTaxonId = masterTaxonId,

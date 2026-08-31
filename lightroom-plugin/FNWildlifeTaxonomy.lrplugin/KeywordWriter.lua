@@ -1,4 +1,5 @@
 local PluginState = require "PluginState"
+local Statistics = require "Statistics"
 local TaxonomyRanks = require "TaxonomyRanks"
 
 local KeywordWriter = {}
@@ -388,8 +389,10 @@ function KeywordWriter.assign(catalog, photos, taxon)
   end
 
   local previousKeywordNames = {}
+  local beforeStatistics = {}
   for index, photo in ipairs(photos) do
     previousKeywordNames[index] = resolveManagedKeywordNames(catalog, photo)
+    beforeStatistics[index] = Statistics.photoSnapshot(photo)
   end
 
   local hierarchyPath = {}
@@ -483,6 +486,11 @@ function KeywordWriter.assign(catalog, photos, taxon)
       end
       setAssignmentText(photo, "assignedAt", assignedAt)
     end
+    local afterStatistics = {}
+    for index, photo in ipairs(photos) do
+      afterStatistics[index] = Statistics.photoSnapshot(photo)
+    end
+    PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end, function(reason)
     return assignmentError(taxon, currentKeyword, currentStep, #photos, reason)
   end)
@@ -503,8 +511,6 @@ function KeywordWriter.assign(catalog, photos, taxon)
     end
   end
 
-  PluginState.markStatisticsDirty()
-
   return {
     photoCount = #photos,
     keywordCount = #managedKeywordNames,
@@ -515,6 +521,10 @@ end
 function KeywordWriter.remove(catalog, photos)
   local removedKeywords = 0
   local removedAssignments = 0
+  local beforeStatistics = {}
+  for index, photo in ipairs(photos) do
+    beforeStatistics[index] = Statistics.photoSnapshot(photo)
+  end
   runWithWriteAccess(catalog, "FN Wildlife Taxonomie entfernen", function()
     for _, photo in ipairs(photos) do
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
@@ -523,8 +533,12 @@ function KeywordWriter.remove(catalog, photos)
       removedKeywords = removedKeywords + removeCurrentManagedKeywords(catalog, photo)
       clearPluginMetadata(photo)
     end
+    local afterStatistics = {}
+    for index, photo in ipairs(photos) do
+      afterStatistics[index] = Statistics.photoSnapshot(photo)
+    end
+    PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end)
-  PluginState.markStatisticsDirty()
   return {
     photoCount = #photos,
     assignmentCount = removedAssignments,

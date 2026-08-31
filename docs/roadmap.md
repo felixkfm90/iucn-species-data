@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.20.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
-Refresh praktisch bestätigt; Statistikfix, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.21.0 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+Refresh praktisch bestätigt; persistenter Statistikindex, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,15 +1055,16 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.20.0 am 2026-08-30 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.21.0 am 2026-08-31 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
   Mehrfachauswahl die Gesamtzahl, aktualisiert den Zustand bei Auswahlwechseln über eine kurze vom Observer
   gestartete `LrTask` und merkt die zehn zuletzt
   verwendeten Arten. Lifelist und Katalogstatistik bleiben im getrennten Statistikfenster; das Zuweisungsfenster
-  startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine katalogweite Berechnung und markiert nur den Cache
-  als ungültig. Identische sichtbare `(FN)`-Keywordnamen werden vor dem Schreibzugriff dedupliziert. Damit erzeugen
+  startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine katalogweite Berechnung. Version 0.4.21.0 führt
+  stattdessen den Zustand der betroffenen Fotos direkt im persistenten Katalogindex nach. Identische sichtbare
+  `(FN)`-Keywordnamen werden vor dem Schreibzugriff dedupliziert. Damit erzeugen
   die bei Austernfischer beziehungsweise Bartmeise gleich benannten Familien- und Gattungsstufen nur eine
   Stichwortzuweisung pro Foto. Kontextfehler nennen Art, wissenschaftlichen Namen, Keyword beziehungsweise
   Arbeitsschritt und Fotozahl. Version 0.4.10.0 legte irrtümlich normales Lua-`pcall` um yieldende SDK-Aufrufe;
@@ -1086,19 +1087,25 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und
   den wichtigsten Rängen. Die Rangfelder verwenden kurze Titel ohne den redundanten Zusatz `(wissenschaftlich)`;
   `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.9.0 am 2026-08-28 umgesetzt.** Genau ein
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.21.0 am 2026-08-31 umgesetzt und automatisiert geprüft; der
+  neue Statistikstand benötigt noch den praktischen Großkatalogtest.** Genau ein
   bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
-  neu berechenbare Katalogstatistik mit Lifelist, Abdeckung, Klassenübersicht, zehn am häufigsten fotografierten
-  Arten und Cache sind implementiert und vertraglich getestet. Die Statistik liest den Lightroom-Katalog und
-  benötigt kein Taxonomie-Datenbankupdate. Seit 0.4.17.0 erfolgt der Scan in 500-Foto-Leseblöcken; Fortschritt und
-  Yield liegen außerhalb von `withReadAccessDo`. `Art-Favoriten` wertet `referenceImage = yes` aus. `Taxonomie
+  Katalogstatistik mit Lifelist, Abdeckung, aufklappbarer Klassen-/Artenübersicht, zehn am häufigsten fotografierten
+  Arten und UTF-8-CSV-Export sind implementiert und vertraglich getestet. Der kompakte Aggregatindex liegt als
+  katalogweite Plug-in-Eigenschaft vor. Sein Erstaufbau liest gebündelt in 500-Foto-Blöcken, speichert alle 5.000
+  Fotos einen fortsetzbaren Checkpoint und läuft in einem pausierbaren nichtmodalen Fenster; Fortschritt und Yield
+  liegen außerhalb von `withReadAccessDo`. Eigene Zuweisungs-, Rücknahme- und Favoritenaktionen aktualisieren den
+  Index innerhalb desselben Schreibzugriffs. Eine geänderte Kataloggröße erzwingt einen Neuaufbau. Da das Lightroom-
+  SDK keinen allgemeinen Beobachter für beliebige Metadatenänderungen anbietet, bleibt für externe Änderungen die
+  ausdrückliche Aktion `Index neu aufbauen`. Die Statistik benötigt kein Taxonomie-Datenbankupdate.
+  `Art-Favoriten` wertet `referenceImage = yes` aus. `Taxonomie
   zugewiesen` erkennt eine gültige Plug-in-Master-ID am Präfix `mtx_`; `Taxonomie fehlt` ist über `exclude` die
   Gegenmenge. Die im praktischen Test umgekehrt ausgewerteten Operationen `empty` und `notEmpty` werden nicht mehr
   verwendet. Die Sammlungen hängen weder von normalen
   Fotometadaten noch von Lightroom-Stichwörtern ab. Beim erneuten Einrichten werden vorhandene Regeln korrigiert und die bekannten
   Alt-Sammlungen `5-Sterne-Tierbilder` sowie `Art-Referenzbilder` im verwalteten Satz entfernt. Der
   Zusatzmodul-Manager zeigt Version und Status des
-  abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Export, erweiterte
+  abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Erweiterte
   Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Eine ebenfalls spätere,
   getrennt zu priorisierende Ortsauswertung soll vorhandene IPTC-Ortsfelder bevorzugen, GPS nur optional per
   Reverse-Geocoding ergänzen und abgeleitete Ortsstichwörter ausschließlich unter
@@ -1107,14 +1114,14 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   nicht überschrieben werden. Zuweisungsfenster, Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
   geprüft. Die komplementären Taxonomiesammlungen wurden bei 132 Fotos und einer Zuweisung praktisch mit 131
   fehlenden und einem zugewiesenen Foto bestätigt;
-- vor 10.5 noch umzusetzen und praktisch zu prüfen: Export der Lifelist mindestens als CSV sowie ein persistenter,
-  inkrementell gepflegter Statistikindex. Der einmalige initiale Katalogaufbau soll als Hintergrundvorgang mit
-  Fortschritt und Pause/Fortsetzen laufen. Plug-in-eigene Zuweisungs-, Rücknahme- und Favoritenaktionen müssen den
-  Index gezielt aktualisieren. Vor der Umsetzung ist anhand des Lightroom-SDK zu klären, welche außerhalb des
-  Plug-ins vorgenommenen relevanten Metadatenänderungen zuverlässig beobachtet werden können; für nicht sicher
-  beobachtbare Änderungen ist eine kontrollierte Aktualisierungs- oder Neuaufbauaktion vorzusehen. Außerdem soll
-  die Klassenübersicht im Statistikfenster aufklappbar werden und je Klasse wie Vögel oder Säugetiere mindestens
-  deutschen Namen, wissenschaftlichen Namen und Fotoanzahl der enthaltenen Lifelist-Arten zeigen. Das
+- vor 10.5 umgesetzt und praktisch zu prüfen: Version 0.4.21.0 enthält Lifelist-CSV, persistenten und durch eigene
+  Aktionen inkrementell gepflegten Statistikindex, fortsetzbaren Hintergrundaufbau mit Fortschritt und
+  Pause/Fortsetzen sowie aufklappbare Klassen mit deutschem Namen, wissenschaftlichem Namen und Fotoanzahl je Art.
+  Die SDK-Prüfung ergab keine allgemeine Beobachter-API für beliebige Foto- oder Plug-in-Metadatenänderungen;
+  deshalb erkennt der Index Änderungen der Kataloggröße und bietet für alle sonstigen externen Fälle die
+  kontrollierte Aktion `Index neu aufbauen`. Der praktische Test muss Initialaufbau, Pause über einen Neustart des
+  Statistikfensters, CSV-Umlaute, Klasseninhalte und direkte Delta-Aktualisierung auf dem großen Katalog bestätigen;
+- vor 10.5 umgesetzt und praktisch zu prüfen: Das
   Lightroom-Zuweisungsfenster kann seit Version 0.4.18.0 für die ausgewählte Art eine Namenskorrektur anstoßen. Das Plug-in darf die
   Master-SQLite dabei nicht direkt verändern, sondern muss wissenschaftlichen Namen, aktuellen Namen und Vorschlag
   kontrolliert an den Arten-Explorer übergeben; dort bleiben Bestätigung, versionierte Korrekturschicht,

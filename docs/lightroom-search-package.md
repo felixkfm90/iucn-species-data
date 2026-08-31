@@ -1,13 +1,13 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-08-30
+Stand: 2026-08-31
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.20.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.21.0 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
 Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, die automatische Suche von 0.4.19.0 und die gemeinsame schnelle
-Korrekturaktivierung von 0.4.20.0
+Korrekturaktivierung von 0.4.20.0 sowie der persistente Statistikindex mit CSV-Export von 0.4.21.0
 benötigen noch den praktischen Folgetest. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
@@ -160,7 +160,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.20.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.21.0`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -192,12 +192,13 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   0,5 Sekunden ohne weitere Eingabe;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
-- `PluginState.lua`: ausschließlich lokale Bedienzustände und der verwerfbare Statistikcache;
+- `PluginState.lua`: lokale Bedienzustände sowie der kataloggebundene persistente Statistikindex und sein
+  fortsetzbarer Aufbauzustand;
 - `ReferenceImage.lua` und `SetReferenceImage.lua`: genau ein kontrolliertes `Favoritenbild der Art` je
   Master-Taxon-ID;
 - `SmartCollections.lua` und `CreateCollections.lua`: wiederholbar einrichtbare intelligente Sammlungen;
-- `Statistics.lua` und `ShowStatistics.lua`: Katalogstatistik mit Lifelist, Klassenübersicht und manuell
-  aktualisierbarem Cache;
+- `StatisticsIndex.lua`, `Statistics.lua` und `ShowStatistics.lua`: kompakter Aggregatindex, gebündelter und
+  pausierbarer Katalogaufbau, Lifelist-CSV, aufklappbare Klassen mit Arten sowie das Statistikfenster;
 - `PluginInfoProvider.lua`: kompakte Version und read-only Statusanzeige des lokalen Suchpakets im
   Zusatzmodul-Manager.
 
@@ -283,8 +284,9 @@ Zuweisung und Rücknahme verwenden direkt `withWriteAccessDo` innerhalb der bere
 `LrTask`; die einzelnen SDK-Schreibaufrufe werden im Lightroom-Callback direkt ausgeführt. Ein offizieller
 SDK-Timeout wartet bis zu zehn Sekunden, wenn Lightroom kurzzeitig einen anderen Schreibzugriff hält. Version
 0.4.15.0 prüft danach zwingend den Callback-Abschluss und liest nach der Zuweisung die
-gespeicherte `masterTaxonId` jedes Fotos zurück. Erst danach wird Erfolg gemeldet. Beide Aktionen markieren den
-Statistikcache automatisch als ungültig, starten aber keine Neuberechnung im Zuweisungsfenster.
+gespeicherte `masterTaxonId` jedes Fotos zurück. Erst danach wird Erfolg gemeldet. Seit Version 0.4.21.0
+aktualisieren beide Aktionen einen bereits vollständig aufgebauten Statistikindex direkt innerhalb desselben
+Katalogschreibzugriffs; im Zuweisungsfenster wird weiterhin keine Statistikberechnung gestartet.
 
 `Ausgewähltes Foto als Favoritenbild der Art markieren ...` markiert nach einer verständlichen Bestätigung genau ein
 bereits taxonomisch zugeordnetes Foto als Favoritenbild seiner `masterTaxonId`. Diese Markierung dient
@@ -311,15 +313,21 @@ Familien-, Klassen- und Favoritenbild-Zahlen, `Lifelist: X Arten`, die Taxonomie
 Klassenübersicht sowie `Am häufigsten fotografierte Arten:` mit höchstens zehn Einträgen. Solange noch
 keine Art zugewiesen ist, wird dieser Zustand ausdrücklich angezeigt.
 
-Bei ungültigem Cache erscheint sofort `Taxonomie-Statistik wird geladen`. Der Katalogscan verarbeitet jeweils 500
-Fotos in einem begrenzten `withReadAccessDo`-Block. Fortschrittsaktualisierung und `LrTasks.yield()` erfolgen erst
-nach dem jeweiligen Block; damit wird kein Yield innerhalb des SDK-Lesecallbacks versucht.
+Fehlt der persistente Index oder hat sich die Kataloggröße geändert, öffnet Version 0.4.21.0 ein nichtmodales
+Fortschrittsfenster. Der Erstaufbau sortiert die Fotos stabil nach ihrer lokalen Lightroom-Kennung, liest
+Plug-in-Metadaten gebündelt in 500er-Blöcken und speichert nach jeweils 5.000 Fotos einen fortsetzbaren Checkpoint
+als katalogweite Plug-in-Eigenschaft. Fortschrittsaktualisierung und `LrTasks.yield()` erfolgen erst nach dem
+jeweiligen `withReadAccessDo`-Block. `Pausieren`, `Fortsetzen` und das Schließen des Fensters arbeiten deshalb nur
+zwischen abgeschlossenen Blöcken; Lightroom bleibt währenddessen bedienbar.
 
-Der Statistikcache ist nur eine Beschleunigung und keine fachliche Datenquelle. Zuweisungs-, Rücknahme- und
-Favoritenbild-Aktionen machen ihn automatisch ungültig. Die Statistik liest die Zuordnungen direkt aus dem
-Lightroom-Katalog; ein erneuter Import oder ein Update der Taxonomie-Masterdatenbank ist dafür nicht erforderlich.
-Änderungen an Bewertungen oder Plug-in-Feldern außerhalb dieser Aktionen werden über `Neu berechnen` ausdrücklich
-neu eingelesen. Das alleinige manuelle Löschen sichtbarer Stichwörter hebt eine Taxonomiezuweisung nicht auf, weil
+Der gespeicherte Index enthält ausschließlich Aggregate pro Art, Klasse, Familie und Gattung, keine zweite
+katalogweite Fotoliste. Zuweisungs-, Rücknahme- und Favoritenbild-Aktionen ziehen den Zustand der betroffenen Fotos
+innerhalb desselben Lightroom-Schreibzugriffs ab und fügen den neuen Zustand hinzu. Sie lösen damit keinen
+Katalogscan aus. Eine veränderte Gesamtzahl der Fotos macht den Index beim nächsten Öffnen ungültig. Das SDK bietet
+keinen allgemeinen Beobachter für beliebige Änderungen an Foto- oder Plug-in-Metadaten; nach solchen Änderungen
+außerhalb der Plug-in-Aktionen bleibt deshalb `Index neu aufbauen` der kontrollierte Abgleich. Bewertungen sind für
+diese Statistik nicht relevant. Das alleinige manuelle Löschen sichtbarer Stichwörter hebt eine
+Taxonomiezuweisung nicht auf, weil
 die stabilen Plug-in-Metadaten dabei erhalten bleiben; dafür ist `Taxonomie entfernen` zu verwenden. Bereits mit
 einer älteren Plug-in-Version
 zugewiesene Fotos erhalten Klasse, Familie und Gattung erst bei einer erneuten kontrollierten Zuweisung.
@@ -334,7 +342,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.20.0`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.21.0`, der Suchpaketstatus sowie die fünf
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -364,8 +372,12 @@ sondern zentral im Arten-Explorer verwaltet.
     intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` vorhanden ist. Frühere
     Sammlungen `5-Sterne-Tierbilder` und `Art-Referenzbilder` müssen aus diesem Satz entfernt sein. Bei 132 Fotos
     mit zwei Taxonomiezuweisungen müssen `Taxonomie fehlt` 130 und `Taxonomie zugewiesen` zwei Fotos enthalten.
-12. `Taxonomie-Statistik ...` öffnen, `Neu berechnen` ausführen und Lifelist, Abdeckung, Klassenübersicht,
-    Favoritenbilder sowie die höchstens zehn am häufigsten fotografierten Arten prüfen.
+12. `Taxonomie-Statistik ...` öffnen. Beim ersten Aufruf den sichtbaren 500er-Fortschritt prüfen, einmal pausieren,
+    das Fenster schließen und anschließend fortsetzen. Danach Lifelist, Abdeckung, Favoritenbilder und die höchstens
+    zehn am häufigsten fotografierten Arten prüfen. Vögel beziehungsweise eine andere vorhandene Klasse aufklappen;
+    jede enthaltene Art muss mit deutschem, wissenschaftlichem Namen und Fotoanzahl erscheinen. Die Lifelist als
+    UTF-8-CSV exportieren und Spalten, Umlaute, Fotozahlen sowie Art-Favorit kontrollieren. Anschließend eine
+    Zuweisung, Rücknahme und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen Neuaufbau stimmen.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
@@ -400,7 +412,8 @@ Automatisch verifiziert sind:
   Metadaten, kontextreiche Schreibfehler sowie Callback- und Metadatenverifikation des Write-Access;
 - kompakte und vollständige Metadatenansicht sowie kompakte Suchpaketinformation im Zusatzmodul-Manager;
 - eindeutige, bestätigungspflichtige Markierung eines Favoritenbilds der Art, idempotente Sammlungsdefinitionen sowie
-  Statistik- und Cache-Grenzen einschließlich Lifelist, Klassen, Abdeckung und häufigsten Arten.
+  den persistenten, inkrementellen und fortsetzbaren Statistikindex einschließlich Lifelist-CSV, aufklappbarer
+  Klassen, Abdeckung und häufigsten Arten;
 - abgesicherte einmalige Lightroom-Explorer-Korrekturübergabe, revisionsbasierte Erkennung noch nicht eingebauter
   Korrekturen, gemeinsame atomare Aktivierung einer kleinen Korrekturschicht ohne Basisneubau und kombinierter
   Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten.
@@ -414,7 +427,8 @@ ersetzte die Task-Grenze, konnte jedoch wegen des optionalen Timeouts einen nich
 Erfolg melden. Version 0.4.15.0 ergänzt zum direkten Write-Access-Aufruf den vom SDK vorgesehenen Zehn-Sekunden-
 Timeout und prüft danach Callback-Abschluss sowie gespeicherte `masterTaxonId`; die Zuweisung wurde praktisch
 bestätigt. Version 0.4.16.0 verlagert den Auswahl-Refresh in eine kurze `LrTask`; dies wurde praktisch bestätigt.
-Version 0.4.17.0 verlagert den Statistik-Yield aus dem SDK-Lesecallback und benötigt noch den praktischen Test. Am
+Version 0.4.17.0 verlagert den Statistik-Yield aus dem SDK-Lesecallback. Version 0.4.21.0 ersetzt den verwerfbaren
+Ergebniscache durch den kataloggebundenen Aggregatindex und benötigt noch den praktischen Großkatalogtest. Am
 2026-08-28 wurden außerdem die komplementären Sammlungsregeln von
 Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `Taxonomie fehlt = 131` und
 `Taxonomie zugewiesen = 1` bestätigt. Die Sammlungs- und Statistikverträge sind automatisiert abgesichert.
@@ -437,6 +451,11 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   Lightroom, nicht aber gegenüber anderen Windows-Anwendungen im Vordergrund zu halten. `toFront()` wird nur bei
   erneutem Aufruf der Plug-in-Aktion verwendet. Das sonstige Vordergrundverhalten bestimmt Lightroom; eine
   undokumentierte Windows- oder SDK-Funktion wird nicht ergänzt.
+- Der Lightroom-SDK-Vertrag dokumentiert Auswahl- und Quellenbeobachter für schwebende Dialoge, aber keinen
+  allgemeinen Beobachter für beliebige Foto-, Katalog- oder Plug-in-Metadatenänderungen. Der Statistikindex wird
+  deshalb bei allen eigenen Schreibaktionen sofort aktualisiert, erkennt eine geänderte Kataloggröße und bietet für
+  sonstige externe Änderungen ausdrücklich `Index neu aufbauen`; eine nicht belegte Hintergrundbeobachtung wird
+  nicht vorgetäuscht.
 - Die Taxonomievorschau verwendet wegen der begrenzten und versionsabhängigen Layoutsteuerung des Lightroom-SDK
   eine feste Höhe von 150 Pixeln. Ihre Breite ist an das Fenster gekoppelt; eine zuverlässige dynamische Höhe nach
   exakt vorhandener Zeilenzahl wird nicht vorausgesetzt.

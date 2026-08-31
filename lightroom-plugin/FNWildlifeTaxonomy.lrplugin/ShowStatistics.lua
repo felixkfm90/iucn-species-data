@@ -1,11 +1,13 @@
 local LrApplication = import "LrApplication"
+local LrBinding = import "LrBinding"
 local LrDialogs = import "LrDialogs"
-local LrProgressScope = import "LrProgressScope"
+local LrFunctionContext = import "LrFunctionContext"
 local LrTasks = import "LrTasks"
 local LrView = import "LrView"
 
 local Statistics = require "Statistics"
 
+local bind = LrView.bind
 local CLASS_DISPLAY_NAMES = {
   Aves = "Vögel",
   Mammalia = "Säugetiere",
@@ -48,19 +50,6 @@ local function percentage(part, total)
   return string.gsub(string.format("%.1f", value), "%.", ",") .. " %"
 end
 
-local function calculate(catalog, forceRefresh)
-  local scope = LrProgressScope({ title = "Taxonomie-Statistik wird geladen" })
-  local ok, statistics, cached = LrTasks.pcall(Statistics.load, catalog, forceRefresh, function(index, total)
-    scope:setPortionComplete(index, math.max(total, 1))
-    LrTasks.yield()
-  end)
-  scope:done()
-  if not ok then
-    error(statistics, 0)
-  end
-  return statistics, cached
-end
-
 local function catalogOverviewText(statistics)
   return table.concat({
     photoLabel(statistics.totalPhotos) .. " im Katalog",
@@ -96,40 +85,35 @@ local function favoriteText(statistics)
   return table.concat(lines, "\n")
 end
 
-local function classBreakdownText(statistics)
-  local lines = {}
-  for _, entry in ipairs(statistics.classBreakdown or {}) do
-    table.insert(
-      lines,
-      classDisplayName(entry.name)
-        .. ": "
-        .. speciesLabel(entry.speciesCount)
-        .. " · "
-        .. photoLabel(entry.photoCount)
-    )
-  end
-  if #lines == 0 then
-    return "Noch keine Klassen erfasst."
-  end
-  return table.concat(lines, "\n")
-end
-
 local function topSpeciesText(statistics)
   local lines = {}
   for index, entry in ipairs(statistics.topSpecies or {}) do
     table.insert(
       lines,
-      tostring(index)
-        .. ". "
-        .. tostring(entry.name)
-        .. " · "
-        .. photoLabel(entry.photoCount)
+      tostring(index) .. ". " .. tostring(entry.name) .. " · " .. photoLabel(entry.photoCount)
     )
   end
   if #lines == 0 then
     return "Noch keine Arten zugewiesen."
   end
   return table.concat(lines, "\n")
+end
+
+local function classSpeciesText(entry)
+  local lines = {}
+  for _, species in ipairs(entry.species or {}) do
+    local germanName = tostring(species.germanName or "")
+    local scientificName = tostring(species.scientificName or "")
+    local name = germanName ~= "" and germanName or scientificName
+    if name == "" then
+      name = tostring(species.masterTaxonId or "Unbekannte Art")
+    end
+    if germanName ~= "" and scientificName ~= "" then
+      name = germanName .. " · " .. scientificName
+    end
+    table.insert(lines, name .. " · " .. photoLabel(species.photoCount))
+  end
+  return #lines > 0 and table.concat(lines, "\n") or "Noch keine Arten in dieser Klasse."
 end
 
 local function section(factory, title, text, height)
@@ -145,8 +129,50 @@ local function section(factory, title, text, height)
   })
 end
 
-local function dashboard(factory, statistics, cached)
+local function classSections(factory, props, statistics)
+  local items = {
+    spacing = factory:control_spacing(),
+    fill_horizontal = 1,
+  }
+  for index, entry in ipairs(statistics.classBreakdown or {}) do
+    local expandedKey = "classExpanded" .. tostring(index)
+    props[expandedKey] = false
+    table.insert(items, factory:group_box({
+      title = classDisplayName(entry.name)
+        .. ": "
+        .. speciesLabel(entry.speciesCount)
+        .. " · "
+        .. photoLabel(entry.photoCount),
+      fill_horizontal = 1,
+      factory:push_button({
+        title = bind({
+          key = expandedKey,
+          transform = function(value)
+            return value and "Arten ausblenden" or "Arten anzeigen"
+          end,
+        }),
+        action = function()
+          props[expandedKey] = not props[expandedKey]
+        end,
+      }),
+      factory:static_text({
+        title = classSpeciesText(entry),
+        visible = bind(expandedKey),
+        width_in_chars = 82,
+        height_in_lines = math.min(math.max(#(entry.species or {}), 1), 12),
+        fill_horizontal = 1,
+      }),
+    }))
+  end
+  if #(statistics.classBreakdown or {}) == 0 then
+    table.insert(items, factory:static_text({ title = "Noch keine Klassen erfasst." }))
+  end
+  return factory:column(items)
+end
+
+local function dashboard(factory, props, statistics)
   return factory:column({
+    bind_to_object = props,
     spacing = factory:control_spacing(),
     fill_horizontal = 1,
     factory:static_text({
@@ -160,35 +186,272 @@ local function dashboard(factory, statistics, cached)
       section(factory, "Taxonomischer Umfang", taxonomyScopeText(statistics), 4),
     }),
     section(factory, "Art-Favoriten", favoriteText(statistics), 3),
-    section(factory, "Klassenverteilung", classBreakdownText(statistics), 8),
+    factory:group_box({
+      title = "Klassen und Lifelist-Arten",
+      fill_horizontal = 1,
+      factory:scrolled_view({
+        width = 720,
+        height = 260,
+        horizontal_scroller = false,
+        vertical_scroller = true,
+        classSections(factory, props, statistics),
+      }),
+    }),
     section(factory, "Am häufigsten fotografierte Arten", topSpeciesText(statistics), 10),
     factory:static_text({
       title = "Stand: "
         .. tostring(statistics.generatedAt or "soeben")
-        .. (cached and " · zwischengespeichert" or " · neu berechnet"),
+        .. " · persistenter Katalogindex",
       alignment = "right",
+      fill_horizontal = 1,
+    }),
+    factory:static_text({
+      title = "Zuweisung, Rücknahme und Art-Favoriten aktualisieren den Index direkt. "
+        .. "Nach Änderungen außerhalb des Plug-ins bitte „Index neu aufbauen“ verwenden.",
+      width_in_chars = 90,
       fill_horizontal = 1,
     }),
   })
 end
 
+local function buildProgressText(processed, total)
+  processed = tonumber(processed or 0) or 0
+  total = tonumber(total or 0) or 0
+  local percent = total > 0 and math.floor(((processed / total) * 1000) + 0.5) / 10 or 100
+  return tostring(processed)
+    .. " von "
+    .. tostring(total)
+    .. " Fotos · "
+    .. string.gsub(string.format("%.1f", percent), "%.", ",")
+    .. " %"
+end
+
+local function buildIndexWindow(catalog, restart)
+  return LrFunctionContext.callWithContext("FN Wildlife Statistikindex", function(context)
+    local factory = LrView.osFactory()
+    local props = LrBinding.makePropertyTable(context)
+    local dialogControls = nil
+    local running = false
+    local pauseRequested = false
+    local windowClosed = false
+    local completedStatistics = nil
+
+    props.status = restart
+      and "Der Statistikindex wird vollständig neu aufgebaut."
+      or "Der Statistikindex wird vorbereitet."
+    props.progress = "Noch keine Fotos verarbeitet."
+    props.toggleTitle = "Pausieren"
+
+    local function updateControls(status, title)
+      if not windowClosed then
+        props.status = status
+        props.toggleTitle = title
+      end
+    end
+
+    local startWorker
+    startWorker = function()
+      if running then
+        return
+      end
+      if not Statistics.beginBuild() then
+        updateControls(
+          "Ein anderer Statistikaufbau speichert gerade seinen Fortschritt. Bitte kurz warten.",
+          "Erneut versuchen"
+        )
+        return
+      end
+      running = true
+      pauseRequested = false
+      updateControls("Statistikindex wird im Hintergrund aufgebaut.", "Pausieren")
+      LrTasks.startAsyncTask(function()
+        local ok, result = LrTasks.pcall(function()
+          return Statistics.build(catalog, {
+            restart = restart,
+            progress = function(processed, total)
+              if not windowClosed then
+                props.progress = buildProgressText(processed, total)
+              end
+              LrTasks.yield()
+              if pauseRequested or windowClosed then
+                return "pause"
+              end
+              return nil
+            end,
+          })
+        end)
+        Statistics.finishBuild()
+        restart = false
+        running = false
+        if not ok then
+          updateControls("Aufbau fehlgeschlagen: " .. tostring(result), "Erneut versuchen")
+          return
+        end
+        if result.status == "paused" then
+          updateControls(
+            "Aufbau pausiert. Der Fortschritt wurde im Lightroom-Katalog gespeichert.",
+            "Fortsetzen"
+          )
+          return
+        end
+        completedStatistics = result.statistics
+        if not windowClosed then
+          props.progress = buildProgressText(result.totalPhotos, result.totalPhotos)
+          props.status = "Statistikindex ist vollständig und wurde gespeichert."
+        end
+        if dialogControls then
+          dialogControls:close()
+        end
+      end)
+    end
+
+    local contents = factory:column({
+      bind_to_object = props,
+      spacing = factory:dialog_spacing(),
+      fill_horizontal = 1,
+      factory:static_text({
+        title = bind("status"),
+        width_in_chars = 72,
+        fill_horizontal = 1,
+      }),
+      factory:static_text({
+        title = bind("progress"),
+        font = "<system/bold>",
+        fill_horizontal = 1,
+      }),
+      factory:static_text({
+        title = "Lightroom bleibt während des Aufbaus bedienbar. "
+          .. "Pausieren und Schließen speichern den zuletzt abgeschlossenen Block.",
+        width_in_chars = 72,
+        fill_horizontal = 1,
+      }),
+      factory:row({
+        fill_horizontal = 1,
+        factory:push_button({
+          title = bind("toggleTitle"),
+          action = function()
+            if running then
+              pauseRequested = true
+              updateControls("Pause wird nach dem aktuellen Fotoblock gespeichert ...", "Pausieren")
+            else
+              startWorker()
+            end
+          end,
+        }),
+        factory:spacer({ fill_horizontal = 1 }),
+        factory:push_button({
+          title = "Schließen",
+          action = function()
+            pauseRequested = true
+            if dialogControls then
+              dialogControls:close()
+            end
+          end,
+        }),
+      }),
+    })
+
+    LrDialogs.presentFloatingDialog(_PLUGIN, {
+      title = "FN Wildlife – Statistikindex aufbauen",
+      contents = contents,
+      blockTask = true,
+      resizable = false,
+      save_frame = "fnWildlifeStatisticsBuildV1",
+      onShow = function(controls)
+        dialogControls = controls
+        startWorker()
+      end,
+      windowWillClose = function()
+        windowClosed = true
+        pauseRequested = true
+        dialogControls = nil
+      end,
+    })
+    return completedStatistics
+  end)
+end
+
+local function csvField(value)
+  local text = tostring(value or "")
+  return '"' .. string.gsub(text, '"', '""') .. '"'
+end
+
+local function exportLifelist(statistics)
+  local path = LrDialogs.runSavePanel({
+    title = "Lifelist als CSV exportieren",
+    prompt = "Exportieren",
+    requiredFileType = "csv",
+    canCreateDirectories = true,
+  })
+  if not path then
+    return
+  end
+  local file, openError = io.open(path, "wb")
+  if not file then
+    error("CSV-Datei konnte nicht geöffnet werden: " .. tostring(openError), 0)
+  end
+  file:write(string.char(239, 187, 191))
+  file:write(table.concat({
+    csvField("Deutscher Name"),
+    csvField("Wissenschaftlicher Name"),
+    csvField("Klasse"),
+    csvField("Familie"),
+    csvField("Gattung"),
+    csvField("Fotoanzahl"),
+    csvField("Art-Favorit"),
+  }, ";"), "\r\n")
+  for _, entry in ipairs(statistics.lifelist or {}) do
+    file:write(table.concat({
+      csvField(entry.germanName),
+      csvField(entry.scientificName),
+      csvField(classDisplayName(entry.className)),
+      csvField(entry.family),
+      csvField(entry.genus),
+      csvField(entry.photoCount),
+      csvField((tonumber(entry.referenceImageCount or 0) or 0) > 0 and "Ja" or "Nein"),
+    }, ";"), "\r\n")
+  end
+  file:close()
+  LrDialogs.message(
+    "Lifelist exportiert",
+    speciesLabel(statistics.speciesCount) .. " wurden als UTF-8-CSV gespeichert.",
+    "info"
+  )
+end
+
+local function showDashboard(catalog, statistics)
+  while statistics do
+    local result = LrFunctionContext.callWithContext("FN Wildlife Statistik", function(context)
+      local factory = LrView.osFactory()
+      local props = LrBinding.makePropertyTable(context)
+      return LrDialogs.presentModalDialog({
+        title = "FN Wildlife – Taxonomie-Statistik",
+        actionVerb = "Lifelist als CSV exportieren",
+        otherVerb = "Index neu aufbauen",
+        cancelVerb = "Schließen",
+        contents = dashboard(factory, props, statistics),
+      })
+    end)
+    if result == "ok" then
+      exportLifelist(statistics)
+    elseif result == "other" then
+      local rebuilt = buildIndexWindow(catalog, true)
+      statistics = rebuilt or select(1, Statistics.load(catalog))
+    else
+      break
+    end
+  end
+end
+
 LrTasks.startAsyncTask(function()
   local ok, errorMessage = LrTasks.pcall(function()
     local catalog = LrApplication.activeCatalog()
-    local forceRefresh = false
-    while true do
-      local statistics, cached = calculate(catalog, forceRefresh)
-      local factory = LrView.osFactory()
-      local result = LrDialogs.presentModalDialog({
-        title = "FN Wildlife – Taxonomie-Statistik",
-        actionVerb = "Neu berechnen",
-        cancelVerb = "Schließen",
-        contents = dashboard(factory, statistics, cached),
-      })
-      if result ~= "ok" then
-        break
-      end
-      forceRefresh = true
+    local statistics = select(1, Statistics.load(catalog))
+    if not statistics then
+      statistics = buildIndexWindow(catalog, false)
+    end
+    if statistics then
+      showDashboard(catalog, statistics)
     end
   end)
   if not ok then

@@ -1140,13 +1140,14 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.20.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.21.0`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
   und Katalogstatistik werden ausschließlich im getrennten Statistikfenster berechnet; Öffnen, Zuweisen und
-  Entfernen starten im Zuweisungsfenster keine katalogweite Statistikberechnung und markieren nach einer Änderung
-  nur den Statistikcache als ungültig. Sichtbar gleiche `(FN)`-Stichwortnamen werden vor dem Lightroom-
+  Entfernen starten im Zuweisungsfenster keine katalogweite Statistikberechnung. Eigene Zuweisungs-, Rücknahme-
+  und Favoritenaktionen aktualisieren stattdessen die betroffenen Aggregate des persistenten Katalogindex im
+  selben Schreibzugriff. Sichtbar gleiche `(FN)`-Stichwortnamen werden vor dem Lightroom-
   Schreibzugriff dedupliziert, sodass Familie und Gattung etwa bei Austernfischer oder Bartmeise dasselbe
   Stichwort nicht zweimal anlegen oder zuweisen. Version 0.4.15.0 verwendet den direkten `withWriteAccessDo`-Aufruf
   innerhalb der bereits gestarteten `LrTask` und wartet mit dem offiziellen SDK-Timeout bis zu zehn Sekunden auf
@@ -1155,8 +1156,10 @@ Aktuelle Planung:
   Fehlerübersetzung aus 0.4.13.0 bleibt entfernt. Version 0.4.16.0 verlagert außerdem die Aktualisierung der
   Lightroom-Auswahl aus dem Observer in eine kurze `LrTask`, damit Fotozahl und Einzelfotoanzeige unmittelbar nach
   Strg+A oder einem Einzelklick nachgezogen werden; dies wurde praktisch bestätigt. Version 0.4.17.0 verarbeitet
-  große Statistikscans in 500-Foto-Leseblöcken und yieldet nur zwischen diesen SDK-Lesezugriffen. Eine sofortige
-  Fortschrittsanzeige macht einen ungültigen Statistikcache sichtbar, bevor das Ergebnisfenster erscheint. Die
+  große Statistikscans in 500-Foto-Leseblöcken und yieldet nur zwischen diesen SDK-Lesezugriffen. Version 0.4.21.0
+  speichert den kompakten Aggregatindex und seinen alle 5.000 Fotos geschriebenen Aufbaucheckpoint als
+  katalogweite Plug-in-Eigenschaft. Der nichtmodale Aufbau zeigt Zahlen und Prozentwert, bleibt pausier- und
+  fortsetzbar und lässt Lightroom bedienbar. Die
   Suche bleibt über `Art suchen` verfügbar und startet zusätzlich nach 0,5 Sekunden Eingabepause. Eine Änderung
   des Suchtexts verwirft die zuvor geladene Art sofort; vor einer trotzdem abweichenden Zuweisung steht eine
   ausdrückliche Sicherheitsabfrage. Der
@@ -1183,9 +1186,11 @@ Aktuelle Planung:
   Datenbankpflege. Als klar abgegrenzte 10.4-Funktionen sind genau ein erklärtes und bestätigungspflichtiges
   `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz aus `Art-Favoriten`, `Taxonomie fehlt` und
   `Taxonomie zugewiesen` sowie eine vollständig neu
-  berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, Klassenübersicht, den zehn am häufigsten
-  fotografierten Arten und verwerfbarem Cache implementiert. Die Statistik liest die Zuordnungen aus dem
-  Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Die Sammlungen beruhen ausschließlich auf
+  berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, UTF-8-CSV, aufklappbarer Klassen-/Artenübersicht
+  und den zehn am häufigsten fotografierten Arten implementiert. Die Statistik liest die Zuordnungen aus dem
+  Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Eine veränderte Fotozahl macht den Index
+  ungültig; für andere außerhalb des Plug-ins vorgenommene Änderungen bleibt `Index neu aufbauen` verbindlich,
+  weil das SDK keinen allgemeinen Metadatenbeobachter dokumentiert. Die Sammlungen beruhen ausschließlich auf
   den Plug-in-Metadaten `referenceImage` und `masterTaxonId`, nicht auf normalen Foto- oder
   Lightroom-Stichwortmetadaten. Eine gültige Zuweisung wird am reservierten Master-ID-Präfix `mtx_` erkannt;
   `Taxonomie fehlt` ist die über `exclude` gebildete Gegenmenge. Die in Lightroom praktisch umgekehrt ausgewerteten
@@ -1214,6 +1219,8 @@ Aktuelle Planung:
   geladene Art wird über die geänderte Korrekturrevision vor der Zuweisung gesperrt. Das Zurücksetzen einer bereits
   in einem früheren Vollmaster fest eingebauten manuellen Aussage bleibt dem vollständigen Kandidatenbau
   vorbehalten. Der Sekundenpfad ist automatisiert geprüft und benötigt noch den praktischen Lightroom-/Explorer-Test.
+  Der Statistikindex, Pause/Fortsetzen, Lifelist-CSV, Klasseninhalte und direkte Delta-Aktualisierung von Version
+  0.4.21.0 sind automatisiert geprüft und benötigen noch den praktischen Test im großen Lightroom-Katalog.
 - Phase 11 - Mehrere Computer:
   automatische App-Aktualisierung, Identitaet, Bearbeitungssperre, Konfliktbehandlung, NAS-Restore und Installer.
   Beim Installer ist der Standardspeicherort der grossen Taxonomiereferenz erneut zu bewerten; bis dahin bleibt
