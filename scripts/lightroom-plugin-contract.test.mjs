@@ -36,7 +36,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.21.0");
+  assert.equal(version.slice(1).join("."), "0.4.21.3");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -214,7 +214,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /factory:simple_list\(\{/);
   assert.match(window, /items\s*=\s*bind\("previewLines"\)/);
   assert.match(window, /width\s*=\s*TAXONOMY_PREVIEW_WIDTH/);
-  assert.match(window, /background_color\s*=\s*LrColor\(0\.94, 0\.94, 0\.94\)/);
+  assert.doesNotMatch(window, /background_color|local LrColor/);
   assert.doesNotMatch(window, /PREVIEW_LINE_LIMIT|previewLineVisible|previewLineViews/);
   assert.doesNotMatch(window, /width\s*=\s*760/);
   assert.doesNotMatch(window, /width\s*=\s*740/);
@@ -362,6 +362,14 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
     "Stichwörter müssen im selben Schreibzugriff und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.applyStatisticsPhotoChanges\(catalog, beforeStatistics, afterStatistics\)/);
+  assert.match(writer, /Statistics\.assignmentSnapshot\(/);
+  assert.match(writer, /beforeStatistics\[index\]\.referenceImage/);
+  assert.match(writer, /Statistics\.emptySnapshot\(\)/);
+  assert.doesNotMatch(
+    writer,
+    /afterStatistics\[index\]\s*=\s*Statistics\.photoSnapshot\(photo\)/,
+    "Innerhalb des Lightroom-Schreibcallbacks darf nicht der noch alte Fotozustand als Statistikdelta gelesen werden",
+  );
   assert.match(writer, /utf8Prefix\(value, 460\)/);
   assert.match(writer, /maximumNameBytes\s*=\s*240 - string\.len\(PLUGIN_KEYWORD_SUFFIX\)/);
   assert.match(writer, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
@@ -411,14 +419,22 @@ test("Art-Favorit und Taxonomiestatus verwenden ausschließlich Plug-in-Metadate
   assert.match(reference, /masterTaxonId/);
   assert.match(reference, /referenceImage/);
   assert.match(reference, /function ReferenceImage\.findExisting\(catalog, photo\)/);
-  assert.match(reference, /candidate ~= photo/);
-  assert.match(reference, /getPropertyForPlugin\(_PLUGIN, "referenceImage"\)\) == "yes"/);
+  assert.match(reference, /PluginState\.referenceImageUuids\(catalog, masterTaxonId\)/);
+  assert.match(reference, /photo:getRawMetadata\("uuid"\)/);
+  assert.match(reference, /catalog:findPhotoByUuid\(uuid\)/);
+  assert.doesNotMatch(reference, /catalog:getAllPhotos\(\)/);
   assert.match(reference, /candidate == photo and "yes" or "no"/);
   assert.match(reference, /catalog:withWriteAccessDo/);
+  assert.match(reference, /Statistics\.referenceSnapshot\(/);
   assert.match(reference, /PluginState\.applyStatisticsPhotoChanges\(catalog, beforeStatistics, afterStatistics\)/);
+  assert.match(reference, /return existingPhotos\[1\], existingPhotos/);
+  assert.match(reference, /local affectedPhotos = \{ photo \}/);
+  assert.match(reference, /Lightroom hat das ausgewählte Foto nicht als Art-Favorit gespeichert/);
   assert.match(referenceAction, /Zuerst Taxonomie zuweisen/);
   assert.match(referenceAction, /Favoritenbild der Art/);
-  assert.match(referenceAction, /local existingPhoto = ReferenceImage\.findExisting\(catalog, photo\)/);
+  assert.match(referenceAction, /local existingPhoto, existingPhotos, indexError = ReferenceImage\.findExisting\(catalog, photo\)/);
+  assert.match(referenceAction, /ReferenceImage\.assign\(catalog, photo, existingPhotos\)/);
+  assert.match(referenceAction, /Statistik neu aufbauen/);
   assert.match(referenceAction, /if existingPhoto then[\s\S]*?LrDialogs\.confirm/);
   assert.match(referenceAction, /Für [\s\S]*?ist bereits ein Art-Favorit festgelegt/);
   assert.match(referenceAction, /"Ja, ersetzen"/);
@@ -469,8 +485,10 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(state, /catalog:setPropertyForPlugin\(_PLUGIN, field, value\)/);
   assert.match(state, /withPrivateWriteAccessDo/);
   assert.match(state, /applyStatisticsPhotoChanges/);
-  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*1/);
+  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*2/);
   assert.match(index, /function StatisticsIndex\.applyChanges/);
+  assert.match(index, /referenceImageUuids/);
+  assert.match(index, /photoUuid/);
   assert.match(index, /lifelist = lifelist/);
   assert.match(index, /classBreakdown = classBreakdown/);
   assert.match(statistics, /catalog:getAllPhotos\(\)/);
@@ -478,8 +496,12 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(statistics, /CHECKPOINT_CHUNK_COUNT\s*=\s*10/);
   assert.match(statistics, /for chunkStart = startIndex, totalPhotos, READ_CHUNK_SIZE do/);
   assert.match(statistics, /catalog:batchGetPropertyForPlugin\(chunk, _PLUGIN, FIELD_IDS\)/);
+  assert.match(statistics, /catalog:batchGetRawMetadata\(chunk, \{ "uuid" \}\)/);
   assert.match(statistics, /PluginState\.saveStatisticsBuild/);
   assert.match(statistics, /PluginState\.saveStatisticsIndex/);
+  assert.match(statistics, /function Statistics\.assignmentSnapshot/);
+  assert.match(statistics, /function Statistics\.emptySnapshot/);
+  assert.match(statistics, /function Statistics\.referenceSnapshot/);
   assert.match(statistics, /end\)\s*\n\s*processedPhotos = chunkEnd[\s\S]*?options\.progress\(processedPhotos, totalPhotos\)/);
   assert.doesNotMatch(statistics, /catalog:withReadAccessDo\(function\(\)[\s\S]*?LrTasks\.yield\(\)/);
   assert.match(dialog, /presentFloatingDialog\(_PLUGIN/);
@@ -487,18 +509,19 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /Pause wird nach dem aktuellen Fotoblock gespeichert/);
   assert.match(dialog, /Aufbau pausiert/);
   assert.match(dialog, /startWorker\(\)/);
-  assert.match(dialog, /Index neu aufbauen/);
+  assert.match(dialog, /Statistik neu aufbauen/);
+  assert.match(dialog, /section\(factory, "Klassen", classBreakdownText\(statistics\)/);
+  assert.doesNotMatch(dialog, /factory:scrolled_view/);
   assert.match(dialog, /runSavePanel/);
   assert.match(dialog, /requiredFileType\s*=\s*"csv"/);
   assert.match(dialog, /string\.char\(239, 187, 191\)/);
   assert.match(dialog, /Deutscher Name/);
   assert.match(dialog, /Wissenschaftlicher Name/);
   assert.match(dialog, /Art-Favorit/);
-  assert.match(dialog, /classExpanded/);
-  assert.match(dialog, /Arten anzeigen/);
+  assert.doesNotMatch(dialog, /classExpanded|Arten anzeigen|Arten ausblenden/);
   assert.match(dialog, /Abdeckung:/);
   assert.match(dialog, /Lifelist /);
-  assert.match(dialog, /Klassen und Lifelist-Arten/);
+  assert.match(dialog, /"Klassen"/);
   assert.match(dialog, /Art-Favoriten/);
   assert.match(dialog, /Aves = "Vögel"/);
   assert.match(dialog, /Mammalia = "Säugetiere"/);
@@ -552,7 +575,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
   assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.21\.0/);
+  assert.match(provider, /Version: 0\.4\.21\.3/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

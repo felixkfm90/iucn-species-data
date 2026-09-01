@@ -37,7 +37,18 @@ LrTasks.startAsyncTask(function()
     local germanName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "germanName"))
     local scientificName = cleanText(photo:getPropertyForPlugin(_PLUGIN, "scientificName"))
     local name = germanName ~= "" and germanName or scientificName
-    local existingPhoto = ReferenceImage.findExisting(catalog, photo)
+    local existingPhoto, existingPhotos, indexError = ReferenceImage.findExisting(catalog, photo)
+    if indexError then
+      local detail = indexError == "stale"
+        and "Der Statistikindex verweist auf ein nicht mehr vorhandenes Foto."
+        or "Der Statistikindex enthält noch keine Foto-IDs für Art-Favoriten."
+      LrDialogs.message(
+        "Statistik neu aufbauen",
+        detail .. " Bitte öffne die Taxonomie-Statistik und wähle „Statistik neu aufbauen“.",
+        "info"
+      )
+      return
+    end
     if existingPhoto then
       local choice = LrDialogs.confirm(
         "Art-Favorit ersetzen?",
@@ -52,7 +63,7 @@ LrTasks.startAsyncTask(function()
       end
     end
 
-    local result = ReferenceImage.assign(catalog, photo)
+    local result = ReferenceImage.assign(catalog, photo, existingPhotos)
     local resultName = result.germanName ~= "" and result.germanName or result.scientificName
     LrDialogs.message(
       "Favoritenbild der Art markiert",

@@ -99,21 +99,19 @@ local function topSpeciesText(statistics)
   return table.concat(lines, "\n")
 end
 
-local function classSpeciesText(entry)
+local function classBreakdownText(statistics)
   local lines = {}
-  for _, species in ipairs(entry.species or {}) do
-    local germanName = tostring(species.germanName or "")
-    local scientificName = tostring(species.scientificName or "")
-    local name = germanName ~= "" and germanName or scientificName
-    if name == "" then
-      name = tostring(species.masterTaxonId or "Unbekannte Art")
-    end
-    if germanName ~= "" and scientificName ~= "" then
-      name = germanName .. " · " .. scientificName
-    end
-    table.insert(lines, name .. " · " .. photoLabel(species.photoCount))
+  for _, entry in ipairs(statistics.classBreakdown or {}) do
+    table.insert(
+      lines,
+      classDisplayName(entry.name)
+        .. ": "
+        .. speciesLabel(entry.speciesCount)
+        .. " · "
+        .. photoLabel(entry.photoCount)
+    )
   end
-  return #lines > 0 and table.concat(lines, "\n") or "Noch keine Arten in dieser Klasse."
+  return #lines > 0 and table.concat(lines, "\n") or "Noch keine Klassen erfasst."
 end
 
 local function section(factory, title, text, height)
@@ -129,50 +127,11 @@ local function section(factory, title, text, height)
   })
 end
 
-local function classSections(factory, props, statistics)
-  local items = {
-    spacing = factory:control_spacing(),
-    fill_horizontal = 1,
-  }
-  for index, entry in ipairs(statistics.classBreakdown or {}) do
-    local expandedKey = "classExpanded" .. tostring(index)
-    props[expandedKey] = false
-    table.insert(items, factory:group_box({
-      title = classDisplayName(entry.name)
-        .. ": "
-        .. speciesLabel(entry.speciesCount)
-        .. " · "
-        .. photoLabel(entry.photoCount),
-      fill_horizontal = 1,
-      factory:push_button({
-        title = bind({
-          key = expandedKey,
-          transform = function(value)
-            return value and "Arten ausblenden" or "Arten anzeigen"
-          end,
-        }),
-        action = function()
-          props[expandedKey] = not props[expandedKey]
-        end,
-      }),
-      factory:static_text({
-        title = classSpeciesText(entry),
-        visible = bind(expandedKey),
-        width_in_chars = 82,
-        height_in_lines = math.min(math.max(#(entry.species or {}), 1), 12),
-        fill_horizontal = 1,
-      }),
-    }))
-  end
-  if #(statistics.classBreakdown or {}) == 0 then
-    table.insert(items, factory:static_text({ title = "Noch keine Klassen erfasst." }))
-  end
-  return factory:column(items)
-end
-
 local function dashboard(factory, props, statistics)
+  local classCount = #(statistics.classBreakdown or {})
   return factory:column({
     bind_to_object = props,
+    margin = factory:dialog_spacing(),
     spacing = factory:control_spacing(),
     fill_horizontal = 1,
     factory:static_text({
@@ -186,17 +145,7 @@ local function dashboard(factory, props, statistics)
       section(factory, "Taxonomischer Umfang", taxonomyScopeText(statistics), 4),
     }),
     section(factory, "Art-Favoriten", favoriteText(statistics), 3),
-    factory:group_box({
-      title = "Klassen und Lifelist-Arten",
-      fill_horizontal = 1,
-      factory:scrolled_view({
-        width = 720,
-        height = 260,
-        horizontal_scroller = false,
-        vertical_scroller = true,
-        classSections(factory, props, statistics),
-      }),
-    }),
+    section(factory, "Klassen", classBreakdownText(statistics), math.max(classCount, 1)),
     section(factory, "Am häufigsten fotografierte Arten", topSpeciesText(statistics), 10),
     factory:static_text({
       title = "Stand: "
@@ -207,7 +156,7 @@ local function dashboard(factory, props, statistics)
     }),
     factory:static_text({
       title = "Zuweisung, Rücknahme und Art-Favoriten aktualisieren den Index direkt. "
-        .. "Nach Änderungen außerhalb des Plug-ins bitte „Index neu aufbauen“ verwenden.",
+        .. "Nach Änderungen außerhalb des Plug-ins bitte „Statistik neu aufbauen“ verwenden.",
       width_in_chars = 90,
       fill_horizontal = 1,
     }),
@@ -307,6 +256,7 @@ local function buildIndexWindow(catalog, restart)
 
     local contents = factory:column({
       bind_to_object = props,
+      margin = factory:dialog_spacing(),
       spacing = factory:dialog_spacing(),
       fill_horizontal = 1,
       factory:static_text({
@@ -427,7 +377,7 @@ local function showDashboard(catalog, statistics)
       return LrDialogs.presentModalDialog({
         title = "FN Wildlife – Taxonomie-Statistik",
         actionVerb = "Lifelist als CSV exportieren",
-        otherVerb = "Index neu aufbauen",
+        otherVerb = "Statistik neu aufbauen",
         cancelVerb = "Schließen",
         contents = dashboard(factory, props, statistics),
       })

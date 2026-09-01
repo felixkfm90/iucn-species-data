@@ -3,7 +3,7 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local StatisticsIndex = {}
 local cleanText = TaxonomyRanks.cleanText
 
-StatisticsIndex.SCHEMA_VERSION = 1
+StatisticsIndex.SCHEMA_VERSION = 2
 
 local function countKeys(values)
   local count = 0
@@ -76,6 +76,7 @@ function StatisticsIndex.snapshot(values)
     genus = cleanText(values.taxonomyGenus),
     className = cleanText(values.taxonomyClass),
     referenceImage = cleanText(values.referenceImage) == "yes",
+    photoUuid = cleanText(values.photoUuid or values.uuid),
   }
 end
 
@@ -88,6 +89,7 @@ function StatisticsIndex.photoSnapshot(photo)
     taxonomyGenus = photo:getPropertyForPlugin(_PLUGIN, "taxonomyGenus"),
     taxonomyClass = photo:getPropertyForPlugin(_PLUGIN, "taxonomyClass"),
     referenceImage = photo:getPropertyForPlugin(_PLUGIN, "referenceImage"),
+    photoUuid = photo:getRawMetadata("uuid"),
   })
 end
 
@@ -123,6 +125,7 @@ function StatisticsIndex.add(index, snapshot)
       genus = "",
       photoCount = 0,
       referenceImageCount = 0,
+      referenceImageUuids = {},
     }
     index.species[masterTaxonId] = speciesEntry
   end
@@ -137,7 +140,11 @@ function StatisticsIndex.add(index, snapshot)
   speciesEntry.genus = cleanText(snapshot.genus)
   speciesEntry.photoCount = (tonumber(speciesEntry.photoCount or 0) or 0) + 1
   if snapshot.referenceImage then
+    speciesEntry.referenceImageUuids = speciesEntry.referenceImageUuids or {}
     speciesEntry.referenceImageCount = (tonumber(speciesEntry.referenceImageCount or 0) or 0) + 1
+    if cleanText(snapshot.photoUuid) ~= "" then
+      speciesEntry.referenceImageUuids[cleanText(snapshot.photoUuid)] = true
+    end
   end
 end
 
@@ -167,10 +174,14 @@ function StatisticsIndex.remove(index, snapshot)
   if speciesEntry then
     speciesEntry.photoCount = math.max((tonumber(speciesEntry.photoCount or 0) or 0) - 1, 0)
     if snapshot.referenceImage then
+      speciesEntry.referenceImageUuids = speciesEntry.referenceImageUuids or {}
       speciesEntry.referenceImageCount = math.max(
         (tonumber(speciesEntry.referenceImageCount or 0) or 0) - 1,
         0
       )
+      if cleanText(snapshot.photoUuid) ~= "" then
+        speciesEntry.referenceImageUuids[cleanText(snapshot.photoUuid)] = nil
+      end
     end
     if speciesEntry.photoCount == 0 then
       index.species[masterTaxonId] = nil

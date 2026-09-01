@@ -1,6 +1,5 @@
 local LrApplication = import "LrApplication"
 local LrBinding = import "LrBinding"
-local LrColor = import "LrColor"
 local LrDialogs = import "LrDialogs"
 local LrPathUtils = import "LrPathUtils"
 local LrTasks = import "LrTasks"
@@ -625,7 +624,6 @@ function AssignmentWindow.show(context)
           width = TAXONOMY_PREVIEW_WIDTH,
           height = 150,
           fill_horizontal = 1,
-          background_color = LrColor(0.94, 0.94, 0.94),
         }),
         factory:row({
           fill_horizontal = 1,

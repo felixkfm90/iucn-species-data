@@ -137,4 +137,29 @@ function PluginState.applyStatisticsPhotoChanges(catalog, beforeSnapshots, after
   return true
 end
 
+function PluginState.referenceImageUuids(catalog, masterTaxonId)
+  local index = decodeCatalogValue(catalog, STATISTICS_INDEX_FIELD)
+  if not StatisticsIndex.isValid(index) or index.status ~= "complete" then
+    return nil, "missing"
+  end
+  local speciesEntry = index.species[cleanText(masterTaxonId)]
+  if not speciesEntry then
+    return {}, nil
+  end
+  if type(speciesEntry.referenceImageUuids) ~= "table" then
+    return nil, "outdated"
+  end
+  local uuids = {}
+  for uuid, active in pairs(speciesEntry.referenceImageUuids) do
+    if active and cleanText(uuid) ~= "" then
+      table.insert(uuids, cleanText(uuid))
+    end
+  end
+  if (tonumber(speciesEntry.referenceImageCount or 0) or 0) > #uuids then
+    return nil, "incomplete"
+  end
+  table.sort(uuids)
+  return uuids, nil
+end
+
 return PluginState

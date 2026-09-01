@@ -4,7 +4,7 @@ Stand: 2026-08-30
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.21.0 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.21.3 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
 automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
@@ -362,7 +362,7 @@ Zu prüfende Funktionen:
 - Performancetests mit großen Katalogen
 - genau ein kontrolliertes `Favoritenbild der Art` pro Art
 - intelligente Sammlungen und kataloggebundene persistente Katalogstatistiken
-- Lifelist- und aufklappbare Klassenstatistiken sowie höchstens zehn am häufigsten fotografierte Arten
+- Lifelist- und kompakte Klassenstatistiken sowie höchstens zehn am häufigsten fotografierte Arten
 - Lifelist-CSV sowie ein kontrollierter Index-Neuaufbau für nicht beobachtbare externe Änderungen
 - später optional weiterführende Export- und Abgleichsfunktionen
 
@@ -600,7 +600,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.21.0 am 2026-08-31 umgesetzt und automatisiert geprüft; Einzel- und
+- **Bis Plug-in-Version 0.4.21.3 am 2026-09-01 umgesetzt und automatisiert geprüft; Einzel- und
   Mehrfachzuweisung sowie Auswahl-Refresh bis 0.4.16.0 praktisch bestätigt, die jüngsten Abläufe noch nicht abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -610,7 +610,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   Einzelklicks die Anzeige unmittelbar aktualisieren. Es zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt`, bei
   Mehrfachauswahl die Gesamtzahl, den aktuellen Zuweisungszustand und die zehn zuletzt verwendeten Arten an.
   Lifelist und Katalogstatistik werden ausschließlich im getrennten Statistikfenster berechnet; Öffnen, Zuweisen
-  und Entfernen lösen im Zuweisungsfenster keine katalogweite Statistikberechnung aus. Version 0.4.21.0 pflegt
+  und Entfernen lösen im Zuweisungsfenster keine katalogweite Statistikberechnung aus. Version 0.4.21.1 pflegt
   nach eigenen Schreibaktionen nur die betroffenen Aggregate im persistenten Katalogindex. Sein einmaliger Aufbau
   liest 500er-Blöcke, speichert alle 5.000 Fotos einen Checkpoint und läuft nichtmodal mit Pause/Fortsetzen.
   Version 0.4.19.0
@@ -670,11 +670,14 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
   Lightroom-Stichwörter bleiben unberücksichtigt. Bereits vorhandene Regeln werden
   aktualisiert; `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden innerhalb dieses Satzes automatisch entfernt.
 - Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und Favoritenbilder,
-  berechnet Taxonomie-Abdeckung und zeigt höchstens zehn am häufigsten fotografierte Arten. Klassen sind bis zu
-  den enthaltenen Arten mit deutschem, wissenschaftlichem Namen und Fotoanzahl aufklappbar; die Lifelist lässt
+  berechnet Taxonomie-Abdeckung und zeigt höchstens zehn am häufigsten fotografierte Arten. Klassen werden kompakt
+  mit Art- und Fotozahl angezeigt; die vollständigen Arten je Klasse stehen im CSV, weil dynamische Dialogzeilen im
+  praktischen Lightroom-Test nicht zuverlässig skalierten. Die Lifelist lässt
   sich als UTF-8-CSV exportieren. Der kompakte Index und ein fortsetzbarer Aufbaucheckpoint liegen als
-  katalogweite Plug-in-Eigenschaften vor. Eine veränderte Fotozahl oder die ausdrückliche Aktion `Index neu
-  aufbauen` führen zum vollständigen Abgleich; ein allgemeiner Metadatenbeobachter ist im SDK nicht dokumentiert.
+  katalogweite Plug-in-Eigenschaften vor. Der globale Aufbau speichert zugleich persistente Lightroom-Foto-UUIDs
+  vorhandener Art-Favoriten; spätere Favoritenwechsel lösen nur diese UUIDs auf und schreiben die betroffenen Fotos.
+  Eine veränderte Fotozahl oder die ausdrückliche Aktion `Statistik neu aufbauen` führen zum vollständigen Abgleich;
+  ein allgemeiner Metadatenbeobachter ist im SDK nicht dokumentiert.
   Dafür ist kein Import oder Update der Taxonomie-Masterdatenbank nötig.
 - Im Zusatzmodul-Manager stehen nur Plug-in-Version und read-only Suchpaketstatus. Aktualisierung, Backup und
   Rollback bleiben zentral im Arten-Explorer und werden nicht im Plug-in dupliziert.
@@ -709,7 +712,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.21.0 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.21.3 die nutzergeführte Rücknahme, dynamische
 Auswahl, die persistente Lifelist-/Klassenstatistik mit CSV, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 

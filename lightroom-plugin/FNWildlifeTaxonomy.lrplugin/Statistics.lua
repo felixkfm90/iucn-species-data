@@ -91,8 +91,11 @@ function Statistics.build(catalog, options)
     end
     catalog:withReadAccessDo(function()
       local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
+      local rawValuesByPhoto = catalog:batchGetRawMetadata(chunk, { "uuid" })
       for _, photo in ipairs(chunk) do
-        StatisticsIndex.add(index, StatisticsIndex.snapshot(valuesByPhoto[photo] or {}))
+        local values = valuesByPhoto[photo] or {}
+        values.photoUuid = (rawValuesByPhoto[photo] or {}).uuid
+        StatisticsIndex.add(index, StatisticsIndex.snapshot(values))
       end
     end)
 
@@ -130,6 +133,38 @@ end
 
 function Statistics.photoSnapshot(photo)
   return StatisticsIndex.photoSnapshot(photo)
+end
+
+function Statistics.assignmentSnapshot(taxon, rankValues, referenceImage, photoUuid)
+  rankValues = rankValues or {}
+  return StatisticsIndex.snapshot({
+    masterTaxonId = taxon and taxon.masterTaxonId,
+    germanName = taxon and taxon.germanName,
+    scientificName = taxon and taxon.acceptedScientificName,
+    taxonomyFamily = rankValues.family,
+    taxonomyGenus = rankValues.genus,
+    taxonomyClass = rankValues.class,
+    referenceImage = referenceImage and "yes" or "no",
+    photoUuid = photoUuid,
+  })
+end
+
+function Statistics.emptySnapshot()
+  return StatisticsIndex.snapshot({})
+end
+
+function Statistics.referenceSnapshot(snapshot, referenceImage)
+  snapshot = snapshot or {}
+  return StatisticsIndex.snapshot({
+    masterTaxonId = snapshot.masterTaxonId,
+    germanName = snapshot.germanName,
+    scientificName = snapshot.scientificName,
+    taxonomyFamily = snapshot.family,
+    taxonomyGenus = snapshot.genus,
+    taxonomyClass = snapshot.className,
+    referenceImage = referenceImage and "yes" or "no",
+    photoUuid = snapshot.photoUuid,
+  })
 end
 
 return Statistics

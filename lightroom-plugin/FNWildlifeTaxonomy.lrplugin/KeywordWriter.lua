@@ -487,8 +487,13 @@ function KeywordWriter.assign(catalog, photos, taxon)
       setAssignmentText(photo, "assignedAt", assignedAt)
     end
     local afterStatistics = {}
-    for index, photo in ipairs(photos) do
-      afterStatistics[index] = Statistics.photoSnapshot(photo)
+    for index in ipairs(photos) do
+      afterStatistics[index] = Statistics.assignmentSnapshot(
+        taxon,
+        rankValues,
+        beforeStatistics[index].referenceImage,
+        beforeStatistics[index].photoUuid
+      )
     end
     PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end, function(reason)
@@ -534,8 +539,8 @@ function KeywordWriter.remove(catalog, photos)
       clearPluginMetadata(photo)
     end
     local afterStatistics = {}
-    for index, photo in ipairs(photos) do
-      afterStatistics[index] = Statistics.photoSnapshot(photo)
+    for index in ipairs(photos) do
+      afterStatistics[index] = Statistics.emptySnapshot()
     end
     PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end)

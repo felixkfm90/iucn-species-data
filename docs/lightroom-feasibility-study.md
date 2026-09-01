@@ -1,8 +1,8 @@
 # Machbarkeitsstudie: Lightroom-Classic-Integration
 
-Stand: 2026-08-31
+Stand: 2026-09-01
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.21.0 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.21.3 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -399,8 +399,17 @@ gespeicherte `masterTaxonId`, bevor die Zuweisung als erfolgreich gilt. Der Ausw
 0.4.17.0 begrenzte Leseblöcke; der Yield liegt außerhalb des `withReadAccessDo`-Callbacks. Version 0.4.21.0
 speichert einen kompakten kataloggebundenen Statistikindex, baut ihn nichtmodal mit Checkpoints und
 Pause/Fortsetzen auf, aktualisiert ihn durch eigene Schreibaktionen inkrementell und exportiert die Lifelist als
-UTF-8-CSV. Klassen lassen sich bis zu ihren enthaltenen Arten aufklappen. Der SDK-Vergleich bestätigt keinen
-allgemeinen Metadatenänderungsbeobachter; externe Änderungen werden deshalb über `Index neu aufbauen` abgeglichen.
+UTF-8-CSV. Klassen werden kompakt mit Art- und Fotozahl angezeigt; die vollständige Artenliste bleibt im CSV,
+nachdem die dynamische Dialoghöhe im praktischen Lightroom-Test nur eine Zeile darstellte. Der SDK-Vergleich bestätigt keinen
+allgemeinen Metadatenänderungsbeobachter; externe Änderungen werden deshalb über `Statistik neu aufbauen` abgeglichen.
+Version 0.4.21.1 korrigiert die im Großkatalogtest erkannte verzögerte Sichtbarkeit neuer Plug-in-Felder innerhalb
+des Schreibcallbacks, indem sie das Statistikdelta aus dem vorgesehenen neuen Zustand bildet. Version 0.4.21.2
+entfernt die instabile Klassen-Aufklappansicht. Der globale Statistikaufbau speichert nun die persistenten Foto-UUIDs
+vorhandener Favoriten; die Favoritenaktion löst diese anschließend gezielt über `findPhotoByUuid` auf und schreibt
+nur die tatsächlich betroffenen Fotos.
+Version 0.4.21.3 dokumentiert die verbleibende Plattformgrenze der Vorschau: Das zuverlässige native `simple_list`
+hat unter Windows eine weiße Systemfläche und bietet laut SDK keine eigene Hintergrundfarbe. Der farblich steuerbare
+`scrolled_view` bleibt verworfen, weil er im praktischen Test Taxonomiezeilen abschnitt oder ausblendete.
 Die erneute SDK-Prüfung am
 2026-08-28 bestätigt keinen Erweiterungspunkt für das normale Foto-Rechtsklickmenü; die Aktionen bleiben über die
 dokumentierten `Plug-in-Extras`-Menüs erreichbar. Der praktische Test widerlegte die Enter-Annahme im dauerhaft

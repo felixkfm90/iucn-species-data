@@ -982,7 +982,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.21.0` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.21.3` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1022,7 +1022,8 @@ irreführende pauschale Übersetzung als Katalogbelegung bleiben entfernt. Callb
 Als abgegrenzte Erweiterungen sind genau ein bestätigungspflichtiges `Favoritenbild der Art` je Art, ein idempotenter
 Satz aus den drei intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` sowie eine
 persistente Katalogstatistik mit `Lifelist`, Taxonomie-Abdeckung, UTF-8-CSV-Export,
-aufklappbarer Klassen-/Artenübersicht und den zehn am häufigsten fotografierten Arten umgesetzt. Die eigene Metadatenansicht
+kompakter Klassenübersicht und den zehn am häufigsten fotografierten Arten umgesetzt. Die Arten je Klasse stehen
+vollständig im CSV-Export; die im Lightroom-Dialog unzuverlässig skalierende Aufklappansicht wurde entfernt. Die eigene Metadatenansicht
 `FN Wildlife – Foto & Taxonomie` verbindet sinnvolle Standard-Fotofelder mit Namen und den wichtigsten
 Taxonomierängen. Rangfelder heißen dort knapp `Reich`, `Klasse`, `Ordnung` und entsprechend, ohne den redundanten
 Zusatz `(wissenschaftlich)`; gespeichert werden weiterhin die wissenschaftlichen Taxonwerte. Für die vollständige Hierarchie steht zusätzlich `FN Wildlife – vollständige Taxonomie` bereit;
@@ -1033,7 +1034,16 @@ inkrementell aktualisiert. Sein einmaliger Aufbau läuft in einem nichtmodalen F
 gebündelt, speichert alle 5.000 Fotos einen Checkpoint und kann pausiert sowie fortgesetzt werden. Lightroom bleibt
 dabei bedienbar; Yield erfolgt nur zwischen den SDK-Lesezugriffen. Eine veränderte Kataloggröße erzwingt einen
 Neuaufbau. Weil das SDK keinen allgemeinen Metadatenbeobachter bereitstellt, steht für sonstige externe Änderungen
-`Index neu aufbauen` zur Verfügung. Die Statistik benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
+`Statistik neu aufbauen` zur Verfügung. Version 0.4.21.1 bildet die direkten Deltas aus den beabsichtigten neuen
+Plug-in-Werten statt aus Lightrooms innerhalb des Schreibcallbacks noch altem Lesestand; Zuweisung und Rücknahme
+wurden damit im Großkatalog praktisch bestätigt. Version 0.4.21.2 zeigt Klassen nur noch kompakt mit Art- und
+Fotoanzahl. Der CSV-Export bleibt die vollständige Artenaufschlüsselung. Der globale Statistikaufbau speichert je
+Art die persistenten Lightroom-Foto-UUIDs vorhandener Favoriten. Die Art-Favoriten-Aktion löst danach nur diese
+UUIDs gezielt auf und schreibt ausschließlich das neue sowie tatsächlich vorhandene bisherige Favoritenbild. Das
+dafür erhöhte Indexschema erfordert nach dem Wechsel auf 0.4.21.2 genau einen Neuaufbau. Der UUID-basierte
+Favoritenwechsel wurde anschließend praktisch bestätigt. Ein alter oder fehlender Index verlangt sichtbar
+`Statistik neu aufbauen`; beim Klick erfolgt kein versteckter Katalogscan. Die Statistik
+benötigt kein Taxonomie-Datenbankupdate. Die Sammlungen werten ausschließlich die Plug-in-Metadaten
 `referenceImage` und `masterTaxonId` aus und hängen nicht von normalen Fotometadaten oder Lightroom-Stichwörtern ab.
 `Taxonomie zugewiesen` erkennt das reservierte Master-ID-Präfix `mtx_`; `Taxonomie fehlt` ist die ausdrücklich
 ausgeschlossene Gegenmenge. Die praktisch umgekehrt ausgewerteten Leerheitsoperationen werden nicht verwendet.
