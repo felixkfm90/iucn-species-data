@@ -13,6 +13,13 @@ local FIELD_IDS = {
   "taxonomyGenus",
   "taxonomyClass",
   "referenceImage",
+  "fnLocation",
+  "fnCity",
+  "fnStateProvince",
+  "fnCountry",
+  "fnIsoCountryCode",
+  "fnCaptureMonth",
+  "fnCaptureYear",
 }
 
 local function photoIdentifier(photo)
@@ -135,9 +142,28 @@ function Statistics.photoSnapshot(photo)
   return StatisticsIndex.photoSnapshot(photo)
 end
 
-function Statistics.assignmentSnapshot(taxon, rankValues, referenceImage, photoUuid)
+local function copyLocationTime(values, snapshot)
+  snapshot = snapshot or {}
+  values.fnLocation = snapshot.fnLocation
+  values.fnCity = snapshot.fnCity
+  values.fnStateProvince = snapshot.fnStateProvince
+  values.fnCountry = snapshot.fnCountry
+  values.fnIsoCountryCode = snapshot.fnIsoCountryCode
+  values.fnCaptureMonth = snapshot.fnCaptureMonth
+  values.fnCaptureYear = snapshot.fnCaptureYear
+  return values
+end
+
+function Statistics.assignmentSnapshot(
+  taxon,
+  rankValues,
+  referenceImage,
+  photoUuid,
+  previousSnapshot,
+  locationTimeValues
+)
   rankValues = rankValues or {}
-  return StatisticsIndex.snapshot({
+  local values = copyLocationTime({
     masterTaxonId = taxon and taxon.masterTaxonId,
     germanName = taxon and taxon.germanName,
     scientificName = taxon and taxon.acceptedScientificName,
@@ -146,16 +172,40 @@ function Statistics.assignmentSnapshot(taxon, rankValues, referenceImage, photoU
     taxonomyClass = rankValues.class,
     referenceImage = referenceImage and "yes" or "no",
     photoUuid = photoUuid,
-  })
+  }, previousSnapshot)
+  if locationTimeValues ~= false and locationTimeValues ~= nil then
+    copyLocationTime(values, locationTimeValues)
+  end
+  return StatisticsIndex.snapshot(values)
 end
 
-function Statistics.emptySnapshot()
-  return StatisticsIndex.snapshot({})
+function Statistics.emptySnapshot(previousSnapshot)
+  return StatisticsIndex.snapshot(copyLocationTime({}, previousSnapshot))
+end
+
+function Statistics.locationTimeSnapshot(snapshot, locationTimeValues)
+  snapshot = snapshot or {}
+  local values = {
+    masterTaxonId = snapshot.masterTaxonId,
+    germanName = snapshot.germanName,
+    scientificName = snapshot.scientificName,
+    taxonomyFamily = snapshot.family,
+    taxonomyGenus = snapshot.genus,
+    taxonomyClass = snapshot.className,
+    referenceImage = snapshot.referenceImage and "yes" or "no",
+    photoUuid = snapshot.photoUuid,
+  }
+  if locationTimeValues == false then
+    copyLocationTime(values, snapshot)
+  else
+    copyLocationTime(values, locationTimeValues)
+  end
+  return StatisticsIndex.snapshot(values)
 end
 
 function Statistics.referenceSnapshot(snapshot, referenceImage)
   snapshot = snapshot or {}
-  return StatisticsIndex.snapshot({
+  return StatisticsIndex.snapshot(copyLocationTime({
     masterTaxonId = snapshot.masterTaxonId,
     germanName = snapshot.germanName,
     scientificName = snapshot.scientificName,
@@ -164,7 +214,7 @@ function Statistics.referenceSnapshot(snapshot, referenceImage)
     taxonomyClass = snapshot.className,
     referenceImage = referenceImage and "yes" or "no",
     photoUuid = snapshot.photoUuid,
-  })
+  }, snapshot))
 end
 
 return Statistics

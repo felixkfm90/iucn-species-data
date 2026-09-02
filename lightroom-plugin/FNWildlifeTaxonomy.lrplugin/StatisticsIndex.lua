@@ -3,7 +3,20 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local StatisticsIndex = {}
 local cleanText = TaxonomyRanks.cleanText
 
-StatisticsIndex.SCHEMA_VERSION = 2
+StatisticsIndex.SCHEMA_VERSION = 3
+
+local LOCATION_FIELDS = {
+  "fnCountry",
+  "fnStateProvince",
+  "fnCity",
+  "fnLocation",
+  "fnIsoCountryCode",
+}
+
+local TIME_FIELDS = {
+  "fnCaptureYear",
+  "fnCaptureMonth",
+}
 
 local function countKeys(values)
   local count = 0
@@ -24,6 +37,69 @@ local function increment(values, key, amount)
   else
     values[key] = nil
   end
+end
+
+local function newLocationTimeAggregate()
+  return {
+    photoCount = 0,
+    locationPhotoCount = 0,
+    timePhotoCount = 0,
+    countries = {},
+    states = {},
+    cities = {},
+    locations = {},
+    years = {},
+    months = {},
+  }
+end
+
+local function hasAnyValue(snapshot, fields)
+  for _, field in ipairs(fields) do
+    if cleanText(snapshot and snapshot[field]) ~= "" then
+      return true
+    end
+  end
+  return false
+end
+
+local function hasValidTaxonomy(snapshot)
+  local masterTaxonId = cleanText(snapshot and snapshot.masterTaxonId)
+  return string.sub(masterTaxonId, 1, 4) == "mtx_"
+end
+
+local function changeCounter(aggregate, field, amount)
+  aggregate[field] = math.max((tonumber(aggregate[field] or 0) or 0) + amount, 0)
+end
+
+local function changeLocationTime(aggregate, snapshot, amount)
+  local hasLocation = hasAnyValue(snapshot, LOCATION_FIELDS)
+  local hasTime = hasAnyValue(snapshot, TIME_FIELDS)
+  if not hasLocation and not hasTime then
+    return
+  end
+  changeCounter(aggregate, "photoCount", amount)
+  if hasLocation then
+    changeCounter(aggregate, "locationPhotoCount", amount)
+  end
+  if hasTime then
+    changeCounter(aggregate, "timePhotoCount", amount)
+  end
+  increment(aggregate.countries, snapshot.fnCountry, amount)
+  increment(aggregate.states, snapshot.fnStateProvince, amount)
+  increment(aggregate.cities, snapshot.fnCity, amount)
+  increment(aggregate.locations, snapshot.fnLocation, amount)
+  increment(aggregate.years, snapshot.fnCaptureYear, amount)
+  increment(aggregate.months, snapshot.fnCaptureMonth, amount)
+end
+
+local function validLocationTimeAggregate(aggregate)
+  return type(aggregate) == "table"
+    and type(aggregate.countries) == "table"
+    and type(aggregate.states) == "table"
+    and type(aggregate.cities) == "table"
+    and type(aggregate.locations) == "table"
+    and type(aggregate.years) == "table"
+    and type(aggregate.months) == "table"
 end
 
 local function displayName(entry)
@@ -54,6 +130,8 @@ function StatisticsIndex.new(totalPhotos)
     families = {},
     genera = {},
     classes = {},
+    locationTime = newLocationTimeAggregate(),
+    taxonomyLocationTime = newLocationTimeAggregate(),
   }
 end
 
@@ -64,6 +142,8 @@ function StatisticsIndex.isValid(index)
     and type(index.families) == "table"
     and type(index.genera) == "table"
     and type(index.classes) == "table"
+    and validLocationTimeAggregate(index.locationTime)
+    and validLocationTimeAggregate(index.taxonomyLocationTime)
 end
 
 function StatisticsIndex.snapshot(values)
@@ -77,6 +157,13 @@ function StatisticsIndex.snapshot(values)
     className = cleanText(values.taxonomyClass),
     referenceImage = cleanText(values.referenceImage) == "yes",
     photoUuid = cleanText(values.photoUuid or values.uuid),
+    fnLocation = cleanText(values.fnLocation),
+    fnCity = cleanText(values.fnCity),
+    fnStateProvince = cleanText(values.fnStateProvince),
+    fnCountry = cleanText(values.fnCountry),
+    fnIsoCountryCode = cleanText(values.fnIsoCountryCode),
+    fnCaptureMonth = cleanText(values.fnCaptureMonth),
+    fnCaptureYear = cleanText(values.fnCaptureYear),
   }
 end
 
@@ -90,12 +177,23 @@ function StatisticsIndex.photoSnapshot(photo)
     taxonomyClass = photo:getPropertyForPlugin(_PLUGIN, "taxonomyClass"),
     referenceImage = photo:getPropertyForPlugin(_PLUGIN, "referenceImage"),
     photoUuid = photo:getRawMetadata("uuid"),
+    fnLocation = photo:getPropertyForPlugin(_PLUGIN, "fnLocation"),
+    fnCity = photo:getPropertyForPlugin(_PLUGIN, "fnCity"),
+    fnStateProvince = photo:getPropertyForPlugin(_PLUGIN, "fnStateProvince"),
+    fnCountry = photo:getPropertyForPlugin(_PLUGIN, "fnCountry"),
+    fnIsoCountryCode = photo:getPropertyForPlugin(_PLUGIN, "fnIsoCountryCode"),
+    fnCaptureMonth = photo:getPropertyForPlugin(_PLUGIN, "fnCaptureMonth"),
+    fnCaptureYear = photo:getPropertyForPlugin(_PLUGIN, "fnCaptureYear"),
   })
 end
 
 function StatisticsIndex.add(index, snapshot)
+  changeLocationTime(index.locationTime, snapshot, 1)
+  if hasValidTaxonomy(snapshot) then
+    changeLocationTime(index.taxonomyLocationTime, snapshot, 1)
+  end
   local masterTaxonId = cleanText(snapshot and snapshot.masterTaxonId)
-  if masterTaxonId == "" then
+  if not hasValidTaxonomy(snapshot) then
     return
   end
   index.assignedPhotos = (tonumber(index.assignedPhotos or 0) or 0) + 1
@@ -149,8 +247,12 @@ function StatisticsIndex.add(index, snapshot)
 end
 
 function StatisticsIndex.remove(index, snapshot)
+  changeLocationTime(index.locationTime, snapshot, -1)
+  if hasValidTaxonomy(snapshot) then
+    changeLocationTime(index.taxonomyLocationTime, snapshot, -1)
+  end
   local masterTaxonId = cleanText(snapshot and snapshot.masterTaxonId)
-  if masterTaxonId == "" then
+  if not hasValidTaxonomy(snapshot) then
     return
   end
   index.assignedPhotos = math.max((tonumber(index.assignedPhotos or 0) or 0) - 1, 0)
@@ -187,6 +289,46 @@ function StatisticsIndex.remove(index, snapshot)
       index.species[masterTaxonId] = nil
     end
   end
+end
+
+local function sortedCounts(values, limit)
+  local rows = {}
+  for name, photoCount in pairs(values or {}) do
+    table.insert(rows, {
+      name = cleanText(name),
+      photoCount = tonumber(photoCount or 0) or 0,
+    })
+  end
+  table.sort(rows, function(left, right)
+    if left.photoCount == right.photoCount then
+      return string.lower(left.name) < string.lower(right.name)
+    end
+    return left.photoCount > right.photoCount
+  end)
+  while #rows > limit do
+    table.remove(rows)
+  end
+  return rows
+end
+
+local function locationTimeResult(aggregate)
+  return {
+    photoCount = tonumber(aggregate.photoCount or 0) or 0,
+    locationPhotoCount = tonumber(aggregate.locationPhotoCount or 0) or 0,
+    timePhotoCount = tonumber(aggregate.timePhotoCount or 0) or 0,
+    countryCount = countKeys(aggregate.countries),
+    stateCount = countKeys(aggregate.states),
+    cityCount = countKeys(aggregate.cities),
+    locationCount = countKeys(aggregate.locations),
+    yearCount = countKeys(aggregate.years),
+    monthCount = countKeys(aggregate.months),
+    topCountries = sortedCounts(aggregate.countries, 1),
+    topStates = sortedCounts(aggregate.states, 1),
+    topCities = sortedCounts(aggregate.cities, 1),
+    topLocations = sortedCounts(aggregate.locations, 1),
+    topYears = sortedCounts(aggregate.years, 1),
+    topMonths = sortedCounts(aggregate.months, 1),
+  }
 end
 
 function StatisticsIndex.applyChanges(index, beforeSnapshots, afterSnapshots)
@@ -294,6 +436,8 @@ function StatisticsIndex.result(index)
     topSpecies = topSpecies,
     classBreakdown = classBreakdown,
     lifelist = lifelist,
+    locationTime = locationTimeResult(index.locationTime),
+    taxonomyLocationTime = locationTimeResult(index.taxonomyLocationTime),
     generatedAt = cleanText(index.generatedAt),
   }
 end

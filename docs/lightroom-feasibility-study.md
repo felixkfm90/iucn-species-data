@@ -2,7 +2,7 @@
 
 Stand: 2026-09-01
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.21.3 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.23.16 sind unter
 `docs/lightroom-search-package.md` dokumentiert
 
 ## 1. Ziel und Ergebnis
@@ -410,6 +410,12 @@ nur die tatsächlich betroffenen Fotos.
 Version 0.4.21.3 dokumentiert die verbleibende Plattformgrenze der Vorschau: Das zuverlässige native `simple_list`
 hat unter Windows eine weiße Systemfläche und bietet laut SDK keine eigene Hintergrundfarbe. Der farblich steuerbare
 `scrolled_view` bleibt verworfen, weil er im praktischen Test Taxonomiezeilen abschnitt oder ausblendete.
+Version 0.4.22.1 verwendet für die erste Orts-/Zeitstufe ausschließlich dokumentierte Lightroom-Metadatenfelder:
+Ortsteil, Stadt, Bundesland/Region, Land/Region, ISO-Ländercode sowie `dateTimeOriginal`. Die
+Konvertierung in deutschen Monat und Jahr erfolgt über `LrDate.timestampToComponents`. Das dokumentierte GPS-Rohfeld
+erkennt Fotos mit nicht direkt lesbaren Lightroom-Ortsvorschlägen. Diese werden aus kleinen temporären Lightroom-
+Exporten übernommen; ein eigener Reverse-Geocoding-Dienst, direkter Katalogzugriff und katalogweite Läufe bleiben ausgeschlossen. Der technische Vertrag
+ist automatisiert geprüft; die praktische Lightroom-Abnahme steht noch aus.
 Die erneute SDK-Prüfung am
 2026-08-28 bestätigt keinen Erweiterungspunkt für das normale Foto-Rechtsklickmenü; die Aktionen bleiben über die
 dokumentierten `Plug-in-Extras`-Menüs erreichbar. Der praktische Test widerlegte die Enter-Annahme im dauerhaft

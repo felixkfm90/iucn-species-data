@@ -61,6 +61,86 @@ local fields = {
     searchable = false,
     browsable = false,
   },
+  {
+    id = "locationTimeKeywordIds",
+    version = 1,
+    title = "Interne Orts-/Zeit-Stichwort-IDs",
+    dataType = "string",
+    searchable = false,
+    browsable = false,
+  },
+  {
+    id = "locationTimeKeywordNames",
+    version = 1,
+    title = "Interne Orts-/Zeit-Stichwortnamen",
+    dataType = "string",
+    searchable = false,
+    browsable = false,
+  },
+  {
+    id = "fnLocation",
+    version = 1,
+    title = "FN-Ortsteil",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnCity",
+    version = 1,
+    title = "FN-Stadt",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnStateProvince",
+    version = 1,
+    title = "FN-Bundesland/Region",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnCountry",
+    version = 1,
+    title = "FN-Land/Region",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnIsoCountryCode",
+    version = 1,
+    title = "FN-ISO-Ländercode",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnCaptureMonth",
+    version = 1,
+    title = "FN-Aufnahmemonat",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "fnCaptureYear",
+    version = 1,
+    title = "FN-Aufnahmejahr",
+    dataType = "string",
+    searchable = true,
+    browsable = true,
+  },
+  {
+    id = "locationTimeAssignedAt",
+    version = 1,
+    title = "Orts-/Zeitstichwörter aktualisiert am",
+    dataType = "string",
+    searchable = false,
+    browsable = false,
+  },
 }
 
 for _, rank in ipairs(TaxonomyRanks.all()) do
@@ -96,6 +176,6 @@ table.insert(fields, {
 })
 
 return {
-  schemaVersion = 6,
+  schemaVersion = 7,
   metadataFieldsForPhotos = fields,
 }

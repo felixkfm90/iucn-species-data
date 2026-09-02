@@ -24,6 +24,12 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(info, /Taxonomie zuweisen/);
   assert.match(info, /title = "Taxonomie entfernen"/);
   assert.match(info, /file\s*=\s*"RemoveTaxonomy\.lua"/);
+  assert.match(info, /title = "Orts- und Zeitstichwörter hinzufügen \.\.\."/);
+  assert.match(info, /file\s*=\s*"AddLocationTime\.lua"/);
+  assert.match(info, /title = "Orts- und Zeitstichwörter entfernen \.\.\."/);
+  assert.match(info, /file\s*=\s*"RemoveLocationTime\.lua"/);
+  assert.match(info, /title = "Orts- und Zeitstichwörter aktualisieren \.\.\."/);
+  assert.match(info, /file\s*=\s*"UpdateLocationTime\.lua"/);
   assert.match(info, /Ausgewähltes Foto als Favoritenbild der Art markieren/);
   assert.match(info, /FN Wildlife-Sammlungen einrichten/);
   assert.match(info, /Taxonomie-Statistik/);
@@ -36,7 +42,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.21.3");
+  assert.equal(version.slice(1).join("."), "0.4.23.16");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -51,6 +57,16 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     "taxonRank",
     "taxonomyPath",
     "taxonomyKeywordIds",
+    "locationTimeKeywordIds",
+    "locationTimeKeywordNames",
+    "fnLocation",
+    "fnCity",
+    "fnStateProvince",
+    "fnCountry",
+    "fnIsoCountryCode",
+    "fnCaptureMonth",
+    "fnCaptureYear",
+    "locationTimeAssignedAt",
     "referenceImage",
     "assignedAt",
   ]) {
@@ -58,7 +74,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   }
   assert.match(metadata, /local TaxonomyRanks = require "TaxonomyRanks"/);
   assert.match(metadata, /for _, rank in ipairs\(TaxonomyRanks\.all\(\)\)/);
-  assert.match(metadata, /schemaVersion\s*=\s*6/);
+  assert.match(metadata, /schemaVersion\s*=\s*7/);
   assert.match(
     metadata,
     /id\s*=\s*TaxonomyRanks\.metadataFieldId\(rank\.id\)[\s\S]*?version\s*=\s*2[\s\S]*?title\s*=\s*rank\.label/,
@@ -80,6 +96,23 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     metadata,
     /id\s*=\s*"taxonomyKeywordIds"[\s\S]*?version\s*=\s*1[\s\S]*?searchable\s*=\s*false/,
   );
+  for (const field of [
+    "locationTimeKeywordIds",
+    "locationTimeKeywordNames",
+    "fnLocation",
+    "fnCity",
+    "fnStateProvince",
+    "fnCountry",
+    "fnIsoCountryCode",
+    "fnCaptureMonth",
+    "fnCaptureYear",
+    "locationTimeAssignedAt",
+  ]) {
+    assert.match(
+      metadata,
+      new RegExp(`id\\s*=\\s*"${field}"[\\s\\S]*?version\\s*=\\s*1`),
+    );
+  }
   assert.match(
     metadata,
     /id\s*=\s*"masterTaxonId"[\s\S]*?searchable\s*=\s*true[\s\S]*?browsable\s*=\s*false/,
@@ -236,7 +269,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /windowWillClose/);
   assert.match(window, /activeDialogControls:toFront\(\)/);
   assert.match(window, /LrTasks\.pcall\(TaxonomyHelper\.request/);
-  assert.match(window, /LrTasks\.pcall\(KeywordWriter\.assign/);
+  assert.match(window, /LrTasks\.pcall\(\s*KeywordWriter\.assign/);
   assert.match(window, /local activePackage = TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(window, /selectedPackageId ~= cleanText\(activePackage\.packageId\)/);
   assert.match(
@@ -346,7 +379,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /removeManagedKeywords/);
   assert.match(writer, /local keyword = createKeyword\(catalog, name, nil\)\s*\n\s*photo:removeKeyword\(keyword\)/);
-  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo\)/);
+  assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo, protectedNames\)/);
   assert.match(writer, /local function managedKeywordNamesFromMetadata\(photo\)/);
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "taxonomyPath"\)/);
   assert.match(
@@ -358,13 +391,13 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(writer, /clearPluginMetadata/);
   assert.match(
     writer,
-    /function KeywordWriter\.remove[\s\S]*runWithWriteAccess\(catalog, "FN Wildlife Taxonomie entfernen"[\s\S]*removeCurrentManagedKeywords\(catalog, photo\)[\s\S]*clearPluginMetadata\(photo\)/,
+    /function KeywordWriter\.remove[\s\S]*runWithWriteAccess\(catalog, "FN Wildlife Taxonomie entfernen"[\s\S]*removeCurrentManagedKeywords\([\s\S]*?catalog,[\s\S]*?photo,[\s\S]*?LocationTimeWriter\.managedKeywordNameSet\(photo\)[\s\S]*?clearPluginMetadata\(photo\)/,
     "Stichwörter müssen im selben Schreibzugriff und vor den Plug-in-Metadaten entfernt werden",
   );
   assert.match(writer, /PluginState\.applyStatisticsPhotoChanges\(catalog, beforeStatistics, afterStatistics\)/);
   assert.match(writer, /Statistics\.assignmentSnapshot\(/);
   assert.match(writer, /beforeStatistics\[index\]\.referenceImage/);
-  assert.match(writer, /Statistics\.emptySnapshot\(\)/);
+  assert.match(writer, /Statistics\.emptySnapshot\(beforeStatistics\[index\]\)/);
   assert.doesNotMatch(
     writer,
     /afterStatistics\[index\]\s*=\s*Statistics\.photoSnapshot\(photo\)/,
@@ -398,6 +431,151 @@ test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden"
   assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
   assert.match(removal, /Andere Lightroom-Stichwörter/);
   assert.match(removal, /"Von "[\s\S]*result\.photoCount[\s\S]*" wurde die Taxonomie entfernt\."/);
+});
+
+test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightroom-Felder und getrennte FN-Metadaten", async () => {
+  const info = await source("Info.lua");
+  const addAction = await source("AddLocationTime.lua");
+  const removeAction = await source("RemoveLocationTime.lua");
+  const updateAction = await source("UpdateLocationTime.lua");
+  const menu = await source("LocationTimeMenu.lua");
+  const locationTime = await source("LocationTimeWriter.lua");
+  const suggestions = await source("LocationSuggestionReader.lua");
+  const taxonomy = await source("KeywordWriter.lua");
+  const assignmentWindow = await source("AssignmentWindow.lua");
+  for (const title of [
+    "Orts- und Zeitstichwörter hinzufügen \.\.\.",
+    "Orts- und Zeitstichwörter entfernen \.\.\.",
+    "Orts- und Zeitstichwörter aktualisieren \.\.\.",
+  ]) {
+    assert.match(info, new RegExp(title));
+  }
+  assert.match(addAction, /LocationTimeMenu"\)\.run\("add"\)/);
+  assert.match(removeAction, /LocationTimeMenu"\)\.run\("remove"\)/);
+  assert.match(updateAction, /LocationTimeMenu"\)\.run\("update"\)/);
+  assert.match(menu, /catalog:getTargetPhotos\(\)/);
+  assert.match(menu, /LrDialogs\.confirm/);
+  assert.match(menu, /LrTasks\.pcall\(/);
+  assert.match(menu, /KeywordWriter\.taxonomyKeywordNameSet/);
+  assert.match(menu, /\(FN Ort\)- und \(FN Zeit\)-Stichwörter/);
+  for (const field of ["location", "city", "stateProvince", "country", "isoCountryCode"]) {
+    assert.ok(locationTime.includes(`readFormatted(photo, "${field}")`));
+  }
+  assert.match(locationTime, /fnStateProvince = readFormatted\(photo, "stateProvince"\)/);
+  assert.match(locationTime, /photo:getRawMetadata\("dateTimeOriginal"\)/);
+  assert.match(locationTime, /photo:getRawMetadata\("gps"\)/);
+  assert.match(locationTime, /tonumber\(gps\.latitude\)/);
+  assert.match(locationTime, /tonumber\(gps\.longitude\)/);
+  assert.match(locationTime, /LrDate\.timestampToComponents\(timestamp\)/);
+  assert.match(locationTime, /if type\(first\) == "table" then/);
+  assert.match(locationTime, /first\.year or first\[1\]/);
+  assert.match(locationTime, /photo:getFormattedMetadata\("dateTimeOriginal"\)/);
+  assert.match(locationTime, /captureDiagnostic = plan\.captureDiagnostic/);
+  assert.match(menu, /Lesehinweis:/);
+  assert.match(locationTime, /datePartsFromText\(formattedValue\)/);
+  assert.match(locationTime, /string\.find\(lowerText, string\.lower\(monthName\), 1, true\)/);
+  assert.match(locationTime, /"Januar"[\s\S]*"Dezember"/);
+  assert.match(locationTime, /local LOCATION_KEYWORD_SUFFIX = " \(FN Ort\)"/);
+  assert.match(locationTime, /local TIME_KEYWORD_SUFFIX = " \(FN Zeit\)"/);
+  assert.match(locationTime, /name == cleanText\(LOCATION_KEYWORD_SUFFIX\)/);
+  assert.match(locationTime, /name == cleanText\(TIME_KEYWORD_SUFFIX\)/);
+  assert.match(locationTime, /values\.fnCountry/);
+  assert.match(locationTime, /values\.fnStateProvince/);
+  assert.match(locationTime, /values\.fnCity/);
+  assert.match(locationTime, /values\.fnLocation/);
+  assert.match(locationTime, /values\.fnCaptureMonth/);
+  assert.match(locationTime, /values\.fnCaptureYear/);
+  assert.match(locationTime, /local text = cleanText\(value\)\s*if text ~= "" then\s*appendUnique/);
+  assert.doesNotMatch(locationTime, /appendUnique\(names, seen, values\.fnIsoCountryCode\)/);
+  assert.match(locationTime, /locationTimeKeywordIds/);
+  assert.match(locationTime, /locationTimeKeywordNames/);
+  assert.match(locationTime, /locationTimeAssignedAt/);
+  assert.match(locationTime, /function LocationTimeWriter\.prepare\(catalog, photos, options\)/);
+  assert.doesNotMatch(locationTime, /batchGetRawMetadata|batchGetFormattedMetadata/);
+  assert.ok(
+    menu.indexOf("LocationTimeWriter.prepare(catalog, photos, {")
+      < menu.indexOf("LrTasks.pcall("),
+    "Lightroom-Lesezugriffe müssen vor der nicht yield-fähigen pcall-Grenze liegen",
+  );
+  assert.match(locationTime, /missingLocationPhotoCount = 0/);
+  assert.match(locationTime, /gpsWithoutStoredLocationPhotoCount = 0/);
+  assert.match(locationTime, /missingGpsAndLocationPhotoCount = 0/);
+  assert.match(locationTime, /missingTimePhotoCount = 0/);
+  assert.match(menu, /Lightroom lieferte dafür aber keine exportierbaren Ortsvorschläge\./);
+  assert.match(menu, /Adressvorschläge beim Export übernommen werden/);
+  assert.match(locationTime, /local LocationSuggestionReader = require "LocationSuggestionReader"/);
+  assert.match(locationTime, /LocationSuggestionReader\.resolve\(suggestionPhotos\)/);
+  assert.match(locationTime, /resolveSuggestedLocations == true/);
+  assert.match(suggestions, /local LrExportSession = import "LrExportSession"/);
+  assert.match(suggestions, /local LrTasks = import "LrTasks"/);
+  assert.match(suggestions, /LR_format = "JPEG"/);
+  assert.match(suggestions, /LR_embeddedMetadataOption = "all"/);
+  assert.match(suggestions, /LR_removeLocationMetadata = false/);
+  assert.match(suggestions, /session:renditions\(/);
+  assert.match(suggestions, /session:doExportOnNewTask\(\)/);
+  assert.match(suggestions, /LrTasks\.sleep\(0\.1\)/);
+  assert.ok(
+    suggestions.indexOf("session:doExportOnNewTask()")
+      < suggestions.indexOf("session:renditions({"),
+    "Die temporäre Export-Session muss vor dem Warten auf Renditions gestartet werden",
+  );
+  assert.match(suggestions, /rendition:waitForRender\(\)/);
+  assert.match(suggestions, /Iptc4xmpCore:Location/);
+  assert.match(suggestions, /photoshop:City/);
+  assert.match(suggestions, /photoshop:State/);
+  assert.match(suggestions, /photoshop:Country/);
+  assert.match(suggestions, /Iptc4xmpCore:CountryCode/);
+  assert.match(suggestions, /iptcValue\(app13, 92\)/);
+  assert.match(suggestions, /iptcValue\(app13, 90\)/);
+  assert.match(suggestions, /iptcValue\(app13, 95\)/);
+  assert.match(suggestions, /iptcValue\(app13, 101\)/);
+  assert.match(suggestions, /iptcValue\(app13, 100\)/);
+  assert.match(suggestions, /cleanupDirectory\(outputDirectory\)/);
+  assert.doesNotMatch(suggestions, /LrHttp|\.lrcat|sqlite/i);
+  const assignmentFunction = assignmentWindow.slice(
+    assignmentWindow.indexOf("local function assign()"),
+    assignmentWindow.indexOf("local function openCorrection()"),
+  );
+  assert.ok(
+    assignmentFunction.indexOf("LocationTimeWriter.prepare(catalog, photos")
+      < assignmentFunction.indexOf("LrTasks.pcall("),
+    "Ortsvorschläge müssen vor der nicht yield-fähigen Zuweisungs-pcall-Grenze aufgelöst werden",
+  );
+  assert.match(assignmentFunction, /resolveSuggestedLocations = true/);
+  assert.match(locationTime, /function LocationTimeWriter\.applyPrepared\(/);
+  assert.match(locationTime, /function LocationTimeWriter\.execute\(/);
+  assert.match(locationTime, /catalog:withWriteAccessDo\(/);
+  assert.match(locationTime, /timeout = WRITE_ACCESS_TIMEOUT_SECONDS/);
+  assert.match(locationTime, /local callbackResult = nil/);
+  assert.match(locationTime, /callbackResult = callback\(\)/);
+  assert.match(locationTime, /if completed then\s*return callbackResult/);
+  assert.doesNotMatch(
+    locationTime,
+    /local result = catalog:withWriteAccessDo\(/,
+    "Das SDK-Ergebnis von withWriteAccessDo ist nicht das fachliche Aktionsergebnis",
+  );
+  assert.match(menu, /tonumber\(result and result\.skippedPhotoCount or 0\) or 0/);
+  assert.match(locationTime, /Statistics\.photoSnapshot\(photo\)/);
+  assert.match(locationTime, /Statistics\.locationTimeSnapshot\(/);
+  assert.match(locationTime, /PluginState\.applyStatisticsPhotoChanges\(/);
+  assert.match(taxonomy, /locationTimeResult\.afterValues\[index\]/);
+  assert.match(taxonomy, /LocationTimeWriter\.prepare\(catalog, photos, \{ resolveSuggestedLocations = false \}\)/);
+  assert.match(taxonomy, /Statistics\.emptySnapshot\(beforeStatistics\[index\]\)/);
+  const existingAssignment = locationTime.slice(
+    locationTime.indexOf("local function existingAssignment"),
+    locationTime.indexOf("local function removeStoredKeywords"),
+  );
+  assert.match(existingAssignment, /for _, field in ipairs\(VALUE_FIELDS\) do/);
+  assert.doesNotMatch(existingAssignment, /locationTimeAssignedAt|storedKeywordNames/);
+  assert.doesNotMatch(locationTime, /getAllPhotos|LrHttp|reverse.?geocod/i);
+  assert.match(taxonomy, /local LocationTimeWriter = require "LocationTimeWriter"/);
+  assert.match(
+    taxonomy,
+    /LocationTimeWriter\.prepare\(catalog, photos, \{ resolveSuggestedLocations = false \}\)/,
+  );
+  assert.match(taxonomy, /LocationTimeWriter\.applyPrepared\([\s\S]*?"add"/);
+  assert.match(taxonomy, /LocationTimeWriter\.managedKeywordNameSet\(photo\)/);
+  assert.match(taxonomy, /function KeywordWriter\.taxonomyKeywordNameSet\(photo\)/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {
@@ -485,12 +663,28 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(state, /catalog:setPropertyForPlugin\(_PLUGIN, field, value\)/);
   assert.match(state, /withPrivateWriteAccessDo/);
   assert.match(state, /applyStatisticsPhotoChanges/);
-  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*2/);
+  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*3/);
   assert.match(index, /function StatisticsIndex\.applyChanges/);
   assert.match(index, /referenceImageUuids/);
   assert.match(index, /photoUuid/);
   assert.match(index, /lifelist = lifelist/);
   assert.match(index, /classBreakdown = classBreakdown/);
+  assert.match(index, /locationTime = locationTimeResult\(index\.locationTime\)/);
+  assert.match(index, /taxonomyLocationTime = locationTimeResult\(index\.taxonomyLocationTime\)/);
+  assert.match(index, /string\.sub\(masterTaxonId, 1, 4\) == "mtx_"/);
+  assert.match(index, /topCountries = sortedCounts\(aggregate\.countries, 1\)/);
+  assert.match(index, /topMonths = sortedCounts\(aggregate\.months, 1\)/);
+  for (const field of [
+    "fnLocation",
+    "fnCity",
+    "fnStateProvince",
+    "fnCountry",
+    "fnCaptureMonth",
+    "fnCaptureYear",
+  ]) {
+    assert.match(index, new RegExp(field));
+    assert.match(statistics, new RegExp(`"${field}"`));
+  }
   assert.match(statistics, /catalog:getAllPhotos\(\)/);
   assert.match(statistics, /READ_CHUNK_SIZE\s*=\s*500/);
   assert.match(statistics, /CHECKPOINT_CHUNK_COUNT\s*=\s*10/);
@@ -501,6 +695,7 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(statistics, /PluginState\.saveStatisticsIndex/);
   assert.match(statistics, /function Statistics\.assignmentSnapshot/);
   assert.match(statistics, /function Statistics\.emptySnapshot/);
+  assert.match(statistics, /function Statistics\.locationTimeSnapshot/);
   assert.match(statistics, /function Statistics\.referenceSnapshot/);
   assert.match(statistics, /end\)\s*\n\s*processedPhotos = chunkEnd[\s\S]*?options\.progress\(processedPhotos, totalPhotos\)/);
   assert.doesNotMatch(statistics, /catalog:withReadAccessDo\(function\(\)[\s\S]*?LrTasks\.yield\(\)/);
@@ -528,6 +723,19 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /Actinopterygii = "Strahlenflosser"/);
   assert.match(dialog, /Am häufigsten fotografierte Arten/);
   assert.match(dialog, /Noch keine Arten zugewiesen/);
+  assert.match(dialog, /FN-Orte und FN-Zeiten/);
+  assert.match(dialog, /Alle FN-Orts-\/Zeitfotos/);
+  assert.match(dialog, /Mit Taxonomie/);
+  assert.match(dialog, /Länder/);
+  assert.match(dialog, /Bundesländer\/Regionen/);
+  assert.match(dialog, /Städte/);
+  assert.match(dialog, /Ortsdetails/);
+  assert.match(dialog, /Jahre/);
+  assert.match(dialog, /Monate/);
+  assert.match(
+    dialog,
+    /locationTimeText\(statistics\.locationTime\),\s*7,\s*45/,
+  );
 });
 
 test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder", async () => {
@@ -574,8 +782,11 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
   assert.match(fullTagset, /FN Wildlife – vollständige Taxonomie/);
   assert.match(fullTagset, /MetadataTagsetFields\.full\(\)/);
   const visibleTagsets = `${tagset}\n${fullTagset}\n${fields}`;
-  assert.doesNotMatch(visibleTagsets, /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds/);
-  assert.match(provider, /Version: 0\.4\.21\.3/);
+  assert.doesNotMatch(
+    visibleTagsets,
+    /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
+  );
+  assert.match(provider, /Version: 0\.4\.23\.16/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

@@ -1038,8 +1038,8 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.21.3 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
-Refresh praktisch bestätigt; persistenter Statistikindex, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
+separaten Testkatalog bestätigt; Version 0.4.23.16 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+Refresh praktisch bestätigt; Orts-/Zeitaktionen, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
 umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
@@ -1055,7 +1055,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   für vollständige Taxonomie sowie Mehrfachzuweisung sind implementiert und automatisiert getestet. Einzel- und
   Mehrfachzuweisung wurden am vorbereiteten separaten Lightroom-Testkatalog praktisch bestätigt; Details:
   `docs/lightroom-search-package.md`;
-- 10.3: **MVP-Ausbau bis Version 0.4.21.3 am 2026-09-01 umgesetzt und automatisiert geprüft; die vorherigen
+- 10.3: **MVP-Ausbau bis Version 0.4.22.1 am 2026-09-01 umgesetzt und automatisiert geprüft; die vorherigen
   Grundabläufe wurden praktisch bestätigt, der Reparaturstand benötigt noch den gezielten Lightroom-Test.** Das deutsche
   schwebende Zuweisungsfenster bleibt
   bei der Bildauswahl geöffnet, zeigt bei einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei
@@ -1087,7 +1087,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und
   den wichtigsten Rängen. Die Rangfelder verwenden kurze Titel ohne den redundanten Zusatz `(wissenschaftlich)`;
   `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.21.3 am 2026-09-01 umgesetzt und automatisiert geprüft;
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.23.16 am 2026-09-02 umgesetzt und automatisiert geprüft;
   Statistikdeltas und UUID-basierter Art-Favorit wurden praktisch bestätigt.** Genau ein
   bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
   Katalogstatistik mit Lifelist, Abdeckung, kompakter Klassenübersicht, zehn am häufigsten fotografierten
@@ -1106,12 +1106,25 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Alt-Sammlungen `5-Sterne-Tierbilder` sowie `Art-Referenzbilder` im verwalteten Satz entfernt. Der
   Zusatzmodul-Manager zeigt Version und Status des
   abgeleiteten Suchpakets; dessen Datenbankpflege verbleibt im Arten-Explorer. Erweiterte
-  Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen. Eine ebenfalls spätere,
-  getrennt zu priorisierende Ortsauswertung soll vorhandene IPTC-Ortsfelder bevorzugen, GPS nur optional per
-  Reverse-Geocoding ergänzen und abgeleitete Ortsstichwörter ausschließlich unter
-  `FN Wildlife & Travel > Orte` führen. Vorgesehen sind Land, Region/Bundesland, Ort/Kreis und benutzerdefinierte
-  Fotoplätze beziehungsweise Schutzgebiete sowie Statistiken nach diesen Ebenen; manuelle Stichwörter dürfen dabei
-  nicht überschrieben werden. Zuweisungsfenster, Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
+  Konfliktauflösung und optionale iNaturalist-Anbindung bleiben spätere Einzelentscheidungen.
+  Version 0.4.22.1 ergänzt eine erste, bewusst lokale Orts-/Zeitstufe für die aktuelle Auswahl. Die drei Aktionen
+  `Orts- und Zeitstichwörter hinzufügen ...`, `entfernen ...` und `aktualisieren ...` übernehmen vorhandene
+  Lightroom-Werte für Ortsteil, Stadt, Bundesland/Region, Land/Region, ISO-Ländercode und Aufnahmezeit. Sichtbare
+  flache `(FN Ort)`-Stichwörter entstehen für vorhandene Ortsnamen und `(FN Zeit)` für deutschen Monat und Jahr; der ISO-Code bleibt als
+  Plug-in-Metadatum erhalten. Die normale Taxonomiezuweisung ergänzt diese Werte auf bisher nicht bearbeiteten
+  Fotos automatisch. Getrennte Namen und Kennungen schützen Taxonomie-, Orts-/Zeit- und manuelle Stichwörter bei
+  der jeweiligen Rücknahme. Die Funktion führt keinen Katalogscan und keinen eigenen Geodienstaufruf aus. Bei
+  vorhandenen GPS-Koordinaten ohne gespeicherte Ortsfelder werden nur die betroffenen ausgewählten Fotos temporär
+  klein exportiert und Lightrooms eingebettete Ortsvorschläge aus XMP/IPTC übernommen. Polygonflächen, automatisch
+  benannte Fotoplätze und Schutzgebiete bleiben frühestens eine Idee nach Phase 11.
+  Der technische Vertrag ist automatisiert geprüft, der Lightroom-Test steht noch aus. Version 0.4.23.0 wertet
+  ausschließlich diese gespeicherten FN-Orts-/Zeitfelder in zwei kompakten Bereichen aus: einmal unabhängig von
+  Taxonomie für alle FN-Orts-/Zeitfotos und einmal als Schnittmenge mit einer gültigen `mtx_`-Taxonomie. Pro
+  Bereich erscheinen Fotozahlen sowie die Anzahl und der häufigste Wert für Länder, Regionen, Städte, Ortsdetails, Jahre und
+  Monate in zwei festen nebeneinanderliegenden Blöcken. Die drei Orts-/Zeitaktionen sowie Taxonomiezuweisung und -rücknahme
+  schreiben ihre Deltas direkt in den persistenten Index; das neue Indexschema benötigt einmalig `Statistik neu
+  aufbauen`. Zuweisungsfenster,
+  Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
   geprüft. Die komplementären Taxonomiesammlungen wurden bei 132 Fotos und einer Zuweisung praktisch mit 131
   fehlenden und einem zugewiesenen Foto bestätigt;
 - vor 10.5 umgesetzt und praktisch geprüft: Version 0.4.21.3 enthält Lifelist-CSV, persistenten und durch eigene

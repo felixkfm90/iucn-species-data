@@ -1,0 +1,1 @@
+require("LocationTimeMenu").run("remove")

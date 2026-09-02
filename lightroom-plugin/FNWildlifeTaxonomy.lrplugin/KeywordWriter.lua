@@ -1,5 +1,6 @@
 local PluginState = require "PluginState"
 local Statistics = require "Statistics"
+local LocationTimeWriter = require "LocationTimeWriter"
 local TaxonomyRanks = require "TaxonomyRanks"
 
 local KeywordWriter = {}
@@ -188,7 +189,7 @@ local function resolveManagedKeywordNames(catalog, photo)
   return names
 end
 
-local function removeManagedKeywords(catalog, photo, names)
+local function removeManagedKeywords(catalog, photo, names, protectedNames)
   local removed = 0
   for _, name in ipairs(names or {}) do
     -- Ausschließlich eindeutig mit (FN) oder (FN)* gekennzeichnete Plug-in-
@@ -196,9 +197,11 @@ local function removeManagedKeywords(catalog, photo, names)
     -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
     -- createKeyword liefert mit returnExisting=true dasselbe Katalogobjekt,
     -- das auch bei der Zuweisung an photo:addKeyword übergeben wurde.
-    local keyword = createKeyword(catalog, name, nil)
-    photo:removeKeyword(keyword)
-    removed = removed + 1
+    if not protectedNames or not protectedNames[string.lower(name)] then
+      local keyword = createKeyword(catalog, name, nil)
+      photo:removeKeyword(keyword)
+      removed = removed + 1
+    end
   end
   return removed
 end
@@ -235,7 +238,7 @@ local function managedKeywordNamesFromMetadata(photo)
   return names
 end
 
-local function removeCurrentManagedKeywords(catalog, photo)
+local function removeCurrentManagedKeywords(catalog, photo, protectedNames)
   local removed = 0
   local seen = {}
 
@@ -245,6 +248,9 @@ local function removeCurrentManagedKeywords(catalog, photo)
       return
     end
     seen[name] = true
+    if protectedNames and protectedNames[string.lower(name)] then
+      return
+    end
     local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
     photo:removeKeyword(keyword)
     removed = removed + 1
@@ -377,7 +383,7 @@ function KeywordWriter.findConflicts(photos, taxon)
   return conflicts
 end
 
-function KeywordWriter.assign(catalog, photos, taxon)
+function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans)
   local conflicts = KeywordWriter.findConflicts(photos, taxon)
   if #conflicts > 0 then
     error(
@@ -390,6 +396,8 @@ function KeywordWriter.assign(catalog, photos, taxon)
 
   local previousKeywordNames = {}
   local beforeStatistics = {}
+  local locationTimePlans = preparedLocationTimePlans
+    or LocationTimeWriter.prepare(catalog, photos, { resolveSuggestedLocations = false })
   for index, photo in ipairs(photos) do
     previousKeywordNames[index] = resolveManagedKeywordNames(catalog, photo)
     beforeStatistics[index] = Statistics.photoSnapshot(photo)
@@ -426,7 +434,12 @@ function KeywordWriter.assign(catalog, photos, taxon)
     for index, photo in ipairs(photos) do
       currentKeyword = ""
       currentStep = "vorhandene (FN)-Stichwörter entfernen"
-      removeManagedKeywords(catalog, photo, previousKeywordNames[index])
+      removeManagedKeywords(
+        catalog,
+        photo,
+        previousKeywordNames[index],
+        LocationTimeWriter.managedKeywordNameSet(photo)
+      )
     end
 
     for _, readableKeyword in ipairs(managedKeywordNames) do
@@ -486,13 +499,24 @@ function KeywordWriter.assign(catalog, photos, taxon)
       end
       setAssignmentText(photo, "assignedAt", assignedAt)
     end
+    currentKeyword = ""
+    currentStep = "Orts- und Zeitstichwörter ergänzen"
+    local locationTimeResult = LocationTimeWriter.applyPrepared(
+      catalog,
+      photos,
+      locationTimePlans,
+      "add",
+      { protectedNamesForPhoto = KeywordWriter.taxonomyKeywordNameSet }
+    )
     local afterStatistics = {}
     for index in ipairs(photos) do
       afterStatistics[index] = Statistics.assignmentSnapshot(
         taxon,
         rankValues,
         beforeStatistics[index].referenceImage,
-        beforeStatistics[index].photoUuid
+        beforeStatistics[index].photoUuid,
+        beforeStatistics[index],
+        locationTimeResult.afterValues[index]
       )
     end
     PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
@@ -535,12 +559,17 @@ function KeywordWriter.remove(catalog, photos)
       if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
         removedAssignments = removedAssignments + 1
       end
-      removedKeywords = removedKeywords + removeCurrentManagedKeywords(catalog, photo)
+      removedKeywords = removedKeywords
+        + removeCurrentManagedKeywords(
+          catalog,
+          photo,
+          LocationTimeWriter.managedKeywordNameSet(photo)
+        )
       clearPluginMetadata(photo)
     end
     local afterStatistics = {}
     for index in ipairs(photos) do
-      afterStatistics[index] = Statistics.emptySnapshot()
+      afterStatistics[index] = Statistics.emptySnapshot(beforeStatistics[index])
     end
     PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end)
@@ -549,6 +578,14 @@ function KeywordWriter.remove(catalog, photos)
     assignmentCount = removedAssignments,
     keywordCount = removedKeywords,
   }
+end
+
+function KeywordWriter.taxonomyKeywordNameSet(photo)
+  local names = {}
+  for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
+    names[string.lower(name)] = true
+  end
+  return names
 end
 
 function KeywordWriter.rankLabel(rank)

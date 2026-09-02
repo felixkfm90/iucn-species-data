@@ -4,7 +4,7 @@ Stand: 2026-08-30
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.21.3 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.23.16 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
 automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
@@ -600,7 +600,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.21.3 am 2026-09-01 umgesetzt und automatisiert geprüft; Einzel- und
+- **Bis Plug-in-Version 0.4.23.16 am 2026-09-02 umgesetzt und automatisiert geprüft; Einzel- und
   Mehrfachzuweisung sowie Auswahl-Refresh bis 0.4.16.0 praktisch bestätigt, die jüngsten Abläufe noch nicht abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -642,6 +642,13 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   und wichtigen Rängen. Die Rangfelder tragen kurze Titel ohne `(wissenschaftlich)`; ihre Werte bleiben
   wissenschaftlich. `FN Wildlife – vollständige Taxonomie` zeigt bei Bedarf alle unterstützten Ränge.
   Lightrooms eingebaute Ansicht `Standard` bleibt unverändert.
+- Version 0.4.22.1 übernimmt vorhandene Lightroom-IPTC-Ortsfelder und die Aufnahmezeit als getrennt gespeicherte
+  FN-Orts-/Zeitwerte. Drei Menüaktionen erlauben Hinzufügen, Entfernen und Aktualisieren unabhängig von der
+  Taxonomie; die normale Taxonomiezuweisung ergänzt sie auf bisher nicht bearbeiteten Fotos automatisch. Sichtbar
+  werden flache `(FN Ort)`-Stichwörter für vorhandene Ortsnamen sowie `(FN Zeit)` für deutschen Monat und Jahr. ISO-Ländercode und alle
+  Quellwerte bleiben als Plug-in-Metadaten nachvollziehbar. Die Funktion arbeitet nur auf der aktuellen Auswahl,
+  liest GPS zur Erkennung noch nicht direkt lesbarer Lightroom-Ortsvorschläge. Diese werden aus kleinen temporären
+  Lightroom-Exporten der betroffenen Auswahl übernommen; ein eigener Geodienst und ein katalogweiter Lauf finden nicht statt. Die praktische Abnahme steht noch aus.
 - Versioniertes read-only Suchpaket, atomarer Wechsel, Rollback, stabile Master-Taxon-ID und optionale
   Projekt-Art-ID bleiben unverändert die technische Grundlage.
 - `Artbezeichnung korrigieren ...` übergibt die ausgewählte Art seit Version 0.4.18.0 einmalig und kurzlebig an den
@@ -657,8 +664,8 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.9.0 am 2026-08-28 technisch umgesetzt und in den zentralen
-  Bedienabläufen praktisch geprüft.**
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.23.16 am 2026-09-02 technisch umgesetzt und automatisiert
+  geprüft; die neue Orts-/Zeitstufe benötigt noch den gebündelten Lightroom-Test.**
 - Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
   Markierung derselben Art zurück. Diese Lightroom-Markierung ist unabhängig vom Artporträt des Arten-Explorers.
@@ -679,13 +686,21 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
   Eine veränderte Fotozahl oder die ausdrückliche Aktion `Statistik neu aufbauen` führen zum vollständigen Abgleich;
   ein allgemeiner Metadatenbeobachter ist im SDK nicht dokumentiert.
   Dafür ist kein Import oder Update der Taxonomie-Masterdatenbank nötig.
+- Version 0.4.23.0 ergänzt im selben Index eine eigenständige Statistik aller Fotos mit gespeicherten FN-Orts-/
+  Zeitwerten sowie eine getrennte Schnittmenge nur für Fotos mit gültiger `mtx_`-Taxonomie. Beide zeigen kompakt
+  Fotozahlen sowie die Anzahl und den häufigsten Wert für Länder, Regionen, Städte, Ortsdetails, Jahre und Monate. Zwei
+  feste nebeneinanderliegende Blöcke vermeiden die zuvor unzuverlässige dynamische Scrollhöhe. Die Orts-/Zeitaktionen und die
+  normale Taxonomiezuweisung beziehungsweise -rücknahme aktualisieren die betroffenen Aggregate direkt. Der
+  Schemawechsel erfordert einmalig einen kontrollierten Neuaufbau des Statistikindex.
 - Im Zusatzmodul-Manager stehen nur Plug-in-Version und read-only Suchpaketstatus. Aktualisierung, Backup und
   Rollback bleiben zentral im Arten-Explorer und werden nicht im Plug-in dupliziert.
 - Der fachliche Taxonomiestand bleibt ausschließlich im Master/Suchpaket. Favoritenbild der Art, Sammlungen und Statistik
   sind abgeleitete Lightroom-Funktionen und bilden keine zweite Stammdatenbank.
-- Eine spätere Ortsauswertung verwendet vorhandene IPTC-Ortsfelder vorrangig, kann GPS kontrolliert per
-  Reverse-Geocoding ergänzen und führt abgeleitete Ortsstichwörter in einem eigenen Plug-in-Zweig. Länder,
-  Regionen, Orte und benutzerdefinierte Fotoplätze dürfen vorhandene manuelle Stichwörter niemals überschreiben.
+- Die erste Orts-/Zeitstufe ist in Version 0.4.22.1 umgesetzt: vorhandene IPTC-Ortsfelder sowie Monat und Jahr
+  werden auf der aktuellen Auswahl als getrennt verwaltete flache `(FN Ort)`- beziehungsweise `(FN Zeit)`-
+  Stichwörter hinzugefügt, entfernt oder
+  aktualisiert. Taxonomie- und manuelle Stichwörter bleiben geschützt. GPS-basiertes Reverse-Geocoding,
+  Polygonflächen und automatisch benannte Fotoplätze bleiben bewusst ein möglicher Ausbau nach Phase 11.
 - Weitere kontrollierte Exporte, Konfliktauflösung bestehender Zuordnungen sowie optionale iNaturalist-Anbindung bleiben
   spätere, einzeln zu priorisierende Ausbauschritte.
 
@@ -712,7 +727,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.21.3 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.23.16 die nutzergeführte Rücknahme, dynamische
 Auswahl, die persistente Lifelist-/Klassenstatistik mit CSV, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 

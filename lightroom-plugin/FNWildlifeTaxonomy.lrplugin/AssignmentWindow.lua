@@ -6,6 +6,7 @@ local LrTasks = import "LrTasks"
 local LrView = import "LrView"
 
 local KeywordWriter = require "KeywordWriter"
+local LocationTimeWriter = require "LocationTimeWriter"
 local PluginState = require "PluginState"
 local TaxonomyHelper = require "TaxonomyHelper"
 local TaxonomyRanks = require "TaxonomyRanks"
@@ -443,8 +444,24 @@ function AssignmentWindow.show(context)
     end
 
     setBusy(true)
+    props.searchStatus = "Orts- und Zeitdaten werden geprüft ..."
+    local locationTimePlans, preparation = LocationTimeWriter.prepare(catalog, photos, {
+      resolveSuggestedLocations = true,
+      skipExisting = true,
+    })
+    if preparation and preparation.canceled then
+      setBusy(false)
+      props.searchStatus = "Die Übernahme der Lightroom-Ortsvorschläge wurde abgebrochen. Es wurde nichts zugewiesen."
+      return
+    end
     props.searchStatus = "Taxonomie wird zugewiesen ..."
-    local ok, result = LrTasks.pcall(KeywordWriter.assign, catalog, photos, currentTaxon)
+    local ok, result = LrTasks.pcall(
+      KeywordWriter.assign,
+      catalog,
+      photos,
+      currentTaxon,
+      locationTimePlans
+    )
     setBusy(false)
     if not ok then
       props.searchStatus = tostring(result)

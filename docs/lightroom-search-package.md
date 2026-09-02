@@ -2,14 +2,16 @@
 
 Stand: 2026-09-01
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.21.3 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.23.16 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
 Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, die automatische Suche von 0.4.19.0 und die gemeinsame schnelle
 Korrekturaktivierung von 0.4.20.0 benötigen noch den praktischen Folgetest. Der persistente Statistikindex mit
 CSV-Export sowie direkte Deltas nach Zuweisung und Rücknahme wurden im Großkatalog bis 0.4.21.1 praktisch bestätigt;
-der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Phase 10 bleibt bis zum umfassenden
+der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitaktionen von 0.4.22.1 und ihre
+Statistikauswertung von 0.4.23.0 sowie die Aktionskorrekturen bis 0.4.23.16 benötigen noch
+den kontrollierten Lightroom-Test. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
 ## Ziel
@@ -161,13 +163,13 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.21.3`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.23.16`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
 - `Info.lua`: Manifest, SDK-Grenze und deutscher Bibliotheksmenüpunkt;
-- `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder für Namen, Status und alle unterstützten
-  Taxonomieränge;
+- `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder für Namen, Status, alle unterstützten Taxonomieränge
+  sowie die vom Plug-in übernommenen Orts- und Zeitwerte;
 - `MetadataTagset.lua`, `MetadataTagsetFull.lua` und `MetadataTagsetFields.lua`: eine kompakte Metadatenansicht
   `FN Wildlife – Foto & Taxonomie` mit sinnvollen Standard-Fotofeldern und den wichtigsten fachlichen Feldern sowie
   eine getrennte vollständige Taxonomieansicht für alle unterstützten Ränge;
@@ -193,13 +195,15 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   0,5 Sekunden ohne weitere Eingabe;
 - `RemoveTaxonomy.lua`: eigenständige Rücknahmeaktion über `Plug-in-Extras` beziehungsweise
   `Bibliothek > Zusatzmoduloptionen`;
+- `LocationTimeWriter.lua`, `LocationTimeMenu.lua` und die drei kleinen Aktionsskripte: kontrolliertes Hinzufügen,
+  Entfernen und Aktualisieren der verwalteten Orts- und Zeitstichwörter für die aktuelle Lightroom-Auswahl;
 - `PluginState.lua`: lokale Bedienzustände sowie der kataloggebundene persistente Statistikindex und sein
   fortsetzbarer Aufbauzustand;
 - `ReferenceImage.lua` und `SetReferenceImage.lua`: genau ein kontrolliertes `Favoritenbild der Art` je
   Master-Taxon-ID;
 - `SmartCollections.lua` und `CreateCollections.lua`: wiederholbar einrichtbare intelligente Sammlungen;
 - `StatisticsIndex.lua`, `Statistics.lua` und `ShowStatistics.lua`: kompakter Aggregatindex, gebündelter und
-  pausierbarer Katalogaufbau, Lifelist-CSV, kompakte Klassenübersicht sowie das Statistikfenster;
+  pausierbarer Katalogaufbau, Lifelist-CSV, kompakte Klassenübersicht sowie getrennte FN-Orts-/Zeitstatistiken;
 - `PluginInfoProvider.lua`: kompakte Version und read-only Statusanzeige des lokalen Suchpakets im
   Zusatzmodul-Manager.
 
@@ -214,6 +218,10 @@ Tiere (FN)
 Chordatiere (FN)
 Vögel (FN)
 Waldkauz (FN)
+Deutschland (FN Ort)
+Schleswig-Holstein (FN Ort)
+Juli (FN Zeit)
+2025 (FN Zeit)
 ```
 
 Die Schlüsselwörter sind für die normale Bildsuche gedacht und enthalten deshalb weder interne Kennungen noch
@@ -281,7 +289,7 @@ die formatierte Stichwortanzeige sowie gespeicherte lokale Kennungen. Andere man
 Stichwörter ohne FN-Endung bleiben erhalten. Ein manuelles Löschen einzelner Stichwörter in Lightroom entfernt
 dagegen keine Plug-in-Metadaten; für eine vollständige Rücknahme ist deshalb die Plug-in-Aktion zu verwenden.
 Nach Erfolg lautet die Meldung beispielsweise `Von 19 Fotos wurde die Taxonomie entfernt.` Zuweisung und
-Zuweisung und Rücknahme verwenden direkt `withWriteAccessDo` innerhalb der bereits vom Aufrufer gestarteten
+Rücknahme verwenden direkt `withWriteAccessDo` innerhalb der bereits vom Aufrufer gestarteten
 `LrTask`; die einzelnen SDK-Schreibaufrufe werden im Lightroom-Callback direkt ausgeführt. Ein offizieller
 SDK-Timeout wartet bis zu zehn Sekunden, wenn Lightroom kurzzeitig einen anderen Schreibzugriff hält. Version
 0.4.15.0 prüft danach zwingend den Callback-Abschluss und liest nach der Zuweisung die
@@ -290,6 +298,78 @@ aktualisieren beide Aktionen einen bereits vollständig aufgebauten Statistikind
 Katalogschreibzugriffs aus den beabsichtigten neuen Werten; damit hängt das Delta nicht von den innerhalb des
 Callbacks noch nicht sichtbar gewordenen Lightroom-Metadaten ab. Im Zuweisungsfenster wird weiterhin keine
 Statistikberechnung gestartet.
+
+Version 0.4.22.1 ergänzt drei getrennte Aktionen:
+
+- `Orts- und Zeitstichwörter hinzufügen ...` übernimmt nur Fotos, für die noch keine FN-Orts-/Zeitwerte gespeichert
+  sind;
+- `Orts- und Zeitstichwörter entfernen ...` entfernt ausschließlich die von dieser Funktion gespeicherten
+  Stichwortverknüpfungen und Metadaten;
+- `Orts- und Zeitstichwörter aktualisieren ...` ersetzt den gespeicherten FN-Stand durch die aktuellen Lightroom-
+  Werte.
+
+Verwendet werden ausschließlich die dokumentierten Lightroom-Felder Ortsteil, Stadt, Bundesland/Region,
+Land/Region und ISO-Ländercode sowie die Aufnahmezeit. Sichtbare flache Stichwörter erhalten für Ortswerte die
+Endung `(FN Ort)` und für den deutschen Aufnahmemonat sowie das vierstellige Aufnahmejahr `(FN Zeit)`; der ISO-Code wird wegen der
+Redundanz nur als Plug-in-Metadatum gespeichert. Eine normale Taxonomiezuweisung ergänzt dieselben Orts-/Zeitwerte
+automatisch, sofern für das Foto noch kein solcher FN-Stand existiert. Taxonomie- und Orts-/Zeitaktionen schützen
+die jeweils fremden gespeicherten Stichwortnamen gegeneinander. Manuelle Stichwörter bleiben unverändert. Es gibt
+keine katalogweite Suche und keinen eigenen Reverse-Geocoding-Dienst. Das Rohfeld `gps` bestimmt, ob für noch nicht
+gespeicherte Lightroom-Ortsvorschläge ein kleiner temporärer Export erforderlich ist.
+
+Version 0.4.23.0 ergänzt im Statistikfenster zwei feste nebeneinanderliegende Bereiche ohne dynamische Scrollansicht:
+
+- `Alle FN-Orts-/Zeitfotos` zählt jedes Foto mit gespeicherten FN-Orts- oder FN-Zeitfeldern, auch ohne
+  Taxonomie;
+- `Mit Taxonomie` zählt nur deren Schnittmenge mit einer gültigen `masterTaxonId`, die mit
+  `mtx_` beginnt.
+
+Beide Bereiche nennen Gesamtfotos sowie Fotos mit Ort beziehungsweise Zeit und zeigen für Länder,
+Bundesländer/Regionen, Städte, Ortsdetails, Jahre und Monate jeweils die Anzahl und den häufigsten Wert. Die drei Orts-/Zeitaktionen
+aktualisieren diese Aggregate direkt. Normale Taxonomiezuweisung übernimmt einen noch fehlenden FN-Orts-/Zeitstand
+in dasselbe Delta; `Taxonomie entfernen` lässt eigenständige FN-Orts-/Zeitwerte erhalten und entfernt das Foto nur
+aus der kombinierten Auswertung. Der Index speichert weiterhin ausschließlich Aggregate und keine zweite
+katalogweite Fotoliste. Das erhöhte Indexschema macht einen älteren Index ungültig; beim ersten Statistikaufruf ist
+deshalb einmalig ein vollständiger, weiterhin pausierbarer Aufbau nötig.
+
+Version 0.4.23.1 korrigiert die Rückgabe der eigenständigen Orts-/Zeitaktionen. `withWriteAccessDo` wird nur zum
+Ausführen und Absichern des Schreibcallbacks verwendet; dessen SDK-Rückgabewert ist nicht das fachliche
+Zählerergebnis. Der Writer erfasst das Ergebnis deshalb im äußeren Gültigkeitsbereich und gibt es nach bestätigtem
+Callback-Abschluss zurück. Die Erfolgsmeldung behandelt fehlende optionale Zähler zusätzlich als null, sodass ein
+abweichender SDK-Rückgabewert keinen Lua-Vergleichsfehler mehr auslösen kann.
+
+Version 0.4.23.2 erkennt einen bereits vorhandenen FN-Orts-/Zeitstand nur noch an mindestens einem tatsächlich
+gespeicherten sichtbaren FN-Wert. Ein allein zurückgebliebener interner Aktualisierungsmarker kann ein leeres Foto
+daher nicht mehr fälschlich überspringen. Die Aufnahmezeitkonvertierung unterstützt beide zulässigen Formen des
+Komponentenergebnisses und liest bei Bedarf den formatierten Wert desselben Lightroom-Datumsfelds. Ein leerer oder
+teilweise geschriebener Stand wird beim nächsten `Hinzufügen` damit kontrolliert repariert.
+
+Version 0.4.23.3 prüft jeden Quellwert, bevor die reservierte Endung angehängt wird. Leere Werte können daher keine
+alleinstehenden Stichwörter `(FN Ort)` oder `(FN Zeit)` mehr erzeugen. Die Aufnahmezeit wird zuerst über das
+Lightroom-Rohfeld `captureTime` gelesen; `dateTimeOriginal`, `dateTime` und die formatierten Varianten bleiben
+begrenzte Rückfälle. `Hinzufügen` entfernt auf den ausgewählten Fotos zugleich die intern gespeicherten leeren
+Suffix-Stichwörter der Vorversionen und ersetzt sie durch verwertbare Werte, sofern vorhanden.
+
+Version 0.4.23.16 liest die Orts- und Zeitquellen vor dem Schreibzugriff direkt an den ausgewählten Fotos. Der
+öffentliche Lightroom-Schlüssel `dateTimeOriginal` liefert die Aufnahmezeit; der interne Schlüssel `captureTime`
+wird nicht mehr an die Batch-Schnittstelle übergeben. Ein numerischer `dateTimeOriginal`-Wert wird mit der
+Lightroom-SDK-Funktion `LrDate.timestampToComponents` zerlegt; der
+Datumsparser erkennt außerdem lokalisierte Lightroom-Anzeigen wie `20. August 2026`. Ortsfelder und GPS bleiben
+optional: Ein Foto ohne gespeicherte Ortsfelder erhält bei vorhandener Aufnahmezeit ausschließlich Monat und Jahr als `(FN Zeit)`.
+Das dokumentierte Rohfeld `gps` liefert Koordinaten als `latitude` und `longitude`. Wenn die formatierten Ortsfelder
+trotz GPS leer sind, exportiert das Plug-in nur diese ausgewählten Fotos als 64-Pixel-JPEGs mit vollständigen
+Metadaten, liest Lightrooms Vorschläge aus den standardisierten XMP-/IPTC-Feldern und löscht die temporären Dateien.
+Seit Version 0.4.23.16 wird die programmgesteuerte Export-Session ausdrücklich mit `doExportOnNewTask()` gestartet,
+bevor `waitForRender()` auf die einzelnen Vorschauen wartet; ohne diesen Start konnte der Fortschrittsdialog auf der
+ersten Datei stehen bleiben.
+Der Fortschrittsdialog ist abbrechbar; bei Abbruch erfolgt noch keine FN-Metadaten- oder Stichwortänderung. Liefert
+Lightroom keine Vorschläge, verweist die Meldung auf die Katalogoption für den Export von Adressvorschlägen und auf
+private gespeicherte Orte.
+Die Metadatenabfrage läuft innerhalb der aktiven `LrTask`, aber ausdrücklich vor `LrTasks.pcall`, weil Lightroom
+bei einem notwendigen Yield innerhalb dieser Fehlergrenze mit `Yielding is not allowed` abbrechen würde.
+Die IPTC-Ortswerte werden über die formatierten Lightroom-Felder gelesen; `Bundesland/Region` verwendet dabei
+Lightrooms öffentlichen SDK-Schlüssel `stateProvince`. Die gleichnamigen Rohmetadaten-Schlüssel sind für diese
+Felder nicht freigegeben.
 
 `Ausgewähltes Foto als Favoritenbild der Art markieren ...` markiert nach einer verständlichen Bestätigung genau ein
 bereits taxonomisch zugeordnetes Foto als Favoritenbild seiner `masterTaxonId`. Diese Markierung dient
@@ -327,9 +407,9 @@ Version 0.4.21.2 erhöht das Indexschema einmalig, weil beim globalen Aufbau zus
 Foto-UUIDs vorhandener Art-Favoriten erfasst werden. Ein mit 0.4.21.0 oder 0.4.21.1 aufgebauter Index wird deshalb
 beim ersten Statistikaufruf kontrolliert neu aufgebaut. Danach benötigt der Favoritenbutton keinen Vollkatalogscan.
 
-Der gespeicherte Index enthält ausschließlich Aggregate pro Art, Klasse, Familie und Gattung, keine zweite
-katalogweite Fotoliste. Zuweisungs-, Rücknahme- und Favoritenbild-Aktionen ziehen den Zustand der betroffenen Fotos
-innerhalb desselben Lightroom-Schreibzugriffs ab und fügen den neuen Zustand hinzu. Sie lösen damit keinen
+Der gespeicherte Index enthält ausschließlich Aggregate pro Art, Klasse, Familie, Gattung sowie FN-Orts- und
+FN-Zeitwert, keine zweite katalogweite Fotoliste. Taxonomie-, Orts-/Zeit- und Favoritenbild-Aktionen ziehen den
+Zustand der betroffenen Fotos innerhalb desselben Lightroom-Schreibzugriffs ab und fügen den neuen Zustand hinzu. Sie lösen damit keinen
 Katalogscan aus. Eine veränderte Gesamtzahl der Fotos macht den Index beim nächsten Öffnen ungültig. Das SDK bietet
 keinen allgemeinen Beobachter für beliebige Änderungen an Foto- oder Plug-in-Metadaten; nach solchen Änderungen
 außerhalb der Plug-in-Aktionen bleibt deshalb `Statistik neu aufbauen` der kontrollierte Abgleich. Bewertungen sind für
@@ -349,7 +429,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.21.3`, der Suchpaketstatus sowie die fünf
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.23.16`, der Suchpaketstatus sowie die acht
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -372,6 +452,12 @@ sondern zentral im Arten-Explorer verwaltet.
    vorausgesetzt. Plug-in-Metadaten und Stichwörter mit `(FN)` beziehungsweise `(FN)*` müssen auf allen markierten
    Fotos verschwinden, vorhandene manuelle Stichwörter müssen erhalten bleiben;
    Statistik und intelligente Sammlungen müssen nach Neuberechnung denselben Zustand zeigen.
+9a. Auf Fotos mit vorhandenen IPTC-Ortsfeldern und Aufnahmezeit nacheinander die drei Orts-/Zeitaktionen prüfen.
+    Erwartet werden beispielsweise `Deutschland (FN Ort)`, `Schleswig-Holstein (FN Ort)`, `Juli (FN Zeit)` und
+    `2025 (FN Zeit)`.
+    `Hinzufügen` darf einen vorhandenen FN-Stand nicht still ersetzen, `Aktualisieren` muss geänderte Lightroom-
+    Ortswerte übernehmen und `Entfernen` darf weder Taxonomie- noch manuelle Stichwörter löschen. Anschließend die
+    normale Taxonomiezuweisung auf einem noch nicht bearbeiteten Foto prüfen; sie muss Ort und Zeit mit übernehmen.
 10. Für eine zugewiesene Art nacheinander zwei Fotos als Favoritenbild der Art markieren, die Ersetzungswarnung
     einmal mit `Nein, behalten` und einmal mit `Ja, ersetzen` prüfen. Danach darf nur das zuletzt bestätigte Foto
     `Favoritenbild der Art = Ja` besitzen.
@@ -382,9 +468,13 @@ sondern zentral im Arten-Explorer verwaltet.
 12. `Taxonomie-Statistik ...` öffnen. Beim ersten Aufruf den sichtbaren 500er-Fortschritt prüfen, einmal pausieren,
     das Fenster schließen und anschließend fortsetzen. Danach Lifelist, Abdeckung, Favoritenbilder und die höchstens
     zehn am häufigsten fotografierten Arten prüfen. Die kompakte Klassenübersicht muss Art- und Fotozahl je Klasse
-    ohne große Leerfläche zeigen. Die Lifelist als UTF-8-CSV exportieren und dort Klasseninhalt, Spalten, Umlaute,
+    ohne große Leerfläche zeigen. Zusätzlich müssen `Orte und Zeiten – alle FN-Fotos` alle zuvor bearbeiteten
+    Orts-/Zeitfotos unabhängig von ihrer Taxonomie und `Taxonomiefotos nach Ort und Zeit` nur die taxonomisch
+    zugewiesene Schnittmenge zeigen. Länder, Regionen, Städte, Ortsdetails, Jahre und Monate erscheinen kompakt in
+    zwei nebeneinanderliegenden Blöcken mit Anzahl und häufigstem Wert. Die Lifelist als UTF-8-CSV exportieren und dort Klasseninhalt, Spalten, Umlaute,
     Fotozahlen sowie Art-Favorit kontrollieren. Anschließend eine
-    Zuweisung, Rücknahme und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen Neuaufbau stimmen.
+    Zuweisung, Rücknahme, Orts-/Zeitänderung und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen
+    Neuaufbau stimmen.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
@@ -482,6 +572,10 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   praktisch abschnitt beziehungsweise vollständig ausblendete.
 - Der Favoriten-Ersetzungsdialog zeigt bewusst nur den verständlichen Arttext. Bildvorschauen und Dateinamen wurden
   nicht verwendet, weil sie in diesem Dialog nicht zuverlässig beziehungsweise nicht lesbar genug waren.
+- Die Orts-/Zeitfunktion übernimmt gespeicherte IPTC-Ortsfelder, Lightrooms beim temporären Export eingebettete
+  Ortsvorschläge und die Aufnahmezeit. Ein eigener Geodienst wird nicht angesprochen; die Vorschläge hängen von
+  Lightrooms Katalogoption `Adressvorschläge beim Export ...` und nicht privaten gespeicherten Orten ab. Eine eigene Ortsbestimmung per Polygon oder Reverse-Geocoding bleibt frühestens ein
+  gesonderter Ausbau nach Phase 11.
 - Alte flache Taxonomie-Stichwörter ohne `(FN)`-Endung sind nicht eindeutig vom Nutzerbestand unterscheidbar und
   werden deshalb nicht automatisch gelöscht. Andere frühere Smart-Sammlungen mit unbekannten abweichenden Namen
   werden ebenfalls nicht automatisch entfernt; die beiden bekannten Alt-Sammlungen `5-Sterne-Tierbilder` und

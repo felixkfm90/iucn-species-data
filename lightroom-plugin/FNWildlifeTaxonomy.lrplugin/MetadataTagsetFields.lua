@@ -50,6 +50,14 @@ end
 
 local function appendFooterFields(items)
   append(items, "com.adobe.separator")
+  append(items, TOOLKIT_ID .. ".fnLocation")
+  append(items, TOOLKIT_ID .. ".fnCity")
+  append(items, TOOLKIT_ID .. ".fnStateProvince")
+  append(items, TOOLKIT_ID .. ".fnCountry")
+  append(items, TOOLKIT_ID .. ".fnIsoCountryCode")
+  append(items, TOOLKIT_ID .. ".fnCaptureMonth")
+  append(items, TOOLKIT_ID .. ".fnCaptureYear")
+  append(items, "com.adobe.separator")
   append(items, TOOLKIT_ID .. ".referenceImage")
   append(items, TOOLKIT_ID .. ".assignedAt")
 end

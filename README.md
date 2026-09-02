@@ -982,12 +982,12 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.21.3` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.23.16` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
 Statistikfenster; das Zuweisungsfenster startet beim Öffnen sowie nach Zuweisung oder Rücknahme keine
-katalogweite Statistikberechnung. Zuweisung, Rücknahme und Art-Favoriten aktualisieren stattdessen ausschließlich
+katalogweite Statistikberechnung. Taxonomie-, Orts-/Zeit- und Art-Favoriten-Aktionen aktualisieren stattdessen ausschließlich
 die betroffenen Aggregate des persistenten Katalogindex. Neben dem
 Button `Art suchen` startet dieselbe Suche automatisch nach 0,5 Sekunden ohne weitere Eingabe. Jede Textänderung
 verwirft sofort die zuvor gewählte Art; eine zusätzliche Sicherheitsabfrage verhindert die stille Zuweisung einer
@@ -1003,6 +1003,45 @@ kontrollierten SDK-Weg zurück und entfernt von den markierten Fotos die eindeut
 `(FN)` und `(FN)*`. Andere manuelle Stichwörter und alte, nicht eindeutig erkennbare flache Stichwörter bleiben
 erhalten. Die Aktionen sind über `Plug-in-Extras` beziehungsweise `Bibliothek > Zusatzmoduloptionen` erreichbar;
 ein Eintrag direkt im normalen Foto-Rechtsklickmenü war im praktischen Test nicht verfügbar.
+Version 0.4.22.1 übernimmt beim normalen Taxonomiezuweisen zusätzlich vorhandene Lightroom-Ortsfelder und die
+Aufnahmezeit, sofern für das Foto noch kein FN-Orts-/Zeitstand gespeichert ist. Drei getrennte Aktionen unter
+`Bibliothek > Zusatzmoduloptionen` fügen diese Werte unabhängig von der Taxonomie hinzu, entfernen sie oder
+aktualisieren sie aus Ortsteil, Stadt, Bundesland/Region, Land/Region, ISO-Ländercode und Aufnahmezeit. Sichtbare
+flache Stichwörter erhalten eindeutige Fachendungen, beispielsweise `Deutschland (FN Ort)`,
+`Schleswig-Holstein (FN Ort)`, `Juli (FN Zeit)` und `2025 (FN Zeit)`; der ISO-Code bleibt als Plug-in-
+Metadatum erhalten. Taxonomie-, Orts-/Zeit- und manuelle Stichwörter werden getrennt geschützt. Es findet keine
+katalogweite Suche oder eigener Online-Ortsdienst statt. GPS-Koordinaten werden über das dokumentierte
+Rohfeld `gps` erkannt. Sind nur Lightrooms Ortsvorschläge vorhanden, exportiert das Plug-in ausschließlich die
+betroffenen ausgewählten Fotos als kleine temporäre JPEGs, liest die von Lightroom eingebetteten Ortsfelder aus
+XMP beziehungsweise IPTC und löscht die temporären Dateien anschließend. Dieser neue Ablauf ist automatisiert geprüft
+und benötigt noch den kontrollierten Lightroom-Test.
+Version 0.4.23.0 erweitert denselben persistenten Katalogindex um zwei kompakte Orts-/Zeitauswertungen. `Alle
+FN-Orts-/Zeitfotos` berücksichtigt jedes Foto mit gespeicherten FN-Orts- oder FN-Zeitfeldern unabhängig von
+einer Taxonomie. `Mit Taxonomie` zeigt ausschließlich deren Schnittmenge mit einer gültigen
+`mtx_`-Taxonomiezuweisung. Beide Bereiche nennen Fotozahlen sowie die Anzahl und den häufigsten Wert für Länder, Regionen, Städte,
+Ortsdetails, Jahre und Monate in zwei festen nebeneinanderliegenden Blöcken ohne dynamische Scrollansicht. Die drei Orts-/
+Zeitaktionen sowie normale Taxonomiezuweisung und -rücknahme halten diese Aggregate inkrementell aktuell. Wegen
+des erweiterten Indexschemas ist nach dem Laden dieser Version einmalig `Statistik neu aufbauen` erforderlich.
+Version 0.4.23.1 gibt nach den drei eigenständigen Orts-/Zeitaktionen ausdrücklich das innerhalb des Lightroom-
+Schreibcallbacks erzeugte fachliche Ergebnis zurück. Der undokumentierte SDK-Rückgabewert wird nicht mehr
+irrtümlich als Zählerobjekt verwendet; die Erfolgsmeldung normalisiert ihre Zähler zusätzlich defensiv.
+Version 0.4.23.2 behandelt einen allein zurückgebliebenen internen Zeitstempel nicht mehr als vollständigen FN-
+Orts-/Zeitstand. Leere sichtbare FN-Felder werden dadurch beim nächsten Hinzufügen repariert statt übersprungen.
+Die Aufnahmezeitkonvertierung akzeptiert sowohl einzelne Komponenten als auch eine vom SDK gelieferte
+Komponententabelle und verwendet bei Bedarf den formatierten Wert desselben Lightroom-Datumsfelds.
+Version 0.4.23.3 verhindert leere Suffix-Stichwörter vollständig: Erst ein nichtleerer Quellwert wird um `(FN Ort)`
+oder `(FN Zeit)` ergänzt. Die Aufnahmezeit wird vorrangig aus Lightrooms Rohfeld `captureTime` gelesen; die beiden
+bisherigen Datumsfelder und ihre formatierten Werte bleiben Rückfälle. Ein erneutes Hinzufügen entfernt zuvor von
+0.4.23.0 bis 0.4.23.2 gespeicherte leere Suffix-Stichwörter auf den ausgewählten Fotos.
+Version 0.4.23.16 liest alle Orts-/Zeitquellen vor der nicht yield-fähigen Fehlergrenze direkt an den ausgewählten
+Fotos; für die Aufnahmezeit wird das öffentliche Lightroom-Feld `dateTimeOriginal` verwendet. Der
+Datumsrückfall erkennt zusätzlich lokalisierte Lightroom-Werte wie `20. August 2026`. Ein Foto
+ohne gespeicherte Ortsfelder erhält damit ausschließlich `August (FN Zeit)` und `2026 (FN Zeit)`; GPS ist keine
+Voraussetzung. Das dokumentierte Rohfeld `gps` erkennt den Bedarf für den auswahlbezogenen Vorschlagsexport. Damit
+können kursiv angezeigte Lightroom-Ortsvorschläge ohne einzelnes Bestätigen übernommen werden. Ein Fortschrittsdialog
+macht den langsameren Erstlauf sichtbar und erlaubt den Abbruch vor jeder FN-Metadaten- oder Stichwortänderung. Die
+programmgesteuerte Export-Session wird vor dem Warten auf die Vorschauen ausdrücklich gestartet, damit der Lauf nicht
+auf der ersten Datei stehen bleibt.
 Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren ...` die ausgewählte Art über eine kurzlebige,
 einmalig konsumierbare Übergabedatei im Arten-Explorer öffnen. Lightroom erhält dadurch keinen Schreibzugriff auf
 den Master. Der Explorer prüft Master-ID und wissenschaftlichen Namen erneut und speichert Änderungen ausschließlich

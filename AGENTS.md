@@ -1140,13 +1140,13 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.21.3`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.23.16`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
   und Katalogstatistik werden ausschließlich im getrennten Statistikfenster berechnet; Öffnen, Zuweisen und
   Entfernen starten im Zuweisungsfenster keine katalogweite Statistikberechnung. Eigene Zuweisungs-, Rücknahme-
-  und Favoritenaktionen aktualisieren stattdessen die betroffenen Aggregate des persistenten Katalogindex im
+  Orts-/Zeit- und Favoritenaktionen aktualisieren stattdessen die betroffenen Aggregate des persistenten Katalogindex im
   selben Schreibzugriff. Sichtbar gleiche `(FN)`-Stichwortnamen werden vor dem Lightroom-
   Schreibzugriff dedupliziert, sodass Familie und Gattung etwa bei Austernfischer oder Bartmeise dasselbe
   Stichwort nicht zweimal anlegen oder zuweisen. Version 0.4.15.0 verwendet den direkten `withWriteAccessDo`-Aufruf
@@ -1174,6 +1174,40 @@ Aktuelle Planung:
   beziehungsweise `Bibliothek > Zusatzmoduloptionen` bereit; ein Eintrag direkt im normalen Foto-Rechtsklickmenü
   war im praktischen Test nicht verfügbar. Die Aktion löscht Plug-in-Metadaten und alle eindeutig reservierten
   Stichwörter mit den Endungen `(FN)` und `(FN)*` von den markierten Fotos kontrolliert über das Lightroom-SDK.
+  Version 0.4.22.1 ergänzt die getrennten Aktionen `Orts- und Zeitstichwörter hinzufügen ...`, `entfernen ...` und
+  `aktualisieren ...`. Sie lesen ausschließlich vorhandene Lightroom-Felder für Ortsteil, Stadt,
+  Bundesland/Region, Land/Region, ISO-Ländercode und Aufnahmezeit. Ortsnamen werden als flache `(FN Ort)`-,
+  deutscher Monat und Jahr als `(FN Zeit)`-Stichwörter geschrieben; der ISO-Code bleibt ein Plug-in-Metadatum. Eine normale
+  Taxonomiezuweisung ergänzt Ort und Zeit nur dann automatisch, wenn noch kein FN-Orts-/Zeitstand besteht. Die
+  getrennt gespeicherten Namen und Kennungen schützen Taxonomie- und Orts-/Zeitstichwörter bei ihrer jeweiligen
+  Rücknahme voreinander; manuelle Stichwörter bleiben unangetastet. Das dokumentierte Rohfeld `gps` erkennt Fotos,
+  deren kursiv angezeigte Lightroom-Ortsvorschläge nicht über die normale Metadaten-API lesbar sind. Für genau diese
+  ausgewählten Fotos erzeugt das Plug-in kleine temporäre JPEGs, übernimmt die von Lightroom exportierten XMP-/IPTC-
+  Ortswerte und bereinigt die Dateien anschließend. Ein eigener Geodienst und katalogweite Läufe gehören nicht zu
+  diesem Stand. Der neue Ablauf ist automatisiert geprüft und noch praktisch abzunehmen.
+  Version 0.4.23.0 erweitert den persistenten Index um zwei getrennte, kompakte Orts-/Zeitstatistiken: alle Fotos
+  mit gespeicherten FN-Orts-/Zeitwerten unabhängig von der Taxonomie sowie deren Schnittmenge mit einer gültigen
+  `mtx_`-Taxonomiezuweisung. Beide zeigen die Anzahl und den häufigsten Wert für Länder, Regionen, Städte, Ortsdetails, Jahre und
+  Monate in zwei festen nebeneinanderliegenden Bereichen ohne dynamische Scrollhöhe. Die eigenen Orts-/Zeitaktionen schreiben
+  die betroffenen Deltas direkt mit; nach dem Schemawechsel ist einmalig `Statistik neu aufbauen` erforderlich.
+  Version 0.4.23.1 korrigiert den Rückgabevertrag der eigenständigen Orts-/Zeitaktionen: Verwendet wird nun das im
+  Write-Access-Callback erzeugte fachliche Ergebnis statt des SDK-Rückgabewerts von `withWriteAccessDo`; die
+  Meldungszähler besitzen zusätzlich einen defensiven Nullstandard.
+  Version 0.4.23.2 erkennt einen vorhandenen Orts-/Zeitstand ausschließlich an tatsächlich gespeicherten FN-
+  Orts-/Zeitwerten; ein verwaister interner Aktualisierungsmarker blockiert die Reparatur daher nicht. Die
+  Aufnahmezeit wird sowohl aus einzelnen SDK-Komponenten als auch einer Komponententabelle gelesen und fällt bei
+  Bedarf auf den formatierten Wert desselben Lightroom-Feldes zurück.
+  Version 0.4.23.3 prüft Quellwerte vor dem Anhängen der reservierten Endung und erzeugt daher niemals die leeren
+  Stichwörter `(FN Ort)` oder `(FN Zeit)`. Für die Aufnahmezeit wird vorrangig `captureTime` gelesen; bisherige
+  Roh- und Formatfelder bleiben Rückfälle. Ein erneutes Hinzufügen bereinigt auf den ausgewählten Fotos zugleich
+  bereits gespeicherte leere Suffix-Stichwörter der fehlerhaften Vorversionen.
+  Version 0.4.23.16 liest die Aufnahmezeit jedes ausgewählten Fotos über das öffentliche Lightroom-Feld
+  `dateTimeOriginal` vor der nicht yield-fähigen Fehlergrenze und erkennt auch
+  lokalisierte Datumswerte wie `20. August 2026`. Aufnahmezeitstichwörter benötigen weder GPS noch Ortsfelder. GPS
+  wird über `getRawMetadata("gps")` erkannt. Fehlen gespeicherte Ortsfelder, werden Lightrooms exportierbare
+  Ortsvorschläge über kleine temporäre JPEGs übernommen; einzelne Felder müssen nicht manuell bestätigt werden.
+  Version 0.4.23.16 startet die programmgesteuerte Export-Session vor `waitForRender()` ausdrücklich als neue Task;
+  der erste praktische Versuch ohne diesen Start blieb beim ersten Foto im Fortschrittsdialog stehen.
   Der Suchhelfer erkennt unter Windows eine übliche lokale
   Node-Installation auch dann, wenn Lightroom den System-`PATH` nicht vollständig übernimmt, und erhält den lokalen
   Suchpaketpfad unabhängig von Lightroom-Prozessvariablen ausdrücklich. Ein fehlgeschlagener Hilfsprozess zeigt eine

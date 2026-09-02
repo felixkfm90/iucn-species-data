@@ -13,6 +13,18 @@ return {
       file = "RemoveTaxonomy.lua",
     },
     {
+      title = "Orts- und Zeitstichwörter hinzufügen ...",
+      file = "AddLocationTime.lua",
+    },
+    {
+      title = "Orts- und Zeitstichwörter entfernen ...",
+      file = "RemoveLocationTime.lua",
+    },
+    {
+      title = "Orts- und Zeitstichwörter aktualisieren ...",
+      file = "UpdateLocationTime.lua",
+    },
+    {
       title = "Ausgewähltes Foto als Favoritenbild der Art markieren ...",
       file = "SetReferenceImage.lua",
     },
@@ -34,7 +46,7 @@ return {
   VERSION = {
     major = 0,
     minor = 4,
-    revision = 21,
-    build = 3,
+    revision = 23,
+    build = 16,
   },
 }

@@ -114,13 +114,71 @@ local function classBreakdownText(statistics)
   return #lines > 0 and table.concat(lines, "\n") or "Noch keine Klassen erfasst."
 end
 
-local function section(factory, title, text, height)
+local section
+
+local function rankedValuesLine(label, distinctCount, entries)
+  local values = {}
+  for _, entry in ipairs(entries or {}) do
+    table.insert(values, tostring(entry.name) .. " (" .. tostring(entry.photoCount) .. ")")
+  end
+  return label
+    .. " ("
+    .. tostring(tonumber(distinctCount or 0) or 0)
+    .. "): "
+    .. (#values > 0 and table.concat(values, ", ") or "–")
+end
+
+local function locationTimeText(statistics)
+  statistics = statistics or {}
+  local photoCount = tonumber(statistics.photoCount or 0) or 0
+  if photoCount == 0 then
+    return "Noch keine passenden FN-Orts-/Zeitdaten gespeichert."
+  end
+  return table.concat({
+    photoLabel(photoCount)
+      .. " · " .. photoLabel(statistics.locationPhotoCount) .. " mit Ort"
+      .. " · " .. photoLabel(statistics.timePhotoCount) .. " mit Zeit",
+    rankedValuesLine("Länder", statistics.countryCount, statistics.topCountries),
+    rankedValuesLine("Bundesländer/Regionen", statistics.stateCount, statistics.topStates),
+    rankedValuesLine("Städte", statistics.cityCount, statistics.topCities),
+    rankedValuesLine("Ortsdetails", statistics.locationCount, statistics.topLocations),
+    rankedValuesLine("Jahre", statistics.yearCount, statistics.topYears),
+    rankedValuesLine("Monate", statistics.monthCount, statistics.topMonths),
+  }, "\n")
+end
+
+local function locationTimeDashboard(factory, statistics)
+  return factory:group_box({
+    title = "FN-Orte und FN-Zeiten",
+    fill_horizontal = 1,
+    factory:row({
+      spacing = factory:dialog_spacing(),
+      fill_horizontal = 1,
+      section(
+        factory,
+        "Alle FN-Orts-/Zeitfotos",
+        locationTimeText(statistics.locationTime),
+        7,
+        45
+      ),
+      section(
+        factory,
+        "Mit Taxonomie",
+        locationTimeText(statistics.taxonomyLocationTime),
+        7,
+        45
+      ),
+    }),
+  })
+end
+
+section = function(factory, title, text, height, width)
   return factory:group_box({
     title = title,
     fill_horizontal = 1,
     factory:static_text({
       title = text,
-      width_in_chars = 58,
+      width_in_chars = width or 58,
       height_in_lines = height,
       fill_horizontal = 1,
     }),
@@ -145,6 +203,7 @@ local function dashboard(factory, props, statistics)
       section(factory, "Taxonomischer Umfang", taxonomyScopeText(statistics), 4),
     }),
     section(factory, "Art-Favoriten", favoriteText(statistics), 3),
+    locationTimeDashboard(factory, statistics),
     section(factory, "Klassen", classBreakdownText(statistics), math.max(classCount, 1)),
     section(factory, "Am häufigsten fotografierte Arten", topSpeciesText(statistics), 10),
     factory:static_text({
@@ -155,7 +214,7 @@ local function dashboard(factory, props, statistics)
       fill_horizontal = 1,
     }),
     factory:static_text({
-      title = "Zuweisung, Rücknahme und Art-Favoriten aktualisieren den Index direkt. "
+      title = "Taxonomie-, Orts-/Zeit- und Art-Favoriten-Aktionen aktualisieren den Index direkt. "
         .. "Nach Änderungen außerhalb des Plug-ins bitte „Statistik neu aufbauen“ verwenden.",
       width_in_chars = 90,
       fill_horizontal = 1,
