@@ -1318,5 +1318,29 @@
     "Species": "autumnalis",
     "Letztes IUCN Update": "2018",
     "Daten abgerufen": "2026-08-16"
+  },
+  {
+    "URLSlug": "ciconiaciconia",
+    "Wissenschaftlicher Name": "Ciconia ciconia",
+    "Deutscher Name": "Weissstorch",
+    "Englischer Name": "White Stork",
+    "Gewicht": "ca. 2,4-4,5 kg",
+    "Größe": "ca. 95-110 cm",
+    "Lebenserwartung": "ca. 20-25 Jahre",
+    "Assessment ID": 281839847,
+    "Status": "LC",
+    "Trend": "Zunehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "526.000-588.000",
+    "Generationsdauer": "14,18 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Ciconiiformes",
+    "Family": "Ciconiidae",
+    "Genus": "Ciconia",
+    "Species": "ciconia",
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-09-03"
   }
 ]

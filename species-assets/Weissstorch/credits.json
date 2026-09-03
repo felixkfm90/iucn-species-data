@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Ciconia ciconia",
+  "german_name": "Weissstorch",
+  "recordist": "Pascal Christe",
+  "country": "Switzerland",
+  "location": "Damphreux, Porrentruy, Jura",
+  "quality": "A",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/824502",
+  "rejectionKey": "xeno-canto:824502",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Ciconia sp:ciconia q:A\" | page=1"
+}

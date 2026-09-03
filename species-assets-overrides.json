@@ -1391,6 +1391,45 @@
         "generatedAt": "2026-08-16T08:16:25.328Z",
         "verifiedAt": "2026-08-16T08:16:25.334Z"
       }
+    },
+    "Weissstorch": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-09-03T17:23:41.874Z",
+        "approvedAt": "2026-09-03T17:23:48.654Z",
+        "sha256": "d1176bb0b86093bd76f9614fa6df3c463dde9d1a26ae86df9246472b40c7abfd",
+        "metadataSha256": "efab4555f301f46a1ce853796f22a5059df3e8f9d8fc7de3363c00b9e2543852"
+      },
+      "map": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-03T17:24:17.419Z"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:922887",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/922887",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-09-03T17:24:17.420Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-03T17:24:34.624Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "8884787a1d3076a1b2a0c5b1ee007768fe406320e4b7e0b6c135f2a619305d32",
+        "spectrogramSha256": "1eaf33179249206b52de1d3c8762080c69942a5f1623ce21ffcef0f19803d8ee",
+        "generatedAt": "2026-09-03T17:24:19.129Z",
+        "verifiedAt": "2026-09-03T17:24:19.134Z"
+      }
     }
   },
   "spectrogramGenerator": {

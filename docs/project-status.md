@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-08-16T08:16:45.295Z`
+Report-Datenstand: `2026-09-03T17:24:34.829Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 55 |
-| Aktive Arten | 55 |
-| Arten in `speciesData.json` | 55 |
-| Vollständige Art-Assetordner | 55 |
-| Karten | 55 |
-| Sounds | 53 |
-| Credits | 53 |
-| Spektrogramme | 53 |
-| Artporträts | 55 |
+| Eingaben in `species_list.json` | 56 |
+| Aktive Arten | 56 |
+| Arten in `speciesData.json` | 56 |
+| Vollständige Art-Assetordner | 56 |
+| Karten | 56 |
+| Sounds | 54 |
+| Credits | 54 |
+| Spektrogramme | 54 |
+| Artporträts | 56 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 

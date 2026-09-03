@@ -493,5 +493,14 @@
     "size": "ca. 33-35 cm",
     "weight": "ca. 300-450 g",
     "life_expectancy": "ca. 30-40 Jahre"
+  },
+  {
+    "german": "Weissstorch",
+    "english": "White Stork",
+    "genus": "Ciconia",
+    "species": "ciconia",
+    "size": "ca. 95-110 cm",
+    "weight": "ca. 2,4-4,5 kg",
+    "life_expectancy": "ca. 20-25 Jahre"
   }
 ]
