@@ -8,6 +8,8 @@ local LocationTimeWriter = {}
 
 local LOCATION_KEYWORD_SUFFIX = " (FN Ort)"
 local TIME_KEYWORD_SUFFIX = " (FN Zeit)"
+local LOCATION_PARTIAL_KEYWORD_SUFFIX = LOCATION_KEYWORD_SUFFIX .. "*"
+local TIME_PARTIAL_KEYWORD_SUFFIX = TIME_KEYWORD_SUFFIX .. "*"
 local WRITE_ACCESS_TIMEOUT_SECONDS = 10
 local MONTH_NAMES = {
   "Januar",
@@ -78,8 +80,14 @@ local function hasManagedSuffix(value)
   local name = cleanText(value)
   return name == cleanText(LOCATION_KEYWORD_SUFFIX)
     or name == cleanText(TIME_KEYWORD_SUFFIX)
+    or name == cleanText(LOCATION_PARTIAL_KEYWORD_SUFFIX)
+    or name == cleanText(TIME_PARTIAL_KEYWORD_SUFFIX)
     or string.sub(name, -string.len(LOCATION_KEYWORD_SUFFIX)) == LOCATION_KEYWORD_SUFFIX
     or string.sub(name, -string.len(TIME_KEYWORD_SUFFIX)) == TIME_KEYWORD_SUFFIX
+    or string.sub(name, -string.len(LOCATION_PARTIAL_KEYWORD_SUFFIX))
+      == LOCATION_PARTIAL_KEYWORD_SUFFIX
+    or string.sub(name, -string.len(TIME_PARTIAL_KEYWORD_SUFFIX))
+      == TIME_PARTIAL_KEYWORD_SUFFIX
 end
 
 local function keywordName(keyword)
@@ -356,14 +364,57 @@ local function removeStoredKeywords(catalog, photo, protectedNames)
       removeCandidate(keyword)
     end
   end
+  -- Lightroom liefert Stichwörter je nach Katalogzustand nicht immer über
+  -- die gespeicherten lokalen IDs zurück. Deshalb werden zusätzlich die
+  -- aktuell am Foto sichtbaren Stichwortobjekte und die formatierte flache
+  -- Anzeige geprüft. Die reservierten Endungen begrenzen die Entfernung
+  -- weiterhin strikt auf FN-Ort und FN-Zeit.
+  local rawOk, assigned = pcall(function()
+    return photo:getRawMetadata("keywords")
+  end)
+  for key, value in pairs(rawOk and assigned or {}) do
+    removeCandidate(key)
+    removeCandidate(value)
+  end
+  local formattedOk, formatted = pcall(function()
+    return photo:getFormattedMetadata("keywordTags")
+  end)
+  if formattedOk then
+    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
+      removeCandidate(cleanText(part))
+    end
+  end
   return removed
 end
 
-local function addKeywords(catalog, photo, names)
+local function prepareKeywordObjects(catalog, photos, plans, mode)
+  local keywordsByName = {}
+  if mode == "remove" then
+    return keywordsByName
+  end
+  for index, photo in ipairs(photos or {}) do
+    local plan = plans[index] or { keywordNames = {} }
+    if not (mode == "add" and existingAssignment(photo)) then
+      for _, name in ipairs(plan.keywordNames or {}) do
+        local key = string.lower(cleanText(name))
+        if key ~= "" and not keywordsByName[key] then
+          local keyword = createKeyword(catalog, name)
+          if not keyword then
+            error("Lightroom lieferte für „" .. name .. "“ kein Stichwortobjekt zurück.", 0)
+          end
+          keywordsByName[key] = keyword
+        end
+      end
+    end
+  end
+  return keywordsByName
+end
+
+local function addKeywords(photo, names, keywordsByName)
   local ids = {}
   local added = 0
   for _, name in ipairs(names) do
-    local keyword = createKeyword(catalog, name)
+    local keyword = keywordsByName[string.lower(cleanText(name))]
     if not keyword then
       error("Lightroom lieferte für „" .. name .. "“ kein Stichwortobjekt zurück.", 0)
     end
@@ -385,6 +436,7 @@ local function protectedNames(options, photo)
 end
 
 function LocationTimeWriter.prepare(catalog, photos, options)
+  options = options or {}
   local plans = {}
   local suggestionPhotos = {}
   local selectedPhotos = photos or {}
@@ -399,12 +451,21 @@ function LocationTimeWriter.prepare(catalog, photos, options)
       hasTimeData = hasAnyValue(values, { "fnCaptureMonth", "fnCaptureYear" }),
       captureDiagnostic = captureDiagnostic,
     }
-    if options
-        and options.resolveSuggestedLocations == true
+    if options.resolveSuggestedLocations == true
         and hasGpsData
         and not hasLocationData
         and not (options.skipExisting == true and existingAssignment(photo)) then
       table.insert(suggestionPhotos, photo)
+    end
+    if options.progress and (index % 250 == 0 or index == #selectedPhotos) then
+      local instruction = options.progress(index, #selectedPhotos, "Quelldaten")
+      if instruction == "cancel" then
+        return plans, {
+          canceled = true,
+          suggestedLocationPhotoCount = #suggestionPhotos,
+          unresolvedSuggestedLocationPhotoCount = 0,
+        }
+      end
     end
   end
 
@@ -414,6 +475,9 @@ function LocationTimeWriter.prepare(catalog, photos, options)
     unresolvedSuggestedLocationPhotoCount = 0,
   }
   if #suggestionPhotos > 0 then
+    if options.beforeSuggestions then
+      options.beforeSuggestions(#suggestionPhotos)
+    end
     local suggestions = LocationSuggestionReader.resolve(suggestionPhotos)
     preparation.canceled = suggestions.canceled == true
     for index, photo in ipairs(selectedPhotos) do
@@ -442,7 +506,33 @@ function LocationTimeWriter.managedKeywordNameSet(photo)
   for _, name in ipairs(storedKeywordNames(photo)) do
     names[string.lower(name)] = true
   end
+  local rawOk, assigned = pcall(function()
+    return photo:getRawMetadata("keywords")
+  end)
+  for key, value in pairs(rawOk and assigned or {}) do
+    for _, candidate in ipairs({ key, value }) do
+      local name = keywordName(candidate)
+      if hasManagedSuffix(name) then
+        names[string.lower(name)] = true
+      end
+    end
+  end
+  local formattedOk, formatted = pcall(function()
+    return photo:getFormattedMetadata("keywordTags")
+  end)
+  if formattedOk then
+    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
+      local name = cleanText(part)
+      if hasManagedSuffix(name) then
+        names[string.lower(name)] = true
+      end
+    end
+  end
   return names
+end
+
+function LocationTimeWriter.hasManagedKeywordSuffix(value)
+  return hasManagedSuffix(keywordName(value))
 end
 
 function LocationTimeWriter.applyPrepared(catalog, photos, plans, mode, options)
@@ -460,9 +550,11 @@ function LocationTimeWriter.applyPrepared(catalog, photos, plans, mode, options)
     removedKeywordCount = 0,
     afterValues = {},
   }
+  local keywordsByName = prepareKeywordObjects(catalog, photos, plans, mode)
   for index, photo in ipairs(photos or {}) do
     local plan = plans[index] or { values = {}, keywordNames = {} }
     local alreadyAssigned = existingAssignment(photo)
+    local removedBeforePhoto = result.removedKeywordCount
     if mode == "add" and alreadyAssigned then
       result.skippedPhotoCount = result.skippedPhotoCount + 1
       result.afterValues[index] = false
@@ -472,14 +564,14 @@ function LocationTimeWriter.applyPrepared(catalog, photos, plans, mode, options)
       clearMetadata(photo)
       if mode == "remove" then
         result.afterValues[index] = {}
-        if alreadyAssigned then
+        if alreadyAssigned or result.removedKeywordCount > removedBeforePhoto then
           result.changedPhotoCount = result.changedPhotoCount + 1
         end
       elseif #plan.keywordNames == 0 then
         result.afterValues[index] = {}
         result.missingDataPhotoCount = result.missingDataPhotoCount + 1
       else
-        local ids, added = addKeywords(catalog, photo, plan.keywordNames)
+        local ids, added = addKeywords(photo, plan.keywordNames, keywordsByName)
         for _, field in ipairs(VALUE_FIELDS) do
           setMetadata(photo, field, plan.values[field])
         end

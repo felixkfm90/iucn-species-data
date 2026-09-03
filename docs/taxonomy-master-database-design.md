@@ -78,8 +78,12 @@ Entfernte Quellenzeilen bleiben als `removed` beziehungsweise `stale` nachvollzi
 
 ## Stabile Master-ID und Zustände
 
-Jedes zusammengeführte Taxon besitzt eine anbieterunabhängige ID `mtx_<UUID>`. Anbieter-IDs, Namen und
-Projekt-Slugs sind Aussagen oder Verknüpfungen und können die Master-ID nicht ersetzen.
+Jedes zusammengeführte Taxon besitzt eine anbieterunabhängige ID `mtx_<32 Hexzeichen>`. Der produktive
+Master-Kandidatenbau leitet sie deterministisch aus normalisiertem wissenschaftlichem Namen, Rang und Reich ab.
+Deutsche beziehungsweise englische Namen, Hierarchie, Anbieter-IDs und Projekt-Slugs sind Aussagen oder
+Verknüpfungen und ändern diese Master-ID nicht. Ändert sich dagegen eine der drei Identitätskomponenten, entsteht
+ohne eine ausdrücklich modellierte Nachfolgerbeziehung eine neue ID. Taxonomische Splits und Merges besitzen in
+diesem Stand noch keine automatisch nutzbare Vorgänger-/Nachfolgerzuordnung.
 
 Folgende kombinierbare Zustände werden geführt:
 

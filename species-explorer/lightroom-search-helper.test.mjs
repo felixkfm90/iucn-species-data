@@ -51,6 +51,17 @@ test("Suchhilfe beantwortet Status, Suche und Taxondetail über einen stabilen J
     });
     const missing = await handler.handle({ command: "taxon", masterTaxonId: "missing" });
     assert.equal(missing.error.code, "taxon-not-found");
+    const taxa = await handler.handle({
+      command: "taxa",
+      masterTaxonIds: ["mtx_fixture", "missing", "mtx_fixture"],
+    });
+    assert.deepEqual(taxa.result.taxa.map((entry) => entry.masterTaxonId), ["mtx_fixture"]);
+    assert.deepEqual(taxa.result.missingMasterTaxonIds, ["missing"]);
+    assert.deepEqual(taxa.result.searchPackage, {
+      packageId: "fixture",
+      masterVersion: "master-fixture",
+      correctionRevision: "",
+    });
   } finally {
     handler.close();
   }

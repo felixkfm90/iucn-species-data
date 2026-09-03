@@ -1140,7 +1140,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.23.16`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.24.5`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1208,6 +1208,46 @@ Aktuelle Planung:
   Ortsvorschläge über kleine temporäre JPEGs übernommen; einzelne Felder müssen nicht manuell bestätigt werden.
   Version 0.4.23.16 startet die programmgesteuerte Export-Session vor `waitForRender()` ausdrücklich als neue Task;
   der erste praktische Versuch ohne diesen Start blieb beim ersten Foto im Fortschrittsdialog stehen.
+  Version 0.4.24.1 erkennt bei der Orts-/Zeit-Rücknahme zusätzlich die vollständigen Lightroom-Varianten
+  `(FN Ort)*` und `(FN Zeit)*`, erzeugt diese Sternformen aber nicht. `Alle FN-Daten entfernen ...` bereinigt nach
+  Bestätigung auf der aktuellen Auswahl Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten und ausschließlich die sechs
+  reservierten Endungen `(FN)`, `(FN)*`, `(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` und `(FN Zeit)*`. Die neue Aktion
+  `FN-Daten im Katalog aktualisieren ...` führt einen lesenden 500-Foto-Scan mit Vorschau aus und schreibt erst nach
+  Bestätigung pausierbar in 250-Foto-Blöcken. Alle vorhandenen Master-IDs werden in einer Suchhelferanfrage gegen
+  dasselbe aktive Paket geprüft; Taxonomien werden nur bei unverändert eindeutig aktiver `masterTaxonId`
+  aktualisiert. Ungültige oder nicht auflösbare IDs, Mehrfachfavoriten sowie verwaiste reservierte Stichwörter
+  werden sichtbar gemeldet und nicht automatisch umgedeutet. Ortsvorschläge werden für den bestätigten Lauf in
+  einer gemeinsamen Lightroom-Export-Session gebündelt; einen möglichen Adobe-Bestätigungsdialog kann das Plug-in
+  nicht unterdrücken. Erfolgreiche Blöcke halten den vorhandenen Statistikindex inkrementell aktuell. Pause greift
+  zwischen Blöcken beziehungsweise nach einem laufenden Export; Schließen beendet nach dem aktuellen Block. Ein
+  Neustart ist idempotent, ein persistenter Katalogpflege-Checkpoint ist in diesem Stand nicht enthalten. Der neue
+  Funktionsblock ist automatisiert geprüft und benötigt noch die praktische Lightroom-Abnahme. Version 0.4.24.1
+  dedupliziert zusätzlich sämtliche Orts-/Zeit-Stichwortnamen eines Schreibvorgangs vor dem ersten
+  `photo:addKeyword`: Ein Monats- oder Jahresstichwort wird einmal erzeugt und danach für alle passenden Fotos
+  wiederverwendet. Das verhindert Lightrooms `nil`-Rückgabe bei wiederholtem `createKeyword` innerhalb einer
+  gemischten Mehrfachauswahl.
+  Version 0.4.24.2 beschriftet die Gesamtauswertung und deren Taxonomie-Schnittmenge im Inhalt. Sie zeigt
+  Fotozahlen je Jahr, häufigsten Monat und häufigste Ortswerte sowie die Anzahl unterschiedlicher Länder, Regionen,
+  Städte und Ortsdetails. Eine vollständig identische zweite Verteilung wird durch einen eindeutigen
+  Übereinstimmungshinweis ersetzt.
+  Version 0.4.24.3 trennt Katalogübersicht, Datenqualität der taxonomierten Fotos, vollständigen Taxonomieumfang,
+  Art-Favoriten, Orte und Zeiten. Deutsche Tausenderpunkte gelten für alle sichtbaren Zähler. Die Abdeckung zählt
+  ausschließlich gültige `mtx_`-Master-IDs; die Orts-/Zeit-Schnittmengen stammen ausschließlich aus FN-Feldern.
+  Die Rangvielfalt wird aus den Plug-in-Metadaten für Domäne, Reich, Stamm, Klasse, Ordnung, Familie und Gattung
+  sowie eindeutigen Master-IDs für Arten gebildet. Spitzenwerte für Jahr, Monat und Monat/Jahr verwenden FN-Zeit;
+  der Spitzen-Aufnahmetag wird nur beim bewussten Statistikaufbau aus `dateTimeOriginal` aggregiert. Indexschema 4
+  erfordert einmalig `Statistik neu aufbauen` und löst keinen Scan im Zuweisungsfenster aus.
+  Version 0.4.24.4 stellt den Lifelist-Kopf einzeilig dar und begrenzt Orts-, Zeit- und Artenranglisten einheitlich
+  auf Top 5. Datenqualität und Klassen zeigen Prozentanteile der taxonomierten Fotos. Der gemeinsame Button
+  `Exportieren ...` bietet eine erweiterte Lifelist-CSV, eine nur auf ausdrücklichen Aufruf in 500er-Blöcken aus
+  vorhandenen FN-Metadaten aggregierte Beobachtungslisten-CSV und eine gruppierte UTF-8-Artenliste als TXT.
+  Indexschema 5 erfordert einmalig `Statistik neu aufbauen`; Exporte schreiben keine Metadaten oder Stichwörter und
+  führen kein Geocoding aus.
+  Version 0.4.24.5 führt die nach FN-Datum, FN-Ort und Master-Art gebildeten Beobachtungsgruppen im persistenten
+  Statistikindex. Der bewusste Statistikaufbau erzeugt sie einmalig, danach pflegen Plug-in-Aktionen die Gruppen
+  inkrementell. Die Beobachtungslisten-CSV benötigt dadurch beim Export keinen Katalogscan mehr. Der Index speichert
+  keine Fotoliste je Gruppe und höchstens einen optionalen Beispiel-Dateinamen; Indexschema 6 erfordert einmalig
+  `Statistik neu aufbauen`.
   Der Suchhelfer erkennt unter Windows eine übliche lokale
   Node-Installation auch dann, wenn Lightroom den System-`PATH` nicht vollständig übernimmt, und erhält den lokalen
   Suchpaketpfad unabhängig von Lightroom-Prozessvariablen ausdrücklich. Ein fehlgeschlagener Hilfsprozess zeigt eine
@@ -1220,8 +1260,8 @@ Aktuelle Planung:
   Datenbankpflege. Als klar abgegrenzte 10.4-Funktionen sind genau ein erklärtes und bestätigungspflichtiges
   `Favoritenbild der Art` je Master-Taxon-ID, ein idempotenter Satz aus `Art-Favoriten`, `Taxonomie fehlt` und
   `Taxonomie zugewiesen` sowie eine vollständig neu
-  berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, UTF-8-CSV, kompakter Klassenübersicht
-  und den zehn am häufigsten fotografierten Arten implementiert. Die Arten je Klasse werden wegen der praktisch
+  berechenbare Katalogstatistik mit Lifelist, Taxonomie-Abdeckung, drei UTF-8-Exporten, kompakter Klassenübersicht
+  und den fünf am häufigsten fotografierten Arten implementiert. Die Arten je Klasse werden wegen der praktisch
   unzuverlässigen dynamischen Lightroom-Ansicht vollständig im CSV statt in aufklappbaren Dialogzeilen ausgegeben. Die Statistik liest die Zuordnungen aus dem
   Lightroom-Katalog und benötigt dafür kein Taxonomie-Datenbankupdate. Eine veränderte Fotozahl macht den Index
   ungültig; für andere außerhalb des Plug-ins vorgenommene Änderungen bleibt `Statistik neu aufbauen` verbindlich,

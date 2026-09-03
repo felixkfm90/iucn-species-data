@@ -30,6 +30,10 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(info, /file\s*=\s*"RemoveLocationTime\.lua"/);
   assert.match(info, /title = "Orts- und Zeitstichwörter aktualisieren \.\.\."/);
   assert.match(info, /file\s*=\s*"UpdateLocationTime\.lua"/);
+  assert.match(info, /title = "Alle FN-Daten entfernen \.\.\."/);
+  assert.match(info, /file\s*=\s*"RemoveAllFnData\.lua"/);
+  assert.match(info, /title = "FN-Daten im Katalog aktualisieren \.\.\."/);
+  assert.match(info, /file\s*=\s*"UpdateCatalogFnData\.lua"/);
   assert.match(info, /Ausgewähltes Foto als Favoritenbild der Art markieren/);
   assert.match(info, /FN Wildlife-Sammlungen einrichten/);
   assert.match(info, /Taxonomie-Statistik/);
@@ -42,7 +46,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.23.16");
+  assert.equal(version.slice(1).join("."), "0.4.24.5");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -417,8 +421,10 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
 test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", async () => {
   const assignment = await source("AssignmentWindow.lua");
   const statistics = await source("ShowStatistics.lua");
+  const maintenance = await source("CatalogMaintenance.lua");
   assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?activeDialogControls:close\(\)/);
   assert.match(statistics, /cancelVerb\s*=\s*"Schließen"/);
+  assert.match(maintenance, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
 });
 
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
@@ -477,8 +483,18 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(locationTime, /"Januar"[\s\S]*"Dezember"/);
   assert.match(locationTime, /local LOCATION_KEYWORD_SUFFIX = " \(FN Ort\)"/);
   assert.match(locationTime, /local TIME_KEYWORD_SUFFIX = " \(FN Zeit\)"/);
+  assert.match(locationTime, /LOCATION_PARTIAL_KEYWORD_SUFFIX = LOCATION_KEYWORD_SUFFIX \.\. "\*"/);
+  assert.match(locationTime, /TIME_PARTIAL_KEYWORD_SUFFIX = TIME_KEYWORD_SUFFIX \.\. "\*"/);
   assert.match(locationTime, /name == cleanText\(LOCATION_KEYWORD_SUFFIX\)/);
   assert.match(locationTime, /name == cleanText\(TIME_KEYWORD_SUFFIX\)/);
+  assert.match(
+    locationTime,
+    /string\.sub\(name, -string\.len\(LOCATION_PARTIAL_KEYWORD_SUFFIX\)\)[\s\S]*== LOCATION_PARTIAL_KEYWORD_SUFFIX/,
+  );
+  assert.match(
+    locationTime,
+    /string\.sub\(name, -string\.len\(TIME_PARTIAL_KEYWORD_SUFFIX\)\)[\s\S]*== TIME_PARTIAL_KEYWORD_SUFFIX/,
+  );
   assert.match(locationTime, /values\.fnCountry/);
   assert.match(locationTime, /values\.fnStateProvince/);
   assert.match(locationTime, /values\.fnCity/);
@@ -490,6 +506,8 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(locationTime, /locationTimeKeywordIds/);
   assert.match(locationTime, /locationTimeKeywordNames/);
   assert.match(locationTime, /locationTimeAssignedAt/);
+  assert.match(locationTime, /photo:getRawMetadata\("keywords"\)/);
+  assert.match(locationTime, /photo:getFormattedMetadata\("keywordTags"\)/);
   assert.match(locationTime, /function LocationTimeWriter\.prepare\(catalog, photos, options\)/);
   assert.doesNotMatch(locationTime, /batchGetRawMetadata|batchGetFormattedMetadata/);
   assert.ok(
@@ -543,6 +561,24 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   );
   assert.match(assignmentFunction, /resolveSuggestedLocations = true/);
   assert.match(locationTime, /function LocationTimeWriter\.applyPrepared\(/);
+  assert.match(locationTime, /local function prepareKeywordObjects\(catalog, photos, plans, mode\)/);
+  assert.match(locationTime, /if key ~= "" and not keywordsByName\[key\] then/);
+  assert.match(locationTime, /keywordsByName\[key\] = keyword/);
+  const addLocationTimeKeywords = locationTime.slice(
+    locationTime.indexOf("local function addKeywords(photo, names, keywordsByName)"),
+    locationTime.indexOf("local function protectedNames"),
+  );
+  assert.match(addLocationTimeKeywords, /keywordsByName\[string\.lower\(cleanText\(name\)\)\]/);
+  assert.doesNotMatch(addLocationTimeKeywords, /createKeyword/);
+  const applyPrepared = locationTime.slice(
+    locationTime.indexOf("function LocationTimeWriter.applyPrepared"),
+    locationTime.indexOf("local function runWithWriteAccess"),
+  );
+  assert.ok(
+    applyPrepared.indexOf("local keywordsByName = prepareKeywordObjects(catalog, photos, plans, mode)")
+      < applyPrepared.indexOf("for index, photo in ipairs(photos or {}) do"),
+    "Orts-/Zeitstichwörter müssen vor der fotoweisen Zuweisung einmalig erzeugt werden",
+  );
   assert.match(locationTime, /function LocationTimeWriter\.execute\(/);
   assert.match(locationTime, /catalog:withWriteAccessDo\(/);
   assert.match(locationTime, /timeout = WRITE_ACCESS_TIMEOUT_SECONDS/);
@@ -555,6 +591,9 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
     "Das SDK-Ergebnis von withWriteAccessDo ist nicht das fachliche Aktionsergebnis",
   );
   assert.match(menu, /tonumber\(result and result\.skippedPhotoCount or 0\) or 0/);
+  assert.match(menu, /tonumber\(result and result\.removedKeywordCount or 0\) or 0/);
+  assert.match(menu, /verwaltete Stichwortzuordnungen wurden entfernt/);
+  assert.match(locationTime, /removedKeywordCount > removedBeforePhoto/);
   assert.match(locationTime, /Statistics\.photoSnapshot\(photo\)/);
   assert.match(locationTime, /Statistics\.locationTimeSnapshot\(/);
   assert.match(locationTime, /PluginState\.applyStatisticsPhotoChanges\(/);
@@ -576,6 +615,64 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(taxonomy, /LocationTimeWriter\.applyPrepared\([\s\S]*?"add"/);
   assert.match(taxonomy, /LocationTimeWriter\.managedKeywordNameSet\(photo\)/);
   assert.match(taxonomy, /function KeywordWriter\.taxonomyKeywordNameSet\(photo\)/);
+});
+
+test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und ID-basiert", async () => {
+  const info = await source("Info.lua");
+  const removal = await source("RemoveAllFnData.lua");
+  const maintenanceAction = await source("UpdateCatalogFnData.lua");
+  const maintenance = await source("CatalogMaintenance.lua");
+  const writer = await source("KeywordWriter.lua");
+  const locationTime = await source("LocationTimeWriter.lua");
+
+  assert.match(info, /Alle FN-Daten entfernen \.\.\./);
+  assert.match(info, /FN-Daten im Katalog aktualisieren \.\.\./);
+  assert.match(removal, /catalog:getTargetPhotos\(\)/);
+  assert.match(removal, /LrDialogs\.confirm/);
+  assert.match(removal, /KeywordWriter\.removeAll/);
+  for (const suffix of [
+    "\\(FN\\)",
+    "\\(FN\\)\\*",
+    "\\(FN Ort\\)",
+    "\\(FN Ort\\)\\*",
+    "\\(FN Zeit\\)",
+    "\\(FN Zeit\\)\\*",
+  ]) {
+    assert.match(removal, new RegExp(suffix));
+  }
+  assert.match(writer, /function KeywordWriter\.removeAll\(catalog, photos\)/);
+  assert.match(writer, /function KeywordWriter\.hasManagedKeywordSuffix\(value\)/);
+  assert.match(writer, /removeCurrentManagedKeywords\(catalog, photo\)/);
+  assert.match(writer, /LocationTimeWriter\.applyPrepared\([\s\S]*?"remove"/);
+  assert.match(writer, /Statistics\.emptySnapshot\(\)/);
+  assert.match(maintenanceAction, /CatalogMaintenance\.show/);
+  assert.match(maintenance, /catalog:getAllPhotos\(\)/);
+  assert.match(maintenance, /READ_CHUNK_SIZE = 500/);
+  assert.match(maintenance, /WRITE_CHUNK_SIZE = 250/);
+  assert.match(maintenance, /catalog:batchGetPropertyForPlugin\(chunk, _PLUGIN, FIELD_IDS\)/);
+  assert.match(maintenance, /catalog:batchGetRawMetadata\(chunk, \{ "keywords" \}\)/);
+  assert.match(maintenance, /orphanTaxonomyKeywordPhotoCount/);
+  assert.match(maintenance, /orphanLocationTimeKeywordPhotoCount/);
+  assert.match(maintenance, /Verwaiste FN-Stichwörter ohne zugehörige Plug-in-Metadaten/);
+  assert.match(maintenance, /werden nur mit „Alle FN-Daten entfernen“ bereinigt/);
+  assert.match(maintenance, /command = "taxa"/);
+  assert.match(maintenance, /masterTaxonIds = state\.taxonomyIds/);
+  assert.match(maintenance, /cleanText\(taxon\.lifecycleState\) == "active"/);
+  assert.match(maintenance, /not packageMatches\(state\.searchPackage\)/);
+  assert.match(maintenance, /locationTimeMode = "update"/);
+  assert.match(maintenance, /resolveSuggestedLocations = true/);
+  assert.match(maintenance, /LocationTimeWriter\.prepare\(catalog, targetPhotos/);
+  assert.match(maintenance, /Vorschau vollständig\. Noch wurden keine Fotos verändert\./);
+  assert.match(maintenance, /title = "Vorschau übernehmen"/);
+  assert.match(maintenance, /Pause wird nach dem aktuellen Lese- oder Schreibblock wirksam/);
+  assert.match(maintenance, /Mehrere Art-Favoriten/);
+  assert.match(maintenance, /werden nicht automatisch geändert/);
+  assert.doesNotMatch(maintenance, /existingId.*scientificName|ähnlich|similar/i);
+  assert.match(locationTime, /function LocationTimeWriter\.hasManagedKeywordSuffix\(value\)/);
+  assert.match(locationTime, /LOCATION_PARTIAL_KEYWORD_SUFFIX/);
+  assert.match(locationTime, /TIME_PARTIAL_KEYWORD_SUFFIX/);
+  assert.doesNotMatch(locationTime, /managedKeywordName\([^\n]+PARTIAL_KEYWORD_SUFFIX/);
+  assert.match(locationTime, /options\.beforeSuggestions\(#suggestionPhotos\)/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {
@@ -663,7 +760,7 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(state, /catalog:setPropertyForPlugin\(_PLUGIN, field, value\)/);
   assert.match(state, /withPrivateWriteAccessDo/);
   assert.match(state, /applyStatisticsPhotoChanges/);
-  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*3/);
+  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*6/);
   assert.match(index, /function StatisticsIndex\.applyChanges/);
   assert.match(index, /referenceImageUuids/);
   assert.match(index, /photoUuid/);
@@ -671,9 +768,30 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(index, /classBreakdown = classBreakdown/);
   assert.match(index, /locationTime = locationTimeResult\(index\.locationTime\)/);
   assert.match(index, /taxonomyLocationTime = locationTimeResult\(index\.taxonomyLocationTime\)/);
+  assert.match(index, /taxonomyDataQuality = taxonomyDataQualityResult\(index\.taxonomyLocationTime, assignedPhotos\)/);
+  assert.match(index, /observations = \{\}/);
+  assert.match(index, /type\(index\.observations\) == "table"/);
+  assert.match(index, /local function changeObservation\(index, snapshot, amount\)/);
+  assert.match(index, /changeObservation\(index, snapshot, 1\)/);
+  assert.match(index, /changeObservation\(index, snapshot, -1\)/);
+  assert.match(index, /observationRows = observationRows/);
+  for (const aggregate of [
+    "countries",
+    "states",
+    "cities",
+    "locations",
+    "years",
+    "months",
+    "monthYears",
+    "days",
+  ]) {
+    assert.match(index, new RegExp(`sortedCounts\\(aggregate\\.${aggregate}, 5\\)`));
+  }
+  assert.match(index, /captureDate = captureDate\(values\.captureDate or values\.dateTimeOriginal\)/);
   assert.match(index, /string\.sub\(masterTaxonId, 1, 4\) == "mtx_"/);
-  assert.match(index, /topCountries = sortedCounts\(aggregate\.countries, 1\)/);
-  assert.match(index, /topMonths = sortedCounts\(aggregate\.months, 1\)/);
+  assert.match(index, /while #topSpecies > 5 do/);
+  assert.match(index, /englishName = cleanText\(entry\.englishName\)/);
+  assert.match(index, /order = cleanText\(entry\.order\)/);
   for (const field of [
     "fnLocation",
     "fnCity",
@@ -690,7 +808,7 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(statistics, /CHECKPOINT_CHUNK_COUNT\s*=\s*10/);
   assert.match(statistics, /for chunkStart = startIndex, totalPhotos, READ_CHUNK_SIZE do/);
   assert.match(statistics, /catalog:batchGetPropertyForPlugin\(chunk, _PLUGIN, FIELD_IDS\)/);
-  assert.match(statistics, /catalog:batchGetRawMetadata\(chunk, \{ "uuid" \}\)/);
+  assert.match(statistics, /catalog:batchGetRawMetadata\([\s\S]*?chunk,[\s\S]*?\{ "uuid", "dateTimeOriginal", "path" \}[\s\S]*?\)/);
   assert.match(statistics, /PluginState\.saveStatisticsBuild/);
   assert.match(statistics, /PluginState\.saveStatisticsIndex/);
   assert.match(statistics, /function Statistics\.assignmentSnapshot/);
@@ -708,14 +826,16 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /section\(factory, "Klassen", classBreakdownText\(statistics\)/);
   assert.doesNotMatch(dialog, /factory:scrolled_view/);
   assert.match(dialog, /runSavePanel/);
-  assert.match(dialog, /requiredFileType\s*=\s*"csv"/);
+  assert.match(dialog, /requiredFileType\s*=\s*fileType/);
   assert.match(dialog, /string\.char\(239, 187, 191\)/);
   assert.match(dialog, /Deutscher Name/);
+  assert.match(dialog, /Englischer Name/);
   assert.match(dialog, /Wissenschaftlicher Name/);
+  assert.match(dialog, /csvField\("Ordnung"\)/);
   assert.match(dialog, /Art-Favorit/);
   assert.doesNotMatch(dialog, /classExpanded|Arten anzeigen|Arten ausblenden/);
-  assert.match(dialog, /Abdeckung:/);
-  assert.match(dialog, /Lifelist /);
+  assert.match(dialog, /Taxonomieabdeckung:/);
+  assert.match(dialog, /title = "Lifelist: " \.\. speciesLabel\(statistics\.speciesCount\)/);
   assert.match(dialog, /"Klassen"/);
   assert.match(dialog, /Art-Favoriten/);
   assert.match(dialog, /Aves = "Vögel"/);
@@ -723,18 +843,99 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /Actinopterygii = "Strahlenflosser"/);
   assert.match(dialog, /Am häufigsten fotografierte Arten/);
   assert.match(dialog, /Noch keine Arten zugewiesen/);
-  assert.match(dialog, /FN-Orte und FN-Zeiten/);
-  assert.match(dialog, /Alle FN-Orts-\/Zeitfotos/);
-  assert.match(dialog, /Mit Taxonomie/);
+  assert.doesNotMatch(dialog, /FN-Orte und FN-Zeiten/);
+  assert.match(dialog, /Datenqualität der taxonomierten Fotos/);
+  assert.match(dialog, /mit Zeit- und Ortsangabe/);
+  assert.match(dialog, /nur mit Zeitangabe/);
+  assert.match(dialog, /nur mit Ortsangabe/);
+  assert.match(dialog, /ohne Zeit- und Ortsangabe/);
+  assert.match(dialog, /"Orte"/);
+  assert.match(dialog, /"Zeiten"/);
   assert.match(dialog, /Länder/);
-  assert.match(dialog, /Bundesländer\/Regionen/);
-  assert.match(dialog, /Städte/);
-  assert.match(dialog, /Ortsdetails/);
-  assert.match(dialog, /Jahre/);
-  assert.match(dialog, /Monate/);
-  assert.match(
-    dialog,
-    /locationTimeText\(statistics\.locationTime\),\s*7,\s*45/,
+  assert.match(dialog, /Regionen/);
+  assert.match(dialog, /Städte\/Gemeinden/);
+  assert.match(dialog, /Orte\/Details/);
+  assert.match(dialog, /Top 5 Jahre/);
+  assert.match(dialog, /local function photoYearSpanLabel\(count\)/);
+  assert.match(dialog, /count == 1 and "Jahr" or "Jahren"/);
+  assert.match(dialog, /Top 5 Monate/);
+  assert.match(dialog, /Top 5 Monate\/Jahre/);
+  assert.match(dialog, /Top 5 Tage/);
+  assert.match(dialog, /Top 5 Länder/);
+  assert.match(dialog, /Top 5 Regionen/);
+  assert.match(dialog, /Top 5 Städte\/Gemeinden/);
+  assert.match(dialog, /Top 5 Orte\/Details/);
+  assert.match(dialog, /percentage\(entry\.photoCount, statistics\.assignedPhotos\)/);
+  assert.match(dialog, /line\(quality\.timePhotoCount, "mit Zeitangabe"\)/);
+  assert.match(dialog, /actionVerb = "Exportieren \.\.\."/);
+  assert.match(dialog, /Lifelist als CSV exportieren/);
+  assert.match(dialog, /Beobachtungsliste als CSV exportieren/);
+  assert.match(dialog, /Artenliste als TXT exportieren/);
+  assert.match(dialog, /function exportObservationList\(statistics\)/);
+  assert.match(dialog, /local rows = statistics\.observationRows or \{\}/);
+  assert.doesNotMatch(dialog, /Statistics\.observationRows\(catalog|LrProgressScope/);
+  assert.match(statistics, /fnCaptureMonth/);
+  assert.match(statistics, /fnCaptureYear/);
+  assert.match(dialog, /Beispiel-Dateiname/);
+  assert.match(dialog, /csvField\("Art-Favorit vorhanden"\)/);
+  assert.match(dialog, /rawInteger\(entry\.photoCount\)/);
+  assert.match(dialog, /CLASS_EXPORT_ORDER/);
+  assert.match(dialog, /function exportSpeciesText\(statistics\)/);
+  assert.match(dialog, /Gesamt: /);
+  assert.match(dialog, /TXT_SEPARATOR/);
+  assert.match(dialog, /"\* " \.\. speciesDisplayName\(entry\)/);
+  assert.doesNotMatch(statistics, /function Statistics\.observationRows/);
+  const observationExport = dialog.slice(
+    dialog.indexOf("local function exportObservationList"),
+    dialog.indexOf("local function exportSpeciesText"),
+  );
+  assert.doesNotMatch(
+    observationExport,
+    /getAllPhotos|batchGetPropertyForPlugin|batchGetRawMetadata|withReadAccessDo/,
+  );
+  assert.match(index, /local function observationKey\(snapshot\)/);
+  assert.match(index, /local hasFnTime = cleanText\(snapshot\.fnCaptureYear\) ~= ""/);
+  assert.match(index, /local date = hasFnTime and cleanText\(snapshot\.captureDate\) or ""/);
+  assert.match(index, /exampleFileName = cleanText\(entry\.exampleFileName\)/);
+  assert.doesNotMatch(statistics, /getRawMetadata\("gps"\)|reverse.?geocod/i);
+  assert.doesNotMatch(`${statistics}\n${dialog}`, /setPropertyForPlugin|addKeyword|createKeyword/);
+  assert.doesNotMatch(dialog, /Bedeutung:/);
+  assert.match(dialog, /local function formatInteger\(value\)/);
+  assert.match(dialog, /string\.gsub\(reversed, "\(%d%d%d\)", "%1\."\)/);
+  assert.doesNotMatch(dialog, /\bBild(?:er)?\b/);
+  for (const rankLabel of ["Domäne", "Reich", "Stamm", "Klasse", "Ordnung", "Familie", "Gattung"]) {
+    assert.match(dialog, new RegExp(rankLabel));
+  }
+  for (const rankField of ["taxonomyDomain", "taxonomyKingdom", "taxonomyPhylum", "taxonomyOrder"]) {
+    assert.match(statistics, new RegExp(`"${rankField}"`));
+  }
+  for (const rankMap of ["domains", "kingdoms", "phyla", "classRanks", "orders", "families", "genera"]) {
+    assert.match(index, new RegExp(`type\\(index\\.${rankMap}\\) == "table"`));
+  }
+  assert.match(index, /bothPhotoCount = math\.max\(locationPhotoCount \+ timePhotoCount - unionPhotoCount, 0\)/);
+  assert.match(index, /onlyLocationPhotoCount = math\.max\(locationPhotoCount - bothPhotoCount, 0\)/);
+  assert.match(index, /onlyTimePhotoCount = math\.max\(timePhotoCount - bothPhotoCount, 0\)/);
+  assert.match(index, /neitherPhotoCount = math\.max\(\(tonumber\(assignedPhotos or 0\) or 0\) - unionPhotoCount, 0\)/);
+  const screenshotCounts = {
+    assigned: 4787,
+    location: 1250,
+    time: 4775,
+    union: 4777,
+  };
+  const both = screenshotCounts.location + screenshotCounts.time - screenshotCounts.union;
+  assert.deepEqual(
+    {
+      both,
+      onlyTime: screenshotCounts.time - both,
+      onlyLocation: screenshotCounts.location - both,
+      neither: screenshotCounts.assigned - screenshotCounts.union,
+    },
+    { both: 1248, onlyTime: 3527, onlyLocation: 2, neither: 10 },
+  );
+  assert.ok(
+    index.indexOf("if not hasValidTaxonomy(snapshot) then\n    return")
+      < index.indexOf("index.assignedPhotos = (tonumber(index.assignedPhotos or 0) or 0) + 1"),
+    "Taxonomieabdeckung darf nur gültige masterTaxonId-Zuweisungen zählen",
   );
 });
 
@@ -786,7 +987,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.23\.16/);
+  assert.match(provider, /Version: 0\.4\.24\.5/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

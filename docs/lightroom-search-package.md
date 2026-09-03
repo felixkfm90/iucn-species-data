@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-01
+Stand: 2026-09-03
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.23.16 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.24.5 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
@@ -10,7 +10,8 @@ Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, die automatische Suche von 0
 Korrekturaktivierung von 0.4.20.0 benötigen noch den praktischen Folgetest. Der persistente Statistikindex mit
 CSV-Export sowie direkte Deltas nach Zuweisung und Rücknahme wurden im Großkatalog bis 0.4.21.1 praktisch bestätigt;
 der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitaktionen von 0.4.22.1 und ihre
-Statistikauswertung von 0.4.23.0 sowie die Aktionskorrekturen bis 0.4.23.16 benötigen noch
+  Statistikauswertung von 0.4.23.0, die Aktionskorrekturen bis 0.4.23.16 sowie Gesamtbereinigung und Katalogpflege
+  von 0.4.24.5 benötigen noch
 den kontrollierten Lightroom-Test. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
@@ -152,7 +153,9 @@ Anfrage-/Antwortdateimodus für Lua:
 node species-explorer/lightroom-search-helper.mjs --request=<Anfrage.json> --response=<Antwort.json>
 ```
 
-Unterstützte Befehle sind `ping`, `status`, `search`, `taxon` und `close`. Fehler werden als strukturierte
+Unterstützte Befehle sind `ping`, `status`, `search`, `taxon`, `taxa` und `close`. `taxa` löst bis zu 10.000
+deduplizierte Master-IDs in einer Anfrage auf und liefert gefundene und fehlende IDs sowie die Paketidentität
+getrennt zurück. Fehler werden als strukturierte
 JSON-Antworten gemeldet; technische Stacktraces gelangen nicht in die Lightroom-Oberfläche.
 
 ## Plug-in
@@ -163,7 +166,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.23.16`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.5`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -314,7 +317,7 @@ Endung `(FN Ort)` und für den deutschen Aufnahmemonat sowie das vierstellige Au
 Redundanz nur als Plug-in-Metadatum gespeichert. Eine normale Taxonomiezuweisung ergänzt dieselben Orts-/Zeitwerte
 automatisch, sofern für das Foto noch kein solcher FN-Stand existiert. Taxonomie- und Orts-/Zeitaktionen schützen
 die jeweils fremden gespeicherten Stichwortnamen gegeneinander. Manuelle Stichwörter bleiben unverändert. Es gibt
-keine katalogweite Suche und keinen eigenen Reverse-Geocoding-Dienst. Das Rohfeld `gps` bestimmt, ob für noch nicht
+bei diesen drei Auswahlaktionen keine katalogweite Suche und keinen eigenen Reverse-Geocoding-Dienst. Das Rohfeld `gps` bestimmt, ob für noch nicht
 gespeicherte Lightroom-Ortsvorschläge ein kleiner temporärer Export erforderlich ist.
 
 Version 0.4.23.0 ergänzt im Statistikfenster zwei feste nebeneinanderliegende Bereiche ohne dynamische Scrollansicht:
@@ -331,6 +334,47 @@ in dasselbe Delta; `Taxonomie entfernen` lässt eigenständige FN-Orts-/Zeitwert
 aus der kombinierten Auswertung. Der Index speichert weiterhin ausschließlich Aggregate und keine zweite
 katalogweite Fotoliste. Das erhöhte Indexschema macht einen älteren Index ungültig; beim ersten Statistikaufruf ist
 deshalb einmalig ein vollständiger, weiterhin pausierbarer Aufbau nötig.
+
+Version 0.4.24.2 zeigt die Fotozahl für jedes gespeicherte Jahr, den häufigsten Monat und die häufigsten Ortswerte
+einschließlich ihrer Fotozahl. Die Ortsvielfalt nennt getrennt die Anzahl unterschiedlicher Länder, Regionen,
+Städte und Ortsdetails. Besitzen alle FN-Orts-/Zeitfotos auch eine gültige Taxonomie, ist die Schnittmenge
+definitionsgemäß identisch; statt der vollständigen Wiederholung zeigt der rechte Bereich dann einen entsprechenden
+Hinweis.
+
+Version 0.4.24.3 ersetzt den kombinierten Doppelblock durch getrennte Abschnitte `Orte` und `Zeiten` sowie eine
+eigene `Datenqualität der taxonomierten Fotos`. Die Schnittmengen werden aus dem taxonomierten FN-Ort/FN-Zeit-
+Aggregat berechnet: beide = Ort + Zeit - Vereinigung; nur Ort beziehungsweise nur Zeit ziehen diese Schnittmenge
+ab; weder noch = taxonomierte Fotos - Vereinigung. Katalogübersicht und Abdeckung verwenden weiterhin ausschließlich
+gültige `mtx_`-Master-IDs. Sichtbare Ganzzahlen erhalten deutsche Tausenderpunkte. Der Taxonomieumfang zählt Domäne,
+Reich, Stamm, Klasse, Ordnung, Familie und Gattung aus den jeweiligen Plug-in-Metadaten und Arten aus eindeutigen
+Master-IDs. Ortszahlen stammen nur aus FN-Ortsfeldern; Zeitspitzen für Jahr, Monat und Monat/Jahr nur aus FN-
+Zeitfeldern. Für den häufigsten Tag liest ausschließlich der bewusst gestartete Statistikaufbau zusätzlich das
+dokumentierte Aufnahmedatum `dateTimeOriginal`; gespeichert wird nur das Tagesaggregat, kein neues Foto-Metadatum
+oder Stichwort. Indexschema 4 verlangt dafür einmalig `Statistik neu aufbauen`.
+
+Version 0.4.24.4 erhöht den Statistikindex auf Schema 5, damit Lifelist und Exporte zusätzlich englischen Artnamen
+und Ordnung enthalten. Alle Orts-, Zeit- und Artenranglisten sind auf fünf Einträge begrenzt. Im Fenster stehen
+Orts- und Zeitlisten platzsparend in jeweils zwei zweispaltigen Zeilen; Datenqualität und Klassen zeigen zusätzlich
+Prozentanteile bezogen auf taxonomierte Fotos. `Exportieren ...` öffnet eine Auswahl für drei ausschließlich lesende
+Formate:
+
+- Lifelist-CSV: eine Zeile je Art, nach Amphibien, Insekten, Reptilien, Säugetieren, Vögeln und danach weiteren
+  Klassen sortiert;
+- Beobachtungslisten-CSV: eine Zeile je Kombination aus FN-Datum, FN-Ort und Master-Art, einschließlich Fotozahl,
+  Favoritenstatus und – sofern über den dokumentierten Fotopfad vorhanden – eines Beispiel-Dateinamens;
+- TXT-Artenliste: kompakte UTF-8-Liste mit Klassenzusammenfassung, Unicode-Trennlinien und Sternchen-Aufzählung.
+
+Nur der ausdrücklich gestartete Beobachtungsexport liest alle Katalogfotos in 500er-Blöcken und zeigt dabei einen
+abbrechbaren Fortschritt. Er verwendet ausschließlich vorhandene Plug-in-Metadaten und `dateTimeOriginal`, führt
+kein Geocoding aus und verändert weder Fotos, Metadaten noch Stichwörter.
+
+Version 0.4.24.5 übernimmt diese Beobachtungsgruppen in den persistenten Statistikindex. Sie werden beim ohnehin
+bewusst gestarteten Statistikaufbau einmalig erzeugt und anschließend von Taxonomie-, Orts-/Zeit- und
+Favoritenaktionen über die vorhandenen Vorher-/Nachher-Schnappschüsse inkrementell gepflegt. Der
+Beobachtungslisten-Export liest damit wie die beiden anderen Exporte nur noch den fertigen Index und startet keinen
+Katalogscan. Pro Gruppe speichert der Index Zähler, Fachwerte und höchstens einen optionalen Beispiel-Dateinamen,
+aber keine vollständige Fotoliste. Wird genau das Beispielbild aus der Gruppe entfernt, darf das optionale Feld bis
+zu einer späteren Ergänzung leer bleiben. Indexschema 6 erfordert einmalig `Statistik neu aufbauen`.
 
 Version 0.4.23.1 korrigiert die Rückgabe der eigenständigen Orts-/Zeitaktionen. `withWriteAccessDo` wird nur zum
 Ausführen und Absichern des Schreibcallbacks verwendet; dessen SDK-Rückgabewert ist nicht das fachliche
@@ -371,6 +415,31 @@ Die IPTC-Ortswerte werden über die formatierten Lightroom-Felder gelesen; `Bund
 Lightrooms öffentlichen SDK-Schlüssel `stateProvince`. Die gleichnamigen Rohmetadaten-Schlüssel sind für diese
 Felder nicht freigegeben.
 
+Version 0.4.24.1 ergänzt die Rücknahme um die vollständigen Lightroom-Varianten `(FN Ort)*` und `(FN Zeit)*`.
+Sie werden anhand des gesamten Stichwortnamens entfernt; neue Stichwörter erhalten weiterhin ausschließlich
+`(FN Ort)` oder `(FN Zeit)` ohne Stern. Die zusätzliche Auswahlaktion `Alle FN-Daten entfernen ...` verlangt eine
+Bestätigung und entfernt Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten sowie exakt die sechs Endungen `(FN)`, `(FN)*`,
+`(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` und `(FN Zeit)*`. Andere Lightroom-Metadaten und manuelle Stichwörter bleiben
+unverändert.
+
+`FN-Daten im Katalog aktualisieren ...` ist davon getrennt und beginnt mit einem rein lesenden Scan in
+500-Foto-Blöcken. Die Vorschau nennt sicher aktualisierbare Taxa, nicht auflösbare beziehungsweise ungültige
+Master-IDs, Mehrfachfavoriten und verwaiste reservierte Stichwörter. Erst `Vorschau übernehmen` startet
+250-Foto-Schreibblöcke. Alle eindeutigen IDs werden einmal gebündelt vom Suchhelfer aufgelöst; vor jedem
+Taxonomieblock müssen Paket-ID, Masterversion und Korrekturrevision noch der Vorschau entsprechen. Nur eine
+weiterhin aktive identische `masterTaxonId` wird aktualisiert. Es gibt keine Namensähnlichkeitssuche und keine
+stille Nachfolger-, Split- oder Merge-Zuordnung. Orts-/Zeitwerte werden für auflösbare Taxonomiefotos sowie bereits
+eigenständig verwaltete Orts-/Zeitfotos nach den aktuellen Regeln ersetzt. Fotos mit GPS, aber ohne gespeicherte
+Ortsfelder gehen für einen bestätigten Lauf gemeinsam durch eine Lightroom-Export-Session; ein von Adobe
+angezeigter KI-Bestätigungsdialog lässt sich durch das SDK nicht unterdrücken. Pause/Fortsetzen greift zwischen den
+Blöcken beziehungsweise nach einem laufenden Export. Schließen beendet nach dem aktuellen Block; ein späterer
+Neustart ist idempotent, beginnt jedoch ohne persistenten Wartungscheckpoint mit einer neuen Vorschau. Erfolgreiche
+Blöcke aktualisieren einen vorhandenen Statistikindex direkt. Seit Version 0.4.24.1 wird die Vereinigung aller in
+einem Schreibvorgang benötigten Orts-/Zeit-Stichwortnamen vorab gebildet. Lightroom erzeugt jedes Stichwortobjekt
+genau einmal; die fotoweise Zuweisung verwendet anschließend dieses Objekt wieder. Eine gemischte Auswahl aus
+Januar- und Februar-Fotos kann daher nicht mehr durch wiederholte `createKeyword`-Aufrufe für denselben Monat
+abbrechen.
+
 `Ausgewähltes Foto als Favoritenbild der Art markieren ...` markiert nach einer verständlichen Bestätigung genau ein
 bereits taxonomisch zugeordnetes Foto als Favoritenbild seiner `masterTaxonId`. Diese Markierung dient
 Sammlungen und Statistik und ist nicht das Artportrait des Arten-Explorers. Die Bilddatei wird weder kopiert noch
@@ -393,7 +462,7 @@ innerhalb des verwalteten Sammlungssatzes automatisch gelöscht. Gleichnamige Sa
 bleiben unangetastet. `Taxonomie-Statistik ...` zeigt
 Foto-, Art-, Gattungs-,
 Familien-, Klassen- und Favoritenbild-Zahlen, `Lifelist: X Arten`, die Taxonomie-Abdeckung, eine
-Klassenübersicht sowie `Am häufigsten fotografierte Arten:` mit höchstens zehn Einträgen. Solange noch
+  Klassenübersicht sowie `Am häufigsten fotografierte Arten:` mit höchstens fünf Einträgen. Solange noch
 keine Art zugewiesen ist, wird dieser Zustand ausdrücklich angezeigt.
 
 Fehlt der persistente Index oder hat sich die Kataloggröße geändert, öffnet Version 0.4.21.0 ein nichtmodales
@@ -429,7 +498,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.23.16`, der Suchpaketstatus sowie die acht
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.5`, der Suchpaketstatus sowie die zehn
    Menüaktionen ohne
    Lua-Fehler erscheinen.
 5. In der Bibliothek ein Testfoto markieren und
@@ -458,6 +527,11 @@ sondern zentral im Arten-Explorer verwaltet.
     `Hinzufügen` darf einen vorhandenen FN-Stand nicht still ersetzen, `Aktualisieren` muss geänderte Lightroom-
     Ortswerte übernehmen und `Entfernen` darf weder Taxonomie- noch manuelle Stichwörter löschen. Anschließend die
     normale Taxonomiezuweisung auf einem noch nicht bearbeiteten Foto prüfen; sie muss Ort und Zeit mit übernehmen.
+9b. Auf entbehrlichen Testfotos je eine Sternvariante `(FN)*`, `(FN Ort)*` und `(FN Zeit)*` vorbereiten.
+    Die jeweilige Einzelrücknahme muss das vollständige fachlich passende Stichwort entfernen. Anschließend
+    `Alle FN-Daten entfernen ...` prüfen: Nach Bestätigung müssen Taxonomie, Favorit, Orts-/Zeitdaten und alle sechs
+    reservierten Endungen verschwinden, während ein manuelles Kontrollstichwort und normale Lightroom-Metadaten
+    erhalten bleiben.
 10. Für eine zugewiesene Art nacheinander zwei Fotos als Favoritenbild der Art markieren, die Ersetzungswarnung
     einmal mit `Nein, behalten` und einmal mit `Ja, ersetzen` prüfen. Danach darf nur das zuletzt bestätigte Foto
     `Favoritenbild der Art = Ja` besitzen.
@@ -466,15 +540,22 @@ sondern zentral im Arten-Explorer verwaltet.
     Sammlungen `5-Sterne-Tierbilder` und `Art-Referenzbilder` müssen aus diesem Satz entfernt sein. Bei 132 Fotos
     mit zwei Taxonomiezuweisungen müssen `Taxonomie fehlt` 130 und `Taxonomie zugewiesen` zwei Fotos enthalten.
 12. `Taxonomie-Statistik ...` öffnen. Beim ersten Aufruf den sichtbaren 500er-Fortschritt prüfen, einmal pausieren,
-    das Fenster schließen und anschließend fortsetzen. Danach Lifelist, Abdeckung, Favoritenbilder und die höchstens
-    zehn am häufigsten fotografierten Arten prüfen. Die kompakte Klassenübersicht muss Art- und Fotozahl je Klasse
-    ohne große Leerfläche zeigen. Zusätzlich müssen `Orte und Zeiten – alle FN-Fotos` alle zuvor bearbeiteten
-    Orts-/Zeitfotos unabhängig von ihrer Taxonomie und `Taxonomiefotos nach Ort und Zeit` nur die taxonomisch
-    zugewiesene Schnittmenge zeigen. Länder, Regionen, Städte, Ortsdetails, Jahre und Monate erscheinen kompakt in
-    zwei nebeneinanderliegenden Blöcken mit Anzahl und häufigstem Wert. Die Lifelist als UTF-8-CSV exportieren und dort Klasseninhalt, Spalten, Umlaute,
-    Fotozahlen sowie Art-Favorit kontrollieren. Anschließend eine
+    das Fenster schließen und anschließend fortsetzen. Danach den einzeiligen Lifelist-Kopf, Abdeckung,
+    Favoritenbilder, Prozentwerte und die höchstens fünf am häufigsten fotografierten Arten prüfen. Orte und Zeiten
+    müssen jeweils Top 5 für Länder/Regionen/Städte/Ortsdetails beziehungsweise Jahre/Monate/Monate-Jahre/Tage
+    zeigen. Über `Exportieren ...` Lifelist-CSV, Beobachtungslisten-CSV und TXT-Artenliste prüfen: UTF-8, Umlaute,
+    Klassensortierung, Aggregation, leere fehlende FN-Felder, unverzierte numerische Fotozahlen und Beispiel-Dateiname.
+    Anschließend eine
     Zuweisung, Rücknahme, Orts-/Zeitänderung und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen
     Neuaufbau stimmen.
+12a. `FN-Daten im Katalog aktualisieren ...` in einem kopierten Katalog öffnen. Der 500er-Scan darf vor der
+     Vorschau nichts schreiben. Ungültige beziehungsweise unbekannte IDs, mehrere Favoriten derselben Art und
+     verwaiste FN-Stichwörter müssen in der Vorschau erscheinen und unverändert bleiben. Danach übernehmen, bei
+     mindestens einem Block pausieren/fortsetzen und prüfen, dass aktuelle Namen, Taxonomiepfade, Stichwörter sowie
+     FN-Orts-/Zeitwerte in 250er-Blöcken ersetzt werden. Falls Lightroom KI-Ortsvorschläge bestätigen lässt, darf
+     höchstens die gemeinsame Export-Session dieses Laufes erscheinen. Einen Lauf einmal während eines Blocks
+     schließen und erneut starten; bereits abgeschlossene Blöcke müssen ohne Doppelstichwörter erneut verarbeitbar
+     sein. Die Statistik muss nach erfolgreichen Blöcken ohne Vollneuaufbau stimmen.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
@@ -513,7 +594,9 @@ Automatisch verifiziert sind:
   Klassenübersicht, Abdeckung und häufigsten Arten;
 - abgesicherte einmalige Lightroom-Explorer-Korrekturübergabe, revisionsbasierte Erkennung noch nicht eingebauter
   Korrekturen, gemeinsame atomare Aktivierung einer kleinen Korrekturschicht ohne Basisneubau und kombinierter
-  Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten.
+  Hierarchieexport aus vollständigem Anbieterfallback und ausgewählten Masterwerten;
+- Erkennung aller sechs reservierten FN-Endungen bei der Gesamtbereinigung, blockweiser Katalogpflegerahmen,
+  gebündelte Master-ID-Auflösung, unveränderte Paketprüfung, Konfliktbericht und inkrementelle Statistikdeltas.
 
 Einzel- und Mehrfachzuweisung, Suche per Button, Fensterbreite und -höhe, die frühere Lifelist-Anzeige,
 Favoritenersetzungswarnung sowie die Rücknahme von `(FN)`- und `(FN)*`-Stichwörtern wurden mit den vorherigen
@@ -576,6 +659,15 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   Ortsvorschläge und die Aufnahmezeit. Ein eigener Geodienst wird nicht angesprochen; die Vorschläge hängen von
   Lightrooms Katalogoption `Adressvorschläge beim Export ...` und nicht privaten gespeicherten Orten ab. Eine eigene Ortsbestimmung per Polygon oder Reverse-Geocoding bleibt frühestens ein
   gesonderter Ausbau nach Phase 11.
+- Der Katalogpflegelauf kann eine Lightroom-Export-Session für alle benötigten Ortsvorschläge bündeln, hat aber
+  keine SDK-Kontrolle über Adobes KI-Bestätigungsdialog. Pause greift erst nach einem bereits laufenden Export.
+  Der Lauf speichert keinen eigenen dauerhaften Fortschrittscheckpoint; nach Schließen beginnt ein idempotenter
+  Neustart wieder mit Scan und Vorschau.
+- Die aktuelle Master-Taxon-ID wird aus wissenschaftlichem Namen, Rang und Reich gebildet. Reine deutsche oder
+  englische Namenskorrekturen sowie Hierarchieänderungen behalten deshalb die ID. Ändert sich eine dieser drei
+  Identitätskomponenten oder wird ein Taxon geteilt beziehungsweise zusammengeführt, existiert derzeit keine
+  automatische Nachfolgerbeziehung. Der Katalogpflegelauf überspringt die nicht mehr auflösbare ID, statt anhand
+  eines Namens zu raten; eine bestätigte Konflikt- beziehungsweise Nachfolgerzuordnung bleibt offen.
 - Alte flache Taxonomie-Stichwörter ohne `(FN)`-Endung sind nicht eindeutig vom Nutzerbestand unterscheidbar und
   werden deshalb nicht automatisch gelöscht. Andere frühere Smart-Sammlungen mit unbekannten abweichenden Namen
   werden ebenfalls nicht automatisch entfernt; die beiden bekannten Alt-Sammlungen `5-Sterne-Tierbilder` und

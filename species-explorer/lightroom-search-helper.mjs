@@ -8,6 +8,7 @@ import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
 export const LIGHTROOM_SEARCH_PROTOCOL_VERSION = 1;
+const MAX_BATCH_TAXA = 10_000;
 
 function cleanText(value) {
   return String(value ?? "").normalize("NFKC").trim();
@@ -83,6 +84,36 @@ export async function createLightroomSearchRequestHandler({
           const status = store.status();
           return success(request, {
             ...taxon,
+            searchPackage: {
+              packageId: status.packageId,
+              masterVersion: status.masterVersion,
+              correctionRevision: status.correctionRevision || "",
+            },
+          });
+        }
+        if (command === "taxa") {
+          const masterTaxonIds = [...new Set(
+            (Array.isArray(request.masterTaxonIds) ? request.masterTaxonIds : [])
+              .map(cleanText)
+              .filter(Boolean),
+          )];
+          if (masterTaxonIds.length > MAX_BATCH_TAXA) {
+            throw Object.assign(
+              new Error(`Höchstens ${MAX_BATCH_TAXA} Master-Taxa können gemeinsam aufgelöst werden.`),
+              { code: "too-many-taxa" },
+            );
+          }
+          const taxa = [];
+          const missingMasterTaxonIds = [];
+          for (const masterTaxonId of masterTaxonIds) {
+            const taxon = store.taxon(masterTaxonId);
+            if (taxon) taxa.push(taxon);
+            else missingMasterTaxonIds.push(masterTaxonId);
+          }
+          const status = store.status();
+          return success(request, {
+            taxa,
+            missingMasterTaxonIds,
             searchPackage: {
               packageId: status.packageId,
               masterVersion: status.masterVersion,

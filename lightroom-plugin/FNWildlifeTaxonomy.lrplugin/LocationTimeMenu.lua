@@ -16,8 +16,9 @@ local ACTIONS = {
   },
   remove = {
     question = "Orts- und Zeitstichwörter entfernen?",
-    explanation = "Nur die durch diese Plug-in-Funktion gespeicherten Orts- und Zeitstichwörter sowie "
-      .. "deren FN-Metadaten werden entfernt. Taxonomie- und manuelle Stichwörter bleiben erhalten.",
+    explanation = "Nur die durch diese Plug-in-Funktion gespeicherten Orts- und Zeitstichwörter mit "
+      .. "(FN Ort), (FN Ort)*, (FN Zeit) oder (FN Zeit)* sowie deren FN-Metadaten werden entfernt. "
+      .. "Taxonomie- und manuelle Stichwörter bleiben erhalten.",
     button = "Entfernen",
     success = "Orts- und Zeitstichwörter entfernt",
   },
@@ -31,7 +32,7 @@ local ACTIONS = {
   },
 }
 
-local function resultMessage(result)
+local function resultMessage(result, mode)
   local changedPhotoCount = tonumber(result and result.changedPhotoCount or 0) or 0
   local skippedPhotoCount = tonumber(result and result.skippedPhotoCount or 0) or 0
   local missingDataPhotoCount = tonumber(result and result.missingDataPhotoCount or 0) or 0
@@ -42,9 +43,18 @@ local function resultMessage(result)
     result and result.missingGpsAndLocationPhotoCount or 0
   ) or 0
   local missingTimePhotoCount = tonumber(result and result.missingTimePhotoCount or 0) or 0
+  local removedKeywordCount = tonumber(result and result.removedKeywordCount or 0) or 0
   local captureDiagnostic = tostring(result and result.captureDiagnostic or "")
   local message = tostring(changedPhotoCount)
     .. (changedPhotoCount == 1 and " Foto wurde geändert." or " Fotos wurden geändert.")
+  if mode == "remove" then
+    message = message
+      .. " "
+      .. tostring(removedKeywordCount)
+      .. (removedKeywordCount == 1
+          and " verwaltete Stichwortzuordnung wurde entfernt."
+        or " verwaltete Stichwortzuordnungen wurden entfernt.")
+  end
   if skippedPhotoCount > 0 then
     message = message
       .. " "
@@ -149,7 +159,7 @@ function LocationTimeMenu.run(mode)
       )
       return
     end
-    LrDialogs.message(action.success, resultMessage(result), "info")
+    LrDialogs.message(action.success, resultMessage(result, mode), "info")
   end)
 end
 

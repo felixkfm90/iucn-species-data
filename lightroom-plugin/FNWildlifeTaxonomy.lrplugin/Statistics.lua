@@ -8,7 +8,12 @@ local CHECKPOINT_CHUNK_COUNT = 10
 local FIELD_IDS = {
   "masterTaxonId",
   "germanName",
+  "englishName",
   "scientificName",
+  "taxonomyDomain",
+  "taxonomyKingdom",
+  "taxonomyPhylum",
+  "taxonomyOrder",
   "taxonomyFamily",
   "taxonomyGenus",
   "taxonomyClass",
@@ -98,10 +103,16 @@ function Statistics.build(catalog, options)
     end
     catalog:withReadAccessDo(function()
       local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
-      local rawValuesByPhoto = catalog:batchGetRawMetadata(chunk, { "uuid" })
+      local rawValuesByPhoto = catalog:batchGetRawMetadata(
+        chunk,
+        { "uuid", "dateTimeOriginal", "path" }
+      )
       for _, photo in ipairs(chunk) do
         local values = valuesByPhoto[photo] or {}
-        values.photoUuid = (rawValuesByPhoto[photo] or {}).uuid
+        local rawValues = rawValuesByPhoto[photo] or {}
+        values.photoUuid = rawValues.uuid
+        values.dateTimeOriginal = rawValues.dateTimeOriginal
+        values.path = rawValues.path
         StatisticsIndex.add(index, StatisticsIndex.snapshot(values))
       end
     end)
@@ -166,21 +177,31 @@ function Statistics.assignmentSnapshot(
   local values = copyLocationTime({
     masterTaxonId = taxon and taxon.masterTaxonId,
     germanName = taxon and taxon.germanName,
+    englishName = taxon and taxon.englishName,
     scientificName = taxon and taxon.acceptedScientificName,
+    taxonomyDomain = rankValues.domain,
+    taxonomyKingdom = rankValues.kingdom,
+    taxonomyPhylum = rankValues.phylum,
+    taxonomyOrder = rankValues.order,
     taxonomyFamily = rankValues.family,
     taxonomyGenus = rankValues.genus,
     taxonomyClass = rankValues.class,
     referenceImage = referenceImage and "yes" or "no",
     photoUuid = photoUuid,
+    exampleFileName = previousSnapshot and previousSnapshot.exampleFileName,
   }, previousSnapshot)
   if locationTimeValues ~= false and locationTimeValues ~= nil then
     copyLocationTime(values, locationTimeValues)
   end
+  values.captureDate = previousSnapshot and previousSnapshot.captureDate
   return StatisticsIndex.snapshot(values)
 end
 
 function Statistics.emptySnapshot(previousSnapshot)
-  return StatisticsIndex.snapshot(copyLocationTime({}, previousSnapshot))
+  local values = copyLocationTime({}, previousSnapshot)
+  values.captureDate = previousSnapshot and previousSnapshot.captureDate
+  values.exampleFileName = previousSnapshot and previousSnapshot.exampleFileName
+  return StatisticsIndex.snapshot(values)
 end
 
 function Statistics.locationTimeSnapshot(snapshot, locationTimeValues)
@@ -188,12 +209,19 @@ function Statistics.locationTimeSnapshot(snapshot, locationTimeValues)
   local values = {
     masterTaxonId = snapshot.masterTaxonId,
     germanName = snapshot.germanName,
+    englishName = snapshot.englishName,
     scientificName = snapshot.scientificName,
+    taxonomyDomain = snapshot.domain,
+    taxonomyKingdom = snapshot.kingdom,
+    taxonomyPhylum = snapshot.phylum,
+    taxonomyOrder = snapshot.order,
     taxonomyFamily = snapshot.family,
     taxonomyGenus = snapshot.genus,
     taxonomyClass = snapshot.className,
     referenceImage = snapshot.referenceImage and "yes" or "no",
     photoUuid = snapshot.photoUuid,
+    captureDate = snapshot.captureDate,
+    exampleFileName = snapshot.exampleFileName,
   }
   if locationTimeValues == false then
     copyLocationTime(values, snapshot)
@@ -208,12 +236,19 @@ function Statistics.referenceSnapshot(snapshot, referenceImage)
   return StatisticsIndex.snapshot(copyLocationTime({
     masterTaxonId = snapshot.masterTaxonId,
     germanName = snapshot.germanName,
+    englishName = snapshot.englishName,
     scientificName = snapshot.scientificName,
+    taxonomyDomain = snapshot.domain,
+    taxonomyKingdom = snapshot.kingdom,
+    taxonomyPhylum = snapshot.phylum,
+    taxonomyOrder = snapshot.order,
     taxonomyFamily = snapshot.family,
     taxonomyGenus = snapshot.genus,
     taxonomyClass = snapshot.className,
     referenceImage = referenceImage and "yes" or "no",
     photoUuid = snapshot.photoUuid,
+    captureDate = snapshot.captureDate,
+    exampleFileName = snapshot.exampleFileName,
   }, snapshot))
 end
 

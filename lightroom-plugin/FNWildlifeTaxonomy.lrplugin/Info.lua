@@ -25,6 +25,14 @@ return {
       file = "UpdateLocationTime.lua",
     },
     {
+      title = "Alle FN-Daten entfernen ...",
+      file = "RemoveAllFnData.lua",
+    },
+    {
+      title = "FN-Daten im Katalog aktualisieren ...",
+      file = "UpdateCatalogFnData.lua",
+    },
+    {
       title = "Ausgewähltes Foto als Favoritenbild der Art markieren ...",
       file = "SetReferenceImage.lua",
     },
@@ -46,7 +54,7 @@ return {
   VERSION = {
     major = 0,
     minor = 4,
-    revision = 23,
-    build = 16,
+    revision = 24,
+    build = 5,
   },
 }

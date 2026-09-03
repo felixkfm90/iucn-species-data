@@ -1,10 +1,10 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-08-30
+Stand: 2026-09-03
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.23.16 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.5 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
 automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
@@ -362,9 +362,10 @@ Zu prüfende Funktionen:
 - Performancetests mit großen Katalogen
 - genau ein kontrolliertes `Favoritenbild der Art` pro Art
 - intelligente Sammlungen und kataloggebundene persistente Katalogstatistiken
-- Lifelist- und kompakte Klassenstatistiken sowie höchstens zehn am häufigsten fotografierte Arten
-- Lifelist-CSV sowie ein kontrollierter Index-Neuaufbau für nicht beobachtbare externe Änderungen
-- später optional weiterführende Export- und Abgleichsfunktionen
+- Lifelist- und kompakte Klassenstatistiken sowie höchstens fünf am häufigsten fotografierte Arten
+- Lifelist-CSV, Beobachtungslisten-CSV, TXT-Artenliste sowie ein kontrollierter Index-Neuaufbau für nicht
+  beobachtbare externe Änderungen
+- später optional weiterführende Abgleichsfunktionen
 
 Die Machbarkeitsprüfung hat ein vollständig aus der aktiven Masterdatenbank abgeleitetes, kontrolliertes Suchpaket
 als bevorzugten MVP-Zugriffsweg bestätigt. Das Paket enthält einen kompakten SQLite-Suchindex mit allen Taxa,
@@ -600,7 +601,7 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
 
 ### 10.3 Deutsches Lightroom-Plug-in als MVP
 
-- **Bis Plug-in-Version 0.4.23.16 am 2026-09-02 umgesetzt und automatisiert geprüft; Einzel- und
+- **Bis Plug-in-Version 0.4.24.1 am 2026-09-03 umgesetzt und automatisiert geprüft; Einzel- und
   Mehrfachzuweisung sowie Auswahl-Refresh bis 0.4.16.0 praktisch bestätigt, die jüngsten Abläufe noch nicht abgenommen.**
 - Die deutsche Oberfläche verwendet ein kompaktes schwebendes, in vier gerahmte Arbeitsschritte gegliedertes
   Arbeitsfenster mit unten rechts verankertem Schließen-Button. Es prüft vor der Suche den lokalen Paketstatus,
@@ -648,7 +649,9 @@ praktisch bestätigt. Der verbindliche aktuelle Bedien- und Teststand steht in `
   werden flache `(FN Ort)`-Stichwörter für vorhandene Ortsnamen sowie `(FN Zeit)` für deutschen Monat und Jahr. ISO-Ländercode und alle
   Quellwerte bleiben als Plug-in-Metadaten nachvollziehbar. Die Funktion arbeitet nur auf der aktuellen Auswahl,
   liest GPS zur Erkennung noch nicht direkt lesbarer Lightroom-Ortsvorschläge. Diese werden aus kleinen temporären
-  Lightroom-Exporten der betroffenen Auswahl übernommen; ein eigener Geodienst und ein katalogweiter Lauf finden nicht statt. Die praktische Abnahme steht noch aus.
+  Lightroom-Exporten der betroffenen Auswahl übernommen; ein eigener Geodienst findet nicht statt. Ein Kataloglauf
+  existiert erst als ausdrücklich gestartete, bestätigungspflichtige Wartungsaktion ab Version 0.4.24.1. Die
+  praktische Abnahme steht noch aus.
 - Versioniertes read-only Suchpaket, atomarer Wechsel, Rollback, stabile Master-Taxon-ID und optionale
   Projekt-Art-ID bleiben unverändert die technische Grundlage.
 - `Artbezeichnung korrigieren ...` übergibt die ausgewählte Art seit Version 0.4.18.0 einmalig und kurzlebig an den
@@ -664,8 +667,8 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.23.16 am 2026-09-02 technisch umgesetzt und automatisiert
-  geprüft; die neue Orts-/Zeitstufe benötigt noch den gebündelten Lightroom-Test.**
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.24.5 am 2026-09-03 technisch umgesetzt und automatisiert
+  geprüft; Orts-/Zeitstufe, Gesamtbereinigung und Katalogpflege benötigen noch den gebündelten Lightroom-Test.**
 - Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
   Markierung derselben Art zurück. Diese Lightroom-Markierung ist unabhängig vom Artporträt des Arten-Explorers.
@@ -677,21 +680,45 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
   Lightroom-Stichwörter bleiben unberücksichtigt. Bereits vorhandene Regeln werden
   aktualisiert; `5-Sterne-Tierbilder` und `Art-Referenzbilder` werden innerhalb dieses Satzes automatisch entfernt.
 - Eine lokale Katalogstatistik zählt Fotos, Lifelist-Arten, Gattungen, Familien, Klassen und Favoritenbilder,
-  berechnet Taxonomie-Abdeckung und zeigt höchstens zehn am häufigsten fotografierte Arten. Klassen werden kompakt
-  mit Art- und Fotozahl angezeigt; die vollständigen Arten je Klasse stehen im CSV, weil dynamische Dialogzeilen im
-  praktischen Lightroom-Test nicht zuverlässig skalierten. Die Lifelist lässt
-  sich als UTF-8-CSV exportieren. Der kompakte Index und ein fortsetzbarer Aufbaucheckpoint liegen als
+  berechnet Taxonomie-Abdeckung und zeigt höchstens fünf am häufigsten fotografierte Arten. Klassen werden kompakt
+  mit Art-, Fotozahl und Prozentanteil angezeigt; die vollständigen Arten je Klasse stehen in Lifelist-CSV und
+  TXT-Artenliste, weil dynamische Dialogzeilen im praktischen Lightroom-Test nicht zuverlässig skalierten. Eine
+  Beobachtungslisten-CSV aggregiert vorhandene FN-Daten erst beim ausdrücklichen Export. Der kompakte Index und ein fortsetzbarer Aufbaucheckpoint liegen als
   katalogweite Plug-in-Eigenschaften vor. Der globale Aufbau speichert zugleich persistente Lightroom-Foto-UUIDs
   vorhandener Art-Favoriten; spätere Favoritenwechsel lösen nur diese UUIDs auf und schreiben die betroffenen Fotos.
   Eine veränderte Fotozahl oder die ausdrückliche Aktion `Statistik neu aufbauen` führen zum vollständigen Abgleich;
   ein allgemeiner Metadatenbeobachter ist im SDK nicht dokumentiert.
   Dafür ist kein Import oder Update der Taxonomie-Masterdatenbank nötig.
+- Version 0.4.24.4 vereinheitlicht Orts-, Zeit- und Artenranglisten auf Top 5, ergänzt Prozentanteile bei
+  Datenqualität und Klassen und trennt drei Exportformate hinter `Exportieren ...`. Lifelist-CSV und gruppierte
+  TXT-Artenliste verwenden den persistenten Index. Nur die ausdrücklich gewählte Beobachtungslisten-CSV liest den
+  Katalog in 500er-Blöcken und aggregiert vorhandene FN-Datums-, FN-Orts- und Taxonomiewerte; sie schreibt nichts
+  zurück und führt kein Geocoding aus. Indexschema 5 verlangt einmalig `Statistik neu aufbauen`.
+- Version 0.4.24.5 übernimmt auch die nach FN-Datum, FN-Ort und Master-Art gruppierten Beobachtungen in den
+  persistenten Statistikindex. Der Statistikaufbau erzeugt diese Gruppen einmalig; Plug-in-Aktionen pflegen sie
+  über vorhandene Vorher-/Nachher-Schnappschüsse weiter. Die Beobachtungslisten-CSV benötigt dadurch beim Export
+  keinen weiteren Katalogscan. Pro Gruppe wird höchstens ein optionaler Beispiel-Dateiname, aber keine Fotoliste
+  gespeichert. Indexschema 6 verlangt einmalig `Statistik neu aufbauen`.
 - Version 0.4.23.0 ergänzt im selben Index eine eigenständige Statistik aller Fotos mit gespeicherten FN-Orts-/
   Zeitwerten sowie eine getrennte Schnittmenge nur für Fotos mit gültiger `mtx_`-Taxonomie. Beide zeigen kompakt
   Fotozahlen sowie die Anzahl und den häufigsten Wert für Länder, Regionen, Städte, Ortsdetails, Jahre und Monate. Zwei
   feste nebeneinanderliegende Blöcke vermeiden die zuvor unzuverlässige dynamische Scrollhöhe. Die Orts-/Zeitaktionen und die
   normale Taxonomiezuweisung beziehungsweise -rücknahme aktualisieren die betroffenen Aggregate direkt. Der
   Schemawechsel erfordert einmalig einen kontrollierten Neuaufbau des Statistikindex.
+- Version 0.4.24.1 erkennt bei der Rücknahme zusätzlich die vollständigen Varianten `(FN Ort)*` und `(FN Zeit)*`,
+  erzeugt aber weiterhin ausschließlich die Endungen ohne Stern. `Alle FN-Daten entfernen ...` bereinigt nach
+  Bestätigung auf der Auswahl alle FN-Taxonomie-, Favoriten- und Orts-/Zeitdaten sowie exakt die sechs reservierten
+  Stichwortendungen. Andere Metadaten und manuelle Stichwörter bleiben erhalten.
+- `FN-Daten im Katalog aktualisieren ...` ist ein gesonderter Wartungslauf mit rein lesendem 500-Foto-Scan,
+  Vorschau und erst danach 250-Foto-Schreibblöcken. Er ist zwischen Blöcken pausierbar, löst die vorhandenen
+  `masterTaxonId`-Werte in einer gebündelten Suchhelferanfrage auf und prüft vor jedem Taxonomieblock, dass
+  Paket-ID, Masterversion und Korrekturrevision seit der Vorschau unverändert sind. Nur weiterhin aktive identische
+  IDs werden aktualisiert; ungültige oder nicht auflösbare IDs, mehrere Favoriten derselben Art und verwaiste
+  reservierte Stichwörter werden gemeldet und nicht erraten. Ortsvorschläge werden innerhalb einer gemeinsamen
+  Lightroom-Export-Session gebündelt. Einen Adobe-Bestätigungsdialog kann das Plug-in nicht abschalten. Erfolgreiche
+  Blöcke pflegen den Statistikindex inkrementell. Pause wirkt zwischen Blöcken beziehungsweise nach dem Export;
+  Schließen beendet nach dem aktuellen Block. Ein späterer idempotenter Neustart beginnt mit einer neuen Vorschau,
+  weil der Wartungslauf keinen persistenten Checkpoint speichert.
 - Im Zusatzmodul-Manager stehen nur Plug-in-Version und read-only Suchpaketstatus. Aktualisierung, Backup und
   Rollback bleiben zentral im Arten-Explorer und werden nicht im Plug-in dupliziert.
 - Der fachliche Taxonomiestand bleibt ausschließlich im Master/Suchpaket. Favoritenbild der Art, Sammlungen und Statistik
@@ -727,7 +754,7 @@ ausdrücklich:
 Phase 10.1 hat Suchpaket, Suchhelfer und Grundgrenzen des Metadatenmodells entschieden. Phase 10.2 hat Paket- und
 API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in-Metadaten, eindeutig markierte
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
-im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.23.16 die nutzergeführte Rücknahme, dynamische
+im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.24.1 die nutzergeführte Rücknahme, dynamische
 Auswahl, die persistente Lifelist-/Klassenstatistik mit CSV, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
 Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
 

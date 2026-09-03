@@ -383,7 +383,8 @@ function KeywordWriter.findConflicts(photos, taxon)
   return conflicts
 end
 
-function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans)
+function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans, options)
+  options = options or {}
   local conflicts = KeywordWriter.findConflicts(photos, taxon)
   if #conflicts > 0 then
     error(
@@ -505,7 +506,7 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans)
       catalog,
       photos,
       locationTimePlans,
-      "add",
+      options.locationTimeMode == "update" and "update" or "add",
       { protectedNamesForPhoto = KeywordWriter.taxonomyKeywordNameSet }
     )
     local afterStatistics = {}
@@ -580,12 +581,62 @@ function KeywordWriter.remove(catalog, photos)
   }
 end
 
+function KeywordWriter.removeAll(catalog, photos)
+  local result = {
+    photoCount = #photos,
+    assignmentCount = 0,
+    referenceImageCount = 0,
+    taxonomyKeywordCount = 0,
+    locationTimeKeywordCount = 0,
+    locationTimeAssignmentCount = 0,
+  }
+  local beforeStatistics = {}
+  for index, photo in ipairs(photos) do
+    beforeStatistics[index] = Statistics.photoSnapshot(photo)
+  end
+
+  runWithWriteAccess(catalog, "FN Wildlife – alle FN-Daten entfernen", function()
+    for _, photo in ipairs(photos) do
+      if cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId")) ~= "" then
+        result.assignmentCount = result.assignmentCount + 1
+      end
+      if cleanText(photo:getPropertyForPlugin(_PLUGIN, "referenceImage")) == "yes" then
+        result.referenceImageCount = result.referenceImageCount + 1
+      end
+      result.taxonomyKeywordCount = result.taxonomyKeywordCount
+        + removeCurrentManagedKeywords(catalog, photo)
+      clearPluginMetadata(photo)
+    end
+
+    local locationResult = LocationTimeWriter.applyPrepared(
+      catalog,
+      photos,
+      {},
+      "remove",
+      {}
+    )
+    result.locationTimeKeywordCount = locationResult.removedKeywordCount
+    result.locationTimeAssignmentCount = locationResult.changedPhotoCount
+
+    local afterStatistics = {}
+    for index in ipairs(photos) do
+      afterStatistics[index] = Statistics.emptySnapshot()
+    end
+    PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
+  end)
+  return result
+end
+
 function KeywordWriter.taxonomyKeywordNameSet(photo)
   local names = {}
   for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
     names[string.lower(name)] = true
   end
   return names
+end
+
+function KeywordWriter.hasManagedKeywordSuffix(value)
+  return hasPluginKeywordSuffix(value)
 end
 
 function KeywordWriter.rankLabel(rank)

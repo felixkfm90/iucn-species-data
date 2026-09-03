@@ -3,7 +3,10 @@ local TaxonomyRanks = require "TaxonomyRanks"
 local StatisticsIndex = {}
 local cleanText = TaxonomyRanks.cleanText
 
-StatisticsIndex.SCHEMA_VERSION = 3
+local LrDate = import "LrDate"
+local LrPathUtils = import "LrPathUtils"
+
+StatisticsIndex.SCHEMA_VERSION = 6
 
 local LOCATION_FIELDS = {
   "fnCountry",
@@ -50,7 +53,60 @@ local function newLocationTimeAggregate()
     locations = {},
     years = {},
     months = {},
+    monthYears = {},
+    days = {},
   }
+end
+
+local function normalizedDate(year, month, day)
+  year = tonumber(year)
+  month = tonumber(month)
+  day = tonumber(day)
+  if not year or year < 1800 or year > 3000
+      or not month or month < 1 or month > 12
+      or not day or day < 1 or day > 31 then
+    return ""
+  end
+  return string.format("%04d-%02d-%02d", year, month, day)
+end
+
+local function captureDate(value)
+  local timestamp = tonumber(value)
+  if timestamp then
+    local results = { LrDate.timestampToComponents(timestamp) }
+    local first = results[1]
+    if type(first) == "table" then
+      local date = normalizedDate(
+        first.year or first[1],
+        first.month or first[2],
+        first.day or first[3]
+      )
+      if date ~= "" then
+        return date
+      end
+    else
+      for index = 1, #results - 2 do
+        local date = normalizedDate(results[index], results[index + 1], results[index + 2])
+        if date ~= "" then
+          return date
+        end
+      end
+    end
+  end
+  local text = cleanText(value)
+  local year, month, day = string.match(text, "(%d%d%d%d)[%-/:](%d%d?)[%-/:](%d%d?)")
+  if not year then
+    day, month, year = string.match(text, "(%d%d?)[%.%-/](%d%d?)[%.%-/](%d%d%d%d)")
+  end
+  return normalizedDate(year, month, day)
+end
+
+local function fileName(value)
+  local path = cleanText(value)
+  if path == "" then
+    return ""
+  end
+  return cleanText(LrPathUtils.leafName(path))
 end
 
 local function hasAnyValue(snapshot, fields)
@@ -65,6 +121,93 @@ end
 local function hasValidTaxonomy(snapshot)
   local masterTaxonId = cleanText(snapshot and snapshot.masterTaxonId)
   return string.sub(masterTaxonId, 1, 4) == "mtx_"
+end
+
+local function observationKeyPart(value)
+  local text = cleanText(value)
+  return tostring(#text) .. ":" .. text
+end
+
+local function observationKey(snapshot)
+  local hasFnTime = cleanText(snapshot.fnCaptureYear) ~= ""
+    or cleanText(snapshot.fnCaptureMonth) ~= ""
+  local date = hasFnTime and cleanText(snapshot.captureDate) or ""
+  return table.concat({
+    observationKeyPart(date),
+    observationKeyPart(snapshot.fnCaptureYear),
+    observationKeyPart(snapshot.fnCaptureMonth),
+    observationKeyPart(snapshot.fnCountry),
+    observationKeyPart(snapshot.fnStateProvince),
+    observationKeyPart(snapshot.fnCity),
+    observationKeyPart(snapshot.fnLocation),
+    observationKeyPart(snapshot.masterTaxonId),
+  }, "|"), date
+end
+
+local function copyObservationText(entry, field, value)
+  value = cleanText(value)
+  if value ~= "" then
+    entry[field] = value
+  end
+end
+
+local function changeObservation(index, snapshot, amount)
+  if not hasValidTaxonomy(snapshot) then
+    return
+  end
+  local key, date = observationKey(snapshot)
+  local entry = index.observations[key]
+  if amount > 0 then
+    if not entry then
+      entry = {
+        captureDate = date,
+        captureYear = cleanText(snapshot.fnCaptureYear),
+        captureMonth = cleanText(snapshot.fnCaptureMonth),
+        country = cleanText(snapshot.fnCountry),
+        stateProvince = cleanText(snapshot.fnStateProvince),
+        city = cleanText(snapshot.fnCity),
+        location = cleanText(snapshot.fnLocation),
+        masterTaxonId = cleanText(snapshot.masterTaxonId),
+        germanName = "",
+        englishName = "",
+        scientificName = "",
+        className = "",
+        order = "",
+        family = "",
+        genus = "",
+        photoCount = 0,
+        exampleFileName = "",
+        examplePhotoUuid = "",
+      }
+      index.observations[key] = entry
+    end
+    copyObservationText(entry, "germanName", snapshot.germanName)
+    copyObservationText(entry, "englishName", snapshot.englishName)
+    copyObservationText(entry, "scientificName", snapshot.scientificName)
+    copyObservationText(entry, "className", snapshot.className)
+    copyObservationText(entry, "order", snapshot.order)
+    copyObservationText(entry, "family", snapshot.family)
+    copyObservationText(entry, "genus", snapshot.genus)
+    entry.photoCount = (tonumber(entry.photoCount or 0) or 0) + amount
+    if cleanText(entry.exampleFileName) == "" and cleanText(snapshot.exampleFileName) ~= "" then
+      entry.exampleFileName = cleanText(snapshot.exampleFileName)
+      entry.examplePhotoUuid = cleanText(snapshot.photoUuid)
+    end
+    return
+  end
+  if not entry then
+    return
+  end
+  entry.photoCount = math.max((tonumber(entry.photoCount or 0) or 0) + amount, 0)
+  if entry.photoCount == 0 then
+    index.observations[key] = nil
+  elseif cleanText(snapshot.photoUuid) ~= ""
+      and cleanText(snapshot.photoUuid) == cleanText(entry.examplePhotoUuid) then
+    -- Der Index speichert absichtlich keine Fotoliste pro Beobachtung. Wird das
+    -- Beispiel entfernt, bleibt das optionale Feld bis zur nächsten Ergänzung leer.
+    entry.exampleFileName = ""
+    entry.examplePhotoUuid = ""
+  end
 end
 
 local function changeCounter(aggregate, field, amount)
@@ -90,6 +233,14 @@ local function changeLocationTime(aggregate, snapshot, amount)
   increment(aggregate.locations, snapshot.fnLocation, amount)
   increment(aggregate.years, snapshot.fnCaptureYear, amount)
   increment(aggregate.months, snapshot.fnCaptureMonth, amount)
+  if hasTime then
+    local year = cleanText(snapshot.fnCaptureYear)
+    local month = cleanText(snapshot.fnCaptureMonth)
+    if year ~= "" and month ~= "" then
+      increment(aggregate.monthYears, year .. "|" .. month, amount)
+    end
+    increment(aggregate.days, snapshot.captureDate, amount)
+  end
 end
 
 local function validLocationTimeAggregate(aggregate)
@@ -100,6 +251,8 @@ local function validLocationTimeAggregate(aggregate)
     and type(aggregate.locations) == "table"
     and type(aggregate.years) == "table"
     and type(aggregate.months) == "table"
+    and type(aggregate.monthYears) == "table"
+    and type(aggregate.days) == "table"
 end
 
 local function displayName(entry)
@@ -120,6 +273,36 @@ local function sortSpecies(left, right)
   return leftName < rightName
 end
 
+local function observationSortValue(value)
+  local text = string.lower(cleanText(value))
+  return text ~= "" and text or "\255"
+end
+
+local function sortObservations(left, right)
+  local leftDate = observationSortValue(left.captureDate)
+  local rightDate = observationSortValue(right.captureDate)
+  if leftDate ~= rightDate then
+    return leftDate < rightDate
+  end
+  for _, field in ipairs({ "country", "stateProvince", "city", "location" }) do
+    local leftValue = observationSortValue(left[field])
+    local rightValue = observationSortValue(right[field])
+    if leftValue ~= rightValue then
+      return leftValue < rightValue
+    end
+  end
+  local leftName = observationSortValue(
+    cleanText(left.germanName) ~= "" and left.germanName or left.scientificName
+  )
+  local rightName = observationSortValue(
+    cleanText(right.germanName) ~= "" and right.germanName or right.scientificName
+  )
+  if leftName == rightName then
+    return cleanText(left.masterTaxonId) < cleanText(right.masterTaxonId)
+  end
+  return leftName < rightName
+end
+
 function StatisticsIndex.new(totalPhotos)
   return {
     schemaVersion = StatisticsIndex.SCHEMA_VERSION,
@@ -129,9 +312,15 @@ function StatisticsIndex.new(totalPhotos)
     species = {},
     families = {},
     genera = {},
+    domains = {},
+    kingdoms = {},
+    phyla = {},
+    classRanks = {},
+    orders = {},
     classes = {},
     locationTime = newLocationTimeAggregate(),
     taxonomyLocationTime = newLocationTimeAggregate(),
+    observations = {},
   }
 end
 
@@ -141,9 +330,15 @@ function StatisticsIndex.isValid(index)
     and type(index.species) == "table"
     and type(index.families) == "table"
     and type(index.genera) == "table"
+    and type(index.domains) == "table"
+    and type(index.kingdoms) == "table"
+    and type(index.phyla) == "table"
+    and type(index.classRanks) == "table"
+    and type(index.orders) == "table"
     and type(index.classes) == "table"
     and validLocationTimeAggregate(index.locationTime)
     and validLocationTimeAggregate(index.taxonomyLocationTime)
+    and type(index.observations) == "table"
 end
 
 function StatisticsIndex.snapshot(values)
@@ -151,7 +346,12 @@ function StatisticsIndex.snapshot(values)
   return {
     masterTaxonId = cleanText(values.masterTaxonId),
     germanName = cleanText(values.germanName),
+    englishName = cleanText(values.englishName),
     scientificName = cleanText(values.scientificName),
+    domain = cleanText(values.taxonomyDomain),
+    kingdom = cleanText(values.taxonomyKingdom),
+    phylum = cleanText(values.taxonomyPhylum),
+    order = cleanText(values.taxonomyOrder),
     family = cleanText(values.taxonomyFamily),
     genus = cleanText(values.taxonomyGenus),
     className = cleanText(values.taxonomyClass),
@@ -164,6 +364,10 @@ function StatisticsIndex.snapshot(values)
     fnIsoCountryCode = cleanText(values.fnIsoCountryCode),
     fnCaptureMonth = cleanText(values.fnCaptureMonth),
     fnCaptureYear = cleanText(values.fnCaptureYear),
+    captureDate = captureDate(values.captureDate or values.dateTimeOriginal),
+    exampleFileName = cleanText(values.exampleFileName) ~= ""
+      and cleanText(values.exampleFileName)
+      or fileName(values.path),
   }
 end
 
@@ -171,7 +375,12 @@ function StatisticsIndex.photoSnapshot(photo)
   return StatisticsIndex.snapshot({
     masterTaxonId = photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"),
     germanName = photo:getPropertyForPlugin(_PLUGIN, "germanName"),
+    englishName = photo:getPropertyForPlugin(_PLUGIN, "englishName"),
     scientificName = photo:getPropertyForPlugin(_PLUGIN, "scientificName"),
+    taxonomyDomain = photo:getPropertyForPlugin(_PLUGIN, "taxonomyDomain"),
+    taxonomyKingdom = photo:getPropertyForPlugin(_PLUGIN, "taxonomyKingdom"),
+    taxonomyPhylum = photo:getPropertyForPlugin(_PLUGIN, "taxonomyPhylum"),
+    taxonomyOrder = photo:getPropertyForPlugin(_PLUGIN, "taxonomyOrder"),
     taxonomyFamily = photo:getPropertyForPlugin(_PLUGIN, "taxonomyFamily"),
     taxonomyGenus = photo:getPropertyForPlugin(_PLUGIN, "taxonomyGenus"),
     taxonomyClass = photo:getPropertyForPlugin(_PLUGIN, "taxonomyClass"),
@@ -184,6 +393,8 @@ function StatisticsIndex.photoSnapshot(photo)
     fnIsoCountryCode = photo:getPropertyForPlugin(_PLUGIN, "fnIsoCountryCode"),
     fnCaptureMonth = photo:getPropertyForPlugin(_PLUGIN, "fnCaptureMonth"),
     fnCaptureYear = photo:getPropertyForPlugin(_PLUGIN, "fnCaptureYear"),
+    dateTimeOriginal = photo:getRawMetadata("dateTimeOriginal"),
+    path = photo:getRawMetadata("path"),
   })
 end
 
@@ -196,7 +407,13 @@ function StatisticsIndex.add(index, snapshot)
   if not hasValidTaxonomy(snapshot) then
     return
   end
+  changeObservation(index, snapshot, 1)
   index.assignedPhotos = (tonumber(index.assignedPhotos or 0) or 0) + 1
+  increment(index.domains, snapshot.domain, 1)
+  increment(index.kingdoms, snapshot.kingdom, 1)
+  increment(index.phyla, snapshot.phylum, 1)
+  increment(index.classRanks, snapshot.className, 1)
+  increment(index.orders, snapshot.order, 1)
   increment(index.families, snapshot.family, 1)
   increment(index.genera, snapshot.genus, 1)
 
@@ -217,8 +434,10 @@ function StatisticsIndex.add(index, snapshot)
     speciesEntry = {
       masterTaxonId = masterTaxonId,
       germanName = "",
+      englishName = "",
       scientificName = "",
       className = className,
+      order = "",
       family = "",
       genus = "",
       photoCount = 0,
@@ -230,10 +449,14 @@ function StatisticsIndex.add(index, snapshot)
   if cleanText(snapshot.germanName) ~= "" then
     speciesEntry.germanName = cleanText(snapshot.germanName)
   end
+  if cleanText(snapshot.englishName) ~= "" then
+    speciesEntry.englishName = cleanText(snapshot.englishName)
+  end
   if cleanText(snapshot.scientificName) ~= "" then
     speciesEntry.scientificName = cleanText(snapshot.scientificName)
   end
   speciesEntry.className = className
+  speciesEntry.order = cleanText(snapshot.order)
   speciesEntry.family = cleanText(snapshot.family)
   speciesEntry.genus = cleanText(snapshot.genus)
   speciesEntry.photoCount = (tonumber(speciesEntry.photoCount or 0) or 0) + 1
@@ -255,7 +478,13 @@ function StatisticsIndex.remove(index, snapshot)
   if not hasValidTaxonomy(snapshot) then
     return
   end
+  changeObservation(index, snapshot, -1)
   index.assignedPhotos = math.max((tonumber(index.assignedPhotos or 0) or 0) - 1, 0)
+  increment(index.domains, snapshot.domain, -1)
+  increment(index.kingdoms, snapshot.kingdom, -1)
+  increment(index.phyla, snapshot.phylum, -1)
+  increment(index.classRanks, snapshot.className, -1)
+  increment(index.orders, snapshot.order, -1)
   increment(index.families, snapshot.family, -1)
   increment(index.genera, snapshot.genus, -1)
 
@@ -322,12 +551,29 @@ local function locationTimeResult(aggregate)
     locationCount = countKeys(aggregate.locations),
     yearCount = countKeys(aggregate.years),
     monthCount = countKeys(aggregate.months),
-    topCountries = sortedCounts(aggregate.countries, 1),
-    topStates = sortedCounts(aggregate.states, 1),
-    topCities = sortedCounts(aggregate.cities, 1),
-    topLocations = sortedCounts(aggregate.locations, 1),
-    topYears = sortedCounts(aggregate.years, 1),
-    topMonths = sortedCounts(aggregate.months, 1),
+    topCountries = sortedCounts(aggregate.countries, 5),
+    topStates = sortedCounts(aggregate.states, 5),
+    topCities = sortedCounts(aggregate.cities, 5),
+    topLocations = sortedCounts(aggregate.locations, 5),
+    topYears = sortedCounts(aggregate.years, 5),
+    topMonths = sortedCounts(aggregate.months, 5),
+    topMonthYears = sortedCounts(aggregate.monthYears, 5),
+    topDays = sortedCounts(aggregate.days, 5),
+  }
+end
+
+local function taxonomyDataQualityResult(aggregate, assignedPhotos)
+  local unionPhotoCount = tonumber(aggregate.photoCount or 0) or 0
+  local locationPhotoCount = tonumber(aggregate.locationPhotoCount or 0) or 0
+  local timePhotoCount = tonumber(aggregate.timePhotoCount or 0) or 0
+  local bothPhotoCount = math.max(locationPhotoCount + timePhotoCount - unionPhotoCount, 0)
+  return {
+    locationPhotoCount = locationPhotoCount,
+    timePhotoCount = timePhotoCount,
+    bothPhotoCount = bothPhotoCount,
+    onlyLocationPhotoCount = math.max(locationPhotoCount - bothPhotoCount, 0),
+    onlyTimePhotoCount = math.max(timePhotoCount - bothPhotoCount, 0),
+    neitherPhotoCount = math.max((tonumber(assignedPhotos or 0) or 0) - unionPhotoCount, 0),
   }
 end
 
@@ -356,8 +602,10 @@ function StatisticsIndex.result(index)
     local row = {
       masterTaxonId = cleanText(entry.masterTaxonId),
       germanName = cleanText(entry.germanName),
+      englishName = cleanText(entry.englishName),
       scientificName = cleanText(entry.scientificName),
       className = cleanText(entry.className),
+      order = cleanText(entry.order),
       family = cleanText(entry.family),
       genus = cleanText(entry.genus),
       photoCount = tonumber(entry.photoCount or 0) or 0,
@@ -416,9 +664,35 @@ function StatisticsIndex.result(index)
     end
     return left.photoCount > right.photoCount
   end)
-  while #topSpecies > 10 do
+  while #topSpecies > 5 do
     table.remove(topSpecies)
   end
+
+  local observationRows = {}
+  for _, entry in pairs(index.observations) do
+    local speciesEntry = index.species[cleanText(entry.masterTaxonId)] or {}
+    table.insert(observationRows, {
+      captureDate = cleanText(entry.captureDate),
+      captureYear = cleanText(entry.captureYear),
+      captureMonth = cleanText(entry.captureMonth),
+      country = cleanText(entry.country),
+      stateProvince = cleanText(entry.stateProvince),
+      city = cleanText(entry.city),
+      location = cleanText(entry.location),
+      masterTaxonId = cleanText(entry.masterTaxonId),
+      germanName = cleanText(entry.germanName),
+      englishName = cleanText(entry.englishName),
+      scientificName = cleanText(entry.scientificName),
+      className = cleanText(entry.className),
+      order = cleanText(entry.order),
+      family = cleanText(entry.family),
+      genus = cleanText(entry.genus),
+      photoCount = tonumber(entry.photoCount or 0) or 0,
+      referenceImage = (tonumber(speciesEntry.referenceImageCount or 0) or 0) > 0,
+      exampleFileName = cleanText(entry.exampleFileName),
+    })
+  end
+  table.sort(observationRows, sortObservations)
 
   local totalPhotos = tonumber(index.totalPhotos or 0) or 0
   local assignedPhotos = tonumber(index.assignedPhotos or 0) or 0
@@ -427,6 +701,11 @@ function StatisticsIndex.result(index)
     assignedPhotos = assignedPhotos,
     unassignedPhotos = math.max(totalPhotos - assignedPhotos, 0),
     speciesCount = #lifelist,
+    domainCount = countKeys(index.domains),
+    kingdomCount = countKeys(index.kingdoms),
+    phylumCount = countKeys(index.phyla),
+    rankClassCount = countKeys(index.classRanks),
+    orderCount = countKeys(index.orders),
     familyCount = countKeys(index.families),
     genusCount = countKeys(index.genera),
     classCount = #classBreakdown,
@@ -436,10 +715,17 @@ function StatisticsIndex.result(index)
     topSpecies = topSpecies,
     classBreakdown = classBreakdown,
     lifelist = lifelist,
+    observationRows = observationRows,
     locationTime = locationTimeResult(index.locationTime),
     taxonomyLocationTime = locationTimeResult(index.taxonomyLocationTime),
+    taxonomyDataQuality = taxonomyDataQualityResult(index.taxonomyLocationTime, assignedPhotos),
     generatedAt = cleanText(index.generatedAt),
   }
+end
+
+
+function StatisticsIndex.captureDate(value)
+  return captureDate(value)
 end
 
 return StatisticsIndex

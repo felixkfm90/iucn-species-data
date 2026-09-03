@@ -1038,9 +1038,9 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.23.16 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
-Refresh praktisch bestätigt; Orts-/Zeitaktionen, automatische Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das
-umfassende Abschlussaudit 10.5
+separaten Testkatalog bestätigt; Version 0.4.24.5 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+Refresh praktisch bestätigt; Orts-/Zeitaktionen, katalogweite FN-Aktualisierung, Gesamtbereinigung, automatische
+Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das umfassende Abschlussaudit 10.5
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1087,11 +1087,12 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   kompakte Metadatenansicht `FN Wildlife – Foto & Taxonomie` kombiniert sinnvolle Standard-Fotofelder mit Namen und
   den wichtigsten Rängen. Die Rangfelder verwenden kurze Titel ohne den redundanten Zusatz `(wissenschaftlich)`;
   `FN Wildlife – vollständige Taxonomie` ergänzt bei Bedarf alle unterstützten Ränge;
-- 10.4: **priorisierter Funktionsblock bis Version 0.4.23.16 am 2026-09-02 umgesetzt und automatisiert geprüft;
-  Statistikdeltas und UUID-basierter Art-Favorit wurden praktisch bestätigt.** Genau ein
+- 10.4: **priorisierter Funktionsblock bis Version 0.4.24.5 am 2026-09-03 umgesetzt und automatisiert geprüft;
+  Statistikdeltas und UUID-basierter Art-Favorit wurden praktisch bestätigt; der neue Katalogpflegelauf und die
+  Gesamtbereinigung sind praktisch noch abzunehmen.** Genau ein
   bestätigungspflichtiges `Favoritenbild der Art` je Master-Taxon-ID, drei idempotente intelligente Sammlungen und eine
-  Katalogstatistik mit Lifelist, Abdeckung, kompakter Klassenübersicht, zehn am häufigsten fotografierten
-  Arten und UTF-8-CSV-Export sind implementiert und vertraglich getestet. Der kompakte Aggregatindex liegt als
+  Katalogstatistik mit Lifelist, Abdeckung, kompakter Klassenübersicht, fünf am häufigsten fotografierten
+  Arten, Lifelist- und Beobachtungslisten-CSV sowie TXT-Artenliste ist implementiert und vertraglich getestet. Der kompakte Aggregatindex liegt als
   katalogweite Plug-in-Eigenschaft vor. Sein Erstaufbau liest gebündelt in 500-Foto-Blöcken, speichert alle 5.000
   Fotos einen fortsetzbaren Checkpoint und läuft in einem pausierbaren nichtmodalen Fenster; Fortschritt und Yield
   liegen außerhalb von `withReadAccessDo`. Eigene Zuweisungs-, Rücknahme- und Favoritenaktionen aktualisieren den
@@ -1124,9 +1125,42 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   Monate in zwei festen nebeneinanderliegenden Blöcken. Die drei Orts-/Zeitaktionen sowie Taxonomiezuweisung und -rücknahme
   schreiben ihre Deltas direkt in den persistenten Index; das neue Indexschema benötigt einmalig `Statistik neu
   aufbauen`. Zuweisungsfenster,
+  Version 0.4.24.2 zeigt Fotozahlen je Jahr, häufigsten Monat und häufigste Ortswerte sowie die Anzahl
+  unterschiedlicher Länder, Regionen, Städte und Ortsdetails unmittelbar in der Oberfläche. Ist die Taxonomie-
+  Schnittmenge vollständig mit allen FN-Orts-/Zeitfotos identisch, wird die Verteilung nicht doppelt wiederholt,
+  sondern die Übereinstimmung ausdrücklich genannt.
+  Version 0.4.24.3 ersetzt den kombinierten Orts-/Zeitblock durch Katalogübersicht, Datenqualität der taxonomierten
+  Fotos, vollständigen Taxonomieumfang sowie getrennte Orts- und Zeitabschnitte. Alle sichtbaren Zähler verwenden
+  deutsche Tausenderpunkte. Taxonomieabdeckung und Art-Favoriten bleiben rein Master-ID-basiert; Orts-/Zeit-
+  Schnittmengen verwenden ausschließlich FN-Felder. Domäne bis Gattung werden aus Plug-in-Rangmetadaten gezählt.
+  Spitzenwerte für Jahr, Monat, Monat/Jahr und den nur statistisch aus `dateTimeOriginal` gelesenen Aufnahmetag
+  ergänzen die Zeitansicht. Indexschema 4 erfordert einmalig den bewussten Statistikneuaufbau.
+  Version 0.4.24.4 vereinheitlicht alle Ranglisten auf Top 5, ergänzt kompakte Orts- und Zeitlisten sowie
+  Prozentwerte für Datenqualität und Klassen. `Exportieren ...` stellt getrennt eine erweiterte Lifelist-CSV, eine
+  nur beim Export blockweise aus vorhandenen FN-Metadaten aggregierte Beobachtungslisten-CSV und eine gruppierte
+  TXT-Artenliste bereit. Der Beobachtungsexport verändert keine Katalogdaten und führt kein Geocoding aus.
+  Indexschema 5 erfordert einmalig `Statistik neu aufbauen`;
+  Version 0.4.24.5 speichert die Beobachtungsgruppen zusätzlich im persistenten Statistikindex. Sie werden beim
+  bewussten Statistikaufbau erzeugt und durch Plug-in-Aktionen inkrementell aktualisiert. Die Beobachtungslisten-
+  CSV liest deshalb beim Export keine Katalogfotos mehr. Der kompakte Gruppeneintrag enthält keine Fotoliste und
+  höchstens einen optionalen Beispiel-Dateinamen. Indexschema 6 erfordert einmalig `Statistik neu aufbauen`;
   Favoritenersetzung und Rücknahme wurden im Testkatalog praktisch
   geprüft. Die komplementären Taxonomiesammlungen wurden bei 132 Fotos und einer Zuweisung praktisch mit 131
   fehlenden und einem zugewiesenen Foto bestätigt;
+- vor 10.5 umgesetzt und praktisch zu prüfen: Version 0.4.24.1 ergänzt `Alle FN-Daten entfernen ...` für die
+  aktuelle Auswahl. Nach Bestätigung werden Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten und ausschließlich
+  Stichwörter mit `(FN)`, `(FN)*`, `(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` oder `(FN Zeit)*` entfernt. Sternformen
+  werden erkannt, aber nie erzeugt. `FN-Daten im Katalog aktualisieren ...` liest 500 Fotos je Block, zeigt vor
+  jedem Schreiben eine Vorschau und aktualisiert anschließend pausierbar in 250-Foto-Blöcken. Taxonomien werden nur
+  anhand einer unverändert aktiven `masterTaxonId` übernommen; unbekannte beziehungsweise veraltete IDs,
+  Mehrfachfavoriten und verwaiste FN-Stichwörter werden gemeldet und nicht still umgedeutet. Alle IDs gehen
+  gebündelt an einen Suchhelferprozess, und die für Lightroom-Ortsvorschläge nötigen Fotos werden in einer
+  gemeinsamen Export-Session verarbeitet. Erfolgreiche Blöcke pflegen den vorhandenen Statistikindex direkt. Ein
+  Schließen beendet nach dem aktuellen Block; der idempotente Neustart beginnt erneut mit der Vorschau, weil dieser
+  Wartungslauf noch keinen persistenten Checkpoint besitzt. Ein möglicher Adobe-Dialog für KI-Ortsvorschläge bleibt
+  außerhalb der Plug-in-Kontrolle. Version 0.4.24.1 dedupliziert zusätzlich alle im selben Schreibvorgang benötigten
+  Orts-/Zeit-Stichwortnamen vor der Erzeugung, sodass gemischte Monatsauswahlen dasselbe Lightroom-Stichwortobjekt
+  wiederverwenden;
 - vor 10.5 umgesetzt und praktisch geprüft: Version 0.4.21.3 enthält Lifelist-CSV, persistenten und durch eigene
   Aktionen inkrementell gepflegten Statistikindex, fortsetzbaren Hintergrundaufbau mit Fortschritt und
   Pause/Fortsetzen sowie kompakte Klassen mit Art- und Fotoanzahl. Die vollständige Artenaufschlüsselung je Klasse
