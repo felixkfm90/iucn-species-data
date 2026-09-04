@@ -1,10 +1,10 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-09-03
+Stand: 2026-09-04
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.5 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.6 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
 automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
@@ -667,7 +667,7 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
 
 ### 10.4 Erweiterte Lightroom-Funktionen
 
-- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.24.5 am 2026-09-03 technisch umgesetzt und automatisiert
+- **Priorisierter Funktionsblock bis Plug-in-Version 0.4.24.6 am 2026-09-04 technisch umgesetzt und automatisiert
   geprüft; Orts-/Zeitstufe, Gesamtbereinigung und Katalogpflege benötigen noch den gebündelten Lightroom-Test.**
 - Ein bereits taxonomisch zugeordnetes Foto kann nach erklärender Bestätigung als eindeutiges `Favoritenbild der Art`
   seiner Master-Taxon-ID markiert werden; die Datei bleibt unverändert und eine neue Auswahl setzt die bisherige
@@ -699,6 +699,11 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
   über vorhandene Vorher-/Nachher-Schnappschüsse weiter. Die Beobachtungslisten-CSV benötigt dadurch beim Export
   keinen weiteren Katalogscan. Pro Gruppe wird höchstens ein optionaler Beispiel-Dateiname, aber keine Fotoliste
   gespeichert. Indexschema 6 verlangt einmalig `Statistik neu aufbauen`.
+- Version 0.4.24.6 belässt `Taxonomie zuweisen` als häufige Direktaktion und führt sie zusätzlich mit allen anderen
+  Aktionen im Verwaltungsfenster `FN Wildlife verwalten ...`. Auswahlbezogene Orts-/Zeitaktualisierung und der
+  vollständige FN-Katalogabgleich stehen gemeinsam, sind aber durch eindeutige Reichweitenbeschriftung getrennt.
+  Die Gruppierung nutzt keine undokumentierten nativen Untermenüs oder Trennlinien; alle bisherigen Fachaktionen
+  und Bestätigungsgrenzen bleiben unverändert.
 - Version 0.4.23.0 ergänzt im selben Index eine eigenständige Statistik aller Fotos mit gespeicherten FN-Orts-/
   Zeitwerten sowie eine getrennte Schnittmenge nur für Fotos mit gültiger `mtx_`-Taxonomie. Beide zeigen kompakt
   Fotozahlen sowie die Anzahl und den häufigsten Wert für Länder, Regionen, Städte, Ortsdetails, Jahre und Monate. Zwei
@@ -709,7 +714,7 @@ Stammdatenpflege; das umfassende Phase-10-Abschlussaudit steht noch aus.
   erzeugt aber weiterhin ausschließlich die Endungen ohne Stern. `Alle FN-Daten entfernen ...` bereinigt nach
   Bestätigung auf der Auswahl alle FN-Taxonomie-, Favoriten- und Orts-/Zeitdaten sowie exakt die sechs reservierten
   Stichwortendungen. Andere Metadaten und manuelle Stichwörter bleiben erhalten.
-- `FN-Daten im Katalog aktualisieren ...` ist ein gesonderter Wartungslauf mit rein lesendem 500-Foto-Scan,
+- `Gesamten Katalog aktualisieren ...` ist ein gesonderter Wartungslauf mit rein lesendem 500-Foto-Scan,
   Vorschau und erst danach 250-Foto-Schreibblöcken. Er ist zwischen Blöcken pausierbar, löst die vorhandenen
   `masterTaxonId`-Werte in einer gebündelten Suchhelferanfrage auf und prüft vor jedem Taxonomieblock, dass
   Paket-ID, Masterversion und Korrekturrevision seit der Vorschau unverändert sind. Nur weiterhin aktive identische

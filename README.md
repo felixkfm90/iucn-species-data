@@ -982,7 +982,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.24.5` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.24.6` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1086,6 +1086,12 @@ Statistikaufbau bildet nun einmalig die Kombinationen aus FN-Datum, FN-Ort und M
 pflegen deren Zähler inkrementell. Dadurch exportiert auch die Beobachtungsliste ohne erneuten Katalogscan direkt
 aus dem Index. Ein optionaler Beispiel-Dateiname wird platzsparend ohne Fotoliste je Gruppe geführt und darf nach
 dem Entfernen des Beispielbildes leer bleiben. Indexschema 6 erfordert einmalig `Statistik neu aufbauen`.
+Version 0.4.24.6 verkürzt das native Lightroom-Menü auf die häufige Direktaktion `Taxonomie zuweisen` und
+`FN Wildlife verwalten ...`. Das Verwaltungsfenster führt zusätzlich die Zuweisung und damit alle zehn Aktionen.
+Es trennt Auswahlaktionen von katalogweiter Pflege und stellt die beiden Aktualisierungswege gemeinsam, aber mit
+eindeutiger Reichweite als `Ort/Zeit der Auswahl` und `Gesamter Katalog` dar. Diese
+Alternative verwendet ausschließlich dokumentierte normale Menüeinträge; die Lightroom-SDK-Dokumentation weist
+für `LrLibraryMenuItems` keine nativen Untermenüs oder Trennlinien aus.
 Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren ...` die ausgewählte Art über eine kurzlebige,
 einmalig konsumierbare Übergabedatei im Arten-Explorer öffnen. Lightroom erhält dadurch keinen Schreibzugriff auf
 den Master. Der Explorer prüft Master-ID und wissenschaftlichen Namen erneut und speichert Änderungen ausschließlich

@@ -17,26 +17,57 @@ async function source(file) {
 
 test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenvertrag", async () => {
   const info = await source("Info.lua");
+  const pluginMenu = await source("PluginMenu.lua");
   const provider = await source("PluginInfoProvider.lua");
   const metadata = await source("MetadataDefinition.lua");
   const ranks = await source("TaxonomyRanks.lua");
   assert.match(info, /LrToolkitIdentifier\s*=\s*"de\.fnwildlifetravel\.taxonomy"/);
-  assert.match(info, /Taxonomie zuweisen/);
-  assert.match(info, /title = "Taxonomie entfernen"/);
-  assert.match(info, /file\s*=\s*"RemoveTaxonomy\.lua"/);
-  assert.match(info, /title = "Orts- und Zeitstichwörter hinzufügen \.\.\."/);
-  assert.match(info, /file\s*=\s*"AddLocationTime\.lua"/);
-  assert.match(info, /title = "Orts- und Zeitstichwörter entfernen \.\.\."/);
-  assert.match(info, /file\s*=\s*"RemoveLocationTime\.lua"/);
-  assert.match(info, /title = "Orts- und Zeitstichwörter aktualisieren \.\.\."/);
-  assert.match(info, /file\s*=\s*"UpdateLocationTime\.lua"/);
-  assert.match(info, /title = "Alle FN-Daten entfernen \.\.\."/);
-  assert.match(info, /file\s*=\s*"RemoveAllFnData\.lua"/);
-  assert.match(info, /title = "FN-Daten im Katalog aktualisieren \.\.\."/);
-  assert.match(info, /file\s*=\s*"UpdateCatalogFnData\.lua"/);
-  assert.match(info, /Ausgewähltes Foto als Favoritenbild der Art markieren/);
-  assert.match(info, /FN Wildlife-Sammlungen einrichten/);
-  assert.match(info, /Taxonomie-Statistik/);
+  assert.match(
+    info,
+    /title = "Taxonomie zuweisen"[\s\S]*?file = "AssignTaxonomy\.lua"[\s\S]*?enabledWhen = "photosSelected"/,
+  );
+  assert.match(
+    info,
+    /title = "FN Wildlife verwalten \.\.\."[\s\S]*?file = "PluginMenu\.lua"/,
+  );
+  const libraryMenu = info.slice(
+    info.indexOf("LrLibraryMenuItems"),
+    info.indexOf("LrMetadataProvider"),
+  );
+  assert.equal(
+    [...libraryMenu.matchAll(/file\s*=\s*"[^"]+"/g)].length,
+    2,
+    "Das native Lightroom-Menü muss auf zwei belegte Einstiegspunkte begrenzt bleiben",
+  );
+  for (const group of [
+    "Taxonomie und Art",
+    "Ort und Zeit – Auswahl",
+    "FN-Daten aktualisieren und bereinigen",
+    "Auswertung und Einrichtung",
+  ]) {
+    assert.match(pluginMenu, new RegExp(group));
+  }
+  for (const script of [
+    "AssignTaxonomy.lua",
+    "RemoveTaxonomy.lua",
+    "SetReferenceImage.lua",
+    "AddLocationTime.lua",
+    "UpdateLocationTime.lua",
+    "RemoveLocationTime.lua",
+    "UpdateCatalogFnData.lua",
+    "RemoveAllFnData.lua",
+    "ShowStatistics.lua",
+    "CreateCollections.lua",
+  ]) {
+    assert.match(pluginMenu, new RegExp(script.replace(".", "\\.")));
+  }
+  assert.match(pluginMenu, /ALLOWED_SCRIPTS\[action\.script\] = true/);
+  assert.match(pluginMenu, /LrPathUtils\.child\(_PLUGIN\.path, script\)/);
+  assert.match(pluginMenu, /LrTasks\.pcall\(dofile, path\)/);
+  assert.match(pluginMenu, /title = "Schließen"[\s\S]*?dialogControls:close\(\)/);
+  assert.match(pluginMenu, /title = "Taxonomie zuweisen \.\.\."[\s\S]*?script = "AssignTaxonomy\.lua"/);
+  assert.match(pluginMenu, /Ort\/Zeit der Auswahl aktualisieren \.\.\./);
+  assert.match(pluginMenu, /Gesamten Katalog aktualisieren \.\.\./);
   assert.match(info, /LrMetadataProvider\s*=\s*"MetadataDefinition\.lua"/);
   assert.match(info, /LrMetadataTagsetFactory\s*=\s*\{/);
   assert.match(info, /"MetadataTagset\.lua"/);
@@ -46,7 +77,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.5");
+  assert.equal(version.slice(1).join("."), "0.4.24.6");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -422,15 +453,18 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
   const assignment = await source("AssignmentWindow.lua");
   const statistics = await source("ShowStatistics.lua");
   const maintenance = await source("CatalogMaintenance.lua");
+  const pluginMenu = await source("PluginMenu.lua");
   assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?activeDialogControls:close\(\)/);
   assert.match(statistics, /cancelVerb\s*=\s*"Schließen"/);
   assert.match(maintenance, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
+  assert.match(pluginMenu, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
 });
 
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
-  const info = await source("Info.lua");
+  const pluginMenu = await source("PluginMenu.lua");
   const removal = await source("RemoveTaxonomy.lua");
-  assert.match(info, /title = "Taxonomie entfernen"/);
+  assert.match(pluginMenu, /title = "Taxonomie entfernen \.\.\."/);
+  assert.match(pluginMenu, /script = "RemoveTaxonomy\.lua"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.remove/);
@@ -440,7 +474,7 @@ test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden"
 });
 
 test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightroom-Felder und getrennte FN-Metadaten", async () => {
-  const info = await source("Info.lua");
+  const pluginMenu = await source("PluginMenu.lua");
   const addAction = await source("AddLocationTime.lua");
   const removeAction = await source("RemoveLocationTime.lua");
   const updateAction = await source("UpdateLocationTime.lua");
@@ -449,12 +483,12 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   const suggestions = await source("LocationSuggestionReader.lua");
   const taxonomy = await source("KeywordWriter.lua");
   const assignmentWindow = await source("AssignmentWindow.lua");
-  for (const title of [
-    "Orts- und Zeitstichwörter hinzufügen \.\.\.",
-    "Orts- und Zeitstichwörter entfernen \.\.\.",
-    "Orts- und Zeitstichwörter aktualisieren \.\.\.",
+  for (const script of [
+    "AddLocationTime.lua",
+    "RemoveLocationTime.lua",
+    "UpdateLocationTime.lua",
   ]) {
-    assert.match(info, new RegExp(title));
+    assert.match(pluginMenu, new RegExp(script.replace(".", "\\.")));
   }
   assert.match(addAction, /LocationTimeMenu"\)\.run\("add"\)/);
   assert.match(removeAction, /LocationTimeMenu"\)\.run\("remove"\)/);
@@ -618,15 +652,15 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
 });
 
 test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und ID-basiert", async () => {
-  const info = await source("Info.lua");
+  const pluginMenu = await source("PluginMenu.lua");
   const removal = await source("RemoveAllFnData.lua");
   const maintenanceAction = await source("UpdateCatalogFnData.lua");
   const maintenance = await source("CatalogMaintenance.lua");
   const writer = await source("KeywordWriter.lua");
   const locationTime = await source("LocationTimeWriter.lua");
 
-  assert.match(info, /Alle FN-Daten entfernen \.\.\./);
-  assert.match(info, /FN-Daten im Katalog aktualisieren \.\.\./);
+  assert.match(pluginMenu, /Alle FN-Daten der Auswahl entfernen \.\.\./);
+  assert.match(pluginMenu, /Gesamten Katalog aktualisieren \.\.\./);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.removeAll/);
@@ -987,7 +1021,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.5/);
+  assert.match(provider, /Version: 0\.4\.24\.6/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

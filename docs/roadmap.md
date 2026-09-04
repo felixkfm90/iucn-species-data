@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-08-29
+Stand: 2026-09-04
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1038,9 +1038,10 @@ normalisierten Vorgaben und die verwendete Taxonomieklasse.
 ## Phase 10 - Lightroom-Integration
 
 Status: in Arbeit; Phase 10.1 abgeschlossen, Suchpaket und Plug-in-Kern umgesetzt, Einzel- und Mehrfachzuweisung im
-separaten Testkatalog bestätigt; Version 0.4.24.5 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
+separaten Testkatalog bestätigt; Version 0.4.24.6 und die Bausteine aus 10.3/10.4 automatisiert geprüft, Auswahl-
 Refresh praktisch bestätigt; Orts-/Zeitaktionen, katalogweite FN-Aktualisierung, Gesamtbereinigung, automatische
-Suche und Korrekturübergabe benötigen noch den gezielten Lightroom-Test und das umfassende Abschlussaudit 10.5
+Suche, Korrekturübergabe und das neue Verwaltungsmenü benötigen noch den gezielten Lightroom-Test. Die
+CoL-/Master-/Lightroom-Wiederaufbaulücke ist der nächste technische Blocker vor dem umfassenden Abschlussaudit 10.5.
 
 Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 
@@ -1150,7 +1151,7 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
 - vor 10.5 umgesetzt und praktisch zu prüfen: Version 0.4.24.1 ergänzt `Alle FN-Daten entfernen ...` für die
   aktuelle Auswahl. Nach Bestätigung werden Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten und ausschließlich
   Stichwörter mit `(FN)`, `(FN)*`, `(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` oder `(FN Zeit)*` entfernt. Sternformen
-  werden erkannt, aber nie erzeugt. `FN-Daten im Katalog aktualisieren ...` liest 500 Fotos je Block, zeigt vor
+  werden erkannt, aber nie erzeugt. `Gesamten Katalog aktualisieren ...` liest 500 Fotos je Block, zeigt vor
   jedem Schreiben eine Vorschau und aktualisiert anschließend pausierbar in 250-Foto-Blöcken. Taxonomien werden nur
   anhand einer unverändert aktiven `masterTaxonId` übernommen; unbekannte beziehungsweise veraltete IDs,
   Mehrfachfavoriten und verwaiste FN-Stichwörter werden gemeldet und nicht still umgedeutet. Alle IDs gehen
@@ -1208,7 +1209,90 @@ Die Lightroom-Arbeiten wurden bewusst aus Phase 9 herausgelöst. Geplant sind:
   wird anhand der Korrekturrevision vor der Zuweisung gesperrt. Die Fixture-Prüfung bestätigt außerdem, dass Master-
   und Paket-SQLite bei diesem Ablauf unverändert bleiben. Das Zurücksetzen einer bereits in einem Vollmaster fest
   eingebauten manuellen Aussage bleibt bewusst dem vollständigen Kandidatenbau vorbehalten;
-- 10.5: **offen:** umfassendes Phase-10-Abschlussaudit.
+### Nächste Arbeitsaufträge vor dem Phase-10-Abschlussaudit
+
+#### Auftrag 1: Lightroom-Plug-in-Menü prüfen, gliedern und vereinfachen – technisch umgesetzt
+
+Ausgangslage vor der Umsetzung: `Info.lua` registrierte zehn gleichrangige Bibliotheksaktionen für Taxonomie, Orts-/Zeitdaten,
+Gesamtbereinigung, Katalogpflege, Art-Favorit, Sammlungen und Statistik. Alle Funktionen sind fachlich sinnvoll,
+die flache Liste wird mit jeder Ergänzung jedoch schwerer überblickbar.
+
+Vorgehen:
+
+1. Zuerst anhand der vorhandenen Lightroom-SDK-Dokumentation und eines kleinen isolierten Vertragsbeispiels prüfen,
+   welche Gliederungsmöglichkeiten `LrLibraryMenuItems` tatsächlich unterstützt: Reihenfolge, Trennlinien,
+   Untermenüs oder ausschließlich flache Aktionen. Keine undokumentierten Felder oder erfundenen Menüfunktionen
+   verwenden.
+2. Die zehn vorhandenen Einstiegspunkte nach Nutzung und Risiko ordnen. Als fachliche Zielgruppen gelten:
+   Taxonomie und Art-Favorit; Orts- und Zeitdaten; Katalogpflege und Gesamtbereinigung; Statistik und Einrichtung.
+   Häufige Einzelbildaktionen stehen vor seltenen katalogweiten beziehungsweise destruktiven Aktionen.
+3. Wenn Lightroom native Gruppen oder Untermenüs dokumentiert unterstützt, diese verwenden. Wenn nicht, eine
+   einfache unterstützte Alternative entwerfen und vor der Umsetzung bewerten, beispielsweise wenige häufige
+   Direktaktionen plus ein kompaktes FN-Wildlife-Werkzeugfenster für seltene Aktionen. Keine Funktion darf dadurch
+   unauffindbar werden.
+4. Bezeichnungen vereinheitlichen und kürzen, ohne ihre Wirkung zu verschleiern. Destruktive oder katalogweite
+   Aktionen behalten `...`, eindeutige Bestätigungen und klare Reichweitenangaben. Vorhandene Schreib-, Such- und
+   Statistiklogik bleibt unverändert.
+5. Vertragstest, Bedien- und Sicherheitsdokumentation sowie Plug-in-Version gemeinsam aktualisieren. Anschließend
+   im Lightroom-Testkatalog prüfen: Reihenfolge beziehungsweise Gliederung, Erreichbarkeit aller Aktionen,
+   Abbrechen und Bestätigen destruktiver Aktionen sowie Darstellung im tatsächlich verwendeten Windows-Menü.
+
+Akzeptanz: Das Menü ist sichtbar kürzer oder eindeutig gegliedert, alle bisherigen Funktionen bleiben erreichbar,
+häufige und gefährliche Aktionen sind klar getrennt, und jede verwendete Menüfähigkeit ist durch SDK-Vertrag oder
+praktischen Test belegt.
+
+Umsetzung am 2026-09-04: Der offizielle Menüvertrag dokumentiert für `LrLibraryMenuItems` normale Einträge mit
+`title`, `file` und optional `enabledWhen`, aber keine Untermenüs oder Trennlinien. Version 0.4.24.6 registriert
+daher nur noch `Taxonomie zuweisen` als häufige Direktaktion und `FN Wildlife verwalten ...`. Das neue Fenster
+führt die Zuweisung zusätzlich und damit alle zehn Aktionen. Orts-/Zeitaktualisierung der Auswahl und vollständiger
+FN-Katalogabgleich stehen gemeinsam, unterscheiden ihre Reichweite aber ausdrücklich. Das Fenster startet nur
+fest hinterlegte Plug-in-Skripte. Vertragstest und Dokumentation sind aktualisiert. Offen bleibt die praktische
+Lightroom-Abnahme nach Neuladen des Zusatzmoduls: beide Menüpunkte, vier Gruppen, Erreichbarkeit jeder Aktion sowie
+Schließen und Rückkehr aus dem Verwaltungsfenster.
+
+#### Auftrag 2: Wiederaufbaulücke nach CoL-Referenzaktualisierung schließen – nächster technischer Blocker
+
+Beobachteter Ausgangsfall: Die aktive CoL-Referenz wurde auf `col-xr-2026-08-26-316165` aktualisiert und der
+Projektartenabgleich meldete keine Konflikte. Der aktive Master blieb dennoch
+`master-20260830105212577` auf Basis von `col-xr-2026-07-17-315834`; auch das aktive Lightroom-Suchpaket blieb an
+diesen älteren Master gebunden. Es gab keinen Staging-Master und keinen sichtbaren laufenden Masteraufbau.
+`Keine Konflikte` bestätigt daher nur den Projektartenabgleich, nicht den anschließenden Master- und Paketneubau.
+Die erneute Codeprüfung am 2026-09-04 bestätigt den Befund: Die UI-Entscheidung berücksichtigt derzeit
+`hasCandidate`, `correctionsPending`, `lightroomPackageNeedsRebuild` und das Quellen-`hasWork`, aber keinen expliziten
+Drift zwischen aktiver Referenz und der Referenzprovenienz des aktiven Masters. Der nachgelagerte Paketabgleich
+Master gegen Lightroom ist vorhanden; er kann den vorgelagerten Referenz-gegen-Master-Drift nicht ersetzen.
+
+Vorgehen:
+
+1. Die Ursache zunächst mit einem automatisierten Zustandsvertrag reproduzieren. Insbesondere prüfen, ob die
+   Aktualisierungsentscheidung zwar Quellenarbeit, vorhandenen Kandidaten, Korrekturen und
+   Lightroom-Paket-gegen-Master vergleicht, aber den aktiven CoL-Referenzstand nicht mit dem im aktiven Master
+   gespeicherten CoL-Quellstand abgleicht.
+2. Eine explizite, zentrale Zustandsprüfung ergänzen: Weicht die aktive Referenzversion von der Quellversion des
+   aktiven Masters ab, besteht unabhängig von Projektartenkonflikten verbindlicher Master-Neuaufbaubedarf.
+3. `Datenbank aktualisieren` muss diesen Zustand sichtbar erklären und den vorhandenen sicheren Ablauf starten
+   beziehungsweise fortsetzen: Masterkandidat bauen, vollständig prüfen, atomar aktivieren, anschließend
+   Lightroom-Suchpaket aus genau diesem Master bauen, prüfen und atomar aktivieren.
+4. Ein leerer Konfliktbericht darf diesen Ablauf nicht als erledigt behandeln. Umgekehrt darf bei identischen
+   Referenz-, Master- und Paketständen kein unnötiger Neuaufbau entstehen.
+5. Fortschritt, aktuelle Phase und Teilerfolg bleiben sichtbar. Bei Fehler oder Abbruch bleiben der vorherige
+   aktive Master und das dazu passende bisherige Lightroom-Paket verwendbar. Ein erneuter Aufruf setzt den
+   ausstehenden Schritt kontrolliert fort oder wiederholt ihn idempotent.
+6. Den schnellen atomaren Korrekturrelease für reine Namenskorrekturen nicht mit dem vollständigen
+   Referenz-Neuaufbau vermischen. Beide Wege müssen denselben konsistenten Aktivstand liefern.
+7. Nach erfolgreicher Paketaktivierung muss ein geöffnetes Lightroom ohne Neustart bei einer neuen Suche den neuen
+   aktiven Paketstand verwenden. Dafür keine direkte Manipulation des Lightroom-Katalogs und keine Abhängigkeit von
+   einem geschlossenen Lightroom einführen.
+8. Tests mindestens für Referenz neuer als Master, Master neuer als Paket, vollständig synchronen Stand,
+   konfliktfreien Referenzwechsel, fehlgeschlagenen Masterbau, fehlgeschlagenen Paketbau und erneuten Aufruf nach
+   Teilerfolg ergänzen. Dokumentation und Betriebsablauf anschließend aktualisieren.
+
+Akzeptanz: Nach einer bestätigten CoL-Aktualisierung kann der Explorer nicht mehr im Zustand „neue Referenz, alter
+Master, altes Lightroom-Paket“ ohne sichtbaren Handlungsbedarf stehen. Ein erfolgreicher Lauf endet mit
+übereinstimmender Referenzherkunft, aktiver Master-ID und dazugehöriger Paket-`masterVersion`; ein Fehler bewahrt
+nachweislich den letzten konsistent nutzbaren Aktivstand.
+
+- 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Abschluss und praktischem Test beider Aufträge.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
 

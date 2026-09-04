@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-08-30
+Stand: 2026-09-04
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1140,7 +1140,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.24.5`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.24.6`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1212,7 +1212,7 @@ Aktuelle Planung:
   `(FN Ort)*` und `(FN Zeit)*`, erzeugt diese Sternformen aber nicht. `Alle FN-Daten entfernen ...` bereinigt nach
   Bestätigung auf der aktuellen Auswahl Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten und ausschließlich die sechs
   reservierten Endungen `(FN)`, `(FN)*`, `(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` und `(FN Zeit)*`. Die neue Aktion
-  `FN-Daten im Katalog aktualisieren ...` führt einen lesenden 500-Foto-Scan mit Vorschau aus und schreibt erst nach
+  `Gesamten Katalog aktualisieren ...` führt einen lesenden 500-Foto-Scan mit Vorschau aus und schreibt erst nach
   Bestätigung pausierbar in 250-Foto-Blöcken. Alle vorhandenen Master-IDs werden in einer Suchhelferanfrage gegen
   dasselbe aktive Paket geprüft; Taxonomien werden nur bei unverändert eindeutig aktiver `masterTaxonId`
   aktualisiert. Ungültige oder nicht auflösbare IDs, Mehrfachfavoriten sowie verwaiste reservierte Stichwörter
@@ -1248,6 +1248,11 @@ Aktuelle Planung:
   inkrementell. Die Beobachtungslisten-CSV benötigt dadurch beim Export keinen Katalogscan mehr. Der Index speichert
   keine Fotoliste je Gruppe und höchstens einen optionalen Beispiel-Dateinamen; Indexschema 6 erfordert einmalig
   `Statistik neu aufbauen`.
+  Version 0.4.24.6 reduziert die native Liste unter `Bibliothek > Zusatzmoduloptionen` auf `Taxonomie zuweisen`
+  und `FN Wildlife verwalten ...`. Das zweite Fenster führt alle zehn Aktionen einschließlich der zusätzlichen
+  Zuweisung. Auswahlbezogene und katalogweite Aktualisierung stehen gemeinsam, bleiben durch ihre Beschriftung
+  und Wirkung aber eindeutig getrennt. Native Untermenüs oder Trennlinien werden
+  nicht vorgetäuscht, weil der dokumentierte `LrLibraryMenuItems`-Vertrag nur normale Einträge ausweist.
   Der Suchhelfer erkennt unter Windows eine übliche lokale
   Node-Installation auch dann, wenn Lightroom den System-`PATH` nicht vollständig übernimmt, und erhält den lokalen
   Suchpaketpfad unabhängig von Lightroom-Prozessvariablen ausdrücklich. Ein fehlgeschlagener Hilfsprozess zeigt eine

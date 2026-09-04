@@ -7,42 +7,11 @@ return {
     {
       title = "Taxonomie zuweisen",
       file = "AssignTaxonomy.lua",
+      enabledWhen = "photosSelected",
     },
     {
-      title = "Taxonomie entfernen",
-      file = "RemoveTaxonomy.lua",
-    },
-    {
-      title = "Orts- und Zeitstichwörter hinzufügen ...",
-      file = "AddLocationTime.lua",
-    },
-    {
-      title = "Orts- und Zeitstichwörter entfernen ...",
-      file = "RemoveLocationTime.lua",
-    },
-    {
-      title = "Orts- und Zeitstichwörter aktualisieren ...",
-      file = "UpdateLocationTime.lua",
-    },
-    {
-      title = "Alle FN-Daten entfernen ...",
-      file = "RemoveAllFnData.lua",
-    },
-    {
-      title = "FN-Daten im Katalog aktualisieren ...",
-      file = "UpdateCatalogFnData.lua",
-    },
-    {
-      title = "Ausgewähltes Foto als Favoritenbild der Art markieren ...",
-      file = "SetReferenceImage.lua",
-    },
-    {
-      title = "FN Wildlife-Sammlungen einrichten ...",
-      file = "CreateCollections.lua",
-    },
-    {
-      title = "Taxonomie-Statistik ...",
-      file = "ShowStatistics.lua",
+      title = "FN Wildlife verwalten ...",
+      file = "PluginMenu.lua",
     },
   },
   LrMetadataProvider = "MetadataDefinition.lua",
@@ -55,6 +24,6 @@ return {
     major = 0,
     minor = 4,
     revision = 24,
-    build = 5,
+    build = 6,
   },
 }

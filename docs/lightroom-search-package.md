@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-03
+Stand: 2026-09-04
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.24.5 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.24.6 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
@@ -166,11 +166,13 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.5`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.6`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
-- `Info.lua`: Manifest, SDK-Grenze und deutscher Bibliotheksmenüpunkt;
+- `Info.lua`: Manifest, SDK-Grenze und die zwei deutschen Bibliotheksmenüpunkte;
+- `PluginMenu.lua`: kompaktes Verwaltungsfenster mit festen, erlaubten Verweisen auf alle vorhandenen Aktionen;
+  Auswahl- und Katalogaktualisierung stehen gemeinsam, sind aber eindeutig nach ihrer Reichweite beschriftet;
 - `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder für Namen, Status, alle unterstützten Taxonomieränge
   sowie die vom Plug-in übernommenen Orts- und Zeitwerte;
 - `MetadataTagset.lua`, `MetadataTagsetFull.lua` und `MetadataTagsetFields.lua`: eine kompakte Metadatenansicht
@@ -376,6 +378,14 @@ Katalogscan. Pro Gruppe speichert der Index Zähler, Fachwerte und höchstens ei
 aber keine vollständige Fotoliste. Wird genau das Beispielbild aus der Gruppe entfernt, darf das optionale Feld bis
 zu einer späteren Ergänzung leer bleiben. Indexschema 6 erfordert einmalig `Statistik neu aufbauen`.
 
+Version 0.4.24.6 begrenzt `LrLibraryMenuItems` auf die häufige Direktaktion `Taxonomie zuweisen` und den Einstieg
+`FN Wildlife verwalten ...`. Der dokumentierte Lightroom-Menüvertrag bietet keine nativen Untermenüs oder
+Trennlinien. Deshalb ordnet ein kompaktes schwebendes Fenster alle zehn vorhandenen Aktionen in vier Gruppen ein;
+die Zuweisung bleibt zusätzlich direkt erreichbar. `Ort/Zeit der Auswahl aktualisieren ...` und `Gesamten Katalog
+aktualisieren ...` stehen gemeinsam, bezeichnen aber ihre unterschiedliche Reichweite ausdrücklich. Das Fenster
+startet ausschließlich fest hinterlegte Skripte aus dem Plug-in-Verzeichnis und schließt sich vor
+dem Aufruf; Fachlogik, Bestätigungen und Schreibgrenzen der Aktionen bleiben unverändert.
+
 Version 0.4.23.1 korrigiert die Rückgabe der eigenständigen Orts-/Zeitaktionen. `withWriteAccessDo` wird nur zum
 Ausführen und Absichern des Schreibcallbacks verwendet; dessen SDK-Rückgabewert ist nicht das fachliche
 Zählerergebnis. Der Writer erfasst das Ergebnis deshalb im äußeren Gültigkeitsbereich und gibt es nach bestätigtem
@@ -422,7 +432,7 @@ Bestätigung und entfernt Taxonomie, Art-Favorit, FN-Orts-/Zeitdaten sowie exakt
 `(FN Ort)`, `(FN Ort)*`, `(FN Zeit)` und `(FN Zeit)*`. Andere Lightroom-Metadaten und manuelle Stichwörter bleiben
 unverändert.
 
-`FN-Daten im Katalog aktualisieren ...` ist davon getrennt und beginnt mit einem rein lesenden Scan in
+`Gesamten Katalog aktualisieren ...` ist davon getrennt und beginnt mit einem rein lesenden Scan in
 500-Foto-Blöcken. Die Vorschau nennt sicher aktualisierbare Taxa, nicht auflösbare beziehungsweise ungültige
 Master-IDs, Mehrfachfavoriten und verwaiste reservierte Stichwörter. Erst `Vorschau übernehmen` startet
 250-Foto-Schreibblöcke. Alle eindeutigen IDs werden einmal gebündelt vom Suchhelfer aufgelöst; vor jedem
@@ -498,9 +508,10 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.5`, der Suchpaketstatus sowie die zehn
-   Menüaktionen ohne
-   Lua-Fehler erscheinen.
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.6`, der Suchpaketstatus sowie die zwei
+   Einträge `Taxonomie zuweisen` und `FN Wildlife verwalten ...` ohne Lua-Fehler erscheinen. Im
+   Verwaltungsfenster müssen alle zehn Aktionen in vier klar beschrifteten Gruppen erreichbar sein. Die beiden
+   Aktualisierungen müssen Auswahl und gesamten Katalog klar unterscheiden.
 5. In der Bibliothek ein Testfoto markieren und
    `Bibliothek > Zusatzmoduloptionen > Taxonomie zuweisen` wählen.
 6. Im Zuweisungsfenster Dateiname beziehungsweise `1 Foto ausgewählt`, die vier gerahmten Schritte und den Hinweis
@@ -548,7 +559,7 @@ sondern zentral im Arten-Explorer verwaltet.
     Anschließend eine
     Zuweisung, Rücknahme, Orts-/Zeitänderung und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen
     Neuaufbau stimmen.
-12a. `FN-Daten im Katalog aktualisieren ...` in einem kopierten Katalog öffnen. Der 500er-Scan darf vor der
+12a. `Gesamten Katalog aktualisieren ...` in einem kopierten Katalog öffnen. Der 500er-Scan darf vor der
      Vorschau nichts schreiben. Ungültige beziehungsweise unbekannte IDs, mehrere Favoriten derselben Art und
      verwaiste FN-Stichwörter müssen in der Vorschau erscheinen und unverändert bleiben. Danach übernehmen, bei
      mindestens einem Block pausieren/fortsetzen und prüfen, dass aktuelle Namen, Taxonomiepfade, Stichwörter sowie
