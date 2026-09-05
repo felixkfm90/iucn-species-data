@@ -3,6 +3,7 @@
     "URLSlug": "turdusmerula",
     "Wissenschaftlicher Name": "Turdus merula",
     "Deutscher Name": "Amsel",
+    "Englischer Name": "Eurasian Blackbird",
     "Gewicht": "ca. 80-110 g",
     "Größe": "ca. 23,5-29 cm",
     "Lebenserwartung": "ca. 3 Jahre",
@@ -20,13 +21,13 @@
     "Genus": "Turdus",
     "Species": "merula",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Blackbird"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "motacillaalba",
     "Wissenschaftlicher Name": "Motacilla alba",
     "Deutscher Name": "Bachstelze",
+    "Englischer Name": "White Wagtail",
     "Gewicht": "ca. 20-25 g",
     "Größe": "ca. 17-19 cm",
     "Lebenserwartung": "ca. 2 Jahre",
@@ -44,13 +45,13 @@
     "Genus": "Motacilla",
     "Species": "alba",
     "Letztes IUCN Update": "2019",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "White Wagtail"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "panurusbiarmicus",
     "Wissenschaftlicher Name": "Panurus biarmicus",
     "Deutscher Name": "Bartmeise",
+    "Englischer Name": "Bearded Reedling",
     "Gewicht": "ca. 14-18 g",
     "Größe": "ca. 14-15,5 cm",
     "Lebenserwartung": "ca. 2-3 Jahre",
@@ -68,13 +69,13 @@
     "Genus": "Panurus",
     "Species": "biarmicus",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Bearded Reedling"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "linariacannabina",
     "Wissenschaftlicher Name": "Linaria cannabina",
     "Deutscher Name": "Bluthänfling",
+    "Englischer Name": "Eurasian Linnet",
     "Gewicht": "ca. 15-20 g",
     "Größe": "ca. 12,5-14 cm",
     "Lebenserwartung": "ca. 2 Jahre",
@@ -92,13 +93,13 @@
     "Genus": "Linaria",
     "Species": "cannabina",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Linnet"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "dendrocoposmajor",
     "Wissenschaftlicher Name": "Dendrocopos major",
     "Deutscher Name": "Buntspecht",
+    "Englischer Name": "Great Spotted Woodpecker",
     "Gewicht": "ca. 70-90 g",
     "Größe": "ca. 23-26 cm",
     "Lebenserwartung": "ca. 5-10 Jahre",
@@ -116,13 +117,13 @@
     "Genus": "Dendrocopos",
     "Species": "major",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Great Spotted Woodpecker"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "alcedoatthis",
     "Wissenschaftlicher Name": "Alcedo atthis",
     "Deutscher Name": "Eisvogel",
+    "Englischer Name": "Common Kingfisher",
     "Gewicht": "ca. 35-45 g",
     "Größe": "ca. 17-19,5 cm",
     "Lebenserwartung": "ca. 7 Jahre",
@@ -140,13 +141,13 @@
     "Genus": "Alcedo",
     "Species": "atthis",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Common Kingfisher"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "lusciniasvecica",
     "Wissenschaftlicher Name": "Luscinia svecica",
     "Deutscher Name": "Blaukehlchen",
+    "Englischer Name": "Bluethroat",
     "Gewicht": "ca. 15-22 g",
     "Größe": "ca. 13-14 cm",
     "Lebenserwartung": "ca. 3-5 Jahre",
@@ -164,13 +165,13 @@
     "Genus": "Luscinia",
     "Species": "svecica",
     "Letztes IUCN Update": "2019",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Bluethroat"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "cyanistescaeruleus",
     "Wissenschaftlicher Name": "Cyanistes caeruleus",
     "Deutscher Name": "Blaumeise",
+    "Englischer Name": "Eurasian Blue Tit",
     "Gewicht": "ca. 10-12 g",
     "Größe": "ca. 10,5-12 cm",
     "Lebenserwartung": "ca. 2-3 Jahre",
@@ -188,13 +189,13 @@
     "Genus": "Cyanistes",
     "Species": "caeruleus",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Blue Tit"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "fulicaatra",
     "Wissenschaftlicher Name": "Fulica atra",
     "Deutscher Name": "Blässhuhn",
+    "Englischer Name": "Eurasian Coot",
     "Gewicht": "ca. 600-900 g",
     "Größe": "ca. 36-42 cm",
     "Lebenserwartung": "ca. 5-10 Jahre",
@@ -212,13 +213,13 @@
     "Genus": "Fulica",
     "Species": "atra",
     "Letztes IUCN Update": "2019",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Coot"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "otistarda",
     "Wissenschaftlicher Name": "Otis tarda",
     "Deutscher Name": "Großtrappe",
+    "Englischer Name": "Great Bustard",
     "Gewicht": "Männchen ca. 8-16 kg Weibchen ca. 3,5-5 kg",
     "Größe": "Männchen ca. 90-105 cm Weibchen ca. 75-85 cm",
     "Lebenserwartung": "ca. 10-15 Jahre",
@@ -236,13 +237,13 @@
     "Genus": "Otis",
     "Species": "tarda",
     "Letztes IUCN Update": "2023",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Great Bustard"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "erithacusrubecula",
     "Wissenschaftlicher Name": "Erithacus rubecula",
     "Deutscher Name": "Rotkehlchen",
+    "Englischer Name": "European Robin",
     "Gewicht": "ca. 15-20 g",
     "Größe": "ca. 12,5-14 cm",
     "Lebenserwartung": "ca. 1-2 Jahre",
@@ -260,13 +261,13 @@
     "Genus": "Erithacus",
     "Species": "rubecula",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "European Robin"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "falcotinnunculus",
     "Wissenschaftlicher Name": "Falco tinnunculus",
     "Deutscher Name": "Turmfalke",
+    "Englischer Name": "Eurasian Kestrel",
     "Gewicht": "ca. 155-240 g",
     "Größe": "ca. 31-37 cm",
     "Lebenserwartung": "ca. 4-6 Jahre",
@@ -284,13 +285,13 @@
     "Genus": "Falco",
     "Species": "tinnunculus",
     "Letztes IUCN Update": "2021",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Kestrel"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "alouattapalliata",
     "Wissenschaftlicher Name": "Alouatta palliata",
     "Deutscher Name": "Mantelbrüllaffe",
+    "Englischer Name": "Mantled Howler Monkey",
     "Gewicht": "Männchen ca. 6-9 kg Weibchen ca. 4-6 kg",
     "Größe": "ca. 45-65 cm",
     "Lebenserwartung": "ca. 10-12 Jahre",
@@ -308,13 +309,13 @@
     "Genus": "Alouatta",
     "Species": "palliata",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Mantled Howler Monkey"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "pharomachrusmocinno",
     "Wissenschaftlicher Name": "Pharomachrus mocinno",
     "Deutscher Name": "Quetzal",
+    "Englischer Name": "Resplendent Quetzal",
     "Gewicht": "ca. 180-250 g",
     "Größe": "ca. 30-40 cm",
     "Lebenserwartung": "ca. 3-10 Jahre",
@@ -332,13 +333,13 @@
     "Genus": "Pharomachrus",
     "Species": "mocinno",
     "Letztes IUCN Update": "2023",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Resplendent Quetzal"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "cebusimitator",
     "Wissenschaftlicher Name": "Cebus imitator",
     "Deutscher Name": "Panama-Kapuzineraffe",
+    "Englischer Name": "Central American White-faced Capuchin",
     "Gewicht": "Männchen ca. 3-4 kg Weibchen ca. 2-3 kg",
     "Größe": "ca. 35-45 cm",
     "Lebenserwartung": "ca. 25-30 Jahre",
@@ -356,13 +357,13 @@
     "Genus": "Cebus",
     "Species": "imitator",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Central American White-faced Capuchin"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "saimirioerstedii",
     "Wissenschaftlicher Name": "Saimiri oerstedii",
     "Deutscher Name": "Mittelamerikanischer Totenkopfaffe",
+    "Englischer Name": "Central American Squirrel Monkey",
     "Gewicht": "ca. 0,6-0,9 kg",
     "Größe": "ca. 35-45 cm",
     "Lebenserwartung": "ca. 15 Jahre",
@@ -380,13 +381,13 @@
     "Genus": "Saimiri",
     "Species": "oerstedii",
     "Letztes IUCN Update": "2021",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Central American Squirrel Monkey"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "fraterculaarctica",
     "Wissenschaftlicher Name": "Fratercula arctica",
     "Deutscher Name": "Papageientaucher",
+    "Englischer Name": "Atlantic Puffin",
     "Gewicht": "ca. 300-550 g",
     "Größe": "ca. 28-34 cm",
     "Lebenserwartung": "ca. 20 Jahre",
@@ -404,13 +405,13 @@
     "Genus": "Fratercula",
     "Species": "arctica",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Atlantic Puffin"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "megapteranovaeangliae",
     "Wissenschaftlicher Name": "Megaptera novaeangliae",
     "Deutscher Name": "Buckelwal",
+    "Englischer Name": "Humpback Whale",
     "Gewicht": "ca. 25-30 t",
     "Größe": "ca. 15-16 m",
     "Lebenserwartung": "ca. 80-90 Jahre",
@@ -428,13 +429,13 @@
     "Genus": "Megaptera",
     "Species": "novaeangliae",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Humpback Whale"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "atelesgeoffroyi",
     "Wissenschaftlicher Name": "Ateles geoffroyi",
     "Deutscher Name": "Geoffroy-Klammeraffe",
+    "Englischer Name": "Central American Spider Monkey",
     "Gewicht": "ca. 6-9 kg",
     "Größe": "ca. 30-63 cm",
     "Lebenserwartung": "ca. 20-25 Jahre",
@@ -452,13 +453,13 @@
     "Genus": "Ateles",
     "Species": "geoffroyi",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Central American Spider Monkey"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "ramphastosambiguus",
     "Wissenschaftlicher Name": "Ramphastos ambiguus",
     "Deutscher Name": "Goldkehltukan",
+    "Englischer Name": "Yellow-throated Toucan",
     "Gewicht": "ca. 0,62-0,74 kg",
     "Größe": "ca. 56-61 cm",
     "Lebenserwartung": "ca. 15-20 Jahre",
@@ -476,13 +477,13 @@
     "Genus": "Ramphastos",
     "Species": "ambiguus",
     "Letztes IUCN Update": "2023",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Yellow-throated Toucan"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "fringillacoelebs",
     "Wissenschaftlicher Name": "Fringilla coelebs",
     "Deutscher Name": "Buchfink",
+    "Englischer Name": "Common Chaffinch",
     "Gewicht": "ca. 18-29 g",
     "Größe": "ca. 14-16 cm",
     "Lebenserwartung": "ca. 3 Jahre",
@@ -500,13 +501,13 @@
     "Genus": "Fringilla",
     "Species": "coelebs",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Common Chaffinch"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "vanellusvanellus",
     "Wissenschaftlicher Name": "Vanellus vanellus",
     "Deutscher Name": "Kiebitz",
+    "Englischer Name": "Northern Lapwing",
     "Gewicht": "ca. 128-230 g",
     "Größe": "ca. 28-31 cm",
     "Lebenserwartung": "ca. 3-4 Jahre",
@@ -524,13 +525,13 @@
     "Genus": "Vanellus",
     "Species": "vanellus",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Northern Lapwing"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "pyrrhulapyrrhula",
     "Wissenschaftlicher Name": "Pyrrhula pyrrhula",
     "Deutscher Name": "Gimpel",
+    "Englischer Name": "Eurasian Bullfinch",
     "Gewicht": "ca. 25-35 g",
     "Größe": "ca. 14-17 cm",
     "Lebenserwartung": "ca. 2-5 Jahre",
@@ -548,13 +549,13 @@
     "Genus": "Pyrrhula",
     "Species": "pyrrhula",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Bullfinch"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "lophophanescristatus",
     "Wissenschaftlicher Name": "Lophophanes cristatus",
     "Deutscher Name": "Haubenmeise",
+    "Englischer Name": "Crested Tit",
     "Gewicht": "ca. 11-14 g",
     "Größe": "ca. 10,5-12 cm",
     "Lebenserwartung": "ca. 2 Jahre",
@@ -572,13 +573,13 @@
     "Genus": "Lophophanes",
     "Species": "cristatus",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Crested Tit"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "ramphastossulfuratus",
     "Wissenschaftlicher Name": "Ramphastos sulfuratus",
     "Deutscher Name": "Fischertukan",
+    "Englischer Name": "Keel-billed Toucan",
     "Gewicht": "ca. 380–500 g",
     "Größe": "ca. 42–55 cm",
     "Lebenserwartung": "ca. 15-20 Jahre",
@@ -596,13 +597,13 @@
     "Genus": "Ramphastos",
     "Species": "sulfuratus",
     "Letztes IUCN Update": "2021",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Keel-billed Toucan"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "phasianuscolchicus",
     "Wissenschaftlicher Name": "Phasianus colchicus",
     "Deutscher Name": "Jagdfasan",
+    "Englischer Name": "Ring-necked Pheasant",
     "Gewicht": "Männchen ca. 1,2-1,8 kg Weibchen ca. 0,8-1,3 kg",
     "Größe": "ca. 70–90 cm",
     "Lebenserwartung": "ca. 1-3 Jahre",
@@ -620,13 +621,13 @@
     "Genus": "Phasianus",
     "Species": "colchicus",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Ring-necked Pheasant"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "capreoluscapreolus",
     "Wissenschaftlicher Name": "Capreolus capreolus",
     "Deutscher Name": "Reh",
+    "Englischer Name": "Western Roe Deer",
     "Gewicht": "ca. 15-30 kg",
     "Größe": "ca. 60–75 cm",
     "Lebenserwartung": "ca. 10-15 Jahre",
@@ -644,13 +645,13 @@
     "Genus": "Capreolus",
     "Species": "capreolus",
     "Letztes IUCN Update": "2016",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Western Roe Deer"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "phalacrocoraxcarbo",
     "Wissenschaftlicher Name": "Phalacrocorax carbo",
     "Deutscher Name": "Kormoran",
+    "Englischer Name": "Great Cormorant",
     "Gewicht": "ca. 2,0-3,5 kg",
     "Größe": "ca. 80–100 cm",
     "Lebenserwartung": "ca. 10-15 Jahre",
@@ -668,13 +669,13 @@
     "Genus": "Phalacrocorax",
     "Species": "carbo",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Great Cormorant"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "haematopusostralegus",
     "Wissenschaftlicher Name": "Haematopus ostralegus",
     "Deutscher Name": "Austernfischer",
+    "Englischer Name": "Eurasian Oystercatcher",
     "Gewicht": "ca. 400-700 g",
     "Größe": "ca. 39–44 cm",
     "Lebenserwartung": "ca. 12 Jahre",
@@ -692,13 +693,13 @@
     "Genus": "Haematopus",
     "Species": "ostralegus",
     "Letztes IUCN Update": "2019",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Oystercatcher"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "calidrisalpina",
     "Wissenschaftlicher Name": "Calidris alpina",
     "Deutscher Name": "Alpenstrandläufer",
+    "Englischer Name": "Dunlin",
     "Gewicht": "ca. 40-60 g",
     "Größe": "ca. 17–21 cm",
     "Lebenserwartung": "ca. 5 Jahre",
@@ -716,13 +717,13 @@
     "Genus": "Calidris",
     "Species": "alpina",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Dunlin"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "acanthisflammea",
     "Wissenschaftlicher Name": "Acanthis flammea",
     "Deutscher Name": "Birkenzeisig",
+    "Englischer Name": "Redpoll",
     "Gewicht": "ca. 10-18 g",
     "Größe": "ca. 11-14 cm",
     "Lebenserwartung": "ca. 2 Jahre",
@@ -740,13 +741,13 @@
     "Genus": "Acanthis",
     "Species": "flammea",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Redpoll"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "strixaluco",
     "Wissenschaftlicher Name": "Strix aluco",
     "Deutscher Name": "Waldkauz",
+    "Englischer Name": "Tawny Owl",
     "Gewicht": "ca. 400-650 g",
     "Größe": "ca. 37-43 cm",
     "Lebenserwartung": "ca. 4 Jahre",
@@ -764,13 +765,13 @@
     "Genus": "Strix",
     "Species": "aluco",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Tawny Owl"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "eumomotasuperciliosa",
     "Wissenschaftlicher Name": "Eumomota superciliosa",
     "Deutscher Name": "Brauenmotmot",
+    "Englischer Name": "Turquoise-browed Motmot",
     "Gewicht": "ca. 60–80 g",
     "Größe": "ca. 34–38 cm",
     "Lebenserwartung": "ca. 5-10 Jahre",
@@ -788,13 +789,13 @@
     "Genus": "Eumomota",
     "Species": "superciliosa",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Turquoise-browed Motmot"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "sittaeuropaea",
     "Wissenschaftlicher Name": "Sitta europaea",
     "Deutscher Name": "Kleiber",
+    "Englischer Name": "Eurasian Nuthatch",
     "Gewicht": "ca. 20–25 g",
     "Größe": "ca. 12–14 cm",
     "Lebenserwartung": "ca. 2-3 Jahre",
@@ -812,13 +813,13 @@
     "Genus": "Sitta",
     "Species": "europaea",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Nuthatch"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "fringillamontifringilla",
     "Wissenschaftlicher Name": "Fringilla montifringilla",
     "Deutscher Name": "Bergfink",
+    "Englischer Name": "Brambling",
     "Gewicht": "ca. 20–30 g",
     "Größe": "ca. 14–16 cm",
     "Lebenserwartung": "ca. 3-5 Jahre",
@@ -836,13 +837,13 @@
     "Genus": "Fringilla",
     "Species": "montifringilla",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Brambling"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "coccothraustescoccothraustes",
     "Wissenschaftlicher Name": "Coccothraustes coccothraustes",
     "Deutscher Name": "Kernbeißer",
+    "Englischer Name": "Hawfinch",
     "Gewicht": "ca. 45–65 g",
     "Größe": "ca. 16–18 cm",
     "Lebenserwartung": "ca. 2-5 Jahre",
@@ -860,13 +861,13 @@
     "Genus": "Coccothraustes",
     "Species": "coccothraustes",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Hawfinch"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "glaucidiumpasserinum",
     "Wissenschaftlicher Name": "Glaucidium passerinum",
     "Deutscher Name": "Sperlingskauz",
+    "Englischer Name": "Eurasian Pygmy-Owl",
     "Gewicht": "ca. 50–80 g",
     "Größe": "ca. 15–19 cm",
     "Lebenserwartung": "ca. 4-6 Jahre",
@@ -884,13 +885,13 @@
     "Genus": "Glaucidium",
     "Species": "passerinum",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Pygmy-Owl"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "ondatrazibethicus",
     "Wissenschaftlicher Name": "Ondatra zibethicus",
     "Deutscher Name": "Bisamratte",
+    "Englischer Name": "Muskrat",
     "Gewicht": "ca. 0,8-1,8 kg",
     "Größe": "ca. 25–40 cm",
     "Lebenserwartung": "ca. 3 Jahre",
@@ -908,13 +909,13 @@
     "Genus": "Ondatra",
     "Species": "zibethicus",
     "Letztes IUCN Update": "2016",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Muskrat"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "sciurusvulgaris",
     "Wissenschaftlicher Name": "Sciurus vulgaris",
     "Deutscher Name": "Eurasisches Eichhörnchen",
+    "Englischer Name": "Eurasian Red Squirrel",
     "Gewicht": "ca. 200–400 g",
     "Größe": "ca. 20–25 cm",
     "Lebenserwartung": "ca. 2-4 Jahre",
@@ -932,13 +933,13 @@
     "Genus": "Sciurus",
     "Species": "vulgaris",
     "Letztes IUCN Update": "2023",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Red Squirrel"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "milvusmilvus",
     "Wissenschaftlicher Name": "Milvus milvus",
     "Deutscher Name": "Rotmilan",
+    "Englischer Name": "Red Kite",
     "Gewicht": "ca. 0,8–1,3 kg",
     "Größe": "ca. 60-70 cm",
     "Lebenserwartung": "ca. 10-15 Jahre",
@@ -956,13 +957,13 @@
     "Genus": "Milvus",
     "Species": "milvus",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Red Kite"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "vulpesvulpes",
     "Wissenschaftlicher Name": "Vulpes vulpes",
     "Deutscher Name": "Rotfuchs",
+    "Englischer Name": "Red Fox",
     "Gewicht": "ca. 5–10 kg",
     "Größe": "ca. 60-90 cm",
     "Lebenserwartung": "ca. 3 Jahre",
@@ -980,13 +981,13 @@
     "Genus": "Vulpes",
     "Species": "vulpes",
     "Letztes IUCN Update": "2016",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Red Fox"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "parusmajor",
     "Wissenschaftlicher Name": "Parus major",
     "Deutscher Name": "Kohlmeise",
+    "Englischer Name": "Great Tit",
     "Gewicht": "ca. 14–22 g",
     "Größe": "ca. 13-15 cm",
     "Lebenserwartung": "ca. 2-3 Jahre",
@@ -1004,13 +1005,13 @@
     "Genus": "Parus",
     "Species": "major",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Great Tit"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "ardeacinerea",
     "Wissenschaftlicher Name": "Ardea cinerea",
     "Deutscher Name": "Graureiher",
+    "Englischer Name": "Grey Heron",
     "Gewicht": "ca. 1–2 kg",
     "Größe": "ca. 90-100 cm",
     "Lebenserwartung": "ca. 5 Jahre",
@@ -1028,13 +1029,13 @@
     "Genus": "Ardea",
     "Species": "cinerea",
     "Letztes IUCN Update": "2019",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Grey Heron"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "anseranser",
     "Wissenschaftlicher Name": "Anser anser",
     "Deutscher Name": "Graugans",
+    "Englischer Name": "Greylag Goose",
     "Gewicht": "ca. 2,5–4,5 kg",
     "Größe": "ca. 75-90 cm",
     "Lebenserwartung": "ca. 20 Jahre",
@@ -1052,13 +1053,13 @@
     "Genus": "Anser",
     "Species": "anser",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Greylag Goose"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "mergusmerganser",
     "Wissenschaftlicher Name": "Mergus merganser",
     "Deutscher Name": "Gänsesäger",
+    "Englischer Name": "Common Merganser",
     "Gewicht": "ca. 0,9–2,1 kg",
     "Größe": "ca. 58-72 cm",
     "Lebenserwartung": "ca. 13 Jahre",
@@ -1076,13 +1077,13 @@
     "Genus": "Mergus",
     "Species": "merganser",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Common Merganser"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "iguanaiguana",
     "Wissenschaftlicher Name": "Iguana iguana",
     "Deutscher Name": "Grüner Leguan",
+    "Englischer Name": "Green Iguana",
     "Gewicht": "ca. 4–8 kg",
     "Größe": "ca. 120–200 cm",
     "Lebenserwartung": "ca. 15–20 Jahre",
@@ -1100,13 +1101,13 @@
     "Genus": "Iguana",
     "Species": "iguana",
     "Letztes IUCN Update": "2022",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Green Iguana"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "aramacao",
     "Wissenschaftlicher Name": "Ara macao",
     "Deutscher Name": "Scharlachara",
+    "Englischer Name": "Scarlet Macaw",
     "Gewicht": "ca. 900–1.200 g",
     "Größe": "ca. 81–96 cm",
     "Lebenserwartung": "ca. 40–50 Jahre",
@@ -1124,13 +1125,13 @@
     "Genus": "Ara",
     "Species": "macao",
     "Letztes IUCN Update": "2022",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Scarlet Macaw"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "garrulusglandarius",
     "Wissenschaftlicher Name": "Garrulus glandarius",
     "Deutscher Name": "Eichelhäher",
+    "Englischer Name": "Eurasian Jay",
     "Gewicht": "ca. 140–190 g",
     "Größe": "ca. 32–35 cm",
     "Lebenserwartung": "ca. 15–18 Jahre",
@@ -1148,13 +1149,13 @@
     "Genus": "Garrulus",
     "Species": "glandarius",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Eurasian Jay"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "pantheraleo",
     "Wissenschaftlicher Name": "Panthera leo",
     "Deutscher Name": "Löwe",
+    "Englischer Name": "Lion",
     "Gewicht": "Männchen: ca. 150–250 kg; Weibchen: ca. 110–180 kg",
     "Größe": "ca. 140–250 cm",
     "Lebenserwartung": "ca. 10–14 Jahre",
@@ -1172,13 +1173,13 @@
     "Genus": "Panthera",
     "Species": "leo",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Lion"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "acinonyxjubatus",
     "Wissenschaftlicher Name": "Acinonyx jubatus",
     "Deutscher Name": "Gepard",
+    "Englischer Name": "Cheetah",
     "Gewicht": "ca. 35-65 kg",
     "Größe": "ca. 110-150 cm",
     "Lebenserwartung": "ca. 10-12 Jahre",
@@ -1196,13 +1197,13 @@
     "Genus": "Acinonyx",
     "Species": "jubatus",
     "Letztes IUCN Update": "2022",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "Cheetah"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "actophilornisafricanus",
     "Wissenschaftlicher Name": "Actophilornis africanus",
     "Deutscher Name": "Blaustirn-Blatthühnchen",
+    "Englischer Name": "African Jacana",
     "Gewicht": "ca. 110–290 g",
     "Größe": "ca. 23–31 cm",
     "Lebenserwartung": "ca. 8–10 Jahre",
@@ -1220,13 +1221,13 @@
     "Genus": "Actophilornis",
     "Species": "africanus",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-07-19",
-    "Englischer Name": "African Jacana"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "terathopiusecaudatus",
     "Wissenschaftlicher Name": "Terathopius ecaudatus",
     "Deutscher Name": "Gaukler",
+    "Englischer Name": "Bateleur",
     "Gewicht": "ca. 1,8-3,0 kg",
     "Größe": "ca. 55-70 cm",
     "Lebenserwartung": "ca. 20-30 Jahre",
@@ -1244,8 +1245,7 @@
     "Genus": "Terathopius",
     "Species": "ecaudatus",
     "Letztes IUCN Update": "2020",
-    "Daten abgerufen": "2026-07-25",
-    "Englischer Name": "Bateleur"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "coraciascaudatus",
@@ -1269,7 +1269,7 @@
     "Genus": "Coracias",
     "Species": "caudatus",
     "Letztes IUCN Update": "2024",
-    "Daten abgerufen": "2026-08-02"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "pteroglossustorquatus",
@@ -1293,7 +1293,7 @@
     "Genus": "Pteroglossus",
     "Species": "torquatus",
     "Letztes IUCN Update": "2023",
-    "Daten abgerufen": "2026-08-03"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "amazonaautumnalis",
@@ -1317,7 +1317,7 @@
     "Genus": "Amazona",
     "Species": "autumnalis",
     "Letztes IUCN Update": "2018",
-    "Daten abgerufen": "2026-08-16"
+    "Daten abgerufen": "2026-09-05"
   },
   {
     "URLSlug": "ciconiaciconia",
@@ -1341,6 +1341,6 @@
     "Genus": "Ciconia",
     "Species": "ciconia",
     "Letztes IUCN Update": "2025",
-    "Daten abgerufen": "2026-09-03"
+    "Daten abgerufen": "2026-09-05"
   }
 ]

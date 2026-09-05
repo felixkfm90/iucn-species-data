@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-09-04
+Stand: 2026-09-05
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1114,18 +1114,41 @@ Aktuelle Planung:
   Projektarten. Referenzlückenbestätigungen verwenden eine exakte aktive Masterabfrage nach wissenschaftlichem
   Namen, Rang und Reich; `Sciurus vulgaris` ist dafür der verbindliche reale Fall. Native Playeraktionen verwerfen
   eine vorhandene Sound-Schnittvorschau nicht. Die drei Aktionen stehen wie die Backup-Aktionen vollbreit
-  untereinander. `Datenbank aktualisieren` prüft zuerst die CoL- und Anbieterstände und startet ohne neue Quelldaten
-  beziehungsweise wartenden Kandidaten keinen Master-Neuaufbau. Ein echter Lauf ist im Kopf und Datenbankblock gelb
-  als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
+  untereinander. `Datenbank aktualisieren` prüft zuerst die CoL- und Anbieterstände und vergleicht außerdem die
+  aktive CoL-Release-ID mit der im aktiven Master gespeicherten CoL-Provenienz. Ein bereits aktivierter neuerer
+  Referenzstand wird dadurch auch nach einem unterbrochenen Ablauf ohne erneuten Download in einen Masterkandidaten
+  übernommen. Ein vorhandener Kandidat darf nur aktiviert werden, wenn seine CoL-Provenienz zur aktiven Referenz
+  passt. Erst wenn weder Quelldaten, Kandidat, Korrekturen, Referenz-Master-Drift noch ein veraltetes
+  Lightroom-Paket vorliegen, startet kein Neuaufbau. Ein echter Lauf ist im Kopf und Datenbankblock gelb als
+  `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zur Aktivierung erhalten.
   Seit 2026-08-29 zeigt der Masteraufbau zusätzlich echte Phasen, verarbeitete/gesamte Datensätze und Laufzeit.
   CoL-Zeilen, Anbieterzusammenführung und Kandidatenvergleich werden speicherschonend schrittweise verarbeitet.
+  Beim Wechsel der aktiven CoL-Referenz werden zuvor bekannte Referenzlücken erneut gegen den neuen CoL-Stand
+  geprüft; release-lokale numerische SQLite-Taxon-IDs werden dabei verworfen und die wissenschaftlichen Namen im
+  neuen Release exakt aufgelöst. Bei unveränderter Referenz bleibt die geprüfte Abkürzung bestehen. Die
+  Statusabfrage nutzt nach der vollständigen
+  Kandidatenprüfung nur kompakte Manifestzähler und blockierende Konflikte, damit Polling weder die Vollvalidierung
+  der großen SQLite wiederholt noch sämtliche nicht blockierenden Lücken überträgt. Ausdrücklich gepflegte
+  Projektnamen ersetzen bisherige reine Anbieterwerte; manuelle Korrekturen bleiben geschützt. Rein von Anbietern
+  stammende Hierarchiefelder werden dagegen beim geprüften neuen Quellenstand auch für Projektarten automatisch
+  aktualisiert und nicht als wissenschaftliche Einzelentscheidung vorgelegt. Echte verbleibende Feldkonflikte
+  erscheinen mit deutschem und wissenschaftlichem Namen, verständlicher Gegenüberstellung und Quellenangabe.
+  Seit 2026-09-05 übernimmt `taxonomy-master-previous-state.mjs` fehlende Anbieterfelder mit ihrem ursprünglichen
+  Quellenbeleg und archivierten Release, nicht als manuelle Entscheidung. Fehlerhafte alte manuelle Trägerzeilen
+  werden ausschließlich bei identischem Quellenbeleg im vorherigen Master, ohne Feldentscheidung und ohne eigene
+  Korrektur zurückgeführt. Ohne diesen Nachweis bleiben sie geschützt. Der reale Folgelauf und die abschließende
+  Master-/Lightroom-Prüfung stehen noch aus; der Konfliktkandidat vom 5. September wurde nicht aktiviert.
+  Der folgende Lauf brach bei einer doppelten Quellenkennung ab: Ein neues gleichnamiges Taxon eines anderen
+  Reichs erbte fälschlich die Altfelder des vorhandenen Taxons. Die Vorgängerzuordnung prüft jetzt auch Reich und
+  beidseitige Eindeutigkeit; ein Regressionstest reproduziert den ursprünglichen UNIQUE-Fehler und die Trennung.
   Vor Aktivierung und Rollback schließt der Explorer seine eigenen read-only Masterhandles, damit Windows den
   atomaren Slotwechsel nicht mit `EPERM` blockiert. Mehrere Namenskorrekturen können vor einem gemeinsamen
   `Datenbank aktualisieren` gesammelt werden. Seit 2026-08-30 baut der Explorer nach bestätigter Masteraktivierung
   oder Wiederherstellung das Lightroom-Suchpaket automatisch in einem getrennten Hilfsprozess neu, prüft es
   vollständig und aktiviert es atomar. Fortschritt erscheint im bestehenden Datenbankblock. Bei einem Paketfehler
   bleibt das bisherige Paket aktiv; der Teilerfolg wird gemeldet und `Datenbank aktualisieren` wiederholt nur den
-  fehlenden Paketbau.
+  fehlenden Paketbau. Bei einem Masterfehler bleiben Master und Paket unverändert; der Referenz-Master-Drift bleibt
+  als Handlungsbedarf sichtbar und wird beim nächsten bestätigten Aufruf erneut verarbeitet.
   Phase 10.1 ist seit 2026-08-13 abgeschlossen. `docs/lightroom-feasibility-study.md` dokumentiert die reale
   Lightroom-Classic-15.5-Zielumgebung, offizielle Lua-SDK-/Metadatengrenzen und den Vergleich mit iNat Publish Pro,
   LifeListXP, Nomen und Species Tagger. Der technische Kern von Phase 10.2 ist ebenfalls umgesetzt und unter

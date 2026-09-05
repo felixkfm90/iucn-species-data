@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-09-04
+Stand: 2026-09-05
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1257,10 +1257,11 @@ Projektartenabgleich meldete keine Konflikte. Der aktive Master blieb dennoch
 `master-20260830105212577` auf Basis von `col-xr-2026-07-17-315834`; auch das aktive Lightroom-Suchpaket blieb an
 diesen älteren Master gebunden. Es gab keinen Staging-Master und keinen sichtbaren laufenden Masteraufbau.
 `Keine Konflikte` bestätigt daher nur den Projektartenabgleich, nicht den anschließenden Master- und Paketneubau.
-Die erneute Codeprüfung am 2026-09-04 bestätigt den Befund: Die UI-Entscheidung berücksichtigt derzeit
+Die erneute Codeprüfung am 2026-09-04 bestätigte den Befund: Die frühere UI-Entscheidung berücksichtigte
 `hasCandidate`, `correctionsPending`, `lightroomPackageNeedsRebuild` und das Quellen-`hasWork`, aber keinen expliziten
 Drift zwischen aktiver Referenz und der Referenzprovenienz des aktiven Masters. Der nachgelagerte Paketabgleich
-Master gegen Lightroom ist vorhanden; er kann den vorgelagerten Referenz-gegen-Master-Drift nicht ersetzen.
+Master gegen Lightroom war bereits vorhanden, konnte den vorgelagerten Referenz-gegen-Master-Drift aber nicht
+ersetzen.
 
 Vorgehen:
 
@@ -1291,6 +1292,55 @@ Akzeptanz: Nach einer bestätigten CoL-Aktualisierung kann der Explorer nicht me
 Master, altes Lightroom-Paket“ ohne sichtbaren Handlungsbedarf stehen. Ein erfolgreicher Lauf endet mit
 übereinstimmender Referenzherkunft, aktiver Master-ID und dazugehöriger Paket-`masterVersion`; ein Fehler bewahrt
 nachweislich den letzten konsistent nutzbaren Aktivstand.
+
+Umsetzung am 2026-09-04: Der Masterstatus liest nun den kleinen aktiven CoL-Zeiger und vergleicht dessen Release-ID
+zentral mit der `catalogue-of-life`-Provenienz von aktivem Master und vorhandenem Kandidaten. Der reale lokale Zustand
+`col-xr-2026-08-26-316165` gegen Master-Provenienz `col-xr-2026-07-17-315834` wird als `stale` und verbindlicher
+Neuaufbaubedarf erkannt. `Datenbank aktualisieren` zeigt diesen Zustand als `Masterdatenbank an aktive Referenz
+angleichen`, baut ohne erneuten CoL-Download oder Anbieterabruf aus der bereits aktiven Referenz und aktiviert nur
+einen Kandidaten mit passender Referenzprovenienz. Die bestehende Aktivierung baut anschließend das
+Lightroom-Suchpaket und aktiviert es atomar. Fehler beim Masterbau lassen Master und Paket unverändert; ein reiner
+Paketfehler bleibt der bereits vorhandene gezielt wiederholbare Teilerfolg. Entscheidungs-, Service-, Fehler- und
+Wiederholungstests sind ergänzt. Offen bleibt der einmalige praktische Wiederanlauf mit dem realen großen Bestand
+und die anschließende Kontrolle
+`aktive CoL-Referenz = Master-Provenienz` sowie `aktive Master-ID = Lightroom-Paket-masterVersion`.
+
+Der erste reale Wiederanlauf am 2026-09-04 erzeugte zwar den gültigen Staging-Kandidaten
+`master-20260904130409617` mit der aktuellen Referenz `col-xr-2026-08-26-316165` und 56 Projektarten, aktivierte ihn
+aber nicht. Die Prüfung zeigte zwei zusätzliche Ursachen: Bekannte Referenzlücken aus älteren Anbieter-Ausschnitten
+wurden beim Referenzwechsel nicht erneut in CoL gesucht, und Statusabfragen validierten den großen Kandidaten immer
+wieder vollständig und luden Hunderttausende nicht blockierende Konflikte. Dadurch blieb `Ciconia ciconia` trotz
+exakter Artzeile in der aktiven CoL-Datenbank fälschlich eine Referenzlücke und der Explorer wirkte bei 98 Prozent
+über lange Zeit blockiert. Der Reparaturstand prüft bekannte Lücken bei geändertem CoL-Release erneut, übernimmt
+ausdrücklich gepflegte Projektnamen gegenüber reinen Anbieterwerten und liefert für Polling nur kompakte
+Manifestzähler sowie blockierende Konflikte. Regressionstests für den konkreten Weißstorch-/Hausstorch-Fall und
+den leichten Großkandidatenstatus sind vorhanden. Eine weitere reale Auffälligkeit zeigte, dass die bloße
+Projektverknüpfung versehentlich auch alte Anbieterhierarchien schützte und dadurch wissenschaftliche
+Ordnungs-/Familienentscheidungen verlangte. Der Schutz gilt deshalb nun feldgenau nur für ausdrücklich gepflegte
+Projekt- und manuelle Werte; ungeschützte CoL-Hierarchien folgen dem geprüften neuen Referenzstand. Verbleibende
+echte Konflikte werden deutsch erklärt und große technische Konfliktmengen nicht als Einzelentscheidungen
+angeboten. Der anschließende reale Lauf aktivierte Master und Lightroom-Paket zunächst konfliktfrei, deckte bei
+der Detailprüfung von `Ciconia ciconia` aber eine weitere Wiederanlauflücke auf: Der ältere iNaturalist-Ausschnitt
+enthielt die interne numerische CoL-SQLite-ID `1022266`, während dieselbe Art im neuen Release unter der
+release-lokalen ID `1024347` liegt. Solche IDs werden nun beim Referenzwechsel verworfen und der wissenschaftliche
+Name erneut exakt aufgelöst. Offen bleibt der dadurch notwendige abschließende reale Neuaufbau und danach weiterhin
+die dreifache Provenienzprüfung einschließlich des Referenzstatus von `Ciconia ciconia`.
+
+Der Folgekandidat `master-20260905004256225` vom 5. September enthält `Ciconia ciconia` korrekt als `exact-col`,
+blieb aber wegen 120 Feldkonflikten gesperrt. Ursache sind zuvor automatisch übernommene Anbieterfelder, die bei
+fehlendem Ersatz fälschlich als manuelle Trägerzeilen gespeichert wurden. Die Herkunftsübernahme ist jetzt in
+`taxonomy-master-previous-state.mjs` gekapselt: Quellenwerte behalten Beleg und archiviertes Release; alte
+Trägerzeilen werden nur mit identischem Quellenbeleg im vorherigen Master sowie ohne Korrektur oder ausdrückliche
+Feldentscheidung zurückgeführt. Regressionstests prüfen mehrere Aufbauten, Quellenbeweis und Schutzgrenzen.
+Der Kandidat wurde nicht aktiviert. Der erneute reale Aufbau wurde am 5. September um 03:46:59 Uhr MESZ auf dem
+separaten Hintergrundserver gestartet, ohne Anbieter erneut abzurufen. Offen: Abschluss dieses Aufbaus,
+konfliktfreie Aktivierungsprüfung, Lightroom-Ableitung und abschließende Such-/Provenienzstichproben einschließlich
+des Erhalts echter manueller Feldherkunft bei Textgleichheit mit einem Anbieter. 29 gezielte Tests und das
+vollständige Qualitätsgate sind bestanden. Dieser Lauf brach um 04:01:28 Uhr MESZ beim Schreiben ab, weil ein
+neues Homonym eines anderen Reichs fälschlich Altfelder und Quellenkennung des vorhandenen Taxons erbte.
+Der Fehler ist mit einem kleinen mehrstufigen Test reproduziert und die Vorgängerzuordnung auf eindeutige,
+reichskompatible Identitäten begrenzt. Aktiver Master und Lightroom-Paket blieben unverändert. Ein erneuter
+Lauf mit diesem zusätzlichen Fix ist erforderlich. Die Plug-in-Version bleibt unverändert.
 
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Abschluss und praktischem Test beider Aufträge.
 

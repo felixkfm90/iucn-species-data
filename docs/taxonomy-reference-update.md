@@ -1,10 +1,9 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-07-30
+Stand: 2026-09-05
 
-Status: Phase 9.5 technisch umgesetzt; reale Paketabweichungen wurden sicher erkannt und korrigiert, eine getrennte
-Ergänzungsnamensschicht ist integriert; Phase 9.6 ergänzt eine getrennte Masterdatenbank-Grundlage, ohne den
-bestehenden CoL-Aktualisierungsablauf umzuschalten
+Status: Phase 9 abgeschlossen; Referenzaktualisierung, Masterableitung und kontrollierter Wiederanlauf sind
+technisch umgesetzt. Der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts steht noch aus.
 
 ## Ziel
 
@@ -115,10 +114,27 @@ Aktualisierung fehl, bleibt der letzte funktionierende Bestand aktiv. Eigene Kor
 versioniert und überleben sowohl einen neuen Ergänzungslauf als auch einen neuen CoL-Release. Der vollständige
 Vertrag steht in `docs/taxonomy-reference-supplements.md`.
 
-Die ab Phase 9.6 vorbereitete Masterdatenbank ändert diesen sicheren CoL-Releaseablauf nicht. Sie liegt separat,
-verweist mit versionierter Provenienz auf CoL und weitere Anbieter und wird erst nach späterer Migration,
+Die ab Phase 9.6 eingeführte Masterdatenbank ändert diesen sicheren CoL-Releaseablauf nicht. Sie liegt separat,
+verweist mit versionierter Provenienz auf CoL und weitere Anbieter und wird erst nach Kandidatenbau,
 Konfliktprüfung und atomarer Aktivierung für die Explorer-Suche verwendet. Details:
 `docs/taxonomy-master-database-design.md`.
+
+Referenzaktivierung, Masteraktivierung und Lightroom-Paketaktivierung bleiben getrennte sichere Schritte. Der
+Masterstatus vergleicht deshalb die aktive Referenz-Release-ID mit der im aktiven Master gespeicherten
+CoL-Provenienz. Wurde der Ablauf nach der Referenzaktivierung beendet, behandelt `Datenbank aktualisieren` diese
+Abweichung beim nächsten Aufruf weiterhin als Arbeit. Es verwendet die bereits installierte aktive Referenz, baut
+und prüft daraus einen neuen Masterkandidaten und lädt den gleichen CoL-Stand nicht erneut herunter. Erst nach der
+atomaren Masteraktivierung wird das passende Lightroom-Suchpaket gebaut und atomar aktiviert. Ein leerer
+Projektkonfliktbericht überspringt keinen dieser Ableitungsschritte.
+
+Ein Referenzwechsel entwertet außerdem die bisherige Abkürzung für bekannte CoL-Referenzlücken. Der lokale
+Masteraufbau prüft diese wissenschaftlichen Namen erneut gegen die neue aktive CoL-SQLite; bei unveränderter
+Referenz bleiben bekannte Lücken weiterhin ohne unnötige Wiederholung überspringbar. Fortschrittsabfragen lesen
+nur kompakte, bereits geprüfte Kandidateninformationen. Eine Statusabfrage darf keine erneute Vollvalidierung und
+keine Übertragung sämtlicher nicht blockierender Konfliktzeilen auslösen.
+Numerische interne SQLite-Taxon-IDs sind dabei niemals releaseübergreifend stabil. Nach einem Referenzwechsel wird
+daher ausschließlich über den wissenschaftlichen Namen im neuen Release aufgelöst; auch im Schnellweg wird eine
+gespeicherte ID nur bei identischem wissenschaftlichem Taxon akzeptiert.
 
 Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
 ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
@@ -216,6 +232,14 @@ POST /api/taxonomy/corrections/reset
 Alle Endpunkte verwenden die vorhandene localhost-, Origin- und Sitzungsgrenze des Arten-Explorers.
 
 ## Prüfungen
+
+Der reale Wiederanlauf am 5. September schloss die falsche CoL-Lücke für `Ciconia ciconia`, deckte jedoch
+fehlerhaft als manuell gespeicherte Anbieter-Altfelder auf. Dieser Kandidat wurde nicht aktiviert. Die abgesicherte
+Herkunftsreparatur und ihre Beweisgrenzen sind in `taxonomy-master-database-design.md` beschrieben; der erneute
+reale Aufbau und die abschließende Master-/Lightroom-Provenienzprüfung sind noch offen. Der anschließende Lauf
+brach beim Übernehmen einer bereits belegten Quellenkennung ab; Ursache war die fälschliche Übernahme von
+Altfeldern zwischen gleichnamigen Taxa unterschiedlicher Reiche. Die Vorgängerzuordnung berücksichtigt jetzt
+Reich und beidseitige Eindeutigkeit; ein gezielter Test reproduziert und verhindert diesen Abbruch.
 
 Fokussierter Test:
 

@@ -1,9 +1,9 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-08-08
+Stand: 2026-09-05
 
-Status: technisch erweitert; realer Neuaufbau und Abschlussprüfung laufen. Das umfassende Phase-9-Abschlussaudit
-bleibt danach ein eigener Schritt.
+Status: Phase 9 abgeschlossen; Wiederanlauf und Lightroom-Ableitung sind technisch abgesichert. Der praktische
+Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts steht noch aus.
 
 ## Ziel und verbindliche Quellenarchitektur
 
@@ -114,25 +114,29 @@ Damit ist für jeden ausgewählten Namen, Rang und Hierarchiewert nachvollziehba
 
 ## Verbindliche Zusammenführungsregeln
 
-1. Ausdrücklich geschützte eigene Korrekturen und Projektwerte haben Vorrang.
+1. Ausdrücklich geschützte eigene Korrekturen und konkret gepflegte Projektfelder haben Vorrang.
 2. CoL XR ist die globale Primärreferenz.
 3. WoRMS ist nur für marine und brackische Taxa die bevorzugte Fachergänzung.
 4. GBIF und iNaturalist ergänzen Taxonlücken und dienen dem Abgleich.
 5. Wikidata ergänzt deutsche/englische Namen und externe IDs.
 6. Animalia ergänzt ausschließlich danach verbleibende, kontrolliert belegte Tierlücken.
 7. Eine Unterart wird niemals automatisch zur fehlenden Art hochgestuft.
-8. Eine vorhandene Hierarchie wird nicht still überschrieben.
+8. Rein aus Anbietern stammende Hierarchiefelder folgen beim geprüften Neuaufbau der aktuellen Quellenpriorität;
+   auch bei Projektarten entsteht daraus keine redaktionelle Fachentscheidung.
 9. Synonyme, frühere Namen und alternative Namen bleiben erhalten.
 10. Entfernte Anbieterzeilen werden zunächst als veraltet markiert statt gelöscht.
-11. Widersprüche werden als Konflikt zur Prüfung angezeigt.
-12. Ein neuerer Quellenstand gewinnt nicht automatisch.
+11. Widersprüche mit einem konkret manuell oder im Projekt gepflegten Feld werden als Konflikt zur Prüfung angezeigt.
+12. Ein neuerer Quellenstand gewinnt bei ungeschützten Anbieterfeldern gemäß der festgelegten Quellenpriorität.
 13. Exakte Zuordnungen berücksichtigen mindestens wissenschaftlichen Namen, Rang und Reich. Die Reichssynonyme
     `Animalia`, `Animal`, `Animals` und `Metazoa` werden dabei kontrolliert als dasselbe Reich behandelt; echte
     reichsübergreifende Homonyme bleiben getrennt.
 
 Die technische Priorität ist: eigene Korrektur, bestätigter Projektwert, CoL XR, WoRMS, GBIF, iNaturalist,
 Wikidata, Animalia. Diese Reihenfolge entscheidet nur bei fachlich vergleichbaren Aussagen; ein Konflikt wird
-nicht durch eine höhere Zahl unsichtbar gemacht.
+nicht durch eine höhere Zahl unsichtbar gemacht. Ein im Projekt ausdrücklich gepflegter deutscher oder englischer
+Artname ersetzt jedoch einen bisherigen reinen Anbieterwert ohne zusätzlichen Scheinkonflikt; eine eigene manuelle
+Korrektur bleibt weiterhin geschützt. Die bloße Verknüpfung eines Taxons mit einer Projektart schützt nicht pauschal
+dessen alte Anbieterhierarchie. Alternative verifizierte Anbieternamen bleiben als Suchnamen erhalten.
 
 ## Kandidat, Konflikte und Aktivierung
 
@@ -146,9 +150,24 @@ Projektzuordnungen und Korrekturen. Die Vorschau zeigt insbesondere:
 - Hierarchieänderungen;
 - Konflikte mit vorhandenen Projektarten.
 
-Offene blockierende Konflikte verhindern die Aktivierung. In der Explorer-Oberfläche stehen die Entscheidungen
-`bisherigen Wert behalten`, `neuen Wert übernehmen`, `als Alias ergänzen` und `dauerhaft manuell schützen` zur
-Verfügung. Erst eine bestätigte, konfliktfreie Vorschau wird atomar aktiviert.
+Offene blockierende Konflikte verhindern die Aktivierung. Sie entstehen nur für konkret geschützte Felder oder
+echte Mehrdeutigkeiten, nicht für gewöhnliche Änderungen einer CoL-Hierarchie. Die Explorer-Oberfläche nennt zuerst
+den deutschen und danach den wissenschaftlichen Artnamen, erklärt das betroffene Feld und stellt bisherigen sowie
+neuen Wert mit verständlicher Quellenbezeichnung gegenüber. Eine Aliasentscheidung wird ausschließlich bei
+Namensfeldern angeboten. Unerwartet große technische Konfliktmengen werden nicht als tausende Einzelentscheidungen
+ausgegeben, sondern verlangen einen erneuten Masteraufbau. Erst eine bestätigte, konfliktfreie Vorschau wird atomar
+aktiviert.
+
+Die laufende Statusanzeige verwendet nach der vollständigen Kandidatenprüfung nur noch die bereits geschriebenen
+Manifestwerte, kompakte Differenzzähler und die wenigen blockierenden Konflikte. Sie wiederholt weder die
+Vollvalidierung der mehrgigabytegroßen SQLite-Datei noch lädt sie alle nicht blockierenden Referenzlücken. Die
+vollständige Integritäts- und Fachprüfung bleibt unmittelbar im Kandidatenbau und erneut an der Aktivierungsgrenze
+verbindlich.
+
+Interne numerische Zeilen-IDs einer CoL-SQLite sind ausdrücklich release-lokal. Anbieter-Ausschnitte dürfen sie
+beim Wechsel auf einen neuen CoL-Release nicht als stabile Taxonkennung wiederverwenden. Der Neuaufbau löst die
+gespeicherten wissenschaftlichen Namen deshalb erneut exakt im aktiven Release auf und akzeptiert einen
+beschleunigten ID-Zugriff nur, wenn Referenzrelease und wissenschaftliche Identität nachweislich übereinstimmen.
 
 ## Explorer-Integration
 
@@ -173,6 +192,12 @@ Der reale Sonderfall ist verbindlich abgesichert:
 4. Es entsteht genau eine stabile Master-ID mit `col-reference-gap`.
 5. Der bestehende Projekt-Slug `sciurusvulgaris` bleibt unverändert.
 6. Liefert CoL später die exakte Art, wird nur die Referenzlücke geschlossen; es entsteht kein zweiter Datensatz.
+
+Beim Wechsel der aktiven CoL-Referenz werden auch in vorhandenen Anbieter-Ausschnitten als Referenzlücke markierte
+Arten erneut gegen die neue CoL-Version geprüft. Nur bei unveränderter Referenz darf die bekannte Lückenklassifikation
+als Abkürzung wiederverwendet werden. So wird etwa `Ciconia ciconia` nicht wegen eines älteren
+iNaturalist-Ausschnitts fälschlich weiter als Referenzlücke geführt, wenn die aktive CoL-Datenbank inzwischen eine
+exakte Artzeile enthält.
 
 Weitere Tests decken Homonyme, Synonyme, manuell geschützte Werte, doppelte Anbieter-IDs, Anbieter-Ausfälle,
 entfernte Quelleneinträge, unterbrochene Aktivierung und Rollback ab.
@@ -309,10 +334,15 @@ angezeigt. Die Bestätigung einer CoL-Referenzlücke verwendet zuerst eine exakt
 Rang und Reich in der aktiven Masterdatenbank. `Sciurus vulgaris` wird dadurch eindeutig mit dem vorhandenen,
 durch GBIF und iNaturalist bestätigten Mastertaxon verknüpft.
 
-Seit dem 11. August 2026 prüft `Datenbank aktualisieren` zuerst die verfügbaren CoL- und Anbieterstände. Sind weder
-neue Quelldaten noch ein bereits geprüfter Kandidat vorhanden, meldet der Explorer den aktuellen Stand und startet
-keinen Master-Neuaufbau. Nur ein tatsächliches Update durchläuft Referenzimport, Anbieteraktualisierung,
-Kandidatenbau und Aktivierung. Währenddessen sind der Kopfstatus und der Datenbankstatus gelb als
+Seit dem 11. August 2026 prüft `Datenbank aktualisieren` zuerst die verfügbaren CoL- und Anbieterstände. Seit dem
+4. September 2026 vergleicht der Masterstatus zusätzlich die aktive CoL-Release-ID mit der im aktiven Master
+gespeicherten `catalogue-of-life`-Provenienz. Eine bereits aktivierte neuere Referenz bleibt dadurch auch dann
+sichtbarer Handlungsbedarf, wenn die Quellenprüfung selbst keine Arbeit mehr findet. Der Wiederanlauf baut aus der
+bereits aktiven Referenz einen neuen Masterkandidaten, ohne denselben CoL-Stand erneut herunterzuladen oder die
+Anbieter-Ausschnitte unnötig neu abzurufen. Ein vorhandener Kandidat wird nur aktiviert, wenn seine Provenienz zur
+aktiven Referenz passt; ein Kandidat aus einem älteren Referenzstand wird ersetzt. Nur wenn weder neue Quelldaten,
+ein Kandidat, offene Korrekturen, Referenz-Master-Drift noch eine Master-Paket-Abweichung vorhanden sind, meldet der
+Explorer den aktuellen Stand ohne Neuaufbau. Während eines Laufs sind Kopfstatus und Datenbankstatus gelb als
 `Taxonomie-Update läuft` gekennzeichnet; die bestehende Datenbank bleibt bis zur erfolgreichen Aktivierung lesbar.
 Die drei Aktionen stehen wie im Backup-Bereich als untereinander angeordnete, vollbreite Aktionskarten.
 
@@ -326,6 +356,24 @@ Der Kandidatenbau verarbeitet die relevanten CoL-Zeilen schrittweise, führt dop
 jeweiligen Taxongruppen zusammen und liest bisherige Aliasse nur bei Bedarf. Der abschließende Vergleich zwischen
 aktivem Stand und Kandidat läuft zeilenweise statt beide SQLite-Datenbanken vollständig in JavaScript-Maps zu
 duplizieren; dieser Vergleich ist in `species-explorer/taxonomy-master-diff.mjs` vom Kandidatenbau getrennt.
+Die Herkunft bisheriger Felder kapselt `species-explorer/taxonomy-master-previous-state.mjs`. Ein Anbieterfeld ohne
+frischen Ersatz behält `origin_kind = source`, seinen ursprünglichen Beleg und dessen Release. Ein nicht mehr
+aktueller Beleg wird als `stale`/`removed` aus einem archivierten Release übernommen und behauptet damit keine
+aktuelle Quellenbestätigung; der weiterhin ausgewählte letzte Feldwert bleibt nachvollziehbar. Neue Anbieterwerte
+können ihn bei einem späteren Aufbau ersetzen, ohne eine künstliche manuelle Sperre auszulösen.
+Vor dem 5. September 2026 erzeugte Trägerzeilen werden nur dann als nachweisliche Quellenwerte gelesen, wenn der
+vorherige Master für dieselbe Master-ID, dasselbe Feld, dieselbe Sprache und denselben exakten Wert einen
+Quellenbeleg besitzt. Zusätzlich müssen Erstellzeit und manuelles Build-Release übereinstimmen; eigene aktuelle
+Korrekturen, Projektfelder oder gespeicherte Feldentscheidungen schließen die Rückführung aus. Ohne Beweis bleibt
+die manuelle Herkunft geschützt. Beide bisherigen SQLite-Dateien bleiben dabei read-only; nur der neue Kandidat
+erhält die korrigierte Herkunft. Schema und manuelle Taxonomieentscheidungen werden nicht verändert.
+Eine ausdrückliche manuelle Feldauswahl bleibt auch dann als manuell gespeichert, wenn ein Anbieter denselben
+Text liefert. Textgleichheit allein darf den Schutz nicht für den nächsten Aufbau verlieren lassen.
+Die Vorgängerzuordnung verwendet zuerst die vollständige Identität aus wissenschaftlichem Namen, Rang und Reich.
+Die Ergänzung eines vorher fehlenden Reichs über Name und Rang ist nur bei beidseitig eindeutiger Zuordnung und
+ohne widersprüchliche bekannte Reiche zulässig. Ein neu auftauchendes Homonym eines anderen Reichs erbt deshalb
+weder Felder, Aliasse noch Quellenbelege des bisherigen Taxons. Der zuvor damit ausgelöste UNIQUE-Fehler für eine
+vorzeitig übernommene Anbieterkennung wird durch einen mehrstufigen Neuaufbau-Test abgesichert.
 Dadurch benötigt der Vollaufbau kein erhöhtes Node-Heap-Limit mehr. Vor Aktivierung und Rollback
 schließt der Explorer seine eigenen read-only Referenz- und Masterhandles, bevor Windows die Slotverzeichnisse
 atomar umbenennt; die nächste Suche öffnet den dann aktiven Stand wieder bedarfsgesteuert. Bei einem Fehler bleibt
@@ -337,6 +385,10 @@ Hilfsprozess und zeigt dessen Schema-, Export-, Index-, Prüf- und Aktivierungsp
 Der aktive Suchpaketstand wird über die `masterVersion` mit der aktiven Master-`candidateId` verglichen. Scheitert
 der Paketbau, bleibt das vorherige Suchpaket aktiv; der Masterwechsel wird als Teilerfolg gemeldet und
 `Datenbank aktualisieren` holt gezielt nur die fehlende Ableitung nach.
+Scheitert schon der Masterbau, werden weder aktiver Master noch aktives Lightroom-Paket umgeschaltet. Der weiterhin
+bestehende Referenz-Master-Drift wird beim nächsten Statusabruf erneut erkannt und der bestätigte Wiederholungslauf
+beginnt wieder beim Masterkandidaten. Der konfliktfreie Projektartenabgleich allein gilt ausdrücklich nicht als
+Beleg, dass Master und Suchpaket bereits nachgezogen wurden.
 Der Hierarchieexport setzt keinen einzelnen Anbieterbeleg als vollständig voraus. Er übernimmt zunächst den
 vollständigen bevorzugten Anbieterpfad und überschreibt beziehungsweise ergänzt jeden im Master ausgewählten Rang.
 Dadurch bleibt beispielsweise der vollständige Pfad von `Sciurus vulgaris` im Lightroom-Paket erhalten, auch wenn

@@ -1168,9 +1168,14 @@ Korrekturdialog zeigt zuerst konkrete offene Prüfungen der verwendeten Projekta
 Suche im aktiven Offline-Bestand. Die CoL-Referenzlücke `Sciurus vulgaris` wird über eine exakte Abfrage der aktiven
 Masterdatenbank bestätigt. Ein Klick in die Zeitleiste der Sound-Schnittvorschau verwirft diese nicht mehr.
 Die drei Datenbankaktionen sind wie die Backup-Aktionen als untereinander angeordnete Karten gestaltet. Vor einem
-Neuaufbau prüft `Datenbank aktualisieren`, ob ein neuer CoL- oder Anbieterstand vorliegt. Ohne neue Quelldaten und
-ohne wartenden Kandidaten wird kein Neuaufbau gestartet. Ein echter Lauf ist im Kopf und im Datenbankblock gelb als
-`Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zum erfolgreichen Abschluss erhalten.
+Neuaufbau prüft `Datenbank aktualisieren`, ob ein neuer CoL- oder Anbieterstand vorliegt. Zusätzlich vergleicht der
+Explorer die aktive CoL-Release-ID mit der im aktiven Master gespeicherten CoL-Provenienz. Eine bereits aktivierte
+neuere Referenz gilt dadurch auch dann als ausstehende Arbeit, wenn die Quellenvorschau keinen erneuten Download
+mehr findet. In diesem Wiederanlauffall wird der Master aus der vorhandenen aktiven Referenz ohne erneute
+Anbieteraktualisierung aufgebaut. Nur wenn weder Quelldaten, Kandidat, Korrekturen, Referenz-Master-Drift noch ein
+veraltetes Lightroom-Paket vorliegen, wird kein Neuaufbau gestartet. Ein echter Lauf ist im Kopf und im
+Datenbankblock gelb als `Taxonomie-Update läuft` sichtbar; der bisherige aktive Stand bleibt bis zum erfolgreichen
+Abschluss erhalten.
 Der lange Masteraufbau zeigt dabei seine aktuelle Phase, echte Datensatzzähler und die Laufzeit. Relevante
 CoL-Zeilen und der Vergleich mit dem bisherigen Stand werden speicherschonend schrittweise verarbeitet; ein
 erhöhtes Node-Heap-Limit ist nicht erforderlich. Vor dem atomaren Aktivieren oder Wiederherstellen schließt der
@@ -1187,6 +1192,30 @@ Lightroom-Suchpaket automatisch neu, prüft es vollständig und aktiviert es ers
 in einem getrennten Hilfsprozess; Phase, Prozentwert und Laufzeit bleiben im vorhandenen Datenbankblock sichtbar.
 Scheitert nur dieser letzte Schritt, bleibt das bisherige Lightroom-Paket aktiv. `Datenbank aktualisieren` erkennt
 die abweichende Masterversion und wiederholt gezielt den Paketbau, ohne die Masterdatenbank erneut aufzubauen.
+Ein fehlgeschlagener Masterbau lässt dagegen Master und Suchpaket unverändert; der weiterhin sichtbare
+Referenz-Master-Drift löst beim nächsten bestätigten Aufruf erneut genau diesen Masterbau aus. Ein vorhandener
+Kandidat wird nur aktiviert, wenn seine CoL-Provenienz zur aktiven Referenz passt.
+
+Beim Referenzwechsel werden zuvor gespeicherte CoL-Lücken erneut gegen die neue aktive Referenz geprüft. Ein
+älterer Anbieter-Ausschnitt kann dadurch keine inzwischen vorhandene exakte CoL-Art weiter als Lücke festhalten.
+Interne numerische CoL-SQLite-IDs gelten nur innerhalb ihres Releases und werden bei einem Referenzwechsel nicht
+wiederverwendet; die neue Referenz wird erneut exakt über den wissenschaftlichen Namen aufgelöst.
+Ausdrücklich im Projekt gepflegte deutsche und englische Artnamen haben gegenüber bisherigen reinen
+Anbieternamen Vorrang; eine eigene manuelle Korrektur bleibt geschützt. Rein von Anbietern gelieferte
+Hierarchiefelder folgen dagegen auch bei einer Projektart dem geprüften neuen CoL-Stand und werden dem Benutzer
+nicht als wissenschaftliche Einzelentscheidung vorgelegt. Verbleibende echte Konflikte zeigt der Explorer mit
+deutschem und wissenschaftlichem Artnamen, verständlicher Feldbeschreibung, beiden Werten und ihren Quellen. Die
+Fortschrittsabfrage verwendet nur kompakte Manifestzähler und blockierende Konflikte. Vollvalidierung, vollständige
+Konfliktmenge und große Differenzlisten werden nicht bei jedem Poll erneut gelesen, sondern bleiben Kandidatenbau
+und Aktivierungsprüfung vorbehalten.
+
+Fehlt ein bisheriger Anbieterwert im neuen Ausschnitt, bleibt seine tatsächliche Quelle einschließlich des
+archivierten Releases erhalten. Er wird nicht als eigene manuelle Entscheidung gespeichert. Für ältere fehlerhafte
+Trägerzeilen erfolgt eine Herkunftsreparatur nur mit identischem Quellenbeleg im vorherigen Master und ohne eigene
+Korrektur oder gespeicherte Feldentscheidung; unklare Herkunft wird nicht automatisch freigegeben.
+Die Übernahme aus einem bisherigen Mastertaxon setzt zudem eine eindeutige Identität einschließlich des Reichs
+voraus. Gleiche wissenschaftliche Namen bei Tieren und Pflanzen dürfen keine Altfelder oder Quellenkennungen
+voneinander erben.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

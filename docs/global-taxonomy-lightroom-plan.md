@@ -502,8 +502,8 @@ echte Vollinstallation bleibt ein ausdrücklich gestarteter lokaler Betriebstest
 - **Abgeschlossen am 2026-08-01.**
 - Priorität: manuell bestätigte Projektdaten, CoL XR, WoRMS für marine/brackische Taxa, GBIF/iNaturalist für
   Lücken und Abgleich, Wikidata für gebräuchliche Namen und externe IDs
-- keine stille Hierarchieänderung, keine automatische Hochstufung von Unterarten und kein Vorrang allein aufgrund
-  eines neueren Zeitstempels
+- keine stille Änderung ausdrücklich gepflegter Felder und keine automatische Hochstufung von Unterarten;
+  ungeschützte Anbieterhierarchien folgen beim geprüften Master-Neuaufbau der verbindlichen Quellenpriorität
 - Synonyme und alternative Namen bleiben erhalten; entfernte Quelleneinträge werden zunächst als veraltet markiert
 
 ### 9.8 Versionierte Anbieterbestände und -ausschnitte
@@ -761,7 +761,15 @@ API-Vertrag, stabile Feldkennungen, vollständige Taxonomiehierarchie in Plug-in
 flache Stichwörter, Mehrfachzuordnung und Konfliktsperre technisch umgesetzt. Einzel- und Mehrfachzuweisung wurden
 im Testkatalog bestätigt. Phase 10.3/10.4 ergänzen bis Version 0.4.24.1 die nutzergeführte Rücknahme, dynamische
 Auswahl, die persistente Lifelist-/Klassenstatistik mit CSV, Favoritenbild der Art, Sammlungen, eigene Metadatenansicht und
-Suchpaketstatus. Offen ist das umfassende Phase-10-Abschlussaudit. Danach bleiben für Phase 11:
+Suchpaketstatus. Seit dem 4. September 2026 vergleicht der Update-Wiederanlauf zusätzlich den aktiven CoL-Stand mit
+der CoL-Provenienz des Masters. Eine bereits aktivierte neue Referenz wird ohne erneuten Download in Master und
+anschließend in das atomar aktivierte Lightroom-Suchpaket übernommen; unpassende alte Kandidaten werden nicht
+aktiviert. Automatisierte Drift-, Fehler- und Wiederholungstests sind vorhanden, der praktische Lauf mit dem realen
+großen Bestand steht nach einem ersten, nicht aktivierten Kandidaten erneut aus. Der Reparaturstand prüft bei einem
+CoL-Wechsel auch zuvor bekannte Referenzlücken neu, behandelt ausdrücklich gepflegte Projektnamen als bevorzugte
+Masterwerte und hält Statusabfragen durch kompakte Differenzzähler sowie ausschließlich blockierende Konflikte
+leichtgewichtig. Vollvalidierung und Aktivierungsprüfung bleiben unverändert verbindlich. Offen ist danach das
+umfassende Phase-10-Abschlussaudit. Für Phase 11 bleiben:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

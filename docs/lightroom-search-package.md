@@ -686,6 +686,11 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
 - Der automatische Suchpaketbau benötigt lokal vorübergehend Platz für den neuen Staging-Stand zusätzlich zum
   aktiven und gegebenenfalls vorherigen Paket. Bei einem Fehler bleibt das alte Paket nutzbar, die korrigierten
   Namen stehen Lightroom aber erst nach dem erfolgreichen Wiederholungslauf zur Verfügung.
+- Der Masterstatus vergleicht die aktive CoL-Release-ID mit der CoL-Provenienz des aktiven Masters. Ist die Referenz
+  bereits neuer, baut der bestätigte Wiederanlauf zuerst den Master aus dem vorhandenen aktiven Referenzstand und
+  erst danach dieses Suchpaket. Er lädt die gleiche Referenz nicht erneut herunter. Ein Kandidat eines älteren
+  Referenzstands wird nicht aktiviert. Nach einem Paketfehler wird nur das Paket nachgeholt; nach einem Masterfehler
+  bleiben Master und Paket unverändert und der Referenz-Master-Drift sichtbar.
 - Das Zurücksetzen einer Korrektur, die bereits in einem früheren vollständigen Masterstand als ausgewählter
   manueller Wert eingebaut wurde, kann nicht allein durch Weglassen in einer kleinen Überlagerung rückgängig gemacht
   werden. Der Schnellweg erkennt diesen Fall und verweigert eine scheinbare Teilaktivierung; dafür bleibt der
