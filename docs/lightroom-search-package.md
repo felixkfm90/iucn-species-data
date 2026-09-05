@@ -1,6 +1,6 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-04
+Stand: 2026-09-05
 Roadmap: Phase 10.2 bis 10.4
 Status: Suchpaket und Plug-in Version 0.4.24.6 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
@@ -14,6 +14,16 @@ der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitakti
   von 0.4.24.5 benötigen noch
 den kontrollierten Lightroom-Test. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
+
+Der reale Referenz-Master-Wiederanlauf vom 5. September 2026 ist technisch abgeschlossen: Paket
+`lightroom-946c961bd063fd1b8f12` wurde automatisch aufgebaut, vollständig geprüft und um 08:32:51 Uhr MESZ
+atomar aktiviert. Es stammt aus `master-20260905054823067` und derselben aktiven CoL-Referenz
+`col-xr-2026-08-26-316165`. Die abschließenden read-only Suchtests bestätigen die bevorzugten Projektnamen und
+eigenen Korrekturen, insbesondere Weißstorch, Taubenschwänzchen und Rotstirnamazone. Das Lua-Plug-in blieb
+unverändert bei 0.4.24.6. Der Benutzer bestätigte Weißstorch in Lightroom und den passenden Masterstand im
+Zusatzmodul-Manager; Commit/Push sind freigegeben. Dies bestätigt nicht sämtliche Zuweisungs- und Wartungsabläufe.
+Der zusätzliche Vergleich mit der aktuellen Master-/Referenzversion direkt beim Öffnen in Lightroom ist geplant,
+noch nicht implementiert. `Lokales Suchpaket bereit` ist bisher eine Verfügbarkeitsanzeige, kein Aktualitätsnachweis.
 
 ## Ziel
 

@@ -1250,7 +1250,7 @@ fest hinterlegte Plug-in-Skripte. Vertragstest und Dokumentation sind aktualisie
 Lightroom-Abnahme nach Neuladen des Zusatzmoduls: beide Menüpunkte, vier Gruppen, Erreichbarkeit jeder Aktion sowie
 Schließen und Rückkehr aus dem Verwaltungsfenster.
 
-#### Auftrag 2: Wiederaufbaulücke nach CoL-Referenzaktualisierung schließen – nächster technischer Blocker
+#### Auftrag 2: Wiederaufbaulücke nach CoL-Referenzaktualisierung schließen – technisch abgeschlossen
 
 Beobachteter Ausgangsfall: Die aktive CoL-Referenz wurde auf `col-xr-2026-08-26-316165` aktualisiert und der
 Projektartenabgleich meldete keine Konflikte. Der aktive Master blieb dennoch
@@ -1301,8 +1301,8 @@ angleichen`, baut ohne erneuten CoL-Download oder Anbieterabruf aus der bereits 
 einen Kandidaten mit passender Referenzprovenienz. Die bestehende Aktivierung baut anschließend das
 Lightroom-Suchpaket und aktiviert es atomar. Fehler beim Masterbau lassen Master und Paket unverändert; ein reiner
 Paketfehler bleibt der bereits vorhandene gezielt wiederholbare Teilerfolg. Entscheidungs-, Service-, Fehler- und
-Wiederholungstests sind ergänzt. Offen bleibt der einmalige praktische Wiederanlauf mit dem realen großen Bestand
-und die anschließende Kontrolle
+Wiederholungstests sind ergänzt. Als damaliges Abnahmekriterium blieben der praktische Wiederanlauf mit dem realen
+großen Bestand und die anschließende Kontrolle
 `aktive CoL-Referenz = Master-Provenienz` sowie `aktive Master-ID = Lightroom-Paket-masterVersion`.
 
 Der erste reale Wiederanlauf am 2026-09-04 erzeugte zwar den gültigen Staging-Kandidaten
@@ -1323,8 +1323,8 @@ angeboten. Der anschließende reale Lauf aktivierte Master und Lightroom-Paket z
 der Detailprüfung von `Ciconia ciconia` aber eine weitere Wiederanlauflücke auf: Der ältere iNaturalist-Ausschnitt
 enthielt die interne numerische CoL-SQLite-ID `1022266`, während dieselbe Art im neuen Release unter der
 release-lokalen ID `1024347` liegt. Solche IDs werden nun beim Referenzwechsel verworfen und der wissenschaftliche
-Name erneut exakt aufgelöst. Offen bleibt der dadurch notwendige abschließende reale Neuaufbau und danach weiterhin
-die dreifache Provenienzprüfung einschließlich des Referenzstatus von `Ciconia ciconia`.
+Name erneut exakt aufgelöst. Dadurch wurden ein weiterer realer Neuaufbau und die dreifache Provenienzprüfung
+einschließlich des Referenzstatus von `Ciconia ciconia` notwendig.
 
 Der Folgekandidat `master-20260905004256225` vom 5. September enthält `Ciconia ciconia` korrekt als `exact-col`,
 blieb aber wegen 120 Feldkonflikten gesperrt. Ursache sind zuvor automatisch übernommene Anbieterfelder, die bei
@@ -1333,16 +1333,86 @@ fehlendem Ersatz fälschlich als manuelle Trägerzeilen gespeichert wurden. Die 
 Trägerzeilen werden nur mit identischem Quellenbeleg im vorherigen Master sowie ohne Korrektur oder ausdrückliche
 Feldentscheidung zurückgeführt. Regressionstests prüfen mehrere Aufbauten, Quellenbeweis und Schutzgrenzen.
 Der Kandidat wurde nicht aktiviert. Der erneute reale Aufbau wurde am 5. September um 03:46:59 Uhr MESZ auf dem
-separaten Hintergrundserver gestartet, ohne Anbieter erneut abzurufen. Offen: Abschluss dieses Aufbaus,
+separaten Hintergrundserver gestartet, ohne Anbieter erneut abzurufen. Damalige Prüfpunkte: Abschluss dieses Aufbaus,
 konfliktfreie Aktivierungsprüfung, Lightroom-Ableitung und abschließende Such-/Provenienzstichproben einschließlich
 des Erhalts echter manueller Feldherkunft bei Textgleichheit mit einem Anbieter. 29 gezielte Tests und das
 vollständige Qualitätsgate sind bestanden. Dieser Lauf brach um 04:01:28 Uhr MESZ beim Schreiben ab, weil ein
 neues Homonym eines anderen Reichs fälschlich Altfelder und Quellenkennung des vorhandenen Taxons erbte.
 Der Fehler ist mit einem kleinen mehrstufigen Test reproduziert und die Vorgängerzuordnung auf eindeutige,
 reichskompatible Identitäten begrenzt. Aktiver Master und Lightroom-Paket blieben unverändert. Ein erneuter
-Lauf mit diesem zusätzlichen Fix ist erforderlich. Die Plug-in-Version bleibt unverändert.
+Lauf mit diesem zusätzlichen Fix wurde erforderlich. Die Plug-in-Version bleibt unverändert.
 
-- 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Abschluss und praktischem Test beider Aufträge.
+Am 5. September wurde nach erneuter Benutzerfreigabe der Projektstatus synchronisiert und das vollständige
+Qualitätsgate erfolgreich ausgeführt. Der korrigierte reale Masteraufbau startete um 07:48:16 Uhr MESZ auf dem
+separaten Hintergrundserver aus den bereits vorhandenen Quellen. Alle bisherigen Korrekturen waren bei diesem
+Start geladen. Der Masterbau endete um 08:16:48 Uhr nach rund 29 Minuten ohne blockierende Konflikte.
+Nach vollständiger Kandidatenprüfung wurde `master-20260905054823067` um 08:28:50 Uhr aktiviert; der automatisch
+gestartete Paketbau aktivierte `lightroom-946c961bd063fd1b8f12` um 08:32:51 Uhr. Damit ist der technische reale
+Wiederanlauf bis zum Suchpaket abgeschlossen. Die abschließende read-only Prüfung bestätigte:
+
+- aktive Referenz und CoL-Provenienz in Master und Paket: `col-xr-2026-08-26-316165`;
+- aktive Master-ID entspricht der `masterVersion` des Lightroom-Pakets;
+- alle 56 Projektnamenpaare und die sechs Namensfelder der drei eigenen Korrekturen ohne Abweichung;
+- `Ciconia ciconia` mit unveränderter ID, aktueller CoL-Kennung `5Z5T3`, `exact-col` und bevorzugtem `Weissstorch`;
+  auch die Suche nach `Hausstorch` führt zu diesem Namen, nicht zu einer anderen Art;
+- getrennte Tier-/Pflanzen-Identitäten und Familien für `Acmella pusilla`, keine taxonfremden Feld-Quellenbelege;
+- bereits vor Aktivierung geprüfter Erhalt von 207 echten manuellen beziehungsweise Projektfeldern gegenüber dem
+  vorherigen stabilen Stand, darunter 44 manuelle Felder einschließlich ihrer Herkunft.
+
+Der reguläre Updateablauf umfasst weiterhin Quellenupdates, Masterzusammenführung unter Erhalt eigener Korrekturen
+und das Suchpaket. Dieser Reparaturlauf nutzte vorhandene Quellen und testete keinen erneuten Download.
+Kein Aufbau läuft mehr; für diesen Lauf muss der Rechner nicht weiterlaufen. Der Benutzer bestätigte anschließend
+Weißstorch in Lightroom und zeigte den korrekten Paket-/Masterstand im Zusatzmodul-Manager bei Plug-in-Version
+0.4.24.6. Commit/Push wurden freigegeben. Nicht daraus ableiten lassen sich eine erfolgreiche neue Zuweisung oder
+die vollständige praktische Abnahme aller drei Arten und der übrigen Lightroom-Werkzeuge.
+
+Die alte Windows-Aufgabe `Datenabruf Website` startete um 07:00 Uhr `update_local.bat` und veröffentlichte mit
+Commit `4363ba3` auch offene Dokumentationsänderungen, jedoch keinen aktualisierten Projektstatus. GitHub Pages
+brach deshalb im Quality-Job vor dem Deployment ab. Der Benutzer hat die Aufgabe gelöscht; die Statusdatei ist
+lokal aktualisiert und Teil der freigegebenen Veröffentlichung. Der neue GitHub-Pages-Lauf ist nach dem Push zu
+prüfen; der historische fehlgeschlagene Lauf wird nicht erneut gestartet.
+
+Zusätzlicher Benutzerpunkt vom 5. September, nach dem abgeschlossenen Wiederaufbau und vor dem Abschlussaudit:
+Lightroom soll beim Öffnen des Zuweisungsfensters den Datenstand nachvollziehbar prüfen und anzeigen. Aktuell prüft
+es Verfügbarkeit und Paketstand sowie Paketwechsel seit der Artauswahl, vergleicht jedoch nicht den zugrunde
+liegenden Master mit dem aktuell aktiven Master und dessen Referenzstand. Vorgeschlagen ist eine gemeinsame,
+kleine read-only Versionsgrundlage für Explorer und Suchhelfer: Plug-in-Version getrennt vom Datenstand,
+Master-/Paket-Konsistenz, aktive Korrekturrevision und verständliche Zustände für aktuell, veraltet, im Aufbau
+oder nicht prüfbar. Keine großen SQLite-/Katalogscans und keine automatischen Downloads beim Öffnen in Lightroom.
+Quellenaktualisierung und Paketbau bleiben zentral im Arten-Explorer; bei fehlender Vergleichsgrundlage darf
+Lightroom nicht pauschal Aktualität behaupten. Umsetzung einschließlich Plug-in-Versionsanhebung und Vertragstests
+ist noch offen und nicht Teil des abgeschlossenen Masteraufbaus.
+
+#### Gebündelte Restpunkte vor dem Phase-10-Abschlussaudit
+
+1. **Umsetzung:** Leichtgewichtigen Versionsvergleich direkt in Lightroom ergänzen, wie oben beschrieben. Der
+   bestätigte Zusatzmodul-Screenshot belegt bisher nur Verfügbarkeit und Paket-Masterversion. Keine erneuten
+   Statistikscans oder automatischen Quelldownloads beim Öffnen ergänzen.
+2. **Fachliche Entscheidung:** Bevorzugte Namen bei der Verwendung von Suchalternativen festlegen. Explizite
+   Projektnamen und eigene Korrekturen sind jetzt geschützt; eine bloße Suche oder Lightroom-Zuweisung unter einem
+   Alternativnamen speichert noch keine neue globale Namenspräferenz. Festlegen, wie eine solche Präferenz
+   erkennbar, rücknehmbar und in beiden Programmen gleich angewendet wird; nicht mit einer Taxon-ID-Änderung vermischen.
+3. **Fachliche Entscheidung:** Umgang mit geänderter Taxonidentität, Aufteilung und Zusammenführung abschließen.
+   Der Katalogabgleich überspringt nicht mehr eindeutig auflösbare Master-IDs bereits sicher. Eine bestätigte
+   Nachfolgerzuordnung fehlt. Vor Phasenabschluss entweder umsetzen oder mit ausdrücklicher Begründung verschieben;
+   keine automatische Namensheuristik einführen.
+4. **Gebündelte Lightroom-Abnahme:** Menü und Verwaltungsfenster einschließlich aller Aktionen; neue Suche und
+   Einzel-/Mehrfachzuweisung; automatische Suche, Korrekturübergabe und Sekundenkorrektur bei geöffnetem Lightroom;
+   Orts-/Zeit-Stapel, Aktualisierung, Gesamtbereinigung und Katalogpflege einschließlich Pause/Abbruch, Stern-Endungen
+   und Statistikdeltas; finale Statistikdarstellung und alle drei Exporte. Schon bestätigte Altstände nicht als
+   vollständige Abnahme des aktuellen Gesamtstands verbuchen. Kleine Testauswahl und separaten Testkatalog verwenden.
+5. **Betriebsgrenzen prüfen und entscheiden:** Fehler-/Wiederanlauf und Rollback mit geöffneten Verbrauchern,
+   viele echte Konflikte jenseits der derzeitigen 100er-Anzeigegrenze sowie Verhalten bei Explorer-Neustart prüfen.
+   Ein Masterbau im eigenen Worker, dauerhafte Lauf-Checkpoints und ein engerer gemeinsamer Aktivierungspunkt sind
+   mögliche Verbesserungen, keine bereits implementierten Zusagen. Der funktionierende Reparaturlauf ist kein
+   erneuter Downloadtest. Bekannte SDK-Grenzen (Adobe-KI-Dialog, externe Metadatenbeobachtung, weiße native Liste,
+   Enter und Rechtsklick) bleiben explizit dokumentiert statt durch undokumentierte Funktionen umgangen zu werden.
+6. **Veröffentlichung und Auditbereitschaft:** Qualitätsgate, Projektstatus, GitHub-Pages-Deployment und
+   Dokumentationsabgleich prüfen. Für das Gesamtaudit anschließend Code/Modularisierung/Dopplungen/tote Elemente,
+   Daten und Schemata, temporäre Dateien sowie Backup/Restore und Veröffentlichung projektweit untersuchen.
+
+- 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Erledigung beziehungsweise begründeter Zuordnung der
+  gebündelten Restpunkte. Der erfolgreiche Wiederanlauf allein schließt Phase 10 nicht ab.
 
 ## Phase 11 - Mehrere Computer, Git-Update und NAS-Restore
 

@@ -1136,11 +1136,24 @@ Aktuelle Planung:
   Seit 2026-09-05 übernimmt `taxonomy-master-previous-state.mjs` fehlende Anbieterfelder mit ihrem ursprünglichen
   Quellenbeleg und archivierten Release, nicht als manuelle Entscheidung. Fehlerhafte alte manuelle Trägerzeilen
   werden ausschließlich bei identischem Quellenbeleg im vorherigen Master, ohne Feldentscheidung und ohne eigene
-  Korrektur zurückgeführt. Ohne diesen Nachweis bleiben sie geschützt. Der reale Folgelauf und die abschließende
-  Master-/Lightroom-Prüfung stehen noch aus; der Konfliktkandidat vom 5. September wurde nicht aktiviert.
+  Korrektur zurückgeführt. Ohne diesen Nachweis bleiben sie geschützt. Der Konfliktkandidat vom 5. September
+  wurde nicht aktiviert; der spätere geprüfte Wiederanlauf ist unten dokumentiert.
   Der folgende Lauf brach bei einer doppelten Quellenkennung ab: Ein neues gleichnamiges Taxon eines anderen
   Reichs erbte fälschlich die Altfelder des vorhandenen Taxons. Die Vorgängerzuordnung prüft jetzt auch Reich und
   beidseitige Eindeutigkeit; ein Regressionstest reproduziert den ursprünglichen UNIQUE-Fehler und die Trennung.
+  Nach erfolgreichem vollständigem Qualitätsgate und Statusabgleich wurde am 2026-09-05 um 07:48:16 Uhr MESZ
+  der reale Aufbau mit allen Korrekturen neu gestartet und um 08:16:48 Uhr konfliktfrei abgeschlossen. Master
+  `master-20260905054823067` wurde um 08:28:50 Uhr, das automatisch abgeleitete Lightroom-Paket
+  `lightroom-946c961bd063fd1b8f12` um 08:32:51 Uhr aktiviert. Die aktive CoL-Referenz
+  `col-xr-2026-08-26-316165`, Master-Provenienz und Paket-Provenienz stimmen überein. Die read-only Endprüfung
+  bestätigte Projektnamen, eigene Korrekturen mit manueller Herkunft, stabile Weißstorch-Identität mit `exact-col`
+  sowie getrennte Tier-/Pflanzen-Homonyme. Kein Aufbau läuft mehr. Der Benutzer bestätigte am 5. September
+  Weißstorch in Lightroom und den passenden Paket-/Masterstand im Zusatzmodul-Manager und gab Commit/Push frei.
+  Das bestätigt noch keine Zuweisung oder vollständige Lightroom-Abnahme. Offen bleiben die in der Roadmap
+  gebündelten Praxistests, die zusätzliche Versionsprüfung direkt in Lightroom und das Abschlussaudit.
+  Die alte Windows-Aufgabe `Datenabruf Website` wurde vom Benutzer gelöscht; ihr Lauf um 07:00
+  hatte Daten und offene Dokumentation ohne aktualisierten Projektstatus veröffentlicht. Der Pages-Quality-Job
+  stoppte deshalb vor dem Deployment. Die Statuskorrektur gehört zur jetzt freigegebenen gemeinsamen Veröffentlichung.
   Vor Aktivierung und Rollback schließt der Explorer seine eigenen read-only Masterhandles, damit Windows den
   atomaren Slotwechsel nicht mit `EPERM` blockiert. Mehrere Namenskorrekturen können vor einem gemeinsamen
   `Datenbank aktualisieren` gesammelt werden. Seit 2026-08-30 baut der Explorer nach bestätigter Masteraktivierung

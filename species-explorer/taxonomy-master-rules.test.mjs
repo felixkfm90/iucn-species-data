@@ -21,6 +21,23 @@ test("9.7 priorisiert manuelle und CoL-Werte ohne stille Überschreibung", () =>
     chooseFieldAssertion({
       current: {
         fieldName: "german-name",
+        fieldValue: "Hausstorch",
+        originKind: "source",
+        provider: "inaturalist",
+      },
+      candidate: {
+        fieldName: "german-name",
+        fieldValue: "Weissstorch",
+        originKind: "project",
+        provider: "project",
+      },
+    }).action,
+    "select",
+  );
+  assert.equal(
+    chooseFieldAssertion({
+      current: {
+        fieldName: "german-name",
         fieldValue: "Gelbwangenamazone",
         originKind: "source",
         provider: "catalogue-of-life",

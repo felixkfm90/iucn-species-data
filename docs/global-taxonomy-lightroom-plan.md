@@ -1,6 +1,6 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-09-04
+Stand: 2026-09-05
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
@@ -764,12 +764,16 @@ Auswahl, die persistente Lifelist-/Klassenstatistik mit CSV, Favoritenbild der A
 Suchpaketstatus. Seit dem 4. September 2026 vergleicht der Update-Wiederanlauf zusätzlich den aktiven CoL-Stand mit
 der CoL-Provenienz des Masters. Eine bereits aktivierte neue Referenz wird ohne erneuten Download in Master und
 anschließend in das atomar aktivierte Lightroom-Suchpaket übernommen; unpassende alte Kandidaten werden nicht
-aktiviert. Automatisierte Drift-, Fehler- und Wiederholungstests sind vorhanden, der praktische Lauf mit dem realen
-großen Bestand steht nach einem ersten, nicht aktivierten Kandidaten erneut aus. Der Reparaturstand prüft bei einem
+aktiviert. Automatisierte Drift-, Fehler- und Wiederholungstests sind vorhanden; der reale Wiederanlauf mit dem
+großen Bestand wurde am 5. September bis zum automatisch aktivierten Lightroom-Paket erfolgreich geprüft.
+Referenz, Master und Paket besitzen übereinstimmende Provenienz; Projektnamen, eigene Korrekturen und
+Weißstorch-Identität sind erhalten. Der Reparaturstand prüft bei einem
 CoL-Wechsel auch zuvor bekannte Referenzlücken neu, behandelt ausdrücklich gepflegte Projektnamen als bevorzugte
 Masterwerte und hält Statusabfragen durch kompakte Differenzzähler sowie ausschließlich blockierende Konflikte
-leichtgewichtig. Vollvalidierung und Aktivierungsprüfung bleiben unverändert verbindlich. Offen ist danach das
-umfassende Phase-10-Abschlussaudit. Für Phase 11 bleiben:
+leichtgewichtig. Vollvalidierung und Aktivierungsprüfung bleiben unverändert verbindlich. Weißstorch und der neue
+Paket-/Masterstand wurden in Lightroom bestätigt; Commit/Push sind freigegeben. Offen bleiben die restlichen
+Lightroom-Praxistests, der zusätzliche leichtgewichtige Versionsabgleich direkt in Lightroom, die in der Roadmap
+gebündelten Fachentscheidungen und das umfassende Phase-10-Abschlussaudit. Für Phase 11 bleiben:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

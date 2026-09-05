@@ -66,8 +66,19 @@
     lightroomPackageNeedsRebuild = false,
     correctionsPending = false,
     candidateIncludesCorrections = false,
+    referenceNeedsMasterRebuild = false,
+    candidateMatchesReference = true,
+    referenceComparisonError = false,
   } = {}) {
-    if (hasCandidate && (!correctionsPending || candidateIncludesCorrections)) return "activate";
+    if (referenceComparisonError) return "reference-error";
+    if (
+      hasCandidate
+      && candidateMatchesReference
+      && (!correctionsPending || candidateIncludesCorrections)
+    ) return "activate";
+    if (referenceNeedsMasterRebuild || (hasCandidate && !candidateMatchesReference)) {
+      return "rebuild-master";
+    }
     if (correctionsPending) return hasCandidate ? "build-corrections" : "apply-corrections";
     if (lightroomPackageNeedsRebuild) return "sync-lightroom";
     return hasWork ? "refresh-and-build" : "current";
@@ -141,12 +152,18 @@
       const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus);
       const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error);
       const lightroomPackageNeedsRebuild = masterStatus.lightroomPackage?.needsRebuild === true;
+      const referenceNeedsMasterRebuild = masterStatus.reference?.needsMasterRebuild === true;
       const correctionsPending = masterStatus.corrections?.pending === true;
-      const partial = masterStatus.status === "partial" || lightroomPackageNeedsRebuild;
+      const partial = masterStatus.status === "partial"
+        || lightroomPackageNeedsRebuild
+        || referenceNeedsMasterRebuild;
       const updateAvailable = referenceStatus.updateAvailable === true;
-      const blockingConflicts = Array.isArray(masterLifecycle.blockingConflicts)
-        ? masterLifecycle.blockingConflicts.length
-        : 0;
+      const blockingConflicts = Number(
+        masterLifecycle.blockingConflictCount
+        ?? (Array.isArray(masterLifecycle.blockingConflicts)
+          ? masterLifecycle.blockingConflicts.length
+          : 0),
+      );
       const projectConflicts = Number(referenceStatus.conflicts?.referenceGaps || 0)
         + Number(referenceStatus.conflicts?.suggestions || 0)
         + Number(referenceStatus.conflicts?.ambiguous || 0)
@@ -161,6 +178,8 @@
 
       elements.taxonomyDatabaseOverviewSummary.textContent = active
         ? "Taxonomiedatenbank wird aktualisiert"
+        : referenceNeedsMasterRebuild
+          ? "Masterdatenbank an aktive Referenz angleichen"
         : partial
           ? "Lightroom-Suchpaket aktualisieren"
           : failed
@@ -187,6 +206,19 @@
       }
       if (counts) details.push(counts);
       if (updateAvailable && latest) details.push(`Verfügbar: ${latest}`);
+      if (referenceNeedsMasterRebuild) {
+        const referenceRelease = cleanText(masterStatus.reference?.activeRelease) || "unbekannt";
+        const masterRelease = cleanText(masterStatus.reference?.activeMasterRelease) || "noch keiner";
+        details.push(
+          `Aktive CoL-Referenz ${referenceRelease}; im aktiven Master enthalten: ${masterRelease}`,
+        );
+      }
+      if (masterStatus.reference?.status === "error") {
+        details.push(
+          cleanText(masterStatus.reference?.error)
+          || "Der Referenzstand konnte nicht mit dem Master verglichen werden",
+        );
+      }
       if (blockingConflicts) {
         details.push(`${blockingConflicts} Aktualisierungskonflikt(e) benötigen eine Entscheidung`);
       }
@@ -274,9 +306,12 @@
 
     async function activateCandidate(masterStatus) {
       const lifecycle = masterStatus.lifecycle || {};
-      const blocking = Array.isArray(lifecycle.blockingConflicts)
-        ? lifecycle.blockingConflicts.length
-        : 0;
+      const blocking = Number(
+        lifecycle.blockingConflictCount
+        ?? (Array.isArray(lifecycle.blockingConflicts)
+          ? lifecycle.blockingConflicts.length
+          : 0),
+      );
       if (blocking) {
         throw new Error(
           `${blocking} Aktualisierungskonflikt(e) müssen zuerst unter „Datenbank ansehen und korrigieren“ entschieden werden.`,
@@ -294,9 +329,23 @@
         : started;
     }
 
+    async function buildAndActivateMaster({ refreshProviders, label }) {
+      const building = await fetchJson("/api/taxonomy/master/build", {
+        method: "POST",
+        body: JSON.stringify({ refreshProviders }),
+      });
+      state.taxonomyMasterSnapshot = building;
+      renderOverview();
+      const built = masterIsActive(building)
+        ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, label)
+        : building;
+      return activateCandidate(built);
+    }
+
     async function updateDatabase() {
       const fastCorrection = state.taxonomyMasterSnapshot?.corrections?.pending === true
-        && !state.taxonomyMasterSnapshot?.lifecycle?.candidate;
+        && !state.taxonomyMasterSnapshot?.lifecycle?.candidate
+        && state.taxonomyMasterSnapshot?.reference?.needsMasterRebuild !== true;
       const confirmed = await showQuickConfirm({
         eyebrow: "Taxonomiedatenbank",
         title: fastCorrection ? "Namenskorrekturen aktivieren?" : "Datenbank aktualisieren?",
@@ -317,8 +366,22 @@
           lightroomPackageNeedsRebuild: master.lightroomPackage?.needsRebuild === true,
           correctionsPending: master.corrections?.pending === true,
           candidateIncludesCorrections: master.corrections?.candidateIncludesCurrent === true,
+          referenceNeedsMasterRebuild: master.reference?.needsMasterRebuild === true,
+          candidateMatchesReference: !cleanText(master.reference?.activeRelease)
+            || master.reference?.candidateMatchesActiveReference !== false,
+          referenceComparisonError: master.reference?.status === "error",
         });
-        if (decision === "sync-lightroom") {
+        if (decision === "reference-error") {
+          throw new Error(
+            master.reference?.error
+            || "Der aktive Referenzstand konnte nicht sicher mit dem Master verglichen werden.",
+          );
+        } else if (decision === "rebuild-master") {
+          await buildAndActivateMaster({
+            refreshProviders: false,
+            label: "Master-Neuaufbau",
+          });
+        } else if (decision === "sync-lightroom") {
           const started = await fetchJson("/api/taxonomy/master/sync-lightroom", {
             method: "POST",
             body: "{}",
@@ -349,16 +412,10 @@
             );
           }
         } else if (decision === "build-corrections") {
-          const building = await fetchJson("/api/taxonomy/master/build", {
-            method: "POST",
-            body: JSON.stringify({ refreshProviders: false }),
+          await buildAndActivateMaster({
+            refreshProviders: false,
+            label: "Korrektur-Neuaufbau",
           });
-          state.taxonomyMasterSnapshot = building;
-          renderOverview();
-          master = masterIsActive(building)
-            ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, "Korrektur-Neuaufbau")
-            : building;
-          await activateCandidate(master);
         } else {
           const preview = await fetchJson("/api/taxonomy/update/preview", {
             method: "POST",
@@ -381,16 +438,10 @@
           if (referenceIsActive(started)) {
             await waitUntilIdle("/api/taxonomy/status", referenceIsActive, "Referenzaktualisierung");
           }
-          const building = await fetchJson("/api/taxonomy/master/build", {
-            method: "POST",
-            body: JSON.stringify({ refreshProviders: true }),
+          await buildAndActivateMaster({
+            refreshProviders: true,
+            label: "Datenbankprüfung",
           });
-          state.taxonomyMasterSnapshot = building;
-          renderOverview();
-          master = masterIsActive(building)
-            ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, "Datenbankprüfung")
-            : building;
-          await activateCandidate(master);
         }
         await refreshSnapshots();
         await loadReview();

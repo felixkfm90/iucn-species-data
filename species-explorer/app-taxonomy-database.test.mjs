@@ -53,6 +53,59 @@ test("Taxonomiedatenbank berücksichtigt Quellen, eigene Korrekturen und Suchpak
     }),
     "activate",
   );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({ referenceNeedsMasterRebuild: true }),
+    "rebuild-master",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      candidateMatchesReference: false,
+      referenceNeedsMasterRebuild: true,
+    }),
+    "rebuild-master",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      candidateMatchesReference: true,
+      referenceNeedsMasterRebuild: true,
+    }),
+    "activate",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      correctionsPending: true,
+      referenceNeedsMasterRebuild: true,
+    }),
+    "rebuild-master",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      lightroomPackageNeedsRebuild: true,
+      referenceNeedsMasterRebuild: true,
+    }),
+    "rebuild-master",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      candidateMatchesReference: false,
+    }),
+    "rebuild-master",
+  );
+  assert.equal(
+    database.taxonomyDatabaseUpdateDecision({
+      hasCandidate: true,
+      referenceComparisonError: true,
+    }),
+    "reference-error",
+  );
+  assert.match(
+    source,
+    /decision === "rebuild-master"[\s\S]*?refreshProviders: false/,
+    "Ein bereits aktivierter Referenzstand muss ohne erneuten Quellen-Download in den Master übernommen werden",
+  );
 });
 
 test("Lightroom-Korrekturanfrage verlangt identische Master-ID und wissenschaftlichen Namen", () => {

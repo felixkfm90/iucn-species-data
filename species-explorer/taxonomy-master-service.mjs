@@ -7,6 +7,7 @@ import {
 } from "./taxonomy-correction-release.mjs";
 import {
   buildTaxonomyMasterCandidate,
+  readTaxonomyMasterManifest,
   taxonomyCorrectionsRevision,
 } from "./taxonomy-master-candidate.mjs";
 import {
@@ -23,6 +24,7 @@ import {
   canonicalSpeciesName,
   isMasterSpeciesCandidate,
 } from "./taxonomy-taxon-quality.mjs";
+import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -62,6 +64,42 @@ function initialState() {
 
 function cleanText(value) {
   return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ");
+}
+
+function masterReferenceRelease(manifest = null) {
+  const source = Array.isArray(manifest?.sources)
+    ? manifest.sources.find((entry) => cleanText(entry?.provider) === "catalogue-of-life")
+    : null;
+  return cleanText(source?.providerVersion || source?.releaseId);
+}
+
+function taxonomyMasterReferenceStatus(activeReferenceRelease, lifecycle = {}) {
+  const activeRelease = cleanText(activeReferenceRelease);
+  const activeMasterRelease = masterReferenceRelease(lifecycle.active);
+  const candidateRelease = masterReferenceRelease(lifecycle.candidate);
+  const hasActiveMaster = Boolean(lifecycle.active);
+  const hasCandidate = Boolean(lifecycle.candidate);
+  const activeMatchesReference = Boolean(
+    activeRelease
+    && hasActiveMaster
+    && activeMasterRelease === activeRelease
+  );
+  const candidateMatchesActiveReference = Boolean(
+    activeRelease
+    && hasCandidate
+    && candidateRelease === activeRelease
+  );
+  return {
+    status: activeRelease
+      ? activeMatchesReference ? "current" : "stale"
+      : "unavailable",
+    activeRelease,
+    activeMasterRelease,
+    candidateRelease,
+    activeMatchesReference,
+    candidateMatchesActiveReference,
+    needsMasterRebuild: Boolean(activeRelease && !activeMatchesReference),
+  };
 }
 
 async function readJson(filePath, fallback) {
@@ -168,14 +206,14 @@ async function collectColRecords(
   store,
   scientificNames,
   onProgress = () => {},
-  { providerSlices = [] } = {},
+  { providerSlices = [], recheckKnownReferenceGaps = false } = {},
 ) {
   const records = [];
   for await (const record of streamColRecords(
     store,
     scientificNames,
     onProgress,
-    { providerSlices },
+    { providerSlices, recheckKnownReferenceGaps },
   )) {
     records.push(record);
   }
@@ -186,7 +224,7 @@ async function* streamColRecords(
   store,
   scientificNames,
   onProgress = () => {},
-  { providerSlices = [] } = {},
+  { providerSlices = [], recheckKnownReferenceGaps = false } = {},
 ) {
   const status = store.status();
   const knownColTaxonIds = new Map();
@@ -205,14 +243,29 @@ async function* streamColRecords(
   for (let index = 0; index < names.length; index += 1) {
     const scientificName = names[index];
     onProgress({ current: index, total: names.length, scientificName });
-    if (knownColReferenceGaps.has(scientificName) && !knownColTaxonIds.has(scientificName)) {
+    if (
+      !recheckKnownReferenceGaps
+      && knownColReferenceGaps.has(scientificName)
+      && !knownColTaxonIds.has(scientificName)
+    ) {
       continue;
     }
-    const knownColTaxonId = knownColTaxonIds.get(scientificName);
+    // `colTaxonId` aus einem Anbieter-Ausschnitt ist die interne SQLite-Zeilen-ID
+    // des damaligen CoL-Releases. Sie ist nur innerhalb genau dieses Releases
+    // stabil und darf nach einem Referenzwechsel nicht wiederverwendet werden.
+    const knownColTaxonId = recheckKnownReferenceGaps
+      ? null
+      : knownColTaxonIds.get(scientificName);
     if (knownColTaxonId) {
       const detail = store.taxon(knownColTaxonId);
-      if (detail) yield normalizeColTaxon(detail, null, status);
-      continue;
+      if (
+        detail
+        && canonicalSpeciesName(detail.scientific_name || detail.acceptedScientificName)
+          === canonicalSpeciesName(scientificName)
+      ) {
+        yield normalizeColTaxon(detail, null, status);
+        continue;
+      }
     }
     const result = store.findTaxonByScientificName(scientificName, { rank: "species" });
     if (!result) continue;
@@ -254,6 +307,7 @@ export class TaxonomyMasterService {
     inspectLightroomPackages = null,
     rebuildLightroomPackage = null,
     activateCorrections = activateTaxonomyCorrectionRelease,
+    readReferencePointer = readActiveTaxonomyPointer,
   } = {}) {
     if (!taxonomyRoot || !referenceService || !speciesListPath || !correctionsPath) {
       throw new TypeError("Taxonomiepfad, Referenzdienst, Artenliste und Korrekturdatei sind erforderlich.");
@@ -275,6 +329,7 @@ export class TaxonomyMasterService {
     this.inspectLightroomPackages = inspectLightroomPackages;
     this.rebuildLightroomPackage = rebuildLightroomPackage;
     this.activateCorrections = activateCorrections;
+    this.readReferencePointer = readReferencePointer;
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
@@ -323,7 +378,9 @@ export class TaxonomyMasterService {
 
   async status() {
     this.assertOpen();
-    const lifecycle = await this.inspectLifecycle(this.taxonomyRoot).catch((error) => ({
+    const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, {
+      lightweight: true,
+    }).catch((error) => ({
       error: error.message,
       candidate: null,
       active: null,
@@ -333,9 +390,10 @@ export class TaxonomyMasterService {
       canActivate: false,
       canRollback: false,
     }));
-    const [lightroomPackage, corrections] = await Promise.all([
+    const [lightroomPackage, corrections, reference] = await Promise.all([
       this.lightroomPackageStatus(lifecycle),
       this.correctionsStatus(lifecycle),
+      this.referenceStatus(lifecycle),
     ]);
     return {
       ...this.state,
@@ -343,7 +401,22 @@ export class TaxonomyMasterService {
       lifecycle,
       lightroomPackage,
       corrections,
+      reference,
     };
+  }
+
+  async referenceStatus(lifecycle = null) {
+    const snapshot = lifecycle || await this.inspectLifecycle(this.taxonomyRoot);
+    try {
+      const pointer = await this.readReferencePointer(this.taxonomyRoot);
+      return taxonomyMasterReferenceStatus(pointer?.activeRelease, snapshot);
+    } catch (error) {
+      return {
+        ...taxonomyMasterReferenceStatus("", snapshot),
+        status: "error",
+        error: error.message,
+      };
+    }
   }
 
   async correctionsStatus(lifecycle = null) {
@@ -381,7 +454,7 @@ export class TaxonomyMasterService {
     if (!this.lightroomSearchRoot) return false;
     const existing = await readActiveTaxonomyCorrectionPointer(this.taxonomyRoot);
     if (existing) return false;
-    const lifecycle = await this.inspectLifecycle(this.taxonomyRoot);
+    const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, { lightweight: true });
     const activeRevision = cleanText(lifecycle.active?.inputRevisions?.corrections);
     if (!activeRevision) return false;
     const document = await readJson(this.correctionsPath, { entries: [] });
@@ -538,6 +611,13 @@ export class TaxonomyMasterService {
         ? await this.supplementService.selectedTaxa()
         : [];
       const store = await this.referenceService.requireStore();
+      const activeMasterManifest = await readTaxonomyMasterManifest(this.taxonomyRoot, "active");
+      const activeMasterRelease = masterReferenceRelease(activeMasterManifest);
+      const activeReferenceRelease = cleanText(store.status()?.releaseId);
+      const recheckKnownReferenceGaps = Boolean(
+        activeReferenceRelease
+        && activeMasterRelease !== activeReferenceRelease
+      );
       const warnings = [];
       if (refreshProviders && this.providerRefreshService) {
         const refreshed = await this.providerRefreshService.refresh({
@@ -605,7 +685,7 @@ export class TaxonomyMasterService {
             percent: 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 15),
           });
         },
-        { providerSlices },
+        { providerSlices, recheckKnownReferenceGaps },
       );
       const manifest = await this.buildCandidate({
         taxonomyRoot: this.taxonomyRoot,
@@ -627,12 +707,12 @@ export class TaxonomyMasterService {
           });
         },
       });
-      const lifecycle = await this.inspectLifecycle(this.taxonomyRoot);
+      const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, { lightweight: true });
       this.state = {
         ...this.state,
         status: "ready",
-        message: lifecycle.blockingConflicts.length
-          ? `${lifecycle.blockingConflicts.length} Konflikt(e) müssen vor der Aktivierung entschieden werden.`
+        message: lifecycle.blockingConflictCount
+          ? `${lifecycle.blockingConflictCount} Konflikt(e) müssen vor der Aktivierung entschieden werden.`
           : "Master-Kandidat ist geprüft und kann aktiviert werden.",
         progressPercent: 100,
         progressPhase: "Abgeschlossen",
@@ -868,8 +948,10 @@ export const taxonomyMasterServiceInternals = Object.freeze({
   collectColRecords,
   correctionsFromDocument,
   latestProviderSlices,
+  masterReferenceRelease,
   normalizeColTaxon,
   projectTaxaFromSpeciesList,
   releaseFromStoreStatus,
   streamColRecords,
+  taxonomyMasterReferenceStatus,
 });

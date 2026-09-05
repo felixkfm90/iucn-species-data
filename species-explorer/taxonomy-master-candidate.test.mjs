@@ -12,7 +12,6 @@ import {
 } from "./taxonomy-master-candidate.mjs";
 import {
   activateTaxonomyMasterCandidate,
-  decideTaxonomyMasterConflict,
   inspectTaxonomyMasterLifecycle,
   rollbackTaxonomyMaster,
 } from "./taxonomy-master-lifecycle.mjs";
@@ -95,20 +94,6 @@ function selectedField(root, slot, fieldName) {
   }
 }
 
-function hasTaxonStatus(root, slot, statusName) {
-  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, slot), { readOnly: true });
-  try {
-    return Boolean(database.prepare(`
-      SELECT 1
-      FROM master_taxon_status
-      WHERE status_name = ?
-      LIMIT 1
-    `).get(statusName));
-  } finally {
-    database.close();
-  }
-}
-
 test("9.9 erstellt zuerst einen prüfbaren Kandidaten und aktiviert ihn nur bestätigt", async (t) => {
   const root = await createRoot(t);
   const progress = [];
@@ -139,7 +124,48 @@ test("9.9 erstellt zuerst einen prüfbaren Kandidaten und aktiviert ihn nur best
   assert.equal(selectedField(root, "active", "family").field_value, "Felidae");
 });
 
-test("9.9 zeigt Hierarchieänderungen als Konflikt und übernimmt sie erst nach Entscheidung", async (t) => {
+test("leichter Masterstatus liefert nur kompakte Differenzen und blockierende Konflikte", async (t) => {
+  const root = await createRoot(t);
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [],
+    providerSlices: [{
+      manifest: {
+        provider: "gbif",
+        providerVersion: "2026-08-01",
+        retrievedAt: FIRST.toISOString(),
+      },
+      records: [{
+        providerRecordId: "5219668",
+        scientificName: "Sciurus vulgaris",
+        rank: "species",
+        kingdom: "Animalia",
+        hierarchy: { genus: "Sciurus", species: "Sciurus vulgaris" },
+        names: [],
+        relevanceReasons: ["col-reference-gap"],
+      }],
+    }],
+    projectTaxa: [{
+      projectTaxonKey: "sciurusvulgaris",
+      projectSlug: "sciurusvulgaris",
+      scientificName: "Sciurus vulgaris",
+      rank: "species",
+      kingdom: "Animalia",
+      germanName: "Eurasisches Eichhörnchen",
+    }],
+    now: () => FIRST,
+  });
+
+  const lifecycle = await inspectTaxonomyMasterLifecycle(root, { lightweight: true });
+  assert.equal(typeof lifecycle.candidate.diff.newTaxa, "number");
+  assert.equal(lifecycle.candidate.diff.newTaxa, 1);
+  assert.deepEqual(lifecycle.conflicts, []);
+  assert.deepEqual(lifecycle.blockingConflicts, []);
+  assert.equal(lifecycle.canActivate, true);
+});
+
+test("eine neue CoL-Hierarchie wird auch bei Projektarten ohne Fachentscheidung übernommen", async (t) => {
   const root = await createRoot(t);
   await buildFirstActive(root);
   const manifest = await buildTaxonomyMasterCandidate({
@@ -151,20 +177,8 @@ test("9.9 zeigt Hierarchieänderungen als Konflikt und übernimmt sie erst nach 
   });
   assert.equal(manifest.state, "staging");
   const inspection = await inspectTaxonomyMasterCandidate(root);
-  const familyConflict = inspection.conflicts.find((entry) => entry.field_name === "family");
-  assert.ok(familyConflict);
-  assert.equal(familyConflict.current_value, "Felidae");
-  assert.equal(familyConflict.candidate_value, "Pantheridae");
-  await assert.rejects(
-    activateTaxonomyMasterCandidate(root, { confirmed: true }),
-    /müssen vor der Aktivierung entschieden werden/,
-  );
-  await decideTaxonomyMasterConflict(root, {
-    conflictId: familyConflict.conflict_id,
-    decision: "accept-candidate",
-    now: () => SECOND,
-  });
-  assert.equal(hasTaxonStatus(root, "staging", "conflicting"), false);
+  assert.equal(inspection.conflicts.some((entry) => entry.field_name === "family"), false);
+  assert.equal(selectedField(root, "staging", "family").field_value, "Pantheridae");
   const lifecycle = await inspectTaxonomyMasterLifecycle(root);
   assert.equal(lifecycle.canActivate, true);
   await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });
@@ -173,6 +187,194 @@ test("9.9 zeigt Hierarchieänderungen als Konflikt und übernimmt sie erst nach 
   await rollbackTaxonomyMaster(root, { confirmed: true, now: () => SECOND });
   assert.equal(selectedField(root, "active", "family").field_value, "Felidae");
   assert.equal(selectedField(root, "previous", "family").field_value, "Pantheridae");
+});
+
+test("reine Anbieter-Taxa übernehmen einen neuen priorisierten Quellenwert ohne Massenkonflikt", async (t) => {
+  const root = await createRoot(t);
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [leopardRecord("Felidae")],
+    now: () => FIRST,
+  });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
+
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-08", SECOND.toISOString()),
+    colRecords: [leopardRecord("Pantheridae")],
+    now: () => SECOND,
+  });
+
+  assert.equal(selectedField(root, "staging", "family").field_value, "Pantheridae");
+  const lifecycle = await inspectTaxonomyMasterLifecycle(root);
+  assert.equal(lifecycle.blockingConflicts.length, 0);
+  assert.equal(lifecycle.canActivate, true);
+});
+
+test("fehlende Anbieterfelder behalten ihre Quelle über mehrere Neuaufbauten", async (t) => {
+  const root = await createRoot(t);
+  await buildFirstActive(root);
+  const withoutFamily = leopardRecord();
+  delete withoutFamily.hierarchy.family;
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-08", SECOND.toISOString()),
+    colRecords: [withoutFamily],
+    now: () => SECOND,
+  });
+  assert.equal(selectedField(root, "staging", "family").origin_kind, "source");
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    const field = database.prepare(`
+      SELECT release.provider, release.provider_version, release.release_state,
+        source.match_state, source.version_change_state
+      FROM master_field_assertion field
+      JOIN provider_release release USING(release_id)
+      JOIN provider_taxon_assertion source ON source.assertion_id = field.provider_taxon_assertion_id
+      WHERE field.field_name = 'family' AND field.selected = 1
+    `).get();
+    assert.equal(field.provider, "catalogue-of-life");
+    assert.equal(field.provider_version, "2026-07");
+    assert.equal(field.release_state, "archived");
+    assert.equal(field.match_state, "stale");
+    assert.equal(field.version_change_state, "removed");
+  } finally {
+    database.close();
+  }
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-09", SECOND.toISOString()),
+    colRecords: [leopardRecord("Pantheridae")],
+    now: () => new Date("2026-08-03T08:00:00Z"),
+  });
+  assert.equal(selectedField(root, "staging", "family").field_value, "Pantheridae");
+  assert.equal(selectedField(root, "staging", "family").origin_kind, "source");
+  assert.equal((await inspectTaxonomyMasterLifecycle(root)).blockingConflictCount, 0);
+});
+
+for (const protection of ["none", "decision", "same-value", "correction", "no-history", "different-value"]) {
+  test(`alte manuelle Trägerzeile wird nur mit Quellenbeweis repariert: ${protection}`, async (t) => {
+    const root = await createRoot(t);
+    await buildTaxonomyMasterCandidate({
+      taxonomyRoot: root,
+      colRelease: colRelease("2026-07", FIRST.toISOString()),
+      colRecords: [leopardRecord()],
+      now: () => FIRST,
+    });
+    await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
+    const withoutGermanName = { ...leopardRecord(), germanNames: [] };
+    await buildTaxonomyMasterCandidate({
+      taxonomyRoot: root,
+      colRelease: colRelease("2026-08", SECOND.toISOString()),
+      colRecords: [withoutGermanName],
+      now: () => SECOND,
+    });
+    await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });
+    // Ausschließlich in dieser Fixture das frühere fehlerhafte Speicherformat nachstellen.
+    const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"));
+    try {
+      database.prepare(`
+        UPDATE master_field_assertion SET origin_kind = 'manual',
+          provider_taxon_assertion_id = NULL, release_id = ?
+        WHERE field_name = 'german-name' AND selected = 1
+      `).run(`manual-${SECOND.toISOString()}`);
+      if (protection === "different-value") {
+        database.exec(`UPDATE master_field_assertion SET field_value = 'Mein Leopard'
+          WHERE field_name = 'german-name' AND selected = 1`);
+      }
+      if (["decision", "same-value"].includes(protection)) {
+        database.prepare(`
+          INSERT INTO master_decision (decision_id, master_taxon_id, field_name, language,
+            decision_type, selected_assertion_id, decided_at)
+          SELECT 'explicit', master_taxon_id, field_name, language, 'protect-manual', assertion_id, ?
+          FROM master_field_assertion WHERE field_name = 'german-name' AND selected = 1
+        `).run(SECOND.toISOString());
+      }
+    } finally {
+      database.close();
+    }
+    if (protection === "no-history") {
+      await fs.rename(taxonomyMasterDatabasePath(root, "previous"), path.join(root, "unavailable.sqlite"));
+    }
+    await buildTaxonomyMasterCandidate({
+      taxonomyRoot: root,
+      colRelease: colRelease("2026-09", SECOND.toISOString()),
+      colRecords: [{ ...leopardRecord(), germanNames: [{
+        name: protection === "same-value" ? "Leopard" : "Panther", preferred: true,
+      }] }],
+      corrections: protection === "correction"
+        ? [{ scientificName: "Panthera pardus", germanName: "Leopard" }] : [],
+      now: () => new Date("2026-08-03T08:00:00Z"),
+    });
+    const field = selectedField(root, "staging", "german-name");
+    const lifecycle = await inspectTaxonomyMasterLifecycle(root);
+    if (protection === "none") {
+      assert.equal(field.field_value, "Panther");
+      assert.equal(field.origin_kind, "source");
+      assert.equal(lifecycle.blockingConflictCount, 0);
+    } else {
+      assert.equal(field.field_value, protection === "different-value" ? "Mein Leopard" : "Leopard");
+      assert.equal(field.origin_kind, "manual");
+      assert.equal(lifecycle.blockingConflictCount, ["correction", "same-value"].includes(protection) ? 0 : 1);
+    }
+  });
+}
+
+test("ein ausdrücklich gepflegter Projektname ersetzt einen bisherigen Quellennamen", async (t) => {
+  const root = await createRoot(t);
+  const storkRecord = {
+    ...leopardRecord(),
+    providerRecordId: "col-ciconia-ciconia",
+    scientificName: "Ciconia ciconia",
+    hierarchy: {
+      kingdom: "Animalia",
+      phylum: "Chordata",
+      class: "Aves",
+      order: "Ciconiiformes",
+      family: "Ciconiidae",
+      genus: "Ciconia",
+      species: "Ciconia ciconia",
+    },
+    germanNames: [{ name: "Hausstorch", preferred: true, verified: true }],
+    englishNames: [{ name: "European White Stork", preferred: true, verified: true }],
+  };
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-07", FIRST.toISOString()),
+    colRecords: [storkRecord],
+    now: () => FIRST,
+  });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
+
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-08", SECOND.toISOString()),
+    colRecords: [storkRecord],
+    projectTaxa: [{
+      projectTaxonKey: "ciconiaciconia",
+      projectSlug: "ciconiaciconia",
+      scientificName: "Ciconia ciconia",
+      rank: "species",
+      kingdom: "Animalia",
+      germanName: "Weissstorch",
+      englishName: "White Stork",
+    }],
+    now: () => SECOND,
+  });
+
+  assert.deepEqual({ ...selectedField(root, "staging", "german-name") }, {
+    field_value: "Weissstorch",
+    origin_kind: "project",
+  });
+  assert.deepEqual({ ...selectedField(root, "staging", "english-name") }, {
+    field_value: "White Stork",
+    origin_kind: "project",
+  });
+  const lifecycle = await inspectTaxonomyMasterLifecycle(root);
+  assert.equal(lifecycle.blockingConflicts.length, 0);
+  assert.equal(lifecycle.canActivate, true);
 });
 
 test("9.9 behandelt eine dokumentierte CoL-Referenzlücke als Hinweis statt Aktivierungsblocker", async (t) => {

@@ -31,19 +31,37 @@
     "reference-gap": "CoL-Referenzlücke",
     "reference-returned": "CoL-Referenzlücke geschlossen",
   });
-  const DECISIONS = Object.freeze([
+  const BASE_DECISIONS = Object.freeze([
     ["keep-current", "Bisherigen Wert behalten"],
-    ["accept-candidate", "Neuen Wert übernehmen"],
-    ["add-alias", "Neuen Wert als Alias ergänzen"],
-    ["protect-manual", "Dauerhaft manuell schützen"],
+    ["accept-candidate", "Neuen Referenzwert übernehmen"],
   ]);
+  const NAME_DECISIONS = Object.freeze([
+    ["add-alias", "Neuen Namen zusätzlich suchbar machen"],
+  ]);
+  const PROTECTION_DECISION = Object.freeze([
+    "protect-manual",
+    "Bisherigen Wert dauerhaft schützen",
+  ]);
+  const NAME_FIELDS = new Set(["scientific-name", "german-name", "english-name"]);
+  const PROVIDER_LABELS = Object.freeze({
+    "catalogue-of-life": "Catalogue of Life",
+    project: "deine Projektdaten",
+    manual: "deine manuelle Korrektur",
+    inaturalist: "iNaturalist",
+    gbif: "GBIF",
+    worms: "WoRMS",
+    wikidata: "Wikidata",
+    animalia: "lokale Animalia-Ergänzung",
+  });
 
   function cleanText(value) {
     return String(value ?? "").trim();
   }
 
   function listLength(value) {
-    return Array.isArray(value) ? value.length : 0;
+    if (Array.isArray(value)) return value.length;
+    const count = Number(value);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
   }
 
   function masterDiffItems(diff = {}) {
@@ -83,7 +101,9 @@
       return status.message || "Aktualisierung wird vorbereitet und geprüft.";
     }
     if (lifecycle.candidate) {
-      const blocking = listLength(lifecycle.blockingConflicts);
+      const blocking = Number(
+        lifecycle.blockingConflictCount ?? listLength(lifecycle.blockingConflicts),
+      );
       return blocking
         ? `${blocking} Konflikt(e) benötigen eine Entscheidung. Vorhandene Arten werden nicht automatisch geändert.`
         : "Die geprüfte Aktualisierung ist bereit zur Übernahme. Vorhandene Arten werden nicht automatisch geändert.";
@@ -132,18 +152,55 @@
     if (!hasCurrent && hasCandidate) {
       return { decision: "accept-candidate", text: "Fehlenden Wert aus der neuen Quelle ergänzen" };
     }
-    return { decision: "keep-current", text: "Bisherigen Projektwert behalten und fachlich prüfen" };
+    if (["manual", "project"].includes(cleanText(conflict.current_origin_kind))) {
+      return { decision: "keep-current", text: "Bisherigen selbst gepflegten Wert behalten" };
+    }
+    return { decision: "keep-current", text: "Bisherigen Wert zunächst behalten" };
+  }
+
+  function conflictExplanation(conflict = {}) {
+    const field = FIELD_LABELS[conflict.field_name] || cleanText(conflict.field_name) || "Eintrag";
+    if (conflict.conflict_type === "source-removed") {
+      return `Für das Feld „${field}“ fehlt im neuen Quellenstand ein bisher vorhandener Beleg.`;
+    }
+    if (conflict.conflict_type === "ambiguous-match") {
+      return `Das Feld „${field}“ lässt sich nicht eindeutig einem neuen Quellenwert zuordnen.`;
+    }
+    if (NAME_FIELDS.has(conflict.field_name)) {
+      return `Der bisherige und der neue Quellenstand verwenden unterschiedliche Werte für „${field}“.`;
+    }
+    return `Die taxonomische Zuordnung bei „${field}“ unterscheidet sich zwischen dem bisherigen und dem neuen Quellenstand.`;
+  }
+
+  function providerLabel(provider) {
+    const value = cleanText(provider);
+    return PROVIDER_LABELS[value] || value || "Quelle nicht angegeben";
+  }
+
+  function conflictDecisionOptions(fieldName) {
+    return [
+      ...BASE_DECISIONS,
+      ...(NAME_FIELDS.has(fieldName) ? NAME_DECISIONS : []),
+      PROTECTION_DECISION,
+    ];
   }
 
   function conflictPresentation(conflict = {}) {
     const recommendation = conflictRecommendation(conflict);
+    const scientificName = cleanText(conflict.canonical_scientific_name) || "Unbekanntes Taxon";
+    const germanName = cleanText(conflict.german_name);
     return {
       id: cleanText(conflict.conflict_id),
-      species: cleanText(conflict.canonical_scientific_name) || "Unbekanntes Taxon",
+      species: germanName || scientificName,
+      scientificName,
       field: FIELD_LABELS[conflict.field_name] || cleanText(conflict.field_name) || "Taxonomieeintrag",
+      fieldName: cleanText(conflict.field_name),
       type: CONFLICT_LABELS[conflict.conflict_type] || cleanText(conflict.conflict_type),
+      explanation: conflictExplanation(conflict),
       currentValue: cleanText(conflict.current_value) || "nicht vorhanden",
       candidateValue: cleanText(conflict.candidate_value) || "nicht vorhanden",
+      currentProvider: providerLabel(conflict.current_provider),
+      candidateProvider: providerLabel(conflict.candidate_provider),
       recommendation,
       blocking: ["changed-value", "source-removed", "ambiguous-match"].includes(conflict.conflict_type),
     };
@@ -175,20 +232,34 @@
         `).join("");
     }
 
-    function renderConflicts(conflicts = []) {
+    function renderConflicts(conflicts = [], blockingConflictCount = null) {
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
-      elements.taxonomyMasterConflicts.hidden = blocking.length === 0;
+      const total = Number(blockingConflictCount ?? blocking.length);
+      elements.taxonomyMasterConflicts.hidden = total === 0;
+      if (total > blocking.length) {
+        elements.taxonomyMasterConflicts.innerHTML = `
+          <div class="taxonomy-master-conflict-overflow">
+            <strong>${total.toLocaleString("de-DE")} technische Konflikte erkannt</strong>
+            <span>Dieser Kandidat wird nicht als Liste von Einzelentscheidungen angeboten. Bitte die Masterdatenbank mit dem aktuellen Programmstand neu aufbauen.</span>
+          </div>
+        `;
+        return;
+      }
       elements.taxonomyMasterConflicts.innerHTML = blocking.map((entry) => `
         <article class="taxonomy-master-conflict" data-master-conflict="${escapeHtml(entry.id)}">
           <div class="taxonomy-master-conflict-copy">
-            <strong>${escapeHtml(entry.species)} · ${escapeHtml(entry.field)}</strong>
-            <span>${escapeHtml(entry.type)}</span>
-            <span>Bisher: ${escapeHtml(entry.currentValue)} · Neu: ${escapeHtml(entry.candidateValue)}</span>
+            <strong>${escapeHtml(entry.species)}</strong>
+            ${entry.species === entry.scientificName ? "" : `<span>${escapeHtml(entry.scientificName)}</span>`}
+            <span>${escapeHtml(entry.explanation)}</span>
+            <div class="taxonomy-master-conflict-values">
+              <span><small>Bisher · ${escapeHtml(entry.currentProvider)}</small><strong>${escapeHtml(entry.currentValue)}</strong></span>
+              <span><small>Neu · ${escapeHtml(entry.candidateProvider)}</small><strong>${escapeHtml(entry.candidateValue)}</strong></span>
+            </div>
             <span class="taxonomy-master-conflict-recommendation">Empfehlung: ${escapeHtml(entry.recommendation.text)}</span>
           </div>
           <div class="taxonomy-master-conflict-actions">
             <select aria-label="Entscheidung für ${escapeHtml(entry.species)}">
-              ${DECISIONS.map(([value, label]) => (
+              ${conflictDecisionOptions(entry.fieldName).map(([value, label]) => (
                 `<option value="${value}"${value === entry.recommendation.decision ? " selected" : ""}>${escapeHtml(label)}</option>`
               )).join("")}
             </select>
@@ -214,7 +285,7 @@
         elements.taxonomyMasterProgress.removeAttribute("value");
       }
       renderDiff(lifecycle.candidate);
-      renderConflicts(lifecycle.conflicts || []);
+      renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount);
       elements.taxonomyMasterBuildButton.disabled = active;
       elements.taxonomyMasterActivateButton.disabled = active || !lifecycle.canActivate;
       elements.taxonomyMasterRollbackButton.disabled = active || !lifecycle.canRollback;
@@ -338,6 +409,8 @@
   global.SpeciesExplorerTaxonomyMaster = Object.freeze({
     conflictPresentation,
     conflictRecommendation,
+    conflictDecisionOptions,
+    conflictExplanation,
     masterDiffItems,
     masterSummary,
     progressDetail,

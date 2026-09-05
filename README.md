@@ -1217,6 +1217,13 @@ Die Übernahme aus einem bisherigen Mastertaxon setzt zudem eine eindeutige Iden
 voraus. Gleiche wissenschaftliche Namen bei Tieren und Pflanzen dürfen keine Altfelder oder Quellenkennungen
 voneinander erben.
 
+Der reale Wiederanlauf vom 5. September 2026 wurde bis zum automatisch aktivierten Lightroom-Suchpaket erfolgreich
+geprüft. Referenz-, Master- und Paketstände stimmen überein; eigene Namenskorrekturen und bevorzugte Projektnamen
+bleiben erhalten. Ein erneuter Quelldownload war für diesen Reparaturlauf nicht erforderlich. Der Benutzer hat
+Weißstorch und den neuen Paket-/Masterstand im Zusatzmodul-Manager praktisch bestätigt und die Veröffentlichung
+freigegeben. Die restliche Lightroom-Abnahme und der zusätzliche Versionsvergleich direkt in Lightroom bleiben
+vor dem Phasenabschluss offen; den verbindlichen Stand enthält `docs/roadmap.md`.
+
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.
 

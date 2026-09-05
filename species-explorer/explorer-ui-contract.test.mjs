@@ -233,7 +233,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appEditorSoundSource, /\.sound-segment-start/);
   assert.match(appEditorSoundSource, /Number\(normalizedValue\) === 0/);
   assert.match(appSpeciesEditorSource, /event\.target\.closest\("audio"\)/);
-  assert.match(appTaxonomyMasterSource, /Dauerhaft manuell sch\u00fctzen/);
+  assert.match(appTaxonomyMasterSource, /Bisherigen Wert dauerhaft sch\u00fctzen/);
+  assert.match(appTaxonomyMasterSource, /nicht als Liste von Einzelentscheidungen angeboten/);
   assert.match(appEditorFormSource, /function createEditorFormModel\(/);
   assert.match(appSettingsSource, /function createBackupSettingsController\(/);
   assert.match(appSettingsSource, /function setupBackupSettings\(/);

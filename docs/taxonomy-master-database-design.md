@@ -2,8 +2,10 @@
 
 Stand: 2026-09-05
 
-Status: Phase 9 abgeschlossen; Wiederanlauf und Lightroom-Ableitung sind technisch abgesichert. Der praktische
-Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts steht noch aus.
+Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
+automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
+Weißstorch und der Paket-/Masterstand sind inzwischen auch in Lightroom vom Benutzer bestätigt; Commit/Push sind
+freigegeben. Die restliche Lightroom-Abnahme und die Auditpunkte stehen in `roadmap.md`.
 
 ## Ziel und verbindliche Quellenarchitektur
 
@@ -374,6 +376,13 @@ Die Ergänzung eines vorher fehlenden Reichs über Name und Rang ist nur bei bei
 ohne widersprüchliche bekannte Reiche zulässig. Ein neu auftauchendes Homonym eines anderen Reichs erbt deshalb
 weder Felder, Aliasse noch Quellenbelege des bisherigen Taxons. Der zuvor damit ausgelöste UNIQUE-Fehler für eine
 vorzeitig übernommene Anbieterkennung wird durch einen mehrstufigen Neuaufbau-Test abgesichert.
+Der reale Lauf vom 5. September 2026 bestätigte diese Grenzen: Der vollständig geprüfte Master
+`master-20260905054823067` wurde ohne blockierende Konflikte aktiviert. Die eigenen Namenskorrekturen behalten
+ihre manuelle Herkunft; Projektnamen bleiben bevorzugt. `Ciconia ciconia` besitzt die aktuelle CoL-Aussage und
+`exact-col` bei unveränderter Master-ID. Die Homonyme `Acmella pusilla` bleiben nach Reich getrennt, und die
+globale Feld-/Quellenverknüpfungsprüfung fand keine taxonfremden Belege. Das automatisch aktivierte Paket
+`lightroom-946c961bd063fd1b8f12` verweist auf genau diesen Master; alle drei CoL-Provenienzen stimmen überein.
+Zeitpunkte und abschließende Praxistestgrenzen stehen in `roadmap.md`.
 Dadurch benötigt der Vollaufbau kein erhöhtes Node-Heap-Limit mehr. Vor Aktivierung und Rollback
 schließt der Explorer seine eigenen read-only Referenz- und Masterhandles, bevor Windows die Slotverzeichnisse
 atomar umbenennt; die nächste Suche öffnet den dann aktiven Stand wieder bedarfsgesteuert. Bei einem Fehler bleibt

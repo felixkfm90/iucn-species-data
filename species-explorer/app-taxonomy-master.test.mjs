@@ -93,19 +93,50 @@ test("Mastervorschau zeigt Differenzen und gibt nur geprüfte Aktionen frei", ()
   assert.equal(visible.taxonomyMasterRollbackButton.disabled, false);
 });
 
-test("offene fachliche Konflikte werden mit allen vier Entscheidungen dargestellt", () => {
+test("Mastervorschau akzeptiert kompakte Differenzzähler für große Kandidaten", () => {
+  const visible = elements();
+  const status = readyStatus();
+  status.lifecycle.candidate.diff = {
+    newTaxa: 115_291,
+    closedReferenceGaps: 42,
+    changedScientificNames: 3,
+    changedNames: 8,
+    newSynonyms: 100_000,
+    staleTaxa: 4,
+    removedTaxa: 21,
+  };
+  const controller = masterUi.createTaxonomyMasterController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => status,
+    escapeHtml: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  controller.render(status);
+  assert.match(visible.taxonomyMasterDiff.innerHTML, /115\.291 Neue Taxa/);
+  assert.match(visible.taxonomyMasterDiff.innerHTML, /25 Veraltet\/entfernt/);
+});
+
+test("offene Namenskonflikte werden deutsch erklärt und mit passenden Entscheidungen dargestellt", () => {
   const visible = elements();
   const status = readyStatus();
   status.lifecycle.canActivate = false;
   status.lifecycle.conflicts = [{
     conflict_id: "conflict-1",
     canonical_scientific_name: "Panthera pardus",
+    german_name: "Leopard",
     field_name: "german-name",
     conflict_type: "changed-value",
     current_value: "Leopard",
+    current_origin_kind: "project",
+    current_provider: "project",
     candidate_value: "Panter",
+    candidate_provider: "catalogue-of-life",
   }];
   status.lifecycle.blockingConflicts = status.lifecycle.conflicts;
+  status.lifecycle.blockingConflictCount = 1;
   const controller = masterUi.createTaxonomyMasterController({
     state: {},
     elements: visible,
@@ -117,10 +148,46 @@ test("offene fachliche Konflikte werden mit allen vier Entscheidungen dargestell
 
   controller.render(status);
   assert.equal(visible.taxonomyMasterConflicts.hidden, false);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Leopard/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Panthera pardus/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /deine Projektdaten/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Catalogue of Life/);
   assert.match(visible.taxonomyMasterConflicts.innerHTML, /Bisherigen Wert behalten/);
-  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Neuen Wert übernehmen/);
-  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Neuen Wert als Alias ergänzen/);
-  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Dauerhaft manuell schützen/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Neuen Referenzwert übernehmen/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Neuen Namen zusätzlich suchbar machen/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Bisherigen Wert dauerhaft schützen/);
+  assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
+});
+
+test("Hierarchiekonflikte bieten keine fachlich falsche Namensalias-Aktion an", () => {
+  const options = masterUi.conflictDecisionOptions("family");
+  assert.deepEqual(
+    Array.from(options, ([value]) => value),
+    ["keep-current", "accept-candidate", "protect-manual"],
+  );
+});
+
+test("kompakter Status zeigt die Gesamtzahl auch bei begrenzter Konfliktliste", () => {
+  const visible = elements();
+  const status = readyStatus();
+  status.lifecycle.canActivate = false;
+  status.lifecycle.conflicts = [];
+  status.lifecycle.blockingConflicts = [];
+  status.lifecycle.blockingConflictCount = 26_737;
+  const controller = masterUi.createTaxonomyMasterController({
+    state: {},
+    elements: visible,
+    fetchJson: async () => status,
+    escapeHtml: (value) => String(value),
+    showQuickConfirm: async () => true,
+    renderDatabaseStatus() {},
+  });
+
+  controller.render(status);
+  assert.match(visible.taxonomyMasterDetail.textContent, /26737 Konflikt/);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, false);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /26\.737 technische Konflikte/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /nicht als Liste von Einzelentscheidungen/);
   assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
 });
 

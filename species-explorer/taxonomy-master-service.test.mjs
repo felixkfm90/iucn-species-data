@@ -71,6 +71,83 @@ function lifecycle({ blocking = false } = {}) {
   };
 }
 
+test("Masterstatus erkennt den Drift zwischen aktiver CoL-Referenz und Master-Provenienz", async (t) => {
+  const fixture = await createFixture(t);
+  let lifecycleSnapshot = {
+    ...lifecycle(),
+    candidate: null,
+    active: {
+      candidateId: "master-alt",
+      sources: [{
+        provider: "catalogue-of-life",
+        providerVersion: "col-2026-07",
+        releaseId: "col-2026-07",
+      }],
+    },
+  };
+  const service = createTaxonomyMasterService({
+    taxonomyRoot: fixture.root,
+    referenceService: { async requireStore() { return referenceStore(); } },
+    speciesListPath: fixture.speciesListPath,
+    correctionsPath: fixture.correctionsPath,
+    async readReferencePointer() {
+      return { activeRelease: "col-2026-08" };
+    },
+    async inspectLifecycle() { return lifecycleSnapshot; },
+  });
+
+  let status = await service.status();
+  assert.equal(status.reference.status, "stale");
+  assert.equal(status.reference.activeRelease, "col-2026-08");
+  assert.equal(status.reference.activeMasterRelease, "col-2026-07");
+  assert.equal(status.reference.needsMasterRebuild, true);
+  assert.equal(status.reference.candidateMatchesActiveReference, false);
+
+  lifecycleSnapshot = {
+    ...lifecycleSnapshot,
+    candidate: {
+      candidateId: "master-neu",
+      sources: [{
+        provider: "catalogue-of-life",
+        providerVersion: "col-2026-08",
+        releaseId: "col-2026-08",
+      }],
+    },
+  };
+  status = await service.status();
+  assert.equal(status.reference.needsMasterRebuild, true);
+  assert.equal(status.reference.candidateRelease, "col-2026-08");
+  assert.equal(status.reference.candidateMatchesActiveReference, true);
+
+  lifecycleSnapshot = {
+    ...lifecycleSnapshot,
+    candidate: null,
+    active: null,
+  };
+  status = await service.status();
+  assert.equal(status.reference.status, "stale");
+  assert.equal(status.reference.activeMasterRelease, "");
+  assert.equal(status.reference.needsMasterRebuild, true);
+
+  lifecycleSnapshot = {
+    ...lifecycleSnapshot,
+    candidate: null,
+    active: {
+      ...lifecycleSnapshot.active,
+      candidateId: "master-neu",
+      sources: [{
+        provider: "catalogue-of-life",
+        providerVersion: "col-2026-08",
+        releaseId: "col-2026-08",
+      }],
+    },
+  };
+  status = await service.status();
+  assert.equal(status.reference.status, "current");
+  assert.equal(status.reference.needsMasterRebuild, false);
+  await service.close();
+});
+
 test("eigene Korrekturen bleiben bis zu einem passenden Masterkandidaten sichtbar offen", async (t) => {
   const fixture = await createFixture(t);
   const emptyRevision = taxonomyCorrectionsRevision([]);
@@ -237,7 +314,7 @@ test("passender bestehender Vollmaster erhält beim Start eine sichere Korrektur
   await service.close();
 });
 
-test("breite Anbieter-Ausschnitte vermeiden erneute CoL-Suchen für bekannte IDs und Referenzlücken", async () => {
+test("breite Anbieter-Ausschnitte vermeiden bei unveränderter Referenz erneute CoL-Suchen", async () => {
   const searched = [];
   const loaded = [];
   const store = {
@@ -291,6 +368,73 @@ test("breite Anbieter-Ausschnitte vermeiden erneute CoL-Suchen für bekannte IDs
   assert.deepEqual(loaded, ["42"]);
   assert.deepEqual(searched, ["Coracias caudatus"]);
   assert.equal(records.length, 1);
+});
+
+test("bekannte Referenzlücken werden nach einem CoL-Wechsel erneut geprüft", async () => {
+  const searched = [];
+  const loaded = [];
+  const store = {
+    status() {
+      return {
+        releaseId: "col-2026-08",
+        importedAt: NOW.toISOString(),
+        counts: { taxa: 4_800_000 },
+        source: {},
+      };
+    },
+    findTaxonByScientificName(scientificName) {
+      searched.push(scientificName);
+      return scientificName === "Ciconia ciconia"
+        ? { taxonId: "col-ciconia-ciconia", acceptedScientificName: scientificName, rank: "species" }
+        : null;
+    },
+    taxon(taxonId) {
+      loaded.push(String(taxonId));
+      if (taxonId === "1022266") {
+        return {
+          source_id: "anderes-taxon",
+          scientific_name: "Ciconia boyciana",
+          rank: "species",
+          kingdom: { scientificName: "Animalia" },
+          hierarchy: [],
+          germanNames: [],
+          englishNames: [],
+        };
+      }
+      return taxonId === "col-ciconia-ciconia"
+        ? {
+          source_id: taxonId,
+          scientific_name: "Ciconia ciconia",
+          rank: "species",
+          kingdom: { scientificName: "Animalia" },
+          hierarchy: [],
+          germanNames: [{ name: "Weißstorch" }],
+          englishNames: [{ name: "White Stork" }],
+        }
+        : null;
+    },
+  };
+  const providerSlices = [{
+    records: [{
+      scientificName: "Ciconia ciconia",
+      // Interne ID aus dem vorherigen CoL-Release. Diese darf im neuen
+      // Release nicht als stabile Taxonkennung behandelt werden.
+      colTaxonId: "1022266",
+      relevanceReasons: ["col-reference-gap"],
+    }],
+  }];
+
+  const records = await taxonomyMasterServiceInternals.collectColRecords(
+    store,
+    ["Ciconia ciconia"],
+    () => {},
+    { providerSlices, recheckKnownReferenceGaps: true },
+  );
+
+  assert.deepEqual(searched, ["Ciconia ciconia"]);
+  assert.deepEqual(loaded, ["col-ciconia-ciconia"]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].scientificName, "Ciconia ciconia");
 });
 
 test("9.10 baut Anbieter-Ausschnitte fortschrittlich auf und wartet auf ausdrückliche Aktivierung", async (t) => {

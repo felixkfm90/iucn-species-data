@@ -188,6 +188,57 @@ test("9.11 trennt Homonyme gleichen Rangs anhand des Reichs", async (t) => {
   assert.deepEqual(staged.taxa.map((entry) => entry.kingdom).sort(), ["Animalia", "Plantae"]);
 });
 
+test("ein neues Homonym erbt weder Altfelder noch Quellenkennung eines anderen Reichs", async (t) => {
+  const root = await createRoot(t);
+  const plant = {
+    providerRecordId: "plant-1",
+    scientificName: "Duplicata exemplaris",
+    rank: "species",
+    kingdom: "Plantae",
+    hierarchy: { kingdom: "Plantae", subfamily: "Plantaceae" },
+    names: [{ name: "Pflanzen-Fixture", language: "de", nameKind: "vernacular" }],
+    relevanceReasons: ["searched-taxon"],
+  };
+  const slices = [providerSlice("inaturalist", "2026-08", [plant])];
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-08", FIRST),
+    colRecords: [],
+    providerSlices: slices,
+    now: () => FIRST,
+  });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
+  const originalId = readMasterRows(root).taxa[0].master_taxon_id;
+  await buildTaxonomyMasterCandidate({
+    taxonomyRoot: root,
+    colRelease: colRelease("2026-09", SECOND),
+    colRecords: [{
+      providerRecordId: "animal-1",
+      scientificName: plant.scientificName,
+      rank: "species",
+      kingdom: "Animalia",
+      hierarchy: { kingdom: "Animalia" },
+    }],
+    providerSlices: slices,
+    now: () => SECOND,
+  });
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    const taxa = database.prepare("SELECT * FROM master_taxon").all();
+    assert.equal(taxa.length, 2);
+    assert.equal(taxa.find((row) => row.kingdom === "Plantae").master_taxon_id, originalId);
+    const animalId = taxa.find((row) => row.kingdom === "Animalia").master_taxon_id;
+    assert.equal(database.prepare(`SELECT COUNT(*) AS count FROM master_field_assertion
+      WHERE master_taxon_id = ? AND field_name IN ('subfamily', 'german-name')`).get(animalId).count, 0);
+    assert.equal(database.prepare(`SELECT COUNT(*) AS count FROM provider_taxon_assertion
+      WHERE provider_record_id = 'plant-1'`).get().count, 1);
+    assert.equal(database.prepare(`SELECT COUNT(*) AS count FROM provider_taxon_assertion
+      WHERE master_taxon_id = ? AND provider_record_id = 'plant-1'`).get(animalId).count, 0);
+  } finally {
+    database.close();
+  }
+});
+
 test("9.11 führt Animalia, Metazoa und einen fehlenden Reichswert zu genau einer Projektart zusammen", async (t) => {
   const root = await createRoot(t);
   const metazoaRecord = {

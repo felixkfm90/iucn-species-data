@@ -2,8 +2,9 @@
 
 Stand: 2026-09-05
 
-Status: Phase 9 abgeschlossen; Referenzaktualisierung, Masterableitung und kontrollierter Wiederanlauf sind
-technisch umgesetzt. Der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts steht noch aus.
+Status: Phase 9 abgeschlossen; der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts bis zum automatisch
+aktivierten Lightroom-Paket wurde am 2026-09-05 erfolgreich geprüft. Weißstorch und Paket-/Masterstand sind in
+Lightroom bestätigt, die Veröffentlichung ist freigegeben. Weitere Praxistests bleiben laut `roadmap.md` offen.
 
 ## Ziel
 
@@ -235,11 +236,16 @@ Alle Endpunkte verwenden die vorhandene localhost-, Origin- und Sitzungsgrenze d
 
 Der reale Wiederanlauf am 5. September schloss die falsche CoL-Lücke für `Ciconia ciconia`, deckte jedoch
 fehlerhaft als manuell gespeicherte Anbieter-Altfelder auf. Dieser Kandidat wurde nicht aktiviert. Die abgesicherte
-Herkunftsreparatur und ihre Beweisgrenzen sind in `taxonomy-master-database-design.md` beschrieben; der erneute
-reale Aufbau und die abschließende Master-/Lightroom-Provenienzprüfung sind noch offen. Der anschließende Lauf
+Herkunftsreparatur und ihre Beweisgrenzen sind in `taxonomy-master-database-design.md` beschrieben. Der anschließende Lauf
 brach beim Übernehmen einer bereits belegten Quellenkennung ab; Ursache war die fälschliche Übernahme von
 Altfeldern zwischen gleichnamigen Taxa unterschiedlicher Reiche. Die Vorgängerzuordnung berücksichtigt jetzt
 Reich und beidseitige Eindeutigkeit; ein gezielter Test reproduziert und verhindert diesen Abbruch.
+Der folgende reale Lauf vom 5. September aktivierte Master `master-20260905054823067` und anschließend automatisch
+Lightroom-Paket `lightroom-946c961bd063fd1b8f12`. Die aktive CoL-Referenz `col-xr-2026-08-26-316165` entspricht
+deren Quellenständen; Paket-`masterVersion` und aktive Master-ID stimmen überein. Eigene Namen, manuelle Herkunft,
+Weißstorch-Identität und getrennte Homonyme wurden read-only geprüft. Dieser Reparaturlauf nutzte bereits
+vorhandene Downloads. Der Benutzer bestätigte anschließend Weißstorch und den passenden Paket-/Masterstand in
+Lightroom. Dies ersetzt nicht die übrige praktische Abnahme; Details stehen in `roadmap.md`.
 
 Fokussierter Test:
 

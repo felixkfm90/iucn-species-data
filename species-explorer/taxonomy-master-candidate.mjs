@@ -38,6 +38,7 @@ import {
   taxonomyMasterRoot,
 } from "./taxonomy-master-storage.mjs";
 import { diffTaxonomyMasterDatabases } from "./taxonomy-master-diff.mjs";
+import { openPreviousMasterState } from "./taxonomy-master-previous-state.mjs";
 import {
   foldTaxonomySearchTerm,
   germanTaxonomySearchKey,
@@ -448,57 +449,6 @@ function compareCandidates(left, right) {
     || left.fieldValue.localeCompare(right.fieldValue, "de", { sensitivity: "base" });
 }
 
-function activeState(databasePath, DatabaseSync) {
-  let database;
-  try {
-    database = new DatabaseSync(databasePath, { readOnly: true });
-  } catch {
-    return {
-      taxa: new Map(),
-      fieldsFor: () => [],
-      aliasesFor: () => [],
-      close: () => {},
-    };
-  }
-  const taxa = new Map(database.prepare(`
-    SELECT master.master_taxon_id, master.canonical_scientific_name,
-      master.rank, master.kingdom, master.reference_state, master.lifecycle_state,
-      COUNT(source.assertion_id) AS source_count
-    FROM master_taxon master
-    LEFT JOIN provider_taxon_assertion source
-      ON source.master_taxon_id = master.master_taxon_id
-    GROUP BY master.master_taxon_id
-  `).all().map((row) => [row.master_taxon_id, { ...row }]));
-  const fieldsStatement = database.prepare(`
-      SELECT field.*, release.provider, release.provider_version,
-        source.provider_record_id, source.scientific_name AS source_scientific_name,
-        source.rank AS source_rank, source.kingdom AS source_kingdom,
-        source.hierarchy_json, source.retrieved_at, source.version_change_state
-      FROM master_field_assertion field
-      JOIN provider_release release ON release.release_id = field.release_id
-      LEFT JOIN provider_taxon_assertion source
-        ON source.assertion_id = field.provider_taxon_assertion_id
-      WHERE field.selected = 1
-        AND field.master_taxon_id = ?
-    `);
-  const aliasesStatement = database.prepare(`
-    SELECT * FROM master_taxon_alias
-    WHERE master_taxon_id = ?
-  `);
-  let closed = false;
-  return {
-    taxa,
-    fieldsFor: (masterTaxonId) => fieldsStatement.all(masterTaxonId).map((row) => ({ ...row })),
-    aliasesFor: (masterTaxonId) => aliasesStatement.all(masterTaxonId).map((row) => ({ ...row })),
-    close: () => {
-      if (closed) return;
-      closed = true;
-      taxa.clear();
-      database.close();
-    },
-  };
-}
-
 function summarizeDatabase(database) {
   const statuses = Object.fromEntries(database.prepare(`
     SELECT status_name, COUNT(*) AS count
@@ -860,7 +810,9 @@ export async function buildTaxonomyMasterCandidate({
 
   const { DatabaseSync } = await loadNodeSqlite();
   const activePath = taxonomyMasterDatabasePath(taxonomyRoot, "active");
-  const previousState = activeState(activePath, DatabaseSync);
+  const previousState = openPreviousMasterState(activePath, DatabaseSync, {
+    historyPath: taxonomyMasterDatabasePath(taxonomyRoot, "previous"),
+  });
   const previousByIdentity = new Map();
   const previousByBaseIdentity = new Map();
   for (const previousTaxon of previousState.taxa.values()) {
@@ -880,8 +832,18 @@ export async function buildTaxonomyMasterCandidate({
   }
   for (const group of groups.values()) {
     const exactPrevious = previousByIdentity.get(group.key);
-    const baseMatches = previousByBaseIdentity.get(baseIdentityKey(group)) || [];
-    group.previousTaxon = exactPrevious || (baseMatches.length === 1 ? baseMatches[0] : null);
+    const baseKey = baseIdentityKey(group);
+    const baseMatches = previousByBaseIdentity.get(baseKey) || [];
+    const currentMatches = groupsByBaseIdentity.get(baseKey);
+    const onlyPrevious = baseMatches.length === 1 ? baseMatches[0] : null;
+    const previousKingdom = canonicalKingdomIdentity(onlyPrevious?.kingdom);
+    const currentKingdom = canonicalKingdomIdentity(group.kingdom);
+    // Gleicher Name/Rang allein ist bei Homonymen keine Identität. Sonst erbt
+    // ein neues Tier die Pflanzenfelder und belegt vorzeitig deren Quellen-ID.
+    const unambiguousPrevious = currentMatches?.size === 1
+      && (!previousKingdom || !currentKingdom || previousKingdom === currentKingdom)
+      ? onlyPrevious : null;
+    group.previousTaxon = exactPrevious || unambiguousPrevious;
   }
   const temporaryDirectory = path.join(
     taxonomyMasterRoot(taxonomyRoot),
@@ -1146,9 +1108,20 @@ export async function buildTaxonomyMasterCandidate({
           }));
         }
       }
-      const previousMasterTaxon = previousState.taxa.get(masterTaxonId) || oldTaxon;
+      const oldKingdom = canonicalKingdomIdentity(oldTaxon?.kingdom);
+      const compatibleOldTaxon = !oldKingdom || !kingdom || oldKingdom === kingdom ? oldTaxon : null;
+      const previousMasterTaxon = previousState.taxa.get(masterTaxonId) || compatibleOldTaxon;
       const previousMasterTaxonId = previousMasterTaxon?.master_taxon_id || masterTaxonId;
-      const currentFields = previousState.fieldsFor(previousMasterTaxonId);
+      const explicitFieldKeys = new Set(fieldCandidates
+        .filter((field) => field && ["manual", "project"].includes(field.originKind))
+        .map(candidateKey));
+      const currentFields = previousState.fieldsFor(previousMasterTaxonId, explicitFieldKeys);
+      const protectedPreviousFieldKeys = new Set([
+        ...explicitFieldKeys,
+        ...currentFields
+          .filter((field) => ["manual", "project"].includes(field.origin_kind))
+          .map((field) => `${field.field_name}|${field.language || ""}`),
+      ]);
       let groupBlockingConflictCount = 0;
       const byField = new Map();
       for (const candidate of fieldCandidates.filter(Boolean)) {
@@ -1163,19 +1136,28 @@ export async function buildTaxonomyMasterCandidate({
       for (const current of currentFields) {
         const key = `${current.field_name}|${current.language || ""}`;
         const list = byField.get(key) || [];
-        if (list.some((entry) => normalized(entry.fieldValue) === normalized(current.field_value))) continue;
-        const originKind = current.origin_kind === "project" ? "project" : "manual";
+        const protectsPreviousField = protectedPreviousFieldKeys.has(key);
+        if (list.some((entry) => normalized(entry.fieldValue) === normalized(current.field_value)
+          && (current.origin_kind === "source" || entry.originKind === current.origin_kind))) continue;
+        // Reine Anbieterwerte des globalen Offlinebestands folgen beim neuen
+        // Quellenstand der aktuellen Priorität. Das gilt auch für deren
+        // Hierarchiefelder bei einer Projektart. Nur das konkret im Projekt
+        // oder manuell gepflegte Feld und Felder ohne jeden frischen Ersatz
+        // brauchen den bisherigen Wert als geschützten Vergleichskandidaten.
+        if (!protectsPreviousField && list.length) continue;
+        const originKind = current.origin_kind;
+        const provenance = originKind === "source"
+          ? previousState.retainSource(database, current, masterTaxonId)
+          : { releaseId: releaseByProvider.get(originKind).releaseId };
         list.push(fieldCandidate({
           fieldName: current.field_name,
           fieldValue: current.field_value,
           language: current.language,
-          // Der bisherige Wert wird als eigenständiger Vergleichskandidat in die
-          // neue Datenbank übernommen. Seine ursprüngliche Anbieterpriorität
-          // bleibt für den Vergleich erhalten; nur die FK-freie Speicherung
-          // erfolgt als manuelle Trägerzeile im Kandidaten.
+          // Der bisherige Anbieterwert behält Quelle, Release und Feldherkunft.
+          // Sonst würde der nächste Aufbau ihn als manuelle Entscheidung schützen.
           provider: current.provider,
           originKind,
-          releaseId: releaseByProvider.get(originKind).releaseId,
+          ...provenance,
           confidence: current.confidence,
           selected: true,
           current: true,
@@ -1183,6 +1165,7 @@ export async function buildTaxonomyMasterCandidate({
         byField.set(key, list);
       }
       for (const [key, candidates] of byField) {
+        const protectsPreviousField = protectedPreviousFieldKeys.has(key);
         candidates.sort(compareCandidates);
         const freshCandidates = candidates.filter((entry) => !entry.current);
         const currentValue = currentFields.find((entry) => (
@@ -1190,7 +1173,7 @@ export async function buildTaxonomyMasterCandidate({
         ));
         let selectedCandidate = freshCandidates[0] || candidates[0];
         let conflictCandidate = null;
-        if (currentValue) {
+        if (currentValue && protectsPreviousField) {
           const same = candidates.find((entry) => (
             normalized(entry.fieldValue) === normalized(currentValue.field_value)
           ));
@@ -1207,7 +1190,9 @@ export async function buildTaxonomyMasterCandidate({
               candidate: preferred,
               environment: preferred.environment,
             });
-            if (decision.action === "conflict") {
+            if (decision.action === "select") {
+              selectedCandidate = preferred;
+            } else if (decision.action === "conflict") {
               selectedCandidate = same || candidates.find((entry) => entry.current) || selectedCandidate;
               conflictCandidate = preferred;
             }
@@ -1409,7 +1394,10 @@ export async function readTaxonomyMasterManifest(taxonomyRoot, slot = "active") 
   }
 }
 
-export async function inspectTaxonomyMasterCandidate(taxonomyRoot) {
+export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
+  validate = true,
+  blockingConflictsOnly = false,
+} = {}) {
   const manifest = await readTaxonomyMasterManifest(taxonomyRoot, "staging");
   if (!manifest) return { available: false, reason: "no-candidate" };
   const { DatabaseSync } = await loadNodeSqlite();
@@ -1417,21 +1405,48 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot) {
     readOnly: true,
   });
   try {
-    const validation = validateTaxonomyMasterDatabase(database);
+    const validation = validate
+      ? validateTaxonomyMasterDatabase(database)
+      : manifest.validation || null;
+    const blockingConflictCount = Number(database.prepare(`
+      SELECT COUNT(*) AS count
+      FROM master_conflict
+      WHERE conflict_state = 'open'
+        AND conflict_type IN ('changed-value', 'source-removed', 'ambiguous-match')
+    `).get().count);
+    const conflictFilter = blockingConflictsOnly
+      ? "AND conflict.conflict_type IN ('changed-value', 'source-removed', 'ambiguous-match')"
+      : "";
+    const conflictLimit = blockingConflictsOnly ? "LIMIT 100" : "";
     const conflicts = database.prepare(`
       SELECT conflict.*, master.canonical_scientific_name,
+        german_field.field_value AS german_name,
         current_field.field_value AS current_value,
-        candidate_field.field_value AS candidate_value
+        current_field.origin_kind AS current_origin_kind,
+        current_release.provider AS current_provider,
+        candidate_field.field_value AS candidate_value,
+        candidate_field.origin_kind AS candidate_origin_kind,
+        candidate_release.provider AS candidate_provider
       FROM master_conflict conflict
       JOIN master_taxon master ON master.master_taxon_id = conflict.master_taxon_id
+      LEFT JOIN master_field_assertion german_field
+        ON german_field.master_taxon_id = conflict.master_taxon_id
+        AND german_field.field_name = 'german-name'
+        AND german_field.selected = 1
       LEFT JOIN master_field_assertion current_field
         ON current_field.assertion_id = conflict.current_assertion_id
+      LEFT JOIN provider_release current_release
+        ON current_release.release_id = current_field.release_id
       LEFT JOIN master_field_assertion candidate_field
         ON candidate_field.assertion_id = conflict.candidate_assertion_id
+      LEFT JOIN provider_release candidate_release
+        ON candidate_release.release_id = candidate_field.release_id
       WHERE conflict.conflict_state = 'open'
+        ${conflictFilter}
       ORDER BY master.canonical_name_normalized, conflict.field_name, conflict.conflict_type
+      ${conflictLimit}
     `).all().map((row) => ({ ...row }));
-    return { available: true, manifest, validation, conflicts };
+    return { available: true, manifest, validation, conflicts, blockingConflictCount };
   } finally {
     database.close();
   }

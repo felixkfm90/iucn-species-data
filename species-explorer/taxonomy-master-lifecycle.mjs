@@ -219,31 +219,58 @@ async function writeCandidateReviewManifest(taxonomyRoot, database, now) {
   return updated;
 }
 
-export async function inspectTaxonomyMasterLifecycle(taxonomyRoot) {
+function compactManifestDiff(manifest) {
+  if (!manifest?.diff) return manifest;
+  return {
+    ...manifest,
+    diff: Object.fromEntries(Object.entries(manifest.diff).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value.length : Number(value || 0),
+    ])),
+  };
+}
+
+export async function inspectTaxonomyMasterLifecycle(taxonomyRoot, {
+  lightweight = false,
+} = {}) {
   const [candidate, activeManifest, previousManifest] = await Promise.all([
-    inspectTaxonomyMasterCandidate(taxonomyRoot),
+    inspectTaxonomyMasterCandidate(taxonomyRoot, {
+      validate: !lightweight,
+      blockingConflictsOnly: lightweight,
+    }),
     readTaxonomyMasterManifest(taxonomyRoot, "active"),
     readTaxonomyMasterManifest(taxonomyRoot, "previous"),
   ]);
-  const [candidateManifest, active, previous] = await Promise.all([
-    enrichManifestSummary(
-      taxonomyRoot,
-      "staging",
-      candidate.available ? candidate.manifest : null,
-    ),
-    enrichManifestSummary(taxonomyRoot, "active", activeManifest),
-    enrichManifestSummary(taxonomyRoot, "previous", previousManifest),
+  const withSummary = (slot, manifest) => (
+    lightweight
+      ? Promise.resolve(manifest)
+      : enrichManifestSummary(taxonomyRoot, slot, manifest)
+  );
+  let [candidateManifest, active, previous] = await Promise.all([
+    withSummary("staging", candidate.available ? candidate.manifest : null),
+    withSummary("active", activeManifest),
+    withSummary("previous", previousManifest),
   ]);
+  if (lightweight) {
+    candidateManifest = compactManifestDiff(candidateManifest);
+    active = compactManifestDiff(active);
+    previous = compactManifestDiff(previous);
+  }
   const conflicts = candidate.available ? candidate.conflicts : [];
+  const blockingConflicts = conflicts.filter((entry) => BLOCKING_CONFLICTS.has(entry.conflict_type));
+  const blockingConflictCount = candidate.available
+    ? Number(candidate.blockingConflictCount ?? blockingConflicts.length)
+    : 0;
   return {
     candidate: candidateManifest,
     active,
     previous,
     conflicts,
-    blockingConflicts: conflicts.filter((entry) => BLOCKING_CONFLICTS.has(entry.conflict_type)),
+    blockingConflicts,
+    blockingConflictCount,
     canActivate: Boolean(
       candidate.available
-      && !conflicts.some((entry) => BLOCKING_CONFLICTS.has(entry.conflict_type)),
+      && blockingConflictCount === 0,
     ),
     canRollback: Boolean(previous),
   };

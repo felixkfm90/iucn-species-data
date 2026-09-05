@@ -126,6 +126,9 @@ export function chooseFieldAssertion({
   if (candidate.originKind === "manual") {
     return { action: "select", reason: "explicit-manual-correction" };
   }
+  if (candidate.originKind === "project" && current.originKind !== "manual") {
+    return { action: "select", reason: "explicit-project-value" };
+  }
   if (current.originKind === "manual" || current.originKind === "project") {
     return { action: "conflict", reason: "protected-current-value" };
   }
