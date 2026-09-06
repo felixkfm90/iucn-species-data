@@ -1,11 +1,17 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-09-05
+Stand: 2026-09-06
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
 Weißstorch und der Paket-/Masterstand sind inzwischen auch in Lightroom vom Benutzer bestätigt; Commit/Push sind
 freigegeben. Die restliche Lightroom-Abnahme und die Auditpunkte stehen in `roadmap.md`.
+
+Seit 2026-09-06 nutzt die bewusste deutsche Namenswahl aus Explorer und Lightroom den gemeinsamen
+Korrektur-Releaseweg. Eine Revisionsprüfung und kurze prozessübergreifende SQLite-Sperre koordinieren die
+Korrekturdatei und Aktivierung; Master und Referenz werden dabei nicht direkt verändert. Rückwahl eines
+vorherigen Namens ist eine neue bestätigte Korrektur, kein Löschen einer eingebauten Basisassertion.
+Vollständiger Bedien-/Fehlervertrag und verbleibende Grenzen: `taxonomy-name-preference-plan.md`.
 
 ## Ziel und verbindliche Quellenarchitektur
 
@@ -285,7 +291,7 @@ bisherigen und neuen Wert, einen begründeten Lösungsvorschlag und die vier bes
 Bestätigung verändert sich keine Projektart. Zusätzliche Namen aus einer älteren Quelle bleiben erhalten, wenn
 ein neuer Quellenstand sie nicht mehr liefert; entfernte Aussagen werden zunächst als veraltet behandelt.
 
-Der Explorer ergänzt diese kompakte Statusanzeige um `Datenbank ansehen und korrigieren`. Der Dialog durchsucht
+Der Explorer ergänzt diese kompakte Statusanzeige um `In Datenbank suchen und Namen korrigieren`. Der Dialog durchsucht
 die aktive Masteransicht vollständig offline. Hierarchie, Rang, Quellen und Masterstatus sind lesbar, aber nicht
 direkt überschreibbar. Für Art-Taxa können deutsche und englische Namen als eigene Korrektur gespeichert oder
 zurückgesetzt werden; diese Korrekturen stehen bei späteren Aktualisierungen über den Anbieterwerten.
@@ -328,7 +334,7 @@ Seit dem 11. August 2026 zeigt dieser Block genau drei anwenderseitige Aktionen:
 1. `Datenbank aktualisieren` führt Versionsprüfung, Referenzimport, Anbieteraktualisierung, Kandidatenbau,
    Konfliktprüfung und Aktivierung in der sicheren technischen Reihenfolge aus;
 2. `Vorherigen Stand wiederherstellen` setzt den zuletzt aktiven Gesamtstand zurück;
-3. `Datenbank ansehen und korrigieren` öffnet zuerst die offenen Prüfungen der verwendeten Projektarten und danach
+3. `In Datenbank suchen und Namen korrigieren` öffnet zuerst die offenen Prüfungen der verwendeten Projektarten und danach
    die Suche im aktiven Offline-Bestand.
 
 Technische Zwischenaktionen bleiben intern und getestet, werden aber nicht mehr als gleichwertige Schaltflächen

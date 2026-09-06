@@ -21,6 +21,43 @@
       "englishName": "Leopard",
       "note": "Geläufiger deutscher Artname; in der aktiven CoL-Referenz fehlt derzeit ein deutscher Vernakularname.",
       "updatedAt": ""
+    },
+    {
+      "scientificName": "Ciconia ciconia",
+      "rank": "species",
+      "kingdom": "Animalia",
+      "germanName": "Weissstorch",
+      "englishName": "",
+      "note": "Bewusst gewählte deutsche Namensvariante",
+      "updatedAt": "2026-09-06T11:11:16.686Z",
+      "namePreference": {
+        "masterTaxonId": "mtx_dd24e7a0743a4af47683495d736b5aae",
+        "previousGermanName": "Weißstorch",
+        "operationToken": "e508719fff53f55db7bfa9301ab434640ccc6b1408df0cc8c81db7ab90606a98",
+        "previousSources": [
+          {
+            "name": "Weißstorch",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "Eigene Korrektur"
+          },
+          {
+            "name": "Weißstorch",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "Catalogue of Life"
+          },
+          {
+            "name": "Weißstorch",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "iNaturalist"
+          }
+        ],
+        "previousMasterVersion": "master-20260905054823067",
+        "previousCorrectionRevision": "408c78e03845acb011357aad6c653ca3af7b96f013a2b4139a9cc2139f59c334",
+        "publicationRevision": "a50bf7fb0b00f404ab404a333a0eeb6cc9bcdd600bbe467534aa3b73ff7b428f"
+      }
     }
   ]
 }

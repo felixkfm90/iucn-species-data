@@ -354,6 +354,7 @@ export class TaxonomyReferenceService {
     this.masterStore?.close?.();
     this.masterStore = opened;
     this.activeMasterCandidate = openedStoreKey;
+    await this.supplementService?.reloadCorrections?.();
     return this.masterStore;
   }
 

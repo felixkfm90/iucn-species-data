@@ -221,6 +221,10 @@
       englishName,
       displayName,
       usesEnglishFallback,
+      masterTaxonId: String(detail.masterTaxonId || selectedResult.masterTaxonId || ""),
+      preferredGermanName: detail.preferredGermanName || detail.germanNames?.[0]?.name || germanName,
+      previousGermanName: detail.supplement?.namePreference?.previousGermanName || "",
+      germanNameChoices: [...new Set([germanName, ...(detail.germanNames || []).map((entry) => entry.name)].filter(Boolean))],
       nameToApply: displayName,
       scientificName,
       hierarchy,
@@ -313,6 +317,7 @@
     let activeLanguage = "all";
     let searchResults = [];
     let selectedResult = null;
+    let explicitNameChoice = false;
     let selectedDetail = null;
     let activeSearchController = null;
 
@@ -537,6 +542,14 @@
           <strong>${escape(view.displayName || "Deutschen Namen manuell ergänzen")}</strong>
           <em>${escape(view.scientificName)}</em>
         </div>
+        ${view.masterTaxonId && view.germanNameChoices.length > 1 ? `
+          <label>Deutscher Name
+            <select data-taxonomy-name-choice>${view.germanNameChoices.map((name) => `
+              <option value="${escape(name)}" ${name === view.germanName ? "selected" : ""}>${escape(name)}${name === view.preferredGermanName ? " (bevorzugt)" : ""}</option>
+            `).join("")}</select>
+          </label>
+          <p>Eine bewusst gewählte Variante gilt nach dem Speichern der Art auch in Lightroom.</p>
+        ` : ""}
         ${synonym}
         <p class="taxonomy-reference-selection-meta">
           ${escape([
@@ -605,6 +618,7 @@
     };
 
     const selectResult = async (result) => {
+      explicitNameChoice = false;
       const version = ++requestVersion;
       selectedResult = result;
       selectedDetail = null;
@@ -617,6 +631,9 @@
         );
         if (version !== requestVersion) return;
         selectedDetail = detail;
+        explicitNameChoice = result.hasVerifiedGermanName === true
+          && result.germanName !== detail.germanNames?.[0]?.name
+          && (detail.germanNames || []).some((entry) => entry.name === result.germanName);
         renderSelection();
         applySelectedNames();
       } catch (error) {
@@ -891,9 +908,25 @@
       }
     });
 
+    selectionContent.addEventListener("change", (event) => {
+      if (!event.target.matches("[data-taxonomy-name-choice]") || !selectedDetail || !selectedResult) return;
+      selectedResult = { ...selectedResult, germanName: event.target.value, hasVerifiedGermanName: true };
+      explicitNameChoice = true;
+      germanInput.value = event.target.value;
+      onNamesChanged();
+      setMessage("Deutsche Namensvariante gewählt. Die globale Übernahme erfolgt erst nach dem Speichern der Art.", "info");
+    });
+
     return Object.freeze({
       initialize,
       reset,
+      getNamePreference: () => {
+        if (!explicitNameChoice || !selectedDetail || !selectedResult) return null;
+        const view = taxonomyDetailPresentation(selectedDetail, selectedResult);
+        if (!view.masterTaxonId || germanInput.value.trim() !== view.germanName
+            || scientificInput.value.trim() !== view.scientificName) return null;
+        return { masterTaxonId: view.masterTaxonId, germanName: view.germanName };
+      },
       getSelection: () => (
         selectedDetail && selectedResult
           ? taxonomyDetailPresentation(selectedDetail, selectedResult)

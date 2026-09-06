@@ -303,6 +303,7 @@ test("9.11 führt Animalia, Metazoa und einen fehlenden Reichswert zu genau eine
     });
     assert.equal(result?.acceptedScientificName, "Sciurus vulgaris");
     const detail = store.taxon(result?.masterTaxonId);
+    assert.equal(detail?.preferredGermanName, "Eurasisches Eichhörnchen");
     assert.equal(detail?.projectLinks?.[0]?.project_slug, "sciurusvulgaris");
     const review = store.review();
     assert.equal(review.projectTaxonCount, 1);

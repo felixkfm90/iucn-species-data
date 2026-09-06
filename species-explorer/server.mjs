@@ -20,6 +20,7 @@ import { renderMapJpeg } from "./media-assets.mjs";
 import { closeActiveFileStreams } from "./http-routing.mjs";
 import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
+import { createTaxonomyNamePreferenceService } from "./taxonomy-name-preference-service.mjs";
 import { createSpeciesDeleteOperations } from "./species-delete.mjs";
 import { createSpeciesEditOperations } from "./species-edit.mjs";
 import { createTaxonomyEditOperations } from "./taxonomy-edit.mjs";
@@ -115,6 +116,9 @@ export async function createExplorerServer({
     repoRoot,
     "taxonomy-reference-corrections.json",
   );
+  const taxonomyNamePreference = createTaxonomyNamePreferenceService({
+    searchRoot: lightroomSearchRoot, taxonomyRoot, correctionsPath: taxonomyReferenceCorrectionsPath,
+  });
   const assetOverridesPath = join(repoRoot, "species-assets-overrides.json");
   const taxonomyOverridesPath = join(repoRoot, "species-taxonomy-overrides.json");
   const assessmentIdsPath = join(repoRoot, "lastSavedAssessmentId.json");
@@ -636,6 +640,13 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyCorrection({ action, payload }) {
+        if (action === "preference-preview") return taxonomyNamePreference.preview(payload);
+        if (action === "preference-save") {
+          if (taxonomyMasterService.isActive()) throw new Error("Eine Datenbankaktualisierung läuft. Bitte danach erneut versuchen.");
+          const result = await taxonomyNamePreference.save(payload);
+          taxonomyReference.reset();
+          return result;
+        }
         if (action === "save") return taxonomyReference.saveCorrection(payload);
         if (action === "reset") return taxonomyReference.resetCorrection(payload);
         const error = new Error("Unbekannte Taxonomie-Korrekturoperation");

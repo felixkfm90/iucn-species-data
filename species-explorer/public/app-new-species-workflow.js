@@ -95,6 +95,7 @@
       let inlineManualMapHandled = false;
       let inlinePipelinePollTimer = null;
       let maxStepReached = 1;
+      let namePreferencePreparing = false;
 
       const setMessage = createMessageSetter(message, "edit-message new-species-message");
       const setPortraitMessage = createMessageSetter(
@@ -708,7 +709,30 @@
       }
 
       const saveAndStartPipeline = async () => {
-        if (!previewToken || pipelineBusy) return;
+        if (!previewToken || pipelineBusy || namePreferencePreparing) return;
+        const speciesPreviewToken = previewToken;
+        let namePreference = null;
+        const preferenceChoice = taxonomyReference.getNamePreference?.();
+        namePreferencePreparing = true;
+        try {
+          if (preferenceChoice) {
+            try {
+              namePreference = await fetchJson("/api/taxonomy/name-preference/preview", {
+                method: "POST", body: JSON.stringify(preferenceChoice),
+              });
+              if (namePreference.requiresConfirmation && !await showQuickConfirm({
+                title: "Bevorzugten deutschen Namen ändern?",
+                message: `Bisher: ${namePreference.previousGermanName}\nNeu: ${namePreference.germanName}\nDie Namenswahl gilt künftig auch in Lightroom. Bestehende Projektdateien werden nicht umbenannt.`,
+                confirmLabel: "Namenswahl übernehmen",
+              })) return;
+            } catch (error) { setMessage(error.message, "error"); return; }
+          }
+        } finally { namePreferencePreparing = false; }
+        if (previewToken !== speciesPreviewToken
+            || JSON.stringify(taxonomyReference.getNamePreference?.()) !== JSON.stringify(preferenceChoice)) {
+          setMessage("Eingaben wurden geändert. Bitte erneut prüfen.", "error");
+          return;
+        }
         showStep(3);
         state.newSpeciesPipelineActive = true;
         setPipelineBusy(true);
@@ -722,6 +746,26 @@
           });
           savedSpeciesId = result.species?.id || result.derived.slug;
           savedSpeciesName = result.entry.german;
+          if (namePreference && !namePreference.unchanged) {
+            const notice = document.createElement("p");
+            const retry = document.createElement("button");
+            retry.type = "button";
+            retry.textContent = "Globale Namenswahl erneut speichern";
+            dialog.querySelector(".new-species-message").after(notice, retry);
+            const publishName = async () => {
+              retry.disabled = true;
+              try {
+                const published = await fetchJson("/api/taxonomy/name-preference/save", {
+                  method: "POST", body: JSON.stringify({ ...namePreference, confirmed: true }),
+                });
+                notice.textContent = published.saved ? "Globale Namenswahl übernommen." : published.message;
+                retry.hidden = published.saved;
+              } catch (error) { notice.textContent = `Art gespeichert; globale Namenswahl noch offen: ${error.message}`; }
+              retry.disabled = false;
+            };
+            retry.addEventListener("click", () => void publishName());
+            await publishName();
+          }
           state.selectedId = savedSpeciesId;
           elements.search.value = "";
           elements.statusFilter.value = "";

@@ -225,3 +225,20 @@ test("Detaildarstellung liefert Hierarchie, Quelle und manuellen Animalia-Fallba
   assert.equal(detail.trustTier, "base");
   assert.equal(detail.manualGermanNameFallback.provider, "Animalia.bio");
 });
+
+test("Detaildarstellung trennt bevorzugten Masterwert vom ersten Ergänzungsnamen", () => {
+  const detail = taxonomyReference.taxonomyDetailPresentation({
+    masterTaxonId: "mtx_stork",
+    scientific_name: "Ciconia ciconia",
+    preferredGermanName: "Weissstorch",
+    supplement: { namePreference: { previousGermanName: "Hausstorch" } },
+    germanNames: [{ name: "Weißstorch" }, { name: "Weissstorch" }],
+    rank: "species",
+  }, {
+    germanName: "Weissstorch",
+    hasVerifiedGermanName: true,
+  });
+  assert.equal(detail.preferredGermanName, "Weissstorch");
+  assert.equal(detail.previousGermanName, "Hausstorch");
+  assert.equal(detail.germanNameChoices[0], "Weissstorch");
+});

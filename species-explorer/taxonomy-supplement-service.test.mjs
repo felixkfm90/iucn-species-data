@@ -246,6 +246,25 @@ test("eigene Korrekturen überlagern Ergänzungsquellen und sind zurücksetzbar"
   })).length, 0);
 });
 
+test("Korrekturpflege liest fremde Namenswahlen frisch und erhält Rang und Reich", async (context) => {
+  const { service, correctionsPath } = await temporaryService(context, { providers: [] });
+  await service.load();
+  const external = { scientificName: "Panthera pardus", germanName: "Leopard", namePreference: { masterTaxonId: "mtx_leopard", previousGermanName: "Panther" } };
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: [external,
+    { scientificName: "Plant species", rank: "species", kingdom: "Plantae", germanName: "Pflanze" },
+  ] }));
+  await service.saveCorrection({ scientificName: "Plant species", germanName: "Andere Bezeichnung" });
+  const entries = JSON.parse(await fs.readFile(correctionsPath, "utf8")).entries;
+  assert.equal(entries.find((entry) => entry.scientificName === "Plant species").kingdom, "Plantae");
+  assert.deepEqual(entries.find((entry) => entry.scientificName === "Panthera pardus").namePreference, external.namePreference);
+  const detail = await service.augmentTaxon({
+    scientific_name: "Panthera pardus",
+    germanNames: [],
+    englishNames: [],
+  });
+  assert.deepEqual(detail.supplement.namePreference, external.namePreference);
+});
+
 test("eigene Korrekturen werden auch ohne UI serverseitig begrenzt", async (context) => {
   const { service } = await temporaryService(context, {
     providers: [],

@@ -99,6 +99,27 @@
     return cleanText(active.candidateId || active.masterVersion);
   }
 
+  function taxonomyDatabaseDetailPresentation(detailPresentation, detail, selectedResult) {
+    const view = detailPresentation(detail, selectedResult);
+    const preferredGermanName = cleanText(view.preferredGermanName);
+    if (!preferredGermanName) return view;
+    return {
+      ...view,
+      germanName: preferredGermanName,
+      displayName: preferredGermanName,
+      usesEnglishFallback: false,
+      nameToApply: preferredGermanName,
+      germanNameChoices: [...new Set([
+        preferredGermanName,
+        ...(view.germanNameChoices || []),
+      ].filter(Boolean))],
+    };
+  }
+
+  function shouldScheduleTaxonomyDatabaseSearch(query) {
+    return cleanText(query).length >= 2;
+  }
+
   function createTaxonomyDatabaseController({
     state,
     elements,
@@ -492,6 +513,18 @@
       dialog,
       closeButtons: dialog.querySelectorAll(".taxonomy-database-close"),
       afterOpen() {
+        if (!lightroomCorrectionRequest) {
+          clearTimeout(timer);
+          searchInput.value = "";
+          searchResults = [];
+          selectedResult = null;
+          selectedDetail = null;
+          results.hidden = true;
+          results.innerHTML = "";
+          detail.hidden = true;
+          detail.innerHTML = "";
+          setMessage("", "");
+        }
         void loadReview();
         searchInput.focus();
       },
@@ -612,7 +645,11 @@
     }
 
     function renderDetail() {
-      const view = detailPresentation(selectedDetail, selectedResult);
+      const view = taxonomyDatabaseDetailPresentation(
+        detailPresentation,
+        selectedDetail,
+        selectedResult,
+      );
       const hierarchy = view.hierarchy.map((entry) => `
         <div><dt>${escapeHtml(entry.label)}</dt><dd>${escapeHtml(entry.value)}</dd></div>
       `).join("");
@@ -653,6 +690,17 @@
           Quelle: ${escapeHtml(view.source)}${view.releaseId ? ` · Stand: ${escapeHtml(view.releaseId)}` : ""}
         </p>
         ${lightroomOrigin}
+        ${correctionAllowed && view.masterTaxonId && view.germanNameChoices.length > 0 ? `
+          <section class="taxonomy-database-correction">
+            <h4>Bevorzugte deutsche Namensvariante</h4>
+            <label>Deutscher Name <select data-name-preference-choice>${view.germanNameChoices.map((name) => `
+              <option value="${escapeHtml(name)}" ${name === view.germanName ? "selected" : ""}>${escapeHtml(name)}${name === view.preferredGermanName ? " (bevorzugt)" : ""}</option>
+            `).join("")}</select></label>
+            <p>Die Namenswahl gilt künftig auch in Lightroom. Projektdateien und bestehende Fotos bleiben unverändert.</p>
+            <button type="button" data-name-preference-save disabled>Namenswahl übernehmen</button>
+            <button type="button" data-name-preference-previous ${view.previousGermanName ? "" : "disabled"}>Vorherige Namenswahl wiederherstellen</button>
+          </section>
+        ` : ""}
         ${correctionAllowed ? `
           <section class="taxonomy-database-correction">
             <h4>Eigene Namenskorrektur</h4>
@@ -828,7 +876,11 @@
 
     async function saveCorrection(action, button) {
       if (!selectedDetail) return;
-      const view = detailPresentation(selectedDetail, selectedResult);
+      const view = taxonomyDatabaseDetailPresentation(
+        detailPresentation,
+        selectedDetail,
+        selectedResult,
+      );
       const germanName = detail.querySelector("[name='taxonomyDatabaseGerman']")?.value || "";
       const englishName = detail.querySelector("[name='taxonomyDatabaseEnglish']")?.value || "";
       const note = detail.querySelector("[name='taxonomyDatabaseNote']")?.value || "";
@@ -890,6 +942,37 @@
       }
     }
 
+    async function saveNamePreference(button, usePrevious = false) {
+      const view = taxonomyDatabaseDetailPresentation(
+        detailPresentation,
+        selectedDetail,
+        selectedResult,
+      );
+      const germanName = detail.querySelector("[data-name-preference-choice]")?.value;
+      const selectionVersion = requestVersion;
+      const taxonId = selectedResult?.taxonId;
+      button.disabled = true;
+      try {
+        const preview = await fetchJson("/api/taxonomy/name-preference/preview", {
+          method: "POST", body: JSON.stringify({ masterTaxonId: view.masterTaxonId, germanName, usePrevious }),
+        });
+        if (preview.requiresConfirmation && !await showQuickConfirm({
+          title: "Bevorzugten deutschen Namen ändern?",
+          message: `Bisher: ${preview.previousGermanName}\nNeu: ${preview.germanName}\nDiese Namenswahl gilt künftig im Arten-Explorer und in Lightroom. Projektdateien und bestehende Fotos bleiben unverändert.`,
+          confirmLabel: "Namenswahl übernehmen",
+        })) return;
+        if (selectionVersion !== requestVersion || detail.querySelector("[data-name-preference-choice]")?.value !== germanName) {
+          throw new Error("Die Auswahl wurde geändert. Bitte erneut prüfen.");
+        }
+        const result = await fetchJson("/api/taxonomy/name-preference/save", {
+          method: "POST", body: JSON.stringify({ ...preview, confirmed: true }),
+        });
+        if (selectionVersion === requestVersion && result.saved) await selectTaxon(taxonId);
+        setMessage(result.saved ? "Die Namenswahl ist für Arten-Explorer und Lightroom aktiv." : result.message, result.saved ? "success" : "warning");
+      } catch (error) { setMessage(error.message, "error"); }
+      finally { button.disabled = false; }
+    }
+
     function setup() {
       renderOverview();
       elements.taxonomyDatabaseUpdateButton.addEventListener("click", () => void updateDatabase());
@@ -900,6 +983,16 @@
         correctionSaved = false;
         clearTimeout(timer);
         requestVersion += 1;
+        if (!shouldScheduleTaxonomyDatabaseSearch(searchInput.value)) {
+          searchResults = [];
+          selectedResult = null;
+          selectedDetail = null;
+          renderResults();
+          detail.hidden = true;
+          detail.innerHTML = "";
+          setMessage(cleanText(searchInput.value) ? "Bitte mindestens zwei Zeichen eingeben." : "", "info");
+          return;
+        }
         timer = setTimeout(() => void search(), SEARCH_DELAY_MS);
       });
       results.addEventListener("click", (event) => {
@@ -907,6 +1000,10 @@
         if (button) void selectTaxon(button.dataset.taxonomyDatabaseTaxon);
       });
       detail.addEventListener("click", (event) => {
+        const preferenceButton = event.target.closest("[data-name-preference-save]");
+        if (preferenceButton) { void saveNamePreference(preferenceButton); return; }
+        const previousPreferenceButton = event.target.closest("[data-name-preference-previous]");
+        if (previousPreferenceButton) { void saveNamePreference(previousPreferenceButton, true); return; }
         const button = event.target.closest("[data-taxonomy-database-correction]");
         if (button) {
           void saveCorrection(button.dataset.taxonomyDatabaseCorrection, button);
@@ -915,6 +1012,16 @@
         const nextButton = event.target.closest("[data-taxonomy-database-next]");
         if (nextButton?.dataset.taxonomyDatabaseNext === "collect") prepareNextCorrection();
         if (nextButton?.dataset.taxonomyDatabaseNext === "update") updateDatabaseFromCorrection();
+      });
+      detail.addEventListener("change", (event) => {
+        if (!event.target.matches("[data-name-preference-choice]")) return;
+        const view = taxonomyDatabaseDetailPresentation(
+          detailPresentation,
+          selectedDetail,
+          selectedResult,
+        );
+        const saveButton = detail.querySelector("[data-name-preference-save]");
+        if (saveButton) saveButton.disabled = cleanText(event.target.value) === cleanText(view.preferredGermanName);
       });
       elements.taxonomyDatabaseReviewList.addEventListener("click", (event) => {
         const confirmButton = event.target.closest("[data-taxonomy-review-confirm]");
@@ -939,6 +1046,8 @@
   global.SpeciesExplorerTaxonomyDatabase = Object.freeze({
     createTaxonomyDatabaseController,
     lightroomCorrectionResult,
+    shouldScheduleTaxonomyDatabaseSearch,
+    taxonomyDatabaseDetailPresentation,
     taxonomyDatabaseUpdateDecision,
   });
 })(globalThis);

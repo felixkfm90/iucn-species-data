@@ -24,6 +24,25 @@ function fakeStore() {
   };
 }
 
+test("Versionsabfrage öffnet keine SQLite und Status reicht den geladenen Paketstand weiter", async () => {
+  let opens = 0;
+  const calls = [];
+  const handler = await createLightroomSearchRequestHandler({
+    searchRoot: "D:/versions-fixture",
+    openStore: async () => { opens += 1; return fakeStore(); },
+    readVersions: async (options) => { calls.push(options); return { state: "current" }; },
+  });
+  try {
+    assert.equal((await handler.handle({ command: "versions" })).result.state, "current");
+    assert.equal(opens, 0);
+    assert.deepEqual(calls[0], { searchRoot: "D:/versions-fixture" });
+    assert.equal((await handler.handle({ command: "status" })).result.dataVersions.state, "current");
+    assert.equal(opens, 1);
+    assert.equal(calls[1].loadedPackage.packageId, "fixture");
+  } finally { handler.close(); }
+  assert.equal((await handler.handle({ command: "versions" })).error.code, "helper-closed");
+});
+
 test("Suchhilfe beantwortet Status, Suche und Taxondetail über einen stabilen JSON-Vertrag", async () => {
   const store = fakeStore();
   const handler = await createLightroomSearchRequestHandler({

@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-05
+Stand: 2026-09-06
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.24.6 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.24.8 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
@@ -22,8 +22,64 @@ atomar aktiviert. Es stammt aus `master-20260905054823067` und derselben aktiven
 eigenen Korrekturen, insbesondere Weißstorch, Taubenschwänzchen und Rotstirnamazone. Das Lua-Plug-in blieb
 unverändert bei 0.4.24.6. Der Benutzer bestätigte Weißstorch in Lightroom und den passenden Masterstand im
 Zusatzmodul-Manager; Commit/Push sind freigegeben. Dies bestätigt nicht sämtliche Zuweisungs- und Wartungsabläufe.
-Der zusätzliche Vergleich mit der aktuellen Master-/Referenzversion direkt beim Öffnen in Lightroom ist geplant,
-noch nicht implementiert. `Lokales Suchpaket bereit` ist bisher eine Verfügbarkeitsanzeige, kein Aktualitätsnachweis.
+Der zusätzliche Vergleich mit der aktuellen lokalen Master-/Referenzversion ist anschließend in Version
+0.4.24.7 implementiert und anschließend vom Benutzer bestätigt worden. `Lokales Suchpaket bereit`
+bleibt eine Verfügbarkeitsanzeige. Der separate Versionsvergleich bestätigt nur konsistente lokale Datenstände.
+
+## Lokaler Versionsvergleich ab 0.4.24.7
+
+Im Zusatzmodul-Manager erscheinen aktive CoL-Referenz, CoL-Provenienz des Masters, aktive Master-ID,
+Master-ID im Lightroom-Paket, Paket-ID und anwendbare Korrekturschicht. `Datenstand erneut prüfen` wiederholt
+die asynchrone Abfrage. Das Zuweisungsfenster zeigt beim Öffnen dieselbe kurze Zusammenfassung über den
+bestehenden Statusabruf. Die Plug-in-Version bleibt davon getrennt. Suche und Zuweisungsregeln ändern sich nicht.
+
+`taxonomy-data-versions.mjs` besitzt den gemeinsamen Referenz-/Mastervergleich für Explorer und Suchhilfe.
+Der neue Helferbefehl `versions` öffnet keine SQLite-Datenbank: Er liest die aktiven Versionsdateien zweimal
+mit höchstens 64 KiB je Datei und prüft die Existenz der Paketdatenbank. Beim großen Mastermanifest wird nur
+der vom Projekt geschriebene JSON-Kopf vor dem obersten `summary` gelesen, nicht die Differenzlisten. Abweichende
+oder zu große Kopfstrukturen ergeben bewusst `nicht prüfbar`, keinen unbeschränkten Rückfall-Lesezugriff.
+Eine anwendbare Korrekturschicht benötigt einen passenden Zeiger und eine passende unveränderliche Releasedatei.
+Alte, nicht mehr anwendbare Korrekturzeiger werden nicht über den neuen Basisstand gelegt. Wechsel zwischen den
+beiden Abfragen oder Abweichungen zum bereits geöffneten Paket werden nicht als übereinstimmend ausgegeben.
+
+Die Zustände sind: lokale Stände stimmen überein, Referenz-/Master-/Paket- oder Korrekturabweichung, Suchpaket
+fehlt, Aktualisierung läuft und Datenstand nicht prüfbar. Der Master-Service schreibt während Aufbau, Aktivierung,
+Rollback, Korrekturanwendung und Paketnachholung einen kleinen Hinweis unter `taxonomy/master/update-presence.json`.
+Nur ein höchstens 30 Sekunden alter Hinweis eines erreichbaren Prozesses gilt als laufend; alte oder nicht
+überprüfbare aktive Hinweise gelten als ungeklärt. Dieser Hinweis ist weder Sperre noch Wiederanlaufcheckpoint.
+Ohne Hinweis kann lediglich die Konsistenz der aktiven Dateien bestätigt werden. Bereits gestartete alte
+Explorer-Versionen sowie separate externe Prozesse veröffentlichen diesen Hinweis nicht.
+
+Keine Online-Releaseprüfung, neuen Statistik-/Katalogscans, automatischen Downloads oder Aufbauten. Die Anzeige
+funktioniert auch bei geschlossenem Explorer. Für die Anzeige das Zusatzmodul neu laden, für den Laufhinweis
+den Explorer vor künftigen Updates neu starten; Master und Lightroom-Paket benötigen dafür keinen Neubau.
+Automatisiert geprüft werden fehlende/beschädigte Angaben, Drift, Korrekturschichten, große Manifestköpfe,
+Versionswechsel und Laufhinweise. Die Darstellung wurde anschließend vom Benutzer bestätigt; die realen
+Fehler-/Wechselzustände sind damit nicht zusätzlich manuell abgenommen.
+
+Prüfstand vom 5. September 2026: acht neue fachliche Versionstests, vier Suchhelfer- und elf Plug-in-Vertragstests
+sowie zwölf Master-Service-Tests erfolgreich. Alle 32 Lua-Dateien bestehen die Syntaxprüfung für Lua 5.1;
+`npm.cmd run --silent quality:ci` ist erfolgreich. Der reale read-only Vergleich bestätigt die oben genannten
+installierten Referenz-, Master- und Paketstände. Squarespace-JavaScript und CSS sind nicht betroffen;
+Footer- und Cacheversionen benötigen keine Anpassung.
+
+## Bewusste deutsche Namenswahl ab 0.4.24.8
+
+Das Zuweisungsfenster bietet `Deutscher Name` mit belegten Varianten der ausgewählten Art. Eine andere Variante
+wird in der Vorschau angezeigt, vor Ersetzen einer eigenen Präferenz mit bisherigem/neuem Namen bestätigt und
+erst nach erfolgreicher Fotozuweisung global gespeichert. `Vorherige Namenswahl auswählen` bereitet eine
+ausdrückliche Rückwahl vor. Englisch, wissenschaftlicher Name und Taxonomieidentität bleiben unverändert.
+
+Der separate `lightroom-name-preference-helper.mjs` ruft denselben zentralen Dienst wie der Explorer auf.
+Suchhelfer und Master-/Paket-SQLite bleiben read-only; die Entscheidung verwendet die vorhandene Korrekturdatei
+und den atomaren Korrekturzeiger. Revision und Identität werden serverseitig geprüft, fremde ausstehende Korrekturen
+nicht mit veröffentlicht. Die Korrekturspeicherwege teilen eine kurze prozessübergreifende Schreibsperre.
+Ein fehlgeschlagener globaler Schritt wird getrennt von der Fotozuweisung gemeldet und kann über
+`Globale Namenswahl erneut speichern` ohne Wiederholung der Zuweisung nachgeholt werden.
+
+Explorer neu starten und Plug-in neu laden; kein Master-/Paketneubau nötig. Für bestehende Fotos bleibt die
+bewusst gestartete FN-Aktualisierung zuständig. Praktische Abnahme und vollständiges Zurücksetzen auf den
+Anbieterstandard bleiben offen. Bedienvertrag, Rückwahl und Fehlergrenzen: `taxonomy-name-preference-plan.md`.
 
 ## Ziel
 
@@ -176,11 +232,13 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.6`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.8`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
 - `Info.lua`: Manifest, SDK-Grenze und die zwei deutschen Bibliotheksmenüpunkte;
+- `DataVersionView.lua`: gemeinsame reine Textdarstellung für den lokalen Versionsvergleich in Manager und
+  Zuweisungsfenster; keine Katalogzugriffe;
 - `PluginMenu.lua`: kompaktes Verwaltungsfenster mit festen, erlaubten Verweisen auf alle vorhandenen Aktionen;
   Auswahl- und Katalogaktualisierung stehen gemeinsam, sind aber eindeutig nach ihrer Reichweite beschriftet;
 - `MetadataDefinition.lua`: stabile Plug-in-Metadatenfelder für Namen, Status, alle unterstützten Taxonomieränge
@@ -518,7 +576,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.6`, der Suchpaketstatus sowie die zwei
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.8`, der Suchpaketstatus sowie die zwei
    Einträge `Taxonomie zuweisen` und `FN Wildlife verwalten ...` ohne Lua-Fehler erscheinen. Im
    Verwaltungsfenster müssen alle zehn Aktionen in vier klar beschrifteten Gruppen erreichbar sein. Die beiden
    Aktualisierungen müssen Auswahl und gesamten Katalog klar unterscheiden.

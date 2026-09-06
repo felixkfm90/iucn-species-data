@@ -982,7 +982,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.24.6` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.24.8` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1151,7 +1151,7 @@ Datenbank-Aktionen zeigen Referenz und Master als eine `Taxonomiedatenbank` mit 
 Rollbackarchitektur bleibt bestehen. Konflikte mit vorhandenen Arten werden mit Lösungsvorschlag angezeigt und
 niemals still übernommen. Eine bestätigte externe Artlücke kann direkt am Konflikthinweis mit der Masterdatenbank
 verknüpft werden; ein späterer exakter CoL-Treffer erhält automatisch wieder Vorrang. Über
-`Datenbank ansehen und korrigieren` lässt sich der aktive Offline-Bestand durchsuchen. Seine wissenschaftliche
+`In Datenbank suchen und Namen korrigieren` lässt sich der aktive Offline-Bestand durchsuchen. Seine wissenschaftliche
 Taxonomie bleibt schreibgeschützt, während deutsche und englische Namen kontrolliert als eigene, updatefeste
 Korrektur gespeichert oder zurückgesetzt werden können. Im Tierstimmeneditor besitzen bisheriger Sound und
 Schnittvorschau jeweils das passende Spektrogramm; MP3 und Spektrogramm werden bereits vor der Übernahme gemeinsam
@@ -1162,7 +1162,7 @@ Taxonomieanzeigen wurden für die aktuell verwendeten Reiche, Stämme, Klassen, 
 ergänzt; der Tooltip enthält nur den unveränderten wissenschaftlichen Rohwert.
 
 Seit dem 11. August 2026 ist die Datenbankpflege auf genau drei sichtbare Nutzeraktionen reduziert:
-`Datenbank aktualisieren`, `Vorherigen Stand wiederherstellen` und `Datenbank ansehen und korrigieren`. Die erste
+`Datenbank aktualisieren`, `Vorherigen Stand wiederherstellen` und `In Datenbank suchen und Namen korrigieren`. Die erste
 Aktion führt die weiterhin getrennten technischen Prüf-, Kandidaten- und Aktivierungsschritte automatisch aus. Der
 Korrekturdialog zeigt zuerst konkrete offene Prüfungen der verwendeten Projektarten und bietet anschließend die
 Suche im aktiven Offline-Bestand. Die CoL-Referenzlücke `Sciurus vulgaris` wird über eine exakte Abfrage der aktiven
@@ -1221,8 +1221,34 @@ Der reale Wiederanlauf vom 5. September 2026 wurde bis zum automatisch aktiviert
 geprüft. Referenz-, Master- und Paketstände stimmen überein; eigene Namenskorrekturen und bevorzugte Projektnamen
 bleiben erhalten. Ein erneuter Quelldownload war für diesen Reparaturlauf nicht erforderlich. Der Benutzer hat
 Weißstorch und den neuen Paket-/Masterstand im Zusatzmodul-Manager praktisch bestätigt und die Veröffentlichung
-freigegeben. Die restliche Lightroom-Abnahme und der zusätzliche Versionsvergleich direkt in Lightroom bleiben
-vor dem Phasenabschluss offen; den verbindlichen Stand enthält `docs/roadmap.md`.
+freigegeben. Die restliche Lightroom-Abnahme bleibt vor dem Phasenabschluss offen; den verbindlichen Stand
+enthält `docs/roadmap.md`.
+
+Seit Plug-in-Version `0.4.24.7` zeigt der Zusatzmodul-Manager zusätzlich den lokalen Vergleich von aktiver
+CoL-Referenz, Master, Lightroom-Suchpaket und anwendbarer Korrekturschicht. `Datenstand erneut prüfen` aktualisiert
+die Anzeige. Das Zuweisungsfenster zeigt dieselbe Zusammenfassung beim Öffnen. Die Prüfung läuft asynchron und
+startet weder Katalogscan noch Download oder Datenbankaufbau. Übereinstimmende lokale Stände bedeuten nicht,
+dass online keine neueren Anbieterreleases existieren. Nicht lesbare oder unvollständige Angaben werden als
+nicht prüfbar gemeldet. Für die neue Anzeige das Zusatzmodul neu laden; für den Laufhinweis bei künftigen Updates
+den Arten-Explorer vor dem nächsten Lauf neu starten. Bestehende Datenbanken müssen dafür nicht neu gebaut werden.
+
+Die Anzeige von 0.4.24.7 wurde inzwischen vom Benutzer bestätigt. Version 0.4.24.8 ergänzt die bewusste Wahl
+deutscher Namensvarianten: in Lightroom nach erfolgreicher Zuweisung, im Neue-Art-Assistenten nach dem Speichern
+und im Explorer-Datenbankdialog über `Namenswahl übernehmen`. Eine eigene Präferenz wird nur nach Rückfrage mit
+bisherigem und neuem Namen ersetzt. Frühere Namenswahlen können ausdrücklich wiederhergestellt werden;
+Projektdateien und bereits zugewiesene Fotos ändern sich nicht automatisch. Aktivierungsfehler werden getrennt
+gemeldet und können ohne erneute Fotozuweisung nachgeholt werden. Zum erstmaligen Laden dieser Programmversion
+Explorer neu starten und Zusatzmodul neu laden; danach wird eine bestätigte Namenswahl ohne weiteren Neustart und
+ohne Datenbankneubau in beiden Anwendungen aktiv. Der Explorer unterscheidet dabei den tatsächlich bevorzugten
+Masterwert von bloßen alternativen Suchtreffern. Die praktische Abnahme mit Weißstorch/Weissstorch ist erfolgt;
+das vollständige Zurücksetzen auf den Anbieterstandard bleibt offen. Details:
+`docs/taxonomy-name-preference-plan.md`.
+
+Die Aktivierung von CoL-Referenz, Master und Lightroom-Suchpaket erfolgt bereits atomar über geprüfte neue Stände.
+Ein weitergehender inkrementeller Vollaufbau ist davon zu unterscheiden: Er könnte unveränderte Taxa wiederverwenden
+und nur geänderte Quellen, Hierarchien und Suchbegriffe neu berechnen, muss aber weiterhin als vollständig geprüfter
+neuer Kandidat aktiviert werden. Dieser Ausbau ist noch nicht implementiert und als eigener Restpunkt vor dem
+Phase-10-Audit dokumentiert.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

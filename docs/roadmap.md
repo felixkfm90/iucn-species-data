@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-09-05
+Stand: 2026-09-06
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1373,25 +1373,32 @@ lokal aktualisiert und Teil der freigegebenen Veröffentlichung. Der neue GitHub
 prüfen; der historische fehlgeschlagene Lauf wird nicht erneut gestartet.
 
 Zusätzlicher Benutzerpunkt vom 5. September, nach dem abgeschlossenen Wiederaufbau und vor dem Abschlussaudit:
-Lightroom soll beim Öffnen des Zuweisungsfensters den Datenstand nachvollziehbar prüfen und anzeigen. Aktuell prüft
-es Verfügbarkeit und Paketstand sowie Paketwechsel seit der Artauswahl, vergleicht jedoch nicht den zugrunde
-liegenden Master mit dem aktuell aktiven Master und dessen Referenzstand. Vorgeschlagen ist eine gemeinsame,
-kleine read-only Versionsgrundlage für Explorer und Suchhelfer: Plug-in-Version getrennt vom Datenstand,
-Master-/Paket-Konsistenz, aktive Korrekturrevision und verständliche Zustände für aktuell, veraltet, im Aufbau
-oder nicht prüfbar. Keine großen SQLite-/Katalogscans und keine automatischen Downloads beim Öffnen in Lightroom.
-Quellenaktualisierung und Paketbau bleiben zentral im Arten-Explorer; bei fehlender Vergleichsgrundlage darf
-Lightroom nicht pauschal Aktualität behaupten. Umsetzung einschließlich Plug-in-Versionsanhebung und Vertragstests
-ist noch offen und nicht Teil des abgeschlossenen Masteraufbaus.
+Lightroom prüft seit Version 0.4.24.7 beim Öffnen des Zuweisungsfensters und im Zusatzmodul-Manager den lokalen
+Datenstand. `taxonomy-data-versions.mjs` teilt den Referenz-/Mastervergleich mit dem Explorer und vergleicht
+zusätzlich Master-/Paket-ID und die anwendbare Korrekturschicht. Die Anzeige unterscheidet übereinstimmend,
+abweichend, fehlend, laufende Aktualisierung und nicht prüfbar; der Manager bietet eine erneute Prüfung an.
+Keine großen SQLite-/Katalogscans oder automatischen Downloads und Aufbauten. Ein frischer Laufhinweis des
+aktualisierten Master-Service zeigt künftige laufende Aktionen an; veraltete Hinweise bleiben ausdrücklich
+ungeklärt. Ohne Hinweis wird nur die Konsistenz der aktiven Dateien bestätigt, nicht die Abwesenheit anderer
+Prozesse. Quellenaktualisierung und Paketbau bleiben zentral im Arten-Explorer. Umsetzung und Vertragstests
+sind ergänzt; der Benutzer hat die Anzeige anschließend mit `passt` bestätigt. Fehler- und Wechselzustände sind
+automatisiert, nicht zusätzlich im realen Lightroom geprüft. Details: `docs/lightroom-search-package.md`.
 
 #### Gebündelte Restpunkte vor dem Phase-10-Abschlussaudit
 
-1. **Umsetzung:** Leichtgewichtigen Versionsvergleich direkt in Lightroom ergänzen, wie oben beschrieben. Der
-   bestätigte Zusatzmodul-Screenshot belegt bisher nur Verfügbarkeit und Paket-Masterversion. Keine erneuten
-   Statistikscans oder automatischen Quelldownloads beim Öffnen ergänzen.
-2. **Fachliche Entscheidung:** Bevorzugte Namen bei der Verwendung von Suchalternativen festlegen. Explizite
-   Projektnamen und eigene Korrekturen sind jetzt geschützt; eine bloße Suche oder Lightroom-Zuweisung unter einem
-   Alternativnamen speichert noch keine neue globale Namenspräferenz. Festlegen, wie eine solche Präferenz
-   erkennbar, rücknehmbar und in beiden Programmen gleich angewendet wird; nicht mit einer Taxon-ID-Änderung vermischen.
+1. **Umgesetzt und vom Benutzer bestätigt:** Leichtgewichtiger Versionsvergleich in Version 0.4.24.7.
+   Der Benutzer bestätigte den Stand anschließend mit `passt` und gab den nächsten Punkt frei. Kein Neubau
+   erforderlich; dies ist keine manuelle Abnahme sämtlicher Fehler-/Wechselzustände oder der ganzen Phase.
+2. **Namenswahl umgesetzt und vom Benutzer bestätigt:** Version 0.4.24.8 übernimmt bewusst gewählte deutsche
+   Varianten nach erfolgreichem Speichern/Zuweisen, bei eigenen Präferenzen nur nach der bestätigten Rückfrage.
+   Derselbe zentrale Korrekturweg wird in beiden Programmen verwendet; echte SQLite-Tests prüfen Aktivierung und
+   Rückwahl ohne Basisneubau. Details: `taxonomy-name-preference-plan.md`. Bloßes Suchen ändert nichts global.
+   Der erste Bedienungstest fand und korrigierte eine Explorer-Anzeigelücke zwischen einem gefundenen
+   Anbieternamen und dem tatsächlich bevorzugten Masterwert; Master und Lightroom waren dabei konsistent.
+   Der erneute praktische Speicher-/Rückwahltest mit Weißstorch/Weissstorch wurde erfolgreich bestätigt.
+   Teilerfolge und Rückwahl nach realem Master-Neuaufbau bleiben Teil der späteren Betriebsprüfung. Vollständiges
+   Zurücksetzen auf den Anbieterstandard (statt Rückwahl eines vorherigen Namens) benötigt weiterhin einen
+   Neubau und ist vor Audit separat umzusetzen oder begründet zu verschieben. Keine Taxon-ID-Änderung.
 3. **Fachliche Entscheidung:** Umgang mit geänderter Taxonidentität, Aufteilung und Zusammenführung abschließen.
    Der Katalogabgleich überspringt nicht mehr eindeutig auflösbare Master-IDs bereits sicher. Eine bestätigte
    Nachfolgerzuordnung fehlt. Vor Phasenabschluss entweder umsetzen oder mit ausdrücklicher Begründung verschieben;
@@ -1410,6 +1417,14 @@ ist noch offen und nicht Teil des abgeschlossenen Masteraufbaus.
 6. **Veröffentlichung und Auditbereitschaft:** Qualitätsgate, Projektstatus, GitHub-Pages-Deployment und
    Dokumentationsabgleich prüfen. Für das Gesamtaudit anschließend Code/Modularisierung/Dopplungen/tote Elemente,
    Daten und Schemata, temporäre Dateien sowie Backup/Restore und Veröffentlichung projektweit untersuchen.
+7. **Architektur-/Optimierungspunkt:** Inkrementelle Aktualisierung für Master und abgeleitetes Lightroom-Suchpaket
+   bewerten und gegebenenfalls als spätere Teilphase spezifizieren. Ziel ist ein neuer, atomar aktivierter Kandidat,
+   der unveränderte Taxa wiederverwendet und nur geänderte Quellen-, Hierarchie- und Suchdaten neu berechnet. Das
+   darf nicht als direkte Änderung des aktiven Bestands umgesetzt werden. Vor einer Umsetzung müssen Löschungen,
+   Taxonaufteilungen/-zusammenführungen, Quellenprovenienz, Prüfsummen, Rollback, Abbruch/Fortsetzung und
+   Rückwärtsverträglichkeit nachgewiesen werden. Der aktuelle Stand besitzt bereits atomare Aktivierung sowie den
+   schnellen Korrekturpfad ohne Basisneubau; ein inkrementeller Vollaufbau ist noch nicht implementiert und bleibt
+   vor dem Audit zunächst eine zu entscheidende bzw. begründet nach Phase 10 zu verschiebende Optimierung.
 
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Erledigung beziehungsweise begründeter Zuordnung der
   gebündelten Restpunkte. Der erfolgreiche Wiederanlauf allein schließt Phase 10 nicht ab.

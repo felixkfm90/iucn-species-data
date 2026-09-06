@@ -772,6 +772,8 @@ export class TaxonomyMasterStore {
       ], (entry) => normalized(entry.scientific_name)),
       germanNames: taxon.names.germanNames,
       englishNames: taxon.names.englishNames,
+      preferredGermanName: taxon.germanName,
+      preferredEnglishName: taxon.englishName,
       displayName: taxon.germanName || taxon.englishName,
       displayNameLanguage: taxon.germanName ? "de" : (taxon.englishName ? "en" : null),
       usesEnglishFallback: !taxon.germanName && Boolean(taxon.englishName),

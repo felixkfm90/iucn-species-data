@@ -22,6 +22,8 @@ import {
 } from "./lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
 import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
+import { createTaxonomyNamePreferenceService } from "./taxonomy-name-preference-service.mjs";
+import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 import {
   taxonomyMasterDatabasePath,
   taxonomyMasterManifestPath,
@@ -375,6 +377,45 @@ test("Lightroom-Suchpaket exportiert vollständige Taxonomie und sucht offline",
   } finally {
     store.close();
   }
+});
+
+test("Bestätigte Namenswahl und Rückwahl erreichen echte Master- und Lightroom-Leser ohne Basisneubau", async () => {
+  const { root, taxonomyRoot, searchRoot } = await createRoots();
+  await createMasterFixture(taxonomyRoot);
+  const masterPath = taxonomyMasterManifestPath(taxonomyRoot, "active");
+  const masterManifest = JSON.parse(await fs.readFile(masterPath, "utf8"));
+  await fs.writeFile(masterPath, JSON.stringify({ ...masterManifest,
+    sources: [{ provider: "catalogue-of-life", providerVersion: "COL fixture" }],
+    inputRevisions: { corrections: taxonomyCorrectionsRevision([]) },
+  }));
+  await fs.writeFile(path.join(taxonomyRoot, "active.json"), JSON.stringify({ schemaVersion: 1, activeRelease: "COL fixture" }));
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "active"));
+  try {
+    insertSearchTerm(database, { masterTaxonId: "mtx_calidris_alpina_fixture", term: "Nordischer Strandläufer",
+      termKind: "vernacular", language: "de", provider: "catalogue-of-life", weight: 3 });
+  } finally { database.close(); }
+  await buildLightroomSearchPackage({ taxonomyRoot, searchRoot });
+  await activateLightroomSearchPackage(searchRoot, { verify: verifyLightroomSearchPackage });
+  const correctionsPath = path.join(root, "corrections.json");
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: [] }));
+  const service = createTaxonomyNamePreferenceService({ taxonomyRoot, searchRoot, correctionsPath });
+  const before = await fs.stat(lightroomSearchDatabasePath(searchRoot, "active"));
+  for (const germanName of ["Nordischer Strandläufer", "Alpenstrandläufer"]) {
+    const preview = await service.preview({ masterTaxonId: "mtx_calidris_alpina_fixture", germanName });
+    assert.equal(preview.requiresConfirmation, true);
+    await assert.rejects(service.save(preview), /bestätigt/);
+    assert.equal((await service.save({ ...preview, confirmed: true })).saved, true);
+    const lr = await openLightroomSearchStore({ searchRoot });
+    const master = await openTaxonomyMasterStore({ taxonomyRoot });
+    try {
+      assert.equal(lr.taxon(preview.masterTaxonId).germanName, germanName);
+      assert.equal(master.taxon(preview.masterTaxonId).germanNames[0].name, germanName);
+      assert.equal(lr.taxon(preview.masterTaxonId).englishName, "Dunlin");
+    } finally { lr.close(); master.close(); }
+  }
+  const after = await fs.stat(lightroomSearchDatabasePath(searchRoot, "active"));
+  assert.equal(after.mtimeMs, before.mtimeMs);
+  assert.equal(after.size, before.size);
 });
 
 test("kleine Namenskorrektur wird ohne Basisneubau gemeinsam und atomar aktiviert", async () => {

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { defaultLightroomSearchRoot } from "./lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
+import { readTaxonomyDataVersions } from "./taxonomy-data-versions.mjs";
 
 export const LIGHTROOM_SEARCH_PROTOCOL_VERSION = 1;
 const MAX_BATCH_TAXA = 10_000;
@@ -40,8 +41,9 @@ export async function createLightroomSearchRequestHandler({
   searchRoot = defaultLightroomSearchRoot(),
   slot = "active",
   openStore = openLightroomSearchStore,
+  readVersions = readTaxonomyDataVersions,
 } = {}) {
-  const store = await openStore({ searchRoot, slot });
+  let store = null;
   let closed = false;
 
   function assertAvailable() {
@@ -66,8 +68,18 @@ export async function createLightroomSearchRequestHandler({
             protocolVersion: LIGHTROOM_SEARCH_PROTOCOL_VERSION,
           });
         }
+        if (command === "versions" && !closed) {
+          return success(request, await readVersions({ searchRoot }));
+        }
+        if (!closed && !store) store = await openStore({ searchRoot, slot });
         assertAvailable();
-        if (command === "status") return success(request, store.status());
+        if (command === "status") {
+          const status = store.status();
+          return success(request, {
+            ...status,
+            dataVersions: await readVersions({ searchRoot, loadedPackage: status }),
+          });
+        }
         if (command === "search") {
           return success(request, store.search(request.query, {
             limit: request.limit,

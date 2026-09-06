@@ -13,6 +13,7 @@ import {
 } from "./taxonomy-master-storage.mjs";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
+import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 
 export const TAXONOMY_CORRECTION_RELEASE_SCHEMA_VERSION = 1;
 export const TAXONOMY_CORRECTION_POINTER_SCHEMA_VERSION = 1;
@@ -247,7 +248,11 @@ export async function prepareTaxonomyCorrectionRelease({
   return release;
 }
 
-export async function activateTaxonomyCorrectionRelease({
+export async function activateTaxonomyCorrectionRelease(options = {}) {
+  return withTaxonomyCorrectionLock(options.taxonomyRoot, () => activateTaxonomyCorrectionReleaseUnlocked(options));
+}
+
+export async function activateTaxonomyCorrectionReleaseUnlocked({
   taxonomyRoot,
   searchRoot,
   corrections = [],

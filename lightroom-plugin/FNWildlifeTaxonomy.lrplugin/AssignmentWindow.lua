@@ -9,6 +9,8 @@ local KeywordWriter = require "KeywordWriter"
 local LocationTimeWriter = require "LocationTimeWriter"
 local PluginState = require "PluginState"
 local TaxonomyHelper = require "TaxonomyHelper"
+local DataVersionView = require "DataVersionView"
+local NamePreference = require "NamePreference"
 local TaxonomyRanks = require "TaxonomyRanks"
 
 local AssignmentWindow = {}
@@ -173,6 +175,7 @@ function AssignmentWindow.show(context)
   local factory = LrView.osFactory()
   local props = LrBinding.makePropertyTable(context)
   local currentTaxon = nil
+  local pendingNamePreference = nil
   local currentTaxonQuery = ""
   local searchRequestSerial = 0
   local selectionRefreshSerial = 0
@@ -193,6 +196,10 @@ function AssignmentWindow.show(context)
   end
 
   props.query = ""
+  props.germanNameItems = {}
+  props.selectedGermanName = ""
+  props.preferenceStatus = ""
+  props.canRetryPreference = false
   props.kingdom = "Animalia"
   props.kingdomItems = KINGDOM_ITEMS
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
@@ -262,9 +269,7 @@ function AssignmentWindow.show(context)
     end
     props.packageReady = status and status.available == true
     if props.packageReady then
-      props.packageStatus = "Lokale Masterdatenbank bereit · "
-        .. tostring(status.taxonCount or 0)
-        .. " Taxa"
+      props.packageStatus = DataVersionView.summary(status.dataVersions)
     else
       props.packageStatus = "Das lokale Taxonomie-Suchpaket ist noch nicht installiert."
     end
@@ -295,6 +300,8 @@ function AssignmentWindow.show(context)
       return
     end
     currentTaxon = taxon
+    props.germanNameItems = NamePreference.items(taxon)
+    props.selectedGermanName = taxon.germanName or ""
     currentTaxonQuery = requestedQuery
     setPreview(previewText(taxon))
     props.searchStatus = "Art ist zur Zuweisung bereit."
@@ -390,7 +397,19 @@ function AssignmentWindow.show(context)
     scheduleAutoSearch()
   end)
 
+  props:addObserver("selectedGermanName", function()
+    if not currentTaxon then return end
+    local preview = {}
+    for key, value in pairs(currentTaxon) do preview[key] = value end
+    preview.germanName = props.selectedGermanName
+    setPreview(previewText(preview))
+  end)
+
   local function assign()
+    if pendingNamePreference then
+      props.preferenceStatus = "Bitte zuerst die offene globale Namenswahl erneut speichern oder im Arten-Explorer aktivieren."
+      return
+    end
     if not currentTaxon then
       props.searchStatus = "Bitte zuerst eine Art auswählen."
       return
@@ -445,6 +464,12 @@ function AssignmentWindow.show(context)
 
     setBusy(true)
     props.searchStatus = "Orts- und Zeitdaten werden geprüft ..."
+    local prepared, assignmentTaxon, preference = LrTasks.pcall(NamePreference.prepare, currentTaxon, props.selectedGermanName)
+    if not prepared or not assignmentTaxon then
+      setBusy(false)
+      props.searchStatus = prepared and "Namenswahl abgebrochen. Es wurde nichts zugewiesen." or tostring(assignmentTaxon)
+      return
+    end
     local locationTimePlans, preparation = LocationTimeWriter.prepare(catalog, photos, {
       resolveSuggestedLocations = true,
       skipExisting = true,
@@ -459,24 +484,31 @@ function AssignmentWindow.show(context)
       KeywordWriter.assign,
       catalog,
       photos,
-      currentTaxon,
+      assignmentTaxon,
       locationTimePlans
     )
-    setBusy(false)
     if not ok then
+      setBusy(false)
       props.searchStatus = tostring(result)
       return
     end
-    PluginState.addRecentTaxon(currentTaxon)
+    if preference and result.photoCount > 0 then
+      local published, message = NamePreference.publish(preference)
+      if published then pendingNamePreference = nil else pendingNamePreference = preference end
+      props.canRetryPreference = not published
+      props.preferenceStatus = message
+    end
+    PluginState.addRecentTaxon(assignmentTaxon)
     props.recentItems = recentItems()
     props.recentTaxonId = props.recentItems[1].value
-    local germanName = cleanText(currentTaxon.germanName)
+    local germanName = cleanText(assignmentTaxon.germanName)
     local speciesName = germanName ~= "" and germanName or cleanText(currentTaxon.acceptedScientificName)
     if result.photoCount == 1 then
       props.searchStatus = "1 Foto wurde " .. speciesName .. " zugewiesen."
     else
       props.searchStatus = tostring(result.photoCount) .. " Fotos wurden " .. speciesName .. " zugewiesen."
     end
+    setBusy(false)
     refreshSelection()
   end
 
@@ -554,7 +586,7 @@ function AssignmentWindow.show(context)
       fill_horizontal = 1,
       factory:column({
         spacing = factory:control_spacing(),
-        factory:static_text({ title = bind("packageStatus"), width_in_chars = 86, fill_horizontal = 1 }),
+        factory:static_text({ title = bind("packageStatus"), width_in_chars = 86, height_in_lines = 2, fill_horizontal = 1 }),
         factory:row({
           spacing = factory:control_spacing(),
           factory:static_text({ title = "Reich/Domäne:" }),
@@ -604,6 +636,42 @@ function AssignmentWindow.show(context)
           }),
         }),
         factory:static_text({ title = bind("searchStatus"), width_in_chars = 86, fill_horizontal = 1 }),
+        factory:row({
+          spacing = factory:control_spacing(),
+          factory:static_text({ title = "Deutscher Name:" }),
+          factory:popup_menu({ items = bind("germanNameItems"), value = bind("selectedGermanName"), enabled = bind("canSearch"), width_in_chars = 55 }),
+        }),
+        factory:push_button({ title = "Vorherige Namenswahl auswählen", enabled = bind("canCorrect"), action = function()
+          if props.busy or not currentTaxon then return end
+          local taxonId = currentTaxon.masterTaxonId
+          LrTasks.startAsyncTask(function()
+            setBusy(true)
+            local ok, previous = LrTasks.pcall(TaxonomyHelper.namePreference, { command = "preview", masterTaxonId = taxonId, usePrevious = true })
+            if ok and currentTaxon and currentTaxon.masterTaxonId == taxonId then
+              local items = NamePreference.items(currentTaxon)
+              local found = false
+              for _, item in ipairs(items) do if item.value == previous.germanName then found = true end end
+              if not found then table.insert(items, { title = previous.germanName, value = previous.germanName }) end
+              props.germanNameItems = items
+              props.selectedGermanName = previous.germanName
+              props.preferenceStatus = "Vorherige Namenswahl ausgewählt. Übernahme erfolgt erst mit der Zuweisung."
+            elseif not ok then props.preferenceStatus = tostring(previous) end
+            setBusy(false)
+          end)
+        end }),
+        factory:static_text({ title = "Eine geänderte Namenswahl gilt nach Zuweisung auch im Arten-Explorer.", width_in_chars = 86 }),
+        factory:static_text({ title = bind("preferenceStatus"), width_in_chars = 86, height_in_lines = 2 }),
+        factory:push_button({ title = "Globale Namenswahl erneut speichern", enabled = bind("canRetryPreference"), action = function()
+          if props.busy or not pendingNamePreference then return end
+          LrTasks.startAsyncTask(function()
+            setBusy(true)
+            local published, message = NamePreference.publish(pendingNamePreference)
+            if published then pendingNamePreference = nil end
+            props.canRetryPreference = not published
+            props.preferenceStatus = message
+            setBusy(false)
+          end)
+        end }),
         factory:row({
           spacing = factory:control_spacing(),
           fill_horizontal = 1,

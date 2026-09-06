@@ -8,6 +8,7 @@ import {
   normalizeTaxonomySearchTerm,
 } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
+import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { defaultTaxonomySupplementProviders } from "./taxonomy-supplement-providers.mjs";
 import {
   canonicalMasterProvider,
@@ -345,6 +346,9 @@ function normalizeCorrection(entry) {
     englishName: cleanName(entry.englishName),
     note: cleanName(entry.note),
     updatedAt: String(entry.updatedAt || "").trim(),
+    ...(entry.namePreference ? { namePreference: entry.namePreference } : {}),
+    ...(entry.rank ? { rank: entry.rank } : {}),
+    ...(entry.kingdom ? { kingdom: entry.kingdom } : {}),
   };
 }
 
@@ -372,6 +376,7 @@ function correctionAsSupplement(entry) {
       : [],
     note: entry.note,
     correction: true,
+    namePreference: entry.namePreference || null,
   };
 }
 
@@ -438,6 +443,15 @@ export class TaxonomySupplementService {
     this.cache = null;
     this.corrections = null;
     await this.load();
+  }
+
+  async reloadCorrections() {
+    await this.load();
+    const document = await readJsonOr(this.correctionsPath, emptyCorrections());
+    this.corrections = {
+      ...document,
+      entries: (document.entries || []).map(normalizeCorrection).filter(Boolean),
+    };
   }
 
   async status() {
@@ -1079,6 +1093,7 @@ export class TaxonomySupplementService {
         },
         correction: entry.correction === true,
         note: entry.note || null,
+        namePreference: entry.namePreference || null,
       },
       manualGermanNameFallback: germanNames.length ? null : detail.manualGermanNameFallback,
     };
@@ -1142,42 +1157,49 @@ export class TaxonomySupplementService {
     englishName = "",
     note = "",
   } = {}) {
-    await this.load();
-    const cleanedScientificName = cleanName(scientificName);
-    const cleanedGermanName = cleanName(germanName);
-    const cleanedEnglishName = cleanName(englishName);
-    const cleanedNote = cleanName(note);
-    if ((cleanedScientificName?.length || 0) > MAX_SCIENTIFIC_NAME_LENGTH) {
-      throw new Error(
-        `Der wissenschaftliche Name darf höchstens ${MAX_SCIENTIFIC_NAME_LENGTH} Zeichen enthalten.`,
-      );
-    }
-    if (
-      (cleanedGermanName?.length || 0) > MAX_VERNACULAR_NAME_LENGTH
-      || (cleanedEnglishName?.length || 0) > MAX_VERNACULAR_NAME_LENGTH
-    ) {
-      throw new Error(
-        `Deutsche und englische Namen dürfen höchstens ${MAX_VERNACULAR_NAME_LENGTH} Zeichen enthalten.`,
-      );
-    }
-    if ((cleanedNote?.length || 0) > MAX_CORRECTION_NOTE_LENGTH) {
-      throw new Error(
-        `Der Hinweis darf höchstens ${MAX_CORRECTION_NOTE_LENGTH} Zeichen enthalten.`,
-      );
-    }
-    const normalized = normalizeCorrection({
-      scientificName: cleanedScientificName,
-      germanName: cleanedGermanName,
-      englishName: cleanedEnglishName,
-      note: cleanedNote,
-      updatedAt: this.now().toISOString(),
+    return withTaxonomyCorrectionLock(this.taxonomyRoot, async () => {
+      this.corrections = null;
+      await this.load();
+      const cleanedScientificName = cleanName(scientificName);
+      const cleanedGermanName = cleanName(germanName);
+      const cleanedEnglishName = cleanName(englishName);
+      const cleanedNote = cleanName(note);
+      if ((cleanedScientificName?.length || 0) > MAX_SCIENTIFIC_NAME_LENGTH) {
+        throw new Error(
+          `Der wissenschaftliche Name darf höchstens ${MAX_SCIENTIFIC_NAME_LENGTH} Zeichen enthalten.`,
+        );
+      }
+      if (
+        (cleanedGermanName?.length || 0) > MAX_VERNACULAR_NAME_LENGTH
+        || (cleanedEnglishName?.length || 0) > MAX_VERNACULAR_NAME_LENGTH
+      ) {
+        throw new Error(
+          `Deutsche und englische Namen dürfen höchstens ${MAX_VERNACULAR_NAME_LENGTH} Zeichen enthalten.`,
+        );
+      }
+      if ((cleanedNote?.length || 0) > MAX_CORRECTION_NOTE_LENGTH) {
+        throw new Error(
+          `Der Hinweis darf höchstens ${MAX_CORRECTION_NOTE_LENGTH} Zeichen enthalten.`,
+        );
+      }
+      const normalized = normalizeCorrection({
+        scientificName: cleanedScientificName,
+        germanName: cleanedGermanName,
+        englishName: cleanedEnglishName,
+        note: cleanedNote,
+        updatedAt: this.now().toISOString(),
     });
     if (!normalized) throw new Error("Der wissenschaftliche Name fehlt.");
     if (!normalized.germanName && !normalized.englishName) {
       throw new Error("Bitte mindestens einen deutschen oder englischen Namen angeben.");
     }
-    const key = normalizedScientificName(normalized.scientificName);
-    const entries = this.corrections.entries.filter(
+      const key = normalizedScientificName(normalized.scientificName);
+      const previousEntry = this.corrections.entries.find(
+        (entry) => normalizedScientificName(entry.scientificName) === key,
+      );
+      if (previousEntry?.rank) normalized.rank = previousEntry.rank;
+      if (previousEntry?.kingdom) normalized.kingdom = previousEntry.kingdom;
+      const entries = this.corrections.entries.filter(
       (entry) => normalizedScientificName(entry.scientificName) !== key,
     );
     entries.push(normalized);
@@ -1192,28 +1214,32 @@ export class TaxonomySupplementService {
     };
     await atomicWriteJson(this.correctionsPath, this.corrections);
     return normalized;
+    });
   }
 
   async resetCorrection(scientificName) {
-    await this.load();
-    const cleanedScientificName = cleanName(scientificName);
-    if (!cleanedScientificName) {
-      throw new Error("Der wissenschaftliche Name fehlt.");
-    }
-    if (cleanedScientificName.length > MAX_SCIENTIFIC_NAME_LENGTH) {
-      throw new Error(
-        `Der wissenschaftliche Name darf höchstens ${MAX_SCIENTIFIC_NAME_LENGTH} Zeichen enthalten.`,
+    return withTaxonomyCorrectionLock(this.taxonomyRoot, async () => {
+      this.corrections = null;
+      await this.load();
+      const cleanedScientificName = cleanName(scientificName);
+      if (!cleanedScientificName) {
+        throw new Error("Der wissenschaftliche Name fehlt.");
+      }
+      if (cleanedScientificName.length > MAX_SCIENTIFIC_NAME_LENGTH) {
+        throw new Error(
+          `Der wissenschaftliche Name darf höchstens ${MAX_SCIENTIFIC_NAME_LENGTH} Zeichen enthalten.`,
+        );
+      }
+      const key = normalizedScientificName(cleanedScientificName);
+      const before = this.corrections.entries.length;
+      this.corrections.entries = this.corrections.entries.filter(
+        (entry) => normalizedScientificName(entry.scientificName) !== key,
       );
-    }
-    const key = normalizedScientificName(cleanedScientificName);
-    const before = this.corrections.entries.length;
-    this.corrections.entries = this.corrections.entries.filter(
-      (entry) => normalizedScientificName(entry.scientificName) !== key,
-    );
-    if (this.corrections.entries.length !== before) {
-      await atomicWriteJson(this.correctionsPath, this.corrections);
-    }
-    return { removed: before !== this.corrections.entries.length };
+      if (this.corrections.entries.length !== before) {
+        await atomicWriteJson(this.correctionsPath, this.corrections);
+      }
+      return { removed: before !== this.corrections.entries.length };
+    });
   }
 
   async refreshKnown({ scientificNames = [], store, onProgress = () => {} } = {}) {

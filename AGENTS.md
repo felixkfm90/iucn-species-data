@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-09-05
+Stand: 2026-09-06
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1109,7 +1109,7 @@ Aktuelle Planung:
   Squarespace-Layout folgt Portrait, Infos, Status, Taxonomie und Sound. Deutsche Taxonomieanzeigen decken die
   aktuell verwendeten Ränge ab; der Tooltip zeigt ausschließlich den wissenschaftlichen Rohwert.
   Seit 2026-08-11 zeigt die Taxonomiedatenbank genau drei Nutzeraktionen: `Datenbank aktualisieren`, `Vorherigen
-  Stand wiederherstellen` und `Datenbank ansehen und korrigieren`. Technische Referenz-, Kandidaten- und
+  Stand wiederherstellen` und `In Datenbank suchen und Namen korrigieren`. Technische Referenz-, Kandidaten- und
   Aktivierungsschritte werden intern orchestriert. Der Korrekturdialog beginnt mit offenen Prüfungen der
   Projektarten. Referenzlückenbestätigungen verwenden eine exakte aktive Masterabfrage nach wissenschaftlichem
   Namen, Rang und Reich; `Sciurus vulgaris` ist dafür der verbindliche reale Fall. Native Playeraktionen verwerfen
@@ -1150,7 +1150,25 @@ Aktuelle Planung:
   sowie getrennte Tier-/Pflanzen-Homonyme. Kein Aufbau läuft mehr. Der Benutzer bestätigte am 5. September
   Weißstorch in Lightroom und den passenden Paket-/Masterstand im Zusatzmodul-Manager und gab Commit/Push frei.
   Das bestätigt noch keine Zuweisung oder vollständige Lightroom-Abnahme. Offen bleiben die in der Roadmap
-  gebündelten Praxistests, die zusätzliche Versionsprüfung direkt in Lightroom und das Abschlussaudit.
+  gebündelten Praxistests und das Abschlussaudit. Der zusätzliche lokale Versionsvergleich ist seit 0.4.24.7
+  im Zusatzmodul-Manager (mit erneuter Prüfung) und beim Öffnen des Zuweisungsfensters umgesetzt und anschließend
+  vom Benutzer bestätigt. `taxonomy-data-versions.mjs` vergleicht Referenz, Master, Suchpaket und
+  anwendbare Korrekturschicht mit begrenzten Manifest-Lesezugriffen, ohne SQLite- oder Katalogscan. Der
+  Master-Service schreibt während seiner Aktionen einen kleinen Laufhinweis mit Zeitstempel; alte oder nicht
+  überprüfbare Laufhinweise werden nicht als bestätigter aktueller Stand ausgegeben. Kein automatischer Neubau.
+  Die atomare Aktivierung von Master und Lightroom-Paket ist vorhanden. Ein inkrementeller Vollaufbau, der nur
+  geänderte Taxa/Quellen neu berechnet und danach ebenfalls einen geprüften neuen Kandidaten atomar aktiviert, ist
+  noch nicht umgesetzt; dieser Architekturpunkt steht als eigener Restpunkt vor dem Audit.
+  Nächster fachlicher Punkt: globale deutsche Namenspräferenz bei bewusster Auswahl einer Suchalternative.
+  Die Namenswahl mit bestätigter Rückfrage und expliziter Rückwahl ist seit 0.4.24.8 technisch umgesetzt:
+  gemeinsamer `taxonomy-name-preference-service.mjs`, vorhandene atomare Korrekturschicht und prozessübergreifende
+  Korrektur-Schreibsperre. Einzelheiten und Grenzen stehen in `docs/taxonomy-name-preference-plan.md`.
+  Der erste Bedienungstest zeigte, dass der Explorer einen ergänzenden Anbieternamen fälschlich als bevorzugt
+  markierte, obwohl Master und Lightroom übereinstimmten. Taxondetails kennzeichnen den Masterwert nun explizit;
+  der erneute praktische Speicher-/Rückwahltest mit Weißstorch/Weissstorch wurde erfolgreich bestätigt. Leere
+  Datenbanksuche startet keinen verzögerten Suchlauf mehr. Das vollständige Zurücksetzen auf den Anbieterstandard
+  bleibt offen. Keine globale
+  Änderung allein durch Suchtext oder Vorschau, keine beiläufige Projekt-/Assetumbenennung.
   Die alte Windows-Aufgabe `Datenabruf Website` wurde vom Benutzer gelöscht; ihr Lauf um 07:00
   hatte Daten und offene Dokumentation ohne aktualisierten Projektstatus veröffentlicht. Der Pages-Quality-Job
   stoppte deshalb vor dem Deployment. Die Statuskorrektur gehört zur jetzt freigegebenen gemeinsamen Veröffentlichung.
@@ -1176,7 +1194,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.24.6`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.24.8`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist

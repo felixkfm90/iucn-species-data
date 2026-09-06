@@ -38,6 +38,8 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/project-conflicts/decide", { name: "taxonomy-maintenance", action: "decide-project-conflict" }],
   ["/api/taxonomy/corrections/save", { name: "taxonomy-correction", action: "save" }],
   ["/api/taxonomy/corrections/reset", { name: "taxonomy-correction", action: "reset" }],
+  ["/api/taxonomy/name-preference/preview", { name: "taxonomy-correction", action: "preference-preview" }],
+  ["/api/taxonomy/name-preference/save", { name: "taxonomy-correction", action: "preference-save" }],
   ["/api/taxonomy/master/build", { name: "taxonomy-master", action: "build" }],
   ["/api/taxonomy/master/apply-corrections", { name: "taxonomy-master", action: "apply-corrections" }],
   ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],

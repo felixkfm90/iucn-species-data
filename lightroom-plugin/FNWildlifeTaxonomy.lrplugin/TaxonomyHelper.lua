@@ -330,4 +330,12 @@ function TaxonomyHelper.openCorrection(masterTaxonId)
   })
 end
 
+function TaxonomyHelper.namePreference(payload)
+  local repositoryRoot = LrPathUtils.parent(LrPathUtils.parent(_PLUGIN.path))
+  return executeHelperRequest(payload, {
+    helperPath = LrPathUtils.child(repositoryRoot, "species-explorer/lightroom-name-preference-helper.mjs"),
+    helperLabel = "Namenswahl",
+  })
+end
+
 return TaxonomyHelper

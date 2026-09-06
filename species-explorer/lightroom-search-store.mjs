@@ -335,6 +335,7 @@ export class LightroomSearchStore {
       rank: row.rank,
       kingdom: row.kingdom || null,
       lifecycleState: row.lifecycle_state,
+      projectLinked: this.projectRows.all(row.master_taxon_id).length > 0,
       referenceState: row.reference_state,
       hierarchy,
       names,

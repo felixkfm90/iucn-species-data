@@ -1,6 +1,6 @@
 # Quellenentscheidung für die globale Taxonomiereferenz
 
-Stand: 2026-08-08
+Stand: 2026-09-06
 
 Status: Phase 9.1 abgeschlossen und für den erweiterten lokalen Masterbestand fortgeschrieben; verbindliche
 Grundlage aller Importphasen
@@ -197,6 +197,10 @@ Lücken bereits offline geschlossen werden.
 6. GBIF darf einen alten GBIF-Key auf den aktuellen CoL-XR-Taxonbezug abbilden, aber keine konkurrierende
    Hierarchie erzeugen.
 7. Deutsche Namen sind Vorschläge mit Sprache, Quelle und Status. Ein bereits bestätigter Projektname hat Vorrang.
+   Seit 0.4.24.8 kann eine bewusst gewählte deutsche Variante als eigene Korrektur übernommen werden. Das
+   Ersetzen einer geschützten eigenen Präferenz beziehungsweise eines Projektnamens in der globalen Anzeige
+   erfordert eine Rückfrage; die Projektdatei selbst wird nicht umbenannt. Die bestehende Priorität eigener
+   Korrekturen bleibt erhalten. Details: `taxonomy-name-preference-plan.md`.
 8. Wikidata- und Animalia-Namen werden nie allein durch Zeichenkettenähnlichkeit produktiv übernommen.
 9. IUCN-Daten werden erst nach bestätigter Projektart und bestehender Assessment-Zuordnung ergänzt.
 10. Jede produktive Übernahme bleibt eine explizite Benutzerentscheidung mit Vorschau.

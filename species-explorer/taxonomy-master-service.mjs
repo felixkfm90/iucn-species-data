@@ -25,6 +25,8 @@ import {
   isMasterSpeciesCandidate,
 } from "./taxonomy-taxon-quality.mjs";
 import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
+import { masterReferenceRelease, taxonomyMasterReferenceStatus } from "./taxonomy-data-versions.mjs";
+import { createTaxonomyUpdatePresence } from "./taxonomy-update-presence.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -64,42 +66,6 @@ function initialState() {
 
 function cleanText(value) {
   return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ");
-}
-
-function masterReferenceRelease(manifest = null) {
-  const source = Array.isArray(manifest?.sources)
-    ? manifest.sources.find((entry) => cleanText(entry?.provider) === "catalogue-of-life")
-    : null;
-  return cleanText(source?.providerVersion || source?.releaseId);
-}
-
-function taxonomyMasterReferenceStatus(activeReferenceRelease, lifecycle = {}) {
-  const activeRelease = cleanText(activeReferenceRelease);
-  const activeMasterRelease = masterReferenceRelease(lifecycle.active);
-  const candidateRelease = masterReferenceRelease(lifecycle.candidate);
-  const hasActiveMaster = Boolean(lifecycle.active);
-  const hasCandidate = Boolean(lifecycle.candidate);
-  const activeMatchesReference = Boolean(
-    activeRelease
-    && hasActiveMaster
-    && activeMasterRelease === activeRelease
-  );
-  const candidateMatchesActiveReference = Boolean(
-    activeRelease
-    && hasCandidate
-    && candidateRelease === activeRelease
-  );
-  return {
-    status: activeRelease
-      ? activeMatchesReference ? "current" : "stale"
-      : "unavailable",
-    activeRelease,
-    activeMasterRelease,
-    candidateRelease,
-    activeMatchesReference,
-    candidateMatchesActiveReference,
-    needsMasterRebuild: Boolean(activeRelease && !activeMatchesReference),
-  };
 }
 
 async function readJson(filePath, fallback) {
@@ -333,6 +299,7 @@ export class TaxonomyMasterService {
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
+    this.withVersionPresence = createTaxonomyUpdatePresence(this.taxonomyRoot);
   }
 
   assertOpen() {
@@ -489,7 +456,7 @@ export class TaxonomyMasterService {
       progressPhase: "Korrekturen prüfen",
       startedAt: this.now().toISOString(),
     };
-    this.runPromise = this.runApplyCorrections().catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runApplyCorrections()).catch(() => null);
     return this.status();
   }
 
@@ -595,7 +562,7 @@ export class TaxonomyMasterService {
       progressPhase: refreshProviders ? "Anbieterquellen" : "Vorbereitung",
       startedAt,
     };
-    this.runPromise = this.runBuild({ ...options, refreshProviders }).catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runBuild({ ...options, refreshProviders })).catch(() => null);
     return this.status();
   }
 
@@ -766,7 +733,7 @@ export class TaxonomyMasterService {
       progressPhase: "Aktivierung",
       startedAt: this.now().toISOString(),
     };
-    this.runPromise = this.runActivate({ confirmed }).catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runActivate({ confirmed })).catch(() => null);
     return this.status();
   }
 
@@ -822,7 +789,7 @@ export class TaxonomyMasterService {
       progressPhase: "Wiederherstellung",
       startedAt: this.now().toISOString(),
     };
-    this.runPromise = this.runRollback({ confirmed }).catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runRollback({ confirmed })).catch(() => null);
     return this.status();
   }
 
@@ -875,7 +842,7 @@ export class TaxonomyMasterService {
       progressPhase: "Lightroom-Suchpaket",
       startedAt: this.now().toISOString(),
     };
-    this.runPromise = this.runLightroomPackageSync().catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runLightroomPackageSync()).catch(() => null);
     return this.status();
   }
 
