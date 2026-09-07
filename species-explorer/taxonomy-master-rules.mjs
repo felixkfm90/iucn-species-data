@@ -80,6 +80,12 @@ export function isExactTaxonMatch(left, right) {
   );
 }
 
+export function compareMasterFieldCandidates(left, right) {
+  return providerFieldPriority(right.provider, right) - providerFieldPriority(left.provider, left)
+    || Number(right.confidence || 0) - Number(left.confidence || 0)
+    || left.fieldValue.localeCompare(right.fieldValue, "de", { sensitivity: "base" });
+}
+
 export function mayCloseColReferenceGap(colRecord, externalRecord) {
   if (!colRecord || !externalRecord) return false;
   return isExactTaxonMatch(colRecord, externalRecord)

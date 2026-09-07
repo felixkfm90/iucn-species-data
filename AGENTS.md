@@ -1,6 +1,6 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
@@ -1166,8 +1166,15 @@ Aktuelle Planung:
   Der erste Bedienungstest zeigte, dass der Explorer einen ergänzenden Anbieternamen fälschlich als bevorzugt
   markierte, obwohl Master und Lightroom übereinstimmten. Taxondetails kennzeichnen den Masterwert nun explizit;
   der erneute praktische Speicher-/Rückwahltest mit Weißstorch/Weissstorch wurde erfolgreich bestätigt. Leere
-  Datenbanksuche startet keinen verzögerten Suchlauf mehr. Das vollständige Zurücksetzen auf den Anbieterstandard
-  bleibt offen. Keine globale
+  Datenbanksuche startet keinen verzögerten Suchlauf mehr. Version 0.4.24.9 ergänzt `Anbieterstandard verwenden`
+  für den deutschen Namen mit Vorschau und Bestätigung. `germanNameMode: provider` löst auch eingebaute eigene
+  Namen über den gemeinsamen Korrekturzeiger ab und folgt nach Master-Neubau erneut der Quellenpriorität;
+  englische Korrekturen und vorherige Namenswahl bleiben erhalten. Fehlende oder nicht eindeutig belegbare
+  Anbieterwerte blockieren die Rücksetzung. SQLite-Neubau-/Rückwahltests sind erfolgreich; der Benutzer hat
+  Anbieterstandard und Rückwahl in beiden Richtungen praktisch bestätigt. Version 0.4.24.10 ergänzt in Lightroom
+  `Namenswahl übernehmen` für eine direkte globale Präferenz ohne Fotozuweisung; nur dieser neue Button braucht
+  noch den kurzen Bedienungstest.
+  Keine globale
   Änderung allein durch Suchtext oder Vorschau, keine beiläufige Projekt-/Assetumbenennung.
   Die alte Windows-Aufgabe `Datenabruf Website` wurde vom Benutzer gelöscht; ihr Lauf um 07:00
   hatte Daten und offene Dokumentation ohne aktualisierten Projektstatus veröffentlicht. Der Pages-Quality-Job
@@ -1194,7 +1201,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.24.8`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.24.10`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist

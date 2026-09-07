@@ -343,6 +343,7 @@ function normalizeCorrection(entry) {
   return {
     scientificName,
     germanName: cleanName(entry.germanName),
+    ...(entry.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
     englishName: cleanName(entry.englishName),
     note: cleanName(entry.note),
     updatedAt: String(entry.updatedAt || "").trim(),

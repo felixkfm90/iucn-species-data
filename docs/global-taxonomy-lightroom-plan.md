@@ -1,10 +1,10 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.8 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.10 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
 Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
 geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
 automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
@@ -17,8 +17,11 @@ Version 0.4.24.7 ergänzt den asynchronen lokalen Referenz-/Master-/Paketverglei
 Zuweisungsfenster, einschließlich anwendbarer Korrekturschicht und vorsichtiger Laufhinweise. Die Anzeige startet
 keine Downloads, Aufbauten oder Katalogscans; sie prüft nicht die neuesten Online-Releases. Der Benutzer hat die
 Anzeige anschließend bestätigt. Vertrag und Grenzen: `lightroom-search-package.md`. Die Namenswahl mit Rückfrage
-und expliziter Rückwahl ist in 0.4.24.8 umgesetzt und praktisch bestätigt; die vollständige Rücknahme auf den
-Anbieterstandard bleibt offen. Details: `taxonomy-name-preference-plan.md`.
+und expliziter Rückwahl ist in 0.4.24.8 umgesetzt und praktisch bestätigt. Version 0.4.24.9 ergänzt die bestätigte
+Rücksetzung des deutschen Namens auf den belegten Anbieterstandard einschließlich eingebauter eigener Werte;
+Quellenupdates werten diese Wahl erneut aus. Anbieterstandard und Rückwahl sind in beiden Richtungen praktisch
+bestätigt. 0.4.24.10 ergänzt die direkte Aktion `Namenswahl übernehmen` in Lightroom ohne Fotozuweisung;
+der kurze Bedienungstest dieses Buttons steht noch aus. Details: `taxonomy-name-preference-plan.md`.
 
 ## Ziel und Abgrenzung
 

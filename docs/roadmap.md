@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -1396,9 +1396,15 @@ automatisiert, nicht zusätzlich im realen Lightroom geprüft. Details: `docs/li
    Der erste Bedienungstest fand und korrigierte eine Explorer-Anzeigelücke zwischen einem gefundenen
    Anbieternamen und dem tatsächlich bevorzugten Masterwert; Master und Lightroom waren dabei konsistent.
    Der erneute praktische Speicher-/Rückwahltest mit Weißstorch/Weissstorch wurde erfolgreich bestätigt.
-   Teilerfolge und Rückwahl nach realem Master-Neuaufbau bleiben Teil der späteren Betriebsprüfung. Vollständiges
-   Zurücksetzen auf den Anbieterstandard (statt Rückwahl eines vorherigen Namens) benötigt weiterhin einen
-   Neubau und ist vor Audit separat umzusetzen oder begründet zu verschieben. Keine Taxon-ID-Änderung.
+   Teilerfolge und Rückwahl nach produktivem Master-Neuaufbau bleiben Teil der späteren Betriebsprüfung.
+   `Anbieterstandard verwenden` ist für deutsche Namen ab 0.4.24.9 mit Rückfrage umgesetzt; englische
+   Korrekturen bleiben erhalten. Der schnelle Korrekturweg löst auch eingebaute eigene Namen ab. Ein echter
+   SQLite-Test prüft anschließenden Master-/Paketneubau mit geändertem Anbieterwert und erneute Rückwahl.
+   Anbieterstandard und Rückwahl sind in beiden Richtungen praktisch bestätigt; fehlende oder uneindeutige
+   Anbieterbelege bleiben gesperrt. Ergänzung 0.4.24.10: `Namenswahl übernehmen` in Lightroom speichert eine
+   gewählte Variante unmittelbar global, ohne Fotozuweisung. Nur der kurze Bedienungstest dieses Buttons steht
+   noch aus; danach den abgenommenen Stand sichern und mit Taxonidentitäten/Aufteilungen/Zusammenführungen fortfahren.
+   Keine Taxon-ID-Änderung. Details: `taxonomy-name-preference-plan.md`.
 3. **Fachliche Entscheidung:** Umgang mit geänderter Taxonidentität, Aufteilung und Zusammenführung abschließen.
    Der Katalogabgleich überspringt nicht mehr eindeutig auflösbare Master-IDs bereits sicher. Eine bestätigte
    Nachfolgerzuordnung fehlt. Vor Phasenabschluss entweder umsetzen oder mit ausdrücklicher Begründung verschieben;

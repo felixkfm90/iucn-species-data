@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.24.8 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Suchpaket und Plug-in Version 0.4.24.10 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
@@ -78,8 +78,18 @@ Ein fehlgeschlagener globaler Schritt wird getrennt von der Fotozuweisung gemeld
 `Globale Namenswahl erneut speichern` ohne Wiederholung der Zuweisung nachgeholt werden.
 
 Explorer neu starten und Plug-in neu laden; kein Master-/Paketneubau nötig. Für bestehende Fotos bleibt die
-bewusst gestartete FN-Aktualisierung zuständig. Praktische Abnahme und vollständiges Zurücksetzen auf den
-Anbieterstandard bleiben offen. Bedienvertrag, Rückwahl und Fehlergrenzen: `taxonomy-name-preference-plan.md`.
+bewusst gestartete FN-Aktualisierung zuständig. Die Namenswahl aus 0.4.24.8 ist praktisch bestätigt.
+Ab 0.4.24.9 setzt `Anbieterstandard verwenden ...` nach Vorschau und Bestätigung den deutschen Namen global
+zurück, ohne Fotozuweisung. Die Aktion verwendet eine gezielte Abfrage im Master, den gemeinsamen Korrekturzeiger
+und eine dauerhafte Anbieterwahl statt eines festgeschriebenen Namens. Auch bereits eingebaute eigene Werte
+werden dadurch abgelöst. Englisch und Rückwahl bleiben erhalten. Alte oder unzureichende Herkunftsdaten führen
+zu einer verständlichen Ablehnung. Anbieterstandard und Rückwahl wurden vom Benutzer in beiden Richtungen bestätigt.
+Ab 0.4.24.10 kann eine im Auswahlfeld gewählte Namensvariante über `Namenswahl übernehmen` unmittelbar global
+gespeichert werden. Der Button verwendet dieselbe Vorschau, Konfliktrückfrage, Revisionsprüfung und Aktivierung
+wie die Zuweisung; er ruft keinen Katalog-Schreibweg auf. Erfolgreiche Speicherung und erfolgreiche Wiederholung
+laden den sichtbaren Namen neu. Unveränderte Auswahl und offene Speicherung geben keinen weiteren Direktauftrag
+frei. Die neue Direktaktion muss noch kurz praktisch geprüft werden.
+Bedienvertrag, Rückwahl und Fehlergrenzen: `taxonomy-name-preference-plan.md`.
 
 ## Ziel
 
@@ -232,7 +242,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.8`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.10`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -576,7 +586,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.8`, der Suchpaketstatus sowie die zwei
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.10`, der Suchpaketstatus sowie die zwei
    Einträge `Taxonomie zuweisen` und `FN Wildlife verwalten ...` ohne Lua-Fehler erscheinen. Im
    Verwaltungsfenster müssen alle zehn Aktionen in vier klar beschrifteten Gruppen erreichbar sein. Die beiden
    Aktualisierungen müssen Auswahl und gesamten Katalog klar unterscheiden.

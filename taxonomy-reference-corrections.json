@@ -29,33 +29,33 @@
       "germanName": "Weissstorch",
       "englishName": "",
       "note": "Bewusst gewählte deutsche Namensvariante",
-      "updatedAt": "2026-09-06T11:11:16.686Z",
+      "updatedAt": "2026-09-07T13:56:34.283Z",
       "namePreference": {
         "masterTaxonId": "mtx_dd24e7a0743a4af47683495d736b5aae",
-        "previousGermanName": "Weißstorch",
-        "operationToken": "e508719fff53f55db7bfa9301ab434640ccc6b1408df0cc8c81db7ab90606a98",
+        "previousGermanName": "Hausstorch",
+        "operationToken": "4baf03db7048416392ad4995551d6f1606e69bf614e6d646cec7988ed436c480",
         "previousSources": [
           {
-            "name": "Weißstorch",
-            "kind": "vernacular",
-            "language": "de",
-            "source": "Eigene Korrektur"
-          },
-          {
-            "name": "Weißstorch",
+            "name": "Hausstorch",
             "kind": "vernacular",
             "language": "de",
             "source": "Catalogue of Life"
           },
           {
-            "name": "Weißstorch",
+            "name": "Hausstorch",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "Catalogue of Life"
+          },
+          {
+            "name": "Hausstorch",
             "kind": "vernacular",
             "language": "de",
             "source": "iNaturalist"
           }
         ],
         "previousMasterVersion": "master-20260905054823067",
-        "previousCorrectionRevision": "408c78e03845acb011357aad6c653ca3af7b96f013a2b4139a9cc2139f59c334",
+        "previousCorrectionRevision": "b27bca77c163afc979feaffc292587aed92b67fb90cfd125e7e6e34173c3fc89",
         "publicationRevision": "a50bf7fb0b00f404ab404a333a0eeb6cc9bcdd600bbe467534aa3b73ff7b428f"
       }
     }

@@ -18,8 +18,8 @@ import {
 import {
   HIERARCHY_FIELDS,
   chooseFieldAssertion,
+  compareMasterFieldCandidates as compareCandidates,
   deriveMasterStatuses,
-  providerFieldPriority,
 } from "./taxonomy-master-rules.mjs";
 import {
   createTaxonomyMasterSchema,
@@ -165,6 +165,7 @@ function normalizeCorrection(value = {}) {
     rank: normalizeRank(value.rank),
     kingdom: cleanText(value.kingdom || "Animalia"),
     germanName: cleanText(value.germanName),
+    ...(value.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
     englishName: cleanText(value.englishName),
     note: cleanText(value.note),
   };
@@ -441,12 +442,6 @@ function fieldCandidate({
 
 function candidateKey(candidate) {
   return `${candidate.fieldName}|${candidate.language || ""}`;
-}
-
-function compareCandidates(left, right) {
-  return providerFieldPriority(right.provider, right) - providerFieldPriority(left.provider, left)
-    || Number(right.confidence || 0) - Number(left.confidence || 0)
-    || left.fieldValue.localeCompare(right.fieldValue, "de", { sensitivity: "base" });
 }
 
 function summarizeDatabase(database) {
@@ -1060,6 +1055,7 @@ export async function buildTaxonomyMasterCandidate({
         }
       }
       const projectRelease = releaseByProvider.get("project");
+      const useProviderGermanName = group.corrections.some((entry) => entry.germanNameMode === "provider");
       for (const project of group.projects) {
         linkProjectTaxon(database, {
           projectTaxonKey: project.projectTaxonKey,
@@ -1080,6 +1076,7 @@ export async function buildTaxonomyMasterCandidate({
           ["german-name", project.germanName, "de"],
           ["english-name", project.englishName, "en"],
         ]) {
+          if (useProviderGermanName && fieldName === "german-name") continue;
           fieldCandidates.push(fieldCandidate({
             fieldName,
             fieldValue,
@@ -1097,6 +1094,7 @@ export async function buildTaxonomyMasterCandidate({
           ["german-name", correction.germanName, "de"],
           ["english-name", correction.englishName, "en"],
         ]) {
+          if (useProviderGermanName && fieldName === "german-name") continue;
           fieldCandidates.push(fieldCandidate({
             fieldName,
             fieldValue,
@@ -1115,7 +1113,9 @@ export async function buildTaxonomyMasterCandidate({
       const explicitFieldKeys = new Set(fieldCandidates
         .filter((field) => field && ["manual", "project"].includes(field.originKind))
         .map(candidateKey));
-      const currentFields = previousState.fieldsFor(previousMasterTaxonId, explicitFieldKeys);
+      const currentFields = previousState.fieldsFor(previousMasterTaxonId, explicitFieldKeys)
+        .filter((field) => !useProviderGermanName || field.field_name !== "german-name"
+          || field.origin_kind === "source");
       const protectedPreviousFieldKeys = new Set([
         ...explicitFieldKeys,
         ...currentFields

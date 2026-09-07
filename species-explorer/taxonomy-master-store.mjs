@@ -390,9 +390,9 @@ export class TaxonomyMasterStore {
     if (correction?.germanName) {
       names.germanNames = uniqueBy([{
         name: correction.germanName,
-        source: PROVIDER_LABELS.manual,
-        provider: "manual",
-        providerVersion: this.correctionRelease.releaseId,
+        source: PROVIDER_LABELS[correction.germanNameSource?.provider || "manual"],
+        provider: correction.germanNameSource?.provider || "manual",
+        providerVersion: correction.germanNameSource?.providerVersion || this.correctionRelease.releaseId,
         preferred: true,
         verified: true,
         selected: true,

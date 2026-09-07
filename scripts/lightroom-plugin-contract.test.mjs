@@ -77,7 +77,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.8");
+  assert.equal(version.slice(1).join("."), "0.4.24.10");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -1021,7 +1021,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.8/);
+  assert.match(provider, /Version: 0\.4\.24\.10/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
@@ -1044,7 +1044,7 @@ test("Versionsvergleich läuft asynchron und verändert weder Katalog noch Zuwei
   for (const key of ["referenceRelease", "masterReferenceRelease", "masterVersion", "packageMasterVersion", "packageId", "correctionRevision"]) assert.match(view, new RegExp(key));
 });
 
-test("Bewusste deutsche Namenswahl bestätigt Konflikte und veröffentlicht erst nach Fotozuweisung", async () => {
+test("Namenswahl bestätigt Konflikte und erlaubt eine ausdrückliche Übernahme ohne Fotozuweisung", async () => {
   const window = await source("AssignmentWindow.lua");
   const preference = await source("NamePreference.lua");
   const helper = await source("TaxonomyHelper.lua");
@@ -1057,6 +1057,19 @@ test("Bewusste deutsche Namenswahl bestätigt Konflikte und veröffentlicht erst
   assert.ok(window.indexOf("KeywordWriter.assign,") < window.indexOf("NamePreference.publish(preference)"));
   assert.match(window, /preference and result\.photoCount > 0/);
   assert.match(window, /Globale Namenswahl erneut speichern/);
+  const directSave = window.match(/local function saveNamePreference\(\)([\s\S]*?)\n  local view =/)[1];
+  assert.match(directSave, /LrTasks\.pcall\(NamePreference\.prepare, taxon, germanName\)/);
+  assert.match(directSave, /if ok and payload then[\s\S]*NamePreference\.publish\(payload\)/);
+  assert.match(directSave, /if not published then pendingNamePreference = payload end/);
+  assert.match(directSave, /loadTaxon\(taxon\.masterTaxonId/);
+  assert.doesNotMatch(directSave, /KeywordWriter|withWriteAccessDo|setPropertyForPlugin|createKeyword|getTargetPhotos/);
+  assert.match(window, /LrTasks\.startAsyncTask\(saveNamePreference\)/);
+  assert.match(window, /enabled = bind\("canSavePreference"\)/);
+  assert.match(window, /props\.selectedGermanName ~= currentTaxon\.germanName/);
+  assert.doesNotMatch(preference, /Fotos zugewiesen;/);
+  assert.match(window, /NamePreference\.providerStandard, taxon/);
+  assert.match(preference, /function NamePreference\.providerStandard\(taxon\)/);
+  assert.match(preference, /useProviderStandard = true/);
   assert.match(helper, /lightroom-name-preference-helper\.mjs/);
   assert.doesNotMatch(preference, /withWriteAccessDo|setPropertyForPlugin|createKeyword/);
 });

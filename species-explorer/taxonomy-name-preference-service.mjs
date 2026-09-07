@@ -8,6 +8,7 @@ import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 import { activateTaxonomyCorrectionReleaseUnlocked, prepareTaxonomyCorrectionRelease } from "./taxonomy-correction-release.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
+import { readProviderGermanName } from "./taxonomy-provider-standard.mjs";
 
 const text = (value) => typeof value === "string" ? value.normalize("NFKC").trim().replace(/\s+/gu, " ") : "";
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -26,6 +27,7 @@ export function createTaxonomyNamePreferenceService({
   readVersions = readTaxonomyDataVersions,
   activate = activateTaxonomyCorrectionReleaseUnlocked,
   prepare = prepareTaxonomyCorrectionRelease,
+  readProviderStandard = readProviderGermanName,
 } = {}) {
   async function inspect(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("Die Namenswahl-Anfrage ist ungültig.");
@@ -52,17 +54,31 @@ export function createTaxonomyNamePreferenceService({
         ? text(entry.namePreference.previousGermanName) : "";
       if (previous && !choices.includes(previous)) choices.push(previous);
       if (payload.usePrevious === true && !previous) throw new Error("Für diese Art ist keine vorherige Namenswahl gespeichert.");
-      const germanName = payload.usePrevious === true ? previous : text(payload.germanName);
-      if (germanName.length > 120 || !choices.includes(germanName)) throw new Error("Bitte einen belegten deutschen Namen dieser Art auswählen.");
-      const protectedName = Boolean(entry?.germanName || taxon.projectLinked || (taxon.names || []).some((name) => (
+      const useProviderStandard = payload.useProviderStandard === true;
+      if (useProviderStandard && payload.usePrevious === true) throw new Error("Bitte genau eine Namenswahl-Aktion auswählen.");
+      const providerStandard = useProviderStandard
+        ? await readProviderStandard({ taxonomyRoot, masterTaxonId: taxon.masterTaxonId }) : null;
+      if (providerStandard) {
+        const after = await readVersions({ searchRoot, taxonomyRoot });
+        if (after.state !== "current" || ["masterVersion", "packageId", "correctionRevision"].some((key) => after[key] !== versions[key])) {
+          throw new Error("Die Datenbank wurde während der Prüfung geändert. Bitte erneut prüfen.");
+        }
+      }
+      const germanName = providerStandard ? text(providerStandard.germanName)
+        : payload.usePrevious === true ? previous : text(payload.germanName);
+      if (!germanName || germanName.length > 120 || (!providerStandard && !choices.includes(germanName))) throw new Error("Bitte einen belegten deutschen Namen dieser Art auswählen.");
+      const protectedName = Boolean(entry?.germanName || entry?.germanNameMode === "provider" || taxon.projectLinked || (taxon.names || []).some((name) => (
         name.language === "de" && text(name.name) === text(taxon.germanName)
         && ["Eigene Korrektur", "Arten-Explorer"].includes(name.source)
       )));
-      const unchanged = germanName === text(taxon.germanName);
+      const sameMode = useProviderStandard === (entry?.germanNameMode === "provider");
+      const unchanged = germanName === text(taxon.germanName) && sameMode
+        && taxonomyCorrectionsRevision(document.entries) === versions.masterCorrectionRevision;
       const selection = {
         masterTaxonId: taxon.masterTaxonId, scientificName: taxon.acceptedScientificName,
         kingdom: taxon.kingdom, previousGermanName: text(taxon.germanName), germanName,
-        requiresConfirmation: !unchanged && protectedName, unchanged, choices,
+        requiresConfirmation: !unchanged && (protectedName || useProviderStandard), unchanged, choices,
+        ...(useProviderStandard ? { useProviderStandard: true, providerStandard } : {}),
       };
       const snapshot = { selection, packageStatus: store.status(), document };
       return { document, taxon, entry, versions, selection, token: digest(snapshot) };
@@ -83,8 +99,13 @@ export function createTaxonomyNamePreferenceService({
         const { selection, document, entry, taxon, versions } = value;
         // Exact replay of an already published operation is harmless.
         if (payload.token && selection.unchanged && entry?.namePreference?.operationToken === payload.token) return { saved: true, unchanged: true };
-        if (payload.token && entry?.namePreference?.operationToken === payload.token && entry.germanName === selection.germanName
+        if (payload.token && entry?.namePreference?.operationToken === payload.token
+            && (entry.germanNameMode === "provider" ? selection.useProviderStandard === true : entry.germanName === selection.germanName)
             && taxonomyCorrectionsRevision(document.entries) === entry.namePreference.publicationRevision) {
+          if (selection.useProviderStandard && (digest(entry.namePreference.providerStandard) !== digest(selection.providerStandard)
+              || entry.namePreference.previousMasterVersion !== versions.masterVersion)) {
+            throw new Error("Der Anbieterstand wurde verändert. Bitte die ausstehende Rücksetzung im Arten-Explorer prüfen.");
+          }
           await activate({ taxonomyRoot, searchRoot, corrections: document.entries });
           return { saved: true, germanName: selection.germanName };
         }
@@ -95,14 +116,18 @@ export function createTaxonomyNamePreferenceService({
         if (revision !== versions.masterCorrectionRevision) throw new Error("Es gibt noch nicht aktivierte Namenskorrekturen. Bitte diese zuerst im Arten-Explorer bearbeiten.");
         const nextEntry = {
           ...entry, scientificName: taxon.acceptedScientificName, rank: "species", kingdom: taxon.kingdom,
-          germanName: selection.germanName, englishName: entry?.englishName || "", note: entry?.note || "Bewusst gewählte deutsche Namensvariante",
+          germanName: selection.useProviderStandard ? "" : selection.germanName,
+          englishName: entry?.englishName || "", note: entry?.note || "Bewusst gewählte deutsche Namensvariante",
           updatedAt: new Date().toISOString(),
           namePreference: {
             masterTaxonId: taxon.masterTaxonId, previousGermanName: selection.previousGermanName, operationToken: payload.token,
             previousSources: (taxon.names || []).filter((name) => name.language === "de" && text(name.name) === selection.previousGermanName),
             previousMasterVersion: versions.masterVersion, previousCorrectionRevision: versions.masterCorrectionRevision,
+            ...(selection.useProviderStandard ? { providerStandard: selection.providerStandard } : {}),
           },
         };
+        if (selection.useProviderStandard) nextEntry.germanNameMode = "provider";
+        else delete nextEntry.germanNameMode;
         const next = { ...document, entries: [...document.entries.filter((item) => item !== entry), nextEntry] };
         nextEntry.namePreference.publicationRevision = taxonomyCorrectionsRevision(next.entries);
         // Resolve identity in both databases before changing the editable correction document.

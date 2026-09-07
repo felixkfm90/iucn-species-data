@@ -37,11 +37,11 @@ return {
     return {
       {
         title = "FN Wildlife Taxonomie",
-        synopsis = "Version 0.4.24.8",
+        synopsis = "Version 0.4.24.10",
         factory:column({
           bind_to_object = propertyTable,
           spacing = factory:control_spacing(),
-          factory:static_text({ title = "Version: 0.4.24.8" }),
+          factory:static_text({ title = "Version: 0.4.24.10" }),
           factory:static_text({ title = LrView.bind("fnPackageStatus"), width_in_chars = 78 }),
           factory:static_text({ title = LrView.bind("fnVersionStatus"), width_in_chars = 78, height_in_lines = 2 }),
           factory:static_text({ title = LrView.bind("fnVersionDetails"), width_in_chars = 78, height_in_lines = 7, selectable = true }),

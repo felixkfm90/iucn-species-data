@@ -982,7 +982,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.24.8` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.24.10` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1241,8 +1241,19 @@ gemeldet und können ohne erneute Fotozuweisung nachgeholt werden. Zum erstmalig
 Explorer neu starten und Zusatzmodul neu laden; danach wird eine bestätigte Namenswahl ohne weiteren Neustart und
 ohne Datenbankneubau in beiden Anwendungen aktiv. Der Explorer unterscheidet dabei den tatsächlich bevorzugten
 Masterwert von bloßen alternativen Suchtreffern. Die praktische Abnahme mit Weißstorch/Weissstorch ist erfolgt;
-das vollständige Zurücksetzen auf den Anbieterstandard bleibt offen. Details:
-`docs/taxonomy-name-preference-plan.md`.
+Version 0.4.24.9 ergänzt `Anbieterstandard verwenden …` in beiden Programmen. Nach Vorschau und Bestätigung
+folgt der deutsche Anzeigename wieder den Anbieterständen, auch wenn eine eigene Variante bereits im Master
+eingebaut war. Englische Korrekturen bleiben erhalten; `Vorherige Namenswahl` erlaubt die Rückwahl. In Lightroom
+wirkt diese Aktion unmittelbar auf die globale Namenswahl und weist keine Fotos zu. Bestehende Fotos werden erst
+über die bewusste FN-Aktualisierung angepasst. Fehlt ein eindeutig belegbarer Anbietername, wird nichts geändert.
+Zum Laden des neuen Codes Explorer einmal neu starten und das Plug-in neu laden; spätere Namensänderungen brauchen
+keinen Neustart oder Masterneubau. Anbieterstandard und Rückwahl sind in beiden Richtungen praktisch bestätigt.
+Version 0.4.24.10 ergänzt in Lightroom `Namenswahl übernehmen`: Eine andere Variante unter `Deutscher Name`
+wählen und den Button drücken, gegebenenfalls die bestehende Konfliktrückfrage bestätigen. Der Name wird
+anschließend als bevorzugt markiert und ist auch im Explorer aktiv, ohne ein Foto zuzuweisen. Der Button bleibt
+beim bereits bevorzugten Namen deaktiviert. `Vorherige Namenswahl auswählen` lässt sich genauso übernehmen.
+Nur der neue Direktbutton benötigt noch den kurzen Lightroom-Bedienungstest.
+Details: `docs/taxonomy-name-preference-plan.md`.
 
 Die Aktivierung von CoL-Referenz, Master und Lightroom-Suchpaket erfolgt bereits atomar über geprüfte neue Stände.
 Ein weitergehender inkrementeller Vollaufbau ist davon zu unterscheiden: Er könnte unveränderte Taxa wiederverwenden

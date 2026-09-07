@@ -196,7 +196,7 @@ export class LightroomSearchStore {
           german_key: germanTaxonomySearchKey(term),
           term_kind: "vernacular",
           language,
-          source_provider: "manual",
+          source_provider: language === "de" ? correction.germanNameSource?.provider || "manual" : "manual",
           weight: 0,
           project_linked: 0,
         };
@@ -312,7 +312,7 @@ export class LightroomSearchStore {
         term: correction.germanName,
         term_kind: "vernacular",
         language: "de",
-        source_provider: "manual",
+        source_provider: correction.germanNameSource?.provider || "manual",
       },
       correction?.englishName && {
         term: correction.englishName,

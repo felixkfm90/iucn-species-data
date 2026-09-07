@@ -200,7 +200,11 @@ Lücken bereits offline geschlossen werden.
    Seit 0.4.24.8 kann eine bewusst gewählte deutsche Variante als eigene Korrektur übernommen werden. Das
    Ersetzen einer geschützten eigenen Präferenz beziehungsweise eines Projektnamens in der globalen Anzeige
    erfordert eine Rückfrage; die Projektdatei selbst wird nicht umbenannt. Die bestehende Priorität eigener
-   Korrekturen bleibt erhalten. Details: `taxonomy-name-preference-plan.md`.
+   Korrekturen bleibt erhalten. Seit 0.4.24.9 kann die deutsche Namenspräferenz ausdrücklich auf den
+   Anbieterstandard zurückgesetzt werden. Diese bestätigte Entscheidung setzt nur für diesen deutschen
+   Anzeigenamen eigene beziehungsweise Projektwerte aus; die Projektdatei und englische Korrekturen bleiben
+   erhalten. Bei späteren Updates entscheidet wieder die dokumentierte Anbieterpriorität.
+   Details: `taxonomy-name-preference-plan.md`.
 8. Wikidata- und Animalia-Namen werden nie allein durch Zeichenkettenähnlichkeit produktiv übernommen.
 9. IUCN-Daten werden erst nach bestätigter Projektart und bestehender Assessment-Zuordnung ergänzt.
 10. Jede produktive Übernahme bleibt eine explizite Benutzerentscheidung mit Vorschau.

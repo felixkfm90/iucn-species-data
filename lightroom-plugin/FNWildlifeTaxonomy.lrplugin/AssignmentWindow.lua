@@ -200,6 +200,7 @@ function AssignmentWindow.show(context)
   props.selectedGermanName = ""
   props.preferenceStatus = ""
   props.canRetryPreference = false
+  props.canSavePreference = false
   props.kingdom = "Animalia"
   props.kingdomItems = KINGDOM_ITEMS
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
@@ -217,6 +218,15 @@ function AssignmentWindow.show(context)
   props.canSearch = false
   props.packageReady = false
   props.busy = false
+
+  local function refreshPreferenceAction()
+    props.canSavePreference = props.canCorrect and currentTaxon ~= nil and not pendingNamePreference
+      and cleanText(props.selectedGermanName) ~= "" and props.selectedGermanName ~= currentTaxon.germanName
+  end
+
+  props:addObserver("selectedGermanName", refreshPreferenceAction)
+  props:addObserver("canCorrect", refreshPreferenceAction)
+  props:addObserver("canRetryPreference", refreshPreferenceAction)
 
   local function refreshActions()
     local photos = catalog:getTargetPhotos() or {}
@@ -561,6 +571,22 @@ function AssignmentWindow.show(context)
     refreshSelection()
   end
 
+  local function saveNamePreference()
+    if props.busy or not props.canSavePreference or not currentTaxon or pendingNamePreference then return end
+    local taxon = currentTaxon
+    local germanName = props.selectedGermanName
+    setBusy(true)
+    local ok, preparedTaxon, payload = LrTasks.pcall(NamePreference.prepare, taxon, germanName)
+    if ok and payload then
+      local published, message = NamePreference.publish(payload)
+      if not published then pendingNamePreference = payload end
+      props.canRetryPreference = not published
+      if published and currentTaxon == taxon then loadTaxon(taxon.masterTaxonId, cleanText(props.query)) end
+      props.preferenceStatus = message
+    elseif not ok then props.preferenceStatus = tostring(preparedTaxon) end
+    setBusy(false)
+  end
+
   local view = factory:column({
     bind_to_object = props,
     spacing = factory:dialog_spacing(),
@@ -641,6 +667,9 @@ function AssignmentWindow.show(context)
           factory:static_text({ title = "Deutscher Name:" }),
           factory:popup_menu({ items = bind("germanNameItems"), value = bind("selectedGermanName"), enabled = bind("canSearch"), width_in_chars = 55 }),
         }),
+        factory:push_button({ title = "Namenswahl übernehmen", enabled = bind("canSavePreference"), action = function()
+          LrTasks.startAsyncTask(saveNamePreference)
+        end }),
         factory:push_button({ title = "Vorherige Namenswahl auswählen", enabled = bind("canCorrect"), action = function()
           if props.busy or not currentTaxon then return end
           local taxonId = currentTaxon.masterTaxonId
@@ -654,20 +683,38 @@ function AssignmentWindow.show(context)
               if not found then table.insert(items, { title = previous.germanName, value = previous.germanName }) end
               props.germanNameItems = items
               props.selectedGermanName = previous.germanName
-              props.preferenceStatus = "Vorherige Namenswahl ausgewählt. Übernahme erfolgt erst mit der Zuweisung."
+              props.preferenceStatus = "Vorherige Namenswahl ausgewählt. Jetzt Namenswahl übernehmen oder einem Foto zuweisen."
             elseif not ok then props.preferenceStatus = tostring(previous) end
             setBusy(false)
           end)
         end }),
-        factory:static_text({ title = "Eine geänderte Namenswahl gilt nach Zuweisung auch im Arten-Explorer.", width_in_chars = 86 }),
+        factory:push_button({ title = "Anbieterstandard verwenden ...", enabled = bind("canCorrect"), action = function()
+          if props.busy or not currentTaxon or pendingNamePreference then return end
+          local taxon = currentTaxon
+          LrTasks.startAsyncTask(function()
+            setBusy(true)
+            local ok, payload = LrTasks.pcall(NamePreference.providerStandard, taxon)
+            if ok and payload then
+              local published, message = NamePreference.publish(payload)
+              if not published then pendingNamePreference = payload end
+              props.canRetryPreference = not published
+              if published then loadTaxon(taxon.masterTaxonId, cleanText(props.query)) end
+              props.preferenceStatus = message
+            elseif not ok then props.preferenceStatus = tostring(payload) end
+            setBusy(false)
+          end)
+        end }),
+        factory:static_text({ title = "Namenswahl übernehmen speichert die bevorzugte Variante auch ohne Fotozuweisung.", width_in_chars = 86 }),
         factory:static_text({ title = bind("preferenceStatus"), width_in_chars = 86, height_in_lines = 2 }),
         factory:push_button({ title = "Globale Namenswahl erneut speichern", enabled = bind("canRetryPreference"), action = function()
           if props.busy or not pendingNamePreference then return end
           LrTasks.startAsyncTask(function()
             setBusy(true)
+            local taxonId = pendingNamePreference.masterTaxonId
             local published, message = NamePreference.publish(pendingNamePreference)
             if published then pendingNamePreference = nil end
             props.canRetryPreference = not published
+            if published and currentTaxon and currentTaxon.masterTaxonId == taxonId then loadTaxon(taxonId, cleanText(props.query)) end
             props.preferenceStatus = message
             setBusy(false)
           end)

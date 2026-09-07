@@ -14,6 +14,7 @@ import {
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
+import { resolveProviderGermanName } from "./taxonomy-provider-standard.mjs";
 
 export const TAXONOMY_CORRECTION_RELEASE_SCHEMA_VERSION = 1;
 export const TAXONOMY_CORRECTION_POINTER_SCHEMA_VERSION = 1;
@@ -104,10 +105,11 @@ function normalizedCorrections(corrections = []) {
       rank: cleanText(value.rank || "species").toLocaleLowerCase("en"),
       kingdom: cleanText(value.kingdom || "Animalia"),
       germanName: cleanText(value.germanName),
+      ...(value.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
       englishName: cleanText(value.englishName),
       note: cleanText(value.note),
     };
-    if (!entry.germanName && !entry.englishName) {
+    if (!entry.germanName && !entry.englishName && entry.germanNameMode !== "provider") {
       throw new Error(`Die Korrektur für ${scientificName} enthält keinen Namen.`);
     }
     unique.set(key, entry);
@@ -153,10 +155,13 @@ function resolveCorrectionEntries(masterDatabase, lightroomDatabase, corrections
     if (correction.kingdom && cleanText(master.kingdom) !== correction.kingdom) {
       throw new Error(`${correction.scientificName} gehört im Master nicht zum erwarteten Reich ${correction.kingdom}.`);
     }
+    const providerStandard = correction.germanNameMode === "provider"
+      ? resolveProviderGermanName(masterDatabase, master.master_taxon_id) : null;
     return {
       masterTaxonId: master.master_taxon_id,
       scientificName: master.canonical_scientific_name,
-      germanName: correction.germanName,
+      germanName: providerStandard?.germanName || correction.germanName,
+      ...(providerStandard ? { germanNameMode: "provider", germanNameSource: providerStandard } : {}),
       englishName: correction.englishName,
       note: correction.note,
     };

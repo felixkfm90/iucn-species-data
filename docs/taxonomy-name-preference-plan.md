@@ -1,8 +1,9 @@
 # Bevorzugte Artnamen in Explorer und Lightroom
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 Status: Namenswahl mit Rückfrage und Rückwahl in Plug-in 0.4.24.8 technisch umgesetzt und praktisch abgenommen.
-Vollständiges Zurücksetzen auf den Anbieterstandard bleibt separat offen, siehe Grenzen unten.
+Anbieterstandard und Rückwahl aus 0.4.24.9 sind in beiden Richtungen praktisch bestätigt. 0.4.24.10 ergänzt die
+direkte Lightroom-Aktion `Namenswahl übernehmen`; nur deren kurzer Bedienungstest steht noch aus.
 Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrage mit bisherigem und neuem Namen ersetzen.
 
 ## Ausgangslage vor Version 0.4.24.8
@@ -30,7 +31,8 @@ Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrag
    Explorer beziehungsweise einer erfolgreichen Lightroom-Zuweisung als globale Präferenz übernommen.
    Kurzer sichtbarer Hinweis: `Diese Namenswahl gilt künftig auch im Arten-Explorer und in Lightroom.`
    Reines Tippen, Suchen, Vorschauöffnen oder ein abgebrochener Speichervorgang verändert nichts global.
-   Im Datenbankdialog des Explorers steht außerdem die ausdrückliche Aktion `Namenswahl übernehmen` bereit.
+   Im Datenbankdialog des Explorers und seit 0.4.24.10 auch in Lightroom steht außerdem die ausdrückliche Aktion
+   `Namenswahl übernehmen` bereit; sie speichert ohne Artanlage beziehungsweise Fotozuweisung.
    Die vorhandene allgemeine Projektbearbeitung löst keine beiläufige globale Präferenzänderung aus.
 3. Erstmalige Wahl gegenüber einem reinen Anbietervorschlag benötigt nach dieser sichtbaren Kennzeichnung keine
    zusätzliche Bestätigung. Eine bereits eigene bestätigte Präferenz wird gemäß Benutzerentscheidung nur nach
@@ -67,8 +69,8 @@ Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrag
 - Rücknahme unterscheiden: `Vorherige eigene Namenswahl wiederherstellen` und `Anbieterstandard verwenden`.
   Ersteres kann als neue explizite Namensentscheidung erfolgen, wenn die Identität noch stimmt. Letzteres muss
   den tatsächlichen Standard ohne die eigene Präferenz auflösen; eine bereits im Basis-Master enthaltene Korrektur
-  verschwindet nicht durch bloßes Löschen eines Overlay-Eintrags. Dafür zunächst einen belastbaren Rücknahmevertrag
-  entwickeln; keinen mehrstündigen Neubau unbemerkt aus einer Namensauswahl starten.
+  verschwindet nicht durch bloßes Löschen eines Overlay-Eintrags. Der Rücknahmevertrag ab 0.4.24.9 ist unten
+  beschrieben; die Namensaktion startet keinen vollständigen Neubau.
 - Reine Namensentscheidungen sollen den vorhandenen kleinen atomaren Aktivierungspfad verwenden. Verhalten
   während Quellen-/Masterupdates und Erhalt nach Neuaufbau gehören zur Abnahme; keine garantierte Sekundendauer
   bei gesperrtem oder unpassendem Basisstand behaupten.
@@ -93,13 +95,12 @@ Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrag
   ohne die Fotozuweisung zu wiederholen. Eine noch offene Speicherung wird nicht durch eine neue Zuweisung
   überschrieben. Nach Schließen des Fensters können bereits gespeicherte, ausstehende Korrekturen im Explorer
   über `Datenbank aktualisieren` aktiviert werden.
-- `Vorherige Namenswahl auswählen` in Lightroom setzt nur die Auswahl; erst Zuweisen samt Rückfrage übernimmt
-  sie. `Vorherige Namenswahl wiederherstellen` im Explorer führt die ausdrückliche globale Rückwahl aus. Auch
+- `Vorherige Namenswahl auswählen` in Lightroom setzt nur die Auswahl; `Namenswahl übernehmen` oder Zuweisen
+  samt Rückfrage übernimmt sie. `Vorherige Namenswahl wiederherstellen` im Explorer führt die globale Rückwahl aus. Auch
   diese Entscheidung wird als neue Korrektur veröffentlicht, nicht durch Löschen alter Daten.
-- **Weiter offen:** `Anbieterstandard verwenden` einschließlich Entfernen bereits in den Basis-Master eingebauter
-  eigener Werte benötigt weiterhin den bestehenden vollständigen Neubau. Dieser Ausbau ist nicht Teil der
-  jetzt implementierten Rückwahl. Es wird dafür kein verdeckter Neubau gestartet.
-- Explorer zum erstmaligen Laden der Programmänderung neu starten und das Lightroom-Zusatzmodul auf 0.4.24.8 neu laden. Ein bereits laufender
+- `Anbieterstandard verwenden` ist ab 0.4.24.9 auch für bereits im Basis-Master enthaltene eigene deutsche Werte
+  verfügbar; es gilt der folgende Rücknahmevertrag.
+- Explorer zum erstmaligen Laden der Programmänderung neu starten und das Lightroom-Zusatzmodul auf 0.4.24.10 neu laden. Ein bereits laufender
   alter Explorer kennt weder die neuen Endpunkte noch die gemeinsame Schreibsperre. Die Datenbanken selbst
   benötigen für die Funktion keinen Neubau.
 
@@ -138,3 +139,64 @@ Lua-5.1-Syntaxprüfung erfolgreich; das vollständige `npm.cmd run --silent qual
 Browsermodule gehören ausschließlich zum lokalen Explorer, nicht zu Squarespace; Footer und `?v=` bleiben
 deshalb unverändert. Die Produktionsdatei mit eigenen Namenskorrekturen enthält die bewusst bestätigte Präferenz
 `Weissstorch`; als vorherige Variante bleibt `Weißstorch` nachvollziehbar und ausdrücklich rückwählbar.
+
+## Anbieterstandard ab 0.4.24.9
+
+- In beiden Programmen steht `Anbieterstandard verwenden …` bei der deutschen Namenswahl. Die Vorschau nennt
+  bisherigen und neuen Namen; eine Bestätigung ist auch nötig, wenn beide Texte identisch sind, aber die eigene
+  Bindung aufgehoben wird. In Lightroom wirkt die Aktion direkt auf die globale Namenswahl, ohne Fotozuweisung.
+- Die bestehende Korrekturdatei hält `germanNameMode: provider` und einen leeren deutschen Korrekturwert fest.
+  Das ist eine dauerhafte Entscheidung, künftig Anbieterwerte zu verwenden. Englische Korrekturen, Notiz und
+  Rückwahlhistorie bleiben erhalten. Eine spätere bewusste eigene Namenswahl entfernt diesen Modus wieder.
+- `taxonomy-provider-standard.mjs` liest über den Master-ID-Index nur die deutschen Quellenbehauptungen der Art.
+  Nur aktive Anbieterreleases und nicht entfernte, nicht abgelehnte, eindeutig verknüpfte Quellenbelege zählen.
+  Eigene und Projektwerte sind keine Rückfallwerte. Sortierung nach Anbieterpriorität, Vertrauen und Name ist
+  dieselbe gemeinsame Regel wie beim Masteraufbau. Die Korrekturauflösung prüft außerdem Artidentität und Rang
+  gegen Master und Lightroom-Paket. Die Quelle des ermittelten Namens bleibt in beiden Lesern sichtbar.
+- Der Korrekturzeiger aktiviert den neuen Anzeigenamen gemeinsam für beide Programme. Die Basisdateien bleiben
+  unverändert; kein Download oder Vollaufbau wird ausgelöst. Bei künftigen Masteraufbauten setzt der Modus nur
+  für `german-name` alte eigene und Projektwerte aus und berechnet den Anbieterstandard neu. Projektdateien,
+  Taxon-ID, Hierarchie, englischer Name und bereits zugewiesene Fotos werden nicht nebenbei geändert.
+- Vorschau und Speicherung prüfen Datenrevisionen. Bei Aktivierungsfehler bleibt die Entscheidung ausstehend;
+  erneutes Speichern darf weder einen inzwischen geänderten Anbieterwert unbestätigt übernehmen noch fremde
+  offene Korrekturen veröffentlichen. Die vorhandene prozessübergreifende Schreibsperre wird weiterverwendet.
+- Grenzen: Ohne belegten deutschen Anbieterwert ist keine Rücksetzung möglich. Ältere Masterdateien speichern
+  die für die WoRMS-Priorität verwendete Lebensraumangabe nicht am Feld. Falls marine und terrestrische
+  Priorisierung zu unterschiedlichen Gewinnern führen, wird die Rücksetzung abgelehnt. Keine heuristische Wahl.
+  Allgemeines Entfernen einer ganzen Korrektur einschließlich Englisch bleibt eine getrennte Aktion mit dem
+  bisherigen Neubauvertrag. Diese Änderung betrifft die deutsche Namenspräferenz.
+
+Automatisierte Abnahme: Echte SQLite-Testdatenbanken prüfen einen fest eingebauten eigenen Namen, schnelle
+Rücksetzung bei unveränderten Datenbank-Prüfsummen, anschließenden Master-/Paketneubau mit geändertem Anbieterwert,
+identische Namen und Herkunft in beiden Lesern sowie erneute Rückwahl. Weitere Tests prüfen Bestätigung trotz
+identischem Namen, fehlende Quellen, WoRMS-Mehrdeutigkeit, Quellenwechsel, Aktivierungsfehler und Erhalt des Modus
+bei der Korrektur einer anderen Art. Die Tests sind Bestandteil von `quality:ci`.
+
+Produktive Vorschau am 2026-09-07, ohne Speicherung: Für `Ciconia ciconia` ist `Weissstorch` bevorzugt;
+der Anbieterstandard wäre `Hausstorch` aus dem aktiven CoL-Release. Anbieterstandard bedeutet nicht, dass dieser
+Name für den Benutzer geläufiger oder besser ist. Die vorhandene Präferenz wurde nicht verändert.
+
+Praktische Abnahme von 0.4.24.9, vom Benutzer in beiden Richtungen bestätigt:
+
+1. Explorer einmal neu starten, Lightroom-Plug-in neu laden und Version 0.4.24.9 prüfen.
+2. Im Datenbankdialog Weißstorch öffnen, `Anbieterstandard verwenden …` aufrufen und zuerst abbrechen.
+   Die Namenswahl muss in beiden Programmen unverändert bleiben.
+3. Erneut aufrufen, die angezeigte Änderung bestätigen und in beiden Programmen neu suchen.
+   Beide müssen den Anbieterwert zeigen; bestehende Fotos bleiben unverändert.
+4. Im Explorer `Vorherige Namenswahl wiederherstellen` bestätigen und beide Suchen erneut prüfen.
+5. Den gleichen Vorschau-/Abbruch-/Bestätigungstest im Lightroom-Zuweisungsfenster über den neuen Button ausführen.
+   Die globale Änderung erfolgt ohne Klick auf `Ausgewählte Art zuweisen`. Danach wieder auf den gewünschten
+   vorherigen Namen zurückstellen. Ein produktiver Master-Neuaufbau ist für diesen Test nicht nötig.
+
+## Direkte Lightroom-Namenswahl ab 0.4.24.10
+
+`Namenswahl übernehmen` verwendet die bestehende Namensvorschau und Konfliktrückfrage, speichert aber sofort
+global ohne Fotozuweisung. Der Button wird nur bei abweichender nichtleerer Namensauswahl und ohne offene
+Speicherung freigegeben. Erfolg lädt das Taxon erneut, sodass `(bevorzugt)` direkt der aktuellen Variante folgt.
+Nach einem Fehler steht derselbe Wiederholungsweg zur Verfügung; seine Fehlermeldung behauptet keine Fotozuweisung.
+Der automatische Präferenzweg nach einer tatsächlichen Fotozuweisung bleibt erhalten.
+
+Noch zu prüfen: Plug-in auf 0.4.24.10 neu laden, eine alternative deutsche Variante wählen, `Namenswahl übernehmen`
+bestätigen und die Markierung sowie die nächste Explorersuche prüfen. Dabei keinem Foto die Art zuweisen.
+Danach `Vorherige Namenswahl auswählen` und `Namenswahl übernehmen` nutzen, um die gewünschte Variante
+wiederherzustellen. Die Rücksetzung auf den Anbieterstandard braucht keine erneute vollständige Abnahme.

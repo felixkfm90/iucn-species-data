@@ -246,6 +246,18 @@ test("eigene Korrekturen überlagern Ergänzungsquellen und sind zurücksetzbar"
   })).length, 0);
 });
 
+test("Ergänzungscache erhält Anbieterwahl und Rückwahl bei Pflege einer anderen Art", async (context) => {
+  const { service, correctionsPath } = await temporaryService(context, { providers: [] });
+  const standard = { scientificName: "Ciconia ciconia", germanName: "", englishName: "",
+    germanNameMode: "provider", namePreference: { masterTaxonId: "mtx_stork", previousGermanName: "Hausstorch" } };
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: [standard] }));
+  await service.saveCorrection({ scientificName: "Panthera pardus", germanName: "Leopard" });
+  const stored = JSON.parse(await fs.readFile(correctionsPath, "utf8")).entries.find((entry) => entry.scientificName === standard.scientificName);
+  assert.equal(stored.germanNameMode, "provider");
+  assert.equal(stored.germanName || "", "");
+  assert.deepEqual(stored.namePreference, standard.namePreference);
+});
+
 test("Korrekturpflege liest fremde Namenswahlen frisch und erhält Rang und Reich", async (context) => {
   const { service, correctionsPath } = await temporaryService(context, { providers: [] });
   await service.load();

@@ -43,9 +43,24 @@ end
 function NamePreference.publish(payload)
   if not payload then return true, "" end
   local ok, result = LrTasks.pcall(TaxonomyHelper.namePreference, payload)
-  if not ok then return false, "Fotos zugewiesen; globale Namenswahl noch offen: " .. tostring(result) end
+  if not ok then return false, (payload.useProviderStandard and "Anbieterstandard noch offen: " or "Globale Namenswahl noch offen: ") .. tostring(result) end
   if not result.saved then return false, result.message or "Die globale Namenswahl ist noch nicht aktiviert." end
   return true, "Die Namenswahl wurde für Arten-Explorer und Lightroom übernommen."
+end
+
+function NamePreference.providerStandard(taxon)
+  local preview = TaxonomyHelper.namePreference({
+    command = "preview", masterTaxonId = taxon.masterTaxonId, useProviderStandard = true,
+  })
+  if preview.unchanged then return nil end
+  local choice = LrDialogs.confirm("Deutschen Anbieternamen verwenden?",
+    "Bisher: " .. preview.previousGermanName .. "\nNeu: " .. preview.germanName
+      .. "\n\nDer deutsche Name folgt künftig den Anbieteraktualisierungen in Lightroom und im Arten-Explorer."
+      .. " Englische Korrekturen, Projektdateien und bestehende Fotos bleiben unverändert.",
+    "Anbieterstandard verwenden", "Abbrechen")
+  if choice ~= "ok" then return nil end
+  return { command = "save", masterTaxonId = taxon.masterTaxonId, useProviderStandard = true,
+    token = preview.token, confirmed = true }
 end
 
 return NamePreference

@@ -28,10 +28,11 @@ async function fixture(t, { protectedName = false, activationFails = false } = {
     openStore: async () => ({ taxon: (id) => id === taxon.masterTaxonId ? structuredClone(taxon) : null, status: () => ({ ...status }), close() {} }),
     readVersions: async () => ({ ...versions }),
     prepare: async () => {},
+    readProviderStandard: async () => ({ germanName: "Hausstorch", provider: "catalogue-of-life", providerVersion: "fixture" }),
     activate: async ({ corrections }) => {
       activations += 1;
       if (activationFails) throw new Error("Fixture: Paket belegt");
-      taxon.germanName = corrections[0].germanName;
+      taxon.germanName = corrections[0].germanNameMode === "provider" ? "Hausstorch" : corrections[0].germanName;
       versions.masterCorrectionRevision = taxonomyCorrectionsRevision(corrections);
     },
   };
@@ -40,6 +41,53 @@ async function fixture(t, { protectedName = false, activationFails = false } = {
 }
 
 const choice = { masterTaxonId: "mtx_stork", germanName: "Weißstorch" };
+
+test("Anbieterstandard löst auch bei gleichem Namen die eigene Bindung nach Bestätigung und erhält Englisch und Rückwahl", async (t) => {
+  const f = await fixture(t, { protectedName: true });
+  const before = await fs.readFile(f.correctionsPath, "utf8");
+  const preview = await f.service.preview({ masterTaxonId: choice.masterTaxonId, useProviderStandard: true });
+  assert.equal(preview.unchanged, false);
+  assert.equal(preview.requiresConfirmation, true);
+  assert.equal(preview.germanName, "Hausstorch");
+  await assert.rejects(f.service.save(preview), /bestätigt/);
+  assert.equal(await fs.readFile(f.correctionsPath, "utf8"), before);
+  assert.equal((await f.service.save({ ...preview, confirmed: true })).saved, true);
+  const saved = JSON.parse(await fs.readFile(f.correctionsPath, "utf8")).entries[0];
+  assert.equal(saved.germanName, "");
+  assert.equal(saved.germanNameMode, "provider");
+  assert.equal(saved.englishName, "White Stork");
+  assert.equal(saved.namePreference.previousGermanName, "Hausstorch");
+  assert.equal((await f.service.save({ ...preview, confirmed: true })).unchanged, true);
+  const undo = await f.service.preview({ masterTaxonId: choice.masterTaxonId, usePrevious: true });
+  assert.equal(undo.unchanged, false);
+  assert.equal(undo.requiresConfirmation, true);
+  await f.service.save({ ...undo, confirmed: true });
+  assert.equal(JSON.parse(await fs.readFile(f.correctionsPath, "utf8")).entries[0].germanNameMode, undefined);
+});
+
+test("Nicht belegbarer Anbieterstandard und zwischenzeitlicher Quellenwechsel verändern keine Korrektur", async (t) => {
+  const f = await fixture(t, { protectedName: true });
+  const before = await fs.readFile(f.correctionsPath, "utf8");
+  const missing = createTaxonomyNamePreferenceService({ ...f, readProviderStandard: async () => { throw new Error("Kein Anbietername"); } });
+  await assert.rejects(missing.preview({ masterTaxonId: choice.masterTaxonId, useProviderStandard: true }), /Kein Anbietername/);
+  let providerVersion = "old";
+  const changed = createTaxonomyNamePreferenceService({ ...f, readProviderStandard: async () => ({ germanName: "Hausstorch", provider: "catalogue-of-life", providerVersion }) });
+  const preview = await changed.preview({ masterTaxonId: choice.masterTaxonId, useProviderStandard: true });
+  providerVersion = "new";
+  await assert.rejects(changed.save({ ...preview, confirmed: true }), /Namensstand wurde verändert/);
+  assert.equal(await fs.readFile(f.correctionsPath, "utf8"), before);
+});
+
+test("Anbieterstandard bleibt bei Aktivierungsfehler wiederholbar und veröffentlicht keine fremde Korrektur", async (t) => {
+  const f = await fixture(t, { protectedName: true, activationFails: true });
+  const preview = await f.service.preview({ masterTaxonId: choice.masterTaxonId, useProviderStandard: true });
+  const payload = { ...preview, confirmed: true };
+  assert.equal((await f.service.save(payload)).pending, true);
+  assert.equal(f.activations(), 1);
+  f.setActivationFailure(false);
+  assert.equal((await f.service.save(payload)).saved, true);
+  assert.equal(f.activations(), 2);
+});
 
 test("Nur belegte deutsche Varianten, keine Suchtexte, englischen Namen oder wissenschaftlichen Synonyme", async (t) => {
   const f = await fixture(t);

@@ -1,6 +1,6 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-09-06
+Stand: 2026-09-07
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
@@ -411,6 +411,10 @@ ein zusätzlicher GBIF-Beleg nur Reich und Art liefert; zusätzliche Zwischenrä
 
 Der inkrementelle Korrekturweg ist vor dem Phase-10-Abschluss umgesetzt. Statt die mehrgigabytegroßen Slots zu
 klonen, hält er die Basisstände unverändert und versioniert nur die betroffenen redaktionellen Namen. Der gemeinsame
-Aktivierungszeiger ist der atomare Commitpunkt für Arten-Explorer und Lightroom. Vollständige Quellenupdates,
-Hierarchieänderungen sowie das Zurücksetzen bereits fest eingebauter manueller Aussagen verwenden weiterhin den
-normalen Kandidaten-, Integritäts-, Paket- und Rollbackablauf.
+Aktivierungszeiger ist der atomare Commitpunkt für Arten-Explorer und Lightroom. Seit 0.4.24.9 kann die bestätigte
+Anbieterwahl auch eingebaute eigene deutsche Namen ablösen. Die Korrekturdatei speichert dafür keinen festen
+deutschen Namen, sondern `germanNameMode: provider`; der Releaseaufbau löst den belegten aktuellen Anbieterwert
+gezielt anhand der Master-ID auf und erhält dessen Herkunft. Der Masterneubau ignoriert für genau dieses Feld
+alte eigene und Projektwerte und ermittelt den Standard aus frischen Quellen. Andere Felder bleiben geschützt.
+Vollständige Quellenupdates, Hierarchieänderungen und sonstige Rücknahmen manueller Aussagen verwenden weiterhin
+den normalen Kandidaten-, Integritäts-, Paket- und Rollbackablauf. Details: `taxonomy-name-preference-plan.md`.

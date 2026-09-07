@@ -699,6 +699,7 @@
             <p>Die Namenswahl gilt künftig auch in Lightroom. Projektdateien und bestehende Fotos bleiben unverändert.</p>
             <button type="button" data-name-preference-save disabled>Namenswahl übernehmen</button>
             <button type="button" data-name-preference-previous ${view.previousGermanName ? "" : "disabled"}>Vorherige Namenswahl wiederherstellen</button>
+            <button type="button" data-name-preference-provider>Anbieterstandard verwenden …</button>
           </section>
         ` : ""}
         ${correctionAllowed ? `
@@ -942,7 +943,7 @@
       }
     }
 
-    async function saveNamePreference(button, usePrevious = false) {
+    async function saveNamePreference(button, usePrevious = false, useProviderStandard = false) {
       const view = taxonomyDatabaseDetailPresentation(
         detailPresentation,
         selectedDetail,
@@ -954,12 +955,12 @@
       button.disabled = true;
       try {
         const preview = await fetchJson("/api/taxonomy/name-preference/preview", {
-          method: "POST", body: JSON.stringify({ masterTaxonId: view.masterTaxonId, germanName, usePrevious }),
+          method: "POST", body: JSON.stringify({ masterTaxonId: view.masterTaxonId, germanName, usePrevious, useProviderStandard }),
         });
         if (preview.requiresConfirmation && !await showQuickConfirm({
-          title: "Bevorzugten deutschen Namen ändern?",
-          message: `Bisher: ${preview.previousGermanName}\nNeu: ${preview.germanName}\nDiese Namenswahl gilt künftig im Arten-Explorer und in Lightroom. Projektdateien und bestehende Fotos bleiben unverändert.`,
-          confirmLabel: "Namenswahl übernehmen",
+          title: useProviderStandard ? "Deutschen Anbieternamen verwenden?" : "Bevorzugten deutschen Namen ändern?",
+          message: `Bisher: ${preview.previousGermanName}\nNeu: ${preview.germanName}\n${useProviderStandard ? "Der deutsche Name folgt künftig den Anbieteraktualisierungen. Englische Korrekturen bleiben erhalten.\n" : ""}Diese Namenswahl gilt künftig im Arten-Explorer und in Lightroom. Projektdateien und bestehende Fotos bleiben unverändert.`,
+          confirmLabel: useProviderStandard ? "Anbieterstandard verwenden" : "Namenswahl übernehmen",
         })) return;
         if (selectionVersion !== requestVersion || detail.querySelector("[data-name-preference-choice]")?.value !== germanName) {
           throw new Error("Die Auswahl wurde geändert. Bitte erneut prüfen.");
@@ -1004,6 +1005,8 @@
         if (preferenceButton) { void saveNamePreference(preferenceButton); return; }
         const previousPreferenceButton = event.target.closest("[data-name-preference-previous]");
         if (previousPreferenceButton) { void saveNamePreference(previousPreferenceButton, true); return; }
+        const providerButton = event.target.closest("[data-name-preference-provider]");
+        if (providerButton) { void saveNamePreference(providerButton, false, true); return; }
         const button = event.target.closest("[data-taxonomy-database-correction]");
         if (button) {
           void saveCorrection(button.dataset.taxonomyDatabaseCorrection, button);
