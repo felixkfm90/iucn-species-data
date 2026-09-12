@@ -1342,5 +1342,29 @@
     "Species": "ciconia",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-09-05"
+  },
+  {
+    "URLSlug": "chlorischloris",
+    "Wissenschaftlicher Name": "Chloris chloris",
+    "Deutscher Name": "Grünfink",
+    "Englischer Name": "Common Greenfinch",
+    "Gewicht": "ca. 25-35 g",
+    "Größe": "ca. 14-15 cm",
+    "Lebenserwartung": "ca. 5-10 Jahre",
+    "Assessment ID": 132000123,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "48.000.000-74.000.000",
+    "Generationsdauer": "4,2 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Passeriformes",
+    "Family": "Fringillidae",
+    "Genus": "Chloris",
+    "Species": "chloris",
+    "Letztes IUCN Update": "2018",
+    "Daten abgerufen": "2026-09-12"
   }
 ]

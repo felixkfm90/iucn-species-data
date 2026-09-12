@@ -1430,6 +1430,56 @@
         "generatedAt": "2026-09-03T17:24:19.129Z",
         "verifiedAt": "2026-09-03T17:24:19.134Z"
       }
+    },
+    "Gruenfink": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-09-12T07:40:14.224Z",
+        "approvedAt": "2026-09-12T07:40:21.553Z",
+        "sha256": "d0ee6e61055129f8b28193f80c7b9694e5ad95e1b427424228f606e35a26ac83",
+        "metadataSha256": "070993556b64ae33c9067026e3d72cb4e1b98d156b9a895872208f37ab860f6f"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:642404",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/642404",
+            "recordist": "Kevin Ortega",
+            "license": "https://creativecommons.org/licenses/by/4.0/",
+            "rejectedAt": "2026-09-12T07:42:15.471Z"
+          },
+          {
+            "key": "xeno-canto:776640",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/776640",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-09-12T07:42:26.910Z"
+          },
+          {
+            "key": "xeno-canto:953860",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/953860",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-09-12T07:42:39.005Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-12T07:42:59.602Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "faaea35276776d124f32c5d76669c2ecb9372c16ab28a0c8cfe6cd4b2a826a88",
+        "spectrogramSha256": "63626de7eab5f29665297bd1a890b2e16134d800c5b88c608de0b48eba04426f",
+        "generatedAt": "2026-09-12T07:42:45.043Z",
+        "verifiedAt": "2026-09-12T07:42:45.048Z"
+      }
     }
   },
   "spectrogramGenerator": {

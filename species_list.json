@@ -502,5 +502,14 @@
     "size": "ca. 95-110 cm",
     "weight": "ca. 2,4-4,5 kg",
     "life_expectancy": "ca. 20-25 Jahre"
+  },
+  {
+    "german": "Grünfink",
+    "english": "Common Greenfinch",
+    "genus": "Chloris",
+    "species": "chloris",
+    "size": "ca. 14-15 cm",
+    "weight": "ca. 25-35 g",
+    "life_expectancy": "ca. 5-10 Jahre"
   }
 ]

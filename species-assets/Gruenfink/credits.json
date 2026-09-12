@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Chloris chloris",
+  "german_name": "Grünfink",
+  "recordist": "Camille Vacher",
+  "country": "France",
+  "location": "Mairie (near  Oppède), Vaucluse, Provence-Alpes-Côte d'Azur",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/930527",
+  "rejectionKey": "xeno-canto:930527",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Chloris sp:chloris q:B\" | page=2"
+}
