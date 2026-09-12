@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-12T07:42:59.801Z",
+  "generatedAt": "2026-09-12T07:44:51.798Z",
   "counts": {
     "totalSpecies": 57,
     "missingSoundMp3": 2,
     "missingSoundCredits": 0,
-    "missingMap": 1,
+    "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 3,
+    "missingSpeciesAssets": 2,
     "ncSoundLicensesAll": 10
   },
   "missing": {
@@ -18,9 +18,7 @@
       "Gepard"
     ],
     "soundCredits": [],
-    "maps": [
-      "Grünfink"
-    ],
+    "maps": [],
     "speciesAssets": [
       {
         "german": "Grüner Leguan",
@@ -38,13 +36,6 @@
           "sound.mp3",
           "credits.json",
           "spectrogram.webp"
-        ]
-      },
-      {
-        "german": "Grünfink",
-        "safeName": "Gruenfink",
-        "missing": [
-          "map.jpg"
         ]
       }
     ],
