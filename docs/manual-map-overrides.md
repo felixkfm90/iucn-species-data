@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-09-12
+Stand: 2026-09-13
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -20,7 +20,7 @@ ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeNam
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
 | Blaukehlchen | Blaukehlchen | `species-assets/Blaukehlchen/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Keine Automatischer Download | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-12 | erledigt/geprueft |
+| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Keine Automatischer Download | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-13 | erledigt/geprueft |
 
 ## Pflege-Regeln
 
