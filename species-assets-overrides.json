@@ -1483,12 +1483,12 @@
       "map": {
         "manual": true,
         "protectFromPipeline": true,
-        "reason": "Keine Automatischer Download",
+        "reason": "Karte als lokale Datei importiert.",
         "source": "https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg",
         "germanName": "Grünfink",
         "originalFileName": "T22720330A132000123.jpg",
-        "importedAt": "2026-09-12T07:44:51.714Z",
-        "updatedAt": "2026-09-12T07:44:51.714Z",
+        "importedAt": "2026-09-13T07:00:42.974Z",
+        "updatedAt": "2026-09-13T07:00:42.974Z",
         "sha256": "009572b8177014aaa56f96cf9428db773eac06041546dad4d112be92d3a8e480"
       }
     }
