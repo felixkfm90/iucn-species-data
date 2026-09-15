@@ -511,5 +511,14 @@
     "size": "ca. 14-15 cm",
     "weight": "ca. 25-35 g",
     "life_expectancy": "ca. 5-10 Jahre"
+  },
+  {
+    "german": "Rebhuhn",
+    "english": "Gray Partridge",
+    "genus": "Perdix",
+    "species": "perdix",
+    "size": "ca. 28-32 cm",
+    "weight": "ca. 300-450 g",
+    "life_expectancy": "ca. 2-3 Jahre"
   }
 ]

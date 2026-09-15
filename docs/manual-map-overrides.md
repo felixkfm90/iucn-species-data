@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-09-13
+Stand: 2026-09-15
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -11,7 +11,7 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind 2 Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
+Aktuell sind 3 Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
 fehlerhafte Kartendaten. Die produktiven Karten duerfen deshalb nicht unbemerkt durch automatisch geladene IUCN-Karten
 ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeName>/map.jpg`.
 
@@ -20,7 +20,8 @@ ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeNam
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
 | Blaukehlchen | Blaukehlchen | `species-assets/Blaukehlchen/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-13 | erledigt/geprueft |
+| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-15 | erledigt/geprueft |
+| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-09-15 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

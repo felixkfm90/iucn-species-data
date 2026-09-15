@@ -1366,5 +1366,29 @@
     "Species": "chloris",
     "Letztes IUCN Update": "2018",
     "Daten abgerufen": "2026-09-12"
+  },
+  {
+    "URLSlug": "perdixperdix",
+    "Wissenschaftlicher Name": "Perdix perdix",
+    "Deutscher Name": "Rebhuhn",
+    "Englischer Name": "Gray Partridge",
+    "Gewicht": "ca. 300-450 g",
+    "Größe": "ca. 28-32 cm",
+    "Lebenserwartung": "ca. 2-3 Jahre",
+    "Assessment ID": 154496308,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "3.300.000-5.300.000",
+    "Generationsdauer": "2,8 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Galliformes",
+    "Family": "Phasianidae",
+    "Genus": "Perdix",
+    "Species": "perdix",
+    "Letztes IUCN Update": "2022",
+    "Daten abgerufen": "2026-09-15"
   }
 ]

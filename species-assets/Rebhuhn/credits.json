@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Perdix perdix",
+  "german_name": "Rebhuhn",
+  "recordist": "Mikko Heikkinen",
+  "country": "Finland",
+  "location": "Kaskimaa (near  Espoo), Helsinki, Uusimaa",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/636092",
+  "rejectionKey": "xeno-canto:636092",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Perdix sp:perdix q:B\" | page=1"
+}

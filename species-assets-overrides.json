@@ -1491,6 +1491,59 @@
         "updatedAt": "2026-09-13T07:00:42.974Z",
         "sha256": "009572b8177014aaa56f96cf9428db773eac06041546dad4d112be92d3a8e480"
       }
+    },
+    "Rebhuhn": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-09-15T14:57:37.323Z",
+        "approvedAt": "2026-09-15T14:57:46.661Z",
+        "sha256": "2dbd88634a99e32321a0b6bf582fb49569cdadb8ad694c7a77f2604f19f7eb41",
+        "metadataSha256": "d7b3f8946ab79ce1245e5c2435602ca9ecee33b4993263dacba6b1a7f73970dd"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:906048",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/906048",
+            "recordist": "Jochem Verweij",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "rejectedAt": "2026-09-15T14:59:38.445Z"
+          },
+          {
+            "key": "xeno-canto:953923",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/953923",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-09-15T14:59:54.234Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-15T15:00:24.269Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "9813bf6ae29e8a351428291b50da8429e7bdc3610724d69f73e21f63750ef9f9",
+        "spectrogramSha256": "9430b779555c1585111b20e3e743d279c77dc5cee45efbd771a516e71f2a97d9",
+        "generatedAt": "2026-09-15T14:59:56.785Z",
+        "verifiedAt": "2026-09-15T14:59:56.791Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Karte als lokale Datei importiert.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg",
+        "germanName": "Rebhuhn",
+        "originalFileName": "T22678911A154496308.jpg",
+        "importedAt": "2026-09-15T15:03:40.041Z",
+        "updatedAt": "2026-09-15T15:03:40.041Z",
+        "sha256": "678256caaeebfdc0863656d1b4e046d2048ef3f64173ed7b1396a374b1be3476"
+      }
     }
   },
   "spectrogramGenerator": {
