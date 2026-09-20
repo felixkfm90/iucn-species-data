@@ -1,10 +1,33 @@
 # Bevorzugte Artnamen in Explorer und Lightroom
 
-Stand: 2026-09-07
+Stand: 2026-09-20
+
+## Kompatibilität bereits aktiver Namenswahlen
+
+Seit Einführung der Master-ID-Bindung umfasst der Korrekturprüfwert auch `namePreference.masterTaxonId`.
+Ältere aktive Releases konnten bei unveränderten Namen deshalb fälschlich als ausstehende Korrektur erscheinen.
+Die Namenswahl in Explorer und Lightroom sowie der Masterstatus erkennen dieses ältere Format jetzt lesend:
+Nur wenn sämtliche bisherigen Korrekturfelder exakt dem aktiven alten Prüfwert entsprechen und alle gebundenen
+Identitäten in aktivem Master und Lightroom-Paket eindeutig übereinstimmen, gilt der Stand weiterhin als aktiv.
+Ein vorhandenes Korrektur-Release muss dieselben Identitäten enthalten. Echte Änderungen, falsche/entfernte IDs
+und unlesbare Bestände bleiben gesperrt. Öffnen veröffentlicht nichts; die nächste bestätigte Namenswahl erzeugt
+regulär den neuen ID-gebundenen Prüfwert. Kein Master-Neuaufbau nur wegen des älteren Prüfformats.
 Status: Namenswahl mit Rückfrage und Rückwahl in Plug-in 0.4.24.8 technisch umgesetzt und praktisch abgenommen.
 Anbieterstandard und Rückwahl aus 0.4.24.9 sind in beiden Richtungen praktisch bestätigt. 0.4.24.10 ergänzt die
-direkte Lightroom-Aktion `Namenswahl übernehmen`; nur deren kurzer Bedienungstest steht noch aus.
+direkte Lightroom-Aktion `Namenswahl übernehmen`; ihr kurzer Bedienungstest wurde am 8. September bestätigt.
+Die späteren Regressionskorrekturen vom 20. September sind automatisiert geprüft; deren erneute praktische
+Bedienabnahme steht noch aus. Frühere Abnahmen gelten nicht pauschal als Test des heutigen Gesamtstands.
 Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrage mit bisherigem und neuem Namen ersetzen.
+
+## Eindeutige Suchtreffer und Namenswahl
+
+Der Suchdienst vereinigt Master-, CoL- und Ergänzungstreffer auch nach der Ergänzungssuche nochmals.
+Ein exakt gleicher wissenschaftlicher Name mit gleichem Rang und Reich, der genau einer Master-ID zugeordnet
+ist, erscheint als Mastertreffer und nicht zusätzlich als eingeschränkter CoL-Treffer. So hängt die angebotene
+Namenswahl bei Feldhuhn/Rebhuhn nicht davon ab, welche der früher zwei Zeilen angeklickt wurde.
+Bereits angezeigte alte CoL-Treffer werden beim Detailabruf nur bei eindeutiger Zuordnung ebenfalls auf diese
+Masteransicht aufgelöst. Mehrere mögliche Master-Identitäten bleiben getrennt; es gibt keine automatische
+Split-/Merge-Entscheidung. Suchen/Öffnen schreibt keine Namenspräferenz und verändert keine Projektart.
 
 ## Ausgangslage vor Version 0.4.24.8
 
@@ -196,7 +219,7 @@ Speicherung freigegeben. Erfolg lädt das Taxon erneut, sodass `(bevorzugt)` dir
 Nach einem Fehler steht derselbe Wiederholungsweg zur Verfügung; seine Fehlermeldung behauptet keine Fotozuweisung.
 Der automatische Präferenzweg nach einer tatsächlichen Fotozuweisung bleibt erhalten.
 
-Noch zu prüfen: Plug-in auf 0.4.24.10 neu laden, eine alternative deutsche Variante wählen, `Namenswahl übernehmen`
+Am 8. September vom Benutzer praktisch bestätigt: Plug-in auf 0.4.24.10 neu laden, eine alternative deutsche Variante wählen, `Namenswahl übernehmen`
 bestätigen und die Markierung sowie die nächste Explorersuche prüfen. Dabei keinem Foto die Art zuweisen.
 Danach `Vorherige Namenswahl auswählen` und `Namenswahl übernehmen` nutzen, um die gewünschte Variante
 wiederherzustellen. Die Rücksetzung auf den Anbieterstandard braucht keine erneute vollständige Abnahme.

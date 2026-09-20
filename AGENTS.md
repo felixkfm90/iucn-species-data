@@ -1,11 +1,27 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-09-07
+Stand: 2026-09-20
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
+
+## Aktuelle Übergabe – 20. September 2026
+
+- Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
+  CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
+  alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.
+- Artanlage: Entwurf/Portrait ohne Sitzungs-Ablauffrist, Karten-Dateiauswahl/Drop im Assistenten und sichtbare,
+  schließbare Fehlerzustände sind implementiert. Erneute praktische Abnahme der Regressionskorrekturen offen.
+- Hintergrundaufbau: Masterworker mit 500er-Checkpoints und ausdrücklicher Pause/Fortsetzung ist angebunden.
+  Auch die schwere Master-/Lightroom-Paarvorbereitung einschließlich Rücknahme läuft nun im Hilfsprozess;
+  nur frische Eingangsprüfung und gemeinsamer Zeigerwechsel bleiben im Server. Echte Hilfsprozesstests vorhanden.
+- Nächster technischer Schritt: Release-/Jobaufbewahrung und Platzbudget; danach vollständige Betriebs- und
+  Großbestandsabnahme. Kein produktiver Neuaufbau wurde für diesen Schritt gestartet. Phase 10 bleibt offen.
+- Maßgeblicher Restplan: `docs/roadmap.md`; Verträge: `docs/taxonomy-master-background-build.md`,
+  `docs/taxonomy-incremental-build.md`, `docs/taxonomy-name-preference-plan.md`. Datierte ältere Abschnitte
+  weiter unten sind Verlauf, keine erneute Freigabe des aktuellen Stands. Aktuelle Zähler nur in `docs/project-status.md`.
 
 ## Arbeitsregel: Dokumentation ist Pflicht
 
@@ -131,6 +147,15 @@ Lokale Arbeitsoberflaeche:
   Explorer-Logordner
 
 ## Aktueller Projektstand
+
+Regressionskorrektur vom 20. September: Neue-Art-Entwurf und zugehöriges Portrait laufen während der Sitzung
+nicht mehr zeitlich ab; Quellen-/Kollisionsschutz bleibt aktiv. Der Karten-Schritt bietet lokalen JPEG-/PNG-Import
+und Dateiablage, Fehler im Abschluss bleiben sichtbar und geben das Fenster wieder frei. Bereits angelegte Arten
+nicht erneut anlegen oder löschen. `Manuell geschützte Karten` zählt gespeicherte Schutzentscheidungen, nicht
+blockierte Downloads. Ältere aktive Namenskorrekturen werden nur bei exakt passendem Altprüfwert und bestätigter
+Identität in beiden lokalen Datenbanken akzeptiert. Details: `docs/add-species-workflow.md` und
+`docs/taxonomy-name-preference-plan.md`. Automatischer IUCN-Abruf und Trennung von Herkunft/Schutz bleiben vor dem
+Audit offen; keine bestehenden Schutzmarkierungen pauschal ändern.
 
 Aktuelle Zähler sowie die aktiven Listen für manuelle Karten, NC-Sounds und bewusst fehlende Tierstimmen stehen
 ausschließlich in der automatisch erzeugten Datei `docs/project-status.md`. Sie wird mit `npm run status:sync`
@@ -533,8 +558,8 @@ Aktuelle Planung:
   2026-07-02 versucht `update.mjs` zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den
   offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus Redirect-, HTML- und
   Fehlerantworten als
-  `cached-individual-maps`-URL. Wenn Node lokal HTTP 403 erhaelt, nutzt die Pipeline unter Windows zusaetzlich
-  `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Seit
+  `cached-individual-maps`-URL. Der Windows-Fallback nach HTTP 403 wurde am 2026-09-12 zunächst entfernt,
+  dann wiederhergestellt; auch er scheitert im aktuellen Benutzerlauf. Ersatzweg ist der Datei-Upload. Seit
   2026-07-10 wiederholt die Pipeline diesen Fallback bei temporären IUCN-/Backblaze-Fehlern bis zu dreimal, damit
   ein einzelnes `503 Server nicht verfügbar` nicht direkt in den manuellen Kartenworkflow führt. Der URL-Prüfer im
   Kartenimport nutzt denselben Windows-WebRequest-Fallback für IUCN-API-Kartenlinks. Wenn
@@ -1156,10 +1181,94 @@ Aktuelle Planung:
   anwendbare Korrekturschicht mit begrenzten Manifest-Lesezugriffen, ohne SQLite- oder Katalogscan. Der
   Master-Service schreibt während seiner Aktionen einen kleinen Laufhinweis mit Zeitstempel; alte oder nicht
   überprüfbare Laufhinweise werden nicht als bestätigter aktueller Stand ausgegeben. Kein automatischer Neubau.
-  Die atomare Aktivierung von Master und Lightroom-Paket ist vorhanden. Ein inkrementeller Vollaufbau, der nur
-  geänderte Taxa/Quellen neu berechnet und danach ebenfalls einen geprüften neuen Kandidaten atomar aktiviert, ist
-  noch nicht umgesetzt; dieser Architekturpunkt steht als eigener Restpunkt vor dem Audit.
-  Nächster fachlicher Punkt: globale deutsche Namenspräferenz bei bewusster Auswahl einer Suchalternative.
+  Master und Lightroom-Paket besitzen jeweils atomare Slotwechsel; der Vollaufbau aktiviert sie bislang
+  nacheinander mit möglichem Teilerfolg. Nur die schnelle Namenskorrektur hat bereits einen gemeinsamen Zeiger.
+  Seit dem 8. September ist der inkrementelle Master-/Paketaufbau ausdrücklich Pflicht vor dem Audit:
+  Identitätsregeln klären, kontrollierten Zuordnungsweg implementieren, anschließend inkrementelle Kandidaten
+  mit gemeinsamem Aktivierungswechsel, Wiederanlauf und Vollaufbauvergleich. Noch nicht implementiert.
+  Fachregeln bestätigt; Stand 9. September: Schema-4-Identitätsregister, geschützte Review-API, geprüfter
+  Kandidatenaufbau und Aktivierungssperre für fehlende Entscheidungen sowie Historie im Suchpaket implementiert.
+  Alter Master bleibt lesbar; keine produktive Migration. Explorer-Fallansicht mit begrenzten Projektseiten,
+  gezielter Suche, Quellenvergleich, Bestätigung und Verwerfen offener Vormerkungen implementiert.
+  Die bedienbare Foto-Nachfolgerzuordnung und der Deltaaufbau sind noch offen. Projekt-Splits/Merges lassen sich
+  jetzt mit ausdrücklicher Einzelzielwahl je Projekt, lokaler Namensregel und erneuter Vorschau bestätigen.
+  Der Masterkandidat erhält Website-Identität/Dateien und überträgt keine alten Projektnamen auf neue Taxa.
+  Am 10. September zusätzlich mit Reichsaliasen und der Kette Split/Fortführung/erneuter Split geprüft:
+  Die nächste Aufteilung verlangt eine neue Zielbestätigung; Rollback stellt den vorherigen Projektlink her.
+  Der Benutzer hat den kurzen Explorer-Bedienungstest (Öffnen, gezielte Suche, Schließen) bestätigt;
+  keine praktische Split-/Merge-Migration. Foto-Vorschaukern, SQLite-Rücknahmejournal und isolierter
+  Lua-Schreibkern sind anschließend implementiert, aber noch nicht zu einer Bedienaktion verbunden.
+  Die Helferbrücke verbindet nun bestätigte Schnappschussvorschau und dauerhaftes Journal, öffnet vor
+  Bestätigung den aktiven Paketstand neu und prüft Wiederaufnahme sowie Favoritenabhängigkeiten für
+  250er-Blöcke. Am 11. September verbindet die lokale Lua-Orchestrierung nun ausdrücklichen Katalogleselauf,
+  Zielvorbereitung, Journal und Schreiben/Rücklesen samt Sperrprüfung. Version 0.4.24.13 ergänzt
+  „Artänderungen prüfen ...“ im Verwaltungsfenster: explizite Nachfolger-/Favoritenwahl, Bestätigungen,
+  Fortschritt, Pause und protokollierte Fortsetzung/Rücknahme. 103 Lightroom-Tests bestanden;
+  praktische Lightroom-Abnahme und Großkatalogmessung bleiben offen. Normale Zuweisung unverändert.
+  Bedienung und Grenzen: `docs/lightroom-identity-workflow.md`.
+  Am 11. September hat der Benutzer das Öffnen ohne Suche/Auswahl bestätigt; keine Schreib-/Rücknahmeabnahme.
+  Anschließend begonnen: `taxonomy-build-inputs.mjs` mit versionsgebundenem Quellenplan, transaktionalen
+  Eingangscheckpoints und streamendem Datensatzvergleich. Die Anbindung `taxonomy-master-inputs.mjs` speichert
+  jetzt geprüfte Eingänge beim Explorer-Vollaufbau mit dem Kandidaten, bindet dessen fertige Datei per Prüfsumme
+  und vergleicht nachgelagert gegen die aktive Baseline. CoL-Auswahlumfang ist nicht der Gesamtbestand;
+  Abbruch, Fremddatei und fehlende Altbaseline ergeben keine Wiederverwendungsfreigabe. Weitere direkte
+  Aufrufer ohne Beleg bleiben Vollaufbau ohne Baseline. Am 12. September ergänzt
+  `taxonomy-master-dependencies.mjs` einen nachgelagerten SQLite-Abhängigkeitsplan aus altem und neuem Master:
+  Quellen-/Eltern-/Akzeptiert-Verweise, wissenschaftliche Varianten, Gattungsableitung und konservative
+  Neuberechnung zustandsabhängiger Taxa. Zyklen und entfernte Kanten sind getestet; keine Kopierfreigabe.
+  `taxonomy-master-reuse.mjs` schaltet nun bei belegbar unveränderter Graphstruktur den Plan vor die
+  Ergebnisberechnung und übernimmt nicht betroffene, zustandsfreie Arten mit aktuellen Quellenbelegen.
+  Geänderte Reihenfolge gleicher Quellenwerte wird neu berechnet. Struktur-/Identitätswechsel bleiben Vollaufbau.
+  Kleine mehrstufige Vollaufbau-Vergleichstests samt Mehranbieter-/Projektfeldern bestanden. Isolierte Messungen
+  mit 10.000 synthetischen Arten bestätigen die Ergebnisgleichheit, zeigen aber Ausreißer und höheres RSS.
+  Doppeltes Graphlesen und wiederholte SQL-Vorbereitung sind reduziert; vollständig geänderte Eingänge
+  überspringen nutzlose Wiederverwendungsplanung. Abbruchtests nach 500 Kopien erhalten die alten Stände.
+  Seit 13. September: Suchpaket-Deltas aus gemeinsamem Vollaufbau-Projektionsvertrag und atomare Paaraktivierung
+  über `taxonomy-publication/active.json` sind angebunden. Beide Releaseordner werden zuerst geprüft;
+  Paketfehler lassen beide Altstände aktiv. Präferenzen, Rücknahme, offene Leser und echter Paketworker sind
+  isoliert geprüft. Lua-Version 0.4.24.14 liest denselben Zeiger. Keine produktive Aktivierung.
+  Vor Großbestandsfreigabe bleiben Speicher-/Ausreißeranalyse, Release-Aufbewahrung/Platzbudget und
+  die Abnahme des gesamten Wiederanlaufs offen. Die schwere Paarvorbereitung/-prüfung samt Rücknahme ist
+  seit 20. September in einen eigenen Hilfsprozess ausgelagert; der Elternprozess allein aktiviert das Paar.
+  Worker-/Jobkern und transaktionale 500er-Schreibcheckpoints sind im Explorer angeschlossen:
+  aktuelle Quellenauswahl und eigene Eingänge werden gebunden, Aufträge beim Neustart ohne automatischen
+  Lauf wiedergefunden, Pause/Fortsetzung und gesicherter Zähler sind sichtbar. Serviceweite Prozesssperren
+  sowie Ablehnung veralteter Läufe/älterer Kandidaten sind geprüft. Der Service-/Worker-Test öffnet den Dienst
+  neu; produktive Explorer-/Lightroom-Neustart- und Großbestandsabnahme stehen aus. Keine produktiven Läufe.
+  Nächster Schritt: Release-/Jobaufbewahrung und Platzbudget. Vertrag: `docs/taxonomy-master-background-build.md`.
+  Details: `docs/taxonomy-incremental-build.md`.
+  Benutzerbefunde vom 12. September untersucht: Grünfink-Kartenabruf erhält HTTP 403/Schutzseite trotz
+  funktionierendem Browserlink. Keine Umgehung; verständliche Meldung und vorhandener Datei-Upload als Ersatzweg.
+  GitHub-Lauf `34681451887` scheiterte am Mediengate (fehlende Karte), nicht am Deploy-Schritt. Pipeline-/Transfer-
+  veröffentlichungen prüfen Medien jetzt vor Git. Doppelte Detailberichte sind unterdrückt; eine abschließende
+  Gesamtzusammenfassung trennt Verarbeitung, Fehlstellen und Git/Pages. Tests bestanden; automatische IUCN-
+  Abruffreigabe und praktische Explorer-Abnahme bleiben offen. Details: `docs/pipeline-control-plan.md`.
+  Beschädigte Umlaute in Kartenmeldungen: Windows-Ausgabe und Node-Eingabe auf UTF-8 vereinheitlicht;
+  Pipeline-Textdecoder erhält Zeichen und Zeilen über Paketgrenzen. Historische Logs bleiben unverändert.
+  Lesender Live-Test am 12. September, 19:48 MESZ: alle 57 Kartenendpunkte HTTP 403/Schutzseite, 0 JPEGs.
+  Alle 57 vorhandenen Karten per SHA-256 unverändert; automatischer Neuabruf bleibt als allgemeiner Befund offen.
+  Einordnung: Der 57-Arten-Test umfasst direkte Node-Abrufe, keinen vollständigen Alt-Ablauf. Reguläre
+  Assessment-API für Weißstorch/Grünfink antwortet im Reparaturversuch HTTP 200, ohne JPEG-Link. Downloadfunktion
+  Der historische Windows-WebRequest-Fallback nach direktem 403 ist wieder aktiv; aktueller Erfolg noch nicht
+  nachgewiesen. Ein Browser-Network-Link kann als zusätzlicher regulärer Weg geprüft werden.
+  Korrektur des Browserbefunds: Der vollständige Network-Auszug nennt `www.iucnredlist.org`, HTTP 200,
+  `image/jpeg` und ca. 581 kB. Der Adapter priorisiert `www`; automatischer Erfolg bleibt offen.
+  Karten-Webrequests senden keinen Bearer-Token an den Website-Endpunkt; Token bleibt auf API-JSON beschränkt.
+  Ein 403 des Windows-Fallbacks wird nicht mehr als vorzeitiger Abbruchfehler weitergereicht; Cache-/Backblaze-
+  Prüfungen bleiben Teil des vollständigen Kartenablaufs.
+  Seit 13. September: vereinfachter lokaler Dateiimport im Karteneditor. JPEG/PNG auswählen oder in das
+  beschriftete Feld ziehen startet ausschließlich die vorhandene lokale Vorschauprüfung, keinen IUCN-Abruf.
+  Browserbutton beziehungsweise passender Assessment-Dateiname ergänzen die Quelle; leerer Pflegegrund erhält
+  einen editierbaren Vorschlag. Abweichende Assessment-Dateinamen, Mehrfachablagen, ungültige Dateiformate und
+  veraltete Vorschauen werden abgefangen. Speichern bleibt ausdrücklich bestätigt, mit Backup und lokalem
+  Änderungsstand. Kein neuer Browser-/Session-Fallback; automatische Downloads weiterhin ungelöst.
+  Dateiimport einschließlich direktem Browser-Drag-and-drop vom Benutzer bestätigt. Automatischen Kartenabruf
+  und die Trennung von IUCN-Herkunft und manuellem Pflegeschutz als letzten fachlichen Punkt vor dem Audit prüfen;
+  keinen bestehenden Schutz automatisch entfernen. Details: `docs/pipeline-control-plan.md`.
+  Details und Grenzen: `docs/taxonomy-identity-incremental-plan.md`.
+  Die vorhandene ID aus Name/Rang/Reich erkennt keinen Split bei unverändertem Identitätstupel. Unbekannte IDs
+  zu überspringen ersetzt deshalb keine Nachfolgerverwaltung. Produktive Daten wurden in der Analyse nicht geändert.
+  Abgenommener vorheriger Punkt: globale deutsche Namenspräferenz bei bewusster Auswahl einer Suchalternative.
   Die Namenswahl mit bestätigter Rückfrage und expliziter Rückwahl ist seit 0.4.24.8 technisch umgesetzt:
   gemeinsamer `taxonomy-name-preference-service.mjs`, vorhandene atomare Korrekturschicht und prozessübergreifende
   Korrektur-Schreibsperre. Einzelheiten und Grenzen stehen in `docs/taxonomy-name-preference-plan.md`.
@@ -1172,8 +1281,8 @@ Aktuelle Planung:
   englische Korrekturen und vorherige Namenswahl bleiben erhalten. Fehlende oder nicht eindeutig belegbare
   Anbieterwerte blockieren die Rücksetzung. SQLite-Neubau-/Rückwahltests sind erfolgreich; der Benutzer hat
   Anbieterstandard und Rückwahl in beiden Richtungen praktisch bestätigt. Version 0.4.24.10 ergänzt in Lightroom
-  `Namenswahl übernehmen` für eine direkte globale Präferenz ohne Fotozuweisung; nur dieser neue Button braucht
-  noch den kurzen Bedienungstest.
+  `Namenswahl übernehmen` für eine direkte globale Präferenz ohne Fotozuweisung; der Benutzer hat auch diesen
+  Button am 8. September praktisch bestätigt.
   Keine globale
   Änderung allein durch Suchtext oder Vorschau, keine beiläufige Projekt-/Assetumbenennung.
   Die alte Windows-Aufgabe `Datenabruf Website` wurde vom Benutzer gelöscht; ihr Lauf um 07:00
@@ -1201,7 +1310,7 @@ Aktuelle Planung:
   `.lrcat` oder XMP ist
   verboten; Lightroom bleibt alleiniger Besitzer aller Katalogschreibvorgänge. Automatisierte Phase-10.2-Tests
   sichern Suchpaket, Suchhelfer, Plug-in-Grenzen und Konfliktsperre. Der aktuelle, automatisiert geprüfte Stand
-  trägt Version `0.4.24.10`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
+  trägt Version `0.4.24.14`: Das kompakte schwebende Zuweisungsfenster bleibt bei Auswahlwechseln geöffnet,
   gliedert Auswahl, Prüfung und Zuweisung in vier gerahmte Schritte, prüft den lokalen Suchpaketstatus, zeigt bei
   einem Foto dessen Dateinamen oder `1 Foto ausgewählt` und bei Mehrfachauswahl ausschließlich die Gesamtzahl,
   besitzt einen unten rechts verankerten Schließen-Button und merkt die zehn zuletzt verwendeten Arten. Lifelist
@@ -1357,9 +1466,10 @@ Aktuelle Planung:
   Masterversion und Lightroom-Paket-ID geprüft. Ein einziger atomarer Zeiger aktiviert es anschließend gleichzeitig
   für Masteransicht und Lightroom-Suchhelfer; die mehrgigabytegroßen Basis-SQLite-Dateien werden nicht kopiert oder
   verändert. Lightroom öffnet bei der nächsten Suche den neuen Stand ohne Neustart. Eine vor dem Zeigerwechsel
-  geladene Art wird über die geänderte Korrekturrevision vor der Zuweisung gesperrt. Das Zurücksetzen einer bereits
-  in einem früheren Vollmaster fest eingebauten manuellen Aussage bleibt dem vollständigen Kandidatenbau
-  vorbehalten. Der Sekundenpfad ist automatisiert geprüft und benötigt noch den praktischen Lightroom-/Explorer-Test.
+  geladene Art wird über die geänderte Korrekturrevision vor der Zuweisung gesperrt. Der damalige Schnellweg konnte
+  fest eingebaute Korrekturen noch nicht entfernen. Seit 0.4.24.9 setzt `Anbieterstandard verwenden` den belegten
+  Anbieterwert jedoch ohne Master-Neuaufbau als bestätigte neue Wahl; Rückwahl und seit 0.4.24.10 die direkte
+  Namensübernahme wurden praktisch bestätigt. Das gilt nicht als Abnahme der späteren Regressionskorrekturen.
   Der Großkatalogtest von Version 0.4.21.0 bestätigte Fortschritt, Bedienbarkeit, unauffälligen RAM-Verlauf,
   Pause/Fortsetzen, Lifelist-CSV und Klasseninhalte. Version 0.4.21.1 korrigierte den fehlenden Dialogrand und das
   wirkungslose direkte Delta; Zuweisung und Rücknahme wurden damit praktisch bestätigt. Die dynamische Artenhöhe

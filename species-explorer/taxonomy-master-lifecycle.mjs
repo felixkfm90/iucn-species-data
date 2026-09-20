@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { assertSeparatePublicationAllowed } from "./taxonomy-publication-storage.mjs";
 
 import {
   addMasterDecision,
@@ -15,6 +16,8 @@ import {
   readTaxonomyMasterManifest,
 } from "./taxonomy-master-candidate.mjs";
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
+import { readIdentityReview } from "./taxonomy-identity-review.mjs";
+import { identityRegistryRevision, emptyIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 import {
   taxonomyMasterActiveDirectory,
   taxonomyMasterCandidateDirectory,
@@ -427,11 +430,16 @@ export async function activateTaxonomyMasterCandidate(taxonomyRoot, {
   now = () => new Date(),
   fileSystem = fs,
 } = {}) {
+  assertSeparatePublicationAllowed(taxonomyRoot);
   if (!confirmed) {
     throw new Error("Die Aktivierung des geprüften Master-Kandidaten muss ausdrücklich bestätigt werden.");
   }
   const candidate = await inspectTaxonomyMasterCandidate(taxonomyRoot);
   if (!candidate.available) throw new Error("Es ist kein Master-Kandidat vorhanden.");
+  const identityReview = await readIdentityReview(taxonomyRoot);
+  if (identityReview && (candidate.manifest.inputRevisions?.identities || identityRegistryRevision(emptyIdentityRegistry())) !== identityReview.revision) {
+    throw new Error("Vorgemerkte Identitätsentscheidungen fehlen im Kandidaten. Bitte den Masterkandidaten erneut aufbauen und prüfen.");
+  }
   const blocking = candidate.conflicts.filter((entry) => BLOCKING_CONFLICTS.has(entry.conflict_type));
   if (blocking.length) {
     throw new Error(`${blocking.length} widersprüchliche Änderung(en) müssen vor der Aktivierung entschieden werden.`);
@@ -500,6 +508,7 @@ export async function rollbackTaxonomyMaster(taxonomyRoot, {
   now = () => new Date(),
   fileSystem = fs,
 } = {}) {
+  assertSeparatePublicationAllowed(taxonomyRoot);
   if (!confirmed) {
     throw new Error("Die Wiederherstellung der vorherigen Masterversion muss ausdrücklich bestätigt werden.");
   }

@@ -15,6 +15,7 @@ import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { resolveProviderGermanName } from "./taxonomy-provider-standard.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
 export const TAXONOMY_CORRECTION_RELEASE_SCHEMA_VERSION = 1;
 export const TAXONOMY_CORRECTION_POINTER_SCHEMA_VERSION = 1;
@@ -52,8 +53,21 @@ async function readJson(filePath, fallback = null) {
   }
 }
 
-export async function readActiveTaxonomyCorrectionPointer(dataRoot) {
-  const pointer = await readJson(taxonomyCorrectionActivePointerPath(dataRoot));
+export async function readActiveTaxonomyCorrectionPointer(dataRoot, {
+  expectedMasterVersion = "", expectedPackageId = "",
+} = {}) {
+  const publication = readTaxonomyPublication(dataRoot);
+  const separate = await readJson(taxonomyCorrectionActivePointerPath(dataRoot));
+  const matches = (entry) => entry
+    && (!expectedMasterVersion || entry.baseMasterVersion === expectedMasterVersion)
+    && (!expectedPackageId || entry.basePackageId === expectedPackageId);
+  const pair = publication && [publication.active, publication.previous].find((entry) => entry
+    && (!expectedMasterVersion || entry.masterVersion === expectedMasterVersion)
+    && (!expectedPackageId || entry.packageId === expectedPackageId));
+  const pointer = publication
+    ? (matches(separate) && separate.baseMasterVersion === pair?.masterVersion && separate.basePackageId === pair?.packageId
+      ? separate : pair?.correctionPointer)
+    : separate;
   if (!pointer) return null;
   if (Number(pointer.schemaVersion) !== TAXONOMY_CORRECTION_POINTER_SCHEMA_VERSION) {
     throw new Error(`Nicht unterstützte Korrektur-Aktivierungsversion: ${pointer.schemaVersion}`);
@@ -72,7 +86,7 @@ export async function readActiveTaxonomyCorrectionRelease(dataRoot, {
   expectedMasterVersion = "",
   expectedPackageId = "",
 } = {}) {
-  const pointer = await readActiveTaxonomyCorrectionPointer(dataRoot);
+  const pointer = await readActiveTaxonomyCorrectionPointer(dataRoot, { expectedMasterVersion, expectedPackageId });
   if (!pointer) return null;
   const requiredMaster = cleanText(expectedMasterVersion);
   const requiredPackage = cleanText(expectedPackageId);
@@ -106,6 +120,7 @@ function normalizedCorrections(corrections = []) {
       kingdom: cleanText(value.kingdom || "Animalia"),
       germanName: cleanText(value.germanName),
       ...(value.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
+      ...(value.namePreference?.masterTaxonId ? { namePreference: { masterTaxonId: cleanText(value.namePreference.masterTaxonId) } } : {}),
       englishName: cleanText(value.englishName),
       note: cleanText(value.note),
     };
@@ -139,6 +154,9 @@ function resolveCorrectionEntries(masterDatabase, lightroomDatabase, corrections
       );
     }
     const master = masterMatches[0];
+    if (correction.namePreference?.masterTaxonId && correction.namePreference.masterTaxonId !== master.master_taxon_id) {
+      throw new Error(`${correction.scientificName}: Die Namenspräferenz gehört zu einer anderen Masteridentität. Bitte die Artänderung ausdrücklich klären.`);
+    }
     const packageMatch = packageRow.get(master.master_taxon_id);
     if (
       !packageMatch
@@ -168,15 +186,52 @@ function resolveCorrectionEntries(masterDatabase, lightroomDatabase, corrections
   });
 }
 
+// Older releases hashed the names without the subsequently introduced ID binding.
+// Accept that representation only after checking every identity in both active DBs.
+// This is read-only: neither opening a dialog nor checking status publishes a release.
+export async function taxonomyCorrectionsMatchActive({ taxonomyRoot, searchRoot, corrections = [], activeRevision } = {}) {
+  if (taxonomyCorrectionsRevision(corrections) === activeRevision) return true;
+  const legacy = corrections.map(({ namePreference: _preference, ...entry }) => entry);
+  if (!activeRevision || taxonomyCorrectionsRevision(legacy) !== activeRevision || !searchRoot) return false;
+  let masterDatabase;
+  let lightroomDatabase;
+  try {
+    const masterManifest = await readJson(taxonomyMasterManifestPath(taxonomyRoot, "active"));
+    const packageManifest = await readLightroomSearchManifest(searchRoot, "active");
+    const masterVersion = masterManifest?.candidateId || masterManifest?.masterVersion;
+    if (!masterVersion || masterVersion !== packageManifest?.masterVersion) return false;
+    const overlay = await readActiveTaxonomyCorrectionRelease(taxonomyRoot, {
+      expectedMasterVersion: masterVersion, expectedPackageId: packageManifest.packageId,
+    });
+    if ((overlay?.revision || masterManifest.inputRevisions?.corrections) !== activeRevision) return false;
+    const { DatabaseSync } = await loadNodeSqlite();
+    masterDatabase = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "active"), { readOnly: true });
+    lightroomDatabase = new DatabaseSync(lightroomSearchDatabasePath(searchRoot, "active"), { readOnly: true });
+    const resolved = resolveCorrectionEntries(masterDatabase, lightroomDatabase, normalizedCorrections(corrections));
+    return !overlay || resolved.every((entry) => overlay.entries.some((old) => (
+      old.masterTaxonId === entry.masterTaxonId && old.scientificName === entry.scientificName
+    )));
+  } catch {
+    return false; // Unreadable or changed identities remain pending, never silently accepted.
+  } finally {
+    lightroomDatabase?.close();
+    masterDatabase?.close();
+  }
+}
+
 export async function prepareTaxonomyCorrectionRelease({
   taxonomyRoot,
   searchRoot,
   corrections = [],
   now = () => new Date(),
+  masterDirectory = null,
+  packageDirectory = null,
 } = {}) {
   if (!taxonomyRoot || !searchRoot) {
     throw new TypeError("Taxonomie- und Lightroom-Suchpaketpfad sind erforderlich.");
   }
+  masterDirectory ??= path.dirname(taxonomyMasterDatabasePath(taxonomyRoot, "active"));
+  packageDirectory ??= path.dirname(lightroomSearchDatabasePath(searchRoot, "active"));
   const masterCorrectionRoot = correctionRoot(taxonomyRoot);
   const packageCorrectionRoot = correctionRoot(searchRoot);
   if (masterCorrectionRoot !== packageCorrectionRoot) {
@@ -186,8 +241,8 @@ export async function prepareTaxonomyCorrectionRelease({
   }
   const normalized = normalizedCorrections(corrections);
   const [masterManifest, packageManifest] = await Promise.all([
-    readJson(taxonomyMasterManifestPath(taxonomyRoot, "active")),
-    readLightroomSearchManifest(searchRoot, "active"),
+    readJson(path.join(masterDirectory, "manifest.json")),
+    readJson(path.join(packageDirectory, "manifest.json")),
   ]);
   if (!masterManifest || !packageManifest) {
     throw new Error("Für die schnelle Korrektur müssen Master und Lightroom-Suchpaket aktiv sein.");
@@ -221,11 +276,11 @@ export async function prepareTaxonomyCorrectionRelease({
   }
   const { DatabaseSync } = await loadNodeSqlite();
   const masterDatabase = new DatabaseSync(
-    taxonomyMasterDatabasePath(taxonomyRoot, "active"),
+    path.join(masterDirectory, "taxonomy-master.sqlite"),
     { readOnly: true },
   );
   const lightroomDatabase = new DatabaseSync(
-    lightroomSearchDatabasePath(searchRoot, "active"),
+    path.join(packageDirectory, path.basename(lightroomSearchDatabasePath(searchRoot, "active"))),
     { readOnly: true },
   );
   let entries;
@@ -249,7 +304,16 @@ export async function prepareTaxonomyCorrectionRelease({
     basePackageId: cleanText(packageManifest.packageId),
     entries,
   };
-  await atomicWriteJson(taxonomyCorrectionReleasePath(taxonomyRoot, releaseId), release);
+  const releasePath = taxonomyCorrectionReleasePath(taxonomyRoot, releaseId);
+  const existing = await readJson(releasePath);
+  if (existing) {
+    if (["schemaVersion", "releaseId", "revision", "baseMasterVersion", "basePackageId", "entries"]
+      .some((key) => JSON.stringify(existing[key]) !== JSON.stringify(release[key]))) {
+      throw new Error("Ein unveränderliches Korrektur-Release besitzt unerwartet abweichenden Inhalt.");
+    }
+    return existing;
+  }
+  await atomicWriteJson(releasePath, release);
   return release;
 }
 

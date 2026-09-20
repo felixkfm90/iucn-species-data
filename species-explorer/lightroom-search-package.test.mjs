@@ -4,6 +4,15 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, test } from "node:test";
+import { EventEmitter } from "node:events";
+import { publishTaxonomyPair, rollbackTaxonomyPair, writeTaxonomyPublication } from "./taxonomy-publication.mjs";
+import { readTaxonomyPublication, taxonomyPublicationPath } from "./taxonomy-publication-storage.mjs";
+import { inspectTaxonomyMasterCandidate } from "./taxonomy-master-candidate.mjs";
+import { readTaxonomyDataVersions } from "./taxonomy-data-versions.mjs";
+import { rebuildLightroomSearchPackage } from "./lightroom-search-update.mjs";
+import { prepareTaxonomyPublicationInWorker } from "./taxonomy-publication-process.mjs";
+import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import { fileURLToPath } from "node:url";
 
 import {
   buildLightroomSearchPackage,
@@ -35,11 +44,62 @@ import {
 } from "./taxonomy-search-text.mjs";
 
 const NOW = "2026-08-13T10:00:00.000Z";
+
+function publicationProcessFixture(onSend) {
+  const child = new EventEmitter();
+  child.pid = 23456;
+  child.stderr = new EventEmitter();
+  child.stderr.setEncoding = () => {};
+  child.kill = () => { queueMicrotask(() => { child.emit("exit", null); child.emit("disconnect"); }); };
+  child.send = (...args) => onSend(child, ...args);
+  return child;
+}
+
+test("Paarprozess wartet nach Exit auf das letzte IPC-Ergebnis und übergibt nur Auftragsdaten", async () => {
+  const prepared = { pointer: { active: { id: "test" } }, result: { masterVersion: "test" } };
+  const child = publicationProcessFixture((process, message, callback) => {
+    assert.equal(message.type, "prepare");
+    assert.equal(message.options.timestamp, NOW);
+    assert.equal(message.options.onProgress, undefined);
+    assert.equal(message.options.signal, undefined);
+    assert.equal(message.options.writePointer, undefined);
+    queueMicrotask(() => {
+      callback();
+      process.emit("exit", 0);
+      setImmediate(() => {
+        process.emit("message", { type: "prepared", prepared });
+        process.emit("disconnect");
+      });
+    });
+  });
+  assert.deepEqual(await prepareTaxonomyPublicationInWorker({ spawnProcess: () => child,
+    now: () => new Date(NOW) }), prepared);
+});
+
+test("Paarprozess meldet Start-, IPC-, Fortschritts- und Ergebnisfehler ohne Scheinaktivierung", async () => {
+  const cases = [
+    { name: "Startfehler", onSend: (child) => queueMicrotask(() => child.emit("error", new Error("Startfehler"))) },
+    { name: "Sendefehler", onSend: () => { throw new Error("Sendefehler"); } },
+    { name: "Kanalfehler", onSend: (_child, _message, callback) => callback(new Error("Kanalfehler")) },
+    { name: "Fortschrittsfehler", onSend: (child) => queueMicrotask(() => child.emit("message", { type: "progress", event: {} })),
+      onProgress: () => { throw new Error("Fortschrittsfehler"); } },
+    { name: "unterbrochen", onSend: (child) => queueMicrotask(() => { child.emit("exit", 0); child.emit("disconnect"); }) },
+    { name: "Fachfehler", onSend: (child) => queueMicrotask(() => {
+      child.emit("message", { type: "failed", message: "Fachfehler" });
+      child.emit("exit", 1); child.emit("disconnect");
+    }) },
+  ];
+  for (const entry of cases) {
+    const child = publicationProcessFixture(entry.onSend);
+    await assert.rejects(prepareTaxonomyPublicationInWorker({ spawnProcess: () => child,
+      onProgress: entry.onProgress }), new RegExp(entry.name), entry.name);
+  }
+});
 const temporaryRoots = [];
 
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map((root) => (
-    fs.rm(root, { recursive: true, force: true })
+    fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 })
   )));
 });
 
@@ -585,4 +645,294 @@ test("Prüfsummenfehler verhindert die Paketfreigabe", async () => {
     verifyLightroomSearchPackage({ searchRoot, slot: "staging" }),
     /Prüfsumme/,
   );
+});
+
+async function activeFixture() {
+  const result = await createRoots();
+  await createMasterFixture(result.taxonomyRoot);
+  await buildLightroomSearchPackage(result);
+  await activateLightroomSearchPackage(result.searchRoot, { verify: verifyLightroomSearchPackage });
+  return result;
+}
+
+async function stageFixture(taxonomyRoot) {
+  const source = path.dirname(taxonomyMasterDatabasePath(taxonomyRoot));
+  const target = path.dirname(taxonomyMasterDatabasePath(taxonomyRoot, "staging"));
+  await fs.cp(source, target, { recursive: true });
+  const manifest = JSON.parse(await fs.readFile(path.join(source, "manifest.json"), "utf8"));
+  await fs.writeFile(path.join(target, "manifest.json"), JSON.stringify({ ...manifest, candidateId: "master-fixture-v2" }));
+}
+
+function semanticRows(file) {
+  const database = new DatabaseSync(file, { readOnly: true });
+  try {
+    return Object.fromEntries(["provider_release", "taxon", "taxon_status", "taxon_provider", "project_link", "hierarchy", "search_term"].map((table) => {
+      const columns = database.prepare(`PRAGMA table_info(${table})`).all().map((row) => row.name)
+        .filter((name) => name !== "search_term_id").join(", ");
+      return [table, database.prepare(`SELECT ${columns} FROM ${table} ORDER BY ${columns}`).all().map((row) => ({ ...row }))];
+    }));
+  } finally { database.close(); }
+}
+
+test("Delta entspricht Vollaufbau nach Namens-, Quellen-, Hierarchieänderung und Löschung; FTS bleibt konsistent", async () => {
+  const options = await activeFixture();
+  const { taxonomyRoot, searchRoot, root } = options;
+  await stageFixture(taxonomyRoot);
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "staging"));
+  database.exec(`PRAGMA foreign_keys=ON;
+    DELETE FROM master_conflict WHERE master_taxon_id='mtx_sciurus_vulgaris_fixture';
+    DELETE FROM master_field_assertion WHERE master_taxon_id='mtx_sciurus_vulgaris_fixture';
+    DELETE FROM provider_taxon_assertion WHERE master_taxon_id='mtx_sciurus_vulgaris_fixture';
+    DELETE FROM master_taxon WHERE master_taxon_id='mtx_sciurus_vulgaris_fixture';
+    UPDATE master_field_assertion SET field_value='Dunlin changed' WHERE field_name='english-name';
+    UPDATE master_field_assertion SET field_value='New family' WHERE field_name='family';
+    UPDATE provider_release SET provider_version='new fixture';
+    UPDATE master_search_term SET search_term_id=search_term_id+10000;
+    DELETE FROM master_search_term WHERE term='Dunlin';
+  `);
+  insertSearchTerm(database, { masterTaxonId: "mtx_calidris_alpina_fixture", term: "DeltaOnly", termKind: "vernacular", provider: "manual", weight: 1 });
+  database.close();
+  const delta = await buildLightroomSearchPackage({ ...options, sourceSlot: "staging" });
+  assert.equal(delta.build.mode, "incremental");
+  assert.equal(delta.build.changes.taxon.written, 1);
+  assert.equal(delta.build.changes.search_term.written, 1, "unchanged terms keep their local IDs");
+  await buildLightroomSearchPackage({ taxonomyRoot, searchRoot: path.join(root, "full"), sourceSlot: "staging", incremental: false });
+  assert.deepEqual(semanticRows(lightroomSearchDatabasePath(searchRoot, "staging")),
+    semanticRows(lightroomSearchDatabasePath(path.join(root, "full"), "staging")));
+  const store = await openLightroomSearchStore({ searchRoot, slot: "staging" });
+  try {
+    assert.equal(store.search("DeltaOnly").length, 1);
+    assert.equal(store.search("Eichhörnchen").length, 0);
+  } finally { store.close(); }
+  await activateLightroomSearchPackage(searchRoot, { verify: verifyLightroomSearchPackage });
+  const repeated = await buildLightroomSearchPackage({ ...options, sourceSlot: "staging" });
+  assert.equal(repeated.build.changes.search_term.written, 0);
+  assert.equal(repeated.build.changes.search_term.removedOrReplaced, 0);
+});
+
+test("Beschädigte Delta-Basis fällt auf Vollaufbau zurück; Abbruch erhält vorhandenes Staging", async () => {
+  const options = await activeFixture();
+  await fs.appendFile(lightroomSearchDatabasePath(options.searchRoot), "corrupt");
+  const manifest = await buildLightroomSearchPackage(options);
+  assert.equal(manifest.build.mode, "full");
+  const before = await fs.readFile(lightroomSearchDatabasePath(options.searchRoot, "staging"));
+  const controller = new AbortController();
+  await assert.rejects(buildLightroomSearchPackage({ ...options, signal: controller.signal,
+    onProgress: ({ phase }) => { if (phase === "copy") controller.abort(); } }), /abort/i);
+  assert.deepEqual(await fs.readFile(lightroomSearchDatabasePath(options.searchRoot, "staging")), before);
+});
+
+const fixtureCorrection = [{ scientificName: "Calidris alpina", germanName: "Test Strandläufer" }];
+
+test("Paarworker prüft und baut ohne Zeigerwechsel; nur der Elternprozess aktiviert und rollt zurück", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const oldMaster = taxonomyMasterDatabasePath(options.taxonomyRoot);
+  let pid = null, ticks = 0;
+  const timer = setInterval(() => { ticks += 1; }, 2);
+  const prepare = async (job) => {
+    const prepared = await prepareTaxonomyPublicationInWorker({ ...job, projectRevision: "worker-test",
+      onProgress(event) { pid = event.workerPid; },
+    });
+    assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+    assert.equal(taxonomyMasterDatabasePath(options.taxonomyRoot), oldMaster);
+    return prepared;
+  };
+  try {
+    const result = await publishTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection, prepare });
+    assert.ok(pid && pid !== process.pid);
+    assert.ok(ticks > 1, "Explorer event loop remains available during preparation");
+    assert.equal(result.active.projectRevision, "worker-test");
+    assert.equal(result.masterVersion, "master-fixture-v2");
+    const stored = await openLightroomSearchStore(options);
+    try { assert.equal(stored.search("Test Strandläufer")[0].germanName, "Test Strandläufer"); }
+    finally { stored.close(); }
+    const rollback = await rollbackTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection,
+      prepare: prepareTaxonomyPublicationInWorker });
+    assert.equal(rollback.masterVersion, "master-fixture-v1");
+  } finally { clearInterval(timer); }
+});
+
+test("Paarworker-Abbruch und neue Eingaben nach Vorbereitung erhalten den aktiven Stand und erlauben neuen Versuch", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const controller = new AbortController();
+  await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true, prepare: prepareTaxonomyPublicationInWorker,
+    signal: controller.signal, onProgress(event) { if (event.workerPid) controller.abort(); },
+  }), /abort/i);
+  assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+  assert.deepEqual((await fs.readdir(options.searchRoot)).filter((name) => name.startsWith(".publication-")), []);
+  let revision = 1;
+  await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true, readInputs: async () => revision,
+    prepare: async (job) => { const prepared = await prepareTaxonomyPublicationInWorker(job); revision += 1; return prepared; },
+  }), /zwischenzeitlich/);
+  assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+  assert.deepEqual(await fs.readdir(path.join(options.searchRoot, "releases")), []);
+  await publishTaxonomyPair({ ...options, confirmed: true, prepare: prepareTaxonomyPublicationInWorker });
+  assert.equal(readTaxonomyPublication(options.taxonomyRoot).active.masterVersion, "master-fixture-v2");
+});
+
+test("Explorer-Schließen beendet die Paarvorbereitung ohne Aktivierung; erneutes Öffnen startet nichts", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const speciesListPath = path.join(options.root, "species.json"), correctionsPath = path.join(options.root, "corrections.json");
+  await fs.writeFile(speciesListPath, "[]"); await fs.writeFile(correctionsPath, '{"entries":[]}');
+  let announce;
+  const started = new Promise((resolve) => { announce = resolve; });
+  const create = () => createTaxonomyMasterService({ ...options, speciesListPath, correctionsPath,
+    readReferencePointer: async () => null, referenceService: { reset() {} },
+    publishPair: (pair) => publishTaxonomyPair({ ...options, ...pair,
+      prepare: (job) => prepareTaxonomyPublicationInWorker({ ...job, onProgress(event) {
+        job.onProgress(event);
+        if (event.workerPid) announce();
+      } }),
+    }),
+  });
+  const service = create();
+  try {
+    await service.activate({ confirmed: true });
+    await started;
+    await service.close();
+    assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+    const reopened = create();
+    try { assert.equal((await reopened.status()).active, false); }
+    finally { await reopened.close(); }
+  } finally { await service.close(); }
+});
+
+test("Gemeinsamer Zeiger erhält offene Leser, Präferenzen und Rückweg ohne Master-/Paketdrift", async () => {
+  const options = await activeFixture();
+  await activateTaxonomyCorrectionRelease({ ...options, corrections: fixtureCorrection });
+  const oldMaster = await openTaxonomyMasterStore(options);
+  const oldPackage = await openLightroomSearchStore(options);
+  await stageFixture(options.taxonomyRoot);
+  try {
+    const result = await publishTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection });
+    assert.equal(result.masterVersion, "master-fixture-v2");
+    assert.equal(oldPackage.search("Test Strandläufer")[0].germanName, "Test Strandläufer");
+    assert.equal(oldMaster.manifest.candidateId, "master-fixture-v1");
+    const store = await openLightroomSearchStore(options);
+    try {
+      assert.equal(store.manifest.masterVersion, "master-fixture-v2");
+      assert.equal(store.search("Test Strandläufer")[0].germanName, "Test Strandläufer");
+    } finally { store.close(); }
+    assert.equal((await inspectTaxonomyMasterCandidate(options.taxonomyRoot)).reason, "already-published");
+    await assert.rejects(activateLightroomSearchPackage(options.searchRoot), /gemeinsam/);
+    const unchangedPointer = await fs.readFile(taxonomyPublicationPath(options.taxonomyRoot), "utf8");
+    await assert.rejects(rollbackTaxonomyPair({ ...options, confirmed: true,
+      corrections: [{ ...fixtureCorrection[0], namePreference: { masterTaxonId: "wrong-identity" } }],
+    }), /anderen Masteridentität/);
+    assert.equal(await fs.readFile(taxonomyPublicationPath(options.taxonomyRoot), "utf8"), unchangedPointer);
+    if (process.platform === "win32") {
+      const differentlyCased = await openLightroomSearchStore({ searchRoot: options.searchRoot.toUpperCase() });
+      try { assert.equal(differentlyCased.manifest.masterVersion, "master-fixture-v2"); }
+      finally { differentlyCased.close(); }
+    }
+    await rollbackTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection });
+    const restored = await openLightroomSearchStore(options);
+    try {
+      assert.equal(restored.manifest.masterVersion, "master-fixture-v1");
+      assert.equal(restored.search("Test Strandläufer")[0].germanName, "Test Strandläufer");
+    } finally { restored.close(); }
+    assert.equal((await inspectTaxonomyMasterCandidate(options.taxonomyRoot)).available, false);
+    await rollbackTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection });
+    // Rebuild just the package from the same master: the overlay must be rebound too.
+    await publishTaxonomyPair({ ...options, sourceSlot: "active", confirmed: true, corrections: fixtureCorrection });
+    const refreshed = await openLightroomSearchStore(options);
+    try { assert.equal(refreshed.search("Test Strandläufer")[0].germanName, "Test Strandläufer"); }
+    finally { refreshed.close(); }
+    const snapshot = await readTaxonomyDataVersions(options);
+    assert.equal(snapshot.packageMasterVersion, "master-fixture-v2");
+    assert.equal(snapshot.correctionRevision, (await readActiveTaxonomyCorrectionPointer(options.taxonomyRoot)).revision);
+  } finally { oldMaster.close(); oldPackage.close(); }
+});
+
+test("Paketfehler, geänderte Eingaben und Zeigerfehler lassen das aktive Paar unverändert", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const oldPackagePath = lightroomSearchDatabasePath(options.searchRoot);
+  const oldMasterPath = taxonomyMasterDatabasePath(options.taxonomyRoot);
+  await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true,
+    buildPackage: async () => { throw new Error("package failed"); } }), /package failed/);
+  assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+  let revision = 1;
+  await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true,
+    readInputs: async () => revision,
+    buildPackage: async (build) => { await buildLightroomSearchPackage(build); revision += 1; },
+  }), /zwischenzeitlich/);
+  assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+  await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true,
+    writePointer: async () => { throw new Error("disk failed"); },
+  }), /disk failed/);
+  assert.equal(lightroomSearchDatabasePath(options.searchRoot), oldPackagePath);
+  assert.equal(taxonomyMasterDatabasePath(options.taxonomyRoot), oldMasterPath);
+  await publishTaxonomyPair({ ...options, confirmed: true });
+  const original = await fs.readFile(taxonomyPublicationPath(options.taxonomyRoot), "utf8");
+  await assert.rejects(writeTaxonomyPublication(options.taxonomyRoot, {}, { rename: async () => {
+    assert.equal(await fs.readFile(taxonomyPublicationPath(options.taxonomyRoot), "utf8"), original);
+    throw Object.assign(new Error("busy pointer"), { code: "EPERM" });
+  } }), /busy pointer/);
+  assert.equal(await fs.readFile(taxonomyPublicationPath(options.taxonomyRoot), "utf8"), original);
+});
+
+test("Explorer-Dienst baut das gemeinsame Paket in echtem Hintergrundprozess und aktiviert erst danach", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const speciesListPath = path.join(options.root, "species.json");
+  const correctionsPath = path.join(options.root, "corrections.json");
+  await fs.writeFile(speciesListPath, "[]");
+  await fs.writeFile(correctionsPath, '{"schemaVersion":1,"entries":[]}');
+  let fail = true;
+  const service = createTaxonomyMasterService({ ...options, speciesListPath, correctionsPath,
+    referenceService: { reset() {} }, readReferencePointer: async () => null,
+    activateCandidate: async () => { throw new Error("standalone activation forbidden"); },
+    publishPair: (pairOptions) => publishTaxonomyPair({ ...options, ...pairOptions,
+      buildPackage: async (build) => {
+        assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+        if (fail) throw new Error("worker failure");
+        return rebuildLightroomSearchPackage({ ...build, activate: false,
+          repoRoot: fileURLToPath(new URL("../", import.meta.url)) });
+      },
+    }),
+  });
+  try {
+    await service.activate({ confirmed: true });
+    await service.runPromise;
+    assert.equal(service.state.status, "failed", "not a partial master activation");
+    assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
+    fail = false;
+    await service.activate({ confirmed: true });
+    await service.runPromise;
+    assert.equal(service.state.status, "completed", service.state.error);
+    assert.equal(readTaxonomyPublication(options.taxonomyRoot).active.masterVersion, "master-fixture-v2");
+  } finally { await service.close(); }
+});
+
+test("Paarfreigabe überschreibt keine im Kandidaten entschiedene Altpräferenz und sperrt fremde ID-Bindungen", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const manifestPath = taxonomyMasterManifestPath(options.taxonomyRoot, "staging");
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  await fs.writeFile(manifestPath, JSON.stringify({ ...manifest,
+    inputRevisions: { corrections: taxonomyCorrectionsRevision(fixtureCorrection) } }));
+  await publishTaxonomyPair({ ...options, confirmed: true, corrections: fixtureCorrection });
+  const store = await openLightroomSearchStore(options);
+  try {
+    assert.equal(store.taxon("mtx_calidris_alpina_fixture").germanName, "Alpenstrandläufer",
+      "The prepared master's decision, not a second name-only interpretation, is authoritative");
+  } finally { store.close(); }
+  await assert.rejects(activateTaxonomyCorrectionRelease({ ...options,
+    corrections: [{ ...fixtureCorrection[0], namePreference: { masterTaxonId: "different-identity" } }],
+  }), /anderen Masteridentität/);
+  const speciesListPath = path.join(options.root, "species.json");
+  const correctionsPath = path.join(options.root, "corrections.json");
+  await fs.writeFile(speciesListPath, "[]");
+  await fs.writeFile(correctionsPath, JSON.stringify({ entries: fixtureCorrection }));
+  const service = createTaxonomyMasterService({ ...options, lightroomSearchRoot: options.searchRoot,
+    speciesListPath, correctionsPath, referenceService: { reset() {} },
+    inspectLightroomPackages: () => inspectLightroomSearchPackages(options.searchRoot),
+    activateCorrections: async () => { throw new Error("Must not reapply old names at startup"); },
+  });
+  try { assert.equal(await service.ensureCorrectionBaseline(), false); }
+  finally { await service.close(); }
 });

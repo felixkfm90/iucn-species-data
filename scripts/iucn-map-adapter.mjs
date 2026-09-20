@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { iucnBrowserAccessError } from "./iucn-map-access.mjs";
 
 const defaultExecFile = promisify(execFile);
 
@@ -117,11 +118,17 @@ export function createIucnMapAdapter({
   function requestHeaders(url) {
     const host = new URL(url).hostname.toLowerCase();
     const headers = {
-      Accept: "image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
       "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+      "Cache-Control": "max-age=0",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
     };
-    if (token && (host === "api.iucnredlist.org" || host === "www.iucnredlist.org" || host.endsWith(".iucnredlist.org"))) {
+    if (token && host === "api.iucnredlist.org") {
       headers.Authorization = `Bearer ${token}`;
     }
     return headers;
@@ -130,7 +137,7 @@ export function createIucnMapAdapter({
   function canUsePowerShell(url) {
     if (platform !== "win32") return false;
     const parsed = new URL(url);
-    return parsed.hostname.toLowerCase() === "www.iucnredlist.org"
+    return (parsed.hostname.toLowerCase() === "iucnredlist.org" || parsed.hostname.toLowerCase() === "www.iucnredlist.org")
       && parsed.pathname.includes("/api/v4/assessments/")
       && parsed.pathname.endsWith("/distribution_map/jpg");
   }
@@ -146,15 +153,22 @@ export function createIucnMapAdapter({
   async function fetchWithPowerShell(url) {
     if (!canUsePowerShell(url)) return null;
     const script = `
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
 $Uri = $env:IUCN_MAP_URL
 $OutFile = $env:IUCN_MAP_OUTFILE
 if (-not $Uri -or -not $OutFile) { throw 'IUCN_MAP_URL oder IUCN_MAP_OUTFILE fehlt.' }
 $headers = @{
-  Accept = 'image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7'
+  Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'
   'Accept-Language' = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
-  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
+  'Cache-Control' = 'max-age=0'
+  'Upgrade-Insecure-Requests' = '1'
+  'Sec-Fetch-Dest' = 'document'
+  'Sec-Fetch-Mode' = 'navigate'
+  'Sec-Fetch-Site' = 'none'
+  'Sec-Fetch-User' = '?1'
+  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
 }
-if ($env:IUCN_TOKEN) { $headers.Authorization = 'Bearer ' + $env:IUCN_TOKEN }
 try {
   $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
   $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
@@ -184,6 +198,8 @@ try {
             env: { ...process.env, IUCN_MAP_URL: url, IUCN_MAP_OUTFILE: tempFile },
             maxBuffer: 1024 * 1024,
             timeout: 60_000,
+            windowsHide: true,
+            encoding: "utf8",
           },
         );
         const info = JSON.parse(String(stdout || "{}"));
@@ -200,7 +216,8 @@ try {
         lastMessage = error.message;
         if (output) {
           try {
-            lastMessage = JSON.parse(output).error || lastMessage;
+            const info = JSON.parse(output);
+            lastMessage = info.error || lastMessage;
           } catch {
             lastMessage = output.slice(0, 200);
           }
@@ -326,6 +343,7 @@ try {
       let buffer = null;
       for (const url of [
         `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`,
+        `https://iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`,
         `${baseUrl}/assessments/${assessmentId}/distribution_map/jpg`,
       ]) {
         buffer = await fetchValidJpeg(url, { cacheFile });
@@ -346,6 +364,10 @@ try {
       return "ok";
     } catch (error) {
       if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+      if (error.code === "IUCN_BROWSER_REQUIRED") {
+        logger.warn(`⚠ Keine gültige Kartendatei für ${name} automatisch abrufbar. ${error.message}`);
+        return "missing";
+      }
       logger.error(`❌ Fehler beim Download der Karte für ${name}: ${error.message}`);
       logError(`Fehler beim Download der Karte für ${name}: ${error.message}`);
       return "error";

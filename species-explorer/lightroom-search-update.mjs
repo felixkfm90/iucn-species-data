@@ -34,6 +34,9 @@ export async function rebuildLightroomSearchPackage({
   onProgress = () => {},
   execPath = process.execPath,
   spawnProcess = spawn,
+  sourceSlot = "active",
+  baseSearchRoot = searchRoot,
+  activate = true,
 } = {}) {
   if (!repoRoot || !taxonomyRoot || !searchRoot) {
     throw new TypeError("Repository-, Taxonomie- und Lightroom-Suchpaketpfad sind erforderlich.");
@@ -43,11 +46,13 @@ export async function rebuildLightroomSearchPackage({
     "--no-warnings",
     scriptPath,
     "build",
-    "--activate",
+    ...(activate ? ["--activate"] : []),
     "--progress-json",
     `--repo-root=${path.resolve(repoRoot)}`,
     `--taxonomy-root=${path.resolve(taxonomyRoot)}`,
     `--search-root=${path.resolve(searchRoot)}`,
+    `--base-search-root=${path.resolve(baseSearchRoot)}`,
+    `--source-slot=${sourceSlot}`,
     `--project-revision=${cleanText(projectRevision) || "working-tree"}`,
   ];
   const child = spawnProcess(execPath, args, {
@@ -82,6 +87,7 @@ export async function rebuildLightroomSearchPackage({
       || `Lightroom-Suchpaketprozess wurde mit Exit-Code ${exitCode} beendet.`,
     );
   }
+  if (!activate) return null; // The common publisher verifies the exact prepared files itself.
   const [masterManifest, packages] = await Promise.all([
     readTaxonomyMasterManifest(taxonomyRoot, "active"),
     inspectLightroomSearchPackages(searchRoot),

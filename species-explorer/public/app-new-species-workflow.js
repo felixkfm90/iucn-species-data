@@ -92,6 +92,7 @@
       let inlineReviewAssets = [];
       let inlineReviewChoices = new Map();
       let inlineManualMapPreviewToken = "";
+      let inlineManualMapFile = null;
       let inlineManualMapHandled = false;
       let inlinePipelinePollTimer = null;
       let maxStepReached = 1;
@@ -128,7 +129,17 @@
         ageUnits: MANUAL_AGE_UNITS,
       });
 
+      const discardDraft = () => {
+        if (!previewToken || savedSpeciesId) return;
+        const token = previewToken;
+        previewToken = "";
+        void fetchJson("/api/species/new/discard", {
+          method: "POST", body: JSON.stringify({ token }),
+        }).catch(() => {});
+      };
+
       const markSpeciesInputsChanged = () => {
+        discardDraft();
         previewToken = "";
         maxStepReached = 1;
         preview.hidden = true;
@@ -204,7 +215,7 @@
 
       const newSpeciesData = () => state.species.find((entry) => entry.id === savedSpeciesId) ?? null;
 
-      const continueAfterMapDecision = () => {
+      const continueAfterMapDecision = async () => {
         const soundAsset = inlineReviewAssets.find((entry) => entry.type === "sound");
         if (soundAsset) {
           showStep(4);
@@ -212,8 +223,10 @@
           setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
           return;
         }
-        if (inlineReviewAssets.length) void submitInlineAssetReview();
-        else void finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
+        try {
+          if (inlineReviewAssets.length) await submitInlineAssetReview();
+          else await finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
+        } catch (error) { showWorkflowError(error.message); }
       };
 
       const renderInlineSoundPlayback = (container) => {
@@ -276,7 +289,7 @@
           </div>
           <div class="new-species-review-actions">
             <button type="button" data-new-species-map-decision="reject">Überspringen / später manuell einfügen</button>
-            <button type="button" data-new-species-map-action="manual">Manuell per URL einfügen</button>
+            <button type="button" data-new-species-map-action="manual">Datei oder Kartenlink verwenden</button>
             <button class="primary" type="button" data-new-species-map-decision="automatic">Karte übernehmen</button>
           </div>
         `;
@@ -284,12 +297,13 @@
 
       const renderInlineManualMapReview = (messageText = "Keine automatisch speicherbare Karte gefunden.") => {
         inlineManualMapPreviewToken = "";
+        inlineManualMapFile = null;
         const species = newSpeciesData();
         const browserMapUrl = iucnDistributionMapUrl(species);
         mapReview.hidden = false;
         mapReview.innerHTML = `
           <h5>Karte manuell einfügen</h5>
-          <p>${escapeHtml(messageText)} Du kannst den sichtbaren Backblaze-JPEG-Link aus dem Browser hier einfügen.</p>
+          <p>${escapeHtml(messageText)} Speichere die Karte im Browser und wähle die JPEG-/PNG-Datei hier aus oder ziehe sie in das Dateifeld. Der Quellenlink dokumentiert die Herkunft; bei einer Datei wird er nicht heruntergeladen.</p>
           <div class="new-species-manual-map">
             ${browserMapUrl ? `
               <a
@@ -299,9 +313,14 @@
                 rel="noopener noreferrer"
               >IUCN-Karte im Browser öffnen</a>
             ` : ""}
+            <label class="new-species-map-drop-zone">
+              Kartendatei auswählen oder hier ablegen (JPEG/PNG, maximal 20 MB)
+              <input class="new-species-map-file-input" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png">
+              <span class="new-species-map-file-status"></span>
+            </label>
             <label>
               Quellen-URL
-              <input class="new-species-map-source-input" type="url" placeholder="https://...jpg">
+              <input class="new-species-map-source-input" type="url" value="${escapeHtml(browserMapUrl || "")}" placeholder="https://...jpg">
             </label>
             <label>
               Pflegegrund
@@ -331,7 +350,7 @@
             <button class="primary" type="button" data-new-species-map-action="save" disabled>Manuelle Karte übernehmen</button>
           </div>
         `;
-        setInlineMapMessage("Bitte Quellen-URL einfügen und „Karte prüfen“ wählen.", "info");
+        setInlineMapMessage("Kartendatei auswählen oder ablegen, dann „Karte prüfen“ wählen. Alternativ einen direkt abrufbaren Kartenlink prüfen.", "info");
       };
 
       const previewInlineManualMap = async () => {
@@ -345,12 +364,12 @@
         const saveMapButton = mapReview.querySelector('[data-new-species-map-action="save"]');
         if (!sourceInput || !reasonInput || !previewSection || !previewImage || !previewMeta || !saveMapButton) return;
         const source = sourceInput.value.trim();
-        if (!source) {
-          setInlineMapMessage("Bitte zuerst den direkten Karten-JPEG-Link einfügen.", "error");
+        if (!source && !inlineManualMapFile) {
+          setInlineMapMessage("Bitte eine JPEG-/PNG-Datei auswählen oder einen direkten Kartenlink einfügen.", "error");
           return;
         }
         setPipelineBusy(true);
-        setInlineMapMessage("Kartenlink wird geprüft…", "info");
+        setInlineMapMessage(inlineManualMapFile ? "Kartendatei wird geprüft…" : "Kartenlink wird geprüft…", "info");
         try {
           const result = await fetchJson(
             `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/map/preview`,
@@ -358,8 +377,8 @@
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                originalName: "",
-                imageBase64: "",
+                originalName: inlineManualMapFile?.name || "",
+                imageBase64: inlineManualMapFile ? await fileToBase64(inlineManualMapFile) : "",
                 reason: reasonInput.value,
                 source,
                 pipelineRunId: inlineRunId,
@@ -375,6 +394,7 @@
           saveMapButton.disabled = false;
           setInlineMapMessage("Karte geprüft. Bitte vollständige Darstellung kontrollieren und dann übernehmen oder überspringen.", "success");
         } catch (error) {
+          inlineManualMapPreviewToken = "";
           previewSection.hidden = true;
           saveMapButton.disabled = true;
           setInlineMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -390,6 +410,7 @@
         }
         setPipelineBusy(true);
         setInlineMapMessage("Manuelle Karte wird übernommen…", "info");
+        let saved = false;
         try {
           await fetchJson(
             `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/map/save`,
@@ -409,12 +430,13 @@
           await loadData({ reload: true });
           mapReview.hidden = true;
           mapReview.innerHTML = "";
-          continueAfterMapDecision();
+          saved = true;
         } catch (error) {
           setInlineMapMessage([error.message, ...(error.details || [])].join(" · "), "error");
         } finally {
           setPipelineBusy(false);
         }
+        if (saved) await continueAfterMapDecision();
       };
 
       const renderInlineSoundReview = (asset) => {
@@ -461,7 +483,13 @@
         portraitPreviewButton.disabled = busy || pipelineBusy || !previewToken;
         portraitSkipButton.disabled = busy || pipelineBusy || !previewToken;
         openButton.disabled = busy || pipelineBusy;
-        for (const button of closeButtons) button.disabled = busy || pipelineBusy || state.newSpeciesPipelineActive;
+        for (const input of mapReview.querySelectorAll("input, textarea, button")) input.disabled = busy || pipelineBusy;
+        const saveMap = mapReview.querySelector('[data-new-species-map-action="save"]');
+        if (saveMap) saveMap.disabled = busy || pipelineBusy || !inlineManualMapPreviewToken;
+        for (const button of closeButtons) {
+          button.disabled = busy || pipelineBusy || namePreferencePreparing;
+          if (button.textContent !== "×") button.textContent = savedSpeciesId ? "Fenster schließen" : "Abbrechen";
+        }
       };
 
       const showStep = (step) => {
@@ -516,6 +544,7 @@
         inlineReviewAssets = [];
         inlineReviewChoices = new Map();
         inlineManualMapPreviewToken = "";
+        inlineManualMapFile = null;
         inlineManualMapHandled = false;
         state.holdNewSpeciesBackground = false;
         state.newSpeciesPipelineActive = false;
@@ -556,9 +585,22 @@
         updateButtons();
       };
 
+      const showWorkflowError = (messageText) => {
+        stopInlinePipelinePolling();
+        state.newSpeciesPipelineActive = false;
+        state.holdNewSpeciesBackground = false;
+        setPipelineBusy(false);
+        const text = savedSpeciesId
+          ? `Die Art „${savedSpeciesName}“ ist lokal angelegt. ${messageText} Vorhandene Dateien bleiben erhalten. Fenster schließen und die Art im Explorer ergänzen; nicht erneut anlegen.`
+          : messageText;
+        setPipelineMessage(text, "error");
+        setFinishMessage(text, "error");
+        setPortraitMessage(text, "error");
+      };
+
       const finishNewSpeciesWorkflow = async (status) => {
         stopInlinePipelinePolling();
-        setPipelineBusy(false);
+        setPipelineBusy(true);
         state.holdNewSpeciesBackground = false;
         state.newSpeciesPipelineActive = false;
         state.pipelineWasRunning = false;
@@ -573,6 +615,7 @@
         setPipelineMessage(soundOutcome.noAlternative ? soundOutcome.message : "", soundOutcome.messageType);
         setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} ist erfolgreich angelegt.`, "success");
         doneSection.hidden = false;
+        setPipelineBusy(false);
         showStep(4);
       };
 
@@ -619,16 +662,14 @@
           soundReview.innerHTML = "";
           void pollInlinePipelineStatus();
         } catch (error) {
-          setPipelineBusy(false);
-          state.newSpeciesPipelineActive = false;
-          setFinishMessage([error.message, ...(error.details || [])].join(" · "), "error");
+          showWorkflowError([error.message, ...(error.details || [])].join(" · "));
         }
       };
 
       const handleInlineReviewStatus = async (status) => {
-        setPipelineBusy(false);
         inlineRunId = status.runId;
         await loadData({ reload: true });
+        setPipelineBusy(false);
         if (inlineReviewAssets !== status.reviewAssets) {
           inlineReviewAssets = status.reviewAssets || [];
           inlineReviewChoices = new Map();
@@ -695,16 +736,12 @@
             return;
           }
           if (status.status === "failed") {
-            setPipelineBusy(false);
-            state.newSpeciesPipelineActive = false;
-            setPipelineMessage(status.error || "Suchlauf ist fehlgeschlagen.", "error");
+            showWorkflowError(status.error || "Suchlauf ist fehlgeschlagen.");
             return;
           }
-          inlinePipelinePollTimer = setTimeout(pollInlinePipelineStatus, 1000);
+          showWorkflowError("Der Suchlauf ist nicht mehr aktiv. Bitte seinen Status im Explorer prüfen.");
         } catch (error) {
-          setPipelineBusy(false);
-          state.newSpeciesPipelineActive = false;
-          setPipelineMessage(error.message, "error");
+          showWorkflowError(error.message);
         }
       }
 
@@ -725,7 +762,7 @@
                 message: `Bisher: ${namePreference.previousGermanName}\nNeu: ${namePreference.germanName}\nDie Namenswahl gilt künftig auch in Lightroom. Bestehende Projektdateien werden nicht umbenannt.`,
                 confirmLabel: "Namenswahl übernehmen",
               })) return;
-            } catch (error) { setMessage(error.message, "error"); return; }
+            } catch (error) { setPortraitMessage(error.message, "error"); return; }
           }
         } finally { namePreferencePreparing = false; }
         if (previewToken !== speciesPreviewToken
@@ -746,6 +783,7 @@
           });
           savedSpeciesId = result.species?.id || result.derived.slug;
           savedSpeciesName = result.entry.german;
+          previewToken = ""; // The draft was consumed; never create this species twice.
           if (namePreference && !namePreference.unchanged) {
             const notice = document.createElement("p");
             const retry = document.createElement("button");
@@ -783,10 +821,7 @@
                 },
               );
             } catch (portraitError) {
-              setPipelineMessage(
-                `Art wurde angelegt, aber das Portrait konnte nicht übernommen werden: ${portraitError.message}`,
-                "error",
-              );
+              throw new Error(`Das Portrait konnte nicht übernommen werden: ${portraitError.message}. Die Originaldatei bitte für den erneuten Import behalten.`);
             }
           }
 
@@ -816,9 +851,7 @@
           setPipelineMessage("Suchlauf läuft. Karte, Sound und Spektrogramm werden vorbereitet…", "info");
           void pollInlinePipelineStatus();
         } catch (error) {
-          setPipelineBusy(false);
-          state.newSpeciesPipelineActive = false;
-          setPipelineMessage([error.message, ...(error.details || [])].join(" · "), "error");
+          showWorkflowError([error.message, ...(error.details || [])].join(" · "));
         }
       };
 
@@ -826,7 +859,8 @@
         dialog,
         closeButtons,
         beforeClose: () => {
-          if (busy || pipelineBusy || state.newSpeciesPipelineActive) return false;
+          if (busy || pipelineBusy || namePreferencePreparing) return false;
+          discardDraft();
           form.reset();
           state.holdNewSpeciesBackground = false;
           resetAll();
@@ -898,6 +932,7 @@
           return;
         }
         clearFieldErrors();
+        discardDraft();
         resetPortraitPrompt();
         resetPortraitPreview();
         setBusy(true);
@@ -1060,7 +1095,54 @@
         updateButtons();
       });
 
+      const selectInlineMapFile = async (files) => {
+        if (busy || pipelineBusy) return;
+        inlineManualMapPreviewToken = "";
+        inlineManualMapFile = null;
+        const file = files?.[0];
+        const status = mapReview.querySelector(".new-species-map-file-status");
+        const previewSection = mapReview.querySelector(".new-species-manual-map-preview");
+        if (previewSection) previewSection.hidden = true;
+        if (status) status.textContent = "";
+        updateButtons();
+        if (files?.length !== 1 || !file || !/\.(jpe?g|png)$/iu.test(file.name) || file.size <= 0 || file.size > 20 * 1024 * 1024) {
+          setInlineMapMessage("Bitte genau eine JPEG-/PNG-Datei mit maximal 20 MB auswählen.", "error");
+          return;
+        }
+        const species = newSpeciesData();
+        const assessment = /T\d+A(\d+)(?:\s*\(\d+\))?\.jpe?g$/iu.exec(file.name)?.[1];
+        if (assessment && species?.iucn?.assessmentId && assessment !== String(species.iucn.assessmentId)) {
+          setInlineMapMessage("Diese IUCN-Kartendatei gehört zu einer anderen Bewertung. Bitte die Karte dieser Art verwenden.", "error");
+          return;
+        }
+        const source = mapReview.querySelector(".new-species-map-source-input");
+        const browserUrl = iucnDistributionMapUrl(species);
+        // Do not label an arbitrary local image as an IUCN download by default.
+        if (!assessment && source?.value === browserUrl) {
+          source.value = "";
+          const reason = mapReview.querySelector(".new-species-map-reason-input");
+          if (reason?.value.startsWith("Manuell aus dem IUCN-Kartenlink")) reason.value = "Karte als lokale Datei importiert.";
+        }
+        else if (assessment && source && !source.value) source.value = browserUrl;
+        inlineManualMapFile = file;
+        if (status) status.textContent = `${file.name} · ${formatBytes(file.size)}`;
+        await previewInlineManualMap();
+      };
+
+      mapReview.addEventListener("change", (event) => {
+        if (event.target.matches(".new-species-map-file-input")) return selectInlineMapFile(event.target.files);
+      });
+      for (const eventName of ["dragover", "drop"]) {
+        mapReview.addEventListener(eventName, (event) => {
+          if (!event.target.closest(".new-species-map-drop-zone")) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (eventName === "drop") return selectInlineMapFile(event.dataTransfer?.files);
+        });
+      }
+
       mapReview.addEventListener("click", (event) => {
+        if (busy || pipelineBusy) return;
         const zoomButton = event.target.closest("[data-new-species-map-zoom]");
         if (zoomButton) {
           openSharedMapLightbox(
@@ -1075,9 +1157,9 @@
           if (action === "manual") {
             renderInlineManualMapReview("Automatische Karte wird nicht übernommen.");
           } else if (action === "preview") {
-            void previewInlineManualMap();
+            return previewInlineManualMap();
           } else if (action === "save") {
-            void saveInlineManualMap();
+            return saveInlineManualMap();
           } else if (action === "skip") {
             const mapAsset = inlineReviewAssets.find((entry) => entry.type === "map");
             if (mapAsset) inlineReviewChoices.set(`${mapAsset.safeName}:map`, "reject");
@@ -1085,7 +1167,7 @@
             inlineManualMapPreviewToken = "";
             mapReview.hidden = true;
             mapReview.innerHTML = "";
-            continueAfterMapDecision();
+            return continueAfterMapDecision();
           }
           return;
         }
@@ -1096,10 +1178,11 @@
         inlineReviewChoices.set(`${asset.safeName}:map`, button.dataset.newSpeciesMapDecision);
         inlineManualMapHandled = true;
         mapReview.hidden = true;
-        continueAfterMapDecision();
+        return continueAfterMapDecision();
       });
 
       soundReview.addEventListener("click", (event) => {
+        if (busy || pipelineBusy) return;
         const button = event.target.closest("[data-new-species-sound-decision]");
         if (!button) return;
         const asset = inlineReviewAssets.find((entry) => entry.type === "sound");

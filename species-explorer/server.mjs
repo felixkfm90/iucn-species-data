@@ -32,9 +32,12 @@ import { createPipelineController } from "./pipeline-controller.mjs";
 import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
+import { prepareTaxonomyPublicationInWorker } from "./taxonomy-publication-process.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
 import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
 import { rebuildLightroomSearchPackage } from "./lightroom-search-update.mjs";
+import { publishTaxonomyPair, rollbackTaxonomyPair } from "./taxonomy-publication.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import {
   defaultLightroomSearchRoot,
   inspectLightroomSearchPackages,
@@ -197,6 +200,8 @@ export async function createExplorerServer({
   function cleanupPreviewTokens() {
     const now = Date.now();
     for (const [token, preview] of previewTokens) {
+      if (preview.expiresAt === null && (preview.type === "create"
+          || (preview.type === "portrait-asset" && preview.createToken))) continue;
       if (preview.expiresAt > now) continue;
       if (["map-asset", "sound-asset", "portrait-asset"].includes(preview.type) && preview.stagingPath) {
         rmSync(preview.stagingPath, { force: true });
@@ -264,12 +269,22 @@ export async function createExplorerServer({
   });
   taxonomyMasterService = createTaxonomyMasterService({
     taxonomyRoot,
+    backgroundBuild: true,
     referenceService: taxonomyReference,
     supplementService: taxonomySupplements,
     speciesListPath,
     correctionsPath: taxonomyReferenceCorrectionsPath,
     lightroomSearchRoot,
     inspectLightroomPackages: () => inspectLightroomSearchPackages(lightroomSearchRoot),
+    publishPair: (options) => {
+      const operation = options.sourceSlot === "previous" && readTaxonomyPublication(taxonomyRoot)
+        ? rollbackTaxonomyPair : publishTaxonomyPair;
+      return operation({ ...options, taxonomyRoot, searchRoot: lightroomSearchRoot,
+        prepare: (prepareOptions) => prepareTaxonomyPublicationInWorker({
+          ...prepareOptions, projectRevision: modelRevision,
+        }),
+      });
+    },
     rebuildLightroomPackage: ({ onProgress }) => rebuildLightroomSearchPackage({
       repoRoot,
       taxonomyRoot,
@@ -399,6 +414,7 @@ export async function createExplorerServer({
 
   const {
     previewNewSpecies,
+    discardNewSpecies,
     createNewSpeciesPortraitPrompt,
     previewNewSpeciesPortrait,
     saveNewSpecies,
@@ -408,7 +424,6 @@ export async function createExplorerServer({
     backupDir,
     assetStagingRoot,
     previewTokens,
-    previewTokenTtlMs: PREVIEW_TOKEN_TTL_MS,
     cleanupPreviewTokens,
     getModel: () => model,
     refreshModel,
@@ -556,6 +571,7 @@ export async function createExplorerServer({
       },
       async newSpecies({ action, payload }) {
         if (action === "preview") return previewNewSpecies(payload);
+        if (action === "discard") return discardNewSpecies(payload);
         if (action === "portrait-prompt") return createNewSpeciesPortraitPrompt(payload);
         if (action === "portrait-preview") return previewNewSpeciesPortrait(payload);
         return saveNewSpecies(payload);
@@ -641,8 +657,8 @@ export async function createExplorerServer({
       },
       async taxonomyCorrection({ action, payload }) {
         if (action === "preference-preview") return taxonomyNamePreference.preview(payload);
+        if (taxonomyMasterService.isActive()) throw new Error("Eine Datenbankaktualisierung läuft. Bitte danach erneut versuchen.");
         if (action === "preference-save") {
-          if (taxonomyMasterService.isActive()) throw new Error("Eine Datenbankaktualisierung läuft. Bitte danach erneut versuchen.");
           const result = await taxonomyNamePreference.save(payload);
           taxonomyReference.reset();
           return result;
@@ -655,8 +671,15 @@ export async function createExplorerServer({
       },
       async taxonomyMaster({ action, payload }) {
         if (action === "build") return taxonomyMasterService.startBuild(payload);
+        if (action === "pause-build") return taxonomyMasterService.pauseBuild();
+        if (action === "resume-build") return taxonomyMasterService.resumeBuild(payload);
         if (action === "apply-corrections") return taxonomyMasterService.applyCorrections(payload);
         if (action === "decide") return taxonomyMasterService.decide(payload);
+        if (action === "identity-preview") return taxonomyMasterService.reviewIdentity("preview", payload);
+        if (action === "identity-save") return taxonomyMasterService.reviewIdentity("save", payload);
+        if (action === "identity-browse") return taxonomyMasterService.reviewIdentity("browse", payload);
+        if (action === "identity-discard-preview") return taxonomyMasterService.reviewIdentity("discardPreview", payload);
+        if (action === "identity-discard") return taxonomyMasterService.reviewIdentity("discard", payload);
         if (action === "activate") return taxonomyMasterService.activate(payload);
         if (action === "rollback") return taxonomyMasterService.rollback(payload);
         if (action === "sync-lightroom") return taxonomyMasterService.syncLightroomPackage();

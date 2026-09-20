@@ -9,7 +9,6 @@ import { readActiveTaxonomyCorrectionRelease } from "./taxonomy-correction-relea
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
 import {
   taxonomyMasterDatabasePath,
-  taxonomyMasterManifestPath,
 } from "./taxonomy-master-storage.mjs";
 import {
   foldTaxonomySearchTerm,
@@ -811,7 +810,7 @@ export class TaxonomyMasterStore {
 export async function openTaxonomyMasterStore({ taxonomyRoot, slot = "active" } = {}) {
   if (!taxonomyRoot) throw new Error("Taxonomie-Zielpfad fehlt.");
   const databasePath = taxonomyMasterDatabasePath(taxonomyRoot, slot);
-  const manifestPath = taxonomyMasterManifestPath(taxonomyRoot, slot);
+  const manifestPath = path.join(path.dirname(databasePath), "manifest.json");
   try {
     const [manifestText] = await Promise.all([
       fs.readFile(manifestPath, "utf8"),

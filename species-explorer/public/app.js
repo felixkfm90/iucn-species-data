@@ -60,6 +60,8 @@ const explorerTaxonomyMaintenance = window.SpeciesExplorerTaxonomyMaintenance;
 if (!explorerTaxonomyMaintenance) throw new Error("Explorer-Taxonomiewartung konnte nicht geladen werden.");
 const explorerTaxonomyMaster = window.SpeciesExplorerTaxonomyMaster;
 if (!explorerTaxonomyMaster) throw new Error("Explorer-Taxonomie-Mastersteuerung konnte nicht geladen werden.");
+const explorerTaxonomyIdentity = window.SpeciesExplorerTaxonomyIdentity;
+if (!explorerTaxonomyIdentity) throw new Error("Explorer-Artänderungsprüfung konnte nicht geladen werden.");
 const explorerTaxonomyDatabase = window.SpeciesExplorerTaxonomyDatabase;
 if (!explorerTaxonomyDatabase) throw new Error("Explorer-Taxonomiedatenbankansicht konnte nicht geladen werden.");
 const explorerDashboard = window.SpeciesExplorerDashboard;
@@ -234,6 +236,9 @@ const elements = {
   taxonomyDatabaseOverview: document.querySelector(".taxonomy-database-overview"),
   taxonomyDatabaseUpdateButton: document.querySelector("[data-taxonomy-database-action='update']"),
   taxonomyDatabaseRollbackButton: document.querySelector("[data-taxonomy-database-action='rollback']"),
+  taxonomyDatabasePauseButton: document.querySelector("[data-taxonomy-database-action='pause-build']"),
+  taxonomyDatabaseResumeButton: document.querySelector("[data-taxonomy-database-action='resume-build']"),
+  taxonomyDatabaseBuildProgress: document.querySelector("#taxonomy-database-build-progress"),
   taxonomyDatabaseOpenButton: document.querySelector("[data-taxonomy-database-action='open']"),
   taxonomyDatabaseCurrentVersion: document.querySelector("#taxonomy-database-current-version"),
   taxonomyDatabasePreviousVersion: document.querySelector("#taxonomy-database-previous-version"),
@@ -584,6 +589,7 @@ setupPipelineControl();
 setupTaxonomyMaintenance();
 setupTaxonomyMaster();
 setupTaxonomyDatabase();
+explorerTaxonomyIdentity.setupIdentityController({ fetchJson, escapeHtml, createDialogController, state });
 window.speciesExplorerDesktop?.onTaxonomyCorrectionRequest?.((request) => {
   void taxonomyDatabaseController.openCorrectionRequest?.(request);
 });

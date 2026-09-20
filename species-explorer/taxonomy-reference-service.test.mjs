@@ -46,6 +46,40 @@ test("fehlende Referenzdaten blockieren die manuelle Artanlage nicht", async (co
   );
 });
 
+test("CoL-Ergänzung dupliziert keinen Mastertreffer; alte Treffer öffnen dieselbe Namenswahl", async () => {
+  const base = { taxonId: 123, acceptedScientificName: "Perdix perdix", rank: "species", kingdom: { id: "Animalia", scientificName: "Animalia" }, germanName: "Rebhuhn" };
+  const master = { ...base, taxonId: "mtx_partridge", masterTaxonId: "mtx_partridge", germanName: "Feldhuhn", matchedTerm: "Rebhuhn" };
+  const detail = { ...master, scientific_name: "Perdix perdix", kingdom: "Animalia", germanNames: [{ name: "Feldhuhn" }, { name: "Rebhuhn" }], hierarchy: [] };
+  let duplicateIdentity = false;
+  const service = createTaxonomyReferenceService({ taxonomyRoot: path.join(os.tmpdir(), "reference-merge-readonly"),
+    readPointer: async () => ({ activeRelease: "col" }), readMasterManifest: async () => ({ candidateId: "master" }),
+    readCorrectionPointer: async () => null,
+    openStore: async () => ({ close() {}, status: () => ({ releaseId: "col" }), search: () => ({ results: [base] }), taxon: () => ({ ...base, scientific_name: "Perdix perdix" }) }),
+    openMasterStore: async () => ({ close() {}, status: () => ({ candidateId: "master" }),
+      search: () => ({ results: duplicateIdentity ? [master, { ...master, taxonId: "mtx_other", masterTaxonId: "mtx_other" }] : [master] }),
+      findTaxonByScientificName: (name, options) => {
+        assert.equal(name, "Perdix perdix"); assert.deepEqual(options, { rank: "species", kingdom: "Animalia" });
+        return duplicateIdentity ? null : master;
+      }, taxon: () => detail,
+    }),
+    supplementService: { search: async () => [{ ...base, germanName: "Feldhuhn", supplementScore: -20 }], augmentTaxon: async (value) => value },
+  });
+  try {
+    const result = await service.search({ query: "Rebhuhn", kingdomId: "Animalia", rank: "species" });
+    assert.equal(result.results.length, 1);
+    assert.equal(result.results[0].masterTaxonId, master.masterTaxonId);
+    const fromOld = await service.taxon("123");
+    const fromMaster = await service.taxon(master.masterTaxonId);
+    assert.deepEqual(fromOld, fromMaster);
+    assert.equal(fromOld.releaseId, "master");
+    assert.equal(fromOld.germanNames.length, 2);
+    duplicateIdentity = true;
+    const ambiguous = await service.search({ query: "Rebhuhn", kingdomId: "Animalia", rank: "species" });
+    assert.equal(ambiguous.results.filter((row) => row.masterTaxonId).length, 2);
+    assert.equal((await service.taxon("123")).masterTaxonId, undefined);
+  } finally { service.close(); }
+});
+
 test("aktive Referenz liefert Reichsauswahl, Drei-Feld-Suche und Taxondetails", async (context) => {
   const { root, taxonomyRoot } = await temporaryTaxonomyRoot(context, "taxonomy-reference-ready-");
   await importTaxonomyPrototype({

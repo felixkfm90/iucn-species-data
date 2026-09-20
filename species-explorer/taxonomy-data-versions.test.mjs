@@ -19,7 +19,7 @@ function matching() {
 
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-data-versions-"));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const searchRoot = path.join(root, "lightroom");
   const taxonomyRoot = path.join(root, "taxonomy");
   const write = async (relative, value) => {
@@ -39,6 +39,11 @@ async function fixture(t) {
 
 test("Versionsvergleich trennt Verfügbarkeit, Referenz-/Masterdrift und Paketdrift", () => {
   assert.equal(compareTaxonomyDataVersions(matching()).state, "current");
+  for (const schemaVersion of [2, 3, 4, 99]) {
+    const data = matching();
+    data.master.schemaVersion = schemaVersion;
+    assert.equal(compareTaxonomyDataVersions(data).state, schemaVersion === 99 ? "unverifiable" : "current");
+  }
   const referenceDrift = matching();
   referenceDrift.reference.activeRelease = "col-newer";
   assert.equal(compareTaxonomyDataVersions(referenceDrift).reason, "reference-master-drift");

@@ -323,7 +323,7 @@
           }
           setEditorMessage(
             noMapAlternative
-              ? "Kartensuchlauf abgeschlossen. Lokal wurde keine direkt speicherbare Karte gefunden. Bitte „IUCN-Karte im Browser öffnen“ nutzen, den sichtbaren Backblaze-JPEG-Link ins Quellenfeld kopieren und „Karte prüfen“ wählen."
+              ? "Kartensuchlauf abgeschlossen. Lokal wurde keine direkt speicherbare Karte gefunden. Bitte „IUCN-Karte im Browser öffnen“ nutzen und die sichtbare JPEG-Karte im Browser speichern. Danach die JPEG-/PNG-Datei im Karteneditor auswählen und „Karte prüfen“ wählen. Nur wenn tatsächlich ein signierter IUCN-/Backblaze-Link sichtbar ist, kann stattdessen die Quellen-URL verwendet werden."
               : "Kartensuchlauf abgeschlossen. Die Auswahl wurde verarbeitet.",
             noMapAlternative ? "info" : "success",
           );

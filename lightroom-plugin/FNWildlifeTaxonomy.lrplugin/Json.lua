@@ -1,6 +1,12 @@
 local Json = {}
 
 Json.null = {}
+local ARRAY = {}
+
+-- Opt-in array marker; ordinary empty tables remain JSON objects for existing callers.
+function Json.array(value)
+  return setmetatable(value or {}, ARRAY)
+end
 
 local ESCAPE_ENCODE = {
   ["\b"] = "\\b",
@@ -45,6 +51,7 @@ local function arrayLength(value)
       maximum = key
     end
   end
+  if count == 0 and getmetatable(value) == ARRAY then return 0 end
   if count == 0 or count ~= maximum then
     return nil
   end

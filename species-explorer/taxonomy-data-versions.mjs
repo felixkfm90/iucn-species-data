@@ -1,5 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS, taxonomyMasterManifestPath } from "./taxonomy-master-storage.mjs";
+import { lightroomSearchDatabasePath } from "./lightroom-search-storage.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
 const MAX_VERSION_BYTES = 64 * 1024;
 
@@ -77,7 +80,7 @@ export function compareTaxonomyDataVersions({ reference, master, packageManifest
   if (!available) return result("missing", "package-missing", "Lightroom-Suchpaket fehlt. Bitte im Arten-Explorer bereitstellen.");
   if (readError) return result("unverifiable", "version-read-failed", "Datenstand nicht prüfbar. Versionsangaben fehlen oder sind nicht lesbar.");
   if (!referenceRelease || !masterVersion || !masterReference || !packageId || !packageMasterVersion
-      || ![2, 3].includes(master?.schemaVersion) || reference?.schemaVersion !== 1 || packageManifest?.schemaVersion !== 1) {
+      || !READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS.includes(master?.schemaVersion) || reference?.schemaVersion !== 1 || packageManifest?.schemaVersion !== 1) {
     return result("unverifiable", "version-incomplete", "Datenstand nicht prüfbar. Versionsangaben fehlen oder sind nicht unterstützt.");
   }
   if (referenceRelease !== masterReference) return result("stale", "reference-master-drift", "Masterdatenbank passt nicht zur aktiven CoL-Referenz. Im Arten-Explorer aktualisieren.");
@@ -104,18 +107,22 @@ function processAlive(pid) {
 
 export async function readTaxonomyDataVersions({ searchRoot, taxonomyRoot = path.join(path.dirname(path.resolve(searchRoot)), "taxonomy"), loadedPackage = null, now = Date.now, isProcessAlive = processAlive, readJson = readVersionJson } = {}) {
   const root = path.resolve(searchRoot);
-  const files = [
-    [path.join(taxonomyRoot, "active.json")],
-    [path.join(taxonomyRoot, "master/active/manifest.json"), { masterHeader: true }],
-    [path.join(root, "active/manifest.json")],
-    [path.join(path.dirname(root), "corrections/active.json")],
-    [path.join(taxonomyRoot, "master/update-presence.json")],
-  ];
   const snapshot = async () => {
+    const publication = readTaxonomyPublication(taxonomyRoot);
+    const databasePath = lightroomSearchDatabasePath(root);
+    const files = [
+      [path.join(taxonomyRoot, "active.json")],
+      [taxonomyMasterManifestPath(taxonomyRoot), { masterHeader: true }],
+      [path.join(path.dirname(databasePath), "manifest.json")],
+      [path.join(path.dirname(root), "corrections/active.json")],
+      [path.join(taxonomyRoot, "master/update-presence.json")],
+    ];
     const values = await Promise.allSettled(files.map(([file, options]) => readJson(file, options)));
     let readError = values.some((entry, index) => entry.status === "rejected"
       && !(index >= 3 && entry.reason?.code === "ENOENT"));
-    const [reference, master, packageManifest, correction, marker] = values.map((entry) => entry.status === "fulfilled" ? entry.value : null);
+    let [reference, master, packageManifest, correction, marker] = values.map((entry) => entry.status === "fulfilled" ? entry.value : null);
+    if (publication && (correction?.baseMasterVersion !== publication.active.masterVersion
+      || correction?.basePackageId !== publication.active.packageId)) correction = publication.active.correctionPointer || null;
     if (correction) {
       if (correction.schemaVersion !== 1 || !/^corrections-[a-f0-9]{20}$/.test(text(correction.activeRelease))) {
         readError = true;
@@ -128,7 +135,7 @@ export async function readTaxonomyDataVersions({ searchRoot, taxonomyRoot = path
         } catch { readError = true; }
       }
     }
-    const available = await fs.stat(path.join(root, "active/taxonomy-search.sqlite")).then((stat) => stat.isFile(), () => false);
+    const available = await fs.stat(databasePath).then((stat) => stat.isFile(), () => false);
     return { reference, master, packageManifest, correction, marker, available, readError };
   };
   const before = await snapshot();

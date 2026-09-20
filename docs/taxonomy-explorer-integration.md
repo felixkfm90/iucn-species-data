@@ -1,10 +1,16 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-08-08
+Stand: 2026-09-20
 
 Status: Phase 9.4/9.5 bilden den sicheren Referenzfallback. Seit Phase 9.10 durchsucht der Assistent bevorzugt die
 aktive lokale Masterdatenbank aus vollständigem CoL XR, breitem iNaturalist-Lücken-/Namensbestand, relevanten
 GBIF-/WoRMS-/Wikidata-Ausschnitten, kontrollierten Animalia-Fällen und eigenen Korrekturen.
+
+Aktueller Suchvertrag: Auch nach der Ergänzungssuche wird eine eindeutig im Master vorhandene Art nicht
+nochmals als eingeschränkter CoL-Treffer ausgegeben. Bereits ausgewählte ältere CoL-Treffer öffnen bei exakt
+gleichem wissenschaftlichem Namen, Rang und Reich und genau einer Master-ID dieselbe Masterdetailansicht.
+Mehrdeutige Identitäten werden nicht zusammengeführt. Die Suche bleibt lesend; die ausdrücklich bestätigte
+globale Namenswahl ist separat in `taxonomy-name-preference-plan.md` beschrieben.
 
 ## Ziel
 

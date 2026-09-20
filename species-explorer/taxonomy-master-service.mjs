@@ -4,11 +4,13 @@ import path from "node:path";
 import {
   activateTaxonomyCorrectionRelease,
   readActiveTaxonomyCorrectionPointer,
+  taxonomyCorrectionsMatchActive,
 } from "./taxonomy-correction-release.mjs";
 import {
   buildTaxonomyMasterCandidate,
   readTaxonomyMasterManifest,
   taxonomyCorrectionsRevision,
+  taxonomyIdentityInputRevision,
 } from "./taxonomy-master-candidate.mjs";
 import {
   activateTaxonomyMasterCandidate,
@@ -18,6 +20,7 @@ import {
 } from "./taxonomy-master-lifecycle.mjs";
 import {
   latestProviderSliceVersion,
+  providerSliceManifestPath,
   readProviderSlice,
 } from "./taxonomy-master-slices.mjs";
 import {
@@ -27,6 +30,12 @@ import {
 import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { masterReferenceRelease, taxonomyMasterReferenceStatus } from "./taxonomy-data-versions.mjs";
 import { createTaxonomyUpdatePresence } from "./taxonomy-update-presence.mjs";
+import { createIdentityReviewService, readIdentityReview, identityReviewStatus } from "./taxonomy-identity-review.mjs";
+import { coverMasterInputSelection } from "./taxonomy-master-inputs.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
+import { MasterRunController } from "./taxonomy-master-run-controller.mjs";
+import { masterJobBinding } from "./taxonomy-master-job.mjs";
+import { readRetainedMasterTaxa } from "./taxonomy-master-source-binding.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -103,6 +112,8 @@ function correctionsFromDocument(document) {
     rank: cleanText(entry.rank || "species").toLocaleLowerCase("en"),
     kingdom: cleanText(entry.kingdom || "Animalia"),
     germanName: cleanText(entry.germanName),
+    ...(entry.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
+    ...(entry.namePreference?.masterTaxonId ? { namePreference: { masterTaxonId: cleanText(entry.namePreference.masterTaxonId) } } : {}),
     englishName: cleanText(entry.englishName),
     note: cleanText(entry.note),
   })).filter((entry) => entry.scientificName);
@@ -272,8 +283,11 @@ export class TaxonomyMasterService {
     rollbackCandidate = rollbackTaxonomyMaster,
     inspectLightroomPackages = null,
     rebuildLightroomPackage = null,
+    publishPair = null,
     activateCorrections = activateTaxonomyCorrectionRelease,
     readReferencePointer = readActiveTaxonomyPointer,
+    backgroundBuild = false,
+    runController = null,
   } = {}) {
     if (!taxonomyRoot || !referenceService || !speciesListPath || !correctionsPath) {
       throw new TypeError("Taxonomiepfad, Referenzdienst, Artenliste und Korrekturdatei sind erforderlich.");
@@ -294,12 +308,28 @@ export class TaxonomyMasterService {
     this.rollbackCandidate = rollbackCandidate;
     this.inspectLightroomPackages = inspectLightroomPackages;
     this.rebuildLightroomPackage = rebuildLightroomPackage;
+    this.publishPair = publishPair;
     this.activateCorrections = activateCorrections;
     this.readReferencePointer = readReferencePointer;
+    this.runController = runController || (backgroundBuild ? new MasterRunController(this.taxonomyRoot) : null);
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
-    this.withVersionPresence = createTaxonomyUpdatePresence(this.taxonomyRoot);
+    const withPresence = createTaxonomyUpdatePresence(this.taxonomyRoot);
+    this.withVersionPresence = async (operation) => {
+      try { return await (this.runController ? this.runController.exclusive(() => withPresence(operation)) : withPresence(operation)); }
+      catch (error) {
+        if (ACTIVE_STATUSES.has(this.state.status)) this.state = { ...this.state, status: "failed", error: error.message,
+          message: "Datenbankaktion konnte nicht abgeschlossen werden. Der bisherige aktive Stand bleibt erhalten." };
+        throw error;
+      } finally { this.runPromise = null; }
+    };
+    this.identityReviewBusy = false;
+    this.identityReviewService = createIdentityReviewService({ taxonomyRoot: this.taxonomyRoot, now: this.now,
+      readInputRevision: async () => {
+        const [species, corrections] = await Promise.all([readJson(this.speciesListPath, []), readJson(this.correctionsPath, { entries: [] })]);
+        return taxonomyIdentityInputRevision({ projectTaxa: projectTaxaFromSpeciesList(species), corrections: correctionsFromDocument(corrections) });
+      } });
   }
 
   assertOpen() {
@@ -307,7 +337,7 @@ export class TaxonomyMasterService {
   }
 
   isActive() {
-    return ACTIVE_STATUSES.has(this.state.status);
+    return this.identityReviewBusy || ACTIVE_STATUSES.has(this.state.status) || Boolean(this.runController?.isActive());
   }
 
   updateProgress({
@@ -345,6 +375,7 @@ export class TaxonomyMasterService {
 
   async status() {
     this.assertOpen();
+    const buildJob = this.runController ? await this.runController.status() : { available: false };
     const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, {
       lightweight: true,
     }).catch((error) => ({
@@ -357,18 +388,34 @@ export class TaxonomyMasterService {
       canActivate: false,
       canRollback: false,
     }));
-    const [lightroomPackage, corrections, reference] = await Promise.all([
+    const [lightroomPackage, corrections, reference, identities] = await Promise.all([
       this.lightroomPackageStatus(lifecycle),
       this.correctionsStatus(lifecycle),
       this.referenceStatus(lifecycle),
+      identityReviewStatus(this.taxonomyRoot, lifecycle),
     ]);
+    if (identities.pending && !identities.candidateIncludesCurrent) lifecycle.canActivate = false;
+    const incompleteJob = buildJob.available && buildJob.status !== "ready";
+    if (incompleteJob) lifecycle.canActivate = false; // Do not activate an older unrelated staging candidate.
+    const recovered = this.runController && !ACTIVE_STATUSES.has(this.state.status) && incompleteJob;
+    const messages = { paused: "Masteraufbau pausiert. Der gesicherte Stand kann nach erneuter Prüfung fortgesetzt werden.",
+      interrupted: "Masteraufbau wurde unterbrochen. Der gesicherte Stand ist erhalten; es wurde nichts automatisch gestartet.",
+      stale: "Gespeicherter Masteraufbau ist veraltet. Bitte einen neuen Aufbau starten.",
+      building: "Gespeicherter Masteraufbau läuft noch im Hintergrund.", pausing: "Pause angefordert. Der Hintergrundprozess hält am nächsten sicheren Punkt an.",
+      failed: "Masteraufbau fehlgeschlagen. Der bisherige aktive Stand bleibt erhalten." };
     return {
       ...this.state,
+      ...(recovered ? { status: buildJob.status, message: messages[buildJob.status],
+        error: ["failed", "stale"].includes(buildJob.status) ? buildJob.error : "",
+        progressPercent: buildJob.progress?.percent ?? null, progressPhase: buildJob.progress?.phase || "",
+        startedAt: buildJob.startedAt } : {}),
       active: this.isActive(),
+      buildJob,
       lifecycle,
       lightroomPackage,
       corrections,
       reference,
+      identities,
     };
   }
 
@@ -404,9 +451,10 @@ export class TaxonomyMasterService {
     const activeManualCount = Number(
       snapshot.active?.sources?.find((source) => source.provider === "manual")?.recordCount || 0,
     );
-    const activeCurrent = overlayRevision === currentRevision || (activeRevision
-      ? activeRevision === currentRevision
-      : corrections.length === 0 && activeManualCount === 0);
+    const activeCurrent = await taxonomyCorrectionsMatchActive({
+      taxonomyRoot: this.taxonomyRoot, searchRoot: this.lightroomSearchRoot,
+      corrections, activeRevision: overlayRevision || activeRevision,
+    }) || (!activeRevision && !overlayRevision && corrections.length === 0 && activeManualCount === 0);
     return {
       count: corrections.length,
       pending: !activeCurrent,
@@ -419,6 +467,10 @@ export class TaxonomyMasterService {
 
   async ensureCorrectionBaseline() {
     if (!this.lightroomSearchRoot) return false;
+    if (this.runController?.isActive()) return false;
+    // A paired master already has a verified baseline or a bound overlay. Do not
+    // reinterpret historical correction names on startup after an identity change.
+    if (readTaxonomyPublication(this.taxonomyRoot)) return false;
     const existing = await readActiveTaxonomyCorrectionPointer(this.taxonomyRoot);
     if (existing) return false;
     const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, { lightweight: true });
@@ -566,22 +618,51 @@ export class TaxonomyMasterService {
     return this.status();
   }
 
+  async pauseBuild() {
+    this.assertOpen();
+    if (!this.runController) throw new Error("Der Master-Hintergrundaufbau ist nicht eingerichtet.");
+    await this.runController.pause();
+    return this.status();
+  }
+
+  resumeBuild({ confirmed = false } = {}) {
+    this.assertAvailable();
+    if (!this.runController || !confirmed) throw new Error("Das Fortsetzen des gespeicherten Masteraufbaus muss bestätigt werden.");
+    this.state = { ...initialState(), action: "build", status: "building", startedAt: this.now().toISOString(),
+      message: "Gespeicherte Eingänge werden vor dem Fortsetzen erneut geprüft.", progressPhase: "Wiederanlauf prüfen" };
+    this.runPromise = this.withVersionPresence(async () => {
+      const job = await this.runController.current();
+      if (!job) throw new Error("Kein gespeicherter Masteraufbau vorhanden.");
+      try {
+        const manifest = await this.runController.resume((event) => this.updateProgress({ ...event, status: "building" }));
+        const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, { lightweight: true });
+        this.state = { ...this.state, status: "ready", message: "Fortgesetzter Masteraufbau ist geprüft. Der Kandidat kann übernommen werden.",
+          progressPercent: 100, progressPhase: "Abgeschlossen", result: { manifest, lifecycle }, warnings: job.warnings || [], completedAt: this.now().toISOString() };
+      } catch (error) {
+        this.state = { ...this.state, status: error.code === "MASTER_BUILD_PAUSED" ? "paused" : "failed",
+          error: error.code === "MASTER_BUILD_PAUSED" ? "" : error.message, message: error.message, completedAt: this.now().toISOString() };
+        throw error;
+      }
+    }).catch(() => null);
+    return this.status();
+  }
+
   async runBuild({ refreshProviders = true, ...providerOptions } = {}) {
     try {
-      const [speciesList, correctionsDocument] = await Promise.all([
+      let [speciesList, correctionsDocument] = await Promise.all([
         readJson(this.speciesListPath, []),
         readJson(this.correctionsPath, { entries: [] }),
       ]);
-      const projectTaxa = projectTaxaFromSpeciesList(speciesList);
-      const corrections = correctionsFromDocument(correctionsDocument);
-      const researchedTaxa = this.supplementService?.selectedTaxa
+      let projectTaxa = projectTaxaFromSpeciesList(speciesList);
+      let corrections = correctionsFromDocument(correctionsDocument);
+      let researchedTaxa = this.supplementService?.selectedTaxa
         ? await this.supplementService.selectedTaxa()
         : [];
-      const store = await this.referenceService.requireStore();
+      let store = await this.referenceService.requireStore();
       const activeMasterManifest = await readTaxonomyMasterManifest(this.taxonomyRoot, "active");
       const activeMasterRelease = masterReferenceRelease(activeMasterManifest);
       const activeReferenceRelease = cleanText(store.status()?.releaseId);
-      const recheckKnownReferenceGaps = Boolean(
+      let recheckKnownReferenceGaps = Boolean(
         activeReferenceRelease
         && activeMasterRelease !== activeReferenceRelease
       );
@@ -622,6 +703,23 @@ export class TaxonomyMasterService {
         });
         warnings.push(...(refreshed.warnings || []));
       }
+      let workerBinding = null;
+      const selection = { speciesListPath: this.speciesListPath, correctionsPath: this.correctionsPath };
+      if (this.runController) {
+        this.updateProgress({ status: "building", phase: "Eingangsstand sichern", message: "Aktuelle Quellen und eigene Entscheidungen werden für den Aufbau gebunden.", percent: 45 });
+        workerBinding = await masterJobBinding(this.taxonomyRoot, [], selection);
+        // Read all build values AFTER capturing the binding, not from the values
+        // previously used for a possibly long provider refresh.
+        [speciesList, correctionsDocument, researchedTaxa] = await Promise.all([
+          readJson(this.speciesListPath, []), readJson(this.correctionsPath, { entries: [] }), readRetainedMasterTaxa(this.taxonomyRoot),
+        ]);
+        projectTaxa = projectTaxaFromSpeciesList(speciesList);
+        corrections = correctionsFromDocument(correctionsDocument);
+        this.referenceService.reset?.();
+        store = await this.referenceService.requireStore();
+        if (store.status()?.releaseId !== workerBinding.selection.reference) throw new Error("Geladene CoL-Referenz und aktueller Eingang stimmen nicht überein.");
+        recheckKnownReferenceGaps = masterReferenceRelease(await readTaxonomyMasterManifest(this.taxonomyRoot, "active")) !== store.status()?.releaseId;
+      }
       this.updateProgress({
         status: "building",
         phase: "CoL-Referenz",
@@ -654,14 +752,21 @@ export class TaxonomyMasterService {
         },
         { providerSlices, recheckKnownReferenceGaps },
       );
-      const manifest = await this.buildCandidate({
+      const colRelease = releaseFromStoreStatus(store.status());
+      const inputs = coverMasterInputSelection({ colRelease, colRecords, targetNames, providerSlices });
+      const buildCandidate = this.runController ? (options) => this.runController.build(options) : this.buildCandidate;
+      const manifest = await buildCandidate({
         taxonomyRoot: this.taxonomyRoot,
-        colRelease: releaseFromStoreStatus(store.status()),
-        colRecords,
+        colRelease,
+        colRecords: inputs.records(),
+        buildInputCoverage: inputs.coverage,
         providerSlices,
         projectTaxa,
         corrections,
         retainedTaxa: researchedTaxa,
+        identityRegistry: (await readIdentityReview(this.taxonomyRoot))?.registry,
+        ...(workerBinding ? { selection, expectedBinding: workerBinding } : {}),
+        warnings,
         now: this.now,
         onProgress: ({ phase, message, current, total, percent }) => {
           this.updateProgress({
@@ -693,11 +798,11 @@ export class TaxonomyMasterService {
     } catch (error) {
       this.state = {
         ...this.state,
-        status: "failed",
-        message: "Master-Abgleich fehlgeschlagen. Die bisherige aktive Version bleibt unverändert.",
+        status: error.code === "MASTER_BUILD_PAUSED" ? "paused" : "failed",
+        message: error.code === "MASTER_BUILD_PAUSED" ? error.message : "Master-Abgleich fehlgeschlagen. Die bisherige aktive Version bleibt unverändert.",
         progressPercent: null,
         completedAt: this.now().toISOString(),
-        error: error.message,
+        error: error.code === "MASTER_BUILD_PAUSED" ? "" : error.message,
       };
       throw error;
     } finally {
@@ -705,9 +810,21 @@ export class TaxonomyMasterService {
     }
   }
 
+  async reviewIdentity(action, payload = {}) {
+    this.assertAvailable();
+    if (!["preview", "save", "browse", "discardPreview", "discard"].includes(action)) throw new Error("Unbekannte Identitätsaktion.");
+    this.identityReviewBusy = true;
+    try {
+      const operation = () => this.identityReviewService[action](payload);
+      return await (this.runController ? this.runController.exclusive(operation) : operation());
+    }
+    finally { this.identityReviewBusy = false; }
+  }
+
   async decide(payload = {}) {
     this.assertAvailable();
-    await this.decideConflict(this.taxonomyRoot, { ...payload, now: this.now });
+    const operation = () => this.decideConflict(this.taxonomyRoot, { ...payload, now: this.now });
+    await (this.runController ? this.runController.exclusive(operation) : operation());
     this.state = {
       ...this.state,
       status: "ready",
@@ -740,13 +857,17 @@ export class TaxonomyMasterService {
   async runActivate({ confirmed = false } = {}) {
     let masterActivated = false;
     try {
+      await this.runController?.assertReadyForActivation();
       if (confirmed) this.referenceService.reset();
-      await this.activateCandidate(this.taxonomyRoot, {
-        confirmed,
-        now: this.now,
-      });
-      masterActivated = true;
-      const lightroomResult = await this.rebuildLightroomAfterMasterChange();
+      let lightroomResult;
+      if (this.publishPair) {
+        lightroomResult = await this.performPairAction("staging", confirmed);
+        this.referenceService.reset();
+      } else {
+        await this.activateCandidate(this.taxonomyRoot, { confirmed, now: this.now });
+        masterActivated = true;
+        lightroomResult = await this.rebuildLightroomAfterMasterChange();
+      }
       this.state = {
         ...this.state,
         status: "completed",
@@ -797,9 +918,15 @@ export class TaxonomyMasterService {
     let masterRestored = false;
     try {
       if (confirmed) this.referenceService.reset();
-      await this.rollbackCandidate(this.taxonomyRoot, { confirmed, now: this.now });
-      masterRestored = true;
-      const lightroomResult = await this.rebuildLightroomAfterMasterChange();
+      let lightroomResult;
+      if (this.publishPair) {
+        lightroomResult = await this.performPairAction("previous", confirmed);
+        this.referenceService.reset();
+      } else {
+        await this.rollbackCandidate(this.taxonomyRoot, { confirmed, now: this.now });
+        masterRestored = true;
+        lightroomResult = await this.rebuildLightroomAfterMasterChange();
+      }
       this.state = {
         ...this.state,
         status: "completed",
@@ -830,7 +957,7 @@ export class TaxonomyMasterService {
 
   syncLightroomPackage() {
     this.assertAvailable();
-    if (typeof this.rebuildLightroomPackage !== "function") {
+    if (!this.publishPair && typeof this.rebuildLightroomPackage !== "function") {
       throw new Error("Der automatische Lightroom-Suchpaketbau ist nicht konfiguriert.");
     }
     this.state = {
@@ -848,7 +975,10 @@ export class TaxonomyMasterService {
 
   async runLightroomPackageSync() {
     try {
-      const result = await this.rebuildLightroomAfterMasterChange();
+      const result = this.publishPair
+        ? await this.performPairAction("active", true)
+        : await this.rebuildLightroomAfterMasterChange();
+      if (this.publishPair) this.referenceService.reset();
       this.state = {
         ...this.state,
         status: "completed",
@@ -863,7 +993,7 @@ export class TaxonomyMasterService {
     } catch (error) {
       this.state = {
         ...this.state,
-        status: "partial",
+        status: this.publishPair ? "failed" : "partial",
         message: "Die Masterdatenbank ist aktiv, aber das Lightroom-Suchpaket konnte nicht erneuert werden. Das bisherige Suchpaket bleibt aktiv; bitte „Datenbank aktualisieren“ erneut ausführen.",
         error: error.message,
         completedAt: this.now().toISOString(),
@@ -899,10 +1029,50 @@ export class TaxonomyMasterService {
     });
   }
 
+  async performPairAction(sourceSlot, confirmed) {
+    if (this.closing) throw new Error("Explorer wird geschlossen; es wurde keine Paarvorbereitung gestartet.");
+    const controller = new AbortController();
+    this.publicationAbortController = controller;
+    const readInputs = async () => {
+      const [species, document, reference, identities, providers] = await Promise.all([
+        readJson(this.speciesListPath, []), readJson(this.correctionsPath, { entries: [] }),
+        this.readReferencePointer(this.taxonomyRoot), readIdentityReview(this.taxonomyRoot),
+        Promise.all(PROVIDERS.map(async (provider) => {
+          const version = await latestProviderSliceVersion(this.taxonomyRoot, provider);
+          return version ? readJson(providerSliceManifestPath(this.taxonomyRoot, provider, version), null) : null;
+        })),
+      ]);
+      const corrections = correctionsFromDocument(document);
+      return { corrections, reference, identities, providers,
+        identityInputs: taxonomyIdentityInputRevision({ projectTaxa: projectTaxaFromSpeciesList(species), corrections }) };
+    };
+    try { return await this.publishPair({ sourceSlot, confirmed, now: this.now, readInputs, signal: controller.signal,
+      validateInputs: async (manifest) => {
+        if (sourceSlot !== "staging") return;
+        const inputs = await readInputs();
+        const staleProvider = PROVIDERS.some((provider, index) => inputs.providers[index]
+          && (manifest.sources || []).find((source) => source.provider === provider)?.providerVersion !== inputs.providers[index].providerVersion);
+        if ((inputs.reference?.activeRelease && masterReferenceRelease(manifest) !== inputs.reference.activeRelease)
+          || staleProvider
+          || (inputs.identities && manifest.inputRevisions?.identities !== inputs.identities.revision)
+          || (manifest.inputRevisions?.identityInputs && manifest.inputRevisions.identityInputs !== inputs.identityInputs)
+          || (manifest.inputRevisions?.corrections && manifest.inputRevisions.corrections !== taxonomyCorrectionsRevision(inputs.corrections))) {
+          throw new Error("Referenz, Projektzuordnungen oder eigene Entscheidungen wurden seit dem Kandidatenbau geändert. Bitte neu aufbauen.");
+        }
+      },
+      onProgress: ({ phase, message, percent }) => this.updateProgress({
+        phase: LIGHTROOM_PROGRESS_PHASES[phase] || phase, message, percent,
+      }),
+    }); } finally { this.publicationAbortController = null; }
+  }
+
   async close() {
-    this.closed = true;
+    this.closing = true;
+    this.publicationAbortController?.abort(new Error("Explorer wird geschlossen; die Paarvorbereitung wurde abgebrochen."));
+    await this.runController?.requestClose();
     await this.providerRefreshService?.close?.();
     await this.runPromise?.catch?.(() => null);
+    this.closed = true;
   }
 }
 

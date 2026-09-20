@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -39,12 +40,17 @@ import {
 } from "./taxonomy-master-storage.mjs";
 import { diffTaxonomyMasterDatabases } from "./taxonomy-master-diff.mjs";
 import { openPreviousMasterState } from "./taxonomy-master-previous-state.mjs";
+import { identityBuildSourceRevision, prepareIdentityBuild, writeIdentityBuild } from "./taxonomy-identity-build.mjs";
+import { identityRegistryRevision } from "./taxonomy-identity-registry.mjs";
 import {
   foldTaxonomySearchTerm,
   germanTaxonomySearchKey,
   normalizeTaxonomySearchTerm,
 } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
+import { writeMasterBuildInputs, masterFileFingerprint, compareMasterBuildInputs } from "./taxonomy-master-inputs.mjs";
+import { prepareMasterReuse } from "./taxonomy-master-reuse.mjs";
+import { openMasterCheckpoint } from "./taxonomy-master-checkpoint.mjs";
 
 const SOURCE_FIELDS = new Set([
   "scientific-name",
@@ -166,6 +172,7 @@ function normalizeCorrection(value = {}) {
     kingdom: cleanText(value.kingdom || "Animalia"),
     germanName: cleanText(value.germanName),
     ...(value.germanNameMode === "provider" ? { germanNameMode: "provider" } : {}),
+    ...(value.namePreference?.masterTaxonId ? { namePreference: { masterTaxonId: cleanText(value.namePreference.masterTaxonId) } } : {}),
     englishName: cleanText(value.englishName),
     note: cleanText(value.note),
   };
@@ -183,6 +190,11 @@ export function taxonomyCorrectionsRevision(corrections = []) {
   return crypto.createHash("sha256")
     .update(JSON.stringify(normalizedCorrections))
     .digest("hex");
+}
+
+export function taxonomyIdentityInputRevision({ corrections = [], projectTaxa = [] } = {}) {
+  return crypto.createHash("sha256").update(JSON.stringify({ corrections: taxonomyCorrectionsRevision(corrections),
+    projects: projectTaxa.map(normalizeProjectTaxon).sort((a, b) => a.projectTaxonKey.localeCompare(b.projectTaxonKey)) })).digest("hex");
 }
 
 function normalizeColRecord(value = {}, fallback = {}) {
@@ -691,6 +703,11 @@ export async function buildTaxonomyMasterCandidate({
   projectTaxa = [],
   corrections = [],
   retainedTaxa = [],
+  identityRegistry,
+  buildInputCoverage,
+  reuseUnchanged = true,
+  checkpoint = null,
+  beforePublish = async () => {},
   onProgress = () => {},
   now = () => new Date(),
 } = {}) {
@@ -702,7 +719,10 @@ export async function buildTaxonomyMasterCandidate({
     ...colRelease,
   }, { importedAt: timestamp });
   const normalizedProjects = projectTaxa.map(normalizeProjectTaxon);
-  const normalizedCorrections = corrections.map(normalizeCorrection).filter(Boolean);
+  const normalizedCorrections = corrections.map((value) => {
+    const correction = normalizeCorrection(value);
+    return correction ? { ...correction, identityBinding: cleanText(value.namePreference?.masterTaxonId || value.identityBinding) } : null;
+  }).filter(Boolean);
   const normalizedRetainedTaxa = retainedTaxa.map((entry) => ({
     scientificName: cleanText(entry.scientificName),
     rank: normalizeRank(entry.rank),
@@ -801,13 +821,27 @@ export async function buildTaxonomyMasterCandidate({
       }
     }
   }
-  recordLocations.clear();
-
   const { DatabaseSync } = await loadNodeSqlite();
   const activePath = taxonomyMasterDatabasePath(taxonomyRoot, "active");
   const previousState = openPreviousMasterState(activePath, DatabaseSync, {
     historyPath: taxonomyMasterDatabasePath(taxonomyRoot, "previous"),
   });
+  let identityPlan;
+  let activeManifest;
+  try {
+    activeManifest = await readTaxonomyMasterManifest(taxonomyRoot, "active");
+    identityPlan = prepareIdentityBuild({ groups, previousState,
+      projects: normalizedProjects, projectKeyOf: identityKey,
+      registry: identityRegistry ?? previousState.identityRegistry,
+      baseVersion: activeManifest?.candidateId || "",
+      inputRevision: taxonomyIdentityInputRevision({ corrections, projectTaxa }),
+      sourceRevision: identityBuildSourceRevision([normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)]),
+      releases: [normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)],
+      ensureGroup: (value) => ensureGroup(groups, groupsByBaseIdentity, value) });
+  } catch (error) {
+    previousState.close();
+    throw error;
+  }
   const previousByIdentity = new Map();
   const previousByBaseIdentity = new Map();
   for (const previousTaxon of previousState.taxa.values()) {
@@ -838,28 +872,73 @@ export async function buildTaxonomyMasterCandidate({
     const unambiguousPrevious = currentMatches?.size === 1
       && (!previousKingdom || !currentKingdom || previousKingdom === currentKingdom)
       ? onlyPrevious : null;
-    group.previousTaxon = exactPrevious || unambiguousPrevious;
+    if (!group.identityMasterTaxonId && !group.identityFresh) group.previousTaxon = exactPrevious || unambiguousPrevious;
   }
-  const temporaryDirectory = path.join(
+  const temporaryDirectory = checkpoint?.directory || path.join(
     taxonomyMasterRoot(taxonomyRoot),
     `.staging-${crypto.randomUUID()}`,
   );
+  if (checkpoint && (path.basename(temporaryDirectory) !== "candidate"
+      || !/^job-[a-f0-9-]{36}$/.test(path.basename(path.dirname(temporaryDirectory)))
+      || path.resolve(path.dirname(path.dirname(temporaryDirectory))) !== path.join(taxonomyMasterRoot(taxonomyRoot), "build-jobs"))) {
+    previousState.close();
+    throw new Error("Aufbaucheckpoints dürfen nur im eigenen Master-Auftragsverzeichnis liegen.");
+  }
   await fs.mkdir(temporaryDirectory, { recursive: true });
   const databasePath = path.join(temporaryDirectory, "taxonomy-master.sqlite");
   let database;
   let manifest;
+  let reuse;
+  const candidateId = `master-${timestamp.replace(/[^0-9]/g, "").slice(0, 17)}`;
   try {
+    if (checkpoint) {
+      // Recreated planning sidecars are not acknowledged taxon write blocks.
+      // These exact files belong exclusively to this worker's private directory.
+      for (const name of ["build-inputs.sqlite", "build-reuse-plan.sqlite", "build-dependencies.sqlite"]) {
+        for (const suffix of ["", "-journal", "-wal", "-shm"]) {
+          await fs.rm(path.join(temporaryDirectory, name + suffix), { force: true });
+        }
+      }
+    }
+    const inputReleases = [normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)];
+    const buildInputs = await writeMasterBuildInputs({ directory: temporaryDirectory, candidateId,
+      baseMasterVersion: activeManifest?.candidateId, masterSchema: TAXONOMY_MASTER_SCHEMA_VERSION,
+      releases: inputReleases, coverage: buildInputCoverage,
+      rawCounts: new Map([[normalizedColRelease.provider, processedColRecords],
+        ...normalizedSlices.map((slice) => [slice.release.provider, slice.records.length])]),
+      recordLocations, corrections: normalizedCorrections, projects: normalizedProjects,
+      retainedTaxa: normalizedRetainedTaxa, identityRevision: identityRegistryRevision(identityPlan.registry), onProgress });
+    reuse = await prepareMasterReuse({ directory: temporaryDirectory,
+      previousDirectory: taxonomyMasterActiveDirectory(taxonomyRoot), previousManifest: activeManifest,
+      buildInputs, recordLocations, onProgress, enabled: reuseUnchanged });
+    recordLocations.clear();
     database = new DatabaseSync(databasePath);
+    if (checkpoint) {
+      const existingSchema = database.prepare("SELECT 1 FROM sqlite_master WHERE name='master_schema_info'").get();
+      const saved = existingSchema && database.prepare("SELECT value FROM master_schema_info WHERE key='buildCheckpoint'").get();
+      if (!saved) {
+        // Includes a crash during initial schema creation. No cursor means no
+        // acknowledged taxon block; only this private unacknowledged DB is reset.
+        database.close();
+        for (const suffix of ["", "-journal", "-wal", "-shm"]) await fs.rm(databasePath + suffix, { force: true });
+        database = new DatabaseSync(databasePath);
+      }
+    }
     try {
-    createTaxonomyMasterSchema(database);
+    const hasSchema = database.prepare("SELECT 1 FROM sqlite_master WHERE name='master_schema_info'").get();
+    if (!hasSchema) createTaxonomyMasterSchema(database);
     // Der reale Masterbestand umfasst mehrere hunderttausend Taxa und noch
     // deutlich mehr Namens-, Herkunfts- und Suchzeilen. Ohne eine gemeinsame
     // Transaktion bestaetigt SQLite jeden einzelnen INSERT separat; ein
     // vollstaendiger Kandidatenbau wuerde dadurch viele Stunden dauern. Die
-    // Staging-Datenbank ist fuer den Aufbau exklusiv, deshalb darf der gesamte
-    // konsistente Kandidat atomar geschrieben werden. Ein Fehler oder das
-    // Schliessen vor COMMIT verwirft die unvollstaendige Transaktion.
-    database.exec("BEGIN IMMEDIATE");
+    // Staging-Datenbank ist fuer den Aufbau exklusiv. Direkte Altaufrufer nutzen
+    // weiterhin eine Transaktion. Der Worker bestaetigt dagegen sichere Bloecke
+    // samt Cursor; ein Abbruch verwirft nur den noch offenen Schreibblock.
+    const progressCheckpoint = checkpoint ? openMasterCheckpoint(database, { ...checkpoint, timestamp, groups }) : null;
+    if (!progressCheckpoint) database.exec("BEGIN IMMEDIATE");
+    if (progressCheckpoint?.manifest) {
+      manifest = progressCheckpoint.manifest;
+    } else {
     const releases = [normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)];
     releases.push({
       releaseId: `project-${timestamp}`,
@@ -879,13 +958,15 @@ export async function buildTaxonomyMasterCandidate({
       recordCount: normalizedCorrections.length,
       metadata: {},
     });
-    for (const release of releases) {
-      registerProviderRelease(database, { ...release, releaseState: "active" });
+    if (!progressCheckpoint?.written) {
+      for (const release of releases) registerProviderRelease(database, { ...release, releaseState: "active" });
     }
+    if (progressCheckpoint) reuse.reusedTaxa = progressCheckpoint.reused;
     const releaseByProvider = new Map(releases.map((release) => [release.provider, release]));
     const groupCount = groups.size;
     let writtenGroups = 0;
     for (const group of groups.values()) {
+      if (writtenGroups < (progressCheckpoint?.written || 0)) { writtenGroups += 1; continue; }
       const exactCol = group.records.find((record) => (
         record.provider === "catalogue-of-life"
         && record.versionChangeState !== "removed"
@@ -909,7 +990,7 @@ export async function buildTaxonomyMasterCandidate({
         || activeRecords.find((record) => record.kingdom)?.kingdom
         || colKingdomByGenus.get(normalized(groupGenus)),
       );
-      const masterTaxonId = createStableMasterTaxonId({
+      const masterTaxonId = group.identityMasterTaxonId || createStableMasterTaxonId({
         scientificName: exactCol?.scientificName || group.scientificName,
         rank: group.rank,
         kingdom,
@@ -931,6 +1012,16 @@ export async function buildTaxonomyMasterCandidate({
             : group.corrections.length
               ? "manual"
               : oldTaxon?.reference_state || "manual";
+      if (reuse.available && reuse.copyIfEligible(database, { group, masterTaxonId, releases: releaseByProvider, timestamp })) {
+        writtenGroups += 1;
+        await progressCheckpoint?.advance(writtenGroups, reuse.reusedTaxa || 0);
+        if (writtenGroups % 500 === 0) {
+          onProgress({ phase: "Masterdatenbank schreiben", message: "Unveränderte Arten werden mit aktuellen Quellenbelegen übernommen.",
+            current: writtenGroups, total: groupCount, percent: 70 + Math.min(15, Math.round(writtenGroups / Math.max(1, groupCount) * 15)) });
+          await yieldToEventLoop();
+        }
+        continue;
+      }
       createMasterTaxon(database, {
         masterTaxonId,
         scientificName: exactCol?.scientificName || group.scientificName,
@@ -1064,6 +1155,9 @@ export async function buildTaxonomyMasterCandidate({
           scientificNameAtLink: project.scientificName,
           linkedAt: timestamp,
         });
+        // A project-to-successor link is not a synonym or a transfer of names.
+        // Website texts remain local; new target names come from their own sources.
+        if (project.identityAssignment) continue;
         addMasterTaxonAlias(database, {
           masterTaxonId,
           name: project.scientificName,
@@ -1072,7 +1166,7 @@ export async function buildTaxonomyMasterCandidate({
           aliasType: "project-name",
         });
         for (const [fieldName, fieldValue, language] of [
-          ["scientific-name", project.scientificName, ""],
+          ["scientific-name", group.identityContinuation ? group.scientificName : project.scientificName, ""],
           ["german-name", project.germanName, "de"],
           ["english-name", project.englishName, "en"],
         ]) {
@@ -1114,6 +1208,7 @@ export async function buildTaxonomyMasterCandidate({
         .filter((field) => field && ["manual", "project"].includes(field.originKind))
         .map(candidateKey));
       const currentFields = previousState.fieldsFor(previousMasterTaxonId, explicitFieldKeys)
+        .filter((field) => !group.identityContinuation || field.field_name !== "scientific-name")
         .filter((field) => !useProviderGermanName || field.field_name !== "german-name"
           || field.origin_kind === "source");
       const protectedPreviousFieldKeys = new Set([
@@ -1296,6 +1391,7 @@ export async function buildTaxonomyMasterCandidate({
         });
       }
       writtenGroups += 1;
+      await progressCheckpoint?.advance(writtenGroups, reuse.reusedTaxa || 0);
       if (writtenGroups % 500 === 0) {
         onProgress({
           phase: "Masterdatenbank schreiben",
@@ -1307,6 +1403,7 @@ export async function buildTaxonomyMasterCandidate({
         await yieldToEventLoop();
       }
     }
+    await progressCheckpoint?.advance(writtenGroups, reuse.reusedTaxa || 0, true);
     onProgress({
       phase: "Masterdatenbank schreiben",
       message: "Die Masterdaten sind vollständig geschrieben.",
@@ -1314,6 +1411,11 @@ export async function buildTaxonomyMasterCandidate({
       total: groupCount,
       percent: 85,
     });
+    writeIdentityBuild(database, identityPlan, timestamp);
+    reuse.close();
+    buildInputs.buildMode = reuse.reusedTaxa ? "incremental" : "full";
+    buildInputs.reuse = { reason: reuse.reason, reusedTaxa: reuse.reusedTaxa || 0,
+      recomputedGroups: groupCount - (reuse.reusedTaxa || 0) };
     groups.clear();
     groupsByBaseIdentity.clear();
     previousByIdentity.clear();
@@ -1346,11 +1448,15 @@ export async function buildTaxonomyMasterCandidate({
     });
     manifest = {
       schemaVersion: TAXONOMY_MASTER_SCHEMA_VERSION,
-      candidateId: `master-${timestamp.replace(/[^0-9]/g, "").slice(0, 17)}`,
+      candidateId,
+      buildInputs,
       createdAt: timestamp,
       state: "staging",
       inputRevisions: {
         corrections: taxonomyCorrectionsRevision(normalizedCorrections),
+        identities: identityRegistryRevision(identityPlan.registry),
+        identitySources: identityBuildSourceRevision([normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)]),
+        identityInputs: taxonomyIdentityInputRevision({ corrections, projectTaxa }),
       },
       sources: releases.map((release) => ({
         provider: release.provider,
@@ -1363,24 +1469,36 @@ export async function buildTaxonomyMasterCandidate({
       validation,
       contentQuality,
       requiresConfirmation: true,
+      ...(checkpoint ? { buildJobRevision: checkpoint.revision } : {}),
     };
+    progressCheckpoint?.finish(manifest);
+    }
     database.exec("COMMIT");
     } finally {
       database.close();
     }
+    if (manifest.buildInputs.available) {
+      manifest.buildInputs.masterSha256 = await masterFileFingerprint(databasePath);
+      manifest.buildInputs.comparison = await compareMasterBuildInputs({
+        previousDirectory: taxonomyMasterActiveDirectory(taxonomyRoot), previousManifest: activeManifest,
+        currentDirectory: temporaryDirectory, currentManifest: manifest, onProgress });
+    }
     await atomicWriteJson(path.join(temporaryDirectory, "manifest.json"), manifest);
     await fs.mkdir(taxonomyMasterRoot(taxonomyRoot), { recursive: true });
+    await beforePublish();
     await replaceDirectory(temporaryDirectory, taxonomyMasterCandidateDirectory(taxonomyRoot));
     return manifest;
   } catch (error) {
+    reuse?.close();
     try {
       database?.close?.();
     } catch {
       // Der innere finally-Block kann die SQLite-Verbindung bereits geschlossen haben.
     }
-    await fs.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
+    if (!checkpoint) await fs.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
     throw error;
   } finally {
+    reuse?.close();
     previousState.close();
   }
 }
@@ -1400,6 +1518,9 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
 } = {}) {
   const manifest = await readTaxonomyMasterManifest(taxonomyRoot, "staging");
   if (!manifest) return { available: false, reason: "no-candidate" };
+  if (readTaxonomyPublication(taxonomyRoot)?.consumedCandidateId === manifest.candidateId) {
+    return { available: false, reason: "already-published" };
+  }
   const { DatabaseSync } = await loadNodeSqlite();
   const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "staging"), {
     readOnly: true,

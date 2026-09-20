@@ -145,6 +145,10 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "taxonomy-master",
     action: "build",
   });
+  for (const action of ["pause-build", "resume-build"]) {
+    assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/master/${action}`), { name: "taxonomy-master", action });
+    assert.notEqual(matchExplorerRoute("GET", `/api/taxonomy/master/${action}`)?.name, "taxonomy-master");
+  }
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/master/apply-corrections"), {
     name: "taxonomy-master",
     action: "apply-corrections",

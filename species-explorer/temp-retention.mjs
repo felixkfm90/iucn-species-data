@@ -47,11 +47,13 @@ export async function cleanupManagedExplorerTemp({
   now = Date.now(),
   maxAgeMs = TEMP_RETENTION_MAX_AGE_MS,
   dryRun = false,
+  protectedPaths = [],
 } = {}) {
   if (!new Set(["startup", "shutdown", "maintenance"]).has(phase)) {
     throw new Error(`Unbekannte Temp-Bereinigungsphase: ${phase}`);
   }
   const result = { phase, removed: [], kept: [], errors: [] };
+  const protectedFiles = new Set(protectedPaths.filter(Boolean).map((file) => path.resolve(file)));
   for (const policy of MANAGED_TEMP_POLICIES) {
     const root = path.resolve(repoRoot, ...policy.root);
     const entries = await readdir(root, { withFileTypes: true }).catch((error) => {
@@ -64,6 +66,10 @@ export async function cleanupManagedExplorerTemp({
         continue;
       }
       const entryPath = path.join(root, entry.name);
+      if (phase !== "shutdown" && protectedFiles.has(path.resolve(entryPath))) {
+        result.kept.push({ policy: policy.id, path: entryPath, reason: "aktive Vorschau" });
+        continue;
+      }
       const details = await stat(entryPath).catch((error) => {
         result.errors.push({ policy: policy.id, path: entryPath, error: error.message });
         return null;

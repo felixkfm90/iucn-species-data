@@ -519,6 +519,7 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
   assert.equal(previewResponse.status, 200);
   const preview = await previewResponse.json();
   assert.ok(preview.token);
+  assert.equal(preview.expiresAt, null);
   assert.deepEqual(preview.entry, {
     german: "Testvogel",
     english: "Test Bird",

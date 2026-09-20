@@ -15,6 +15,90 @@ async function source(file) {
   return fs.readFile(path.join(PLUGIN_ROOT, file), "utf8");
 }
 
+test("Lua-Paketstatus folgt gemeinsamem Zeiger und Korrekturen ohne Prozess- oder Katalogzugriff", async () => {
+  const { default: fengari } = await import("fengari");
+  const { lua, lauxlib, lualib, to_luastring } = fengari;
+  const state = lauxlib.luaL_newstate();
+  lualib.luaL_openlibs(state);
+  const script = `
+    local Json = (function() ${await source("Json.lua")} end)()
+    local files = {}
+    local root = "D:/fixture/lightroom"
+    local function child(parent, leaf) return parent .. "/" .. leaf end
+    function import(name)
+      if name == "LrPrefs" then return { prefsForPlugin = function() return { searchRoot = root } end } end
+      if name == "LrFileUtils" then return { exists = function(p) return files[p] and "file" or false end } end
+      if name == "LrPathUtils" then return { child = child, parent = function(p) return p:match("^(.*)/[^/]+$") end } end
+      return setmetatable({}, { __index = function() error("Unexpected Lightroom call: " .. name) end })
+    end
+    function require(name) assert(name == "Json"); return Json end
+    io.open = function(p)
+      if not files[p] then return nil end
+      return { read = function() return files[p] end, close = function() return true end }
+    end
+    local Helper = (function() ${await source("TaxonomyHelper.lua")} end)()
+    local legacy = root .. "/active/"
+    files[legacy .. "taxonomy-search.sqlite"] = "database"
+    files[legacy .. "manifest.json"] = Json.encode({ taxonCount=2, packageId="old", masterVersion="master-old" })
+    assert(Helper.searchPackageStatus().packageId == "old")
+    local pair = { id="publication-11111111-1111-4111-8111-111111111111", packageId="new", masterVersion="master-new",
+      correctionPointer={ basePackageId="new", baseMasterVersion="master-new", revision="paired" } }
+    local pointerPath = "D:/fixture/taxonomy-publication/active.json"
+    files[pointerPath] = Json.encode({ schemaVersion=1, searchRoot=root:lower(), active=pair })
+    local release = root .. "/releases/" .. pair.id .. "/"
+    files[release .. "taxonomy-search.sqlite"] = "database"
+    files[release .. "manifest.json"] = Json.encode({ taxonCount=3, packageId="new", masterVersion="master-new" })
+    assert(Helper.searchPackageStatus().packageId == "new")
+    assert(Helper.searchPackageStatus().correctionRevision == "paired")
+    files["D:/fixture/corrections/active.json"] = Json.encode({ basePackageId="new", baseMasterVersion="master-new", revision="later" })
+    assert(Helper.searchPackageStatus().correctionRevision == "later")
+    files[pointerPath] = "invalid"
+    assert(not Helper.searchPackageStatus().available)
+  `;
+  try {
+    assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
+    const result = lua.lua_pcall(state, 0, 0, 0);
+    assert.equal(result, lua.LUA_OK, result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1));
+  } finally { lua.lua_close(state); }
+});
+
+test("Identitäts-Schreibkern bleibt separat, journalgebunden und ohne Ort-/Zeit- oder automatische Menüaktion", async () => {
+  const writer = await source("IdentityWriter.lua");
+  const snapshot = await source("IdentitySnapshot.lua");
+  const normalWriter = await source("KeywordWriter.lua");
+  const menu = await source("PluginMenu.lua");
+  const workflow = await source("IdentityWorkflow.lua");
+  const catalog = await source("IdentityCatalog.lua");
+  assert.match(writer, /#changes <= 250/);
+  assert.match(writer, /timeout = 10/);
+  assert.match(writer, /IdentitySnapshot\.validate\(to\)/);
+  assert.match(writer, /IdentitySnapshot\.capture\(entry.photo\)/);
+  assert.match(writer, /PluginState\.applyStatisticsPhotoChanges/);
+  assert.doesNotMatch(writer, /LocationTimeWriter\.(?:prepare|applyPrepared|execute)|KeywordWriter\.assign/);
+  assert.match(snapshot, /LrTasks\.pcall/);
+  assert.doesNotMatch(snapshot, /[^.]\bpcall\(/);
+  assert.match(normalWriter, /function KeywordWriter\.identityTemplate/);
+  assert.match(normalWriter, /function KeywordWriter\.assign[\s\S]*?KeywordWriter\.findConflicts/);
+  assert.doesNotMatch(menu, /IdentityWriter|IdentitySnapshot/);
+  assert.match(workflow, /request\("prepare", preparedInput\)/);
+  assert.match(workflow, /request\("block-confirm", blockInput\)/);
+  assert.match(workflow, /Writer\.applyBlock[\s\S]*request\("checkpoint"/);
+  assert.match(workflow, /LrTasks\.pcall\(action\)/);
+  assert.doesNotMatch(workflow, /[^.]\bpcall\(/);
+  assert.match(catalog, /function IdentityCatalog\.guard[\s\S]*catalog:getAllPhotos\(\)/);
+  assert.doesNotMatch(catalog.slice(catalog.indexOf("function IdentityCatalog.guard")), /Helper\.request|LrTasks\.yield|withWriteAccessDo/);
+  const action = await source("IdentityAction.lua");
+  const view = await source("IdentityView.lua");
+  assert.match(menu, /Artänderungen prüfen \.\.\.[\s\S]*?ReviewIdentity\.lua/);
+  assert.match(await source("ReviewIdentity.lua"), /LrTasks.startAsyncTask/);
+  assert.match(action, /Workflow\.prepare[\s\S]*?process\(catalog, input\)/);
+  assert.match(action, /"recovery-preview"/);
+  assert.match(action, /"undo-prepare"/);
+  assert.match(view, /props.choice = ""/);
+  assert.match(view, /scope:setCancelable\(true\)/);
+  assert.doesNotMatch(action, /KeywordWriter\.assign|IdentityWriter\.applyBlock|withWriteAccessDo/);
+});
+
 test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenvertrag", async () => {
   const info = await source("Info.lua");
   const pluginMenu = await source("PluginMenu.lua");
@@ -58,6 +142,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     "RemoveAllFnData.lua",
     "ShowStatistics.lua",
     "CreateCollections.lua",
+    "ReviewIdentity.lua",
   ]) {
     assert.match(pluginMenu, new RegExp(script.replace(".", "\\.")));
   }
@@ -77,7 +162,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.10");
+  assert.equal(version.slice(1).join("."), "0.4.24.14");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -1021,7 +1106,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.10/);
+  assert.match(provider, /Version: 0\.4\.24\.14/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

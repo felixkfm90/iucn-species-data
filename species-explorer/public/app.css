@@ -626,6 +626,10 @@ button.danger,
   grid-template-columns: 1fr;
 }
 
+.taxonomy-database-actions > button[hidden] {
+  display: none !important;
+}
+
 .taxonomy-master-copy {
   display: grid;
   gap: 2px;
@@ -3749,6 +3753,20 @@ button:focus-visible {
 
 .map-file-field {
   grid-area: file;
+  padding: 12px;
+  border: 2px dashed var(--line-strong);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.map-file-field.is-dragging,
+.map-file-field:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.map-file-field[aria-busy="true"] {
+  opacity: 0.7;
 }
 
 .map-reason-field {

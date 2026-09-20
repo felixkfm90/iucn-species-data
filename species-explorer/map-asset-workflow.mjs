@@ -178,7 +178,9 @@ export function createMapAssetOperations({
       warnings: [
         "Die vorhandene Karte wird vor dem Austausch lokal gesichert.",
         "Die neue Karte wird als manuell gepflegt markiert und vor automatischen Pipeline-Updates geschützt.",
-        "Nach erfolgreichem Speichern werden Karte, Register und Dokumentation automatisch committed und gepusht.",
+        publishAssetChanges
+          ? "Nach erfolgreichem Speichern werden Karte, Register und Dokumentation automatisch committed und gepusht."
+          : "Speichern bleibt lokal. Veröffentlicht wird später mit Änderungen übertragen.",
       ],
     };
   }

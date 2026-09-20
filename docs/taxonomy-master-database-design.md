@@ -1,11 +1,12 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-09-07
+Stand: 2026-09-20
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
-Weißstorch und der Paket-/Masterstand sind inzwischen auch in Lightroom vom Benutzer bestätigt; Commit/Push sind
-freigegeben. Die restliche Lightroom-Abnahme und die Auditpunkte stehen in `roadmap.md`.
+Weißstorch und der damalige Paket-/Masterstand wurden auch in Lightroom vom Benutzer bestätigt. Die späteren
+Identitäts-, Delta- und Hintergrundaufbau-Erweiterungen sind davon getrennt zu prüfen; ihre technische Umsetzung
+ist keine produktive Großbestandsfreigabe. Restliche Abnahme und Auditpunkte stehen in `roadmap.md`.
 
 Seit 2026-09-06 nutzt die bewusste deutsche Namenswahl aus Explorer und Lightroom den gemeinsamen
 Korrektur-Releaseweg. Eine Revisionsprüfung und kurze prozessübergreifende SQLite-Sperre koordinieren die
@@ -49,10 +50,13 @@ Die Daten liegen außerhalb von Repository, GitHub Pages und normalem Projekt-Ba
     providers\                      versionierte Anbieterstände
 ```
 
-Jeder Master-Slot besitzt ein `manifest.json`. `staging` enthält einen vollständig aufgebauten Kandidaten. Erst
-nach Schema-, Integritäts-, Projekt- und Konfliktprüfung wird er atomar nach `active` verschoben. Genau eine
-vorherige Version bleibt unter `previous` für Rollback erhalten. Abgebrochene Aktivierungen stellen den vorherigen
-Stand automatisch wieder her; temporäre Staging- und Rollbackverzeichnisse werden bereinigt.
+Diese Slotstruktur bleibt für bisherige Installationen lesbar. `staging` enthält den fertig geprüften Kandidaten;
+jeder Stand besitzt ein `manifest.json`. Seit der gemeinsamen Master-/Lightroom-Veröffentlichung liegen neue
+aktive Stände unter `master/releases/publication-<UUID>/` und im gleichnamigen Releaseordner des benachbarten
+Lightroom-Speichers. `taxonomy-publication/active.json` wählt genau ein aktives Paar und einen direkten Vorgänger.
+Die schweren Vorbereitungen laufen getrennt im Paarworker; der Server schaltet beide erst nach erneuter Prüfung
+gemeinsam um. Alte Releases werden derzeit nicht automatisch gelöscht. Aufbewahrung und Platzbudget sind noch
+offen. Speicher-/Abbruchvertrag: `taxonomy-master-background-build.md`; Delta-Vertrag: `taxonomy-incremental-build.md`.
 
 Die Speicherortentscheidung wird beim späteren Installer erneut geprüft.
 
@@ -90,8 +94,31 @@ Jedes zusammengeführte Taxon besitzt eine anbieterunabhängige ID `mtx_<32 Hexz
 Master-Kandidatenbau leitet sie deterministisch aus normalisiertem wissenschaftlichem Namen, Rang und Reich ab.
 Deutsche beziehungsweise englische Namen, Hierarchie, Anbieter-IDs und Projekt-Slugs sind Aussagen oder
 Verknüpfungen und ändern diese Master-ID nicht. Ändert sich dagegen eine der drei Identitätskomponenten, entsteht
-ohne eine ausdrücklich modellierte Nachfolgerbeziehung eine neue ID. Taxonomische Splits und Merges besitzen in
-diesem Stand noch keine automatisch nutzbare Vorgänger-/Nachfolgerzuordnung.
+ohne eine ausdrücklich bestätigte Nachfolgerbeziehung eine neue ID. Splits und Merges werden nicht aus
+Namensähnlichkeit automatisch abgeleitet; bestätigte Nachfolger werden im folgenden Identitätsregister geführt.
+
+Auch ein fachlicher Split bei unverändertem wissenschaftlichem Namen, Rang und Reich wird durch diesen Hash
+nicht automatisch erkannt. Seit dem 9. September ist nach bestätigten Fachregeln ein versioniertes
+Identitäts-/Nachfolgerregister in Schema 4 mit geprüftem Kandidatenaufbau implementiert, ohne pauschalen Austausch
+vorhandener IDs. Schema 2/3 bleiben lesbar. Bestätigte Fortführungen behalten IDs; Split/Merge-Ziele erhalten
+neue IDs und ihre Vorgänger bleiben historisch. Explorer-Fallansicht, Vorschau und Vormerkung sind implementiert;
+das Verwerfen offener Vormerkungen setzt nur auf die aktive Historie zurück. Projekt-Nachfolger werden für jede
+betroffene Projektart ausdrücklich gewählt und nach erneuter Vorschau im Ereignis gespeichert. Der Aufbau prüft
+die bisherige Projektidentität und Verknüpfung erneut. Website-Texte, Slugs und Assets bleiben unverändert;
+alte Projektnamen werden weder Namen noch Synonyme der neuen Taxa. Ein weiterer Split verlangt neue Ziele,
+ein Master-Rollback stellt die vorherigen Projektlinks her. Foto-Nachfolgerauswahl, Rücknahmejournal und
+Favoritenkonfliktprüfung sind inzwischen als bewusst gestarteter Lightroom-Ablauf implementiert und isoliert
+geprüft. Die praktische Split-/Merge-Migration bleibt offen; der bestätigte reine Öffnungstest ersetzt sie nicht.
+Bedienung und Grenzen: `lightroom-identity-workflow.md`.
+Verträge und Grenzen: `taxonomy-identity-incremental-plan.md`. Darauf folgt auf ausdrücklichen Benutzerwunsch
+verbindlich vor dem Phase-10-Audit der inkrementelle Master-/Suchpaketaufbau. Der gemeinsame Master-/Paketwechsel
+ist seit 13. September technisch umgesetzt und isoliert getestet; Großbestandsmessung und Release-Aufbewahrung
+bleiben offen. Seit 20. September läuft auch die schwere Paarvorbereitung/Prüfung außerhalb des Serverprozesses;
+die atomare Aktivierung bleibt beim Elternprozess. Masterworker und Schreibcheckpoints sind
+seit 14. September an Service und Explorer-Bedienung angeschlossen: Pause, bestätigte Fortsetzung,
+Wiederentdeckung ohne automatischen Start und heutige Eingangsbindung. Isolierte Service-/Worker-Tests bestehen;
+der vollständige produktive Neustart-/Großbestandstest fehlt noch. Vertrag und Grenzen:
+`taxonomy-master-background-build.md`. Gesamtstand: `taxonomy-incremental-build.md`.
 
 Folgende kombinierbare Zustände werden geführt:
 
@@ -364,6 +391,28 @@ Der Kandidatenbau verarbeitet die relevanten CoL-Zeilen schrittweise, führt dop
 jeweiligen Taxongruppen zusammen und liest bisherige Aliasse nur bei Bedarf. Der abschließende Vergleich zwischen
 aktivem Stand und Kandidat läuft zeilenweise statt beide SQLite-Datenbanken vollständig in JavaScript-Maps zu
 duplizieren; dieser Vergleich ist in `species-explorer/taxonomy-master-diff.mjs` vom Kandidatenbau getrennt.
+
+Seit 11. September ergänzt `species-explorer/taxonomy-master-inputs.mjs` beim Explorer-Vollaufbau eine
+separate `build-inputs.sqlite` im Kandidatenordner. Sie speichert geprüfte, bereits zusammengeführte Eingänge,
+bindet den tatsächlichen CoL-Auswahlumfang und wird per Manifest an Kandidaten-ID sowie fertige Masterdatei
+gebunden. Verzeichnisaktivierung und Rollback nehmen die Baseline mit. Ein nachgelagerter Vergleich liefert
+Eingangsänderungen oder einen ausdrücklichen Vollaufbau-/Sperrgrund.
+Ältere Aufrufer ohne Vollständigkeitsbeleg erhalten keine Deltabasis. Keine zusätzliche aktive Datenbankänderung
+oder gemeinsame Master-/Paketaktivierung. Details und Messgrenzen: `taxonomy-incremental-build.md`.
+Seit 12. September erzeugt `taxonomy-master-dependencies.mjs` zusätzlich einen nachgelagerten konservativen
+Abhängigkeitsplan in `build-dependencies.sqlite`: Vereinigung alter/neuer Quellenverweise, Namens-/Hierarchie-
+Abhängigkeiten und Gattungsableitung mit zyklensicheren Warteschlangen. Manuelle und andere zustandsabhängige
+Taxa bleiben vorläufig neu zu berechnen. `taxonomy-master-reuse.mjs` verwendet den Plan inzwischen bei belegbar
+unveränderter Graphstruktur vor der Ergebnisberechnung und übernimmt unveränderte, nicht betroffene Arten
+mit neuen Beleg-IDs und aktuellen Releases. Strukturänderungen bleiben Vollaufbau; Suchindex und Lightroom-Paket
+werden weiterhin vollständig gebaut. Kleine semantische Vollaufbau-Vergleichstests sind erfolgreich; keine
+Leistungsfreigabe am Großbestand, keine Fotoaktion oder gemeinsame Master-/Paketaktivierung.
+Isolierte Messungen mit 10.000 synthetischen Arten bestätigen inzwischen die Ergebnisgleichheit, nicht jedoch
+eine durchgängig bessere Laufzeit: Ausreißer und zusätzliches Spitzen-RSS bleiben zu klären. Die Übernahme
+verwendet vorbereitete Schreibanweisungen erneut und indexiert einen identischen Abhängigkeitsstand nur einmal.
+Bei vollständig geänderten Eingängen wird die vorgeschaltete Wiederverwendungsplanung übersprungen;
+der normale Ergebnisvergleich bleibt erhalten. Messverfahren, Werte und Grenzen: `taxonomy-incremental-build.md`.
+
 Die Herkunft bisheriger Felder kapselt `species-explorer/taxonomy-master-previous-state.mjs`. Ein Anbieterfeld ohne
 frischen Ersatz behält `origin_kind = source`, seinen ursprünglichen Beleg und dessen Release. Ein nicht mehr
 aktueller Beleg wird als `stale`/`removed` aus einem archivierten Release übernommen und behauptet damit keine
@@ -394,12 +443,14 @@ schließt der Explorer seine eigenen read-only Referenz- und Masterhandles, bevo
 atomar umbenennt; die nächste Suche öffnet den dann aktiven Stand wieder bedarfsgesteuert. Bei einem Fehler bleibt
 der zuvor aktive Stand unverändert verfügbar.
 
-Seit dem 30. August 2026 endet eine bestätigte Aktivierung oder Wiederherstellung nicht mehr beim Master-Slotwechsel.
-Der Explorer startet anschließend automatisch den reproduzierbaren Lightroom-Suchpaketbau als getrennten
-Hilfsprozess und zeigt dessen Schema-, Export-, Index-, Prüf- und Aktivierungsphase im selben Fortschrittsblock.
-Der aktive Suchpaketstand wird über die `masterVersion` mit der aktiven Master-`candidateId` verglichen. Scheitert
-der Paketbau, bleibt das vorherige Suchpaket aktiv; der Masterwechsel wird als Teilerfolg gemeldet und
-`Datenbank aktualisieren` holt gezielt nur die fehlende Ableitung nach.
+Der seit 30. August vorhandene automatische Paket-Hilfsprozess baut seit 13. September vor der Masterfreigabe
+aus einer privaten Kandidatenkopie. Geprüfte unveränderliche Master-/Paketordner werden gemeinsam durch
+`taxonomy-publication/active.json` sichtbar. Der Paketstand wird zusätzlich per `masterVersion` und
+Quelldatei-Prüfsumme an den Kandidaten gebunden. Ein Paketfehler lässt beide alten Stände aktiv. Geänderte
+Namenspräferenzen oder Eingänge verhindern einen veralteten Commit. Rücknahme tauscht das geprüfte Paar mit
+erneut aufgelösten aktuellen Korrekturen; alte geöffnete Leser bleiben auf ihren unveränderten Dateien.
+Die bisherige sequenzielle Aktivierung bleibt nur für ungepaarte Legacy-Aufrufer bestehen und ist nach
+Paarumstellung gesperrt. Noch keine produktive Aktivierung dieses neuen Verfahrens.
 Scheitert schon der Masterbau, werden weder aktiver Master noch aktives Lightroom-Paket umgeschaltet. Der weiterhin
 bestehende Referenz-Master-Drift wird beim nächsten Statusabruf erneut erkannt und der bestätigte Wiederholungslauf
 beginnt wieder beim Masterkandidaten. Der konfliktfreie Projektartenabgleich allein gilt ausdrücklich nicht als

@@ -581,6 +581,41 @@ function KeywordWriter.remove(catalog, photos)
   }
 end
 
+-- Read-only template for the separate, confirmed identity-transition writer.
+-- It shares the existing keyword/display limits but cannot bypass assign's
+-- conflicting-master-ID guard and never invokes location/time preparation.
+function KeywordWriter.identityTemplate(taxon)
+  local values = {}
+  for _, field in ipairs(METADATA_FIELDS) do values[field] = "" end
+  local names, seen, path = {}, {}, {}
+  for _, entry in ipairs(taxon.hierarchy or {}) do
+    local rank = string.lower(cleanText(entry.rank))
+    if TaxonomyRanks.label(rank) ~= rank then
+      values[TaxonomyRanks.metadataFieldId(rank)] = metadataText(entry.scientificName)
+    end
+    local display = TaxonomyRanks.displayTaxon(entry, taxon)
+    if display ~= "" then table.insert(path, utf8Prefix(display, 240)) end
+    local readable = taxonomyKeywordName(entry, taxon)
+    if readable ~= "" then
+      local name = managedKeywordName(readable)
+      if not seen[string.lower(name)] then
+        seen[string.lower(name)] = true
+        table.insert(names, name)
+      end
+    end
+  end
+  values.masterTaxonId = metadataText(taxon.masterTaxonId)
+  values.projectTaxonId = metadataText(taxon.projectLinks and taxon.projectLinks[1]
+    and taxon.projectLinks[1].project_taxon_key or "")
+  values.germanName = metadataText(taxon.germanName)
+  values.englishName = metadataText(taxon.englishName)
+  values.scientificName = metadataText(taxon.acceptedScientificName)
+  values.taxonRank = metadataText(taxon.rank)
+  values.taxonomyPath = boundedPath(path)
+  values.assignedAt = os.date("!%Y-%m-%dT%H:%M:%SZ")
+  return { values = values, names = names }
+end
+
 function KeywordWriter.removeAll(catalog, photos)
   local result = {
     photoCount = #photos,

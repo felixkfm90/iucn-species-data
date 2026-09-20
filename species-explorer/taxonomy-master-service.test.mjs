@@ -8,9 +8,20 @@ import {
   createTaxonomyMasterService,
   taxonomyMasterServiceInternals,
 } from "./taxonomy-master-service.mjs";
-import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
+import { taxonomyCorrectionsRevision, readTaxonomyMasterManifest } from "./taxonomy-master-candidate.mjs";
 
 const NOW = new Date("2026-08-01T12:00:00.000Z");
+
+test("Update-Eingang erhält Anbieterstandard und bindet Namenspräferenz an ihre Masteridentität", () => {
+  const entry = { scientificName: "Ciconia ciconia", germanNameMode: "provider",
+    namePreference: { masterTaxonId: "old-id", previousGermanName: "irrelevant for build" } };
+  const [normalized] = taxonomyMasterServiceInternals.correctionsFromDocument({ entries: [entry] });
+  assert.equal(normalized.germanNameMode, "provider");
+  assert.equal(normalized.namePreference.masterTaxonId, "old-id");
+  assert.notEqual(taxonomyCorrectionsRevision([normalized]), taxonomyCorrectionsRevision([
+    { ...normalized, namePreference: { masterTaxonId: "new-id" } },
+  ]));
+});
 
 async function createFixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-master-service-"));
@@ -70,6 +81,26 @@ function lifecycle({ blocking = false } = {}) {
     canRollback: false,
   };
 }
+
+test("Explorer-Vollaufbau schreibt über die echte Kandidatenanbindung einen belegten Eingangsstand", async (t) => {
+  const fixture = await createFixture(t);
+  const service = createTaxonomyMasterService({ taxonomyRoot: fixture.root,
+    referenceService: { async requireStore() { return referenceStore(); } },
+    speciesListPath: fixture.speciesListPath, correctionsPath: fixture.correctionsPath, now: () => NOW });
+  try {
+    await service.startBuild({ refreshProviders: false });
+    await service.runPromise;
+    const status = await service.status();
+    assert.equal(status.status, "ready", status.error);
+    const manifest = await readTaxonomyMasterManifest(fixture.root, "staging");
+    assert.equal(manifest.buildInputs.available, true);
+    assert.equal(manifest.buildInputs.buildMode, "full");
+    // The source has millions of taxa, but the completed selection contains one.
+    assert.equal(manifest.buildInputs.recordCount, 1);
+    assert.equal(manifest.summary.taxa, 1);
+    assert.equal(await readTaxonomyMasterManifest(fixture.root, "active"), null);
+  } finally { await service.close(); }
+});
 
 test("Masterstatus erkennt den Drift zwischen aktiver CoL-Referenz und Master-Provenienz", async (t) => {
   const fixture = await createFixture(t);

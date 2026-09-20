@@ -52,7 +52,7 @@
         <div><strong id="species-count">–</strong><span>Arten</span></div>
         <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
         <div><strong id="nc-count">–</strong><span>NC-Sounds</span></div>
-        <div><strong id="manual-map-count">–</strong><span>Manuelle Karten</span></div>
+        <div title="Zählt gespeicherte, manuell geschützte Karten. Ein fehlgeschlagener automatischer Download ändert diesen Status nicht."><strong id="manual-map-count">–</strong><span>Manuell geschützte Karten</span></div>
       </section>
 
       <section class="validation-dashboard" aria-labelledby="validation-title">
@@ -547,6 +547,14 @@
               <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
               <div id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></div>
               <div class="action-group-buttons taxonomy-database-actions">
+                <button type="button" data-taxonomy-database-action="pause-build" hidden>
+                  <strong>Masteraufbau pausieren</strong>
+                  <span>Am nächsten sicheren Haltepunkt</span>
+                </button>
+                <button type="button" data-taxonomy-database-action="resume-build" hidden>
+                  <strong>Masteraufbau fortsetzen</strong>
+                  <span>Gespeicherten Lauf nach Standprüfung weiterführen</span>
+                </button>
                 <button type="button" data-taxonomy-database-action="update">
                   <strong>Datenbank aktualisieren</strong>
                   <span id="taxonomy-database-current-version">Aktueller Stand wird geprüft…</span>
@@ -559,7 +567,12 @@
                   <strong>In Datenbank suchen und Namen korrigieren</strong>
                   <span>Offene Prüfungen und gezielte Namenskorrekturen</span>
                 </button>
+                <button type="button" data-taxonomy-identity-open>
+                  <strong>Artänderungen prüfen</strong>
+                  <span>Bisherige Arten und mögliche Nachfolger vergleichen</span>
+                </button>
               </div>
+              <p id="taxonomy-database-build-progress" hidden></p>
               <div class="taxonomy-controller-actions" hidden aria-hidden="true">
                 <button type="button" data-taxonomy-action="check">Auf neue Version prüfen</button>
                 <button type="button" data-taxonomy-action="update" disabled>Datenbank aktualisieren</button>
@@ -704,6 +717,57 @@
       </form>
     </dialog>
 
+    <dialog id="taxonomy-identity-dialog" class="edit-dialog taxonomy-database-dialog" aria-labelledby="taxonomy-identity-title">
+      <form class="edit-form taxonomy-database-form">
+        <header class="edit-dialog-header">
+          <div><p class="edit-eyebrow">Taxonomiedatenbank</p><h3 id="taxonomy-identity-title">Artänderungen prüfen</h3>
+            <p>Für Umbenennung, Aufteilung oder Zusammenführung einer Art. Eine andere deutsche Bezeichnung allein gehört zu „Namen korrigieren“.</p></div>
+          <button type="button" class="edit-close" data-identity-close aria-label="Dialog schließen">×</button>
+        </header>
+        <p data-identity="versions"></p>
+        <section class="taxonomy-database-review"><h4>Betroffene Projektarten</h4>
+          <div data-identity="cases" class="taxonomy-database-review-list"></div>
+          <button type="button" data-identity="next">Nächste Projektseite prüfen</button>
+          <p>Lightroom-Fotozahlen sind hier nicht bekannt. Es wird kein Katalogscan gestartet.</p>
+        </section>
+        <section class="taxonomy-database-review"><h4>Vormerkungen</h4><p data-identity="pending"></p>
+          <div data-identity="pending-list" class="taxonomy-database-review-list"></div>
+          <button type="button" data-identity="discard">Offene Vormerkungen verwerfen …</button>
+          <div data-identity="discard-preview" hidden><p data-identity="discard-message"></p>
+            <button type="button" data-identity="discard-confirm">Verwerfen bestätigen</button>
+            <button type="button" data-identity="discard-cancel">Behalten</button></div>
+        </section>
+        <h4>Gezielte Fallprüfung</h4>
+        <p>Nur mit fachlichem Beleg entscheiden. Ähnliche Namen oder dieselbe Anbieterkennung beweisen keine unveränderte Artabgrenzung.</p>
+        <section class="taxonomy-database-review"><h4>1. Bisherige Art(en)</h4>
+          <label>Im aktiven Master suchen <input type="search" data-identity="active-query" maxlength="200" autocomplete="off"></label>
+          <button type="button" data-identity="active-search">Bisherige Art suchen</button>
+          <div data-identity="active-results" class="taxonomy-database-review-list"></div>
+          <div data-identity="active-selected" class="taxonomy-database-review-list"></div>
+        </section>
+        <section class="taxonomy-database-review"><h4>2. Art(en) im neuen Stand</h4>
+          <label>Im Kandidaten suchen <input type="search" data-identity="staging-query" maxlength="200" autocomplete="off"></label>
+          <button type="button" data-identity="staging-search">Möglichen Nachfolger suchen</button>
+          <div data-identity="staging-results" class="taxonomy-database-review-list"></div>
+          <div data-identity="staging-selected" class="taxonomy-database-review-list"></div>
+        </section>
+        <label>3. Was hat sich fachlich geändert?
+          <select data-identity="type"><option value="">Bitte bewusst wählen</option>
+            <option value="continuation">Dieselbe Art – wissenschaftlicher Name geändert (1 → 1)</option>
+            <option value="split">Eine Art wurde aufgeteilt (1 → mehrere)</option>
+            <option value="merge">Mehrere Arten wurden zusammengeführt (mehrere → 1)</option></select>
+        </label>
+        <label>Begründung und fachlicher Beleg <textarea data-identity="reason" maxlength="2000" rows="3"></textarea></label>
+        <section data-identity="project-choices" class="taxonomy-database-review"></section>
+        <button type="button" data-identity="make-preview">Auswirkungen prüfen</button>
+        <section data-identity="preview" class="taxonomy-database-review" hidden></section>
+        <label><input type="checkbox" data-identity="ack"> Ich habe den Zusammenhang geprüft und bestätige diese Datenbankentscheidung. Fotos werden damit nicht geändert.</label>
+        <p data-identity="message" class="edit-message" role="status" hidden></p>
+        <div class="edit-actions"><button type="button" data-identity-close>Später entscheiden</button>
+          <button type="button" data-identity="save" disabled>Entscheidung vormerken</button></div>
+      </form>
+    </dialog>
+
     <dialog id="asset-review-dialog" class="edit-dialog asset-review-dialog" aria-labelledby="asset-review-title">
       <form id="asset-review-form" class="edit-form">
         <header class="edit-dialog-header">
@@ -771,6 +835,7 @@
     <script src="/app-pipeline-workflow.js" defer></script>
     <script src="/app-taxonomy-maintenance.js" defer></script>
     <script src="/app-taxonomy-master.js" defer></script>
+    <script src="/app-taxonomy-identity.js" defer></script>
     <script src="/app-taxonomy-database.js" defer></script>
     <script src="/filter.js" defer></script>
     <script src="/app-dashboard.js" defer></script>

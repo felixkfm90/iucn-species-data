@@ -14,6 +14,12 @@ local ACTION_GROUPS = {
     },
   },
   {
+    title = "Artänderungen und Rücknahme",
+    actions = {
+      { title = "Artänderungen prüfen ...", script = "ReviewIdentity.lua" },
+    },
+  },
+  {
     title = "Ort und Zeit – Auswahl",
     actions = {
       { title = "Hinzufügen ...", script = "AddLocationTime.lua" },

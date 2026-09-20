@@ -38,8 +38,8 @@
     "test:taxonomy-prototype": "node --no-warnings --test --test-isolation=none scripts/taxonomy-prototype.test.mjs species-explorer/taxonomy-import.test.mjs species-explorer/taxonomy-store.test.mjs",
     "test:taxonomy-reference": "node --no-warnings --test --test-isolation=none species-explorer/taxonomy-reference-service.test.mjs species-explorer/taxonomy-supplement-providers.test.mjs species-explorer/taxonomy-supplement-service.test.mjs species-explorer/app-taxonomy-reference.test.mjs",
     "test:taxonomy-maintenance": "node --no-warnings --test --test-isolation=none species-explorer/taxonomy-storage.test.mjs species-explorer/taxonomy-archive.test.mjs species-explorer/taxonomy-release-client.test.mjs species-explorer/taxonomy-full-import.test.mjs species-explorer/taxonomy-maintenance-service.test.mjs species-explorer/app-taxonomy-maintenance.test.mjs",
-    "test:taxonomy-master": "node --no-warnings --test --test-isolation=none scripts/taxonomy-master-migrate.test.mjs species-explorer/taxonomy-csv.test.mjs species-explorer/taxonomy-inaturalist-client.test.mjs species-explorer/taxonomy-inaturalist-snapshot.test.mjs species-explorer/taxonomy-animalia-fallback.test.mjs species-explorer/taxonomy-provider-refresh-service.test.mjs species-explorer/taxonomy-master.test.mjs species-explorer/taxonomy-master-rules.test.mjs species-explorer/taxonomy-master-slices.test.mjs species-explorer/taxonomy-master-candidate.test.mjs species-explorer/taxonomy-master-regression.test.mjs species-explorer/taxonomy-master-service.test.mjs species-explorer/app-taxonomy-master.test.mjs",
-    "test:lightroom": "node --no-warnings --test --test-isolation=none scripts/lightroom-search-package.test.mjs scripts/lightroom-plugin-contract.test.mjs species-explorer/lightroom-search-package.test.mjs species-explorer/lightroom-search-helper.test.mjs species-explorer/taxonomy-data-versions.test.mjs species-explorer/taxonomy-name-preference.test.mjs species-explorer/taxonomy-provider-standard.test.mjs species-explorer/lightroom-search-update.test.mjs species-explorer/lightroom-correction-handoff.test.mjs species-explorer/lightroom-correction-helper.test.mjs species-explorer/app-taxonomy-database.test.mjs",
+    "test:taxonomy-master": "node --no-warnings --test --test-isolation=none scripts/taxonomy-master-migrate.test.mjs scripts/taxonomy-master-benchmark.test.mjs species-explorer/taxonomy-csv.test.mjs species-explorer/taxonomy-inaturalist-client.test.mjs species-explorer/taxonomy-inaturalist-snapshot.test.mjs species-explorer/taxonomy-animalia-fallback.test.mjs species-explorer/taxonomy-provider-refresh-service.test.mjs species-explorer/taxonomy-master.test.mjs species-explorer/taxonomy-master-rules.test.mjs species-explorer/taxonomy-master-slices.test.mjs species-explorer/taxonomy-master-candidate.test.mjs species-explorer/taxonomy-master-regression.test.mjs species-explorer/taxonomy-master-service.test.mjs species-explorer/taxonomy-build-inputs.test.mjs species-explorer/taxonomy-master-inputs.test.mjs species-explorer/taxonomy-master-worker.test.mjs species-explorer/taxonomy-master-background-service.test.mjs species-explorer/taxonomy-identity-registry.test.mjs species-explorer/app-taxonomy-master.test.mjs species-explorer/app-taxonomy-identity.test.mjs",
+    "test:lightroom": "node --no-warnings --test --test-isolation=none scripts/lightroom-search-package.test.mjs scripts/lightroom-plugin-contract.test.mjs scripts/lightroom-identity-lua.test.mjs scripts/lightroom-identity-ui.test.mjs species-explorer/lightroom-search-package.test.mjs species-explorer/lightroom-search-helper.test.mjs species-explorer/lightroom-identity.test.mjs species-explorer/taxonomy-data-versions.test.mjs species-explorer/taxonomy-name-preference.test.mjs species-explorer/taxonomy-provider-standard.test.mjs species-explorer/lightroom-search-update.test.mjs species-explorer/lightroom-correction-handoff.test.mjs species-explorer/lightroom-correction-helper.test.mjs species-explorer/app-taxonomy-database.test.mjs",
     "lightroom:package:build": "node --no-warnings scripts/lightroom-search-package.mjs build",
     "lightroom:package:verify": "node --no-warnings scripts/lightroom-search-package.mjs verify",
     "lightroom:package:status": "node --no-warnings scripts/lightroom-search-package.mjs status",
@@ -64,11 +64,11 @@
     "test:frontend-foundation": "node --test --test-isolation=none species-explorer/app-foundation.test.mjs",
     "test:frontend-presentation": "node --test --test-isolation=none species-explorer/app-presentation.test.mjs",
     "test:frontend-measurements": "node --test --test-isolation=none species-explorer/app-measurements.test.mjs",
-    "test:frontend-editor-files": "node --test --test-isolation=none species-explorer/app-editor-files.test.mjs",
+    "test:frontend-editor-files": "node --test --test-isolation=none species-explorer/app-editor-files.test.mjs species-explorer/app-editor-map.test.mjs",
     "test:frontend-dialogs": "node --test --test-isolation=none species-explorer/app-dialogs.test.mjs",
     "test:frontend-confirmation": "node --test --test-isolation=none species-explorer/app-confirmation.test.mjs",
     "test:frontend-form-feedback": "node --test --test-isolation=none species-explorer/app-form-feedback.test.mjs",
-    "test:frontend-new-species-form": "node --test --test-isolation=none species-explorer/app-new-species-form.test.mjs",
+    "test:frontend-new-species-form": "node --test --test-isolation=none species-explorer/app-new-species-form.test.mjs species-explorer/app-new-species-workflow.test.mjs species-explorer/species-create-session.test.mjs",
     "test:frontend-editor-form": "node --test --test-isolation=none species-explorer/app-editor-form.test.mjs",
     "test:frontend-settings": "node --test --test-isolation=none species-explorer/app-settings.test.mjs",
     "test:frontend-species-actions": "node --test --test-isolation=none species-explorer/app-species-actions.test.mjs",
@@ -90,6 +90,7 @@
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs species-explorer/server-species-workflows.test.mjs species-explorer/server-assets.test.mjs species-explorer/server-cleanup-search.test.mjs species-explorer/explorer-ui-contract.test.mjs"
   },
   "devDependencies": {
-    "electron": "^42.7.0"
+    "electron": "^42.7.0",
+    "fengari": "^0.1.5"
   }
 }

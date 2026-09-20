@@ -7,6 +7,8 @@ import { defaultLightroomSearchRoot } from "./lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { readTaxonomyDataVersions } from "./taxonomy-data-versions.mjs";
+import { identityPackageStamp, identitySuccessorOptions, previewLightroomIdentity } from "./lightroom-identity-plan.mjs";
+import { createLightroomIdentityWorkflow, isIdentityWorkflowCommand } from "./lightroom-identity-workflow.mjs";
 
 export const LIGHTROOM_SEARCH_PROTOCOL_VERSION = 1;
 const MAX_BATCH_TAXA = 10_000;
@@ -45,6 +47,7 @@ export async function createLightroomSearchRequestHandler({
 } = {}) {
   let store = null;
   let closed = false;
+  const identityWorkflow = createLightroomIdentityWorkflow({ searchRoot, openStore });
 
   function assertAvailable() {
     if (closed) throw Object.assign(new Error("Suchhilfe ist bereits geschlossen."), {
@@ -71,6 +74,10 @@ export async function createLightroomSearchRequestHandler({
         if (command === "versions" && !closed) {
           return success(request, await readVersions({ searchRoot }));
         }
+        if (!closed && isIdentityWorkflowCommand(command)) {
+          if (slot !== "active") throw new Error("Foto-Artänderungen dürfen nur den aktiven Datenbankstand verwenden.");
+          return success(request, await identityWorkflow.handle({ ...request, command }));
+        }
         if (!closed && !store) store = await openStore({ searchRoot, slot });
         assertAvailable();
         if (command === "status") {
@@ -85,6 +92,20 @@ export async function createLightroomSearchRequestHandler({
             limit: request.limit,
             kingdom: cleanText(request.kingdom) || "all",
           }));
+        }
+        if (command === "identity") {
+          return success(request, { ...store.identityResolution(request.masterTaxonId), searchPackage: store.status() });
+        }
+        if (command === "photo-identity-options") {
+          const ids = request.masterTaxonIds;
+          if (!Array.isArray(ids) || !ids.length || ids.length > 100
+              || ids.some((id) => typeof id !== "string" || !/^mtx_[a-f0-9]{32}$/.test(id))
+              || new Set(ids).size !== ids.length) throw new Error("Bitte 1 bis 100 eindeutige Master-IDs für die Foto-Fallprüfung angeben.");
+          return success(request, { package: identityPackageStamp(store),
+            cases: ids.map((id) => identitySuccessorOptions(store, id)), changesPhotos: false });
+        }
+        if (command === "photo-identity-preview") {
+          return success(request, previewLightroomIdentity(store, request));
         }
         if (command === "taxon") {
           const taxon = store.taxon(request.masterTaxonId);

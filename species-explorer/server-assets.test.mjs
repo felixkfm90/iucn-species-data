@@ -112,6 +112,8 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.deepEqual(preview.newMap.dimensions, { width: 640, height: 480 });
   assert.equal(preview.newMap.bytes, jpeg.length);
   assert.equal(preview.currentMap.exists, true);
+  assert.ok(preview.warnings.some((warning) => warning.includes("Speichern bleibt lokal")));
+  assert.equal(existsSync(join(repoRoot, "species-explorer", "asset-backups", "Amsel", "map")), false);
 
   const pngPreviewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
     method: "POST",

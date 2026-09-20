@@ -1,3 +1,23 @@
+import { StringDecoder } from "node:string_decoder";
+
+// Decode byte sequences across chunks and keep partial lines out of the visible log.
+export function createPipelineTextReader(onText) {
+  const decoder = new StringDecoder("utf8");
+  let pending = "";
+  function emit(text, final = false) {
+    pending += text;
+    const boundary = final ? pending.length : pending.lastIndexOf("\n") + 1;
+    if (boundary > 0) {
+      onText(pending.slice(0, boundary));
+      pending = pending.slice(boundary);
+    }
+  }
+  return {
+    write(chunk) { emit(typeof chunk === "string" ? chunk : decoder.write(chunk)); },
+    end() { emit(decoder.end(), true); },
+  };
+}
+
 export function formatSpectrogramPipelineLog(stdoutText) {
   const raw = String(stdoutText ?? "").trim();
   if (!raw) return "";
@@ -53,12 +73,28 @@ export function formatSpectrogramPipelineLog(stdoutText) {
     );
   }
   lines.push(
-    `Zusammenfassung: ${counts.generated} erstellt, ${counts.skipped} vorhanden, ${counts.missingSound} ohne Sound, ${counts.failed} Fehler.`,
+    `Spektrogramm-Ergebnis: ${counts.generated} erstellt, ${counts.skipped} vorhanden, ${counts.missingSound} ohne Sound, ${counts.failed} Fehler.`,
   );
   if (parsed.hashRegistry) {
     lines.push(
       `Hashregister: ${parsed.hashRegistry.updated ?? 0} geprüft${parsed.hashRegistry.changed ? " und aktualisiert" : ""}.`,
     );
+  }
+  return lines.join("\n");
+}
+
+export function formatPipelineSummary(state, report) {
+  const success = state.exitCode === 0;
+  const lines = ["Gesamtzusammenfassung", success ? "Verarbeitung abgeschlossen." : "Lauf nicht vollständig abgeschlossen."];
+  if (state.error) lines.push(`Hinweis: ${state.error}`);
+  lines.push(state.gitPublished
+    ? "Änderungen wurden an GitHub übertragen. Die dortige Qualitätsprüfung und das Pages-Deployment sind separat."
+    : state.gitNoChanges ? "Keine Übertragung erforderlich; keine neuen versionierbaren Änderungen."
+      : "Keine erfolgreiche Übertragung bestätigt. Vorhandene lokale Änderungen bleiben erhalten.");
+  if (report?.counts) {
+    const c = report.counts;
+    lines.push(`Letzter gespeicherter Gesamtbestand: ${c.totalSpecies} Arten; fehlende Karten: ${c.missingMap}; fehlende Tierstimmen: ${c.missingSoundMp3}.`);
+    if (c.missingMap || c.missingSoundMp3) lines.push("Fehlstellen sind keine erfolgreichen Downloads; Details stehen im Fehlstellenbericht.");
   }
   return lines.join("\n");
 }

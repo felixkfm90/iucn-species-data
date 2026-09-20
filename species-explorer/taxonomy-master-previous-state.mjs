@@ -1,21 +1,27 @@
 import { existsSync } from "node:fs";
 
 import { addProviderTaxonAssertion, registerProviderRelease } from "./taxonomy-master-model.mjs";
+import { emptyIdentityRegistry, readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 
 function openSnapshot(databasePath, DatabaseSync) {
   if (!databasePath || !existsSync(databasePath)) return null;
   const database = new DatabaseSync(databasePath, { readOnly: true });
-  const fields = database.prepare(`
-    SELECT field.*, release.provider, release.provider_version
-    FROM master_field_assertion field
-    JOIN provider_release release ON release.release_id = field.release_id
-    WHERE field.selected = 1 AND field.master_taxon_id = ?
-  `);
-  const decisions = database.prepare(`
-    SELECT field_name, language FROM master_decision
-    WHERE master_taxon_id = ?
-  `);
-  return { database, fields, decisions };
+  try {
+    const fields = database.prepare(`
+      SELECT field.*, release.provider, release.provider_version
+      FROM master_field_assertion field
+      JOIN provider_release release ON release.release_id = field.release_id
+      WHERE field.selected = 1 AND field.master_taxon_id = ?
+    `);
+    const decisions = database.prepare(`
+      SELECT field_name, language FROM master_decision
+      WHERE master_taxon_id = ?
+    `);
+    return { database, fields, decisions };
+  } catch (error) {
+    database.close();
+    throw error;
+  }
 }
 
 // Fehlende Anbieterfelder bleiben belegte Quellenwerte, keine Benutzerentscheidung.
@@ -23,23 +29,47 @@ function openSnapshot(databasePath, DatabaseSync) {
 // dem vorherigen Master und ohne ausdrückliche Feldentscheidung zurückgeführt.
 export function openPreviousMasterState(databasePath, DatabaseSync, { historyPath } = {}) {
   const active = openSnapshot(databasePath, DatabaseSync);
-  const history = active ? openSnapshot(historyPath, DatabaseSync) : null;
+  let history;
+  let taxa;
+  let aliases;
+  let identityRegistry;
   const origins = new WeakMap();
-  const taxa = new Map(active ? active.database.prepare(`
-    SELECT master.master_taxon_id, master.canonical_scientific_name,
-      master.rank, master.kingdom, master.reference_state, master.lifecycle_state,
-      COUNT(source.assertion_id) AS source_count
-    FROM master_taxon master
-    LEFT JOIN provider_taxon_assertion source
-      ON source.master_taxon_id = master.master_taxon_id
-    GROUP BY master.master_taxon_id
-  `).all().map((row) => [row.master_taxon_id, { ...row }]) : []);
-  const aliases = active?.database.prepare(`
-    SELECT * FROM master_taxon_alias WHERE master_taxon_id = ?
-  `);
+  try {
+    history = active ? openSnapshot(historyPath, DatabaseSync) : null;
+    identityRegistry = active ? readIdentityRegistry(active.database) : emptyIdentityRegistry();
+    taxa = new Map(active ? active.database.prepare(`
+      SELECT master.master_taxon_id, master.canonical_scientific_name,
+        master.rank, master.kingdom, master.reference_state, master.lifecycle_state,
+        COUNT(source.assertion_id) AS source_count
+      FROM master_taxon master
+      LEFT JOIN provider_taxon_assertion source
+        ON source.master_taxon_id = master.master_taxon_id
+      GROUP BY master.master_taxon_id
+    `).all().map((row) => [row.master_taxon_id, { ...row }]) : []);
+    aliases = active?.database.prepare(`
+      SELECT * FROM master_taxon_alias WHERE master_taxon_id = ?
+    `);
+  } catch (error) {
+    history?.database.close();
+    active?.database.close();
+    throw error;
+  }
   let closed = false;
   return {
     taxa,
+    identityRegistry,
+    projectsFor(masterTaxonId) {
+      return active?.database.prepare(`SELECT project_taxon_key AS projectTaxonKey, project_slug AS projectSlug,
+        scientific_name_at_link AS scientificNameAtLink FROM project_taxon_link WHERE master_taxon_id = ?`)
+        .all(masterTaxonId).map((row) => ({ ...row })) || [];
+    },
+    evidenceFor(masterTaxonId) {
+      return active?.database.prepare(`SELECT release.provider, release.provider_version AS providerVersion,
+        source.provider_record_id AS providerRecordId FROM provider_taxon_assertion source
+        JOIN provider_release release ON release.release_id = source.release_id
+        WHERE source.master_taxon_id = ? AND source.version_change_state != 'removed'`)
+        .all(masterTaxonId).map((row) => ({ ...row })) || [];
+    },
     fieldsFor(masterTaxonId, protectedKeys = new Set()) {
       const rows = active?.fields.all(masterTaxonId) || [];
       const legacy = rows.filter((row) => row.origin_kind === "manual"

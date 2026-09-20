@@ -153,6 +153,28 @@ end
 function TaxonomyHelper.searchPackageStatus()
   local root = TaxonomyHelper.searchRoot()
   local activeRoot = root ~= "" and LrPathUtils.child(root, "active") or ""
+  local pair = nil
+  local publicationPath = root ~= ""
+    and LrPathUtils.child(LrPathUtils.parent(root), "taxonomy-publication/active.json") or ""
+  if publicationPath ~= "" and LrFileUtils.exists(publicationPath) == "file" then
+    local content = readTextFile(publicationPath)
+    local ok, publication = pcall(Json.decode, content or "")
+    local function samePath(left, right)
+      return cleanText(left):gsub("\\", "/"):lower():gsub("/+$", "")
+        == cleanText(right):gsub("\\", "/"):lower():gsub("/+$", "")
+    end
+    if not ok or type(publication) ~= "table" or publication.schemaVersion ~= 1 then
+      activeRoot = "" -- Fail closed instead of reporting a stale legacy package as active.
+    elseif samePath(publication.searchRoot, root) then
+      pair = publication.active
+      if type(pair) ~= "table" or not tostring(pair.id or ""):match("^publication%-%x+%-%x+%-%x+%-%x+%-%x+$") then
+        activeRoot = ""
+        pair = nil
+      elseif not pair.legacy then
+        activeRoot = LrPathUtils.child(root, "releases/" .. pair.id)
+      end
+    end
+  end
   local databasePath = activeRoot ~= ""
       and LrPathUtils.child(activeRoot, "taxonomy-search.sqlite")
     or ""
@@ -177,6 +199,14 @@ function TaxonomyHelper.searchPackageStatus()
         status.masterVersion = cleanText(manifest.masterVersion)
       end
     end
+  end
+  if pair and (pair.packageId ~= status.packageId or pair.masterVersion ~= status.masterVersion) then
+    status.available = false
+  end
+  if pair and type(pair.correctionPointer) == "table"
+    and pair.correctionPointer.basePackageId == status.packageId
+    and pair.correctionPointer.baseMasterVersion == status.masterVersion then
+    status.correctionRevision = cleanText(pair.correctionPointer.revision)
   end
   local correctionPointerPath = root ~= ""
       and LrPathUtils.child(LrPathUtils.parent(root), "corrections/active.json")

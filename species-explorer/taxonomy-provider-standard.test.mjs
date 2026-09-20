@@ -5,14 +5,14 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
-import { buildTaxonomyMasterCandidate } from "./taxonomy-master-candidate.mjs";
+import { buildTaxonomyMasterCandidate, taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 import { activateTaxonomyMasterCandidate } from "./taxonomy-master-lifecycle.mjs";
 import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
 import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
 import { buildLightroomSearchPackage, verifyLightroomSearchPackage } from "./lightroom-search-package.mjs";
 import { activateLightroomSearchPackage, lightroomSearchDatabasePath } from "./lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
-import { activateTaxonomyCorrectionRelease, readActiveTaxonomyCorrectionPointer } from "./taxonomy-correction-release.mjs";
+import { activateTaxonomyCorrectionRelease, readActiveTaxonomyCorrectionPointer, taxonomyCorrectionsMatchActive } from "./taxonomy-correction-release.mjs";
 import { createTaxonomyNamePreferenceService } from "./taxonomy-name-preference-service.mjs";
 import { resolveProviderGermanName } from "./taxonomy-provider-standard.mjs";
 
@@ -21,7 +21,7 @@ const digest = async (file) => crypto.createHash("sha256").update(await fs.readF
 
 test("Anbieterstandard ersetzt eingebauten eigenen Namen, bleibt nach Neubau dynamisch und erlaubt Rückwahl", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-provider-standard-"));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const taxonomyRoot = path.join(root, "taxonomy");
   const searchRoot = path.join(root, "lightroom");
   const correctionsPath = path.join(root, "corrections.json");
@@ -50,13 +50,34 @@ test("Anbieterstandard ersetzt eingebauten eigenen Namen, bleibt nach Neubau dyn
   const service = createTaxonomyNamePreferenceService({ taxonomyRoot, searchRoot, correctionsPath });
   const hashes = async () => Promise.all([taxonomyMasterDatabasePath(taxonomyRoot, "active"), lightroomSearchDatabasePath(searchRoot, "active")].map(digest));
   const before = await hashes();
+  // A pre-ID-binding master must not turn its unchanged persisted preferences
+  // into pending edits merely because the hash format was strengthened.
+  const legacyRevision = taxonomyCorrectionsRevision(initial);
+  const bound = initial.map((entry) => ({ ...entry, namePreference: { masterTaxonId } }));
+  assert.notEqual(taxonomyCorrectionsRevision(bound), legacyRevision);
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: bound }));
+  assert.equal(await taxonomyCorrectionsMatchActive({ taxonomyRoot, searchRoot, corrections: bound, activeRevision: legacyRevision }), true);
+  const wrong = bound.map((entry) => ({ ...entry, namePreference: { masterTaxonId: "mtx_wrong" } }));
+  assert.equal(await taxonomyCorrectionsMatchActive({ taxonomyRoot, searchRoot, corrections: wrong, activeRevision: legacyRevision }), false);
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: wrong }));
+  await assert.rejects(service.preview({ masterTaxonId, useProviderStandard: true }), /noch nicht aktivierte/);
+  await fs.writeFile(correctionsPath, JSON.stringify({ schemaVersion: 1, entries: bound }));
+  const unchanged = await service.preview({ masterTaxonId, germanName: "Eigener Storch" });
+  assert.equal(unchanged.unchanged, true);
+  const changed = bound.map((entry) => ({ ...entry, englishName: "Changed pending name" }));
+  assert.equal(await taxonomyCorrectionsMatchActive({ taxonomyRoot, searchRoot, corrections: changed, activeRevision: legacyRevision }), false);
   const preview = await service.preview({ masterTaxonId, useProviderStandard: true });
   assert.equal(preview.previousGermanName, "Eigener Storch");
   assert.equal(preview.germanName, "Weißstorch");
   assert.equal(preview.providerStandard.provider, "catalogue-of-life");
   assert.equal(await readActiveTaxonomyCorrectionPointer(taxonomyRoot), null);
-  await assert.rejects(service.save(preview), /bestätigt/);
-  assert.equal((await service.save({ ...preview, confirmed: true })).saved, true);
+  // Also cover the production case: an old incremental correction release.
+  await activateTaxonomyCorrectionRelease({ taxonomyRoot, searchRoot, corrections: initial });
+  assert.equal(await taxonomyCorrectionsMatchActive({ taxonomyRoot, searchRoot, corrections: bound, activeRevision: legacyRevision }), true);
+  const overlayPreview = await service.preview({ masterTaxonId, useProviderStandard: true });
+  await assert.rejects(service.save(preview), /Namensstand wurde verändert/);
+  await assert.rejects(service.save(overlayPreview), /bestätigt/);
+  assert.equal((await service.save({ ...overlayPreview, confirmed: true })).saved, true);
   assert.deepEqual(await hashes(), before);
   async function checkBoth(germanName, source) {
     const lr = await openLightroomSearchStore({ searchRoot });

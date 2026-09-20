@@ -42,6 +42,8 @@ function parseOptions(args = process.argv.slice(2)) {
     taxonomyRoot: path.resolve(optionValue(args, "taxonomy-root", defaultTaxonomyRoot())),
     searchRoot: path.resolve(optionValue(args, "search-root", defaultLightroomSearchRoot())),
     slot: optionValue(args, "slot", "active"),
+    sourceSlot: optionValue(args, "source-slot", "active"),
+    baseSearchRoot: optionValue(args, "base-search-root"),
     projectRevision: optionValue(args, "project-revision"),
     activate: args.includes("--activate"),
     skipChecksum: args.includes("--skip-checksum"),
@@ -171,6 +173,8 @@ export async function runLightroomSearchPackageCommand(options) {
     taxonomyRoot: options.taxonomyRoot,
     searchRoot: options.searchRoot,
     projectRevision: options.projectRevision || await projectRevision(options.repoRoot),
+    sourceSlot: options.sourceSlot,
+    baseSearchRoot: options.baseSearchRoot || options.searchRoot,
     onProgress: (entry) => {
       reportProgress({
         ...entry,

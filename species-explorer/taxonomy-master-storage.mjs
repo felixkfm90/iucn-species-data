@@ -1,14 +1,15 @@
 import path from "node:path";
+import { publishedTaxonomyDirectory } from "./taxonomy-publication-storage.mjs";
 
-export const TAXONOMY_MASTER_SCHEMA_VERSION = 3;
-export const READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS = Object.freeze([2, 3]);
+export const TAXONOMY_MASTER_SCHEMA_VERSION = 4;
+export const READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS = Object.freeze([2, 3, 4]);
 
 export function taxonomyMasterRoot(taxonomyRoot) {
   return path.join(path.resolve(taxonomyRoot), "master");
 }
 
 export function taxonomyMasterActiveDirectory(taxonomyRoot) {
-  return path.join(taxonomyMasterRoot(taxonomyRoot), "active");
+  return publishedTaxonomyDirectory(taxonomyRoot, "master", "active") || path.join(taxonomyMasterRoot(taxonomyRoot), "active");
 }
 
 export function taxonomyMasterCandidateDirectory(taxonomyRoot) {
@@ -16,7 +17,7 @@ export function taxonomyMasterCandidateDirectory(taxonomyRoot) {
 }
 
 export function taxonomyMasterPreviousDirectory(taxonomyRoot) {
-  return path.join(taxonomyMasterRoot(taxonomyRoot), "previous");
+  return publishedTaxonomyDirectory(taxonomyRoot, "master", "previous") || path.join(taxonomyMasterRoot(taxonomyRoot), "previous");
 }
 
 export function taxonomyMasterDatabasePath(taxonomyRoot, slot = "active") {

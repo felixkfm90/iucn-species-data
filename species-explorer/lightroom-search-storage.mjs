@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { publishedTaxonomyDirectory, assertSeparatePublicationAllowed } from "./taxonomy-publication-storage.mjs";
 
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
@@ -39,7 +40,7 @@ export function defaultLightroomSearchRoot(environment = process.env) {
 export function lightroomSearchSlotDirectory(searchRoot, slot = "active") {
   const directory = SLOTS[slot];
   if (!directory) throw new Error(`Unbekannter Lightroom-Suchpaketplatz: ${slot}`);
-  return path.join(path.resolve(searchRoot), directory);
+  return publishedTaxonomyDirectory(searchRoot, "lightroom", slot) || path.join(path.resolve(searchRoot), directory);
 }
 
 export function lightroomSearchDatabasePath(searchRoot, slot = "active") {
@@ -137,6 +138,7 @@ export async function activateLightroomSearchPackage(searchRoot, {
   verify,
   now = () => new Date(),
 } = {}) {
+  assertSeparatePublicationAllowed(searchRoot);
   if (typeof verify !== "function") {
     throw new TypeError("Vor der Aktivierung ist eine Suchpaketprüfung erforderlich.");
   }
@@ -199,6 +201,7 @@ export async function rollbackLightroomSearchPackage(searchRoot, {
   verify,
   now = () => new Date(),
 } = {}) {
+  assertSeparatePublicationAllowed(searchRoot);
   if (typeof verify !== "function") {
     throw new TypeError("Vor dem Rollback ist eine Suchpaketprüfung erforderlich.");
   }
@@ -246,6 +249,7 @@ export async function inspectLightroomSearchPackages(searchRoot) {
 }
 
 export async function discardLightroomRollbackProbe(searchRoot) {
+  assertSeparatePublicationAllowed(searchRoot);
   const root = path.resolve(searchRoot);
   const manifest = await readLightroomSearchManifest(root, "previous");
   if (!manifest?.rollbackProbe) return false;

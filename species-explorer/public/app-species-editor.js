@@ -119,6 +119,8 @@
         state,
         closeButtons,
         mapFileInput,
+        mapDropZone: elements.detailPanel.querySelector(".map-file-field"),
+        mapFileStatus: elements.detailPanel.querySelector(".map-file-status"),
         mapReasonInput,
         mapSourceInput,
         mapMessage,
@@ -296,7 +298,7 @@
         const activeSection = ["manual", "portrait", "map", "sound", "taxonomy"].includes(section) ? section : "manual";
         form.reset();
         resetPreview();
-        resetMapPreview();
+        mapEditorController.resetSelection();
         resetSoundPreview();
         resetPortraitPreview();
         resetPortraitPrompt();
@@ -335,6 +337,8 @@
         dialog,
         closeButtons,
         beforeClose: () => {
+          if (mapEditorController.isBusy()) return false;
+          mapEditorController.resetSelection();
           stopSoundPreviewAudio();
           return true;
         },
@@ -401,8 +405,6 @@
           return;
         }
         if (event.target.closest(".map-edit-section")) {
-          resetMapPreview();
-          setMapMessage("Kartenauswahl oder Angaben geändert. Bitte die Vorschau erneut erstellen.", "info");
           return;
         }
         handleGeneralInput();

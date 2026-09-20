@@ -2,6 +2,7 @@ import {
   READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS,
   TAXONOMY_MASTER_SCHEMA_VERSION,
 } from "./taxonomy-master-storage.mjs";
+import { readIdentityRegistry, identityRegistryState } from "./taxonomy-identity-registry.mjs";
 
 export const TAXONOMY_MASTER_PROVIDERS = Object.freeze([
   "catalogue-of-life",
@@ -68,6 +69,12 @@ export function createTaxonomyMasterSchema(database) {
     CREATE UNIQUE INDEX provider_release_previous_idx
       ON provider_release(provider)
       WHERE release_state = 'previous';
+
+    CREATE TABLE master_identity_registry (
+      singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+      document_json TEXT NOT NULL
+    );
+    INSERT INTO master_identity_registry VALUES (1, '{"schemaVersion":1,"events":[]}');
 
     CREATE TABLE master_taxon (
       master_taxon_id TEXT PRIMARY KEY,
@@ -376,6 +383,23 @@ export function validateTaxonomyMasterDatabase(database, { full = true } = {}) {
   // PRAGMA integrity_check über mehrere GiB gehört ausschließlich zu Build,
   // Aktivierung, Rollback-Audit und ausdrücklichen Wartungsprüfungen.
   if (!full) return { schemaVersion, validationMode: "schema-only" };
+
+  if (schemaVersion >= 4) {
+    const state = identityRegistryState(readIdentityRegistry(database));
+    const byId = database.prepare("SELECT canonical_scientific_name, rank, kingdom, lifecycle_state FROM master_taxon WHERE master_taxon_id = ?");
+    for (const entry of state.current.values()) {
+      const row = byId.get(entry.masterTaxonId);
+      if (!row || row.canonical_scientific_name !== entry.scientificName || row.rank !== entry.rank
+          || row.kingdom !== entry.kingdom || row.lifecycle_state === "deprecated") {
+        throw new Error("Aktuelle Masteridentität und Identitätsregister stimmen nicht überein.");
+      }
+    }
+    for (const entry of state.historical.values()) {
+      if (byId.get(entry.masterTaxonId)?.lifecycle_state !== "deprecated") {
+        throw new Error("Eine historische Masteridentität wurde wiederverwendet oder entfernt.");
+      }
+    }
+  }
 
   const integrity = scalar(database, "PRAGMA integrity_check");
   if (integrity !== "ok") {

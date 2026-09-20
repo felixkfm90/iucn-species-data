@@ -45,6 +45,11 @@ test("Wartung respektiert die Aufbewahrungsfrist", async (context) => {
   const report = await cleanupManagedExplorerTemp({ repoRoot, phase: "maintenance", now: Date.now(), maxAgeMs: 60_000 });
   assert.equal(report.removed.length, 0);
   assert.equal(await readFile(managedFile, "utf8"), "temp");
+  const later = await cleanupManagedExplorerTemp({ repoRoot, phase: "maintenance",
+    now: Date.now() + 48 * 3600 * 1000, protectedPaths: [managedFile] });
+  assert.equal(later.removed.length, 0);
+  assert.ok(later.kept.some((item) => item.reason === "aktive Vorschau"));
+  assert.equal(await readFile(managedFile, "utf8"), "temp");
 });
 
 test("Startbereinigung lässt frische Einträge möglicher laufender Instanzen bestehen", async (context) => {

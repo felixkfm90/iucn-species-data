@@ -8,7 +8,6 @@ import {
 } from "./lightroom-search-schema.mjs";
 import {
   lightroomSearchDatabasePath,
-  lightroomSearchManifestPath,
 } from "./lightroom-search-storage.mjs";
 import {
   foldTaxonomySearchTerm,
@@ -16,6 +15,7 @@ import {
   normalizeTaxonomySearchTerm,
 } from "./taxonomy-search-text.mjs";
 import { loadNodeSqlite } from "./taxonomy-storage.mjs";
+import { emptyIdentityRegistry, identityRegistryRevision, identityRegistryState } from "./taxonomy-identity-registry.mjs";
 
 const RESULT_LIMIT = 50;
 
@@ -86,6 +86,10 @@ export class LightroomSearchStore {
       (correctionRelease?.entries || []).map((entry) => [entry.masterTaxonId, entry]),
     );
     this.closed = false;
+    const identityRow = database.prepare("SELECT value FROM package_info WHERE key = 'identityRegistry'").get();
+    const registry = identityRow ? JSON.parse(identityRow.value) : emptyIdentityRegistry();
+    this.identityState = identityRegistryState(registry);
+    this.identityRevision = identityRegistryRevision(registry);
     this.prefixStatements = Object.fromEntries([
       ["normalized", "normalized_term"],
       ["folded", "folded_term"],
@@ -295,6 +299,19 @@ export class LightroomSearchStore {
     }).slice(0, safeLimit);
   }
 
+  identityResolution(masterTaxonId) {
+    this.assertOpen();
+    const id = cleanText(masterTaxonId);
+    const historical = this.identityState.historical.get(id);
+    if (historical) return { state: "historical", type: historical.type, masterTaxonId: id,
+      scientificName: historical.scientificName, successorIds: historical.successorIds,
+      eventId: historical.eventId, identityRevision: this.identityRevision,
+      requiresConfirmation: true, selectionRequired: historical.type === "split", automaticPhotoChange: false };
+    const taxon = this.taxon(id);
+    return { state: taxon?.lifecycleState === "active" ? "current" : "unresolved", masterTaxonId: id,
+      identityRevision: this.identityRevision, successorIds: [], automaticPhotoChange: false };
+  }
+
   taxon(masterTaxonId) {
     this.assertOpen();
     const baseRow = this.taxonRow.get(cleanText(masterTaxonId));
@@ -365,8 +382,9 @@ export class LightroomSearchStore {
 export async function openLightroomSearchStore({ searchRoot, slot = "active" } = {}) {
   if (!searchRoot) throw new Error("Lightroom-Suchpaketpfad fehlt.");
   try {
+    const databasePath = lightroomSearchDatabasePath(searchRoot, slot);
     const manifest = JSON.parse(
-      await fs.readFile(lightroomSearchManifestPath(searchRoot, slot), "utf8"),
+      await fs.readFile(path.join(path.dirname(databasePath), "manifest.json"), "utf8"),
     );
     const correctionRelease = slot === "active"
       ? await readActiveTaxonomyCorrectionRelease(searchRoot, {
@@ -375,7 +393,7 @@ export async function openLightroomSearchStore({ searchRoot, slot = "active" } =
         })
       : null;
     const { DatabaseSync } = await loadNodeSqlite();
-    const database = new DatabaseSync(lightroomSearchDatabasePath(searchRoot, slot), {
+    const database = new DatabaseSync(databasePath, {
       readOnly: true,
     });
     try {

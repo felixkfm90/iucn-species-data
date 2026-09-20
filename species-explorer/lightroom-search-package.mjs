@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import { readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 import path from "node:path";
+import { applyLightroomSearchDelta } from "./lightroom-search-delta.mjs";
 
 import {
   createLightroomSearchSchema,
@@ -12,12 +14,10 @@ import {
   lightroomSearchDatabasePath,
   lightroomSearchManifestPath,
   prepareLightroomSearchStaging,
-  readLightroomSearchManifest,
   sha256File,
 } from "./lightroom-search-storage.mjs";
 import {
   taxonomyMasterDatabasePath,
-  taxonomyMasterManifestPath,
 } from "./taxonomy-master-storage.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 
@@ -96,6 +96,8 @@ function populateLightroomSearchDatabase(database, sourcePath, metadata) {
   try {
     database.exec("BEGIN IMMEDIATE");
     transactionOpen = true;
+    database.prepare("INSERT INTO package_info (key, value) VALUES ('identityRegistry', ?)")
+      .run(JSON.stringify(readIdentityRegistry(database, "master")));
     database.prepare("INSERT INTO package_info (key, value) VALUES ('packageId', ?)")
       .run(metadata.packageId);
     database.prepare("INSERT INTO package_info (key, value) VALUES ('masterVersion', ?)")
@@ -243,6 +245,9 @@ export async function buildLightroomSearchPackage({
   taxonomyRoot,
   searchRoot,
   projectRevision = "unbekannt",
+  sourceSlot = "active",
+  incremental = true,
+  baseSearchRoot = searchRoot,
   now = () => new Date(),
   signal,
   onProgress = () => {},
@@ -251,7 +256,7 @@ export async function buildLightroomSearchPackage({
     throw new Error("Taxonomie- und Lightroom-Suchpaketpfad sind erforderlich.");
   }
   signal?.throwIfAborted();
-  const sourcePath = taxonomyMasterDatabasePath(taxonomyRoot, "active");
+  const sourcePath = taxonomyMasterDatabasePath(taxonomyRoot, sourceSlot);
   const sourceStats = await fs.stat(sourcePath).catch((error) => {
     if (error?.code === "ENOENT") {
       throw new Error("Es ist keine aktive Taxonomie-Masterdatenbank installiert.", {
@@ -264,17 +269,19 @@ export async function buildLightroomSearchPackage({
     throw new Error("Die aktive Taxonomie-Masterdatenbank ist leer oder ungültig.");
   }
   const masterManifest = await readJson(
-    taxonomyMasterManifestPath(taxonomyRoot, "active"),
+    path.join(path.dirname(sourcePath), "manifest.json"),
   ).catch((error) => {
     throw new Error(`Das aktive Mastermanifest ist ungültig: ${error.message}`, {
       cause: error,
     });
   });
+  const sourceChecksum = `sha256:${await sha256File(sourcePath, { signal })}`;
   const generatedAt = now().toISOString();
   const masterVersion = cleanText(masterManifest.candidateId || masterManifest.masterVersion);
   if (!masterVersion) throw new Error("Aktive Masterversion fehlt im Mastermanifest.");
-  await prepareLightroomSearchStaging(searchRoot);
-  const targetPath = lightroomSearchDatabasePath(searchRoot, "staging");
+  const workRoot = path.join(path.resolve(searchRoot), `.build-${crypto.randomUUID()}`);
+  await prepareLightroomSearchStaging(workRoot);
+  const targetPath = lightroomSearchDatabasePath(workRoot, "staging");
   const metadata = {
     packageId: packageId(masterVersion, new Date(generatedAt)),
     generatedAt,
@@ -284,22 +291,46 @@ export async function buildLightroomSearchPackage({
   };
   const { DatabaseSync } = await loadNodeSqlite();
   let database;
+  let retainWorkRoot = false;
+  let build = { mode: "full", reason: incremental ? "no-verified-base" : "requested" };
   try {
+    let base;
+    if (incremental) {
+      try { base = await verifyLightroomSearchPackage({ searchRoot: baseSearchRoot, signal }); }
+      catch { signal?.throwIfAborted(); }
+    }
     onProgress({ phase: "schema", percent: 5, message: "Suchpaketschema wird angelegt." });
-    database = new DatabaseSync(targetPath);
+    const projectionPath = base ? path.join(workRoot, "projection.sqlite") : targetPath;
+    database = new DatabaseSync(projectionPath);
     createLightroomSearchSchema(database);
     signal?.throwIfAborted();
     onProgress({ phase: "copy", percent: 15, message: "Mastertaxa und Namen werden exportiert." });
     populateLightroomSearchDatabase(database, sourcePath, metadata);
     signal?.throwIfAborted();
-    onProgress({ phase: "index", percent: 70, message: "Suchindizes werden aufgebaut." });
-    finalizeLightroomSearchSchema(database);
+    if (base) {
+      database.close();
+      database = null;
+      await fs.copyFile(base.databasePath, targetPath);
+      if (`sha256:${await sha256File(targetPath, { signal })}` !== base.manifest.checksum) {
+        throw new Error("Die Wiederverwendungsbasis wurde während des Kopierens geändert.");
+      }
+      database = new DatabaseSync(targetPath);
+      onProgress({ phase: "index", percent: 70, message: "Geänderte Suchpaketzeilen und Suchbegriffe werden aktualisiert." });
+      build = { ...applyLightroomSearchDelta(database, projectionPath, { signal }), basePackageId: base.manifest.packageId };
+    } else {
+      onProgress({ phase: "index", percent: 70, message: "Suchindizes werden aufgebaut." });
+      finalizeLightroomSearchSchema(database);
+    }
     onProgress({ phase: "validate", percent: 88, message: "Suchpaket wird vollständig geprüft." });
     const counts = inspectLightroomSearchDatabase(database, { full: true });
     database.close();
     database = null;
     const stats = await fs.stat(targetPath);
     const checksum = await sha256File(targetPath, { signal });
+    if (`sha256:${await sha256File(sourcePath, { signal })}` !== sourceChecksum
+      || JSON.stringify(await readJson(path.join(path.dirname(sourcePath), "manifest.json"))) !== JSON.stringify(masterManifest)) {
+      throw new Error("Der Master wurde während des Suchpaketbaus verändert. Es wurde nichts aktiviert.");
+    }
     const manifest = {
       schemaVersion: LIGHTROOM_SEARCH_SCHEMA_VERSION,
       packageId: metadata.packageId,
@@ -315,13 +346,35 @@ export async function buildLightroomSearchPackage({
       providerCount: counts.providerCount,
       databaseBytes: stats.size,
       checksum: `sha256:${checksum}`,
+      build,
+      sourceSlot,
+      sourceChecksum,
     };
-    await atomicWriteJson(lightroomSearchManifestPath(searchRoot, "staging"), manifest);
+    await atomicWriteJson(lightroomSearchManifestPath(workRoot, "staging"), manifest);
+    signal?.throwIfAborted();
+    const staging = path.join(path.resolve(searchRoot), "staging");
+    const displaced = path.join(workRoot, "old-staging");
+    let moved = false;
+    try { await fs.rename(staging, displaced); moved = true; }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+    try { await fs.rename(path.dirname(targetPath), staging); }
+    catch (error) {
+      if (moved) {
+        try { await fs.rename(displaced, staging); }
+        catch (restoreError) {
+          retainWorkRoot = true;
+          throw new AggregateError([error, restoreError], `Staging konnte nicht zurückgestellt werden; Sicherung bleibt in ${displaced}.`);
+        }
+      }
+      throw error;
+    }
     onProgress({ phase: "complete", percent: 100, message: "Suchpaket ist geprüft." });
     return manifest;
   } catch (error) {
     database?.close();
     throw error;
+  } finally {
+    if (!retainWorkRoot) await fs.rm(workRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 80 });
   }
 }
 
@@ -332,17 +385,23 @@ export async function verifyLightroomSearchPackage({
   full = true,
   signal,
 } = {}) {
-  const manifest = await readLightroomSearchManifest(searchRoot, slot);
+  const databasePath = lightroomSearchDatabasePath(searchRoot, slot);
+  const manifest = await readJson(path.join(path.dirname(databasePath), "manifest.json"));
   if (!manifest) throw new Error(`Lightroom-Suchpaket ${slot} ist nicht installiert.`);
   if (manifest.schemaVersion !== LIGHTROOM_SEARCH_SCHEMA_VERSION) {
     throw new Error(`Manifest-Schemaversion ${manifest.schemaVersion} wird nicht unterstützt.`);
   }
-  const databasePath = lightroomSearchDatabasePath(searchRoot, slot);
   const { DatabaseSync } = await loadNodeSqlite();
   const database = new DatabaseSync(databasePath, { readOnly: true });
   let counts;
   try {
     counts = inspectLightroomSearchDatabase(database, { full });
+    if (verifyChecksum) {
+      const info = database.prepare("SELECT value FROM package_info WHERE key = ?");
+      for (const key of ["packageId", "masterVersion"]) {
+        if (info.get(key)?.value !== manifest[key]) throw new Error(`Suchpaket-Provenienz ${key} stimmt nicht mit der Datenbank überein.`);
+      }
+    }
   } finally {
     database.close();
   }

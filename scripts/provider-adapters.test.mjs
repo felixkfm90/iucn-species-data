@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { iucnBrowserAccessError } from "./iucn-map-access.mjs";
 import { createIucnDataAdapter } from "./iucn-data-adapter.mjs";
 import {
   createIucnMapAdapter,
@@ -22,6 +28,58 @@ import {
 } from "./sound-rejection-key.mjs";
 
 const noWait = async () => {};
+
+test("Beide Windows-Kartenprozesse geben deutsche Fehlertexte als UTF-8 aus", async () => {
+  for (const relative of ["./iucn-map-adapter.mjs", "../species-explorer/media-assets.mjs"]) {
+    const source = await fs.readFile(new URL(relative, import.meta.url), "utf8");
+    const preamble = source.match(/\[Console\]::OutputEncoding = New-Object System\.Text\.UTF8Encoding\(\$false\)\r?\n\$OutputEncoding = \[Console\]::OutputEncoding/)?.[0];
+    assert.ok(preamble, `${relative}: UTF-8 muss vor der Prozessausgabe festgelegt sein`);
+    assert.match(source, /encoding: "utf8"/);
+    if (process.platform !== "win32") continue;
+    // No network or map writes: exercise only the real Windows output boundary.
+    const script = `${preamble}\n[pscustomobject]@{ error = ('Unzul' + [char]0xE4 + 'ssig; zur' + [char]0xFC + 'ckgegeben') } | ConvertTo-Json -Compress`;
+    const { stdout } = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+      encoding: "utf8", windowsHide: true, timeout: 15000,
+    });
+    assert.equal(JSON.parse(stdout).error, "Unzulässig; zurückgegeben");
+  }
+});
+
+test("IUCN-403 versucht den früheren Windows-Fallback und überschreibt keine vorhandene Karte", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-map-blocked-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const filename = path.join(root, "map.jpg"), previous = Buffer.from("bestehende Karte");
+  await fs.writeFile(filename, previous);
+  let requests = 0, windowsRequests = 0;
+  const warnings = [];
+  const adapter = createIucnMapAdapter({
+    fetch: async () => { requests += 1; return { ok: false, status: 403, text: async () => "" }; },
+    token: "test-only", iucnGET: async () => null,
+    sleep: noWait, sanitizeAssetName: (value) => value, speciesAssetDir: () => root,
+    ensureDir() {}, isManualAsset: () => false, platform: "win32",
+    execFileAsync: async () => { windowsRequests += 1; throw new Error("Fallback im Test nicht verfügbar"); },
+    logger: { log() {}, warn: (message) => warnings.push(message), error: (message) => warnings.push(message) },
+  });
+  assert.equal(await adapter.downloadMapForSpecies({ "Deutscher Name": "Grünfink", "Assessment ID": 132000123 }, { force: true }), "missing");
+  assert.ok(requests >= 2);
+  assert.ok(windowsRequests >= 2);
+  assert.deepEqual(await fs.readFile(filename), previous);
+  assert.match(warnings.join("\n"), /Windows-WebRequest-Fallback/);
+  assert.equal(iucnBrowserAccessError("https://iucnredlist.org.evil.example/map", 403), null);
+  assert.equal(iucnBrowserAccessError("https://www.iucnredlist.org/map", 404), null);
+});
+
+test("Kartenadapter probiert den im Browser bestätigten www-IUCN-Host zuerst", async () => {
+  const urls = [];
+  const adapter = createIucnMapAdapter({
+    fetch: async (url) => { urls.push(url); return { ok: false, status: 403, text: async () => "" }; },
+    iucnGET: async () => null, sleep: noWait, token: "test-only", platform: "linux",
+    sanitizeAssetName: (value) => value, speciesAssetDir: () => os.tmpdir(), ensureDir() {}, isManualAsset: () => false,
+    logger: { log() {}, warn() {}, error() {} },
+  });
+  await adapter.downloadMapForSpecies({ "Deutscher Name": "Grünfink", "Assessment ID": 132000123 }, { force: true });
+  assert.match(urls[0], /^https:\/\/www\.iucnredlist\.org\//);
+});
 
 function jsonResponse(data, { status = 200 } = {}) {
   return {

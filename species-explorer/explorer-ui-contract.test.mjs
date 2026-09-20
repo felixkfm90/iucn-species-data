@@ -215,9 +215,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /class="action-group-buttons taxonomy-database-actions"/);
   assert.equal(
     [...htmlSource.matchAll(/data-taxonomy-database-action=/g)].length,
-    3,
-    "Die sichtbare Taxonomiedatenbank darf genau drei Hauptaktionen anbieten.",
+    5,
+    "Die Taxonomiedatenbank besitzt drei Hauptaktionen und zwei bedarfsweise sichtbare Aufbauaktionen.",
   );
+  assert.equal([...htmlSource.matchAll(/data-taxonomy-database-action="(?:pause-build|resume-build)" hidden/g)].length, 2,
+    "Pause und Fortsetzen bleiben ohne passenden Lauf verborgen.");
+  assert.match(cssSource, /\.taxonomy-database-actions > button\[hidden\]\s*\{\s*display: none !important;/);
   assert.match(htmlSource, /id="taxonomy-database-current-version"/);
   assert.match(htmlSource, /id="taxonomy-database-previous-version"/);
   assert.match(htmlSource, /id="taxonomy-database-review-list"/);
@@ -369,9 +372,13 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /let maxStepReached = 1/);
   assert.match(modularAppSource, /indicator\.addEventListener\("click"/);
   assert.match(
-    modularAppSource,
-    /beforeClose: \(\) => \{[\s\S]*newSpeciesPipelineActive\) return false;[\s\S]*form\.reset\(\);[\s\S]*resetAll\(\);/,
+    appNewSpeciesWorkflowSource,
+    /beforeClose: \(\) => \{\s*if \(busy \|\| pipelineBusy \|\| namePreferencePreparing\) return false;\s*discardDraft\(\);[\s\S]*?form\.reset\(\);[\s\S]*?resetAll\(\);/,
   );
+  assert.match(appNewSpeciesWorkflowSource, /class="new-species-map-file-input" type="file"/);
+  assert.match(appNewSpeciesWorkflowSource, /mapReview\.addEventListener\(eventName/);
+  assert.match(appNewSpeciesWorkflowSource, /const showWorkflowError[\s\S]*?state\.newSpeciesPipelineActive = false;[\s\S]*?setPipelineBusy\(false\);/);
+  assert.match(htmlSource, /Manuell geschützte Karten/);
   assert.match(cssSource, /\.new-species-value-unit/);
   assert.match(cssSource, /\.new-species-steps li\.reachable/);
   assert.match(modularAppSource, /Artportrait wird lokal übernommen/);
@@ -605,6 +612,12 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(updateSource, /function normalizeTaxonomyFields\(entry\)/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(modularAppSource, /class="map-edit-section"/);
+  assert.match(modularAppSource, /class="map-file-status" role="status" aria-live="polite"/);
+  assert.match(modularAppSource, /mapDropZone\?\.addEventListener\("drop"/);
+  assert.match(modularAppSource, /mapFileInput\?\.addEventListener\("change"/);
+  assert.match(modularAppSource, /mapEditorController\.resetSelection\(\)/);
+  assert.match(modularAppSource, /mapEditorController\.isBusy\(\)/);
+  assert.match(cssSource, /\.map-file-field\.is-dragging/);
   assert.match(modularAppSource, /class="map-auto-search-button"/);
   assert.match(modularAppSource, /openPipelinePreview\("manual-maps"/);
   assert.match(modularAppSource, /silent: true/);
@@ -755,7 +768,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Karte,\s*Sound und Spektrogramm geprüft oder erstellt/);
   assert.match(htmlSource, /new-species-map-review/);
   assert.match(htmlSource, /new-species-sound-review/);
-  assert.match(modularAppSource, /Manuell per URL einfügen/);
+  assert.match(appNewSpeciesWorkflowSource, /Datei oder Kartenlink verwenden/);
   assert.match(modularAppSource, /new-species-map-source-input/);
   assert.match(modularAppSource, /pipelineRunId:\s*inlineRunId/);
   assert.match(assetWorkflowSource, /allowDuringCurrentReview/);

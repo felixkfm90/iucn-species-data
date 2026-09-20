@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-08-08
+Stand: 2026-09-20
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -132,6 +132,13 @@ Die Vorschau zeigt:
 
 ### Schritt 2: Optionales Artportrait
 
+Der geprüfte Artentwurf und sein zugehöriges Portrait haben während der laufenden Explorer-Sitzung keine
+zeitliche Ablauffrist. Auch längere Arbeit am Portrait erfordert deshalb keine erneute Artanlage. Beim Speichern
+bleiben der Abgleich mit der Eingabeliste, Kollisionsprüfung und Einmalverwendung verpflichtend. Abbrechen vor
+der Anlage verwirft nur diesen Entwurf und seine temporären Portraitdateien. Änderungen an den Artdaten verlangen
+eine erneute Prüfung. Entwürfe überleben noch keinen Neustart des Explorers. Die Zehn-Minuten-Frist anderer
+Bearbeitungs-/Assetvorschauen wird dadurch nicht aufgehoben; diese lassen sich ohne erneute Artanlage prüfen.
+
 Nach erfolgreicher Datenpruefung kann direkt ein Portrait vorbereitet werden:
 
 1. optional `Erweiterte Vorgaben für die Bildgenerierung` öffnen und nur gewünschte Abweichungen auswählen
@@ -167,10 +174,13 @@ Wenn eine neue Karte gefunden wird, wird sie direkt in diesem Dialog geprüft. S
 werden. Beim Überspringen wird die automatisch gefundene Karte entfernt; eine manuelle Karte kann später über die
 Assetverwaltung eingefügt werden.
 
-Seit 2026-07-10 nutzt der Neue-Art-Lauf beim IUCN-Kartenabruf denselben Windows-WebRequest-Fallback wie die
-Kartenbearbeitung und wiederholt kurzzeitig fehlgeschlagene Abrufe bis zu drei Mal. Wenn die Pipeline danach noch
-keine direkt speicherbare Karte erhält, kann die offizielle IUCN-API-URL oder der im Browser sichtbare
-Backblaze-JPEG-Link im selben Schritt geprüft und manuell übernommen werden.
+Der Neue-Art-Lauf verwendet denselben Kartenabruf wie die Kartenbearbeitung. Liefert der automatische Abruf keine
+speicherbare Karte, bietet der Assistent eine JPEG-/PNG-Dateiauswahl und Dateiablage per Drag-and-drop. Die Datei
+wird lokal geprüft (maximal 20 MB) und erst mit `Manuelle Karte übernehmen` gespeichert. Bei einer lokalen Datei
+wird die Quellen-URL nicht abgerufen; ein dortiges HTTP 403 verhindert deshalb den Dateiimport nicht.
+Der offizielle Link aus der bekannten Assessment-ID ist vorbelegt. Ein IUCN-Dateiname mit anderer Assessment-ID
+wird abgewiesen; bei einem beliebig benannten lokalen Bild wird die vorbelegte IUCN-Herkunft entfernt und kann
+bewusst eingetragen werden. Alternativ bleibt der Import eines direkt erreichbaren Kartenlinks möglich.
 
 ### Schritt 4: Sound und Abschluss
 
@@ -186,6 +196,12 @@ sichtbarer Pflegehinweis erhalten.
 
 Nach Abschluss erscheint im Dialog die Erfolgsmeldung `Neue Art: <Name> wurde angelegt`.
 
+Bei Suchlauf-, Medienprüfungs- oder Veröffentlichungsfehlern steht die Fehlermeldung auch im sichtbaren
+Abschlussschritt. Sobald keine Operation mehr läuft, ist `Fenster schließen` verfügbar; die bereits angelegte
+Art und ihre Dateien bleiben lokal erhalten. Nicht nochmals dieselbe Art anlegen, sondern die vorhandene Art
+ergänzen und anschließend `Änderungen übertragen` verwenden. Auch eine wartende Assetprüfung lässt sich
+schließen; sie bleibt über die Prozessanzeige erreichbar. Schließen ist keine Löschung und kein Rollback.
+
 Speichern:
 
 - nur nach gueltiger Vorschau
@@ -196,8 +212,7 @@ Speichern:
   uebernommen
 - danach startet der selektive Pipeline-Lauf fuer genau diese neue Art automatisch; erst dieser Lauf vervollstaendigt
   IUCN-Daten, Karte, Sound, Spektrogramm und Git-Veröffentlichung
-- der Kartenabruf versucht vor dem manuellen URL-Schritt den direkten IUCN-Abruf inklusive Windows-Fallback und
-  Wiederholungen
+- vor dem manuellen Datei-/Linkimport versucht die Pipeline den automatischen Kartenabruf
 - neu gefundene Karten und Sounds werden im Neue-Art-Dialog einzeln geprüft
 - wenn ein neu gefundener Sound abgelehnt wird, merkt die App die Quellkennung und startet automatisch die nächste
   gezielte Soundsuche fuer diese Art, bis ein Sound akzeptiert wird oder keine taugliche Quelle mehr gefunden wird
@@ -213,6 +228,8 @@ API:
   `kingdomId` oder mehrere kommagetrennte `kingdomIds`
 - `GET /api/taxonomy/taxa/:id`: liefert Detailvorschau, Hierarchie und Quelleninformationen
 - `POST /api/species/new/preview`: validiert alle Felder und Kollisionen, schreibt aber keine Datei
+- `POST /api/species/new/discard`: verwirft nur den per Token benannten, noch nicht gespeicherten Entwurf und
+  zugehörige temporäre Portraits; bereits angelegte Arten werden nicht entfernt
 - `POST /api/species/new/portrait-prompt`: erzeugt den Einzelprompt aus den geprueften Artdaten
 - `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an

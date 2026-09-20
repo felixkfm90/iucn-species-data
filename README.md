@@ -8,6 +8,20 @@ GitHub Pages Base:
 
 ## Datenfluss
 
+Aktueller Taxonomiestand (20. September 2026): Die Namenswahl verwendet bei eindeutiger Masteridentität
+denselben Treffer statt eines zusätzlichen eingeschränkten CoL-Ergebnisses. Masteraufbau sowie schwere
+Master-/Lightroom-Abschlussprüfung laufen in getrennten Hilfsprozessen; die endgültige gemeinsame Freigabe
+prüft der Explorer nochmals. Pause/Fortsetzung betrifft die bestätigten Master-Schreibblöcke, nicht jeden
+Download oder Prüfschritt. Aufbewahrung/Platzbudget und die Großbestandsabnahme sind noch offen.
+Bedienung und Grenzen: [Hintergrundaufbau](docs/taxonomy-master-background-build.md).
+
+Aktueller Bedienhinweis (20. September 2026): Im Neue-Art-Assistenten haben Artentwurf und vorbereitetes Portrait
+während der Sitzung keine Ablauffrist. Fehlende Karten können dort als JPEG/PNG ausgewählt oder abgelegt werden.
+Scheitert der nachgelagerte Suchlauf oder die Übertragung, bleibt die bereits angelegte Art erhalten; das Fenster
+lässt sich nach dem Fehler schließen. Die vorhandene Art ergänzen, nicht nochmals anlegen. Details und Grenzen:
+[Neue-Art-Workflow](docs/add-species-workflow.md). Der Zähler `Manuell geschützte Karten` zählt gespeicherte
+Schutzentscheidungen und nicht die Anzahl aktuell blockierter automatischer Downloads.
+
 `species_list.json` ist die manuelle Eingabeliste. `update.mjs` nutzt daraus deutsche, englische und
 wissenschaftliche Artennamen, Groesse, Gewicht und manuell gepflegte Lebenserwartung und erzeugt bzw.
 aktualisiert:
@@ -643,6 +657,16 @@ Art und Assettyp bleibt genau die letzte verwaltete Sicherung erhalten; ein erne
 überschreibt diese Sicherung. Nach erfolgreichem Austausch bleiben
 Karte, `species-assets-overrides.json`, `docs/manual-map-overrides.md` und Report lokal vorgemerkt; veröffentlicht
 werden sie gesammelt über `Änderungen übertragen`.
+Seit 2026-09-13 startet im Karteneditor die Prüfung einer ausgewählten oder hineingezogenen JPEG-/PNG-Datei
+automatisch. Ablauf: `IUCN-Karte im Browser öffnen`, dort `Bild speichern unter …`, dann die gespeicherte
+Datei in das beschriftete Kartenfeld ziehen oder auswählen. Der Browserbutton trägt die Quellenadresse ein;
+ein passender IUCN-Dateiname kann eine leere Quelle ebenfalls ergänzen. Ein leerer Pflegegrund erhält den
+editierbaren Vorschlag `Karte als lokale Datei importiert.`. Eigene Angaben bleiben erhalten. Die Vorschau
+zeigt bisherige und neue Karte; erst `Karte ersetzen` speichert mit Sicherung und manuellem Pipeline-Schutz.
+Die Dateiablage lädt selbst nichts bei IUCN nach. Sie ersetzt keinen funktionierenden automatischen Download.
+Ein erkennbar abweichender IUCN-Assessment-Dateiname wird abgewiesen; bei umbenannten Dateien muss die Art
+visuell geprüft werden. Nach Änderungen an Quelle oder Grund bitte erneut `Karte prüfen` wählen.
+Details und Abnahmeschritte: `docs/pipeline-control-plan.md`, Abschnitt zum vereinfachten Dateiimport.
 Im Bearbeitungsdialog kann per `Automatisch suchen` für jede vorhandene Art ein gezielter Kartensuchlauf gestartet
 werden, unabhängig davon, ob die Karte bisher automatisch gepflegt, manuell geschützt oder fehlend ist. Der Lauf
 startet im Hintergrund, ohne den Bearbeitungsdialog oder die Desktop-App zu schließen. Wenn die Pipeline eine Karte
@@ -652,9 +676,9 @@ zurückgestellt werden. Bei gezielten Kartenläufen zeigt der Prüfdialog die bi
 nebeneinander; beide Karten können einzeln vergrößert werden.
 Seit 2026-07-02 versucht der automatische Kartenabruf zuerst den bisherigen IUCN-Web-Endpunkt mit browsernahen
 Headern, danach den offiziellen IUCN-API-Host mit Token und zusätzlich signierte Backblaze-Links, die in Redirect-,
-HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Wenn Node lokal HTTP 403 erhält, nutzt
-die Pipeline unter Windows zusätzlich `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort
-die JPEG-Karte ausliefert. Seit 2026-07-10 wird dieser Fallback bei temporären IUCN-/Backblaze-Fehlern wiederholt.
+HTML- oder Fehlerantworten als `cached-individual-maps`-URL enthalten sind. Der Windows-WebRequest-Fallback bleibt
+im zuletzt wiederhergestellten Alt-Ablauf verfügbar, löst die beobachteten HTTP-403-Antworten jedoch nicht.
+Der frühere Zwischenstand mit sofortigem Abbruch wurde wieder zurückgenommen; der Download bleibt offen.
 Der Kartenimport kann IUCN-API-Kartenlinks ebenfalls direkt über diesen Fallback prüfen. Wenn IUCN lokal weiterhin
 keinen direkt speicherbaren Link liefert, kann der im Browser sichtbare signierte Backblaze-JPEG-Link im Kartenimport
 als Quellen-URL eingefügt und geprüft
@@ -982,7 +1006,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.24.10` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.24.14` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten
@@ -1183,15 +1207,31 @@ Explorer eigene read-only Datenbankhandles und öffnet den neuen aktiven Stand b
 Mehrere eigene Namenskorrekturen können gesammelt und anschließend gemeinsam über `Datenbank aktualisieren`
 aktiviert werden. Ein Fingerabdruck erkennt die Abweichung auch ohne neue externe Anbieterstände. Für reine neue
 oder weiterhin vorhandene geänderte Namen entsteht nur ein kleines geprüftes Korrektur-Release; ein einzelnes
-atomar geschriebenes Manifest aktiviert es gleichzeitig für Arten-Explorer und Lightroom-Suche. Das Zurücksetzen
-einer bereits in einem früheren Vollmaster fest eingebauten Korrektur verwendet weiterhin den vollständigen
-Kandidatenbau, weil dabei die darunterliegende Anbieterpriorität neu bestimmt werden muss.
+atomar geschriebenes Manifest aktiviert es gleichzeitig für Arten-Explorer und Lightroom-Suche.
+`Anbieterstandard verwenden` setzt auch einen früher fest eingebauten eigenen deutschen Namen ohne
+Master-Neuaufbau auf den belegten Anbieterstandard zurück. Das ist eine bestätigte neue Namensentscheidung,
+kein ungeprüftes Löschen beliebiger Basisassertionen. Unklare Identitäten oder fehlende Anbieterbelege sperren
+die Aktion. Vertrag: [Namenswahl](docs/taxonomy-name-preference-plan.md).
 
-Nach einer bestätigten Master-Aktivierung oder Wiederherstellung baut der Arten-Explorer das davon abgeleitete
-Lightroom-Suchpaket automatisch neu, prüft es vollständig und aktiviert es erst danach atomar. Der Paketbau läuft
-in einem getrennten Hilfsprozess; Phase, Prozentwert und Laufzeit bleiben im vorhandenen Datenbankblock sichtbar.
-Scheitert nur dieser letzte Schritt, bleibt das bisherige Lightroom-Paket aktiv. `Datenbank aktualisieren` erkennt
-die abweichende Masterversion und wiederholt gezielt den Paketbau, ohne die Masterdatenbank erneut aufzubauen.
+Seit 13. September werden Master und passendes Suchpaket vor der Freigabe gemeinsam vorbereitet. Erst nach
+erfolgreicher Prüfung aktiviert ein einzelner Zeiger beide unveränderlichen Releaseordner. Ein Paketfehler lässt
+auch den bisherigen Master aktiv. Der Paketbau läuft in einem getrennten Hilfsprozess; Phase, Prozentwert und
+Laufzeit bleiben im Datenbankblock sichtbar. Eine geprüfte alte Paketkopie wird zeilenweise aktualisiert; ohne
+geeignete Basis bleibt der Vollaufbau. Vollständige Projektion, Dateikopien und Prüfungen sind weiterhin nötig.
+Rücknahme schaltet das gespeicherte Paar gemeinsam zurück und prüft heutige Namenspräferenzen erneut gegen die
+alten Identitäten. Bestehender Alt-Drift kann weiterhin durch gezielten Paketbau ohne Master-Neuberechnung
+behoben werden; auch dieser nutzt die gemeinsame Freigabe. Altreleases bleiben zunächst erhalten.
+Seit 20. September laufen Kopie, Paketbau, vollständige Datenbank-/Prüfsummenprüfung und Rücknahmevorbereitung
+in einem Hilfsprozess. Der Explorer bleibt für die kurze, erneut validierte gemeinsame Freigabe zuständig.
+Abbruch/Schließen vor diesem Wechsel lässt den bisherigen Stand aktiv; Öffnen startet nichts automatisch.
+Technik und noch offene Großbestandsfreigabe: `docs/taxonomy-incremental-build.md`.
+Der fortsetzbare Masterworker mit gesicherten 500er-Schreibblöcken ist im Explorer angeschlossen.
+Während des Workeraufbaus erscheint `Masteraufbau pausieren`; bei einem gespeicherten unterbrochenen oder
+pausierten Lauf `Masteraufbau fortsetzen`. Das Öffnen startet keinen Lauf. Fortsetzen verlangt Bestätigung und
+prüft Quellen sowie eigene Änderungen erneut; ein veralteter Zwischenstand erfordert einen neuen Aufbau.
+Gesicherte Artgruppen werden getrennt vom laufenden Fortschritt angezeigt. Download, Eingangsaufbereitung und
+spätere Paarprüfung sind noch keine fortsetzbaren Schreibblöcke. Bedienung, Tests und offene Großbestandsgrenzen:
+`docs/taxonomy-master-background-build.md`.
 Ein fehlgeschlagener Masterbau lässt dagegen Master und Suchpaket unverändert; der weiterhin sichtbare
 Referenz-Master-Drift löst beim nächsten bestätigten Aufruf erneut genau diesen Masterbau aus. Ein vorhandener
 Kandidat wird nur aktiviert, wenn seine CoL-Provenienz zur aktiven Referenz passt.
@@ -1252,14 +1292,72 @@ Version 0.4.24.10 ergänzt in Lightroom `Namenswahl übernehmen`: Eine andere Va
 wählen und den Button drücken, gegebenenfalls die bestehende Konfliktrückfrage bestätigen. Der Name wird
 anschließend als bevorzugt markiert und ist auch im Explorer aktiv, ohne ein Foto zuzuweisen. Der Button bleibt
 beim bereits bevorzugten Namen deaktiviert. `Vorherige Namenswahl auswählen` lässt sich genauso übernehmen.
-Nur der neue Direktbutton benötigt noch den kurzen Lightroom-Bedienungstest.
+Der Benutzer hat den neuen Direktbutton am 8. September ebenfalls praktisch bestätigt.
 Details: `docs/taxonomy-name-preference-plan.md`.
 
-Die Aktivierung von CoL-Referenz, Master und Lightroom-Suchpaket erfolgt bereits atomar über geprüfte neue Stände.
-Ein weitergehender inkrementeller Vollaufbau ist davon zu unterscheiden: Er könnte unveränderte Taxa wiederverwenden
-und nur geänderte Quellen, Hierarchien und Suchbegriffe neu berechnen, muss aber weiterhin als vollständig geprüfter
-neuer Kandidat aktiviert werden. Dieser Ausbau ist noch nicht implementiert und als eigener Restpunkt vor dem
-Phase-10-Audit dokumentiert.
+CoL-Referenz, Master und Lightroom-Suchpaket besitzen jeweils kontrollierte atomare Wechsel. Der Vollaufbau
+aktiviert den Master aber vor dem anschließenden Paketbau; bei einem Paketfehler bleibt ein gemeldeter Teilerfolg.
+Ein gemeinsamer Wechsel existiert bereits für die kleine Namenskorrekturschicht, noch nicht für den Vollaufbau.
+Der Benutzer hat den inkrementellen Master-/Paketaufbau am 8. September verbindlich vor das Phase-10-Audit gesetzt.
+Geplant sind die Wiederverwendung unveränderter Ergebnisse, gezielte Neuberechnung betroffener Daten, gemeinsam
+geprüfte Aktivierung sowie Wiederanlauf und Vollaufbau als Rückfallweg. Zuerst werden Identitätsfortführung,
+Artaufteilung und Zusammenführung abgesichert. Die Regeln sind bestätigt; der technische Register-/Kandidatenkern
+ist am 9. September implementiert. `Artänderungen prüfen` bietet jetzt Projektfälle, gezielte Suche im bisherigen
+Master und im Kandidaten, Quellenvergleich, Vorschau und bestätigte Vormerkung. Schließen/„Später entscheiden“
+speichert nichts; offene Vormerkungen können getrennt bestätigt verworfen werden. Kein automatischer Aufbau
+oder Katalogscan. Projektarten können nach einer ersten Vorschau jeweils einem ausdrücklich gewählten Nachfolger
+zugeordnet werden. Das Beibehalten der Projekttexte ohne Übertragung auf die neuen Masterarten und eine zweite
+Vorschau sind Pflicht. Website-Dateien, Slugs und Assets bleiben unverändert. Die am 10. September geprüfte
+Kette aus Aufteilung, Fortführung und erneuter Aufteilung verlangt beim nächsten Split wieder eine Zielbestätigung.
+Der kurze Explorer-Bedienungstest ist bestätigt, noch keine echte Aufteilung/Zusammenführung.
+Foto-Vorschau, persistentes Rücknahmejournal und separater Lua-Schreibkern sind als technische Bausteine
+implementiert. Version `0.4.24.13` macht sie unter „FN Wildlife verwalten“ → „Artänderungen prüfen ...“
+als bestätigte Fotoaktion erreichbar; die normale
+Zuweisung bleibt unverändert. Die Helferbrücke verbindet jetzt bestätigte Vorschau, Journal,
+Wiederaufnahmeprüfung und favoritenabhängige Blockplanung. Die Lua-Lese-/Schreiborchestrierung ist jetzt
+mit direkter Prüfung unter Katalogschreibzugriff verbunden und simuliert getestet. Auswahl, Fortschritt,
+Pause und Journalaktionen sind implementiert. Praktische Lightroom-Abnahme, Großkatalogmessung und
+Deltaaufbau stehen aus. Öffnen/Schließen des Einstiegsdialoges ist ohne Scan oder Fotoänderung testbar.
+Der Benutzer hat am 11. September das Öffnen ohne Suche oder Auswahl bestätigt; die schreibenden Abläufe sind
+damit noch nicht praktisch abgenommen. Der anschließend begonnene inkrementelle Aufbau besitzt zunächst einen
+geprüften, wiederaufnehmbaren Eingangsvergleich. Er ist inzwischen an den Explorer-Vollaufbau angeschlossen:
+Neue Kandidaten speichern ihre Eingangsgrundlage und vergleichen sie gegen einen passend belegten vorherigen
+Stand. Alte Master oder nachträglich bearbeitete Dateien werden nicht ungeprüft wiederverwendet. Bei unveränderter
+Abhängigkeitsstruktur werden nun nicht betroffene Arten tatsächlich mit aktuellen Quellenbelegen übernommen.
+Geänderte und geschützte Arten werden neu berechnet; Strukturwechsel bleiben zunächst Vollaufbau.
+Ein Test oder Neuaufbau im produktiven Explorer ist dafür jetzt nicht erforderlich.
+Seit 12. September wird zusätzlich ein Abhängigkeitsplan gespeichert. Er berücksichtigt direkte und indirekte
+Folgen einer Quellenänderung sowie frühere Verknüpfungen. Eigene Entscheidungen werden vorsichtshalber erneut
+geprüft. Der vorgeschaltete Wiederverwendungsweg nutzt den Plan nur unter den belegten Sicherheitsbedingungen.
+Ein isolierter Messlauf ist über `node --no-warnings scripts/taxonomy-master-benchmark.mjs 1000 sparse 2`
+reproduzierbar. Er erzeugt ausschließlich synthetische Arten unter `Testlauf/`, vergleicht getrennte Prozesse
+für Wiederverwendung und erzwungenen Vollaufbau und entfernt seine eigenen Testdateien danach. Er aktiviert
+keinen produktiven Master. Varianten: `unchanged`, `sparse`, `dense`, `structure`; maximal 20.000 Testarten und
+drei Messpaare. Die großen Messungen sind bewusst kein Bestandteil des normalen Qualitätsgates.
+Messwerte und Grenzen stehen im Detaildokument; Lightroom-Paket und gemeinsame Aktivierung sind noch nicht
+inkrementell umgestellt. Neue Benutzerbefunde zu Kartenübernahme, Veröffentlichung und doppelten
+Abschlussausgaben sind in `docs/roadmap.md` erfasst. Die Ursachen wurden inzwischen eingegrenzt: IUCN kann den
+automatischen Kartenabruf trotz funktionierendem Browserlink mit HTTP 403 sperren. In diesem Fall die Karte im
+Browser herunterladen und im Karteneditor als Datei auswählen. Der automatische Download ist damit nicht
+repariert. Eine lokale Medienprüfung verhindert jetzt die Übertragung unvollständiger Pipeline-Stände vor Git.
+Teilschritte wiederholen nicht mehr den vollständigen Fehlstellenbericht; am Ende steht eine Gesamtzusammenfassung.
+Windows-Kartenmeldungen verwenden durchgehend UTF-8; aufgeteilte Prozessausgaben erhalten Umlaute und Zeilen.
+Lesender Gesamttest am 12. September: Alle 57 hinterlegten IUCN-Kartenendpunkte lieferten HTTP 403 statt JPEG;
+kein Grünfink-Einzelfall. Alle vorhandenen Karten blieben nachweislich unverändert. Automatischer Neuabruf bleibt offen.
+Dieser Test betrifft direkte Node-Abrufe, nicht den früher erfolgreichen vollständigen Windows-Ablauf.
+Der Reparaturversuch stellt den historischen Windows-WebRequest-Fallback nach direktem 403 wieder her. Ein
+aktueller erfolgreicher Kartenabruf ist damit noch nicht nachgewiesen; ein Browser-Network-Link kann als
+zusätzlicher regulärer Weg geprüft werden.
+Der vollständige Browserauszug bestätigt den Host `www.iucnredlist.org`, HTTP 200 und `image/jpeg` mit
+etwa 581 kB. Die frühere Einordnung als Endpunkt ohne `www` war falsch; der Adapter versucht `www` zuerst.
+Der Bearer-Token wird nur an den dokumentierten API-Host gesendet, nicht an den Website-Kartenendpunkt.
+Ein 403 des Windows-Fallbacks beendet den Ablauf nicht vor den Cache-/Backblaze-Prüfungen.
+Git-Übertragung und erfolgreiche Pages-Veröffentlichung sind dabei getrennt. Details: `docs/pipeline-control-plan.md`.
+Implementierungsstand und nächste Schritte: `docs/taxonomy-incremental-build.md`.
+Details und Journalgrenzen: `docs/lightroom-identity-workflow.md`.
+Stand und Sicherheitsgrenzen: `docs/taxonomy-identity-incremental-plan.md`. Noch keine produktiven
+Identitätsentscheidungen ausführen. Fotozuordnungen bleiben unverändert; Quelldownloads können weiterhin
+vollständig nötig sein.
 
 Vor diesen Ausbauschritten wurde ein Projektkonsolidierungs-Audit umgesetzt: `docs/project-consolidation-audit.md`.
 Dabei wurden lokale Altlasten entfernt und die Pipeline von `node-fetch` auf natives Node-`fetch` umgestellt.

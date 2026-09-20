@@ -1,13 +1,26 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-07
+Stand: 2026-09-20
 Roadmap: Phase 10.2 bis 10.4
-Status: Suchpaket und Plug-in Version 0.4.24.10 sind automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
+Status: Plug-in-Version **0.4.24.14** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+gebundene Namenskorrektur. Technisch und isoliert getestet; produktive Paarumstellung/Großbestandsabnahme noch offen.
+Details: `taxonomy-incremental-build.md`. Version 0.4.24.13 ergänzte „Artänderungen prüfen ...“ im Verwaltungsfenster.
+Die gemeinsame Paarvorbereitung und Rücknahmeprüfung laufen seit 20. September vollständig im Hilfsprozess;
+der Explorer behält die kurze, erneut validierte Aktivierung. Kein automatischer Neuaufbau beim Öffnen.
+Bedienung und Abbruchgrenzen: `taxonomy-master-background-build.md`. Die ID-geprüfte Altformatkorrektur für
+Namenspräferenzen und die Zusammenführung eindeutiger CoL-/Mastertreffer sind im gemeinsamen Explorer-Dienst
+umgesetzt; keine weitere Lua-Version für diese Änderungen. Aktueller Namensvertrag: `taxonomy-name-preference-plan.md`.
+Nachfolger-/Favoritenwahl, Bestätigungen, Fortschritt, Pause und protokollierte Fortsetzung/Rücknahme sind
+mit dem Vorschau-/Journal-/Schreibweg verbunden und simuliert getestet. Die echte Lightroom-Abnahme und
+Großkatalogmessung stehen weiterhin aus.
+Vertrag: `lightroom-identity-workflow.md`.
+Der vorherige Suchpaket-/Plug-in-Stand 0.4.24.10 ist automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
-Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt; der Statistikfix von 0.4.17.0 und die
-Lightroom-Explorer-Korrekturübergabe von 0.4.18.0, die automatische Suche von 0.4.19.0 und die gemeinsame schnelle
-Korrekturaktivierung von 0.4.20.0 benötigen noch den praktischen Folgetest. Der persistente Statistikindex mit
+Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Die gemeinsame Namenswahl einschließlich
+Anbieterstandard und direkter Übernahme wurde bis 0.4.24.10 ebenfalls praktisch bestätigt. Die spätere
+Regressionskorrektur und alle aktuellen Abläufe benötigen die in der Roadmap getrennt geführte Abnahme.
+Der persistente Statistikindex mit
 CSV-Export sowie direkte Deltas nach Zuweisung und Rücknahme wurden im Großkatalog bis 0.4.21.1 praktisch bestätigt;
 der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitaktionen von 0.4.22.1 und ihre
   Statistikauswertung von 0.4.23.0, die Aktionskorrekturen bis 0.4.23.16 sowie Gesamtbereinigung und Katalogpflege
@@ -88,7 +101,7 @@ Ab 0.4.24.10 kann eine im Auswahlfeld gewählte Namensvariante über `Namenswahl
 gespeichert werden. Der Button verwendet dieselbe Vorschau, Konfliktrückfrage, Revisionsprüfung und Aktivierung
 wie die Zuweisung; er ruft keinen Katalog-Schreibweg auf. Erfolgreiche Speicherung und erfolgreiche Wiederholung
 laden den sichtbaren Namen neu. Unveränderte Auswahl und offene Speicherung geben keinen weiteren Direktauftrag
-frei. Die neue Direktaktion muss noch kurz praktisch geprüft werden.
+frei. Die neue Direktaktion wurde am 8. September vom Benutzer praktisch bestätigt.
 Bedienvertrag, Rückwahl und Fehlergrenzen: `taxonomy-name-preference-plan.md`.
 
 ## Ziel
@@ -155,21 +168,26 @@ Standardpfad:
     corrections-<Prüfsumme>.json
 ```
 
-`staging` wird vollständig aufgebaut und geprüft. Erst danach ersetzt es atomar `active`; der zuvor aktive Stand
-wandert nach `previous`. Ein Rollback tauscht `active` und `previous` kontrolliert zurück. Temporäre Rollbackproben
-laufen in einem isolierten Unterordner und verändern den produktiven Zeiger nicht.
+Die obige Ordnerstruktur beschreibt Installationen vor der Paarumstellung. Seit 13. September veröffentlicht
+der Explorer unveränderliche Ordner `taxonomy/master/releases/publication-<UUID>` und
+`lightroom/releases/publication-<UUID>` über genau einen Zeiger `taxonomy-publication/active.json` im gemeinsamen
+Elternordner. Er enthält aktives Paar, Vorgänger und passende Korrekturschicht. Erst nach Vorbereitung und Prüfung
+beider Dateien wird dieser Zeiger ersetzt; bei einem Fehler bleiben beide bisherigen Stände aktiv.
+Ein passendes vorhandenes Legacy-Paar wird beim ersten Wechsel als Vorgänger übernommen. Nicht mehr referenzierte
+Releases bleiben bis zur noch offenen Aufbewahrungs-/Platzbudgetprüfung erhalten; keine automatische Löschung.
 
-Seit dem 30. August 2026 ist dieser Ableitungsschritt in die normale Datenbankpflege des Arten-Explorers
-eingebunden. Nach einer bestätigten Master-Aktivierung oder Master-Wiederherstellung baut der Explorer das
-Lightroom-Suchpaket automatisch in einem getrennten Node-Hilfsprozess neu auf, prüft Datenbank, Zähler und
-SHA-256-Prüfsumme vollständig und aktiviert erst danach den Staging-Slot. Schema, Export, Indizes, Prüfung und
-Aktivierung erscheinen als Phasen im bestehenden Fortschrittsblock; der Explorer-Server bleibt während des
-SQLite-Aufbaus ansprechbar.
+Der Paketbau läuft seit 30. August in einem getrennten Node-Hilfsprozess. Seit 13. September arbeitet dieser
+vor der Masterfreigabe auf einer privaten Kopie des gewählten Kandidaten. Eine geeignete geprüfte Paketbasis
+wird mit Zeilen-/Suchindexdeltas aktualisiert; sonst erfolgt der Vollaufbau. Beide Wege verwenden dieselbe
+vollständige fachliche Exportprojektion und prüfen Datenbank, Zähler, Herkunft und SHA-256. Vollständiges Lesen
+und Dateikopien bleiben erforderlich. Phasen erscheinen im bestehenden Fortschrittsblock. Die Masterprüfung
+selbst ist noch nicht aus dem Serverprozess ausgelagert; Großbestands-/Neustartfreigabe bleibt offen.
 
-Schlägt ausschließlich dieser abgeleitete Schritt fehl, bleibt die bereits aktivierte Masterdatenbank bestehen und
-das bisherige Lightroom-Suchpaket aktiv. Der Explorer kennzeichnet diesen Zustand ausdrücklich als Teilerfolg.
-`Datenbank aktualisieren` erkennt die abweichende `masterVersion` im aktiven Paket und wiederholt dann nur den
-Paketbau; ein erneuter Masteraufbau ist dafür nicht erforderlich.
+Anders als im vorherigen sequenziellen Ablauf gibt es bei Paketfehlern im Paarpfad keinen bereits aktivierten
+neuen Master. Auch eine reine Paketnachholung nutzt die gemeinsame Veröffentlichung ohne Master-Neuberechnung.
+Rollback prüft das gespeicherte Vorgängerpaar sowie die heutigen Namenspräferenzen gegen dessen Identitäten und
+tauscht nur den Zeiger. Fehlt ein eindeutiges Ziel, wird nichts gewechselt. Separate CLI-Aktivierung/-Rücknahme
+ist bei paarverwalteten Installationen gesperrt. Isolierte Legacy-Rollbackproben bleiben möglich.
 
 Der Pfad ist über `--search-root=<Pfad>` beziehungsweise die lokalen Plug-in-Einstellungen überschreibbar. Eine
 spätere Installer- und Mehrgerätephase darf ihn deshalb konfigurieren, ohne das Datenformat zu ändern.
@@ -242,7 +260,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.10`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.13`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -586,7 +604,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.10`, der Suchpaketstatus sowie die zwei
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.13`, der Suchpaketstatus sowie die zwei
    Einträge `Taxonomie zuweisen` und `FN Wildlife verwalten ...` ohne Lua-Fehler erscheinen. Im
    Verwaltungsfenster müssen alle zehn Aktionen in vier klar beschrifteten Gruppen erreichbar sein. Die beiden
    Aktualisierungen müssen Auswahl und gesamten Katalog klar unterscheiden.
@@ -757,6 +775,10 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   Identitätskomponenten oder wird ein Taxon geteilt beziehungsweise zusammengeführt, existiert derzeit keine
   automatische Nachfolgerbeziehung. Der Katalogpflegelauf überspringt die nicht mehr auflösbare ID, statt anhand
   eines Namens zu raten; eine bestätigte Konflikt- beziehungsweise Nachfolgerzuordnung bleibt offen.
+  Ergänzung 9. September: Neue Masterkandidaten können bestätigte Identitätsentscheidungen in Schema 4 speichern;
+  das Paket exportiert diese als `package_info.identityRegistry`. Der Helfer meldet sie über `identity`, ohne
+  historische IDs auf aktive Ziele umzuleiten. Der Lua-Katalogpflegelauf verwendet diese neue Auskunft noch nicht.
+  Bedien-/Fotozuordnungsweg und produktive Abnahme bleiben offen; Details: `taxonomy-identity-incremental-plan.md`.
 - Alte flache Taxonomie-Stichwörter ohne `(FN)`-Endung sind nicht eindeutig vom Nutzerbestand unterscheidbar und
   werden deshalb nicht automatisch gelöscht. Andere frühere Smart-Sammlungen mit unbekannten abweichenden Namen
   werden ebenfalls nicht automatisch entfernt; die beiden bekannten Alt-Sammlungen `5-Sterne-Tierbilder` und

@@ -9,6 +9,7 @@ import {
   validateMapPreviewPayload,
   validatePortraitPreviewPayload,
   validateSoundPreviewPayload,
+  fetchMapPreviewSource,
 } from "./media-assets.mjs";
 import {
   createTestJpeg,
@@ -21,6 +22,30 @@ const species = {
   germanName: "Amsel",
   scientificName: "Turdus merula",
 };
+
+test("Karteneditor behält den Windows-Fallback nach IUCN-403", async () => {
+  let fallbackCalls = 0;
+  await assert.rejects(fetchMapPreviewSource("https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg", {
+    validateUrl: async (value) => new URL(value),
+    fetchImpl: async () => ({ ok: false, status: 403 }),
+    powerShell: async () => { fallbackCalls += 1; },
+  }), /HTTP 403/);
+  assert.equal(fallbackCalls, 1);
+});
+
+test("Freigegebene Kartenantwort wird nach geprüfter Weiterleitung übernommen", async () => {
+  const jpeg = createTestJpeg(640, 480), checked = [];
+  let calls = 0;
+  const buffer = await fetchMapPreviewSource("https://maps.example/start", {
+    validateUrl: async (value) => { checked.push(String(value)); return new URL(value); },
+    fetchImpl: async () => ++calls === 1
+      ? { status: 302, headers: new Headers({ location: "https://maps.example/map.jpg" }) }
+      : { ok: true, status: 200, headers: new Headers(), arrayBuffer: async () => jpeg },
+    powerShell: async () => { throw new Error("Kein Fallback erforderlich"); },
+  });
+  assert.deepEqual(buffer, jpeg);
+  assert.deepEqual(checked, ["https://maps.example/start", "https://maps.example/map.jpg"]);
+});
 
 test("Medieninspektoren erkennen JPEG, PNG, MP3 und WebP", () => {
   assert.deepEqual(inspectJpeg(createTestJpeg(640, 480)), { width: 640, height: 480 });

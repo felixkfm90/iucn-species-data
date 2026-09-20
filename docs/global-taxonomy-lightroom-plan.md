@@ -1,17 +1,25 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-09-07
+Stand: 2026-09-20
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
-10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.10 umgesetzt und automatisiert geprüft. Einzel- und Mehrfachzuweisung,
-Fensteraufbau, Favoritenersetzung und Taxonomierücknahme wurden im separaten Lightroom-Testkatalog praktisch
-geprüft; Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Persistenter Statistikindex,
-automatische Suche, Korrekturübergabe und schnelle gemeinsame Korrekturaktivierung benötigen noch den praktischen
-Folgetest. Phase 10 bleibt bis zum
-umfassenden Abschlussaudit offen.
+10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.14 umgesetzt und automatisiert geprüft. Praktisch bestätigt sind
+unter anderem Zuweisung, Favoriten, Taxonomierücknahme, Statistikdeltas sowie die globale Namenswahl einschließlich
+Anbieterstandard und direkter Lightroom-Übernahme bis 0.4.24.10. Das ersetzt weder die erneute Abnahme der
+späteren Regressionskorrekturen noch die gebündelte Prüfung des heutigen Gesamtstands. Identitätsmigration,
+inkrementeller Großbestandsaufbau und vollständige Betriebsprüfung bleiben offen. Phase 10 bleibt bis zum
+umfassenden Abschlussaudit offen; maßgebliche Reihenfolge und Einzelgrenzen: `roadmap.md`.
 
 Roadmap: Phase 9 und Phase 10
+
+Ergänzung 13. September: Plug-in 0.4.24.14 liest den gemeinsamen Master-/Paket-Aktivzeiger. Suchpaket-Deltas
+und gemeinsame Freigabe mit Präferenzmitnahme/Rücknahme sind isoliert geprüft; keine produktive Umstellung.
+Vollprojektion, Kopien und vollständige Prüfungen bleiben erforderlich. Masterworker mit Schreibcheckpoints,
+ausdrücklicher Pause/Fortsetzung und Wiederentdeckung ist angeschlossen. Seit 20. September laufen auch die
+schwere Paarvorbereitung und Rücknahmeprüfung in einem Hilfsprozess; der Server aktiviert erst nach erneuter
+Eingangsprüfung. Speicher-/Laufzeitmessung, Release-/Jobaufbewahrung und vollständige Betriebsabnahme bleiben offen.
+Aktueller Detailstand: `taxonomy-incremental-build.md`.
 
 Version 0.4.24.7 ergänzt den asynchronen lokalen Referenz-/Master-/Paketvergleich im Zusatzmodul-Manager und
 Zuweisungsfenster, einschließlich anwendbarer Korrekturschicht und vorsichtiger Laufhinweise. Die Anzeige startet
@@ -21,7 +29,26 @@ und expliziter Rückwahl ist in 0.4.24.8 umgesetzt und praktisch bestätigt. Ver
 Rücksetzung des deutschen Namens auf den belegten Anbieterstandard einschließlich eingebauter eigener Werte;
 Quellenupdates werten diese Wahl erneut aus. Anbieterstandard und Rückwahl sind in beiden Richtungen praktisch
 bestätigt. 0.4.24.10 ergänzt die direkte Aktion `Namenswahl übernehmen` in Lightroom ohne Fotozuweisung;
-der kurze Bedienungstest dieses Buttons steht noch aus. Details: `taxonomy-name-preference-plan.md`.
+der Benutzer hat auch diesen Button am 8. September praktisch bestätigt. Details: `taxonomy-name-preference-plan.md`.
+
+Der inkrementelle Master-/Lightroom-Paketaufbau ist seit dem 8. September auf Benutzerwunsch verbindlich vor dem
+Phase-10-Audit umzusetzen. Zuerst Identitätsfortführung, Aufteilungen und Zusammenführungen entscheiden und
+absichern; danach inkrementelle Berechnung, gemeinsamer geprüfter Aktivierungswechsel, Wiederanlauf und
+Vollaufbauvergleich. Vor dem Paarmechanismus wurden Master und Paket nacheinander aktiviert; die einzeln atomaren
+Slotwechsel konnten einen Teilerfolg hinterlassen. Der aktuelle Paarweg vermeidet dies durch vorbereitete
+Releases und einen gemeinsamen Aktivzeiger. Fachregeln sind bestätigt;
+der Schema-4-Register-/Kandidatenkern ist am 9. September implementiert und mit isolierten SQLite-Fixtures geprüft.
+Die erste Explorer-Fallansicht ergänzt begrenzte Suche, Quellenvergleich, bestätigte Vormerkung und Verwerfen
+offener Entscheidungen. Projekt-Nachfolger sind pro Projektart ausdrücklich wählbar; die bisherigen Projekttexte
+bleiben lokal und werden nicht auf neue Taxa übertragen. Eine erneute Vorschau bestätigt die vollständigen Ziele.
+Foto-Vorschau, SQLite-Journal und separater Lua-Schreibkern (0.4.24.13) sind als technische Bausteine
+implementiert. Die Helferbrücke verbindet Vorschau und Journal samt Wiederaufnahmeprüfung und
+favoritenabhängiger Blockplanung. Die Lua-Schreibverbindung ist seit 11. September angeschlossen und
+simuliert geprüft. 0.4.24.13 ergänzt die bestätigte Bedienaktion mit Fortschritt, Pause und Journalaktionen;
+praktische Lightroom-Abnahme, Großkatalogmessung und inkrementeller Basisaufbau bleiben offen.
+Der kurze Explorer-Bedienungstest wurde bestätigt, noch keine produktive Identitätsmigration.
+Foto-Vertrag und Grenzen: `lightroom-identity-workflow.md`.
+Aktueller Teilstand und Grenzen: `taxonomy-identity-incremental-plan.md`.
 
 ## Ziel und Abgrenzung
 
@@ -782,8 +809,9 @@ CoL-Wechsel auch zuvor bekannte Referenzlücken neu, behandelt ausdrücklich gep
 Masterwerte und hält Statusabfragen durch kompakte Differenzzähler sowie ausschließlich blockierende Konflikte
 leichtgewichtig. Vollvalidierung und Aktivierungsprüfung bleiben unverändert verbindlich. Weißstorch und der neue
 Paket-/Masterstand wurden in Lightroom bestätigt; Commit/Push sind freigegeben. Offen bleiben die restlichen
-Lightroom-Praxistests, der zusätzliche leichtgewichtige Versionsabgleich direkt in Lightroom, die in der Roadmap
-gebündelten Fachentscheidungen und das umfassende Phase-10-Abschlussaudit. Für Phase 11 bleiben:
+Lightroom-Praxistests, die in der Roadmap gebündelten Identitätsregeln, der nun verpflichtende inkrementelle
+Master-/Paketaufbau und das umfassende Phase-10-Abschlussaudit. Der zusätzliche leichtgewichtige Versionsabgleich
+ist inzwischen umgesetzt und bestätigt. Für Phase 11 bleiben:
 
 1. optionales NAS-Paket für die große Referenzdatenbank;
 2. Verteilung und Versionsabgleich im Mehrgerätebetrieb;

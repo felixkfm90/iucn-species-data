@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
+import { iucnBrowserAccessError } from "../scripts/iucn-map-access.mjs";
 import {
   buildPortraitPrompt,
   portraitPromptSha256,
@@ -366,7 +367,7 @@ function isIucnDistributionMapUrl(source) {
   try {
     const parsed = new URL(source);
     return process.platform === "win32"
-      && parsed.hostname.toLowerCase() === "www.iucnredlist.org"
+      && (parsed.hostname.toLowerCase() === "iucnredlist.org" || parsed.hostname.toLowerCase() === "www.iucnredlist.org")
       && parsed.pathname.includes("/api/v4/assessments/")
       && parsed.pathname.endsWith("/distribution_map/jpg");
   } catch {
@@ -386,18 +387,23 @@ async function fetchMapPreviewSourceWithPowerShell(source) {
   if (!isIucnDistributionMapUrl(source)) return null;
 
   const script = `
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
 $Uri = $env:IUCN_MAP_URL
 $OutFile = $env:IUCN_MAP_OUTFILE
 if (-not $Uri -or -not $OutFile) {
   throw 'IUCN_MAP_URL oder IUCN_MAP_OUTFILE fehlt.'
 }
 $headers = @{
-  Accept = 'image/jpeg,image/*;q=0.9,text/html;q=0.8,*/*;q=0.7'
+  Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'
   'Accept-Language' = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
-  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
-}
-if ($env:IUCN_TOKEN) {
-  $headers.Authorization = 'Bearer ' + $env:IUCN_TOKEN
+  'Cache-Control' = 'max-age=0'
+  'Upgrade-Insecure-Requests' = '1'
+  'Sec-Fetch-Dest' = 'document'
+  'Sec-Fetch-Mode' = 'navigate'
+  'Sec-Fetch-Site' = 'none'
+  'Sec-Fetch-User' = '?1'
+  'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
 }
 try {
   $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
@@ -431,6 +437,8 @@ try {
           },
           maxBuffer: 1024 * 1024,
           timeout: 60_000,
+          windowsHide: true,
+          encoding: "utf8",
         },
       );
       const info = JSON.parse(String(stdout || "{}"));
@@ -462,34 +470,37 @@ try {
   );
 }
 
-async function fetchMapPreviewSource(source) {
-  let parsed = await assertPublicHttpUrl(source);
+export async function fetchMapPreviewSource(source, {
+  fetchImpl = fetch, validateUrl = assertPublicHttpUrl, powerShell = fetchMapPreviewSourceWithPowerShell,
+} = {}) {
+  let parsed = await validateUrl(source);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), MAP_SOURCE_FETCH_TIMEOUT_MS);
   try {
     let response;
     for (let redirects = 0; redirects <= 5; redirects += 1) {
-      response = await fetch(parsed, {
+      response = await fetchImpl(parsed, {
         redirect: "manual",
         signal: controller.signal,
         headers: {
-          Accept: "image/jpeg,image/*;q=0.8,*/*;q=0.5",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+          "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Cache-Control": "max-age=0",
+          "Upgrade-Insecure-Requests": "1",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
         },
       });
       if (![301, 302, 303, 307, 308].includes(response.status)) break;
       const location = response.headers.get("location");
       if (!location) throw new Error("Karten-URL lieferte eine Weiterleitung ohne Ziel");
       if (redirects === 5) throw new Error("Karten-URL enthält zu viele Weiterleitungen");
-      parsed = await assertPublicHttpUrl(new URL(location, parsed));
+      parsed = await validateUrl(new URL(location, parsed));
     }
     if (!response.ok) {
-      const host = parsed.hostname.toLowerCase();
-      if (response.status === 403 && host.includes("iucnredlist.org")) {
-        throw new Error(
-          "IUCN blockiert den lokalen Kartenabruf. Bitte den im Browser geöffneten signierten Backblaze-JPEG-Link als Quellen-URL einfügen.",
-        );
-      }
       throw new Error(`Karten-URL konnte nicht geladen werden (HTTP ${response.status}).`);
     }
     const contentLength = Number(response.headers.get("content-length") || 0);
@@ -505,10 +516,11 @@ async function fetchMapPreviewSource(source) {
     }
     return buffer;
   } catch (error) {
+    if (error.code === "IUCN_BROWSER_REQUIRED") throw error;
     if (error.name === "AbortError") {
       throw new Error("Karten-URL hat nicht rechtzeitig geantwortet");
     }
-    const fallback = await fetchMapPreviewSourceWithPowerShell(source);
+    const fallback = await powerShell(source);
     if (fallback) return fallback;
     throw error;
   } finally {

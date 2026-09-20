@@ -19,7 +19,8 @@ import {
   sanitizeAssetName,
 } from "./species-model.mjs";
 import { synchronizeManualMapDocumentation } from "./manual-map-documentation.mjs";
-import { formatSpectrogramPipelineLog } from "./pipeline-log.mjs";
+import { formatSpectrogramPipelineLog, formatPipelineSummary, createPipelineTextReader } from "./pipeline-log.mjs";
+import { checkPipelinePublication } from "./pipeline-publication-check.mjs";
 import { isNonCommercialLicense } from "./media-assets.mjs";
 import { closeActiveFileStreams, sendFile, sendText } from "./http-routing.mjs";
 import { isPathInside } from "./request-security.mjs";
@@ -50,6 +51,7 @@ export function createPipelineController({
   hashText,
   compactTimestamp,
   readJson,
+  spawnProcess = spawn,
 }) {
   async function readPipelinePlan(mode, targetSlugs = []) {
     const [speciesListText, speciesDataText] = await Promise.all([
@@ -508,23 +510,27 @@ export function createPipelineController({
     appendPipelineLog(`--- ${phase} ---`);
     return new Promise((resolveRun) => {
       let stdoutBuffer = "";
-      const child = spawn(command, args, {
+      const child = spawnProcess(command, args, {
         cwd: repoRoot,
         env: childProcessEnvironment(command),
         windowsHide: true,
       });
       runtime.process = child;
-      child.stdout.on("data", (chunk) => {
-        if (stdoutFormatter) stdoutBuffer += chunk.toString("utf8");
-        else appendPipelineLog(chunk);
+      const stdoutReader = createPipelineTextReader((text) => {
+        if (stdoutFormatter) stdoutBuffer += text;
+        else appendPipelineLog(text);
       });
-      child.stderr.on("data", (chunk) => appendPipelineLog(chunk));
+      const stderrReader = createPipelineTextReader(appendPipelineLog);
+      child.stdout.on("data", (chunk) => stdoutReader.write(chunk));
+      child.stderr.on("data", (chunk) => stderrReader.write(chunk));
       child.on("error", (error) => {
         appendPipelineLog(`Prozessfehler: ${error.message}`);
         runtime.process = null;
         resolveRun(1);
       });
       child.on("close", (code) => {
+        stdoutReader.end();
+        stderrReader.end();
         if (stdoutFormatter && stdoutBuffer.trim()) {
           try {
             appendPipelineLog(stdoutFormatter(stdoutBuffer));
@@ -539,6 +545,10 @@ export function createPipelineController({
   }
 
   async function publishPipelineChanges() {
+    runtime.state.phase = "Lokale Veröffentlichungsprüfung";
+    const preflight = checkPipelinePublication(repoRoot);
+    appendPipelineLog(preflight.message);
+    if (!preflight.ok) { runtime.state.error = preflight.message; return 1; }
     let code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Vorprüfung");
     if (code !== 0) {
       runtime.state.error = "Vor dem Pipeline-Lauf waren bereits Dateien vorgemerkt. Automatischer Commit wurde abgebrochen.";
@@ -574,7 +584,7 @@ export function createPipelineController({
     code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Änderungen prüfen");
     if (code === 0) {
       appendPipelineLog("Keine versionierbaren Pipeline-Änderungen vorhanden.");
-      runtime.state.gitPublished = true;
+      runtime.state.gitNoChanges = true;
       return 0;
     }
     if (code !== 1) return code;
@@ -683,13 +693,22 @@ export function createPipelineController({
     if (runtime.state.runId) {
       await removePipelineAssetBackupRun(runtime.state.runId);
     }
+    const finalReport = await readJson(join(repoRoot, "fehlende_elemente_report.json")).catch(() => null);
+    if (runtime.state.summary) {
+      const previousSummaryStart = runtime.state.log.lastIndexOf("Gesamtzusammenfassung");
+      if (previousSummaryStart >= 0) runtime.state.log.splice(previousSummaryStart, runtime.state.summary.split("\n").length);
+    }
+    runtime.state.summary = formatPipelineSummary(runtime.state, finalReport);
+    appendPipelineLog(runtime.state.summary);
     await mkdir(pipelineLogDir, { recursive: true });
     const logName = `pipeline-${compactTimestamp(new Date(runtime.state.startedAt))}-${runtime.state.runId.slice(0, 8)}.log`;
     const logPath = join(pipelineLogDir, logName);
     await writeFile(logPath, `${runtime.state.log.join("\n")}\n`, "utf8");
     runtime.state.logFile = `species-explorer/logs/${logName}`;
     await prunePipelineLogs(pipelineLogDir).catch(() => {});
-    await cleanupManagedExplorerTemp({ repoRoot, phase: "maintenance" }).catch(() => {});
+    await cleanupManagedExplorerTemp({ repoRoot, phase: "maintenance",
+      protectedPaths: [...previewTokens.values()].flatMap((preview) => [preview.stagingPath, preview.inputStagingPath, preview.spectrogramStagingPath]),
+    }).catch(() => {});
     await refreshModel({ force: true });
   }
 
@@ -712,7 +731,7 @@ export function createPipelineController({
       return;
     }
 
-    const updateArgs = [join(repoRoot, "update.mjs"), `--mode=${plan.mode}`];
+    const updateArgs = [join(repoRoot, "update.mjs"), `--mode=${plan.mode}`, "--quiet-report"];
     if (Array.isArray(plan.targetSlugs) && plan.targetSlugs.length > 0) {
       updateArgs.push(`--species=${plan.targetSlugs.join(",")}`);
     }
@@ -754,7 +773,7 @@ export function createPipelineController({
     if (exitCode === 0 && !assetOnlyMode) {
       exitCode = await runPipelineChild(
         process.execPath,
-        [join(repoRoot, "update.mjs"), "--report-only"],
+        [join(repoRoot, "update.mjs"), "--report-only", "--quiet-report"],
         "Report-Abgleich",
       );
     }
@@ -782,7 +801,7 @@ export function createPipelineController({
         await continueAfterAssetReview();
         return;
       }
-      runtime.state.gitPublished = true;
+      runtime.state.gitNoChanges = true;
       await finishPipelineRun(0);
       return;
     }
@@ -877,6 +896,8 @@ export function createPipelineController({
       error: "",
       reviewAssets: [],
       gitPublished: false,
+      gitNoChanges: false,
+      summary: "",
       publishAfterAssetOnlyNoAssets: false,
     };
     if (preview.mode === "nc-sounds") {
@@ -1062,7 +1083,7 @@ export function createPipelineController({
       if (runtime.state.mode === "nc-sounds" || reportNeedsRefresh) {
         const reportExitCode = await runPipelineChild(
           process.execPath,
-          [join(repoRoot, "update.mjs"), "--report-only"],
+          [join(repoRoot, "update.mjs"), "--report-only", "--quiet-report"],
           "Report-Abgleich",
         );
         if (reportExitCode !== 0) {
@@ -1102,7 +1123,7 @@ export function createPipelineController({
         return;
       }
       if (!acceptedAny && retryMode && !registryChanged) {
-        runtime.state.gitPublished = true;
+        runtime.state.gitNoChanges = true;
         await finishPipelineRun(0);
         return;
       }

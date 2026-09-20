@@ -218,21 +218,31 @@ function mergeSearchResults(query, baseResults, supplementResults, limit) {
 }
 
 function scientificResultKey(result = {}) {
+  const kingdom = typeof result.kingdom === "object"
+    ? result.kingdom?.scientificName || result.kingdom?.id || "" : result.kingdom || "";
   return [
     normalizeTaxonomySearchTerm(result.acceptedScientificName || result.scientificName),
     String(result.rank || "").trim().toLowerCase(),
-    String(result.kingdom?.id || result.kingdom || "").trim().toLowerCase(),
+    String(kingdom).trim().toLowerCase(),
   ].join("|");
 }
 
 function mergeMasterAndReferenceResults(query, masterResults, referenceResults, limit) {
   const merged = new Map();
+  const masterKeys = new Map();
   for (const result of masterResults) {
-    merged.set(scientificResultKey(result), result);
+    const key = scientificResultKey(result);
+    const ids = masterKeys.get(key) || new Set();
+    ids.add(result.masterTaxonId || result.taxonId);
+    masterKeys.set(key, ids);
+    merged.set(String(result.taxonId), result);
   }
   for (const result of referenceResults) {
     const key = scientificResultKey(result);
-    if (!merged.has(key)) merged.set(key, result);
+    // Supplemental searches can reintroduce the numeric CoL ID after the first
+    // merge. Prefer the one active master identity, never collapse two masters.
+    if (masterKeys.get(key)?.size === 1) continue;
+    if (!merged.has(String(result.taxonId))) merged.set(String(result.taxonId), result);
   }
   return [...merged.values()]
     .map((result) => ({ ...result, referenceScore: searchResultScore(query, result) }))
@@ -473,12 +483,13 @@ export class TaxonomyReferenceService {
         online: !baseHasExactMatch,
       })
       : [];
-    const results = mergeSearchResults(
+    const combined = mergeSearchResults(
       searchOptions.query,
       localResults,
       supplements,
       searchOptions.limit,
     );
+    const results = mergeMasterAndReferenceResults(searchOptions.query, master.results, combined, searchOptions.limit);
     return {
       available: true,
       ...base,
@@ -525,6 +536,18 @@ export class TaxonomyReferenceService {
       : normalizedReference.startsWith("stx_")
         ? await this.supplementService?.taxon(normalizedReference)
         : store.taxon(normalizedReference);
+    // A cached CoL/supplement result may still be selected after a master update.
+    // Resolve only an exact, rank- and kingdom-bound unique active master match.
+    if (result && !result.masterTaxonId && masterStore) {
+      const kingdom = typeof result.kingdom === "object"
+        ? result.kingdom?.scientificName || result.kingdom?.id : result.kingdom;
+      if (kingdom && result.rank) {
+        const match = masterStore.findTaxonByScientificName(result.acceptedScientificName || result.scientific_name, {
+          rank: result.rank, kingdom,
+        });
+        if (match?.masterTaxonId) result = masterStore.taxon(match.masterTaxonId) || result;
+      }
+    }
     if (!result) {
       throw createHttpError("Das ausgewählte Taxon wurde nicht gefunden.", 404);
     }
@@ -535,7 +558,7 @@ export class TaxonomyReferenceService {
       ...result,
       hierarchy: (result.hierarchy || []).map(taxonomyHierarchyDisplayEntry),
     };
-    const status = normalizedReference.startsWith("mtx_")
+    const status = result.masterTaxonId
       ? masterStore.status()
       : normalizedReference.startsWith("stx_")
         ? { releaseId: "Versionierter Ergänzungsausschnitt" }

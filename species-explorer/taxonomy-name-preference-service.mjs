@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { openLightroomSearchStore } from "./lightroom-search-store.mjs";
 import { readTaxonomyDataVersions } from "./taxonomy-data-versions.mjs";
 import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
-import { activateTaxonomyCorrectionReleaseUnlocked, prepareTaxonomyCorrectionRelease } from "./taxonomy-correction-release.mjs";
+import { activateTaxonomyCorrectionReleaseUnlocked, prepareTaxonomyCorrectionRelease, taxonomyCorrectionsMatchActive } from "./taxonomy-correction-release.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { readProviderGermanName } from "./taxonomy-provider-standard.mjs";
@@ -28,6 +28,7 @@ export function createTaxonomyNamePreferenceService({
   activate = activateTaxonomyCorrectionReleaseUnlocked,
   prepare = prepareTaxonomyCorrectionRelease,
   readProviderStandard = readProviderGermanName,
+  correctionsMatchActive = taxonomyCorrectionsMatchActive,
 } = {}) {
   async function inspect(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("Die Namenswahl-Anfrage ist ungültig.");
@@ -72,8 +73,10 @@ export function createTaxonomyNamePreferenceService({
         && ["Eigene Korrektur", "Arten-Explorer"].includes(name.source)
       )));
       const sameMode = useProviderStandard === (entry?.germanNameMode === "provider");
-      const unchanged = germanName === text(taxon.germanName) && sameMode
-        && taxonomyCorrectionsRevision(document.entries) === versions.masterCorrectionRevision;
+      const correctionsCurrent = await correctionsMatchActive({
+        taxonomyRoot, searchRoot, corrections: document.entries, activeRevision: versions.masterCorrectionRevision,
+      });
+      const unchanged = germanName === text(taxon.germanName) && sameMode && correctionsCurrent;
       const selection = {
         masterTaxonId: taxon.masterTaxonId, scientificName: taxon.acceptedScientificName,
         kingdom: taxon.kingdom, previousGermanName: text(taxon.germanName), germanName,
@@ -81,14 +84,14 @@ export function createTaxonomyNamePreferenceService({
         ...(useProviderStandard ? { useProviderStandard: true, providerStandard } : {}),
       };
       const snapshot = { selection, packageStatus: store.status(), document };
-      return { document, taxon, entry, versions, selection, token: digest(snapshot) };
+      return { document, taxon, entry, versions, selection, correctionsCurrent, token: digest(snapshot) };
     } finally { store.close(); }
   }
 
   return {
     async preview(payload) {
       const value = await inspect(payload);
-      if (!value.selection.unchanged && taxonomyCorrectionsRevision(value.document.entries) !== value.versions.masterCorrectionRevision) {
+      if (!value.correctionsCurrent) {
         throw new Error("Es gibt noch nicht aktivierte Namenskorrekturen. Bitte diese zuerst im Arten-Explorer bearbeiten.");
       }
       return { ...value.selection, token: value.token };
@@ -112,8 +115,7 @@ export function createTaxonomyNamePreferenceService({
         if (!payload.token || payload.token !== value.token) throw new Error("Der Namensstand wurde verändert. Bitte die Auswahl erneut prüfen und bestätigen.");
         if (selection.requiresConfirmation && payload.confirmed !== true) throw new Error("Das Ersetzen der eigenen Namenspräferenz muss bestätigt werden.");
         if (selection.unchanged) return { saved: true, unchanged: true };
-        const revision = taxonomyCorrectionsRevision(document.entries);
-        if (revision !== versions.masterCorrectionRevision) throw new Error("Es gibt noch nicht aktivierte Namenskorrekturen. Bitte diese zuerst im Arten-Explorer bearbeiten.");
+        if (!value.correctionsCurrent) throw new Error("Es gibt noch nicht aktivierte Namenskorrekturen. Bitte diese zuerst im Arten-Explorer bearbeiten.");
         const nextEntry = {
           ...entry, scientificName: taxon.acceptedScientificName, rank: "species", kingdom: taxon.kingdom,
           germanName: selection.useProviderStandard ? "" : selection.germanName,

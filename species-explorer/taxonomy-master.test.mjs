@@ -112,7 +112,7 @@ test("read-only Öffnen prüft den Schemavertrag ohne teure Vollintegritätsprü
   const database = openDatabase();
   try {
     assert.deepEqual(validateTaxonomyMasterDatabase(database, { full: false }), {
-      schemaVersion: 3,
+      schemaVersion: 4,
       validationMode: "schema-only",
     });
     assert.equal(validateTaxonomyMasterDatabase(database).validationMode, "full");
@@ -269,7 +269,7 @@ test("Sciurus vulgaris bleibt bei einer CoL-Lücke ein einziges stabiles Mastert
 
     const gapValidation = validateTaxonomyMasterDatabase(database);
     assert.deepEqual(gapValidation, {
-      schemaVersion: 3,
+      schemaVersion: 4,
       validationMode: "full",
       sourceReleases: 5,
       masterTaxa: 1,

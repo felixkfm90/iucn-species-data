@@ -29,17 +29,17 @@
       "germanName": "Weissstorch",
       "englishName": "",
       "note": "Bewusst gewählte deutsche Namensvariante",
-      "updatedAt": "2026-09-07T13:56:34.283Z",
+      "updatedAt": "2026-09-07T18:41:22.283Z",
       "namePreference": {
         "masterTaxonId": "mtx_dd24e7a0743a4af47683495d736b5aae",
         "previousGermanName": "Hausstorch",
-        "operationToken": "4baf03db7048416392ad4995551d6f1606e69bf614e6d646cec7988ed436c480",
+        "operationToken": "cd99f698d5f2f904b66783444d3a1c6d7b23603c990850707a6009c450c1d759",
         "previousSources": [
           {
             "name": "Hausstorch",
             "kind": "vernacular",
             "language": "de",
-            "source": "Catalogue of Life"
+            "source": "Eigene Korrektur"
           },
           {
             "name": "Hausstorch",
@@ -55,8 +55,39 @@
           }
         ],
         "previousMasterVersion": "master-20260905054823067",
-        "previousCorrectionRevision": "b27bca77c163afc979feaffc292587aed92b67fb90cfd125e7e6e34173c3fc89",
+        "previousCorrectionRevision": "76baf1fae1500eec40b119b84be6add5aeb0e9fc82233de23e8284818815e9c4",
         "publicationRevision": "a50bf7fb0b00f404ab404a333a0eeb6cc9bcdd600bbe467534aa3b73ff7b428f"
+      }
+    },
+    {
+      "scientificName": "Perdix perdix",
+      "rank": "species",
+      "kingdom": "Animalia",
+      "germanName": "Rebhuhn",
+      "englishName": "",
+      "note": "Bewusst gewählte deutsche Namensvariante",
+      "updatedAt": "2026-09-20T05:58:36.789Z",
+      "namePreference": {
+        "masterTaxonId": "mtx_dabeb92630aba9d1cd0fba3d00c63513",
+        "previousGermanName": "Feldhuhn",
+        "operationToken": "a69588507d04002e26e9b363ae1f10bc58c01bbcf6d93a40016082899990f342",
+        "previousSources": [
+          {
+            "name": "Feldhuhn",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "Catalogue of Life"
+          },
+          {
+            "name": "Feldhuhn",
+            "kind": "vernacular",
+            "language": "de",
+            "source": "iNaturalist"
+          }
+        ],
+        "previousMasterVersion": "master-20260905054823067",
+        "previousCorrectionRevision": "a50bf7fb0b00f404ab404a333a0eeb6cc9bcdd600bbe467534aa3b73ff7b428f",
+        "publicationRevision": "35bea2af676b3eb3864425e14217852dcdfa0c6f044008c27647eab42b52b5d8"
       }
     }
   ]

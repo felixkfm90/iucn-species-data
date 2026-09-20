@@ -31,7 +31,6 @@ export function createSpeciesCreateOperations({
   backupDir,
   assetStagingRoot,
   previewTokens,
-  previewTokenTtlMs,
   cleanupPreviewTokens,
   getModel,
   refreshModel,
@@ -90,7 +89,7 @@ export function createSpeciesCreateOperations({
     }
 
     const token = randomUUID();
-    const expiresAt = Date.now() + previewTokenTtlMs;
+    const expiresAt = null; // An interactive creation draft has no wall-clock deadline.
     previewTokens.set(token, {
       type: "create",
       values,
@@ -100,7 +99,7 @@ export function createSpeciesCreateOperations({
 
     return {
       token,
-      expiresAt: new Date(expiresAt).toISOString(),
+      expiresAt,
       entry,
       derived: {
         ...derived,
@@ -217,7 +216,7 @@ export function createSpeciesCreateOperations({
     const source = await portraitAssetSourceRevision(species);
     removePreviousPortraitPreviews(species.id);
     const token = randomUUID();
-    const expiresAt = Date.now() + previewTokenTtlMs;
+    const expiresAt = null;
     const importedAt = new Date().toISOString();
     const inputExtension = validated.image.format === "jpeg"
       ? ".jpg"
@@ -238,6 +237,7 @@ export function createSpeciesCreateOperations({
       const sha256 = createHash("sha256").update(renderedBuffer).digest("hex");
       previewTokens.set(token, {
         type: "portrait-asset",
+        createToken,
         id: species.id,
         safeName: species.safeName,
         inputStagingPath,
@@ -261,7 +261,7 @@ export function createSpeciesCreateOperations({
       });
       return {
         token,
-        expiresAt: new Date(expiresAt).toISOString(),
+        expiresAt,
         species,
         currentPortrait: {
           exists: source.portraitBuffer.length > 0,
@@ -389,8 +389,22 @@ export function createSpeciesCreateOperations({
     };
   }
 
+  function discardNewSpecies(payload) {
+    const token = String(payload?.token ?? "");
+    const draft = previewTokens.get(token);
+    if (draft?.type !== "create") return { discarded: false };
+    for (const [key, item] of previewTokens) {
+      if (key !== token && !(item.type === "portrait-asset" && item.createToken === token)) continue;
+      if (item.stagingPath) rmSync(item.stagingPath, { force: true });
+      if (item.inputStagingPath) rmSync(item.inputStagingPath, { force: true });
+      previewTokens.delete(key);
+    }
+    return { discarded: true };
+  }
+
   return {
     previewNewSpecies,
+    discardNewSpecies,
     createNewSpeciesPortraitPrompt,
     previewNewSpeciesPortrait,
     saveNewSpecies,

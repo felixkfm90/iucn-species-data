@@ -564,8 +564,10 @@
 
               <div class="map-edit-fields">
                 <label class="asset-file-field map-file-field">
-                  <span>Neue Karten-Datei</span>
+                  <span>Gespeicherte Karte für ${escapeHtml(species.germanName)}</span>
                   <input class="map-file-input" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                  <small>JPEG/PNG hier hineinziehen oder auswählen · bis 20 MB. Prüfung startet automatisch.</small>
+                  <small class="map-file-status" role="status" aria-live="polite">Noch keine Datei ausgewählt.</small>
                 </label>
                 <label class="asset-reason-field map-reason-field">
                   <span>Pflegegrund</span>
@@ -582,13 +584,13 @@
                     class="map-source-input"
                     type="url"
                     maxlength="2000"
-                    placeholder="https://… oder signierter IUCN/Backblaze-JPEG-Link"
+                    placeholder="Quellenadresse der Karte (bei Dateiimport optional)"
                     value="${escapeHtml(species.assets.map.source || "")}"
                   >
                 </label>
               </div>
 
-              <p class="edit-message map-edit-message" hidden></p>
+              <p class="edit-message map-edit-message" role="status" aria-live="polite" hidden></p>
 
               <section class="map-edit-preview" hidden>
                 <div class="map-compare-grid">
@@ -609,7 +611,7 @@
                 </div>
                 <p class="edit-warning">
                   Speichern ersetzt <code>map.jpg</code>, legt ein lokales Backup an, aktiviert den manuellen
-                  Pipeline-Schutz und führt anschließend Commit und Push aus.
+                  Pipeline-Schutz. Veröffentlicht wird anschließend mit „Änderungen übertragen“.
                 </p>
               </section>
 

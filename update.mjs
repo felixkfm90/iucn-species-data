@@ -105,10 +105,11 @@ function normalizeTaxonomyFields(entry) {
 }
 
 function parsePipelineArgs(rawArgs) {
-  const parsed = { mode: "all", dryRun: false, reportOnly: false, targetSlugs: [] };
+  const parsed = { mode: "all", dryRun: false, reportOnly: false, quietReport: false, targetSlugs: [] };
   for (const arg of rawArgs) {
     if (arg === "--dry-run") parsed.dryRun = true;
     else if (arg === "--report-only") parsed.reportOnly = true;
+    else if (arg === "--quiet-report") parsed.quietReport = true;
     else if (arg.startsWith("--mode=")) parsed.mode = arg.slice("--mode=".length);
     else if (arg.startsWith("--species=")) {
       parsed.targetSlugs = arg.slice("--species=".length)
@@ -136,6 +137,7 @@ Optionen:
   --species=slug      Optional: nur die angegebenen URL-Slugs verarbeiten, kommagetrennt
   --dry-run        Auswahl anzeigen, ohne Dateien oder Assets zu verändern
   --report-only    Report aus speciesData.json und aktuellen Assets neu aufbauen
+  --quiet-report   Fehlstellenbericht speichern, ohne seine Detailübersicht auszugeben (Explorer-Teilschritt)
 `);
 }
 
@@ -1069,7 +1071,7 @@ function printReportToConsole(report) {
     if (args.reportOnly) {
       const report = createMissingElementsReport(existingSpeciesData);
       atomicWriteJson("fehlende_elemente_report.json", report);
-      printReportToConsole(report);
+      if (!args.quietReport) printReportToConsole(report);
       console.log("✔ fehlende_elemente_report.json aus aktuellem Daten-/Assetstand neu aufgebaut!");
       return;
     }
@@ -1181,8 +1183,8 @@ function printReportToConsole(report) {
         data["Assessment ID"] &&
         data["Assessment ID"] !== "n/a";
 
-      const soundLabel = soundStatus === "ok" ? "ok" : soundStatus;
-      const mapLabel = mapStatus === "ok" ? "ok" : mapStatus;
+      const soundLabel = args.mode === "manual-maps" ? "nicht geprüft" : soundStatus;
+      const mapLabel = args.mode === "nc-sounds" ? "nicht geprüft" : mapStatus;
       const dataLabel = speciesOk ? "ok" : "n/a";
 
       const hasError = soundLabel === "error" || mapLabel === "error";
@@ -1215,7 +1217,7 @@ function printReportToConsole(report) {
 
       const report = createMissingElementsReport(effectiveOutput);
       atomicWriteJson("fehlende_elemente_report.json", report);
-      printReportToConsole(report);
+      if (!args.quietReport) printReportToConsole(report);
       console.log("✔ fehlende_elemente_report.json erstellt!");
     }
   } catch (err) {

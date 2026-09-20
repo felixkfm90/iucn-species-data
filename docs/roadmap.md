@@ -1,6 +1,23 @@
 # Roadmap
 
-Stand: 2026-09-07
+Stand: 2026-09-20
+
+Aktuelle Regressionskorrekturen: Die falsche Sperre unveränderter alter Namenspräferenzen ist über einen
+ID-geprüften Altformatvergleich behoben. Neue-Art-Entwürfe/Portraits laufen während der Sitzung nicht mehr ab;
+Karten-Dateiauswahl/Drop stehen auch im Assistenten bereit, Fehler im Abschluss sind sichtbar und das Fenster
+wieder schließbar. Automatisierte Regressionen decken die Abläufe ab; eine erneute echte Bedienabnahme durch Felix
+steht noch aus. Details: [Artanlage](add-species-workflow.md), [Namenswahl](taxonomy-name-preference-plan.md).
+Die großbestandsbezogenen Restpunkte des [Master-Hintergrundaufbaus](taxonomy-master-background-build.md)
+und der letzte IUCN-Abruf-/Pflegekennzeichnungs-Prüfpunkt bleiben offen. Das Gesamtaudit ist nicht abgeschlossen.
+
+Fortsetzung am 20. September: Doppelte Master-/CoL-Treffer wie Feldhuhn/Rebhuhn werden nach der Ergänzungssuche
+eindeutig zusammengeführt; alte CoL-Auswahlen erhalten bei eindeutiger Identität dieselbe Masterdetailansicht und
+Namenswahl. Die schwere gemeinsame Master-/Lightroom-Vorbereitung und Rücknahmeprüfung laufen jetzt außerhalb
+des Serverprozesses. Der Server prüft vor dem atomaren Wechsel die heutigen Eingänge erneut. Prozessabbruch,
+Eingangsänderung, erneuter Versuch und Schließen/Wiederöffnen sind mit temporären Datenbanken geprüft.
+**Als Nächstes:** Release-/Jobaufbewahrung und Platzbudget; anschließend Betriebs-/Großbestandstest,
+gebündelte Lightroom-Abnahme und die restlichen Punkte der untenstehenden Vor-Audit-Reihenfolge.
+Historische Phasenberichte darunter sind kein Beleg für eine aktuelle vollständige Abnahme.
 
 Definition of Done fuer alle weiteren Schritte: Ein Schritt gilt erst als abgeschlossen, wenn die betroffenen Dateien
 geaendert, geprueft und die dazugehoerige Dokumentation aktualisiert sind. Mindestens zu pruefen sind `AGENTS.md`,
@@ -392,8 +409,8 @@ Bilder und weitere Assets gepflegt werden koennen, ohne direkt in JSON-Dateien u
   Endpunkt eine Fallback-Strategie fuer gecachte Einzelkarten. Seit 2026-07-02 versucht `update.mjs` zuerst den
   bisherigen IUCN-Web-Endpunkt mit browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und
   extrahiert signierte Backblaze-Links aus Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL.
-  Wenn Node lokal HTTP 403 erhält, nutzt die Pipeline unter Windows zusätzlich `Invoke-WebRequest` als
-  WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die JPEG-Karte ausliefert. Seit 2026-07-10 wiederholt die
+  Der Windows-Fallback nach HTTP 403 wurde am 2026-09-12 zwischenzeitlich entfernt und anschließend wieder
+  eingebaut; ein erfolgreicher aktueller Download ist nicht belegt. Ersatzweg ist der Datei-Upload. Seit 2026-07-10 wiederholt die
   Pipeline diesen Fallback bei temporären IUCN-/Backblaze-Fehlern bis zu dreimal; der Kartenimport kann
   IUCN-API-Kartenlinks ebenfalls direkt über diesen Fallback prüfen. Wenn lokal trotzdem kein direkt
   speicherbarer Link geliefert wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im
@@ -1402,35 +1419,128 @@ automatisiert, nicht zusätzlich im realen Lightroom geprüft. Details: `docs/li
    SQLite-Test prüft anschließenden Master-/Paketneubau mit geändertem Anbieterwert und erneute Rückwahl.
    Anbieterstandard und Rückwahl sind in beiden Richtungen praktisch bestätigt; fehlende oder uneindeutige
    Anbieterbelege bleiben gesperrt. Ergänzung 0.4.24.10: `Namenswahl übernehmen` in Lightroom speichert eine
-   gewählte Variante unmittelbar global, ohne Fotozuweisung. Nur der kurze Bedienungstest dieses Buttons steht
-   noch aus; danach den abgenommenen Stand sichern und mit Taxonidentitäten/Aufteilungen/Zusammenführungen fortfahren.
+   gewählte Variante unmittelbar global, ohne Fotozuweisung. Der Benutzer hat diesen Direktbutton am
+   8. September ebenfalls praktisch bestätigt; der Code ist mit `d487667` veröffentlicht.
    Keine Taxon-ID-Änderung. Details: `taxonomy-name-preference-plan.md`.
-3. **Fachliche Entscheidung:** Umgang mit geänderter Taxonidentität, Aufteilung und Zusammenführung abschließen.
-   Der Katalogabgleich überspringt nicht mehr eindeutig auflösbare Master-IDs bereits sicher. Eine bestätigte
-   Nachfolgerzuordnung fehlt. Vor Phasenabschluss entweder umsetzen oder mit ausdrücklicher Begründung verschieben;
-   keine automatische Namensheuristik einführen.
-4. **Gebündelte Lightroom-Abnahme:** Menü und Verwaltungsfenster einschließlich aller Aktionen; neue Suche und
+3. **Fachlich bestätigt, in Umsetzung:** Umgang mit geänderter Taxonidentität, Aufteilung und Zusammenführung
+   abschließen. Der Katalogabgleich überspringt fehlende/inaktive Master-IDs; ein Split bei gleich gebliebenem
+   Namen, Rang und Reich ist damit nicht automatisch erkannt. Schema-4-Identitätsregister, bestätigte Review-API,
+   Kandidaten-/Aktivierungssperre und Historie im Suchpaket sind implementiert und mit SQLite-Fixtures geprüft.
+   Die Explorer-Fallansicht ist mit begrenzter Suche, Quellenvergleich, Vorschau, Bestätigung und Verwerfen
+   offener Vormerkungen implementiert. Projekt-Nachfolger sind nun je Projektart mit Zielauswahl, bewusstem
+   Beibehalten lokaler Texte und erneuter Vorschau bestätigbar; unvollständige Entscheidungen bleiben gesperrt.
+   Ketten aus Aufteilung/Fortführung/erneuter Aufteilung sowie Projekt-Reichsaliase sind geprüft;
+   am 10. September 25 direkte Tests und vollständiges Qualitätsgate bestanden.
+   Foto-Vorschau, Journal und isolierter Lua-Schreibkern samt Favoriten-Konfliktprüfung sind als technische
+   Bausteine umgesetzt. Die Helferbrücke verbindet nun bestätigte Vorschau und Journal; Wiederaufnahmeprüfung
+   und favoritenabhängige 250er-Blockplanung sind mit Teilabbrüchen und Paketwechseln geprüft.
+   Seit 11. September ist auch die Lua-Lese-/Schreiborchestrierung angeschlossen: ausdrücklicher
+   Katalogleselauf, Journalvorbereitung, Blockbestätigung und Rücklesung. 0.4.24.13 ergänzt die bestätigte
+   Bedienaktion mit Nachfolger-/Favoritenwahl, Fortschritt, Pause und Journalfortsetzung/Rücknahme.
+   Der Benutzer hat am 11. September ausschließlich das Öffnen in Lightroom bestätigt, ohne Suche oder
+   Auswahlentscheidung. Offen bleiben praktische Schreib-/Rücknahmeabnahme und Großkatalogmessung.
+   Details: `lightroom-identity-workflow.md`.
+   Der kurze Explorer-Bedienungstest wurde bestätigt; keine praktische Split-/Merge-Migration.
+   Codebefunde, Bedienvorschlag, Rücknahmegrenzen und Prüfkriterien stehen in
+   `taxonomy-identity-incremental-plan.md`. Keine automatische Namensheuristik und keine automatische
+   Foto-Neuzuordnung. Produktive Daten unverändert; Lua-Plug-in mit der neuen Bedienaktion nun 0.4.24.13.
+4. **Verbindliche Umsetzung vor dem Audit:** Inkrementellen Master- und Lightroom-Suchpaketaufbau nach den
+   Identitätsregeln implementieren. Der Benutzer hat die bisher optionale Verschiebung am 8. September ausdrücklich
+   aufgehoben. Unveränderte Ergebnisse wiederverwenden, Änderungen einschließlich Löschungen und abhängiger
+   Hierarchien/Suchdaten neu berechnen; vollständiger Neuaufbau bleibt als Rückfallweg erhalten. Beide Kandidaten
+   vor gemeinsamem Aktivierungswechsel prüfen. Der bisherige Vollaufbau aktiviert Master und Paket nacheinander
+   mit möglichem Teilerfolg, nicht gemeinsam in einer Transaktion. Fortschritt, dauerhafte Checkpoints,
+   Wiederanlauf, Präferenzerhalt und Ergebnisgleichheit mit Vollaufbau sind Pflichtprüfungen. Details und
+   Abgrenzung zu Quelldownloads: `taxonomy-identity-incremental-plan.md`. Am 11. September ist der isolierte
+   Eingangsvergleich samt versionsgebundenen SQLite-Checkpoints implementiert und direkt getestet.
+   Anschließend ist der Explorer-Vollaufbau an die geprüfte Eingangsaufbereitung angeschlossen: Baseline im
+   Kandidatenordner, Kandidaten-/Dateibindung, Mitnahme bei Aktivierung/Rollback und nachgelagerter Vergleich.
+   Der CoL-Auswahlumfang ist ausdrücklich von der Gesamtquelle getrennt; alte Aufrufer ohne Beleg bleiben
+   Vollaufbau ohne Deltabasis. Am 12. September ist ein konservativer nachgelagerter Abhängigkeitsplan aus
+   beiden Masterständen ergänzt: transitive Quellenverweise, wissenschaftliche Varianten, CoL-Gattungsableitung,
+   alte Kanten und zustandsabhängige Taxa. Anschließend ist die tatsächliche Wiederverwendung bei unveränderter
+   Graphstruktur vorgeschaltet: unveränderte Arten überspringen die Feldauswahl, aktuelle Releases/Beleg-IDs
+   werden neu verknüpft. Kleine Vergleichstests gegen Vollaufbau inklusive mehrstufigem Update sind erfolgreich.
+   Struktur-/Identitätswechsel bleiben Vollaufbau. Isolierte Leistungs-/Grenztests mit 10.000 synthetischen Arten
+   sind durchgeführt: Ergebnisgleichheit in allen Messpaaren, aber Laufzeitausreißer und höheres Spitzen-RSS.
+   Doppeltes Graphlesen und wiederholte SQL-Vorbereitung sind reduziert; vollständig geänderte Eingänge gehen
+   ohne nutzlose Wiederverwendungsplanung in den Vollaufbau. Abbruch nach 500 Übernahmen schützt alte Stände.
+   Seit 13. September sind Suchpaket-Deltas, vorbereiteter Paketbau aus dem Kandidaten und gemeinsame
+   Master-/Paketfreigabe implementiert und isoliert getestet (Plug-in 0.4.24.14). Präferenzmitnahme,
+   Rücknahme, offene Leser und Bau-/Zeigerfehler sind abgedeckt; keine produktive Aktivierung.
+   Vor Großbestandsfreigabe verbleiben Speicher-/Ausreißeranalyse, Release-Aufbewahrung/Platzbudget und
+   Abnahme des gesamten Wiederanlaufs. Die schwere Paarprüfung ist seit 20. September in einem separaten
+   Hilfsprozess angebunden; nur die frisch geprüfte gemeinsame Aktivierung bleibt im Server. Der Prozesskern mit
+   500er-Schreibcheckpoints ist seit 14. September im Explorer angeschlossen: aktuelle Eingangsbindung,
+   Auftragswiederentdeckung ohne automatischen Start, serviceweite Sperren und sichtbare Pause/Fortsetzung.
+   Service-/Worker- und UI-Tests prüfen die Wiederaufnahme, geänderte Quellen und gesperrte Alt-Kandidaten.
+   Nächster Schritt: Aufbewahrung/Platzbudget ergänzen; danach kompletter
+   Betriebs-/Großbestandstest gemäß `taxonomy-master-background-build.md`.
+   Vollständiges Lesen/Projizieren wird noch nicht eingespart.
+   Stand: `taxonomy-incremental-build.md`.
+5. **Gebündelte Lightroom-Abnahme:** Menü und Verwaltungsfenster einschließlich aller Aktionen; neue Suche und
    Einzel-/Mehrfachzuweisung; automatische Suche, Korrekturübergabe und Sekundenkorrektur bei geöffnetem Lightroom;
    Orts-/Zeit-Stapel, Aktualisierung, Gesamtbereinigung und Katalogpflege einschließlich Pause/Abbruch, Stern-Endungen
    und Statistikdeltas; finale Statistikdarstellung und alle drei Exporte. Schon bestätigte Altstände nicht als
    vollständige Abnahme des aktuellen Gesamtstands verbuchen. Kleine Testauswahl und separaten Testkatalog verwenden.
-5. **Betriebsgrenzen prüfen und entscheiden:** Fehler-/Wiederanlauf und Rollback mit geöffneten Verbrauchern,
+6. **Betriebsgrenzen prüfen und entscheiden:** Fehler-/Wiederanlauf und Rollback mit geöffneten Verbrauchern,
    viele echte Konflikte jenseits der derzeitigen 100er-Anzeigegrenze sowie Verhalten bei Explorer-Neustart prüfen.
-   Ein Masterbau im eigenen Worker, dauerhafte Lauf-Checkpoints und ein engerer gemeinsamer Aktivierungspunkt sind
-   mögliche Verbesserungen, keine bereits implementierten Zusagen. Der funktionierende Reparaturlauf ist kein
+   Masterbau außerhalb des UI-Prozesses und dauerhafte Lauf-Checkpoints gehören zum Pflichtumfang aus Punkt 4
+   und sind an Service und Oberfläche angeschlossen, aber noch nicht im produktiven Gesamtablauf abgenommen.
+   Der gemeinsame Paarwechsel ist technisch umgesetzt, aber nicht am Großbestand abgenommen. Der Reparaturlauf ist kein
    erneuter Downloadtest. Bekannte SDK-Grenzen (Adobe-KI-Dialog, externe Metadatenbeobachtung, weiße native Liste,
    Enter und Rechtsklick) bleiben explizit dokumentiert statt durch undokumentierte Funktionen umgangen zu werden.
-6. **Veröffentlichung und Auditbereitschaft:** Qualitätsgate, Projektstatus, GitHub-Pages-Deployment und
+7. **Veröffentlichung und Auditbereitschaft:** Qualitätsgate, Projektstatus, GitHub-Pages-Deployment und
    Dokumentationsabgleich prüfen. Für das Gesamtaudit anschließend Code/Modularisierung/Dopplungen/tote Elemente,
    Daten und Schemata, temporäre Dateien sowie Backup/Restore und Veröffentlichung projektweit untersuchen.
-7. **Architektur-/Optimierungspunkt:** Inkrementelle Aktualisierung für Master und abgeleitetes Lightroom-Suchpaket
-   bewerten und gegebenenfalls als spätere Teilphase spezifizieren. Ziel ist ein neuer, atomar aktivierter Kandidat,
-   der unveränderte Taxa wiederverwendet und nur geänderte Quellen-, Hierarchie- und Suchdaten neu berechnet. Das
-   darf nicht als direkte Änderung des aktiven Bestands umgesetzt werden. Vor einer Umsetzung müssen Löschungen,
-   Taxonaufteilungen/-zusammenführungen, Quellenprovenienz, Prüfsummen, Rollback, Abbruch/Fortsetzung und
-   Rückwärtsverträglichkeit nachgewiesen werden. Der aktuelle Stand besitzt bereits atomare Aktivierung sowie den
-   schnellen Korrekturpfad ohne Basisneubau; ein inkrementeller Vollaufbau ist noch nicht implementiert und bleibt
-   vor dem Audit zunächst eine zu entscheidende bzw. begründet nach Phase 10 zu verschiebende Optimierung.
+   Zusätzlich am 12. September gemeldet und inzwischen untersucht/technisch nachgebessert; praktische
+   Explorer-Abnahme vor dem Audit bleibt offen:
+   - **Karten-Download im Arten-Explorer:** Beim Grünfink schlägt die Übernahme fehl, obwohl der vom Explorer
+     angebotene [IUCN-Kartenlink](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg)
+     im Browser eine Karte anzeigt. Belegt: automatischer Abruf erhält HTTP 403/Schutzseite, alternative API
+     HTTP 404. Auch der wiederhergestellte Windows-Fallback scheitert laut Benutzerlauf; Datei-Upload bleibt
+     nutzbar und vorhandene Karten erhalten. **Automatischer Abruf bleibt extern blockiert**, kein bestätigter
+     Downloadfix. Abnahme: zutreffende Meldung beziehungsweise Übernahme einer freigegebenen Datei.
+   - **Veröffentlichungsfehler bei Artanlage:** Den gemeldeten
+     [GitHub-Actions-Lauf 34681451887](https://github.com/felixkfm90/iucn-species-data/actions/runs/34681451887)
+     geprüft: Medien-Qualitätsgate scheiterte an der fehlenden Grünfink-Karte, Build/Deploy wurden übersprungen.
+     Dieselbe Medienprüfung stoppt Pipeline-/Transferveröffentlichungen jetzt lokal vor Git. Tests mit fehlender
+     und ergänzter Karte bestanden; kein echter Push oder Wiederholung des alten fehlerhaften Commits gestartet.
+   - **Doppelte Abschlussausgaben bei „Alle Arten aktualisieren“:** Ausgaben der Teilprozesse und der
+     Explorer-Oberfläche nachgebessert: interne Detailberichte unterdrückt, Spektrogramm-Ergebnis als Teilschritt,
+     nicht bearbeitete Assets als `nicht geprüft`, eine eindeutige Gesamtzusammenfassung bei Finalisierung.
+     Git-Übertragung bedeutet ausdrücklich nicht erfolgreiches Pages-Deployment. Controller-/Ausgabetests
+     bestanden; reale Sichtprüfung der neuen Abschlussdarstellung noch offen. Details: `pipeline-control-plan.md`.
+     Zusatzkorrektur: UTF-8 für Windows-Kartenprozesse und paketübergreifende Pipeline-Textdekodierung gegen
+     beschädigte Umlaute; alte Logs bleiben als historische Belege unverändert.
+   Lesender Gesamttest am 12. September, 19:48 MESZ: **57/57 Kartenendpunkte HTTP 403/Schutzseite, 0 JPEGs**.
+   Die Downloadstörung betrifft im Test alle Arten, nicht nur Grünfink; automatischer Neuabruf bleibt vor dem
+   Audit offen. Alle 57 vorhandenen Kartendateien per SHA-256 unverändert. Details: `pipeline-control-plan.md`.
+   Präzisierung des Reparaturversuchs: Direkte Node-Abrufe wurden getestet, nicht der vollständige historische
+   Windows-Ablauf. Weißstorch/Grünfink liefern über die angemeldete Assessment-API HTTP 200 und vorhandene
+   Verbreitungsdaten, aber keinen JPEG-Link. Der historische Windows-Fallback nach direktem 403 ist wieder
+   aktiviert; aktueller automatischer Erfolg bleibt bis zum Network-Auszug/Live-Test offen.
+   Der vollständige Network-Auszug bestätigt `www.iucnredlist.org` mit HTTP 200, `image/jpeg` und ca. 581 kB.
+   Die frühere Annahme eines Endpunkts ohne `www` war falsch; `www` wird zuerst versucht.
+   Der Karten-Webrequest sendet den Token nur an den API-Host, nicht an den Website-Bildendpunkt.
+   Windows-403 beendet den Ablauf nicht vor den nachgelagerten Cache-/Backblaze-Prüfungen.
+   **13. September – Dateiimport vereinfacht:** Im Karteneditor startet die lokale JPEG-/PNG-Prüfung nach
+   Auswahl oder Drag-and-drop automatisch. Quelle und leerer Pflegegrund erhalten kontrollierte Vorschläge;
+   Übernahme erst nach Vorschau und Bestätigung. Falsche Assessment-Dateinamen und veraltete Vorschauen werden
+   abgefangen. Am 13. September vom Benutzer praktisch bestätigt, einschließlich direkter Ablage aus dem Browser.
+   Eine solche Übernahme aktiviert aktuell denselben manuellen Pipeline-Schutz wie der bisherige Dateiimport.
+   Vollautomatischer IUCN-Kartenabruf bleibt ein separater offener Betriebsbefund.
+   Am 10. September zusätzlich bei Installation der Lua-Testabhängigkeit entdeckt: `npm audit` meldet eine
+   hohe Schwachstelle in der bereits im veröffentlichten Lockfile vorhandenen Electron-Downloadabhängigkeit
+   `undici@7.28.0` (`electron → @electron/get → undici`). Separates gezieltes Abhängigkeitsupdate mit Prüfung
+   vor dem Audit einplanen; kein pauschales `npm audit fix` während der Identitätsimplementierung.
+
+8. **Letzter fachlicher Prüfpunkt unmittelbar vor dem Audit – IUCN-Karten und Pflegekennzeichnung:**
+   Automatischen Abruf erneut über regulär verfügbare Zugänge prüfen. Zusätzlich Herkunft und Schutzentscheidung
+   voneinander trennen: Eine unveränderte, aus dem Browser übernommene IUCN-Karte soll nicht zwangsläufig dauerhaft
+   als fachlich manuell gepflegt gelten. Mögliche eigene Kennzeichnung, ausdrückliche Rückkehr zur automatischen
+   Pflege und Bestands-/Backupschutz bewerten. Bestehende Schutzmarkierungen bis zur bestätigten Umsetzung
+   erhalten. Der erfolgreiche Dateiimport ist abgenommen; der automatische Download ist weiterhin offen.
 
 - 10.5: **offen:** umfassendes Phase-10-Abschlussaudit nach Erledigung beziehungsweise begründeter Zuordnung der
   gebündelten Restpunkte. Der erfolgreiche Wiederanlauf allein schließt Phase 10 nicht ab.

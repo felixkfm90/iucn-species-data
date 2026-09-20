@@ -1,6 +1,6 @@
 # Pipeline-Steuerung im Arten-Explorer
 
-Stand: 2026-07-19
+Stand: 2026-09-13
 
 Ziel von Phase 7.6: Die bestehende Datenpipeline kontrolliert aus dem Arten-Explorer starten und dabei klar zwischen
 einem gezielten Lauf fuer neue oder unvollstaendige Arten und einem vollstaendigen Lauf ueber alle Arten
@@ -9,6 +9,162 @@ unterscheiden.
 Status: abgeschlossen am 2026-06-20. Vollständige und selektive Läufe, Prozessanzeige, Karte-/Sound-Entscheidung,
 automatischer Commit/Push, Bereinigung, Karten-Großansicht, sichere Dialogbedienung und Soundstopp wurden praktisch
 geprüft.
+
+## Nachbesserung Kartenabruf, Veröffentlichung und Abschlussausgaben (12. September)
+
+Beim Grünfink-Aufbau vom 12. September dokumentiert der lokale Lauf
+`pipeline-20260912T074021Z-558a22c7.log` HTTP 403 am öffentlichen IUCN-Kartenendpunkt, HTTP 404 am alternativen
+API-Endpunkt und eine nicht öffentlich abrufbare Cache-Datei. Ein erneuter direkter Abruf bestätigte
+HTTP 403 mit HTML-Titel `Just a moment...`. Ein im Browser funktionierender Link beweist daher nicht die
+Freigabe des automatischen Abrufs. Die konkrete Ursache der unterschiedlichen Browserbehandlung ist nicht belegt.
+
+Der [GitHub-Lauf 34681451887](https://github.com/felixkfm90/iucn-species-data/actions/runs/34681451887)
+scheiterte in `Quality checks` / `Run quality gate`, weil `species-assets/Gruenfink/map.jpg` fehlte.
+Artefaktbau und Deployment wurden übersprungen. Es war kein Fehler des Pages-Deploy-Schritts.
+Die später vorhandene Grünfink-Karte wurde bei der Reparatur nicht verändert; kein erneuter Push/Deploy ausgelöst.
+
+- Zwischenstand vom 12. September: Nach IUCN-Zugriffsablehnungen (HTTP 401/403) wurden zunächst keine weiteren
+  Windows-/Cache-Versuche ausgeführt. Dieser Abbruch wurde später zurückgenommen (siehe Reparaturversuch unten).
+  Das historische Qualitätsgate prüfte diesen Zwischenstand, nicht die anschließend wiederhergestellten Fallbacks.
+- Bei dieser externen Zugriffssperre: Karte im Browser herunterladen und im vorhandenen Karteneditor als
+  JPEG-/PNG-Datei auswählen. Das ist ein kontrollierter Ersatzweg, **keine Wiederherstellung eines automatischen
+  Downloads** und kein Umgehen der Schutzseite. Ein langfristig freigegebener maschineller IUCN-Kartenzugang
+  bleibt eine externe Voraussetzung.
+- Vor den Git-Aktionen eines Pipeline-/Transferlaufs läuft dieselbe Medienprüfung wie im CI-Gate.
+  Fehlende/ungültige Medien stoppen die Übertragung vor dem Vormerken. Bereits verarbeitete Daten bleiben
+  lokal erhalten. Nach Ergänzung im Explorer kann `Änderungen übertragen` erneut gestartet werden.
+  Die Vorprüfung ersetzt weder das vollständige Qualitätsgate noch einen erfolgreichen Pages-Lauf.
+- Interne Aufrufe von `update.mjs` verwenden `--quiet-report`: Der Fehlstellenbericht wird weiterhin
+  geschrieben, seine komplette Detailausgabe aber nicht bei jedem Teilschritt wiederholt. Direkte CLI-Läufe
+  behalten die ausführliche Ausgabe, sofern die Option nicht gesetzt ist.
+- Der Spektrogramm-Abgleich endet mit `Spektrogramm-Ergebnis`, nicht mit einer vermeintlichen
+  Gesamtzusammenfassung. Ein Sound-only-Lauf bezeichnet Karten als `nicht geprüft`; umgekehrt gilt das
+  für Sounds im Karten-only-Lauf.
+- `finishPipelineRun` schreibt eine `Gesamtzusammenfassung` für Erfolg oder Fehler, mit Git-Übertragungsstatus
+  und ausdrücklich dem **letzten gespeicherten Gesamtbestand**. War keine Übertragung nötig, behauptet der
+  Lauf keinen Commit/Push. Wartende Assetentscheidungen sind noch kein Abschluss. Eine erneute Finalisierung
+  ersetzt die vorherige Zusammenfassung statt sie zu verdoppeln. Git-Push und erfolgreiches Pages-Deployment
+  werden ausdrücklich unterschieden.
+
+Regressionen: HTTP-Sperre ohne Wiederholungsabruf und ohne Kartenüberschreibung; freigegebene Antwort nach
+geprüfter Weiterleitung; lokale Medienprüfung; ein echter Controller-Transfer mit simulierten Git-Prozessen
+stoppt bei fehlender Karte und läuft nach Ergänzung erfolgreich weiter. Keine echten Git-/Produktivaktionen
+in diesen Tests. Eine praktische Explorer-Abnahme der neuen Meldungen steht noch aus.
+
+Prüfstand 2026-09-12: Alle 21 gezielten Anbieter-, Medien- und Pipeline-Tests bestanden; das vollständige
+`npm.cmd run --silent quality:ci` erfolgreich (Exitcode 0). `git diff --check` ohne Befunde.
+
+Squarespace-Footer und dessen `?v=`-Stände wurden geprüft: Diese Nachbesserung betrifft ausschließlich lokale
+Pipeline-/Explorer-Module, keine dort eingebundenen Frontend-Dateien; kein Versionswechsel im Footer erforderlich.
+
+Zusatzbefund Zeichenkodierung: In den Windows-WebRequest-Logs standen bereits beschädigte Umlaute in
+`Unzulässig` und `zurückgegeben`. Beide Karten-Hilfsprozesse legen jetzt ihre Ausgabe ausdrücklich auf UTF-8
+fest; Node liest dieselbe Kodierung. Pipeline-stdout und -stderr werden getrennt über Paketgrenzen dekodiert
+und zu vollständigen Zeilen zusammengesetzt. Tests prüfen echte Windows-JSON-Ausgabe ohne Netzwerk sowie
+byteweise geteilte Umlaute, Emoji und letzte Zeilen ohne Umbruch. Historische Logs werden nicht umgeschrieben.
+Nach dieser Zusatzkorrektur: 23 gezielte Anbieter-/Medien-/Pipeline-Tests bestanden, einschließlich der echten
+Windows-Ausgabeprüfung; Stil-, Dokumentations- und Syntaxprüfung bestanden. Das vollständige Qualitätsgate
+wurde für den unmittelbar vorherigen Stand ausgeführt, für diese Zusatzkorrektur nicht erneut.
+
+## Lesender Kartenquellentest vom 12. September 2026, 19:48 MESZ
+
+Auf Wunsch alle 57 Assessment-Kartenendpunkte aus `speciesData.json` geprüft, einschließlich Arten mit
+bereits vorhandener Karte. Je Endpunkt ein sequenzieller GET mit den aktuellen Headern und dem vorhandenen
+IUCN-Token, eine Sekunde Pause, 15 Sekunden Timeout und begrenztem Antwortumfang. Keine Tokens protokolliert.
+Geprüft wurde `https://www.iucnredlist.org/api/v4/assessments/<Assessment ID>/distribution_map/jpg`, also der
+erste Download-Endpunkt im aktuellen Adapter; keine erneuten Windows-/Cache-Versuche nach Zugriffsablehnung.
+
+Ergebnis: **57 von 57 HTTP 403**, jeweils HTML-Schutzseite mit Titel `Just a moment...`; **0 gültige JPEGs**,
+keine Netzwerkfehler oder HTTP-429-Antworten. Betroffen sind damit in diesem Test nicht nur Grünfink,
+sondern sämtliche hinterlegten Assessment-Endpunkte. Ein nötiger automatischer Neuabruf würde mit dem
+aktuellen Ablauf bei allen 57 Arten an dieser Sperre enden. Das beweist weder ein Fehlen der Karten noch die
+Ursache oder Dauer der unterschiedlichen Browserbehandlung. Andere Zugangswege wurden nicht pauschal getestet.
+
+Alle 57 lokalen Karten waren vor und nach dem Test vorhanden und per SHA-256 unverändert. Keine Bilddateien
+gespeichert, keine Assessment-Marker geändert, kein Pipeline-/Git-/Deploy-Lauf gestartet. Temporäres Testskript
+nach Abschluss entfernt. Automatischer Kartenabruf bleibt ein offener Betriebsbefund vor dem Audit.
+
+## Reparaturversuch und verbleibende Zugangsgrenze (12. September)
+
+Der frühere erfolgreiche Weißstorch-Lauf vom 3. September ist im lokalen Log
+`pipeline-20260903T172348Z-a2226d68.log` belegt: Windows-WebRequest lieferte eine Karte. Der Kartenadapter
+war laut Git-Historie seit Commit `f391ce2` vom 18. Juli unverändert. Beim ursprünglichen Grünfink-Fehler am
+12. September lief dieser Windows-Weg noch und scheiterte bereits mit HTTP 403. Der später hinzugefügte
+Abbruch nach HTTP 401/403 ist eine zusätzliche Verhaltensänderung, nicht die Ursache dieses ursprünglichen
+Grünfink-Fehlers. Der 57-Arten-Test prüfte nur direkte Node-Abrufe, nicht den früheren vollständigen Ablauf.
+
+Im anschließenden Reparaturversuch liefert die reguläre, angemeldete API
+`GET https://api.iucnredlist.org/api/v4/assessment/<ID>` für Weißstorch (`281839847`) und Grünfink
+(`132000123`) jeweils HTTP 200. Beide Antworten enthalten `assessment_ranges: true` und
+`assessment_points: false`, jedoch keinen JPEG-Downloadlink. Die existierenden Token sind damit für diese
+Datenabfragen nutzbar; eine grundsätzlich ausgefallene Anmeldung ist für diese Aufrufe ausgeschlossen.
+Die Ursache der abweichenden Behandlung der Karten-Programmanfragen bleibt unbewiesen.
+
+**Reparaturstand:** Der frühere Windows-WebRequest-Fallback wird nach einem direkten 403 wieder versucht;
+auch Cache-/Backblaze-Prüfungen bleiben erreichbar. Der Windows-403 wird nicht mehr als vorzeitiger
+Abbruchfehler weitergereicht. Das stellt den historischen Weißstorch-Ablauf wieder her,
+ist aber noch kein Beleg für einen erfolgreichen aktuellen Grünfink-Download. Ein regulärer Bildlink aus dem
+Browser-Network-Auszug kann als zusätzlicher, gezielt geprüfter Weg ergänzt werden. Kein Produktionslauf,
+Kartenersatz und kein Commit/Push in diesem Reparaturversuch. Meldungs-/Kodierungsverbesserungen und
+Bestandsschutz sind nicht mit einem erfolgreichen aktuellen Download gleichzusetzen.
+
+Der vollständige Browser-Network-Auszug nennt
+`https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg` mit HTTP 200,
+`content-type: image/jpeg`, `filename="T22720330A132000123.jpg"` und rund 581 kB.
+Die frühere Einordnung als Host ohne `www` war falsch. Der Adapter versucht `www` zuerst;
+der Windows-WebRequest-Fallback gilt für beide Hosts. Der jüngste Benutzerlauf scheitert weiterhin mit 403.
+Das belegt eine unterschiedliche Behandlung der Zugänge, nicht deren konkrete Ursache oder ein Speicherverbot.
+Der Karten-Webrequest sendet dabei keinen Bearer-Token an den Website-Bildendpunkt; der Token bleibt auf
+`api.iucnredlist.org`-JSON-Anfragen beschränkt. Das entspricht dem vorliegenden Browser-Network-Auszug.
+Die Explorer-Hinweise wurden an diesen Befund angepasst: Sie verlangen keinen nicht vorhandenen Backblaze-Link
+mehr, sondern nennen den Browser-Dateiimport als Fallback; eine Quellen-URL wird nur bei tatsächlich sichtbarem
+signiertem Link angeboten. Die Squarespace-Frontend-Dateien bleiben davon unberührt.
+
+## Vereinfachter Dateiimport im Karteneditor (13. September)
+
+Der akzeptierte Ersatzweg vereinfacht nur die lokale Übernahme einer vom Benutzer gespeicherten Karte.
+Es werden keine Browser-Sitzungen übernommen und keine geschützten Antworten automatisch nachgeladen.
+Der Neue-Art-Assistent behält seinen bisherigen manuellen Import; dieser Schritt betrifft den Karteneditor.
+
+1. Art auswählen und bei der Verbreitungskarte `Bearbeiten` öffnen.
+2. `IUCN-Karte im Browser öffnen` wählen und im normalen Browser `Bild speichern unter …` verwenden.
+   Der Button trägt ausschließlich die bekannte Quellenadresse ein, er lädt keine Datei im Explorer nach.
+3. Die gespeicherte JPEG-/PNG-Datei in das beschriftete Feld ziehen oder über die Dateiauswahl öffnen.
+   Prüfung und Vergleichsvorschau starten automatisch. `Karte prüfen` bleibt für korrigierte Angaben und
+   den bisherigen ausdrücklichen URL-Import verfügbar.
+4. Bisherige und neue Karte visuell vergleichen. Erst `Karte ersetzen` schreibt mit vorhandener Sicherung,
+   Quellrevisionsschutz und manuellem Pipeline-Schutz. Im normalen Explorer bleibt die Änderung lokal;
+   `Änderungen übertragen` veröffentlicht sie später. Die API-Warnung berücksichtigt die explizite
+   `publishAssetChanges`-Konfiguration statt stets einen automatischen Push anzukündigen.
+
+Ohne eigenen Pflegegrund wird `Karte als lokale Datei importiert.` als editierbarer Vorschlag eingesetzt.
+Erkannte IUCN-Dateinamen `T<Taxon>A<Assessment>.jpg` (auch Downloads mit `(1)`-Suffix) ergänzen bei passender
+Assessment-ID eine leere beziehungsweise bisherige Quellenadresse. Eigene abweichende Quellen werden nicht
+überschrieben. Generische Dateinamen erfinden keine IUCN-Quelle. Eine erkannte andere Assessment-ID blockiert
+die Auswahl; das ist eine Plausibilitätsprüfung, kein Beweis des Bildinhalts. Umbenannte Dateien sind visuell
+der richtigen Art zuzuordnen.
+
+Die Ablage akzeptiert genau eine nicht leere Datei bis 20 MB. Links, HTML und Mehrfachablagen werden nicht
+automatisch geladen. Die bestehende Serverprüfung kontrolliert Bildsignatur, Struktur und Abmessungen und
+konvertiert PNG nach JPEG. Eine falsche Auswahl entwertet vorherige Vorschauen. Änderungen an Grund oder
+Quelle sperren das Speichern bis zur erneuten Prüfung. Während Prüfung/Speicherung verhindern Sperren
+Doppelklicks und Dialogschließen; verspätete Antworten nach einem Reset aktivieren keine alte Vorschau.
+Beim Schließen/Öffnen wird die ausgewählte Datei verworfen. Kein neuer automatischer Katalog-/Projektlauf.
+
+Regressionen liegen in `species-explorer/app-editor-map.test.mjs` und laufen mit `test:frontend-editor-files`
+im Qualitätsgate. API-/Medientests decken PNG-Konvertierung, Vorschau, Backup, manuellen Schutz und einmalige
+Vorschau-Token ab. Am 13. September hat der Benutzer den Dateiimport praktisch bestätigt, einschließlich
+direkter Ablage aus dem Browser. Die pauschale manuelle Pflegekennzeichnung und der reguläre automatische
+IUCN-Abruf werden als letzter fachlicher Punkt vor dem Audit erneut geprüft; siehe `roadmap.md`, Punkt 8.
+
+Prüfstand 2026-09-13: 11 neue Ablauf-Tests erfolgreich; zusammen mit Dateihilfen und Modulverträgen 21 Tests.
+Weitere 13 Medien-, Kartenimport- und UI-Vertragstests erfolgreich. Vollständiges `npm.cmd run --silent quality:ci`
+bestanden (Exitcode 0), einschließlich Lightroom-Vertrag und lokaler Medienprüfung. Der erste eingeschränkte
+Versuch scheiterte an `spawn EPERM` im vorhandenen Windows-UTF-8-Test; der erneute Lauf mit erlaubtem
+Hilfsprozessstart bestand. Keine produktiven Asset-, Pipeline-, Commit- oder Push-Aktionen dieses Arbeitsschritts.
+
+Squarespace-Footer und Custom-CSS-Referenz geprüft: Geändert sind nur lokale Explorer-Dateien, keine dort
+eingebundenen Skripte oder Styles. Keine Squarespace-Versionsänderung und keine Lightroom-Änderung erforderlich.
 
 ## Bedienoberfläche
 
@@ -149,9 +305,9 @@ werden bei Bedarf zusätzlich verarbeitet.
 - Seit 2026-06-29 prüft `update.mjs` neben dem direkten IUCN-Kartenendpunkt eine Fallback-Strategie fuer gecachte
   Einzelkarten. Seit 2026-07-02 versucht der automatische Abruf zuerst den bisherigen IUCN-Web-Endpunkt mit
   browsernahen Headern, danach den offiziellen IUCN-API-Host mit Token und extrahiert signierte Backblaze-Links aus
-  Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL. Wenn Node lokal HTTP 403 erhält, nutzt die
-  Pipeline unter Windows zusätzlich `Invoke-WebRequest` als WebRequest-Fallback, weil derselbe IUCN-Endpunkt dort die
-  JPEG-Karte ausliefert. Wenn lokal trotzdem kein direkt speicherbarer Link geliefert
+  Redirect-, HTML- und Fehlerantworten als `cached-individual-maps`-URL. Seit 2026-09-12 beendet eine ausdrückliche
+  IUCN-Ablehnung (401/403) den automatischen Abruf ohne weitere Windows-/Cache-Versuche; Ersatzweg ist der
+  Datei-Upload. Der Windows-Fallback bleibt für vorübergehende technische Fehler verfügbar. Wenn kein direkt speicherbarer Link geliefert
   wird, kann der im Browser sichtbare signierte Backblaze-JPEG-Link weiterhin im Kartenimport als Quellen-URL
   eingefügt und geprüft werden. Seit 2026-07-01 zeigt der Karten-Bearbeitungsdialog dafür direkt `IUCN-Karte im
   Browser öffnen`. Im Neue-Art-Assistenten steht derselbe manuelle URL-Schritt zur Verfügung; die Karte kann dort
