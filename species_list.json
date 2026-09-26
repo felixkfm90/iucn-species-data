@@ -520,5 +520,14 @@
     "size": "ca. 28-32 cm",
     "weight": "ca. 300-450 g",
     "life_expectancy": "ca. 2-3 Jahre"
+  },
+  {
+    "german": "Rotaugenlaubfrosch",
+    "english": "American Red-eyed Tree Frog",
+    "genus": "Agalychnis",
+    "species": "callidryas",
+    "size": "Männchen: ca. 4-5 cm; Weibchen: ca. 6-7 cm",
+    "weight": "ca. 6-15 g",
+    "life_expectancy": "ca. 5-8 Jahre"
   }
 ]

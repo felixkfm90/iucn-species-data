@@ -1,21 +1,22 @@
 {
-  "generatedAt": "2026-09-15T15:03:40.120Z",
+  "generatedAt": "2026-09-26T07:29:11.970Z",
   "counts": {
-    "totalSpecies": 58,
-    "missingSoundMp3": 2,
+    "totalSpecies": 59,
+    "missingSoundMp3": 3,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 2,
+    "missingSpeciesAssets": 3,
     "ncSoundLicensesAll": 10
   },
   "missing": {
     "soundMp3": [
       "Grüner Leguan",
-      "Gepard"
+      "Gepard",
+      "Rotaugenlaubfrosch"
     ],
     "soundCredits": [],
     "maps": [],
@@ -32,6 +33,15 @@
       {
         "german": "Gepard",
         "safeName": "Gepard",
+        "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
+      {
+        "german": "Rotaugenlaubfrosch",
+        "safeName": "Rotaugenlaubfrosch",
         "missing": [
           "sound.mp3",
           "credits.json",

@@ -1390,5 +1390,29 @@
     "Species": "perdix",
     "Letztes IUCN Update": "2022",
     "Daten abgerufen": "2026-09-15"
+  },
+  {
+    "URLSlug": "agalychniscallidryas",
+    "Wissenschaftlicher Name": "Agalychnis callidryas",
+    "Deutscher Name": "Rotaugenlaubfrosch",
+    "Englischer Name": "American Red-eyed Tree Frog",
+    "Gewicht": "ca. 6-15 g",
+    "Größe": "Männchen: ca. 4-5 cm; Weibchen: ca. 6-7 cm",
+    "Lebenserwartung": "ca. 5-8 Jahre",
+    "Assessment ID": 3028059,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "n/a",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Amphibia",
+    "Order": "Anura",
+    "Family": "Phyllomedusidae",
+    "Genus": "Agalychnis",
+    "Species": "callidryas",
+    "Letztes IUCN Update": "2020",
+    "Daten abgerufen": "2026-09-26"
   }
 ]

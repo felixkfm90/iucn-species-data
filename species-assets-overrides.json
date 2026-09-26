@@ -1544,6 +1544,44 @@
         "updatedAt": "2026-09-15T15:03:40.041Z",
         "sha256": "678256caaeebfdc0863656d1b4e046d2048ef3f64173ed7b1396a374b1be3476"
       }
+    },
+    "Rotaugenlaubfrosch": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-09-26T07:27:41.355Z",
+        "approvedAt": "2026-09-26T07:27:46.073Z",
+        "sha256": "4e533702bbbc006d42adc09c0b6efc51e3beaea27e94ea3fb7885177f305c417",
+        "metadataSha256": "e28cf96f05085cfe6e708f85bb3cf28b2dc0938d61ae95cca52202d091f06fea"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg",
+        "germanName": "Rotaugenlaubfrosch",
+        "originalFileName": "T55290A3028059.jpg",
+        "importedAt": "2026-09-26T07:28:50.878Z",
+        "updatedAt": "2026-09-26T07:28:50.878Z",
+        "sha256": "a8d66b0f6b9b4945a2d921dadf71a3bf8be123830cb2a9a8d671462ca4462746"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatische Soundquelle wurde manuell abgelehnt; Quelle wird kuenftig uebersprungen.",
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:893968",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/893968",
+            "recordist": "Chris Harrison",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-09-26T07:29:11.757Z"
+          }
+        ],
+        "updatedAt": "2026-09-26T07:29:11.757Z"
+      }
     }
   },
   "spectrogramGenerator": {
