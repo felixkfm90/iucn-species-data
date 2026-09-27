@@ -1,22 +1,21 @@
 {
-  "generatedAt": "2026-09-27T07:42:32.717Z",
+  "generatedAt": "2026-09-27T07:44:18.186Z",
   "counts": {
     "totalSpecies": 60,
-    "missingSoundMp3": 3,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 3,
-    "ncSoundLicensesAll": 11
+    "missingSpeciesAssets": 2,
+    "ncSoundLicensesAll": 12
   },
   "missing": {
     "soundMp3": [
       "Grüner Leguan",
-      "Gepard",
-      "Erdbeerfröschchen"
+      "Gepard"
     ],
     "soundCredits": [],
     "maps": [],
@@ -38,15 +37,6 @@
           "credits.json",
           "spectrogram.webp"
         ]
-      },
-      {
-        "german": "Erdbeerfröschchen",
-        "safeName": "Erdbeerfroeschchen",
-        "missing": [
-          "sound.mp3",
-          "credits.json",
-          "spectrogram.webp"
-        ]
       }
     ],
     "assessmentId": [],
@@ -58,6 +48,7 @@
     "Bisamratte",
     "Blaustirn-Blatthühnchen",
     "Brauenmotmot",
+    "Erdbeerfröschchen",
     "Gaukler",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
