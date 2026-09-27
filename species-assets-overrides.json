@@ -1603,10 +1603,6 @@
         "sha256": "11f23fc68c612e38466c72dfebc30c2b7fec77f012bb1b2f262dff745cebe85a"
       },
       "sound": {
-        "manual": false,
-        "protectFromPipeline": false,
-        "reason": "Soundpaket wurde manuell gelöscht; bereits abgelehnte Quellen bleiben gespeichert.",
-        "updatedAt": "2026-09-27T17:02:30.239Z",
         "rejectedSources": [
           {
             "key": "xeno-canto:942515",
@@ -1614,17 +1610,19 @@
             "url": "https://xeno-canto.org/942515",
             "recordist": "Krzysztof Ostrowski",
             "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-            "rejectedAt": "2026-09-27T17:02:10.397Z"
-          },
-          {
-            "key": "xeno-canto:1180462",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/1180462",
-            "recordist": "Nick Talbot",
-            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-            "rejectedAt": "2026-09-27T17:02:30.239Z"
+            "rejectedAt": "2026-09-27T07:43:58.819Z"
           }
-        ]
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-27T07:44:17.983Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "ce9a424669ec15452c20c9842d7a64a33f93281d9df1fa30ef425b4cdd8745ee",
+        "spectrogramSha256": "f1eb63a3e6e0923044fa0ab23dbb8df41ebcf710d880cb9bbf2bc48f33fc3e8b",
+        "generatedAt": "2026-09-27T07:44:07.499Z",
+        "verifiedAt": "2026-09-27T07:44:07.503Z"
       }
     }
   },
