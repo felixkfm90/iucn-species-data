@@ -1579,6 +1579,60 @@
         "generatedAt": "2026-09-27T07:26:25.078Z",
         "verifiedAt": "2026-09-27T07:26:25.083Z"
       }
+    },
+    "Erdbeerfroeschchen": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-09-27T07:40:31.604Z",
+        "approvedAt": "2026-09-27T07:40:38.209Z",
+        "sha256": "9d3b898b19181cc6e51628057df377fc6e43351abe10b7d7c73c1cabbe08607d",
+        "metadataSha256": "b322bd1241015ebd2e52d0c68068a8810b19b7e51fb9b56bf94407e084c95b2e"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg",
+        "germanName": "Erdbeerfröschchen",
+        "originalFileName": "T55196A3025630.jpg",
+        "importedAt": "2026-09-27T07:41:26.065Z",
+        "updatedAt": "2026-09-27T07:41:26.065Z",
+        "sha256": "11f23fc68c612e38466c72dfebc30c2b7fec77f012bb1b2f262dff745cebe85a"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatische Soundquelle wurde manuell abgelehnt; Quelle wird kuenftig uebersprungen.",
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:942515",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/942515",
+            "recordist": "Krzysztof Ostrowski",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-09-27T07:41:32.685Z"
+          },
+          {
+            "key": "xeno-canto:1180462",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1180462",
+            "recordist": "Nick Talbot",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-09-27T07:41:53.129Z"
+          },
+          {
+            "key": "xeno-canto:1003159",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/1003159",
+            "recordist": "Venicio Wilson",
+            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+            "rejectedAt": "2026-09-27T07:42:32.517Z"
+          }
+        ],
+        "updatedAt": "2026-09-27T07:42:32.517Z"
+      }
     }
   },
   "spectrogramGenerator": {

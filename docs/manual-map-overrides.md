@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-09-26
+Stand: 2026-09-27
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -11,7 +11,7 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind 4 Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
+Aktuell sind 5 Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
 fehlerhafte Kartendaten. Die produktiven Karten duerfen deshalb nicht unbemerkt durch automatisch geladene IUCN-Karten
 ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeName>/map.jpg`.
 
@@ -20,9 +20,10 @@ ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeNam
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
 | Blaukehlchen | Blaukehlchen | `species-assets/Blaukehlchen/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-26 | erledigt/geprueft |
-| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-09-26 | erledigt/geprueft |
-| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-09-26 | erledigt/geprueft |
+| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-09-27 | erledigt/geprueft |
+| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-09-27 | erledigt/geprueft |
+| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-09-27 | erledigt/geprueft |
+| Erdbeerfröschchen | Erdbeerfroeschchen | `species-assets/Erdbeerfroeschchen/map.jpg` | Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg) | 2026-09-27 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

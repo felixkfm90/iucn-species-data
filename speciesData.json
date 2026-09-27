@@ -1414,5 +1414,29 @@
     "Species": "callidryas",
     "Letztes IUCN Update": "2020",
     "Daten abgerufen": "2026-09-26"
+  },
+  {
+    "URLSlug": "oophagapumilio",
+    "Wissenschaftlicher Name": "Oophaga pumilio",
+    "Deutscher Name": "Erdbeerfröschchen",
+    "Englischer Name": "Flaming Poison Frog",
+    "Gewicht": "ca. 1-2 g",
+    "Größe": "ca. 1,7-2,4 cm",
+    "Lebenserwartung": "ca. 8-12 Jahre",
+    "Assessment ID": 3025630,
+    "Status": "LC",
+    "Trend": "Unbekannt",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "n/a",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Amphibia",
+    "Order": "Anura",
+    "Family": "Dendrobatidae",
+    "Genus": "Oophaga",
+    "Species": "pumilio",
+    "Letztes IUCN Update": "2015",
+    "Daten abgerufen": "2026-09-27"
   }
 ]

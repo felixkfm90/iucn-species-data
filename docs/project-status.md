@@ -5,25 +5,26 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-09-27T07:26:29.071Z`
+Report-Datenstand: `2026-09-27T07:42:32.717Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 59 |
-| Aktive Arten | 59 |
-| Arten in `speciesData.json` | 59 |
-| Vollständige Art-Assetordner | 59 |
-| Karten | 59 |
+| Eingaben in `species_list.json` | 60 |
+| Aktive Arten | 60 |
+| Arten in `speciesData.json` | 60 |
+| Vollständige Art-Assetordner | 60 |
+| Karten | 60 |
 | Sounds | 57 |
 | Credits | 57 |
 | Spektrogramme | 57 |
-| Artporträts | 59 |
+| Artporträts | 60 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Manuell gepflegte Karten (4)
+## Manuell gepflegte Karten (5)
 
 - Blaukehlchen
+- Erdbeerfröschchen
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
@@ -42,7 +43,8 @@ Report-Datenstand: `2026-09-27T07:26:29.071Z`
 - Rotstirnamazone
 - Scharlachara
 
-## Bewusst fehlende Tierstimmen (2)
+## Bewusst fehlende Tierstimmen (3)
 
+- Erdbeerfröschchen
 - Gepard
 - Grüner Leguan

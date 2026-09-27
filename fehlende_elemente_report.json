@@ -1,21 +1,22 @@
 {
-  "generatedAt": "2026-09-27T07:26:29.071Z",
+  "generatedAt": "2026-09-27T07:42:32.717Z",
   "counts": {
-    "totalSpecies": 59,
-    "missingSoundMp3": 2,
+    "totalSpecies": 60,
+    "missingSoundMp3": 3,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 2,
+    "missingSpeciesAssets": 3,
     "ncSoundLicensesAll": 11
   },
   "missing": {
     "soundMp3": [
       "Grüner Leguan",
-      "Gepard"
+      "Gepard",
+      "Erdbeerfröschchen"
     ],
     "soundCredits": [],
     "maps": [],
@@ -32,6 +33,15 @@
       {
         "german": "Gepard",
         "safeName": "Gepard",
+        "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
+      {
+        "german": "Erdbeerfröschchen",
+        "safeName": "Erdbeerfroeschchen",
         "missing": [
           "sound.mp3",
           "credits.json",

@@ -529,5 +529,14 @@
     "size": "Männchen: ca. 4-5 cm; Weibchen: ca. 6-7 cm",
     "weight": "ca. 6-15 g",
     "life_expectancy": "ca. 5-8 Jahre"
+  },
+  {
+    "german": "Erdbeerfröschchen",
+    "english": "Flaming Poison Frog",
+    "genus": "Oophaga",
+    "species": "pumilio",
+    "size": "ca. 1,7-2,4 cm",
+    "weight": "ca. 1-2 g",
+    "life_expectancy": "ca. 8-12 Jahre"
   }
 ]
