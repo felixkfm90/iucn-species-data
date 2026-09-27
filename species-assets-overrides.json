@@ -1569,18 +1569,15 @@
       },
       "sound": {
         "manual": false,
-        "reason": "Automatische Soundquelle wurde manuell abgelehnt; Quelle wird kuenftig uebersprungen.",
-        "rejectedSources": [
-          {
-            "key": "xeno-canto:893968",
-            "source": "xeno-canto.org",
-            "url": "https://xeno-canto.org/893968",
-            "recordist": "Chris Harrison",
-            "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-            "rejectedAt": "2026-09-26T07:29:11.757Z"
-          }
-        ],
-        "updatedAt": "2026-09-26T07:29:11.757Z"
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-09-27T07:26:28.867Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "6e164a3639c67f3242bf23f25eb2d6794014606dc7cc76921624b1e564b9bda3",
+        "spectrogramSha256": "8eea026d2d7160d31fc0dd57595156b3bca8638ddbfe66a153b9ed8443e6d20f",
+        "generatedAt": "2026-09-27T07:26:25.078Z",
+        "verifiedAt": "2026-09-27T07:26:25.083Z"
       }
     }
   },

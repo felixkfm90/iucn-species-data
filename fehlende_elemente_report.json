@@ -1,22 +1,21 @@
 {
-  "generatedAt": "2026-09-26T09:22:03.978Z",
+  "generatedAt": "2026-09-27T07:26:29.071Z",
   "counts": {
     "totalSpecies": 59,
-    "missingSoundMp3": 3,
+    "missingSoundMp3": 2,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 3,
-    "ncSoundLicensesAll": 10
+    "missingSpeciesAssets": 2,
+    "ncSoundLicensesAll": 11
   },
   "missing": {
     "soundMp3": [
       "Grüner Leguan",
-      "Gepard",
-      "Rotaugenlaubfrosch"
+      "Gepard"
     ],
     "soundCredits": [],
     "maps": [],
@@ -38,15 +37,6 @@
           "credits.json",
           "spectrogram.webp"
         ]
-      },
-      {
-        "german": "Rotaugenlaubfrosch",
-        "safeName": "Rotaugenlaubfrosch",
-        "missing": [
-          "sound.mp3",
-          "credits.json",
-          "spectrogram.webp"
-        ]
       }
     ],
     "assessmentId": [],
@@ -63,6 +53,7 @@
     "Großtrappe",
     "Halsbandarassari",
     "Löwe",
+    "Rotaugenlaubfrosch",
     "Rotstirnamazone",
     "Scharlachara"
   ]
