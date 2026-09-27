@@ -5,7 +5,7 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-09-27T07:44:18.186Z`
+Report-Datenstand: `2026-09-27T17:00:51.104Z`
 
 | Bereich | Anzahl |
 |---|---:|
@@ -14,9 +14,9 @@ Report-Datenstand: `2026-09-27T07:44:18.186Z`
 | Arten in `speciesData.json` | 60 |
 | Vollständige Art-Assetordner | 60 |
 | Karten | 60 |
-| Sounds | 58 |
-| Credits | 58 |
-| Spektrogramme | 58 |
+| Sounds | 57 |
+| Credits | 57 |
+| Spektrogramme | 57 |
 | Artporträts | 60 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
@@ -29,7 +29,7 @@ Report-Datenstand: `2026-09-27T07:44:18.186Z`
 - Rebhuhn
 - Rotaugenlaubfrosch
 
-## Aktive NC-Soundlizenzen (12)
+## Aktive NC-Soundlizenzen (11)
 
 - Bisamratte
 - Blaustirn-Blatthühnchen
@@ -40,11 +40,11 @@ Report-Datenstand: `2026-09-27T07:44:18.186Z`
 - Großtrappe
 - Halsbandarassari
 - Löwe
-- Rotaugenlaubfrosch
 - Rotstirnamazone
 - Scharlachara
 
-## Bewusst fehlende Tierstimmen (2)
+## Bewusst fehlende Tierstimmen (3)
 
 - Gepard
 - Grüner Leguan
+- Rotaugenlaubfrosch
