@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-27T17:00:51.104Z",
+  "generatedAt": "2026-09-27T17:03:03.244Z",
   "counts": {
     "totalSpecies": 60,
     "missingSoundMp3": 3,
@@ -16,7 +16,7 @@
     "soundMp3": [
       "Grüner Leguan",
       "Gepard",
-      "Rotaugenlaubfrosch"
+      "Erdbeerfröschchen"
     ],
     "soundCredits": [],
     "maps": [],
@@ -40,8 +40,8 @@
         ]
       },
       {
-        "german": "Rotaugenlaubfrosch",
-        "safeName": "Rotaugenlaubfrosch",
+        "german": "Erdbeerfröschchen",
+        "safeName": "Erdbeerfroeschchen",
         "missing": [
           "sound.mp3",
           "credits.json",
@@ -58,12 +58,12 @@
     "Bisamratte",
     "Blaustirn-Blatthühnchen",
     "Brauenmotmot",
-    "Erdbeerfröschchen",
     "Gaukler",
     "Geoffroy-Klammeraffe",
     "Großtrappe",
     "Halsbandarassari",
     "Löwe",
+    "Rotaugenlaubfrosch",
     "Rotstirnamazone",
     "Scharlachara"
   ]

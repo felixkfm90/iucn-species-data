@@ -5,7 +5,7 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-09-27T17:00:51.104Z`
+Report-Datenstand: `2026-09-27T17:03:03.244Z`
 
 | Bereich | Anzahl |
 |---|---:|
@@ -34,17 +34,17 @@ Report-Datenstand: `2026-09-27T17:00:51.104Z`
 - Bisamratte
 - Blaustirn-Blatthühnchen
 - Brauenmotmot
-- Erdbeerfröschchen
 - Gaukler
 - Geoffroy-Klammeraffe
 - Großtrappe
 - Halsbandarassari
 - Löwe
+- Rotaugenlaubfrosch
 - Rotstirnamazone
 - Scharlachara
 
 ## Bewusst fehlende Tierstimmen (3)
 
+- Erdbeerfröschchen
 - Gepard
 - Grüner Leguan
-- Rotaugenlaubfrosch
