@@ -84,3 +84,23 @@ Beschränkung bestand, ohne Testregeln oder Windows-Einstellungen zu ändern.
 Squarespace-Footer/Custom-CSS, Lua-Plug-in und produktive Arten-/Assetdateien wurden durch diesen
 Dokumentationsabschluss nicht verändert. Plug-in-Version bleibt 0.4.24.14. Das lokale Qualitätsgate ist kein
 Phase-10.5-Gesamtaudit; ein erfolgreicher GitHub-Pages-Lauf bleibt nach dem Push gesondert nachzuweisen.
+
+## Plattformfehler im anschließenden Pages-Qualitätsgate
+
+Der [GitHub-Lauf für `d7bcc76`](https://github.com/felixkfm90/iucn-species-data/actions/runs/36914212613)
+scheiterte vor Build/Deployment an genau zwei CLI-Vertragstests: Die Ersatz-/Neustarttests verwendeten einen
+festen Windows-Pfad für die Entscheidungsdatei. Unter Linux lehnt die unveränderte produktive
+`path.isAbsolute`-Prüfung diesen Pfad korrekt ab. Der vorherige lokale Windows-Testlauf bleibt als solcher
+erfolgreich; er war kein plattformübergreifender Nachweis. Build und Deployment wurden übersprungen.
+
+Die drei CLI-Vertragstests verwenden nun absolute Testpfade aus dem temporären Verzeichnis des jeweiligen
+Systems. Zusätzlich prüfen alle vier schreibenden CLI-Wege (`prepare`, `candidate`, `replacement-candidate`,
+`restart-candidate`), dass relative Entscheidungsdateien und fehlende Bestätigung weiterhin abgewiesen werden.
+Keine produktive Schutzregel, Reparaturdatenbank, Namenswahl, Fotozuweisung oder Plug-in-Version geändert.
+Eine Korrektur der CI-Testdaten verlangt keinen erneuten produktiven Aufbau. Der GitHub-Linux-/Pages-Lauf
+bleibt der gesonderte Nachweis für die Veröffentlichung.
+
+Lokale Gegenprüfung der Korrektur: gesamte Reparatur-Testdatei mit 51 erfolgreichen Tests, darunter echte
+Hilfsprozesse und alle drei CLI-Vertragstests; null Fehler/Abbrüche. Syntax, Stil, Dokumentationsverweise,
+frisch synchronisierter Projektstatus und `git diff --check` erfolgreich. Nur Tests und diese Übergabe-/
+Betriebsdokumentation geändert; das vollständige Linux-Qualitätsgate wird nicht umgangen.

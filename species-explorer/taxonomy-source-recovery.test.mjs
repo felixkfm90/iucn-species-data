@@ -39,6 +39,13 @@ import { assertRecoveryCandidateScope, scopedRecoveryColRecords, frozenRecoveryC
 
 const OLD = "2026-09-03T00:00:00.000Z", NOW = "2026-09-27T00:00:00.000Z";
 const COL = "col-xr-2026-07-17";
+const CLI_FIXTURE_ROOT = path.resolve(os.tmpdir(), "fn-source-recovery-cli-fixture");
+const CLI_DECISIONS = `--replacement-decisions=${path.join(CLI_FIXTURE_ROOT, "decisions.json")}`;
+const cliFixtureArgs = () => [
+  ...[["taxonomy-root", "taxonomy"], ["search-root", "lightroom"], ["species-list", "species.json"], ["corrections", "corrections.json"]]
+    .map(([flag, file]) => `--${flag}=${path.join(CLI_FIXTURE_ROOT, file)}`),
+  "--previous-version=old", "--current-version=current",
+];
 const json = async (file, value) => { await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, JSON.stringify(value, null, 2) + "\n"); };
 const read = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
 const record = (providerRecordId, scientificName, extra = {}) => normalizeProviderSliceRecord({ provider: "inaturalist", providerRecordId,
@@ -230,8 +237,7 @@ test("zusätzliche Entscheidungen und Mehrfachbesitz einer Ersatz-ID verhindern 
 });
 
 test("CLI besitzt keine Standardpfade oder Aktivierung und verlangt explizite Bestätigung", () => {
-  const base = ["--taxonomy-root=D:/Fixture/taxonomy", "--search-root=D:/Fixture/lightroom", "--species-list=D:/Fixture/species.json",
-    "--corrections=D:/Fixture/corrections.json", "--previous-version=old", "--current-version=current"];
+  const base = cliFixtureArgs();
   assert.equal(parseSourceRecoveryArgs(["preview", ...base]).command, "preview");
   assert.throws(() => parseSourceRecoveryArgs(["activate", ...base]), /keine Aktivierung/);
   assert.throws(() => parseSourceRecoveryArgs(["preview"]), /fehlt/);
@@ -239,6 +245,12 @@ test("CLI besitzt keine Standardpfade oder Aktivierung und verlangt explizite Be
   assert.throws(() => parseSourceRecoveryArgs(["prepare", ...base, `--revision=${"a".repeat(64)}`]), /confirm/);
   assert.throws(() => parseSourceRecoveryArgs(["inspect", ...base, "--revision=../../bad"]), /revision/);
   assert.throws(() => parseSourceRecoveryArgs(["preview", ...base, "--current-version=other"]), /doppelte/);
+  for (const command of ["prepare", "candidate"]) {
+    const revision = `--revision=${"a".repeat(64)}`;
+    assert.equal(parseSourceRecoveryArgs([command, ...base, revision, "--confirm", CLI_DECISIONS]).decisionsFile, path.join(CLI_FIXTURE_ROOT, "decisions.json"));
+    assert.throws(() => parseSourceRecoveryArgs([command, ...base, revision, CLI_DECISIONS]), /confirm/);
+    assert.throws(() => parseSourceRecoveryArgs([command, ...base, revision, "--confirm", "--replacement-decisions=decisions.json"]), /absolute/);
+  }
 });
 
 test("unvollständiger Alt-Entwurf wird nie als fertig erkannt; frische Vorbereitung bleibt getrennt", async (t) => {
@@ -780,13 +792,16 @@ test("Fehler nach Aufbewahrung vor Auftragssicherung erhält Altstand und gibt S
 });
 
 test("CLI trennt lesende Ersatzvorschau und frisch bestätigten Ersatzkandidaten", () => {
-  const base = ["--taxonomy-root=D:/Fixture/taxonomy", "--search-root=D:/Fixture/lightroom", "--species-list=D:/Fixture/species.json",
-    "--corrections=D:/Fixture/corrections.json", "--previous-version=old", "--current-version=current", `--revision=${"a".repeat(64)}`];
+  const base = [...cliFixtureArgs(), `--revision=${"a".repeat(64)}`];
   assert.equal(parseSourceRecoveryArgs(["replacement-preview", ...base]).command, "replacement-preview");
   assert.throws(() => parseSourceRecoveryArgs(["replacement-preview", ...base, "--confirm"]), /lesend/);
-  assert.throws(() => parseSourceRecoveryArgs(["replacement-candidate", ...base, "--confirm", "--replacement-decisions=D:/Fixture/decisions.json"]), /plan-revision/);
-  const parsed = parseSourceRecoveryArgs(["replacement-candidate", ...base, "--confirm", "--replacement-decisions=D:/Fixture/decisions.json", `--plan-revision=${"b".repeat(64)}`]);
+  assert.throws(() => parseSourceRecoveryArgs(["replacement-candidate", ...base, "--confirm", CLI_DECISIONS]), /plan-revision/);
+  const plan = `--plan-revision=${"b".repeat(64)}`;
+  const parsed = parseSourceRecoveryArgs(["replacement-candidate", ...base, "--confirm", CLI_DECISIONS, plan]);
   assert.equal(parsed.planRevision, "b".repeat(64));
+  assert.equal(parsed.decisionsFile, path.join(CLI_FIXTURE_ROOT, "decisions.json"));
+  assert.throws(() => parseSourceRecoveryArgs(["replacement-candidate", ...base, CLI_DECISIONS, plan]), /confirm/);
+  assert.throws(() => parseSourceRecoveryArgs(["replacement-candidate", ...base, "--confirm", "--replacement-decisions=decisions.json", plan]), /absolute/);
 });
 
 test("Paarvorbereitung prüft kopierten engen Kandidaten gegen den richtigen Ausgangsmaster", async (t) => {
@@ -869,14 +884,17 @@ test("Neustart verweigert Änderungen an Daten, Fehlernachweis, Freigabe und fre
 });
 
 test("CLI trennt Fehlerplan, frische Neustartfreigabe und lesende Vorschau", () => {
-  const base = ["--taxonomy-root=D:/Fixture/taxonomy", "--search-root=D:/Fixture/lightroom", "--species-list=D:/Fixture/species.json",
-    "--corrections=D:/Fixture/corrections.json", "--previous-version=old", "--current-version=current", `--revision=${"a".repeat(64)}`];
+  const base = [...cliFixtureArgs(), `--revision=${"a".repeat(64)}`];
   const failed = `--failed-plan-revision=${"b".repeat(64)}`;
   assert.throws(() => parseSourceRecoveryArgs(["restart-preview", ...base]), /failed-plan-revision/);
   assert.throws(() => parseSourceRecoveryArgs(["replacement-preview", ...base, failed]), /ausschließlich zum Neustart/);
   assert.throws(() => parseSourceRecoveryArgs(["restart-preview", ...base, failed, "--confirm"]), /lesend/);
   assert.throws(() => parseSourceRecoveryArgs(["restart-candidate", ...base, failed]), /plan-revision/);
   assert.equal(parseSourceRecoveryArgs(["restart-preview", ...base, failed]).failedPlanRevision, "b".repeat(64));
-  assert.equal(parseSourceRecoveryArgs(["restart-candidate", ...base, failed, "--confirm", "--replacement-decisions=D:/Fixture/decisions.json",
-    `--plan-revision=${"c".repeat(64)}`]).planRevision, "c".repeat(64));
+  const plan = `--plan-revision=${"c".repeat(64)}`;
+  const parsed = parseSourceRecoveryArgs(["restart-candidate", ...base, failed, "--confirm", CLI_DECISIONS, plan]);
+  assert.equal(parsed.planRevision, "c".repeat(64));
+  assert.equal(parsed.decisionsFile, path.join(CLI_FIXTURE_ROOT, "decisions.json"));
+  assert.throws(() => parseSourceRecoveryArgs(["restart-candidate", ...base, failed, CLI_DECISIONS, plan]), /confirm/);
+  assert.throws(() => parseSourceRecoveryArgs(["restart-candidate", ...base, failed, "--confirm", "--replacement-decisions=decisions.json", plan]), /absolute/);
 });

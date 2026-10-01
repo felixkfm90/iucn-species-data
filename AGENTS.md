@@ -24,6 +24,11 @@ Abschließender Dokumentations-/Veröffentlichungscheck: vollständiges `quality
 generierter Projektstatus. Erste sandboxbedingte Hilfsprozesssperre durch erlaubten Gegenlauf geklärt, keine
 Test-/Windows-Regeländerung. Keine neue Lua-Version, Squarespace-Einbindung oder produktive Datenänderung.
 Das ist kein Phase-10.5-Audit und kein vorweggenommener Pages-Deploymentnachweis.
+Der anschließende Pages-Lauf für `d7bcc76` scheiterte vor Build/Deploy an zwei CLI-Tests mit fest eingetragenen
+Windows-Pfaden unter Linux. Nur Testfixtures auf plattformeigene absolute Pfade umgestellt; die produktive
+Pfad-/Bestätigungsprüfung bleibt unverändert. Relative Entscheidungsdateien und fehlende Bestätigung werden
+für alle vier schreibenden CLI-Wege ausdrücklich gegengeprüft. Kein neuer Taxonomie-/Kataloglauf zur CI-Korrektur;
+der erfolgreiche GitHub-Linux-/Pages-Lauf muss separat nachgewiesen werden.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
