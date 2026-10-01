@@ -5,8 +5,11 @@ import { buildTaxonomyMasterCandidate, inspectTaxonomyMasterCandidate } from "./
 import { masterJobDirectory, verifyMasterJob, readMasterJobRecords, acquireMasterJobLock } from "./taxonomy-master-job.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { MasterBuildPaused } from "./taxonomy-master-checkpoint.mjs";
+import { assertTaxonomySpace, taxonomyDirectoryBytes } from "./taxonomy-space-budget.mjs";
+import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
 
-export async function executeMasterJob({ taxonomyRoot, id, resume = false, shouldPause = () => false, onProgress = () => {} }) {
+export async function executeMasterJob({ taxonomyRoot, id, resume = false, shouldPause = () => false, onProgress = () => {},
+  checkSpace = assertTaxonomySpace }) {
   const directory = masterJobDirectory(taxonomyRoot, id);
   const releaseLock = await acquireMasterJobLock(taxonomyRoot);
   let writes = Promise.resolve(), lastSaved = 0;
@@ -48,6 +51,11 @@ export async function executeMasterJob({ taxonomyRoot, id, resume = false, shoul
       await save();
       return previous.manifest;
     }
+    let inputBytes = 0;
+    for (const filename of Object.keys(recipe.inputs)) inputBytes += (await fs.stat(path.join(directory, filename))).size;
+    const baseBytes = await taxonomyDirectoryBytes(path.dirname(taxonomyMasterDatabasePath(taxonomyRoot)));
+    const writtenBytes = await taxonomyDirectoryBytes(path.join(directory, "candidate"));
+    await checkSpace(taxonomyRoot, Math.max(0, Math.max(inputBytes * 6, baseBytes * 2) - writtenBytes));
     const providerSlices = [];
     for (const provider of recipe.providers) {
       const records = [];
@@ -63,6 +71,7 @@ export async function executeMasterJob({ taxonomyRoot, id, resume = false, shoul
         onCheckpoint: async (checkpoint) => {
           state.checkpoint = checkpoint;
           await save();
+          await checkSpace(taxonomyRoot);
           onProgress({ phase: "Schreibblock gesichert", ...checkpoint });
         } },
       onProgress: (event) => { progress(event); if (paused()) throw new MasterBuildPaused(); },

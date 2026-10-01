@@ -6,8 +6,9 @@ import { childProcessEnvironment } from "./child-process-environment.mjs";
 // active pair, live input validation and the preference lock stay in the parent.
 export async function prepareTaxonomyPublicationInWorker({ taxonomyRoot, searchRoot, id, action, sourceSlot,
   corrections, expectedSourceManifest, projectRevision = "working-tree", now = () => new Date(),
-  onProgress = () => {}, signal, execPath = process.execPath, spawnProcess = spawn,
+  incremental = true, onProgress = () => {}, signal, execPath = process.execPath, spawnProcess = spawn,
 } = {}) {
+  if (typeof incremental !== "boolean") throw new Error("Ungültiger Suchpaket-Aufbaumodus.");
   signal?.throwIfAborted();
   const timestamp = now().toISOString();
   const child = spawnProcess(execPath, ["--no-warnings",
@@ -35,7 +36,7 @@ export async function prepareTaxonomyPublicationInWorker({ taxonomyRoot, searchR
   try {
     try {
       child.send({ type: "prepare", options: { taxonomyRoot, searchRoot, id, action, sourceSlot, corrections,
-        expectedSourceManifest, projectRevision, timestamp } }, (error) => {
+        expectedSourceManifest, projectRevision, timestamp, incremental } }, (error) => {
         if (error) { failure = error.message; abort(); }
       });
     } catch (error) { failure = error.message; abort(); }

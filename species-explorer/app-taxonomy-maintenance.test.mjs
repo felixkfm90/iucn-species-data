@@ -13,6 +13,7 @@ const context = vm.createContext({
     return 1;
   },
 });
+new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-taxonomy-maintenance.js" }).runInContext(context);
 const maintenance = context.SpeciesExplorerTaxonomyMaintenance;
 

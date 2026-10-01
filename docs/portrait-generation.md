@@ -1,6 +1,6 @@
 # KI-Artporträts im Arten-Explorer
 
-Stand: 2026-08-12
+Stand: 2026-10-01
 
 ## Entscheidung
 
@@ -88,8 +88,11 @@ bei kleinen Seitenverhältnisabweichungen nur Randfläche. Die Vorschau verwende
 4:5-Rahmen und zeigt das gesamte Produktbild. Ein Verschieben oder manuelles Festlegen eines Crop-Ausschnitts ist
 daher nicht vorgesehen.
 
-Die Quelldatei bleibt nur während der zehn Minuten gültigen Vorschau im ignorierten Stagingordner. Sie wird nach
-Übernahme, Ablauf oder neuer Vorschau gelöscht.
+Bei bestehenden Arten bleibt die Quelldatei nur während der zehn Minuten gültigen Vorschau im ignorierten
+Stagingordner; sie wird nach Übernahme, Ablauf oder neuer Vorschau gelöscht. Das ist nicht die Frist für den
+Neue-Art-Assistenten: dessen geprüfter Entwurf und zugehöriges Portrait haben während der laufenden Sitzung
+seit der Regressionskorrektur keine zeitliche Ablauffrist. Kollisions-/Quellenprüfung und Einmalverwendung bleiben
+verpflichtend. Ein Prozessneustart ist keine zugesagte dauerhafte Entwurfswiederherstellung.
 
 ## Bedienablauf
 
@@ -118,11 +121,16 @@ Beim Anlegen einer neuen Art kann der Portraitschritt direkt vorbereitet werden:
 4. `Portrait-Prompt erstellen` und `Prompt kopieren`.
 5. In ChatGPT genau ein Bild erzeugen und herunterladen.
 6. Bild im Neue-Art-Dialog auswählen und mit `Bild prüfen` validieren oder `Artportrait überspringen` wählen.
-7. Im Schritt `Abschluss` die Art anlegen.
+7. Im Schritt `Karte` die geprüfte Art einmalig anlegen und den gezielten Assetlauf abwarten.
+8. Die Karte prüfen beziehungsweise als JPEG/PNG-Datei auswählen oder ablegen; bei fehlender Karte den
+   zutreffenden Pflegehinweis beachten. Ein Browserlink allein ist noch kein erfolgreicher Programmdownload.
+9. Unter `Sound & Abschluss` die Tierstimme prüfen und die Anlage abschließen.
 
-Wenn kein Bild geprüft wurde, läuft der bisherige Ablauf weiter und die App bietet den selektiven Pipeline-Lauf an.
-Wenn ein Bild geprüft wurde, speichert die App zuerst die neue Art und fragt dann, ob das Portrait lokal übernommen
-werden soll. Die Veröffentlichung erfolgt anschließend zusammen mit dem gezielten Pipeline-Lauf für diese neue Art.
+Das Portrait bleibt optional. Ein geprüftes Bild wird beim einmaligen Anlegen lokal übernommen, ohne eine
+zusätzliche Browser-/Electron-Bestätigung. Die Veröffentlichung folgt mit dem gezielten Pipeline-/Transferlauf.
+Ein nachgelagerter Medien-/Veröffentlichungsfehler bedeutet nicht, dass die Art erneut angelegt werden muss;
+bereits gespeicherte Daten erhalten und fehlende Medien ergänzen. Fehlerzustände bleiben sichtbar und schließbar.
+Verbindlicher Ablauf und noch offene praktische Regressionsabnahme: [Neue Art anlegen](add-species-workflow.md).
 
 Arten ohne Portrait tragen in der linken Liste die Markierung `P`. Ein fehlendes Portrait gilt als reguläres
 Assetproblem:
@@ -212,9 +220,9 @@ Nach erfolgreicher Speicherung werden nur folgende Dateien vorgemerkt:
 
 Anschließend folgen Commit und Push gesammelt über `Änderungen übertragen`.
 
-## Nächste Phase
+## Desktop-Betrieb
 
-Die nächste Phase betrifft nicht nur Portraits, sondern die gesamte Arten-Explorer-App: ein eigenes
-Windows-App-Fenster startet und überwacht den lokalen Server automatisch. Ein externer Browser und die manuelle URL
-`127.0.0.1:4177` sollen für den normalen Betrieb nicht mehr erforderlich sein. Planung:
+Die eigene Windows-Desktop-Oberfläche ist inzwischen umgesetzt: Sie startet und überwacht den lokalen Server.
+Ein externer Browser und die manuelle URL `127.0.0.1:4177` sind für den normalen Desktop-Betrieb nicht erforderlich.
+Betriebsvertrag und Grenzen:
 `docs/desktop-shell-plan.md`.

@@ -531,6 +531,13 @@ button.danger,
   white-space: normal;
 }
 
+.quick-confirm-message {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
 .taxonomy-project-conflict-summary {
   white-space: pre-line;
 }

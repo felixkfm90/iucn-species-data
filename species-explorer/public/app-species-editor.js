@@ -165,6 +165,7 @@
         soundPreviewButton,
         soundSaveButton,
         soundRejectCurrentButton,
+        soundResetRejectionsButton: elements.detailPanel.querySelector(".sound-reset-rejections-button"),
         soundAutoSearchButton,
         soundDeleteButton,
         soundSegmentEditor,

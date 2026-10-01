@@ -401,11 +401,13 @@ export function validateTaxonomyMasterDatabase(database, { full = true } = {}) {
     }
   }
 
-  const integrity = scalar(database, "PRAGMA integrity_check");
+  // Validate this candidate, not read-only reference databases attached for
+  // bulk copying. Their exact baseline bytes are verified by the reuse gate.
+  const integrity = scalar(database, "PRAGMA main.integrity_check");
   if (integrity !== "ok") {
     throw new Error(`Masterdatenbank-Integritätsprüfung fehlgeschlagen: ${integrity}`);
   }
-  const foreignKeyErrors = database.prepare("PRAGMA foreign_key_check").all();
+  const foreignKeyErrors = database.prepare("PRAGMA main.foreign_key_check").all();
   if (foreignKeyErrors.length) {
     throw new Error(
       `Masterdatenbank-Fremdschlüsselprüfung meldet ${foreignKeyErrors.length} Fehler.`,

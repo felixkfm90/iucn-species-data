@@ -1,6 +1,6 @@
 # Taxonomiereferenz im Neue-Art-Assistenten
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 Status: Phase 9.4/9.5 bilden den sicheren Referenzfallback. Seit Phase 9.10 durchsucht der Assistent bevorzugt die
 aktive lokale Masterdatenbank aus vollständigem CoL XR, breitem iNaturalist-Lücken-/Namensbestand, relevanten
@@ -13,6 +13,11 @@ Mehrdeutige Identitäten werden nicht zusammengeführt. Die Suche bleibt lesend;
 globale Namenswahl ist separat in `taxonomy-name-preference-plan.md` beschrieben.
 
 ## Ziel
+
+Nach der eng bestätigten Quellenreparatur am 1. Oktober sind Master und Lightroom-Suchpaket gemeinsam aktiv
+und vollständig verglichen. Felix bestätigte die Explorer-Namen Weissstorch/Rebhuhn sowie Zuweisung und
+Erhalt in Lightroom. Dies ist die gezielte Verbraucherabnahme, keine vollständige erneute Artanlage-Abnahme.
+Der [aktuelle Betriebsstand](taxonomy-current-status.md) trennt diese Reparatur von der neuen CoL-Version.
 
 Der erste Schritt des Neue-Art-Assistenten kann eine lokal installierte Taxonomiereferenz ausschließlich lesend
 durchsuchen. Die Referenz unterstützt die Eingabe, ersetzt aber weder die redaktionelle Entscheidung noch die

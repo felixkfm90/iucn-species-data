@@ -9,6 +9,21 @@ import {
   taxonomyMaintenanceInternals,
 } from "./taxonomy-maintenance-service.mjs";
 
+test("Referenzstatus liefert echte Messmengen getrennt von alten Phasenmarken und löscht veraltete Zähler", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-progress-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
+    referenceService: { reset() {} } });
+  service.updateProgress({ phase: "download", current: 25, total: 100 });
+  assert.equal(service.state.progressCurrent, 25);
+  assert.equal(service.state.progressTotal, 100);
+  assert.notEqual(service.state.progressPercent, 25, "Legacy-Gewichtung bleibt API-kompatibel, ist aber kein Anzeigewert mehr");
+  service.updateProgress({ phase: "compact" });
+  assert.equal(service.state.progressCurrent, null);
+  assert.equal(service.state.progressTotal, null);
+  await service.close();
+});
+
 test("Importfehler werden ohne technischen Stacktrace angezeigt", () => {
   assert.equal(
     taxonomyMaintenanceInternals.summarizeImportFailure(

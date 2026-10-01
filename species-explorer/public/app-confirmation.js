@@ -31,7 +31,7 @@
           <form method="dialog" class="quick-confirm-form">
             ${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ""}
             <h2>${escapeHtml(title)}</h2>
-            ${message ? `<p>${escapeHtml(message)}</p>` : ""}
+            ${message ? `<p class="quick-confirm-message">${escapeHtml(message)}</p>` : ""}
             <div class="dialog-actions">
               ${cancelLabel ? `<button class="quick-confirm-cancel" type="button">${escapeHtml(cancelLabel)}</button>` : ""}
               <button class="quick-confirm-ok ${danger ? "danger" : ""}" type="submit">${escapeHtml(confirmLabel)}</button>

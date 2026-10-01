@@ -64,6 +64,27 @@ async function temporaryService(context, {
   };
 }
 
+test("schmale Suchtreffer leeren keine Cache-Hierarchie; erneuter Suchtreffer nach Suchmiss bleibt möglich", async (t) => {
+  const { service } = await temporaryService(t, { providers: [] });
+  await service.load();
+  const full = { source: "iNaturalist", providerId: "41970", scientificName: "Panthera pardus",
+    rank: "species", kingdom: "Animalia", hierarchy: { kingdom: "Animalia", family: "Felidae" } };
+  const options = { checkedAt: "2026-07-30T10:00:00Z", query: "leopard", relevanceReasons: ["missing-name"], selectedForMaster: true };
+  service.mergeProviderRecord(full, options);
+  const partial = { ...full, kingdom: "", hierarchy: {} };
+  const merged = service.mergeProviderRecord(partial, { ...options, selectedForMaster: false, relevanceReasons: ["searched-taxon"] });
+  assert.equal(merged.kingdom, "Animalia"); assert.equal(merged.hierarchy.family, "Felidae");
+  assert.equal(merged.selectedForMaster, true);
+  service.markMissingProviderRecords({ provider: "inaturalist", query: "leopard", seenKeys: new Set(), checkedAt: options.checkedAt });
+  assert.equal(service.cache.providerRecords[0].versionChangeState, "removed");
+  const restored = service.mergeProviderRecord(partial, options);
+  assert.equal(restored.versionChangeState, "restored");
+  assert.equal(restored.kingdom, "Animalia");
+  const before = structuredClone(service.cache.providerRecords);
+  assert.throws(() => service.mergeProviderRecord({ ...partial, kingdom: "Plantae" }, options), /Reich/);
+  assert.deepEqual(service.cache.providerRecords, before);
+});
+
 function leopardProvider() {
   return [{
     scientificName: "Panthera pardus",

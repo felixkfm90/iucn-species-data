@@ -1,6 +1,6 @@
 # Soundeditor im Arten-Explorer
 
-Stand: 2026-08-10
+Stand: 2026-10-01
 
 Der Soundeditor schneidet vorhandene Tierstimmen lokal und kann mehrere ausgewählte Zeitabschnitte in der
 angegebenen Reihenfolge zu einer neuen MP3 zusammensetzen. Quellen- und Lizenzangaben bleiben unverändert erhalten.
@@ -32,6 +32,23 @@ freigegeben. Ein fehlgeschlagenes Spektrogramm verändert keine Produktivdatei.
 Native Playeraktionen innerhalb der Schnittvorschau, insbesondere ein Klick in die Zeitleiste, gelten nicht als
 Formularänderung. Sie dürfen die erzeugte Vorschau deshalb weder verwerfen noch ausblenden. Erst eine echte Änderung
 an Start, Ende, Reihenfolge oder Anzahl der Abschnitte macht eine neue Vorschaugenerierung erforderlich.
+
+## Abgelehnte Soundquellen wieder zulassen
+
+Unter `Tierstimme → Bearbeiten` steht `Abgelehnte Soundquellen wieder zulassen …` bereit. Die Vorschau nennt die
+gespeicherten Ablehnungen der gewählten Art; erst die ausdrückliche Rückfrage gibt sie wieder frei. Abbrechen
+ändert nichts. Die Aktion ersetzt/löscht keine Sounddatei, verändert keine andere Art und nimmt einen manuell
+geschützten Sound nicht aus dem Schutz. Im Editor folgt eine neue Suche bewusst separat über `Automatisch suchen`
+beziehungsweise `Alternative suchen`.
+
+Der Neue-Art-Assistent bietet dieselbe Freigabe nach Suchende und während offener Soundprüfung. Während der
+Prüfung werden nach Rückfrage die früheren Ablehnungen aufgehoben und der gerade angezeigte Kandidat
+übersprungen; die Entscheidung bleibt an dessen konkrete Review-URL gebunden. Eine frühere Aufnahme wird
+erneut gesucht, nicht garantiert wiederhergestellt. Der Assistent legt die bereits gespeicherte Art nicht nochmals an.
+
+Felix hat Editor, Assistent nach Suchende und den Zwischenweg praktisch bestätigt; am 28. September dokumentiert.
+Fehler-/Abbruch-/Wiederholungs-/Neustartprüfungen sind vorhanden. Der vollständige Registry-/API-Vertrag steht im
+[Artanlage-Ablauf](add-species-workflow.md). Lokale Registry-Änderungen werden anschließend gesammelt übertragen.
 
 ## Technischer Ablauf
 

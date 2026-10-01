@@ -1,6 +1,6 @@
 # Bevorzugte Artnamen in Explorer und Lightroom
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 ## Kompatibilität bereits aktiver Namenswahlen
 
@@ -15,8 +15,12 @@ regulär den neuen ID-gebundenen Prüfwert. Kein Master-Neuaufbau nur wegen des 
 Status: Namenswahl mit Rückfrage und Rückwahl in Plug-in 0.4.24.8 technisch umgesetzt und praktisch abgenommen.
 Anbieterstandard und Rückwahl aus 0.4.24.9 sind in beiden Richtungen praktisch bestätigt. 0.4.24.10 ergänzt die
 direkte Lightroom-Aktion `Namenswahl übernehmen`; ihr kurzer Bedienungstest wurde am 8. September bestätigt.
-Die späteren Regressionskorrekturen vom 20. September sind automatisiert geprüft; deren erneute praktische
-Bedienabnahme steht noch aus. Frühere Abnahmen gelten nicht pauschal als Test des heutigen Gesamtstands.
+Die späteren Regressionskorrekturen vom 20. September sind automatisiert geprüft. Am 1. Oktober bestätigte
+Felix nach der Quellenreparatur die bevorzugten Namen Weissstorch/Rebhuhn in beiden Programmen, erfolgreiche
+Lightroom-Zuweisung und Erhalt nach Schließen/Wiederöffnen. Das bestätigt Anzeige/Verwendung der bestehenden
+Präferenzen, nicht einen erneuten Speicher-/Rückwahltest aller Namensaktionen. Diese bleiben Teil der gebündelten
+Bedienabnahme; frühere Abnahmen gelten nicht pauschal als Test des heutigen Gesamtstands.
+Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
 Benutzerentscheidung: Eine bestehende eigene Namenspräferenz nur nach Rückfrage mit bisherigem und neuem Namen ersetzen.
 
 ## Eindeutige Suchtreffer und Namenswahl

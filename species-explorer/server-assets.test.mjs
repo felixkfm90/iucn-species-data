@@ -10,6 +10,7 @@ import {
   isExplorerAlreadyReachable,
 } from "./server.mjs";
 import { buildExplorerModel } from "./explorer-model.mjs";
+import { createSoundAssetOperations } from "./sound-asset-workflow.mjs";
 import {
   inspectJpeg,
   inspectMp3,
@@ -43,6 +44,63 @@ const createExplorerServer = (options = {}) => createProtectedExplorerServer({
   ...options,
   sessionProtection: false,
 });
+
+test("Sound-Ablehnungen: bestätigte artbezogene Rücksetzung erhält Dateien, Schutz und fremde Quellen auch nach Neustart", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const path = join(repoRoot, "species-assets-overrides.json");
+  const registry = { version: 1, assets: {
+    Amsel: { map: { manual: true }, sound: {
+      manual: true, protectFromPipeline: true, reason: "Eigene Auswahl", rejectedCurrent: true,
+      rejectedSources: [{ key: "xeno-canto:123", source: "xeno-canto.org" }],
+    } },
+    Rotaugenlaubfrosch: { sound: { rejectedSources: [{ key: "xeno-canto:456" }] } },
+  } };
+  await writeFile(path, JSON.stringify(registry));
+  const files = ["sound.mp3", "credits.json", "spectrogram.webp", "map.jpg"];
+  const before = await Promise.all(files.map((file) => readFile(join(repoRoot, "species-assets", "Amsel", file))));
+  let app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false });
+  context.after(() => app.close());
+  let address = await app.listen();
+  const request = (action, body = {}, id = "turdusmerula") => fetch(
+    `http://${app.host}:${address.port}/api/species/${id}/assets/sound/${action}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+  );
+  assert.equal((await request("rejections-preview", {}, "unknown")).status, 404);
+  assert.equal((await request("rejections-reset", { confirmed: true })).status, 409);
+  const preview = await (await request("rejections-preview")).json();
+  assert.equal(preview.count, 1);
+  assert.equal((await request("rejections-reset", { token: preview.token })).status, 409);
+  assert.deepEqual(JSON.parse(await readFile(path)), registry);
+  // An unrelated edit makes the whole registry snapshot stale; nothing may be overwritten.
+  registry.assets.Amsel.portrait = { manual: true };
+  await writeFile(path, JSON.stringify(registry));
+  assert.equal((await request("rejections-reset", { token: preview.token, confirmed: true })).status, 409);
+  const next = await (await request("rejections-preview")).json();
+  const response = await request("rejections-reset", { token: next.token, confirmed: true });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).cleared, 1);
+  assert.equal((await request("rejections-reset", { token: next.token, confirmed: true })).status, 409);
+  delete registry.assets.Amsel.sound.rejectedSources;
+  assert.deepEqual(JSON.parse(await readFile(path)), registry);
+  for (const [index, file] of files.entries()) {
+    assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", file)), before[index]);
+  }
+  // A real server reopen keeps the cleared list. Empty resets do not rewrite the registry.
+  await app.close();
+  app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false });
+  address = await app.listen();
+  const empty = await (await request("rejections-preview")).json();
+  assert.equal(empty.count, 0);
+  const textBefore = await readFile(path, "utf8");
+  assert.equal((await (await request("rejections-reset", { token: empty.token, confirmed: true })).json()).saved, false);
+  assert.equal(await readFile(path, "utf8"), textBefore);
+  // An unreadable registry is a visible error, never interpreted as an empty file.
+  await writeFile(path, "invalid json");
+  assert.equal((await request("rejections-preview")).status, 500);
+  await writeFile(path, textBefore);
+  assert.equal((await request("rejections-preview")).status, 200);
+});
 function requestStatusWithHost(baseUrl, pathname, hostHeader) {
   const target = new URL(pathname, baseUrl);
   return new Promise((resolveRequest, rejectRequest) => {
@@ -60,6 +118,46 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
     request.end();
   });
 }
+
+test("Sound-Rücksetzung: Schreibsperre, laufende Prüfung, Ablauf und fehlgeschlagene Speicherung geben den Weg wieder frei", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const path = join(repoRoot, "species-assets-overrides.json");
+  const registryText = JSON.stringify({ version: 1, assets: { Amsel: { sound: { rejectedSources: [{ key: "xeno-canto:1" }] } } } });
+  await writeFile(path, registryText);
+  const model = await buildExplorerModel(repoRoot);
+  const tokens = new Map();
+  let active = false, status = "idle", refreshFailure = false;
+  const { resetSoundRejections } = createSoundAssetOperations({
+    assetOverridesPath: path, previewTokens: tokens, previewTokenTtlMs: 60_000,
+    cleanupPreviewTokens() {}, getModel: () => model, hashText: (text) => text,
+    getPipelineState: () => ({ status }), getPipelineProcess: () => null,
+    isAssetWriteActive: () => active, setAssetWriteActive: (value) => { active = value; },
+    refreshModel: async () => { if (refreshFailure) throw new Error("Anzeige fehlgeschlagen"); },
+  });
+  for (const busyStatus of ["running", "awaiting-review"]) {
+    status = busyStatus;
+    await assert.rejects(resetSoundRejections("turdusmerula", {}, true), /Prozess/);
+  }
+  status = "idle";
+  const pending = resetSoundRejections("turdusmerula", {}, true);
+  await assert.rejects(resetSoundRejections("turdusmerula", {}, true), /Prozess/);
+  const expired = await pending;
+  assert.equal(active, false);
+  tokens.get(expired.token).expiresAt = 0;
+  await assert.rejects(resetSoundRejections("turdusmerula", { token: expired.token, confirmed: true }), /abgelaufen/);
+  const preview = await resetSoundRejections("turdusmerula", {}, true);
+  // An invalid external registry edit must fail safely and release the write lock.
+  await writeFile(path, "broken");
+  await assert.rejects(resetSoundRejections("turdusmerula", { token: preview.token, confirmed: true }), SyntaxError);
+  assert.equal(active, false);
+  await writeFile(path, registryText);
+  refreshFailure = true;
+  const result = await resetSoundRejections("turdusmerula", { token: preview.token, confirmed: true });
+  assert.equal(result.saved, true);
+  assert.match(result.warning, /Gespeichert/);
+  assert.equal(active, false);
+});
 
 
 

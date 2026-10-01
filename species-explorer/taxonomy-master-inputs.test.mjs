@@ -254,7 +254,7 @@ function semanticMaster(root) {
       assert.match(name, /^[a-z_]+$/);
       result[name] = db.prepare(`SELECT * FROM ${name}`).all().map((row) => {
         const value = { ...row };
-        for (const column of ["assertion_id", "alias_id"]) delete value[column];
+        for (const column of ["assertion_id", "alias_id", "search_term_id"]) delete value[column];
         for (const column of ["provider_taxon_assertion_id", "source_assertion_id"]) {
           if (value[column] != null) value[column] = sources.get(value[column]);
         }

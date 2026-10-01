@@ -77,6 +77,7 @@
       const soundReview = dialog.querySelector(".new-species-sound-review");
       const finishMessage = dialog.querySelector(".new-species-finish-message");
       const doneSection = dialog.querySelector(".new-species-done");
+      const resetSoundsButton = dialog.querySelector(".new-species-reset-sounds-button");
 
       let currentStep = 1;
       let previewToken = "";
@@ -474,6 +475,9 @@
         backButton.hidden = currentStep === 1 || currentStep >= 3 || completed;
         nextButton.hidden = currentStep >= 3 || completed;
         saveButton.hidden = !completed;
+        resetSoundsButton.hidden = !savedSpeciesId || currentStep !== 4
+          || (inlineReviewAssets.length > 0 && !inlineReviewAssets.some((asset) => asset.type === "sound"));
+        resetSoundsButton.disabled = busy || pipelineBusy || namePreferencePreparing;
         previewButton.disabled = busy || pipelineBusy;
         backButton.disabled = busy || pipelineBusy;
         nextButton.disabled = busy || pipelineBusy || (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait());
@@ -488,7 +492,10 @@
         if (saveMap) saveMap.disabled = busy || pipelineBusy || !inlineManualMapPreviewToken;
         for (const button of closeButtons) {
           button.disabled = busy || pipelineBusy || namePreferencePreparing;
-          if (button.textContent !== "×") button.textContent = savedSpeciesId ? "Fenster schließen" : "Abbrechen";
+          if (button.textContent !== "×") {
+            button.textContent = savedSpeciesId ? "Fenster schließen" : "Abbrechen";
+            button.hidden = completed;
+          }
         }
       };
 
@@ -619,7 +626,7 @@
         showStep(4);
       };
 
-      const submitInlineAssetReview = async () => {
+      const submitInlineAssetReview = async ({ resetSoundRejections = false } = {}) => {
         const choices = inlineReviewAssets.map((asset) => {
           const decision = inlineReviewChoices.get(`${asset.safeName}:${asset.type}`);
           return {
@@ -627,6 +634,8 @@
             type: asset.type,
             decision,
             manual: decision === "manual",
+            ...(resetSoundRejections && asset.type === "sound" && decision === "reject"
+              ? { resetSoundRejections: true, reviewUrl: asset.url } : {}),
           };
         });
         if (choices.some((choice) => !choice.decision)) {
@@ -1194,6 +1203,68 @@
 
       saveButton.addEventListener("click", () => {
         close();
+      });
+
+      resetSoundsButton.addEventListener("click", async () => {
+        if (!savedSpeciesId || busy || pipelineBusy) return;
+        setBusy(true);
+        let resetSaved = false;
+        try {
+          const currentSound = inlineReviewAssets.find((asset) => asset.type === "sound");
+          if (currentSound) {
+            const confirmed = await showQuickConfirm({
+              title: "Frühere Soundquellen wieder zulassen?",
+              message: `Frühere Ablehnungen für ${savedSpeciesName} aufheben und erneut suchen? Der gerade angezeigte Sound wird dabei abgelehnt und übersprungen. Eine zuvor gespeicherte Aufnahme und ihre Schutzmarkierung bleiben erhalten. Die Art wird nicht nochmals angelegt.`,
+              confirmLabel: "Frühere Sounds erneut suchen",
+            });
+            if (!confirmed) return;
+            inlineReviewChoices.set(`${currentSound.safeName}:sound`, "reject");
+            stopInlineReviewAudio();
+            await submitInlineAssetReview({ resetSoundRejections: true });
+            return;
+          }
+          if (inlineReviewAssets.length) return;
+          const base = `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/sound`;
+          const preview = await fetchJson(`${base}/rejections-preview`, { method: "POST", body: "{}" });
+          const confirmed = await showQuickConfirm({
+            title: "Soundquellen erneut prüfen?",
+            message: preview.count
+              ? `${preview.count} gespeicherte Ablehnung(en) für ${savedSpeciesName} aufheben und die Soundsuche erneut starten? Vorhandene Dateien und manuell geschützte Sounds bleiben unverändert.`
+              : "Für diese Art sind keine Ablehnungen mehr gespeichert. Die Soundsuche erneut starten?",
+            confirmLabel: "Soundsuche erneut starten",
+          });
+          if (!confirmed) return;
+          if (preview.count) {
+            await fetchJson(`${base}/rejections-reset`, {
+              method: "POST", body: JSON.stringify({ token: preview.token, confirmed: true }),
+            });
+            resetSaved = true;
+          }
+          const plan = await fetchJson("/api/pipeline/preview", {
+            method: "POST", body: JSON.stringify({ mode: "nc-sounds", targetSlugs: [savedSpeciesId] }),
+          });
+          if (!plan.tokensAvailable) throw new Error("Die benötigten API-Tokens fehlen in der Server-Umgebung.");
+          if (!plan.hasWork) {
+            setFinishMessage("Keine Soundsuche erforderlich. Vorhandene Schutzentscheidungen bleiben erhalten.", "info");
+            return;
+          }
+          const status = await fetchJson("/api/pipeline/start", {
+            method: "POST", body: JSON.stringify({ token: plan.token }),
+          });
+          completed = false;
+          doneSection.hidden = true;
+          state.holdNewSpeciesBackground = true;
+          state.newSpeciesPipelineActive = true;
+          state.pipelineWasRunning = true;
+          state.pipelineStatusSnapshot = status;
+          setPipelineBusy(true);
+          setFinishMessage("Soundsuche läuft erneut. Die Art wird nicht nochmals angelegt.", "info");
+          void pollInlinePipelineStatus();
+        } catch (error) {
+          showWorkflowError(`${resetSaved ? "Die Ablehnungen sind aufgehoben; die Soundsuche konnte nicht gestartet werden. " : ""}${error.message}`);
+        } finally {
+          setBusy(false);
+        }
       });
     }
 

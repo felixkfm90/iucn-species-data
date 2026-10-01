@@ -116,6 +116,20 @@ test("Fallansicht ist im echten Explorer geladen und besitzt sichere Aktionen oh
   assert.match(html, /data-identity="discard-confirm">Verwerfen bestätigen/);
 });
 
+test("technische Reparaturhistorie besitzt verständlichen Titel und keine neue manuelle Fallauswahl", async () => {
+  const f = fixture(() => ({ available: true, cases: [], review: { events: [{ type: "source-repair",
+    sources: [taxon], targets: [taxon], reason: "Beleg <prüfen>" }] } }));
+  f.controller.open();
+  await new Promise(setImmediate);
+  assert.match(f.get("pending-list").innerHTML, /Quellendaten repariert – ursprüngliche Art-ID wiederhergestellt/);
+  assert.match(f.get("pending-list").innerHTML, /Beleg &lt;prüfen&gt;/);
+  assert.doesNotMatch(f.get("pending-list").innerHTML, /undefined/);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].payload.mode, "projects");
+  const html = await fs.readFile(new URL("./public/index.html", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /<option[^>]+value="source-repair"/);
+});
+
 test("Verwerfen braucht einen zweiten Klick und Abbrechen schreibt nichts", async () => {
   const f = fixture((url) => {
     if (url.endsWith("browse")) return { cases: [], review: { events: [], truncated: false } };

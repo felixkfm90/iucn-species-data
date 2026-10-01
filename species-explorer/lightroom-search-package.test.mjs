@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { taxonomyBuildCacheUsage } from "./taxonomy-build-cache.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -395,7 +396,7 @@ test("Lightroom-Suchpaket exportiert vollständige Taxonomie und sucht offline",
   assert.equal(manifest.projectTaxonCount, 1);
   assert.equal(manifest.providerCount, 3);
   assert.ok(manifest.nameCount >= 7);
-  assert.deepEqual(progress, ["schema", "copy", "index", "validate", "complete"]);
+  assert.deepEqual(progress, ["schema", "copy", "copy", "index", "validate", "complete"]);
 
   const activated = await activateLightroomSearchPackage(searchRoot, {
     verify: verifyLightroomSearchPackage,
@@ -718,7 +719,13 @@ test("Beschädigte Delta-Basis fällt auf Vollaufbau zurück; Abbruch erhält vo
   const before = await fs.readFile(lightroomSearchDatabasePath(options.searchRoot, "staging"));
   const controller = new AbortController();
   await assert.rejects(buildLightroomSearchPackage({ ...options, signal: controller.signal,
-    onProgress: ({ phase }) => { if (phase === "copy") controller.abort(); } }), /abort/i);
+    onProgress: ({ phase }) => {
+      if (phase === "copy") {
+        assert.ok(taxonomyBuildCacheUsage().activeConnections > 0);
+        controller.abort();
+      }
+    } }), /abort/i);
+  assert.equal(taxonomyBuildCacheUsage().activeConnections, 0);
   assert.deepEqual(await fs.readFile(lightroomSearchDatabasePath(options.searchRoot, "staging")), before);
 });
 
@@ -854,6 +861,7 @@ test("Paketfehler, geänderte Eingaben und Zeigerfehler lassen das aktive Paar u
   const oldMasterPath = taxonomyMasterDatabasePath(options.taxonomyRoot);
   await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true,
     buildPackage: async () => { throw new Error("package failed"); } }), /package failed/);
+  assert.equal(taxonomyBuildCacheUsage().activeConnections, 0);
   assert.equal(readTaxonomyPublication(options.taxonomyRoot), null);
   let revision = 1;
   await assert.rejects(publishTaxonomyPair({ ...options, confirmed: true,

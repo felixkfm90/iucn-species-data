@@ -1,24 +1,357 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
 
-## Aktuelle Übergabe – 20. September 2026
+## Aktuelle Übergabe – 1. Oktober 2026
+
+Maßgeblicher kompakter Betriebsstand: `docs/taxonomy-current-status.md`; Dokumentationsübersicht:
+`docs/README.md`. Die Quellenreparatur ist technisch abgeschlossen und von Felix mit Weissstorch/Rebhuhn
+gezielt praktisch bestätigt (Explorer-Namen, Lightroom-Zuweisung, Erhalt nach Schließen/Wiederöffnen).
+Die Meldung zu `COL26.9 XR` bezeichnet ein separates Quellenupdate, keinen Drift des passenden lokalen Paars.
+Als nächstes nur den gesondert beauftragten regulären Updatevertrag einschließlich der 2.173 CoL-/Reichsfälle
+prüfen; keinen zusätzlichen Aufbau, Download, Katalogabgleich oder Bereinigung aus alten Laufnotizen ableiten.
+Historische Schritte/Freigaben darunter bleiben Nachweise, keine noch laufenden Aufträge. Die aktuelle
+Restreihenfolge steht am Anfang von `docs/roadmap.md`; Phase 10 und ihr Gesamtaudit bleiben offen.
+Felix hat anschließend das Nachziehen der gesamten betroffenen Dokumentation und Commit/Push dieser bislang
+unveröffentlichten Arbeitsserie beauftragt. Keine Freigabe für zusätzliche Quellenupdates oder Bereinigung.
+Abschließender Dokumentations-/Veröffentlichungscheck: vollständiges `quality:ci` mit Exit 0, 50 Testgruppen/
+810 gemeldete Tests, keine Fehler/Abbrüche; 70 Markdown-Dateien ohne fehlende lokale Verweise und aktueller
+generierter Projektstatus. Erste sandboxbedingte Hilfsprozesssperre durch erlaubten Gegenlauf geklärt, keine
+Test-/Windows-Regeländerung. Keine neue Lua-Version, Squarespace-Einbindung oder produktive Datenänderung.
+Das ist kein Phase-10.5-Audit und kein vorweggenommener Pages-Deploymentnachweis.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
   alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.
 - Artanlage: Entwurf/Portrait ohne Sitzungs-Ablauffrist, Karten-Dateiauswahl/Drop im Assistenten und sichtbare,
   schließbare Fehlerzustände sind implementiert. Erneute praktische Abnahme der Regressionskorrekturen offen.
+- Sound-Rücksetzung am 27. September: artbezogene Freigabe gespeicherter Ablehnungen mit Rückfrage im
+  Assistenten und Sound-Editor. Im Assistenten folgt nur die Soundsuche, ohne erneute Artanlage. Dateien,
+  manuelle Schutzmarkierungen und fremde Ablehnungen bleiben erhalten. Ein Footer-Schließen statt zwei;
+  Fehler-/Wiederholungs-/Neustarttests vorhanden. Felix bestätigte Editor und Assistent nach Suchende praktisch.
+  Nun auch während offener Soundprüfung: nach Rückfrage frühere Quellen freigeben und aktuellen Kandidaten
+  überspringen, gemeinsam mit der Review-Entscheidung und an deren URL gebunden. Felix hat auch diesen
+  zusätzlichen Weg bestätigt; am 28. September als praktisch abgenommen dokumentiert. Keine echten Ablehnungen
+  durch die Implementierung gelöscht.
+  Die gemeldete kurze Eingabesperre bei aktivem Listenfilter ist nicht reproduziert; der Filter blockiert laut
+  Codeprüfung die Artanlage nicht. Controller-Gegenprobe mit verzögerter Referenz bestanden. Felix betrachtet
+  die Beobachtung vorerst als erledigt und meldet ein erneutes Auftreten; Ursache nicht bestätigt, keine weitere
+  Untersuchung eingeplant. Parallel laufende Lightroom-Prozesse sind nur eine mögliche Auslastungsquelle.
 - Hintergrundaufbau: Masterworker mit 500er-Checkpoints und ausdrücklicher Pause/Fortsetzung ist angebunden.
   Auch die schwere Master-/Lightroom-Paarvorbereitung einschließlich Rücknahme läuft nun im Hilfsprozess;
   nur frische Eingangsprüfung und gemeinsamer Zeigerwechsel bleiben im Server. Echte Hilfsprozesstests vorhanden.
-- Nächster technischer Schritt: Release-/Jobaufbewahrung und Platzbudget; danach vollständige Betriebs- und
-  Großbestandsabnahme. Kein produktiver Neuaufbau wurde für diesen Schritt gestartet. Phase 10 bleibt offen.
+- Speicherpflege: bestätigt entfernbare Altstände mit Vorschau, unverändertem Plan und Prozesssperren;
+  aktives Paar plus genau ein prüfsummenbestätigter Vorgänger als Backup. Aktueller Kandidat, benötigte Aufträge
+  und deren Abhängigkeiten bleiben geschützt. 2-GiB-Reserve und wiederholte Platzprüfungen sind angebunden.
+  Keine produktive Bereinigung in diesem Schritt. Vertrag: `docs/taxonomy-storage-maintenance.md`.
+- Betriebscheck: ein zusammenhängender Test mit echten Hilfsprozessen prüft harten Workerabbruch, Fortsetzung,
+  gemeinsamen Paketwechsel, eigene Namenswahl und Rollback bei offenen SQLite-Lesern. Der Größenvergleich
+  wird getrennt mit synthetischen Arten wiederholt; Ergebnisse/Grenzen: `docs/taxonomy-operational-checks.md`.
+- Gezielter Paketexport: Fingerabdrücke sind an Exportregeln, Quellmaster und Paketprüfsumme gebunden;
+  nur geänderte Taxa werden projiziert, Herkunftszeiten separat aktualisiert. Alte/unklare Grundlagen sowie
+  breite Änderungen fallen auf Vollaufbau zurück. Vollständige Basisprüfung läuft verpflichtend parallel.
+  Vertrag: `docs/lightroom-incremental-export.md`.
+- Master-Suchübernahme: Bereits zur Wiederverwendung freigegebene Arten erhalten ihre geprüften Suchbegriffe
+  gebündelt aus dem nur lesend angeschlossenen Altmaster. Nur betroffene Arten werden neu normalisiert.
+  Freigabemarker teilen den Taxoncheckpoint; nach Abschlussfehler bleibt ein erneuter Versuch möglich.
+  Eine erneute Quellprüfsumme vor Kandidatenübergabe verhindert die Nutzung zwischenzeitlich veränderter Basisdaten.
+  Fachbelege und aktuelle Herkunftsangaben werden weiterhin im neuen Kandidaten geschrieben.
+- Abschlussplan: Der frisch erstellte Vorabplan kann nach vollständigem, nur lesendem Strukturvergleich
+  übernommen werden. Prüfsummen und beide Eingangsstände binden den Plan; jede Abweichung verlangt den
+  vollständigen Abschlussplan. Die Fachbeleg-Einzelvalidierung bleibt unverändert. Ein Feldbündelungsversuch
+  ohne belegbaren Vorteil wurde verworfen. Windows-Lesesperren werden auch bei Fortsetzung eines bereits
+  abgeschlossenen Kandidaten vor der Verzeichnisübergabe geschlossen.
+- Prüfabschluss 23. September: Suchübernahme mit je zwei 10.000-/20.000-Arten-Messpaaren; nachfolgende
+  Abschlussplan-Übernahme mit zwei endgültigen 10.000-Arten-Messpaaren fachlich identisch zum Vollaufbau.
+  Letzter Vergleich: 11,05–11,09 s gegenüber 16,27–16,50 s Kandidatenbau, nicht Gesamtupdate.
+  Vollständiges `quality:ci` erneut erfolgreich, einschließlich 188 Master- und 155 Lightroom-/Pakettests.
+  Keine produktive Neuaktivierung; der größere Vergleich des neuen Planwegs war zu diesem Zeitpunkt noch offen.
+- Master-Schreibweg am 24. September: ein kandidatenlokaler, auf 64 Einträge begrenzter Befehlsspeicher
+  vermeidet erneute SQL-Vorbereitung auch bei neu berechneten Taxa. Keine Werte, Prüfergebnisse oder Abfrageergebnisse
+  werden zwischengespeichert; Modell- und Datenbankprüfungen bleiben unverändert. Der Kopierweg liest nur
+  tatsächlich benötigte Spalten. Gleiche Eingangsschlüssel benötigen keine erneute UTF-8-Konvertierung;
+  unterschiedliche Schlüssel behalten den bisherigen bytegeordneten Vergleich.
+- Prüfabschluss 24. September: je zwei 10.000-/20.000-Arten-Messpaare fachlich gleich, Ausgangsmaster unverändert.
+  Aktuell 10,93–11,06 s statt 12,40–12,48 s bei 10.000 und 23,10–23,82 s statt 26,63–27,38 s bei 20.000 Arten.
+  Hauptgewinn dieses Schritts: schnellerer Vollweg; der Änderungsweg ist bei 10.000 Arten nahezu unverändert.
+  `quality:ci` erfolgreich, darunter 194 Master-/Betriebs- und 155 Lightroom-/Pakettests. Kein produktiver Aufbau.
+- Leistungsziel weiter offen: Beim Paket benötigen 10.000 synthetische Arten mit zehn Änderungen 1,78–1,87 s statt
+  2,17–2,19 s im heutigen Vollpfad. Der frühere Vollpfad ohne Vergleichsgrundlage lag aber bereits bei 1,8 s.
+  Das ist noch keine deutliche Verkürzung des Gesamtupdates. Neue Mastermessungen einschließlich langsamer
+  Ausreißer stehen in `docs/taxonomy-operational-checks.md`; kein pauschaler Geschwindigkeitsfaktor.
+- Lokaler Gesamtvergleich: Auftragssicherung, beide echten Hilfsprozesse, vollständige Prüfungen und gemeinsamer
+  Wechsel sind nun zusammen gegen erzwungenen Master-/Paket-Vollaufbau geprüft. Eigene Namenswahl, alte Leser
+  und Ausgangsdateien bleiben erhalten. Downloads und produktive Anbieter-/Konfliktauswahl liegen außerhalb.
+  Die 10.000-/20.000-Arten-Ausgangsmessungen streuen stark; kein pauschaler Beschleunigungsfaktor.
+- Begrenzte Lesegruppen: Unveränderte Altbelege werden für höchstens 128 Taxa gebündelt gelesen. Quellen bleiben
+  schreibgeschützt, die bisherigen Einzelprüfungen und aktuellen Herkunftsangaben unverändert. Keine Teilgruppe
+  nach Lesefehlern; spätere Checkpoints können direkt wieder einsteigen. Die kleine direkte Gegenprobe zeigt
+  8–9 % weniger Kandidatenbauzeit, aber keinen Speichergewinn. Große Laufzeiten bleiben schwankend.
+- Prüfabschluss 25. September: je zwei integrierte 10.000-/20.000-Arten-Messpaare fachlich gleich; zuletzt
+  20.000 Arten in 43,72 / 34,29 s im Änderungsweg gegenüber 39,97 / 39,69 s im Vollweg. Ein Lauf ist langsamer,
+  deshalb kein zuverlässiger Gesamtvorteil belegt. Getrennte 10.000-Arten-Speicherprobe: rund 297 statt 234 MiB
+  Spitzen-RSS. Vollständiges `quality:ci` erfolgreich, darunter 205 Master-/Betriebs- und 155 Lightroom-/Pakettests.
+  Details einschließlich aller Ausreißer: `docs/taxonomy-operational-checks.md`. Keine produktive Aktivierung.
+- Ergänzende Ressourcenprüfung am 25. September: Prozess-Rechenzeit, RAM, Hauptthread-GC und logische
+  Windows-Ein-/Ausgabe sind im isolierten Vergleich messbar; synthetischer Mehranbieterbestand ergänzt.
+  Ein ausschließlich testlokaler 8-MiB-SQLite-Puffer senkt die logischen Mengen deutlich. Gegen spätere
+  Standard-Rückproben: 12,77–12,89 statt 14,99 s bei 10.000 Arten und 14,57–14,63 statt 16,80 s bei 5.000
+  Arten/12.500 Quellenbelegen, also beobachtete 13–15 %, keine Verdopplung der Geschwindigkeit zugesagt.
+  Auch der Standard wurde im Verlauf schneller; verbleibende Streuung ist nicht erklärt. Keine produktive
+  Pufferänderung. Erneutes `quality:ci` erfolgreich: 213 Master-/Betriebs- und 155 Lightroom-/Pakettests.
+  Ergebnisse, Messgrenzen und prozessgebundene Windows-Messfreigabe: `docs/taxonomy-performance-profiling.md`.
+- Aufbaupuffer am 26. September integriert: expliziter asynchroner Bereich für Masterbau, Paketbau und
+  Paarvorbereitung/Rücknahmeprüfung. Maximal acht Hauptdatenbank-Verbindungen je Worker/Laufzeit erhalten
+  8 MiB SQLite-Richtwert; weitere behalten ihren Standard. Normale Leser, angefügte Datenbanken und der
+  parallele Paketprüfer bleiben unverändert. Keine Prototypänderung und keine dauerhafte Datenbankeinstellung.
+  Rückstellung/Freigabe auch nach Fehlern; Pause/Fortsetzung, harter Abbruch und Rollback gezielt geprüft.
+  Vertrag und Prüfabschluss: `docs/taxonomy-build-cache.md`.
+- Größenvergleich abgeschlossen: je zwei Paare mit 10.000 Arten und 5.000 Arten/12.500 Mehranbieter-Belegen,
+  ein Paar mit 20.000 Arten. Ohne Mess-Injektion fachlich gleich; Änderungswege 12,79–13,12 / 14,45–14,55 /
+  28,20 s gegenüber verbessertem Vollweg 15,63–16,52 / 16,44–16,45 / 33,39 s. Beobachtete 11–21 % je Bestand,
+  kein isolierter Puffereffekt und keine Zusage für den echten Bestand. `docs/taxonomy-build-cache.md`.
+- Prüfabschluss 27. September: vollständiges `quality:ci` erfolgreich, darunter 221 Master-/Betriebs- und
+  155 Lightroom-/Pakettests; nach der Zwischen-Rücksetzung erneut vollständig erfolgreich. 21 gezielte
+  Sound-/Assistenten-/Pipeline-Tests bestanden. Dokumentation nachgeführt.
+- Lesende Großbestandsvorprüfung am 27. September: aktive CoL-/Master-/Paket-Herkunft und Vorgängerpaar konsistent;
+  vier Datenbanken mit quick_check/Foreign-Key-Prüfung ohne Befund und unveränderten Vorher-/Nachher-Hashes.
+  Master-/Export-Eingangsgrundlagen fehlen im aktiven Altstand; erster neuer Lauf deshalb vollständig.
+  Noch kein gemeinsamer Veröffentlichungszeiger und kein gespeicherter Masterauftrag. Kein produktiver Aufbau,
+  keine Bereinigung. Einzelheiten/Grenzen: `docs/audits/2026-09-27-taxonomy-preflight.md`.
+- Lokaler Grundlagen-Startweg am 28. September implementiert: Unter Datenbank-Aktionen → Taxonomiedatenbank
+  erscheint bei fehlenden Altformat-Grundlagen `Vergleichsgrundlage einmalig erstellen …`. Ausdrückliche,
+  an den angezeigten Stand gebundene Bestätigung; erneute Prüfung unter Prozesssperre. Nur vorhandene lokale
+  Quellen, keine Anbieterdownloads. Vorhandene Aufträge/Kandidaten haben Vorrang; kein automatischer Start beim
+  Öffnen. Der Anzeigencheck liest nur vorhandene Statusmanifeste, er ersetzt keine vollständige Aufbauprüfung.
+  Service-, Routing-, UI- und echte Hilfsprozesstests sichern den Weg einschließlich gemeinsamer Paarfreigabe ab.
+  Vertrag: `docs/taxonomy-master-background-build.md`. Felix hat Anklicken und Abbrechen der Rückfrage praktisch
+  bestätigt. Der erste produktive lokale Grundlagenlauf wurde anschließend von Felix gestartet (siehe unten).
+- Startvorbereitung am 28. September: Manifestvergleich bestätigt weiterhin passende CoL-/Master-/Paketkennungen,
+  fehlende Eingangsgrundlagen und keinen gespeicherten Auftrag/Staging-Kandidaten. Rund 139,1 GiB frei auf C:.
+  Der lokale Explorer-Dienst auf Port 4177 war nicht erreichbar; keine aktuelle API-Freigabe ableitbar. Kein
+  Aufbau gestartet, keine erneute vollständige Integritätsprüfung. Explorer öffnen und reguläre Rückfrage nutzen.
+- Erster produktiver Grundlagenlauf: Felix hat ihn am 28. September um 08:36:59 MESZ über die Rückfrage gestartet.
+  Erste API-Prüfung: `building`, Phase `Eingangsstand sichern`, 45 %, keine gemeldeten Fehler; aktiver Master
+  und Lightroom-Paket weiterhin das bisherige passende Paar. Noch kein fortsetzbarer Workerauftrag/Checkpoint
+  verfügbar. Die Prozentzahl beschreibt die Phase, nicht einen gemessenen Zeitanteil. In dieser Vorbereitung
+  weder Pause/Fortsetzung noch Abschluss abgenommen; noch kein Wechsel nachgewiesen.
+- Produktiver Grundlagenlauf am 28. September um 10:07:59 MESZ abgeschlossen, rund 1 h 31 min insgesamt.
+  Master und Lightroom-Paket gemeinsam aktiviert, Vorgänger erhalten, fünf Namenskorrekturen laut Status
+  übernommen; keine Fehler/Warnungen oder blockierenden Konflikte gemeldet. Eingangs-/Exportgrundlage vorhanden.
+  Nachweis/Grenzen: `docs/audits/2026-09-28-taxonomy-baseline-run.md`. Neue Taxonzahl um 106 geringer, lokale
+  Anbieterstände vom 27. statt 3. September; damals genaue Identitäts-/Quelldifferenz noch ungeklärt.
+- Lesender Differenzcheck am 29. September abgeschlossen: 154 alte IDs fehlen, 48 neue, netto minus 106.
+  150 Arten werden trotz vorhandener Anbieter- und CoL-Belege ausgeschlossen, weil Teil-Suchtreffer im
+  Anbieter-Snapshot die vorherigen Aufnahme-Merkmale ersetzen. Vier gleiche iNaturalist-IDs erhalten nach
+  Leerung des Reichs neue Master-IDs. Echter Auswahlfilter und isolierte Drei-Zeilen-Gegenprobe reproduzieren
+  beide Fehler. Kein bestätigter Split/Merge. Die weiteren 44 Einträge umfassen 43 neue Namen und einen
+  getrennten Plantae-Beleg zu `Chloris chloris`; nicht mit dem erhaltenen Grünfink zusammenführen.
+  Alle 60 Projektarten verknüpft, 56 Altverknüpfungen unverändert; fünf eigene Namen in Master und Paket korrekt.
+  Beide Suchpakete entsprechen ihrem Master vollständig, kein separater Exportverlust. Lightroom-Fotobestand
+  nicht abgefragt. Nachweis einschließlich aller IDs: `docs/audits/2026-09-29-taxonomy-difference.md`.
+  Damals noch kein Codefix; weiterhin keine produktive Wiederherstellung, kein neuer Aufbau/Rollback/Bereinigung. Vorgänger und
+  Anbieterstände erhalten; weiterer produktiver Aufbau/katalogweiter FN-Abgleich zur Reparatur erst nach Fix
+  und kontrollierter Vorschau. Erfolgreicher technischer Wechsel ist keine fachliche Bestandsfreigabe.
+- Fortschrittsanzeige am 28. September implementiert: gemeinsame Darstellung für Dialog und obere Schaltfläche,
+  sieben logische Schritte für den Aufbau inklusive lokalem Quellenlesen; kürzere Wege für Namenswahl,
+  Paketreparatur und Rücknahme. Prozent nur aus aktuellen Messmengen als ausdrücklich bezeichneter Teilfortschritt,
+  sonst laufende Phase. Alte feste Prozentmarken werden nicht mehr angezeigt. Checkpoints und bisherige
+  Bestandszahlen getrennt; Abschluss erst bei bestätigter erfolgreicher Aktion und passendem Paketstand.
+  74 gezielte UI-/Service-/Vertragstests und 17 HTTP-/Hilfsprozesstests bestanden. Kein zusätzlicher produktiver
+  Lauf und kein Neustart der geöffneten Anwendung. Praktische Anzeigeabnahme offen.
+- Schutzkorrektur und lesende Vorschau am 30. September: Teil-Suchtreffer derselben belegten Anbieter-ID
+  erhalten Aufnahmegrundlage und fehlende Identitäts-/Quellenfelder; widersprüchliche Identität wird abgewiesen.
+  Fehlende Alt-IDs bleiben am Kandidaten prüfbar, sperren aber Einzel- und Paaraktivierung vor Veröffentlichung.
+  Bestätigte Identitätsereignisse/Rücknahme bleiben möglich. 66 direkte und 68 weiterführende Tests bestanden.
+  Alle 154 betroffenen Quellzeilen in der lesenden Vorschau wieder aufgenommen, ursprüngliche IDs reproduziert.
+  Vollhashes beider Master, beider Pakete und beider Quellen sowie Zeiger unverändert. Vier schon aktive
+  Ersatz-IDs benötigten zu diesem Prüfzeitpunkt noch eine gesonderte, nachvollziehbare Behandlung.
+  Vertrag, Grenzen und nächste Schritte: `docs/taxonomy-partial-source-recovery.md`.
+- Bestätigter Reparaturweg am 30. September implementiert: lesende, prüfsummengebundene Vorschau, separater
+  Quellenentwurf und gespeicherter Masterauftrag mit Fortsetzung. Vier technische `source-repair`-Ereignisse
+  erhalten die Ersatz-IDs historisch und stellen die ursprünglichen IDs aktiv wieder her; kein fachlicher
+  Split/Merge und keine automatische Foto-/Projektmigration. Neuer unveränderlicher Quellenstand und
+  Historienvormerkung werden erst nach Kandidatenprüfung übernommen; unterbrochene Übernahme ist wiederholbar.
+  Gemeinsame Paaraktivierung bleibt separat bestätigt. 19 neue Reparaturtests sowie ein neuer Anzeigetest;
+  insgesamt 161 gezielte Tests erfolgreich,
+  einschließlich echtem Hilfsprozess, lokalem CoL-Eingangsleser und regulärer Kandidaten-Freigabeprüfung.
+  Die Explorer-Historie bezeichnet den technischen Reparaturtyp verständlich, ohne neue manuelle Fallauswahl.
+  Abschließende große lesende Vorschau bestätigt 154 Fälle, davon 150 Aufnahmeverluste und vier Ersatz-IDs,
+  ohne Blocker; gebundene Dateien und Zeiger unverändert. Kein produktiver Entwurf, Auftrag oder Quellenwechsel.
+- Produktiver Reparaturkandidat am 30. September durch Felix freigegeben. Bestätigter Wartungsaufruf gegen
+  Revision `a6bdf57a5b2fcc6820dc661cb344afdd154f1f82b3aeb2d1f7e79bf2f05c003e` gestartet;
+  erste Prüfung bestätigt nur laufende Eingangsprüfung, noch keinen neuen Entwurf/Workerauftrag oder Wechsel.
+  Explorer-Dienst beim Start geschlossen, rund 118,48 GiB frei. Vier Historienentscheidungen ausdrücklich
+  gebunden; aktive Paaraktivierung ist durch diese Freigabe nicht erlaubt. Keine parallele Eingangsänderung.
+  Stand 19:46 MESZ: separater Entwurf `prepared`, 154 ergänzte von 273.517 Quellenzeilen; noch kein neuer
+  Workerauftrag. Vor Auftragsstart erneute Eingangsprüfung. Veröffentlichungszeiger weiterhin vom 28. September.
+  Stille 30-Minuten-Wiedervorlage `taxonomie-reparaturkandidaten-pr-fen` zur Begleitung bis Prüfung/Handlungsbedarf eingerichtet.
+  Stand 19:58 MESZ: neuer Auftrag `job-bfb06bf7-94b3-4c69-be2c-42af970a1f3a`, Reparaturjournal `building`;
+  Hilfsprozess seit 19:54:08 MESZ, Phase Masterdatenbank schreiben. 110.000 von 275.635 Taxa gesichert,
+  etwa 39,9 % dieses Schreibteils, kein Gesamtprozent. Geplante Menge liegt über dem bisherigen Master;
+  zusätzliche Bestandsdifferenz nach Abschluss ausdrücklich prüfen. Zu diesem Zeitpunkt noch kein fertiger Kandidat oder Quellenwechsel.
+- Reparaturkandidat am 30. September abgeschlossen: Wartungsaufruf mit Exit 0, Auftrag und Reparaturjournal
+  `ready`, Kandidat `master-20260930174712224`. Worker von 19:54:08 bis 20:12:30 MESZ; danach frische
+  Abschlussprüfung sowie neuer Quellenstand `recovery-a6bdf57a5b2fcc6820dc661c` und vier Historienvormerkungen.
+  Lesende Prüfung um 20:26 MESZ bestätigt alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch,
+  sämtliche IDs beider bisherigen Master erhalten, alle 60 Projektlinks und 46 eigene ausgewählte Felder
+  einschließlich fünf deutscher Namenskorrekturen unverändert. Reguläre Kandidatenprüfung und `quick_check`
+  erfolgreich, keine blockierenden Konflikte. Beide alten Master, beide Suchpakete, beide Originalquellen
+  und Veröffentlichungszeiger unverändert; kein neues Lightroom-Paket und keine Aktivierung.
+  Fachlicher Zusatzbefund: 275.639 IDs, davon 275.635 aktiv und vier historisch; gegenüber dem aktiven Master
+  154 Reparatur-IDs plus 2.173 weitere aktive CoL-IDs. Alle weiteren IDs besitzen CoL-Belege, aber jeweils
+  denselben wissenschaftlichen Namen wie eine erhaltene bisherige ID mit anderem Reich. Alle alten Gegenstücke
+  waren `reference-gap`; neue Gegenstücke ausschließlich CoL-belegt. Ursache im Eingangsweg: umfassende erneute
+  lokale Lückenprüfung, nicht ausschließlich die 154 Quellzeilen. Keine bestätigte Identitätsgleichheit,
+  kein belegter Split/Merge und keine automatische Zusammenführung. Technische Freigabefähigkeit ist keine
+  fachliche Bestandsfreigabe. Kandidat bis Klärung nicht aktivieren. Abschlussbefund und Grenzen:
+  `docs/taxonomy-partial-source-recovery.md`. Wiedervorlage nach Abschlussprüfung auf `PAUSED` gesetzt;
+  keine weiteren automatischen Prüfungen dieses beendeten Laufs.
+- Eingrenzungsprüfung am 30. September nach Felix' „Weiter“ abgeschlossen, ohne produktiven Aufbau oder Codewechsel:
+  gleicher lokaler CoL-Stand; der echte normale Eingangsleser liefert für die 2.173 Zusatznamen null CoL-Zeilen,
+  der erzwungene Reparaturweg 2.173. Für alle 154 Reparaturnamen liefern beide Wege exakt dieselben 150
+  CoL-Zeilen; vier verbleibende Fälle bleiben iNaturalist-belegt. Alle 154 reparierten Anbieterzeilen reproduzieren
+  die ursprünglichen IDs und sind aufnahmefähig. Von 1.418 zusätzlich geschlossenen Referenzlücken würde der
+  normale Weg noch eine anfassen; ein bloßer Boolean-Wechsel garantiert deshalb keine strikte 154-Fälle-Grenze.
+  Explizite CoL-`inat:`-Verweise: 1.693 eindeutig auf die alte iNaturalist-ID, sechs auf eine andere ID,
+  zwei mehrdeutig, 472 ohne diesen Verweis. Das ist eine Quellenklassifizierung, keine bestätigte Identitätsmigration.
+  Zwei vorhandene Eingangsleser-Regressionstests erfolgreich; fünf Datenbank-Dateigrößen/Schreibzeiten und vier
+  Statusdateien unverändert. Keine erneute vollständige Integritäts-/Vollhashprüfung. Detailnachweis im Reparaturvertrag.
+- Enge Reparaturkorrektur anschließend durch Felix freigegeben und implementiert: ursprünglicher, prüfsummen-
+  und auftragsgebundener CoL-Eingang aus dem aktiven Masteraufbau bleibt unverändert; nur bestätigte Reparaturnamen
+  werden zusätzlich lokal gelesen, mit Identitäts-/Anbieter-ID-Prüfung. Kein erneuter Lückensuchlauf über alle Namen.
+  Tatsächliche IDs, Status, Quellenbelege/-namen, Aufnahmegründe, Feldwerte, Aliasse, Konflikte, eigene Entscheidungen,
+  Projektlinks und Suchbegriffe außerhalb des Plans müssen semantisch unverändert sein. Prüfung vor Worker-Übergabe,
+  bei regulärer Kandidatenprüfung und gegen den Originalmaster bei kopierter Paarvorbereitung.
+  Neuer Ersatzweg: lesendes `replacement-preview`, ausdrückliches `replacement-candidate` mit ursprünglicher
+  Reparaturrevision plus frischer Planrevision und denselben Historienentscheidungen. Verwendet den bereits
+  installierten Quellen-/Historienstand, erhält den alten Auftrag unverändert und verschiebt den alten Kandidaten
+  erst unter bestätigtem Plan nach `master/source-recovery/retained-candidates/recovery-<Altplanrevision>`.
+  Gespeichertes Ersatzjournal sichert Fehler-/Abbruch-/Wiederholungs-/Neustartwege; unbekannte Ziele und geänderte
+  Eingänge sperren die Übernahme. Kein Umschreiben alter Auftrags-/Regelprüfsummen. Isolierter Prüfabschluss und
+  vollständige Grenzen im Reparaturvertrag. In diesem Implementierungsschritt keine produktiven Daten verändert.
+- Lesende Ersatzvorschau am 1. Oktober um 15:08 MESZ erfolgreich, Exit 0, rund 67,42 s: ursprüngliche
+  Reparaturrevision, installierte Quelle, vier Historienentscheidungen, Altauftrag und Alt-Kandidat passen zusammen.
+  Neue Planrevision `9beccf7fe76602f74b7d75fb938201e8c683e286795e7624b930751e25424516`;
+  154 Reparaturfälle und vier historische Ersatz-IDs, 43 Eingangsdateien sowie 17 zusätzliche Auftrags-/
+  Kandidaten-Dateibindungen geprüft. Aktives Paar und Vorgänger mit ihren vollständigen Prüfsummen gebunden;
+  Status-/Projekt-/Korrekturdateien sowie Größen/Schreibzeiten von fünf Datenbanken vor/nach der Vorschau gleich.
+  Originalquellen und installierte Reparaturquelle unverändert; Aufbewahrungsziel frei, kein Ersatzjournal.
+  Nur lokales Prüfprotokoll unter ignoriertem `Testlauf/` erstellt. Kein neuer Kandidat, Verschieben oder Paarwechsel.
+  Keine erneute fachliche Gesamtprüfung des Alt-Kandidaten oder Zusage der Endmenge eines künftigen Ersatzes.
+- Ersatzkandidatenlauf am 1. Oktober anschließend durch Felix mit „ja“ ausdrücklich für diese Planrevision
+  bestätigt und gestartet. Neues Ersatzjournal `building`, Auftrag
+  `job-65f8c166-6d9e-4e00-b471-35b761e2927f`, Revision
+  `0d69de1bf04090c58d30ce7bcc67ff29be30b0e41f0b33b7c922aebf69c883d7`.
+  Journalzeit 15:17:26 MESZ; Hilfsprozess PID 30104 seit 15:21:07 MESZ. Stand 15:22:53 MESZ:
+  Masterdatenbank schreiben, 22.000 von 273.462 geplanten aktiven Taxa gesichert, noch kein Abschluss.
+  Stand 15:30:13 MESZ: alle 273.462 Taxa geschrieben, Suchindex 1.276.000 von 6.186.155 Einträgen;
+  weiterhin `building`, kein Fehler gemeldet. Das sind Teilmengen, keine Gesamtprozent oder Endfreigabe.
+  Alter Kandidat am exakt bestätigten Aufbewahrungsziel erhalten; alter Auftrag nicht umgeschrieben.
+  Historischer Begleitstand der Ausführungssitzung `83773`. Keine vollständigen Vergleichsscans während des Aufbaus.
+  Vorbereiteter lesender Abschlussvergleich: `Testlauf/taxonomy-replacement-verify-2026-10-01.mjs`, erst nach
+  Exit 0 und Ersatzjournal/Auftrag `ready` ausführen. Neue Dienst-/Regelversion nicht während des Laufs ändern.
+  Bestehende stille 30-Minuten-Wiedervorlage `taxonomie-reparaturkandidaten-pr-fen` für genau diesen Ersatzlauf
+  aktualisiert und reaktiviert; nach Abschlussprüfung oder nutzerabhängigem Hindernis wieder deaktivieren.
+- Ersatzlauf am 1. Oktober um 15:42:02 MESZ mit Exit 1 durch die enge Schutzprüfung gestoppt:
+  `Reparaturumfang überschritten: Konflikte außerhalb der bestätigten Fälle verändert.` Auftrag `failed`;
+  Ersatzjournal weiterhin in der zuletzt gespeicherten Workflowstufe `building`, kein laufender Worker daraus
+  ableitbar. Hilfsprozess lief 20 min 54,6 s; keine fertige Staging-Übergabe und kein neues Lightroom-Paket.
+  Private Datenbank im neuen Auftragsordner erhalten, alter Kandidat am bestätigten Aufbewahrungsziel erhalten.
+  Lesende Fehlerprüfung um 15:46 MESZ: genau 26 zusätzliche offene `reference-gap`-Hinweise außerhalb des Plans,
+  keine entfernten fremden Konflikte. Alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch; keine fehlende
+  ID beider Altmaster und keine zusätzliche fremde ID. Ergebnis 273.466 IDs, davon 273.462 aktiv und vier historisch.
+  Alle 60 Projektlinks und 46 ausgewählten eigenen Felder einschließlich fünf deutscher Namen unverändert.
+  58 gebundene Original-/Eingangs-/Aufbewahrungsdateien mit vollständigen Hashes sowie Veröffentlichungszeiger
+  unverändert. Keine fachliche Freigabe: unabhängiger vollständiger Abschlussvergleich wegen `failed` nicht ausgeführt.
+  Begrenzte Gegenprüfung aller 26 Einträge: im aktiven Master bereits `reference-gap`, dort ohne Konfliktzeile;
+  im Vorgänger vom 5. September nicht vorhanden, ohne Projektlinks/eigene Felder. Quellenbelege und Referenzzustand
+  im privaten Ergebnis gleich. Die allgemeine Aufbauregel erzeugt wegen des nun vorhandenen Vorgängers neue
+  Hinweise, obwohl die enge Reparatur diese Einträge nicht ändern darf. Schutzprüfung nicht abschwächen.
+  Wiedervorlage `taxonomie-reparaturkandidaten-pr-fen` nach gemeldetem Hindernis wieder `PAUSED`.
+- Konflikterhalt nach Felix' gesondertem „Ja“ am 1. Oktober implementiert und isoliert geprüft:
+  ausschließlich im engen `sourceRecoveryScope`-Weg werden Konflikte und zugehörige eigene Entscheidungen
+  unbeteiligter IDs aus dem aktiven Master übernommen, einschließlich fehlender Hinweise, Zustände, Texte und Zeiten.
+  Nur private Kandidatendaten ändern sich. Interne Feldverweise werden an dieselbe ID und exakt gleiche Feld-/
+  Quellenmerkmale gebunden, fehlende/mehrdeutige Belege sperren die Übernahme. Eigener Savepoint rollt Fehler/Pause
+  zurück; bestätigte Reparatur-/Historien-IDs bleiben ausgeschlossen. Allgemeine Update-Regel und semantische
+  Umfangssperre unverändert. Neues Modul `taxonomy-source-recovery-conflicts.mjs` an Vorschau-/Masterregeln gebunden.
+  Regression reproduzierte zuerst denselben Schutzabbruch und besteht nach der Korrektur. 160 gezielte Tests in
+  acht Dateien bestanden, darunter 40 Reparaturtests mit sieben Unterfällen, echte Hilfsprozesse sowie Kandidaten-/
+  Paket-/Paarprüfungen ausschließlich mit temporären Daten. Einzelner Windows-`ENOTEMPTY`-Aufräumfehler im ersten
+  Gegenlauf; betroffener Test einzeln und anschließend kompletter erweiterter Gegenlauf erfolgreich, keine
+  Fachregel oder fremder Test zur Umgehung geändert. Kein produktiver Vergleich/Aufbau oder Auftragswechsel.
+- Kontrollierter Neustart am 1. Oktober durch Felix mit „Los mach solange weiter bis die Reparatur abgeschlossen
+  ist“ freigegeben: neue lesende `restart-preview` und bestätigte `restart-candidate` binden ursprüngliche Revision,
+  fehlgeschlagenen Plan und frische Planrevision. Altes Ersatzjournal, vollständiger Fehlerauftrag/private Datenbank
+  und aufbewahrter erster Kandidat bleiben unverändert. Separates Neustartjournal unter `source-recovery/restarts`;
+  kein Umschreiben alter Regeln oder Prüfsummen. Nur lokale Code-/Regeländerungen sind gegenüber dem Fehlerplan
+  zulässig; geänderte produktive Daten, fremde Aufträge, vorhandene Kandidaten oder laufende Prozesse sperren.
+  164 gezielte Tests in acht Dateien erfolgreich, einschließlich Neustart mit echten Hilfsprozessen.
+  Frische lesende Produktivvorschau um 16:53 MESZ erfolgreich: genau 154 Fälle/vier Historien-IDs, Datenbindungen
+  unverändert. Plan `ebd6f0815afcb8bc86bd5077ce1f7002134fb2ba025256082ff4dc8c4b0d4df0`.
+  Bestätigter Neustartaufruf anschließend gestartet, Ausführungssitzung 69913; zunächst erneute Eingangsprüfung.
+  Historischer Stand 17:10 MESZ: neuer Auftrag `job-1c0243c8-e1d7-477d-8e5e-b775549bb0af`, Revision
+  `338ce21c8a4c0e0a9a144f1a27a9e64dc50aafe302e7ac35c7c4ad4433f48ab0`, Worker PID 3432 seit
+  16:59:17 MESZ. Alle 273.462 geplanten Taxa geschrieben, Suchindex 3.434.000/6.186.155; kein gemeldeter Fehler.
+  Zu diesem Zeitpunkt noch keine vollständige Kandidatenprüfung; stille 30-Minuten-Wiedervorlage reaktiviert.
+- Reparaturkandidat am 1. Oktober vollständig geprüft abgeschlossen: Wartungsaufruf Exit 0, neuer Auftrag und
+  Neustartjournal `ready`, Kandidat `master-20261001145513036`. Worker fertig um 17:21:21 MESZ, anschließende
+  frische Serviceprüfung und unabhängiger Gesamtvergleich erfolgreich. 273.466 IDs, davon 273.462 aktiv und vier
+  historisch. Alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, sämtliche IDs beider Altmaster erhalten;
+  keinerlei fremde Zusatz-ID. Alle elf semantischen Umfangsprojektionen außerhalb des Plans unverändert,
+  einschließlich Konflikten/eigenen Entscheidungen/Suchbegriffen. 60 Projektlinks und 46 eigene ausgewählte
+  Felder einschließlich fünf deutscher Namen unverändert. Referenzhinweise 118.338 → 118.334, vier Entfälle
+  ausschließlich im bestätigten Umfang; keine neuen fremden Hinweise, null blockierende Konflikte.
+  Reguläre vollständige Kandidatenprüfung, `quick_check=ok`, null Fremdschlüsselverletzungen. Abschließende
+  Vollhashprüfung um 17:46:52 MESZ: 70 geschützte Dateien, Kandidat und Veröffentlichungszeiger unverändert;
+  alte Journale/Aufträge/private Fehlerdatenbank und aufbewahrter erster Kandidat erhalten. Belege unter
+  `Testlauf/taxonomy-restart-verify-2026-10-01-result.json` und `Testlauf/taxonomy-restart-postcheck-2026-10-01-result.json`.
+  Wiedervorlage nach vollständigem Prüfabschluss `PAUSED`. Dokumentation nachgeführt, kein vollständiges
+  `quality:ci` oder Phasenaudit. Keine Aktivierung, Migration, Bereinigung, Anbieterdownloads, Commit oder Push.
+- Gemeinsame Master-/Lightroom-Paaraktivierung am 1. Oktober anschließend durch Felix mit „ja los“ gesondert
+  bestätigt. Wartungsaufruf um 17:57:36 MESZ gestartet; Hilfsprozess PID 13300 bereitete das Paar aus dem bereits
+  vollständig geprüften Kandidaten vor. Bestehende Prozesssperren, frische Eingangsprüfung, vollständige
+  Paketprüfung und ein gemeinsamer Veröffentlichungszeiger bleiben verbindlich. Wartungsabschluss um 18:11:42 MESZ,
+  Exit 0: Paar `publication-60f9b546-49ee-4c65-ada9-7b57b965b120` aktiv, Master `master-20261001145513036`,
+  Suchpaket `lightroom-63c431a5fa43190a4c52` mit 273.462 Taxa. Paketbau inkrementell: 154 Taxa neu projiziert,
+  vier historische Ersatz-IDs nicht mehr im aktiven Suchbestand; deren Historie bleibt enthalten. Herkunftszeiten
+  auch der unveränderten Taxa gesondert erneuert, keine pauschale Laufzeitersparnis ableiten. Kein zusätzlicher
+  Master-Vollaufbau oder Foto-/Projektmigration. Vorheriges Paar vom 28. September als Rückweg erhalten.
+  Unabhängige lesende Paar-/Originaldateiprüfung um 20:34:39 MESZ mit Exit 0 vollständig abgeschlossen:
+  aktiver Master byteidentisch zum geprüften Kandidaten; vollständige Paketintegritäts-/Prüfsummenprüfung und
+  Gesamtvergleiche aller aktiven Taxa, bevorzugten Namen, Suchbegriffe, Quellenbelege, Status, Projektlinks,
+  ausgewählten Hierarchiefelder und Identitätshistorie erfolgreich. Alle 154 IDs in beiden normalen lesenden
+  Verbrauchern aktiv, vier Ersatz-IDs historisch mit ausdrücklicher Rückfrage statt automatischer Fotoänderung.
+  Alle 60 Projektlinks und 46 eigenen ausgewählten Felder/fünf deutschen Namen erhalten. 69 geschützte Dateien,
+  privater Kandidat und Vorgänger unverändert; nur der bestätigte gemeinsame Zeigerwechsel. Reparatur damit
+  produktiv abgeschlossen. Beleg: `Testlauf/taxonomy-repair-pair-verify-2026-10-01-result.json`.
+  Lokaler Zusatzprüfer korrigiert, keine weiteren Produktionscodeänderungen oder neuer Masterlauf. Die ersten
+  Prüferversuche sind keine vollständigen Abschlussbelege; interner ID-/Objektvergleich und ungünstiger
+  Suchindex ausschließlich dort berichtigt. Dokumentations-/Projektstatusprüfung erfolgreich; kein vollständiges
+  `quality:ci`, Phasenaudit, GUI-Abnahmetest, Katalogabgleich, Bereinigung, Commit oder Push.
+  Die 2.173 Quellenfälle separat für reguläre Updates vor dem Audit behandeln, nicht nebenbei migrieren.
+  Vor späterer Explorer-Bedienung die neue Dienstversion laden. Keine Altreleases überschreiben oder ID-Sperre umgehen.
+  Keine ungeprüfte Namen-/Reichsheuristik und keine zusätzlichen Historienereignisse aus gleichem Namen ableiten.
+  Quellenstand und vier technische Historienfälle sind vorbereitet. Die aktuelle Freigabe gilt ausschließlich
+  für den eng geprüften Kandidaten; keine zusätzlichen Quellenfälle oder automatische ID-Migration ableiten.
+  Kein weiterer langer Produktivlauf zur Diagnose.
+  Gezielte praktische Verbraucherabnahme am 1. Oktober anschließend vollständig von Felix bestätigt:
+  Weissstorch/Rebhuhn im Explorer mit bevorzugten Namen, erfolgreiche Lightroom-Zuweisung mit passenden
+  Metadaten/Stichwörtern und Erhalt nach normalem Schließen/Wiederöffnen. Rückmeldung „1 passt / 2 passt / 3 passt“;
+  nutzerbestätigte Stichprobe, keine GUI-Automation oder Abnahme aller 154 Fälle. Reparaturpunkt damit technisch
+  und gezielt praktisch abgeschlossen. `COL26.9 XR` ist ein separates Quellenupdate, kein reparaturbedingter
+  Drift; regulären Updateweg und die 2.173 CoL-/Reichsfälle vor Freigabe gesondert prüfen. Kein neuer Lauf gestartet.
+  Die übrige Anzeige-/Betriebs-/Großbestandsabnahme bleibt offen. Produktive Pause/Fortsetzung und Rücknahme nicht durch den Erfolgsdurchlauf
+  abgenommen. Sound-Rücksetzung einschließlich Zwischenweg praktisch abgenommen.
+  Den Gesamtgewinn getrennt von kleinen Einzeloptimierungen bewerten; Prüfungen nicht für bessere Zeiten entfernen.
+  Die übrige Laufzeitstreuung bleibt offen; der einzelne 20.000er-Vergleich belegt keine Wiederholbarkeit.
+  Kein weiterer produktiver Neuaufbau für die Anzeigeänderung. Phase 10 bleibt offen.
 - Maßgeblicher Restplan: `docs/roadmap.md`; Verträge: `docs/taxonomy-master-background-build.md`,
   `docs/taxonomy-incremental-build.md`, `docs/taxonomy-name-preference-plan.md`. Datierte ältere Abschnitte
   weiter unten sind Verlauf, keine erneute Freigabe des aktuellen Stands. Aktuelle Zähler nur in `docs/project-status.md`.
@@ -260,7 +593,7 @@ Optional fuer Sortierung:
 
 Voraussetzungen:
 
-- Node.js 18 oder neuer
+- Node.js 24 für den vollständigen Explorer-/Taxonomiebetrieb einschließlich `node:sqlite`; CI verwendet Node 24
 - `npm install`
 - Umgebungsvariable `IUCN_TOKEN`
 - Umgebungsvariable `XENO_TOKEN`
@@ -335,7 +668,8 @@ Echte Ausgabe braucht `ffmpeg` im PATH, `FFMPEG_PATH` oder `--ffmpeg=<Pfad>`. Er
 `Testlauf/spectrograms` pruefen, bevor produktive `species-assets/<SafeName>/spectrogram.webp`-Dateien erzeugt werden.
 
 Temporare Tests gehoeren in `Testlauf/`. Dieser Ordner ist ignoriert; produktive Artefakte gehoeren dort nicht hinein.
-Nach Abschluss eines Themas wird `Testlauf/` wieder geleert.
+Nach Abschluss nur eigene entbehrliche Testordner gezielt entfernen. Gebundene Reparatur-/Prüfbelege und fremde
+Inhalte erhalten; der Dokumentations-/Commitauftrag ist keine pauschale Bereinigungsfreigabe.
 
 ## Bekannte Stolperstellen
 
@@ -1227,7 +1561,7 @@ Aktuelle Planung:
   über `taxonomy-publication/active.json` sind angebunden. Beide Releaseordner werden zuerst geprüft;
   Paketfehler lassen beide Altstände aktiv. Präferenzen, Rücknahme, offene Leser und echter Paketworker sind
   isoliert geprüft. Lua-Version 0.4.24.14 liest denselben Zeiger. Keine produktive Aktivierung.
-  Vor Großbestandsfreigabe bleiben Speicher-/Ausreißeranalyse, Release-Aufbewahrung/Platzbudget und
+  Vor Großbestandsfreigabe bleiben Speicher-/Ausreißeranalyse sowie
   die Abnahme des gesamten Wiederanlaufs offen. Die schwere Paarvorbereitung/-prüfung samt Rücknahme ist
   seit 20. September in einen eigenen Hilfsprozess ausgelagert; der Elternprozess allein aktiviert das Paar.
   Worker-/Jobkern und transaktionale 500er-Schreibcheckpoints sind im Explorer angeschlossen:
@@ -1235,7 +1569,12 @@ Aktuelle Planung:
   Lauf wiedergefunden, Pause/Fortsetzung und gesicherter Zähler sind sichtbar. Serviceweite Prozesssperren
   sowie Ablehnung veralteter Läufe/älterer Kandidaten sind geprüft. Der Service-/Worker-Test öffnet den Dienst
   neu; produktive Explorer-/Lightroom-Neustart- und Großbestandsabnahme stehen aus. Keine produktiven Läufe.
-  Nächster Schritt: Release-/Jobaufbewahrung und Platzbudget. Vertrag: `docs/taxonomy-master-background-build.md`.
+  Release-/Jobaufbewahrung und Platzprüfung sind inzwischen mit bestätigter Vorschau und genau einem Backup
+  angebunden; siehe `docs/taxonomy-storage-maintenance.md`. Seit 21. September ersetzt eine gebundene
+  Teilprojektion die vollständige Zwischenprojektion. Ergebnisgleichheit und ein begrenzter Vorteil gegenüber
+  dem heutigen Vollpfad sind geprüft; die deutliche Gesamtbeschleunigung bleibt vor der Betriebsabnahme offen.
+  Vertrag und Grenzen: `docs/lightroom-incremental-export.md`.
+  Vertrag: `docs/taxonomy-master-background-build.md`.
   Details: `docs/taxonomy-incremental-build.md`.
   Benutzerbefunde vom 12. September untersucht: Grünfink-Kartenabruf erhält HTTP 403/Schutzseite trotz
   funktionierendem Browserlink. Keine Umgehung; verständliche Meldung und vorhandener Datei-Upload als Ersatzweg.

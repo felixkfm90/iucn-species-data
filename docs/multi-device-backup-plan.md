@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-07-12
+Stand: 2026-10-01
 
 ## Ziel
 
@@ -205,7 +205,8 @@ Ziel: keine Kommandozeile.
 
 1. ZIP vom NAS entpacken.
 2. `restore-start.cmd` doppelklicken.
-3. Das Skript prueft Node.js 18+.
+3. Das bestehende Bootstrap-Skript prueft Node.js 18+. Für den heutigen vollständigen Explorer-/Taxonomiebetrieb
+   einschließlich `node:sqlite` wird Node.js 24 verwendet; die alte Mindestprüfung allein garantiert diesen Betrieb nicht.
 4. Falls `node_modules` fehlt, bietet es `npm.cmd install` an.
 5. Es erzeugt die Desktop-Verknuepfung.
 6. Es startet die App.

@@ -1,9 +1,13 @@
 # Machbarkeitsstudie: Lightroom-Classic-Integration
 
-Stand: 2026-09-04
+Stand: 2026-10-01
 Roadmap: Phase 10.1  
-Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.24.6 sind unter
+Status: Phase 10.1 abgeschlossen; Suchpaket, produktive Zuweisung und Ausbau bis Plug-in-Version 0.4.24.14 sind unter
 `docs/lightroom-search-package.md` dokumentiert
+
+Die Machbarkeitsentscheidung bleibt abgeschlossen. Der heutige operative Stand einschließlich bestätigter
+Quellenreparatur steht im [Taxonomie-Betriebsstand](taxonomy-current-status.md); das ist keine neue
+Machbarkeitsprüfung und kein Phase-10-Abschlussaudit.
 
 ## 1. Ziel und Ergebnis
 

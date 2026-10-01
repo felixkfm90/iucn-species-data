@@ -1,3 +1,4 @@
+import { configureTaxonomyBuildDatabase } from "./taxonomy-build-cache.mjs";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 
 function normalized(value) {
@@ -38,7 +39,7 @@ export async function diffTaxonomyMasterDatabases({
 } = {}) {
   let previousDatabase;
   try {
-    previousDatabase = new DatabaseSync(previousPath, { readOnly: true });
+    previousDatabase = configureTaxonomyBuildDatabase(new DatabaseSync(previousPath, { readOnly: true }));
   } catch {
     return initialDiff(currentDatabase);
   }

@@ -54,6 +54,8 @@ function initialState() {
     action: "",
     message: "Noch keine Aktualisierung gestartet.",
     progressPercent: null,
+    progressCurrent: null,
+    progressTotal: null,
     startedAt: "",
     completedAt: "",
     releaseId: "",
@@ -200,6 +202,8 @@ export class TaxonomyMaintenanceService {
     this.state.phase = String(progress?.phase || this.state.phase);
     this.state.message = String(progress?.message || this.state.message);
     this.state.progressPercent = progressPercent(progress || {});
+    this.state.progressCurrent = progress?.current ?? null;
+    this.state.progressTotal = progress?.total ?? null;
   }
 
   async checkLatest({ force = false, visible = false } = {}) {

@@ -219,8 +219,9 @@
 
       elements.taxonomyMaintenanceProgress.hidden = !active;
       if (active) {
-        if (Number.isFinite(Number(status.progressPercent))) {
-          elements.taxonomyMaintenanceProgress.value = Number(status.progressPercent);
+        const measured = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ reference: status });
+        if (measured?.percent !== null && measured?.percent !== undefined) {
+          elements.taxonomyMaintenanceProgress.value = measured.percent;
         } else {
           elements.taxonomyMaintenanceProgress.removeAttribute("value");
         }

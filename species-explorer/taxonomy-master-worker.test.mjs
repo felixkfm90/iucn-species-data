@@ -14,6 +14,7 @@ import { coverMasterInputSelection, masterFileFingerprint } from "./taxonomy-mas
 import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
 import { activateTaxonomyMasterCandidate } from "./taxonomy-master-lifecycle.mjs";
 import { benchmarkRows, semanticDigests } from "../scripts/taxonomy-master-benchmark.mjs";
+import { taxonomyBuildCacheUsage } from "./taxonomy-build-cache.mjs";
 
 const timestamp = "2026-09-13T12:00:00.000Z";
 const now = () => new Date(timestamp);
@@ -58,11 +59,35 @@ function semanticWithoutWorkerMetadata(filename) {
   return result;
 }
 
+test("Platzmangel nach bestätigtem Block bewahrt 500 Arten und setzt nach Freigabe ohne Doppelungen fort", async (t) => {
+  const f = await fixture(t), job = await f.job();
+  let checks = 0;
+  await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id,
+    checkSpace: async () => { if (++checks === 2) throw new Error("Zu wenig freier Speicher"); } }), /Zu wenig/);
+  assert.equal(cursor(job.directory).written, 500);
+  assert.equal(cursor(job.directory).actual, 500);
+  assert.equal((await json(path.join(job.directory, "state.json"))).status, "failed");
+  const checkpoints = [];
+  const resumed = await executeMasterJob({ taxonomyRoot: f.root, id: job.id, resume: true,
+    onProgress: (event) => { if (event.written) checkpoints.push(event.written); } });
+  assert.equal(resumed.summary.taxa, 510);
+  assert.deepEqual(checkpoints, [510]);
+});
+
 test("Gesicherter Schreibblock wird fortgesetzt; vollständige Fach- und Suchtabellen entsprechen dem Vollaufbau", async (t) => {
   const f = await fixture(t), job = await f.job();
   let paused = false;
+  const configuredBefore = taxonomyBuildCacheUsage().configuredConnections;
   await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id, shouldPause: () => paused,
-    onProgress(event) { if (event.written === 500) paused = true; } }), { code: "MASTER_BUILD_PAUSED" });
+    onProgress(event) {
+      if (event.written === 500) {
+        const usage = taxonomyBuildCacheUsage();
+        assert.ok(usage.activeConnections > 0 && usage.activeConnections <= 8);
+        paused = true;
+      }
+    } }), { code: "MASTER_BUILD_PAUSED" });
+  assert.equal(taxonomyBuildCacheUsage().activeConnections, 0);
+  assert.ok(taxonomyBuildCacheUsage().configuredConnections > configuredBefore);
   assert.equal(cursor(job.directory).written, 500);
   assert.equal(cursor(job.directory).actual, 500);
   assert.equal((await json(path.join(job.directory, "state.json"))).status, "paused");
@@ -73,6 +98,7 @@ test("Gesicherter Schreibblock wird fortgesetzt; vollständige Fach- und Suchtab
   assert.equal(resumed.summary.taxa, 510);
   assert.deepEqual(checkpoints, [510]);
   const before = semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging"));
+  assert.equal(taxonomyBuildCacheUsage().activeConnections, 0);
   const hashBeforeRetry = await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "staging"));
   await executeMasterJob({ taxonomyRoot: f.root, id: job.id });
   assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "staging")), hashBeforeRetry);
@@ -87,6 +113,7 @@ test("Fehler in der Abschlussprüfung bewahrt Schreibblöcke und bestehenden Kan
   const job = await f.job();
   await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id,
     onProgress(event) { if (event.phase === "Prüfung") throw new Error("Prüfung unterbrochen"); } }), /Prüfung unterbrochen/);
+  assert.equal(taxonomyBuildCacheUsage().activeConnections, 0);
   assert.equal(cursor(job.directory).actual, 10);
   assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "staging")), oldHash);
   assert.equal((await executeMasterJob({ taxonomyRoot: f.root, id: job.id })).summary.taxa, 10);
@@ -194,12 +221,64 @@ test("Auch wiederverwendete Arten und ihre Quellen werden genau einmal fortgeset
   await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id, shouldPause: () => paused,
     onProgress(event) { if (event.written === 500) paused = true; } }), { code: "MASTER_BUILD_PAUSED" });
   assert.equal(cursor(job.directory).reused, 500);
+  const savedSearch = new DatabaseSync(path.join(job.directory, "candidate", "taxonomy-master.sqlite"), { readOnly: true });
+  try {
+    assert.equal(savedSearch.prepare("SELECT COUNT(*) AS n FROM master_build_reused_search").get().n, 500);
+    assert.equal(savedSearch.prepare("SELECT COUNT(*) AS n FROM master_search_term").get().n, 0);
+  } finally { savedSearch.close(); }
   const result = await executeMasterJob({ taxonomyRoot: f.root, id: job.id });
   assert.equal(result.buildInputs.reuse.reusedTaxa, 510);
   assert.equal(result.buildInputs.reuse.recomputedGroups, 0);
+  assert.equal(result.buildInputs.reuse.search.reusedTaxa, 510);
+  assert.equal(result.buildInputs.reuse.search.rebuiltSources, 0);
   assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "active")), activeHash);
   const actual = semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging"));
   await buildTaxonomyMasterCandidate({ ...f.options(), reuseUnchanged: false, now: () => new Date("2026-09-14T12:00:00.000Z") });
+  assert.deepEqual(semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging")), actual);
+});
+
+test("Fehler nach gebündelter Suchübernahme bewahrt Marker und setzt den Abschluss ohne doppelte Begriffe fort", async (t) => {
+  const f = await fixture(t, 20);
+  await buildTaxonomyMasterCandidate(f.options());
+  await activateTaxonomyMasterCandidate(f.root, { confirmed: true });
+  const activeHash = await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "active"));
+  const when = () => new Date("2026-09-14T12:00:00.000Z");
+  const job = await prepareMasterJob({ ...f.options(), now: when });
+  await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id, onProgress(event) {
+    if (event.phase === "Suchindex" && event.percent === 96) throw new Error("Abschluss nach Suchübernahme unterbrochen");
+  } }), /Suchübernahme unterbrochen/);
+  assert.equal(cursor(job.directory).written, 20);
+  const saved = new DatabaseSync(path.join(job.directory, "candidate", "taxonomy-master.sqlite"), { readOnly: true });
+  try {
+    assert.equal(saved.prepare("SELECT COUNT(*) AS n FROM master_build_reused_search").get().n, 20);
+    assert.equal(saved.prepare("SELECT COUNT(*) AS n FROM master_search_term").get().n, 0);
+  } finally { saved.close(); }
+  const resumed = await executeMasterJob({ taxonomyRoot: f.root, id: job.id, resume: true });
+  assert.equal(resumed.buildInputs.reuse.search.reusedTaxa, 20);
+  assert.equal(resumed.buildInputs.reuse.search.rebuiltSources, 0);
+  assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(f.root, "active")), activeHash);
+  const actual = semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging"));
+  await buildTaxonomyMasterCandidate({ ...f.options(), reuseUnchanged: false, now: when });
+  assert.deepEqual(semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging")), actual);
+});
+
+test("Pause beim Strukturvergleich setzt einen bereits abgeschlossenen Master mit frischem Plan fort", async (t) => {
+  const f = await fixture(t, 20);
+  await buildTaxonomyMasterCandidate(f.options());
+  await activateTaxonomyMasterCandidate(f.root, { confirmed: true });
+  const hash = await masterFileFingerprint(taxonomyMasterDatabasePath(f.root));
+  const when = () => new Date("2026-09-14T12:00:00.000Z");
+  const job = await prepareMasterJob({ ...f.options(), now: when });
+  let paused = false;
+  await assert.rejects(executeMasterJob({ taxonomyRoot: f.root, id: job.id, shouldPause: () => paused,
+    onProgress(event) { if (event.phase === "Abhängigkeiten vergleichen") paused = true; } }), { code: "MASTER_BUILD_PAUSED" });
+  assert.ok(cursor(job.directory).manifest);
+  const resumed = await executeMasterJob({ taxonomyRoot: f.root, id: job.id, resume: true });
+  assert.equal(resumed.buildInputs.comparison.dependencyPlan.graphReuse, "verified-prewrite-plan");
+  assert.equal(resumed.buildInputs.reuse.reusedTaxa, 20);
+  assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(f.root)), hash);
+  const actual = semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging"));
+  await buildTaxonomyMasterCandidate({ ...f.options(), reuseUnchanged: false, now: when });
   assert.deepEqual(semanticWithoutWorkerMetadata(taxonomyMasterDatabasePath(f.root, "staging")), actual);
 });
 

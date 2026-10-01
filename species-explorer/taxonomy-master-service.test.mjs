@@ -9,8 +9,103 @@ import {
   taxonomyMasterServiceInternals,
 } from "./taxonomy-master-service.mjs";
 import { taxonomyCorrectionsRevision, readTaxonomyMasterManifest } from "./taxonomy-master-candidate.mjs";
+import { taxonomyBaselineSetupStatus, assertBaselineSetup } from "./taxonomy-baseline-setup.mjs";
 
 const NOW = new Date("2026-08-01T12:00:00.000Z");
+
+test("Masterfortschritt erhält Messmengen und verwirft sie bei einer unbestimmten Folgephase", async (t) => {
+  const f = await createFixture(t);
+  const service = createTaxonomyMasterService({ taxonomyRoot: f.root,
+    speciesListPath: f.speciesListPath, correctionsPath: f.correctionsPath, referenceService: { reset() {} } });
+  service.updateProgress({ phase: "Masterdatenbank schreiben", current: 1200, total: 3000, percent: 74 });
+  assert.equal(service.state.progressCurrent, 1200);
+  assert.equal(service.state.progressTotal, 3000);
+  service.updateProgress({ phase: "Prüfung", percent: 95 });
+  assert.equal(service.state.progressCurrent, null);
+  assert.equal(service.state.progressTotal, null);
+  await service.close();
+});
+
+const baselineStatus = () => ({ lifecycle: { active: { candidateId: "old-master", schemaVersion: 3 } },
+  lightroomPackage: { status: "current", active: { packageId: "old-package", masterVersion: "old-master" } },
+  reference: { status: "current", activeRelease: "col-2026-07" }, corrections: { currentRevision: "names-1" } });
+
+test("Grundlagenangebot verwendet nur vorhandene Manifestangaben; Kandidaten, Fehler und Aufträge haben Vorrang", () => {
+  assert.equal(taxonomyBaselineSetupStatus().needed, false);
+  assert.equal(taxonomyBaselineSetupStatus({ lightroomPackage: null }).needed, false);
+  const old = baselineStatus();
+  const offered = taxonomyBaselineSetupStatus(old);
+  assert.equal(offered.needed, true); assert.equal(offered.canStart, true);
+  assert.equal(offered.check, "manifest-only");
+  assertBaselineSetup({ baselineSetup: offered }, offered.revision);
+  for (const change of [
+    { lifecycle: { ...old.lifecycle, candidate: { candidateId: "candidate" } } },
+    { lifecycle: { ...old.lifecycle, error: "Lesefehler" } },
+    { reference: { status: "stale" } }, { lightroomPackage: null },
+    { lightroomPackage: { status: "error" } },
+    ...["paused", "interrupted", "failed", "stale", "building"].map((status) => ({ buildJob: { available: true, status } })),
+  ]) {
+    const blocked = taxonomyBaselineSetupStatus({ ...old, ...change });
+    assert.equal(blocked.canStart, false);
+    assert.throws(() => assertBaselineSetup({ baselineSetup: blocked }, blocked.revision), { statusCode: 409 });
+  }
+  assert.equal(taxonomyBaselineSetupStatus({ ...old, active: true }).canStart, false);
+  const changed = taxonomyBaselineSetupStatus({ ...old, corrections: { currentRevision: "names-2" } });
+  assert.throws(() => assertBaselineSetup({ baselineSetup: changed }, offered.revision), { statusCode: 409 });
+  const present = structuredClone(old);
+  present.lifecycle.active.buildInputs = { available: true, file: "build-inputs.sqlite", fingerprint: "a".repeat(64), masterSha256: "b".repeat(64) };
+  assert.equal(taxonomyBaselineSetupStatus(present).needed, true, "Paketgrundlage noch nicht vorhanden");
+  present.lightroomPackage.active.exportContract = "c".repeat(64);
+  present.lightroomPackage.active.sourceChecksum = `sha256:${"d".repeat(64)}`;
+  assert.equal(taxonomyBaselineSetupStatus(present).needed, false);
+});
+
+test("Lokaler Grundlagenstart braucht frische Bestätigung, lädt keine Anbieter und aktiviert serverseitig nichts", async (t) => {
+  const f = await createFixture(t);
+  let built = 0, candidate = null, changed = false, busy = false;
+  const active = { candidateId: "old-master", sources: [{ provider: "catalogue-of-life", providerVersion: "col-2026-07" }] };
+  const service = createTaxonomyMasterService({ taxonomyRoot: f.root, ...f,
+    referenceService: { requireStore: async () => referenceStore() },
+    readReferencePointer: async () => ({ activeRelease: "col-2026-07" }),
+    inspectLifecycle: async () => ({ active, candidate }), isProjectBusy: () => busy,
+    inspectLightroomPackages: async () => ({ active: { packageId: changed ? "other" : "old-package", masterVersion: "old-master" } }),
+    providerRefreshService: { refresh() { throw new Error("Kein Anbieterdownload erlaubt"); }, close() {} },
+    supplementService: { selectedTaxa: async () => [], refreshKnown() { throw new Error("Keine Ergänzungsdownloads erlaubt"); } },
+    activateCandidate() { throw new Error("Keine serverseitige automatische Aktivierung erlaubt"); },
+    buildCandidate: async (options) => {
+      built += 1;
+      for await (const record of options.colRecords) assert.ok(record);
+      candidate = { candidateId: "new-master" }; return candidate;
+    }, now: () => NOW,
+  });
+  t.after(() => service.close());
+  const initial = await service.status();
+  assert.equal(initial.baselineSetup.canStart, true);
+  assert.equal(built, 0);
+  await assert.rejects(service.startBaselineBuild(), { statusCode: 400 });
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: "wrong" }), { statusCode: 409 });
+  changed = true;
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision }), { statusCode: 409 });
+  changed = false; busy = true;
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision }), { statusCode: 409 });
+  busy = false;
+  const originalPresence = service.withVersionPresence;
+  service.withVersionPresence = async (operation) => { changed = true; return originalPresence(operation); };
+  await service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision });
+  await service.runPromise;
+  assert.equal(built, 0, "Zweite Prüfung unter Sperre stoppt zwischenzeitliche Paketänderung");
+  assert.equal((await service.status()).status, "failed");
+  service.withVersionPresence = originalPresence; changed = false;
+  await service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision, refreshProviders: true });
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision }), { statusCode: 409 });
+  await service.runPromise;
+  const ready = await service.status();
+  assert.equal(ready.status, "ready", ready.error);
+  assert.equal(built, 1);
+  assert.equal(ready.lifecycle.active.candidateId, "old-master");
+  assert.equal(ready.baselineSetup.canStart, false, "Kandidat muss erst übernommen werden");
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision }), { statusCode: 409 });
+});
 
 test("Update-Eingang erhält Anbieterstandard und bindet Namenspräferenz an ihre Masteridentität", () => {
   const entry = { scientificName: "Ciconia ciconia", germanNameMode: "provider",

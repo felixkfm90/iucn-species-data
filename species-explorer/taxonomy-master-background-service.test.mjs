@@ -9,7 +9,9 @@ import { masterJobDirectory, masterJobBinding, acquireMasterJobLock } from "./ta
 import { startMasterJobProcess, pauseMasterJob } from "./taxonomy-master-process.mjs";
 import { writeActiveTaxonomyPointer, atomicWriteJson } from "./taxonomy-storage.mjs";
 import { providerSliceManifestPath, providerSliceDataPath } from "./taxonomy-master-slices.mjs";
-import { readTaxonomyMasterManifest } from "./taxonomy-master-candidate.mjs";
+import { readTaxonomyMasterManifest, buildTaxonomyMasterCandidate } from "./taxonomy-master-candidate.mjs";
+import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
+import { inspectLightroomSearchPackages, sha256File } from "./lightroom-search-storage.mjs";
 import { readMasterSourceBinding } from "./taxonomy-master-source-binding.mjs";
 import { publishTaxonomyPair } from "./taxonomy-publication.mjs";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
@@ -17,6 +19,43 @@ import { benchmarkRows } from "../scripts/taxonomy-master-benchmark.mjs";
 
 const now = () => new Date("2026-09-14T10:00:00Z");
 const json = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
+
+test("Einmaliger Grundlagenlauf mit echtem Worker erhält Altstand bis zur Paarfreigabe und verschwindet danach", async (t) => {
+  const f = await fixture(t), searchRoot = path.join(path.dirname(f.root), "lightroom");
+  const shared = { lightroomSearchRoot: searchRoot,
+    inspectLightroomPackages: () => inspectLightroomSearchPackages(searchRoot),
+    publishPair: (options) => publishTaxonomyPair({ ...options, taxonomyRoot: f.root, searchRoot }),
+    providerRefreshService: { refresh() { throw new Error("Keine Anbieterdownloads im Grundlagenlauf"); }, close() {} } };
+  // Genuine small pair without the newly introduced master input descriptor.
+  const legacy = f.service({ ...shared, backgroundBuild: false,
+    buildCandidate: (options) => buildTaxonomyMasterCandidate({ ...options, buildInputCoverage: undefined }) });
+  await legacy.startBuild({ refreshProviders: false }); await legacy.runPromise;
+  assert.equal((await legacy.status()).status, "ready", legacy.state.error);
+  await legacy.activate({ confirmed: true }); await legacy.runPromise;
+  assert.equal((await legacy.status()).status, "completed", legacy.state.error);
+  await legacy.close();
+  const previous = readTaxonomyPublication(f.root).active;
+  const oldPath = taxonomyMasterDatabasePath(f.root, "active"), before = await sha256File(oldPath);
+  const service = f.service({ ...shared, now: () => new Date("2026-09-28T10:00:00Z") });
+  const initial = await service.status();
+  assert.equal(initial.baselineSetup.canStart, true, JSON.stringify(initial.baselineSetup));
+  assert.equal(service.runPromise, null, "Öffnen startet keinen Hintergrundlauf");
+  await service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision });
+  await service.runPromise;
+  const built = await service.status();
+  assert.equal(built.status, "ready", built.error);
+  assert.equal(built.buildJob.status, "ready");
+  assert.equal(built.lifecycle.candidate.buildInputs.available, true);
+  assert.equal(readTaxonomyPublication(f.root).active.masterVersion, previous.masterVersion);
+  assert.equal(await sha256File(oldPath), before);
+  await service.activate({ confirmed: true }); await service.runPromise;
+  const complete = await service.status();
+  assert.equal(complete.status, "completed", complete.error);
+  assert.equal(complete.baselineSetup.needed, false);
+  assert.equal(readTaxonomyPublication(f.root).previous.masterVersion, previous.masterVersion);
+  assert.equal(await sha256File(oldPath), before);
+  await assert.rejects(service.startBaselineBuild({ confirmed: true, revision: initial.baselineSetup.revision }), { statusCode: 409 });
+});
 
 async function fixture(t, count = 10) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-background-service-"));

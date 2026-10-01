@@ -125,6 +125,10 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "taxonomy-maintenance",
     action: "preview",
   });
+  for (const action of ["storage-preview", "storage-clean"]) {
+    assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/master/${action}`), { name: "taxonomy-master", action });
+    assert.notEqual(matchExplorerRoute("GET", `/api/taxonomy/master/${action}`).name, "taxonomy-master");
+  }
   assert.deepEqual(matchExplorerRoute("POST", "/api/taxonomy/update/start"), {
     name: "taxonomy-maintenance",
     action: "start",
@@ -145,7 +149,7 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
     name: "taxonomy-master",
     action: "build",
   });
-  for (const action of ["pause-build", "resume-build"]) {
+  for (const action of ["pause-build", "resume-build", "build-baseline"]) {
     assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/master/${action}`), { name: "taxonomy-master", action });
     assert.notEqual(matchExplorerRoute("GET", `/api/taxonomy/master/${action}`)?.name, "taxonomy-master");
   }
@@ -314,6 +318,11 @@ test("Schreibaktionen werden begrenzt, dekodiert und an Fachoperationen delegier
     name: "taxonomyMaster",
     action: "build",
     payload: { refreshProviders: true },
+  });
+
+  await post("/api/taxonomy/master/build-baseline", { confirmed: true, revision: "confirmed-stand" });
+  assert.deepEqual(calls.at(-1), {
+    name: "taxonomyMaster", action: "build-baseline", payload: { confirmed: true, revision: "confirmed-stand" },
   });
 
   await post("/api/taxonomy/master/apply-corrections", { confirmed: true });

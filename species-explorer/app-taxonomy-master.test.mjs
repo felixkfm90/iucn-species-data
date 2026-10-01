@@ -13,6 +13,7 @@ const context = vm.createContext({
     return 1;
   },
 });
+new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-taxonomy-master.js" }).runInContext(context);
 const masterUi = context.SpeciesExplorerTaxonomyMaster;
 
@@ -215,8 +216,8 @@ test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt"
 
   controller.render(status);
   assert.equal(visible.taxonomyMasterProgress.hidden, false);
-  assert.equal(visible.taxonomyMasterProgress.value, 44);
-  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Phase: Masterdatenbank schreiben/);
+  assert.equal(visible.taxonomyMasterProgress.value, 40, "Messwert 1.200/3.000 ersetzt alte Phasenmarke 44");
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Schritt 3 von 7.*Masterdatenbank schreiben/);
   assert.match(visible.taxonomyMasterProgressDetail.textContent, /1\.200 von 3\.000/);
   assert.match(visible.taxonomyMasterProgressDetail.textContent, /Laufzeit 1:0[45]/);
   assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
@@ -246,7 +247,7 @@ test("automatischer Lightroom-Paketbau nutzt denselben sichtbaren Fortschrittsbl
 
   controller.render(status);
   assert.equal(visible.taxonomyMasterProgress.hidden, false);
-  assert.equal(visible.taxonomyMasterProgress.value, 42);
+  assert.equal(visible.taxonomyMasterProgress.value, undefined, "Keine Messmenge: unbestimmter Balken statt erfundener 42 %");
   assert.match(visible.taxonomyMasterProgressDetail.textContent, /Lightroom-Suchpaket · Taxonomieexport/);
   assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
 });

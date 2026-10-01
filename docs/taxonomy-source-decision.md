@@ -1,11 +1,18 @@
 # Quellenentscheidung für die globale Taxonomiereferenz
 
-Stand: 2026-09-06
+Stand: 2026-10-01
 
 Status: Phase 9.1 abgeschlossen und für den erweiterten lokalen Masterbestand fortgeschrieben; verbindliche
 Grundlage aller Importphasen
 
 ## Fortschreibung für den lokalen Masterbestand
+
+Die Quellenreparatur vom 1. Oktober ändert die fachliche Quellenpriorität nicht. Schmale Suchtreffer derselben
+belegten Anbieter-ID erhalten vorhandene Aufnahme-/Identitätsfelder; widersprüchliche Identität bleibt gesperrt.
+Die 2.173 getrennten CoL-/Reichsfälle werden nicht allein wegen gleicher wissenschaftlicher Namen vereinigt.
+Vertrag und erfolgreicher enger Abschluss: [Quellenreparatur](taxonomy-partial-source-recovery.md);
+aktueller [Betriebsstand](taxonomy-current-status.md). Ein neuer Anbieterrelease ist keine automatische
+Foto-/Projektmigration und keine pauschale fachliche Freigabe eines neuen Masters.
 
 Die ursprüngliche Quellenbewertung bleibt gültig. Für die inzwischen umgesetzte lokale Masterdatenbank ist die
 operative Reihenfolge verbindlich erweitert:

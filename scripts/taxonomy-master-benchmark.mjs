@@ -47,7 +47,7 @@ export function semanticDigests(filename) {
       const rows = [];
       for (const row of db.prepare(`SELECT * FROM ${name}`).iterate()) {
         const value = { ...row };
-        for (const column of ["assertion_id", "alias_id"]) delete value[column];
+        for (const column of ["assertion_id", "alias_id", "search_term_id"]) delete value[column];
         for (const [columns, mapping] of [[["provider_taxon_assertion_id", "source_assertion_id"], sources],
           [["current_assertion_id", "candidate_assertion_id"], fields]]) {
           for (const column of columns) if (value[column] != null) {
@@ -115,7 +115,8 @@ async function worker(root, slot, count, scenario, reuse) {
   const digests = semanticDigests(taxonomyMasterDatabasePath(taxonomyRoot, "staging"));
   if (seed) await activateTaxonomyMasterCandidate(taxonomyRoot, { confirmed: true, now: () => now });
   return { elapsedMs, sampledPeakRssMiB: peakRss / 1048576, processPeakMiB: processPeakKiB / 1024,
-    phasesMs: phases, files, reuse: manifest.buildInputs.reuse, digests };
+    phasesMs: phases, files, reuse: manifest.buildInputs.reuse,
+    dependencyGraphReuse: manifest.buildInputs.comparison?.dependencyPlan?.graphReuse || null, digests };
 }
 
 async function subprocess(root, slot, count, scenario, reuse) {

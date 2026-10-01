@@ -36,6 +36,9 @@ import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import { MasterRunController } from "./taxonomy-master-run-controller.mjs";
 import { masterJobBinding } from "./taxonomy-master-job.mjs";
 import { readRetainedMasterTaxa } from "./taxonomy-master-source-binding.mjs";
+import { createTaxonomyStorageMaintenance } from "./taxonomy-storage-maintenance.mjs";
+import { assertTaxonomySpace } from "./taxonomy-space-budget.mjs";
+import { taxonomyBaselineSetupStatus, assertBaselineSetup } from "./taxonomy-baseline-setup.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -312,6 +315,9 @@ export class TaxonomyMasterService {
     this.activateCorrections = activateCorrections;
     this.readReferencePointer = readReferencePointer;
     this.runController = runController || (backgroundBuild ? new MasterRunController(this.taxonomyRoot) : null);
+    this.storageMaintenance = this.runController && this.lightroomSearchRoot ? createTaxonomyStorageMaintenance({
+      taxonomyRoot: this.taxonomyRoot, searchRoot: this.lightroomSearchRoot, controller: this.runController, now,
+    }) : null;
     this.state = initialState();
     this.closed = false;
     this.runPromise = null;
@@ -408,6 +414,7 @@ export class TaxonomyMasterService {
       ...(recovered ? { status: buildJob.status, message: messages[buildJob.status],
         error: ["failed", "stale"].includes(buildJob.status) ? buildJob.error : "",
         progressPercent: buildJob.progress?.percent ?? null, progressPhase: buildJob.progress?.phase || "",
+        progressCurrent: buildJob.progress?.current ?? null, progressTotal: buildJob.progress?.total ?? null,
         startedAt: buildJob.startedAt } : {}),
       active: this.isActive(),
       buildJob,
@@ -416,6 +423,8 @@ export class TaxonomyMasterService {
       corrections,
       reference,
       identities,
+      baselineSetup: taxonomyBaselineSetupStatus({ lifecycle, lightroomPackage, corrections, reference,
+        identities, buildJob, active: this.isActive() || this.isProjectBusy() }),
     };
   }
 
@@ -457,6 +466,7 @@ export class TaxonomyMasterService {
     }) || (!activeRevision && !overlayRevision && corrections.length === 0 && activeManualCount === 0);
     return {
       count: corrections.length,
+      currentRevision,
       pending: !activeCurrent,
       candidateIncludesCurrent: Boolean(candidateRevision)
         && candidateRevision === currentRevision,
@@ -599,7 +609,19 @@ export class TaxonomyMasterService {
     };
   }
 
-  startBuild(options = {}) {
+  async startBaselineBuild({ confirmed = false, revision = "" } = {}) {
+    this.assertAvailable();
+    if (confirmed !== true) {
+      const error = new Error("Der einmalige lokale Grundlagenlauf muss ausdrücklich bestätigt werden.");
+      error.statusCode = 400;
+      throw error;
+    }
+    assertBaselineSetup(await this.status(), revision);
+    // startBuild checks availability again after the asynchronous status read.
+    return this.startBuild({ refreshProviders: false }, revision);
+  }
+
+  startBuild(options = {}, baselineRevision = "") {
     const refreshProviders = options.refreshProviders !== false;
     this.assertAvailable();
     const startedAt = this.now().toISOString();
@@ -614,7 +636,11 @@ export class TaxonomyMasterService {
       progressPhase: refreshProviders ? "Anbieterquellen" : "Vorbereitung",
       startedAt,
     };
-    this.runPromise = this.withVersionPresence(() => this.runBuild({ ...options, refreshProviders })).catch(() => null);
+    this.runPromise = this.withVersionPresence(async () => {
+      // Repeat under the existing cross-process build lock; do not trust a stale UI confirmation.
+      if (baselineRevision) assertBaselineSetup(await this.status(), baselineRevision);
+      return this.runBuild({ ...options, refreshProviders });
+    }).catch(() => null);
     return this.status();
   }
 
@@ -649,6 +675,7 @@ export class TaxonomyMasterService {
 
   async runBuild({ refreshProviders = true, ...providerOptions } = {}) {
     try {
+      if (this.runController) await assertTaxonomySpace(this.taxonomyRoot);
       let [speciesList, correctionsDocument] = await Promise.all([
         readJson(this.speciesListPath, []),
         readJson(this.correctionsPath, { entries: [] }),
@@ -1027,6 +1054,15 @@ export class TaxonomyMasterService {
         });
       },
     });
+  }
+
+  async maintainStorage(action, payload = {}) {
+    this.assertOpen();
+    if (!this.storageMaintenance) throw new Error("Die gemeinsame Speicherpflege ist nicht eingerichtet.");
+    if (this.closing || this.isActive() || this.isProjectBusy()) throw new Error("Ein Datenbank- oder Projektlauf ist aktiv. Bitte vor der Speicherpflege warten.");
+    if (action === "preview") return this.storageMaintenance.preview();
+    if (action === "clean") return this.storageMaintenance.clean(payload);
+    throw new Error("Unbekannte Speicherpflegeaktion.");
   }
 
   async performPairAction(sourceSlot, confirmed) {

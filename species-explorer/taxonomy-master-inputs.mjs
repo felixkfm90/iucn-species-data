@@ -5,15 +5,17 @@ import path from "node:path";
 import { canonicalBuildInput, taxonomyRecordFingerprint, createTaxonomyBuildInputs,
   openTaxonomyBuildInputs, compareTaxonomyBuildInputs } from "./taxonomy-build-inputs.mjs";
 import { planMasterDependencies, MASTER_DEPENDENCY_FILE } from "./taxonomy-master-dependencies.mjs";
+import { reuseMasterDependencyPlan } from "./taxonomy-master-graph-reuse.mjs";
 
 export const MASTER_INPUT_FILE = "build-inputs.sqlite";
 const hash = (value) => crypto.createHash("sha256").update(canonicalBuildInput(value)).digest("hex");
-const RULE_FILES = ["taxonomy-master-inputs.mjs", "taxonomy-build-inputs.mjs", "taxonomy-master-dependencies.mjs", "taxonomy-master-reuse.mjs", "taxonomy-master-candidate.mjs", "taxonomy-master-checkpoint.mjs",
+const RULE_FILES = ["taxonomy-source-recovery-conflicts.mjs", "taxonomy-source-recovery-scope.mjs", "taxonomy-source-recovery-replacement.mjs", "taxonomy-source-recovery-identities.mjs", "taxonomy-source-recovery-candidate.mjs", "taxonomy-master-continuity.mjs", "taxonomy-partial-record.mjs", "taxonomy-master-inputs.mjs", "taxonomy-build-inputs.mjs", "taxonomy-master-dependencies.mjs", "taxonomy-master-reuse.mjs", "taxonomy-master-candidate.mjs", "taxonomy-master-checkpoint.mjs",
   "taxonomy-master-service.mjs", "taxonomy-master-slices.mjs", "taxonomy-master-model.mjs", "taxonomy-master-rules.mjs",
   "taxonomy-master-schema.mjs", "taxonomy-master-storage.mjs", "taxonomy-master-previous-state.mjs", "taxonomy-taxon-quality.mjs",
   "taxonomy-search-text.mjs", "taxonomy-identity-build.mjs", "taxonomy-identity-registry.mjs", "taxonomy-identity-projects.mjs",
   "taxonomy-master-job.mjs", "taxonomy-master-worker.mjs", "taxonomy-master-process.mjs", "../scripts/taxonomy-master-worker.mjs",
-  "taxonomy-master-source-binding.mjs", "taxonomy-master-run-controller.mjs"];
+  "taxonomy-master-source-binding.mjs", "taxonomy-master-run-controller.mjs", "taxonomy-master-search-reuse.mjs",
+  "taxonomy-master-graph-reuse.mjs", "taxonomy-master-writer.mjs", "taxonomy-master-reuse-reader.mjs"];
 
 export async function masterBuildRulesRevision() {
   const contents = await Promise.all(RULE_FILES.map(async (name) => [name,
@@ -137,7 +139,7 @@ export async function readBoundMasterBuildInputs(directory, manifest) {
   }
 }
 
-export async function compareMasterBuildInputs({ previousDirectory, previousManifest, currentDirectory, currentManifest, onProgress }) {
+export async function compareMasterBuildInputs({ previousDirectory, previousManifest, currentDirectory, currentManifest, onProgress, reusePlan }) {
   const previous = await readBoundMasterBuildInputs(previousDirectory, previousManifest);
   if (!previous.available) return { mode: "full-build-required", reasons: [previous.reason], changesEmitted: 0 };
   let current;
@@ -147,10 +149,13 @@ export async function compareMasterBuildInputs({ previousDirectory, previousMani
     const comparison = compareTaxonomyBuildInputs(previous.inputs, current.inputs);
     if (comparison.mode === "input-delta") {
       const filename = path.join(currentDirectory, MASTER_DEPENDENCY_FILE);
-      const plan = await planMasterDependencies({ filename,
+      const options = { filename,
         previousPath: path.join(previousDirectory, "taxonomy-master.sqlite"),
         currentPath: path.join(currentDirectory, "taxonomy-master.sqlite"),
-        beforeInputs: previous.inputs, afterInputs: current.inputs, onProgress });
+        beforeInputs: previous.inputs, afterInputs: current.inputs, onProgress };
+      const plan = await reuseMasterDependencyPlan({ ...options, descriptor: reusePlan,
+        previousSha256: previousManifest.buildInputs.masterSha256, fingerprint: masterFileFingerprint })
+        || await planMasterDependencies(options);
       comparison.dependencyPlan = { ...plan, file: MASTER_DEPENDENCY_FILE, sha256: await masterFileFingerprint(filename) };
     }
     return comparison;

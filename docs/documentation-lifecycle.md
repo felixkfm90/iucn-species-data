@@ -1,12 +1,17 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-08-27
+Stand: 2026-10-01
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
 
 ## Verbindliche Quellen
 
+- `docs/README.md` ist der thematische Einstieg und trennt aktuelle Verträge von historischen Nachweisen.
+- `docs/taxonomy-current-status.md` fasst den heute bestätigten Taxonomie-Betriebsstand, gezielte praktische
+  Abnahmen und die Grenze zwischen installiertem lokalen Paar und neuer Anbieterversion zusammen.
+- `docs/taxonomy-partial-source-recovery.md` ist der detaillierte Freigabe-/Prüfvertrag der Quellenreparatur;
+  datierte Fehlversuche bleiben erhalten. Ein aktueller Abschluss wird nicht aus älteren Zwischenständen abgeleitet.
 - `docs/project-status.md` ist die einzige dokumentarische Quelle für aktuelle Zähler sowie aktive Listen zu
   manuellen Karten, NC-Sounds und bewusst fehlenden Tierstimmen.
 - Die Datei wird nicht manuell bearbeitet. `npm.cmd run status:sync` erzeugt sie aus dem Explorer-Modell und den
@@ -39,6 +44,11 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   Lua-Plug-in, Lightroom-Stichwörter, Plug-in-Metadaten, Mehrfachzuweisung, Konfliktsperre, Rollback und die
   praktisch geprüften Bedienabläufe. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
+- `docs/taxonomy-master-background-build.md`, `docs/taxonomy-incremental-build.md` und
+  `docs/lightroom-incremental-export.md` dokumentieren Worker-/Checkpoint-/Paar- und Änderungsaufbauverträge.
+  `docs/taxonomy-storage-maintenance.md` beschreibt bestätigungspflichtige Aufbewahrung; die Betriebs-/Leistungs-
+  und Puffernachweise stehen in `taxonomy-operational-checks.md`, `taxonomy-performance-profiling.md` und
+  `taxonomy-build-cache.md` unter demselben Dokumentationsordner. Messungen ersetzen keine produktive Gesamtabnahme.
 
 ## Historische Dokumente
 
@@ -48,6 +58,10 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   heute maßgeblichen Dokumente.
 - Historische Zahlen dürfen in einem ausdrücklich datierten Verlauf stehen, aber nicht als „aktueller Stand“
   formuliert sein.
+- Ein erfolgreicher Datenvergleich, eine nutzerbestätigte GUI-Stichprobe, ein vollständiges Qualitätsgate und
+  ein erfolgreiches Pages-Deployment sind getrennte Nachweise. Keine Teilabnahme als Phasenabschluss ausgeben.
+- Bei Dokumentationsabgleich nur betroffene Inhalte/Datenstände nachführen, nicht alle unveränderten Verträge
+  pauschal neu datieren. Automatisch erzeugte Pflege- und Projektstatusdateien weiterhin über ihre Generatoren pflegen.
 
 ## Pflicht bei künftigen Änderungen
 

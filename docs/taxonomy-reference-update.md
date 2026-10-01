@@ -1,10 +1,15 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-09-05
+Stand: 2026-10-01
 
 Status: Phase 9 abgeschlossen; der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts bis zum automatisch
 aktivierten Lightroom-Paket wurde am 2026-09-05 erfolgreich geprüft. Weißstorch und Paket-/Masterstand sind in
 Lightroom bestätigt, die Veröffentlichung ist freigegeben. Weitere Praxistests bleiben laut `roadmap.md` offen.
+
+**Heutiger Betriebsstand:** Die Quellenreparatur vom 1. Oktober ist gemeinsam für Master und Lightroom aktiviert,
+vollständig geprüft und mit Weissstorch/Rebhuhn gezielt praktisch abgenommen. Lokale CoL-Referenz `COL26.8 XR`,
+Master und Suchpaket passen zusammen. Die inzwischen gemeldete Verfügbarkeit von `COL26.9 XR` ist ein separates
+Quellenupdate, keine erneute Reparaturpflicht. Stand und Abgrenzung: [Taxonomie-Betriebsstand](taxonomy-current-status.md).
 
 ## Ziel
 
@@ -51,9 +56,15 @@ abgerufen. Die Prüfung:
 - beeinträchtigt den Explorer bei Netzwerkfehlern nicht und
 - bietet bei fehlender oder veralteter Referenz einmalig direkt `Jetzt aktualisieren` oder `Später` an.
 
-`Später` unterdrückt die Nachfrage für den aktuellen App-Start; der manuelle Auslöser im kompakten Bereich
-`Datenbank-Aktionen > Taxonomiereferenz` bleibt verfügbar. Der vollständige Download beginnt erst nach einer
-aktuellen Vorschau und ausdrücklicher Bestätigung.
+`Später` unterdrückt die Nachfrage für den aktuellen App-Start. Der manuelle zusammenhängende Auslöser unter
+`Datenbank-Aktionen > Taxonomiedatenbank > Datenbank aktualisieren` bleibt verfügbar. Der vollständige Download
+beginnt erst nach einer aktuellen Vorschau und ausdrücklicher Bestätigung.
+
+Wichtige Grenze im heutigen Code: Die Startnachfrage `Jetzt aktualisieren` ruft zunächst nur die
+Referenz-/Ergänzungswartung auf. Die zusammenhängende Datenbank-Aktion führt anschließend den Masterbau und
+die gemeinsame Lightroom-Paketfreigabe aus. Der Referenzimport allein bestätigt deshalb noch keinen neuen
+Master-/Paketstand. Beide Einstiegspfade sowie die 2.173 separaten CoL-/Reichsfälle werden vor der Freigabe des
+nächsten regulären Quellenupdates geprüft; in der aktuellen Reparaturabnahme wurde kein neues Update gestartet.
 
 ## Download, Import und Aktivierung
 

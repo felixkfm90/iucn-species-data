@@ -1,25 +1,63 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
 10.2 bis 10.4 sind bis Plug-in-Version 0.4.24.14 umgesetzt und automatisiert geprüft. Praktisch bestätigt sind
 unter anderem Zuweisung, Favoriten, Taxonomierücknahme, Statistikdeltas sowie die globale Namenswahl einschließlich
 Anbieterstandard und direkter Lightroom-Übernahme bis 0.4.24.10. Das ersetzt weder die erneute Abnahme der
-späteren Regressionskorrekturen noch die gebündelte Prüfung des heutigen Gesamtstands. Identitätsmigration,
-inkrementeller Großbestandsaufbau und vollständige Betriebsprüfung bleiben offen. Phase 10 bleibt bis zum
+späteren Regressionskorrekturen noch die gebündelte Prüfung des heutigen Gesamtstands. Die enge Quellenreparatur
+und gemeinsame Paaraktivierung vom 1. Oktober sind vollständig geprüft; Weissstorch/Rebhuhn wurden von Felix
+in Explorer, Lightroom-Zuweisung und nach Schließen/Wiederöffnen bestätigt. Bestätigte Identitätsmigration,
+reguläre Quellenupdates, Leistungs-/Rollbackgrenzen und vollständige Betriebsprüfung bleiben offen. Phase 10 bleibt bis zum
 umfassenden Abschlussaudit offen; maßgebliche Reihenfolge und Einzelgrenzen: `roadmap.md`.
+
+Kompakter heutiger [Betriebsstand](taxonomy-current-status.md), vollständiger
+[Reparaturabschluss](taxonomy-partial-source-recovery.md). `COL26.9 XR` ist ein neues separates Quellenupdate;
+die Verfügbarkeitsmeldung bedeutet keinen Drift des reparierten Paars. Die 2.173 separaten CoL-/Reichsfälle
+wurden nicht aktiviert und sind vor dem Audit im regulären Updatevertrag zu behandeln.
 
 Roadmap: Phase 9 und Phase 10
 
 Ergänzung 13. September: Plug-in 0.4.24.14 liest den gemeinsamen Master-/Paket-Aktivzeiger. Suchpaket-Deltas
-und gemeinsame Freigabe mit Präferenzmitnahme/Rücknahme sind isoliert geprüft; keine produktive Umstellung.
-Vollprojektion, Kopien und vollständige Prüfungen bleiben erforderlich. Masterworker mit Schreibcheckpoints,
+und gemeinsame Freigabe mit Präferenzmitnahme/Rücknahme waren zu diesem Zeitpunkt isoliert geprüft; die spätere
+produktive Umstellung/Reparatur ist im heutigen Betriebsstand getrennt dokumentiert.
+Vollständiger Eingangsvergleich, Kopien und Prüfungen bleiben erforderlich. Masterworker mit Schreibcheckpoints,
 ausdrücklicher Pause/Fortsetzung und Wiederentdeckung ist angeschlossen. Seit 20. September laufen auch die
 schwere Paarvorbereitung und Rücknahmeprüfung in einem Hilfsprozess; der Server aktiviert erst nach erneuter
-Eingangsprüfung. Speicher-/Laufzeitmessung, Release-/Jobaufbewahrung und vollständige Betriebsabnahme bleiben offen.
+Eingangsprüfung. Release-/Jobaufbewahrung und Platzprüfungen sind mit einer bestätigten Vorschau angebunden;
+ein geprüfter Vorgänger bleibt als Backup geschützt. Speicher-/Laufzeitmessung und vollständige Betriebsabnahme
+am realen Großbestand bleiben offen. Nach dem negativen ersten Paketvergleich vom 21. September ersetzt ein
+gebundener Teilprojektionsweg die vollständige Zwischen-Datenbank; vollständige Basisprüfung läuft parallel.
+Der aktuelle isolierte Vergleich belegt Ergebnisgleichheit und einen begrenzten Laufzeitvorteil zum heutigen
+Vollpfad. Das Ziel einer deutlichen Gesamtbeschleunigung gegenüber dem früheren Ablauf bleibt aber offen.
+Vertrag: `lightroom-incremental-export.md`; Messungen: `taxonomy-operational-checks.md`.
+Speichervertrag: `taxonomy-storage-maintenance.md`.
 Aktueller Detailstand: `taxonomy-incremental-build.md`.
+Seit 22. September übernimmt der Masteraufbau die geprüften Suchbegriffe wiederverwendbarer Arten gebündelt;
+deren erneute Normalisierung entfällt. Fachbelege, Eingangs-/Abhängigkeitsprüfung und endgültige Freigabe bleiben
+bestandsabhängig. Dieser isolierte Fortschritt ist noch keine produktive Großbestands- oder Gesamtlaufabnahme.
+Seit 23. September kann der frisch erstellte Abhängigkeitsplan nach vollständigem Vergleich aller
+graphrelevanten Eingänge auch für den Abschluss verwendet werden; unsichere oder veränderte Grundlagen
+fallen auf den vollständigen Planaufbau zurück. Die versuchte Feldbündelung wurde mangels Zeitvorteil
+verworfen. Masterbelegschreibung und vollständige Prüfungen bleiben erhalten.
+Am 24. September wird die identische SQL-Vorbereitung zusätzlich im Vollaufbau wiederverwendet. Das
+beschleunigt insbesondere vollständige Neuberechnungen, ohne Feldprüfungen oder Herkunftsbelege auszulassen.
+Der damit ebenfalls schnellere Vollweg ist künftig die Vergleichsgrundlage; die relative Deltaersparnis
+des Vortags ist keine fortgeltende Geschwindigkeitszusage. Messungen: `taxonomy-operational-checks.md`.
+Der anschließende integrierte Vergleich misst jetzt auch Auftragssicherung, Master-/Paket-Hilfsprozesse,
+Prüfungen und gemeinsame Freigabe gegen den vollständigen Weg. Er enthält eine eigene Namenspräferenz und
+geöffnete Altleser. Das ist weiterhin ein künstlicher lokaler Kernablauf ohne Quelldownloads und ohne reale
+Anbieter-/Konfliktvielfalt; kein Nachweis für einen nur von der Änderungszahl abhängigen Gesamtaufwand.
+Seit 25. September werden alte Belege in begrenzten Gruppen gelesen; die Einzelvalidierung bleibt aktiv.
+Der kleine Vorher-/Nachher-Vorteil ersetzt angesichts großer Zeitstreuung und offenen Speicherbedarfs keinen
+Leistungsnachweis für den echten Bestand. Details und nächste Messgrenzen stehen im Betriebsbericht.
+Die ergänzende Ressourcenmessung mit synthetischen Mehranbieterbelegen grenzt hohe logische Ein-/Ausgaben
+ein. Das Experiment steht in `taxonomy-performance-profiling.md`; die anschließend am 26. September integrierte
+begrenzte Aufbau-Pufferregel samt Budget, Standardrückfall und Fehler-/Wiederanlaufprüfungen in
+`taxonomy-build-cache.md`. Keine dauerhafte Datenbankeinstellung und weiterhin keine vollständige Erklärung
+der Zeitstreuung oder Freigabe des realen Gesamtbestands.
 
 Version 0.4.24.7 ergänzt den asynchronen lokalen Referenz-/Master-/Paketvergleich im Zusatzmodul-Manager und
 Zuweisungsfenster, einschließlich anwendbarer Korrekturschicht und vorsichtiger Laufhinweise. Die Anzeige startet

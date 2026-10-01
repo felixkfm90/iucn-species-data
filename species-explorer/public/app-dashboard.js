@@ -203,12 +203,19 @@
     }
 
     function renderDatabaseStatus(stateName = "") {
+      const taxonomyProgress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
+        master: state.taxonomyMasterSnapshot, reference: state.taxonomyMaintenanceSnapshot,
+        busy: state.taxonomyDatabaseBusy });
       const taxonomyActive = Boolean(
         state.taxonomyDatabaseBusy
         || state.taxonomyMaintenanceSnapshot?.active
         || state.taxonomyMasterSnapshot?.active,
       );
-      const status = resolveDatabaseStatus({
+      const otherWork = ["running", "awaiting-review", "failed"].includes(state.pipelineStatusSnapshot?.status)
+        || state.backupStatusSnapshot?.status === "running" || state.databaseNeedsUpdate;
+      const showTaxonomy = taxonomyProgress && (taxonomyActive || !otherWork
+        || ["failed", "review"].includes(taxonomyProgress.className));
+      const status = showTaxonomy ? taxonomyProgress.className : resolveDatabaseStatus({
         explicitStatus: taxonomyActive ? "taxonomy" : stateName,
         backupStatus: state.backupStatusSnapshot?.status,
         pipelineStatus: state.pipelineStatusSnapshot?.status,
@@ -216,7 +223,10 @@
       });
       elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
       elements.pipelineStatus.className = `pipeline-status-text ${status}`;
-      elements.pipelineStatus.textContent = databaseStatusLabel(status);
+      elements.pipelineStatus.textContent = showTaxonomy ? taxonomyProgress.compact : databaseStatusLabel(status);
+      elements.pipelineMenuButton.title = showTaxonomy ? taxonomyProgress.detail : "Datenbank-Aktionen öffnen";
+      elements.pipelineMenuButton.setAttribute("aria-label", showTaxonomy
+        ? `Datenbank-Aktionen öffnen. ${taxonomyProgress.detail}` : "Datenbank-Aktionen öffnen");
     }
 
     const setValidationCardState = (card, ok) => {

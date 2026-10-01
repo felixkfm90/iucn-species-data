@@ -10,6 +10,7 @@ import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { taxonomyPublicationPath } from "./taxonomy-publication-storage.mjs";
 import { readMasterSourceBinding } from "./taxonomy-master-source-binding.mjs";
 import { existsSync } from "node:fs";
+import { assertTaxonomySpace, taxonomyDirectoryBytes } from "./taxonomy-space-budget.mjs";
 
 const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const JOB_PATTERN = /^job-[a-f0-9-]{36}$/;
@@ -54,16 +55,20 @@ export async function verifyMasterJob(root, recipe) {
   }
 }
 
-async function spool(filename, records) {
+async function spool(filename, records, checkSpace) {
   const file = await fs.open(filename, "wx");
   const digest = crypto.createHash("sha256");
-  let buffer = "";
+  let buffer = "", sinceCheck = 8 * 1024 ** 2;
   try {
     for await (const row of records) {
       buffer += JSON.stringify(row) + "\n";
-      if (buffer.length >= 128 * 1024) { digest.update(buffer); await file.writeFile(buffer); buffer = ""; }
+      if (buffer.length >= 128 * 1024) {
+        const bytes = Buffer.byteLength(buffer);
+        if (sinceCheck >= 8 * 1024 ** 2) { await checkSpace(path.dirname(filename), bytes); sinceCheck = 0; }
+        digest.update(buffer); await file.writeFile(buffer); sinceCheck += bytes; buffer = "";
+      }
     }
-    if (buffer) { digest.update(buffer); await file.writeFile(buffer); }
+    if (buffer) { await checkSpace(path.dirname(filename), Buffer.byteLength(buffer)); digest.update(buffer); await file.writeFile(buffer); }
     await file.sync();
     return digest.digest("hex");
   } finally { await file.close(); }
@@ -79,16 +84,18 @@ export async function* readMasterJobRecords(filename) {
 // Preparation is deliberately separate from execution: an interrupted spool is
 // never resumable. Only a completely hashed input set receives recipe.json.
 export async function prepareMasterJob({ taxonomyRoot, colRecords = [], providerSlices = [],
-  guardFiles = [], selection = null, expectedBinding = null, now = () => new Date(), onProgress = () => {}, ...options }) {
+  guardFiles = [], selection = null, expectedBinding = null, now = () => new Date(), onProgress = () => {},
+  checkSpace = assertTaxonomySpace, ...options }) {
   const id = `job-${crypto.randomUUID()}`, directory = masterJobDirectory(taxonomyRoot, id);
+  await checkSpace(taxonomyRoot, 2 * await taxonomyDirectoryBytes(path.dirname(taxonomyMasterDatabasePath(taxonomyRoot))));
   const binding = expectedBinding || await masterJobBinding(taxonomyRoot, guardFiles, selection);
   await fs.mkdir(directory, { recursive: true });
   try {
-    const inputs = { "col.jsonl": await spool(path.join(directory, "col.jsonl"), colRecords) };
+    const inputs = { "col.jsonl": await spool(path.join(directory, "col.jsonl"), colRecords, checkSpace) };
     const providers = [];
     for (const [index, slice] of providerSlices.entries()) {
       const file = `provider-${index}.jsonl`;
-      inputs[file] = await spool(path.join(directory, file), slice.records || []);
+      inputs[file] = await spool(path.join(directory, file), slice.records || [], checkSpace);
       providers.push({ manifest: slice.manifest, file });
     }
     // Coverage may be completed by consuming colRecords; capture it afterwards.
@@ -98,6 +105,7 @@ export async function prepareMasterJob({ taxonomyRoot, colRecords = [], provider
       options: { colRelease: options.colRelease, buildInputCoverage: options.buildInputCoverage,
         projectTaxa: options.projectTaxa || [], corrections: options.corrections || [],
         retainedTaxa: options.retainedTaxa || [], identityRegistry: options.identityRegistry,
+        ...(options.sourceRecoveryScope ? { sourceRecoveryScope: options.sourceRecoveryScope } : {}),
         reuseUnchanged: options.reuseUnchanged !== false } };
     recipe.revision = hash(recipe);
     // Serialize once so omitted optional properties have the same hash after reload.

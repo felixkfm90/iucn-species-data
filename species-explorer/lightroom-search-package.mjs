@@ -1,8 +1,12 @@
+import { configureTaxonomyBuildDatabase, withTaxonomyBuildCache } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import { readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
+import { RANK_POSITIONS, rankPositionSql, populateLightroomSearchDatabase } from "./lightroom-search-projection.mjs";
 import path from "node:path";
 import { applyLightroomSearchDelta } from "./lightroom-search-delta.mjs";
+import { verifiedLightroomExportRevision, recordLightroomExportInputs, hasBoundLightroomExportInputs,
+  planLightroomExport, refreshLightroomExportProvenance } from "./lightroom-search-inputs.mjs";
+import { validateLightroomBaseInBackground } from "./lightroom-search-validation.mjs";
 
 import {
   createLightroomSearchSchema,
@@ -21,42 +25,6 @@ import {
 } from "./taxonomy-master-storage.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 
-const RANK_POSITIONS = Object.freeze({
-  domain: 10,
-  superkingdom: 20,
-  kingdom: 30,
-  subkingdom: 40,
-  infrakingdom: 50,
-  superphylum: 60,
-  phylum: 70,
-  subphylum: 80,
-  infraphylum: 90,
-  parvphylum: 100,
-  superclass: 110,
-  megaclass: 115,
-  class: 120,
-  subclass: 130,
-  infraclass: 140,
-  parvclass: 150,
-  superorder: 160,
-  order: 170,
-  suborder: 180,
-  infraorder: 190,
-  parvorder: 200,
-  superfamily: 210,
-  family: 220,
-  subfamily: 230,
-  tribe: 240,
-  subtribe: 250,
-  genus: 260,
-  subgenus: 270,
-  section: 280,
-  species: 290,
-  subspecies: 300,
-  variety: 310,
-  form: 320,
-});
-
 function cleanText(value) {
   return String(value ?? "").normalize("NFKC").trim();
 }
@@ -66,182 +34,15 @@ function packageId(masterVersion, now) {
   return `lightroom-${crypto.createHash("sha256").update(source).digest("hex").slice(0, 20)}`;
 }
 
-function rankPositionSql(fieldExpression = "hierarchy.key") {
-  const clauses = Object.entries(RANK_POSITIONS)
-    .map(([rank, position]) => `WHEN '${rank}' THEN ${position}`)
-    .join(" ");
-  return `CASE lower(${fieldExpression}) ${clauses} ELSE 500 END`;
-}
-
-function providerPrioritySql() {
-  return `CASE release.provider
-    WHEN 'manual' THEN 0
-    WHEN 'project' THEN 1
-    WHEN 'catalogue-of-life' THEN 2
-    WHEN 'worms' THEN 3
-    WHEN 'gbif' THEN 4
-    WHEN 'inaturalist' THEN 5
-    WHEN 'wikidata' THEN 6
-    WHEN 'animalia' THEN 7
-    ELSE 8 END`;
-}
-
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-function populateLightroomSearchDatabase(database, sourcePath, metadata) {
-  database.prepare("ATTACH DATABASE ? AS master").run(sourcePath);
-  let transactionOpen = false;
-  try {
-    database.exec("BEGIN IMMEDIATE");
-    transactionOpen = true;
-    database.prepare("INSERT INTO package_info (key, value) VALUES ('identityRegistry', ?)")
-      .run(JSON.stringify(readIdentityRegistry(database, "master")));
-    database.prepare("INSERT INTO package_info (key, value) VALUES ('packageId', ?)")
-      .run(metadata.packageId);
-    database.prepare("INSERT INTO package_info (key, value) VALUES ('masterVersion', ?)")
-      .run(metadata.masterVersion);
-    database.prepare("INSERT INTO package_info (key, value) VALUES ('generatedAt', ?)")
-      .run(metadata.generatedAt);
-    database.prepare("INSERT INTO package_info (key, value) VALUES ('projectRevision', ?)")
-      .run(metadata.projectRevision);
-    database.exec(`
-      INSERT INTO provider_release (
-        provider, provider_version, issued_at, imported_at, source_url, license
-      )
-      SELECT provider, provider_version, issued_at, imported_at, source_url, license
-      FROM master.provider_release
-      WHERE release_state = 'active';
-
-      INSERT INTO taxon (
-        master_taxon_id, accepted_scientific_name, rank, kingdom,
-        german_name, english_name, lifecycle_state, reference_state, updated_at
-      )
-      SELECT taxon.master_taxon_id, taxon.canonical_scientific_name, taxon.rank,
-        taxon.kingdom,
-        (
-          SELECT field.field_value FROM master.master_field_assertion field
-          WHERE field.master_taxon_id = taxon.master_taxon_id
-            AND field.field_name = 'german-name' AND field.language = 'de'
-            AND field.selected = 1 LIMIT 1
-        ),
-        (
-          SELECT field.field_value FROM master.master_field_assertion field
-          WHERE field.master_taxon_id = taxon.master_taxon_id
-            AND field.field_name = 'english-name' AND field.language = 'en'
-            AND field.selected = 1 LIMIT 1
-        ),
-        taxon.lifecycle_state, taxon.reference_state, taxon.updated_at
-      FROM master.master_taxon taxon
-      WHERE taxon.lifecycle_state != 'deprecated';
-
-      INSERT INTO taxon_status (
-        master_taxon_id, status_name, status_detail, updated_at
-      )
-      SELECT status.master_taxon_id, status.status_name, status.status_detail,
-        status.updated_at
-      FROM master.master_taxon_status status
-      JOIN taxon ON taxon.master_taxon_id = status.master_taxon_id
-      WHERE status.status_name != 'conflicting'
-        OR EXISTS (
-          SELECT 1
-          FROM master.master_conflict conflict
-          WHERE conflict.master_taxon_id = status.master_taxon_id
-            AND conflict.conflict_state = 'open'
-            AND conflict.conflict_type IN (
-              'changed-value', 'source-removed', 'ambiguous-match'
-            )
-        );
-
-      INSERT INTO project_link (
-        project_taxon_key, master_taxon_id, project_slug,
-        scientific_name_at_link, link_state
-      )
-      SELECT project.project_taxon_key, project.master_taxon_id, project.project_slug,
-        project.scientific_name_at_link, project.link_state
-      FROM master.project_taxon_link project
-      JOIN taxon ON taxon.master_taxon_id = project.master_taxon_id;
-
-      INSERT OR IGNORE INTO taxon_provider (
-        master_taxon_id, provider, provider_version, provider_record_id,
-        scientific_name, rank, match_state, retrieved_at
-      )
-      SELECT source.master_taxon_id, release.provider, release.provider_version,
-        source.provider_record_id, source.scientific_name, source.rank,
-        source.match_state, source.retrieved_at
-      FROM master.provider_taxon_assertion source
-      JOIN master.provider_release release ON release.release_id = source.release_id
-      JOIN taxon ON taxon.master_taxon_id = source.master_taxon_id
-      WHERE release.release_state = 'active'
-        AND source.version_change_state != 'removed';
-
-      WITH preferred_hierarchy AS (
-        SELECT source.master_taxon_id, source.hierarchy_json, release.provider,
-          ROW_NUMBER() OVER (
-            PARTITION BY source.master_taxon_id
-            ORDER BY ${providerPrioritySql()},
-              CASE source.match_state WHEN 'exact' THEN 0 WHEN 'reference-gap' THEN 1 ELSE 2 END,
-              source.assertion_id
-          ) AS hierarchy_priority
-        FROM master.provider_taxon_assertion source
-        JOIN master.provider_release release ON release.release_id = source.release_id
-        JOIN taxon ON taxon.master_taxon_id = source.master_taxon_id
-        WHERE release.release_state = 'active'
-          AND source.version_change_state != 'removed'
-          AND source.hierarchy_json != ''
-          AND json_valid(source.hierarchy_json)
-      )
-      INSERT OR IGNORE INTO hierarchy (
-        master_taxon_id, position, rank, scientific_name, source_provider
-      )
-      SELECT preferred.master_taxon_id, ${rankPositionSql()}, lower(hierarchy.key),
-        trim(CAST(hierarchy.value AS TEXT)), preferred.provider
-      FROM preferred_hierarchy preferred, json_each(preferred.hierarchy_json) hierarchy
-      WHERE preferred.hierarchy_priority = 1
-        AND hierarchy.type = 'text'
-        AND trim(CAST(hierarchy.value AS TEXT)) != '';
-
-      INSERT OR REPLACE INTO hierarchy (
-        master_taxon_id, position, rank, scientific_name, source_provider
-      )
-      SELECT field.master_taxon_id, ${rankPositionSql("field.field_name")},
-        lower(field.field_name), trim(field.field_value), release.provider
-      FROM master.master_field_assertion field
-      JOIN master.provider_release release ON release.release_id = field.release_id
-      JOIN taxon ON taxon.master_taxon_id = field.master_taxon_id
-      WHERE field.selected = 1
-        AND lower(field.field_name) IN (
-          'domain', 'superkingdom', 'kingdom', 'subkingdom', 'infrakingdom',
-          'superphylum', 'phylum', 'subphylum', 'infraphylum', 'parvphylum',
-          'superclass', 'class', 'subclass', 'infraclass', 'parvclass', 'megaclass',
-          'superorder', 'order', 'suborder', 'infraorder', 'parvorder',
-          'superfamily', 'family', 'subfamily', 'tribe', 'subtribe',
-          'genus', 'subgenus', 'species'
-        )
-        AND trim(field.field_value) != '';
-
-      INSERT INTO search_term (
-        search_term_id, master_taxon_id, term, normalized_term, folded_term,
-        german_key, term_kind, language, source_provider, weight
-      )
-      SELECT term.search_term_id, term.master_taxon_id, term.term,
-        term.normalized_term, term.folded_term, term.german_key, term.term_kind,
-        term.language, term.source_provider, term.weight
-      FROM master.master_search_term term
-      JOIN taxon ON taxon.master_taxon_id = term.master_taxon_id;
-    `);
-    database.exec("COMMIT");
-    transactionOpen = false;
-  } catch (error) {
-    if (transactionOpen) database.exec("ROLLBACK");
-    throw error;
-  } finally {
-    database.exec("DETACH DATABASE master");
-  }
+export function buildLightroomSearchPackage(options = {}) {
+  return withTaxonomyBuildCache(() => buildLightroomSearchPackageScoped(options));
 }
 
-export async function buildLightroomSearchPackage({
+async function buildLightroomSearchPackageScoped({
   taxonomyRoot,
   searchRoot,
   projectRevision = "unbekannt",
@@ -277,6 +78,7 @@ export async function buildLightroomSearchPackage({
   });
   const sourceChecksum = `sha256:${await sha256File(sourcePath, { signal })}`;
   const generatedAt = now().toISOString();
+  const exportContract = await verifiedLightroomExportRevision();
   const masterVersion = cleanText(masterManifest.candidateId || masterManifest.masterVersion);
   if (!masterVersion) throw new Error("Aktive Masterversion fehlt im Mastermanifest.");
   const workRoot = path.join(path.resolve(searchRoot), `.build-${crypto.randomUUID()}`);
@@ -288,45 +90,98 @@ export async function buildLightroomSearchPackage({
     projectRevision: cleanText(projectRevision) || "unbekannt",
     masterVersion,
     masterActivatedAt: cleanText(masterManifest.activatedAt),
+    exportContract,
+    sourceChecksum,
   };
   const { DatabaseSync } = await loadNodeSqlite();
   let database;
+  let baseValidation;
   let retainWorkRoot = false;
   let build = { mode: "full", reason: incremental ? "no-verified-base" : "requested" };
   try {
     let base;
     if (incremental) {
-      try { base = await verifyLightroomSearchPackage({ searchRoot: baseSearchRoot, signal }); }
+      // This is only the quick binding check. Full verification runs concurrently
+      // and must succeed for the SAME checksummed base before staging is replaced.
+      try { base = await verifyLightroomSearchPackage({ searchRoot: baseSearchRoot, signal, full: false }); }
       catch { signal?.throwIfAborted(); }
+      if (base) {
+        const previous = configureTaxonomyBuildDatabase(new DatabaseSync(base.databasePath, { readOnly: true }));
+        try {
+          if (!hasBoundLightroomExportInputs(previous, base.manifest, exportContract)) {
+            base = null;
+            build.reason = "no-bound-export-inputs";
+          }
+        } finally { previous.close(); }
+      }
+      if (base) baseValidation = validateLightroomBaseInBackground(baseSearchRoot, { signal });
     }
     onProgress({ phase: "schema", percent: 5, message: "Suchpaketschema wird angelegt." });
     const projectionPath = base ? path.join(workRoot, "projection.sqlite") : targetPath;
-    database = new DatabaseSync(projectionPath);
+    database = configureTaxonomyBuildDatabase(new DatabaseSync(projectionPath));
     createLightroomSearchSchema(database);
     signal?.throwIfAborted();
     onProgress({ phase: "copy", percent: 15, message: "Mastertaxa und Namen werden exportiert." });
-    populateLightroomSearchDatabase(database, sourcePath, metadata);
-    signal?.throwIfAborted();
+    recordLightroomExportInputs(database, sourcePath, { signal });
     if (base) {
-      database.close();
-      database = null;
       await fs.copyFile(base.databasePath, targetPath);
       if (`sha256:${await sha256File(targetPath, { signal })}` !== base.manifest.checksum) {
         throw new Error("Die Wiederverwendungsbasis wurde während des Kopierens geändert.");
       }
-      database = new DatabaseSync(targetPath);
+    }
+    // Plan against the exact private bytes later modified, never a moving legacy slot.
+    const scope = base ? planLightroomExport(database, targetPath) : null;
+    // For broad changes on a nontrivial package, rebuilding indices is cheaper
+    // than maintaining them row by row. Small fixtures still exercise the delta.
+    if (scope?.totalTaxa >= 1000 && scope.projectedTaxa > scope.totalTaxa / 2) {
+      await baseValidation.close();
+      baseValidation = null;
+      base = null;
+      database.exec("DROP TABLE delta_scope");
+      build = { mode: "full", reason: "many-changed-taxa", scope };
+    }
+    signal?.throwIfAborted();
+    onProgress({ phase: "copy", percent: 35, message: base
+      ? `${scope.projectedTaxa} von ${scope.totalTaxa} Taxa werden neu exportiert.` : "Vollständiger Masterexport wird vorbereitet.", scope });
+    populateLightroomSearchDatabase(database, sourcePath, metadata, { partial: Boolean(base) });
+    signal?.throwIfAborted();
+    if (base) {
+      database.close();
+      database = null;
+      database = configureTaxonomyBuildDatabase(new DatabaseSync(targetPath));
       onProgress({ phase: "index", percent: 70, message: "Geänderte Suchpaketzeilen und Suchbegriffe werden aktualisiert." });
-      build = { ...applyLightroomSearchDelta(database, projectionPath, { signal }), basePackageId: base.manifest.packageId };
+      build = { ...applyLightroomSearchDelta(database, projectionPath, { signal, scoped: true }),
+        basePackageId: base.manifest.packageId, scope, projection: "changed-taxa" };
+      build.provenanceChanges = refreshLightroomExportProvenance(database, sourcePath, projectionPath, { signal });
     } else {
+      if (projectionPath !== targetPath) {
+        database.close();
+        database = null;
+        await fs.rm(targetPath, { force: true });
+        await fs.rename(projectionPath, targetPath);
+        database = configureTaxonomyBuildDatabase(new DatabaseSync(targetPath));
+      }
       onProgress({ phase: "index", percent: 70, message: "Suchindizes werden aufgebaut." });
       finalizeLightroomSearchSchema(database);
     }
+    if (baseValidation) {
+      const verifiedBase = await baseValidation.result;
+      signal?.throwIfAborted();
+      if (!verifiedBase?.checksumVerified || verifiedBase.manifest.checksum !== base.manifest.checksum
+        || verifiedBase.manifest.packageId !== base.manifest.packageId) {
+        const error = new Error("Die vollständige Basisprüfung ist fehlgeschlagen; vollständiger Paketaufbau erforderlich.");
+        error.code = "LIGHTROOM_BASE_REBUILD";
+        throw error;
+      }
+    }
     onProgress({ phase: "validate", percent: 88, message: "Suchpaket wird vollständig geprüft." });
+    signal?.throwIfAborted();
     const counts = inspectLightroomSearchDatabase(database, { full: true });
     database.close();
     database = null;
     const stats = await fs.stat(targetPath);
     const checksum = await sha256File(targetPath, { signal });
+    await verifiedLightroomExportRevision();
     if (`sha256:${await sha256File(sourcePath, { signal })}` !== sourceChecksum
       || JSON.stringify(await readJson(path.join(path.dirname(sourcePath), "manifest.json"))) !== JSON.stringify(masterManifest)) {
       throw new Error("Der Master wurde während des Suchpaketbaus verändert. Es wurde nichts aktiviert.");
@@ -349,6 +204,7 @@ export async function buildLightroomSearchPackage({
       build,
       sourceSlot,
       sourceChecksum,
+      exportContract,
     };
     await atomicWriteJson(lightroomSearchManifestPath(workRoot, "staging"), manifest);
     signal?.throwIfAborted();
@@ -372,8 +228,16 @@ export async function buildLightroomSearchPackage({
     return manifest;
   } catch (error) {
     database?.close();
+    if (error.code === "LIGHTROOM_BASE_REBUILD") {
+      await baseValidation.close();
+      await fs.rm(workRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 80 });
+      onProgress({ phase: "schema", percent: 5, message: "Basisprüfung fehlgeschlagen. Suchpaket wird vollständig neu aufgebaut." });
+      return await buildLightroomSearchPackage({ taxonomyRoot, searchRoot, projectRevision, sourceSlot,
+        incremental: false, now, signal, onProgress });
+    }
     throw error;
   } finally {
+    await baseValidation?.close();
     if (!retainWorkRoot) await fs.rm(workRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 80 });
   }
 }
@@ -392,7 +256,7 @@ export async function verifyLightroomSearchPackage({
     throw new Error(`Manifest-Schemaversion ${manifest.schemaVersion} wird nicht unterstützt.`);
   }
   const { DatabaseSync } = await loadNodeSqlite();
-  const database = new DatabaseSync(databasePath, { readOnly: true });
+  const database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath, { readOnly: true }));
   let counts;
   try {
     counts = inspectLightroomSearchDatabase(database, { full });

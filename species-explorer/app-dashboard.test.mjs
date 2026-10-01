@@ -5,6 +5,7 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8");
 const context = vm.createContext({});
+new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-dashboard.js" }).runInContext(context);
 const dashboard = context.SpeciesExplorerDashboard;
 
@@ -184,6 +185,28 @@ function createController({ state, elements, filterSpecies, onSpeciesSelect = ()
     OptionConstructor: FakeOption,
   });
 }
+
+test("Kopf zeigt denselben Taxonomiefortschritt ohne geöffneten Dialog und behält andere Aufgaben sichtbar", () => {
+  const state = { taxonomyMasterSnapshot: { status: "building", active: true, progressPhase: "Masterdatenbank schreiben",
+    progressCurrent: 250, progressTotal: 1000, progressPercent: 74 } };
+  const elements = createElements();
+  const controller = createController({ state, elements, filterSpecies: () => [] });
+  controller.renderDatabaseStatus();
+  const expected = context.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: state.taxonomyMasterSnapshot });
+  assert.equal(elements.pipelineStatus.textContent, expected.compact);
+  assert.equal(elements.pipelineMenuButton.title, expected.detail);
+  assert.match(elements.pipelineMenuButton.attributes["aria-label"], /25 % dieses Teilschritts/);
+  state.taxonomyMasterSnapshot = { status: "idle", buildJob: { available: true, status: "paused",
+    progress: { phase: "Masterdatenbank schreiben" } } };
+  controller.renderDatabaseStatus();
+  assert.match(elements.pipelineStatus.textContent, /pausiert/);
+  assert.match(elements.pipelineMenuButton.className, /review/);
+  state.taxonomyMasterSnapshot = { status: "completed", lightroomPackage: { status: "current" } };
+  state.pipelineStatusSnapshot = { status: "awaiting-review" };
+  controller.renderDatabaseStatus();
+  assert.equal(elements.pipelineStatus.textContent, "needs-update", "Abgeschlossene Taxonomie verdeckt keine Assetprüfung");
+  assert.equal(elements.pipelineMenuButton.title, "Datenbank-Aktionen öffnen");
+});
 
 test("Validierungspräsentation beschreibt einen konsistenten Bestand", () => {
   const result = dashboard.createValidationPresentation(validationFixture(), { pluralize });

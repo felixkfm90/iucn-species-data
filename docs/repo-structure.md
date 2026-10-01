@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-08-13
+Stand: 2026-10-01
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -35,7 +35,7 @@ Nicht ins Repo gehoeren lokale Abhaengigkeiten, Logdateien, `.env`-Dateien, Batc
 | `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenz- und Masterkern für lokalen Speicher, SQLite-Schemata, Import, read-only Suche, stabile Master-IDs, versionierte Anbieter-Ausschnitte, Provenienz, Zusammenführungsregeln, Kandidaten, Konflikte, Projektverknüpfungen, atomare Aktivierung und Rollback. `taxonomy-reference-service.mjs` stellt Status, Reiche, Suche und Taxondetails bereit; `taxonomy-master-service.mjs` schaltet bevorzugt auf die aktive Masteransicht und fällt sicher auf die CoL-Referenz zurück. `taxonomy-storage.mjs` serialisiert atomare Zeiger- und Cache-Schreibvorgänge je Zieldatei; `taxonomy-storage.test.mjs` sichert parallele Windows-Schreibvorgänge ab. |
 | `species-explorer/lightroom-search-*.mjs` | Phase-10.2-Kern für das abgeleitete read-only Lightroom-Suchpaket: Schema, Aufbau, aktiver/vorheriger Stand, Prüfsumme, Suche, Suchhelfer und direkte Tests. Er bearbeitet weder Lightroom-Katalog noch XMP. |
 | `species-explorer/public/app-taxonomy-reference.js`, `app-taxonomy-master.js` | Bidirektionale Taxonomievorschläge im Neue-Art-Assistenten, Quellen-/Statusanzeige, CoL-Lücken, Konfliktentscheidungen und Masterwartung mit nicht blockierendem manuellem Fallback. |
-| `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` | Versionierter deutscher Phase-10.2-Lua-Prototyp. Er verwendet den read-only Suchhelfer und schreibt ausschließlich über das Lightroom-SDK hierarchische Schlüsselwörter sowie stabile Plug-in-Metadaten. |
+| `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` | Versioniertes deutsches Lightroom-Plug-in 0.4.24.14. Es verwendet den read-only Suchhelfer und schreibt ausschließlich über das Lightroom-SDK reservierte flache FN-Stichwörter sowie stabile Plug-in-Metadaten; Verwaltung, Statistik/Exporte und bestätigte Artänderungen sind getrennte Abläufe. |
 | `scripts/taxonomy-prototype*.mjs` | Reproduzierbarer begrenzter Phase-9.3-Import, Fixture-Erzeugung und End-to-End-Test. |
 | `scripts/taxonomy-master-migrate.mjs` | Reale, verifizierte Phase-9.12-Migration in einen Master-Kandidaten mit optionaler Aktivierung, Rollbacktest, JSON-Bericht und Messwerten. |
 | `scripts/taxonomy-master-verify.mjs` | Schreibgeschützte Betriebsprüfung des aktiven realen Masters: Schema, Bestandszähler, Projektverknüpfungen, repräsentative Offline-Suchen und Laufzeiten. |
@@ -70,6 +70,19 @@ Modultests liegen neben dem jeweiligen Modul. Zusammengesetzte API-Abläufe sind
 aufgeteilt. `explorer-ui-contract.test.mjs` prüft getrennt Browseroberfläche, Modulzuständigkeiten und
 HTTP-Auslieferungsverträge.
 
+Die schweren Taxonomiearbeiten besitzen eigene Prozessgrenzen: `taxonomy-master-job.mjs` bindet Eingänge und
+Checkpoints, `taxonomy-master-worker.mjs` baut privat; `taxonomy-publication-process.mjs` und
+`scripts/taxonomy-publication-worker.mjs` bereiten Master-/Lightroom-Paare vor. Nur die frische Eingangsprüfung
+und der gemeinsame Veröffentlichungszeigerwechsel bleiben im Service. `taxonomy-build-cache.mjs` begrenzt
+den Aufbaupuffer; `taxonomy-storage-maintenance.mjs` verwaltet bestätigte Speicherpläne.
+
+Die kontrollierte Quellenreparatur liegt in `taxonomy-source-recovery*.mjs` und
+`scripts/taxonomy-source-recovery.mjs`: revisionsgebundene Vorschau, separater Entwurf/Auftrag, Identitäts- und
+semantische Umfangssperre, Konflikterhalt sowie bestätigte Ersatz-/Neustartwege. Keine automatischen Migrationen
+oder Löschungen. `lightroom-search-inputs.mjs`, `lightroom-search-projection.mjs`, `lightroom-search-delta.mjs`
+und `lightroom-search-validation*.mjs` trennen Fingerabdrücke, Projektion, Änderungen und vollständige Prüfung.
+Verträge/Einordnung: [Dokumentationsübersicht](README.md), [Taxonomie-Betriebsstand](taxonomy-current-status.md).
+
 ## Muss versioniert bleiben, obwohl generiert
 
 | Ordner | Grund |
@@ -94,15 +107,17 @@ HTTP-Auslieferungsverträge.
 | `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
 | `taxonomy-data/`, `species-explorer/taxonomy-data/` | lokale, reproduzierbare Taxonomie-Releases und SQLite-Dateien; ignoriert und nie Bestandteil von Pages |
 | `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\lightroom\` | lokales abgeleitetes Lightroom-Suchpaket mit `active`, `previous` und `staging`; reproduzierbar, nicht versioniert und nicht Bestandteil von Pages |
+| `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\`, `taxonomy-publication\` im selben Explorer-Basispfad | lokale Quellen, Masterreleases, gespeicherte Aufträge/Reparaturjournale und gemeinsamer Paarzeiger; nicht versioniert und nicht Bestandteil von Pages |
 | `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |
-| `Testlauf/` | temporare Tests, ignoriert und nach Tests wieder leer zu halten |
+| `Testlauf/` | ignorierte Test-/Mess-/Prüfablage; benötigte Reparaturnachweise erhalten, keine Produktivartefakte oder Veröffentlichung |
 | `list_licenses.mjs` | altes lokales Hilfsskript; nicht mehr noetig, weil Report und Sound-Review die Lizenzuebersicht abdecken |
 
-`Testlauf/` darf waehrend eines aktiven Themas Skripte, Reports oder andere Zwischenstaende enthalten. Nach Abschluss
-des Themas wird der Ordner wieder geleert; produktive Artefakte werden stattdessen in die passende Repo-Struktur oder
-Dokumentation uebernommen.
+`Testlauf/` darf waehrend eines aktiven Themas Skripte, Reports oder andere Zwischenstaende enthalten. Eigene
+entbehrliche Testordner können danach gezielt entfernt werden; gebundene Reparatur-/Prüfbelege und fremde Inhalte
+nicht pauschal löschen. Produktive Artefakte werden in die passende Struktur/Dokumentation übernommen.
+Die Dokumentations-/Commitfreigabe am 1. Oktober umfasst keine Bereinigung dieser Ablagen.
 
 Das Pages-Artefakt enthält weder `README.md` noch `docs/`. Öffentlich sind nur die explizit freigegebenen
 Frontendmodule, zentralen JSON-Dateien, Artassets und benötigten PNG-Grafiken. Repositoryweite Style-, Schema- und

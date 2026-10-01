@@ -1,3 +1,4 @@
+import { configureTaxonomyBuildDatabase, withTaxonomyBuildCache } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import fs from "node:fs/promises";
@@ -51,6 +52,10 @@ import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
 import { writeMasterBuildInputs, masterFileFingerprint, compareMasterBuildInputs } from "./taxonomy-master-inputs.mjs";
 import { prepareMasterReuse } from "./taxonomy-master-reuse.mjs";
 import { openMasterCheckpoint } from "./taxonomy-master-checkpoint.mjs";
+import { copyMasterSearchTerms } from "./taxonomy-master-search-reuse.mjs";
+import { createMasterWriter } from "./taxonomy-master-writer.mjs";
+import { inspectMasterTaxonContinuity } from "./taxonomy-master-continuity.mjs";
+import { preserveRecoveryConflictState } from "./taxonomy-source-recovery-conflicts.mjs";
 
 const SOURCE_FIELDS = new Set([
   "scientific-name",
@@ -491,19 +496,23 @@ function searchTokens(value) {
   return [...new Set(text.split(/[^\p{L}\p{N}]+/u).filter((entry) => entry.length >= 2))];
 }
 
-async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
+async function rebuildMasterSearchTerms(database, onProgress = () => {}, expectedReusedTaxa = 0, previousPath) {
+  onProgress({ phase: "Suchindex", message: "Suchbegriffe werden übernommen und für betroffene Arten ergänzt.", percent: 85 });
   database.exec("DELETE FROM master_search_term");
+  const reuse = copyMasterSearchTerms(database, previousPath, expectedReusedTaxa);
+  const pending = (alias = "") => reuse.present
+    ? `${alias}master_taxon_id NOT IN (SELECT master_taxon_id FROM master_build_reused_search)` : "1=1";
   const sourceCounts = [
-    "SELECT COUNT(*) AS count FROM master_taxon WHERE lifecycle_state != 'deprecated'",
-    "SELECT COUNT(*) AS count FROM master_field_assertion WHERE selected = 1",
-    "SELECT COUNT(*) AS count FROM master_taxon_alias",
+    `SELECT COUNT(*) AS count FROM master_taxon WHERE lifecycle_state != 'deprecated' AND ${pending()}`,
+    `SELECT COUNT(*) AS count FROM master_field_assertion WHERE selected = 1 AND ${pending()}`,
+    `SELECT COUNT(*) AS count FROM master_taxon_alias WHERE ${pending()}`,
     `SELECT COUNT(*) AS count
       FROM provider_name_assertion name
       JOIN provider_taxon_assertion source
         ON source.assertion_id = name.provider_taxon_assertion_id
-      WHERE source.version_change_state != 'removed'`,
-    "SELECT COUNT(*) AS count FROM provider_taxon_assertion WHERE version_change_state != 'removed'",
-    "SELECT COUNT(*) AS count FROM project_taxon_link",
+      WHERE source.version_change_state != 'removed' AND ${pending("source.")}`,
+    `SELECT COUNT(*) AS count FROM provider_taxon_assertion WHERE version_change_state != 'removed' AND ${pending()}`,
+    `SELECT COUNT(*) AS count FROM project_taxon_link WHERE ${pending()}`,
   ];
   const total = sourceCounts.reduce((sum, sql) => (
     sum + Number(database.prepare(sql).get().count)
@@ -561,7 +570,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
   for (const row of database.prepare(`
     SELECT master_taxon_id, canonical_scientific_name
     FROM master_taxon
-    WHERE lifecycle_state != 'deprecated'
+    WHERE lifecycle_state != 'deprecated' AND ${pending()}
   `).iterate()) {
     add({
       masterTaxonId: row.master_taxon_id,
@@ -578,7 +587,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
       release.provider
     FROM master_field_assertion field
     JOIN provider_release release ON release.release_id = field.release_id
-    WHERE field.selected = 1
+    WHERE field.selected = 1 AND ${pending("field.")}
   `).iterate()) {
     const identifier = row.field_name.endsWith("-id");
     const vernacular = ["german-name", "english-name"].includes(row.field_name);
@@ -600,6 +609,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
     LEFT JOIN provider_taxon_assertion source
       ON source.assertion_id = alias.source_assertion_id
     LEFT JOIN provider_release release ON release.release_id = source.release_id
+    WHERE ${pending("alias.")}
   `).iterate()) {
     add({
       masterTaxonId: row.master_taxon_id,
@@ -618,7 +628,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
     JOIN provider_taxon_assertion source
       ON source.assertion_id = name.provider_taxon_assertion_id
     JOIN provider_release release ON release.release_id = source.release_id
-    WHERE source.version_change_state != 'removed'
+    WHERE source.version_change_state != 'removed' AND ${pending("source.")}
   `).iterate()) {
     const termKind = ["scientific", "synonym"].includes(row.name_kind)
       ? row.name_kind
@@ -640,7 +650,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
     SELECT source.master_taxon_id, source.provider_record_id, release.provider
     FROM provider_taxon_assertion source
     JOIN provider_release release ON release.release_id = source.release_id
-    WHERE source.version_change_state != 'removed'
+    WHERE source.version_change_state != 'removed' AND ${pending("source.")}
   `).iterate()) {
     add({
       masterTaxonId: row.master_taxon_id,
@@ -654,6 +664,7 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
   for (const row of database.prepare(`
     SELECT master_taxon_id, project_taxon_key, project_slug, scientific_name_at_link
     FROM project_taxon_link
+    WHERE ${pending()}
   `).iterate()) {
     for (const term of [row.project_taxon_key, row.project_slug, row.scientific_name_at_link]) {
       add({
@@ -674,6 +685,8 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}) {
     total,
     percent: 96,
   });
+  if (reuse.present) database.exec("DROP TABLE master_build_reused_search");
+  return { reusedTaxa: reuse.reusedTaxa, reusedTerms: reuse.reusedTerms, rebuiltSources: total };
 }
 
 async function replaceDirectory(source, target) {
@@ -695,7 +708,11 @@ async function replaceDirectory(source, target) {
   }
 }
 
-export async function buildTaxonomyMasterCandidate({
+export function buildTaxonomyMasterCandidate(options = {}) {
+  return withTaxonomyBuildCache(() => buildTaxonomyMasterCandidateScoped(options));
+}
+
+async function buildTaxonomyMasterCandidateScoped({
   taxonomyRoot,
   colRelease,
   colRecords = [],
@@ -706,6 +723,7 @@ export async function buildTaxonomyMasterCandidate({
   identityRegistry,
   buildInputCoverage,
   reuseUnchanged = true,
+  sourceRecoveryScope = null,
   checkpoint = null,
   beforePublish = async () => {},
   onProgress = () => {},
@@ -912,7 +930,7 @@ export async function buildTaxonomyMasterCandidate({
       previousDirectory: taxonomyMasterActiveDirectory(taxonomyRoot), previousManifest: activeManifest,
       buildInputs, recordLocations, onProgress, enabled: reuseUnchanged });
     recordLocations.clear();
-    database = new DatabaseSync(databasePath);
+    database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath));
     if (checkpoint) {
       const existingSchema = database.prepare("SELECT 1 FROM sqlite_master WHERE name='master_schema_info'").get();
       const saved = existingSchema && database.prepare("SELECT value FROM master_schema_info WHERE key='buildCheckpoint'").get();
@@ -921,12 +939,13 @@ export async function buildTaxonomyMasterCandidate({
         // acknowledged taxon block; only this private unacknowledged DB is reset.
         database.close();
         for (const suffix of ["", "-journal", "-wal", "-shm"]) await fs.rm(databasePath + suffix, { force: true });
-        database = new DatabaseSync(databasePath);
+        database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath));
       }
     }
     try {
     const hasSchema = database.prepare("SELECT 1 FROM sqlite_master WHERE name='master_schema_info'").get();
     if (!hasSchema) createTaxonomyMasterSchema(database);
+    const writer = createMasterWriter(database);
     // Der reale Masterbestand umfasst mehrere hunderttausend Taxa und noch
     // deutlich mehr Namens-, Herkunfts- und Suchzeilen. Ohne eine gemeinsame
     // Transaktion bestaetigt SQLite jeden einzelnen INSERT separat; ein
@@ -959,7 +978,7 @@ export async function buildTaxonomyMasterCandidate({
       metadata: {},
     });
     if (!progressCheckpoint?.written) {
-      for (const release of releases) registerProviderRelease(database, { ...release, releaseState: "active" });
+      for (const release of releases) registerProviderRelease(writer, { ...release, releaseState: "active" });
     }
     if (progressCheckpoint) reuse.reusedTaxa = progressCheckpoint.reused;
     const releaseByProvider = new Map(releases.map((release) => [release.provider, release]));
@@ -1022,7 +1041,7 @@ export async function buildTaxonomyMasterCandidate({
         }
         continue;
       }
-      createMasterTaxon(database, {
+      createMasterTaxon(writer, {
         masterTaxonId,
         scientificName: exactCol?.scientificName || group.scientificName,
         rank: group.rank,
@@ -1040,7 +1059,7 @@ export async function buildTaxonomyMasterCandidate({
           : exactCol || record.provider === "catalogue-of-life"
             ? "exact"
             : "reference-gap";
-        const sourceAssertionId = addProviderTaxonAssertion(database, {
+        const sourceAssertionId = addProviderTaxonAssertion(writer, {
           releaseId: release.releaseId,
           providerRecordId: cleanText(record.providerRecordId) || shaId("record", record.provider, record.scientificName),
           masterTaxonId,
@@ -1061,13 +1080,13 @@ export async function buildTaxonomyMasterCandidate({
           versionChangeState: record.versionChangeState || "unchanged",
         });
         for (const reason of record.relevanceReasons || []) {
-          addProviderSliceMembership(database, {
+          addProviderSliceMembership(writer, {
             providerTaxonAssertionId: sourceAssertionId,
             relevanceReason: reason,
             observedAt: record.retrievedAt || release.importedAt,
           });
         }
-        addProviderNameAssertion(database, {
+        addProviderNameAssertion(writer, {
           providerTaxonAssertionId: sourceAssertionId,
           name: record.scientificName,
           nameKind: "scientific",
@@ -1098,7 +1117,7 @@ export async function buildTaxonomyMasterCandidate({
         }
         for (const name of record.names || []) {
           if (!cleanText(name.name)) continue;
-          addProviderNameAssertion(database, {
+          addProviderNameAssertion(writer, {
             providerTaxonAssertionId: sourceAssertionId,
             name: name.name,
             language: name.language || "",
@@ -1108,7 +1127,7 @@ export async function buildTaxonomyMasterCandidate({
           });
           if (name.nameKind === "synonym" || name.nameKind === "scientific") {
             if (normalized(name.name) !== normalized(group.scientificName)) {
-              addMasterTaxonAlias(database, {
+              addMasterTaxonAlias(writer, {
                 masterTaxonId,
                 name: name.name,
                 rank: group.rank,
@@ -1148,7 +1167,7 @@ export async function buildTaxonomyMasterCandidate({
       const projectRelease = releaseByProvider.get("project");
       const useProviderGermanName = group.corrections.some((entry) => entry.germanNameMode === "provider");
       for (const project of group.projects) {
-        linkProjectTaxon(database, {
+        linkProjectTaxon(writer, {
           projectTaxonKey: project.projectTaxonKey,
           masterTaxonId,
           projectSlug: project.projectSlug,
@@ -1158,7 +1177,7 @@ export async function buildTaxonomyMasterCandidate({
         // A project-to-successor link is not a synonym or a transfer of names.
         // Website texts remain local; new target names come from their own sources.
         if (project.identityAssignment) continue;
-        addMasterTaxonAlias(database, {
+        addMasterTaxonAlias(writer, {
           masterTaxonId,
           name: project.scientificName,
           rank: project.rank,
@@ -1296,7 +1315,7 @@ export async function buildTaxonomyMasterCandidate({
         const assertionIds = new Map();
         for (const candidate of candidates) {
           const selected = candidate === selectedCandidate;
-          const assertionId = addMasterFieldAssertion(database, {
+          const assertionId = addMasterFieldAssertion(writer, {
             masterTaxonId,
             fieldName: candidate.fieldName,
             fieldValue: candidate.fieldValue,
@@ -1319,7 +1338,7 @@ export async function buildTaxonomyMasterCandidate({
             selectedCandidate.fieldValue,
             conflictCandidate.fieldValue,
           );
-          addMasterConflict(database, {
+          addMasterConflict(writer, {
             conflictId,
             masterTaxonId,
             fieldName: selectedCandidate.fieldName,
@@ -1339,7 +1358,7 @@ export async function buildTaxonomyMasterCandidate({
       );
       if (referenceGapNeedsReview) {
         const conflictId = shaId("gap", masterTaxonId, group.scientificName);
-        addMasterConflict(database, {
+        addMasterConflict(writer, {
           conflictId,
           masterTaxonId,
           conflictType: "reference-gap",
@@ -1347,7 +1366,7 @@ export async function buildTaxonomyMasterCandidate({
           resolutionNote: "Keine exakte Artzeile in der aktiven CoL-Referenz.",
         });
       } else if (previousMasterTaxon?.reference_state === "reference-gap") {
-        addMasterConflict(database, {
+        addMasterConflict(writer, {
           conflictId: shaId("returned", masterTaxonId, normalizedColRelease.providerVersion),
           masterTaxonId,
           conflictType: "reference-returned",
@@ -1357,7 +1376,7 @@ export async function buildTaxonomyMasterCandidate({
       }
       if (sourceRemoved) {
         const conflictId = shaId("removed", masterTaxonId, timestamp);
-        addMasterConflict(database, {
+        addMasterConflict(writer, {
           conflictId,
           masterTaxonId,
           conflictType: "source-removed",
@@ -1375,14 +1394,14 @@ export async function buildTaxonomyMasterCandidate({
         manuallyProtected: group.corrections.length > 0 || currentFields.some((field) => field.origin_kind === "manual"),
       });
       for (const statusName of statuses) {
-        setMasterTaxonStatus(database, {
+        setMasterTaxonStatus(writer, {
           masterTaxonId,
           statusName,
           updatedAt: timestamp,
         });
       }
       for (const alias of previousState.aliasesFor(previousMasterTaxonId)) {
-        addMasterTaxonAlias(database, {
+        addMasterTaxonAlias(writer, {
           masterTaxonId,
           name: alias.name,
           rank: alias.rank,
@@ -1412,6 +1431,9 @@ export async function buildTaxonomyMasterCandidate({
       percent: 85,
     });
     writeIdentityBuild(database, identityPlan, timestamp);
+    const recoveryConflictState = sourceRecoveryScope ? await preserveRecoveryConflictState({
+      database, previousPath: activePath, scope: sourceRecoveryScope, onProgress,
+    }) : null;
     reuse.close();
     buildInputs.buildMode = reuse.reusedTaxa ? "incremental" : "full";
     buildInputs.reuse = { reason: reuse.reason, reusedTaxa: reuse.reusedTaxa || 0,
@@ -1422,7 +1444,7 @@ export async function buildTaxonomyMasterCandidate({
     previousByBaseIdentity.clear();
     colKingdomByGenus.clear();
     previousState.close();
-    await rebuildMasterSearchTerms(database, onProgress);
+    buildInputs.reuse.search = await rebuildMasterSearchTerms(database, onProgress, reuse.reusedTaxa || 0, reuse.searchSourcePath);
     onProgress({
       phase: "Prüfung",
       message: "Konsistenz, fachliche Mindestwerte und Änderungen werden geprüft.",
@@ -1432,6 +1454,9 @@ export async function buildTaxonomyMasterCandidate({
     });
     const validation = validateTaxonomyMasterDatabase(database);
     const contentQuality = assertTaxonomyMasterContent(database);
+    // Keep the candidate available for explicit split/merge review, but record
+    // missing identities. Every activation path rechecks the actual databases.
+    const identityContinuity = inspectMasterTaxonContinuity({ previousPath: activePath, currentDatabase: database, DatabaseSync });
     const diff = await diffTaxonomyMasterDatabases({
       previousPath: activePath,
       currentDatabase: database,
@@ -1468,7 +1493,9 @@ export async function buildTaxonomyMasterCandidate({
       diff,
       validation,
       contentQuality,
+      identityContinuity,
       requiresConfirmation: true,
+      ...(sourceRecoveryScope ? { sourceRecoveryScope, recoveryConflictState } : {}),
       ...(checkpoint ? { buildJobRevision: checkpoint.revision } : {}),
     };
     progressCheckpoint?.finish(manifest);
@@ -1477,15 +1504,25 @@ export async function buildTaxonomyMasterCandidate({
     } finally {
       database.close();
     }
+    // A resumed, already committed candidate skips the write/search block and
+    // its early close. Release planning readers before Windows directory rename.
+    reuse.close();
     if (manifest.buildInputs.available) {
       manifest.buildInputs.masterSha256 = await masterFileFingerprint(databasePath);
       manifest.buildInputs.comparison = await compareMasterBuildInputs({
         previousDirectory: taxonomyMasterActiveDirectory(taxonomyRoot), previousManifest: activeManifest,
-        currentDirectory: temporaryDirectory, currentManifest: manifest, onProgress });
+        currentDirectory: temporaryDirectory, currentManifest: manifest, onProgress, reusePlan: reuse.dependencyPlan });
+    }
+    if (sourceRecoveryScope) {
+      const { assertRecoveryCandidateScope } = await import("./taxonomy-source-recovery-scope.mjs");
+      assertRecoveryCandidateScope(taxonomyRoot, { rows: sourceRecoveryScope }, { candidatePath: databasePath });
     }
     await atomicWriteJson(path.join(temporaryDirectory, "manifest.json"), manifest);
     await fs.mkdir(taxonomyMasterRoot(taxonomyRoot), { recursive: true });
     await beforePublish();
+    if (reuse.available && await masterFileFingerprint(reuse.searchSourcePath) !== activeManifest.buildInputs.masterSha256) {
+      throw new Error("Der Ausgangsmaster wurde während der Wiederverwendung verändert. Ein neuer Aufbau ist erforderlich.");
+    }
     await replaceDirectory(temporaryDirectory, taxonomyMasterCandidateDirectory(taxonomyRoot));
     return manifest;
   } catch (error) {
@@ -1515,16 +1552,22 @@ export async function readTaxonomyMasterManifest(taxonomyRoot, slot = "active") 
 export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
   validate = true,
   blockingConflictsOnly = false,
+  recoveryScopeRoot = taxonomyRoot,
 } = {}) {
   const manifest = await readTaxonomyMasterManifest(taxonomyRoot, "staging");
   if (!manifest) return { available: false, reason: "no-candidate" };
   if (readTaxonomyPublication(taxonomyRoot)?.consumedCandidateId === manifest.candidateId) {
     return { available: false, reason: "already-published" };
   }
+  if (validate && manifest.sourceRecoveryScope) {
+    const { assertRecoveryCandidateScope } = await import("./taxonomy-source-recovery-scope.mjs");
+    assertRecoveryCandidateScope(recoveryScopeRoot, { rows: manifest.sourceRecoveryScope },
+      { candidatePath: taxonomyMasterDatabasePath(taxonomyRoot, "staging") });
+  }
   const { DatabaseSync } = await loadNodeSqlite();
-  const database = new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "staging"), {
+  const database = configureTaxonomyBuildDatabase(new DatabaseSync(taxonomyMasterDatabasePath(taxonomyRoot, "staging"), {
     readOnly: true,
-  });
+  }));
   try {
     const validation = validate
       ? validateTaxonomyMasterDatabase(database)

@@ -23,7 +23,7 @@ class Element {
   get innerHTML() { return this.html || ""; }
   addEventListener(name, fn) { this.listeners.set(name, fn); }
   async emit(name, event = {}) { return this.listeners.get(name)?.({ preventDefault() {}, stopPropagation() {}, target: this, ...event }); }
-  focus() {} reset() {} removeAttribute(name) { delete this[name]; }
+  focus() { this.focused = true; } reset() {} removeAttribute(name) { delete this[name]; }
 }
 
 async function settle(predicate) {
@@ -31,24 +31,28 @@ async function settle(predicate) {
   assert.fail("Workflow did not reach the expected state");
 }
 
-function harness({ status = "awaiting-review", finalStatus = "completed", failReview = false } = {}) {
+function harness({ status = "awaiting-review", finalStatus = "completed", failReview = false,
+  confirm = true, failRestart = false, failReset = false, initializeReference = () => {} } = {}) {
   const dialog = new Element(), form = new Element(), open = new Element(), close = new Element();
+  const headerClose = new Element();
+  headerClose.textContent = "×";
   close.textContent = "Abbrechen";
   const steps = [1, 2, 3, 4].map((n) => { const e = new Element(); e.dataset.newSpeciesStep = n; return e; });
-  dialog.groups = { ".new-species-cancel": [close], "[data-new-species-step]": steps };
+  dialog.groups = { ".new-species-cancel": [close, headerClose], "[data-new-species-step]": steps };
   form.elements = { german: new Element() };
-  const state = { species: [] }, calls = [];
-  let dialogOptions, statusReads = 0, opened = false;
+  const state = { species: [] }, calls = [], confirmations = [];
+  const filters = { search: new Element(), statusFilter: new Element(), flagFilter: new Element() };
+  let dialogOptions, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
   const context = vm.createContext({ document: {}, FormData: class {}, clearTimeout, setTimeout });
   new vm.Script(source).runInContext(context);
   const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } } };
   const controller = context.SpeciesExplorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
     state, elements: { newSpeciesDialog: dialog, newSpeciesForm: form, newSpeciesButton: open,
-      search: new Element(), statusFilter: new Element(), flagFilter: new Element() },
+      ...filters },
     createMessageSetter: (element) => (text = "", type = "") => { element.textContent = text; element.hidden = !text; element.type = type; },
     createFieldFeedbackController: () => ({ clearFieldErrors() {}, applyFieldErrors() {}, updateMeasurementMode() {} }),
     createNewSpeciesFormModel: () => ({ speciesValues: () => ({ german: "Rebhuhn" }), localFieldErrors: () => ({}) }),
-    createTaxonomyReferenceController: () => ({ reset() {}, initialize() {} }),
+    createTaxonomyReferenceController: () => ({ reset() {}, initialize: initializeReference }),
     createDialogController: (options) => {
       dialogOptions = options;
       close.addEventListener("click", () => { if (options.beforeClose()) opened = false; });
@@ -61,7 +65,15 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       if (route.endsWith("/new/discard")) return { discarded: true };
       if (route.endsWith("/new/save")) return { species, entry: { german: "Rebhuhn" }, derived: { slug: species.id } };
       if (route === "/api/pipeline/preview") return { token: "run-preview", hasWork: true, tokensAvailable: true };
-      if (route === "/api/pipeline/start") return { status: "running", runId: "run" };
+      if (route === "/api/pipeline/start") {
+        if (++starts > 1 && failRestart) throw new Error("Test: Suchstart fehlgeschlagen");
+        return { status: "running", runId: "run" };
+      }
+      if (route.endsWith("/rejections-preview")) return { token: "reset", count: rejectedCount };
+      if (route.endsWith("/rejections-reset")) {
+        if (failReset) throw new Error("Test: Ablehnungen unverändert");
+        rejectedCount = 0; return { saved: true };
+      }
       if (route === "/api/pipeline/status") return {
         status: statusReads++ ? finalStatus : status, error: "Karte fehlt; Übertragung angehalten", runId: "run",
         reviewAssets: [{ type: "sound", safeName: "Rebhuhn", germanName: "Rebhuhn", scientificName: "Perdix perdix", url: "/sound.mp3" }],
@@ -72,6 +84,7 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       throw new Error(`Unexpected route: ${route}`);
     },
     loadData: async () => { state.species = [species]; },
+    showQuickConfirm: async (options) => { confirmations.push(options); return confirm; },
     fileToBase64: async () => "local-image-bytes", escapeHtml: (x) => String(x || ""), formatBytes: (x) => `${x} Bytes`,
     releaseMediaWithin() {}, iucnDistributionMapUrl: () => mapUrl,
     soundLicenseInfo: () => ({}), soundLicenseBadgeHtml: () => "", soundSearchOutcome: () => ({}),
@@ -82,7 +95,7 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const action = (key, value) => ({ closest: (selector) => selector === `[${key}]` ? { dataset: {
     [key.replace(/^data-/, "").replace(/-([a-z])/g, (_, c) => c.toUpperCase())]: value,
   } } : null });
-  return { state, calls, get, close, steps, map, sound, dialogOptions: () => dialogOptions, opened: () => opened,
+  return { state, calls, confirmations, filters, form, get, close, headerClose, steps, map, sound, open, dialogOptions: () => dialogOptions, opened: () => opened,
     async start() {
       await open.emit("click"); await form.emit("submit");
       await get(".new-species-next-button").emit("click");
@@ -117,9 +130,114 @@ test("Neue Art: Datei und Drop nutzen lokale Bytes, Quellenlink ist vorbelegt; A
     await h.soundAction();
     await settle(() => /erfolgreich angelegt/.test(h.get(".new-species-finish-message").textContent));
     assert.equal(h.close.disabled, false);
-    await h.close.emit("click"); assert.equal(h.opened(), false);
+    assert.equal(h.close.hidden, true);
+    assert.equal(h.headerClose.hidden, false);
+    assert.equal(h.headerClose.disabled, false);
+    assert.equal(h.get(".new-species-save-button").hidden, false);
+    await h.get(".new-species-save-button").emit("click"); assert.equal(h.opened(), false);
+    await h.open.emit("click");
+    assert.equal(h.close.hidden, false);
+    assert.equal(h.get(".new-species-save-button").hidden, true);
+    await h.close.emit("click");
     assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
     assert.equal(h.calls.some((c) => c.route.endsWith("/new/discard")), false);
+  }
+});
+
+test("Neue Art: Sound-Ablehnungen mit Rückfrage freigeben und nur Sounds erneut suchen, ohne doppelte Artanlage", async () => {
+  const h = harness(); await h.start();
+  await h.mapAction("skip"); await h.soundAction();
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  const reset = h.get(".new-species-reset-sounds-button");
+  assert.equal(reset.hidden, false);
+  await reset.emit("click");
+  await settle(() => !h.get(".new-species-save-button").hidden && !reset.disabled);
+  const plans = h.calls.filter((c) => c.route === "/api/pipeline/preview");
+  assert.deepEqual(plans[1].body, { mode: "nc-sounds", targetSlugs: ["perdixperdix"] });
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/rejections-reset")).length, 1);
+  assert.equal(h.close.hidden, true);
+});
+
+test("Neue Art: frühere Sounds schon während der Prüfung freigeben; Abbruch und Fehler bleiben bedienbar", async () => {
+  for (const options of [{}, { confirm: false }, { failReview: true }]) {
+    const h = harness(options); await h.start(); await h.mapAction("skip");
+    await settle(() => !h.sound.hidden);
+    const reset = h.get(".new-species-reset-sounds-button");
+    assert.equal(reset.hidden, false);
+    assert.equal(reset.disabled, false);
+    await reset.emit("click");
+    assert.match(h.confirmations[0].message, /gerade angezeigte Sound wird.*abgelehnt/);
+    const reviews = h.calls.filter((c) => c.route === "/api/pipeline/assets/review");
+    assert.equal(h.calls.some((c) => c.route.includes("/rejections-")), false,
+      "Die laufende Prüfung muss ihre Ausgangssicherung selbst berücksichtigen");
+    assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+    if (options.confirm === false) {
+      assert.equal(reviews.length, 0);
+      assert.equal(h.sound.hidden, false);
+    } else {
+      assert.deepEqual(reviews[0].body.choices, [{ safeName: "Rebhuhn", type: "sound", decision: "reject",
+        manual: false, resetSoundRejections: true, reviewUrl: "/sound.mp3" }]);
+      if (options.failReview) {
+        assert.match(h.get(".new-species-finish-message").textContent, /Medienprüfung fehlgeschlagen/);
+        assert.equal(reset.disabled, false);
+        // A subsequent ordinary acceptance must not accidentally retain the reset request.
+        await h.soundAction();
+        await settle(() => h.calls.filter((c) => c.route === "/api/pipeline/assets/review").length === 2);
+        const retry = h.calls.filter((c) => c.route === "/api/pipeline/assets/review")[1];
+        assert.equal(retry.body.choices[0].resetSoundRejections, undefined);
+      } else {
+        await settle(() => !h.get(".new-species-save-button").hidden);
+        assert.equal(h.close.hidden, true);
+      }
+    }
+    await settle(() => !h.close.disabled);
+    await h.close.emit("click");
+    assert.equal(h.opened(), false);
+    await h.open.emit("click");
+    assert.equal(reset.hidden, true);
+    assert.equal(h.get(".new-species-save-button").hidden, true);
+  }
+});
+
+test("Neue Art: gesetzte Listenfilter und ausstehende Referenzprüfung blockieren Öffnen und Eingabe nicht", async () => {
+  let resolveReference, initialized = false;
+  const reference = new Promise((resolve) => { resolveReference = resolve; });
+  const h = harness({ initializeReference: () => { initialized = true; return reference; } });
+  for (const filter of Object.values(h.filters)) filter.value = "aktiver Filter";
+  await h.open.emit("click");
+  assert.equal(initialized, true);
+  assert.equal(h.opened(), true);
+  assert.equal(h.form.elements.german.focused, true);
+  assert.equal(h.form.elements.german.disabled, false);
+  h.form.elements.german.value = "Rotaugenlaubfrosch";
+  await h.form.elements.german.emit("input");
+  assert.equal(h.form.elements.german.value, "Rotaugenlaubfrosch");
+  assert.equal(h.close.disabled, false);
+  assert.equal(Object.values(h.filters).every((filter) => filter.value === "aktiver Filter"), true);
+  await h.close.emit("click");
+  assert.equal(h.opened(), false);
+  resolveReference();
+});
+
+test("Neue Art: Sound-Rücksetzung abbrechen oder Fehler; Abschluss bleibt schließbar und wiederholbar", async () => {
+  for (const options of [{ confirm: false }, { failReset: true }, { failRestart: true }]) {
+    const h = harness(options); await h.start();
+    await h.mapAction("skip"); await h.soundAction();
+    await settle(() => !h.get(".new-species-save-button").hidden);
+    await h.get(".new-species-reset-sounds-button").emit("click");
+    assert.equal(h.get(".new-species-save-button").disabled, false);
+    assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+    if (options.confirm === false) assert.equal(h.calls.some((c) => c.route.endsWith("/rejections-reset")), false);
+    if (options.failRestart) {
+      assert.match(h.get(".new-species-finish-message").textContent, /Ablehnungen sind aufgehoben/);
+      await h.get(".new-species-reset-sounds-button").emit("click");
+      assert.equal(h.calls.filter((c) => c.route.endsWith("/rejections-reset")).length, 1);
+      assert.equal(h.calls.filter((c) => c.route === "/api/pipeline/start").length, 3);
+    }
+    await h.get(".new-species-save-button").emit("click");
+    assert.equal(h.opened(), false);
+    assert.equal(h.state.newSpeciesPipelineActive, false);
   }
 });
 

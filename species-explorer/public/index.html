@@ -451,6 +451,7 @@
           <p class="new-species-final-portrait-state">Artportrait wird übersprungen.</p>
           <p class="edit-message new-species-finish-message" hidden></p>
           <section class="new-species-inline-review new-species-sound-review" hidden></section>
+          <button class="new-species-reset-sounds-button" type="button" hidden>Abgelehnte Soundquellen wieder zulassen …</button>
           <section class="new-species-done" hidden></section>
         </section>
 
@@ -559,6 +560,10 @@
                   <strong>Datenbank aktualisieren</strong>
                   <span id="taxonomy-database-current-version">Aktueller Stand wird geprüft…</span>
                 </button>
+                <button type="button" data-taxonomy-database-action="build-baseline" hidden>
+                  <strong>Vergleichsgrundlage einmalig erstellen …</strong>
+                  <span>Vollständiger lokaler Aufbau für künftige Änderungsabgleiche · ohne Downloads</span>
+                </button>
                 <button type="button" data-taxonomy-database-action="rollback" disabled>
                   <strong>Vorherigen Stand wiederherstellen</strong>
                   <span id="taxonomy-database-previous-version">Kein vorheriger Stand vorhanden</span>
@@ -570,6 +575,10 @@
                 <button type="button" data-taxonomy-identity-open>
                   <strong>Artänderungen prüfen</strong>
                   <span>Bisherige Arten und mögliche Nachfolger vergleichen</span>
+                </button>
+                <button type="button" data-taxonomy-database-action="storage">
+                  <strong>Speicher prüfen und bereinigen</strong>
+                  <span>Vorschau · aktiver Stand und ein Vorgänger bleiben geschützt</span>
                 </button>
               </div>
               <p id="taxonomy-database-build-progress" hidden></p>
@@ -833,6 +842,7 @@
     <script src="/app-pipeline.js" defer></script>
     <script src="/app-backup-workflow.js" defer></script>
     <script src="/app-pipeline-workflow.js" defer></script>
+    <script src="/app-taxonomy-progress.js" defer></script>
     <script src="/app-taxonomy-maintenance.js" defer></script>
     <script src="/app-taxonomy-master.js" defer></script>
     <script src="/app-taxonomy-identity.js" defer></script>

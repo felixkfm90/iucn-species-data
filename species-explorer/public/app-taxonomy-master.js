@@ -128,13 +128,8 @@
 
   function progressDetail(status = {}) {
     const parts = [];
-    const phase = cleanText(status.progressPhase);
-    if (phase) parts.push(`Phase: ${phase}`);
-    const current = Number(status.progressCurrent);
-    const total = Number(status.progressTotal);
-    if (Number.isFinite(current) && Number.isFinite(total) && total > 0) {
-      parts.push(`${current.toLocaleString("de-DE")} von ${total.toLocaleString("de-DE")}`);
-    }
+    const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status });
+    if (progress) parts.push(progress.detail);
     const elapsed = formatElapsed(status.startedAt);
     if (elapsed) parts.push(`Laufzeit ${elapsed}`);
     return parts.join(" · ");
@@ -279,8 +274,9 @@
       elements.taxonomyMasterProgress.hidden = !active;
       elements.taxonomyMasterProgressDetail.hidden = !active;
       elements.taxonomyMasterProgressDetail.textContent = active ? progressDetail(status) : "";
-      if (active && Number.isFinite(Number(status.progressPercent))) {
-        elements.taxonomyMasterProgress.value = Number(status.progressPercent);
+      const measured = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status });
+      if (active && measured?.percent !== null && measured?.percent !== undefined) {
+        elements.taxonomyMasterProgress.value = measured.percent;
       } else if (active) {
         elements.taxonomyMasterProgress.removeAttribute("value");
       }

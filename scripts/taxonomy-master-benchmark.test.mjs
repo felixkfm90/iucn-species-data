@@ -20,6 +20,8 @@ test("Isolierte Mastermessung vergleicht getrennte Prozesse und vollständige Er
   assert.equal(result.samples.length, 2);
   assert.equal(result.samples[0].reuse.reusedTaxa, 10);
   assert.equal(result.samples[1].reuse.reusedTaxa, 0);
+  assert.equal(result.samples[0].dependencyGraphReuse, "verified-prewrite-plan");
+  assert.equal(result.samples[1].dependencyGraphReuse, null);
   for (const sample of result.samples) {
     assert.ok(sample.elapsedMs > 0);
     assert.ok(sample.processPeakMiB > 0);

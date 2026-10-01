@@ -1,9 +1,14 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 Roadmap: Phase 10.2 bis 10.4
 Status: Plug-in-Version **0.4.24.14** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
-gebundene Namenskorrektur. Technisch und isoliert getestet; produktive Paarumstellung/Großbestandsabnahme noch offen.
+gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
+seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
+vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
+Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuweisung und Erhalt nach
+Schließen/Wiederöffnen. Übrige Funktions-/Großbestandsabnahme und Phase-10-Audit bleiben offen.
+Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
 Details: `taxonomy-incremental-build.md`. Version 0.4.24.13 ergänzte „Artänderungen prüfen ...“ im Verwaltungsfenster.
 Die gemeinsame Paarvorbereitung und Rücknahmeprüfung laufen seit 20. September vollständig im Hilfsprozess;
 der Explorer behält die kurze, erneut validierte Aktivierung. Kein automatischer Neuaufbau beim Öffnen.
@@ -14,12 +19,22 @@ Nachfolger-/Favoritenwahl, Bestätigungen, Fortschritt, Pause und protokollierte
 mit dem Vorschau-/Journal-/Schreibweg verbunden und simuliert getestet. Die echte Lightroom-Abnahme und
 Großkatalogmessung stehen weiterhin aus.
 Vertrag: `lightroom-identity-workflow.md`.
+Ergänzung vom 30. September: Das unveränderte Historienformat transportiert auch den eng geprüften technischen
+Reparaturtyp `source-repair`. Ersatz-IDs bleiben historische Fälle mit belegtem ursprünglichem Nachfolger;
+Lightroom verlangt weiterhin explizite Nachfolger-/Fotowahl und Schlussbestätigung, keine automatische Umleitung.
+Echter Paketbau, Suchhelfer und bestehende Lua-/Dialogverträge sind gezielt geprüft. Kein Lua-Modul wurde geändert,
+deshalb keine neue Plug-in-Version. Reparaturkandidat und Paar sind inzwischen produktiv vollständig geprüft
+und aktiviert; keine automatische Foto-/Projektmigration. Die vier historischen Ersatz-IDs sind keine zweite
+aktive Art im Suchpaket. Der produktive Foto-Nachfolger-/Rücknahmeweg bleibt eine gesonderte Abnahme.
+Vertrag: [Quellenreparatur](taxonomy-partial-source-recovery.md).
 Der vorherige Suchpaket-/Plug-in-Stand 0.4.24.10 ist automatisiert verifiziert. Einzel- und Mehrfachzuweisung,
 Zuweisungsfenster, Favoritenersetzung und das Entfernen der Taxonomie einschließlich der reservierten
 FN-Stichwörter wurden mit den vorherigen Ständen im vorbereiteten Lightroom-Testkatalog praktisch geprüft. Die
 Zuweisung und Auswahl-Refresh bis 0.4.16.0 wurden praktisch bestätigt. Die gemeinsame Namenswahl einschließlich
 Anbieterstandard und direkter Übernahme wurde bis 0.4.24.10 ebenfalls praktisch bestätigt. Die spätere
-Regressionskorrektur und alle aktuellen Abläufe benötigen die in der Roadmap getrennt geführte Abnahme.
+Regressionskorrektur ist am 1. Oktober für Suche/Explorer-Anzeige und Zuweisung von Weissstorch/Rebhuhn praktisch
+bestätigt; neue Präferenzspeicherung/Rückwahl und die übrigen aktuellen Abläufe bleiben Teil der getrennten
+gebündelten Abnahme in der Roadmap.
 Der persistente Statistikindex mit
 CSV-Export sowie direkte Deltas nach Zuweisung und Rücknahme wurden im Großkatalog bis 0.4.21.1 praktisch bestätigt;
 der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitaktionen von 0.4.22.1 und ihre
@@ -28,7 +43,7 @@ der Art-Favoritenfix von 0.4.21.2 wurde praktisch bestätigt. Die Orts-/Zeitakti
 den kontrollierten Lightroom-Test. Phase 10 bleibt bis zum umfassenden
 Abschlussaudit offen.
 
-Der reale Referenz-Master-Wiederanlauf vom 5. September 2026 ist technisch abgeschlossen: Paket
+Historischer Nachweis: Der reale Referenz-Master-Wiederanlauf vom 5. September 2026 ist technisch abgeschlossen: Paket
 `lightroom-946c961bd063fd1b8f12` wurde automatisch aufgebaut, vollständig geprüft und um 08:32:51 Uhr MESZ
 atomar aktiviert. Es stammt aus `master-20260905054823067` und derselben aktiven CoL-Referenz
 `col-xr-2026-08-26-316165`. Die abschließenden read-only Suchtests bestätigen die bevorzugten Projektnamen und
@@ -174,14 +189,27 @@ der Explorer unveränderliche Ordner `taxonomy/master/releases/publication-<UUID
 Elternordner. Er enthält aktives Paar, Vorgänger und passende Korrekturschicht. Erst nach Vorbereitung und Prüfung
 beider Dateien wird dieser Zeiger ersetzt; bei einem Fehler bleiben beide bisherigen Stände aktiv.
 Ein passendes vorhandenes Legacy-Paar wird beim ersten Wechsel als Vorgänger übernommen. Nicht mehr referenzierte
-Releases bleiben bis zur noch offenen Aufbewahrungs-/Platzbudgetprüfung erhalten; keine automatische Löschung.
+Releases können seit 20. September ausschließlich nach Vorschau und Bestätigung bereinigt werden; aktives Paar,
+genau ein geprüfter Vorgänger als Backup und benötigte Aufträge bleiben geschützt. Keine automatische Löschung.
+Platzreserve, Prozesssperren und Grenzen: `taxonomy-storage-maintenance.md`.
 
 Der Paketbau läuft seit 30. August in einem getrennten Node-Hilfsprozess. Seit 13. September arbeitet dieser
 vor der Masterfreigabe auf einer privaten Kopie des gewählten Kandidaten. Eine geeignete geprüfte Paketbasis
-wird mit Zeilen-/Suchindexdeltas aktualisiert; sonst erfolgt der Vollaufbau. Beide Wege verwenden dieselbe
-vollständige fachliche Exportprojektion und prüfen Datenbank, Zähler, Herkunft und SHA-256. Vollständiges Lesen
-und Dateikopien bleiben erforderlich. Phasen erscheinen im bestehenden Fortschrittsblock. Die Masterprüfung
-selbst ist noch nicht aus dem Serverprozess ausgelagert; Großbestands-/Neustartfreigabe bleibt offen.
+wird mit Zeilen-/Suchindexdeltas aktualisiert; sonst erfolgt der Vollaufbau. Beide Wege verwenden denselben
+fachlichen SQL-Export, seit 21. September im Deltaweg begrenzt auf tatsächlich geänderte Taxa. Beide prüfen
+Datenbank, Zähler, Herkunft und SHA-256. Vollständiges Lesen für Fingerabdrücke und Prüfungen
+und Dateikopien bleiben erforderlich. Phasen erscheinen im bestehenden Fortschrittsblock. Seit 20. September
+laufen auch die schwere Masterprüfung, Paarvorbereitung und Rücknahmeprüfung im Hilfsprozess. Der Server prüft
+die heutigen Eingänge vor dem gemeinsamen Zeigerwechsel erneut; Großbestands-/Neustartfreigabe bleibt offen.
+
+Der erste Paketvergleich vom 21. September zeigte trotz optimiertem Zeilenabgleich langsameren Deltaaufbau.
+Inzwischen speichert das Paket regel-/quellengebundene Fingerabdrücke und exportiert nur betroffene Taxa;
+Herkunftszeiten werden separat aktualisiert. Alte Pakete ohne diese Grundlage werden einmalig vollständig
+aufgebaut. Die vollständige Basisprüfung läuft parallel und muss vor Freigabe erfolgreich sein. Fremde/alte
+Grundlagen und breite Änderungen fallen auf Vollaufbau zurück. Doppelte Suchbelege, umsortierte IDs,
+NULL-Felder, Leerbestände, Abbruch und Wiederholung sind direkt geprüft. Vertrag: `lightroom-incremental-export.md`.
+Ein begrenzter Vorteil zum heutigen Vollpfad ist gemessen, deutliche Gesamtbeschleunigung und produktive
+Freigabe bleiben offen. Prüfgrenzen, frühere Vergleichswerte und Messwerte: `taxonomy-operational-checks.md`.
 
 Anders als im vorherigen sequenziellen Ablauf gibt es bei Paketfehlern im Paarpfad keinen bereits aktivierten
 neuen Master. Auch eine reine Paketnachholung nutzt die gemeinsame Veröffentlichung ohne Master-Neuberechnung.

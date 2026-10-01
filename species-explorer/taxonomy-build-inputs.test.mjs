@@ -213,6 +213,31 @@ test("Callbackfehler beendet Iteratoren und lässt einen erneuten Vergleich zu",
   assert.equal(compareTaxonomyBuildInputs(before, after).changesEmitted, 2);
 });
 
+test("Gleichheitsweg für stabile Schlüssel bewahrt UTF-8-Reihenfolge bei Anbieter- und ID-Wechseln", async (t) => {
+  const f = await fixture(t), providers = ["a", "\uE000", "😀"], ids = ["1", "\uE000", "😀"];
+  const sources = providers.map((provider) => source(3, { provider }));
+  async function snapshot(after) {
+    const filename = f.filename(), writer = await createTaxonomyBuildInputs({ filename, contract: contract(sources) });
+    try {
+      for (const manifest of sources) {
+        writer.addSource(manifest);
+        writer.append(manifest.provider, 0, ids.map((id) => record(after && id === "1" ? "2" : id,
+          after && id === "😀" ? { rank: "genus" } : {})));
+        writer.completeSource(manifest.provider);
+      }
+      writer.seal();
+    } finally { writer.close(); }
+    return f.track(openTaxonomyBuildInputs(filename));
+  }
+  const before = await snapshot(false), after = await snapshot(true), events = [];
+  const result = compareTaxonomyBuildInputs(before, after, (event) => events.push(event));
+  assert.deepEqual(result.counts, { added: 3, removed: 3, changed: 3, unchanged: 3 });
+  assert.deepEqual(events, providers.flatMap((provider) => [
+    { kind: "removed", provider, recordId: "1" }, { kind: "added", provider, recordId: "2" },
+    { kind: "changed", provider, recordId: "😀" },
+  ]));
+});
+
 test("Blockgrenze und lückenhafte Eingaben verändern den gespeicherten Fortschritt nicht", async (t) => {
   const f = await fixture(t), filename = f.filename();
   const writer = f.track(await createTaxonomyBuildInputs({ filename, contract: contract([source(1001)]) }));

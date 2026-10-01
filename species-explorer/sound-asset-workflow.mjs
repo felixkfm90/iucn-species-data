@@ -728,11 +728,74 @@ export function createSoundAssetOperations({
   }
 
 
+  // Reset only this species' search exclusions, never its media or manual protection.
+  async function resetSoundRejections(id, payload = {}, previewOnly = false) {
+    cleanupPreviewTokens();
+    const fail = (message, statusCode = 409) => {
+      throw Object.assign(new Error(message), { statusCode });
+    };
+    if (isAssetWriteActive() || getPipelineProcess()
+        || ["running", "awaiting-review"].includes(getPipelineState().status)) {
+      fail("Es läuft bereits ein schreibender Asset- oder Pipeline-Prozess. Bitte zuerst abschließen.");
+    }
+    const species = findEditableSpecies(getModel(), id);
+    if (!species?.inInput) fail("Art wurde nicht gefunden oder ist nicht bearbeitbar", species ? 409 : 404);
+    // Acquire before the first await, including the preview, to prevent overlapping mutations.
+    setAssetWriteActive(true);
+    let tempPath;
+    try {
+      const registryText = await readFile(assetOverridesPath, "utf8").catch((error) => {
+        if (error.code === "ENOENT") return '{"version":1,"assets":{}}';
+        throw error;
+      });
+      const registry = JSON.parse(registryText);
+      const sound = registry.assets?.[species.safeName]?.sound;
+      const count = Array.isArray(sound?.rejectedSources) ? sound.rejectedSources.length : 0;
+      const revision = hashText(registryText);
+      if (previewOnly) {
+        const token = randomUUID();
+        previewTokens.set(token, {
+          type: "sound-rejections", id, safeName: species.safeName, revision,
+          expiresAt: Date.now() + previewTokenTtlMs,
+        });
+        return { token, count, germanName: species.germanName };
+      }
+      const preview = previewTokens.get(payload.token);
+      if (payload.confirmed !== true || preview?.type !== "sound-rejections"
+          || preview.id !== id || preview.safeName !== species.safeName
+          || preview.revision !== revision || preview.expiresAt <= Date.now()) {
+        fail("Bestätigung ist abgelaufen oder die Sound-Ablehnungen wurden geändert. Bitte erneut prüfen.");
+      }
+      if (!count) {
+        previewTokens.delete(payload.token);
+        return { saved: false, cleared: 0 };
+      }
+      delete sound.rejectedSources;
+      tempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
+      await writeFile(tempPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
+      // Also detect an external edit made while this request was preparing its file.
+      if (hashText(await readFile(assetOverridesPath, "utf8")) !== revision) {
+        fail("Die Sound-Ablehnungen wurden inzwischen geändert. Bitte erneut prüfen.");
+      }
+      await rename(tempPath, assetOverridesPath);
+      previewTokens.delete(payload.token);
+      // Saving succeeded even if refreshing the display fails; do not report a false failed write.
+      let warning = "";
+      try { await refreshModel({ force: true }); }
+      catch { warning = "Gespeichert; bitte die Ansicht neu laden."; }
+      return { saved: true, cleared: count, pendingTransfer: true, warning };
+    } finally {
+      if (tempPath) await unlink(tempPath).catch(() => {});
+      setAssetWriteActive(false);
+    }
+  }
+
   return {
     previewSoundAsset,
     previewEditedSoundAsset,
     saveSoundAsset,
     rejectCurrentSoundAsset,
+    resetSoundRejections,
     soundAssetSourceRevision,
   };
 }

@@ -915,6 +915,20 @@ export function createPipelineController({
   }
 
   async function savePipelineAssetReview(payload) {
+    if (runtime.assetReviewSaving) {
+      const error = new Error("Die aktuelle Medienentscheidung wird bereits gespeichert");
+      error.statusCode = 409;
+      throw error;
+    }
+    runtime.assetReviewSaving = true;
+    try {
+      return await applyPipelineAssetReview(payload);
+    } finally {
+      runtime.assetReviewSaving = false;
+    }
+  }
+
+  async function applyPipelineAssetReview(payload) {
     if (runtime.state.status !== "awaiting-review") {
       const error = new Error("Es warten keine neuen Assets auf eine Pflegeentscheidung");
       error.statusCode = 409;
@@ -947,9 +961,23 @@ export function createPipelineController({
         error.statusCode = 400;
         throw error;
       }
+      if (choice.resetSoundRejections !== undefined
+        && (choice.resetSoundRejections !== true || choice.decision !== "reject" || asset.type !== "sound")) {
+        const error = new Error("Frühere Sound-Ablehnungen können nur zusammen mit dem Überspringen der aktuellen Soundquelle aufgehoben werden");
+        error.statusCode = 400;
+        throw error;
+      }
+      if (choice.resetSoundRejections === true && (!asset.url || choice.reviewUrl !== asset.url)) {
+        const error = new Error("Die angezeigte Soundprüfung ist nicht mehr aktuell. Bitte die aktuelle Aufnahme erneut prüfen.");
+        error.statusCode = 409;
+        throw error;
+      }
     }
 
-    const registry = await readJson(assetOverridesPath).catch(() => ({ version: 1, assets: {} }));
+    const registry = await readJson(assetOverridesPath).catch((error) => {
+      if (error.code === "ENOENT") return { version: 1, assets: {} };
+      throw error;
+    });
     registry.version = 1;
     registry.assets ??= {};
     const updatedAt = new Date().toISOString();
@@ -1002,11 +1030,17 @@ export function createPipelineController({
           }
           if (rejectSound) {
             rejectedSoundAssets.push(asset);
-            const restoredOverride = registry.assets[asset.safeName].sound ?? {
+            const restoredOverride = { ...(registry.assets[asset.safeName].sound ?? {
               manual: previous?.override?.manual === true,
               reason: previous?.override?.reason
                 || "Automatische Soundquelle wurde manuell abgelehnt; Quelle wird kuenftig uebersprungen.",
-            };
+            }) };
+            // Clear the restored snapshot, not only the live registry: the next search must
+            // keep the current rejection without reviving any earlier exclusions.
+            if (choice.resetSoundRejections === true) {
+              delete restoredOverride.rejectedSources;
+              appendPipelineLog(`Frühere Sound-Ablehnungen aufgehoben: ${asset.germanName}; aktuelle Quelle wird übersprungen.`);
+            }
             registry.assets[asset.safeName].sound = {
               ...addRejectedSoundSource(restoredOverride, rejectedSource),
               updatedAt,

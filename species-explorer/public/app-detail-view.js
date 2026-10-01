@@ -633,6 +633,7 @@
                       ${species.assets.sound.exists ? "Alternative suchen" : "Automatisch suchen"}
                     </button>
                   ` : ""}
+                  <button class="sound-reset-rejections-button" type="button">Abgelehnte Soundquellen wieder zulassen …</button>
                   <span class="sound-care-state">
                     ${species.assets.sound.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
                   </span>

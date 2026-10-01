@@ -1,13 +1,18 @@
+import { withTaxonomyBuildCache } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
+import { assertMasterTaxonIdsRetained } from "./taxonomy-master-continuity.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { buildLightroomSearchPackage, verifyLightroomSearchPackage } from "./lightroom-search-package.mjs";
 import { lightroomSearchDatabasePath, sha256File } from "./lightroom-search-storage.mjs";
 import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
+import { loadNodeSqlite } from "./taxonomy-storage.mjs";
 import { inspectTaxonomyMasterCandidate, taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 import { readTaxonomyPublication, taxonomyPublicationPath } from "./taxonomy-publication-storage.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
+import { acquireMasterJobLock } from "./taxonomy-master-job.mjs";
+import { assertTaxonomySpace, taxonomyDirectoryBytes } from "./taxonomy-space-budget.mjs";
 import { prepareTaxonomyCorrectionRelease, readActiveTaxonomyCorrectionPointer,
   taxonomyCorrectionActivePointerPath } from "./taxonomy-correction-release.mjs";
 
@@ -100,9 +105,16 @@ async function cleanupPreparation(taxonomyRoot, searchRoot, id, keepReleases) {
 
 // Heavy read/copy/build/SQLite checks. This function NEVER replaces an active
 // pointer; it is safe to execute in a disposable child process.
-export async function prepareTaxonomyPublication({ taxonomyRoot, searchRoot, id, action = "publish",
+export async function prepareTaxonomyPublication(options = {}) {
+  const configured = roots(options.taxonomyRoot, options.searchRoot);
+  const unlock = await acquireMasterJobLock(configured.taxonomyRoot);
+  try { return await withTaxonomyBuildCache(() => preparePublicationUnlocked(options)); }
+  finally { unlock(); }
+}
+
+async function preparePublicationUnlocked({ taxonomyRoot, searchRoot, id, action = "publish",
   sourceSlot = "staging", corrections = [], expectedSourceManifest = "",
-  buildPackage = buildLightroomSearchPackage, onProgress = () => {}, now = () => new Date(),
+  buildPackage = buildLightroomSearchPackage, onProgress = () => {}, now = () => new Date(), checkSpace = assertTaxonomySpace,
 } = {}) {
   const configured = roots(taxonomyRoot, searchRoot);
   ({ taxonomyRoot, searchRoot } = configured);
@@ -115,16 +127,26 @@ export async function prepareTaxonomyPublication({ taxonomyRoot, searchRoot, id,
   const sourceManifestText = await fs.readFile(manifestAt(sourceDatabase), "utf8");
   if (expectedSourceManifest && sourceManifestText !== expectedSourceManifest) throw new Error("Der Kandidat wurde vor der Vorbereitung geändert.");
   const sourceManifest = JSON.parse(sourceManifestText);
+  const masterBytes = await taxonomyDirectoryBytes(path.dirname(sourceDatabase));
+  const searchBytes = await taxonomyDirectoryBytes(path.dirname(lightroomSearchDatabasePath(searchRoot)));
+  await checkSpace(searchRoot, masterBytes * 2 + searchBytes * 2);
+  await checkSpace(taxonomyRoot, masterBytes);
   const { work, masterRelease, packageRelease } = paths;
+  await fs.mkdir(searchRoot, { recursive: true });
+  await fs.mkdir(work, { recursive: false });
+  await fs.writeFile(path.join(work, "preparation.json"), JSON.stringify({ schemaVersion: 1, id, ...configured, createdAt: now().toISOString() }), { flag: "wx" });
   const privateTaxonomy = path.join(work, "taxonomy");
   const privateSearch = path.join(work, "lightroom");
   const privateMaster = path.dirname(taxonomyMasterDatabasePath(privateTaxonomy, "staging"));
   onProgress({ phase: "copy", percent: 0, message: "Master-Kandidat wird für die gemeinsame Aktivierung vorbereitet." });
   await fs.cp(path.dirname(sourceDatabase), privateMaster, { recursive: true, errorOnExist: true, force: false });
-  const candidate = await inspectTaxonomyMasterCandidate(privateTaxonomy, { blockingConflictsOnly: true });
+  const candidate = await inspectTaxonomyMasterCandidate(privateTaxonomy, { blockingConflictsOnly: true, recoveryScopeRoot: taxonomyRoot });
   if (!candidate.available || candidate.blockingConflictCount) {
     throw new Error("Der Master-Kandidat fehlt oder enthält noch widersprüchliche Änderungen.");
   }
+  const { DatabaseSync } = await loadNodeSqlite();
+  assertMasterTaxonIdsRetained({ previousPath: taxonomyMasterDatabasePath(taxonomyRoot, "active"),
+    currentPath: taxonomyMasterDatabasePath(privateTaxonomy, "staging"), DatabaseSync });
   await buildPackage({ taxonomyRoot: privateTaxonomy, searchRoot: privateSearch,
     sourceSlot: "staging", baseSearchRoot: searchRoot, onProgress });
   const verified = await verifyLightroomSearchPackage({ searchRoot: privateSearch, slot: "staging" });

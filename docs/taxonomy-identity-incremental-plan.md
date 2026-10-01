@@ -1,14 +1,52 @@
 # Taxonidentitäten und inkrementeller Aufbau vor dem Phase-10-Audit
 
-Stand: 2026-09-12
+Stand: 2026-10-01
 
 Status: Fachregeln durch den Benutzer bestätigt; Umsetzung in Arbeit. Implementiert sind das versionierte
 Identitätsregister, Kandidatenprüfung, vorgemerkte Entscheidung, Explorer-Fallansicht und bestätigte
 Projekt-Nachfolgerzuordnung. Foto-Vorschau, Journal und Lua-Lese-/Schreiborchestrierung sind verbunden und
-simuliert getestet. 0.4.24.13 ergänzt die bestätigte Foto-Bedienaktion; praktische Abnahme und inkrementeller
-Basisaufbau stehen aus. Keine produktive Datenmigration oder
-Aktivierung dieses Arbeitsschritts. Der inkrementelle Aufbau von Master und Lightroom-Suchpaket bleibt Pflicht
-vor dem Audit.
+simuliert getestet. 0.4.24.13 ergänzt die bestätigte Foto-Bedienaktion; praktische Abnahme steht aus.
+0.4.24.14 liest den gemeinsamen Master-/Paketzeiger. Begrenzte Master-Wiederverwendung, Paket-Zeilendeltas,
+Worker-Wiederanlauf und Paarfreigabe sind inzwischen implementiert und isoliert geprüft. Der negative erste
+Paketvergleich vom 21. September führte zu einem gebundenen Teilprojektionsweg mit paralleler vollständiger
+Basisprüfung. Dieser ist jetzt etwas schneller als der heutige Vollpfad; eine deutliche Beschleunigung des
+gesamten früheren Ablaufs ist damit noch nicht belegt. Die isolierten Messungen sind keine produktive Datenmigration.
+Die gesondert bestätigte gemeinsame Reparaturaktivierung vom 1. Oktober und ihre gezielte praktische
+Weissstorch-/Rebhuhn-Abnahme sind abgeschlossen; der gewöhnliche Foto-Nachfolgerweg bleibt getrennt offen.
+Der inkrementelle Aufbau von Master und Lightroom-Suchpaket einschließlich Leistungsnachweis bleibt Pflicht
+vor dem Audit. Aktuelle Messungen und nächster Umsetzungsschritt: `taxonomy-operational-checks.md`.
+Am 23. September wurde zusätzlich die doppelte Abhängigkeitsplanung für nachweislich unveränderte
+Graphstrukturen reduziert. Nur der im selben Lauf erstellte, an Master und Eingangsstände gebundene Plan
+ist übernehmbar; vollständige Validierung und Rückfall bleiben Pflicht. Der neue Fortsetzungstest
+behebt zudem einen offenen Planleser, der die Kandidatenübergabe unter Windows blockieren konnte.
+Das ist keine Freigabe des realen Gesamtupdates; unveränderte Fachbelegschreibung bleibt ein Kostentreiber.
+Am 24. September ergänzt ein begrenzter Befehlsspeicher die identische SQL-Vorbereitung auch bei vollständig
+neu berechneten Arten. Der Vollaufbau wird dadurch schneller; Feldvalidierung, Identitätsentscheidungen und
+Checkpointvertrag bleiben unverändert. Der Leistungsnachweis muss sich am ebenfalls verbesserten Vollweg
+messen, nicht ausschließlich an alten langsameren Vergleichszeiten.
+Der integrierte Messbaustein umfasst inzwischen Auftragssicherung, beide Hilfsprozesse, Prüfungen und den
+gemeinsamen Paarwechsel. Eigene Namenswahl und offene alte Leser sind Teil der Gegenprobe. Der vollständig
+erzwungene Vergleichsweg baut sowohl Master als auch Lightroom-Paket neu; Downloads und reale Auswahl-/
+Konfliktvielfalt bleiben außerhalb der Messung. Zahlen und Leistungsgrenzen: `taxonomy-operational-checks.md`.
+Seit 25. September reduzieren begrenzte Lesegruppen die Altmaster-Einzelabfragen. Kopierfreigaben,
+Identitätsprüfung und Feldvalidierung werden dadurch nicht erweitert oder ausgelassen. Die große
+Laufzeitstreuung und der nicht belegte Speichervorteil bleiben vor produktiver Großbestandsabnahme offen.
+Die ergänzende Ressourcenmessung mit synthetischen Mehranbieterbelegen zeigt hohe logische Ein-/Ausgaben;
+ein größerer Verbindungspuffer wurde zunächst ausschließlich im Test erprobt. Die am 26. September
+integrierte, budgetierte Aufbau-Pufferregel und Fehler-/Wiederanlaufprüfungen stehen in `taxonomy-build-cache.md`;
+das vorangegangene Experiment ist unter `taxonomy-performance-profiling.md` dokumentiert.
+
+Ergänzung vom 30. September: Der belegte Teilquellenverlust erhält einen bestätigten, standgebundenen Reparaturweg.
+Vier durch leeres Reich entstandene Ersatz-IDs werden über die eng geprüfte technische Ereignisart `source-repair`
+historisch erhalten; die ursprünglichen IDs werden im Kandidaten aktiv wiederhergestellt. Das ist kein fachlicher
+Split/Merge und keine automatische Foto-/Projektmigration. Der gewöhnliche Identitätsdialog kann diesen Typ nicht
+erzeugen. Quellenentwurf, fortsetzbarer Workerauftrag und Quellen-/Historienvorbereitung sind implementiert;
+Die nachfolgenden Schutz-/Konflikt-/Neustartkorrekturen sind gezielt geprüft; Kandidatenlauf und Paaraktivierung
+wurden jeweils separat bestätigt und am 1. Oktober vollständig erfolgreich geprüft abgeschlossen. Alle
+154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs und keine automatische
+Foto-/Projektmigration. Die 2.173 separaten Reichs-/CoL-Fälle bleiben außerhalb dieser Aktivierungsfreigabe.
+Vertrag und Prüfgrenzen: [Quellenreparatur](taxonomy-partial-source-recovery.md);
+heutiger [Betriebsstand](taxonomy-current-status.md).
 
 ## Implementierungsstand am 10. September
 
@@ -290,3 +328,14 @@ Die erste Leistungs-/Grenzprüfung des begrenzten Masterwegs ist am 12. Septembe
 Arten erfolgt. Ergebnisgleichheit und Schutz der bisherigen Stände bei simuliertem Abbruch sind belegt.
 Laufzeitausreißer und höherer Speicherbedarf verhindern noch eine Großbestandsfreigabe; Einzelwerte sind keine
 Laufzeitprognose. Messverfahren und nächste Grenzen stehen in `taxonomy-incremental-build.md`.
+
+Am 20./21. September wurden Master- und Paketzeiten mit wiederholten, getrennten Messprozessen geprüft.
+Der damalige Masterweg sparte im synthetischen Vergleich etwa 11–12 %. Der Paketweg ist nach gebundener Teilprojektion
+und paralleler Prüfung etwas schneller als der heutige Vollpfad, erreicht aber noch keine deutliche
+Gesamtbeschleunigung gegenüber dem früheren Ablauf. Nächster Schwerpunkt ist die verbleibende
+Vollbestandsarbeit im Master und beim Vergleich. Weniger geschriebene Zeilen und sichere Wiederaufnahme allein
+erfüllen das Beschleunigungsziel nicht. Vertrag: `lightroom-incremental-export.md`;
+Messungen: `taxonomy-operational-checks.md`.
+Seit 22. September wird auch im Master die erneute Suchnormalisierung unveränderter Arten durch eine gebündelte
+Übernahme ersetzt. Sichere Checkpoints und aktuelle Herkunftsbelege bleiben erhalten. Die neue Messreihe
+einschließlich langsamer Ausreißer steht im Betriebsbericht; das Gesamtleistungsziel bleibt offen.

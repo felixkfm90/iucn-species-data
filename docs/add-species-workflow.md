@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-09-20
+Stand: 2026-09-28
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -195,6 +195,60 @@ weltweit keine Aufnahme gibt. Die Art kann ohne Tierstimme abgeschlossen werden;
 sichtbarer Pflegehinweis erhalten.
 
 Nach Abschluss erscheint im Dialog die Erfolgsmeldung `Neue Art: <Name> wurde angelegt`.
+
+Seit 27. September bietet Schritt 4 nach Ende des Suchlaufs `Abgelehnte Soundquellen wieder zulassen …`.
+Eine Rückfrage nennt die Zahl der gespeicherten Ablehnungen **dieser Art**. Erst nach Bestätigung werden sie
+aufgehoben und ein reiner Sound-Suchlauf für dieselbe bereits gespeicherte Art gestartet. Es entsteht kein
+zweiter Arteintrag. Nach einem fehlgeschlagenen Suchstart kann erneut gesucht werden, auch wenn die Liste schon
+geleert ist. Die Lizenz- und Quellenprüfung bleibt unverändert; erneute Verfügbarkeit einer Aufnahme ist nicht
+garantiert.
+
+Die Aktion steht auch **während der Soundprüfung** zur Verfügung, nicht erst nach ausgeschöpfter Suche.
+Die Rückfrage erklärt hier ausdrücklich: frühere Ablehnungen aufheben, den gerade angezeigten Sound ablehnen
+und überspringen, danach frühere Quellen wieder durchsuchen. Abbrechen lässt die aktuelle Auswahl unverändert.
+Das ist eine neue Suche, keine garantierte Wiederherstellung einer bestimmten früheren Aufnahme.
+Die Rücksetzung wird zusammen mit der aktuellen Medienentscheidung gespeichert; nur die aktuelle Quelle bleibt
+gesperrt. So kann die Rücksicherung des vorherigen Sounds alte Ablehnungen nicht wieder einschleppen.
+
+Für schon angelegte Arten ist dieselbe Freigabe unter `Tierstimme → Bearbeiten` verfügbar. Hier folgt die
+Soundsuche bewusst separat über `Automatisch suchen` bzw. `Alternative suchen`. Geschützte manuelle Sounds
+bleiben geschützt. Die Freigabe entfernt ausschließlich `sound.rejectedSources` der gewählten Art; sie ersetzt
+oder löscht keine Datei und verändert keine andere Art. Vorhandene Sound-Backups werden nicht überschrieben.
+Historische Ablehnungsangaben bleiben erhalten, sind aber keine Suchsperre. Die Registry-Änderung wird lokal
+gespeichert und später mit `Änderungen übertragen` beziehungsweise dem nachfolgenden Pipeline-Lauf veröffentlicht.
+
+Die API verwendet `POST …/assets/sound/rejections-preview` und `…/rejections-reset`: art- und revisionsgebundene,
+kurzlebige Bestätigung, Schutz gegen parallele Asset-/Pipeline-Schreibvorgänge, atomarer Registry-Dateiaustausch.
+Eine nachträglich geänderte Registry verlangt eine neue Vorschau. Fehler geben die Sperre wieder frei; ein
+Anzeigefehler nach erfolgreichem Speichern wird als Warnung statt als fehlgeschlagene Speicherung gemeldet.
+Während einer wartenden Soundprüfung verwendet der Assistent stattdessen die bestehende Review-API mit
+`decision: reject`, `resetSoundRejections: true` und der aktuellen `reviewUrl`. Lauf-ID und Vorschau-URL müssen
+passen; sonst bleibt die neuere Prüfung unverändert. Gleichzeitige Review-Speicherungen werden abgewiesen.
+Eine unlesbare Registry wird nicht als leere Datei ersetzt. Vorhandene Sounddateien werden zunächst aus der
+Ausgangssicherung wiederhergestellt, ihre Schutzmarkierung bleibt erhalten; nur ein danach tatsächlich neu
+gefundener Kandidat kann wieder eine eigene Prüfentscheidung verlangen. Andere Arten bleiben unverändert.
+
+Am erfolgreichen Abschluss bleibt genau **eine** Schließen-Schaltfläche im Fußbereich. Das X im Kopf bleibt
+zusätzlich verfügbar. Nach Schließen/Wiederöffnen startet der Assistent wieder mit seiner normalen Abbrechen-Aktion.
+Controller- und API-Tests prüfen Rückfrage/Abbruch, Fehler, Wiederholung, einmalige Artanlage, Schließen,
+Registry-Erhalt und Server-Neustart. Acht gezielte Tests sowie das vollständige `quality:ci` bestanden am
+27. September. Felix bestätigte anschließend beide bisherigen Rücksetzungswege praktisch (Editor und Assistent
+nach ausgeschöpfter Suche). Die zusätzliche Rücksetzung während einer noch offenen Soundprüfung ist
+automatisiert geprüft und inzwischen ebenfalls von Felix bestätigt (Abnahme am 28. September dokumentiert).
+Echte Ablehnungen wurden bei der Implementierung nicht zurückgesetzt.
+
+Auch die Ergänzung während offener Prüfung bestand am 27. September das vollständige `quality:ci`
+(Exitcode 0). 21 gezielte Sound-/Assistenten-/Pipeline-Tests prüfen zusätzlich normale Ablehnung,
+Rücksetzung mit/ohne vorherige Sounddatei, alte Review-URL, gleichzeitige Speicherung, defekte Registry,
+Suchfehler nach Speicherung sowie den sofortigen Dialogstart bei ausstehender Referenzprüfung.
+
+Vorerst erledigte Beobachtung am 27. September: Beim Öffnen der Artanlage mit aktivem Listenfilter waren Eingaben laut
+Felix vorübergehend nicht anklickbar. Eine Sperre durch den Filter ist im Code nicht belegt: er rendert nur die
+Artenliste; die Referenzprüfung wird nach dem Öffnen ohne Warten gestartet. Ein Controller-Test mit gesetzten
+Filtern und absichtlich ausstehender Referenzprüfung bestätigt sofortiges Öffnen, Fokus und Schließen.
+Er bildet jedoch keine Electron-Ereignisschleifen-/Fokusverzögerung nach. Felix betrachtet die Beobachtung
+vorerst als erledigt und meldet ein erneutes Auftreten. Parallel liefen nach seiner Rückmeldung Lightroom-Prozesse;
+deren Einfluss ist nicht nachgewiesen. Keine weitere Untersuchung eingeplant und keine spekulative Filteränderung.
 
 Bei Suchlauf-, Medienprüfungs- oder Veröffentlichungsfehlern steht die Fehlermeldung auch im sichtbaren
 Abschlussschritt. Sobald keine Operation mehr läuft, ist `Fenster schließen` verfügbar; die bereits angelegte

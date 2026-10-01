@@ -427,7 +427,11 @@
         const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
           || state.pipelineStatusSnapshot?.status === "awaiting-review";
         const backupActive = state.backupStatusSnapshot?.status === "running";
-        const taxonomyActive = state.taxonomyMaintenanceSnapshot?.active === true;
+        const taxonomyActive = state.taxonomyMaintenanceSnapshot?.active === true
+          || state.taxonomyMasterSnapshot?.active === true || state.taxonomyDatabaseBusy
+          || (state.taxonomyMasterSnapshot?.buildJob?.available === true
+            && state.taxonomyMasterSnapshot.buildJob.status !== "ready")
+          || Boolean(state.taxonomyMasterSnapshot?.lifecycle?.candidate || state.taxonomyMasterSnapshot?.error);
         if (pipelineActive) {
           showStatusDialog(state.pipelineStatusSnapshot);
           return;

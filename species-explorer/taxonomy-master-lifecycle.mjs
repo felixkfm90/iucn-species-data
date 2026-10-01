@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { assertMasterTaxonIdsRetained } from "./taxonomy-master-continuity.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { assertSeparatePublicationAllowed } from "./taxonomy-publication-storage.mjs";
@@ -448,6 +449,10 @@ export async function activateTaxonomyMasterCandidate(taxonomyRoot, {
   // inspectTaxonomyMasterCandidate hat unmittelbar zuvor bereits die
   // vollständige Integritäts-, Fremdschlüssel- und Fachprüfung ausgeführt.
   // Eine zweite Vollprüfung wäre bei produktiven Masterständen unnötig teuer.
+
+  const { DatabaseSync } = await loadNodeSqlite();
+  assertMasterTaxonIdsRetained({ previousPath: taxonomyMasterDatabasePath(taxonomyRoot, "active"),
+    currentPath: taxonomyMasterDatabasePath(taxonomyRoot, "staging"), DatabaseSync });
 
   const timestamp = now().toISOString();
   await updateSlotManifest(taxonomyRoot, "staging", {

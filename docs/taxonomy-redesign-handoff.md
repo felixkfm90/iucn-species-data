@@ -2,6 +2,10 @@
 
 Stand: 2026-07-29
 
+> Historischer Umsetzungsauftrag für die Phase-8-Taxonomie-Pyramide, keine neue Arbeitsfreigabe.
+> Heutige Priorisierung und Betriebsverträge: [Roadmap](roadmap.md),
+> [Gesamtplan Taxonomie/Lightroom](global-taxonomy-lightroom-plan.md) und [Dokumentationsübersicht](README.md).
+
 ## Ziel
 
 Die bisherige dynamische Taxonomie-Pyramide auf den Squarespace-Artseiten soll durch eine moderne, responsive HTML-/CSS-Komponente ersetzt werden. Die beigefügte Konzeptgrafik ist die visuelle Referenz, aber **kein** fertiges Frontend-Asset.

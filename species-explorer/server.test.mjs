@@ -195,6 +195,7 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
     ["app-detail-view.js", "createDetailViewRenderer"],
     ["app-backup-workflow.js", "createBackupWorkflowController"],
     ["app-pipeline-workflow.js", "createPipelineWorkflowController"],
+    ["app-taxonomy-progress.js", "taxonomyProgressPresentation"],
   ];
   for (const [fileName, factoryName] of workflowModules) {
     const response = await fetch(`${baseUrl}/${fileName}`);

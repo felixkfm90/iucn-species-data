@@ -1,6 +1,6 @@
 # Fortsetzbarer Master-Hintergrundaufbau
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 ## Freigabestand
 
@@ -9,8 +9,48 @@ Prozesskern, Service und Explorer-Bedienung sind implementiert und mit temporär
 aufbauen. Pause und ausdrückliche Fortsetzung sind angebunden. Seit 20. September laufen auch Kopie, Paketbau,
 Prüfsummen, Datenbankprüfungen und Rücknahmevorbereitung der gemeinsamen Master-/Lightroom-Freigabe in einem
 separaten Hilfsprozess. Nur der abschließende, frisch validierte Zeigerwechsel bleibt im Server.
-Dies ist noch keine Großbestandsfreigabe; Aufbewahrung, Platzbudget und die unten genannten Betriebsprüfungen fehlen.
+Aufbewahrung und Platzprüfung sind mit bestätigter Vorschau, genau einem geprüften Vorgänger als Backup und
+Schutz aller benötigten Aufträge angebunden; siehe `taxonomy-storage-maintenance.md`.
+Dies ist noch keine Großbestandsfreigabe; die unten genannten Betriebsprüfungen fehlen.
+Der am 29. September festgestellte, inzwischen kontrolliert reparierte Befund: Teil-Suchtreffer können bisherige
+Aufnahme-Merkmale und belegte Identitätsfelder verdrängen. Dadurch fehlen Arten beziehungsweise ändern sich
+IDs trotz weiter vorhandener Quellen. Quellenvereinigung und Aktivierungsschutz sind seit 30. September
+implementiert und gezielt getestet. Kandidaten mit fehlenden Alt-IDs bleiben für Identitätsentscheidungen
+prüfbar, können aber weder einzeln noch als Paar aktiviert werden. Lesende Vorschau reproduziert alle 154
+ursprünglichen IDs. Der bestätigte Reparaturweg verwendet separaten Quellenentwurf, gespeicherten Workerauftrag
+und technische Historie der vier Ersatz-IDs. Nach dem breiten Erstkandidaten und einem kontrollierten Schutzabbruch
+ist der neue enge Reparaturkandidat am 1. Oktober vollständig unabhängig geprüft: 154 Original-IDs aktiv,
+vier Ersatz-IDs historisch, keine zusätzlichen fachlich ungeklärten IDs und keine unbeteiligten Datenänderungen.
+164 gezielte Regressionstests in acht Dateien einschließlich echter Hilfsprozesse erfolgreich.
+Felix bestätigte anschließend die Paaraktivierung separat. Wartungsaufruf um 18:11:42 MESZ mit Exit 0 abgeschlossen:
+Master `master-20261001145513036` / Lightroom-Paket `lightroom-63c431a5fa43190a4c52` gemeinsam aktiv,
+vorheriges Paar vom 28. September als Rückweg erhalten. Unabhängiger lesender Paar-/Dateivergleich um
+20:34:39 MESZ mit Exit 0 erfolgreich: alle 154 IDs in Master und Paket aktiv, vier Ersatz-IDs historisch,
+eigene Namen/46 eigene ausgewählte Felder/60 Projektlinks erhalten; aktiver Master byteidentisch zum geprüften
+Kandidaten, Paket vollständig auf Integrität und Prüfsummen geprüft. 69 geschützte Originaldateien unverändert.
+Die Quellenreparatur ist damit produktiv abgeschlossen. Felix bestätigte anschließend am 1. Oktober die
+gezielte Verbraucherabnahme mit Weissstorch/Rebhuhn: bevorzugte Namen im Explorer, Lightroom-Zuweisung und
+Erhalt nach Schließen/Wiederöffnen. Die übrige Anzeigeabnahme, Betriebsprüfungen und das vollständige Phasenaudit
+bleiben getrennt offen; die Stichprobe ist kein produktiver Pause-/Fortsetzungs- oder Rollbacktest.
+Kein neuer Masterbau in der Aktivierung; inkrementeller Paketexport mit vollständiger Prüfung. Keine
+Foto-/Projektmigration oder Katalogaktion. Vorgänger und Anbieterstände nicht bereinigen.
+Vertrag und Tests: [Kontrollierte Wiederherstellung](taxonomy-partial-source-recovery.md).
+Nachweis/Abgrenzung: [Masterdifferenz](audits/2026-09-29-taxonomy-difference.md).
 Gesamtauftrag und verbleibende Optimierungen: `taxonomy-incremental-build.md`.
+Der seit 24. September verwendete kandidatenlokale Befehlsspeicher enthält nur vorbereitete SQL-Texte,
+keine Daten oder Prüfergebnisse. Er überlebt keinen Worker-Neustart; Fortsetzung und Rollback verwenden
+weiterhin dieselben bestätigten 500er-Checkpoints und Datenbanktransaktionen.
+
+Seit 22. September werden Suchbegriffe wiederverwendbarer Arten gebündelt aus dem gebundenen Altmaster
+übernommen. Freigegebene Taxon-IDs werden mit dem jeweiligen 500er-Schreibblock gesichert, die Suchkopie selbst
+gehört zum Abschlussblock. Fehler nach der Kopie lassen die Marker und bestätigten Taxa fortsetzbar zurück;
+erneutes Ausführen erzeugt keine doppelten Suchbegriffe. Dieser Abschlussblock besitzt weiterhin keinen eigenen
+Teilcursor: Nach Unterbrechung wird er wiederholt. Vor Kandidatenübergabe muss die Quellprüfsumme nochmals
+mit der gebundenen Basis übereinstimmen. Vertrag: `taxonomy-incremental-build.md`.
+Seit 23. September prüft der Abschluss außerdem die mögliche Übernahme seines heutigen Vorabplans.
+Pause zwischen den Strukturvergleichen ist fortsetzbar; beim erneuten Aufruf wird der Plan neu gebunden.
+Auch der Fortsetzungszweig für einen vollständig geschriebenen Master schließt Planleser vor der Übergabe,
+damit offene SQLite-Dateien unter Windows den Verzeichniswechsel nicht blockieren.
 
 ## Zuständigkeiten
 
@@ -27,6 +67,14 @@ Gesamtauftrag und verbleibende Optimierungen: `taxonomy-incremental-build.md`.
 - `taxonomy-publication.mjs`: schwere Paarvorbereitung getrennt von der kurzen atomaren Freigabe.
 - `taxonomy-publication-process.mjs` und `scripts/taxonomy-publication-worker.mjs`: versteckter Hilfsprozess
   für Paarvorbereitung/Rücknahme, Fortschritt, Abbruch und vollständige Ergebnisübergabe.
+
+Der Paarprozess übernimmt zusätzlich einen internen booleschen Parameter `incremental` für den Paketbau.
+Standard ist unverändert `true`; `false` erzwingt den bestehenden vollständigen Export mit allen Prüfungen.
+Der isolierte Vergleich `scripts/taxonomy-pipeline-benchmark.mjs` verwendet dies, damit sein vollständiger
+Vergleichsweg nicht versehentlich weiterhin einen inkrementellen Paketbau misst. Es gibt keine neue UI-Aktion
+oder automatische produktive Neuaktivierung. Ungültige Werte werden vor Prozessstart zurückgewiesen und im
+Hilfsprozess nochmals geprüft. Aktivierungsbefugnis und frische Eingangsprüfung bleiben beim Elternprozess.
+Messumfang und Grenzen: `taxonomy-operational-checks.md`.
 
 Der Masterworker hat keine Download-, Aktivierungs-, Git- oder Lightroom-Katalogaktion. Er stellt ausschließlich
 einen geprüften Staging-Kandidaten bereit. Die gemeinsame Master-/Suchpaketfreigabe bleibt ein separater Schritt.
@@ -76,7 +124,8 @@ bestätigten Cursor wird nur im privaten Kandidatenverzeichnis neu begonnen.
 Bereits fertiges Staging, aktiver Master und aktives Lightroom-Paket bleiben bis zum erfolgreichen Abschluss
 unverändert. Ein erneuter Aufruf desselben fertigen Auftrags ersetzt den Kandidaten nicht nochmals. Nach einer
 zwischenzeitlichen Aktivierung wird die alte Ausgangsbindung ungültig. Angefangene Aufträge bleiben für eine
-ausdrückliche Fortsetzung erhalten; automatische Aufbewahrung und Platzbudget sind noch zu ergänzen.
+ausdrückliche Fortsetzung erhalten. Die Speicherpflege bietet nur eindeutig überholte fertige Aufträge nach
+Schonfrist an; sie löscht nichts ohne Bestätigung. Platzprüfungen mit 2 GiB Reserve schützen Spooling und Aufbau.
 
 ## Bedienung und Wiederfinden
 
@@ -101,6 +150,124 @@ API: `POST /api/taxonomy/master/pause-build` und `POST /api/taxonomy/master/resu
 (Fortsetzen mit `confirmed: true`), unter den bestehenden lokalen Sitzungs-/Browsergrenzen.
 Die Statusantwort enthält `buildJob` mit Zustand, letzter Anzeige des Checkpoints und erlaubten Aktionen.
 
+## Einmalige Vergleichsgrundlage für alte aktive Stände
+
+Seit 28. September steht im Dialog **Datenbank-Aktionen → Taxonomiedatenbank** die Aktion
+**Vergleichsgrundlage einmalig erstellen …** bereit. Sie ist nur sichtbar, wenn beim aktiven Master oder
+Lightroom-Paket die aufgezeichneten Eingangsgrundlagen fehlen. Der normale Updateweg bleibt unverändert:
+Aktuelle Anbieterstände lösen allein wegen dieses alten Formats keinen automatischen Vollaufbau aus.
+
+Bedienung:
+
+1. Nach Übernahme der Codeänderung den Arten-Explorer neu öffnen und den Datenbank-Aktionen-Dialog öffnen.
+2. Unter Taxonomiedatenbank **Vergleichsgrundlage einmalig erstellen …** wählen. Zunächst wird der Status
+   frisch gelesen; eine fehlgeschlagene Abfrage darf keinen alten Bestätigungsstand verwenden.
+3. Für einen reinen Bediencheck die Rückfrage **abbrechen**. Das erzeugt keinen Aufbauauftrag und ändert
+   keine aktiven Datenbanken. Erst **Lokal aufbauen und geprüft übernehmen** startet den tatsächlichen Lauf.
+4. Der erste Aufbau verwendet ausschließlich die bereits lokalen CoL-/Anbieterstände, eigenen Entscheidungen
+   und Projekteingänge. Es werden keine neuen Anbieterstände heruntergeladen. Dieser vollständige Erstlauf
+   kann lange dauern; die kleinen synthetischen Messungen liefern dafür keine belastbare Dauerzusage.
+5. Der alte Master und das alte Lightroom-Suchpaket bleiben bis zur vollständig geprüften gemeinsamen Freigabe
+   aktiv und danach als Vorgänger erhalten. Eigene Namensentscheidungen werden berücksichtigt; Konflikte werden
+   nicht still entschieden. Bestehende Fotos werden nicht geändert. Nach erfolgreicher Freigabe mit vorhandenen
+   Eingangsgrundlagen verschwindet die einmalige Aktion.
+
+`taxonomy-baseline-setup.mjs` bewertet nur die bereits gelesenen Statusmanifeste (`check: manifest-only`).
+Es öffnet keine SQLite-Datenbank und berechnet keine Prüfsummen großer Dateien beim Anzeigen des Buttons.
+Diese Anzeige ist **kein Integritätsnachweis und keine Freigabe zur inkrementellen Wiederverwendung**:
+Aufbau, Quellbindung, Kandidatenprüfung und Paarfreigabe behalten ihre vollständigen Prüfungen. Beschädigte
+oder nicht mehr passende Grundlagen werden weiter vom eigentlichen Aufbau behandelt.
+
+`POST /api/taxonomy/master/build-baseline` verlangt `confirmed: true` und die frische `baselineSetup.revision`
+aus `/api/taxonomy/master/status`. Die Revision bindet Master-/Paketkennungen und ihre aufgezeichneten
+Prüfwerte, aktive Referenz sowie eigene Namens-/Identitätsentscheidungen. Die Berechtigung wird vor Start und
+erneut unter der bestehenden Prozesssperre geprüft. Ein abweichender Stand benötigt eine neue Bestätigung;
+der Aufrufer kann keine Anbieterdownloads über diesen Endpunkt einschalten. Die vollständigen Eingangsdateien
+werden anschließend weiterhin durch den vorhandenen Auftrags-/Workerweg gebunden und geprüft.
+
+Unvollständige oder veraltete Aufträge, vorhandene Kandidaten, laufende Aktionen sowie ein inkonsistenter
+Referenz-/Paketstand sperren diesen Einstieg. Dann sind zuerst Fortsetzung, Kandidatenprüfung oder die reguläre
+Aktualisierung erforderlich. Pause, Fehler, offene Konflikte und eine fehlgeschlagene Paarvorbereitung dürfen
+nicht als Erfolg erscheinen. Die Rückfrage autorisiert Aufbau **und** geprüfte Übernahme; der Browser führt
+nach einem erfolgreichen Aufbau zum vorhandenen Aktivierungsweg weiter. Schließen beziehungsweise Wiederöffnen
+startet keinen Lauf und aktiviert keinen Kandidaten automatisch. Gesicherte Aufträge bleiben über den bestehenden
+Wiederanlauf auffindbar; ein fertiger Kandidat kann nach erneuter Prüfung über die normale Aktualisierung
+übernommen werden.
+
+Der Aufbaupfad ist mit isolierten Testbeständen und inzwischen einem erfolgreichen produktiven Grundlagenlauf
+geprüft. Felix hat zusätzlich das Öffnen und Abbrechen der Rückfrage praktisch bestätigt. Produktive Pause/
+Fortsetzung, vollständige Verbraucher- und Rollback-Abnahme stehen weiterhin aus. Lightroom muss für den reinen Button-/Abbrechen-Test weder neu gestartet noch
+ein Foto verändert werden. Squarespace-Footer und Lightroom-Plug-in-Version bleiben unverändert, da dieser
+Schritt ausschließlich den lokalen Explorer betrifft.
+
+Startvorbereitung am 28. September: Die erneut gelesenen Manifeste nennen unverändert
+`master-20260905054823067`, das dazu passende Paket `lightroom-946c961bd063fd1b8f12` und die gemeinsame
+CoL-Herkunft `col-xr-2026-08-26-316165`. Master-Eingangsgrundlage und Paket-Exportvertrag fehlen weiterhin.
+Kein gespeicherter Aufbauauftrag, Staging-Kandidat oder gemeinsamer Veröffentlichungszeiger vorhanden.
+Auf C: waren rund 139,1 GiB frei. Dies war nur ein Manifest-/Platzcheck, keine erneute Integritätsprüfung,
+Dateiprüfsummenbestätigung oder dauerhafte Platzfreigabe. Der lokale Dienst auf `127.0.0.1:4177` war auch bei
+der direkten lesenden Gegenprobe nicht erreichbar; ein aktueller API-Status konnte nicht bestätigt werden.
+Deshalb kein automatischer Start: Explorer öffnen und den oben beschriebenen Bestätigungsweg nutzen. Dieser
+prüft den heutigen Stand frisch. Es wurde weder ein Aufbau noch eine Aktivierung oder Bereinigung ausgeführt.
+
+Anschließender Start durch Felix: 28. September, 08:36:59 MESZ (API-Startzeit `2026-09-28T06:36:59.942Z`).
+Die erste lesende API-Prüfung bestätigte `building`, Phase `Eingangsstand sichern`, 45 % und ein leeres Fehlerfeld.
+Aktiver Master und Lightroom-Paket waren weiterhin das oben genannte alte Paar; die Referenz passte dazu.
+`buildJob.available: false` ist zu diesem Zeitpunkt die noch nicht abgeschlossene Auftragsvorbereitung,
+kein nachgewiesener Auftragsverlust. Noch kein gesicherter Worker-Checkpoint und damit kein Pausentest.
+45 % ist eine feste Phasenmarke während der Eingangsbindung, keine Messung von 45 % der Gesamtlaufzeit.
+Die Meldung zur fehlenden Vergleichsgrundlage bezieht sich weiterhin auf den alten aktiven Stand.
+Dieser Nachweis bestätigt ausschließlich den Start; Erfolg, Fortsetzung und Rücknahme sind nicht abgenommen.
+
+Der nachfolgend lesend bestätigte Abschluss erfolgte um 10:07:59 MESZ; der neue Master und das Lightroom-Paket
+sind gemeinsam aktiv, der bisherige Stand ist als Vorgänger vorhanden. Die Eingangs-/Exportgrundlage fehlt nun
+nicht mehr. Details, Zeitangaben und die damals noch zu klärende Taxondifferenz stehen im
+[Abschlussnachweis](audits/2026-09-28-taxonomy-baseline-run.md). Der Erfolgsdurchlauf ersetzt keinen Pause-/Rollbacktest.
+Die nachfolgende [lesende Diagnose](audits/2026-09-29-taxonomy-difference.md) erklärt die Differenz durch
+verlorene Aufnahme-Merkmale und vier unbestätigte ID-Wechsel bei fehlendem Reich. Der gemeinsame technische
+Wechsel ist damit nachgewiesen, die fachliche Bestandsfreigabe aber bis zur Reparatur blockiert.
+
+## Fortschrittsanzeige
+
+Auftrag vom 28. September, nach dem erfolgreichen Grundlagenlauf **implementiert und gezielt automatisiert geprüft**.
+Die frühere Anzeige fester Phasenmarken wie 45 % war als Gesamtfortschritt missverständlich. Das reine Modul
+`public/app-taxonomy-progress.js` liefert nun dieselbe Darstellung für Dialog, Kopf und vorhandene Detailbalken.
+Der produktive Aufbau wurde dafür nicht verändert, wiederholt oder zurückgenommen; die geöffnete Anwendung
+wurde nicht neu gestartet. Die praktische Anzeigeabnahme bleibt offen.
+
+- Darstellung: `Schritt X von Y · Phase · Z % dieses Teilschritts`. Der Aufbau hat sieben logische Meilensteine:
+  Quellen vorbereiten, Eingänge sichern/lesen, Master aufbauen, Master prüfen, Lightroom-Paket erstellen,
+  Gesamtstand prüfen, gemeinsam übernehmen. Auch offline werden zuerst lokale Quellen ausgewählt; der erste
+  Schritt behauptet keinen Download. Unterphasen wie Schreiben und Suchindex haben eigene Messmengen, keinen
+  gemeinsamen geschätzten Prozentwert. Namenswahl/Rücknahme nutzen zwei, reine Paketreparatur drei Schritte.
+  Bei Wiederaufnahme wird die erneute Eingangsprüfung sichtbar. Keine Gleichsetzung von Schrittanzahl und Zeitanteil.
+- Teilprozente nur aus belegten Mengen wie bearbeiteten Datensätzen oder Bytes berechnen. Bei unbekanntem Umfang
+  ausschließlich Phase und laufende Tätigkeit zeigen, keine erfundenen 0/45/100 %. Ein späterer Gesamtprozentwert
+  verlangt eine nachvollziehbare Messgrundlage über alle Arbeitsschritte, keine geratenen Zeitgewichte.
+- Gesicherte Checkpoints getrennt vom gerade bearbeiteten Umfang anzeigen. Taxonzahlen des noch aktiven Altstands
+  nicht als Zähler bereits verarbeiteter Datensätze des neuen Laufs darstellen.
+- Obere Schaltfläche mit kompakter Anzeige derselben Schritt-/Fortschrittsquelle versorgen; vollständige Phase
+  im Dialog beziehungsweise zugänglichen Detailtext. Auch bei geschlossenem Datenbankdialog aktuell halten,
+  ohne zusätzliche Katalogscans, doppelte Statusabfrageschleifen oder einen automatischen Aufbau auszulösen.
+- Abgeschlossener Masterbau bedeutet noch nicht abgeschlossener Gesamtvorgang. Erst nach erfolgreicher geprüfter
+  gemeinsamer Freigabe `abgeschlossen` anzeigen. Pause, Unterbrechung, offene Entscheidungen und Fehler müssen in
+  Kopf und Dialog übereinstimmend erkennbar sein; eine neue Phase darf nicht als Rücksprung einer Gesamtprozentzahl wirken.
+- Gezielt prüfen: Voll-/Änderungsweg, lokaler Grundlagenlauf ohne Download, unbekannte Mengen, Phasenwechsel,
+  geschlossener Dialog, Pause/Fortsetzung/Wiederöffnung, Konflikt, Paketfehler und erfolgreicher Gesamtabschluss.
+
+Die bestehende Statusübertragung liefert bei Referenzphasen und wiedergefundenen Masteraufträgen die gemessenen
+Zähler zusätzlich als `progressCurrent`/`progressTotal`. Alte `progressPercent`-Felder bleiben API-kompatibel,
+werden aber von der Taxonomieanzeige nicht mehr verwendet. `null` wird nicht als 0 % interpretiert; 100 % einer
+Teilphase ist erst bei tatsächlich erreichtem Gesamtzähler möglich. Gespeicherte Checkpoints autorisieren
+weiterhin keine Aktivierung. Das Modul liest keine Datenbanken und startet keine Statusabfragen. Die vorhandenen
+Controller aktualisieren den Kopf auch bei geschlossenem Dialog; keine zusätzliche Pollschleife.
+
+Abnahme am 28. September: 74 gezielte Fortschritts-/Dialog-/Dashboard-/Service-/Vertragstests und 17 HTTP-/echte
+Hilfsprozesstests bestanden. Syntax-, Stil-, Dokumentations- und Projektstatusprüfungen bestanden. Kein erneutes
+vollständiges `quality:ci` und kein neuer produktiver Lauf. Lightroom-Plug-in, Squarespace-JS/CSS und Footer
+bleiben unverändert. Der Modul-Auslieferungstest ist ergänzt; die neuen Fortschrittstests laufen über
+`test:frontend-dashboard` auch im regulären Qualitätsgate.
+
 ## Gemeinsame Master-/Lightroom-Abschlussprüfung
 
 Der Server hält vor Beginn die Eingangsrevision, aktiven Zeiger, Korrekturen und das Kandidatenmanifest fest.
@@ -114,7 +281,8 @@ Ein Workerfehler, Abbruch oder Explorer-Schließen vor diesem Zeigerwechsel läs
 Der Dienst beendet seine eigene laufende Paarvorbereitung; ein verlorener Elternprozess beendet den Worker.
 Unfertige eigene Arbeits-/Releaseordner werden beim geordneten Fehlerweg entfernt. Nach einem unklaren
 Zeigerschreibausgang bleiben Releaseordner vorsichtshalber erhalten. Bei hartem Prozessverlust können ebenfalls
-inaktive Reste bleiben; deren begrenzte Aufbewahrung ist noch offen. Wiederöffnen startet keine Freigabe.
+inaktive Reste bleiben; markierte alte Vorbereitungen können über die bestätigte Speicherpflege entfernt werden.
+Unmarkierte oder unbekannte Reste bleiben geschützt. Wiederöffnen startet keine Freigabe oder Bereinigung.
 Ein erneuter bestätigter Versuch kann einen weiterhin gültigen fertigen Masterkandidaten verwenden, wiederholt
 aber die Paarvorbereitung. Diese hat keine 500er-Checkpoints. Quellenbeschaffung und Eingangsaufbereitung sind
 ebenfalls nicht mitten in jeder Operation fortsetzbar.
@@ -124,9 +292,24 @@ Bestätigungspflicht und Identitätssperren bleiben bestehen; ein fehlgeschlagen
 
 ## Weiter offen vor Großbestandsfreigabe
 
-1. Aufbewahrung und Platzbudget der Jobspools, inaktiven Vorbereitungen und unveränderlichen Releases ergänzen.
-2. Gesamtablauf mit tatsächlichem Explorer-Neustart, geöffnetem Lightroom, Platzmangel und Rücknahme abnehmen.
-3. Speicher-/Laufzeitmessung am großen Bestand, danach gebündelte Abnahme und Audit.
+Die [lesende Vorprüfung vom 27. September](audits/2026-09-27-taxonomy-preflight.md) ist abgeschlossen:
+aktive und vorherige Paare konsistent, vier Datenbanken ohne Integritätsbefund und unverändert. Dem aktiven
+Altstand fehlten die gebundenen Master-/Export-Eingangsgrundlagen. Der erste vollständige Grundlagenlauf wurde
+am 28. September erfolgreich abgeschlossen; damit ist eine Basis für den noch ausstehenden inkrementellen
+Vergleich vorhanden. Die normale Updateentscheidung bleibt unverändert. Keine produktive Rücknahme oder
+Bereinigung ausgeführt; die folgenden Abnahmen bleiben offen.
+
+Zusammenhängender Workerabbruch, Fortsetzung, gemeinsamer Wechsel und Rollback bei offenen SQLite-Lesern
+sind zusätzlich als eigenständiger isolierter Betriebscheck verbunden. Messgrößen und Grenzen stehen in
+`taxonomy-operational-checks.md`; dieser Nachweis ersetzt keinen tatsächlichen Lightroom-/Explorer-Neustart.
+
+Die normale Verbraucher-Stichprobe nach Schließen/Wiederöffnen wurde anschließend am 1. Oktober von Felix
+für Weissstorch/Rebhuhn bestätigt. Offen bleiben Fehler-/Worker-Wiederanlauf, produktive Pause/Fortsetzung,
+Rücknahme und die übrigen Anzeige-/Großbestandsgrenzen; keinen weiteren Aufbau nur für diese Anzeige starten.
+
+1. Gesamtablauf mit tatsächlichem Explorer-Neustart, geöffnetem Lightroom, Platzmangel und Rücknahme abnehmen,
+   einschließlich der technisch implementierten Speicherpflege/Platzprüfung.
+2. Speicher-/Laufzeitmessung am großen Bestand, danach gebündelte Abnahme und Audit.
 
 Die automatische Prüfung erzeugt echte Hilfsprozesse und öffnet den Service neu, startet aber keinen produktiven
 Explorerlauf. Stromausfall und kompletter Betriebssystem-Neustart wurden nicht getestet. Für diesen technischen
@@ -150,6 +333,17 @@ Ablehnung älterer Kandidaten, neue Anbieterreleases, Suchcachegrenzen und proze
 Die UI-Tests prüfen Zustände, sichtbaren Schreibzähler, Bestätigung und ausbleibende Aktivierung bei Pause.
 Die Tests sind Bestandteil von `test:taxonomy-master` beziehungsweise `test:lightroom` und damit `quality:ci`.
 Sie verwenden ausschließlich eigene temporäre Datenbanken. Kein produktiver Quellenlauf, keine Fotoänderung.
+
+Der Grundlagen-Startweg ergänzt Status-/Bestätigungstests im Masterservice, Routingtests und Controllerprüfungen
+für Öffnen ohne Schreibzugriff, Abbrechen, Doppelklick, Lesefehler, veraltete Bestätigung, konkurrierende Aufträge,
+Pause, Konflikte und fehlgeschlagene Paarfreigabe. Ein echter Worker baut aus einem kleinen Altstand ohne
+Eingangsgrundlage einen neuen Kandidaten. Der Test prüft den unveränderten Altmaster bis zur ausdrücklichen
+Paarfreigabe, den erhaltenen Vorgänger sowie das anschließende Ausblenden und die Ablehnung einer Wiederholung.
+
+Prüfabschluss 28. September: 36 gezielte Service-/Dialog-/Routing-/Oberflächen-Vertragstests und 11 Tests
+mit echten Hilfsprozessen bestanden. Dokumentations-, Quellstil- und Projektstatusprüfung bestanden ebenfalls.
+Das vollständige `quality:ci` wurde für diesen begrenzten Schritt nicht erneut ausgeführt; sein letzter
+dokumentierter Gesamtlauf vom 27. September ersetzt nicht die noch offene produktive Bedien-/Großbestandsabnahme.
 
 `lightroom-search-package.test.mjs` prüft zusätzlich echte Paarworker: kein Zeigerwechsel im Worker,
 weiter bedienbare Eltern-Ereignisschleife, gemeinsame Freigabe/Rücknahme, Abbruch mit erneutem Versuch,

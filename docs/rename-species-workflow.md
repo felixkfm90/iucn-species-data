@@ -1,11 +1,18 @@
 # Artnamen umbenennen
 
-Stand: 2026-07-11
+Stand: 2026-10-01
 
 Dieser Workflow ist fuer Faelle gedacht, in denen sich der deutsche Artname oder bewusst auch der wissenschaftliche
 Name aendert. Der deutsche Name kann direkt bearbeitet werden. Der wissenschaftliche Name ist zunaechst gesperrt und
 muss mit Schloss und Warnbestaetigung entsperrt werden, weil dadurch der URL-Slug geaendert wird und die Website
 direkt betroffen sein kann.
+
+Dieser Workflow ändert eine bestehende Projektart und gegebenenfalls ihre Assetpfade/Website-Adresse.
+Er ist nicht dasselbe wie eine bevorzugte deutsche Namensvariante in der globalen Taxonomiedatenbank:
+`Namenswahl übernehmen` in Explorer/Lightroom speichert eine ID-gebundene Präferenz, ohne Projektdateien,
+Assetordner oder bereits zugewiesene Fotos umzubenennen. Dafür gilt der
+[Namenspräferenzvertrag](taxonomy-name-preference-plan.md). Bestätigte Taxon-Nachfolger sind nochmals ein
+eigener [Identitätsablauf](taxonomy-identity-incremental-plan.md), keine automatische Namensheuristik.
 
 ## Bedienung im Arten-Explorer
 

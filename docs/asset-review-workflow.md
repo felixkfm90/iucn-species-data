@@ -1,9 +1,15 @@
 # Prüfung neuer Karten und Sounds
 
-Stand: 2026-07-19
+Stand: 2026-10-01
 
 Nach einem erfolgreichen Pipeline-Lauf vergleicht der Arten-Explorer den Assetstand vor und nach dem Lauf.
 Neu hinzugefügte `map.jpg`- und `sound.mp3`-Dateien werden vor Git-Commit und Git-Push zur Prüfung angezeigt.
+
+Gespeicherte Sound-Ablehnungen können inzwischen artbezogen und nach Rückfrage wieder freigegeben werden:
+im [Soundeditor](sound-editor.md) oder im [Neue-Art-Assistenten](add-species-workflow.md), auch während einer
+offenen Soundprüfung. Die neue Review-Entscheidung ist an die aktuelle Quell-URL gebunden; Abbrechen erhält
+den Kandidaten und die bisherigen Ablehnungen. Sounddateien und manuelle Schutzmarkierungen bleiben erhalten.
+Die drei Rücksetzungswege sind von Felix praktisch bestätigt, nicht sämtliche übrigen Artanlage-Regressionen.
 
 ## Ablauf
 

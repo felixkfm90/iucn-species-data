@@ -16,6 +16,12 @@ import {
   rollbackTaxonomyMaster,
 } from "./taxonomy-master-lifecycle.mjs";
 import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
+import { assertMasterTaxonIdsRetained } from "./taxonomy-master-continuity.mjs";
+import { writeProviderSlice } from "./taxonomy-master-slices.mjs";
+import { publishTaxonomyPair } from "./taxonomy-publication.mjs";
+import { buildLightroomSearchPackage, verifyLightroomSearchPackage } from "./lightroom-search-package.mjs";
+import { activateLightroomSearchPackage, lightroomSearchDatabasePath } from "./lightroom-search-storage.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
 const FIRST = new Date("2026-08-01T08:00:00.000Z");
 const SECOND = new Date("2026-08-02T08:00:00.000Z");
@@ -80,6 +86,90 @@ async function buildFirstActive(root) {
   });
   return activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
 }
+
+test("gespeicherter Teiltreffer behält im echten Kandidaten seine ursprüngliche Master-ID", async (t) => {
+  const root = await createRoot(t);
+  const full = { ...leopardRecord(), providerRecordId: "41970", selectedForMaster: true, relevanceReasons: ["missing-name"] };
+  const before = await writeProviderSlice(root, { provider: "inaturalist", providerVersion: "before",
+    retrievedAt: FIRST.toISOString(), records: [full] });
+  const options = { taxonomyRoot: root, colRelease: colRelease("2026-07", FIRST.toISOString()), colRecords: [] };
+  await buildTaxonomyMasterCandidate({ ...options, providerSlices: [before], now: () => FIRST });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const after = await writeProviderSlice(root, { provider: "inaturalist", providerVersion: "after",
+    retrievedAt: SECOND.toISOString(), preserveUnmentioned: true,
+    records: [{ providerRecordId: "41970", scientificName: "Panthera pardus", rank: "species" }] });
+  await buildTaxonomyMasterCandidate({ ...options, providerSlices: [after], now: () => SECOND });
+  const old = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"), { readOnly: true });
+  const next = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    const sql = "SELECT master_taxon_id, canonical_scientific_name, kingdom FROM master_taxon";
+    assert.deepEqual(next.prepare(sql).all(), old.prepare(sql).all());
+  } finally { old.close(); next.close(); }
+});
+
+test("Alt-Kandidat mit verlorenen IDs wird auch bei Einzel- und Paaraktivierung abgelehnt", async (t) => {
+  const base = await createRoot(t), foreign = await createRoot(t);
+  const root = path.join(base, "taxonomy"), searchRoot = path.join(base, "lightroom");
+  await buildFirstActive(root);
+  await buildLightroomSearchPackage({ taxonomyRoot: root, searchRoot, sourceSlot: "active" });
+  await activateLightroomSearchPackage(searchRoot, { verify: verifyLightroomSearchPackage });
+  await buildTaxonomyMasterCandidate({ taxonomyRoot: foreign,
+    colRelease: colRelease("2026-08", SECOND.toISOString()),
+    colRecords: [{ ...leopardRecord(), providerRecordId: "col-other", scientificName: "Panthera onca" }], now: () => SECOND });
+  await fs.cp(path.dirname(taxonomyMasterDatabasePath(foreign, "staging")),
+    path.dirname(taxonomyMasterDatabasePath(root, "staging")), { recursive: true });
+  const master = await fs.readFile(taxonomyMasterDatabasePath(root, "active"));
+  const search = await fs.readFile(lightroomSearchDatabasePath(searchRoot, "active"));
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).blockingConflictCount, 0);
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /bisherige Master-ID.*Aktivierung gesperrt/);
+  let packageBuilt = false;
+  await assert.rejects(publishTaxonomyPair({ taxonomyRoot: root, searchRoot, confirmed: true,
+    buildPackage: async () => { packageBuilt = true; throw new Error("unexpected package build"); } }), /bisherige Master-ID.*Aktivierung gesperrt/);
+  assert.equal(packageBuilt, false);
+  assert.equal(readTaxonomyPublication(root), null);
+  assert.deepEqual(await fs.readFile(taxonomyMasterDatabasePath(root, "active")), master);
+  assert.deepEqual(await fs.readFile(lightroomSearchDatabasePath(searchRoot, "active")), search);
+});
+
+test("fehlende IDs bleiben am Kandidaten prüfbar, verhindern aber seine Aktivierung", async (t) => {
+  const root = await createRoot(t);
+  await buildFirstActive(root);
+  const original = await fs.readFile(taxonomyMasterDatabasePath(root, "active"));
+  const candidate = await buildTaxonomyMasterCandidate({ taxonomyRoot: root,
+    colRelease: colRelease("2026-08", SECOND.toISOString()),
+    colRecords: [{ ...leopardRecord(), providerRecordId: "col-other", scientificName: "Panthera onca" }],
+    now: () => SECOND });
+  assert.equal(candidate.identityContinuity.missing, 1);
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /1 bisherige Master-ID.*Aktivierung gesperrt/);
+  assert.deepEqual(await fs.readFile(taxonomyMasterDatabasePath(root, "active")), original);
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).available, true);
+});
+
+test("ein geleertes Reich derselben Anbieter-ID wird nicht still als neue Identität veröffentlicht", async (t) => {
+  const root = await createRoot(t);
+  const records = [{ providerRecordId: "1454825", scientificName: "Gaeolaelaps ciconia", rank: "species",
+    kingdom: "Animalia", hierarchy: { kingdom: "Animalia" }, relevanceReasons: ["col-reference-gap"] }];
+  const options = (time, incoming) => ({ taxonomyRoot: root,
+    colRelease: colRelease("2026-08", time.toISOString()), colRecords: [],
+    providerSlices: [{ manifest: { provider: "inaturalist", providerVersion: time.toISOString(), retrievedAt: time.toISOString() }, records: incoming }], now: () => time });
+  await buildTaxonomyMasterCandidate(options(FIRST, records));
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  await buildTaxonomyMasterCandidate(options(SECOND, [{ ...records[0], kingdom: "", hierarchy: {} }]));
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }),
+    /bisherige Master-ID.*Aktivierung gesperrt/);
+});
+
+test("Kontinuitätsprüfung akzeptiert ausdrücklich erhaltene historische IDs und lehnt unlesbare Basis ab", async (t) => {
+  const root = await createRoot(t), before = path.join(root, "old.sqlite"), after = path.join(root, "new.sqlite");
+  for (const [file, state] of [[before, "active"], [after, "deprecated"]]) {
+    const db = new DatabaseSync(file);
+    db.exec("CREATE TABLE master_taxon(master_taxon_id TEXT PRIMARY KEY, canonical_scientific_name TEXT, lifecycle_state TEXT)");
+    db.prepare("INSERT INTO master_taxon VALUES ('stable-id','Fixture species',?)").run(state); db.close();
+  }
+  assert.deepEqual(assertMasterTaxonIdsRetained({ previousPath: before, currentPath: after, DatabaseSync }), { checked: 1, missing: 0 });
+  await fs.writeFile(before, "broken");
+  assert.throws(() => assertMasterTaxonIdsRetained({ previousPath: before, currentPath: after, DatabaseSync }));
+});
 
 function selectedField(root, slot, fieldName) {
   const database = new DatabaseSync(taxonomyMasterDatabasePath(root, slot), { readOnly: true });

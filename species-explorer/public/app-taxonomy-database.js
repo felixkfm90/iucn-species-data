@@ -197,6 +197,8 @@
       const referenceStatus = state.taxonomyMaintenanceSnapshot || {};
       const masterStatus = state.taxonomyMasterSnapshot || {};
       const masterLifecycle = masterStatus.lifecycle || {};
+      const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
+        master: masterStatus, reference: referenceStatus, busy: databaseBusy });
       const build = masterBuildPresentation(masterStatus);
       const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus);
       const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error);
@@ -230,6 +232,10 @@
         ? build.title
         : active
         ? "Taxonomiedatenbank wird aktualisiert"
+        : progress?.state === "fehlgeschlagen" ? "Taxonomieaktualisierung prüfen"
+        : progress?.state === "Entscheidung erforderlich" ? "Aktualisierung wartet auf Entscheidung"
+        : progress?.state === "Übernahme ausstehend" ? "Geprüfter Kandidat wartet auf Übernahme"
+        : progress?.completed ? "Taxonomieaktualisierung abgeschlossen"
         : referenceNeedsMasterRebuild
           ? "Masterdatenbank an aktive Referenz angleichen"
         : partial
@@ -254,12 +260,9 @@
           || cleanText(referenceStatus.message)
           || "Aktualisierung wird vorbereitet",
         );
-        const phase = cleanText(masterStatus.progressPhase || referenceStatus.progressPhase);
-        const percent = Number(masterStatus.progressPercent ?? referenceStatus.progressPercent);
-        if (phase) details.push(`Phase: ${phase}`);
-        if (Number.isFinite(percent)) details.push(`${Math.round(percent)} %`);
       }
-      if (counts) details.push(counts);
+      if (progress) details.push(progress.detail);
+      if (counts) details.push(`${active ? masterLifecycle.candidate ? "Geprüfter Kandidat: " : "Bisheriger aktiver Bestand: " : ""}${counts}`);
       if (updateAvailable && latest) details.push(`Verfügbar: ${latest}`);
       if (referenceNeedsMasterRebuild) {
         const referenceRelease = cleanText(masterStatus.reference?.activeRelease) || "unbekannt";
@@ -287,6 +290,10 @@
       }
       if (identitiesPending) {
         details.push("Bestätigte Identitätsentscheidungen warten auf einen erneut geprüften Masterkandidaten; Fotos bleiben unverändert");
+      }
+      if (masterStatus.baselineSetup?.needed) {
+        details.push(masterStatus.baselineSetup.blockedReason
+          || "Einmalige Vergleichsgrundlage für künftige Änderungsabgleiche fehlt; lokaler Vollaufbau erforderlich");
       }
       if (lightroomPackageNeedsRebuild && masterStatus.status !== "partial") {
         details.push(
@@ -329,6 +336,11 @@
         elements.taxonomyDatabaseResumeButton.disabled = active || !build.canResume;
       }
       elements.taxonomyDatabaseRollbackButton.disabled = active || !masterLifecycle.canRollback;
+      if (elements.taxonomyDatabaseStorageButton) elements.taxonomyDatabaseStorageButton.disabled = active || databaseBusy;
+      if (elements.taxonomyDatabaseBaselineButton) {
+        elements.taxonomyDatabaseBaselineButton.hidden = masterStatus.baselineSetup?.needed !== true;
+        elements.taxonomyDatabaseBaselineButton.disabled = active || databaseBusy || masterStatus.baselineSetup?.canStart !== true;
+      }
       renderDatabaseStatus();
     }
 
@@ -388,7 +400,7 @@
       );
       if (blocking) {
         throw new Error(
-          `${blocking} Aktualisierungskonflikt(e) müssen zuerst unter „Datenbank ansehen und korrigieren“ entschieden werden.`,
+          `${blocking} Aktualisierungskonflikt(e) müssen zuerst unter „In Datenbank suchen und Namen korrigieren“ entschieden werden.`,
         );
       }
       if (!lifecycle.canActivate) throw new Error("Der Kandidat kann noch nicht übernommen werden. Bitte den Datenbankstatus und offene Entscheidungen prüfen.");
@@ -414,6 +426,48 @@
         ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, label)
         : building;
       return activateCandidate(built);
+    }
+
+    async function buildBaseline() {
+      if (databaseBusy) return;
+      databaseBusy = true;
+      state.taxonomyDatabaseBusy = true;
+      renderOverview();
+      try {
+        // A failed read must not silently fall back to a cached eligible status.
+        const master = await fetchJson("/api/taxonomy/master/status");
+        state.taxonomyMasterSnapshot = master;
+        renderOverview();
+        if (!master.baselineSetup?.canStart) {
+          throw new Error(master.baselineSetup?.blockedReason || "Der Grundlagenlauf ist derzeit nicht erforderlich oder eine andere Aktion läuft.");
+        }
+        const confirmed = await showQuickConfirm({
+          eyebrow: "Taxonomiedatenbank",
+          title: "Vergleichsgrundlage einmalig erstellen?",
+          message: "Master und Lightroom-Suchpaket werden aus den bereits lokal vorhandenen Quellen neu aufgebaut und vollständig geprüft. Es werden keine neuen Anbieterstände heruntergeladen. Dieser erste Lauf kann länger dauern; erst danach sind spätere Änderungsabgleiche möglich. Eigene Namensentscheidungen werden berücksichtigt. Der bisherige Stand bleibt bis zur erfolgreichen gemeinsamen Übernahme aktiv und danach als Vorgänger erhalten. Bestehende Fotos werden nicht geändert. Bei offenen Konflikten erfolgt keine automatische Übernahme.",
+          confirmLabel: "Lokal aufbauen und geprüft übernehmen",
+        });
+        if (!confirmed) return;
+        const started = await fetchJson("/api/taxonomy/master/build-baseline", {
+          method: "POST", body: JSON.stringify({ confirmed: true, revision: master.baselineSetup.revision }),
+        });
+        state.taxonomyMasterSnapshot = started;
+        renderOverview();
+        setActionMessage("Vergleichsgrundlage wird aus lokalen Quellen aufgebaut. Der bisherige Stand bleibt zunächst aktiv.", "info");
+        const built = masterIsActive(started)
+          ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, "Lokaler Grundlagenlauf") : started;
+        const activated = await activateCandidate(built);
+        if (["failed", "partial"].includes(activated.status) || activated.error) {
+          throw new Error(activated.error || activated.message || "Der gemeinsame Datenbankwechsel ist nicht abgeschlossen.");
+        }
+        setActionMessage("Lokaler Grundlagenlauf abgeschlossen. Master und Lightroom-Suchpaket wurden gemeinsam übernommen.", "success");
+      } catch (error) {
+        setActionMessage(error.message || "Die Vergleichsgrundlage konnte nicht erstellt werden.", error.code === "MASTER_BUILD_STOPPED" ? "warning" : "error");
+      } finally {
+        databaseBusy = false;
+        state.taxonomyDatabaseBusy = false;
+        await refreshSnapshots();
+      }
     }
 
     async function updateDatabase() {
@@ -555,6 +609,35 @@
         await activateCandidate(built);
         setActionMessage("Fortgesetzter Datenbankaufbau wurde erfolgreich übernommen.", "success");
       } catch (error) { setActionMessage(error.message, error.code === "MASTER_BUILD_STOPPED" ? "warning" : "error"); }
+      finally { databaseBusy = false; state.taxonomyDatabaseBusy = false; await refreshSnapshots(); }
+    }
+
+    async function maintainStorage() {
+      if (databaseBusy) return;
+      databaseBusy = true;
+      state.taxonomyDatabaseBusy = true;
+      renderOverview();
+      const size = (value) => `${(Number(value || 0) / 1024 ** 3).toLocaleString("de-DE", { maximumFractionDigits: 2 })} GiB`;
+      try {
+        setActionMessage("Speicherbestand und vorhandener Rückweg werden geprüft. Es wird noch nichts entfernt.", "info");
+        const plan = await fetchJson("/api/taxonomy/master/storage-preview", { method: "POST", body: "{}" });
+        const candidates = plan.items.filter((item) => item.eligible);
+        const summary = `Verwaltete Alt-/Releasebestände: ${size(plan.managedBytes)}. Frei auf dem Laufwerk: ${size(plan.freeBytes)}. `
+          + `Zur Bereinigung freigegeben: ${candidates.length} Einträge · ${size(plan.reclaimableBytes)}.`;
+        const warnings = (plan.warnings || []).join(" ");
+        if (!candidates.length) { setActionMessage(`${summary} ${warnings} Aktiver Stand, Vorgänger und benötigte Aufträge bleiben erhalten.`, "info"); return; }
+        const labels = { pair: "Datenbankpaar", job: "Abgeschlossener Auftrag", preparation: "Alte Vorbereitung" };
+        const confirmed = await showQuickConfirm({ eyebrow: "Datenbankspeicher", title: "Freigegebene Altstände endgültig entfernen?",
+          message: `${summary}\n${warnings}\nAktiver Stand, ein geprüfter Vorgänger als Backup, aktueller Kandidat und benötigte Fortsetzungsdaten bleiben erhalten. `
+            + "Die folgenden alten Dateien werden dauerhaft entfernt; eine direkte Rücknahme der Bereinigung gibt es nicht. Arten, Fotos, Karten und Namenswahlen bleiben unverändert.\n"
+            + candidates.map((item) => `${labels[item.kind]} ${item.id} · ${size(item.bytes)}`).join("\n"),
+          confirmLabel: "Aufgelistete Altstände entfernen", danger: true });
+        if (!confirmed) { setActionMessage("Speicherbereinigung abgebrochen. Es wurde nichts entfernt.", "info"); return; }
+        const result = await fetchJson("/api/taxonomy/master/storage-clean", { method: "POST", body: JSON.stringify({ confirmed: true, revision: plan.revision }) });
+        setActionMessage(`${result.removed.length} Altstände entfernt · ${size(result.freedBytes)} freigegeben.`
+          + (result.failed.length ? ` ${result.failed.length} Einträge konnten nicht vollständig entfernt werden: ${result.failed.map((item) => `${item.id}: ${item.error}`).join("; ")}` : " Geschützte Stände bleiben erhalten."),
+        result.failed.length ? "warning" : "success");
+      } catch (error) { setActionMessage(error.message, "error"); }
       finally { databaseBusy = false; state.taxonomyDatabaseBusy = false; await refreshSnapshots(); }
     }
 
@@ -1059,6 +1142,8 @@
     function setup() {
       elements.taxonomyDatabasePauseButton?.addEventListener("click", () => void pauseMasterBuild());
       elements.taxonomyDatabaseResumeButton?.addEventListener("click", () => void resumeMasterBuild());
+      elements.taxonomyDatabaseStorageButton?.addEventListener("click", () => void maintainStorage());
+      elements.taxonomyDatabaseBaselineButton?.addEventListener("click", () => void buildBaseline());
       renderOverview();
       elements.taxonomyDatabaseUpdateButton.addEventListener("click", () => void updateDatabase());
       elements.taxonomyDatabaseRollbackButton.addEventListener("click", () => void rollbackDatabase());

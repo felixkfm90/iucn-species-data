@@ -379,6 +379,7 @@ export async function createExplorerServer({
     previewEditedSoundAsset,
     saveSoundAsset,
     rejectCurrentSoundAsset,
+    resetSoundRejections,
     soundAssetSourceRevision,
   } = createSoundAssetOperations({
     ...assetOperationContext,
@@ -542,6 +543,8 @@ export async function createExplorerServer({
             : saveMapAsset(id, payload);
         }
         if (assetType === "sound") {
+          if (action === "rejections-preview") return resetSoundRejections(id, payload, true);
+          if (action === "rejections-reset") return resetSoundRejections(id, payload);
           if (action === "reject") return rejectCurrentSoundAsset(id);
           if (action === "edit-preview") return previewEditedSoundAsset(id, payload);
           return action === "preview"
@@ -671,8 +674,11 @@ export async function createExplorerServer({
       },
       async taxonomyMaster({ action, payload }) {
         if (action === "build") return taxonomyMasterService.startBuild(payload);
+        if (action === "build-baseline") return taxonomyMasterService.startBaselineBuild(payload);
         if (action === "pause-build") return taxonomyMasterService.pauseBuild();
         if (action === "resume-build") return taxonomyMasterService.resumeBuild(payload);
+        if (action === "storage-preview") return taxonomyMasterService.maintainStorage("preview");
+        if (action === "storage-clean") return taxonomyMasterService.maintainStorage("clean", payload);
         if (action === "apply-corrections") return taxonomyMasterService.applyCorrections(payload);
         if (action === "decide") return taxonomyMasterService.decide(payload);
         if (action === "identity-preview") return taxonomyMasterService.reviewIdentity("preview", payload);

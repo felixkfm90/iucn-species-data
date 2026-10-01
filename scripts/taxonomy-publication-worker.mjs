@@ -11,12 +11,13 @@ const send = (value) => new Promise((resolve) => {
 process.once("message", async (message) => {
   try {
     if (message?.type !== "prepare" || !message.options) throw new Error("Ungültiger Vorbereitungsauftrag.");
-    const { timestamp, projectRevision, ...options } = message.options;
+    const { timestamp, projectRevision, incremental = true, ...options } = message.options;
+    if (typeof incremental !== "boolean") throw new Error("Ungültiger Suchpaket-Aufbaumodus.");
     const date = new Date(timestamp);
     if (!Number.isFinite(date.getTime())) throw new Error("Ungültiger Auftragszeitpunkt.");
     await send({ type: "progress", event: { phase: "prepare", percent: 0, message: "Master-/Lightroom-Abschlussprüfung läuft im Hintergrund." } });
     const prepared = await prepareTaxonomyPublication({ ...options, now: () => date,
-      buildPackage: (build) => buildLightroomSearchPackage({ ...build, projectRevision, now: () => date }),
+      buildPackage: (build) => buildLightroomSearchPackage({ ...build, projectRevision, incremental, now: () => date }),
       onProgress: (event) => { if (process.connected) process.send({ type: "progress", event }, () => {}); },
     });
     await send({ type: "prepared", prepared });

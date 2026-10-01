@@ -4,7 +4,7 @@ import { normalizeIdentityProjectAssignments, checkIdentityProjectAssignments } 
 
 const text = (value) => typeof value === "string" ? value.normalize("NFKC").trim() : "";
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const TYPES = new Set(["continuation", "split", "merge"]);
+const TYPES = new Set(["continuation", "split", "merge", "source-repair"]);
 const MAX_EVENTS = 10000;
 
 export function taxonIdentityKey(value) {
@@ -12,18 +12,37 @@ export function taxonIdentityKey(value) {
     normalizeTaxonomySearchTerm(text(value?.kingdom))].join("|");
 }
 
-function identity(value) {
+function identity(value, { allowEmptyKingdom = false } = {}) {
   const result = { scientificName: text(value?.scientificName), rank: text(value?.rank).toLowerCase(), kingdom: text(value?.kingdom) };
-  if (!result.scientificName || result.rank !== "species" || !result.kingdom) {
+  if (!result.scientificName || result.rank !== "species" || (!result.kingdom && !allowEmptyKingdom)) {
     throw new Error("Identitätsentscheidungen benötigen wissenschaftlichen Namen, Rang Art und ein eindeutiges Reich.");
   }
   return result;
 }
 
-function snapshot(value) {
-  const result = { ...identity(value), masterTaxonId: text(value?.masterTaxonId) };
+function snapshot(value, options) {
+  const result = { ...identity(value, options), masterTaxonId: text(value?.masterTaxonId) };
   if (!/^mtx_[a-f0-9]{32}$/.test(result.masterTaxonId)) throw new Error("Die Masteridentität ist ungültig.");
   return result;
+}
+
+function checkSourceRepair(event, sources, targets) {
+  const [source] = sources, [target] = targets, proof = event.sourceRepair;
+  const stableId = (value) => `mtx_${crypto.createHash("sha256").update(taxonIdentityKey(value)).digest("hex").slice(0, 32)}`;
+  if (sources.length !== 1 || targets.length !== 1 || source.kingdom || !target.kingdom
+      || taxonIdentityKey({ ...source, kingdom: target.kingdom }) !== taxonIdentityKey(target)
+      || source.masterTaxonId !== stableId(source) || target.masterTaxonId !== stableId(target)
+      || source.masterTaxonId === target.masterTaxonId || event.projectAssignments?.length
+      || proof?.provider !== "inaturalist" || !text(proof.providerRecordId)
+      || !text(proof.previousVersion) || !text(proof.currentVersion) || !text(proof.repairedVersion)
+      || proof.previousVersion === proof.currentVersion || proof.currentVersion === proof.repairedVersion
+      || proof.policy !== "preserve-history-no-photo-migration"
+      || [proof.recoveryRevision, proof.previousRecordHash, proof.currentRecordHash, proof.repairedRecordHash]
+        .some((hash) => !/^[a-f0-9]{64}$/.test(hash || ""))
+      || event.evidence.length !== 2 || ![proof.currentVersion, proof.repairedVersion].every((version) =>
+        event.evidence.some((entry) => entry.provider === proof.provider && entry.providerRecordId === proof.providerRecordId && entry.providerVersion === version))) {
+    throw new Error("Quellenreparatur benötigt dieselbe belegte Anbieter-ID, ein ausschließlich geleertes Reich und die ursprüngliche stabile ID; keine Fotomigration.");
+  }
 }
 
 export function emptyIdentityRegistry() {
@@ -52,10 +71,13 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
         || !Array.isArray(event.sources) || !Array.isArray(event.targets)) {
       throw new Error("Die Identitätsentscheidung ist unvollständig oder doppelt.");
     }
-    const sources = event.sources.map(snapshot);
-    const targets = event.targets.map(snapshot);
+    const repair = event.type === "source-repair";
+    const sources = event.sources.map((source) => snapshot(source, { allowEmptyKingdom: repair }));
+    const targets = event.targets.map((target) => snapshot(target));
+    if (repair) checkSourceRepair(event, sources, targets);
+    else if (event.sourceRepair) throw new Error("Quellenreparaturbelege gehören nicht zu einer taxonomischen Entscheidung.");
     checkIdentityProjectAssignments(event, projectState, taxonIdentityKey);
-    const cardinality = event.type === "continuation" ? sources.length === 1 && targets.length === 1
+    const cardinality = ["continuation", "source-repair"].includes(event.type) ? sources.length === 1 && targets.length === 1
       : event.type === "split" ? sources.length === 1 && targets.length >= 2
         : sources.length >= 2 && targets.length === 1;
     if (!cardinality || sources.length > 100 || targets.length > 100
@@ -75,7 +97,7 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
       if (event.type !== "continuation") retired.add(source.masterTaxonId);
     }
     for (const target of targets) {
-      if (target.kingdom !== sources[0].kingdom || sources.some((source) => source.kingdom !== target.kingdom)) {
+      if (!repair && (target.kingdom !== sources[0].kingdom || sources.some((source) => source.kingdom !== target.kingdom))) {
         throw new Error("Eine Identitätsentscheidung darf keine verschiedenen Reiche gleichsetzen.");
       }
       if (event.type === "continuation" && target.masterTaxonId !== sources[0].masterTaxonId) {
@@ -131,9 +153,9 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
 }
 
 function previewBody({ registry, sources, targets, type, reason, evidence, baseVersion, sourceRevision, inputRevision, projectAssignments }) {
-  if (!TYPES.has(type)) throw new Error("Bitte Identitätsfortführung, Aufteilung oder Zusammenführung wählen.");
+  if (!["continuation", "split", "merge"].includes(type)) throw new Error("Bitte Identitätsfortführung, Aufteilung oder Zusammenführung wählen.");
   if (!Array.isArray(sources) || !Array.isArray(targets) || !Array.isArray(evidence)) throw new Error("Die Identitätsvorschau ist unvollständig.");
-  const body = { type, sources: sources.map(snapshot).sort((a, b) => a.masterTaxonId.localeCompare(b.masterTaxonId)),
+  const body = { type, sources: sources.map((source) => snapshot(source)).sort((a, b) => a.masterTaxonId.localeCompare(b.masterTaxonId)),
     targets: targets.map(identity).sort((a, b) => taxonIdentityKey(a).localeCompare(taxonIdentityKey(b))),
     reason: text(reason), evidence: evidence.map((entry) => ({ provider: text(entry?.provider),
       providerVersion: text(entry?.providerVersion), providerRecordId: text(entry?.providerRecordId) }))

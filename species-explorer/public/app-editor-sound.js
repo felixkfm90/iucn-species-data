@@ -21,6 +21,7 @@
       soundPreviewButton,
       soundSaveButton,
       soundRejectCurrentButton,
+      soundResetRejectionsButton,
       soundAutoSearchButton,
       soundDeleteButton,
       soundFileInput,
@@ -102,6 +103,7 @@
       if (soundSegmentAddButton) soundSegmentAddButton.disabled = busy;
       if (soundSaveButton) soundSaveButton.disabled = busy || !soundPreviewToken;
       if (soundRejectCurrentButton) soundRejectCurrentButton.disabled = busy;
+      if (soundResetRejectionsButton) soundResetRejectionsButton.disabled = busy;
       if (soundAutoSearchButton) soundAutoSearchButton.disabled = busy;
       if (soundDeleteButton) soundDeleteButton.disabled = busy;
       if (soundFileInput) soundFileInput.disabled = busy;
@@ -332,6 +334,35 @@
       } catch (error) {
         state.silentPipelineContext = null;
         setSoundMessage([error.message, ...(error.details || [])].join(" · "), "error");
+      } finally {
+        setSoundBusy(false);
+      }
+    });
+
+    soundResetRejectionsButton?.addEventListener("click", async () => {
+      if (soundBusy) return;
+      setSoundBusy(true);
+      try {
+        const base = `/api/species/${encodeURIComponent(species.id)}/assets/sound`;
+        const preview = await fetchJson(`${base}/rejections-preview`, { method: "POST", body: "{}" });
+        if (!preview.count) {
+          setSoundMessage("Für diese Art sind keine abgelehnten Soundquellen gespeichert.", "info");
+          return;
+        }
+        if (!window.confirm(`${preview.count} gespeicherte Ablehnung(en) für ${species.germanName} aufheben? Vorhandene Dateien und manuell geschützte Sounds bleiben unverändert. Danach kannst du die Soundsuche erneut starten.`)) return;
+        const result = await fetchJson(`${base}/rejections-reset`, {
+          method: "POST", body: JSON.stringify({ token: preview.token, confirmed: true }),
+        });
+        resetSoundPreview();
+        state.reloadAfterEditClose = true;
+        setSoundMessage(
+          `Soundquellen sind wieder zugelassen. ${species.assets.sound.manuallyAdded
+            ? "Der vorhandene Sound bleibt manuell geschützt."
+            : "Bitte „Automatisch suchen“ bzw. „Alternative suchen“ wählen."} ${result.warning || ""}`,
+          "success",
+        );
+      } catch (error) {
+        setSoundMessage(error.message, "error");
       } finally {
         setSoundBusy(false);
       }

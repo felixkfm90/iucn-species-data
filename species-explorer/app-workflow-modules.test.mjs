@@ -77,7 +77,11 @@ test("HTML lädt alle Fachmodule vor app.js in Abhängigkeitsreihenfolge", () =>
     "app-detail-view.js",
     "app-backup-workflow.js",
     "app-pipeline-workflow.js",
+    "app-taxonomy-progress.js",
     "app-taxonomy-maintenance.js",
+    "app-taxonomy-master.js",
+    "app-taxonomy-database.js",
+    "app-dashboard.js",
     "app.js",
   ];
   let previous = -1;

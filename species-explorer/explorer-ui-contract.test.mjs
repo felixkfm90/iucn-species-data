@@ -210,16 +210,25 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appTaxonomyReferenceSource, /Manuell bei Animalia\.bio suchen/);
   assert.match(appTaxonomyMasterSource, /function createTaxonomyMasterController\(/);
   assert.match(appTaxonomyDatabaseSource, /function createTaxonomyDatabaseController\(/);
+  assert.match(htmlSource, /app-taxonomy-progress\.js[\s\S]*app-taxonomy-database\.js[\s\S]*app-dashboard\.js/);
+  assert.match(appTaxonomyDatabaseSource, /SpeciesExplorerTaxonomyProgress\.taxonomyProgressPresentation/);
+  assert.match(appDashboardSource, /SpeciesExplorerTaxonomyProgress\.taxonomyProgressPresentation/);
   assert.match(htmlSource, /id="taxonomy-database-dialog"/);
   assert.match(htmlSource, /id="taxonomy-database-overview-summary"/);
   assert.match(htmlSource, /class="action-group-buttons taxonomy-database-actions"/);
   assert.equal(
     [...htmlSource.matchAll(/data-taxonomy-database-action=/g)].length,
-    5,
-    "Die Taxonomiedatenbank besitzt drei Hauptaktionen und zwei bedarfsweise sichtbare Aufbauaktionen.",
+    7,
+    "Die Taxonomiedatenbank besitzt vier Hauptaktionen einschließlich Speicherpflege und drei bedarfsweise sichtbare Aufbauaktionen.",
   );
   assert.equal([...htmlSource.matchAll(/data-taxonomy-database-action="(?:pause-build|resume-build)" hidden/g)].length, 2,
     "Pause und Fortsetzen bleiben ohne passenden Lauf verborgen.");
+  assert.match(htmlSource, /data-taxonomy-database-action="build-baseline" hidden/);
+  assert.match(htmlSource, /Vergleichsgrundlage einmalig erstellen/);
+  assert.match(appTaxonomyDatabaseSource, /build-baseline[\s\S]*confirmed: true, revision: master\.baselineSetup\.revision/);
+  assert.match(appTaxonomyDatabaseSource, /taxonomyDatabaseBaselineButton\.hidden = masterStatus\.baselineSetup\?\.needed !== true/);
+  assert.match(htmlSource, /Speicher prüfen und bereinigen/);
+  assert.match(appTaxonomyDatabaseSource, /storage-clean[\s\S]*confirmed: true, revision: plan\.revision/);
   assert.match(cssSource, /\.taxonomy-database-actions > button\[hidden\]\s*\{\s*display: none !important;/);
   assert.match(htmlSource, /id="taxonomy-database-current-version"/);
   assert.match(htmlSource, /id="taxonomy-database-previous-version"/);

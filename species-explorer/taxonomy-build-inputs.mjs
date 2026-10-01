@@ -1,3 +1,4 @@
+import { configureTaxonomyBuildDatabase } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
@@ -90,7 +91,7 @@ export async function createTaxonomyBuildInputs({ filename, contract }) {
   const normalized = checkContract(contract);
   const handle = await fs.open(filename, "wx");
   await handle.close();
-  const db = new DatabaseSync(filename);
+  const db = configureTaxonomyBuildDatabase(new DatabaseSync(filename));
   try {
     db.exec(`PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; PRAGMA user_version=${SCHEMA};
       CREATE TABLE build_info (id INTEGER PRIMARY KEY CHECK(id=1), contract_json TEXT NOT NULL, sealed_hash TEXT);
@@ -109,7 +110,7 @@ export async function resumeTaxonomyBuildInputs({ filename, contract }) {
   const normalized = checkContract(contract);
   const handle = await fs.open(filename, "r+"); // never create an absent checkpoint
   await handle.close();
-  const db = new DatabaseSync(filename);
+  const db = configureTaxonomyBuildDatabase(new DatabaseSync(filename));
   try {
     db.exec("PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;");
     if (db.prepare("PRAGMA user_version").get().user_version !== SCHEMA) throw new Error("Unbekanntes Eingangsformat.");
@@ -194,7 +195,7 @@ function inputWriter(db) {
 }
 
 export function openTaxonomyBuildInputs(filename) {
-  const db = new DatabaseSync(filename, { readOnly: true });
+  const db = configureTaxonomyBuildDatabase(new DatabaseSync(filename, { readOnly: true }));
   try {
     if (db.prepare("PRAGMA user_version").get().user_version !== SCHEMA) throw new Error("Unbekanntes Eingangsformat; Vollaufbau erforderlich.");
     const info = db.prepare("SELECT * FROM build_info WHERE id=1").get();
@@ -228,8 +229,10 @@ export function compareTaxonomyBuildInputs(before, after, onChange = () => {}) {
   const oldIterator = before.records(), nextIterator = after.records();
   let old = oldIterator.next(), next = nextIterator.next();
   const counts = { added: 0, changed: 0, removed: 0, unchanged: 0 };
-  const keyCompare = (a, b) => Buffer.compare(Buffer.from(a.provider), Buffer.from(b.provider))
-    || Buffer.compare(Buffer.from(a.record_id), Buffer.from(b.record_id));
+  // Most rows retain the exact same source and ID. Equality needs no allocation;
+  // differing strings still use SQLite's UTF-8 order, never JavaScript's UTF-16.
+  const keyCompare = (a, b) => (a.provider === b.provider ? 0 : Buffer.compare(Buffer.from(a.provider), Buffer.from(b.provider)))
+    || (a.record_id === b.record_id ? 0 : Buffer.compare(Buffer.from(a.record_id), Buffer.from(b.record_id)));
   try {
     while (!old.done || !next.done) {
       const order = old.done ? 1 : next.done ? -1 : keyCompare(old.value, next.value);

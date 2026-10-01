@@ -238,6 +238,8 @@ const elements = {
   taxonomyDatabaseRollbackButton: document.querySelector("[data-taxonomy-database-action='rollback']"),
   taxonomyDatabasePauseButton: document.querySelector("[data-taxonomy-database-action='pause-build']"),
   taxonomyDatabaseResumeButton: document.querySelector("[data-taxonomy-database-action='resume-build']"),
+  taxonomyDatabaseStorageButton: document.querySelector("[data-taxonomy-database-action='storage']"),
+  taxonomyDatabaseBaselineButton: document.querySelector("[data-taxonomy-database-action='build-baseline']"),
   taxonomyDatabaseBuildProgress: document.querySelector("#taxonomy-database-build-progress"),
   taxonomyDatabaseOpenButton: document.querySelector("[data-taxonomy-database-action='open']"),
   taxonomyDatabaseCurrentVersion: document.querySelector("#taxonomy-database-current-version"),
@@ -579,12 +581,7 @@ const {
   loadData,
 });
 
-setupBackupSettings({
-  state,
-  elements,
-  fetchJson,
-  createDialogController,
-});
+setupBackupSettings({ state, elements, fetchJson, createDialogController });
 setupPipelineControl();
 setupTaxonomyMaintenance();
 setupTaxonomyMaster();

@@ -1,6 +1,6 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-09-20
+Stand: 2026-10-01
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
@@ -8,11 +8,49 @@ Weißstorch und der damalige Paket-/Masterstand wurden auch in Lightroom vom Ben
 Identitäts-, Delta- und Hintergrundaufbau-Erweiterungen sind davon getrennt zu prüfen; ihre technische Umsetzung
 ist keine produktive Großbestandsfreigabe. Restliche Abnahme und Auditpunkte stehen in `roadmap.md`.
 
+Seit 30. September schützen ID-gebundene Teilquellenvereinigung und eine frische Kontinuitätsprüfung vor der
+Aktivierung vor dem am 29. September belegten Bestandsverlust. Schmale Suchtreffer ersetzen keine vorhandene
+Aufnahmegrundlage oder fehlende Identitätsfelder. Kandidaten bleiben zur ausdrücklichen Identitätsprüfung
+verfügbar; Einzel-/Paaraktivierung ist bei verschwundenen Alt-IDs gesperrt. Bestätigte Identitätsereignisse
+behalten historische IDs; Rücknahme bleibt gesondert geprüft. Die eng freigegebenen produktiven Eingänge und das
+Master-/Lightroom-Paar sind seit 1. Oktober repariert und vollständig geprüft; keine fremden Zusatz-IDs.
+Der bestätigte Wartungsweg verwendet jetzt eine eng geprüfte technische Historienart `source-repair`:
+genau eine ID mit leerem Reich wird historisch erhalten, die belegte ursprüngliche ID aktiv wiederhergestellt.
+Anbieter-ID, unveränderte wissenschaftliche Identität, stabile ID-Berechnung und gebundene Quellenstände sind
+Pflichtbelege. Keine automatische Foto-/Projektmigration und keine gewöhnliche Split-/Merge-Auswahl für diesen Typ.
+Ein gespeicherter Reparaturauftrag sichert Kandidatenbau und wiederholbare Quellen-/Historienvorbereitung;
+die gemeinsame Paaraktivierung bleibt getrennt bestätigt. Kandidat und Paar sind erfolgreich produktiv geprüft;
+Felix bestätigte anschließend Explorer-Namen, Lightroom-Zuweisung und Erhalt nach Schließen/Wiederöffnen für
+Weissstorch/Rebhuhn. Die vier Ersatz-IDs bleiben historisch, alle ursprünglichen IDs aktiv. Die 2.173 separaten
+CoL-/Reichsfälle sind nicht Teil dieser Freigabe. Ein nächstes reguläres Quellenupdate, produktiver Rollback und
+die umfassende Phase-10-Abnahme bleiben getrennt. Vertrag: [Teilquellen und Wiederherstellung](taxonomy-partial-source-recovery.md);
+kompakter [Betriebsstand](taxonomy-current-status.md).
+
 Seit 2026-09-06 nutzt die bewusste deutsche Namenswahl aus Explorer und Lightroom den gemeinsamen
 Korrektur-Releaseweg. Eine Revisionsprüfung und kurze prozessübergreifende SQLite-Sperre koordinieren die
 Korrekturdatei und Aktivierung; Master und Referenz werden dabei nicht direkt verändert. Rückwahl eines
 vorherigen Namens ist eine neue bestätigte Korrektur, kein Löschen einer eingebauten Basisassertion.
 Vollständiger Bedien-/Fehlervertrag und verbleibende Grenzen: `taxonomy-name-preference-plan.md`.
+
+Der Kandidatenaufbau übernimmt seit 22. September die Suchbegriffe bereits verifiziert wiederverwendbarer
+Arten gesammelt aus dem nur lesend angeschlossenen Altmaster. Taxoncheckpoint, wiederholbarer Abschlussblock
+und erneute Quellprüfsumme sichern den Weg ab; Fachbelege erhalten weiterhin aktuelle Provenienz.
+Vertrag: `taxonomy-incremental-build.md`; Messnachweis und offene Leistungsgrenzen: `taxonomy-operational-checks.md`.
+Der Abschluss übernimmt seit 23. September bei nachgewiesen identischen Graph-Eingängen den frisch erzeugten,
+prüfsummengebundenen Vorabplan. Geänderte Strukturen oder Zustände bleiben im vollständigen Abschlussplan;
+Taxon-/Feldvalidierung und die gemeinsame Freigabe werden nicht abgeschwächt.
+Seit 24. September nutzt auch der vollständige Kandidatenaufbau einen verbindungslokalen, begrenzten
+Speicher vorbereiteter Schreibbefehle. Er ersetzt keine Modellprüfung und hält keine Abfrageergebnisse vor.
+Transaktionen, Herkunftsregeln und Checkpoints bleiben unverändert; Details und Messung in den obigen Verträgen.
+Seit 25. September werden die alten Belege beim Kopieren in begrenzten 128-Taxon-Gruppen gelesen. Das
+reduziert einzelne Leseabfragen, ersetzt aber keine Validierung und keine abschließende Quellenprüfung.
+Die Quelle bleibt nur lesend geöffnet; Fehler veröffentlichen keine teilweise gelesene Gruppe.
+Speicherbedarf und Laufzeitstreuung bleiben Teil der offenen Großbestandsbewertung.
+Die anschließende Ressourcenprüfung untersucht zunächst einen größeren SQLite-Verbindungspuffer ausschließlich
+im isolierten Test; `taxonomy-performance-profiling.md` enthält Messwerte und Standard-Rückproben. Am
+26. September folgt die ausdrücklich auf den Aufbau begrenzte Regel mit höchstens acht vergrößerten
+Hauptdatenbank-Puffern je Laufzeit und Standardrückfall. Keine globalen Prototypänderungen und keine dauerhaften
+Datenbankeinstellungen; normale Suche bleibt unverändert. Vertrag und Prüfabschluss: `taxonomy-build-cache.md`.
 
 ## Ziel und verbindliche Quellenarchitektur
 
@@ -55,8 +93,11 @@ jeder Stand besitzt ein `manifest.json`. Seit der gemeinsamen Master-/Lightroom-
 aktive Stände unter `master/releases/publication-<UUID>/` und im gleichnamigen Releaseordner des benachbarten
 Lightroom-Speichers. `taxonomy-publication/active.json` wählt genau ein aktives Paar und einen direkten Vorgänger.
 Die schweren Vorbereitungen laufen getrennt im Paarworker; der Server schaltet beide erst nach erneuter Prüfung
-gemeinsam um. Alte Releases werden derzeit nicht automatisch gelöscht. Aufbewahrung und Platzbudget sind noch
-offen. Speicher-/Abbruchvertrag: `taxonomy-master-background-build.md`; Delta-Vertrag: `taxonomy-incremental-build.md`.
+gemeinsam um. Alte Releases werden nicht automatisch gelöscht. Die revisionsgebundene Speicherpflege bietet
+nicht mehr benötigte alte Paare nach Vorschau zur bestätigten Entfernung an; aktiv und genau ein geprüfter
+Vorgänger als Backup bleiben geschützt. Platzprüfungen sind angebunden, produktive Betriebsabnahme ist offen.
+Vertrag: `taxonomy-storage-maintenance.md`; Speicher-/Abbruchvertrag: `taxonomy-master-background-build.md`;
+Delta-Vertrag: `taxonomy-incremental-build.md`.
 
 Die Speicherortentscheidung wird beim späteren Installer erneut geprüft.
 
@@ -112,8 +153,8 @@ geprüft. Die praktische Split-/Merge-Migration bleibt offen; der bestätigte re
 Bedienung und Grenzen: `lightroom-identity-workflow.md`.
 Verträge und Grenzen: `taxonomy-identity-incremental-plan.md`. Darauf folgt auf ausdrücklichen Benutzerwunsch
 verbindlich vor dem Phase-10-Audit der inkrementelle Master-/Suchpaketaufbau. Der gemeinsame Master-/Paketwechsel
-ist seit 13. September technisch umgesetzt und isoliert getestet; Großbestandsmessung und Release-Aufbewahrung
-bleiben offen. Seit 20. September läuft auch die schwere Paarvorbereitung/Prüfung außerhalb des Serverprozesses;
+ist seit 13. September technisch umgesetzt und isoliert getestet; Großbestandsmessung bleibt offen.
+Release-/Jobpflege und Platzprüfungen sind angebunden. Seit 20. September läuft auch die schwere Paarvorbereitung/Prüfung außerhalb des Serverprozesses;
 die atomare Aktivierung bleibt beim Elternprozess. Masterworker und Schreibcheckpoints sind
 seit 14. September an Service und Explorer-Bedienung angeschlossen: Pause, bestätigte Fortsetzung,
 Wiederentdeckung ohne automatischen Start und heutige Eingangsbindung. Isolierte Service-/Worker-Tests bestehen;

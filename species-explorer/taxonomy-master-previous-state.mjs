@@ -1,3 +1,4 @@
+import { configureTaxonomyBuildDatabase } from "./taxonomy-build-cache.mjs";
 import { existsSync } from "node:fs";
 
 import { addProviderTaxonAssertion, registerProviderRelease } from "./taxonomy-master-model.mjs";
@@ -5,7 +6,7 @@ import { emptyIdentityRegistry, readIdentityRegistry } from "./taxonomy-identity
 
 function openSnapshot(databasePath, DatabaseSync) {
   if (!databasePath || !existsSync(databasePath)) return null;
-  const database = new DatabaseSync(databasePath, { readOnly: true });
+  const database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath, { readOnly: true }));
   try {
     const fields = database.prepare(`
       SELECT field.*, release.provider, release.provider_version

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { mergePartialProviderRecord } from "./taxonomy-partial-record.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -692,9 +693,14 @@ export class TaxonomySupplementService {
         ? "restored"
         : compareProviderRecord(current, incoming),
     };
-    if (index >= 0) this.cache.providerRecords[index] = merged;
-    else this.cache.providerRecords.push(merged);
-    return merged;
+    // A cache miss concerns one search, not an authoritative provider removal.
+    // The persisted slice separately prevents reviving a fully removed record.
+    const priorSearch = current?.versionChangeState === "removed"
+      ? { ...current, versionChangeState: "unchanged" } : current;
+    const checked = mergePartialProviderRecord(priorSearch, merged).record;
+    if (index >= 0) this.cache.providerRecords[index] = checked;
+    else this.cache.providerRecords.push(checked);
+    return checked;
   }
 
   markMissingProviderRecords({ provider, query, seenKeys, checkedAt }) {

@@ -41,6 +41,7 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/name-preference/preview", { name: "taxonomy-correction", action: "preference-preview" }],
   ["/api/taxonomy/name-preference/save", { name: "taxonomy-correction", action: "preference-save" }],
   ["/api/taxonomy/master/build", { name: "taxonomy-master", action: "build" }],
+  ["/api/taxonomy/master/build-baseline", { name: "taxonomy-master", action: "build-baseline" }],
   ["/api/taxonomy/master/apply-corrections", { name: "taxonomy-master", action: "apply-corrections" }],
   ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],
   ["/api/taxonomy/master/identity/preview", { name: "taxonomy-master", action: "identity-preview" }],
@@ -53,6 +54,8 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/master/sync-lightroom", { name: "taxonomy-master", action: "sync-lightroom" }],
   ["/api/taxonomy/master/pause-build", { name: "taxonomy-master", action: "pause-build" }],
   ["/api/taxonomy/master/resume-build", { name: "taxonomy-master", action: "resume-build" }],
+  ["/api/taxonomy/master/storage-preview", { name: "taxonomy-master", action: "storage-preview" }],
+  ["/api/taxonomy/master/storage-clean", { name: "taxonomy-master", action: "storage-clean" }],
   ["/api/pipeline/assets/review", { name: "pipeline-asset-review", action: "save" }],
     ["/api/species/new/preview", { name: "new-species", action: "preview" }],
     ["/api/species/new/discard", { name: "new-species", action: "discard" }],
@@ -63,7 +66,7 @@ const POST_ROUTES = new Map([
 
 const ASSET_ACTIONS = {
   map: "preview|save|delete-preview|delete|restore-preview|restore",
-  sound: "preview|edit-preview|save|reject|delete-preview|delete|restore-preview|restore",
+  sound: "preview|edit-preview|save|reject|rejections-preview|rejections-reset|delete-preview|delete|restore-preview|restore",
   portrait: "prompt|preview|save|delete-preview|delete|restore-preview|restore",
 };
 

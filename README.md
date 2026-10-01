@@ -6,14 +6,212 @@ Dieses Repository erzeugt und hostet Arten-Daten, Karten, Sounds und Frontend-Mo
 GitHub Pages Base:
 `https://felixkfm90.github.io/iucn-species-data/`
 
-## Datenfluss
+## Aktueller Stand und Dokumentation
 
-Aktueller Taxonomiestand (20. September 2026): Die Namenswahl verwendet bei eindeutiger Masteridentität
+Stand: 1. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
+aktiviert. Felix hat bevorzugte Namen, Zuweisung und Erhalt nach Schließen/Wiederöffnen für Weissstorch und
+Rebhuhn bestätigt. Der neue Anbieterstand `COL26.9 XR` ist ein getrenntes, noch zu prüfendes Quellenupdate;
+die Verfügbarkeitsmeldung bedeutet keinen Drift des reparierten lokalen Paars.
+
+Maßgeblich sind der [kompakte Taxonomie-Betriebsstand](docs/taxonomy-current-status.md), die
+[Roadmap](docs/roadmap.md) und die [Dokumentationsübersicht](docs/README.md). Aktuelle Projekt-/Assetzähler stehen
+ausschließlich im [generierten Projektstatus](docs/project-status.md). Phase 10 und das Gesamtaudit bleiben offen.
+Das vollständige lokale Qualitätsgate und der Dokumentationsabgleich bestanden am 1. Oktober erneut;
+Git-Übertragung und nachfolgendes Pages-Deployment bleiben getrennte Nachweise.
+
+## Datenfluss und datierter Umsetzungsverlauf
+
+Umsetzungsstand vom 27. September 2026 (historischer Verlauf; heutigen Freigabestand siehe oben): Die Namenswahl verwendet bei eindeutiger Masteridentität
 denselben Treffer statt eines zusätzlichen eingeschränkten CoL-Ergebnisses. Masteraufbau sowie schwere
 Master-/Lightroom-Abschlussprüfung laufen in getrennten Hilfsprozessen; die endgültige gemeinsame Freigabe
 prüft der Explorer nochmals. Pause/Fortsetzung betrifft die bestätigten Master-Schreibblöcke, nicht jeden
-Download oder Prüfschritt. Aufbewahrung/Platzbudget und die Großbestandsabnahme sind noch offen.
+Download oder Prüfschritt. Speicherpflege mit Vorschau und Platzprüfungen ist angebunden; die Großbestandsabnahme
+ist noch offen. `Speicher prüfen und bereinigen` behält den aktiven Stand und genau einen geprüften Vorgänger als
+Backup. Aktuelle Kandidaten, benötigte Aufträge und unbekannte Dateien bleiben geschützt; erst die ausdrückliche
+Bestätigung entfernt aufgelistete Altstände dauerhaft. Der Aufbau prüft freien Platz einschließlich 2 GiB Reserve.
+Details, Schonfrist und Grenzen: [Speicherpflege](docs/taxonomy-storage-maintenance.md).
 Bedienung und Grenzen: [Hintergrundaufbau](docs/taxonomy-master-background-build.md).
+Ein isolierter Betriebscheck prüft Abbruch/Fortsetzung, gemeinsame Freigabe und Rollback mit geöffneten
+Datenbanklesern. Messwerte und Abgrenzung zur noch offenen produktiven Abnahme:
+[Betriebs- und Größenprüfung](docs/taxonomy-operational-checks.md).
+Der Suchpaketaufbau exportiert seit 21. September nur fachlich geänderte Taxa; Herkunftsangaben werden trotzdem
+aktualisiert. Die vollständige Basisprüfung läuft parallel, bleibt aber vor Abschluss verpflichtend.
+Alte Pakete erhalten die Vergleichsgrundlage einmalig über den Vollaufbau. Details:
+[Gezielter Paketexport](docs/lightroom-incremental-export.md).
+Der Vergleich mit 10.000 synthetischen Arten braucht 1,78–1,87 s statt 2,17–2,19 s im heutigen Vollpfad.
+Der frühere Vollpfad ohne zusätzliche Vergleichsgrundlage lag allerdings bereits bei etwa 1,8 s.
+Das Ziel einer deutlichen Verkürzung des gesamten Updates bleibt deshalb vor der produktiven Abnahme offen.
+Seit 22. September übernimmt der Masteraufbau zusätzlich die geprüften Suchbegriffe unveränderter Arten
+gebündelt. Nur betroffene Arten werden erneut für die Suche aufbereitet; aktuelle Quellenbelege und die
+vollständige Kandidatenprüfung bleiben erhalten. Bestätigte Schreibblöcke bleiben auch nach einem Fehler
+im Suchabschluss fortsetzbar. Eine abschließende Quellprüfsumme schützt vor währenddessen veränderter Basis.
+Vertrag: [Inkrementeller Masteraufbau](docs/taxonomy-incremental-build.md).
+Die Messungen enthalten weiterhin langsame Ausreißer; noch keine Laufzeitzusage für den realen Gesamtbestand.
+Seit 23. September kann der bereits im selben Aufbau geprüfte Abhängigkeitsplan auch den Abschluss bedienen.
+Dafür werden Identitäten, Quellenverknüpfungen, Hierarchien, wissenschaftliche Namen und entscheidungsabhängige
+Zustände vollständig lesend verglichen. Bei Abweichungen bleibt der vollständige Abschlussplan erforderlich.
+Seit 24. September werden außerdem identische Schreibbefehle innerhalb eines Kandidaten wiederverwendet,
+auch wenn Arten vollständig neu berechnet werden. Der begrenzte Speicher enthält keine Daten oder
+Prüfergebnisse; sämtliche Feldprüfungen bleiben aktiv. Die vollständige Neuberechnung als Rückfall wird
+dadurch schneller. Messwerte und Grenzen: `docs/taxonomy-operational-checks.md`.
+Dies ersetzt keine Datenprüfung und keine produktive Großbestandsabnahme.
+Ein isolierter Vergleich umfasst außerdem Auftragssicherung, beide Hilfsprozesse, Paketprüfung und
+gemeinsame Freigabe. Eigene Namenswahl und offene Altleser bleiben erhalten. Quelldownloads und die produktive
+Anbieterauswahl sind darin nicht enthalten. Die gemessenen Laufzeiten streuen deutlich; daraus lässt sich
+noch keine verlässliche Dauer des echten Gesamtupdates ableiten. Seit 25. September reduziert das Lesen
+in begrenzten 128-Arten-Gruppen viele kleine Altmaster-Abfragen. Alle übernommenen Werte werden weiterhin
+einzeln geprüft und erhalten aktuelle Herkunftsangaben. Der kleine direkte Vergleich belegt einen begrenzten
+Zeitgewinn, keinen Speichergewinn. Laufzeitstreuung und weitere Bestandsarbeit bleiben vor der Großbestandsabnahme
+zu untersuchen. Messpaare und Grenzen: [Betriebs- und Größenprüfung](docs/taxonomy-operational-checks.md).
+Eine anschließende Ressourcenmessung mit zusätzlichem synthetischem Mehranbieterbestand grenzt hohe
+logische Datenbank-Ein-/Ausgaben ein. Ein nur im Test vergrößerter Verbindungspuffer zeigt gegenüber
+späteren Standard-Rückproben etwa 13–15 % kürzere Änderungsabläufe. Auch die Standardzeiten verändern sich;
+ein pauschaler Geschwindigkeitsfaktor oder eine Erklärung aller Ausreißer ist damit nicht belegt.
+Ergebnisse und Grenzen des Experiments: [Ressourcenmessung](docs/taxonomy-performance-profiling.md).
+Seit 26. September verwendet der Aufbau eine ausdrücklich begrenzte Pufferregel: bis zu acht gleichzeitig
+vergrößerte Hauptdatenbank-Puffer je Hilfsprozess/Laufzeit mit je 8 MiB Richtwert. Normale Leser und angefügte
+Datenbanken bleiben unverändert. Rückfall, Abbruch und Fortsetzung behalten ihre Prüfungen; keine dauerhafte
+Datenbankeinstellung und keine Änderung der aktiven Bestände. Vertrag, Messungen und Prüfabschluss:
+[Begrenzter Aufbaupuffer](docs/taxonomy-build-cache.md). Keine Freigabe des produktiven Großbestands daraus.
+
+Der integrierte Vergleich ohne experimentelle Puffer-Injektion ist abgeschlossen: fünf Messpaare mit
+10.000/20.000 Testarten beziehungsweise 5.000 Arten mit 12.500 Anbieterbelegen stimmen fachlich überein.
+Die Änderungswege benötigen in diesen Paaren etwa 11–21 % weniger Zeit als der ebenfalls verbesserte Vollweg.
+Downloads fehlen im Vergleich; keine Dauerzusage für den produktiven Gesamtbestand. Einzelwerte und Grenzen
+stehen im Aufbaupuffer-Vertrag. Die produktive Betriebs-/Großbestandsabnahme ist der nächste getrennte Schritt.
+
+Sound-Ablehnungen lassen sich seit 27. September gezielt pro Art zurücksetzen: im Neue-Art-Assistenten auf
+`Sound & Abschluss` über `Abgelehnte Soundquellen wieder zulassen …`, bei vorhandenen Arten unter
+`Tierstimme → Bearbeiten` mit derselben Aktion. Auch während der Soundprüfung ist die Freigabe verfügbar:
+nach ausdrücklicher Rückfrage werden frühere Quellen zugelassen und der aktuelle Kandidat übersprungen.
+Außerhalb einer wartenden Prüfung wird nur die Ausschlussliste dieser Art geleert, ohne Dateien oder
+Schutzentscheidungen zu ändern. Der Assistent startet anschließend nur die Soundsuche,
+ohne die Art erneut anzulegen; im Editor die Suche anschließend separat starten. Am Assistentenende bleibt
+eine einzige Schließen-Schaltfläche im Fußbereich. Felix hat auch die Rücksetzung während offener Soundprüfung
+bestätigt; die praktische Abnahme ist am 28. September dokumentiert. Details: [Artanlage](docs/add-species-workflow.md).
+
+Die [lesende Datenbankvorprüfung vom 27. September](docs/audits/2026-09-27-taxonomy-preflight.md) bestätigt
+konsistente aktive und vorherige Master-/Lightroom-Paare. Die alten Stände besitzen noch keine gebundene
+inkrementelle Vergleichsgrundlage: ein erster vollständiger lokaler Grundlagenlauf ist nötig, bevor dessen
+Nachfolger inkrementell arbeiten können. Dafür steht seit 28. September im Dialog **Datenbank-Aktionen** unter
+**Taxonomiedatenbank** die bedarfsabhängige Aktion **Vergleichsgrundlage einmalig erstellen …** bereit.
+Sie verlangt eine ausdrückliche Bestätigung und verwendet ausschließlich vorhandene lokale Quellen, ohne
+Anbieterdownloads. Der bisherige Stand bleibt bis zum vollständig geprüften gemeinsamen Master-/Lightroom-Wechsel
+aktiv. Fotos bleiben unverändert. Öffnen oder Abbrechen der Rückfrage startet nichts. Nach erfolgreichem Aufbau
+entfällt die Aktion; spätere Aktualisierungen verwenden weiterhin den normalen Updateweg. Bedienung und Grenzen:
+[Master-Hintergrundaufbau](docs/taxonomy-master-background-build.md). Felix hat das Öffnen und Abbrechen der
+Rückfrage praktisch bestätigt und den ersten produktiven lokalen Grundlagenlauf am 28. September um 08:36:59 MESZ
+gestartet. Der Lauf war um 10:07:59 MESZ erfolgreich abgeschlossen, mit gemeinsam aktiviertem Master-/Lightroom-Paar,
+erhaltenem Vorgänger und vorhandener Eingangs-/Exportgrundlage. Technischer Ablauf und damalige Prüfgrenzen:
+[Abschlussnachweis](docs/audits/2026-09-28-taxonomy-baseline-run.md). Produktive Pause/Fortsetzung und Rollback bleiben offen.
+
+**Betriebshinweis vom 29. September:** Der anschließende lesende Bestandsvergleich hat zwei Fehler vor dem
+Masterexport belegt: Teil-Suchtreffer können Aufnahme-Merkmale vorhandener Arten überschreiben; ein fehlendes
+Reich kann die Master-ID verändern. Die angelegten Projektarten und eigenen Namenskorrekturen sind im geprüften
+Stand erhalten, der allgemeine Suchbestand ist aber nicht fachlich freigegeben. Bis zur Korrektur und kontrollierten
+Wiederherstellung keinen weiteren Taxonomieaufbau, keine Bereinigung der Vorgänger und keinen katalogweiten
+FN-Abgleich zur Reparatur starten. Keine Fotos neu zuweisen oder Projektarten neu anlegen.
+Nachweis und Reparaturauftrag: [Bestandsdifferenz](docs/audits/2026-09-29-taxonomy-difference.md).
+
+**Ergänzung vom 30. September:** Vorbeugende Quellenvereinigung und frische ID-Prüfung vor beiden
+Aktivierungswegen sind implementiert und gezielt getestet. Die lesende Vorschau rekonstruiert sämtliche
+154 betroffenen alten IDs; bei dieser Vorschau blieben die produktiven Dateien unverändert. Der bestätigte Wartungsweg ist nun
+implementiert: separater Quellenentwurf, gespeicherter und fortsetzbarer Kandidatenauftrag sowie technische
+Historie der vier Ersatz-IDs. Erst nach Kandidatenprüfung werden ein neuer unveränderlicher Quellenstand und
+die Historienvormerkung vorbereitet; die gemeinsame Paaraktivierung bleibt separat bestätigt. 161 gezielte
+Tests einschließlich echtem Hilfsprozess bestehen. Die abschließende große lesende Vorschau bestätigt alle
+Fälle ohne Blocker. Felix hat den lokalen Kandidatenlauf anschließend freigegeben; er ist mit Exit 0 beendet.
+Der neue unveränderliche Quellenstand und vier technische Historienfälle sind vorbereitet. Die lesende
+Abschlussprüfung bestätigt sämtliche 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, erhaltene
+IDs beider bisherigen Master, fünf eigene deutsche Namen und alle 60 Projektverknüpfungen. Originalreleases
+und das aktive Master-/Lightroom-Paar bleiben unverändert; noch kein neues Suchpaket und kein Paarwechsel.
+**Vor Aktivierung zu klären:** Der Kandidat enthält zusätzlich 2.173 CoL-Einträge mit bereits vorhandenen
+wissenschaftlichen Namen, aber anderer Reichszuordnung. Sie stammen aus der umfassenden erneuten lokalen
+Lückenprüfung und sind keine bestätigten neuen Arten oder Identitätsnachfolger. Keine Zusammenführung nur
+nach Namen. Trotz erfolgreicher technischer Prüfungen ist der Kandidat daher noch nicht fachlich freigegeben.
+Die anschließende lesende Gegenprobe bestätigt die Ursache: Der normale Eingangsweg mit unveränderter CoL-Version
+liefert für die Zusatznamen keine CoL-Zeilen, erhält aber dieselben Belege der 154 Reparaturfälle. Die Eingrenzung
+muss zusätzlich unbeteiligte Quellenänderungen verhindern; bloß den erzwungenen Lückensuchlauf auszuschalten reicht
+für eine strikte Reparaturgrenze nicht vollständig. Die Gegenprobe allein war noch kein implementierter Fix.
+Für 1.693 Zusatzfälle verweist CoL ausdrücklich auf die vorhandene iNaturalist-ID, sechs Verweise weichen ab,
+zwei sind mehrdeutig und 472 fehlen. Diese Quellenbeziehungen werden getrennt von der 154-Fälle-Reparatur behandelt,
+nicht automatisch zusammengeführt. Der anschließend freigegebene enge Reparaturweg ist nun implementiert:
+Er übernimmt die exakt gebundenen alten CoL-Eingänge und ergänzt ausschließlich die bestätigten Reparaturfälle.
+Eine zusätzliche semantische Prüfung sperrt neue IDs und Änderungen an fremden Belegen, Namen, Werten, Konflikten,
+Entscheidungen und Projektlinks vor der Worker-Übergabe sowie vor späterer Aktivierung.
+Der neue Wartungsweg `replacement-preview` bleibt lesend; `replacement-candidate` benötigt zusätzlich eine frische
+Planbestätigung. Er verwendet bereits installierte reparierte Quellen und Historienfälle, erhält den alten Auftrag
+und bewahrt den alten Kandidaten getrennt auf. Er verändert keine alten Rezeptprüfsummen oder Originalreleases.
+Isolierte Tests sind im Reparaturvertrag dokumentiert; zu diesem Implementierungszeitpunkt noch kein produktiver
+Ersatzlauf und kein Paarwechsel.
+Die lesende Ersatzvorschau wurde am 1. Oktober um 15:08 MESZ erfolgreich geprüft. Sie bindet dieselben
+154 Reparaturfälle und vier Historienentscheidungen an die unveränderten Quellen, den vorhandenen Altauftrag,
+Alt-Kandidaten und das aktive Paar. Frische Planrevision:
+`9beccf7fe76602f74b7d75fb938201e8c683e286795e7624b930751e25424516`.
+Das vorgesehene Aufbewahrungsziel ist frei; kein Ersatzjournal, Auftrag oder Kandidat wurde angelegt oder verschoben.
+Felix hat den lokalen Ersatzlauf anschließend mit „ja“ ausdrücklich an diese Revision gebunden bestätigt.
+Der neue Auftrag wurde gesichert und der Hilfsprozess startete um 15:21:07 MESZ. Der alte Kandidat bleibt am
+bestätigten Aufbewahrungsziel erhalten, der alte Auftrag wird nicht umgeschrieben.
+**Historischer Schutzabbruch 1. Oktober, 15:42 MESZ:** Ersatzlauf mit Exit 1 durch die Schutzprüfung gestoppt;
+26 zusätzliche Referenzlücken-Hinweise außerhalb der 154 bestätigten Fälle. Auftrag `failed`, Ersatzjournal
+noch in der zuletzt gespeicherten Stufe `building`; das ist kein laufender Prozess. Private Auftragsdatenbank
+erhalten, keine fertige Kandidatenübergabe, kein neues Lightroom-Paket oder Paarwechsel.
+Die lesende Fehlerprüfung bestätigt alle 154 ursprünglichen IDs aktiv und vier Ersatz-IDs historisch,
+keine fehlenden alten oder zusätzlichen fremden IDs, unveränderte 60 Projektlinks und 46 ausgewählte eigene Felder
+einschließlich fünf eigener deutscher Namen. 58 gebundene Dateien und Veröffentlichungszeiger unverändert.
+Alle 26 Einträge waren bereits Referenzlücken ohne separate Konfliktzeile; die allgemeine Folgelaufregel erzeugt
+allein wegen vorhandener Vorgänger die neuen Hinweise. Quellen und Referenzzustände dieser Einträge bleiben gleich.
+Das Ergebnis ist **nicht freigegeben**; der unabhängige vollständige Abschlussvergleich wurde nicht ausgeführt.
+Die anschließend ausdrücklich bestätigte Codekorrektur ist isoliert geprüft: Im engen Reparaturweg bleiben
+Konflikte und damit verbundene eigene Entscheidungen unbeteiligter Einträge erhalten, auch wenn bisher kein
+Hinweis vorhanden war. Zustände, Texte und Zeitpunkte bleiben gleich. Feldverweise benötigen dieselbe ID und
+exakt passende Feld-/Quellenmerkmale; fehlende oder mehrdeutige Belege führen zum Abbruch. Die allgemeine Update-
+Regel und die unabhängige Umfangssperre bleiben unverändert. 160 gezielte Tests in acht Dateien erfolgreich.
+**Kontrollierter Neustart am 1. Oktober freigegeben und implementiert:** Felix beauftragte die Arbeit bis zum
+vollständig geprüften Reparaturkandidaten. Lesende Neustartvorschau und separater neuer Auftrag binden Fehlerplan,
+ursprüngliche Reparaturrevision und frische Regeln. Alte Journale/Auftragsdateien/private Fehlerdatenbank bleiben
+erhalten; keine nachträgliche Änderung ihrer Prüfsummen. Neue Journale unter `master/source-recovery/restarts`.
+Produktive Datenänderungen, laufende Prozesse, fremde Aufträge und vorhandene Kandidaten sperren den Neustart.
+Wiederholung verwendet denselben neuen Auftrag. 164 gezielte Tests in acht Dateien erfolgreich.
+Frische produktive Vorschau um 16:53 MESZ erfolgreich: 154 Fälle/vier Historien-IDs, unveränderte Datenbindungen.
+**Aktueller Abschluss am 1. Oktober:** Wartungsaufruf Exit 0, Auftrag/Neustartjournal `ready`, Kandidat
+`master-20261001145513036` vollständig unabhängig geprüft. Alle 154 ursprünglichen IDs wieder aktiv, vier Ersatz-IDs
+historisch, sämtliche IDs beider bisherigen Master erhalten; keine fremden Zusatz-IDs. 273.466 IDs insgesamt,
+273.462 aktiv und vier historisch. Alle elf semantischen Umfangsvergleiche außerhalb des Plans unverändert,
+einschließlich Konflikten, eigenen Entscheidungen und Suchbegriffen. 60 Projektverknüpfungen/46 eigene ausgewählte
+Felder/fünf deutsche Namenskorrekturen erhalten. Keine blockierenden Konflikte, vollständige reguläre Prüfung,
+`quick_check` und Fremdschlüsselprüfung erfolgreich. Abschließende Vollhashprüfung um 17:46:52 MESZ bestätigt
+70 geschützte Dateien, Kandidat und Veröffentlichungszeiger unverändert; auch beide alten Aufträge/Journale und
+die private Fehlerdatenbank bleiben erhalten. Begleitung nach Abschluss `PAUSED`.
+**Gemeinsame Aktivierung separat bestätigt:** Felix hat den Paarwechsel anschließend mit „ja los“ freigegeben.
+Wartungsaufruf am 1. Oktober um 17:57:36 MESZ gestartet, um 18:11:42 MESZ mit Exit 0 abgeschlossen. Master
+`master-20261001145513036` und Suchpaket `lightroom-63c431a5fa43190a4c52` gemeinsam aktiv; vorheriges Paar vom
+28. September als Rückweg erhalten. Paket mit 273.462 Taxa inkrementell erstellt: 154 Taxa neu projiziert und
+vier technische Ersatz-IDs nur noch historisch; Herkunftszeiten separat aktualisiert. Kein neuer Masterlauf.
+**Produktiv abgeschlossen und unabhängig geprüft:** Paar-/Dateivergleich um 20:34:39 MESZ mit Exit 0 bestanden.
+Alle 154 ursprünglichen IDs in beiden Datenbanken aktiv, vier Ersatz-IDs historisch; eigene Namen, 46 eigene
+ausgewählte Felder und sämtliche 60 Projektverknüpfungen erhalten. Vollständige Paketintegritäts-/Prüfsummenprüfung
+und semantische Exportvergleiche erfolgreich, 69 geschützte Originaldateien unverändert. Der aktive Master ist
+byteidentisch zum vorher vollständig geprüften engen Kandidaten. Kein neuer Aufbau zur Reparatur erforderlich.
+Keine Foto-/Projektmigration, Bereinigung, Anbieterdownloads oder Commit/Push. Die 2.173 separaten Quellenfälle
+gehören weiterhin in einen eigenen regulären Updatepunkt vor dem Audit.
+**Gezielte praktische Abnahme am 1. Oktober ebenfalls bestätigt:** Felix hat Weissstorch und Rebhuhn im
+Explorer mit den bevorzugten Namen gefunden, in Lightroom erfolgreich zugewiesen und den Erhalt nach
+Schließen/Wiederöffnen bestätigt. Kein erneuter Aufbau zur Reparatur nötig; keine vollständige Phase-10-Abnahme.
+Die Verfügbarkeitsmeldung für `COL26.9 XR` ist ein separates Quellenupdate, kein Fehler des reparierten Paars.
+Vor erneuter Explorer-Bedienung den neuen Dienstcode laden; keine konkurrierenden Taxonomieänderungen oder
+Bereinigung des vorbereiteten Kandidaten starten. Die Wiedervorlage des ursprünglichen Laufs wurde nach dessen
+Prüfung deaktiviert, am 1. Oktober gezielt für den bestätigten Ersatzlauf reaktiviert und nach dessen Schutzabbruch
+wieder deaktiviert.
+Stand und Bediengrenzen:
+[Kontrollierte Wiederherstellung](docs/taxonomy-partial-source-recovery.md).
+
+Die Fortschrittsanzeige verwendet seit der anschließenden Änderung gemeinsame logische Arbeitsschritte im Dialog
+und in der oberen Datenbank-Aktionen-Schaltfläche. Beispiel: `Schritt 3 von 7 · Master aufbauen · Suchindex ·
+42 % dieses Teilschritts`. Bei unbekannter Gesamtmenge steht dort nur die Tätigkeit, kein geschätztes Gesamtprozent.
+Der Kopf zeigt eine kurze Fassung; der vollständige Text ist auch als Tooltip und zugängliche Beschriftung verfügbar.
+Bestandszahlen des bisherigen Masters und gesicherte Checkpoints bleiben getrennt. Der neue Programmstand wird beim
+nächsten Explorer-Start geladen; keinen neuen Vollaufbau nur zur Anzeigeprüfung starten. Praktische Abnahme noch offen.
 
 Aktueller Bedienhinweis (20. September 2026): Im Neue-Art-Assistenten haben Artentwurf und vorbereitetes Portrait
 während der Sitzung keine Ablauffrist. Fehlende Karten können dort als JPEG/PNG ausgewählt oder abgelegt werden.
@@ -231,7 +429,7 @@ Uebersichtsseiten brauchen fuer die Suche:
 
 Voraussetzungen:
 
-- Node.js 18 oder neuer
+- Node.js 24 für Explorer/Taxonomie einschließlich `node:sqlite` (lokal mit 24.12.0 geprüft; CI verwendet Node 24)
 - `npm install`
 - Environment Variable `IUCN_TOKEN`
 - Environment Variable `XENO_TOKEN`
@@ -1317,7 +1515,8 @@ Zuweisung bleibt unverändert. Die Helferbrücke verbindet jetzt bestätigte Vor
 Wiederaufnahmeprüfung und favoritenabhängige Blockplanung. Die Lua-Lese-/Schreiborchestrierung ist jetzt
 mit direkter Prüfung unter Katalogschreibzugriff verbunden und simuliert getestet. Auswahl, Fortschritt,
 Pause und Journalaktionen sind implementiert. Praktische Lightroom-Abnahme, Großkatalogmessung und
-Deltaaufbau stehen aus. Öffnen/Schließen des Einstiegsdialoges ist ohne Scan oder Fotoänderung testbar.
+Gesamtleistungsnachweis des Deltaaufbaus stehen aus. Öffnen/Schließen des Einstiegsdialoges ist ohne Scan oder
+Fotoänderung testbar.
 Der Benutzer hat am 11. September das Öffnen ohne Suche oder Auswahl bestätigt; die schreibenden Abläufe sind
 damit noch nicht praktisch abgenommen. Der anschließend begonnene inkrementelle Aufbau besitzt zunächst einen
 geprüften, wiederaufnehmbaren Eingangsvergleich. Er ist inzwischen an den Explorer-Vollaufbau angeschlossen:
@@ -1334,8 +1533,10 @@ reproduzierbar. Er erzeugt ausschließlich synthetische Arten unter `Testlauf/`,
 für Wiederverwendung und erzwungenen Vollaufbau und entfernt seine eigenen Testdateien danach. Er aktiviert
 keinen produktiven Master. Varianten: `unchanged`, `sparse`, `dense`, `structure`; maximal 20.000 Testarten und
 drei Messpaare. Die großen Messungen sind bewusst kein Bestandteil des normalen Qualitätsgates.
-Messwerte und Grenzen stehen im Detaildokument; Lightroom-Paket und gemeinsame Aktivierung sind noch nicht
-inkrementell umgestellt. Neue Benutzerbefunde zu Kartenübernahme, Veröffentlichung und doppelten
+Messwerte und Grenzen stehen in `docs/taxonomy-operational-checks.md`. Gezielter Lightroom-Paketexport und
+gemeinsame atomare Aktivierung sind inzwischen implementiert und isoliert geprüft; produktive Gesamtabnahme
+und Leistungsnachweis am realen Bestand stehen weiterhin aus. Neue Benutzerbefunde zu Kartenübernahme,
+Veröffentlichung und doppelten
 Abschlussausgaben sind in `docs/roadmap.md` erfasst. Die Ursachen wurden inzwischen eingegrenzt: IUCN kann den
 automatischen Kartenabruf trotz funktionierendem Browserlink mit HTTP 403 sperren. In diesem Fall die Karte im
 Browser herunterladen und im Karteneditor als Datei auswählen. Der automatische Download ist damit nicht
@@ -1539,7 +1740,8 @@ werden soll. Bis dahin bleibt der aktuelle Standardspeicherort unverändert. Det
 
 Nach einem Restore aus einem NAS-ZIP kann `restore-start.cmd` im entpackten Projektordner per Doppelklick gestartet
 werden. Das Skript prueft Node.js 18+, bietet bei fehlenden `node_modules` ein `npm install` an, erstellt die
-Desktop-Verknuepfung und startet die App.
+Desktop-Verknuepfung und startet die App. Diese ältere Bootstrap-Mindestprüfung ist kein Nachweis der heutigen
+Taxonomie-Laufzeitfähigkeit: Für Explorer/Masteraufbau gilt die oben genannte Node-24-Voraussetzung.
 
 Der technische Backup-Kern nutzt als Standardziel `W:\Website Datenbank Backup`:
 

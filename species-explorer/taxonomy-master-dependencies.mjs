@@ -1,3 +1,4 @@
+import { configureTaxonomyBuildDatabase } from "./taxonomy-build-cache.mjs";
 import fs from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalBuildInput, compareTaxonomyBuildInputs } from "./taxonomy-build-inputs.mjs";
@@ -21,11 +22,11 @@ export async function planMasterDependencies({ filename, previousPath, currentPa
   if (compatibility.mode !== "input-delta") return compatibility;
   const handle = await fs.open(filename, "wx");
   await handle.close();
-  const graph = new DatabaseSync(filename);
+  const graph = configureTaxonomyBuildDatabase(new DatabaseSync(filename));
   let previous, current;
   try {
-    previous = new DatabaseSync(previousPath, { readOnly: true });
-    current = new DatabaseSync(currentPath, { readOnly: true });
+    previous = configureTaxonomyBuildDatabase(new DatabaseSync(previousPath, { readOnly: true }));
+    current = configureTaxonomyBuildDatabase(new DatabaseSync(currentPath, { readOnly: true }));
     graph.exec(`PRAGMA synchronous=FULL; PRAGMA user_version=1; BEGIN IMMEDIATE;
       CREATE TABLE taxon(id TEXT PRIMARY KEY, present_before INTEGER NOT NULL DEFAULT 0,
         present_after INTEGER NOT NULL DEFAULT 0, stateful INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID;

@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { compareProviderRecord } from "./taxonomy-master-rules.mjs";
+import { mergePartialProviderRecord } from "./taxonomy-partial-record.mjs";
 import { taxonomyMasterProviderRoot } from "./taxonomy-master-storage.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
@@ -62,6 +63,11 @@ function safeSegment(value, label) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function refreshPayloadChecksum(record) {
+  return { ...record, payloadSha256: crypto.createHash("sha256")
+    .update(JSON.stringify({ ...record, payloadSha256: undefined })).digest("hex") };
 }
 
 export function canonicalMasterProvider(value) {
@@ -139,10 +145,7 @@ export function normalizeProviderSliceRecord(value = {}, {
     selectedForMaster: Boolean(value.selectedForMaster),
     versionChangeState: cleanText(value.versionChangeState || "new").toLocaleLowerCase("en"),
   };
-  normalized.payloadSha256 = crypto.createHash("sha256")
-    .update(JSON.stringify({ ...normalized, payloadSha256: undefined }))
-    .digest("hex");
-  return normalized;
+  return refreshPayloadChecksum(normalized);
 }
 
 export function providerSliceReleaseDirectory(taxonomyRoot, provider, providerVersion) {
@@ -252,12 +255,22 @@ export async function writeProviderSlice(taxonomyRoot, {
     : { records: [] };
   const previousById = new Map(previous.records.map((record) => [record.providerRecordId, record]));
   const currentById = new Map();
+  const partialMerges = [];
   for (const value of Array.isArray(records) ? records : []) {
-    const record = normalizeProviderSliceRecord(value, {
+    let record = normalizeProviderSliceRecord(value, {
       provider: normalizedProvider,
       retrievedAt: normalizedRetrievedAt,
     });
-    record.versionChangeState = compareProviderRecord(previousById.get(record.providerRecordId), record);
+    const prior = previousById.get(record.providerRecordId);
+    if (currentById.has(record.providerRecordId)) throw new Error(`Doppelte Anbieter-ID im Eingang: ${record.providerRecordId}`);
+    if (preserveUnmentioned) {
+      const merged = mergePartialProviderRecord(prior, record);
+      record = normalizeProviderSliceRecord(merged.record);
+      if (merged.retainedFields.length) partialMerges.push({ providerRecordId: record.providerRecordId,
+        previousVersion, previousRetrievedAt: prior.retrievedAt, retainedFields: merged.retainedFields });
+    }
+    record.versionChangeState = record.versionChangeState === "removed" ? "removed"
+      : prior?.versionChangeState === "removed" ? "restored" : compareProviderRecord(prior, record);
     currentById.set(record.providerRecordId, record);
   }
   for (const previousRecord of previous.records) {
@@ -271,7 +284,7 @@ export async function writeProviderSlice(taxonomyRoot, {
       versionChangeState: preserveUnmentioned ? retainedState : "removed",
     });
   }
-  const normalizedRecords = [...currentById.values()].sort((left, right) => (
+  const normalizedRecords = [...currentById.values()].map(refreshPayloadChecksum).sort((left, right) => (
     left.scientificName.localeCompare(right.scientificName, "en", { sensitivity: "base" })
     || left.providerRecordId.localeCompare(right.providerRecordId, "en")
   ));
@@ -301,6 +314,7 @@ export async function writeProviderSlice(taxonomyRoot, {
     checksumSha256,
     metadata,
     preserveUnmentioned: Boolean(preserveUnmentioned),
+    ...(preserveUnmentioned ? { partialMerges } : {}),
   };
   await atomicWriteJson(
     providerSliceManifestPath(taxonomyRoot, normalizedProvider, normalizedVersion),
