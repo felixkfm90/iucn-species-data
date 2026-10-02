@@ -43,7 +43,11 @@ Zweite Stufe inzwischen implementiert: revisionsgebundene Vorschau und bestätig
 Quellenfälle, neuer Kandidatenbau mit ursprünglicher ID, Namens-/Projektlink-Erhalt und rohen Anbieterbelegen.
 Neuer Typ `classification` bleibt getrennt von normalen Fortführungs-/Split-/Merge- und Reparaturereignissen;
 keine Fotomigration oder künstliche Namenssynonyme. Fehlende/widersprüchliche Folgebelege stoppen zur erneuten
-Prüfung. Zurückstellung unklarer Fälle und einheitlicher Update-Einstieg bleiben offen. Kein produktiver
+Prüfung. Dritte Stufe inzwischen implementiert: separate gebundene Zurückstellung unklarer CoL-Gegenstücke,
+Erhalt bisheriger Arten/IDs und erneute offene Prüfung geänderter Belege. Registertyp `classification-deferred`
+ändert keine Identität und erzeugt keine Umleitung/Aliasse. Beide Bündel können ohne Zwischenaufbau vorgemerkt
+werden; erst ein frischer Kandidat verarbeitet sie. Unentschiedene Fälle und andere Konflikte bleiben gesperrt.
+Einheitlicher Update-Einstieg und praktische Gesamtabnahme bleiben offen. Kein produktiver
 Vergleich/Download/Aufbau/Wechsel/Kataloglauf. Details und nächste Grenze:
 `docs/taxonomy-reference-update.md`.
 
@@ -62,7 +66,16 @@ Vormerkungs-Neustart/Rücknahme, frischer Kandidat/Folgeaufbau und Rollback gepr
 Tests in drei Dateien ebenfalls erfolgreich, zusätzlich mit geprüfter Eingangsgrundlage und 104 passenden/
 einem unklaren Fall oberhalb der Listenbegrenzung. Keine produktiven Daten
 berührt und kein vollständiges Qualitätsgate in diesem Schritt. Pages-Lauf `37009726984` für `ea55bb4`
-vollständig erfolgreich; Veröffentlichung der zweiten Stufe gesondert prüfen.
+vollständig erfolgreich. Pages-Lauf `37015180330` für `cca8268` inzwischen ebenfalls vollständig erfolgreich;
+Veröffentlichung der dritten Stufe gesondert prüfen.
+
+Prüfabschluss dritte Stufe: 238 gezielte Tests in 14 Dateien mit Exit 0, ohne Fehler/Abbrüche/übersprungene
+Tests; echte Hilfsprozesse, bestehende Reparatur-/Identitätswege und Lightroom-ID-Auflösung eingeschlossen.
+Synthetische 480-Fälle-Probe, beide Bündelreihenfolgen ohne Zwischenaufbau, mehrere Vorgänger, 105 vollständig
+verarbeitete Zurückstellungen, veraltete Quellen, Schreibfehler/Wiederholung, Auftragsfortsetzung und Rollback
+geprüft. Geänderter CoL-Stand oder unabhängige Zielbelege öffnen die Prüfung wieder; spätere passende Übernahme
+erhält die alte ID. Syntax (356 Dateien), Stil, 70 Markdown-Dateien, Projektstatus und Diffprüfung bestanden.
+Kein vollständiges `quality:ci`, produktiver Update-/Bedienlauf oder Phase-10.5-Audit in diesem Schritt.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;

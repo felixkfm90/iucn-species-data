@@ -33,6 +33,7 @@ export async function identityReviewStatus(taxonomyRoot, lifecycle = {}) {
     pending: Boolean(review) && (lifecycle.active?.inputRevisions?.identities || identityRegistryRevision(emptyIdentityRegistry())) !== revision,
     revision,
     candidateIncludesCurrent: Boolean(review) && lifecycle.candidate?.inputRevisions?.identities === revision,
+    classificationCandidateId: review?.registry.events.at(-1)?.type?.startsWith("classification") ? review.candidateId : null,
   };
 }
 

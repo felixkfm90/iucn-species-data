@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { normalizeIdentityProjectAssignments, checkIdentityProjectAssignments } from "./taxonomy-identity-projects.mjs";
-import { assertMatchingClassificationCase } from "./taxonomy-classification-review.mjs";
+import { assertMatchingClassificationCase, assertUnclearClassificationCase } from "./taxonomy-classification-review.mjs";
 
 const text = (value) => typeof value === "string" ? value.normalize("NFKC").trim() : "";
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const TYPES = new Set(["continuation", "split", "merge", "source-repair", "classification"]);
+const TYPES = new Set(["continuation", "split", "merge", "source-repair", "classification", "classification-deferred"]);
 const MAX_EVENTS = 10000;
 
 export function taxonIdentityKey(value) {
@@ -62,6 +62,22 @@ function checkClassification(event, sources, targets) {
   }
 }
 
+function checkClassificationDeferral(event, sources, targets) {
+  const proof = assertUnclearClassificationCase(event.classificationCase);
+  const evidenceKey = (entry) => JSON.stringify([entry.provider, entry.providerVersion, entry.providerRecordId]);
+  const expected = [...proof.sources.flatMap((source) => source.evidence), ...proof.target.colRecords.map((record) => ({
+    provider: "catalogue-of-life", providerVersion: proof.colVersion, providerRecordId: record.providerRecordId }))];
+  if (sources.length !== proof.sources.length || targets.length !== sources.length || event.projectAssignments?.length
+      || event.baseVersion !== proof.baseVersion || !/^[a-f0-9]{64}$/.test(event.classificationBatchRevision || "")
+      || sources.some((source, index) => source.masterTaxonId !== proof.sources[index].masterTaxonId
+        || taxonIdentityKey(source) !== taxonIdentityKey(proof.sources[index])
+        || JSON.stringify(source) !== JSON.stringify(targets[index]))
+      || expected.length !== event.evidence.length
+      || expected.some((entry) => !event.evidence.some((actual) => evidenceKey(entry) === evidenceKey(actual)))) {
+    throw new Error("Zurückstellung muss sämtliche bisherigen IDs unverändert erhalten; keine Nachfolgerzuordnung.");
+  }
+}
+
 export function emptyIdentityRegistry() {
   return { schemaVersion: 1, events: [] };
 }
@@ -77,6 +93,7 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
   const retired = new Set();
   const occupied = new Map();
   const projectState = new Map();
+  const deferredCases = new Set();
   const historyHash = crypto.createHash("sha256").update('{"schemaVersion":1,"events":[');
   for (const event of value.events) {
     if (event?.registryRevision !== historyHash.copy().update("]}").digest("hex")) {
@@ -94,9 +111,12 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
     if (repair) checkSourceRepair(event, sources, targets);
     else if (event.sourceRepair) throw new Error("Quellenreparaturbelege gehören nicht zu einer taxonomischen Entscheidung.");
     if (event.type === "classification") checkClassification(event, sources, targets);
+    else if (event.type === "classification-deferred") checkClassificationDeferral(event, sources, targets);
     else if (event.classificationCase || event.classificationBatchRevision) throw new Error("Klassifikationsbelege gehören nur zu einer bestätigten Klassifikationsentscheidung.");
     checkIdentityProjectAssignments(event, projectState, taxonIdentityKey);
-    const cardinality = ["continuation", "source-repair", "classification"].includes(event.type) ? sources.length === 1 && targets.length === 1
+    const deferral = event.type === "classification-deferred";
+    const cardinality = deferral ? sources.length > 0 && sources.length === targets.length
+      : ["continuation", "source-repair", "classification"].includes(event.type) ? sources.length === 1 && targets.length === 1
       : event.type === "split" ? sources.length === 1 && targets.length >= 2
         : sources.length >= 2 && targets.length === 1;
     if (!cardinality || sources.length > 100 || targets.length > 100
@@ -111,11 +131,13 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
           || (occupied.has(taxonIdentityKey(source)) && occupied.get(taxonIdentityKey(source)) !== source.masterTaxonId)) {
         throw new Error("Eine historische oder inzwischen geänderte Identität kann nicht erneut als Vorgänger verwendet werden.");
       }
+      if (deferral) continue; // A hold is not an identity transition or an ID reservation.
       current.delete(source.masterTaxonId);
       if (occupied.get(taxonIdentityKey(source)) === source.masterTaxonId) occupied.delete(taxonIdentityKey(source));
       if (!["continuation", "classification"].includes(event.type)) retired.add(source.masterTaxonId);
     }
     for (const target of targets) {
+      if (deferral) continue;
       if (!repair && event.type !== "classification" && (target.kingdom !== sources[0].kingdom || sources.some((source) => source.kingdom !== target.kingdom))) {
         throw new Error("Eine Identitätsentscheidung darf keine verschiedenen Reiche gleichsetzen.");
       }
@@ -136,6 +158,10 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
     }
     const { eventId, ...body } = event;
     if (digest(body) !== eventId) throw new Error("Die Prüfsumme der Identitätsentscheidung stimmt nicht.");
+    if (deferral) {
+      if (deferredCases.has(event.classificationCase.revision)) throw new Error("Dieser Quellenfall wurde bereits zurückgestellt.");
+      deferredCases.add(event.classificationCase.revision);
+    }
     if (eventIds.size) historyHash.update(",");
     historyHash.update(JSON.stringify(event));
     eventIds.add(eventId);
@@ -153,8 +179,10 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
   const historical = new Map();
   const aliases = new Map();
   const classifications = new Map();
+  const deferrals = [];
   const projectAssignments = new Map();
   for (const event of validated.events) {
+    if (event.type === "classification-deferred") { deferrals.push(event); continue; }
     checkIdentityProjectAssignments(event, projectAssignments, taxonIdentityKey);
     for (const source of event.sources) {
       current.delete(source.masterTaxonId);
@@ -173,12 +201,12 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
     }
     for (const target of event.targets) current.set(target.masterTaxonId, target);
   }
-  return { current, historical, aliases, classifications, projectAssignments };
+  return { current, historical, aliases, classifications, deferrals, projectAssignments };
 }
 
 // Incremental prefix hashing keeps a large confirmed batch linear in its size.
 // Generic identity previews cannot create this privileged decision type.
-export function appendClassificationBatch({ registry, cases, batchRevision, sourceRevision, inputRevision, confirmedAt }) {
+export function appendClassificationBatch({ registry, cases, batchRevision, sourceRevision, inputRevision, confirmedAt, deferred = false }) {
   registry = validateIdentityRegistry(registry);
   if (!Array.isArray(cases) || !cases.length || registry.events.length + cases.length > MAX_EVENTS) {
     throw new Error("Die Klassifikationsübernahme ist leer oder überschreitet die unterstützte Registergröße.");
@@ -187,12 +215,15 @@ export function appendClassificationBatch({ registry, cases, batchRevision, sour
   const prefix = crypto.createHash("sha256").update('{"schemaVersion":1,"events":[');
   events.forEach((event, index) => { if (index) prefix.update(","); prefix.update(JSON.stringify(event)); });
   for (const value of [...cases].sort((a, b) => a.revision.localeCompare(b.revision))) {
-    const proof = assertMatchingClassificationCase(value);
+    const proof = deferred ? assertUnclearClassificationCase(value) : assertMatchingClassificationCase(value);
     const source = snapshot(proof.sources[0]);
-    const body = { type: "classification", sources: [source], targets: [{ ...identity(proof.target), masterTaxonId: source.masterTaxonId }],
-      reason: "Bestätigte CoL-Klassifikation mit gleicher iNaturalist-ID; ursprüngliche Master-ID bleibt erhalten.",
-      evidence: [...proof.sources[0].evidence, { provider: "catalogue-of-life", providerVersion: proof.colVersion,
-        providerRecordId: proof.target.colRecords[0].providerRecordId }], baseVersion: proof.baseVersion,
+    const preserved = proof.sources.map((entry) => snapshot(entry));
+    const body = { type: deferred ? "classification-deferred" : "classification",
+      sources: deferred ? preserved : [source], targets: deferred ? structuredClone(preserved) : [{ ...identity(proof.target), masterTaxonId: source.masterTaxonId }],
+      reason: deferred ? "Unklare CoL-Klassifikation ausdrücklich zurückgestellt; bisherige Arten bleiben getrennt erhalten."
+        : "Bestätigte CoL-Klassifikation mit gleicher iNaturalist-ID; ursprüngliche Master-ID bleibt erhalten.",
+      evidence: [...proof.sources.flatMap((entry) => entry.evidence), ...proof.target.colRecords.map((record) => ({
+        provider: "catalogue-of-life", providerVersion: proof.colVersion, providerRecordId: record.providerRecordId }))], baseVersion: proof.baseVersion,
       sourceRevision, inputRevision, registryRevision: prefix.copy().update("]}").digest("hex"),
       classificationCase: proof, classificationBatchRevision: batchRevision, confirmedAt };
     const event = { ...body, eventId: digest(body) };

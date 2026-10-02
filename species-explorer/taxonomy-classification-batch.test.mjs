@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { classificationReviewCase } from "./taxonomy-classification-review.mjs";
+import { classificationReviewCase, assertUnclearClassificationCase } from "./taxonomy-classification-review.mjs";
 import { appendClassificationBatch, emptyIdentityRegistry, identityRegistryState, validateIdentityRegistry, previewIdentityDecision, confirmIdentityDecision, taxonIdentityKey } from "./taxonomy-identity-registry.mjs";
 import { createIdentityReviewService, readIdentityReview } from "./taxonomy-identity-review.mjs";
 import { buildTaxonomyMasterCandidate, inspectTaxonomyMasterCandidate } from "./taxonomy-master-candidate.mjs";
@@ -19,6 +19,7 @@ import { prepareMasterJob } from "./taxonomy-master-job.mjs";
 import { startMasterJobProcess } from "./taxonomy-master-process.mjs";
 import { identityTaxonDetails } from "./taxonomy-identity-cases.mjs";
 import { coverMasterInputSelection } from "./taxonomy-master-inputs.mjs";
+import { classificationDeferralSummary } from "./taxonomy-classification-deferral.mjs";
 
 const FIRST = new Date("2026-09-01T00:00:00Z"), SECOND = new Date("2026-10-02T00:00:00Z");
 const hash = async (file) => crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
@@ -34,6 +35,7 @@ function proof(index = 1, ids = [`inat:${index}`]) {
 }
 const batch = (cases, extra = {}) => appendClassificationBatch({ registry: emptyIdentityRegistry(), cases,
   batchRevision: "a".repeat(64), sourceRevision: "fixture-source", inputRevision: "fixture-input", confirmedAt: SECOND.toISOString(), ...extra });
+const identifiers = (...ids) => ids.map((identifier) => ({ type: "inat", identifier }));
 function rows(root, slot = "active") {
   const db = new DatabaseSync(taxonomyMasterDatabasePath(root, slot), { readOnly: true });
   try {
@@ -44,13 +46,14 @@ function rows(root, slot = "active") {
       aliases: db.prepare("SELECT * FROM master_taxon_alias WHERE alias_type='synonym'").all() };
   } finally { db.close(); }
 }
-async function fixture(t, { count = 1, missingLast = false } = {}) {
+async function fixture(t, { count = 1, missingLast = false, identifiersByIndex = null, multipleSources = false } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-classification-batch-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy");
   const records = Array.from({ length: count }, (_, index) => ({ providerRecordId: String(index + 1),
     scientificName: speciesName(index + 1), rank: "species", kingdom: "Bacteria",
     hierarchy: { kingdom: "Bacteria" }, relevanceReasons: ["col-reference-gap"] }));
+  if (multipleSources) { records[1].scientificName = records[0].scientificName; records[1].kingdom = "Animalia"; records[1].hierarchy.kingdom = "Animalia"; }
   const providerSlices = [{ manifest: { provider: "inaturalist", providerVersion: "fixture-inat", retrievedAt: FIRST.toISOString() }, records }];
   const projectTaxa = [{ projectTaxonKey: "fixture", projectSlug: "fixture", scientificName: records[0].scientificName,
     kingdom: "Bacteria", germanName: "Eigener Projektname" }];
@@ -58,14 +61,292 @@ async function fixture(t, { count = 1, missingLast = false } = {}) {
   await buildTaxonomyMasterCandidate({ taxonomyRoot: root, colRelease: release("col-old", FIRST), colRecords: [],
     providerSlices, projectTaxa, corrections, now: () => FIRST });
   await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
-  const colRecords = records.map((record, index) => ({ ...record, providerRecordId: `col-${index + 1}`, kingdom: "Bacillati",
-    hierarchy: { kingdom: "Bacillati" }, identifiers: missingLast && index === count - 1 ? [] : [{ type: "inat", identifier: `inat:${index + 1}` }] }));
+  const colRecords = (multipleSources ? records.slice(0, 1) : records).map((record, index) => ({ ...record, providerRecordId: `col-${index + 1}`, kingdom: "Bacillati",
+    hierarchy: { kingdom: "Bacillati" }, identifiers: identifiersByIndex ? identifiersByIndex[index]
+      : missingLast && index === count - 1 ? [] : [{ type: "inat", identifier: `inat:${index + 1}` }] }));
   const inputs = { taxonomyRoot: root, colRelease: release("col-next", SECOND), colRecords, providerSlices, projectTaxa, corrections, now: () => SECOND };
   const candidate = await buildTaxonomyMasterCandidate(inputs);
   let inputRevision = candidate.inputRevisions.identityInputs;
   const service = createIdentityReviewService({ taxonomyRoot: root, now: () => SECOND, readInputRevision: async () => inputRevision });
   return { root, service, inputs, candidate, setInputRevision: (value) => { inputRevision = value; } };
 }
+
+test("480 unklare Zurückstellungen reservieren keine neuen IDs und erzeugen weder Historiennachfolger noch Aliasse", () => {
+  const cases = Array.from({ length: 480 }, (_, index) => proof(index + 1, []));
+  const registry = batch(cases, { deferred: true }), state = identityRegistryState(registry);
+  assert.equal(state.deferrals.length, 480);
+  assert.equal(state.current.size, 0);
+  assert.equal(state.historical.size, 0);
+  assert.equal(state.aliases.size, 0);
+  assert.ok(registry.events.every((event) => JSON.stringify(event.sources) === JSON.stringify(event.targets)));
+  assert.throws(() => batch([proof()], { deferred: true }), /unklaren Quellenfall/);
+  assert.throws(() => previewIdentityDecision({ type: "classification-deferred" }), /Identitätsfortführung/);
+  assert.throws(() => batch([cases[0], cases[0]], { deferred: true }), /bereits zurückgestellt/);
+  const changed = structuredClone(cases[0]);
+  changed.target.kingdom = "Animalia";
+  assert.throws(() => assertUnclearClassificationCase(changed), /Quellenfall/);
+  const forged = structuredClone(registry);
+  forged.events[0].targets[0].masterTaxonId = `mtx_${"f".repeat(32)}`;
+  assert.throws(() => validateIdentityRegistry(forged), /bisherigen IDs/);
+});
+
+test("Zurückstellung nutzt geschützte POST-Routen und verlangt eigene Bestätigung mit unveränderter Vorschau", async (t) => {
+  for (const action of ["preview", "save"]) {
+    const url = `/api/taxonomy/master/classification/deferral-${action}`;
+    assert.equal(matchExplorerRoute("POST", url).action, `classification-deferral-${action}`);
+    assert.notEqual(matchExplorerRoute("GET", url).name, "taxonomy-master");
+  }
+  const { root, service, setInputRevision, candidate } = await fixture(t, { identifiersByIndex: [[]] });
+  const files = [taxonomyMasterDatabasePath(root), taxonomyMasterDatabasePath(root, "staging"),
+    taxonomyMasterManifestPath(root), taxonomyMasterManifestPath(root, "staging")], before = await Promise.all(files.map(hash));
+  const preview = await service.classificationDeferralPreview();
+  assert.equal(preview.count, 1);
+  assert.equal(await readIdentityReview(root), null);
+  await assert.rejects(service.classificationDeferralSave({ token: preview.token }), /ausdrücklich/);
+  await assert.rejects(service.classificationDeferralSave({ token: "stale", confirmed: true }), /veraltet/);
+  setInputRevision("changed");
+  await assert.rejects(service.classificationDeferralSave({ token: preview.token, confirmed: true }), /veraltet/);
+  setInputRevision(candidate.inputRevisions.identityInputs);
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  assert.equal((await readIdentityReview(root)).registry.events[0].type, "classification-deferred");
+  await assert.rejects(service.classificationDeferralSave({ token: preview.token, confirmed: true }), /bereits vorgemerkt/);
+  assert.deepEqual(await Promise.all(files.map(hash)), before);
+  const reopened = createIdentityReviewService({ taxonomyRoot: root });
+  const discard = await reopened.discardPreview();
+  await reopened.discard({ token: discard.token, confirmed: true });
+  assert.equal((await readIdentityReview(root)).registry.events.length, 0);
+  assert.equal((await reopened.classificationDeferralPreview()).count, 1);
+});
+
+test("abweichende, mehrdeutige und fehlende Belege lassen sich nur im frischen Kandidaten zurückstellen; Altarten bleiben erhalten", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 3,
+    identifiersByIndex: [identifiers("inat:999"), identifiers("inat:2", "inat:999"), []] }), before = rows(root);
+  const preview = await service.classificationDeferralPreview();
+  assert.equal(preview.count, 3);
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  const registry = (await readIdentityReview(root)).registry;
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /Vorgemerkte Identitätsentscheidungen|vor der Aktivierung/);
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 1000) });
+  const after = rows(root, "staging"), inspected = await inspectTaxonomyMasterCandidate(root);
+  assert.deepEqual(after, before);
+  assert.equal(inspected.blockingConflictCount, 0);
+  assert.equal(inspected.manifest.classificationReview.total, 0);
+  assert.equal(inspected.manifest.classificationDeferrals.total, 3);
+  assert.equal(inspected.manifest.classificationDeferrals.differentProviderId, 1);
+  assert.equal(inspected.manifest.classificationDeferrals.ambiguousProviderId, 1);
+  assert.equal(inspected.manifest.classificationDeferrals.missingProviderId, 1);
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 2000) });
+  await buildTaxonomyMasterCandidate({ ...inputs, now: () => new Date(SECOND.getTime() + 3000) });
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).manifest.classificationDeferrals.total, 3);
+  assert.deepEqual(rows(root, "staging"), before);
+  const searchRoot = path.join(root, "search");
+  await buildLightroomSearchPackage({ taxonomyRoot: root, searchRoot, now: () => SECOND });
+  const store = await openLightroomSearchStore({ searchRoot, slot: "staging" });
+  try {
+    for (const row of before.taxa) {
+      assert.equal(store.identityResolution(row.master_taxon_id).state, "current");
+      assert.equal(store.taxon(row.master_taxon_id).kingdom, "Bacteria");
+    }
+  } finally { store.close(); }
+  await rollbackTaxonomyMaster(root, { confirmed: true });
+  assert.deepEqual(rows(root), before);
+});
+
+test("passende Übernahme und unklare Zurückstellung werden in beiden Reihenfolgen ohne Zwischenaufbau gebündelt", async (t) => {
+  for (const deferredFirst of [false, true]) await t.test(String(deferredFirst), async (subtest) => {
+    const { root, service, inputs } = await fixture(subtest, { count: 2, missingLast: true });
+    const original = rows(root);
+    const [firstPreview, firstSave, secondPreview, secondSave] = deferredFirst
+      ? ["classificationDeferralPreview", "classificationDeferralSave", "classificationPreview", "classificationSave"]
+      : ["classificationPreview", "classificationSave", "classificationDeferralPreview", "classificationDeferralSave"];
+    const staleSecond = await service[secondPreview]();
+    const first = await service[firstPreview]();
+    await service[firstSave]({ token: first.token, confirmed: true });
+    await assert.rejects(service[secondSave]({ token: staleSecond.token, confirmed: true }), /veraltet/);
+    const second = await service[secondPreview]();
+    await service[secondSave]({ token: second.token, confirmed: true });
+    const registry = (await readIdentityReview(root)).registry;
+    assert.equal(registry.events.length, 2);
+    await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 1000) });
+    const after = rows(root, "staging"), inspected = await inspectTaxonomyMasterCandidate(root);
+    assert.deepEqual(after.taxa.map((row) => row.master_taxon_id), original.taxa.map((row) => row.master_taxon_id));
+    assert.equal(after.taxa.filter((row) => row.kingdom === "Bacillati").length, 1);
+    assert.equal(inspected.blockingConflictCount, 0);
+    assert.equal(inspected.manifest.classificationDeferrals.total, 1);
+  });
+});
+
+test("veränderte Quellen werden nach aktivierter Zurückstellung wieder offen geprüft; unbelegtes frisches Ereignis stoppt", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] }), before = rows(root);
+  const preview = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  const registry = (await readIdentityReview(root)).registry;
+  const changed = [{ ...inputs.colRecords[0], identifiers: identifiers("inat:999") }];
+  await assert.rejects(buildTaxonomyMasterCandidate({ ...inputs, colRecords: changed, identityRegistry: registry,
+    now: () => new Date(SECOND.getTime() + 1000) }), /nicht mehr unverändert/);
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 2000) });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 3000) });
+  await buildTaxonomyMasterCandidate({ ...inputs, colRecords: changed, now: () => new Date(SECOND.getTime() + 4000) });
+  const inspected = await inspectTaxonomyMasterCandidate(root);
+  assert.equal(inspected.manifest.classificationDeferrals.total, 0);
+  assert.equal(inspected.manifest.classificationReview.differentProviderId, 1);
+  assert.equal(inspected.blockingConflictCount, 1);
+  assert.deepEqual(rows(root), before);
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /vor der Aktivierung/);
+});
+
+test("Zurückstellung im echten Worker hält Altarten, Namen und Projektlinks; gespeicherte Übersicht ist prüfpflichtig", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] }), before = rows(root);
+  const preview = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  const registry = (await readIdentityReview(root)).registry;
+  const job = await prepareMasterJob({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 1000) });
+  const candidate = await startMasterJobProcess({ taxonomyRoot: root, id: job.id });
+  assert.equal(candidate.classificationDeferrals.total, 1);
+  assert.deepEqual(rows(root, "staging"), before);
+  const manifestFile = taxonomyMasterManifestPath(root, "staging"), manifest = JSON.parse(await fs.readFile(manifestFile, "utf8"));
+  manifest.classificationDeferrals.total = 0;
+  await fs.writeFile(manifestFile, JSON.stringify(manifest));
+  await assert.rejects(inspectTaxonomyMasterCandidate(root), /Zurückstellungsübersicht/);
+  assert.deepEqual(rows(root), before);
+});
+
+test("mehrdeutiger Fall mit zwei bisherigen Arten erhält beide IDs und keine fremde Zielart", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 2, multipleSources: true, identifiersByIndex: [[]] });
+  const before = rows(root), preview = await service.classificationDeferralPreview();
+  assert.equal(preview.count, 1);
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  const registry = (await readIdentityReview(root)).registry;
+  assert.equal(registry.events[0].sources.length, 2);
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 1000) });
+  assert.deepEqual(rows(root, "staging"), before);
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).blockingConflictCount, 0);
+});
+
+test("Zurückstellung oberhalb von 100 Fällen ist vollständig und ihre Statusübersicht bleibt kompakt", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 105, identifiersByIndex: Array.from({ length: 105 }, () => []) });
+  const preview = await service.classificationDeferralPreview(), before = rows(root);
+  assert.equal(preview.count, 105);
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  const inspected = await inspectTaxonomyMasterCandidate(root);
+  assert.equal(inspected.manifest.classificationDeferrals.total, 105);
+  assert.equal(inspected.blockingConflictCount, 0);
+  assert.ok(JSON.stringify(inspected.manifest.classificationDeferrals).length < 2000);
+  assert.deepEqual(rows(root, "staging"), before);
+});
+
+test("beide Rückfragen haben getrennte Tokens; Zurückstellungs-Schreibfehler ist ohne Teilentscheidung wiederholbar", async (t) => {
+  const { root, service, candidate } = await fixture(t, { count: 2, missingLast: true });
+  const matching = await service.classificationPreview();
+  await assert.rejects(service.classificationDeferralSave({ token: matching.token, confirmed: true }), /veraltet/);
+  const broken = createClassificationReviewService({ taxonomyRoot: root, now: () => SECOND,
+    readReview: () => readIdentityReview(root), readInputRevision: async () => candidate.inputRevisions.identityInputs,
+    writeReview: async () => { throw new Error("Schreibfehler"); } });
+  const preview = await broken.classificationDeferralPreview();
+  await assert.rejects(broken.classificationDeferralSave({ token: preview.token, confirmed: true }), /Schreibfehler/);
+  assert.equal(await readIdentityReview(root), null);
+  const fresh = await service.classificationDeferralPreview();
+  assert.equal((await service.classificationDeferralSave({ token: fresh.token, confirmed: true })).saved, true);
+});
+
+test("alte Kandidaten erhalten keine rückwirkende Zurückstellungsfreigabe", async (t) => {
+  const { root, service } = await fixture(t, { identifiersByIndex: [[]] });
+  const file = taxonomyMasterManifestPath(root, "staging"), manifest = JSON.parse(await fs.readFile(file, "utf8"));
+  delete manifest.classificationReview.deferralAvailable;
+  await fs.writeFile(file, JSON.stringify(manifest));
+  await assert.rejects(service.classificationDeferralPreview(), /ältere Kandidat/);
+  assert.equal(await readIdentityReview(root), null);
+});
+
+test("entfernte Prüfzeilen oder wieder geöffnete Zurückstellungen verhindern die Freigabe", async (t) => {
+  for (const mode of ["removed", "reopened"]) await t.test(mode, async (subtest) => {
+    const { root, service, inputs } = await fixture(subtest, { identifiersByIndex: [[]] });
+    const preview = await service.classificationDeferralPreview();
+    await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+    await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+      now: () => new Date(SECOND.getTime() + 1000) });
+    const db = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"));
+    try {
+      if (mode === "removed") db.exec("DELETE FROM master_conflict WHERE conflict_id GLOB 'classification_hold_*'");
+      else db.exec("UPDATE master_conflict SET conflict_state='open' WHERE conflict_id GLOB 'classification_hold_*'");
+    } finally { db.close(); }
+    if (mode === "removed") {
+      const file = taxonomyMasterManifestPath(root, "staging"), manifest = JSON.parse(await fs.readFile(file, "utf8"));
+      manifest.classificationDeferrals = classificationDeferralSummary([]);
+      await fs.writeFile(file, JSON.stringify(manifest));
+    }
+    await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /Zurückstellung|Klassifikationsprüfung/);
+  });
+});
+
+test("geprüfte Eingangsgrundlage bewahrt ausgelassene CoL-Belege und erhält die Zurückstellung im Folgeabgleich", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] });
+  async function covered(options) {
+    const selection = coverMasterInputSelection({ ...options, targetNames: options.providerSlices[0].records.map((record) => record.scientificName) });
+    return buildTaxonomyMasterCandidate({ ...options, colRecords: selection.records(), buildInputCoverage: selection.coverage });
+  }
+  const preview = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  const candidate = await covered({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  assert.equal(candidate.buildInputs.available, true);
+  assert.equal(candidate.classificationDeferrals.total, 1);
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 2000) });
+  const expected = rows(root);
+  const followup = await covered({ ...inputs, now: () => new Date(SECOND.getTime() + 3000) });
+  assert.equal(followup.buildInputs.available, true);
+  assert.equal(followup.classificationDeferrals.total, 1);
+  assert.deepEqual(rows(root, "staging"), expected);
+});
+
+test("zusätzlicher eigenständiger Zielbeleg entwertet die alte Zurückstellung statt fremde Quellen auszublenden", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] });
+  const preview = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 2000) });
+  const extra = { manifest: { provider: "gbif", providerVersion: "fixture-gbif", retrievedAt: SECOND.toISOString() }, records: [{
+    ...inputs.colRecords[0], providerRecordId: "gbif-independent", relevanceReasons: ["col-reference-gap"] }] };
+  await buildTaxonomyMasterCandidate({ ...inputs, providerSlices: [...inputs.providerSlices, extra], now: () => new Date(SECOND.getTime() + 3000) });
+  const inspected = await inspectTaxonomyMasterCandidate(root);
+  assert.equal(inspected.manifest.classificationDeferrals.total, 0);
+  assert.equal(inspected.manifest.classificationReview.total, 1);
+  assert.equal(inspected.blockingConflictCount, 1);
+  await assert.rejects(service.classificationDeferralPreview(), /nicht mehr eindeutig/);
+});
+
+test("neuer CoL-Release erfordert neue Zurückstellung; später passender Quellenbeleg kann mit alter ID übernommen werden", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] }), before = rows(root);
+  const first = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: first.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 2000) });
+  const next = { ...inputs, colRelease: release("col-later", SECOND) };
+  await buildTaxonomyMasterCandidate({ ...next, now: () => new Date(SECOND.getTime() + 3000) });
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).blockingConflictCount, 1);
+  const fresh = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: fresh.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...next, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 4000) });
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).manifest.classificationDeferrals.total, 1);
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 5000) });
+  const resolved = [{ ...inputs.colRecords[0], identifiers: identifiers("inat:1") }];
+  await buildTaxonomyMasterCandidate({ ...next, colRecords: resolved, now: () => new Date(SECOND.getTime() + 6000) });
+  const matching = await service.classificationPreview();
+  await service.classificationSave({ token: matching.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...next, colRecords: resolved, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 7000) });
+  const inspected = await inspectTaxonomyMasterCandidate(root);
+  assert.equal(inspected.blockingConflictCount, 0);
+  assert.equal(inspected.manifest.classificationDeferrals.total, 0);
+  assert.equal(rows(root, "staging").taxa[0].master_taxon_id, before.taxa[0].master_taxon_id);
+  assert.equal(rows(root, "staging").taxa[0].kingdom, "Bacillati");
+  assert.deepEqual(rows(root, "staging").names, before.names);
+});
 
 test("1693 bestätigte Klassifikationen erhalten IDs ohne historische Umleitung oder falsche Synonyme", () => {
   const registry = batch(Array.from({ length: 1693 }, (_, index) => proof(index + 1)));
@@ -118,7 +399,7 @@ test("Vorschau schreibt nichts, Bestätigung nur Vormerkung; Wiederholung und ge
   assert.equal(saved.pending, true);
   assert.equal(saved.changesPhotos, false);
   assert.equal((await readIdentityReview(root)).registry.events.length, 1);
-  await assert.rejects(service.classificationSave({ token: preview.token, confirmed: true }), /vormerkungen/);
+  await assert.rejects(service.classificationSave({ token: preview.token, confirmed: true }), /vorgemerkt|vormerkungen/);
   assert.deepEqual(await Promise.all(files.map(hash)), before);
   const reopened = createIdentityReviewService({ taxonomyRoot: root, now: () => SECOND });
   const discard = await reopened.discardPreview();

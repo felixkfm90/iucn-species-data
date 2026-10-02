@@ -223,6 +223,7 @@
     let pollTimer = null;
     let classificationBusy = false;
     let classificationSaved = false;
+    let deferralSaved = false;
     let classificationSavedCandidateId = null;
 
     function setActionMessage(message, type = "") {
@@ -241,7 +242,7 @@
         `).join("");
     }
 
-    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false) {
+    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false, deferrals = null) {
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
       const total = Number(blockingConflictCount ?? blocking.length);
       const classificationTotal = Number(classificationReview?.total || blocking.filter((entry) => entry.identityReviewRequired).length);
@@ -264,11 +265,13 @@
             ${Number(classificationReview?.groupCount) > (classificationReview?.groups || []).length ? `<span>Die Übersicht zeigt die ${format(classificationReview.groups.length)} größten Gruppen von ${format(classificationReview.groupCount)}.</span>` : ""}
           </div>
           ${matching && classificationReview?.acceptanceAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-preview${actionsBlocked || classificationBusy || classificationSaved ? " disabled" : ""}>Passende Klassifikationen prüfen …</button></div>` : ""}
+          ${classificationTotal > matching && classificationReview?.deferralAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-defer${actionsBlocked || classificationBusy || deferralSaved ? " disabled" : ""}>Unklare Fälle zurückstellen …</button></div>` : ""}
         </article>
       `;
-      elements.taxonomyMasterConflicts.hidden = total === 0;
+      const held = Number(deferrals?.total || 0) ? `<article class="taxonomy-master-conflict"><strong>${format(deferrals.total)} ${deferrals.total === 1 ? "unklarer Fall zurückgestellt" : "unklare Fälle zurückgestellt"}</strong><span>Neue CoL-Gegenstücke vorerst nicht übernommen. Bisherige Arten, IDs und eigene Namen bleiben erhalten. Geänderte Quellenfälle benötigen erneut eine Entscheidung.</span></article>` : "";
+      elements.taxonomyMasterConflicts.hidden = total === 0 && !held;
       if (regularTotal > regular.length) {
-        elements.taxonomyMasterConflicts.innerHTML = grouped + `
+        elements.taxonomyMasterConflicts.innerHTML = held + grouped + `
           <div class="taxonomy-master-conflict-overflow">
             <strong>${regularTotal.toLocaleString("de-DE")} technische Konflikte erkannt</strong>
             <span>Dieser Kandidat wird nicht als Liste von Einzelentscheidungen angeboten. Bitte die Masterdatenbank mit dem aktuellen Programmstand neu aufbauen.</span>
@@ -276,7 +279,7 @@
         `;
         return;
       }
-      elements.taxonomyMasterConflicts.innerHTML = grouped + regular.map((entry) => `
+      elements.taxonomyMasterConflicts.innerHTML = held + grouped + regular.map((entry) => `
         <article class="taxonomy-master-conflict" data-master-conflict="${escapeHtml(entry.id)}">
           <div class="taxonomy-master-conflict-copy">
             <strong>${escapeHtml(entry.species)}</strong>
@@ -304,9 +307,10 @@
       state.taxonomyMasterSnapshot = status;
       state.renderTaxonomyDatabaseOverview?.();
       const lifecycle = status.lifecycle || {};
-      if (classificationSaved && ((lifecycle.candidate?.candidateId && lifecycle.candidate.candidateId !== classificationSavedCandidateId)
+      if ((classificationSaved || deferralSaved) && ((lifecycle.candidate?.candidateId && lifecycle.candidate.candidateId !== classificationSavedCandidateId)
           || (status.identities && !status.identities.pending))) {
         classificationSaved = false;
+        deferralSaved = false;
       }
       const active = status.active === true || ACTIVE_STATES.has(status.status);
       elements.taxonomyMasterSummary.textContent = masterSummary(status);
@@ -322,7 +326,9 @@
       }
       renderDiff(lifecycle.candidate);
       renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview,
-        active || (status.identities?.pending && !status.identities.candidateIncludesCurrent));
+        active || (status.identities?.pending && !status.identities.candidateIncludesCurrent
+          && status.identities.classificationCandidateId !== lifecycle.candidate?.candidateId),
+        (lifecycle.candidate || lifecycle.active)?.classificationDeferrals);
       elements.taxonomyMasterBuildButton.disabled = active || classificationBusy;
       elements.taxonomyMasterActivateButton.disabled = active || classificationBusy || !lifecycle.canActivate;
       elements.taxonomyMasterRollbackButton.disabled = active || classificationBusy || !lifecycle.canRollback;
@@ -365,6 +371,7 @@
 
     async function decide(event) {
       if (event.target.closest("[data-classification-preview]")) return reviewClassification();
+      if (event.target.closest("[data-classification-defer]")) return reviewClassification(true);
       const button = event.target.closest("[data-master-conflict-save]");
       if (!button) return;
       const card = button.closest("[data-master-conflict]");
@@ -386,23 +393,27 @@
       }
     }
 
-    async function reviewClassification() {
+    async function reviewClassification(deferred = false) {
       const snapshot = state.taxonomyMasterSnapshot || {};
-      if (classificationBusy || classificationSaved || snapshot.active || ACTIVE_STATES.has(snapshot.status)
-          || (snapshot.identities?.pending && !snapshot.identities.candidateIncludesCurrent)) return;
+      if (classificationBusy || (deferred ? deferralSaved : classificationSaved) || snapshot.active || ACTIVE_STATES.has(snapshot.status)
+          || (snapshot.identities?.pending && !snapshot.identities.candidateIncludesCurrent
+            && snapshot.identities.classificationCandidateId !== snapshot.lifecycle?.candidate?.candidateId)) return;
       classificationBusy = true;
       render(snapshot);
       try {
-        const preview = await fetchJson("/api/taxonomy/master/classification/preview", { method: "POST", body: "{}" });
+        const preview = await fetchJson(`/api/taxonomy/master/classification/${deferred ? "deferral-preview" : "preview"}`, { method: "POST", body: "{}" });
         const format = (value) => Number(value || 0).toLocaleString("de-DE");
         const groups = (preview.groups || []).map((entry) => `${entry.previousKingdom} → ${entry.newKingdom}: ${format(entry.count)}`).join("; ");
-        const confirmed = await showQuickConfirm({ eyebrow: "Klassifikation mit ID-Erhalt", title: "Passende CoL-Klassifikationen vormerken?",
-          message: `${format(preview.count)} ${preview.count === 1 ? "Fall" : "Fälle"} mit eindeutiger übereinstimmender iNaturalist-ID. ${groups}. ${format(preview.remaining)} unklare Fälle bleiben gesperrt. Die ursprünglichen Master-IDs, eigenen Namen und Projektlinks bleiben erhalten. Nur Vormerkung; kein automatischer Aufbau, Paketwechsel oder Fotoabgleich.`,
-          confirmLabel: "Klassifikationen vormerken" });
+        const confirmed = await showQuickConfirm({ eyebrow: deferred ? "Unklare Quellenfälle" : "Klassifikation mit ID-Erhalt",
+          title: deferred ? "Unklare CoL-Gegenstücke vorerst nicht übernehmen?" : "Passende CoL-Klassifikationen vormerken?",
+          message: deferred ? `${format(preview.count)} ${preview.count === 1 ? "unklarer Fall" : "unklare Fälle"}. ${groups}. Nur die neuen CoL-Gegenstücke werden vorerst nicht übernommen. Die bisherigen Arten, Master-IDs, eigenen Namen und Projektlinks bleiben erhalten. Geänderte Quellenfälle werden erneut offen geprüft. Nur Vormerkung; kein automatischer Aufbau, Paketwechsel oder Fotoabgleich.`
+            : `${format(preview.count)} ${preview.count === 1 ? "Fall" : "Fälle"} mit eindeutiger übereinstimmender iNaturalist-ID. ${groups}. ${format(preview.remaining)} unklare Fälle bleiben gesperrt. Die ursprünglichen Master-IDs, eigenen Namen und Projektlinks bleiben erhalten. Nur Vormerkung; kein automatischer Aufbau, Paketwechsel oder Fotoabgleich.`,
+          confirmLabel: deferred ? "Zurückstellung vormerken" : "Klassifikationen vormerken" });
         if (!confirmed) return;
-        const saved = await fetchJson("/api/taxonomy/master/classification/save", { method: "POST",
+        const saved = await fetchJson(`/api/taxonomy/master/classification/${deferred ? "deferral-save" : "save"}`, { method: "POST",
           body: JSON.stringify({ token: preview.token, confirmed: true }) });
-        classificationSaved = true;
+        if (deferred) deferralSaved = true;
+        else classificationSaved = true;
         classificationSavedCandidateId = snapshot.lifecycle?.candidate?.candidateId || null;
         setActionMessage(saved.message, "success");
       } catch (error) {

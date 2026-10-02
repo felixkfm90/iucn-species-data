@@ -40,6 +40,7 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
     if (event.baseVersion !== baseVersion || event.sourceRevision !== sourceRevision || event.inputRevision !== inputRevision) {
       throw new Error("Die Identitätsentscheidung gehört zu einem anderen Master- oder Quellenstand. Bitte erneut prüfen.");
     }
+    if (event.type === "classification-deferred") continue; // Fresh case/extent validation follows before any candidate writes.
     validateProjectAssignmentsAgainstActive(event, previousState);
     if (event.type === "classification") validateNewClassification({ event, previousState, groups, releases, baseVersion });
     for (const source of event.sources) {

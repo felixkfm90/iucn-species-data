@@ -25,7 +25,7 @@ export function checkIdentityProjectAssignments(event, projectState, keyOf) {
   for (const assignment of normalizeIdentityProjectAssignments(event.projectAssignments)) {
     const target = event.targets.find((entry) => keyOf(entry) === assignment.targetKey);
     const previous = projectState.get(assignment.projectTaxonKey);
-    if (["continuation", "classification"].includes(event.type) || !target
+    if (["continuation", "classification", "classification-deferred"].includes(event.type) || !target
         || !event.sources.some((source) => source.masterTaxonId === assignment.sourceMasterTaxonId)
         || (previous && previous.targetMasterTaxonId !== assignment.sourceMasterTaxonId)) {
       throw new Error("Die Projekt-Nachfolgerzuordnung passt nicht zur bestätigten Identitätskette.");
@@ -35,7 +35,7 @@ export function checkIdentityProjectAssignments(event, projectState, keyOf) {
 }
 
 export function validateProjectAssignmentsAgainstActive(event, previousState) {
-  if (["continuation", "classification"].includes(event.type)) return;
+  if (["continuation", "classification", "classification-deferred"].includes(event.type)) return;
   const expected = event.sources.flatMap((source) => previousState.projectsFor(source.masterTaxonId)
     .map((project) => ({ ...project, sourceMasterTaxonId: source.masterTaxonId })));
   const assignments = event.projectAssignments || [];

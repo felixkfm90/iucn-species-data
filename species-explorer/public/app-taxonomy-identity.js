@@ -3,6 +3,7 @@
 
   const TYPES = Object.freeze({ continuation: "Dieselbe Art – wissenschaftlicher Name geändert",
     classification: "Bestätigte CoL-Klassifikation – bisherige Art-ID bleibt erhalten",
+    "classification-deferred": "Unklare CoL-Klassifikation zurückgestellt – bisherige Arten bleiben erhalten",
     split: "Eine Art wurde aufgeteilt", merge: "Mehrere Arten wurden zusammengeführt",
     "source-repair": "Quellendaten repariert – ursprüngliche Art-ID wiederhergestellt" });
   const PROVIDERS = Object.freeze({ "catalogue-of-life": "Catalogue of Life", inaturalist: "iNaturalist",

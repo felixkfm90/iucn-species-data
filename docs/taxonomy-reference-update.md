@@ -171,7 +171,7 @@ Am 2. Oktober nach Felix' erneutem „Weiter“ implementiert; keine produktiven
   und eindeutig vorhandener iNaturalist-ID. Fehlende/widersprüchliche Belege oder eine weitere abweichende
   Identitätskette stoppen zur erneuten Prüfung, statt eine automatische Migration abzuleiten. Diese enge
   Wiederverwendung ersetzt noch keinen allgemeinen Workflow für sämtliche späteren Identitätsänderungen.
-- Unklare Fälle bleiben auch nach der Bündelbestätigung offen und blockieren die Einzel-/Paarfreigabe. Eine
+- Zu diesem Zwischenstand bleiben unklare Fälle auch nach der Bündelbestätigung offen und blockieren die Einzel-/Paarfreigabe. Eine
   vorhandene eigene geschützte Hierarchieentscheidung wird nicht pauschal überschrieben. Offen bleibt der
   nächste Schritt: ausdrückliche Zurückstellung unklarer Fälle an der Freigabegrenze sowie einheitlicher
   Update-Einstieg. Deshalb weiterhin keinen produktiven `COL26.9 XR`-Lauf zur Bedienabnahme starten.
@@ -190,7 +190,65 @@ enthalten; kein vollständiges `quality:ci` in dieser Stufe. Explorer-JS ist nic
 Lua-Version weiterhin `0.4.24.14`.
 
 Der [Pages-Lauf für die erste Stufe `ea55bb4`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37009726984)
-ist vollständig erfolgreich. Das ist kein vorweggenommener Deploymentnachweis dieser zweiten Stufe.
+und der [Lauf für die zweite Stufe `cca8268`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37015180330)
+sind vollständig erfolgreich. Das ist kein vorweggenommener Deploymentnachweis der folgenden dritten Stufe.
+
+## Dritte Umsetzungsstufe: unklare Fälle ausdrücklich zurückstellen
+
+Am 2. Oktober nach Felix' erneutem „weiter“ implementiert; keine produktiven Daten verändert:
+
+- `Unklare Fälle zurückstellen …` verwendet eine eigene gebundene Vorschau und ausdrückliche Rückfrage.
+  Abweichende, mehrdeutige oder fehlende Quellenverweise sind keine Gleichsetzung von Arten. Die Vorschau
+  prüft alle betroffenen bisherigen IDs, Quellenbelege, neue CoL-Gegenstücke, Eingangs-/Korrekturrevisionen und
+  bereits gespeicherte Vormerkungen. Geschützte POST-Routen `classification/deferral-preview` und
+  `classification/deferral-save` nutzen die bestehende Master-/Korrektursperre; kein automatischer Aufbau.
+- Bestätigung speichert ausschließlich append-only Ereignisse `classification-deferred` in der vorhandenen
+  Vormerkungsdatei. Quellen und Ziele enthalten dieselben bisherigen IDs/Tupel; keine neue ID, historische
+  Nachfolgerumleitung, künstliches Synonym oder Projektzuweisung. Passende Fälle können nicht über diesen
+  Weg zurückgestellt werden. Die allgemeine Identitätsvorschau kann den Sondertyp nicht erzeugen.
+- Passende Übernahme und unklare Zurückstellung können in beiden Reihenfolgen zum selben unveränderten
+  Kandidaten vorgemerkt werden. Jede neue Vorschau bindet den inzwischen erweiterten Registerstand; alte Tokens
+  werden abgewiesen. Kein teurer Zwischenaufbau allein zwischen den zwei Rückfragen erforderlich. Fremde
+  Identitätsvormerkungen, ein anderer Kandidat oder geänderte Quellen-/Projektwerte sperren diese Abkürzung.
+- Erst ein ausdrücklich gestarteter frischer Kandidat regeneriert die tatsächlichen Quellenfälle und verarbeitet
+  die Entscheidung. Er lässt ausschließlich die gebundenen neuen CoL-Gruppen aus. Bestehende Identitäten,
+  Projektwerte, eigene Korrekturen oder zusätzliche unabhängige Anbieterbelege am Ziel dürfen nicht ausgeblendet
+  werden. Alle bisherigen Arten müssen weiterhin aktiv und aktuell belegt sein; mehrdeutige Fälle erhalten
+  sämtliche bisherigen IDs getrennt. Andere Arten/Quellenkonflikte bleiben unverändert zu prüfen.
+- Ausgelassene rohe CoL-Eingänge bleiben in der geprüften Vergleichsgrundlage, der Fallbeleg in der Historie.
+  Der neue Master führt pro angewendetem Ereignis eine gebundene `classification_hold_`-Prüfzeile im Zustand
+  `dismissed`, keine normale Feldentscheidung. Die kompakte Manifestübersicht bindet alle Fälle/Entscheidungen
+  per Revision und zeigt höchstens acht Gruppen, ohne tausende Ereignisse bei jeder Statusabfrage zu übertragen.
+  Die Kandidaten-/Aktivierungsprüfung prüft ID-Erhalt, fehlendes neues Ziel, Registerbeleg und vollständige
+  Anwendung frischer Vormerkungen; manipulierte Zähler, entfernte oder wieder geöffnete Prüfzeilen sperren.
+- Unverändert belegte Fälle dürfen bei einem folgenden Aufbau zurückgestellt bleiben. Ein neuer CoL-Release,
+  andere ID-Verweise, veränderte bisherige Belege oder zusätzliche unabhängige Zielquellen entwerten diese
+  fallbezogene Freigabe: der Fall bleibt wieder offen. Eine später eindeutig passende Verbindung kann nach
+  neuer Vorschau ausdrücklich mit ursprünglicher ID übernommen werden. Die alte Zurückstellung bleibt als
+  Nachweis erhalten, gilt aber nicht als Identitätsentscheidung oder pauschale Dauerfreigabe.
+- Der normale Eingangsleser kann bekannte Lücken bei unverändertem CoL-Stand weiter überspringen. Eine dann
+  nicht erneut gelesene Gegenstelle erzeugt keine neue angewendete Prüffallzahl; die gespeicherte Historie bleibt
+  erhalten. Die Übersicht zählt tatsächlich im aktuellen Kandidaten geprüfte/anwendbare Fälle, nicht alle
+  jemals gespeicherten Zurückstellungen. Neue CoL-Stände müssen wie bisher die Lücken erneut lesen.
+- Abbrechen schreibt nichts. Offene Vormerkungen lassen sich über die bestehende bestätigte Rücknahme verwerfen;
+  aktive Entscheidungen nur über den kontrollierten Rollback. Keine Quellen-/Historienbereinigung, Fotomigration,
+  Projekt-/Assetumbenennung oder produktive Paaraktivierung. Alte Kandidaten ohne `deferralAvailable` bekommen
+  keine rückwirkende Freigabe. Registergrenze 10.000 Ereignisse; höchstens 100 bisherige Arten je Quellenfall.
+
+Offen bleibt die Vereinheitlichung der Update-Einstiege und die anschließende praktische Gesamtabnahme.
+Weiterhin keinen produktiven `COL26.9 XR`-Lauf allein für diese Implementierungsprüfung starten. Der synthetische
+480-Fälle-Test ist kein neuer Vergleich der historischen produktiven 480 unklaren Fälle. Lua-Version bleibt
+`0.4.24.14`; Explorer-JS ist nicht im Squarespace-Footer eingebunden, Footer/CSS unverändert.
+
+Prüfabschluss dieser dritten Stufe: 238 gezielte Tests in 14 Dateien mit Exit 0, ohne Fehler, Abbrüche oder
+übersprungene Tests. Enthalten sind echte Master-Hilfsprozesse, enge Quellenreparatur, bisherige Identitätswege,
+Lightroom-ID-Auflösung, synthetische 480 unklare Fälle, mehrere bisherige Arten und 105 vollständig angewendete
+Zurückstellungen oberhalb der Listenbegrenzung. Beide Bündelreihenfolgen ohne Zwischenaufbau, Abbruch,
+veraltete/quermodale Freigaben, Schreibfehler mit Wiederholung, Fortsetzung, Rollback, manipulierte/entfernte
+Prüfzeilen und alte Kandidaten geprüft. Neue CoL-Version und unabhängige Zielquellen öffnen den Fall wieder;
+später passende Übernahme erhält die alte ID. Syntax (356 Dateien), Stil, 70 Markdown-Dateien ohne fehlende
+lokale Verweise, aktueller Projektstatus und Diffprüfung bestanden. Kein vollständiges `quality:ci`,
+produktiver Vergleich/Aufbau, praktischer Bediennachweis oder Phase-10.5-Audit in diesem Schritt.
 
 ## Download, Import und Aktivierung
 

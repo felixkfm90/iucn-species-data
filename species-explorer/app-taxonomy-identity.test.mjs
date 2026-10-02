@@ -142,6 +142,17 @@ test("Klassifikationsvormerkung zeigt einen verständlichen Historientitel und k
   assert.doesNotMatch(html, /<option[^>]+value="classification"/);
 });
 
+test("Zurückstellung erscheint ausdrücklich als Beibehalten ohne frei wählbare Identitätsmigration", async () => {
+  const f = fixture(() => ({ available: true, cases: [], review: { events: [{ type: "classification-deferred",
+    sources: [taxon], targets: [taxon], reason: "Neues CoL-Gegenstück nicht übernehmen" }] } }));
+  f.controller.open();
+  await new Promise(setImmediate);
+  assert.match(f.get("pending-list").innerHTML, /Unklare CoL-Klassifikation zurückgestellt – bisherige Arten bleiben erhalten/);
+  assert.doesNotMatch(f.get("pending-list").innerHTML, /undefined/);
+  const html = await fs.readFile(new URL("./public/index.html", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /<option[^>]+value="classification-deferred"/);
+});
+
 test("Verwerfen braucht einen zweiten Klick und Abbrechen schreibt nichts", async () => {
   const f = fixture((url) => {
     if (url.endsWith("browse")) return { cases: [], review: { events: [], truncated: false } };

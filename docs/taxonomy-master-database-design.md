@@ -147,6 +147,11 @@ die ausdrücklich bestätigte CoL-Reichsklassifikation bei gleichem wissenschaft
 eindeutiger iNaturalist-ID. Es behält die ursprüngliche aktive ID; allgemeine Fortführung/Split/Merge dürfen
 weiterhin keine verschiedenen Reiche gleichsetzen. Komplette Fallbelege, Vorschau-/Batchrevision und Historie
 sind gebunden. Die Klassifikation erzeugt kein Namenssynonym und verändert keine Fotos oder Projektdateien.
+Der getrennte Typ `classification-deferred` bestätigt dagegen keine Identitätsänderung: Er erhält sämtliche
+bisherigen IDs/Tupel und erlaubt ausschließlich das vorläufige Auslassen der gebundenen neuen CoL-Gegenstücke
+in einem frischen Kandidaten. Keine ID-Reservierung, historische Umleitung, Aliasbildung oder Projektmigration.
+Quellenfall, Batch- und Eingangsrevisionen bleiben im append-only Register. Unveränderte Fälle werden erneut
+belegt; geänderte Quellen/Releases bleiben offen und sperren die Freigabe bis zur erneuten Entscheidung.
 Explorer-Fallansicht, Vorschau und Vormerkung sind implementiert;
 das Verwerfen offener Vormerkungen setzt nur auf die aktive Historie zurück. Projekt-Nachfolger werden für jede
 betroffene Projektart ausdrücklich gewählt und nach erneuter Vorschau im Ereignis gespeichert. Der Aufbau prüft
@@ -248,8 +253,13 @@ Keine Erweiterung des Identitätsregisters, Reichs-/ID-Fortführung oder automat
 ersten Stufe. Die zweite Stufe ergänzt inzwischen gebundene Bündelvormerkung passender Fälle und frischen
 Kandidatenbau mit ursprünglicher ID, eigenen Namen und Projektlinks. Rohe Anbieter-Reichsbehauptungen bleiben
 erhalten; widersprüchliche Folgebelege stoppen zur erneuten Prüfung. Der streng geprüfte Quellenreparaturumfang
-bleibt unverändert. Ausdrückliche Zurückstellung unklarer Fälle und vereinheitlichter Update-Einstieg bleiben
-offen; Details/Grenzen: [Regulärer Updatevertrag](taxonomy-reference-update.md).
+bleibt unverändert. Die dritte Stufe ergänzt die ausdrücklich bestätigte Zurückstellung unklarer Gegenstücke.
+Nur belegte neue CoL-Gruppen ohne bestehende Identität, Projektwerte oder unabhängige zusätzliche Quellen dürfen
+ausgelassen werden. Bisherige Arten müssen aktiv und belegt bleiben. `classification_hold_`-Prüfzeilen binden
+die tatsächlich angewendeten Registerentscheidungen als `dismissed`; eine kompakte Manifestrevision bindet
+Fallzahlen und Entscheidungen. Kandidatenprüfung/Aktivierungsgrenze prüfen Historie, ID-Erhalt, ausgelassenes
+Ziel und vollständige frische Vormerkungen erneut. Normale Feldentscheidungen lösen keine Klassifikationsfälle.
+Der vereinheitlichte Update-Einstieg bleibt offen; Details/Grenzen: [Regulärer Updatevertrag](taxonomy-reference-update.md).
 
 Die laufende Statusanzeige verwendet nach der vollständigen Kandidatenprüfung nur noch die bereits geschriebenen
 Manifestwerte, kompakte Differenzzähler und die wenigen blockierenden Konflikte. Sie wiederholt weder die

@@ -59,6 +59,31 @@ export function isClassificationReviewConflict(value) {
   return /^classification_[a-f0-9]{64}$/.test(text(value?.conflict_id));
 }
 
+export function assertUnclearClassificationCase(value) {
+  const target = value?.target, sources = value?.sources;
+  if (!target || !Array.isArray(target.colRecords) || !target.colRecords.length
+      || !Array.isArray(sources) || !sources.length || sources.length > 100
+      || sources.some((source) => !Array.isArray(source.evidence) || !source.evidence.length)) {
+    throw new Error("Die Zurückstellung benötigt vollständig belegte bisherige Arten und CoL-Einträge.");
+  }
+  const checked = classificationReviewCase({ sources, records: target.colRecords,
+    target: { scientificName: target.scientificName, rank: target.rank, kingdom: target.kingdom },
+    baseVersion: value.baseVersion, colVersion: value.colVersion });
+  const norm = normalizeTaxonomySearchTerm;
+  if (canonicalBuildInput(checked) !== canonicalBuildInput(value)
+      || !["different-provider-id", "ambiguous-provider-id", "missing-provider-id"].includes(checked.category)
+      || !text(value.baseVersion) || !text(value.colVersion) || target.rank !== "species" || !norm(target.kingdom)
+      || new Set(sources.map((source) => source.masterTaxonId)).size !== sources.length
+      || target.colRecords.some((record) => !text(record.providerRecordId))
+      || sources.some((source) => !/^mtx_[a-f0-9]{32}$/.test(source.masterTaxonId || "")
+        || source.rank !== "species" || !norm(source.kingdom) || norm(source.kingdom) === norm(target.kingdom)
+        || !norm(source.scientificName) || norm(source.scientificName) !== norm(target.scientificName)
+        || source.evidence.some((entry) => !text(entry.provider) || !text(entry.providerVersion) || !text(entry.providerRecordId)))) {
+    throw new Error("Die Zurückstellung hat keinen unveränderten unklaren Quellenfall.");
+  }
+  return checked;
+}
+
 // Recompute the complete proof, not just its claimed category or checksum.
 export function assertMatchingClassificationCase(value) {
   const target = value?.target, source = value?.sources?.[0];
@@ -96,6 +121,9 @@ export function assertClassificationReviewSummary(database, review) {
       || review.requiresConfirmation !== true || review.changesPhotos !== false || typeof review.acceptanceAvailable !== "boolean") {
     throw new Error("Die gebündelte Klassifikationsprüfung passt nicht zu den offenen Kandidatenfällen. Bitte erneut aufbauen und prüfen.");
   }
+  if (review.deferralAvailable !== undefined && typeof review.deferralAvailable !== "boolean") {
+    throw new Error("Die Zurückstellungsfreigabe des Kandidaten ist ungültig.");
+  }
 }
 
 export function summarizeClassificationReview(cases) {
@@ -118,5 +146,5 @@ export function summarizeClassificationReview(cases) {
     .sort((a, b) => b.count - a.count || compare(canonicalBuildInput(a), canonicalBuildInput(b)));
   return { schemaVersion: 1, revision: digest(cases.map((entry) => entry.revision).sort(compare)), ...counts,
     groups: ordered.slice(0, 8),
-    groupCount: groups.size, requiresConfirmation: true, changesPhotos: false, acceptanceAvailable: true };
+    groupCount: groups.size, requiresConfirmation: true, changesPhotos: false, acceptanceAvailable: true, deferralAvailable: true };
 }

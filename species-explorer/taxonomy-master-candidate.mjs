@@ -57,6 +57,7 @@ import { createMasterWriter } from "./taxonomy-master-writer.mjs";
 import { inspectMasterTaxonContinuity } from "./taxonomy-master-continuity.mjs";
 import { preserveRecoveryConflictState } from "./taxonomy-source-recovery-conflicts.mjs";
 import { normalizeColIdentifiers, classificationReviewCase, summarizeClassificationReview, assertClassificationReviewSummary } from "./taxonomy-classification-review.mjs";
+import { planClassificationDeferrals, classificationDeferralSummary, writeClassificationDeferrals, assertClassificationDeferrals } from "./taxonomy-classification-deferral.mjs";
 
 const SOURCE_FIELDS = new Set([
   "scientific-name",
@@ -917,7 +918,13 @@ async function buildTaxonomyMasterCandidateScoped({
         baseVersion: activeManifest.candidateId, colVersion: normalizedColRelease.providerVersion }));
     }
   } catch (error) { previousState.close(); throw error; }
+  let deferredClassifications;
+  try {
+    deferredClassifications = planClassificationDeferrals({ cases: classificationCases, groups, identityPlan,
+      previousRegistry: previousState.identityRegistry, previousState });
+  } catch (error) { previousState.close(); throw error; }
   const classificationReview = summarizeClassificationReview([...classificationCases.values()]);
+  const classificationDeferrals = classificationDeferralSummary(deferredClassifications);
   const temporaryDirectory = checkpoint?.directory || path.join(
     taxonomyMasterRoot(taxonomyRoot),
     `.staging-${crypto.randomUUID()}`,
@@ -1465,6 +1472,7 @@ async function buildTaxonomyMasterCandidateScoped({
       percent: 85,
     });
     writeIdentityBuild(database, identityPlan, timestamp);
+    writeClassificationDeferrals(database, deferredClassifications, timestamp);
     const recoveryConflictState = sourceRecoveryScope ? await preserveRecoveryConflictState({
       database, previousPath: activePath, scope: sourceRecoveryScope, onProgress,
     }) : null;
@@ -1509,6 +1517,7 @@ async function buildTaxonomyMasterCandidateScoped({
       schemaVersion: TAXONOMY_MASTER_SCHEMA_VERSION,
       candidateId,
       buildInputs,
+      sourceMasterVersion: activeManifest?.candidateId || "initial",
       createdAt: timestamp,
       state: "staging",
       inputRevisions: {
@@ -1529,6 +1538,7 @@ async function buildTaxonomyMasterCandidateScoped({
       contentQuality,
       identityContinuity,
       classificationReview,
+      classificationDeferrals,
       requiresConfirmation: true,
       ...(sourceRecoveryScope ? { sourceRecoveryScope, recoveryConflictState } : {}),
       ...(checkpoint ? { buildJobRevision: checkpoint.revision } : {}),
@@ -1608,6 +1618,8 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
       ? validateTaxonomyMasterDatabase(database)
       : manifest.validation || null;
     assertClassificationReviewSummary(database, manifest.classificationReview);
+    assertClassificationDeferrals(database, manifest.classificationDeferrals, { baseVersion: manifest.sourceMasterVersion,
+      colVersion: manifest.sources.find((entry) => entry.provider === "catalogue-of-life")?.providerVersion });
     const blockingConflictCount = Number(database.prepare(`
       SELECT COUNT(*) AS count
       FROM master_conflict

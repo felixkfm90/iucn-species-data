@@ -118,8 +118,10 @@ gebündelte Übersicht und offene Aktivierungssperre für neue CoL-/Reichsgegens
 Keine normale Feldentscheidung kann diese Prüfung umgehen. Zweite Stufe inzwischen implementiert:
 gebundene Bündelvorschau und bestätigte Vormerkung passender Quellenfälle, erneuter Kandidatenbau mit
 ursprünglicher ID, eigenen Namen/Projektlinks und unveränderten rohen Anbieterbehauptungen. Neue Vormerkung
-startet keinen Aufbau oder Paketwechsel. Unklare Fälle bleiben gesperrt; deren ausdrückliche Zurückstellung
-und einheitlicher Update-Einstieg sind noch nicht abgeschlossen.
+startet keinen Aufbau oder Paketwechsel. Dritte Stufe inzwischen implementiert: separate bestätigte Zurückstellung
+unklarer Fälle. Ein frischer Kandidat lässt ausschließlich die gebundenen neuen CoL-Gegenstücke aus, erhält
+bisherige Arten/IDs und prüft geänderte Belege wieder offen. Beide Bündel können ohne Zwischenaufbau vorgemerkt
+werden. Unentschiedene Fälle/andere Konflikte bleiben gesperrt. Der einheitliche Update-Einstieg ist noch offen.
 Details und Grenzen: [regulärer Updatevertrag](taxonomy-reference-update.md).
 Kein neuer Download, produktiver Aufbau, Zeigerwechsel, Katalogabgleich oder Bereinigung.
 178 gezielte Tests in zehn Dateien erfolgreich; abschließende neun UI-Tests erneut bestanden. Syntax/Stil,
@@ -135,3 +137,13 @@ geprüfter Eingangsgrundlage und vollständiger Übernahme von 104 passenden Fä
 Kein erneuter produktiver Vergleich und keine Freigabe des nächsten Quellenupdates.
 Der [Pages-Lauf für die erste Stufe `ea55bb4`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37009726984)
 ist inzwischen mit Linux-Qualitätsgate, Build und Deployment erfolgreich.
+Auch der [Pages-Lauf für die zweite Stufe `cca8268`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37015180330)
+ist vollständig erfolgreich. Das ist kein vorweggenommener Veröffentlichungsnachweis der dritten Stufe.
+
+Prüfabschluss der dritten Stufe: 238 gezielte Tests in 14 Dateien mit Exit 0; null Fehler, Abbrüche oder
+übersprungene Tests. Echte Hilfsprozesse, bisherige Reparatur-/Identitätswege und Lightroom-ID-Auflösung
+eingeschlossen. Synthetische 480-Fälle-Probe, mehrere Vorgänger, 105 vollständige Zurückstellungen,
+beide Bündelreihenfolgen ohne Zwischenaufbau, veraltete Belege, Fehler/Wiederholung, Fortsetzung und Rollback
+geprüft. Neue CoL-Stände und unabhängige Zielbelege benötigen eine neue Entscheidung; später passende Fälle
+lassen sich mit alter ID übernehmen. Syntax (356 Dateien), Stil, Dokumentationsverweise, aktueller Projektstatus
+und Diffprüfung erfolgreich. Kein vollständiges Qualitätsgate oder produktiver Update-/Bedienlauf.

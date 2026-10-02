@@ -315,6 +315,71 @@ test("fehlgeschlagene Bündelbestätigung ist erneut prüfbar; laufende oder alt
   assert.equal(calls.filter((url) => url.endsWith("/save")).length, 2);
 });
 
+test("unklare Fälle verlangen separate Rückfrage; Abbruch, Fehler, Wiederholung und neue Kandidaten bleiben bedienbar", async () => {
+  const visible = elements(), status = readyStatus(), calls = [], prompts = [];
+  status.lifecycle.candidate.candidateId = "candidate";
+  status.lifecycle.candidate.classificationReview = { total: 4, matchingProviderId: 1, acceptanceAvailable: true, deferralAvailable: true, groups: [] };
+  status.lifecycle.canActivate = false;
+  status.lifecycle.blockingConflictCount = 4;
+  let accept = false, fail = true;
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible, escapeHtml: String, renderDatabaseStatus() {},
+    showQuickConfirm: async (prompt) => { prompts.push(prompt); return accept; },
+    fetchJson: async (url, options) => {
+      calls.push({ url, payload: options?.body ? JSON.parse(options.body) : null });
+      if (url.endsWith("deferral-preview")) return { token: "bound-hold", count: 3, groups: [] };
+      if (url.endsWith("deferral-save")) { if (fail) { fail = false; throw new Error("Speichern fehlgeschlagen"); } return { message: "Zurückstellung vorgemerkt" }; }
+      return status;
+    } });
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer>/);
+  await controller.reviewClassification(true);
+  assert.equal(calls.filter((call) => call.url.endsWith("deferral-save")).length, 0);
+  assert.match(prompts[0].message, /3 unklare Fälle.*bisherigen Arten, Master-IDs/);
+  assert.match(prompts[0].message, /Geänderte Quellenfälle werden erneut offen geprüft/);
+  accept = true;
+  await controller.reviewClassification(true);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer>/);
+  await controller.reviewClassification(true);
+  const saved = calls.filter((call) => call.url.endsWith("deferral-save"));
+  assert.equal(saved.length, 2);
+  assert.equal(saved[1].payload.token, "bound-hold");
+  assert.equal(saved[1].payload.confirmed, true);
+  await controller.reviewClassification(true);
+  assert.equal(calls.filter((call) => call.url.endsWith("deferral-save")).length, 2);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer disabled/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview>/);
+  status.lifecycle.candidate.candidateId = "new-candidate";
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer>/);
+  assert.ok(calls.every((call) => !/\/(build|activate|rollback)$/.test(call.url)));
+});
+
+test("Zurückstellungen bleiben als kurzer Status sichtbar und kompatible Vormerkungen erlauben das zweite Bündel", () => {
+  const visible = elements(), status = readyStatus();
+  status.lifecycle.candidate.candidateId = "same-candidate";
+  status.identities = { pending: true, candidateIncludesCurrent: false, classificationCandidateId: "same-candidate" };
+  status.lifecycle.blockingConflictCount = 1;
+  status.lifecycle.candidate.classificationReview = { total: 1, matchingProviderId: 0, deferralAvailable: true, groups: [] };
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible, escapeHtml: String,
+    renderDatabaseStatus() {}, fetchJson: async () => status, showQuickConfirm: async () => false });
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer>/);
+  status.identities.classificationCandidateId = "foreign-candidate";
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-defer disabled/);
+  status.lifecycle.candidate.classificationReview = { total: 0 };
+  status.lifecycle.candidate.classificationDeferrals = { total: 480 };
+  status.lifecycle.blockingConflictCount = 0;
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, false);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /480 unklare Fälle zurückgestellt/);
+  assert.doesNotMatch(visible.taxonomyMasterConflicts.innerHTML, /data-master-conflict-save/);
+  delete status.lifecycle.candidate;
+  status.lifecycle.active.classificationDeferrals = { total: 480 };
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /480 unklare Fälle zurückgestellt/);
+});
+
 test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt", () => {
   const visible = elements();
   const status = {
