@@ -77,6 +77,15 @@ geprüft. Geänderter CoL-Stand oder unabhängige Zielbelege öffnen die Prüfun
 erhält die alte ID. Syntax (356 Dateien), Stil, 70 Markdown-Dateien, Projektstatus und Diffprüfung bestanden.
 Kein vollständiges `quality:ci`, produktiver Update-/Bedienlauf oder Phase-10.5-Audit in diesem Schritt.
 
+Pages-Lauf `37019314273` für `2aad61e` danach vor Build/Deploy gescheitert: sechs Pakettests treffen denselben
+ungeschützten Zugriff auf die optionale Quellenübersicht eines alten/minimalen Manifests. Unter Windows gezielt
+reproduziert, kein Ubuntu-Migrationsfehler. Zugriff korrigiert; Altmanifest ohne Zurückstellung bleibt prüfbar,
+neue Zurückstellungen ohne Quellenübersicht oder Ausgangsmaster bleiben ausdrücklich gesperrt. 82 gezielte
+Paket-/Klassifikations-/Identitätstests in vier Dateien sowie die komplette Lightroom-Testgruppe mit 159 Tests
+erfolgreich. Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden.
+Kein produktiver Aufbau zur CI-Korrektur.
+Der neue vollständige GitHub-Linux-/Pages-Nachweis bleibt getrennt zu prüfen.
+
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
   alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.

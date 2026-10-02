@@ -147,3 +147,17 @@ beide Bündelreihenfolgen ohne Zwischenaufbau, veraltete Belege, Fehler/Wiederho
 geprüft. Neue CoL-Stände und unabhängige Zielbelege benötigen eine neue Entscheidung; später passende Fälle
 lassen sich mit alter ID übernehmen. Syntax (356 Dateien), Stil, Dokumentationsverweise, aktueller Projektstatus
 und Diffprüfung erfolgreich. Kein vollständiges Qualitätsgate oder produktiver Update-/Bedienlauf.
+
+## Paket-Kompatibilitätsfehler nach der dritten Stufe
+
+Der [Pages-Lauf für `2aad61e`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37019314273) scheiterte
+vor Build/Deployment an sechs Pakettests mit derselben Ursache: Die neue Zurückstellungsprüfung greift schon
+beim Aufruf auf eine optionale Quellenübersicht zu, die im älteren/minimalen Paket-Testmanifest fehlt.
+Gezielt auch unter Windows reproduziert; die allgemeine Ubuntu-Migrationsmeldung ist nicht die Ursache.
+Die zuvor bestandenen 238 gezielten Tests enthielten diese Paket-Testdatei nicht und waren kein vollständiges
+Qualitätsgate. Der neue Zugriff erhält die Altformat-Kompatibilität, ohne eine Zurückstellung ohne Quellenbeleg
+freizugeben. Neue Regressionen prüfen beide Grenzen, einschließlich Aktivierungssperre bei fehlendem
+Ausgangsmaster. 82 Tests in vier betroffenen Dateien sowie die gesamte Lightroom-Testgruppe mit 159 Tests
+erfolgreich. Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden;
+keine produktiven Daten verändert.
+Der neue GitHub-Linux-/Pages-Lauf ist der gesonderte Veröffentlichungsnachweis.

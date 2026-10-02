@@ -250,6 +250,15 @@ später passende Übernahme erhält die alte ID. Syntax (356 Dateien), Stil, 70 
 lokale Verweise, aktueller Projektstatus und Diffprüfung bestanden. Kein vollständiges `quality:ci`,
 produktiver Vergleich/Aufbau, praktischer Bediennachweis oder Phase-10.5-Audit in diesem Schritt.
 
+Anschließender CI-Befund: [Pages-Lauf `37019314273` für `2aad61e`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37019314273)
+scheitert an sechs Pakettests. Der Zugriff auf `manifest.sources` war auch ohne neue Zurückstellung
+unbedingt und ließ ältere/minimale Manifeste nicht mehr zu; unter Windows reproduziert. Korrigiert ist nur
+dieser optionale Zugriff. Ohne Zurückstellung bleibt der alte Kandidat regulär prüfbar; vorhandene neue
+Zurückstellungen verlangen unverändert CoL-Version und Ausgangsmaster. Beide Grenzen durch neue Regressionen
+gesichert; 82 Tests in vier betroffenen Dateien und die gesamte Lightroom-Testgruppe mit 159 Tests erfolgreich.
+Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden. Keine Testfixture zur Umgehung umgeschrieben,
+keine Schutzregel gelockert, kein produktiver Aufbau oder Paketwechsel. Vollständigen Pages-Nachweis separat prüfen.
+
 ## Download, Import und Aktivierung
 
 Der Explorer reserviert vor einer Erstinstallation mindestens 12 GB freien Speicher. Das komprimierte Archiv darf

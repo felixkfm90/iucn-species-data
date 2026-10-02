@@ -731,6 +731,19 @@ test("Beschädigte Delta-Basis fällt auf Vollaufbau zurück; Abbruch erhält vo
 
 const fixtureCorrection = [{ scientificName: "Calidris alpina", germanName: "Test Strandläufer" }];
 
+test("Altmanifest ohne Quellenübersicht bleibt ohne Zurückstellung regulär prüfbar", async () => {
+  const options = await activeFixture();
+  await stageFixture(options.taxonomyRoot);
+  const manifest = JSON.parse(await fs.readFile(taxonomyMasterManifestPath(options.taxonomyRoot, "staging"), "utf8"));
+  assert.equal(Object.hasOwn(manifest, "sources"), false);
+  assert.equal(Object.hasOwn(manifest, "classificationDeferrals"), false);
+  for (const validate of [false, true]) {
+    const inspected = await inspectTaxonomyMasterCandidate(options.taxonomyRoot, { validate });
+    assert.equal(inspected.available, true);
+    assert.equal(inspected.blockingConflictCount, 0);
+  }
+});
+
 test("Paarworker prüft und baut ohne Zeigerwechsel; nur der Elternprozess aktiviert und rollt zurück", async () => {
   const options = await activeFixture();
   await stageFixture(options.taxonomyRoot);

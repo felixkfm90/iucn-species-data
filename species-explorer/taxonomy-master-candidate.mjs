@@ -1619,7 +1619,7 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
       : manifest.validation || null;
     assertClassificationReviewSummary(database, manifest.classificationReview);
     assertClassificationDeferrals(database, manifest.classificationDeferrals, { baseVersion: manifest.sourceMasterVersion,
-      colVersion: manifest.sources.find((entry) => entry.provider === "catalogue-of-life")?.providerVersion });
+      colVersion: manifest.sources?.find((entry) => entry.provider === "catalogue-of-life")?.providerVersion });
     const blockingConflictCount = Number(database.prepare(`
       SELECT COUNT(*) AS count
       FROM master_conflict

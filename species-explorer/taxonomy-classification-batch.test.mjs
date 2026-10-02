@@ -152,6 +152,27 @@ test("abweichende, mehrdeutige und fehlende Belege lassen sich nur im frischen K
   assert.deepEqual(rows(root), before);
 });
 
+test("neue Zurückstellungen bleiben ohne Quellenübersicht oder Ausgangsmaster gesperrt", async (t) => {
+  const { root, service, inputs } = await fixture(t, { identifiersByIndex: [[]] });
+  const preview = await service.classificationDeferralPreview();
+  await service.classificationDeferralSave({ token: preview.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  const manifestPath = taxonomyMasterManifestPath(root, "staging");
+  const original = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  for (const field of ["sources", "sourceMasterVersion"]) {
+    const altered = structuredClone(original);
+    delete altered[field];
+    await fs.writeFile(manifestPath, JSON.stringify(altered));
+    for (const validate of [false, true]) {
+      await assert.rejects(inspectTaxonomyMasterCandidate(root, { validate }), /Zurückstellung/);
+    }
+    await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /Zurückstellung/);
+  }
+  await fs.writeFile(manifestPath, JSON.stringify(original));
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).manifest.classificationDeferrals.total, 1);
+});
+
 test("passende Übernahme und unklare Zurückstellung werden in beiden Reihenfolgen ohne Zwischenaufbau gebündelt", async (t) => {
   for (const deferredFirst of [false, true]) await t.test(String(deferredFirst), async (subtest) => {
     const { root, service, inputs } = await fixture(subtest, { count: 2, missingLast: true });
