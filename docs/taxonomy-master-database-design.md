@@ -132,11 +132,23 @@ Entfernte Quellenzeilen bleiben als `removed` beziehungsweise `stale` nachvollzi
 ## Stabile Master-ID und Zustände
 
 Jedes zusammengeführte Taxon besitzt eine anbieterunabhängige ID `mtx_<32 Hexzeichen>`. Der produktive
-Master-Kandidatenbau leitet sie deterministisch aus normalisiertem wissenschaftlichem Namen, Rang und Reich ab.
+Master-Kandidatenbau leitet neue IDs deterministisch aus normalisiertem wissenschaftlichem Namen, Rang und Reich ab.
+Eine bereits aktive, eindeutig zugeordnete Identität behält dagegen ihre vorhandene ID, auch wenn diese nach
+einer früheren belegten Reichsergänzung nicht mehr dem heutigen Hash entspricht.
 Deutsche beziehungsweise englische Namen, Hierarchie, Anbieter-IDs und Projekt-Slugs sind Aussagen oder
 Verknüpfungen und ändern diese Master-ID nicht. Ändert sich dagegen eine der drei Identitätskomponenten, entsteht
 ohne eine ausdrücklich bestätigte Nachfolgerbeziehung eine neue ID. Splits und Merges werden nicht aus
 Namensähnlichkeit automatisch abgeleitet; bestätigte Nachfolger werden im folgenden Identitätsregister geführt.
+
+Seit 2. Oktober ist die enge Ergänzung eines bisher unbekannten Reichs davon getrennt: unveränderter
+wissenschaftlicher Name/Rang, genau ein bisheriger und ein aktueller gleichnamiger Gruppenpartner sowie ein
+fortbestehender, nicht entfernter Anbieter-Datensatz mit derselben Anbieterkennung erhalten die ursprüngliche
+aktive ID. Name allein, fremde/geänderte/fehlende Kennung oder mehrere Gegenstücke reichen nicht. Ein bekanntes
+Reich darf weder geleert noch durch ein anderes bekanntes Reich still ersetzt werden. Der rohe Anbieterwert
+bleibt unverändert belegt; keine Aliasbildung, historische Ersatz-ID oder Fotomigration durch die Ergänzung.
+Die Kontinuitätssperre bleibt unverändert. Isoliert geprüft einschließlich weiterer Updates, eigener Namen,
+Projektverknüpfung, Lightroom-Export und Worker-Abschlussfehler/Fortsetzung. Der vorhandene produktive
+Prüfkandidat wird dadurch nicht nachträglich geändert; er benötigt später einen frisch gebundenen lokalen Aufbau.
 
 Auch ein fachlicher Split bei unverändertem wissenschaftlichem Namen, Rang und Reich wird durch diesen Hash
 nicht automatisch erkannt. Seit dem 9. September ist nach bestätigten Fachregeln ein versioniertes

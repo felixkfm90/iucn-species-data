@@ -59,16 +59,44 @@ lesend bestätigt. Kein vollständiger Download oder Wiederholungsstart durch di
 [Updatevertrag](taxonomy-reference-update.md#früher-downloadabbruch-und-enge-korrektur-am-2-oktober).
 
 **Aktueller Folgeversuch:** Felix startete nach normalem Explorer-Neustart um 19:53:14 MESZ erneut. Die Referenz
-`col-xr-2026-09-25-316441` ist importiert; sein aktueller Bedienstand meldet `3/7 Master aufbauen · Suchindex`.
+`col-xr-2026-09-25-316441` ist importiert. Lesender API-Befund nach Kandidatenabschluss um 21:10:14 MESZ:
+Auftrag `job-b7795544-1758-464f-baaf-66c7ed6f32db` und Kandidat `master-20261002182254600` sind `ready`,
+ohne technischen Aufbaufehler. Die Übernahme ist bei Schritt 4/7 gesperrt: 2.182 offene Klassifikationen,
+davon 1.995 passende iNaturalist-ID-Verweise und 187 unklare Fälle (6 abweichend, 2 mehrdeutig, 179 ohne Verweis).
+Dies sind neue Mengen dieses Releases, nicht die historischen 2.173 beziehungsweise 1.693/480.
 Der aktive Master enthält noch `col-xr-2026-08-26-316165`; das bisherige Master-/Lightroom-Paar bleibt bis zum
 erfolgreich geprüften gemeinsamen Wechsel aktiv. Dieser Zwischenstand ist kein Gesamtabschluss und kein
 Nachweis eines erneut beschädigten Paars. Offene Entscheidungen weiterhin nur nach frischer Vorschau und
 Felix' Bestätigung; keinen parallelen Aufbau, zusätzlichen Download oder Dienstneustart auslösen.
 
+Separater ID-Befund: Das Kandidatenmanifest meldet eine fehlende bisherige ID für `Storchodon cingulatus`.
+Gezielte, nur lesende Namens-/Quellenabfragen bestätigen im aktiven Master
+`mtx_6bbad0b4ee45cbfbde46c3c87b22292c` mit leerem Reich und GBIF-Kennung `181179893`, im Kandidaten dagegen
+`mtx_f62f1980849cd4c78995ace17d089602` mit `Animalia`, neuem CoL-Beleg und derselben GBIF-Kennung.
+Keine Projektverknüpfung für diesen Eintrag; Lightroom-Nutzung nicht geprüft. Die Aktivierungsprüfung verbietet
+den ungeklärten ID-Verlust unabhängig von Klassifikationsentscheidungen. Der technische Fehler ist inzwischen
+isoliert reproduziert und im Kandidatenaufbau korrigiert: bei eindeutiger Ergänzung eines bisher leeren Reichs
+und fortbestehender gleicher Anbieterkennung bleibt die alte aktive ID erhalten, auch bei späteren Updates.
+Rohbelege, eigene Namen und Projektlinks bleiben getrennt erhalten. Keine Namensheuristik oder bekannte
+Reichsänderung; Kontinuitätssperre unverändert. Kein produktiver Folgeaufbau oder geändertes Identitätsereignis.
+Der vorhandene gesperrte Kandidat ist weiterhin unverändert, nicht durch normale Konfliktbestätigung freigeben.
+
+Felix möchte anschließend nur bei angelegten beziehungsweise Lightroom-zugewiesenen Arten Rückfragen.
+Nutzungsabhängige Automatik noch nicht implementiert: der Statistikindex liegt katalogintern; die vorhandene
+Artänderungs-Rücklesung ist kein dauerhaft vollständiges Explorer-Nutzungsregister. Felix bestätigte ausdrücklich
+alle seine FN-Kataloge, nicht nur den aktuell geöffneten. Anschließend bestätigt: nur
+`D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`; historische Altstände bleiben außerhalb dieser aktiven
+Nutzungsmenge. Noch keine vollständige FN-Erfassung. Unbekannte Nutzung darf nicht als unbenutzt gelten;
+IDs und eigene Entscheidungen
+bleiben geschützt. Bestätigte Vorgaben und offene Grenzen stehen im [Updatevertrag](taxonomy-reference-update.md#nutzungsabhängige-automatik--auftrag-nach-dem-ersten-prüfkandidaten).
+Die 30-Minuten-Wiedervorlage wurde an diesem entscheidungsabhängigen Halt pausiert; kein aktiver Worker
+abgebrochen, keine Vormerkung, Aktivierung, Bereinigung oder Veröffentlichung durchgeführt.
+
 Die obere Schaltfläche ist separat vereinfacht: `Datenbank-Update`, darunter beispielsweise
 `3/7 Master aufbauen · 32 %`. Die gemessene Unterphase wird im Dialog/Tooltip weiterhin vollständig erklärt.
 84 gezielte UI-/Vertragstests bestanden. Noch keine Sichtprüfung im geöffneten Explorer; neuer Text erst nach
-normalem Laden der Oberfläche. Laufender Aufbau, seine Eingänge und die bestehende Begleitung unverändert.
+normalem Laden der Oberfläche. Aufbau und Eingänge wurden durch die Anzeigeänderung nicht verändert;
+der spätere entscheidungsabhängige Halt ist davon getrennt.
 
 Für die aktuelle Abnahme wurde `Später` empfohlen. Kein `COL26.9 XR`-Download, weiterer Masterlauf oder
 katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet. Das bezeichnet die frühere Reparaturabnahme,

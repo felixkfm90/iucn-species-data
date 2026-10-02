@@ -433,6 +433,73 @@ regulären Updateweg mit frischer Rückfrage erneut durch Felix bestätigen. Dan
 Import, offenen Klassifikationsbefund und gemeinsamen Paarabschluss prüfen. Alte Release-/Master-/Paketstände
 und Reparaturnachweise erhalten; keine Cachelöschung oder eigenständige Wiederholung.
 
+## Nutzungsabhängige Automatik – Auftrag nach dem ersten Prüfkandidaten
+
+Felix startete den korrigierten regulären Updateweg am 2. Oktober um 19:53:14 MESZ erneut. Quellenimport
+abgeschlossen; der erste Kandidat `master-20261002182254600` ist seit 21:10:14 MESZ `ready` und nicht aktiv.
+Neue Klassifikationsmengen: 2.182 Fälle, davon 1.995 passende Quellenverweise und 187 unklare (6 abweichend,
+2 mehrdeutig, 179 ohne Verweis). Die bestehende Entscheidungssperre hat die gemeinsame Übernahme gestoppt.
+Keine pauschale Bestätigung oder Ableitung einer Sollmenge aus früheren Reparaturnotizen.
+
+Zusätzlich meldet die gespeicherte ID-Kontinuitätsprüfung eine fehlende ursprüngliche ID. Gezielte lesende
+Abfragen zeigen `Storchodon cingulatus` mit derselben GBIF-Kennung `181179893`, jedoch bisher ohne Reich als
+`mtx_6bbad0b4ee45cbfbde46c3c87b22292c` und neu mit CoL-/Animalia-Beleg als
+`mtx_f62f1980849cd4c78995ace17d089602`. Keine Projektverknüpfung, Lightroom-Nutzung unbekannt. Ursache des
+ID-Wechsels inzwischen isoliert reproduziert und gezielt korrigiert: der Aufbau verwendete trotz erkannter
+Altzuordnung erneut den Namen-/Rang-/Reichshash. Eine eindeutige Ergänzung des unbekannten Reichs mit
+fortbestehender gleicher Anbieterkennung behält jetzt die alte aktive ID; weitere Updates erhalten diese ID
+ebenfalls. Gleicher Name allein, andere/fehlende/entfernte Kennung, bekannte Reichswechsel und mehrdeutige
+Gegenstücke bleiben ausgeschlossen. Roher GBIF-Wert bleibt leer, CoL-/Animalia-Beleg getrennt erhalten.
+Namenswahl/Projektlink, Lightroom-Export sowie Worker-Abschlussfehler/Fortsetzung sind isoliert geprüft.
+Kein Eingriff in den gespeicherten produktiven Kandidaten und keine nachträgliche Änderung seiner Regelbindung.
+Auch eine spätere automatische Klassifikationsbehandlung darf diese eigenständige Aktivierungssperre nicht umgehen.
+
+Prüfabschluss dieses ID-Fixes: 220 gezielte Tests in zehn Dateien mit Exit 0, ohne Fehler/Abbrüche/übersprungene
+Tests; echte Worker-/Paarprozesse und bestehende Split-/Merge-/Klassifikations-/Reparaturwege eingeschlossen.
+Ein zuerst prozessbeschränkt gesperrter Testlauf wurde beendet und zulässig wiederholt. Syntax (357 Dateien),
+Stil, 70 Markdown-Verweise, generierter Projektstatus und Diffprüfung bestanden. Kein vollständiges Qualitätsgate,
+produktiver Neuaufbau, Paketwechsel oder Lightroom-Bedientest. Plug-in-Version bleibt `0.4.24.14`.
+
+**Neue Nutzervorgabe:** solche Quellenfälle künftig ohne Einzelrückfrage verarbeiten, außer sie betreffen
+bereits angelegte Projektarten oder in Lightroom zugewiesene Arten. Noch keine Umsetzung/Freigabe des
+gesperrten Kandidaten daraus ableiten. Vorgesehene sichere Abgrenzung, vor Implementierung zu konkretisieren:
+
+- Angelegte Projektarten, zugewiesene Master-IDs und eigene Namens-/Identitätsentscheidungen geschützt behandeln.
+  Projektlinks allein belegen nicht, dass eine Art in Lightroom unbenutzt ist.
+- Nur bei vollständig belegtem Nichtgebrauch und weiterhin eindeutigen Anbieter-ID-Verweisen passende
+  Klassifikationen nach der bestätigten Regel verarbeiten, mit ursprünglicher Master-ID und gebundenem Journal.
+  Keine Namensheuristik, automatische Fotomigration oder Änderung bestehender Projekttexte.
+- Unklare unbenutzte Gegenstücke konservativ nicht übernehmen; bisherige Identität/ID erhalten und Gründe
+  protokollieren, statt automatisch Reichs-/Identitätsgleichheit zu behaupten. Behandlung noch nicht implementiert.
+- Bei verwendeten Arten oder fehlendem/veraltetem Nutzungsnachweis bleibt eine gezielte Rückfrage erforderlich.
+  Vollständige ID-/Quellen-/Kandidaten-/Paketprüfung und frische gemeinsame Freigabe bleiben unverändert.
+- Lightroom hält den Statistikindex derzeit als Plug-in-Eigenschaft im jeweiligen Katalog. Die explizite
+  Artänderungsprüfung liest ein Inventar für ihre eigene Aktion; es existiert noch kein vollständiges dauerhaftes
+  Nutzungsregister für diese Master-Automatik. Felix bestätigte ausdrücklich alle seine FN-Kataloge, nicht
+  nur den aktuell geöffneten. Bekannte Nutzung katalogübergreifend schützen; fehlende/unvollständige
+  Kataloggrundlagen sperren eine Einstufung als unbenutzt. Keine neuen automatischen Vollscans beim Öffnen
+  eines Fensters einbauen; vorhandenen Statistikindex nur mit belegter Vollständigkeit und anschließender
+  Fortschreibung verwenden. Erforderliche Erstaufnahme getrennt und ausdrücklich starten, nicht still scannen.
+
+Felix hat anschließend die Fortsetzung bis zum erfüllten Aufbauvertrag beauftragt und bestätigt, dass er nur
+einen FN-Katalog verwendet: `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`. Lesende Dateiliste bestätigt
+diesen aktuellen Katalog neben Vorschau-/Hilfsdateien und `Old Lightroom Catalogs`; historische Altstände sind
+keine zusätzlichen aktiven Kataloge. Kein Inhalt des Katalogs gelesen oder verändert und noch keine vollständige
+Nutzungserfassung. Künftige weitere FN-Kataloge dürfen nicht still aus der Schutzmenge fallen.
+
+Umsetzungsreihenfolge: den unabhängigen ID-Wechsel isoliert absichern (Codefix implementiert), dann den vollständigen
+katalogübergreifenden Nutzungsnachweis anbinden und dessen Frische/Änderungsgrenzen prüfen, danach automatische
+passende Übernahme beziehungsweise konservative Zurückstellung ausschließlich unbenutzter Fälle integrieren.
+Geschützte Fälle separat und kompakt zur Bestätigung zeigen. Neue Automatik muss mit unbekannten/fehlenden
+Kataloggrundlagen, zwischenzeitlicher Zuweisung, eigener Entscheidung, Wiederholung, Fehler und Neustart geprüft
+werden. Erst anschließend einen frisch gebundenen lokalen Folgeaufbau separat bestätigen; bisherige Quellen
+nicht erneut herunterladen. Diese Reihenfolge ist ein Umsetzungsauftrag, kein bereits implementierter Ablauf
+und keine Freigabe eines produktiven Folgeaufbaus oder Paketwechsels.
+
+Bis zur Klärung keine der beiden Bündel speichern und keinen Folgeaufbau starten. Die bestehende stille
+Wiedervorlage ist am nutzerabhängigen Halt pausiert. Kandidat, Originalquellen und aktives Paar unverändert;
+keine produktive Reparatur, Regeländerung oder unaufgeforderte Veröffentlichung in dieser Prüfung.
+
 ## Download, Import und Aktivierung
 
 Der Explorer reserviert vor einer Erstinstallation mindestens 12 GB freien Speicher. Das komprimierte Archiv darf

@@ -19,6 +19,34 @@ import { taxonomyBuildCacheUsage } from "./taxonomy-build-cache.mjs";
 const timestamp = "2026-09-13T12:00:00.000Z";
 const now = () => new Date(timestamp);
 
+test("Worker behält eine durch CoL ergänzte unbekannte Reichs-ID auch nach Abschlussfehler und Fortsetzung", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-enrichment-worker-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
+  const root = path.join(base, "taxonomy");
+  const record = { providerRecordId: "181179893", scientificName: "Storchodon cingulatus", rank: "species", kingdom: "", hierarchy: {} };
+  const make = (time, colRecords) => {
+    const colRelease = { providerVersion: time, importedAt: time, recordCount: colRecords.length };
+    const providerSlices = [{ manifest: { provider: "gbif", providerVersion: time, retrievedAt: time }, records: [record] }];
+    const inputs = coverMasterInputSelection({ colRelease, colRecords, providerSlices, targetNames: [record.scientificName] });
+    return { taxonomyRoot: root, colRelease, colRecords: inputs.records(), providerSlices, buildInputCoverage: inputs.coverage, now: () => new Date(time) };
+  };
+  await buildTaxonomyMasterCandidate(make(timestamp, []));
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const originalHash = await masterFileFingerprint(taxonomyMasterDatabasePath(root));
+  const col = { ...record, providerRecordId: "T36WM", kingdom: "Animalia", hierarchy: { kingdom: "Animalia" } };
+  const job = await prepareMasterJob(make("2026-09-14T12:00:00.000Z", [col]));
+  await assert.rejects(executeMasterJob({ taxonomyRoot: root, id: job.id, onProgress(event) {
+    if (event.phase === "Suchindex" && event.percent === 96) throw new Error("Abschlussprobe unterbrochen");
+  } }), /Abschlussprobe unterbrochen/);
+  const resumed = await executeMasterJob({ taxonomyRoot: root, id: job.id, resume: true });
+  assert.equal(resumed.identityContinuity.missing, 0);
+  assert.equal(resumed.summary.taxa, 1);
+  assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(root)), originalHash);
+  const hashBeforeRetry = await masterFileFingerprint(taxonomyMasterDatabasePath(root, "staging"));
+  await executeMasterJob({ taxonomyRoot: root, id: job.id });
+  assert.equal(await masterFileFingerprint(taxonomyMasterDatabasePath(root, "staging")), hashBeforeRetry);
+});
+
 test("Prozessende vor letzter IPC-Nachricht verliert das fertige Ergebnis nicht", async () => {
   const result = { candidateId: "completed" };
   const manifest = await startMasterJobProcess({ taxonomyRoot: path.join(os.tmpdir(), "not-written"),

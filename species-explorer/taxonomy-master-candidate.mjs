@@ -143,6 +143,27 @@ function baseIdentityKey({ scientificName, rank = "species" } = {}) {
   return [normalized(scientificName), normalizeRank(rank)].join("|");
 }
 
+function retainedMasterTaxonId(group, kingdom, previousState) {
+  const previous = group.previousTaxon;
+  if (group.identityFresh || !previous || previous.lifecycle_state !== "active") return null;
+  const previousKingdom = canonicalKingdomIdentity(previous.kingdom);
+  // A previously retained ID need not equal today's name/rank/kingdom hash.
+  // Exact identities must keep it on subsequent updates too.
+  if (normalized(previousKingdom) === normalized(kingdom)) return previous.master_taxon_id;
+  // Only an unknown -> known enrichment with a continuing provider assertion
+  // is automatic. Erasing or changing a known kingdom still requires review.
+  if (previousKingdom || !kingdom) return null;
+  const previousEvidence = previousState.evidenceFor(previous.master_taxon_id);
+  const continuingProvider = group.records.some((record) => record.versionChangeState !== "removed"
+    && !["manual", "project"].includes(record.provider)
+    && cleanText(record.providerRecordId)
+    && baseIdentityKey(record) === baseIdentityKey(group)
+    && (!record.kingdom || normalized(canonicalKingdomIdentity(record.kingdom)) === normalized(kingdom))
+    && previousEvidence.some((evidence) => evidence.provider === record.provider
+      && evidence.providerRecordId === cleanText(record.providerRecordId)));
+  return continuingProvider ? previous.master_taxon_id : null;
+}
+
 function shaId(prefix, ...values) {
   const digest = crypto.createHash("sha256")
     .update(values.map((value) => String(value ?? "")).join("|"))
@@ -1043,7 +1064,7 @@ async function buildTaxonomyMasterCandidateScoped({
         || activeRecords.find((record) => record.kingdom)?.kingdom
         || colKingdomByGenus.get(normalized(groupGenus)),
       );
-      const masterTaxonId = group.identityMasterTaxonId || createStableMasterTaxonId({
+      const masterTaxonId = group.identityMasterTaxonId || retainedMasterTaxonId(group, kingdom, previousState) || createStableMasterTaxonId({
         scientificName: exactCol?.scientificName || group.scientificName,
         rank: group.rank,
         kingdom,

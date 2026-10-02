@@ -37,8 +37,19 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    bei API-404 und korrekte Quellenfehler-/Bestandsanzeige implementiert; 145 gezielte Tests bestanden.
    Offizielles Archiv nur lesend mit Dateiinformationen/vier ZIP-Bytes geprüft, nicht vollständig heruntergeladen.
    Anschließend durch Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet. Neue Referenz
-   importiert, gemeldeter Stand `3/7 Master aufbauen · Suchindex`; bisheriger Master und Paket bleiben aktiv.
-   Noch kein Gesamtabschluss/Paarwechsel bestätigt; Details: [Updatevertrag](taxonomy-reference-update.md).
+   importiert, Kandidat seit 21:10:14 MESZ `ready`: 2.182 Klassifikationen (1.995 passend, 187 unklar) sperren
+   die Übernahme. Zusätzlich fehlt eine bisherige ID für `Storchodon cingulatus`; dieselbe GBIF-Kennung ist im
+   Kandidaten unter neuer CoL-/Animalia-ID enthalten. Fehler isoliert reproduziert und gezielt korrigiert:
+   eindeutige Reichsergänzung mit fortbestehender Anbieterkennung erhält die ursprüngliche ID auch bei späteren
+   Updates. Andere Kennungen, Homonyme, bekannte Reichswechsel und ID-Sperre bleiben geschützt. Gespeicherter
+   produktiver Kandidat unverändert; erst ein frischer lokaler Aufbau nutzt den Fix.
+   Felix beauftragte nutzungsabhängige Automatik: Rückfragen für angelegte/Lightroom-zugewiesene Arten,
+   sichere automatische Behandlung unbenutzter Fälle. Alle seine FN-Kataloge ausdrücklich bestätigt.
+   Anschließend genau ein Katalog bestätigt: `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`.
+   Vollständiges LR-Nutzungsregister fehlt; noch keine Automatik/Bündelbestätigung/Folgeaufbau.
+   Wiedervorlage am Entscheidungshalt pausiert, bisheriger Master und Paket aktiv. Nächste Reihenfolge:
+   ID-Fix mit weiteren Aufbau-/Paketwegen absichern, katalogübergreifenden Nutzungsnachweis anbinden, dann nur unbenutzte Fälle
+   automatisiert behandeln; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.
    Die zwei bestätigten Arten schließen nur die gezielte Reparaturabnahme, nicht alle heutigen Funktionen.

@@ -146,6 +146,39 @@ nach dem aktuellen Aufbau offen. Explorer-CSS/JS nicht in Squarespace eingebunde
 unverändert. Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung bestanden;
 kein vollständiges lokales `quality:ci` oder Pages-Nachweis dieser Änderung. Details: `docs/taxonomy-master-background-build.md`.
 
+Neuer lesender Befund nach Kandidatenabschluss um 21:10:14 MESZ: Auftrag/Kandidat `ready`, kein Aufbaufehler;
+Kandidat `master-20261002182254600` mit 2.182 offenen Klassifikationen (1.995 passende iNaturalist-IDs,
+187 unklar: 6 abweichend, 2 mehrdeutig, 179 ohne Verweis). Eigenständige ID-Kontinuität meldet einen Verlust:
+`Storchodon cingulatus`, GBIF `181179893`, bisherige ID `mtx_6bbad0b4ee45cbfbde46c3c87b22292c` ohne Reich,
+im Kandidaten neue ID `mtx_f62f1980849cd4c78995ace17d089602` mit CoL-/Animalia-Beleg. Gezielt lesend bestätigt,
+keine Projektverknüpfung; LR-Nutzung nicht geprüft. Aktivierungssperre unverändert. Der technische Fehler ist
+inzwischen isoliert reproduziert und korrigiert: trotz erkannter Altzuordnung wurde die ID beim Ergänzen eines
+unbekannten Reichs neu gehasht. Eindeutiger Vorgänger und fortbestehende gleiche Anbieterkennung erhalten jetzt
+die alte aktive ID, auch bei späteren Updates. Rohe GBIF-/CoL-Belege, eigene Namen und Projektlinks erhalten;
+keine Namensheuristik, bekannte Reichsänderung oder gelockerte Kontinuitätsprüfung. Gespeicherter Kandidat und
+aktives Paar unverändert, kein produktiver Folgeaufbau/Identitätsereignis.
+Felix möchte solche Quellenfälle automatisiert, außer bei angelegten oder LR-zugewiesenen Arten. Noch nicht
+implementiert: Statistikindex ist katalogintern, explizites Artänderungsinventar kein dauerhaft vollständiger
+Explorer-Nutzungsnachweis. Felix bestätigte ausdrücklich alle seine FN-Kataloge; unbekannte/unvollständige Nutzung
+nicht als unbenutzt behandeln. Anschließend bestätigt: nur `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`;
+lesende Verzeichnisprüfung, kein SDK-/Foto-/Katalogscan. Historische Altstände sind keine weiteren aktiven
+FN-Kataloge. Felix beauftragte die Fortsetzung bis zum erfüllten Aufbauvertrag. ID-Fix weiter absichern,
+dann katalogübergreifenden Nutzungsnachweis und
+nutzungsabhängige Automatik implementieren. Beide Bündel/Folgeaufbau zunächst nicht starten. Wiedervorlage
+`regul-ren-taxonomie-update-pr-fen` am nutzerabhängigen Halt pausiert; Quellen/Kandidat/aktives Paar erhalten.
+Keine Schutzumgehung, Eingangs-/Regeländerung, Katalogaktion, Bereinigung oder unaufgeforderte Veröffentlichung.
+Konkreter neuer Auftrag/Grenzen: `docs/taxonomy-reference-update.md`, `docs/taxonomy-current-status.md`.
+
+Prüfabschluss ID-Ergänzung: zuerst derselbe Ein-Fall-Fehler isoliert reproduziert, dann 220 gezielte Tests in zehn
+Aufbau-/Klassifikations-/Identitäts-/Reparatur-/Paketdateien erfolgreich, einschließlich echter Hilfsprozesse.
+Neue Gegenproben: fortbestehende GBIF-ID bei leerem -> bekanntem Reich, weiterer Updatezyklus, eigene Namen,
+Projektlink und Lightroom-Export; geänderte/fremde/fehlende/entfernte Kennung und mehrdeutige CoL-Gegenstücke
+bleiben ohne automatische ID-Übernahme. Worker-Abschlussfehler/Fortsetzung/Wiederholung geprüft. Ein erster
+Sandbox-Testlauf wurde nach gesperrten Test-Hilfsprozessen beendet und zulässig wiederholt; keine Test-/Windows-
+Regeländerung. Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung bestanden.
+Kein vollständiges `quality:ci`, produktiver Neuaufbau oder Paketwechsel. Lua bleibt `0.4.24.14`, Backend-MJS
+nicht in Squarespace eingebunden. Die Nutzungsautomatik bleibt der nächste getrennte Implementierungsteil.
+
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
   alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.

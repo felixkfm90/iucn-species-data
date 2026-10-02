@@ -37,13 +37,23 @@ Start musste separat bestätigt werden; vollständiger Download/Import war durch
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 Der gemeinsame Einstieg ist mit erfolgreichem Linux-Qualitätsgate/Pages-Lauf veröffentlicht. Der nächste
 Quellenlauf wurde anschließend von Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet.
-Die neue Referenz ist inzwischen importiert; der gemeldete Aufbau steht bei `3/7 Master aufbauen · Suchindex`.
+Die neue Referenz ist importiert; der erste Kandidat ist seit 21:10:14 MESZ bereit, aber wegen offener
+Klassifikationen und einer fehlenden ursprünglichen ID nicht zur Übernahme freigegeben.
 Der bisherige Master-/Lightroom-Stand bleibt bis zum geprüften gemeinsamen Wechsel aktiv; noch kein
 Gesamtabschluss oder neuer Paarwechsel bestätigt. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
 Die obere Explorer-Schaltfläche wurde getrennt davon auf zwei Zeilen vereinfacht: `Datenbank-Update` und
 beispielsweise `3/7 Master aufbauen · 32 %`. Prozent weiterhin nur aus Messmengen der aktuellen Unterphase;
 vollständige Erklärung im Datenbankfenster und Tooltip. Keine neue Statusabfrage oder Aufbauänderung.
 Sichtbar nach dem nächsten normalen Laden der Oberfläche, nicht durch Neustart während des aktiven Updates.
+Felix möchte Quellenfälle künftig nur bei angelegten oder Lightroom-zugewiesenen Arten selbst entscheiden.
+Diese nutzungsabhängige Automatik ist noch nicht implementiert: ein vollständiger katalogübergreifender
+Lightroom-Nutzungsnachweis fehlt. Unbekannte Nutzung gilt nicht als unbenutzt; bestehende IDs/Entscheidungen
+bleiben geschützt. Kein aktueller Folgeaufbau oder Paketwechsel; die Wiedervorlage ist am Entscheidungshalt pausiert.
+Der zusätzliche technische ID-Wechsel bei der Ergänzung eines zuvor leeren Reichs ist inzwischen isoliert
+reproduziert und korrigiert: eindeutiger Vorgänger, unveränderter Name/Rang und fortbestehender Anbieterbeleg
+erhalten die ursprüngliche ID. Unklare Beziehungen und bekannte Reichsänderungen bleiben gesperrt. Der vorhandene
+produktive Kandidat wird nicht nachträglich umgeschrieben. Felix bestätigt genau einen aktiven FN-Katalog;
+Nutzungserfassung/Automatik und frisch gebundener lokaler Folgeaufbau bleiben nächste Schritte.
 
 ## Datenfluss und datierter Umsetzungsverlauf
 

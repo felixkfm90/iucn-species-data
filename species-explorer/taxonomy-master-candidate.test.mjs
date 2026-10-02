@@ -159,6 +159,114 @@ test("ein geleertes Reich derselben Anbieter-ID wird nicht still als neue Identi
     /bisherige Master-ID.*Aktivierung gesperrt/);
 });
 
+test("CoL ergänzt ein unbekanntes Reich bei gleicher GBIF-ID ohne Verlust der ursprünglichen Master-ID", async (t) => {
+  const root = await createRoot(t);
+  const scientificName = "Storchodon cingulatus";
+  const gbif = { providerRecordId: "181179893", scientificName, rank: "species", kingdom: "",
+    taxonomicStatus: "accepted", hierarchy: {}, relevanceReasons: ["col-reference-gap"] };
+  const options = (time, colRecords) => ({ taxonomyRoot: root,
+    colRelease: colRelease(time.toISOString(), time.toISOString()), colRecords,
+    providerSlices: [{ manifest: { provider: "gbif", providerVersion: time.toISOString(), retrievedAt: time.toISOString() },
+      records: [gbif] }], now: () => time });
+  await buildTaxonomyMasterCandidate(options(FIRST, []));
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => FIRST });
+  const before = await fs.readFile(taxonomyMasterDatabasePath(root, "active"));
+  const old = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"), { readOnly: true });
+  let originalId;
+  try {
+    const row = old.prepare("SELECT master_taxon_id, kingdom FROM master_taxon").get();
+    originalId = row.master_taxon_id;
+    assert.equal(row.kingdom, null);
+  } finally { old.close(); }
+  const col = { providerRecordId: "T36WM", scientificName, rank: "species", kingdom: "Animalia",
+    hierarchy: { kingdom: "Animalia" }, taxonomicStatus: "provisionally accepted" };
+  const protectedInputs = { projectTaxa: [{ scientificName, projectSlug: "storchodon-fixture", kingdom: "Animalia" }],
+    corrections: [{ scientificName, kingdom: "Animalia", germanName: "Eigener Testname",
+      namePreference: { masterTaxonId: originalId } }] };
+  const candidate = await buildTaxonomyMasterCandidate({ ...options(SECOND, [col]), ...protectedInputs });
+  assert.equal(candidate.identityContinuity.missing, 0);
+  assert.deepEqual(candidate.diff.closedReferenceGaps, [scientificName]);
+  const staged = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    const row = staged.prepare("SELECT master_taxon_id, kingdom, reference_state FROM master_taxon").get();
+    assert.equal(row.master_taxon_id, originalId);
+    assert.equal(row.kingdom, "Animalia");
+    assert.equal(row.reference_state, "exact-col");
+    assert.deepEqual(staged.prepare(`SELECT provider_record_id, kingdom FROM provider_taxon_assertion
+      ORDER BY provider_record_id`).all().map((row) => ({ ...row })), [
+      { provider_record_id: "181179893", kingdom: null }, { provider_record_id: "T36WM", kingdom: "Animalia" },
+    ]);
+    assert.equal(staged.prepare("SELECT COUNT(*) AS n FROM master_taxon_alias WHERE alias_type='synonym'").get().n, 0);
+    assert.equal(staged.prepare("SELECT master_taxon_id FROM project_taxon_link").get().master_taxon_id, originalId);
+    assert.equal(staged.prepare(`SELECT field_value FROM master_field_assertion
+      WHERE master_taxon_id=? AND field_name='german-name' AND selected=1`).get(originalId).field_value, "Eigener Testname");
+  } finally { staged.close(); }
+  assert.deepEqual(await fs.readFile(taxonomyMasterDatabasePath(root, "active")), before);
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });
+  const third = new Date("2026-08-03T08:00:00.000Z");
+  const next = await buildTaxonomyMasterCandidate({ ...options(third, [col]), ...protectedInputs });
+  assert.equal(next.identityContinuity.missing, 0, "Auch beim nächsten Update bleibt die übernommene ID erhalten.");
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try { assert.equal(database.prepare("SELECT master_taxon_id FROM master_taxon").get().master_taxon_id, originalId); }
+  finally { database.close(); }
+  const searchRoot = path.join(root, "lightroom");
+  await buildLightroomSearchPackage({ taxonomyRoot: root, searchRoot, sourceSlot: "staging" });
+  const search = new DatabaseSync(lightroomSearchDatabasePath(searchRoot, "staging"), { readOnly: true });
+  try { assert.equal(search.prepare("SELECT master_taxon_id FROM taxon").get().master_taxon_id, originalId); }
+  finally { search.close(); }
+});
+
+for (const [label, change] of [
+  ["abweichende Anbieter-ID", { providerRecordId: "different-id" }],
+  ["gleiche Kennung eines anderen Anbieters", { provider: "inaturalist" }],
+  ["entfernter Anbieterbeleg", { versionChangeState: "removed" }],
+  ["fehlende Anbieterkennung", { providerRecordId: "" }],
+  ["veränderter wissenschaftlicher Name", { scientificName: "Storchodon alteratus" }],
+]) test(`Reichsergänzung übernimmt ohne fortbestehenden eindeutigen Beleg keine ID: ${label}`, async (t) => {
+  const root = await createRoot(t);
+  const original = { providerRecordId: "181179893", scientificName: "Storchodon cingulatus", rank: "species",
+    kingdom: "", hierarchy: {}, relevanceReasons: ["col-reference-gap"] };
+  const options = (time, record, provider = "gbif", colRecords = []) => ({ taxonomyRoot: root,
+    colRelease: colRelease(time.toISOString(), time.toISOString()), colRecords,
+    providerSlices: [{ manifest: { provider, providerVersion: time.toISOString(), retrievedAt: time.toISOString() }, records: [record] }],
+    now: () => time });
+  await buildTaxonomyMasterCandidate(options(FIRST, original));
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const before = await fs.readFile(taxonomyMasterDatabasePath(root, "active"));
+  const incoming = { ...original, ...change };
+  const col = { providerRecordId: "T36WM", scientificName: incoming.scientificName, rank: "species", kingdom: "Animalia" };
+  const candidate = await buildTaxonomyMasterCandidate(options(SECOND, incoming, change.provider || "gbif", [col]));
+  assert.equal(candidate.identityContinuity.missing, 1);
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /bisherige Master-ID.*Aktivierung gesperrt/);
+  assert.deepEqual(await fs.readFile(taxonomyMasterDatabasePath(root, "active")), before);
+});
+
+test("Reichsergänzung entscheidet bei mehreren gleichnamigen CoL-Gegenstücken nicht per Anbieter-ID", async (t) => {
+  const root = await createRoot(t);
+  const scientificName = "Duplicata exemplaris";
+  const record = { providerRecordId: "same-id", scientificName, rank: "species", kingdom: "", hierarchy: {} };
+  const options = (time, colRecords) => ({ taxonomyRoot: root,
+    colRelease: colRelease(time.toISOString(), time.toISOString()), colRecords,
+    providerSlices: [{ manifest: { provider: "gbif", providerVersion: time.toISOString(), retrievedAt: time.toISOString() }, records: [record] }],
+    now: () => time });
+  await buildTaxonomyMasterCandidate(options(FIRST, []));
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const old = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"), { readOnly: true });
+  let originalId;
+  try { originalId = old.prepare("SELECT master_taxon_id FROM master_taxon").get().master_taxon_id; }
+  finally { old.close(); }
+  await buildTaxonomyMasterCandidate(options(SECOND, [
+    { providerRecordId: "col-animal", scientificName, rank: "species", kingdom: "Animalia" },
+    { providerRecordId: "col-plant", scientificName, rank: "species", kingdom: "Plantae" },
+  ]));
+  const database = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    assert.equal(database.prepare("SELECT kingdom FROM master_taxon WHERE master_taxon_id=?").get(originalId).kingdom, null);
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM master_taxon WHERE kingdom IS NOT NULL AND master_taxon_id=?").get(originalId).n, 0);
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM master_taxon").get().n, 3);
+  } finally { database.close(); }
+});
+
 test("Kontinuitätsprüfung akzeptiert ausdrücklich erhaltene historische IDs und lehnt unlesbare Basis ab", async (t) => {
   const root = await createRoot(t), before = path.join(root, "old.sqlite"), after = path.join(root, "new.sqlite");
   for (const [file, state] of [[before, "active"], [after, "deprecated"]]) {
