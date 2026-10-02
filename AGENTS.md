@@ -1,13 +1,13 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
 
-## Aktuelle Übergabe – 1. Oktober 2026
+## Aktuelle Übergabe – 2. Oktober 2026
 
 Maßgeblicher kompakter Betriebsstand: `docs/taxonomy-current-status.md`; Dokumentationsübersicht:
 `docs/README.md`. Die Quellenreparatur ist technisch abgeschlossen und von Felix mit Weissstorch/Rebhuhn
@@ -29,6 +29,28 @@ Windows-Pfaden unter Linux. Nur Testfixtures auf plattformeigene absolute Pfade 
 Pfad-/Bestätigungsprüfung bleibt unverändert. Relative Entscheidungsdateien und fehlende Bestätigung werden
 für alle vier schreibenden CLI-Wege ausdrücklich gegengeprüft. Kein neuer Taxonomie-/Kataloglauf zur CI-Korrektur;
 der erfolgreiche GitHub-Linux-/Pages-Lauf muss separat nachgewiesen werden.
+Inzwischen bestätigt: Pages-Lauf `36915759582` für `bf953ae` vollständig erfolgreich, einschließlich Linux-
+Qualitätsgate, Build und Deployment. Keine erneute CI-Reparatur erforderlich.
+Aktueller Arbeitspunkt: regulärer Updatevertrag. Vorprüfung am 2. Oktober reproduziert mit vier isolierten
+Datenbankpaaren die fehlende Unterscheidung passender/abweichender/mehrdeutiger/fehlender Anbieter-ID-Verweise
+bei verschiedenen Reichen; alle sind bisher technisch aktivierbar. Sechs gezielte Regressionstests bestanden.
+Die beiden UI-Einstiege haben weiterhin unterschiedliche Wirkung. Felix beauftragte danach die gebündelte
+bestätigungspflichtige Prüfung mit ID-Erhalt. Erste Stufe implementiert: alle CoL-ID-Verweise erhalten,
+passende/abweichende/mehrdeutige/fehlende Quellenbeziehung zählen, neue CoL-/Reichsgegenstücke bisheriger
+Referenzlücken als offene Identitätsprüfung sperren und kompakt gruppieren. Keine normale Feldentscheidung
+oder Einzel-/Paaraktivierung darf diese Fälle freigeben. Der enge Quellenreparaturweg bleibt unverändert.
+Bestätigte Bündelübernahme, Fortführung mit ursprünglicher ID, Zurückstellung unklarer Fälle und einheitlicher
+Update-Einstieg bleiben offen; Oberfläche weist die fehlende Übernahme aus. Kein produktiver
+Vergleich/Download/Aufbau/Wechsel/Kataloglauf. Details und nächste Grenze:
+`docs/taxonomy-reference-update.md`.
+
+Prüfabschluss dieser ersten Stufe: 178 gezielte Tests in zehn Dateien erfolgreich, einschließlich echter
+Master-/Paar-Hilfsprozesse und bestehender Reparatur-/Identitätswege. Abschließende neun UI-Tests erneut
+bestanden. Syntax/Stil, 70 Markdown-Dateien ohne fehlende lokale Verweise, aktueller Projektstatus und
+Diffprüfung erfolgreich. Erlaubter Gegenlauf nach Prozessbeschränkung; keine Windows-/Testregeländerung.
+Kein vollständiges Qualitätsgate oder produktiver Bedienlauf; Lua-Version bleibt `0.4.24.14`, Explorer-JS
+nicht im Squarespace-Footer eingebunden. Regelbindungen für neue Aufträge umfassen die Klassifikationsprüfung;
+historische Auftrags-/Reparaturbindungen nicht nachträglich umschreiben.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;

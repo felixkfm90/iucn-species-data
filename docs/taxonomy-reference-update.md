@@ -1,6 +1,6 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 Status: Phase 9 abgeschlossen; der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts bis zum automatisch
 aktivierten Lightroom-Paket wurde am 2026-09-05 erfolgreich geprüft. Weißstorch und Paket-/Masterstand sind in
@@ -65,6 +65,84 @@ Referenz-/Ergänzungswartung auf. Die zusammenhängende Datenbank-Aktion führt 
 die gemeinsame Lightroom-Paketfreigabe aus. Der Referenzimport allein bestätigt deshalb noch keinen neuen
 Master-/Paketstand. Beide Einstiegspfade sowie die 2.173 separaten CoL-/Reichsfälle werden vor der Freigabe des
 nächsten regulären Quellenupdates geprüft; in der aktuellen Reparaturabnahme wurde kein neues Update gestartet.
+
+## Regulärer Updatevertrag: Vorprüfung am 2. Oktober
+
+Felix hat diesen Punkt mit „los“ beauftragt. Die erste Prüfung verändert keine produktiven Quellen, Master,
+Suchpakete, Identitätsentscheidungen oder Fotos und startet keine Anbieterdownloads. Beide UI-Einstiege wurden
+im aktuellen Code verfolgt: Der Startdialog ruft `beginUpdate()` der Referenzwartung auf; nur die Datenbank-Aktion
+wartet anschließend auf Masterbau und geprüfte Paaraktivierung. Die Vereinheitlichung ist noch nicht umgesetzt.
+
+Die historische Quellenklassifizierung der 2.173 Fälle steht im
+[Reparaturvertrag](taxonomy-partial-source-recovery.md): 1.693 CoL-Verweise passen eindeutig zur bisherigen
+iNaturalist-ID, sechs verweisen auf eine andere ID, zwei sind mehrdeutig und 472 fehlen. Diese Zahlen stammen
+aus der Prüfung vom 30. September; heute kein erneuter produktiver Gesamtvergleich oder neuer Anbieterstand.
+Eine passende Anbieter-ID ist ein Quellenbeleg, keine bestätigte Reichsänderung oder Identitätsmigration.
+
+Eine neue isolierte Gegenprobe vom 2. Oktober verwendet vier selbst erzeugte kleine Datenbankpaare, denselben
+synthetischen Namen und unterschiedliche Reichsangaben. Passender, abweichender, mehrdeutiger und fehlender
+Anbieter-ID-Verweis führten vor dieser Korrektur jeweils zu zwei getrennten Master-IDs; die ursprüngliche ID blieb erhalten.
+Alle vier Kandidaten waren technisch aktivierbar, mit null blockierenden Konflikten und nur einem
+`reference-gap`-Hinweis. Das ist der reproduzierte Ausgangsfehler, nicht der neue Freigabestand.
+Probe und Ergebnis liegen unter dem ignorierten `Testlauf/taxonomy-regular-update-probe-2026-10-02.mjs`
+beziehungsweise `Testlauf/taxonomy-regular-update-probe-2026-10-02-result.json`; kein produktiver Kandidat.
+
+Die bestehende Identitätsfortführung verbietet außerdem das Gleichsetzen verschiedener bekannter Reiche.
+Der technische `source-repair`-Sonderweg gilt nur für die zuvor bestätigten vier Ersatz-ID-Fälle und ist kein
+Ausweg für diese neue fachliche Entscheidung. Keine pauschalen Reichs-Aliasse oder gelockerte Schutzprüfung.
+
+**Von Felix mit „Weiter“ beauftragte Richtung:** passende Quellenverweise als mögliche Klassifikationswechsel
+gebündelt zur ausdrücklichen Prüfung anbieten, bei bestätigter Übernahme die bisherige Master-ID erhalten und
+unklare Fälle getrennt zurückstellen. Auch eine gebündelte Prüfung darf Namensgleichheit nicht als Beweis
+verwenden oder vorhandene Fotos migrieren. Diese Umsetzungsfreigabe ist keine Freigabe eines produktiven Updates.
+
+Sechs gezielte bestehende Regressionstests bestanden: Homonyme, Fremdfelder-/Quellenkennungs-Erhalt, geleertes
+Reich, Startangebot, Aufschieben sowie Aktivierungssperre bei gestopptem Aufbau. Die Tests sichern bestehende
+Grenzen; sie belegen keinen neuen Klassifikationsworkflow oder vereinheitlichten Update-Einstieg.
+
+## Erste Umsetzungsstufe: gebündelte Prüfung und Aktivierungssperre
+
+Am 2. Oktober implementiert, ausschließlich mit temporären Datenbanken geprüft:
+
+- Bei einem regulären Kandidatenbau werden neu hinzukommende CoL-Artgruppen gegen bisher aktive, gleichnamige
+  Arten gleichen Rangs mit Referenzlücke und anderem bekannten Reich geprüft. Bereits vorhandene exakte
+  Zielidentitäten, historische Vorgänger und die bekannten Animalia-/Metazoa-Reichssynonyme sind keine solchen
+  Neufälle. Diese enge Prüfung ist noch kein allgemeiner automatischer Klassifikationswechsel.
+- Alle CoL-Identifikatoren bleiben bei Normalisierung und Zusammenführung von Teilzeilen erhalten. Mehrere,
+  widersprüchliche oder ungültige `inat`-Verweise werden nicht durch einen letzten Einzelwert verdeckt.
+- Fälle werden anhand tatsächlicher alter iNaturalist-Belege als passend, abweichend, mehrdeutig oder fehlend
+  eingeordnet. Mehrere mögliche Vorgänger/CoL-Belege bleiben mehrdeutig. Auch eine passende ID verlangt
+  ausdrückliche Identitätsprüfung; sie verändert weder das Reich noch die ID.
+- Jeder Fall ist als offener `ambiguous-match` mit reservierter `classification_`-Kennung gespeichert. Die
+  Fallprüfsumme bindet Ausgangsmaster, CoL-Version, Vorgänger-IDs/-Belege, Zielreich und sämtliche Quellenverweise.
+  Einzelaktivierung und gemeinsame Master-/Lightroom-Vorbereitung bleiben gesperrt. Eine normale Feldentscheidung
+  wie `keep-current` darf die Prüfung nicht auflösen. Die Übersichtszähler werden gegen die offenen Fälle geprüft.
+- Der Explorer zeigt Gesamtmengen und höchstens acht Reichs-/Quellengruppen mit jeweils zwei Beispielen,
+  auch bei mehr als 100 offenen Fällen. Normale Feldkonflikte bleiben getrennt sichtbar. Kein zusätzlicher
+  produktiver Vollscan beim Öffnen: Gruppierung entsteht im ohnehin beauftragten Kandidatenbau, der Status
+  liest Manifest und Konfliktzähler. Der streng abgegrenzte `sourceRecoveryScope` bleibt unverändert.
+
+**Noch nicht umgesetzt:** revisionsgebundene, ausdrücklich bestätigte Bündelübernahme in das Identitätsregister,
+erneuter Kandidatenbau unter Erhalt der ursprünglichen IDs sowie die Behandlung zurückgestellter unklarer Fälle
+an der abschließenden Freigabegrenze. Die Oberfläche sagt deshalb ausdrücklich, dass die Übernahme noch nicht
+verfügbar ist, und bietet keine wirkungslose Bestätigung an. Auch die Vereinheitlichung der beiden Update-Einstiege
+bleibt als anschließender Schritt offen. Keinen regulären produktiven Quellenlauf zur Bedienabnahme starten.
+
+Die historischen Mengen 1.693/480 und 2.173 wurden nicht erneut über den produktiven Bestand berechnet;
+zukünftige Kandidaten zählen die Fälle aus ihrem tatsächlich gebundenen Eingang. Alte Kandidaten ohne diese
+Prüfstufe erhalten rückwirkend keine neue fachliche Freigabe. Aufbewahrte Reparatur-/Fehlerkandidaten unverändert
+lassen; für das nächste Update ist ein frisch gebundener regulärer Kandidat erforderlich.
+
+Prüfabschluss dieser ersten Stufe: 178 gezielte Tests in zehn Dateien erfolgreich, darunter echte
+Master-/Paar-Hilfsprozesse, Wiederaufnahme, enge Quellenreparatur, bestehende Identitätsregeln, Kandidatenbau,
+Vergleichsgrundlagen und Suchpaket. Die neun UI-Tests nach der abschließenden Kategorienbeschriftung erneut
+erfolgreich. Geprüft sind auch alle vier gesperrten Quellenfälle, Wiederholung ohne doppelte Konflikte,
+mehr als 100 Fälle, veränderte Übersichtszähler und unzulässig ausgeräumte Konfliktzeilen. Syntax/Stil,
+Dokumentationsverweise, aktueller Projektstatus und `git diff --check` bestanden. Der erste eingeschränkte
+Hilfsprozesslauf konnte nicht vollständig abschließen; der erlaubte Gegenlauf außerhalb der Prozessbeschränkung
+bestand, ohne Windows-/Testregeln zu ändern. Kein vollständiges `quality:ci`, produktiver Kandidatenbau,
+Bediennachweis oder Phase-10.5-Audit in diesem Schritt. Explorer-JS ist nicht im Squarespace-Footer eingebunden;
+Footer/CSS und Lua-Version `0.4.24.14` bleiben unverändert.
 
 ## Download, Import und Aktivierung
 

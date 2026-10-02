@@ -136,6 +136,9 @@
   }
 
   function conflictRecommendation(conflict = {}) {
+    if (isClassificationConflict(conflict)) {
+      return { decision: null, text: "Quellenbeziehung und Reichszuordnung gemeinsam prüfen; keine normale Feldentscheidung" };
+    }
     const hasCurrent = Boolean(cleanText(conflict.current_value));
     const hasCandidate = Boolean(cleanText(conflict.candidate_value));
     if (conflict.conflict_type === "reference-returned" && hasCandidate) {
@@ -154,6 +157,9 @@
   }
 
   function conflictExplanation(conflict = {}) {
+    if (isClassificationConflict(conflict)) {
+      return "CoL liefert zu einem bisherigen Eintrag mit Referenzlücke einen gleichnamigen Eintrag in einem anderen Reich. Die Identität ist noch nicht bestätigt.";
+    }
     const field = FIELD_LABELS[conflict.field_name] || cleanText(conflict.field_name) || "Eintrag";
     if (conflict.conflict_type === "source-removed") {
       return `Für das Feld „${field}“ fehlt im neuen Quellenstand ein bisher vorhandener Beleg.`;
@@ -170,6 +176,10 @@
   function providerLabel(provider) {
     const value = cleanText(provider);
     return PROVIDER_LABELS[value] || value || "Quelle nicht angegeben";
+  }
+
+  function isClassificationConflict(conflict = {}) {
+    return /^classification_[a-f0-9]{64}$/.test(cleanText(conflict.conflict_id));
   }
 
   function conflictDecisionOptions(fieldName) {
@@ -197,6 +207,7 @@
       currentProvider: providerLabel(conflict.current_provider),
       candidateProvider: providerLabel(conflict.candidate_provider),
       recommendation,
+      identityReviewRequired: isClassificationConflict(conflict),
       blocking: ["changed-value", "source-removed", "ambiguous-match"].includes(conflict.conflict_type),
     };
   }
@@ -227,20 +238,41 @@
         `).join("");
     }
 
-    function renderConflicts(conflicts = [], blockingConflictCount = null) {
+    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null) {
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
       const total = Number(blockingConflictCount ?? blocking.length);
+      const classificationTotal = Number(classificationReview?.total || blocking.filter((entry) => entry.identityReviewRequired).length);
+      const regular = blocking.filter((entry) => !entry.identityReviewRequired);
+      const regularTotal = Math.max(0, total - classificationTotal);
+      const format = (value) => Number(value || 0).toLocaleString("de-DE");
+      const matching = Number(classificationReview?.matchingProviderId || 0);
+      const categoryLabels = { "matching-provider-id": "gleiche Anbieter-ID · Prüfung erforderlich",
+        "different-provider-id": "abweichende Anbieter-ID · unklar", "ambiguous-provider-id": "mehrdeutige Belege · unklar",
+        "missing-provider-id": "passender Quellenverweis fehlt · unklar" };
+      const grouped = !classificationTotal ? "" : `
+        <article class="taxonomy-master-conflict taxonomy-master-classification-review">
+          <div class="taxonomy-master-conflict-copy">
+            <strong>Abweichende Reichszuordnungen prüfen · ${format(classificationTotal)} ${classificationTotal === 1 ? "Fall" : "Fälle"}</strong>
+            ${classificationReview ? `<span>${format(matching)} mit übereinstimmender iNaturalist-ID · ${format(classificationTotal - matching)} ohne eindeutigen passenden Quellenverweis</span>` : ""}
+            ${classificationReview ? `<span>Abweichende Anbieter-ID: ${format(classificationReview.differentProviderId)} · Mehrdeutige Belege: ${format(classificationReview.ambiguousProviderId)} · Fehlender Verweis: ${format(classificationReview.missingProviderId)}</span>` : ""}
+            <span>Eine passende Anbieter-ID ist ein Prüfhinweis, keine bestätigte Identität. Bisherige Master-IDs und Fotos bleiben unverändert. Dieser Kandidat bleibt gesperrt.</span>
+            <span>Die bestätigte Übernahme mit ID-Erhalt ist noch nicht verfügbar. Keine normale Feldentscheidung und keine pauschale Zusammenführung.</span>
+            ${(classificationReview?.groups || []).map((entry) => `<span>${escapeHtml(entry.previousKingdom)} → ${escapeHtml(entry.newKingdom)}: ${format(entry.count)} ${entry.count === 1 ? "Fall" : "Fälle"} · ${escapeHtml(categoryLabels[entry.category] || "Prüfung erforderlich")}${entry.examples?.length ? ` · z. B. ${escapeHtml(entry.examples.join(", "))}` : ""}</span>`).join("")}
+            ${Number(classificationReview?.groupCount) > (classificationReview?.groups || []).length ? `<span>Die Übersicht zeigt die ${format(classificationReview.groups.length)} größten Gruppen von ${format(classificationReview.groupCount)}.</span>` : ""}
+          </div>
+        </article>
+      `;
       elements.taxonomyMasterConflicts.hidden = total === 0;
-      if (total > blocking.length) {
-        elements.taxonomyMasterConflicts.innerHTML = `
+      if (regularTotal > regular.length) {
+        elements.taxonomyMasterConflicts.innerHTML = grouped + `
           <div class="taxonomy-master-conflict-overflow">
-            <strong>${total.toLocaleString("de-DE")} technische Konflikte erkannt</strong>
+            <strong>${regularTotal.toLocaleString("de-DE")} technische Konflikte erkannt</strong>
             <span>Dieser Kandidat wird nicht als Liste von Einzelentscheidungen angeboten. Bitte die Masterdatenbank mit dem aktuellen Programmstand neu aufbauen.</span>
           </div>
         `;
         return;
       }
-      elements.taxonomyMasterConflicts.innerHTML = blocking.map((entry) => `
+      elements.taxonomyMasterConflicts.innerHTML = grouped + regular.map((entry) => `
         <article class="taxonomy-master-conflict" data-master-conflict="${escapeHtml(entry.id)}">
           <div class="taxonomy-master-conflict-copy">
             <strong>${escapeHtml(entry.species)}</strong>
@@ -281,7 +313,7 @@
         elements.taxonomyMasterProgress.removeAttribute("value");
       }
       renderDiff(lifecycle.candidate);
-      renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount);
+      renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview);
       elements.taxonomyMasterBuildButton.disabled = active;
       elements.taxonomyMasterActivateButton.disabled = active || !lifecycle.canActivate;
       elements.taxonomyMasterRollbackButton.disabled = active || !lifecycle.canRollback;

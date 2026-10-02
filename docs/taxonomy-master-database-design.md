@@ -1,6 +1,6 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
@@ -233,6 +233,15 @@ neuen Wert mit verständlicher Quellenbezeichnung gegenüber. Eine Aliasentschei
 Namensfeldern angeboten. Unerwartet große technische Konfliktmengen werden nicht als tausende Einzelentscheidungen
 ausgegeben, sondern verlangen einen erneuten Masteraufbau. Erst eine bestätigte, konfliktfreie Vorschau wird atomar
 aktiviert.
+
+Seit 2. Oktober werden neue CoL-/Reichsgegenstücke zu bislang aktiven Arten mit Referenzlücke getrennt als
+Identitätsprüfung behandelt. Alle CoL-Anbieter-Verweise bleiben erhalten; passende, abweichende, mehrdeutige
+und fehlende iNaturalist-Verbindungen werden gebündelt angezeigt. Offene `classification_`-Fälle verwenden
+`ambiguous-match`, sperren Einzel-/Paaraktivierung und können nicht über normale Feldentscheidungen aufgelöst
+werden. Fallrevisionen binden Quellen, Vorgänger und Zielreich; Übersicht und offene Fallzahl müssen passen.
+Keine Erweiterung des Identitätsregisters, Reichs-/ID-Fortführung oder automatische Zusammenführung in dieser
+ersten Stufe. Der streng geprüfte Quellenreparaturumfang bleibt unverändert. Übernahme und Update-Einstiege
+bleiben offen; Details/Grenzen: [Regulärer Updatevertrag](taxonomy-reference-update.md).
 
 Die laufende Statusanzeige verwendet nach der vollständigen Kandidatenprüfung nur noch die bereits geschriebenen
 Manifestwerte, kompakte Differenzzähler und die wenigen blockierenden Konflikte. Sie wiederholt weder die

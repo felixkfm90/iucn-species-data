@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 ## Aktuelle Restreihenfolge vor dem Audit
 
@@ -13,6 +13,12 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
 1. **Regulären Quellenupdatevertrag prüfen:** die 2.173 separaten CoL-/Reichsfälle fachlich behandeln und die
    unterschiedlichen Einstiege Startdialog/zusammenhängende Datenbank-Aktion prüfen. Keine Namensheuristik,
    automatische Migration oder neue Quellenaktualisierung allein wegen der Verfügbarkeitsmeldung.
+   Vorprüfung am 2. Oktober abgeschlossen: unterschiedliche Einstiege und fehlende Unterscheidung der
+   Quellenbeziehungen reproduziert; gebündelte Prüfung mit ID-Erhalt anschließend von Felix beauftragt.
+   Erste Stufe implementiert: verlustfreie Quellen-ID-Prüfung, vier Kategorien, kompakte Gruppenübersicht und
+   Sperre neuer CoL-/Reichsgegenstücke gegen normale Feldentscheidungen und Einzel-/Paaraktivierung.
+   Noch offen: bestätigte Bündelübernahme mit ID-Erhalt, unklare Fälle zurückstellen und beide Update-Einstiege
+   vereinheitlichen. Keine Freigabe eines produktiven Quellenupdates; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.
    Die zwei bestätigten Arten schließen nur die gezielte Reparaturabnahme, nicht alle heutigen Funktionen.

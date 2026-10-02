@@ -8,7 +8,7 @@ GitHub Pages Base:
 
 ## Aktueller Stand und Dokumentation
 
-Stand: 1. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
+Stand: 2. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
 aktiviert. Felix hat bevorzugte Namen, Zuweisung und Erhalt nach Schließen/Wiederöffnen für Weissstorch und
 Rebhuhn bestätigt. Der neue Anbieterstand `COL26.9 XR` ist ein getrenntes, noch zu prüfendes Quellenupdate;
 die Verfügbarkeitsmeldung bedeutet keinen Drift des reparierten lokalen Paars.
@@ -18,6 +18,13 @@ Maßgeblich sind der [kompakte Taxonomie-Betriebsstand](docs/taxonomy-current-st
 ausschließlich im [generierten Projektstatus](docs/project-status.md). Phase 10 und das Gesamtaudit bleiben offen.
 Das vollständige lokale Qualitätsgate und der Dokumentationsabgleich bestanden am 1. Oktober erneut;
 Git-Übertragung und nachfolgendes Pages-Deployment bleiben getrennte Nachweise.
+
+Der reguläre Quellenupdatevertrag wird getrennt bearbeitet. Neue CoL-Einträge in einem anderen Reich zu
+bisherigen Arten mit Referenzlücke erhalten jetzt eine gebündelte Quellenprüfung und sperren die Aktivierung.
+Passende Anbieter-IDs sind Prüfhinweise, keine automatische Zusammenführung. Alte IDs, eigene Namen und Fotos
+bleiben unverändert. Die bestätigte Übernahme mit ID-Erhalt sowie der einheitliche Update-Einstieg sind noch
+offen; deshalb weiterhin keinen neuen produktiven Quellenlauf zur Abnahme starten.
+Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 
 ## Datenfluss und datierter Umsetzungsverlauf
 

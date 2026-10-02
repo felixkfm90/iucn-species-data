@@ -15,7 +15,8 @@ const RULE_FILES = ["taxonomy-source-recovery-conflicts.mjs", "taxonomy-source-r
   "taxonomy-search-text.mjs", "taxonomy-identity-build.mjs", "taxonomy-identity-registry.mjs", "taxonomy-identity-projects.mjs",
   "taxonomy-master-job.mjs", "taxonomy-master-worker.mjs", "taxonomy-master-process.mjs", "../scripts/taxonomy-master-worker.mjs",
   "taxonomy-master-source-binding.mjs", "taxonomy-master-run-controller.mjs", "taxonomy-master-search-reuse.mjs",
-  "taxonomy-master-graph-reuse.mjs", "taxonomy-master-writer.mjs", "taxonomy-master-reuse-reader.mjs"];
+  "taxonomy-master-graph-reuse.mjs", "taxonomy-master-writer.mjs", "taxonomy-master-reuse-reader.mjs",
+  "taxonomy-classification-review.mjs", "taxonomy-master-lifecycle.mjs"];
 
 export async function masterBuildRulesRevision() {
   const contents = await Promise.all(RULE_FILES.map(async (name) => [name,

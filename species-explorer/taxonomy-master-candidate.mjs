@@ -56,6 +56,7 @@ import { copyMasterSearchTerms } from "./taxonomy-master-search-reuse.mjs";
 import { createMasterWriter } from "./taxonomy-master-writer.mjs";
 import { inspectMasterTaxonContinuity } from "./taxonomy-master-continuity.mjs";
 import { preserveRecoveryConflictState } from "./taxonomy-source-recovery-conflicts.mjs";
+import { normalizeColIdentifiers, classificationReviewCase, summarizeClassificationReview, assertClassificationReviewSummary } from "./taxonomy-classification-review.mjs";
 
 const SOURCE_FIELDS = new Set([
   "scientific-name",
@@ -256,6 +257,7 @@ function normalizeColRecord(value = {}, fallback = {}) {
       cleanText(entry.identifier_type || entry.type),
       cleanText(entry.identifier),
     ]).filter(([key, id]) => key && id)),
+    identifiers: normalizeColIdentifiers(value),
     environment: cleanText(value.environment || "unknown").toLocaleLowerCase("en"),
     retrievedAt: cleanText(value.retrievedAt || fallback.importedAt),
     relevanceReasons: value.relevanceReasons || ["project-species"],
@@ -416,6 +418,9 @@ function mergeSourceRecord(left, right) {
     hierarchy: { ...(left.hierarchy || {}), ...(right.hierarchy || {}) },
     names: mergeRecordNames(left.names, right.names),
     externalIds: { ...(left.externalIds || {}), ...(right.externalIds || {}) },
+    ...(left.provider === "catalogue-of-life" ? { identifiers: normalizeColIdentifiers({
+      identifiers: [...normalizeColIdentifiers(left), ...normalizeColIdentifiers(right)],
+    }) } : {}),
     relevanceReasons: [...new Set([
       ...(left.relevanceReasons || []),
       ...(right.relevanceReasons || []),
@@ -892,6 +897,27 @@ async function buildTaxonomyMasterCandidateScoped({
       ? onlyPrevious : null;
     if (!group.identityMasterTaxonId && !group.identityFresh) group.previousTaxon = exactPrevious || unambiguousPrevious;
   }
+  const classificationCases = new Map();
+  // The strictly scoped source repair must not introduce foreign conflicts.
+  // A regular build instead holds newly introduced CoL/kingdom counterparts for
+  // explicit identity review; name equality never authorizes their merger.
+  try {
+    if (!sourceRecoveryScope) for (const group of groups.values()) {
+      if (!group.kingdom || previousByIdentity.has(group.key)) continue;
+      const records = group.records.filter((record) => record.provider === "catalogue-of-life"
+        && record.versionChangeState !== "removed" && identityKey(record) === group.key);
+      if (!records.length) continue;
+      const sources = (previousByBaseIdentity.get(baseIdentityKey(group)) || []).filter((source) =>
+        source.lifecycle_state === "active" && source.reference_state === "reference-gap" && source.kingdom
+        && normalized(canonicalKingdomIdentity(source.kingdom)) !== normalized(canonicalKingdomIdentity(group.kingdom)))
+        .map((source) => ({ masterTaxonId: source.master_taxon_id, scientificName: source.canonical_scientific_name,
+          rank: source.rank, kingdom: source.kingdom, evidence: previousState.evidenceFor(source.master_taxon_id) }));
+      if (sources.length) classificationCases.set(group, classificationReviewCase({ sources, records,
+        target: { scientificName: group.scientificName, rank: group.rank, kingdom: canonicalKingdomIdentity(group.kingdom) },
+        baseVersion: activeManifest.candidateId, colVersion: normalizedColRelease.providerVersion }));
+    }
+  } catch (error) { previousState.close(); throw error; }
+  const classificationReview = summarizeClassificationReview([...classificationCases.values()]);
   const temporaryDirectory = checkpoint?.directory || path.join(
     taxonomyMasterRoot(taxonomyRoot),
     `.staging-${crypto.randomUUID()}`,
@@ -1031,7 +1057,7 @@ async function buildTaxonomyMasterCandidateScoped({
             : group.corrections.length
               ? "manual"
               : oldTaxon?.reference_state || "manual";
-      if (reuse.available && reuse.copyIfEligible(database, { group, masterTaxonId, releases: releaseByProvider, timestamp })) {
+      if (!classificationCases.has(group) && reuse.available && reuse.copyIfEligible(database, { group, masterTaxonId, releases: releaseByProvider, timestamp })) {
         writtenGroups += 1;
         await progressCheckpoint?.advance(writtenGroups, reuse.reusedTaxa || 0);
         if (writtenGroups % 500 === 0) {
@@ -1237,6 +1263,13 @@ async function buildTaxonomyMasterCandidateScoped({
           .map((field) => `${field.field_name}|${field.language || ""}`),
       ]);
       let groupBlockingConflictCount = 0;
+      const classificationCase = classificationCases.get(group);
+      if (classificationCase) {
+        addMasterConflict(writer, { conflictId: `classification_${classificationCase.revision}`, masterTaxonId,
+          fieldName: "kingdom", conflictType: "ambiguous-match", detectedAt: timestamp,
+          resolutionNote: JSON.stringify(classificationCase) });
+        groupBlockingConflictCount += 1;
+      }
       const byField = new Map();
       for (const candidate of fieldCandidates.filter(Boolean)) {
         const key = candidateKey(candidate);
@@ -1494,6 +1527,7 @@ async function buildTaxonomyMasterCandidateScoped({
       validation,
       contentQuality,
       identityContinuity,
+      classificationReview,
       requiresConfirmation: true,
       ...(sourceRecoveryScope ? { sourceRecoveryScope, recoveryConflictState } : {}),
       ...(checkpoint ? { buildJobRevision: checkpoint.revision } : {}),
@@ -1572,6 +1606,7 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
     const validation = validate
       ? validateTaxonomyMasterDatabase(database)
       : manifest.validation || null;
+    assertClassificationReviewSummary(database, manifest.classificationReview);
     const blockingConflictCount = Number(database.prepare(`
       SELECT COUNT(*) AS count
       FROM master_conflict

@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -104,3 +104,22 @@ Lokale Gegenprüfung der Korrektur: gesamte Reparatur-Testdatei mit 51 erfolgrei
 Hilfsprozesse und alle drei CLI-Vertragstests; null Fehler/Abbrüche. Syntax, Stil, Dokumentationsverweise,
 frisch synchronisierter Projektstatus und `git diff --check` erfolgreich. Nur Tests und diese Übergabe-/
 Betriebsdokumentation geändert; das vollständige Linux-Qualitätsgate wird nicht umgangen.
+
+Nachweis inzwischen bestätigt: [GitHub-Lauf für `bf953ae`](https://github.com/felixkfm90/iucn-species-data/actions/runs/36915759582)
+mit erfolgreichem Linux-Qualitätsgate, Pages-Build und Deployment. Der CI-Fehler ist abgeschlossen.
+
+## Regulärer Updateablauf: Vorprüfung am 2. Oktober
+
+Die unterschiedlichen Start-/Datenbank-Einstiege und die fehlende fachliche Unterscheidung der abweichenden
+CoL-/Reichsbeziehungen sind im Code und mit vier isolierten Datenbank-Gegenproben bestätigt. Sechs gezielte
+Regressionstests erfolgreich. Felix beauftragte anschließend die gebündelte, bestätigungspflichtige Prüfung
+unter Erhalt bisheriger IDs. Erste Stufe implementiert: vollständige CoL-ID-Verweise, vier Quellenkategorien,
+gebündelte Übersicht und offene Aktivierungssperre für neue CoL-/Reichsgegenstücke bisheriger Referenzlücken.
+Keine normale Feldentscheidung kann diese Prüfung umgehen. Bestätigte Bündelübernahme/ID-Fortführung,
+Behandlung unklarer Fälle und einheitlicher Update-Einstieg sind noch nicht abgeschlossen.
+Details und Grenzen: [regulärer Updatevertrag](taxonomy-reference-update.md).
+Kein neuer Download, produktiver Aufbau, Zeigerwechsel, Katalogabgleich oder Bereinigung.
+178 gezielte Tests in zehn Dateien erfolgreich; abschließende neun UI-Tests erneut bestanden. Syntax/Stil,
+70 Markdown-Dateien ohne fehlende lokale Verweise, aktueller Projektstatus und Diffprüfung erfolgreich.
+Echte Hilfsprozesse im erlaubten Gegenlauf geprüft, keine Windows-/Testregeländerung. Kein vollständiges
+Qualitätsgate oder praktischer Bediennachweis für diese erste Stufe; Plug-in-Version unverändert `0.4.24.14`.

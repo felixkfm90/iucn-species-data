@@ -192,6 +192,46 @@ test("kompakter Status zeigt die Gesamtzahl auch bei begrenzter Konfliktliste", 
   assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
 });
 
+test("Reichs-/Quellenfälle werden auch oberhalb des Listenlimits gebündelt und ohne falsche Feldentscheidung dargestellt", () => {
+  const visible = elements(), status = readyStatus();
+  status.lifecycle.canActivate = false;
+  status.lifecycle.blockingConflictCount = 2173;
+  status.lifecycle.conflicts = [{ conflict_id: `classification_${"a".repeat(64)}`, conflict_type: "ambiguous-match",
+    field_name: "kingdom", canonical_scientific_name: "Testus classificatus" }];
+  status.lifecycle.candidate.classificationReview = { total: 2173, matchingProviderId: 1693,
+    differentProviderId: 6, ambiguousProviderId: 2, missingProviderId: 472, groupCount: 1,
+    groups: [{ previousKingdom: "Bacteria", newKingdom: "Bacillati", category: "matching-provider-id", count: 1143, examples: ["Testus classificatus"] }] };
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible,
+    fetchJson: async () => status, escapeHtml: (value) => String(value), showQuickConfirm: async () => true, renderDatabaseStatus() {} });
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /2\.173 Fälle/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /1\.693 mit übereinstimmender iNaturalist-ID/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /480 ohne eindeutigen/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Abweichende Anbieter-ID: 6 · Mehrdeutige Belege: 2 · Fehlender Verweis: 472/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Bacteria → Bacillati: 1\.143 Fälle/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /gleiche Anbieter-ID · Prüfung erforderlich/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /noch nicht verfügbar/);
+  assert.doesNotMatch(visible.taxonomyMasterConflicts.innerHTML, /technische Konflikte|data-master-conflict-save|<select/);
+  assert.equal(visible.taxonomyMasterActivateButton.disabled, true);
+  assert.equal(masterUi.conflictPresentation(status.lifecycle.conflicts[0]).identityReviewRequired, true);
+  assert.equal(masterUi.conflictRecommendation(status.lifecycle.conflicts[0]).decision, null);
+});
+
+test("gebündelte Identitätsfälle verdecken keine weiteren normalen Konflikte", () => {
+  const visible = elements(), status = readyStatus();
+  status.lifecycle.canActivate = false;
+  status.lifecycle.blockingConflictCount = 2;
+  status.lifecycle.candidate.classificationReview = { total: 1, matchingProviderId: 0, groups: [], groupCount: 0 };
+  status.lifecycle.conflicts = [{ conflict_id: `classification_${"a".repeat(64)}`, conflict_type: "ambiguous-match" },
+    { conflict_id: "ordinary", conflict_type: "changed-value", field_name: "german-name", german_name: "Weißstorch" }];
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible,
+    fetchJson: async () => status, escapeHtml: (value) => String(value), showQuickConfirm: async () => true, renderDatabaseStatus() {} });
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /1 Fall/);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-master-conflict="ordinary"/);
+  assert.equal((visible.taxonomyMasterConflicts.innerHTML.match(/data-master-conflict-save/g) || []).length, 1);
+});
+
 test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt", () => {
   const visible = elements();
   const status = {

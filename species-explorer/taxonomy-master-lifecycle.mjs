@@ -19,6 +19,7 @@ import {
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
 import { readIdentityReview } from "./taxonomy-identity-review.mjs";
 import { identityRegistryRevision, emptyIdentityRegistry } from "./taxonomy-identity-registry.mjs";
+import { isClassificationReviewConflict } from "./taxonomy-classification-review.mjs";
 import {
   taxonomyMasterActiveDirectory,
   taxonomyMasterCandidateDirectory,
@@ -300,6 +301,9 @@ export async function decideTaxonomyMasterConflict(taxonomyRoot, {
     if (!conflict) throw new Error(`Konflikt ${normalizedConflictId} wurde nicht gefunden.`);
     if (conflict.conflict_state !== "open") {
       throw new Error(`Konflikt ${normalizedConflictId} wurde bereits entschieden.`);
+    }
+    if (isClassificationReviewConflict(conflict)) {
+      throw new Error("Dieser Reichs-/Quellenfall benötigt eine bestätigte Identitätsprüfung. Eine normale Feldentscheidung darf ihn nicht freigeben.");
     }
 
     let selectedAssertionId = conflict.current_assertion_id;
