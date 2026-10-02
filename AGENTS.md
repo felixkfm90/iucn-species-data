@@ -116,6 +116,23 @@ fünf eigene Korrekturen und Identitäten bereits aktiv, Paket `current`, Rückw
 von 19:29 MESZ bestätigt neuen/nicht installierten Release. Startvorbereitung praktisch bestätigt; konkrete
 Startentscheidung noch ausstehend. Keine Quellen-/Aufbau-/Aktivierungsroute aufgerufen.
 
+Anschließend durch Felix gestartet am 2. Oktober um 19:34:35 MESZ. Quellenstatus schon beim API-Export
+`failed`/`download`: HTTP 404, keine sichere Downloadweiterleitung; kein Master-Abgleich gestartet.
+Lesende API-Gegenprüfung bestätigt unveränderte Referenz und passendes aktives Master-/Lightroom-Paar, keinen
+neuen Kandidaten. Die rote Schritt-4-Anzeige war falsch: sie nutzte `Abschluss` aus dem alten fertigen Auftrag
+und verdrängte die eigentliche Fehlerursache mit der alten Mastermeldung. Gezielt reproduziert und korrigiert:
+Quellenfehler zeigt Schritt 1/7, tatsächlichen Fehler und ausdrücklich bisherigen aktiven Bestand.
+Downloadkorrektur: API-Jobexport bleibt erster Weg. Nur bei HTTP 404 und zusammenpassender Release-ID,
+Datensatzkennung, gültigem Datum, XR-Ursprung, ColDP-Format und kanonischer Exportadresse wird das offizielle
+datierte Monatsarchiv geladen. Kein `latest`, fremder Host oder zusätzlicher Redirect; keine Umgehung von 403.
+Größen-/ZIP-/Entpack-/Import-/ID-/Paarprüfungen unverändert. Archiv für 25. September lesend mit HEAD 200 und
+vier Range-Bytes (`504b0304`) bestätigt; kein vollständiger Download oder produktiver Wiederholungsstart.
+145 Tests in elf betroffenen Wartungs-/Anzeige-/Sicherheitsdateien erfolgreich; vollständiger produktiver
+Import und Gesamtabnahme offen. Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung
+erfolgreich. Kein vollständiges lokales `quality:ci`; Pages-Veröffentlichung der Korrektur separat prüfen.
+Nächster Schritt: normaler Explorer-Neustart und frische Update-Rückfrage durch Felix; kein eigenständiger
+Start/Download/Aufbau/Wechsel, Katalogabgleich oder Bereinigung. Lua-Version unverändert `0.4.24.14`.
+
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
   alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.

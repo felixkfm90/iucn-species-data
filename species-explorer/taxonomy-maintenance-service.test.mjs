@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { downloadCatalogueArchive, normalizeCatalogueRelease } from "./taxonomy-release-client.mjs";
+
 import {
   createTaxonomyMaintenanceService,
   taxonomyMaintenanceInternals,
@@ -140,6 +142,66 @@ function latestRelease() {
     exportUrl: "https://api.checklistbank.org/dataset/2/export.zip",
   };
 }
+
+test("API-404-Ersatz läuft nur nach Bestätigung durch die Wartung; Downloadfehler lässt Altstand und Folgeschritte unangetastet", async (t) => {
+  for (const succeeds of [true, false]) await t.test(succeeds ? "datierter Archivweg" : "Ersatzabruf scheitert", async (st) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-dated-archive-"));
+    st.after(() => fs.rm(root, { recursive: true, force: true }));
+    const release = normalizeCatalogueRelease({ key: 316441, issued: "2026-09-25", origin: "xrelease" });
+    const datedUrl = "https://download.checklistbank.org/col/monthly/2026-09-25_xr_coldp.zip";
+    const zip = Buffer.from("504b030400000000", "hex");
+    const sequence = [], urls = [];
+    let pointer = { activeRelease: "col-old", previousRelease: null };
+    const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
+      referenceService: { reset() {}, async status() {
+        return { available: true, releaseId: pointer.activeRelease, boundedPrototype: false };
+      } },
+      discoverRelease: async () => ({ checkedAt: "2026-10-02T17:34:00Z", latest: release }),
+      readPointer: async () => pointer, listReleases: async () => ["col-old"], diskBytes: async () => 20 * 1024 ** 3,
+      downloadArchive: (options) => {
+        sequence.push("download");
+        return downloadCatalogueArchive({ ...options, fetchImpl: async (url) => {
+          urls.push(String(url));
+          return urls.length === 1 ? new Response(null, { status: 404 })
+            : succeeds ? new Response(zip) : new Response(null, { status: 403 });
+        } });
+      },
+      extractArchive: async ({ archivePath }) => {
+        sequence.push("extract"); assert.deepEqual(await fs.readFile(archivePath), zip);
+      },
+      compareProjectSpecies: async () => {
+        sequence.push("compare"); return { summary: { total: 0, exact: 0 }, results: [] };
+      },
+      activateRelease: async (_taxonomyRoot, releaseId) => {
+        sequence.push("activate"); pointer = { activeRelease: releaseId, previousRelease: pointer.activeRelease };
+      },
+    });
+    st.after(() => service.close());
+    // Import/extraction are bounded doubles; the archive downloader and service
+    // transition/confirmation/metadata/error paths are real, never live data.
+    service.runImportChild = async ({ releasePath, archiveMetadataPath }) => {
+      sequence.push("import");
+      assert.equal(JSON.parse(await fs.readFile(releasePath, "utf8")).releaseId, release.releaseId);
+      assert.equal(JSON.parse(await fs.readFile(archiveMetadataPath, "utf8")).downloadUrl, datedUrl);
+      return { releaseId: release.releaseId };
+    };
+    const preview = await service.previewUpdate();
+    assert.equal(preview.downloadRequired, true);
+    assert.deepEqual(urls, [], "Die Vorschau lädt kein Archiv");
+    await service.startUpdate({ token: preview.token });
+    const final = await waitForTerminal(service);
+    assert.deepEqual(urls, [release.exportUrl, datedUrl]);
+    assert.equal(final.active, false);
+    if (succeeds) {
+      assert.equal(final.status, "completed");
+      assert.deepEqual(sequence, ["download", "extract", "import", "compare", "activate"]);
+      assert.equal(pointer.activeRelease, release.releaseId); assert.equal(pointer.previousRelease, "col-old");
+    } else {
+      assert.equal(final.status, "failed"); assert.equal(final.phase, "download"); assert.match(final.error, /HTTP 403/);
+      assert.deepEqual(sequence, ["download"]); assert.deepEqual(pointer, { activeRelease: "col-old", previousRelease: null });
+    }
+  });
+});
 
 test("Aktualisierung braucht Vorschau und aktiviert erst nach dem Artenabgleich", async (context) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-maintenance-"));

@@ -48,8 +48,20 @@ haben Vorrang; ihre ausdrücklich beschriebene lokale Verarbeitung lädt keine n
 Konflikte stoppen die Übernahme. Frische Statusabfragen müssen den passenden Master-/Paketstand bestätigen.
 Die Implementierung ist automatisiert geprüft; praktische Gesamtabnahme und Startfreigabe sind getrennt.
 
+**Aktueller Folgepunkt am 2. Oktober:** Felix startete den regulären Quellenlauf um 19:34:35 MESZ. Der API-Export
+lieferte HTTP 404; Abbruch schon beim Quelldownload, kein Masteraufbau gestartet. Die bisherige Referenz und das
+passende Master-/Lightroom-Paar oben bleiben aktiv. Die falsche Anzeige `Schritt 4 · Master prüfen · Abschluss`
+stammte aus dem alten fertigen Auftrag; sie ist nun auf tatsächliche Quellenphase/Fehlerursache korrigiert.
+Der API-Download erhält einen eng gebundenen Ersatz über das offizielle datierte XR-ColDP-Monatsarchiv, nur bei
+404 und passenden Releasefeldern. Keine geänderten Größen-, Import-, Identitäts- oder Aktivierungsschutzregeln.
+145 gezielte Wartungs-/Anzeige-/Sicherheitstests erfolgreich; echtes Archiv nur per HEAD und vier ZIP-Bytes
+lesend bestätigt. Kein vollständiger Download oder Wiederholungsstart durch die Korrektur. Nächster Schritt:
+Explorer normal neu öffnen und den regulären Updateweg erneut frisch bestätigen. Details/Grenzen im
+[Updatevertrag](taxonomy-reference-update.md#früher-downloadabbruch-und-enge-korrektur-am-2-oktober).
+
 Für die aktuelle Abnahme wurde `Später` empfohlen. Kein `COL26.9 XR`-Download, weiterer Masterlauf oder
-katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet.
+katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet. Das bezeichnet die frühere Reparaturabnahme,
+nicht den anschließend von Felix gestarteten und am Download gescheiterten regulären Quellenlauf.
 
 ## Was vor dem nächsten Update beziehungsweise Audit offen bleibt
 
@@ -208,4 +220,5 @@ ohne Startbestätigung. Lesende API-Prüfung um 19:31 MESZ: kein laufender Vorga
 oder offene eigene Vormerkung; fünf eigene Korrekturen aktiv, Lightroom-Paket `current`, Rückweg verfügbar.
 Frischer Versionscheck vom 2. Oktober um 19:29 MESZ bestätigt den verfügbaren/nicht installierten Release.
 Startvorbereitung praktisch bestätigt. Nächster Schritt nur nach ausdrücklicher Startentscheidung; bislang kein
-Quellen-/Aufbau-/Paarlauf gestartet.
+Quellen-/Aufbau-/Paarlauf gestartet. Historischer Vorbereitungsstand vor Felix' anschließendem Start; dessen
+Downloadabbruch und heutiger nächster Schritt sind oben festgehalten.

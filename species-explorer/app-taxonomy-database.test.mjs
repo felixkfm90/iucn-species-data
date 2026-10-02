@@ -51,6 +51,25 @@ test("Datenbankdialog teilt den Kopf-Fortschritt und kennzeichnet alte Bestandsz
   assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /80 %/);
 });
 
+test("Quellenfehler zeigt tatsächliche Ursache statt alter Mastermeldung und kennzeichnet unveränderten Bestand", () => {
+  const f = backgroundUiFixture();
+  f.state.taxonomyMaintenanceSnapshot = { status: "failed", active: false, phase: "download", action: "update",
+    error: "ChecklistBank hat keine sichere Downloadweiterleitung geliefert (HTTP 404)." };
+  f.state.taxonomyMasterSnapshot = { status: "idle", active: false, message: "Noch kein Master-Abgleich gestartet.",
+    lifecycle: { active: { summary: { taxa: 273466 } } },
+    buildJob: { available: true, status: "ready", progress: { phase: "Abschluss" } } };
+  f.state.renderTaxonomyDatabaseOverview();
+  const detail = f.elements.taxonomyDatabaseOverviewDetail.textContent;
+  assert.match(detail, /Schritt 1 von 7.*Quelldownload.*fehlgeschlagen/);
+  assert.match(detail, /Bisheriger aktiver Bestand: 273\.466 Taxa/);
+  assert.match(detail, /HTTP 404/);
+  assert.doesNotMatch(detail, /Master prüfen|Noch kein Master-Abgleich|\.\.$/);
+  f.state.taxonomyMasterSnapshot.lifecycle.candidate = { summary: { taxa: 999999 } };
+  f.state.renderTaxonomyDatabaseOverview();
+  assert.match(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Bisheriger aktiver Bestand: 273\.466 Taxa/);
+  assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /999\.999|Geprüfter Kandidat/);
+});
+
 function backgroundUiFixture({ confirm = false, storagePlan = null, storageError = null,
   baseline = false, buildResult = null, activationResult = null, failBaselineRead = false, failBaselineStart = false } = {}) {
   const nodes = new Map();

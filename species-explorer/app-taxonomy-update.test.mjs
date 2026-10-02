@@ -241,6 +241,27 @@ test("veraltete Freigabe oder Quellenfehler starten keinen Master und bleiben er
   }
 });
 
+test("Aktueller Downloadfehler überdeckt alten fertigen Auftrag; Wiederöffnung startet nichts und zeigt keinen Gesamtabschluss", async () => {
+  const f = fixture({ initialMaster: { status: "idle", active: false, message: "Noch kein Master-Abgleich gestartet.",
+    lifecycle: { active: { candidateId: "old", summary: { taxa: 273466, germanNames: 45502, englishNames: 157607 } } },
+    reference: { needsMasterRebuild: false }, lightroomPackage: { status: "current" },
+    buildJob: { available: true, status: "ready", progress: { phase: "Abschluss", percent: 99 } } },
+    sourceResult: { status: "failed", phase: "download", active: false, action: "update",
+      message: "Taxonomie-Aktualisierung fehlgeschlagen. Die bisherige Version bleibt aktiv.",
+      error: "ChecklistBank hat keine sichere Downloadweiterleitung geliefert (HTTP 404)." } });
+  await f.state.updateTaxonomyDatabase();
+  assert.deepEqual(writes(f).map((call) => call.url), ["/api/taxonomy/update/start"]);
+  assert.equal(success(f).length, 0); assert.equal(f.state.taxonomyDatabaseBusy, false);
+  assert.equal(f.elements.taxonomyDatabaseUpdateButton.disabled, false);
+  const detail = f.elements.taxonomyDatabaseOverviewDetail.textContent;
+  assert.match(detail, /Schritt 1 von 7.*Quelldownload.*fehlgeschlagen/);
+  assert.match(detail, /Bisheriger aktiver Bestand: 273\.466 Taxa.*45\.502 deutsche Namen.*157\.607 englische Namen/);
+  assert.match(detail, /HTTP 404/); assert.doesNotMatch(detail, /Master prüfen|Noch kein Master-Abgleich/);
+  await f.database.refresh();
+  assert.equal(writes(f).length, 1, "Nur lesende Wiederöffnung, kein unbestätigter Wiederholungsstart");
+  assert.equal(f.state.taxonomyMasterSnapshot.lifecycle.active.candidateId, "old");
+});
+
 test("Masterpause, Fehler und Klassifikationskonflikte stoppen vor der Paketaktivierung", async (t) => {
   for (const buildResult of [
     ...["paused", "interrupted", "failed", "stale", "partial"].map((status) => ({ status, active: false, message: "Aufbau gestoppt",

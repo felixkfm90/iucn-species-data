@@ -26,13 +26,18 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Vierte Stufe implementiert: beide Update-Einstiege verwenden denselben bestätigten Quellen-/Master-/Paketweg,
    gemeinsame Sperre und frischen Gesamtabschluss. Vorhandene lokale Arbeit hat Vorrang; Quellenimport allein
    meldet keinen Erfolg des Gesamtupdates. Automatisierte Abbruch-/Fehler-/Wiederholungswege geprüft.
-   Noch offen: nächsten Quellenlauf gesondert planen/freigeben und den vollständigen Weg praktisch abnehmen.
+   Noch offen: erneuten Quellenlauf gesondert bestätigen und den vollständigen Weg praktisch abnehmen.
    Lesender Plan am 2. Oktober vorbereitet: gespeichertes Paar/Register/Auftrag passend, keine neue Vormerkung;
    Explorer-Dienst nicht erreichbar. Frische Rückfrage ohne Bestätigung prüfen, dann separat starten lassen.
    Historische Fallzahlen sind kein Sollbestand eines neuen Releases; bei Entscheidungen ein lokaler Folgeaufbau.
    Anschließend Rückfragetext durch Felix und frischer API-Stand bestätigt: passendes Paar, keine laufende Aktion,
-   kein Kandidat/Drift/offene Vormerkung. `COL26.9 XR` frisch verfügbar; konkrete Startfreigabe noch ausstehend.
-   Keine Freigabe eines produktiven Quellenupdates; Details: [Updatevertrag](taxonomy-reference-update.md).
+   kein Kandidat/Drift/offene Vormerkung. `COL26.9 XR` frisch verfügbar; Startfreigabe zu diesem Zeitpunkt ausstehend.
+   Anschließend durch Felix um 19:34:35 MESZ gestartet, aber vor Masterarbeit am API-Download mit HTTP 404
+   abgebrochen. Bisherige Referenz und Master-/Lightroom-Paar unverändert. Enger datierter XR-ColDP-Ersatzweg
+   bei API-404 und korrekte Quellenfehler-/Bestandsanzeige implementiert; 145 gezielte Tests bestanden.
+   Offizielles Archiv nur lesend mit Dateiinformationen/vier ZIP-Bytes geprüft, nicht vollständig heruntergeladen.
+   Nächster Schritt: Explorer normal neu öffnen und erneuten Updateweg frisch bestätigen. Noch kein erfolgreicher
+   produktiver Download/Import oder Gesamtabschluss; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.
    Die zwei bestätigten Arten schließen nur die gezielte Reparaturabnahme, nicht alle heutigen Funktionen.

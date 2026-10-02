@@ -230,7 +230,8 @@
         + Number(referenceStatus.conflicts?.suggestions || 0)
         + Number(referenceStatus.conflicts?.ambiguous || 0)
         + Number(referenceStatus.conflicts?.missing || 0);
-      const counts = taxonomyDatabaseCounts(masterStatus);
+      const counts = taxonomyDatabaseCounts(progress?.sourceFailure
+        ? { ...masterStatus, lifecycle: { ...masterLifecycle, candidate: null } } : masterStatus);
       const latest = taxonomyReleaseLabel(referenceStatus.latest);
       const currentRelease = referenceLabel(referenceStatus);
       const activeDate = formatSnapshotDate(masterLifecycle.active);
@@ -272,7 +273,8 @@
         );
       }
       if (progress) details.push(progress.detail);
-      if (counts) details.push(`${active ? masterLifecycle.candidate ? "Geprüfter Kandidat: " : "Bisheriger aktiver Bestand: " : ""}${counts}`);
+      if (counts) details.push(`${active || progress?.sourceFailure
+        ? !progress?.sourceFailure && masterLifecycle.candidate ? "Geprüfter Kandidat: " : "Bisheriger aktiver Bestand: " : ""}${counts}`);
       if (updateAvailable && latest) details.push(`Verfügbar: ${latest}`);
       if (referenceNeedsMasterRebuild) {
         const referenceRelease = cleanText(masterStatus.reference?.activeRelease) || "unbekannt";
@@ -313,15 +315,14 @@
       }
       if (failed) {
         details.push(
-          cleanText(masterStatus.message)
-          || masterStatus.error
-          || referenceStatus.error
-          || referenceStatus.message
+          cleanText(masterStatus.error)
+          || cleanText(referenceStatus.error)
+          || cleanText(referenceStatus.status === "failed" ? referenceStatus.message : masterStatus.message)
           || "Aktualisierung fehlgeschlagen",
         );
       }
       if (!details.length) details.push("Umfang, Aktualität und Konflikte werden zusammengeführt");
-      elements.taxonomyDatabaseOverviewDetail.textContent = `${details.join(" · ")}.`;
+      elements.taxonomyDatabaseOverviewDetail.textContent = `${details.join(" · ").replace(/\.+$/, "")}.`;
 
       elements.taxonomyDatabaseCurrentVersion.textContent = [
         currentRelease ? `Aktuell: ${currentRelease}` : "Aktueller Datenbankstand",

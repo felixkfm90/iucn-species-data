@@ -29,13 +29,16 @@ frischen Kandidatenaufbau erledigen. Geänderte Belege benötigen erneut eine En
 Aufbau oder Paketwechsel durch die Vormerkung. Startangebot und manuelle Datenbank-Aktion verwenden inzwischen
 denselben bestätigten Quellen-/Master-/Paketweg. Quellenimport allein meldet keinen Gesamtabschluss; erst der
 frisch bestätigte passende Master-/Lightroom-Stand. Vorhandene lokale Arbeit hat Vorrang vor neuen Anbieterständen.
-Praktische Gesamtabnahme und gesonderte Startfreigabe bleiben offen; kein produktiver Quellenlauf in diesem Schritt.
+Praktische Gesamtabnahme bleibt offen. Der anschließend von Felix gestartete Lauf brach schon beim Quelldownload
+mit HTTP 404 ab; Referenz und passendes Master-/Lightroom-Paar blieben unverändert. Der Downloadweg verwendet
+nun ausschließlich bei fehlendem API-Export das offizielle, datierte XR-ColDP-Archiv des bestätigten Releases.
+Fehleranzeige und alte Bestandszahlen werden der tatsächlichen Quellenphase zugeordnet. Der erneute produktive
+Start muss separat bestätigt werden; vollständiger Download/Import noch nicht abgenommen.
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 Der gemeinsame Einstieg ist mit erfolgreichem Linux-Qualitätsgate/Pages-Lauf veröffentlicht. Der nächste
-Quellenlauf ist lesend vorbereitet, nicht gestartet: zunächst frische Explorer-Rückfrage ohne Bestätigung
-prüfen, anschließend gesonderte Startfreigabe. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
-Diese Rückfrage und der frische passende API-Stand wurden anschließend bestätigt; die konkrete Startfreigabe
-steht noch aus. Kein produktiver Quellenlauf zur Vorbereitung gestartet.
+Quellenlauf ist nach dem frühen Downloadfehler erneut über eine frische Explorer-Rückfrage zu starten.
+Arten-Explorer zuvor normal neu öffnen, damit der korrigierte Downloadweg geladen wird. Historische Fallzahlen
+ersetzen keine neue Quellenprüfung.
 
 ## Datenfluss und datierter Umsetzungsverlauf
 

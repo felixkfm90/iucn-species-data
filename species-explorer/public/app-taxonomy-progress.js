@@ -36,7 +36,12 @@
     const referenceActive = reference.active === true;
     const pending = job.available === true && job.status !== "ready";
     const running = referenceActive || master.active === true || ACTIVE.has(master.status);
-    const status = referenceActive ? reference.status : pending ? job.status : master.status;
+    // A source failure ends before Master work begins. A consumed ready job
+    // must not lend its old "Abschluss" phase or action to this failed update.
+    const sourceFailure = reference.status === "failed" && !running && !pending
+      && !master.error && !["failed", "partial"].includes(master.status);
+    const referenceInFocus = referenceActive || sourceFailure;
+    const status = referenceInFocus ? reference.status : pending ? job.status : master.status;
     const lifecycle = master.lifecycle || {};
     const conflicts = Number(lifecycle.blockingConflictCount ?? lifecycle.blockingConflicts?.length ?? 0);
     const candidate = Boolean(lifecycle.candidate);
@@ -45,7 +50,7 @@
     const failed = !referenceActive && (Boolean(master.error) || ["failed", "partial"].includes(status))
       || (!running && reference.status === "failed");
     const waiting = !running && candidate;
-    const stopped = !referenceActive && STOPPED[status];
+    const stopped = !referenceInFocus && STOPPED[status];
     const pairCurrent = master.lightroomPackage?.status === "current"
       && !master.reference?.needsMasterRebuild && !master.corrections?.pending && !master.identities?.pending;
     const completed = !busy && !sourcesAwaitMaster && !running && !failed && !pending && !candidate
@@ -54,20 +59,20 @@
     if (!running && !pending && !candidate && !failed && !busy && !completed && !unfinished) return null;
 
     const savedProgress = pending && !ACTIVE.has(master.status) ? job.progress : null;
-    let phase = text(referenceActive ? REFERENCE_PHASES[reference.phase] || reference.phase
+    let phase = text(referenceInFocus ? REFERENCE_PHASES[reference.phase] || reference.phase
       : savedProgress?.phase || master.progressPhase || job.progress?.phase);
     let steps = BUILD_STEPS, index = 0;
     const action = master.action || "";
-    if (!referenceActive && (action === "rollback" || master.status === "rolling-back")) {
+    if (!referenceInFocus && (action === "rollback" || master.status === "rolling-back")) {
       steps = ["Vorgänger und eigene Entscheidungen prüfen", "Vorgänger gemeinsam übernehmen"];
       index = /Aktivierung|übernehmen|aktivieren/i.test(phase) ? 1 : 0;
-    } else if (!referenceActive && (action === "apply-corrections" || master.status === "applying-corrections")) {
+    } else if (!referenceInFocus && (action === "apply-corrections" || master.status === "applying-corrections")) {
       steps = ["Namenswahl prüfen", "Namenswahl gemeinsam übernehmen"];
       index = /aktivieren|Aktivierung|übernehmen/i.test(phase) ? 1 : 0;
-    } else if (!referenceActive && action === "sync-lightroom") {
+    } else if (!referenceInFocus && action === "sync-lightroom") {
       steps = BUILD_STEPS.slice(4);
       index = packageStep(phase) - 4;
-    } else if (!referenceActive) {
+    } else if (!referenceInFocus) {
       if (["activating", "syncing-lightroom"].includes(master.status) || action === "activate") {
         // Before the first publication event the service says "Aktivierung",
         // but package preparation/verification still lies ahead.
@@ -82,7 +87,7 @@
     if (!running && sourcesAwaitMaster && !candidate && !pending) {
       steps = BUILD_STEPS; index = 1; phase = "Masterabgleich ausstehend";
     }
-    const source = referenceActive ? reference : savedProgress || master;
+    const source = referenceInFocus ? reference : savedProgress || master;
     const measured = completed || waiting || stopped || failed || unfinished ? null
       : measuredProgress(savedProgress ? source.current : source.progressCurrent,
         savedProgress ? source.total : source.progressTotal);
@@ -100,7 +105,7 @@
       : ["DB", `${index + 1}/${steps.length}`, shortStage, measured ? `Teil ${measured.percent} %` : "",
         stateLabel === "läuft" ? "" : stateLabel].filter(Boolean).join(" · ");
     return { step: index + 1, totalSteps: steps.length, stage, phase, percent: measured?.percent ?? null,
-      detail, compact, state: stateLabel, running, completed,
+      detail, compact, state: stateLabel, running, completed, sourceFailure,
       className: failed ? "failed" : stopped || waiting || unfinished ? "review" : running || busy ? "taxonomy" : "current" };
   }
 

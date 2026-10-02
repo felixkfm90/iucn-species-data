@@ -102,6 +102,19 @@ function isAllowedDownloadUrl(url) {
     && /^\/job\/[a-z0-9]{2}\/[a-z0-9-]+\.zip$/i.test(url.pathname);
 }
 
+function datedXrArchiveUrl(release, initialUrl) {
+  // The API's cached job export can be absent while the official dated monthly
+  // archive exists. Never substitute a moving "latest" release.
+  const { datasetKey, issued, releaseId, origin, format } = release;
+  if (!Number.isSafeInteger(datasetKey) || datasetKey <= 0 || origin !== "xrelease" || format !== "ColDP"
+    || typeof issued !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(issued)) return null;
+  const timestamp = Date.parse(`${issued}T00:00:00Z`);
+  if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString().slice(0, 10) !== issued
+    || releaseId !== `col-xr-${issued}-${datasetKey}`
+    || initialUrl.href !== `${CHECKLISTBANK_API}/dataset/${datasetKey}/export.zip?extended=true&format=ColDP`) return null;
+  return new URL(`${CHECKLISTBANK_DOWNLOAD}/col/monthly/${issued}_xr_coldp.zip`);
+}
+
 async function fetchWithTimeout(fetchImpl, url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -201,24 +214,28 @@ export async function discoverLatestCatalogueRelease({
   return result;
 }
 
-async function resolveDownloadResponse(fetchImpl, exportUrl) {
-  const initialUrl = new URL(exportUrl);
+async function resolveDownloadResponse(fetchImpl, release) {
+  const initialUrl = new URL(release.exportUrl);
   if (!isAllowedReleaseUrl(initialUrl)) {
     throw createHttpError("Die Exportadresse liegt außerhalb der erlaubten ChecklistBank-API.", 400);
   }
   const response = await fetchWithRetries(fetchImpl, initialUrl, {
     redirect: "manual",
   });
-  if (response.status < 300 || response.status >= 400) {
+  let downloadUrl;
+  if (response.status === 404) downloadUrl = datedXrArchiveUrl(release, initialUrl);
+  if (!downloadUrl && (response.status < 300 || response.status >= 400)) {
     throw createHttpError(
       `ChecklistBank hat keine sichere Downloadweiterleitung geliefert (HTTP ${response.status}).`,
       502,
     );
   }
-  const location = response.headers.get("location");
-  const downloadUrl = location ? new URL(location, initialUrl) : null;
-  if (!downloadUrl || !isAllowedDownloadUrl(downloadUrl)) {
-    throw createHttpError("ChecklistBank hat auf eine nicht erlaubte Downloadadresse weitergeleitet.", 502);
+  if (!downloadUrl) {
+    const location = response.headers.get("location");
+    downloadUrl = location ? new URL(location, initialUrl) : null;
+    if (!downloadUrl || !isAllowedDownloadUrl(downloadUrl)) {
+      throw createHttpError("ChecklistBank hat auf eine nicht erlaubte Downloadadresse weitergeleitet.", 502);
+    }
   }
   const download = await fetchWithRetries(fetchImpl, downloadUrl, {
     redirect: "error",
@@ -243,7 +260,7 @@ export async function downloadCatalogueArchive({
   if (!release?.exportUrl || !targetPath) {
     throw new TypeError("Release und Downloadziel sind erforderlich.");
   }
-  const { response, downloadUrl } = await resolveDownloadResponse(fetchImpl, release.exportUrl);
+  const { response, downloadUrl } = await resolveDownloadResponse(fetchImpl, release);
   const announcedBytes = Number(response.headers.get("content-length")) || null;
   if (announcedBytes && announcedBytes > maxBytes) {
     throw createHttpError(

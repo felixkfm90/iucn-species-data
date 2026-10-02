@@ -54,6 +54,29 @@ test("Quellendownload hat Vorrang vor altem Masterstatus; Referenzabschluss ist 
   assert.equal(view({ master, busy: true }).completed, false, "Alte Erfolgsmeldung nicht während einer neuen Aktion zeigen");
 });
 
+test("Fehlgeschlagener Quelldownload bleibt Schritt 1, auch neben dem Abschluss eines alten fertigen Auftrags", () => {
+  for (const action of ["", "activate", "rollback", "apply-corrections", "sync-lightroom"]) {
+    const master = { status: "idle", active: false, action, lightroomPackage: pair,
+      buildJob: { available: true, status: "ready", progress: { phase: "Abschluss", percent: 99 } } };
+    const result = view({ master, reference: { status: "failed", active: false, action: "update", phase: "download" } });
+    assert.equal(result.step, 1); assert.equal(result.totalSteps, 7);
+    assert.equal(result.phase, "Quelldownload"); assert.equal(result.state, "fehlgeschlagen");
+    assert.equal(result.className, "failed"); assert.equal(result.completed, false); assert.equal(result.percent, null);
+    assert.doesNotMatch(result.detail, /Master prüfen|Abschluss|99 %/);
+  }
+  for (const phase of ["extract", "supplements"]) {
+    assert.equal(view({ reference: { status: "failed", phase } }).step, 1);
+  }
+});
+
+test("Aktueller Masterfehler oder gespeicherter gestoppter Aufbau wird nicht durch alten Quellenfehler verdeckt", () => {
+  const reference = { status: "failed", active: false, phase: "download" };
+  const master = { status: "failed", action: "activate", progressPhase: "Paketprüfung", error: "Paketfehler" };
+  assert.equal(view({ master, reference }).step, 6);
+  const job = { status: "idle", buildJob: { available: true, status: "paused", progress: { phase: "Masterdatenbank schreiben" } } };
+  assert.equal(view({ master: job, reference }).step, 3);
+});
+
 test("Gespeicherter Auftrag trennt Checkpoint und Fortschritt und bleibt nach Wiederöffnung verständlich", () => {
   for (const status of ["paused", "interrupted", "stale", "failed", "pausing"]) {
     const result = view({ master: { status: "idle", buildJob: { available: true, status,

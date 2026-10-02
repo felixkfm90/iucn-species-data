@@ -379,7 +379,59 @@ fünf eigene Korrekturen und Identitätsregister bereits aktiv, keine offenen Vo
 `current`, passender Quellmaster, Rückweg verfügbar. Frischer Versionscheck vom 2. Oktober um 19:29 MESZ
 bestätigt `COL26.9 XR` als verfügbar/nicht installiert. Keine Update-/Aufbau-/Aktivierungsroute aufgerufen.
 Damit ist die Startvorbereitung einschließlich sichtbarer gemeinsamer Rückfrage bestätigt; die konkrete
-Startfreigabe fehlt weiterhin. Weitere reine Implementierungsprüfungen verlangen keinen produktiven Lauf.
+Startfreigabe fehlte zu diesem Zeitpunkt noch. Weitere reine Implementierungsprüfungen verlangen keinen produktiven Lauf.
+
+## Früher Downloadabbruch und enge Korrektur am 2. Oktober
+
+Felix bestätigte anschließend den Start. Gespeicherter Quellenstatus: Beginn `2026-10-02T17:34:35.236Z`,
+Abbruch `2026-10-02T17:34:35.353Z` (19:34:35 MESZ), Phase `download`, HTTP 404 bei der erwarteten sicheren
+API-Exportweiterleitung. Kein Master-Abgleich oder neuer Kandidat gestartet. Lesende Statusgegenprobe bestätigt
+Referenz `col-xr-2026-08-26-316165`, Master `master-20261001145513036` und Paket vom selben Master weiterhin
+passend/aktiv. Kein Zeigerwechsel, Katalogabgleich oder Bereinigung. Kein vollständiger neuer Datenbankscan.
+
+Die Meldung `Schritt 4 von 7 · Master prüfen · Abschluss · fehlgeschlagen` war ein separater Anzeigefehler:
+Ein alter fertiger Aufbauauftrag lieferte `Abschluss`, obwohl der aktuelle Quellenlauf vorher gescheitert war.
+Zusätzlich verdrängte `Noch kein Master-Abgleich gestartet` die echte HTTP-Fehlerursache. Korrektur:
+aktueller Quellenfehler zeigt Schritt 1/7 mit tatsächlicher Quellenphase und Fehler; die Zahlen werden als
+`Bisheriger aktiver Bestand` gekennzeichnet. Alte Masteraktionen/fertige Aufträge liefern hierfür keine Phase.
+Aktuelle Master-/Paketfehler und gestoppte Aufträge bleiben eigenständig sichtbar. Kein doppelter Schlusspunkt.
+
+Lesender Anbieterbefund: Der API-Export für Datensatz `316441` liefert 404; derselbe Weg für `316165` liefert
+weiter eine erlaubte Jobweiterleitung. Das [offizielle Monatsarchiv](https://download.checklistbank.org/col/monthly/)
+enthält `2026-09-25_xr_coldp.zip`. HEAD bestätigt HTTP 200, `application/zip`, 1.416.328.110 Bytes; ein auf vier
+Bytes begrenzter Abruf liefert HTTP 206 und ZIP-Kennung `504b0304`. Keine vollständige Inhalts-, Herkunfts- oder
+Importprüfung aus dieser kurzen Gegenprobe ableiten; warum genau der neue API-Jobexport fehlt, ist nicht belegt.
+
+Downloadvertrag nach Korrektur:
+
+- API-Export/erlaubte Jobweiterleitung bleibt der erste Weg.
+- Nur bei API-HTTP-404 wird ein Ersatz erwogen. Release-ID, Datensatzkennung, kalendergültiges Datum, Ursprung
+  `xrelease`, Format `ColDP` und kanonische API-Exportadresse müssen zusammenpassen; auch bisherige gespeicherte
+  Releaseobjekte brauchen kein neues Feld oder erzwungenes Löschen des Versionscaches.
+- Ersatzadresse wird ausschließlich daraus als `https://download.checklistbank.org/col/monthly/<Datum>_xr_coldp.zip`
+  abgeleitet. Kein bewegliches `latest`, fremder Host, übergebenes freies Archivziel oder weiterer Redirect.
+  HTTP 403/andere API-Fehler und unsichere Jobweiterleitungen starten keinen Ersatzabruf.
+- Erfolg, Datenstrom, Größenlimit und ZIP-Kennung bleiben erforderlich; tatsächliche Downloadadresse und SHA-256
+  bleiben in den Archivmetadaten. Fehler entfernt ausschließlich das eigene Teilarchiv; vorhandenes Ziel bleibt
+  bei fehlerhafter Übertragung erhalten. Sichere Entpackung, vollständiger Import und alle nachgelagerten
+  Referenz-/Master-/ID-/Paketprüfungen bleiben unverändert.
+
+Prüfabschluss: 109 Tests der vollständigen Wartungsgruppe und 36 zusätzliche Anzeige-/Dashboard-/Sicherheitstests
+erfolgreich (145 Tests in elf Dateien). Reproduktion vor Fix, normaler Jobexport, datierter Ersatz, inkonsistente
+Releasefelder, unerlaubte Antworten/Weiterleitungen, ZIP-/Größenfehler, Übertragungsabbruch/Wiederholung,
+Metadatenübergabe im Wartungsweg und Erhalt des alten Referenzzeigers bei Fehler geprüft. Der Import/Entpacker
+ist in der neuen Service-Gegenprobe simuliert; die bestehende Wartungsgruppe prüft deren eigene Verträge separat.
+UI-Gegenprobe mit Felix' altem fertigen Auftrag prüft genaue Fehleranzeige, keine Master-/Paketaktion, bedienbare
+Oberfläche und rein lesendes Wiederöffnen. Kein vollständiges lokales `quality:ci`, Phase-10.5-Audit oder
+produktiver Wiederholungsstart durch diesen Fix. Lua-Version bleibt `0.4.24.14`.
+Syntax (357 Dateien), Stil, 70 Markdown-Dateien ohne fehlende lokale Verweise, frisch synchronisierter
+Projektstatus und Diffprüfung erfolgreich. Explorer-JS ist nicht im Squarespace-Footer eingebunden;
+Footer/CSS unverändert. Commit/Push und erfolgreicher Pages-Lauf bleiben getrennte Nachweise.
+
+**Nächste Grenze:** Arten-Explorer normal schließen/neustarten, um Backend und Anzeige neu zu laden, dann den
+regulären Updateweg mit frischer Rückfrage erneut durch Felix bestätigen. Danach erst vollständigen Download,
+Import, offenen Klassifikationsbefund und gemeinsamen Paarabschluss prüfen. Alte Release-/Master-/Paketstände
+und Reparaturnachweise erhalten; keine Cachelöschung oder eigenständige Wiederholung.
 
 ## Download, Import und Aktivierung
 
