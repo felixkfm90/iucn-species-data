@@ -17,7 +17,10 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Quellenbeziehungen reproduziert; gebündelte Prüfung mit ID-Erhalt anschließend von Felix beauftragt.
    Erste Stufe implementiert: verlustfreie Quellen-ID-Prüfung, vier Kategorien, kompakte Gruppenübersicht und
    Sperre neuer CoL-/Reichsgegenstücke gegen normale Feldentscheidungen und Einzel-/Paaraktivierung.
-   Noch offen: bestätigte Bündelübernahme mit ID-Erhalt, unklare Fälle zurückstellen und beide Update-Einstiege
+   Zweite Stufe implementiert: revisionsgebundene Bündelvorschau und bestätigte Vormerkung passender Quellenfälle,
+   neuer Kandidatenbau mit ursprünglicher ID sowie Erhalt eigener Namen/Projektlinks und roher Anbieterbelege.
+   Unklare Fälle bleiben gesperrt; keine automatische Aktivierung oder Fotomigration.
+   Noch offen: unklare Fälle ausdrücklich zurückstellen und beide Update-Einstiege
    vereinheitlichen. Keine Freigabe eines produktiven Quellenupdates; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.

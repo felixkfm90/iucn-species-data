@@ -130,6 +130,18 @@ test("technische Reparaturhistorie besitzt verständlichen Titel und keine neue 
   assert.doesNotMatch(html, /<option[^>]+value="source-repair"/);
 });
 
+test("Klassifikationsvormerkung zeigt einen verständlichen Historientitel und keine freie Reichsentscheidung", async () => {
+  const f = fixture(() => ({ available: true, cases: [], review: { events: [{ type: "classification",
+    sources: [taxon], targets: [{ ...taxon, kingdom: "Bacillati" }], reason: "Bisherige ID bleibt erhalten" }] } }));
+  f.controller.open();
+  await new Promise(setImmediate);
+  assert.match(f.get("pending-list").innerHTML, /Bestätigte CoL-Klassifikation – bisherige Art-ID bleibt erhalten/);
+  assert.doesNotMatch(f.get("pending-list").innerHTML, /undefined/);
+  assert.equal(f.calls.length, 1);
+  const html = await fs.readFile(new URL("./public/index.html", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /<option[^>]+value="classification"/);
+});
+
 test("Verwerfen braucht einen zweiten Klick und Abbrechen schreibt nichts", async () => {
   const f = fixture((url) => {
     if (url.endsWith("browse")) return { cases: [], review: { events: [], truncated: false } };

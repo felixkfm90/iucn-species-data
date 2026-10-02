@@ -903,7 +903,7 @@ async function buildTaxonomyMasterCandidateScoped({
   // explicit identity review; name equality never authorizes their merger.
   try {
     if (!sourceRecoveryScope) for (const group of groups.values()) {
-      if (!group.kingdom || previousByIdentity.has(group.key)) continue;
+      if (!group.kingdom || group.identityClassification || previousByIdentity.has(group.key)) continue;
       const records = group.records.filter((record) => record.provider === "catalogue-of-life"
         && record.versionChangeState !== "removed" && identityKey(record) === group.key);
       if (!records.length) continue;
@@ -1030,7 +1030,8 @@ async function buildTaxonomyMasterCandidateScoped({
       const removedOnly = sourceRemoved && !group.projects.length && !group.corrections.length;
       const [groupGenus] = cleanText(group.scientificName).split(/\s+/u);
       const kingdom = canonicalKingdomIdentity(
-        group.projects[0]?.kingdom
+        group.identityKingdom
+        || group.projects[0]?.kingdom
         || exactCol?.kingdom
         || activeRecords.find((record) => record.kingdom)?.kingdom
         || colKingdomByGenus.get(normalized(groupGenus)),

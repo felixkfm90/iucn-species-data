@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { normalizeIdentityProjectAssignments, checkIdentityProjectAssignments } from "./taxonomy-identity-projects.mjs";
+import { assertMatchingClassificationCase } from "./taxonomy-classification-review.mjs";
 
 const text = (value) => typeof value === "string" ? value.normalize("NFKC").trim() : "";
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const TYPES = new Set(["continuation", "split", "merge", "source-repair"]);
+const TYPES = new Set(["continuation", "split", "merge", "source-repair", "classification"]);
 const MAX_EVENTS = 10000;
 
 export function taxonIdentityKey(value) {
@@ -45,6 +46,22 @@ function checkSourceRepair(event, sources, targets) {
   }
 }
 
+function checkClassification(event, sources, targets) {
+  const proof = assertMatchingClassificationCase(event.classificationCase);
+  const source = sources[0], target = targets[0];
+  const expectedEvidence = [...proof.sources[0].evidence, { provider: "catalogue-of-life",
+    providerVersion: proof.colVersion, providerRecordId: proof.target.colRecords[0].providerRecordId }];
+  const key = (entry) => JSON.stringify([entry.provider, entry.providerVersion, entry.providerRecordId]);
+  if (sources.length !== 1 || targets.length !== 1 || source.masterTaxonId !== target.masterTaxonId
+      || source.masterTaxonId !== proof.sources[0].masterTaxonId
+      || taxonIdentityKey(source) !== taxonIdentityKey(proof.sources[0]) || taxonIdentityKey(target) !== taxonIdentityKey(proof.target)
+      || event.baseVersion !== proof.baseVersion || !/^[a-f0-9]{64}$/.test(event.classificationBatchRevision || "")
+      || event.projectAssignments?.length || event.evidence.length !== expectedEvidence.length
+      || expectedEvidence.some((entry) => !event.evidence.some((actual) => key(entry) === key(actual)))) {
+    throw new Error("Bestätigte Klassifikation muss die ursprüngliche ID und genau die gebundenen Quellenbelege erhalten.");
+  }
+}
+
 export function emptyIdentityRegistry() {
   return { schemaVersion: 1, events: [] };
 }
@@ -76,8 +93,10 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
     const targets = event.targets.map((target) => snapshot(target));
     if (repair) checkSourceRepair(event, sources, targets);
     else if (event.sourceRepair) throw new Error("Quellenreparaturbelege gehören nicht zu einer taxonomischen Entscheidung.");
+    if (event.type === "classification") checkClassification(event, sources, targets);
+    else if (event.classificationCase || event.classificationBatchRevision) throw new Error("Klassifikationsbelege gehören nur zu einer bestätigten Klassifikationsentscheidung.");
     checkIdentityProjectAssignments(event, projectState, taxonIdentityKey);
-    const cardinality = ["continuation", "source-repair"].includes(event.type) ? sources.length === 1 && targets.length === 1
+    const cardinality = ["continuation", "source-repair", "classification"].includes(event.type) ? sources.length === 1 && targets.length === 1
       : event.type === "split" ? sources.length === 1 && targets.length >= 2
         : sources.length >= 2 && targets.length === 1;
     if (!cardinality || sources.length > 100 || targets.length > 100
@@ -94,10 +113,10 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
       }
       current.delete(source.masterTaxonId);
       if (occupied.get(taxonIdentityKey(source)) === source.masterTaxonId) occupied.delete(taxonIdentityKey(source));
-      if (event.type !== "continuation") retired.add(source.masterTaxonId);
+      if (!["continuation", "classification"].includes(event.type)) retired.add(source.masterTaxonId);
     }
     for (const target of targets) {
-      if (!repair && (target.kingdom !== sources[0].kingdom || sources.some((source) => source.kingdom !== target.kingdom))) {
+      if (!repair && event.type !== "classification" && (target.kingdom !== sources[0].kingdom || sources.some((source) => source.kingdom !== target.kingdom))) {
         throw new Error("Eine Identitätsentscheidung darf keine verschiedenen Reiche gleichsetzen.");
       }
       if (event.type === "continuation" && target.masterTaxonId !== sources[0].masterTaxonId) {
@@ -133,6 +152,7 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
   const current = new Map();
   const historical = new Map();
   const aliases = new Map();
+  const classifications = new Map();
   const projectAssignments = new Map();
   for (const event of validated.events) {
     checkIdentityProjectAssignments(event, projectAssignments, taxonIdentityKey);
@@ -142,6 +162,10 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
         const names = aliases.get(source.masterTaxonId) || [];
         names.push(source);
         aliases.set(source.masterTaxonId, names);
+      } else if (event.type === "classification") {
+        const events = classifications.get(source.masterTaxonId) || [];
+        events.push(event);
+        classifications.set(source.masterTaxonId, events);
       } else {
         historical.set(source.masterTaxonId, { ...source, eventId: event.eventId, type: event.type,
           successorIds: event.targets.map((target) => target.masterTaxonId) });
@@ -149,7 +173,34 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
     }
     for (const target of event.targets) current.set(target.masterTaxonId, target);
   }
-  return { current, historical, aliases, projectAssignments };
+  return { current, historical, aliases, classifications, projectAssignments };
+}
+
+// Incremental prefix hashing keeps a large confirmed batch linear in its size.
+// Generic identity previews cannot create this privileged decision type.
+export function appendClassificationBatch({ registry, cases, batchRevision, sourceRevision, inputRevision, confirmedAt }) {
+  registry = validateIdentityRegistry(registry);
+  if (!Array.isArray(cases) || !cases.length || registry.events.length + cases.length > MAX_EVENTS) {
+    throw new Error("Die Klassifikationsübernahme ist leer oder überschreitet die unterstützte Registergröße.");
+  }
+  const events = [...registry.events];
+  const prefix = crypto.createHash("sha256").update('{"schemaVersion":1,"events":[');
+  events.forEach((event, index) => { if (index) prefix.update(","); prefix.update(JSON.stringify(event)); });
+  for (const value of [...cases].sort((a, b) => a.revision.localeCompare(b.revision))) {
+    const proof = assertMatchingClassificationCase(value);
+    const source = snapshot(proof.sources[0]);
+    const body = { type: "classification", sources: [source], targets: [{ ...identity(proof.target), masterTaxonId: source.masterTaxonId }],
+      reason: "Bestätigte CoL-Klassifikation mit gleicher iNaturalist-ID; ursprüngliche Master-ID bleibt erhalten.",
+      evidence: [...proof.sources[0].evidence, { provider: "catalogue-of-life", providerVersion: proof.colVersion,
+        providerRecordId: proof.target.colRecords[0].providerRecordId }], baseVersion: proof.baseVersion,
+      sourceRevision, inputRevision, registryRevision: prefix.copy().update("]}").digest("hex"),
+      classificationCase: proof, classificationBatchRevision: batchRevision, confirmedAt };
+    const event = { ...body, eventId: digest(body) };
+    if (events.length) prefix.update(",");
+    prefix.update(JSON.stringify(event));
+    events.push(event);
+  }
+  return validateIdentityRegistry({ schemaVersion: 1, events });
 }
 
 function previewBody({ registry, sources, targets, type, reason, evidence, baseVersion, sourceRevision, inputRevision, projectAssignments }) {

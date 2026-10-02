@@ -51,7 +51,7 @@ test("gebündelte Übersicht bleibt begrenzt und zählt Fälle statt Quellzeilen
   assert.equal(summary.total, 2173);
   assert.equal(summary.matchingProviderId, 1693);
   assert.equal(summary.missingProviderId, 480);
-  assert.equal(summary.acceptanceAvailable, false);
+  assert.equal(summary.acceptanceAvailable, true);
   assert.equal(summary.changesPhotos, false);
   assert.equal(summary.requiresConfirmation, true);
   assert.ok(summary.groups.every((group) => group.examples.length <= 2));

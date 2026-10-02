@@ -142,7 +142,12 @@ Auch ein fachlicher Split bei unverändertem wissenschaftlichem Namen, Rang und 
 nicht automatisch erkannt. Seit dem 9. September ist nach bestätigten Fachregeln ein versioniertes
 Identitäts-/Nachfolgerregister in Schema 4 mit geprüftem Kandidatenaufbau implementiert, ohne pauschalen Austausch
 vorhandener IDs. Schema 2/3 bleiben lesbar. Bestätigte Fortführungen behalten IDs; Split/Merge-Ziele erhalten
-neue IDs und ihre Vorgänger bleiben historisch. Explorer-Fallansicht, Vorschau und Vormerkung sind implementiert;
+neue IDs und ihre Vorgänger bleiben historisch. Seit 2. Oktober ergänzt ein getrenntes `classification`-Ereignis
+die ausdrücklich bestätigte CoL-Reichsklassifikation bei gleichem wissenschaftlichem Namen/Rang und gleicher,
+eindeutiger iNaturalist-ID. Es behält die ursprüngliche aktive ID; allgemeine Fortführung/Split/Merge dürfen
+weiterhin keine verschiedenen Reiche gleichsetzen. Komplette Fallbelege, Vorschau-/Batchrevision und Historie
+sind gebunden. Die Klassifikation erzeugt kein Namenssynonym und verändert keine Fotos oder Projektdateien.
+Explorer-Fallansicht, Vorschau und Vormerkung sind implementiert;
 das Verwerfen offener Vormerkungen setzt nur auf die aktive Historie zurück. Projekt-Nachfolger werden für jede
 betroffene Projektart ausdrücklich gewählt und nach erneuter Vorschau im Ereignis gespeichert. Der Aufbau prüft
 die bisherige Projektidentität und Verknüpfung erneut. Website-Texte, Slugs und Assets bleiben unverändert;
@@ -240,8 +245,11 @@ und fehlende iNaturalist-Verbindungen werden gebündelt angezeigt. Offene `class
 `ambiguous-match`, sperren Einzel-/Paaraktivierung und können nicht über normale Feldentscheidungen aufgelöst
 werden. Fallrevisionen binden Quellen, Vorgänger und Zielreich; Übersicht und offene Fallzahl müssen passen.
 Keine Erweiterung des Identitätsregisters, Reichs-/ID-Fortführung oder automatische Zusammenführung in dieser
-ersten Stufe. Der streng geprüfte Quellenreparaturumfang bleibt unverändert. Übernahme und Update-Einstiege
-bleiben offen; Details/Grenzen: [Regulärer Updatevertrag](taxonomy-reference-update.md).
+ersten Stufe. Die zweite Stufe ergänzt inzwischen gebundene Bündelvormerkung passender Fälle und frischen
+Kandidatenbau mit ursprünglicher ID, eigenen Namen und Projektlinks. Rohe Anbieter-Reichsbehauptungen bleiben
+erhalten; widersprüchliche Folgebelege stoppen zur erneuten Prüfung. Der streng geprüfte Quellenreparaturumfang
+bleibt unverändert. Ausdrückliche Zurückstellung unklarer Fälle und vereinheitlichter Update-Einstieg bleiben
+offen; Details/Grenzen: [Regulärer Updatevertrag](taxonomy-reference-update.md).
 
 Die laufende Statusanzeige verwendet nach der vollständigen Kandidatenprüfung nur noch die bereits geschriebenen
 Manifestwerte, kompakte Differenzzähler und die wenigen blockierenden Konflikte. Sie wiederholt weder die

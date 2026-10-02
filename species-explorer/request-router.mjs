@@ -45,6 +45,8 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/master/apply-corrections", { name: "taxonomy-master", action: "apply-corrections" }],
   ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],
   ["/api/taxonomy/master/identity/preview", { name: "taxonomy-master", action: "identity-preview" }],
+  ["/api/taxonomy/master/classification/preview", { name: "taxonomy-master", action: "classification-preview" }],
+  ["/api/taxonomy/master/classification/save", { name: "taxonomy-master", action: "classification-save" }],
   ["/api/taxonomy/master/identity/save", { name: "taxonomy-master", action: "identity-save" }],
   ["/api/taxonomy/master/identity/browse", { name: "taxonomy-master", action: "identity-browse" }],
   ["/api/taxonomy/master/identity/discard-preview", { name: "taxonomy-master", action: "identity-discard-preview" }],

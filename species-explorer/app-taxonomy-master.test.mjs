@@ -232,6 +232,89 @@ test("gebündelte Identitätsfälle verdecken keine weiteren normalen Konflikte"
   assert.equal((visible.taxonomyMasterConflicts.innerHTML.match(/data-master-conflict-save/g) || []).length, 1);
 });
 
+test("Bündelübernahme verlangt gebundene Rückfrage, Abbruch schreibt nichts und startet keinen Aufbau", async () => {
+  const visible = elements(), status = readyStatus(), calls = [], prompts = [];
+  status.lifecycle.candidate.candidateId = "fixture-candidate";
+  status.lifecycle.canActivate = false;
+  status.lifecycle.blockingConflictCount = 2173;
+  status.lifecycle.candidate.classificationReview = { total: 2173, matchingProviderId: 1693, acceptanceAvailable: true, groups: [] };
+  let accept = false;
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible,
+    fetchJson: async (url, options) => {
+      calls.push({ url, payload: options?.body ? JSON.parse(options.body) : null });
+      if (url.endsWith("/classification/preview")) return { token: "bound-preview", count: 1693, remaining: 480,
+        groups: [{ previousKingdom: "Bacteria", newKingdom: "Bacillati", count: 100 }] };
+      if (url.endsWith("/classification/save")) return { saved: true, pending: true, message: "Vorgemerkt" };
+      return status;
+    }, escapeHtml: String, showQuickConfirm: async (prompt) => { prompts.push(prompt); return accept; }, renderDatabaseStatus() {} });
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview>/);
+  await controller.reviewClassification();
+  assert.equal(calls.filter((call) => call.url.endsWith("/save")).length, 0);
+  assert.match(prompts[0].message, /1\.693 Fälle.*480 unklare Fälle.*ursprünglichen Master-IDs/);
+  assert.match(prompts[0].message, /kein automatischer Aufbau, Paketwechsel oder Fotoabgleich/);
+  accept = true;
+  await controller.reviewClassification();
+  const writes = calls.filter((call) => call.url.endsWith("/save"));
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].payload.token, "bound-preview");
+  assert.equal(writes[0].payload.confirmed, true);
+  await controller.reviewClassification();
+  assert.equal(calls.filter((call) => call.url.endsWith("/save")).length, 1);
+  assert.ok(calls.every((call) => !/\/(build|activate|rollback)$/.test(call.url)));
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview disabled/);
+  status.identities = { pending: false, candidateIncludesCurrent: false };
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview>/, "Nach explizitem Verwerfen wieder prüfbar");
+});
+
+test("Doppelklick während der Bündelrückfrage öffnet nur eine Vorschau und schreibt bei Abbruch nichts", async () => {
+  const visible = elements(), status = readyStatus(), calls = [];
+  status.lifecycle.candidate.classificationReview = { total: 1, matchingProviderId: 1, acceptanceAvailable: true, groups: [] };
+  status.lifecycle.blockingConflictCount = 1;
+  let closePrompt;
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible,
+    fetchJson: async (url) => { calls.push(url); return url.endsWith("/preview") ? { token: "current", count: 1, remaining: 0 } : status; },
+    escapeHtml: String, showQuickConfirm: () => new Promise((resolve) => { closePrompt = resolve; }), renderDatabaseStatus() {} });
+  controller.render(status);
+  const pending = controller.reviewClassification();
+  await Promise.resolve();
+  assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview disabled/);
+  await controller.reviewClassification();
+  closePrompt(false);
+  await pending;
+  assert.equal(calls.filter((url) => url.endsWith("/preview")).length, 1);
+  assert.equal(calls.filter((url) => url.endsWith("/save")).length, 0);
+  assert.equal(visible.taxonomyMasterBuildButton.disabled, false);
+});
+
+test("fehlgeschlagene Bündelbestätigung ist erneut prüfbar; laufende oder alte Vormerkung sperrt den Button", async () => {
+  const visible = elements(), status = readyStatus(), calls = [], messages = [];
+  status.lifecycle.candidate.classificationReview = { total: 1, matchingProviderId: 1, acceptanceAvailable: true, groups: [] };
+  status.lifecycle.blockingConflictCount = 1;
+  let first = true;
+  const controller = masterUi.createTaxonomyMasterController({ state: { setPipelineMessage: (message) => messages.push(message) }, elements: visible,
+    fetchJson: async (url) => {
+      calls.push(url);
+      if (url.endsWith("/preview")) return { token: "fresh", count: 1, remaining: 0, groups: [] };
+      if (url.endsWith("/save")) { if (first) { first = false; throw new Error("Vorschau veraltet"); } return { message: "Vorgemerkt" }; }
+      return status;
+    }, escapeHtml: String, showQuickConfirm: async () => true, renderDatabaseStatus() {} });
+  controller.render(status);
+  await controller.reviewClassification();
+  assert.ok(messages.includes("Vorschau veraltet"));
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview>/);
+  await controller.reviewClassification();
+  assert.equal(calls.filter((url) => url.endsWith("/save")).length, 2);
+  status.lifecycle.candidate.candidateId = "fresh-candidate";
+  status.identities = { pending: true, candidateIncludesCurrent: false };
+  controller.render(status);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /data-classification-preview disabled/);
+  await controller.reviewClassification();
+  assert.equal(calls.filter((url) => url.endsWith("/save")).length, 2);
+});
+
 test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt", () => {
   const visible = elements();
   const status = {

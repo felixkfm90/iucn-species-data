@@ -115,11 +115,23 @@ CoL-/Reichsbeziehungen sind im Code und mit vier isolierten Datenbank-Gegenprobe
 Regressionstests erfolgreich. Felix beauftragte anschließend die gebündelte, bestätigungspflichtige Prüfung
 unter Erhalt bisheriger IDs. Erste Stufe implementiert: vollständige CoL-ID-Verweise, vier Quellenkategorien,
 gebündelte Übersicht und offene Aktivierungssperre für neue CoL-/Reichsgegenstücke bisheriger Referenzlücken.
-Keine normale Feldentscheidung kann diese Prüfung umgehen. Bestätigte Bündelübernahme/ID-Fortführung,
-Behandlung unklarer Fälle und einheitlicher Update-Einstieg sind noch nicht abgeschlossen.
+Keine normale Feldentscheidung kann diese Prüfung umgehen. Zweite Stufe inzwischen implementiert:
+gebundene Bündelvorschau und bestätigte Vormerkung passender Quellenfälle, erneuter Kandidatenbau mit
+ursprünglicher ID, eigenen Namen/Projektlinks und unveränderten rohen Anbieterbehauptungen. Neue Vormerkung
+startet keinen Aufbau oder Paketwechsel. Unklare Fälle bleiben gesperrt; deren ausdrückliche Zurückstellung
+und einheitlicher Update-Einstieg sind noch nicht abgeschlossen.
 Details und Grenzen: [regulärer Updatevertrag](taxonomy-reference-update.md).
 Kein neuer Download, produktiver Aufbau, Zeigerwechsel, Katalogabgleich oder Bereinigung.
 178 gezielte Tests in zehn Dateien erfolgreich; abschließende neun UI-Tests erneut bestanden. Syntax/Stil,
 70 Markdown-Dateien ohne fehlende lokale Verweise, aktueller Projektstatus und Diffprüfung erfolgreich.
 Echte Hilfsprozesse im erlaubten Gegenlauf geprüft, keine Windows-/Testregeländerung. Kein vollständiges
 Qualitätsgate oder praktischer Bediennachweis für diese erste Stufe; Plug-in-Version unverändert `0.4.24.14`.
+
+Prüfabschluss der zweiten Stufe: 215 gezielte Tests in 14 Dateien erfolgreich, einschließlich echter
+Master-Hilfsprozesse, alter Reparatur-/Identitätswege, neuem Bündelregister und Lightroom-ID-Auflösung.
+Synthetische 1.693-Fälle-Probe, Abbruch, veraltete Belege, Wiederholung, Schreibfehler, erneuter Aufbau und
+Rollback geprüft; abschließende 36 Bündel-/UI-Tests in drei Dateien ebenfalls erfolgreich, einschließlich
+geprüfter Eingangsgrundlage und vollständiger Übernahme von 104 passenden Fällen oberhalb der Listenbegrenzung.
+Kein erneuter produktiver Vergleich und keine Freigabe des nächsten Quellenupdates.
+Der [Pages-Lauf für die erste Stufe `ea55bb4`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37009726984)
+ist inzwischen mit Linux-Qualitätsgate, Build und Deployment erfolgreich.

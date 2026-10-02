@@ -39,8 +39,11 @@ bestätigungspflichtige Prüfung mit ID-Erhalt. Erste Stufe implementiert: alle 
 passende/abweichende/mehrdeutige/fehlende Quellenbeziehung zählen, neue CoL-/Reichsgegenstücke bisheriger
 Referenzlücken als offene Identitätsprüfung sperren und kompakt gruppieren. Keine normale Feldentscheidung
 oder Einzel-/Paaraktivierung darf diese Fälle freigeben. Der enge Quellenreparaturweg bleibt unverändert.
-Bestätigte Bündelübernahme, Fortführung mit ursprünglicher ID, Zurückstellung unklarer Fälle und einheitlicher
-Update-Einstieg bleiben offen; Oberfläche weist die fehlende Übernahme aus. Kein produktiver
+Zweite Stufe inzwischen implementiert: revisionsgebundene Vorschau und bestätigte Bündelvormerkung passender
+Quellenfälle, neuer Kandidatenbau mit ursprünglicher ID, Namens-/Projektlink-Erhalt und rohen Anbieterbelegen.
+Neuer Typ `classification` bleibt getrennt von normalen Fortführungs-/Split-/Merge- und Reparaturereignissen;
+keine Fotomigration oder künstliche Namenssynonyme. Fehlende/widersprüchliche Folgebelege stoppen zur erneuten
+Prüfung. Zurückstellung unklarer Fälle und einheitlicher Update-Einstieg bleiben offen. Kein produktiver
 Vergleich/Download/Aufbau/Wechsel/Kataloglauf. Details und nächste Grenze:
 `docs/taxonomy-reference-update.md`.
 
@@ -51,6 +54,15 @@ Diffprüfung erfolgreich. Erlaubter Gegenlauf nach Prozessbeschränkung; keine W
 Kein vollständiges Qualitätsgate oder produktiver Bedienlauf; Lua-Version bleibt `0.4.24.14`, Explorer-JS
 nicht im Squarespace-Footer eingebunden. Regelbindungen für neue Aufträge umfassen die Klassifikationsprüfung;
 historische Auftrags-/Reparaturbindungen nicht nachträglich umschreiben.
+
+Prüfabschluss zweite Stufe: 215 gezielte Tests in 14 Dateien erfolgreich, einschließlich echter Hilfsprozesse,
+enger Quellenreparatur, bisheriger Identitätswege und Lightroom-Auflösung der unveränderten ID. Synthetisches
+1.693-Fälle-Bündel, Vorschau/Abbruch, veraltete/manipulierte Belege, doppelte Bestätigung, Schreibfehler/Wiederholung,
+Vormerkungs-Neustart/Rücknahme, frischer Kandidat/Folgeaufbau und Rollback geprüft. Abschließende 36 Bündel-/UI-
+Tests in drei Dateien ebenfalls erfolgreich, zusätzlich mit geprüfter Eingangsgrundlage und 104 passenden/
+einem unklaren Fall oberhalb der Listenbegrenzung. Keine produktiven Daten
+berührt und kein vollständiges Qualitätsgate in diesem Schritt. Pages-Lauf `37009726984` für `ea55bb4`
+vollständig erfolgreich; Veröffentlichung der zweiten Stufe gesondert prüfen.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;

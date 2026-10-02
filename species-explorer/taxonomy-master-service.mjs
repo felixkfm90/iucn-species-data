@@ -839,7 +839,7 @@ export class TaxonomyMasterService {
 
   async reviewIdentity(action, payload = {}) {
     this.assertAvailable();
-    if (!["preview", "save", "browse", "discardPreview", "discard"].includes(action)) throw new Error("Unbekannte Identitätsaktion.");
+    if (!["preview", "save", "browse", "discardPreview", "discard", "classificationPreview", "classificationSave"].includes(action)) throw new Error("Unbekannte Identitätsaktion.");
     this.identityReviewBusy = true;
     try {
       const operation = () => this.identityReviewService[action](payload);

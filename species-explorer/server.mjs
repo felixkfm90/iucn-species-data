@@ -682,6 +682,8 @@ export async function createExplorerServer({
         if (action === "apply-corrections") return taxonomyMasterService.applyCorrections(payload);
         if (action === "decide") return taxonomyMasterService.decide(payload);
         if (action === "identity-preview") return taxonomyMasterService.reviewIdentity("preview", payload);
+        if (action === "classification-preview") return taxonomyMasterService.reviewIdentity("classificationPreview", payload);
+        if (action === "classification-save") return taxonomyMasterService.reviewIdentity("classificationSave", payload);
         if (action === "identity-save") return taxonomyMasterService.reviewIdentity("save", payload);
         if (action === "identity-browse") return taxonomyMasterService.reviewIdentity("browse", payload);
         if (action === "identity-discard-preview") return taxonomyMasterService.reviewIdentity("discardPreview", payload);

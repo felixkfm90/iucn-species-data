@@ -122,11 +122,12 @@ Am 2. Oktober implementiert, ausschließlich mit temporären Datenbanken geprüf
   produktiver Vollscan beim Öffnen: Gruppierung entsteht im ohnehin beauftragten Kandidatenbau, der Status
   liest Manifest und Konfliktzähler. Der streng abgegrenzte `sourceRecoveryScope` bleibt unverändert.
 
-**Noch nicht umgesetzt:** revisionsgebundene, ausdrücklich bestätigte Bündelübernahme in das Identitätsregister,
+**Grenze der ersten Stufe (durch die zweite Stufe unten teilweise erweitert):** revisionsgebundene,
+ausdrücklich bestätigte Bündelübernahme in das Identitätsregister,
 erneuter Kandidatenbau unter Erhalt der ursprünglichen IDs sowie die Behandlung zurückgestellter unklarer Fälle
-an der abschließenden Freigabegrenze. Die Oberfläche sagt deshalb ausdrücklich, dass die Übernahme noch nicht
-verfügbar ist, und bietet keine wirkungslose Bestätigung an. Auch die Vereinheitlichung der beiden Update-Einstiege
-bleibt als anschließender Schritt offen. Keinen regulären produktiven Quellenlauf zur Bedienabnahme starten.
+an der abschließenden Freigabegrenze. Die Oberfläche sagte in dieser ersten Stufe ausdrücklich, dass die Übernahme
+noch nicht verfügbar war, und bot keine wirkungslose Bestätigung an. Auch die Vereinheitlichung der beiden
+Update-Einstiege blieb als anschließender Schritt offen. Keinen regulären produktiven Quellenlauf zur Bedienabnahme starten.
 
 Die historischen Mengen 1.693/480 und 2.173 wurden nicht erneut über den produktiven Bestand berechnet;
 zukünftige Kandidaten zählen die Fälle aus ihrem tatsächlich gebundenen Eingang. Alte Kandidaten ohne diese
@@ -143,6 +144,53 @@ Hilfsprozesslauf konnte nicht vollständig abschließen; der erlaubte Gegenlauf 
 bestand, ohne Windows-/Testregeln zu ändern. Kein vollständiges `quality:ci`, produktiver Kandidatenbau,
 Bediennachweis oder Phase-10.5-Audit in diesem Schritt. Explorer-JS ist nicht im Squarespace-Footer eingebunden;
 Footer/CSS und Lua-Version `0.4.24.14` bleiben unverändert.
+
+## Zweite Umsetzungsstufe: bestätigte Bündelvormerkung mit ID-Erhalt
+
+Am 2. Oktober nach Felix' erneutem „Weiter“ implementiert; keine produktiven Daten verändert:
+
+- `Passende Klassifikationen prüfen …` liest ausschließlich gespeicherte Kandidatenfälle und die betroffenen,
+  indiziert abgefragten Arten. Vorschau und bestätigte Übernahme verwenden geschützte POST-Routen und die
+  bestehende Master-/Korrektursperre. Kein Download, Kandidatenbau, Paketwechsel oder Fotoabgleich durch den Button.
+- Nur `matching-provider-id` mit genau einem aktiven Referenzlücken-Vorgänger, einem CoL-Ziel, gleichem
+  wissenschaftlichem Namen/Rang und eindeutig gleicher iNaturalist-ID ist bündelweise vormerkbar. Sämtliche
+  ID-Verweise und Fallprüfsummen werden erneut geprüft. Besetzte Ziele, doppelte Vorgänger/Ziele und veränderte
+  Eingangs- oder Registerstände werden abgewiesen; Zähler oder Kategorie allein sind keine Freigabe.
+- Die Rückfrage nennt Fallzahl, Reichsgruppen, verbleibende unklare Fälle und die unveränderten Master-IDs,
+  eigenen Namen und Projektlinks. Abbrechen schreibt nichts. Bestätigung speichert nur ein neues, append-only
+  Registerereignis `classification` je passendem Fall in der bestehenden Vormerkungsdatei. Historie, komplette
+  Quellenbelege, Batchrevision, Zeit und Eingangsrevisionen sind gebunden. Große Bündel werden linear gehasht.
+- Die gewöhnliche Identitätsvorschau darf dieses Ereignis nicht erzeugen. Ihre Reichssperre für Fortführung,
+  Split und Merge bleibt unverändert; der technische `source-repair`-Sonderweg bleibt getrennt. Klassifikation
+  erhält dieselbe aktive ID und erzeugt weder historische Nachfolgerumleitungen noch künstliche Namenssynonyme.
+- Erst ein ausdrücklich gestarteter, frischer Kandidat darf die Vormerkung verarbeiten. Er prüft die alte
+  Referenzlücke und die tatsächlichen CoL-/Anbietereingänge erneut. Die bestätigte Zielklassifikation gilt für
+  dieselbe Master-ID; Projekttexte/Slugs/Assets werden nicht umgeschrieben. Eigene Namen und Projektlinks folgen
+  dieser ID. Alte Anbieterzeilen behalten ihre ursprüngliche Reichsbehauptung und Herkunft.
+- Folgende reguläre Aufbauten erhalten diese Klassifikation nur bei weiterhin eindeutig passendem CoL-Verweis
+  und eindeutig vorhandener iNaturalist-ID. Fehlende/widersprüchliche Belege oder eine weitere abweichende
+  Identitätskette stoppen zur erneuten Prüfung, statt eine automatische Migration abzuleiten. Diese enge
+  Wiederverwendung ersetzt noch keinen allgemeinen Workflow für sämtliche späteren Identitätsänderungen.
+- Unklare Fälle bleiben auch nach der Bündelbestätigung offen und blockieren die Einzel-/Paarfreigabe. Eine
+  vorhandene eigene geschützte Hierarchieentscheidung wird nicht pauschal überschrieben. Offen bleibt der
+  nächste Schritt: ausdrückliche Zurückstellung unklarer Fälle an der Freigabegrenze sowie einheitlicher
+  Update-Einstieg. Deshalb weiterhin keinen produktiven `COL26.9 XR`-Lauf zur Bedienabnahme starten.
+
+Prüfnachweis: 215 gezielte Tests in 14 Dateien erfolgreich, einschließlich echter Master-Hilfsprozesse,
+aller bisherigen engen Reparaturwege, Master-/Identitäts-/Router- und UI-Gegenproben. Neue Gegenproben prüfen
+ein synthetisches 1.693-Fälle-Bündel, Abbruch ohne Schreibzugriff, veraltete/manipulierte Belege, doppelte
+Bestätigung, Schreibfehler und erneuten Versuch, Wiederöffnen/Verwerfen der Vormerkung, ID-/Namens-/Projekt-
+und Rohquellenerhalt, erneuten Aufbau, Lightroom-Auflösung als aktuelle gleiche ID sowie Rollback. Abschließende
+36 Bündel-/UI-Tests in drei Dateien ebenfalls erfolgreich: geprüfte Eingangsgrundlage/Folgeabgleich, vollständige
+Übernahme von 104 passenden Fällen plus einem gesperrten unklaren Fall sowie geschützte Hierarchie und historischer
+ID-Erhalt nach einem weiteren Split. Die
+Produktivmengen 1.693/480 wurden nicht erneut berechnet; sie bleiben historische Werte vom 30. September.
+Keine pauschale Geschwindigkeitszusage oder produktive Bedienabnahme. Der neue Test ist im Master-Testskript
+enthalten; kein vollständiges `quality:ci` in dieser Stufe. Explorer-JS ist nicht im Squarespace-Footer eingebunden;
+Lua-Version weiterhin `0.4.24.14`.
+
+Der [Pages-Lauf für die erste Stufe `ea55bb4`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37009726984)
+ist vollständig erfolgreich. Das ist kein vorweggenommener Deploymentnachweis dieser zweiten Stufe.
 
 ## Download, Import und Aktivierung
 

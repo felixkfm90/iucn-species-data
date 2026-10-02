@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { createMasterTaxon, addMasterConflict, addMasterTaxonAlias, linkProjectTaxon } from "./taxonomy-master-model.mjs";
 import { identityRegistryState, taxonIdentityKey, validateIdentityRegistry, writeIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 import { validateProjectAssignmentsAgainstActive, moveAssignedProjects } from "./taxonomy-identity-projects.mjs";
+import { validateNewClassification, carryClassificationGroups } from "./taxonomy-classification-build.mjs";
 
 export function identityBuildSourceRevision(releases) {
   const sources = releases.map((release) => ({ provider: release.provider, releaseId: release.releaseId,
@@ -40,6 +41,7 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
       throw new Error("Die Identitätsentscheidung gehört zu einem anderen Master- oder Quellenstand. Bitte erneut prüfen.");
     }
     validateProjectAssignmentsAgainstActive(event, previousState);
+    if (event.type === "classification") validateNewClassification({ event, previousState, groups, releases, baseVersion });
     for (const source of event.sources) {
       const old = previousState.taxa.get(source.masterTaxonId);
       if (!old || old.lifecycle_state === "deprecated" || taxonIdentityKey(fromRow(old)) !== taxonIdentityKey(source)
@@ -65,7 +67,7 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
       }
       const oldTargets = previousByKey.get(taxonIdentityKey(target)) || [];
       if (oldTargets.some((oldTarget) => !event.sources.some((source) => source.masterTaxonId === oldTarget.master_taxon_id))
-          || (event.type !== "continuation" && previousState.taxa.has(target.masterTaxonId))) {
+          || (!["continuation", "classification"].includes(event.type) && previousState.taxa.has(target.masterTaxonId))) {
         throw new Error("Das Ziel ist bereits eine andere bestehende Identität. Diese muss ausdrücklich als Vorgänger einbezogen werden.");
       }
     }
@@ -78,11 +80,13 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
   const heldProjects = new Map();
   for (const entry of state.current.values()) ensureGroup(entry);
   moveAssignedProjects({ groups, projects, state, keyOf: projectKeyOf });
+  carryClassificationGroups({ state, groups });
 
   // Historic source tuples cannot be resurrected by a hash or a retained project
   // name. In a same-name split, only fresh provider values may enter the new ID.
   const historicalNames = [...state.historical.values()].flatMap((entry) => [entry,
-    ...(state.aliases.get(entry.masterTaxonId) || [])]);
+    ...(state.aliases.get(entry.masterTaxonId) || []),
+    ...(state.classifications.get(entry.masterTaxonId) || []).flatMap((event) => event.sources)]);
   for (const historical of historicalNames) {
     const key = taxonIdentityKey(historical);
     const group = groups.get(key);

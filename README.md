@@ -202,6 +202,12 @@ und semantische Exportvergleiche erfolgreich, 69 geschützte Originaldateien unv
 byteidentisch zum vorher vollständig geprüften engen Kandidaten. Kein neuer Aufbau zur Reparatur erforderlich.
 Keine Foto-/Projektmigration, Bereinigung, Anbieterdownloads oder Commit/Push. Die 2.173 separaten Quellenfälle
 gehören weiterhin in einen eigenen regulären Updatepunkt vor dem Audit.
+Dieser Updatepunkt ist inzwischen in zwei Stufen umgesetzt: kompakte Quellen-/Reichsprüfung mit Freigabesperre
+und bestätigte Bündelvormerkung eindeutig passender CoL-/iNaturalist-Fälle. Ein frischer Kandidat erhält dabei
+die ursprüngliche Master-ID, eigene Namenswahl und Projektlinks; rohe Anbieterangaben bleiben nachvollziehbar.
+Die Bestätigung allein startet keinen Aufbau, Download, Paketwechsel oder Fotoabgleich. Unklare Fälle bleiben
+gesperrt; deren ausdrückliche Zurückstellung und der einheitliche Update-Einstieg sind noch offen.
+Bedienung, Prüfungen und Grenzen: [regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 **Gezielte praktische Abnahme am 1. Oktober ebenfalls bestätigt:** Felix hat Weissstorch und Rebhuhn im
 Explorer mit den bevorzugten Namen gefunden, in Lightroom erfolgreich zugewiesen und den Erhalt nach
 Schließen/Wiederöffnen bestätigt. Kein erneuter Aufbau zur Reparatur nötig; keine vollständige Phase-10-Abnahme.

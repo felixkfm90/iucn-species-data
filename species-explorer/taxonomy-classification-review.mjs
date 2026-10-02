@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { canonicalBuildInput } from "./taxonomy-build-inputs.mjs";
+import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 
 const text = (value) => String(value ?? "").normalize("NFKC").trim();
 const digest = (value) => crypto.createHash("sha256").update(canonicalBuildInput(value)).digest("hex");
@@ -58,6 +59,28 @@ export function isClassificationReviewConflict(value) {
   return /^classification_[a-f0-9]{64}$/.test(text(value?.conflict_id));
 }
 
+// Recompute the complete proof, not just its claimed category or checksum.
+export function assertMatchingClassificationCase(value) {
+  const target = value?.target, source = value?.sources?.[0];
+  if (!target || !source || !Array.isArray(target.colRecords) || value.sources.length !== 1) {
+    throw new Error("Die Klassifikationsentscheidung benötigt genau einen belegten Vorgänger und einen CoL-Eintrag.");
+  }
+  const checked = classificationReviewCase({ sources: value.sources, records: target.colRecords,
+    target: { scientificName: target.scientificName, rank: target.rank, kingdom: target.kingdom },
+    baseVersion: value.baseVersion, colVersion: value.colVersion });
+  const norm = normalizeTaxonomySearchTerm;
+  if (canonicalBuildInput(checked) !== canonicalBuildInput(value) || checked.category !== "matching-provider-id"
+      || !text(value.baseVersion) || !text(value.colVersion) || !/^mtx_[a-f0-9]{32}$/.test(source.masterTaxonId || "")
+      || !/^[1-9][0-9]*$/.test(checked.previousProviderIds[0] || "")
+      || source.evidence.some((entry) => !text(entry.provider) || !text(entry.providerVersion) || !text(entry.providerRecordId))
+      || !text(target.colRecords[0]?.providerRecordId) || source.rank !== "species" || target.rank !== "species"
+      || !norm(source.scientificName) || norm(source.scientificName) !== norm(target.scientificName)
+      || !norm(source.kingdom) || !norm(target.kingdom) || norm(source.kingdom) === norm(target.kingdom)) {
+    throw new Error("Die Klassifikationsentscheidung hat keinen unveränderten, eindeutigen Quellenbeleg mit gleicher Anbieter-ID.");
+  }
+  return checked;
+}
+
 export function assertClassificationReviewSummary(database, review) {
   if (!review) return; // Legacy candidates have no claim of this new review.
   const fields = ["total", "matchingProviderId", "differentProviderId", "ambiguousProviderId", "missingProviderId"];
@@ -70,7 +93,7 @@ export function assertClassificationReviewSummary(database, review) {
   if (review.schemaVersion !== 1 || fields.some((field) => !Number.isSafeInteger(review[field]) || review[field] < 0)
       || review.total !== fields.slice(1).reduce((sum, field) => sum + review[field], 0)
       || fields.some((field) => review[field] !== Number(actual[field])) || !/^[a-f0-9]{64}$/.test(review.revision || "")
-      || review.requiresConfirmation !== true || review.changesPhotos !== false || review.acceptanceAvailable !== false) {
+      || review.requiresConfirmation !== true || review.changesPhotos !== false || typeof review.acceptanceAvailable !== "boolean") {
     throw new Error("Die gebündelte Klassifikationsprüfung passt nicht zu den offenen Kandidatenfällen. Bitte erneut aufbauen und prüfen.");
   }
 }
@@ -95,5 +118,5 @@ export function summarizeClassificationReview(cases) {
     .sort((a, b) => b.count - a.count || compare(canonicalBuildInput(a), canonicalBuildInput(b)));
   return { schemaVersion: 1, revision: digest(cases.map((entry) => entry.revision).sort(compare)), ...counts,
     groups: ordered.slice(0, 8),
-    groupCount: groups.size, requiresConfirmation: true, changesPhotos: false, acceptanceAvailable: false };
+    groupCount: groups.size, requiresConfirmation: true, changesPhotos: false, acceptanceAvailable: true };
 }

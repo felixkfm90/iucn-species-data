@@ -221,6 +221,9 @@
     renderDatabaseStatus,
   } = {}) {
     let pollTimer = null;
+    let classificationBusy = false;
+    let classificationSaved = false;
+    let classificationSavedCandidateId = null;
 
     function setActionMessage(message, type = "") {
       state.setPipelineMessage?.(message, type);
@@ -238,7 +241,7 @@
         `).join("");
     }
 
-    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null) {
+    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false) {
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
       const total = Number(blockingConflictCount ?? blocking.length);
       const classificationTotal = Number(classificationReview?.total || blocking.filter((entry) => entry.identityReviewRequired).length);
@@ -256,10 +259,11 @@
             ${classificationReview ? `<span>${format(matching)} mit übereinstimmender iNaturalist-ID · ${format(classificationTotal - matching)} ohne eindeutigen passenden Quellenverweis</span>` : ""}
             ${classificationReview ? `<span>Abweichende Anbieter-ID: ${format(classificationReview.differentProviderId)} · Mehrdeutige Belege: ${format(classificationReview.ambiguousProviderId)} · Fehlender Verweis: ${format(classificationReview.missingProviderId)}</span>` : ""}
             <span>Eine passende Anbieter-ID ist ein Prüfhinweis, keine bestätigte Identität. Bisherige Master-IDs und Fotos bleiben unverändert. Dieser Kandidat bleibt gesperrt.</span>
-            <span>Die bestätigte Übernahme mit ID-Erhalt ist noch nicht verfügbar. Keine normale Feldentscheidung und keine pauschale Zusammenführung.</span>
+            <span>${classificationReview?.acceptanceAvailable === true ? "Passende Quellenfälle können gemeinsam mit ID-Erhalt vorgemerkt werden. Unklare Fälle bleiben gesperrt." : "Für diesen älteren Kandidaten ist die Bündelübernahme noch nicht verfügbar. Bitte mit aktuellem Programmstand erneut prüfen."} Keine normale Feldentscheidung und keine pauschale Zusammenführung.</span>
             ${(classificationReview?.groups || []).map((entry) => `<span>${escapeHtml(entry.previousKingdom)} → ${escapeHtml(entry.newKingdom)}: ${format(entry.count)} ${entry.count === 1 ? "Fall" : "Fälle"} · ${escapeHtml(categoryLabels[entry.category] || "Prüfung erforderlich")}${entry.examples?.length ? ` · z. B. ${escapeHtml(entry.examples.join(", "))}` : ""}</span>`).join("")}
             ${Number(classificationReview?.groupCount) > (classificationReview?.groups || []).length ? `<span>Die Übersicht zeigt die ${format(classificationReview.groups.length)} größten Gruppen von ${format(classificationReview.groupCount)}.</span>` : ""}
           </div>
+          ${matching && classificationReview?.acceptanceAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-preview${actionsBlocked || classificationBusy || classificationSaved ? " disabled" : ""}>Passende Klassifikationen prüfen …</button></div>` : ""}
         </article>
       `;
       elements.taxonomyMasterConflicts.hidden = total === 0;
@@ -300,6 +304,10 @@
       state.taxonomyMasterSnapshot = status;
       state.renderTaxonomyDatabaseOverview?.();
       const lifecycle = status.lifecycle || {};
+      if (classificationSaved && ((lifecycle.candidate?.candidateId && lifecycle.candidate.candidateId !== classificationSavedCandidateId)
+          || (status.identities && !status.identities.pending))) {
+        classificationSaved = false;
+      }
       const active = status.active === true || ACTIVE_STATES.has(status.status);
       elements.taxonomyMasterSummary.textContent = masterSummary(status);
       elements.taxonomyMasterDetail.textContent = masterDetail(status);
@@ -313,10 +321,11 @@
         elements.taxonomyMasterProgress.removeAttribute("value");
       }
       renderDiff(lifecycle.candidate);
-      renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview);
-      elements.taxonomyMasterBuildButton.disabled = active;
-      elements.taxonomyMasterActivateButton.disabled = active || !lifecycle.canActivate;
-      elements.taxonomyMasterRollbackButton.disabled = active || !lifecycle.canRollback;
+      renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview,
+        active || (status.identities?.pending && !status.identities.candidateIncludesCurrent));
+      elements.taxonomyMasterBuildButton.disabled = active || classificationBusy;
+      elements.taxonomyMasterActivateButton.disabled = active || classificationBusy || !lifecycle.canActivate;
+      elements.taxonomyMasterRollbackButton.disabled = active || classificationBusy || !lifecycle.canRollback;
       if (active) renderDatabaseStatus("taxonomy");
       else renderDatabaseStatus();
       clearTimeout(pollTimer);
@@ -355,6 +364,7 @@
     }
 
     async function decide(event) {
+      if (event.target.closest("[data-classification-preview]")) return reviewClassification();
       const button = event.target.closest("[data-master-conflict-save]");
       if (!button) return;
       const card = button.closest("[data-master-conflict]");
@@ -373,6 +383,33 @@
       } catch (error) {
         button.disabled = false;
         setActionMessage(error.message, "error");
+      }
+    }
+
+    async function reviewClassification() {
+      const snapshot = state.taxonomyMasterSnapshot || {};
+      if (classificationBusy || classificationSaved || snapshot.active || ACTIVE_STATES.has(snapshot.status)
+          || (snapshot.identities?.pending && !snapshot.identities.candidateIncludesCurrent)) return;
+      classificationBusy = true;
+      render(snapshot);
+      try {
+        const preview = await fetchJson("/api/taxonomy/master/classification/preview", { method: "POST", body: "{}" });
+        const format = (value) => Number(value || 0).toLocaleString("de-DE");
+        const groups = (preview.groups || []).map((entry) => `${entry.previousKingdom} → ${entry.newKingdom}: ${format(entry.count)}`).join("; ");
+        const confirmed = await showQuickConfirm({ eyebrow: "Klassifikation mit ID-Erhalt", title: "Passende CoL-Klassifikationen vormerken?",
+          message: `${format(preview.count)} ${preview.count === 1 ? "Fall" : "Fälle"} mit eindeutiger übereinstimmender iNaturalist-ID. ${groups}. ${format(preview.remaining)} unklare Fälle bleiben gesperrt. Die ursprünglichen Master-IDs, eigenen Namen und Projektlinks bleiben erhalten. Nur Vormerkung; kein automatischer Aufbau, Paketwechsel oder Fotoabgleich.`,
+          confirmLabel: "Klassifikationen vormerken" });
+        if (!confirmed) return;
+        const saved = await fetchJson("/api/taxonomy/master/classification/save", { method: "POST",
+          body: JSON.stringify({ token: preview.token, confirmed: true }) });
+        classificationSaved = true;
+        classificationSavedCandidateId = snapshot.lifecycle?.candidate?.candidateId || null;
+        setActionMessage(saved.message, "success");
+      } catch (error) {
+        setActionMessage(error.message, "error");
+      } finally {
+        classificationBusy = false;
+        await refresh();
       }
     }
 
@@ -431,7 +468,7 @@
       void refresh();
     }
 
-    return Object.freeze({ setup, refresh, render });
+    return Object.freeze({ setup, refresh, render, reviewClassification });
   }
 
   global.SpeciesExplorerTaxonomyMaster = Object.freeze({
