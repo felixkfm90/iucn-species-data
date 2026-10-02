@@ -31,6 +31,11 @@ denselben bestätigten Quellen-/Master-/Paketweg. Quellenimport allein meldet ke
 frisch bestätigte passende Master-/Lightroom-Stand. Vorhandene lokale Arbeit hat Vorrang vor neuen Anbieterständen.
 Praktische Gesamtabnahme und gesonderte Startfreigabe bleiben offen; kein produktiver Quellenlauf in diesem Schritt.
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
+Der gemeinsame Einstieg ist mit erfolgreichem Linux-Qualitätsgate/Pages-Lauf veröffentlicht. Der nächste
+Quellenlauf ist lesend vorbereitet, nicht gestartet: zunächst frische Explorer-Rückfrage ohne Bestätigung
+prüfen, anschließend gesonderte Startfreigabe. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
+Diese Rückfrage und der frische passende API-Stand wurden anschließend bestätigt; die konkrete Startfreigabe
+steht noch aus. Kein produktiver Quellenlauf zur Vorbereitung gestartet.
 
 ## Datenfluss und datierter Umsetzungsverlauf
 

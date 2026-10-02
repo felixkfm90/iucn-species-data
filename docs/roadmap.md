@@ -27,6 +27,11 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    gemeinsame Sperre und frischen Gesamtabschluss. Vorhandene lokale Arbeit hat Vorrang; Quellenimport allein
    meldet keinen Erfolg des Gesamtupdates. Automatisierte Abbruch-/Fehler-/Wiederholungswege geprüft.
    Noch offen: nächsten Quellenlauf gesondert planen/freigeben und den vollständigen Weg praktisch abnehmen.
+   Lesender Plan am 2. Oktober vorbereitet: gespeichertes Paar/Register/Auftrag passend, keine neue Vormerkung;
+   Explorer-Dienst nicht erreichbar. Frische Rückfrage ohne Bestätigung prüfen, dann separat starten lassen.
+   Historische Fallzahlen sind kein Sollbestand eines neuen Releases; bei Entscheidungen ein lokaler Folgeaufbau.
+   Anschließend Rückfragetext durch Felix und frischer API-Stand bestätigt: passendes Paar, keine laufende Aktion,
+   kein Kandidat/Drift/offene Vormerkung. `COL26.9 XR` frisch verfügbar; konkrete Startfreigabe noch ausstehend.
    Keine Freigabe eines produktiven Quellenupdates; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.

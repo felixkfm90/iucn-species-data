@@ -101,6 +101,20 @@ Die Verkettung bleibt im geöffneten UI; kein neuer dauerhafter Serverkoordinato
 nach Schließen. Syntax (357 Dateien), Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden; kein vollständiges
 lokales `quality:ci`, produktiver Update-/Bedienlauf oder Phase-10.5-Audit. Lua-Version bleibt `0.4.24.14`;
 Squarespace-Footer/CSS und produktive Bestände unverändert. Veröffentlichung dieser Stufe separat prüfen.
+Inzwischen bestätigt: Pages-Lauf `37040327369` für `c1f586b` vollständig erfolgreich, einschließlich Linux-
+Qualitätsgate, Build und Deployment. Lesender Updateplan am 2. Oktober um 19:28 MESZ vorbereitet: gespeichertes
+Paar weiterhin passend, letzter Auftrag `ready`/Kandidat verbraucht, vier Reparaturentscheidungen berücksichtigt,
+keine neue Klassifikationsvormerkung. Rund 93,83 GiB frei auf C:; keine Platzgarantie oder neue Integritätsprüfung.
+Explorer-Dienst nicht erreichbar, Releasecache vom Vortag; keine frische Quellen-/API-Vorschau. Nächster Schritt:
+Explorer öffnen, Rückfrage ohne Bestätigung prüfen, dann gesonderte Startentscheidung. Historische 2.173 und
+1.693/480 sind keine Sollmengen des neuen Releases. Bei offenen Fällen beide Bündel vor einem lokalen Folgeaufbau
+vormerken. Kein produktiver Start, Download, Datenbankscan, Paarwechsel, Kataloglauf oder Bereinigung zur Planung.
+Konkreter Ablauf/Freigabegrenzen im Updatevertrag; dieser Plan ist keine Startfreigabe.
+Anschließend Explorer durch Felix geöffnet und sichtbarer vollständiger Rückfragetext für `COL26.9 XR` bestätigt,
+ohne Startbestätigung. Lesender API-Stand um 19:31 MESZ: keine laufende Aktion, kein offener Kandidat/Drift,
+fünf eigene Korrekturen und Identitäten bereits aktiv, Paket `current`, Rückweg verfügbar. Frischer Quellencheck
+von 19:29 MESZ bestätigt neuen/nicht installierten Release. Startvorbereitung praktisch bestätigt; konkrete
+Startentscheidung noch ausstehend. Keine Quellen-/Aufbau-/Aktivierungsroute aufgerufen.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;

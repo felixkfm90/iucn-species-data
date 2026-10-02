@@ -184,3 +184,28 @@ zuvor 67 UI-Tests in drei Dateien und anschließend alle 76 Wartungstests erfolg
 Syntax (357 Dateien), Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden.
 Kein vollständiges lokales Qualitätsgate, produktiver Quellenlauf, praktische Gesamtabnahme oder
 Phase-10.5-Audit. Lua-Version unverändert `0.4.24.14`; Veröffentlichung dieses Schritts separat prüfen.
+
+Veröffentlichung inzwischen bestätigt: [Pages-Lauf `37040327369` für `c1f586b`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37040327369)
+vollständig erfolgreich, einschließlich Linux-Qualitätsgate, Build und Deployment.
+
+## Vorbereitung des nächsten Quellenlaufs
+
+Lesende Prüfung am 2. Oktober um 19:28 MESZ bestätigt anhand kleiner gespeicherter Dateien weiterhin dieselbe
+Referenz-/Master-/Paket-Herkunft und einen eingetragenen passenden Vorgänger. Letzter Auftrag `ready`, dessen
+Kandidat bereits veröffentlicht; vier Reparaturentscheidungen im aktiven Master berücksichtigt, keine neue
+Klassifikationsvormerkung im gespeicherten Register. Rund 93,83 GiB frei auf C:; bestehende dynamische Platzprüfung
+bleibt erforderlich. Keine erneute Datenbank-/Integritäts-/Vollhashprüfung und keine produktiven Daten geändert.
+
+Der Explorer-Dienst war nicht erreichbar. Der Versionscache vom Vortag meldet `COL26.9 XR`; keine heutige
+Anbieterabfrage oder frische API-Vorschau. Der konkrete [Updateplan](taxonomy-reference-update.md#nächster-produktiver-quellenlauf-vorbereiteter-plan-noch-keine-startfreigabe)
+ist dokumentiert, aber nicht freigegeben. Nächster Schritt: Explorer öffnen und frische Rückfrage ohne
+Bestätigung prüfen. Historische 2.173 beziehungsweise 1.693/480 Fälle sind keine Sollmengen des neuen Releases.
+Bei offenen Klassifikationen braucht der erste Prüfkandidat nach beiden Bündelentscheidungen einen lokalen
+Folgeaufbau; zwischen den zwei Rückfragen kein zusätzlicher Aufbau. Keine automatische Migration oder Bereinigung.
+
+Anschließend öffnete Felix den Explorer und bestätigte den sichtbaren vollständigen Rückfragetext für `COL26.9 XR`,
+ohne Startbestätigung. Lesende API-Prüfung um 19:31 MESZ: kein laufender Vorgang, offener Kandidat, Referenzdrift
+oder offene eigene Vormerkung; fünf eigene Korrekturen aktiv, Lightroom-Paket `current`, Rückweg verfügbar.
+Frischer Versionscheck vom 2. Oktober um 19:29 MESZ bestätigt den verfügbaren/nicht installierten Release.
+Startvorbereitung praktisch bestätigt. Nächster Schritt nur nach ausdrücklicher Startentscheidung; bislang kein
+Quellen-/Aufbau-/Paarlauf gestartet.

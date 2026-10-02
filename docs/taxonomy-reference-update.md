@@ -305,6 +305,82 @@ die Testmengen überschneiden sich. Syntax (357 Dateien), Stil, Dokumentationsve
 Diffprüfung bestanden. Kein vollständiges lokales `quality:ci`, produktiver Download/Aufbau/Wechsel,
 praktischer Gesamtbedienlauf oder Phase-10.5-Audit. Nächster Quellenlauf braucht eine eigene Planung/Freigabe.
 
+Veröffentlichung der vierten Stufe inzwischen bestätigt: [Pages-Lauf `37040327369` für `c1f586b`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37040327369)
+vollständig erfolgreich, einschließlich Linux-Qualitätsgate, Build und Deployment.
+
+## Nächster produktiver Quellenlauf: vorbereiteter Plan, noch keine Startfreigabe
+
+Lesende Vorbereitung am 2. Oktober um 19:28 MESZ: nur kleine Zeiger-, Manifest-, Register- und Auftragsdateien
+gelesen. Keine Datenbank geöffnet, keine vollständige Integritätsprüfung, keine neuen Anbieterabfragen oder
+Downloads, kein Auftrag gestartet und kein Zeiger verändert. Port 4177 war nicht erreichbar; deshalb keine
+frische Explorer-API-Vorschau oder praktische Rückfrage geprüft.
+
+Gespeicherter Ausgangsstand:
+
+- Referenz `col-xr-2026-08-26-316165` (`COL26.8 XR`); Master `master-20261001145513036` und
+  Paket `lightroom-63c431a5fa43190a4c52` passen laut ihren Manifesten zur gemeinsamen Veröffentlichung
+  `publication-60f9b546-49ee-4c65-ada9-7b57b965b120`. Das passende Vorgängerpaar ist eingetragen.
+- Der zuletzt gespeicherte Auftrag ist `ready`; seine Kandidaten-ID ist bereits im Veröffentlichungszeiger
+  als verbraucht markiert. Ein noch vorhandenes gleichnamiges Staging-Manifest ist kein neuer offener Kandidat.
+  Keine Auftragsfortsetzung oder Bereinigung allein aus vorhandenen Dateien ableiten.
+- Das Identitätsregister enthält vier `source-repair`-Ereignisse; seine Revision stimmt mit dem aktiven
+  Mastermanifest überein. Keine zusätzliche Klassifikationsvormerkung in diesem gespeicherten Register.
+  Eigene Korrekturen sind laut Mastermanifest fünf Eingänge. Das ersetzt keine frische Eingangsprüfung.
+- Der Versionscache vom 1. Oktober meldet `col-xr-2026-09-25-316441` (`COL26.9 XR`); dieser Release ist
+  nicht in den lokalen Releaseordnern vorhanden. Die Meldung ist ein gespeicherter Stand, kein heutiger
+  Anbietercheck. Beim späteren Start muss die aktuelle Vorschau Release, Bedarf und Token frisch bestimmen.
+- Rund 93,83 GiB frei auf C: zum Prüfzeitpunkt. Das ist keine Platzgarantie für den Gesamtaufbau; die bestehenden
+  12-GiB-Startprüfung, 2-GiB-Reserve und wiederholten auftragsabhängigen Platzprüfungen bleiben maßgeblich.
+
+Geplanter Ablauf und Freigabegrenzen:
+
+1. **Rückfrage ohne Start prüfen:** Explorer mit aktuellem Dienst-/UI-Code öffnen. Startangebot oder
+   `Datenbank-Aktionen → Taxonomiedatenbank → Datenbank aktualisieren` nur bis zur Rückfrage aufrufen.
+   Noch nicht bestätigen. Frischen Release, Quellenauswahl, keine konkurrierende Aktion und den angekündigten
+   vollständigen Master-/Lightroom-Weg prüfen. Unerwartete lokale Arbeit zuerst klären.
+2. **Gesonderte Startentscheidung:** Erst nach diesem Befund den angekündigten regulären Updateweg freigeben.
+   Diese Rückfrage umfasst Quellenaktualisierung, Kandidatenbau und bei bestandener Prüfung/offenen Fällen = 0
+   die automatische gemeinsame Master-/Lightroom-Übernahme. Sie ist keine reine Kandidatenfreigabe.
+   Während der Verkettung Explorer geöffnet lassen; keine parallelen Taxonomie-/Pipeline-/Assetänderungen.
+3. **Neue Quellen und ersten Kandidaten prüfen:** neue Referenz/Ergänzungen und Anbieterstände über den
+   bestehenden Updateweg vorbereiten. Tatsächliche ID-Differenzen, Herkunft, erhaltene eigene Entscheidungen
+   und neue Klassifikationsgruppen aus dem frischen Kandidaten prüfen. Die historischen 2.173 Fälle und
+   1.693/480 sind keine Sollmengen eines neuen `COL26.9 XR`-Laufs.
+4. **Falls Klassifikationsfälle offen sind:** keine automatische Paarübernahme. Passende Gruppen über
+   `Passende Klassifikationen prüfen …` nach frischer gebundener Vorschau mit ID-Erhalt vormerken.
+   Unklare Gruppen separat über `Unklare Fälle zurückstellen …` nur nach ausdrücklicher Bestätigung vormerken.
+   Beide Bündel vor einem einzigen Folgeaufbau speichern; keinen Aufbau zwischen den zwei Rückfragen starten.
+   Andere Konflikte getrennt klären. Neue oder geänderte Quellenbelege können die Vormerkung wieder entwerten.
+5. **Entscheidungen tatsächlich anwenden:** falls Schritt 4 erforderlich war, einen neuen lokalen Kandidaten
+   bestätigt aufbauen, ohne denselben CoL-Download zu wiederholen. Vollständige Kandidaten-/ID-/Paketprüfung
+   bleibt verpflichtend; erst ein geeigneter Kandidat darf gemeinsam übernommen werden. Der erste Prüfkandidat
+   plus ein Folgeaufbau bei Entscheidungen ist kein versprochener Ein-Aufbau-Gesamtlauf.
+6. **Abschluss getrennt nachweisen:** frischer Status bestätigt aktive Referenz = Master-CoL-Herkunft,
+   Paket-Quellmaster = aktiver Master, erhaltene ursprüngliche IDs/fünf eigene Namen/Projektlinks und angewendete
+   beziehungsweise nachvollziehbar zurückgestellte Fälle. Anschließend gezielte Explorer-/Lightroom-Suche und
+   Zuweisung mit Weissstorch/Rebhuhn. Kein katalogweiter Fotoabgleich, keine Statistik-Neuberechnung oder
+   Bereinigung als Bestandteil dieses Quellenupdates.
+
+Fehler/Pause/Unterbrechung: keine Schutzprüfung umgehen und keinen zweiten Lauf parallel starten. Bestehende
+Auftrags-/Statusausgabe zuerst prüfen; bei geändertem Eingang neue Vorschau/Freigabe. Gemeinsame Master-/Paket-
+Rücknahme sowie gegebenenfalls Referenzrücknahme sind gesonderte Entscheidungen, kein automatischer Fehlerreflex.
+Der normale Paarwechsel erhält das vorher aktive reparierte Paar als Rückweg; er ist kein rückstandsloses Löschen
+aller neuen Quellen-/Auftragsdateien. Historische Fehleraufträge/Originalquellen nicht bereinigen.
+
+Für diese Vorbereitung noch kein produktiver Lauf freigegeben. Nächste benötigte Rückmeldung: sichtbarer Text
+der frischen Explorer-Rückfrage; danach konkrete Startentscheidung. Kein zusätzlicher Code-/Lua-Fix erforderlich
+aus diesem lesenden Befund allein.
+
+**Rückfrage anschließend praktisch bestätigt:** Felix öffnete den Explorer und übermittelte die Rückfrage
+`Taxonomiedatenbank ist veraltet` mit `COL26.9 XR` vom 25. September, Quellenumfang/Platzbedarf, anschließendem
+Master-/Paketbau, gemeinsamem Wechsel und Stopp bei offenen Konflikten. Noch keine Startbestätigung.
+Lesende API-Prüfung um 19:31 MESZ: Referenz und Master inaktiv/ohne Fehler, kein offener Kandidat oder Drift;
+fünf eigene Korrekturen und Identitätsregister bereits aktiv, keine offenen Vormerkungen. Lightroom-Paket
+`current`, passender Quellmaster, Rückweg verfügbar. Frischer Versionscheck vom 2. Oktober um 19:29 MESZ
+bestätigt `COL26.9 XR` als verfügbar/nicht installiert. Keine Update-/Aufbau-/Aktivierungsroute aufgerufen.
+Damit ist die Startvorbereitung einschließlich sichtbarer gemeinsamer Rückfrage bestätigt; die konkrete
+Startfreigabe fehlt weiterhin. Weitere reine Implementierungsprüfungen verlangen keinen produktiven Lauf.
+
 ## Download, Import und Aktivierung
 
 Der Explorer reserviert vor einer Erstinstallation mindestens 12 GB freien Speicher. Das komprimierte Archiv darf
