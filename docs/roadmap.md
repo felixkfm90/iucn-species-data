@@ -26,7 +26,7 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Vierte Stufe implementiert: beide Update-Einstiege verwenden denselben bestätigten Quellen-/Master-/Paketweg,
    gemeinsame Sperre und frischen Gesamtabschluss. Vorhandene lokale Arbeit hat Vorrang; Quellenimport allein
    meldet keinen Erfolg des Gesamtupdates. Automatisierte Abbruch-/Fehler-/Wiederholungswege geprüft.
-   Noch offen: erneuten Quellenlauf gesondert bestätigen und den vollständigen Weg praktisch abnehmen.
+   Noch offen: den vollständigen Quellen-/Master-/Paketweg praktisch abnehmen; aktueller Folgeversuch siehe unten.
    Lesender Plan am 2. Oktober vorbereitet: gespeichertes Paar/Register/Auftrag passend, keine neue Vormerkung;
    Explorer-Dienst nicht erreichbar. Frische Rückfrage ohne Bestätigung prüfen, dann separat starten lassen.
    Historische Fallzahlen sind kein Sollbestand eines neuen Releases; bei Entscheidungen ein lokaler Folgeaufbau.
@@ -36,14 +36,18 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    abgebrochen. Bisherige Referenz und Master-/Lightroom-Paar unverändert. Enger datierter XR-ColDP-Ersatzweg
    bei API-404 und korrekte Quellenfehler-/Bestandsanzeige implementiert; 145 gezielte Tests bestanden.
    Offizielles Archiv nur lesend mit Dateiinformationen/vier ZIP-Bytes geprüft, nicht vollständig heruntergeladen.
-   Nächster Schritt: Explorer normal neu öffnen und erneuten Updateweg frisch bestätigen. Noch kein erfolgreicher
-   produktiver Download/Import oder Gesamtabschluss; Details: [Updatevertrag](taxonomy-reference-update.md).
+   Anschließend durch Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet. Neue Referenz
+   importiert, gemeldeter Stand `3/7 Master aufbauen · Suchindex`; bisheriger Master und Paket bleiben aktiv.
+   Noch kein Gesamtabschluss/Paarwechsel bestätigt; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.
    Die zwei bestätigten Arten schließen nur die gezielte Reparaturabnahme, nicht alle heutigen Funktionen.
 3. **Betriebs-/Großbestandsgrenzen:** produktive Pause/Fortsetzung, Wiederanlauf/Rollback bei geöffneten
    Verbrauchern, größere Konfliktmengen, Speicherpflege und Fortschrittsanzeige. Bereinigung nur nach eigenem
    unverändertem Vorschauplan und Bestätigung. Der Reparaturlauf belegt keine Laufzeit des nächsten Quellenupdates.
+   Obere Explorer-Anzeige am 2. Oktober separat vereinfacht: `Datenbank-Update` plus `X/Y Schritt · Z %`, ohne
+   `DB`/`Teil`. Gemessene Unterphasenprozente und vollständige Detailanzeige unverändert; 84 gezielte Tests
+   bestanden. Kein Neustart oder Eingriff im aktiven Aufbau. Kurze Sichtprüfung nach dessen Abschluss offen.
 4. **Veröffentlichungsbereitschaft:** vollständiges Qualitätsgate, Projektstatus, Dokumentationsabgleich und
    GitHub-Pages-Ergebnis prüfen. Push und erfolgreiches Deployment sind getrennte Nachweise.
 5. **Letzter IUCN-Prüfpunkt vor dem Audit:** automatischen Kartenabruf und Trennung von Herkunft/Schutzmarkierung

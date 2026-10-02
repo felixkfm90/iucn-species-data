@@ -98,12 +98,10 @@
     const suffix = measured ? `${measured.percent} % dieses Teilschritts · ${measured.count}` : "";
     const detail = [step, stage, phase && phase !== stage ? phase : "", suffix,
       stateLabel !== "läuft" && stateLabel !== "abgeschlossen" ? stateLabel : ""].filter(Boolean).join(" · ");
-    const shortStage = ({ "Quellen vorbereiten": "Quellen", "Eingänge sichern und lesen": "Eingänge",
-      "Master aufbauen": "Master", "Master prüfen": "Masterprüfung", "Lightroom-Paket erstellen": "LR-Paket",
-      "Gesamtstand prüfen": "Prüfung", "Gemeinsam übernehmen": "Übernahme" })[stage] || stage;
-    const compact = completed ? "Taxonomie abgeschlossen"
-      : ["DB", `${index + 1}/${steps.length}`, shortStage, measured ? `Teil ${measured.percent} %` : "",
+    const compactStatus = completed ? "Abgeschlossen"
+      : [`${index + 1}/${steps.length} ${stage}`, measured ? `${measured.percent} %` : "",
         stateLabel === "läuft" ? "" : stateLabel].filter(Boolean).join(" · ");
+    const compact = `Datenbank-Update\n${compactStatus}`;
     return { step: index + 1, totalSteps: steps.length, stage, phase, percent: measured?.percent ?? null,
       detail, compact, state: stateLabel, running, completed, sourceFailure,
       className: failed ? "failed" : stopped || waiting || unfinished ? "review" : running || busy ? "taxonomy" : "current" };

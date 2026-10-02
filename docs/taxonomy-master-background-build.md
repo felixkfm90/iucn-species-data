@@ -1,6 +1,6 @@
 # Fortsetzbarer Master-Hintergrundaufbau
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 ## Freigabestand
 
@@ -249,6 +249,12 @@ wurde nicht neu gestartet. Die praktische Anzeigeabnahme bleibt offen.
 - Obere Schaltfläche mit kompakter Anzeige derselben Schritt-/Fortschrittsquelle versorgen; vollständige Phase
   im Dialog beziehungsweise zugänglichen Detailtext. Auch bei geschlossenem Datenbankdialog aktuell halten,
   ohne zusätzliche Katalogscans, doppelte Statusabfrageschleifen oder einen automatischen Aufbau auszulösen.
+  Seit 2. Oktober steht in der ersten Zeile `Datenbank-Update`, darunter beispielsweise
+  `3/7 Master aufbauen · 32 %`. Kein `DB`, kein `Teil` und keine verkürzte Schrittbezeichnung im Button.
+  Der Prozentwert bleibt der gemessene Fortschritt der aktuellen Unterphase, kein Gesamt- oder Zeitprozent.
+  Ohne Messmengen entfällt er; Tooltip, zugängliche Beschriftung und Dialog nennen weiter Unterphase,
+  Messmengen und `dieses Teilschritts`. Pause, Fehler und erforderliche Entscheidungen bleiben auch im Button
+  sichtbar. Die eigene CSS-Regel erhält den Zeilenumbruch und erlaubt längeren Text ohne feste Höhe.
 - Abgeschlossener Masterbau bedeutet noch nicht abgeschlossener Gesamtvorgang. Erst nach erfolgreicher geprüfter
   gemeinsamer Freigabe `abgeschlossen` anzeigen. Pause, Unterbrechung, offene Entscheidungen und Fehler müssen in
   Kopf und Dialog übereinstimmend erkennbar sein; eine neue Phase darf nicht als Rücksprung einer Gesamtprozentzahl wirken.
@@ -267,6 +273,15 @@ Hilfsprozesstests bestanden. Syntax-, Stil-, Dokumentations- und Projektstatuspr
 vollständiges `quality:ci` und kein neuer produktiver Lauf. Lightroom-Plug-in, Squarespace-JS/CSS und Footer
 bleiben unverändert. Der Modul-Auslieferungstest ist ergänzt; die neuen Fortschrittstests laufen über
 `test:frontend-dashboard` auch im regulären Qualitätsgate.
+
+Vereinfachung am 2. Oktober: 84 gezielte Fortschritts-/Dashboard-/Dialog-/Update-/Modul-/Oberflächenvertragstests
+bestanden. Der erste Standardaufruf konnte in der Sandbox keine Testprozesse starten (`spawn EPERM`);
+der Gegenlauf nutzte den bereits im Projekt eingesetzten Testmodus ohne Prozessisolation und bestand,
+ohne Windows-Einstellungen oder Testregeln zu ändern. Keine visuelle Abnahme im laufenden Explorer, kein
+Neustart und keine Änderung gebundener Aufbau-/Paketregeln oder produktiver Eingänge. Die neue Beschriftung
+wird beim nächsten normalen Laden der Oberfläche sichtbar; nicht das laufende Update dafür unterbrechen.
+Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung bestanden; kein vollständiges
+lokales `quality:ci` oder vorweggenommener Pages-Deploymentnachweis für diese reine Anzeigeänderung.
 
 ## Gemeinsame Master-/Lightroom-Abschlussprüfung
 

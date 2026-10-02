@@ -4,6 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8");
+const stylesheet = await readFile(new URL("./public/app.css", import.meta.url), "utf8");
 const context = vm.createContext({});
 new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-dashboard.js" }).runInContext(context);
@@ -194,6 +195,8 @@ test("Kopf zeigt denselben Taxonomiefortschritt ohne geöffneten Dialog und beh�
   controller.renderDatabaseStatus();
   const expected = context.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: state.taxonomyMasterSnapshot });
   assert.equal(elements.pipelineStatus.textContent, expected.compact);
+  assert.equal(elements.pipelineStatus.textContent, "Datenbank-Update\n3/7 Master aufbauen · 25 %");
+  assert.equal(elements.pipelineStatus.innerHTML, "", "Beschriftung bleibt reiner Text, kein neues HTML");
   assert.equal(elements.pipelineMenuButton.title, expected.detail);
   assert.match(elements.pipelineMenuButton.attributes["aria-label"], /25 % dieses Teilschritts/);
   state.taxonomyMasterSnapshot = { status: "idle", buildJob: { available: true, status: "paused",
@@ -206,6 +209,15 @@ test("Kopf zeigt denselben Taxonomiefortschritt ohne geöffneten Dialog und beh�
   controller.renderDatabaseStatus();
   assert.equal(elements.pipelineStatus.textContent, "needs-update", "Abgeschlossene Taxonomie verdeckt keine Assetprüfung");
   assert.equal(elements.pipelineMenuButton.title, "Datenbank-Aktionen öffnen");
+});
+
+test("Nur die obere Datenbankbeschriftung erhält einen sichtbaren Zeilenumbruch ohne feste Höhe", () => {
+  const rule = stylesheet.match(/\.database-status \.pipeline-status-text\s*\{([^}]+)\}/)?.[1];
+  assert.ok(rule, "Eigene, auf die Kopfschaltfläche begrenzte Darstellungsregel");
+  assert.match(rule, /display:\s*block;/);
+  assert.match(rule, /white-space:\s*pre-line;/);
+  assert.match(rule, /line-height:\s*1\.3;/);
+  assert.doesNotMatch(rule, /(?:^|;)\s*(?:height|max-height|overflow):/);
 });
 
 test("Validierungspräsentation beschreibt einen konsistenten Bestand", () => {

@@ -33,12 +33,17 @@ Praktische Gesamtabnahme bleibt offen. Der anschließend von Felix gestartete La
 mit HTTP 404 ab; Referenz und passendes Master-/Lightroom-Paar blieben unverändert. Der Downloadweg verwendet
 nun ausschließlich bei fehlendem API-Export das offizielle, datierte XR-ColDP-Archiv des bestätigten Releases.
 Fehleranzeige und alte Bestandszahlen werden der tatsächlichen Quellenphase zugeordnet. Der erneute produktive
-Start muss separat bestätigt werden; vollständiger Download/Import noch nicht abgenommen.
+Start musste separat bestätigt werden; vollständiger Download/Import war durch die Korrektur nicht abgenommen.
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 Der gemeinsame Einstieg ist mit erfolgreichem Linux-Qualitätsgate/Pages-Lauf veröffentlicht. Der nächste
-Quellenlauf ist nach dem frühen Downloadfehler erneut über eine frische Explorer-Rückfrage zu starten.
-Arten-Explorer zuvor normal neu öffnen, damit der korrigierte Downloadweg geladen wird. Historische Fallzahlen
-ersetzen keine neue Quellenprüfung.
+Quellenlauf wurde anschließend von Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet.
+Die neue Referenz ist inzwischen importiert; der gemeldete Aufbau steht bei `3/7 Master aufbauen · Suchindex`.
+Der bisherige Master-/Lightroom-Stand bleibt bis zum geprüften gemeinsamen Wechsel aktiv; noch kein
+Gesamtabschluss oder neuer Paarwechsel bestätigt. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
+Die obere Explorer-Schaltfläche wurde getrennt davon auf zwei Zeilen vereinfacht: `Datenbank-Update` und
+beispielsweise `3/7 Master aufbauen · 32 %`. Prozent weiterhin nur aus Messmengen der aktuellen Unterphase;
+vollständige Erklärung im Datenbankfenster und Tooltip. Keine neue Statusabfrage oder Aufbauänderung.
+Sichtbar nach dem nächsten normalen Laden der Oberfläche, nicht durch Neustart während des aktiven Updates.
 
 ## Datenfluss und datierter Umsetzungsverlauf
 

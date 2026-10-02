@@ -133,6 +133,19 @@ erfolgreich. Kein vollständiges lokales `quality:ci`; Pages-Veröffentlichung d
 Nächster Schritt: normaler Explorer-Neustart und frische Update-Rückfrage durch Felix; kein eigenständiger
 Start/Download/Aufbau/Wechsel, Katalogabgleich oder Bereinigung. Lua-Version unverändert `0.4.24.14`.
 
+Anschließend durch Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet. Neue Referenz
+`col-xr-2026-09-25-316441` importiert; aktueller gemeldeter Bedienstand `3/7 Master aufbauen · Suchindex`.
+Bisheriger Master-/Lightroom-Stand noch aktiv, kein Gesamtabschluss/Paarwechsel bestätigt. Bestehende stille
+Begleitung bleibt auf diesen Lauf begrenzt. Obere Schaltfläche auf Felix' gesonderten Wunsch rein darstellungsseitig
+vereinfacht: `Datenbank-Update` und darunter beispielsweise `3/7 Master aufbauen · 32 %`, ohne `DB`/`Teil`.
+Gemessener Unterphasenfortschritt, Tooltip/zugänglicher Detailtext, Pause/Fehler/Entscheidung und Abschlussgrenzen
+unverändert. 84 gezielte UI-/Vertragstests bestanden; erster Prozessstart in der Sandbox gesperrt, projektüblicher
+Gegenlauf ohne Testprozessisolation erfolgreich, keine Windows-/Testregeländerung. Kein neuer produktiver Lauf,
+Neustart des geöffneten Explorers oder Eingriff in gebundene Aufbau-/Paketregeln und Eingänge. Kurze Sichtprüfung
+nach dem aktuellen Aufbau offen. Explorer-CSS/JS nicht in Squarespace eingebunden; Footer/Custom-CSS und Lua
+unverändert. Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung bestanden;
+kein vollständiges lokales `quality:ci` oder Pages-Nachweis dieser Änderung. Details: `docs/taxonomy-master-background-build.md`.
+
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
   alte CoL-Auswahlen öffnen bei eindeutiger Identität dieselbe Master-Namenswahl. Keine automatische Artmigration.

@@ -40,6 +40,35 @@ test("Lokaler Voll- und Änderungsweg zeigen echte Teilschritte bis zum Paketwec
   }
 });
 
+test("Kopfschaltfläche zeigt zwei klare Zeilen und nur den gemessenen Teilfortschritt", () => {
+  const search = view({ master: build("Suchindex", {
+    progressCurrent: 2008000, progressTotal: 6231604, progressPercent: 75,
+  }) });
+  assert.equal(search.compact, "Datenbank-Update\n3/7 Master aufbauen · 32 %");
+  assert.doesNotMatch(search.compact, /\bDB\b|Teil|75/);
+  assert.match(search.detail, /Schritt 3 von 7 · Master aufbauen · Suchindex · 32 % dieses Teilschritts/);
+  assert.match(search.detail, /2\.008\.000 von 6\.231\.604/);
+  assert.equal(view({ master: build("Suchindex", { progressPercent: 75 }) }).compact,
+    "Datenbank-Update\n3/7 Master aufbauen", "Ohne Messmengen keinen Prozentwert erfinden");
+  assert.equal(view({ master: build("Suchindex", { progressCurrent: 100, progressTotal: 100 }) }).compact,
+    "Datenbank-Update\n3/7 Master aufbauen · 100 %", "Teilabschluss ist kein Gesamtabschluss");
+});
+
+test("Kompakte Kopfzeile erhält Pausen, Fehler und ausstehende Entscheidungen", () => {
+  for (const status of ["paused", "interrupted", "stale", "failed", "pausing"]) {
+    const result = view({ master: { status: "idle", buildJob: { available: true, status,
+      progress: { phase: "Masterdatenbank schreiben", current: 750, total: 1000 } } } });
+    assert.ok(result.compact.endsWith(` · ${result.state}`));
+    assert.doesNotMatch(result.compact, /%|Teil/);
+  }
+  const sourceFailure = view({ reference: { status: "failed", phase: "download" } });
+  assert.equal(sourceFailure.compact, "Datenbank-Update\n1/7 Quellen vorbereiten · fehlgeschlagen");
+  const candidate = view({ master: { status: "ready", lifecycle: { candidate: { candidateId: "new" }, blockingConflictCount: 1 } } });
+  assert.equal(candidate.compact, "Datenbank-Update\n4/7 Master prüfen · Entscheidung erforderlich");
+  const completed = view({ master: { status: "completed", action: "activate", lightroomPackage: pair } });
+  assert.equal(completed.compact, "Datenbank-Update\nAbgeschlossen");
+});
+
 test("Quellendownload hat Vorrang vor altem Masterstatus; Referenzabschluss ist kein Gesamtabschluss", () => {
   const master = { status: "completed", action: "activate", lightroomPackage: pair, progressPercent: 100 };
   const result = view({ master, reference: { active: true, status: "downloading", phase: "download",

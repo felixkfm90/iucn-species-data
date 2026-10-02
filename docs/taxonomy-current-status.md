@@ -48,26 +48,37 @@ haben Vorrang; ihre ausdrücklich beschriebene lokale Verarbeitung lädt keine n
 Konflikte stoppen die Übernahme. Frische Statusabfragen müssen den passenden Master-/Paketstand bestätigen.
 Die Implementierung ist automatisiert geprüft; praktische Gesamtabnahme und Startfreigabe sind getrennt.
 
-**Aktueller Folgepunkt am 2. Oktober:** Felix startete den regulären Quellenlauf um 19:34:35 MESZ. Der API-Export
+**Früher Fehlversuch am 2. Oktober:** Felix startete den regulären Quellenlauf um 19:34:35 MESZ. Der API-Export
 lieferte HTTP 404; Abbruch schon beim Quelldownload, kein Masteraufbau gestartet. Die bisherige Referenz und das
-passende Master-/Lightroom-Paar oben bleiben aktiv. Die falsche Anzeige `Schritt 4 · Master prüfen · Abschluss`
+passende Master-/Lightroom-Paar oben blieben aktiv. Die falsche Anzeige `Schritt 4 · Master prüfen · Abschluss`
 stammte aus dem alten fertigen Auftrag; sie ist nun auf tatsächliche Quellenphase/Fehlerursache korrigiert.
 Der API-Download erhält einen eng gebundenen Ersatz über das offizielle datierte XR-ColDP-Monatsarchiv, nur bei
 404 und passenden Releasefeldern. Keine geänderten Größen-, Import-, Identitäts- oder Aktivierungsschutzregeln.
 145 gezielte Wartungs-/Anzeige-/Sicherheitstests erfolgreich; echtes Archiv nur per HEAD und vier ZIP-Bytes
-lesend bestätigt. Kein vollständiger Download oder Wiederholungsstart durch die Korrektur. Nächster Schritt:
-Explorer normal neu öffnen und den regulären Updateweg erneut frisch bestätigen. Details/Grenzen im
+lesend bestätigt. Kein vollständiger Download oder Wiederholungsstart durch die Korrektur selbst. Details/Grenzen im
 [Updatevertrag](taxonomy-reference-update.md#früher-downloadabbruch-und-enge-korrektur-am-2-oktober).
+
+**Aktueller Folgeversuch:** Felix startete nach normalem Explorer-Neustart um 19:53:14 MESZ erneut. Die Referenz
+`col-xr-2026-09-25-316441` ist importiert; sein aktueller Bedienstand meldet `3/7 Master aufbauen · Suchindex`.
+Der aktive Master enthält noch `col-xr-2026-08-26-316165`; das bisherige Master-/Lightroom-Paar bleibt bis zum
+erfolgreich geprüften gemeinsamen Wechsel aktiv. Dieser Zwischenstand ist kein Gesamtabschluss und kein
+Nachweis eines erneut beschädigten Paars. Offene Entscheidungen weiterhin nur nach frischer Vorschau und
+Felix' Bestätigung; keinen parallelen Aufbau, zusätzlichen Download oder Dienstneustart auslösen.
+
+Die obere Schaltfläche ist separat vereinfacht: `Datenbank-Update`, darunter beispielsweise
+`3/7 Master aufbauen · 32 %`. Die gemessene Unterphase wird im Dialog/Tooltip weiterhin vollständig erklärt.
+84 gezielte UI-/Vertragstests bestanden. Noch keine Sichtprüfung im geöffneten Explorer; neuer Text erst nach
+normalem Laden der Oberfläche. Laufender Aufbau, seine Eingänge und die bestehende Begleitung unverändert.
 
 Für die aktuelle Abnahme wurde `Später` empfohlen. Kein `COL26.9 XR`-Download, weiterer Masterlauf oder
 katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet. Das bezeichnet die frühere Reparaturabnahme,
-nicht den anschließend von Felix gestarteten und am Download gescheiterten regulären Quellenlauf.
+nicht die anschließend von Felix bestätigten regulären Quellenversuche.
 
 ## Was vor dem nächsten Update beziehungsweise Audit offen bleibt
 
 - Den regulären Quellenupdatevertrag einschließlich der 2.173 separaten CoL-/Reichsfälle prüfen. Diese Fälle
   sind nicht Teil des aktivierten Reparaturbestands. Gleiche Namen allein erlauben keine Zusammenführung,
-  Reichsänderung oder ID-Migration. Das nächste Quellenupdate separat planen und freigeben.
+  Reichsänderung oder ID-Migration. Den laufenden, gesondert bestätigten Quellenversuch bis zur Schutzprüfung begleiten.
 - Die gebündelte Lightroom-Abnahme und die noch offenen Neue-Art-Regressionsabläufe durchführen; die
   bestätigten zwei Arten ersetzen keine umfassende Menü-, Orts-/Zeit-, Statistik-, Export- oder Migrationstestreihe.
 - Produktive Pause/Fortsetzung, Wiederanlauf und Rollback bei geöffneten Verbrauchern sowie Speicherpflege,
