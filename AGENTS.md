@@ -34,7 +34,7 @@ Qualitätsgate, Build und Deployment. Keine erneute CI-Reparatur erforderlich.
 Aktueller Arbeitspunkt: regulärer Updatevertrag. Vorprüfung am 2. Oktober reproduziert mit vier isolierten
 Datenbankpaaren die fehlende Unterscheidung passender/abweichender/mehrdeutiger/fehlender Anbieter-ID-Verweise
 bei verschiedenen Reichen; alle sind bisher technisch aktivierbar. Sechs gezielte Regressionstests bestanden.
-Die beiden UI-Einstiege haben weiterhin unterschiedliche Wirkung. Felix beauftragte danach die gebündelte
+Bei dieser Vorprüfung hatten die beiden UI-Einstiege unterschiedliche Wirkung. Felix beauftragte danach die gebündelte
 bestätigungspflichtige Prüfung mit ID-Erhalt. Erste Stufe implementiert: alle CoL-ID-Verweise erhalten,
 passende/abweichende/mehrdeutige/fehlende Quellenbeziehung zählen, neue CoL-/Reichsgegenstücke bisheriger
 Referenzlücken als offene Identitätsprüfung sperren und kompakt gruppieren. Keine normale Feldentscheidung
@@ -47,7 +47,11 @@ Prüfung. Dritte Stufe inzwischen implementiert: separate gebundene Zurückstell
 Erhalt bisheriger Arten/IDs und erneute offene Prüfung geänderter Belege. Registertyp `classification-deferred`
 ändert keine Identität und erzeugt keine Umleitung/Aliasse. Beide Bündel können ohne Zwischenaufbau vorgemerkt
 werden; erst ein frischer Kandidat verarbeitet sie. Unentschiedene Fälle und andere Konflikte bleiben gesperrt.
-Einheitlicher Update-Einstieg und praktische Gesamtabnahme bleiben offen. Kein produktiver
+Vierte Stufe inzwischen implementiert: Startangebot und manuelle Datenbank-Aktion nutzen denselben bestätigten
+Quellen-/Master-/Paketweg, gemeinsame Sperre und frische Abschlussprüfung. Vorhandene Aufträge, Kandidaten und
+eigene Vormerkungen haben Vorrang; ihre lokale Verarbeitung lädt keine neuen Anbieterstände. Quellenimport
+allein meldet keinen Gesamtabschluss. Offene Konflikte stoppen die Übernahme. Praktische Gesamtabnahme und
+gesonderte Freigabe des nächsten Quellenupdates bleiben offen. Kein produktiver
 Vergleich/Download/Aufbau/Wechsel/Kataloglauf. Details und nächste Grenze:
 `docs/taxonomy-reference-update.md`.
 
@@ -84,7 +88,19 @@ neue Zurückstellungen ohne Quellenübersicht oder Ausgangsmaster bleiben ausdr�
 Paket-/Klassifikations-/Identitätstests in vier Dateien sowie die komplette Lightroom-Testgruppe mit 159 Tests
 erfolgreich. Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden.
 Kein produktiver Aufbau zur CI-Korrektur.
-Der neue vollständige GitHub-Linux-/Pages-Nachweis bleibt getrennt zu prüfen.
+Inzwischen bestätigt: Pages-Lauf `37020500536` für `265032f` vollständig erfolgreich, einschließlich Linux-
+Qualitätsgate, Build und Deployment. Dieser Nachweis gilt für die CI-Korrektur, nicht für spätere Änderungen.
+
+Prüfabschluss vierte Stufe: 201 gezielte Tests in 15 Dateien mit Exit 0, ohne Fehler/Abbrüche/übersprungene
+Tests, einschließlich echter Master-/Paar-Hilfsprozesse, Klassifikationsbündel und Paket-/Identitätswege.
+Komplette betroffene Wartungs-Testgruppe mit 76 Tests ebenfalls erfolgreich; Testzahlen überschneiden sich.
+Zuvor 67 UI-Tests in drei Dateien erfolgreich: gleicher vollständiger Ablauf beider Einstiege, gemeinsame
+Rückfrage/Sperre, Abbruch, fehlerhafte/veraltete Vorschau, gestoppte Aufbauten, offene Entscheidungen, sofortige
+Paketfehler, frischer Abschlussnachweis, lokale Wiederholung nach Quellenwechsel und reines lesendes Wiederöffnen.
+Die Verkettung bleibt im geöffneten UI; kein neuer dauerhafter Serverkoordinator oder automatischer Folgelauf
+nach Schließen. Syntax (357 Dateien), Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden; kein vollständiges
+lokales `quality:ci`, produktiver Update-/Bedienlauf oder Phase-10.5-Audit. Lua-Version bleibt `0.4.24.14`;
+Squarespace-Footer/CSS und produktive Bestände unverändert. Veröffentlichung dieser Stufe separat prüfen.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;
@@ -1222,6 +1238,8 @@ Aktuelle Planung:
   und Importzähler sichtbar und ein einmaliges Bestätigungsfenster meldet die erfolgreiche Übernahme. Der
   verbindliche Konflikt- und Betriebsvertrag steht in `docs/taxonomy-reference-update.md`. Der erneute echte
   Vollimport bleibt ein bewusst gestarteter lokaler Betriebstest.
+  Änderung am 2. Oktober 2026: Der gemeinsame Update-Einstieg ersetzt das damalige Quellenabschlussfenster;
+  Gesamterfolg erscheint erst nach frischer Prüfung des passenden Master-/Lightroom-Paars.
   Seit 2026-07-30 bestand zunächst eine getrennte Namensschicht. Seit 2026-08-08 wird sie in die verbindliche,
   physisch getrennte Masterdatenbank überführt. Lokal versioniert werden CoL XR, ein breiter iNaturalist-Namens-
   und Artlückenausschnitt, relevante GBIF-, WoRMS- und Wikidata-Ausschnitte, kontrollierte Animalia-Fälle und

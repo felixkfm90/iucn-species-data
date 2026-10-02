@@ -40,11 +40,13 @@ Die Startmeldung **„Taxonomiedatenbank ist veraltet“** bezeichnet diese neue
 Drift zwischen den installierten lokalen Komponenten. Referenz, Master und Paket des reparierten Paars passen
 zusammen; eine Verfügbarkeitsmeldung allein verlangt keine erneute Reparatur.
 
-Der Startdialog bietet `Jetzt aktualisieren` oder `Später`. Sein bestätigter Updateweg startet zunächst nur
-die Referenz-/Ergänzungswartung. Der zusammenhängende Weg unter
-**Datenbank-Aktionen → Taxonomiedatenbank → Datenbank aktualisieren** führt anschließend den Masteraufbau und
-die gemeinsame Paketfreigabe aus. Diese unterschiedlichen Einstiege sind vor dem nächsten Quellenupdate
-gemeinsam zu prüfen; die Dokumentation ersetzt keine Implementierungskorrektur oder neue Startfreigabe.
+Der Startdialog bietet `Jetzt aktualisieren` oder `Später`. Er und
+**Datenbank-Aktionen → Taxonomiedatenbank → Datenbank aktualisieren** verwenden jetzt denselben bestätigten
+Updateweg: Quellen vorbereiten, Master aufbauen/prüfen und passendes Lightroom-Paket gemeinsam übernehmen.
+Der Quellenimport allein meldet keinen Gesamtabschluss. Vorhandene Aufträge, Kandidaten und eigene Vormerkungen
+haben Vorrang; ihre ausdrücklich beschriebene lokale Verarbeitung lädt keine neuen Anbieterstände. Offene
+Konflikte stoppen die Übernahme. Frische Statusabfragen müssen den passenden Master-/Paketstand bestätigen.
+Die Implementierung ist automatisiert geprüft; praktische Gesamtabnahme und Startfreigabe sind getrennt.
 
 Für die aktuelle Abnahme wurde `Später` empfohlen. Kein `COL26.9 XR`-Download, weiterer Masterlauf oder
 katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet.
@@ -121,7 +123,8 @@ ursprünglicher ID, eigenen Namen/Projektlinks und unveränderten rohen Anbieter
 startet keinen Aufbau oder Paketwechsel. Dritte Stufe inzwischen implementiert: separate bestätigte Zurückstellung
 unklarer Fälle. Ein frischer Kandidat lässt ausschließlich die gebundenen neuen CoL-Gegenstücke aus, erhält
 bisherige Arten/IDs und prüft geänderte Belege wieder offen. Beide Bündel können ohne Zwischenaufbau vorgemerkt
-werden. Unentschiedene Fälle/andere Konflikte bleiben gesperrt. Der einheitliche Update-Einstieg ist noch offen.
+werden. Unentschiedene Fälle/andere Konflikte bleiben gesperrt. Die vierte Stufe vereinheitlicht inzwischen
+Startangebot und manuelle Datenbank-Aktion; der praktische vollständige Updateweg ist noch gesondert abzunehmen.
 Details und Grenzen: [regulärer Updatevertrag](taxonomy-reference-update.md).
 Kein neuer Download, produktiver Aufbau, Zeigerwechsel, Katalogabgleich oder Bereinigung.
 178 gezielte Tests in zehn Dateien erfolgreich; abschließende neun UI-Tests erneut bestanden. Syntax/Stil,
@@ -160,4 +163,24 @@ freizugeben. Neue Regressionen prüfen beide Grenzen, einschließlich Aktivierun
 Ausgangsmaster. 82 Tests in vier betroffenen Dateien sowie die gesamte Lightroom-Testgruppe mit 159 Tests
 erfolgreich. Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden;
 keine produktiven Daten verändert.
-Der neue GitHub-Linux-/Pages-Lauf ist der gesonderte Veröffentlichungsnachweis.
+Der [Pages-Lauf für die Korrektur `265032f`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37020500536)
+ist vollständig erfolgreich, einschließlich Linux-Qualitätsgate, Build und Deployment.
+
+## Gemeinsamer Update-Einstieg am 2. Oktober
+
+Startangebot, manuelle Datenbank-Aktion und alter Referenz-Updatebutton delegieren an denselben Controller.
+Gemeinsame Sperre bereits während der Rückfrage, frische Status-/Quellenvorschau, bestehende serverseitige
+Token-/Prozessprüfung und frischer Paketabschluss verhindern doppelte Starts und verfrühte Erfolgsmeldungen.
+Gestoppte oder fehlgeschlagene Vorgänge sowie offene Entscheidungen führen nicht zur Paaraktivierung.
+Nach Quellenwechsel setzt ein späterer bestätigter Klick lokal fort, ohne denselben Release erneut zu laden.
+
+Die Verkettung der Phasen läuft weiterhin im geöffneten UI, nicht in einem neuen dauerhaften Serverauftrag.
+Schließen zwischen Phasen löst nach Wiederöffnen keinen unbestätigten Folgelauf aus; vorhandener Drift und
+gespeicherte Aufträge bleiben über den bestätigten lokalen Weg behandelbar. Keine Zusage eines unbeaufsichtigten
+Gesamtdurchlaufs über App-/Dienstneustarts. Details: [Updatevertrag](taxonomy-reference-update.md).
+
+201 gezielte Tests in 15 Dateien erfolgreich, einschließlich echter Hilfsprozesse und Paket-/Klassifikationswege;
+zuvor 67 UI-Tests in drei Dateien und anschließend alle 76 Wartungstests erfolgreich (überlappende Testmengen).
+Syntax (357 Dateien), Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden.
+Kein vollständiges lokales Qualitätsgate, produktiver Quellenlauf, praktische Gesamtabnahme oder
+Phase-10.5-Audit. Lua-Version unverändert `0.4.24.14`; Veröffentlichung dieses Schritts separat prüfen.

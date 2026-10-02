@@ -154,7 +154,7 @@ async function flushAsyncWork() {
   }
 }
 
-test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenster angezeigt", async () => {
+test("Quellenabschluss zeigt keinen vorzeitigen Gesamtabschluss und kein zweites Bestätigungsfenster", async () => {
   const visible = elements();
   const confirmations = [];
   const messages = [];
@@ -179,25 +179,17 @@ test("erfolgreiche Übernahme wird dauerhaft und einmalig als Bestätigungsfenst
   assert.equal(confirmations.length, 0);
   await controller.refresh();
   await Promise.resolve();
-  assert.equal(confirmations.length, 1);
-  assert.equal(confirmations[0].title, "Neue Datenbank erfolgreich übernommen");
-  assert.equal(confirmations[0].cancelLabel, "");
-  assert.match(confirmations[0].message, /2\.500\.000 Taxa/);
+  assert.equal(confirmations.length, 0);
   assert.equal(
     visible.taxonomyMaintenanceSummary.textContent,
-    "Taxonomiedatenbank erfolgreich aktualisiert",
+    "CoL-Referenz vorbereitet",
   );
   assert.match(visible.taxonomyMaintenanceDetail.textContent, /Bestehende Projektdaten wurden nicht automatisch verändert/);
-  assert.match(confirmations[0].message, /7\.800\.000 wissenschaftliche Namen/);
-  assert.match(confirmations[0].message, /1 nicht zuordenbare Namen übersprungen/);
-  assert.deepEqual(messages.at(-1), {
-    message: "Taxonomiedatenbank erfolgreich aktualisiert.",
-    type: "success",
-  });
+  assert.equal(messages.length, 0);
 
   await controller.refresh();
   await Promise.resolve();
-  assert.equal(confirmations.length, 1);
+  assert.equal(confirmations.length, 0);
 });
 
 test("laufende Aktualisierung wiederholt den Fortschrittstitel nicht in der Detailzeile", async () => {
@@ -235,7 +227,7 @@ test("installierte und neueste Referenz werden ohne Dopplung getrennt angezeigt"
   });
 
   await controller.refresh();
-  assert.equal(visible.taxonomyMaintenanceSummary.textContent, "Datenbank aktuell");
+  assert.equal(visible.taxonomyMaintenanceSummary.textContent, "Lokale Referenz verfügbar");
   assert.equal(
     visible.taxonomyMaintenanceDetail.textContent,
     "Neueste verfügbare Version: COL26.7 XR vom 17.07.2026.",
@@ -317,12 +309,12 @@ test("bereits vor dem Öffnen abgeschlossene Läufe erzeugen kein nachträgliche
   assert.equal(confirmations.length, 0);
 });
 
-test("beim Start wird eine fehlende Referenz einmalig zur Installation angeboten", async () => {
-  const confirmations = [];
+test("Startangebot delegiert genau einmal an die gemeinsame Steuerung und startet selbst keine Quelle", async () => {
+  const delegated = [];
   const requests = [];
   const status = availableUpdateStatus();
   const controller = maintenance.createTaxonomyMaintenanceController({
-    state: {},
+    state: { updateTaxonomyDatabase: async (options) => { delegated.push(options); } },
     elements: elements(),
     fetchJson: async (url, options) => {
       requests.push({ url, options });
@@ -331,28 +323,24 @@ test("beim Start wird eine fehlende Referenz einmalig zur Installation angeboten
       return status;
     },
     formatBytes: () => "12 GB",
-    showQuickConfirm: async (options) => {
-      confirmations.push(options);
-      return true;
-    },
+    showQuickConfirm: async () => { throw new Error("Die Rückfrage gehört zur gemeinsamen Steuerung"); },
     renderDatabaseStatus() {},
   });
 
   controller.setup();
   await flushAsyncWork();
-  assert.equal(confirmations.length, 1);
-  assert.equal(confirmations[0].title, "Keine Taxonomiedatenbank installiert");
-  assert.equal(confirmations[0].confirmLabel, "Jetzt aktualisieren");
-  assert.equal(confirmations[0].cancelLabel, "Später");
-  assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 1);
+  assert.equal(delegated.length, 1);
+  assert.equal(delegated[0].startup, true);
+  assert.equal(delegated[0].sourcePreview.token, "preview-token");
+  assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 0);
 });
 
-test("eine verschobene Aktualisierung wird beim selben Start nicht erneut angeboten", async () => {
-  const confirmations = [];
+test("die gemeinsame Steuerung wird nach Aufschieben beim selben Start nicht erneut aufgerufen", async () => {
+  const delegated = [];
   const requests = [];
   const status = availableUpdateStatus({ installed: true });
   const controller = maintenance.createTaxonomyMaintenanceController({
-    state: {},
+    state: { updateTaxonomyDatabase: async (options) => { delegated.push(options); return false; } },
     elements: elements(),
     fetchJson: async (url, options) => {
       requests.push({ url, options });
@@ -360,10 +348,7 @@ test("eine verschobene Aktualisierung wird beim selben Start nicht erneut angebo
       return status;
     },
     formatBytes: () => "12 GB",
-    showQuickConfirm: async (options) => {
-      confirmations.push(options);
-      return false;
-    },
+    showQuickConfirm: async () => { throw new Error("Die Rückfrage gehört zur gemeinsamen Steuerung"); },
     renderDatabaseStatus() {},
   });
 
@@ -371,8 +356,7 @@ test("eine verschobene Aktualisierung wird beim selben Start nicht erneut angebo
   await flushAsyncWork();
   await controller.refresh();
   await flushAsyncWork();
-  assert.equal(confirmations.length, 1);
-  assert.equal(confirmations[0].title, "Taxonomiedatenbank ist veraltet");
+  assert.equal(delegated.length, 1);
   assert.equal(requests.filter(({ url }) => url.endsWith("/start")).length, 0);
 });
 
@@ -411,7 +395,7 @@ test("veraltete Ergänzungsnamen werden ohne vorgetäuschtes CoL-Update dargeste
   );
   assert.equal(
     visible.taxonomyMaintenanceSummary.textContent,
-    "Datenbank aktuell",
+    "Lokale Referenz verfügbar",
   );
   assert.equal(
     visible.taxonomyMaintenanceDetail.textContent,

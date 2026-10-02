@@ -489,6 +489,7 @@ const taxonomyDatabaseController =
     createDialogController,
     taxonomyReference: explorerTaxonomyReference,
     showQuickConfirm,
+    formatBytes,
     renderDatabaseStatus,
   });
 const { setup: setupTaxonomyDatabase } = taxonomyDatabaseController;

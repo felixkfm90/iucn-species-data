@@ -60,18 +60,19 @@ abgerufen. Die Prüfung:
 `Datenbank-Aktionen > Taxonomiedatenbank > Datenbank aktualisieren` bleibt verfügbar. Der vollständige Download
 beginnt erst nach einer aktuellen Vorschau und ausdrücklicher Bestätigung.
 
-Wichtige Grenze im heutigen Code: Die Startnachfrage `Jetzt aktualisieren` ruft zunächst nur die
-Referenz-/Ergänzungswartung auf. Die zusammenhängende Datenbank-Aktion führt anschließend den Masterbau und
-die gemeinsame Lightroom-Paketfreigabe aus. Der Referenzimport allein bestätigt deshalb noch keinen neuen
-Master-/Paketstand. Beide Einstiegspfade sowie die 2.173 separaten CoL-/Reichsfälle werden vor der Freigabe des
-nächsten regulären Quellenupdates geprüft; in der aktuellen Reparaturabnahme wurde kein neues Update gestartet.
+Seit der vierten Umsetzungsstufe am 2. Oktober verwenden Startnachfrage und manuelle Datenbank-Aktion denselben
+bestätigten Quellen-/Master-/Paketweg. Der Referenzimport allein bestätigt keinen neuen Master-/Paketstand und
+zeigt kein zusätzliches Gesamtabschlussfenster. Vorhandene lokale Arbeit hat Vorrang vor neuen Anbieterständen;
+offene Entscheidungen stoppen die Übernahme. Praktische Gesamtabnahme und Freigabe des nächsten regulären
+Quellenupdates bleiben getrennt; für die Implementierung wurde kein produktiver Quellenlauf gestartet.
 
 ## Regulärer Updatevertrag: Vorprüfung am 2. Oktober
 
 Felix hat diesen Punkt mit „los“ beauftragt. Die erste Prüfung verändert keine produktiven Quellen, Master,
 Suchpakete, Identitätsentscheidungen oder Fotos und startet keine Anbieterdownloads. Beide UI-Einstiege wurden
-im aktuellen Code verfolgt: Der Startdialog ruft `beginUpdate()` der Referenzwartung auf; nur die Datenbank-Aktion
-wartet anschließend auf Masterbau und geprüfte Paaraktivierung. Die Vereinheitlichung ist noch nicht umgesetzt.
+im damaligen Code vor der vierten Stufe verfolgt: Der Startdialog ruft `beginUpdate()` der Referenzwartung auf;
+nur die Datenbank-Aktion wartet anschließend auf Masterbau und geprüfte Paaraktivierung. Diese unterschiedliche
+Wirkung war der reproduzierte Ausgangsstand; die vierte Stufe vereinheitlicht inzwischen beide Einstiege.
 
 Die historische Quellenklassifizierung der 2.173 Fälle steht im
 [Reparaturvertrag](taxonomy-partial-source-recovery.md): 1.693 CoL-Verweise passen eindeutig zur bisherigen
@@ -235,7 +236,8 @@ Am 2. Oktober nach Felix' erneutem „weiter“ implementiert; keine produktiven
   Projekt-/Assetumbenennung oder produktive Paaraktivierung. Alte Kandidaten ohne `deferralAvailable` bekommen
   keine rückwirkende Freigabe. Registergrenze 10.000 Ereignisse; höchstens 100 bisherige Arten je Quellenfall.
 
-Offen bleibt die Vereinheitlichung der Update-Einstiege und die anschließende praktische Gesamtabnahme.
+Zum Abschluss der dritten Stufe waren Vereinheitlichung der Update-Einstiege und praktische Gesamtabnahme offen.
+Die Vereinheitlichung ist inzwischen in der unten beschriebenen vierten Stufe implementiert.
 Weiterhin keinen produktiven `COL26.9 XR`-Lauf allein für diese Implementierungsprüfung starten. Der synthetische
 480-Fälle-Test ist kein neuer Vergleich der historischen produktiven 480 unklaren Fälle. Lua-Version bleibt
 `0.4.24.14`; Explorer-JS ist nicht im Squarespace-Footer eingebunden, Footer/CSS unverändert.
@@ -257,7 +259,51 @@ dieser optionale Zugriff. Ohne Zurückstellung bleibt der alte Kandidat regulär
 Zurückstellungen verlangen unverändert CoL-Version und Ausgangsmaster. Beide Grenzen durch neue Regressionen
 gesichert; 82 Tests in vier betroffenen Dateien und die gesamte Lightroom-Testgruppe mit 159 Tests erfolgreich.
 Syntax, Stil, Dokumentationsverweise, Projektstatus und Diffprüfung bestanden. Keine Testfixture zur Umgehung umgeschrieben,
-keine Schutzregel gelockert, kein produktiver Aufbau oder Paketwechsel. Vollständigen Pages-Nachweis separat prüfen.
+keine Schutzregel gelockert, kein produktiver Aufbau oder Paketwechsel.
+Der [Pages-Lauf der Korrektur `265032f`](https://github.com/felixkfm90/iucn-species-data/actions/runs/37020500536)
+bestätigt inzwischen erfolgreiches Linux-Qualitätsgate, Build und Deployment.
+
+## Vierte Umsetzungsstufe: gemeinsamer vollständiger Update-Einstieg
+
+Am 2. Oktober implementiert und ausschließlich mit simulierten UI-Antworten beziehungsweise temporären
+Testdatenbanken geprüft:
+
+- Startangebot `Jetzt aktualisieren`, manuelle Datenbank-Aktion und alter Referenz-Updatebutton delegieren an
+  denselben Controller. Die gemeinsame Sperre gilt schon während Statuslesen und Rückfrage. Fehlt die Anbindung,
+  wird keine ersatzweise reine Quellenaktualisierung gestartet. `Später`/`Abbrechen` schreibt nichts.
+- Vor einer Bestätigung werden Referenz- und Masterstatus frisch gelesen; Fehler erlauben keinen Rückfall auf
+  einen alten bereiten UI-Stand. Eine aktuelle Quellenvorschau mit Token ist für neue Anbieterstände Pflicht;
+  die serverseitige Frische-/Prozessprüfung bleibt unverändert. Ohne neue Arbeit kein Download oder Neuaufbau.
+- Gespeicherte Aufträge, Kandidaten, offene eigene Vormerkungen, Referenzdrift oder Paketnachholung haben wie
+  bisher Vorrang. Die Rückfrage beschreibt dann ausdrücklich einen lokalen Weg ohne neue Anbieterstände.
+  Ein zusätzlich verfügbarer neuer Release wird nicht still mit dieser lokalen Bestätigung heruntergeladen.
+  Vorhandene Zwischenstände werden nicht überschrieben; Fortsetzung bleibt die gesonderte vorhandene Aktion.
+- Nach bestätigter Quellenaktualisierung wartet der gemeinsame Weg auf deren Abschluss, danach auf Masterbau
+  und geprüfte gemeinsame Master-/Lightroom-Übernahme über die vorhandenen APIs. Referenz-/Ergänzungsanzeigen
+  heißen nur noch `CoL-Referenz vorbereitet` beziehungsweise `Ergänzungsnamen vorbereitet`; kein Quellenabschluss-
+  Popup oder vorgezogener Gesamterfolg. Eigene Namen bleiben erhalten; keine automatische Foto-/Projektmigration.
+- Sofortige wie später gelesene Fehler, Teilerfolge, Pause, Unterbrechung oder veraltete Aufträge stoppen die
+  Verkettung. Offene Kandidatenkonflikte verhindern die Aktivierung und verweisen auf die gebündelte Prüfung/
+  Zurückstellung unter `Datenbank-Aktionen → Taxonomiedatenbank`. Server-/Kandidaten-Schutzregeln bleiben bestehen.
+- Der Gesamtabschluss verlangt frischen Referenz-/Masterstatus, aktiven Master, keinen laufenden Vorgang,
+  keinen verbliebenen Kandidaten/Referenzdrift/offene eigene Vormerkung und ein aktuelles Lightroom-Paket.
+  Erst dann erscheint einmal `Master und Lightroom-Suchpaket sind gemeinsam aktuell`.
+- Die Verkettung bleibt im geöffneten UI, nicht in einem neuen dauerhaften Serverkoordinator. Schließen zwischen
+  Phasen startet nach Wiederöffnen keinen automatischen Folgelauf. Nach einem Quellenwechsel bleibt der Drift
+  als Arbeit erkennbar; ein späterer bestätigter Klick setzt lokal fort, ohne denselben Release erneut zu laden.
+  Gespeicherte Workeraufträge und ihre bestehende ausdrückliche Fortsetzung bleiben erhalten. Kein garantierter
+  unbeaufsichtigter Gesamtdurchlauf über App-/Dienstneustarts; bestehende vierstündige UI-Wartegrenze unverändert.
+- Statusabfragen verwenden die bestehenden kompakten Endpunkte, keine neuen automatischen Vollscans, Schema-
+  oder Lua-Änderungen. Lua-Version bleibt `0.4.24.14`; Explorer-JS nicht im Squarespace-Footer eingebunden.
+
+Prüfabschluss: 201 gezielte Tests in 15 Dateien mit Exit 0, ohne Fehler, Abbrüche oder übersprungene Tests,
+einschließlich echter Master-/Paar-Hilfsprozesse, Klassifikationsbündel, Paket-/ID-Auflösung und Korrekturübergabe.
+Zuvor 67 UI-Tests in drei Dateien erfolgreich, darunter beide vollständigen Einstiege, gemeinsame Rückfrage/
+Sperre, Abbruch, veraltete Vorschau, unmittelbare und spätere Fehler, offene Entscheidungen, lokale Wiederholung,
+reines lesendes Wiederöffnen und frischer Abschlussnachweis. Zusätzlich alle 76 Wartungstests erfolgreich;
+die Testmengen überschneiden sich. Syntax (357 Dateien), Stil, Dokumentationsverweise, Projektstatus und
+Diffprüfung bestanden. Kein vollständiges lokales `quality:ci`, produktiver Download/Aufbau/Wechsel,
+praktischer Gesamtbedienlauf oder Phase-10.5-Audit. Nächster Quellenlauf braucht eine eigene Planung/Freigabe.
 
 ## Download, Import und Aktivierung
 
@@ -324,12 +370,12 @@ verweist mit versionierter Provenienz auf CoL und weitere Anbieter und wird erst
 Konfliktprüfung und atomarer Aktivierung für die Explorer-Suche verwendet. Details:
 `docs/taxonomy-master-database-design.md`.
 
-Referenzaktivierung, Masteraktivierung und Lightroom-Paketaktivierung bleiben getrennte sichere Schritte. Der
+Referenzaktivierung und anschließende gemeinsame Master-/Lightroom-Freigabe bleiben getrennte sichere Schritte. Der
 Masterstatus vergleicht deshalb die aktive Referenz-Release-ID mit der im aktiven Master gespeicherten
 CoL-Provenienz. Wurde der Ablauf nach der Referenzaktivierung beendet, behandelt `Datenbank aktualisieren` diese
 Abweichung beim nächsten Aufruf weiterhin als Arbeit. Es verwendet die bereits installierte aktive Referenz, baut
-und prüft daraus einen neuen Masterkandidaten und lädt den gleichen CoL-Stand nicht erneut herunter. Erst nach der
-atomaren Masteraktivierung wird das passende Lightroom-Suchpaket gebaut und atomar aktiviert. Ein leerer
+und prüft daraus einen neuen Masterkandidaten und lädt den gleichen CoL-Stand nicht erneut herunter. Das passende
+Lightroom-Suchpaket wird vor dem gemeinsamen atomaren Paarwechsel vorbereitet und geprüft. Ein leerer
 Projektkonfliktbericht überspringt keinen dieser Ableitungsschritte.
 
 Ein Referenzwechsel entwertet außerdem die bisherige Abkürzung für bekannte CoL-Referenzlücken. Der lokale
@@ -341,10 +387,10 @@ Numerische interne SQLite-Taxon-IDs sind dabei niemals releaseübergreifend stab
 daher ausschließlich über den wissenschaftlichen Namen im neuen Release aufgelöst; auch im Schnellweg wird eine
 gespeicherte ID nur bei identischem wissenschaftlichem Taxon akzeptiert.
 
-Nach erfolgreicher Aktivierung bleibt der Abschluss im Bereich `Taxonomiereferenz` sichtbar. Zusätzlich erscheint
-ein einmaliges Bestätigungsfenster mit aktivem Release, importierten Taxa, wissenschaftlichen und gebräuchlichen
-Namen, der gegebenenfalls gezählten Anzahl sicher übersprungener verwaister Namen sowie dem Hinweis, dass keine
-bestehenden Projektdaten automatisch verändert wurden. Nach einem Fehler
+Nach erfolgreichem Referenzimport bleiben Release und Importzähler im Bereich `Taxonomiereferenz` sichtbar.
+Dieser Quellenabschluss allein meldet keinen Gesamterfolg und öffnet kein Bestätigungsfenster. Der gemeinsame
+Updateweg bestätigt den Gesamtabschluss erst nach frischer Prüfung des passenden Master-/Lightroom-Stands.
+Nach einem Fehler
 bleiben stattdessen die verständlich zusammengefasste Fehlerursache und die weiterhin aktive bisherige Referenz
 eindeutig sichtbar; interne JavaScript-Stacktraces werden nicht in die Oberfläche übernommen.
 

@@ -23,7 +23,10 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Ausschluss ausschließlich der gebundenen neuen CoL-Gegenstücke und erneute offene Prüfung geänderter Belege.
    Beide Bündel können vor einem einzigen frischen Kandidatenaufbau vorgemerkt werden. Unentschiedene Fälle und
    andere Konflikte bleiben gesperrt; keine automatische Aktivierung oder Fotomigration.
-   Noch offen: beide Update-Einstiege vereinheitlichen und den vollständigen Weg gesondert abnehmen.
+   Vierte Stufe implementiert: beide Update-Einstiege verwenden denselben bestätigten Quellen-/Master-/Paketweg,
+   gemeinsame Sperre und frischen Gesamtabschluss. Vorhandene lokale Arbeit hat Vorrang; Quellenimport allein
+   meldet keinen Erfolg des Gesamtupdates. Automatisierte Abbruch-/Fehler-/Wiederholungswege geprüft.
+   Noch offen: nächsten Quellenlauf gesondert planen/freigeben und den vollständigen Weg praktisch abnehmen.
    Keine Freigabe eines produktiven Quellenupdates; Details: [Updatevertrag](taxonomy-reference-update.md).
 2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.

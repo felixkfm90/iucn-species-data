@@ -44,40 +44,6 @@
     ].filter(Boolean).join("\n");
   }
 
-  function referenceCountsText(reference) {
-    const counts = reference?.counts || {};
-    const values = [
-      ["taxa", "Taxa"],
-      ["scientificNames", "wissenschaftliche Namen"],
-      ["vernacularNames", "gebräuchliche Namen"],
-    ]
-      .filter(([key]) => Number.isFinite(Number(counts[key])))
-      .map(([key, label]) => `${Number(counts[key]).toLocaleString("de-DE")} ${label}`);
-    const skippedUnknownTaxa = Number(counts.vernacularNamesSkippedUnknownTaxa);
-    if (Number.isFinite(skippedUnknownTaxa) && skippedUnknownTaxa > 0) {
-      values.push(
-        `${skippedUnknownTaxa.toLocaleString("de-DE")} nicht zuordenbare Namen übersprungen`,
-      );
-    }
-    return values.length ? values.join(" · ") : "";
-  }
-
-  function updateRunKey(status) {
-    return [
-      String(status?.releaseId || ""),
-      String(status?.startedAt || ""),
-    ].join("|");
-  }
-
-  function updateCompletionKey(status) {
-    if (status?.status !== "completed" || status?.action !== "update") return "";
-    return [
-      String(status.releaseId || ""),
-      String(status.startedAt || ""),
-      String(status.completedAt || ""),
-    ].join("|");
-  }
-
   function createTaxonomyMaintenanceController({
     state,
     elements,
@@ -89,8 +55,6 @@
   } = {}) {
     let preview = null;
     let pollTimer = null;
-    let observedUpdateRun = "";
-    let acknowledgedCompletion = "";
     let startupOfferEnabled = false;
     let startupOfferHandled = false;
     let startupOfferPending = false;
@@ -143,53 +107,16 @@
       `;
     }
 
-    function showCompletedUpdate(status) {
-      if (status.active && status.action === "update") {
-        observedUpdateRun = updateRunKey(status);
-        return;
-      }
-      const completionKey = updateCompletionKey(status);
-      if (!completionKey || !observedUpdateRun || completionKey === acknowledgedCompletion) return;
-      if (updateRunKey(status) !== observedUpdateRun) return;
-      acknowledgedCompletion = completionKey;
-      observedUpdateRun = "";
-      const release = status.reference?.source || status.latest || {
-        releaseId: status.releaseId,
-      };
-      const counts = referenceCountsText(status.reference);
-      const catalogueChanged = status.updateCatalogue === true;
-      setActionMessage(
-        catalogueChanged
-          ? "Taxonomiedatenbank erfolgreich aktualisiert."
-          : "Namensbestand erfolgreich aktualisiert.",
-        "success",
-      );
-      void showQuickConfirm({
-        eyebrow: "Taxonomiedatenbank",
-        title: catalogueChanged
-          ? "Neue Datenbank erfolgreich übernommen"
-          : "Namensbestand erfolgreich aktualisiert",
-        message: [
-          catalogueChanged ? `${releaseLabel(release)} ist jetzt aktiv.` : "",
-          counts ? `Enthalten: ${counts}.` : "",
-          status.message,
-          "Bestehende Projektdaten wurden nicht automatisch verändert.",
-        ].filter(Boolean).join(" "),
-        confirmLabel: "Verstanden",
-        cancelLabel: "",
-      });
-    }
-
     function render(status) {
       state.taxonomyMaintenanceSnapshot = status;
       state.renderTaxonomyDatabaseOverview?.();
-      const active = status.active === true;
+      const active = status.active === true || state.taxonomyDatabaseBusy === true || state.taxonomyMasterSnapshot?.active === true;
       const completedUpdate = status.status === "completed" && status.action === "update";
       const failedUpdate = status.status === "failed" && status.action === "update";
       const reference = status.reference || {};
       const latest = status.latest;
       const activeLabel = reference.available
-        ? "Datenbank aktuell"
+        ? "Lokale Referenz verfügbar"
         : "Noch keine lokale Taxonomiedatenbank installiert.";
       const latestLabel = latest
         ? `Neueste verfügbare Version: ${releaseLabel(latest)}.`
@@ -203,8 +130,8 @@
           ? "Taxonomie-Aktualisierung fehlgeschlagen"
           : completedUpdate
             ? status.updateCatalogue
-              ? "Taxonomiedatenbank erfolgreich aktualisiert"
-              : "Namensbestand erfolgreich aktualisiert"
+              ? "CoL-Referenz vorbereitet"
+              : "Ergänzungsnamen vorbereitet"
             : activeLabel;
       elements.taxonomyMaintenanceDetail.textContent = active
         ? "Die bestehende Referenz bleibt bis zur erfolgreichen Aktivierung erhalten."
@@ -217,8 +144,8 @@
             ].filter(Boolean).join(" ")
             : latestLabel;
 
-      elements.taxonomyMaintenanceProgress.hidden = !active;
-      if (active) {
+      elements.taxonomyMaintenanceProgress.hidden = status.active !== true;
+      if (status.active === true) {
         const measured = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ reference: status });
         if (measured?.percent !== null && measured?.percent !== undefined) {
           elements.taxonomyMaintenanceProgress.value = measured.percent;
@@ -243,7 +170,6 @@
       if (active) renderDatabaseStatus("taxonomy");
       else renderDatabaseStatus();
 
-      showCompletedUpdate(status);
       void maybeOfferStartupUpdate(status);
       clearTimeout(pollTimer);
       pollTimer = active || (!status.latestCheckedAt && !status.latestCheckError)
@@ -262,17 +188,12 @@
       }
     }
 
-    async function beginUpdate(result) {
-      const status = await fetchJson("/api/taxonomy/update/start", {
-        method: "POST",
-        body: JSON.stringify({ token: result.token }),
-      });
+    async function beginUpdate(options = {}) {
+      if (typeof state.updateTaxonomyDatabase !== "function") {
+        throw new Error("Die gemeinsame Datenbankaktualisierung ist nicht verfügbar. Bitte den Arten-Explorer neu öffnen; keine reine Quellenaktualisierung wurde gestartet.");
+      }
       preview = null;
-      render(status);
-      setActionMessage(
-        "Taxonomie-Aktualisierung läuft. Das Fenster kann geöffnet bleiben; der Fortschritt wird hier angezeigt.",
-        "info",
-      );
+      await state.updateTaxonomyDatabase(options);
     }
 
     async function maybeOfferStartupUpdate(status) {
@@ -280,6 +201,9 @@
         !startupOfferEnabled
         || startupOfferHandled
         || startupOfferPending
+        || state.taxonomyDatabaseBusy
+        || state.taxonomyMasterSnapshot?.active
+        || typeof state.updateTaxonomyDatabase !== "function"
         || status.active
         || !status.updateAvailable
         || !status.latest
@@ -291,37 +215,7 @@
       try {
         const result = preview?.hasWork ? preview : await createPreview();
         if (!result.hasWork) return;
-        const hasReference = status.reference?.available === true;
-        const confirmed = await showQuickConfirm({
-          eyebrow: "Taxonomiedatenbank",
-          title: result.updateCatalogue
-            ? hasReference
-              ? "Taxonomiedatenbank ist veraltet"
-              : "Keine Taxonomiedatenbank installiert"
-            : "Namensbestand ist veraltet",
-          message: [
-            result.updateCatalogue && hasReference
-              ? `${releaseLabel(result.latest)} ist verfügbar.`
-              : result.updateCatalogue
-                ? `${releaseLabel(result.latest)} kann jetzt installiert werden.`
-                : "",
-            result.warning,
-            result.updateCatalogue
-              ? `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`
-              : "",
-            "Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.",
-          ].filter(Boolean).join(" "),
-          confirmLabel: "Jetzt aktualisieren",
-          cancelLabel: "Später",
-        });
-        if (confirmed) {
-          await beginUpdate(result);
-        } else {
-          setActionMessage(
-            "Die Taxonomiedatenbank kann später unter „Datenbank-Aktionen“ aktualisiert werden.",
-            "info",
-          );
-        }
+        await beginUpdate({ startup: true, sourcePreview: result });
       } catch (error) {
         setActionMessage([error.message, ...(error.details || [])].join(" · "), "error");
       } finally {
@@ -361,32 +255,8 @@
 
     async function startUpdate() {
       try {
-        const result = preview?.hasWork ? preview : await createPreview();
-        if (!result.hasWork) {
-          setActionMessage(
-            "Die Taxonomiedatenbank ist bereits aktuell.",
-            "success",
-          );
-          return;
-        }
-        const confirmed = await showQuickConfirm({
-          eyebrow: "Taxonomiedatenbank",
-          title: result.updateCatalogue
-            ? `${releaseLabel(result.latest)} installieren?`
-            : "Namensbestand aktualisieren?",
-          message: [
-            result.warning,
-            result.updateCatalogue
-              ? `Benötigt werden mindestens ${formatBytes(result.requiredFreeBytes)} freier Speicher.`
-              : "",
-            "Bestehende Arten werden nur geprüft und niemals automatisch umbenannt.",
-          ].filter(Boolean).join(" "),
-          confirmLabel: result.updateCatalogue
-            ? "Download und Import starten"
-            : "Namensbestand aktualisieren",
-        });
-        if (!confirmed) return;
-        await beginUpdate(result);
+        startupOfferHandled = true;
+        await beginUpdate();
       } catch (error) {
         setActionMessage([error.message, ...(error.details || [])].join(" · "), "error");
         await refresh();

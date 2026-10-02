@@ -26,8 +26,10 @@ bleiben unverändert. Passende Fälle können nach gebundener Vorschau gemeinsam
 `Unklare Fälle zurückstellen …` merkt separat vor, die neuen CoL-Gegenstücke vorerst nicht zu übernehmen;
 bisherige Arten, eigene Namen und Projektlinks bleiben erhalten. Beide Rückfragen lassen sich vor einem einzigen
 frischen Kandidatenaufbau erledigen. Geänderte Belege benötigen erneut eine Entscheidung. Kein automatischer
-Aufbau oder Paketwechsel durch die Vormerkung. Der einheitliche Update-Einstieg ist noch offen; deshalb
-weiterhin keinen neuen produktiven Quellenlauf zur Abnahme starten.
+Aufbau oder Paketwechsel durch die Vormerkung. Startangebot und manuelle Datenbank-Aktion verwenden inzwischen
+denselben bestätigten Quellen-/Master-/Paketweg. Quellenimport allein meldet keinen Gesamtabschluss; erst der
+frisch bestätigte passende Master-/Lightroom-Stand. Vorhandene lokale Arbeit hat Vorrang vor neuen Anbieterständen.
+Praktische Gesamtabnahme und gesonderte Startfreigabe bleiben offen; kein produktiver Quellenlauf in diesem Schritt.
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 
 ## Datenfluss und datierter Umsetzungsverlauf
@@ -206,11 +208,13 @@ und semantische Exportvergleiche erfolgreich, 69 geschützte Originaldateien unv
 byteidentisch zum vorher vollständig geprüften engen Kandidaten. Kein neuer Aufbau zur Reparatur erforderlich.
 Keine Foto-/Projektmigration, Bereinigung, Anbieterdownloads oder Commit/Push. Die 2.173 separaten Quellenfälle
 gehören weiterhin in einen eigenen regulären Updatepunkt vor dem Audit.
-Dieser Updatepunkt ist inzwischen in zwei Stufen umgesetzt: kompakte Quellen-/Reichsprüfung mit Freigabesperre
-und bestätigte Bündelvormerkung eindeutig passender CoL-/iNaturalist-Fälle. Ein frischer Kandidat erhält dabei
-die ursprüngliche Master-ID, eigene Namenswahl und Projektlinks; rohe Anbieterangaben bleiben nachvollziehbar.
-Die Bestätigung allein startet keinen Aufbau, Download, Paketwechsel oder Fotoabgleich. Unklare Fälle bleiben
-gesperrt; deren ausdrückliche Zurückstellung und der einheitliche Update-Einstieg sind noch offen.
+Dieser Updatepunkt ist inzwischen in vier Stufen umgesetzt: kompakte Quellen-/Reichsprüfung mit Freigabesperre,
+bestätigte Bündelvormerkung passender CoL-/iNaturalist-Fälle, separate Zurückstellung unklarer Gegenstücke und
+gemeinsamer Update-Einstieg. Ein frischer Kandidat erhält die ursprünglichen IDs, eigene Namen und Projektlinks;
+rohe Anbieterangaben bleiben nachvollziehbar. Beide Bündel können vor einem einzigen Aufbau vorgemerkt werden.
+Die Vormerkung allein startet keinen Aufbau, Download, Paketwechsel oder Fotoabgleich. Unentschiedene Fälle und
+andere Konflikte bleiben gesperrt. Startangebot und manuelle Aktion warten nach Bestätigung auf Master und
+Lightroom-Paket; praktische Gesamtabnahme und gesonderte Freigabe des nächsten Quellenupdates bleiben offen.
 Bedienung, Prüfungen und Grenzen: [regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 **Gezielte praktische Abnahme am 1. Oktober ebenfalls bestätigt:** Felix hat Weissstorch und Rebhuhn im
 Explorer mit den bevorzugten Namen gefunden, in Lightroom erfolgreich zugewiesen und den Erhalt nach
