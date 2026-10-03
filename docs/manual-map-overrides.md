@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-09-27
+Stand: 2026-10-03
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -11,9 +11,19 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind 5 Karten als manuell gepflegt dokumentiert. Grund: IUCN liefert fuer diese Arten korrupte bzw.
-fehlerhafte Kartendaten. Die produktiven Karten duerfen deshalb nicht unbemerkt durch automatisch geladene IUCN-Karten
-ersetzt werden. Die Karten liegen ausschliesslich unter `species-assets/<SafeName>/map.jpg`.
+Aktuell sind fünf Karten durch bestehende manuelle Altmarkierungen geschützt. Die Gründe sind unterschiedlich:
+ein dokumentierter korrupter Kartenstand und vier lokale Browser-/Dateiübernahmen. Ein HTTP-403 beim automatischen
+Abruf belegt keine korrupte sichtbare Karte. Die produktiven Karten dürfen nicht unbemerkt ersetzt werden und
+liegen ausschließlich unter `species-assets/<SafeName>/map.jpg`. Bestehende Markierungen wurden nicht umklassifiziert.
+
+Neue Importe trennen Herkunft, Pflegeart und Schutz. Standard bleibt eigene/manuell bearbeitete Karte.
+Alternativ ausdrücklich `Unveränderte IUCN-Karte aus dem Browser (eigene Bestätigung)` wählen: lokale Datei,
+kanonische Quellenadresse und aktuelle Assessment-ID erforderlich. Diese Herkunft ist `user-declared`, nicht
+unabhängig technisch verifiziert. `careMode: provider` ist keine eigene fachliche Kartenpflege; beide Varianten
+bleiben mit `protectFromPipeline: true` geschützt. Altes `manual: true` schützt zusätzlich und wird durch
+`protectFromPipeline: false` nicht aufgehoben. Kopf/Projektstatus zeigen Schutz, Browserimporte und eigene
+Pflege/Altmarkierungen getrennt. Der automatische IUCN-Download wurde damit nicht repariert; kein neuer
+erfolgreicher maschineller Abruf belegt.
 
 ## Liste
 

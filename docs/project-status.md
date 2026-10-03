@@ -21,7 +21,21 @@ Report-Datenstand: `2026-09-27T17:03:07.173Z`
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Manuell gepflegte Karten (5)
+## Geschützte Karten (5)
+
+- Blaukehlchen
+- Erdbeerfröschchen
+- Grünfink
+- Rebhuhn
+- Rotaugenlaubfrosch
+
+## IUCN-Browserimporte laut Nutzerangabe (0)
+
+- Keine
+
+Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
+
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (5)
 
 - Blaukehlchen
 - Erdbeerfröschchen
