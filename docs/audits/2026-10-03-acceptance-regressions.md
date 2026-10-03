@@ -73,8 +73,14 @@ Deutsche Formatierung und vorhandene Exportstruktur bleiben erhalten.
 
 ## Abschlussgrenzen
 
-Commit und Pages-Nachweis werden nach der freigegebenen Veröffentlichung ergänzt; kein vorweggenommener
-Deployment-Erfolg. Keine neue Anbieterabfrage, produktive Aktivierung, Katalogaktion oder Bereinigung.
+Implementierung und bisherige lokale Serie sind als [f6834fc](https://github.com/felixkfm90/iucn-species-data/commit/f6834fcd54e42b4f1a0e689b497392eb8dfabbbf)
+nach `main` übertragen. Diffstat: **111 Dateien, 7.420 Einfügungen, 387 Löschungen**. Dieser größere Umfang
+enthält auch die bisherige Automatisierungsserie; nicht 111 neue Bedienfehler.
+[Pages-Lauf 37147560397](https://github.com/felixkfm90/iucn-species-data/actions/runs/37147560397)
+vollständig erfolgreich: Linux-Qualitätsgate 2m46s, Build 15s, Deployment 8s. Statusgate nicht umgangen.
+Die neue Veröffentlichungsvorabprüfung besteht nach Codecommit auch auf dem realen Repository.
+Vollständige Dateiliste und Diffs sind im Implementierungscommit verzeichnet.
+Keine neue Anbieterabfrage, produktive Aktivierung, Katalogaktion oder Bereinigung.
 Das passende Taxonomie-/Lightroom-Paar vom 3. Oktober bleibt unverändert.
 Praktisch danach: Plug-in 0.4.24.17 normal neu laden, bewusst gewählte Testfotos mit Orts-/Zeitkeywords
 einschließlich metadatenleerer Altlasten entfernen, drei Auswahlexporte/Defaultnamen ansehen.

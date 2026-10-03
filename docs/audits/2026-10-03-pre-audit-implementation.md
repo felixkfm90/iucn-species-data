@@ -1,6 +1,6 @@
 # Vor-Audit-Umsetzungsprüfung – 3. Oktober 2026
 
-Stand: lokal implementiert und automatisiert geprüft, praktische Gesamtabnahme und Veröffentlichung offen.
+Erster Prüfstand: lokal implementiert und automatisiert geprüft, damals praktische Gesamtabnahme und Veröffentlichung offen.
 Dies ist **kein Phase-10.5-Gesamtaudit**.
 
 Diese erste Umsetzungsprüfung dokumentiert Plug-in 0.4.24.16. Nachfolgende Nutzerbefunde, Korrekturen

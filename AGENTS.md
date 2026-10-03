@@ -19,7 +19,10 @@ Alle drei Statistikexporte mit Defaultnamen und Umfang Katalog/markierte Fotos; 
 beim Statistiköffnen. Plug-in-Quellstand 0.4.24.17. Vollständiges quality:ci bestanden: 50 Gruppen/1.120
 gemeldete Tests, darunter 420 Master- und 231 Lightroomtests, keine Fehler/Abbrüche/Skips. Gezielter
 Plug-in-Vertrag 15/15, funktionale Statistik-Lua-Datei 22/22, Yield-/Entfernung 6/6, Pages-Vorabgrenze 19/19.
-Syntax 374 Dateien, 75 Markdown-Verweise, Stil/Schema/Status/Diff bestanden. Veröffentlichung folgt separat.
+Syntax 374 Dateien, 75 Markdown-Verweise, Stil/Schema/Status/Diff bestanden. Ganze Serie als f6834fc nach main
+übertragen: 111 Dateien, 7.420 Einfügungen, 387 Löschungen. Pages-Lauf 37147560397 vollständig erfolgreich,
+einschließlich Linux-Qualitätsgate, Build und Deployment; Statusgate unverändert aktiv. Vorabprüfung besteht
+nach Codecommit auch im realen Repository. Abschließende Dokumentationsfortschreibung danach getrennt.
 Felix hat Commit/Push der gesamten erfolgreich geprüften lokalen Serie ausdrücklich freigegeben.
 Keine neue Taxonomie-/Katalogaktion, Aktivierung oder Bereinigung. Nachweis:
 docs/audits/2026-10-03-acceptance-regressions.md. Standangaben darunter sind datierte Vorgeschichte.

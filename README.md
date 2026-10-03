@@ -15,6 +15,12 @@ alter versionierter Code) belegt und durch gemeinsame Daten-/Asset-Vorabprüfung
 Nutzerabnahme, Prüfgrenzen und Veröffentlichungsstand:
 [Bedienbefunde und Reparaturen vom 3. Oktober](docs/audits/2026-10-03-acceptance-regressions.md).
 
+Diese Arbeitsserie ist als `f6834fc` veröffentlicht. Der
+[Pages-Lauf 37147560397](https://github.com/felixkfm90/iucn-species-data/actions/runs/37147560397) bestand
+vollständig: Linux-Qualitätsgate, Build und Deployment. Lokales Gesamtgate: 50 Testgruppen, 1.120 gemeldete
+Tests, darunter 420 Master-/Betriebs- und 231 Lightroom-/Pakettests. Neuer SDK-/Sichttest für 0.4.24.17
+bleibt von diesen automatisierten Erfolgen getrennt; kein neuer produktiver Taxonomieaufbau ausgeführt.
+
 Stand: 3. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
 aktiviert. Felix hat bevorzugte Namen, Zuweisung und Erhalt nach Schließen/Wiederöffnen für Weissstorch und
 Rebhuhn bestätigt. Auch das separate reguläre Update auf `COL26.9 XR` ist technisch abgeschlossen:
@@ -35,11 +41,11 @@ Kein neuer produktiver Update-Lauf und noch keine praktische Gesamtabnahme. Vert
 Maßgeblich sind der [kompakte Taxonomie-Betriebsstand](docs/taxonomy-current-status.md), die
 [Roadmap](docs/roadmap.md) und die [Dokumentationsübersicht](docs/README.md). Aktuelle Projekt-/Assetzähler stehen
 ausschließlich im [generierten Projektstatus](docs/project-status.md). Phase 10 und das Gesamtaudit bleiben offen.
-Das vollständige lokale Qualitätsgate bestand am 3. Oktober erneut: 50 Testgruppen, darunter 420 Master-/
+Das erste lokale Qualitätsgate für die vorherige Umsetzung bestand am 3. Oktober: 50 Testgruppen, darunter 420 Master-/
 Betriebs- und 214 Lightroom-/Pakettests. Plug-in-Vertrag zusätzlich separat 15/15. Die gefundene enge
 Reparatur-/Statusregression ist ohne Lockerung der Umfangsprüfung korrigiert und vollständig gegengeprüft.
 [Lokaler Umsetzungsnachweis und verbleibende Abnahme](docs/audits/2026-10-03-pre-audit-implementation.md);
-Git-Übertragung und nachfolgendes Pages-Deployment bleiben getrennte Nachweise.
+Die nachfolgenden Git-/Pages-Nachweise stehen im oben verlinkten Regressionsbericht.
 
 Der folgende datierte Verlauf ist Vorgeschichte. Neue CoL-Einträge in einem anderen Reich zu
 bisherigen Arten mit Referenzlücke erhalten jetzt eine gebündelte Quellenprüfung und sperren die Aktivierung.

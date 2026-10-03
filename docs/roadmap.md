@@ -7,8 +7,8 @@ Stand: 2026-10-03
 Neuester Bedienbefund am 3. Oktober: 1 A bestätigt, Statistikindex bewusst neu aufgebaut, Kartenherkunft
 nach Nutzerwahl geändert. Pages-Statusgenerator-Mix, Orts-/Zeitkeywords nach Entfernung und fehlende
 Auswahlexporte sind beauftragt und in Plug-in 0.4.24.17 korrigiert. Gesamtprüfung bestanden: 50 Gruppen/
-1.120 gemeldete Tests, 420 Master- und 231 Lightroomtests. Freigegebener Commit/Push mit separatem
-Pages-Nachweis folgt; gezielte Lightroom-Sichtabnahme bleibt nötig.
+1.120 gemeldete Tests, 420 Master- und 231 Lightroomtests. Freigegebener Commit/Push f6834fc und
+Pages-Lauf 37147560397 vollständig erfolgreich; gezielte Lightroom-Sichtabnahme bleibt nötig.
 [Aktueller Reparaturnachweis](audits/2026-10-03-acceptance-regressions.md).
 
 **Abgeschlossen:** enge Quellenreparatur, unabhängiger vollständiger Master-/Paketvergleich und die von Felix
@@ -104,7 +104,9 @@ Die gezielte Suche-/Namensabnahme ist damit ebenfalls bestanden, nicht die gesam
    GitHub-Pages-Ergebnis prüfen. Lokales Gesamtgate am 3. Oktober nach Regressionskorrektur bestanden:
    50 Testgruppen, darunter 420 Master-/Betriebs- und 214 Lightroom-/Pakettests; separater Plug-in-Vertrag 15/15.
    [Umsetzungsnachweis und praktische Abnahme](audits/2026-10-03-pre-audit-implementation.md).
-   Push nur nach eigener Freigabe und erfolgreiches Deployment sind getrennte Nachweise; beide für diese Serie offen.
+   Anschließende Bedienkorrekturen in 0.4.24.17 ebenfalls geprüft (231 Lightroomtests) und gesamte Serie nach
+   ausdrücklicher Freigabe als f6834fc veröffentlicht. Pages 37147560397 mit Linux-Gate/Build/Deploy erfolgreich;
+   dieser Veröffentlichungsnachweis ersetzt kein SDK-/Phase-10.5-Audit.
 6. **Letzter IUCN-Prüfpunkt vor dem Audit:** automatischen Kartenabruf und Trennung von Herkunft/Schutzmarkierung
    abschließend bewerten; bestehende manuelle Schutzentscheidungen nicht pauschal ändern. Trennung lokal umgesetzt:
    ausdrücklicher IUCN-Browserimport (`user-declared`) versus eigene Pflege, beide geschützt; getrennte Zähler.

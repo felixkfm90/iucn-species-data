@@ -45,6 +45,10 @@ Button sowie Auswahl-/Katalogexporte mit Defaultnamen in Plug-in 0.4.24.17. Feli
 abgefragten Öffnungscheck, bewussten Statistik-Neuaufbau und eigene Kartenherkunftsänderungen.
 Keine neue produktive Taxonomie-/Katalogaktion. [Befund und Nachweis](audits/2026-10-03-acceptance-regressions.md).
 
+Implementierung f6834fc nach main übertragen; Pages 37147560397 vollständig erfolgreich (Linux-Gate,
+Build und Deployment). Neues lokales Gesamtgate: 50 Gruppen, 1.120 gemeldete Tests, 420 Master- und
+231 Lightroomtests. Die konkrete SDK-/Sichtabnahme von 0.4.24.17 bleibt offen; Datenbankpaar unverändert.
+
 Plug-in **0.4.24.16** und gespeicherter Updatekoordinator verbinden die technische Kette nach einer Startbestätigung.
 Bei offenem/verändertem Lightroom werden neue requestgebundene SDK-Quittungen angefordert. Normales Schließen
 wird nur bestätigt und erst nach Erfassung angefordert; selbst schließen wird im Hintergrund erkannt.
