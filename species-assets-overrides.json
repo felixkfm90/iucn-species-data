@@ -1544,12 +1544,20 @@
       "map": {
         "manual": true,
         "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "154496308",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg"
+        },
         "reason": "Karte als lokale Datei importiert.",
         "source": "https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg",
         "germanName": "Rebhuhn",
         "originalFileName": "T22678911A154496308.jpg",
-        "importedAt": "2026-09-15T15:03:40.041Z",
-        "updatedAt": "2026-09-15T15:03:40.041Z",
+        "importedAt": "2026-10-03T18:37:41.316Z",
+        "updatedAt": "2026-10-03T18:37:41.316Z",
         "sha256": "678256caaeebfdc0863656d1b4e046d2048ef3f64173ed7b1396a374b1be3476"
       }
     },
@@ -1567,12 +1575,20 @@
       "map": {
         "manual": true,
         "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "3028059",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg"
+        },
         "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
         "source": "https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg",
         "germanName": "Rotaugenlaubfrosch",
         "originalFileName": "T55290A3028059.jpg",
-        "importedAt": "2026-09-26T07:28:50.878Z",
-        "updatedAt": "2026-09-26T07:28:50.878Z",
+        "importedAt": "2026-10-03T18:37:11.237Z",
+        "updatedAt": "2026-10-03T18:37:11.237Z",
         "sha256": "a8d66b0f6b9b4945a2d921dadf71a3bf8be123830cb2a9a8d671462ca4462746"
       },
       "sound": {
@@ -1602,12 +1618,20 @@
       "map": {
         "manual": true,
         "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "3025630",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg"
+        },
         "reason": "Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.",
         "source": "https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg",
         "germanName": "Erdbeerfröschchen",
         "originalFileName": "T55196A3025630.jpg",
-        "importedAt": "2026-09-27T07:41:26.065Z",
-        "updatedAt": "2026-09-27T07:41:26.065Z",
+        "importedAt": "2026-10-03T18:38:13.170Z",
+        "updatedAt": "2026-10-03T18:38:13.170Z",
         "sha256": "11f23fc68c612e38466c72dfebc30c2b7fec77f012bb1b2f262dff745cebe85a"
       },
       "sound": {

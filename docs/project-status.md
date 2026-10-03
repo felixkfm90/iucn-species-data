@@ -5,7 +5,7 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-10-03T18:35:33.683Z`
+Report-Datenstand: `2026-10-03T18:38:13.255Z`
 
 | Bereich | Anzahl |
 |---|---:|
@@ -29,18 +29,18 @@ Report-Datenstand: `2026-10-03T18:35:33.683Z`
 - Rebhuhn
 - Rotaugenlaubfrosch
 
-## IUCN-Browserimporte laut Nutzerangabe (1)
+## IUCN-Browserimporte laut Nutzerangabe (4)
 
+- Erdbeerfröschchen
 - Grünfink
+- Rebhuhn
+- Rotaugenlaubfrosch
 
 Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
 
-## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (4)
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (1)
 
 - Blaukehlchen
-- Erdbeerfröschchen
-- Rebhuhn
-- Rotaugenlaubfrosch
 
 ## Aktive NC-Soundlizenzen (12)
 
