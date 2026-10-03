@@ -7,6 +7,7 @@ import { pruneAssetBackups, writeManagedAssetBackup } from "./asset-backups.mjs"
 import { findEditableSpecies } from "./species-model.mjs";
 import { synchronizeManualMapDocumentation } from "./manual-map-documentation.mjs";
 import { inspectJpeg, validateMapPreviewPayload } from "./media-assets.mjs";
+import { createMapImportCare } from "../scripts/map-provenance.mjs";
 
 export function createMapAssetOperations({
   repoRoot,
@@ -114,6 +115,11 @@ export function createMapAssetOperations({
       error.statusCode = species ? 409 : 404;
       throw error;
     }
+    let care;
+    try { care = createMapImportCare(payload, species); } catch (error) {
+      error.statusCode = 400;
+      throw error;
+    }
     const validated = await validateMapPreviewPayload(payload, { repoRoot, mapImageRenderer });
     if (validated.errors.length) {
       const error = new Error("Karten-Datei oder Angaben sind ungültig");
@@ -143,6 +149,7 @@ export function createMapAssetOperations({
       safeName: species.safeName,
       reason: validated.reason,
       source: validated.source,
+      care,
       originalName: validated.originalName,
       stagingPath,
       sha256,
@@ -175,9 +182,13 @@ export function createMapAssetOperations({
       },
       reason: validated.reason,
       source: validated.source,
+      careMode: care.importMode,
+      provenance: care.provenance,
       warnings: [
         "Die vorhandene Karte wird vor dem Austausch lokal gesichert.",
-        "Die neue Karte wird als manuell gepflegt markiert und vor automatischen Pipeline-Updates geschützt.",
+        care.importMode === "iucn-browser"
+          ? "IUCN-Browserimport laut eigener Bestätigung; Bildherkunft und Unverändertheit sind nicht technisch verifiziert. Automatischer Ersatz bleibt gesperrt."
+          : "Eigene Pflege; die Karte bleibt vor automatischen Pipeline-Updates geschützt.",
         publishAssetChanges
           ? "Nach erfolgreichem Speichern werden Karte, Register und Dokumentation automatisch committed und gepusht."
           : "Speichern bleibt lokal. Veröffentlicht wird später mit Änderungen übertragen.",
@@ -212,6 +223,23 @@ export function createMapAssetOperations({
     if (!species?.inInput || species.safeName !== preview.safeName) {
       previewTokens.delete(token);
       const error = new Error("Art ist nicht mehr im erwarteten Zustand");
+      error.statusCode = 409;
+      throw error;
+    }
+    if (payload?.careMode !== undefined && payload.careMode !== preview.care.importMode) {
+      const error = new Error("Pflegewahl wurde seit der Vorschau geändert. Bitte erneut prüfen.");
+      error.statusCode = 409;
+      throw error;
+    }
+    try {
+      const currentCare = createMapImportCare({
+        careMode: preview.care.importMode, imageBase64: "preview-bound-file",
+        originalName: preview.originalName, source: preview.source,
+      }, species);
+      if (preview.care.importMode === "iucn-browser"
+        && JSON.stringify(currentCare) !== JSON.stringify(preview.care)) throw new Error("Bewertung geändert");
+    } catch {
+      const error = new Error("IUCN-Bewertung wurde seit der Vorschau geändert. Bitte erneut prüfen.");
       error.statusCode = 409;
       throw error;
     }
@@ -277,6 +305,8 @@ export function createMapAssetOperations({
       registry.assets[species.safeName].map = {
         manual: true,
         protectFromPipeline: true,
+        careMode: preview.care.careMode,
+        provenance: preview.care.provenance,
         reason: preview.reason,
         source: preview.source,
         germanName: species.germanName,

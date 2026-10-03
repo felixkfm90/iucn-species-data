@@ -101,14 +101,12 @@ end
 
 local LocationTimeMenu = {}
 
-function LocationTimeMenu.run(mode)
+function LocationTimeMenu.runForPhotos(catalog, photos, mode)
   local action = ACTIONS[mode]
   if not action then
     error("Unbekannte Orts-/Zeitaktion: " .. tostring(mode))
   end
-  LrTasks.startAsyncTask(function()
-    local catalog = LrApplication.activeCatalog()
-    local photos = catalog:getTargetPhotos() or {}
+    photos = photos or {}
     if #photos == 0 then
       LrDialogs.message(
         "Keine Fotos ausgewählt",
@@ -129,12 +127,15 @@ function LocationTimeMenu.run(mode)
     if choice ~= "ok" then
       return
     end
-    -- Lightroom-Metadatenabfragen dürfen yielden und müssen deshalb vor der
-    -- pcall-Grenze ausgeführt werden.
-    local plans, preparation = LocationTimeWriter.prepare(catalog, photos, {
-      resolveSuggestedLocations = mode ~= "remove",
-      skipExisting = mode == "add",
-    })
+    -- Entfernen braucht keine GPS-/Zeitlesung oder Exportvorschläge, auch
+    -- dann nicht, wenn nach einer früheren Rücknahme nur Stichwörter bleiben.
+    local plans, preparation = {}, nil
+    if mode ~= "remove" then
+      plans, preparation = LocationTimeWriter.prepare(catalog, photos, {
+        resolveSuggestedLocations = true,
+        skipExisting = mode == "add",
+      })
+    end
     if preparation and preparation.canceled then
       LrDialogs.message(
         "Orts- und Zeitstichwörter abgebrochen",
@@ -157,9 +158,20 @@ function LocationTimeMenu.run(mode)
         tostring(result),
         "warning"
       )
-      return
+      return nil, tostring(result)
     end
     LrDialogs.message(action.success, resultMessage(result, mode), "info")
+    return result
+end
+
+function LocationTimeMenu.run(mode)
+  LrTasks.startAsyncTask(function()
+    local catalog = LrApplication.activeCatalog()
+    local photos = catalog:getTargetPhoto() and catalog:getTargetPhotos() or {}
+    local ok, result = LrTasks.pcall(LocationTimeMenu.runForPhotos, catalog, photos, mode)
+    if not ok then
+      LrDialogs.message("Orts- und Zeitstichwörter konnten nicht verarbeitet werden", tostring(result), "warning")
+    end
   end)
 end
 

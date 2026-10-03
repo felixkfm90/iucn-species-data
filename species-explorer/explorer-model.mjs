@@ -8,6 +8,7 @@ import {
   repoRelativePath,
 } from "./asset-backups.mjs";
 import { SPECIES_ASSET_FILE_NAMES } from "./asset-files.mjs";
+import { mapCareState } from "../scripts/map-provenance.mjs";
 import {
   compareReportList,
   compareValues,
@@ -259,9 +260,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     const soundOverride = assetOverrides.assets?.[safeName]?.sound;
     const spectrogramOverride = assetOverrides.assets?.[safeName]?.spectrogram;
     const portraitOverride = assetOverrides.assets?.[safeName]?.portrait;
-    const isManualMap = typeof mapOverride?.manual === "boolean"
-      ? mapOverride.manual
-      : manualMapSafeNames.has(safeName);
+    const mapCare = mapCareState(mapOverride, manualMapSafeNames.has(safeName));
+    const isManualMap = mapCare.protectedFromPipeline;
     const isManualSound = soundOverride?.manual === true;
     const soundMissingKnown =
       Boolean(generated)
@@ -381,6 +381,11 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
           ...map,
           url: `/assets/${encodeURIComponent(safeName)}/map.jpg`,
           manuallyAdded: isManualMap,
+          browserImported: mapCare.browserImported,
+          ownCare: mapCare.ownCare,
+          careMode: mapCare.careMode,
+          provenance: mapCare.provenance,
+          protectFromPipeline: mapCare.protectedFromPipeline,
           manualReason: mapOverride?.reason ?? "",
           source: mapOverride?.source ?? "",
           sha256: mapOverride?.sha256 ?? "",
@@ -585,6 +590,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     },
     special: {
       manualMapCount: species.filter((entry) => entry.isManualMap).length,
+      browserImportedMapCount: species.filter((entry) => entry.assets.map.browserImported).length,
+      ownCareMapCount: species.filter((entry) => entry.assets.map.ownCare).length,
       manualSoundCount: species.filter((entry) => entry.isManualSound).length,
       soundCareCount: species.filter((entry) => entry.soundCareHint).length,
       missingSoundKnownCount: species.filter((entry) => entry.soundMissingKnown).length,
@@ -602,6 +609,8 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
     validationIssueSpecies: species.filter((entry) => entry.inconsistencies.length > 0).length,
     ncSoundCount: species.filter((entry) => entry.isNcSound).length,
     manualMapCount: species.filter((entry) => entry.isManualMap).length,
+    browserImportedMapCount: species.filter((entry) => entry.assets.map.browserImported).length,
+    ownCareMapCount: species.filter((entry) => entry.assets.map.ownCare).length,
     manualSoundCount: species.filter((entry) => entry.isManualSound).length,
     soundCareCount: species.filter((entry) => entry.soundCareHint).length,
     missingSoundKnownCount: species.filter((entry) => entry.soundMissingKnown).length,

@@ -21,7 +21,8 @@ const shape = (row) => canonicalBuildInput({ name: normalized(row.scientificName
 // changes. Then the old graph is also the current graph. Changed values still
 // invalidate their full consumer closure; uncertain/stateful taxa are rebuilt.
 export async function prepareMasterReuse({ directory, previousDirectory, previousManifest, buildInputs,
-  recordLocations, onProgress, enabled = true }) {
+  recordLocations, protectedMasterIds = [], onProgress, enabled = true }) {
+  const protectedIds = new Set(protectedMasterIds);
   const disabled = (reason) => ({ available: false, reason, close() {} });
   if (!enabled) return disabled("explicit-full-build");
   if (!buildInputs.available) return disabled("no-current-input-baseline");
@@ -81,7 +82,7 @@ export async function prepareMasterReuse({ directory, previousDirectory, previou
     retained = true;
     return { available: true, reason: "stable-dependency-graph", reusedTaxa: 0, searchSourcePath: oldPath, dependencyPlan,
       copyIfEligible(database, { group, masterTaxonId, releases, timestamp }) {
-        if (!eligible.get(masterTaxonId) || group.projects.length || group.corrections.length
+        if (protectedIds.has(masterTaxonId) || !eligible.get(masterTaxonId) || group.projects.length || group.corrections.length
             || group.identityFresh || group.identityContinuation || group.previousTaxon?.master_taxon_id !== masterTaxonId) return false;
         if (!copy(database, group, masterTaxonId, releases, timestamp)) return false;
         this.reusedTaxa += 1;

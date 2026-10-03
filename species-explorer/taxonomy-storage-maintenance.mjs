@@ -6,6 +6,7 @@ import { availableTaxonomySpace } from "./taxonomy-space-budget.mjs";
 import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { acquireMasterJobLock } from "./taxonomy-master-job.mjs";
 import { sha256File } from "./lightroom-search-storage.mjs";
+import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const PAIR = new RegExp(`^publication-${UUID}$`, "u");
@@ -42,18 +43,55 @@ async function children(directory, pattern) {
 async function tree(directory) {
   const hash = crypto.createHash("sha256");
   let bytes = 0, modified = 0;
-  const files = [];
+  const files = [], entries = [];
   async function visit(filename) {
     const stat = await fs.lstat(filename);
     if (stat.isSymbolicLink() || (!stat.isFile() && !stat.isDirectory())) throw new Error("Unbekannter oder verknüpfter Eintrag; bleibt erhalten.");
-    hash.update(JSON.stringify([path.relative(directory, filename), stat.size, stat.mtimeMs, stat.ino]));
+    const entry = [path.relative(directory, filename).split(path.sep).join("/"), stat.size, stat.mtimeMs, stat.ino, stat.isDirectory()];
+    entries.push(entry);
+    hash.update(JSON.stringify(entry));
     modified = Math.max(modified, stat.mtimeMs);
     if (stat.isFile()) { bytes += stat.size; files.push(path.relative(directory, filename).split(path.sep).join("/")); }
     else for (const entry of (await fs.readdir(filename)).sort()) await visit(path.join(filename, entry));
   }
   await noLinks(directory);
   await visit(directory);
-  return { bytes, modified, files, fingerprint: hash.digest("hex") };
+  return { bytes, modified, files, entries, fingerprint: hash.digest("hex") };
+}
+
+function cleanupReceiptPath(taxonomyRoot, id) {
+  if (!PAIR.test(id)) throw new Error("Ungültige Paarkennung für die Bereinigungsquittung.");
+  return path.join(taxonomyRoot, "master", "storage-cleanups", `${id}.json`);
+}
+async function snapshotOrMissing(directory) {
+  await noLinks(directory);
+  try { await fs.lstat(directory); }
+  catch (error) { if (error.code === "ENOENT") return null; throw error; }
+  return tree(directory);
+}
+function verifyCleanupReceipt(receipt, taxonomyRoot, searchRoot, id) {
+  if (receipt.schemaVersion !== 1 || receipt.id !== id || receipt.kind !== "pair"
+    || receipt.taxonomyRoot !== taxonomyRoot || receipt.searchRoot !== searchRoot
+    || !/^[a-f0-9]{64}$/u.test(receipt.confirmedRevision || "")
+    || receipt.revision !== digest({ ...receipt, revision: undefined })
+    || !Array.isArray(receipt.snapshots) || receipt.snapshots.length !== 2
+    || receipt.snapshots.some((snapshot, index) => !snapshot || !Array.isArray(snapshot.entries)
+      || !Array.isArray(snapshot.files) || snapshot.files.some((file) => !managedFile("pair", file, index))
+      || snapshot.entries.some((entry) => !Array.isArray(entry) || entry.length !== 5))) {
+    throw new Error("Unvollständige oder veränderte Bereinigungsquittung; Restbestand bleibt geschützt.");
+  }
+}
+function verifyRemainingSnapshot(snapshot, original) {
+  if (!snapshot) return; // Only an already missing, internally derived directory.
+  const expected = new Map(original.entries.map((entry) => [entry[0], entry]));
+  for (const entry of snapshot.entries) {
+    const before = expected.get(entry[0]);
+    // Deletion changes directory size/mtime, never its identity or retained files.
+    if (!before || before[4] !== entry[4] || before[3] !== entry[3]
+      || (!entry[4] && JSON.stringify(before) !== JSON.stringify(entry))) {
+      throw new Error("Restbestand seit der bestätigten Bereinigung verändert; bleibt geschützt.");
+    }
+  }
 }
 
 function managedFile(kind, file, index) {
@@ -103,15 +141,21 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
     }
   } catch (error) { protectAllPairs = true; warnings.push(`${error.message}. Ältere Datenbankpaare bleiben geschützt.`); }
   const cutoff = now().getTime() - TAXONOMY_RETENTION.minimumAgeDays * DAY;
-  async function item(kind, id, directories, verify) {
-    const row = { kind, id, directories, bytes: 0, modified: 0, fingerprints: [], reason: "", eligible: false };
+  async function item(kind, id, directories, verify, receipt = null) {
+    const row = { kind, id, directories, bytes: 0, modified: 0, fingerprints: [], snapshots: [],
+      cleanupReceipt: receipt, reason: "", eligible: false };
     try {
       for (const [index, directory] of directories.entries()) {
-        const snapshot = await tree(directory);
-        row.bytes += snapshot.bytes; row.modified = Math.max(row.modified, snapshot.modified);
-        row.fingerprints.push(snapshot.fingerprint);
-        if (snapshot.files.some((file) => !managedFile(kind, file, index))) throw new Error("Enthält nicht vom Aufbau verwaltete Dateien");
+        const snapshot = receipt ? await snapshotOrMissing(directory) : await tree(directory);
+        if (receipt) verifyRemainingSnapshot(snapshot, receipt.snapshots[index]);
+        row.snapshots.push(snapshot);
+        row.bytes += snapshot?.bytes || 0; row.modified = Math.max(row.modified, snapshot?.modified || 0);
+        row.fingerprints.push(snapshot?.fingerprint || null);
+        if (snapshot?.files.some((file) => !managedFile(kind, file, index))) throw new Error("Enthält nicht vom Aufbau verwaltete Dateien");
       }
+      // Own partial deletion updates directory mtimes. The original confirmed
+      // age remains valid only while every retained entry still matches.
+      if (receipt) row.modified = Math.max(...receipt.snapshots.map((snapshot) => snapshot.modified));
       await verify(row);
     } catch (error) { row.reason = `Nicht sicher prüfbar: ${error.message}`; }
     items.push(row); return row;
@@ -149,13 +193,19 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
   const masterReleases = path.join(taxonomyRoot, "master", "releases"), searchReleases = path.join(searchRoot, "releases");
   const pairIds = new Set([...await children(masterReleases, PAIR), ...await children(searchReleases, PAIR)]);
   for (const id of pairIds) {
+    let receipt = null, receiptError;
+    try {
+      receipt = await readJson(cleanupReceiptPath(taxonomyRoot, id));
+      if (receipt) verifyCleanupReceipt(receipt, taxonomyRoot, searchRoot, id);
+    } catch (error) { receipt = null; receiptError = error; }
     await item("pair", id, [path.join(masterReleases, id), path.join(searchReleases, id)], async (row) => {
+      if (receiptError) throw receiptError;
       const master = await readJson(path.join(row.directories[0], "manifest.json"));
       const search = await readJson(path.join(row.directories[1], "manifest.json"));
-      if (!master?.candidateId || !search?.packageId || search.masterVersion !== master.candidateId) row.reason = "Unvollständiges oder fremdes Datenbankpaar";
-      else if (protectedPairs.has(id)) row.reason = "Aktiv, direkter Rückweg oder von einem Auftrag benötigt";
+      if (protectedPairs.has(id)) row.reason = "Aktiv, direkter Rückweg oder von einem Auftrag benötigt";
       else if (protectAllPairs) row.reason = "Abhängigkeiten eines Auftrags sind unklar";
-    });
+      else if (!receipt && (!master?.candidateId || !search?.packageId || search.masterVersion !== master.candidateId)) row.reason = "Unvollständiges oder fremdes Datenbankpaar";
+    }, receipt);
   }
   const pairs = items.filter((row) => row.kind === "pair" && !row.reason).sort((a, b) => b.modified - a.modified || a.id.localeCompare(b.id));
   for (const [index, row] of pairs.entries()) {
@@ -204,18 +254,46 @@ export function createTaxonomyStorageMaintenance({ taxonomyRoot, searchRoot, con
         const plan = await inspect(options);
         if (plan.revision !== revision) throw new Error("Der Datenbestand wurde seit der Vorschau geändert. Bitte erneut prüfen; es wurde nichts entfernt.");
         const removed = [], failed = [];
+        let freedBytes = 0;
         for (const row of plan.items.filter((entry) => entry.eligible)) {
+          let rowFreedBytes = 0;
           try {
+            if (row.kind === "pair" && !row.cleanupReceipt) {
+              const receipt = { schemaVersion: 1, kind: "pair", id: row.id,
+                taxonomyRoot: path.resolve(taxonomyRoot), searchRoot: path.resolve(searchRoot),
+                confirmedRevision: revision, confirmedAt: now().toISOString(),
+                snapshots: row.snapshots };
+              receipt.revision = digest(receipt);
+              const filename = cleanupReceiptPath(taxonomyRoot, row.id);
+              await noLinks(filename);
+              await atomicWriteJson(filename, receipt);
+            }
             // Only internally derived, enumerated UUID children are ever removed.
             for (const [index, directory] of row.directories.entries()) {
-              await noLinks(directory);
-              if ((await tree(directory)).fingerprint !== row.fingerprints[index]) throw new Error("Eintrag wurde während der Bereinigung verändert; bleibt erhalten.");
-              await remove(directory);
+              const before = await snapshotOrMissing(directory);
+              if ((before?.fingerprint || null) !== row.fingerprints[index]) throw new Error("Eintrag wurde während der Bereinigung verändert; bleibt erhalten.");
+              if (!before) continue;
+              try {
+                await remove(directory);
+                if (await snapshotOrMissing(directory)) throw new Error("Eintrag wurde nicht vollständig entfernt.");
+                rowFreedBytes += before.bytes;
+              } catch (error) {
+                // A native recursive removal can fail after deleting some files.
+                const remaining = await snapshotOrMissing(directory).catch(() => before);
+                rowFreedBytes += Math.max(0, before.bytes - (remaining?.bytes || 0));
+                throw error;
+              }
+            }
+            if (row.kind === "pair") {
+              const filename = cleanupReceiptPath(taxonomyRoot, row.id);
+              await noLinks(filename);
+              await fs.unlink(filename);
             }
             removed.push({ kind: row.kind, id: row.id, bytes: row.bytes });
-          } catch (error) { failed.push({ kind: row.kind, id: row.id, error: error.message }); }
+          } catch (error) { failed.push({ kind: row.kind, id: row.id, error: error.message, freedBytes: rowFreedBytes }); }
+          freedBytes += rowFreedBytes;
         }
-        return { removed, failed, freedBytes: removed.reduce((sum, row) => sum + row.bytes, 0) };
+        return { removed, failed, freedBytes };
       });
     },
   };

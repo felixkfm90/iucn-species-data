@@ -36,6 +36,25 @@
     const referenceActive = reference.active === true;
     const pending = job.available === true && job.status !== "ready";
     const running = referenceActive || master.active === true || ACTIVE.has(master.status);
+    const workflow = master.updateWorkflow;
+    const workflowOpen = Boolean(workflow?.updateRunId && !["completed", "idle"].includes(workflow.status));
+    if (workflowOpen && !running && (!pending || workflow.phase === "sources")) {
+      const states = { "waiting-lightroom": "Warte auf Lightroom-Schließung", "waiting-usage": "FN-Nutzung prüfen",
+        "waiting-decisions": "Entscheidung erforderlich", paused: "pausiert", interrupted: "unterbrochen", failed: "fehlgeschlagen" };
+      const state = states[workflow.status] || "läuft";
+      const phaseSteps = { sources: 1, build: 3, "resume-build": 3, candidate: 4, package: 5, activation: 7 };
+      const waiting = ["waiting-lightroom", "waiting-usage"].includes(workflow.status);
+      const step = waiting ? null : phaseSteps[workflow.phase] || null;
+      const stage = step ? BUILD_STEPS[step - 1] : state;
+      const phase = workflow.phase === "sources" ? REFERENCE_PHASES[reference.phase] || "Quellenprüfung" : "";
+      const detail = [step ? `Schritt ${step} von ${BUILD_STEPS.length}` : "", stage,
+        phase, state !== stage ? state : "", text(workflow.message), text(workflow.error)].filter(Boolean).join(" · ");
+      return { step, totalSteps: BUILD_STEPS.length, stage, phase, percent: null,
+        detail, compact: `Datenbank-Update\n${step ? `${step}/${BUILD_STEPS.length} ${stage} · ` : ""}${state}`,
+        state, running: workflow.active === true, completed: false,
+        sourceFailure: workflow.phase === "sources" && ["failed", "interrupted"].includes(workflow.status),
+        className: workflow.error || workflow.status === "failed" ? "failed" : "review" };
+    }
     // A source failure ends before Master work begins. A consumed ready job
     // must not lend its old "Abschluss" phase or action to this failed update.
     const sourceFailure = reference.status === "failed" && !running && !pending
@@ -53,7 +72,7 @@
     const stopped = !referenceInFocus && STOPPED[status];
     const pairCurrent = master.lightroomPackage?.status === "current"
       && !master.reference?.needsMasterRebuild && !master.corrections?.pending && !master.identities?.pending;
-    const completed = !busy && !sourcesAwaitMaster && !running && !failed && !pending && !candidate
+    const completed = !workflowOpen && !busy && !sourcesAwaitMaster && !running && !failed && !pending && !candidate
       && master.status === "completed" && pairCurrent;
     const unfinished = !busy && !running && master.status === "completed" && !completed;
     if (!running && !pending && !candidate && !failed && !busy && !completed && !unfinished) return null;

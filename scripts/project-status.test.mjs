@@ -23,8 +23,21 @@ test("rendert aktuelle Zähler und sortierte Pflegehinweise deterministisch", ()
     knownMissingSounds: ["Grüner Leguan"],
   });
   assert.match(markdown, /Aktive Arten \| 2/);
-  assert.match(markdown, /Manuell gepflegte Karten \(1\)[\s\S]*- Amsel/);
+  assert.match(markdown, /Geschützte Karten \(1\)[\s\S]*- Amsel/);
+  assert.match(markdown, /IUCN-Browserimporte laut Nutzerangabe \(0\)/);
+  assert.match(markdown, /Eigene Kartenpflege einschließlich bestehender Altmarkierungen \(1\)/);
   assert.match(markdown, /Aktive NC-Soundlizenzen \(1\)[\s\S]*- Löwe/);
   assert.match(markdown, /Bewusst fehlende Tierstimmen \(1\)[\s\S]*- Grüner Leguan/);
   assert.ok(markdown.endsWith("\n"));
+});
+
+test("Browserimport wird getrennt von eigener Pflege und Schutzstatus dargestellt", () => {
+  const markdown = renderProjectStatus({ reportGeneratedAt: "fixture", counts: {},
+    manualMaps: ["Amsel", "Rebhuhn"], browserImportedMaps: ["Rebhuhn"], ownCareMaps: ["Amsel"],
+    ncSounds: [], knownMissingSounds: [],
+  });
+  assert.match(markdown, /Geschützte Karten \(2\)/);
+  assert.match(markdown, /IUCN-Browserimporte laut Nutzerangabe \(1\)\s+- Rebhuhn/);
+  assert.match(markdown, /Eigene Kartenpflege einschließlich bestehender Altmarkierungen \(1\)\s+- Amsel/);
+  assert.match(markdown, /kein technischer Bildnachweis/);
 });

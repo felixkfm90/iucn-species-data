@@ -1,6 +1,6 @@
 # Taxonomie: Aufbewahrung und Speicherplatz
 
-Stand: 2026-10-01
+Stand: 2026-10-03
 
 Status: implementiert und mit isolierten Datenbanken/Dateibeständen geprüft. Keine produktiven Dateien für
 diese Umsetzung gelöscht. Der vollständige Betriebs-/Großbestandstest steht weiterhin aus.
@@ -12,6 +12,12 @@ Nachweise sind keine zusätzlichen pauschal freigegebenen Backups; der aktuelle 
 enthält keine Löschfreigabe. Jede spätere Bereinigung braucht ihren eigenen frischen, unveränderten Vorschauplan.
 
 ## Aufbewahrungsentscheidung
+
+Ergänzung am 3. Oktober: Eine bestätigte Paarbereinigung speichert vor dem ersten Entfernen eine gebundene
+Quittung unter `master/storage-cleanups`. Nach einem Teilfehler nennt sie tatsächlich entfernte Bytes.
+Nur belegte unveränderte Reste können nach frischer Vorschau und erneuter Bestätigung fortgesetzt werden;
+aktive/vorherige Paare und benötigte Aufträge bleiben erneut geschützt. Unbekannte oder manipulierte Reste
+werden nicht freigegeben. Isolierte Fehler-/Retrytests bestanden; keine produktiven Dateien entfernt.
 
 Benutzerentscheidung vom 20. September: **Aktiver Stand plus genau ein vorheriger, geprüfter Stand als Backup**.
 Gemeint ist ein funktionierendes Master-/Lightroom-Paar, nicht irgendein alter, möglicherweise unfertiger Kandidat.

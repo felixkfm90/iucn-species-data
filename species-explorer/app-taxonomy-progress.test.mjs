@@ -154,3 +154,36 @@ test("Paketreparatur, Namenswahl und Rücknahme besitzen eigene kurze Pläne", (
   const repair = view({ master: { active: true, status: "syncing-lightroom", action: "sync-lightroom", progressPhase: "Paketprüfung" } });
   assert.equal(repair.totalSteps, 3); assert.equal(repair.step, 2);
 });
+
+test("Gespeicherte Warteaufträge verdrängen alte Mastererfolge und behaupten keine fertige SDK-Erfassung", () => {
+  const oldMaster = { status: "completed", active: false, action: "activate", lightroomPackage: pair,
+    buildJob: { available: true, status: "ready", progress: { phase: "Abschluss" } } };
+  for (const status of ["waiting-lightroom", "waiting-usage", "waiting-decisions", "paused", "interrupted", "failed"]) {
+    const result = view({ master: { ...oldMaster, updateWorkflow: { updateRunId: "saved", status, phase: "start",
+      active: status.startsWith("waiting-"), message: "Aktueller FN-Nutzungsnachweis erforderlich." } } });
+    assert.equal(result.completed, false);
+    assert.equal(result.percent, null);
+    assert.doesNotMatch(result.compact, /Abgeschlossen|100 %/);
+    assert.doesNotMatch(result.detail, /Erfassung.*abgeschlossen/);
+    if (status === "waiting-lightroom") assert.match(result.compact, /Warte auf Lightroom-Schließung/);
+    if (status === "waiting-usage") assert.match(result.compact, /FN-Nutzung prüfen/);
+  }
+  const building = view({ master: { ...oldMaster, updateWorkflow: { updateRunId: "saved", status: "building", phase: "build", active: true } } });
+  assert.equal(building.completed, false);
+  assert.equal(building.step, 3);
+  assert.match(building.compact, /3\/7 Master aufbauen/);
+});
+
+test("Gespeicherter Quellenfehler oder Unterbrechung bleibt vor Masterprüfung und fordert keinen falschen Abschluss", () => {
+  for (const status of ["failed", "interrupted"]) {
+    const result = view({ master: { status: "completed", action: "activate", lightroomPackage: pair,
+      buildJob: { available: true, status: "ready", progress: { phase: "Abschluss", percent: 100 } },
+      updateWorkflow: { updateRunId: "saved", status, phase: "sources", error: "Ergänzungsprüfung unvollständig" } },
+    reference: { status: "failed", phase: "supplements" } });
+    assert.equal(result.step, 1);
+    assert.equal(result.sourceFailure, true);
+    assert.equal(result.completed, false);
+    assert.match(result.detail, /Schritt 1 von 7.*Anbieternamen aktualisieren.*Ergänzungsprüfung/);
+    assert.doesNotMatch(result.detail, /Master prüfen|Abschluss|100 %/);
+  }
+});

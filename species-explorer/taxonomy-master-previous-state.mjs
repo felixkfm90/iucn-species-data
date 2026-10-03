@@ -15,10 +15,15 @@ function openSnapshot(databasePath, DatabaseSync) {
       WHERE field.selected = 1 AND field.master_taxon_id = ?
     `);
     const decisions = database.prepare(`
-      SELECT field_name, language FROM master_decision
-      WHERE master_taxon_id = ?
+      SELECT decision.decision_id, decision.field_name, decision.language,
+        decision.decision_type, decision.decided_at, field.field_value
+      FROM master_decision decision
+      LEFT JOIN master_field_assertion field ON field.assertion_id = decision.selected_assertion_id
+      WHERE decision.master_taxon_id = ?
     `);
-    return { database, fields, decisions };
+    const protection = database.prepare(`SELECT status_detail FROM master_taxon_status
+      WHERE master_taxon_id = ? AND status_name = 'manually-protected'`);
+    return { database, fields, decisions, protection };
   } catch (error) {
     database.close();
     throw error;
@@ -63,6 +68,22 @@ export function openPreviousMasterState(databasePath, DatabaseSync, { historyPat
       return active?.database.prepare(`SELECT project_taxon_key AS projectTaxonKey, project_slug AS projectSlug,
         scientific_name_at_link AS scientificNameAtLink FROM project_taxon_link WHERE master_taxon_id = ?`)
         .all(masterTaxonId).map((row) => ({ ...row })) || [];
+    },
+    decisionsFor(masterTaxonId) {
+      return active?.decisions.all(masterTaxonId).map((row) => ({ ...row })) || [];
+    },
+    decisionProtectionFor(masterTaxonId) {
+      const detail = active?.protection.get(masterTaxonId)?.status_detail;
+      if (!detail) return [];
+      let marker;
+      try { marker = JSON.parse(detail); } catch { return []; }
+      if (marker.kind !== "own-field-decision-protection" || marker.version !== 1 || !Array.isArray(marker.decisions)) return [];
+      if (marker.decisions.some((decision) => !decision || typeof decision.decisionId !== "string"
+          || typeof decision.sourceMasterVersion !== "string" || typeof decision.fieldName !== "string"
+          || typeof decision.decisionType !== "string" || typeof decision.decidedAt !== "string")) {
+        throw new Error("Ungültige Herkunft des eigenen Taxon-Schutzmarkers.");
+      }
+      return marker.decisions;
     },
     evidenceFor(masterTaxonId) {
       return active?.database.prepare(`SELECT release.provider, release.provider_version AS providerVersion,

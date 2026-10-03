@@ -144,6 +144,24 @@ test("Neue Art: Datei und Drop nutzen lokale Bytes, Quellenlink ist vorbelegt; A
   }
 });
 
+test("Neue Art: Browserangabe bleibt explizit und geänderte Pflegewahl verlangt neue Vorschau", async () => {
+  const h = harness(); await h.start();
+  assert.match(h.map.innerHTML, /Unveränderte IUCN-Karte aus dem Browser/);
+  await h.upload([{ name: "T1A154496308.jpg", size: 1234 }]);
+  assert.equal(h.calls.find((c) => c.route.endsWith("/assets/map/preview")).body.careMode, "manual");
+  const mode = h.map.querySelector(".new-species-map-care-mode-input");
+  mode.value = "iucn-browser";
+  await h.map.emit("change", { target: {
+    matches: (selector) => selector === ".new-species-map-care-mode-input",
+  } });
+  await h.mapAction("save");
+  assert.equal(h.calls.some((c) => c.route.endsWith("/assets/map/save")), false);
+  await h.mapAction("preview");
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/assets/map/preview")).at(-1).body.careMode, "iucn-browser");
+  await h.mapAction("save");
+  assert.equal(h.calls.find((c) => c.route.endsWith("/assets/map/save")).body.careMode, "iucn-browser");
+});
+
 test("Neue Art: Sound-Ablehnungen mit Rückfrage freigeben und nur Sounds erneut suchen, ohne doppelte Artanlage", async () => {
   const h = harness(); await h.start();
   await h.mapAction("skip"); await h.soundAction();

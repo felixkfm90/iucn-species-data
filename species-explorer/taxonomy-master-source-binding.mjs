@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { masterFileFingerprint } from "./taxonomy-master-inputs.mjs";
 import { latestProviderSliceVersion, providerSliceManifestPath, providerSliceDataPath } from "./taxonomy-master-slices.mjs";
 import { readActiveTaxonomyPointer, taxonomyActivePointerPath, taxonomyDatabasePath, taxonomyReleaseManifestPath } from "./taxonomy-storage.mjs";
+import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
 
 const PROVIDERS = ["inaturalist", "gbif", "worms", "wikidata", "animalia"];
 async function fingerprint(filename) {
@@ -19,6 +20,8 @@ export async function readMasterSourceBinding(taxonomyRoot, selection) {
   const versions = await Promise.all(PROVIDERS.map(async (provider) => [provider, await latestProviderSliceVersion(taxonomyRoot, provider)]));
   const files = [selection.speciesListPath, selection.correctionsPath,
     path.join(taxonomyRoot, "master", "identity-review.json"),
+    path.join(taxonomyRoot, "catalog-usage", "registry.json"),
+    path.join(taxonomyRoot, "catalog-usage", "captures.json"),
     taxonomyActivePointerPath(taxonomyRoot),
     ...(reference ? [taxonomyDatabasePath(taxonomyRoot, reference.activeRelease), taxonomyReleaseManifestPath(taxonomyRoot, reference.activeRelease)] : []),
     ...versions.flatMap(([provider, version]) => version
@@ -26,7 +29,9 @@ export async function readMasterSourceBinding(taxonomyRoot, selection) {
   // Ordinary search-cache timestamps are not build inputs. Only retained taxa
   // from this cache affect selection; unrelated searches must not stale a job.
   const retainedRevision = createHash("sha256").update(JSON.stringify(await readRetainedMasterTaxa(taxonomyRoot))).digest("hex");
+  const automation = await assertPendingClassificationAutomation(taxonomyRoot);
   return { reference: reference?.activeRelease || null, versions, retainedRevision,
+    ...(automation ? { classificationAutomation: automation } : {}),
     files: await Promise.all(files.map(async (filename) => [path.resolve(filename), await fingerprint(filename)])) };
 }
 

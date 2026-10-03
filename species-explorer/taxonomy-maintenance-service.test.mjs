@@ -133,6 +133,36 @@ async function waitForTerminal(service) {
   throw new Error("Die simulierte Taxonomieaktualisierung wurde nicht beendet.");
 }
 
+test("Ein bestätigter Quellenplan bleibt beim Warten auf Lightroom exakt gebunden", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-bound-update-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  let activeRelease = "col-old-release", milliseconds = Date.parse("2026-10-03T08:00:00Z");
+  const activated = [];
+  const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
+    referenceService: { reset() {}, status: async () => ({ available: true, releaseId: activeRelease,
+      boundedPrototype: false, source: { releaseId: activeRelease } }) },
+    now: () => new Date(milliseconds),
+    discoverRelease: async () => ({ checkedAt: new Date(milliseconds).toISOString(), latest: latestRelease() }),
+    listReleases: async () => ["col-old-release", "col-new-release"],
+    readPointer: async () => ({ activeRelease }),
+    compareProjectSpecies: async () => ({ summary: { total: 0, blocking: 0 }, results: [] }),
+    activateRelease: async (_root, release) => { activated.push(release); activeRelease = release; return { activeRelease }; },
+  });
+  t.after(() => service.close());
+  const preview = await service.previewUpdate();
+  const updatePlan = await service.bindUpdatePlan({ token: preview.token });
+  milliseconds += 60 * 60 * 1000;
+  service.latest = { ...latestRelease(), releaseId: "col-another-new-release" };
+  await assert.rejects(service.startUpdate({ token: preview.token }), /abgelaufen/);
+  await assert.rejects(service.startUpdate({ updatePlan: { ...updatePlan, updateSupplements: !updatePlan.updateSupplements } }), /verändert/);
+  const before = activeRelease; activeRelease = "col-foreign-release";
+  await assert.rejects(service.startUpdate({ updatePlan }), /Quellenstand.*verändert/);
+  activeRelease = before;
+  await service.startUpdate({ updatePlan });
+  assert.equal((await waitForTerminal(service)).status, "completed");
+  assert.deepEqual(activated, ["col-new-release"], "Kein Wechsel auf ein inzwischen erkanntes neues latest");
+});
+
 function latestRelease() {
   return {
     releaseId: "col-new-release",

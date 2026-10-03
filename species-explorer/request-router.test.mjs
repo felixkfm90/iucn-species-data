@@ -72,6 +72,12 @@ function createOperations(calls, previewPath = null) {
 }
 
 test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", () => {
+  for (const action of ["sequence-start", "sequence-resume", "sequence-pause", "lightroom-close"]) {
+    assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/update/${action}`), { name: "taxonomy-maintenance", action });
+    assert.notEqual(matchExplorerRoute("GET", `/api/taxonomy/update/${action}`).name, "taxonomy-maintenance");
+  }
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/update/sequence-status"), { name: "taxonomy-read", resource: "sequence-status" });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/taxonomy/update/lightroom-status"), { name: "taxonomy-read", resource: "lightroom-status" });
   assert.deepEqual(matchExplorerRoute("GET", "/api/session"), { name: "session" });
   assert.deepEqual(matchExplorerRoute("POST", "/api/species/new/preview"), {
     name: "new-species",

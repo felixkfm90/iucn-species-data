@@ -1,14 +1,35 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-01
+Stand: 2026-10-03
 Roadmap: Phase 10.2 bis 10.4
-Status: Plug-in-Version **0.4.24.14** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: Quellstand Plug-in-Version **0.4.24.17** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
 Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuweisung und Erhalt nach
 Schließen/Wiederöffnen. Übrige Funktions-/Großbestandsabnahme und Phase-10-Audit bleiben offen.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
+Version 0.4.24.17 korrigiert Orts-/Zeitentfernung mit dokumentierten SDK-Objekten auch bei leeren FN-Metadaten,
+ergänzt den unteren Entfernen-Button und drei Auswahlexporte mit Defaultnamen. Fehlender Statistikindex
+wird nur bewusst neu aufgebaut. Technische Gegenproben und praktische Restabnahme:
+[Bedienregressionen](audits/2026-10-03-acceptance-regressions.md).
+
+Version 0.4.24.15 ergänzt die ausdrückliche, nur lesende Aktion `FN-Katalognutzung erfassen …` im
+Verwaltungsfenster. Zwei SDK-Durchgänge liefern eine Erfassungsquittung; erst normal geschlossenes Lightroom
+und ausdrückliche Gesamtbestätigung im Explorer erlauben die Einstufung als unbenutzt. Kein automatischer
+Katalogscan, keine Foto-/Metadaten-/Stichwortänderung. Praktische Erstaufnahme am 3. Oktober bestätigt:
+128.871 Fotos, 5.484 FN-Zuweisungen und 56 genutzte IDs. Nutzungsnachweis und Klassifikationsaufteilung
+lesend geprüft; produktiver Folgeaufbau und gemeinsamer Paarwechsel am 3. Oktober um 09:11:14 MESZ erfolgreich.
+Paket `lightroom-fa739bd28ec1e82a0283` aus Master `master-20261003055911210`, alle 56 genutzten IDs vorhanden.
+Felix bestätigt beide Testarten vorhanden und bevorzugt markiert; gezielte Suche-/Namensprüfung bestanden.
+Die gesamte Bedienabnahme bleibt getrennt: [Abschlussnachweis](audits/2026-10-03-taxonomy-reference-update.md).
+Version **0.4.24.16** ergänzt die requestgebundene Erfassung nur bei einem gespeicherten bestätigten Update-Start,
+ohne allgemeine Katalogscans beim Öffnen. Der neue serverseitige Gesamtweg wartet auf normal geschlossenes
+Lightroom und echte neue Quittungen; keine Neuprägung alter Nachweise. Normale Schließanforderung ausdrücklich
+bestätigen, keine Zwangsschließung. Einmalige Nutzervereinbarung für die Zeit bis zum Schließen, kein SDK-Beobachter.
+Zusätzlich Orts-/Zeit-Entfernungszähler und frische Paketprüfung vor jedem Katalogpflegeblock korrigiert.
+Lokal umgesetzt, praktische SDK-/Gesamtabnahme noch offen: [Gesamtweg](taxonomy-update-automation.md).
+Bedienung, Schutzregeln und konservative Frischegrenze: [FN-Katalognutzung](lightroom-catalog-usage.md).
 Details: `taxonomy-incremental-build.md`. Version 0.4.24.13 ergänzte „Artänderungen prüfen ...“ im Verwaltungsfenster.
 Die gemeinsame Paarvorbereitung und Rücknahmeprüfung laufen seit 20. September vollständig im Hilfsprozess;
 der Explorer behält die kurze, erneut validierte Aktivierung. Kein automatischer Neuaufbau beim Öffnen.
@@ -288,7 +309,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.13`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.16`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -502,6 +523,44 @@ Katalogscan. Pro Gruppe speichert der Index Zähler, Fachwerte und höchstens ei
 aber keine vollständige Fotoliste. Wird genau das Beispielbild aus der Gruppe entfernt, darf das optionale Feld bis
 zu einer späteren Ergänzung leer bleiben. Indexschema 6 erfordert einmalig `Statistik neu aufbauen`.
 
+Version 0.4.24.17 ergänzt für alle drei Formate die ausdrückliche Umfangswahl `Gesamter Katalog · gespeicherter
+Index` oder `Nur markierte Fotos`. Katalogexporte verwenden weiterhin ausschließlich den geladenen persistenten
+Index. Der Auswahlexport übernimmt erst beim bestätigten Klick auf `Exportieren` eine eigene Liste der markierten
+Fotoobjekte. `getTargetPhoto()` prüft dabei eine echte Auswahl, bevor `getTargetPhotos()` gelesen wird: Ohne
+Markierung liefert das SDK sonst den gesamten Filmstreifen. Leere Auswahl meldet deshalb `Keine Fotos markiert`
+und wechselt niemals auf den Katalogumfang. Spätere Auswahländerungen während Fortschritt oder Dateidialog
+verändern die gebundene Liste nicht.
+
+Nur die ausdrücklich bestätigte Auswahl wird in höchstens 500 Fotos großen SDK-Leseblöcken temporär aggregiert.
+Arten, Fotozahlen, Beobachtungsgruppen, Zeit-/Ortswerte, optionale Beispiel-Dateinamen und Art-Favoriten stammen
+ausschließlich aus diesen Fotos. Ein Favorit derselben Art außerhalb der Auswahl zählt im Auswahlformat nicht als
+vorhanden. Die Fachregeln und Gruppierung entsprechen dem Katalogindex; der Auswahlexport speichert weder einen
+zweiten Index noch einen Aufbaucheckpoint und verändert keine Katalogdaten. Abbruch oder Lesefehler liefert keinen
+Export und keinen Rückfall auf den Katalogindex; ein erneuter Start erfasst die dann bestätigte Auswahl frisch.
+Beim Öffnen der Statistik wird die bestehende reine Fotozahlprüfung beibehalten. Fehlt ein passender Index,
+startet kein Metadatenscan automatisch: Das Fenster bietet Auswahlexport und den bewussten Button
+`Statistik neu aufbauen`; ein vorhandener pausierter Aufbau kann über diesen Button fortgesetzt werden.
+
+Das Speichern-Fenster belegt den editierbaren Dateinamen mit `Artenliste.txt`, `Lifelist.csv` beziehungsweise
+`Beobachtungsliste.csv` vor und zeigt den Exportumfang. Der zuletzt in diesem Plug-in-Aufruf gewählte Zielordner
+wird wiederverwendet; zunächst gilt der Dokumente-Ordner. `Zielordner wählen ...` verwendet die dokumentierte
+SDK-Ordnerauswahl. Eine fehlende Endung wird ergänzt; falsche Endung, Pfadangaben, Steuerzeichen, unter Windows
+unzulässige Sonderzeichen und reservierte Gerätenamen werden vor dem Dateiöffnen abgewiesen. Bestehende Dateien
+verlangen eine eigene Überschreibbestätigung. Abbruch der Export- oder Dateiwahl sowie Ablehnen des Überschreibens
+ändert keine Datei.
+
+Alle Formate werden zunächst in einer eindeutigen temporären Datei im gewählten Zielordner vollständig mit
+UTF-8-BOM geschrieben und geschlossen; Schreib- und Abschlussfehler werden geprüft. Erst danach wird eine
+bestätigte vorhandene Datei gesichert und der neue Export über den dokumentierten, nicht überschreibenden
+`LrFileUtils.move()`-Weg übernommen. Misslingt die Übernahme, wird die alte Datei zurückgeschoben. Ist auch diese
+Rücknahme gesperrt, bleibt die alte Datei unter dem ausdrücklich gemeldeten Sicherungspfad erhalten. Kann eine
+eigene temporäre Datei oder die nach erfolgreicher Übernahme entbehrliche Sicherung nicht entfernt werden, nennt
+die Meldung ebenfalls deren Pfad. Das ist keine atomare Ersetzung über einen einzelnen SDK-Aufruf: Bei hartem
+Lightroom-/Rechnerabbruch zwischen Sicherung und Übernahme können Sicherung und temporäre Datei im Zielordner
+verbleiben. CSV-Spalten, Semikolon, deutsche Tagesdarstellung, CSV-Escaping und die Klassensortierung bleiben
+erhalten; TXT nennt zusätzlich den Umfang. Die Auswahl-, Datei-, Abbruch-, Fehler- und Wiederholungswege sind mit
+echten Lua-Modulen und simuliertem SDK geprüft; praktische Lightroom-Bedienabnahme bleibt offen.
+
 Version 0.4.24.6 begrenzt `LrLibraryMenuItems` auf die häufige Direktaktion `Taxonomie zuweisen` und den Einstieg
 `FN Wildlife verwalten ...`. Der dokumentierte Lightroom-Menüvertrag bietet keine nativen Untermenüs oder
 Trennlinien. Deshalb ordnet ein kompaktes schwebendes Fenster alle zehn vorhandenen Aktionen in vier Gruppen ein;
@@ -599,8 +658,9 @@ Familien-, Klassen- und Favoritenbild-Zahlen, `Lifelist: X Arten`, die Taxonomie
   Klassenübersicht sowie `Am häufigsten fotografierte Arten:` mit höchstens fünf Einträgen. Solange noch
 keine Art zugewiesen ist, wird dieser Zustand ausdrücklich angezeigt.
 
-Fehlt der persistente Index oder hat sich die Kataloggröße geändert, öffnet Version 0.4.21.0 ein nichtmodales
-Fortschrittsfenster. Der Erstaufbau sortiert die Fotos stabil nach ihrer lokalen Lightroom-Kennung, liest
+Fehlt der persistente Index oder hat sich die Kataloggröße geändert, bietet das Fenster seit Version 0.4.24.17
+den bewussten Aufbau an. Erst `Statistik neu aufbauen` öffnet das nichtmodale Fortschrittsfenster.
+Der Erstaufbau sortiert die Fotos stabil nach ihrer lokalen Lightroom-Kennung, liest
 Plug-in-Metadaten gebündelt in 500er-Blöcken und speichert nach jeweils 5.000 Fotos einen fortsetzbaren Checkpoint
 als katalogweite Plug-in-Eigenschaft. Fortschrittsaktualisierung und `LrTasks.yield()` erfolgen erst nach dem
 jeweiligen `withReadAccessDo`-Block. `Pausieren`, `Fortsetzen` und das Schließen des Fensters arbeiten deshalb nur
@@ -608,7 +668,8 @@ zwischen abgeschlossenen Blöcken; Lightroom bleibt währenddessen bedienbar.
 
 Version 0.4.21.2 erhöht das Indexschema einmalig, weil beim globalen Aufbau zusätzlich die persistenten Lightroom-
 Foto-UUIDs vorhandener Art-Favoriten erfasst werden. Ein mit 0.4.21.0 oder 0.4.21.1 aufgebauter Index wird deshalb
-beim ersten Statistikaufruf kontrolliert neu aufgebaut. Danach benötigt der Favoritenbutton keinen Vollkatalogscan.
+beim ersten Statistikaufruf als veraltet erkannt und nach bewusstem Aufbau ersetzt. Danach benötigt der
+Favoritenbutton keinen Vollkatalogscan.
 
 Der gespeicherte Index enthält ausschließlich Aggregate pro Art, Klasse, Familie, Gattung sowie FN-Orts- und
 FN-Zeitwert, keine zweite katalogweite Fotoliste. Taxonomie-, Orts-/Zeit- und Favoritenbild-Aktionen ziehen den
@@ -632,7 +693,7 @@ sondern zentral im Arten-Explorer verwaltet.
 2. `Datei > Zusatzmodul-Manager` öffnen.
 3. Das Verzeichnis
    `D:\IUCN_Datenbank\lightroom-plugin\FNWildlifeTaxonomy.lrplugin` hinzufügen.
-4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.13`, der Suchpaketstatus sowie die zwei
+4. Das Zusatzmodul im Manager neu laden und prüfen, dass Version `0.4.24.16`, der Suchpaketstatus sowie die zwei
    Einträge `Taxonomie zuweisen` und `FN Wildlife verwalten ...` ohne Lua-Fehler erscheinen. Im
    Verwaltungsfenster müssen alle zehn Aktionen in vier klar beschrifteten Gruppen erreichbar sein. Die beiden
    Aktualisierungen müssen Auswahl und gesamten Katalog klar unterscheiden.
@@ -674,12 +735,16 @@ sondern zentral im Arten-Explorer verwaltet.
     intelligenten Sammlungen `Art-Favoriten`, `Taxonomie fehlt` und `Taxonomie zugewiesen` vorhanden ist. Frühere
     Sammlungen `5-Sterne-Tierbilder` und `Art-Referenzbilder` müssen aus diesem Satz entfernt sein. Bei 132 Fotos
     mit zwei Taxonomiezuweisungen müssen `Taxonomie fehlt` 130 und `Taxonomie zugewiesen` zwei Fotos enthalten.
-12. `Taxonomie-Statistik ...` öffnen. Beim ersten Aufruf den sichtbaren 500er-Fortschritt prüfen, einmal pausieren,
+12. `Taxonomie-Statistik ...` öffnen. Ohne aktuellen Index darf kein automatischer Metadatenscan starten.
+    `Statistik neu aufbauen` bewusst wählen, den sichtbaren 500er-Fortschritt prüfen, einmal pausieren,
     das Fenster schließen und anschließend fortsetzen. Danach den einzeiligen Lifelist-Kopf, Abdeckung,
     Favoritenbilder, Prozentwerte und die höchstens fünf am häufigsten fotografierten Arten prüfen. Orte und Zeiten
     müssen jeweils Top 5 für Länder/Regionen/Städte/Ortsdetails beziehungsweise Jahre/Monate/Monate-Jahre/Tage
     zeigen. Über `Exportieren ...` Lifelist-CSV, Beobachtungslisten-CSV und TXT-Artenliste prüfen: UTF-8, Umlaute,
     Klassensortierung, Aggregation, leere fehlende FN-Felder, unverzierte numerische Fotozahlen und Beispiel-Dateiname.
+    Für jedes Format zusätzlich `Nur markierte Fotos` prüfen: Fotozahlen und Favoriten dürfen ausschließlich aus
+    der beim Exportklick markierten Auswahl stammen. Die Dateinamen müssen sinnvoll vorbelegt sein. Leere Auswahl,
+    Abbruch, fehlender Index und Ablehnen des Überschreibens dürfen keinen Katalogrückfall oder Dateiersatz auslösen.
     Anschließend eine
     Zuweisung, Rücknahme, Orts-/Zeitänderung und Favoritenänderung ausführen: Die Anzeige muss ohne vollständigen
     Neuaufbau stimmen.

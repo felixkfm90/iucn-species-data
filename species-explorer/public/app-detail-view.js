@@ -557,12 +557,22 @@
                   ` : ""}
                   <button class="map-auto-search-button" type="button">Automatisch suchen</button>
                   <span class="map-care-state">
-                    ${species.assets.map.manuallyAdded ? "Manuell geschützt" : "Automatische Pflege"}
+                    ${species.assets.map.browserImported ? "IUCN-Browserimport (Nutzerangabe)"
+                      : species.assets.map.ownCare || species.assets.map.manuallyAdded ? "Eigene Pflege" : "Automatische Pflege"}
+                    ${species.assets.map.manuallyAdded ? " · Geschützt" : ""}
                   </span>
                 </div>
               </header>
 
               <div class="map-edit-fields">
+                <label>
+                  <span>Herkunft und Pflege dieser neuen Datei</span>
+                  <select class="map-care-mode-input">
+                    <option value="manual">Eigene/manuell bearbeitete Karte</option>
+                    <option value="iucn-browser">Unveränderte IUCN-Karte aus dem Browser (eigene Bestätigung)</option>
+                  </select>
+                  <small>Keine technische Herkunftsprüfung. Beide Varianten bleiben vor automatischem Ersatz geschützt.</small>
+                </label>
                 <label class="asset-file-field map-file-field">
                   <span>Gespeicherte Karte für ${escapeHtml(species.germanName)}</span>
                   <input class="map-file-input" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { isMapProtected } from "./map-provenance.mjs";
 
 const MISSING_VALUES = new Set(["", "n/a"]);
 
@@ -128,7 +129,7 @@ export function buildPipelinePlan({
     if (mode === "manual-maps") {
       reasons.splice(0, reasons.length);
       const mapPath = path.join(assetDir, "map.jpg");
-      if (assetOverrides.assets?.[safeName]?.map?.manual === true) {
+      if (isMapProtected(assetOverrides.assets?.[safeName]?.map)) {
         reasons.push("manuell gepflegte Karte erneut automatisch suchen");
       } else if (existing && !fs.existsSync(mapPath)) {
         reasons.push("Karte fehlt; automatische Karte suchen");

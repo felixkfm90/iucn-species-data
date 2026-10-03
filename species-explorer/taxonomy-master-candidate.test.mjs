@@ -363,7 +363,7 @@ test("leichter Masterstatus liefert nur kompakte Differenzen und blockierende Ko
   assert.equal(lifecycle.canActivate, true);
 });
 
-test("eine neue CoL-Hierarchie wird auch bei Projektarten ohne Fachentscheidung übernommen", async (t) => {
+test("eine neue CoL-Hierarchie benötigt bei einer Projektart eine ausdrückliche Fachentscheidung", async (t) => {
   const root = await createRoot(t);
   await buildFirstActive(root);
   const manifest = await buildTaxonomyMasterCandidate({
@@ -375,16 +375,12 @@ test("eine neue CoL-Hierarchie wird auch bei Projektarten ohne Fachentscheidung 
   });
   assert.equal(manifest.state, "staging");
   const inspection = await inspectTaxonomyMasterCandidate(root);
-  assert.equal(inspection.conflicts.some((entry) => entry.field_name === "family"), false);
-  assert.equal(selectedField(root, "staging", "family").field_value, "Pantheridae");
+  assert.equal(inspection.conflicts.some((entry) => entry.field_name === "family" && entry.conflict_type === "changed-value"), true);
+  assert.equal(selectedField(root, "staging", "family").field_value, "Felidae");
   const lifecycle = await inspectTaxonomyMasterLifecycle(root);
-  assert.equal(lifecycle.canActivate, true);
-  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND });
-  assert.equal(selectedField(root, "active", "family").field_value, "Pantheridae");
-
-  await rollbackTaxonomyMaster(root, { confirmed: true, now: () => SECOND });
+  assert.equal(lifecycle.canActivate, false);
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => SECOND }), /entschieden werden/);
   assert.equal(selectedField(root, "active", "family").field_value, "Felidae");
-  assert.equal(selectedField(root, "previous", "family").field_value, "Pantheridae");
 });
 
 test("reine Anbieter-Taxa übernehmen einen neuen priorisierten Quellenwert ohne Massenkonflikt", async (t) => {
@@ -447,9 +443,9 @@ test("fehlende Anbieterfelder behalten ihre Quelle über mehrere Neuaufbauten", 
     colRecords: [leopardRecord("Pantheridae")],
     now: () => new Date("2026-08-03T08:00:00Z"),
   });
-  assert.equal(selectedField(root, "staging", "family").field_value, "Pantheridae");
+  assert.equal(selectedField(root, "staging", "family").field_value, "Felidae");
   assert.equal(selectedField(root, "staging", "family").origin_kind, "source");
-  assert.equal((await inspectTaxonomyMasterLifecycle(root)).blockingConflictCount, 0);
+  assert.equal((await inspectTaxonomyMasterLifecycle(root)).blockingConflictCount, 1);
 });
 
 for (const protection of ["none", "decision", "same-value", "correction", "no-history", "different-value"]) {

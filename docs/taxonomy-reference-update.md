@@ -1,15 +1,30 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-10-02
+Stand: 2026-10-03
 
 Status: Phase 9 abgeschlossen; der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts bis zum automatisch
 aktivierten Lightroom-Paket wurde am 2026-09-05 erfolgreich geprüft. Weißstorch und Paket-/Masterstand sind in
 Lightroom bestätigt, die Veröffentlichung ist freigegeben. Weitere Praxistests bleiben laut `roadmap.md` offen.
 
-**Heutiger Betriebsstand:** Die Quellenreparatur vom 1. Oktober ist gemeinsam für Master und Lightroom aktiviert,
-vollständig geprüft und mit Weissstorch/Rebhuhn gezielt praktisch abgenommen. Lokale CoL-Referenz `COL26.8 XR`,
-Master und Suchpaket passen zusammen. Die inzwischen gemeldete Verfügbarkeit von `COL26.9 XR` ist ein separates
-Quellenupdate, keine erneute Reparaturpflicht. Stand und Abgrenzung: [Taxonomie-Betriebsstand](taxonomy-current-status.md).
+**Heutiger Betriebsstand:** Nach der am 1. Oktober gezielt praktisch abgenommenen Quellenreparatur ist auch
+das separate reguläre Update auf `COL26.9 XR` technisch abgeschlossen. Felix bestätigte den lokalen Folgeweg
+am 3. Oktober um 07:52:59 MESZ; erfolgreicher Gesamtabschluss um 09:11:14 MESZ. Referenz und Masterherkunft
+sind `col-xr-2026-09-25-316441`, Master `master-20261003055911210` und Paket
+`lightroom-fa739bd28ec1e82a0283` gemeinsam aktiv. 1.995 unbenutzte Klassifikationen mit ID-Erhalt verarbeitet,
+187 unklare Gegenstücke konservativ zurückgestellt, keine blockierenden Konflikte. Einmaliger unabhängiger
+lesender Vergleich bestätigt ID-/Namens-/Projektlink-Erhalt. Die Wiedervorlage ist gelöscht; Lightroom darf
+wieder geöffnet werden. Felix hat anschließend beide Testarten in Explorer/Lightroom vorhanden und bevorzugt
+markiert bestätigt; die gezielte Suche-/Namensprüfung ist bestanden. Gesamte Bedienabnahme und Audit bleiben getrennt.
+Nachweis und Grenzen: [produktiver Abschluss am 3. Oktober](audits/2026-10-03-taxonomy-reference-update.md).
+Stand und Abgrenzung: [Taxonomie-Betriebsstand](taxonomy-current-status.md).
+
+**Heutige lokale Folgeumsetzung:** der Quellen-/Master-/Paketweg wird nach einem Start gespeichert und im
+Explorer-Dienst verkettet, nicht mehr nur im offenen Dialog. Neue requestgebundene SDK-Erfassung und normales
+Lightroom-Schließen gehen der Freigabe voraus; keine alte Quittung neu stempeln. Capture-to-close bleibt eine
+einmalige ausdrücklich bestätigte Nutzervereinbarung. Normale Anbieteränderungen geschützter Namen/Hierarchie
+benötigen ebenfalls Entscheidungen. Nach vollständiger bestätigter Entscheidung derselbe Auftrag fortgesetzt.
+Noch keine praktische Gesamtabnahme oder neue Produktivaktion; [aktueller Automatisierungsvertrag](taxonomy-update-automation.md).
+Die darunter datierten UI-/Erstaufnahmegrenzen beschreiben ihren jeweiligen früheren Implementierungsstand.
 
 ## Ziel
 
@@ -460,9 +475,9 @@ Ein zuerst prozessbeschränkt gesperrter Testlauf wurde beendet und zulässig wi
 Stil, 70 Markdown-Verweise, generierter Projektstatus und Diffprüfung bestanden. Kein vollständiges Qualitätsgate,
 produktiver Neuaufbau, Paketwechsel oder Lightroom-Bedientest. Plug-in-Version bleibt `0.4.24.14`.
 
-**Neue Nutzervorgabe:** solche Quellenfälle künftig ohne Einzelrückfrage verarbeiten, außer sie betreffen
+**Neue Nutzervorgabe (2. Oktober):** solche Quellenfälle künftig ohne Einzelrückfrage verarbeiten, außer sie betreffen
 bereits angelegte Projektarten oder in Lightroom zugewiesene Arten. Noch keine Umsetzung/Freigabe des
-gesperrten Kandidaten daraus ableiten. Vorgesehene sichere Abgrenzung, vor Implementierung zu konkretisieren:
+gesperrten Kandidaten daraus ableiten. Damalige Abgrenzung, inzwischen wie unten beschrieben implementiert:
 
 - Angelegte Projektarten, zugewiesene Master-IDs und eigene Namens-/Identitätsentscheidungen geschützt behandeln.
   Projektlinks allein belegen nicht, dass eine Art in Lightroom unbenutzt ist.
@@ -470,7 +485,7 @@ gesperrten Kandidaten daraus ableiten. Vorgesehene sichere Abgrenzung, vor Imple
   Klassifikationen nach der bestätigten Regel verarbeiten, mit ursprünglicher Master-ID und gebundenem Journal.
   Keine Namensheuristik, automatische Fotomigration oder Änderung bestehender Projekttexte.
 - Unklare unbenutzte Gegenstücke konservativ nicht übernehmen; bisherige Identität/ID erhalten und Gründe
-  protokollieren, statt automatisch Reichs-/Identitätsgleichheit zu behaupten. Behandlung noch nicht implementiert.
+  protokollieren, statt automatisch Reichs-/Identitätsgleichheit zu behaupten.
 - Bei verwendeten Arten oder fehlendem/veraltetem Nutzungsnachweis bleibt eine gezielte Rückfrage erforderlich.
   Vollständige ID-/Quellen-/Kandidaten-/Paketprüfung und frische gemeinsame Freigabe bleiben unverändert.
 - Lightroom hält den Statistikindex derzeit als Plug-in-Eigenschaft im jeweiligen Katalog. Die explizite
@@ -493,12 +508,54 @@ passende Übernahme beziehungsweise konservative Zurückstellung ausschließlich
 Geschützte Fälle separat und kompakt zur Bestätigung zeigen. Neue Automatik muss mit unbekannten/fehlenden
 Kataloggrundlagen, zwischenzeitlicher Zuweisung, eigener Entscheidung, Wiederholung, Fehler und Neustart geprüft
 werden. Erst anschließend einen frisch gebundenen lokalen Folgeaufbau separat bestätigen; bisherige Quellen
-nicht erneut herunterladen. Diese Reihenfolge ist ein Umsetzungsauftrag, kein bereits implementierter Ablauf
+nicht erneut herunterladen. Diese Reihenfolge war ein Umsetzungsauftrag, kein damals bereits implementierter Ablauf
 und keine Freigabe eines produktiven Folgeaufbaus oder Paketwechsels.
 
 Bis zur Klärung keine der beiden Bündel speichern und keinen Folgeaufbau starten. Die bestehende stille
 Wiedervorlage ist am nutzerabhängigen Halt pausiert. Kandidat, Originalquellen und aktives Paar unverändert;
 keine produktive Reparatur, Regeländerung oder unaufgeforderte Veröffentlichung in dieser Prüfung.
+
+### Implementierte Nutzungsgrenze am 3. Oktober
+
+Plug-in 0.4.24.15 ergänzt die ausdrückliche SDK-Erfassung, ohne Foto-/Metadaten-/Stichwortänderung.
+Zwei vollständige UUID-/Master-ID-Lesedurchgänge müssen übereinstimmen. Die Quittung allein genügt nicht:
+Lightroom normal schließen, unveränderte FN-Daten seit der Erfassung und alle FN-Kataloge ausdrücklich
+im Explorer bestätigen. Dateistand/Prüfsumme binden die geschlossenen Kataloge. Neue/unvollständige/offene/
+geänderte Grundlagen sind unbekannt, nicht leer. Keine zusätzliche automatische Vollberechnung beim Öffnen.
+
+Die einmal bestätigte Richtlinie erlaubt gemeinsame atomare Vormerkung beider unbenutzter Gruppen:
+passende Quellenfälle mit ursprünglicher ID, unklare neue CoL-Gegenstücke zurückstellen. Projektlinks,
+FN-Zuweisungen sowie eigene Namen, Felder und Entscheidungen schützen Vorgänger und Gegenstück.
+Jedes automatische Ereignis enthält die Nutzungsrevision. Aufbau/Fortsetzung und beide Aktivierungswege
+prüfen diese Grenze erneut. Bereits aktive automatische Historie blockiert keine spätere LR-Nutzung.
+
+Die bestätigte komplette Updateaktion kann genau einen lokalen Folgeaufbau ohne Anbieterrefresh
+anschließen; verbleibende geschützte oder andere Konflikte stoppen weiter zur Rückfrage. Separate
+Vormerkung per Button startet keinen Aufbau. Keine Endlosschleife, Schutzumgehung oder automatische
+Fotomigration. Historische Auftrags-/Kandidatenbindungen bleiben unverändert.
+
+Noch keine dauerhafte SDK-Deltafortschreibung: veränderten/offenen Katalog erneut erfassen und bestätigen;
+alte automatische Vormerkungen nicht still umstempeln. Nutzerbestätigung schließt die Zeitlücke zwischen
+SDK-Erfassung und normalem LR-Schließen; diese wird nicht unabhängig technisch beobachtet.
+Praktische Erstaufnahme inzwischen durch Felix durchgeführt: 128.871 Fotos, 5.484 FN-Zuweisungen,
+56 genutzte IDs. Gesamtbestätigung am 3. Oktober um 07:42:24 MESZ. Lesende vollständige Nutzungs-/Fallprüfung
+bestätigt 1.995 unbenutzte passende und 187 unbenutzte unklare Fälle, keine geschützte Überschneidung in
+dieser Gruppe. Keine Vormerkung oder Aktivierung durch diese lesende Prüfung. Anschließend von Felix
+bestätigter Update-Einstieg um 07:52:59 MESZ: alle 2.182 Fälle atomar vorgemerkt, lokaler Folgeaufbau
+zunächst `building` / `Eingangsstand sichern`, ohne Fehler. Um 09:11:14 MESZ erfolgreicher Gesamtabschluss
+mit gemeinsamem Master-/Paketwechsel. Keine offenen Klassifikationen; 187 Zurückstellungen sind eine
+gewollte Verarbeitung, keine jetzt ausstehende Entscheidung. Nachfolgender einmaliger lesender Vergleich
+bestätigt sämtliche bisherigen IDs, vier historische Ersatz-IDs, fünf eigene Namen, 60 Projektlinks,
+46 ausgewählte eigene Felder und alle 56 genutzten Lightroom-IDs. Kein zusätzlicher Vollhash-/Integritätsscan.
+Der gemeinsame Update-Einstieg führt
+Vormerkung, Aufbau und Paarprüfung ohne einzelne Fallbestätigung zusammen aus.
+Bedienung/Grenzen: [FN-Katalognutzung](lightroom-catalog-usage.md).
+Prüfabschluss: 281 Tests in 15 betroffenen Dateien und vollständige Lightroom-Testgruppe mit 170 Tests
+erfolgreich. Anschließend 95 Nutzungs-/Bündel-/UI-/Lua-Tests einschließlich Fehler beim gemeinsamen
+Paarwechsel erneut erfolgreich; Testmengen überschneiden sich. Zusätzliche leere SDK-Nutzung explizit als
+JSON-Liste geprüft. Syntax (360 Dateien), Stil, 71 Markdown-Verweise, Projektstatus und Diffprüfung bestanden.
+Dieser automatisierte Prüfabschluss enthielt kein vollständiges Qualitätsgate, produktiven SDK-Lauf,
+Masteraufbau, Paarwechsel oder Pages-Nachweis; die nachfolgende echte SDK-Erfassung ist separat oben belegt.
 
 ## Download, Import und Aktivierung
 

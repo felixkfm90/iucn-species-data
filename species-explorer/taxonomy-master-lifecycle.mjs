@@ -18,6 +18,7 @@ import {
 } from "./taxonomy-master-candidate.mjs";
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
 import { readIdentityReview } from "./taxonomy-identity-review.mjs";
+import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
 import { identityRegistryRevision, emptyIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 import { isClassificationReviewConflict } from "./taxonomy-classification-review.mjs";
 import {
@@ -441,6 +442,7 @@ export async function activateTaxonomyMasterCandidate(taxonomyRoot, {
   }
   const candidate = await inspectTaxonomyMasterCandidate(taxonomyRoot);
   if (!candidate.available) throw new Error("Es ist kein Master-Kandidat vorhanden.");
+  await assertPendingClassificationAutomation(taxonomyRoot, { full: true });
   const identityReview = await readIdentityReview(taxonomyRoot);
   if (identityReview && (candidate.manifest.inputRevisions?.identities || identityRegistryRevision(emptyIdentityRegistry())) !== identityReview.revision) {
     throw new Error("Vorgemerkte Identitätsentscheidungen fehlen im Kandidaten. Bitte den Masterkandidaten erneut aufbauen und prüfen.");

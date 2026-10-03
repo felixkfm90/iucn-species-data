@@ -264,6 +264,8 @@
             ${(classificationReview?.groups || []).map((entry) => `<span>${escapeHtml(entry.previousKingdom)} → ${escapeHtml(entry.newKingdom)}: ${format(entry.count)} ${entry.count === 1 ? "Fall" : "Fälle"} · ${escapeHtml(categoryLabels[entry.category] || "Prüfung erforderlich")}${entry.examples?.length ? ` · z. B. ${escapeHtml(entry.examples.join(", "))}` : ""}</span>`).join("")}
             ${Number(classificationReview?.groupCount) > (classificationReview?.groups || []).length ? `<span>Die Übersicht zeigt die ${format(classificationReview.groups.length)} größten Gruppen von ${format(classificationReview.groupCount)}.</span>` : ""}
           </div>
+          <div class="taxonomy-master-conflict-actions"><button type="button" data-catalog-usage${actionsBlocked || classificationBusy ? " disabled" : ""}>FN-Nutzung bestätigen …</button></div>
+          <div class="taxonomy-master-conflict-actions"><button type="button" data-classification-automatic${actionsBlocked || classificationBusy ? " disabled" : ""}>Unbenutzte Fälle automatisch vormerken</button></div>
           ${matching && classificationReview?.acceptanceAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-preview${actionsBlocked || classificationBusy || classificationSaved ? " disabled" : ""}>Passende Klassifikationen prüfen …</button></div>` : ""}
           ${classificationTotal > matching && classificationReview?.deferralAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-defer${actionsBlocked || classificationBusy || deferralSaved ? " disabled" : ""}>Unklare Fälle zurückstellen …</button></div>` : ""}
         </article>
@@ -370,6 +372,8 @@
     }
 
     async function decide(event) {
+      if (event.target.closest("[data-catalog-usage]")) return confirmCatalogUsage();
+      if (event.target.closest("[data-classification-automatic]")) return automaticClassification();
       if (event.target.closest("[data-classification-preview]")) return reviewClassification();
       if (event.target.closest("[data-classification-defer]")) return reviewClassification(true);
       const button = event.target.closest("[data-master-conflict-save]");
@@ -391,6 +395,38 @@
         button.disabled = false;
         setActionMessage(error.message, "error");
       }
+    }
+
+    async function automaticClassification() {
+      if (classificationBusy || ACTIVE_STATES.has(state.taxonomyMasterSnapshot?.status) || state.taxonomyMasterSnapshot?.active) return;
+      classificationBusy = true;
+      render(state.taxonomyMasterSnapshot);
+      try {
+        const preview = await fetchJson("/api/taxonomy/master/classification/automatic-preview", { method: "POST", body: "{}" });
+        if (!preview.available) throw new Error(preview.message || "FN-Nutzungsstand fehlt oder ist veraltet.");
+        const saved = await fetchJson("/api/taxonomy/master/classification/automatic-save", { method: "POST", body: JSON.stringify(preview) });
+        setActionMessage(saved.message, saved.saved ? "success" : "info");
+      } catch (error) { setActionMessage(error.message, "error"); }
+      finally { classificationBusy = false; await refresh(); }
+    }
+
+    async function confirmCatalogUsage() {
+      if (classificationBusy || ACTIVE_STATES.has(state.taxonomyMasterSnapshot?.status) || state.taxonomyMasterSnapshot?.active) return;
+      classificationBusy = true;
+      render(state.taxonomyMasterSnapshot);
+      try {
+        const preview = await fetchJson("/api/taxonomy/master/catalog-usage/preview", { method: "POST", body: "{}" });
+        if (!preview?.token || !Array.isArray(preview.catalogs) || !preview.catalogs.length) throw new Error("Die FN-Nutzungsvorschau ist unvollständig. Es wurde nichts bestätigt.");
+        const catalogs = preview.catalogs.map((entry) => `${entry.catalogPath}: ${Number(entry.totalPhotos).toLocaleString("de-DE")} Fotos, ${Number(entry.assignedPhotos).toLocaleString("de-DE")} mit FN-Taxonomie`).join("; ");
+        const confirmed = await showQuickConfirm({ eyebrow: "FN-Katalognutzung", title: "Alle FN-Kataloge vollständig erfasst?",
+          message: `${catalogs}. Bestätige nur, wenn dies alle deine FN-Kataloge sind und seit ihrer Erfassung keine FN-Zuweisungen geändert wurden. Lightroom muss normal geschlossen bleiben. Unbenutzte passende Klassifikationen dürfen künftig mit ID-Erhalt vorgemerkt werden; unklare unbenutzte Gegenstücke werden zurückgestellt. Angelegte Arten, zugewiesene Arten und eigene Entscheidungen bleiben zur Rückfrage geschützt. Diese Bestätigung allein startet keinen Aufbau oder Paketwechsel.`,
+          confirmLabel: "Vollständige FN-Nutzung bestätigen" });
+        if (!confirmed) return;
+        await fetchJson("/api/taxonomy/master/catalog-usage/save", { method: "POST",
+          body: JSON.stringify({ token: preview.token, confirmed: true, allCatalogsConfirmed: true, unchangedSinceCapture: true }) });
+        setActionMessage("FN-Nutzung bestätigt. Lightroom für den anschließenden Klassifikationsabgleich geschlossen lassen; keine Fotos wurden geändert.", "success");
+      } catch (error) { setActionMessage(error.message, "error"); }
+      finally { classificationBusy = false; await refresh(); }
     }
 
     async function reviewClassification(deferred = false) {
@@ -479,7 +515,7 @@
       void refresh();
     }
 
-    return Object.freeze({ setup, refresh, render, reviewClassification });
+    return Object.freeze({ setup, refresh, render, reviewClassification, confirmCatalogUsage, automaticClassification });
   }
 
   global.SpeciesExplorerTaxonomyMaster = Object.freeze({

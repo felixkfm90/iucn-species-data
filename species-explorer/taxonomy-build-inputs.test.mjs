@@ -164,6 +164,20 @@ test("Neues Release und neue Abrufzeiten verursachen keine fachlichen Änderunge
   assert.notEqual(result.beforeFingerprint, result.afterFingerprint);
 });
 
+test("Schutzlistenänderung oder fehlender Altvertrag verlangt einen Vollaufbau statt ungeprüfter Wiederverwendung", async (t) => {
+  const f = await fixture(t);
+  const before = f.track(openTaxonomyBuildInputs(await f.snapshot([record("1")])));
+  const after = f.track(openTaxonomyBuildInputs(await f.snapshot([record("1")], source(1), { protectedMasterIdsRevision: HASH })));
+  assert.deepEqual(compareTaxonomyBuildInputs(before, after),
+    { mode: "full-build-required", reasons: ["protectedMasterIdsRevision"], changesEmitted: 0 });
+  const changed = f.track(openTaxonomyBuildInputs(await f.snapshot([record("1")], source(1), { protectedMasterIdsRevision: "b".repeat(64) })));
+  assert.equal(compareTaxonomyBuildInputs(after, changed).mode, "full-build-required");
+  const invalid = f.filename();
+  await assert.rejects(createTaxonomyBuildInputs({ filename: invalid,
+    contract: contract([source(1)], { protectedMasterIdsRevision: "not-a-hash" }) }), /Schutzlistenrevision/);
+  await assert.rejects(fs.stat(invalid), { code: "ENOENT" });
+});
+
 test("Vollständige vergleichbare Quellen liefern genau Hinzufügen, Ändern und Entfernen", async (t) => {
   const f = await fixture(t);
   const before = f.track(openTaxonomyBuildInputs(await f.snapshot([record("1"), record("2"), record("3")])));

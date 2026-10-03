@@ -1,12 +1,69 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-02
+Stand: 2026-10-03
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
 [Reparaturvertrag](taxonomy-partial-source-recovery.md). Die [Roadmap](roadmap.md) bleibt maßgeblich für die
 Reihenfolge der offenen Arbeiten; aktuelle Projekt-/Assetzähler stehen ausschließlich im
 [generierten Projektstatus](project-status.md).
+
+## Reguläres Quellenupdate technisch abgeschlossen – 3. Oktober
+
+Der von Felix bestätigte lokale Folgeweg vom 3. Oktober ist um **09:11:14 MESZ** erfolgreich abgeschlossen:
+Master und Lightroom-Suchpaket sind gemeinsam aktiviert, Service `completed` / nicht aktiv, kein offener
+Kandidat, keine Fehler/Warnungen und keine blockierenden Konflikte. Die 30-Minuten-Wiedervorlage ist auf
+Felix' Wunsch gelöscht. Die folgenden Reparatur- und Zwischenstände sind datierte Vorgeschichte.
+
+| Ebene | Aktueller bestätigter Stand |
+| --- | --- |
+| Referenz und Master-CoL-Herkunft | `col-xr-2026-09-25-316441` (`COL26.9 XR`) |
+| Master | `master-20261003055911210` |
+| Lightroom-Suchpaket | `lightroom-fa739bd28ec1e82a0283`, aus demselben Master |
+| Gemeinsame Veröffentlichung | `publication-b64beeb2-9951-4cf0-ac4e-1a326c5c3e91` |
+| Erhaltener Vorgänger | Passendes Master-/Paketpaar vom 1. Oktober |
+| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; heutiger Quellstand `0.4.24.17`, Bedienregressionskorrekturen noch gezielt praktisch zu prüfen |
+
+Einmaliger unabhängiger lesender Vergleich bestanden: sämtliche 273.466 bisherigen IDs erhalten,
+kein vorher aktiver Eintrag verloren; vier technische Ersatz-IDs weiter historisch. Alle 60 Projektlinks,
+46 ausgewählten eigenen Felder, fünf Namenspräferenzen und 56 genutzten Lightroom-IDs erhalten.
+Alle 273.476 Pakettaxa passen zu ihrem Master; kein aktives Mastertaxon fehlt.
+1.995 unbenutzte Klassifikationen mit ursprünglicher ID verarbeitet; 187 unklare neue CoL-Gegenstücke
+konservativ zurückgestellt. **Diese 187 Fälle sind kein Fehler und kein aktueller offener Entscheidungsauftrag.**
+Bisherige Arten bleiben erhalten; geänderte Belege werden erneut geprüft.
+Details, Methodik und Grenzen: [datierter Abschlussnachweis](audits/2026-10-03-taxonomy-reference-update.md).
+Lightroom darf wieder geöffnet werden. Felix hat anschließend bestätigt: Weissstorch und Rebhuhn sind in
+beiden Verbrauchern vorhanden und als bevorzugt markiert. Damit ist diese gezielte Suche-/Namensprüfung des
+neuen Pakets bestanden; keine zusätzliche neue Fotozuweisung oder vollständige Bedienabnahme behauptet.
+Als nächstes beauftragte Felix den automatischen Gesamtweg statt der heutigen manuellen Schrittfolge:
+[Folgeauftrag und Abnahmekriterien](lightroom-catalog-usage.md#folgeauftrag-automatischer-gesamtweg-statt-manueller-erstaufnahmekette).
+
+## Neue lokale Umsetzung nach diesem Abschluss
+
+Neuester Folgeauftrag: Pages-Veröffentlichungsgrenze, SDK-sichere Orts-/Zeitentfernung, zusätzlicher unterer
+Button sowie Auswahl-/Katalogexporte mit Defaultnamen in Plug-in 0.4.24.17. Felix bestätigt den zuvor
+abgefragten Öffnungscheck, bewussten Statistik-Neuaufbau und eigene Kartenherkunftsänderungen.
+Keine neue produktive Taxonomie-/Katalogaktion. [Befund und Nachweis](audits/2026-10-03-acceptance-regressions.md).
+
+Plug-in **0.4.24.16** und gespeicherter Updatekoordinator verbinden die technische Kette nach einer Startbestätigung.
+Bei offenem/verändertem Lightroom werden neue requestgebundene SDK-Quittungen angefordert. Normales Schließen
+wird nur bestätigt und erst nach Erfassung angefordert; selbst schließen wird im Hintergrund erkannt.
+Capture-to-close bleibt ausdrücklich einmalige Nutzervereinbarung, nicht unabhängig beobachtete Vollständigkeit.
+Normale Anbieteränderungen an gewählten Namen/Hierarchie geschützter Arten fragen ebenfalls nach; unveränderte
+Werte/Herkunftszeiten nicht. Die letzte vollständige bestätigte Feld-/Klassifikationsentscheidung setzt denselben
+Auftrag automatisch fort. Abbruch, unbekannter Katalog, fremder Auftrag oder veraltete Bindung stoppt.
+
+Zusätzlich korrigiert: falsche Orts-/Zeit-Entfernungszähler und Paketprüfung vor jedem 250er-Pflegeblock;
+belegte wiederholbare Reste nach Speicherteilfehlern; getrennte Kartenherkunft/Pflege/Schutz ohne Umschreiben
+realer Altmarkierungen. Automatischer IUCN-Abruf bleibt getrennte Einschränkung, kein neuer Download-Erfolg belegt.
+Kein produktiver Aufbau, Paarwechsel, Kataloglauf oder Löschvorgang durch diese Umsetzung.
+Praktische neue SDK-/Menü-/Kartenabnahme bleibt offen; [Umsetzungsvertrag](taxonomy-update-automation.md).
+
+Automatisierter Abschluss der lokalen Umsetzung am 3. Oktober: vollständiges `quality:ci` mit Exit 0,
+50 Testgruppen, darunter 420 Master-/Betriebs- und 214 Lightroom-/Pakettests. Separater Plug-in-Vertrag 15/15;
+enge Reparatur/Feldschutz nach gefundener und korrigierter Statusregression 65/65. Keine Schutzprüfung gelockert.
+[Datierter Umsetzungsnachweis](audits/2026-10-03-pre-audit-implementation.md) trennt die bestandenen Tests von
+noch offener praktischer Abnahme, Veröffentlichung und Gesamtaudit.
 
 ## Reparatur abgeschlossen und gezielt praktisch abgenommen
 
@@ -58,7 +115,7 @@ Der API-Download erhält einen eng gebundenen Ersatz über das offizielle datier
 lesend bestätigt. Kein vollständiger Download oder Wiederholungsstart durch die Korrektur selbst. Details/Grenzen im
 [Updatevertrag](taxonomy-reference-update.md#früher-downloadabbruch-und-enge-korrektur-am-2-oktober).
 
-**Aktueller Folgeversuch:** Felix startete nach normalem Explorer-Neustart um 19:53:14 MESZ erneut. Die Referenz
+**Zwischenstand des Folgeversuchs am 2. Oktober:** Felix startete nach normalem Explorer-Neustart um 19:53:14 MESZ erneut. Die Referenz
 `col-xr-2026-09-25-316441` ist importiert. Lesender API-Befund nach Kandidatenabschluss um 21:10:14 MESZ:
 Auftrag `job-b7795544-1758-464f-baaf-66c7ed6f32db` und Kandidat `master-20261002182254600` sind `ready`,
 ohne technischen Aufbaufehler. Die Übernahme ist bei Schritt 4/7 gesperrt: 2.182 offene Klassifikationen,
@@ -82,15 +139,39 @@ Reichsänderung; Kontinuitätssperre unverändert. Kein produktiver Folgeaufbau 
 Der vorhandene gesperrte Kandidat ist weiterhin unverändert, nicht durch normale Konfliktbestätigung freigeben.
 
 Felix möchte anschließend nur bei angelegten beziehungsweise Lightroom-zugewiesenen Arten Rückfragen.
-Nutzungsabhängige Automatik noch nicht implementiert: der Statistikindex liegt katalogintern; die vorhandene
-Artänderungs-Rücklesung ist kein dauerhaft vollständiges Explorer-Nutzungsregister. Felix bestätigte ausdrücklich
+Nutzungsabhängige Automatik seit 3. Oktober implementiert; echte Erstaufnahme und Gesamtbestätigung inzwischen
+durch Felix durchgeführt. Der Statistikindex
+liegt katalogintern; die vorhandene Artänderungs-Rücklesung ersetzt keinen vollständigen Nachweis. Felix bestätigte ausdrücklich
 alle seine FN-Kataloge, nicht nur den aktuell geöffneten. Anschließend bestätigt: nur
 `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`; historische Altstände bleiben außerhalb dieser aktiven
-Nutzungsmenge. Noch keine vollständige FN-Erfassung. Unbekannte Nutzung darf nicht als unbenutzt gelten;
-IDs und eigene Entscheidungen
-bleiben geschützt. Bestätigte Vorgaben und offene Grenzen stehen im [Updatevertrag](taxonomy-reference-update.md#nutzungsabhängige-automatik--auftrag-nach-dem-ersten-prüfkandidaten).
-Die 30-Minuten-Wiedervorlage wurde an diesem entscheidungsabhängigen Halt pausiert; kein aktiver Worker
-abgebrochen, keine Vormerkung, Aktivierung, Bereinigung oder Veröffentlichung durchgeführt.
+Nutzungsmenge. Gespeicherte SDK-Quittung: 128.871 Fotos, 5.484 FN-Zuweisungen, 56 genutzte IDs; Erfassung
+07:40:53 und Gesamtbestätigung 07:42:24 MESZ am 3. Oktober. Unbekannte Nutzung darf nicht als unbenutzt gelten;
+IDs und eigene Entscheidungen bleiben geschützt. Plug-in **0.4.24.15** ergänzt eine ausdrückliche Erfassung
+mit zwei SDK-Lesedurchgängen; anschließend Lightroom schließen und alle Kataloge im Explorer bestätigen.
+Unbenutzte passende Fälle und unklare Gegenstücke werden gemeinsam vorgemerkt, nicht sofort aktiviert.
+Projektarten, genutzte IDs und eigene Entscheidungen bleiben zur Rückfrage geschützt. Geöffneter/geänderter
+Katalog oder fehlende Grundlage sperren die Automatik. Keine inkrementelle SDK-Fortschreibung zugesagt;
+Lesende Vorschau mit voller Katalogprüfsumme und aktuellen Projekt-/Namensgrundlagen bestätigt:
+1.995 unbenutzte passende Fälle, 187 unbenutzte unklare Gegenstücke und keine geschützte Überschneidung
+innerhalb dieser Klassifikationsgruppe. Keine Vormerkung durch die lesende Prüfung.
+Anschließend hat Felix den gemeinsamen Updateweg bestätigt: um **07:52:59 MESZ am 3. Oktober** wurden
+alle 2.182 Fälle atomar vorgemerkt und der lokale Folgeaufbau gestartet. Vormerkungsrevision:
+`8aba3cdd302211c0f252971e8f00cf7505bfc87b7fdcc2c149b090512226b74b`.
+Erster bestätigter Zwischenstand: `building`, `active: true`, `Eingangsstand sichern`, keine Fehler.
+Der noch sichtbare alte Kandidat und dessen 2.182 Konflikte sind kein erneuter Entscheidungsauftrag.
+Nicht erneut starten, keine gebundenen Eingänge/Regeln ändern und Explorer nicht neu starten.
+Der geöffnete Updateweg übernimmt Master und Paket nur bei erfolgreichen Schutzprüfungen.
+Diese Startgrenze ist inzwischen erfüllt: Gesamtabschluss und einmaliger lesender Paarvergleich am
+3. Oktober um 09:11:14 MESZ beziehungsweise danach bestanden; Lightroom darf wieder geöffnet werden.
+Bedienung und Frischegrenzen: [FN-Katalognutzung](lightroom-catalog-usage.md).
+Bestätigte Vorgaben im [Updatevertrag](taxonomy-reference-update.md#nutzungsabhängige-automatik--auftrag-nach-dem-ersten-prüfkandidaten).
+Automatisierte Prüfung: 281 gezielte Aufbau-/Paket-/Identitäts-/Bedientests und die vollständige
+Lightroom-Testgruppe mit 170 Tests erfolgreich; nach zusätzlichem Paarwechsel-Gegenfall 95 gezielte Tests
+erneut erfolgreich. Testmengen überschneiden sich. Syntax (360 Dateien), Stil, 71 Markdown-Verweise,
+Projektstatus und Diffprüfung bestanden. Kein vollständiges `quality:ci` oder Pages-Nachweis dieser Änderung.
+Die am früheren Entscheidungshalt pausierte 30-Minuten-Wiedervorlage wurde für diesen bestätigten lokalen
+Folgeaufbau reaktiviert und nach erfolgreichem Gesamtabschluss auf Felix' Wunsch gelöscht.
+Keine zusätzliche Aufbau-/Aktivierungsroute durch die Begleitung, keine Bereinigung oder Veröffentlichung.
 
 Die obere Schaltfläche ist separat vereinfacht: `Datenbank-Update`, darunter beispielsweise
 `3/7 Master aufbauen · 32 %`. Die gemessene Unterphase wird im Dialog/Tooltip weiterhin vollständig erklärt.
@@ -102,11 +183,12 @@ Für die aktuelle Abnahme wurde `Später` empfohlen. Kein `COL26.9 XR`-Download,
 katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet. Das bezeichnet die frühere Reparaturabnahme,
 nicht die anschließend von Felix bestätigten regulären Quellenversuche.
 
-## Was vor dem nächsten Update beziehungsweise Audit offen bleibt
+## Was nach dem technischen Updateabschluss vor dem Audit offen bleibt
 
-- Den regulären Quellenupdatevertrag einschließlich der 2.173 separaten CoL-/Reichsfälle prüfen. Diese Fälle
-  sind nicht Teil des aktivierten Reparaturbestands. Gleiche Namen allein erlauben keine Zusammenführung,
-  Reichsänderung oder ID-Migration. Den laufenden, gesondert bestätigten Quellenversuch bis zur Schutzprüfung begleiten.
+- Den von Felix beauftragten automatischen Gesamtweg umsetzen: FN-Nutzungsnachweis und technische
+  Phasenübergänge ohne die heutigen wiederholten manuellen Aktionen, fachliche Rückfragen nur bei relevanten
+  Änderungen an Projekt-/zugewiesenen Arten und eigenen Daten. Die gezielte Suche-/Namensprüfung ist bestätigt;
+  Vollautomatik noch nicht implementiert. Technische Fehler oder unbekannte Nutzung nicht als Freigabe behandeln.
 - Die gebündelte Lightroom-Abnahme und die noch offenen Neue-Art-Regressionsabläufe durchführen; die
   bestätigten zwei Arten ersetzen keine umfassende Menü-, Orts-/Zeit-, Statistik-, Export- oder Migrationstestreihe.
 - Produktive Pause/Fortsetzung, Wiederanlauf und Rollback bei geöffneten Verbrauchern sowie Speicherpflege,

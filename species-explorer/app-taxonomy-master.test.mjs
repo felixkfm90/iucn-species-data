@@ -71,6 +71,47 @@ function readyStatus() {
   };
 }
 
+test("FN-Nutzung: Öffnen liest nur Status, Abbruch bestätigt nichts und frische Zustimmung bindet alle Kataloge", async () => {
+  for (const accept of [false, true]) {
+    const calls = [], prompts = [], messages = [], status = readyStatus();
+    const controller = masterUi.createTaxonomyMasterController({ state: { setPipelineMessage: (message) => messages.push(message) }, elements: elements(),
+      fetchJson: async (url, options) => {
+        calls.push({ url, payload: options?.body ? JSON.parse(options.body) : null });
+        if (url.endsWith("/catalog-usage/preview")) return { token: "receipt", catalogs: [{ catalogPath: "current.lrcat", totalPhotos: 129555, assignedPhotos: 4787 }] };
+        if (url.endsWith("/catalog-usage/save")) return { saved: true };
+        return status;
+      }, showQuickConfirm: async (prompt) => { prompts.push(prompt); return accept; }, escapeHtml: String,
+      renderDatabaseStatus() {}, setActionMessage: (message) => messages.push(message) });
+    controller.setup(); await new Promise(setImmediate);
+    assert.ok(calls.every((call) => !call.payload));
+    await controller.confirmCatalogUsage();
+    assert.match(prompts[0].message, /129\.555 Fotos.*4\.787.*alle deine FN-Kataloge.*seit ihrer Erfassung keine FN-Zuweisungen/);
+    const writes = calls.filter((call) => call.url.endsWith("/catalog-usage/save"));
+    assert.equal(writes.length, accept ? 1 : 0);
+    if (accept) assert.deepEqual(writes[0].payload, { token: "receipt", confirmed: true, allCatalogsConfirmed: true, unchangedSinceCapture: true });
+    assert.ok(calls.every((call) => !/\/(build|activate)$/.test(call.url)));
+  }
+});
+
+test("Unbenutzte Klassifikationen nutzen globale Richtlinie, fehlende Nutzung und Fehler starten keinen Aufbau", async () => {
+  for (const mode of ["missing", "error", "ready"]) {
+    const calls = [], status = readyStatus(), messages = [];
+    const controller = masterUi.createTaxonomyMasterController({ state: { setPipelineMessage: (message) => messages.push(message) }, elements: elements(),
+      fetchJson: async (url, options) => {
+        calls.push({ url, payload: options?.body ? JSON.parse(options.body) : null });
+        if (url.endsWith("/automatic-preview")) return mode === "missing" ? { available: false, message: "Nutzung fehlt" }
+          : { available: true, token: "fresh", candidateId: "candidate", usageRevision: "usage", matching: 2, deferred: 1 };
+        if (url.endsWith("/automatic-save")) { if (mode === "error") throw new Error("Katalog verändert"); return { saved: true, message: "Vorgemerkt" }; }
+        return status;
+      }, showQuickConfirm: async () => { throw new Error("Kein erneutes Einzelbestätigen nach Richtlinienfreigabe"); }, escapeHtml: String,
+      renderDatabaseStatus() {}, setActionMessage: (message) => messages.push(message) });
+    controller.render(status); await controller.automaticClassification();
+    assert.equal(calls.filter((call) => call.url.endsWith("/automatic-save")).length, mode === "missing" ? 0 : 1);
+    assert.ok(calls.every((call) => !/\/(build|activate)$/.test(call.url)));
+    assert.ok(messages.some((value) => value.includes(mode === "missing" ? "Nutzung fehlt" : mode === "error" ? "Katalog verändert" : "Vorgemerkt")));
+  }
+});
+
 test("Mastervorschau zeigt Differenzen und gibt nur geprüfte Aktionen frei", () => {
   const visible = elements();
   const controller = masterUi.createTaxonomyMasterController({

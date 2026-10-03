@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
+import { isMapProtected } from "./scripts/map-provenance.mjs";
 import {
   audioFormatLabel,
   detectAudioFormat,
@@ -213,6 +214,7 @@ function speciesAssetDir(safeName) {
 }
 
 function isManualAsset(safeName, assetType) {
+  if (assetType === "map") return isMapProtected(assetOverrides.assets?.[safeName]?.map);
   return assetOverrides.assets?.[safeName]?.[assetType]?.manual === true;
 }
 

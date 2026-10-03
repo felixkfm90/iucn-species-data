@@ -37,7 +37,7 @@ class Element {
 
 function harness(overrides = {}) {
   const elements = Object.fromEntries([
-    "mapFileInput", "mapDropZone", "mapFileStatus", "mapReasonInput", "mapSourceInput",
+    "mapFileInput", "mapDropZone", "mapFileStatus", "mapReasonInput", "mapSourceInput", "mapCareModeInput",
     "mapMessage", "mapPreview", "mapCurrentImage", "mapNewImage", "mapCurrentMeta", "mapNewMeta",
     "mapPreviewButton", "mapSaveButton", "mapAutoSearchButton", "mapBrowserLink", "mapDeleteButton",
   ].map((key) => [key, new Element()]));
@@ -88,7 +88,7 @@ test("Dateiablage prüft lokal, ergänzt IUCN-Quelle und speichert erst nach Bes
   assert.match(h.mapFileStatus.textContent, /T22720330A132000123.jpg/);
   await h.mapSaveButton.emit("click");
   assert.equal(h.calls.length, 2);
-  assert.deepEqual(h.calls[1].body, { token: "preview-token" });
+  assert.deepEqual(h.calls[1].body, { token: "preview-token", careMode: "manual" });
   assert.equal(h.closes(), 1);
 });
 
@@ -108,6 +108,22 @@ test("Generische PNG-Datei ohne Quellenangabe erfindet keine IUCN-Provenienz", a
   await drop(h, [{ name: "meine-karte.png", size: 123 }]);
   assert.equal(h.calls[0].body.source, "");
   assert.equal(h.calls[0].body.originalName, "meine-karte.png");
+});
+
+test("Browserherkunft braucht eigene Wahl und geänderte Pflegewahl entwertet die Vorschau", async () => {
+  const h = harness();
+  await drop(h);
+  assert.equal(h.calls[0].body.careMode, "manual");
+  h.mapCareModeInput.value = "iucn-browser";
+  await h.mapCareModeInput.emit("change");
+  assert.equal(h.mapSaveButton.disabled, true);
+  await h.mapSaveButton.emit("click");
+  assert.equal(h.calls.length, 1);
+  await h.mapPreviewButton.emit("click");
+  assert.equal(h.calls[1].body.careMode, "iucn-browser");
+  assert.equal(h.calls[1].body.imageBase64, "image-bytes");
+  await h.mapSaveButton.emit("click");
+  assert.equal(h.calls[2].body.careMode, "iucn-browser");
 });
 
 test("Browserlink ergänzt nur Quellenangabe und startet keinen Abruf", async () => {

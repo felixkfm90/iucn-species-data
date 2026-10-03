@@ -1,4 +1,5 @@
 local LrDate = import "LrDate"
+local LrTasks = import "LrTasks"
 
 local LocationSuggestionReader = require "LocationSuggestionReader"
 local PluginState = require "PluginState"
@@ -94,24 +95,43 @@ local function keywordName(keyword)
   if type(keyword) == "string" then
     return cleanText(keyword)
   end
-  local ok, value = pcall(function()
+  if type(keyword) ~= "table" and type(keyword) ~= "userdata" then
+    return ""
+  end
+  local ok, value = LrTasks.pcall(function()
     return keyword:getName()
   end)
-  return ok and cleanText(value) or ""
+  if not ok then
+    error("Lightroom konnte einen zugeordneten Stichwortnamen nicht lesen: " .. tostring(value), 0)
+  end
+  return cleanText(value)
 end
 
 local function keywordLocalIdentifier(keyword)
-  local ok, value = pcall(function()
+  local ok, value = LrTasks.pcall(function()
     return keyword.localIdentifier
   end)
   value = ok and cleanText(value) or ""
-  if value == "" then
-    ok, value = pcall(function()
-      return keyword:getLocalIdentifier()
-    end)
-    value = ok and cleanText(value) or ""
-  end
   return value ~= "" and value or nil
+end
+
+local function assignedKeywords(photo)
+  -- SDK: keywords ist die Liste tatsächlich zugeordneter LrKeyword-Objekte.
+  -- SDK-Leseaufrufe dürfen yielden; normales Lua-pcall würde deren Fehler
+  -- verschlucken und anschließend nur die FN-Metadaten leeren.
+  local ok, assigned = LrTasks.pcall(function()
+    return photo:getRawMetadata("keywords")
+  end)
+  if not ok or type(assigned) ~= "table" then
+    error("Lightroom konnte die zugeordneten Stichwörter nicht lesen: " .. tostring(assigned), 0)
+  end
+  for key, value in pairs(assigned) do
+    local candidate = (type(key) == "table" or type(key) == "userdata") and key or value
+    if type(candidate) ~= "table" and type(candidate) ~= "userdata" then
+      error("Lightroom lieferte kein gültiges zugeordnetes Stichwortobjekt; FN-Metadaten bleiben erhalten.", 0)
+    end
+  end
+  return assigned
 end
 
 local function createKeyword(catalog, name)
@@ -304,13 +324,6 @@ local function storedKeywordNames(photo)
   return keywordNamesForValues(values)
 end
 
-local function storedKeywordIds(photo)
-  return splitStored(
-    photo:getPropertyForPlugin(_PLUGIN, "locationTimeKeywordIds"),
-    "[^,]+"
-  )
-end
-
 local function setMetadata(photo, field, value)
   photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
 end
@@ -336,53 +349,41 @@ end
 local function removeStoredKeywords(catalog, photo, protectedNames)
   local removed = 0
   local seen = {}
+  local candidates = {}
+  local function rememberAssigned(candidate)
+    if type(candidate) ~= "table" and type(candidate) ~= "userdata" then
+      return
+    end
+    local name = keywordName(candidate)
+    if hasManagedSuffix(name) and not (protectedNames and protectedNames[string.lower(name)]) then
+      table.insert(candidates, candidate)
+    end
+  end
   local function removeCandidate(candidate)
     local name = keywordName(candidate)
     local key = string.lower(name)
-    if name == "" or seen[key] or not hasManagedSuffix(name) then
+    local identifier = keywordLocalIdentifier(candidate)
+    local objectKey = identifier and ("id:" .. identifier) or candidate
+    if name == "" or seen[objectKey] or not hasManagedSuffix(name) then
       return
     end
-    seen[key] = true
+    seen[objectKey] = true
     if protectedNames and protectedNames[key] then
       return
     end
-    local keyword = type(candidate) == "string" and createKeyword(catalog, name) or candidate
-    if keyword then
-      photo:removeKeyword(keyword)
-      removed = removed + 1
-    end
+    photo:removeKeyword(candidate)
+    removed = removed + 1
   end
 
-  for _, name in ipairs(storedKeywordNames(photo)) do
-    removeCandidate(name)
+  -- Nur tatsächlich am Foto sichtbare Zuordnungen entfernen. Gespeicherte
+  -- Namen oder FN-Werte sind kein Beleg für eine noch vorhandene Zuordnung;
+  -- insbesondere dürfen Rücknahmen keine neuen Stichwörter erzeugen.
+  for key, value in pairs(assignedKeywords(photo)) do
+    rememberAssigned(key)
+    rememberAssigned(value)
   end
-  for _, id in ipairs(storedKeywordIds(photo)) do
-    local ok, keyword = pcall(function()
-      return catalog:getKeywordByLocalIdentifier(id)
-    end)
-    if ok and keyword then
-      removeCandidate(keyword)
-    end
-  end
-  -- Lightroom liefert Stichwörter je nach Katalogzustand nicht immer über
-  -- die gespeicherten lokalen IDs zurück. Deshalb werden zusätzlich die
-  -- aktuell am Foto sichtbaren Stichwortobjekte und die formatierte flache
-  -- Anzeige geprüft. Die reservierten Endungen begrenzen die Entfernung
-  -- weiterhin strikt auf FN-Ort und FN-Zeit.
-  local rawOk, assigned = pcall(function()
-    return photo:getRawMetadata("keywords")
-  end)
-  for key, value in pairs(rawOk and assigned or {}) do
-    removeCandidate(key)
-    removeCandidate(value)
-  end
-  local formattedOk, formatted = pcall(function()
-    return photo:getFormattedMetadata("keywordTags")
-  end)
-  if formattedOk then
-    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      removeCandidate(cleanText(part))
-    end
+  for _, candidate in ipairs(candidates) do
+    removeCandidate(candidate)
   end
   return removed
 end
@@ -506,23 +507,9 @@ function LocationTimeWriter.managedKeywordNameSet(photo)
   for _, name in ipairs(storedKeywordNames(photo)) do
     names[string.lower(name)] = true
   end
-  local rawOk, assigned = pcall(function()
-    return photo:getRawMetadata("keywords")
-  end)
-  for key, value in pairs(rawOk and assigned or {}) do
+  for key, value in pairs(assignedKeywords(photo)) do
     for _, candidate in ipairs({ key, value }) do
       local name = keywordName(candidate)
-      if hasManagedSuffix(name) then
-        names[string.lower(name)] = true
-      end
-    end
-  end
-  local formattedOk, formatted = pcall(function()
-    return photo:getFormattedMetadata("keywordTags")
-  end)
-  if formattedOk then
-    for part in string.gmatch(tostring(formatted or ""), "([^,]+)") do
-      local name = cleanText(part)
       if hasManagedSuffix(name) then
         names[string.lower(name)] = true
       end
@@ -628,7 +615,7 @@ local function runWithWriteAccess(catalog, actionName, callback)
 end
 
 function LocationTimeWriter.execute(catalog, photos, mode, options, preparedPlans)
-  local plans = preparedPlans or LocationTimeWriter.prepare(catalog, photos)
+  local plans = preparedPlans or (mode == "remove" and {} or LocationTimeWriter.prepare(catalog, photos))
   local beforeStatistics = {}
   for index, photo in ipairs(photos or {}) do
     beforeStatistics[index] = Statistics.photoSnapshot(photo)

@@ -1,3 +1,5 @@
+import { isMapProtected, mapCareState } from "../scripts/map-provenance.mjs";
+
 export function synchronizeManualMapDocumentation(
   markdown,
   assetOverrides,
@@ -9,7 +11,11 @@ export function synchronizeManualMapDocumentation(
     const source = map.source
       ? `[Quelle](${String(map.source).replace(/\|/g, "%7C").replace(/\)/g, "%29")})`
       : "Manuell über Arten-Explorer gepflegt.";
-    return `| ${cell(map.germanName || safeName)} | ${cell(safeName)} | \`species-assets/${safeName}/map.jpg\` | ${cell(map.reason || "Manuell gepflegte Karte.")} | ${source} | ${updatedDate} | erledigt/geprueft |`;
+    const care = mapCareState(map);
+    const reason = care.browserImported
+      ? `IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. ${map.reason || ""}`
+      : map.reason || "Manuell gepflegte Karte.";
+    return `| ${cell(map.germanName || safeName)} | ${cell(safeName)} | \`species-assets/${safeName}/map.jpg\` | ${cell(reason)} | ${source} | ${updatedDate} | erledigt/geprueft |`;
   };
   const filtered = [];
   for (const line of lines) {
@@ -22,8 +28,8 @@ export function synchronizeManualMapDocumentation(
     }
     const safeName = match[2].trim();
     const map = assetOverrides.assets?.[safeName]?.map;
-    if (!map || map.manual === false) continue;
-    filtered.push(map?.manual === true && (map.source || map.importedAt)
+    if (!isMapProtected(map)) continue;
+    filtered.push((map.source || map.importedAt)
       ? manualMapRow(safeName, map)
       : line);
   }
@@ -33,7 +39,7 @@ export function synchronizeManualMapDocumentation(
     if (match) documented.add(match[1]);
   }
   const addedRows = Object.entries(assetOverrides.assets ?? {})
-    .filter(([safeName, entry]) => entry?.map?.manual === true && !documented.has(safeName))
+    .filter(([safeName, entry]) => isMapProtected(entry?.map) && !documented.has(safeName))
     .sort(([left], [right]) => left.localeCompare(right, "de"))
     .map(([safeName, entry]) => manualMapRow(safeName, entry.map));
   if (addedRows.length) {
@@ -53,8 +59,8 @@ export function synchronizeManualMapDocumentation(
     .join("\n")
     .replace(/^Stand:\s*\d{4}-\d{2}-\d{2}$/m, `Stand: ${updatedDate}`)
     .replace(
-      /Aktuell sind .*? Karten? als manuell gepflegt dokumentiert\./,
-      `Aktuell sind ${remainingCount} ${mapLabel} als manuell gepflegt dokumentiert.`,
+      /Aktuell sind .*? Karten? als (?:manuell gepflegt|geschützt) dokumentiert\./,
+      `Aktuell sind ${remainingCount} ${mapLabel} als geschützt dokumentiert.`,
     );
   return hadFinalNewline && !next.endsWith("\n") ? `${next}\n` : next;
 }

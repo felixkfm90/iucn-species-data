@@ -387,7 +387,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appNewSpeciesWorkflowSource, /class="new-species-map-file-input" type="file"/);
   assert.match(appNewSpeciesWorkflowSource, /mapReview\.addEventListener\(eventName/);
   assert.match(appNewSpeciesWorkflowSource, /const showWorkflowError[\s\S]*?state\.newSpeciesPipelineActive = false;[\s\S]*?setPipelineBusy\(false\);/);
-  assert.match(htmlSource, /Manuell geschützte Karten/);
+  assert.match(htmlSource, /Geschützte Karten/);
+  assert.match(htmlSource, /id="map-provenance-counts"/);
+  assert.match(appEditorMapSource, /careMode: mapCareModeInput\?\.value/);
   assert.match(cssSource, /\.new-species-value-unit/);
   assert.match(cssSource, /\.new-species-steps li\.reachable/);
   assert.match(modularAppSource, /Artportrait wird lokal übernommen/);
@@ -406,7 +408,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /\/api\/pipeline\/assets\/review/);
   assert.match(modularAppSource, /autoStart/);
   assert.match(modularAppSource, /startCurrentPipelinePreview/);
-  assert.match(htmlSource, /Manuelle und fehlende Karten erneut suchen/);
+  assert.match(htmlSource, /Geschützte und fehlende Karten erneut suchen/);
   assert.match(appPipelineSource, /NC- und fehlende Sounds erneut suchen/);
   assert.doesNotMatch(appSource, /Fehlende Artporträts ergänzen/);
   assert.doesNotMatch(appSource, /strikten Ein-Bild-Regel/);
@@ -544,7 +546,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(pipelineControllerSource, /reviewMode:\s*plan\.mode/);
   assert.match(pipelineControllerSource, /copyFileSync\(resolvedBackupPath, targetPath\)/);
   assert.match(pipelineControllerSource, /synchronizeStoredManualMapDocumentation/);
-  assert.match(explorerModelSource, /typeof mapOverride\?\.manual === "boolean"/);
+  assert.match(explorerModelSource, /mapCareState\(mapOverride, manualMapSafeNames\.has\(safeName\)\)/);
+  assert.match(explorerModelSource, /const isManualMap = mapCare\.protectedFromPipeline/);
   assert.match(assetWorkflowSource, /async function previewMapAsset\(id, payload\)/);
   assert.match(assetWorkflowSource, /async function saveMapAsset\(id, payload\)/);
   assert.match(serverSource, /publishAssetChanges = false/);
@@ -808,7 +811,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /Backup und Einstellungen/);
   assert.match(htmlSource, /<details class="action-group action-group-danger">/);
   assert.match(htmlSource, /Neue\/Unvollständige Arten aktualisieren/);
-  assert.match(htmlSource, /Manuelle und fehlende Karten erneut bei IUCN prüfen/);
+  assert.match(htmlSource, /Geschützte und fehlende Karten erneut bei IUCN prüfen/);
   assert.match(htmlSource, /id="asset-review-dialog"/);
   assert.match(htmlSource, /id="asset-review-list"/);
   assert.match(htmlSource, /id="asset-review-map-lightbox"/);
@@ -825,7 +828,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /value="asset-issues"/);
   assert.match(
     htmlSource,
-    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Manuelle Karte<\/option>\s*<option value="nc">NC-Sound<\/option>\s*<option value="sound-care">Sound fehlt\/manuell gepflegt<\/option>/s,
+    /value="issues">Alle Probleme<\/option>\s*<option value="asset-issues">Assetproblem<\/option>\s*<option value="data-issues">Datenabweichung<\/option>\s*<option value="missing-portrait">Fehlendes Artporträt<\/option>\s*<option value="manual-map">Geschützte Karte<\/option>\s*<option value="nc">NC-Sound<\/option>\s*<option value="sound-care">Sound fehlt\/manuell gepflegt<\/option>/s,
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /html,\s*body\s*\{[^}]*height:\s*100%[^}]*overflow:\s*hidden/s);

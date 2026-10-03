@@ -30,7 +30,7 @@ test("Automatisch übernommene Karten verlassen die manuelle Dokumentation", () 
   assert.doesNotMatch(synchronized, /species-assets\/Amsel\/map\.jpg/);
   assert.match(synchronized, /species-assets\/Drossel\/map\.jpg/);
   assert.match(synchronized, /Stand: 2026-06-20/);
-  assert.match(synchronized, /Aktuell sind 1 Karte als manuell gepflegt dokumentiert\./);
+  assert.match(synchronized, /Aktuell sind 1 Karte als geschützt dokumentiert\./);
 });
 
 test("Neue manuelle Karten werden mit Quelle und Pflegegrund dokumentiert", () => {
@@ -67,5 +67,16 @@ test("Neue manuelle Karten werden mit Quelle und Pflegegrund dokumentiert", () =
   assert.match(synchronized, /species-assets\/Amsel\/map\.jpg/);
   assert.match(synchronized, /Automatische Karte unvollständig\./);
   assert.match(synchronized, /\[Quelle\]\(https:\/\/example\.org\/map\.jpg\)/);
-  assert.match(synchronized, /Aktuell sind 1 Karte als manuell gepflegt dokumentiert\./);
+  assert.match(synchronized, /Aktuell sind 1 Karte als geschützt dokumentiert\./);
+});
+
+test("Browserangabe und eigenständiger Pipeline-Schutz sind keine technische Herkunftsbestätigung", () => {
+  const map = { manual: false, protectFromPipeline: true, careMode: "provider", reason: "Lokaler Import",
+    provenance: { provider: "iucn", acquisition: "browser-file", assurance: "user-declared" },
+    source: "https://www.iucnredlist.org/api/v4/assessments/1/distribution_map/jpg" };
+  const markdown = "Aktuell sind 0 Karten als manuell gepflegt dokumentiert.\n\n## Pflege-Regeln\n";
+  const result = synchronizeManualMapDocumentation(markdown, { assets: { Amsel: { map } } }, "2026-10-03");
+  assert.match(result, /1 Karte als geschützt dokumentiert/);
+  assert.match(result, /IUCN-Browserimport laut Nutzerangabe/);
+  assert.match(result, /nicht technisch verifiziert/);
 });

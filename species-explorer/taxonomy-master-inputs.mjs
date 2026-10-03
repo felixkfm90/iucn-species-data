@@ -9,6 +9,15 @@ import { reuseMasterDependencyPlan } from "./taxonomy-master-graph-reuse.mjs";
 
 export const MASTER_INPUT_FILE = "build-inputs.sqlite";
 const hash = (value) => crypto.createHash("sha256").update(canonicalBuildInput(value)).digest("hex");
+export function normalizeProtectedMasterIds(ids = []) {
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !/^mtx_[a-f0-9]{32}$/.test(id))) {
+    throw new TypeError("Ungültige geschützte Master-IDs für den Aufbau.");
+  }
+  return [...new Set(ids)].sort();
+}
+export function protectedMasterIdsRevision(ids = []) {
+  return hash(normalizeProtectedMasterIds(ids));
+}
 const RULE_FILES = ["taxonomy-source-recovery-conflicts.mjs", "taxonomy-source-recovery-scope.mjs", "taxonomy-source-recovery-replacement.mjs", "taxonomy-source-recovery-identities.mjs", "taxonomy-source-recovery-candidate.mjs", "taxonomy-master-continuity.mjs", "taxonomy-partial-record.mjs", "taxonomy-master-inputs.mjs", "taxonomy-build-inputs.mjs", "taxonomy-master-dependencies.mjs", "taxonomy-master-reuse.mjs", "taxonomy-master-candidate.mjs", "taxonomy-master-checkpoint.mjs",
   "taxonomy-master-service.mjs", "taxonomy-master-slices.mjs", "taxonomy-master-model.mjs", "taxonomy-master-rules.mjs",
   "taxonomy-master-schema.mjs", "taxonomy-master-storage.mjs", "taxonomy-master-previous-state.mjs", "taxonomy-taxon-quality.mjs",
@@ -16,7 +25,8 @@ const RULE_FILES = ["taxonomy-source-recovery-conflicts.mjs", "taxonomy-source-r
   "taxonomy-master-job.mjs", "taxonomy-master-worker.mjs", "taxonomy-master-process.mjs", "../scripts/taxonomy-master-worker.mjs",
   "taxonomy-master-source-binding.mjs", "taxonomy-master-run-controller.mjs", "taxonomy-master-search-reuse.mjs",
   "taxonomy-master-graph-reuse.mjs", "taxonomy-master-writer.mjs", "taxonomy-master-reuse-reader.mjs",
-  "taxonomy-classification-review.mjs", "taxonomy-classification-build.mjs", "taxonomy-classification-deferral.mjs", "taxonomy-master-lifecycle.mjs"];
+  "taxonomy-classification-review.mjs", "taxonomy-classification-build.mjs", "taxonomy-classification-deferral.mjs", "taxonomy-master-lifecycle.mjs",
+  "taxonomy-classification-automation.mjs", "lightroom-catalog-usage.mjs"];
 
 export async function masterBuildRulesRevision() {
   const contents = await Promise.all(RULE_FILES.map(async (name) => [name,
@@ -56,7 +66,7 @@ export function coverMasterInputSelection({ colRelease, colRecords, targetNames,
 // can discard/redirect a historic group. Only bounded buffers are duplicated.
 export async function writeMasterBuildInputs({ directory, candidateId, baseMasterVersion, masterSchema,
   releases, coverage, rawCounts, recordLocations, corrections, projects, retainedTaxa, identityRevision,
-  onProgress = () => {} }) {
+  protectedMasterIds = [], onProgress = () => {} }) {
   if (!coverage) return { available: false, reason: "unverified-input-coverage" };
   const loaded = await loadedRules;
   if (loaded.error) throw loaded.error;
@@ -90,7 +100,8 @@ export async function writeMasterBuildInputs({ directory, candidateId, baseMaste
     checksum: digest.digest("hex"), expectedCount: count }));
   const contract = { candidateId, baseMasterVersion: baseMasterVersion || "no-active-master", masterSchema,
     normalizerVersion: "master-inputs-1", rulesRevision: revision, identitiesRevision: identityRevision,
-    correctionsRevision: hash(corrections), projectsRevision: hash({ projects, retainedTaxa }), sources,
+    correctionsRevision: hash(corrections), projectsRevision: hash({ projects, retainedTaxa }),
+    protectedMasterIdsRevision: protectedMasterIdsRevision(protectedMasterIds), sources,
     // Observational release provenance is preserved without making a timestamp a
     // semantic record change. The input digest is not an archive checksum.
     upstreamReleases: releases };

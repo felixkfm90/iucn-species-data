@@ -52,7 +52,7 @@
         <div><strong id="species-count">–</strong><span>Arten</span></div>
         <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
         <div><strong id="nc-count">–</strong><span>NC-Sounds</span></div>
-        <div title="Zählt gespeicherte, manuell geschützte Karten. Ein fehlgeschlagener automatischer Download ändert diesen Status nicht."><strong id="manual-map-count">–</strong><span>Manuell geschützte Karten</span></div>
+        <div title="Zählt gespeicherte Schutzentscheidungen, nicht fehlgeschlagene Downloads. Browserherkunft ist eine eigene Angabe, kein technischer Herkunftsnachweis."><strong id="manual-map-count">–</strong><span>Geschützte Karten</span><small id="map-provenance-counts"></small></div>
       </section>
 
       <section class="validation-dashboard" aria-labelledby="validation-title">
@@ -110,7 +110,7 @@
                   <option value="asset-issues">Assetproblem</option>
                   <option value="data-issues">Datenabweichung</option>
                   <option value="missing-portrait">Fehlendes Artporträt</option>
-                  <option value="manual-map">Manuelle Karte</option>
+                  <option value="manual-map">Geschützte Karte</option>
                   <option value="nc">NC-Sound</option>
                   <option value="sound-care">Sound fehlt/manuell gepflegt</option>
                 </select>
@@ -493,8 +493,8 @@
                 <span>Nur Arten mit fehlenden Daten oder Assets</span>
               </button>
               <button type="button" data-pipeline-mode="manual-maps">
-                <strong>Manuelle und fehlende Karten erneut suchen</strong>
-                <span>Manuelle und fehlende Karten erneut bei IUCN prüfen</span>
+                <strong>Geschützte und fehlende Karten erneut suchen</strong>
+                <span>Geschützte und fehlende Karten erneut bei IUCN prüfen</span>
               </button>
               <button type="button" data-pipeline-mode="nc-sounds">
                 <strong>NC- und fehlende Sounds erneut suchen</strong>

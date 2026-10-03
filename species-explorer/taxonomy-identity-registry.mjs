@@ -113,6 +113,11 @@ export function validateIdentityRegistry(value = emptyIdentityRegistry()) {
     if (event.type === "classification") checkClassification(event, sources, targets);
     else if (event.type === "classification-deferred") checkClassificationDeferral(event, sources, targets);
     else if (event.classificationCase || event.classificationBatchRevision) throw new Error("Klassifikationsbelege gehören nur zu einer bestätigten Klassifikationsentscheidung.");
+    if (event.classificationAutomation && (!["classification", "classification-deferred"].includes(event.type)
+        || event.classificationAutomation.policy !== "unused-classifications-v1"
+        || !/^[a-f0-9]{64}$/.test(event.classificationAutomation.usageRevision || ""))) {
+      throw new Error("Ungültiger FN-Nutzungsbeleg einer automatischen Klassifikation.");
+    }
     checkIdentityProjectAssignments(event, projectState, taxonIdentityKey);
     const deferral = event.type === "classification-deferred";
     const cardinality = deferral ? sources.length > 0 && sources.length === targets.length
@@ -206,7 +211,7 @@ export function identityRegistryState(registry = emptyIdentityRegistry()) {
 
 // Incremental prefix hashing keeps a large confirmed batch linear in its size.
 // Generic identity previews cannot create this privileged decision type.
-export function appendClassificationBatch({ registry, cases, batchRevision, sourceRevision, inputRevision, confirmedAt, deferred = false }) {
+export function appendClassificationBatch({ registry, cases, batchRevision, sourceRevision, inputRevision, confirmedAt, deferred = false, automation = null }) {
   registry = validateIdentityRegistry(registry);
   if (!Array.isArray(cases) || !cases.length || registry.events.length + cases.length > MAX_EVENTS) {
     throw new Error("Die Klassifikationsübernahme ist leer oder überschreitet die unterstützte Registergröße.");
@@ -225,7 +230,8 @@ export function appendClassificationBatch({ registry, cases, batchRevision, sour
       evidence: [...proof.sources.flatMap((entry) => entry.evidence), ...proof.target.colRecords.map((record) => ({
         provider: "catalogue-of-life", providerVersion: proof.colVersion, providerRecordId: record.providerRecordId }))], baseVersion: proof.baseVersion,
       sourceRevision, inputRevision, registryRevision: prefix.copy().update("]}").digest("hex"),
-      classificationCase: proof, classificationBatchRevision: batchRevision, confirmedAt };
+      classificationCase: proof, classificationBatchRevision: batchRevision, confirmedAt,
+      ...(automation ? { classificationAutomation: automation } : {}) };
     const event = { ...body, eventId: digest(body) };
     if (events.length) prefix.update(",");
     prefix.update(JSON.stringify(event));

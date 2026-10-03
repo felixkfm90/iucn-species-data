@@ -20,6 +20,26 @@ import { benchmarkRows } from "../scripts/taxonomy-master-benchmark.mjs";
 const now = () => new Date("2026-09-14T10:00:00Z");
 const json = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
 
+test("Update-Eigentümer ist im echten Auftrag gebunden; falscher und manipulierter Eigentümer bleiben gesperrt", async (t) => {
+  const f = await fixture(t), service = f.service();
+  const updateRunId = "update-00000000-0000-4000-8000-000000000001";
+  await service.startBuild({ refreshProviders: false, updateRunId });
+  await service.runPromise;
+  const status = await service.status();
+  assert.equal(status.status, "ready", status.error);
+  assert.equal(status.buildJob.updateRunId, updateRunId);
+  await service.runController.assertReadyForActivation(updateRunId);
+  await assert.rejects(service.runController.assertReadyForActivation("update-00000000-0000-4000-8000-000000000002"), /gehört nicht/);
+  const current = await service.runController.current();
+  await atomicWriteJson(service.runController.currentFile, { ...current, updateRunId: "update-00000000-0000-4000-8000-000000000002" });
+  await assert.rejects(service.runController.assertReadyForActivation("update-00000000-0000-4000-8000-000000000002"), /gehört nicht/);
+  await atomicWriteJson(service.runController.currentFile, current);
+  const recipePath = path.join(masterJobDirectory(f.root, current.id), "recipe.json");
+  const recipe = await json(recipePath);
+  await atomicWriteJson(recipePath, { ...recipe, timestamp: "2026-01-01T00:00:00Z" });
+  await assert.rejects(service.runController.assertReadyForActivation(updateRunId), /Auftrag|Prüfsumme|verändert/);
+});
+
 test("Einmaliger Grundlagenlauf mit echtem Worker erhält Altstand bis zur Paarfreigabe und verschwindet danach", async (t) => {
   const f = await fixture(t), searchRoot = path.join(path.dirname(f.root), "lightroom");
   const shared = { lightroomSearchRoot: searchRoot,

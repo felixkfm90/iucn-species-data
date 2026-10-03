@@ -1,5 +1,6 @@
 import { withTaxonomyBuildCache } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
+import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
 import { assertMasterTaxonIdsRetained } from "./taxonomy-master-continuity.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -127,6 +128,7 @@ async function preparePublicationUnlocked({ taxonomyRoot, searchRoot, id, action
   const sourceManifestText = await fs.readFile(manifestAt(sourceDatabase), "utf8");
   if (expectedSourceManifest && sourceManifestText !== expectedSourceManifest) throw new Error("Der Kandidat wurde vor der Vorbereitung geändert.");
   const sourceManifest = JSON.parse(sourceManifestText);
+  if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot, { full: true });
   const masterBytes = await taxonomyDirectoryBytes(path.dirname(sourceDatabase));
   const searchBytes = await taxonomyDirectoryBytes(path.dirname(lightroomSearchDatabasePath(searchRoot)));
   await checkSpace(searchRoot, masterBytes * 2 + searchBytes * 2);
@@ -207,12 +209,14 @@ export async function publishTaxonomyPair({ taxonomyRoot, searchRoot, confirmed 
       expectedSourceManifest: sourceManifestText, buildPackage, onProgress, now, signal });
     signal?.throwIfAborted();
     if (prepared.pointer?.active?.id !== id || prepared.sourceManifestText !== sourceManifestText) throw new Error("Unpassendes Ergebnis der Paarvorbereitung.");
+    if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot, { full: true });
     onProgress({ phase: "activate", percent: 99, message: "Geprüfter Master und Suchpaket werden gemeinsam aktiviert." });
     await withTaxonomyCorrectionLock(taxonomyRoot, async () => {
       if (await generation(taxonomyRoot, searchRoot, readInputs) !== baseline) {
         throw new Error("Datenstand oder Namenswahl wurden zwischenzeitlich geändert. Beide bisherigen Versionen bleiben aktiv.");
       }
       await validateInputs(sourceManifest);
+      if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot);
       if (await fs.readFile(manifestAt(sourceDatabase), "utf8") !== sourceManifestText) {
         throw new Error("Der Kandidat wurde während der Aktivierung geändert.");
       }

@@ -51,6 +51,7 @@
       const mapFileInput = elements.detailPanel.querySelector(".map-file-input");
       const mapReasonInput = elements.detailPanel.querySelector(".map-reason-input");
       const mapSourceInput = elements.detailPanel.querySelector(".map-source-input");
+      const mapCareModeInput = elements.detailPanel.querySelector(".map-care-mode-input");
       const mapMessage = elements.detailPanel.querySelector(".map-edit-message");
       const mapPreview = elements.detailPanel.querySelector(".map-edit-preview");
       const mapCurrentImage = elements.detailPanel.querySelector(".map-preview-current");
@@ -123,6 +124,7 @@
         mapFileStatus: elements.detailPanel.querySelector(".map-file-status"),
         mapReasonInput,
         mapSourceInput,
+        mapCareModeInput,
         mapMessage,
         mapPreview,
         mapCurrentImage,

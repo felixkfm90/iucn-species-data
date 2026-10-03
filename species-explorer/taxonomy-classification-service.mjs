@@ -10,6 +10,7 @@ import { assertClassificationReviewSummary, assertMatchingClassificationCase, as
   isClassificationReviewConflict } from "./taxonomy-classification-review.mjs";
 import { canonicalBuildInput } from "./taxonomy-build-inputs.mjs";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
+import { catalogUsageStatus, assertCatalogUsageRevision } from "./lightroom-catalog-usage.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(canonicalBuildInput(value)).digest("hex");
 const same = (a, b) => canonicalBuildInput(a) === canonicalBuildInput(b);
@@ -18,7 +19,7 @@ const evidenceKey = (value) => value.map(canonicalBuildInput).sort();
 // Invoked only by the explicit batch button. It reads stored conflicts and
 // indexed affected taxa, never downloads, builds, activates or touches photos.
 export function createClassificationReviewService({ taxonomyRoot, now, readInputRevision, readReview, writeReview }) {
-  async function inspect(deferred = false) {
+  async function inspect(deferred = false, usage = null, allowEmpty = false) {
     const [activeManifest, candidateManifest, pending] = await Promise.all([
       fs.readFile(taxonomyMasterManifestPath(taxonomyRoot), "utf8").then(JSON.parse),
       fs.readFile(taxonomyMasterManifestPath(taxonomyRoot, "staging"), "utf8").then(JSON.parse), readReview(),
@@ -66,8 +67,12 @@ export function createClassificationReviewService({ taxonomyRoot, now, readInput
       }
       const saved = new Set(additions.map((event) => event.classificationCase.revision));
       const eligible = cases.filter((value) => (value.category !== "matching-provider-id") === deferred && !saved.has(value.revision));
-      if (!eligible.length) throw new Error("Diese Klassifikationsfälle sind bereits vorgemerkt oder nicht vorhanden; keine doppelte Übernahme.");
+      if (!eligible.length && !usage && !allowEmpty) throw new Error("Diese Klassifikationsfälle sind bereits vorgemerkt oder nicht vorhanden; keine doppelte Übernahme.");
+      const correction = await readActiveTaxonomyCorrectionRelease(taxonomyRoot, { expectedMasterVersion: activeManifest.candidateId });
+      const protectedIds = new Set([...(usage?.usedIds || []), ...(correction?.entries || []).map((entry) => entry.masterTaxonId),
+        ...registry.events.filter((event) => !event.classificationAutomation).flatMap((event) => [...event.sources, ...event.targets].map((entry) => entry.masterTaxonId))]);
       const boundDetails = [];
+      const automaticCases = [];
       const selectedIds = new Set(), selectedKeys = new Set();
       const byRevision = new Map(rows.map((row) => [row.conflict_id.slice("classification_".length), row]));
       for (const value of eligible) {
@@ -96,16 +101,68 @@ export function createClassificationReviewService({ taxonomyRoot, now, readInput
         // SQLite returns name rows with a null prototype; bind their JSON data,
         // not the runtime-specific row object representation.
         boundDetails.push(JSON.parse(JSON.stringify({ sources, target })));
+        if (usage) {
+          const protectedTaxon = (database, taxon) => protectedIds.has(taxon.masterTaxonId) || taxon.projects.length
+            || database.prepare("SELECT 1 FROM master_field_assertion WHERE master_taxon_id=? AND origin_kind IN ('manual','project') LIMIT 1").get(taxon.masterTaxonId)
+            || database.prepare("SELECT 1 FROM master_taxon_status WHERE master_taxon_id=? AND status_name='manually-protected' LIMIT 1").get(taxon.masterTaxonId)
+            || database.prepare("SELECT 1 FROM master_decision WHERE master_taxon_id=? LIMIT 1").get(taxon.masterTaxonId);
+          if (!sources.some((source) => protectedTaxon(active, source)) && !protectedTaxon(candidate, target)) automaticCases.push(value);
+        }
       }
-      const correction = await readActiveTaxonomyCorrectionRelease(taxonomyRoot, { expectedMasterVersion: activeManifest.candidateId });
-      const token = digest({ activeManifest, candidateManifest, registry, boundDetails, cases, deferred, correctionRevision: correction?.revision || "" });
+      const selected = usage ? automaticCases : eligible;
+      const token = digest({ activeManifest, candidateManifest, registry, boundDetails, cases, deferred,
+        correctionRevision: correction?.revision || "", ...(usage ? { usageRevision: usage.revision, selected } : {}) });
       // Validate the entire prospective history while still in read-only preview.
-      appendClassificationBatch({ registry, cases: eligible, batchRevision: token, sourceRevision: revisions.identitySources,
+      if (selected.length) appendClassificationBatch({ registry, cases: selected, batchRevision: token, sourceRevision: revisions.identitySources,
         inputRevision: revisions.identityInputs, confirmedAt: "2000-01-01T00:00:00.000Z", deferred });
-      return { registry, eligible, token, summary, candidateManifest };
+      const ordinaryOpen = candidate.prepare("SELECT COUNT(*) AS count FROM master_conflict WHERE conflict_state='open' AND conflict_id NOT GLOB 'classification_*' AND conflict_type IN ('changed-value','source-removed','ambiguous-match')").get().count;
+      return { registry, eligible: selected, protectedCount: eligible.length - selected.length, token, summary, candidateManifest,
+        unresolvedCount: cases.filter((value) => !saved.has(value.revision)).length, ordinaryOpen };
     } finally { candidate?.close(); active?.close(); }
   }
   return {
+    async classificationDecisionReadiness() {
+      const value = await inspect(false, null, true);
+      return { ready: value.unresolvedCount === 0 && value.ordinaryOpen === 0,
+        candidateId: value.candidateManifest.candidateId, unresolvedCount: value.unresolvedCount,
+        ordinaryOpen: value.ordinaryOpen };
+    },
+    async classificationAutomaticPreview() {
+      const usage = await catalogUsageStatus(taxonomyRoot, { full: true });
+      if (!usage.ready) return { available: false, reason: usage.reason, changesPhotos: false,
+        message: "Vollständige FN-Nutzung zuerst in Lightroom erfassen, Lightroom schließen und im Explorer bestätigen." };
+      const matching = await inspect(false, usage), unclear = await inspect(true, usage);
+      return { available: true, token: digest([matching.token, unclear.token]), candidateId: matching.candidateManifest.candidateId,
+        usageRevision: usage.revision, matching: matching.eligible.length, deferred: unclear.eligible.length,
+        protected: matching.protectedCount + unclear.protectedCount, changesPhotos: false };
+    },
+    async classificationAutomaticSave(payload) {
+      return withTaxonomyCorrectionLock(taxonomyRoot, async () => {
+        const usage = await assertCatalogUsageRevision(taxonomyRoot, payload?.usageRevision, { full: true });
+        const matching = await inspect(false, usage), unclear = await inspect(true, usage);
+        if (payload.token !== digest([matching.token, unclear.token]) || payload.candidateId !== matching.candidateManifest.candidateId) {
+          throw new Error("Die automatische Klassifikationsvorschau ist veraltet. Bitte erneut prüfen.");
+        }
+        let registry = matching.registry;
+        const count = matching.eligible.length + unclear.eligible.length;
+        if (!count) return { saved: false, count: 0, protected: matching.protectedCount + unclear.protectedCount, changesPhotos: false,
+          message: "Keine weiteren unbenutzten Fälle. Geschützte Arten benötigen eine Entscheidung." };
+        for (const [value, deferred] of [[matching, false], [unclear, true]]) {
+          if (value.eligible.length) registry = appendClassificationBatch({ registry, cases: value.eligible, deferred,
+            batchRevision: value.token, sourceRevision: value.candidateManifest.inputRevisions.identitySources,
+            inputRevision: value.candidateManifest.inputRevisions.identityInputs, confirmedAt: now().toISOString(),
+            automation: { policy: "unused-classifications-v1", usageRevision: usage.revision } });
+        }
+        // Recheck after the indexed case reads. A reopened/changed catalog must
+        // not turn a once-unused taxon into an automatically approved case.
+        await assertCatalogUsageRevision(taxonomyRoot, usage.revision);
+        const revision = identityRegistryRevision(registry);
+        await writeReview({ schemaVersion: 1, registry, revision, savedAt: now().toISOString(), candidateId: matching.candidateManifest.candidateId });
+        return { saved: true, pending: true, count, matching: matching.eligible.length, deferred: unclear.eligible.length,
+          protected: matching.protectedCount + unclear.protectedCount, revision, changesPhotos: false,
+          message: `${matching.eligible.length} unbenutzte passende Klassifikationen und ${unclear.eligible.length} unklare Gegenstücke gemeinsam vorgemerkt. Geschützte Arten bleiben offen. Erst ein frischer Kandidat verarbeitet diese Vormerkungen; Fotos bleiben unverändert.` };
+      });
+    },
     async classificationDeferralPreview() {
       const value = await inspect(true);
       return { token: value.token, count: value.eligible.length, remaining: value.summary.matchingProviderId,

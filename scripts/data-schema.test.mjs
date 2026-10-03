@@ -71,6 +71,22 @@ test("Override-Schema prüft manuelle Kennzeichnung und abgelehnte Soundquellen"
   assert.match(issues.join(" "), /boolesch/);
 });
 
+test("Optionale Kartenherkunft trennt deklarierte Browserquelle, Pflege und booleschen Schutz", () => {
+  const map = { manual: true, protectFromPipeline: true, careMode: "provider", provenance: {
+    provider: "iucn", acquisition: "browser-file", assurance: "user-declared", assessmentId: "1",
+    canonicalUrl: "https://www.iucnredlist.org/api/v4/assessments/1/distribution_map/jpg",
+  } };
+  const validate = (value) => validateAssetOverridesSchema({ version: 1, assets: { Amsel: { map: value } } });
+  assert.deepEqual(validate(map), []);
+  assert.deepEqual(validate({ manual: true }), [], "bestehende Schutzmarkierung unverändert zulässig");
+  assert.deepEqual(validate({ manual: false, protectFromPipeline: true }), []);
+  for (const changed of [{ protectFromPipeline: "ja" }, { careMode: "automatic" },
+    { provenance: [] }, { provenance: { ...map.provenance, assurance: "verified" } },
+    { provenance: { ...map.provenance, canonicalUrl: map.provenance.canonicalUrl + "?token=fixture" } },
+    { provenance: { ...map.provenance, assessmentId: 1 } },
+  ]) assert.ok(validate({ ...map, ...changed }).length);
+});
+
 test("Taxonomie-Override-Schema prüft Felder und automatische Ausgangswerte", () => {
   const fields = {
     Kingdom: "Tiere",

@@ -111,7 +111,7 @@ test("Explorer unterdrückt nur doppelte Berichte und prüft Medien vor Git-Akti
   assert.match(update, /args.mode === "nc-sounds" \? "nicht geprüft"/);
 });
 
-test("Transfer stoppt vor Git bei fehlender Karte und lässt sich nach Ergänzung erneut ausführen", async (t) => {
+test("Transfer stoppt vor Git bei fehlender Karte oder unveröffentlichtem Generator und bleibt wiederholbar", async (t) => {
   const root = await createEditableFixture();
   t.after(() => rm(root, { recursive: true, force: true }));
   const assets = join(root, "species-assets", "Amsel");
@@ -122,6 +122,7 @@ test("Transfer stoppt vor Git bei fehlender Karte und lässt sich nach Ergänzun
   await rm(join(assets, "map.jpg"));
   const runtime = { state: { status: "idle" }, process: null }, commands = [];
   let finished, cachedChecks = 0;
+  let sourcePreflight = { ok: false, message: "Übertragung angehalten: unveröffentlichter Statusgenerator." };
   const controller = createPipelineController({
     repoRoot: root, speciesListPath: join(root, "species_list.json"), assetOverridesPath: join(root, "species-assets-overrides.json"),
     assessmentIdsPath: join(root, "lastSavedAssessmentId.json"), manualMapOverridesPath: join(root, "docs", "manual-map-overrides.md"),
@@ -131,6 +132,7 @@ test("Transfer stoppt vor Git bei fehlender Karte und lässt sich nach Ergänzun
     readPendingProjectChanges: async () => ({ files: [{ path: "species_list.json" }], count: 1, error: "" }),
     pendingAssetSpeciesFromFiles: () => [], isPipelineActive: () => false, isBackupActive: () => false, isAssetWriteActive: () => false,
     hashText: (text) => createHash("sha256").update(text).digest("hex"), compactTimestamp: () => "test",
+    checkPublicationSources: () => sourcePreflight,
     readJson: async (filename) => JSON.parse(await readFile(filename, "utf8")),
     spawnProcess(command, args) {
       commands.push([command, ...args]);
@@ -152,6 +154,11 @@ test("Transfer stoppt vor Git bei fehlender Karte und lässt sich nach Ergänzun
   assert.equal(commands.length, 0);
   assert.equal(runtime.state.log.filter((line) => line === "Gesamtzusammenfassung").length, 1);
   await writeFile(join(assets, "map.jpg"), createTestJpeg(640, 480));
+  await run();
+  assert.equal(runtime.state.status, "failed");
+  assert.match(runtime.state.error, /unveröffentlichter Statusgenerator/);
+  assert.equal(commands.length, 0);
+  sourcePreflight = { ok: true, message: "Quellstand für simulierte Veröffentlichung geprüft." };
   await run();
   assert.equal(runtime.state.status, "completed");
   assert.equal(runtime.state.gitPublished, true);

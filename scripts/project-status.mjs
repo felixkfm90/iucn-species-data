@@ -31,6 +31,8 @@ export async function buildProjectStatus(repoRoot = process.cwd()) {
       validationProblems: model.validation.issueCount,
     },
     manualMaps: sortedSpeciesNames(model.species, (entry) => entry.isManualMap),
+    browserImportedMaps: sortedSpeciesNames(model.species, (entry) => entry.assets.map.browserImported),
+    ownCareMaps: sortedSpeciesNames(model.species, (entry) => entry.assets.map.ownCare),
     ncSounds: sortedSpeciesNames(model.species, (entry) => entry.isNcSound),
     knownMissingSounds: sortedSpeciesNames(model.species, (entry) => entry.soundMissingKnown),
   };
@@ -66,9 +68,19 @@ Report-Datenstand: \`${status.reportGeneratedAt || "Unbekannt"}\`
 | Assetprobleme | ${counts.assetProblems} |
 | Validierungsprobleme | ${counts.validationProblems} |
 
-## Manuell gepflegte Karten (${status.manualMaps.length})
+## Geschützte Karten (${status.manualMaps.length})
 
 ${listOrNone(status.manualMaps)}
+
+## IUCN-Browserimporte laut Nutzerangabe (${(status.browserImportedMaps ?? []).length})
+
+${listOrNone(status.browserImportedMaps ?? [])}
+
+Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
+
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (${(status.ownCareMaps ?? status.manualMaps).length})
+
+${listOrNone(status.ownCareMaps ?? status.manualMaps)}
 
 ## Aktive NC-Soundlizenzen (${status.ncSounds.length})
 

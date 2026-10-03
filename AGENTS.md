@@ -1,20 +1,77 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-10-02
+Stand: 2026-10-03
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
 
-## Aktuelle Übergabe – 2. Oktober 2026
+## Neuer Bedienbefund und Reparatur – 3. Oktober 2026
+
+Felix bestätigt 1 A passend und bewussten Statistik-Neuaufbau in 1 B; Karten bis auf Blaukehlchen laut Nutzer
+auf IUCN-Herkunft umgestellt. Drei Pages-Läufe scheitern identisch am Statusgate: neue lokale Kartenausgabe,
+zugehöriger Generator/Schema-Code unveröffentlicht. Gemeinsame Daten-/Asset-Vorabprüfung gegen HEAD und
+rekursive benötigte Quellen implementiert; fachfremde Änderungen erlaubt, keine automatische Codeveröffentlichung.
+Orts-/Zeitentfernung korrigiert: yield-fähige SDK-Objektlesung, kein stilles Leeren bei Lesefehler,
+auch metadatenleere Altlasten/Sternchen. Unterer Button im Zuweisungsfenster nutzt dieselbe bestätigte Aktion.
+Alle drei Statistikexporte mit Defaultnamen und Umfang Katalog/markierte Fotos; kein automatischer Vollaufbau
+beim Statistiköffnen. Plug-in-Quellstand 0.4.24.17. Vollständiges quality:ci bestanden: 50 Gruppen/1.120
+gemeldete Tests, darunter 420 Master- und 231 Lightroomtests, keine Fehler/Abbrüche/Skips. Gezielter
+Plug-in-Vertrag 15/15, funktionale Statistik-Lua-Datei 22/22, Yield-/Entfernung 6/6, Pages-Vorabgrenze 19/19.
+Syntax 374 Dateien, 75 Markdown-Verweise, Stil/Schema/Status/Diff bestanden. Veröffentlichung folgt separat.
+Felix hat Commit/Push der gesamten erfolgreich geprüften lokalen Serie ausdrücklich freigegeben.
+Keine neue Taxonomie-/Katalogaktion, Aktivierung oder Bereinigung. Nachweis:
+docs/audits/2026-10-03-acceptance-regressions.md. Standangaben darunter sind datierte Vorgeschichte.
+
+## Aktuelle Übergabe – 3. Oktober 2026
+
+Reguläres Update auf COL26.9 XR inzwischen technisch abgeschlossen: Gesamtabschluss 3. Oktober 09:11:14 MESZ,
+Service completed/nicht aktiv, keine Fehler/Warnungen, kein Kandidat und keine blockierenden Konflikte.
+Referenz und Masterherkunft col-xr-2026-09-25-316441, Master master-20261003055911210 und Paket
+lightroom-fa739bd28ec1e82a0283 gemeinsam aktiv; publication-b64beeb2-9951-4cf0-ac4e-1a326c5c3e91.
+Einmalige unabhängige lesende Gegenprüfung: alle 273.466 bisherigen IDs erhalten, vier technische Ersatz-IDs
+weiter historisch, Storchodon cingulatus mit ursprünglicher ID aktiv. Fünf eigene Namen, 46 ausgewählte eigene
+Felder, 60 Projektlinks und alle 56 genutzten Lightroom-IDs erhalten; vollständiger Paket-/Mastervergleich
+ohne Abweichung. 1.995 unbenutzte Klassifikationen mit alter ID verarbeitet, 187 unklare neue CoL-Gegenstücke
+zurückgestellt, keine aktuell offene Klassifikation. Zurückstellungen sind kein Fehler oder heute abzuarbeitender
+Entscheidungsauftrag. Die 30-Minuten-Wiedervorlage regul-ren-taxonomie-update-pr-fen auf Felix' Wunsch gelöscht.
+Lightroom darf wieder geöffnet werden. Felix hat anschließend Weissstorch/Rebhuhn in beiden Verbrauchern
+vorhanden und bevorzugt markiert bestätigt; gezielte Suche-/Namensprüfung bestanden, keine weitere neue
+Fotozuweisung behauptet. Sonstige Restpunkte und Phase-10.5-Gesamtaudit bleiben getrennt. Keine weitere Aktivierung,
+Katalogaktion, Bereinigung oder unaufgeforderte
+Veröffentlichung. Nachweis und Grenzen: docs/audits/2026-10-03-taxonomy-reference-update.md.
+
+Folgeauftrag vom 3. Oktober lokal umgesetzt: gespeicherter Quellen-/Master-/Paketkoordinator mit eigener
+Prozesssperre, gebundenem Quellenziel und Update-Eigentümer. Ein Start oder Später; bestätigtes Warten erkennt
+selbst geschlossenes Lightroom ohne zweiten Startklick. Plug-in 0.4.24.16 fordert bei Bedarf zwei neue SDK-Pässe
+nur für einen expliziten requestgebundenen Updateauftrag an. Normales Schließen nur ausdrücklich bestätigt
+und erst nach Erfassung, niemals Kill. Geschlossener Katalog und neue Quittungen werden gebunden; alte Quittung
+nicht umstempeln, unbekannte Nutzung nicht leer behandeln. Capture-to-close bleibt ehrlich einmalige
+Nutzervereinbarung, kein unabhängiger SDK-Änderungsnachweis. Erfassungsabbruch/Fehler stoppt; Retry neue Request-ID.
+Normale Anbieter-Namens-/Hierarchieänderungen bei Projektarten, genutzten IDs oder eigenen Entscheidungen
+jetzt ebenfalls geschützt. Nach letzter gebundener Feld-/Klassifikationsentscheidung automatische Fortsetzung.
+Speicherteilfehler erlauben nur frisch bestätigte Wiederholung belegter unveränderter Reste. Kartenherkunft,
+Pflegeart und Schutz getrennt; reale Altmarkierungen unverändert. IUCN-Abruf nicht als repariert behaupten.
+Kein produktiver SDK-, Quellen-/Master-/Paketlauf, keine Bereinigung oder Veröffentlichung zur Umsetzung.
+Praktische Gesamtabnahme und Phase-10.5-Audit bleiben offen. Verträge/Grenzen:
+docs/taxonomy-update-automation.md, docs/lightroom-catalog-usage.md und aktuelle Roadmap.
+
+Prüfabschluss dieser lokalen Folgeumsetzung: vollständiges quality:ci mit Exit 0, 50 Testgruppen, darunter
+420 Master-/Betriebs- und 214 Lightroom-/Pakettests ohne Fehler/Abbruch/Skip. Separater Plug-in-Vertrag 15/15.
+Erster Gesamtlauf fand eine Statusregression außerhalb des engen Reparaturumfangs; gezielt behoben, echte
+Entscheidungen/vorhandene Marker unverändert erhalten, Schutzprüfung nicht gelockert. 65 Reparatur-/Feldschutztests
+und danach das gesamte Gate bestanden. Keine produktive Aktion, Veröffentlichung oder Windows-/Testregeländerung.
+Abnahmegrenzen und nächste Schritte: docs/audits/2026-10-03-pre-audit-implementation.md.
+
+Der folgende datierte Verlauf ist Vorgeschichte, keine erneut auszuführende Arbeits- oder Startfreigabe.
 
 Maßgeblicher kompakter Betriebsstand: `docs/taxonomy-current-status.md`; Dokumentationsübersicht:
 `docs/README.md`. Die Quellenreparatur ist technisch abgeschlossen und von Felix mit Weissstorch/Rebhuhn
 gezielt praktisch bestätigt (Explorer-Namen, Lightroom-Zuweisung, Erhalt nach Schließen/Wiederöffnen).
-Die Meldung zu `COL26.9 XR` bezeichnet ein separates Quellenupdate, keinen Drift des passenden lokalen Paars.
-Als nächstes nur den gesondert beauftragten regulären Updatevertrag einschließlich der 2.173 CoL-/Reichsfälle
-prüfen; keinen zusätzlichen Aufbau, Download, Katalogabgleich oder Bereinigung aus alten Laufnotizen ableiten.
+Die damalige Meldung zu `COL26.9 XR` bezeichnete ein separates Quellenupdate, keinen Drift des passenden lokalen Paars.
+Der anschließend gesondert beauftragte reguläre Updatevertrag einschließlich der CoL-/Reichsfälle ist inzwischen
+technisch abgeschlossen; keinen zusätzlichen Aufbau, Download, Katalogabgleich oder Bereinigung aus alten Laufnotizen ableiten.
 Historische Schritte/Freigaben darunter bleiben Nachweise, keine noch laufenden Aufträge. Die aktuelle
 Restreihenfolge steht am Anfang von `docs/roadmap.md`; Phase 10 und ihr Gesamtaudit bleiben offen.
 Felix hat anschließend das Nachziehen der gesamten betroffenen Dokumentation und Commit/Push dieser bislang
@@ -177,7 +234,51 @@ bleiben ohne automatische ID-Übernahme. Worker-Abschlussfehler/Fortsetzung/Wied
 Sandbox-Testlauf wurde nach gesperrten Test-Hilfsprozessen beendet und zulässig wiederholt; keine Test-/Windows-
 Regeländerung. Syntax (357 Dateien), Stil, 70 Markdown-Verweise, Projektstatus und Diffprüfung bestanden.
 Kein vollständiges `quality:ci`, produktiver Neuaufbau oder Paketwechsel. Lua bleibt `0.4.24.14`, Backend-MJS
-nicht in Squarespace eingebunden. Die Nutzungsautomatik bleibt der nächste getrennte Implementierungsteil.
+nicht in Squarespace eingebunden. Die Nutzungsautomatik war danach der nächste getrennte Implementierungsteil.
+
+Ergänzung am 3. Oktober: Nutzungsabhängige Klassifikationsautomatik implementiert. Produktive Erstaufnahme
+anschließend durch Felix durchgeführt. Plug-in 0.4.24.15 ergänzt `FN-Katalognutzung erfassen …`: zwei vollständige SDK-Lesedurchgänge,
+UUID-/ID-/Mengenvergleich, Abbruch/Fehler ohne Quittung. Keine Foto-/Metadaten-/Stichwortänderung und kein
+Scan beim Fensteröffnen. Erst normal geschlossenes Lightroom plus Bestätigung aller FN-Kataloge und
+unveränderter FN-Daten seit der Erfassung erlauben eine negative Nutzungsannahme. Geschlossene Datei an
+Dateistand/SHA-256 gebunden, kein direkter SQLite-Katalogzugriff. Zeitlücke Erfassung/Schließen ausdrücklich
+nutzerbestätigt, nicht unabhängig beobachtet. Genau ein Katalog nach Felix' Angaben; historische Backups nicht erfasst.
+Passende unbenutzte Klassifikationen und unklare unbenutzte Gegenstücke werden atomar mit ID-Erhalt bzw.
+konservativer Zurückstellung vorgemerkt. Projektarten, zugewiesene IDs und eigene Namen/Felder/Entscheidungen
+bleiben geschützt. Ereignisse binden die Nutzungsrevision; Aufbau/Fortsetzung sowie Einzel-/Paarfreigabe
+prüfen erneut. Bestätigter Updateweg höchstens ein lokaler Folgeaufbau ohne Anbieterrefresh; eigene Buttons
+starten keinen Aufbau. Keine dauerhafte inkrementelle SDK-Fortschreibung: geänderte/offene Kataloge erneut
+erfassen, alte automatische Vormerkungen nur bestätigt verwerfen/frisch prüfen, nicht umstempeln.
+Implementierung selbst ohne produktiven SDK-Lauf, neuen Aufbau, Paketwechsel, Quellenupdate, Bereinigung
+oder Dienstneustart. Anschließend echte SDK-Quittung (3. Oktober 07:40:53 MESZ) und Gesamtbestätigung
+(07:42:24 MESZ) von Felix: 128.871 Fotos, 5.484 FN-Zuweisungen und 56 genutzte IDs, einziger bestätigter Katalog.
+Lesende frische Automatikvorschau einschließlich voller Katalogprüfsumme und aktueller Projekt-/Namensbindung:
+1.995 unbenutzte passende, 187 unbenutzte unklare Fälle, 0 geschützte Überschneidungen in dieser Gruppe.
+Keine Vormerkung durch die Prüfung. Nächste Nutzerhandlung: gemeinsamen lokalen Folgeweg über
+„Datenbank aktualisieren“ bestätigen; nicht die Erstaufnahme wiederholen, solange der Nachweis frisch ist.
+Felix' Bedienziel möglichst keine eigenen Aktionen; die aktuelle manuelle SDK-Erfassung/Schließung/Bestätigung
+bleibt eine bekannte Grenze, keine zugesagte Hintergrundautomatik. Vertrag: `docs/lightroom-catalog-usage.md`.
+Explorer-JS/MJS nicht im Squarespace-Footer eingebunden, Footer/CSS unverändert.
+
+Anschließend von Felix über denselben gemeinsamen Updateweg gestartet: 3. Oktober 07:52:59 MESZ.
+Alle 2.182 unbenutzten Fälle atomar vorgemerkt (1.995 classification, 187 classification-deferred),
+Identitätsrevision 8aba3cdd302211c0f252971e8f00cf7505bfc87b7fdcc2c149b090512226b74b und bestätigte
+Nutzungsrevision unverändert. Erster tatsächlicher Status building/active, „Eingangsstand sichern“, kein Fehler.
+Noch alter Auftrag/Kandidat in der lesenden Antwort; dessen Konflikte sind kein erneuter Entscheidungsauftrag.
+Bei diesem Start blieb das bisherige Master-/Paketpaar aktiv; kein zweiter Lauf, Download, Dienstneustart oder
+Änderung gebundener Regeln/Eingänge. Die für diesen Lauf reaktivierte 30-Minuten-Wiedervorlage ist nach dem
+erfolgreichen Gesamtabschluss gelöscht. Einmalige lesende Abschlussprüfung bestanden, siehe aktuelle Übergabe
+oben. Lightroom darf wieder geöffnet werden. Keine unaufgeforderte Veröffentlichung.
+
+Prüfabschluss der Nutzungsgrenze: 281 gezielte Tests in 15 Dateien erfolgreich, echte Aufbau-/Paarprozesse und
+bisherige Reparatur-/Identitätswege eingeschlossen. Vollständige Lightroom-Testgruppe mit 170 Tests erfolgreich.
+Nach Zusatzprobe zur gemeinsamen Veröffentlichung 95 Nutzungs-/Bündel-/UI-/Lua-Tests erneut erfolgreich;
+Zahlen überschneiden sich. SDK-Simulation prüft Erfolg, Abbruch, Änderung zwischen Durchgängen, doppelte UUID,
+ungültige ID, Helferfehler und leere FN-Nutzung. Registermanipulation, neue/fehlende Kataloge, Schreibfehler,
+Wiederholung und Öffnen vor Paarwechsel bleiben gesperrt; frische Wiederholung erhält eigene Namen und IDs.
+Syntax (360 Dateien), Stil, 71 Markdown-Verweise, Projektstatus und Diffprüfung bestanden. Kein vollständiges
+`quality:ci`, echte SDK-Erfassung, produktiver Aufbau oder Pages-Nachweis dieser Änderung. Neue Nutzungsserie
+zunächst lokal, keine unaufgeforderte Commit-/Push-Aktion aus dem Umsetzungsauftrag ableiten.
 
 - Namenswahl: Die falsche Sperre unveränderter alter Korrekturreleases ist ID-geprüft behoben. Doppelte
   CoL-/Ergänzungstreffer für eindeutig vorhandene Masterarten werden auch nach der Ergänzungssuche unterdrückt;

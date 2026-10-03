@@ -85,7 +85,8 @@ export async function* readMasterJobRecords(filename) {
 // never resumable. Only a completely hashed input set receives recipe.json.
 export async function prepareMasterJob({ taxonomyRoot, colRecords = [], providerSlices = [],
   guardFiles = [], selection = null, expectedBinding = null, now = () => new Date(), onProgress = () => {},
-  checkSpace = assertTaxonomySpace, ...options }) {
+  checkSpace = assertTaxonomySpace, updateRunId = "", ...options }) {
+  if (updateRunId && !/^update-[a-f0-9-]{36}$/.test(updateRunId)) throw new Error("Ungültige Update-Auftragskennung.");
   const id = `job-${crypto.randomUUID()}`, directory = masterJobDirectory(taxonomyRoot, id);
   await checkSpace(taxonomyRoot, 2 * await taxonomyDirectoryBytes(path.dirname(taxonomyMasterDatabasePath(taxonomyRoot))));
   const binding = expectedBinding || await masterJobBinding(taxonomyRoot, guardFiles, selection);
@@ -101,10 +102,12 @@ export async function prepareMasterJob({ taxonomyRoot, colRecords = [], provider
     // Coverage may be completed by consuming colRecords; capture it afterwards.
     const recipe = { schemaVersion: 1, id, taxonomyRoot: path.resolve(taxonomyRoot),
       timestamp: now().toISOString(), guardFiles, binding, inputs, providers,
+      ...(updateRunId ? { updateRunId } : {}),
       ...(selection ? { selection } : {}),
       options: { colRelease: options.colRelease, buildInputCoverage: options.buildInputCoverage,
         projectTaxa: options.projectTaxa || [], corrections: options.corrections || [],
         retainedTaxa: options.retainedTaxa || [], identityRegistry: options.identityRegistry,
+        protectedMasterIds: options.protectedMasterIds || [],
         ...(options.sourceRecoveryScope ? { sourceRecoveryScope: options.sourceRecoveryScope } : {}),
         reuseUnchanged: options.reuseUnchanged !== false } };
     recipe.revision = hash(recipe);

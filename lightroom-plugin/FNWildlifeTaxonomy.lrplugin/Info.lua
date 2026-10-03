@@ -20,10 +20,12 @@ return {
     "MetadataTagsetFull.lua",
   },
   LrPluginInfoProvider = "PluginInfoProvider.lua",
+  LrInitPlugin = "PluginInit.lua",
+  LrShutdownPlugin = "PluginShutdown.lua",
   VERSION = {
     major = 0,
     minor = 4,
     revision = 24,
-    build = 14,
+    build = 17,
   },
 }

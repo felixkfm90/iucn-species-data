@@ -31,7 +31,7 @@ import { readActiveTaxonomyPointer } from "./taxonomy-storage.mjs";
 import { masterReferenceRelease, taxonomyMasterReferenceStatus } from "./taxonomy-data-versions.mjs";
 import { createTaxonomyUpdatePresence } from "./taxonomy-update-presence.mjs";
 import { createIdentityReviewService, readIdentityReview, identityReviewStatus } from "./taxonomy-identity-review.mjs";
-import { coverMasterInputSelection } from "./taxonomy-master-inputs.mjs";
+import { coverMasterInputSelection, protectedMasterIdsRevision } from "./taxonomy-master-inputs.mjs";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import { MasterRunController } from "./taxonomy-master-run-controller.mjs";
 import { masterJobBinding } from "./taxonomy-master-job.mjs";
@@ -39,6 +39,7 @@ import { readRetainedMasterTaxa } from "./taxonomy-master-source-binding.mjs";
 import { createTaxonomyStorageMaintenance } from "./taxonomy-storage-maintenance.mjs";
 import { assertTaxonomySpace } from "./taxonomy-space-budget.mjs";
 import { taxonomyBaselineSetupStatus, assertBaselineSetup } from "./taxonomy-baseline-setup.mjs";
+import { catalogProtectedMasterIds } from "./lightroom-catalog-usage.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -651,7 +652,7 @@ export class TaxonomyMasterService {
     return this.status();
   }
 
-  resumeBuild({ confirmed = false } = {}) {
+  resumeBuild({ confirmed = false, updateRunId = "" } = {}) {
     this.assertAvailable();
     if (!this.runController || !confirmed) throw new Error("Das Fortsetzen des gespeicherten Masteraufbaus muss bestätigt werden.");
     this.state = { ...initialState(), action: "build", status: "building", startedAt: this.now().toISOString(),
@@ -660,7 +661,7 @@ export class TaxonomyMasterService {
       const job = await this.runController.current();
       if (!job) throw new Error("Kein gespeicherter Masteraufbau vorhanden.");
       try {
-        const manifest = await this.runController.resume((event) => this.updateProgress({ ...event, status: "building" }));
+        const manifest = await this.runController.resume((event) => this.updateProgress({ ...event, status: "building" }), updateRunId);
         const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, { lightweight: true });
         this.state = { ...this.state, status: "ready", message: "Fortgesetzter Masteraufbau ist geprüft. Der Kandidat kann übernommen werden.",
           progressPercent: 100, progressPhase: "Abgeschlossen", result: { manifest, lifecycle }, warnings: job.warnings || [], completedAt: this.now().toISOString() };
@@ -673,7 +674,7 @@ export class TaxonomyMasterService {
     return this.status();
   }
 
-  async runBuild({ refreshProviders = true, ...providerOptions } = {}) {
+  async runBuild({ refreshProviders = true, updateRunId = "", ...providerOptions } = {}) {
     try {
       if (this.runController) await assertTaxonomySpace(this.taxonomyRoot);
       let [speciesList, correctionsDocument] = await Promise.all([
@@ -784,6 +785,7 @@ export class TaxonomyMasterService {
       const buildCandidate = this.runController ? (options) => this.runController.build(options) : this.buildCandidate;
       const manifest = await buildCandidate({
         taxonomyRoot: this.taxonomyRoot,
+        ...(updateRunId ? { updateRunId } : {}),
         colRelease,
         colRecords: inputs.records(),
         buildInputCoverage: inputs.coverage,
@@ -792,6 +794,7 @@ export class TaxonomyMasterService {
         corrections,
         retainedTaxa: researchedTaxa,
         identityRegistry: (await readIdentityReview(this.taxonomyRoot))?.registry,
+        protectedMasterIds: await catalogProtectedMasterIds(this.taxonomyRoot),
         ...(workerBinding ? { selection, expectedBinding: workerBinding } : {}),
         warnings,
         now: this.now,
@@ -839,7 +842,7 @@ export class TaxonomyMasterService {
 
   async reviewIdentity(action, payload = {}) {
     this.assertAvailable();
-    if (!["preview", "save", "browse", "discardPreview", "discard", "classificationPreview", "classificationSave", "classificationDeferralPreview", "classificationDeferralSave"].includes(action)) throw new Error("Unbekannte Identitätsaktion.");
+    if (!["preview", "save", "browse", "discardPreview", "discard", "classificationPreview", "classificationSave", "classificationDeferralPreview", "classificationDeferralSave", "catalogUsagePreview", "catalogUsageSave", "classificationAutomaticPreview", "classificationAutomaticSave", "classificationDecisionReadiness"].includes(action)) throw new Error("Unbekannte Identitätsaktion.");
     this.identityReviewBusy = true;
     try {
       const operation = () => this.identityReviewService[action](payload);
@@ -863,7 +866,7 @@ export class TaxonomyMasterService {
     return this.status();
   }
 
-  activate({ confirmed = false } = {}) {
+  activate({ confirmed = false, updateRunId = "" } = {}) {
     this.assertAvailable();
     if (!confirmed) {
       throw new Error("Die Aktivierung der Masterdatenbank muss ausdrücklich bestätigt werden.");
@@ -877,14 +880,14 @@ export class TaxonomyMasterService {
       progressPhase: "Aktivierung",
       startedAt: this.now().toISOString(),
     };
-    this.runPromise = this.withVersionPresence(() => this.runActivate({ confirmed })).catch(() => null);
+    this.runPromise = this.withVersionPresence(() => this.runActivate({ confirmed, updateRunId })).catch(() => null);
     return this.status();
   }
 
-  async runActivate({ confirmed = false } = {}) {
+  async runActivate({ confirmed = false, updateRunId = "" } = {}) {
     let masterActivated = false;
     try {
-      await this.runController?.assertReadyForActivation();
+      await this.runController?.assertReadyForActivation(updateRunId);
       if (confirmed) this.referenceService.reset();
       let lightroomResult;
       if (this.publishPair) {
@@ -1080,6 +1083,7 @@ export class TaxonomyMasterService {
       ]);
       const corrections = correctionsFromDocument(document);
       return { corrections, reference, identities, providers,
+        protectedMasterIds: await catalogProtectedMasterIds(this.taxonomyRoot),
         identityInputs: taxonomyIdentityInputRevision({ projectTaxa: projectTaxaFromSpeciesList(species), corrections }) };
     };
     try { return await this.publishPair({ sourceSlot, confirmed, now: this.now, readInputs, signal: controller.signal,
@@ -1092,6 +1096,7 @@ export class TaxonomyMasterService {
           || staleProvider
           || (inputs.identities && manifest.inputRevisions?.identities !== inputs.identities.revision)
           || (manifest.inputRevisions?.identityInputs && manifest.inputRevisions.identityInputs !== inputs.identityInputs)
+          || (manifest.inputRevisions?.protectedMasterIds && manifest.inputRevisions.protectedMasterIds !== protectedMasterIdsRevision(inputs.protectedMasterIds))
           || (manifest.inputRevisions?.corrections && manifest.inputRevisions.corrections !== taxonomyCorrectionsRevision(inputs.corrections))) {
           throw new Error("Referenz, Projektzuordnungen oder eigene Entscheidungen wurden seit dem Kandidatenbau geändert. Bitte neu aufbauen.");
         }

@@ -9,7 +9,7 @@ import { createSourceRecoveryService } from "./taxonomy-source-recovery.mjs";
 import { inspectSourceRecovery } from "./taxonomy-source-recovery-reader.mjs";
 import { planSourceRecovery } from "./taxonomy-source-recovery-plan.mjs";
 import { createStableMasterTaxonId, createMasterTaxon, addMasterConflict, addMasterFieldAssertion,
-  addMasterDecision, registerProviderRelease, resolveMasterConflict } from "./taxonomy-master-model.mjs";
+  addMasterDecision, registerProviderRelease, resolveMasterConflict, setMasterTaxonStatus } from "./taxonomy-master-model.mjs";
 import { createTaxonomyMasterSchema } from "./taxonomy-master-schema.mjs";
 import { preserveRecoveryConflictState } from "./taxonomy-source-recovery-conflicts.mjs";
 import { normalizeProviderSliceRecord, providerSliceDataPath, providerSliceManifestPath, latestProviderSliceVersion, readProviderSlice } from "./taxonomy-master-slices.mjs";
@@ -54,7 +54,7 @@ const record = (providerRecordId, scientificName, extra = {}) => normalizeProvid
   retrievedAt: OLD, ...extra });
 
 async function fixture(t, { stableName = "Testus stable", stableKingdom = "Animalia", stableNotice = true,
-  stableNoticeState = "open" } = {}) {
+  stableNoticeState = "open", stableProtectionMarker = false } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-source-recovery-"));
   t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const options = { taxonomyRoot: path.join(base, "taxonomy"), searchRoot: path.join(base, "lightroom"),
@@ -107,6 +107,12 @@ async function fixture(t, { stableName = "Testus stable", stableKingdom = "Anima
           addMasterDecision(db, { decisionId: "fixture-own-choice", masterTaxonId: createStableMasterTaxonId(row),
             conflictId: "fixture-gap-3", fieldName: "german-name", language: "de", decisionType: "keep-current",
             selectedAssertionId: field.assertion_id, decidedAt: timestamp, note: "Eigene bestätigte Wahl" });
+          if (stableProtectionMarker) setMasterTaxonStatus(db, { masterTaxonId: createStableMasterTaxonId(row),
+            statusName: "manually-protected", updatedAt: timestamp, statusDetail: JSON.stringify({
+              kind: "own-field-decision-protection", version: 1, decisions: [{ decisionId: "fixture-own-choice",
+                sourceMasterVersion: masterVersion, fieldName: "german-name", language: "de",
+                decisionType: "keep-current", decidedAt: timestamp, selectedValue: "Name 3" }],
+            }) });
         }
       }
     } finally { db.close(); }
@@ -526,13 +532,21 @@ test("regulärer Folgeaufbau erzeugt weiterhin den Referenzlückenhinweis für e
   assert.deepEqual(await f.fingerprints(), initial);
 });
 
-test("enger Kandidatenbau erhält einen verworfenen Referenzhinweis und die eigene Entscheidung", async (t) => {
-  const f = await fixture(t, { stableNoticeState: "dismissed" }), initial = await f.fingerprints();
+for (const stableProtectionMarker of [false, true]) test(`enger Kandidatenbau erhält verworfenen Referenzhinweis, eigene Entscheidung und Status: Marker ${stableProtectionMarker}`, async (t) => {
+  const f = await fixture(t, { stableNoticeState: "dismissed", stableProtectionMarker }), initial = await f.fingerprints();
+  const stableId = createStableMasterTaxonId(f.before[2]);
+  const statuses = (slot) => {
+    const db = new DatabaseSync(taxonomyMasterDatabasePath(f.options.taxonomyRoot, slot), { readOnly: true });
+    try { return db.prepare("SELECT status_name, status_detail FROM master_taxon_status WHERE master_taxon_id=? ORDER BY status_name")
+      .all(stableId).map((row) => ({ ...row })); } finally { db.close(); }
+  };
+  const beforeStatuses = statuses("active");
   const preview = await f.service().preview();
   await candidateService(f).stage(f.request(preview));
   const checked = await inspectTaxonomyMasterCandidate(f.options.taxonomyRoot);
   assert.equal(checked.available, true);
   assert.deepEqual(checked.manifest.recoveryConflictState, { conflicts: 1, decisions: 1 });
+  assert.deepEqual(statuses("staging"), beforeStatuses, "keine neue oder neu gestempelte Schutzmarkierung außerhalb der Reparaturfälle");
   const db = new DatabaseSync(taxonomyMasterDatabasePath(f.options.taxonomyRoot, "staging"), { readOnly: true });
   try {
     const row = db.prepare("SELECT * FROM master_conflict WHERE conflict_id='fixture-gap-3'").get();

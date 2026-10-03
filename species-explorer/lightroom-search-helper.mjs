@@ -9,6 +9,8 @@ import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { readTaxonomyDataVersions } from "./taxonomy-data-versions.mjs";
 import { identityPackageStamp, identitySuccessorOptions, previewLightroomIdentity } from "./lightroom-identity-plan.mjs";
 import { createLightroomIdentityWorkflow, isIdentityWorkflowCommand } from "./lightroom-identity-workflow.mjs";
+import { captureCatalogUsage } from "./lightroom-catalog-usage.mjs";
+import { catalogUsageRequest, reportCatalogUsageRequestError } from "./lightroom-usage-request.mjs";
 
 export const LIGHTROOM_SEARCH_PROTOCOL_VERSION = 1;
 const MAX_BATCH_TAXA = 10_000;
@@ -73,6 +75,18 @@ export async function createLightroomSearchRequestHandler({
         }
         if (command === "versions" && !closed) {
           return success(request, await readVersions({ searchRoot }));
+        }
+        if (command === "catalog-usage-capture" && !closed) {
+          if (slot !== "active") throw new Error("FN-Nutzung darf nur für den aktiven Betrieb erfasst werden.");
+          return success(request, await captureCatalogUsage(path.join(path.dirname(searchRoot), "taxonomy"), request));
+        }
+        if (command === "catalog-usage-request" && !closed) {
+          if (slot !== "active") throw new Error("FN-Nutzung darf nur für den aktiven Betrieb erfasst werden.");
+          return success(request, await catalogUsageRequest(path.join(path.dirname(searchRoot), "taxonomy"), request));
+        }
+        if (command === "catalog-usage-request-error" && !closed) {
+          if (slot !== "active") throw new Error("FN-Nutzung darf nur für den aktiven Betrieb erfasst werden.");
+          return success(request, await reportCatalogUsageRequestError(path.join(path.dirname(searchRoot), "taxonomy"), request));
         }
         if (!closed && isIdentityWorkflowCommand(command)) {
           if (slot !== "active") throw new Error("Foto-Artänderungen dürfen nur den aktiven Datenbankstand verwenden.");

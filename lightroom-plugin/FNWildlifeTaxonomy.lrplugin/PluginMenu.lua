@@ -48,6 +48,7 @@ local ACTION_GROUPS = {
     actions = {
       { title = "Taxonomie-Statistik ...", script = "ShowStatistics.lua" },
       { title = "Smart-Sammlungen einrichten ...", script = "CreateCollections.lua" },
+      { title = "FN-Katalognutzung erfassen ...", script = "CaptureCatalogUsage.lua" },
     },
   },
 }

@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { sanitizeAssetName } from "./species-model.mjs";
 import { childProcessEnvironment } from "./child-process-environment.mjs";
+import { checkProjectPublicationSources } from "./project-publication-check.mjs";
 
 const TRACKED_PROJECT_PATHS = Object.freeze([
   "species_list.json",
@@ -47,6 +48,8 @@ export function createProjectPublicationService({ repoRoot }) {
   }
 
   async function synchronizeProjectStatusForPublication() {
+    const preflight = checkProjectPublicationSources(repoRoot);
+    if (!preflight.ok) throw new Error(preflight.message);
     const result = await runCommandCapture(
       process.execPath,
       [join(repoRoot, "scripts", "project-status.mjs")],

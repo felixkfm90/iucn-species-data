@@ -1,3 +1,4 @@
+local LrTasks = import "LrTasks"
 local PluginState = require "PluginState"
 local Statistics = require "Statistics"
 local LocationTimeWriter = require "LocationTimeWriter"
@@ -67,19 +68,19 @@ local function keywordName(keyword)
   if type(keyword) == "string" then
     return cleanText(keyword)
   end
-  local ok, value = pcall(function()
+  local ok, value = LrTasks.pcall(function()
     return keyword:getName()
   end)
   return ok and cleanText(value) or ""
 end
 
 local function keywordLocalIdentifier(keyword)
-  local ok, value = pcall(function()
+  local ok, value = LrTasks.pcall(function()
     return keyword.localIdentifier
   end)
   value = ok and cleanText(value) or ""
   if value == "" then
-    ok, value = pcall(function()
+    ok, value = LrTasks.pcall(function()
       return keyword:getLocalIdentifier()
     end)
     value = ok and cleanText(value) or ""
@@ -145,7 +146,7 @@ end
 local function resolveManagedKeywordNames(catalog, photo)
   local names = {}
   local seen = {}
-  local ok, assigned = pcall(function()
+  local ok, assigned = LrTasks.pcall(function()
     return photo:getRawMetadata("keywords")
   end)
   local function appendAssignedKeyword(candidate)
@@ -164,7 +165,7 @@ local function resolveManagedKeywordNames(catalog, photo)
   -- zuverlässiger als die rohen Stichwortobjekte. Da neue Plug-in-
   -- Stichwörter flach sind, kann die kommagetrennte Anzeige hier gezielt auf
   -- das reservierte Suffix geprüft werden.
-  local formattedOk, formatted = pcall(function()
+  local formattedOk, formatted = LrTasks.pcall(function()
     return photo:getFormattedMetadata("keywordTags")
   end)
   if formattedOk then
@@ -179,7 +180,7 @@ local function resolveManagedKeywordNames(catalog, photo)
   local storedIds = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
   local ids = parseKeywordIds(storedIds)
   for id in pairs(ids) do
-    local ok, keyword = pcall(function()
+    local ok, keyword = LrTasks.pcall(function()
       return catalog:getKeywordByLocalIdentifier(id)
     end)
     if ok and keyword and hasPluginKeywordSuffix(keyword) then
@@ -265,7 +266,7 @@ local function removeCurrentManagedKeywords(catalog, photo, protectedNames)
     removeCandidate(name)
   end
 
-  local ok, assigned = pcall(function()
+  local ok, assigned = LrTasks.pcall(function()
     return photo:getRawMetadata("keywords")
   end)
   for key, value in pairs(ok and assigned or {}) do
@@ -273,7 +274,7 @@ local function removeCurrentManagedKeywords(catalog, photo, protectedNames)
     removeCandidate(value)
   end
 
-  local formattedOk, formatted = pcall(function()
+  local formattedOk, formatted = LrTasks.pcall(function()
     return photo:getFormattedMetadata("keywordTags")
   end)
   if formattedOk then
@@ -284,7 +285,7 @@ local function removeCurrentManagedKeywords(catalog, photo, protectedNames)
 
   local storedIds = parseKeywordIds(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
   for id in pairs(storedIds) do
-    local idOk, keyword = pcall(function()
+    local idOk, keyword = LrTasks.pcall(function()
       return catalog:getKeywordByLocalIdentifier(id)
     end)
     if idOk and keyword then

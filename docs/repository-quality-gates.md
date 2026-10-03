@@ -1,6 +1,6 @@
 # Repository-Qualitätsgrenzen
 
-Stand: 2026-07-18
+Stand: 2026-10-03
 
 ## Zweck
 
@@ -16,7 +16,7 @@ Veröffentlichung erkannt.
 1. Syntaxprüfung aller JavaScript-/MJS-Quellen;
 2. schlanke Quelltextregeln für Kodierung, Zeilenenden, nachgestellte Leerzeichen und Tabs;
 3. Prüfung lokaler Markdown-Links und ausdrücklich genannter Dokumentpfade;
-4. Schema- und Konsistenzprüfung der fünf zentralen JSON-Datenbestände;
+4. Schema- und Konsistenzprüfung der sechs zentralen JSON-Datenbestände;
 5. alle direkten Modul-, Vertrags- und Integrationstests;
 6. Audio- und Medienformatprüfung mit Einzelgrenzen;
 7. flexibles Größenbudget des versionierten Projektstands;
@@ -57,6 +57,26 @@ Zusätzliche repositoryweite Regressionstests sichern Querschnittsgrenzen:
 
 Beide Tests laufen über `test:quality-tools` und damit automatisch als Bestandteil von `npm test` und
 `quality:ci`.
+
+## Lokale Grenze vor automatischen Datenveröffentlichungen
+
+Pipeline-, Karten-, Sound- und Portrait-Veröffentlichungen nehmen ausschließlich ihre fachlichen Daten und
+Assets in den Commit auf. Vor der Statussynchronisierung und vor dem Vormerken prüfen sie deshalb zusätzlich,
+ob `scripts/project-status.mjs`, `scripts/validate-data-schema.mjs` und ihre lokalen Importabhängigkeiten dem
+versionierten Git-Stand `HEAD` entsprechen. Geänderte oder neue, noch nicht versionierte Quellen dieser
+Prüfwege stoppen die Übertragung mit der konkreten Dateiliste. Änderungen außerhalb dieser Abhängigkeiten
+blockieren die Übertragung nicht. Git berücksichtigt dabei seine Zeilenendenregeln.
+
+Der Halt verändert weder die lokalen Daten noch den Git-Index. Bereits gespeicherte Assets bleiben lokal
+vorgemerkt und können nach gemeinsamer Prüfung und Veröffentlichung der erforderlichen Codeänderung erneut
+übertragen werden. Der Explorer veröffentlicht benötigten Code nicht selbst und führt auch keine Taxonomie-
+oder Katalogaktion aus. Ein nicht lesbarer oder nicht zum Projektordner passender Git-Stand stoppt ebenfalls.
+
+Diese Grenze verhindert, dass lokal erzeugte Statusdateien aus neuerem Code mit dem alten Generator im
+automatischen Datencommit veröffentlicht werden. Sie ersetzt das vollständige CI-Gate und dessen getrennten
+Pages-Build-/Deploymentnachweis nicht. Die Regeln liegen in
+`species-explorer/project-publication-check.mjs`; echte isolierte Git-Regressionen und der Transfer-/Wiederholungs-
+test laufen über `test:pipeline-log` und damit in `quality:ci`.
 
 ## Öffentliche Pages-Dateien
 

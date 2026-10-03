@@ -34,6 +34,10 @@ const POST_ROUTES = new Map([
   ["/api/backup/start", { name: "backup", action: "start" }],
   ["/api/taxonomy/update/preview", { name: "taxonomy-maintenance", action: "preview" }],
   ["/api/taxonomy/update/start", { name: "taxonomy-maintenance", action: "start" }],
+  ["/api/taxonomy/update/sequence-start", { name: "taxonomy-maintenance", action: "sequence-start" }],
+  ["/api/taxonomy/update/sequence-resume", { name: "taxonomy-maintenance", action: "sequence-resume" }],
+  ["/api/taxonomy/update/sequence-pause", { name: "taxonomy-maintenance", action: "sequence-pause" }],
+  ["/api/taxonomy/update/lightroom-close", { name: "taxonomy-maintenance", action: "lightroom-close" }],
   ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
   ["/api/taxonomy/project-conflicts/decide", { name: "taxonomy-maintenance", action: "decide-project-conflict" }],
   ["/api/taxonomy/corrections/save", { name: "taxonomy-correction", action: "save" }],
@@ -46,6 +50,10 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/master/conflicts/decide", { name: "taxonomy-master", action: "decide" }],
   ["/api/taxonomy/master/identity/preview", { name: "taxonomy-master", action: "identity-preview" }],
   ["/api/taxonomy/master/classification/preview", { name: "taxonomy-master", action: "classification-preview" }],
+  ["/api/taxonomy/master/classification/automatic-preview", { name: "taxonomy-master", action: "classification-automatic-preview" }],
+  ["/api/taxonomy/master/classification/automatic-save", { name: "taxonomy-master", action: "classification-automatic-save" }],
+  ["/api/taxonomy/master/catalog-usage/preview", { name: "taxonomy-master", action: "catalog-usage-preview" }],
+  ["/api/taxonomy/master/catalog-usage/save", { name: "taxonomy-master", action: "catalog-usage-save" }],
   ["/api/taxonomy/master/classification/save", { name: "taxonomy-master", action: "classification-save" }],
   ["/api/taxonomy/master/classification/deferral-preview", { name: "taxonomy-master", action: "classification-deferral-preview" }],
   ["/api/taxonomy/master/classification/deferral-save", { name: "taxonomy-master", action: "classification-deferral-save" }],
@@ -143,6 +151,12 @@ export function matchExplorerRoute(method, pathname) {
   }
   if (normalizedPath === "/api/taxonomy/master/status") {
     return { name: "taxonomy-read", resource: "master-status" };
+  }
+  if (normalizedPath === "/api/taxonomy/update/sequence-status") {
+    return { name: "taxonomy-read", resource: "sequence-status" };
+  }
+  if (normalizedPath === "/api/taxonomy/update/lightroom-status") {
+    return { name: "taxonomy-read", resource: "lightroom-status" };
   }
   const taxonomyTaxon = normalizedPath.match(/^\/api\/taxonomy\/taxa\/([^/]+)$/);
   if (taxonomyTaxon) {

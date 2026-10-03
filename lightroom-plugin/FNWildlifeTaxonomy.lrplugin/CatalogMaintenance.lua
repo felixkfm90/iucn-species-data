@@ -374,6 +374,11 @@ local function applyUpdate(catalog, state, callbacks)
     end
     local firstIndex = 1
     while firstIndex <= #group.photos do
+      if not packageMatches(state.searchPackage) then
+        result.status = "package-changed"
+        result.error = "Das aktive Taxonomie-Suchpaket wurde während des Laufs geändert. Der aktuelle Block wurde nicht begonnen."
+        return result
+      end
       local chunk, lastIndex = chunkFor(group.photos, firstIndex)
       local ok, updateResult = LrTasks.pcall(
         KeywordWriter.assign,
@@ -402,6 +407,11 @@ local function applyUpdate(catalog, state, callbacks)
 
   local firstIndex = 1
   while firstIndex <= #state.locationOnlyPhotos do
+    if not packageMatches(state.searchPackage) then
+      result.status = "package-changed"
+      result.error = "Das aktive Taxonomie-Suchpaket wurde während des Laufs geändert. Der aktuelle Orts-/Zeitblock wurde nicht begonnen."
+      return result
+    end
     local chunk, lastIndex = chunkFor(state.locationOnlyPhotos, firstIndex)
     local ok, updateResult = LrTasks.pcall(
       LocationTimeWriter.execute,

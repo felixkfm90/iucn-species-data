@@ -35,6 +35,9 @@ import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs
 import { prepareTaxonomyPublicationInWorker } from "./taxonomy-publication-process.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
 import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import { createTaxonomyUpdateCoordinator } from "./taxonomy-update-coordinator.mjs";
+import { createLightroomCloseGate } from "./lightroom-close-gate.mjs";
+import { createLightroomUsageRequestService } from "./lightroom-usage-request.mjs";
 import { rebuildLightroomSearchPackage } from "./lightroom-search-update.mjs";
 import { publishTaxonomyPair, rollbackTaxonomyPair } from "./taxonomy-publication.mjs";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
@@ -105,6 +108,7 @@ export async function createExplorerServer({
   sessionProtection = true,
   taxonomyRoot = process.env.IUCN_TAXONOMY_DIR || defaultTaxonomyRoot(),
   lightroomSearchRoot = defaultLightroomSearchRoot(),
+  lightroomCloseGate = null,
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   let model = await buildExplorerModel(repoRoot);
@@ -148,6 +152,9 @@ export async function createExplorerServer({
   });
   let taxonomyMaintenanceService = null;
   let taxonomyMasterService = null;
+  let taxonomyUpdateCoordinator = null;
+  const usageRequests = createLightroomUsageRequestService({ taxonomyRoot });
+  const closeGate = lightroomCloseGate || createLightroomCloseGate({ taxonomyRoot, usageRequests });
   let pipelineProcess = null;
   let assetWriteActive = false;
   let pipelineAssetSnapshot = new Map();
@@ -224,7 +231,8 @@ export async function createExplorerServer({
     return Boolean(
       isPipelineProcessActive()
       || taxonomyMaintenanceService?.isActive()
-      || taxonomyMasterService?.isActive(),
+      || taxonomyMasterService?.isActive()
+      || taxonomyUpdateCoordinator?.isBusy(),
     );
   }
 
@@ -301,6 +309,28 @@ export async function createExplorerServer({
   });
   await taxonomyMasterService.ensureCorrectionBaseline().catch(() => false);
   void taxonomyMaintenanceService.startupCheck();
+  taxonomyUpdateCoordinator = createTaxonomyUpdateCoordinator({ taxonomyRoot,
+    maintenanceService: taxonomyMaintenanceService, masterService: taxonomyMasterService,
+    checkStartReady: (context) => closeGate.ready(context),
+    prepareStart: lightroomCloseGate ? undefined : (job) => usageRequests.prepare(job),
+    onStateChange: lightroomCloseGate ? undefined : (job) => usageRequests.syncJob(job), pollIntervalMs: 10000 });
+  await taxonomyUpdateCoordinator.restore();
+
+  async function assertUpdateRouteAllowed(action) {
+    if (!taxonomyUpdateCoordinator.isBusy()) return;
+    const sequence = await taxonomyUpdateCoordinator.status();
+    const readOnly = action === "preview" || action.endsWith("-preview") || action.endsWith("-browse");
+    const decision = ["decide", "decide-project-conflict", "identity-save", "classification-save", "classification-deferral-save"].includes(action);
+    const usage = ["catalog-usage-save", "catalog-usage-preview"].includes(action);
+    if (readOnly || usage || decision && sequence.status === "waiting-decisions") return;
+    throw Object.assign(new Error("Der gespeicherte Datenbank-Updateauftrag besitzt den Ablauf. Bitte dessen Fortsetzen/Pause verwenden."), { statusCode: 409 });
+  }
+
+  async function continueAfterDecision(result) {
+    if (taxonomyUpdateCoordinator.status().status !== "waiting-decisions") return result;
+    const workflow = await taxonomyUpdateCoordinator.afterConfirmedDecision();
+    return { ...result, updateWorkflow: workflow };
+  }
 
   const pipelineRuntime = {
     get state() { return pipelineState; },
@@ -627,7 +657,10 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyRead({ resource, reference, searchParams }) {
-        if (resource === "master-status") return taxonomyMasterService.status();
+        if (resource === "master-status") return { ...await taxonomyMasterService.status(),
+          updateWorkflow: { ...await taxonomyUpdateCoordinator.status(), available: true } };
+        if (resource === "sequence-status") return taxonomyUpdateCoordinator.status();
+        if (resource === "lightroom-status") return closeGate.status({ updateRunId: taxonomyUpdateCoordinator.status().updateRunId });
         if (resource === "status") return taxonomyMaintenanceService.status();
         if (resource === "kingdoms") return taxonomyReference.kingdoms();
         if (resource === "review") return taxonomyReference.review();
@@ -648,8 +681,14 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyMaintenance({ action, payload }) {
+        if (action === "sequence-start") return taxonomyUpdateCoordinator.start(payload);
+        if (action === "sequence-resume") return taxonomyUpdateCoordinator.resume(payload);
+        if (action === "sequence-pause") return taxonomyUpdateCoordinator.pause();
+        if (action === "lightroom-close") return closeGate.requestClose({ confirmed: payload.confirmed,
+          updateRunId: taxonomyUpdateCoordinator.status().updateRunId });
+        await assertUpdateRouteAllowed(action);
         if (action === "preview") return taxonomyMaintenanceService.previewUpdate();
-        if (action === "start") return taxonomyMaintenanceService.startUpdate(payload);
+        if (action === "start") return taxonomyMaintenanceService.startUpdate({ token: payload.token });
         if (action === "rollback") return taxonomyMaintenanceService.rollback();
         if (action === "decide-project-conflict") {
           return taxonomyMaintenanceService.decideProjectConflict(payload);
@@ -660,6 +699,7 @@ export async function createExplorerServer({
       },
       async taxonomyCorrection({ action, payload }) {
         if (action === "preference-preview") return taxonomyNamePreference.preview(payload);
+        await assertUpdateRouteAllowed(action);
         if (taxonomyMasterService.isActive()) throw new Error("Eine Datenbankaktualisierung läuft. Bitte danach erneut versuchen.");
         if (action === "preference-save") {
           const result = await taxonomyNamePreference.save(payload);
@@ -673,6 +713,8 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyMaster({ action, payload }) {
+        await assertUpdateRouteAllowed(action);
+        if (payload.updateRunId) throw new Error("Update-Eigentümer dürfen nicht über Einzelaktionen übernommen werden.");
         if (action === "build") return taxonomyMasterService.startBuild(payload);
         if (action === "build-baseline") return taxonomyMasterService.startBaselineBuild(payload);
         if (action === "pause-build") return taxonomyMasterService.pauseBuild();
@@ -680,12 +722,16 @@ export async function createExplorerServer({
         if (action === "storage-preview") return taxonomyMasterService.maintainStorage("preview");
         if (action === "storage-clean") return taxonomyMasterService.maintainStorage("clean", payload);
         if (action === "apply-corrections") return taxonomyMasterService.applyCorrections(payload);
-        if (action === "decide") return taxonomyMasterService.decide(payload);
+        if (action === "decide") return continueAfterDecision(await taxonomyMasterService.decide(payload));
         if (action === "identity-preview") return taxonomyMasterService.reviewIdentity("preview", payload);
         if (action === "classification-preview") return taxonomyMasterService.reviewIdentity("classificationPreview", payload);
-        if (action === "classification-save") return taxonomyMasterService.reviewIdentity("classificationSave", payload);
+        if (action === "classification-automatic-preview") return taxonomyMasterService.reviewIdentity("classificationAutomaticPreview", payload);
+        if (action === "classification-automatic-save") return taxonomyMasterService.reviewIdentity("classificationAutomaticSave", payload);
+        if (action === "catalog-usage-preview") return taxonomyMasterService.reviewIdentity("catalogUsagePreview", payload);
+        if (action === "catalog-usage-save") return taxonomyMasterService.reviewIdentity("catalogUsageSave", payload);
+        if (action === "classification-save") return continueAfterDecision(await taxonomyMasterService.reviewIdentity("classificationSave", payload));
         if (action === "classification-deferral-preview") return taxonomyMasterService.reviewIdentity("classificationDeferralPreview", payload);
-        if (action === "classification-deferral-save") return taxonomyMasterService.reviewIdentity("classificationDeferralSave", payload);
+        if (action === "classification-deferral-save") return continueAfterDecision(await taxonomyMasterService.reviewIdentity("classificationDeferralSave", payload));
         if (action === "identity-save") return taxonomyMasterService.reviewIdentity("save", payload);
         if (action === "identity-browse") return taxonomyMasterService.reviewIdentity("browse", payload);
         if (action === "identity-discard-preview") return taxonomyMasterService.reviewIdentity("discardPreview", payload);
@@ -724,6 +770,7 @@ export async function createExplorerServer({
         server.close((error) => (error ? reject(error) : resolveClose()));
       });
       closeActiveFileStreams();
+      await taxonomyUpdateCoordinator.close();
       await taxonomyMasterService.close();
       await taxonomyMaintenanceService.close();
       taxonomyReference.close();

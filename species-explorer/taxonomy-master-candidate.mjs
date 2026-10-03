@@ -49,7 +49,8 @@ import {
   normalizeTaxonomySearchTerm,
 } from "./taxonomy-search-text.mjs";
 import { atomicWriteJson, loadNodeSqlite } from "./taxonomy-storage.mjs";
-import { writeMasterBuildInputs, masterFileFingerprint, compareMasterBuildInputs } from "./taxonomy-master-inputs.mjs";
+import { writeMasterBuildInputs, masterFileFingerprint, compareMasterBuildInputs,
+  normalizeProtectedMasterIds, protectedMasterIdsRevision } from "./taxonomy-master-inputs.mjs";
 import { prepareMasterReuse } from "./taxonomy-master-reuse.mjs";
 import { openMasterCheckpoint } from "./taxonomy-master-checkpoint.mjs";
 import { copyMasterSearchTerms } from "./taxonomy-master-search-reuse.mjs";
@@ -71,6 +72,7 @@ const SOURCE_FIELDS = new Set([
   "wikidata-id",
   "animalia-id",
 ]);
+const PROTECTED_TAXON_FIELDS = new Set(["scientific-name", "german-name", "english-name", ...HIERARCHY_FIELDS]);
 
 function cleanText(value) {
   return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ");
@@ -747,6 +749,7 @@ async function buildTaxonomyMasterCandidateScoped({
   projectTaxa = [],
   corrections = [],
   retainedTaxa = [],
+  protectedMasterIds = [],
   identityRegistry,
   buildInputCoverage,
   reuseUnchanged = true,
@@ -757,6 +760,8 @@ async function buildTaxonomyMasterCandidateScoped({
   now = () => new Date(),
 } = {}) {
   if (!taxonomyRoot) throw new Error("Taxonomie-Zielpfad fehlt.");
+  const normalizedProtectedMasterIds = normalizeProtectedMasterIds(protectedMasterIds);
+  const protectedIds = new Set(normalizedProtectedMasterIds);
   const timestamp = now().toISOString();
   const normalizedColRelease = sourceRelease({
     provider: "catalogue-of-life",
@@ -979,10 +984,11 @@ async function buildTaxonomyMasterCandidateScoped({
       rawCounts: new Map([[normalizedColRelease.provider, processedColRecords],
         ...normalizedSlices.map((slice) => [slice.release.provider, slice.records.length])]),
       recordLocations, corrections: normalizedCorrections, projects: normalizedProjects,
-      retainedTaxa: normalizedRetainedTaxa, identityRevision: identityRegistryRevision(identityPlan.registry), onProgress });
+      retainedTaxa: normalizedRetainedTaxa, identityRevision: identityRegistryRevision(identityPlan.registry),
+      protectedMasterIds: normalizedProtectedMasterIds, onProgress });
     reuse = await prepareMasterReuse({ directory: temporaryDirectory,
       previousDirectory: taxonomyMasterActiveDirectory(taxonomyRoot), previousManifest: activeManifest,
-      buildInputs, recordLocations, onProgress, enabled: reuseUnchanged });
+      buildInputs, recordLocations, protectedMasterIds: normalizedProtectedMasterIds, onProgress, enabled: reuseUnchanged });
     recordLocations.clear();
     database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath));
     if (checkpoint) {
@@ -1285,10 +1291,38 @@ async function buildTaxonomyMasterCandidateScoped({
         .filter((field) => !group.identityContinuation || field.field_name !== "scientific-name")
         .filter((field) => !useProviderGermanName || field.field_name !== "german-name"
           || field.origin_kind === "source");
+      const previousDecisions = previousState.decisionsFor(previousMasterTaxonId);
+      // Narrow source recovery copies the actual decisions below and must keep
+      // unrelated semantic statuses unchanged. Only a regular rebuild converts
+      // old decision evidence into a durable protection marker.
+      const decisionProtection = [...previousState.decisionProtectionFor(previousMasterTaxonId),
+        ...(sourceRecoveryScope ? [] : previousDecisions.map((decision) => ({ decisionId: decision.decision_id,
+          sourceMasterVersion: activeManifest.candidateId, fieldName: decision.field_name,
+          language: decision.language || "", decisionType: decision.decision_type,
+          decidedAt: decision.decided_at, selectedValue: decision.field_value })))];
+      const protectsTaxon = protectedIds.has(masterTaxonId) || protectedIds.has(previousMasterTaxonId)
+        || group.projects.length > 0 || previousState.projectsFor(previousMasterTaxonId).length > 0
+        || group.corrections.length > 0 || decisionProtection.length > 0 || previousDecisions.length > 0
+        || currentFields.some((field) => ["manual", "project"].includes(field.origin_kind));
+      // Only the selected substantive value is protected, not a release, source
+      // identifier or retrieval time. Provider-standard reset is an explicit
+      // user choice, not an unconfirmed source change.
+      const protectsTaxonField = (fieldName) => protectsTaxon && PROTECTED_TAXON_FIELDS.has(fieldName)
+        && !(useProviderGermanName && fieldName === "german-name")
+        && !(group.identityClassification && fieldName === "kingdom");
+      const sameFieldValue = (fieldName, left, right) => protectsTaxonField(fieldName)
+        ? cleanText(left) === cleanText(right) : normalized(left) === normalized(right);
+      const confirmedIdentityValue = (fieldName, value) => group.identityContinuation && (
+        (fieldName === "species" && group.rank === "species" && cleanText(value) === cleanText(group.scientificName))
+        || (fieldName === "subspecies" && group.rank === "subspecies" && cleanText(value) === cleanText(group.scientificName))
+        || (fieldName === "genus" && cleanText(value) === cleanText(group.scientificName).split(" ")[0])
+      );
       const protectedPreviousFieldKeys = new Set([
         ...explicitFieldKeys,
         ...currentFields
           .filter((field) => ["manual", "project"].includes(field.origin_kind))
+          .map((field) => `${field.field_name}|${field.language || ""}`),
+        ...currentFields.filter((field) => protectsTaxonField(field.field_name))
           .map((field) => `${field.field_name}|${field.language || ""}`),
       ]);
       let groupBlockingConflictCount = 0;
@@ -1304,7 +1338,7 @@ async function buildTaxonomyMasterCandidateScoped({
         const key = candidateKey(candidate);
         const list = byField.get(key) || [];
         if (!list.some((entry) => (
-          normalized(entry.fieldValue) === normalized(candidate.fieldValue)
+          sameFieldValue(candidate.fieldName, entry.fieldValue, candidate.fieldValue)
           && entry.provider === candidate.provider
         ))) list.push(candidate);
         byField.set(key, list);
@@ -1313,13 +1347,13 @@ async function buildTaxonomyMasterCandidateScoped({
         const key = `${current.field_name}|${current.language || ""}`;
         const list = byField.get(key) || [];
         const protectsPreviousField = protectedPreviousFieldKeys.has(key);
-        if (list.some((entry) => normalized(entry.fieldValue) === normalized(current.field_value)
+        if (list.some((entry) => sameFieldValue(current.field_name, entry.fieldValue, current.field_value)
           && (current.origin_kind === "source" || entry.originKind === current.origin_kind))) continue;
         // Reine Anbieterwerte des globalen Offlinebestands folgen beim neuen
-        // Quellenstand der aktuellen Priorität. Das gilt auch für deren
-        // Hierarchiefelder bei einer Projektart. Nur das konkret im Projekt
-        // oder manuell gepflegte Feld und Felder ohne jeden frischen Ersatz
-        // brauchen den bisherigen Wert als geschützten Vergleichskandidaten.
+        // Quellenstand der aktuellen Priorität. Bei angelegten/zugewiesenen
+        // oder selbst gepflegten Arten bleiben Namen und Hierarchie dagegen
+        // vollständig geschützte Vergleichswerte. Herkunft und externe IDs
+        // sind keine solche fachliche Feldänderung.
         if (!protectsPreviousField && list.length) continue;
         const originKind = current.origin_kind;
         const provenance = originKind === "source"
@@ -1351,12 +1385,18 @@ async function buildTaxonomyMasterCandidateScoped({
         let conflictCandidate = null;
         if (currentValue && protectsPreviousField) {
           const same = candidates.find((entry) => (
-            normalized(entry.fieldValue) === normalized(currentValue.field_value)
+            sameFieldValue(currentValue.field_name, entry.fieldValue, currentValue.field_value)
           ));
           if (same) selectedCandidate = same;
           const preferred = freshCandidates[0];
-          if (preferred && normalized(preferred.fieldValue) !== normalized(currentValue.field_value)) {
-            const decision = chooseFieldAssertion({
+          if (preferred && !sameFieldValue(currentValue.field_name, preferred.fieldValue, currentValue.field_value)) {
+            const explicitChoice = preferred.originKind === "manual"
+              || (preferred.originKind === "project" && currentValue.origin_kind !== "manual")
+              || (currentValue.origin_kind === "source" && preferred.originKind === "source"
+                && confirmedIdentityValue(currentValue.field_name, preferred.fieldValue));
+            const decision = protectsTaxonField(currentValue.field_name)
+              ? { action: explicitChoice ? "select" : "conflict" }
+              : chooseFieldAssertion({
               current: {
                 fieldName: currentValue.field_name,
                 fieldValue: currentValue.field_value,
@@ -1453,12 +1493,15 @@ async function buildTaxonomyMasterCandidateScoped({
         externalProviderCount: externalProviders.size,
         conflictCount: groupBlockingConflictCount,
         stale: sourceRemoved || removedOnly,
-        manuallyProtected: group.corrections.length > 0 || currentFields.some((field) => field.origin_kind === "manual"),
+        manuallyProtected: group.corrections.length > 0 || decisionProtection.length > 0
+          || currentFields.some((field) => field.origin_kind === "manual"),
       });
       for (const statusName of statuses) {
         setMasterTaxonStatus(writer, {
           masterTaxonId,
           statusName,
+          ...(statusName === "manually-protected" && decisionProtection.length > 0
+            ? { statusDetail: JSON.stringify({ kind: "own-field-decision-protection", version: 1, decisions: decisionProtection }) } : {}),
           updatedAt: timestamp,
         });
       }
@@ -1546,6 +1589,7 @@ async function buildTaxonomyMasterCandidateScoped({
         identities: identityRegistryRevision(identityPlan.registry),
         identitySources: identityBuildSourceRevision([normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)]),
         identityInputs: taxonomyIdentityInputRevision({ corrections, projectTaxa }),
+        protectedMasterIds: protectedMasterIdsRevision(normalizedProtectedMasterIds),
       },
       sources: releases.map((release) => ({
         provider: release.provider,

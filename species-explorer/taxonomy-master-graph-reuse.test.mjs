@@ -77,6 +77,7 @@ test("Strukturvergleich erkennt alle Arten von Kanten und zustandsabhängigen Ma
     "DELETE FROM provider_name_assertion WHERE name_kind='scientific'",
     "INSERT INTO master_taxon_alias(master_taxon_id,name,normalized_name,alias_type) SELECT master_taxon_id,'Alias species','alias species','synonym' FROM master_taxon LIMIT 1",
     "INSERT INTO master_decision(decision_id,master_taxon_id,decision_type,decided_at) SELECT 'decision',master_taxon_id,'keep-current','2026-09-23' FROM master_taxon LIMIT 1",
+    "INSERT INTO master_taxon_status(master_taxon_id,status_name,status_detail,updated_at) SELECT master_taxon_id,'manually-protected','own decision provenance','2026-09-23' FROM master_taxon LIMIT 1",
     "INSERT INTO master_conflict(conflict_id,master_taxon_id,conflict_type,detected_at) SELECT 'conflict',master_taxon_id,'changed-value','2026-09-23' FROM master_taxon LIMIT 1",
     "INSERT INTO project_taxon_link(project_taxon_key,master_taxon_id,project_slug,scientific_name_at_link,link_state,linked_at,updated_at) SELECT 'project',master_taxon_id,'slug',canonical_scientific_name,'linked','2026-09-23','2026-09-23' FROM master_taxon LIMIT 1",
     "UPDATE master_field_assertion SET origin_kind='manual',provider_taxon_assertion_id=NULL",

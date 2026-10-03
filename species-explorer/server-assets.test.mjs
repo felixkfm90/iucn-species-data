@@ -310,6 +310,59 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   );
 });
 
+test("Kartenimport trennt explizite IUCN-Browserangabe, eigene Pflege und unveränderten Schutz", async (t) => {
+  const repoRoot = await createEditableFixture();
+  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false, rebuildReportAfterAssetSave: false });
+  const address = await app.listen(); t.after(() => app.close());
+  const base = `http://${app.host}:${address.port}`;
+  const post = (action, body) => fetch(`${base}/api/species/turdusmerula/assets/map/${action}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const original = await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg"));
+  const payload = { careMode: "iucn-browser", imageBase64: createTestJpeg(640, 480).toString("base64"),
+    originalName: "T1A1.jpg", reason: "Im Browser heruntergeladen",
+    source: "https://www.iucnredlist.org/api/v4/assessments/1/distribution_map/jpg" };
+  for (const changes of [{ source: payload.source + "?token=fixture" }, { imageBase64: "" },
+    { source: payload.source.replace("/1/", "/2/") }, { originalName: "T1A2.jpg" }]) {
+    assert.equal((await post("preview", { ...payload, ...changes })).status, 400);
+    assert.deepEqual(await readFile(join(repoRoot, "species-assets", "Amsel", "map.jpg")), original);
+  }
+  const response = await post("preview", payload); assert.equal(response.status, 200);
+  const preview = await response.json();
+  assert.equal(preview.provenance.assurance, "user-declared");
+  assert.match(preview.warnings.join(" "), /nicht technisch verifiziert/);
+  const dataPath = join(repoRoot, "speciesData.json");
+  const data = JSON.parse(await readFile(dataPath, "utf8"));
+  data[0]["Assessment ID"] = 2;
+  await writeFile(dataPath, JSON.stringify(data));
+  await fetch(`${base}/api/reload`);
+  assert.equal((await post("save", { token: preview.token, careMode: "iucn-browser" })).status, 409);
+  data[0]["Assessment ID"] = 1;
+  await writeFile(dataPath, JSON.stringify(data));
+  await fetch(`${base}/api/reload`);
+  assert.equal((await post("save", { token: preview.token, careMode: "manual" })).status, 409);
+  assert.equal((await post("save", { token: preview.token, careMode: "iucn-browser" })).status, 200);
+  const registry = JSON.parse(await readFile(join(repoRoot, "species-assets-overrides.json"), "utf8"));
+  assert.equal(registry.assets.Amsel.map.manual, true, "alter Pipeline-Client bleibt geschützt");
+  assert.equal(registry.assets.Amsel.map.protectFromPipeline, true);
+  assert.equal(registry.assets.Amsel.map.careMode, "provider");
+  const model = await buildExplorerModel(repoRoot);
+  assert.equal(model.summary.manualMapCount, 1);
+  assert.equal(model.summary.browserImportedMapCount, 1);
+  assert.equal(model.summary.ownCareMapCount, 0);
+  assert.equal(model.species[0].assets.map.ownCare, false);
+  assert.equal((await post("save", { token: preview.token })).status, 409);
+  registry.assets.Amsel.map.manual = false;
+  await writeFile(join(repoRoot, "species-assets-overrides.json"), JSON.stringify(registry));
+  const plan = buildPipelinePlan({ repoRoot, mode: "manual-maps",
+    speciesList: JSON.parse(await readFile(join(repoRoot, "species_list.json"), "utf8")),
+    existingSpeciesData: JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8")),
+    sanitizeAssetName: (name) => name,
+  });
+  assert.equal(plan.targetCount, 1, "eigenständiger Schutz bleibt bei späterer Suche berücksichtigt");
+});
+
 test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fehlschlägt", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));

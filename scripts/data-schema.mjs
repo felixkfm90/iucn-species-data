@@ -91,6 +91,32 @@ export function validateAssetOverridesSchema(value) {
       if (asset.manual !== undefined && typeof asset.manual !== "boolean") {
         issues.push(`species-assets-overrides.json.assets.${safeName}.${assetType}.manual muss boolesch sein.`);
       }
+      if (assetType === "map") {
+        const label = `species-assets-overrides.json.assets.${safeName}.map`;
+        if (asset.protectFromPipeline !== undefined && typeof asset.protectFromPipeline !== "boolean") {
+          issues.push(`${label}.protectFromPipeline muss boolesch sein.`);
+        }
+        if (asset.careMode !== undefined && !["manual", "provider"].includes(asset.careMode)) {
+          issues.push(`${label}.careMode muss manual oder provider sein.`);
+        }
+        if (asset.provenance !== undefined) {
+          requireObject(asset.provenance, `${label}.provenance`, issues);
+          if (isObject(asset.provenance)) {
+            const provenance = asset.provenance;
+            if (!["iucn", "unspecified"].includes(provenance.provider)) issues.push(`${label}.provenance.provider ist ungültig.`);
+            if (!["file", "url", "browser-file", "pipeline"].includes(provenance.acquisition)) issues.push(`${label}.provenance.acquisition ist ungültig.`);
+            if (!["unverified", "user-declared", "program-retrieved"].includes(provenance.assurance)) issues.push(`${label}.provenance.assurance ist ungültig.`);
+            if (provenance.acquisition === "browser-file") {
+              const id = provenance.assessmentId;
+              if (asset.careMode !== "provider" || provenance.provider !== "iucn"
+                || provenance.assurance !== "user-declared" || typeof id !== "string" || !/^\d+$/.test(id)
+                || provenance.canonicalUrl !== `https://www.iucnredlist.org/api/v4/assessments/${id}/distribution_map/jpg`) {
+                issues.push(`${label}.provenance muss die erklärte IUCN-Browserherkunft und passende kanonische Bewertung enthalten.`);
+              }
+            }
+          }
+        }
+      }
       if (assetType === "sound" && asset.rejectedSources !== undefined) {
         requireArray(asset.rejectedSources, `species-assets-overrides.json.assets.${safeName}.sound.rejectedSources`, issues);
         if (Array.isArray(asset.rejectedSources)) {

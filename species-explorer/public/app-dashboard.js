@@ -259,6 +259,9 @@
       elements.assetIssues.textContent = summary.missingCoreAssets;
       elements.ncCount.textContent = summary.ncSoundCount;
       elements.manualMapCount.textContent = summary.manualMapCount;
+      const mapProvenanceCounts = documentRef.querySelector?.("#map-provenance-counts");
+      if (mapProvenanceCounts) mapProvenanceCounts.textContent =
+        `${summary.browserImportedMapCount || 0} IUCN-Browserimporte · ${summary.ownCareMapCount ?? summary.manualMapCount} eigene Pflege/Altmarkierungen`;
       elements.reportDate.textContent = formatDate(summary.reportGeneratedAt);
     }
 

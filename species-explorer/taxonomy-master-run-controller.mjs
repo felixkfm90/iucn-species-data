@@ -48,6 +48,7 @@ export class MasterRunController {
     const status = executing ? pause ? "pausing" : "building"
       : terminal.includes(saved?.status) ? saved.status : "interrupted";
     return { available: true, id: current.id, status, startedAt: current.startedAt,
+      updateRunId: current.updateRunId || "",
       warnings: current.warnings || [],
       progress: saved?.progress || null, checkpoint: saved?.checkpoint || null, error: saved?.error || "",
       canPause: executing && !pause,
@@ -58,16 +59,28 @@ export class MasterRunController {
   async build(options) {
     if (this.closing) throw new Error("Explorer wird geschlossen; es wurde kein Hintergrundlauf gestartet.");
     const job = await prepareMasterJob(options);
-    await atomicWriteJson(this.currentFile, { schemaVersion: 1, id: job.id, startedAt: options.now().toISOString(), warnings: options.warnings || [] });
+    await atomicWriteJson(this.currentFile, { schemaVersion: 1, id: job.id, startedAt: options.now().toISOString(), warnings: options.warnings || [],
+      ...(options.updateRunId ? { updateRunId: options.updateRunId } : {}) });
     if (this.closing) await pauseMasterJob(this.root, job.id);
     return this.startProcess({ taxonomyRoot: this.root, id: job.id, onProgress: options.onProgress });
   }
-  async resume(onProgress) {
+  async assertUpdateOwner(updateRunId) {
+    if (!updateRunId) return;
+    if (!/^update-[a-f0-9-]{36}$/.test(updateRunId)) throw new Error("Ungültige Update-Auftragskennung.");
+    const current = await this.current();
+    const recipe = current && await readJson(path.join(masterJobDirectory(this.root, current.id), "recipe.json"));
+    if (!current || current.updateRunId !== updateRunId || recipe?.updateRunId !== updateRunId) {
+      throw new Error("Der gespeicherte Masteraufbau gehört nicht zu diesem Update-Auftrag.");
+    }
+  }
+  async resume(onProgress, updateRunId = "") {
+    await this.assertUpdateOwner(updateRunId);
     const current = await this.current();
     if (!current) throw new Error("Es gibt keinen gespeicherten Masteraufbau zum Fortsetzen.");
     return this.startProcess({ taxonomyRoot: this.root, id: current.id, resume: true, onProgress });
   }
-  async assertReadyForActivation() {
+  async assertReadyForActivation(updateRunId = "") {
+    await this.assertUpdateOwner(updateRunId);
     const current = await this.current();
     if (!current) return; // Legacy candidate without a background job.
     const status = await this.status();

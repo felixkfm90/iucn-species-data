@@ -10,6 +10,7 @@ import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { extname, join, resolve, sep } from "node:path";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
+import { isMapProtected } from "../scripts/map-provenance.mjs";
 import { buildCleanupPlan } from "../scripts/species-cleanup.mjs";
 import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
 import { prunePipelineLogs } from "./asset-backups.mjs";
@@ -21,6 +22,7 @@ import {
 import { synchronizeManualMapDocumentation } from "./manual-map-documentation.mjs";
 import { formatSpectrogramPipelineLog, formatPipelineSummary, createPipelineTextReader } from "./pipeline-log.mjs";
 import { checkPipelinePublication } from "./pipeline-publication-check.mjs";
+import { checkProjectPublicationSources } from "./project-publication-check.mjs";
 import { isNonCommercialLicense } from "./media-assets.mjs";
 import { closeActiveFileStreams, sendFile, sendText } from "./http-routing.mjs";
 import { isPathInside } from "./request-security.mjs";
@@ -52,6 +54,7 @@ export function createPipelineController({
   compactTimestamp,
   readJson,
   spawnProcess = spawn,
+  checkPublicationSources = checkProjectPublicationSources,
 }) {
   async function readPipelinePlan(mode, targetSlugs = []) {
     const [speciesListText, speciesDataText] = await Promise.all([
@@ -387,7 +390,9 @@ export function createPipelineController({
           previousLicense: type === "sound"
             ? String(previousCredits.license ?? "").trim()
             : "",
-          previousManual: registry.assets?.[target.safeName]?.[type]?.manual === true,
+          previousManual: type === "map"
+            ? isMapProtected(registry.assets?.[target.safeName]?.map)
+            : registry.assets?.[target.safeName]?.[type]?.manual === true,
           override: structuredClone(registry.assets?.[target.safeName]?.[type] ?? null),
           spectrogramOverride: type === "sound"
             ? structuredClone(registry.assets?.[target.safeName]?.spectrogram ?? null)
@@ -549,6 +554,9 @@ export function createPipelineController({
     const preflight = checkPipelinePublication(repoRoot);
     appendPipelineLog(preflight.message);
     if (!preflight.ok) { runtime.state.error = preflight.message; return 1; }
+    const sourcePreflight = checkPublicationSources(repoRoot);
+    appendPipelineLog(sourcePreflight.message);
+    if (!sourcePreflight.ok) { runtime.state.error = sourcePreflight.message; return 1; }
     let code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Vorprüfung");
     if (code !== 0) {
       runtime.state.error = "Vor dem Pipeline-Lauf waren bereits Dateien vorgemerkt. Automatischer Commit wurde abgebrochen.";
@@ -1069,6 +1077,11 @@ export function createPipelineController({
       registry.assets[asset.safeName][asset.type] = {
         ...(preservedSoundRejections.length ? { rejectedSources: preservedSoundRejections } : {}),
         manual: choice.decision === "manual",
+        ...(asset.type === "map" ? {
+          protectFromPipeline: choice.decision === "manual",
+          careMode: choice.decision === "manual" ? "manual" : "provider",
+          provenance: { provider: "iucn", acquisition: "pipeline", assurance: "program-retrieved" },
+        } : {}),
         reason: choice.decision === "manual"
           ? "Nach Pipeline-Import von Felix als manuell gepflegt markiert."
           : "Automatisch durch die Pipeline gepflegt.",

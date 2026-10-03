@@ -72,6 +72,79 @@ function Statistics.load(catalog)
   return StatisticsIndex.result(index), true, nil
 end
 
+function Statistics.selectedPhotos(catalog)
+  -- getTargetPhotos liefert ohne Auswahl den Filmstreifen. Das aktive Foto
+  -- unterscheidet diese SDK-Rückgabe von einer tatsächlich markierten Auswahl.
+  if not catalog:getTargetPhoto() then
+    return {}
+  end
+  local selected = {}
+  local seen = {}
+  for _, photo in ipairs(catalog:getTargetPhotos() or {}) do
+    if not seen[photo] then
+      seen[photo] = true
+      table.insert(selected, photo)
+    end
+  end
+  return selected
+end
+
+function Statistics.forPhotos(catalog, photos, options)
+  options = options or {}
+  -- Eigene Liste bindet den bestätigten Export auch über SDK-Yields hinweg.
+  local exportPhotos = {}
+  for _, photo in ipairs(photos or {}) do
+    table.insert(exportPhotos, photo)
+  end
+  local totalPhotos = #exportPhotos
+  local index = StatisticsIndex.new(totalPhotos)
+  if options.progress and options.progress(0, totalPhotos) == "cancel" then
+    return { status = "cancelled" }
+  end
+  for chunkStart = 1, totalPhotos, READ_CHUNK_SIZE do
+    local chunkEnd = math.min(chunkStart + READ_CHUNK_SIZE - 1, totalPhotos)
+    local chunk = {}
+    for photoIndex = chunkStart, chunkEnd do
+      table.insert(chunk, exportPhotos[photoIndex])
+    end
+    local completed = false
+    catalog:withReadAccessDo(function()
+      local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
+      local rawValuesByPhoto = catalog:batchGetRawMetadata(
+        chunk,
+        { "uuid", "dateTimeOriginal", "path" }
+      )
+      if type(valuesByPhoto) ~= "table" or type(rawValuesByPhoto) ~= "table" then
+        error("Lightroom hat die Export-Metadaten der markierten Fotos nicht vollständig geliefert.", 0)
+      end
+      for _, photo in ipairs(chunk) do
+        if type(valuesByPhoto[photo]) ~= "table" or type(rawValuesByPhoto[photo]) ~= "table" then
+          error("Lightroom hat die Export-Metadaten eines markierten Fotos nicht vollständig geliefert.", 0)
+        end
+        local values = {}
+        for field, value in pairs(valuesByPhoto[photo]) do
+          values[field] = value
+        end
+        local rawValues = rawValuesByPhoto[photo]
+        values.photoUuid = rawValues.uuid
+        values.dateTimeOriginal = rawValues.dateTimeOriginal
+        values.path = rawValues.path
+        StatisticsIndex.add(index, StatisticsIndex.snapshot(values))
+      end
+      completed = true
+    end)
+    if not completed then
+      error("Lightroom konnte die markierten Fotos nicht vollständig lesen.", 0)
+    end
+    if options.progress and options.progress(chunkEnd, totalPhotos) == "cancel" then
+      return { status = "cancelled" }
+    end
+  end
+  local result = StatisticsIndex.result(index)
+  result.exportScope = "selection"
+  return { status = "complete", statistics = result }
+end
+
 function Statistics.beginBuild()
   if activeBuild then
     return false

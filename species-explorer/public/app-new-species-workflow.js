@@ -303,7 +303,7 @@
         const browserMapUrl = iucnDistributionMapUrl(species);
         mapReview.hidden = false;
         mapReview.innerHTML = `
-          <h5>Karte manuell einfügen</h5>
+          <h5>Gespeicherte Karte einfügen</h5>
           <p>${escapeHtml(messageText)} Speichere die Karte im Browser und wähle die JPEG-/PNG-Datei hier aus oder ziehe sie in das Dateifeld. Der Quellenlink dokumentiert die Herkunft; bei einer Datei wird er nicht heruntergeladen.</p>
           <div class="new-species-manual-map">
             ${browserMapUrl ? `
@@ -325,7 +325,15 @@
             </label>
             <label>
               Pflegegrund
-              <textarea class="new-species-map-reason-input">Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat.</textarea>
+              <textarea class="new-species-map-reason-input">Als Datei übernommen, weil der automatische Abruf nicht verfügbar war.</textarea>
+            </label>
+            <label>
+              <span>Herkunft und Pflege dieser Datei</span>
+              <select class="new-species-map-care-mode-input">
+                <option value="manual">Eigene/manuell bearbeitete Karte</option>
+                <option value="iucn-browser">Unveränderte IUCN-Karte aus dem Browser (eigene Bestätigung)</option>
+              </select>
+              <small>Keine technische Herkunftsprüfung. Beide Varianten bleiben vor automatischem Ersatz geschützt.</small>
             </label>
             <p class="edit-message new-species-map-message" hidden></p>
             <section class="new-species-manual-map-preview" hidden>
@@ -348,7 +356,7 @@
           <div class="new-species-review-actions">
             <button type="button" data-new-species-map-action="skip">Karte überspringen</button>
             <button type="button" data-new-species-map-action="preview">Karte prüfen</button>
-            <button class="primary" type="button" data-new-species-map-action="save" disabled>Manuelle Karte übernehmen</button>
+            <button class="primary" type="button" data-new-species-map-action="save" disabled>Karte übernehmen</button>
           </div>
         `;
         setInlineMapMessage("Kartendatei auswählen oder ablegen, dann „Karte prüfen“ wählen. Alternativ einen direkt abrufbaren Kartenlink prüfen.", "info");
@@ -382,6 +390,7 @@
                 imageBase64: inlineManualMapFile ? await fileToBase64(inlineManualMapFile) : "",
                 reason: reasonInput.value,
                 source,
+                careMode: mapReview.querySelector(".new-species-map-care-mode-input")?.value || "manual",
                 pipelineRunId: inlineRunId,
               }),
             },
@@ -410,7 +419,7 @@
           return;
         }
         setPipelineBusy(true);
-        setInlineMapMessage("Manuelle Karte wird übernommen…", "info");
+        setInlineMapMessage("Karte wird übernommen…", "info");
         let saved = false;
         try {
           await fetchJson(
@@ -421,6 +430,7 @@
               body: JSON.stringify({
                 token: inlineManualMapPreviewToken,
                 pipelineRunId: inlineRunId,
+                careMode: mapReview.querySelector(".new-species-map-care-mode-input")?.value || "manual",
               }),
             },
           );
@@ -487,7 +497,7 @@
         portraitPreviewButton.disabled = busy || pipelineBusy || !previewToken;
         portraitSkipButton.disabled = busy || pipelineBusy || !previewToken;
         openButton.disabled = busy || pipelineBusy;
-        for (const input of mapReview.querySelectorAll("input, textarea, button")) input.disabled = busy || pipelineBusy;
+        for (const input of mapReview.querySelectorAll("input, textarea, select, button")) input.disabled = busy || pipelineBusy;
         const saveMap = mapReview.querySelector('[data-new-species-map-action="save"]');
         if (saveMap) saveMap.disabled = busy || pipelineBusy || !inlineManualMapPreviewToken;
         for (const button of closeButtons) {
@@ -1140,6 +1150,13 @@
 
       mapReview.addEventListener("change", (event) => {
         if (event.target.matches(".new-species-map-file-input")) return selectInlineMapFile(event.target.files);
+        if (event.target.matches(".new-species-map-care-mode-input")) {
+          inlineManualMapPreviewToken = "";
+          const preview = mapReview.querySelector(".new-species-manual-map-preview");
+          if (preview) preview.hidden = true;
+          setInlineMapMessage("Pflegewahl geändert. Bitte die Karte erneut prüfen.", "info");
+          updateButtons();
+        }
       });
       for (const eventName of ["dragover", "drop"]) {
         mapReview.addEventListener(eventName, (event) => {

@@ -6,6 +6,7 @@ local LrTasks = import "LrTasks"
 local LrView = import "LrView"
 
 local Statistics = require "Statistics"
+local ExportFile = require "ExportFile"
 
 local bind = LrView.bind
 local CLASS_DISPLAY_NAMES = {
@@ -563,70 +564,72 @@ local function sortedLifelist(statistics)
   return rows
 end
 
-local function savePath(title, fileType)
-  return LrDialogs.runSavePanel({
-    title = title,
-    prompt = "Exportieren",
-    requiredFileType = fileType,
-    canCreateDirectories = true,
-  })
+local function exportScopeText(statistics)
+  if statistics.exportScope == "selection" then
+    return "Markierte Fotos: " .. photoLabel(statistics.totalPhotos)
+      .. " · " .. photoLabel(statistics.assignedPhotos) .. " mit Taxonomie"
+  end
+  local generatedAt = tostring(statistics.generatedAt or "")
+  return "Gesamter Katalog · persistenter Index" .. (generatedAt ~= "" and " vom " .. generatedAt or "")
 end
 
-local function openExportFile(path, kind)
-  local file, openError = io.open(path, "wb")
-  if not file then
-    error(kind .. " konnte nicht geöffnet werden: " .. tostring(openError), 0)
+local function exportSuccessText(statistics, message, backupPath)
+  local text = message .. "\n" .. exportScopeText(statistics)
+  if backupPath then
+    text = text .. "\nDie vorherige Datei bleibt als Sicherung erhalten: " .. backupPath
   end
-  file:write(string.char(239, 187, 191))
-  return file
+  return text
 end
 
 local function exportLifelist(statistics)
-  local path = savePath("Lifelist als CSV exportieren", "csv")
+  local path, replaceExisting = ExportFile.choosePath(
+    "Lifelist als CSV exportieren", "csv", "Lifelist.csv", exportScopeText(statistics)
+  )
   if not path then
     return
   end
-  local file = openExportFile(path, "CSV-Datei")
-  file:write(table.concat({
-    csvField("Deutscher Name"),
-    csvField("Englischer Name"),
-    csvField("Wissenschaftlicher Name"),
-    csvField("Klasse"),
-    csvField("Ordnung"),
-    csvField("Familie"),
-    csvField("Gattung"),
-    csvField("Fotoanzahl"),
-    csvField("Art-Favorit"),
-  }, ";"), "\r\n")
-  for _, entry in ipairs(sortedLifelist(statistics)) do
+  local backupPath = ExportFile.write(path, "CSV-Datei", function(file)
     file:write(table.concat({
-      csvField(entry.germanName),
-      csvField(entry.englishName),
-      csvField(entry.scientificName),
-      csvField(classDisplayName(entry.className)),
-      csvField(entry.order),
-      csvField(entry.family),
-      csvField(entry.genus),
-      rawInteger(entry.photoCount),
-      csvField((tonumber(entry.referenceImageCount or 0) or 0) > 0 and "Ja" or "Nein"),
+      csvField("Deutscher Name"),
+      csvField("Englischer Name"),
+      csvField("Wissenschaftlicher Name"),
+      csvField("Klasse"),
+      csvField("Ordnung"),
+      csvField("Familie"),
+      csvField("Gattung"),
+      csvField("Fotoanzahl"),
+      csvField("Art-Favorit"),
     }, ";"), "\r\n")
-  end
-  file:close()
+    for _, entry in ipairs(sortedLifelist(statistics)) do
+      file:write(table.concat({
+        csvField(entry.germanName),
+        csvField(entry.englishName),
+        csvField(entry.scientificName),
+        csvField(classDisplayName(entry.className)),
+        csvField(entry.order),
+        csvField(entry.family),
+        csvField(entry.genus),
+        rawInteger(entry.photoCount),
+        csvField((tonumber(entry.referenceImageCount or 0) or 0) > 0 and "Ja" or "Nein"),
+      }, ";"), "\r\n")
+    end
+  end, replaceExisting)
   LrDialogs.message(
     "Lifelist exportiert",
-    storedMessage(statistics.speciesCount, "Art", "Arten", "UTF-8-CSV"),
+    exportSuccessText(statistics, storedMessage(statistics.speciesCount, "Art", "Arten", "UTF-8-CSV"), backupPath),
     "info"
   )
 end
 
 local function exportObservationList(statistics)
-  local path = savePath("Beobachtungsliste als CSV exportieren", "csv")
+  local path, replaceExisting = ExportFile.choosePath(
+    "Beobachtungsliste als CSV exportieren", "csv", "Beobachtungsliste.csv", exportScopeText(statistics)
+  )
   if not path then
     return
   end
   local rows = statistics.observationRows or {}
-  local writeOk, writeError = LrTasks.pcall(function()
-    local file = openExportFile(path, "CSV-Datei")
+  local backupPath = ExportFile.write(path, "CSV-Datei", function(file)
     file:write(table.concat({
       csvField("Datum"),
       csvField("Jahr"),
@@ -670,20 +673,18 @@ local function exportObservationList(statistics)
         LrTasks.yield()
       end
     end
-    file:close()
-  end)
-  if not writeOk then
-    error(writeError, 0)
-  end
+  end, replaceExisting)
   LrDialogs.message(
     "Beobachtungsliste exportiert",
-    storedMessage(#rows, "Beobachtung", "Beobachtungen", "UTF-8-CSV"),
+    exportSuccessText(statistics, storedMessage(#rows, "Beobachtung", "Beobachtungen", "UTF-8-CSV"), backupPath),
     "info"
   )
 end
 
 local function exportSpeciesText(statistics)
-  local path = savePath("Artenliste als TXT exportieren", "txt")
+  local path, replaceExisting = ExportFile.choosePath(
+    "Artenliste als TXT exportieren", "txt", "Artenliste.txt", exportScopeText(statistics)
+  )
   if not path then
     return
   end
@@ -708,7 +709,11 @@ local function exportSpeciesText(statistics)
     return leftRank < rightRank
   end)
 
-  local lines = { "Gesamt: " .. speciesLabel(statistics.speciesCount), "" }
+  local lines = {
+    "Gesamt: " .. speciesLabel(statistics.speciesCount),
+    "Umfang: " .. exportScopeText(statistics),
+    "",
+  }
   for _, className in ipairs(classNames) do
     local prefix = CLASS_EMOJIS[className]
     table.insert(
@@ -733,21 +738,22 @@ local function exportSpeciesText(statistics)
     end
   end
 
-  local file = openExportFile(path, "TXT-Datei")
-  file:write(table.concat(lines, "\r\n"), "\r\n")
-  file:close()
+  local backupPath = ExportFile.write(path, "TXT-Datei", function(file)
+    file:write(table.concat(lines, "\r\n"), "\r\n")
+  end, replaceExisting)
   LrDialogs.message(
     "Artenliste exportiert",
-    storedMessage(statistics.speciesCount, "Art", "Arten", "UTF-8-TXT"),
+    exportSuccessText(statistics, storedMessage(statistics.speciesCount, "Art", "Arten", "UTF-8-TXT"), backupPath),
     "info"
   )
 end
 
-local function chooseExport()
+local function chooseExport(catalog, hasIndex)
   return LrFunctionContext.callWithContext("FN Wildlife Statistikexport", function(context)
     local factory = LrView.osFactory()
     local props = LrBinding.makePropertyTable(context)
     props.exportType = "lifelist"
+    props.exportScope = hasIndex and "catalog" or "selection"
     local result = LrDialogs.presentModalDialog({
       title = "Statistik exportieren",
       actionVerb = "Exportieren",
@@ -766,14 +772,104 @@ local function chooseExport()
             { title = "Artenliste als TXT exportieren", value = "species-text" },
           },
         }),
+        factory:static_text({ title = "Umfang auswählen:" }),
+        factory:popup_menu({
+          value = bind("exportScope"),
+          width_in_chars = 42,
+          items = hasIndex and {
+            { title = "Gesamter Katalog · gespeicherter Index", value = "catalog" },
+            { title = "Nur markierte Fotos", value = "selection" },
+          } or {
+            { title = "Nur markierte Fotos", value = "selection" },
+          },
+        }),
+        factory:static_text({
+          title = "Für „Nur markierte Fotos“ gilt die Auswahl beim Klick auf „Exportieren“. "
+            .. "Fotozahlen und Art-Favoriten beziehen sich ausschließlich auf diese Auswahl.",
+          width_in_chars = 64,
+        }),
       }),
     })
-    return result == "ok" and props.exportType or nil
+    if result ~= "ok" then
+      return nil
+    end
+    return {
+      exportType = props.exportType,
+      scope = props.exportScope,
+      photos = props.exportScope == "selection" and Statistics.selectedPhotos(catalog) or nil,
+    }
   end)
 end
 
+local function selectionStatistics(catalog, photos)
+  if #photos == 0 then
+    LrDialogs.message("Keine Fotos markiert", "Bitte die gewünschten Fotos in Lightroom markieren.", "info")
+    return nil
+  end
+  return LrFunctionContext.callWithContext("FN Wildlife Auswahl exportieren", function(context)
+    local progress = LrDialogs.showModalProgressDialog({
+      title = "Markierte Fotos für Export lesen",
+      functionContext = context,
+      cannotCancel = false,
+    })
+    local ok, result = LrTasks.pcall(function()
+      return Statistics.forPhotos(catalog, photos, {
+        progress = function(processed, total)
+          progress:setPortionComplete(processed, total)
+          progress:setCaption(buildProgressText(processed, total))
+          LrTasks.yield()
+          return progress:isCanceled() and "cancel" or nil
+        end,
+      })
+    end)
+    progress:done()
+    if not ok then
+      error(result, 0)
+    end
+    return result.status == "complete" and result.statistics or nil
+  end)
+end
+
+local function exportStatistics(catalog, statistics)
+  local ok, errorMessage = LrTasks.pcall(function()
+    local choice = chooseExport(catalog, statistics ~= nil)
+    if not choice then
+      return
+    end
+    local exportResult = statistics
+    if choice.scope == "selection" then
+      exportResult = selectionStatistics(catalog, choice.photos)
+    end
+    if not exportResult then
+      return
+    end
+    if choice.exportType == "lifelist" then
+      exportLifelist(exportResult)
+    elseif choice.exportType == "observations" then
+      exportObservationList(exportResult)
+    elseif choice.exportType == "species-text" then
+      exportSpeciesText(exportResult)
+    end
+  end)
+  if not ok then
+    LrDialogs.message("Export fehlgeschlagen", tostring(errorMessage), "critical")
+  end
+end
+
+local function missingIndexContents(factory)
+  return factory:column({
+    margin = factory:dialog_spacing(),
+    spacing = factory:control_spacing(),
+    factory:static_text({
+      title = "Es ist kein aktueller Katalogindex vorhanden. Für Katalogstatistik und Katalogexport "
+        .. "bitte „Statistik neu aufbauen“ wählen. Markierte Fotos können sofort exportiert werden.",
+      width_in_chars = 72,
+    }),
+  })
+end
+
 local function showDashboard(catalog, statistics)
-  while statistics do
+  while true do
     local result = LrFunctionContext.callWithContext("FN Wildlife Statistik", function(context)
       local factory = LrView.osFactory()
       local props = LrBinding.makePropertyTable(context)
@@ -782,20 +878,13 @@ local function showDashboard(catalog, statistics)
         actionVerb = "Exportieren ...",
         otherVerb = "Statistik neu aufbauen",
         cancelVerb = "Schließen",
-        contents = dashboard(factory, props, statistics),
+        contents = statistics and dashboard(factory, props, statistics) or missingIndexContents(factory),
       })
     end)
     if result == "ok" then
-      local exportType = chooseExport()
-      if exportType == "lifelist" then
-        exportLifelist(statistics)
-      elseif exportType == "observations" then
-        exportObservationList(statistics)
-      elseif exportType == "species-text" then
-        exportSpeciesText(statistics)
-      end
+      exportStatistics(catalog, statistics)
     elseif result == "other" then
-      local rebuilt = buildIndexWindow(catalog, true)
+      local rebuilt = buildIndexWindow(catalog, statistics ~= nil)
       statistics = rebuilt or select(1, Statistics.load(catalog))
     else
       break
@@ -807,12 +896,7 @@ LrTasks.startAsyncTask(function()
   local ok, errorMessage = LrTasks.pcall(function()
     local catalog = LrApplication.activeCatalog()
     local statistics = select(1, Statistics.load(catalog))
-    if not statistics then
-      statistics = buildIndexWindow(catalog, false)
-    end
-    if statistics then
-      showDashboard(catalog, statistics)
-    end
+    showDashboard(catalog, statistics)
   end)
   if not ok then
     LrDialogs.message("Statistik konnte nicht erstellt werden", tostring(errorMessage), "critical")

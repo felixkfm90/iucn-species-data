@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-10-01
+Stand: 2026-10-03
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -66,8 +66,11 @@ widersprüchlich an mehreren Stellen gepflegt werden.
 ## Pflicht bei künftigen Änderungen
 
 1. Der Arten-Explorer führt vor seinen automatischen Pipeline-, Karten-, Sound- und Portrait-Veröffentlichungen
-   `status:sync` selbst aus und nimmt `docs/project-status.md` in denselben Commit auf. Nach manuellen Änderungen
-   außerhalb dieses Ablaufs `npm.cmd run status:sync` ausführen.
+   eine lesende Prüfung aus, ob Statusgenerator, Schemaprüfung und ihre lokalen Importabhängigkeiten bereits
+   dem Git-Stand `HEAD` entsprechen. Benötigter unveröffentlichter Code stoppt vor Statusschreiben und Vormerken;
+   zunächst die erforderlichen Codeänderungen gemeinsam prüfen und veröffentlichen, dann die Datenübertragung
+   wiederholen. Danach führt der Explorer `status:sync` selbst aus und nimmt `docs/project-status.md` in denselben
+   Commit auf. Nach manuellen Änderungen außerhalb dieses Ablaufs `npm.cmd run status:sync` ausführen.
 2. Die fachlich betroffenen Dokumente aktualisieren; keine aktuellen Zähler in README oder AGENTS kopieren.
 3. Bei Dokumentänderungen `npm.cmd run --silent check:docs` ausführen.
 4. `npm.cmd run status:check` beziehungsweise `npm.cmd run quality:ci` ausführen.

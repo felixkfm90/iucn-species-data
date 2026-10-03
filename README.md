@@ -8,18 +8,40 @@ GitHub Pages Base:
 
 ## Aktueller Stand und Dokumentation
 
-Stand: 2. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
+Aktueller Plug-in-Quellstand **0.4.24.17**: SDK-sichere Orts-/Zeitentfernung auch für metadatenleere
+Stichwort-Altlasten, unterer Entfernen-Button im Zuweisungsfenster und drei Statistikexporte für Katalog
+oder markierte Fotos mit vorbelegten Dateinamen. Wiederkehrende Pages-Ursache (neuer lokaler Statusgenerator,
+alter versionierter Code) belegt und durch gemeinsame Daten-/Asset-Vorabprüfung abgesichert.
+Nutzerabnahme, Prüfgrenzen und Veröffentlichungsstand:
+[Bedienbefunde und Reparaturen vom 3. Oktober](docs/audits/2026-10-03-acceptance-regressions.md).
+
+Stand: 3. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
 aktiviert. Felix hat bevorzugte Namen, Zuweisung und Erhalt nach Schließen/Wiederöffnen für Weissstorch und
-Rebhuhn bestätigt. Der neue Anbieterstand `COL26.9 XR` ist ein getrenntes, noch zu prüfendes Quellenupdate;
-die Verfügbarkeitsmeldung bedeutet keinen Drift des reparierten lokalen Paars.
+Rebhuhn bestätigt. Auch das separate reguläre Update auf `COL26.9 XR` ist technisch abgeschlossen:
+Gesamtabschluss am 3. Oktober um 09:11:14 MESZ, Master `master-20261003055911210` und
+Lightroom-Paket `lightroom-fa739bd28ec1e82a0283` gemeinsam aktiv. Einmaliger lesender Vergleich bestätigt
+ID-/Namens-/Projektlink-Erhalt; 187 unklare neue CoL-Gegenstücke konservativ zurückgestellt, keine
+blockierenden Konflikte. Die 30-Minuten-Wiedervorlage wurde gelöscht; Lightroom darf wieder geöffnet werden.
+Nachweis und Grenzen: [datierter Updateabschluss](docs/audits/2026-10-03-taxonomy-reference-update.md).
+Felix hat anschließend Weissstorch und Rebhuhn in beiden Verbrauchern vorhanden und bevorzugt markiert bestätigt.
+Die gezielte Suche-/Namensprüfung des neuen Pakets ist bestanden. Der Folgeauftrag ist nun lokal implementiert:
+gespeicherter Gesamtweg nach einem Start, neue requestgebundene SDK-Erfassung in Plug-in **0.4.24.16**,
+Warten auf selbst geschlossenes Lightroom oder ausdrücklich bestätigte normale Schließanforderung nach Erfassung.
+Vorhandene Daten sind auch gegen normale Anbieter-Namens-/Hierarchieänderungen geschützt. Die Zeit zwischen
+Erfassung und Schließen bleibt eine einmalige Nutzervereinbarung, keine behauptete SDK-Vollbeobachtung.
+Kein neuer produktiver Update-Lauf und noch keine praktische Gesamtabnahme. Vertrag und Grenzen:
+[gespeicherter Gesamtweg](docs/taxonomy-update-automation.md).
 
 Maßgeblich sind der [kompakte Taxonomie-Betriebsstand](docs/taxonomy-current-status.md), die
 [Roadmap](docs/roadmap.md) und die [Dokumentationsübersicht](docs/README.md). Aktuelle Projekt-/Assetzähler stehen
 ausschließlich im [generierten Projektstatus](docs/project-status.md). Phase 10 und das Gesamtaudit bleiben offen.
-Das vollständige lokale Qualitätsgate und der Dokumentationsabgleich bestanden am 1. Oktober erneut;
+Das vollständige lokale Qualitätsgate bestand am 3. Oktober erneut: 50 Testgruppen, darunter 420 Master-/
+Betriebs- und 214 Lightroom-/Pakettests. Plug-in-Vertrag zusätzlich separat 15/15. Die gefundene enge
+Reparatur-/Statusregression ist ohne Lockerung der Umfangsprüfung korrigiert und vollständig gegengeprüft.
+[Lokaler Umsetzungsnachweis und verbleibende Abnahme](docs/audits/2026-10-03-pre-audit-implementation.md);
 Git-Übertragung und nachfolgendes Pages-Deployment bleiben getrennte Nachweise.
 
-Der reguläre Quellenupdatevertrag wird getrennt bearbeitet. Neue CoL-Einträge in einem anderen Reich zu
+Der folgende datierte Verlauf ist Vorgeschichte. Neue CoL-Einträge in einem anderen Reich zu
 bisherigen Arten mit Referenzlücke erhalten jetzt eine gebündelte Quellenprüfung und sperren die Aktivierung.
 Passende Anbieter-IDs sind Prüfhinweise, keine automatische Zusammenführung. Alte IDs, eigene Namen und Fotos
 bleiben unverändert. Passende Fälle können nach gebundener Vorschau gemeinsam mit ID-Erhalt vorgemerkt werden.
@@ -37,23 +59,35 @@ Start musste separat bestätigt werden; vollständiger Download/Import war durch
 Details: [Regulärer Updatevertrag](docs/taxonomy-reference-update.md).
 Der gemeinsame Einstieg ist mit erfolgreichem Linux-Qualitätsgate/Pages-Lauf veröffentlicht. Der nächste
 Quellenlauf wurde anschließend von Felix nach normalem Explorer-Neustart um 19:53:14 MESZ erneut gestartet.
-Die neue Referenz ist importiert; der erste Kandidat ist seit 21:10:14 MESZ bereit, aber wegen offener
+Die neue Referenz wurde importiert; der erste Kandidat war seit 21:10:14 MESZ bereit, aber wegen offener
 Klassifikationen und einer fehlenden ursprünglichen ID nicht zur Übernahme freigegeben.
-Der bisherige Master-/Lightroom-Stand bleibt bis zum geprüften gemeinsamen Wechsel aktiv; noch kein
-Gesamtabschluss oder neuer Paarwechsel bestätigt. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
+Der bisherige Master-/Lightroom-Stand blieb bis zum geprüften gemeinsamen Wechsel aktiv; der erfolgreiche
+Folgeabschluss vom 3. Oktober steht oben. Historische Fallzahlen ersetzen keine neue Quellenprüfung.
 Die obere Explorer-Schaltfläche wurde getrennt davon auf zwei Zeilen vereinfacht: `Datenbank-Update` und
 beispielsweise `3/7 Master aufbauen · 32 %`. Prozent weiterhin nur aus Messmengen der aktuellen Unterphase;
 vollständige Erklärung im Datenbankfenster und Tooltip. Keine neue Statusabfrage oder Aufbauänderung.
 Sichtbar nach dem nächsten normalen Laden der Oberfläche, nicht durch Neustart während des aktiven Updates.
 Felix möchte Quellenfälle künftig nur bei angelegten oder Lightroom-zugewiesenen Arten selbst entscheiden.
-Diese nutzungsabhängige Automatik ist noch nicht implementiert: ein vollständiger katalogübergreifender
-Lightroom-Nutzungsnachweis fehlt. Unbekannte Nutzung gilt nicht als unbenutzt; bestehende IDs/Entscheidungen
-bleiben geschützt. Kein aktueller Folgeaufbau oder Paketwechsel; die Wiedervorlage ist am Entscheidungshalt pausiert.
+Diese nutzungsabhängige Automatik ist seit 3. Oktober implementiert. Die produktive Erstaufnahme ist
+inzwischen bestätigt: 128.871 Fotos, 5.484 FN-Zuweisungen und 56 genutzte IDs. Plug-in 0.4.24.15 liest
+auf ausdrücklichen Klick FN-Kennungen zweimal. Erst normal
+geschlossenes Lightroom und Gesamtbestätigung im Explorer erlauben die automatische Vormerkung unbenutzter
+Fälle. Passende Klassifikationen behalten ihre ID; unklare Gegenstücke werden konservativ zurückgestellt.
+Projektarten, zugewiesene Arten und eigene Entscheidungen bleiben geschützt. Unbekannte Nutzung gilt nicht
+als unbenutzt. Der anschließende bestätigte lokale Folgeaufbau von 07:52:59 MESZ ist mit erfolgreichem
+gemeinsamem Paarwechsel um 09:11:14 MESZ beendet; die 30-Minuten-Begleitung wurde gelöscht.
 Der zusätzliche technische ID-Wechsel bei der Ergänzung eines zuvor leeren Reichs ist inzwischen isoliert
 reproduziert und korrigiert: eindeutiger Vorgänger, unveränderter Name/Rang und fortbestehender Anbieterbeleg
 erhalten die ursprüngliche ID. Unklare Beziehungen und bekannte Reichsänderungen bleiben gesperrt. Der vorhandene
 produktive Kandidat wird nicht nachträglich umgeschrieben. Felix bestätigt genau einen aktiven FN-Katalog;
-Nutzungserfassung/Automatik und frisch gebundener lokaler Folgeaufbau bleiben nächste Schritte.
+Die lesende frische Automatikvorschau bestätigt 1.995 unbenutzte passende und 187 unbenutzte unklare Fälle,
+ohne Überschneidung mit geschützten Arten in dieser Gruppe. Felix hat den gemeinsamen lokalen Folgeweg
+über „Datenbank aktualisieren“ anschließend bestätigt: 2.182 Fälle atomar vorgemerkt und in einem lokalen
+Folgeaufbau verarbeitet. Abschließender Master-/Paketvergleich und gemeinsamer Wechsel sind erfolgreich;
+kein erneuter Start oder Wiederholung der Erstaufnahme für diesen abgeschlossenen Wechsel.
+Keine dauerhafte inkrementelle SDK-Fortschreibung: Öffnen/Ändern des Katalogs verlangt
+erneute Erfassung; bestehende automatische Vormerkungen nicht still an neue Nachweise binden.
+Bedienung und Grenzen: [FN-Katalognutzung](docs/lightroom-catalog-usage.md).
 
 ## Datenfluss und datierter Umsetzungsverlauf
 
@@ -1248,7 +1282,7 @@ Suchbegriffe; repräsentative Offline-Suchen lagen lokal unter zwei Millisekunde
 Lua-Plug-in zeigt Namen und vollständige Taxonomie vor der Übernahme an und weist sie als eindeutig mit `(FN)`
 markierte, flache Lightroom-Stichwörter sowie stabile eigene Metadaten einem oder mehreren ausgewählten Fotos zu.
 Paketprüfung, atomare Aktivierung, isolierter Rollback, Suchhelfer und Plug-in-Vertrag sind automatisiert getestet.
-Das Plug-in besitzt in Version `0.4.24.14` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
+Das Plug-in besitzt in Version `0.4.24.15` ein kompaktes schwebendes, vierstufig gerahmtes Zuweisungsfenster. Es
 zeigt bei einem Einzelfoto dessen Dateinamen oder `1 Foto ausgewählt`, bei Mehrfachauswahl die Gesamtzahl der Fotos
 und aktualisiert sich bei einem Auswahlwechsel über eine kurze, vom Observer gestartete `LrTask`. Lifelist und
 Katalogstatistik bleiben vollständig im getrennten

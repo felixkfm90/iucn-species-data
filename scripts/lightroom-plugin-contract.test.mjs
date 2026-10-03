@@ -15,6 +15,70 @@ async function source(file) {
   return fs.readFile(path.join(PLUGIN_ROOT, file), "utf8");
 }
 
+test("Explizite FN-Nutzungserfassung liest nur SDK-Kennungen zweimal und speichert nach Abbruch oder Änderung nichts", async () => {
+  const { default: fengari } = await import("fengari");
+  const { lua, lauxlib, lualib, to_luastring } = fengari;
+  const capture = await source("CaptureCatalogUsage.lua");
+  const captureCore = await source("CatalogUsageCapture.lua");
+  assert.doesNotMatch(capture, /withWriteAccess|setPropertyForPlugin|addKeyword|removeKeyword|StatisticsIndex|sqlite/i);
+  assert.match(await source("PluginMenu.lua"), /FN-Katalognutzung erfassen.*CaptureCatalogUsage\.lua/);
+  for (const scenario of ["success", "empty", "cancel", "changed", "duplicate", "invalid", "helper-error", "dialog-cancel"]) {
+    const state = lauxlib.luaL_newstate(); lualib.luaL_openlibs(state);
+    const script = `
+      local scenario = "${scenario}"
+      local calls, reads, messages, done = 0, 0, {}, false
+      local id = "mtx_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      local photos = {}
+      for i = 1, 3 do photos[i] = {
+        getRawMetadata = function(_, field) assert(field == "uuid"); return scenario == "duplicate" and "same" or "uuid-" .. i end,
+        getPropertyForPlugin = function(_, _, field) assert(field == "masterTaxonId");
+          if scenario == "invalid" then return "bad" end
+          if scenario == "changed" and reads == 2 and i == 1 then return "" end
+          return scenario ~= "empty" and i <= 2 and id or ""
+        end,
+      } end
+      local catalog = { getPath = function() return "D:/current.lrcat" end,
+        getAllPhotos = function() reads = reads + 1; return photos end }
+      local scope = { setCancelable = function() end, setCaption = function() end, setPortionComplete = function() end,
+        isCanceled = function() return scenario == "cancel" end, done = function() done = true end }
+      function import(name)
+        if name == "LrApplication" then return { activeCatalog = function() return catalog end } end
+        if name == "LrDialogs" then return { attachErrorDialogToFunctionContext = function() end,
+          confirm = function() return scenario == "dialog-cancel" and "cancel" or "ok" end,
+          message = function(title, message) table.insert(messages, title .. message) end } end
+        if name == "LrFunctionContext" then return { callWithContext = function(_, callback) callback({}) end } end
+        if name == "LrProgressScope" then return function() return scope end end
+        if name == "LrTasks" then return { startAsyncTask = function(callback) callback() end, pcall = pcall, yield = function() end } end
+        error("Unexpected API: " .. name)
+      end
+      local Json = (function() ${await source("Json.lua")} end)()
+      local core
+      function require(name) if name == "Json" then return Json end;
+        if name == "CatalogUsageCapture" then return core end;
+        assert(name == "TaxonomyHelper"); return { request = function(input)
+        calls = calls + 1; assert(input.command == "catalog-usage-capture" and input.complete and input.passes == 2)
+        assert(input.totalPhotos == 3)
+        if scenario == "empty" then assert(#input.usedTaxa == 0 and Json.encode(input.usedTaxa) == "[]")
+        else assert(#input.usedTaxa == 1 and input.usedTaxa[1].photoCount == 2) end
+        if scenario == "helper-error" then error("helper failed") end
+        return { saved = true, assignedPhotos = 2, taxonCount = 1 }
+      end } end
+      _PLUGIN = {}
+      core = (function() ${captureCore} end)()
+      ${capture}
+      assert(calls == ((scenario == "success" or scenario == "empty" or scenario == "helper-error") and 1 or 0))
+      assert(done == (scenario ~= "dialog-cancel"))
+      if scenario == "success" or scenario == "empty" then assert(reads == 2 and messages[1]:find("FN%-Nutzung erfasst"))
+      elseif scenario ~= "dialog-cancel" then assert(messages[1]:find("FN%-Nutzung nicht übernommen")) end
+    `;
+    try {
+      assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
+      const result = lua.lua_pcall(state, 0, 0, 0);
+      assert.equal(result, lua.LUA_OK, `${scenario}: ${result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1)}`);
+    } finally { lua.lua_close(state); }
+  }
+});
+
 test("Lua-Paketstatus folgt gemeinsamem Zeiger und Korrekturen ohne Prozess- oder Katalogzugriff", async () => {
   const { default: fengari } = await import("fengari");
   const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -162,7 +226,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.14");
+  assert.equal(version.slice(1).join("."), "0.4.24.17");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -406,7 +470,9 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*LrDialogs\.presentFloatingDialog/);
   assert.doesNotMatch(window, /12 \* 60 \* 60/);
   assert.match(writer, /catalog:withWriteAccessDo/);
-  assert.doesNotMatch(writer, /import "LrTasks"|LrTasks\.pcall/);
+  assert.match(writer, /local LrTasks = import "LrTasks"/);
+  assert.doesNotMatch(writer, /(^|[^.\w])pcall\(/m,
+    "Auch Stichwort-Lesezugriffe müssen die yield-fähige SDK-Fehlergrenze verwenden");
   assert.match(writer, /local result = catalog:withWriteAccessDo\(/);
   assert.match(writer, /WRITE_ACCESS_TIMEOUT_SECONDS\s*=\s*10/);
   assert.match(writer, /\{ timeout = WRITE_ACCESS_TIMEOUT_SECONDS \}/);
@@ -626,7 +692,12 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(locationTime, /locationTimeKeywordNames/);
   assert.match(locationTime, /locationTimeAssignedAt/);
   assert.match(locationTime, /photo:getRawMetadata\("keywords"\)/);
-  assert.match(locationTime, /photo:getFormattedMetadata\("keywordTags"\)/);
+  assert.match(locationTime, /local LrTasks = import "LrTasks"/);
+  assert.match(locationTime, /local function assignedKeywords\(photo\)/);
+  assert.match(locationTime, /local ok, assigned = LrTasks\.pcall\(function\(\)/);
+  assert.match(locationTime, /if not ok or type\(assigned\) ~= "table" then/);
+  assert.doesNotMatch(locationTime, /getFormattedMetadata\("keywordTags"\)|getKeywordByLocalIdentifier|getLocalIdentifier/);
+  assert.doesNotMatch(locationTime, /(^|[^.\w])pcall\(/m);
   assert.match(locationTime, /function LocationTimeWriter\.prepare\(catalog, photos, options\)/);
   assert.doesNotMatch(locationTime, /batchGetRawMetadata|batchGetFormattedMetadata/);
   assert.ok(
@@ -734,6 +805,12 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(taxonomy, /LocationTimeWriter\.applyPrepared\([\s\S]*?"add"/);
   assert.match(taxonomy, /LocationTimeWriter\.managedKeywordNameSet\(photo\)/);
   assert.match(taxonomy, /function KeywordWriter\.taxonomyKeywordNameSet\(photo\)/);
+  assert.match(menu, /function LocationTimeMenu\.runForPhotos\(catalog, photos, mode\)/);
+  assert.match(menu, /if mode ~= "remove" then\s*plans, preparation = LocationTimeWriter\.prepare/);
+  assert.match(assignmentWindow, /title = "Orts- und Zeitdaten entfernen \.\.\."/);
+  assert.match(assignmentWindow, /LrTasks\.pcall\(LocationTimeMenu\.runForPhotos, catalog, photos, "remove"\)/);
+  assert.ok(assignmentWindow.lastIndexOf('title = "Orts- und Zeitdaten entfernen ..."')
+    < assignmentWindow.lastIndexOf('title = "Schließen"'));
 });
 
 test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und ID-basiert", async () => {
@@ -873,6 +950,7 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   const index = await source("StatisticsIndex.lua");
   const statistics = await source("Statistics.lua");
   const dialog = await source("ShowStatistics.lua");
+  const exportFile = await source("ExportFile.lua");
   assert.match(state, /STATISTICS_INDEX_FIELD\s*=\s*"statisticsIndexV1"/);
   assert.match(state, /STATISTICS_BUILD_FIELD\s*=\s*"statisticsBuildV1"/);
   assert.match(state, /catalog:getPropertyForPlugin\(_PLUGIN, field\)/);
@@ -944,9 +1022,31 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /Statistik neu aufbauen/);
   assert.match(dialog, /section\(factory, "Klassen", classBreakdownText\(statistics\)/);
   assert.doesNotMatch(dialog, /factory:scrolled_view/);
-  assert.match(dialog, /runSavePanel/);
-  assert.match(dialog, /requiredFileType\s*=\s*fileType/);
-  assert.match(dialog, /string\.char\(239, 187, 191\)/);
+  assert.match(dialog, /ExportFile\.choosePath/);
+  assert.match(exportFile, /props\.fileName = fileName/);
+  assert.match(exportFile, /factory:edit_field\(\{ value = LrView\.bind\("fileName"\)/);
+  assert.match(exportFile, /LrDialogs\.runOpenPanel/);
+  assert.match(exportFile, /canChooseFiles = false/);
+  assert.match(exportFile, /canChooseDirectories = true/);
+  assert.doesNotMatch(exportFile, /initialFileName|initialFilename|runSavePanel/);
+  assert.match(exportFile, /string\.char\(239, 187, 191\)/);
+  assert.match(exportFile, /LrFileUtils\.chooseUniqueFileName\(path \.\. "\.fn-export\.tmp"\)/);
+  assert.match(exportFile, /LrFileUtils\.move\(source, destination\)/);
+  assert.match(exportFile, /Vorhandene Exportdatei ersetzen/);
+  for (const fileName of ["Lifelist.csv", "Beobachtungsliste.csv", "Artenliste.txt"]) {
+    assert.ok(dialog.includes(`"${fileName}"`), fileName);
+  }
+  assert.match(dialog, /Nur markierte Fotos/);
+  assert.match(dialog, /Statistics\.selectedPhotos\(catalog\)/);
+  assert.match(dialog, /Statistics\.forPhotos\(catalog, photos/);
+  assert.match(statistics, /function Statistics\.selectedPhotos/);
+  assert.match(statistics, /if not catalog:getTargetPhoto\(\) then\s+return \{\}/);
+  assert.match(statistics, /catalog:getTargetPhotos\(\)/);
+  assert.match(statistics, /function Statistics\.forPhotos/);
+  const selectionRead = statistics.slice(statistics.indexOf("function Statistics.forPhotos"), statistics.indexOf("function Statistics.beginBuild"));
+  assert.doesNotMatch(selectionRead, /getAllPhotos|saveStatisticsIndex|saveStatisticsBuild/);
+  const opening = dialog.slice(dialog.lastIndexOf("LrTasks.startAsyncTask(function()"));
+  assert.doesNotMatch(opening, /buildIndexWindow/);
   assert.match(dialog, /Deutscher Name/);
   assert.match(dialog, /Englischer Name/);
   assert.match(dialog, /Wissenschaftlicher Name/);
@@ -1106,7 +1206,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.14/);
+  assert.match(provider, /Version: 0\.4\.24\.17/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

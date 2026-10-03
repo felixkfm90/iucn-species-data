@@ -8,6 +8,7 @@ import { readActiveTaxonomyCorrectionRelease } from "./taxonomy-correction-relea
 import { browseIdentityCases, identityTaxonDetails as details } from "./taxonomy-identity-cases.mjs";
 import { normalizeTaxonomySearchTerm } from "./taxonomy-search-text.mjs";
 import { createClassificationReviewService } from "./taxonomy-classification-service.mjs";
+import { createCatalogUsageService } from "./lightroom-catalog-usage.mjs";
 import { readIdentityRegistry, validateIdentityRegistry, identityRegistryRevision, emptyIdentityRegistry, taxonIdentityKey,
   previewIdentityDecision, confirmIdentityDecision } from "./taxonomy-identity-registry.mjs";
 
@@ -126,6 +127,7 @@ export function createIdentityReviewService({ taxonomyRoot, now = () => new Date
     } finally { candidate?.close(); active?.close(); }
   }
   return {
+    ...createCatalogUsageService({ taxonomyRoot, now }),
     ...createClassificationReviewService({ taxonomyRoot, now, readInputRevision,
       readReview: () => readIdentityReview(taxonomyRoot), writeReview: (document) => atomicWriteJson(reviewPath(taxonomyRoot), document) }),
     async browse(payload) {

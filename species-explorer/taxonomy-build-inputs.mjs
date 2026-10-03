@@ -37,6 +37,9 @@ function checkContract(contract) {
     throw new Error("Vollständiger Schema-, Regel-, Identitäts-, Korrektur-, Projekt- und Basisstand erforderlich.");
   }
   if (!Array.isArray(contract.sources) || !contract.sources.length) throw new Error("Verbindlicher Quellenplan fehlt.");
+  if (contract.protectedMasterIdsRevision !== undefined && !hashPattern.test(contract.protectedMasterIdsRevision)) {
+    throw new Error("Ungültige Schutzlistenrevision für den Aufbauvertrag.");
+  }
   const sources = contract.sources.map(checkSource);
   if (new Set(sources.map((source) => source.provider)).size !== sources.length) throw new Error("Doppelte Quelle im Aufbauvertrag.");
   sources.sort((a, b) => Buffer.compare(Buffer.from(a.provider), Buffer.from(b.provider)));
@@ -214,7 +217,7 @@ export function openTaxonomyBuildInputs(filename) {
 // Streams changes through a callback instead of accumulating millions of IDs.
 // This is an input comparison, NOT permission to delete a taxon or activate data.
 export function compareTaxonomyBuildInputs(before, after, onChange = () => {}) {
-  const incompatible = ["masterSchema", "normalizerVersion", "rulesRevision", "identitiesRevision", "correctionsRevision", "projectsRevision"]
+  const incompatible = ["masterSchema", "normalizerVersion", "rulesRevision", "identitiesRevision", "correctionsRevision", "projectsRevision", "protectedMasterIdsRevision"]
     .filter((key) => before.contract[key] !== after.contract[key]);
   if (incompatible.length) return { mode: "full-build-required", reasons: incompatible, changesEmitted: 0 };
   const nextSources = new Map(after.sources.map((source) => [source.provider, source]));

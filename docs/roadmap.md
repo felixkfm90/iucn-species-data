@@ -1,16 +1,26 @@
 # Roadmap
 
-Stand: 2026-10-02
+Stand: 2026-10-03
 
 ## Aktuelle Restreihenfolge vor dem Audit
+
+Neuester Bedienbefund am 3. Oktober: 1 A bestätigt, Statistikindex bewusst neu aufgebaut, Kartenherkunft
+nach Nutzerwahl geändert. Pages-Statusgenerator-Mix, Orts-/Zeitkeywords nach Entfernung und fehlende
+Auswahlexporte sind beauftragt und in Plug-in 0.4.24.17 korrigiert. Gesamtprüfung bestanden: 50 Gruppen/
+1.120 gemeldete Tests, 420 Master- und 231 Lightroomtests. Freigegebener Commit/Push mit separatem
+Pages-Nachweis folgt; gezielte Lightroom-Sichtabnahme bleibt nötig.
+[Aktueller Reparaturnachweis](audits/2026-10-03-acceptance-regressions.md).
 
 **Abgeschlossen:** enge Quellenreparatur, unabhängiger vollständiger Master-/Paketvergleich und die von Felix
 bestätigte praktische Stichprobe mit Weissstorch/Rebhuhn (Explorer-Namen, Lightroom-Zuweisung, Erhalt nach
 Schließen/Wiederöffnen). Kein weiterer Reparaturaufbau oder katalogweiter FN-Abgleich erforderlich.
-Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das passende lokale Paar auf
-`COL26.8 XR` von der gemeldeten Verfügbarkeit von `COL26.9 XR`.
+Auch der reguläre Quellen-/Master-/Paketweg auf `COL26.9 XR` ist seit 3. Oktober um 09:11:14 MESZ technisch
+abgeschlossen. Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) und
+[datierte Abschlussnachweis](audits/2026-10-03-taxonomy-reference-update.md) belegen das neue passende Paar.
+Felix bestätigt anschließend Weissstorch und Rebhuhn in beiden Verbrauchern vorhanden und bevorzugt markiert.
+Die gezielte Suche-/Namensabnahme ist damit ebenfalls bestanden, nicht die gesamte Lightroom-Abnahme.
 
-1. **Regulären Quellenupdatevertrag prüfen:** die 2.173 separaten CoL-/Reichsfälle fachlich behandeln und die
+1. **Regulärer Quellenupdatevertrag – technisch und gezielt praktisch abgeschlossen:** die ursprünglichen 2.173 separaten CoL-/Reichsfälle fachlich behandeln und die
    unterschiedlichen Einstiege Startdialog/zusammenhängende Datenbank-Aktion prüfen. Keine Namensheuristik,
    automatische Migration oder neue Quellenaktualisierung allein wegen der Verfügbarkeitsmeldung.
    Vorprüfung am 2. Oktober abgeschlossen: unterschiedliche Einstiege und fehlende Unterscheidung der
@@ -26,7 +36,8 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Vierte Stufe implementiert: beide Update-Einstiege verwenden denselben bestätigten Quellen-/Master-/Paketweg,
    gemeinsame Sperre und frischen Gesamtabschluss. Vorhandene lokale Arbeit hat Vorrang; Quellenimport allein
    meldet keinen Erfolg des Gesamtupdates. Automatisierte Abbruch-/Fehler-/Wiederholungswege geprüft.
-   Noch offen: den vollständigen Quellen-/Master-/Paketweg praktisch abnehmen; aktueller Folgeversuch siehe unten.
+   Produktiver technischer Gesamtabschluss und nachfolgende Suche-/Namensprüfung des neuen Pakets inzwischen
+   bestätigt. Datierter Verlauf bis zum Abschluss siehe unten; umfassende Bedienabnahme weiterhin getrennt.
    Lesender Plan am 2. Oktober vorbereitet: gespeichertes Paar/Register/Auftrag passend, keine neue Vormerkung;
    Explorer-Dienst nicht erreichbar. Frische Rückfrage ohne Bestätigung prüfen, dann separat starten lassen.
    Historische Fallzahlen sind kein Sollbestand eines neuen Releases; bei Entscheidungen ein lokaler Folgeaufbau.
@@ -46,24 +57,60 @@ Der [aktuelle Taxonomie-Betriebsstand](taxonomy-current-status.md) trennt das pa
    Felix beauftragte nutzungsabhängige Automatik: Rückfragen für angelegte/Lightroom-zugewiesene Arten,
    sichere automatische Behandlung unbenutzter Fälle. Alle seine FN-Kataloge ausdrücklich bestätigt.
    Anschließend genau ein Katalog bestätigt: `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`.
-   Vollständiges LR-Nutzungsregister fehlt; noch keine Automatik/Bündelbestätigung/Folgeaufbau.
-   Wiedervorlage am Entscheidungshalt pausiert, bisheriger Master und Paket aktiv. Nächste Reihenfolge:
-   ID-Fix mit weiteren Aufbau-/Paketwegen absichern, katalogübergreifenden Nutzungsnachweis anbinden, dann nur unbenutzte Fälle
-   automatisiert behandeln; Details: [Updatevertrag](taxonomy-reference-update.md).
-2. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
+   Nutzungsnachweis und Automatik am 3. Oktober implementiert: ausdrückliche SDK-Erfassung in Plug-in
+   0.4.24.15, normal geschlossenes Lightroom, Gesamtbestätigung und Frischebindung. Beide unbenutzten Gruppen
+   atomar vormerken, Projekt-/Foto-/eigene Entscheidungen schützen; genau ein lokaler Folgeaufbau im
+   bestätigten Updateweg. Kein automatischer Scan beim Öffnen, keine dauerhafte SDK-Deltafortschreibung.
+   Echte Erfassung/Gesamtbestätigung inzwischen durch Felix durchgeführt: 128.871 Fotos, 5.484 FN-Zuweisungen,
+   56 genutzte IDs. Lesende frische Prüfung bestätigt 1.995 unbenutzte passende und 187 unbenutzte unklare Fälle,
+   keine geschützte Überschneidung in dieser Gruppe. Anschließend von Felix um 07:52:59 MESZ bestätigter
+   gemeinsamer Updateweg: 2.182 Fälle atomar vorgemerkt, um 09:11:14 MESZ gemeinsam aktiviert und anschließend
+   einmal unabhängig lesend geprüft. Alle bisherigen IDs, fünf eigene Namen, 60 Projektlinks und 56 genutzten
+   Lightroom-IDs erhalten. 1.995 Klassifikationen mit alter ID verarbeitet, 187 Gegenstücke zurückgestellt;
+   keine blockierenden Konflikte. 30-Minuten-Begleitung auf Felix' Wunsch gelöscht.
+   Felix bestätigt danach beide Arten in Explorer/Lightroom vorhanden und bevorzugt markiert; kein weiterer Start,
+   Katalogabgleich oder erneute Erstaufnahme für diesen abgeschlossenen Wechsel. Bedienziel möglichst ohne Nutzeraktionen; die verbleibende
+   manuelle SDK-Erfassung/Schließung/Bestätigung ist noch keine fertige Hintergrundautomatik.
+   Details: [FN-Katalognutzung](lightroom-catalog-usage.md),
+   [Updatevertrag](taxonomy-reference-update.md).
+2. **Automatischer Gesamtweg – lokal umgesetzt, neue praktische Abnahme offen:** die heute einzeln
+   durchgeführte Quellen-/FN-Nutzungs-/Master-/Paketkette ohne wiederholte technische Rückfragen durchlaufen
+   lassen. Aktuelle Katalognutzung automatisch und vollständig nachweisen, gespeicherte Aufträge nach
+   frischer Prüfung fortführen, sichere unbenutzte Klassifikationen verarbeiten und nur relevante Änderungen
+   an angelegten/zugewiesenen Arten oder eigenen Daten verständlich und gebündelt zur Entscheidung zeigen.
+   Nach einer Entscheidung denselben Auftrag automatisch fortführen; eindeutiger geprüfter Gesamtabschluss.
+   Normales Lightroom-Schließen nur ausdrücklich bestätigt und nach neuer SDK-Erfassung; niemals hart beenden.
+   Alte Quittung nicht still neu freigeben, unbekannte Nutzung nicht
+   als leer behandeln, keine Foto-/Projektmigration. SDK-Möglichkeiten und offene Verbraucher-/Neustartgrenzen
+   vor der Umsetzung belegt. Gespeicherter Koordinator, neue SDK-Requestbindung in 0.4.24.16 und normale
+   Anbieter-Feldschutzgrenze implementiert. Capture-to-close bleibt einmalige Nutzervereinbarung, kein vollständiger
+   SDK-Beobachter. Kein neuer produktiver Lauf; [aktueller Vertrag](taxonomy-update-automation.md).
+   Konkreter Vertrag: [Folgeauftrag und Abnahmekriterien](lightroom-catalog-usage.md#folgeauftrag-automatischer-gesamtweg-statt-manueller-erstaufnahmekette).
+3. **Gebündelte Bedienabnahme:** übrige Neue-Art-Regressionsabläufe und Lightroom-Menü, Suche/Namenswechsel,
    Einzel-/Mehrfachzuweisung, bestätigte Artänderungen, Orts-/Zeit-Stapel, Katalogpflege, Statistik und drei Exporte.
    Die zwei bestätigten Arten schließen nur die gezielte Reparaturabnahme, nicht alle heutigen Funktionen.
-3. **Betriebs-/Großbestandsgrenzen:** produktive Pause/Fortsetzung, Wiederanlauf/Rollback bei geöffneten
+   Isolierte echte Lua-Gegenproben für Jan/Feb ohne GPS, Orts-/Zeit-Schnittmengen/Statistik und alle drei Exporte
+   ergänzt. Falsche Entfernungszählung und Paketwechselgrenze je 250er-Pflegeblock korrigiert. Neue automatische
+   Erfassung/neuer Karten-Pflegemodus benötigen noch praktische SDK-/Sichtabnahme, keine unfreigegebene Produktivaktion.
+4. **Betriebs-/Großbestandsgrenzen:** produktive Pause/Fortsetzung, Wiederanlauf/Rollback bei geöffneten
    Verbrauchern, größere Konfliktmengen, Speicherpflege und Fortschrittsanzeige. Bereinigung nur nach eigenem
    unverändertem Vorschauplan und Bestätigung. Der Reparaturlauf belegt keine Laufzeit des nächsten Quellenupdates.
    Obere Explorer-Anzeige am 2. Oktober separat vereinfacht: `Datenbank-Update` plus `X/Y Schritt · Z %`, ohne
    `DB`/`Teil`. Gemessene Unterphasenprozente und vollständige Detailanzeige unverändert; 84 gezielte Tests
    bestanden. Kein Neustart oder Eingriff im aktiven Aufbau. Kurze Sichtprüfung nach dessen Abschluss offen.
-4. **Veröffentlichungsbereitschaft:** vollständiges Qualitätsgate, Projektstatus, Dokumentationsabgleich und
-   GitHub-Pages-Ergebnis prüfen. Push und erfolgreiches Deployment sind getrennte Nachweise.
-5. **Letzter IUCN-Prüfpunkt vor dem Audit:** automatischen Kartenabruf und Trennung von Herkunft/Schutzmarkierung
-   abschließend bewerten; bestehende manuelle Schutzentscheidungen nicht pauschal ändern.
-6. **Phase 10.5 – Gesamtaudit:** Code/Modulgrenzen, Daten/Schemata, Verzeichnis-/Temporärstruktur, Backup/Restore,
+   Gespeicherte eigene/fremde Aufträge und Quellenunterbrechung isoliert geprüft; Speicherteilfehler nun über
+   gebundene Quittung und frisch bestätigte unveränderte Reste wiederholbar, keine echte Bereinigung ausgeführt.
+5. **Veröffentlichungsbereitschaft:** vollständiges Qualitätsgate, Projektstatus, Dokumentationsabgleich und
+   GitHub-Pages-Ergebnis prüfen. Lokales Gesamtgate am 3. Oktober nach Regressionskorrektur bestanden:
+   50 Testgruppen, darunter 420 Master-/Betriebs- und 214 Lightroom-/Pakettests; separater Plug-in-Vertrag 15/15.
+   [Umsetzungsnachweis und praktische Abnahme](audits/2026-10-03-pre-audit-implementation.md).
+   Push nur nach eigener Freigabe und erfolgreiches Deployment sind getrennte Nachweise; beide für diese Serie offen.
+6. **Letzter IUCN-Prüfpunkt vor dem Audit:** automatischen Kartenabruf und Trennung von Herkunft/Schutzmarkierung
+   abschließend bewerten; bestehende manuelle Schutzentscheidungen nicht pauschal ändern. Trennung lokal umgesetzt:
+   ausdrücklicher IUCN-Browserimport (`user-declared`) versus eigene Pflege, beide geschützt; getrennte Zähler.
+   Bestehende fünf Altmarkierungen unverändert. Automatischer Download nicht als repariert belegt; diese
+   Betriebseinschränkung bleibt sichtbar. Neue Auswahl praktisch prüfen und verbleibende Einschränkung vor Audit einordnen.
+7. **Phase 10.5 – Gesamtaudit:** Code/Modulgrenzen, Daten/Schemata, Verzeichnis-/Temporärstruktur, Backup/Restore,
    Betrieb, Veröffentlichung und Dokumentation umfassend prüfen. Offene Befunde beheben oder begründet verschieben.
 
 Die weiter unten stehenden Detailverträge und datierten Abnahmen bleiben erhalten. Deren frühere

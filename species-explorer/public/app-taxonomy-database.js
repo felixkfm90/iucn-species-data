@@ -181,6 +181,7 @@
     let selectedResult = null;
     let selectedDetail = null;
     let databaseBusy = false;
+    let workflowTimer = null;
     let correctionSaved = false;
     let lightroomCorrectionRequest = null;
     const queuedLightroomCorrectionRequests = [];
@@ -206,12 +207,17 @@
     function renderOverview() {
       const referenceStatus = state.taxonomyMaintenanceSnapshot || {};
       const masterStatus = state.taxonomyMasterSnapshot || {};
+      const workflow = masterStatus.updateWorkflow || {};
+      const workflowOpen = Boolean(workflow.updateRunId && !["completed", "idle"].includes(workflow.status));
       const masterLifecycle = masterStatus.lifecycle || {};
       const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
         master: masterStatus, reference: referenceStatus, busy: databaseBusy });
       const build = masterBuildPresentation(masterStatus);
-      const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus);
-      const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error);
+      const workflowCanPause = workflowOpen && (["waiting-lightroom", "waiting-usage"].includes(workflow.status)
+        || workflow.status === "building" && build.canPause);
+      const workflowCanResume = workflowOpen && ["paused", "interrupted", "failed", "waiting-decisions"].includes(workflow.status);
+      const active = databaseBusy || referenceIsActive(referenceStatus) || masterIsActive(masterStatus) || workflow.active === true;
+      const failed = referenceStatus.status === "failed" || Boolean(masterStatus.error) || Boolean(workflow.error);
       const lightroomPackageNeedsRebuild = masterStatus.lightroomPackage?.needsRebuild === true;
       const referenceNeedsMasterRebuild = masterStatus.reference?.needsMasterRebuild === true;
       const correctionsPending = masterStatus.corrections?.pending === true;
@@ -239,7 +245,9 @@
 
       elements.taxonomyDatabaseOverview?.classList.toggle("updating", active);
 
-      elements.taxonomyDatabaseOverviewSummary.textContent = build.pending && !active
+      elements.taxonomyDatabaseOverviewSummary.textContent = workflowOpen && !masterIsActive(masterStatus) && !referenceIsActive(referenceStatus)
+        ? workflow.message || "Gespeicherter Updateauftrag"
+        : build.pending && !active
         ? build.title
         : active
         ? "Taxonomiedatenbank wird aktualisiert"
@@ -264,6 +272,7 @@
               : "Noch keine Taxonomiedatenbank aktiviert";
 
       const details = [];
+      if (workflowOpen && workflow.error) details.push(workflow.error);
       if (build.pending && !active) details.push(masterStatus.message || "Fortsetzen prüft zuerst den aktuellen Datenstand. Ein neuer Aufbau bleibt möglich.");
       if (active) {
         details.push(
@@ -336,18 +345,19 @@
       if (elements.taxonomyCheckButton) elements.taxonomyCheckButton.disabled = active;
       if (elements.taxonomyRollbackButton) elements.taxonomyRollbackButton.disabled = active || !referenceStatus.rollbackAvailable;
       const updateTitle = elements.taxonomyDatabaseUpdateButton.querySelector("strong");
-      if (updateTitle) updateTitle.textContent = build.pending ? "Neuen Datenbankaufbau starten" : "Datenbank aktualisieren";
+      if (updateTitle) updateTitle.textContent = workflowOpen ? workflow.active ? "Gespeicherter Updateauftrag wartet/läuft" : "Gespeicherten Updateauftrag fortsetzen"
+        : build.pending ? "Neuen Datenbankaufbau starten" : "Datenbank aktualisieren";
       if (elements.taxonomyDatabaseBuildProgress) {
         elements.taxonomyDatabaseBuildProgress.hidden = !build.pending;
         elements.taxonomyDatabaseBuildProgress.textContent = build.checkpoint;
       }
       if (elements.taxonomyDatabasePauseButton) {
-        elements.taxonomyDatabasePauseButton.hidden = !build.showPause;
-        elements.taxonomyDatabasePauseButton.disabled = !build.canPause;
+        elements.taxonomyDatabasePauseButton.hidden = workflowOpen ? !workflowCanPause : !build.showPause;
+        elements.taxonomyDatabasePauseButton.disabled = databaseBusy || (workflowOpen ? !workflowCanPause : !build.canPause);
       }
       if (elements.taxonomyDatabaseResumeButton) {
-        elements.taxonomyDatabaseResumeButton.hidden = !build.showResume;
-        elements.taxonomyDatabaseResumeButton.disabled = active || !build.canResume;
+        elements.taxonomyDatabaseResumeButton.hidden = workflowOpen ? !workflowCanResume : !build.showResume;
+        elements.taxonomyDatabaseResumeButton.disabled = active || (workflowOpen ? !workflowCanResume : !build.canResume);
       }
       elements.taxonomyDatabaseRollbackButton.disabled = active || !masterLifecycle.canRollback;
       if (elements.taxonomyDatabaseStorageButton) elements.taxonomyDatabaseStorageButton.disabled = active || databaseBusy;
@@ -356,6 +366,7 @@
         elements.taxonomyDatabaseBaselineButton.disabled = active || databaseBusy || masterStatus.baselineSetup?.canStart !== true;
       }
       renderDatabaseStatus();
+      if (workflow.active) watchUpdateWorkflow();
     }
 
     state.renderTaxonomyDatabaseOverview = renderOverview;
@@ -401,7 +412,51 @@
       throw new Error(`${label} hat das Zeitlimit überschritten.`);
     }
 
-    async function activateCandidate(masterStatus) {
+    function watchUpdateWorkflow() {
+      if (workflowTimer) return;
+      workflowTimer = global.setTimeout(async () => {
+        workflowTimer = null;
+        try {
+          const workflow = await fetchJson("/api/taxonomy/update/sequence-status");
+          state.taxonomyMasterSnapshot = { ...state.taxonomyMasterSnapshot, updateWorkflow: workflow };
+          await refreshSnapshots();
+          setActionMessage([workflow.message, workflow.error].filter(Boolean).join(" "),
+            workflow.status === "completed" ? "success" : workflow.error ? "error" : "info");
+          if (workflow.active) watchUpdateWorkflow();
+        } catch (error) {
+          setActionMessage(`Der gespeicherte Updateauftrag bleibt erhalten. Status derzeit nicht erreichbar: ${error.message}`, "warning");
+        }
+      }, 5000);
+    }
+
+    async function startSavedUpdate(decision, sourcePreview, master) {
+      const candidate = master.lifecycle?.candidate;
+      const workflow = await fetchJson("/api/taxonomy/update/sequence-start", { method: "POST", body: JSON.stringify({
+        confirmed: true, decision, token: sourcePreview?.token || "",
+        usageConsent: { allCatalogsConfirmed: true, noChangesUntilClose: true },
+        candidateId: candidate?.candidateId || "", buildJobId: master.buildJob?.id || "",
+        buildJobRevision: candidate?.buildJobRevision || "",
+      }) });
+      state.taxonomyMasterSnapshot = { ...master, updateWorkflow: workflow };
+      let closeMessage = "";
+      if (["waiting-lightroom", "waiting-usage"].includes(workflow.status)) {
+        const lightroom = await fetchJson("/api/taxonomy/update/lightroom-status");
+        if (lightroom.canRequestClose) {
+          const closeNow = await showQuickConfirm({ eyebrow: "Datenbankaktualisierung", title: "Lightroom schließen?",
+            message: "Für die Datenbankaktualisierung muss Lightroom geschlossen werden. Jetzt schließen fordert nur das normale Schließen an; offene Lightroom-Rückfragen bitte beantworten. Alternativ Lightroom selbst schließen. Der gespeicherte Auftrag wartet im Hintergrund und startet anschließend ohne zweiten Startklick. Ein aktueller FN-Nutzungsnachweis bleibt erforderlich.",
+            confirmLabel: "Lightroom jetzt schließen", cancelLabel: "Ich schließe Lightroom selbst" });
+          if (closeNow) {
+            const closing = await fetchJson("/api/taxonomy/update/lightroom-close", { method: "POST", body: JSON.stringify({ confirmed: true }) });
+            if (closing.queued) closeMessage = "Das normale Schließen von Lightroom wird nach der erforderlichen FN-Nutzungserfassung angefordert. Bitte die Lightroom-Rückfragen beantworten; der Updateauftrag bleibt gespeichert.";
+          }
+        }
+      }
+      setActionMessage(closeMessage || [workflow.message, workflow.error].filter(Boolean).join(" "), workflow.error ? "error" : "info");
+      if (workflow.active) watchUpdateWorkflow();
+      await refreshSnapshots();
+    }
+
+    async function activateCandidate(masterStatus, automaticAttempted = false) {
       assertOperationComplete(masterStatus, "Masteraufbau");
       assertBuildMayActivate(masterStatus);
       const lifecycle = masterStatus.lifecycle || {};
@@ -412,6 +467,13 @@
           : 0),
       );
       if (blocking) {
+        if (!automaticAttempted && Number(lifecycle.candidate?.classificationReview?.total || 0)) {
+          const preview = await fetchJson("/api/taxonomy/master/classification/automatic-preview", { method: "POST", body: "{}" });
+          if (preview.available && Number(preview.matching || 0) + Number(preview.deferred || 0) > 0) {
+            const saved = await fetchJson("/api/taxonomy/master/classification/automatic-save", { method: "POST", body: JSON.stringify(preview) });
+            if (saved.saved) return buildAndActivateMaster({ refreshProviders: false, label: "Lokaler Klassifikationsabgleich", automaticAttempted: true });
+          }
+        }
         throw new Error(
           `${blocking} Aktualisierungskonflikt(e) müssen zuerst unter „Datenbank-Aktionen → Taxonomiedatenbank“ entschieden werden. Klassifikationen können dort gebündelt geprüft oder zurückgestellt werden.`,
         );
@@ -429,7 +491,7 @@
       return completed;
     }
 
-    async function buildAndActivateMaster({ refreshProviders, label }) {
+    async function buildAndActivateMaster({ refreshProviders, label, automaticAttempted = false }) {
       const building = await fetchJson("/api/taxonomy/master/build", {
         method: "POST",
         body: JSON.stringify({ refreshProviders }),
@@ -439,7 +501,7 @@
       const built = masterIsActive(building)
         ? await waitUntilIdle("/api/taxonomy/master/status", masterIsActive, label)
         : building;
-      return activateCandidate(built);
+      return activateCandidate(built, automaticAttempted);
     }
 
     async function buildBaseline() {
@@ -491,9 +553,29 @@
       renderOverview();
       try {
         const { master, reference } = await refreshSnapshots({ requireFresh: true });
+        const workflow = master.updateWorkflow;
+        let restartSources = false;
+        if (workflow?.available && workflow.updateRunId && !["completed", "idle"].includes(workflow.status)) {
+          if (workflow.active) {
+            setActionMessage(workflow.message || "Der gespeicherte Auftrag läuft oder wartet im Hintergrund.", "info");
+            watchUpdateWorkflow();
+            return;
+          }
+          restartSources = workflow.phase === "sources" && ["failed", "interrupted"].includes(workflow.status);
+          if (!restartSources) {
+            const resumed = await fetchJson("/api/taxonomy/update/sequence-resume", { method: "POST", body: JSON.stringify({ confirmed: true }) });
+            state.taxonomyMasterSnapshot = { ...master, updateWorkflow: resumed };
+            setActionMessage([resumed.message, resumed.error].filter(Boolean).join(" "), resumed.error ? "error" : "info");
+            if (resumed.active) watchUpdateWorkflow();
+            return;
+          }
+          // A partial CoL import is not proof that all sources were checked.
+          // Discard even a caller-supplied preview and bind a fresh full plan.
+          sourcePreview = null;
+        }
         if (masterIsActive(master) || referenceIsActive(reference)) throw new Error("Es läuft bereits eine Datenbankaktion. Bitte deren Abschluss oder Pause abwarten.");
         const hasSavedBuild = masterBuildPresentation(master).pending;
-        let decision = hasSavedBuild ? "rebuild-master" : taxonomyDatabaseUpdateDecision({
+        let decision = restartSources ? "refresh-and-build" : hasSavedBuild ? "rebuild-master" : taxonomyDatabaseUpdateDecision({
           hasCandidate: Boolean(master.lifecycle?.candidate),
           lightroomPackageNeedsRebuild: master.lightroomPackage?.needsRebuild === true,
           correctionsPending: master.corrections?.pending === true,
@@ -511,26 +593,30 @@
             || "Der aktive Referenzstand konnte nicht sicher mit dem Master verglichen werden.",
           );
         }
-        if (decision === "current") {
+        if (decision === "current" || restartSources) {
           sourcePreview ||= await fetchJson("/api/taxonomy/update/preview", { method: "POST", body: "{}" });
           if (typeof sourcePreview?.hasWork !== "boolean" || (sourcePreview.hasWork && !cleanText(sourcePreview.token))) {
             throw new Error("Die aktuelle Quellenvorschau ist unvollständig. Bitte erneut prüfen; es wurde nichts gestartet.");
           }
           decision = taxonomyDatabaseUpdateDecision({ hasWork: sourcePreview.hasWork });
           if (decision === "current") {
+            if (restartSources) throw new Error("Die frische Quellenvorschau bietet keinen vollständigen Wiederholungsplan. Der unterbrochene Auftrag bleibt erhalten; ein Gesamtabschluss ist nicht bestätigt.");
             setActionMessage("Die Taxonomiedatenbank ist bereits aktuell. Es wurde kein Neuaufbau gestartet.", "success");
             return;
           }
         }
         const sourceUpdate = decision === "refresh-and-build";
         const fastCorrection = decision === "apply-corrections";
+        const usageConfirmation = master.updateWorkflow?.available === true
+          ? " Mit dem Start bestätigst du den gespeicherten vollständigen Satz deiner FN-Kataloge. Die FN-Nutzung wird neu erfasst; eine alte Quittung wird nicht neu datiert. Bis Lightroom geschlossen ist bitte keine FN-Zuweisungen, Fotoimporte oder Katalogwechsel vornehmen. Der Auftrag wartet bei geöffnetem Lightroom im Hintergrund."
+          : "";
         const confirmed = await showQuickConfirm({
           eyebrow: "Taxonomiedatenbank",
           title: hasSavedBuild ? "Neuen Datenbankaufbau starten?" : fastCorrection ? "Namenskorrekturen aktivieren?"
             : startup && sourceUpdate ? sourcePreview.updateCatalogue
               ? reference.reference?.available ? "Taxonomiedatenbank ist veraltet" : "Keine Taxonomiedatenbank installiert"
               : "Namensbestand ist veraltet" : "Datenbank aktualisieren?",
-          message: sourceUpdate ? [
+          message: (sourceUpdate ? [
             sourcePreview.updateCatalogue ? `${taxonomyReleaseLabel(sourcePreview.latest)} ist verfügbar.` : "",
             sourcePreview.warning,
             sourcePreview.updateCatalogue ? `Benötigt werden mindestens ${formatBytes(sourcePreview.requiredFreeBytes)} freier Speicher.` : "",
@@ -539,7 +625,7 @@
             ? "Ein neuer lokaler Aufbau verwendet die heutigen Quellen und Entscheidungen. Der gespeicherte Zwischenstand wird nicht überschrieben. Master und Lightroom-Suchpaket werden erst nach erfolgreicher Prüfung gemeinsam übernommen; bestehende Fotos bleiben unverändert. Es werden bei diesem Schritt keine neuen Anbieterstände geladen."
             : fastCorrection
               ? "Die geänderten Namen werden gegen den aktiven Master und das Lightroom-Suchpaket geprüft und anschließend gemeinsam aktiviert. Der bisherige Stand bleibt bei einem Fehler vollständig aktiv. Es werden keine neuen Anbieterstände geladen."
-              : "Der vorhandene Datenbankstand und eigene Entscheidungen werden geprüft und gemeinsam für Master und Lightroom übernommen. Offene Konflikte stoppen die Übernahme. Bestehende Fotos und Projektdateien bleiben unverändert. Es werden bei diesem Schritt keine neuen Anbieterstände geladen.",
+              : "Der vorhandene Datenbankstand und eigene Entscheidungen werden geprüft und gemeinsam für Master und Lightroom übernommen. Offene Konflikte stoppen die Übernahme. Bestehende Fotos und Projektdateien bleiben unverändert. Es werden bei diesem Schritt keine neuen Anbieterstände geladen.") + usageConfirmation,
           confirmLabel: startup && sourceUpdate ? "Jetzt aktualisieren" : fastCorrection ? "Korrekturen aktivieren" : "Datenbank aktualisieren",
           cancelLabel: startup ? "Später" : "Abbrechen",
         });
@@ -548,6 +634,10 @@
           return;
         }
         setActionMessage("Taxonomiedatenbank wird aktualisiert. Der bisherige Master-/Paketstand bleibt bis zur geprüften gemeinsamen Übernahme aktiv.", "info");
+        if (master.updateWorkflow?.available === true) {
+          await startSavedUpdate(decision, sourcePreview, master);
+          return;
+        }
         if (decision === "rebuild-master") {
           await buildAndActivateMaster({
             refreshProviders: false,
@@ -627,6 +717,12 @@
 
     async function pauseMasterBuild() {
       try {
+        if (state.taxonomyMasterSnapshot?.updateWorkflow?.updateRunId
+            && state.taxonomyMasterSnapshot.updateWorkflow.status !== "completed") {
+          await fetchJson("/api/taxonomy/update/sequence-pause", { method: "POST", body: "{}" });
+          await refreshSnapshots();
+          return;
+        }
         state.taxonomyMasterSnapshot = await fetchJson("/api/taxonomy/master/pause-build", { method: "POST", body: "{}" });
         setActionMessage("Pause angefordert. Bitte warten, bis der Masteraufbau als pausiert angezeigt wird.", "info");
         renderOverview();
@@ -634,6 +730,8 @@
     }
 
     async function resumeMasterBuild() {
+      if (state.taxonomyMasterSnapshot?.updateWorkflow?.updateRunId
+          && state.taxonomyMasterSnapshot.updateWorkflow.status !== "completed") return updateDatabase();
       const confirmed = await showQuickConfirm({ eyebrow: "Taxonomiedatenbank", title: "Masteraufbau fortsetzen?",
         message: "Die gespeicherten Eingänge werden mit den heutigen Quellen und eigenen Entscheidungen verglichen. Nur bei Übereinstimmung wird fortgesetzt. Nach erfolgreicher Prüfung werden Master und passendes Lightroom-Suchpaket gemeinsam übernommen.",
         confirmLabel: "Prüfen und fortsetzen" });

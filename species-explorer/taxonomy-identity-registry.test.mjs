@@ -148,6 +148,23 @@ test("Reine Umbenennung erhält eigene Namen und Projektlink ohne Projektdateien
   assert.deepEqual(corrections[0].scientificName, "Testus alpha");
 });
 
+test("bestätigte Fortführung fragt Namen/Gattung nicht doppelt, gibt aber andere geschützte Hierarchie nicht frei", async (t) => {
+  const projectTaxa = [{ ...taxon("Testus alpha"), projectTaxonKey: "project-alpha", projectSlug: "alpha-url" }];
+  const { root, build, value } = await fixture(t, "continuation", { projectTaxa });
+  const target = taxon("Otherus gamma");
+  const saved = confirmed({ ...value, targets: [target],
+    evidence: [evidence("Testus alpha", "one"), evidence(target.scientificName, "two")] });
+  await build({ identityRegistry: saved.registry, colRecords: [record(target.scientificName)] });
+  assert.equal(read(root, "staging", (db) => db.prepare("SELECT COUNT(*) AS n FROM master_conflict WHERE conflict_state='open' AND conflict_type='changed-value'").get().n), 0);
+  assert.equal(read(root, "staging", (db) => db.prepare("SELECT field_value FROM master_field_assertion WHERE field_name='genus' AND selected=1").get().field_value), "Otherus");
+  const changed = record(target.scientificName);
+  changed.hierarchy.family = "New family";
+  await build({ identityRegistry: saved.registry, colRecords: [changed] });
+  assert.deepEqual(read(root, "staging", (db) => db.prepare("SELECT field_name FROM master_conflict WHERE conflict_state='open' AND conflict_type='changed-value'").all().map((row) => row.field_name)), ["family"]);
+  assert.equal(read(root, "staging", (db) => db.prepare("SELECT field_value FROM master_field_assertion WHERE field_name='family' AND selected=1").get().field_value), "Testidae");
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /entschieden werden/);
+});
+
 test("Veraltete oder unbelegte Entscheidungen verändern weder aktiven Master noch einen vorhandenen Kandidaten", async (t) => {
   const { root, build, value, saved } = await fixture(t, "split");
   await build();

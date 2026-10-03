@@ -11,6 +11,7 @@
       mapFileStatus,
       mapReasonInput,
       mapSourceInput,
+      mapCareModeInput,
       mapMessage,
       mapPreview,
       mapCurrentImage,
@@ -59,6 +60,7 @@ const setMapBusy = (value) => {
   if (mapFileInput) mapFileInput.disabled = busy;
   if (mapReasonInput) mapReasonInput.disabled = busy;
   if (mapSourceInput) mapSourceInput.disabled = busy;
+  if (mapCareModeInput) mapCareModeInput.disabled = busy;
   for (const button of closeButtons) button.disabled = busy;
 };
 
@@ -103,6 +105,7 @@ async function previewMap() {
           imageBase64,
           reason: mapReasonInput.value,
           source,
+          careMode: mapCareModeInput?.value || "manual",
         }),
       },
     );
@@ -182,12 +185,16 @@ mapDropZone?.addEventListener("drop", (event) => {
   return acceptFiles(Array.from(event.dataTransfer?.files || []));
 });
 
-for (const input of [mapReasonInput, mapSourceInput]) {
+for (const input of [mapReasonInput, mapSourceInput, mapCareModeInput]) {
   input?.addEventListener("input", () => {
     resetMapPreview();
     setMapMessage("Angaben geändert. Bitte mit „Karte prüfen“ die Vorschau erneuern.", "info");
   });
 }
+mapCareModeInput?.addEventListener("change", () => {
+  resetMapPreview();
+  setMapMessage("Pflegewahl geändert. Bitte mit „Karte prüfen“ die Vorschau erneuern.", "info");
+});
 
 mapAutoSearchButton?.addEventListener("click", async () => {
   if (busy) return;
@@ -226,7 +233,9 @@ mapSaveButton?.addEventListener("click", async () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: mapPreviewToken }),
+        body: JSON.stringify({ token: mapPreviewToken,
+          ...(mapCareModeInput ? { careMode: mapCareModeInput.value || "manual" } : {}),
+        }),
       },
     );
     state.notice = result.gitPublished

@@ -519,7 +519,7 @@ export class TaxonomyMaintenanceService {
     }
   }
 
-  async startUpdate({ token } = {}) {
+  async bindUpdatePlan({ token } = {}) {
     this.assertOpen();
     this.assertProjectReady();
     if (
@@ -541,6 +541,29 @@ export class TaxonomyMaintenanceService {
           releaseId: this.preview.releaseId,
         },
     };
+    const installed = await this.installedStatus();
+    const plan = { schemaVersion: 1, releaseId: operation.releaseId, release: operation.release,
+      updateCatalogue: operation.updateCatalogue, updateSupplements: operation.updateSupplements,
+      activeRelease: installed.activeRelease || "" };
+    return { ...plan, revision: crypto.createHash("sha256").update(JSON.stringify(plan)).digest("hex") };
+  }
+
+  async startUpdate({ token, updatePlan = null } = {}) {
+    this.assertOpen();
+    this.assertProjectReady();
+    if (this.isActive()) throw createHttpError("Eine Taxonomie-Aktualisierung läuft bereits.", 409);
+    const plan = updatePlan || await this.bindUpdatePlan({ token });
+    const { revision, ...body } = plan;
+    if (body.schemaVersion !== 1 || !body.releaseId || body.release?.releaseId !== body.releaseId
+      || typeof body.updateCatalogue !== "boolean" || typeof body.updateSupplements !== "boolean"
+      || !body.updateCatalogue && !body.updateSupplements
+      || revision !== crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex")) {
+      throw createHttpError("Der gespeicherte Quellenplan ist unvollständig oder verändert.", 409);
+    }
+    if (((await this.installedStatus()).activeRelease || "") !== body.activeRelease) {
+      throw createHttpError("Der aktive Quellenstand wurde seit der Startentscheidung verändert. Bitte erneut prüfen.", 409);
+    }
+    const operation = body;
     this.preview = null;
     this.state = {
       ...initialState(),

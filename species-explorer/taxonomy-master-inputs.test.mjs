@@ -4,7 +4,8 @@ import path from "node:path";
 import os from "node:os";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
-import { coverMasterInputSelection, MASTER_INPUT_FILE, readBoundMasterBuildInputs, masterFileFingerprint } from "./taxonomy-master-inputs.mjs";
+import { coverMasterInputSelection, MASTER_INPUT_FILE, readBoundMasterBuildInputs, masterFileFingerprint,
+  normalizeProtectedMasterIds, protectedMasterIdsRevision } from "./taxonomy-master-inputs.mjs";
 import { buildTaxonomyMasterCandidate, readTaxonomyMasterManifest } from "./taxonomy-master-candidate.mjs";
 import { activateTaxonomyMasterCandidate, rollbackTaxonomyMaster } from "./taxonomy-master-lifecycle.mjs";
 import { taxonomyMasterCandidateDirectory, taxonomyMasterActiveDirectory, taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
@@ -64,6 +65,51 @@ test("Identische Inhalte in neuem Release bleiben unverändert; Baseline folgt A
   const bound = await readBoundMasterBuildInputs(taxonomyMasterActiveDirectory(root), manifest);
   assert.equal(bound.available, true);
   bound.inputs.close();
+});
+
+test("Schutzlistenrevision ist kanonisch, geprüft und Teil des Kandidaten-/Wiederverwendungsvertrags", async (t) => {
+  const root = await rootFor(t);
+  const ids = ["mtx_" + "b".repeat(32), "mtx_" + "a".repeat(32)];
+  assert.deepEqual(normalizeProtectedMasterIds([ids[0], ids[1], ids[0]]), [ids[1], ids[0]]);
+  assert.equal(protectedMasterIdsRevision([ids[0], ids[1], ids[0]]), protectedMasterIdsRevision([ids[1], ids[0]]));
+  for (const invalid of [null, {}, "id", ["invalid"], [123]]) assert.throws(() => protectedMasterIdsRevision(invalid), /Master-IDs/);
+  await build(root, 1);
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const db = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"), { readOnly: true });
+  let id;
+  try { id = db.prepare("SELECT master_taxon_id FROM master_taxon").get().master_taxon_id; } finally { db.close(); }
+  const second = await build(root, 2, { protectedMasterIds: [id], rows: [record({ germanNames: [{ name: "Hausstorch" }] })] });
+  assert.equal(second.inputRevisions.protectedMasterIds, protectedMasterIdsRevision([id]));
+  assert.equal(second.buildInputs.buildMode, "full");
+  assert.deepEqual(second.buildInputs.comparison.reasons, ["protectedMasterIdsRevision"]);
+  assert.equal(second.buildInputs.reuse.reusedTaxa, 0);
+  const bound = await readBoundMasterBuildInputs(taxonomyMasterCandidateDirectory(root), second);
+  try { assert.equal(bound.inputs.contract.protectedMasterIdsRevision, second.inputRevisions.protectedMasterIds); }
+  finally { bound.inputs.close(); }
+  const staged = new DatabaseSync(taxonomyMasterDatabasePath(root, "staging"), { readOnly: true });
+  try {
+    assert.equal(staged.prepare("SELECT field_value FROM master_field_assertion WHERE field_name='german-name' AND selected=1").get().field_value, "Weißstorch");
+    assert.equal(staged.prepare("SELECT COUNT(*) AS n FROM master_conflict WHERE conflict_type='changed-value' AND conflict_state='open'").get().n, 1);
+  } finally { staged.close(); }
+});
+
+test("unveränderte geschützte Taxa werden fachlich neu geprüft, unabhängige Quellenarten bleiben wiederverwendbar", async (t) => {
+  const root = await rootFor(t);
+  const rows = [record(), record({ providerRecordId: "bear", scientificName: "Ursus arctos",
+    hierarchy: { kingdom: "Animalia", genus: "Ursus", species: "Ursus arctos", family: "Ursidae" },
+    germanNames: [{ name: "Braunbär" }] })];
+  await build(root, 1, { rows });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const db = new DatabaseSync(taxonomyMasterDatabasePath(root, "active"), { readOnly: true });
+  let id;
+  try { id = db.prepare("SELECT master_taxon_id FROM master_taxon WHERE canonical_scientific_name='Ciconia ciconia'").get().master_taxon_id; }
+  finally { db.close(); }
+  await build(root, 2, { rows, protectedMasterIds: [id] });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const third = await build(root, 3, { rows, protectedMasterIds: [id, id] });
+  assert.equal(third.buildInputs.buildMode, "incremental");
+  assert.equal(third.buildInputs.reuse.reusedTaxa, 1);
+  assert.equal(third.buildInputs.comparison.counts.unchanged, 2);
 });
 
 test("Fingerabdrücke entstehen nach der vorhandenen Duplikatzusammenführung", async (t) => {

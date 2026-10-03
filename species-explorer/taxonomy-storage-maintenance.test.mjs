@@ -138,6 +138,108 @@ test("Nur gekennzeichnete alte Vorbereitungen sind bereinigbar; Windows-Dateispe
   await fs.access(work);
 });
 
+test("Teilweise entfernte alte Paare zählen entfernte Bytes und sind nur nach frischer Vorschau wiederholbar", async (t) => {
+  const f = await fixture(t), [master, search] = f.obsolete.directories;
+  const masterBytes = (await fs.stat(path.join(master, "taxonomy-master.sqlite"))).size
+    + (await fs.stat(path.join(master, "manifest.json"))).size;
+  const service = f.service({ remove: async (directory) => {
+    assert.ok(f.obsolete.directories.includes(directory));
+    if (directory === search) throw new Error("Paketdatei wird verwendet");
+    await fs.rm(directory, { recursive: true, force: false });
+  } });
+  const plan = await service.preview();
+  const partial = await service.clean({ confirmed: true, revision: plan.revision });
+  assert.equal(partial.removed.length, 0);
+  assert.equal(partial.failed.length, 1);
+  assert.equal(partial.freedBytes, masterBytes);
+  assert.equal(partial.failed[0].freedBytes, masterBytes);
+  await assert.rejects(fs.access(master));
+  await fs.access(search);
+  const retry = f.service(), fresh = await retry.preview();
+  assert.equal(fresh.items.find((row) => row.id === f.obsolete.id).eligible, true);
+  await assert.rejects(retry.clean({ confirmed: true, revision: plan.revision }), /seit der Vorschau/);
+  await assert.rejects(retry.clean({ revision: fresh.revision }), /bestätigte/);
+  const finished = await retry.clean({ confirmed: true, revision: fresh.revision });
+  assert.equal(finished.removed.length, 1);
+  assert.equal(finished.failed.length, 0);
+  assert.ok(finished.freedBytes > 0);
+  await assert.rejects(fs.access(search));
+  for (const entry of [f.active, f.previous]) for (const directory of entry.directories) await fs.access(directory);
+});
+
+test("Bereinigungsquittung gibt veränderte Restdateien und inzwischen geschützte Paare nicht frei", async (t) => {
+  const f = await fixture(t), [master, search] = f.obsolete.directories;
+  const service = f.service({ remove: async (directory) => {
+    assert.ok(f.obsolete.directories.includes(directory));
+    if (directory === search) throw new Error("Paketdatei wird verwendet");
+    await fs.rm(directory, { recursive: true, force: false });
+  } });
+  const plan = await service.preview();
+  await service.clean({ confirmed: true, revision: plan.revision });
+  await fs.writeFile(path.join(search, "taxonomy-search.sqlite"), "changed");
+  const changed = await f.service().preview();
+  assert.equal(changed.items.find((row) => row.id === f.obsolete.id).eligible, false);
+  await writeTaxonomyPublication(f.taxonomyRoot, { ...f.pointer, previous: f.obsolete });
+  const protectedPlan = await f.service().preview();
+  assert.equal(protectedPlan.items.find((row) => row.id === f.obsolete.id).eligible, false);
+  assert.ok(protectedPlan.warnings.length > 0);
+  await assert.rejects(fs.access(master));
+  await fs.access(search);
+});
+
+test("Teilweise Dateilöschung wird gezählt und setzt nur den belegten unveränderten Rest fort", async (t) => {
+  const f = await fixture(t), [master, search] = f.obsolete.directories;
+  const removedManifestBytes = (await fs.stat(path.join(search, "manifest.json"))).size;
+  const plan = await f.service().preview(), row = plan.items.find((entry) => entry.id === f.obsolete.id);
+  const service = f.service({ remove: async (directory) => {
+    assert.ok(f.obsolete.directories.includes(directory));
+    if (directory === search) {
+      await fs.unlink(path.join(search, "manifest.json"));
+      throw new Error("Restdatei wird verwendet");
+    }
+    await fs.rm(directory, { recursive: true, force: false });
+  } });
+  const partial = await service.clean({ confirmed: true, revision: plan.revision });
+  assert.equal(partial.freedBytes, row.snapshots[0].bytes + removedManifestBytes);
+  const retry = f.service(), fresh = await retry.preview();
+  assert.equal(fresh.items.find((entry) => entry.id === f.obsolete.id).eligible, true);
+  const finished = await retry.clean({ confirmed: true, revision: fresh.revision });
+  assert.equal(partial.freedBytes + finished.freedBytes, row.bytes);
+  for (const directory of [master, search]) await assert.rejects(fs.access(directory));
+});
+
+test("Neue Schutzabhängigkeit sperrt auch einen unveränderten belegten Bereinigungsrest", async (t) => {
+  const f = await fixture(t), [master, search] = f.obsolete.directories;
+  const service = f.service({ remove: async (directory) => {
+    assert.ok(f.obsolete.directories.includes(directory));
+    if (directory === search) throw new Error("Paketdatei wird verwendet");
+    await fs.rm(directory, { recursive: true, force: false });
+  } });
+  const plan = await service.preview();
+  await service.clean({ confirmed: true, revision: plan.revision });
+  await f.job("paused", [[path.join(search, "taxonomy-search.sqlite"), "hash"]]);
+  const protectedPlan = await f.service().preview();
+  const retained = protectedPlan.items.find((row) => row.id === f.obsolete.id);
+  assert.equal(retained.eligible, false);
+  assert.match(retained.reason, /Auftrag benötigt/);
+  await assert.rejects(fs.access(master));
+  await fs.access(search);
+});
+
+test("Unbelegter oder manipulierter Paarrest bleibt gesperrt; keine pauschale Waisenbereinigung", async (t) => {
+  const f = await fixture(t), [master, search] = f.obsolete.directories;
+  await fs.rm(master, { recursive: true, force: false });
+  let plan = await f.service().preview();
+  assert.equal(plan.items.find((row) => row.id === f.obsolete.id).eligible, false);
+  await json(path.join(f.taxonomyRoot, "master", "storage-cleanups", `${f.obsolete.id}.json`), {
+    schemaVersion: 1, kind: "pair", id: f.obsolete.id, taxonomyRoot: f.taxonomyRoot,
+    searchRoot: f.searchRoot, revision: "guessed", snapshots: [],
+  });
+  plan = await f.service().preview();
+  assert.equal(plan.items.find((row) => row.id === f.obsolete.id).eligible, false);
+  await fs.access(search);
+});
+
 test("Speicherreserve und Größenabschätzung sperren bei Platzmangel oder unlesbarem Laufwerk", async () => {
   const available = async () => TAXONOMY_SPACE_RESERVE + 10;
   assert.equal((await assertTaxonomySpace("unused", 10, { available })).requiredBytes, TAXONOMY_SPACE_RESERVE + 10);

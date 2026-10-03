@@ -20,6 +20,10 @@ import { startMasterJobProcess } from "./taxonomy-master-process.mjs";
 import { identityTaxonDetails } from "./taxonomy-identity-cases.mjs";
 import { coverMasterInputSelection } from "./taxonomy-master-inputs.mjs";
 import { classificationDeferralSummary } from "./taxonomy-classification-deferral.mjs";
+import { captureCatalogUsage, createCatalogUsageService } from "./lightroom-catalog-usage.mjs";
+import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
+import { publishTaxonomyPair, prepareTaxonomyPublication } from "./taxonomy-publication.mjs";
+import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
 const FIRST = new Date("2026-09-01T00:00:00Z"), SECOND = new Date("2026-10-02T00:00:00Z");
 const hash = async (file) => crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
@@ -70,6 +74,142 @@ async function fixture(t, { count = 1, missingLast = false, identifiersByIndex =
   const service = createIdentityReviewService({ taxonomyRoot: root, now: () => SECOND, readInputRevision: async () => inputRevision });
   return { root, service, inputs, candidate, setInputRevision: (value) => { inputRevision = value; } };
 }
+
+async function usageFixture(root, usedIds = []) {
+  const catalogPath = path.join(path.dirname(root), "catalog.lrcat");
+  await fs.writeFile(catalogPath, "closed fixture catalog; SDK receipt is independently simulated");
+  await captureCatalogUsage(root, { catalogPath, complete: true, passes: 2, totalPhotos: usedIds.length,
+    usedTaxa: usedIds.map((masterTaxonId) => ({ masterTaxonId, photoCount: 1 })) });
+  const service = createCatalogUsageService({ taxonomyRoot: root });
+  const preview = await service.catalogUsagePreview();
+  await service.catalogUsageSave({ token: preview.token, confirmed: true, allCatalogsConfirmed: true, unchangedSinceCapture: true });
+  return catalogPath;
+}
+
+test("Automatik erfordert vollständige FN-Nutzung und schützt Projektart, eigene Namen und zugewiesene Art", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 4, missingLast: true });
+  const unknown = await service.classificationAutomaticPreview();
+  assert.equal(unknown.available, false); assert.equal(await readIdentityReview(root), null);
+  const old = rows(root), db = new DatabaseSync(taxonomyMasterDatabasePath(root), { readOnly: true });
+  let usedId;
+  try { usedId = db.prepare("SELECT master_taxon_id FROM master_taxon WHERE canonical_scientific_name=?").get(speciesName(2)).master_taxon_id; }
+  finally { db.close(); }
+  const catalog = await usageFixture(root, [usedId]);
+  const preview = await service.classificationAutomaticPreview();
+  assert.equal(preview.matching, 1); assert.equal(preview.deferred, 1); assert.equal(preview.protected, 2);
+  await assert.rejects(service.classificationAutomaticSave({ ...preview, token: "stale" }), /veraltet/);
+  const saved = await service.classificationAutomaticSave(preview);
+  assert.equal(saved.count, 2); assert.equal(saved.changesPhotos, false);
+  const review = await readIdentityReview(root);
+  assert.deepEqual(review.registry.events.map((event) => event.type), ["classification", "classification-deferred"]);
+  assert.ok(review.registry.events.every((event) => event.classificationAutomation.usageRevision === preview.usageRevision));
+  assert.equal((await service.classificationAutomaticPreview()).matching, 0);
+  assert.equal((await service.classificationAutomaticSave(await service.classificationAutomaticPreview())).saved, false);
+  assert.deepEqual(rows(root), old, "Vormerkung verändert keine aktive Datenbank");
+  assert.equal((await assertPendingClassificationAutomation(root, { full: true })).eventIds.length, 2);
+  await fs.writeFile(catalog + ".lock", "");
+  await assert.rejects(assertPendingClassificationAutomation(root), /veraltet/);
+  await fs.unlink(catalog + ".lock");
+  // Only the protected cases remain for explicit review. Both kinds of pending
+  // decision are then applied in ONE fresh candidate, with original IDs.
+  const manual = await service.classificationPreview(); assert.equal(manual.count, 2);
+  await service.classificationSave({ token: manual.token, confirmed: true });
+  const finalReview = await readIdentityReview(root);
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: finalReview.registry, now: () => new Date("2026-10-02T01:00:00Z") });
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).blockingConflictCount, 0);
+  const next = rows(root, "staging");
+  assert.deepEqual(next.taxa.map((entry) => entry.master_taxon_id).sort(), old.taxa.map((entry) => entry.master_taxon_id).sort());
+  assert.deepEqual(next.projects, old.projects); assert.deepEqual(next.names, old.names);
+  await fs.writeFile(catalog + ".lock", "");
+  await assert.rejects(activateTaxonomyMasterCandidate(root, { confirmed: true }), /veraltet/);
+  assert.deepEqual(rows(root), old);
+  await fs.unlink(catalog + ".lock");
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  await fs.writeFile(catalog + ".lock", "");
+  assert.equal(await assertPendingClassificationAutomation(root), null, "Aktive Historie verlangt keine dauerhafte LR-Sperre");
+});
+
+test("automatische Klassifikation schützt einen echten fortgeschriebenen eigenen Entscheidungsmarker", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 3 });
+  const db = new DatabaseSync(taxonomyMasterDatabasePath(root));
+  try {
+    db.prepare(`INSERT INTO master_decision(decision_id,master_taxon_id,field_name,language,
+      decision_type,selected_assertion_id,decided_at)
+      SELECT 'source-field-choice',f.master_taxon_id,f.field_name,f.language,'keep-current',f.assertion_id,?
+      FROM master_field_assertion f JOIN master_taxon t USING(master_taxon_id)
+      WHERE t.canonical_scientific_name=? AND f.selected=1 AND f.field_name='scientific-name'`)
+      .run(FIRST.toISOString(), speciesName(2));
+  } finally { db.close(); }
+  await buildTaxonomyMasterCandidate({ ...inputs, colRelease: release("col-old", FIRST), colRecords: [], now: () => SECOND });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true });
+  const updated = new DatabaseSync(taxonomyMasterDatabasePath(root), { readOnly: true });
+  try {
+    assert.equal(updated.prepare("SELECT COUNT(*) AS n FROM master_decision").get().n, 0);
+    const marker = JSON.parse(updated.prepare(`SELECT s.status_detail FROM master_taxon_status s JOIN master_taxon t USING(master_taxon_id)
+      WHERE t.canonical_scientific_name=? AND s.status_name='manually-protected'`).get(speciesName(2)).status_detail);
+    assert.equal(marker.decisions[0].decisionId, "source-field-choice");
+    assert.equal(updated.prepare(`SELECT COUNT(*) AS n FROM master_field_assertion f JOIN master_taxon t USING(master_taxon_id)
+      WHERE t.canonical_scientific_name=? AND f.origin_kind IN ('manual','project')`).get(speciesName(2)).n, 0);
+  } finally { updated.close(); }
+  await buildTaxonomyMasterCandidate({ ...inputs, now: () => new Date(SECOND.getTime() + 1000) });
+  await usageFixture(root);
+  const preview = await service.classificationAutomaticPreview();
+  assert.equal(preview.matching, 1);
+  assert.equal(preview.protected, 2, "Projektart und eigene Entscheidung bleiben separat manuell geschützt");
+  const saved = await service.classificationAutomaticSave(preview);
+  assert.equal(saved.count, 1);
+  const review = await readIdentityReview(root);
+  assert.equal(review.registry.events[0].sources[0].scientificName, speciesName(3));
+});
+
+test("Automatik ist quellen-/nutzungsgebunden, atomar, wiederholbar nach Schreibfehler und ohne laufenden Katalogscan", async (t) => {
+  const { root, service, candidate } = await fixture(t, { count: 3, missingLast: true });
+  const catalog = await usageFixture(root);
+  const preview = await service.classificationAutomaticPreview();
+  const flaky = createClassificationReviewService({ taxonomyRoot: root, now: () => SECOND,
+    readInputRevision: async () => candidate.inputRevisions.identityInputs, readReview: () => readIdentityReview(root),
+    writeReview: async () => { throw new Error("write-failed"); } });
+  await assert.rejects(flaky.classificationAutomaticSave(preview), /write-failed/);
+  assert.equal(await readIdentityReview(root), null);
+  await fs.appendFile(catalog, "changed");
+  await assert.rejects(service.classificationAutomaticSave(preview), /veraltet/);
+  await usageFixture(root);
+  const current = await service.classificationAutomaticPreview();
+  assert.notEqual(current.token, preview.token);
+  await service.classificationAutomaticSave(current);
+  const pending = await readIdentityReview(root);
+  assert.equal(pending.registry.events.length, 2);
+  assert.equal(pending.registry.events[0].classificationAutomation.policy, "unused-classifications-v1");
+  await captureCatalogUsage(root, { catalogPath: catalog, complete: true, passes: 2, totalPhotos: 0, usedTaxa: [] });
+  await assert.rejects(assertPendingClassificationAutomation(root, { full: true }), /veraltet/);
+});
+
+test("automatische Vormerkung schützt auch gemeinsamen Paarwechsel vor nachträglich geöffnetem Katalog und erlaubt frische Wiederholung", async (t) => {
+  const { root, service, inputs } = await fixture(t, { count: 3, missingLast: true });
+  const catalog = await usageFixture(root), searchRoot = path.join(path.dirname(root), "lightroom");
+  await service.classificationAutomaticSave(await service.classificationAutomaticPreview());
+  const manual = await service.classificationPreview();
+  await service.classificationSave({ token: manual.token, confirmed: true });
+  await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: (await readIdentityReview(root)).registry,
+    now: () => new Date("2026-10-02T01:00:00Z") });
+  const masterPath = taxonomyMasterDatabasePath(root), before = await hash(masterPath);
+  await assert.rejects(publishTaxonomyPair({ taxonomyRoot: root, searchRoot, confirmed: true, corrections: inputs.corrections,
+    prepare: async (options) => {
+      const prepared = await prepareTaxonomyPublication(options);
+      await fs.writeFile(catalog + ".lock", "");
+      return prepared;
+    } }), /veraltet/);
+  assert.equal(readTaxonomyPublication(root), null);
+  assert.equal(await hash(masterPath), before);
+  await fs.unlink(catalog + ".lock");
+  const result = await publishTaxonomyPair({ taxonomyRoot: root, searchRoot, confirmed: true, corrections: inputs.corrections });
+  assert.ok(result.publicationId);
+  assert.equal(readTaxonomyPublication(root).active.masterVersion, result.masterVersion);
+  const store = await openLightroomSearchStore({ searchRoot });
+  try { assert.equal(store.status().masterVersion, result.masterVersion); }
+  finally { store.close(); }
+  assert.equal(await assertPendingClassificationAutomation(root), null);
+});
 
 test("480 unklare Zurückstellungen reservieren keine neuen IDs und erzeugen weder Historiennachfolger noch Aliasse", () => {
   const cases = Array.from({ length: 480 }, (_, index) => proof(index + 1, []));
@@ -183,9 +323,11 @@ test("passende Übernahme und unklare Zurückstellung werden in beiden Reihenfol
     const staleSecond = await service[secondPreview]();
     const first = await service[firstPreview]();
     await service[firstSave]({ token: first.token, confirmed: true });
+    assert.equal((await service.classificationDecisionReadiness()).ready, false);
     await assert.rejects(service[secondSave]({ token: staleSecond.token, confirmed: true }), /veraltet/);
     const second = await service[secondPreview]();
     await service[secondSave]({ token: second.token, confirmed: true });
+    assert.equal((await service.classificationDecisionReadiness()).ready, true);
     const registry = (await readIdentityReview(root)).registry;
     assert.equal(registry.events.length, 2);
     await buildTaxonomyMasterCandidate({ ...inputs, identityRegistry: registry, now: () => new Date(SECOND.getTime() + 1000) });

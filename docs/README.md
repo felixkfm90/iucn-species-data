@@ -1,6 +1,6 @@
 # Dokumentationsübersicht
 
-Stand: 2026-10-01
+Stand: 2026-10-03
 
 Aktuelle Bedien- und Betriebsverträge stehen neben ausdrücklich datierten Messungen und historischen
 Planungs-/Auditberichten. Ein älteres Datum allein macht einen unveränderten Vertrag nicht ungültig; ein
@@ -10,7 +10,7 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 
 - [Projekt-README](../README.md): Installation, Bedienung und Betrieb.
 - [Roadmap](roadmap.md): aktuelle Restreihenfolge und offene Abnahmen vor dem Audit.
-- [Taxonomie-Betriebsstand](taxonomy-current-status.md): abgeschlossene Reparatur, lokales Paar und separates Quellenupdate.
+- [Taxonomie-Betriebsstand](taxonomy-current-status.md): abgeschlossene Reparatur und reguläres Quellenupdate, aktives lokales Paar und offene Abnahmen.
 - [Projektstatus](project-status.md): einzige aktuelle Quelle für Arten-/Assetzähler und Pflege-/Lizenzlisten; automatisch erzeugt.
 - [Dokumentationsregeln](documentation-lifecycle.md): Zuständigkeiten, historische Berichte und Prüfpflichten.
 - [Repositorystruktur](repo-structure.md), [Qualitätsgrenzen](repository-quality-gates.md),
@@ -26,6 +26,10 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Inkrementeller Masteraufbau](taxonomy-incremental-build.md), [Hintergrundaufbau und Fortschritt](taxonomy-master-background-build.md).
 - [Lightroom-Suchpaket und Plug-in](lightroom-search-package.md), [gezielter Export](lightroom-incremental-export.md).
 - [Bestätigte Lightroom-Artänderungen](lightroom-identity-workflow.md).
+- [FN-Katalognutzung und unbenutzte Klassifikationen](lightroom-catalog-usage.md).
+- [Gespeicherter Gesamtweg, SDK-Anforderung und Schließungsgrenze](taxonomy-update-automation.md).
+- [Vor-Audit-Umsetzungsprüfung vom 3. Oktober](audits/2026-10-03-pre-audit-implementation.md): lokale Prüfergebnisse und noch nötige praktische Abnahmen, kein Gesamtaudit.
+- [Bedienbefunde und Regressionskorrekturen vom 3. Oktober](audits/2026-10-03-acceptance-regressions.md): Pages-Vorabgrenze, Orts-/Zeitentfernung, Auswahlexporte und Plug-in 0.4.24.17.
 - [Kontrollierte Quellenreparatur und vollständiger Abschluss](taxonomy-partial-source-recovery.md).
 - [Speicherpflege](taxonomy-storage-maintenance.md), [begrenzter Aufbaupuffer](taxonomy-build-cache.md).
 - [Isolierte Betriebs-/Größenprüfungen](taxonomy-operational-checks.md),
@@ -73,3 +77,4 @@ umgeschrieben; die oben verlinkten aktuellen Verträge ordnen spätere Änderung
 - [Großbestandsvorprüfung 27. September](audits/2026-09-27-taxonomy-preflight.md).
 - [Grundlagenlauf 28. September](audits/2026-09-28-taxonomy-baseline-run.md).
 - [Bestandsdifferenz 29. September](audits/2026-09-29-taxonomy-difference.md).
+- [Reguläres CoL-Update 3. Oktober](audits/2026-10-03-taxonomy-reference-update.md): produktiver Paarabschluss, ID-/Namens-/Projektlink-Erhalt und 187 konservative Zurückstellungen; kein Gesamtaudit.

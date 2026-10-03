@@ -7,6 +7,7 @@ local LrView = import "LrView"
 
 local KeywordWriter = require "KeywordWriter"
 local LocationTimeWriter = require "LocationTimeWriter"
+local LocationTimeMenu = require "LocationTimeMenu"
 local PluginState = require "PluginState"
 local TaxonomyHelper = require "TaxonomyHelper"
 local DataVersionView = require "DataVersionView"
@@ -571,6 +572,22 @@ function AssignmentWindow.show(context)
     refreshSelection()
   end
 
+  local function removeLocationTime()
+    if props.busy then return end
+    local photos = catalog:getTargetPhoto() and catalog:getTargetPhotos() or {}
+    setBusy(true)
+    local ok, result, errorMessage = LrTasks.pcall(LocationTimeMenu.runForPhotos, catalog, photos, "remove")
+    setBusy(false)
+    if not ok then
+      props.searchStatus = tostring(result)
+    elseif result then
+      props.searchStatus = "Orts- und Zeitdaten von " .. photoCountText(result.changedPhotoCount) .. " entfernt."
+    elseif errorMessage then
+      props.searchStatus = errorMessage
+    end
+    refreshSelection()
+  end
+
   local function saveNamePreference()
     if props.busy or not props.canSavePreference or not currentTaxon or pendingNamePreference then return end
     local taxon = currentTaxon
@@ -796,6 +813,13 @@ function AssignmentWindow.show(context)
     }),
     factory:row({
       fill_horizontal = 1,
+      factory:push_button({
+        title = "Orts- und Zeitdaten entfernen ...",
+        enabled = bind("canRemove"),
+        action = function()
+          LrTasks.startAsyncTask(removeLocationTime)
+        end,
+      }),
       factory:spacer({ fill_horizontal = 1 }),
       factory:push_button({
         title = "Schließen",

@@ -99,6 +99,7 @@ export async function planMasterDependencies({ filename, previousPath, currentPa
       for (const row of db.prepare(`SELECT master_taxon_id AS id FROM master_decision
           UNION SELECT master_taxon_id FROM master_conflict
           UNION SELECT master_taxon_id FROM project_taxon_link
+          UNION SELECT master_taxon_id FROM master_taxon_status WHERE status_name='manually-protected'
           UNION SELECT master_taxon_id FROM master_field_assertion WHERE origin_kind IN ('manual','project')`).iterate()) {
         mark.run(row.id);
         await progress();
