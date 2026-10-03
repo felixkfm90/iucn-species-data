@@ -1483,12 +1483,20 @@
       "map": {
         "manual": true,
         "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "132000123",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg"
+        },
         "reason": "Karte als lokale Datei importiert.",
         "source": "https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg",
         "germanName": "Grünfink",
         "originalFileName": "T22720330A132000123.jpg",
-        "importedAt": "2026-09-13T07:00:42.974Z",
-        "updatedAt": "2026-09-13T07:00:42.974Z",
+        "importedAt": "2026-10-03T18:35:13.772Z",
+        "updatedAt": "2026-10-03T18:35:13.772Z",
         "sha256": "009572b8177014aaa56f96cf9428db773eac06041546dad4d112be92d3a8e480"
       }
     },
@@ -1576,8 +1584,8 @@
         "stale": false,
         "soundSha256": "6e164a3639c67f3242bf23f25eb2d6794014606dc7cc76921624b1e564b9bda3",
         "spectrogramSha256": "8eea026d2d7160d31fc0dd57595156b3bca8638ddbfe66a153b9ed8443e6d20f",
-        "generatedAt": "2026-09-27T07:26:25.078Z",
-        "verifiedAt": "2026-09-27T07:26:25.083Z"
+        "generatedAt": "2026-09-27T17:01:20.524Z",
+        "verifiedAt": "2026-10-03T18:35:33.564Z"
       }
     },
     "Erdbeerfroeschchen": {
@@ -1621,8 +1629,8 @@
         "stale": false,
         "soundSha256": "ce9a424669ec15452c20c9842d7a64a33f93281d9df1fa30ef425b4cdd8745ee",
         "spectrogramSha256": "f1eb63a3e6e0923044fa0ab23dbb8df41ebcf710d880cb9bbf2bc48f33fc3e8b",
-        "generatedAt": "2026-09-27T07:44:07.499Z",
-        "verifiedAt": "2026-09-27T07:44:07.503Z"
+        "generatedAt": "2026-09-27T17:03:07.097Z",
+        "verifiedAt": "2026-10-03T18:35:33.543Z"
       }
     }
   },
