@@ -29,7 +29,8 @@ geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage tro
    keine Weiterleitung oder neue Kartendatei. Kein erneuter Massendownloadtest erforderlich.
 5. **Qualitäts-/Veröffentlichungsabschluss und Audit:** vollständiges Gate für diese Serie bestanden:
    50 Gruppen/1.177 gemeldete Tests, 423 Master-/Betriebs- und 239 Lightroom-/Pakettests, keine Fehler/Skips.
-   Dokumentation fortgeschrieben; neuer Commit-/Pages-Nachweis separat.
+   Dokumentation fortgeschrieben; Serie `52545eb` und Pages `37199775549` vollständig erfolgreich veröffentlicht.
+   Linux ohne Fehler/Abbruch, zwei Windows-NAS-Prüfungen dort erwartungsgemäß übersprungen, lokal bestanden.
    Phase 10.5 nicht allein anhand isolierter Tests oder früherer Nutzerrückmeldungen als bestanden melden.
 
 Historische 187 Fälle werden neutral als erhaltene bisherige Quellenzuordnungen dargestellt. Sie ändern keine

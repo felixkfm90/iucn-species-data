@@ -75,6 +75,13 @@ Explorer-Schließen ist wiederholbar und umfasst Ressourcen auch bei nicht gesta
 
 ## Verbleibende Abschlussgrenze
 
+Veröffentlichung: `52545eb1fe459a26c6848c71429b2849eed25d28`, 153 geänderte/neue Dateien,
+4.687 Einfügungen und 814 Löschungen. [Pages-Lauf 37199775549](https://github.com/felixkfm90/iucn-species-data/actions/runs/37199775549)
+am 4. Oktober um 11:48:17 UTC vollständig erfolgreich: Linux-Gate, Build und Deployment.
+Linux: 50 Gruppen/1.177 gemeldete Tests, keine Fehler/Abbrüche; zwei ausschließlich Windows-spezifische
+NAS-Vertragsprüfungen übersprungen. Beide im lokalen Windows-Gate erfolgreich, dort keine Skips.
+Lokale Daten, Konfiguration, Umzugsjournal und Temp sind nicht im Commit/Pages enthalten.
+
 - Finaler Hauptordnername `D:\Arten-Explorer`: Datenkonfiguration portabel isoliert geprüft, tatsächliche
   Umbenennung noch offen. Codex-Arbeitschat/-Projekt und Lightroom-Registrierung binden weiterhin den alten
   Programmpfad; Desktop-Verknüpfung muss gemeinsam umgestellt werden. Kein isoliertes Umbenennen.
@@ -83,7 +90,7 @@ Explorer-Schließen ist wiederholbar und umfasst Ressourcen auch bei nicht gesta
 - Vollautomatischer IUCN-Abruf weiterhin kein belegter Erfolg; Browser-/Dateiimport bleibt der sichere Weg.
   Letzte normale lesende HTTP-Probe am 4. Oktober 11:28 UTC: Grünfink-Endpunkt HTTP 403,
   `text/html; charset=UTF-8`, keine Weiterleitung. Keine Karte heruntergeladen oder bestehende Datei ersetzt.
-- Neuer Commit-/Pages-Nachweis getrennt; **dieser Bericht ist kein Phase-10.5-Gesamtaudit**.
+- Commit-/Pages-Nachweis bestanden; **dieser Bericht ist kein Phase-10.5-Gesamtaudit**.
 
 Verträge: [Umzug und Rückweg](../storage-migration.md), [Temp](../temp-retention.md),
 [Artanlage](../add-species-workflow.md), [aktuelle Restreihenfolge](../roadmap.md).

@@ -60,7 +60,11 @@ eigener Namenswahl. Gezielter Plug-in-Vertrag am neuen Datenpfad erneut 21/21 be
 Das vollständige Gate nach dem produktiven Datenwechsel und der zusätzlichen Sound-Abschlusskorrektur
 erneut mit denselben 50 Gruppen/1.177 Tests bestanden. 78 Markdown-Dateien ohne fehlende lokale Verweise.
 Hauptordnerumbenennung, neue native Bedienabnahme und Phase-10.5-Gesamtaudit weiterhin getrennt offen.
-Nachweis: docs/audits/2026-10-04-storage-and-species-wizard.md. Pages dieser Serie noch nicht nachgewiesen.
+Nachweis: docs/audits/2026-10-04-storage-and-species-wizard.md. Serie als 52545eb veröffentlicht:
+153 Dateien, 4.687 Einfügungen/814 Löschungen. Pages 37199775549 vollständig erfolgreich einschließlich
+Linux-Gate, Build und Deployment. Linux meldet 50 Gruppen/1.177 Tests, keine Fehler/Abbrüche, zwei ausdrücklich
+Windows-spezifische NAS-Prüfungen übersprungen; beide im lokalen Windows-Gate bestanden. Keine neue
+Aktivierung, Katalogaktion oder Artanlage durch Veröffentlichung. Dieser Nachweis ist kein Phase-10.5-Audit.
 
 ## Frühere Speicheraufnahme vor der Umsetzung – 4. Oktober 2026
 

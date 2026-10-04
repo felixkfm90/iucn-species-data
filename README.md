@@ -32,6 +32,10 @@ prozessgebundene Temp-Sitzungen. Keine neue Taxonomie- oder Katalogaktion durch 
 Native Bedienabnahme der neuen Speicher-/Assistentenwege und Phase-10.5-Gesamtaudit bleiben getrennt.
 Gesamtgate: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
 und Suche am neuen Datenort bestanden. [Nachweis und verbleibende Abschlussgrenze](docs/audits/2026-10-04-storage-and-species-wizard.md).
+Die Serie ist als `52545eb` veröffentlicht. Der [Pages-Lauf 37199775549](https://github.com/felixkfm90/iucn-species-data/actions/runs/37199775549)
+bestand Linux-Qualitätsgate, Build und Deployment. Zwei ausschließlich Windows-spezifische NAS-Tests sind
+unter Linux übersprungen, im lokalen Windows-Gate bestanden. Native Abnahme und finaler Hauptordnerwechsel
+bleiben offen; die erfolgreiche Veröffentlichung allein schließt Phase 10.5 nicht ab.
 
 Vorausgehende Menüänderung **0.4.24.20**: Verwaltungsfenster auf sechs Hauptzugänge reduziert;
 Ort/Zeit mit drei Auswahlaktionen und Weitere Aktionen mit fünf seltenen Funktionen. Alle zwölf bisherigen
