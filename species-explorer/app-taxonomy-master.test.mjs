@@ -24,6 +24,7 @@ function element() {
     innerHTML: "",
     textContent: "",
     value: 0,
+    open: false,
     addEventListener() {},
     removeAttribute(name) {
       delete this[name];
@@ -39,6 +40,8 @@ function elements() {
     taxonomyMasterProgressDetail: element(),
     taxonomyMasterDiff: element(),
     taxonomyMasterConflicts: element(),
+    taxonomyMasterTechnicalDetails: element(),
+    taxonomyMasterTechnicalDetailsCopy: element(),
     taxonomyMasterBuildButton: element(),
     taxonomyMasterActivateButton: element(),
     taxonomyMasterRollbackButton: element(),
@@ -70,6 +73,112 @@ function readyStatus() {
     },
   };
 }
+
+function currentStatus() {
+  return {
+    status: "idle", active: false,
+    lifecycle: { active: { candidateId: "master-current", summary: { taxa: 275662 },
+      classificationDeferrals: { total: 187 } }, blockingConflictCount: 0, conflicts: [], blockingConflicts: [] },
+    reference: { status: "current", activeMatchesReference: true, needsMasterRebuild: false },
+    lightroomPackage: { status: "current", needsRebuild: false,
+      masterVersion: "master-current", packageVersion: "master-current" },
+    corrections: { pending: false }, identities: { pending: false },
+    buildJob: { available: true, status: "ready" },
+    updateWorkflow: { status: "idle", active: false },
+  };
+}
+
+test("Erfolgsanzeige benötigt einen belegten passenden Gesamtstand; Zurückstellungen sind kein Fehler", () => {
+  assert.equal(masterUi.activePairIsCurrent(currentStatus()), true);
+  assert.equal(masterUi.activePairIsCurrent({ ...currentStatus(), status: "completed" }), true);
+  const invalid = [
+    ["status", "building"], ["status", "applying-corrections"], ["status", "partial"], ["status", "failed"], ["status", "paused"],
+    ["active", true], ["error", "Masterprüfung fehlgeschlagen"],
+    ["lifecycle.candidate", { candidateId: "waiting" }], ["lifecycle.active", null],
+    ["lifecycle.blockingConflictCount", 1], ["lifecycle.error", "Stand nicht lesbar"],
+    ["lifecycle.blockingConflicts", [{ conflict_id: "ordinary" }]],
+    ["lifecycle.conflicts", [{ conflict_id: "ordinary", conflict_type: "changed-value" }]],
+    ["reference.status", "stale"], ["reference.activeMatchesReference", false],
+    ["reference.activeMatchesReference", undefined], ["reference.needsMasterRebuild", true],
+    ["reference.error", "Vergleich fehlgeschlagen"],
+    ["lightroomPackage.status", "stale"], ["lightroomPackage.needsRebuild", true],
+    ["lightroomPackage.masterVersion", "other-master"], ["lightroomPackage.packageVersion", "old-master"],
+    ["lightroomPackage.packageVersion", undefined], ["lightroomPackage.error", "Paket fehlt"],
+    ["corrections.pending", true], ["corrections.error", "Korrekturen nicht lesbar"],
+    ["identities.pending", true], ["identities.error", "Identitäten nicht lesbar"],
+    ["buildJob.status", "paused"], ["updateWorkflow.active", true],
+    ["updateWorkflow.error", "Quellenfehler"],
+    ["updateWorkflow.status", "failed"],
+    ["updateWorkflow", { updateRunId: "waiting", status: "waiting-decisions", active: false }],
+  ];
+  for (const [field, value] of invalid) {
+    const status = currentStatus();
+    const parts = field.split(".");
+    const target = parts.length === 2 ? status[parts[0]] : status;
+    target[parts.at(-1)] = value;
+    assert.equal(masterUi.activePairIsCurrent(status), false, `${field}: kein falscher Erfolg`);
+  }
+});
+
+test("Historische Quellenzuordnungen liegen neutral in geschlossenen Details, nicht im Entscheidungsbereich", () => {
+  const visible = elements(), status = currentStatus(), calls = [];
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible,
+    fetchJson: async (url) => { calls.push(url); return status; }, escapeHtml: String,
+    showQuickConfirm: async () => false, renderDatabaseStatus() {} });
+  visible.taxonomyMasterTechnicalDetails.open = true;
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, true);
+  assert.equal(visible.taxonomyMasterConflicts.innerHTML, "");
+  assert.equal(visible.taxonomyMasterTechnicalDetails.hidden, false);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.open, false);
+  assert.match(visible.taxonomyMasterDetail.textContent, /Technisch abgeschlossen · keine offenen Entscheidungen/);
+  const copy = visible.taxonomyMasterTechnicalDetailsCopy.innerHTML;
+  assert.match(copy, /187 neue CoL-Zuordnungen vorerst nicht übernommen/);
+  assert.match(copy, /Im aktiven Master bleiben die bisherigen Einträge, Master-IDs und eigenen Namen erhalten/);
+  assert.match(copy, /fachlich noch nicht vollständig geklärt/);
+  assert.match(copy, /keine aktuell offenen Entscheidungen/);
+  assert.match(copy, /automatische Auflösung beim nächsten Update ist nicht garantiert/);
+  assert.doesNotMatch(copy, /taxonomy-master-conflict|data-master-conflict-save|<button/);
+  assert.equal(calls.length, 0, "Darstellung startet keine Aktion");
+  visible.taxonomyMasterTechnicalDetails.open = true;
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.open, true, "Lesen bleibt bei unverändertem Status möglich");
+  status.lifecycle.active.candidateId = "new-master";
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.open, false, "Neuer Stand beginnt eingeklappt");
+  status.lifecycle.active.classificationDeferrals.total = 1;
+  controller.render(status);
+  assert.match(visible.taxonomyMasterTechnicalDetailsCopy.innerHTML, /1 neue CoL-Zuordnung vorerst nicht übernommen/);
+  status.lifecycle.active.classificationDeferrals.total = 0;
+  visible.taxonomyMasterTechnicalDetails.open = true;
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.hidden, true);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.open, false);
+  assert.equal(visible.taxonomyMasterTechnicalDetailsCopy.innerHTML, "");
+});
+
+test("Fehler, laufender Aufbau und echte Konflikte bleiben trotz historischer Zurückstellungen sichtbar", () => {
+  const visible = elements(), status = currentStatus();
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements: visible, escapeHtml: String,
+    fetchJson: async () => status, showQuickConfirm: async () => false, renderDatabaseStatus() {} });
+  status.status = "failed"; status.error = "Masterprüfung fehlgeschlagen";
+  controller.render(status);
+  assert.match(visible.taxonomyMasterDetail.textContent, /Masterprüfung fehlgeschlagen/);
+  assert.doesNotMatch(visible.taxonomyMasterDetail.textContent, /Technisch abgeschlossen|keine offenen Entscheidungen/);
+  status.status = "building"; status.active = true; status.error = ""; status.message = "Suchindex wird aufgebaut";
+  controller.render(status);
+  assert.match(visible.taxonomyMasterDetail.textContent, /Suchindex wird aufgebaut/);
+  assert.equal(visible.taxonomyMasterProgress.hidden, false);
+  status.status = "ready"; status.active = false;
+  status.lifecycle.candidate = { candidateId: "review", classificationDeferrals: { total: 1 } };
+  status.lifecycle.conflicts = [{ conflict_id: "ordinary", conflict_type: "changed-value", field_name: "german-name", german_name: "Weißstorch" }];
+  status.lifecycle.blockingConflictCount = 1;
+  controller.render(status);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, false);
+  assert.match(visible.taxonomyMasterConflicts.innerHTML, /Weißstorch.*data-master-conflict-save/s);
+  assert.match(visible.taxonomyMasterDetail.textContent, /1 Konflikt/);
+  assert.match(visible.taxonomyMasterTechnicalDetailsCopy.innerHTML, /Im geprüften Kandidaten bleiben/);
+});
 
 test("FN-Nutzung: Öffnen liest nur Status, Abbruch bestätigt nichts und frische Zustimmung bindet alle Kataloge", async () => {
   for (const accept of [false, true]) {
@@ -395,7 +504,7 @@ test("unklare Fälle verlangen separate Rückfrage; Abbruch, Fehler, Wiederholun
   assert.ok(calls.every((call) => !/\/(build|activate|rollback)$/.test(call.url)));
 });
 
-test("Zurückstellungen bleiben als kurzer Status sichtbar und kompatible Vormerkungen erlauben das zweite Bündel", () => {
+test("Zurückstellungen stehen nur in Details und kompatible Vormerkungen erlauben das zweite Bündel", () => {
   const visible = elements(), status = readyStatus();
   status.lifecycle.candidate.candidateId = "same-candidate";
   status.identities = { pending: true, candidateIncludesCurrent: false, classificationCandidateId: "same-candidate" };
@@ -412,13 +521,15 @@ test("Zurückstellungen bleiben als kurzer Status sichtbar und kompatible Vormer
   status.lifecycle.candidate.classificationDeferrals = { total: 480 };
   status.lifecycle.blockingConflictCount = 0;
   controller.render(status);
-  assert.equal(visible.taxonomyMasterConflicts.hidden, false);
-  assert.match(visible.taxonomyMasterConflicts.innerHTML, /480 unklare Fälle zurückgestellt/);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, true);
+  assert.equal(visible.taxonomyMasterTechnicalDetails.open, false);
+  assert.match(visible.taxonomyMasterTechnicalDetailsCopy.innerHTML, /480 neue CoL-Zuordnungen vorerst nicht übernommen/);
   assert.doesNotMatch(visible.taxonomyMasterConflicts.innerHTML, /data-master-conflict-save/);
   delete status.lifecycle.candidate;
   status.lifecycle.active.classificationDeferrals = { total: 480 };
   controller.render(status);
-  assert.match(visible.taxonomyMasterConflicts.innerHTML, /480 unklare Fälle zurückgestellt/);
+  assert.equal(visible.taxonomyMasterConflicts.hidden, true);
+  assert.match(visible.taxonomyMasterTechnicalDetailsCopy.innerHTML, /480 neue CoL-Zuordnungen vorerst nicht übernommen/);
 });
 
 test("laufender Masteraufbau blockiert parallele Aktionen und zeigt Fortschritt", () => {

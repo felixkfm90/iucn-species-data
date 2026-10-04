@@ -32,7 +32,7 @@ async function settle(predicate) {
 }
 
 function harness({ status = "awaiting-review", finalStatus = "completed", failReview = false,
-  confirm = true, failRestart = false, failReset = false, initializeReference = () => {} } = {}) {
+  confirm = true, failRestart = false, failReset = false, noReviewAssets = false, persistReview = false, initializeReference = () => {} } = {}) {
   const dialog = new Element(), form = new Element(), open = new Element(), close = new Element();
   const headerClose = new Element();
   headerClose.textContent = "×";
@@ -43,6 +43,7 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const state = { species: [] }, calls = [], confirmations = [];
   const filters = { search: new Element(), statusFilter: new Element(), flagFilter: new Element() };
   let dialogOptions, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
+  let reviewSubmitted = false;
   const context = vm.createContext({ document: {}, FormData: class {}, clearTimeout, setTimeout });
   new vm.Script(source).runInContext(context);
   const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } } };
@@ -74,13 +75,16 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
         if (failReset) throw new Error("Test: Ablehnungen unverändert");
         rejectedCount = 0; return { saved: true };
       }
-      if (route === "/api/pipeline/status") return {
-        status: statusReads++ ? finalStatus : status, error: "Karte fehlt; Übertragung angehalten", runId: "run",
-        reviewAssets: [{ type: "sound", safeName: "Rebhuhn", germanName: "Rebhuhn", scientificName: "Perdix perdix", url: "/sound.mp3" }],
-      };
+      if (route === "/api/pipeline/status") {
+        const first = statusReads++ === 0;
+        return {
+        status: persistReview && !reviewSubmitted ? status : first ? status : finalStatus, error: "Karte fehlt; Übertragung angehalten", runId: "run",
+        guidedSpeciesCreation: noReviewAssets, targets: [{ slug: "perdixperdix", germanName: "Rebhuhn" }],
+        reviewAssets: noReviewAssets ? [] : [{ type: "sound", safeName: "Rebhuhn", germanName: "Rebhuhn", scientificName: "Perdix perdix", url: "/sound.mp3" }],
+      }; }
       if (route.endsWith("/assets/map/preview")) return { token: "map-preview", newMap: { url: "/preview.jpg", dimensions: { width: 800, height: 1000 }, bytes: 1234 } };
       if (route.endsWith("/assets/map/save")) { species.assets.map.exists = true; return { saved: true }; }
-      if (route === "/api/pipeline/assets/review") { if (failReview) throw new Error("Medienprüfung fehlgeschlagen"); return {}; }
+      if (route === "/api/pipeline/assets/review") { if (failReview) throw new Error("Medienprüfung fehlgeschlagen"); reviewSubmitted = true; return {}; }
       throw new Error(`Unexpected route: ${route}`);
     },
     loadData: async () => { state.species = [species]; },
@@ -107,12 +111,53 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
     },
     async mapAction(value) { await map.emit("click", { target: action("data-new-species-map-action", value) }); },
     async soundAction() { await sound.emit("click", { target: action("data-new-species-sound-decision", "automatic") }); },
+    async finishSound() { await sound.emit("click", { target: { closest: (selector) => selector === "[data-new-species-sound-finish]" ? {} : null } }); },
     async upload(files, drop = false) {
       if (drop) await map.emit("drop", { target: { closest: () => ({}) }, dataTransfer: { files } });
       else await map.emit("change", { target: { matches: () => true, files } });
     },
   };
 }
+
+test("Neue Art ohne automatische Karte und Sound erreicht beide Schritte vor der Übertragung", async () => {
+  const h = harness({ noReviewAssets: true }); await h.start();
+  assert.equal(h.calls.find((c) => c.route === "/api/pipeline/start").body.guidedSpeciesCreation, true);
+  assert.match(h.map.innerHTML, /type="file"/);
+  assert.equal(h.calls.some((c) => c.route === "/api/pipeline/assets/review"), false);
+  await h.upload([{ name: "map.jpg", size: 1234 }]); await h.mapAction("save");
+  assert.equal(h.sound.hidden, false);
+  assert.match(h.sound.innerHTML, /Sound-Schritt abschließen/);
+  assert.equal(h.close.disabled, false);
+  await h.finishSound();
+  await settle(() => /erfolgreich angelegt/.test(h.get(".new-species-finish-message").textContent));
+  assert.deepEqual(h.calls.find((c) => c.route === "/api/pipeline/assets/review").body, { runId: "run", choices: [] });
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+});
+
+test("Leere Art-Medienprüfung bleibt nach Schließen wieder aufnehmbar, ohne erneute Artanlage", async () => {
+  const h = harness({ noReviewAssets: true, persistReview: true }); await h.start();
+  await h.upload([{ name: "map.jpg", size: 1234 }]); await h.mapAction("save");
+  await h.close.emit("click"); assert.equal(h.opened(), false);
+  await h.open.emit("click");
+  assert.equal(h.opened(), true);
+  assert.equal(h.sound.hidden, false);
+  assert.match(h.sound.innerHTML, /Sound-Schritt abschließen/);
+  await h.finishSound();
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+});
+
+test("Auch ohne aktuelle Soundaufnahme ist die bestätigte Wiederholung im Assistenten erreichbar", async () => {
+  for (const confirm of [true, false]) {
+    const h = harness({ noReviewAssets: true, confirm }); await h.start(); await h.mapAction("skip");
+    await h.get(".new-species-reset-sounds-button").emit("click");
+    const request = h.calls.find((c) => c.route === "/api/pipeline/assets/review");
+    assert.equal(Boolean(request), confirm);
+    if (confirm) assert.deepEqual(request.body, { runId: "run", choices: [], retrySoundSearch: true, confirmed: true });
+    assert.equal(h.calls.some((c) => c.route.includes("/rejections-")), false);
+    assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+  }
+});
 
 test("Neue Art: Datei und Drop nutzen lokale Bytes, Quellenlink ist vorbelegt; Abschluss bleibt bedienbar", async () => {
   for (const drop of [false, true]) {

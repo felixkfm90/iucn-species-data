@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { captureCatalogUsage, catalogUsageStatus, createCatalogUsageService, assertCatalogUsageRevision, catalogProtectedMasterIds } from "./lightroom-catalog-usage.mjs";
@@ -17,7 +17,7 @@ test("Nutzungs- und Automatikwege sind geschützte POST-Aktionen, kein Status-GE
   }
 });
 async function fixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-usage-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "fn-usage-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy"), catalogPath = path.join(directory, "current.lrcat");
   await fs.writeFile(catalogPath, "catalog fixture, never opened as SQLite");

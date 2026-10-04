@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
+import { explorerStoragePaths, EXPLORER_REPO_ROOT } from "./storage-paths.mjs";
 import { publishedTaxonomyDirectory, assertSeparatePublicationAllowed } from "./taxonomy-publication-storage.mjs";
 
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
@@ -27,14 +27,10 @@ function isRetryableWindowsError(error) {
   return ["EACCES", "EBUSY", "ENOTEMPTY", "EPERM"].includes(error?.code);
 }
 
-export function defaultLightroomSearchRoot(environment = process.env) {
+export function defaultLightroomSearchRoot(environment = process.env, repoRoot = EXPLORER_REPO_ROOT) {
   const configured = String(environment.FN_LIGHTROOM_SEARCH_ROOT ?? "").trim();
   if (configured) return path.resolve(configured);
-  const localAppData = String(environment.LOCALAPPDATA ?? "").trim();
-  if (localAppData) {
-    return path.join(localAppData, "FN Wildlife Travel", "Arten-Explorer", "lightroom");
-  }
-  return path.join(os.homedir(), ".fn-wildlife-travel", "arten-explorer", "lightroom");
+  return explorerStoragePaths({ environment, repoRoot }).searchRoot;
 }
 
 export function lightroomSearchSlotDirectory(searchRoot, slot = "active") {

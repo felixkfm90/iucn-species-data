@@ -18,7 +18,7 @@ local function quoteArgument(value)
   return '"' .. string.gsub(text, '"', '\\"') .. '"'
 end
 
-local function defaultSearchRoot(tempRoot)
+local function legacySearchRoot(tempRoot)
   local localAppData = cleanText(tempRoot) ~= "" and LrPathUtils.parent(tempRoot) or ""
   if localAppData == "" then
     return ""
@@ -27,6 +27,59 @@ local function defaultSearchRoot(tempRoot)
     localAppData,
     "FN Wildlife Travel/Arten-Explorer/lightroom"
   )
+end
+
+local function storageConfiguration()
+  local repositoryRoot = LrPathUtils.parent(LrPathUtils.parent(_PLUGIN.path))
+  local file = io.open(LrPathUtils.child(repositoryRoot, "storage-path.json"), "rb")
+  if not file then return nil, repositoryRoot end
+  local body = file:read("*a")
+  file:close()
+  local ok, value = pcall(Json.decode, body)
+  if not ok or type(value) ~= "table" or value.schemaVersion ~= 1 or value.state ~= "ready"
+    or type(value.dataRoot) ~= "string" or value.dataRoot == "" then
+    error("Speicherkonfiguration ungültig. Bitte den Speicherwechsel im Arten-Explorer prüfen.")
+  end
+  local dataRoot = value.dataRoot
+  if dataRoot == "Daten" then dataRoot = LrPathUtils.child(repositoryRoot, "Daten")
+  elseif not dataRoot:match("^%a:[/\\]") and not dataRoot:match("^[/\\][/\\]") and not dataRoot:match("^/") then
+    error("Der gemeinsame Datenpfad muss absolut sein.")
+  end
+  if not LrFileUtils.exists(dataRoot) then error("Der bestätigte Datenordner fehlt: " .. dataRoot) end
+  if value.legacyDataRoot or value.previousRepoRoot or value.migrationRevision then
+    local journalFile = io.open(LrPathUtils.child(dataRoot, ".storage-migration.json"), "rb")
+    if not journalFile then error("Der Nachweis des Datenumzugs fehlt.") end
+    local journalBody = journalFile:read("*a")
+    journalFile:close()
+    local journalOk, journal = pcall(Json.decode, journalBody)
+    if not journalOk or type(journal) ~= "table" or journal.schemaVersion ~= 1 or journal.state ~= "committed"
+      or type(journal.plan) ~= "table" or journal.plan.revision ~= value.migrationRevision
+      or journal.plan.sourceRoot ~= value.legacyDataRoot or journal.plan.repoRoot ~= value.previousRepoRoot
+      or type(journal.copied) ~= "table" or type(journal.plan.files) ~= "table" or #journal.copied ~= #journal.plan.files then
+      error("Der Datenumzug ist unvollständig oder sein Nachweis wurde verändert.")
+    end
+  end
+  return { dataRoot = dataRoot, legacyDataRoot = value.legacyDataRoot }, repositoryRoot
+end
+
+local function defaultSearchRoot(tempRoot)
+  local config, repositoryRoot = storageConfiguration()
+  if config then return LrPathUtils.child(config.dataRoot, "lightroom") end
+  local legacy = legacySearchRoot(tempRoot)
+  if legacy ~= "" and LrFileUtils.exists(LrPathUtils.parent(legacy)) then return legacy end
+  return LrPathUtils.child(repositoryRoot, "Daten/lightroom")
+end
+
+local function normalizedStoragePath(value)
+  local text = cleanText(value):gsub("\\", "/"):lower():gsub("/+$", "")
+  local config = storageConfiguration()
+  if config and config.legacyDataRoot then
+    local legacy = cleanText(config.legacyDataRoot):gsub("\\", "/"):lower():gsub("/+$", "")
+    if text == legacy or text:sub(1, #legacy + 1) == legacy .. "/" then
+      text = cleanText(config.dataRoot):gsub("\\", "/"):lower():gsub("/+$", "") .. text:sub(#legacy + 1)
+    end
+  end
+  return text
 end
 
 local function resolveCommandProcessor(tempRoot)
@@ -87,16 +140,6 @@ local function resolveNodePath(configuredPath)
   return "node.exe"
 end
 
-local function removeFile(path)
-  if path then
-    pcall(function()
-      if LrFileUtils.exists(path) then
-        LrFileUtils.delete(path)
-      end
-    end)
-  end
-end
-
 local function writeTextFile(path, content)
   local file, openError = io.open(path, "wb")
   if not file then
@@ -145,6 +188,11 @@ function TaxonomyHelper.searchRoot()
   local prefs = LrPrefs.prefsForPlugin()
   local configured = cleanText(prefs.searchRoot)
   if configured ~= "" then
+    local config = storageConfiguration()
+    if config and config.legacyDataRoot and normalizedStoragePath(configured)
+      == normalizedStoragePath(LrPathUtils.child(config.dataRoot, "lightroom")) then
+      return LrPathUtils.child(config.dataRoot, "lightroom")
+    end
     return configured
   end
   return defaultSearchRoot(LrPathUtils.getStandardFilePath("temp"))
@@ -160,8 +208,7 @@ function TaxonomyHelper.searchPackageStatus()
     local content = readTextFile(publicationPath)
     local ok, publication = pcall(Json.decode, content or "")
     local function samePath(left, right)
-      return cleanText(left):gsub("\\", "/"):lower():gsub("/+$", "")
-        == cleanText(right):gsub("\\", "/"):lower():gsub("/+$", "")
+      return normalizedStoragePath(left) == normalizedStoragePath(right)
     end
     if not ok or type(publication) ~= "table" or publication.schemaVersion ~= 1 then
       activeRoot = "" -- Fail closed instead of reporting a stale legacy package as active.
@@ -237,28 +284,16 @@ local function executeHelperRequest(payload, options)
     )
   end
 
-  local tempRoot = LrPathUtils.getStandardFilePath("temp")
   local searchRoot = TaxonomyHelper.searchRoot()
   if searchRoot == "" then
     error("Der lokale Speicherort des Lightroom-Suchpakets konnte nicht ermittelt werden.")
   end
+  local operation = require("TempSession").begin("Taxonomie-Hilfsanfrage")
   local requestId = LrUUID.generateUUID()
-  local requestPath = LrPathUtils.child(
-    tempRoot,
-    "fn-wildlife-taxonomy-request-" .. requestId .. ".json"
-  )
-  local responsePath = LrPathUtils.child(
-    tempRoot,
-    "fn-wildlife-taxonomy-response-" .. requestId .. ".json"
-  )
-  local commandPath = LrPathUtils.child(
-    tempRoot,
-    "fn-wildlife-taxonomy-command-" .. requestId .. ".cmd"
-  )
-  local logPath = LrPathUtils.child(
-    tempRoot,
-    "fn-wildlife-taxonomy-command-" .. requestId .. ".log"
-  )
+  local requestPath = operation:path("fn-wildlife-taxonomy-request-" .. requestId .. ".json")
+  local responsePath = operation:path("fn-wildlife-taxonomy-response-" .. requestId .. ".json")
+  local commandPath = operation:path("fn-wildlife-taxonomy-command-" .. requestId .. ".cmd")
+  local logPath = operation:path("fn-wildlife-taxonomy-command-" .. requestId .. ".log")
   payload.requestId = requestId
 
   local function executeRequest()
@@ -268,14 +303,7 @@ local function executeHelperRequest(payload, options)
       error("Die Anfrage konnte nicht geschrieben werden: " .. tostring(writeError))
     end
 
-    local helperCommand = table.concat({
-      quoteArgument(nodePath),
-      "--no-warnings",
-      quoteArgument(helperPath),
-      quoteArgument("--request=" .. requestPath),
-      quoteArgument("--response=" .. responsePath),
-      quoteArgument("--search-root=" .. searchRoot),
-    }, " ")
+    local helperCommand = operation:helperCommand(helperPath, requestPath, responsePath, searchRoot)
     local commandWritten, commandWriteError = writeTextFile(
       commandPath,
       "@echo off\r\n"
@@ -291,7 +319,9 @@ local function executeHelperRequest(payload, options)
       )
     end
 
-    local command = resolveCommandProcessor(tempRoot)
+    -- Windows runtime discovery remains based on the SDK's system temp drive,
+    -- never the D: plug-in scratch location.
+    local command = TaxonomyHelper.runtimeCommandProcessor()
       .. " /d /c "
       .. quoteArgument(commandPath)
     local exitCode = LrTasks.execute(command)
@@ -334,14 +364,19 @@ local function executeHelperRequest(payload, options)
   end
 
   local ok, result = LrTasks.pcall(executeRequest)
-  removeFile(requestPath)
-  removeFile(responsePath)
-  removeFile(commandPath)
-  removeFile(logPath)
+  operation:release()
   if not ok then
     error(result)
   end
   return result
+end
+
+function TaxonomyHelper.runtimeNodePath()
+  return resolveNodePath(LrPrefs.prefsForPlugin().nodePath)
+end
+
+function TaxonomyHelper.runtimeCommandProcessor()
+  return resolveCommandProcessor(LrPathUtils.getStandardFilePath("temp"))
 end
 
 function TaxonomyHelper.request(payload)

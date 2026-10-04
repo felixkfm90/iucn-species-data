@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
@@ -74,7 +74,7 @@ test("Register sperrt ungültige Beziehungen, manipulierte Historie und erneute 
 });
 
 async function fixture(t, type, { corrections = [], projectTaxa = [] } = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-identity-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-identity-"));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const value = input(type);
   const firstManifest = await buildTaxonomyMasterCandidate({ taxonomyRoot: root, colRelease: release("one"),

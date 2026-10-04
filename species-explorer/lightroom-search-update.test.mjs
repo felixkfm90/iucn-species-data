@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
@@ -31,7 +31,7 @@ test("Fehlerausgabe des Paketprozesses bleibt begrenzt", () => {
 });
 
 test("Paketneubau läuft als Hilfsprozess und bestätigt die aktive Masterversion", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-search-update-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "lightroom-search-update-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const taxonomyRoot = path.join(root, "taxonomy");
   const searchRoot = path.join(root, "lightroom");

@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
+import { tmpdir } from "../scripts/test-temp.mjs";
 
-test("bereinigt nur registrierte temporäre Explorer-Einträge", async (context) => {
-  const repoRoot = await mkdtemp(path.join(tmpdir(), "iucn-temp-retention-"));
+async function fixture(prefix) {
+  const root = tmpdir();
+  return mkdtemp(path.join(root, prefix));
+}
+
+test("Legacy-Namen ohne Eigentumsnachweis werden beim Schließen nicht gelöscht", async (context) => {
+  const repoRoot = await fixture("iucn-temp-retention-");
   context.after(async () => {
     const { rm } = await import("node:fs/promises");
     await rm(repoRoot, { recursive: true, force: true });
@@ -27,13 +32,15 @@ test("bereinigt nur registrierte temporäre Explorer-Einträge", async (context)
   await writeFile(restoreBackup, "sicherung");
 
   const report = await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" });
-  assert.equal(report.removed.length, 2);
+  assert.equal(report.removed.length, 0);
+  assert.equal(await readFile(managedFile, "utf8"), "temp");
+  assert.equal(await readFile(path.join(managedRun, "sound.mp3"), "utf8"), "temp");
   assert.equal(await readFile(foreignFile, "utf8"), "behalten");
   assert.equal(await readFile(restoreBackup, "utf8"), "sicherung");
 });
 
 test("Wartung respektiert die Aufbewahrungsfrist", async (context) => {
-  const repoRoot = await mkdtemp(path.join(tmpdir(), "iucn-temp-age-"));
+  const repoRoot = await fixture("iucn-temp-age-");
   context.after(async () => {
     const { rm } = await import("node:fs/promises");
     await rm(repoRoot, { recursive: true, force: true });
@@ -53,7 +60,7 @@ test("Wartung respektiert die Aufbewahrungsfrist", async (context) => {
 });
 
 test("Startbereinigung lässt frische Einträge möglicher laufender Instanzen bestehen", async (context) => {
-  const repoRoot = await mkdtemp(path.join(tmpdir(), "iucn-temp-startup-"));
+  const repoRoot = await fixture("iucn-temp-startup-");
   context.after(async () => {
     const { rm } = await import("node:fs/promises");
     await rm(repoRoot, { recursive: true, force: true });

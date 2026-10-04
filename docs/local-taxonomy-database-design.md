@@ -133,6 +133,19 @@ eine vorhandene Referenz kontrolliert migrieren und bei einem Fehler den bisheri
 beibehalten. Die große reproduzierbare Referenzdatenbank darf auch dann nicht unbemerkt im Git-Arbeitsverzeichnis,
 im Pages-Artefakt oder in normalen Projekt-Backups landen.
 
+Neue Nutzerpräferenz vom 3. Oktober 2026: Felix möchte einen gemeinsamen Daten-Unterordner beim Programm und
+den Hauptordner `D:\Arten-Explorer` statt `D:\IUCN_Datenbank`. Noch nicht migriert; der obige aktuelle
+AppData-Standard bleibt bis zum geprüften gemeinsamen Wechsel gültig. Das neue Ziel umfasst nicht nur das
+Lightroom-Suchpaket, sondern die zusammengehörigen Referenz-/Master-/Korrektur-/Auftrags-/Nutzungs-/Paketstände
+und Veröffentlichungszeiger. Mengen, Speicherplatz, Git-/Pages-/Backup-Ausschlüsse, Pfadbindungen, Verbraucher,
+Sicherung und Rückfall sind vorher zu prüfen. Konkrete Folgeplanung in der [aktuellen Roadmap](roadmap.md).
+
+Ergänzung vom 4. Oktober: der gemeinsame Daten-Unterordner beim Explorer wird der künftige Standard,
+der Datenpfad soll später über Einstellungen änderbar sein. Alle zusammengehörigen Schichten müssen dieselbe
+Konfiguration nutzen; keine isolierte Paketpfadänderung. Eigene Test-/Hilfsdateien werden separat im Explorer-temp
+gebündelt und beim kontrollierten Schließen bereinigt, ohne wiederanlaufbare Aufträge oder Belege zu löschen.
+Noch kein produktiver Speicherwechsel. [Temp-/Migrationsvertrag](temp-retention.md).
+
 ### 4.2 Verzeichnisstruktur
 
 ```text

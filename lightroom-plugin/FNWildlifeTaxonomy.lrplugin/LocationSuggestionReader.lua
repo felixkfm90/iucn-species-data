@@ -1,12 +1,9 @@
 local LrExportSession = import "LrExportSession"
 local LrFileUtils = import "LrFileUtils"
-local LrPathUtils = import "LrPathUtils"
 local LrProgressScope = import "LrProgressScope"
 local LrTasks = import "LrTasks"
 
 local LocationSuggestionReader = {}
-
-local operationSerial = 0
 
 local function cleanText(value)
   local text = tostring(value or "")
@@ -171,25 +168,6 @@ local function fillIptcFallbacks(values, app13)
   return values
 end
 
-local function temporaryDirectory()
-  operationSerial = operationSerial + 1
-  local suffix = tostring(os.time()) .. "-" .. tostring(operationSerial)
-  return LrPathUtils.child(
-    LrPathUtils.getStandardFilePath("temp"),
-    "fn-wildlife-location-" .. suffix
-  )
-end
-
-local function cleanupDirectory(path)
-  if not path or path == "" then
-    return
-  end
-  for filePath in LrFileUtils.recursiveFiles(path) do
-    pcall(LrFileUtils.delete, filePath)
-  end
-  pcall(LrFileUtils.delete, path)
-end
-
 local function exportSettings(path)
   return {
     LR_exportServiceProvider = "com.adobe.ag.export.file",
@@ -226,14 +204,8 @@ function LocationSuggestionReader.resolve(photos)
     return result
   end
 
-  local outputDirectory = temporaryDirectory()
-  local directoryOk, directoryError = LrFileUtils.createAllDirectories(outputDirectory)
-  if not directoryOk then
-    for _, photo in ipairs(selectedPhotos) do
-      result.failedByPhoto[photo] = tostring(directoryError or "Temporärer Ordner konnte nicht erstellt werden.")
-    end
-    return result
-  end
+  local operation = require("TempSession").begin("Lightroom-Ortsvorschläge")
+  local outputDirectory = operation.root
 
   local progress = LrProgressScope({
     title = "Lightroom-Ortsvorschläge übernehmen",
@@ -249,30 +221,42 @@ function LocationSuggestionReader.resolve(photos)
   -- gestartet werden; die kurze Pause gibt Lightrooms Export-Task Zeit, die
   -- Renditions anzulegen. Diese Reihenfolge entspricht dem bewährten
   -- Commit-Locations-Ablauf von Any Tag.
-  session:doExportOnNewTask()
-  LrTasks.sleep(0.1)
-  for _, rendition in session:renditions({
-    progressScope = progress,
-    renderProgressPortion = 1,
-    stopIfCanceled = true,
-  }) do
-    local success, pathOrMessage = rendition:waitForRender()
-    if success then
-      local readOk, data = pcall(LrFileUtils.readFile, pathOrMessage)
-      if readOk and type(data) == "string" then
-        local values, app13 = locationValuesFromJpeg(data)
-        result.valuesByPhoto[rendition.photo] = fillIptcFallbacks(values, app13)
+  local exportOk, exportError = LrTasks.pcall(function()
+    session:doExportOnNewTask()
+    LrTasks.sleep(0.1)
+    for _, rendition in session:renditions({
+      progressScope = progress,
+      renderProgressPortion = 1,
+      -- Even cancellation must finish waiting for started renderers before any
+      -- directory can be released. The action remains canceled for the writer.
+      stopIfCanceled = false,
+    }) do
+      local success, pathOrMessage = rendition:waitForRender()
+      if success then
+        operation:register(pathOrMessage)
+        local readOk, data = pcall(LrFileUtils.readFile, pathOrMessage)
+        if readOk and type(data) == "string" then
+          local values, app13 = locationValuesFromJpeg(data)
+          result.valuesByPhoto[rendition.photo] = fillIptcFallbacks(values, app13)
+        else
+          result.failedByPhoto[rendition.photo] = tostring(data or "Temporäre Vorschau konnte nicht gelesen werden.")
+        end
       else
-        result.failedByPhoto[rendition.photo] = tostring(data or "Temporäre Vorschau konnte nicht gelesen werden.")
+        result.failedByPhoto[rendition.photo] = tostring(pathOrMessage or "Temporärer Export fehlgeschlagen.")
       end
-      pcall(LrFileUtils.delete, pathOrMessage)
-    else
-      result.failedByPhoto[rendition.photo] = tostring(pathOrMessage or "Temporärer Export fehlgeschlagen.")
     end
-  end
+  end)
   result.canceled = progress:isCanceled()
   progress:done()
-  cleanupDirectory(outputDirectory)
+  if exportOk then
+    operation:release()
+  else
+    -- A thrown SDK error does not prove every renderer stopped. Leave the
+    -- lease for process-verified crash/start recovery, never delete beneath it.
+    for _, photo in ipairs(selectedPhotos) do
+      result.failedByPhoto[photo] = tostring(exportError or "Temporärer Export nicht sicher abgeschlossen.")
+    end
+  end
   return result
 end
 

@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
@@ -20,7 +20,7 @@ const corrections = [{ scientificName, kingdom: "Bacteria", germanName: "Bevorzu
 const release = (version, date) => ({ releaseId: version, providerVersion: version, importedAt: date.toISOString() });
 const fingerprint = async (filename) => crypto.createHash("sha256").update(await fs.readFile(filename)).digest("hex");
 async function baseline(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-classification-candidate-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "fn-classification-candidate-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy"), searchRoot = path.join(directory, "lightroom");
   await buildTaxonomyMasterCandidate({ taxonomyRoot: root, colRelease: release("col-fixture-old", FIRST), colRecords: [],
@@ -125,7 +125,7 @@ test("veränderte Übersicht oder ausgeräumte Konfliktzeile kann die gebündelt
 });
 
 test("mehr als 100 Klassifikationsfälle bleiben trotz kompakter Statusliste vollständig gesperrt", async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-classification-limit-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "fn-classification-limit-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy");
   const records = Array.from({ length: 105 }, (_, index) => ({ ...external,

@@ -40,6 +40,8 @@ const SKIPPED_DIRECTORIES = new Set([
   "node_modules",
   "pipeline-asset-backups",
   "staging",
+  "temp",
+  "Daten",
 ]);
 
 function collectTextFiles(repoRoot, relativeDirectory, output) {
@@ -62,6 +64,7 @@ export function repositoryTextFiles(repoRoot) {
   for (const entry of fs.readdirSync(repoRoot, { withFileTypes: true })) {
     if (
       entry.isFile()
+      && entry.name !== "storage-path.json"
       && !GENERATED_ROOT_FILES.has(entry.name)
       && TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())
     ) output.push(entry.name);

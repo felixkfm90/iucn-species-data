@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { after, before, test } from "node:test";
 
@@ -22,7 +22,7 @@ let root;
 let store;
 
 before(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-store-"));
+  root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-store-"));
   const taxonomyRoot = path.join(root, "taxonomy");
   await importTaxonomyPrototype({
     fixtureDirectory: FIXTURE_DIRECTORY,

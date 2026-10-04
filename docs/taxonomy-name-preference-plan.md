@@ -1,6 +1,27 @@
 # Bevorzugte Artnamen in Explorer und Lightroom
 
-Stand: 2026-10-01
+Stand: 2026-10-04
+
+## Lightroom-Buttonbeschriftungen ab 0.4.24.18
+
+Die vier vorhandenen Aktionen stehen im Zuweisungsfenster in einer Reihe. Kürzere Titel und Tooltips erläutern
+die unterschiedliche Wirkung; API, Bestätigungen, Revisionsbindung und Speicherung bleiben unverändert.
+
+| Aktueller Button | Bisheriger Lightroom-Titel | Wirkung |
+| --- | --- | --- |
+| Als bevorzugt speichern | Namenswahl übernehmen | Die aktuell ausgewählte deutsche Variante global für Lightroom und Explorer speichern, auch ohne Fotozuweisung. Geschützte eigene Wahl weiterhin nur nach Rückfrage ersetzen. |
+| Vorherigen Namen auswählen | Vorherige Namenswahl auswählen | Nur den früher bevorzugten Namen im Auswahlfeld vorbelegen. Noch keine globale Änderung; erst Speichern oder erfolgreiche Fotozuweisung übernimmt die Wahl. |
+| Anbieterstandard verwenden | Anbieterstandard verwenden ... | Nach Vorschau/Rückfrage den deutschen Anbieternamen global verwenden; künftige Anbieteraktualisierungen zulassen. Nicht nur eine Vorauswahl. |
+| Speichern wiederholen | Globale Namenswahl erneut speichern | Nur nach gescheitertem globalem Speichern dieselbe offene Wahl nochmals veröffentlichen. Keine erneute Fotozuweisung; nach Erfolg wieder deaktiviert. |
+
+Bereits zugewiesene Fotos und Projektdateien werden durch diese Namensaktionen nicht umbenannt. Der separate
+Explorer-Button und die Bestätigungsdialoge dürfen weiterhin `Namenswahl übernehmen` heißen; die obige Tabelle
+bezieht sich auf die kompakte Lightroom-Buttonreihe. Nach Detailaktualisierung wird der Speicherbutton erneut
+gegen den tatsächlich bevorzugten Namen geprüft. Sichtabnahme der neuen Reihe bleibt offen.
+Ab 0.4.24.19 erscheinen tatsächliche Namensrückmeldungen zusammen mit dem Such-/Aktionsstatus; dessen Tooltip
+enthält den vollständigen Text. Die bislang auch leer zweizeilig reservierte Namensstatusfläche entfällt.
+Die zuletzt verwendeten Arten bleiben ausschließlich ausdrücklich wählbare Suchabkürzungen: leere Startauswahl,
+auch nach Zuweisung und Wiederöffnen, keine neue Namenspräferenz durch Öffnen dieser Auswahl.
 
 ## Kompatibilität bereits aktiver Namenswahlen
 

@@ -1,3 +1,4 @@
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,9 +12,10 @@ import { taxonomyBuildCacheUsage } from "../species-explorer/taxonomy-build-cach
 // Worker threads inherit --import but share the PID. Observe/write only once.
 if (isMainThread) observe();
 function observe() {
-  const scratch = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../Testlauf");
+  const scratch = benchmarkScratchRoot;
   const root = path.resolve(process.env.FN_TAXONOMY_BENCHMARK_ROOT || "");
   assert.equal(path.dirname(root), scratch);
+  assertScratchPath(root, { inspectTree: true });
   assert.match(path.basename(root), /^pipeline-benchmark-[a-zA-Z0-9]+$/u);
   assert.ok(fs.statSync(root).isDirectory() && !fs.lstatSync(root).isSymbolicLink());
   const key = process.env.FN_TAXONOMY_BENCHMARK_KEY;

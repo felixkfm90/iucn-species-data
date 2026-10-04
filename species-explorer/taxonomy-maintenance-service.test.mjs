@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -12,7 +12,7 @@ import {
 } from "./taxonomy-maintenance-service.mjs";
 
 test("Referenzstatus liefert echte Messmengen getrennt von alten Phasenmarken und löscht veraltete Zähler", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-progress-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-progress-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
     referenceService: { reset() {} } });
@@ -45,7 +45,7 @@ test("Importfehler werden ohne technischen Stacktrace angezeigt", () => {
 });
 
 test("CoL-Referenzlücken können bewusst durch den aktiven Master bestätigt werden", async (context) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-conflict-decision-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-conflict-decision-"));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   const mappingsPath = path.join(root, "species-reference-mappings.json");
   const conflictReport = {
@@ -134,7 +134,7 @@ async function waitForTerminal(service) {
 }
 
 test("Ein bestätigter Quellenplan bleibt beim Warten auf Lightroom exakt gebunden", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-bound-update-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-bound-update-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   let activeRelease = "col-old-release", milliseconds = Date.parse("2026-10-03T08:00:00Z");
   const activated = [];
@@ -175,7 +175,7 @@ function latestRelease() {
 
 test("API-404-Ersatz läuft nur nach Bestätigung durch die Wartung; Downloadfehler lässt Altstand und Folgeschritte unangetastet", async (t) => {
   for (const succeeds of [true, false]) await t.test(succeeds ? "datierter Archivweg" : "Ersatzabruf scheitert", async (st) => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-dated-archive-"));
+    const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-dated-archive-"));
     st.after(() => fs.rm(root, { recursive: true, force: true }));
     const release = normalizeCatalogueRelease({ key: 316441, issued: "2026-09-25", origin: "xrelease" });
     const datedUrl = "https://download.checklistbank.org/col/monthly/2026-09-25_xr_coldp.zip";
@@ -234,7 +234,7 @@ test("API-404-Ersatz läuft nur nach Bestätigung durch die Wartung; Downloadfeh
 });
 
 test("Aktualisierung braucht Vorschau und aktiviert erst nach dem Artenabgleich", async (context) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-maintenance-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-maintenance-"));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   let pointer = { activeRelease: "col-old-release", previousRelease: null };
   const sequence = [];
@@ -325,7 +325,7 @@ test("Aktualisierung braucht Vorschau und aktiviert erst nach dem Artenabgleich"
 });
 
 test("Fehler vor der Aktivierung lassen die bisherige Referenz aktiv", async (context) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-maintenance-failure-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-maintenance-failure-"));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   const pointer = { activeRelease: "col-old-release", previousRelease: null };
   const service = createTaxonomyMaintenanceService({
@@ -365,7 +365,7 @@ test("Fehler vor der Aktivierung lassen die bisherige Referenz aktiv", async (co
 });
 
 test("aktuelle CoL-Daten können unabhängig um Ergänzungsnamen aktualisiert werden", async (context) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-maintenance-supplements-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-maintenance-supplements-"));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(
     path.join(root, "species_list.json"),

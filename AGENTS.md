@@ -1,11 +1,151 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
+
+## Aktuelle Arbeitsserie – 4. Oktober 2026
+
+Felix beauftragt die offenen Vor-Audit-Arbeiten und zusätzlich den Goldbaumsteiger-Artassistenten.
+Explorer und Lightroom laut Nutzer geschlossen; unabhängige lokale Prozessprüfung bestätigt. Keine neue
+Artanlage, Quellenaktualisierung, Taxonomieaktivierung, Katalogänderung oder Schutzumgehung beauftragt.
+Goldbaumsteiger war bereits manuell fertiggestellt und wird durch die Reparatur nicht erneut angelegt.
+
+Lokaler Plug-in-Quellstand **0.4.24.21**. Zentraler Speicherresolver und geprüfter Umzugsvertrag implementiert,
+gemeinsame Daten unter dem Programm, später absolut konfigurierbar. Neuer Standard Daten; vorhandene
+Installation bleibt bis zum ausdrücklich bestätigten Wechsel lesbar. Gewünschter finaler Hauptordner
+D:\Arten-Explorer. Die laufende Codex-Projektbindung, Desktop-Verknüpfung und Lightroom-Registrierung müssen
+vor einer tatsächlichen Hauptordnerumbenennung gemeinsam umgestellt werden, kein isoliertes Umbenennen.
+
+Produktiver Datenumzug abgeschlossen: 207 Dateien, 98.603.910.132 Bytes unter D:\IUCN_Datenbank\Daten.
+Alle Kopierprüfwerte identisch; vor Übernahme Ziel erneut vollständig und jedes Original unmittelbar vor
+Entfernung geprüft. Vollständiges quality:ci zuvor bestanden und Verbraucher unabhängig geschlossen.
+Journal committed, Konfiguration ready; alle 207 alten Originale einzeln entfernt, AppData-Wurzel leer,
+kein Link und keine dortige Doppelablage. Bytegleiche Daten am neuen Ort und gebundener Rückweg erhalten.
+Historische Belegbytes und
+Revisionsbindungen bleiben unverändert; nur Zugriffe über das verifizierte Umzugsjournal projizieren.
+Details und aktuelle Abschlussgrenze: docs/storage-migration.md.
+
+Eigene Laufzeitdateien jetzt unter temp/explorer, Tests unter temp/tests und Plug-in-Helfer unter
+Plug-in-temp, mit Eigentums-, Operations- und Helferbindung. Schließen wartet auf die eigenen Operationen;
+fremde, aktive, unbekannte sowie dauerhafte Wiederanlauf-/Review-/Sicherungsdateien bleiben erhalten.
+Alte gemeinsame Ablagen ohne Prozessnachweis nicht allein nach Alter oder Namen löschen.
+Tests und Messwerkzeuge umgestellt; Git/Pages/Scanner und NAS-Backup berücksichtigen Daten und Temp.
+Verträge: docs/temp-retention.md und docs/test-temp-contract.md. Die zuvor bestätigten 15 Altdateien
+liegen unverändert in temp/altreste-2026-10-04; Manifest/Rückweg erhalten.
+
+Artassistent: Einzelart-Suchlauf hält auch ohne neue Karte/Sound vor der Veröffentlichung im Reviewzustand.
+Karten-Dateiimport/Überspringen und expliziter Sound-Abschluss bleiben erreichbar; geschlossener Assistent
+öffnet denselben gespeicherten Auftrag ohne zweite Artanlage. Erneute Soundsuche bei leerem Ergebnis mit
+artbezogener Rückfrage, ohne Dateiverlust. Fehlende Karte verhindert weiterhin Veröffentlichung, aber nicht
+lokalen Abschluss der übrigen Schritte. Keine fehlende Karte als erfolgreicher Download ausgeben.
+Technische Gegenproben bestanden; Goldbaumsteiger nicht produktiv verändert. Erneute native Bedienabnahme
+dieser Regression offen. Vertrag: docs/add-species-workflow.md.
+Zusätzliche Abschlussprobe: bestätigte Soundsuche ohne offene Medien verändert nur die eigene Ablehnung,
+erhält fremde Ablehnungen/Schutzmarkierungen/Dateien und denselben Artauftrag. Ein dabei gefundener
+Kurzschluss des leeren Sound-Wiederholungslaufs korrigiert: auch danach fehlende Karte als noch offene
+Übertragung melden statt den neuen Artauftrag als unveränderten Sonderlauf zu beenden. 17/17 gezielte
+Assistent-/Pipeline-Gegenproben bestanden; keine produktive Art- oder Assetänderung.
+
+Historische 187 Zurückstellungen werden neutral als Erhalt bisheriger Quellenzuordnungen dargestellt,
+nicht als heutiger Fehler/Entscheidungsauftrag. Echte neue Konflikte bleiben gesperrt.
+Isolierte Temp-/Umzugsprüfung 40/40, Explorer-Betrieb 26/26, Artassistent 11/11 und eigener Pipelinevertrag
+1/1 bestanden. Vollständiges quality:ci Exit 0: 50 Gruppen/1.177 gemeldete Tests, darunter 423 Master-/Betriebs-
+und 239 Lightroom-/Pakettests, keine Fehler/Abbrüche/Skips. Lesender neuer Resolver, Versionsvergleich und
+Suchhelfer bestätigen den unveränderten gemeinsamen aktiven Stand/Vorgänger sowie Weissstorch/Rebhuhn mit
+eigener Namenswahl. Gezielter Plug-in-Vertrag am neuen Datenpfad erneut 21/21 bestanden.
+Das vollständige Gate nach dem produktiven Datenwechsel und der zusätzlichen Sound-Abschlusskorrektur
+erneut mit denselben 50 Gruppen/1.177 Tests bestanden. 78 Markdown-Dateien ohne fehlende lokale Verweise.
+Hauptordnerumbenennung, neue native Bedienabnahme und Phase-10.5-Gesamtaudit weiterhin getrennt offen.
+Nachweis: docs/audits/2026-10-04-storage-and-species-wizard.md. Pages dieser Serie noch nicht nachgewiesen.
+
+## Frühere Speicheraufnahme vor der Umsetzung – 4. Oktober 2026
+
+Felix verlangt einen später einstellbaren gemeinsamen Datenpfad, standardmäßig als Daten-Unterordner beim
+Explorer, nicht AppData. Der gewünschte Hauptordner bleibt D:\Arten-Explorer; Umzug und Umbenennung noch nicht
+ausgeführt. Lesende Codeprüfung bestätigt weiterhin AppData-Standards in taxonomy-storage.mjs und
+lightroom-search-storage.mjs. Keine neue Defaultumstellung, die den bisherigen Bestand unsichtbar macht.
+Eigene Test-/Vorschau-/Hilfsdateien künftig ausschließlich im Explorer-temp; Plug-in-Arbeitsdateien in eigenem
+temp beim Plug-in. Kontrolliertes Explorer-/Lightroom-Schließen leert ausschließlich entbehrliche eigene
+Sitzungsreste nach Beendigung ihrer Prozesse; keine fremden oder noch aktiven Dateien. Benötigte Aufträge,
+Wiederanlaufdaten, Reparaturentscheidungen, Journale, Nutzungsquittungen und Sicherungen sind dauerhafte Daten,
+kein automatisch löschbarer Tempbestand. Absturzreste beim Folgestart nur nach Eigentums-/Prozessprüfung.
+Noch nicht implementiert: zentraler konfigurierbarer Pfad, vollständige Temp-Konsolidierung und Lightroom-
+Schließbereinigung. PluginShutdown läuft auch bei Plug-in-Reload/Deaktivierung, kein pauschaler LR-Schließnachweis.
+Aktuelle Registry liefert bei temp:check keine abgelaufenen verwalteten Reste. Testlauf enthält weiterhin
+benötigte Prüf-/Reparaturbelege; nicht pauschal verschieben oder beim Schließen leeren. Vier vorgeschlagene
+Altbestände ohne Code-/Dokumentationsverweis: lifelistxp-guide, sound-cut-real und zwei Serverlogs vom 5. September,
+15 Dateien/3.037.671 Bytes. Konkrete Verschiebung anschließend durch Felix bestätigt und nach
+temp/altreste-2026-10-04 durchgeführt. Alle 15 SHA-256-Prüfwerte/Größen nachher identisch, ursprüngliche vier
+Quellen entfernt, nichts gelöscht oder überschrieben. Quell-/Ziel-/Prüfwertmanifest verschiebung.json im
+Zielordner, durch Rückverschieben wiederherstellbar. temp/ in Git ignoriert; vollständige neue Temp-/Backup-
+Konsolidierung bleibt offen. Aktuelles Lightroom/Electron geöffnet; keine produktive Arbeitsdatei angefasst.
+Vertrag, Grenzen und nächste Prüfung: docs/temp-retention.md und aktuelle Roadmap.
+
+## Aktuelle Verwaltungsvereinfachung – 4. Oktober 2026
+
+Felix hat den dokumentierten Menüvorschlag mit „los“ freigegeben und bündige Erklärungstexte unter den
+Buttons verlangt. Lokaler Plug-in-Quellstand 0.4.24.20: sechs Hauptzugänge Taxonomie zuweisen, Art-Favorit,
+Ort und Zeit, Statistik und Exporte, FN-Daten aktualisieren sowie Weitere Aktionen. Ort/Zeit öffnet die drei
+Auswahlaktionen; Weitere Aktionen enthält Taxonomie entfernen, Artänderungsprüfung, Gesamtentfernung,
+Smart-Sammlungen und manuelle Nutzungserfassung. Alle zwölf Skriptziele und ihre Bestätigungen erhalten.
+Ein Fenster je Menüseite, Zurück und Schließen schreibfrei; Skriptausführung erst nach Menüschließung,
+Doppelklickschutz und sichtbarer Fehler mit erneuter Öffnung. Alle Karten 330 Pixel breit, Kurztext mit
+3-Pixel-Ausgleich zur sichtbaren nativen Windows-Buttonkante; tatsächliche Pixelabnahme noch offen.
+Explorer: allgemeine Arten-/Medienläufe und Taxonomieupdate/Suche bleiben im Hauptbereich. Karten-/Soundsonderläufe,
+Vergleichsgrundlage, Rollback, Artänderungen, Speicherpflege, Backup und Bereinigung unter eingeklapptem
+Weitere Aktionen, auch nach Wiederöffnung. Vorhandene IDs, Controller, Vorschauen und Schutzprüfungen erhalten;
+Pause/Fortsetzen und offene Entscheidungen weiterhin zustandsabhängig sichtbar. Keine neue Bestandsautomatik.
+Gezielte Prüfungen: Plug-in-Vertrag 21/21; mit Entfernungs-/Statistik-Lua-Gegenproben 49/49. Explorer-Menü/
+Updatevertrag 50/50, ergänzende Pipeline-/Bestätigungs-/Einstellungs-/Taxonomie-UI-Gegenproben 49/49 erfolgreich.
+Syntax 374 Dateien, Stil, 75 Markdown-Verweise, synchronisierter Projektstatus und Diffprüfung bestanden.
+Kein erneutes vollständiges quality:ci für diesen engen Menüumbau, keine native GUI-Abnahme behauptet.
+Keine produktive Katalogaktion, Quellen-/Master-/Paketänderung, Bereinigung, Pfadmigration oder Veröffentlichung.
+Explorer-JS/CSS unabhängig von Squarespace; Footer/Custom-CSS geprüft, keine eingebundene Version betroffen.
+Vertrag und verbleibende native Sichtprüfung: docs/lightroom-search-package.md.
+
+## Vorherige Fensterkorrektur – 4. Oktober 2026
+
+Felix' Screenshot widerlegt die Layoutannahme aus 0.4.24.18: native Taxonomieliste weiter nur SDK-Standardbreite,
+leere zweizeilige Namensrückmeldung und unterer Leerstreifen. Lokaler Quellstand 0.4.24.19 legt Fensterinhalt
+960 Pixel, gleiche horizontale Gruppenränder 10 Pixel und gemeinsame Inhaltsspalten/Listenbreite 940 Pixel fest.
+Korrekturzeile nutzt dieselbe Spalte; keine vertikale Wurzelfüllung. Undokumentierte width/height/resizable-Argumente
+am FloatingDialog entfernt, neue Framekennung V7 statt alter gespeicherter Geometrie. Namensrückmeldungen teilen
+das bestehende Statusfeld samt vollständigem Tooltip, kein reserviertes Leerfeld. Zuletzt verwendet bietet die
+gespeicherten Arten nach leerer Startauswahl; Öffnen erst nach expliziter Auswahl und verfügbarem Paket. Auch nach
+Zuweisung/Wiederöffnen keine Vorbelegung. Namens-, Foto-, Stichwort-, Entfernungs- und Update-Schreibverträge erhalten.
+Plug-in-Vertrag 21/21 erfolgreich, zusammen mit Entfernungs-/Statistik-Lua-Gegenproben 49/49 ohne Fehler,
+Abbrüche oder Skips. Neue Gegenproben führen das reale Lua-Fenster mit SDK-Simulation aus. Syntax 374 Dateien,
+Stil, 75 Markdown-Verweise, aktueller Projektstatus und Diffprüfung bestanden; kein vollständiges quality:ci.
+Native Pixel-/Fensterhöhenabnahme noch erforderlich, kein produktiver Kataloglauf zur Änderung.
+Vereinfachung für Verwaltungsfenster und Explorer zunächst als Vorschlag dokumentiert, anschließend durch Felix
+freigegeben und in 0.4.24.20 umgesetzt, siehe oben. Keine automatische Bestandsänderung oder Bereinigung daraus ableiten.
+Vertrag und Prüfgrenzen: docs/lightroom-search-package.md. Kein Commit/Push oder Speicherwechsel beauftragt.
+
+## Vorherige Bedienglättung – 3. Oktober 2026
+
+Felix bestätigt die Orts-/Zeitentfernung für Einzel- und Mehrfachauswahl sowie die neuen Statistikexporte
+anhand eines Fotos praktisch; vorher bewusster Statistik-Neuaufbau. Keine pauschale Großbestands-/Gesamtabnahme.
+Neuer lokaler Plug-in-Quellstand 0.4.24.18: Orts-/Zeitentfernung direkt in Schritt 4 neben Taxonomie entfernen,
+Vorschau und Korrekturzeile ohne überschießende feste Mindestbreite, kleiner Kontrollabstand. Vier Namensaktionen
+in einer Reihe mit klareren Titeln und Tooltips; bereits gespeicherte Wahl deaktiviert den Speicherbutton frisch.
+Verwaltungsbuttons ohne Auslassungspunkte, sichtbare Kurztexte und ausführlichere Tooltips. Keine tatsächlich
+obsolete Aktion: Auswahl-/Katalogabgleich bleiben verschieden, manuelle Nutzungsaufnahme als Erstregistrierung/
+Wiederherstellung weiter erforderlich, normale Updateerfassung automatisch. Fach-/Schreiblogik unverändert.
+Sichtbefund am 4. Oktober: Breite/Leerflächen nicht passend, siehe gezielte Korrektur oben. Plug-in-Vertrag 19/19, gemeinsam mit Entfernungs- und
+Statistik-Lua-Dateien 47/47 erfolgreich; Syntax 374 Dateien, Stil, 75 Markdown-Verweise, Status/Diff bestanden.
+Kein erneutes vollständiges quality:ci für die enge UI-Anpassung, keine produktive GUI-Abnahme behauptet.
+Keine produktive Datenänderung, kein Neuaufbau oder neuer Commit-/Push-Auftrag für diese UI-Anpassung.
+Felix bevorzugt künftig einen gemeinsamen Daten-Unterordner beim Programm und den Hauptordnernamen
+D:\Arten-Explorer statt D:\IUCN_Datenbank. Zielpräferenz bestätigt, konkrete Umstellung noch nicht durchgeführt;
+D:\Arten-Explorer bei lesender Vorprüfung noch nicht vorhanden. Konkreten Daten-Unterordner, Mengen, Ausschlüsse, Sicherung,
+gemeinsame Pfad-/Zeigerumstellung und Rückfall vor einer Migration klären. Nicht nur das Suchpaket versetzen.
+Desktop-Verknüpfung, Lightroom-Plug-in-Registrierung und Codex-Projektpfad gemeinsam berücksichtigen;
+aktuell geöffneten Arbeitsordner nicht durch isoliertes Umbenennen für Verbraucher unerreichbar machen.
+Details: docs/lightroom-search-package.md, docs/taxonomy-name-preference-plan.md und aktuelle Roadmap.
 
 ## Neuer Bedienbefund und Reparatur – 3. Oktober 2026
 

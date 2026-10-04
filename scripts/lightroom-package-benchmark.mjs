@@ -1,3 +1,4 @@
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { readdirSync, statSync } from "node:fs";
@@ -16,11 +17,12 @@ import { buildLightroomSearchPackage, verifyLightroomSearchPackage } from "../sp
 import { activateLightroomSearchPackage, lightroomSearchDatabasePath } from "../species-explorer/lightroom-search-storage.mjs";
 import { openLightroomSearchStore } from "../species-explorer/lightroom-search-store.mjs";
 
-const script = fileURLToPath(import.meta.url), scratch = path.resolve(path.dirname(script), "../Testlauf");
+const script = fileURLToPath(import.meta.url), scratch = benchmarkScratchRoot;
 const measuredTime = new Date("2026-09-03T12:00:00.000Z");
 function ownedRun(directory) {
   const resolved = path.resolve(directory);
   assert.equal(path.dirname(resolved), scratch);
+  assertScratchPath(resolved, { inspectTree: true });
   assert.match(path.basename(resolved), /^package-benchmark-[a-zA-Z0-9]+$/u);
   return resolved;
 }
@@ -125,6 +127,7 @@ async function subprocess(root, mode, count, scenario) {
 export async function runPackageBenchmark({ count = 1000, scenario = "sparse", repeats = 2 } = {}) {
   benchmarkRows(count, scenario);
   assert.ok(Number.isInteger(repeats) && repeats >= 1 && repeats <= 3, "Ein bis drei Messpaare erforderlich.");
+  assertScratchPath(scratch, { allowRoot: true });
   await fs.mkdir(scratch, { recursive: true });
   const root = ownedRun(await fs.mkdtemp(path.join(scratch, "package-benchmark-")));
   try {
@@ -138,7 +141,7 @@ export async function runPackageBenchmark({ count = 1000, scenario = "sparse", r
       for (const mode of trial % 2 ? ["delta", "full"] : ["full", "delta"]) {
         const target = path.join(root, "sample");
         assert.equal(path.dirname(target), ownedRun(root));
-        await fs.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 80 });
+        await fs.rm(assertScratchPath(target, { inspectTree: true }), { recursive: true, force: true, maxRetries: 5, retryDelay: 80 });
         process.stderr.write(`Paketmessung: ${count} Arten, ${scenario}, Paar ${trial}, ${mode}\n`);
         const result = await subprocess(root, mode, count, scenario);
         const { digests, searches, ...metrics } = result;

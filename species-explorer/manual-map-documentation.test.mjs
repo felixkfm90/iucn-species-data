@@ -80,3 +80,11 @@ test("Browserangabe und eigenständiger Pipeline-Schutz sind keine technische He
   assert.match(result, /IUCN-Browserimport laut Nutzerangabe/);
   assert.match(result, /nicht technisch verifiziert/);
 });
+
+test("ältere ausgeschriebene Schutz-Zählung wird bei zusätzlichem Browserimport frisch berechnet", () => {
+  const markdown = "Aktuell sind fünf Karten durch bestehende manuelle Altmarkierungen geschützt. Weitere Hinweise bleiben.\n\n## Pflege-Regeln\n";
+  const assets = { Goldbaumsteiger: { map: { manual: false, protectFromPipeline: true } } };
+  const result = synchronizeManualMapDocumentation(markdown, { assets }, "2026-10-04");
+  assert.match(result, /Aktuell sind 1 Karte als geschützt dokumentiert\. Weitere Hinweise bleiben\./);
+  assert.doesNotMatch(result, /fünf Karten/);
+});

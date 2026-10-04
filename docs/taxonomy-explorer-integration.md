@@ -212,8 +212,9 @@ Im Wartungsbereich wird die installierte Referenz genau einmal als `Aktive Refer
 Detailzeile nennt nur die neueste verfügbare Version. Arten mit Konflikten oder Referenzlücken stehen nach
 `Manuell zu prüfen:` in einer eigenen Zeile, damit die Information auch bei mehreren Arten lesbar bleibt.
 
-Die aktive vollständige Datenbank liegt außerhalb des Repositorys unter
-`%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\releases\<Release>\taxonomy.sqlite`. Sie darf zur
+Die aktive vollständige Datenbank liegt im ignorierten gemeinsamen Speicher unter
+`<Explorer-Ordner>\Daten\taxonomy\releases\<Release>\taxonomy.sqlite`. Seit 4. Oktober ersetzt der
+[geprüfte Speicherwechsel](storage-migration.md) den AppData-Datenpfad. Sie darf zur
 Analyse mit einem SQLite-Werkzeug nur lesend geöffnet werden. Direkte Änderungen wären beim nächsten Release
 verloren; bestätigte Sonderzuordnungen gehören in `species-reference-mappings.json`, zusätzliche fachliche
 Fallbackquellen in die kontrollierte Import- und Konfliktschicht.

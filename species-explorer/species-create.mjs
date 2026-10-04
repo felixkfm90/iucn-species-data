@@ -30,6 +30,7 @@ export function createSpeciesCreateOperations({
   speciesListPath,
   backupDir,
   assetStagingRoot,
+  stageFilePath = async (filename) => join(assetStagingRoot, filename),
   previewTokens,
   cleanupPreviewTokens,
   getModel,
@@ -222,8 +223,8 @@ export function createSpeciesCreateOperations({
       ? ".jpg"
       : `.${validated.image.format}`;
     await mkdir(assetStagingRoot, { recursive: true });
-    const inputStagingPath = join(assetStagingRoot, `${token}.portrait-input${inputExtension}`);
-    const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
+    const inputStagingPath = await stageFilePath(`${token}.portrait-input${inputExtension}`);
+    const stagingPath = await stageFilePath(`${token}.portrait.webp`);
     await writeFile(inputStagingPath, validated.buffer);
     try {
       const rendered = await portraitRenderer({

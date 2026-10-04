@@ -11,8 +11,8 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind fünf Karten durch bestehende manuelle Altmarkierungen geschützt. Die Gründe sind unterschiedlich:
-ein dokumentierter korrupter Kartenstand und vier lokale Browser-/Dateiübernahmen. Ein HTTP-403 beim automatischen
+Aktuell sind 6 Karten als geschützt dokumentiert. Die Gründe sind unterschiedlich:
+ein dokumentierter korrupter Kartenstand und lokale Browser-/Dateiübernahmen. Ein HTTP-403 beim automatischen
 Abruf belegt keine korrupte sichtbare Karte. Die produktiven Karten dürfen nicht unbemerkt ersetzt werden und
 liegen ausschließlich unter `species-assets/<SafeName>/map.jpg`. Bestehende Markierungen wurden nicht umklassifiziert.
 

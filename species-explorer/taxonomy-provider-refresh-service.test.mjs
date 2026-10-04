@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
@@ -13,7 +13,7 @@ import { writeProviderSlice } from "./taxonomy-master-slices.mjs";
 const NOW = new Date("2026-08-08T12:00:00.000Z");
 
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-provider-refresh-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-provider-refresh-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const fallbackPath = path.join(root, "animalia.json");
   await fs.writeFile(fallbackPath, "{}\n", "utf8");

@@ -10,6 +10,8 @@ const skippedDirectories = new Set([
   "node_modules",
   "local-tools",
   "Testlauf",
+  "temp",
+  "Daten",
   "species-assets",
   "asset-backups",
   "backups",

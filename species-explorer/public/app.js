@@ -228,6 +228,8 @@ const elements = {
   taxonomyMasterProgressDetail: document.querySelector("#taxonomy-master-progress-detail"),
   taxonomyMasterDiff: document.querySelector("#taxonomy-master-diff"),
   taxonomyMasterConflicts: document.querySelector("#taxonomy-master-conflicts"),
+  taxonomyMasterTechnicalDetails: document.querySelector("#taxonomy-master-technical-details"),
+  taxonomyMasterTechnicalDetailsCopy: document.querySelector("#taxonomy-master-technical-details-copy"),
   taxonomyMasterBuildButton: document.querySelector("[data-taxonomy-master-action='build']"),
   taxonomyMasterActivateButton: document.querySelector("[data-taxonomy-master-action='activate']"),
   taxonomyMasterRollbackButton: document.querySelector("[data-taxonomy-master-action='rollback']"),

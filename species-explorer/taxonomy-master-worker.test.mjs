@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { test } from "node:test";
@@ -20,7 +20,7 @@ const timestamp = "2026-09-13T12:00:00.000Z";
 const now = () => new Date(timestamp);
 
 test("Worker behält eine durch CoL ergänzte unbekannte Reichs-ID auch nach Abschlussfehler und Fortsetzung", async (t) => {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-enrichment-worker-"));
+  const base = await fs.mkdtemp(path.join(tmpdir(), "fn-master-enrichment-worker-"));
   t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(base, "taxonomy");
   const record = { providerRecordId: "181179893", scientificName: "Storchodon cingulatus", rank: "species", kingdom: "", hierarchy: {} };
@@ -49,7 +49,7 @@ test("Worker behält eine durch CoL ergänzte unbekannte Reichs-ID auch nach Abs
 
 test("Prozessende vor letzter IPC-Nachricht verliert das fertige Ergebnis nicht", async () => {
   const result = { candidateId: "completed" };
-  const manifest = await startMasterJobProcess({ taxonomyRoot: path.join(os.tmpdir(), "not-written"),
+  const manifest = await startMasterJobProcess({ taxonomyRoot: path.join(tmpdir(), "not-written"),
     id: `job-${"a".repeat(36)}`, spawnProcess() {
       const child = new EventEmitter();
       child.stderr = new EventEmitter();
@@ -63,7 +63,7 @@ test("Prozessende vor letzter IPC-Nachricht verliert das fertige Ergebnis nicht"
   assert.deepEqual(manifest, result);
 });
 async function fixture(t, count = 510) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-worker-"));
+  const base = await fs.mkdtemp(path.join(tmpdir(), "fn-master-worker-"));
   t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const root = path.join(base, "taxonomy"), rows = benchmarkRows(count);
   const options = () => {

@@ -1,14 +1,14 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { createTaxonomyUpdateCoordinator } from "./taxonomy-update-coordinator.mjs";
 
 const copy = (value) => JSON.parse(JSON.stringify(value));
 
 async function fixture(t, options = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-update-coordinator-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-update-coordinator-"));
   const calls = [];
   const timers = new Map();
   let timerId = 0;

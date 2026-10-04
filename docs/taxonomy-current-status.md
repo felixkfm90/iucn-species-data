@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -22,7 +22,7 @@ Felix' Wunsch gelöscht. Die folgenden Reparatur- und Zwischenstände sind datie
 | Lightroom-Suchpaket | `lightroom-fa739bd28ec1e82a0283`, aus demselben Master |
 | Gemeinsame Veröffentlichung | `publication-b64beeb2-9951-4cf0-ac4e-1a326c5c3e91` |
 | Erhaltener Vorgänger | Passendes Master-/Paketpaar vom 1. Oktober |
-| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; heutiger Quellstand `0.4.24.17`, Bedienregressionskorrekturen noch gezielt praktisch zu prüfen |
+| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; aktueller lokaler Quellstand `0.4.24.21`, neue Speicher-/Temp-/Bedienprüfung getrennt |
 
 Einmaliger unabhängiger lesender Vergleich bestanden: sämtliche 273.466 bisherigen IDs erhalten,
 kein vorher aktiver Eintrag verloren; vier technische Ersatz-IDs weiter historisch. Alle 60 Projektlinks,
@@ -40,6 +40,31 @@ Als nächstes beauftragte Felix den automatischen Gesamtweg statt der heutigen m
 
 ## Neue lokale Umsetzung nach diesem Abschluss
 
+Neuester Stand vom 4. Oktober: Speicherresolver und eigener Temp-Lebenszyklus in Explorer/Plug-in implementiert.
+207 unveränderte Bestandsdateien mit 98.603.910.132 Bytes vollständig nach `D:\IUCN_Datenbank\Daten`
+kopiert und SHA-256-geprüft. Nach Gesamtgate/frischem Schließnachweis übernommen: Journal `committed`,
+Konfiguration `ready`, AppData leer und ohne Link. Lesender Versionsvergleich und reale Suchhilfe am neuen
+Datenort erfolgreich; Weissstorch und Rebhuhn werden mit eigener bevorzugter Namenswahl gefunden.
+Referenz, Master, Paket und gemeinsame Veröffentlichung bleiben identisch. Gewünschter finaler Hauptordner
+`D:\Arten-Explorer` erfordert koordinierte Verbraucher-/Codex-Bindung. Kein erneuter Aufbau oder Paarwechsel.
+[Umzugsvertrag](storage-migration.md). Historische Zurückstellungen jetzt neutral dargestellt; Schutzlogik erhalten.
+Gesamtgate: 50 Gruppen/1.177 gemeldete Tests, darunter 423 Master-/Betriebs- und 239 Lightroom-/Pakettests,
+ohne Fehler, Abbruch oder Skip. [Neuer Nachweis und offene Grenzen](audits/2026-10-04-storage-and-species-wizard.md).
+Die folgenden Absätze sind vorausgehende datierte Umsetzungsschritte.
+
+Felix bestätigt anschließend Einzel-/Mehrfach-Orts-/Zeitentfernung und neue Exporte anhand eines Fotos nach
+bewusstem Statistik-Neuaufbau. Quellstand 0.4.24.18 ordnet und erklärt die vorhandenen Aktionen klarer.
+Felix' Screenshot vom 4. Oktober zeigt die weiter schmale Vorschau und leere Flächen. 0.4.24.19 korrigiert dies
+mit gemeinsamen Innenbreiten, gleichen Rändern, gemeinsamer Statusanzeige und inhaltsbezogener Fenstergeometrie;
+zuletzt verwendete Arten ohne Vorbelegung. Fachliche Wirkung erhalten. Erneute Sichtprüfung offen; keine gesamte
+Lightroom-Abnahme. Vereinfachungsvorschlag anschließend freigegeben: 0.4.24.20 bündelt die Lightroom-Verwaltung
+in sechs Hauptzugänge mit Ort-/Zeitunterseite und Weiteren Aktionen; Erklärungstexte an der Buttonkante
+ausgerichtet. Im Explorer technische/seltenere Optionen eingeklappt. Ziele, Vorschauen und Schutzverträge
+erhalten, keine zusätzliche Bestandsautomatik; echte Menüsichtprüfung offen.
+Gewünschter gemeinsamer Daten-Unterordner beim Programm mit Hauptordnernamen D:\Arten-Explorer statt
+D:\IUCN_Datenbank ist nur Zielpräferenz, keine durchgeführte Migration. Aktive Referenz/Master/Paket und
+gemeinsame Veröffentlichung bleiben unverändert.
+
 Neuester Folgeauftrag: Pages-Veröffentlichungsgrenze, SDK-sichere Orts-/Zeitentfernung, zusätzlicher unterer
 Button sowie Auswahl-/Katalogexporte mit Defaultnamen in Plug-in 0.4.24.17. Felix bestätigt den zuvor
 abgefragten Öffnungscheck, bewussten Statistik-Neuaufbau und eigene Kartenherkunftsänderungen.
@@ -47,7 +72,7 @@ Keine neue produktive Taxonomie-/Katalogaktion. [Befund und Nachweis](audits/202
 
 Implementierung f6834fc nach main übertragen; Pages 37147560397 vollständig erfolgreich (Linux-Gate,
 Build und Deployment). Neues lokales Gesamtgate: 50 Gruppen, 1.120 gemeldete Tests, 420 Master- und
-231 Lightroomtests. Die konkrete SDK-/Sichtabnahme von 0.4.24.17 bleibt offen; Datenbankpaar unverändert.
+231 Lightroomtests. Gezielte Entfernung/Ein-Foto-Exporte danach von Felix bestätigt; Datenbankpaar unverändert.
 
 Plug-in **0.4.24.16** und gespeicherter Updatekoordinator verbinden die technische Kette nach einer Startbestätigung.
 Bei offenem/verändertem Lightroom werden neue requestgebundene SDK-Quittungen angefordert. Normales Schließen

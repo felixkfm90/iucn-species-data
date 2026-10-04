@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -21,7 +21,7 @@ const FIXTURE_DIRECTORY = path.resolve(
 );
 
 async function temporaryDirectory(prefix) {
-  return fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  return fs.mkdtemp(path.join(tmpdir(), prefix));
 }
 
 async function copyFixture(root, releaseId) {

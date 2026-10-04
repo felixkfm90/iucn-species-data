@@ -18,10 +18,16 @@ Dies schließt die gezielte Reparaturabnahme, nicht die folgenden regulären Upd
 
 ## Zusammenhängender Betriebscheck
 
+Erneute Prüfung am 4. Oktober nach dem produktiven Datenpfadwechsel: der isolierte 5.000-Arten-Lauf besteht
+erneut. Checkpoint 500, 4.940 wiederverwendete Taxa, inkrementelles Paket gleich Vollpaket, offene Leser und
+eigene Namenswahl erhalten, gemeinsame Rücknahme bestanden. Lauf liegt ausschließlich im neuen
+`temp/benchmarks`; kein produktiver Quellen-/Master-/Paketlauf oder Rollback. Die folgenden Zeiten sind
+ausdrücklich frühere Messungen, keine heutigen Laufzeitversprechen.
+
 `node --no-warnings scripts/taxonomy-operation-check.mjs 2000` erzeugt einen eigenen Testbestand;
 zulässig sind 1.200 bis 20.000 synthetische Arten. Der Aufruf akzeptiert keine produktiven Zielpfade.
 Jeder Lauf entfernt ausschließlich seinen selbst erzeugten, auf Elternpfad und Namensmuster geprüften
-Ordner `Testlauf/taxonomy-operation-*`. Fremde Testdateien bleiben unverändert.
+Ordner `temp/benchmarks/taxonomy-operation-*`. Fremde Testdateien bleiben unverändert.
 
 Der Ablauf prüft:
 

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 
 import {
   importTaxonomyPrototype,
@@ -17,7 +18,7 @@ const DEFAULT_FIXTURE = path.join(
   "taxonomy",
   "col-xr-2026-07-17",
 );
-const DEFAULT_TARGET = path.join(PROJECT_ROOT, "Testlauf", "taxonomy-prototype");
+const DEFAULT_TARGET = path.join(benchmarkScratchRoot, "taxonomy-prototype");
 const BENCHMARK_QUERIES = Object.freeze([
   { query: "A", kingdom: "Animalia" },
   { query: "Stie", kingdom: "Animalia" },
@@ -59,12 +60,7 @@ function percentile(values, fraction) {
 }
 
 function assertSafeResetTarget(target) {
-  const relative = path.relative(path.join(PROJECT_ROOT, "Testlauf"), path.resolve(target));
-  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error(
-      "--reset darf nur ein Unterverzeichnis des lokalen Testlauf-Ordners entfernen.",
-    );
-  }
+  return assertScratchPath(target, { allowTests: true, inspectTree: true });
 }
 
 async function measureStore(taxonomyRoot) {
@@ -116,6 +112,7 @@ export async function runTaxonomyPrototype(options = {}) {
     reset: options.reset === true,
     rollback: options.rollback === true,
   };
+  assertScratchPath(selected.taxonomyRoot, { allowTests: true });
   if (selected.reset) {
     assertSafeResetTarget(selected.taxonomyRoot);
     await fs.rm(selected.taxonomyRoot, { recursive: true, force: true });

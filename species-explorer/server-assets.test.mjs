@@ -1,3 +1,4 @@
+import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -47,7 +48,7 @@ const createExplorerServer = (options = {}) => createProtectedExplorerServer({
 
 test("Sound-Ablehnungen: bestätigte artbezogene Rücksetzung erhält Dateien, Schutz und fremde Quellen auch nach Neustart", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const path = join(repoRoot, "species-assets-overrides.json");
   const registry = { version: 1, assets: {
     Amsel: { map: { manual: true }, sound: {
@@ -60,7 +61,7 @@ test("Sound-Ablehnungen: bestätigte artbezogene Rücksetzung erhält Dateien, S
   const files = ["sound.mp3", "credits.json", "spectrogram.webp", "map.jpg"];
   const before = await Promise.all(files.map((file) => readFile(join(repoRoot, "species-assets", "Amsel", file))));
   let app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false });
-  context.after(() => app.close());
+  cleanupFixture(app);
   let address = await app.listen();
   const request = (action, body = {}, id = "turdusmerula") => fetch(
     `http://${app.host}:${address.port}/api/species/${id}/assets/sound/${action}`,
@@ -89,6 +90,7 @@ test("Sound-Ablehnungen: bestätigte artbezogene Rücksetzung erhält Dateien, S
   // A real server reopen keeps the cleared list. Empty resets do not rewrite the registry.
   await app.close();
   app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false });
+  cleanupFixture(app);
   address = await app.listen();
   const empty = await (await request("rejections-preview")).json();
   assert.equal(empty.count, 0);
@@ -121,7 +123,7 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
 
 test("Sound-Rücksetzung: Schreibsperre, laufende Prüfung, Ablauf und fehlgeschlagene Speicherung geben den Weg wieder frei", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const path = join(repoRoot, "species-assets-overrides.json");
   const registryText = JSON.stringify({ version: 1, assets: { Amsel: { sound: { rejectedSources: [{ key: "xeno-canto:1" }] } } } });
   await writeFile(path, registryText);
@@ -167,7 +169,7 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
   assert.throws(() => inspectJpeg(Buffer.from("kein jpeg")), /JPEG/);
 
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({
     repoRoot,
     port: 0,
@@ -179,7 +181,7 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
     },
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const invalidResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/preview`, {
@@ -312,9 +314,9 @@ test("Kartenimport prüft JPEG, erstellt Vorschau, Backup und manuellen Schutz",
 
 test("Kartenimport trennt explizite IUCN-Browserangabe, eigene Pflege und unveränderten Schutz", async (t) => {
   const repoRoot = await createEditableFixture();
-  t.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(t, repoRoot);
   const app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false, rebuildReportAfterAssetSave: false });
-  const address = await app.listen(); t.after(() => app.close());
+  const address = await app.listen(); cleanupFixture(app);
   const base = `http://${app.host}:${address.port}`;
   const post = (action, body) => fetch(`${base}/api/species/turdusmerula/assets/map/${action}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -365,7 +367,7 @@ test("Kartenimport trennt explizite IUCN-Browserangabe, eigene Pflege und unver�
 
 test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fehlschlägt", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const assetDirectory = join(repoRoot, "species-assets", "Amsel");
   const before = {
     sound: await readFile(join(assetDirectory, "sound.mp3")),
@@ -382,7 +384,7 @@ test("Soundimport ändert keine Produktdatei, wenn die Spektrogramm-Erzeugung fe
     },
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/preview`, {
     method: "POST",
@@ -423,7 +425,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
   assert.throws(() => inspectMp3(Buffer.from("kein mp3")), /MPEG-Audioframe/);
 
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({
     repoRoot,
     port: 0,
@@ -435,7 +437,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
     },
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const invalidResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/sound/preview`, {
@@ -574,7 +576,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
   assert.deepEqual(inspectPng(uploadedPng), { width: 1120, height: 1400 });
 
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const renderedWebp = createTestWebp(12);
   let renderCalls = 0;
   const app = await createExplorerServer({
@@ -589,7 +591,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
     },
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const promptResponse = await fetch(
@@ -756,7 +758,7 @@ test("Artporträt-Prompt und manueller Bildimport funktionieren ohne kostenpflic
 
 test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung vorgemerkt werden", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const assetDirectory = join(repoRoot, "species-assets", "Amsel");
   await Promise.all([
     writeFile(join(assetDirectory, "portrait.webp"), createTestWebp(13)),
@@ -821,7 +823,7 @@ test("Einzelne Assets können gezielt gelöscht und für spätere Übertragung v
     rebuildReportAfterAssetSave: false,
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const deleteMapResponse = await fetch(`${baseUrl}/api/species/turdusmerula/assets/map/delete`, {
@@ -961,7 +963,7 @@ test("Soundeditor setzt mehrere Abschnitte zusammen und bewahrt Credits und Lize
   const editedMp3 = createTestMp3(11);
   const webp = createTestWebp(13);
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const originalCredits = JSON.parse(
     await readFile(join(repoRoot, "species-assets", "Amsel", "credits.json"), "utf8"),
   );
@@ -994,7 +996,7 @@ test("Soundeditor setzt mehrere Abschnitte zusammen und bewahrt Credits und Lize
     },
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const previewResponse = await fetch(

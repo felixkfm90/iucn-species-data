@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
@@ -119,7 +119,7 @@ test("Update-Eingang erhält Anbieterstandard und bindet Namenspräferenz an ihr
 });
 
 async function createFixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-master-service-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-master-service-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const speciesListPath = path.join(root, "species_list.json");
   const correctionsPath = path.join(root, "corrections.json");

@@ -8,6 +8,7 @@ import { assertRecoveryPath } from "./taxonomy-source-recovery-reader.mjs";
 import { sha256File } from "./lightroom-search-storage.mjs";
 import { canonicalBuildInput, taxonomyRecordFingerprint } from "./taxonomy-build-inputs.mjs";
 import { taxonomyMasterCandidateInternals } from "./taxonomy-master-candidate.mjs";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const json = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -30,7 +31,7 @@ export async function frozenRecoveryColInput(root, referenceVersion) {
   const recordsFile = path.join(masterJobDirectory(root, id), "col.jsonl");
   await assertRecoveryPath(recordsFile);
   const hash = await sha256File(recordsFile);
-  if (recipe.schemaVersion !== 1 || recipe.id !== id || path.resolve(recipe.taxonomyRoot) !== path.resolve(root)
+  if (recipe.schemaVersion !== 1 || recipe.id !== id || path.resolve(relocatedStoragePath(recipe.taxonomyRoot)) !== path.resolve(root)
       || recipe.revision !== digest({ ...recipe, revision: undefined }) || recipe.inputs?.["col.jsonl"] !== hash
       || recipe.options?.colRelease?.providerVersion !== referenceVersion) throw new Error("CoL-Ausgangseingang oder Referenzherkunft ist verändert.");
   if (!manifest.buildInputs?.available || await sha256File(taxonomyMasterDatabasePath(root)) !== manifest.buildInputs.masterSha256) {

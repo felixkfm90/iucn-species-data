@@ -1,8 +1,30 @@
 # Add Species Workflow
 
-Stand: 2026-09-28
+Stand: 2026-10-04
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
+
+## Artassistent bei fehlenden Medien – Korrektur vom 4. Oktober
+
+Der Goldbaumsteiger-Befund zeigte einen vorgezogenen Veröffentlichungsversuch: Ohne neue Karte/Sound wurde
+die Medienprüfung gestartet, bevor der Assistent den manuellen Karten- und Sound-Schritt anbieten konnte.
+Der geführte, an genau eine Art gebundene Suchlauf hält jetzt auch bei leerem Medienergebnis vor der Übertragung an.
+
+- Schritt 3 bietet die vorhandene Karten-Dateiauswahl, Drag-and-drop bzw. bewusstes Überspringen an.
+  Der bekannte IUCN-Link wird aus der Art abgeleitet; ein Browsererfolg bedeutet weiterhin keinen
+  erfolgreichen automatischen Abruf. HTTP-403-Schutz und Medienprüfung bleiben unverändert.
+- Danach erscheint immer Schritt 4: neue Aufnahme prüfen oder ausdrücklich den Sound-Schritt abschließen,
+  wenn keine neue nutzbare Aufnahme gefunden wurde. Eine vorhandene Aufnahme bleibt erhalten.
+- Frühere Soundablehnungen können auch bei leerem Suchergebnis nach artbezogener Rückfrage aufgehoben
+  und neu gesucht werden. Keine erneute Artanlage, keine fremden Ablehnungen oder manuellen Dateien löschen.
+- Schließen/Wiederöffnen setzt denselben gespeicherten Medienauftrag fort, statt eine zweite Art anzulegen.
+- Erst nach diesem Ablauf wird die Übertragung geprüft. Fehlende/ungültige Karte bleibt ein
+  Veröffentlichungsblocker; die lokalen übrigen Schritte können trotzdem abgeschlossen werden.
+  Die Oberfläche unterscheidet deshalb „lokal abgeschlossen“ und „Übertragung noch offen“ von Veröffentlichungserfolg.
+
+Automatisierte UI-/Controller-Gegenproben prüfen leeres Suchergebnis, Kartenimport, Sound-Abschluss,
+Rücksetzen/Wiederholen, gebundene Fortsetzung und Wiederöffnung. Kein produktiver Goldbaumsteiger-Neulauf
+oder neues Karten-/Soundasset durch die Reparatur. Eine erneute praktische Regressionseinzelabnahme bleibt nötig.
 
 ## Grundsatz
 

@@ -1,7 +1,7 @@
+import { tmpdir } from "./test-temp.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -46,7 +46,7 @@ test("Beide Windows-Kartenprozesse geben deutsche Fehlertexte als UTF-8 aus", as
 });
 
 test("IUCN-403 versucht den früheren Windows-Fallback und überschreibt keine vorhandene Karte", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-map-blocked-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-map-blocked-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const filename = path.join(root, "map.jpg"), previous = Buffer.from("bestehende Karte");
   await fs.writeFile(filename, previous);
@@ -74,7 +74,7 @@ test("Kartenadapter probiert den im Browser bestätigten www-IUCN-Host zuerst", 
   const adapter = createIucnMapAdapter({
     fetch: async (url) => { urls.push(url); return { ok: false, status: 403, text: async () => "" }; },
     iucnGET: async () => null, sleep: noWait, token: "test-only", platform: "linux",
-    sanitizeAssetName: (value) => value, speciesAssetDir: () => os.tmpdir(), ensureDir() {}, isManualAsset: () => false,
+    sanitizeAssetName: (value) => value, speciesAssetDir: () => tmpdir(), ensureDir() {}, isManualAsset: () => false,
     logger: { log() {}, warn() {}, error() {} },
   });
   await adapter.downloadMapForSpecies({ "Deutscher Name": "Grünfink", "Assessment ID": 132000123 }, { force: true });

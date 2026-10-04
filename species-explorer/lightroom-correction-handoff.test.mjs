@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -25,7 +25,7 @@ function fixtureTaxon() {
 }
 
 test("Lightroom-Korrekturübergabe ist kurzlebig, eindeutig und wird einmalig verbraucht", async (t) => {
-  const handoffRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-correction-"));
+  const handoffRoot = await fs.mkdtemp(path.join(tmpdir(), "lightroom-correction-"));
   t.after(() => fs.rm(handoffRoot, { recursive: true, force: true }));
   const launched = [];
   const now = new Date("2026-08-30T10:00:00.000Z");
@@ -53,7 +53,7 @@ test("Lightroom-Korrekturübergabe ist kurzlebig, eindeutig und wird einmalig ve
 });
 
 test("Abgelaufene oder manipulierte Übergaben werden gelöscht und nicht geöffnet", async (t) => {
-  const handoffRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-correction-expired-"));
+  const handoffRoot = await fs.mkdtemp(path.join(tmpdir(), "lightroom-correction-expired-"));
   t.after(() => fs.rm(handoffRoot, { recursive: true, force: true }));
   const targetPath = lightroomCorrectionHandoffPath(handoffRoot, REQUEST_ID);
   await fs.mkdir(handoffRoot, { recursive: true });
@@ -87,7 +87,7 @@ test("Desktop-Startargument akzeptiert ausschließlich UUID-Anfragen und dedupli
 });
 
 test("Bei fehlgeschlagenem Explorer-Start bleibt keine Übergabedatei zurück", async (t) => {
-  const handoffRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-correction-launch-"));
+  const handoffRoot = await fs.mkdtemp(path.join(tmpdir(), "lightroom-correction-launch-"));
   t.after(() => fs.rm(handoffRoot, { recursive: true, force: true }));
   await assert.rejects(createLightroomCorrectionHandoff({
     taxon: fixtureTaxon(),

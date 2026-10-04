@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { captureCatalogUsage, createCatalogUsageService, catalogUsageStatus, catalogUsageRegistration } from "./lightroom-catalog-usage.mjs";
 import { createLightroomUsageRequestService, catalogUsageRequest, reportCatalogUsageRequestError } from "./lightroom-usage-request.mjs";
@@ -12,7 +12,7 @@ const ID = `mtx_${"a".repeat(32)}`;
 const job = { updateRunId: "update-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", phase: "start", status: "waiting-lightroom",
   startedAt: "2026-10-03T10:00:00.000Z", usageConsent: { allCatalogsConfirmed: true, noChangesUntilClose: true } };
 async function fixture(t, count = 1) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-usage-request-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "fn-usage-request-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy");
   const inputs = [];

@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
@@ -18,7 +18,7 @@ const record = (extra = {}) => ({ providerRecordId: "col-leopard", scientificNam
 const project = { projectTaxonKey: "leopard", projectSlug: "leopard", scientificName: "Panthera pardus", kingdom: "Animalia" };
 const ownName = { scientificName: "Panthera pardus", kingdom: "Animalia", germanName: "Mein Leopard" };
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-field-protection-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-master-field-protection-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
 }

@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -9,7 +9,7 @@ import { readProviderSlice } from "./taxonomy-master-slices.mjs";
 import { loadNodeSqlite } from "./taxonomy-storage.mjs";
 
 async function fixture() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-inat-snapshot-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-inat-snapshot-"));
   const packageDirectory = path.join(root, "package");
   const taxonomyRoot = path.join(root, "taxonomy");
   const workRoot = path.join(root, "work");

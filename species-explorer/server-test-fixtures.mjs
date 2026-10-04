@@ -1,6 +1,15 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "../scripts/test-temp.mjs";
 import { join } from "node:path";
+
+export function registerFixtureCleanup(context, repoRoot) {
+  const servers = [];
+  context.after(async () => {
+    for (const server of servers) await server.close();
+    await rm(repoRoot, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 });
+  });
+  return (server) => servers.push(server);
+}
 
 export function createTestJpeg(width = 3, height = 2) {
   return Buffer.from([

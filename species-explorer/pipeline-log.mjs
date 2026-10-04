@@ -87,6 +87,7 @@ export function formatPipelineSummary(state, report) {
   const success = state.exitCode === 0;
   const lines = ["Gesamtzusammenfassung", success ? "Verarbeitung abgeschlossen." : "Lauf nicht vollständig abgeschlossen."];
   if (state.error) lines.push(`Hinweis: ${state.error}`);
+  if (state.publicationPending) lines.push(`Lokal abgeschlossen; Übertragung noch offen: ${state.publicationPending}`);
   lines.push(state.gitPublished
     ? "Änderungen wurden an GitHub übertragen. Die dortige Qualitätsprüfung und das Pages-Deployment sind separat."
     : state.gitNoChanges ? "Keine Übertragung erforderlich; keine neuen versionierbaren Änderungen."

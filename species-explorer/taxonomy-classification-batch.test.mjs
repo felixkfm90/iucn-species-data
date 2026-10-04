@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
@@ -51,7 +51,7 @@ function rows(root, slot = "active") {
   } finally { db.close(); }
 }
 async function fixture(t, { count = 1, missingLast = false, identifiersByIndex = null, multipleSources = false } = {}) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "fn-classification-batch-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "fn-classification-batch-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const root = path.join(directory, "taxonomy");
   const records = Array.from({ length: count }, (_, index) => ({ providerRecordId: String(index + 1),

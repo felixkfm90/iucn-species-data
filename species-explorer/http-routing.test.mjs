@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
+import { tmpdir } from "../scripts/test-temp.mjs";
 import path from "node:path";
 import { Readable } from "node:stream";
 import test from "node:test";

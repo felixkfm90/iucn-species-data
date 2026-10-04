@@ -23,6 +23,7 @@ export function createPortraitAssetOperations({
   repoRoot,
   assetOverridesPath,
   assetStagingRoot,
+  stageFilePath = async (filename) => join(assetStagingRoot, filename),
   assetBackupRoot,
   previewTokens,
   previewTokenTtlMs,
@@ -197,8 +198,8 @@ export function createPortraitAssetOperations({
       ? ".jpg"
       : `.${validated.image.format}`;
     await mkdir(assetStagingRoot, { recursive: true });
-    const inputStagingPath = join(assetStagingRoot, `${token}.portrait-input${inputExtension}`);
-    const stagingPath = join(assetStagingRoot, `${token}.portrait.webp`);
+    const inputStagingPath = await stageFilePath(`${token}.portrait-input${inputExtension}`);
+    const stagingPath = await stageFilePath(`${token}.portrait.webp`);
     await writeFile(inputStagingPath, validated.buffer);
     try {
       const rendered = await portraitRenderer({

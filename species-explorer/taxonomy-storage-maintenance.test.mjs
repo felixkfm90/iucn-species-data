@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { createTaxonomyStorageMaintenance } from "./taxonomy-storage-maintenance.mjs";
@@ -24,7 +24,7 @@ async function age(directory) {
   await fs.utimes(directory, old, old);
 }
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-storage-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-storage-"));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const taxonomyRoot = path.join(root, "taxonomy"), searchRoot = path.join(root, "lightroom");
   const controller = new MasterRunController(taxonomyRoot);

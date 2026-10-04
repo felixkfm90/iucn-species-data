@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
 import { coverMasterInputSelection, MASTER_INPUT_FILE, readBoundMasterBuildInputs, masterFileFingerprint,
@@ -19,7 +19,7 @@ const record = (extra = {}) => ({ providerRecordId: "stork", scientificName: "Ci
   germanNames: [{ name: "Weißstorch" }], ...extra });
 const release = (day) => ({ providerVersion: `COL-${day}`, importedAt: time(day).toISOString(), recordCount: 4000000 });
 async function rootFor(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-inputs-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-master-inputs-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
 }

@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
-import { readdir, rm, stat } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import path from "node:path";
+import { assertNoTempLinks, cleanupOrphanTempSessions } from "./temp-session.mjs";
 
 export const TEMP_RETENTION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -48,6 +49,8 @@ export async function cleanupManagedExplorerTemp({
   maxAgeMs = TEMP_RETENTION_MAX_AGE_MS,
   dryRun = false,
   protectedPaths = [],
+  session = null,
+  isProcessAlive,
 } = {}) {
   if (!new Set(["startup", "shutdown", "maintenance"]).has(phase)) {
     throw new Error(`Unbekannte Temp-Bereinigungsphase: ${phase}`);
@@ -56,6 +59,11 @@ export async function cleanupManagedExplorerTemp({
   const protectedFiles = new Set(protectedPaths.filter(Boolean).map((file) => path.resolve(file)));
   for (const policy of MANAGED_TEMP_POLICIES) {
     const root = path.resolve(repoRoot, ...policy.root);
+    try { await assertNoTempLinks(root); }
+    catch (error) {
+      result.errors.push({ policy: policy.id, path: root, error: error.message });
+      continue;
+    }
     const entries = await readdir(root, { withFileTypes: true }).catch((error) => {
       if (error.code !== "ENOENT") result.errors.push({ policy: policy.id, path: root, error: error.message });
       return [];
@@ -66,36 +74,24 @@ export async function cleanupManagedExplorerTemp({
         continue;
       }
       const entryPath = path.join(root, entry.name);
-      if (phase !== "shutdown" && protectedFiles.has(path.resolve(entryPath))) {
+      if (protectedFiles.has(path.resolve(entryPath))) {
         result.kept.push({ policy: policy.id, path: entryPath, reason: "aktive Vorschau" });
         continue;
       }
-      const details = await stat(entryPath).catch((error) => {
-        result.errors.push({ policy: policy.id, path: entryPath, error: error.message });
-        return null;
-      });
-      if (!details) continue;
-      const expired = now - details.mtimeMs >= maxAgeMs;
-      // Beim Start können andere Entwicklungsinstanzen noch laufen. Deshalb
-      // werden dort – wie bei der Wartung – nur abgelaufene Einträge entfernt.
-      // Erst ein kontrolliertes Herunterfahren besitzt die eindeutige Freigabe,
-      // alle verwalteten Laufzeitreste dieser Arbeitskopie zu löschen.
-      const removeNow = phase === "shutdown" || expired;
-      if (!removeNow) {
-        result.kept.push({ policy: policy.id, path: entryPath, reason: "Aufbewahrungsfrist aktiv" });
-        continue;
-      }
-      if (!dryRun) {
-        try {
-          await rm(entryPath, { recursive: true, force: true, maxRetries: 4, retryDelay: 200 });
-        } catch (error) {
-          result.errors.push({ policy: policy.id, path: entryPath, error: error.message });
-          continue;
-        }
-      }
-      result.removed.push({ policy: policy.id, path: entryPath, dryRun });
+      // Legacy shared roots have filenames but no owner/process certificate.
+      // Age or another server's shutdown must not turn a pending asset review,
+      // recovery backup, or concurrent preview into disposable content.
+      result.kept.push({ policy: policy.id, path: entryPath, reason: "Altbestand ohne Sitzungs-/Prozessnachweis" });
     }
   }
+  const owned = phase === "shutdown" && session && !dryRun
+    ? await session.close()
+    : await cleanupOrphanTempSessions({ repoRoot, owner: "explorer", isProcessAlive, dryRun });
+  result.removed.push(...owned.removed.map((file) => ({ policy: "owned-session", path: file, dryRun })));
+  result.kept.push(...owned.kept.map((entry) => ({ policy: "owned-session", ...entry })));
+  result.errors.push(...owned.errors.map((entry) => typeof entry === "string"
+    ? { policy: "owned-session", error: entry } : { policy: "owned-session", ...entry }));
+  if (owned.pending) result.pending = true;
   return result;
 }
 

@@ -1,10 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
-import { tmpdir } from "node:os";
+import { createManagedTempSession } from "./temp-session.mjs";
 import { promisify } from "node:util";
 
 import { inspectMp3Buffer } from "../scripts/audio-format.mjs";
@@ -422,9 +421,8 @@ try {
 
   let lastMessage = "";
   for (let attempt = 1; attempt <= MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS; attempt++) {
-    const tempDir = join(tmpdir(), `iucn-map-preview-${randomUUID()}`);
-    const tempFile = join(tempDir, "map.jpg");
-    await mkdir(tempDir, { recursive: true });
+    const session = await createManagedTempSession({ repoRoot: REPO_ROOT });
+    const tempFile = await session.filePath("map.jpg");
     try {
       const { stdout } = await execFileAsync(
         "powershell.exe",
@@ -459,7 +457,7 @@ try {
         }
       }
     } finally {
-      await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      await session.close();
     }
     if (attempt < MAP_SOURCE_POWERSHELL_RETRY_ATTEMPTS) {
       await sleep(MAP_SOURCE_POWERSHELL_RETRY_DELAY_MS * attempt);
@@ -544,10 +542,9 @@ async function normalizeMapUploadToJpeg({
     };
   }
 
-  const tempDir = join(tmpdir(), `map-upload-${randomUUID()}`);
-  const inputPath = join(tempDir, "source.png");
-  const outputPath = join(tempDir, "map.jpg");
-  await mkdir(tempDir, { recursive: true });
+  const session = await createManagedTempSession({ repoRoot });
+  const inputPath = await session.filePath("source.png");
+  const outputPath = await session.filePath("map.jpg");
   try {
     await writeFile(inputPath, buffer);
     await mapImageRenderer({
@@ -564,7 +561,7 @@ async function normalizeMapUploadToJpeg({
       converted: true,
     };
   } finally {
-    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    await session.close();
   }
 }
 

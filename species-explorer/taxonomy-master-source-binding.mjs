@@ -5,6 +5,7 @@ import { masterFileFingerprint } from "./taxonomy-master-inputs.mjs";
 import { latestProviderSliceVersion, providerSliceManifestPath, providerSliceDataPath } from "./taxonomy-master-slices.mjs";
 import { readActiveTaxonomyPointer, taxonomyActivePointerPath, taxonomyDatabasePath, taxonomyReleaseManifestPath } from "./taxonomy-storage.mjs";
 import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const PROVIDERS = ["inaturalist", "gbif", "worms", "wikidata", "animalia"];
 async function fingerprint(filename) {
@@ -18,7 +19,7 @@ export async function readMasterSourceBinding(taxonomyRoot, selection) {
   if (!selection?.speciesListPath || !selection?.correctionsPath) throw new Error("Projektdateien für den Masteraufbau fehlen.");
   const reference = await readActiveTaxonomyPointer(taxonomyRoot);
   const versions = await Promise.all(PROVIDERS.map(async (provider) => [provider, await latestProviderSliceVersion(taxonomyRoot, provider)]));
-  const files = [selection.speciesListPath, selection.correctionsPath,
+  const files = [relocatedStoragePath(selection.speciesListPath), relocatedStoragePath(selection.correctionsPath),
     path.join(taxonomyRoot, "master", "identity-review.json"),
     path.join(taxonomyRoot, "catalog-usage", "registry.json"),
     path.join(taxonomyRoot, "catalog-usage", "captures.json"),

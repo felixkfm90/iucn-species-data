@@ -126,6 +126,10 @@
         elements.pipelineDialogTitle.textContent = "Datenbank-Aktionen";
         elements.pipelineDialogDescription.textContent = "Wähle aus, was aktualisiert, gesichert oder bereinigt werden soll.";
         elements.pipelineModeChoice.hidden = false;
+        const moreActions = dialog.querySelector("#pipeline-more-actions");
+        if (moreActions) moreActions.open = false;
+        const technicalDetails = dialog.querySelector("#taxonomy-master-technical-details");
+        if (technicalDetails) technicalDetails.open = false;
         elements.pipelinePreview.hidden = true;
         elements.pipelineStartButton.hidden = true;
         elements.pipelineStartButton.disabled = true;

@@ -28,8 +28,10 @@ const SKIPPED_DIRECTORIES = new Set([
   "node_modules",
   "pipeline-asset-backups",
   "staging",
+  "temp",
+  "Daten",
 ]);
-const SKIPPED_ROOT_FILES = new Set(["errors.log", "update_github_only.bat", "update_local.bat"]);
+const SKIPPED_ROOT_FILES = new Set(["errors.log", "storage-path.json", "update_github_only.bat", "update_local.bat"]);
 
 function collectDirectoryStats(absoluteDirectory) {
   let bytes = 0;

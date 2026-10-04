@@ -14,6 +14,7 @@ export function createMapAssetOperations({
   assetOverridesPath,
   manualMapOverridesPath,
   assetStagingRoot,
+  stageFilePath = async (filename) => join(assetStagingRoot, filename),
   assetBackupRoot,
   previewTokens,
   previewTokenTtlMs,
@@ -131,7 +132,7 @@ export function createMapAssetOperations({
     const token = randomUUID();
     const expiresAt = Date.now() + previewTokenTtlMs;
     await mkdir(assetStagingRoot, { recursive: true });
-    const stagingPath = join(assetStagingRoot, `${token}.jpg`);
+    const stagingPath = await stageFilePath(`${token}.jpg`);
     await writeFile(stagingPath, validated.buffer);
     const source = await mapAssetSourceRevision(species);
     let currentDimensions = null;

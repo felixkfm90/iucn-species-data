@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -15,7 +15,7 @@ const FIXTURE_DIRECTORY = path.resolve(
 );
 
 async function temporaryTaxonomyRoot(context, prefix) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  const root = await fs.mkdtemp(path.join(tmpdir(), prefix));
   return {
     root,
     taxonomyRoot: path.join(root, "taxonomy"),
@@ -51,7 +51,7 @@ test("CoL-Ergänzung dupliziert keinen Mastertreffer; alte Treffer öffnen diese
   const master = { ...base, taxonId: "mtx_partridge", masterTaxonId: "mtx_partridge", germanName: "Feldhuhn", matchedTerm: "Rebhuhn" };
   const detail = { ...master, scientific_name: "Perdix perdix", kingdom: "Animalia", germanNames: [{ name: "Feldhuhn" }, { name: "Rebhuhn" }], hierarchy: [] };
   let duplicateIdentity = false;
-  const service = createTaxonomyReferenceService({ taxonomyRoot: path.join(os.tmpdir(), "reference-merge-readonly"),
+  const service = createTaxonomyReferenceService({ taxonomyRoot: path.join(tmpdir(), "reference-merge-readonly"),
     readPointer: async () => ({ activeRelease: "col" }), readMasterManifest: async () => ({ candidateId: "master" }),
     readCorrectionPointer: async () => null,
     openStore: async () => ({ close() {}, status: () => ({ releaseId: "col" }), search: () => ({ results: [base] }), taxon: () => ({ ...base, scientific_name: "Perdix perdix" }) }),

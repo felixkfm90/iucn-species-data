@@ -223,11 +223,11 @@ Wenn Node.js fehlt, zeigt das Skript eine klare Meldung. Node.js wird nicht auto
 6. Backup-Rotation auf maximal 10 ZIPs einbauen.
 7. Backup-Pfad in der App lokal einstellbar machen.
 8. Restore-Test dokumentieren.
-9. Danach Installer/zweiter-PC-Komfort klaeren. Dabei den Standardspeicherort der grossen Taxonomiereferenz erneut
-   bewerten: `%LOCALAPPDATA%` bleibt bis dahin unveraendert; ein optionaler anderer lokaler Speicherort erfordert
-   Speicherplatzpruefung, kontrollierte Migration, Integritaetspruefung und sicheren Rueckfall auf den bisherigen
-   aktiven Pfad. Die Referenzdatenbank darf nicht versehentlich Teil des Git-Arbeitsverzeichnisses oder normaler
-   Projekt-Backups werden.
+9. Danach Installer/zweiter-PC-Komfort klaeren. Seit 4. Oktober gilt der gemeinsame konfigurierbare Datenpfad
+   standardmäßig als ignorierter Explorer-Unterordner `Daten`; AppData-Daten vollständig umgezogen.
+   [Speicherplatz-/Migrations-/Integritäts-/Rückfallvertrag](storage-migration.md) bleibt auch für weitere
+   Pfadwechsel verbindlich. Referenzen sind nicht versioniert oder in Pages, aber ausdrücklich Bestandteil
+   des vollständigen NAS-Restorebackups. Ein externer Pfad darf keinen unvollständigen Backup-Erfolg vortäuschen.
 
 ## Noch offen vor Lock-/Update-Implementierung
 

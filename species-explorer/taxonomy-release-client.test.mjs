@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -25,7 +25,7 @@ test("Releaseauswahl verwendet ausschließlich das neueste CoL-XR-Release", () =
 });
 
 test("Startprüfung lädt nur kleine Metadaten und verwendet danach den Cache", async (context) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-release-check-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-release-check-"));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   const cachePath = path.join(root, "release-check.json");
   const urls = [];
@@ -102,7 +102,7 @@ const jobArchive = "https://download.checklistbank.org/job/01/01fdd380-aafc-4d74
 const zipBytes = Buffer.from("504b030400000000", "hex");
 
 async function downloadFixture(t, responses, extra = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-release-download-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-release-download-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const calls = [], targetPath = path.join(root, "reference.zip");
   return { root, calls, targetPath, run: () => downloadCatalogueArchive({

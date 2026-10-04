@@ -1,14 +1,101 @@
 # Roadmap
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 
 ## Aktuelle Restreihenfolge vor dem Audit
+
+### Neuester Arbeitsstand – 4. Oktober
+
+Felix bestätigt die zuletzt bezeichneten Abnahmepunkte 1 und 4; keine zusätzlichen Großbestands- oder
+Neustartabnahmen daraus ableiten. Er beauftragt anschließend die übrigen sicheren Vor-Audit-Arbeiten bei
+geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage trotz nicht abrufbarer IUCN-Karte.
+
+1. **Gemeinsamer Speicher und Temp:** implementiert, produktive Kopie mit 207 Dateien/98.603.910.132 Bytes
+   vollständig SHA-256-geprüft unter `D:\IUCN_Datenbank\Daten`. Nach bestandenem Gesamtgate und frischem
+   Schließnachweis übernommen; AppData leer, keine Verknüpfung, Journal committed/Konfiguration ready.
+   Neuer Versionsvergleich und Weissstorch-/Rebhuhn-Suchhelfer bestanden. Finaler Programmname `D:\Arten-Explorer` verlangt
+   koordinierte Codex-/Desktop-/Lightroom-Bindung; isoliertes Umbenennen ist kein sicherer Abschluss.
+2. **Artassistent:** fehlendes Medium öffnet jetzt Kartenimport/Überspringen und expliziten Sound-Schritt;
+   gleicher Auftrag nach Wiederöffnung, keine zweite Artanlage. Lokaler Abschluss bei fehlender Karte mit
+   ehrlich offener Übertragung. Goldbaumsteiger nicht erneut angelegt. Automatisierte Gegenproben bestanden,
+   neue praktische Regressionseinzelabnahme noch offen.
+3. **Automatischer Updateweg und Betriebsgrenzen zusammen prüfen:** vorhandener gespeicherter Koordinator,
+   Ein-Klick-Start/Später, requestgebundene Erfassung und Warten auf Lightroom bleiben erhalten. Isolierte
+   Prozess-, Wiederanlauf-, Veröffentlichungspaar- und Rollbacktests bestanden, zusätzlich neuer 5.000-Arten-
+   Betriebslauf nach dem Datenwechsel. Kein neuer produktiver Updatelauf; native Neustart-/Bedienabnahme getrennt.
+4. **Letzte IUCN-Prüfung:** Browserimport/Dateiübernahme bleiben der belegte Weg; HTTP 403 nicht als behoben
+   behaupten. Kartenherkunft, Pflege und Schutz nicht vermischen. Kein automatisches Herunterladen durch
+   Umgehung eines gesperrten Abrufwegs. Normale lesende HTTP-Probe am 4. Oktober weiterhin 403/HTML,
+   keine Weiterleitung oder neue Kartendatei. Kein erneuter Massendownloadtest erforderlich.
+5. **Qualitäts-/Veröffentlichungsabschluss und Audit:** vollständiges Gate für diese Serie bestanden:
+   50 Gruppen/1.177 gemeldete Tests, 423 Master-/Betriebs- und 239 Lightroom-/Pakettests, keine Fehler/Skips.
+   Dokumentation fortgeschrieben; neuer Commit-/Pages-Nachweis separat.
+   Phase 10.5 nicht allein anhand isolierter Tests oder früherer Nutzerrückmeldungen als bestanden melden.
+
+Historische 187 Fälle werden neutral als erhaltene bisherige Quellenzuordnungen dargestellt. Sie ändern keine
+vorhandene Art/ID und sind kein aktueller Fehler. Geänderte oder geschützte neue Fälle verlangen weiter Prüfung.
+Verträge: [Speicherwechsel](storage-migration.md), [Temp](temp-retention.md),
+[Prüfabschluss und offene Abschlussgrenze](audits/2026-10-04-storage-and-species-wizard.md),
+[Artanlage](add-species-workflow.md). Die folgenden datierten Abschnitte dokumentieren die vorausgehenden
+Implementierungs- und Abnahmegrenzen; sie sind keine erneute Freigabe alter Aufbau- oder Bereinigungsaufträge.
+
+Zusätzlicher aktueller Betriebsnachweis nach Datenwechsel: isolierter 5.000-Arten-Prozesslauf mit hartem
+Abbruch/Fortsetzung, gleicher inkrementeller/Vollpaket-Ausgabe, erhaltenen offenen Lesern/Namenswahl und
+gemeinsamer Rücknahme bestanden. Kein produktiver Paketwechsel. Temp 40/40 und Lightroom 239/239 danach
+erneut bestanden. Native Einzelabnahme und endgültige Programmpfadbindung weiter getrennt.
+
+Neueste gezielte Nutzerabnahme: Orts-/Zeitentfernung für Einzel-/Mehrfachauswahl und neue Exporte anhand eines
+Fotos funktionieren laut Felix, nach bewusstem Statistik-Neuaufbau. Keine vollständige Großbestandsabnahme.
+Darstellungsfolgeauftrag lokal in 0.4.24.18 umgesetzt: Entfernen in Schritt 4, Vorschau mit Abstand,
+vier verständlichere Namensbuttons in einer Reihe, Verwaltungsaktionen ohne Auslassungspunkte mit Kurztexten/
+Tooltips. Fachaktionen unverändert; echte Sichtprüfung noch offen. Manuelle Nutzungsaufnahme bleibt gezielter
+Erstregistrierungs-/Wiederherstellungsweg, nicht zusätzlicher Normalupdateschritt. Vertrag:
+[Plug-in-Fenster](lightroom-search-package.md), [Namensaktionen](taxonomy-name-preference-plan.md#lightroom-buttonbeschriftungen-ab-042418).
+Gezielte Prüfung: Plug-in-Vertrag 19/19; zusammen mit Entfernung/Statistik 47/47, Syntax/Stil/Docs/Status/Diff
+bestanden. Kein erneutes vollständiges Qualitätsgate oder Produktivtest dieser Layoutänderung.
+Sichtbefund vom 4. Oktober widerlegt die angenommene Breitenfüllung und zeigt zwei leere Bereiche.
+Lokale Korrektur 0.4.24.19: gemeinsame 940-Pixel-Innenspalten mit gleichen 10-Pixel-Gruppenrändern,
+keine vertikale Wurzelfüllung oder reservierte Namensstatusfläche, dokumentierte FloatingDialog-Argumente und
+neue Framekennung. Zuletzt verwendet ohne Vorbelegung beim Öffnen/nach Zuweisung, Öffnen erst nach Auswahl.
+Plug-in-Vertrag 21/21, zusammen mit Entfernungs-/Statistik-Lua-Gegenproben 49/49 erfolgreich;
+Syntax 374 Dateien, Stil, 75 Markdown-Verweise, Status/Diff bestanden. Kein vollständiges quality:ci,
+erneute echte Layout-Sichtprüfung offen.
+Verwaltungsvereinfachung anschließend durch Felix freigegeben und lokal in **0.4.24.20** umgesetzt:
+sechs Lightroom-Hauptzugänge, drei Ort-/Zeit-Auswahlaktionen, fünf seltene Funktionen unter Weitere Aktionen.
+Kurztexte mit gemeinsamer Kartenbreite und Ausgleich zur sichtbaren Buttonkante. Explorer: Arten-/Medienläufe,
+Taxonomieupdate und Suche bleiben vorn; Sonderläufe, Einrichtung, Backup, Rücknahme und Wartung eingeklappt.
+Alle alten Ziele, Vorschauen, Bestätigungen und Schutzprüfungen erhalten. Keine neue Bestandsautomatik oder
+Katalogscans beim Öffnen. Plug-in 21/21, mit Entfernung/Statistik 49/49, Explorer-Menü/Update 50/50 und
+ergänzende UI-Gegenproben 49/49 bestanden. Praktische Ausrichtung/Navigation noch bestätigen; kein Gesamtaudit.
+[Umsetzung und Automatikgrenzen](lightroom-search-package.md#vereinfachung-der-verwaltungswege--vorschlag-vom-4-oktober).
+
+Neuer Speicherwunsch: Felix bestätigt einen gemeinsamen Daten-Unterordner beim Programm statt des
+AppData-Standards und möchte den Hauptordner von `D:\IUCN_Datenbank` in `D:\Arten-Explorer` umbenennen.
+Zielhauptordner bei lesender Vorprüfung noch nicht vorhanden. **Noch keine Migration oder Bereinigung.**
+Desktop-Verknüpfung, Lightroom-Plug-in-Registrierung und Codex-Projektpfad beim Wechsel berücksichtigen.
+Vorher konkreten Daten-Unterordnernamen und
+vollständigen lokalen Datenumfang feststellen, Git-/Pages-/Projektbackup-Ausschlüsse, Platzbedarf, unveränderte
+Sicherung, gemeinsame Explorer-/Plug-in-/Aktivierungszeigerumstellung und Rückfall prüfen. Eine isolierte
+Suchpaketverschiebung reicht nicht; aktive Aufträge/Verbraucher müssen berücksichtigt werden. Bisheriger
+Speichervertrag bleibt bis zur gesonderten Freigabe wirksam. Dies ergänzt den bisherigen Phase-11-Pfadpunkt.
+
+Ergänzender Auftrag vom 4. Oktober: gemeinsamer Datenpfad später in Einstellungen wählbar, Standard beim
+Explorer. Eigene Test-/Hilfsdateien ausschließlich im zentralen Explorer-temp, Plug-in-Arbeitsdateien im
+eigenen Plug-in-temp; beim kontrollierten Schließen entbehrliche Sitzungsreste leeren. Aufträge, Belege,
+Sicherungen und fremde/aktive Instanzen schützen, Absturzreste beim nächsten Start sicher behandeln.
+Bestehende Altlasten nur nach Nutzungsprüfung, konkreter Mengen-/Zielvorschau und Freigabe verschieben.
+Erste abgegrenzte Altverschiebung von Felix bestätigt und durchgeführt: vier Altbestände/15 Dateien/
+3.037.671 Bytes ohne Code-/Dokumentationsverweis nach temp/altreste-2026-10-04, alle SHA-256-Prüfwerte und
+Größen identisch; Manifest mit Rückweg im Ziel. Nichts gelöscht/überschrieben, temp/ in Git ignoriert.
+Gesamter Pfad-/Tempumbau noch nicht umgesetzt, AppData und benötigte Testlauf-Belege erhalten.
+[Detaillierter Vertrag und Altbestand](temp-retention.md#neuer-verbindlicher-speicher--und-tempauftrag--4-oktober-2026).
 
 Neuester Bedienbefund am 3. Oktober: 1 A bestätigt, Statistikindex bewusst neu aufgebaut, Kartenherkunft
 nach Nutzerwahl geändert. Pages-Statusgenerator-Mix, Orts-/Zeitkeywords nach Entfernung und fehlende
 Auswahlexporte sind beauftragt und in Plug-in 0.4.24.17 korrigiert. Gesamtprüfung bestanden: 50 Gruppen/
 1.120 gemeldete Tests, 420 Master- und 231 Lightroomtests. Freigegebener Commit/Push f6834fc und
-Pages-Lauf 37147560397 vollständig erfolgreich; gezielte Lightroom-Sichtabnahme bleibt nötig.
+Pages-Lauf 37147560397 vollständig erfolgreich; gezielte Entfernung/Ein-Foto-Exporte danach bestätigt,
+Gesamtabnahme und neue Layout-Sichtprüfung bleiben nötig.
 [Aktueller Reparaturnachweis](audits/2026-10-03-acceptance-regressions.md).
 
 **Abgeschlossen:** enge Quellenreparatur, unabhängiger vollständiger Master-/Paketvergleich und die von Felix

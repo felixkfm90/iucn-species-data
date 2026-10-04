@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -51,7 +51,7 @@ function fullRelease(releaseId = "col-full-test-2026-07-17") {
 }
 
 async function temporaryRoot(context, prefix) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  const root = await fs.mkdtemp(path.join(tmpdir(), prefix));
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
 }

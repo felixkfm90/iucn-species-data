@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const samePath = (left, right) => process.platform === "win32"
   ? path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase()
   : path.resolve(left) === path.resolve(right);
+
 
 export function taxonomyPublicationPath(dataRoot) {
   return path.join(path.dirname(path.resolve(dataRoot)), "taxonomy-publication", "active.json");
@@ -23,6 +25,7 @@ export function readTaxonomyPublication(dataRoot) {
       throw new Error("Ungültige Kennung im gemeinsamen Master-/Suchpaketzeiger.");
     }
   }
+  value = { ...value, taxonomyRoot: relocatedStoragePath(value.taxonomyRoot), searchRoot: relocatedStoragePath(value.searchRoot) };
   const root = path.resolve(dataRoot);
   if (![value.taxonomyRoot, value.searchRoot].some((entry) => samePath(entry, root))) return null;
   if (!samePath(path.dirname(value.taxonomyRoot), path.dirname(value.searchRoot))) {

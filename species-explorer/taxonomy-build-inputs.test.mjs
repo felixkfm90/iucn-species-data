@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { DatabaseSync } from "node:sqlite";
@@ -18,7 +18,7 @@ const record = (id, extra = {}) => ({ providerRecordId: id, scientificName: "Cic
   hierarchy: { family: "Ciconiidae" }, names: [{ language: "de", name: "Weißstorch" }], ...extra });
 
 async function fixture(t) {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "fn-build-inputs-"));
+  const dir = await fs.mkdtemp(path.join(tmpdir(), "fn-build-inputs-"));
   const handles = new Set();
   let counter = 0;
   t.after(async () => {

@@ -18,7 +18,8 @@ local AssignmentWindow = {}
 local bind = LrView.bind
 local activeDialogControls = nil
 local ASSIGNMENT_WINDOW_WIDTH = 960
-local TAXONOMY_PREVIEW_WIDTH = ASSIGNMENT_WINDOW_WIDTH - 30
+local ASSIGNMENT_GROUP_MARGIN = 10
+local ASSIGNMENT_CONTENT_WIDTH = ASSIGNMENT_WINDOW_WIDTH - 2 * ASSIGNMENT_GROUP_MARGIN
 
 local cleanText = TaxonomyRanks.cleanText
 
@@ -148,15 +149,15 @@ local function selectionState(catalog)
 end
 
 local function recentItems()
-  local items = {}
+  local items = { { title = "Zuletzt verwendete Art auswählen", value = "" } }
   for _, taxon in ipairs(PluginState.recentTaxa()) do
     table.insert(items, {
       title = resultTitle(taxon),
       value = taxon.masterTaxonId,
     })
   end
-  if #items == 0 then
-    table.insert(items, { title = "Noch keine zuletzt verwendete Art", value = "" })
+  if #items == 1 then
+    items[1].title = "Noch keine zuletzt verwendete Art"
   end
   return items
 end
@@ -206,12 +207,14 @@ function AssignmentWindow.show(context)
   props.kingdomItems = KINGDOM_ITEMS
   props.packageStatus = "Lokales Taxonomie-Suchpaket wird geprüft ..."
   props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
+  props.actionStatus = props.searchStatus
   props.selectionFiles = "Lightroom-Auswahl wird gelesen ..."
   props.selectionStatus = "Lightroom-Auswahl wird gelesen ..."
   props.resultItems = { { title = "Noch keine Suche", value = "" } }
   props.masterTaxonId = ""
   props.recentItems = recentItems()
-  props.recentTaxonId = props.recentItems[1].value
+  props.recentTaxonId = ""
+  props.canOpenRecent = false
   setPreview("Noch keine Art ausgewählt.")
   props.canAssign = false
   props.canCorrect = false
@@ -219,6 +222,26 @@ function AssignmentWindow.show(context)
   props.canSearch = false
   props.packageReady = false
   props.busy = false
+
+  -- Rückmeldungen teilen das vorhandene Statusfeld. Keine leere zweite
+  -- Statusfläche reservieren; der Tooltip enthält auch lange Fehlermeldungen.
+  local function refreshActionStatus()
+    if props.canRetryPreference and props.preferenceStatus ~= "" then
+      props.actionStatus = props.preferenceStatus .. " · " .. props.searchStatus
+    else
+      props.actionStatus = props.searchStatus
+        .. (props.preferenceStatus ~= "" and (" · " .. props.preferenceStatus) or "")
+    end
+  end
+  props:addObserver("searchStatus", refreshActionStatus)
+  props:addObserver("preferenceStatus", refreshActionStatus)
+  props:addObserver("canRetryPreference", refreshActionStatus)
+
+  local function refreshRecentAction()
+    props.canOpenRecent = props.canSearch and cleanText(props.recentTaxonId) ~= ""
+  end
+  props:addObserver("recentTaxonId", refreshRecentAction)
+  props:addObserver("canSearch", refreshRecentAction)
 
   local function refreshPreferenceAction()
     props.canSavePreference = props.canCorrect and currentTaxon ~= nil and not pendingNamePreference
@@ -317,6 +340,7 @@ function AssignmentWindow.show(context)
     setPreview(previewText(taxon))
     props.searchStatus = "Art ist zur Zuweisung bereit."
     refreshSelection()
+    refreshPreferenceAction()
   end
 
   local function search()
@@ -418,7 +442,7 @@ function AssignmentWindow.show(context)
 
   local function assign()
     if pendingNamePreference then
-      props.preferenceStatus = "Bitte zuerst die offene globale Namenswahl erneut speichern oder im Arten-Explorer aktivieren."
+      props.preferenceStatus = "Bitte zuerst „Speichern wiederholen“ wählen oder die offene Namenswahl im Arten-Explorer aktivieren."
       return
     end
     if not currentTaxon then
@@ -511,7 +535,7 @@ function AssignmentWindow.show(context)
     end
     PluginState.addRecentTaxon(assignmentTaxon)
     props.recentItems = recentItems()
-    props.recentTaxonId = props.recentItems[1].value
+    props.recentTaxonId = ""
     local germanName = cleanText(assignmentTaxon.germanName)
     local speciesName = germanName ~= "" and germanName or cleanText(currentTaxon.acceptedScientificName)
     if result.photoCount == 1 then
@@ -607,16 +631,19 @@ function AssignmentWindow.show(context)
   local view = factory:column({
     bind_to_object = props,
     spacing = factory:dialog_spacing(),
+    width = ASSIGNMENT_WINDOW_WIDTH,
+    margin = 0,
     fill_horizontal = 1,
-    fill_vertical = 1,
     factory:group_box({
       title = "1. Aktuelle Lightroom-Auswahl",
+      margin_horizontal = ASSIGNMENT_GROUP_MARGIN,
       fill_horizontal = 1,
       factory:column({
         spacing = factory:control_spacing(),
+        width = ASSIGNMENT_CONTENT_WIDTH,
         factory:static_text({
           title = bind("selectionFiles"),
-          width_in_chars = 86,
+          width = ASSIGNMENT_CONTENT_WIDTH,
           fill_horizontal = 1,
           font = "<system/bold>",
         }),
@@ -626,10 +653,12 @@ function AssignmentWindow.show(context)
     }),
     factory:group_box({
       title = "2. Art suchen und auswählen",
+      margin_horizontal = ASSIGNMENT_GROUP_MARGIN,
       fill_horizontal = 1,
       factory:column({
         spacing = factory:control_spacing(),
-        factory:static_text({ title = bind("packageStatus"), width_in_chars = 86, height_in_lines = 2, fill_horizontal = 1 }),
+        width = ASSIGNMENT_CONTENT_WIDTH,
+        factory:static_text({ title = bind("packageStatus"), width = ASSIGNMENT_CONTENT_WIDTH, height_in_lines = 2 }),
         factory:row({
           spacing = factory:control_spacing(),
           factory:static_text({ title = "Reich/Domäne:" }),
@@ -678,64 +707,75 @@ function AssignmentWindow.show(context)
             end,
           }),
         }),
-        factory:static_text({ title = bind("searchStatus"), width_in_chars = 86, fill_horizontal = 1 }),
+        factory:static_text({ title = bind("actionStatus"), tooltip = bind("actionStatus"), width = ASSIGNMENT_CONTENT_WIDTH }),
         factory:row({
           spacing = factory:control_spacing(),
           factory:static_text({ title = "Deutscher Name:" }),
           factory:popup_menu({ items = bind("germanNameItems"), value = bind("selectedGermanName"), enabled = bind("canSearch"), width_in_chars = 55 }),
         }),
-        factory:push_button({ title = "Namenswahl übernehmen", enabled = bind("canSavePreference"), action = function()
-          LrTasks.startAsyncTask(saveNamePreference)
-        end }),
-        factory:push_button({ title = "Vorherige Namenswahl auswählen", enabled = bind("canCorrect"), action = function()
-          if props.busy or not currentTaxon then return end
-          local taxonId = currentTaxon.masterTaxonId
-          LrTasks.startAsyncTask(function()
-            setBusy(true)
-            local ok, previous = LrTasks.pcall(TaxonomyHelper.namePreference, { command = "preview", masterTaxonId = taxonId, usePrevious = true })
-            if ok and currentTaxon and currentTaxon.masterTaxonId == taxonId then
-              local items = NamePreference.items(currentTaxon)
-              local found = false
-              for _, item in ipairs(items) do if item.value == previous.germanName then found = true end end
-              if not found then table.insert(items, { title = previous.germanName, value = previous.germanName }) end
-              props.germanNameItems = items
-              props.selectedGermanName = previous.germanName
-              props.preferenceStatus = "Vorherige Namenswahl ausgewählt. Jetzt Namenswahl übernehmen oder einem Foto zuweisen."
-            elseif not ok then props.preferenceStatus = tostring(previous) end
-            setBusy(false)
-          end)
-        end }),
-        factory:push_button({ title = "Anbieterstandard verwenden ...", enabled = bind("canCorrect"), action = function()
-          if props.busy or not currentTaxon or pendingNamePreference then return end
-          local taxon = currentTaxon
-          LrTasks.startAsyncTask(function()
-            setBusy(true)
-            local ok, payload = LrTasks.pcall(NamePreference.providerStandard, taxon)
-            if ok and payload then
-              local published, message = NamePreference.publish(payload)
-              if not published then pendingNamePreference = payload end
-              props.canRetryPreference = not published
-              if published then loadTaxon(taxon.masterTaxonId, cleanText(props.query)) end
-              props.preferenceStatus = message
-            elseif not ok then props.preferenceStatus = tostring(payload) end
-            setBusy(false)
-          end)
-        end }),
-        factory:static_text({ title = "Namenswahl übernehmen speichert die bevorzugte Variante auch ohne Fotozuweisung.", width_in_chars = 86 }),
-        factory:static_text({ title = bind("preferenceStatus"), width_in_chars = 86, height_in_lines = 2 }),
-        factory:push_button({ title = "Globale Namenswahl erneut speichern", enabled = bind("canRetryPreference"), action = function()
-          if props.busy or not pendingNamePreference then return end
-          LrTasks.startAsyncTask(function()
-            setBusy(true)
-            local taxonId = pendingNamePreference.masterTaxonId
-            local published, message = NamePreference.publish(pendingNamePreference)
-            if published then pendingNamePreference = nil end
-            props.canRetryPreference = not published
-            if published and currentTaxon and currentTaxon.masterTaxonId == taxonId then loadTaxon(taxonId, cleanText(props.query)) end
-            props.preferenceStatus = message
-            setBusy(false)
-          end)
-        end }),
+        factory:row({
+          spacing = factory:control_spacing(),
+          fill_horizontal = 1,
+          factory:push_button({ title = "Als bevorzugt speichern", enabled = bind("canSavePreference"),
+            tooltip = "Den ausgewählten deutschen Namen für diese Art in Lightroom und im Arten-Explorer bevorzugen. Bestehende Fotos bleiben unverändert.",
+            action = function()
+              LrTasks.startAsyncTask(saveNamePreference)
+            end }),
+          factory:push_button({ title = "Vorherigen Namen auswählen", enabled = bind("canCorrect"),
+            tooltip = "Den zuvor bevorzugten Namen nur im Auswahlfeld auswählen. Erst „Als bevorzugt speichern“ oder eine Fotozuweisung übernimmt ihn global.",
+            action = function()
+              if props.busy or not currentTaxon then return end
+              local taxonId = currentTaxon.masterTaxonId
+              LrTasks.startAsyncTask(function()
+                setBusy(true)
+                local ok, previous = LrTasks.pcall(TaxonomyHelper.namePreference, { command = "preview", masterTaxonId = taxonId, usePrevious = true })
+                if ok and currentTaxon and currentTaxon.masterTaxonId == taxonId then
+                  local items = NamePreference.items(currentTaxon)
+                  local found = false
+                  for _, item in ipairs(items) do if item.value == previous.germanName then found = true end end
+                  if not found then table.insert(items, { title = previous.germanName, value = previous.germanName }) end
+                  props.germanNameItems = items
+                  props.selectedGermanName = previous.germanName
+                  props.preferenceStatus = "Vorheriger Name ausgewählt. Jetzt „Als bevorzugt speichern“ wählen oder einem Foto zuweisen."
+                elseif not ok then props.preferenceStatus = tostring(previous) end
+                setBusy(false)
+              end)
+            end }),
+          factory:push_button({ title = "Anbieterstandard verwenden", enabled = bind("canCorrect"),
+            tooltip = "Nach Rückfrage wieder den deutschen Anbieternamen verwenden und künftig dessen Aktualisierungen folgen. Bestehende Fotos bleiben unverändert.",
+            action = function()
+              if props.busy or not currentTaxon or pendingNamePreference then return end
+              local taxon = currentTaxon
+              LrTasks.startAsyncTask(function()
+                setBusy(true)
+                local ok, payload = LrTasks.pcall(NamePreference.providerStandard, taxon)
+                if ok and payload then
+                  local published, message = NamePreference.publish(payload)
+                  if not published then pendingNamePreference = payload end
+                  props.canRetryPreference = not published
+                  if published then loadTaxon(taxon.masterTaxonId, cleanText(props.query)) end
+                  props.preferenceStatus = message
+                elseif not ok then props.preferenceStatus = tostring(payload) end
+                setBusy(false)
+              end)
+            end }),
+          factory:push_button({ title = "Speichern wiederholen", enabled = bind("canRetryPreference"),
+            tooltip = "Nur nach einem fehlgeschlagenen Speicherversuch: dieselbe offene Namenswahl erneut speichern, ohne Fotos nochmals zuzuweisen.",
+            action = function()
+              if props.busy or not pendingNamePreference then return end
+              LrTasks.startAsyncTask(function()
+                setBusy(true)
+                local taxonId = pendingNamePreference.masterTaxonId
+                local published, message = NamePreference.publish(pendingNamePreference)
+                if published then pendingNamePreference = nil end
+                props.canRetryPreference = not published
+                if published and currentTaxon and currentTaxon.masterTaxonId == taxonId then loadTaxon(taxonId, cleanText(props.query)) end
+                props.preferenceStatus = message
+                setBusy(false)
+              end)
+            end }),
+        }),
+        factory:static_text({ title = "Bevorzugte Namen gelten in Lightroom und im Arten-Explorer; bestehende Fotos bleiben unverändert.", width = ASSIGNMENT_CONTENT_WIDTH }),
         factory:row({
           spacing = factory:control_spacing(),
           fill_horizontal = 1,
@@ -748,8 +788,9 @@ function AssignmentWindow.show(context)
           }),
           factory:push_button({
             title = "Öffnen",
-            enabled = bind("canSearch"),
+            enabled = bind("canOpenRecent"),
             action = function()
+              if not props.canOpenRecent then return end
               local id = props.recentTaxonId
               props.query = ""
               LrTasks.startAsyncTask(function()
@@ -763,14 +804,19 @@ function AssignmentWindow.show(context)
     }),
     factory:group_box({
       title = "3. Taxonomie prüfen",
+      margin_horizontal = ASSIGNMENT_GROUP_MARGIN,
       fill_horizontal = 1,
       factory:column({
+        spacing = factory:control_spacing(),
+        width = ASSIGNMENT_CONTENT_WIDTH,
         fill_horizontal = 1,
         factory:simple_list({
           items = bind("previewLines"),
           value = bind("previewSelection"),
           allows_multiple_selection = false,
-          width = TAXONOMY_PREVIEW_WIDTH,
+          -- simple_list behält sonst seine SDK-Standardbreite von 450 Pixeln.
+          -- Gemeinsame Innenbreite mit gleichen Gruppenrändern festlegen.
+          width = ASSIGNMENT_CONTENT_WIDTH,
           height = 150,
           fill_horizontal = 1,
         }),
@@ -778,7 +824,7 @@ function AssignmentWindow.show(context)
           fill_horizontal = 1,
           factory:spacer({ fill_horizontal = 1 }),
           factory:push_button({
-            title = "Artbezeichnung korrigieren ...",
+            title = "Artbezeichnung korrigieren",
             enabled = bind("canCorrect"),
             action = function()
               LrTasks.startAsyncTask(openCorrection)
@@ -789,37 +835,42 @@ function AssignmentWindow.show(context)
     }),
     factory:group_box({
       title = "4. Taxonomie verwalten",
+      margin_horizontal = ASSIGNMENT_GROUP_MARGIN,
       fill_horizontal = 1,
-      factory:row({
+      factory:column({
         spacing = factory:control_spacing(),
+        width = ASSIGNMENT_CONTENT_WIDTH,
         fill_horizontal = 1,
-        factory:push_button({
-          title = "Ausgewählte Art zuweisen",
-          enabled = bind("canAssign"),
-          action = function()
-            LrTasks.startAsyncTask(assign)
-          end,
+        factory:row({
+          spacing = factory:control_spacing(),
+          fill_horizontal = 1,
+          factory:push_button({
+            title = "Ausgewählte Art zuweisen",
+            enabled = bind("canAssign"),
+            action = function()
+              LrTasks.startAsyncTask(assign)
+            end,
+          }),
+          factory:push_button({
+            title = "Taxonomie entfernen",
+            enabled = bind("canRemove"),
+            action = function()
+              LrTasks.startAsyncTask(removeAssignment)
+            end,
+          }),
+          factory:push_button({
+            title = "Orts- und Zeitdaten entfernen",
+            enabled = bind("canRemove"),
+            action = function()
+              LrTasks.startAsyncTask(removeLocationTime)
+            end,
+          }),
         }),
-        factory:push_button({
-          title = "Taxonomie entfernen",
-          enabled = bind("canRemove"),
-          action = function()
-            LrTasks.startAsyncTask(removeAssignment)
-          end,
-        }),
-        factory:spacer({ fill_horizontal = 1 }),
-        factory:static_text({ title = "Das Fenster kann während der Bildauswahl geöffnet bleiben." }),
+        factory:static_text({ title = "Das Fenster kann während der Fotoauswahl geöffnet bleiben." }),
       }),
     }),
     factory:row({
       fill_horizontal = 1,
-      factory:push_button({
-        title = "Orts- und Zeitdaten entfernen ...",
-        enabled = bind("canRemove"),
-        action = function()
-          LrTasks.startAsyncTask(removeLocationTime)
-        end,
-      }),
       factory:spacer({ fill_horizontal = 1 }),
       factory:push_button({
         title = "Schließen",
@@ -839,11 +890,8 @@ function AssignmentWindow.show(context)
     LrDialogs.presentFloatingDialog(_PLUGIN, {
       title = "FN Wildlife – Taxonomie zuweisen",
       contents = view,
-      resizable = false,
-      width = ASSIGNMENT_WINDOW_WIDTH,
-      height = 565,
       blockTask = true,
-      save_frame = "fnWildlifeTaxonomyAssignmentWindowV6",
+      save_frame = "fnWildlifeTaxonomyAssignmentWindowV7",
       selectionChangeObserver = function()
         scheduleSelectionRefresh()
       end,

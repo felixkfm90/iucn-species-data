@@ -59,7 +59,7 @@ export function synchronizeManualMapDocumentation(
     .join("\n")
     .replace(/^Stand:\s*\d{4}-\d{2}-\d{2}$/m, `Stand: ${updatedDate}`)
     .replace(
-      /Aktuell sind .*? Karten? als (?:manuell gepflegt|geschützt) dokumentiert\./,
+      /Aktuell sind [^\n]*? Karten? (?:als (?:manuell gepflegt|geschützt) dokumentiert|durch bestehende manuelle Altmarkierungen geschützt)\./,
       `Aktuell sind ${remainingCount} ${mapLabel} als geschützt dokumentiert.`,
     );
   return hadFinalNewline && !next.endsWith("\n") ? `${next}\n` : next;

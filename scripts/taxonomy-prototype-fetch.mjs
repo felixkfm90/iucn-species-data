@@ -2,13 +2,12 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUTPUT = path.join(
-  REPO_ROOT,
-  "scripts",
-  "fixtures",
-  "taxonomy",
+  benchmarkScratchRoot,
+  "prototype-fixtures",
   "col-xr-2026-07-17",
 );
 
@@ -380,6 +379,7 @@ async function fetchWormsFixture(checklistFixture) {
 }
 
 async function writeFixture(outputDirectory, checklistFixture, wormsRows) {
+  assertScratchPath(outputDirectory);
   await fs.mkdir(outputDirectory, { recursive: true });
   const files = new Map();
   files.set("NameUsage.tsv", serializeTsv([
@@ -450,6 +450,7 @@ async function writeFixture(outputDirectory, checklistFixture, wormsRows) {
 
 async function runCli() {
   const outputDirectory = parseOutputArgument(process.argv.slice(2));
+  assertScratchPath(outputDirectory);
   const checklistFixture = await fetchChecklistBankFixture();
   const wormsRows = await fetchWormsFixture(checklistFixture);
   const manifest = await writeFixture(outputDirectory, checklistFixture, wormsRows);

@@ -480,8 +480,8 @@
         <div id="pipeline-mode-choice" class="pipeline-mode-choice">
           <details class="action-group" open>
             <summary>
-              <strong>Daten aktualisieren</strong>
-              <span>Pipeline-Läufe für Arten, Karten und Sounds</span>
+              <strong>Artdaten und Medien aktualisieren</strong>
+              <span>Daten aktualisieren: Umfang wählen, danach Vorschau prüfen</span>
             </summary>
             <div class="action-group-buttons">
               <button type="button" data-pipeline-mode="all">
@@ -491,14 +491,6 @@
               <button type="button" data-pipeline-mode="missing">
                 <strong>Neue/Unvollständige Arten aktualisieren</strong>
                 <span>Nur Arten mit fehlenden Daten oder Assets</span>
-              </button>
-              <button type="button" data-pipeline-mode="manual-maps">
-                <strong>Geschützte und fehlende Karten erneut suchen</strong>
-                <span>Geschützte und fehlende Karten erneut bei IUCN prüfen</span>
-              </button>
-              <button type="button" data-pipeline-mode="nc-sounds">
-                <strong>NC- und fehlende Sounds erneut suchen</strong>
-                <span>NC-Sounds auf freie Alternativen prüfen und fehlende Sounds suchen</span>
               </button>
             </div>
           </details>
@@ -546,6 +538,10 @@
               <p id="taxonomy-master-progress-detail" class="taxonomy-master-progress-detail" hidden></p>
               <div id="taxonomy-master-diff" class="taxonomy-master-diff" hidden></div>
               <div id="taxonomy-master-conflicts" class="taxonomy-master-conflicts" hidden></div>
+              <details id="taxonomy-master-technical-details" class="taxonomy-master-technical-details" hidden>
+                <summary>Technische Details zur Quellenübernahme</summary>
+                <div id="taxonomy-master-technical-details-copy" class="taxonomy-master-technical-details-copy"></div>
+              </details>
               <div id="taxonomy-maintenance-conflicts" class="taxonomy-maintenance-conflicts" hidden></div>
               <div class="action-group-buttons taxonomy-database-actions">
                 <button type="button" data-taxonomy-database-action="pause-build" hidden>
@@ -560,25 +556,9 @@
                   <strong>Datenbank aktualisieren</strong>
                   <span id="taxonomy-database-current-version">Aktueller Stand wird geprüft…</span>
                 </button>
-                <button type="button" data-taxonomy-database-action="build-baseline" hidden>
-                  <strong>Vergleichsgrundlage einmalig erstellen …</strong>
-                  <span>Vollständiger lokaler Aufbau für künftige Änderungsabgleiche · ohne Downloads</span>
-                </button>
-                <button type="button" data-taxonomy-database-action="rollback" disabled>
-                  <strong>Vorherigen Stand wiederherstellen</strong>
-                  <span id="taxonomy-database-previous-version">Kein vorheriger Stand vorhanden</span>
-                </button>
                 <button type="button" data-taxonomy-database-action="open">
                   <strong>In Datenbank suchen und Namen korrigieren</strong>
                   <span>Offene Prüfungen und gezielte Namenskorrekturen</span>
-                </button>
-                <button type="button" data-taxonomy-identity-open>
-                  <strong>Artänderungen prüfen</strong>
-                  <span>Bisherige Arten und mögliche Nachfolger vergleichen</span>
-                </button>
-                <button type="button" data-taxonomy-database-action="storage">
-                  <strong>Speicher prüfen und bereinigen</strong>
-                  <span>Vorschau · aktiver Stand und ein Vorgänger bleiben geschützt</span>
                 </button>
               </div>
               <p id="taxonomy-database-build-progress" hidden></p>
@@ -593,34 +573,70 @@
             </div>
           </details>
 
-          <details class="action-group" open>
+          <details id="pipeline-more-actions" class="action-group database-more-actions">
             <summary>
-              <strong>Backup und Einstellungen</strong>
-              <span>NAS-Sicherung und lokaler Zielpfad</span>
+              <strong>Weitere Aktionen</strong>
+              <span>Gezielte Medienprüfung, Einrichtung, Sicherung und Wiederherstellung</span>
             </summary>
-            <div class="action-group-buttons">
-              <button type="button" data-backup-action="nas">
-                <strong>NAS-Backup erstellen</strong>
-                <span>Projektstand als ZIP auf dem NAS sichern</span>
-              </button>
-              <button type="button" data-settings-action="backup-path">
-                <strong>Backup-Pfad einstellen</strong>
-                <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
-              </button>
-            </div>
-          </details>
-
-          <details class="action-group action-group-danger">
-            <summary>
-              <strong>Wartung</strong>
-              <span>Dauerhafte Bereinigung verwaister Daten</span>
-            </summary>
-            <div class="action-group-buttons">
-              <button class="danger" type="button" data-pipeline-mode="cleanup">
-                <strong>Bereinigen</strong>
-                <span>Verwaiste Daten und Assets dauerhaft löschen</span>
-              </button>
-            </div>
+            <section class="action-subgroup">
+              <h4>Gezielte Karten- und Soundsuche</h4>
+              <div class="action-group-buttons">
+                <button type="button" data-pipeline-mode="manual-maps">
+                  <strong>Geschützte und fehlende Karten erneut suchen</strong>
+                  <span>Geschützte und fehlende Karten erneut bei IUCN prüfen</span>
+                </button>
+                <button type="button" data-pipeline-mode="nc-sounds">
+                  <strong>NC- und fehlende Sounds erneut suchen</strong>
+                  <span>NC-Sounds auf freie Alternativen prüfen und fehlende Sounds suchen</span>
+                </button>
+              </div>
+            </section>
+            <section class="action-subgroup">
+              <h4>Taxonomie: Einrichtung und Wiederherstellung</h4>
+              <div class="action-group-buttons taxonomy-database-actions">
+                <button type="button" data-taxonomy-database-action="build-baseline" hidden>
+                  <strong>Vergleichsgrundlage einmalig erstellen</strong>
+                  <span>Vollständiger lokaler Aufbau für künftige Änderungsabgleiche · ohne Downloads</span>
+                </button>
+                <button type="button" data-taxonomy-database-action="rollback" disabled>
+                  <strong>Vorherigen Stand wiederherstellen</strong>
+                  <span id="taxonomy-database-previous-version">Kein vorheriger Stand vorhanden</span>
+                </button>
+                <button type="button" data-taxonomy-identity-open>
+                  <strong>Artänderungen prüfen</strong>
+                  <span>Bisherige Arten und mögliche Nachfolger vergleichen</span>
+                </button>
+                <button type="button" data-taxonomy-database-action="storage">
+                  <strong>Speicher prüfen und bereinigen</strong>
+                  <span>Vorschau · aktiver Stand und ein Vorgänger bleiben geschützt</span>
+                </button>
+              </div>
+            </section>
+            <section class="action-subgroup">
+              <h4>Backup und Einstellungen</h4>
+              <div class="action-group-buttons">
+                <button type="button" data-backup-action="nas">
+                  <strong>NAS-Backup erstellen</strong>
+                  <span>Projektstand als ZIP auf dem NAS sichern</span>
+                </button>
+                <button type="button" data-settings-action="backup-path">
+                  <strong>Backup-Pfad einstellen</strong>
+                  <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
+                </button>
+              </div>
+            </section>
+            <details class="action-group action-group-danger">
+              <summary>
+                <strong>Wartung</strong>
+                <span>Dauerhafte Bereinigung verwaister Daten</span>
+              </summary>
+              <div class="action-group-buttons">
+                <button class="danger" type="button" data-pipeline-mode="cleanup">
+                  <strong>Bereinigen</strong>
+                  <span>Verwaiste Daten und Assets dauerhaft löschen</span>
+                </button>
+              </div>
+            </details>
           </details>
         </div>
         <section class="edit-preview pipeline-preview" hidden>

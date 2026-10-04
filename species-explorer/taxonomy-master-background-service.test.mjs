@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
@@ -78,7 +78,7 @@ test("Einmaliger Grundlagenlauf mit echtem Worker erhält Altstand bis zur Paarf
 });
 
 async function fixture(t, count = 10) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-master-background-service-"));
+  const base = await fs.mkdtemp(path.join(tmpdir(), "fn-master-background-service-"));
   t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const root = path.join(base, "taxonomy");
   const selection = { speciesListPath: path.join(base, "species_list.json"), correctionsPath: path.join(base, "corrections.json") };

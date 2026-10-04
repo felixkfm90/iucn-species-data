@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
@@ -14,7 +14,7 @@ const FIRST = new Date("2026-08-01T08:00:00.000Z");
 const SECOND = new Date("2026-09-01T08:00:00.000Z");
 
 async function createRoot(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-master-regression-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-master-regression-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
 }

@@ -76,10 +76,12 @@ Quellenstand wird nie allein aufgrund seines Datums als fachlich richtiger behan
 
 ## Speichergrenze und Versionen
 
-Die Daten liegen außerhalb von Repository, GitHub Pages und normalem Projekt-Backup:
+Die Daten liegen im ignorierten gemeinsamen Daten-Unterordner, außerhalb versionierter Repositorydateien
+und GitHub Pages. Das vollständige NAS-Restorebackup enthält sie; Temp bleibt ausgeschlossen.
+[Speicherwechsel und Konfiguration seit 4. Oktober](storage-migration.md).
 
 ```text
-%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\
+<Explorer-Ordner>\Daten\taxonomy\
   releases\                         vollständige CoL-XR-Releases
   master\
     active\taxonomy-master.sqlite

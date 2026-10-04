@@ -1,3 +1,4 @@
+import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -64,7 +65,7 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
 
 test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Backup an", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const backupDir = join(repoRoot, "species-explorer", "backups");
   await mkdir(backupDir, { recursive: true });
   for (let index = 0; index < 22; index += 1) {
@@ -77,7 +78,7 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   await writeFile(join(backupDir, "not-a-managed-backup.txt"), "behalten\n");
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const speciesListPath = join(repoRoot, "species_list.json");
   const beforeText = await readFile(speciesListPath, "utf8");
@@ -162,10 +163,10 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
 
 test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückgesetzt werden", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const fields = {
     Kingdom: "Animalia",
@@ -238,7 +239,7 @@ test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückge
 
 test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträgen umbenannt werden", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const assetDir = join(repoRoot, "species-assets", "Amsel");
   await Promise.all([
     writeFile(join(repoRoot, "lastSavedAssessmentId.json"), `${JSON.stringify({ Amsel: 264548442 }, null, 2)}\n`),
@@ -295,7 +296,7 @@ test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträge
 
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const previewResponse = await fetch(`${baseUrl}/api/species/turdusmerula/preview`, {
@@ -363,7 +364,7 @@ test("Deutscher Artname kann inklusive SafeName, Assetordner und Pflegeeinträge
 
 test("Wissenschaftlicher Artname bleibt gesperrt und kann bewusst mit URL-Slug geändert werden", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const assetDir = join(repoRoot, "species-assets", "Amsel");
   await Promise.all([
     writeFile(join(assetDir, "portrait.json"), `${JSON.stringify({
@@ -379,7 +380,7 @@ test("Wissenschaftlicher Artname bleibt gesperrt und kann bewusst mit URL-Slug g
   ]);
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const payload = {
     germanName: "Amsel",
@@ -444,11 +445,11 @@ test("Wissenschaftlicher Artname bleibt gesperrt und kann bewusst mit URL-Slug g
 
 test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehängt", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   await mkdir(join(repoRoot, "species-assets", "Kollisionsart"), { recursive: true });
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const speciesListPath = join(repoRoot, "species_list.json");
   const beforeText = await readFile(speciesListPath, "utf8");
@@ -630,7 +631,7 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
 
 test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const speciesList = JSON.parse(await readFile(join(repoRoot, "species_list.json"), "utf8"));
   const speciesData = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
   const sanitize = (value) => value;
@@ -789,7 +790,7 @@ test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (co
 
 test("Explorer-Modell zählt automatisch übernommene Karten nicht als manuell", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   await Promise.all([
     writeFile(join(repoRoot, "docs", "manual-map-overrides.md"), [
       "# Manual Map Overrides",

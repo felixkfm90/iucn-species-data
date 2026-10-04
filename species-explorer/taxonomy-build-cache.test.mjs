@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
@@ -130,7 +131,7 @@ test("Später asynchroner Nachläufer eines abgeschlossenen Bereichs erhält kei
 });
 
 test("Dateipuffer ist nicht dauerhaft, schreibgeschützte Quelle bleibt bytegleich und nach Fehler wieder offen", async () => {
-  const directory = await fs.mkdtemp(path.resolve("Testlauf/build-cache-")), file = path.join(directory, "source.sqlite");
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "build-cache-")), file = path.join(directory, "source.sqlite");
   let db = new DatabaseSync(file);
   db.exec("CREATE TABLE source(id INTEGER PRIMARY KEY); INSERT INTO source VALUES(1)");
   const standard = size(db), journal = db.prepare("PRAGMA journal_mode").get().journal_mode;
@@ -153,7 +154,7 @@ test("Dateipuffer ist nicht dauerhaft, schreibgeschützte Quelle bleibt byteglei
     assert.equal(db.prepare("SELECT count(*) n FROM source").get().n, 1);
   } finally {
     if (db.isOpen) db.close();
-    assert.equal(path.dirname(directory), path.resolve("Testlauf"));
+    assert.equal(path.dirname(directory), tmpdir());
     assert.match(path.basename(directory), /^build-cache-[a-zA-Z0-9]+$/u);
     await fs.rm(directory, { recursive: true, force: true });
   }

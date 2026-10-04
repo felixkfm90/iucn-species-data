@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -47,7 +47,7 @@ function planFixture({ type = "split", favorite = false, existing = false } = {}
   return { store, before, after, request, previousFavorite };
 }
 async function journalFixture(t, options = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-photo-journal-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-photo-journal-"));
   const journals = [];
   t.after(async () => { journals.forEach((journal) => { try { journal.close(); } catch {} }); await fs.rm(root, { recursive: true, force: true }); });
   const open = async (overrides = {}) => {

@@ -1,6 +1,6 @@
 # Dokumentationsübersicht
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 
 Aktuelle Bedien- und Betriebsverträge stehen neben ausdrücklich datierten Messungen und historischen
 Planungs-/Auditberichten. Ein älteres Datum allein macht einen unveränderten Vertrag nicht ungültig; ein
@@ -54,6 +54,8 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 
 - [Desktop-Betrieb](desktop-shell-plan.md), [historischer Desktop-App-Plan](desktop-app-plan.md).
 - [Lokale API-Sicherheit](explorer-api-security.md), [temporäre Dateien](temp-retention.md).
+- [Gemeinsamer Datenpfad und geprüfter Umzug](storage-migration.md), [Test- und Messpfade](test-temp-contract.md).
+- [Datenwechsel und Artassistent-Prüfabschluss vom 4. Oktober](audits/2026-10-04-storage-and-species-wizard.md).
 - [Mehrgeräte-/Update-/NAS-Plan](multi-device-backup-plan.md): offene Phase 11 von heutigen Funktionen trennen.
 
 ## Squarespace und Website

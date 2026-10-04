@@ -11,6 +11,7 @@ import { taxonomyPublicationPath } from "./taxonomy-publication-storage.mjs";
 import { readMasterSourceBinding } from "./taxonomy-master-source-binding.mjs";
 import { existsSync } from "node:fs";
 import { assertTaxonomySpace, taxonomyDirectoryBytes } from "./taxonomy-space-budget.mjs";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const JOB_PATTERN = /^job-[a-f0-9-]{36}$/;
@@ -30,7 +31,7 @@ export async function masterJobBinding(taxonomyRoot, guardFiles = [], selection 
   const files = [...new Set([
     taxonomyPublicationPath(taxonomyRoot),
     ...["active", "previous"].flatMap((slot) => [taxonomyMasterDatabasePath(taxonomyRoot, slot), taxonomyMasterManifestPath(taxonomyRoot, slot)]),
-    ...guardFiles.map((filename) => path.resolve(filename)),
+    ...guardFiles.map((filename) => path.resolve(relocatedStoragePath(filename))),
   ])].sort();
   return { rules: await masterBuildRulesRevision(),
     ...(selection ? { selection: await readMasterSourceBinding(taxonomyRoot, selection) } : {}),
@@ -38,11 +39,15 @@ export async function masterJobBinding(taxonomyRoot, guardFiles = [], selection 
 }
 
 export async function verifyMasterJob(root, recipe) {
-  if (recipe.schemaVersion !== 1 || path.resolve(recipe.taxonomyRoot) !== path.resolve(root)
+  if (recipe.schemaVersion !== 1 || path.resolve(relocatedStoragePath(recipe.taxonomyRoot)) !== path.resolve(root)
       || !JOB_PATTERN.test(recipe.id) || recipe.revision !== hash({ ...recipe, revision: undefined })) {
     throw new Error("Der gespeicherte Master-Auftrag ist ungültig.");
   }
-  if (hash(await masterJobBinding(root, recipe.guardFiles, recipe.selection)) !== hash(recipe.binding)) {
+  const relocateBinding = (binding) => ({ ...binding,
+    ...(binding.selection ? { selection: { ...binding.selection,
+      files: binding.selection.files.map(([file, checksum]) => [relocatedStoragePath(file), checksum]) } } : {}),
+    files: binding.files.map(([file, checksum]) => [relocatedStoragePath(file), checksum]).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0) });
+  if (hash(await masterJobBinding(root, recipe.guardFiles, recipe.selection)) !== hash(relocateBinding(recipe.binding))) {
     const error = new Error("Eingangsdaten, aktiver Master oder Aufbauregeln wurden geändert. Dieser Zwischenstand darf nicht fortgesetzt werden. Bitte einen neuen Aufbau starten.");
     error.code = "MASTER_JOB_STALE";
     throw error;

@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { readdirSync } from "node:fs";
@@ -14,7 +15,7 @@ import { activateLightroomSearchPackage, lightroomSearchDatabasePath, sha256File
 
 const now = () => new Date("2026-09-21T10:00:00Z");
 async function fixture(t) {
-  const scratch = fileURLToPath(new URL("../Testlauf/", import.meta.url));
+  const scratch = tmpdir();
   await fs.mkdir(scratch, { recursive: true });
   const root = await fs.mkdtemp(path.join(scratch, "lightroom-input-"));
   t.after(async () => {

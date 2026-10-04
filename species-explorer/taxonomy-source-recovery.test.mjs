@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -39,7 +39,7 @@ import { assertRecoveryCandidateScope, scopedRecoveryColRecords, frozenRecoveryC
 
 const OLD = "2026-09-03T00:00:00.000Z", NOW = "2026-09-27T00:00:00.000Z";
 const COL = "col-xr-2026-07-17";
-const CLI_FIXTURE_ROOT = path.resolve(os.tmpdir(), "fn-source-recovery-cli-fixture");
+const CLI_FIXTURE_ROOT = path.resolve(tmpdir(), "fn-source-recovery-cli-fixture");
 const CLI_DECISIONS = `--replacement-decisions=${path.join(CLI_FIXTURE_ROOT, "decisions.json")}`;
 const cliFixtureArgs = () => [
   ...[["taxonomy-root", "taxonomy"], ["search-root", "lightroom"], ["species-list", "species.json"], ["corrections", "corrections.json"]]
@@ -55,7 +55,7 @@ const record = (providerRecordId, scientificName, extra = {}) => normalizeProvid
 
 async function fixture(t, { stableName = "Testus stable", stableKingdom = "Animalia", stableNotice = true,
   stableNoticeState = "open", stableProtectionMarker = false } = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-source-recovery-"));
+  const base = await fs.mkdtemp(path.join(tmpdir(), "fn-source-recovery-"));
   t.after(() => fs.rm(base, { recursive: true, force: true, maxRetries: 4, retryDelay: 80 }));
   const options = { taxonomyRoot: path.join(base, "taxonomy"), searchRoot: path.join(base, "lightroom"),
     speciesListPath: path.join(base, "species.json"), correctionsPath: path.join(base, "corrections.json"),
@@ -561,7 +561,7 @@ for (const stableProtectionMarker of [false, true]) test(`enger Kandidatenbau er
 });
 
 async function conflictFixture(t, state = "resolved-keep", { missing = false, ambiguous = false } = {}) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "fn-recovery-conflicts-"));
+  const base = await fs.mkdtemp(path.join(tmpdir(), "fn-recovery-conflicts-"));
   const previousPath = path.join(base, "old.sqlite"), candidatePath = path.join(base, "candidate.sqlite");
   const before = new DatabaseSync(previousPath), database = new DatabaseSync(candidatePath);
   t.after(async () => { database.close(); await fs.rm(base, { recursive: true, force: true }); });

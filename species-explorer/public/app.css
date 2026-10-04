@@ -469,6 +469,21 @@ button.danger,
   gap: 8px;
 }
 
+.database-more-actions > .action-subgroup + .action-subgroup {
+  border-top: 1px solid var(--line);
+}
+
+.action-subgroup h4 {
+  margin: 0;
+  padding: 10px 12px 8px;
+  color: var(--green);
+  font-size: 0.8rem;
+}
+
+.database-more-actions > .action-group-danger {
+  margin: 0 10px 10px;
+}
+
 .taxonomy-maintenance-panel {
   padding: 0 8px 8px;
   display: grid;
@@ -666,8 +681,33 @@ button.danger,
 }
 
 .taxonomy-master-diff[hidden],
-.taxonomy-master-conflicts[hidden] {
+.taxonomy-master-conflicts[hidden],
+.taxonomy-master-technical-details[hidden] {
   display: none !important;
+}
+
+.taxonomy-master-technical-details {
+  padding: 7px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.taxonomy-master-technical-details > summary {
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.taxonomy-master-technical-details-copy {
+  padding-top: 7px;
+  line-height: 1.5;
+}
+
+.taxonomy-master-technical-details-copy p {
+  margin: 5px 0 0;
 }
 
 .taxonomy-master-diff-item {

@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
+import { explorerStoragePaths, EXPLORER_REPO_ROOT } from "./storage-paths.mjs";
 import { fileURLToPath } from "node:url";
 
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
@@ -25,14 +25,10 @@ function normalizeDate(value, label) {
   return date;
 }
 
-export function defaultLightroomCorrectionHandoffRoot(environment = process.env) {
+export function defaultLightroomCorrectionHandoffRoot(environment = process.env, repoRoot = EXPLORER_REPO_ROOT) {
   const configured = cleanText(environment.FN_LIGHTROOM_CORRECTION_HANDOFF_ROOT, 1024);
   if (configured) return path.resolve(configured);
-  const localAppData = cleanText(environment.LOCALAPPDATA, 1024);
-  if (localAppData) {
-    return path.join(localAppData, "FN Wildlife Travel", "Arten-Explorer", "handoff");
-  }
-  return path.join(os.homedir(), ".fn-wildlife-travel", "arten-explorer", "handoff");
+  return explorerStoragePaths({ environment, repoRoot }).handoffRoot;
 }
 
 export function assertLightroomCorrectionRequestId(value) {

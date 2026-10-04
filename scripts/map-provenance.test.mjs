@@ -4,7 +4,7 @@ import { createMapImportCare, isMapProtected, mapCareState } from "./map-provena
 import { createIucnMapAdapter } from "./iucn-map-adapter.mjs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { tmpdir } from "./test-temp.mjs";
 
 const species = { iucn: { assessmentId: "132000123" } };
 const payload = {

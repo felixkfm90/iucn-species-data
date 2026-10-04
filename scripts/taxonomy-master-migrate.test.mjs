@@ -1,6 +1,6 @@
+import { tmpdir } from "./test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -12,7 +12,7 @@ const {
 } = taxonomyMasterMigrationInternals;
 
 async function temporaryTaxonomyRoot(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-master-migrate-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-master-migrate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   return root;
 }

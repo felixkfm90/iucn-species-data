@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -102,7 +102,7 @@ test("Nicht installiertes Paket wird verständlich gemeldet", async () => {
 });
 
 test("Einmalmodus schreibt genau eine atomare Antwortdatei", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-helper-test-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "lightroom-helper-test-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const requestPath = path.join(root, "request.json");
   const responsePath = path.join(root, "response.json");

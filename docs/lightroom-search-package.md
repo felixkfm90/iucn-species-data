@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 Roadmap: Phase 10.2 bis 10.4
-Status: Quellstand Plug-in-Version **0.4.24.17** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.21** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
@@ -13,6 +13,118 @@ Version 0.4.24.17 korrigiert Orts-/Zeitentfernung mit dokumentierten SDK-Objekte
 ergänzt den unteren Entfernen-Button und drei Auswahlexporte mit Defaultnamen. Fehlender Statistikindex
 wird nur bewusst neu aufgebaut. Technische Gegenproben und praktische Restabnahme:
 [Bedienregressionen](audits/2026-10-03-acceptance-regressions.md).
+
+Felix bestätigt die Orts-/Zeitentfernung für Einzel-/Mehrfachauswahl sowie die neuen Exporte anhand eines Fotos
+nach bewusstem Statistik-Neuaufbau. Das ist gezielte praktische Abnahme, kein Großkatalog- oder Gesamtaudit.
+Version 0.4.24.18 glättet nur diese Fenster: `Orts- und Zeitdaten entfernen` steht in Schritt 4 unmittelbar
+neben `Taxonomie entfernen`. Ein SDK-Kontrollabstand trennt Liste und rechtsbündigen Button
+`Artbezeichnung korrigieren`. Die vier Namensaktionen stehen in einer Reihe und erhalten erklärende Tooltips;
+nach frischem Detailabruf wird auch der Speicherbutton für einen schon bevorzugten Namen deaktiviert.
+[Beschriftungen und Wirkung](taxonomy-name-preference-plan.md#lightroom-buttonbeschriftungen-ab-042418).
+
+Der Screenshot vom 4. Oktober widerlegt die bisher angenommene Breitenfüllung: die native Liste behält
+450 Pixel SDK-Standardbreite, obwohl die umgebende Gruppe breiter ist. 0.4.24.19 definiert deshalb eine
+960-Pixel-Wurzelspalte, in allen vier Gruppen gleiche horizontale Ränder von 10 Pixeln und gemeinsame
+940-Pixel-Innenspalten. Liste und Korrekturzeile gehören derselben Innenspalte an; die Liste erhält deren
+Breite ausdrücklich. Keine vertikale Wurzelfüllung oder feste Dialoghöhe. Die nicht dokumentierten
+FloatingDialog-Argumente `width`, `height`, `resizable` entfallen; Inhaltslayout und neue `save_frame`-Kennung
+V7 ersetzen die alte gespeicherte Geometrie. Die Höhe der scrollbaren Taxonomieliste bleibt 150 Pixel.
+Die bisher auch leer zweizeilig reservierte Namensstatusfläche entfällt. Such-/Aktions- und Namensrückmeldungen
+teilen das vorhandene Statusfeld; dessen Tooltip enthält den vollständigen Text einschließlich Speicherfehlern.
+`Zuletzt verwendet` beginnt mit leerer Auswahl und bietet darunter nur die gespeicherten zuletzt verwendeten
+Arten. `Öffnen` wird erst bei expliziter Artauswahl und verfügbarem Paket aktiv. Kein Detailabruf allein beim
+Öffnen des Fensters; nach Zuweisung und Wiederöffnen erneut leere Vorauswahl. Keine Namenspräferenz dadurch.
+
+Im Verwaltungsfenster haben alle zwölf Aktionsbuttons keine Auslassungspunkte, jeweils einen kurzen sichtbaren
+Erklärungstext und einen ausführlicheren Tooltip. Keine Aktion fachlich entfallen: Auswahl-Ort/Zeit, gesamter
+Katalogabgleich und vollständige Auswahlbereinigung haben unterschiedliche Reichweiten. `FN-Katalognutzung
+erfassen` bleibt Erstregistrierungs-/Wiederherstellungsweg; bei normalen bestätigten Datenbankupdates wird eine
+nötige Erfassung automatisch angefordert. Kein manueller Zusatzschritt im regulären Weg.
+Layoutgrundlagen: Adobe-SDK-Referenz für [Abstände](https://lrc.mcor.dev/modules/LrView%20child%20layout%20properties.html),
+[Füllung/Mindestbreiten](https://lrc.mcor.dev/modules/LrView%20node%20layout%20properties.html) und
+[Tooltips](https://lrc.mcor.dev/modules/LrView%20view%20properties.html), extern gespiegelte Adobe-Dokumentation.
+Zusätzlich [native Listenbreite](https://lrc.mcor.dev/modules/LrView.html#viewFactory:simple_list) und
+[FloatingDialog-Vertrag](https://lrc.mcor.dev/modules/LrDialogs.html#LrDialogs.presentFloatingDialog).
+Erneute praktische Sichtprüfung dieses korrigierten Layouts noch offen. Keine neue Fotozuweisung, Erfassung oder Datenmigration
+durch den UI-Umbau. Historische Prüfzahlen gelten weiterhin nur für ihren bezeichneten Stand.
+Prüfabschluss der UI-Anpassung: Plug-in-Vertrag 19/19, zusammen mit Entfernungs-/Statistik-Lua-Gegenproben
+47/47 erfolgreich, keine Fehler/Abbrüche/Skips. Neue Tests führen die realen Lua-Fenstermodule aus: Anordnung,
+Beschriftungen, Rückfragen/Abbruch, Namensvorauswahl ohne Speichern, Anbieterstandard, Speicherfehler/Wiederholung,
+alle zwölf Verwaltungsziele, Doppelauslösungsschutz und Schließen/Wiederöffnen. Das simuliert SDK-Verträge,
+nicht das native Pixelrendering. Syntax/Stil/75 Markdown-Verweise/Projektstatus/Diff ebenfalls bestanden;
+kein erneutes vollständiges quality:ci für diese enge Darstellungskorrektur.
+
+Folgeprüfung 0.4.24.19: Plug-in-Vertrag 21/21, gemeinsam mit Entfernungs-/Statistik-Lua-Gegenproben 49/49
+erfolgreich, keine Fehler/Abbrüche/Skips. Syntax 374 Dateien, Stil, 75 Markdown-Verweise, aktueller Projektstatus
+und Diffprüfung bestanden; kein erneutes vollständiges quality:ci. Gleiche explizite Rand-/Breitenverhältnisse und
+keine reservierte vertikale Füllung/Statusfläche, Schließen/Wiederöffnen, vollständig erhaltene Speicherfehler
+und Wiederholung getestet. Recent-Auswahl mit vorhandener Historie: keine implizite Suche/Art, leere Auswahl
+nach Zuweisung und erneutem Öffnen, bewusstes Laden, Ladefehler und unverfügbares Paket. Dies prüft reale
+Lua-Steuerung mit SDK-Simulation, nicht die tatsächlichen Windows-Pixel oder die vom SDK gewählte Fensterhöhe.
+
+## Vereinfachung der Verwaltungswege – Vorschlag vom 4. Oktober
+
+Die folgenden Punkte beantworten Felix' Automatisierungsfrage. Der Vorschlag ist mit „los“ freigegeben und
+in **0.4.24.20** sowie der lokalen Explorer-Oberfläche umgesetzt. Der Abschnittsname bleibt als bestehendes
+Verweisziel erhalten. Dies ist Menüvereinfachung, **kein Auftrag zur automatischen Bestandsänderung**.
+Geprüft sind vorhandene Menüziele, ihre Schreibwirkung, Explorer-HTML/Controller und der gespeicherte Updatevertrag.
+
+| Bereich | Schon automatisch | Sinnvolle Vereinfachung | Grenze |
+| --- | --- | --- | --- |
+| FN-Katalognutzung | Im ausdrücklich gestarteten regulären Update nötige neue SDK-Erfassung anfordern und auf normales Lightroom-Schließen warten. | Einzelnen Erfassungsbutton unter Einrichtung/Wiederherstellung statt im normalen Hauptbereich. | Unbekannte Kataloge müssen einmal registriert werden; kein Scan ohne Auftrag. |
+| Taxonomiedatenbank | Gespeicherte Quellen-/Master-/Suchpaketkette, sichere unbenutzte Klassifikationen und Fortsetzung nach letzter bestätigter Entscheidung. | Ein sichtbarer Aktualisierungsweg; technische Einzelwege und Rücknahme unter Weitere Aktionen. | Ein Start/Später; geschützte Änderungen, technische Fehler und frische Nachweise bleiben relevant. Praktische Gesamtabnahme offen. |
+| Statistik | Eigene FN-Schreibaktionen führen den persistenten Index fort. | Neuaufbau als bedarfsbezogene Reparatur im Statistikfenster statt zusätzliche Hauptaufgabe. | Externe Änderungen nicht lückenlos SDK-beobachtbar; kein versteckter Vollkatalogscan beim Öffnen. |
+| Ort und Zeit | Bei Taxonomiezuweisung aus vorhandenen Angaben fehlende FN-Ort-/Zeitdaten ergänzen. | Einzelaktionen Hinzufügen/Abgleichen/Entfernen unter einem Einstieg Ort und Zeit; Umfang und Wirkung dort eindeutig wählen. | Orts-/Zeit-Abgleich der Auswahl ist nicht der Taxonomieabgleich des gesamten Katalogs. Entfernen nicht automatisch auslösen. |
+| Entfernen/Artänderungen | Keine automatische Entfernung oder Foto-/Projektmigration. | Doppelte Taxonomie-/Ort-/Zeitentfernungszugänge im Zuweisungsfenster bzw. gemeinsamen Ort-/Zeitbereich belassen; Gesamtentfernung und Review/Rücknahme unter Weitere Aktionen. | Rückfrage und bisherige Wiederherstellungswege erhalten; nur relevante Fälle aktiv anbieten. |
+| Smart-Sammlungen | Lightroom hält eingerichtete Smart-Sammlungen anhand ihrer Regeln aktuell. | Einmalige geführte Einrichtung; Reparatur/Regelabgleich unter Einrichtung. | Aktuelles Einrichtungsskript ersetzt Regeln und löscht alte verwaltete Sammlungen. Nicht ungefragt beim Start ausführen. |
+| Explorer-Artdaten und Medien | Artanlage nutzt bereits den gezielten Pipelineweg mit anschließender Assetprüfung. | Ein Einstieg Artdaten und Medien aktualisieren mit klarer Umfangswahl; gezielte Karten-/Soundsonderläufe unter Weitere Aktionen bzw. bei Bedarf. | Eigene Karten, Soundablehnungen, Lizenz-/Assetentscheidungen und manuelle Felder bleiben geschützt. IUCN-403 ist dadurch nicht repariert. |
+| Backup und Bereinigung | Keine neue automatische NAS-Sicherung oder Löschung aus diesem Auftrag. | Backup-Pfad/technische Einstellungen, Speicherbereinigung und Rollback unter Weitere Aktionen. | Aufbewahrungsregel, Ziel und Sicherung gesondert festlegen; Bereinigung nach unverändertem Vorschauplan und Bestätigung. |
+
+Umgesetzte normale Lightroom-Einstiege: `Taxonomie zuweisen`, `Art-Favorit festlegen`, `Ort und Zeit`,
+`Statistik und Exporte`, `FN-Daten aktualisieren` sowie ein zusammengefasster Zugang `Weitere Aktionen`.
+Keine vorhandene Fachaktion ersatzlos löschen. Der Aktualisierungseinstieg muss Umfang/Wirkung klar anzeigen;
+ein Datenbankwechsel darf nicht still sämtliche bereits zugewiesenen Fotos umschreiben.
+
+Im Explorer als Hauptwege `Taxonomiedatenbank aktualisieren`, `In Datenbank suchen und Namen korrigieren`
+und `Artdaten und Medien aktualisieren`; Pause/Fortsetzen sowie konkrete Konfliktentscheidungen nur im
+jeweiligen Zustand anbieten. Backup, Speicherpflege, Rücknahme, einmalige Vergleichsgrundlage und technische
+Wiederherstellung gehören unter Weitere Aktionen. Die alten Quellen-/Master-Einzelbuttons sind im aktuellen
+HTML bereits verborgen, nicht zusätzliche sichtbare Hauptoptionen.
+
+Diese Umsetzung ändert weder den bestätigten [Updatevertrag](taxonomy-update-automation.md) noch
+die [Nutzungsgrenze](lightroom-catalog-usage.md), Smart-Sammlungsregeln, Such-/Zuweisungslogik oder den
+offenen separaten Speicherumzug. Keine zusätzliche Bestandsaktion, Erfassung oder Löschung beim Öffnen.
+
+### Menüaufbau und Ausrichtung ab 0.4.24.20
+
+Lightroom zeigt sechs Karten in zwei Spalten. `Ort und Zeit` öffnet Hinzufügen, Aktualisieren und Entfernen
+für die Auswahl. `Weitere Aktionen` enthält Taxonomie entfernen, Artänderungen prüfen, alle FN-Daten der
+Auswahl entfernen, Smart-Sammlungen einrichten und FN-Katalognutzung erfassen. Alle zwölf Skriptziele bleiben
+erreichbar. Der Kurztext zu `FN-Daten aktualisieren` nennt ausdrücklich den gesamten Katalog; der Auswahl-
+Ort/Zeitabgleich bleibt getrennt. Jede Unterseite besitzt Zurück und Schließen, immer nur eine Menüseite offen.
+Das Zielskript wird erst nach Schließen des Menüs ausgeführt. Doppelauslösungsschutz, Fehleranzeige und
+erneute Öffnung erhalten; reine Navigation schreibt nichts.
+
+Buttons und Erklärungszeilen nutzen dieselbe feste 330-Pixel-Spalte. Der Text beginnt 3 Pixel innerhalb der
+Layoutkante, um den im Screenshot sichtbaren Versatz zum nativen Windows-Buttonrahmen auszugleichen;
+die Textbreite wird entsprechend verkürzt. Dies gilt für Hauptseite und beide Unterseiten. Tooltips bleiben
+vollständig. Die tatsächliche Pixelkante kann nur in Lightroom geprüft werden, nicht durch die SDK-Simulation.
+
+Im Explorer sind Karten-/Soundsonderläufe, Vergleichsgrundlage, Rollback, Artänderungen, Speicherpflege, Backup
+und Bereinigung unter `Weitere Aktionen` zusammengefasst. Der Bereich beginnt auch nach Wiederöffnung
+eingeklappt. Keine Funktion entfernt; IDs und bestehende Controllerverdrahtung unverändert. Pause/Fortsetzen
+und Konfliktentscheidungen erscheinen weiterhin bei Bedarf. Allgemeine Arten-/Medienläufe verlangen wie bisher
+zunächst eine Vorschau; das Aufklappen ist kein Laufstart.
+
+Prüfabschluss: Plug-in-Vertrag **21/21**, gemeinsam mit Entfernungs-/Statistik-Lua-Gegenproben **49/49**;
+Explorer-Menü/Updatevertrag **50/50**, zusätzliche Pipeline-/Bestätigungs-/Einstellungs-/Taxonomie-UI-Gegenproben
+**49/49**, ohne Fehler/Abbruch/Skip. Reale Lua-Steuerung mit SDK-Simulation prüft alle zwölf Ziele,
+Zurück/Schließen, Doppelklick, Zielfehler und erfolgreiche Wiederholung. Explorer-Gegenproben prüfen sämtliche
+alten Aktionen genau einmal, standardmäßig geschlossenen Bereich, Vorschaufehler und Wiederöffnung ohne Start.
+Syntax 374 Dateien, Stil, 75 Markdown-Verweise, synchronisierter Projektstatus und Diffprüfung bestanden.
+Kein produktiver GUI-/Kataloglauf, kein Gesamtaudit oder vollständiges quality:ci daraus ableiten.
+Geänderte Explorer-JS/CSS sind nicht in Squarespace eingebunden; Footer/Custom-CSS geprüft, keine dortige
+Versionsänderung erforderlich. Speicherumzug und Veröffentlichung bleiben separat.
 
 Version 0.4.24.15 ergänzt die ausdrückliche, nur lesende Aktion `FN-Katalognutzung erfassen …` im
 Verwaltungsfenster. Zwei SDK-Durchgänge liefern eine Erfassungsquittung; erst normal geschlossenes Lightroom
@@ -116,7 +228,7 @@ Footer- und Cacheversionen benötigen keine Anpassung.
 
 Das Zuweisungsfenster bietet `Deutscher Name` mit belegten Varianten der ausgewählten Art. Eine andere Variante
 wird in der Vorschau angezeigt, vor Ersetzen einer eigenen Präferenz mit bisherigem/neuem Namen bestätigt und
-erst nach erfolgreicher Fotozuweisung global gespeichert. `Vorherige Namenswahl auswählen` bereitet eine
+erst nach erfolgreicher Fotozuweisung global gespeichert. `Vorherigen Namen auswählen` bereitet eine
 ausdrückliche Rückwahl vor. Englisch, wissenschaftlicher Name und Taxonomieidentität bleiben unverändert.
 
 Der separate `lightroom-name-preference-helper.mjs` ruft denselben zentralen Dienst wie der Explorer auf.
@@ -124,11 +236,11 @@ Suchhelfer und Master-/Paket-SQLite bleiben read-only; die Entscheidung verwende
 und den atomaren Korrekturzeiger. Revision und Identität werden serverseitig geprüft, fremde ausstehende Korrekturen
 nicht mit veröffentlicht. Die Korrekturspeicherwege teilen eine kurze prozessübergreifende Schreibsperre.
 Ein fehlgeschlagener globaler Schritt wird getrennt von der Fotozuweisung gemeldet und kann über
-`Globale Namenswahl erneut speichern` ohne Wiederholung der Zuweisung nachgeholt werden.
+`Speichern wiederholen` ohne Wiederholung der Zuweisung nachgeholt werden.
 
 Explorer neu starten und Plug-in neu laden; kein Master-/Paketneubau nötig. Für bestehende Fotos bleibt die
 bewusst gestartete FN-Aktualisierung zuständig. Die Namenswahl aus 0.4.24.8 ist praktisch bestätigt.
-Ab 0.4.24.9 setzt `Anbieterstandard verwenden ...` nach Vorschau und Bestätigung den deutschen Namen global
+Ab 0.4.24.9 setzt `Anbieterstandard verwenden` nach Vorschau und Bestätigung den deutschen Namen global
 zurück, ohne Fotozuweisung. Die Aktion verwendet eine gezielte Abfrage im Master, den gemeinsamen Korrekturzeiger
 und eine dauerhafte Anbieterwahl statt eines festgeschriebenen Namens. Auch bereits eingebaute eigene Werte
 werden dadurch abgelöst. Englisch und Rückwahl bleiben erhalten. Alte oder unzureichende Herkunftsdaten führen
@@ -186,10 +298,10 @@ Fingerabdruck, aktuelle Korrekturdatei und aktives Lightroom-Paket bereits exakt
 
 ## Lokaler Speicher
 
-Standardpfad:
+Aktueller Standardpfad nach dem geprüften Datenwechsel vom 4. Oktober:
 
 ```text
-%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\lightroom\
+<Explorer-Ordner>\Daten\lightroom\
   active\
     manifest.json
     taxonomy-search.sqlite
@@ -198,11 +310,23 @@ Standardpfad:
     taxonomy-search.sqlite
   staging\
 
-%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\corrections\
+<Explorer-Ordner>\Daten\corrections\
   active.json
   releases\
     corrections-<Prüfsumme>.json
 ```
+
+Zielvertrag vom 4. Oktober: gemeinsamer Daten-Unterordner beim Explorer als Standard, später in Einstellungen
+wählbar. Explorer und Plug-in müssen denselben bestätigten Datenstand und dieselben Pfadbindungen verwenden.
+Der AppData-Bestand ist vollständig übernommen und sein alter Datenordner leer, ohne Weiterleitung.
+Aktueller Programmname noch D:\IUCN_Datenbank, final D:\Arten-Explorer mit koordinierter Verbraucherbindung.
+Historische Zeiger-/Auftragspfade werden über das verifizierte Umzugsjournal aufgelöst; Belegbytes unverändert.
+Plug-in-Hilfsdateien liegen im eigenen temp beim Plug-in und werden nach Ende eigener Operationen/Helfer
+beim kontrollierten Schließen freigegeben; keine Katalog-,
+Nutzungs-/Wiederanlaufdaten oder fremden Dateien. PluginShutdown allein ist auch bei Reload/Deaktivierung aktiv
+und darf deshalb nicht pauschal als Lightroom-Schließnachweis gelten. [Umzug und Rückweg](storage-migration.md).
+Vertrag und Prüfanforderungen:
+[Temp-Konsolidierung](temp-retention.md#neuer-verbindlicher-speicher--und-tempauftrag--4-oktober-2026).
 
 Die obige Ordnerstruktur beschreibt Installationen vor der Paarumstellung. Seit 13. September veröffentlicht
 der Explorer unveränderliche Ordner `taxonomy/master/releases/publication-<UUID>` und
@@ -338,7 +462,7 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise Gesamtzahl der ausgewählten Fotos, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
-  Arten. Unter der Vorschau öffnet `Artbezeichnung korrigieren ...` die ausgewählte Art kontrolliert im
+  Arten. Unter der Vorschau öffnet `Artbezeichnung korrigieren` die ausgewählte Art kontrolliert im
   Arten-Explorer. Vor einer Zuweisung wird geprüft, ob noch dasselbe Basispaket und dieselbe atomar aktivierte
   Korrekturrevision aktiv sind. Das Fenster startet keine
   Statistik- oder Lifelist-Berechnung. Die Suche bleibt über `Art suchen` verfügbar und startet zusätzlich nach
@@ -411,7 +535,7 @@ leerem Suchfeld benötigt diese Zusatzbestätigung nicht. Es bleibt beim Wechsel
 geöffnetes Fenster erneut in den Vordergrund, statt ein zweites zu erzeugen. Der Button `Schließen` sitzt unten
 rechts. Das reine Öffnen, Suchen und Vorschauen verändert keine Bildmetadaten.
 
-`Artbezeichnung korrigieren ...` schreibt weder Masterdaten noch Lightroom-Katalogdaten. Das Plug-in erzeugt eine
+`Artbezeichnung korrigieren` schreibt weder Masterdaten noch Lightroom-Katalogdaten. Das Plug-in erzeugt eine
 auf Größe und Lebensdauer begrenzte Übergabe mit Master-ID, wissenschaftlichem Namen, sichtbaren Namen sowie Paket-
 und Masterstand. Der Arten-Explorer konsumiert diese Übergabe genau einmal, prüft Master-ID und wissenschaftlichen
 Namen gegen seinen aktiven Master und öffnet erst dann denselben Korrekturdialog wie bei einer manuellen Explorer-
@@ -759,7 +883,7 @@ sondern zentral im Arten-Explorer verwaltet.
 13. Im Metadatenbedienfeld nacheinander `FN Wildlife – Foto & Taxonomie` und
     `FN Wildlife – vollständige Taxonomie` wählen. Die kompakte Ansicht muss Standard-Fotodaten, Namen und wichtige
     Ränge zeigen, die vollständige Ansicht alle vorhandenen Ränge; interne IDs dürfen in keiner Ansicht erscheinen.
-14. Für eine Art `Artbezeichnung korrigieren ...` wählen, die eindeutige Vorbelegung im Explorer prüfen, eine neue
+14. Für eine Art `Artbezeichnung korrigieren` wählen, die eindeutige Vorbelegung im Explorer prüfen, eine neue
     begründete Korrektur speichern und `Datenbank jetzt aktualisieren` wählen. Der Korrekturdialog muss sich vor dem
     Lauf schließen; Prüf- und Aktivierungsphase müssen sichtbar werden. Nach wenigen Sekunden muss eine neue
     Lightroom-Suche den korrigierten Namen liefern, ohne dass die große Master- oder Paketdatei neu aufgebaut wurde.

@@ -7,10 +7,62 @@ const source = await readFile(new URL("./public/app-taxonomy-database.js", impor
 const indexSource = await readFile(new URL("./public/index.html", import.meta.url), "utf8");
 const styleSource = await readFile(new URL("./public/app.css", import.meta.url), "utf8");
 const progressSource = await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8");
+const masterSource = await readFile(new URL("./public/app-taxonomy-master.js", import.meta.url), "utf8");
 const context = vm.createContext({});
 new vm.Script(progressSource).runInContext(context);
+new vm.Script(masterSource).runInContext(context);
 new vm.Script(source, { filename: "app-taxonomy-database.js" }).runInContext(context);
 const database = context.SpeciesExplorerTaxonomyDatabase;
+
+test("Normalanzeige benennt technischen Abschluss nur beim belegten passenden Paar ohne offene Arbeit", () => {
+  const f = backgroundUiFixture();
+  function currentMaster() {
+    return { status: "idle", active: false,
+      lifecycle: { active: { candidateId: "current", classificationDeferrals: { total: 187 } }, blockingConflictCount: 0 },
+      reference: { status: "current", activeMatchesReference: true, needsMasterRebuild: false },
+      lightroomPackage: { status: "current", masterVersion: "current", packageVersion: "current", needsRebuild: false } };
+  }
+  f.state.taxonomyMasterSnapshot = currentMaster();
+  f.state.taxonomyMaintenanceSnapshot = { status: "idle", active: false, updateAvailable: false };
+  f.state.renderTaxonomyDatabaseOverview();
+  assert.equal(f.elements.taxonomyDatabaseOverviewSummary.textContent, "Datenbank aktuell");
+  assert.match(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Technisch abgeschlossen · keine offenen Entscheidungen/);
+  assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /187|unklar|zurückgestellt/);
+  for (const change of [
+    (master) => { master.status = "building"; master.active = true; },
+    (master) => { master.status = "failed"; master.error = "Paketprüfung fehlgeschlagen"; },
+    (master) => { master.reference.needsMasterRebuild = true; master.reference.activeMatchesReference = false; },
+    (master) => { master.reference.activeMatchesReference = undefined; },
+    (master) => { master.lightroomPackage.packageVersion = "old"; },
+    (master) => { master.corrections = { pending: true }; },
+    (master) => { master.identities = { pending: true }; },
+    (master) => { master.lifecycle.candidate = { candidateId: "new" }; },
+    (master) => { master.lifecycle.blockingConflictCount = 1; },
+    (master) => { master.updateWorkflow = { updateRunId: "running", status: "waiting-decisions" }; },
+  ]) {
+    const master = currentMaster(); change(master); f.state.taxonomyMasterSnapshot = master;
+    f.state.renderTaxonomyDatabaseOverview();
+    assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Technisch abgeschlossen|keine offenen Entscheidungen/);
+  }
+  for (const reference of [
+    { status: "failed", error: "Quelldownload fehlgeschlagen" },
+    { status: "downloading", active: true }, { status: "idle", updateAvailable: true },
+    { status: "idle", conflicts: { ambiguous: 1 } },
+  ]) {
+    f.state.taxonomyMasterSnapshot = currentMaster(); f.state.taxonomyMaintenanceSnapshot = reference;
+    f.state.renderTaxonomyDatabaseOverview();
+    assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Technisch abgeschlossen|keine offenen Entscheidungen/);
+  }
+});
+
+test("Historische Quellenhinweise stehen in neutralen zunächst eingeklappten Details außerhalb echter Konflikte", () => {
+  assert.match(indexSource, /<div id="taxonomy-master-conflicts"[^>]*hidden><\/div>\s*<details id="taxonomy-master-technical-details" class="taxonomy-master-technical-details" hidden>/);
+  assert.match(indexSource, /<summary>Technische Details zur Quellenübernahme<\/summary>/);
+  assert.doesNotMatch(indexSource, /<details id="taxonomy-master-technical-details"[^>]*\bopen\b/);
+  const neutralStyle = styleSource.match(/\.taxonomy-master-technical-details\s*\{([^}]+)\}/)?.[1];
+  assert.match(neutralStyle, /border: 1px solid var\(--line\)/);
+  assert.doesNotMatch(neutralStyle, /--amber|--red/);
+});
 
 test("Masteraufbau zeigt Zustände und bestätigte Blöcke getrennt; veraltete Läufe sind nicht fortsetzbar", () => {
   assert.equal(database.masterBuildPresentation().pending, false);

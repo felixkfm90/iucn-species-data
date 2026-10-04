@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -11,7 +12,7 @@ import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
 import { openTaxonomyMasterStore } from "./taxonomy-master-store.mjs";
 import { benchmarkRows, semanticDigests } from "../scripts/taxonomy-master-benchmark.mjs";
 
-const scratch = path.resolve("Testlauf");
+const scratch = tmpdir();
 async function fixture(t, count = 30) {
   await fs.mkdir(scratch, { recursive: true });
   const root = await fs.mkdtemp(path.join(scratch, "master-search-reuse-"));

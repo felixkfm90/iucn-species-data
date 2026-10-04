@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { tmpdir } from "../scripts/test-temp.mjs";
 import path from "node:path";
 import {
   assetBackupFileNames,

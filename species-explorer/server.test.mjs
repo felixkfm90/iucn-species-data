@@ -1,3 +1,4 @@
+import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -241,14 +242,14 @@ test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", as
 
 test("Schreibende API verlangt lokale Sitzung, gleiche Origin und Bestätigungstoken", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   await Promise.all([
     writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.webp"), createTestWebp(7)),
     writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.json"), "{}\n"),
   ]);
   const app = await createProtectedExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const wrongHostStatus = await requestStatusWithHost(baseUrl, "/api/summary", `localhost:${address.port}`);
@@ -348,7 +349,7 @@ test("Server erkennt bereits laufenden Explorer auf belegtem Port", async (conte
 
 test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const managed = await startManagedExplorerServer({
     repoRoot,
     preferredPort: 0,
@@ -370,14 +371,14 @@ test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async
 
 test("Backup-Pfad ist lokal einstellbar und bleibt aus Git heraus", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({
     repoRoot,
     port: 0,
     nasBackupRoot: "W:\\Default Backup",
   });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const initialSettings = await (await fetch(`${baseUrl}/api/settings`)).json();
@@ -420,10 +421,10 @@ test("Backup-Pfad ist lokal einstellbar und bleibt aus Git heraus", async (conte
 
 test("Explorer erkennt externe Dateiänderungen ohne manuellen Reload", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const initialRevision = await (await fetch(`${baseUrl}/api/revision`)).json();

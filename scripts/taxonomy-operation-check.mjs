@@ -1,3 +1,4 @@
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -18,10 +19,11 @@ import { buildLightroomSearchPackage } from "../species-explorer/lightroom-searc
 import { lightroomSearchDatabasePath } from "../species-explorer/lightroom-search-storage.mjs";
 
 const script = fileURLToPath(import.meta.url);
-const scratch = path.resolve(path.dirname(script), "../Testlauf");
+const scratch = benchmarkScratchRoot;
 function ownedRun(directory) {
   const resolved = path.resolve(directory);
   assert.equal(path.dirname(resolved), scratch);
+  assertScratchPath(resolved, { inspectTree: true });
   assert.match(path.basename(resolved), /^taxonomy-operation-[a-zA-Z0-9]+$/u);
   return resolved;
 }
@@ -42,6 +44,7 @@ function packageRows(filename) {
 // Git action, Lightroom process or photo catalog is part of this check.
 export async function runOperationalCheck({ count = 2000, onProgress = () => {} } = {}) {
   assert.ok(Number.isInteger(count) && count >= 1200 && count <= 20000, "1200 bis 20000 Testarten erforderlich.");
+  assertScratchPath(scratch, { allowRoot: true });
   await fs.mkdir(scratch, { recursive: true });
   const root = ownedRun(await fs.mkdtemp(path.join(scratch, "taxonomy-operation-")));
   const taxonomyRoot = path.join(root, "taxonomy"), searchRoot = path.join(root, "lightroom");

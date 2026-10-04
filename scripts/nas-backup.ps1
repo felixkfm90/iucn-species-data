@@ -49,6 +49,10 @@ function Test-ExcludedRelativePath {
   param([string]$RelativePath)
   $normalized = Convert-ToZipPath $RelativePath
   return (
+    $normalized -eq "temp" -or
+    $normalized.StartsWith("temp/") -or
+    $normalized -eq "lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp" -or
+    $normalized.StartsWith("lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/") -or
     $normalized -eq "Testlauf" -or
     $normalized.StartsWith("Testlauf/") -or
     $normalized -eq "species-explorer/staging" -or
@@ -60,6 +64,62 @@ function Test-ExcludedRelativePath {
     $normalized -eq "species-explorer/logs" -or
     $normalized.StartsWith("species-explorer/logs/")
   )
+}
+
+function Get-FileSha256Hex {
+  param([string]$Path)
+  $sha = [Security.Cryptography.SHA256]::Create()
+  $stream = [IO.File]::OpenRead($Path)
+  try { return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-", "").ToLowerInvariant() }
+  finally { $stream.Dispose(); $sha.Dispose() }
+}
+
+function Assert-LocalDataBackupTarget {
+  param([string]$RepoRoot)
+  $settingsPath = Join-Path $RepoRoot "storage-path.json"
+  if (-not (Test-Path -LiteralPath $settingsPath)) { return }
+  $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+  if ($settings.schemaVersion -ne 1 -or $settings.state -ne "ready" -or -not $settings.dataRoot) {
+    throw "Der gemeinsame Datenpfad ist nicht sicher gebunden. Vor dem vollstaendigen NAS-Backup Speichereinstellung pruefen."
+  }
+  $configuredRoot = if ([IO.Path]::IsPathRooted($settings.dataRoot)) {
+    [IO.Path]::GetFullPath($settings.dataRoot)
+  } elseif ($settings.dataRoot -eq "Daten") { Join-Path $RepoRoot "Daten" } else {
+    throw "Unzulaessiger relativer Datenpfad in storage-path.json."
+  }
+  if (-not $configuredRoot.TrimEnd("\", "/").Equals((Join-Path $RepoRoot "Daten"), [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Der Datenpfad liegt ausserhalb des Programmordners. Fuer ein vollstaendiges Backup ist eine gesonderte Datensicherung erforderlich; es wurde kein unvollstaendiges NAS-Backup erstellt."
+  }
+}
+
+function Get-LocalDataStateHash {
+  param([string]$RepoRoot)
+  $records = New-Object System.Collections.Generic.List[string]
+  $dataRoot = Join-Path $RepoRoot "Daten"
+  $settingsPath = Join-Path $RepoRoot "storage-path.json"
+  if (Test-Path -LiteralPath $settingsPath) {
+    $settingsEntry = Get-Item -LiteralPath $settingsPath
+    if ($settingsEntry.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Verknuepfte Speichereinstellung ist kein sicherer Backup-Eingang." }
+    $records.Add("storage-path.json|$(Get-FileSha256Hex -Path $settingsPath)")
+  }
+  function Add-DataFiles {
+    param([string]$Directory)
+    $directoryEntry = Get-Item -LiteralPath $Directory
+    if (-not $directoryEntry.PSIsContainer -or ($directoryEntry.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw "Verknuepfter Datenordner kann nicht vollstaendig gesichert werden."
+    }
+    foreach ($entry in Get-ChildItem -LiteralPath $Directory -Force) {
+      if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Verknuepfte Daten sind kein sicherer Backup-Eingang." }
+      if ($entry.PSIsContainer) { Add-DataFiles -Directory $entry.FullName }
+      else {
+        $relative = Convert-ToZipPath (Get-RelativePathFromRoot -Root $RepoRoot -FullPath $entry.FullName)
+        $records.Add("$relative|$($entry.Length)|$(Get-FileSha256Hex -Path $entry.FullName)")
+      }
+    }
+  }
+  if (Test-Path -LiteralPath $dataRoot) { Add-DataFiles -Directory $dataRoot }
+  $sorted = @($records | Sort-Object)
+  return Get-Sha256Hex ($sorted -join "`n")
 }
 
 function Get-ArchiveManifest {
@@ -126,6 +186,7 @@ function Write-BackupProgress {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $backupRootPath = $BackupRoot
+Assert-LocalDataBackupTarget -RepoRoot $repoRoot
 
 Write-BackupProgress -Percent 1 -Message "Backup-Ziel wird geprüft"
 
@@ -144,13 +205,15 @@ $gitShort = Invoke-Git -Arguments @("rev-parse", "--short=12", "HEAD")
 $gitStatus = Invoke-Git -Arguments @("status", "--porcelain=v1")
 $workingTreeDirty = -not [string]::IsNullOrWhiteSpace($gitStatus)
 $statusHash = Get-Sha256Hex $gitStatus
+Write-BackupProgress -Percent 4 -Message "Dauerhafte lokale Daten werden fuer den Backup-Nachweis geprueft"
+$localDataStateHash = Get-LocalDataStateHash -RepoRoot $repoRoot
 
 $existingArchives = @(Get-ChildItem -LiteralPath $backupRootResolved -Filter "IUCN_Datenbank_*.zip" -File -ErrorAction SilentlyContinue |
   Sort-Object LastWriteTime -Descending)
 Write-BackupProgress -Percent 6 -Message "Vorhandene NAS-Backups werden geprüft"
 $latestManifest = if ($existingArchives.Count) { Get-ArchiveManifest $existingArchives[0].FullName } else { $null }
-$currentStateKey = "$gitCommit|$statusHash"
-$latestStateKey = if ($latestManifest) { "$($latestManifest.gitCommit)|$($latestManifest.workingTreeStatusHash)" } else { "" }
+$currentStateKey = "$gitCommit|$statusHash|$localDataStateHash"
+$latestStateKey = if ($latestManifest) { "$($latestManifest.gitCommit)|$($latestManifest.workingTreeStatusHash)|$($latestManifest.localDataStateHash)" } else { "" }
 
 if (-not $Force -and $latestStateKey -eq $currentStateKey) {
   Write-BackupProgress -Percent 100 -Message "Kein neues Backup erforderlich"
@@ -185,11 +248,15 @@ $manifest = [ordered]@{
   gitShort = $gitShort
   workingTreeDirty = $workingTreeDirty
   workingTreeStatusHash = $statusHash
+  localDataStateHash = $localDataStateHash
+  includesLocalData = (Test-Path -LiteralPath (Join-Path $repoRoot "Daten"))
   nodeVersion = (node -p "process.version")
   includesNodeModules = (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))
   includesFfmpeg = (Test-Path -LiteralPath (Join-Path $repoRoot "local-tools\ffmpeg"))
   maxBackups = $MaxBackups
   excluded = @(
+    "temp/",
+    "lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/",
     "Testlauf/",
     "species-explorer/staging/",
     "species-explorer/pipeline-asset-backups/",
@@ -249,7 +316,11 @@ try {
   } finally {
     $archive.Dispose()
   }
+  if ((Get-LocalDataStateHash -RepoRoot $repoRoot) -ne $localDataStateHash) {
+    throw "Dauerhafte Daten wurden waehrend der Sicherung geaendert. Dieses Backup wird nicht als vollstaendig uebernommen; bitte nach Abschluss der Datenaktion erneut sichern."
+  }
 } catch {
+  $fileStream.Dispose()
   if (Test-Path -LiteralPath $archivePath) {
     Remove-Item -LiteralPath $archivePath -Force
   }

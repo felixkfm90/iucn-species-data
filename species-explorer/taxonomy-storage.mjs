@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import os from "node:os";
 import path from "node:path";
+import { explorerStoragePaths, EXPLORER_REPO_ROOT } from "./storage-paths.mjs";
 
 export const TAXONOMY_SCHEMA_VERSION = 1;
 export const TAXONOMY_IMPORTER_VERSION = 1;
@@ -18,12 +18,9 @@ export function assertTaxonomyReleaseId(value) {
   return releaseId;
 }
 
-export function defaultTaxonomyRoot(environment = process.env) {
-  const localAppData = String(environment.LOCALAPPDATA ?? "").trim();
-  if (localAppData) {
-    return path.join(localAppData, "FN Wildlife Travel", "Arten-Explorer", "taxonomy");
-  }
-  return path.join(os.homedir(), ".fn-wildlife-travel", "arten-explorer", "taxonomy");
+export function defaultTaxonomyRoot(environment = process.env, repoRoot = EXPLORER_REPO_ROOT) {
+  const configured = String(environment.IUCN_TAXONOMY_DIR || "").trim();
+  return configured ? path.resolve(configured) : explorerStoragePaths({ environment, repoRoot }).taxonomyRoot;
 }
 
 export function taxonomyReleaseDirectory(taxonomyRoot, releaseId) {

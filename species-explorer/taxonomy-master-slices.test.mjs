@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { mergePartialProviderRecord } from "./taxonomy-partial-record.mjs";
@@ -91,7 +91,7 @@ test("Teilvereinigung bleibt ID-gebunden, unveränderlich und übernimmt ausdrü
 });
 
 async function temporaryRoot() {
-  return fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-master-slices-"));
+  return fs.mkdtemp(path.join(tmpdir(), "taxonomy-master-slices-"));
 }
 
 test("Anbieter-Ausschnitte bewahren Version, Provenienz und entfernte Datensätze", async () => {

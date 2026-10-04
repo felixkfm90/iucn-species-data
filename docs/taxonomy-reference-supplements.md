@@ -50,8 +50,11 @@ Masteraufbau mit Quelle, Zeitpunkt und Version lokal übernommen werden.
 Automatisch ergänzte Namen liegen im lokalen, ignorierten Referenzbereich:
 
 ```text
-%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\supplements.json
+<Explorer-Ordner>\Daten\taxonomy\supplements.json
 ```
+
+Gemeinsamer konfigurierbarer Speicher seit 4. Oktober, alter AppData-Datenordner geleert;
+historische Quellenbindungen bleiben unverändert. [Umzugsvertrag](storage-migration.md).
 
 Jeder Namenseintrag enthält:
 

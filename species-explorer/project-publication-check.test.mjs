@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
@@ -7,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { checkProjectPublicationSources } from "./project-publication-check.mjs";
 import { createProjectPublicationService } from "./project-publication.mjs";
 
-const testRoot = fileURLToPath(new URL("../Testlauf/", import.meta.url));
+const testRoot = tmpdir();
 
 function git(root, ...args) {
   const result = spawnSync("git", args, { cwd: root, windowsHide: true, encoding: "utf8" });

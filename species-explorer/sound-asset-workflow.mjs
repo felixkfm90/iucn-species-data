@@ -20,6 +20,7 @@ export function createSoundAssetOperations({
   repoRoot,
   assetOverridesPath,
   assetStagingRoot,
+  stageFilePath = async (filename) => join(assetStagingRoot, filename),
   assetBackupRoot,
   previewTokens,
   previewTokenTtlMs,
@@ -113,7 +114,7 @@ export function createSoundAssetOperations({
   }
 
   async function createPreviewSpectrogram(token, stagingPath) {
-    const spectrogramStagingPath = join(assetStagingRoot, `${token}.webp`);
+    const spectrogramStagingPath = await stageFilePath(`${token}.webp`);
     let renderedSpectrogram;
     try {
       renderedSpectrogram = await spectrogramRenderer({
@@ -164,7 +165,7 @@ export function createSoundAssetOperations({
     const token = randomUUID();
     const expiresAt = Date.now() + previewTokenTtlMs;
     await mkdir(assetStagingRoot, { recursive: true });
-    const stagingPath = join(assetStagingRoot, `${token}.mp3`);
+    const stagingPath = await stageFilePath(`${token}.mp3`);
     await writeFile(stagingPath, validated.buffer);
     let previewSpectrogram;
     try {
@@ -272,7 +273,7 @@ export function createSoundAssetOperations({
     const token = randomUUID();
     const expiresAt = Date.now() + previewTokenTtlMs;
     await mkdir(assetStagingRoot, { recursive: true });
-    const stagingPath = join(assetStagingRoot, `${token}.mp3`);
+    const stagingPath = await stageFilePath(`${token}.mp3`);
     let rendered;
     try {
       rendered = await soundSegmentRenderer({

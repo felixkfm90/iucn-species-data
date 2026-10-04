@@ -224,10 +224,11 @@
           setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
           return;
         }
-        try {
-          if (inlineReviewAssets.length) await submitInlineAssetReview();
-          else await finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
-        } catch (error) { showWorkflowError(error.message); }
+        showStep(4);
+        soundReview.hidden = false;
+        soundReview.innerHTML = `<p>Keine neue automatisch nutzbare Aufnahme gefunden. Eine vorhandene Aufnahme bleibt erhalten.</p>
+          <button type="button" data-new-species-sound-finish>Sound-Schritt abschließen</button>`;
+        setFinishMessage("Soundsuche abgeschlossen. Du kannst frühere Soundquellen erneut prüfen oder den Schritt abschließen.", "info");
       };
 
       const renderInlineSoundPlayback = (container) => {
@@ -630,13 +631,15 @@
         completed = true;
         setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
         setPipelineMessage(soundOutcome.noAlternative ? soundOutcome.message : "", soundOutcome.messageType);
-        setFinishMessage(`✓ Neue Art: ${savedSpeciesName || "Neue Art"} ist erfolgreich angelegt.`, "success");
+        setFinishMessage(status?.publicationPending
+          ? `Die Art „${savedSpeciesName || "Neue Art"}“ ist lokal angelegt. Übertragung noch offen: ${status.publicationPending}`
+          : `✓ Neue Art: ${savedSpeciesName || "Neue Art"} ist erfolgreich angelegt.`, status?.publicationPending ? "info" : "success");
         doneSection.hidden = false;
         setPipelineBusy(false);
         showStep(4);
       };
 
-      const submitInlineAssetReview = async ({ resetSoundRejections = false } = {}) => {
+      const submitInlineAssetReview = async ({ resetSoundRejections = false, retrySoundSearch = false } = {}) => {
         const choices = inlineReviewAssets.map((asset) => {
           const decision = inlineReviewChoices.get(`${asset.safeName}:${asset.type}`);
           return {
@@ -670,7 +673,7 @@
           await fetchJson("/api/pipeline/assets/review", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ runId: inlineRunId, choices }),
+            body: JSON.stringify({ runId: inlineRunId, choices, ...(retrySoundSearch ? { retrySoundSearch: true, confirmed: true } : {}) }),
           });
           inlineReviewAssets = [];
           inlineReviewChoices = new Map();
@@ -714,7 +717,8 @@
           setFinishMessage("Bitte Sound anhören und entscheiden.", "info");
           return;
         }
-        void submitInlineAssetReview();
+        if (!soundAsset) await continueAfterMapDecision();
+        else void submitInlineAssetReview();
       };
 
       async function pollInlinePipelineStatus() {
@@ -862,7 +866,7 @@
           const startedStatus = await fetchJson("/api/pipeline/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: previewResult.token }),
+            body: JSON.stringify({ token: previewResult.token, guidedSpeciesCreation: true }),
           });
           state.pipelineStatusSnapshot = startedStatus;
           state.pipelineWasRunning = true;
@@ -888,11 +892,25 @@
       });
       const close = () => dialogController.close("programmatic");
 
-      openButton.addEventListener("click", () => {
+      openButton.addEventListener("click", async () => {
         form.reset();
         resetAll();
         state.holdNewSpeciesBackground = true;
         dialogController.open();
+        const pending = state.pipelineStatusSnapshot;
+        if (pending?.status === "awaiting-review" && pending.guidedSpeciesCreation && pending.targets?.length === 1) {
+          try {
+            const fresh = await fetchJson("/api/pipeline/status");
+            if (fresh.status === "awaiting-review" && fresh.runId === pending.runId && fresh.guidedSpeciesCreation) {
+              savedSpeciesId = fresh.targets[0].slug;
+              savedSpeciesName = fresh.targets[0].germanName;
+              await loadData({ reload: true });
+              inlineManualMapHandled = newSpeciesData()?.assets?.map?.exists === true;
+              await handleInlineReviewStatus(fresh);
+              return;
+            }
+          } catch (error) { showWorkflowError(error.message); return; }
+        }
         void taxonomyReference.initialize();
         form.elements.german.focus();
       });
@@ -1209,6 +1227,11 @@
 
       soundReview.addEventListener("click", (event) => {
         if (busy || pipelineBusy) return;
+        if (event.target.closest("[data-new-species-sound-finish]")) {
+          if (inlineRunId && state.pipelineStatusSnapshot?.status === "awaiting-review") void submitInlineAssetReview();
+          else void finishNewSpeciesWorkflow({ status: "completed", gitPublished: false });
+          return;
+        }
         const button = event.target.closest("[data-new-species-sound-decision]");
         if (!button) return;
         const asset = inlineReviewAssets.find((entry) => entry.type === "sound");
@@ -1241,6 +1264,15 @@
             return;
           }
           if (inlineReviewAssets.length) return;
+          if (state.pipelineStatusSnapshot?.status === "awaiting-review" && state.pipelineStatusSnapshot.guidedSpeciesCreation) {
+            const confirmed = await showQuickConfirm({
+              title: "Frühere Soundquellen erneut prüfen?",
+              message: `Frühere Ablehnungen für ${savedSpeciesName} aufheben und erneut suchen? Vorhandene Dateien und manuelle Schutzmarkierungen bleiben erhalten. Die Art wird nicht nochmals angelegt.`,
+              confirmLabel: "Sounds erneut suchen",
+            });
+            if (confirmed) await submitInlineAssetReview({ retrySoundSearch: true });
+            return;
+          }
           const base = `/api/species/${encodeURIComponent(savedSpeciesId)}/assets/sound`;
           const preview = await fetchJson(`${base}/rejections-preview`, { method: "POST", body: "{}" });
           const confirmed = await showQuickConfirm({

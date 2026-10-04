@@ -1,12 +1,12 @@
 param([Parameter(Mandatory=$true)][int]$BenchmarkPid, [Parameter(Mandatory=$true)][string]$BenchmarkRoot,
     [Parameter(Mandatory=$true)][string]$BenchmarkKey)
 $ErrorActionPreference = 'Stop'
-$scratchRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../Testlauf'))
+$scratchRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../temp/benchmarks'))
 $resolvedRoot = [IO.Path]::GetFullPath($BenchmarkRoot)
 if ($BenchmarkPid -le 0 -or $BenchmarkKey -notmatch '^[a-f0-9-]{36}$' -or [IO.Path]::GetDirectoryName($resolvedRoot) -ne $scratchRoot -or
     [IO.Path]::GetFileName($resolvedRoot) -notmatch '^pipeline-benchmark-[a-zA-Z0-9]+$') { throw 'Unzulaessiges Messziel' }
 $metricsDirectory = Join-Path $resolvedRoot 'metrics'
-foreach ($directory in @($resolvedRoot, $metricsDirectory)) {
+foreach ($directory in @((Split-Path -Parent (Split-Path -Parent $scratchRoot)), (Split-Path -Parent $scratchRoot), $scratchRoot, $resolvedRoot, $metricsDirectory)) {
     $entry = Get-Item -LiteralPath $directory
     if (-not $entry.PSIsContainer -or ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Unzulaessiger Messordner' }
 }

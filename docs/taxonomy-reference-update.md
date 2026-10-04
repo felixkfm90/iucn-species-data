@@ -703,9 +703,11 @@ Bei Download-, Speicher-, Entpack-, Import-, Prüf- oder Aktivierungsfehlern:
 Der Referenzbestand liegt pfadunabhängig unter:
 
 ```text
-%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy
+<Explorer-Ordner>\Daten\taxonomy
 ```
 
+Seit 4. Oktober gilt der [gemeinsame Speicherwechsel](storage-migration.md): alter AppData-Datenordner leer,
+keine Verknüpfung, eigene Entscheidungen/Aufträge am neuen Ort. Gebundene historische Prüfbelege unverändert.
 Er enthält Releaseordner, aktiven Zeiger, eine Rollbackversion, Versionsprüfungs-Cache und temporäre
 Arbeitsverzeichnisse sowie den reproduzierbaren Ergänzungsnamencache. Der Bestand gehört nicht in normale
 Projekt-ZIP-Backups. Die spätere

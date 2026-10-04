@@ -1,3 +1,4 @@
+import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -7,7 +8,7 @@ import { createEditableFixture, createTestPng, createTestWebp } from "./server-t
 
 test("Artentwurf und geprüftes Portrait bleiben tagelang gültig; Abbruch entfernt nur den eigenen Entwurf", async (t) => {
   const repoRoot = await createEditableFixture();
-  t.after(() => rm(repoRoot, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
+  const cleanupFixture = registerFixtureCleanup(t, repoRoot);
   const server = await createExplorerServer({ repoRoot, port: 0, sessionProtection: false,
     publishAssetChanges: false, rebuildReportAfterAssetSave: false,
     portraitRenderer: async ({ outputPath }) => {
@@ -15,7 +16,7 @@ test("Artentwurf und geprüftes Portrait bleiben tagelang gültig; Abbruch entfe
       return { width: 1280, height: 1600 };
     },
   });
-  t.after(() => server.close());
+  cleanupFixture(server);
   const address = await server.listen();
   const baseUrl = `http://127.0.0.1:${address.port}`;
   const post = async (route, body) => {

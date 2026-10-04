@@ -14,6 +14,10 @@ update_local.bat
 update_github_only.bat
 
 # Local scratch/test runs
+temp/
+Daten/
+storage-path.json
+lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/
 Testlauf/
 _site/
 list_licenses.mjs
@@ -31,3 +35,4 @@ species-explorer/asset-backups/
 # Local global-taxonomy downloads, staging data, databases and indexes
 taxonomy-data/
 species-explorer/taxonomy-data/
+storage-migration-lock.sqlite*

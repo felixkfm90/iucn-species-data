@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import { taxonomyBuildCacheUsage } from "./taxonomy-build-cache.mjs";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, test } from "node:test";
@@ -105,7 +105,7 @@ afterEach(async () => {
 });
 
 async function createRoots() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "lightroom-search-test-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "lightroom-search-test-"));
   temporaryRoots.push(root);
   return {
     root,

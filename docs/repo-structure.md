@@ -106,8 +106,10 @@ Verträge/Einordnung: [Dokumentationsübersicht](README.md), [Taxonomie-Betriebs
 | `node_modules/` | lokal installiert, ignoriert |
 | `_site/` | lokales GitHub-Pages-Artefakt aus `scripts/prepare-pages-artifact.mjs`, ignoriert |
 | `taxonomy-data/`, `species-explorer/taxonomy-data/` | lokale, reproduzierbare Taxonomie-Releases und SQLite-Dateien; ignoriert und nie Bestandteil von Pages |
-| `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\lightroom\` | lokales abgeleitetes Lightroom-Suchpaket mit `active`, `previous` und `staging`; reproduzierbar, nicht versioniert und nicht Bestandteil von Pages |
-| `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy\`, `taxonomy-publication\` im selben Explorer-Basispfad | lokale Quellen, Masterreleases, gespeicherte Aufträge/Reparaturjournale und gemeinsamer Paarzeiger; nicht versioniert und nicht Bestandteil von Pages |
+| `Daten/lightroom/` | lokales abgeleitetes Lightroom-Suchpaket mit Paarreleases, Vorgänger und Staging; nicht versioniert und nicht Bestandteil von Pages |
+| `Daten/taxonomy/`, `Daten/taxonomy-publication/`, `Daten/corrections/`, `Daten/handoff/` | gemeinsamer konfigurierbarer Speicher für Quellen, Master, eigene Entscheidungen, Aufträge/Belege und Paarzeiger; ignoriert, im vollständigen NAS-Restorebackup enthalten |
+| `storage-path.json`, `storage-migration-lock.sqlite*` | lokale Konfiguration und Speicherwechsel-Prozesssperre; ignoriert |
+| `temp/`, `<Plug-in>/temp/` | eigene prozess-/sitzungsgebundene Laufzeit-, Test- und Hilfsdateien; ignoriert und nicht im NAS-Backup |
 | `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |

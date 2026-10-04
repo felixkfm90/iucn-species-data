@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -8,7 +9,7 @@ import { applyLightroomSearchDelta } from "./lightroom-search-delta.mjs";
 import { createLightroomSearchSchema, finalizeLightroomSearchSchema } from "./lightroom-search-schema.mjs";
 
 async function fixture(t, before, after, { previousName = null, desiredName = null } = {}) {
-  const scratch = fileURLToPath(new URL("../Testlauf/", import.meta.url));
+  const scratch = tmpdir();
   await fs.mkdir(scratch, { recursive: true });
   const root = await fs.mkdtemp(path.join(scratch, "search-delta-"));
   const databases = [];

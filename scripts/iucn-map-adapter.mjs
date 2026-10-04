@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+import { fileURLToPath } from "node:url";
+import { createManagedTempSession } from "../species-explorer/temp-session.mjs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { iucnBrowserAccessError } from "./iucn-map-access.mjs";
@@ -94,7 +95,7 @@ export function createIucnMapAdapter({
   baseUrl = "https://api.iucnredlist.org/api/v4",
   platform = process.platform,
   execFileAsync = defaultExecFile,
-  tempRoot = os.tmpdir(),
+  tempRoot = fileURLToPath(new URL("../", import.meta.url)),
   logger = console,
   powerShellRetryAttempts = 3,
   powerShellRetryDelayMs = 1_500,
@@ -188,8 +189,8 @@ try {
 }`.trim();
     let lastMessage = "";
     for (let attempt = 1; attempt <= powerShellRetryAttempts; attempt++) {
-      const tempDir = fs.mkdtempSync(path.join(tempRoot, "iucn-map-"));
-      const tempFile = path.join(tempDir, "map.jpg");
+      const session = await createManagedTempSession({ repoRoot: tempRoot });
+      const tempFile = await session.filePath("map.jpg");
       try {
         const { stdout } = await execFileAsync(
           "powershell.exe",
@@ -223,7 +224,7 @@ try {
           }
         }
       } finally {
-        removeQuietly(tempDir);
+        await session.close();
       }
       if (attempt < powerShellRetryAttempts) {
         logger.warn(`⚠ Windows-WebRequest-Fallback für IUCN-Karte fehlgeschlagen (Versuch ${attempt}/${powerShellRetryAttempts}): ${lastMessage}. Neuer Versuch folgt.`);

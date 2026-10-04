@@ -12,6 +12,7 @@ import {
 import { createSessionToken } from "./request-security.mjs";
 import { renderPortrait } from "../scripts/portrait-renderer.mjs";
 import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
+import { cleanupOrphanTempSessions, createManagedTempSession } from "./temp-session.mjs";
 import {
   buildExplorerModel,
   buildExplorerRevision,
@@ -106,11 +107,13 @@ export async function createExplorerServer({
   portraitRenderer = renderPortrait,
   mapImageRenderer = renderMapJpeg,
   sessionProtection = true,
-  taxonomyRoot = process.env.IUCN_TAXONOMY_DIR || defaultTaxonomyRoot(),
-  lightroomSearchRoot = defaultLightroomSearchRoot(),
+  taxonomyRoot = defaultTaxonomyRoot(process.env, repoRoot),
+  lightroomSearchRoot = defaultLightroomSearchRoot(process.env, repoRoot),
   lightroomCloseGate = null,
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
+  await cleanupOrphanTempSessions({ repoRoot, owner: "explorer" });
+  const tempSession = await createManagedTempSession({ repoRoot, owner: "explorer" });
   let model = await buildExplorerModel(repoRoot);
   let modelRevision = await buildExplorerRevision(repoRoot);
   let modelRefreshPromise = null;
@@ -134,7 +137,8 @@ export async function createExplorerServer({
   const localSettingsPath = join(repoRoot, "species-explorer", LOCAL_SETTINGS_FILE);
   const pipelineLogDir = join(repoRoot, "species-explorer", "logs");
   const pipelineAssetBackupRoot = join(repoRoot, "species-explorer", "pipeline-asset-backups");
-  const assetStagingRoot = join(repoRoot, "species-explorer", "staging");
+  const assetStagingRoot = tempSession.root;
+  const stageFilePath = (filename) => tempSession.filePath(filename);
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   const taxonomySupplements = createTaxonomySupplementService({
@@ -379,6 +383,7 @@ export async function createExplorerServer({
     assetOverridesPath,
     manualMapOverridesPath,
     assetStagingRoot,
+    stageFilePath,
     assetBackupRoot,
     previewTokens,
     previewTokenTtlMs: PREVIEW_TOKEN_TTL_MS,
@@ -454,6 +459,7 @@ export async function createExplorerServer({
     speciesListPath,
     backupDir,
     assetStagingRoot,
+    stageFilePath,
     previewTokens,
     cleanupPreviewTokens,
     getModel: () => model,
@@ -748,7 +754,14 @@ export async function createExplorerServer({
       },
     },
   });
-  const server = createHttpServer(requestHandler);
+  const server = createHttpServer((request, response) => {
+    void (async () => {
+      const release = await tempSession.beginOperation();
+      try { await requestHandler(request, response); }
+      finally { await release(); }
+    })().catch(() => { if (!response.destroyed) response.destroy(); });
+  });
+  let closePromise;
 
   return {
     host,
@@ -763,19 +776,25 @@ export async function createExplorerServer({
         });
       });
     },
-    async close() {
-      await new Promise((resolveClose, reject) => {
-        server.closeIdleConnections?.();
-        server.closeAllConnections?.();
-        server.close((error) => (error ? reject(error) : resolveClose()));
-      });
-      closeActiveFileStreams();
-      await taxonomyUpdateCoordinator.close();
-      await taxonomyMasterService.close();
-      await taxonomyMaintenanceService.close();
-      taxonomyReference.close();
-      previewTokens.clear();
-      await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" }).catch(() => {});
+    close() {
+      // Repeated close requests (window, shutdown hook, reopening test) share
+      // one complete cleanup. A server that never listened still owns resources.
+      closePromise ||= (async () => {
+        await new Promise((resolveClose, reject) => {
+          server.closeIdleConnections?.();
+          server.closeAllConnections?.();
+          server.close((error) => (error && error.code !== "ERR_SERVER_NOT_RUNNING" ? reject(error) : resolveClose()));
+        });
+        closeActiveFileStreams();
+        await taxonomyUpdateCoordinator.close();
+        await taxonomyMasterService.close();
+        await taxonomyMaintenanceService.close();
+        taxonomyReference.close();
+        previewTokens.clear();
+        await tempSession.close();
+        await cleanupManagedExplorerTemp({ repoRoot, phase: "shutdown" }).catch(() => {});
+      })();
+      return closePromise;
     },
   };
 }

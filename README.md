@@ -8,8 +8,52 @@ GitHub Pages Base:
 
 ## Aktueller Stand und Dokumentation
 
-Aktueller Plug-in-Quellstand **0.4.24.17**: SDK-sichere Orts-/Zeitentfernung auch für metadatenleere
-Stichwort-Altlasten, unterer Entfernen-Button im Zuweisungsfenster und drei Statistikexporte für Katalog
+Speicherumbau vom 4. Oktober: gemeinsamer Daten-Unterordner beim Explorer als neuer Standard, zentral
+konfigurierbar. Gewünschter finaler Hauptordner `D:\Arten-Explorer`. Die 207 Bestandsdateien mit
+98.603.910.132 Bytes sind vollständig nach `D:\IUCN_Datenbank\Daten` kopiert und per SHA-256 verglichen.
+Der gemeinsame Datenwechsel ist abgeschlossen: alle 207 frisch geprüften AppData-Originale einzeln entfernt,
+alter Datenordner leer und ohne Verknüpfung. Hauptordnerumbenennung und Verbraucherbindung noch offen.
+Der gemeinsame Wechsel verschiebt Referenz, Master, Suchpaket und eigene Entscheidungen zusammen, ohne
+AppData-Link und ohne historische Prüfbelege umzuschreiben.
+[Umzugsvertrag und tatsächlicher Stand](docs/storage-migration.md).
+Eigene Test-/Laufzeitdateien liegen jetzt in getrennten zentralen Temp-Sitzungen; Plug-in-Helfer in eigenem
+Plug-in-temp. Kontrolliertes Schließen entfernt nur nachweislich entbehrliche eigene Dateien nach Prozessende.
+Aufträge, Wiederanlaufbelege, offene Medienprüfungen und Sicherungen bleiben dauerhafte Daten.
+[Speicher-/Temp-Vertrag](docs/temp-retention.md), [Test- und Messpfade](docs/test-temp-contract.md).
+
+Artanlage-Regression (Goldbaumsteiger) korrigiert: Auch ohne automatisch gefundenes Medium erreicht der
+Assistent den Kartenimport und anschließend den Sound-Schritt. Eine fehlende Karte blockiert weiterhin
+die Veröffentlichung, nicht mehr die restlichen lokalen Schritte. Schließen und Wiederöffnen setzt denselben
+Auftrag fort; keine zweite Anlage. Die bereits manuell fertiggestellte Art bleibt unverändert.
+[Artassistent und Abschlussgrenzen](docs/add-species-workflow.md).
+
+Aktueller lokaler Plug-in-Quellstand **0.4.24.21** ergänzt den gemeinsamen Speicherresolver und eigene
+prozessgebundene Temp-Sitzungen. Keine neue Taxonomie- oder Katalogaktion durch die Umstellung.
+Native Bedienabnahme der neuen Speicher-/Assistentenwege und Phase-10.5-Gesamtaudit bleiben getrennt.
+Gesamtgate: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
+und Suche am neuen Datenort bestanden. [Nachweis und verbleibende Abschlussgrenze](docs/audits/2026-10-04-storage-and-species-wizard.md).
+
+Vorausgehende Menüänderung **0.4.24.20**: Verwaltungsfenster auf sechs Hauptzugänge reduziert;
+Ort/Zeit mit drei Auswahlaktionen und Weitere Aktionen mit fünf seltenen Funktionen. Alle zwölf bisherigen
+Skriptziele und Bestätigungen bleiben erhalten. Erklärungstexte mit gleicher Kartenbreite und kleinem Ausgleich
+zur sichtbaren nativen Buttonkante. Im Explorer bleiben Arten-/Medienläufe, Taxonomieupdate und Suche vorn;
+gezielte Medienläufe, Einrichtung, Wiederherstellung und Wartung sind unter Weitere Aktionen eingeklappt.
+Öffnen, Zurück und Schließen starten keine Verarbeitung. Native Sichtprüfung beider Verwaltungsfenster noch offen.
+
+Fensterkorrektur aus **0.4.24.19** bleibt erhalten: Vorschau-/Korrekturspalte mit ausdrücklich gleicher Innenbreite
+und gleichen Gruppenrändern, keine reservierte leere Namensstatusfläche oder vertikale Wurzelfüllung.
+Zuletzt verwendete Arten werden angeboten, aber weder beim Öffnen noch nach Zuweisung vorbelegt.
+Orts-/Zeitentfernung bleibt neben Taxonomie entfernen in Schritt 4, Namensaktionen und erklärte Verwaltungsbuttons
+aus 0.4.24.18 bleiben erhalten. Fachaktionen unverändert; erneute native Sichtprüfung noch offen. Der Screenshot
+vom 4. Oktober belegt die unzureichende Breite und Leerflächen der vorherigen Layoutannahme.
+Felix bestätigt die vorherigen Einzel-/Mehrfachentfernungen und neuen Exporte anhand eines Fotos praktisch.
+Bedienvertrag: [Lightroom-Plug-in](docs/lightroom-search-package.md),
+[Namensaktionen](docs/taxonomy-name-preference-plan.md#lightroom-buttonbeschriftungen-ab-042418).
+Die [Vereinfachung der Verwaltungswege](docs/lightroom-search-package.md#vereinfachung-der-verwaltungswege--vorschlag-vom-4-oktober)
+ist auf Felix' Freigabe umgesetzt. Keine zusätzliche automatische Katalogaktion, Bestandsänderung oder Bereinigung.
+
+Der veröffentlichte Stand **0.4.24.17** ergänzt SDK-sichere Orts-/Zeitentfernung auch für metadatenleere
+Stichwort-Altlasten, den damaligen unteren Entfernen-Button im Zuweisungsfenster und drei Statistikexporte für Katalog
 oder markierte Fotos mit vorbelegten Dateinamen. Wiederkehrende Pages-Ursache (neuer lokaler Statusgenerator,
 alter versionierter Code) belegt und durch gemeinsame Daten-/Asset-Vorabprüfung abgesichert.
 Nutzerabnahme, Prüfgrenzen und Veröffentlichungsstand:
@@ -18,8 +62,8 @@ Nutzerabnahme, Prüfgrenzen und Veröffentlichungsstand:
 Diese Arbeitsserie ist als `f6834fc` veröffentlicht. Der
 [Pages-Lauf 37147560397](https://github.com/felixkfm90/iucn-species-data/actions/runs/37147560397) bestand
 vollständig: Linux-Qualitätsgate, Build und Deployment. Lokales Gesamtgate: 50 Testgruppen, 1.120 gemeldete
-Tests, darunter 420 Master-/Betriebs- und 231 Lightroom-/Pakettests. Neuer SDK-/Sichttest für 0.4.24.17
-bleibt von diesen automatisierten Erfolgen getrennt; kein neuer produktiver Taxonomieaufbau ausgeführt.
+Tests, darunter 420 Master-/Betriebs- und 231 Lightroom-/Pakettests. Die anschließend von Felix bestätigten
+gezielten SDK-Tests ersetzen keine gesamte Lightroom-Abnahme; kein neuer produktiver Taxonomieaufbau ausgeführt.
 
 Stand: 3. Oktober 2026. Die Quellenreparatur ist vollständig geprüft und gemeinsam für Master und Lightroom
 aktiviert. Felix hat bevorzugte Namen, Zuweisung und Erhalt nach Schließen/Wiederöffnen für Weissstorch und
@@ -1398,7 +1442,7 @@ Es trennt Auswahlaktionen von katalogweiter Pflege und stellt die beiden Aktuali
 eindeutiger Reichweite als `Ort/Zeit der Auswahl` und `Gesamter Katalog` dar. Diese
 Alternative verwendet ausschließlich dokumentierte normale Menüeinträge; die Lightroom-SDK-Dokumentation weist
 für `LrLibraryMenuItems` keine nativen Untermenüs oder Trennlinien aus.
-Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren ...` die ausgewählte Art über eine kurzlebige,
+Unter `Taxonomie prüfen` kann `Artbezeichnung korrigieren` die ausgewählte Art über eine kurzlebige,
 einmalig konsumierbare Übergabedatei im Arten-Explorer öffnen. Lightroom erhält dadurch keinen Schreibzugriff auf
 den Master. Der Explorer prüft Master-ID und wissenschaftlichen Namen erneut und speichert Änderungen ausschließlich
 in der versionierten Korrekturschicht. Eigene noch nicht aktive Korrekturen werden als eigener Aktualisierungsgrund

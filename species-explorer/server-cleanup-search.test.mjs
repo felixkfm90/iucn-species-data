@@ -1,3 +1,4 @@
+import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -65,10 +66,10 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
 
 test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten und Assets dauerhaft", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
-  context.after(() => app.close());
+  cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
   const assetDir = join(repoRoot, "species-assets", "Amsel");
 
@@ -119,7 +120,7 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
   );
 
   const directRoot = await createEditableFixture();
-  context.after(() => rm(directRoot, { recursive: true, force: true }));
+  const cleanupDirectFixture = registerFixtureCleanup(context, directRoot);
   await writeFile(
     join(directRoot, "species-assets-overrides.json"),
     `${JSON.stringify({
@@ -137,7 +138,7 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
   );
   const directApp = await createExplorerServer({ repoRoot: directRoot, port: 0 });
   const directAddress = await directApp.listen();
-  context.after(() => directApp.close());
+  cleanupDirectFixture(directApp);
   const directBaseUrl = `http://${directApp.host}:${directAddress.port}`;
   const directAssetDir = join(directRoot, "species-assets", "Amsel");
   const directPreviewResponse = await fetch(
@@ -191,11 +192,11 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
   assert.equal(recreateResponse.status, 200);
 
   const generatedOnlyRoot = await createEditableFixture();
-  context.after(() => rm(generatedOnlyRoot, { recursive: true, force: true }));
+  const cleanupGeneratedFixture = registerFixtureCleanup(context, generatedOnlyRoot);
   await writeFile(join(generatedOnlyRoot, "species_list.json"), "[]\n", "utf8");
   const generatedOnlyApp = await createExplorerServer({ repoRoot: generatedOnlyRoot, port: 0 });
   const generatedOnlyAddress = await generatedOnlyApp.listen();
-  context.after(() => generatedOnlyApp.close());
+  cleanupGeneratedFixture(generatedOnlyApp);
   const generatedOnlyBaseUrl = `http://${generatedOnlyApp.host}:${generatedOnlyAddress.port}`;
   const generatedOnlyAssetDir = join(generatedOnlyRoot, "species-assets", "Amsel");
   const generatedOnlyPreviewResponse = await fetch(
@@ -230,7 +231,7 @@ test("Löschen kann Assets sofort entfernen; Bereinigung löscht verwaiste Daten
 
 test("Artbereinigung stellt Assets nach Windows-Dateisperre wieder her", async (context) => {
   const repoRoot = await createEditableFixture();
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
   const assetDir = join(repoRoot, "species-assets", "Amsel");
   await writeFile(join(repoRoot, "species_list.json"), "[]\n", "utf8");
 

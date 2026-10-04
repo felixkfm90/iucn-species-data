@@ -86,6 +86,7 @@ test("Lua-Paketstatus folgt gemeinsamem Zeiger und Korrekturen ohne Prozess- ode
   lualib.luaL_openlibs(state);
   const script = `
     local Json = (function() ${await source("Json.lua")} end)()
+    _PLUGIN = { path = "D:/fixture/lightroom-plugin/FNWildlifeTaxonomy.lrplugin" }
     local files = {}
     local root = "D:/fixture/lightroom"
     local function child(parent, leaf) return parent .. "/" .. leaf end
@@ -153,7 +154,7 @@ test("Identitäts-Schreibkern bleibt separat, journalgebunden und ohne Ort-/Zeit
   assert.doesNotMatch(catalog.slice(catalog.indexOf("function IdentityCatalog.guard")), /Helper\.request|LrTasks\.yield|withWriteAccessDo/);
   const action = await source("IdentityAction.lua");
   const view = await source("IdentityView.lua");
-  assert.match(menu, /Artänderungen prüfen \.\.\.[\s\S]*?ReviewIdentity\.lua/);
+  assert.match(menu, /Artänderungen prüfen"[\s\S]*?ReviewIdentity\.lua/);
   assert.match(await source("ReviewIdentity.lua"), /LrTasks.startAsyncTask/);
   assert.match(action, /Workflow\.prepare[\s\S]*?process\(catalog, input\)/);
   assert.match(action, /"recovery-preview"/);
@@ -188,10 +189,10 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     "Das native Lightroom-Menü muss auf zwei belegte Einstiegspunkte begrenzt bleiben",
   );
   for (const group of [
-    "Taxonomie und Art",
-    "Ort und Zeit – Auswahl",
-    "FN-Daten aktualisieren und bereinigen",
-    "Auswertung und Einrichtung",
+    "FN Wildlife verwalten",
+    "FN Wildlife – Ort und Zeit",
+    "FN Wildlife – Weitere Aktionen",
+    "Statistik und Exporte",
   ]) {
     assert.match(pluginMenu, new RegExp(group));
   }
@@ -213,10 +214,14 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(pluginMenu, /ALLOWED_SCRIPTS\[action\.script\] = true/);
   assert.match(pluginMenu, /LrPathUtils\.child\(_PLUGIN\.path, script\)/);
   assert.match(pluginMenu, /LrTasks\.pcall\(dofile, path\)/);
-  assert.match(pluginMenu, /title = "Schließen"[\s\S]*?dialogControls:close\(\)/);
-  assert.match(pluginMenu, /title = "Taxonomie zuweisen \.\.\."[\s\S]*?script = "AssignTaxonomy\.lua"/);
-  assert.match(pluginMenu, /Ort\/Zeit der Auswahl aktualisieren \.\.\./);
-  assert.match(pluginMenu, /Gesamten Katalog aktualisieren \.\.\./);
+  assert.match(pluginMenu, /title = "Schließen"[\s\S]*?choose\(\{\}\)/);
+  assert.match(pluginMenu, /if dialogControls then dialogControls:close\(\) end/);
+  assert.match(pluginMenu, /title = "Taxonomie zuweisen"[\s\S]*?script = "AssignTaxonomy\.lua"/);
+  assert.match(pluginMenu, /Orts-\/Zeitdaten aktualisieren"/);
+  assert.match(pluginMenu, /FN-Daten aktualisieren"/);
+  assert.doesNotMatch(pluginMenu, /title = "[^"]*\.\.\.|title = "[^"]*…/);
+  assert.match(pluginMenu, /tooltip = action\.tooltip/);
+  assert.match(pluginMenu, /title = action\.summary[\s\S]*?height_in_lines = 2/);
   assert.match(info, /LrMetadataProvider\s*=\s*"MetadataDefinition\.lua"/);
   assert.match(info, /LrMetadataTagsetFactory\s*=\s*\{/);
   assert.match(info, /"MetadataTagset\.lua"/);
@@ -226,7 +231,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.17");
+  assert.equal(version.slice(1).join("."), "0.4.24.21");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -355,23 +360,24 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(helper, /getStandardFilePath\("temp"\)/);
   assert.match(helper, /Program Files\\\\nodejs\\\\node\.exe/);
   assert.match(helper, /FN Wildlife Travel\/Arten-Explorer\/lightroom/);
-  assert.match(helper, /--search-root=/);
-  assert.match(helper, /fn-wildlife-taxonomy-command-/);
+  const tempHelper = await fs.readFile(path.join(ROOT, "species-explorer", "lightroom-temp-helper.mjs"), "utf8");
+  assert.match(tempHelper, /--search-root=/);
+  assert.match(helper, /require\("TempSession"\)/);
   assert.match(helper, /Technische Meldung/);
   assert.match(helper, /local Json = require "Json"/);
   assert.doesNotMatch(helper, /LrJson/);
   assert.match(json, /function Json\.encode\(value\)/);
   assert.match(json, /function Json\.decode\(text\)/);
-  assert.match(helper, /--request=/);
-  assert.match(helper, /--response=/);
+  assert.match(tempHelper, /--request=/);
+  assert.match(tempHelper, /--response=/);
   assert.match(helper, /local ok, result = LrTasks\.pcall\(executeRequest\)/);
   assert.match(helper, /local function writeTextFile\(path, content\)/);
   assert.match(helper, /local function readTextFile\(path\)/);
   assert.match(helper, /io\.open\(path, "wb"\)/);
   assert.match(helper, /io\.open\(path, "rb"\)/);
   assert.doesNotMatch(helper, /LrFileUtils\.(?:writeFile|readFile)/);
-  assert.match(helper, /removeFile\(requestPath\)/);
-  assert.match(helper, /removeFile\(responsePath\)/);
+  assert.match(helper, /operation:release\(\)/);
+  assert.match(tempHelper, /cleanupOwnedPluginTempSession/);
   assert.match(assignment, /AssignmentWindow\.show/);
   assert.match(
     assignment,
@@ -390,7 +396,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /4\. Taxonomie verwalten/);
   assert.match(window, /Ausgewählte Art zuweisen/);
   assert.match(window, /Taxonomie entfernen/);
-  assert.match(window, /Artbezeichnung korrigieren \.\.\./);
+  assert.match(window, /title = "Artbezeichnung korrigieren"/);
   assert.match(window, /TaxonomyHelper\.openCorrection/);
   assert.match(window, /props\.canCorrect = isSpeciesTaxon\(currentTaxon\) and not props\.busy/);
   assert.match(window, /KeywordWriter\.remove/);
@@ -418,10 +424,10 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /title\s*=\s*"Schließen"/);
   assert.match(window, /activeDialogControls:close\(\)/);
   assert.doesNotMatch(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
-  assert.match(window, /fill_horizontal\s*=\s*1,\s*\n\s*fill_vertical\s*=\s*1,/);
+  assert.doesNotMatch(window, /fill_vertical\s*=/);
   assert.match(window, /height\s*=\s*150/);
   assert.match(window, /ASSIGNMENT_WINDOW_WIDTH\s*=\s*960/);
-  assert.match(window, /TAXONOMY_PREVIEW_WIDTH\s*=\s*ASSIGNMENT_WINDOW_WIDTH - 30/);
+  assert.doesNotMatch(window, /TAXONOMY_PREVIEW_WIDTH/);
   assert.match(window, /local function setPreview\(value\)/);
   assert.match(window, /string\.gmatch\(text \.\. "\\n", "\(\.\-\)\\n"\)/);
   assert.match(window, /props\.previewLines\s*=\s*lines/);
@@ -430,7 +436,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /props\.previewSelection\s*=\s*\{\}/);
   assert.match(window, /factory:simple_list\(\{/);
   assert.match(window, /items\s*=\s*bind\("previewLines"\)/);
-  assert.match(window, /width\s*=\s*TAXONOMY_PREVIEW_WIDTH/);
+  assert.match(window, /factory:simple_list\(\{[\s\S]*?height = 150,[\s\S]*?fill_horizontal = 1/);
   assert.doesNotMatch(window, /background_color|local LrColor/);
   assert.doesNotMatch(window, /PREVIEW_LINE_LIMIT|previewLineVisible|previewLineViews/);
   assert.doesNotMatch(window, /width\s*=\s*760/);
@@ -438,10 +444,10 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(window, /height_in_lines\s*=\s*-1/);
   assert.doesNotMatch(window, /previewLineCount|textLineCount/);
   assert.doesNotMatch(window, /height_in_lines\s*=\s*32/);
-  assert.match(window, /resizable\s*=\s*false/);
   assert.match(window, /width\s*=\s*ASSIGNMENT_WINDOW_WIDTH/);
-  assert.match(window, /height\s*=\s*565/);
-  assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV6"/);
+  const floatingDialog = window.slice(window.indexOf("LrDialogs.presentFloatingDialog(_PLUGIN"));
+  assert.doesNotMatch(floatingDialog, /resizable\s*=|\bwidth\s*=|\bheight\s*=/);
+  assert.match(window, /save_frame\s*=\s*"fnWildlifeTaxonomyAssignmentWindowV7"/);
   assert.match(window, /PluginState\.recentTaxa/);
   assert.match(window, /blockTask\s*=\s*true/);
   assert.match(window, /selectionChangeObserver/);
@@ -608,13 +614,14 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
   assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?activeDialogControls:close\(\)/);
   assert.match(statistics, /cancelVerb\s*=\s*"Schließen"/);
   assert.match(maintenance, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
-  assert.match(pluginMenu, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
+  assert.match(pluginMenu, /title\s*=\s*"Schließen"[\s\S]*?choose\(\{\}\)/);
+  assert.match(pluginMenu, /if dialogControls then dialogControls:close\(\) end/);
 });
 
 test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden", async () => {
   const pluginMenu = await source("PluginMenu.lua");
   const removal = await source("RemoveTaxonomy.lua");
-  assert.match(pluginMenu, /title = "Taxonomie entfernen \.\.\."/);
+  assert.match(pluginMenu, /title = "Taxonomie entfernen"/);
   assert.match(pluginMenu, /script = "RemoveTaxonomy\.lua"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
@@ -738,7 +745,8 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(suggestions, /iptcValue\(app13, 95\)/);
   assert.match(suggestions, /iptcValue\(app13, 101\)/);
   assert.match(suggestions, /iptcValue\(app13, 100\)/);
-  assert.match(suggestions, /cleanupDirectory\(outputDirectory\)/);
+  assert.match(suggestions, /operation:release\(\)/);
+  assert.match(suggestions, /stopIfCanceled = false/);
   assert.doesNotMatch(suggestions, /LrHttp|\.lrcat|sqlite/i);
   const assignmentFunction = assignmentWindow.slice(
     assignmentWindow.indexOf("local function assign()"),
@@ -807,9 +815,9 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(taxonomy, /function KeywordWriter\.taxonomyKeywordNameSet\(photo\)/);
   assert.match(menu, /function LocationTimeMenu\.runForPhotos\(catalog, photos, mode\)/);
   assert.match(menu, /if mode ~= "remove" then\s*plans, preparation = LocationTimeWriter\.prepare/);
-  assert.match(assignmentWindow, /title = "Orts- und Zeitdaten entfernen \.\.\."/);
+  assert.match(assignmentWindow, /title = "Orts- und Zeitdaten entfernen"/);
   assert.match(assignmentWindow, /LrTasks\.pcall\(LocationTimeMenu\.runForPhotos, catalog, photos, "remove"\)/);
-  assert.ok(assignmentWindow.lastIndexOf('title = "Orts- und Zeitdaten entfernen ..."')
+  assert.ok(assignmentWindow.lastIndexOf('title = "Orts- und Zeitdaten entfernen"')
     < assignmentWindow.lastIndexOf('title = "Schließen"'));
 });
 
@@ -821,8 +829,8 @@ test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und I
   const writer = await source("KeywordWriter.lua");
   const locationTime = await source("LocationTimeWriter.lua");
 
-  assert.match(pluginMenu, /Alle FN-Daten der Auswahl entfernen \.\.\./);
-  assert.match(pluginMenu, /Gesamten Katalog aktualisieren \.\.\./);
+  assert.match(pluginMenu, /Alle FN-Daten der Auswahl entfernen"/);
+  assert.match(pluginMenu, /FN-Daten aktualisieren"/);
   assert.match(removal, /catalog:getTargetPhotos\(\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.removeAll/);
@@ -1206,7 +1214,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.17/);
+  assert.match(provider, /Version: 0\.4\.24\.21/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
@@ -1241,7 +1249,7 @@ test("Namenswahl bestätigt Konflikte und erlaubt eine ausdrückliche Übernahme
   assert.match(preference, /token = preview\.token, confirmed = true/);
   assert.ok(window.indexOf("KeywordWriter.assign,") < window.indexOf("NamePreference.publish(preference)"));
   assert.match(window, /preference and result\.photoCount > 0/);
-  assert.match(window, /Globale Namenswahl erneut speichern/);
+  assert.match(window, /title = "Speichern wiederholen"/);
   const directSave = window.match(/local function saveNamePreference\(\)([\s\S]*?)\n  local view =/)[1];
   assert.match(directSave, /LrTasks\.pcall\(NamePreference\.prepare, taxon, germanName\)/);
   assert.match(directSave, /if ok and payload then[\s\S]*NamePreference\.publish\(payload\)/);
@@ -1257,4 +1265,359 @@ test("Namenswahl bestätigt Konflikte und erlaubt eine ausdrückliche Übernahme
   assert.match(preference, /useProviderStandard = true/);
   assert.match(helper, /lightroom-name-preference-helper\.mjs/);
   assert.doesNotMatch(preference, /withWriteAccessDo|setPropertyForPlugin|createKeyword/);
+});
+
+async function assignmentViewFixture(body) {
+  const { default: fengari } = await import("fengari");
+  const { lua, lauxlib, lualib, to_luastring } = fengari;
+  const state = lauxlib.luaL_newstate();
+  lualib.luaL_openlibs(state);
+  const script = `
+    local props, dialog, duringDialog
+    local originalPcall, dialogsClosed, published, confirmations = pcall, 0, 0, 0
+    local failPublish, confirmResult, removalCalls = false, "ok", 0
+    local preferred = "Rebhuhn"
+    local recentTaxa, requests, assignmentCalls = {}, {}, 0
+    local allowAssignment, failTaxon, packageAvailable = false, false, true
+    local photo = {
+      getPropertyForPlugin = function() return "" end,
+      getFormattedMetadata = function() return "test.jpg" end,
+      getRawMetadata = function() return "D:/test.jpg" end,
+    }
+    local catalog = { getTargetPhotos = function() return { photo } end, getTargetPhoto = function() return photo end }
+    local factory = { dialog_spacing = function() return 12 end, control_spacing = function() return 6 end }
+    for _, kind in ipairs({ "column", "row", "group_box", "push_button", "static_text", "popup_menu", "edit_field", "simple_list", "spacer" }) do
+      factory[kind] = function(_, value) value.kind = kind; return value end
+    end
+    function import(name)
+      if name == "LrApplication" then return { activeCatalog = function() return catalog end } end
+      if name == "LrPathUtils" then return { leafName = function() return "test.jpg" end } end
+      if name == "LrView" then return { osFactory = function() return factory end, bind = function(key) return { key = key } end } end
+      if name == "LrTasks" then return { pcall = originalPcall, startAsyncTask = function(fn) fn() end, yield = function() end, sleep = function() end } end
+      if name == "LrBinding" then return { makePropertyTable = function()
+        local values, observers = {}, {}
+        props = setmetatable({ addObserver = function(_, key, fn)
+          observers[key] = observers[key] or {}; table.insert(observers[key], fn)
+        end }, { __index = values, __newindex = function(_, key, value)
+          local old = values[key]; values[key] = value
+          if old ~= value then for _, fn in ipairs(observers[key] or {}) do fn() end end
+        end })
+        return props
+      end } end
+      if name == "LrDialogs" then return {
+        confirm = function() confirmations = confirmations + 1; return confirmResult end,
+        presentFloatingDialog = function(_, options)
+          dialog = options
+          options.onShow({ close = function() dialogsClosed = dialogsClosed + 1 end })
+          duringDialog(options.contents)
+          options.windowWillClose()
+        end,
+      } end
+      error("Unexpected import: " .. name)
+    end
+    local Helper = {
+      request = function(input)
+        table.insert(requests, input)
+        if input.command == "status" then return { available = packageAvailable } end
+        if input.command == "search" then return { { masterTaxonId = "mtx_test", germanName = preferred } } end
+        assert(input.command == "taxon")
+        if failTaxon then error("test taxon unavailable") end
+        return { masterTaxonId = input.masterTaxonId, rank = "species", germanName = preferred,
+          searchPackage = { packageId = "package", masterVersion = "master", correctionRevision = "revision" },
+          acceptedScientificName = "Perdix perdix", hierarchy = {}, names = {}, }
+      end,
+      searchPackageStatus = function() return { available = packageAvailable, packageId = "package", masterVersion = "master", correctionRevision = "revision" } end,
+      namePreference = function(input)
+        if input.command == "preview" then
+          return { germanName = input.usePrevious and "Feldhuhn" or input.useProviderStandard and "Feldhuhn" or input.germanName,
+            previousGermanName = preferred, requiresConfirmation = true, token = "token" }
+        end
+        assert(input.command == "save" and input.confirmed and input.token == "token")
+        if failPublish then error("test publish failed") end
+        published = published + 1
+        preferred = input.useProviderStandard and "Feldhuhn" or input.germanName
+        return { saved = true }
+      end,
+    }
+    local modules = {
+      TaxonomyHelper = Helper,
+      PluginState = {
+        recentTaxa = function() return recentTaxa end,
+        addRecentTaxon = function(taxon) recentTaxa = { taxon } end,
+      },
+      DataVersionView = { summary = function() return "Paket bereit" end },
+      KeywordWriter = {
+        findConflicts = function() assert(allowAssignment, "No taxonomy write expected"); return {} end,
+        assign = function() assert(allowAssignment, "No taxonomy write expected"); assignmentCalls = assignmentCalls + 1; return { photoCount = 1 } end,
+      },
+      LocationTimeWriter = { prepare = function() assert(allowAssignment, "No location preparation expected"); return {}, {} end },
+      LocationTimeMenu = { runForPhotos = function(receivedCatalog, photos, mode)
+        assert(receivedCatalog == catalog and #photos == 1 and mode == "remove")
+        removalCalls = removalCalls + 1; return nil
+      end },
+    }
+    function require(name) assert(modules[name], name); return modules[name] end
+    modules.TaxonomyRanks = (function() ${await source("TaxonomyRanks.lua")} end)()
+    modules.NamePreference = (function() ${await source("NamePreference.lua")} end)()
+    _PLUGIN = {}
+    local Window = (function() ${await source("AssignmentWindow.lua")} end)()
+    local function find(view, title)
+      if view.title == title then return view end
+      for _, child in ipairs(view) do local found = find(child, title); if found then return found end end
+    end
+    local function open(body) duringDialog = body; Window.show({}) end
+    local function load(view) props.query = "rebhuhn"; find(view, "Art suchen").action() end
+    ${body}
+  `;
+  try {
+    assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
+    const result = lua.lua_pcall(state, 0, 0, 0);
+    assert.equal(result, lua.LUA_OK, result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1));
+  } finally { lua.lua_close(state); }
+}
+
+test("Zuweisungsansicht bündelt Namensaktionen, gemeinsame Vorschaukanten und beide Rücknahmen in Schritt 4", async () => {
+  await assignmentViewFixture(`
+    open(function(view)
+      local search = find(view, "2. Art suchen und auswählen")[1]
+      local save = find(search, "Als bevorzugt speichern")
+      local nameRow
+      for _, child in ipairs(search) do if child.kind == "row" and child[1] == save then nameRow = child end end
+      assert(nameRow and #nameRow == 4 and nameRow.spacing == 6)
+      local titles = { "Als bevorzugt speichern", "Vorherigen Namen auswählen", "Anbieterstandard verwenden", "Speichern wiederholen" }
+      for i, title in ipairs(titles) do assert(nameRow[i].title == title and #nameRow[i].tooltip > 40) end
+      local preview = find(view, "3. Taxonomie prüfen")[1]
+      assert(preview.spacing == 6 and preview.fill_horizontal == 1)
+      assert(view.width == 960 and view.margin == 0 and view.fill_vertical == nil)
+      for _, group in ipairs(view) do if group.kind == "group_box" then
+        assert(group.margin_horizontal == 10 and group[1].width == 940)
+        assert(group[1].width + 2 * group.margin_horizontal == view.width)
+      end end
+      assert(preview[1].kind == "simple_list" and preview[1].width == preview.width and preview[1].height == 150)
+      assert(preview[1].fill_horizontal == 1 and preview[2].fill_horizontal == 1)
+      assert(preview[2][1].kind == "spacer" and preview[2][1].fill_horizontal == 1)
+      assert(preview[2][2].title == "Artbezeichnung korrigieren")
+      local row = find(view, "4. Taxonomie verwalten")[1][1]
+      assert(row.kind == "row" and #row == 3)
+      assert(row[2].title == "Taxonomie entfernen" and row[3].title == "Orts- und Zeitdaten entfernen")
+      assert(row[2].enabled.key == "canRemove" and row[3].enabled.key == "canRemove")
+      row[3].action(); assert(removalCalls == 1 and not props.busy)
+      local footer = view[#view]
+      assert(#footer == 2 and footer[1].kind == "spacer" and footer[2].title == "Schließen")
+      assert(dialog.height == nil and dialog.width == nil and dialog.resizable == nil)
+      assert(dialog.save_frame == "fnWildlifeTaxonomyAssignmentWindowV7")
+      footer[2].action()
+    end)
+    assert(dialogsClosed == 1 and published == 0)
+    open(function(view) find(view, "Schließen").action() end)
+    assert(dialogsClosed == 2 and published == 0)
+  `);
+});
+
+test("Zuletzt verwendet bleibt beim Öffnen und nach Zuweisung leer; nur explizite Auswahl lädt eine Art", async () => {
+  await assignmentViewFixture(`
+    recentTaxa = {
+      { masterTaxonId = "mtx_recent", germanName = "Rötelschwalbe" },
+      { masterTaxonId = "mtx_second", germanName = "Rebhuhn" },
+    }
+    open(function(view)
+      assert(#requests == 1 and requests[1].command == "status")
+      assert(#props.recentItems == 3 and props.recentItems[1].value == "")
+      assert(props.recentItems[2].value == "mtx_recent" and props.recentItems[3].value == "mtx_second")
+      local button = find(view, "Öffnen")
+      assert(button.enabled.key == "canOpenRecent" and props.recentTaxonId == "" and not props.canOpenRecent)
+      button.action(); assert(#requests == 1)
+      props.recentTaxonId = "mtx_recent"; assert(props.canOpenRecent)
+      button.action(); assert(#requests == 2 and requests[2].masterTaxonId == "mtx_recent")
+      assert(props.canAssign and assignmentCalls == 0 and published == 0)
+      allowAssignment = true; find(view, "Ausgewählte Art zuweisen").action()
+      assert(assignmentCalls == 1 and props.recentTaxonId == "" and not props.canOpenRecent)
+      assert(#props.recentItems == 2 and props.recentItems[2].value == "mtx_recent")
+    end)
+    open(function(view)
+      assert(props.recentTaxonId == "" and not props.canOpenRecent and not props.canAssign)
+      assert(props.preview == "Noch keine Art ausgewählt.")
+      props.recentTaxonId = "mtx_recent"; failTaxon = true
+      find(view, "Öffnen").action()
+      assert(not props.canAssign and not props.busy and props.actionStatus:find("test taxon unavailable", 1, true))
+    end)
+    packageAvailable = false
+    open(function(view)
+      props.recentTaxonId = "mtx_recent"; assert(not props.canOpenRecent)
+      local count = #requests; find(view, "Öffnen").action(); assert(#requests == count)
+    end)
+    assert(assignmentCalls == 1 and published == 0 and removalCalls == 0)
+  `);
+});
+
+test("Namensrückmeldungen nutzen vorhandenen Status mit vollständigem Tooltip statt leerer Statusfläche", async () => {
+  await assignmentViewFixture(`
+    open(function(view)
+      local search = find(view, "2. Art suchen und auswählen")[1]
+      local status, separatePreferenceStatus
+      for _, control in ipairs(search) do if control.kind == "static_text" and type(control.title) == "table" then
+        if control.title.key == "actionStatus" then status = control end
+        if control.title.key == "preferenceStatus" then separatePreferenceStatus = control end
+      end end
+      assert(status and status.tooltip.key == "actionStatus" and status.height_in_lines == nil)
+      assert(status.width == search.width and not separatePreferenceStatus)
+      assert(props.preferenceStatus == "" and props.actionStatus == props.searchStatus)
+      load(view); find(view, "Vorherigen Namen auswählen").action()
+      assert(props.actionStatus:find("Vorheriger Name ausgewählt", 1, true))
+      failPublish = true; find(view, "Als bevorzugt speichern").action()
+      assert(props.canRetryPreference and props.actionStatus:find("test publish failed", 1, true))
+      assert(props.actionStatus:sub(1, #props.preferenceStatus) == props.preferenceStatus)
+      props.searchStatus = "Neue Suchmeldung"
+      assert(props.actionStatus:find("Neue Suchmeldung", 1, true) and props.actionStatus:find("test publish failed", 1, true))
+      find(view, "Ausgewählte Art zuweisen").action()
+      assert(props.actionStatus:find("Speichern wiederholen", 1, true) and assignmentCalls == 0)
+      failPublish = false; find(view, "Speichern wiederholen").action()
+      assert(published == 1 and not props.canRetryPreference and props.actionStatus:find(props.preferenceStatus, 1, true))
+    end)
+    assert(assignmentCalls == 0 and removalCalls == 0)
+  `);
+});
+
+test("Beschriftete Namensaktionen behalten Vorauswahl, Bestätigung und Anbieterstandard ohne Fotozuweisung", async () => {
+  await assignmentViewFixture(`
+    open(function(view)
+      load(view)
+      assert(not props.canSavePreference and not props.canRetryPreference, "initial buttons")
+      find(view, "Vorherigen Namen auswählen").action()
+      assert(props.selectedGermanName == "Feldhuhn" and preferred == "Rebhuhn" and published == 0)
+      assert(props.canSavePreference)
+      confirmResult = "cancel"; find(view, "Als bevorzugt speichern").action()
+      assert(published == 0 and preferred == "Rebhuhn" and not props.busy)
+      confirmResult = "ok"; find(view, "Als bevorzugt speichern").action()
+      assert(published == 1 and preferred == "Feldhuhn" and not props.canSavePreference, "direct save")
+      props.selectedGermanName = "Rebhuhn"; find(view, "Als bevorzugt speichern").action()
+      assert(published == 2 and preferred == "Rebhuhn")
+      confirmResult = "cancel"; find(view, "Anbieterstandard verwenden").action()
+      assert(published == 2 and preferred == "Rebhuhn")
+      confirmResult = "ok"; find(view, "Anbieterstandard verwenden").action()
+      assert(published == 3 and preferred == "Feldhuhn" and not props.busy)
+    end)
+    assert(removalCalls == 0 and confirmations == 5)
+  `);
+});
+
+test("Speichern wiederholen ist nur nach Teilerfolg aktiv und übernimmt dieselbe offene Namenswahl ohne Zuweisung", async () => {
+  await assignmentViewFixture(`
+    open(function(view)
+      load(view)
+      find(view, "Vorherigen Namen auswählen").action()
+      failPublish = true; find(view, "Als bevorzugt speichern").action()
+      assert(published == 0 and preferred == "Rebhuhn" and props.canRetryPreference and not props.busy)
+      assert(not props.canSavePreference)
+      find(view, "Speichern wiederholen").action()
+      assert(published == 0 and props.canRetryPreference and not props.busy)
+      failPublish = false; find(view, "Speichern wiederholen").action()
+      assert(published == 1 and preferred == "Feldhuhn" and not props.canRetryPreference and not props.busy)
+      find(view, "Speichern wiederholen").action()
+      assert(published == 1)
+    end)
+    assert(removalCalls == 0 and confirmations == 1)
+  `);
+});
+
+test("Verwaltung bündelt sechs Hauptaktionen, bündige Kurztexte und alle zwölf Ziele mit sicherer Navigation", async () => {
+  const { default: fengari } = await import("fengari");
+  const { lua, lauxlib, lualib, to_luastring } = fengari;
+  const state = lauxlib.luaL_newstate();
+  lualib.luaL_openlibs(state);
+  const script = `
+    local calls, messages, closes, fail = {}, {}, 0, false
+    local route, step, expectedScript, inDialog = {}, 0, nil, false
+    local originalPcall = pcall
+    local factory = { dialog_spacing = function() return 12 end, control_spacing = function() return 6 end }
+    for _, kind in ipairs({ "column", "row", "push_button", "static_text", "spacer" }) do
+      factory[kind] = function(_, value) value.kind = kind; return value end
+    end
+    local function find(view, title)
+      if view.title == title then return view end
+      for _, child in ipairs(view) do local result = find(child, title); if result then return result end end
+    end
+    function import(name)
+      if name == "LrView" then return { osFactory = function() return factory end } end
+      if name == "LrPathUtils" then return { child = function(root, leaf) return root .. "/" .. leaf end } end
+      if name == "LrFunctionContext" then return { callWithContext = function(_, fn) fn({}) end } end
+      if name == "LrTasks" then return { pcall = originalPcall, startAsyncTask = function(fn) fn() end, yield = function() end } end
+      assert(name == "LrDialogs")
+      return { message = function(...) table.insert(messages, { ... }) end, presentFloatingDialog = function(_, options)
+        assert(not inDialog, "only one menu window at a time"); inDialog = true
+        options.onShow({ close = function() closes = closes + 1 end })
+        local cards = {}
+        for _, row in ipairs(options.contents) do if row.kind == "row" then
+          for _, card in ipairs(row) do if card.kind == "column" then
+            assert(card.width == 330 and card.margin == 0 and #card == 2)
+            local button, caption = card[1], card[2]
+            local help = caption[1]
+            assert(button.kind == "push_button" and button.width == card.width and button.place_horizontal == 0)
+            assert(not button.title:find("...", 1, true) and not button.title:find("…", 1, true))
+            assert(#button.tooltip > 60 and caption.kind == "row" and caption.margin_left == 3)
+            assert(help.kind == "static_text" and #help.title > 20 and help.height_in_lines == 2)
+            assert(help.tooltip == button.tooltip and help.alignment == "left" and help.place_horizontal == 0)
+            assert(help.width + caption.margin_left == button.width)
+            table.insert(cards, button)
+          end end
+        end end
+        if options.save_frame == "fnWildlifePluginMenuV2_main" then
+          local titles = { "Taxonomie zuweisen", "Art-Favorit festlegen", "Ort und Zeit", "Statistik und Exporte", "FN-Daten aktualisieren", "Weitere Aktionen" }
+          assert(#cards == #titles)
+          for i, title in ipairs(titles) do assert(cards[i].title == title) end
+          assert(not find(options.contents, "Zurück"))
+          assert(not find(options.contents, "FN-Katalognutzung erfassen"))
+        elseif options.save_frame == "fnWildlifePluginMenuV2_locationTime" then
+          assert(#cards == 3 and find(options.contents, "Zurück"))
+        else
+          assert(options.save_frame == "fnWildlifePluginMenuV2_more" and #cards == 5 and find(options.contents, "Zurück"))
+        end
+        step = step + 1
+        local title = route[step] or "Schließen"
+        if title ~= "__window_close__" then
+          local button = find(options.contents, title); assert(button, title)
+          local count = #calls; button.action(); button.action()
+          assert(#calls == count, "navigation must close before executing a target")
+        end
+        options.windowWillClose(); inDialog = false
+      end }
+    end
+    _PLUGIN = { path = "D:/fixture/plugin" }
+    dofile = function(filename)
+      assert(not inDialog and filename == _PLUGIN.path .. "/" .. expectedScript)
+      table.insert(calls, filename)
+      if fail then error("script failed") end
+    end
+    local function openMenu(sequence, script)
+      route, step, expectedScript = sequence, 0, script
+      ${await source("PluginMenu.lua")}
+    end
+    openMenu({}, nil); assert(#calls == 0 and closes == 1)
+    openMenu({ "Ort und Zeit", "Zurück", "Weitere Aktionen", "Zurück", "Schließen" }, nil)
+    assert(#calls == 0 and closes == 6)
+    openMenu({ "Weitere Aktionen", "__window_close__" }, nil); assert(#calls == 0 and closes == 7)
+    local cases = {
+      { { "Taxonomie zuweisen" }, "AssignTaxonomy.lua" },
+      { { "Weitere Aktionen", "Taxonomie entfernen" }, "RemoveTaxonomy.lua" },
+      { { "Art-Favorit festlegen" }, "SetReferenceImage.lua" },
+      { { "Weitere Aktionen", "Artänderungen prüfen" }, "ReviewIdentity.lua" },
+      { { "Ort und Zeit", "Orts-/Zeitdaten hinzufügen" }, "AddLocationTime.lua" },
+      { { "Ort und Zeit", "Orts-/Zeitdaten entfernen" }, "RemoveLocationTime.lua" },
+      { { "Ort und Zeit", "Orts-/Zeitdaten aktualisieren" }, "UpdateLocationTime.lua" },
+      { { "FN-Daten aktualisieren" }, "UpdateCatalogFnData.lua" },
+      { { "Weitere Aktionen", "Alle FN-Daten der Auswahl entfernen" }, "RemoveAllFnData.lua" },
+      { { "Statistik und Exporte" }, "ShowStatistics.lua" },
+      { { "Weitere Aktionen", "Smart-Sammlungen einrichten" }, "CreateCollections.lua" },
+      { { "Weitere Aktionen", "FN-Katalognutzung erfassen" }, "CaptureCatalogUsage.lua" },
+    }
+    for i, case in ipairs(cases) do openMenu(case[1], case[2]); assert(#calls == i) end
+    fail = true; openMenu({ "Taxonomie zuweisen" }, "AssignTaxonomy.lua"); assert(#messages == 1 and #calls == 13)
+    fail = false; openMenu({ "Taxonomie zuweisen" }, "AssignTaxonomy.lua"); assert(#calls == 14)
+    openMenu({}, nil); assert(#calls == 14)
+  `;
+  try {
+    assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
+    const result = lua.lua_pcall(state, 0, 0, 0);
+    assert.equal(result, lua.LUA_OK, result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1));
+  } finally { lua.lua_close(state); }
 });

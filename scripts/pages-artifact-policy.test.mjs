@@ -1,6 +1,6 @@
+import { tmpdir } from "./test-temp.mjs";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
@@ -25,6 +25,11 @@ test("Pages-Pfadregeln erlauben nur Laufzeitdateien", () => {
   assert.equal(isIgnoredDesignSource("graphics/catagory/Alternativ/Blaupause.psd"), true);
   assert.equal(isAllowedArtifactPath(".nojekyll"), true);
   assert.equal(isAllowedArtifactPath("species-explorer/local-settings.json"), false);
+  for (const filename of ["Daten/taxonomy/active.json", "temp/tests/a.sqlite", "storage-path.json",
+    "lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/request.json"]) {
+    assert.equal(isPublishableSourcePath(filename), false);
+    assert.equal(isAllowedArtifactPath(filename), false);
+  }
 });
 
 test("Pages-Artefakt entspricht exakt der freigegebenen Quelle", async (context) => {
@@ -51,7 +56,7 @@ test("Pages-Artefakt weist unerwartete Dateien zurück", async (context) => {
 });
 
 async function createFixture() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "pages-policy-"));
+  const root = await mkdtemp(path.join(tmpdir(), "pages-policy-"));
   for (const relativePath of PAGE_SOURCE_FILES) {
     const target = path.join(root, ...relativePath.split("/"));
     await mkdir(path.dirname(target), { recursive: true });

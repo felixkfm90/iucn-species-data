@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createTaxonomyNamePreferenceService, germanNameChoices } from "./taxonomy-name-preference-service.mjs";
@@ -9,7 +9,7 @@ import { taxonomyCorrectionsRevision } from "./taxonomy-master-candidate.mjs";
 import { handleNamePreferenceRequest } from "./lightroom-name-preference-helper.mjs";
 
 async function fixture(t, { protectedName = false, activationFails = false } = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-preference-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-preference-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const correctionsPath = path.join(root, "corrections.json");
   const document = { schemaVersion: 1, entries: protectedName ? [{ scientificName: "Ciconia ciconia", germanName: "Hausstorch", englishName: "White Stork", note: "Eigene Pflege" }] : [] };

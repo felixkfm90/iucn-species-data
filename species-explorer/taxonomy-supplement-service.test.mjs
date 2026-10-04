@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -44,7 +44,7 @@ async function temporaryService(context, {
   now = () => new Date("2026-07-30T10:00:00.000Z"),
   corrections = { schemaVersion: 1, entries: [] },
 } = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-supplements-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-supplements-"));
   const taxonomyRoot = path.join(root, "taxonomy");
   const correctionsPath = path.join(root, "corrections.json");
   await fs.mkdir(taxonomyRoot, { recursive: true });

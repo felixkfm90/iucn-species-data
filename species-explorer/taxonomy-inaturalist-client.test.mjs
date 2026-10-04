@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -9,7 +9,7 @@ import { downloadInaturalistTaxonomyArchive } from "./taxonomy-inaturalist-clien
 const ZIP = Buffer.from("504b030400000000", "hex");
 
 async function root(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "taxonomy-inat-client-"));
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-inat-client-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   return directory;
 }

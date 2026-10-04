@@ -1,3 +1,4 @@
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -21,10 +22,11 @@ import { pipelineFixture } from "./taxonomy-benchmark-fixture.mjs";
 import { createProcessMeter } from "./taxonomy-benchmark-metrics.mjs";
 import { observeBenchmarkWorkers } from "./taxonomy-benchmark-process.mjs";
 
-const script = fileURLToPath(import.meta.url), scratch = path.resolve(path.dirname(script), "../Testlauf");
+const script = fileURLToPath(import.meta.url), scratch = benchmarkScratchRoot;
 function ownedRun(directory) {
   const resolved = path.resolve(directory);
   assert.equal(path.dirname(resolved), scratch);
+  assertScratchPath(resolved, { inspectTree: true });
   assert.match(path.basename(resolved), /^pipeline-benchmark-[a-zA-Z0-9]+$/u);
   return resolved;
 }
@@ -182,7 +184,7 @@ async function sample(root, mode, count, scenario, fixture, profile, windowsIo, 
     assert.deepEqual(await Promise.all(oldFiles.map(masterFileFingerprint)), before);
     assert.equal(await masterFileFingerprint(masterPath), masterHash);
     assert.equal(await masterFileFingerprint(packagePath), packageHash);
-    await fs.rm(packageCopy);
+    await fs.rm(assertScratchPath(packageCopy));
     return { totalMs, stagesMs, phasesMs, sourceTaxa: expectedSources, ...(profile ? { resources } : {}), reusedTaxa: manifest.buildInputs.reuse.reusedTaxa,
       packageBuild: published.active.build, databaseBytes: { master: (await fs.stat(masterPath)).size, search: (await fs.stat(packagePath)).size },
       digests, searches };
@@ -212,6 +214,7 @@ export async function runPipelineBenchmark({ count = 1000, scenario = "sparse", 
   assert.ok(!windowsIo || profile, "Windows-Messung benötigt den ausdrücklichen Profilmodus.");
   assert.ok([0, 8192].includes(cacheKiB) && (!cacheKiB || profile), "Unzulässige Testpuffergröße oder fehlender Profilmodus.");
   assert.ok(Number.isInteger(repeats) && repeats >= 1 && repeats <= 3, "Ein bis drei Messpaare erforderlich.");
+  assertScratchPath(scratch, { allowRoot: true });
   await fs.mkdir(scratch, { recursive: true });
   const root = ownedRun(await fs.mkdtemp(path.join(scratch, "pipeline-benchmark-")));
   try {
@@ -226,7 +229,7 @@ export async function runPipelineBenchmark({ count = 1000, scenario = "sparse", 
         // Restore to the SAME absolute path: common pointers/job bindings contain
         // absolute roots. Copying to a different path would test the legacy path.
         assert.equal(path.dirname(target), ownedRun(root));
-        await fs.rm(target, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 });
+        await fs.rm(assertScratchPath(target, { inspectTree: true }), { recursive: true, force: true, maxRetries: 8, retryDelay: 80 });
         await fs.cp(snapshot, target, { recursive: true });
         process.stderr.write(`Gesamtlauf: ${count} Arten, ${scenario}, Paar ${trial}, ${mode}\n`);
         const { digests, searches, ...metrics } = await subprocess(root, mode, count, scenario, fixture, profile, windowsIo, cacheKiB);

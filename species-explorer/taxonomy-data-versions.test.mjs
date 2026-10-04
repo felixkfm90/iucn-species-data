@@ -1,6 +1,6 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { compareTaxonomyDataVersions, readTaxonomyDataVersions, readVersionJson } from "./taxonomy-data-versions.mjs";
@@ -18,7 +18,7 @@ function matching() {
 }
 
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-data-versions-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-data-versions-"));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const searchRoot = path.join(root, "lightroom");
   const taxonomyRoot = path.join(root, "taxonomy");

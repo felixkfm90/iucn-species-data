@@ -1,7 +1,7 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
@@ -20,7 +20,7 @@ const scientificName = "Ciconia ciconia";
 const digest = async (file) => crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
 
 test("Anbieterstandard ersetzt eingebauten eigenen Namen, bleibt nach Neubau dynamisch und erlaubt Rückwahl", async (t) => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "fn-provider-standard-"));
+  const root = await fs.mkdtemp(path.join(tmpdir(), "fn-provider-standard-"));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const taxonomyRoot = path.join(root, "taxonomy");
   const searchRoot = path.join(root, "lightroom");

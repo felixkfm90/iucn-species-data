@@ -1,3 +1,4 @@
+import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -9,7 +10,7 @@ import { createMasterTaxon, registerProviderRelease, addProviderTaxonAssertion, 
 import { createMasterReuseReader } from "./taxonomy-master-reuse-reader.mjs";
 import { masterFileFingerprint } from "./taxonomy-master-inputs.mjs";
 
-const scratch = path.resolve("Testlauf"), timestamp = "2026-09-24T12:00:00.000Z";
+const scratch = tmpdir(), timestamp = "2026-09-24T12:00:00.000Z";
 async function fixture(t, count = 5) {
   await fs.mkdir(scratch, { recursive: true });
   const root = await fs.mkdtemp(path.join(scratch, "reuse-reader-test-")), filename = path.join(root, "source.sqlite");

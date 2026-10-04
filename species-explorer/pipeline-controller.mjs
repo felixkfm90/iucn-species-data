@@ -617,6 +617,15 @@ export function createPipelineController({
   }
 
   async function continueAfterAssetReview() {
+    if (runtime.state.guidedSpeciesCreation) {
+      const media = checkPipelinePublication(repoRoot);
+      if (!media.ok) {
+        runtime.state.publicationPending = media.message;
+        appendPipelineLog(`Artassistent lokal abgeschlossen; Übertragung noch offen: ${media.message}`);
+        await finishPipelineRun(0);
+        return;
+      }
+    }
     const exitCode = await publishPipelineChanges();
     await finishPipelineRun(exitCode);
   }
@@ -792,11 +801,13 @@ export function createPipelineController({
     }
 
     reviewAssets = detectNewPipelineAssets(plan);
-    if (reviewAssets.length > 0) {
+    if (reviewAssets.length > 0 || runtime.state.guidedSpeciesCreation) {
       runtime.state.status = "awaiting-review";
       runtime.state.phase = "Neue Assets prüfen";
       runtime.state.reviewAssets = reviewAssets;
-      appendPipelineLog(`${reviewAssets.length} neue Karte(n)/Sound(s) warten auf Pflegeentscheidung.`);
+      appendPipelineLog(reviewAssets.length
+        ? `${reviewAssets.length} neue Karte(n)/Sound(s) warten auf Pflegeentscheidung.`
+        : "Suchlauf abgeschlossen. Karte und Sound im Artassistenten ergänzen oder bewusst überspringen; noch keine Übertragung.");
       await writeFile(pendingAssetReviewPath, `${JSON.stringify(runtime.state, null, 2)}\n`, "utf8");
       await refreshModel({ force: true });
       return;
@@ -855,6 +866,12 @@ export function createPipelineController({
     }
 
     const { plan, sourceRevision } = await readPipelinePlan(preview.mode, preview.targetSlugs ?? []);
+    const guidedSpeciesCreation = payload?.guidedSpeciesCreation === true;
+    if (guidedSpeciesCreation && (preview.mode !== "missing" || preview.targetSlugs?.length !== 1 || plan.targets.length !== 1)) {
+      const error = new Error("Der Artassistent benötigt einen einzelnen gebundenen Art-Suchlauf.");
+      error.statusCode = 400;
+      throw error;
+    }
     if (sourceRevision !== preview.sourceRevision) {
       previewTokens.delete(token);
       const error = new Error("Artenliste oder Pipeline-Daten wurden seit der Vorschau geändert");
@@ -907,6 +924,7 @@ export function createPipelineController({
       gitNoChanges: false,
       summary: "",
       publishAfterAssetOnlyNoAssets: false,
+      guidedSpeciesCreation,
     };
     if (preview.mode === "nc-sounds") {
       closeActiveFileStreams((filePath) => extname(filePath).toLowerCase() === ".mp3");
@@ -949,6 +967,11 @@ export function createPipelineController({
     }
 
     const choices = Array.isArray(payload?.choices) ? payload.choices : [];
+    const retryEmptySound = payload?.retrySoundSearch === true;
+    if (retryEmptySound && (!runtime.state.guidedSpeciesCreation || runtime.state.targets?.length !== 1
+        || runtime.state.reviewAssets.length !== 0 || choices.length !== 0 || payload.confirmed !== true)) {
+      throw new Error("Soundsuche benötigt die bestätigte aktuelle Einzelartprüfung ohne offene Medienentscheidungen.");
+    }
     const choicesByKey = new Map(
       choices.map((choice) => {
         const decision = String(
@@ -957,6 +980,10 @@ export function createPipelineController({
         return [`${choice.safeName}:${choice.type}`, { ...choice, decision }];
       }),
     );
+    if (choices.length !== runtime.state.reviewAssets.length || choicesByKey.size !== choices.length
+        || [...choicesByKey.keys()].some((key) => !runtime.state.reviewAssets.some((asset) => `${asset.safeName}:${asset.type}` === key))) {
+      throw new Error("Medienentscheidungen passen nicht vollständig zur aktuellen Prüfung.");
+    }
     for (const asset of runtime.state.reviewAssets) {
       const choice = choicesByKey.get(`${asset.safeName}:${asset.type}`);
       if (!choice || !["automatic", "manual", "reject"].includes(choice.decision)) {
@@ -994,6 +1021,19 @@ export function createPipelineController({
     let acceptedAny = false;
     let reportNeedsRefresh = false;
     const rejectedSoundAssets = [];
+    if (retryEmptySound) {
+      const target = runtime.state.targets[0];
+      const previous = registry.assets[target.safeName]?.sound;
+      if (previous?.rejectedSources) {
+        const next = { ...previous, updatedAt };
+        delete next.rejectedSources;
+        registry.assets[target.safeName].sound = next;
+        registryChanged = true;
+        reportNeedsRefresh = true;
+      }
+      rejectedSoundAssets.push({ safeName: target.safeName, germanName: target.germanName, type: "sound" });
+      appendPipelineLog(`Frühere Soundquellen erneut zugelassen: ${target.germanName}; vorhandene Dateien und Schutzmarkierungen bleiben erhalten.`);
+    }
     const restoreOrRemovePipelineAsset = async (asset) => {
       const previous = runtime.assetSnapshot.get(`${asset.safeName}:${asset.type}`);
       const names = asset.type === "sound"
@@ -1169,7 +1209,9 @@ export function createPipelineController({
         await executePipelineRun(retryPlan);
         return;
       }
-      if (!acceptedAny && retryMode && !registryChanged) {
+      // A guided creation still owns the new species' pending publication,
+      // even when its repeated sound search produced no new asset.
+      if (!runtime.state.guidedSpeciesCreation && !acceptedAny && retryMode && !registryChanged) {
         runtime.state.gitNoChanges = true;
         await finishPipelineRun(0);
         return;

@@ -222,7 +222,8 @@ festgelegt. Der verbindliche technische Entwurf steht in `docs/local-taxonomy-da
 
 Wesentliche Entscheidungen:
 
-- pfadunabhängiger Standardspeicher unter `%LOCALAPPDATA%\FN Wildlife Travel\Arten-Explorer\taxonomy`
+- ursprünglich AppData; seit 4. Oktober gemeinsamer konfigurierbarer Standardspeicher unter
+  `<Explorer-Ordner>\Daten\taxonomy`, [geprüfter Umzug und Rückweg](storage-migration.md)
 - versionierte, unveränderliche read-only Release-Datenbanken
 - vollständiger Import und Test in einem getrennten Stagingordner
 - atomare Aktivierung über eine kleine `active.json`

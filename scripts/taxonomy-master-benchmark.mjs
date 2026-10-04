@@ -1,3 +1,4 @@
+import { benchmarkScratchRoot, assertScratchPath } from "./scratch-paths.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -13,7 +14,7 @@ import { activateTaxonomyMasterCandidate } from "../species-explorer/taxonomy-ma
 import { taxonomyMasterDatabasePath, taxonomyMasterCandidateDirectory } from "../species-explorer/taxonomy-master-storage.mjs";
 
 const script = fileURLToPath(import.meta.url);
-const scratch = path.resolve(path.dirname(script), "../Testlauf");
+const scratch = benchmarkScratchRoot;
 const scenarios = ["unchanged", "sparse", "dense", "structure"];
 const letters = (n) => { let value = ""; do { value = String.fromCharCode(97 + n % 26) + value; n = Math.floor(n / 26); } while (n); return value; };
 
@@ -68,6 +69,7 @@ export function semanticDigests(filename) {
 function ownedRun(root) {
   const resolved = path.resolve(root);
   assert.equal(path.dirname(resolved), scratch);
+  assertScratchPath(resolved, { inspectTree: true });
   assert.match(path.basename(resolved), /^master-benchmark-[a-zA-Z0-9]+$/u);
   return resolved;
 }
@@ -137,6 +139,7 @@ async function subprocess(root, slot, count, scenario, reuse) {
 export async function runBenchmark({ count = 1000, scenario = "sparse", repeats = 2 } = {}) {
   benchmarkRows(count, scenario); // Validate before creating files or starting processes.
   assert.ok(Number.isInteger(repeats) && repeats >= 1 && repeats <= 3);
+  assertScratchPath(scratch, { allowRoot: true });
   await fs.mkdir(scratch, { recursive: true });
   const root = ownedRun(await fs.mkdtemp(path.join(scratch, "master-benchmark-")));
   try {
@@ -149,7 +152,7 @@ export async function runBenchmark({ count = 1000, scenario = "sparse", repeats 
       for (const reuse of (trial % 2 ? [false, true] : [true, false])) {
         const sampleRoot = path.join(root, "sample");
         assert.equal(path.dirname(sampleRoot), ownedRun(root));
-        await fs.rm(sampleRoot, { recursive: true, force: true });
+        await fs.rm(assertScratchPath(sampleRoot, { inspectTree: true }), { recursive: true, force: true });
         await fs.cp(path.join(root, "seed"), sampleRoot, { recursive: true });
         process.stderr.write(`Messung: ${count} Arten, ${scenario}, Paar ${trial + 1}, ${reuse ? "Wiederverwendung" : "Vollaufbau"}\n`);
         const result = await subprocess(root, "sample", count, scenario, reuse);

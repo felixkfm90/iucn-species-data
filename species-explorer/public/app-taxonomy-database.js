@@ -236,6 +236,9 @@
         + Number(referenceStatus.conflicts?.suggestions || 0)
         + Number(referenceStatus.conflicts?.ambiguous || 0)
         + Number(referenceStatus.conflicts?.missing || 0);
+      const verifiedCurrent = global.SpeciesExplorerTaxonomyMaster?.activePairIsCurrent(masterStatus) === true
+        && !active && !failed && !updateAvailable && !projectConflicts
+        && !masterStatus.baselineSetup?.needed;
       const counts = taxonomyDatabaseCounts(progress?.sourceFailure
         ? { ...masterStatus, lifecycle: { ...masterLifecycle, candidate: null } } : masterStatus);
       const latest = taxonomyReleaseLabel(referenceStatus.latest);
@@ -272,6 +275,7 @@
               : "Noch keine Taxonomiedatenbank aktiviert";
 
       const details = [];
+      if (verifiedCurrent) details.push("Technisch abgeschlossen · keine offenen Entscheidungen. Referenz, Master und Lightroom-Suchpaket stimmen überein");
       if (workflowOpen && workflow.error) details.push(workflow.error);
       if (build.pending && !active) details.push(masterStatus.message || "Fortsetzen prüft zuerst den aktuellen Datenstand. Ein neuer Aufbau bleibt möglich.");
       if (active) {

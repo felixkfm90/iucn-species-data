@@ -54,7 +54,7 @@
     "test:backups": "node --test --test-isolation=none species-explorer/asset-backups.test.mjs",
     "test:model": "node --test --test-isolation=none species-explorer/species-model.test.mjs",
     "test:explorer-model": "node --test --test-isolation=none species-explorer/explorer-model.test.mjs",
-    "test:pipeline-log": "node --test --test-isolation=none species-explorer/pipeline-log.test.mjs species-explorer/pipeline-asset-review.test.mjs species-explorer/project-publication-check.test.mjs",
+    "test:pipeline-log": "node --test --test-isolation=none species-explorer/pipeline-log.test.mjs species-explorer/pipeline-asset-review.test.mjs species-explorer/pipeline-guided-creation.test.mjs species-explorer/project-publication-check.test.mjs",
     "test:child-process-environment": "node --test --test-isolation=none species-explorer/child-process-environment.test.mjs",
     "test:desktop": "node --test --test-isolation=none species-explorer/desktop/window-activation.test.mjs species-explorer/desktop/lightroom-correction-contract.test.mjs",
     "test:manual-map-doc": "node --test --test-isolation=none species-explorer/manual-map-documentation.test.mjs",
@@ -86,7 +86,7 @@
     "test:pages": "node --test --test-isolation=none scripts/pages-artifact-policy.test.mjs",
     "test:security": "node --test --test-isolation=none species-explorer/request-security.test.mjs",
     "test:status": "node --test --test-isolation=none scripts/project-status.test.mjs",
-    "test:temp": "node --test --test-isolation=none species-explorer/temp-retention.test.mjs",
+    "test:temp": "node --no-warnings --test --test-isolation=none species-explorer/temp-retention.test.mjs species-explorer/temp-session.test.mjs species-explorer/lightroom-temp-helper.test.mjs species-explorer/storage-paths.test.mjs species-explorer/storage-migration.test.mjs scripts/test-temp.test.mjs scripts/nas-backup-contract.test.mjs scripts/lightroom-temp-session-lua.test.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs species-explorer/server-species-workflows.test.mjs species-explorer/server-assets.test.mjs species-explorer/server-cleanup-search.test.mjs species-explorer/explorer-ui-contract.test.mjs"
   },
   "devDependencies": {

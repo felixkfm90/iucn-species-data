@@ -7,6 +7,7 @@
     "activating",
     "rolling-back",
     "syncing-lightroom",
+    "applying-corrections",
   ]);
   const FIELD_LABELS = Object.freeze({
     "scientific-name": "wissenschaftlicher Name",
@@ -109,9 +110,39 @@
         : "Die geprüfte Aktualisierung ist bereit zur Übernahme. Vorhandene Arten werden nicht automatisch geändert.";
     }
     if (lifecycle.active) {
-      return "Datenbank aktuell. Quellenstände und eigene Korrekturen sind lokal versioniert.";
+      return activePairIsCurrent(status)
+        ? "Technisch abgeschlossen · keine offenen Entscheidungen. Referenz, Master und Lightroom-Suchpaket stimmen überein."
+        : "Bisheriger Masterstand ist aktiv. Quellen- und Lightroom-Paketstand werden getrennt geprüft.";
     }
     return status.message || "Erstelle zunächst eine prüfbare Aktualisierung.";
+  }
+
+  // This is a presentation check, not an activation permission. Historical
+  // deferrals are not open decisions, but their presence never proves success.
+  function activePairIsCurrent(status = {}) {
+    const lifecycle = status.lifecycle || {};
+    const reference = status.reference || {};
+    const searchPackage = status.lightroomPackage || {};
+    const masterVersion = cleanText(lifecycle.active?.candidateId || lifecycle.active?.masterVersion);
+    const workflow = status.updateWorkflow || {};
+    return Boolean(masterVersion)
+      && ["idle", "completed"].includes(status.status)
+      && status.active !== true
+      && !lifecycle.candidate
+      && !status.error && !lifecycle.error && !reference.error && !searchPackage.error
+      && reference.status === "current" && reference.activeMatchesReference === true
+      && reference.needsMasterRebuild !== true
+      && searchPackage.status === "current" && searchPackage.needsRebuild !== true
+      && cleanText(searchPackage.masterVersion) === masterVersion
+      && cleanText(searchPackage.packageVersion) === masterVersion
+      && Number(lifecycle.blockingConflictCount ?? lifecycle.blockingConflicts?.length ?? 0) === 0
+      && !(lifecycle.blockingConflicts?.length > 0)
+      && !(lifecycle.conflicts || []).some((entry) => conflictPresentation(entry).blocking)
+      && status.corrections?.pending !== true && !status.corrections?.error
+      && status.identities?.pending !== true && !status.identities?.error
+      && !(status.buildJob?.available && status.buildJob.status !== "ready")
+      && !workflow.active && !workflow.error
+      && (!workflow.status || ["idle", "completed"].includes(workflow.status));
   }
 
   function formatElapsed(startedAt) {
@@ -225,6 +256,7 @@
     let classificationSaved = false;
     let deferralSaved = false;
     let classificationSavedCandidateId = null;
+    let technicalDetailsKey = null;
 
     function setActionMessage(message, type = "") {
       state.setPipelineMessage?.(message, type);
@@ -242,7 +274,25 @@
         `).join("");
     }
 
-    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false, deferrals = null) {
+    function renderTechnicalDetails(lifecycle = {}) {
+      const details = elements.taxonomyMasterTechnicalDetails;
+      const copy = elements.taxonomyMasterTechnicalDetailsCopy;
+      if (!details || !copy) return;
+      const snapshot = lifecycle.candidate || lifecycle.active;
+      const count = Number(snapshot?.classificationDeferrals?.total || 0);
+      const visible = Number.isSafeInteger(count) && count > 0;
+      const key = visible ? `${lifecycle.candidate ? "candidate" : "active"}:${cleanText(snapshot.candidateId || snapshot.masterVersion)}:${count}` : "";
+      if (key !== technicalDetailsKey || !visible) details.open = false;
+      technicalDetailsKey = key;
+      details.hidden = !visible;
+      copy.innerHTML = visible ? `
+        <strong>${count.toLocaleString("de-DE")} ${count === 1 ? "neue CoL-Zuordnung vorerst nicht übernommen" : "neue CoL-Zuordnungen vorerst nicht übernommen"}</strong>
+        <p>${lifecycle.candidate ? "Im geprüften Kandidaten bleiben" : "Im aktiven Master bleiben"} die bisherigen Einträge, Master-IDs und eigenen Namen erhalten. Die Verbindung zu diesen neuen CoL-Gegenstücken ist noch nicht eindeutig belegt.</p>
+        <p>Die betroffenen Einträge beruhen deshalb weiterhin auf der bisherigen Zuordnung. Diese Quellenzuordnungen sind fachlich noch nicht vollständig geklärt, aber keine aktuell offenen Entscheidungen. Geänderte Quellenbelege werden erneut geprüft; eine automatische Auflösung beim nächsten Update ist nicht garantiert.</p>
+      ` : "";
+    }
+
+    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false) {
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
       const total = Number(blockingConflictCount ?? blocking.length);
       const classificationTotal = Number(classificationReview?.total || blocking.filter((entry) => entry.identityReviewRequired).length);
@@ -270,10 +320,9 @@
           ${classificationTotal > matching && classificationReview?.deferralAvailable === true ? `<div class="taxonomy-master-conflict-actions"><button type="button" data-classification-defer${actionsBlocked || classificationBusy || deferralSaved ? " disabled" : ""}>Unklare Fälle zurückstellen …</button></div>` : ""}
         </article>
       `;
-      const held = Number(deferrals?.total || 0) ? `<article class="taxonomy-master-conflict"><strong>${format(deferrals.total)} ${deferrals.total === 1 ? "unklarer Fall zurückgestellt" : "unklare Fälle zurückgestellt"}</strong><span>Neue CoL-Gegenstücke vorerst nicht übernommen. Bisherige Arten, IDs und eigene Namen bleiben erhalten. Geänderte Quellenfälle benötigen erneut eine Entscheidung.</span></article>` : "";
-      elements.taxonomyMasterConflicts.hidden = total === 0 && !held;
+      elements.taxonomyMasterConflicts.hidden = total === 0;
       if (regularTotal > regular.length) {
-        elements.taxonomyMasterConflicts.innerHTML = held + grouped + `
+        elements.taxonomyMasterConflicts.innerHTML = grouped + `
           <div class="taxonomy-master-conflict-overflow">
             <strong>${regularTotal.toLocaleString("de-DE")} technische Konflikte erkannt</strong>
             <span>Dieser Kandidat wird nicht als Liste von Einzelentscheidungen angeboten. Bitte die Masterdatenbank mit dem aktuellen Programmstand neu aufbauen.</span>
@@ -281,7 +330,7 @@
         `;
         return;
       }
-      elements.taxonomyMasterConflicts.innerHTML = held + grouped + regular.map((entry) => `
+      elements.taxonomyMasterConflicts.innerHTML = grouped + regular.map((entry) => `
         <article class="taxonomy-master-conflict" data-master-conflict="${escapeHtml(entry.id)}">
           <div class="taxonomy-master-conflict-copy">
             <strong>${escapeHtml(entry.species)}</strong>
@@ -329,8 +378,8 @@
       renderDiff(lifecycle.candidate);
       renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview,
         active || (status.identities?.pending && !status.identities.candidateIncludesCurrent
-          && status.identities.classificationCandidateId !== lifecycle.candidate?.candidateId),
-        (lifecycle.candidate || lifecycle.active)?.classificationDeferrals);
+          && status.identities.classificationCandidateId !== lifecycle.candidate?.candidateId));
+      renderTechnicalDetails(lifecycle);
       elements.taxonomyMasterBuildButton.disabled = active || classificationBusy;
       elements.taxonomyMasterActivateButton.disabled = active || classificationBusy || !lifecycle.canActivate;
       elements.taxonomyMasterRollbackButton.disabled = active || classificationBusy || !lifecycle.canRollback;
@@ -525,6 +574,7 @@
     conflictExplanation,
     masterDiffItems,
     masterSummary,
+    activePairIsCurrent,
     progressDetail,
     createTaxonomyMasterController,
   });
