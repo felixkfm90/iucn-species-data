@@ -10,11 +10,12 @@ Felix bestätigt die zuletzt bezeichneten Abnahmepunkte 1 und 4; keine zusätzli
 Neustartabnahmen daraus ableiten. Er beauftragt anschließend die übrigen sicheren Vor-Audit-Arbeiten bei
 geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage trotz nicht abrufbarer IUCN-Karte.
 
-1. **Gemeinsamer Speicher und Temp:** implementiert, produktive Kopie mit 207 Dateien/98.603.910.132 Bytes
-   vollständig SHA-256-geprüft unter `D:\IUCN_Datenbank\Daten`. Nach bestandenem Gesamtgate und frischem
-   Schließnachweis übernommen; AppData leer, keine Verknüpfung, Journal committed/Konfiguration ready.
-   Neuer Versionsvergleich und Weissstorch-/Rebhuhn-Suchhelfer bestanden. Finaler Programmname `D:\Arten-Explorer` verlangt
-   koordinierte Codex-/Desktop-/Lightroom-Bindung; isoliertes Umbenennen ist kein sicherer Abschluss.
+1. **Gemeinsamer Speicher und Temp:** implementiert und produktiv übernommen; 207 Dateien/98.603.910.132 Bytes
+   vollständig SHA-256-geprüft. Endgültiger Ort nach Felix' Hauptordnerumbenennung `D:\Arten-Explorer\Daten`.
+   AppData leer, keine Verknüpfung, Journal committed/Konfiguration ready. Codex-Projektbindung geprüft,
+   Desktop-Verknüpfung und Lightroom-Registrierung korrigiert, lokale Startdateien ordnerunabhängig.
+   Erneuter Versionsvergleich und Weissstorch-/Rebhuhn-Suchhelfer am endgültigen Pfad bestanden; Umzugsbelege
+   und aktives Paar unverändert. Native Explorer-/Lightroom-Neustartabnahme weiterhin gesondert.
 2. **Artassistent:** fehlendes Medium öffnet jetzt Kartenimport/Überspringen und expliziten Sound-Schritt;
    gleicher Auftrag nach Wiederöffnung, keine zweite Artanlage. Lokaler Abschluss bei fehlender Karte mit
    ehrlich offener Übertragung. Goldbaumsteiger nicht erneut angelegt. Automatisierte Gegenproben bestanden,
@@ -43,7 +44,8 @@ Implementierungs- und Abnahmegrenzen; sie sind keine erneute Freigabe alter Aufb
 Zusätzlicher aktueller Betriebsnachweis nach Datenwechsel: isolierter 5.000-Arten-Prozesslauf mit hartem
 Abbruch/Fortsetzung, gleicher inkrementeller/Vollpaket-Ausgabe, erhaltenen offenen Lesern/Namenswahl und
 gemeinsamer Rücknahme bestanden. Kein produktiver Paketwechsel. Temp 40/40 und Lightroom 239/239 danach
-erneut bestanden. Native Einzelabnahme und endgültige Programmpfadbindung weiter getrennt.
+erneut bestanden. Endgültige Programmpfadbindung anschließend technisch abgeschlossen: Desktop 5/5,
+Temp/Umzug 40/40 und Plug-in-Vertrag 21/21 am neuen Ort bestanden. Native Einzelabnahme bleibt getrennt.
 
 Neueste gezielte Nutzerabnahme: Orts-/Zeitentfernung für Einzel-/Mehrfachauswahl und neue Exporte anhand eines
 Fotos funktionieren laut Felix, nach bewusstem Statistik-Neuaufbau. Keine vollständige Großbestandsabnahme.
@@ -70,8 +72,9 @@ Katalogscans beim Öffnen. Plug-in 21/21, mit Entfernung/Statistik 49/49, Explor
 ergänzende UI-Gegenproben 49/49 bestanden. Praktische Ausrichtung/Navigation noch bestätigen; kein Gesamtaudit.
 [Umsetzung und Automatikgrenzen](lightroom-search-package.md#vereinfachung-der-verwaltungswege--vorschlag-vom-4-oktober).
 
-Neuer Speicherwunsch: Felix bestätigt einen gemeinsamen Daten-Unterordner beim Programm statt des
-AppData-Standards und möchte den Hauptordner von `D:\IUCN_Datenbank` in `D:\Arten-Explorer` umbenennen.
+Vorausgehende Zielklärung vor dem anschließend abgeschlossenen Umzug: Felix bestätigt einen gemeinsamen
+Daten-Unterordner beim Programm statt des AppData-Standards und möchte den Hauptordner von
+`D:\IUCN_Datenbank` in `D:\Arten-Explorer` umbenennen.
 Zielhauptordner bei lesender Vorprüfung noch nicht vorhanden. **Noch keine Migration oder Bereinigung.**
 Desktop-Verknüpfung, Lightroom-Plug-in-Registrierung und Codex-Projektpfad beim Wechsel berücksichtigen.
 Vorher konkreten Daten-Unterordnernamen und

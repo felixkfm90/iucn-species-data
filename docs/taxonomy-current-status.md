@@ -41,12 +41,16 @@ Als nächstes beauftragte Felix den automatischen Gesamtweg statt der heutigen m
 ## Neue lokale Umsetzung nach diesem Abschluss
 
 Neuester Stand vom 4. Oktober: Speicherresolver und eigener Temp-Lebenszyklus in Explorer/Plug-in implementiert.
-207 unveränderte Bestandsdateien mit 98.603.910.132 Bytes vollständig nach `D:\IUCN_Datenbank\Daten`
+207 unveränderte Bestandsdateien mit 98.603.910.132 Bytes zunächst nach `D:\IUCN_Datenbank\Daten`
 kopiert und SHA-256-geprüft. Nach Gesamtgate/frischem Schließnachweis übernommen: Journal `committed`,
 Konfiguration `ready`, AppData leer und ohne Link. Lesender Versionsvergleich und reale Suchhilfe am neuen
 Datenort erfolgreich; Weissstorch und Rebhuhn werden mit eigener bevorzugter Namenswahl gefunden.
-Referenz, Master, Paket und gemeinsame Veröffentlichung bleiben identisch. Gewünschter finaler Hauptordner
-`D:\Arten-Explorer` erfordert koordinierte Verbraucher-/Codex-Bindung. Kein erneuter Aufbau oder Paarwechsel.
+Referenz, Master, Paket und gemeinsame Veröffentlichung bleiben identisch. Felix hat anschließend den gesamten
+Programmordner nach `D:\Arten-Explorer` umbenannt: endgültiger Datenort `D:\Arten-Explorer\Daten`.
+Codex-Projektbindung geprüft, Desktop-Verknüpfung und Lightroom-Registrierung korrigiert; alte lokale
+Startdateien ordnerunabhängig. Erneuter Versionsvergleich `current` und beide bevorzugten Namen im realen
+Suchhelfer bestätigt, Umzugsbelege bytegleich. Desktop 5/5, Temp/Umzug 40/40, Plug-in-Vertrag 21/21 bestanden.
+Native Neustart-/Bedienabnahme bleibt getrennt; kein erneuter Aufbau oder Paarwechsel.
 [Umzugsvertrag](storage-migration.md). Historische Zurückstellungen jetzt neutral dargestellt; Schutzlogik erhalten.
 Gesamtgate: 50 Gruppen/1.177 gemeldete Tests, darunter 423 Master-/Betriebs- und 239 Lightroom-/Pakettests,
 ohne Fehler, Abbruch oder Skip. [Neuer Nachweis und offene Grenzen](audits/2026-10-04-storage-and-species-wizard.md).
@@ -61,9 +65,9 @@ Lightroom-Abnahme. Vereinfachungsvorschlag anschließend freigegeben: 0.4.24.20 
 in sechs Hauptzugänge mit Ort-/Zeitunterseite und Weiteren Aktionen; Erklärungstexte an der Buttonkante
 ausgerichtet. Im Explorer technische/seltenere Optionen eingeklappt. Ziele, Vorschauen und Schutzverträge
 erhalten, keine zusätzliche Bestandsautomatik; echte Menüsichtprüfung offen.
-Gewünschter gemeinsamer Daten-Unterordner beim Programm mit Hauptordnernamen D:\Arten-Explorer statt
-D:\IUCN_Datenbank ist nur Zielpräferenz, keine durchgeführte Migration. Aktive Referenz/Master/Paket und
-gemeinsame Veröffentlichung bleiben unverändert.
+Die damalige Zielpräferenz für den gemeinsamen Daten-Unterordner und Hauptordnernamen ist mittlerweile
+umgesetzt, siehe aktueller Speicherstand oben. Aktive Referenz/Master/Paket und gemeinsame Veröffentlichung
+bleiben unverändert.
 
 Neuester Folgeauftrag: Pages-Veröffentlichungsgrenze, SDK-sichere Orts-/Zeitentfernung, zusätzlicher unterer
 Button sowie Auswahl-/Katalogexporte mit Defaultnamen in Plug-in 0.4.24.17. Felix bestätigt den zuvor

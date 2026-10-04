@@ -7,28 +7,30 @@ Stand: 2026-10-04
 Felix bestätigt als finalen gemeinsamen Datenordner `D:\Arten-Explorer\Daten`. Taxonomiereferenz, Master,
 Lightroom-Suchpaket, eigene Namen/Entscheidungen, Nutzungsquittungen und Aufträge werden zusammen verschoben.
 Er verlangt den alten AppData-Datenpfad zu leeren, ohne Weiterleitungsverzeichnis und ohne dortige Rückfallkopie.
-Der laufende Programm-/Codex-Pfad lautet noch `D:\IUCN_Datenbank`; die koordinierte Hauptordnerumbenennung
-ist ein eigener letzter Schritt und darf nicht Desktop, Plug-in oder den aktuellen Arbeitschat unerreichbar machen.
+Felix hat anschließend den gesamten Programmordner in `D:\Arten-Explorer` umbenannt. Die Codex-Projektbindung
+zeigt bereits auf den neuen Ort; Desktop-Verknüpfung und Lightroom-Registrierung sind danach bei geschlossenen
+Verbrauchern korrigiert und geprüft. Keine Weiterleitung vom alten Programmpfad.
 
 Abgeschlossener produktiver Datenwechsel:
 
 | Merkmal | Geprüfter Wert |
 | --- | --- |
 | Quelle | `C:\Users\felix\AppData\Local\FN Wildlife Travel\Arten-Explorer` |
-| Derzeitiges Datenziel | `D:\IUCN_Datenbank\Daten` |
+| Endgültiges Datenziel | `D:\Arten-Explorer\Daten` |
 | Bestandsdateien | 207 |
 | Gesamtbytes | 98.603.910.132 |
 | Kopiervergleich | alle 207 SHA-256-Prüfwerte stimmen mit den Originalen überein |
 | Planrevision | `3572354f69620c3556242d10a404ef9552ab0033606e6fd9287be02ad6947be5` |
 | Umzugsjournal | `Daten/.storage-migration.json`, Zustand `committed`, 207 entfernte Originaldateien |
-| Aktiver Pfad | `D:\IUCN_Datenbank\Daten`, Konfiguration `ready` |
+| Aktiver Pfad | `D:\Arten-Explorer\Daten`, relative Konfiguration `Daten`, Zustand `ready` |
 | AppData-Quellordner | leer, keine Verknüpfung oder dortige Rückfallkopie |
 
 Keine Taxonomieaktivierung oder Änderung von Datenbankinhalten durch den Wechsel. Produktive Übernahme
 nach bestandenem Gesamtgate (50 Gruppen/1.177 Tests), unabhängig geschlossenen Verbrauchern und erneuter
 vollständiger Zielprüfung. Jedes Original unmittelbar vor Entfernung erneut geprüft. Lesender Resolver,
 Versionsvergleich, unverändertes aktives Paar/Vorgänger sowie Weissstorch/Rebhuhn im Suchhelfer bestätigt.
-Das ist noch keine native Explorer-/Lightroom-Neustartabnahme oder finaler Hauptordnerwechsel.
+Der finale Hauptordnerwechsel ist ebenfalls technisch geprüft, aber noch keine native Explorer-/Lightroom-
+Neustartabnahme. Die anfängliche Kopie nach `D:\IUCN_Datenbank\Daten` wurde dabei nicht erneut kopiert.
 Der alte leere Wurzelordner ist kein Datenbestand; der gebundene Rückweg nutzt ausschließlich die neuen
 unveränderten Daten. Nach neuer Bearbeitung automatische Rücknahme weiterhin gesperrt.
 
@@ -50,21 +52,34 @@ Ein tatsächlich anderer Eingangs-/Regelstand darf einen alten Auftrag weiter al
 Die relative Standardkonfiguration bleibt nach gemeinsamem Umbenennen des Programmordners portabel;
 auch bisherige Programmdateiverweise werden über die verifizierte Herkunft aufgelöst.
 
-## Noch notwendiger koordinierter Hauptordnerwechsel
+## Abgeschlossener koordinierter Hauptordnerwechsel
 
-Der aktuelle Codex-Arbeitschat ist weiterhin an `D:\IUCN_Datenbank` gebunden. Die verfügbaren Werkzeuge
-bieten keinen verifizierten Weg, diese laufende Projektbindung gemeinsam mit einer Umbenennung zu ändern.
-Ein eigenmächtiger Eingriff in die laufende Codex-Datenbank oder ein alter Programmpfad als Junction ist
-deshalb kein Ersatz für den koordinierten Wechsel. Der aktuelle Datenpfad bleibt bis dahin vollständig nutzbar.
+Nach Felix' Rückmeldung „umbenannt“ lesend geprüft: `D:\Arten-Explorer` vorhanden und kein Verzeichnislink,
+`D:\IUCN_Datenbank` nicht mehr vorhanden. Das gespeicherte Codex-Projekt zeigt auf den neuen Programmpfad;
+kein direkter Eingriff in Codex-Datenbanken war erforderlich.
 
-Für den letzten Wechsel müssen die Verbraucher geschlossen sein und die Codex-Projektbindung den alten
-Arbeitsordner freigeben. Danach den gesamten Programmordner genau einmal in `D:\Arten-Explorer` umbenennen,
-Desktop-Verknüpfung sowie Lightroom-Plug-in-Registrierung und ausdrücklich gespeicherte Helfer-/Suchpfade
-auf den neuen Programmpfad prüfen/umstellen und das Codex-Projekt am neuen Ort wieder anbinden.
-Die relative Konfiguration `Daten` und der unveränderte Umzugsnachweis sind für diesen Gesamtwechsel
-isoliert geprüft; die großen Daten werden nicht noch einmal kopiert. Danach beide Programme normal öffnen
-und den gemeinsamen Datenstand/Suche sowie das kontrollierte Schließen prüfen. Keine neue Quellen-
-aktualisierung, Fotoänderung oder Taxonomieaktivierung ist für diesen Pfadcheck erforderlich.
+Explorer/Lightroom waren bei den Bindungsänderungen geschlossen. Die Desktop-Verknüpfung startet jetzt
+`D:\Arten-Explorer\species-explorer\desktop\start-explorer.vbs`, mit neuem Arbeits-/Symbolpfad.
+In Lightroom ausschließlich die ausgewählte Plug-in-Adresse und den dazugehörigen Eintrag in der installierten
+Plug-in-Liste korrigiert: zwei Zeilen/drei Pfadstellen, übrige Einstellungen einschließlich UTF-8/CRLF bytegleich.
+Keine ausdrücklich gespeicherten alten Helfer-/Suchpfade im FN-Präferenzblock oder relevanten Pfadvariablen.
+Keine Windows-Aufgabenaktion mit altem Programmpfad gefunden. Die zwei lokalen, nicht versionierten
+Batchdateien `update_local.bat` und `update_github_only.bat` verwenden nun ihren eigenen Ordner `%~dp0`;
+beide Verzeichnisblöcke in isolierten Temp-Kopien aus einem fremden Arbeitsordner mit Leerzeichen geprüft.
+Ihre produktiven Verarbeitungsschritte wurden nicht ausgeführt.
+
+Originale der vier Bindungs-/Startdateien dauerhaft und SHA-256-geprüft unter
+`Daten/program-path-change/2026-10-04` gesichert, nicht im löschbaren Test-temp. Rückwechsel nur koordiniert
+bei geschlossenen Verbrauchern; ältere Gesamteinstellungen nach neuen Änderungen nicht blind zurückkopieren.
+Die relative Konfiguration `Daten` und der Umzugsnachweis blieben bytegleich. Historische alte Pfade sind
+Herkunftsbelege, keine weiterhin verwendeten Betriebsadressen; der gebundene Resolver übersetzt die Zugriffe.
+
+Versionsvergleich `current`, unveränderte gemeinsame Veröffentlichung/Vorgänger sowie reale Weissstorch-/
+Rebhuhn-Suche mit eigenen Namen und bisherigen IDs am endgültigen Pfad bestätigt. Desktop-Verträge 5/5,
+Temp/Umzug 40/40 und Plug-in-Verträge 21/21 ohne Fehler, Abbruch oder Skip bestanden. Kein erneuter Vollscan
+der 98,60 GB oder fachlicher ID-Gesamtvergleich für die reine Ordnerumbenennung behauptet.
+Beide Programme können wieder normal geöffnet werden. Native Suche/Datenstand und kontrolliertes Schließen
+noch kurz prüfen; keine Quellenaktualisierung, Fotoänderung oder Taxonomieaktivierung dafür erforderlich.
 
 ## Übernahme und Wiederherstellung
 

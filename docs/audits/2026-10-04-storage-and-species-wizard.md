@@ -75,6 +75,21 @@ Explorer-Schließen ist wiederholbar und umfasst Ressourcen auch bei nicht gesta
 
 ## Verbleibende Abschlussgrenze
 
+Zusätzlicher Programmpfadabschluss nach Felix' eigener Umbenennung: `D:\Arten-Explorer` vorhanden ohne
+Verzeichnislink, alter Programmordner nicht mehr vorhanden, gespeicherte Codex-Projektbindung am neuen Ort.
+Desktop-Verknüpfung und Lightroom-Registrierung bei geschlossenen Verbrauchern korrigiert. Ausschließlich
+zwei Lightroom-Zeilen/drei Plug-in-Pfadstellen verändert; sonstige Einstellungsbytes, UTF-8 und CRLF erhalten.
+Die beiden lokalen Batchdateien verwenden ihren eigenen Ordner; isolierte Verzeichnisblockproben aus einem
+fremden Arbeitsordner mit Leerzeichen bestanden. Kein produktiver Lauf ausgeführt.
+Vier Originaldateien vor Änderung bytegenau im dauerhaften `Daten/program-path-change/2026-10-04` gesichert.
+
+Am endgültigen Ort `D:\Arten-Explorer\Daten` Versionsvergleich `current`, unverändertes aktives Paar und
+Vorgänger, Weissstorch/Rebhuhn mit eigenen Namen, bisherigen IDs und Projektlinks lesend bestätigt.
+Speicherkonfiguration und Umzugsjournal nachweislich bytegleich; AppData-Datenordner weiterhin leer.
+Lightroom-Einstellungsdatei erfolgreich als Lua geparst; keine neue Plug-in-Quellversion, weiterhin 0.4.24.21.
+Desktop-Verträge 5/5, Temp/Umzug 40/40, Plug-in-Verträge 21/21 am umbenannten Ort erneut bestanden.
+Diese gezielten Gegenproben sind kein erneut ausgeführtes Gesamtgate oder vollständiger Identitätsvergleich.
+
 Veröffentlichung: `52545eb1fe459a26c6848c71429b2849eed25d28`, 153 geänderte/neue Dateien,
 4.687 Einfügungen und 814 Löschungen. [Pages-Lauf 37199775549](https://github.com/felixkfm90/iucn-species-data/actions/runs/37199775549)
 am 4. Oktober um 11:48:17 UTC vollständig erfolgreich: Linux-Gate, Build und Deployment.
@@ -82,9 +97,8 @@ Linux: 50 Gruppen/1.177 gemeldete Tests, keine Fehler/Abbrüche; zwei ausschlie�
 NAS-Vertragsprüfungen übersprungen. Beide im lokalen Windows-Gate erfolgreich, dort keine Skips.
 Lokale Daten, Konfiguration, Umzugsjournal und Temp sind nicht im Commit/Pages enthalten.
 
-- Finaler Hauptordnername `D:\Arten-Explorer`: Datenkonfiguration portabel isoliert geprüft, tatsächliche
-  Umbenennung noch offen. Codex-Arbeitschat/-Projekt und Lightroom-Registrierung binden weiterhin den alten
-  Programmpfad; Desktop-Verknüpfung muss gemeinsam umgestellt werden. Kein isoliertes Umbenennen.
+- Finaler Hauptordnername und technische Verbraucherbindung `D:\Arten-Explorer` abgeschlossen;
+  native Neustart-/Schließabnahme noch nicht aus dem lesenden Helfertest ableiten.
 - Native Regressionseinzelabnahme des neuen Artassistenten und Explorer-/Lightroom-Neustart am endgültigen
   Daten-/Programmpfad noch offen. Frühere Nutzerrückmeldungen nicht auf diese neue Implementierung ausweiten.
 - Vollautomatischer IUCN-Abruf weiterhin kein belegter Erfolg; Browser-/Dateiimport bleibt der sichere Weg.

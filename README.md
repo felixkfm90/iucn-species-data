@@ -8,11 +8,13 @@ GitHub Pages Base:
 
 ## Aktueller Stand und Dokumentation
 
-Speicherumbau vom 4. Oktober: gemeinsamer Daten-Unterordner beim Explorer als neuer Standard, zentral
-konfigurierbar. Gewünschter finaler Hauptordner `D:\Arten-Explorer`. Die 207 Bestandsdateien mit
-98.603.910.132 Bytes sind vollständig nach `D:\IUCN_Datenbank\Daten` kopiert und per SHA-256 verglichen.
-Der gemeinsame Datenwechsel ist abgeschlossen: alle 207 frisch geprüften AppData-Originale einzeln entfernt,
-alter Datenordner leer und ohne Verknüpfung. Hauptordnerumbenennung und Verbraucherbindung noch offen.
+Speicherumbau vom 4. Oktober abgeschlossen: gemeinsamer Daten-Unterordner beim Explorer als neuer Standard,
+zentral konfigurierbar. Endgültiger Programmordner `D:\Arten-Explorer`, Datenordner `D:\Arten-Explorer\Daten`.
+Die 207 Bestandsdateien mit 98.603.910.132 Bytes wurden vollständig kopiert und per SHA-256 verglichen;
+danach alle 207 frisch geprüften AppData-Originale einzeln entfernt, alter Datenordner leer und ohne Link.
+Felix hat anschließend den ganzen Programmordner umbenannt. Codex-Projektpfad, Desktop-Verknüpfung und
+Lightroom-Plug-in-Registrierung sind am neuen Ort geprüft/gebunden; lokale Startdateien sind ordnerunabhängig.
+Lesender Versionsvergleich und Weissstorch-/Rebhuhn-Suche am endgültigen Pfad bestanden, aktives Paar unverändert.
 Der gemeinsame Wechsel verschiebt Referenz, Master, Suchpaket und eigene Entscheidungen zusammen, ohne
 AppData-Link und ohne historische Prüfbelege umzuschreiben.
 [Umzugsvertrag und tatsächlicher Stand](docs/storage-migration.md).
@@ -34,8 +36,8 @@ Gesamtgate: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip;
 und Suche am neuen Datenort bestanden. [Nachweis und verbleibende Abschlussgrenze](docs/audits/2026-10-04-storage-and-species-wizard.md).
 Die Serie ist als `52545eb` veröffentlicht. Der [Pages-Lauf 37199775549](https://github.com/felixkfm90/iucn-species-data/actions/runs/37199775549)
 bestand Linux-Qualitätsgate, Build und Deployment. Zwei ausschließlich Windows-spezifische NAS-Tests sind
-unter Linux übersprungen, im lokalen Windows-Gate bestanden. Native Abnahme und finaler Hauptordnerwechsel
-bleiben offen; die erfolgreiche Veröffentlichung allein schließt Phase 10.5 nicht ab.
+unter Linux übersprungen, im lokalen Windows-Gate bestanden. Hauptordnerwechsel technisch abgeschlossen;
+native Neustart-/Bedienabnahme bleibt offen. Die erfolgreiche Veröffentlichung allein schließt Phase 10.5 nicht ab.
 
 Vorausgehende Menüänderung **0.4.24.20**: Verwaltungsfenster auf sechs Hauptzugänge reduziert;
 Ort/Zeit mit drei Auswahlaktionen und Weitere Aktionen mit fünf seltenen Funktionen. Alle zwölf bisherigen
@@ -1218,13 +1220,13 @@ npm.cmd run --silent generate:spectrograms -- --dry-run
 Testausgabe fuer drei Arten nach `Testlauf/`, wenn ffmpeg im PATH verfuegbar ist:
 
 ```bash
-npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+npm.cmd run --silent generate:spectrograms -- --species=Amsel,Graugans,Bisamratte --output-root=temp/spectrograms
 ```
 
 Wenn ffmpeg projektlokal liegt:
 
 ```bash
-npm.cmd run --silent generate:spectrograms -- --ffmpeg=D:\IUCN_Datenbank\local-tools\ffmpeg\bin\ffmpeg.exe --species=Amsel,Graugans,Bisamratte --output-root=Testlauf/spectrograms
+npm.cmd run --silent generate:spectrograms -- --ffmpeg=local-tools/ffmpeg/bin/ffmpeg.exe --species=Amsel,Graugans,Bisamratte --output-root=temp/spectrograms
 ```
 
 `local-tools/` ist ignoriert und wird nicht versioniert.
