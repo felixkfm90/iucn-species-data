@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-10-03
+Stand: 2026-10-04
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -30,10 +30,11 @@ erfolgreicher maschineller Abruf belegt.
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
 | Blaukehlchen | Blaukehlchen | `species-assets/Blaukehlchen/map.jpg` | IUCN liefert korrupte Kartendaten. | Von Felix manuell gepflegt; vor Pipeline-/Kartenlogik-Aenderungen schuetzen. | 2026-06-17 | erledigt/geprueft |
-| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-10-03 | erledigt/geprueft |
-| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-10-03 | erledigt/geprueft |
-| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-10-03 | erledigt/geprueft |
-| Erdbeerfröschchen | Erdbeerfroeschchen | `species-assets/Erdbeerfroeschchen/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg) | 2026-10-03 | erledigt/geprueft |
+| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-10-04 | erledigt/geprueft |
+| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-10-04 | erledigt/geprueft |
+| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-10-04 | erledigt/geprueft |
+| Erdbeerfröschchen | Erdbeerfroeschchen | `species-assets/Erdbeerfroeschchen/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg) | 2026-10-04 | erledigt/geprueft |
+| Goldbaumsteiger | Goldbaumsteiger | `species-assets/Goldbaumsteiger/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg) | 2026-10-04 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

@@ -5,33 +5,35 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-10-03T18:38:13.255Z`
+Report-Datenstand: `2026-10-04T07:44:45.991Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 60 |
-| Aktive Arten | 60 |
-| Arten in `speciesData.json` | 60 |
-| Vollständige Art-Assetordner | 60 |
-| Karten | 60 |
+| Eingaben in `species_list.json` | 61 |
+| Aktive Arten | 61 |
+| Arten in `speciesData.json` | 61 |
+| Vollständige Art-Assetordner | 61 |
+| Karten | 61 |
 | Sounds | 58 |
 | Credits | 58 |
 | Spektrogramme | 58 |
-| Artporträts | 60 |
+| Artporträts | 61 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Geschützte Karten (5)
+## Geschützte Karten (6)
 
 - Blaukehlchen
 - Erdbeerfröschchen
+- Goldbaumsteiger
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
 
-## IUCN-Browserimporte laut Nutzerangabe (4)
+## IUCN-Browserimporte laut Nutzerangabe (5)
 
 - Erdbeerfröschchen
+- Goldbaumsteiger
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
@@ -57,7 +59,8 @@ Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein techni
 - Rotstirnamazone
 - Scharlachara
 
-## Bewusst fehlende Tierstimmen (2)
+## Bewusst fehlende Tierstimmen (3)
 
 - Gepard
+- Goldbaumsteiger
 - Grüner Leguan

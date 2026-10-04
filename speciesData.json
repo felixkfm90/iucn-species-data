@@ -1438,5 +1438,29 @@
     "Species": "pumilio",
     "Letztes IUCN Update": "2015",
     "Daten abgerufen": "2026-09-27"
+  },
+  {
+    "URLSlug": "dendrobatesauratus",
+    "Wissenschaftlicher Name": "Dendrobates auratus",
+    "Deutscher Name": "Goldbaumsteiger",
+    "Englischer Name": "Dart Poison Frog",
+    "Gewicht": "ca. 3–8 g",
+    "Größe": "ca. 3,0–4,5 cm",
+    "Lebenserwartung": "ca. 10 Jahre",
+    "Assessment ID": 3024941,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "n/a",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Amphibia",
+    "Order": "Anura",
+    "Family": "Dendrobatidae",
+    "Genus": "Dendrobates",
+    "Species": "auratus",
+    "Letztes IUCN Update": "2020",
+    "Daten abgerufen": "2026-10-04"
   }
 ]

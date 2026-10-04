@@ -1656,6 +1656,37 @@
         "generatedAt": "2026-09-27T17:03:07.097Z",
         "verifiedAt": "2026-10-03T18:35:33.543Z"
       }
+    },
+    "Goldbaumsteiger": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-10-04T07:41:47.252Z",
+        "approvedAt": "2026-10-04T07:41:51.840Z",
+        "sha256": "f214e4d0f375267e4086829be60f2e76fcaaf012f97ce90f7fc5de9ea6b4a1a8",
+        "metadataSha256": "b3435982696f31a806b7b0d4da30a637403f34106aa38f0b53bee5332ac0edf3"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "3024941",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg"
+        },
+        "reason": "Karte als lokale Datei importiert.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg",
+        "germanName": "Goldbaumsteiger",
+        "originalFileName": "T55174A3024941.jpg",
+        "importedAt": "2026-10-04T07:44:45.904Z",
+        "updatedAt": "2026-10-04T07:44:45.904Z",
+        "sha256": "210005712c8500ed4773fe3abaa16ad7793cd4980f933606476e4892adbaff99"
+      }
     }
   },
   "spectrogramGenerator": {

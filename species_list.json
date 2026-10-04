@@ -538,5 +538,14 @@
     "size": "ca. 1,7-2,4 cm",
     "weight": "ca. 1-2 g",
     "life_expectancy": "ca. 8-12 Jahre"
+  },
+  {
+    "german": "Goldbaumsteiger",
+    "english": "Dart Poison Frog",
+    "genus": "Dendrobates",
+    "species": "auratus",
+    "size": "ca. 3,0–4,5 cm",
+    "weight": "ca. 3–8 g",
+    "life_expectancy": "ca. 10 Jahre"
   }
 ]
