@@ -1687,13 +1687,6 @@
         "updatedAt": "2026-10-04T07:44:45.904Z",
         "sha256": "210005712c8500ed4773fe3abaa16ad7793cd4980f933606476e4892adbaff99"
       }
-    },
-    "Schwarzstorch": {
-      "sound": {
-        "manual": true,
-        "reason": "Nach Pipeline-Import von Felix als manuell gepflegt markiert.",
-        "updatedAt": "2026-10-04T17:37:04.595Z"
-      }
     }
   },
   "spectrogramGenerator": {
