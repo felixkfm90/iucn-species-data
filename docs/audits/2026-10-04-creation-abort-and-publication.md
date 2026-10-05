@@ -130,9 +130,13 @@ Projektbestand bleibt bei 61 Arten ohne Validierungsfehler; bekannte fehlende So
 Das vollständige Ausführungsprotokoll ist entbehrliche Prüfausgabe im eigenen `temp`-Ordner.
 
 Die begrenzte unabhängige Restprüfung findet keinen zusätzlichen konkreten technischen Vor-Audit-Pflichtpunkt.
-Ausstehend ist noch der frische Pages-Nachweis der Veröffentlichung dieser geprüften Code-/Dokumentationsserie;
-frühere grüne Veröffentlichungen ersetzen ihn nicht. Keine neue produktive Artanlage, Anbieteraktualisierung,
-Master-/Paketaktivierung oder Lightroom-Katalogänderung durch diesen Abschluss.
+Die geprüfte Serie ist als `550829f006078629b620d40525eca0643c030e74` nach main veröffentlicht.
+[Pages 37319639341](https://github.com/felixkfm90/iucn-species-data/actions/runs/37319639341)
+ist vollständig erfolgreich: Linux-Gate, Seitenartefakt und tatsächliches Deployment. Unter Linux 1.216 Tests
+bestanden, keine Fehler/Abbrüche; zwei ausschließlich Windows-spezifische NAS-Vertragstests erwartungsgemäß
+übersprungen und im vollständigen lokalen Windows-Gate bestanden. Allgemeine GitHub-Hinweise zur kommenden
+Ubuntu-/Actions-Node-Laufzeitumstellung sind keine Lauf- oder Produktfehler. Keine neue produktive Artanlage,
+Anbieteraktualisierung, Master-/Paketaktivierung oder Lightroom-Katalogänderung durch diesen Abschluss.
 
 Neue native Bedienprüfung des echten Abbruchs nach Laden des neuen Explorerstands und der Pfadwarnung
 nach Neuladen des Plug-ins 0.4.24.22 bleiben eigene kurze Abnahmegrenzen. Bereits bestätigte Suche/Namen,

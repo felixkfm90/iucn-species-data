@@ -65,7 +65,9 @@ Paketproblem. Dieser einzelne Eintrag mit Sicherung entfernt; Projektprüfung da
 Die enge Datenkorrektur ist als `5349893` übertragen, Pages `37225123679` erfolgreich. Der separate
 Code-/Dokumentationsabschluss ist am 5. Oktober technisch geprüft: frisches Gesamtgate mit 50 Gruppen/
 1.218 bestandenen Tests, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten
-Vor-Audit-Pflichtpunkt. Veröffentlichung dieser finalen Serie wird gesondert verifiziert; kein neuer produktiver Taxonomieaufbau.
+Vor-Audit-Pflichtpunkt. Reparaturserie `550829f` veröffentlicht; Pages `37319639341` mit Linux-Gate, Aufbau
+und Deployment vollständig erfolgreich. Kein neuer produktiver Taxonomieaufbau. Neue native Abbruch-/
+Plug-in-Neuladebestätigungen und anschließend der Gesamtaudit bleiben ausdrücklich getrennt.
 [Aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 Die folgenden Absätze sind vorausgehende datierte Umsetzungsschritte.
 

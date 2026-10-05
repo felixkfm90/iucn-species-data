@@ -43,7 +43,8 @@ Abbruch/Löschen gegen verspätete Medienentscheidungen, statt die Qualitätspr�
 [Aktueller Reparaturbefund und Nachweis](docs/audits/2026-10-04-creation-abort-and-publication.md).
 Frischer technischer Abschluss am 5. Oktober: vollständiges Gesamtgate mit **50 Testgruppen/1.218 bestandenen
 Tests**, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten technischen Pflichtpunkt.
-Veröffentlichung der finalen Reparaturserie wird anschließend gesondert geprüft. Neue native Abbruch- und
+Reparaturserie `550829f` nach main übertragen; [Pages 37319639341](https://github.com/felixkfm90/iucn-species-data/actions/runs/37319639341)
+mit Linux-Gate, Seitenaufbau und tatsächlichem Deployment vollständig erfolgreich. Neue native Abbruch- und
 Plug-in-Neuladeabnahme bleiben vom noch nicht durchgeführten Gesamtaudit getrennt.
 
 Vorausgehendes Gesamtgate vom 4. Oktober: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
