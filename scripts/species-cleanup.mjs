@@ -26,10 +26,77 @@ function readJson(filePath, fallback) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function atomicWriteJson(filePath, value) {
+function readOptionalBytes(filePath) {
+  try { return fs.readFileSync(filePath); } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function equalBytes(left, right) {
+  return left === null || right === null ? left === right : left.equals(right);
+}
+
+function atomicWriteBytes(filePath, bytes, expectedBytes) {
   const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(tempPath, JSON.stringify(value, null, 2));
-  fs.renameSync(tempPath, filePath);
+  try {
+    fs.writeFileSync(tempPath, bytes);
+    if (!equalBytes(readOptionalBytes(filePath), expectedBytes)) {
+      throw new Error(`Datei wurde während der Bereinigung geändert: ${path.basename(filePath)}`);
+    }
+    fs.renameSync(tempPath, filePath);
+  } catch (error) {
+    try { fs.unlinkSync(tempPath); } catch {}
+    throw error;
+  }
+}
+
+function createCleanupJsonTransaction(filePaths) {
+  const originals = new Map(filePaths.map((filePath) => [filePath, readOptionalBytes(filePath)]));
+  const written = [];
+  return {
+    readJson(filePath, fallback) {
+      const bytes = originals.get(filePath);
+      return bytes === null ? fallback : JSON.parse(bytes.toString("utf8"));
+    },
+    writeJson(filePath, value) {
+      const beforeBytes = originals.get(filePath);
+      if (!equalBytes(readOptionalBytes(filePath), beforeBytes)) {
+        throw new Error(`Datei wurde während der Bereinigung geändert: ${path.basename(filePath)}`);
+      }
+      if (beforeBytes !== null
+          && JSON.stringify(JSON.parse(beforeBytes.toString("utf8"))) === JSON.stringify(value)) return;
+      const afterBytes = Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
+      atomicWriteBytes(filePath, afterBytes, beforeBytes);
+      written.push({ filePath, beforeBytes, afterBytes });
+    },
+    rollback() {
+      const errors = [];
+      for (const { filePath, beforeBytes, afterBytes } of [...written].reverse()) {
+        try {
+          if (!equalBytes(readOptionalBytes(filePath), afterBytes)) {
+            throw new Error(`Fremde Änderung erhalten; Rücknahme nicht möglich: ${path.basename(filePath)}`);
+          }
+          if (beforeBytes === null) fs.unlinkSync(filePath);
+          else atomicWriteBytes(filePath, beforeBytes, afterBytes);
+        } catch (error) { errors.push(error.message); }
+      }
+      return errors;
+    },
+  };
+}
+
+function restoreCleanupAfterError(error, transaction, stagedEntries, trashRunDirectory) {
+  const recoveryErrors = transaction.rollback();
+  try { restoreStagedAssetDirectories(stagedEntries); } catch (restoreError) {
+    recoveryErrors.push(restoreError.message);
+  }
+  removeEmptyCleanupTrashRunDirectory(trashRunDirectory);
+  if (recoveryErrors.length) {
+    throw new Error(`${error.message}; Bereinigung konnte nicht vollständig zurückgenommen werden: ${recoveryErrors.join("; ")}`,
+      { cause: error });
+  }
+  throw error;
 }
 
 function directoryBytes(directory) {
@@ -232,10 +299,7 @@ function deleteStagedAssetDirectory(entry) {
 function removeEmptyCleanupTrashRunDirectory(trashRunDirectory) {
   if (!trashRunDirectory || !fs.existsSync(trashRunDirectory)) return;
   try {
-    fs.rmSync(trashRunDirectory, {
-      recursive: true,
-      force: true,
-    });
+    fs.rmdirSync(trashRunDirectory);
   } catch {
     // Ein nicht leerbarer Zwischenordner ist kein Datenverlust. Er bleibt ignoriert und kann spaeter bereinigt werden.
   }
@@ -397,11 +461,14 @@ export function runCleanup(repoRoot = process.cwd()) {
   const assessmentPath = path.join(repoRoot, "lastSavedAssessmentId.json");
   const assetOverridesPath = path.join(repoRoot, "species-assets-overrides.json");
   const taxonomyOverridesPath = path.join(repoRoot, "species-taxonomy-overrides.json");
-  const speciesData = readJson(speciesDataPath, []);
+  const transaction = createCleanupJsonTransaction([
+    speciesDataPath, assessmentPath, assetOverridesPath, taxonomyOverridesPath, reportPath,
+  ]);
+  const speciesData = transaction.readJson(speciesDataPath, []);
   const speciesList = readJson(path.join(repoRoot, "species_list.json"), []);
-  const assessmentIds = readJson(assessmentPath, {});
-  const assetOverrides = readJson(assetOverridesPath, { version: 1, assets: {} });
-  const taxonomyOverrides = readJson(taxonomyOverridesPath, { version: 1, species: {} });
+  const assessmentIds = transaction.readJson(assessmentPath, {});
+  const assetOverrides = transaction.readJson(assetOverridesPath, { version: 1, assets: {} });
+  const taxonomyOverrides = transaction.readJson(taxonomyOverridesPath, { version: 1, species: {} });
   const inputSlugs = new Set(
     speciesList.map((entry) => `${entry.genus ?? ""}${entry.species ?? ""}`.toLocaleLowerCase("de")),
   );
@@ -430,19 +497,19 @@ export function runCleanup(repoRoot = process.cwd()) {
 
   const trashRunDirectory = uniqueCleanupTrashRunDirectory(repoRoot);
   const stagedAssetDirectories = [];
-  for (const entry of plan.obsoleteAssetDirectories) {
-    stagedAssetDirectories.push(stageAssetDirectory(repoRoot, entry.safeName, trashRunDirectory));
-  }
-
   try {
-    atomicWriteJson(speciesDataPath, filteredData);
-    atomicWriteJson(assessmentPath, filteredAssessmentIds);
-    atomicWriteJson(assetOverridesPath, filteredAssetOverrides);
-    atomicWriteJson(taxonomyOverridesPath, filteredTaxonomyOverrides);
-    atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
+    for (const entry of plan.obsoleteAssetDirectories) {
+      stagedAssetDirectories.push(stageAssetDirectory(repoRoot, entry.safeName, trashRunDirectory));
+    }
+    if (plan.obsoleteData.length) transaction.writeJson(speciesDataPath, filteredData);
+    if (plan.obsoleteAssessmentKeys.length) transaction.writeJson(assessmentPath, filteredAssessmentIds);
+    if (plan.obsoleteOverrideKeys.length) transaction.writeJson(assetOverridesPath, filteredAssetOverrides);
+    if (plan.obsoleteTaxonomyOverrideKeys.length) transaction.writeJson(taxonomyOverridesPath, filteredTaxonomyOverrides);
+    if (plan.obsoleteData.length || plan.obsoleteAssetDirectories.length) {
+      transaction.writeJson(reportPath, createReport(filteredData, repoRoot));
+    }
   } catch (error) {
-    restoreStagedAssetDirectories(stagedAssetDirectories);
-    throw error;
+    restoreCleanupAfterError(error, transaction, stagedAssetDirectories, trashRunDirectory);
   }
 
   const pendingDeleteDirectories = stagedAssetDirectories
@@ -480,10 +547,13 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
   const assessmentPath = path.join(repoRoot, "lastSavedAssessmentId.json");
   const assetOverridesPath = path.join(repoRoot, "species-assets-overrides.json");
   const taxonomyOverridesPath = path.join(repoRoot, "species-taxonomy-overrides.json");
-  const speciesData = readJson(speciesDataPath, []);
-  const assessmentIds = readJson(assessmentPath, {});
-  const assetOverrides = readJson(assetOverridesPath, { version: 1, assets: {} });
-  const taxonomyOverrides = readJson(taxonomyOverridesPath, { version: 1, species: {} });
+  const transaction = createCleanupJsonTransaction([
+    speciesDataPath, assessmentPath, assetOverridesPath, taxonomyOverridesPath, reportPath,
+  ]);
+  const speciesData = transaction.readJson(speciesDataPath, []);
+  const assessmentIds = transaction.readJson(assessmentPath, {});
+  const assetOverrides = transaction.readJson(assetOverridesPath, { version: 1, assets: {} });
+  const taxonomyOverrides = transaction.readJson(taxonomyOverridesPath, { version: 1, species: {} });
   const filteredData = speciesData.filter((entry) => (
     String(entry.URLSlug ?? "").toLocaleLowerCase("de") !== normalizedSlug
     && sanitizeAssetName(entry["Deutscher Name"]) !== normalizedSafeName
@@ -505,14 +575,15 @@ export function runSpeciesCleanup(repoRoot, { slug, safeName, allowInputEntry = 
   delete taxonomyOverrides.species[normalizedSlug];
 
   try {
-    atomicWriteJson(speciesDataPath, filteredData);
-    atomicWriteJson(assessmentPath, assessmentIds);
-    atomicWriteJson(assetOverridesPath, assetOverrides);
-    atomicWriteJson(taxonomyOverridesPath, taxonomyOverrides);
-    atomicWriteJson(reportPath, createReport(filteredData, repoRoot));
+    if (generatedDataDeleted) transaction.writeJson(speciesDataPath, filteredData);
+    if (assessmentDeleted) transaction.writeJson(assessmentPath, assessmentIds);
+    if (overrideDeleted) transaction.writeJson(assetOverridesPath, assetOverrides);
+    if (taxonomyOverrideDeleted) transaction.writeJson(taxonomyOverridesPath, taxonomyOverrides);
+    if (generatedDataDeleted || assetDirectoryDeleted) {
+      transaction.writeJson(reportPath, createReport(filteredData, repoRoot));
+    }
   } catch (error) {
-    restoreStagedAssetDirectories([stagedAssetDirectory]);
-    throw error;
+    restoreCleanupAfterError(error, transaction, [stagedAssetDirectory], trashRunDirectory);
   }
   const pendingDeleteDirectories = [deleteStagedAssetDirectory(stagedAssetDirectory)].filter(Boolean);
   if (pendingDeleteDirectories.length === 0) {

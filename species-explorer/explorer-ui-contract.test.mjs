@@ -382,7 +382,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /indicator\.addEventListener\("click"/);
   assert.match(
     appNewSpeciesWorkflowSource,
-    /beforeClose: \(\) => \{\s*if \(busy \|\| pipelineBusy \|\| namePreferencePreparing\) return false;\s*discardDraft\(\);[\s\S]*?form\.reset\(\);[\s\S]*?resetAll\(\);/,
+    /beforeClose: \(\) => \{\s*if \(busy \|\| pipelineBusy \|\| namePreferencePreparing \|\| abortPending\) return false;\s*discardDraft\(\);[\s\S]*?form\.reset\(\);[\s\S]*?resetAll\(\);/,
   );
   assert.match(appNewSpeciesWorkflowSource, /class="new-species-map-file-input" type="file"/);
   assert.match(appNewSpeciesWorkflowSource, /mapReview\.addEventListener\(eventName/);

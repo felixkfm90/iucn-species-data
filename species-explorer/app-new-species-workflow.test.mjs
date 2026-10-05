@@ -32,7 +32,8 @@ async function settle(predicate) {
 }
 
 function harness({ status = "awaiting-review", finalStatus = "completed", failReview = false,
-  confirm = true, failRestart = false, failReset = false, noReviewAssets = false, persistReview = false, initializeReference = () => {} } = {}) {
+  confirm = true, failRestart = false, failReset = false, noReviewAssets = false, persistReview = false, initializeReference = () => {},
+  ownedCreation = false, pendingAborts = 0, finalPublished = false, restartStatus } = {}) {
   const dialog = new Element(), form = new Element(), open = new Element(), close = new Element();
   const headerClose = new Element();
   headerClose.textContent = "×";
@@ -40,10 +41,11 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const steps = [1, 2, 3, 4].map((n) => { const e = new Element(); e.dataset.newSpeciesStep = n; return e; });
   dialog.groups = { ".new-species-cancel": [close, headerClose], "[data-new-species-step]": steps };
   form.elements = { german: new Element() };
-  const state = { species: [] }, calls = [], confirmations = [];
+  const state = { species: [] }, calls = [], confirmations = [], loadStatuses = [];
   const filters = { search: new Element(), statusFilter: new Element(), flagFilter: new Element() };
   let dialogOptions, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
-  let reviewSubmitted = false;
+  let reviewSubmitted = false, restartReviewed = false;
+  let created = false, aborted = false, abortReads = 0;
   const context = vm.createContext({ document: {}, FormData: class {}, clearTimeout, setTimeout });
   new vm.Script(source).runInContext(context);
   const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } } };
@@ -64,30 +66,43 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       calls.push({ route, body });
       if (route.endsWith("/new/preview")) return { token: "draft", entry: {}, derived: {} };
       if (route.endsWith("/new/discard")) return { discarded: true };
-      if (route.endsWith("/new/save")) return { species, entry: { german: "Rebhuhn" }, derived: { slug: species.id } };
+      if (route.endsWith("/new/sessions")) return { sessions: ownedCreation && created && !aborted
+        ? [{ id: "own-creation", slug: species.id, germanName: "Rebhuhn", runId: "run", canAbort: !(finalPublished && reviewSubmitted), publicationStarted: finalPublished && reviewSubmitted }] : [] };
+      if (route.endsWith("/new/abort")) {
+        if (abortReads++ < pendingAborts) return { pending: true, message: "Abbruch angefordert; Speicherung abwarten." };
+        aborted = true; return { aborted: true, pipelineRequired: false };
+      }
+      if (route.endsWith("/new/save")) { created = true; return { species, entry: { german: "Rebhuhn" }, derived: { slug: species.id }, ...(ownedCreation ? { creationId: "own-creation" } : {}) }; }
       if (route === "/api/pipeline/preview") return { token: "run-preview", hasWork: true, tokensAvailable: true };
       if (route === "/api/pipeline/start") {
         if (++starts > 1 && failRestart) throw new Error("Test: Suchstart fehlgeschlagen");
-        return { status: "running", runId: "run" };
+        if (ownedCreation && !(finalPublished && reviewSubmitted)) {
+          assert.equal(body.creationId, "own-creation");
+          assert.equal(body.guidedSpeciesCreation, true);
+        }
+        return { status: "running", runId: "run", ...(ownedCreation ? { creationId: "own-creation" } : {}) };
       }
       if (route.endsWith("/rejections-preview")) return { token: "reset", count: rejectedCount };
       if (route.endsWith("/rejections-reset")) {
         if (failReset) throw new Error("Test: Ablehnungen unverändert");
+        if (ownedCreation && !(finalPublished && reviewSubmitted)) assert.equal(body.creationId, "own-creation");
         rejectedCount = 0; return { saved: true };
       }
       if (route === "/api/pipeline/status") {
+        if (aborted) return { status: "aborted", runId: "run", reviewAssets: [] };
         const first = statusReads++ === 0;
         return {
-        status: persistReview && !reviewSubmitted ? status : first ? status : finalStatus, error: "Karte fehlt; Übertragung angehalten", runId: "run",
-        guidedSpeciesCreation: noReviewAssets, targets: [{ slug: "perdixperdix", germanName: "Rebhuhn" }],
+        status: starts > 1 && restartStatus && !restartReviewed ? restartStatus
+          : persistReview && !reviewSubmitted ? status : first ? status : finalStatus, error: "Karte fehlt; Übertragung angehalten", runId: "run",
+        guidedSpeciesCreation: noReviewAssets, gitPublished: finalPublished && reviewSubmitted, targets: [{ slug: "perdixperdix", germanName: "Rebhuhn" }],
         reviewAssets: noReviewAssets ? [] : [{ type: "sound", safeName: "Rebhuhn", germanName: "Rebhuhn", scientificName: "Perdix perdix", url: "/sound.mp3" }],
       }; }
       if (route.endsWith("/assets/map/preview")) return { token: "map-preview", newMap: { url: "/preview.jpg", dimensions: { width: 800, height: 1000 }, bytes: 1234 } };
       if (route.endsWith("/assets/map/save")) { species.assets.map.exists = true; return { saved: true }; }
-      if (route === "/api/pipeline/assets/review") { if (failReview) throw new Error("Medienprüfung fehlgeschlagen"); reviewSubmitted = true; return {}; }
+      if (route === "/api/pipeline/assets/review") { if (failReview) throw new Error("Medienprüfung fehlgeschlagen"); reviewSubmitted = true; if (starts > 1) restartReviewed = true; return {}; }
       throw new Error(`Unexpected route: ${route}`);
     },
-    loadData: async () => { state.species = [species]; },
+    loadData: async () => { loadStatuses.push(state.pipelineStatusSnapshot?.status); state.species = aborted ? [] : [species]; },
     showQuickConfirm: async (options) => { confirmations.push(options); return confirm; },
     fileToBase64: async () => "local-image-bytes", escapeHtml: (x) => String(x || ""), formatBytes: (x) => `${x} Bytes`,
     releaseMediaWithin() {}, iucnDistributionMapUrl: () => mapUrl,
@@ -99,7 +114,7 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const action = (key, value) => ({ closest: (selector) => selector === `[${key}]` ? { dataset: {
     [key.replace(/^data-/, "").replace(/-([a-z])/g, (_, c) => c.toUpperCase())]: value,
   } } : null });
-  return { state, calls, confirmations, filters, form, get, close, headerClose, steps, map, sound, open, dialogOptions: () => dialogOptions, opened: () => opened,
+  return { state, calls, confirmations, loadStatuses, filters, form, get, close, headerClose, steps, map, sound, open, dialogOptions: () => dialogOptions, opened: () => opened,
     async start() {
       await open.emit("click"); await form.emit("submit");
       await get(".new-species-next-button").emit("click");
@@ -145,6 +160,57 @@ test("Leere Art-Medienprüfung bleibt nach Schließen wieder aufnehmbar, ohne er
   await h.finishSound();
   await settle(() => !h.get(".new-species-save-button").hidden);
   assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+});
+
+test("Eigene Artanlage abbrechen ist getrennt von Schließen und wartet ohne zweiten Klick sicher", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const h = harness({ ownedCreation: true, noReviewAssets: true, persistReview: true, pendingAborts: 1 });
+  await h.start();
+  const abort = h.get(".new-species-abort-button");
+  assert.equal(abort.hidden, false);
+  assert.equal(h.close.textContent, "Fenster schließen");
+  await abort.emit("click");
+  assert.equal(h.opened(), true);
+  assert.equal(abort.disabled, true);
+  assert.equal(h.close.disabled, true);
+  assert.match(h.get(".new-species-finish-message").textContent, /automatisch zurückgenommen/);
+  t.mock.timers.tick(1000);
+  await settle(() => !h.opened());
+  assert.deepEqual(h.calls.filter((call) => call.route === "/api/species/new/abort").map((call) => call.body),
+    [{ creationId: "own-creation" }, { creationId: "own-creation" }]);
+  assert.equal(h.calls.filter((call) => call.route === "/api/species/new/save").length, 1);
+  assert.equal(h.state.species.length, 0);
+  assert.match(h.state.notice, /keine Übertragung erforderlich/);
+  t.mock.timers.reset();
+});
+
+test("Schließen hält eigenen Auftrag wiederaufnehmbar; Abbruch-Rückfrage lässt Anlage bestehen", async () => {
+  const h = harness({ ownedCreation: true, noReviewAssets: true, persistReview: true, confirm: false });
+  await h.start();
+  await h.get(".new-species-abort-button").emit("click");
+  assert.equal(h.calls.some((call) => call.route === "/api/species/new/abort"), false);
+  await h.close.emit("click"); await h.open.emit("click");
+  assert.equal(h.opened(), true);
+  assert.equal(h.get(".new-species-abort-button").hidden, false);
+  assert.equal(h.calls.filter((call) => call.route === "/api/species/new/save").length, 1);
+  await h.close.emit("click");
+});
+
+test("Nach erfolgreicher Veröffentlichung öffnet Neue Art wieder das Formular für die nächste Anlage", async () => {
+  const h = harness({ ownedCreation: true, finalPublished: true }); await h.start();
+  await h.mapAction("skip"); await h.soundAction();
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  assert.equal(h.get(".new-species-abort-button").hidden, true);
+  await h.get(".new-species-save-button").emit("click");
+  await h.open.emit("click");
+  assert.equal(h.steps[0].hidden, false);
+  assert.equal(h.get(".new-species-abort-button").hidden, true);
+  assert.equal(h.get(".new-species-next-button").disabled, true);
+  await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await h.get(".new-species-portrait-skip-button").emit("click"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => h.calls.filter((call) => call.route.endsWith("/new/save")).length === 2 && !h.close.disabled);
+  assert.equal(h.calls.filter((call) => call.route.endsWith("/new/save")).length, 2);
+  await h.close.emit("click");
 });
 
 test("Auch ohne aktuelle Soundaufnahme ist die bestätigte Wiederholung im Assistenten erreichbar", async () => {
@@ -220,6 +286,45 @@ test("Neue Art: Sound-Ablehnungen mit Rückfrage freigeben und nur Sounds erneut
   assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
   assert.equal(h.calls.filter((c) => c.route.endsWith("/rejections-reset")).length, 1);
   assert.equal(h.close.hidden, true);
+});
+
+test("Lokal abgeschlossene eigene Art: Soundreset und geführte Wiedersuche behalten den abbrechbaren Auftrag", async () => {
+  const h = harness({ ownedCreation: true, restartStatus: "awaiting-review" }); await h.start();
+  await h.mapAction("skip"); await h.soundAction();
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  await h.get(".new-species-reset-sounds-button").emit("click");
+  await settle(() => h.state.pipelineStatusSnapshot?.status === "awaiting-review" && !h.sound.hidden);
+  const reset = h.calls.find((c) => c.route.endsWith("/rejections-reset"));
+  assert.equal(reset.body.creationId, "own-creation");
+  const restart = h.calls.filter((c) => c.route === "/api/pipeline/start").at(-1);
+  assert.deepEqual(restart.body, { token: "run-preview", creationId: "own-creation", guidedSpeciesCreation: true });
+  assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+  await h.get(".new-species-abort-button").emit("click");
+  assert.equal(h.calls.find((c) => c.route.endsWith("/new/abort")).body.creationId, "own-creation");
+  assert.deepEqual(h.state.species, []); assert.equal(h.state.pipelineStatusSnapshot.status, "aborted");
+  assert.equal(h.opened(), false);
+});
+
+test("Veröffentlichte neue Art: Soundreset verwendet den normalen Medienlauf ohne historischen Abbruchauftrag", async () => {
+  const h = harness({ ownedCreation: true, finalPublished: true }); await h.start();
+  await h.mapAction("skip"); await h.soundAction();
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  await h.get(".new-species-reset-sounds-button").emit("click");
+  await settle(() => !h.get(".new-species-save-button").hidden);
+  const reset = h.calls.find((c) => c.route.endsWith("/rejections-reset"));
+  assert.equal(reset.body.creationId, undefined);
+  const restart = h.calls.filter((c) => c.route === "/api/pipeline/start").at(-1);
+  assert.deepEqual(restart.body, { token: "run-preview" });
+});
+
+test("Abbruch eines fehlgeschlagenen Auftrags lädt die Daten erst mit frischem aborted-Status neu", async () => {
+  const h = harness({ status: "failed", ownedCreation: true }); await h.start();
+  assert.equal(h.state.pipelineStatusSnapshot.status, "failed");
+  const previousLoads = h.loadStatuses.length;
+  await h.get(".new-species-abort-button").emit("click");
+  assert.deepEqual(h.loadStatuses.slice(previousLoads), ["aborted"]);
+  assert.equal(h.state.pipelineStatusSnapshot.status, "aborted");
+  assert.equal(h.opened(), false);
 });
 
 test("Neue Art: frühere Sounds schon während der Prüfung freigeben; Abbruch und Fehler bleiben bedienbar", async () => {

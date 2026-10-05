@@ -29,15 +29,30 @@ die Veröffentlichung, nicht mehr die restlichen lokalen Schritte. Schließen un
 Auftrag fort; keine zweite Anlage. Die bereits manuell fertiggestellte Art bleibt unverändert.
 [Artassistent und Abschlussgrenzen](docs/add-species-workflow.md).
 
-Aktueller lokaler Plug-in-Quellstand **0.4.24.21** ergänzt den gemeinsamen Speicherresolver und eigene
-prozessgebundene Temp-Sitzungen. Keine neue Taxonomie- oder Katalogaktion durch die Umstellung.
-Native Bedienabnahme der neuen Speicher-/Assistentenwege und Phase-10.5-Gesamtaudit bleiben getrennt.
-Gesamtgate: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
+Aktueller lokaler Plug-in-Quellstand **0.4.24.22** korrigiert zusätzlich den Vergleich belegter Windows-Pfade:
+Schrägstriche, Laufwerks-/Pfadschreibweise und abschließende Trenner dürfen einen vollständig abgeschlossenen
+Umzug nicht als unvollständig melden. Revision, Vollständigkeit und Herkunft bleiben geschützt; keine neue
+Taxonomie- oder Katalogaktion. Felix bestätigt Weissstorch/Rebhuhn am endgültigen Ort sowie alle Schritte
+des Artassistenten. Die neue Abbruchfunktion und das Neuladen dieser Lightroom-Korrektur bleiben eigene
+Bedienprüfungen; Phase-10.5-Gesamtaudit ist davon getrennt.
+
+Der spätere Pages-Fehler nach dem Löschen der Testart Schwarzstorch ist gesondert belegt: Eine alte
+Sound-Bestätigung erzeugte noch einen verwaisten Pflegeeintrag. Nur dieser Eintrag wurde mit bytegenauer
+Sicherung entfernt; andere Arten, Assets und Entscheidungen blieben erhalten. Die Reparatur schützt
+Abbruch/Löschen gegen verspätete Medienentscheidungen, statt die Qualitätsprüfung zu lockern.
+[Aktueller Reparaturbefund und Nachweis](docs/audits/2026-10-04-creation-abort-and-publication.md).
+Frischer technischer Abschluss am 5. Oktober: vollständiges Gesamtgate mit **50 Testgruppen/1.218 bestandenen
+Tests**, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten technischen Pflichtpunkt.
+Veröffentlichung der finalen Reparaturserie wird anschließend gesondert geprüft. Neue native Abbruch- und
+Plug-in-Neuladeabnahme bleiben vom noch nicht durchgeführten Gesamtaudit getrennt.
+
+Vorausgehendes Gesamtgate vom 4. Oktober: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
 und Suche am neuen Datenort bestanden. [Nachweis und verbleibende Abschlussgrenze](docs/audits/2026-10-04-storage-and-species-wizard.md).
 Die Serie ist als `52545eb` veröffentlicht. Der [Pages-Lauf 37199775549](https://github.com/felixkfm90/iucn-species-data/actions/runs/37199775549)
 bestand Linux-Qualitätsgate, Build und Deployment. Zwei ausschließlich Windows-spezifische NAS-Tests sind
 unter Linux übersprungen, im lokalen Windows-Gate bestanden. Hauptordnerwechsel technisch abgeschlossen;
-native Neustart-/Bedienabnahme bleibt offen. Die erfolgreiche Veröffentlichung allein schließt Phase 10.5 nicht ab.
+die anschließende Suche-/Namensbedienung wurde von Felix bestätigt. Die erfolgreiche Veröffentlichung allein
+schließt Phase 10.5 nicht ab; die jüngste Abbruch-/Veröffentlichungskorrektur wird gesondert geprüft.
 
 Vorausgehende Menüänderung **0.4.24.20**: Verwaltungsfenster auf sechs Hauptzugänge reduziert;
 Ort/Zeit mit drei Auswahlaktionen und Weitere Aktionen mit fünf seltenen Funktionen. Alle zwölf bisherigen

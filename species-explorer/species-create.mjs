@@ -42,6 +42,8 @@ export function createSpeciesCreateOperations({
   portraitAssetSourceRevision,
   removePreviousPortraitPreviews,
   portraitRenderer,
+  creationSessions,
+  isBackupActive = () => false,
 }) {
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
@@ -300,6 +302,9 @@ export function createSpeciesCreateOperations({
 
   async function saveNewSpecies(payload) {
     cleanupPreviewTokens();
+    if (isPipelineBusy() || isAssetWriteActive() || isBackupActive()) {
+      throw Object.assign(new Error("Bitte den laufenden Schreibvorgang oder das Backup abwarten, bevor eine Art angelegt wird."), { statusCode: 409 });
+    }
     const token = String(payload?.token ?? "");
     const preview = previewTokens.get(token);
     if (!preview || preview.type !== "create") {
@@ -351,6 +356,7 @@ export function createSpeciesCreateOperations({
     const backupName =
       `species_list-${compactTimestamp()}-${derived.safeName}-${randomUUID().slice(0, 8)}.json`;
     const backupPath = join(backupDir, backupName);
+    const creationId = await creationSessions?.begin({ entry, derived, backupPath });
     await writeFile(backupPath, sourceText, "utf8");
 
     const nextText = `${JSON.stringify([...inputList, entry], null, 2)}\n`;
@@ -364,6 +370,10 @@ export function createSpeciesCreateOperations({
     }
 
     previewTokens.delete(token);
+    for (const item of previewTokens.values()) {
+      if (item.type === "portrait-asset" && item.createToken === token) item.creationId = creationId;
+    }
+    await creationSessions?.checkpoint(creationId);
     await refreshModel({ force: true });
     let backupRetention = { kept: 0, removed: 0 };
     let backupCleanupWarning = "";
@@ -375,6 +385,7 @@ export function createSpeciesCreateOperations({
     const model = getModel();
     return {
       ok: true,
+      creationId,
       backup: `species-explorer/backups/${backupName}`,
       backupRetention,
       backupCleanupWarning,

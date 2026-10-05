@@ -1,6 +1,6 @@
 # Aufbewahrung temporärer Explorer-Dateien
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 
 ## Aktueller Speicher- und Tempvertrag
 
@@ -23,6 +23,7 @@ Eigentümer, registrierte Dateinamen, offene Operationen und Helferprozesse; Nam
 | `temp/benchmarks/` | ausdrücklich gestartete isolierte Mess-/Prototypenläufe | ausschließlich eigener validierter Lauf; Ergebnisse mit Nachweisbedarf erhalten |
 | `<Plug-in>/temp/plugin/<Sitzungs-ID>/` | SDK-Export, Anfrage, Antwort, Befehlsdatei und Log | Operations-/Helferfreigabe; beim Shutdown/Reload keine noch aktive Operation löschen |
 | `species-explorer/pipeline-asset-backups/` | Rücksicherung einer offenen Medienentscheidung | dauerhafter Review-/Wiederherstellungszustand, nicht beim Schließen pauschal löschen |
+| `species-explorer/creation-sessions/` | Herkunft und bestätigter Abbruch eigener unveröffentlichter Artanlagen | dauerhafter Fortsetzungs-/Rücknahmebeleg; Git-/Pages-ignoriert, nicht beim Schließen als Temp entfernen |
 | bisherige gemeinsame `staging/`, `cleanup-trash/`, Testlauf-Browserreste | alte Ablagen ohne unabhängigen Prozessnachweis | nur inventarisieren/erhalten; kein Leeren allein nach Dateimuster oder 24 Stunden |
 
 `temp-session.mjs` verwaltet Laufzeitsitzungen. Kontrolliertes Schließen verweigert neue Operationen und
@@ -57,7 +58,8 @@ Ein externer Datenpfad verlangt einen passenden Sicherungsvertrag statt stillen 
 ## Bestätigter Altbestand
 
 Die vier von Felix freigegebenen Altbestände wurden bereits ohne Überschreiben nach
-`D:\IUCN_Datenbank\temp\altreste-2026-10-04` verschoben:
+zunächst nach `D:\IUCN_Datenbank\temp\altreste-2026-10-04` verschoben. Mit dem anschließend bestätigten
+Programmordnerwechsel liegt derselbe Bestand unter `D:\Arten-Explorer\temp\altreste-2026-10-04`:
 
 | Ursprüngliche Quelle unter Testlauf | Dateien | Bytes |
 | --- | ---: | ---: |

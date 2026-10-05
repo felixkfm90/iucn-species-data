@@ -120,6 +120,42 @@ test("Lua scratch rejects traversal/overwriting and records failed cleanup witho
   `);
 });
 
+test("Lua-Speicherprüfung akzeptiert verifizierte Windows-Pfadvarianten nach Programmumbenennung", () => {
+  execute(`${fixture}${String.raw`
+    preferences.searchRoot = nil
+    files["D:/fixture/Daten"] = "directory"
+    local config = { schemaVersion=1, state="ready", dataRoot="Daten",
+      legacyDataRoot="C:/Users/felix/AppData/Local/FN Wildlife Travel/Arten-Explorer",
+      previousRepoRoot="D:\\IUCN_Datenbank", migrationRevision=string.rep("a", 64) }
+    local journal = { schemaVersion=1, state="committed",
+      plan={ revision=config.migrationRevision, repoRoot="d:/iucn_datenbank/",
+        sourceRoot="c:\\Users\\felix\\AppData\\Local\\FN Wildlife Travel\\Arten-Explorer",
+        files=Json.array({ { relative="fixture.json" } }) },
+      copied=Json.array({ { relative="fixture.json" } }) }
+    files["D:/fixture/storage-path.json"] = Json.encode(config)
+    local journalPath = "D:/fixture/Daten/.storage-migration.json"
+    files[journalPath] = Json.encode(journal)
+    local Helper = require "TaxonomyHelper"
+    assert(Helper.searchRoot() == "D:/fixture/Daten/lightroom")
+    for _, change in ipairs({
+      function() journal.state = "migrating" end,
+      function() journal.plan.revision = string.rep("b", 64) end,
+      function() journal.plan.sourceRoot = "C:/Users/other/AppData/Local/FN Wildlife Travel/Arten-Explorer" end,
+      function() journal.plan.repoRoot = "D:/Other-Explorer" end,
+      function() journal.copied = Json.array() end,
+    }) do
+      local saved = files[journalPath]
+      journal = Json.decode(saved)
+      change()
+      files[journalPath] = Json.encode(journal)
+      assert(not pcall(Helper.searchRoot), "invalid migration must remain blocked")
+      files[journalPath] = saved
+    end
+    assert(Helper.searchRoot() == "D:/fixture/Daten/lightroom")
+    assert(#calls == 0, "read-only storage check must not invoke helpers or a catalog scan")
+  `}`);
+});
+
 test("Taxonomy helper keeps Windows discovery on C while request/cmd/logs use D plug-in temp and wait for helper", () => {
   execute(`${fixture}
     local Helper = require "TaxonomyHelper"

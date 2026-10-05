@@ -43,6 +43,7 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Neue Art anlegen](add-species-workflow.md), [Art umbenennen](rename-species-workflow.md),
   [Art löschen](delete-species-workflow.md), [manuelle Datenfelder](manual-species-fields.md).
 - [Artanlage-/Namenswahl-Regressionsstand](explorer-regression-fixes.md): datierter technischer Prüfstand.
+- [Artabbruch, verspätete Medienentscheidung und Lightroom-Pfadwarnung vom 4. Oktober](audits/2026-10-04-creation-abort-and-publication.md): jüngste gezielte Fehlerkorrektur und separate Prüfgrenzen.
 - [Pipeline-Steuerung und Abschlussausgaben](pipeline-control-plan.md).
 - [Prüfung neuer Karten/Sounds](asset-review-workflow.md), [manuelle Kartenschutzmarkierungen](manual-map-overrides.md).
 - [Soundeditor und Ablehnungsrücksetzung](sound-editor.md), [Soundbar](soundbar.md).

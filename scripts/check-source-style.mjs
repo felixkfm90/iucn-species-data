@@ -36,6 +36,7 @@ const SKIPPED_DIRECTORIES = new Set([
   "asset-backups",
   "backups",
   "cleanup-trash",
+  "creation-sessions",
   "logs",
   "node_modules",
   "pipeline-asset-backups",

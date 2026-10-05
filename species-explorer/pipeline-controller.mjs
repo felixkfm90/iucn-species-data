@@ -55,7 +55,34 @@ export function createPipelineController({
   readJson,
   spawnProcess = spawn,
   checkPublicationSources = checkProjectPublicationSources,
+  creationSessions,
+  abortCreation,
 }) {
+  async function assertActiveCreation() {
+    if (runtime.state.creationId && creationSessions) {
+      // An accepted review finishes its write block and checkpoint before honoring a later abort request.
+      await creationSessions.assertActive(runtime.state.creationId, runtime.state.targets?.[0]?.slug,
+        { allowAbortRequested: runtime.assetReviewSaving === true });
+    }
+  }
+  async function assertFreshPipelineTargets() {
+    await assertActiveCreation();
+    if (["cleanup", "transfer"].includes(runtime.state.mode)) return;
+    const input = JSON.parse(await readFile(speciesListPath, "utf8"));
+    for (const target of runtime.state.targets ?? []) {
+      const entry = input.find((item) => `${item.genus}${item.species}`.toLowerCase() === String(target.slug).toLowerCase());
+      if (!entry || sanitizeAssetName(entry.german) !== target.safeName) {
+        throw Object.assign(new Error("Die Art dieser Prüfung wurde gelöscht oder geändert. Die veraltete Prüfung kann nicht mehr gespeichert oder veröffentlicht werden."), { statusCode: 409 });
+      }
+    }
+    for (const asset of runtime.state.reviewAssets ?? []) {
+      if (!input.some((item) => sanitizeAssetName(item.german) === asset.safeName)) {
+        throw Object.assign(new Error("Die Art der Medienprüfung wurde gelöscht. Es wurden keine Pflegeeinträge gespeichert."), { statusCode: 409 });
+      }
+    }
+  }
+
+  async function creationAbortRequested() { return await creationSessions?.isAbortRequested(runtime.state.creationId) === true; }
   async function readPipelinePlan(mode, targetSlugs = []) {
     const [speciesListText, speciesDataText] = await Promise.all([
       readFile(speciesListPath, "utf8"),
@@ -533,7 +560,7 @@ export function createPipelineController({
         runtime.process = null;
         resolveRun(1);
       });
-      child.on("close", (code) => {
+      child.on("close", async (code) => {
         stdoutReader.end();
         stderrReader.end();
         if (stdoutFormatter && stdoutBuffer.trim()) {
@@ -544,12 +571,28 @@ export function createPipelineController({
           }
         }
         runtime.process = null;
-        resolveRun(Number.isInteger(code) ? code : 1);
+        try {
+          let ownsGeneratorMetadata = false;
+          if (command === process.execPath && args[0] === join(repoRoot, "scripts", "generate-spectrograms.mjs")) {
+            try { ownsGeneratorMetadata = JSON.parse(stdoutBuffer).hashRegistry?.changed === true; } catch {}
+          }
+          await creationSessions?.checkpoint(runtime.state.creationId, { runId: runtime.state.runId,
+            ownedRegistryMetadataKeys: ownsGeneratorMetadata ? ["spectrogramGenerator"] : [] });
+          resolveRun(await creationAbortRequested() ? -2 : Number.isInteger(code) ? code : 1);
+        } catch (error) {
+          runtime.state.error = error.message;
+          resolveRun(1);
+        }
       });
     });
   }
 
   async function publishPipelineChanges() {
+    await assertFreshPipelineTargets();
+    if (await creationAbortRequested()) return -2;
+    if ((await creationSessions?.list())?.some((job) => job.abortRequested)) {
+      throw Object.assign(new Error("Eine gespeicherte Artanlage wartet auf ihre Rücknahme. Bitte Artanlage abbrechen abschließen, bevor Änderungen übertragen werden."), { statusCode: 409 });
+    }
     runtime.state.phase = "Lokale Veröffentlichungsprüfung";
     const preflight = checkPipelinePublication(repoRoot);
     appendPipelineLog(preflight.message);
@@ -557,6 +600,7 @@ export function createPipelineController({
     const sourcePreflight = checkPublicationSources(repoRoot);
     appendPipelineLog(sourcePreflight.message);
     if (!sourcePreflight.ok) { runtime.state.error = sourcePreflight.message; return 1; }
+    await creationSessions?.checkpoint(runtime.state.creationId, { publicationStarted: true });
     let code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Vorprüfung");
     if (code !== 0) {
       runtime.state.error = "Vor dem Pipeline-Lauf waren bereits Dateien vorgemerkt. Automatischer Commit wurde abgebrochen.";
@@ -617,6 +661,8 @@ export function createPipelineController({
   }
 
   async function continueAfterAssetReview() {
+    await assertFreshPipelineTargets();
+    if (await creationAbortRequested()) { await finishPipelineRun(-2); return; }
     if (runtime.state.guidedSpeciesCreation) {
       const media = checkPipelinePublication(repoRoot);
       if (!media.ok) {
@@ -700,6 +746,20 @@ export function createPipelineController({
   }
 
   async function finishPipelineRun(exitCode) {
+    if (await creationAbortRequested() && abortCreation) {
+      try {
+        await abortCreation(runtime.state.creationId);
+        await removePipelineAssetBackupRun(runtime.state.runId);
+      } catch (error) {
+        runtime.state.status = "failed";
+        runtime.state.exitCode = 1;
+        runtime.state.completedAt = new Date().toISOString();
+        runtime.state.error = `Abbruch wurde zum Schutz geänderter Daten angehalten: ${error.message}`;
+        appendPipelineLog(runtime.state.error);
+        await refreshModel({ force: true });
+      }
+      return;
+    }
     await unlink(pendingAssetReviewPath).catch(() => {});
     runtime.state.status = exitCode === 0 ? "completed" : "failed";
     runtime.state.exitCode = exitCode;
@@ -867,10 +927,19 @@ export function createPipelineController({
 
     const { plan, sourceRevision } = await readPipelinePlan(preview.mode, preview.targetSlugs ?? []);
     const guidedSpeciesCreation = payload?.guidedSpeciesCreation === true;
-    if (guidedSpeciesCreation && (preview.mode !== "missing" || preview.targetSlugs?.length !== 1 || plan.targets.length !== 1)) {
+    if (guidedSpeciesCreation && (!["missing", "nc-sounds"].includes(preview.mode) || preview.targetSlugs?.length !== 1 || plan.targets.length !== 1)) {
       const error = new Error("Der Artassistent benötigt einen einzelnen gebundenen Art-Suchlauf.");
       error.statusCode = 400;
       throw error;
+    }
+    let creationId = String(payload?.creationId ?? "");
+    if (creationSessions && preview.targetSlugs?.length === 1) {
+      const job = await creationSessions.findBySlug(preview.targetSlugs[0]);
+      if (creationId && creationId !== job?.id) await creationSessions.assertCurrent(creationId, preview.targetSlugs[0]);
+      creationId = job && !job.publicationStarted ? job.id : "";
+    }
+    if ((guidedSpeciesCreation || creationId) && creationSessions) {
+      await creationSessions.assertCurrent(creationId, preview.targetSlugs[0]);
     }
     if (sourceRevision !== preview.sourceRevision) {
       previewTokens.delete(token);
@@ -925,7 +994,9 @@ export function createPipelineController({
       summary: "",
       publishAfterAssetOnlyNoAssets: false,
       guidedSpeciesCreation,
+      creationId,
     };
+    if (creationId) await creationSessions?.checkpoint(creationId, { runId: runtime.state.runId });
     if (preview.mode === "nc-sounds") {
       closeActiveFileStreams((filePath) => extname(filePath).toLowerCase() === ".mp3");
       appendPipelineLog("Offene MP3-Streams im Explorer wurden vor dem Sound-Suchlauf geschlossen.");
@@ -941,7 +1012,7 @@ export function createPipelineController({
   }
 
   async function savePipelineAssetReview(payload) {
-    if (runtime.assetReviewSaving) {
+    if (runtime.assetReviewSaving || isAssetWriteActive() || isBackupActive()) {
       const error = new Error("Die aktuelle Medienentscheidung wird bereits gespeichert");
       error.statusCode = 409;
       throw error;
@@ -960,6 +1031,11 @@ export function createPipelineController({
       error.statusCode = 409;
       throw error;
     }
+    await assertFreshPipelineTargets();
+    if (runtime.state.creationId && creationSessions) {
+      await creationSessions.assertCurrent(runtime.state.creationId, runtime.state.targets[0].slug);
+    }
+    if (await creationAbortRequested()) throw Object.assign(new Error("Abbruch dieser Artanlage ist bereits angefordert. Die Medienprüfung wurde verworfen."), { statusCode: 409 });
     if (String(payload?.runId ?? "") !== runtime.state.runId) {
       const error = new Error("Assetprüfung gehört nicht zum aktuellen Pipeline-Lauf");
       error.statusCode = 409;
@@ -1051,6 +1127,7 @@ export function createPipelineController({
         ) {
           throw new Error(`Unsicherer Wiederherstellungspfad für ${asset.germanName}`);
         }
+        await assertActiveCreation();
         if (backupPath && existsSync(resolvedBackupPath)) copyFileSync(resolvedBackupPath, targetPath);
         else if (!previous?.exists && existsSync(targetPath)) await unlink(targetPath);
       }
@@ -1131,9 +1208,11 @@ export function createPipelineController({
     }
 
     if (registryChanged) {
+      await assertFreshPipelineTargets();
       const tempPath = `${assetOverridesPath}.tmp-${randomUUID()}`;
       try {
         await writeFile(tempPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
+        await assertActiveCreation();
         await rename(tempPath, assetOverridesPath);
       } catch (error) {
         await unlink(tempPath).catch(() => {});
@@ -1143,6 +1222,7 @@ export function createPipelineController({
 
     const reviewedMaps = runtime.state.reviewAssets.filter((asset) => asset.type === "map");
     if (reviewedMaps.length) {
+      await assertActiveCreation();
       await synchronizeStoredManualMapDocumentation(registry);
     }
 
@@ -1157,11 +1237,14 @@ export function createPipelineController({
         }
       }
       const tempPath = `${assessmentIdsPath}.tmp-${randomUUID()}`;
+      await assertActiveCreation();
       await writeFile(tempPath, `${JSON.stringify(assessmentIds, null, 2)}\n`, "utf8");
+      await assertActiveCreation();
       await rename(tempPath, assessmentIdsPath);
     }
 
     runtime.state.reviewAssets = [];
+    await creationSessions?.checkpoint(runtime.state.creationId, { runId: runtime.state.runId });
     runtime.state.status = "running";
     runtime.state.phase = "Git-Veröffentlichung";
     await unlink(pendingAssetReviewPath).catch(() => {});

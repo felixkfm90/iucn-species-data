@@ -16,6 +16,7 @@ const skippedDirectories = new Set([
   "asset-backups",
   "backups",
   "cleanup-trash",
+  "creation-sessions",
   "logs",
   "pipeline-asset-backups",
   "staging",

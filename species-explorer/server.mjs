@@ -21,6 +21,7 @@ import { renderMapJpeg } from "./media-assets.mjs";
 import { closeActiveFileStreams } from "./http-routing.mjs";
 import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
+import { createSpeciesCreationSessionStore } from "./species-creation-session.mjs";
 import { createTaxonomyNamePreferenceService } from "./taxonomy-name-preference-service.mjs";
 import { createSpeciesDeleteOperations } from "./species-delete.mjs";
 import { createSpeciesEditOperations } from "./species-edit.mjs";
@@ -110,6 +111,7 @@ export async function createExplorerServer({
   taxonomyRoot = defaultTaxonomyRoot(process.env, repoRoot),
   lightroomSearchRoot = defaultLightroomSearchRoot(process.env, repoRoot),
   lightroomCloseGate = null,
+  pipelineSpawnProcess,
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   await cleanupOrphanTempSessions({ repoRoot, owner: "explorer" });
@@ -141,6 +143,7 @@ export async function createExplorerServer({
   const stageFilePath = (filename) => tempSession.filePath(filename);
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
+  const creationSessions = createSpeciesCreationSessionStore({ repoRoot });
   const taxonomySupplements = createTaxonomySupplementService({
     taxonomyRoot,
     correctionsPath: taxonomyReferenceCorrectionsPath,
@@ -161,6 +164,8 @@ export async function createExplorerServer({
   const closeGate = lightroomCloseGate || createLightroomCloseGate({ taxonomyRoot, usageRequests });
   let pipelineProcess = null;
   let assetWriteActive = false;
+  let creationMutationActive = false;
+  let activeAssetCreationId = "";
   let pipelineAssetSnapshot = new Map();
   let pipelineState = {
     status: "idle",
@@ -186,6 +191,15 @@ export async function createExplorerServer({
       const pending = await readJson(pendingAssetReviewPath);
       if (pending?.status === "awaiting-review" && Array.isArray(pending.reviewAssets)) {
         pipelineState = pending;
+        if (pending.creationId) {
+          try {
+            await creationSessions.assertActive(pending.creationId, pending.targets?.[0]?.slug, { allowAbortRequested: true });
+          } catch (error) {
+            await unlink(pendingAssetReviewPath);
+            pipelineState = { ...pending, status: "detached", phase: "Alter Artanlage-Auftrag beendet", reviewAssets: [],
+              error: `Die alte Medienprüfung wurde verworfen: ${error.message}`, completedAt: new Date().toISOString() };
+          }
+        }
       }
     } catch {
       // Eine unlesbare lokale Statusdatei wird beim nächsten erfolgreichen Lauf ersetzt.
@@ -247,6 +261,16 @@ export async function createExplorerServer({
     pendingAssetSpeciesFromFiles,
   } = createProjectPublicationService({ repoRoot });
 
+  async function runAssetCommandCapture(command, args) {
+    if (command === "git" && ["add", "commit", "push"].includes(args[0])) {
+      if ((await creationSessions.list()).some((job) => job.abortRequested)) {
+        throw Object.assign(new Error("Abbruch einer Artanlage ist angefordert. Die Veröffentlichung wird angehalten."), { statusCode: 409 });
+      }
+      if (activeAssetCreationId) await creationSessions.checkpoint(activeAssetCreationId, { publicationStarted: true });
+    }
+    return runCommandCapture(command, args);
+  }
+
   const {
     publicSettingsPayload,
     saveBackupSettings,
@@ -261,7 +285,7 @@ export async function createExplorerServer({
     localSettingsFile: LOCAL_SETTINGS_FILE,
     backupLogLineLimit: BACKUP_LOG_LINE_LIMIT,
     isPipelineActive,
-    isAssetWriteActive: () => assetWriteActive,
+    isAssetWriteActive: () => assetWriteActive || creationMutationActive,
   });
 
   taxonomyMaintenanceService = createTaxonomyMaintenanceService({
@@ -372,10 +396,13 @@ export async function createExplorerServer({
     pendingAssetSpeciesFromFiles,
     isPipelineActive,
     isBackupActive,
-    isAssetWriteActive: () => assetWriteActive,
+    isAssetWriteActive: () => assetWriteActive || creationMutationActive,
     hashText,
     compactTimestamp,
     readJson,
+    creationSessions,
+    abortCreation: abortOwnedCreation,
+    spawnProcess: pipelineSpawnProcess,
   });
 
   const assetOperationContext = {
@@ -396,7 +423,7 @@ export async function createExplorerServer({
     setAssetWriteActive(value) { assetWriteActive = Boolean(value); },
     publishAssetChanges,
     rebuildReportAfterAssetSave,
-    runCommandCapture,
+    runCommandCapture: runAssetCommandCapture,
     synchronizeProjectStatusForPublication,
     hashText,
   };
@@ -473,6 +500,8 @@ export async function createExplorerServer({
     portraitAssetSourceRevision,
     removePreviousPortraitPreviews,
     portraitRenderer,
+    creationSessions,
+    isBackupActive,
   });
 
   const {
@@ -531,6 +560,61 @@ export async function createExplorerServer({
     writeJsonAtomic,
   });
 
+  async function abortOwnedCreation(creationId) {
+    assetWriteActive = true;
+    try {
+      const result = await creationSessions.abort(creationId);
+      for (const [key, item] of previewTokens) {
+        if (item.creationId !== result.id && item.id !== result.slug) continue;
+        for (const filename of [item.stagingPath, item.inputStagingPath, item.spectrogramStagingPath]) {
+          if (filename) rmSync(filename, { force: true });
+        }
+        previewTokens.delete(key);
+      }
+      if (result.runId && pipelineState.runId === result.runId) {
+        await unlink(pendingAssetReviewPath).catch((error) => { if (error.code !== "ENOENT") throw error; });
+        pipelineState = { ...pipelineState, status: "aborted", phase: "Artanlage abgebrochen",
+          reviewAssets: [], error: "", completedAt: new Date().toISOString(), gitPublished: false };
+        pipelineAssetSnapshot = new Map();
+      }
+      await refreshModel({ force: true });
+      return { ...result, pipelineRequired: false };
+    } finally { assetWriteActive = false; }
+  }
+
+  async function saveCreationAsset(id, payload, operation, action, assetType) {
+    if (creationMutationActive) throw Object.assign(new Error("Eine Artanlage wird bereits gespeichert oder zurückgenommen."), { statusCode: 409 });
+    creationMutationActive = true;
+    const requestedCreationId = payload?.creationId || previewTokens.get(String(payload?.token ?? ""))?.creationId;
+    let creationId = "";
+    let validated = false;
+    let savedSoundMetadata = false;
+    try {
+      const existingJob = await creationSessions.findBySlug(id);
+      // A completed publication leaves a historical receipt, not a lock on the media editor.
+      creationId = existingJob && !existingJob.publicationStarted ? existingJob.id : "";
+      activeAssetCreationId = creationId;
+      if (existingJob?.abortRequested || existingJob?.status === "aborting") throw Object.assign(new Error("Die Artanlage wird bereits abgebrochen; diese Speicherung ist veraltet."), { statusCode: 409 });
+      if (requestedCreationId && requestedCreationId !== existingJob?.id) await creationSessions.assertCurrent(requestedCreationId, id);
+      if (creationId) await creationSessions.assertCurrent(creationId, id);
+      if (["save", "reject", "rejections-reset"].includes(action)) {
+        await refreshModel({ force: true });
+        const input = JSON.parse(await readFile(speciesListPath, "utf8"));
+        if (!input.some((item) => `${item.genus}${item.species}`.toLowerCase() === String(id).toLowerCase())) {
+          throw Object.assign(new Error("Die Art dieser Assetprüfung wurde gelöscht. Die veraltete Speicherung wurde angehalten."), { statusCode: 409 });
+        }
+      }
+      validated = true;
+      const result = await operation();
+      savedSoundMetadata = assetType === "sound" && action === "save" && result.saved === true;
+      return result;
+    } finally {
+      try { if (creationId && validated) await creationSessions.checkpoint(creationId,
+        { ownedRegistryMetadataKeys: savedSoundMetadata ? ["spectrogramGenerator"] : [] }); }
+      finally { activeAssetCreationId = ""; creationMutationActive = false; }
+    }
+  }
+
   const requestHandler = createExplorerRequestHandler({
     host,
     sessionToken,
@@ -558,6 +642,8 @@ export async function createExplorerServer({
         return preview.stagingPath;
       },
       async asset({ assetType, id, action, payload }) {
+        const write = !["preview", "edit-preview", "delete-preview", "restore-preview", "rejections-preview", "prompt"].includes(action);
+        const perform = async () => {
         if (action === "delete-preview" || action === "restore-preview") {
           return createAssetMutationPreview(
             id,
@@ -591,6 +677,8 @@ export async function createExplorerServer({
         return action === "preview"
           ? previewPortraitAsset(id, payload)
           : savePortraitAsset(id, payload);
+        };
+        return write ? saveCreationAsset(id, payload, perform, action, assetType) : perform();
       },
       async pipeline({ action, payload }) {
         return action === "preview"
@@ -611,24 +699,66 @@ export async function createExplorerServer({
       async newSpecies({ action, payload }) {
         if (action === "preview") return previewNewSpecies(payload);
         if (action === "discard") return discardNewSpecies(payload);
+        if (action === "sessions") return { sessions: await creationSessions.list() };
+        if (action === "abort") {
+          const creationId = String(payload?.creationId ?? "");
+          const requested = await creationSessions.requestAbort(creationId);
+          if (requested.alreadyAborted) return { aborted: true, alreadyAborted: true, id: creationId };
+          if (pipelineProcess || pipelineState.status === "running" || pipelineRuntime.assetReviewSaving
+              || assetWriteActive || creationMutationActive || isBackupActive()) {
+            return { pending: true, creationId, message: "Abbruch angefordert. Der laufende Schreibvorgang wird sicher abgewartet; anschließend wird die eigene Artanlage zurückgenommen." };
+          }
+          return abortOwnedCreation(creationId);
+        }
         if (action === "portrait-prompt") return createNewSpeciesPortraitPrompt(payload);
         if (action === "portrait-preview") return previewNewSpeciesPortrait(payload);
-        return saveNewSpecies(payload);
+        if (creationMutationActive) throw Object.assign(new Error("Eine Artanlage wird bereits gespeichert oder zurückgenommen."), { statusCode: 409 });
+        creationMutationActive = true;
+        try { return await saveNewSpecies(payload); }
+        finally { creationMutationActive = false; }
       },
       async deleteSpecies({ id, action, payload }) {
-        return action === "preview"
-          ? previewSpeciesDelete(id)
-          : saveSpeciesDelete(id, payload);
+        if (action === "save" && (creationMutationActive || assetWriteActive || pipelineRuntime.assetReviewSaving || pipelineProcess || pipelineState.status === "running" || isBackupActive())) {
+          throw Object.assign(new Error("Eine Art kann während einer laufenden Speicherung, Suche, Rücknahme oder eines Backups nicht gelöscht werden."), { statusCode: 409 });
+        }
+        if (action === "preview") return previewSpeciesDelete(id);
+        creationMutationActive = true;
+        try {
+          const job = await creationSessions.findBySlug(id);
+          const result = await saveSpeciesDelete(id, payload);
+          if (job) await creationSessions.detach(job.id);
+          if (job && pipelineState.status === "awaiting-review" && pipelineState.creationId === job.id) {
+            await unlink(pendingAssetReviewPath).catch((error) => { if (error.code !== "ENOENT") throw error; });
+            pipelineState = { ...pipelineState, status: "detached", phase: "Art separat gelöscht", reviewAssets: [],
+              error: "Die Art dieser Prüfung wurde separat gelöscht. Der alte Artanlage-Auftrag wurde beendet.", completedAt: new Date().toISOString() };
+            pipelineAssetSnapshot = new Map();
+          }
+          for (const [key, item] of previewTokens) {
+            if (item.id !== id) continue;
+            for (const filename of [item.stagingPath, item.inputStagingPath, item.spectrogramStagingPath]) if (filename) rmSync(filename, { force: true });
+            previewTokens.delete(key);
+          }
+          return result;
+        }
+        finally { creationMutationActive = false; }
       },
       async editSpecies({ id, action, payload }) {
-        return action === "preview"
-          ? previewSpeciesEdit(id, payload)
-          : saveSpeciesEdit(id, payload);
+        if (action === "save" && (creationMutationActive || assetWriteActive || pipelineRuntime.assetReviewSaving)) {
+          throw Object.assign(new Error("Die laufende Art- oder Assetspeicherung muss zuerst abgeschlossen werden."), { statusCode: 409 });
+        }
+        if (action === "preview") return previewSpeciesEdit(id, payload);
+        creationMutationActive = true;
+        try { return await saveSpeciesEdit(id, payload); }
+        finally { creationMutationActive = false; }
       },
       async editTaxonomy({ id, action, payload }) {
-        return action === "preview"
-          ? previewTaxonomyEdit(id, payload)
-          : saveTaxonomyEdit(id, payload);
+        if (action === "preview") return previewTaxonomyEdit(id, payload);
+        if (creationMutationActive || assetWriteActive || pipelineRuntime.assetReviewSaving) {
+          throw Object.assign(new Error("Die laufende Art- oder Assetspeicherung muss zuerst abgeschlossen werden."), { statusCode: 409 });
+        }
+        creationMutationActive = true;
+        try { return await saveTaxonomyEdit(id, payload); }
+        finally { creationMutationActive = false; }
       },
       async read({ resource }) {
         if (resource === "summary") {

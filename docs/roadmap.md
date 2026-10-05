@@ -1,10 +1,10 @@
 # Roadmap
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 
 ## Aktuelle Restreihenfolge vor dem Audit
 
-### Neuester Arbeitsstand – 4. Oktober
+### Neuester Arbeitsstand – 4./5. Oktober
 
 Felix bestätigt die zuletzt bezeichneten Abnahmepunkte 1 und 4; keine zusätzlichen Großbestands- oder
 Neustartabnahmen daraus ableiten. Er beauftragt anschließend die übrigen sicheren Vor-Audit-Arbeiten bei
@@ -15,11 +15,15 @@ geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage tro
    AppData leer, keine Verknüpfung, Journal committed/Konfiguration ready. Codex-Projektbindung geprüft,
    Desktop-Verknüpfung und Lightroom-Registrierung korrigiert, lokale Startdateien ordnerunabhängig.
    Erneuter Versionsvergleich und Weissstorch-/Rebhuhn-Suchhelfer am endgültigen Pfad bestanden; Umzugsbelege
-   und aktives Paar unverändert. Native Explorer-/Lightroom-Neustartabnahme weiterhin gesondert.
+   und aktives Paar unverändert. Felix bestätigt danach die Anzeige von Weissstorch und Rebhuhn.
+   Nachfolgende Lua-Umzugswarnung in 0.4.24.22 als Pfadvergleichsfehler korrigiert; reale kleine Belege im
+   Lua-Resolver erfolgreich, negative Herkunfts-/Revisionssperren erhalten. Neuladen noch praktisch prüfen.
 2. **Artassistent:** fehlendes Medium öffnet jetzt Kartenimport/Überspringen und expliziten Sound-Schritt;
    gleicher Auftrag nach Wiederöffnung, keine zweite Artanlage. Lokaler Abschluss bei fehlender Karte mit
    ehrlich offener Übertragung. Goldbaumsteiger nicht erneut angelegt. Automatisierte Gegenproben bestanden,
-   neue praktische Regressionseinzelabnahme noch offen.
+   Felix bestätigt anschließend mit Schwarzstorch alle Assistentenschritte. Echter rückstandsfreier Abbruch
+   separat beauftragt: eigener persistierter Auftrag, Schutz fremder Daten und bereits veröffentlichter Arten,
+   keine Veröffentlichung beim Abbruch. Neue native Abbruchabnahme bleibt vom Schließen/Fortsetzen getrennt.
 3. **Automatischer Updateweg und Betriebsgrenzen zusammen prüfen:** vorhandener gespeicherter Koordinator,
    Ein-Klick-Start/Später, requestgebundene Erfassung und Warten auf Lightroom bleiben erhalten. Isolierte
    Prozess-, Wiederanlauf-, Veröffentlichungspaar- und Rollbacktests bestanden, zusätzlich neuer 5.000-Arten-
@@ -32,13 +36,21 @@ geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage tro
    50 Gruppen/1.177 gemeldete Tests, 423 Master-/Betriebs- und 239 Lightroom-/Pakettests, keine Fehler/Skips.
    Dokumentation fortgeschrieben; Serie `52545eb` und Pages `37199775549` vollständig erfolgreich veröffentlicht.
    Linux ohne Fehler/Abbruch, zwei Windows-NAS-Prüfungen dort erwartungsgemäß übersprungen, lokal bestanden.
+   Späterer Lauf `37221199394` zu `c5d0184` scheitert an einem verwaisten Schwarzstorch-Pflegeeintrag:
+   verspätete Sound-Bestätigung nach Löschen. Exakten Eintrag mit Sicherung entfernt, Projektprüfung wieder
+   erfolgreich. Neue Sperren für späte Entscheidungen und rücknehmbare Bereinigung gesondert gegengeprüft;
+   die enge Datenkorrektur `5349893` ist bereits in Pages `37225123679` erfolgreich. Das gemeinsame Gate
+   am 5. Oktober ist jetzt ebenfalls bestanden: 50 Gruppen/1.218 Tests, keine Fehler/Abbrüche/Skips.
+   Unabhängiger Endreview ohne weiteren konkreten technischen Pflichtpunkt. Der eigene neue Pages-Nachweis
+   der geprüften Code-Reparaturserie wird vor dem Übergang zum Audit noch abgeschlossen.
    Phase 10.5 nicht allein anhand isolierter Tests oder früherer Nutzerrückmeldungen als bestanden melden.
 
 Historische 187 Fälle werden neutral als erhaltene bisherige Quellenzuordnungen dargestellt. Sie ändern keine
 vorhandene Art/ID und sind kein aktueller Fehler. Geänderte oder geschützte neue Fälle verlangen weiter Prüfung.
 Verträge: [Speicherwechsel](storage-migration.md), [Temp](temp-retention.md),
 [Prüfabschluss und offene Abschlussgrenze](audits/2026-10-04-storage-and-species-wizard.md),
-[Artanlage](add-species-workflow.md). Die folgenden datierten Abschnitte dokumentieren die vorausgehenden
+[Artanlage](add-species-workflow.md), [jüngste Abbruch-/Pages-/Lua-Korrektur](audits/2026-10-04-creation-abort-and-publication.md).
+Die folgenden datierten Abschnitte dokumentieren die vorausgehenden
 Implementierungs- und Abnahmegrenzen; sie sind keine erneute Freigabe alter Aufbau- oder Bereinigungsaufträge.
 
 Zusätzlicher aktueller Betriebsnachweis nach Datenwechsel: isolierter 5.000-Arten-Prozesslauf mit hartem

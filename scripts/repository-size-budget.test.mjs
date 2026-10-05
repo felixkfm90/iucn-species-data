@@ -21,7 +21,7 @@ test("Lokale Daten, eigene Tempdateien und Speicherkonfiguration zählen nicht z
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.writeFileSync(path.join(root, "species_list.json"), "[]");
   fs.writeFileSync(path.join(root, "storage-path.json"), JSON.stringify({ dataRoot: "Daten" }));
-  for (const directory of ["Daten/taxonomy", "temp/tests", "species-explorer/temp", "species-explorer/Daten"]) {
+  for (const directory of ["Daten/taxonomy", "temp/tests", "species-explorer/temp", "species-explorer/Daten", "species-explorer/creation-sessions"]) {
     fs.mkdirSync(path.join(root, directory), { recursive: true });
     fs.writeFileSync(path.join(root, directory, "large.sqlite"), Buffer.alloc(4096));
   }

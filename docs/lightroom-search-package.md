@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 Roadmap: Phase 10.2 bis 10.4
-Status: lokaler Quellstand Plug-in-Version **0.4.24.21** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.22** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
@@ -13,6 +13,14 @@ Version 0.4.24.17 korrigiert Orts-/Zeitentfernung mit dokumentierten SDK-Objekte
 ergänzt den unteren Entfernen-Button und drei Auswahlexporte mit Defaultnamen. Fehlender Statistikindex
 wird nur bewusst neu aufgebaut. Technische Gegenproben und praktische Restabnahme:
 [Bedienregressionen](audits/2026-10-03-acceptance-regressions.md).
+
+Gemeinsamer Speicherumzug und Programmordnerwechsel nach `D:\Arten-Explorer\Daten` abgeschlossen;
+Felix bestätigt anschließend Weissstorch/Rebhuhn in den Verbrauchern. 0.4.24.22 korrigiert den danach
+gemeldeten Lua-Vergleich unterschiedlich geschriebener, aber belegter Windows-Pfade. Schrägstriche,
+Groß-/Kleinschreibung und abschließende Trenner werden normalisiert; Herkunft, Revision und vollständiger
+Umzugsnachweis bleiben gesperrt, wenn sie tatsächlich abweichen. Keine Änderung an Originalbelegen,
+Datenbanken oder Fotos. Technischer Resolvernachweis bestanden, native Prüfung nach Plug-in-Neuladen
+noch getrennt: [aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 
 Felix bestätigt die Orts-/Zeitentfernung für Einzel-/Mehrfachauswahl sowie die neuen Exporte anhand eines Fotos
 nach bewusstem Statistik-Neuaufbau. Das ist gezielte praktische Abnahme, kein Großkatalog- oder Gesamtaudit.
@@ -92,8 +100,9 @@ Wiederherstellung gehören unter Weitere Aktionen. Die alten Quellen-/Master-Ein
 HTML bereits verborgen, nicht zusätzliche sichtbare Hauptoptionen.
 
 Diese Umsetzung ändert weder den bestätigten [Updatevertrag](taxonomy-update-automation.md) noch
-die [Nutzungsgrenze](lightroom-catalog-usage.md), Smart-Sammlungsregeln, Such-/Zuweisungslogik oder den
-offenen separaten Speicherumzug. Keine zusätzliche Bestandsaktion, Erfassung oder Löschung beim Öffnen.
+die [Nutzungsgrenze](lightroom-catalog-usage.md), Smart-Sammlungsregeln oder Such-/Zuweisungslogik.
+Der damals noch offene separate [Speicherumzug](storage-migration.md) ist inzwischen abgeschlossen.
+Keine zusätzliche Bestandsaktion, Erfassung oder Löschung beim Öffnen.
 
 ### Menüaufbau und Ausrichtung ab 0.4.24.20
 
@@ -124,7 +133,8 @@ alten Aktionen genau einmal, standardmäßig geschlossenen Bereich, Vorschaufehl
 Syntax 374 Dateien, Stil, 75 Markdown-Verweise, synchronisierter Projektstatus und Diffprüfung bestanden.
 Kein produktiver GUI-/Kataloglauf, kein Gesamtaudit oder vollständiges quality:ci daraus ableiten.
 Geänderte Explorer-JS/CSS sind nicht in Squarespace eingebunden; Footer/Custom-CSS geprüft, keine dortige
-Versionsänderung erforderlich. Speicherumzug und Veröffentlichung bleiben separat.
+Versionsänderung erforderlich. Speicherumzug und Veröffentlichung sind getrennte, inzwischen in den
+aktuellen Betriebsdokumenten belegte Schritte; diese damalige Menüprüfung ist kein neuer Gesamtnachweis.
 
 Version 0.4.24.15 ergänzt die ausdrückliche, nur lesende Aktion `FN-Katalognutzung erfassen …` im
 Verwaltungsfenster. Zwei SDK-Durchgänge liefern eine Erfassungsquittung; erst normal geschlossenes Lightroom

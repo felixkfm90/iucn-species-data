@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -22,7 +22,7 @@ Felix' Wunsch gelöscht. Die folgenden Reparatur- und Zwischenstände sind datie
 | Lightroom-Suchpaket | `lightroom-fa739bd28ec1e82a0283`, aus demselben Master |
 | Gemeinsame Veröffentlichung | `publication-b64beeb2-9951-4cf0-ac4e-1a326c5c3e91` |
 | Erhaltener Vorgänger | Passendes Master-/Paketpaar vom 1. Oktober |
-| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; aktueller lokaler Quellstand `0.4.24.21`, neue Speicher-/Temp-/Bedienprüfung getrennt |
+| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; aktueller lokaler Quellstand `0.4.24.22`, neue Speicher-/Temp-/Bedienprüfung getrennt |
 
 Einmaliger unabhängiger lesender Vergleich bestanden: sämtliche 273.466 bisherigen IDs erhalten,
 kein vorher aktiver Eintrag verloren; vier technische Ersatz-IDs weiter historisch. Alle 60 Projektlinks,
@@ -40,7 +40,7 @@ Als nächstes beauftragte Felix den automatischen Gesamtweg statt der heutigen m
 
 ## Neue lokale Umsetzung nach diesem Abschluss
 
-Neuester Stand vom 4. Oktober: Speicherresolver und eigener Temp-Lebenszyklus in Explorer/Plug-in implementiert.
+Speicherstand vom 4. Oktober: Speicherresolver und eigener Temp-Lebenszyklus in Explorer/Plug-in implementiert.
 207 unveränderte Bestandsdateien mit 98.603.910.132 Bytes zunächst nach `D:\IUCN_Datenbank\Daten`
 kopiert und SHA-256-geprüft. Nach Gesamtgate/frischem Schließnachweis übernommen: Journal `committed`,
 Konfiguration `ready`, AppData leer und ohne Link. Lesender Versionsvergleich und reale Suchhilfe am neuen
@@ -50,10 +50,23 @@ Programmordner nach `D:\Arten-Explorer` umbenannt: endgültiger Datenort `D:\Art
 Codex-Projektbindung geprüft, Desktop-Verknüpfung und Lightroom-Registrierung korrigiert; alte lokale
 Startdateien ordnerunabhängig. Erneuter Versionsvergleich `current` und beide bevorzugten Namen im realen
 Suchhelfer bestätigt, Umzugsbelege bytegleich. Desktop 5/5, Temp/Umzug 40/40, Plug-in-Vertrag 21/21 bestanden.
-Native Neustart-/Bedienabnahme bleibt getrennt; kein erneuter Aufbau oder Paarwechsel.
+Felix bestätigt danach die Anzeige von Weissstorch/Rebhuhn am endgültigen Ort. Kein erneuter Aufbau oder
+Paarwechsel. Die anschließend gemeldete Lightroom-Umzugswarnung ist als Lua-Pfadvergleichsfehler belegt und
+in 0.4.24.22 korrigiert: verifizierte Windows-Pfade werden wie im Node-Resolver normalisiert, Herkunfts-/
+Revisions-/Vollständigkeitssperren bleiben erhalten. Echte kleine Belege im Lua-Resolver erfolgreich gelesen;
+Temp/Umzug 41/41, Plug-in-Vertrag 21/21. Native Bestätigung nach Plug-in-Neuladen bleibt getrennt.
 [Umzugsvertrag](storage-migration.md). Historische Zurückstellungen jetzt neutral dargestellt; Schutzlogik erhalten.
 Gesamtgate: 50 Gruppen/1.177 gemeldete Tests, darunter 423 Master-/Betriebs- und 239 Lightroom-/Pakettests,
 ohne Fehler, Abbruch oder Skip. [Neuer Nachweis und offene Grenzen](audits/2026-10-04-storage-and-species-wizard.md).
+Felix bestätigt auch das Durchlaufen aller Artassistentenschritte mit der Testart Schwarzstorch.
+Anschließend beauftragter echter Abbruch und verspätete Sound-Bestätigung nach Löschen werden gesondert
+repariert. Der Pages-Fehler `c5d0184` ist ein verwaister Schwarzstorch-Pflegeeintrag, kein Taxonomie-/
+Paketproblem. Dieser einzelne Eintrag mit Sicherung entfernt; Projektprüfung danach erfolgreich.
+Die enge Datenkorrektur ist als `5349893` übertragen, Pages `37225123679` erfolgreich. Der separate
+Code-/Dokumentationsabschluss ist am 5. Oktober technisch geprüft: frisches Gesamtgate mit 50 Gruppen/
+1.218 bestandenen Tests, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten
+Vor-Audit-Pflichtpunkt. Veröffentlichung dieser finalen Serie wird gesondert verifiziert; kein neuer produktiver Taxonomieaufbau.
+[Aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 Die folgenden Absätze sind vorausgehende datierte Umsetzungsschritte.
 
 Felix bestätigt anschließend Einzel-/Mehrfach-Orts-/Zeitentfernung und neue Exporte anhand eines Fotos nach

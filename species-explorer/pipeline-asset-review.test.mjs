@@ -9,7 +9,7 @@ import { createEditableFixture, createTestMp3 } from "./server-test-fixtures.mjs
 
 async function setupReview(t, { reset = true, stopSearch = false, previouslyExisting = true } = {}) {
   const root = await createEditableFixture();
-  t.after(() => rm(root, { recursive: true, force: true }));
+  t.after(() => rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   const assets = join(root, "species-assets", "Amsel");
   const overrides = join(root, "species-assets-overrides.json");
   const previousSound = { manual: false, reason: "behalten", rejectedSources: [

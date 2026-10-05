@@ -18,6 +18,16 @@ local function quoteArgument(value)
   return '"' .. string.gsub(text, '"', '\\"') .. '"'
 end
 
+local function sameStoragePath(left, right)
+  if type(left) ~= "string" or type(right) ~= "string" or left == "" or right == "" then return false end
+  local function normalize(value)
+    local text = value:gsub("\\", "/"):gsub("/+$", "")
+    if text:match("^%a:/") or text:sub(1, 2) == "//" then return text:lower() end
+    return text
+  end
+  return normalize(left) == normalize(right)
+end
+
 local function legacySearchRoot(tempRoot)
   local localAppData = cleanText(tempRoot) ~= "" and LrPathUtils.parent(tempRoot) or ""
   if localAppData == "" then
@@ -54,7 +64,8 @@ local function storageConfiguration()
     local journalOk, journal = pcall(Json.decode, journalBody)
     if not journalOk or type(journal) ~= "table" or journal.schemaVersion ~= 1 or journal.state ~= "committed"
       or type(journal.plan) ~= "table" or journal.plan.revision ~= value.migrationRevision
-      or journal.plan.sourceRoot ~= value.legacyDataRoot or journal.plan.repoRoot ~= value.previousRepoRoot
+      or not sameStoragePath(journal.plan.sourceRoot, value.legacyDataRoot)
+      or not sameStoragePath(journal.plan.repoRoot, value.previousRepoRoot)
       or type(journal.copied) ~= "table" or type(journal.plan.files) ~= "table" or #journal.copied ~= #journal.plan.files then
       error("Der Datenumzug ist unvollständig oder sein Nachweis wurde verändert.")
     end

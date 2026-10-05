@@ -1,6 +1,6 @@
 # Add Species Workflow
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
 
@@ -24,7 +24,9 @@ Der geführte, an genau eine Art gebundene Suchlauf hält jetzt auch bei leerem 
 
 Automatisierte UI-/Controller-Gegenproben prüfen leeres Suchergebnis, Kartenimport, Sound-Abschluss,
 Rücksetzen/Wiederholen, gebundene Fortsetzung und Wiederöffnung. Kein produktiver Goldbaumsteiger-Neulauf
-oder neues Karten-/Soundasset durch die Reparatur. Eine erneute praktische Regressionseinzelabnahme bleibt nötig.
+oder neues Karten-/Soundasset durch die Reparatur. Felix hat die geführte Abfolge am Schwarzstorch in allen
+Instanzen praktisch bestätigt. Die neue echte Artanlage-Abbruchprüfung einschließlich Soundreset und
+erneuter Suche benötigt eine separate praktische Abnahme; die automatisierten Prüfungen verwenden isolierte Daten.
 
 ## Grundsatz
 
@@ -243,6 +245,11 @@ Die API verwendet `POST …/assets/sound/rejections-preview` und `…/rejections
 kurzlebige Bestätigung, Schutz gegen parallele Asset-/Pipeline-Schreibvorgänge, atomarer Registry-Dateiaustausch.
 Eine nachträglich geänderte Registry verlangt eine neue Vorschau. Fehler geben die Sperre wieder frei; ein
 Anzeigefehler nach erfolgreichem Speichern wird als Warnung statt als fehlgeschlagene Speicherung gemeldet.
+Bei einer unveröffentlichten neuen Art bleiben Rücksetzung und erneuter Sound-Suchlauf an dieselbe
+`creationId` gebunden. Jede Speicherung aktualisiert deren Herkunftsnachweis; auch ein leerer erneuter
+Suchlauf wartet im Assistenten auf eine bewusste Entscheidung. Der Auftrag bleibt danach abbrechbar und
+nach Schließen oder Neustart fortsetzbar. Bereits veröffentlichte Arten bleiben im Medieneditor bearbeitbar,
+ohne dass ein alter Artanlage-Nachweis spätere Bearbeitungen sperrt.
 Während einer wartenden Soundprüfung verwendet der Assistent stattdessen die bestehende Review-API mit
 `decision: reject`, `resetSoundRejections: true` und der aktuellen `reviewUrl`. Lauf-ID und Vorschau-URL müssen
 passen; sonst bleibt die neuere Prüfung unverändert. Gleichzeitige Review-Speicherungen werden abgewiesen.
@@ -278,6 +285,38 @@ Art und ihre Dateien bleiben lokal erhalten. Nicht nochmals dieselbe Art anlegen
 ergänzen und anschließend `Änderungen übertragen` verwenden. Auch eine wartende Assetprüfung lässt sich
 schließen; sie bleibt über die Prozessanzeige erreichbar. Schließen ist keine Löschung und kein Rollback.
 
+Seit 4. Oktober gibt es nach dem ersten Speichern zusätzlich `Artanlage abbrechen`. Die Rückfrage benennt
+die eigene, noch unveröffentlichte Anlage. Nach Bestätigung nimmt der Explorer genau diesen Auftrag zurück:
+Eingabeliste, erzeugte Art-/Assessmentdaten, Pflegeeinträge, eigene Medien, Karten-Dokumentation und die
+zugehörige Anlagesicherung. Der Fehlteilebericht wird um diese Art bereinigt. Ein Git-Lauf ist dafür nicht nötig.
+Ein nachweislich eigener, unverändert gebliebener Spektrogramm-Generator-Eintrag wird auf den Ausgangsstand
+zurückgenommen. Das gilt für Soundimport und automatisch erzeugte Spektrogramme; spätere fremde
+Registry- oder Generatoränderungen bleiben erhalten.
+`Fenster schließen` erhält die Anlage weiterhin zum Fortsetzen; diese beiden Aktionen sind ausdrücklich getrennt.
+
+Die lokale Herkunftsdatei unter `species-explorer/creation-sessions/` bindet die Rücknahme an die eigene
+Artanlage, nicht allein an einen eingegebenen Artnamen. Sie überlebt das Schließen und einen Explorer-Neustart.
+Bei späteren Änderungen an anderen Arten entfernt der Explorer nur die eigenen Einträge; er stellt keine
+alten Gesamtdateien über neuere fremde Daten wieder her. Sobald sich eigene Daten, Dateien oder Sicherungen
+anderweitig geändert haben, bleibt die Rücknahme mit einem Schutzgrund angehalten. Publikationsbeginn oder
+ein geänderter Git-Stand sperren die automatische Rücknahme ebenfalls. Nach einer erfolgreichen Veröffentlichung
+öffnet `Neue Art` wieder das Formular für die nächste Anlage.
+
+Läuft beim Abbruch noch ein eigener Schreibvorgang, wird der Wunsch dauerhaft vermerkt. Der Explorer wartet
+den begonnenen Schreibblock ab und führt die Rücknahme automatisch mit derselben Auftragskennung weiter.
+Er startet dabei keine Folge-Suche und keine Veröffentlichung. Die Oberfläche sperrt weitere Entscheidungen,
+bis die Rücknahme beendet ist oder einen konkreten Schutzgrund meldet. Nach Neuladen wird ein gespeicherter
+Abbruchwunsch wieder aufgenommen. Ein vor der letzten Herkunftssicherung unterbrochener Prozess kann zur
+Sicherheitsprüfung führen; unbekannte/geänderte Dateien werden nicht pauschal als eigene Dateien gelöscht.
+
+Abgebrochene Aufträge hinterlassen lediglich eine kleine lokale Abschlussquittung ohne alte Artdaten oder
+Medien, damit eine wiederholte Abbruchanfrage sicher beantwortet wird. Alte Medien-/Prüftokens werden verworfen.
+Unabhängig davon prüft jede spätere Pipeline-Medienentscheidung die Zielart frisch: eine inzwischen gelöschte
+oder geänderte Art kann keinen neuen Pflegeeintrag und keine Veröffentlichung über eine alte Prüfung erzeugen.
+Auch nach einer gleichnamigen Neuanlage wird der alte, bei separater Löschung beendete Auftrag abgewiesen,
+bevor Dateien oder Pflegeeinträge verändert werden. Die zugehörige wartende Medienprüfung wird beim
+Löschen entwertet und nach einem Explorer-Neustart nicht wieder als aktive Prüfung geöffnet.
+
 Speichern:
 
 - nur nach gueltiger Vorschau
@@ -309,6 +348,9 @@ API:
 - `POST /api/species/new/portrait-prompt`: erzeugt den Einzelprompt aus den geprueften Artdaten
 - `POST /api/species/new/portrait-preview`: prueft und staged ein optionales Sofortportrait
 - `POST /api/species/new/save`: akzeptiert nur das einmalige Vorschau-Token und haengt den geprueften Eintrag an
+- `POST /api/species/new/sessions`: liefert lokale Artanlage-Aufträge und ihre aktuelle Abbruchmöglichkeit
+- `POST /api/species/new/abort`: verlangt die persistierte `creationId`; nimmt den eigenen unveröffentlichten
+  Auftrag zurück oder meldet `pending`, solange ein laufender Schreibvorgang sicher abgewartet wird
 
 Technischer Stand vom 2026-07-28:
 

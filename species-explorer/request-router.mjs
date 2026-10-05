@@ -72,6 +72,8 @@ const POST_ROUTES = new Map([
     ["/api/species/new/preview", { name: "new-species", action: "preview" }],
     ["/api/species/new/discard", { name: "new-species", action: "discard" }],
   ["/api/species/new/save", { name: "new-species", action: "save" }],
+  ["/api/species/new/sessions", { name: "new-species", action: "sessions" }],
+  ["/api/species/new/abort", { name: "new-species", action: "abort" }],
   ["/api/species/new/portrait-prompt", { name: "new-species", action: "portrait-prompt" }],
   ["/api/species/new/portrait-preview", { name: "new-species", action: "portrait-preview" }],
 ]);

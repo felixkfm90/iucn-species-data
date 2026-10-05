@@ -23,6 +23,7 @@ const SKIPPED_DIRECTORIES = new Set([
   "asset-backups",
   "backups",
   "cleanup-trash",
+  "creation-sessions",
   "local-tools",
   "logs",
   "node_modules",

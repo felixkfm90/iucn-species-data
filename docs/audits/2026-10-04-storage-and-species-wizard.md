@@ -106,5 +106,22 @@ Lokale Daten, Konfiguration, Umzugsjournal und Temp sind nicht im Commit/Pages e
   `text/html; charset=UTF-8`, keine Weiterleitung. Keine Karte heruntergeladen oder bestehende Datei ersetzt.
 - Commit-/Pages-Nachweis bestanden; **dieser Bericht ist kein Phase-10.5-Gesamtaudit**.
 
+## Spätere Nutzerabnahme und getrennte Fehlerkorrektur
+
+Felix bestätigt anschließend Weissstorch/Rebhuhn in den Verbrauchern am endgültigen Programmpfad und
+das Durchlaufen aller Assistentenschritte bei der Testart Schwarzstorch. Diese zwei gezielten Befunde
+schließen die entsprechenden oben noch offenen Stichproben ab, nicht die vollständige Phase-10.5-Abnahme.
+
+Der reine Programmpfad-Commit `ae698eb7700d50c8d81130ae0df371c1ed1f2a78` bestand
+[Pages 37221043510](https://github.com/felixkfm90/iucn-species-data/actions/runs/37221043510) vollständig.
+Eine spätere Explorer-Übertragung `c5d0184` erzeugte nach Artlöschung noch einen Schwarzstorch-Sound-
+Pflegeeintrag und scheiterte korrekt an der Projektprüfung. Zusätzlich gemeldete Lightroom-Umzugswarnung
+war ein Trenner-/Windows-Pfadvergleich im Lua-Resolver, kein unvollständiger Datenwechsel.
+
+Diese neuen Befunde, der ausdrücklich beauftragte echte Artabbruch und ihre Reparaturnachweise stehen
+im [nachfolgenden gezielten Bericht](2026-10-04-creation-abort-and-publication.md). Plug-in-Quellstand danach
+0.4.24.22; die oben datierten Test-/Veröffentlichungszahlen bleiben historische Nachweise, kein behaupteter
+neuer Gesamtabschluss. Referenz, Master, Suchpaket und Umzugsbelege unverändert.
+
 Verträge: [Umzug und Rückweg](../storage-migration.md), [Temp](../temp-retention.md),
 [Artanlage](../add-species-workflow.md), [aktuelle Restreihenfolge](../roadmap.md).

@@ -29,8 +29,9 @@ Keine Taxonomieaktivierung oder Änderung von Datenbankinhalten durch den Wechse
 nach bestandenem Gesamtgate (50 Gruppen/1.177 Tests), unabhängig geschlossenen Verbrauchern und erneuter
 vollständiger Zielprüfung. Jedes Original unmittelbar vor Entfernung erneut geprüft. Lesender Resolver,
 Versionsvergleich, unverändertes aktives Paar/Vorgänger sowie Weissstorch/Rebhuhn im Suchhelfer bestätigt.
-Der finale Hauptordnerwechsel ist ebenfalls technisch geprüft, aber noch keine native Explorer-/Lightroom-
-Neustartabnahme. Die anfängliche Kopie nach `D:\IUCN_Datenbank\Daten` wurde dabei nicht erneut kopiert.
+Der finale Hauptordnerwechsel ist ebenfalls technisch geprüft; Felix bestätigt anschließend Weissstorch und
+Rebhuhn in den Verbrauchern. Das ersetzt keine vollständige Schließ-/Bedienabnahme. Die anfängliche Kopie
+nach `D:\IUCN_Datenbank\Daten` wurde dabei nicht erneut kopiert.
 Der alte leere Wurzelordner ist kein Datenbestand; der gebundene Rückweg nutzt ausschließlich die neuen
 unveränderten Daten. Nach neuer Bearbeitung automatische Rücknahme weiterhin gesperrt.
 
@@ -78,8 +79,28 @@ Versionsvergleich `current`, unveränderte gemeinsame Veröffentlichung/Vorgäng
 Rebhuhn-Suche mit eigenen Namen und bisherigen IDs am endgültigen Pfad bestätigt. Desktop-Verträge 5/5,
 Temp/Umzug 40/40 und Plug-in-Verträge 21/21 ohne Fehler, Abbruch oder Skip bestanden. Kein erneuter Vollscan
 der 98,60 GB oder fachlicher ID-Gesamtvergleich für die reine Ordnerumbenennung behauptet.
-Beide Programme können wieder normal geöffnet werden. Native Suche/Datenstand und kontrolliertes Schließen
-noch kurz prüfen; keine Quellenaktualisierung, Fotoänderung oder Taxonomieaktivierung dafür erforderlich.
+Felix bestätigt anschließend die Anzeige von Weissstorch und Rebhuhn. Keine Quellenaktualisierung,
+Fotoänderung oder Taxonomieaktivierung für den Pfadwechsel erforderlich.
+
+## Lightroom-Nachkorrektur 0.4.24.22
+
+Die danach gemeldete Warnung „Der Datenumzug ist unvollständig oder sein Nachweis wurde verändert“
+war ein reiner Lua-Pfadvergleichsfehler, kein tatsächlich unvollständiger Datenwechsel. Das Originaljournal
+verwendet Rückwärtsschrägstriche, die Konfiguration vorwärts gerichtete Schrägstriche. Der Node-Resolver
+normalisierte diese bereits; der Lightroom-Resolver verglich zuvor die unveränderten Zeichenketten.
+
+Plug-in 0.4.24.22 normalisiert für genau diesen Vergleich Trenner und abschließende Schrägstriche sowie
+Groß-/Kleinschreibung bei Windows-Laufwerks- und UNC-Pfaden. Tatsächlich andere Herkunftspfade, geänderte
+Revision, unvollständige Dateiliste oder laufender Umzug bleiben gesperrt. Konfiguration und Originaljournal
+wurden nicht umgeschrieben. Der neue Regressionstest reproduzierte die ursprüngliche Warnung vor der
+Korrektur und prüft die positiven und negativen Fälle danach.
+
+Zusätzliche lesende Gegenprobe mit dem echten Lua-Resolver und den tatsächlichen kleinen Konfigurations-,
+Umzugs-, Veröffentlichungs- und Paketbelegen erfolgreich: Paket vorhanden, `D:/Arten-Explorer/Daten/lightroom`,
+Master `master-20261003055911210`, Paket `lightroom-fa739bd28ec1e82a0283`, 273.476 Taxa.
+Keine Datenbankabfrage, Prüfsummenvollscan oder Katalogänderung für diese Gegenprobe. Temp/Umzug 41/41 und
+Plug-in-Verträge 21/21 bestanden. Neuladen des Zusatzmoduls und der native Hintergrundhinweis bleiben
+noch praktisch zu bestätigen. [Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 
 ## Übernahme und Wiederherstellung
 

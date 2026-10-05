@@ -55,6 +55,7 @@
       const nextButton = dialog.querySelector(".new-species-next-button");
       const backButton = dialog.querySelector(".new-species-back-button");
       const saveButton = dialog.querySelector(".new-species-save-button");
+      const abortButton = dialog.querySelector(".new-species-abort-button");
       const jsonPreview = dialog.querySelector(".new-species-json");
       const derivedFields = [...dialog.querySelectorAll("[data-derived]")];
       const portraitInstructions = dialog.querySelector(".new-species-portrait-instructions");
@@ -98,6 +99,10 @@
       let inlinePipelinePollTimer = null;
       let maxStepReached = 1;
       let namePreferencePreparing = false;
+      let creationId = "";
+      let abortPending = false;
+      let abortAvailable = false;
+      let abortRetryTimer = null;
 
       const setMessage = createMessageSetter(message, "edit-message new-species-message");
       const setPortraitMessage = createMessageSetter(
@@ -393,6 +398,7 @@
                 source,
                 careMode: mapReview.querySelector(".new-species-map-care-mode-input")?.value || "manual",
                 pipelineRunId: inlineRunId,
+                ...(creationId ? { creationId } : {}),
               }),
             },
           );
@@ -431,6 +437,7 @@
               body: JSON.stringify({
                 token: inlineManualMapPreviewToken,
                 pipelineRunId: inlineRunId,
+                ...(creationId ? { creationId } : {}),
                 careMode: mapReview.querySelector(".new-species-map-care-mode-input")?.value || "manual",
               }),
             },
@@ -482,6 +489,9 @@
       };
 
       const updateButtons = () => {
+        abortButton.hidden = !creationId || !abortAvailable;
+        abortButton.disabled = busy || namePreferencePreparing || abortPending;
+        abortButton.textContent = abortPending ? "Abbruch wird ausgeführt …" : "Artanlage abbrechen";
         previewButton.hidden = currentStep !== 1;
         backButton.hidden = currentStep === 1 || currentStep >= 3 || completed;
         nextButton.hidden = currentStep >= 3 || completed;
@@ -549,6 +559,11 @@
 
       const resetAll = () => {
         stopInlinePipelinePolling();
+        clearTimeout(abortRetryTimer);
+        abortRetryTimer = null;
+        creationId = "";
+        abortPending = false;
+        abortAvailable = false;
         previewToken = "";
         portraitPromptText = "";
         portraitPreviewToken = "";
@@ -609,7 +624,7 @@
         state.holdNewSpeciesBackground = false;
         setPipelineBusy(false);
         const text = savedSpeciesId
-          ? `Die Art „${savedSpeciesName}“ ist lokal angelegt. ${messageText} Vorhandene Dateien bleiben erhalten. Fenster schließen und die Art im Explorer ergänzen; nicht erneut anlegen.`
+          ? `Die Art „${savedSpeciesName}“ ist lokal angelegt. ${messageText} Fenster schließen erhält die Anlage zum Fortsetzen.${abortAvailable ? " Artanlage abbrechen nimmt diesen unveröffentlichten Auftrag zurück." : " Die vorhandene Art kann im Explorer ergänzt werden; nicht erneut anlegen."}`
           : messageText;
         setPipelineMessage(text, "error");
         setFinishMessage(text, "error");
@@ -629,6 +644,7 @@
           hasCurrentSound: createdSpecies?.assets?.sound?.exists === true,
         });
         completed = true;
+        if (status?.gitPublished) abortAvailable = false;
         setPipelineStepState("", ["save", "data", "sound", "spectrogram"]);
         setPipelineMessage(soundOutcome.noAlternative ? soundOutcome.message : "", soundOutcome.messageType);
         setFinishMessage(status?.publicationPending
@@ -806,6 +822,8 @@
           });
           savedSpeciesId = result.species?.id || result.derived.slug;
           savedSpeciesName = result.entry.german;
+          creationId = result.creationId || "";
+          abortAvailable = Boolean(creationId);
           previewToken = ""; // The draft was consumed; never create this species twice.
           if (namePreference && !namePreference.unchanged) {
             const notice = document.createElement("p");
@@ -840,7 +858,7 @@
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ token: portraitPreviewToken, publish: false }),
+                  body: JSON.stringify({ token: portraitPreviewToken, publish: false, creationId }),
                 },
               );
             } catch (portraitError) {
@@ -866,7 +884,7 @@
           const startedStatus = await fetchJson("/api/pipeline/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: previewResult.token, guidedSpeciesCreation: true }),
+            body: JSON.stringify({ token: previewResult.token, guidedSpeciesCreation: true, ...(creationId ? { creationId } : {}) }),
           });
           state.pipelineStatusSnapshot = startedStatus;
           state.pipelineWasRunning = true;
@@ -882,7 +900,7 @@
         dialog,
         closeButtons,
         beforeClose: () => {
-          if (busy || pipelineBusy || namePreferencePreparing) return false;
+          if (busy || pipelineBusy || namePreferencePreparing || abortPending) return false;
           discardDraft();
           form.reset();
           state.holdNewSpeciesBackground = false;
@@ -892,12 +910,66 @@
       });
       const close = () => dialogController.close("programmatic");
 
+      const abortSavedCreation = async () => {
+        if (!creationId || !abortAvailable) return;
+        clearTimeout(abortRetryTimer);
+        stopInlinePipelinePolling();
+        abortPending = true;
+        setBusy(true);
+        const requestedId = creationId;
+        try {
+          const result = await fetchJson("/api/species/new/abort", {
+            method: "POST", body: JSON.stringify({ creationId: requestedId }),
+          });
+          if (requestedId !== creationId) return;
+          if (result.pending) {
+            setPipelineMessage(result.message || "Abbruch angefordert. Laufenden Schreibvorgang sicher abwarten …", "info");
+            setFinishMessage("Abbruch angefordert. Der eigene Auftrag wird nach dem laufenden Schreibvorgang automatisch zurückgenommen.", "info");
+            abortRetryTimer = setTimeout(abortSavedCreation, 1000);
+            return;
+          }
+          state.pipelineStatusSnapshot = await fetchJson("/api/pipeline/status");
+          state.renderPersistentPipelineStatus?.(state.pipelineStatusSnapshot);
+          await loadData({ reload: true });
+          state.notice = `Artanlage „${savedSpeciesName}“ wurde abgebrochen. Eigene Artdaten und Dateien wurden zurückgenommen; keine Übertragung erforderlich.`;
+          abortPending = false;
+          setBusy(false);
+          setPipelineBusy(false);
+          close();
+        } catch (error) {
+          abortPending = false;
+          setBusy(false);
+          setPipelineBusy(false);
+          setPipelineMessage(error.message, "error");
+          setFinishMessage(error.message, "error");
+        }
+      };
+      abortButton.addEventListener("click", async () => {
+        if (abortPending || !creationId) return;
+        if (!await showQuickConfirm({ title: "Artanlage abbrechen?",
+          message: `Die unveröffentlichte Anlage „${savedSpeciesName}“ und ihre eigenen Dateien werden zurückgenommen. Fenster schließen erhält sie zum Fortsetzen.`,
+          confirmLabel: "Artanlage abbrechen" })) return;
+        await abortSavedCreation();
+      });
+
       openButton.addEventListener("click", async () => {
         form.reset();
         resetAll();
         state.holdNewSpeciesBackground = true;
         dialogController.open();
         const pending = state.pipelineStatusSnapshot;
+        try {
+          const result = await fetchJson("/api/species/new/sessions", { method: "POST", body: "{}" });
+          const session = result.sessions?.find((item) => item.canAbort && item.slug === pending?.targets?.[0]?.slug)
+            || result.sessions?.find((item) => item.canAbort);
+          if (session) {
+            creationId = session.id;
+            savedSpeciesId = session.slug;
+            savedSpeciesName = session.germanName;
+            abortAvailable = session.canAbort;
+            if (session.abortRequested && session.canAbort) { await abortSavedCreation(); return; }
+          }
+        } catch (error) { setMessage(`Gespeicherte Artanlage konnte nicht gelesen werden: ${error.message}`, "error"); }
         if (pending?.status === "awaiting-review" && pending.guidedSpeciesCreation && pending.targets?.length === 1) {
           try {
             const fresh = await fetchJson("/api/pipeline/status");
@@ -910,6 +982,11 @@
               return;
             }
           } catch (error) { showWorkflowError(error.message); return; }
+        }
+        if (creationId) {
+          showStep(4);
+          showWorkflowError("Der gespeicherte Auftrag wurde wieder geöffnet.");
+          return;
         }
         void taxonomyReference.initialize();
         form.elements.german.focus();
@@ -1285,7 +1362,8 @@
           if (!confirmed) return;
           if (preview.count) {
             await fetchJson(`${base}/rejections-reset`, {
-              method: "POST", body: JSON.stringify({ token: preview.token, confirmed: true }),
+              method: "POST", body: JSON.stringify({ token: preview.token, confirmed: true,
+                ...(creationId && abortAvailable ? { creationId } : {}) }),
             });
             resetSaved = true;
           }
@@ -1298,7 +1376,8 @@
             return;
           }
           const status = await fetchJson("/api/pipeline/start", {
-            method: "POST", body: JSON.stringify({ token: plan.token }),
+            method: "POST", body: JSON.stringify({ token: plan.token,
+              ...(creationId && abortAvailable ? { creationId, guidedSpeciesCreation: true } : {}) }),
           });
           completed = false;
           doneSection.hidden = true;
