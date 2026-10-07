@@ -51,7 +51,7 @@
     "test:portrait": "node --test --test-isolation=none scripts/species-portrait.test.mjs",
     "test:preview": "node --test --test-isolation=none scripts/local-squarespace-preview.test.mjs",
     "test:size-budget": "node --test --test-isolation=none scripts/repository-size-budget.test.mjs",
-    "test:backups": "node --test --test-isolation=none species-explorer/asset-backups.test.mjs",
+    "test:backups": "node --test --test-isolation=none species-explorer/asset-backups.test.mjs species-explorer/backup-service.test.mjs",
     "test:model": "node --test --test-isolation=none species-explorer/species-model.test.mjs",
     "test:explorer-model": "node --test --test-isolation=none species-explorer/explorer-model.test.mjs",
     "test:pipeline-log": "node --test --test-isolation=none species-explorer/pipeline-log.test.mjs species-explorer/pipeline-asset-review.test.mjs species-explorer/pipeline-guided-creation.test.mjs species-explorer/project-publication-check.test.mjs",
@@ -86,7 +86,7 @@
     "test:pages": "node --test --test-isolation=none scripts/pages-artifact-policy.test.mjs",
     "test:security": "node --test --test-isolation=none species-explorer/request-security.test.mjs",
     "test:status": "node --test --test-isolation=none scripts/project-status.test.mjs",
-    "test:temp": "node --no-warnings --test --test-isolation=none species-explorer/temp-retention.test.mjs species-explorer/temp-session.test.mjs species-explorer/lightroom-temp-helper.test.mjs species-explorer/storage-paths.test.mjs species-explorer/storage-migration.test.mjs scripts/test-temp.test.mjs scripts/nas-backup-contract.test.mjs scripts/lightroom-temp-session-lua.test.mjs",
+    "test:temp": "node --no-warnings --test --test-isolation=none species-explorer/temp-retention.test.mjs species-explorer/temp-session.test.mjs species-explorer/lightroom-temp-helper.test.mjs species-explorer/storage-paths.test.mjs species-explorer/storage-migration.test.mjs scripts/test-temp.test.mjs scripts/nas-backup-contract.test.mjs scripts/nas-backup-retention.test.mjs scripts/lightroom-temp-session-lua.test.mjs",
     "test:explorer": "node --test --test-isolation=none species-explorer/server.test.mjs species-explorer/server-species-workflows.test.mjs species-explorer/server-assets.test.mjs species-explorer/server-cleanup-search.test.mjs species-explorer/explorer-ui-contract.test.mjs"
   },
   "devDependencies": {

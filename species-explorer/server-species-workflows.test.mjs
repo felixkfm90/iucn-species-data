@@ -130,8 +130,8 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   const saved = await saveResponse.json();
   assert.equal(saved.pipelineRequired, true);
   assert.match(saved.backup, /^species-explorer\/backups\/species_list-/);
-  assert.equal(saved.backupRetention.kept, 20);
-  assert.equal(saved.backupRetention.removed, 3);
+  assert.equal(saved.backupRetention.kept, 5);
+  assert.equal(saved.backupRetention.removed, 18);
   assert.equal(saved.backupCleanupWarning, "");
 
   const afterList = JSON.parse(await readFile(speciesListPath, "utf8"));
@@ -145,7 +145,7 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   const backupEntries = await readdir(backupDir);
   assert.equal(
     backupEntries.filter((name) => /^species_list-.*\.json$/.test(name)).length,
-    20,
+    5,
   );
   assert.ok(backupEntries.includes("not-a-managed-backup.txt"));
 
@@ -164,6 +164,12 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
 test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückgesetzt werden", async (context) => {
   const repoRoot = await createEditableFixture();
   const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  const backupDir = join(repoRoot, "species-explorer", "backups");
+  await mkdir(backupDir, { recursive: true });
+  for (let day = 1; day <= 8; day += 1) {
+    await writeFile(join(backupDir, `taxonomy-2026070${day}T010101Z-Amsel-1234abcd.json`), "{}\n");
+  }
+  await writeFile(join(backupDir, "taxonomy-own-note.json"), "behalten\n");
   const app = await createExplorerServer({ repoRoot, port: 0 });
   const address = await app.listen();
   cleanupFixture(app);
@@ -196,6 +202,8 @@ test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückge
   const saved = await saveResponse.json();
   assert.equal(saved.restoredAutomatic, false);
   assert.match(saved.backup, /^species-explorer\/backups\/taxonomy-/);
+  assert.deepEqual(saved.backupRetention, { kept: 5, removed: 4 });
+  assert.equal(await readFile(join(backupDir, "taxonomy-own-note.json"), "utf8"), "behalten\n");
 
   const editedData = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
   assert.equal(editedData[0].Subphylum, "Vertebrata");

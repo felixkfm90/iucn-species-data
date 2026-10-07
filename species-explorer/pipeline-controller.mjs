@@ -113,8 +113,10 @@ export function createPipelineController({
       plan.pendingFileError = pendingProjectChanges.error;
       plan.pendingAssetSpecies = pendingAssetSpecies;
       plan.pendingAssetSpeciesCount = pendingAssetSpecies.length;
+      plan.pendingCreationTransfers = (await creationSessions?.list() ?? []).filter((job) => job.transferPending);
+      for (const job of plan.pendingCreationTransfers) affectedSpeciesKeys.add(job.slug);
       plan.affectedSpeciesCount = affectedSpeciesKeys.size;
-      plan.hasWork = plan.hasWork || pendingProjectChanges.count > 0;
+      plan.hasWork = plan.hasWork || pendingProjectChanges.count > 0 || plan.pendingCreationTransfers.length > 0;
     }
     return {
       plan,
@@ -123,6 +125,7 @@ export function createPipelineController({
           {
             targetSlugs,
             pendingProjectChanges,
+            pendingCreationTransfers: plan.pendingCreationTransfers ?? [],
             plan: mode === "cleanup" ? publicCleanupPlan(plan) : publicPipelinePlan(plan),
           },
         )}`,
@@ -635,6 +638,21 @@ export function createPipelineController({
 
     code = await runPipelineChild("git", ["diff", "--cached", "--quiet"], "Git-Änderungen prüfen");
     if (code === 0) {
+      const retry = await creationSessions?.preparePublication({ runId: runtime.state.runId, onlyPrepared: true });
+      if (retry?.heldIds.length) {
+        runtime.state.error = "Ein noch offener Arttransfer passt nicht mehr zum gespeicherten Stand. Die Übertragung wurde zum Schutz Ihrer Daten angehalten; Dateien und Rücknahmesicherung bleiben erhalten. Bitte diesen offenen Transfer prüfen, bevor weitere Änderungen übertragen werden.";
+        appendPipelineLog(runtime.state.error);
+        return 1;
+      }
+      if (retry?.preparedIds.length) {
+        appendPipelineLog("Der gebundene Arttransfer wird nachgeholt; keine zweite Artanlage und kein neuer Commit.");
+        code = await runPipelineChild("git", ["push"], "Git-Push nachholen");
+        if (code === 0) {
+          runtime.state.gitPublished = true;
+          await creationSessions.confirmPublication(retry, { pushExitCode: code });
+        }
+        return code;
+      }
       appendPipelineLog("Keine versionierbaren Pipeline-Änderungen vorhanden.");
       runtime.state.gitNoChanges = true;
       return 0;
@@ -655,8 +673,14 @@ export function createPipelineController({
         : "Update incomplete species data";
     code = await runPipelineChild("git", ["commit", "-m", message], "Git-Commit");
     if (code !== 0) return code;
+    const publication = await creationSessions?.preparePublication({ runId: runtime.state.runId });
     code = await runPipelineChild("git", ["push"], "Git-Push");
-    if (code === 0) runtime.state.gitPublished = true;
+    if (code === 0) {
+      runtime.state.gitPublished = true;
+      const closed = await creationSessions?.confirmPublication(publication, { pushExitCode: code });
+      if (closed?.closedIds.length) appendPipelineLog("Artanlage erfolgreich übertragen; spätere Medienpflege ist wieder frei.");
+      if (publication?.heldIds.length) appendPipelineLog("Ein älterer Artauftrag passt nicht zum übertragenen Stand; seine Rücknahmebelege bleiben geschützt.");
+    }
     return code;
   }
 

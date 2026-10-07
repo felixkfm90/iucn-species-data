@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -10,8 +10,9 @@ import {
   validateTaxonomyOverrideRegistry,
 } from "../scripts/taxonomy-overrides.mjs";
 import { findEditableSpecies } from "./species-model.mjs";
+import { pruneManagedJsonBackups } from "./asset-backups.mjs";
 
-const TAXONOMY_BACKUP_RETENTION_COUNT = 20;
+export const TAXONOMY_BACKUP_RETENTION_COUNT = 5;
 
 function publicTaxonomyFields(fields) {
   return Object.fromEntries(EDITABLE_TAXONOMY_FIELDS.map((field) => [field.key, fields[field.key] ?? ""]));
@@ -56,14 +57,10 @@ function buildChanges(before, after) {
 }
 
 async function pruneTaxonomyBackups(backupDir) {
-  const entries = await readdir(backupDir, { withFileTypes: true });
-  const candidates = entries
-    .filter((entry) => entry.isFile() && /^taxonomy-\d{8}T\d{6}Z-.+-[0-9a-f]{8}\.json$/.test(entry.name))
-    .map((entry) => entry.name)
-    .sort((a, b) => b.localeCompare(a, "en"));
-  const remove = candidates.slice(TAXONOMY_BACKUP_RETENTION_COUNT);
-  await Promise.all(remove.map((name) => unlink(join(backupDir, name))));
-  return { kept: Math.min(candidates.length, TAXONOMY_BACKUP_RETENTION_COUNT), removed: remove.length };
+  return pruneManagedJsonBackups(backupDir, {
+    keepCount: TAXONOMY_BACKUP_RETENTION_COUNT,
+    pattern: /^taxonomy-\d{8}T\d{6}Z-.+-[0-9a-f]{8}\.json$/,
+  });
 }
 
 export function createTaxonomyEditOperations({

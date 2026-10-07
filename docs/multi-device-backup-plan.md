@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-10-01
+Stand: 2026-10-07
 
 ## Ziel
 
@@ -31,7 +31,7 @@ NAS
   = komprimierte Restore-Backups, nicht aktive Arbeitskopie
 ```
 
-Der lokale Projektordner ist pfadunabhaengig. PC 1 kann z. B. `D:\IUCN_Datenbank` verwenden, PC 2 kann einen anderen
+Der lokale Projektordner ist pfadunabhaengig. PC 1 verwendet `D:\Arten-Explorer`, PC 2 kann einen anderen
 Pfad nutzen. Alle App-Funktionen muessen relativ zum jeweiligen Repo-Root arbeiten.
 
 ## 1. Mehr-PC-Arbeitsmodell
@@ -63,7 +63,10 @@ NAS = Backup-Ziel
 Regeln:
 
 - Backup als ZIP
-- maximal 10 Backups
+- drei vollständig geprüfte Wiederherstellungsstände: zwei jüngere plus ein älterer geschützter Kontrollstand
+- Kontrollstand nicht bei häufigen neuen Sicherungen verdrängen; Wechsel nur mit geprüftem Ersatz
+- unbekannte/beschädigte Altarchive bleiben zusätzlich geschützt und zählen nicht als geprüfte Stände;
+  eine gesonderte Bereinigung braucht konkrete Freigabe
 - taeglich bei Aenderungen
 - mindestens einmal woechentlich bei Aenderungen
 - kein neues Backup, wenn sich seit dem letzten Backup nichts geaendert hat
@@ -163,6 +166,8 @@ In das ZIP gehoeren:
 - `.git`
 - `species-assets/`
 - `species-explorer/backups/`
+- gemeinsamer konfigurierter `Daten`-Ordner mit Taxonomie, Master, Lightroom-Paket, eigenen Entscheidungen,
+  Nutzungsständen und benötigten Herkunfts-/Auftragsbelegen sowie `storage-path.json`
 - `local-tools/ffmpeg/`
 - `node_modules/`
 - lokale Startgrundlagen
@@ -177,7 +182,11 @@ Nicht in das ZIP gehoeren:
 - `species-explorer/staging/`
 - `species-explorer/pipeline-asset-backups/`
 - alte Logs ausserhalb einer spaeteren Retention-Regel
-- Secrets/Tokens aus `.env` oder Betriebssystem-Umgebungsvariablen
+- Secrets/Tokens aus `.env`, `.env.*` in jedem Unterordner oder Betriebssystem-Umgebungsvariablen
+
+Vorhandene alte ZIP-Dateien sind kein Nachweis, dass der heutige Datenordner gesichert ist. Ein Archiv ohne
+vollständiges Inhaltsmanifest wird nicht still in die neue Prüffamilie übernommen. Eine zusätzliche aktuelle
+Sicherung wird vollständig rückgelesen; ein erfolgreicher ZIP-Schreibvorgang allein genügt nicht.
 
 Beispiel-Dateiname:
 
@@ -185,7 +194,9 @@ Beispiel-Dateiname:
 IUCN_Datenbank_2026-06-28_094512_3880eea.zip
 ```
 
-`backup-manifest.json` soll enthalten:
+`backup-manifest.json` enthält im heutigen Vertrag zusätzlich Schema-Version 2, eindeutige Archiv-ID,
+den gebundenen Git-/Arbeitsbaum-/lokalen Datenstand sowie das vollständige Datei-Verzeichnis mit relativen
+Pfaden, Größen und SHA-256-Prüfwerten. Die folgenden historischen Grundfelder bleiben enthalten:
 
 ```json
 {
@@ -220,7 +231,7 @@ Wenn Node.js fehlt, zeigt das Skript eine klare Meldung. Node.js wird nicht auto
 3. Update-Dialog mit Fortschritt in die App einbauen.
 4. Bearbeitungs-Lock ueber `app-lock` Branch einbauen.
 5. NAS-Backup-Konfiguration und ZIP-Erzeugung einbauen.
-6. Backup-Rotation auf maximal 10 ZIPs einbauen.
+6. Geprüfte Backup-Rotation: zwei jüngere plus ein älterer geschützter Kontrollstand, insgesamt drei.
 7. Backup-Pfad in der App lokal einstellbar machen.
 8. Restore-Test dokumentieren.
 9. Danach Installer/zweiter-PC-Komfort klaeren. Seit 4. Oktober gilt der gemeinsame konfigurierbare Datenpfad
@@ -255,12 +266,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -Back
 Das Skript:
 
 - erstellt ZIP-Dateien mit Namen `IUCN_Datenbank_<Datum>_<UhrzeitMitSekunden>_<Commit>.zip`
-- schreibt `backup-manifest.json` in das ZIP
+- schreibt das vollständige `backup-manifest.json` in das ZIP
 - nimmt `.git`, `node_modules`, `local-tools/ffmpeg`, Assets und Projektdateien auf
-- schliesst `Testlauf`, `species-explorer/staging`, `species-explorer/pipeline-asset-backups` und
-  `species-explorer/logs` aus
+- schließt `temp`, Plug-in-Temp, `Testlauf`, `species-explorer/staging`,
+  `species-explorer/pipeline-asset-backups`, `species-explorer/logs` und `.env`/`.env.*` aus
 - ueberspringt ein Backup, wenn letzter Backup-Manifest-Stand und aktueller Git-/Arbeitsbaum-Status identisch sind
-- entfernt nach erfolgreichem Backup alte ZIPs oberhalb der Grenze von 10
+- veröffentlicht den endgültigen Archivnamen erst nach vollständiger Rücklese-/Inhaltsprüfung und
+  erfolgreicher erneuter Prüfung des gebundenen Quellstands; vorher nur eigene unvollständige Arbeitsdatei
+- rotiert ausschließlich erkannte vollständig geprüfte Archive nach der Drei-Stände-Regel; ein defektes,
+  unbekanntes oder altes unzureichend belegtes Archiv bleibt zusätzlich geschützt
+- prüft die gebundene Rotation samt weiterhin benötigten Archiven unmittelbar vor der Entfernung;
+  neuer/ausgetauschter Inhalt stoppt die Entfernung statt den alten Plan blind anzuwenden
 - bietet mit `-DryRun` eine Vorschau ohne Schreiben oder Loeschen
 - bietet mit `-Progress` maschinenlesbare Fortschrittszeilen fuer die App
 
@@ -279,3 +295,16 @@ Erster produktiver Testlauf:
 - Ziel: `W:\Website Datenbank Backup`
 - Datei: `IUCN_Datenbank_2026-06-28_1118_07b5c8a84ab2.zip`
 - Ergebnis: erfolgreich, 1022 Dateien, ca. 784 MB ZIP, keine Rotation geloescht
+
+## Lokale Bearbeitungssicherungen
+
+Bestätigte Regel seit 7. Oktober: je fünf reguläre Artenlisten- und Taxonomie-Bearbeitungsstände global
+pro Klasse, nicht fünf pro Art. Für Medien bleibt regulär ein Rücknahmestand je Art und Medientyp.
+Es gibt kein globales Medienbudget mehr, das den einzigen Rücknahmestand einer anderen Art verdrängen kann.
+Offene Artanlagen und Medienprüfungen schützen zusätzliche notwendige Rücknahmedateien. Unlesbare
+Auftrags-/Reviewdaten stoppen die Rotation; eine begonnene Veröffentlichung ist kein Abschlussnachweis.
+Neue Mediensicherungen erst bytegeprüft übernehmen; ein fehlgeschlagener Austausch erhält den Vorgänger.
+
+Der lokale Rücknahmestand ersetzt keine unabhängige Sicherung gegen Laufwerksverlust. Konkrete
+Vor-Audit-Entscheidungen, Inventar-/Bereinigungsbefunde und Ausführungsnachweise stehen ausschließlich im
+[Gesamtauditauftrag](audit-auftrag-phase-10-5.md); dieses Dokument beschreibt den allgemeinen Betriebsvertrag.

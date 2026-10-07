@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, rename, rmdir, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const JSON_FILES = ["species_list.json", "speciesData.json", "lastSavedAssessmentId.json",
   "species-assets-overrides.json", "species-taxonomy-overrides.json", "fehlende_elemente_report.json"];
@@ -9,6 +11,11 @@ const digest = (value) => createHash("sha256").update(value).digest("hex");
 const canonical = (value) => JSON.stringify(value, (_, item) => item && typeof item === "object" && !Array.isArray(item)
   ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
 const fail = (message) => Object.assign(new Error(message), { statusCode: 409 });
+const gitRead = promisify(execFile);
+const ended = (job) => ["aborted", "detached", "published"].includes(job.status);
+const publicationView = (record) => ({ files: record.files, mapRows: record.mapRows, assets: record.assets,
+  backupAssets: record.backupAssets });
+const publicationRevision = (record) => digest(canonical(publicationView(record)));
 async function optionalRead(path) {
   try { return await readFile(path, "utf8"); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
 }
@@ -78,13 +85,26 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
     await atomicText(jobPath(job.id), `${JSON.stringify(job, null, 2)}\n`);
   }
   async function load(id) {
+    await assertOwnedPath(jobPath(id));
     const text = await optionalRead(jobPath(id));
     if (text === null) throw fail("Der eigene Artanlage-Auftrag wurde nicht gefunden.");
     const job = JSON.parse(text);
     if (job.id !== id || job.owner !== "species-creation" || job.schemaVersion !== 1) throw fail("Artanlage-Auftrag besitzt keinen gültigen Herkunftsnachweis.");
-    if (!["aborted", "detached"].includes(job.status) && (!job.slug || !job.safeName || /[\\/]/.test(job.safeName) || job.safeName === "." || job.safeName === ".."
+    if (job.publication && (!/^[a-f0-9]{40,64}$/.test(job.publication.commitId ?? "")
+        || !/^[a-f0-9]{64}$/.test(job.publication.revision ?? "") || !job.publication.runId
+        || !/^refs\/remotes\/[\w./-]+$/.test(job.publication.upstreamRef ?? "") || job.publication.upstreamRef.includes("..")
+        || !Number.isFinite(Date.parse(job.publication.preparedAt))
+        || job.publication.confirmedAt && !Number.isFinite(Date.parse(job.publication.confirmedAt)))) {
+      throw fail("Artanlage-Auftrag enthält keinen gültigen Transfernachweis. Rücknahmesatz bleibt geschützt.");
+    }
+    if (job.status === "published" && (!job.slug || !job.publication?.confirmedAt
+        || !/^[a-f0-9]{40,64}$/.test(job.publication.commitId ?? "")
+        || !/^[a-f0-9]{64}$/.test(job.publication.revision ?? "") || !job.publication.runId)) {
+      throw fail("Veröffentlichter Artanlage-Auftrag besitzt keine gültige Abschlussquittung.");
+    }
+    if (!ended(job) && (!job.slug || !job.safeName || /[\\/]/.test(job.safeName) || job.safeName === "." || job.safeName === ".."
         || dirname(resolve(job.backupPath)) !== resolve(repoRoot, "species-explorer", "backups"))) throw fail("Artanlage-Auftrag enthält ungültige Dateiziele.");
-    if (!["aborted", "detached"].includes(job.status)) {
+    if (!ended(job)) {
       for (const name of [...Object.keys(job.expected?.assets ?? {}), ...Object.keys(job.expected?.backupAssets ?? {}), ...Object.keys(job.baselineBackups ?? {})]) {
         if (!name || name.split("/").some((part) => !part || part === "." || part === ".." || /[\\:]/.test(part))) throw fail("Artanlage-Auftrag enthält einen ungebundenen Assetpfad.");
       }
@@ -92,6 +112,7 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
     return job;
   }
   async function all() {
+    await assertOwnedPath(jobsRoot);
     let names;
     try { names = await readdir(jobsRoot); } catch (error) { if (error.code === "ENOENT") return []; throw error; }
     return Promise.all(names.filter((name) => /^[0-9a-f-]{36}\.json$/.test(name)).map((name) => load(name.slice(0, -5))));
@@ -153,6 +174,143 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
     return { files, sourceHashes, mapDocument, mapRows: mapRows(mapDocument, job), assets: await assetReceipt(job),
       backupAssets: await assetReceipt(job, { backup: true }) };
   }
+  async function readGit(args) {
+    const { stdout } = await gitRead("git", args, { cwd: repoRoot, windowsHide: true,
+      encoding: "buffer", maxBuffer: 64 * 1024 * 1024, timeout: 30000 });
+    return stdout;
+  }
+  async function currentCommit() {
+    const commit = (await readGit(["rev-parse", "--verify", "HEAD"])).toString("utf8").trim();
+    if (!/^[a-f0-9]{40,64}$/.test(commit)) throw fail("Der veröffentlichte Git-Stand konnte nicht gebunden werden.");
+    return commit;
+  }
+  async function upstreamRef() {
+    const name = (await readGit(["rev-parse", "--symbolic-full-name", "@{upstream}"])).toString("utf8").trim();
+    if (!/^refs\/remotes\/[\w./-]+$/.test(name) || name.includes("..")) throw fail("Der Transfer besitzt keinen gebundenen entfernten Git-Zweig.");
+    return name;
+  }
+  async function hasDurablePushEvidence(publication) {
+    if (!publication?.upstreamRef || !/^refs\/remotes\/[\w./-]+$/.test(publication.upstreamRef)
+        || publication.upstreamRef.includes("..") || !Number.isFinite(Date.parse(publication.preparedAt))) return false;
+    // Git records successful pushes itself. This closes the crash window
+    // between push completion and our receipt write without guessing from HEAD.
+    let log;
+    try { log = (await readGit(["reflog", "show", "-n", "20", "--date=unix", "--format=%H%x00%gs%x00%gD", publication.upstreamRef])).toString("utf8"); }
+    catch { return false; }
+    return log.split(/\r?\n/).some((line) => {
+      const [commit, action, selector] = line.split("\0");
+      const timestamp = /@\{(\d+)\}/.exec(selector ?? "")?.[1];
+      return commit === publication.commitId && action === "update by push"
+        && Number(timestamp) >= Math.floor(Date.parse(publication.preparedAt) / 1000);
+    });
+  }
+  async function committedView(job, commitId, cache = new Map()) {
+    const names = [...JSON_FILES.filter((name) => name !== "species-taxonomy-overrides.json"), MAP_DOC];
+    const tree = (await readGit(["ls-tree", "-r", "-z", commitId, "--", ...names,
+      `species-assets/${job.safeName}/`])).toString("utf8");
+    const blobs = new Map();
+    for (const item of tree.split("\0").filter(Boolean)) {
+      const match = /^(100644|100755) blob ([a-f0-9]{40,64})\t(.+)$/.exec(item);
+      if (!match) throw fail("Verknüpfte oder unbekannte veröffentlichte Artdatei verhindert den Auftragsabschluss.");
+      const [, , hash, name] = match;
+      if (!cache.has(hash)) cache.set(hash, await readGit(["cat-file", "blob", hash]));
+      blobs.set(name, cache.get(hash));
+    }
+    const files = {};
+    for (const name of names.filter((name) => name !== MAP_DOC)) {
+      files[name] = blobs.has(name) ? ownJsonView(name, JSON.parse(blobs.get(name).toString("utf8")), job) : null;
+    }
+    const prefix = `species-assets/${job.safeName}/`;
+    return { files, mapRows: mapRows(blobs.get(MAP_DOC)?.toString("utf8") ?? null, job),
+      assets: Object.fromEntries([...blobs].filter(([name]) => name.startsWith(prefix))
+        .map(([name, bytes]) => [name.slice(prefix.length), digest(bytes)])) };
+  }
+  async function assertCommitted(job, commitId, cache) {
+    const committed = await committedView(job, commitId, cache);
+    const expected = { files: Object.fromEntries(Object.entries(job.expected.files)
+      .filter(([name]) => name !== "species-taxonomy-overrides.json")), mapRows: job.expected.mapRows,
+    assets: job.expected.assets };
+    if (canonical(committed) !== canonical(expected)) throw fail("Der Git-Stand enthält nicht genau die gebundenen Artdaten und Medien. Der Rücknahmesatz bleibt geschützt.");
+  }
+  async function closePublished(job) {
+    if (!job.publication?.confirmedAt || job.publication.revision !== publicationRevision(job.expected)) {
+      throw fail("Der erfolgreiche Transfer besitzt keinen passenden Abschlussnachweis. Der Rücknahmesatz bleibt geschützt.");
+    }
+    await assertCommitted(job, job.publication.commitId);
+    // Keep a small historical receipt, not full duplicate JSON/media baselines.
+    await save({ schemaVersion: 1, owner: "species-creation", id: job.id, slug: job.slug,
+      germanName: job.germanName, status: "published", publication: job.publication });
+    return job.id;
+  }
+  async function recoverPublications() {
+    const closedIds = [];
+    for (const job of await all()) {
+      if (!ended(job) && job.publication
+          && (job.publication.confirmedAt || await hasDurablePushEvidence(job.publication))) {
+        closedIds.push(await locked(job.id, async () => {
+          const current = await load(job.id);
+          if (current.status === "published") return current.id;
+          if (current.abortRequested || current.publication?.revision !== publicationRevision(current.expected)) throw fail("Der Transfernachweis passt nicht zum gespeicherten Artauftrag.");
+          if (!current.publication.confirmedAt) {
+            if (!await hasDurablePushEvidence(current.publication)) throw fail("Der erfolgreiche Transfer kann nicht mehr nachgewiesen werden.");
+            await assertCommitted(current, current.publication.commitId);
+            current.publication.confirmedAt = new Date().toISOString();
+            current.publication.recoveredFromPushLog = true;
+            await save(current);
+          }
+          return closePublished(current);
+        }));
+      }
+    }
+    return { closedIds };
+  }
+  async function preparePublication({ runId, onlyPrepared = false } = {}) {
+    await recoverPublications();
+    const jobs = (await all()).filter((job) => !ended(job) && !job.abortRequested
+      && (!onlyPrepared || job.publication?.commitId));
+    if (!jobs.length) return { commitId: "", preparedIds: [], heldIds: [] };
+    if (!runId) throw fail("Veröffentlichung besitzt keinen gebundenen Lauf.");
+    const commitId = await currentCommit(), targetRef = await upstreamRef(), preparedIds = [], heldIds = [], cache = new Map();
+    for (const item of jobs) {
+      await locked(item.id, async () => {
+        const job = await load(item.id);
+        if (ended(job) || job.abortRequested) { heldIds.push(item.id); return; }
+        try {
+          if (onlyPrepared && job.publication.commitId !== commitId) throw fail("Der vorgemerkte Transfer gehört zu einem anderen Git-Stand.");
+          if (publicationRevision(await receipt(job)) !== publicationRevision(job.expected)) throw fail("Eigene Artdaten wurden verändert.");
+          await assertCommitted(job, commitId, cache);
+        } catch (error) { if (error.statusCode !== 409) throw error; heldIds.push(job.id); return; }
+        job.publicationStarted = true;
+        job.publication = { commitId, runId, upstreamRef: targetRef, revision: publicationRevision(job.expected), preparedAt: new Date().toISOString() };
+        await save(job);
+        preparedIds.push(job.id);
+      });
+    }
+    return { commitId, runId, preparedIds, heldIds };
+  }
+  async function confirmPublication(plan, { pushExitCode } = {}) {
+    if (!plan?.preparedIds?.length) return { closedIds: [] };
+    if (pushExitCode !== 0 || await currentCommit() !== plan.commitId) throw fail("Übertragung nicht bestätigt. Artanlage und Rücknahmesatz bleiben geschützt.");
+    const upstream = await upstreamRef();
+    const pushedCommit = (await readGit(["rev-parse", "--verify", "@{upstream}"])).toString("utf8").trim();
+    if (!upstream.startsWith("refs/remotes/") || pushedCommit !== plan.commitId) throw fail("Der erfolgreiche Push bestätigt nicht den gebundenen Zielstand. Artanlage und Rücknahmesatz bleiben geschützt.");
+    const closedIds = [];
+    for (const id of plan.preparedIds) {
+      closedIds.push(await locked(id, async () => {
+        const job = await load(id);
+        if (job.status === "published" && job.publication.commitId === plan.commitId && job.publication.runId === plan.runId) return id;
+        if (ended(job) || job.abortRequested || job.publication?.commitId !== plan.commitId
+            || job.publication.runId !== plan.runId || job.publication.upstreamRef !== upstream
+            || job.publication.revision !== publicationRevision(job.expected)
+            || job.publication.revision !== publicationRevision(await receipt(job))) throw fail("Der gebundene Artauftrag wurde verändert. Abschluss wurde angehalten.");
+        job.publication.confirmedAt = new Date().toISOString();
+        // Persist the push evidence first so restart can finish a failed final receipt write.
+        await save(job);
+        return closePublished(job);
+      }));
+    }
+    return { closedIds };
+  }
   async function begin({ entry, derived, backupPath }) {
     if (await findBySlug(derived.slug)) throw fail("Für diese Art gibt es bereits einen eigenen Artanlage-Auftrag. Bitte diesen wieder öffnen und fortsetzen oder abbrechen.");
     const job = { schemaVersion: 1, owner: "species-creation", id: randomUUID(), status: "preparing",
@@ -182,9 +340,13 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
   async function checkpoint(id, { runId, publicationStarted = false, ownedRegistryMetadataKeys = [] } = {}) {
     if (!id) return;
     const job = await load(id);
-    if (["aborted", "aborting", "detached"].includes(job.status)) throw fail("Diese Artanlage wurde bereits abgebrochen oder separat gelöscht.");
+    if (ended(job) || job.status === "aborting") throw fail("Diese Artanlage wurde bereits abgeschlossen, abgebrochen oder separat gelöscht.");
     if (publicationStarted && job.abortRequested) throw fail("Abbruch wurde bereits angefordert. Die Veröffentlichung wird nicht gestartet.");
     const next = await receipt(job);
+    if (job.publication) {
+      if (publicationRevision(next) !== job.publication.revision) throw fail("Der gebundene Veröffentlichungsstand wurde verändert. Rücknahmesatz bleibt geschützt.");
+      return;
+    }
     if (canonical(next.files["species_list.json"]) !== canonical(job.expected.files["species_list.json"])) {
       throw fail("Die angelegte Art wurde in der Eingabeliste anderweitig geändert oder gelöscht.");
     }
@@ -202,20 +364,33 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
     await save(job);
   }
   async function findBySlug(slug) {
-    return (await all()).find((job) => job.slug === slug && !["aborted", "detached"].includes(job.status)) ?? null;
+    return (await all()).find((job) => job.slug === slug && !ended(job)) ?? null;
   }
   async function list() {
     const fingerprint = await gitFingerprint();
-    return (await all()).filter((job) => !["aborted", "detached"].includes(job.status)).map((job) => ({ id: job.id,
+    return (await all()).filter((job) => !ended(job)).map((job) => ({ id: job.id,
       slug: job.slug, germanName: job.germanName, runId: job.runId ?? "", createdAt: job.createdAt,
       canAbort: !job.publicationStarted && job.gitFingerprint === fingerprint,
       publicationStarted: job.publicationStarted === true,
+      transferPending: Boolean(job.publication && !job.publication.confirmedAt),
+      publicationCommitId: job.publication?.commitId ?? "",
       abortRequested: job.abortRequested === true,
     })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function backupRetentionProtection() {
+    // A started publication is not a confirmed successful completion. Keep
+    // its recovery files until the ownership receipt has been closed too.
+    const jobs = (await all()).filter((job) => !ended(job));
+    return {
+      backupPaths: jobs.map((job) => job.backupPath),
+      safeNames: jobs.map((job) => job.safeName),
+      assetBackupReceipts: jobs.map((job) => ({ safeName: job.safeName, files: job.expected?.backupAssets ?? {} })),
+    };
   }
   async function requestAbort(id) {
     const job = await load(id);
     if (job.status === "aborted") return { alreadyAborted: true };
+    if (job.status === "published") throw fail("Diese Artanlage wurde erfolgreich übertragen. Sie kann nicht mehr als neue Art abgebrochen werden.");
     if (job.status === "detached") throw fail("Dieser Artanlage-Auftrag wurde durch eine separate Artlöschung beendet.");
     if (job.publicationStarted || job.gitFingerprint !== await gitFingerprint()) throw fail("Die Veröffentlichung hat bereits begonnen oder der Git-Stand wurde geändert. Diese Artanlage kann nicht mehr automatisch abgebrochen werden.");
     job.abortRequested = true;
@@ -225,7 +400,7 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
   async function isAbortRequested(id) { return id ? (await load(id)).abortRequested === true : false; }
   async function assertActive(id, slug, { allowAbortRequested = false } = {}) {
     const job = await load(id);
-    if (job.slug !== slug || ["aborted", "aborting", "detached"].includes(job.status)
+    if (job.slug !== slug || ended(job) || job.status === "aborting"
         || job.abortRequested && !allowAbortRequested) throw fail("Dieser Artanlage-Auftrag ist nicht mehr aktiv.");
     return job;
   }
@@ -237,6 +412,7 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
   async function abort(id) {
     const job = await load(id);
     if (job.status === "aborted") return { aborted: true, alreadyAborted: true, id };
+    if (job.status === "published") throw fail("Diese Artanlage wurde erfolgreich übertragen. Bestehende Artdaten bleiben erhalten.");
     if (job.status === "detached") throw fail("Dieser Artanlage-Auftrag wurde durch eine separate Artlöschung beendet. Eine spätere gleichnamige Art bleibt erhalten.");
     if (job.publicationStarted || job.gitFingerprint !== await gitFingerprint()) {
       throw fail("Die Artanlage wurde bereits zur Veröffentlichung übergeben oder der Git-Stand geändert. Automatische Rücknahme ist nicht mehr möglich.");
@@ -374,11 +550,12 @@ export function createSpeciesCreationSessionStore({ repoRoot }) {
   }
   async function detach(id) {
     const job = await load(id);
+    if (job.status === "published") throw fail("Diese Artanlage besitzt bereits eine unveränderliche Abschlussquittung.");
     await save({ schemaVersion: 1, owner: "species-creation", id, slug: job.slug, status: "detached", endedAt: new Date().toISOString() });
   }
   return { begin,
     checkpoint: (id, options) => id ? locked(id, () => checkpoint(id, options)) : Promise.resolve(),
-    findBySlug, list,
+    findBySlug, list, backupRetentionProtection, preparePublication, confirmPublication, recoverPublications,
     abort: (id) => locked(id, () => abort(id)),
     requestAbort: (id) => locked(id, () => requestAbort(id)),
     detach: (id) => locked(id, () => detach(id)),

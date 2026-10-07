@@ -1,8 +1,15 @@
 # Roadmap
 
-Stand: 2026-10-05
+Stand: 2026-10-07
 
 ## Aktuelle Restreihenfolge vor dem Audit
+
+### Vorbereiteter Gesamtauditauftrag – 7. Oktober
+
+Auftrag, Vorabregeln, Sicherungsbewertung und offene Entscheidungen ausschließlich im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md). Audit noch nicht gestartet;
+Sicherungsgrenzen und ihre Umsetzung vor dem Audit sind inzwischen bestätigt. Ausführungsstand und
+frisch abgegrenzte Bereinigungsfreigaben nur in der führenden Auditdatei pflegen; keine Rotation aus alten Plantexten ableiten.
 
 ### Neuester Arbeitsstand – 4./5. Oktober
 
@@ -17,13 +24,15 @@ geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage tro
    Erneuter Versionsvergleich und Weissstorch-/Rebhuhn-Suchhelfer am endgültigen Pfad bestanden; Umzugsbelege
    und aktives Paar unverändert. Felix bestätigt danach die Anzeige von Weissstorch und Rebhuhn.
    Nachfolgende Lua-Umzugswarnung in 0.4.24.22 als Pfadvergleichsfehler korrigiert; reale kleine Belege im
-   Lua-Resolver erfolgreich, negative Herkunfts-/Revisionssperren erhalten. Neuladen noch praktisch prüfen.
+   Lua-Resolver erfolgreich, negative Herkunfts-/Revisionssperren erhalten. Felix bestätigt am 5. Oktober:
+   Lightroom-Plug-in passt, keine vorherige Warnmeldung mehr.
 2. **Artassistent:** fehlendes Medium öffnet jetzt Kartenimport/Überspringen und expliziten Sound-Schritt;
    gleicher Auftrag nach Wiederöffnung, keine zweite Artanlage. Lokaler Abschluss bei fehlender Karte mit
    ehrlich offener Übertragung. Goldbaumsteiger nicht erneut angelegt. Automatisierte Gegenproben bestanden,
    Felix bestätigt anschließend mit Schwarzstorch alle Assistentenschritte. Echter rückstandsfreier Abbruch
    separat beauftragt: eigener persistierter Auftrag, Schutz fremder Daten und bereits veröffentlichter Arten,
-   keine Veröffentlichung beim Abbruch. Neue native Abbruchabnahme bleibt vom Schließen/Fortsetzen getrennt.
+   keine Veröffentlichung beim Abbruch. Felix bestätigt am 5. Oktober den echten Abbruch mit Schwarzstorch:
+   nach seiner Beobachtung vollständig zurückgenommen. Schließen/Fortsetzen bleibt eine getrennte Aktion.
 3. **Automatischer Updateweg und Betriebsgrenzen zusammen prüfen:** vorhandener gespeicherter Koordinator,
    Ein-Klick-Start/Später, requestgebundene Erfassung und Warten auf Lightroom bleiben erhalten. Isolierte
    Prozess-, Wiederanlauf-, Veröffentlichungspaar- und Rollbacktests bestanden, zusätzlich neuer 5.000-Arten-
@@ -43,8 +52,8 @@ geschlossenem Explorer/Lightroom und zusätzlich die vollständige Artanlage tro
    am 5. Oktober ist jetzt ebenfalls bestanden: 50 Gruppen/1.218 Tests, keine Fehler/Abbrüche/Skips.
    Unabhängiger Endreview ohne weiteren konkreten technischen Pflichtpunkt. Reparaturserie `550829f` nach main
    übertragen; eigener Pages-Nachweis `37319639341` vollständig erfolgreich (Qualität, Artefakt, Deployment).
-   Technische Vor-Audit-Pflichtarbeiten damit abgeschlossen. Nur neue kurze native Abbruch-/Plug-in-Neulade-
-   Bestätigungen bleiben von bereits bestätigter Bedienung und anschließendem Gesamtaudit getrennt.
+   Technische Vor-Audit-Pflichtarbeiten damit abgeschlossen. Die beiden neuen kurzen nativen Abbruch-/
+   Plug-in-Bedienprüfungen sind inzwischen von Felix bestätigt; anschließend folgt das separate Gesamtaudit.
    Phase 10.5 nicht allein anhand isolierter Tests oder früherer Nutzerrückmeldungen als bestanden melden.
 
 Historische 187 Fälle werden neutral als erhaltene bisherige Quellenzuordnungen dargestellt. Sie ändern keine

@@ -54,7 +54,8 @@ Felix bestätigt danach die Anzeige von Weissstorch/Rebhuhn am endgültigen Ort.
 Paarwechsel. Die anschließend gemeldete Lightroom-Umzugswarnung ist als Lua-Pfadvergleichsfehler belegt und
 in 0.4.24.22 korrigiert: verifizierte Windows-Pfade werden wie im Node-Resolver normalisiert, Herkunfts-/
 Revisions-/Vollständigkeitssperren bleiben erhalten. Echte kleine Belege im Lua-Resolver erfolgreich gelesen;
-Temp/Umzug 41/41, Plug-in-Vertrag 21/21. Native Bestätigung nach Plug-in-Neuladen bleibt getrennt.
+Temp/Umzug 41/41, Plug-in-Vertrag 21/21. Felix bestätigt am 5. Oktober die native Bedienprüfung:
+Lightroom-Plug-in passt, die vorherige Warnmeldung erscheint nicht mehr.
 [Umzugsvertrag](storage-migration.md). Historische Zurückstellungen jetzt neutral dargestellt; Schutzlogik erhalten.
 Gesamtgate: 50 Gruppen/1.177 gemeldete Tests, darunter 423 Master-/Betriebs- und 239 Lightroom-/Pakettests,
 ohne Fehler, Abbruch oder Skip. [Neuer Nachweis und offene Grenzen](audits/2026-10-04-storage-and-species-wizard.md).
@@ -66,8 +67,10 @@ Die enge Datenkorrektur ist als `5349893` übertragen, Pages `37225123679` erfol
 Code-/Dokumentationsabschluss ist am 5. Oktober technisch geprüft: frisches Gesamtgate mit 50 Gruppen/
 1.218 bestandenen Tests, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten
 Vor-Audit-Pflichtpunkt. Reparaturserie `550829f` veröffentlicht; Pages `37319639341` mit Linux-Gate, Aufbau
-und Deployment vollständig erfolgreich. Kein neuer produktiver Taxonomieaufbau. Neue native Abbruch-/
-Plug-in-Neuladebestätigungen und anschließend der Gesamtaudit bleiben ausdrücklich getrennt.
+und Deployment vollständig erfolgreich. Kein neuer produktiver Taxonomieaufbau. Felix bestätigt am
+5. Oktober auch den echten Artabbruch mit Schwarzstorch (nach seiner Beobachtung vollständig zurückgenommen)
+und Lightroom ohne die vorherige Warnmeldung. Beide gezielten Nutzerabnahmen abgeschlossen;
+keine unabhängige neue Restprüfung daraus ableiten. Das Gesamtaudit ist weiterhin nicht durchgeführt.
 [Aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 Die folgenden Absätze sind vorausgehende datierte Umsetzungsschritte.
 

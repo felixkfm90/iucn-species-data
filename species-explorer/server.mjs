@@ -144,6 +144,7 @@ export async function createExplorerServer({
   const assetBackupRoot = join(repoRoot, "species-explorer", "asset-backups");
   const pendingAssetReviewPath = join(repoRoot, "species-explorer", "pending-asset-review.json");
   const creationSessions = createSpeciesCreationSessionStore({ repoRoot });
+  await creationSessions.recoverPublications();
   const taxonomySupplements = createTaxonomySupplementService({
     taxonomyRoot,
     correctionsPath: taxonomyReferenceCorrectionsPath,
@@ -590,7 +591,9 @@ export async function createExplorerServer({
     let validated = false;
     let savedSoundMetadata = false;
     try {
+      await creationSessions.recoverPublications();
       const existingJob = await creationSessions.findBySlug(id);
+      if (existingJob?.publication) throw Object.assign(new Error("Diese Art wartet noch auf ihren bestätigten Transfer. Bitte zuerst Änderungen übertragen. Ihre Dateien und Rücknahmesicherung bleiben erhalten."), { statusCode: 409 });
       // A completed publication leaves a historical receipt, not a lock on the media editor.
       creationId = existingJob && !existingJob.publicationStarted ? existingJob.id : "";
       activeAssetCreationId = creationId;
@@ -678,7 +681,14 @@ export async function createExplorerServer({
           ? previewPortraitAsset(id, payload)
           : savePortraitAsset(id, payload);
         };
-        return write ? saveCreationAsset(id, payload, perform, action, assetType) : perform();
+        if (write) return saveCreationAsset(id, payload, perform, action, assetType);
+        // Capture ownership before an asynchronous preview. A later completed
+        // transfer must not turn an old creation token into a fresh editor token.
+        const previewOwner = await creationSessions.findBySlug(id);
+        const result = await perform();
+        const preview = previewTokens.get(result?.token);
+        if (previewOwner && preview?.id === id) preview.creationId = previewOwner.id;
+        return result;
       },
       async pipeline({ action, payload }) {
         return action === "preview"

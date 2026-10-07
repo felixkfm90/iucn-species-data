@@ -162,10 +162,16 @@ test("Bereinigungs- und Backupvorschau liefern Inhalt, Warnung und Startmodus", 
     totalBytes: 100,
     archivePath: "W:\\Backups\\backup.zip",
     retentionWouldRemove: 1,
+    retainedCheckpoint: "W:\\Backups\\older<verified>.zip",
+    protectedArchives: [{ path: "legacy.zip", reason: "Kein Prüfbeleg" }],
   });
   assert.equal(backup.forceStart, false);
   assert.match(backup.html, /20<\/strong> Dateien/);
   assert.match(backup.warning, /Fortschritt in Prozent/);
+  assert.match(backup.warning, /erst nach erfolgreicher Prüfung/);
+  assert.match(backup.html, /zwei jüngere geprüfte Sicherungen.*älterer geschützter Kontrollstand/);
+  assert.match(backup.html, /older&lt;verified&gt;\.zip/);
+  assert.match(backup.html, /1<\/strong> nicht prüfbare oder unbekannte Altarchive.*zusätzlich/);
 
   const forced = previews.renderBackupPreview({ skipped: true, reason: "Keine Änderungen" });
   assert.equal(forced.forceStart, true);

@@ -1,6 +1,6 @@
 # Gemeinsamer Datenpfad und Speicherumzug
 
-Stand: 2026-10-04
+Stand: 2026-10-05
 
 ## Freigabe und tatsächlicher Stand
 
@@ -99,8 +99,10 @@ Zusätzliche lesende Gegenprobe mit dem echten Lua-Resolver und den tatsächlich
 Umzugs-, Veröffentlichungs- und Paketbelegen erfolgreich: Paket vorhanden, `D:/Arten-Explorer/Daten/lightroom`,
 Master `master-20261003055911210`, Paket `lightroom-fa739bd28ec1e82a0283`, 273.476 Taxa.
 Keine Datenbankabfrage, Prüfsummenvollscan oder Katalogänderung für diese Gegenprobe. Temp/Umzug 41/41 und
-Plug-in-Verträge 21/21 bestanden. Neuladen des Zusatzmoduls und der native Hintergrundhinweis bleiben
-noch praktisch zu bestätigen. [Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
+Plug-in-Verträge 21/21 bestanden. Felix bestätigt am 5. Oktober die anschließende native Bedienprüfung:
+Lightroom-Plug-in funktioniert, die vorherige Warnmeldung erscheint nicht mehr. Keine zusätzliche
+Datenbank-/Katalogprüfung aus dieser Rückmeldung ableiten.
+[Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 
 ## Übernahme und Wiederherstellung
 

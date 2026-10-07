@@ -8,6 +8,10 @@ GitHub Pages Base:
 
 ## Aktueller Stand und Dokumentation
 
+Der [Gesamtauditauftrag Phase 10.5](docs/audit-auftrag-phase-10-5.md) enthält als einzige führende Datei
+alle Audit-Anweisungen, Vorabregeln, Sicherungsempfehlungen, Entscheidungen und offenen Startgrenzen.
+Vorbereitung vom 7. Oktober, noch kein ausgeführtes Audit oder pauschale Löschfreigabe.
+
 Speicherumbau vom 4. Oktober abgeschlossen: gemeinsamer Daten-Unterordner beim Explorer als neuer Standard,
 zentral konfigurierbar. Endgültiger Programmordner `D:\Arten-Explorer`, Datenordner `D:\Arten-Explorer\Daten`.
 Die 207 Bestandsdateien mit 98.603.910.132 Bytes wurden vollständig kopiert und per SHA-256 verglichen;
@@ -33,8 +37,8 @@ Aktueller lokaler Plug-in-Quellstand **0.4.24.22** korrigiert zusätzlich den Ve
 Schrägstriche, Laufwerks-/Pfadschreibweise und abschließende Trenner dürfen einen vollständig abgeschlossenen
 Umzug nicht als unvollständig melden. Revision, Vollständigkeit und Herkunft bleiben geschützt; keine neue
 Taxonomie- oder Katalogaktion. Felix bestätigt Weissstorch/Rebhuhn am endgültigen Ort sowie alle Schritte
-des Artassistenten. Die neue Abbruchfunktion und das Neuladen dieser Lightroom-Korrektur bleiben eigene
-Bedienprüfungen; Phase-10.5-Gesamtaudit ist davon getrennt.
+des Artassistenten. Am 5. Oktober bestätigt er außerdem den echten Artanlage-Abbruch mit Schwarzstorch
+und Lightroom ohne die vorherige Warnmeldung. Phase-10.5-Gesamtaudit ist davon getrennt.
 
 Der spätere Pages-Fehler nach dem Löschen der Testart Schwarzstorch ist gesondert belegt: Eine alte
 Sound-Bestätigung erzeugte noch einen verwaisten Pflegeeintrag. Nur dieser Eintrag wurde mit bytegenauer
@@ -44,8 +48,8 @@ Abbruch/Löschen gegen verspätete Medienentscheidungen, statt die Qualitätspr�
 Frischer technischer Abschluss am 5. Oktober: vollständiges Gesamtgate mit **50 Testgruppen/1.218 bestandenen
 Tests**, keine Fehler/Abbrüche/Skips; unabhängiger Endreview ohne weiteren konkreten technischen Pflichtpunkt.
 Reparaturserie `550829f` nach main übertragen; [Pages 37319639341](https://github.com/felixkfm90/iucn-species-data/actions/runs/37319639341)
-mit Linux-Gate, Seitenaufbau und tatsächlichem Deployment vollständig erfolgreich. Neue native Abbruch- und
-Plug-in-Neuladeabnahme bleiben vom noch nicht durchgeführten Gesamtaudit getrennt.
+mit Linux-Gate, Seitenaufbau und tatsächlichem Deployment vollständig erfolgreich. Die beiden anschließenden
+nativen Bedienabnahmen sind inzwischen nutzerbestätigt; das Gesamtaudit ist noch nicht durchgeführt.
 
 Vorausgehendes Gesamtgate vom 4. Oktober: 50 Testgruppen/1.177 gemeldete Tests ohne Fehler, Abbruch oder Skip; lesender Versionsvergleich
 und Suche am neuen Datenort bestanden. [Nachweis und verbleibende Abschlussgrenze](docs/audits/2026-10-04-storage-and-species-wizard.md).

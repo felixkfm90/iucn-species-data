@@ -294,6 +294,11 @@ zurückgenommen. Das gilt für Soundimport und automatisch erzeugte Spektrogramm
 Registry- oder Generatoränderungen bleiben erhalten.
 `Fenster schließen` erhält die Anlage weiterhin zum Fortsetzen; diese beiden Aktionen sind ausdrücklich getrennt.
 
+Native Rückmeldung vom 5. Oktober: Felix hat `Artanlage abbrechen` mit Schwarzstorch ausgeführt.
+Nach seiner Beobachtung wurde die Anlage vollständig zurückgenommen. Damit ist diese gezielte
+Bedienabnahme bestätigt; keine neue unabhängige Datei-/Git-Restprüfung oder gesamte Wiederanlaufabnahme
+behaupten. Die automatisierten Fremdschutz-/Abbruchgegenproben bleiben gesonderte technische Nachweise.
+
 Die lokale Herkunftsdatei unter `species-explorer/creation-sessions/` bindet die Rücknahme an die eigene
 Artanlage, nicht allein an einen eingegebenen Artnamen. Sie überlebt das Schließen und einen Explorer-Neustart.
 Bei späteren Änderungen an anderen Arten entfernt der Explorer nur die eigenen Einträge; er stellt keine
@@ -301,6 +306,21 @@ alten Gesamtdateien über neuere fremde Daten wieder her. Sobald sich eigene Dat
 anderweitig geändert haben, bleibt die Rücknahme mit einem Schutzgrund angehalten. Publikationsbeginn oder
 ein geänderter Git-Stand sperren die automatische Rücknahme ebenfalls. Nach einer erfolgreichen Veröffentlichung
 öffnet `Neue Art` wieder das Formular für die nächste Anlage.
+
+Der erfolgreiche Transfer schließt den Artauftrag mit einer kleinen dauerhaften Quittung: Laufkennung,
+Commit und gebundener Art-/Medienstand müssen übereinstimmen, der Push muss erfolgreich sein und den
+vorgesehenen entfernten Zweig bestätigen. Erst dann entfallen die zusätzlichen JSON-/Medien-Baselines
+des Auftrags und dessen Sicherungsschutz; der normale eine Medienvorgänger je Art/Typ bleibt erhalten.
+Eine spätere Karten-/Soundbearbeitung kann diesen Vorgänger wieder ersetzen. Alte Artanlage-IDs können
+die fertige Art weder erneut aktivieren noch abbrechen oder späteren Medienentscheidungen untergeschoben werden.
+Ein anschließend fehlgeschlagener Pages-Deploy öffnet den bereits übertragenen Artauftrag nicht wieder.
+
+Nach einem Pushfehler bleibt der gebundene Transfer über `Änderungen übertragen` erreichbar, auch ohne
+neue Dateiveränderung; die Wiederholung benötigt weder eine zweite Artanlage noch einen zweiten Commit.
+Nach Neustart darf ein vorbereiteter Transfer aus dem passenden Git-Push-Protokoll abgeschlossen werden,
+nicht aus `publicationStarted`, einem bloß geänderten HEAD oder einem No-op. Fehlt der Beleg oder passt der
+gespeicherte Stand nicht, bleiben Auftrag und Rücknahmesatz geschützt. Ein unterbrochenes Schreiben der
+abschließenden Quittung wird aus dem zuvor dauerhaft gespeicherten Pushnachweis fortgesetzt.
 
 Läuft beim Abbruch noch ein eigener Schreibvorgang, wird der Wunsch dauerhaft vermerkt. Der Explorer wartet
 den begonnenen Schreibblock ab und führt die Rücknahme automatisch mit derselben Auftragskennung weiter.
@@ -376,7 +396,8 @@ Technischer Stand vom 2026-07-28:
   Das Datenbank-Aktionen-Fenster wird dabei nicht geöffnet.
 - Sound- und Spektrogramm-URLs werden bei jedem neuen Suchversuch mit einem Hash versehen, damit nach einer
   Ablehnung nicht versehentlich ein alter Browser-/Electron-Cache abgespielt wird.
-- Die vorhandene Backup-Aufbewahrung mit maximal 20 verwalteten Sicherungen wird wiederverwendet.
+- Die Artenlisten-Aufbewahrung hält fünf reguläre Sicherungen global. Zusätzlich an offene Artanlagen
+  gebundene Rücknahmestände bleiben bis zum belegten Abschluss erhalten; ein begonnener Push genügt nicht.
 - Wissenschaftlicher Name, deutscher Name, Slug, `SafeName` und bereits vorhandene Assetordner werden geprueft.
 - Schreibtests laufen ausschliesslich in temporaeren Mini-Repositories; die echte `species_list.json` bleibt dabei
   unveraendert.

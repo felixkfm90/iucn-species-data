@@ -50,8 +50,9 @@ Lua-Resolver mit den echten kleinen Konfigurations-, Umzugs-, Veröffentlichungs
 vorhandenes Paket am endgültigen Datenpfad, Master `master-20261003055911210`, Paket
 `lightroom-fa739bd28ec1e82a0283`, 273.476 Taxa. Keine SQLite-Inhaltsabfrage oder Katalogaktion durchgeführt.
 
-Native Prüfung des Hintergrundhinweises nach Plug-in-Neuladen bleibt offen; technische Gegenproben sind
-keine behauptete Bedienabnahme. [Speichervertrag](../storage-migration.md).
+Zum technischen Prüfzeitpunkt blieb die native Prüfung des Hintergrundhinweises nach Plug-in-Neuladen
+noch offen; technische Gegenproben waren keine behauptete Bedienabnahme. Die anschließende
+Nutzerrückmeldung vom 5. Oktober ist im Nachtrag unten festgehalten. [Speichervertrag](../storage-migration.md).
 
 ## Abbruch- und Veröffentlichungsprüfung
 
@@ -138,11 +139,24 @@ bestanden, keine Fehler/Abbrüche; zwei ausschließlich Windows-spezifische NAS-
 Ubuntu-/Actions-Node-Laufzeitumstellung sind keine Lauf- oder Produktfehler. Keine neue produktive Artanlage,
 Anbieteraktualisierung, Master-/Paketaktivierung oder Lightroom-Katalogänderung durch diesen Abschluss.
 
-Neue native Bedienprüfung des echten Abbruchs nach Laden des neuen Explorerstands und der Pfadwarnung
-nach Neuladen des Plug-ins 0.4.24.22 bleiben eigene kurze Abnahmegrenzen. Bereits bestätigte Suche/Namen,
+Zum technischen Abschluss blieben die native Bedienprüfung des echten Abbruchs und der Pfadwarnung
+nach Neuladen des Plug-ins 0.4.24.22 eigene kurze Abnahmegrenzen. Bereits bestätigte Suche/Namen,
 Assistentenschritte, Soundreset, Orts-/Zeitentfernung und Auswahlexporte werden nicht erneut geöffnet.
 Der Gesamtaudit ist noch nicht durchgeführt. IUCN-HTTP-403 bleibt eine bekannte Anbietergrenze mit
 funktionierendem Browser-/Dateiimport; die Datenpfad-Einstellungsoberfläche bleibt ausdrücklich späterer Ausbau.
 
 Verträge: [Artanlage](../add-species-workflow.md), [Restreihenfolge](../roadmap.md),
 [vorausgehender Speicher-/Assistentennachweis](2026-10-04-storage-and-species-wizard.md).
+
+## Nachtrag: gezielte native Nutzerabnahmen – 5. Oktober
+
+Felix meldet nach seinen Tests:
+
+1. Schwarzstorch mit `Artanlage abbrechen` getestet; nach seiner Beobachtung vollständig zurückgenommen.
+2. Lightroom-Plug-in funktioniert, keine vorherige Warnmeldung mehr.
+
+Beide bisher fehlenden Rückmeldungen liegen damit vor; diese gezielten Bedienabnahmen sind abgeschlossen.
+Es handelt sich um Nutzerbeobachtungen, nicht um eine neue unabhängige Prüfung aller Dateien/Git-Reste oder
+sämtlicher Abbruch-/Neustartsituationen. In diesem Nachtrag keine Produktänderung, zusätzliche Artanlage,
+Katalogaktion, Veröffentlichung oder Bereinigung. Das Phase-10.5-Gesamtaudit ist weiterhin nicht ausgeführt;
+der [vorbereitete Auditauftrag](../audit-auftrag-phase-10-5.md) führt seine weitergehenden Prüfungen getrennt.

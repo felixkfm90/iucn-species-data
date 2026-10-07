@@ -481,7 +481,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(nasBackupSource, /W:\\Website Datenbank Backup/);
   assert.match(nasBackupSource, /IUCN_Datenbank_\$\{timestamp\}_\$\{gitShort\}\.zip/);
   assert.match(nasBackupSource, /backup-manifest\.json/);
-  assert.match(nasBackupSource, /MaxBackups = 10/);
+  assert.match(nasBackupSource, /MaxBackups = 3/);
+  assert.match(backupServiceSource, /two-newest-plus-oldest-verified-checkpoint/);
   assert.match(nasBackupSource, /DryRun/);
   assert.match(nasBackupSource, /Progress/);
   assert.match(nasBackupSource, /BACKUP_PROGRESS/);
@@ -567,7 +568,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(assetWorkflowSource, /Reject sound source for/);
   assert.match(assetWorkflowSource, /async function publishSoundAssetChanges\(species,/);
   assert.match(assetBackupsSource, /ASSET_BACKUP_RETENTION_COUNT = 1/);
-  assert.match(assetBackupsSource, /ASSET_BACKUP_GLOBAL_BYTES = 500 \* 1024 \* 1024/);
+  assert.doesNotMatch(assetBackupsSource, /ASSET_BACKUP_GLOBAL_BYTES|maxBytes/);
+  assert.match(assetBackupsSource, /SPECIES_LIST_BACKUP_RETENTION_COUNT = 5/);
   assert.match(assetBackupsSource, /async function writeManagedAssetBackup/);
   assert.match(assetWorkflowSource, /async function restoreSpeciesAsset\(id, assetType\)/);
   assert.match(assetWorkflowSource, /restoreSpeciesAsset\(id, assetType\)/);

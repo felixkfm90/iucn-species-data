@@ -1,12 +1,83 @@
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
-import { join, relative } from "node:path";
+import { lstat, mkdir, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { join, relative, resolve } from "node:path";
+import { createSpeciesCreationSessionStore } from "./species-creation-session.mjs";
 
-export const SPECIES_LIST_BACKUP_RETENTION_COUNT = 20;
+export const SPECIES_LIST_BACKUP_RETENTION_COUNT = 5;
 export const PIPELINE_LOG_RETENTION_COUNT = 20;
 export const ASSET_BACKUP_RETENTION_COUNT = 1;
-export const ASSET_BACKUP_GLOBAL_BYTES = 500 * 1024 * 1024;
+
+export async function readBackupRetentionProtection(repoRoot) {
+  const protection = await createSpeciesCreationSessionStore({ repoRoot }).backupRetentionProtection();
+  const backupPaths = new Set(protection.backupPaths.map((file) => resolve(file)));
+  const safeNames = new Set(protection.safeNames);
+  let pendingReview;
+  try {
+    pendingReview = JSON.parse(await readFile(join(repoRoot, "species-explorer", "pending-asset-review.json"), "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  if (pendingReview !== undefined) {
+    if (!pendingReview || !Array.isArray(pendingReview.targets) || !Array.isArray(pendingReview.reviewAssets)) {
+      throw new Error("Offene Medienprüfung ist unlesbar. Rücknahmesicherungen bleiben erhalten.");
+    }
+    for (const entry of [...pendingReview.targets, ...pendingReview.reviewAssets]) {
+      if (!entry || typeof entry.safeName !== "string" || !entry.safeName || /[\\/]/.test(entry.safeName)) {
+        throw new Error("Offene Medienprüfung enthält kein eindeutiges Sicherungsziel. Sicherungen bleiben erhalten.");
+      }
+      safeNames.add(entry.safeName);
+    }
+  }
+  return { backupPaths, safeNames, assetBackupReceipts: protection.assetBackupReceipts };
+}
+
+function compareAssetBackupRecency(left, right) {
+  return Number(right.name === "latest") - Number(left.name === "latest")
+    || right.mtimeMs - left.mtimeMs || right.name.localeCompare(left.name);
+}
+
+async function pinnedAssetBackupPath({ repoRoot, backupDirectory, safeName, assetType, allowedNames }) {
+  const protection = await readBackupRetentionProtection(repoRoot);
+  if (!protection.safeNames.has(safeName) || !existsSync(backupDirectory)) return "";
+  const fail = (message) => Object.assign(new Error(
+    `Die ursprüngliche Mediensicherung für den noch offenen Vorgang kann nicht geprüft werden: ${message} Bisherige Dateien bleiben erhalten. Bitte den Vorgang prüfen und fortsetzen oder abbrechen.`,
+  ), { statusCode: 409 });
+  const directoryDetails = await lstat(backupDirectory);
+  if (!directoryDetails.isDirectory() || directoryDetails.isSymbolicLink()) {
+    throw fail("Der Sicherungsordner ist kein eigener normaler Ordner.");
+  }
+  const entries = await readdir(backupDirectory, { withFileTypes: true });
+  if (entries.some((entry) => !entry.isFile() || !["backup.json", ...allowedNames].includes(entry.name))) {
+    throw fail("Unbekannte oder verknüpfte Dateien liegen im Sicherungsordner.");
+  }
+  let metadata;
+  try { metadata = JSON.parse(await readFile(join(backupDirectory, "backup.json"), "utf8")); }
+  catch { throw fail("Die Herkunftsangaben fehlen oder sind unlesbar."); }
+  if (!metadata || metadata.version !== 1 || metadata.safeName !== safeName || metadata.assetType !== assetType) {
+    throw fail("Die Herkunftsangaben passen nicht zur Art und zum Medientyp.");
+  }
+  const mediaFiles = entries.filter((entry) => allowedNames.includes(entry.name));
+  if (!mediaFiles.length) throw fail("Die Sicherung enthält keine Mediendatei.");
+  const hashes = {};
+  for (const entry of entries) {
+    let bytes;
+    try { bytes = await readFile(join(backupDirectory, entry.name)); }
+    catch { throw fail(`Die Datei ${entry.name} ist nicht lesbar.`); }
+    if (!bytes.length) throw fail(`Die Datei ${entry.name} ist leer.`);
+    hashes[`${assetType}/${entry.name}`] = createHash("sha256").update(bytes).digest("hex");
+  }
+  for (const receipt of protection.assetBackupReceipts.filter((entry) => entry.safeName === safeName)) {
+    const expected = Object.fromEntries(Object.entries(receipt.files).filter(([name]) => name.startsWith(`${assetType}/`)));
+    if (Object.keys(expected).length !== Object.keys(hashes).length
+        || Object.entries(hashes).some(([name, hash]) => expected[name] !== hash)) {
+      throw fail("Die Sicherung stimmt nicht mehr mit dem gespeicherten Artanlage-Auftrag überein.");
+    }
+  }
+  // During an open operation the first recovery set is immutable. Repeated
+  // media choices remain possible and refer to this same verified baseline.
+  return repoRelativePath(repoRoot, backupDirectory);
+}
 
 export function repoRelativePath(repoRoot, filePath) {
   return relative(repoRoot, filePath).replace(/\\/g, "/");
@@ -35,9 +106,23 @@ export async function writeManagedAssetBackup({
   assetType,
   files,
   metadata = {},
+  renameDirectory = rename,
 }) {
+  const allowedNames = assetBackupFileNames(assetType);
+  if (!allowedNames.length || !files.some((file) => file.buffer?.length)) {
+    throw new Error("Leere oder unbekannte Mediensicherung ersetzt keinen vorhandenen Rücknahmestand.");
+  }
+  if (files.some((file) => !allowedNames.includes(file.fileName))) {
+    throw new Error("Mediensicherung enthält einen unbekannten Dateinamen. Vorherige Sicherung bleibt erhalten.");
+  }
   const backupDirectory = join(assetBackupRoot, species.safeName, assetType);
+  const verifyPinnedBackup = () => pinnedAssetBackupPath({ repoRoot, backupDirectory,
+    safeName: species.safeName, assetType, allowedNames });
+  const pinnedBeforeWrite = await verifyPinnedBackup();
+  if (pinnedBeforeWrite) return pinnedBeforeWrite;
   const tempDirectory = join(assetBackupRoot, species.safeName, `${assetType}.tmp-${randomUUID()}`);
+  const previousDirectory = join(assetBackupRoot, species.safeName, `${assetType}.previous-${randomUUID()}`);
+  let previousMoved = false;
   await rm(tempDirectory, { recursive: true, force: true });
   await mkdir(tempDirectory, { recursive: true });
   try {
@@ -57,10 +142,32 @@ export async function writeManagedAssetBackup({
       }, null, 2)}\n`,
       "utf8",
     );
-    await rm(backupDirectory, { recursive: true, force: true });
-    await rename(tempDirectory, backupDirectory);
+    // Verify every staged file before replacing the last usable recovery set.
+    for (const file of files) {
+      if (!file.buffer?.length) continue;
+      if (!(await readFile(join(tempDirectory, file.fileName))).equals(file.buffer)) {
+        throw new Error("Neue Mediensicherung konnte nicht geprüft werden. Vorherige Sicherung bleibt erhalten.");
+      }
+    }
+    JSON.parse(await readFile(join(tempDirectory, "backup.json"), "utf8"));
+    const pinnedBeforeReplace = await verifyPinnedBackup();
+    if (pinnedBeforeReplace) {
+      await rm(tempDirectory, { recursive: true, force: true });
+      return pinnedBeforeReplace;
+    }
+    if (existsSync(backupDirectory)) {
+      await renameDirectory(backupDirectory, previousDirectory);
+      previousMoved = true;
+    }
+    await renameDirectory(tempDirectory, backupDirectory);
+    if (previousMoved) await rm(previousDirectory, { recursive: true, force: true });
     return repoRelativePath(repoRoot, backupDirectory);
   } catch (error) {
+    if (previousMoved && !existsSync(backupDirectory)) {
+      await renameDirectory(previousDirectory, backupDirectory).catch((restoreError) => {
+        error.message += ` Vorherige Sicherung liegt weiterhin unter ${previousDirectory}: ${restoreError.message}`;
+      });
+    }
     await rm(tempDirectory, { recursive: true, force: true }).catch(() => {});
     throw error;
   }
@@ -70,19 +177,33 @@ export async function pruneSpeciesListBackups(
   backupDir,
   keepCount = SPECIES_LIST_BACKUP_RETENTION_COUNT,
 ) {
+  return pruneManagedJsonBackups(backupDir, {
+    keepCount,
+    pattern: /^species_list-\d{8}T\d{6}Z-.+-[0-9a-f]{8}\.json$/,
+  });
+}
+
+export async function pruneManagedJsonBackups(backupDir, { keepCount, pattern }) {
+  if (!Number.isInteger(keepCount) || keepCount < 1) throw new Error("Mindestens eine Bearbeitungssicherung muss erhalten bleiben.");
+  const protection = await readBackupRetentionProtection(resolve(backupDir, "../.."));
   const entries = await readdir(backupDir, { withFileTypes: true });
   const candidates = entries
     .filter((entry) => (
       entry.isFile()
-      && /^species_list-\d{8}T\d{6}Z-.+-[0-9a-f]{8}\.json$/.test(entry.name)
+      && pattern.test(entry.name)
     ))
     .map((entry) => entry.name)
     .sort((a, b) => b.localeCompare(a, "en"));
-  const remove = candidates.slice(keepCount);
+  const pinned = new Set(candidates.filter((name) => (
+    protection.backupPaths.has(resolve(backupDir, name))
+    || protection.safeNames.has(name.match(/^(?:species_list|taxonomy)-\d{8}T\d{6}Z-(.+)-[0-9a-f]{8}\.json$/)?.[1])
+  )));
+  const remove = candidates.filter((name) => !pinned.has(name)).slice(keepCount);
   await Promise.all(remove.map((name) => unlink(join(backupDir, name))));
   return {
-    kept: Math.min(candidates.length, keepCount),
+    kept: candidates.length - remove.length,
     removed: remove.length,
+    ...(pinned.size ? { protected: pinned.size } : {}),
   };
 }
 
@@ -133,7 +254,6 @@ export async function collectManagedAssetBackups(assetBackupRoot) {
           mtimeMs,
           metadata,
         });
-        continue;
       }
 
       for (const file of files) {
@@ -210,11 +330,12 @@ export async function collectManagedAssetBackups(assetBackupRoot) {
   return collected;
 }
 
-export async function pruneAssetBackups(assetBackupRoot, {
+export function planAssetBackupRetention(backups, {
   keepCount = ASSET_BACKUP_RETENTION_COUNT,
-  maxBytes = ASSET_BACKUP_GLOBAL_BYTES,
+  protectedSafeNames = [],
 } = {}) {
-  const backups = await collectManagedAssetBackups(assetBackupRoot);
+  if (!Number.isInteger(keepCount) || keepCount < 1) throw new Error("Mindestens eine Mediensicherung je Art und Medientyp muss erhalten bleiben.");
+  const protectedSpecies = new Set(protectedSafeNames);
   const removePaths = new Set();
   const groups = new Map();
   for (const backup of backups) {
@@ -223,35 +344,33 @@ export async function pruneAssetBackups(assetBackupRoot, {
     groups.get(key).push(backup);
   }
   for (const group of groups.values()) {
-    group.sort((left, right) => right.mtimeMs - left.mtimeMs || right.name.localeCompare(left.name));
+    if (protectedSpecies.has(group[0].species)) continue;
+    // The direct managed directory is authoritative. A copied legacy file
+    // may have a newer filesystem timestamp without being a newer version.
+    group.sort(compareAssetBackupRecency);
     for (const backup of group.slice(keepCount)) {
       removePaths.add(backup.backupPath);
     }
   }
 
-  const retained = backups
-    .filter((backup) => !removePaths.has(backup.backupPath))
-    .sort((left, right) => left.mtimeMs - right.mtimeMs || left.name.localeCompare(right.name));
-  let retainedBytes = retained.reduce((sum, backup) => sum + backup.bytes, 0);
-  for (const backup of retained) {
-    if (retainedBytes <= maxBytes) break;
-    removePaths.add(backup.backupPath);
-    retainedBytes -= backup.bytes;
-  }
+  const retained = backups.filter((backup) => !removePaths.has(backup.backupPath));
+  const retainedBytes = retained.reduce((sum, backup) => sum + backup.bytes, 0);
+  return { removePaths: [...removePaths], kept: retained.length, removed: removePaths.size, bytes: retainedBytes };
+}
 
-  await Promise.all([...removePaths].map((backupPath) => rm(backupPath, { recursive: true, force: true })));
-  return {
-    kept: backups.length - removePaths.size,
-    removed: removePaths.size,
-    bytes: retainedBytes,
-  };
+export async function pruneAssetBackups(assetBackupRoot, options = {}) {
+  const protection = await readBackupRetentionProtection(resolve(assetBackupRoot, "../.."));
+  const backups = await collectManagedAssetBackups(assetBackupRoot);
+  const plan = planAssetBackupRetention(backups, { ...options, protectedSafeNames: protection.safeNames });
+  await Promise.all(plan.removePaths.map((backupPath) => rm(backupPath, { recursive: true, force: true })));
+  return { kept: plan.kept, removed: plan.removed, bytes: plan.bytes };
 }
 
 export async function latestAssetBackup(assetBackupRoot, repoRoot, safeName, assetType) {
   const backups = await collectManagedAssetBackups(assetBackupRoot);
   const candidates = backups
     .filter((backup) => backup.species === safeName && backup.assetType === assetType)
-    .sort((left, right) => right.mtimeMs - left.mtimeMs || right.name.localeCompare(left.name));
+    .sort(compareAssetBackupRecency);
   const backup = candidates[0] ?? null;
   if (!backup) {
     return {

@@ -12,6 +12,7 @@ import {
 } from "./server.mjs";
 import { buildExplorerModel } from "./explorer-model.mjs";
 import { createSoundAssetOperations } from "./sound-asset-workflow.mjs";
+import { createSpeciesCreationSessionStore } from "./species-creation-session.mjs";
 import {
   inspectJpeg,
   inspectMp3,
@@ -44,6 +45,62 @@ await import("./public/filter.js");
 const createExplorerServer = (options = {}) => createProtectedExplorerServer({
   ...options,
   sessionProtection: false,
+});
+
+test("offene Artanlage erlaubt mehrere Karten- und Soundwahlen mit unverändertem ursprünglichem Rücknahmesatz", async (context) => {
+  for (const assetType of ["map", "sound"]) await context.test(assetType, async (context) => {
+    const repoRoot = await createEditableFixture();
+    const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+    const sourceRoot = join(repoRoot, "species-assets", "Testvogel");
+    const backupRoot = join(repoRoot, "species-explorer", "asset-backups", "Testvogel", assetType);
+    const files = assetType === "map" ? ["map.jpg"] : ["sound.mp3", "credits.json", "spectrogram.webp"];
+    const baseline = await Promise.all(files.map((name) => readFile(join(repoRoot, "species-assets", "Amsel", name))));
+    const inputText = await readFile(join(repoRoot, "species_list.json"), "utf8");
+    const entry = { ...JSON.parse(inputText)[0], german: "Testvogel", genus: "Testus", species: "avis" };
+    const store = createSpeciesCreationSessionStore({ repoRoot });
+    const ownBackup = join(repoRoot, "species-explorer", "backups", "own.json");
+    const creationId = await store.begin({ entry, derived: { slug: "testusavis", safeName: "Testvogel" }, backupPath: ownBackup });
+    await mkdir(join(repoRoot, "species-explorer", "backups"), { recursive: true });
+    await writeFile(ownBackup, inputText);
+    await writeFile(join(repoRoot, "species_list.json"), JSON.stringify([...JSON.parse(inputText), entry]));
+    const data = JSON.parse(await readFile(join(repoRoot, "speciesData.json"), "utf8"));
+    data.push({ ...data[0], URLSlug: "testusavis", "Deutscher Name": "Testvogel", "Wissenschaftlicher Name": "Testus avis" });
+    await writeFile(join(repoRoot, "speciesData.json"), JSON.stringify(data));
+    await mkdir(sourceRoot);
+    for (const [index, name] of files.entries()) await writeFile(join(sourceRoot, name), baseline[index]);
+    await store.checkpoint(creationId);
+    const app = await createExplorerServer({ repoRoot, port: 0, publishAssetChanges: false,
+      rebuildReportAfterAssetSave: false,
+      spectrogramRenderer: async ({ outputPath }) => {
+        await writeFile(outputPath, createTestWebp(9)); return { outputBytes: createTestWebp(9).length };
+      },
+    });
+    cleanupFixture(app); const address = await app.listen();
+    const base = `http://${app.host}:${address.port}/api/species/testusavis/assets/${assetType}`;
+    const post = async (action, body) => {
+      const response = await fetch(`${base}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      assert.equal(response.status, 200, await response.clone().text()); return response.json();
+    };
+    let firstMetadata;
+    for (let choice = 1; choice <= 3; choice += 1) {
+      const media = assetType === "map" ? createTestJpeg(640 + choice, 480) : createTestMp3(choice + 5);
+      const payload = assetType === "map" ? {
+        originalName: "karte.jpg", imageBase64: media.toString("base64"), reason: "Neue eigene Kartenwahl", source: "https://example.com/karte",
+      } : {
+        originalName: "sound.mp3", audioBase64: media.toString("base64"), reason: "Neue eigene Soundwahl",
+        credits: { recordist: "Fixture", source: "Testarchiv", url: "https://example.com/sound", license: "https://creativecommons.org/licenses/by/4.0/" },
+      };
+      const preview = await post("preview", payload);
+      const saved = await post("save", { token: preview.token, publish: false });
+      assert.equal(saved.saved, true);
+      assert.equal(saved.gitPublished, false);
+      assert.deepEqual(await readFile(join(sourceRoot, files[0])), media, "Neue Auswahl wird tatsächlich gespeichert");
+      assert.deepEqual(await Promise.all(files.map((name) => readFile(join(backupRoot, name)))), baseline);
+      const metadata = await readFile(join(backupRoot, "backup.json"));
+      if (choice === 1) firstMetadata = metadata;
+      else assert.deepEqual(metadata, firstMetadata, "Erster Rücknahmestand samt Herkunft unverändert");
+    }
+  });
 });
 
 test("Sound-Ablehnungen: bestätigte artbezogene Rücksetzung erhält Dateien, Schutz und fremde Quellen auch nach Neustart", async (context) => {

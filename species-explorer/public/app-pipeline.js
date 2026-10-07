@@ -291,6 +291,12 @@
 
     function renderBackupPreview(result = {}) {
       const forceStart = result.skipped === true;
+      const protectedArchives = Array.isArray(result.protectedArchives) ? result.protectedArchives : [];
+      const retentionDetails = `
+        <p>Behalten werden zwei jüngere geprüfte Sicherungen und ein älterer geschützter Kontrollstand.</p>
+        ${result.retainedCheckpoint ? `<p>Geschützter Kontrollstand: <strong>${escapeHtml(result.retainedCheckpoint)}</strong></p>` : ""}
+        ${protectedArchives.length ? `<p><strong>${protectedArchives.length}</strong> nicht prüfbare oder unbekannte Altarchive bleiben zusätzlich erhalten.</p>` : ""}
+      `;
       return {
         forceStart,
         html: forceStart
@@ -298,6 +304,7 @@
             <p><strong>Kein neues Backup erforderlich.</strong></p>
             <p>${escapeHtml(result.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt.")}</p>
             <p>Letztes Backup: <strong>${escapeHtml(result.archivePath || "Unbekannt")}</strong></p>
+            ${retentionDetails}
           `
           : `
             <p><strong>${result.fileCount}</strong> Dateien werden als ZIP gesichert.</p>
@@ -307,10 +314,11 @@
               <li>Geplante Datei: <strong>${escapeHtml(result.archivePath)}</strong></li>
               <li>Backup-Rotation entfernt danach: <strong>${result.retentionWouldRemove}</strong> alte Datei(en)</li>
             </ul>
+            ${retentionDetails}
           `,
         warning: forceStart
           ? "Du kannst trotzdem manuell ein neues Backup erzwingen."
-          : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent.",
+          : "Das Backup wird auf dem NAS erstellt. Die App zeigt den Fortschritt in Prozent. Entbehrliche geprüfte Archive werden erst nach erfolgreicher Prüfung der neuen Sicherung entfernt.",
       };
     }
 

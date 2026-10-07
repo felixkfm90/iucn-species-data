@@ -1,13 +1,29 @@
 # AGENTS.md - Projektuebergabe Wildlife/IUCN Squarespace
 
-Stand: 2026-10-04
+Stand: 2026-10-07
 
 Projekt: `fnwildlifetravel.de` Wildlife-Artseiten, IUCN-Daten, Karten, Sounds, Suche und Lightbox-Zoom
 Repository: `felixkfm90/iucn-species-data`
 Branch: `main`
 GitHub Pages Base: `https://felixkfm90.github.io/iucn-species-data/`
 
-## Aktuelle Arbeitsserie – 4. Oktober 2026
+## Aktueller Auftrag – Auditvorbereitung vom 7. Oktober 2026
+
+Alle Audit-Anweisungen, Vorabregeln, Empfehlungen und Entscheidungen stehen ausschließlich im
+[Gesamtauditauftrag Phase 10.5](docs/audit-auftrag-phase-10-5.md). Keine zweite Auditdatei oder duplizierte
+Regelliste hier anlegen. Felix hat am 7. Oktober die dort festgelegten Sicherungsgrenzen, die korrigierte
+NAS-Rotation und den Wegfall des globalen Medienbudgets zur Umsetzung vor dem Audit bestätigt und
+tatsächliche Bereinigung beauftragt. Konkrete Löschziele bleiben frisch zu bestätigen; gebundene Originale,
+Herkunftsbelege und offene Aufträge schützen. Keine Audit-Ausführung, Taxonomieaktivierung oder
+Veröffentlichung daraus ableiten. Umsetzungs-/Bereinigungsnachweise ausschließlich im Auditauftrag festhalten.
+Aktueller Programmordner ist `D:\Arten-Explorer`; geerbten alten Arbeitsordner nicht voraussetzen.
+Felix hat die abgeschlossene Vorbereitungsserie am 7. Oktober zusätzlich ausdrücklich zum Commit und Push
+freigegeben. Diese Veröffentlichung startet nicht das Gesamtaudit; Daten und Temp bleiben außerhalb von Git.
+
+Die folgenden datierten Arbeitsserien sind historische Übergaben. Sie ersetzen weder den aktuellen
+Auditauftrag noch eine neue Freigabe für frühere produktive Aufbau-, Bereinigungs- oder Veröffentlichungsaktionen.
+
+## Historische Arbeitsserie – 4. Oktober 2026
 
 Felix beauftragt die offenen Vor-Audit-Arbeiten und zusätzlich den Goldbaumsteiger-Artassistenten.
 Explorer und Lightroom laut Nutzer geschlossen; unabhängige lokale Prozessprüfung bestätigt. Keine neue

@@ -3,7 +3,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const MAX_BACKUP_ROOT_LENGTH = 500;
-const MAX_BACKUPS = 10;
+const MAX_BACKUPS = 3;
+const RETENTION_POLICY = "two-newest-plus-oldest-verified-checkpoint";
 
 function normalizeBackupRoot(value) {
   return String(value ?? "").trim();
@@ -43,6 +44,11 @@ function initialBackupState(backupRoot) {
     totalBytes: 0,
     retainedBackups: 0,
     removedBackups: 0,
+    retainedCheckpoint: "",
+    retainedArchivePaths: [],
+    protectedArchives: [],
+    rotationPlanRevision: "",
+    retentionPolicy: RETENTION_POLICY,
     log: [],
     error: "",
     skipped: false,
@@ -58,6 +64,7 @@ export async function createBackupService({
   backupLogLineLimit,
   isPipelineActive,
   isAssetWriteActive,
+  spawnProcess = spawn,
 }) {
   let processHandle = null;
   let settings = await loadExplorerSettings();
@@ -86,6 +93,7 @@ export async function createBackupService({
       hasCustomBackupRoot: currentBackupRoot !== defaultBackupRoot,
       settingsFile: `species-explorer/${localSettingsFile}`,
       maxBackups: MAX_BACKUPS,
+      retentionPolicy: RETENTION_POLICY,
     };
   }
 
@@ -137,7 +145,7 @@ export async function createBackupService({
 
   function runCommandCapture(command, args) {
     return new Promise((resolveRun) => {
-      const child = spawn(command, args, {
+      const child = spawnProcess(command, args, {
         cwd: repoRoot,
         env: process.env,
         windowsHide: true,
@@ -224,10 +232,16 @@ export async function createBackupService({
       gitCommit: parsed.gitCommit || "",
       workingTreeDirty: Boolean(parsed.workingTreeDirty),
       retentionWouldRemove: Number(parsed.retentionWouldRemove ?? 0),
+      retainedCheckpoint: parsed.retainedCheckpoint || "",
+      retainedArchivePaths: parsed.retainedArchivePaths || [],
+      protectedArchives: parsed.protectedArchives || [],
+      rotationPlanRevision: parsed.rotationPlanRevision || "",
+      retentionPolicy: parsed.retentionPolicy || RETENTION_POLICY,
       warnings: [
-        "Das Backup wird als ZIP auf dem NAS gespeichert und enthält Projektdateien, Git-Stand, node_modules und lokale Werkzeuge.",
+        "Das Backup wird als ZIP auf dem NAS gespeichert und enthält Projektdateien, Git-Stand, den gemeinsamen Datenordner, node_modules und lokale Werkzeuge.",
         "Temporäre Test-, Staging-, Pipeline-Asset-Backup- und Logdateien werden nicht gesichert.",
-        "Es bleiben maximal zehn NAS-Backups erhalten; ältere IUCN_Datenbank_*.zip-Dateien werden nach erfolgreichem Lauf entfernt.",
+        "Die Rotation behält zwei jüngere geprüfte Sicherungen und einen älteren geschützten Kontrollstand. Erst nach Prüfung der neuen Sicherung werden entbehrliche geprüfte Archive entfernt.",
+        "Nicht prüfbare oder unbekannte Altarchive bleiben zusätzlich geschützt; sie werden nicht allein wegen der Anzahl gelöscht.",
       ],
     };
   }
@@ -265,7 +279,7 @@ export async function createBackupService({
   function executeNasBackupRun(force) {
     return new Promise((resolveRun) => {
       let stdoutBuffer = "";
-      const child = spawn(powershellExecutable(), nasBackupArgs({ force, progress: true }), {
+      const child = spawnProcess(powershellExecutable(), nasBackupArgs({ force, progress: true }), {
         cwd: repoRoot,
         env: { ...process.env, IUCN_NAS_BACKUP_DIR: currentBackupRoot },
         windowsHide: true,
@@ -297,6 +311,10 @@ export async function createBackupService({
             state.totalBytes = Number(result.totalBytes ?? state.totalBytes);
             state.retainedBackups = Number(result.retainedBackups ?? 0);
             state.removedBackups = Number(result.removedBackups ?? 0);
+            state.retainedCheckpoint = result.retainedCheckpoint || "";
+            state.retainedArchivePaths = result.retainedArchivePaths || [];
+            state.protectedArchives = result.protectedArchives || [];
+            state.rotationPlanRevision = result.rotationPlanRevision || "";
             state.percent = 100;
             state.phase = state.skipped ? "Kein neues Backup erforderlich" : "Backup abgeschlossen";
             appendBackupLog(
