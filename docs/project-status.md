@@ -5,23 +5,23 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-10-04T17:36:29.352Z`
+Report-Datenstand: `2026-10-13T16:32:40.208Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 61 |
-| Aktive Arten | 61 |
-| Arten in `speciesData.json` | 61 |
-| Vollständige Art-Assetordner | 61 |
-| Karten | 61 |
-| Sounds | 58 |
-| Credits | 58 |
-| Spektrogramme | 58 |
-| Artporträts | 61 |
+| Eingaben in `species_list.json` | 62 |
+| Aktive Arten | 62 |
+| Arten in `speciesData.json` | 62 |
+| Vollständige Art-Assetordner | 62 |
+| Karten | 62 |
+| Sounds | 59 |
+| Credits | 59 |
+| Spektrogramme | 59 |
+| Artporträts | 62 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Geschützte Karten (6)
+## Geschützte Karten (7)
 
 - Blaukehlchen
 - Erdbeerfröschchen
@@ -29,14 +29,16 @@ Report-Datenstand: `2026-10-04T17:36:29.352Z`
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
+- Wendehals
 
-## IUCN-Browserimporte laut Nutzerangabe (5)
+## IUCN-Browserimporte laut Nutzerangabe (6)
 
 - Erdbeerfröschchen
 - Goldbaumsteiger
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
+- Wendehals
 
 Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
 

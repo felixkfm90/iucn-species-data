@@ -1462,5 +1462,29 @@
     "Species": "auratus",
     "Letztes IUCN Update": "2020",
     "Daten abgerufen": "2026-10-04"
+  },
+  {
+    "URLSlug": "jynxtorquilla",
+    "Wissenschaftlicher Name": "Jynx torquilla",
+    "Deutscher Name": "Wendehals",
+    "Englischer Name": "Eurasian Wryneck",
+    "Gewicht": "ca. 30–50 g",
+    "Größe": "ca. 16–18 cm",
+    "Lebenserwartung": "ca. 10 Jahre",
+    "Assessment ID": 157474468,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "3.980.000-7.600.000",
+    "Generationsdauer": "2,85 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Piciformes",
+    "Family": "Picidae",
+    "Genus": "Jynx",
+    "Species": "torquilla",
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-10-13"
   }
 ]

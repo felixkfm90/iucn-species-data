@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Jynx torquilla",
+  "german_name": "Wendehals",
+  "recordist": "Robert Petersen",
+  "country": "Sweden",
+  "location": "Gamla rörsviken, Norrköping Municipality, Östergötland County",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/1103098",
+  "rejectionKey": "xeno-canto:1103098",
+  "notes": "Stage 3 (openOnly=true, q=B, len25-35=false) | query=\"gen:Jynx sp:torquilla q:B\" | page=1"
+}

@@ -1687,6 +1687,49 @@
         "updatedAt": "2026-10-04T07:44:45.904Z",
         "sha256": "210005712c8500ed4773fe3abaa16ad7793cd4980f933606476e4892adbaff99"
       }
+    },
+    "Wendehals": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-10-13T16:31:52.383Z",
+        "approvedAt": "2026-10-13T16:31:54.802Z",
+        "sha256": "be187126c259652665f38eed98ec681d5390ab327de9089c1f0c0a5b183c1c0d",
+        "metadataSha256": "858da1ece5c5252deaf692f8878b018ed9379f367411d322b8e21273b1b4a1e9"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "947b5ae5ce7924e7d2d758cd461d19febc9ee8eda09582b15f3b8d9322264057",
+        "spectrogramSha256": "82ad39c2a4597495ee0d6987ec7c78d0951d77407d1ad0cd9e27e1111d1c310c",
+        "generatedAt": "2026-10-13T16:31:57.964Z",
+        "verifiedAt": "2026-10-13T16:31:57.971Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "provider",
+        "provenance": {
+          "provider": "iucn",
+          "acquisition": "browser-file",
+          "assurance": "user-declared",
+          "assessmentId": "157474468",
+          "canonicalUrl": "https://www.iucnredlist.org/api/v4/assessments/157474468/distribution_map/jpg"
+        },
+        "reason": "Als Datei übernommen, weil der automatische Abruf nicht verfügbar war.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/157474468/distribution_map/jpg",
+        "germanName": "Wendehals",
+        "originalFileName": "T22680683A157474468.jpg",
+        "importedAt": "2026-10-13T16:32:40.147Z",
+        "updatedAt": "2026-10-13T16:32:40.147Z",
+        "sha256": "2f4611ef291aef79070e9d94d1368f1d4a40bf47201b16ac2b2720cf54d88f06"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-10-13T16:32:59.774Z"
+      }
     }
   },
   "spectrogramGenerator": {
