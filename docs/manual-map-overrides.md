@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-10-13
+Stand: 2026-10-19
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -11,7 +11,7 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind 7 Karten als geschützt dokumentiert. Die Gründe sind unterschiedlich:
+Aktuell sind 8 Karten als geschützt dokumentiert. Die Gründe sind unterschiedlich:
 ein aus der Assessment-PDF ausgeschnittener Kartenstand und lokale Browser-/Dateiübernahmen. Ein HTTP-403 beim automatischen
 Abruf belegt keine korrupte sichtbare Karte. Die produktiven Karten dürfen nicht unbemerkt ersetzt werden und
 liegen ausschließlich unter `species-assets/<SafeName>/map.jpg`. Bestehende Markierungen wurden nicht umklassifiziert.
@@ -30,12 +30,13 @@ erfolgreicher maschineller Abruf belegt.
 | Art | SafeName | Datei | Grund | Quelle / Hinweis | Letzte manuelle Pruefung | Audit-Status |
 |---|---|---|---|---|---|---|
 | Blaukehlchen | Blaukehlchen | `species-assets/Blaukehlchen/map.jpg` | Felix hat die Karte manuell aus der IUCN-Assessment-PDF ausgeschnitten, weil der direkte Kartenlink laut seiner Rückmeldung HTTP 503 liefert. Kein Beleg für korrupte PDF-Kartendaten. | IUCN-Assessment-PDF laut Nutzerbestätigung vom 10. Oktober; konkrete PDF-Datei und damalige Ausgabe nicht unabhängig verglichen. Bild und Pipeline-Schutz erhalten. | Herkunftsbestätigung 2026-10-10; Karte nicht erneut geprüft | Herkunft nutzerbestätigt; PDF-Bildvergleich nicht ausgeführt |
-| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
-| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
-| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
-| Erdbeerfröschchen | Erdbeerfroeschchen | `species-assets/Erdbeerfroeschchen/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
-| Goldbaumsteiger | Goldbaumsteiger | `species-assets/Goldbaumsteiger/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
-| Wendehals | Wendehals | `species-assets/Wendehals/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/157474468/distribution_map/jpg) | 2026-10-13 | erledigt/geprueft |
+| Grünfink | Gruenfink | `species-assets/Gruenfink/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Rebhuhn | Rebhuhn | `species-assets/Rebhuhn/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Rotaugenlaubfrosch | Rotaugenlaubfrosch | `species-assets/Rotaugenlaubfrosch/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3028059/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Erdbeerfröschchen | Erdbeerfroeschchen | `species-assets/Erdbeerfroeschchen/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Manuell aus dem IUCN-Kartenlink übernommen, weil der lokale automatische Abruf keinen direkt speicherbaren Kartenlink erhalten hat. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3025630/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Goldbaumsteiger | Goldbaumsteiger | `species-assets/Goldbaumsteiger/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Wendehals | Wendehals | `species-assets/Wendehals/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/157474468/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Wintergoldhähnchen | Wintergoldhaehnchen | `species-assets/Wintergoldhaehnchen/map.jpg` | Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132183740/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

@@ -1486,5 +1486,29 @@
     "Species": "torquilla",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-10-13"
+  },
+  {
+    "URLSlug": "regulusregulus",
+    "Wissenschaftlicher Name": "Regulus regulus",
+    "Deutscher Name": "Wintergoldhähnchen",
+    "Englischer Name": "Common Goldcrest",
+    "Gewicht": "ca. 4,6-8,4 g",
+    "Größe": "ca. 8,5-9,5 cm",
+    "Lebenserwartung": "ca. 1-3 Jahre",
+    "Assessment ID": 132183740,
+    "Status": "LC",
+    "Trend": "Abnehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "98.000.000-164.999.999",
+    "Generationsdauer": "2,7 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Passeriformes",
+    "Family": "Regulidae",
+    "Genus": "Regulus",
+    "Species": "regulus",
+    "Letztes IUCN Update": "2018",
+    "Daten abgerufen": "2026-10-19"
   }
 ]

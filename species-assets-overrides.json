@@ -1730,6 +1730,57 @@
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-10-13T16:32:59.774Z"
       }
+    },
+    "Wintergoldhaehnchen": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-10-19T15:00:10.908Z",
+        "approvedAt": "2026-10-19T15:00:19.672Z",
+        "sha256": "6c88a5d2cc2799c121c7d6b46a43c75284ab1826cec588b9d8b5f520a262e6a9",
+        "metadataSha256": "18a1f8b8807df2da2e8d457d7534d9941c95aa696d4cb58cca568e4988d60493"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "manual",
+        "provenance": {
+          "provider": "unspecified",
+          "acquisition": "file",
+          "assurance": "unverified"
+        },
+        "reason": "Als Datei übernommen, weil der automatische Abruf nicht verfügbar war.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/132183740/distribution_map/jpg",
+        "germanName": "Wintergoldhähnchen",
+        "originalFileName": "T22734997A132183740.jpg",
+        "importedAt": "2026-10-19T15:00:56.643Z",
+        "updatedAt": "2026-10-19T15:00:56.643Z",
+        "sha256": "c1bb9d61d8cc36c0017caef3fa543de36312dec07b4d312f218d2c9b07bb0b87"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:710933",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/710933",
+            "recordist": "Max Karlsson",
+            "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "rejectedAt": "2026-10-19T15:01:23.687Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-10-19T15:01:57.248Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "3025d783c5abdf8ba3770e97a4cb3d27bde4dc1e0ba5ca0cf0e63d0969cbd3a4",
+        "spectrogramSha256": "1e611cd640448fb1368654166ac41b4d30f91c23a5aaef9dd885e4db0f3a0ddd",
+        "generatedAt": "2026-10-19T15:01:28.192Z",
+        "verifiedAt": "2026-10-19T15:01:28.197Z"
+      }
     }
   },
   "spectrogramGenerator": {

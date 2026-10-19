@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Regulus regulus",
+  "german_name": "Wintergoldhähnchen",
+  "recordist": "Marie-Lan Taÿ Pamart",
+  "country": "France",
+  "location": "Ménagerie du Jardin des plantes, Paris, Île-de-France",
+  "quality": "B",
+  "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/475114",
+  "rejectionKey": "xeno-canto:475114",
+  "notes": "Stage 2 (openOnly=true, q=B, len25-35=true) | query=\"gen:Regulus sp:regulus q:B len:25-35\" | page=2"
+}
