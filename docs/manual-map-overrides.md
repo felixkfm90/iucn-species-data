@@ -11,7 +11,7 @@ Begründung; `update.mjs` verwendet das JSON-Register, um geschützte Karten nic
 
 ## Aktueller Stand
 
-Aktuell sind 8 Karten als geschützt dokumentiert. Die Gründe sind unterschiedlich:
+Aktuell sind 9 Karten als geschützt dokumentiert. Die Gründe sind unterschiedlich:
 ein aus der Assessment-PDF ausgeschnittener Kartenstand und lokale Browser-/Dateiübernahmen. Ein HTTP-403 beim automatischen
 Abruf belegt keine korrupte sichtbare Karte. Die produktiven Karten dürfen nicht unbemerkt ersetzt werden und
 liegen ausschließlich unter `species-assets/<SafeName>/map.jpg`. Bestehende Markierungen wurden nicht umklassifiziert.
@@ -37,6 +37,7 @@ erfolgreicher maschineller Abruf belegt.
 | Goldbaumsteiger | Goldbaumsteiger | `species-assets/Goldbaumsteiger/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Karte als lokale Datei importiert. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/3024941/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
 | Wendehals | Wendehals | `species-assets/Wendehals/map.jpg` | IUCN-Browserimport laut Nutzerangabe; unverändert nicht technisch verifiziert; automatischer Ersatz geschützt. Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/157474468/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
 | Wintergoldhähnchen | Wintergoldhaehnchen | `species-assets/Wintergoldhaehnchen/map.jpg` | Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/132183740/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
+| Sommergoldhähnchen | Sommergoldhaehnchen | `species-assets/Sommergoldhaehnchen/map.jpg` | Als Datei übernommen, weil der automatische Abruf nicht verfügbar war. | [Quelle](https://www.iucnredlist.org/api/v4/assessments/154499313/distribution_map/jpg) | 2026-10-19 | erledigt/geprueft |
 
 ## Pflege-Regeln
 

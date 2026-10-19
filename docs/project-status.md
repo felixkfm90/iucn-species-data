@@ -5,23 +5,23 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-10-19T15:01:57.451Z`
+Report-Datenstand: `2026-10-19T15:06:16.092Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 63 |
-| Aktive Arten | 63 |
-| Arten in `speciesData.json` | 63 |
-| Vollständige Art-Assetordner | 63 |
-| Karten | 63 |
-| Sounds | 60 |
-| Credits | 60 |
-| Spektrogramme | 60 |
-| Artporträts | 63 |
+| Eingaben in `species_list.json` | 64 |
+| Aktive Arten | 64 |
+| Arten in `speciesData.json` | 64 |
+| Vollständige Art-Assetordner | 64 |
+| Karten | 64 |
+| Sounds | 61 |
+| Credits | 61 |
+| Spektrogramme | 61 |
+| Artporträts | 64 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Geschützte Karten (8)
+## Geschützte Karten (9)
 
 - Blaukehlchen
 - Erdbeerfröschchen
@@ -29,6 +29,7 @@ Report-Datenstand: `2026-10-19T15:01:57.451Z`
 - Grünfink
 - Rebhuhn
 - Rotaugenlaubfrosch
+- Sommergoldhähnchen
 - Wendehals
 - Wintergoldhähnchen
 
@@ -43,9 +44,10 @@ Report-Datenstand: `2026-10-19T15:01:57.451Z`
 
 Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
 
-## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (2)
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (3)
 
 - Blaukehlchen
+- Sommergoldhähnchen
 - Wintergoldhähnchen
 
 ## Aktive NC-Soundlizenzen (12)

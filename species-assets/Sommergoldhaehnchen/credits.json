@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Regulus ignicapilla",
+  "german_name": "Sommergoldhähnchen",
+  "recordist": "Thomas Jansson",
+  "country": "Sweden",
+  "location": "Snösätravägen (near  Huddinge), Stockholm Municipality, Stockholms län",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/1000594",
+  "rejectionKey": "xeno-canto:1000594",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Regulus sp:ignicapilla q:A\" | page=2"
+}

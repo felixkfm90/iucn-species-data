@@ -1510,5 +1510,29 @@
     "Species": "regulus",
     "Letztes IUCN Update": "2018",
     "Daten abgerufen": "2026-10-19"
+  },
+  {
+    "URLSlug": "regulusignicapilla",
+    "Wissenschaftlicher Name": "Regulus ignicapilla",
+    "Deutscher Name": "Sommergoldhähnchen",
+    "Englischer Name": "Common Firecrest",
+    "Gewicht": "ca. 1-7 g",
+    "Größe": "ca. 9 cm",
+    "Lebenserwartung": "ca. 2-3 Jahre",
+    "Assessment ID": 154499313,
+    "Status": "LC",
+    "Trend": "Zunehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "9.600.000-17.200.000",
+    "Generationsdauer": "1,84 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Class": "Aves",
+    "Order": "Passeriformes",
+    "Family": "Regulidae",
+    "Genus": "Regulus",
+    "Species": "ignicapilla",
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-10-19"
   }
 ]

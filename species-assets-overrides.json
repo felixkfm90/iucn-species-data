@@ -1781,6 +1781,47 @@
         "generatedAt": "2026-10-19T15:01:28.192Z",
         "verifiedAt": "2026-10-19T15:01:28.197Z"
       }
+    },
+    "Sommergoldhaehnchen": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-10-19T15:05:41.599Z",
+        "approvedAt": "2026-10-19T15:05:50.063Z",
+        "sha256": "58c7b2e8f13667df049fa47d74bda95833d15d2b71cba5210d073df41a583003",
+        "metadataSha256": "05230dac6df569bd9b87ae63179af2dc83006b6722e801ff820616a4a8baa062"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "7e4bb3dd2e80d5113f8b22ec35ae8e76e686b79430873b611cb4200efe6c12fb",
+        "spectrogramSha256": "0417eb5b1b65fb842fa22572dccbea38c96df3fe1d75d8b0206325c4a1a01809",
+        "generatedAt": "2026-10-19T15:05:56.705Z",
+        "verifiedAt": "2026-10-19T15:05:56.712Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "manual",
+        "provenance": {
+          "provider": "unspecified",
+          "acquisition": "file",
+          "assurance": "unverified"
+        },
+        "reason": "Als Datei übernommen, weil der automatische Abruf nicht verfügbar war.",
+        "source": "https://www.iucnredlist.org/api/v4/assessments/154499313/distribution_map/jpg",
+        "germanName": "Sommergoldhähnchen",
+        "originalFileName": "T22735002A154499313.jpg",
+        "importedAt": "2026-10-19T15:06:16.028Z",
+        "updatedAt": "2026-10-19T15:06:16.028Z",
+        "sha256": "d73c50cf2e232c55535013eafeff346d307eb3b1a938e8904e508fe67ce63a92"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-10-19T15:06:35.871Z"
+      }
     }
   },
   "spectrogramGenerator": {

@@ -565,5 +565,14 @@
     "size": "ca. 8,5-9,5 cm",
     "weight": "ca. 4,6-8,4 g",
     "life_expectancy": "ca. 1-3 Jahre"
+  },
+  {
+    "german": "Sommergoldhähnchen",
+    "english": "Common Firecrest",
+    "genus": "Regulus",
+    "species": "ignicapilla",
+    "size": "ca. 9 cm",
+    "weight": "ca. 1-7 g",
+    "life_expectancy": "ca. 2-3 Jahre"
   }
 ]
