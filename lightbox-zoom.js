@@ -199,6 +199,7 @@
 
   let zoomBtn = null;
   let returnFocus = null;
+  let escapePressOwned = false;
   const backgroundInert = new Map();
 
   function focusCloseButton() {
@@ -347,10 +348,16 @@
     if (e.target === overlay) closeZoom();
   });
   window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && escapePressOwned) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
     if (!overlay.classList.contains("open")) return;
     // Capture before the underlying Squarespace lightbox receives the key.
     e.stopImmediatePropagation();
     if (e.key === "Escape") {
+      escapePressOwned = true;
       e.preventDefault();
       closeZoom();
     } else if (e.key === "Tab") {
@@ -358,6 +365,14 @@
       focusCloseButton();
     }
   }, true);
+  window.addEventListener("keyup", (e) => {
+    if (e.key !== "Escape" || !escapePressOwned) return;
+    // The release still belongs to this zoom, even though closeZoom hid it.
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    escapePressOwned = false;
+  }, true);
+  window.addEventListener("blur", () => { escapePressOwned = false; });
   window.addEventListener("focusin", (e) => {
     if (!overlay.classList.contains("open")) return;
     e.stopImmediatePropagation();

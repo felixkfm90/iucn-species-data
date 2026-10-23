@@ -124,9 +124,13 @@ Die vergrößerte Galerieansicht bindet Fokus und Escape an ihren eigenen benann
 Schließen werden vorheriger Hintergrundzustand und Fokus wiederhergestellt. Die Abschlusskachel
 „Weitere Tiere“ steht nach allen alphabetisch sortierten Arten, auch beim vorgesehenen Nachladen.
 
-Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.8. Veröffentlichung
+Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.9. Veröffentlichung
 der Dateien über Pages und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen.
 Die tatsächliche öffentliche Funktions- und Sichtprüfung bleibt erforderlich. Während des laufenden
 Gesamtaudits stehen aktuelle Ergebnisse und Grenzen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md); Belege gehören in eigene verwaltete
 Programm-temp-Sitzungen nach dem [Testvertrag](test-temp-contract.md).
+
+Der zum Zoom gehörende Escape-Druck bleibt bis zum Loslassen gebunden, einschließlich gehaltener
+Wiederholungen. Erst der nächste unabhängige Escape-Druck darf die darunterliegende Galerie schließen.
+Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.

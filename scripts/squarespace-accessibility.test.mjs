@@ -45,13 +45,15 @@ function element() {
 }
 
 function zoomFixture() {
+  const listeners = [];
   const body = element(), html = element(), lightbox = element(), previousInert = element();
   previousInert.inert = true;
   body.appendChild(lightbox); body.appendChild(previousInert);
   const image = element(); image.setAttribute("alt", "Amsel auf einem Ast"); image.src = "https://example.test/amsel.jpg";
   lightbox.querySelector = () => ({ querySelector: () => image });
   const document = { body, documentElement: html, activeElement: body,
-    querySelector: () => lightbox, addEventListener() {},
+    querySelector: () => lightbox,
+    addEventListener(name, listener, options) { listeners.push({ site: "document", name, listener, capture: options === true || Boolean(options?.capture) }); },
     createElement() {
       const node = element();
       node.focus = () => { document.activeElement = node; };
@@ -63,24 +65,46 @@ function zoomFixture() {
       return node;
     },
   };
-  const context = vm.createContext({ document, URLSearchParams, location: { search: "?itemId=amsel" },
+  const location = { search: "?itemId=amsel" };
+  const context = vm.createContext({ document, URLSearchParams, location,
     innerWidth: 1200, innerHeight: 900, getComputedStyle: () => ({ display: "block", visibility: "visible", opacity: "1" }),
     MutationObserver: class { observe() {} }, setInterval: () => 0, setTimeout: () => 0, addEventListener() {} });
   const events = new Map();
   context.window = context;
-  context.addEventListener = (name, listener, options) => events.set(name, { listener, options });
+  context.addEventListener = (name, listener, options) => {
+    events.set(name, { listener, options });
+    listeners.push({ site: "window", name, listener, capture: options === true || Boolean(options?.capture) });
+  };
   new vm.Script(lightboxSource, { filename: "lightbox-zoom.js" }).runInContext(context);
   const overlay = body.children.find((node) => node.id === "gz-overlay");
   const trigger = body.children.find((node) => node.className === "gz-zoom-btn");
   const close = overlay.querySelector("#gz-close");
   const open = () => trigger.listeners.get("click").listener({ preventDefault() {}, stopPropagation() {} });
-  const key = (name, shiftKey = false) => {
-    const event = { key: name, shiftKey, prevented: false, stopped: false,
-      preventDefault() { this.prevented = true; }, stopImmediatePropagation() { this.stopped = true; } };
-    events.get("keydown").listener(event);
+  const dispatchKey = (type, name, { shiftKey = false, repeat = false } = {}) => {
+    const event = { type, key: name, shiftKey, repeat, target: document.activeElement,
+      prevented: false, stopped: false, immediateStopped: false,
+      preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; },
+      stopImmediatePropagation() { this.stopped = true; this.immediateStopped = true; } };
+    for (const [site, capture] of [["window", true], ["document", true], ["document", false], ["window", false]]) {
+      for (const entry of listeners.filter((entry) => entry.name === type && entry.site === site && entry.capture === capture)) {
+        entry.listener(event);
+        if (event.immediateStopped) break;
+      }
+      if (event.stopped) break;
+    }
     return event;
   };
-  return { document, lightbox, previousInert, overlay, trigger, close, open, key, events };
+  const key = (name, shiftKey = false) => dispatchKey("keydown", name, { shiftKey });
+  const cmsEvents = [];
+  const addCmsListener = (type, { site = "document", capture = false } = {}) => {
+    listeners.push({ site, name: type, capture, listener(event) {
+      if (event.key !== "Escape") return;
+      cmsEvents.push({ type: event.type, repeat: event.repeat });
+      location.search = "";
+      lightbox.setAttribute("aria-hidden", "true");
+    } });
+  };
+  return { document, lightbox, previousInert, overlay, trigger, close, open, key, dispatchKey, events, location, cmsEvents, addCmsListener };
 }
 
 test("Zoom bindet Fokus und Tastatur an den benannten Dialog und erhält die CMS-Lightbox", () => {
@@ -112,11 +136,89 @@ test("Zoom bindet Fokus und Tastatur an den benannten Dialog und erhält die CMS
   assert.equal(f.previousInert.inert, true, "Vorherige Fremdsperre bleibt erhalten");
   assert.equal(f.document.activeElement, f.trigger);
   assert.equal(f.trigger.style.display, "");
+  const release = f.dispatchKey("keyup", "Escape");
+  assert.equal(release.prevented, true);
+  assert.equal(release.stopped, true, "Auch das Loslassen gehört noch zum Escape-Druck des Zooms");
   assert.equal(f.key("Escape").stopped, false, "Geschlossener Zoom fängt keine CMS-Tasten ab");
   f.open();
   f.close.listeners.get("click").listener();
   assert.equal(f.overlay.hidden, true);
   assert.equal(f.document.activeElement, f.trigger);
+});
+
+for (const options of [{ site: "document", capture: false }, { site: "window", capture: true }]) {
+  test(`Vollständiger Escape-Druck erhält die CMS-Galerie vor späterem ${options.site}-keyup`, () => {
+    const f = zoomFixture();
+    f.addCmsListener("keyup", options);
+    f.open();
+    assert.equal(f.dispatchKey("keydown", "Escape").stopped, true);
+    assert.equal(f.overlay.hidden, true);
+    const release = f.dispatchKey("keyup", "Escape");
+    assert.equal(release.stopped, true);
+    assert.equal(release.prevented, true);
+    assert.equal(f.location.search, "?itemId=amsel");
+    assert.equal(f.cmsEvents.length, 0);
+    assert.equal(f.document.activeElement, f.trigger);
+    assert.equal(f.dispatchKey("keydown", "Escape").stopped, false);
+    assert.equal(f.dispatchKey("keyup", "Escape").stopped, false);
+    assert.equal(f.cmsEvents.length, 1, "Der nächste unabhängige Escape-Druck erreicht das CMS");
+    assert.equal(f.location.search, "");
+  });
+}
+
+test("Gehaltenes Escape konsumiert Wiederholungen bis zum Loslassen und gibt den nächsten Druck frei", () => {
+  const f = zoomFixture();
+  f.addCmsListener("keydown");
+  f.open();
+  f.dispatchKey("keydown", "Escape");
+  for (let count = 0; count < 3; count++) {
+    const repeat = f.dispatchKey("keydown", "Escape", { repeat: true });
+    assert.equal(repeat.stopped, true);
+    assert.equal(repeat.prevented, true);
+  }
+  assert.equal(f.location.search, "?itemId=amsel");
+  assert.equal(f.cmsEvents.length, 0);
+  assert.equal(f.dispatchKey("keyup", "Escape").stopped, true);
+  assert.equal(f.dispatchKey("keydown", "Escape").stopped, false);
+  assert.equal(f.dispatchKey("keyup", "Escape").stopped, false);
+  assert.equal(f.cmsEvents.length, 1);
+});
+
+test("Schließenknopf erhält die Galerie und reserviert keinen späteren Escape-Druck", () => {
+  const f = zoomFixture();
+  f.addCmsListener("keyup");
+  f.open();
+  f.close.listeners.get("click").listener();
+  assert.equal(f.overlay.hidden, true);
+  assert.equal(f.location.search, "?itemId=amsel");
+  assert.equal(f.document.activeElement, f.trigger);
+  assert.equal(f.dispatchKey("keydown", "Escape").stopped, false);
+  assert.equal(f.dispatchKey("keyup", "Escape").stopped, false);
+  assert.equal(f.cmsEvents.length, 1);
+});
+
+test("Fremdes keyup beendet die Bindung eines gehaltenen Escape-Drucks nicht", () => {
+  const f = zoomFixture();
+  f.addCmsListener("keydown");
+  f.open();
+  f.dispatchKey("keydown", "Escape");
+  assert.equal(f.dispatchKey("keyup", "a").stopped, false);
+  assert.equal(f.dispatchKey("keydown", "Escape", { repeat: true }).stopped, true);
+  assert.equal(f.cmsEvents.length, 0);
+  f.dispatchKey("keyup", "Escape");
+  assert.equal(f.dispatchKey("keydown", "Escape").stopped, false);
+  assert.equal(f.cmsEvents.length, 1);
+});
+
+test("Fenster-Fokusverlust löst eine Escape-Bindung mit verlorenem keyup", () => {
+  const f = zoomFixture();
+  f.addCmsListener("keyup");
+  f.open();
+  f.dispatchKey("keydown", "Escape");
+  f.events.get("blur")?.listener();
+  assert.equal(f.dispatchKey("keydown", "Escape").stopped, false);
+  assert.equal(f.dispatchKey("keyup", "Escape").stopped, false);
+  assert.equal(f.cmsEvents.length, 1);
 });
 
 test("Arten-Suche benennt Eingabe und Trefferstatus und behält Suche und Escape bei", async () => {
