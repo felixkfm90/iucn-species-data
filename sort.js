@@ -66,9 +66,12 @@
 
     if (parentSignatures.get(parent) === signature) return false;
 
-    const sorted = [...group].sort((a, b) =>
-      a.title.localeCompare(b.title, "de", { sensitivity: "base", numeric: true })
-    );
+    const sorted = [...group].sort((a, b) => {
+      const aIsClosing = a.title.toLocaleLowerCase("de") === "weitere tiere";
+      const bIsClosing = b.title.toLocaleLowerCase("de") === "weitere tiere";
+      if (aIsClosing !== bIsClosing) return aIsClosing ? 1 : -1;
+      return a.title.localeCompare(b.title, "de", { sensitivity: "base", numeric: true });
+    });
 
     const alreadySorted = sorted.every((entry, i) => entry.item === group[i].item);
     if (alreadySorted) {

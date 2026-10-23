@@ -92,9 +92,10 @@ Nur lokaler Repo-/Assetcheck ohne Netzwerk:
 npm.cmd run --silent audit:site -- --skip-live --skip-pages
 ```
 
-Der Befehl schreibt keine Datei, sondern gibt JSON auf stdout aus. Wenn ein Ergebnis zwischengespeichert werden soll,
-gehoert es waehrend der Arbeit nach `Testlauf/` und wird nach Abschluss wieder geloescht oder gezielt als
-Monatsbericht unter `docs/audits/` zusammengefasst.
+Der Befehl schreibt keine Datei, sondern gibt JSON auf stdout aus. Gespeicherte technische Ergebnisse
+gehören in eigene verwaltete Programm-temp-Sitzungen nach dem [Testvertrag](test-temp-contract.md).
+Gebundene Auditbelege bleiben erhalten; aus Dateialter oder fehlendem Zugriff folgt keine Löschfreigabe.
+Während des Gesamtaudits wird kein zweiter Monats- oder Auditbericht angelegt.
 
 Aktuell automatisiert:
 
@@ -114,3 +115,18 @@ Nicht automatisiert:
 - visuelle Screenshot-Pruefung
 - fachliche SEO-Textqualitaet
 - rechtliche Detailpruefung
+
+## Technische Websitekorrekturen vom 23. Oktober 2026
+
+Die Artstufe zeigt das vollständige wissenschaftliche Binomen, ohne eine bereits enthaltene Gattung
+zu verdoppeln. Das Suchfeld hat einen zugänglichen Namen und eine zurückhaltende Trefferansage.
+Die vergrößerte Galerieansicht bindet Fokus und Escape an ihren eigenen benannten Dialog; beim
+Schließen werden vorheriger Hintergrundzustand und Fokus wiederhergestellt. Die Abschlusskachel
+„Weitere Tiere“ steht nach allen alphabetisch sortierten Arten, auch beim vorgesehenen Nachladen.
+
+Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.8. Veröffentlichung
+der Dateien über Pages und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen.
+Die tatsächliche öffentliche Funktions- und Sichtprüfung bleibt erforderlich. Während des laufenden
+Gesamtaudits stehen aktuelle Ergebnisse und Grenzen ausschließlich im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md); Belege gehören in eigene verwaltete
+Programm-temp-Sitzungen nach dem [Testvertrag](test-temp-contract.md).

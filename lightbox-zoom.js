@@ -166,6 +166,10 @@
   // =========================
   const overlay = document.createElement("div");
   overlay.id = "gz-overlay";
+  overlay.hidden = true;
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", "Vergrößerte Bildansicht");
   overlay.innerHTML = `
     <button id="gz-close" aria-label="Schließen">×</button>
     <img id="gz-img" alt="Vergrößerte Bildansicht">
@@ -194,6 +198,25 @@
     baseH = 0;
 
   let zoomBtn = null;
+  let returnFocus = null;
+  const backgroundInert = new Map();
+
+  function focusCloseButton() {
+    closeBtn.focus({ preventScroll: true });
+  }
+
+  function suspendBackground() {
+    for (const element of document.body.children) {
+      if (element === overlay || backgroundInert.has(element)) continue;
+      backgroundInert.set(element, element.inert);
+      element.inert = true;
+    }
+  }
+
+  function restoreBackground() {
+    for (const [element, previousInert] of backgroundInert) element.inert = previousInert;
+    backgroundInert.clear();
+  }
 
   function apply() {
     zoomImg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
@@ -272,6 +295,7 @@
 
   function openZoom(src, altText) {
     if (!src) return;
+    if (!overlay.classList.contains("open")) returnFocus = zoomBtn || document.activeElement;
 
     // bei neuem Bild Basisgröße neu messen
     zoomImg.onload = () => {
@@ -284,7 +308,9 @@
 
     zoomImg.alt = altText || "Vergrößerte Bildansicht";
     zoomImg.src = src;
+    overlay.hidden = false;
     overlay.classList.add("open");
+    suspendBackground();
     reset();
 
     // reset gesture state
@@ -295,10 +321,13 @@
     document.documentElement.classList.add("gz-noscroll");
     document.body.classList.add("gz-noscroll");
     if (zoomBtn) zoomBtn.style.display = "none";
+    focusCloseButton();
   }
 
   function closeZoom() {
     overlay.classList.remove("open");
+    overlay.hidden = true;
+    restoreBackground();
     zoomImg.src = "";
     zoomImg.alt = "Vergrößerte Bildansicht";
     document.documentElement.classList.remove("gz-noscroll");
@@ -309,15 +338,31 @@
     pinch = null;
 
     updateButtonVisibility();
+    if (returnFocus?.isConnected !== false) returnFocus?.focus?.({ preventScroll: true });
+    returnFocus = null;
   }
 
   closeBtn.addEventListener("click", closeZoom);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeZoom();
   });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay.classList.contains("open")) closeZoom();
-  });
+  window.addEventListener("keydown", (e) => {
+    if (!overlay.classList.contains("open")) return;
+    // Capture before the underlying Squarespace lightbox receives the key.
+    e.stopImmediatePropagation();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeZoom();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      focusCloseButton();
+    }
+  }, true);
+  window.addEventListener("focusin", (e) => {
+    if (!overlay.classList.contains("open")) return;
+    e.stopImmediatePropagation();
+    if (!overlay.contains(e.target)) focusCloseButton();
+  }, true);
 
   window.addEventListener("resize", () => {
     refreshBaseSize();

@@ -249,8 +249,14 @@
     return TAXONOMY_LEVELS
       .filter((level) => isUsableValue(data?.[level.key]))
       .map((level, index) => {
-        const rawValue = normalizedValue(data[level.key]);
-        const displayValue = translateValue(level.key, rawValue);
+        let rawValue = normalizedValue(data[level.key]);
+        if (level.key === "Species") {
+          const genus = normalizedValue(data.Genus);
+          if (isUsableValue(genus) && !rawValue.toLocaleLowerCase("de").startsWith(`${genus.toLocaleLowerCase("de")} `)) {
+            rawValue = `${capitalize(genus)} ${rawValue}`;
+          }
+        }
+        const displayValue = level.key === "Species" ? rawValue : translateValue(level.key, rawValue);
         return { ...level, index, rawValue, displayValue };
       });
   }

@@ -25,9 +25,9 @@
   function ensureUI() {
     host.innerHTML = `
       <div style="margin: 12px 0;">
-        <input id="ss-input" type="search" placeholder="${placeholder}"
+        <input id="ss-input" type="search" aria-label="Arten durchsuchen" placeholder="${placeholder}"
           style="width:100%; padding:10px 12px; border:1px solid #ccc; border-radius:10px; box-sizing:border-box;">
-        <div id="ss-meta" style="font-size:0.9em; margin-top:6px; color:#666;"></div>
+        <div id="ss-meta" role="status" aria-live="polite" style="font-size:0.9em; margin-top:6px; color:#666;"></div>
         <div id="ss-results" style="margin-top:10px; display:none;">
           <ul id="ss-list"
             style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>

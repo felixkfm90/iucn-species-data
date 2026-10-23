@@ -56,7 +56,7 @@ test("Taxonomie rendert sieben Stufen mit deutschen Anzeigenamen", async () => {
   assert.match(markup, />Sperlingsvögel</);
   assert.match(markup, />Drosseln</);
   assert.match(markup, />Echte Drosseln</);
-  assert.match(markup, />Merula</);
+  assert.match(markup, />Turdus merula</);
   assert.match(markup, /title="Animalia"/);
   assert.doesNotMatch(markup, /Wissenschaftlicher Wert:/);
   assert.equal((markup.match(/class="taxonomy-stage"/g) ?? []).length, 7);
@@ -81,6 +81,27 @@ test("Deutsche Anzeigenamen und lateinischer Tooltip bleiben getrennt", async ()
   assert.match(markup, />Gattung:</);
   assert.match(markup, />Strandläufer</);
   assert.match(markup, /title="Calidris"/);
+});
+
+test("Artstufe zeigt das vollständige Binomen auch bei gleichem Gattungs- und Artepitheton", async () => {
+  const markup = await renderTaxonomy({ ...baseTaxonomy, Genus: "Perdix", Species: "perdix" });
+  assert.match(markup, /aria-label="Art: Perdix perdix"/);
+  assert.match(markup, />Perdix perdix</);
+  assert.doesNotMatch(markup, /aria-label="Art: Perdix"/);
+  const complete = await renderTaxonomy({ ...baseTaxonomy, Genus: "Perdix", Species: "Perdix perdix" });
+  assert.match(complete, />Perdix perdix</);
+  assert.doesNotMatch(complete, /Perdix Perdix/);
+  const noGenus = await renderTaxonomy({ ...baseTaxonomy, Genus: "n/a" });
+  assert.match(noGenus, />merula</);
+  assert.doesNotMatch(noGenus, /n\/a merula/);
+});
+
+test("Alle veröffentlichten Arten behalten ihr wissenschaftliches Binomen in der Artstufe", async () => {
+  const species = JSON.parse(await readFile(new URL("../speciesData.json", import.meta.url), "utf8"));
+  for (const data of species) {
+    const markup = await renderTaxonomy(data);
+    assert.ok(markup.includes(`>${data.Genus} ${data.Species}</span>`), data["Deutscher Name"]);
+  }
 });
 
 test("Leerwerte verschwinden und unbekannte Werte fallen sicher zurück", async () => {
