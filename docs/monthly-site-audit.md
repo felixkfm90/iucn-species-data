@@ -1,6 +1,6 @@
 # Monthly Site Audit
 
-Stand: 2026-06-17
+Stand: 2026-10-23
 
 Ziel: Einmal pro Monat soll die komplette Website und GitHub-Pages-Integration strukturiert geprueft werden. Das Audit
 soll nicht jeden unveraenderten Bereich erneut manuell im Detail pruefen, aber keinen Bereich ignorieren. Unveraenderte
@@ -24,7 +24,7 @@ Das Audit liefert eine Zusammenfassung mit klarer Einordnung:
 | Interne Links | Interne Links crawlen, nicht in Sitemap vorhandene Pfade erfassen. | offen / erledigt/geprueft |
 | SEO | Titel und Meta-Beschreibungen gegen `docs/seo-worklist.md` pruefen. | offen / unveraendert / erledigt |
 | Artseiten-Module | Stichprobe oder Vollcheck fuer Info, Taxonomie, Status, Sound und Karte. | offen / erledigt/geprueft |
-| Suche und Sortierung | Uebersichtsseiten `/wildlife/heimische-tierwelt`, `/wildlife/costarica`, `/wildlife/island` pruefen. | offen / erledigt/geprueft |
+| Suche und Sortierung | Uebersichtsseiten `/wildlife/heimische-tierwelt`, `/wildlife/costarica`, `/wildlife/island` pruefen; Arten alphabetisch, vorhandene Abschlusskachel „Weitere Tiere“ immer zuletzt, auch nach spaet nachgeladenen Arten. | offen / erledigt/geprueft |
 | Lightbox | Desktop und Mobile-Pinch/Zoom nur erneut manuell testen, wenn JS/CSS/Galerie geaendert wurde. | unveraendert / erledigt/geprueft |
 | GitHub Pages Assets | `speciesData.json`, `species-assets/`, Credits, Spektrogramme und Reports pruefen. | offen / erledigt/geprueft |
 | Manuell gepflegte Karten | Liste aus `docs/manual-map-overrides.md` beruecksichtigen. | offen / unveraendert / erledigt |
@@ -32,6 +32,31 @@ Das Audit liefert eine Zusammenfassung mit klarer Einordnung:
 | Externe Dienste | GitHub Pages, Xeno-Canto, iNaturalist, Wikimedia Commons, Waves/Audio, Shop/Affiliate falls aktiv. | offen / unveraendert |
 | Rechtliches | Nur nach neuen Diensten, Shop, Affiliate oder Tracking erneut manuell pruefen. | unveraendert / offen |
 | Dokumentation | `AGENTS.md`, `README.md`, `docs/roadmap.md` und betroffene Detaildokumente abgleichen. | offen / erledigt/geprueft |
+
+## Öffentliche Bedien- und CSS-Verträge
+
+Taxonomie zeigt in der Artzeile das vollständige Binomen, ohne eine bereits enthaltene Gattung zu
+verdoppeln. Das Suchfeld heißt „Arten durchsuchen“;
+Trefferzahlen werden als Status ausgegeben. Die Sortierung hält eine vorhandene Kachel „Weitere Tiere“
+am Ende; das Nachladen wird innerhalb des vorhandenen Beobachterzeitraums geprüft.
+
+Zoom 1.0.9 öffnet einen benannten modalen Dialog. Tab und Umschalt-Tab bleiben darin; Schließen gibt den
+Fokus zum Zoomknopf und den vorherigen Hintergrundzustand zurück. Die vollständige Escape-Tastensequenz einschließlich Wiederholung und
+Loslassen gehört dem Zoomdialog; erst ein weiterer Tastendruck schließt die umgebende Galerie.
+Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.
+Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben prüfen.
+
+Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.9. Pages-Veröffentlichung
+und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen. Während des laufenden
+Gesamtaudits stehen Ergebnisse und Grenzen ausschließlich im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
+
+`docs/squarespace-custom.css` ist Standard-CSS. Im CMS bleiben die zwei dokumentierten
+LESS-escaped `clip-path`-Werte erhalten. Rasterpositionen als `grid-row-start`/`grid-row-end`
+beziehungsweise `grid-column-start`/`grid-column-end` schreiben: Der CMS-Compiler kann Schrägstriche
+in Kurzformen als Division auswerten. Nach dem Speichern tatsächliche öffentliche CSS-Datei und
+berechnete Darstellung prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln sind auf vorhandene Blöcke
+begrenzt; jede Änderung in allen drei Ansichten nachprüfen.
 
 ## Berichtsvorlage
 
@@ -115,22 +140,3 @@ Nicht automatisiert:
 - visuelle Screenshot-Pruefung
 - fachliche SEO-Textqualitaet
 - rechtliche Detailpruefung
-
-## Technische Websitekorrekturen vom 23. Oktober 2026
-
-Die Artstufe zeigt das vollständige wissenschaftliche Binomen, ohne eine bereits enthaltene Gattung
-zu verdoppeln. Das Suchfeld hat einen zugänglichen Namen und eine zurückhaltende Trefferansage.
-Die vergrößerte Galerieansicht bindet Fokus und Escape an ihren eigenen benannten Dialog; beim
-Schließen werden vorheriger Hintergrundzustand und Fokus wiederhergestellt. Die Abschlusskachel
-„Weitere Tiere“ steht nach allen alphabetisch sortierten Arten, auch beim vorgesehenen Nachladen.
-
-Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.9. Veröffentlichung
-der Dateien über Pages und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen.
-Die tatsächliche öffentliche Funktions- und Sichtprüfung bleibt erforderlich. Während des laufenden
-Gesamtaudits stehen aktuelle Ergebnisse und Grenzen ausschließlich im
-[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md); Belege gehören in eigene verwaltete
-Programm-temp-Sitzungen nach dem [Testvertrag](test-temp-contract.md).
-
-Der zum Zoom gehörende Escape-Druck bleibt bis zum Loslassen gebunden, einschließlich gehaltener
-Wiederholungen. Erst der nächste unabhängige Escape-Druck darf die darunterliegende Galerie schließen.
-Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.

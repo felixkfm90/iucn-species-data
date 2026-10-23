@@ -747,3 +747,32 @@
     width: 100% !important;
   }
 }
+
+/* Responsive Contact/Footer/Equipment layout corrections — 23 October 2026. */
+@media (min-width: 768px) {
+  /* The form ends at row line 25. Privacy starts after it. */
+  #collection-67556d89ba0ab556b0a428ed .fe-67556d89ba0ab556b0a428fb .fe-block-yui_3_17_2_1_1771519851870_96463 {
+    grid-row-start: 25;
+    grid-row-end: span 2;
+  }
+
+  /* Separate the existing left footer cells without changing their columns. */
+  #footer-sections .fe-67556d89ba0ab556b0a42933 .fe-block-c5a208573c90ed99bfa6 {
+    grid-row-start: 2;
+    grid-row-end: 3;
+  }
+
+  /* Each title owns its first auto-sized row; the next row belongs to its description. */
+  #collection-6755946dc395e73ecca93f3e .fe-6755946dc395e73ecca93f40 > .fe-block:has(h3) {
+    grid-row-end: span 1;
+  }
+}
+
+/* Prevent full-width inline mail links from escaping the existing contact column. */
+#block-d9bfa57c41fbfc477465 a[href^="mailto:"] {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
