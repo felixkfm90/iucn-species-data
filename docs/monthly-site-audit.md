@@ -1,6 +1,6 @@
 # Monthly Site Audit
 
-Stand: 2026-10-23
+Stand: 2026-10-24
 
 Ziel: Einmal pro Monat soll die komplette Website und GitHub-Pages-Integration strukturiert geprueft werden. Das Audit
 soll nicht jeden unveraenderten Bereich erneut manuell im Detail pruefen, aber keinen Bereich ignorieren. Unveraenderte
@@ -46,7 +46,7 @@ Loslassen gehört dem Zoomdialog; erst ein weiterer Tastendruck schließt die um
 Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.
 Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben prüfen.
 
-Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.2 und Zoom 1.0.9. Pages-Veröffentlichung
+Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.3 und Zoom 1.0.9. Pages-Veröffentlichung
 und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen. Während des laufenden
 Gesamtaudits stehen Ergebnisse und Grenzen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
@@ -57,6 +57,19 @@ beziehungsweise `grid-column-start`/`grid-column-end` schreiben: Der CMS-Compile
 in Kurzformen als Division auswerten. Nach dem Speichern tatsächliche öffentliche CSS-Datei und
 berechnete Darstellung prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln sind auf vorhandene Blöcke
 begrenzt; jede Änderung in allen drei Ansichten nachprüfen.
+
+Kontakt und Über uns zeigen bis 1024 px die vorhandenen Fotos vollständig in einem natürlichen
+Raster mit mitwachsender Höhe. Kontakt behält Überschrift, Einleitung, Foto, Formular und
+Datenschutzhinweis in dieser Reihenfolge; Über uns behält mobil das Foto vor der Einleitung.
+Die begrenzten Kontakt-/Ausrüstungsüberschriften brechen in ganzen Wörtern um. Auf Sizilien
+besitzt die Überschrift ab 768 px eine eigene mitwachsende Zeile vor Hinweis und Zurück-Knopf.
+Diese Regeln ändern keine Fotos oder Texte und gelten nur für die konkret bezeichneten Blöcke.
+
+Die Reiseübersicht führt Latium visuell und in der Lesereihenfolge unter 2022; ausschließlich Montenegro
+trägt das Band „In Arbeit“. Der begrenzte Reisezweig in `sort.js` erhält die 14 vorhandenen Karten.
+Seine mobile CSS greift erst nach erfolgreicher DOM-Korrektur. Bei einer anderen Blockstruktur,
+bekanntermaßen veränderter Reihenfolge oder geänderten Titeln bleibt die Korrektur aus; nach struktureller
+CMS-Bearbeitung die Bindung prüfen. Der alphabetische Artensortierer bleibt davon unabhängig.
 
 ## Berichtsvorlage
 
