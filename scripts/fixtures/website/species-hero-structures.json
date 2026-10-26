@@ -1,0 +1,584 @@
+{
+  "schemaVersion": 1,
+  "sourceTableSha256": "237f61fda3d6183566e52b775ad5ee6273d2527775478e942495477a7a08b86c",
+  "sourceInventorySha256": "a1026a76e1b492b99aae932fd7fc878e647c830e3b8edde17b3bc926fa1f076b",
+  "boundSpeciesCount": 63,
+  "samples": [
+    {
+      "path": "/wildlife/heimische-tierwelt/turdusmerula",
+      "sourceSha256": "f4cd51c624a417824d54874e26c12802cf9025a7a857233ff4738521d1670783",
+      "bodyId": "collection-693afe1695d9b876f989cd86",
+      "heroSectionId": "693afe1695d9b876f989cd8a",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/2caab992-c4be-4f3a-adca-c1e4dc299602/7R507296.jpg",
+        "dimensions": "9504x6336",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693afe1695d9b876f989cd88",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "d4da26a74a513b704898",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Amsel – Der frühe Sänger in Garten und Park"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": []
+        },
+        {
+          "id": "393d9e156f4a3049ef29",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/heimische-tierwelt",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/heimische-tierwelt/motacillaalba",
+      "sourceSha256": "6e56e85537dc948364a504ff383b59024402eaf59f9227fc6afe59b0c94cf2c4",
+      "bodyId": "collection-693b01e8e8230f652f67803c",
+      "heroSectionId": "693b01e8e8230f652f67803f",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/0ebe78d6-e911-4b75-a840-7ea2a9ee7056/_7R51828.jpg",
+        "dimensions": "6240x4160",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693b01e8e8230f652f67803e",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "288c03516b78e4af5cc5",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Bachstelze - Der Flinke Läufer am Wasser"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--black"
+          ]
+        },
+        {
+          "id": "a8f00a9bfba38c485d51",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/heimische-tierwelt",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/heimische-tierwelt/dendrocoposmajor",
+      "sourceSha256": "b1504da591bb94204d2491fedb13a46aabb2b49fe9e7fe85e6f60293b9658eae",
+      "bodyId": "collection-693c4a36ff41316f87b7a4a3",
+      "heroSectionId": "693c4a36ff41316f87b7a4a6",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/a25b7687-1034-424c-91be-c80588b693ed/_8240477.JPG",
+        "dimensions": "5184x3888",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693c4a36ff41316f87b7a4a5",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "1d1d4ed571227cc063a7",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Buntspecht - Der Trommler unserer Wälder"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--white"
+          ]
+        },
+        {
+          "id": "411ab1f4f8525cdfdfbf",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/heimische-tierwelt",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/costarica/atelesgeoffroyi",
+      "sourceSha256": "c3e095083e84b9aed80794d4c7b5b1ba0ecf8a7078ef713c024468970bc7fd2f",
+      "bodyId": "collection-693c564f5dd64311b357d0f7",
+      "heroSectionId": "693c564f5dd64311b357d0fa",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/fc9acfc2-7f9f-4344-b9e5-2dfae2bd06d8/DSC06520.JPG",
+        "dimensions": "6000x4000",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693c564f5dd64311b357d0f9",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "0d0fce674675c4c6a3c1",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Geoffroy-Klammeraffe – Kletterkünstler des Regenwalds"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": []
+        },
+        {
+          "id": "42a31f31890e7f5923bc",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/costarica",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/costarica/ramphastosambiguus",
+      "sourceSha256": "4732cee2ef9cfeef2ae26599b91c68ca782f35838d0c17e6fcf549e0c43655f6",
+      "bodyId": "collection-693d281919323c1bfb9ada05",
+      "heroSectionId": "693d281919323c1bfb9ada08",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/c4c3ee24-9127-498d-aaa9-54e28a29043b/_7R54595-2.JPG",
+        "dimensions": "7605x5070",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693d281919323c1bfb9ada07",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "bc3f795c37b0e2d327ce",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Goldkehltukan – Leuchtender Akzent im Regenwald"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--white"
+          ]
+        },
+        {
+          "id": "3504dbd39224e90c94a5",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/costarica",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/island/megapteranovaeangliae",
+      "sourceSha256": "d14e4e8b17a6a5714a30bac72788d592ba85693ab0c67dee072f1e9b92585031",
+      "bodyId": "collection-693d2dc2e8e81867602d8dc4",
+      "heroSectionId": "693d2dc2e8e81867602d8dc7",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/2d91887a-6634-4afc-b2a6-5926d4aeeaab/_1M23830.JPG",
+        "dimensions": "8640x5760",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693d2dc2e8e81867602d8dc6",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "3ab3b9497c92044fa5e4",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Buckelwal - Singender Gigant der Ozeane"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--accent"
+          ]
+        },
+        {
+          "id": "e8b43a8bc42ebf7b64d9",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/island",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/island/fraterculaarctica",
+      "sourceSha256": "1ae632301a6816333c1508f53331a45ca67452b9a2de5153c594bcd33c4cd489",
+      "bodyId": "collection-693d2f081bb5f700f12b13ee",
+      "heroSectionId": "693d2f081bb5f700f12b13f1",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/33292f31-d10a-4961-930f-cb228a90a5df/_1M28509.JPG",
+        "dimensions": "8640x5760",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-693d2f081bb5f700f12b13f0",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "e194472f6d1e70de4b55",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Papageientaucher - Der bunte Clown der Meere"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--white"
+          ]
+        },
+        {
+          "id": "cc151474a117ec0aeb70",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/island",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/heimische-tierwelt/mergusmerganser",
+      "sourceSha256": "bef26a4883d9af2329402d3f8165accfc0eb50d0eca9396943000ba10a479f1c",
+      "bodyId": "collection-69e65485e04acd4d535ef9b2",
+      "heroSectionId": "69e65485e04acd4d535ef9b5",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/a4a7b40f-e15e-43df-b5f8-3cc9aa28dbff/_1M28287_20260119_13_49_05.JPG",
+        "dimensions": "8640x5760",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-69e65485e04acd4d535ef9b4",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "8c77d1a9ba60ce7a9e0d",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Gänsesäger – Der stromlinienförmige Fischjäger"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--accent"
+          ]
+        },
+        {
+          "id": "044c7bca7bce54e3adbe",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/heimische-tierwelt",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/afrika/acinonyxjubatus",
+      "sourceSha256": "c125047007b82129d880be27f3a4af9d4ba36b2daf21816f2ad95f79128fd5e1",
+      "bodyId": "collection-6a58f133b59c3c65f915678f",
+      "heroSectionId": "6a58f133b59c3c65f9156793",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/95ee45a1-a19f-4500-afb3-920436ff9c54/_7R50594.JPG",
+        "dimensions": "8572x5715",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-6a58f133b59c3c65f9156792",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "04d901baa262b4964c30",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Gepard – Die schnellste Raubkatze der Welt"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--white"
+          ]
+        },
+        {
+          "id": "67591295d7036723e34d",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/afrika",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    },
+    {
+      "path": "/wildlife/costarica/pteroglossustorquatus",
+      "sourceSha256": "1f16088448cfc0da4f0577e3acb066725e6c908b1b3567ccf08db54954748c9e",
+      "bodyId": "collection-6a70a73407a7104addbebc2a",
+      "heroSectionId": "6a70a73407a7104addbebc2e",
+      "heroImage": {
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/8bf678e1-7044-4fa0-891a-806ada43b157/_7R53774.jpg",
+        "dimensions": "7479x4986",
+        "alt": ""
+      },
+      "heroGridClass": "fluid-engine fe-6a70a73407a7104addbebc2d",
+      "heroDirectChildren": [
+        {
+          "tag": "div",
+          "class": "section-border"
+        },
+        {
+          "tag": "div",
+          "class": "content-wrapper"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "eec87bdd2b7fadb9700a",
+          "headingTags": [
+            "h3"
+          ],
+          "headings": [
+            "Halsbandarassari – Ein Juwel der Tropenwälder"
+          ],
+          "links": [],
+          "images": 0,
+          "htmlBlocks": 1,
+          "buttonBlocks": 0,
+          "paragraphs": 0,
+          "textColorClasses": [
+            "sqsrte-text-color--black"
+          ]
+        },
+        {
+          "id": "88cb4b86036baf83c15e",
+          "headingTags": [],
+          "headings": [],
+          "links": [
+            {
+              "href": "/wildlife/costarica",
+              "text": "Zurück zur Übersicht",
+              "classes": "sqs-block-button-element--medium sqs-button-element--primary sqs-block-button-element"
+            }
+          ],
+          "images": 0,
+          "htmlBlocks": 0,
+          "buttonBlocks": 1,
+          "paragraphs": 0,
+          "textColorClasses": []
+        }
+      ]
+    }
+  ]
+}

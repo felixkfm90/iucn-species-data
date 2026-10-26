@@ -1,6 +1,6 @@
 # Monthly Site Audit
 
-Stand: 2026-10-24
+Stand: 2026-10-26
 
 Ziel: Einmal pro Monat soll die komplette Website und GitHub-Pages-Integration strukturiert geprueft werden. Das Audit
 soll nicht jeden unveraenderten Bereich erneut manuell im Detail pruefen, aber keinen Bereich ignorieren. Unveraenderte
@@ -46,7 +46,9 @@ Loslassen gehört dem Zoomdialog; erst ein weiterer Tastendruck schließt die um
 Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.
 Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben prüfen.
 
-Footer-Referenz: Taxonomie 1.0.9, Suche 1.0.3, Sortierung 1.0.3 und Zoom 1.0.9. Pages-Veröffentlichung
+Footer-Referenz: Taxonomie/CSS 1.0.17, Artseitenlayout 1.0.4, Karte 1.0.11, Desktopnavigation 1.0.0,
+Suche 1.0.3, Sortierung 1.0.5 und Zoom 1.0.9. Maßgeblich sind die zwölf Einbindungen in
+[squarespace-footer.html](squarespace-footer.html) und das zugehörige Custom CSS. Pages-Veröffentlichung
 und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen. Während des laufenden
 Gesamtaudits stehen Ergebnisse und Grenzen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
@@ -65,11 +67,21 @@ Die begrenzten Kontakt-/Ausrüstungsüberschriften brechen in ganzen Wörtern um
 besitzt die Überschrift ab 768 px eine eigene mitwachsende Zeile vor Hinweis und Zurück-Knopf.
 Diese Regeln ändern keine Fotos oder Texte und gelten nur für die konkret bezeichneten Blöcke.
 
-Die Reiseübersicht führt Latium visuell und in der Lesereihenfolge unter 2022; ausschließlich Montenegro
-trägt das Band „In Arbeit“. Der begrenzte Reisezweig in `sort.js` erhält die 14 vorhandenen Karten.
+Die Reiseübersicht führt Latium visuell und in der Lesereihenfolge unter 2022. Die vorhandenen
+„In Arbeit“-Bänder der noch nicht fertiggestellten Reisen mit FN-Logo bleiben erhalten; sie werden
+nicht auf Montenegro beschränkt. Der begrenzte Reisezweig in `sort.js` erhält die 14 vorhandenen Karten.
 Seine mobile CSS greift erst nach erfolgreicher DOM-Korrektur. Bei einer anderen Blockstruktur,
 bekanntermaßen veränderter Reihenfolge oder geänderten Titeln bleibt die Korrektur aus; nach struktureller
 CMS-Bearbeitung die Bindung prüfen. Der alphabetische Artensortierer bleibt davon unabhängig.
+
+Artseiten behalten das Originalfoto und den Rücklink. Das angenommene Layout zeigt den Titel
+auf Desktop/Tablet über dem Foto, mobil darunter. Die bestätigten Titelkontraste, neun Tablet-
+Bildpositionen und der mobile Eichelhäherfokus bleiben auf ihre jeweiligen Seiten/Breiten begrenzt.
+Karten zeigen das vollständige Bild mit höchstens 360 Pixel Höhe und 640 Pixel Öffnerbreite; ab
+768 Pixeln links unter der Überschrift, mobil mittig. Öffnen, Schließen und Fokusrückgabe prüfen.
+Desktopmenüs melden den sichtbaren Offen-Zustand und schließen auch bei verbleibendem Mauszeiger
+mit Escape; ein Klick beziehungsweise Enter/Leertaste öffnen wieder. Die Mobilnavigation bleibt
+im Anbieterablauf. Diese gekoppelten Regeln benötigen Footer und CMS Custom CSS gemeinsam.
 
 ## Berichtsvorlage
 

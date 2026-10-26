@@ -1,10 +1,11 @@
 import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { listPublishableSourceFiles } from "./pages-artifact-policy.mjs";
+import { assertPagesOutputDirectory, listPublishableSourceFiles } from "./pages-artifact-policy.mjs";
 
 const root = process.cwd();
 const outArg = process.argv.find((arg) => arg.startsWith("--out="));
 const outDir = path.resolve(root, outArg ? outArg.slice("--out=".length) : "_site");
+await assertPagesOutputDirectory(root, outDir);
 const maxBytesArg = process.argv.find((arg) => arg.startsWith("--max-bytes="));
 const maxMibArg = process.argv.find((arg) => arg.startsWith("--max-mib="));
 const baseMibArg = process.argv.find((arg) => arg.startsWith("--base-mib="));
@@ -91,10 +92,7 @@ if (!Array.isArray(speciesList) || speciesList.length < 1) {
 const calculatedMaxBytes = baseBytes + (speciesList.length * perSpeciesBytes);
 const maxBytes = Math.min(fixedMaxBytes ?? calculatedMaxBytes, absoluteMaxBytes);
 
-if (outDir === root || !outDir.startsWith(root + path.sep)) {
-  throw new Error(`Ungültiges Pages-Ausgabeverzeichnis: ${outDir}`);
-}
-
+await assertPagesOutputDirectory(root, outDir);
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 

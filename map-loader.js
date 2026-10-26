@@ -1,5 +1,7 @@
+// Map loader 1.0.11: compact map preview with a native opener in every viewport.
 (async function () {
   const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
+  let closeActiveMap = null;
 
   function init() {
     const wrapper = document.getElementById("map-wrapper");
@@ -75,19 +77,58 @@
       `;
 
       const img = outputEl.querySelector("img");
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-      if (isMobile && img) {
+      if (img) {
         img.style.cursor = "zoom-in";
-        img.addEventListener("click", () => openFullscreen(imgUrl, img.alt));
+        const opener = document.createElement("button");
+        opener.type = "button";
+        opener.className = "species-map-opener";
+        opener.setAttribute("aria-label", `Verbreitungskarte vergrößern: ${germanName}`);
+        Object.assign(opener.style, { display: "block", width: "100%", padding: 0, border: 0, background: "transparent", cursor: "zoom-in" });
+        img.replaceWith(opener);
+        opener.appendChild(img);
+        const action = document.createElement("span");
+        action.className = "species-map-action";
+        action.textContent = "Karte vergrößern";
+        opener.appendChild(action);
+        opener.addEventListener("click", () => openFullscreen(imgUrl, img.alt, opener));
       }
     } catch (_) {
       outputEl.innerHTML = `<p style="font-style:italic;">Verbreitungskarte aktuell nicht verfuegbar.</p>${sourceHtml()}`;
     }
   }
 
-  function openFullscreen(src, altText) {
+  function restoreMapFocus(opener) {
+    if (!opener?.isConnected) return;
+    opener.focus({ preventScroll: true });
+    if (!opener.isConnected || document.activeElement !== opener) return;
+    window.scrollBy({ top: 0, left: 0, behavior: "instant" });
+    window.requestAnimationFrame(() => {
+      if (!opener.isConnected || document.activeElement !== opener) return;
+      const rect = opener.getBoundingClientRect();
+      if (!(rect.width > 0 && rect.height > 0 && window.innerWidth > 0 && window.innerHeight > 0)) return;
+      const style = window.getComputedStyle(opener);
+      const width = style.outlineStyle === "none" ? 0 : Number.parseFloat(style.outlineWidth) || 0;
+      const offset = width > 0 ? Number.parseFloat(style.outlineOffset) || 0 : 0;
+      const x = Math.max(0, Math.min(window.innerWidth - 1, rect.left + rect.width / 2));
+      const y = Math.max(0, Math.min(window.innerHeight - 1, rect.top - offset - width / 2));
+      const header = document.elementFromPoint(x, y)?.closest("header, [role='banner']");
+      if (!header || header.contains(opener)) return;
+      const position = window.getComputedStyle(header).position;
+      if (position !== "fixed" && position !== "sticky") return;
+      const cover = header.getBoundingClientRect();
+      if (!(cover.top <= y && cover.bottom > y && cover.bottom < window.innerHeight)) return;
+      const delta = rect.top - offset - width - cover.bottom - 2;
+      if (delta < 0) window.scrollBy({ top: delta, left: 0, behavior: "instant" });
+    });
+  }
+
+  function openFullscreen(src, altText, opener) {
+    closeActiveMap?.();
     const overlay = document.createElement("div");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Vergrößerte Verbreitungskarte");
     Object.assign(overlay.style, {
       position: "fixed",
       inset: 0,
@@ -104,16 +145,57 @@
     img.alt = altText || "Vergrößerte Verbreitungskarte";
     Object.assign(img.style, {
       maxWidth: "95vw",
-      maxHeight: "95vh",
+      maxHeight: "calc(95vh - 48px)",
       borderRadius: "6px",
       boxShadow: "0 0 20px rgba(0,0,0,0.5)",
     });
 
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.textContent = "×";
+    closeButton.setAttribute("aria-label", "Kartenansicht schließen");
+    Object.assign(closeButton.style, {
+      position: "absolute", top: "8px", right: "8px", width: "44px", height: "44px",
+      border: "2px solid white", borderRadius: "4px", background: "#222", color: "white",
+      fontSize: "30px", lineHeight: "1", cursor: "pointer",
+    });
+    const previousOverflow = document.body.style.overflow;
+    const background = [...document.body.children].map((node) => ({ node, inert: node.inert }));
+    for (const { node } of background) node.inert = true;
+    const close = () => {
+      if (closeActiveMap !== close) return;
+      closeActiveMap = null;
+      window.removeEventListener("keydown", keydown, true);
+      window.removeEventListener("focusin", focusin, true);
+      overlay.remove();
+      for (const { node, inert } of background) node.inert = inert;
+      document.body.style.overflow = previousOverflow;
+      restoreMapFocus(opener);
+    };
+    const keydown = (event) => {
+      if (event.key !== "Escape" && event.key !== "Tab") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.key === "Escape") close();
+      else closeButton.focus();
+    };
+    const focusin = (event) => {
+      if (!overlay.contains(event.target)) closeButton.focus();
+    };
+    closeActiveMap = close;
+    closeButton.addEventListener("click", close);
     overlay.appendChild(img);
-    overlay.onclick = () => overlay.remove();
+    overlay.appendChild(closeButton);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay || event.target === img) close();
+    });
     document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", keydown, true);
+    window.addEventListener("focusin", focusin, true);
+    closeButton.focus();
   }
 
   document.addEventListener("DOMContentLoaded", init);
-  window.addEventListener("mercury:load", init);
+  window.addEventListener("mercury:load", () => { closeActiveMap?.(); init(); });
 })();

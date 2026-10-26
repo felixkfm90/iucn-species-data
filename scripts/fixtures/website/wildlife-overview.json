@@ -1,0 +1,179 @@
+{
+  "bodyId": "collection-6833151fba24803905a3e990",
+  "gridClass": "fe-6833151fba24803905a3e995",
+  "sourceSha256": "ca4390ee57f2059e6e5474b02b318fe3df0e9d79ef8e7ae54d7f7234fcb7a931",
+  "blocks": [
+    {
+      "band": null,
+      "gridArea": "1 / 2 / 3 / 25",
+      "heading": "Wildlife",
+      "id": "bfa0bcb4dc12cc2e7da7",
+      "image": null,
+      "links": [],
+      "htmlDigest": "160b1636710c544632c7563507a64fff3ae63bbfa90740f65e427d99d79074cb"
+    },
+    {
+      "band": null,
+      "gridArea": "3 / 2 / 4 / 25",
+      "heading": null,
+      "id": "488c8303ffa45128c1b3",
+      "image": null,
+      "links": [],
+      "htmlDigest": "fd3f38acbd12777302ca6d96b775067bd4d8aafb91b93df0e0ecfef5702dcb4e"
+    },
+    {
+      "band": null,
+      "gridArea": "4 / 2 / 14 / 9",
+      "heading": null,
+      "id": "ae56691d04078177b902",
+      "image": {
+        "alt": "Ein Rehkitz steht auf einem Waldboden mit Büschen und Bäumen im Hintergrund.",
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/e45269e9-28a7-4145-84d8-37a92776366f/_7R50306.JPG?format=1500w"
+      },
+      "links": [
+        {
+          "href": "/wildlife/heimische-tierwelt",
+          "text": ""
+        }
+      ],
+      "htmlDigest": "1c6a6a29da1500ecd3483b456dccf6ae5577fb5dd6df3c5bb3a5a15cd8d04874"
+    },
+    {
+      "band": null,
+      "gridArea": "14 / 2 / 17 / 9",
+      "heading": "Heimische Tierwelt",
+      "id": "3486cfacf9159ec47226",
+      "image": null,
+      "links": [
+        {
+          "href": "/wildlife/heimische-tierwelt",
+          "text": "Heimische Tierwelt"
+        }
+      ],
+      "htmlDigest": "04abd95e95476803683f71b6c10b3f3cd5d116da21802edccb9142ed851c11af"
+    },
+    {
+      "band": null,
+      "gridArea": "19 / 14 / 31 / 22",
+      "heading": null,
+      "id": "22463b6d0097b8e9ea9f",
+      "image": {
+        "alt": "Logo FN Wildlife & Travel",
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/c043db90-3a2c-478c-a2ff-3d7cdbf6c14d/FN+Wildlife+%26+Travel+Logo+glow.jpg?format=1500w"
+      },
+      "links": [],
+      "htmlDigest": "5acebf5ad39875af5ca454e959bd09462cead37c5c6b94dc19781fc323a8ef48"
+    },
+    {
+      "band": "[{\"text\":\" In Arbeit \"}]",
+      "gridArea": "27 / 14 / 28 / 22",
+      "heading": "In Arbeit",
+      "id": "5079e12ffd965eaad2f1",
+      "image": null,
+      "links": [],
+      "htmlDigest": "394c437b4774176988834bc483816fd408a0ed69a1294f1f53eee9b27bc64cbe"
+    },
+    {
+      "band": null,
+      "gridArea": "30 / 14 / 32 / 22",
+      "heading": "Asien",
+      "id": "ab2bebb755b63b766950",
+      "image": null,
+      "links": [],
+      "htmlDigest": "c556b53666d64e023ce46767c361920e16b8ab30031aafcdb18a56b0b55ef58a"
+    },
+    {
+      "band": null,
+      "gridArea": "4 / 18 / 14 / 25",
+      "heading": null,
+      "id": "5e419c5622b27fa5381c",
+      "image": {
+        "alt": "Ein bunter Papagei sitzt auf einem Ast in einem grünen, bewaldeten Umfeld.",
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/bfad5a8e-21e7-427f-9c4b-4c14adcc50e2/_7R54648-2-Verbessert-RR.JPG?format=1500w"
+      },
+      "links": [
+        {
+          "href": "/wildlife/costarica",
+          "text": ""
+        }
+      ],
+      "htmlDigest": "b4417e4bdf55a6be5c6faa68ef2c07ca5bd47dd44f6b71340e855a607570d347"
+    },
+    {
+      "band": null,
+      "gridArea": "14 / 18 / 16 / 25",
+      "heading": "Costa Rica",
+      "id": "5cea254faa58fe17d025",
+      "image": null,
+      "links": [
+        {
+          "href": "/wildlife/costarica",
+          "text": "Costa Rica"
+        }
+      ],
+      "htmlDigest": "e4dc958d35411047f0ffb0dcba142182344f6011341aabb1295f9f174ac9a9cb"
+    },
+    {
+      "band": null,
+      "gridArea": "4 / 10 / 14 / 17",
+      "heading": null,
+      "id": "c5659536fc284596af3a",
+      "image": {
+        "alt": "Ein Papageientaucher steht auf grasbedecktem Boden mit grünen Pflanzen. Der Himmel im Hintergrund ist hellblau und ohne Wolken.",
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/33292f31-d10a-4961-930f-cb228a90a5df/_1M28509.JPG?format=1500w"
+      },
+      "links": [
+        {
+          "href": "/wildlife/island",
+          "text": ""
+        }
+      ],
+      "htmlDigest": "879164043eeaf2138bcebb8abe5c3843c1e2e2505848b3a855cc9dbdc57e77fe"
+    },
+    {
+      "band": null,
+      "gridArea": "14 / 10 / 16 / 17",
+      "heading": "Island",
+      "id": "be6971130ea8597ac1f7",
+      "image": null,
+      "links": [
+        {
+          "href": "/wildlife/island",
+          "text": "Island"
+        }
+      ],
+      "htmlDigest": "285ce492e7d4d147eb505485b3d2a6fba4cbd4d8c90dce0ce7fd7c7e92f9fe52"
+    },
+    {
+      "band": null,
+      "gridArea": "18 / 2 / 30 / 9",
+      "heading": null,
+      "id": "d6f77972d0b4210b927d",
+      "image": {
+        "alt": "",
+        "src": "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/5b3353ff-39e7-4d6f-9b6f-a01b33d601ba/_7R50586.JPG?format=1500w"
+      },
+      "links": [
+        {
+          "href": "/wildlife/afrika",
+          "text": ""
+        }
+      ],
+      "htmlDigest": "e67d288a9c6f19d5f81ec10c2105fb5254e6276eb0d0107912faeff9ad385f1a"
+    },
+    {
+      "band": null,
+      "gridArea": "30 / 2 / 32 / 9",
+      "heading": "Afrika",
+      "id": "2babb9abd5d5a1ed9285",
+      "image": null,
+      "links": [
+        {
+          "href": "/wildlife/afrika",
+          "text": "Afrika"
+        }
+      ],
+      "htmlDigest": "f46a552227444259dc8c7891fcc4f90a4bf621683b7a77250fba006dc8e32e31"
+    }
+  ]
+}

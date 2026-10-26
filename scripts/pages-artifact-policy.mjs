@@ -5,6 +5,7 @@ export const PAGE_SOURCE_FILES = Object.freeze([
   "species-core.js",
   "species-info.js",
   "species-taxonomy.js",
+  "species-hero-layout.js",
   "docs/squarespace-custom.css",
   "species-status.js",
   "species-portrait.js",
@@ -13,6 +14,7 @@ export const PAGE_SOURCE_FILES = Object.freeze([
   "search.js",
   "sort.js",
   "lightbox-zoom.js",
+  "header-navigation.js",
   "speciesData.json",
   "species_list.json",
   "fehlende_elemente_report.json",
@@ -69,6 +71,31 @@ export function isIgnoredDesignSource(relativePath) {
 export function isAllowedArtifactPath(relativePath) {
   const normalized = normalizeArtifactPath(relativePath);
   return PAGE_GENERATED_FILES.includes(normalized) || isPublishableSourcePath(normalized);
+}
+
+// The builder replaces its output directory. A path merely being inside the
+// checkout must never authorize removal of source files or durable local data.
+export async function assertPagesOutputDirectory(repoRoot, outputDirectory) {
+  const root = path.resolve(repoRoot);
+  const output = path.resolve(outputDirectory);
+  const relative = path.relative(root, output);
+  const parts = relative.split(path.sep);
+  const normalized = parts.map((part) => process.platform === "win32" ? part.toLowerCase() : part);
+  if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(`..${path.sep}`)
+      || !(normalized.length === 1 && normalized[0] === "_site")) {
+    throw new Error("Pages-Ausgabe ist nur im eigenen _site direkt unter der Projektwurzel erlaubt. Quelldateien, dauerhafte Daten und andere Temp-Sitzungen bleiben geschützt.");
+  }
+  for (let current = output;; current = path.dirname(current)) {
+    const info = await lstat(current).catch((error) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+    if (info?.isSymbolicLink() || info && !info.isDirectory()) {
+      throw new Error("Pages-Ausgabepfad enthält einen Link oder ist kein Verzeichnis; nichts wurde entfernt.");
+    }
+    if (current === path.dirname(current)) break;
+  }
+  return output;
 }
 
 export async function listPublishableSourceFiles(repoRoot) {

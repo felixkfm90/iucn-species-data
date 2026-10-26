@@ -1,7 +1,7 @@
 /*
   Squarespace Custom CSS reference
-  Stand: 2026-08-10
-  Soll-Stand inklusive responsiver Taxonomie-Pyramide fuer Phase 8.
+  Stand: 2026-10-26, lokal vorbereiteter Auditstand.
+  Responsive Taxonomie und freigegebene Artseitendarstellung; noch nicht gemeinsam veroeffentlicht.
 */
 
 /* ================================ */
@@ -548,7 +548,7 @@
 /* MOBILE                           */
 /* ================================ */
 
-@media (min-width: 769px) and (max-width: 1100px) {
+@media (width > 768px) and (max-width: 1100px) {
   #species-output {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -861,33 +861,759 @@
 
 
 /* Travel overview: raster rules activate only after the matching reading-order correction succeeds. */
-@media (max-width: 767px) {
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-d3440f9a41f587d9f7bd {
+@media not all and (min-width: 768px) {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-d3440f9a41f587d9f7bd {
     grid-row-start: 77;
     grid-row-end: 85;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-4b21f7e77648c6279536 {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-4b21f7e77648c6279536 {
     grid-row-start: 85;
     grid-row-end: 87;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-59db82169a9f60431f0f {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-59db82169a9f60431f0f {
     grid-row-start: 88;
     grid-row-end: 90;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-f5eae501c897b57cf4ba {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-f5eae501c897b57cf4ba {
     grid-row-start: 89;
     grid-row-end: 90;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-611f69c7d6955ac5c88e {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-611f69c7d6955ac5c88e {
     grid-row-start: 90;
     grid-row-end: 98;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-371d783d87800ccb5a2f {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-371d783d87800ccb5a2f {
     grid-row-start: 98;
     grid-row-end: 100;
   }
-  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-montenegro-v1"] > .fe-block-053f5382d53cf7f852ee {
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965:is([data-fn-travel-order="latium-2022-montenegro-v1"], [data-fn-travel-order="latium-2022-logo-status-v2"]) > .fe-block-053f5382d53cf7f852ee {
     grid-row-start: 120;
     grid-row-end: 122;
+  }
+  /* Status follows the relocated Latium and Namibia 2023 placeholder images. */
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-logo-status-v2"] > .fe-block-f88c7ec3db7bd5048a6f {
+    grid-row-start: 83;
+    grid-row-end: 85;
+  }
+  #collection-6762f93388733e1c65ea92df .fe-6762fbf91d9e4a0b2d731965[data-fn-travel-order="latium-2022-logo-status-v2"] > .fe-block-18b9c85009fdab9fabad {
+    grid-row-start: 96;
+    grid-row-end: 98;
+  }
+}
+
+/* Wildlife overview: keep complete category groups in the same reading and visual order.
+   Works only with the validated marker and variables from sort.js. */
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995 {
+  --fn-wildlife-layout: 1;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] {
+  grid-template-rows: repeat(var(--fn-wildlife-mobile-rows), minmax(24px, auto)) !important;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role] {
+  grid-column-start: 2 !important;
+  grid-column-end: 10 !important;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="image"] {
+  grid-row-start: var(--fn-wildlife-mobile-row) !important;
+  grid-row-end: span 8 !important;
+  z-index: 0 !important;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="title"] {
+  grid-row-start: calc(var(--fn-wildlife-mobile-row) + 8) !important;
+  grid-row-end: span 3 !important;
+  z-index: 1 !important;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="status"] {
+  grid-row-start: calc(var(--fn-wildlife-mobile-row) + 6) !important;
+  grid-row-end: span 2 !important;
+  z-index: 2 !important;
+}
+body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="title"] h2 {
+  font-size: clamp(1.1rem, 4.8vw, 1.6rem);
+  line-height: 1.2;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+}
+@media (min-width: 768px) {
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] {
+    grid-template-rows: repeat(var(--fn-wildlife-wide-rows), minmax(calc(var(--container-width) * var(--row-height-scaling-factor)), auto)) !important;
+  }
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role] {
+    grid-column-start: var(--fn-wildlife-wide-column) !important;
+    grid-column-end: span 7 !important;
+  }
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="image"] {
+    grid-row-start: var(--fn-wildlife-wide-row) !important;
+    grid-row-end: span 10 !important;
+  }
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="title"] {
+    grid-row-start: calc(var(--fn-wildlife-wide-row) + 10) !important;
+    grid-row-end: span 3 !important;
+  }
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="status"] {
+    grid-row-start: calc(var(--fn-wildlife-wide-row) + 8) !important;
+    grid-row-end: span 2 !important;
+  }
+  body#collection-6833151fba24803905a3e990 .fe-6833151fba24803905a3e995[data-fn-wildlife-order="home-alphabetic-pending-v1"] > [data-fn-wildlife-role="title"] h2 {
+    font-size: clamp(1rem, 2.4vw, 2rem);
+  }
+}
+
+/* Species hero v1.0.4.
+   Preserve the native full-bleed cover image, authored focus, medium section
+   height and per-species overlay. Only mobile moves the title below the photo. */
+section[data-fn-species-hero="full-bleed-responsive-title-v3"] {
+  --fn-species-hero-title-mode: overlay;
+}
+section[data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-html-content,
+section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-html-content * {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+}
+@media not all and (min-width: 768px) {
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] {
+    --fn-species-hero-title-mode: below;
+    display: block !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] > .section-border {
+    position: relative !important;
+    inset: auto !important;
+    height: 66vh !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] > .content-wrapper {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+    padding: clamp(20px, 3vw, 36px) max(6vw, 20px) !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .fluid-engine {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .fluid-engine > .fe-block {
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-html-content,
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-html-content * {
+    color: #000000 !important;
+    text-shadow: none !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-html-content :is(h1, h2, h3) {
+    font-size: clamp(24px, 3vw, 40px) !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-block-button,
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-block-button .sqs-block-content {
+    height: auto !important;
+    min-height: 0 !important;
+    flex: initial !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-block-button-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+    min-height: 48px !important;
+  }
+  section[data-fn-species-hero="full-bleed-responsive-title-v3"] .sqs-block-button-element {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 12px 24px !important;
+    box-sizing: border-box !important;
+    line-height: 1.25 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+}
+
+/* A77: approved title contrast; original colors, photos and geometry remain. */
+@media (min-width: 768px) {
+  body#collection-693c436bdd4b483b2fac514e section[data-section-id="693c436bdd4b483b2fac5151"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-f6fa6c3fb0e3aa0884c7 .sqs-html-content h3,
+  body#collection-693c436bdd4b483b2fac514e section[data-section-id="693c436bdd4b483b2fac5151"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-f6fa6c3fb0e3aa0884c7 .sqs-html-content h3 *,
+  body#collection-693d2af5c6dd5d7f5bb73b9a section[data-section-id="693d2af5c6dd5d7f5bb73b9d"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-dfe2e8031c80cf4016f0 .sqs-html-content h3,
+  body#collection-693d2af5c6dd5d7f5bb73b9a section[data-section-id="693d2af5c6dd5d7f5bb73b9d"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-dfe2e8031c80cf4016f0 .sqs-html-content h3 * {
+    text-shadow: -0.6px 0 rgba(255,255,255,0.85), 0.6px 0 rgba(255,255,255,0.85), 0 -0.6px rgba(255,255,255,0.85), 0 0.6px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.45) !important;
+  }
+  body#collection-693c4a36ff41316f87b7a4a3 section[data-section-id="693c4a36ff41316f87b7a4a6"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-1d1d4ed571227cc063a7 .sqs-html-content h3,
+  body#collection-693c4a36ff41316f87b7a4a3 section[data-section-id="693c4a36ff41316f87b7a4a6"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-1d1d4ed571227cc063a7 .sqs-html-content h3 *,
+  body#collection-6978d6e9180ebd78a049d791 section[data-section-id="6978d6e9180ebd78a049d794"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-e2895b50043087193ba4 .sqs-html-content h3,
+  body#collection-6978d6e9180ebd78a049d791 section[data-section-id="6978d6e9180ebd78a049d794"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-e2895b50043087193ba4 .sqs-html-content h3 *,
+  body#collection-697f854234bdc76fb29054e5 section[data-section-id="697f854234bdc76fb29054e8"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-fc52f85ea14e32d6e6f0 .sqs-html-content h3,
+  body#collection-697f854234bdc76fb29054e5 section[data-section-id="697f854234bdc76fb29054e8"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-fc52f85ea14e32d6e6f0 .sqs-html-content h3 *,
+  body#collection-6a3f6120746a1a18bec0777e section[data-section-id="6a3f6120746a1a18bec07781"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-e8e35c44bc5e2b578640 .sqs-html-content h3,
+  body#collection-6a3f6120746a1a18bec0777e section[data-section-id="6a3f6120746a1a18bec07781"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-e8e35c44bc5e2b578640 .sqs-html-content h3 *,
+  body#collection-6a6f1eb2627f4d176e012eb1 section[data-section-id="6a6f1eb2627f4d176e012eb5"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-689192a3bc83a6a15da4 .sqs-html-content h3,
+  body#collection-6a6f1eb2627f4d176e012eb1 section[data-section-id="6a6f1eb2627f4d176e012eb5"][data-fn-species-hero="full-bleed-responsive-title-v3"] #block-689192a3bc83a6a15da4 .sqs-html-content h3 * {
+    text-shadow: -0.6px 0 rgba(0,0,0,0.85), 0.6px 0 rgba(0,0,0,0.85), 0 -0.6px rgba(0,0,0,0.85), 0 0.6px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.45) !important;
+  }
+}
+
+/* A79: approved mobile Eurasian jay photo framing. */
+@media not all and (min-width: 768px) {
+  body#collection-6a4d1e04ae12c952f10322de section[data-section-id="6a4d1e04ae12c952f10322e2"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    object-position: 83% 39.20490061257658% !important;
+  }
+}
+
+/* UNPUBLISHED A71 candidate: only confirmed narrow map headings and occluded mobile map cells. */
+@media (min-width: 768px) {
+  #collection-693c436bdd4b483b2fac514e .fe-693c436bdd4b483b2fac5153 > .fe-block-yui_3_17_2_1_1765556799782_405483,
+  #collection-693c444cb5860245980fa25d .fe-693c444cb5860245980fa262 > .fe-block-yui_3_17_2_1_1765556799782_622495,
+  #collection-693c452111b2c37f741163b9 .fe-693c452111b2c37f741163be > .fe-block-yui_3_17_2_1_1765556799782_852793,
+  #collection-693c4b33951214134411a001 .fe-693c4b33951214134411a006 > .fe-block-yui_3_17_2_1_1765556799782_1542000,
+  #collection-693c4c47e09f98107be8b6bd .fe-693c4c47e09f98107be8b6c2 > .fe-block-yui_3_17_2_1_1765556799782_1760097,
+  #collection-693c4d6a7517a143ba68f683 .fe-693c4d6a7517a143ba68f688 > .fe-block-yui_3_17_2_1_1765556799782_1977823,
+  #collection-693c4f9f8a70fb28d807f014 .fe-693c4f9f8a70fb28d807f019 > .fe-block-yui_3_17_2_1_1765556799782_2444255,
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-yui_3_17_2_1_1765556799782_2930421,
+  #collection-693d2bb9ccbe0d2ba37d7adf .fe-693d2bb9ccbe0d2ba37d7ae4 > .fe-block-yui_3_17_2_1_1765615600058_1162554,
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-yui_3_17_2_1_1765615600058_1710412,
+  #collection-69725abbc4581e2d392a4801 .fe-69725abbc4581e2d392a4806 > .fe-block-17c37639a5bbe0aac992,
+  #collection-69a85b895e465754c2d424ea .fe-69a85b895e465754c2d424f4 > .fe-block-f71884492700b799c38f,
+  #collection-69aafc2279dc7373b8ad7cd2 .fe-69aafc2279dc7373b8ad7cd7 > .fe-block-d0c3e18f78530c574b04,
+  #collection-69ad31e57e99d361fcc9a19e .fe-69ad31e57e99d361fcc9a1a3 > .fe-block-f7cf06cb8bc4bf86727d,
+  #collection-69ad3a58d1285e07a57937e6 .fe-69ad3a58d1285e07a57937eb > .fe-block-4ba3e8fe15d8bc724ab8,
+  #collection-69c56dbb92bbf04ba4ed9ef8 .fe-69c56dbb92bbf04ba4ed9efd > .fe-block-5e8100a48f676d824360,
+  #collection-69c574e08e1c9c4dc7de6db7 .fe-69c574e08e1c9c4dc7de6dbc > .fe-block-f45180f6477975b40a80,
+  #collection-69c58779be166f11b8cabbb3 .fe-69c58779be166f11b8cabbb8 > .fe-block-ea59f17397c95b65c933,
+  #collection-69e65485e04acd4d535ef9b2 .fe-69e65485e04acd4d535ef9b7 > .fe-block-369a0a2d6512323b3a1a,
+  #collection-69ecd0b04903351e33ea02c3 .fe-69ecd0b04903351e33ea02c8 > .fe-block-409672e9b3ad572f30aa,
+  #collection-69ecd58b236f057e707f32f5 .fe-69ecd58b236f057e707f32fa > .fe-block-1eb0b5777c149e97213d,
+  #collection-69ecf2ba6711b46acc9b971d .fe-69ecf2ba6711b46acc9b9722 > .fe-block-dcf0d13dd79d7a2226e5,
+  #collection-69ed025d6711b46acca090bc .fe-69ed025d6711b46acca090c1 > .fe-block-45057854da256569e1b7,
+  #collection-6a4d1e04ae12c952f10322de .fe-6a4d1e04ae12c952f10322e5 > .fe-block-909151ac6bcfb1beab1f,
+  #collection-6a58f133b59c3c65f915678f .fe-6a58f133b59c3c65f9156796 > .fe-block-5988dae6f452e2cbb3dd,
+  #collection-6a5c7b782020146782f75a2f .fe-6a5c7b782020146782f75a36 > .fe-block-bb15a35108989fa5fc99,
+  #collection-6a6460abf68d495052013a81 .fe-6a6460abf68d495052013a88 > .fe-block-17ba6a7a3607daa5094e,
+  #collection-6a6f1eb2627f4d176e012eb1 .fe-6a6f1eb2627f4d176e012eb8 > .fe-block-68ccd73a0abb1425a051,
+  #collection-6a99ac39d282b654f1c73372 .fe-6a99ac39d282b654f1c73379 > .fe-block-282ae8e056ae1b1630e4,
+  #collection-6aa500fcd2c0b57f6d9adf29 .fe-6aa500fcd2c0b57f6d9adf30 > .fe-block-5a93f51699bb536f3e99,
+  #collection-6aa956ee14225a23107c3010 .fe-6aa956ee14225a23107c3017 > .fe-block-d57f9febaa3d2a725a4e,
+  #collection-6ad62cba76ae4a2a342344be .fe-6ad62cba76ae4a2a342344c5 > .fe-block-c0dde11176f12e2517a6,
+  #collection-6ad62cdee41ac144994634c5 .fe-6ad62cdee41ac144994634cc > .fe-block-d39baf9daecbdfaa48c2 {
+    grid-column-start: 2;
+    grid-column-end: 26;
+  }
+}
+
+@media (width < 768px) {
+  /* /wildlife/heimische-tierwelt/motacillaalba */
+  #collection-693b01e8e8230f652f67803c .fe-693b01e8e8230f652f678041 {
+    grid-template-rows: repeat(84, minmax(24px, auto));
+  }
+  #collection-693b01e8e8230f652f67803c .fe-693b01e8e8230f652f678041 > .fe-block-yui_3_17_2_1_1765474873480_4084 {
+    grid-row-start: 79;
+    grid-row-end: 85;
+  }
+  /* /wildlife/heimische-tierwelt/phalacrocoraxcarbo */
+  #collection-6978d6e9180ebd78a049d791 .fe-6978d6e9180ebd78a049d796 {
+    grid-template-rows: repeat(84, minmax(24px, auto));
+  }
+  #collection-6978d6e9180ebd78a049d791 .fe-6978d6e9180ebd78a049d796 > .fe-block-c7bde03ae2d11c700553 {
+    grid-row-start: 78;
+    grid-row-end: 85;
+  }
+  /* /wildlife/heimische-tierwelt/haematopusostralegus */
+  #collection-697f854234bdc76fb29054e5 .fe-697f854234bdc76fb29054ea {
+    grid-template-rows: repeat(90, minmax(24px, auto));
+  }
+  #collection-697f854234bdc76fb29054e5 .fe-697f854234bdc76fb29054ea > .fe-block-a71a89df0a6b0640af32 {
+    grid-row-start: 85;
+    grid-row-end: 91;
+  }
+  /* /wildlife/heimische-tierwelt/sittaeuropaea */
+  #collection-69a85b895e465754c2d424ea .fe-69a85b895e465754c2d424f4 {
+    grid-template-rows: repeat(72, minmax(24px, auto));
+  }
+  #collection-69a85b895e465754c2d424ea .fe-69a85b895e465754c2d424f4 > .fe-block-882d02f2030dd35c6328 {
+    grid-row-start: 66;
+    grid-row-end: 73;
+  }
+  /* /wildlife/heimische-tierwelt/coccothraustescoccothraustes */
+  #collection-69ad31e57e99d361fcc9a19e .fe-69ad31e57e99d361fcc9a1a3 {
+    grid-template-rows: repeat(91, minmax(24px, auto));
+  }
+  #collection-69ad31e57e99d361fcc9a19e .fe-69ad31e57e99d361fcc9a1a3 > .fe-block-2615ef973a366a98ac31 {
+    grid-row-start: 85;
+    grid-row-end: 92;
+  }
+  /* /wildlife/heimische-tierwelt/glaucidiumpasserinum */
+  #collection-69ad3a58d1285e07a57937e6 .fe-69ad3a58d1285e07a57937eb {
+    grid-template-rows: repeat(91, minmax(24px, auto));
+  }
+  #collection-69ad3a58d1285e07a57937e6 .fe-69ad3a58d1285e07a57937eb > .fe-block-3372322b0053fe0cac7e {
+    grid-row-start: 85;
+    grid-row-end: 92;
+  }
+  /* /wildlife/heimische-tierwelt/mergusmerganser */
+  #collection-69e65485e04acd4d535ef9b2 .fe-69e65485e04acd4d535ef9b7 {
+    grid-template-rows: repeat(74, minmax(24px, auto));
+  }
+  #collection-69e65485e04acd4d535ef9b2 .fe-69e65485e04acd4d535ef9b7 > .fe-block-d81975763b2a4b1c0c08 {
+    grid-row-start: 68;
+    grid-row-end: 75;
+  }
+  /* /wildlife/heimische-tierwelt/anseranser */
+  #collection-69ecd0b04903351e33ea02c3 .fe-69ecd0b04903351e33ea02c8 {
+    grid-template-rows: repeat(81, minmax(24px, auto));
+  }
+  #collection-69ecd0b04903351e33ea02c3 .fe-69ecd0b04903351e33ea02c8 > .fe-block-257691b5d2a7bee0c395 {
+    grid-row-start: 75;
+    grid-row-end: 82;
+  }
+  /* /wildlife/heimische-tierwelt/ardeacinerea */
+  #collection-69ecd58b236f057e707f32f5 .fe-69ecd58b236f057e707f32fa {
+    grid-template-rows: repeat(71, minmax(24px, auto));
+  }
+  #collection-69ecd58b236f057e707f32f5 .fe-69ecd58b236f057e707f32fa > .fe-block-0a646bcec4c6ef46782e {
+    grid-row-start: 65;
+    grid-row-end: 72;
+  }
+  /* /wildlife/heimische-tierwelt/parusmajor */
+  #collection-69ecf2ba6711b46acc9b971d .fe-69ecf2ba6711b46acc9b9722 {
+    grid-template-rows: repeat(70, minmax(24px, auto));
+  }
+  #collection-69ecf2ba6711b46acc9b971d .fe-69ecf2ba6711b46acc9b9722 > .fe-block-901a8cc72640269530ad {
+    grid-row-start: 64;
+    grid-row-end: 71;
+  }
+  /* /wildlife/heimische-tierwelt/garrulusglandarius */
+  #collection-6a4d1e04ae12c952f10322de .fe-6a4d1e04ae12c952f10322e5 {
+    grid-template-rows: repeat(91, minmax(24px, auto));
+  }
+  #collection-6a4d1e04ae12c952f10322de .fe-6a4d1e04ae12c952f10322e5 > .fe-block-09b79f6354e572dac2e5 {
+    grid-row-start: 85;
+    grid-row-end: 92;
+  }
+  /* /wildlife/costarica/agalychniscallidryas */
+  #collection-6ab7703fb140a8106a97bc93 .fe-6ab7703fb140a8106a97bc9a {
+    grid-template-rows: repeat(135, minmax(24px, auto));
+  }
+  #collection-6ab7703fb140a8106a97bc93 .fe-6ab7703fb140a8106a97bc9a > .fe-block-7821e9dbafa0d6352f6d {
+    grid-row-start: 129;
+    grid-row-end: 136;
+  }
+}
+
+/* UNPUBLISHED A72 candidate: keep existing mobile order, spans and positive gaps; remove shared text rows. */
+@media (width < 768px) {
+  /* /wildlife/costarica/atelesgeoffroyi */
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc {
+    grid-template-rows: repeat(70, minmax(24px, auto));
+  }
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-80d4b2b27113a7c794d7 {
+    grid-row-start: 39;
+    grid-row-end: 45;
+  }
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-d73621c10d26b078fe13 {
+    grid-row-start: 45;
+    grid-row-end: 52;
+  }
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-77aacadcb12f9ddf14ac {
+    grid-row-start: 52;
+    grid-row-end: 62;
+  }
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-yui_3_17_2_1_1765556799782_2930421 {
+    grid-row-start: 63;
+    grid-row-end: 65;
+  }
+  #collection-693c564f5dd64311b357d0f7 .fe-693c564f5dd64311b357d0fc > .fe-block-yui_3_17_2_1_1765561975721_3837 {
+    grid-row-start: 64;
+    grid-row-end: 71;
+  }
+  /* /wildlife/island/megapteranovaeangliae */
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 {
+    grid-template-rows: repeat(57, minmax(24px, auto));
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-bab11c982300ad67ae2c {
+    grid-row-start: 16;
+    grid-row-end: 25;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-60e0f5004be1088d2ae2 {
+    grid-row-start: 25;
+    grid-row-end: 31;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-9fcc3165ac21bc8ac0db {
+    grid-row-start: 31;
+    grid-row-end: 38;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-88f3d13f5d248f8dd2cf {
+    grid-row-start: 38;
+    grid-row-end: 44;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-ba6b5212b9a09e13eef8 {
+    grid-row-start: 44;
+    grid-row-end: 55;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-yui_3_17_2_1_1765615600058_1710412 {
+    grid-row-start: 56;
+    grid-row-end: 58;
+  }
+  #collection-693d2dc2e8e81867602d8dc4 .fe-693d2dc2e8e81867602d8dc9 > .fe-block-yui_3_17_2_1_1765617247563_4035 {
+    grid-row-start: 57;
+    grid-row-end: 58;
+  }
+  /* /wildlife/heimische-tierwelt/lophophanescristatus */
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 {
+    grid-template-rows: repeat(59, minmax(24px, auto));
+  }
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 > .fe-block-6d5ff5fbec78eae38d4b {
+    grid-row-start: 33;
+    grid-row-end: 42;
+  }
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 > .fe-block-1da7466443f79d6b8eb1 {
+    grid-row-start: 42;
+    grid-row-end: 49;
+  }
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 > .fe-block-d7e96f4adbc8202e486a {
+    grid-row-start: 49;
+    grid-row-end: 57;
+  }
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 > .fe-block-7a4581d9de5618202360 {
+    grid-row-start: 58;
+    grid-row-end: 60;
+  }
+  #collection-69515f3d7dcf0a469d79e82b .fe-69515f3d7dcf0a469d79e830 > .fe-block-64f2770c84cfc7c23e53 {
+    grid-row-start: 59;
+    grid-row-end: 60;
+  }
+  /* /wildlife/afrika/coraciascaudatus */
+  #collection-6a6f1eb2627f4d176e012eb1 .fe-6a6f1eb2627f4d176e012eb8 {
+    grid-template-rows: repeat(125, minmax(24px, auto));
+  }
+  #collection-6a6f1eb2627f4d176e012eb1 .fe-6a6f1eb2627f4d176e012eb8 > .fe-block-d604e604530cf5d2d3ae {
+    grid-row-start: 107;
+    grid-row-end: 117;
+  }
+  #collection-6a6f1eb2627f4d176e012eb1 .fe-6a6f1eb2627f4d176e012eb8 > .fe-block-68ccd73a0abb1425a051 {
+    grid-row-start: 118;
+    grid-row-end: 120;
+  }
+  #collection-6a6f1eb2627f4d176e012eb1 .fe-6a6f1eb2627f4d176e012eb8 > .fe-block-f5b5a955b70c089fbb1c {
+    grid-row-start: 119;
+    grid-row-end: 126;
+  }
+  /* /wildlife/costarica/dendrobatesauratus */
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 {
+    grid-template-rows: repeat(143, minmax(24px, auto));
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-7502a11feea927e9cf0d {
+    grid-row-start: 28;
+    grid-row-end: 41;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-390b64afce4a68acc476 {
+    grid-row-start: 41;
+    grid-row-end: 54;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-636e44411b5ea4284c0d {
+    grid-row-start: 55;
+    grid-row-end: 70;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-da63d81b7bb85908f8c1 {
+    grid-row-start: 71;
+    grid-row-end: 85;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-43b9f00d203d1c222914 {
+    grid-row-start: 86;
+    grid-row-end: 100;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-a2f652a732bfce6a2863 {
+    grid-row-start: 100;
+    grid-row-end: 121;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-b6c0e6e378e676b425e2 {
+    grid-row-start: 122;
+    grid-row-end: 135;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-bf727bef737e7ea42315 {
+    grid-row-start: 136;
+    grid-row-end: 138;
+  }
+  #collection-6ac1fed3c00ee628a3b738f1 .fe-6ac1fed3c00ee628a3b738f8 > .fe-block-4a6ae654eb22eae1e1b5 {
+    grid-row-start: 137;
+    grid-row-end: 144;
+  }
+}
+
+@media (width < 768px) {
+  #collection-693afe1695d9b876f989cd86 .fe-693afe1695d9b876f989cd8c {
+    grid-template-rows: repeat(87, minmax(24px, auto));
+  }
+  #collection-693afe1695d9b876f989cd86 .fe-693afe1695d9b876f989cd8c > .fe-block-yui_3_17_2_1_1765473912508_3684 {
+    grid-row-start: 81;
+    grid-row-end: 88;
+  }
+}
+
+/* FN header navigation 1.0.0: dismissed desktop folders only. */
+header .header-display-desktop .header-nav-item--folder[data-fn-header-dismissed="true"] > .header-nav-folder-content {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Accepted tablet photo positions: nine individually approved species. Header-bound shift preserves the existing hero geometry. */
+@media (min-width: 768px) and (width < 1024px) {
+  body#collection-693c444cb5860245980fa25d section[data-section-id="693c444cb5860245980fa260"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(96px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-693d2f081bb5f700f12b13ee section[data-section-id="693d2f081bb5f700f12b13f1"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(144px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-6978d6e9180ebd78a049d791 section[data-section-id="6978d6e9180ebd78a049d794"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(96px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-693c4f9f8a70fb28d807f014 section[data-section-id="693c4f9f8a70fb28d807f017"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(64px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-693d2dc2e8e81867602d8dc4 section[data-section-id="693d2dc2e8e81867602d8dc7"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(72px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-695a32b9f01bb923cd70efc3 section[data-section-id="695a32b9f01bb923cd70efc6"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(48px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-696358d76fca2b7f58ba9ebb section[data-section-id="696358d76fca2b7f58ba9ebe"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(40px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-6a3f6120746a1a18bec0777e section[data-section-id="6a3f6120746a1a18bec07781"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(72px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+  body#collection-6a48eff3d45fa46bd2a261b6 section[data-section-id="6a48eff3d45fa46bd2a261ba"][data-fn-species-hero="full-bleed-responsive-title-v3"] .section-background img {
+    translate: 0 min(64px, max(0px, calc(var(--fn-species-hero-header-height) - 2px))) !important;
+  }
+}
+
+/* Accepted mobile whole-word headings: Privacy, Haithabu and Luetjenburg only. */
+@media not all and (min-width: 768px) {
+  body#collection-699742d3f3b1c01ab75b45f3 #block-65646b9a52737375b9f3 :is(h1, h2, h3), body#collection-699742d3f3b1c01ab75b45f3 #block-65646b9a52737375b9f3 :is(h1, h2, h3) * {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+  body#collection-699742d3f3b1c01ab75b45f3 #block-65646b9a52737375b9f3 h1 { font-size: clamp(18px, 5.3vw, 24px) !important; }
+  body#collection-699742d3f3b1c01ab75b45f3 #block-65646b9a52737375b9f3 h2 { font-size: clamp(20px, 5.2vw, 24px) !important; }
+  body#collection-699742d3f3b1c01ab75b45f3 #block-65646b9a52737375b9f3 h3 { font-size: clamp(18px, 4.8vw, 22px) !important; }
+}
+
+@media (width < 768px) {
+  body#collection-6766d09d538b177ae085fea9 #block-b0bc7f9445b1dc3269b5 :is(h1,h2,h3,h4),
+  body#collection-6766d09d538b177ae085fea9 #block-b0bc7f9445b1dc3269b5 :is(h1,h2,h3,h4) * {
+    font-size: clamp(18px, 5.3vw, 22px) !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+  body#collection-6766d17cefcd4d4cce55018d #block-1706b5fea38fbc8a5018 :is(h1,h2,h3,h4),
+  body#collection-6766d17cefcd4d4cce55018d #block-1706b5fea38fbc8a5018 :is(h1,h2,h3,h4) * {
+    font-size: clamp(18px, 5.3vw, 22px) !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+}
+
+/* Accepted Home/Support tablet flow and complete photos. */
+@media (min-width: 768px) and (width < 1024px) {
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917,
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f,
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 {
+    grid-template-rows: none !important;
+    grid-auto-rows: auto !important;
+    row-gap: 16px !important;
+  }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917 > .fe-block,
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block,
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block {
+    grid-column-start: 2 !important;
+    grid-column-end: -2 !important;
+    grid-row-start: auto !important;
+    grid-row-end: auto !important;
+  }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917 > .fe-block-c5eaee0bff8acc69fb5a { grid-row-start: 1 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917 > .fe-block-4886fa78cb970051d7d4 { grid-row-start: 2 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917 > .fe-block-3ee9cb2c90e305a4b285 { grid-row-start: 3 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block-9e1de2b7ec7bd058502d { grid-row-start: 1 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block-yui_3_17_2_1_1734192554149_5579 { grid-row-start: 2 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block-206ca541596c0985e36a { grid-row-start: 3 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block-b4606cc125b762b607ab { grid-row-start: 4 !important; grid-row-end: auto !important; }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-198a3ef00f092130862e { grid-row-start: 1 !important; grid-row-end: auto !important; }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_7952 { grid-row-start: 2 !important; grid-row-end: auto !important; }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_2351 { grid-row-start: 3 !important; grid-row-end: auto !important; }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_13119 { grid-row-start: 4 !important; grid-row-end: auto !important; }
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a42917 > .fe-block-3ee9cb2c90e305a4b285,
+  body#collection-67556d89ba0ab556b0a428f3 .fe-67556d89ba0ab556b0a4292f > .fe-block-b4606cc125b762b607ab {
+    aspect-ratio: 1.3333333333;
+    height: auto !important;
+    align-self: start;
+  }
+  body#collection-67556d89ba0ab556b0a428f3 #block-3ee9cb2c90e305a4b285,
+  body#collection-67556d89ba0ab556b0a428f3 #block-b4606cc125b762b607ab {
+    height: 100%;
+    --image-component-object-fit: contain;
+    --image-component-focal-point: 50% 50%;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-180a25537dc079df8906 {
+    grid-column-start: 2 !important;
+    grid-column-end: 14 !important;
+    grid-row-start: 5 !important;
+    grid-row-end: auto !important;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-54ac484c07252bc916ad {
+    grid-column-start: 14 !important;
+    grid-column-end: -2 !important;
+    grid-row-start: 5 !important;
+    grid-row-end: auto !important;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-180a25537dc079df8906,
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-54ac484c07252bc916ad {
+    aspect-ratio: 1.5;
+    height: auto !important;
+    align-self: start;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-180a25537dc079df8906,
+  body#collection-675dadf6ff8f63022d9c9694 #block-54ac484c07252bc916ad {
+    height: 100%;
+    --image-component-object-fit: contain;
+    --image-component-focal-point: 50% 50%;
+  }
+  body#collection-67556d89ba0ab556b0a428f3 #block-9e1de2b7ec7bd058502d h2,
+  body#collection-67556d89ba0ab556b0a428f3 #block-c5eaee0bff8acc69fb5a h2,
+  body#collection-675dadf6ff8f63022d9c9694 #block-198a3ef00f092130862e h3,
+  body#collection-675dadf6ff8f63022d9c9694 #block-yui_3_17_2_1_1734197586864_13119 h4 {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+}
+
+/* Keep the existing Support button centered at its natural width. */
+@media (min-width: 768px) and (width < 1024px) {
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_2351 {
+    justify-self: center !important;
+    width: max-content !important;
+    max-width: 100%;
+  }
+}
+
+/* Preserve the Support button width and usable height. */
+@media (min-width: 768px) and (width < 1024px) {
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_2351 {
+    min-width: 164px;
+    max-width: 100%;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 .fe-675dadf6ff8f63022d9c9699 > .fe-block-yui_3_17_2_1_1734197586864_2351 a.sqs-block-button-element {
+    min-height: 44px;
+  }
+}
+
+/* Accepted compact Support title: original content, font family and colors. */
+@media (min-width: 768px) and (width < 1024px) {
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0 0.3em;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqsrte-scaled-text-container {
+    display: inline-flex !important;
+    flex: 0 1 auto;
+    width: auto !important;
+    max-width: 100% !important;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqsrte-scaled-text {
+    display: inline-block !important;
+    font-size: inherit !important;
+    white-space: normal !important;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 h3 {
+    font-size: clamp(24px, 3.3vw, 28px) !important;
+    line-height: 1.25;
+    margin: 0;
+    flex: 0 1 auto;
+    max-width: 100%;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+}
+
+/* Accepted compact complete map with a visible enlargement action. */
+#map-wrapper #map-output > button.species-map-opener {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  width: 100% !important;
+  max-width: 640px;
+  margin: 0 auto;
+  border-radius: 5px;
+}
+#map-wrapper #map-output > button.species-map-opener > img.species-map-img {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+#map-wrapper #map-output > button.species-map-opener > .species-map-action {
+  display: block;
+  padding: 10px;
+  font: 600 16px system-ui;
+  color: #174c3b;
+  text-decoration: underline;
+}
+#map-wrapper #map-output > button.species-map-opener:focus-visible {
+  outline: 3px solid #078651;
+  outline-offset: -4px;
+}
+
+/* Tablet/Desktop: start the complete image below the map heading; mobile remains centered. */
+@media (min-width: 768px) {
+  #map-wrapper #map-output > button.species-map-opener {
+    align-items: flex-start;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #map-wrapper #map-output > button.species-map-opener > img.species-map-img {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* Accepted mobile Home contact heading: whole words, existing family and color. */
+@media (width < 768px) {
+  body#collection-67556d89ba0ab556b0a428f3 #block-9e1de2b7ec7bd058502d h2,
+  body#collection-67556d89ba0ab556b0a428f3 #block-9e1de2b7ec7bd058502d h2 * {
+    font-size: clamp(20px, 6.4vw, 28px) !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
   }
 }

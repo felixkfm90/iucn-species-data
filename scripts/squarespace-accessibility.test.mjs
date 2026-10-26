@@ -20,8 +20,317 @@ test("Artporträt benennt die dargestellte Art", () => {
 });
 
 test("Karten-Vollbild übernimmt den Alternativtext der Ausgangskarte", () => {
-  assert.match(mapSource, /openFullscreen\(imgUrl, img\.alt\)/);
+  assert.match(mapSource, /openFullscreen\(imgUrl, img\.alt, opener\)/);
   assert.match(mapSource, /img\.alt = altText \|\| "Vergrößerte Verbreitungskarte"/);
+});
+
+async function mapFixture({ width = 767, available = true } = {}) {
+  const frames = [], scrollCalls = [], focusCalls = [], geometry = { header: null, currentTop: 300, height: 300, outlineWidth: 1.76991, outlineOffset: 3.53982, pendingSmoothTop: null };
+  const events = new Map(), documentEvents = new Map();
+  const body = element(), content = element(), previouslyInert = element();
+  body.style.overflow = "auto";
+  body.appendChild(content); body.appendChild(previouslyInert); previouslyInert.inert = true;
+  const document = { body, activeElement: content, elementFromPoint: (x, y) => geometry.hitTest?.(x, y) || null,
+    getElementById: (id) => id === "map-wrapper" ? content : output,
+    addEventListener: (name, listener) => documentEvents.set(name, listener),
+    createElement: (tag) => makeNode(tag),
+  };
+  function makeNode(tag) {
+    const node = element(); node.tagName = tag.toUpperCase();
+    node.focus = (options) => { focusCalls.push({ node, options }); document.activeElement = node; };
+    node.remove = () => {
+      node.parentElement.children = node.parentElement.children.filter((child) => child !== node);
+      node.isConnected = false;
+    };
+    node.replaceWith = (next) => {
+      const parent = node.parentElement, index = parent.children.indexOf(node);
+      parent.children.splice(index, 1, next); next.parentElement = parent;
+    };
+    return node;
+  }
+  const output = makeNode("div"); content.appendChild(output);
+  Object.defineProperty(output, "innerHTML", { set(html) {
+    output.renderedHTML = html;
+    output.children = [];
+    if (html.includes("species-map-img")) {
+      const img = makeNode("img"); img.alt = "Verbreitungskarte - Bachstelze"; output.appendChild(img);
+    }
+  } });
+  output.querySelector = () => output.children[0];
+  const window = { innerWidth: width, innerHeight: 1024,
+    requestAnimationFrame: callback => frames.push(callback),
+    getComputedStyle: node => node === geometry.header ? { position: geometry.position || "fixed" } : { outlineStyle: geometry.outlineWidth > 0 ? "solid" : "none", outlineWidth: geometry.outlineWidth + "px", outlineOffset: geometry.outlineOffset + "px" },
+    scrollBy: options => { scrollCalls.push(options); if (options.behavior === "instant") geometry.pendingSmoothTop = null; geometry.currentTop -= options.top; },
+    SpeciesCore: { getSpeciesData: async () => ({ "Deutscher Name": "Bachstelze" }),
+    getSpeciesAssetPaths: () => ({ map: "https://example.test/map.jpg" }) },
+    matchMedia: () => ({ matches: width <= 768 }),
+    addEventListener: (name, listener) => events.set(name, listener),
+    removeEventListener: (name, listener) => { if (events.get(name) === listener) events.delete(name); },
+  };
+  const context = vm.createContext({ window, document, fetch: async () => ({ ok: available }),
+    Image: function () { return makeNode("img"); } });
+  new vm.Script(mapSource, { filename: "map-loader.js" }).runInContext(context);
+  documentEvents.get("DOMContentLoaded")();
+  await new Promise(setImmediate);
+  const opener = output.children[0];
+  const open = () => opener.listeners.get("click").listener();
+  const key = (value, shiftKey = false) => {
+    const event = { key: value, shiftKey, prevented: false, stopped: false,
+      preventDefault() { this.prevented = true; }, stopImmediatePropagation() { this.stopped = true; } };
+    events.get("keydown")?.(event); return event;
+  };
+  return { document, content, previouslyInert, output, opener, open, key, events, window, frames, scrollCalls, focusCalls, geometry, flush: () => { while (frames.length) frames.shift()(); if (geometry.pendingSmoothTop !== null) { geometry.currentTop = geometry.pendingSmoothTop; geometry.pendingSmoothTop = null; } },
+    overlay: () => body.children.find((node) => node.getAttribute("role") === "dialog") };
+}
+
+
+test("Mobile Karte öffnet als benannter Dialog mit Tastaturfokus und vollständiger Rückgabe", async () => {
+  const f = await mapFixture();
+  assert.equal(f.opener.tagName, "BUTTON");
+  assert.equal(f.opener.type, "button");
+  assert.equal(f.opener.getAttribute("aria-label"), "Verbreitungskarte vergrößern: Bachstelze");
+  f.open();
+  const dialog = f.overlay(), close = dialog.children[1];
+  assert.equal(dialog.getAttribute("aria-modal"), "true");
+  assert.equal(dialog.getAttribute("aria-label"), "Vergrößerte Verbreitungskarte");
+  assert.equal(dialog.children[0].alt, "Verbreitungskarte - Bachstelze");
+  assert.equal(close.getAttribute("aria-label"), "Kartenansicht schließen");
+  assert.equal(f.document.activeElement, close);
+  assert.equal(f.document.body.style.overflow, "hidden");
+  assert.equal(f.content.inert, true);
+  for (const shifted of [false, true]) {
+    const event = f.key("Tab", shifted);
+    assert(event.prevented && event.stopped);
+    assert.equal(f.document.activeElement, close);
+  }
+  f.document.activeElement = f.content;
+  f.events.get("focusin")({ target: f.content });
+  assert.equal(f.document.activeElement, close);
+  const escape = f.key("Escape");
+  assert(escape.prevented && escape.stopped);
+  assert.equal(f.overlay(), undefined);
+  assert.equal(f.document.activeElement, f.opener);
+  assert.equal(f.document.body.style.overflow, "auto");
+  assert.equal(f.content.inert, false);
+  assert.equal(f.previouslyInert.inert, true);
+  assert.equal(f.key("Escape").stopped, false);
+});
+
+test("Karte schließt per Schließknopf, Bildklick und Seitenwechsel ohne zurückbleibende Sperren", async () => {
+  const f = await mapFixture();
+  for (const method of ["close", "image", "page"]) {
+    f.open(); const dialog = f.overlay();
+    if (method === "close") dialog.children[1].listeners.get("click").listener();
+    else if (method === "image") dialog.listeners.get("click").listener({ target: dialog.children[0] });
+    else f.events.get("mercury:load")();
+    assert.equal(f.overlay(), undefined);
+    assert.equal(f.content.inert, false);
+    assert.equal(f.previouslyInert.inert, true);
+    assert.equal(f.document.body.style.overflow, "auto");
+    assert.equal(f.events.has("keydown"), false);
+    assert.equal(f.events.has("focusin"), false);
+  }
+});
+
+for (const width of [390, 768, 820, 1280]) {
+  test("Kompakte Karte bietet in jeder Ansicht denselben nativen Öffner: " + width, async () => {
+    const f = await mapFixture({ width });
+    assert.equal(f.opener.tagName, "BUTTON");
+    assert.equal(f.opener.type, "button");
+    assert.equal(f.opener.className, "species-map-opener");
+    assert.equal(f.opener.getAttribute("aria-label"), "Verbreitungskarte vergrößern: Bachstelze");
+    assert.equal(f.opener.children.length, 2);
+    const [image, action] = f.opener.children;
+    assert.equal(image.tagName, "IMG");
+    assert.equal(image.alt, "Verbreitungskarte - Bachstelze");
+    assert.equal(action.tagName, "SPAN");
+    assert.equal(action.className, "species-map-action");
+    assert.equal(action.textContent, "Karte vergrößern");
+    f.open();
+    const dialog = f.overlay();
+    assert.equal(dialog.getAttribute("aria-modal"), "true");
+    assert.equal(dialog.children[0].src, "https://example.test/map.jpg");
+    assert.equal(dialog.children[0].alt, image.alt);
+    assert.equal(f.document.activeElement, dialog.children[1]);
+    assert.equal(f.content.inert, true);
+    for (const shifted of [false, true]) {
+      const event = f.key("Tab", shifted);
+      assert(event.prevented && event.stopped);
+      assert.equal(f.document.activeElement, dialog.children[1]);
+    }
+    f.key("Escape"); f.flush();
+    assert.equal(f.overlay(), undefined);
+    assert.equal(f.document.activeElement, f.opener);
+    assert.equal(f.content.inert, false);
+    assert.equal(f.previouslyInert.inert, true);
+    assert.equal(f.document.body.style.overflow, "auto");
+    assert.equal(f.events.has("keydown"), false);
+    assert.equal(f.events.has("focusin"), false);
+  });
+}
+
+test("Fehlende Karten erzeugen auch auf breiten Ansichten keinen leeren Vergrößerungsknopf", async () => {
+  for (const width of [390, 820, 1280]) {
+    const f = await mapFixture({ width, available: false });
+    assert.match(f.output.renderedHTML, /Verbreitungskarte aktuell nicht verfuegbar/);
+    assert.equal(f.output.children.length, 0);
+    assert.equal(f.overlay(), undefined);
+    assert.equal(f.events.has("keydown"), false);
+    assert.equal(f.events.has("focusin"), false);
+  }
+});
+
+// Audit 10.54: stable native Amsel/fractional-tablet focus collision, in CSS px.
+// Keep this tiny explicit fixture independent of private evidence files/URLs.
+const MAP_FOCUS_BASELINE = Object.freeze({
+  headerBottom: 139.90597534179688,
+  openerTop: 140.2516632080078,
+  openerHeight: 899.9723510742188,
+  outlineWidth: 1.76991,
+  outlineOffset: 3.53982,
+});
+
+async function focusReturnFixture(options = {}) {
+  const f = await mapFixture(), g = f.geometry;
+  g.currentTop = options.top ?? MAP_FOCUS_BASELINE.openerTop;
+  g.height = options.height ?? MAP_FOCUS_BASELINE.openerHeight;
+  g.outlineWidth = options.outlineWidth ?? MAP_FOCUS_BASELINE.outlineWidth;
+  g.outlineOffset = options.outlineOffset ?? MAP_FOCUS_BASELINE.outlineOffset;
+  g.position = options.position || "fixed";
+  f.opener.getBoundingClientRect = () => ({ left: 46.0177, x: 46.0177, width: 661.9469,
+    right: 707.9646, top: g.currentTop, height: g.height, bottom: g.currentTop + g.height });
+  if (options.header !== false) {
+    g.header = element();
+    g.header.getBoundingClientRect = () => ({ left: 0, right: 767, top: options.headerTop ?? 0,
+      bottom: options.headerBottom ?? MAP_FOCUS_BASELINE.headerBottom, width: 767,
+      height: (options.headerBottom ?? MAP_FOCUS_BASELINE.headerBottom) - (options.headerTop ?? 0) });
+    g.hitTest = (x, y) => {
+      const r = g.header.getBoundingClientRect();
+      return options.hit !== false && x >= r.left && x < r.right && y >= r.top && y < r.bottom
+        ? { closest: () => g.header } : null;
+    };
+  }
+  f.open();
+  return f;
+}
+
+const focusMoves = (f) => f.scrollCalls.filter((call) => call.top !== 0 || call.left !== 0);
+const focusAborts = (f) => f.scrollCalls.filter((call) => call.top === 0 && call.left === 0 && call.behavior === "instant");
+const closeMap = (f) => f.overlay().children[1].listeners.get("click").listener();
+const upperFocusLineY = (f) => f.geometry.currentTop - f.geometry.outlineOffset - f.geometry.outlineWidth / 2;
+
+test("Kartenfokus kehrt ohne Browser-Autoscroll zurück und korrigiert nur eine gemessene Headerverdeckung", async () => {
+  const f = await focusReturnFixture();
+  closeMap(f);
+  assert.equal(f.document.activeElement, f.opener);
+  assert.equal(f.focusCalls.at(-1).options.preventScroll, true);
+  assert.equal(f.document.body.style.overflow, "auto");
+  assert.equal(focusMoves(f).length, 0, "Sichtprüfung erst nach wiederhergestelltem Layout");
+  f.flush();
+  assert.equal(focusMoves(f).length, 1);
+  assert.equal(focusMoves(f)[0].behavior, "instant");
+  assert.equal(focusMoves(f)[0].left, 0);
+  assert(focusMoves(f)[0].top < 0);
+  assert(upperFocusLineY(f) > MAP_FOCUS_BASELINE.headerBottom);
+  assert(f.geometry.currentTop - f.geometry.outlineOffset - f.geometry.outlineWidth
+    >= MAP_FOCUS_BASELINE.headerBottom + 2 - 1e-8);
+});
+
+for (const mode of ["free-header", "no-header", "not-actual-hit", "flow-header"]) {
+  test("Kartenfokus scrollt nicht unnötig: " + mode, async () => {
+    const f = await focusReturnFixture({ top: mode === "free-header" ? 300 : undefined,
+      header: mode !== "no-header", hit: mode !== "not-actual-hit", position: mode === "flow-header" ? "static" : "fixed" });
+    closeMap(f); f.flush();
+    assert.equal(f.document.activeElement, f.opener);
+    assert.equal(f.focusCalls.at(-1).options.preventScroll, true);
+    assert.equal(focusMoves(f).length, 0);
+  });
+}
+
+test("Entfernter Öffner oder zwischenzeitlich anderer Fokus löst kein spätes Kartenscrollen aus", async () => {
+  for (const timing of ["before-close", "after-close", "focus-moved"]) {
+    const f = await focusReturnFixture();
+    if (timing === "before-close") f.opener.isConnected = false;
+    closeMap(f);
+    if (timing === "after-close") f.opener.isConnected = false;
+    if (timing === "focus-moved") f.document.activeElement = f.content;
+    f.flush();
+    assert.equal(focusMoves(f).length, 0);
+    if (timing === "before-close") assert.notEqual(f.document.activeElement, f.opener);
+  }
+});
+
+test("Kleine und hohe Karten behalten ihre Maße; die Korrektur sichert nur den oberen Fokusanker", async () => {
+  for (const height of [200, MAP_FOCUS_BASELINE.openerHeight]) {
+    const f = await focusReturnFixture({ height });
+    closeMap(f); f.flush();
+    assert.equal(f.geometry.height, height);
+    assert(upperFocusLineY(f) > MAP_FOCUS_BASELINE.headerBottom);
+    assert.equal(focusMoves(f).length, 1);
+    if (height > 800) assert(f.geometry.currentTop + height > f.window.innerHeight,
+      "Keine Zusage, dass ein hoher Kartenrahmen vollständig unter den Header passt");
+  }
+});
+
+test("Innenliegender Fokusrahmen und haftender Header verwenden denselben Karten-Rückgabepfad", async () => {
+  const f = await focusReturnFixture({ height: 398, top: 130, outlineWidth: 3, outlineOffset: -4, position: "sticky" });
+  closeMap(f); f.flush();
+  assert.equal(focusMoves(f).length, 1);
+  assert(upperFocusLineY(f) > MAP_FOCUS_BASELINE.headerBottom);
+  assert.equal(f.geometry.height, 398);
+});
+
+test("Escape und Schließknopf geben denselben Kartenfokus zurück und entfernen alle Dialogsperren", async () => {
+  for (const method of ["escape", "button"]) {
+    const f = await focusReturnFixture();
+    if (method === "escape") f.key("Escape"); else closeMap(f);
+    f.flush();
+    assert.equal(f.overlay(), undefined);
+    assert.equal(f.content.inert, false);
+    assert.equal(f.previouslyInert.inert, true);
+    assert.equal(f.events.has("keydown"), false);
+    assert.equal(f.events.has("focusin"), false);
+    assert.equal(f.document.activeElement, f.opener);
+    assert.equal(focusMoves(f).length, 1);
+  }
+});
+
+test("Unpassendes Headerrechteck genügt ohne tatsächliche Überdeckung der Fokuskante nicht zum Scrollen", async () => {
+  const f = await focusReturnFixture();
+  f.geometry.hitTest = () => ({ closest: () => f.geometry.header });
+  f.geometry.header.getBoundingClientRect = () => ({ top: 200, bottom: 300 });
+  closeMap(f); f.flush();
+  assert.equal(focusMoves(f).length, 0);
+});
+
+// Audit 10.54: delayed in-flight smooth motion model using the native Kormoran
+// free first-frame and covered stable endpoints; no private evidence dependency.
+const MAP_SMOOTH_MODEL = Object.freeze({"freeTop":186.62887573242188,"coveredTop":139.72621154785156,"height":909.568603515625,"headerBottom":139.90597534179688});
+
+test("Kartenrückgabe stoppt laufenden Smoothscroll vor der einzigen Headerprüfung", async () => {
+  const f = await focusReturnFixture({ top: MAP_SMOOTH_MODEL.freeTop, height: MAP_SMOOTH_MODEL.height });
+  f.geometry.pendingSmoothTop = MAP_SMOOTH_MODEL.coveredTop;
+  closeMap(f);
+  assert.equal(focusAborts(f).length, 1);
+  assert.equal(f.frames.length, 1);
+  assert.equal(f.geometry.pendingSmoothTop, null);
+  f.flush();
+  assert.equal(f.geometry.currentTop, MAP_SMOOTH_MODEL.freeTop);
+  assert.equal(focusMoves(f).length, 0);
+  assert(upperFocusLineY(f) > MAP_SMOOTH_MODEL.headerBottom);
+});
+
+test("Null-Abbruch bewegt keine freie Seite und unterbleibt bei umgeleitetem Fokus", async () => {
+  const f = await focusReturnFixture({ top: 300 });
+  closeMap(f); f.flush();
+  assert.equal(focusAborts(f).length, 1);
+  assert.equal(focusMoves(f).length, 0);
+  assert.equal(f.geometry.currentTop, 300);
+  const redirected = await focusReturnFixture({ top: 300 }), focus = redirected.opener.focus;
+  redirected.opener.focus = (options) => { focus(options); redirected.document.activeElement = redirected.content; };
+  closeMap(redirected); redirected.flush();
+  assert.equal(redirected.scrollCalls.length, 0);
+  assert.equal(redirected.frames.length, 0);
 });
 
 test("Lightbox-Zoom übernimmt den Alternativtext des geöffneten Bildes", () => {
