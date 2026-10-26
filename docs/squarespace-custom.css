@@ -1639,3 +1639,10 @@ header .header-display-desktop .header-nav-item--folder[data-fn-header-dismissed
     translate: max(calc(-100% - 0.15em), calc(-1 * var(--sqs-site-gutter, 4vw))) 0;
   }
 }
+
+/* Mobile Support title: omit the standalone separator between the two title lines. */
+@media (width < 768px) {
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content > h3 {
+    display: none;
+  }
+}

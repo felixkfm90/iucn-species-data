@@ -48,7 +48,7 @@ Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben pr
 
 Maßgeblich sind die zwölf Einbindungen in [squarespace-footer.html](squarespace-footer.html)
 und die kanonische Datei [squarespace-custom.css](squarespace-custom.css). Taxonomie und CSS verwenden
-gemeinsam Cacheversion **1.0.18**; die übrigen Modulversionen stehen ausschließlich im Footer.
+gemeinsam Cacheversion **1.0.19**; die übrigen Modulversionen stehen ausschließlich im Footer.
 Pages-Veröffentlichung und Übernahme der Einbindungen in Squarespace sind getrennt zu prüfen.
 Ergebnisse und Grenzen des laufenden Gesamtaudits stehen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
@@ -56,7 +56,7 @@ Ergebnisse und Grenzen des laufenden Gesamtaudits stehen ausschließlich im
 Squarespace Custom CSS enthält nur den kanonischen Import:
 
 ```css
-@import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.18");
+@import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.19");
 ```
 
 Die externe Datei bleibt Standard-CSS und wird vom Browser verarbeitet. Keine CSS-Kopie oder
