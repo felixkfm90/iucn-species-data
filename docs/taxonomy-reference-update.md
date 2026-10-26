@@ -1,12 +1,12 @@
 # Taxonomiereferenz aktualisieren und bestehende Arten abgleichen
 
-Stand: 2026-10-03
+Stand: 2026-10-23
 
 Status: Phase 9 abgeschlossen; der reale große Wiederanlauf des am 2026-09-04 erkannten Drifts bis zum automatisch
 aktivierten Lightroom-Paket wurde am 2026-09-05 erfolgreich geprüft. Weißstorch und Paket-/Masterstand sind in
 Lightroom bestätigt, die Veröffentlichung ist freigegeben. Weitere Praxistests bleiben laut `roadmap.md` offen.
 
-**Heutiger Betriebsstand:** Nach der am 1. Oktober gezielt praktisch abgenommenen Quellenreparatur ist auch
+**Historischer Abschluss vom 3. Oktober:** Nach der am 1. Oktober gezielt praktisch abgenommenen Quellenreparatur ist auch
 das separate reguläre Update auf `COL26.9 XR` technisch abgeschlossen. Felix bestätigte den lokalen Folgeweg
 am 3. Oktober um 07:52:59 MESZ; erfolgreicher Gesamtabschluss um 09:11:14 MESZ. Referenz und Masterherkunft
 sind `col-xr-2026-09-25-316441`, Master `master-20261003055911210` und Paket
@@ -25,6 +25,29 @@ einmalige ausdrücklich bestätigte Nutzervereinbarung. Normale Anbieteränderun
 benötigen ebenfalls Entscheidungen. Nach vollständiger bestätigter Entscheidung derselbe Auftrag fortgesetzt.
 Noch keine praktische Gesamtabnahme oder neue Produktivaktion; [aktueller Automatisierungsvertrag](taxonomy-update-automation.md).
 Die darunter datierten UI-/Erstaufnahmegrenzen beschreiben ihren jeweiligen früheren Implementierungsstand.
+
+## Bestätigte Ergänzungsregel für spätere Quellenlücken – 23. Oktober
+
+Felix erlaubt, dass eine bereits vollzogene Klassifikation im nächsten Quellenstand keinen eindeutigen
+aktuellen Beleg mehr hat, sofern keine angelegte Projektart, FN-Nutzung oder eigene geschützte Angabe
+betroffen ist. Die letzte bestätigte Master-ID, das Identitätstupel, die Daten und die unveränderte
+Entscheidungshistorie bleiben erhalten. Der Datensatz wird ausdrücklich als ungeklärte Quellenzuordnung
+gekennzeichnet und für neue Auswahl oder Zuweisung gesperrt. Daraus folgen weder ein Nachfolger noch
+ein Reichswechsel oder eine neue aktuelle Quellenbestätigung.
+
+Die Ausnahme braucht einen vollständigen, frischen Nichtnutzungsnachweis für den bestätigten
+FN-Katalogsatz sowie den Schutzabgleich gegen Projektlinks, eigene Namen/Felder/Korrekturen und
+Entscheidungen. Fehlende oder veraltete Grundlagen, unklare Ownership einer heutigen Quellengruppe
+und technische Belegfehler stoppen weiterhin. Neue vorgemerkte Klassifikationen bleiben vollständig
+im bisherigen strengen Erstprüfpfad. Der aktuelle Fehler wird dabei nicht als passender Anbieterbeleg
+umgedeutet; ein eigener gebundener Erhaltungsnachweis muss den erlaubten Sonderpfad tragen.
+
+Diese neue Regel ergänzt ausschließlich die unten dokumentierte strenge Fortführung bereits vollzogener
+Klassifikationen. Core-, Workflow- und Such-/Zuweisungsgrenzen sind implementiert und unabhängig
+geprüft. Das gemeinsame Vollgate besteht am 23. Oktober mit 50 Gruppen / 1.993 Tests und 165 während
+des Laufs unveränderten Quellen. Eine produktive Übernahme ist noch nicht nachgewiesen.
+Aktueller Lauf, genaue Freigabe und Abschlussgrenzen ausschließlich im
+[Auditauftrag, Abschnitt 10.51](audit-auftrag-phase-10-5.md#1051-fortsetzung-und-neues-col-update--23-oktober).
 
 ## Ziel
 
@@ -69,7 +92,12 @@ abgerufen. Die Prüfung:
 - verwendet einen lokalen Zwölf-Stunden-Cache,
 - lädt kein vollständiges Exportarchiv herunter,
 - beeinträchtigt den Explorer bei Netzwerkfehlern nicht und
-- bietet bei fehlender oder veralteter Referenz einmalig direkt `Jetzt aktualisieren` oder `Später` an.
+- bietet bei fehlender Referenz oder tatsächlich bekannter neuer CoL-Version einmalig direkt
+  `Jetzt aktualisieren` oder `Später` an. Ein bloß veralteter Ergänzungsprüftermin öffnet kein Startangebot.
+
+Die vier Ergänzungsquellen besitzen in der vorhandenen Einzelabfrage-Anbindung keine gemeinsam
+vergleichbare Releasekennung. Ihr lokales Snapshotdatum belegt keine neue Anbieterinformation;
+die bewusste manuelle Ergänzungsprüfung bleibt über die Datenbankaktion erreichbar.
 
 `Später` unterdrückt die Nachfrage für den aktuellen App-Start. Der manuelle zusammenhängende Auslöser unter
 `Datenbank-Aktionen > Taxonomiedatenbank > Datenbank aktualisieren` bleibt verfügbar. Der vollständige Download

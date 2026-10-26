@@ -1,3 +1,4 @@
+import { inspectLightroomRetention } from "./lightroom-search-schema.mjs";
 import { readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 
 export const RANK_POSITIONS = Object.freeze({
@@ -60,6 +61,7 @@ export function populateLightroomSearchDatabase(database, sourcePath, metadata, 
   database.prepare("ATTACH DATABASE ? AS master").run(sourcePath);
   let transactionOpen = false;
   try {
+    inspectLightroomRetention(database, { master: true });
     database.exec("BEGIN IMMEDIATE");
     transactionOpen = true;
     database.prepare("INSERT INTO package_info (key, value) VALUES ('identityRegistry', ?)")

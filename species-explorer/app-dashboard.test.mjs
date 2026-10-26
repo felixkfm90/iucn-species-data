@@ -5,7 +5,9 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-dashboard.js", import.meta.url), "utf8");
 const stylesheet = await readFile(new URL("./public/app.css", import.meta.url), "utf8");
-const context = vm.createContext({});
+const context = vm.createContext({ URL });
+new vm.Script(await readFile(new URL("./public/app-website-pages.js", import.meta.url), "utf8")).runInContext(context);
+new vm.Script(await readFile(new URL("./public/filter.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-dashboard.js" }).runInContext(context);
 const dashboard = context.SpeciesExplorerDashboard;
@@ -111,6 +113,9 @@ class FakeElement {
   querySelector(selector) {
     return this.nodes.get(selector) || null;
   }
+
+  contains(element) { return this.children.includes(element); }
+  focus() { this.focused = true; }
 }
 
 function createSpeciesItem() {
@@ -165,7 +170,7 @@ class FakeOption {
   }
 }
 
-function createController({ state, elements, filterSpecies, onSpeciesSelect = () => {} }) {
+function createController({ state, elements, filterSpecies, onSpeciesSelect = () => {}, documentRef }) {
   return dashboard.createDashboardController({
     state,
     elements,
@@ -182,7 +187,7 @@ function createController({ state, elements, filterSpecies, onSpeciesSelect = ()
     },
     databaseStatusLabel: (status) => status,
     onSpeciesSelect,
-    documentRef: { createElement: (tagName) => new FakeElement(tagName) },
+    documentRef: documentRef || { createElement: (tagName) => new FakeElement(tagName) },
     OptionConstructor: FakeOption,
   });
 }
@@ -218,6 +223,21 @@ test("Nur die obere Datenbankbeschriftung erhält einen sichtbaren Zeilenumbruch
   assert.match(rule, /white-space:\s*pre-line;/);
   assert.match(rule, /line-height:\s*1\.3;/);
   assert.doesNotMatch(rule, /(?:^|;)\s*(?:height|max-height|overflow):/);
+});
+
+test("Kopf zeigt offene Updatebestätigung ohne erfundenen Teilschritt und danach wieder den aktuellen Bestand", () => {
+  const state = { taxonomyDatabaseBusy: true, taxonomyDatabasePreparation: "confirmation",
+    taxonomyMasterSnapshot: { status: "completed", lightroomPackage: { status: "current" } } };
+  const elements = createElements();
+  const controller = createController({ state, elements, filterSpecies: () => [] });
+  controller.renderDatabaseStatus();
+  assert.equal(elements.pipelineStatus.textContent, "Datenbank-Update\nBestätigung ausstehend");
+  assert.doesNotMatch(elements.pipelineMenuButton.title, /Schritt \d+|Quellen vorbereiten/);
+  assert.match(elements.pipelineMenuButton.attributes["aria-label"], /noch keine neue Aktualisierung gestartet/);
+  state.taxonomyDatabaseBusy = false;
+  state.taxonomyDatabasePreparation = "";
+  controller.renderDatabaseStatus();
+  assert.equal(elements.pipelineStatus.textContent, "Datenbank-Update\nAbgeschlossen");
 });
 
 test("Validierungspräsentation beschreibt einen konsistenten Bestand", () => {
@@ -392,6 +412,7 @@ test("Dashboardcontroller filtert, rendert, erhält die Listenposition und melde
   const item = elements.speciesList.children[0];
   assert.equal(item.classList.contains("active"), true);
   assert.equal(item.querySelector("strong").textContent, "Löwe");
+  assert.equal(item.tabIndex, 0, "Nur der gewählte sichtbare Eintrag liegt in der Tabreihenfolge");
   assert.equal(item.querySelector(".species-item-flags").children.length, 3);
   item.emit("click");
   assert.equal(selectedId, "loewe");
@@ -400,4 +421,158 @@ test("Dashboardcontroller filtert, rendert, erhält die Listenposition und melde
   controller.renderSpeciesList();
   assert.equal(elements.visibleCount.textContent, "0 Arten");
   assert.equal(elements.speciesList.children[0].textContent, "Keine Art passt zu den Filtern.");
+});
+
+test("Neu gefilterte Artenlisten bieten genau einen Tastatureinstieg, ohne eine Art ungefragt auszuwählen", () => {
+  const state = { species: [], filtered: [], selectedId: "ausgefiltert" };
+  const elements = createElements();
+  const entries = ["amsel", "loewe"].map((id) => ({ id, germanName: id, scientificName: id,
+    iucn: { status: "LC", trend: "" }, inconsistencies: [], missingPortrait: false }));
+  let refreshed = 0;
+  const controller = dashboard.createDashboardController({
+    state, elements, formatDate: String, formatIucnStatus, pluralize, escapeHtml: String,
+    iucnStatusIconUrl: () => "", iucnTrendIconUrl: () => "", filterSpecies: () => entries,
+    resolveDatabaseStatus: () => "ready", databaseStatusLabel: String, onSpeciesSelect: () => assert.fail("Kein implizites Auswählen"),
+    onSpeciesListRendered: () => { refreshed += 1; },
+    documentRef: { createElement: (tag) => new FakeElement(tag) }, OptionConstructor: FakeOption,
+  });
+  controller.applyFilters();
+  assert.equal(elements.speciesList.children[0].tabIndex, 0);
+  assert.equal(elements.speciesList.children[1].tabIndex, -1);
+  assert.equal(refreshed, 1);
+  state.filtered = [];
+  controller.renderSpeciesList();
+  assert.equal(refreshed, 2);
+});
+
+test("Listen-Neurender erhält den Fokus derselben Art, fällt auf den erreichbaren Einstieg oder eine leere Liste zurück", () => {
+  const entries = ["amsel", "loewe"].map((id) => ({ id, germanName: id, scientificName: id,
+    iucn: { status: "LC", trend: "" }, inconsistencies: [], missingPortrait: false }));
+  const state = { species: entries, filtered: entries, selectedId: "amsel" };
+  const elements = createElements();
+  const documentRef = { createElement: (tag) => new FakeElement(tag), activeElement: null };
+  const controller = createController({ state, elements, filterSpecies: () => state.filtered, documentRef });
+  controller.renderSpeciesList();
+  documentRef.activeElement = elements.speciesList.children[1];
+  controller.renderSpeciesList();
+  assert.equal(elements.speciesList.children[1].focused, true);
+  assert.equal(elements.speciesList.children[0].focused, undefined);
+  documentRef.activeElement = elements.speciesList.children[1];
+  state.filtered = [entries[0]];
+  controller.renderSpeciesList();
+  assert.equal(elements.speciesList.children[0].focused, true);
+  documentRef.activeElement = elements.speciesList.children[0];
+  state.filtered = [];
+  controller.renderSpeciesList();
+  assert.equal(elements.speciesList.focused, true);
+  assert.equal(elements.speciesList.tabIndex, 0);
+  documentRef.activeElement = new FakeElement("input");
+  state.filtered = entries;
+  controller.renderSpeciesList();
+  assert.equal(elements.speciesList.children.some((item) => item.focused), false, "Filtereingabe verliert ihren Fokus nicht");
+});
+
+const websiteReady = (...ids) => ({ status: "ready", checkedAt: "2026-10-26T10:00:00.000Z",
+  pages: ids.map((id) => ({ slug: id, url: `https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/${id}` })) });
+
+function websiteListFixture(fetchJson) {
+  const entries = ["amsel", "newbird"].map((id) => ({ id, germanName: id, scientificName: id,
+    iucn: { status: "LC", trend: "" }, inconsistencies: [], dataIssues: [], assetIssues: [] }));
+  const state = { species: entries, filtered: entries, selectedId: "newbird", websitePagesSnapshot: null };
+  const elements = createElements();
+  const documentRef = { activeElement: null, createElement: (tag) => new FakeElement(tag) };
+  const focusable = (node) => { node.focus = () => { documentRef.activeElement = node; }; return node; };
+  focusable(elements.speciesList);
+  elements.itemTemplate.content.firstElementChild.cloneNode = () => focusable(createSpeciesItem());
+  elements.detailPanel = { querySelector: () => null,
+    set innerHTML(_) { assert.fail("Websiteprüfung darf die Detailmedien nicht neu laden"); } };
+  elements.websitePagesSummary = new FakeElement();
+  elements.websitePagesCheck = new FakeElement("button");
+  const dashboardController = createController({ state, elements, documentRef,
+    filterSpecies: (species, filters) => context.SpeciesExplorerFilters.filterSpecies(species,
+      { ...filters, websitePagesSnapshot: state.websitePagesSnapshot }),
+    onSpeciesSelect: () => assert.fail("Websiteprüfung darf die Art nicht neu auswählen"),
+  });
+  const websiteController = context.SpeciesExplorerWebsitePages.createWebsitePagesController({
+    state, elements, fetchJson, escapeHtml: String, documentRef, onChange: dashboardController.applyFilters,
+    setTimeoutImpl: () => 1, clearTimeoutImpl() {},
+  });
+  const flags = (id) => elements.speciesList.children.find((item) => item.dataset.id === id)
+    ?.querySelector(".species-item-flags").children.filter((flag) => flag.textContent === "W") || [];
+  return { state, elements, documentRef, dashboardController, websiteController, flags };
+}
+
+test("W markiert ausschließlich bestätigt fehlende FN-Artseiten und erhält vorhandene Pflegehinweise", () => {
+  const h = websiteListFixture(async () => websiteReady("amsel"));
+  Object.assign(h.state.species[1], { isManualMap: true, soundCareHint: true, missingPortrait: true });
+  for (const snapshot of [null, { status: "checking", pages: [] }, { status: "unknown", pages: [] },
+    { status: "unavailable", pages: [] }, websiteReady("amsel", "newbird"),
+    { ...websiteReady("newbird"), status: "unavailable" }]) {
+    h.state.websitePagesSnapshot = snapshot;
+    h.dashboardController.renderSpeciesList();
+    assert.equal(h.flags("newbird").length, 0);
+  }
+  h.state.websitePagesSnapshot = websiteReady("amsel");
+  h.dashboardController.renderSpeciesList();
+  assert.equal(h.flags("amsel").length, 0);
+  const [flag] = h.flags("newbird");
+  assert.ok(flag, "Eine bestätigte fehlende öffentliche Artseite bekommt W");
+  assert.equal(flag.className, "flag website");
+  assert.equal(flag.title, "Art noch nicht auf der FN-Website veröffentlicht");
+  assert.equal(flag.attributes.role, "img");
+  assert.equal(flag.attributes["aria-label"], flag.title);
+  const allFlags = h.elements.speciesList.children[1].querySelector(".species-item-flags").children;
+  assert.deepEqual(allFlags.filter((item) => item.textContent).map((item) => item.textContent), ["K", "S", "P", "W"]);
+});
+
+test("Website prüfen entfernt W nach einer neuen Seite mit echtem Listenrenderer ohne Medienreload oder Fokusverlust", async () => {
+  const calls = [];
+  let resolve;
+  const h = websiteListFixture(async (url) => {
+    calls.push(url);
+    return calls.length === 1 ? websiteReady("amsel") : new Promise((done) => { resolve = done; });
+  });
+  try {
+    await h.websiteController.start();
+    assert.equal(h.flags("newbird").length, 1);
+    h.elements.speciesList.scrollTop = 87;
+    h.elements.speciesList.children[1].focus();
+    h.elements.websitePagesCheck.emit("click");
+    const pending = h.websiteController.refresh();
+    assert.equal(h.elements.websitePagesCheck.disabled, true);
+    assert.equal(h.flags("newbird").length, 1, "Letzter bestätigter Stand bleibt während der Prüfung sichtbar");
+    resolve(websiteReady("amsel", "newbird"));
+    await pending;
+    assert.equal(h.flags("newbird").length, 0);
+    assert.equal(h.documentRef.activeElement, h.elements.speciesList.children[1]);
+    assert.equal(h.documentRef.activeElement.dataset.id, "newbird");
+    assert.equal(h.state.selectedId, "newbird");
+    assert.equal(h.elements.speciesList.scrollTop, 87);
+    assert.equal(h.elements.websitePagesCheck.disabled, false);
+    assert.deepEqual(calls, ["/api/website/species-pages", "/api/website/species-pages?refresh=1"]);
+  } finally { h.websiteController.stop(); }
+});
+
+test("Website-Statusfehler erzeugen kein W und der bestehende Fehlend-Filter aktualisiert ohne ungefragte Auswahl", async () => {
+  let snapshot = websiteReady("amsel");
+  const h = websiteListFixture(async () => snapshot);
+  try {
+    await h.websiteController.start();
+    assert.equal(h.flags("newbird").length, 1);
+    snapshot = { status: "unavailable", pages: [] };
+    await h.websiteController.refresh();
+    assert.equal(h.flags("newbird").length, 0);
+    assert.equal(context.SpeciesExplorerWebsitePages.pagePresentation("amsel", h.state.websitePagesSnapshot).status, "found");
+    snapshot = websiteReady("amsel");
+    h.elements.flagFilter.value = "website-missing";
+    await h.websiteController.refresh();
+    assert.deepEqual(h.state.filtered.map((item) => item.id), ["newbird"]);
+    h.elements.speciesList.children[0].focus();
+    snapshot = websiteReady("amsel", "newbird");
+    await h.websiteController.refresh({ refresh: true });
+    assert.equal(h.state.filtered.length, 0);
+    assert.equal(h.elements.speciesList.children[0].textContent, "Keine Art passt zu den Filtern.");
+    assert.equal(h.documentRef.activeElement, h.elements.speciesList);
+    assert.equal(h.state.selectedId, "newbird");
+  } finally { h.websiteController.stop(); }
 });

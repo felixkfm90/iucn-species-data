@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS, taxonomyMasterManifestPath } from "./taxonomy-master-storage.mjs";
 import { lightroomSearchDatabasePath } from "./lightroom-search-storage.mjs";
+import { LIGHTROOM_SEARCH_READER_CONTRACT, SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS } from "./lightroom-search-schema.mjs";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
 const MAX_VERSION_BYTES = 64 * 1024;
@@ -80,7 +81,9 @@ export function compareTaxonomyDataVersions({ reference, master, packageManifest
   if (!available) return result("missing", "package-missing", "Lightroom-Suchpaket fehlt. Bitte im Arten-Explorer bereitstellen.");
   if (readError) return result("unverifiable", "version-read-failed", "Datenstand nicht prüfbar. Versionsangaben fehlen oder sind nicht lesbar.");
   if (!referenceRelease || !masterVersion || !masterReference || !packageId || !packageMasterVersion
-      || !READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS.includes(master?.schemaVersion) || reference?.schemaVersion !== 1 || packageManifest?.schemaVersion !== 1) {
+      || !READABLE_TAXONOMY_MASTER_SCHEMA_VERSIONS.includes(master?.schemaVersion) || reference?.schemaVersion !== 1
+      || !SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS.includes(packageManifest?.schemaVersion)
+      || (packageManifest.schemaVersion >= 2 && packageManifest.readerContract !== LIGHTROOM_SEARCH_READER_CONTRACT)) {
     return result("unverifiable", "version-incomplete", "Datenstand nicht prüfbar. Versionsangaben fehlen oder sind nicht unterstützt.");
   }
   if (referenceRelease !== masterReference) return result("stale", "reference-master-drift", "Masterdatenbank passt nicht zur aktiven CoL-Referenz. Im Arten-Explorer aktualisieren.");

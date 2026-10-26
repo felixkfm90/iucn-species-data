@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-10-07
+Stand: 2026-10-10
 
 ## Ziel
 
@@ -65,7 +65,7 @@ Regeln:
 - Backup als ZIP
 - drei vollständig geprüfte Wiederherstellungsstände: zwei jüngere plus ein älterer geschützter Kontrollstand
 - Kontrollstand nicht bei häufigen neuen Sicherungen verdrängen; Wechsel nur mit geprüftem Ersatz
-- unbekannte/beschädigte Altarchive bleiben zusätzlich geschützt und zählen nicht als geprüfte Stände;
+- Altarchive ohne heutigen Vollständigkeits-/Prüfnachweis bleiben zusätzlich geschützt und zählen nicht als geprüfte Stände;
   eine gesonderte Bereinigung braucht konkrete Freigabe
 - taeglich bei Aenderungen
 - mindestens einmal woechentlich bei Aenderungen
@@ -75,6 +75,13 @@ Regeln:
 - der Pfad ist in der App ueber `Backup-Pfad einstellen` lokal aenderbar
 - die lokale Einstellung liegt in `species-explorer/local-settings.json` und wird nicht committed
 - technisch bleibt der Pfad per Parameter oder Umgebungsvariable `IUCN_NAS_BACKUP_DIR` ueberschreibbar
+
+Die Drei-Stände-Regel meint brauchbare, zeitlich versetzte Wiederherstellungspunkte. Sie verlangt keine
+identischen großen Kopien allein zum Erreichen der Anzahl. Ein fehlender moderner Inhaltsnachweis
+belegt keine Unbrauchbarkeit eines alten Archivs; historische Wiederherstellbarkeit und vollständige
+Abdeckung des heutigen Datenbestands sind getrennt zu prüfen. Mehrere Generationen auf demselben NAS
+ersetzen keinen unabhängigen Rückweg bei Verlust des NAS. Konkrete Bestandsnachweise und Felix' Frage
+zur notwendigen Anzahl stehen ausschließlich im [laufenden Audit](audit-auftrag-phase-10-5.md).
 
 Die App soll nach relevanten Aenderungen oder beim Schliessen vorschlagen:
 
@@ -214,15 +221,36 @@ Pfaden, Größen und SHA-256-Prüfwerten. Die folgenden historischen Grundfelder
 
 Ziel: keine Kommandozeile.
 
+Der Explorer bietet Backup-Erstellung, Pfadwahl, Status und unter `Backup und Einstellungen` die
+lesende Übersicht `NAS-Archive ansehen`. Sie zeigt Datum, ZIP-Größe, enthaltenen Dateiumfang, Archivpfad
+und die jeweilige Nachweisgrenze. Die Übersicht liest begrenzte ZIP-Verzeichnisse und Manifeste; vorhandene
+SHA-256-Einträge sind keine heute ausgeführte Inhaltsprüfung. Historische Archive bleiben als solche erkennbar,
+beschädigte oder verknüpfte Archive erscheinen mit Begründung. Unbekannter Umfang wird nicht als null Bytes
+angezeigt. `GET /api/backup/archives` benötigt den erlaubten Browser-Lesekontext und führt keine Entpack-,
+Restore- oder Startaktion aus.
+
+Für den folgenden externen Ablauf das gewünschte Archiv nach Datum und gesichertem Umfang wählen.
+Eine ältere ZIP-Datei ist nicht auf die Wiederherstellung
+des letzten Stands beschränkt; ihre vollständige Integrität und historische Laufzeit bleiben zu prüfen.
+In einen eigenen geeigneten Zielordner entpacken; den aktiven Programm-/Datenbestand nicht überschreiben.
+Große Restorekopien benötigen vorher eine konkrete Platz-/Zeit- und Betriebsentscheidung.
+
 1. ZIP vom NAS entpacken.
 2. `restore-start.cmd` doppelklicken.
-3. Das bestehende Bootstrap-Skript prueft Node.js 18+. Für den heutigen vollständigen Explorer-/Taxonomiebetrieb
-   einschließlich `node:sqlite` wird Node.js 24 verwendet; die alte Mindestprüfung allein garantiert diesen Betrieb nicht.
-4. Falls `node_modules` fehlt, bietet es `npm.cmd install` an.
+3. Das Bootstrap-Skript prüft mindestens Node.js 24 für den vollständigen Explorer-/Taxonomiebetrieb
+   einschließlich `node:sqlite` und stoppt bei einer älteren oder nicht lesbaren Version.
+4. Falls die Electron-Programmdatei fehlt, bietet es die Installation der gesperrten Abhängigkeiten
+   mit `npm.cmd ci` an; Abbruch oder Installationsfehler startet die App nicht.
 5. Es erzeugt die Desktop-Verknuepfung.
 6. Es startet die App.
 
 Wenn Node.js fehlt, zeigt das Skript eine klare Meldung. Node.js wird nicht automatisch installiert.
+
+Diese Schritte beschreiben den heutigen Starter-Quellstand. Ein historisches Archiv enthält seinen
+damaligen Starter; spätere Korrekturen sind nicht nachträglich enthalten. Vor einem historischen Restore
+die benötigte Laufzeit und den Startweg ausdrücklich prüfen: Der heutige Taxonomiebetrieb benötigt
+Node 24 auch dann, wenn ein alter Starter eine niedrigere Mindestversion zulässt. Das Sicherungsarchiv
+selbst bleibt unverändert. Entpacken/Programmstart ist kein Ersatz für die vollständige Inhaltsprüfung.
 
 ## Umsetzungsetappen
 
@@ -289,6 +317,17 @@ Die App-UI ist als manuelle Wartungsaktion im Datenbank-Dialog eingebunden:
 - bei unveraendertem Stand kann ein Backup manuell trotzdem erzwungen werden
 - waehrend des Laufs zeigt die App Status, Prozent, Prozessausgabe und Abschlussmeldung
 - der Desktop-Schliessschutz warnt bei laufendem NAS-Backup wie bei Pipeline-Laeufen
+
+Eine vorübergehend fehlgeschlagene Statusabfrage beendet die Anzeige nicht dauerhaft. Vier begrenzte
+lesende Wiederholungen folgen nach 1, 2, 4 und 8 Sekunden; der letzte bestätigte Stand bleibt sichtbar
+als aktuell nicht bestätigt gekennzeichnet. Danach endet die automatische Fehlerfolge. Statusfenster
+oder Fehlerhinweis erneut öffnen liest frisch; bei Fehlern beider Dienste werden beide erneut geprüft.
+Die Abfragen bleiben pro Dienst einzeln gebunden und verändern keine fremde Startvorschau. Start-/
+Schreibaufträge und fehlgeschlagene Abschlussansichten werden dadurch nicht automatisch wiederholt.
+Antwortet eine einzelne Statusabfrage 15 Sekunden lang nicht, wird nur diese lesende Anfrage abgebrochen.
+Der letzte bestätigte Stand und der gespeicherte Auftrag bleiben erhalten. Danach gilt derselbe begrenzte
+Backoff; ein Auftrag wird dadurch weder beendet noch erneut gestartet. Verspätete Antworten dürfen keine
+neuere Anzeige überschreiben und keine geschlossenen Dialoge wieder öffnen.
 
 Erster produktiver Testlauf:
 

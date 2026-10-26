@@ -3,6 +3,7 @@ local LrDialogs = import "LrDialogs"
 local LrTasks = import "LrTasks"
 
 local ReferenceImage = require "ReferenceImage"
+local PluginState = require "PluginState"
 
 local function cleanText(value)
   local text = tostring(value or "")
@@ -12,7 +13,7 @@ end
 LrTasks.startAsyncTask(function()
   local ok, errorMessage = LrTasks.pcall(function()
     local catalog = LrApplication.activeCatalog()
-    local photos = catalog:getTargetPhotos() or {}
+    local photos = PluginState.selectedPhotos(catalog)
     if #photos ~= 1 then
       LrDialogs.message(
         "Genau ein Foto auswählen",

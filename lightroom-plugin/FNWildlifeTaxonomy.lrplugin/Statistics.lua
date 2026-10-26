@@ -58,9 +58,39 @@ local function checkpoint(catalog, index, processedPhotos, lastPhotoId)
     totalPhotos = tonumber(index.totalPhotos or 0) or 0,
     processedPhotos = tonumber(processedPhotos or 0) or 0,
     lastPhotoId = tonumber(lastPhotoId or 0) or 0,
+    dataRevision = index.dataRevision,
     savedAt = os.date("!%Y-%m-%dT%H:%M:%SZ"),
     index = index,
   })
+end
+
+local function batchSnapshots(catalog, chunk, errorMessage)
+  local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
+  local rawValuesByPhoto = catalog:batchGetRawMetadata(chunk, { "uuid", "dateTimeOriginal", "path", "isVideo" })
+  if type(valuesByPhoto) ~= "table" or type(rawValuesByPhoto) ~= "table" then
+    error(errorMessage, 0)
+  end
+  local snapshots = {}
+  for _, photo in ipairs(chunk) do
+    if type(valuesByPhoto[photo]) ~= "table" or type(rawValuesByPhoto[photo]) ~= "table" then
+      error(errorMessage, 0)
+    end
+    local values = {}
+    for field, value in pairs(valuesByPhoto[photo]) do values[field] = value end
+    local rawValues = rawValuesByPhoto[photo]
+    values.photoUuid = rawValues.uuid
+    values.dateTimeOriginal = rawValues.dateTimeOriginal
+    values.path = rawValues.path
+    values.isVideo = rawValues.isVideo
+    table.insert(snapshots, StatisticsIndex.snapshot(values))
+  end
+  return snapshots
+end
+
+local function assertBuildRevision(catalog, index)
+  if PluginState.statisticsRevision(catalog) ~= index.dataRevision then
+    error("FN-Daten wurden während des Statistikaufbaus geändert. Bitte Statistik neu aufbauen; der bisherige Index bleibt erhalten.", 0)
+  end
 end
 
 function Statistics.load(catalog)
@@ -73,20 +103,7 @@ function Statistics.load(catalog)
 end
 
 function Statistics.selectedPhotos(catalog)
-  -- getTargetPhotos liefert ohne Auswahl den Filmstreifen. Das aktive Foto
-  -- unterscheidet diese SDK-Rückgabe von einer tatsächlich markierten Auswahl.
-  if not catalog:getTargetPhoto() then
-    return {}
-  end
-  local selected = {}
-  local seen = {}
-  for _, photo in ipairs(catalog:getTargetPhotos() or {}) do
-    if not seen[photo] then
-      seen[photo] = true
-      table.insert(selected, photo)
-    end
-  end
-  return selected
+  return PluginState.selectedPhotos(catalog)
 end
 
 function Statistics.forPhotos(catalog, photos, options)
@@ -109,27 +126,10 @@ function Statistics.forPhotos(catalog, photos, options)
     end
     local completed = false
     catalog:withReadAccessDo(function()
-      local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
-      local rawValuesByPhoto = catalog:batchGetRawMetadata(
-        chunk,
-        { "uuid", "dateTimeOriginal", "path" }
-      )
-      if type(valuesByPhoto) ~= "table" or type(rawValuesByPhoto) ~= "table" then
-        error("Lightroom hat die Export-Metadaten der markierten Fotos nicht vollständig geliefert.", 0)
-      end
-      for _, photo in ipairs(chunk) do
-        if type(valuesByPhoto[photo]) ~= "table" or type(rawValuesByPhoto[photo]) ~= "table" then
-          error("Lightroom hat die Export-Metadaten eines markierten Fotos nicht vollständig geliefert.", 0)
-        end
-        local values = {}
-        for field, value in pairs(valuesByPhoto[photo]) do
-          values[field] = value
-        end
-        local rawValues = rawValuesByPhoto[photo]
-        values.photoUuid = rawValues.uuid
-        values.dateTimeOriginal = rawValues.dateTimeOriginal
-        values.path = rawValues.path
-        StatisticsIndex.add(index, StatisticsIndex.snapshot(values))
+      for _, snapshot in ipairs(batchSnapshots(catalog, chunk,
+        "Lightroom hat die Export-Metadaten der markierten Fotos nicht vollständig geliefert.")) do
+        if snapshot.isVideo then index.videoCount = index.videoCount + 1 end
+        StatisticsIndex.add(index, snapshot)
       end
       completed = true
     end)
@@ -163,6 +163,7 @@ function Statistics.build(catalog, options)
   local totalPhotos = #photos
   local build = options.restart and nil or PluginState.statisticsBuild(catalog, totalPhotos)
   local index = build and build.index or StatisticsIndex.new(totalPhotos)
+  index.dataRevision = PluginState.statisticsRevision(catalog)
   local processedPhotos = build and tonumber(build.processedPhotos or 0) or 0
   local lastPhotoId = build and tonumber(build.lastPhotoId or 0) or 0
   local startIndex = resumeStartIndex(photos, lastPhotoId)
@@ -174,21 +175,18 @@ function Statistics.build(catalog, options)
     for indexInCatalog = chunkStart, chunkEnd do
       table.insert(chunk, photos[indexInCatalog])
     end
+    local completed = false
     catalog:withReadAccessDo(function()
-      local valuesByPhoto = catalog:batchGetPropertyForPlugin(chunk, _PLUGIN, FIELD_IDS)
-      local rawValuesByPhoto = catalog:batchGetRawMetadata(
-        chunk,
-        { "uuid", "dateTimeOriginal", "path" }
-      )
-      for _, photo in ipairs(chunk) do
-        local values = valuesByPhoto[photo] or {}
-        local rawValues = rawValuesByPhoto[photo] or {}
-        values.photoUuid = rawValues.uuid
-        values.dateTimeOriginal = rawValues.dateTimeOriginal
-        values.path = rawValues.path
-        StatisticsIndex.add(index, StatisticsIndex.snapshot(values))
+      for _, snapshot in ipairs(batchSnapshots(catalog, chunk,
+        "Lightroom hat die Statistik-Metadaten nicht vollständig geliefert. Der bisherige Index bleibt erhalten; bitte den Aufbau erneut starten.")) do
+        if snapshot.isVideo then index.videoCount = index.videoCount + 1 end
+        StatisticsIndex.add(index, snapshot)
       end
+      completed = true
     end)
+    if not completed then
+      error("Lightroom konnte die Statistik-Fotos nicht vollständig lesen. Der bisherige Index bleibt erhalten; bitte den Aufbau erneut starten.", 0)
+    end
 
     processedPhotos = chunkEnd
     lastPhotoId = photoIdentifier(photos[chunkEnd])
@@ -198,6 +196,7 @@ function Statistics.build(catalog, options)
       -- Yield und Bedienlogik liegen bewusst außerhalb von withReadAccessDo.
       instruction = options.progress(processedPhotos, totalPhotos)
     end
+    assertBuildRevision(catalog, index)
     if instruction == "pause" or instruction == "cancel" then
       checkpoint(catalog, index, processedPhotos, lastPhotoId)
       return {
@@ -213,6 +212,7 @@ function Statistics.build(catalog, options)
   end
 
   index.totalPhotos = totalPhotos
+  assertBuildRevision(catalog, index)
   PluginState.saveStatisticsIndex(catalog, index)
   return {
     status = "complete",
@@ -248,6 +248,7 @@ function Statistics.assignmentSnapshot(
 )
   rankValues = rankValues or {}
   local values = copyLocationTime({
+    isVideo = previousSnapshot and previousSnapshot.isVideo,
     masterTaxonId = taxon and taxon.masterTaxonId,
     germanName = taxon and taxon.germanName,
     englishName = taxon and taxon.englishName,
@@ -270,8 +271,28 @@ function Statistics.assignmentSnapshot(
   return StatisticsIndex.snapshot(values)
 end
 
+-- Identity journals carry the complete exact taxonomy target. SDK getters can
+-- still expose the old committed metadata after setters in the same write gate.
+function Statistics.identitySnapshot(previousSnapshot, values)
+  return Statistics.assignmentSnapshot({
+    masterTaxonId = values.masterTaxonId,
+    germanName = values.germanName,
+    englishName = values.englishName,
+    acceptedScientificName = values.scientificName,
+  }, {
+    domain = values.taxonomyDomain,
+    kingdom = values.taxonomyKingdom,
+    phylum = values.taxonomyPhylum,
+    class = values.taxonomyClass,
+    order = values.taxonomyOrder,
+    family = values.taxonomyFamily,
+    genus = values.taxonomyGenus,
+  }, values.referenceImage == "yes", previousSnapshot.photoUuid, previousSnapshot, false)
+end
+
 function Statistics.emptySnapshot(previousSnapshot)
   local values = copyLocationTime({}, previousSnapshot)
+  values.isVideo = previousSnapshot and previousSnapshot.isVideo
   values.captureDate = previousSnapshot and previousSnapshot.captureDate
   values.exampleFileName = previousSnapshot and previousSnapshot.exampleFileName
   return StatisticsIndex.snapshot(values)
@@ -280,6 +301,7 @@ end
 function Statistics.locationTimeSnapshot(snapshot, locationTimeValues)
   snapshot = snapshot or {}
   local values = {
+    isVideo = snapshot.isVideo,
     masterTaxonId = snapshot.masterTaxonId,
     germanName = snapshot.germanName,
     englishName = snapshot.englishName,
@@ -307,6 +329,7 @@ end
 function Statistics.referenceSnapshot(snapshot, referenceImage)
   snapshot = snapshot or {}
   return StatisticsIndex.snapshot(copyLocationTime({
+    isVideo = snapshot.isVideo,
     masterTaxonId = snapshot.masterTaxonId,
     germanName = snapshot.germanName,
     englishName = snapshot.englishName,

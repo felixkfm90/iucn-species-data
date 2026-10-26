@@ -161,3 +161,23 @@ test("manuelle Erstaufnahme verwendet denselben Core und bewahrt ihre Bestätigu
   local outcome=Capture.run({manual=true})
   assert(outcome.ok and reads==2 and saves==1 and confirms==1 and #messages==1)
 `));
+
+test("SDK-Nutzungsaufnahme zählt virtuelle Kopien nach eigener UUID, unabhängig vom gemeinsamen Originalpfad", () => execute(`${fixture}
+  local original = catalog.getAllPhotos
+  catalog.getAllPhotos = function(self)
+    local photos = original(self)
+    for position, photo in ipairs(photos) do
+      local uuid = "photo-" .. position
+      photo.getRawMetadata = function(_, field)
+        if field == "uuid" then return uuid end
+        if field == "path" then return "D:/Fotos/Gleiches-Original.jpg" end
+        if field == "isVirtualCopy" then return position == 2 end
+        error("Unexpected metadata field")
+      end
+    end
+    return photos
+  end
+  local outcome = Capture.run({ manual = true })
+  assert(outcome.ok and reads == 2 and saves == 1)
+  -- This proves Lua counts distinct SDK identities; native UUID semantics are a separate acceptance.
+`));

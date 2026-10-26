@@ -23,6 +23,7 @@
 *.jpg binary
 *.jpeg binary
 *.png binary
+*.ico binary
 *.webp binary
 *.mp3 binary
 *.psd binary

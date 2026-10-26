@@ -2,7 +2,7 @@ import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { request as httpRequest } from "node:http";
+import { createServer as createLoopbackServer, request as httpRequest } from "node:http";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -23,6 +23,8 @@ import {
   createTestMp3,
   createTestPng,
   createTestWebp,
+  serverFixtureStoragePaths,
+  withServerFixtureStorageEnvironment,
 } from "./server-test-fixtures.mjs";
 import { buildPipelinePlan } from "../scripts/pipeline-selection.mjs";
 import { buildCleanupPlan, runCleanup, runSpeciesCleanup } from "../scripts/species-cleanup.mjs";
@@ -33,16 +35,98 @@ import {
 } from "../scripts/portrait-generator.mjs";
 import {
   getExplorerPipelineStatus,
+  getExplorerBackupStatus,
+  getExplorerPendingChanges,
   isPipelineBlockingShutdown,
   startManagedExplorerServer,
   stopManagedExplorerServer,
+  waitForExplorerHealthcheck,
 } from "./desktop/server-lifecycle.mjs";
 await import("./public/filter.js");
 
 const createExplorerServer = (options = {}) => createProtectedExplorerServer({
   ...options,
+  ...serverFixtureStoragePaths(options.repoRoot),
   sessionProtection: false,
 });
+
+async function withDesktopDeadlineServer(respond, run) {
+  const sockets = new Set();
+  const server = createLoopbackServer(respond);
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.on("close", () => sockets.delete(socket));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  // This watchdog only frees the deliberately incomplete fixture on a failing test.
+  const watchdog = setTimeout(() => {
+    for (const socket of sockets) socket.destroy();
+  }, 600);
+  try {
+    await run(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    clearTimeout(watchdog);
+    for (const socket of sockets) socket.destroy();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+for (const stage of ["headers", "body"]) {
+  test(`Desktop-Healthcheck begrenzt auch eine ausstehende Antwort (${stage})`, async () => {
+    await withDesktopDeadlineServer((_request, response) => {
+      if (stage === "body") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.write('{"unfinished":');
+      }
+    }, async (baseUrl) => {
+      const started = performance.now();
+      await assert.rejects(waitForExplorerHealthcheck(baseUrl, { timeoutMs: 80, intervalMs: 5 }),
+        /Explorer-Server antwortet nicht/);
+      assert.ok(performance.now() - started < 350, "the complete response must share the deadline");
+    });
+  });
+}
+
+test("Desktop-Healthcheck verwendet eine gemeinsame Frist über mehrere Versuche", async () => {
+  let requests = 0;
+  await withDesktopDeadlineServer((_request, response) => {
+    requests += 1;
+    if (requests === 1) {
+      setTimeout(() => { response.writeHead(503); response.end(); }, 45);
+    } else {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.write('{"unfinished":');
+    }
+  }, async (baseUrl) => {
+    const started = performance.now();
+    await assert.rejects(waitForExplorerHealthcheck(baseUrl, { timeoutMs: 100, intervalMs: 10 }));
+    assert.ok(requests >= 2);
+    assert.ok(performance.now() - started < 350, "retries must not restart the request budget");
+  });
+});
+
+for (const [label, readStatus] of [
+  ["Pipeline", getExplorerPipelineStatus],
+  ["Backup", getExplorerBackupStatus],
+  ["Änderungen", getExplorerPendingChanges],
+]) {
+  test(`Desktop-Schließprüfung begrenzt den vollständigen ${label}-Status`, async () => {
+    let complete = false;
+    await withDesktopDeadlineServer((_request, response) => {
+      response.writeHead(200, { "content-type": "application/json" });
+      if (complete) response.end('{"status":"idle","hasPendingChanges":false}');
+      else response.write('{"unfinished":');
+    }, async (baseUrl) => {
+      const started = performance.now();
+      await assert.rejects(readStatus(baseUrl, { timeoutMs: 80 }));
+      assert.ok(performance.now() - started < 350, "status body must also time out");
+      complete = true;
+      assert.deepEqual(await readStatus(baseUrl, { timeoutMs: 250 }), {
+        status: "idle", hasPendingChanges: false,
+      });
+    });
+  });
+}
 
 function requestStatusWithHost(baseUrl, pathname, hostHeader) {
   const target = new URL(pathname, baseUrl);
@@ -65,10 +149,14 @@ function requestStatusWithHost(baseUrl, pathname, hostHeader) {
 
 
 test("Lokaler Server liefert API, Assets und nur definierte Schreibzugriffe", async (context) => {
-  const expectedModel = await buildExplorerModel();
-  const app = await createExplorerServer({ port: 0 });
+  const repoRoot = await createEditableFixture();
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  await mkdir(join(repoRoot, "graphics", "catagory"), { recursive: true });
+  await writeFile(join(repoRoot, "graphics", "catagory", "EN.png"), createTestPng(8, 8));
+  const expectedModel = await buildExplorerModel(repoRoot);
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  cleanupFixture(app);
   const address = await app.listen();
-  context.after(() => app.close());
   const baseUrl = `http://${app.host}:${address.port}`;
 
   const summaryResponse = await fetch(`${baseUrl}/api/summary`);
@@ -247,7 +335,7 @@ test("Schreibende API verlangt lokale Sitzung, gleiche Origin und Bestätigungst
     writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.webp"), createTestWebp(7)),
     writeFile(join(repoRoot, "species-assets", "Amsel", "portrait.json"), "{}\n"),
   ]);
-  const app = await createProtectedExplorerServer({ repoRoot, port: 0 });
+  const app = await createProtectedExplorerServer({ repoRoot, ...serverFixtureStoragePaths(repoRoot), port: 0 });
   const address = await app.listen();
   cleanupFixture(app);
   const baseUrl = `http://${app.host}:${address.port}`;
@@ -337,24 +425,25 @@ test("Schreibende API verlangt lokale Sitzung, gleiche Origin und Bestätigungst
 });
 
 test("Server erkennt bereits laufenden Explorer auf belegtem Port", async (context) => {
-  const app = await createExplorerServer({ port: 0 });
+  const repoRoot = await createEditableFixture();
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  cleanupFixture(app);
   const address = await app.listen();
-  context.after(() => app.close());
 
   assert.equal(await isExplorerAlreadyReachable(app.host, address.port), true);
 
-  const duplicate = await createExplorerServer({ port: address.port });
+  const duplicate = await createExplorerServer({ repoRoot, port: address.port });
+  cleanupFixture(duplicate);
   await assert.rejects(() => duplicate.listen(), { code: "EADDRINUSE" });
 });
 
 test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async (context) => {
   const repoRoot = await createEditableFixture();
   const cleanupFixture = registerFixtureCleanup(context, repoRoot);
-  const managed = await startManagedExplorerServer({
-    repoRoot,
-    preferredPort: 0,
-    healthTimeoutMs: 5000,
-  });
+  const managed = await withServerFixtureStorageEnvironment(repoRoot, () => startManagedExplorerServer({
+    repoRoot, preferredPort: 0, healthTimeoutMs: 5000,
+  }));
   context.after(() => stopManagedExplorerServer(managed));
 
   assert.match(managed.baseUrl, /^http:\/\/127\.0\.0\.1:\d+$/);
@@ -367,6 +456,23 @@ test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async
 
   await stopManagedExplorerServer(managed);
   managed.server = null;
+});
+
+test("Server-Test verlangt eigene Pfade; der Lifecycle-Test ersetzt und restauriert geerbte Speicheroptionen", async (context) => {
+  assert.throws(() => createExplorerServer({ port: 0 }), /eigenen Fixture-Ordner/);
+  assert.throws(() => createExplorerServer({ repoRoot: process.cwd(), port: 0 }), /außerhalb des eigenen Explorer-temp/);
+  const repoRoot = await createEditableFixture();
+  registerFixtureCleanup(context, repoRoot);
+  const paths = serverFixtureStoragePaths(repoRoot);
+  const keys = ["FN_EXPLORER_DATA_ROOT", "IUCN_TAXONOMY_DIR", "FN_LIGHTROOM_SEARCH_ROOT"];
+  const previous = keys.map((key) => process.env[key]);
+  await assert.rejects(() => withServerFixtureStorageEnvironment(repoRoot, async () => {
+    assert.equal(process.env.FN_EXPLORER_DATA_ROOT, join(repoRoot, "Daten"));
+    assert.equal(process.env.IUCN_TAXONOMY_DIR, paths.taxonomyRoot);
+    assert.equal(process.env.FN_LIGHTROOM_SEARCH_ROOT, paths.lightroomSearchRoot);
+    throw new Error("Isolierter Testfehler");
+  }), /Isolierter Testfehler/);
+  assert.deepEqual(keys.map((key) => process.env[key]), previous);
 });
 
 test("Backup-Pfad ist lokal einstellbar und bleibt aus Git heraus", async (context) => {

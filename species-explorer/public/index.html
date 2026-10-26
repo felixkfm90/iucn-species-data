@@ -85,6 +85,10 @@
           </article>
         </div>
         <div id="validation-details" class="validation-details" hidden></div>
+        <div class="website-pages-overview">
+          <span id="website-pages-summary" role="status">FN-Website wird geprüft …</span>
+          <button id="website-pages-check" type="button">Website prüfen</button>
+        </div>
       </section>
 
       <main class="workspace">
@@ -113,6 +117,7 @@
                   <option value="manual-map">Geschützte Karte</option>
                   <option value="nc">NC-Sound</option>
                   <option value="sound-care">Sound fehlt/manuell gepflegt</option>
+                  <option value="website-missing">FN-Website fehlt</option>
                 </select>
               </label>
             </div>
@@ -358,7 +363,7 @@
             <p class="new-species-json-label">Neuer Arteintrag</p>
             <pre class="new-species-json"></pre>
             <p class="edit-warning">
-              Die Art wird erst im letzten Schritt gespeichert. Danach ist ein Pipeline-Lauf erforderlich.
+              Nach dem Artportrait-Schritt wird die Art lokal angelegt und der Suchlauf gestartet.
             </p>
           </section>
         </section>
@@ -620,6 +625,10 @@
                   <strong>NAS-Backup erstellen</strong>
                   <span>Projektstand als ZIP auf dem NAS sichern</span>
                 </button>
+                <button type="button" data-backup-archives-open>
+                  <strong>NAS-Archive ansehen</strong>
+                  <span>Vorhandene Sicherungen, Umfang und Prüfnachweise anzeigen</span>
+                </button>
                 <button type="button" data-settings-action="backup-path">
                   <strong>Backup-Pfad einstellen</strong>
                   <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
@@ -656,6 +665,59 @@
           <button id="pipeline-start-button" class="edit-save-button" type="submit" hidden disabled>Starten</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="backup-history-dialog" class="edit-dialog backup-history-dialog" aria-labelledby="backup-history-title">
+      <div class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Lokale Sicherungen dieser Art</p>
+            <h3 id="backup-history-title">Bearbeitungsstände</h3>
+            <p>Artenlisten- und Taxonomiebearbeitungen getrennt auswählen. Art-ID, deutscher und wissenschaftlicher Name sowie Medien bleiben erhalten.</p>
+          </div>
+          <button class="edit-close" type="button" data-history-close aria-label="Dialog schließen">×</button>
+        </header>
+        <p id="backup-history-message" class="edit-message" role="status" aria-live="polite"></p>
+        <div id="backup-history-list" class="backup-history-scroll" tabindex="0" aria-label="Gesicherte Bearbeitungsstände"></div>
+        <section id="backup-history-preview" class="edit-preview" hidden>
+          <h4>Ausgewählter Stand: Vorschau</h4>
+          <div id="backup-history-preview-content" class="backup-history-scroll"></div>
+        </section>
+        <div class="edit-actions">
+          <button type="button" data-history-close>Schließen</button>
+          <button id="backup-history-refresh" type="button">Stände neu laden</button>
+          <button id="backup-history-save" class="edit-save-button" type="button" disabled>Stand wiederherstellen…</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="backup-archives-dialog" class="edit-dialog backup-history-dialog" aria-labelledby="backup-archives-title">
+      <div class="edit-form">
+        <header class="edit-dialog-header">
+          <div>
+            <p class="edit-eyebrow">Backup und Einstellungen</p>
+            <h3 id="backup-archives-title">NAS-Archive ansehen</h3>
+            <p>Backup-Ordner: <code id="backup-archives-root"></code></p>
+          </div>
+          <button class="edit-close" type="button" data-archives-close aria-label="Dialog schließen">×</button>
+        </header>
+        <p id="backup-archives-message" class="edit-message" role="status" aria-live="polite"></p>
+        <div id="backup-archives-list" class="backup-history-scroll" tabindex="0" aria-label="Vorhandene NAS-Archive"></div>
+        <section class="edit-preview">
+          <h4>Ein ausgewähltes Archiv außerhalb des Explorers wiederherstellen</h4>
+          <ol>
+            <li>Das gewünschte Archiv anhand von Datum, Umfang und Prüfnachweis auswählen. Die Originalarchive unverändert lassen.</li>
+            <li>Die ausgewählte ZIP-Datei in einen eigenen, leeren Ordner entpacken. Die laufende Installation und den gemeinsamen Datenordner dabei nicht überschreiben.</li>
+            <li>Die mitgelieferte Anleitung und gegebenenfalls <code>restore-start.cmd</code> beachten. Für den heutigen Explorer Node 24 verwenden; eine ältere Mindestprüfung im Starter reicht hierfür nicht aus.</li>
+            <li>Den wiederhergestellten Stand getrennt prüfen und starten. Bei historischen Archiven sind Umfang und damaliger Startweg gesondert zu beachten.</li>
+          </ol>
+          <p>Ein vorhandenes Prüfverzeichnis ersetzt weder die erneute Inhaltsprüfung noch einen erfolgreichen Programmstart aus der Sicherung.</p>
+        </section>
+        <div class="edit-actions">
+          <button type="button" data-archives-close>Schließen</button>
+          <button id="backup-archives-refresh" type="button">Übersicht neu laden</button>
+        </div>
+      </div>
     </dialog>
 
     <dialog id="settings-dialog" class="edit-dialog settings-dialog" aria-labelledby="settings-dialog-title">
@@ -818,7 +880,7 @@
         type="button"
         aria-label="Vergrößerte Karte schließen"
       >×</button>
-      <img id="asset-review-map-lightbox-image" src="" alt="">
+      <img id="asset-review-map-lightbox-image" alt="">
     </dialog>
 
     <template id="species-item-template">
@@ -852,12 +914,14 @@
     <script src="/app-settings.js" defer></script>
     <script src="/app-media.js" defer></script>
     <script src="/app-detail-media.js" defer></script>
+    <script src="/app-website-pages.js" defer></script>
     <script src="/app-detail-view.js" defer></script>
     <script src="/app-selection.js" defer></script>
     <script src="/app-asset-review.js" defer></script>
     <script src="/app-asset-review-workflow.js" defer></script>
     <script src="/app-pipeline.js" defer></script>
     <script src="/app-backup-workflow.js" defer></script>
+    <script src="/app-backup-history.js" defer></script>
     <script src="/app-pipeline-workflow.js" defer></script>
     <script src="/app-taxonomy-progress.js" defer></script>
     <script src="/app-taxonomy-maintenance.js" defer></script>

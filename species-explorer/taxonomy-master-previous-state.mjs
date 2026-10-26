@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 
 import { addProviderTaxonAssertion, registerProviderRelease } from "./taxonomy-master-model.mjs";
 import { emptyIdentityRegistry, readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
+import { readClassificationRetentionSnapshot, classificationRetentionProtection, classificationRetentionMarker } from "./taxonomy-classification-retention.mjs";
 
 function openSnapshot(databasePath, DatabaseSync) {
   if (!databasePath || !existsSync(databasePath)) return null;
@@ -84,6 +85,16 @@ export function openPreviousMasterState(databasePath, DatabaseSync, { historyPat
         throw new Error("Ungültige Herkunft des eigenen Taxon-Schutzmarkers.");
       }
       return marker.decisions;
+    },
+    retentionProtectionFor(masterTaxonId) {
+      return active ? classificationRetentionProtection(active.database, masterTaxonId) : [];
+    },
+    retentionSnapshotFor(masterTaxonId) {
+      if (!active) throw new Error("Die bisherige Bestandsidentität fehlt.");
+      return readClassificationRetentionSnapshot(active.database, masterTaxonId);
+    },
+    retentionMarkerFor(masterTaxonId) {
+      return active ? classificationRetentionMarker(active.database.prepare("SELECT status_detail FROM master_taxon_status WHERE master_taxon_id=? AND status_name='stale'").get(masterTaxonId)?.status_detail) : null;
     },
     evidenceFor(masterTaxonId) {
       return active?.database.prepare(`SELECT release.provider, release.provider_version AS providerVersion,

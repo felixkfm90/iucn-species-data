@@ -1,0 +1,138 @@
+{
+  "kind": "classification-source-retention",
+  "schemaVersion": 1,
+  "policy": "unused-classification-retention-v1",
+  "masterTaxonId": "mtx_e24b0adb25f03d03780e4b196a26d0af",
+  "identity": {
+    "scientificName": "Testus retentus",
+    "rank": "species",
+    "kingdom": "Bacillati"
+  },
+  "eventId": "56c6a7f92dfbfcfd741e691968eabadaea1d8896ca9315cf9a0d8d85c13a9393",
+  "historicalCase": {
+    "schemaVersion": 1,
+    "baseVersion": "master-20260101000000000",
+    "colVersion": "col-classified",
+    "category": "matching-provider-id",
+    "sources": [
+      {
+        "masterTaxonId": "mtx_e24b0adb25f03d03780e4b196a26d0af",
+        "scientificName": "Testus retentus",
+        "rank": "species",
+        "kingdom": "Bacteria",
+        "evidence": [
+          {
+            "provider": "inaturalist",
+            "providerVersion": "fixture-inat",
+            "providerRecordId": "101"
+          }
+        ]
+      }
+    ],
+    "target": {
+      "scientificName": "Testus retentus",
+      "rank": "species",
+      "kingdom": "Bacillati",
+      "colRecords": [
+        {
+          "providerRecordId": "col-101",
+          "identifiers": [
+            {
+              "type": "inat",
+              "identifier": "inat:101"
+            }
+          ]
+        }
+      ]
+    },
+    "providerLinks": {
+      "ids": [
+        "101"
+      ],
+      "invalid": false
+    },
+    "previousProviderIds": [
+      "101"
+    ],
+    "revision": "114a6bb38ebc01521f48c85c28b46059f351532a1a9386247a678412675e5700"
+  },
+  "currentCase": {
+    "schemaVersion": 1,
+    "baseVersion": "master-20260102000001000",
+    "colVersion": "col-current",
+    "category": "different-provider-id",
+    "sources": [
+      {
+        "masterTaxonId": "mtx_e24b0adb25f03d03780e4b196a26d0af",
+        "scientificName": "Testus retentus",
+        "rank": "species",
+        "kingdom": "Bacteria",
+        "evidence": [
+          {
+            "provider": "inaturalist",
+            "providerVersion": "fixture-inat",
+            "providerRecordId": "101"
+          }
+        ]
+      }
+    ],
+    "target": {
+      "scientificName": "Testus retentus",
+      "rank": "species",
+      "kingdom": "Bacillati",
+      "colRecords": [
+        {
+          "providerRecordId": "12345",
+          "identifiers": [
+            {
+              "type": "inat",
+              "identifier": "inat:202"
+            }
+          ]
+        }
+      ]
+    },
+    "providerLinks": {
+      "ids": [
+        "202"
+      ],
+      "invalid": false
+    },
+    "previousProviderIds": [
+      "101"
+    ],
+    "revision": "f388b1ac7fe95af78a42b25a6f435b8445a2b23adcd5023fc8a3353ff7b22fba"
+  },
+  "snapshotHash": "854ab78f67bfe03918de4d9a2267ccbd4a6c43b5f5918979f56946ed4237f5fb",
+  "binding": {
+    "sourceMasterVersion": "master-20260102000001000",
+    "registryRevision": "c0d4f9a28bc10bd2a5c6acc59d394a5ebe3d7cc296b2eaf839ca40f332324df5",
+    "sourceRevision": "064c70b652d6c0dde82f7ce67559e20665001888203c5dca7bce0c36c1df8031",
+    "inputRevision": "846bbcdfa9d8f9cec1c79fc9f9b79626ea382db780e8f22d5984094a9af42d31",
+    "protectedMasterIdsRevision": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "usageRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "withheldGroups": [
+    {
+      "key": "testus retentus|species|bacillati",
+      "records": [
+        {
+          "provider": "catalogue-of-life",
+          "providerRecordId": "12345",
+          "fingerprint": "08060fdb4cfd22c4907c2f98293dbd2cc49fefccb90338b87c29391d99dce10d"
+        }
+      ]
+    },
+    {
+      "key": "testus retentus|species|bacteria",
+      "records": [
+        {
+          "provider": "inaturalist",
+          "providerRecordId": "101",
+          "fingerprint": "58a79e3dbdfcb8c1761505b72b03ebd6b35b49f1e948453f16077693010354f9"
+        }
+      ]
+    }
+  ],
+  "revision": "4e63d1b9645a46c42007f30be64a62895f7a291c893d811bfcf39906226583db"
+}

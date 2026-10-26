@@ -105,7 +105,7 @@ export function createTaxonomyEditOperations({
     return { species, speciesDataText, speciesData, registryText, registry, generated };
   }
 
-  async function previewTaxonomyEdit(id, payload) {
+  async function previewTaxonomyEdit(id, payload, { includeOverrideChanges = false } = {}) {
     cleanupPreviewTokens();
     const state = await readState(id);
     const restoreAutomatic = payload?.restoreAutomatic === true;
@@ -121,6 +121,16 @@ export function createTaxonomyEditOperations({
       ? normalizeTaxonomyFields(override.automaticFields)
       : validated.fields;
     const changes = buildChanges(currentFields, nextFields);
+    const metadataOnly = includeOverrideChanges && changes.length === 0;
+    if (includeOverrideChanges) {
+      if (restoreAutomatic || !override) changes.push({
+        key: "taxonomyMode", label: "Taxonomiepflege", before: override ? "Manueller Override" : "Automatische Taxonomie",
+        after: restoreAutomatic ? "Automatische Taxonomie" : "Manueller Override",
+      });
+      if (!restoreAutomatic && validated.reason !== (override?.reason ?? "")) changes.push({
+        key: "taxonomyReason", label: "Begründung", before: override?.reason || "Nicht vorhanden", after: validated.reason,
+      });
+    }
     if (!changes.length && !restoreAutomatic) {
       const error = new Error("Es wurden keine Taxonomieänderungen vorgenommen");
       error.statusCode = 400;
@@ -134,6 +144,7 @@ export function createTaxonomyEditOperations({
       fields: nextFields,
       reason: validated.reason,
       restoreAutomatic,
+      metadataOnly,
       speciesDataRevision: hashText(state.speciesDataText),
       registryRevision: hashText(state.registryText),
       expiresAt,
@@ -175,9 +186,8 @@ export function createTaxonomyEditOperations({
       throw error;
     }
     const generatedIndex = state.speciesData.indexOf(state.generated);
-    state.speciesData[generatedIndex] = mergeNormalizedTaxonomyFields(
-      state.generated,
-      preview.fields,
+    if (!preview.metadataOnly) state.speciesData[generatedIndex] = mergeNormalizedTaxonomyFields(
+      state.generated, preview.fields,
     );
     state.registry.version = 1;
     state.registry.species ??= {};
@@ -208,11 +218,13 @@ export function createTaxonomyEditOperations({
       createdAt: new Date().toISOString(),
     }, null, 2)}\n`, "utf8");
 
+    // A stale restoration binding fails before effects and outside rollback.
+    await preview.beforeWriteGuard?.();
     try {
-      await writeJsonAtomic(speciesDataPath, state.speciesData);
+      if (!preview.metadataOnly) await writeJsonAtomic(speciesDataPath, state.speciesData);
       await writeJsonAtomic(taxonomyOverridesPath, state.registry);
     } catch (error) {
-      await writeFile(speciesDataPath, state.speciesDataText, "utf8").catch(() => {});
+      if (!preview.metadataOnly) await writeFile(speciesDataPath, state.speciesDataText, "utf8").catch(() => {});
       await writeFile(taxonomyOverridesPath, state.registryText, "utf8").catch(() => {});
       throw error;
     }

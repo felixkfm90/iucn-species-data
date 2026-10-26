@@ -5,7 +5,8 @@ import fs from "node:fs/promises";
 export async function lightroomExportRevision() {
   const hash = crypto.createHash("sha256");
   for (const name of ["lightroom-search-inputs.mjs", "lightroom-search-projection.mjs", "lightroom-search-package.mjs",
-    "lightroom-search-delta.mjs", "lightroom-search-schema.mjs", "lightroom-search-validation.mjs"]) {
+    "lightroom-search-delta.mjs", "lightroom-search-schema.mjs", "lightroom-search-validation.mjs",
+    "lightroom-search-storage.mjs", "taxonomy-classification-retention.mjs"]) {
     hash.update(name).update((await fs.readFile(new URL(name, import.meta.url), "utf8")).replace(/\r\n/g, "\n"));
   }
   return hash.digest("hex");

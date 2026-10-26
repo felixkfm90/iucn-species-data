@@ -1,6 +1,8 @@
 (function initializeSpeciesExplorerConfirmation(global) {
   "use strict";
 
+  let nextConfirmationId = 0;
+
   function createQuickConfirm({
     documentRef = global.document,
     escapeHtml,
@@ -23,15 +25,20 @@
       confirmLabel = "Ja",
       cancelLabel = "Abbrechen",
       danger = false,
+      initialFocus = danger ? "cancel" : "confirm",
     } = {}) {
       return new Promise((resolve) => {
         const dialog = documentRef.createElement("dialog");
+        const titleId = `quick-confirm-title-${++nextConfirmationId}`;
+        const messageId = `${titleId}-message`;
+        dialog.setAttribute("aria-labelledby", titleId);
+        if (message) dialog.setAttribute("aria-describedby", messageId);
         dialog.className = "edit-dialog quick-confirm-dialog";
         dialog.innerHTML = `
           <form method="dialog" class="quick-confirm-form">
             ${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ""}
-            <h2>${escapeHtml(title)}</h2>
-            ${message ? `<p class="quick-confirm-message">${escapeHtml(message)}</p>` : ""}
+            <h2 id="${titleId}">${escapeHtml(title)}</h2>
+            ${message ? `<p id="${messageId}" class="quick-confirm-message">${escapeHtml(message)}</p>` : ""}
             <div class="dialog-actions">
               ${cancelLabel ? `<button class="quick-confirm-cancel" type="button">${escapeHtml(cancelLabel)}</button>` : ""}
               <button class="quick-confirm-ok ${danger ? "danger" : ""}" type="submit">${escapeHtml(confirmLabel)}</button>
@@ -62,7 +69,9 @@
         });
         documentRef.body.append(dialog);
         controller.open();
-        dialog.querySelector(".quick-confirm-ok")?.focus?.();
+        const focusSelector = initialFocus === "cancel" && cancelLabel
+          ? ".quick-confirm-cancel" : ".quick-confirm-ok";
+        dialog.querySelector(focusSelector)?.focus?.();
       });
     };
   }

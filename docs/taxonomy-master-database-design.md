@@ -1,6 +1,6 @@
 # Taxonomie-Masterdatenbank – Phasen 9.6 bis 9.12
 
-Stand: 2026-10-02
+Stand: 2026-10-23
 
 Status: Phase 9 abgeschlossen; der reale Wiederanlauf des am 2026-09-04 erkannten Referenz-Master-Drifts samt
 automatischer Lightroom-Ableitung wurde am 2026-09-05 erfolgreich abgeschlossen und read-only geprüft.
@@ -166,6 +166,44 @@ bisherigen IDs/Tupel und erlaubt ausschließlich das vorläufige Auslassen der g
 in einem frischen Kandidaten. Keine ID-Reservierung, historische Umleitung, Aliasbildung oder Projektmigration.
 Quellenfall, Batch- und Eingangsrevisionen bleiben im append-only Register. Unveränderte Fälle werden erneut
 belegt; geänderte Quellen/Releases bleiben offen und sperren die Freigabe bis zur erneuten Entscheidung.
+Bestätigte Klassifikationen und Zurückstellungen verpflichten auch bei unverändertem CoL-Release zur
+Auswahl ihrer heutigen CoL-Gegenstücke. Ein alter `col-reference-gap`-Marker des rohen Anbietereingangs
+darf diese Auswahl nicht überspringen. Die wissenschaftlichen Namen dienen hier ausschließlich der
+Quellenauswahl; Anbieterkennung, Eindeutigkeit und vollständige Fallrevision werden weiterhin streng geprüft.
+Historische Belege ersetzen keine heutigen CoL-Eingänge. Noch unbehandelte Referenzlücken behalten bei
+gleichem Release die bestehende Auswahlabkürzung. Der lokale Reparatur- und Abnahmestand vom 11. Oktober
+steht ausschließlich im [Auditauftrag](audit-auftrag-phase-10-5.md#1022-vorrangige-fn--und-artanlage-reparaturen--11-oktober).
+
+Die am 23. Oktober bestätigte Ausnahme erhält eine bereits vollzogene, inzwischen quellenungeklärte
+Klassifikation ausschließlich bei belegter Nichtnutzung und fehlendem eigenen Schutz. Der separate
+Nachweis `classification-source-retention` mit Regel `unused-classification-retention-v1` bindet
+historischen und heutigen Quellenfall, bisherige ID/Tupel/Daten, Identitätsregister, Quelleneingänge,
+Altmaster und frische vollständige FN-Nutzungsrevision. Die strenge Erstprüfung bleibt unverändert.
+Projektlinks, eigene Namen/Felder/Korrekturen, manuelle Schutz-/Feldentscheidungen, eigene
+Identitätsentscheidungen und positive FN-Nutzung sperren diesen Weg. Keine Gleichsetzung anhand eines
+Namens, kein erfundener Nachfolger und keine Umdeutung einer alten Quelle zur aktuellen Bestätigung.
+
+Die Registerbindung trennt historischen Ausgangsstand und vollständigen Kandidaten:
+`sourceRegistryRevision` und `sourceRegistryEventCount` binden den unveränderten aktiven Registerpräfix;
+`registryRevision` bindet das gesamte final geplante Kandidatenregister einschließlich gültiger neuer
+Klassifikationen und Zurückstellungen. Die vollständige Revision muss exakt zu Datenbank und
+`manifest.inputRevisions.identities` passen. Die Retentionsbelege werden erst nach Identitäts- und
+Zurückstellungsplanung final gebunden. Geänderte/entfernte Historie, ungültige neue Ereignisse und eigene
+neue Entscheidungen an einer Retentions-ID sperren weiter. Fertige Belege werden nicht neu gestempelt.
+Bestehende Schema-1-Marker ohne die zusätzlichen historischen Felder bleiben unverändert lesbar und
+unterliegen dem exakten vollständigen Registervergleich. Bei neuen Markern müssen beide historischen
+Felder gemeinsam gültig sein. Die bisherigen FN-, Projekt- und manuellen Schutzregeln bleiben bestehen.
+
+Erhaltene Fälle tragen `stale`/`reference-gap`; vorherige Quellenaussagen und deren Herkunft bleiben
+als archiviert beziehungsweise `removed` nachvollziehbar. Ein gebundener Beleg und die
+`classificationRetentions`-Manifestübersicht müssen exakt zusammenpassen. Kandidatenprüfung und beide
+Rücknahmepfade erkennen auch vorab entfernte Übersichten anhand der tatsächlichen Datenbankmarker.
+Aufbau, Aktivierung und Rücknahme prüfen die Nutzungsbindung erneut; gewöhnliche Status-/Suchzugriffe
+verlangen dadurch keinen Katalogabschluss. Ungeklärte Fälle bleiben zur Verwaltung direkt lesbar,
+werden aber von neuer Explorer-/Lightroom-Auswahl ausgeschlossen. Die Sperre gilt auch für direkte
+Master-ID-Abfragen und eine zuvor gespeicherte Artanlagevorschau. Ausführung und aktuelle
+Abnahmegrenzen stehen ausschließlich im [Auditauftrag, Abschnitt 10.51](audit-auftrag-phase-10-5.md#1051-fortsetzung-und-neues-col-update--23-oktober).
+
 Explorer-Fallansicht, Vorschau und Vormerkung sind implementiert;
 das Verwerfen offener Vormerkungen setzt nur auf die aktive Historie zurück. Projekt-Nachfolger werden für jede
 betroffene Projektart ausdrücklich gewählt und nach erneuter Vorschau im Ereignis gespeichert. Der Aufbau prüft

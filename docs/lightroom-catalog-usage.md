@@ -1,14 +1,64 @@
 # FN-Katalognutzung und automatische Klassifikationsvormerkung
 
-Stand: 2026-10-03
+Stand: 2026-10-26
 
-Implementiert ab Plug-in **0.4.24.15**. Felix hat die erste Erfassung und Gesamtbestätigung am 3. Oktober
-durchgeführt; der gespeicherte Nachweis und die produktive Fallaufteilung sind lesend geprüft. Der separat
-bestätigte lokale Folgeweg ist um 09:11:14 MESZ erfolgreich mit gemeinsamem Master-/Paketwechsel abgeschlossen.
-Nachweis: [produktiver Abschluss](audits/2026-10-03-taxonomy-reference-update.md). Der
-[Updatevertrag](taxonomy-reference-update.md) und [Betriebsstand](taxonomy-current-status.md) bleiben maßgeblich.
+Implementiert ab Plug-in **0.4.24.15**, aktueller Quellstand **0.4.24.39**. Tatsächlich geladene Version,
+spätere Betriebsproben und offene Abnahmegrenzen stehen im [Lightroom-Vertrag](lightroom-search-package.md)
+und im führenden [Auditauftrag](audit-auftrag-phase-10-5.md).
 
-## Lokale Folgeumsetzung mit Plug-in 0.4.24.16
+Die folgenden datierten Proben sind historische Nachweise: .27 wurde am 13. und 14. Oktober,
+.28 am Abend des 14. Oktober vom regulären Pfad nativ geladen nachgewiesen. Die private .29-Testkopie
+ist am 15. Oktober im eigenen Katalog bestätigt. Die anschließende .31-Erstkennungsprobe scheiterte
+an der innerhalb des Schreibzugriffs noch alten SDK-Stichwortlesesicht. .32 bindet die tatsächlich
+zugewiesenen Objekte und prüft nach dem SDK-Abschluss alle geänderten FN-Bereiche. Die native .32-Probe
+belegte zusätzlich noch alte FN-Metadatenwerte innerhalb desselben Schreibzugriffs. .33 bindet deshalb
+den vollständigen Vorzustand und exakt die tatsächlich geschriebenen Werte für die Nachprüfung.
+Gezielte **107/107**, unabhängige Review ohne Blocker und vollständiges lokales Gate vom 15. Oktober
+**14:14:45–14:26:45 MESZ, 50 Gruppen / 1.791 Tests** bestanden, 126 gebundene Quellen unverändert.
+Das Original .32 wurde am 15. Oktober um 13:57 MESZ im Hauptkatalog mit vollständigem Produktionspaar
+nativ aktiviert bestätigt. Nach der beauftragten Entfernung sechs obsoleter Registrierungen blieb genau
+dieses Original übrig; Belegdateien wurden nicht entfernt. Die nachfolgende eigene .33-Orts-/Zeitprobe
+schließt neue Mai-/2028-Stichwörter samt beiden internen Kennungen bereits im ersten Lauf erfolgreich ab;
+ihre unveränderte Wiederholung meldet keine weiteren Taxonomie-/Ortszeitänderungen und keine Schreibfehler.
+Der unabhängige Nachvergleich besteht mit **31/31** Prüfungen: alle fünf vollständigen Einträge mit
+FN-Zeitstempeln, realen Stichwortzuordnungen und sämtlichen Statistikvariablen sind nach der Wiederholung
+exakt unverändert. Die beiden privaten .32-/ .33-Registrierungen sind anschließend entfernt; Original
+**.33** ist im wieder geöffneten Hauptkatalog als einziger FN-Eintrag geladen und aktiviert mit passendem
+Produktionspaar bestätigt. Die anschließende eigene .33-Probe mit neu erzeugter Taxonomiestichwortkennung
+ist im Erstlauf vollständig; unveränderte Wiederöffnung und Wiederholung sind mit 178/178 unabhängigen
+Prüfungen bestätigt. Positive Favoritenzuweisung, Ablehnung und bestätigter Ersatz bestehen mit 123/123.
+Das Gesamtgate vom 16. Oktober besteht mit 50 Gruppen / 1.805 Tests. Verdeckter Stapelkonflikt und genaue
+Taxonomierücknahme bestehen mit 102/102; vollständige FN-Rücknahme, Wiederzuweisung und getrenntes
+Orts-/Zeit-Entfernen/Hinzufügen mit 183/183, einschließlich Erhalt der fünf Original-IPTC-Ortsfelder und
+Aufnahmezeit. Hauptkatalog abschließend offen, genau ein reguläres Original .33 aktiviert, Testregistrierung
+entfernt/Belege erhalten. Das schließt diese kleine native Matrix ab; weitere Namens-/Handoff-/Pause-/
+Skalierungsfälle und Gesamtabschluss bleiben im führenden Abschnitt 10.32 getrennt.
+Aktueller Verlauf ausschließlich im [Auditauftrag, Abschnitt 10.31](audit-auftrag-phase-10-5.md#1031-native-video-datumsquellen-und-fortsetzung--15-oktober).
+Der freigegebene lokale Ersatzauftrag vom
+13. Oktober ist um **18:09:17 MESZ** mit gemeinsamem Master-/Paketwechsel vollständig abgeschlossen:
+`master-20261013143021566` / `lightroom-dd834fb15dbd6f1c3257`, alle 273.480 vorherigen IDs erhalten.
+Seine neue requestgebundene SDK-Erfassung schützt **6.110 FN-Zuweisungen und 64 verwendete IDs** in
+**127.093 Katalogeinträgen**. Diese datierte Schutzaufnahme ist kein aktueller laufender Fotozähler.
+Tatsächlicher Ablauf und Abschlussgrenzen: [Auditauftrag, Abschnitt 10.24](audit-auftrag-phase-10-5.md#1024-freigegebener-realer-lokaler-wiederanlauf--11-und-12-oktober).
+Der [Updatevertrag](taxonomy-reference-update.md) und [Betriebsstand](taxonomy-current-status.md) bleiben maßgeblich.
+
+Die erneute Lightroom-Arbeit nach diesem abgeschlossenen Wechsel macht den damaligen Abwesenheits-/
+Frischenachweis für einen späteren Paarwechsel veraltet. Sie macht den bereits übernommenen Stand nicht
+fehlgeschlagen und verlangt keinen weiteren Aufbau. Vor einer künftigen Übernahme braucht deren Auftrag
+wieder seinen gültigen FN-Nutzungsnachweis; alte Quittungen werden nicht neu datiert.
+
+**FN-Katalognutzung erfassen** liest die verwendeten IDs für den Schutz eines Datenbankwechsels und
+schreibt keine Fotos. **FN-Daten aktualisieren** pflegt dagegen vorhandene gültige FN-Zuordnungen im
+geöffneten Katalog gegen das aktuelle Suchpaket und ergänzt beziehungsweise aktualisiert verfügbare
+Orts-/Zeitdaten. Die Statistik ersetzt keine dieser beiden Aktionen. Bedienung und genaue Quellen-/
+Auswahlgrenzen stehen im [Lightroom-Vertrag](lightroom-search-package.md); Ergebnis und Nachkontrolle des
+am 14. Oktober eigens freigegebenen FN-Datenlaufs werden im
+[Auditauftrag, Abschnitt 10.27](audit-auftrag-phase-10-5.md#1027-produktiver-fn-katalogabgleich--14-oktober) fortgeschrieben.
+
+Die erste Erfassung und Gesamtbestätigung vom 3. Oktober sowie der damalige abgeschlossene Paarwechsel
+um 09:11:14 MESZ bleiben historische Nachweise: [produktiver Erstabschluss](audits/2026-10-03-taxonomy-reference-update.md).
+
+## Gespeicherter Gesamtweg, eingeführt mit Plug-in 0.4.24.16
 
 Der nachstehende Folgeauftrag ist jetzt lokal umgesetzt, nicht mehr nur Planung. Der
 [gespeicherte Gesamtweg](taxonomy-update-automation.md) beschreibt aktuelle Bedienung, genaue SDK-Grenzen und Tests.
@@ -19,13 +69,28 @@ bindet geschlossene Dateien, nicht alte Quittungen mit neuen Zeiten. Capture-to-
 Startvereinbarung, kein behaupteter vollständiger SDK-Änderungsbeobachter. Die frühere manuelle Gesamtbestätigung
 entfällt im bestätigten Normalweg; einmalige Erstregistrierung und technische Fehlerfälle bleiben gesondert.
 
+Ergänzung vom 11. Oktober: Ein ausdrücklich neuer lokaler Ersatzauftrag für einen eigenen fehlgeschlagenen
+Masteraufbau fordert auch bei global aktuellem Nachweis eine eigene frische Erfassung. Der alte Updateauftrag
+bleibt erhalten; bestehende Quittungen werden nicht neu datiert. Die bestätigten Katalogpfade werden gebunden, neue Quittungskennungen dürfen
+die Registerrevision ersetzen. Eine frühere normale Schließbestätigung gilt ausschließlich für ihren bisherigen
+Auftrag. Bedienung und Schutzprüfungen stehen im führenden [Gesamtweg](taxonomy-update-automation.md).
+
 Projekt-/LR-/eigene Entscheidungsdaten sind nun auch gegen normale geänderte Anbieternamen und Hierarchie geschützt.
 Unveränderte Werte/Herkunftszeiten verlangen keine Rückfrage. Nach letzter bestätigter vollständiger Feld-/
 Klassifikationsentscheidung automatische Fortsetzung desselben Auftrags. Positive Beobachtungen schützen auch
-bei veralteter negativer Freigabe. Kein Produktivlauf zur Umsetzung; neue praktische SDK-Abnahme noch offen.
+bei veralteter negativer Freigabe. Die damalige Implementierung startete keinen Produktivlauf. Der ausdrücklich
+freigegebene Wiederanlauf vom 13. Oktober ist inzwischen tatsächlich abgeschlossen; die umfassende native
+SDK-/Betriebsabnahme bleibt im [Auditauftrag](audit-auftrag-phase-10-5.md) offen.
 
 Die folgenden Erstaufnahmebeschreibungen dokumentieren den Stand 0.4.24.15 und den damals tatsächlich
 bestätigten produktiven Lauf. Sie sind keine erneut auszuführende Schrittfolge des neuen Normalwegs.
+
+Ergänzung vom 13. Oktober: Lightroom-Arbeit nach einem pausierten oder fehlgeschlagenen Folgeaufbau kann
+dessen bisherige FN-Quittung veralten. Der geschützte lokale Ersatzweg erhält den alten Auftrag und fordert
+eine neue eigene SDK-Erfassung an. Bisher vorgemerkte automatische Identitätsereignisse benötigen einen
+separaten erneuten Schutzvergleich mit dieser neuen Nutzungsrevision; ihre historischen Nutzungskennungen
+werden nicht ersetzt. Die genauen Herkunfts-, Quellen- und Schutzgrenzen stehen im
+[Gesamtweg](taxonomy-update-automation.md#gespeicherte-steuerung-und-wiederanlauf).
 
 ## Folgeauftrag: automatischer Gesamtweg statt manueller Erstaufnahmekette
 
@@ -70,9 +135,10 @@ Technische Fehler, fehlender Speicher oder ein nicht belegbar vollständiger Nut
 fachliche Rückfrage und keine Erlaubnis zur Schutzumgehung. Sie müssen als Fehler/Warten mit realem Grund sichtbar
 sein; der bisherige Stand bleibt aktiv. Ein gegebenenfalls notwendiges Öffnen des Verbrauchers darf nicht als
 eine beliebig oft wiederholte Katalog-Erfassungs-/Schließungs-/Bestätigungskette gestaltet werden.
-Lightroom nicht automatisch beenden oder eine offene Katalogdatei mit einer alten Quittung neu freigeben.
+Lightroom nur nach ausdrücklich bestätigter normaler Schließanforderung beenden; eine offene Katalogdatei
+niemals mit einer alten Quittung neu freigeben.
 
-### Vor einer Umsetzung zwingend zu klären und zu prüfen
+### Vor der damaligen Umsetzung zu klärende und weiterhin abzugrenzende Punkte
 
 - Dokumentierte SDK-Möglichkeiten für initiale Vollständigkeit, FN-Änderungen, Import/Löschen, Katalogwechsel,
   Plug-in-Neuladen und Neustart prüfen, bevor Beobachter oder Hintergrundfunktionen gewählt werden.
@@ -86,8 +152,10 @@ Lightroom nicht automatisch beenden oder eine offene Katalogdatei mit einer alte
 - Keine vollständigen SDK-/Datenbankschleifen in Statusabfragen oder beim Öffnen des Zuweisungsfensters.
   Erstaufnahme und gezielte notwendige Gegenprüfung dürfen nicht in dauernde Vollscans ausarten.
 
-Umsetzung und Tests dürfen keinen neuen produktiven Quellenlauf, Paketwechsel oder Katalogabgleich auslösen.
-Die aktuelle Veröffentlichung bleibt unverändert; die Automatisierung ist der nächste getrennte Punkt vor dem Audit.
+Diese Umsetzung und isolierte Tests waren keine Freigabe für einen produktiven Quellenlauf, Paketwechsel
+oder Katalogabgleich. Der gespeicherte Gesamtweg ist inzwischen implementiert; die separat erteilte
+Wiederanlauffreigabe führte zum belegten Paarabschluss vom 13. Oktober. Sie ersetzt weder die übrige
+Gesamtabnahme noch eine Freigabe zukünftiger Produktivaktionen.
 
 ## Umfang und Freigabe
 
@@ -101,7 +169,7 @@ Die bestätigte Richtlinie `unused-classifications-v1` gilt ausschließlich für
 belegten CoL-/Reichsklassifikationsfälle. Sie ist keine Freigabe für Split/Merge, Namensheuristik, Foto- oder
 Projektmigration, beliebige technische Konflikte, neue Downloads oder Bereinigung.
 
-## Ausdrückliche Erfassung in Lightroom
+## Historische ausdrückliche Erstaufnahme in Lightroom am 3. Oktober
 
 1. Im Zusatzmodul-Manager die Version **0.4.24.15** laden beziehungsweise das Zusatzmodul neu laden.
 2. `Bibliothek → Zusatzmoduloptionen → FN Wildlife verwalten … → FN-Katalognutzung erfassen …` wählen.
@@ -193,11 +261,21 @@ Dateiprüfsumme; Aufbau-/Fortsetzungsbindungen prüfen den gespeicherten Dateist
 Vollkatalog- oder Prüfsummenscans im Polling. Der kurze gemeinsame Zeigerwechsel prüft nochmals die Frische.
 Bereits aktivierte automatische Historie verlangt keine dauerhafte Lightroom-Schließung.
 
-**Bewusste erste Betriebsgrenze:** Noch keine dauerhafte inkrementelle SDK-Nutzungsfortschreibung. Ein nach
-der Bestätigung geöffneter/geänderter Katalog wird nicht als unverändert angenommen. Dann erneut explizit
-erfassen, normal schließen und bestätigen. Sind schon automatische Vormerkungen an einen alten Nachweis
-gebunden, diese über die bestehende bestätigte Vormerkungsrücknahme verwerfen und frisch prüfen; nicht
-nachträglich umstempeln. Das ist konservativer als ein unvollständiger Änderungsbeobachter. Eine spätere
+Ist kein Lightroom-Prozess mehr vorhanden, bestehen aber noch solche Arbeitsdateien, erklärt die
+Updateanzeige den fehlenden Katalogabschluss. Sie fordert nicht erneut das Schließen eines bereits
+beendeten Prozesses. Der Auftrag wartet weiterhin; Dateiexistenz, neue requestgebundene Erfassung,
+geschlossene Registrierung und vollständige Frischeprüfung bleiben dieselben Voraussetzungen. Ein
+verschwundenes Fenster oder beendeter Prozess allein ist keine Freigabe und kein Auftrag zum Löschen
+dieser Dateien. Die gezielte Vorher-/Nachherprüfung und reale Beobachtung stehen im
+[Auditauftrag, Abschnitt 10.24](audit-auftrag-phase-10-5.md#1024-freigegebener-realer-lokaler-wiederanlauf--11-und-12-oktober).
+
+**Bewusste Betriebsgrenze:** Noch keine dauerhafte inkrementelle SDK-Nutzungsfortschreibung. Ein nach
+der Bestätigung geöffneter/geänderter Katalog wird nicht als unverändert angenommen. Vor einem weiteren
+Paarwechsel fordert der bestätigte Updateweg bei Bedarf erneut seine eigene Erfassung und den normalen
+Katalogabschluss an. Historische oder bereits aktivierte Identitätsereignisse werden nicht nachträglich
+umgestempelt. Für noch nicht übernommene eigene Ersatzaufträge gibt es den ausdrücklich bestätigten
+erneuten Schutzvergleich mit separatem Erneuerungsnachweis, beschrieben im
+[Gesamtweg](taxonomy-update-automation.md#gespeicherte-steuerung-und-wiederanlauf). Eine spätere
 inkrementelle Fortschreibung benötigt einen eigenen belegten Vollständigkeits-/Neustartvertrag.
 
 Historische Aufträge/Kandidaten werden nicht umgeschrieben. Neue Aufträge binden die neuen Schutzregeln;

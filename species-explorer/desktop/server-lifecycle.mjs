@@ -5,6 +5,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4177;
 const DEFAULT_HEALTH_TIMEOUT_MS = 10_000;
 const DEFAULT_HEALTH_INTERVAL_MS = 150;
+const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 
 function normalizePort(value, fallback = DEFAULT_PORT) {
   const parsed = Number(value);
@@ -16,12 +17,17 @@ function addressToBaseUrl(address, host) {
   return `http://${host}:${port}`;
 }
 
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
+async function fetchJson(url, { timeoutMs = DEFAULT_STATUS_TIMEOUT_MS, signal, ...options } = {}) {
+  const timeout = AbortSignal.timeout(Math.max(1, Math.ceil(timeoutMs)));
+  const response = await fetch(url, {
+    ...options,
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+  });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
   }
-  return response.json();
+  // Keep the same abort signal active until the entire JSON body has arrived.
+  return await response.json();
 }
 
 export async function waitForExplorerHealthcheck(
@@ -31,17 +37,21 @@ export async function waitForExplorerHealthcheck(
     intervalMs = DEFAULT_HEALTH_INTERVAL_MS,
   } = {},
 ) {
-  const startedAt = Date.now();
+  const deadline = performance.now() + timeoutMs;
   let lastError = null;
-  do {
+  while (performance.now() < deadline) {
     try {
-      const summary = await fetchJson(`${baseUrl}/api/summary`);
+      const summary = await fetchJson(`${baseUrl}/api/summary`, {
+        timeoutMs: deadline - performance.now(),
+      });
+      if (performance.now() >= deadline) throw new Error("Timeout");
       return { ok: true, summary };
     } catch (error) {
       lastError = error;
-      await delay(intervalMs);
+      const remaining = deadline - performance.now();
+      if (remaining > 0) await delay(Math.min(intervalMs, remaining));
     }
-  } while (Date.now() - startedAt < timeoutMs);
+  }
 
   throw new Error(
     `Explorer-Server antwortet nicht unter ${baseUrl}: ${lastError?.message ?? "Timeout"}`,
@@ -88,16 +98,16 @@ export async function stopManagedExplorerServer(managedServer) {
   await managedServer.server.close();
 }
 
-export async function getExplorerPipelineStatus(baseUrl) {
-  return fetchJson(`${baseUrl}/api/pipeline/status`);
+export async function getExplorerPipelineStatus(baseUrl, options) {
+  return fetchJson(`${baseUrl}/api/pipeline/status`, options);
 }
 
-export async function getExplorerBackupStatus(baseUrl) {
-  return fetchJson(`${baseUrl}/api/backup/status`);
+export async function getExplorerBackupStatus(baseUrl, options) {
+  return fetchJson(`${baseUrl}/api/backup/status`, options);
 }
 
-export async function getExplorerPendingChanges(baseUrl) {
-  return fetchJson(`${baseUrl}/api/pending-changes`);
+export async function getExplorerPendingChanges(baseUrl, options) {
+  return fetchJson(`${baseUrl}/api/pending-changes`, options);
 }
 
 export function isPipelineBlockingShutdown(status) {

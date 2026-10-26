@@ -1,4 +1,28 @@
+import { CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY, classificationRetentionForTaxon } from "./taxonomy-classification-retention.mjs";
 import { LIGHTROOM_SEARCH_SCHEMA_VERSION } from "./lightroom-search-storage.mjs";
+
+export const LIGHTROOM_SEARCH_READER_CONTRACT = CLASSIFICATION_RETENTION_POLICY;
+export const SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS = Object.freeze([1, LIGHTROOM_SEARCH_SCHEMA_VERSION]);
+
+// Inspect only potential own markers; ordinary stale statuses retain their existing behavior.
+export function inspectLightroomRetention(database, { master = false } = {}) {
+  const taxon = master ? "master.master_taxon" : "main.taxon";
+  const statuses = master ? "master.master_taxon_status" : "main.taxon_status";
+  const rows = database.prepare(`
+    SELECT taxon.master_taxon_id, taxon.lifecycle_state, taxon.reference_state, status.status_name, status.status_detail
+    FROM ${statuses} status JOIN ${taxon} taxon USING(master_taxon_id)
+    WHERE instr(status.status_detail, ?) > 0 OR instr(status.status_detail, ?) > 0
+      OR CASE WHEN json_valid(status.status_detail) THEN
+        json_extract(status.status_detail, '$.kind') = ? OR json_extract(status.status_detail, '$.policy') = ? ELSE 0 END
+  `).all(CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY,
+    CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY);
+  const grouped = new Map();
+  for (const row of rows) {
+    if (!grouped.has(row.master_taxon_id)) grouped.set(row.master_taxon_id, { ...row, statuses: [] });
+    grouped.get(row.master_taxon_id).statuses.push(row);
+  }
+  return new Map([...grouped].map(([id, row]) => [id, classificationRetentionForTaxon(row)]).filter(([, marker]) => marker));
+}
 
 function scalar(database, sql, ...params) {
   const row = database.prepare(sql).get(...params);
@@ -101,6 +125,7 @@ export function createLightroomSearchSchema(database) {
   `);
   database.prepare("INSERT INTO package_info (key, value) VALUES ('schemaVersion', ?)")
     .run(String(LIGHTROOM_SEARCH_SCHEMA_VERSION));
+  database.prepare("INSERT INTO package_info (key, value) VALUES ('readerContract', ?)").run(LIGHTROOM_SEARCH_READER_CONTRACT);
 }
 
 export function finalizeLightroomSearchSchema(database) {
@@ -124,12 +149,12 @@ export function finalizeLightroomSearchSchema(database) {
   `);
 }
 
-export function inspectLightroomSearchDatabase(database, { full = false } = {}) {
+export function inspectLightroomSearchDatabase(database, { full = false, manifest = null } = {}) {
   const schemaVersion = Number(scalar(
     database,
     "SELECT value FROM package_info WHERE key = 'schemaVersion'",
   ));
-  if (schemaVersion !== LIGHTROOM_SEARCH_SCHEMA_VERSION) {
+  if (!SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS.includes(schemaVersion)) {
     throw new Error(
       `Lightroom-Suchpaket-Schemaversion ${schemaVersion || "(fehlt)"} wird nicht unterstützt.`,
     );
@@ -151,6 +176,16 @@ export function inspectLightroomSearchDatabase(database, { full = false } = {}) 
   if (missing.length) {
     throw new Error(`Lightroom-Suchpaket fehlen Tabellen: ${missing.join(", ")}`);
   }
+  const retained = inspectLightroomRetention(database);
+  if (schemaVersion === 1 && retained.size) {
+    throw new Error("Retentionsmarker benötigen den neuen Suchpaket-Leservertrag; Schema 1 ist dafür gesperrt.");
+  }
+  if (schemaVersion >= 2 && scalar(database, "SELECT value FROM package_info WHERE key='readerContract'") !== LIGHTROOM_SEARCH_READER_CONTRACT) {
+    throw new Error("Der Retentions-Leservertrag des Suchpakets fehlt oder ist inkompatibel.");
+  }
+  if (manifest && (manifest.schemaVersion !== schemaVersion || (schemaVersion >= 2 && manifest.readerContract !== LIGHTROOM_SEARCH_READER_CONTRACT))) {
+    throw new Error("Manifest und Datenbank besitzen keinen übereinstimmenden Suchpaket-Leservertrag.");
+  }
   if (full) {
     const integrity = scalar(database, "PRAGMA integrity_check");
     if (integrity !== "ok") {
@@ -165,6 +200,7 @@ export function inspectLightroomSearchDatabase(database, { full = false } = {}) 
   }
   return {
     schemaVersion,
+    classificationRetentionCount: retained.size,
     validationMode: full ? "full" : "schema-only",
     taxonCount: Number(scalar(database, "SELECT COUNT(*) FROM taxon")),
     nameCount: Number(scalar(database, "SELECT COUNT(*) FROM search_term")),

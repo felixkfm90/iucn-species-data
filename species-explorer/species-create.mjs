@@ -13,6 +13,7 @@ import {
   DEFAULT_PORTRAIT_OPTIONS,
 } from "../scripts/portrait-renderer.mjs";
 import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
+import { validateImageDecode } from "../scripts/image-validation.mjs";
 import { pruneSpeciesListBackups } from "./asset-backups.mjs";
 import {
   MAX_PORTRAIT_INSTRUCTIONS_LENGTH,
@@ -44,7 +45,35 @@ export function createSpeciesCreateOperations({
   portraitRenderer,
   creationSessions,
   isBackupActive = () => false,
+  assertTaxonomyAssignable = null,
 }) {
+  function selectedMasterId(payload) {
+    const values = [payload?.masterTaxonId, payload?.values?.masterTaxonId].filter(value => value != null && String(value).trim() !== "").map(value => String(value).trim());
+    if (new Set(values).size > 1 || (values[0] && !/^mtx_[a-f0-9]{32}$/.test(values[0]))) {
+      throw Object.assign(new Error("Die ausgewählte Masterkennung ist ungültig oder widersprüchlich."), { statusCode: 400 });
+    }
+    return values[0] || "";
+  }
+
+  function selectedTaxonomyReference(payload) {
+    const masterTaxonId = selectedMasterId(payload);
+    const references = [payload?.taxonomyReference, payload?.values?.taxonomyReference]
+      .filter(value => value != null && String(value).trim() !== "").map(value => String(value).trim());
+    if (new Set(references).size > 1 || (references[0] && !/^(?:mtx_[a-f0-9]{32}|stx_[a-f0-9]{24}|[0-9]+)$/.test(references[0]))
+        || (masterTaxonId && references[0] && masterTaxonId !== references[0])) {
+      throw Object.assign(new Error("Die ausgewählte Taxonomiereferenz ist ungültig oder widersprüchlich."), { statusCode: 400 });
+    }
+    return masterTaxonId || references[0] || "";
+  }
+
+  async function assertSelectedTaxon(id) {
+    if (!id) return;
+    if (typeof assertTaxonomyAssignable !== "function") {
+      throw Object.assign(new Error("Die ausgewählte Taxonomie kann gerade nicht geprüft werden."), { statusCode: 409 });
+    }
+    return await assertTaxonomyAssignable(id);
+  }
+
   async function previewNewSpecies(payload) {
     cleanupPreviewTokens();
     const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
@@ -56,6 +85,9 @@ export function createSpeciesCreateOperations({
       throw error;
     }
 
+    const masterTaxonId = selectedMasterId(payload);
+    const taxonomyReference = selectedTaxonomyReference(payload);
+    const selectedTaxon = await assertSelectedTaxon(taxonomyReference);
     const sourceText = await readFile(speciesListPath, "utf8");
     const inputList = JSON.parse(sourceText);
     if (!Array.isArray(inputList)) {
@@ -96,6 +128,9 @@ export function createSpeciesCreateOperations({
     previewTokens.set(token, {
       type: "create",
       values,
+      masterTaxonId,
+      taxonomyReference,
+      taxonomyBinding: selectedTaxon?.assignmentBinding || null,
       sourceRevision: hashText(sourceText),
       expiresAt,
     });
@@ -216,6 +251,8 @@ export function createSpeciesCreateOperations({
       throw error;
     }
 
+    try { await validateImageDecode(validated.buffer, { format: validated.image.format, repoRoot }); }
+    catch (error) { error.statusCode = 400; throw error; }
     const source = await portraitAssetSourceRevision(species);
     removePreviousPortraitPreviews(species.id);
     const token = randomUUID();
@@ -237,6 +274,7 @@ export function createSpeciesCreateOperations({
       });
       const renderedBuffer = await readFile(stagingPath);
       inspectWebp(renderedBuffer);
+      await validateImageDecode(renderedBuffer, { format: "webp", repoRoot });
       const sha256 = createHash("sha256").update(renderedBuffer).digest("hex");
       previewTokens.set(token, {
         type: "portrait-asset",
@@ -313,6 +351,14 @@ export function createSpeciesCreateOperations({
       throw error;
     }
 
+    const requestedReference = selectedTaxonomyReference(payload);
+    if (requestedReference && requestedReference !== (preview.taxonomyReference || preview.masterTaxonId)) {
+      throw Object.assign(new Error("Die Taxonomieauswahl stimmt nicht mit der gespeicherten Vorschau überein."), { statusCode: 409 });
+    }
+    const selectedTaxon = await assertSelectedTaxon(preview.taxonomyReference || preview.masterTaxonId || "");
+    if (JSON.stringify(selectedTaxon?.assignmentBinding || null) !== JSON.stringify(preview.taxonomyBinding || null)) {
+      throw Object.assign(new Error("Die Herkunft der Taxonomieauswahl hat sich seit der Vorschau geändert. Bitte erneut auswählen und prüfen."), { statusCode: 409 });
+    }
     const sourceText = await readFile(speciesListPath, "utf8");
     if (hashText(sourceText) !== preview.sourceRevision) {
       previewTokens.delete(token);

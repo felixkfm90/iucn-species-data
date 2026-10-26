@@ -65,18 +65,20 @@ local function runInput(catalog, input, progress, withKeywords)
   local result = readInput(input, read)
   if withKeywords then
     result.availableKeywords = {}
-    local seen = {}
+    local seen, entries = {}, {}
     for _, photo in ipairs(run.photos) do
       for _, entry in ipairs(photo.before.keywords) do
         if not seen[entry.id] then
           seen[entry.id] = true
-          local ok, name = LrTasks.pcall(function()
-            local keyword = catalog:getKeywordByLocalIdentifier(entry.id)
-            return keyword and keyword:getName() or nil
-          end)
-          if ok and name then table.insert(result.availableKeywords, { id = entry.id, name = name }) end
+          table.insert(entries, entry)
         end
       end
+    end
+    -- Missing/renamed old objects remain unavailable for the helper's conflict
+    -- preview. SDK failures stop here; they are never treated as deleted keys.
+    local available = Snapshot.resolveKeywords(catalog, { keywords = entries }, true)
+    for _, entry in ipairs(entries) do
+      if available[entry.id] then table.insert(result.availableKeywords, { id = entry.id, name = entry.name }) end
     end
   end
   return result, read, run

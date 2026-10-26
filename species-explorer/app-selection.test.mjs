@@ -13,6 +13,12 @@ function createItem(id) {
   const attributes = new Map();
   return {
     dataset: { id },
+    hidden: false,
+    disabled: false,
+    tabIndex: 0,
+    focus() { this.focused = true; },
+    scrollIntoView(options) { this.scrolled = options; },
+    getAttribute(name) { return attributes.get(name) ?? null; },
     classList: {
       toggle(name, enabled) {
         if (enabled) classes.add(name);
@@ -36,7 +42,11 @@ function createFixture({ openDialog = null } = {}) {
     selectedId: "",
   };
   const elements = {
-    speciesList: { querySelectorAll: () => items },
+    speciesList: {
+      listeners: new Map(),
+      querySelectorAll: () => items,
+      addEventListener(type, handler) { this.listeners.set(type, handler); },
+    },
     detailPanel: {},
   };
   const windowRef = {
@@ -58,7 +68,12 @@ function createFixture({ openDialog = null } = {}) {
     resetScrollableToTop: (element) => reset.push(element),
     requestFrame: (callback) => frames.push(callback),
   });
-  return { controller, elements, frames, items, rendered, reset, scrolls, state, windowRef };
+  function key(key, target = items.find((item) => item.focused) || items[0], modifiers = {}) {
+    const event = { key, target, ...modifiers, preventDefault() { this.defaultPrevented = true; } };
+    elements.speciesList.listeners.get("keydown")?.(event);
+    return event;
+  }
+  return { controller, elements, frames, items, rendered, reset, scrolls, state, windowRef, key };
 }
 
 test("Artauswahl aktualisiert Zustand, URL und genau einen aktiven Listeneintrag", () => {
@@ -96,4 +111,55 @@ test("Unbekannte Arten verändern weder Auswahl noch Darstellung", () => {
 test("Offene Dialoge werden unabhängig von der Artauswahl erkannt", () => {
   assert.equal(createFixture().controller.hasOpenDialog(), false);
   assert.equal(createFixture({ openDialog: {} }).controller.hasOpenDialog(), true);
+});
+
+test("Pfeile, Home und End führen sichtbare Auswahl, Detail, URL und Fokus zusammen", () => {
+  const fixture = createFixture();
+  const right = fixture.items[1];
+  assert.equal(fixture.key("ArrowDown").defaultPrevented, true);
+  assert.equal(fixture.state.selectedId, "loewe");
+  assert.equal(right.focused, true);
+  assert.equal(right.attributes.get("aria-selected"), "true");
+  assert.equal(right.tabIndex, 0);
+  assert.equal(fixture.items[0].tabIndex, -1);
+  assert.equal(fixture.rendered.at(-1).id, "loewe");
+  assert.match(fixture.windowRef.history.url, /species=loewe/);
+  fixture.key("Home", right);
+  assert.equal(fixture.state.selectedId, "amsel");
+  fixture.key("End", fixture.items[0]);
+  assert.equal(fixture.state.selectedId, "loewe");
+  fixture.key("ArrowUp", right);
+  assert.equal(fixture.state.selectedId, "amsel");
+});
+
+test("Listenränder, geänderte Filter, leere Listen und Modifizierertasten bleiben sicher", () => {
+  const fixture = createFixture();
+  fixture.key("ArrowUp");
+  assert.equal(fixture.state.selectedId, "amsel");
+  fixture.key("End");
+  fixture.items[0].hidden = true;
+  fixture.key("Home", fixture.items[1]);
+  assert.equal(fixture.state.selectedId, "loewe");
+  const before = fixture.rendered.length;
+  assert.equal(fixture.key("Home", fixture.items[1], { ctrlKey: true }).defaultPrevented, undefined);
+  assert.equal(fixture.key("Tab", fixture.items[1]).defaultPrevented, undefined);
+  assert.equal(fixture.rendered.length, before);
+  fixture.items[1].disabled = true;
+  assert.equal(fixture.key("ArrowDown").defaultPrevented, undefined);
+});
+
+test("Tastatur darf eine dahinterliegende Artenliste bei offenem Dialog nicht ändern", () => {
+  const fixture = createFixture({ openDialog: {} });
+  fixture.key("ArrowDown");
+  assert.equal(fixture.state.selectedId, "");
+  assert.equal(fixture.rendered.length, 0);
+});
+
+test("Ein direkt fokussierter Listeneintrag wird zum einzigen Tab-Einstieg, ohne fachlich gewählt zu werden", () => {
+  const fixture = createFixture();
+  fixture.elements.speciesList.listeners.get("focusin")?.({ target: fixture.items[1] });
+  assert.equal(fixture.items[0].tabIndex, -1);
+  assert.equal(fixture.items[1].tabIndex, 0);
+  assert.equal(fixture.state.selectedId, "");
+  assert.equal(fixture.rendered.length, 0);
 });

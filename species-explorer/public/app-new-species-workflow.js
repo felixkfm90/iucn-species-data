@@ -86,6 +86,7 @@
       let portraitPreviewToken = "";
       let portraitSkipped = false;
       let busy = false;
+      let checkingAvailability = false;
       let pipelineBusy = false;
       let completed = false;
       let savedSpeciesId = "";
@@ -103,6 +104,8 @@
       let abortPending = false;
       let abortAvailable = false;
       let abortRetryTimer = null;
+      let dialogGeneration = 0;
+      const isCurrentDialog = (generation) => generation === dialogGeneration;
 
       const setMessage = createMessageSetter(message, "edit-message new-species-message");
       const setPortraitMessage = createMessageSetter(
@@ -122,7 +125,7 @@
         clearFieldErrors,
         applyFieldErrors,
         updateMeasurementMode,
-      } = createFieldFeedbackController({ form, documentRef: document });
+      } = createFieldFeedbackController({ form, documentRef: document, validateFields: () => localFieldErrors() });
 
       const { speciesValues, localFieldErrors } = createNewSpeciesFormModel({
         form,
@@ -163,6 +166,16 @@
         escapeHtml,
         onNamesChanged: markSpeciesInputsChanged,
       });
+
+      const selectedTaxonomyMasterId = () => {
+        const selection = taxonomyReference.getSelection?.();
+        return selection?.masterTaxonId && selection.scientificName === speciesValues().scientificName ? selection.masterTaxonId : "";
+      };
+
+      const selectedTaxonomyReference = () => {
+        const selection = taxonomyReference.getSelection?.();
+        return selection?.taxonomyReference && selection.scientificName === speciesValues().scientificName ? selection.taxonomyReference : "";
+      };
 
       const selectedTaxonomyClass = () => {
         const selection = taxonomyReference.getSelection?.();
@@ -558,6 +571,7 @@
       };
 
       const resetAll = () => {
+        dialogGeneration += 1;
         stopInlinePipelinePolling();
         clearTimeout(abortRetryTimer);
         abortRetryTimer = null;
@@ -704,9 +718,11 @@
         }
       };
 
-      const handleInlineReviewStatus = async (status) => {
+      const handleInlineReviewStatus = async (status, generation = dialogGeneration) => {
+        if (!isCurrentDialog(generation)) return;
         inlineRunId = status.runId;
         await loadData({ reload: true });
+        if (!isCurrentDialog(generation)) return;
         setPipelineBusy(false);
         if (inlineReviewAssets !== status.reviewAssets) {
           inlineReviewAssets = status.reviewAssets || [];
@@ -738,9 +754,11 @@
       };
 
       async function pollInlinePipelineStatus() {
+        const generation = dialogGeneration;
         stopInlinePipelinePolling();
         try {
           const status = await fetchJson("/api/pipeline/status");
+          if (!isCurrentDialog(generation)) return;
           state.pipelineStatusSnapshot = status;
           state.renderPersistentPipelineStatus?.(status);
         if (status.status === "running") {
@@ -755,11 +773,12 @@
             return;
           }
           if (status.status === "awaiting-review") {
-            await handleInlineReviewStatus(status);
+            await handleInlineReviewStatus(status, generation);
             return;
           }
           if (status.status === "completed") {
             await loadData({ reload: true });
+            if (!isCurrentDialog(generation)) return;
             const createdSpecies = newSpeciesData();
             if (createdSpecies && !createdSpecies.assets?.map?.exists && !inlineManualMapHandled) {
               setPipelineBusy(false);
@@ -780,7 +799,7 @@
           }
           showWorkflowError("Der Suchlauf ist nicht mehr aktiv. Bitte seinen Status im Explorer prüfen.");
         } catch (error) {
-          showWorkflowError(error.message);
+          if (isCurrentDialog(generation)) showWorkflowError(error.message);
         }
       }
 
@@ -952,16 +971,62 @@
         await abortSavedCreation();
       });
 
-      openButton.addEventListener("click", async () => {
+      const openCreator = async (resumeSnapshot = null) => {
+        if (checkingAvailability || busy || pipelineBusy) return;
+        const resumeCreationId = resumeSnapshot?.creationId || "";
+        const matchesResume = (status) => status?.status === "awaiting-review"
+          && status.guidedSpeciesCreation === true && status.creationId === resumeCreationId
+          && status.runId === resumeSnapshot.runId && status.targets?.length === 1
+          && status.targets[0].slug === resumeSnapshot.targets[0].slug;
+        const documentRef = openButton.ownerDocument || global.document;
+        const ownedFocus = documentRef?.activeElement === openButton;
+        let generation = dialogGeneration;
+        checkingAvailability = true;
+        openButton.disabled = true;
+        try {
+          const availability = await fetchJson("/api/species/new/availability");
+          if (!isCurrentDialog(generation)) return;
+          if (resumeCreationId && !matchesResume(state.pipelineStatusSnapshot)) {
+            await showQuickConfirm({ title: "Artanlage kann nicht fortgesetzt werden",
+              message: "Der gespeicherte Auftrag hat sich geändert. Bitte den aktuellen Status erneut prüfen.",
+              confirmLabel: "Verstanden", cancelLabel: "" });
+            return;
+          }
+          if (availability.available !== true) {
+            await showQuickConfirm({ title: "Neue Art derzeit gesperrt", message: availability.message
+              || "Die Artanlage ist derzeit nicht verfügbar. Bitte den Projektstatus prüfen.",
+            confirmLabel: "Verstanden", cancelLabel: "" });
+            return;
+          }
+        } catch (error) {
+          if (!isCurrentDialog(generation)) return;
+          await showQuickConfirm({ title: "Artanlage konnte nicht geprüft werden", message: error.message,
+            confirmLabel: "Verstanden", cancelLabel: "" });
+          return;
+        } finally {
+          checkingAvailability = false;
+          openButton.disabled = busy || pipelineBusy;
+          if (ownedFocus && isCurrentDialog(generation) && openButton.isConnected && !openButton.disabled
+              && documentRef && (documentRef.activeElement === documentRef.body
+                || documentRef.activeElement === documentRef.documentElement)) openButton.focus();
+        }
         form.reset();
         resetAll();
+        generation = dialogGeneration;
         state.holdNewSpeciesBackground = true;
         dialogController.open();
-        const pending = state.pipelineStatusSnapshot;
+        const pending = resumeSnapshot || state.pipelineStatusSnapshot;
         try {
           const result = await fetchJson("/api/species/new/sessions", { method: "POST", body: "{}" });
-          const session = result.sessions?.find((item) => item.canAbort && item.slug === pending?.targets?.[0]?.slug)
-            || result.sessions?.find((item) => item.canAbort);
+          if (!isCurrentDialog(generation)) return;
+          const session = resumeCreationId
+            ? result.sessions?.find((item) => item.id === resumeCreationId && item.canAbort
+              && item.slug === pending?.targets?.[0]?.slug)
+            : result.sessions?.find((item) => item.canAbort && item.slug === pending?.targets?.[0]?.slug)
+              || result.sessions?.find((item) => item.canAbort);
+          if (resumeCreationId && !session) {
+            throw new Error("Der gespeicherte Artauftrag ist nicht mehr eindeutig fortsetzbar. Bitte den aktuellen Projektstatus prüfen.");
+          }
           if (session) {
             creationId = session.id;
             savedSpeciesId = session.slug;
@@ -969,19 +1034,36 @@
             abortAvailable = session.canAbort;
             if (session.abortRequested && session.canAbort) { await abortSavedCreation(); return; }
           }
-        } catch (error) { setMessage(`Gespeicherte Artanlage konnte nicht gelesen werden: ${error.message}`, "error"); }
+        } catch (error) {
+          if (!isCurrentDialog(generation)) return;
+          if (resumeCreationId) {
+            close();
+            await showQuickConfirm({ title: "Artanlage kann nicht fortgesetzt werden", message: error.message,
+              confirmLabel: "Verstanden", cancelLabel: "" });
+            return;
+          }
+          setMessage(`Gespeicherte Artanlage konnte nicht gelesen werden: ${error.message}`, "error");
+        }
         if (pending?.status === "awaiting-review" && pending.guidedSpeciesCreation && pending.targets?.length === 1) {
           try {
             const fresh = await fetchJson("/api/pipeline/status");
+            if (!isCurrentDialog(generation)) return;
+            if (resumeCreationId && !matchesResume(fresh)) {
+              throw new Error("Der gespeicherte Auftrag hat sich geändert. Bitte den aktuellen Status erneut prüfen.");
+            }
             if (fresh.status === "awaiting-review" && fresh.runId === pending.runId && fresh.guidedSpeciesCreation) {
               savedSpeciesId = fresh.targets[0].slug;
               savedSpeciesName = fresh.targets[0].germanName;
               await loadData({ reload: true });
+              if (!isCurrentDialog(generation)) return;
               inlineManualMapHandled = newSpeciesData()?.assets?.map?.exists === true;
-              await handleInlineReviewStatus(fresh);
+              await handleInlineReviewStatus(fresh, generation);
               return;
             }
-          } catch (error) { showWorkflowError(error.message); return; }
+          } catch (error) {
+            if (isCurrentDialog(generation)) showWorkflowError(error.message);
+            return;
+          }
         }
         if (creationId) {
           showStep(4);
@@ -990,7 +1072,16 @@
         }
         void taxonomyReference.initialize();
         form.elements.german.focus();
-      });
+      };
+      openButton.addEventListener("click", () => openCreator());
+      state.resumeNewSpeciesCreation = async () => {
+        const pending = state.pipelineStatusSnapshot;
+        if (dialog.open || pending?.status !== "awaiting-review" || pending.guidedSpeciesCreation !== true
+          || typeof pending.creationId !== "string" || !pending.creationId.trim() || pending.targets?.length !== 1) return;
+        await openCreator({ status: pending.status, guidedSpeciesCreation: pending.guidedSpeciesCreation,
+          creationId: pending.creationId, runId: pending.runId,
+          targets: pending.targets.map((target) => ({ ...target })) });
+      };
 
       form.elements.sizeSexed?.addEventListener("change", () => {
         updateMeasurementMode("size");
@@ -1055,7 +1146,7 @@
           const result = await fetchJson("/api/species/new/preview", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ values: speciesValues() }),
+            body: JSON.stringify({ values: speciesValues(), masterTaxonId: selectedTaxonomyMasterId(), taxonomyReference: selectedTaxonomyReference() }),
           });
           previewToken = result.token;
           maxStepReached = Math.max(maxStepReached, 2);

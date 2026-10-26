@@ -1,6 +1,6 @@
 # Gezielter Lightroom-Suchpaketexport
 
-Stand: 2026-10-01
+Stand: 2026-10-23
 
 Status: implementiert und mit isolierten Testbeständen geprüft. Am 1. Oktober zusätzlich im produktiven engen
 Reparaturpaar verwendet: 154 aktive Taxa neu projiziert, vier technische Ersatz-IDs nicht mehr als aktive Arten
@@ -33,6 +33,12 @@ Neue und entfernte beziehungsweise deaktivierte Taxa sind in der Änderungsmenge
 exportiertes Taxon wird nur aus der privaten Paketkopie entfernt, niemals aus Master oder Lightroom-Katalog.
 
 ## Bindung und Rückfall
+
+Seit 23. Oktober erzeugte Pakete verwenden Schema 2 und den verpflichtenden Retentions-Leservertrag
+aus [Lightroom-Suchpaket](lightroom-search-package.md). Eine Schema-1-Basis wird weiter lesend geprüft,
+aber nicht als Teilaufbaubasis für Schema 2 verwendet: der erste solche Export fällt ausdrücklich mit
+`reader-contract-upgrade` auf Vollaufbau zurück. Das erhält einen eindeutigen gemeinsamen
+Leser-/Sperrvertrag, statt neue Retentionsmarker in eine alte Paketstruktur einzufügen.
 
 Die vollständige Paketprüfsumme schützt auch die Fingerabdrucktabelle. `exportContract` bindet die tatsächlich
 geladenen Export-/Vergleichs-/Prüfregeln über ihre normalisierten Quelltextprüfsummen. Der Quellmaster-Prüfwert

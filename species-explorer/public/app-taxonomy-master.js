@@ -88,8 +88,11 @@
     ].join(" · ");
   }
 
-  function masterDetail(status = {}) {
+  function masterDetail(status = {}, reference = {}) {
     const lifecycle = status.lifecycle || {};
+    if (lifecycle.candidateInspection?.status === "deferred") {
+      return "Der Masteraufbau läuft. Die Kandidaten- und Konfliktprüfung folgt nach seinem Abschluss.";
+    }
     if (status.status === "partial") {
       return [status.message, status.error].map(cleanText).filter(Boolean).join(" ");
     }
@@ -99,7 +102,8 @@
     }
     if (status.error) return `Aktualisierung fehlgeschlagen. ${status.error}`.trim();
     if (ACTIVE_STATES.has(status.status)) {
-      return status.message || "Aktualisierung wird vorbereitet und geprüft.";
+      const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status, reference });
+      return progress?.activityMessage || status.message || "Aktualisierung wird vorbereitet und geprüft.";
     }
     if (lifecycle.candidate) {
       const blocking = Number(
@@ -129,6 +133,7 @@
       && ["idle", "completed"].includes(status.status)
       && status.active !== true
       && !lifecycle.candidate
+      && lifecycle.candidateInspection?.status !== "deferred"
       && !status.error && !lifecycle.error && !reference.error && !searchPackage.error
       && reference.status === "current" && reference.activeMatchesReference === true
       && reference.needsMasterRebuild !== true
@@ -157,9 +162,9 @@
       : `${minutes}:${String(seconds).padStart(2, "0")}`;
   }
 
-  function progressDetail(status = {}) {
+  function progressDetail(status = {}, reference = {}) {
     const parts = [];
-    const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status });
+    const progress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status, reference });
     if (progress) parts.push(progress.detail);
     const elapsed = formatElapsed(status.startedAt);
     if (elapsed) parts.push(`Laufzeit ${elapsed}`);
@@ -243,6 +248,49 @@
     };
   }
 
+  const STATUS_READ_TIMEOUT_MS = 15000;
+  const STATUS_RETRY_DELAYS = [1000, 2000, 4000, 8000, 15000];
+
+  function nextTaxonomyStatusRead(state, channel) {
+    const versions = state.taxonomyStatusReadVersions ||= {};
+    versions[channel] = (versions[channel] || 0) + 1;
+    return versions[channel];
+  }
+
+  // These readers accept only the three status GETs. Writes/confirmations keep
+  // their existing, explicit call paths and are never automatically retried.
+  function createTaxonomyStatusReader({ state, fetchJson }) {
+    const channels = new Map([
+      ["/api/taxonomy/status", "reference"],
+      ["/api/taxonomy/master/status", "master"],
+      ["/api/taxonomy/update/sequence-status", "master"],
+    ]);
+    return async (url) => {
+      const channel = channels.get(url);
+      if (!channel) throw new Error("Unbekannter lesender Taxonomiestatus.");
+      const version = nextTaxonomyStatusRead(state, channel);
+      const isCurrent = () => state.taxonomyStatusReadVersions[channel] === version;
+      const abort = typeof global.AbortController === "function" ? new global.AbortController() : null;
+      let timeout;
+      try {
+        const value = await Promise.race([
+          fetchJson(url, abort ? { signal: abort.signal } : {}),
+          new Promise((resolve, reject) => {
+            timeout = global.setTimeout(() => {
+              reject(new Error("Die Statusabfrage hat das Zeitlimit überschritten. Der gespeicherte Stand bleibt erhalten."));
+              abort?.abort();
+            }, STATUS_READ_TIMEOUT_MS);
+          }),
+        ]);
+        return { value, channel, isCurrent };
+      } catch (error) {
+        return { error, channel, isCurrent };
+      } finally {
+        global.clearTimeout(timeout);
+      }
+    };
+  }
+
   function createTaxonomyMasterController({
     state,
     elements,
@@ -252,6 +300,8 @@
     renderDatabaseStatus,
   } = {}) {
     let pollTimer = null;
+    let statusReadFailures = 0;
+    const readStatus = createTaxonomyStatusReader({ state, fetchJson });
     let classificationBusy = false;
     let classificationSaved = false;
     let deferralSaved = false;
@@ -292,7 +342,12 @@
       ` : "";
     }
 
-    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false) {
+    function renderConflicts(conflicts = [], blockingConflictCount = null, classificationReview = null, actionsBlocked = false, inspectionDeferred = false) {
+      if (inspectionDeferred) {
+        elements.taxonomyMasterConflicts.hidden = false;
+        elements.taxonomyMasterConflicts.textContent = "Konfliktprüfung ausstehend. Der laufende Aufbau wird zuerst beendet und geprüft; eine Übernahme ist noch nicht freigegeben.";
+        return;
+      }
       const blocking = conflicts.map(conflictPresentation).filter((entry) => entry.blocking);
       const total = Number(blockingConflictCount ?? blocking.length);
       const classificationTotal = Number(classificationReview?.total || blocking.filter((entry) => entry.identityReviewRequired).length);
@@ -354,7 +409,9 @@
       `).join("");
     }
 
-    function render(status = {}) {
+    function render(status = {}, { acceptedRead = false } = {}) {
+      if (!acceptedRead) nextTaxonomyStatusRead(state, "master");
+      if (state.taxonomyStatusReadErrors) delete state.taxonomyStatusReadErrors.master;
       state.taxonomyMasterSnapshot = status;
       state.renderTaxonomyDatabaseOverview?.();
       const lifecycle = status.lifecycle || {};
@@ -363,13 +420,15 @@
         classificationSaved = false;
         deferralSaved = false;
       }
+      const inspectionDeferred = lifecycle.candidateInspection?.status === "deferred";
       const active = status.active === true || ACTIVE_STATES.has(status.status);
       elements.taxonomyMasterSummary.textContent = masterSummary(status);
-      elements.taxonomyMasterDetail.textContent = masterDetail(status);
+      elements.taxonomyMasterDetail.textContent = masterDetail(status, state.taxonomyMaintenanceSnapshot);
       elements.taxonomyMasterProgress.hidden = !active;
       elements.taxonomyMasterProgressDetail.hidden = !active;
-      elements.taxonomyMasterProgressDetail.textContent = active ? progressDetail(status) : "";
-      const measured = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status });
+      elements.taxonomyMasterProgressDetail.textContent = active ? progressDetail(status, state.taxonomyMaintenanceSnapshot) : "";
+      const measured = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({ master: status,
+        reference: state.taxonomyMaintenanceSnapshot });
       if (active && measured?.percent !== null && measured?.percent !== undefined) {
         elements.taxonomyMasterProgress.value = measured.percent;
       } else if (active) {
@@ -378,11 +437,11 @@
       renderDiff(lifecycle.candidate);
       renderConflicts(lifecycle.conflicts || [], lifecycle.blockingConflictCount, lifecycle.candidate?.classificationReview,
         active || (status.identities?.pending && !status.identities.candidateIncludesCurrent
-          && status.identities.classificationCandidateId !== lifecycle.candidate?.candidateId));
+          && status.identities.classificationCandidateId !== lifecycle.candidate?.candidateId), inspectionDeferred);
       renderTechnicalDetails(lifecycle);
       elements.taxonomyMasterBuildButton.disabled = active || classificationBusy;
-      elements.taxonomyMasterActivateButton.disabled = active || classificationBusy || !lifecycle.canActivate;
-      elements.taxonomyMasterRollbackButton.disabled = active || classificationBusy || !lifecycle.canRollback;
+      elements.taxonomyMasterActivateButton.disabled = active || inspectionDeferred || classificationBusy || !lifecycle.canActivate;
+      elements.taxonomyMasterRollbackButton.disabled = active || inspectionDeferred || classificationBusy || !lifecycle.canRollback;
       if (active) renderDatabaseStatus("taxonomy");
       else renderDatabaseStatus();
       clearTimeout(pollTimer);
@@ -390,14 +449,24 @@
     }
 
     async function refresh() {
-      try {
-        render(await fetchJson("/api/taxonomy/master/status"));
-      } catch (error) {
-        elements.taxonomyMasterSummary.textContent = "Masterstatus nicht verfügbar";
-        elements.taxonomyMasterDetail.textContent = error.message;
-        state.taxonomyMasterSnapshot = { status: "failed", error: error.message };
-        state.renderTaxonomyDatabaseOverview?.();
+      const result = await readStatus("/api/taxonomy/master/status");
+      if (!result.isCurrent()) return;
+      if (!result.error && result.value) {
+        statusReadFailures = 0;
+        render(result.value, { acceptedRead: true });
+        return;
       }
+      const error = result.error || new Error("Kein gültiger Masterstatus verfügbar.");
+      (state.taxonomyStatusReadErrors ||= {}).master = error.message;
+      elements.taxonomyMasterSummary.textContent = "Masterstatus nicht aktuell";
+      elements.taxonomyMasterDetail.textContent = "Letzter bestätigter Stand; aktuell nicht bestätigt. " + error.message;
+      state.renderTaxonomyDatabaseOverview?.();
+      clearTimeout(pollTimer);
+      const snapshot = state.taxonomyMasterSnapshot || {};
+      const active = snapshot.active === true || ACTIVE_STATES.has(snapshot.status) || snapshot.updateWorkflow?.active === true;
+      const delay = STATUS_RETRY_DELAYS[Math.min(statusReadFailures++, STATUS_RETRY_DELAYS.length - 1)];
+      pollTimer = active || statusReadFailures <= STATUS_RETRY_DELAYS.length
+        ? global.setTimeout(refresh, delay) : null;
     }
 
     async function build() {
@@ -564,10 +633,13 @@
       void refresh();
     }
 
+    state.renderTaxonomyMasterSnapshot = (status) => render(status, { acceptedRead: true });
     return Object.freeze({ setup, refresh, render, reviewClassification, confirmCatalogUsage, automaticClassification });
   }
 
   global.SpeciesExplorerTaxonomyMaster = Object.freeze({
+    createTaxonomyStatusReader,
+    invalidateTaxonomyStatusRead: nextTaxonomyStatusRead,
     conflictPresentation,
     conflictRecommendation,
     conflictDecisionOptions,

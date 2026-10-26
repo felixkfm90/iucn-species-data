@@ -21,10 +21,11 @@ import { identityTaxonDetails } from "./taxonomy-identity-cases.mjs";
 import { coverMasterInputSelection } from "./taxonomy-master-inputs.mjs";
 import { classificationDeferralSummary } from "./taxonomy-classification-deferral.mjs";
 import { captureCatalogUsage, createCatalogUsageService } from "./lightroom-catalog-usage.mjs";
-import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
+import * as classificationAutomation from "./taxonomy-classification-automation.mjs";
 import { publishTaxonomyPair, prepareTaxonomyPublication } from "./taxonomy-publication.mjs";
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 
+const { assertPendingClassificationAutomation } = classificationAutomation;
 const FIRST = new Date("2026-09-01T00:00:00Z"), SECOND = new Date("2026-10-02T00:00:00Z");
 const hash = async (file) => crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
 const release = (version, date) => ({ releaseId: version, providerVersion: version, importedAt: date.toISOString() });
@@ -85,6 +86,212 @@ async function usageFixture(root, usedIds = []) {
   await service.catalogUsageSave({ token: preview.token, confirmed: true, allCatalogsConfirmed: true, unchangedSinceCapture: true });
   return catalogPath;
 }
+
+async function renewalFixture(t) {
+  const value = await fixture(t, { count: 3, missingLast: true });
+  const catalog = await usageFixture(value.root);
+  await value.service.classificationAutomaticSave(await value.service.classificationAutomaticPreview());
+  const review = await readIdentityReview(value.root);
+  const target = await classificationAutomation.pendingClassificationUsageRenewalTarget(value.root);
+  const inputFiles = ["species.json", "corrections.json"].map((name) => path.join(path.dirname(value.root), name));
+  await Promise.all(inputFiles.map((file) => fs.writeFile(file, "unchanged fixture input")));
+  await fs.appendFile(catalog, "new Lightroom assignment outside the automatic cases");
+  await usageFixture(value.root);
+  const usageRevision = (await value.service.classificationAutomaticPreview()).usageRevision;
+  return { ...value, catalog, review, target, usageRevision, inputFiles,
+    renew: (options = {}) => classificationAutomation.renewPendingClassificationAutomation(value.root, {
+      target, usageRevision, inputFiles, readInputRevision: async () => value.candidate.inputRevisions.identityInputs,
+      ...options,
+    }) };
+}
+
+test("erneuter FN-Beleg verlangt einen expliziten exakten Übergang und ändert keine Identitätsgeschichte", async (t) => {
+  const value = await renewalFixture(t);
+  await assert.rejects(assertPendingClassificationAutomation(value.root), /veraltet/);
+  const before = await hash(path.join(value.root, "master", "identity-review.json"));
+  await assert.rejects(value.renew({ target: { ...value.target, eventIds: [] } }), /Vormerkung|Erneuerungsziel/);
+  const receipt = await value.renew();
+  assert.equal(receipt.changesPhotos, false);
+  assert.match(receipt.receiptRevision, /^[a-f0-9]{64}$/);
+  assert.equal(await hash(path.join(value.root, "master", "identity-review.json")), before);
+  const pending = await assertPendingClassificationAutomation(value.root, { full: true });
+  assert.deepEqual(pending.usageRevisions, [value.usageRevision]);
+  assert.equal(pending.receiptRevision, receipt.receiptRevision);
+  assert.deepEqual([...pending.eventIds].sort(), [...value.target.eventIds].sort());
+  assert.ok(value.review.registry.events.every((event) => event.classificationAutomation.usageRevision !== value.usageRevision));
+  assert.equal((await value.renew()).receiptRevision, receipt.receiptRevision, "gleicher Übergang ist idempotent");
+});
+
+test("Erneuerung schützt inzwischen zugewiesene Sources und verlangt eine frische geschlossene Quittung", async (t) => {
+  for (const change of ["used", "open", "missing", "foreign"]) await t.test(change, async (subtest) => {
+    const value = await renewalFixture(subtest);
+    if (change === "used") {
+      await usageFixture(value.root, [value.review.registry.events[0].sources[0].masterTaxonId]);
+      value.usageRevision = (await value.service.classificationAutomaticPreview()).usageRevision;
+    } else if (change === "open") await fs.writeFile(value.catalog + ".lock", "");
+    else if (change === "missing") await fs.unlink(path.join(value.root, "catalog-usage", "registry.json"));
+    const options = change === "foreign" ? { target: { ...value.target, eventIds: ["f".repeat(64)] } }
+      : { usageRevision: value.usageRevision };
+    await assert.rejects(value.renew(options), /zugewiesen|veraltet|Erneuerungsziel|Vormerkung/);
+    await assert.rejects(fs.stat(path.join(value.root, "master", "classification-usage-renewals.json")), { code: "ENOENT" });
+  });
+});
+
+test("Erneuerung stoppt bei neuer manueller, Projekt-, Entscheidungs- oder Korrekturschutzbindung", async (t) => {
+  for (const kind of ["manual", "project", "decision", "marker", "target"]) await t.test(kind, async (subtest) => {
+    const value = await renewalFixture(subtest), id = value.review.registry.events[0].sources[0].masterTaxonId;
+    const db = new DatabaseSync(taxonomyMasterDatabasePath(value.root, kind === "target" ? "staging" : "active"));
+    try {
+      const taxonId = kind === "target" ? db.prepare("SELECT master_taxon_id FROM master_conflict WHERE conflict_id=?")
+        .get(`classification_${value.review.registry.events[0].classificationCase.revision}`).master_taxon_id : id;
+      if (["manual", "target"].includes(kind)) db.prepare("UPDATE master_field_assertion SET origin_kind='manual',provider_taxon_assertion_id=NULL WHERE master_taxon_id=?").run(taxonId);
+      if (kind === "project") db.prepare("INSERT INTO project_taxon_link(project_taxon_key,project_slug,master_taxon_id,scientific_name_at_link,link_state,linked_at,updated_at) VALUES ('new-project','new-project',?,'Testus protected','linked',?,?)")
+        .run(id, SECOND.toISOString(), SECOND.toISOString());
+      if (kind === "decision") db.prepare(`INSERT INTO master_decision(decision_id,master_taxon_id,field_name,language,decision_type,selected_assertion_id,decided_at)
+        SELECT 'new-manual',master_taxon_id,field_name,language,'keep-current',assertion_id,? FROM master_field_assertion WHERE master_taxon_id=? LIMIT 1`)
+        .run(SECOND.toISOString(), id);
+      if (kind === "marker") db.prepare("INSERT INTO master_taxon_status(master_taxon_id,status_name,status_detail,updated_at) VALUES (?,'manually-protected','{}',?)").run(id, SECOND.toISOString());
+    } finally { db.close(); }
+    await assert.rejects(value.renew(), /geschützt|verändert|Grundlagen/);
+  });
+});
+
+test("Erneuerung bindet unveränderte Projekt-/Quellenwerte und verweigert einen beschädigten Quellenfall", async (t) => {
+  for (const change of ["input", "source", "case", "activeManifest"]) await t.test(change, async (subtest) => {
+    const value = await renewalFixture(subtest);
+    if (change === "input") {
+      await assert.rejects(value.renew({ readInputRevision: async () => "changed" }), /Grundlagen|Projekt/);
+      return;
+    }
+    if (change === "activeManifest") {
+      const filename = taxonomyMasterManifestPath(value.root), manifest = JSON.parse(await fs.readFile(filename, "utf8"));
+      manifest.candidateId = "master-foreign";
+      await fs.writeFile(filename, JSON.stringify(manifest));
+    } else {
+      const db = new DatabaseSync(taxonomyMasterDatabasePath(value.root, change === "case" ? "staging" : "active"));
+      try {
+        if (change === "source") db.prepare("UPDATE provider_taxon_assertion SET provider_record_id='changed' WHERE master_taxon_id=?")
+          .run(value.review.registry.events[0].sources[0].masterTaxonId);
+        else {
+          const row = db.prepare("SELECT conflict_id,resolution_note FROM master_conflict WHERE conflict_id=?")
+            .get(`classification_${value.review.registry.events[0].classificationCase.revision}`);
+          const altered = JSON.parse(row.resolution_note); altered.target.colRecords[0].providerRecordId = "changed";
+          db.prepare("UPDATE master_conflict SET resolution_note=? WHERE conflict_id=?").run(JSON.stringify(altered), row.conflict_id);
+        }
+      } finally { db.close(); }
+    }
+    await assert.rejects(value.renew(), /Quellen|Grundlagen|grundlagen|Erneuerungsziel|verändert/);
+  });
+});
+
+test("gespeicherte Erneuerung bleibt nach Austausch des Stagingordners gültig und stoppt bei Eingangsänderung", async (t) => {
+  const value = await renewalFixture(t), receipt = await value.renew();
+  await fs.rename(path.dirname(taxonomyMasterDatabasePath(value.root, "staging")), path.join(value.root, "old-reviewed-candidate"));
+  assert.equal((await assertPendingClassificationAutomation(value.root)).receiptRevision, receipt.receiptRevision);
+  await fs.appendFile(value.inputFiles[0], "changed project input");
+  await assert.rejects(assertPendingClassificationAutomation(value.root), /Erneuerung|Grundlagen|verändert/);
+});
+
+test("Erneuerungsregister weist veränderte Quittungen zurück und bewahrt ältere Erneuerungen", async (t) => {
+  const value = await renewalFixture(t);
+  const first = await value.renew();
+  await fs.appendFile(value.catalog, "another later safe assignment");
+  await usageFixture(value.root);
+  const latest = (await value.service.classificationAutomaticPreview()).usageRevision;
+  const second = await value.renew({ usageRevision: latest });
+  assert.notEqual(first.receiptRevision, second.receiptRevision);
+  const filename = path.join(value.root, "master", "classification-usage-renewals.json");
+  const stored = JSON.parse(await fs.readFile(filename, "utf8"));
+  assert.equal(stored.records.length, 2);
+  assert.equal(stored.records[0].revision, first.receiptRevision);
+  stored.records[1].usageRevision = "f".repeat(64);
+  await fs.writeFile(filename, JSON.stringify(stored));
+  await assert.rejects(assertPendingClassificationAutomation(value.root), /Erneuerung|verändert/);
+});
+
+test("Erneuerungsvorschau schreibt nichts; Bestätigung bindet Token und verweigert Änderungen zwischen Vorschau und Speichern", async (t) => {
+  const value = await renewalFixture(t);
+  const service = classificationAutomation.createClassificationUsageRenewalService({ taxonomyRoot: value.root,
+    inputFiles: value.inputFiles, readInputRevision: async () => value.candidate.inputRevisions.identityInputs });
+  const preview = await service.preview(value.target, value.usageRevision);
+  const filename = path.join(value.root, "master", "classification-usage-renewals.json");
+  await assert.rejects(fs.stat(filename), { code: "ENOENT" });
+  await assert.rejects(service.save({ ...preview, confirmed: false }), /bestätigte/);
+  await assert.rejects(service.save({ ...preview, confirmed: true, token: "stale" }), /veraltet/);
+  await fs.appendFile(value.inputFiles[0], "changed between preview and save");
+  await assert.rejects(service.save({ ...preview, confirmed: true }), /veraltet/);
+  await assert.rejects(fs.stat(filename), { code: "ENOENT" });
+  const fresh = await service.preview(value.target, value.usageRevision);
+  const saved = await service.save({ ...fresh, confirmed: true });
+  const repeatedPreview = await service.preview(value.target, value.usageRevision);
+  assert.equal((await service.save({ ...repeatedPreview, confirmed: true })).receiptRevision, saved.receiptRevision);
+  assert.equal(JSON.parse(await fs.readFile(filename, "utf8")).records.length, 1);
+});
+
+test("neue aktive Korrektur schützt betroffene Art und frischer Aufbau verarbeitet ausschließlich erneuert belegte Fälle", async (t) => {
+  const value = await renewalFixture(t);
+  const correctionRoot = path.join(path.dirname(value.root), "corrections");
+  const releaseId = `corrections-${"a".repeat(20)}`;
+  const pointer = { schemaVersion: 1, activeRelease: releaseId, revision: "b".repeat(64),
+    baseMasterVersion: value.target.activeMasterId, basePackageId: "" };
+  await fs.mkdir(path.join(correctionRoot, "releases"), { recursive: true });
+  await fs.writeFile(path.join(correctionRoot, "active.json"), JSON.stringify(pointer));
+  await fs.writeFile(path.join(correctionRoot, "releases", `${releaseId}.json`), JSON.stringify({
+    schemaVersion: 1, releaseId, revision: pointer.revision, baseMasterVersion: pointer.baseMasterVersion,
+    basePackageId: "", entries: [{ masterTaxonId: value.review.registry.events[0].sources[0].masterTaxonId }],
+  }));
+  await assert.rejects(value.renew(), /geschützt/);
+  await fs.unlink(path.join(correctionRoot, "active.json"));
+  await value.renew();
+  await buildTaxonomyMasterCandidate({ ...value.inputs, identityRegistry: value.review.registry,
+    now: () => new Date("2026-10-02T01:00:00Z") });
+  assert.equal((await inspectTaxonomyMasterCandidate(value.root)).manifest.classificationReview.matchingProviderId, 1,
+    "die eigene geschützte Projektart wurde nicht automatisch aufgenommen");
+  assert.equal((await assertPendingClassificationAutomation(value.root, { full: true })).eventIds.length, 2,
+    "der legitime Austausch des Kandidaten macht die Erneuerung nicht stale");
+});
+
+test("fehlende Vollsatzgrundlagen, neue Quellenmetadaten und zu große gespeicherte Erneuerungen bleiben gesperrt", async (t) => {
+  for (const change of ["inputs", "provider", "oversized"]) await t.test(change, async (subtest) => {
+    const value = await renewalFixture(subtest);
+    if (change === "inputs") {
+      await assert.rejects(value.renew({ inputFiles: [] }), /Grundlagen/);
+      await assert.rejects(value.renew({ readInputRevision: undefined }), /Grundlagen/);
+      return;
+    }
+    if (change === "provider") {
+      const directory = path.join(value.root, "master", "providers", "inaturalist", "releases", "fixture-new");
+      await fs.mkdir(directory, { recursive: true });
+      await fs.writeFile(path.join(directory, "manifest.json"), JSON.stringify({ provider: "inaturalist", providerVersion: "fixture-new",
+        retrievedAt: SECOND.toISOString(), checksumSha256: "c".repeat(64) }));
+      const changedTarget = await classificationAutomation.pendingClassificationUsageRenewalTarget(value.root);
+      assert.notEqual(changedTarget.sourceMetadataRevision, value.target.sourceMetadataRevision);
+      await assert.rejects(value.renew({ target: changedTarget }), /Quellen-Grundlagen/);
+      return;
+    }
+    await fs.writeFile(path.join(value.root, "master", "classification-usage-renewals.json"), " ".repeat(16 * 1024 * 1024 + 1));
+    await assert.rejects(value.renew(), /Größe/);
+  });
+});
+
+test("Erneuerungsziel liest nur den kleinen Masterkopf und keine großen JSON-Anbieterbestände", async (t) => {
+  const value = await renewalFixture(t);
+  const filename = taxonomyMasterManifestPath(value.root);
+  const manifest = JSON.parse(await fs.readFile(filename, "utf8"));
+  manifest.diff.largeSyntheticDetail = "x".repeat(600 * 1024);
+  await fs.writeFile(filename, JSON.stringify(manifest, null, 2));
+  assert.equal((await classificationAutomation.pendingClassificationUsageRenewalTarget(value.root)).activeManifestRevision,
+    value.target.activeManifestRevision, "die fachliche Kopfbindung liest keine große Differenzliste");
+  const directory = path.join(value.root, "master", "providers", "inaturalist", "releases", "fixture-large");
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(path.join(directory, "manifest.json"), JSON.stringify({ provider: "inaturalist", providerVersion: "fixture-large",
+    retrievedAt: SECOND.toISOString(), checksumSha256: "d".repeat(64) }));
+  await fs.writeFile(path.join(directory, "records.json"), "intentionally unparsable synthetic record data".repeat(20000));
+  const target = await classificationAutomation.pendingClassificationUsageRenewalTarget(value.root);
+  assert.deepEqual(target.eventIds, value.target.eventIds);
+  assert.notEqual(target.sourceMetadataRevision, value.target.sourceMetadataRevision,
+    "Quellenmetadaten sind gebunden; große records.json wird erst am bewussten Übergang gehasht");
+});
 
 test("Automatik erfordert vollständige FN-Nutzung und schützt Projektart, eigene Namen und zugewiesene Art", async (t) => {
   const { root, service, inputs } = await fixture(t, { count: 4, missingLast: true });
@@ -755,4 +962,73 @@ test("Bündelübernahme verarbeitet mehr als 100 passende Fälle vollständig un
   const inspected = await inspectTaxonomyMasterCandidate(root);
   assert.equal(inspected.manifest.classificationReview.total, 1);
   assert.equal(inspected.blockingConflictCount, 1);
+});
+
+
+// Retained candidate manifests contain growing diff lists; other JSON roles keep their existing limits.
+import { canonicalBuildInput } from "./taxonomy-build-inputs.mjs";
+async function largeRenewalManifest(value) {
+  const filename = taxonomyMasterManifestPath(value.root, "staging");
+  const manifest = JSON.parse(await fs.readFile(filename, "utf8"));
+  manifest.diff.newTaxa = Array.from({ length: 40000 }, (_, index) => "Syntheticus retainedtaxon" + index);
+  await fs.writeFile(filename, JSON.stringify(manifest));
+  const size = (await fs.stat(filename)).size;
+  assert.ok(size > 512 * 1024 && size < 12 * 1024 * 1024);
+  return { filename, manifest };
+}
+
+test("großes erhaltenes Kandidatenmanifest erlaubt exakte Erneuerung mit voller Manifestbindung", async (t) => {
+  const value = await renewalFixture(t), { manifest } = await largeRenewalManifest(value);
+  const stableFiles = [taxonomyMasterDatabasePath(value.root), taxonomyMasterDatabasePath(value.root, "staging"), path.join(value.root, "master", "identity-review.json")];
+  const before = await Promise.all(stableFiles.map(hash));
+  const renewalFile = path.join(value.root, "master", "classification-usage-renewals.json");
+  const service = classificationAutomation.createClassificationUsageRenewalService({ taxonomyRoot: value.root, inputFiles: value.inputFiles, readInputRevision: async () => value.candidate.inputRevisions.identityInputs });
+  const preview = await service.preview(value.target, value.usageRevision);
+  assert.equal(preview.available, true);
+  await assert.rejects(fs.stat(renewalFile), { code: "ENOENT" });
+  assert.deepEqual(await Promise.all(stableFiles.map(hash)), before);
+  const saved = await service.save({ ...preview, confirmed: true });
+  assert.equal(saved.changesPhotos, false);
+  const stored = JSON.parse(await fs.readFile(renewalFile, "utf8"));
+  assert.equal(stored.records.length, 1);
+  const expected = crypto.createHash("sha256").update(canonicalBuildInput(manifest)).digest("hex");
+  assert.equal(stored.records[0].originalCandidate.manifestRevision, expected);
+  assert.equal(stored.records[0].revision, saved.receiptRevision);
+  assert.equal(stored.records[0].caseProofs.length, value.target.eventIds.length);
+  assert.deepEqual(await Promise.all(stableFiles.map(hash)), before);
+  assert.equal((await assertPendingClassificationAutomation(value.root, { full: true })).receiptRevision, saved.receiptRevision);
+});
+
+test("gültige Änderung eines großen Kandidatenmanifests zwischen Erstlesung und Abschlussvergleich bleibt gesperrt", async (t) => {
+  const value = await renewalFixture(t), { filename, manifest } = await largeRenewalManifest(value);
+  let reads = 0;
+  await assert.rejects(value.renew({ readInputRevision: async () => {
+    reads += 1;
+    if (reads === 2) {
+      manifest.diff.newTaxa[0] = "Syntheticus changed-between-reads";
+      await fs.writeFile(filename, JSON.stringify(manifest));
+    }
+    return value.candidate.inputRevisions.identityInputs;
+  } }), /Erneuerungsgrundlagen wurden während der Prüfung verändert/);
+  assert.equal(reads, 2);
+  await assert.rejects(fs.stat(path.join(value.root, "master", "classification-usage-renewals.json")), { code: "ENOENT" });
+});
+
+test("Kandidatenmanifest behält12MiB und allgemeine Quellenmetadaten behalten512KiB als getrennte Grenzen", async (t) => {
+  await t.test("Kandidatenmanifest über12MiB", async (subtest) => {
+    const value = await renewalFixture(subtest), filename = taxonomyMasterManifestPath(value.root, "staging");
+    const content = await fs.readFile(filename, "utf8"), maximum = 12 * 1024 * 1024;
+    await fs.writeFile(filename, content + " ".repeat(maximum + 1 - Buffer.byteLength(content)));
+    assert.equal((await fs.stat(filename)).size, maximum + 1);
+    await assert.rejects(value.renew(), /Klassifikations-Erneuerungsdatei überschreitet die zulässige Größe/);
+    await assert.rejects(fs.stat(path.join(value.root, "master", "classification-usage-renewals.json")), { code: "ENOENT" });
+  });
+  await t.test("gewöhnliche Quellenmetadaten über512KiB", async (subtest) => {
+    const value = await renewalFixture(subtest);
+    const directory = path.join(value.root, "master", "providers", "inaturalist", "releases", "fixture-large-metadata");
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, "manifest.json"), JSON.stringify({ provider: "inaturalist", providerVersion: "fixture-large-metadata", retrievedAt: SECOND.toISOString(), checksumSha256: "d".repeat(64), extra: "x".repeat(512 * 1024) }));
+    await assert.rejects(classificationAutomation.pendingClassificationUsageRenewalTarget(value.root), /Klassifikations-Erneuerungsdatei überschreitet die zulässige Größe/);
+    await assert.rejects(fs.stat(path.join(value.root, "master", "classification-usage-renewals.json")), { code: "ENOENT" });
+  });
 });

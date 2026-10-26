@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-07-29
+Stand: 2026-10-10
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -53,6 +53,26 @@ Reihenfolge in der Info-Box:
 6. Lebenserwartung
 7. Generationsdauer
 8. Populationsgroesse
+
+## Ältere Bearbeitungsstände auswählen
+
+Im Bearbeitungsmodus öffnet `Bearbeitungsstände` bei der gewählten Art die vorhandenen lokalen Sicherungen.
+Ein Artenlistenstand ist ein damaliger Gesamtstand, aus dem ausschließlich die Angaben dieser Art übernommen
+werden. Datum und Dateiumfang helfen bei der Auswahl; `Stand prüfen` zeigt die konkreten Unterschiede.
+`Stand wiederherstellen…` öffnet die Bestätigung. Erst deren `Stand wiederherstellen` übernimmt englischen
+Namen, Größe, Gewicht und Lebenserwartung.
+Deutscher und wissenschaftlicher Name, Artidentität, andere Arten und Medien bleiben erhalten. Ein früherer
+Stand mit abweichender Artidentität wird mit Begründung gesperrt.
+
+Vor der Übernahme wird der heutige Originalstand nach der bestehenden lokalen Sicherungsregel gesichert.
+Vorschau und Bestätigung sind an den Inhalt der ausgewählten Sicherung und die heutigen Quelldateien gebunden;
+geänderte oder nicht mehr vorhandene Dateien erfordern eine neue Vorschau. Englische Namen werden auch in den
+vorhandenen Anzeigedaten aktualisiert. Messwerte gelangen wie bei einer normalen Bearbeitung durch den nächsten
+bewusst gestarteten Pipeline-Lauf in die veröffentlichten Daten. Die Wiederherstellung startet keine Pipeline
+und keine Veröffentlichung. Für Taxonomiestände gilt der [Taxonomiebearbeitungsvertrag](taxonomy-edit-workflow.md).
+
+Die vorhandene Aufbewahrungsregel wird durch die Auswahl nicht erweitert. Ein Dateizugriffsfehler kann auch
+eine automatische Rückschreibung verhindern; die zuvor angelegte Original-Sicherung ist der Rückweg.
 
 ## Pipeline-Verhalten
 

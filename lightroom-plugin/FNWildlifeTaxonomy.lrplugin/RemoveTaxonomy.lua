@@ -3,10 +3,11 @@ local LrDialogs = import "LrDialogs"
 local LrTasks = import "LrTasks"
 
 local KeywordWriter = require "KeywordWriter"
+local PluginState = require "PluginState"
 
 LrTasks.startAsyncTask(function()
   local catalog = LrApplication.activeCatalog()
-  local photos = catalog:getTargetPhotos() or {}
+  local photos = PluginState.selectedPhotos(catalog)
   if #photos == 0 then
     LrDialogs.message(
       "Keine Fotos ausgewählt",

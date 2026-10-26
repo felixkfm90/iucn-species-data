@@ -47,6 +47,20 @@ function Get-FixturePlan {
   param([string]$Root)
   return Get-NasRetentionPlan -BackupRoot $Root -ExpectedProjectId ('e' * 64)
 }
+function Wait-FixtureDirectoryListing {
+  param([string]$Root, [string[]]$ExpectedNames, [int]$TimeoutMilliseconds = 2000)
+  # Windows may briefly enumerate a zero-byte delete-pending name after the
+  # synchronous removal returns. Observe the complete listing, never filter it.
+  $expected = [string]::Join([char]0, @($ExpectedNames | Sort-Object))
+  $clock = [Diagnostics.Stopwatch]::StartNew()
+  do {
+    $remaining = @(Get-ChildItem -LiteralPath $Root -Force | Sort-Object Name | ForEach-Object { $_.Name })
+    if ([string]::Join([char]0, $remaining) -ceq $expected -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds) {
+      return $remaining
+    }
+    Start-Sleep -Milliseconds 25
+  } while ($true)
+}
 `;
 
 function run(t, command, prepare) {
@@ -194,14 +208,40 @@ test("rotation keeps two latest verified archives plus the older checkpoint rath
     1..6 | ForEach-Object { $null = New-FixtureArchive $root $_ }
     $plan = Get-FixturePlan $root
     $result = Invoke-NasRetentionPlan $plan
+    $remaining = @(Wait-FixtureDirectoryListing -Root $root -ExpectedNames @(
+      'IUCN_Datenbank_fixture_01.zip', 'IUCN_Datenbank_fixture_05.zip', 'IUCN_Datenbank_fixture_06.zip'))
     [pscustomobject]@{ ok = $result.ok; removed = $result.removedArchivePaths.Count;
       checkpoint = [IO.Path]::GetFileName($plan.retainedCheckpoint);
-      remaining = @(Get-ChildItem -LiteralPath $root -File | Sort-Object Name | ForEach-Object { $_.Name }) } | ConvertTo-Json -Compress
+      remaining = $remaining } | ConvertTo-Json -Compress
   `);
   assert.equal(result.ok, true);
   assert.equal(result.removed, 3);
   assert.equal(result.checkpoint, "IUCN_Datenbank_fixture_01.zip");
   assert.deepEqual(result.remaining, ["IUCN_Datenbank_fixture_01.zip", "IUCN_Datenbank_fixture_05.zip", "IUCN_Datenbank_fixture_06.zip"]);
+});
+
+test("fixture completion check still rejects persistent extra files, hidden files and directories", windows, (t) => {
+  const result = run(t, `
+    [IO.File]::WriteAllText((Join-Path $root 'expected.zip'), 'fixture')
+    $extra = Join-Path $root 'unexpected.tmp'
+    [IO.File]::WriteAllText($extra, 'must remain visible to the check')
+    $plain = @(Wait-FixtureDirectoryListing -Root $root -ExpectedNames @('expected.zip') -TimeoutMilliseconds 100)
+    [IO.File]::SetAttributes($extra, [IO.FileAttributes]::Hidden)
+    $hidden = @(Wait-FixtureDirectoryListing -Root $root -ExpectedNames @('expected.zip') -TimeoutMilliseconds 100)
+    $null = [IO.Directory]::CreateDirectory((Join-Path $root 'unexpected-directory'))
+    $directory = @(Wait-FixtureDirectoryListing -Root $root -ExpectedNames @('expected.zip') -TimeoutMilliseconds 100)
+    [pscustomobject]@{ plain = $plain; hidden = $hidden; directory = $directory;
+      extraPresent = [IO.File]::Exists($extra);
+      directoryPresent = [IO.Directory]::Exists((Join-Path $root 'unexpected-directory')) } | ConvertTo-Json -Compress
+  `);
+  assert.deepEqual(result.plain, ["expected.zip", "unexpected.tmp"]);
+  assert.deepEqual(result.hidden, ["expected.zip", "unexpected.tmp"]);
+  assert.deepEqual([...result.directory].sort(), ["expected.zip", "unexpected-directory", "unexpected.tmp"]);
+  for (const listing of [result.plain, result.hidden, result.directory]) {
+    assert.throws(() => assert.deepEqual(listing, ["expected.zip"]), { code: "ERR_ASSERTION" });
+  }
+  assert.equal(result.extraPresent, true);
+  assert.equal(result.directoryPresent, true);
 });
 
 test("legacy, corrupt and interrupted archives are protected without pretending they are verified slots", windows, (t) => {

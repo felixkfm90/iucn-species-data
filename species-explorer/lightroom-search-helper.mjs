@@ -1,3 +1,4 @@
+import { classificationRetentionForTaxon } from "./taxonomy-classification-retention.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import readline from "node:readline";
@@ -127,6 +128,9 @@ export async function createLightroomSearchRequestHandler({
             throw Object.assign(new Error("Taxon wurde im Suchpaket nicht gefunden."), {
               code: "taxon-not-found",
             });
+          }
+          if (classificationRetentionForTaxon(taxon)) {
+            throw Object.assign(new Error("Dieses Taxon bleibt nur als historischer Bestand erhalten und kann nicht neu zugewiesen werden."), { code: "classification-source-retained" });
           }
           const status = store.status();
           return success(request, {

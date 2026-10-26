@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-10-03
+Stand: 2026-10-10
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -62,6 +62,10 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   ein erfolgreiches Pages-Deployment sind getrennte Nachweise. Keine Teilabnahme als Phasenabschluss ausgeben.
 - Bei Dokumentationsabgleich nur betroffene Inhalte/Datenstände nachführen, nicht alle unveränderten Verträge
   pauschal neu datieren. Automatisch erzeugte Pflege- und Projektstatusdateien weiterhin über ihre Generatoren pflegen.
+- Wiederkehrende Projektprüfungen nennen Prüfort, Datum, Branch und gebundene Revision sowie, ob lokale
+  unveröffentlichte Änderungen einbezogen wurden. Ein Review des veröffentlichten Repositorys bezeichnet
+  den lokalen Audit-/Betriebsstand nicht ohne dessen aktuelle Quellen als ungeprüft oder unbegonnen.
+  Fehlt lokaler Zugriff, diese Grenze ausdrücklich nennen; historische und inzwischen ergänzte Nachweise trennen.
 
 ## Pflicht bei künftigen Änderungen
 

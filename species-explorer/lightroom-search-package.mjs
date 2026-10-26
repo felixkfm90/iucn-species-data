@@ -12,6 +12,8 @@ import {
   createLightroomSearchSchema,
   finalizeLightroomSearchSchema,
   inspectLightroomSearchDatabase,
+  LIGHTROOM_SEARCH_READER_CONTRACT,
+  SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS,
 } from "./lightroom-search-schema.mjs";
 import {
   LIGHTROOM_SEARCH_SCHEMA_VERSION,
@@ -105,6 +107,10 @@ async function buildLightroomSearchPackageScoped({
       // and must succeed for the SAME checksummed base before staging is replaced.
       try { base = await verifyLightroomSearchPackage({ searchRoot: baseSearchRoot, signal, full: false }); }
       catch { signal?.throwIfAborted(); }
+      if (base && base.manifest.schemaVersion !== LIGHTROOM_SEARCH_SCHEMA_VERSION) {
+        base = null;
+        build.reason = "reader-contract-upgrade";
+      }
       if (base) {
         const previous = configureTaxonomyBuildDatabase(new DatabaseSync(base.databasePath, { readOnly: true }));
         try {
@@ -188,6 +194,7 @@ async function buildLightroomSearchPackageScoped({
     }
     const manifest = {
       schemaVersion: LIGHTROOM_SEARCH_SCHEMA_VERSION,
+      readerContract: LIGHTROOM_SEARCH_READER_CONTRACT,
       packageId: metadata.packageId,
       state: "staging",
       generatedAt,
@@ -252,14 +259,14 @@ export async function verifyLightroomSearchPackage({
   const databasePath = lightroomSearchDatabasePath(searchRoot, slot);
   const manifest = await readJson(path.join(path.dirname(databasePath), "manifest.json"));
   if (!manifest) throw new Error(`Lightroom-Suchpaket ${slot} ist nicht installiert.`);
-  if (manifest.schemaVersion !== LIGHTROOM_SEARCH_SCHEMA_VERSION) {
+  if (!SUPPORTED_LIGHTROOM_SEARCH_SCHEMA_VERSIONS.includes(manifest.schemaVersion)) {
     throw new Error(`Manifest-Schemaversion ${manifest.schemaVersion} wird nicht unterstützt.`);
   }
   const { DatabaseSync } = await loadNodeSqlite();
   const database = configureTaxonomyBuildDatabase(new DatabaseSync(databasePath, { readOnly: true }));
   let counts;
   try {
-    counts = inspectLightroomSearchDatabase(database, { full });
+    counts = inspectLightroomSearchDatabase(database, { full, manifest });
     if (verifyChecksum) {
       const info = database.prepare("SELECT value FROM package_info WHERE key = ?");
       for (const key of ["packageId", "masterVersion"]) {

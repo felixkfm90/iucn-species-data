@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { unlinkSync } from "node:fs";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "../scripts/test-temp.mjs";
 import path from "node:path";
@@ -93,6 +94,51 @@ test("Byte-Bereiche unterstützen feste, offene und rückwärts gezählte Angabe
   assert.deepEqual(parseByteRange("bytes=8-20", 10), { start: 8, end: 9 });
   assert.equal(parseByteRange("bytes=20-30", 10), null);
   assert.equal(parseByteRange("items=0-2", 10), null);
+});
+
+test("Dateirouten geben keine privaten Ziele durch Verzeichnislinks frei", async (context) => {
+  const root = await createTemporaryRoot(context, "iucn-http-links-");
+  const publicDir = path.join(root, "public"), privateDir = path.join(root, "private");
+  await mkdir(publicDir); await mkdir(privateDir);
+  const privateFile = path.join(privateDir, "secret.txt");
+  await writeFile(privateFile, "private fixture");
+  await writeFile(path.join(publicDir, "safe.txt"), "public fixture");
+  await symlink(privateDir, path.join(publicDir, "linked"), process.platform === "win32" ? "junction" : "dir");
+  const baseUrl = await createTestServer(context, (request, response) => {
+    return sendFile(request, response, safePublicPath(request.url, publicDir));
+  });
+  for (const options of [{}, { method: "HEAD" }, { headers: { Range: "bytes=0-6" } }]) {
+    const response = await fetch(`${baseUrl}/linked/secret.txt`, options);
+    assert.equal(response.status, 404);
+    assert.doesNotMatch(await response.text(), /private fixture/);
+  }
+  const safe = await fetch(`${baseUrl}/safe.txt`);
+  assert.equal(safe.status, 200); assert.equal(await safe.text(), "public fixture");
+  assert.equal(await readFile(privateFile, "utf8"), "private fixture");
+});
+
+test("Lesefehler nach der Dateiprüfung schließen volle und Range-Antworten; erneutes Lesen bleibt möglich", async (context) => {
+  const root = await createTemporaryRoot(context, "iucn-http-read-error-");
+  const file = path.join(root, "sample.txt");
+  const baseUrl = await createTestServer(context, (request, response) => {
+    if (request.url === "/disappear") {
+      const range = request.headers.range;
+      // The request header is read after stat but before createReadStream.
+      // Remove the real fixture there to force an actual asynchronous ENOENT.
+      Object.defineProperty(request.headers, "range", { get() { unlinkSync(file); return range; } });
+    }
+    return sendFile(request, response, file);
+  });
+  for (const options of [{}, { headers: { Range: "bytes=2-5" } }]) {
+    await writeFile(file, "0123456789");
+    await assert.rejects(fetch(`${baseUrl}/disappear`, { ...options, signal: AbortSignal.timeout(1000) }),
+      (error) => error.name === "TypeError" && /fetch failed/.test(error.message));
+    await writeFile(file, "0123456789");
+    const retry = await fetch(`${baseUrl}/retry`, options);
+    assert.equal(retry.status, options.headers ? 206 : 200);
+    assert.equal(await retry.text(), options.headers ? "2345" : "0123456789");
+    assert.equal(await readFile(file, "utf8"), "0123456789");
+  }
 });
 
 test("JSON- und Textantworten setzen eindeutige Inhaltstypen und verhindern Caching", async (context) => {

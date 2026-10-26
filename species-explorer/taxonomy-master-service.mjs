@@ -35,11 +35,13 @@ import { coverMasterInputSelection, protectedMasterIdsRevision } from "./taxonom
 import { readTaxonomyPublication } from "./taxonomy-publication-storage.mjs";
 import { MasterRunController } from "./taxonomy-master-run-controller.mjs";
 import { masterJobBinding } from "./taxonomy-master-job.mjs";
-import { readRetainedMasterTaxa } from "./taxonomy-master-source-binding.mjs";
+import { readMasterBuildIdentityRegistry, readRetainedMasterTaxa } from "./taxonomy-master-source-binding.mjs";
 import { createTaxonomyStorageMaintenance } from "./taxonomy-storage-maintenance.mjs";
 import { assertTaxonomySpace } from "./taxonomy-space-budget.mjs";
 import { taxonomyBaselineSetupStatus, assertBaselineSetup } from "./taxonomy-baseline-setup.mjs";
 import { catalogProtectedMasterIds } from "./lightroom-catalog-usage.mjs";
+import { createClassificationUsageRenewalService } from "./taxonomy-classification-automation.mjs";
+import { readClassificationRetentionBuildPolicy } from "./taxonomy-classification-retention-usage.mjs";
 
 const PROVIDERS = Object.freeze(["inaturalist", "gbif", "worms", "wikidata", "animalia"]);
 const LIGHTROOM_PROGRESS_PHASES = Object.freeze({
@@ -187,14 +189,14 @@ async function collectColRecords(
   store,
   scientificNames,
   onProgress = () => {},
-  { providerSlices = [], recheckKnownReferenceGaps = false } = {},
+  { providerSlices = [], recheckKnownReferenceGaps = false, requiredColScientificNames = [] } = {},
 ) {
   const records = [];
   for await (const record of streamColRecords(
     store,
     scientificNames,
     onProgress,
-    { providerSlices, recheckKnownReferenceGaps },
+    { providerSlices, recheckKnownReferenceGaps, requiredColScientificNames },
   )) {
     records.push(record);
   }
@@ -205,11 +207,12 @@ async function* streamColRecords(
   store,
   scientificNames,
   onProgress = () => {},
-  { providerSlices = [], recheckKnownReferenceGaps = false } = {},
+  { providerSlices = [], recheckKnownReferenceGaps = false, requiredColScientificNames = [] } = {},
 ) {
   const status = store.status();
   const knownColTaxonIds = new Map();
   const knownColReferenceGaps = new Set();
+  const requiredColNames = new Set(requiredColScientificNames.map(canonicalSpeciesName).filter(Boolean));
   for (const slice of providerSlices) {
     for (const record of slice.records || []) {
       const scientificName = canonicalSpeciesName(record.scientificName);
@@ -226,6 +229,7 @@ async function* streamColRecords(
     onProgress({ current: index, total: names.length, scientificName });
     if (
       !recheckKnownReferenceGaps
+      && !requiredColNames.has(scientificName)
       && knownColReferenceGaps.has(scientificName)
       && !knownColTaxonIds.has(scientificName)
     ) {
@@ -332,11 +336,15 @@ export class TaxonomyMasterService {
       } finally { this.runPromise = null; }
     };
     this.identityReviewBusy = false;
-    this.identityReviewService = createIdentityReviewService({ taxonomyRoot: this.taxonomyRoot, now: this.now,
-      readInputRevision: async () => {
-        const [species, corrections] = await Promise.all([readJson(this.speciesListPath, []), readJson(this.correctionsPath, { entries: [] })]);
-        return taxonomyIdentityInputRevision({ projectTaxa: projectTaxaFromSpeciesList(species), corrections: correctionsFromDocument(corrections) });
-      } });
+    const readInputRevision = async () => {
+      const [species, corrections] = await Promise.all([readJson(this.speciesListPath, []), readJson(this.correctionsPath, { entries: [] })]);
+      return taxonomyIdentityInputRevision({ projectTaxa: projectTaxaFromSpeciesList(species), corrections: correctionsFromDocument(corrections) });
+    };
+    this.identityReviewService = createIdentityReviewService({ taxonomyRoot: this.taxonomyRoot, now: this.now, readInputRevision });
+    this.classificationUsageRenewalService = createClassificationUsageRenewalService({
+      taxonomyRoot: this.taxonomyRoot, now: this.now, readInputRevision,
+      inputFiles: [this.speciesListPath, this.correctionsPath],
+    });
   }
 
   assertOpen() {
@@ -383,8 +391,12 @@ export class TaxonomyMasterService {
   async status() {
     this.assertOpen();
     const buildJob = this.runController ? await this.runController.status() : { available: false };
+    const activeBuild = buildJob.available === true && Boolean(buildJob.id)
+      && ["building", "pausing"].includes(buildJob.status);
+    const deferCandidate = activeBuild || Boolean(this.runController
+      && this.state.status === "building" && this.runController.isActive());
     const lifecycle = await this.inspectLifecycle(this.taxonomyRoot, {
-      lightweight: true,
+      lightweight: true, deferCandidate,
     }).catch((error) => ({
       error: error.message,
       candidate: null,
@@ -405,6 +417,7 @@ export class TaxonomyMasterService {
     const incompleteJob = buildJob.available && buildJob.status !== "ready";
     if (incompleteJob) lifecycle.canActivate = false; // Do not activate an older unrelated staging candidate.
     const recovered = this.runController && !ACTIVE_STATUSES.has(this.state.status) && incompleteJob;
+    const useJobProgress = recovered || activeBuild;
     const messages = { paused: "Masteraufbau pausiert. Der gesicherte Stand kann nach erneuter Prüfung fortgesetzt werden.",
       interrupted: "Masteraufbau wurde unterbrochen. Der gesicherte Stand ist erhalten; es wurde nichts automatisch gestartet.",
       stale: "Gespeicherter Masteraufbau ist veraltet. Bitte einen neuen Aufbau starten.",
@@ -412,11 +425,12 @@ export class TaxonomyMasterService {
       failed: "Masteraufbau fehlgeschlagen. Der bisherige aktive Stand bleibt erhalten." };
     return {
       ...this.state,
-      ...(recovered ? { status: buildJob.status, message: messages[buildJob.status],
+      ...(useJobProgress ? { status: buildJob.status, message: activeBuild
+        ? buildJob.progress?.message || messages[buildJob.status] : messages[buildJob.status],
         error: ["failed", "stale"].includes(buildJob.status) ? buildJob.error : "",
         progressPercent: buildJob.progress?.percent ?? null, progressPhase: buildJob.progress?.phase || "",
         progressCurrent: buildJob.progress?.current ?? null, progressTotal: buildJob.progress?.total ?? null,
-        startedAt: buildJob.startedAt } : {}),
+        startedAt: buildJob.startedAt, progressJobId: buildJob.id } : {}),
       active: this.isActive(),
       buildJob,
       lifecycle,
@@ -731,11 +745,13 @@ export class TaxonomyMasterService {
         });
         warnings.push(...(refreshed.warnings || []));
       }
-      let workerBinding = null;
+      let workerBinding = null, classificationRetention = null;
       const selection = { speciesListPath: this.speciesListPath, correctionsPath: this.correctionsPath };
       if (this.runController) {
         this.updateProgress({ status: "building", phase: "Eingangsstand sichern", message: "Aktuelle Quellen und eigene Entscheidungen werden für den Aufbau gebunden.", percent: 45 });
-        workerBinding = await masterJobBinding(this.taxonomyRoot, [], selection);
+        const registry = await readMasterBuildIdentityRegistry(this.taxonomyRoot);
+        classificationRetention = await readClassificationRetentionBuildPolicy(this.taxonomyRoot, registry);
+        workerBinding = await masterJobBinding(this.taxonomyRoot, [], selection, classificationRetention);
         // Read all build values AFTER capturing the binding, not from the values
         // previously used for a possibly long provider refresh.
         [speciesList, correctionsDocument, researchedTaxa] = await Promise.all([
@@ -759,6 +775,14 @@ export class TaxonomyMasterService {
       const providerSlices = activeMasterProviderSlices(
         await latestProviderSlices(this.taxonomyRoot),
       );
+      const identityRegistry = await readMasterBuildIdentityRegistry(this.taxonomyRoot);
+      if (!this.runController) classificationRetention = await readClassificationRetentionBuildPolicy(this.taxonomyRoot, identityRegistry);
+      // Historical gap flags describe the raw provider input, not the CoL
+      // evidence required to recheck a confirmed classification or deferral.
+      const requiredColScientificNames = (identityRegistry?.events || [])
+        .filter((event) => ["classification", "classification-deferred"].includes(event.type))
+        .map((event) => canonicalSpeciesName(event.classificationCase.target.scientificName))
+        .filter(Boolean);
       const targetNames = [...new Set([
         ...projectTaxa.map((entry) => canonicalSpeciesName(entry.scientificName)),
         ...corrections.map((entry) => canonicalSpeciesName(entry.scientificName)),
@@ -778,7 +802,7 @@ export class TaxonomyMasterService {
             percent: 45 + Math.round((Number(current) / Math.max(1, Number(total))) * 15),
           });
         },
-        { providerSlices, recheckKnownReferenceGaps },
+        { providerSlices, recheckKnownReferenceGaps, requiredColScientificNames },
       );
       const colRelease = releaseFromStoreStatus(store.status());
       const inputs = coverMasterInputSelection({ colRelease, colRecords, targetNames, providerSlices });
@@ -793,7 +817,8 @@ export class TaxonomyMasterService {
         projectTaxa,
         corrections,
         retainedTaxa: researchedTaxa,
-        identityRegistry: (await readIdentityReview(this.taxonomyRoot))?.registry,
+        identityRegistry,
+        ...(classificationRetention ? { classificationRetention } : {}),
         protectedMasterIds: await catalogProtectedMasterIds(this.taxonomyRoot),
         ...(workerBinding ? { selection, expectedBinding: workerBinding } : {}),
         warnings,
@@ -849,6 +874,25 @@ export class TaxonomyMasterService {
       return await (this.runController ? this.runController.exclusive(operation) : operation());
     }
     finally { this.identityReviewBusy = false; }
+  }
+
+  async prepareProtectedUsageRenewal({ job, usageRevision }) {
+    this.assertAvailable();
+    const target = job?.protectedUsageRenewalTarget;
+    if (!target) return;
+    if (job.freshUsageCapture !== true || job.buildStarted || job.boundCandidate
+      || job.usageConsent?.allCatalogsConfirmed !== true || job.usageConsent?.noChangesUntilClose !== true
+      || !/^update-[a-f0-9-]{36}$/.test(job.updateRunId || "") || job.usageRevision !== usageRevision) {
+      throw new Error("Die erneute Nutzungsprüfung benötigt den eigenen bestätigten Ersatzauftrag.");
+    }
+    this.identityReviewBusy = true;
+    try {
+      const operation = async () => {
+        const preview = await this.classificationUsageRenewalService.preview(target, usageRevision);
+        return this.classificationUsageRenewalService.save({ confirmed: true, token: preview.token, target, usageRevision });
+      };
+      return await (this.runController ? this.runController.exclusive(operation) : operation());
+    } finally { this.identityReviewBusy = false; }
   }
 
   async decide(payload = {}) {

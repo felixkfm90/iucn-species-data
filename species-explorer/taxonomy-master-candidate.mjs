@@ -59,6 +59,7 @@ import { inspectMasterTaxonContinuity } from "./taxonomy-master-continuity.mjs";
 import { preserveRecoveryConflictState } from "./taxonomy-source-recovery-conflicts.mjs";
 import { normalizeColIdentifiers, classificationReviewCase, summarizeClassificationReview, assertClassificationReviewSummary } from "./taxonomy-classification-review.mjs";
 import { planClassificationDeferrals, classificationDeferralSummary, writeClassificationDeferrals, assertClassificationDeferrals } from "./taxonomy-classification-deferral.mjs";
+import { summarizeClassificationRetentions, writeClassificationRetention, assertClassificationRetentions, finalizeClassificationRetentionRegistry } from "./taxonomy-classification-retention.mjs";
 
 const SOURCE_FIELDS = new Set([
   "scientific-name",
@@ -718,23 +719,43 @@ async function rebuildMasterSearchTerms(database, onProgress = () => {}, expecte
   return { reusedTaxa: reuse.reusedTaxa, reusedTerms: reuse.reusedTerms, rebuiltSources: total };
 }
 
-async function replaceDirectory(source, target) {
+export async function replaceTaxonomyMasterDirectory(source, target, {
+  files = fs,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+} = {}) {
+  const rename = async (from, to) => {
+    for (let attempt = 0; ; attempt += 1) {
+      try { await files.rename(from, to); return; }
+      catch (error) {
+        if (!["EPERM", "EBUSY", "EACCES"].includes(error?.code) || attempt >= 8) throw error;
+        await wait(60 * (attempt + 1));
+      }
+    }
+  };
   const root = path.dirname(target);
   const backup = path.join(root, `.staging-old-${crypto.randomUUID()}`);
   let hadTarget = false;
   try {
-    await fs.rename(target, backup);
+    await rename(target, backup);
     hadTarget = true;
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
   try {
-    await fs.rename(source, target);
-    if (hadTarget) await fs.rm(backup, { recursive: true, force: true });
+    await rename(source, target);
   } catch (error) {
-    if (hadTarget) await fs.rename(backup, target).catch(() => {});
+    if (hadTarget) {
+      try { await rename(backup, target); }
+      catch (rollbackError) {
+        throw new AggregateError([error, rollbackError],
+          `Kandidatenwechsel und Rückstellung fehlgeschlagen. Erhaltene Verzeichnisse: ${source}; ${backup}.`, { cause: error });
+      }
+    }
     throw error;
   }
+  // Cleanup is outside rollback: the new target is already installed. A cleanup
+  // failure must never attempt to move the old backup over the new candidate.
+  if (hadTarget) await files.rm(backup, { recursive: true, force: true });
 }
 
 export function buildTaxonomyMasterCandidate(options = {}) {
@@ -750,6 +771,7 @@ async function buildTaxonomyMasterCandidateScoped({
   corrections = [],
   retainedTaxa = [],
   protectedMasterIds = [],
+  classificationRetention,
   identityRegistry,
   buildInputCoverage,
   reuseUnchanged = true,
@@ -887,7 +909,8 @@ async function buildTaxonomyMasterCandidateScoped({
       inputRevision: taxonomyIdentityInputRevision({ corrections, projectTaxa }),
       sourceRevision: identityBuildSourceRevision([normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)]),
       releases: [normalizedColRelease, ...normalizedSlices.map((slice) => slice.release)],
-      ensureGroup: (value) => ensureGroup(groups, groupsByBaseIdentity, value) });
+      ensureGroup: (value) => ensureGroup(groups, groupsByBaseIdentity, value),
+      classificationRetention: sourceRecoveryScope ? undefined : classificationRetention, protectedMasterIds: normalizedProtectedMasterIds });
   } catch (error) {
     previousState.close();
     throw error;
@@ -948,7 +971,14 @@ async function buildTaxonomyMasterCandidateScoped({
   try {
     deferredClassifications = planClassificationDeferrals({ cases: classificationCases, groups, identityPlan,
       previousRegistry: previousState.identityRegistry, previousState });
+    identityPlan.classificationRetentions = finalizeClassificationRetentionRegistry(identityPlan.classificationRetentions, {
+      previousRegistry: previousState.identityRegistry, registry: identityPlan.registry });
+    const retentionById = new Map(identityPlan.classificationRetentions.map((marker) => [marker.masterTaxonId, marker]));
+    for (const group of groups.values()) if (group.identityRetention) {
+      group.identityRetention = retentionById.get(group.identityRetention.masterTaxonId);
+    }
   } catch (error) { previousState.close(); throw error; }
+  const classificationRetentions = summarizeClassificationRetentions(identityPlan.classificationRetentions);
   const classificationReview = summarizeClassificationReview([...classificationCases.values()]);
   const classificationDeferrals = classificationDeferralSummary(deferredClassifications);
   const temporaryDirectory = checkpoint?.directory || path.join(
@@ -1046,6 +1076,12 @@ async function buildTaxonomyMasterCandidateScoped({
     let writtenGroups = 0;
     for (const group of groups.values()) {
       if (writtenGroups < (progressCheckpoint?.written || 0)) { writtenGroups += 1; continue; }
+      if (group.identityRetention) {
+        writeClassificationRetention(writer, previousState, group.identityRetention, timestamp);
+        writtenGroups += 1;
+        await progressCheckpoint?.advance(writtenGroups, reuse.reusedTaxa || 0);
+        continue;
+      }
       const exactCol = group.records.find((record) => (
         record.provider === "catalogue-of-life"
         && record.versionChangeState !== "removed"
@@ -1560,6 +1596,7 @@ async function buildTaxonomyMasterCandidateScoped({
     });
     const validation = validateTaxonomyMasterDatabase(database);
     const contentQuality = assertTaxonomyMasterContent(database);
+    assertClassificationRetentions(database, classificationRetentions);
     // Keep the candidate available for explicit split/merge review, but record
     // missing identities. Every activation path rechecks the actual databases.
     const identityContinuity = inspectMasterTaxonContinuity({ previousPath: activePath, currentDatabase: database, DatabaseSync });
@@ -1604,6 +1641,7 @@ async function buildTaxonomyMasterCandidateScoped({
       identityContinuity,
       classificationReview,
       classificationDeferrals,
+      ...(classificationRetentions ? { classificationRetentions } : {}),
       requiresConfirmation: true,
       ...(sourceRecoveryScope ? { sourceRecoveryScope, recoveryConflictState } : {}),
       ...(checkpoint ? { buildJobRevision: checkpoint.revision } : {}),
@@ -1633,7 +1671,7 @@ async function buildTaxonomyMasterCandidateScoped({
     if (reuse.available && await masterFileFingerprint(reuse.searchSourcePath) !== activeManifest.buildInputs.masterSha256) {
       throw new Error("Der Ausgangsmaster wurde während der Wiederverwendung verändert. Ein neuer Aufbau ist erforderlich.");
     }
-    await replaceDirectory(temporaryDirectory, taxonomyMasterCandidateDirectory(taxonomyRoot));
+    await replaceTaxonomyMasterDirectory(temporaryDirectory, taxonomyMasterCandidateDirectory(taxonomyRoot));
     return manifest;
   } catch (error) {
     reuse?.close();
@@ -1685,6 +1723,10 @@ export async function inspectTaxonomyMasterCandidate(taxonomyRoot, {
     assertClassificationReviewSummary(database, manifest.classificationReview);
     assertClassificationDeferrals(database, manifest.classificationDeferrals, { baseVersion: manifest.sourceMasterVersion,
       colVersion: manifest.sources?.find((entry) => entry.provider === "catalogue-of-life")?.providerVersion });
+    assertClassificationRetentions(database, manifest.classificationRetentions, {
+      baseVersion: manifest.sourceMasterVersion, registryRevision: manifest.inputRevisions?.identities,
+      sourceRevision: manifest.inputRevisions?.identitySources, inputRevision: manifest.inputRevisions?.identityInputs,
+      protectedMasterIdsRevision: manifest.inputRevisions?.protectedMasterIds, checkOrphans: validate });
     const blockingConflictCount = Number(database.prepare(`
       SELECT COUNT(*) AS count
       FROM master_conflict

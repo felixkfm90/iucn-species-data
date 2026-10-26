@@ -1,6 +1,6 @@
 # Repository-Qualitätsgrenzen
 
-Stand: 2026-10-03
+Stand: 2026-10-26
 
 ## Zweck
 
@@ -25,6 +25,12 @@ Veröffentlichung erkannt.
 Die Style-Prüfung formatiert keine Dateien automatisch. Sie schützt nur klare, repositoryweite Grundregeln und
 vermeidet damit einen riskanten, großflächigen Formatierungsumbau. Generierte JSON-Dateien werden nicht als
 Quelltext formatiert, sondern fachlich über `check:schema`, `audit:project` und `status:check` geprüft.
+
+Der Pages-Workflow führt zusätzlich einen eigenen Netzwerkschritt `npm audit --audit-level=high`
+nach `npm ci --ignore-scripts` aus. Hohe oder kritische Abhängigkeitsbefunde und Abfragefehler verhindern
+den nachfolgenden Artefaktbau. Dieser Schritt gehört nicht zum lokalen, ohne Meldedatenbankabfrage
+ausführbaren `quality:ci`. Paketprüfung und Sicherheitsstand einer separat installierten Node-Laufzeit
+bleiben getrennte Nachweise; Details stehen im [CI-Vertrag](ci-quality-gate.md).
 
 ## Datenanbieter und Tests
 
@@ -53,9 +59,11 @@ Zusätzliche repositoryweite Regressionstests sichern Querschnittsgrenzen:
 
 - `scripts/squarespace-accessibility.test.mjs`: dynamische Alternativtexte für IUCN-Status, Trend, Karten-Vollbild
   und Bild-Lightbox;
+- `scripts/header-navigation.test.mjs`: sichtbarer Desktopmenüzustand, Escape und Wiederöffnen im
+  tatsächlich belegten Anbieterablauf; Mobilselektoren und öffentliche Ziele bleiben erhalten;
 - `scripts/pipeline-error-log.test.mjs`: fehlertoleranter Pipeline-Fehlerlog und feste 256-KiB-Grenze.
 
-Beide Tests laufen über `test:quality-tools` und damit automatisch als Bestandteil von `npm test` und
+Diese Tests laufen über `test:quality-tools` und damit automatisch als Bestandteil von `npm test` und
 `quality:ci`.
 
 ## Lokale Grenze vor automatischen Datenveröffentlichungen
@@ -81,9 +89,10 @@ test laufen über `test:pipeline-log` und damit in `quality:ci`.
 ## Öffentliche Pages-Dateien
 
 Das kontrollierte `_site/`-Artefakt enthält ausschließlich die produktiven Frontendmodule, zentralen JSON-Daten,
-Artassets, benötigten PNG-Grafiken sowie die generierte Startdatei und `.nojekyll`. `README.md`, `docs/`, lokale
-Sicherungen, Designquellen und unbekannte Dateien werden nicht veröffentlicht. Builder und Prüfer verwenden
-dieselbe Positivliste aus `scripts/pages-artifact-policy.mjs`.
+Artassets, benötigten PNG-Grafiken sowie die generierte Startdatei und `.nojekyll`. Aus `docs/` wird allein
+`docs/squarespace-custom.css` als ausdrücklich freigegebene öffentliche CSS-Datei ausgeliefert. `README.md`,
+andere Dokumente, lokale Sicherungen, Designquellen und unbekannte Dateien werden nicht veröffentlicht.
+Builder und Prüfer verwenden dieselbe Positivliste aus `scripts/pages-artifact-policy.mjs`.
 
 ## Flexibles Größenmodell
 
@@ -114,7 +123,9 @@ npm.cmd run --silent pages:check
 npm.cmd run --silent quality:ci
 ```
 
-`_site/` ist ein ignoriertes, vollständig reproduzierbares Prüfartefakt und wird nach lokalen Builds wieder entfernt.
-Das Abschlussaudit vor Phase 8 hat zusätzlich die dynamischen Alternativtexte der Squarespace-Module abgesichert.
-Deshalb sind im dokumentierten Footer `species-status.js?v=1.0.9`, `map-loader.js?v=1.0.8` und
-`lightbox-zoom.js?v=1.0.7` verbindlich. Das Squarespace-CSS bleibt unverändert.
+`_site/` ist ein vollständig reproduzierbares Prüfartefakt. Seine Entfernung setzt die überprüfte
+Eigentums-/Nutzungsbindung und die geltenden Bereinigungsregeln voraus; `.gitignore` ist keine Löschfreigabe.
+Das Abschlussaudit vor Phase 8 hat die damaligen dynamischen Alternativtexte abgesichert.
+Die aktuellen Modul- und Cachebindungen stehen ausschließlich im [dokumentierten Footer](squarespace-footer.html);
+dessen Quellstand und der tatsächlich geladene Squarespace-Einbau sind getrennt zu prüfen.
+Aktuelle Änderungen, Abnahmen und Veröffentlichungsgrenzen führt der [Auditauftrag](audit-auftrag-phase-10-5.md).

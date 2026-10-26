@@ -1,6 +1,6 @@
 # KI-Artporträts im Arten-Explorer
 
-Stand: 2026-10-01
+Stand: 2026-10-10
 
 ## Entscheidung
 
@@ -17,8 +17,12 @@ Stattdessen gilt ein manueller, kontrollierter Workflow:
 6. Erst nach manueller fachlicher Prüfung wird das Bild übernommen. Bei bestehenden Arten speichert
    `Artporträt übernehmen` lokal mit Backup; veröffentlicht wird gesammelt über `Änderungen übertragen`.
 
-Der lokale Workflow ist seit dem 2026-06-21 freigegeben. Die Squarespace-Ausgabe bleibt trotzdem bewusst ein
-späterer eigener Ausbauschritt, nachdem weitere Portraits erstellt und fachlich geprüft wurden.
+Der lokale Workflow ist seit dem 2026-06-21 freigegeben. Die Squarespace-Ausgabe ist inzwischen über
+`species-portrait.js` eingebunden: Artillustration mit artbezogenem Alternativtext, keine zusätzliche
+Bildunterschrift. KI-Herkunft, Import und fachliche Freigabe bleiben in den jeweiligen Metadaten dokumentiert.
+Ein sichtbarer Herkunftshinweis ist eine getrennte Darstellungsentscheidung; aus seinem Fehlen allein wird
+kein Bildfehler oder pauschaler Pflichtverstoß abgeleitet. Aktuelle Einordnung und Primärquellen unter
+10.19 des [Auditauftrags](audit-auftrag-phase-10-5.md).
 
 ## Prompt
 
@@ -206,8 +210,10 @@ species-explorer/asset-backups/<SafeName>/portrait/
 
 Es gelten:
 
-- genau eine letzte verwaltete Sicherung pro Art und Assettyp; ein erneutes Ersetzen oder Löschen überschreibt sie
-- globale Obergrenze 500 MB
+- genau ein logischer Rücknahmestand pro Art und Assettyp; ein erneutes Ersetzen oder Löschen ersetzt diesen
+  kontrolliert, notwendige Originale offener Vorgänge bleiben bis zum geprüften Abschluss zusätzlich geschützt
+- keine globale Medien-Bytegrenze, die den einzigen Rücknahmestand einer anderen Art verdrängt; maßgeblich sind
+  die [Aufbewahrungsentscheidungen](audit-auftrag-phase-10-5.md)
 
 Wenn eine Portrait-Sicherung vorhanden ist, kann sie in der Artseite über `Wiederherstellen` zurückkopiert werden.
 Ohne Sicherung ist der Button deaktiviert.

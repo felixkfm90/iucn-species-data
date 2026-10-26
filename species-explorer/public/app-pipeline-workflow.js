@@ -33,6 +33,8 @@
       let previewToken = "";
       let previewMode = "";
       let previewKind = "";
+      const statusRetryDelays = [1000, 2000, 4000, 8000];
+      let statusReadPromise = null, statusReadGeneration = 0, queuedStatusRead = false, statusReadFailures = 0;
 
       const setMessage = (text = "", type = "") => {
         elements.pipelineMessage.textContent = text;
@@ -55,7 +57,34 @@
         footerCloseButton.textContent = active ? "Fenster schließen" : "Abbrechen";
       };
 
+      const hasSavedCreation = (status) => status?.status === "awaiting-review"
+        && status.guidedSpeciesCreation === true && typeof status.creationId === "string"
+        && status.creationId.trim().length > 0 && status.targets?.length === 1;
+
+      const openSavedCreation = () => {
+        if (!hasSavedCreation(state.pipelineStatusSnapshot)
+          || typeof state.resumeNewSpeciesCreation !== "function") return false;
+        void state.resumeNewSpeciesCreation();
+        return true;
+      };
+
       const renderPersistentPipelineStatus = (status) => {
+        const readErrors = [["Pipeline", state.pipelineStatusReadError], ["Backup", state.backupStatusReadError]]
+          .filter(([, error]) => error);
+        elements.pipelineRunNoticeOpen.textContent = !readErrors.length && hasSavedCreation(status)
+          ? "Artanlage fortsetzen" : "Details anzeigen";
+        if (readErrors.length) {
+          elements.pipelineRunNotice.hidden = false;
+          elements.pipelineRunNotice.className = "pipeline-run-notice failed";
+          elements.pipelineRunNoticeTitle.textContent = readErrors.map(([label]) => `${label}-Status nicht verfügbar`).join(" · ");
+          elements.pipelineRunNoticeDetail.textContent = readErrors.map(([label, error]) => {
+            const next = error.retryDelay === null
+              ? "Statusfenster erneut öffnen, um frisch zu prüfen."
+              : `Erneute Statusprüfung in ${error.retryDelay / 1000} Sekunden.`;
+            return `${label}: ${error.message} · Letzter bestätigter Stand; aktuell nicht bestätigt. ${next}`;
+          }).join(" · ");
+          return;
+        }
         const presentation = persistentStatusPresentation({
           pipelineStatus: status,
           backupStatus: state.backupStatusSnapshot || {},
@@ -70,10 +99,18 @@
       state.renderPersistentPipelineStatus = renderPersistentPipelineStatus;
 
       const showStatusDialog = (status) => {
-        const presentation = pipelineStatusPresentation(status);
+        void refreshPipelineStatus();
+        const presentation = state.pipelineStatusReadError ? {
+          title: "Pipeline-Status nicht verfügbar",
+          message: `Letzter bestätigter Stand; aktuell nicht bestätigt. ${state.pipelineStatusReadError.message}`,
+          messageType: "error",
+        } : pipelineStatusPresentation(status);
         if (!presentation) return;
         previewToken = "";
         previewMode = status.mode;
+        previewKind = "pipeline-status";
+        dialog.dataset.previewKind = previewKind;
+        dialog.dataset.statusKind = "pipeline";
         elements.pipelineDialogTitle.textContent = presentation.title;
         elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode);
         elements.pipelineModeChoice.hidden = true;
@@ -108,14 +145,26 @@
         renderPersistentPipelineStatus,
       });
 
+      const openReadErrorStatus = () => {
+        const pipelineError = Boolean(state.pipelineStatusReadError);
+        const backupError = Boolean(state.backupStatusReadError);
+        if (!pipelineError && !backupError) return false;
+        if (pipelineError) {
+          showStatusDialog(state.pipelineStatusSnapshot || {});
+          if (backupError) void backupController.refreshStatus();
+        } else backupController.showStatusDialog(state.backupStatusSnapshot || {});
+        return true;
+      };
+
       const openChooser = () => {
+        if (openReadErrorStatus()) return;
         if (state.pipelineStatusSnapshot?.status === "running"
           || state.pipelineStatusSnapshot?.status === "awaiting-review") {
-          showStatusDialog(state.pipelineStatusSnapshot);
+          showStatusDialog(state.pipelineStatusSnapshot || {});
           return;
         }
         if (state.backupStatusSnapshot?.status === "running") {
-          backupController.showStatusDialog(state.backupStatusSnapshot);
+          backupController.showStatusDialog(state.backupStatusSnapshot || {});
           return;
         }
         previewToken = "";
@@ -123,6 +172,7 @@
         previewKind = "";
         backupController.reset();
         dialog.dataset.previewKind = "";
+        dialog.dataset.statusKind = "";
         elements.pipelineDialogTitle.textContent = "Datenbank-Aktionen";
         elements.pipelineDialogDescription.textContent = "Wähle aus, was aktualisiert, gesichert oder bereinigt werden soll.";
         elements.pipelineModeChoice.hidden = false;
@@ -137,6 +187,7 @@
         setMessage();
         showDialog();
         void state.refreshTaxonomyMaintenanceStatus?.();
+        void state.refreshTaxonomyMasterStatus?.();
       };
 
       const applyPipelinePreview = (result) => {
@@ -167,6 +218,9 @@
           });
           state.pipelineStatusSnapshot = startedStatus;
           state.pipelineWasRunning = true;
+          previewKind = "pipeline-status";
+          dialog.dataset.previewKind = previewKind;
+          dialog.dataset.statusKind = "pipeline";
           previewToken = "";
           elements.pipelineStartButton.hidden = true;
           elements.pipelinePreview.hidden = true;
@@ -220,6 +274,7 @@
         previewMode = mode;
         previewKind = "pipeline";
         dialog.dataset.previewKind = "pipeline";
+        dialog.dataset.statusKind = "";
         backupController.reset();
         elements.pipelineStartButton.disabled = true;
         elements.pipelineStartButton.hidden = true;
@@ -356,78 +411,127 @@
         return true;
       }
 
-      async function refreshPipelineStatus() {
-        try {
-          const status = await fetchJson("/api/pipeline/status");
-          state.pipelineStatusSnapshot = status;
-          const running = status.status === "running";
-          const awaitingReview = status.status === "awaiting-review";
-          const active = running || awaitingReview;
-          setPipelineButtonsDisabled(active);
-          if (running) renderDatabaseStatus("running");
-          else if (awaitingReview) renderDatabaseStatus("review");
-          else if (status.status === "failed") renderDatabaseStatus("failed");
-          else renderDatabaseStatus();
-          renderPersistentPipelineStatus(status);
-          elements.pipelineStatusDetail.textContent = active
-            ? `${pipelineModeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
-            : status.completedAt
-              ? `${pipelineModeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
-              : "Kein Lauf aktiv.";
-          elements.pipelineStatusDetail.className = `pipeline-dialog-status${
-            status.status === "awaiting-review" ? " review" : status.status !== "idle" ? ` ${status.status}` : ""
-          }`;
-          renderProcessLog({
-            details: elements.pipelineLogDetails,
-            log: elements.pipelineLog,
-            lines: status.log,
-          });
+      function scheduleStatusRead(delay) {
+        const generation = statusReadGeneration;
+        clearTimeout(state.pipelinePollTimer);
+        const timer = setTimeout(() => {
+          if (generation !== statusReadGeneration || state.pipelinePollTimer !== timer) return;
+          state.pipelinePollTimer = null;
+          void refreshPipelineStatus({ resetRetries: false });
+        }, delay);
+        state.pipelinePollTimer = timer;
+      }
 
-          if (dialog.open && active) {
-            const presentation = pipelineStatusPresentation(status);
-            setDialogCloseMode(true);
-            setMessage(presentation.message, presentation.messageType);
-          } else if (dialog.open && state.pipelineWasRunning && !active) {
-            const presentation = pipelineStatusPresentation(status);
-            if (presentation) {
+      async function refreshPipelineStatus({ resetRetries = true } = {}) {
+        clearTimeout(state.pipelinePollTimer);
+        state.pipelinePollTimer = null;
+        if (resetRetries) {
+          statusReadFailures = 0;
+          statusReadGeneration += 1;
+        }
+        if (statusReadPromise) {
+          if (resetRetries) queuedStatusRead = true;
+          return statusReadPromise;
+        }
+        const generation = statusReadGeneration;
+        statusReadPromise = Promise.resolve().then(async () => {
+          let status;
+          // Keep read retry separate from completion notifications and model reload.
+          try { status = await global.SpeciesExplorerBackupWorkflow.readWorkflowStatus(fetchJson, "/api/pipeline/status"); }
+          catch (error) {
+            if (generation !== statusReadGeneration) return;
+            const delay = statusRetryDelays[statusReadFailures++] ?? null;
+            state.pipelineStatusReadError = { message: error.message, retryDelay: delay };
+            elements.pipelineStatus.textContent = "Status nicht aktuell";
+            if (dialog.open && dialog.dataset.previewKind === "pipeline-status" && dialog.dataset.statusKind === "pipeline") {
+              elements.pipelineStatusDetail.textContent = error.message;
+              elements.pipelineStatusDetail.className = "pipeline-dialog-status failed";
+              setMessage(`Pipeline-Status aktuell nicht bestätigt: ${error.message}`, "error");
+            }
+            renderPersistentPipelineStatus(state.pipelineStatusSnapshot || { status: "idle" });
+            if (delay !== null) scheduleStatusRead(delay);
+            return;
+          }
+          if (generation !== statusReadGeneration) return;
+          statusReadFailures = 0;
+          state.pipelineStatusReadError = null;
+          try {
+            state.pipelineStatusSnapshot = status;
+            const running = status.status === "running";
+            const awaitingReview = status.status === "awaiting-review";
+            const active = running || awaitingReview;
+            setPipelineButtonsDisabled(active);
+            if (running) renderDatabaseStatus("running");
+            else if (awaitingReview) renderDatabaseStatus("review");
+            else if (status.status === "failed") renderDatabaseStatus("failed");
+            else renderDatabaseStatus();
+            renderPersistentPipelineStatus(status);
+            if (dialog.open && dialog.dataset.previewKind === "pipeline-status" && dialog.dataset.statusKind === "pipeline") {
+              const presentation = pipelineStatusPresentation(status) || {
+                title: "Artdaten und Medien", message: "Kein Lauf aktiv.", messageType: "info",
+              };
               elements.pipelineDialogTitle.textContent = presentation.title;
-              elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode);
-              setDialogCloseMode(true);
+              elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode || "");
+              setDialogCloseMode(active);
               setMessage(presentation.message, presentation.messageType);
+              elements.pipelineStatusDetail.textContent = active
+                ? `${pipelineModeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
+                : status.completedAt
+                  ? `${pipelineModeLabel(status.mode)} · beendet ${formatDate(status.completedAt).replace(/^Report /, "")}`
+                  : "Kein Lauf aktiv.";
+              elements.pipelineStatusDetail.className = `pipeline-dialog-status${
+                status.status === "awaiting-review" ? " review" : status.status !== "idle" ? ` ${status.status}` : ""
+              }`;
+              renderProcessLog({
+                details: elements.pipelineLogDetails,
+                log: elements.pipelineLog,
+                lines: status.log,
+              });
+            }
+
+            if (awaitingReview && !state.newSpeciesPipelineActive && !hasSavedCreation(status)) {
+              state.openAssetReview?.(status);
+            }
+
+            if (state.pipelineWasRunning && !active && status.status !== "idle") {
+              // Consume the transition before an awaited view refresh can fail.
+              state.pipelineWasRunning = false;
+              if (status.status === "completed" && status.gitPublished) state.notice = "";
+              const keepAssetReviewOpen = state.finishAssetReviewWaiting?.(status) === true;
+              const keepEditDialogOpen = await notifySilentPipelineContext(status);
+              if (keepEditDialogOpen) state.reloadAfterEditClose = true;
+              else if (keepAssetReviewOpen) state.reloadAfterAssetReviewClose = true;
+              else await loadData({ reload: true });
+              if (state.silentPipelineContext) state.silentPipelineContext = null;
+            }
+            state.pipelineWasRunning = active;
+          } catch (error) {
+            if (state.pipelineStatusReadError || state.backupStatusReadError) renderPersistentPipelineStatus(status);
+            else {
+              elements.pipelineRunNotice.hidden = false;
+              elements.pipelineRunNotice.className = "pipeline-run-notice failed";
+              elements.pipelineRunNoticeTitle.textContent = "Pipeline-Ansicht nicht aktualisiert";
+              elements.pipelineRunNoticeDetail.textContent = error.message;
             }
           }
-
-          if (awaitingReview && !state.newSpeciesPipelineActive) state.openAssetReview?.(status);
-
-          if (state.pipelineWasRunning && !active && status.status !== "idle") {
-            if (status.status === "completed" && status.gitPublished) state.notice = "";
-            const keepAssetReviewOpen = state.finishAssetReviewWaiting?.(status) === true;
-            const keepEditDialogOpen = await notifySilentPipelineContext(status);
-            if (keepEditDialogOpen) state.reloadAfterEditClose = true;
-            else if (keepAssetReviewOpen) state.reloadAfterAssetReviewClose = true;
-            else await loadData({ reload: true });
-            if (state.silentPipelineContext) state.silentPipelineContext = null;
+          if (generation === statusReadGeneration && ["running", "awaiting-review"].includes(status.status)) {
+            scheduleStatusRead(1000);
           }
-          state.pipelineWasRunning = active;
-          clearTimeout(state.pipelinePollTimer);
-          state.pipelinePollTimer = active
-            ? setTimeout(refreshPipelineStatus, 1000)
-            : null;
-        } catch (error) {
-          elements.pipelineStatus.textContent = "Statusfehler";
-          elements.pipelineStatusDetail.textContent = error.message;
-          elements.pipelineStatusDetail.className = "pipeline-dialog-status failed";
-          elements.pipelineRunNotice.hidden = false;
-          elements.pipelineRunNotice.className = "pipeline-run-notice failed";
-          elements.pipelineRunNoticeTitle.textContent = "Pipeline-Status nicht verfügbar";
-          elements.pipelineRunNoticeDetail.textContent = error.message;
-        }
+        }).finally(() => {
+          statusReadPromise = null;
+          if (queuedStatusRead) {
+            queuedStatusRead = false;
+            void refreshPipelineStatus({ resetRetries: false });
+          }
+        });
+        return statusReadPromise;
       }
 
       for (const button of elements.pipelineButtons) {
         button.addEventListener("click", () => openPreview(button.dataset.pipelineMode));
       }
       elements.pipelineMenuButton.addEventListener("click", () => {
+        if (openReadErrorStatus()) return;
         const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
           || state.pipelineStatusSnapshot?.status === "awaiting-review";
         const backupActive = state.backupStatusSnapshot?.status === "running";
@@ -437,11 +541,12 @@
             && state.taxonomyMasterSnapshot.buildJob.status !== "ready")
           || Boolean(state.taxonomyMasterSnapshot?.lifecycle?.candidate || state.taxonomyMasterSnapshot?.error);
         if (pipelineActive) {
-          showStatusDialog(state.pipelineStatusSnapshot);
+          if (openSavedCreation()) return;
+          showStatusDialog(state.pipelineStatusSnapshot || {});
           return;
         }
         if (backupActive) {
-          backupController.showStatusDialog(state.backupStatusSnapshot);
+          backupController.showStatusDialog(state.backupStatusSnapshot || {});
           return;
         }
         if (taxonomyActive) {
@@ -456,8 +561,13 @@
         openChooser();
       });
       elements.pipelineRunNoticeOpen.addEventListener("click", () => {
-        if (pipelineStatusPresentation(state.pipelineStatusSnapshot || {})) showStatusDialog(state.pipelineStatusSnapshot);
-        else if (backupStatusPresentation(state.backupStatusSnapshot || {})) backupController.showStatusDialog(state.backupStatusSnapshot);
+        if (openReadErrorStatus()) return;
+        if (openSavedCreation()) return;
+        if (pipelineStatusPresentation(state.pipelineStatusSnapshot || {})) {
+          showStatusDialog(state.pipelineStatusSnapshot || {});
+        } else if (backupStatusPresentation(state.backupStatusSnapshot || {})) {
+          backupController.showStatusDialog(state.backupStatusSnapshot || {});
+        }
       });
       form.addEventListener("submit", async (event) => {
         event.preventDefault();

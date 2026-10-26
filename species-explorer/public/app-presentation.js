@@ -51,9 +51,13 @@
   }
 
   function formatBytes(bytes) {
-    if (!bytes) return "0 KB";
-    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    const value = Number(bytes);
+    if (!Number.isFinite(value) || value < 0) return "Unbekannt";
+    if (!value) return "0 KiB";
+    if (value < 1024 ** 2) return `${Math.max(1, Math.round(value / 1024)).toLocaleString("de-DE")} KiB`;
+    const unit = value < 1024 ** 3 ? "MiB" : "GiB";
+    const divisor = unit === "MiB" ? 1024 ** 2 : 1024 ** 3;
+    return `${(value / divisor).toLocaleString("de-DE", { maximumFractionDigits: 1 })} ${unit}`;
   }
 
   function formatIucnFetchDate(value) {

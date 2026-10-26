@@ -3,7 +3,7 @@
     return String(value ?? "").trim().toLocaleLowerCase("de");
   }
 
-  function filterSpecies(species, { query = "", status = "", flag = "" } = {}) {
+  function filterSpecies(species, { query = "", status = "", flag = "", websitePagesSnapshot = null } = {}) {
     const normalizedQuery = normalize(query);
 
     return species.filter((entry) => {
@@ -20,6 +20,7 @@
         || (flag === "sound-care" && entry.soundCareHint)
         || (flag === "manual-map" && entry.isManualMap)
         || (flag === "missing-portrait" && entry.missingPortrait)
+        || (flag === "website-missing" && root.SpeciesExplorerWebsitePages?.pagePresentation(entry.id, websitePagesSnapshot).status === "missing")
         || (flag === "data-issues" && entry.dataIssues.length > 0)
         || (flag === "asset-issues" && entry.assetIssues.length > 0)
         || (flag === "issues" && entry.inconsistencies.length > 0);

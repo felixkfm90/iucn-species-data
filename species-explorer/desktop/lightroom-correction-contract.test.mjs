@@ -8,8 +8,39 @@ test("Desktop-Verknüpfung verwendet den Installationsordner statt eines festen 
   assert.match(installer, /\$repoRoot = \(Resolve-Path \(Join-Path \$scriptDir "\.\.\\\.\."\)\)\.Path/);
   assert.match(installer, /\$shortcut\.Arguments = .*\$launcher/);
   assert.match(installer, /\$shortcut\.WorkingDirectory = \$repoRoot/);
-  assert.match(installer, /\$shortcut\.IconLocation = "\$electronExe,0"/);
+  assert.match(installer, /\$appIcon = Join-Path \$scriptDir "assets\\arten-explorer-transparent\.ico"/);
+  assert.match(installer, /Test-Path -LiteralPath \$appIcon -PathType Leaf/);
+  assert.match(installer, /\$shortcut\.IconLocation = "\$appIcon,0"/);
   assert.doesNotMatch(installer, /[A-Z]:\\(?:IUCN_Datenbank|Arten-Explorer)\b/i);
+});
+
+test("Desktopfenster und Verknüpfung verwenden das eigene vollständige Mehrgrößensymbol", async () => {
+  const [main, bytes] = await Promise.all([
+    readFile(new URL("./main.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./assets/arten-explorer-transparent.ico", import.meta.url)),
+  ]);
+  assert.match(main, /process\.platform === "win32" \? "\.\/assets\/arten-explorer-transparent\.ico" : "\.\/assets\/arten-explorer\.png"/);
+  assert.match(main, /new BrowserWindow\(\{[\s\S]*?icon: WINDOW_ICON/);
+  assert.equal(bytes.readUInt16LE(0), 0);
+  assert.equal(bytes.readUInt16LE(2), 1);
+  assert.equal(bytes.readUInt16LE(4), 7);
+  const sizes = [];
+  for (let index = 0; index < 7; index += 1) {
+    const entry = 6 + index * 16;
+    const width = bytes[entry] || 256;
+    const height = bytes[entry + 1] || 256;
+    const length = bytes.readUInt32LE(entry + 8);
+    const offset = bytes.readUInt32LE(entry + 12);
+    assert.equal(width, height);
+    assert.equal(bytes[entry + 3], 0);
+    assert.equal(bytes.readUInt16LE(entry + 6), 32);
+    assert.ok(offset >= 118 && offset + length <= bytes.length);
+    assert.deepEqual(bytes.subarray(offset, offset + 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    assert.equal(bytes.readUInt32BE(offset + 16), width);
+    assert.equal(bytes.readUInt32BE(offset + 20), height);
+    sizes.push(width);
+  }
+  assert.deepEqual(sizes, [16, 24, 32, 48, 64, 128, 256]);
 });
 
 test("Desktop-Start bleibt nach gemeinsamem Umbenennen des Programmordners relativ auflösbar", async () => {

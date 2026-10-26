@@ -222,6 +222,7 @@
       displayName,
       usesEnglishFallback,
       masterTaxonId: String(detail.masterTaxonId || selectedResult.masterTaxonId || ""),
+      taxonomyReference: String(detail.masterTaxonId || selectedResult.taxonId || detail.taxon_id || detail.taxonId || ""),
       preferredGermanName: detail.preferredGermanName || detail.germanNames?.[0]?.name || germanName,
       previousGermanName: detail.supplement?.namePreference?.previousGermanName || "",
       germanNameChoices: [...new Set([germanName, ...(detail.germanNames || []).map((entry) => entry.name)].filter(Boolean))],
@@ -275,6 +276,10 @@
     const message = section.querySelector(".taxonomy-reference-message");
     const kingdomSelect = section.querySelector(".taxonomy-reference-kingdom");
     const resultsContainer = section.querySelector(".taxonomy-reference-results");
+    const resultsNavigation = global.SpeciesExplorerSelection.createListboxNavigationController({
+      list: resultsContainer,
+      optionSelector: ".taxonomy-reference-result",
+    });
     const selection = section.querySelector(".taxonomy-reference-selection");
     const selectionContent = section.querySelector(".taxonomy-reference-selection-content");
     const kingdomSettings = section.querySelector(".taxonomy-reference-kingdom-settings");
@@ -320,6 +325,7 @@
     let explicitNameChoice = false;
     let selectedDetail = null;
     let activeSearchController = null;
+    let pendingResultsFocusId = "";
 
     const abortActiveSearch = () => {
       activeSearchController?.abort?.();
@@ -343,6 +349,8 @@
     };
 
     const clearResults = () => {
+      pendingResultsFocusId = resultsContainer.contains?.(global.document?.activeElement)
+        ? global.document.activeElement?.dataset?.taxonId || "" : "";
       searchResults = [];
       resultsContainer.replaceChildren();
       resultsContainer.hidden = true;
@@ -468,13 +476,19 @@
     };
 
     const renderResults = () => {
-      resultsContainer.innerHTML = searchResults.map((result) => {
+      const focusedId = resultsContainer.contains?.(global.document?.activeElement)
+        ? global.document.activeElement?.dataset?.taxonId || "" : pendingResultsFocusId;
+      const restoreFocus = focusedId && (resultsContainer.contains?.(global.document?.activeElement)
+        || !global.document?.activeElement || global.document.activeElement === global.document.body);
+      resultsContainer.innerHTML = searchResults.map((result, index) => {
         const view = taxonomyResultPresentation(result);
         return `
           <button
             class="taxonomy-reference-result"
             type="button"
             role="option"
+            aria-selected="false"
+            tabindex="${index === 0 ? 0 : -1}"
             data-taxon-id="${escape(view.taxonId)}"
           >
             <span class="taxonomy-reference-result-main">
@@ -492,6 +506,14 @@
         `;
       }).join("");
       resultsContainer.hidden = searchResults.length === 0;
+      resultsNavigation.refresh();
+      if (restoreFocus) {
+        const items = Array.from(resultsContainer.querySelectorAll(".taxonomy-reference-result"));
+        const next = items.find((item) => item.dataset.taxonId === focusedId) || items[0];
+        if (next) resultsNavigation.selectOption(next, { focus: true });
+        else activeInput?.focus?.();
+      }
+      pendingResultsFocusId = "";
     };
 
     const renderSelection = () => {
@@ -617,9 +639,16 @@
       );
     };
 
-    const selectResult = async (result) => {
+    const selectResult = async (result, { restoreFocus = false } = {}) => {
       explicitNameChoice = false;
       const version = ++requestVersion;
+      const returnFocusInput = activeInput;
+      const restoreInputFocus = () => {
+        const focused = global.document?.activeElement;
+        if (restoreFocus && (!focused || focused === global.document?.body || focused === returnFocusInput)) {
+          returnFocusInput?.focus?.();
+        }
+      };
       selectedResult = result;
       selectedDetail = null;
       clearResults();
@@ -630,16 +659,21 @@
           `/api/taxonomy/taxa/${encodeURIComponent(result.taxonId)}`,
         );
         if (version !== requestVersion) return;
+        if (detail.assignmentAllowed === false) {
+          throw new Error("Dieses Taxon bleibt nur als historischer Bestand erhalten und kann nicht für eine neue Art übernommen werden.");
+        }
         selectedDetail = detail;
         explicitNameChoice = result.hasVerifiedGermanName === true
           && result.germanName !== detail.germanNames?.[0]?.name
           && (detail.germanNames || []).some((entry) => entry.name === result.germanName);
         renderSelection();
         applySelectedNames();
+        restoreInputFocus();
       } catch (error) {
         if (version !== requestVersion) return;
         clearSelection();
         setMessage(error.message || "Taxondetails konnten nicht geladen werden.", "error");
+        restoreInputFocus();
       }
     };
 
@@ -797,7 +831,7 @@
       const result = searchResults.find(
         (entry) => String(entry.taxonId) === button.dataset.taxonId,
       );
-      if (result) void selectResult(result);
+      if (result) void selectResult(result, { restoreFocus: true });
     });
     kingdomSettingsToggle?.addEventListener("click", () => {
       const willOpen = kingdomSettingsPanel?.hidden !== false;

@@ -50,6 +50,7 @@
       form,
       documentRef: document,
       scope: ".manual-edit-section",
+      validateFields: () => validateEditableFields(),
     });
 
     const { editableValues, validateEditableFields } = createEditorFormModel({
@@ -101,7 +102,6 @@
     };
 
     const handleInput = () => {
-      clearFieldErrors();
       resetPreview();
       setMessage("Eingaben geändert. Bitte die Vorschau erneut erstellen.", "info");
     };

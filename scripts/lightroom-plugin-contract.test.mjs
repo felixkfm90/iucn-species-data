@@ -173,7 +173,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
   assert.match(info, /LrToolkitIdentifier\s*=\s*"de\.fnwildlifetravel\.taxonomy"/);
   assert.match(
     info,
-    /title = "Taxonomie zuweisen"[\s\S]*?file = "AssignTaxonomy\.lua"[\s\S]*?enabledWhen = "photosSelected"/,
+    /title = "Taxonomie zuweisen"[\s\S]*?file = "AssignTaxonomy\.lua"/,
   );
   assert.match(
     info,
@@ -183,6 +183,12 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     info.indexOf("LrLibraryMenuItems"),
     info.indexOf("LrMetadataProvider"),
   );
+  const assignmentMenu = libraryMenu.match(/\{[^{}]*title = "Taxonomie zuweisen"[^{}]*\}/)?.[0];
+  assert.ok(assignmentMenu, "Der direkte Zuweisungseintrag muss eindeutig vorhanden sein");
+  assert.match(assignmentMenu, /enabledWhen\s*=\s*"anythingSelected"/,
+    "Der SDK-Auswahlvertrag muss Fotos und Videos freigeben; ohne enabledWhen bleibt der Videoeinstieg ebenfalls gesperrt");
+  assert.equal([...assignmentMenu.matchAll(/enabledWhen\s*=/g)].length, 1,
+    "Der Zuweisungseintrag darf nur einen eindeutigen Auswahlvertrag enthalten");
   assert.equal(
     [...libraryMenu.matchAll(/file\s*=\s*"[^"]+"/g)].length,
     2,
@@ -231,7 +237,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.22");
+  assert.equal(version.slice(1).join("."), "0.4.24.39");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -384,7 +390,8 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
     /LrTasks\.pcall\(AssignmentWindow\.show, context\)/,
   );
   assert.match(window, /presentFloatingDialog/);
-  assert.match(window, /catalog:getTargetPhotos\(\)/);
+  assert.match(window, /PluginState\.selectedPhotos\(catalog\)/);
+  assert.match(window, /PhotoSelection\.selectedWithCollapsedFolderStacks\(catalog\)/);
   assert.match(window, /command\s*=\s*"search"/);
   assert.match(window, /command\s*=\s*"taxon"/);
   assert.match(window, /command\s*=\s*"status"/);
@@ -422,7 +429,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(window, /validate\s*=\s*function\(_, value\)/);
   assert.doesNotMatch(window, /is_default\s*=/);
   assert.match(window, /title\s*=\s*"Schließen"/);
-  assert.match(window, /activeDialogControls:close\(\)/);
+  assert.match(window, /ownDialogControls:close\(\)/);
   assert.doesNotMatch(window, /factory:spacer\(\{ fill_vertical = 1 \}\)/);
   assert.doesNotMatch(window, /fill_vertical\s*=/);
   assert.match(window, /height\s*=\s*150/);
@@ -454,7 +461,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /local function scheduleSelectionRefresh\(\)/);
   assert.match(window, /selectionRefreshSerial\s*=\s*selectionRefreshSerial \+ 1/);
   assert.match(window, /LrTasks\.startAsyncTask\(function\(\)[\s\S]*?LrTasks\.yield\(\)[\s\S]*?refreshSelection\(\)/);
-  assert.match(window, /selectionChangeObserver\s*=\s*function\(\)\s*scheduleSelectionRefresh\(\)/);
+  assert.match(window, /selectionChangeObserver\s*=\s*function\(\)\s*if shownGeneration == dialogGeneration and ownDialogControls then scheduleSelectionRefresh\(\) end/);
   assert.doesNotMatch(window, /selectionChangeObserver\s*=\s*function\(\)\s*pcall\(refreshSelection\)/);
   assert.match(window, /windowWillClose/);
   assert.match(window, /activeDialogControls:toFront\(\)/);
@@ -473,7 +480,7 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.match(window, /"1 Foto wurde " \.\. speciesName \.\. " zugewiesen\."/);
   assert.match(window, /tostring\(result\.photoCount\) \.\. " Fotos wurden " \.\. speciesName \.\. " zugewiesen\."/);
   assert.match(window, /"Von " \.\. photoCountText\(result\.photoCount\) \.\. " wurde die Taxonomie entfernt\."/);
-  assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*LrDialogs\.presentFloatingDialog/);
+  assert.match(window, /LrTasks\.pcall\(function\(\)\s*\n\s*while true do[\s\S]*?LrDialogs\.presentFloatingDialog/);
   assert.doesNotMatch(window, /12 \* 60 \* 60/);
   assert.match(writer, /catalog:withWriteAccessDo/);
   assert.match(writer, /local LrTasks = import "LrTasks"/);
@@ -570,7 +577,11 @@ test("Schwebende Zuweisung nutzt nur Suchhelfer und offizielle Katalog-API", asy
   assert.doesNotMatch(writer, /name == "Artnamen"|keywordParent|keywordChildren/);
   assert.doesNotMatch(writer, /malformedLegacyKeywordTargets|legacyMetadataValues|legacyRankPrefix/);
   assert.match(writer, /removeManagedKeywords/);
-  assert.match(writer, /local keyword = createKeyword\(catalog, name, nil\)\s*\n\s*photo:removeKeyword\(keyword\)/);
+  const assignmentRemoval = writer.slice(writer.indexOf("local function removeManagedKeywords"),
+    writer.indexOf("local function managedKeywordNamesFromMetadata"));
+  assert.match(assignmentRemoval, /photo:getRawMetadata\("keywords"\)/);
+  assert.match(assignmentRemoval, /photo:removeKeyword\(keyword\)/);
+  assert.doesNotMatch(assignmentRemoval, /local keyword = createKeyword/);
   assert.match(writer, /local function removeCurrentManagedKeywords\(catalog, photo, protectedNames\)/);
   assert.match(writer, /local function managedKeywordNamesFromMetadata\(photo\)/);
   assert.match(writer, /getPropertyForPlugin\(_PLUGIN, "taxonomyPath"\)/);
@@ -611,7 +622,7 @@ test("Alle dauerhaften Plug-in-Fenster besitzen unten eine Schließen-Aktion", a
   const statistics = await source("ShowStatistics.lua");
   const maintenance = await source("CatalogMaintenance.lua");
   const pluginMenu = await source("PluginMenu.lua");
-  assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?activeDialogControls:close\(\)/);
+  assert.match(assignment, /title\s*=\s*"Schließen"[\s\S]*?ownDialogControls:close\(\)/);
   assert.match(statistics, /cancelVerb\s*=\s*"Schließen"/);
   assert.match(maintenance, /title\s*=\s*"Schließen"[\s\S]*?dialogControls:close\(\)/);
   assert.match(pluginMenu, /title\s*=\s*"Schließen"[\s\S]*?choose\(\{\}\)/);
@@ -623,7 +634,7 @@ test("Taxonomie kann als eigene Zusatzmodul-Aktion kontrolliert entfernt werden"
   const removal = await source("RemoveTaxonomy.lua");
   assert.match(pluginMenu, /title = "Taxonomie entfernen"/);
   assert.match(pluginMenu, /script = "RemoveTaxonomy\.lua"/);
-  assert.match(removal, /catalog:getTargetPhotos\(\)/);
+  assert.match(removal, /PluginState\.selectedPhotos\(catalog\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.remove/);
   assert.match(removal, /verwalteten Taxonomie-Stichwörter/);
@@ -651,11 +662,12 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(addAction, /LocationTimeMenu"\)\.run\("add"\)/);
   assert.match(removeAction, /LocationTimeMenu"\)\.run\("remove"\)/);
   assert.match(updateAction, /LocationTimeMenu"\)\.run\("update"\)/);
-  assert.match(menu, /catalog:getTargetPhotos\(\)/);
+  assert.match(menu, /PluginState\.selectedPhotos\(catalog\)/);
+  assert.match(menu, /mode == "remove" and PluginState\.selectedPhotos\(catalog\)\s+or PhotoSelection\.selectedWithCollapsedFolderStacks\(catalog\)/);
   assert.match(menu, /LrDialogs\.confirm/);
   assert.match(menu, /LrTasks\.pcall\(/);
   assert.match(menu, /KeywordWriter\.taxonomyKeywordNameSet/);
-  assert.match(menu, /\(FN Ort\)- und \(FN Zeit\)-Stichwörter/);
+  assert.match(menu, /Fehlende FN-Orts- und Zeitfelder sowie Stichwörter/);
   for (const field of ["location", "city", "stateProvince", "country", "isoCountryCode"]) {
     assert.ok(locationTime.includes(`readFormatted(photo, "${field}")`));
   }
@@ -668,6 +680,8 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(locationTime, /if type\(first\) == "table" then/);
   assert.match(locationTime, /first\.year or first\[1\]/);
   assert.match(locationTime, /photo:getFormattedMetadata\("dateTimeOriginal"\)/);
+  assert.match(locationTime, /fallbackParts\("dateTime"\)/);
+  assert.match(locationTime, /getRawMetadata\("isVideo"\) == true[\s\S]*fallbackParts\("dateTimeDigitized"\)/);
   assert.match(locationTime, /captureDiagnostic = plan\.captureDiagnostic/);
   assert.match(menu, /Lesehinweis:/);
   assert.match(locationTime, /datePartsFromText\(formattedValue\)/);
@@ -717,6 +731,12 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(locationTime, /missingGpsAndLocationPhotoCount = 0/);
   assert.match(locationTime, /missingTimePhotoCount = 0/);
   assert.match(menu, /Lightroom lieferte dafür aber keine exportierbaren Ortsvorschläge\./);
+  assert.match(menu, /result\.unresolvedSuggestedLocationPhotoCount = preparation/);
+  assert.match(menu, /result\.failedSuggestedLocationPhotoCount = preparation/);
+  assert.match(menu, /if unresolvedSuggestedLocationPhotoCount > 0 then/);
+  assert.match(menu, /if failedSuggestedLocationPhotoCount > 0 then/);
+  assert.match(menu, /die Ortsvorschläge nicht exportiert oder gelesen werden\./);
+  assert.doesNotMatch(menu, /gpsWithoutStoredLocationPhotoCount/);
   assert.match(menu, /Adressvorschläge beim Export übernommen werden/);
   assert.match(locationTime, /local LocationSuggestionReader = require "LocationSuggestionReader"/);
   assert.match(locationTime, /LocationSuggestionReader\.resolve\(suggestionPhotos\)/);
@@ -774,7 +794,7 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   );
   assert.ok(
     applyPrepared.indexOf("local keywordsByName = prepareKeywordObjects(catalog, photos, plans, mode)")
-      < applyPrepared.indexOf("for index, photo in ipairs(photos or {}) do"),
+      < applyPrepared.indexOf("local plan = plans[index] or"),
     "Orts-/Zeitstichwörter müssen vor der fotoweisen Zuweisung einmalig erzeugt werden",
   );
   assert.match(locationTime, /function LocationTimeWriter\.execute\(/);
@@ -800,7 +820,7 @@ test("Orts- und Zeitstichwörter verwenden ausschließlich dokumentierte Lightro
   assert.match(taxonomy, /Statistics\.emptySnapshot\(beforeStatistics\[index\]\)/);
   const existingAssignment = locationTime.slice(
     locationTime.indexOf("local function existingAssignment"),
-    locationTime.indexOf("local function removeStoredKeywords"),
+    locationTime.indexOf("local function effectivePlan"),
   );
   assert.match(existingAssignment, /for _, field in ipairs\(VALUE_FIELDS\) do/);
   assert.doesNotMatch(existingAssignment, /locationTimeAssignedAt|storedKeywordNames/);
@@ -831,7 +851,7 @@ test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und I
 
   assert.match(pluginMenu, /Alle FN-Daten der Auswahl entfernen"/);
   assert.match(pluginMenu, /FN-Daten aktualisieren"/);
-  assert.match(removal, /catalog:getTargetPhotos\(\)/);
+  assert.match(removal, /PluginState\.selectedPhotos\(catalog\)/);
   assert.match(removal, /LrDialogs\.confirm/);
   assert.match(removal, /KeywordWriter\.removeAll/);
   for (const suffix of [
@@ -877,6 +897,12 @@ test("Gesamtbereinigung und Katalogpflege bleiben kontrolliert, blockweise und I
   assert.match(locationTime, /TIME_PARTIAL_KEYWORD_SUFFIX/);
   assert.doesNotMatch(locationTime, /managedKeywordName\([^\n]+PARTIAL_KEYWORD_SUFFIX/);
   assert.match(locationTime, /options\.beforeSuggestions\(#suggestionPhotos\)/);
+  assert.match(locationTime, /suggestions\.failedByPhoto\[photo\] ~= nil/);
+  assert.match(locationTime, /if not suggestionFailed\s+and plans\[index\]\.hasGpsData/);
+  assert.match(maintenance, /failedSuggestedLocationPhotoCount = preparation/);
+  assert.match(maintenance, /FN-Daten konnten nicht geschrieben werden:/);
+  assert.match(maintenance, /Ortsvorschläge konnten nicht exportiert oder gelesen werden:/);
+  assert.doesNotMatch(maintenance, /"Fehlgeschlagen:/);
 });
 
 test("Abweichende vorhandene Taxonomie wird nicht still überschrieben", async () => {
@@ -965,7 +991,7 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(state, /catalog:setPropertyForPlugin\(_PLUGIN, field, value\)/);
   assert.match(state, /withPrivateWriteAccessDo/);
   assert.match(state, /applyStatisticsPhotoChanges/);
-  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*6/);
+  assert.match(index, /StatisticsIndex\.SCHEMA_VERSION\s*=\s*7/);
   assert.match(index, /function StatisticsIndex\.applyChanges/);
   assert.match(index, /referenceImageUuids/);
   assert.match(index, /photoUuid/);
@@ -1013,18 +1039,18 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(statistics, /CHECKPOINT_CHUNK_COUNT\s*=\s*10/);
   assert.match(statistics, /for chunkStart = startIndex, totalPhotos, READ_CHUNK_SIZE do/);
   assert.match(statistics, /catalog:batchGetPropertyForPlugin\(chunk, _PLUGIN, FIELD_IDS\)/);
-  assert.match(statistics, /catalog:batchGetRawMetadata\([\s\S]*?chunk,[\s\S]*?\{ "uuid", "dateTimeOriginal", "path" \}[\s\S]*?\)/);
+  assert.match(statistics, /catalog:batchGetRawMetadata\([\s\S]*?chunk,[\s\S]*?\{ "uuid", "dateTimeOriginal", "path", "isVideo" \}[\s\S]*?\)/);
   assert.match(statistics, /PluginState\.saveStatisticsBuild/);
   assert.match(statistics, /PluginState\.saveStatisticsIndex/);
   assert.match(statistics, /function Statistics\.assignmentSnapshot/);
   assert.match(statistics, /function Statistics\.emptySnapshot/);
   assert.match(statistics, /function Statistics\.locationTimeSnapshot/);
   assert.match(statistics, /function Statistics\.referenceSnapshot/);
-  assert.match(statistics, /end\)\s*\n\s*processedPhotos = chunkEnd[\s\S]*?options\.progress\(processedPhotos, totalPhotos\)/);
+  assert.match(statistics, /end\)\s*\n\s*if not completed then[\s\S]*?end\s*\n\s*processedPhotos = chunkEnd[\s\S]*?options\.progress\(processedPhotos, totalPhotos\)/);
   assert.doesNotMatch(statistics, /catalog:withReadAccessDo\(function\(\)[\s\S]*?LrTasks\.yield\(\)/);
   assert.match(dialog, /presentFloatingDialog\(_PLUGIN/);
   assert.match(dialog, /blockTask\s*=\s*true/);
-  assert.match(dialog, /Pause wird nach dem aktuellen Fotoblock gespeichert/);
+  assert.match(dialog, /Pause wird nach dem aktuellen Dateiblock gespeichert/);
   assert.match(dialog, /Aufbau pausiert/);
   assert.match(dialog, /startWorker\(\)/);
   assert.match(dialog, /Statistik neu aufbauen/);
@@ -1048,8 +1074,9 @@ test("Katalogstatistik ist persistent, inkrementell, pausierbar und exportierbar
   assert.match(dialog, /Statistics\.selectedPhotos\(catalog\)/);
   assert.match(dialog, /Statistics\.forPhotos\(catalog, photos/);
   assert.match(statistics, /function Statistics\.selectedPhotos/);
-  assert.match(statistics, /if not catalog:getTargetPhoto\(\) then\s+return \{\}/);
-  assert.match(statistics, /catalog:getTargetPhotos\(\)/);
+  assert.match(state, /if not catalog:getTargetPhoto\(\) then return \{\}/);
+  assert.match(state, /catalog:getTargetPhotos\(\)/);
+  assert.match(statistics, /return PluginState\.selectedPhotos\(catalog\)/);
   assert.match(statistics, /function Statistics\.forPhotos/);
   const selectionRead = statistics.slice(statistics.indexOf("function Statistics.forPhotos"), statistics.indexOf("function Statistics.beginBuild"));
   assert.doesNotMatch(selectionRead, /getAllPhotos|saveStatisticsIndex|saveStatisticsBuild/);
@@ -1214,7 +1241,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.22/);
+  assert.match(provider, /Version: 0\.4\.24\.39/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);
@@ -1250,7 +1277,7 @@ test("Namenswahl bestätigt Konflikte und erlaubt eine ausdrückliche Übernahme
   assert.ok(window.indexOf("KeywordWriter.assign,") < window.indexOf("NamePreference.publish(preference)"));
   assert.match(window, /preference and result\.photoCount > 0/);
   assert.match(window, /title = "Speichern wiederholen"/);
-  const directSave = window.match(/local function saveNamePreference\(\)([\s\S]*?)\n  local view =/)[1];
+  const directSave = window.match(/local function saveNamePreference\(\)([\s\S]*?)\n  local function createView\(shownGeneration\)/)[1];
   assert.match(directSave, /LrTasks\.pcall\(NamePreference\.prepare, taxon, germanName\)/);
   assert.match(directSave, /if ok and payload then[\s\S]*NamePreference\.publish\(payload\)/);
   assert.match(directSave, /if not published then pendingNamePreference = payload end/);
@@ -1279,6 +1306,7 @@ async function assignmentViewFixture(body) {
     local preferred = "Rebhuhn"
     local recentTaxa, requests, assignmentCalls = {}, {}, 0
     local allowAssignment, failTaxon, packageAvailable = false, false, true
+    local duringTaxonRequest, duringPublish
     local photo = {
       getPropertyForPlugin = function() return "" end,
       getFormattedMetadata = function() return "test.jpg" end,
@@ -1319,10 +1347,14 @@ async function assignmentViewFixture(body) {
       request = function(input)
         table.insert(requests, input)
         if input.command == "status" then return { available = packageAvailable } end
-        if input.command == "search" then return { { masterTaxonId = "mtx_test", germanName = preferred } } end
+        if input.command == "search" then return {
+          { masterTaxonId = "mtx_test", germanName = preferred, englishName = "Grey Partridge", acceptedScientificName = "Perdix perdix" },
+          { masterTaxonId = "mtx_other", germanName = "Andere Art", englishName = "Other", acceptedScientificName = "Testus other" },
+        } end
         assert(input.command == "taxon")
+        if duringTaxonRequest then local callback = duringTaxonRequest; duringTaxonRequest = nil; callback() end
         if failTaxon then error("test taxon unavailable") end
-        return { masterTaxonId = input.masterTaxonId, rank = "species", germanName = preferred,
+        return { masterTaxonId = input.masterTaxonId, rank = "species", germanName = preferred, englishName = "Grey Partridge",
           searchPackage = { packageId = "package", masterVersion = "master", correctionRevision = "revision" },
           acceptedScientificName = "Perdix perdix", hierarchy = {}, names = {}, }
       end,
@@ -1336,12 +1368,18 @@ async function assignmentViewFixture(body) {
         if failPublish then error("test publish failed") end
         published = published + 1
         preferred = input.useProviderStandard and "Feldhuhn" or input.germanName
+        if duringPublish then local callback = duringPublish; duringPublish = nil; callback() end
         return { saved = true }
       end,
     }
     local modules = {
       TaxonomyHelper = Helper,
       PluginState = {
+        selectedPhotos = (function()
+          local PluginState = {}
+          ${(await source("PluginState.lua")).match(/function PluginState\.selectedPhotos\(catalog\)[\s\S]*?\nend/)[0]}
+          return PluginState.selectedPhotos
+        end)(),
         recentTaxa = function() return recentTaxa end,
         addRecentTaxon = function(taxon) recentTaxa = { taxon } end,
       },
@@ -1357,8 +1395,10 @@ async function assignmentViewFixture(body) {
       end },
     }
     function require(name) assert(modules[name], name); return modules[name] end
+    modules.PhotoSelection = (function() ${await source("PhotoSelection.lua")} end)()
     modules.TaxonomyRanks = (function() ${await source("TaxonomyRanks.lua")} end)()
     modules.NamePreference = (function() ${await source("NamePreference.lua")} end)()
+    modules.TaxonomyDetailsView = (function() ${await source("TaxonomyDetailsView.lua")} end)()
     _PLUGIN = {}
     local Window = (function() ${await source("AssignmentWindow.lua")} end)()
     local function find(view, title)
@@ -1395,8 +1435,9 @@ test("Zuweisungsansicht bündelt Namensaktionen, gemeinsame Vorschaukanten und b
       end end
       assert(preview[1].kind == "simple_list" and preview[1].width == preview.width and preview[1].height == 150)
       assert(preview[1].fill_horizontal == 1 and preview[2].fill_horizontal == 1)
-      assert(preview[2][1].kind == "spacer" and preview[2][1].fill_horizontal == 1)
-      assert(preview[2][2].title == "Artbezeichnung korrigieren")
+      assert(preview[2][1].title == "Taxonomiedetails lesen" and preview[2][1].enabled.key == "canReadDetails")
+      assert(preview[2][2].kind == "spacer" and preview[2][2].fill_horizontal == 1)
+      assert(preview[2][3].title == "Artbezeichnung korrigieren")
       local row = find(view, "4. Taxonomie verwalten")[1][1]
       assert(row.kind == "row" and #row == 3)
       assert(row[2].title == "Taxonomie entfernen" and row[3].title == "Orts- und Zeitdaten entfernen")
@@ -1411,6 +1452,30 @@ test("Zuweisungsansicht bündelt Namensaktionen, gemeinsame Vorschaukanten und b
     assert(dialogsClosed == 1 and published == 0)
     open(function(view) find(view, "Schließen").action() end)
     assert(dialogsClosed == 2 and published == 0)
+  `);
+});
+
+test("Zuweisungsfenster ignoriert unmarkierten Filmstreifen für Schreiben und erlaubt Namenswahl ohne Foto", async () => {
+  await assignmentViewFixture(`
+    catalog.getTargetPhoto = function() return nil end
+    catalog.getTargetPhotos = function() error("Unmarkierter Filmstreifen darf nicht als Auswahl gelesen werden") end
+    open(function(view)
+      load(view)
+      assert(props.selectionStatus == "Keine Fotos ausgewählt" and props.selectionFiles == "Keine Datei ausgewählt")
+      assert(not props.canAssign and not props.canRemove and props.canCorrect)
+      allowAssignment = true
+      find(view, "Ausgewählte Art zuweisen").action()
+      find(view, "Taxonomie entfernen").action()
+      find(view, "Orts- und Zeitdaten entfernen").action()
+      assert(assignmentCalls == 0 and removalCalls == 0 and confirmations == 0)
+      props.selectedGermanName = "Feldhuhn"
+      find(view, "Als bevorzugt speichern").action()
+      assert(published == 1 and assignmentCalls == 0 and removalCalls == 0)
+      catalog.getTargetPhoto = function() return photo end
+      catalog.getTargetPhotos = function() return { photo, photo } end
+      find(view, "Ausgewählte Art zuweisen").action()
+      assert(assignmentCalls == 1 and props.selectionFiles == "Datei: test.jpg")
+    end)
   `);
 });
 
@@ -1621,3 +1686,55 @@ test("Verwaltung bündelt sechs Hauptaktionen, bündige Kurztexte und alle zwöl
     assert.equal(result, lua.LUA_OK, result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1));
   } finally { lua.lua_close(state); }
 });
+
+const assignmentResultRefreshCases = [
+  {
+    "name": "Suchtreffer: reine Namenswahl, Rückwahl und Anbieterstandard erneuern nur den vorhandenen Titel",
+    "body": "\n    open(function(view)\n      load(view)\n      local query, id = props.query, props.masterTaxonId\n      local other, searches = props.resultItems[2], 0\n      for _, request in ipairs(requests) do if request.command == \"search\" then searches = searches + 1 end end\n      local function check(name)\n        assert(#props.resultItems == 2 and props.resultItems[1].value == id)\n        assert(props.resultItems[1].title == name .. \" · Grey Partridge · Perdix perdix\", props.resultItems[1].title)\n        assert(props.resultItems[2] == other and props.resultItems[2].title == \"Andere Art · Other · Testus other\")\n        assert(props.query == query and props.masterTaxonId == id)\n        local after = 0\n        for _, request in ipairs(requests) do if request.command == \"search\" then after = after + 1 end end\n        assert(after == searches and assignmentCalls == 0 and removalCalls == 0)\n      end\n      check(\"Rebhuhn\")\n      local originalItems = props.resultItems\n      find(view, \"Vorherigen Namen auswählen\").action()\n      assert(props.resultItems == originalItems and preferred == \"Rebhuhn\")\n      confirmResult = \"cancel\"; find(view, \"Als bevorzugt speichern\").action()\n      assert(props.resultItems == originalItems and published == 0)\n      confirmResult = \"ok\"; find(view, \"Als bevorzugt speichern\").action()\n      check(\"Feldhuhn\")\n      props.selectedGermanName = \"Rebhuhn\"; find(view, \"Als bevorzugt speichern\").action()\n      check(\"Rebhuhn\")\n      originalItems = props.resultItems\n      confirmResult = \"cancel\"; find(view, \"Anbieterstandard verwenden\").action()\n      assert(props.resultItems == originalItems)\n      confirmResult = \"ok\"; find(view, \"Anbieterstandard verwenden\").action()\n      check(\"Feldhuhn\")\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: fehlgeschlagene Publikation und Wiederholung erhalten die Fotoanzahl",
+    "body": "\n    open(function(view)\n      load(view)\n      local items, searches = props.resultItems, 0\n      for _, request in ipairs(requests) do if request.command == \"search\" then searches = searches + 1 end end\n      find(view, \"Vorherigen Namen auswählen\").action()\n      failPublish = true; find(view, \"Als bevorzugt speichern\").action()\n      assert(props.resultItems == items and published == 0 and assignmentCalls == 0)\n      find(view, \"Speichern wiederholen\").action()\n      assert(props.resultItems == items and published == 0)\n      failPublish = false; find(view, \"Speichern wiederholen\").action()\n      assert(props.resultItems[1].title == \"Feldhuhn · Grey Partridge · Perdix perdix\")\n      items = props.resultItems\n      find(view, \"Speichern wiederholen\").action()\n      assert(published == 1 and props.resultItems == items and assignmentCalls == 0)\n      local after = 0\n      for _, request in ipairs(requests) do if request.command == \"search\" then after = after + 1 end end\n      assert(after == searches)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: fehlgeschlagenes frisches Lesen ersetzt keinen Titel",
+    "body": "\n    open(function(view)\n      load(view)\n      local items = props.resultItems\n      find(view, \"Vorherigen Namen auswählen\").action()\n      failTaxon = true; find(view, \"Als bevorzugt speichern\").action()\n      assert(preferred == \"Feldhuhn\" and published == 1)\n      assert(props.resultItems == items and props.resultItems[1].title == \"Rebhuhn · Grey Partridge · Perdix perdix\")\n      assert(props.searchStatus:find(\"test taxon unavailable\", 1, true))\n      assert(assignmentCalls == 0)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: zwischenzeitlich geänderte Auswahl verwirft einen alten Detailabruf",
+    "body": "\n    open(function(view)\n      load(view)\n      local items, preview = props.resultItems, props.preview\n      preferred = \"Feldhuhn\"\n      duringTaxonRequest = function() props.masterTaxonId = \"mtx_other\" end\n      find(view, \"Auswahl prüfen\").action()\n      assert(props.masterTaxonId == \"mtx_other\" and props.resultItems == items)\n      assert(props.preview == preview, \"old detail answer must not replace the new selection\")\n      assert(assignmentCalls == 0 and published == 0)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: auch leere Ausgangsquery schützt eine neue Suche vor alter Detailantwort",
+    "body": "\n    recentTaxa = { { masterTaxonId = \"mtx_test\", germanName = \"Rebhuhn\" } }\n    open(function(view)\n      props.recentTaxonId = \"mtx_test\"\n      duringTaxonRequest = function() props.query = \"x\" end\n      find(view, \"Öffnen\").action()\n      assert(props.query == \"x\" and props.masterTaxonId == \"\")\n      assert(not props.canAssign and props.preview == \"Noch keine Art ausgewählt.\")\n      assert(props.resultItems[1].value == \"\")\n      assert(assignmentCalls == 0 and published == 0)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: Zuweisung mit erfolgreicher Präferenz liest einmal frisch ohne zweite Zuweisung oder Suche",
+    "body": "\n    open(function(view)\n      load(view); allowAssignment = true\n      local id, query, other, searches, reads = props.masterTaxonId, props.query, props.resultItems[2], 0, 0\n      for _, request in ipairs(requests) do\n        if request.command == \"search\" then searches = searches + 1 end\n        if request.command == \"taxon\" then reads = reads + 1 end\n      end\n      find(view, \"Vorherigen Namen auswählen\").action()\n      find(view, \"Ausgewählte Art zuweisen\").action()\n      assert(assignmentCalls == 1 and published == 1 and preferred == \"Feldhuhn\")\n      assert(props.resultItems[1].title == \"Feldhuhn · Grey Partridge · Perdix perdix\")\n      assert(props.resultItems[2] == other and props.masterTaxonId == id and props.query == query)\n      assert(props.selectedGermanName == \"Feldhuhn\" and not props.canSavePreference)\n      assert(props.searchStatus:find(\"1 Foto wurde Feldhuhn zugewiesen.\", 1, true))\n      local afterSearch, afterRead = 0, 0\n      for _, request in ipairs(requests) do\n        if request.command == \"search\" then afterSearch = afterSearch + 1 end\n        if request.command == \"taxon\" then afterRead = afterRead + 1 end\n      end\n      assert(afterSearch == searches and afterRead == reads + 1)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: begleitende Präferenz bleibt nach Teilerfolg ohne erneute Fotozuweisung wiederholbar",
+    "body": "\n    open(function(view)\n      load(view); allowAssignment = true\n      find(view, \"Vorherigen Namen auswählen\").action()\n      local items = props.resultItems\n      failPublish = true; find(view, \"Ausgewählte Art zuweisen\").action()\n      assert(assignmentCalls == 1 and published == 0 and props.canRetryPreference and props.resultItems == items)\n      failPublish = false; find(view, \"Speichern wiederholen\").action()\n      assert(published == 1 and assignmentCalls == 1 and not props.canRetryPreference)\n      assert(props.resultItems[1].title == \"Feldhuhn · Grey Partridge · Perdix perdix\")\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: fehlgeschlagener Detailrefresh nach Zuweisung erhält Erfolg und zeigt Lesefehler",
+    "body": "\n    open(function(view)\n      load(view); allowAssignment = true\n      find(view, \"Vorherigen Namen auswählen\").action()\n      local items = props.resultItems\n      failTaxon = true; find(view, \"Ausgewählte Art zuweisen\").action()\n      assert(assignmentCalls == 1 and published == 1 and props.resultItems == items)\n      assert(props.searchStatus:find(\"1 Foto wurde Feldhuhn zugewiesen.\", 1, true))\n      assert(props.searchStatus:find(\"test taxon unavailable\", 1, true))\n      failTaxon = false; find(view, \"Auswahl prüfen\").action()\n      assert(assignmentCalls == 1 and published == 1)\n      assert(props.resultItems[1].title == \"Feldhuhn · Grey Partridge · Perdix perdix\")\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: geänderte Auswahl während begleitender Publikation löst keinen fremden Refresh aus",
+    "body": "\n    open(function(view)\n      load(view); allowAssignment = true\n      find(view, \"Vorherigen Namen auswählen\").action()\n      local items, reads = props.resultItems, 0\n      for _, request in ipairs(requests) do if request.command == \"taxon\" then reads = reads + 1 end end\n      duringPublish = function() props.masterTaxonId = \"mtx_other\" end\n      find(view, \"Ausgewählte Art zuweisen\").action()\n      assert(assignmentCalls == 1 and published == 1)\n      assert(props.masterTaxonId == \"mtx_other\" and props.resultItems == items)\n      local after = 0\n      for _, request in ipairs(requests) do if request.command == \"taxon\" then after = after + 1 end end\n      assert(after == reads)\n    end)\n  "
+  },
+  {
+    "name": "Suchtreffer: geänderte Auswahl im frischen Leser nach Zuweisung wird nicht überschrieben",
+    "body": "\n    open(function(view)\n      load(view); allowAssignment = true\n      find(view, \"Vorherigen Namen auswählen\").action()\n      local items = props.resultItems\n      duringTaxonRequest = function() props.masterTaxonId = \"mtx_other\" end\n      find(view, \"Ausgewählte Art zuweisen\").action()\n      assert(assignmentCalls == 1 and published == 1)\n      assert(props.masterTaxonId == \"mtx_other\" and props.resultItems == items)\n      assert(props.searchStatus:find(\"1 Foto wurde Feldhuhn zugewiesen.\", 1, true))\n    end)\n  "
+  }
+];
+for (const scenario of assignmentResultRefreshCases) {
+  test(scenario.name, async () => { await assignmentViewFixture(scenario.body); });
+}
+
+test("Suchtreffer: verspätete erfolgreiche Detailantwort überschreibt keine neue Sucheingabe", async () => { await assignmentViewFixture("\n      open(function(view)\n        load(view)\n        local expected, items, preview\n        duringTaxonRequest = function()\n          props.query = \"x\"\n          props.searchStatus = \"Neue Auswahlmeldung bleibt erhalten\"\n          expected, items, preview = props.searchStatus, props.resultItems, props.preview\n          failTaxon = false\n        end\n        find(view, \"Auswahl prüfen\").action()\n        assert(props.searchStatus == expected, props.searchStatus)\n        assert(props.resultItems == items and props.preview == preview)\n        assert(assignmentCalls == 0 and published == 0)\n      end)\n    "); });
+test("Suchtreffer: verspätete fehlerhafte Detailantwort überschreibt keine neue Sucheingabe", async () => { await assignmentViewFixture("\n      open(function(view)\n        load(view)\n        local expected, items, preview\n        duringTaxonRequest = function()\n          props.query = \"x\"\n          props.searchStatus = \"Neue Auswahlmeldung bleibt erhalten\"\n          expected, items, preview = props.searchStatus, props.resultItems, props.preview\n          failTaxon = true\n        end\n        find(view, \"Auswahl prüfen\").action()\n        assert(props.searchStatus == expected, props.searchStatus)\n        assert(props.resultItems == items and props.preview == preview)\n        assert(assignmentCalls == 0 and published == 0)\n      end)\n    "); });
+test("Suchtreffer: verspätete erfolgreiche Detailantwort überschreibt keine neue Auswahlmeldung", async () => { await assignmentViewFixture("\n      open(function(view)\n        load(view)\n        local expected, items, preview\n        duringTaxonRequest = function()\n          props.masterTaxonId = \"mtx_other\"\n          props.searchStatus = \"Neue Auswahlmeldung bleibt erhalten\"\n          expected, items, preview = props.searchStatus, props.resultItems, props.preview\n          failTaxon = false\n        end\n        find(view, \"Auswahl prüfen\").action()\n        assert(props.searchStatus == expected, props.searchStatus)\n        assert(props.resultItems == items and props.preview == preview)\n        assert(assignmentCalls == 0 and published == 0)\n      end)\n    "); });
+test("Suchtreffer: verspätete fehlerhafte Detailantwort überschreibt keine neue Auswahlmeldung", async () => { await assignmentViewFixture("\n      open(function(view)\n        load(view)\n        local expected, items, preview\n        duringTaxonRequest = function()\n          props.masterTaxonId = \"mtx_other\"\n          props.searchStatus = \"Neue Auswahlmeldung bleibt erhalten\"\n          expected, items, preview = props.searchStatus, props.resultItems, props.preview\n          failTaxon = true\n        end\n        find(view, \"Auswahl prüfen\").action()\n        assert(props.searchStatus == expected, props.searchStatus)\n        assert(props.resultItems == items and props.preview == preview)\n        assert(assignmentCalls == 0 and published == 0)\n      end)\n    "); });
+test("Suchtreffer: zuletzt verwendete Art außerhalb der Trefferliste ergänzt oder vertauscht keinen Treffer", async () => { await assignmentViewFixture("\n    recentTaxa = { { masterTaxonId = \"mtx_recent\", germanName = \"Rebhuhn\" } }\n    open(function(view)\n      load(view)\n      props.query = \"\"\n      local items, searches = props.resultItems, 0\n      for _, request in ipairs(requests) do if request.command == \"search\" then searches = searches + 1 end end\n      assert(#items == 1 and items[1].value == \"\")\n      props.recentTaxonId = \"mtx_recent\"\n      find(view, \"Öffnen\").action()\n      assert(props.resultItems == items and props.masterTaxonId == \"\" and props.query == \"\")\n      assert(props.canAssign and props.preview:find(\"Rebhuhn\", 1, true))\n      find(view, \"Vorherigen Namen auswählen\").action()\n      find(view, \"Als bevorzugt speichern\").action()\n      assert(published == 1 and props.resultItems == items and #props.resultItems == 1)\n      assert(props.resultItems[1].value == \"\" and props.masterTaxonId == \"\")\n      assert(props.preview:find(\"Feldhuhn\", 1, true))\n      local after = 0\n      for _, request in ipairs(requests) do if request.command == \"search\" then after = after + 1 end end\n      assert(after == searches and assignmentCalls == 0 and removalCalls == 0)\n    end)\n  "); });

@@ -5,7 +5,9 @@ import fengari from "fengari";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 const root = new URL("../lightroom-plugin/FNWildlifeTaxonomy.lrplugin/", import.meta.url);
-const modules = (await Promise.all(["TaxonomyRanks", "LocationTimeWriter", "KeywordWriter", "LocationTimeMenu"].map(async (name) =>
+const stateSource = await readFile(new URL("PluginState.lua", root), "utf8");
+const selectionFunction = stateSource.match(/function PluginState\.selectedPhotos\(catalog\)[\s\S]*?\nend/)[0];
+const modules = (await Promise.all(["TaxonomyRanks", "MetadataDefinition", "KeywordIdFinalizer", "LocationTimeWriter", "KeywordWriter", "LocationTimeMenu", "PhotoSelection"].map(async (name) =>
   `package.preload["${name}"] = function()\n${await readFile(new URL(`${name}.lua`, root), "utf8")}\nend`))).join("\n");
 
 function execute(script) {
@@ -44,10 +46,12 @@ local function copy(values)
   local result = {}; for key, value in pairs(values or {}) do result[key] = value end; return result
 end
 package.preload.PluginState = function() return {
+  selectedPhotos = (function() local PluginState = {}; ${selectionFunction}; return PluginState.selectedPhotos end)(),
   applyStatisticsPhotoChanges = function() assert(inWrite); deltas = deltas + 1 end,
 } end
 package.preload.Statistics = function() return {
   photoSnapshot = function(photo) return copy(photo.values) end,
+  emptySnapshot = function() return {} end,
   locationTimeSnapshot = function(before, after) return { before = before, after = after } end,
 } end
 package.preload.LocationSuggestionReader = function() return {
@@ -163,6 +167,37 @@ test("Multiple selection removes FN Ort/Zeit star variants and duplicate objects
   `);
 });
 
+test("Taxonomierücknahme entfernt alle gleichnamigen FN-Objekte und Sternvarianten, erhält manuelle Wörter und Ort/Zeit", () => {
+  execute(`${fixture}
+    local catalog = catalogFixture()
+    local photo = catalog:photo({ masterTaxonId = "mtx_rebhuhn", germanName = "Rebhuhn", scientificName = "Perdix perdix",
+      taxonomyPath = "Rebhuhn", taxonomySpecies = "Perdix perdix", fnCaptureYear = "2026", fnCountry = "Deutschland", taxonomyKeywordIds = "a,b,star" },
+      { a = "Rebhuhn (FN)", b = "Rebhuhn (FN)", star = "Rebhuhn (FN)*", manual = "Rebhuhn",
+        manualHierarchy = "Perdix perdix", year = "2026 (FN Zeit)", country = "Deutschland (FN Ort)" })
+    function catalog:getKeywordByLocalIdentifier(id) return self.keywords[id] end
+    local result = Writer.remove(catalog, { photo })
+    assert(result.keywordCount == 3 and not photo.keywords.a and not photo.keywords.b and not photo.keywords.star)
+    assert(photo.keywords.manual and photo.keywords.manualHierarchy and photo.keywords.year and photo.keywords.country)
+    assert(photo.values.masterTaxonId == "" and photo.values.referenceImage == "no")
+    assert(photo.values.fnCaptureYear == "2026" and photo.values.fnCountry == "Deutschland")
+    assert(catalog.creations == 0 and deltas == 1)
+    assert(Writer.remove(catalog, { photo }).keywordCount == 0 and photo.keywords.manual)
+  `);
+});
+
+test("Taxonomierücknahme behält den deterministischen Altmetadaten-Rückweg bei unvollständiger Objektliste", () => {
+  execute(`${fixture}
+    local catalog = catalogFixture()
+    local photo = catalog:photo({ masterTaxonId = "mtx_rebhuhn", germanName = "Rebhuhn", scientificName = "Perdix perdix",
+      taxonomyPath = "Rebhuhn", taxonomySpecies = "Perdix perdix", taxonomyKeywordIds = "obsolete-id" }, { taxon = "Rebhuhn (FN)", manual = "Rebhuhn" })
+    function catalog:getKeywordByLocalIdentifier() return nil end
+    function photo:getRawMetadata(field) assert(field == "keywords"); return {} end
+    local result = Writer.remove(catalog, { photo })
+    assert(result.keywordCount == 1 and not photo.keywords.taxon and photo.keywords.manual)
+    assert(photo.values.masterTaxonId == "" and catalog.removals == 1)
+  `);
+});
+
 test("Unreadable or invalid SDK keywords fail closed before clearing FN metadata or index", () => {
   for (const failure of ["readFailure", "invalidKeywords", "unreadableName", "removeFailure"]) {
     execute(`${fixture}
@@ -208,3 +243,55 @@ test("Shared menu action cancels without writes, ignores filmstrip without selec
     assert(deltas == 1 and catalog.creations == 0)
   `);
 });
+
+test("Ort/Zeit-Rücknahme bleibt auf der sichtbaren Auswahl und erweitert keine geschlossenen Stapel", () => {
+  execute(`${fixture}
+    local catalog = catalogFixture()
+    local selected = catalog:photo(values, names)
+    local hidden = catalog:photo(values, names)
+    catalog.target = selected
+    catalog.getTargetPhotos = function() return { selected } end
+    local sourceReads = 0
+    catalog.getActiveSources = function() sourceReads = sourceReads + 1; error("Removal must not inspect folder stacks") end
+    sdk.LrApplication.activeCatalog = function() return catalog end
+    Menu.run("remove")
+    assertRemoved(selected)
+    assert(hidden.values.fnCaptureYear == "2026" and hidden.keywords.year and hidden.keywords.country)
+    assert(sourceReads == 0 and deltas == 1 and catalog.removals == 4)
+  `);
+});
+
+for (const fileName of ["RemoveTaxonomy.lua", "RemoveAllFnData.lua", "SetReferenceImage.lua"]) {
+  const actionSource = await readFile(new URL(fileName, root), "utf8");
+  test(`Auswahlaktion ${fileName} ignoriert Filmstreifen, bindet reale Auswahl und bleibt wiederholbar`, () => {
+    execute(`${fixture}
+      local catalog = catalogFixture(); local photo = catalog:photo(values, names)
+      sdk.LrApplication.activeCatalog = function() return catalog end
+      local affected, affectedCount = 0, 0
+      Writer.remove = function(_, photos)
+        affected = affected + 1; affectedCount = #photos; return { photoCount = #photos }
+      end
+      Writer.removeAll = function(_, photos)
+        affected = affected + 1; affectedCount = #photos
+        return { photoCount = #photos, assignmentCount = 1, referenceImageCount = 0, taxonomyKeywordCount = 1, locationTimeKeywordCount = 1 }
+      end
+      package.preload.ReferenceImage = function() return {
+        findExisting = function() return nil, {} end,
+        assign = function(_, selected)
+          assert(selected == photo); affected = affected + 1; affectedCount = 1
+          return { germanName = "Rebhuhn", scientificName = "Perdix perdix" }
+        end,
+      } end
+      local function action() ${actionSource} end
+      assert(catalog:getTargetPhoto() == nil and #catalog:getTargetPhotos() == 1)
+      action(); assert(affected == 0 and confirms == 0)
+      catalog.target = photo
+      catalog.getTargetPhotos = function() return { photo, photo } end
+      action(); assert(affected == 1 and affectedCount == 1)
+      catalog.target = nil
+      action(); assert(affected == 1)
+      catalog.target = photo
+      action(); assert(affected == 2 and affectedCount == 1)
+    `);
+  });
+}

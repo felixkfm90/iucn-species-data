@@ -7,7 +7,9 @@ return {
     {
       title = "Taxonomie zuweisen",
       file = "AssignTaxonomy.lua",
-      enabledWhen = "photosSelected",
+      -- The SDK requires anythingSelected to include video-only selections.
+      -- The assignment window validates the actual SDK selection again.
+      enabledWhen = "anythingSelected",
     },
     {
       title = "FN Wildlife verwalten ...",
@@ -26,6 +28,6 @@ return {
     major = 0,
     minor = 4,
     revision = 24,
-    build = 22,
+    build = 39,
   },
 }

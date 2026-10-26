@@ -24,22 +24,30 @@ function IdentityWriter.prepareTarget(catalog, taxon, assertCurrent)
   assert(type(assertCurrent) == "function", "Eine aktuelle bestätigte Vorschau ist erforderlich.")
   assertCurrent()
   local template = KeywordWriter.identityTemplate(taxon)
-  local keywords, ids = {}, {}
+  local keywords, ids, created = {}, {}, {}
   write(catalog, "FN Wildlife – Nachfolgerstichwörter vorbereiten", function()
     assertCurrent()
-    local seen = {}
     for _, name in ipairs(template.names) do
       local keyword = catalog:createKeyword(name, {}, true, nil, true)
       if not keyword then error("Lightroom lieferte kein Stichwortobjekt für " .. name, 0) end
-      local entry = IdentitySnapshot.keyword(keyword)
-      if not entry then error("Nachfolgerstichwort ist nicht eindeutig als FN markiert.", 0) end
-      if not seen[entry.id] then
-        seen[entry.id] = true
-        table.insert(keywords, entry)
-        table.insert(ids, entry.id)
-      end
+      table.insert(created, { keyword = keyword, name = name })
     end
   end)
+  -- Newly created objects can expose names and identifiers only after commit.
+  -- No photo or journal is written until the real committed objects are bound.
+  assertCurrent()
+  local seen = {}
+  for _, item in ipairs(created) do
+    local entry = IdentitySnapshot.keyword(item.keyword)
+    if not entry or string.lower(entry.name) ~= string.lower(item.name) then
+      error("Nachfolgerstichwort entspricht nach dem Speichern nicht dem bestätigten FN-Namen.", 0)
+    end
+    if not seen[entry.id] then
+      seen[entry.id] = true
+      table.insert(keywords, entry)
+      table.insert(ids, entry.id)
+    end
+  end
   table.sort(keywords, function(left, right) return left.id < right.id end)
   template.values.taxonomyKeywordIds = #ids > 0 and table.concat(ids, ",") or "none"
   if #template.values.taxonomyKeywordIds > 460 then
@@ -100,7 +108,9 @@ function IdentityWriter.applyBlock(catalog, changes, direction, assertCurrent)
         end
       end
     end
-    for index, entry in ipairs(affected) do afterStatistics[index] = Statistics.photoSnapshot(entry.photo) end
+    for index, entry in ipairs(affected) do
+      afterStatistics[index] = Statistics.identitySnapshot(beforeStatistics[index], entry.to.values)
+    end
     PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
   end)
   local observed = {}

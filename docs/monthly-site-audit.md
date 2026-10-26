@@ -23,9 +23,9 @@ Das Audit liefert eine Zusammenfassung mit klarer Einordnung:
 | Sitemap und URLs | Sitemap laden, HTTP-Status pruefen, 404/302/200 erfassen. | offen / erledigt/geprueft |
 | Interne Links | Interne Links crawlen, nicht in Sitemap vorhandene Pfade erfassen. | offen / erledigt/geprueft |
 | SEO | Titel und Meta-Beschreibungen gegen `docs/seo-worklist.md` pruefen. | offen / unveraendert / erledigt |
-| Artseiten-Module | Stichprobe oder Vollcheck fuer Info, Taxonomie, Status, Sound und Karte. | offen / erledigt/geprueft |
-| Suche und Sortierung | Uebersichtsseiten `/wildlife/heimische-tierwelt`, `/wildlife/costarica`, `/wildlife/island` pruefen; Arten alphabetisch, vorhandene Abschlusskachel „Weitere Tiere“ immer zuletzt, auch nach spaet nachgeladenen Arten. | offen / erledigt/geprueft |
-| Lightbox | Desktop und Mobile-Pinch/Zoom nur erneut manuell testen, wenn JS/CSS/Galerie geaendert wurde. | unveraendert / erledigt/geprueft |
+| Artseiten-Module | Stichprobe oder Vollcheck fuer Titelbild/-text, Info, Taxonomie, Status, Portrait, Sound und Karte; Umfang und Desktop-/Tablet-/Mobilansichten ausdruecklich benennen. | offen / erledigt/geprueft |
+| Suche und Sortierung | Wildlife-Uebersicht und vorhandene regionale Artenuebersichten pruefen; Arten alphabetisch, vorhandene Abschlusskachel „Weitere Tiere“ immer zuletzt, auch nach spaet nachgeladenen Arten. | offen / erledigt/geprueft |
+| Lightbox | Desktop-, Tablet- und Mobilansicht sowie Tastatur-/Touch-Bedienung nur erneut manuell testen, wenn JS/CSS/Galerie geaendert wurde; jeweilige Pruefart benennen. | unveraendert / erledigt/geprueft |
 | GitHub Pages Assets | `speciesData.json`, `species-assets/`, Credits, Spektrogramme und Reports pruefen. | offen / erledigt/geprueft |
 | Manuell gepflegte Karten | Liste aus `docs/manual-map-overrides.md` beruecksichtigen. | offen / unveraendert / erledigt |
 | Sounds und Lizenzen | `fehlende_elemente_report.json` und `docs/sound-license-review.md` pruefen. | offen / erledigt/geprueft |
@@ -40,18 +40,24 @@ verdoppeln. Das Suchfeld heißt „Arten durchsuchen“;
 Trefferzahlen werden als Status ausgegeben. Die Sortierung hält eine vorhandene Kachel „Weitere Tiere“
 am Ende; das Nachladen wird innerhalb des vorhandenen Beobachterzeitraums geprüft.
 
-Zoom 1.0.9 öffnet einen benannten modalen Dialog. Tab und Umschalt-Tab bleiben darin; Schließen gibt den
+Der Galeriezoom öffnet einen benannten modalen Dialog. Tab und Umschalt-Tab bleiben darin; Schließen gibt den
 Fokus zum Zoomknopf und den vorherigen Hintergrundzustand zurück. Die vollständige Escape-Tastensequenz einschließlich Wiederholung und
 Loslassen gehört dem Zoomdialog; erst ein weiterer Tastendruck schließt die umgebende Galerie.
 Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.
 Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben prüfen.
 
-Maßgeblich sind die zwölf Einbindungen in [squarespace-footer.html](squarespace-footer.html)
-und die kanonische Datei [squarespace-custom.css](squarespace-custom.css). Taxonomie und CSS verwenden
-gemeinsam Cacheversion **1.0.19**; die übrigen Modulversionen stehen ausschließlich im Footer.
-Pages-Veröffentlichung und Übernahme der Einbindungen in Squarespace sind getrennt zu prüfen.
-Ergebnisse und Grenzen des laufenden Gesamtaudits stehen ausschließlich im
-[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
+Die [Footer-Referenz](squarespace-footer.html) führt die Skript-/Cacheversionen; das gekoppelte
+[Standard-CSS](squarespace-custom.css) gehört zum selben Quellvergleich. Diese Quellen beschreiben den
+verbindlichen Einbau- und Cachevertrag. Pages-Veröffentlichung, CMS-Übernahme sowie tatsächlich geladene
+öffentliche Module, CSS und Darstellung sind getrennt zu prüfen. Während des laufenden Gesamtaudits stehen
+Ergebnisse und Grenzen ausschließlich im [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
+Datierte Live-Belege gelten nur für den jeweils gebundenen Prüfzeitpunkt und Quellstand.
+
+Das responsive Artseiten-Grundlayout erhält die volle Bildbreite mit bisherigem Ausschnitt,
+ursprünglicher Fokusposition und Bildüberlagerung. Desktop und Tablet überlagern
+es mit Titel und Rückknopf in den bisherigen Farben; mobil stehen diese darunter, der Titel ist schwarz.
+Die Wildlife-Kategorien folgen in allen Ansichten derselben Reihenfolge: Heimische Tierwelt zuerst,
+danach alphabetisch; Kategorien mit „In Arbeit“ zuletzt. Gekoppelte JS-/CSS-Regeln gemeinsam prüfen.
 
 Squarespace Custom CSS enthält nur den kanonischen Import:
 
@@ -59,12 +65,13 @@ Squarespace Custom CSS enthält nur den kanonischen Import:
 @import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.19");
 ```
 
-Die externe Datei bleibt Standard-CSS und wird vom Browser verarbeitet. Keine CSS-Kopie oder
-zusätzliche Altregeln im CMS pflegen; der Import umgeht die Umformung durch den CMS-LESS-Compiler.
-Bei CSS-/Taxonomieänderungen die gemeinsame `?v=`-Version im Import und im Footer erhöhen.
+Die externe Datei bleibt Standard-CSS und wird vom Browser verarbeitet. Der CMS-Compiler LESS 1.3.3
+kann die verwendeten Media-Range-Abfragen nicht kompilieren; deshalb keine CSS-Kopie oder eigene
+LESS-Fassung im CMS pflegen. Taxonomie-Skript und CSS-Import verwenden dieselbe `?v=`-Kennung,
+hier **1.0.19**; bei einem Wechsel Import und [Footer-Referenz](squarespace-footer.html) gemeinsam anpassen.
 Nach dem Speichern die tatsächlich geladenen Quellen, Cacheversionen und berechnete Darstellung
 prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln bleiben auf vorhandene Blöcke begrenzt; Änderungen
-in Desktop-, Tablet- und Mobilansicht nachprüfen.
+in Desktop-, Tablet- und Mobilansicht nachprüfen. Der Einbauvertrag ersetzt keinen öffentlichen Abschlussbeleg.
 
 Kontakt und Über uns zeigen bis 1024 px die vorhandenen Fotos vollständig in einem natürlichen
 Raster mit mitwachsender Höhe. Kontakt behält Überschrift, Einleitung, Foto, Formular und
@@ -73,21 +80,35 @@ Die begrenzten Kontakt-/Ausrüstungsüberschriften brechen in ganzen Wörtern um
 besitzt die Überschrift ab 768 px eine eigene mitwachsende Zeile vor Hinweis und Zurück-Knopf.
 Diese Regeln ändern keine Fotos oder Texte und gelten nur für die konkret bezeichneten Blöcke.
 
-Die Reiseübersicht führt Latium visuell und in der Lesereihenfolge unter 2022. Die vorhandenen
-„In Arbeit“-Bänder der noch nicht fertiggestellten Reisen mit FN-Logo bleiben erhalten; sie werden
-nicht auf Montenegro beschränkt. Der begrenzte Reisezweig in `sort.js` erhält die 14 vorhandenen Karten.
+Die Karten-/Textregeln verwenden bis unter 768 CSS-Pixel die Bedingung `width < 768px`.
+`max-width: 767px` lässt bei gebrochener Skalierung eine schmale ungeregelte Breitenlücke. Grenzbreiten
+und Skalierungsfälle nach Änderungen in der tatsächlich veröffentlichten Browserdarstellung prüfen;
+die Media-Abfragen werden über den kanonischen Import als Standard-CSS ausgewertet.
+
+Die Reiseübersicht führt Latium visuell und in der Lesereihenfolge unter 2022. Die Regel erhält die
+vorhandenen „In Arbeit“-Bänder ihrer Logo-Platzhalter; gewöhnliche Reisefotos erhalten kein Band.
+Die vorhandenen Karten und Originalblöcke bleiben erhalten; vor Übernahme die aktuelle CMS-Bindung prüfen.
 Seine mobile CSS greift erst nach erfolgreicher DOM-Korrektur. Bei einer anderen Blockstruktur,
 bekanntermaßen veränderter Reihenfolge oder geänderten Titeln bleibt die Korrektur aus; nach struktureller
 CMS-Bearbeitung die Bindung prüfen. Der alphabetische Artensortierer bleibt davon unabhängig.
 
-Artseiten behalten das Originalfoto und den Rücklink. Das angenommene Layout zeigt den Titel
-auf Desktop/Tablet über dem Foto, mobil darunter. Die bestätigten Titelkontraste, neun Tablet-
-Bildpositionen und der mobile Eichelhäherfokus bleiben auf ihre jeweiligen Seiten/Breiten begrenzt.
-Karten zeigen das vollständige Bild mit höchstens 360 Pixel Höhe und 640 Pixel Öffnerbreite; ab
-768 Pixeln links unter der Überschrift, mobil mittig. Öffnen, Schließen und Fokusrückgabe prüfen.
-Desktopmenüs melden den sichtbaren Offen-Zustand und schließen auch bei verbleibendem Mauszeiger
-mit Escape; ein Klick beziehungsweise Enter/Leertaste öffnen wieder. Die Mobilnavigation bleibt
-im Anbieterablauf. Diese gekoppelten Regeln benötigen Footer und CMS Custom CSS gemeinsam.
+Die freigegebenen mobilen Überschriften von Datenschutz, Haithabu, Lütjenburg und der Home-
+Kontaktanfrage erhalten ganze Wörter. Home ordnet im Tabletbereich Text/Formular und vollständige Personenfotos untereinander an;
+Spenden verwendet breiten Textfluss, ganze Fotos und einen kompakteren Titel. Die Regeln gelten nur
+für ihre bezeichneten Blöcke; Wildlife und Reiseübersicht bleiben erhalten. Der Kontaktseitenhinweis
+steht auch unmittelbar beim Home-Formular als tatsächlicher CMS-Text mit dem vorhandenen
+Datenschutz-Linkziel; kein CSS-Pseudoinhalt. Inhalt und Layoutübernahme getrennt nachweisen.
+
+Die kompakte Verbreitungskarte zeigt das vollständige Bild mit höchstens 360 Pixel Höhe in einem
+Öffner bis 640 Pixel Breite. Tablet/Desktop beginnen links unter der Überschrift, mobil bleibt sie
+zentriert. „Karte vergrößern“ ist in allen Ansichten als nativer Knopf erreichbar. Dialog, Tastaturbindung,
+Hintergrundschutz und Rückkehrfokus bleiben erhalten. Karten-/CSS-/Footerstand gemeinsam prüfen;
+Quellintegration und tatsächlich veröffentlichte Darstellung getrennt nachweisen.
+
+Galeriebeschriftungen und Bildfokus werden in den tatsächlichen CMS-Galerieeinträgen gepflegt.
+Ein veränderter Vorschaubildfokus erhält die quadratische Galerie und ihr vollständiges Original in der
+Vergrößerung. Bei reinen Textkorrekturen Bildquellen, Reihenfolge und übrige Beschriftungen vergleichen;
+keine fehlenden Links oder neuen Seitenziele daraus ableiten.
 
 ## Berichtsvorlage
 
@@ -122,13 +143,10 @@ Empfohlene naechste Schritte:
 
 ## Ablage
 
-Monatsaudit-Ergebnisse koennen spaeter als einzelne Dateien unter `docs/audits/` abgelegt werden, z. B.
-`docs/audits/2026-06-site-audit.md`. Der Ordner wird erst angelegt, wenn der erste echte Monatsbericht gespeichert
-wird.
-
-Aktueller Bericht:
-
-- `docs/audits/2026-06-site-audit.md`
+Datierte Monatsberichte liegen unter `docs/audits/`, etwa der historische
+[Monatsbericht Juni 2026](audits/2026-06-site-audit.md). Sie bleiben unveränderte Zeitaufnahmen.
+Für das laufende Gesamtaudit werden Ergebnisse ausschließlich im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md) fortgeschrieben; kein zweiter Bericht wird angelegt.
 
 ## Automatisierung
 

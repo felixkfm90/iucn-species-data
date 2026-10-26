@@ -12,6 +12,7 @@ import { readMasterSourceBinding } from "./taxonomy-master-source-binding.mjs";
 import { existsSync } from "node:fs";
 import { assertTaxonomySpace, taxonomyDirectoryBytes } from "./taxonomy-space-budget.mjs";
 import { relocatedStoragePath } from "./storage-paths.mjs";
+import { assertClassificationRetentionUsage } from "./taxonomy-classification-retention-usage.mjs";
 
 const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const JOB_PATTERN = /^job-[a-f0-9-]{36}$/;
@@ -27,14 +28,15 @@ async function fingerprintOrMissing(filename) {
 
 // Bind even same-version field edits and rollbacks, not just release names.
 // Additional project/reference/provider files can be supplied by the caller.
-export async function masterJobBinding(taxonomyRoot, guardFiles = [], selection = null) {
+export async function masterJobBinding(taxonomyRoot, guardFiles = [], selection = null, classificationRetention = null) {
   const files = [...new Set([
     taxonomyPublicationPath(taxonomyRoot),
     ...["active", "previous"].flatMap((slot) => [taxonomyMasterDatabasePath(taxonomyRoot, slot), taxonomyMasterManifestPath(taxonomyRoot, slot)]),
     ...guardFiles.map((filename) => path.resolve(relocatedStoragePath(filename))),
   ])].sort();
   return { rules: await masterBuildRulesRevision(),
-    ...(selection ? { selection: await readMasterSourceBinding(taxonomyRoot, selection) } : {}),
+    ...(selection ? { selection: await readMasterSourceBinding(taxonomyRoot, selection, { classificationRetention }) }
+      : classificationRetention ? { classificationRetention: await assertClassificationRetentionUsage(taxonomyRoot, classificationRetention, { full: false }) } : {}),
     files: await Promise.all(files.map(async (filename) => [filename, await fingerprintOrMissing(filename)])) };
 }
 
@@ -43,11 +45,12 @@ export async function verifyMasterJob(root, recipe) {
       || !JOB_PATTERN.test(recipe.id) || recipe.revision !== hash({ ...recipe, revision: undefined })) {
     throw new Error("Der gespeicherte Master-Auftrag ist ungültig.");
   }
+  await assertClassificationRetentionUsage(root, recipe.options?.classificationRetention);
   const relocateBinding = (binding) => ({ ...binding,
     ...(binding.selection ? { selection: { ...binding.selection,
       files: binding.selection.files.map(([file, checksum]) => [relocatedStoragePath(file), checksum]) } } : {}),
     files: binding.files.map(([file, checksum]) => [relocatedStoragePath(file), checksum]).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0) });
-  if (hash(await masterJobBinding(root, recipe.guardFiles, recipe.selection)) !== hash(relocateBinding(recipe.binding))) {
+  if (hash(await masterJobBinding(root, recipe.guardFiles, recipe.selection, recipe.options?.classificationRetention)) !== hash(relocateBinding(recipe.binding))) {
     const error = new Error("Eingangsdaten, aktiver Master oder Aufbauregeln wurden geändert. Dieser Zwischenstand darf nicht fortgesetzt werden. Bitte einen neuen Aufbau starten.");
     error.code = "MASTER_JOB_STALE";
     throw error;
@@ -92,9 +95,12 @@ export async function prepareMasterJob({ taxonomyRoot, colRecords = [], provider
   guardFiles = [], selection = null, expectedBinding = null, now = () => new Date(), onProgress = () => {},
   checkSpace = assertTaxonomySpace, updateRunId = "", ...options }) {
   if (updateRunId && !/^update-[a-f0-9-]{36}$/.test(updateRunId)) throw new Error("Ungültige Update-Auftragskennung.");
+  const classificationRetention = options.classificationRetention == null ? null
+    : { policy: options.classificationRetention.policy, usageRevision: options.classificationRetention.usageRevision };
+  await assertClassificationRetentionUsage(taxonomyRoot, classificationRetention);
   const id = `job-${crypto.randomUUID()}`, directory = masterJobDirectory(taxonomyRoot, id);
   await checkSpace(taxonomyRoot, 2 * await taxonomyDirectoryBytes(path.dirname(taxonomyMasterDatabasePath(taxonomyRoot))));
-  const binding = expectedBinding || await masterJobBinding(taxonomyRoot, guardFiles, selection);
+  const binding = expectedBinding || await masterJobBinding(taxonomyRoot, guardFiles, selection, classificationRetention);
   await fs.mkdir(directory, { recursive: true });
   try {
     const inputs = { "col.jsonl": await spool(path.join(directory, "col.jsonl"), colRecords, checkSpace) };
@@ -113,11 +119,15 @@ export async function prepareMasterJob({ taxonomyRoot, colRecords = [], provider
         projectTaxa: options.projectTaxa || [], corrections: options.corrections || [],
         retainedTaxa: options.retainedTaxa || [], identityRegistry: options.identityRegistry,
         protectedMasterIds: options.protectedMasterIds || [],
+        ...(classificationRetention ? { classificationRetention } : {}),
         ...(options.sourceRecoveryScope ? { sourceRecoveryScope: options.sourceRecoveryScope } : {}),
         reuseUnchanged: options.reuseUnchanged !== false } };
     recipe.revision = hash(recipe);
     // Serialize once so omitted optional properties have the same hash after reload.
     const serialized = JSON.parse(JSON.stringify(recipe));
+    onProgress({ phase: "Eingangsstand prüfen",
+      message: "Gesicherte Eingänge und bisherige Datenstände werden anhand ihrer Prüfsummen geprüft.",
+      current: null, total: null, percent: null });
     await verifyMasterJob(taxonomyRoot, serialized);
     await atomicWriteJson(path.join(directory, "recipe.json"), serialized);
     onProgress({ phase: "Auftrag gesichert", message: "Vollständige Eingänge für den Hintergrundprozess sind gesichert.", percent: 60 });

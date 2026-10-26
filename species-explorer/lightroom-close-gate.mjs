@@ -7,6 +7,12 @@ const execute = promisify(execFile);
 const probeScript = "$ErrorActionPreference='Stop'; @(Get-Process -Name Lightroom -ErrorAction SilentlyContinue | ForEach-Object { [pscustomobject]@{ id=$_.Id; path=$_.Path; window=[string]$_.MainWindowHandle } }) | ConvertTo-Json -Compress";
 const closeScript = "$ErrorActionPreference='Stop'; $expected=ConvertFrom-Json $env:FN_LIGHTROOM_CLOSE_TARGETS; foreach($target in $expected) { $process=Get-Process -Id $target.id -ErrorAction SilentlyContinue; if($null -eq $process) { continue }; if($process.ProcessName -ne 'Lightroom' -or $process.Path -cne $target.path) { throw 'Lightroom-Prozess hat sich verändert' }; if(-not $process.CloseMainWindow()) { throw 'Normales Schließen konnte nicht angefordert werden. Bitte Lightroom selbst schließen.' } }";
 
+function closureMessage(value, otherwise) {
+  return !value.processes.length && value.workingFiles
+    ? "Lightroom ist beendet. Der Katalogabschluss ist wegen vorhandener Arbeitsdateien noch nicht nachgewiesen. Der Updateauftrag wartet."
+    : otherwise;
+}
+
 async function windowsProcesses() {
   if (process.platform !== "win32") throw new Error("Der Lightroom-Prozessstand kann auf diesem System nicht sicher geprüft werden.");
   const { stdout } = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", probeScript],
@@ -42,7 +48,7 @@ export function createLightroomCloseGate({ taxonomyRoot, processes = windowsProc
         catch (error) { if (error.code !== "ENOENT") throw error; }
       }
     }
-    return { open: entries.length > 0 || workingFiles, processes: entries,
+    return { open: entries.length > 0 || workingFiles, processes: entries, workingFiles,
       usageReady: proof.ready === true, usageReason: proof.reason || "", usageRevision: proof.revision || "" };
   }
   return {
@@ -52,37 +58,51 @@ export function createLightroomCloseGate({ taxonomyRoot, processes = windowsProc
       return { ...value, canRequestClose: value.processes.length > 0,
         capturePending: capture?.exists === true && !capture.ready,
         capturedCatalogCount: capture?.capturedCatalogCount || 0,
-        message: value.open ? "Für die Datenbankaktualisierung muss Lightroom geschlossen werden. Der gespeicherte Startauftrag wartet."
+        message: value.open ? closureMessage(value, "Für die Datenbankaktualisierung muss Lightroom geschlossen werden. Der gespeicherte Startauftrag wartet.")
           : !value.usageReady ? "Lightroom ist geschlossen. Ein aktueller vollständiger FN-Nutzungsnachweis fehlt; keine automatische Freigabe."
             : "Lightroom ist geschlossen und der FN-Nutzungsnachweis ist aktuell." };
     },
     async ready({ job = null } = {}) {
       const value = await inspect();
+      if (job?.freshUsageCapture && !usageRequests) return { ready: false, reason: "catalog-usage",
+        message: "Der neue lokale Auftrag benötigt eine eigene frische FN-Erfassung." };
       if (usageRequests && job?.updateRunId) {
         let capture = await usageRequests.status(job.updateRunId);
-        if (!capture.exists && !value.usageReady && job.phase === "start") {
+        if (!capture.exists && (!value.usageReady || job.freshUsageCapture) && job.phase === "start") {
           await usageRequests.prepare(job);
           capture = await usageRequests.status(job.updateRunId);
         }
+        if (capture.exists && capture.request.status !== "completed" && capture.request.captureError) {
+          throw new Error(`Neue FN-Erfassung fehlgeschlagen: ${capture.request.captureError}. Bitte den gespeicherten Auftrag gezielt fortsetzen.`);
+        }
+        if (job.freshUsageCapture && (!capture.exists || !["pending", "completed"].includes(capture.request?.status)
+            || capture.request.status === "completed" && (!capture.ready || !capture.alreadyRegistered))) {
+          return { ready: false, reason: "catalog-usage", message: "Eine vollständige frische FN-Quittung für diesen neuen Auftrag fehlt." };
+        }
         if (capture.exists && capture.request.status !== "completed") {
-          if (capture.request.captureError) throw new Error(`Neue FN-Erfassung fehlgeschlagen: ${capture.request.captureError}. Bitte den gespeicherten Auftrag gezielt fortsetzen.`);
           if (!capture.ready) return { ready: false, reason: value.open ? "lightroom-open" : "catalog-usage",
-            message: value.open ? "Warte auf die neue FN-Erfassung durch das Lightroom-Plug-in. Danach Lightroom normal schließen."
+            message: value.open ? closureMessage(value, "Warte auf die neue FN-Erfassung durch das Lightroom-Plug-in. Danach Lightroom normal schließen.")
               : "Lightroom wurde vor der neuen FN-Erfassung geschlossen. Bitte mit dem neuen Plug-in öffnen; der Startauftrag bleibt gespeichert." };
           if (value.open) {
             if (value.processes.length && await usageRequests.claimNormalClose(job.updateRunId)) await closeProcesses(value.processes);
-            return { ready: false, reason: "lightroom-open", message: "FN-Nutzung frisch erfasst. Warte auf normal geschlossenes Lightroom." };
+            return { ready: false, reason: "lightroom-open", message: closureMessage(value, "FN-Nutzung frisch erfasst. Warte auf normal geschlossenes Lightroom.") };
           }
           await usageRequests.bindClosed(job.updateRunId);
+          if (job.freshUsageCapture) {
+            const completed = await usageRequests.status(job.updateRunId);
+            if (completed.request?.status !== "completed" || !completed.ready || !completed.alreadyRegistered) {
+              return { ready: false, reason: "catalog-usage", message: "Die neue FN-Erfassung konnte nicht vollständig an den Auftrag gebunden werden." };
+            }
+          }
           failedProofRevision = "";
           const proof = await usage({ full: false });
           const after = await inspect();
           const ready = proof.ready === true && !after.open && after.usageReady;
           return { ready, usageRevision: proof.revision || "", reason: ready ? "" : after.open ? "lightroom-open" : "catalog-usage",
-            message: ready ? "" : "Die neue FN-Erfassung ist nach dem Schließen nicht mehr aktuell oder Lightroom wieder geöffnet." };
+            message: ready ? "" : closureMessage(after, "Die neue FN-Erfassung ist nach dem Schließen nicht mehr aktuell oder Lightroom wieder geöffnet.") };
         }
       }
-      if (value.open) return { ready: false, reason: "lightroom-open", message: "Warte auf geschlossenes Lightroom." };
+      if (value.open) return { ready: false, reason: "lightroom-open", message: closureMessage(value, "Warte auf geschlossenes Lightroom.") };
       if (!value.usageReady) return { ready: false, reason: "catalog-usage", message: "Aktueller FN-Nutzungsnachweis erforderlich." };
       if (failedProofRevision && failedProofRevision === value.usageRevision) {
         return { ready: false, reason: "catalog-usage", message: "Der FN-Nutzungsnachweis hat die Vollprüfung nicht bestanden. Erneute Erfassung erforderlich." };

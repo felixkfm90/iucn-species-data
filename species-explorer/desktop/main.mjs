@@ -16,6 +16,10 @@ import {
 } from "../lightroom-correction-handoff.mjs";
 
 const WINDOW_TITLE = "Arten-Explorer";
+const WINDOW_ICON = fileURLToPath(new URL(
+  process.platform === "win32" ? "./assets/arten-explorer-transparent.ico" : "./assets/arten-explorer.png",
+  import.meta.url,
+));
 const START_PAGE = "data:text/html;charset=utf-8,"
   + encodeURIComponent(`
 <!doctype html>
@@ -56,6 +60,7 @@ const START_PAGE = "data:text/html;charset=utf-8,"
 let mainWindow = null;
 let managedServer = null;
 let quitting = false;
+let closeCheckInProgress = false;
 let pendingSecondInstanceActivation = false;
 let explorerPageReady = false;
 const pendingCorrectionRequests = [];
@@ -95,6 +100,7 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 720,
     title: WINDOW_TITLE,
+    icon: WINDOW_ICON,
     backgroundColor: "#edf3f0",
     show: false,
     webPreferences: {
@@ -180,62 +186,90 @@ async function restartServerAndLoad() {
 async function handleWindowClose(event) {
   if (quitting) return;
   event.preventDefault();
-
-  let pipelineStatus = null;
-  let backupStatus = null;
-  let pendingChanges = null;
+  if (closeCheckInProgress) return;
+  closeCheckInProgress = true;
   try {
+    let pipelineStatus = null;
+    let backupStatus = null;
+    let pendingChanges = null;
+    const unknownStatuses = [];
     if (managedServer?.baseUrl) {
-      [pipelineStatus, backupStatus, pendingChanges] = await Promise.all([
+      const results = await Promise.allSettled([
         getExplorerPipelineStatus(managedServer.baseUrl),
         getExplorerBackupStatus(managedServer.baseUrl),
         getExplorerPendingChanges(managedServer.baseUrl),
       ]);
+      const checks = [
+        { label: "Pipeline", valid: (value) =>
+          ["idle", "running", "awaiting-review", "completed", "failed"].includes(value?.status) },
+        { label: "Sicherungsstatus", valid: (value) =>
+          ["idle", "running", "completed", "failed"].includes(value?.status) },
+        { label: "Änderungsstatus", valid: (value) => typeof value?.hasPendingChanges === "boolean" },
+      ];
+      const values = results.map((result, index) => {
+        if (result.status === "fulfilled" && checks[index].valid(result.value)) return result.value;
+        unknownStatuses.push(checks[index].label);
+        return null;
+      });
+      [pipelineStatus, backupStatus, pendingChanges] = values;
     }
-  } catch {
-    pipelineStatus = null;
-    backupStatus = null;
-    pendingChanges = null;
-  }
 
-  if (isPipelineBlockingShutdown(pipelineStatus) || isBackupBlockingShutdown(backupStatus)) {
-    const backupRunning = isBackupBlockingShutdown(backupStatus);
-    const response = await dialog.showMessageBox(mainWindow, {
-      type: "warning",
-      buttons: ["App offen lassen", "Trotzdem schließen"],
-      defaultId: 0,
-      cancelId: 0,
-      title: backupRunning ? "Backup läuft noch" : "Pipeline läuft noch",
-      message: backupRunning
-        ? "Im Arten-Explorer läuft noch ein NAS-Backup."
-        : "Im Arten-Explorer läuft noch ein Pipeline- oder Asset-Prüfschritt.",
-      detail:
-        "Wenn du jetzt schließt, wird nur der App-Server beendet. Prüfe vorher, ob der laufende Schritt abgeschlossen ist.",
+    if (isPipelineBlockingShutdown(pipelineStatus) || isBackupBlockingShutdown(backupStatus)) {
+      const backupRunning = isBackupBlockingShutdown(backupStatus);
+      const response = await dialog.showMessageBox(mainWindow, {
+        type: "warning",
+        buttons: ["App offen lassen", "Trotzdem schließen"],
+        defaultId: 0,
+        cancelId: 0,
+        title: backupRunning ? "Backup läuft noch" : "Pipeline läuft noch",
+        message: backupRunning
+          ? "Im Arten-Explorer läuft noch ein NAS-Backup."
+          : "Im Arten-Explorer läuft noch ein Pipeline- oder Asset-Prüfschritt.",
+        detail:
+          "Wenn du jetzt schließt, wird nur der App-Server beendet. Prüfe vorher, ob der laufende Schritt abgeschlossen ist.",
+      });
+      if (response.response !== 1) return;
+    }
+
+    if (pendingChanges?.hasPendingChanges) {
+      const response = await dialog.showMessageBox(mainWindow, {
+        type: "warning",
+        buttons: ["Zur App zurück", "Trotzdem schließen"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Offene Änderungen",
+        message: "Es gibt noch nicht übertragene Änderungen.",
+        detail:
+          "Gehe zur App zurück, wenn du die Änderungen jetzt übertragen willst. "
+          + "Du kannst trotzdem schließen und die Übertragung beim nächsten Start nachholen.",
+      });
+      if (response.response !== 1) return;
+    }
+
+    if (unknownStatuses.length) {
+      const response = await dialog.showMessageBox(mainWindow, {
+        type: "warning",
+        buttons: ["App offen lassen", "Trotzdem schließen"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Status nicht vollständig geprüft",
+        message: "Der Arten-Explorer konnte nicht alle Statuswerte rechtzeitig lesen.",
+        detail: `Nicht geprüft: ${unknownStatuses.join(", ")}. `
+          + "Weitere Arbeit oder nicht übertragene Änderungen können noch offen sein. "
+          + "Lass die App zur Kontrolle geöffnet. Mit „Trotzdem schließen“ wird der App-Server beendet.",
+      });
+      if (response.response !== 1) return;
+    }
+
+    quitting = true;
+    await stopManagedExplorerServer(managedServer).catch((error) => {
+      dialog.showErrorBox("Server konnte nicht sauber beendet werden", error.message);
     });
-    if (response.response !== 1) return;
+    mainWindow.destroy();
+    app.quit();
+  } finally {
+    closeCheckInProgress = false;
   }
-
-  if (pendingChanges?.hasPendingChanges) {
-    const response = await dialog.showMessageBox(mainWindow, {
-      type: "warning",
-      buttons: ["Zur App zurück", "Trotzdem schließen"],
-      defaultId: 0,
-      cancelId: 0,
-      title: "Offene Änderungen",
-      message: "Es gibt noch nicht übertragene Änderungen.",
-      detail:
-        "Gehe zur App zurück, wenn du die Änderungen jetzt übertragen willst. "
-        + "Du kannst trotzdem schließen und die Übertragung beim nächsten Start nachholen.",
-    });
-    if (response.response !== 1) return;
-  }
-
-  quitting = true;
-  await stopManagedExplorerServer(managedServer).catch((error) => {
-    dialog.showErrorBox("Server konnte nicht sauber beendet werden", error.message);
-  });
-  mainWindow.destroy();
-  app.quit();
 }
 
 async function boot() {

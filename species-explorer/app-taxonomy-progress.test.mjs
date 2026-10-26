@@ -9,6 +9,193 @@ const { taxonomyProgressPresentation: view, measuredProgress } = context.Species
 const build = (phase, extra = {}) => ({ status: "building", active: true, action: "build", progressPhase: phase, ...extra });
 const pair = { status: "current" };
 
+const localRestart = (workflow = {}, master = {}) => ({
+  status: "failed", active: false, message: "Alter Masteraufbau fehlgeschlagen", error: "Alter Quellenbelegfehler",
+  progressPhase: "Masterdatenbank schreiben", progressCurrent: 750, progressTotal: 1000,
+  buildJob: { available: true, id: "old-build", updateRunId: "old-update", status: "failed", error: "Alter Quellenbelegfehler",
+    checkpoint: { written: 500, total: 1000 }, progress: { phase: "Masterdatenbank schreiben", current: 750, total: 1000 } },
+  updateWorkflow: { updateRunId: "new-update", status: "waiting-lightroom", active: true, phase: "start",
+    decision: "rebuild-master", freshUsageCapture: true, sourceCompleted: true, buildStarted: false,
+    restartGuard: { identity: { updateRunId: "old-update", buildJobId: "old-build" } },
+    message: "Neue FN-Erfassung läuft", error: "", ...workflow }, ...master,
+});
+
+const classificationFollowup = () => ({
+  ...build("Masterdatenbank schreiben", { progressCurrent: 10, progressTotal: 100 }),
+  error: "", buildJob: { available: true, id: "followup-build", updateRunId: "own-update", status: "building" },
+  lifecycle: { candidate: { candidateId: "first-candidate", classificationReview: { total: 187 } }, blockingConflictCount: 187 },
+  identities: { revision: "saved-decision", pending: true, candidateIncludesCurrent: false, classificationCandidateId: "first-candidate" },
+  updateWorkflow: { updateRunId: "own-update", status: "building", active: true, phase: "build", buildStarted: true,
+    automaticFollowupRevision: "saved-decision", automaticAttemptedCandidates: ["first-candidate"], error: "" },
+});
+
+const protectedRetainedCandidate = (workflow = {}, master = {}) => localRestart({
+  restartGuard: { identity: { updateRunId: "old-update", buildJobId: "old-build" }, binding: { retainedCandidate: {
+    candidateId: "historical-candidate", buildJobRevision: "a".repeat(64), buildJobId: "historical-ready-build", updateRunId: "old-update",
+    manifestSha256: "b".repeat(64), recipeSha256: "c".repeat(64), stateSha256: "d".repeat(64) } } }, ...workflow,
+}, { lifecycle: { active: { candidateId: "active-master" }, candidate: { candidateId: "historical-candidate", buildJobRevision: "a".repeat(64),
+  classificationReview: { total: 187 } }, blockingConflictCount: 189 }, ...master });
+
+test("geschützter Ersatzauftrag zeigt den gebundenen historischen Kandidaten als Vorgänger, nicht als neuen Entscheidungsauftrag", () => {
+  const presentation = context.SpeciesExplorerTaxonomyProgress.taxonomyMasterPresentationSnapshot;
+  for (const [status, phase] of [["waiting-lightroom", "start"], ["waiting-usage", "start"], ["building", "build"]]) {
+    const master = protectedRetainedCandidate({ status, phase, buildStarted: phase === "build" });
+    const before = JSON.stringify(master), snapshot = presentation(master);
+    assert.equal(snapshot.lifecycle.candidate, null);
+    assert.equal(snapshot.lifecycle.blockingConflictCount, 2, "Andere Blockaden bleiben sichtbar");
+    const result = view({ master });
+    assert.match(result.detail, /Erhaltener Kandidat.*vorherigen Auftrag/);
+    assert.doesNotMatch(result.detail, /187.*Entscheidung erforderlich|187.*benötigen eine Entscheidung/);
+    assert.equal(result.completed, false);
+    assert.equal(JSON.stringify(master), before);
+  }
+  const ownBuilding = protectedRetainedCandidate({ status: "building", phase: "build", buildStarted: true }, build("Masterdatenbank schreiben", {
+    error: "", buildJob: { available: true, id: "new-build", updateRunId: "new-update", status: "building" } }));
+  assert.equal(presentation(ownBuilding).lifecycle.candidate, null);
+  assert.equal(view({ master: ownBuilding }).running, true);
+});
+
+test("historischer Kandidatenfilter benötigt exakte gespeicherte Herkunft und endet vor neuem eigenem fertigen Kandidaten", () => {
+  const presentation = context.SpeciesExplorerTaxonomyProgress.taxonomyMasterPresentationSnapshot;
+  const master = protectedRetainedCandidate(), guard = master.updateWorkflow.restartGuard;
+  const changes = [
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: {} } } },
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: { retainedCandidate: { ...guard.binding.retainedCandidate, updateRunId: "foreign-update" } } } } },
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: { retainedCandidate: { ...guard.binding.retainedCandidate, buildJobId: "" } } } } },
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: { retainedCandidate: { ...guard.binding.retainedCandidate, manifestSha256: "" } } } } },
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: { retainedCandidate: { ...guard.binding.retainedCandidate, recipeSha256: "invalid" } } } } },
+    { updateWorkflow: { ...master.updateWorkflow, restartGuard: { ...guard, binding: { retainedCandidate: { ...guard.binding.retainedCandidate, stateSha256: "" } } } } },
+    { updateWorkflow: { ...master.updateWorkflow, freshUsageCapture: false } },
+    { updateWorkflow: { ...master.updateWorkflow, updateRunId: "old-update" } },
+    { updateWorkflow: { ...master.updateWorkflow, sourceCompleted: false } },
+    { updateWorkflow: { ...master.updateWorkflow, active: false } },
+    { updateWorkflow: { ...master.updateWorkflow, status: "failed", active: false, error: "Eigener Fehler" } },
+    { updateWorkflow: { ...master.updateWorkflow, status: "waiting-decisions", phase: "candidate" } },
+    { lifecycle: { ...master.lifecycle, candidate: { ...master.lifecycle.candidate, buildJobRevision: "different-recipe" } } },
+    { lifecycle: { ...master.lifecycle, candidate: { ...master.lifecycle.candidate, candidateId: "new-undecided-candidate" } } },
+    { buildJob: { available: true, id: "own-ready", updateRunId: "new-update", status: "ready" } },
+    { buildJob: { available: true, id: "foreign-build", updateRunId: "foreign-update", status: "building" } },
+    { buildJob: { available: true, id: "own-failed", updateRunId: "new-update", status: "failed", error: "Neuer Schreibfehler" } },
+    { error: "Neuer Eingangsfehler" },
+  ];
+  for (const change of changes) {
+    const current = { ...master, ...change }, before = JSON.stringify(current), snapshot = presentation(current);
+    assert.equal(snapshot.lifecycle.candidate.candidateId, current.lifecycle.candidate.candidateId, JSON.stringify(change));
+    assert.equal(snapshot.lifecycle.blockingConflictCount, 189);
+    assert.equal(JSON.stringify(current), before);
+    if (change.error || change.buildJob?.error) assert.equal(view({ master: current }).state, "fehlgeschlagen");
+  }
+});
+
+test("eigener gebundener Folgeaufbau erklärt gespeicherte Klassifikationsentscheidungen zum vorherigen Kandidaten", () => {
+  const master = classificationFollowup(), before = JSON.stringify(master);
+  const result = view({ master });
+  assert.equal(result.running, true);
+  assert.equal(result.completed, false);
+  assert.equal(result.step, 3);
+  assert.match(result.detail, /187 Klassifikationsfälle gehören zum vorherigen Kandidaten/);
+  assert.match(result.detail, /Der laufende Folgeaufbau verarbeitet die gespeicherte Entscheidung/);
+  assert.doesNotMatch(result.detail, /Entscheidung erforderlich|benötigen eine Entscheidung/);
+  assert.equal(JSON.stringify(master), before);
+  const history = view({ master: { ...master, updateWorkflow: { ...master.updateWorkflow,
+    automaticAttemptedCandidates: ["older-candidate", "first-candidate"] } } });
+  assert.match(history.detail, /187 Klassifikationsfälle gehören zum vorherigen Kandidaten/);
+});
+
+test("Folgehinweis braucht exakte Kandidaten-, Revisions- und Auftragsbindung; echte Fehler bleiben bestehen", () => {
+  const master = classificationFollowup();
+  for (const changes of [
+    { updateWorkflow: { ...master.updateWorkflow, status: "paused", active: false } },
+    { updateWorkflow: { ...master.updateWorkflow, active: false } },
+    { updateWorkflow: { ...master.updateWorkflow, buildStarted: false } },
+    { updateWorkflow: { ...master.updateWorkflow, phase: "candidate" } },
+    { updateWorkflow: { ...master.updateWorkflow, automaticFollowupRevision: "changed-revision" } },
+    { updateWorkflow: { ...master.updateWorkflow, automaticAttemptedCandidates: ["another-candidate"] } },
+    { identities: { ...master.identities, pending: false } },
+    { identities: { ...master.identities, candidateIncludesCurrent: true } },
+    { identities: { ...master.identities, classificationCandidateId: "another-candidate" } },
+    { identities: { ...master.identities, revision: "" }, updateWorkflow: { ...master.updateWorkflow, automaticFollowupRevision: "" } },
+    { buildJob: { ...master.buildJob, id: "" } },
+    { buildJob: { ...master.buildJob, available: false } },
+    { buildJob: { ...master.buildJob, updateRunId: "foreign-update" } },
+    { buildJob: { ...master.buildJob, status: "failed", error: "Eigener Schreibfehler" } },
+    { lifecycle: { ...master.lifecycle, blockingConflictCount: 186 } },
+    { error: "Eigener Schreibfehler" },
+  ]) {
+    const result = view({ master: { ...master, ...changes } });
+    assert.doesNotMatch(result.detail, /Klassifikationsfälle gehören zum vorherigen Kandidaten/, JSON.stringify(changes));
+    if (changes.error || changes.buildJob?.error) assert.equal(result.state, "fehlgeschlagen");
+  }
+});
+
+test("eigener lokaler Ersatzauftrag zeigt seine Wartephase statt Fehler und Schreibfortschritt des gebundenen Altauftrags", () => {
+  for (const status of ["waiting-lightroom", "waiting-usage"]) {
+    const master = localRestart({ status });
+    const before = JSON.stringify(master);
+    const result = view({ master });
+    assert.equal(result.state, status === "waiting-lightroom" ? "Warte auf Lightroom-Schließung" : "FN-Nutzung prüfen");
+    assert.equal(result.step, null);
+    assert.equal(result.percent, null);
+    assert.equal(result.running, true);
+    assert.equal(result.completed, false);
+    assert.match(result.detail, /Neue FN-Erfassung läuft/);
+    assert.doesNotMatch(result.detail + result.compact, /fehlgeschlagen|3\/7|Schritt 3|750|500|Quellenbelegfehler/);
+    assert.equal(JSON.stringify(master), before, "Der Darstellungsweg verändert den gespeicherten Status nicht");
+  }
+});
+
+test("eigene Aufbauvorbereitung vor dem neuen Rezept zeigt Schritt 2 und erhält neue Messungen sowie echte Fehler", () => {
+  const workflow = { status: "building", active: true, phase: "build", buildStarted: true, message: "Lokale Eingänge werden vorbereitet" };
+  const preparing = view({ master: localRestart(workflow) });
+  assert.equal(preparing.step, 2);
+  assert.equal(preparing.state, "läuft");
+  assert.equal(preparing.running, true);
+  assert.match(preparing.detail, /Lokale Eingänge werden vorbereitet/);
+  assert.doesNotMatch(preparing.detail, /fehlgeschlagen|750|500|Quellenbelegfehler/);
+  const reading = view({ master: localRestart(workflow, build("CoL-Referenz", { error: "", progressCurrent: 10, progressTotal: 100 })) });
+  assert.equal(reading.step, 2);
+  assert.equal(reading.percent, 10);
+  assert.equal(reading.state, "läuft");
+  const failed = view({ master: localRestart({ ...workflow, status: "failed", active: false, error: "Neue Eingänge verändert" }) });
+  assert.equal(failed.state, "fehlgeschlagen");
+  assert.match(failed.detail, /Neue Eingänge verändert/);
+  assert.doesNotMatch(failed.detail, /Alter Quellenbelegfehler/);
+});
+
+test("Altauftragszuordnung ist eng; fremde Fehler, eigener Schreibstand und Quellenarbeit bleiben sichtbar", () => {
+  for (const workflow of [
+    { updateRunId: "old-update" }, { freshUsageCapture: false }, { sourceCompleted: false }, { decision: "refresh-and-build" },
+    { restartGuard: { identity: { updateRunId: "foreign-update", buildJobId: "old-build" } } },
+    { restartGuard: { identity: { updateRunId: "old-update", buildJobId: "foreign-build" } } },
+    { phase: "package" }, { status: "completed", active: false },
+  ]) assert.equal(view({ master: localRestart(workflow) }).state, "fehlgeschlagen", JSON.stringify(workflow));
+  const own = localRestart({ status: "paused", active: false, phase: "build", buildStarted: true },
+    { status: "paused", error: "", buildJob: { available: true, id: "own-build", updateRunId: "new-update", status: "paused",
+      checkpoint: { written: 500, total: 1000 }, progress: { phase: "Masterdatenbank schreiben", current: 750, total: 1000 } } });
+  assert.equal(view({ master: own }).step, 3);
+  assert.equal(view({ master: own }).state, "pausiert");
+  const source = view({ master: localRestart(), reference: { active: true, phase: "download", progressCurrent: 1, progressTotal: 4 } });
+  assert.equal(source.phase, "Quelldownload");
+  assert.equal(source.percent, 25);
+});
+
+test("Vorschau und offene Bestätigung melden keinen laufenden Quellen-/Masterauftrag und überdecken echte Arbeit nicht", () => {
+  for (const [preparation, stage] of [["preview", "Vorschau wird geprüft"], ["confirmation", "Bestätigung ausstehend"]]) {
+    const pending = view({ busy: true, preparation });
+    assert.equal(pending.stage, stage);
+    assert.equal(pending.step, null);
+    assert.equal(pending.running, false);
+    assert.equal(pending.completed, false);
+    assert.doesNotMatch(pending.detail, /Schritt \d+|Quellen vorbereiten/);
+    assert.equal(view({ busy: true, preparation, master: build("Suchindex") }).running, true);
+    assert.equal(view({ busy: true, preparation, reference: { active: true, phase: "download" } }).phase, "Quelldownload");
+    const waiting = view({ busy: true, preparation, master: { updateWorkflow: {
+      updateRunId: "saved", status: "waiting-lightroom", active: true } } });
+    assert.match(waiting.detail, /Warte auf Lightroom-Schließung/);
+    assert.equal(waiting.preparation, undefined);
+  }
+});
+
 test("Messprozente brauchen echte Mengen; null, alte Phasenmarken und ungültige Werte liefern keine 0 %", () => {
   assert.equal(view(), null);
   assert.equal(view({ master: null, reference: null }), null);
@@ -52,6 +239,53 @@ test("Kopfschaltfläche zeigt zwei klare Zeilen und nur den gemessenen Teilforts
     "Datenbank-Update\n3/7 Master aufbauen", "Ohne Messmengen keinen Prozentwert erfinden");
   assert.equal(view({ master: build("Suchindex", { progressCurrent: 100, progressTotal: 100 }) }).compact,
     "Datenbank-Update\n3/7 Master aufbauen · 100 %", "Teilabschluss ist kein Gesamtabschluss");
+});
+
+test("vollständig gelesene CoL-Auswahl ist noch laufende Eingangsvorbereitung ohne behaupteten Folgemesswert", () => {
+  const master = build("CoL-Referenz", { progressCurrent: 273470, progressTotal: 273470, progressPercent: 60 });
+  const result = view({ master });
+  assert.equal(result.activityMessage, "CoL-Auswahl gelesen. Eingänge werden weiter vorbereitet und geprüft.");
+  assert.equal(result.step, 2);
+  assert.equal(result.phase, "CoL-Referenz", "Die gemeldete Backendphase bleibt erhalten");
+  assert.equal(result.percent, null);
+  assert.equal(result.running, true);
+  assert.equal(result.completed, false);
+  assert.equal(result.state, "läuft");
+  assert.match(result.detail, /CoL-Auswahl gelesen\. Eingänge werden weiter vorbereitet und geprüft\./);
+  assert.doesNotMatch(result.detail + result.compact, /100 %|60 %|Hash|Prüfsumme|Restzeit/);
+  const reading = view({ master: { ...master, progressCurrent: 273469 } });
+  assert.equal(reading.percent, 99); assert.equal(reading.activityMessage, undefined);
+  const following = view({ master: { ...master, progressPhase: "Suchindex", progressCurrent: 1, progressTotal: 100 } });
+  assert.equal(following.percent, 1); assert.equal(following.activityMessage, undefined);
+  assert.doesNotMatch(following.detail, /CoL-Auswahl gelesen/);
+});
+
+test("CoL-Übergangstext verdrängt weder Quellenarbeit, Fachfehler, Stopps noch alte oder ungültige Messungen", async (t) => {
+  const master = build("CoL-Referenz", { progressCurrent: 273470, progressTotal: 273470 });
+  for (const [label, input] of [
+    ["Quellenlauf", { master, reference: { active: true, phase: "download", progressCurrent: 1, progressTotal: 4 } }],
+    ["Masterfehler", { master: { ...master, error: "Prüfung fehlgeschlagen" } }],
+    ["Teilstand", { master: { ...master, active: false, status: "partial" } }],
+    ["Paketnachholung", { master: { ...master, lightroomPackage: { needsRebuild: true } } }],
+    ["Paketfehler", { master: { ...master, lightroomPackage: { error: "Paketprüfung fehlgeschlagen" } } }],
+    ["Pause", { master: { ...master, active: false, status: "paused" } }],
+    ["keine aktive Messung", { master: { ...master, active: false } }],
+    ["gespeicherte alte Messung", { master: { status: "idle", buildJob: { available: true, status: "building",
+      progress: { phase: "CoL-Referenz", current: 273470, total: 273470 } } } }],
+    ["andere Aktion", { master: { ...master, action: "activate" } }],
+    ["anderer Zustand", { master: { ...master, status: "activating" } }],
+    ["andere Phase", { master: { ...master, progressPhase: "Masterdatenbank schreiben" } }],
+    ["fehlende Menge", { master: { ...master, progressTotal: null } }],
+    ["leere Menge", { master: { ...master, progressCurrent: 0, progressTotal: 0 } }],
+    ["überschrittene Menge", { master: { ...master, progressCurrent: 273471 } }],
+    ["nicht endliche Menge", { master: { ...master, progressCurrent: Infinity, progressTotal: Infinity } }],
+  ]) await t.test(label, () => {
+    const result = view(input);
+    assert.equal(result?.activityMessage, undefined);
+    assert.doesNotMatch(result?.detail || "", /CoL-Auswahl gelesen/);
+    if (label === "Quellenlauf") { assert.equal(result.phase, "Quelldownload"); assert.equal(result.percent, 25); }
+    if (label === "andere Phase") assert.equal(result.percent, 100, "Andere abgeschlossene Teilmessungen bleiben erhalten");
+  });
 });
 
 test("Kompakte Kopfzeile erhält Pausen, Fehler und ausstehende Entscheidungen", () => {

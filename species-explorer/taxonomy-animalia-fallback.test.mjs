@@ -9,7 +9,7 @@ import { readProviderSlice } from "./taxonomy-master-slices.mjs";
 
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-animalia-"));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   return { root, file: path.join(root, "animalia.json") };
 }
 

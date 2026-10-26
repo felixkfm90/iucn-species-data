@@ -10,6 +10,7 @@ import {
   validatePortraitOptions,
 } from "../scripts/portrait-generator.mjs";
 import { DEFAULT_PORTRAIT_OPTIONS } from "../scripts/portrait-renderer.mjs";
+import { validateImageDecode } from "../scripts/image-validation.mjs";
 import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
 import { pruneAssetBackups, writeManagedAssetBackup } from "./asset-backups.mjs";
 import { findEditableSpecies } from "./species-model.mjs";
@@ -189,6 +190,8 @@ export function createPortraitAssetOperations({
       error.details = validated.errors;
       throw error;
     }
+    try { await validateImageDecode(validated.buffer, { format: validated.image.format, repoRoot }); }
+    catch (error) { error.statusCode = 400; throw error; }
     const source = await portraitAssetSourceRevision(species);
     removePreviousPortraitPreviews(id);
     const token = randomUUID();
@@ -210,6 +213,7 @@ export function createPortraitAssetOperations({
       });
       const renderedBuffer = await readFile(stagingPath);
       inspectWebp(renderedBuffer);
+      await validateImageDecode(renderedBuffer, { format: "webp", repoRoot });
       const sha256 = createHash("sha256").update(renderedBuffer).digest("hex");
       previewTokens.set(token, {
         type: "portrait-asset",

@@ -188,6 +188,33 @@ test("Gemeinsame Karten-Lightbox setzt Bild, Beschriftung und Scrollposition", (
   assert.equal(fixture.calls.reset.length, 3);
 });
 
+test("Gemeinsame Karten-Lightbox erhält ihre erste Bildquelle erst vor dem Öffnen", async () => {
+  const html = await readFile(new URL("./public/index.html", import.meta.url), "utf8");
+  const imageMarkup = html.match(/<img\b[^>]*\bid="asset-review-map-lightbox-image"[^>]*>/)?.[0];
+  assert.ok(imageMarkup, "Die gemeinsame Karten-Lightbox benötigt ihr Bildziel.");
+  assert.doesNotMatch(imageMarkup, /\ssrc(?:set)?\s*=/i,
+    "Ein zunächst unbenutztes Bild darf keine leere Quelle laden.");
+
+  const image = {};
+  const lightbox = { setAttribute() {} };
+  const openedSources = [];
+  const fixture = createFixture({
+    elements: {
+      assetReviewMapLightbox: lightbox,
+      assetReviewMapLightboxImage: image,
+    },
+    openDialog: () => openedSources.push(image.src),
+  });
+  assert.equal(fixture.controller.openSharedMapLightbox(""), false);
+  assert.equal(Object.hasOwn(image, "src"), false);
+  assert.deepEqual(openedSources, []);
+
+  assert.equal(fixture.controller.openSharedMapLightbox("/map-a.jpg", "Karte A"), true);
+  assert.equal(fixture.controller.openSharedMapLightbox("/map-b.jpg", "Karte B"), true);
+  assert.deepEqual(openedSources, ["/map-a.jpg", "/map-b.jpg"]);
+  assert.equal(image.alt, "Karte B");
+});
+
 test("Soundeditor wird nur bei einem tatsächlich offenen Sounddialog aktualisiert", async () => {
   const fixture = createFixture();
   assert.equal(await fixture.controller.refreshOpenSoundEditor("amsel"), false);

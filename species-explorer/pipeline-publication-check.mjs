@@ -1,8 +1,8 @@
 import { validateRepositoryMedia } from "../scripts/validate-media-assets.mjs";
 
 // Same media gate as CI, before staging/commit/push. Never modifies assets.
-export function checkPipelinePublication(repoRoot, validate = validateRepositoryMedia) {
-  const result = validate(repoRoot);
+export async function checkPipelinePublication(repoRoot, validate = validateRepositoryMedia) {
+  const result = await validate(repoRoot);
   if (result.ok) return { ok: true, message: "Lokale Medienprüfung bestanden." };
   const errors = result.errors || [];
   return { ok: false, message: "Übertragung angehalten: Die lokale Medienprüfung ist fehlgeschlagen. "

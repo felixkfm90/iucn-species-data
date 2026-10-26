@@ -4,6 +4,7 @@ local LrTasks = import "LrTasks"
 local LocationSuggestionReader = require "LocationSuggestionReader"
 local PluginState = require "PluginState"
 local Statistics = require "Statistics"
+local KeywordIdFinalizer = require "KeywordIdFinalizer"
 
 local LocationTimeWriter = {}
 
@@ -253,6 +254,43 @@ local function captureParts(photo)
   if year ~= "" then
     return year, month
   end
+
+  local function fallbackParts(key)
+    local value = photo:getRawMetadata(key)
+    table.insert(diagnostics, "raw." .. key .. "=" .. diagnosticValue(true, value))
+    local fallbackTimestamp = tonumber(value)
+    if fallbackTimestamp and fallbackTimestamp > 0 and fallbackTimestamp < math.huge then
+      local converted, fallbackYear, fallbackMonth = LrTasks.pcall(timestampParts, fallbackTimestamp)
+      local numericYear = tonumber(fallbackYear)
+      if converted and numericYear and numericYear >= 1800 and numericYear <= 3000 then
+        return fallbackYear, fallbackMonth
+      end
+    end
+    local fallbackYear, fallbackMonth = datePartsFromText(value)
+    local numericYear = tonumber(fallbackYear)
+    if numericYear and numericYear >= 1800 and numericYear <= 3000 then
+      return fallbackYear, fallbackMonth
+    end
+    local formatted = photo:getFormattedMetadata(key)
+    table.insert(diagnostics, "formatted." .. key .. "=" .. diagnosticValue(true, formatted))
+    fallbackYear, fallbackMonth = datePartsFromText(formatted)
+    numericYear = tonumber(fallbackYear)
+    if numericYear and numericYear >= 1800 and numericYear <= 3000 then
+      return fallbackYear, fallbackMonth
+    end
+    return "", ""
+  end
+
+  -- For SDK-confirmed videos, Lightroom can expose the visible recording date
+  -- as dateTimeDigitized while dateTime contains the later file creation date.
+  -- Photos must never substitute their scan date for a missing capture date.
+  if photo:getRawMetadata("isVideo") == true then
+    year, month = fallbackParts("dateTimeDigitized")
+    if year ~= "" then return year, month end
+  end
+
+  year, month = fallbackParts("dateTime")
+  if year ~= "" then return year, month end
   return "", "", table.concat(diagnostics, "; ")
 end
 
@@ -324,16 +362,18 @@ local function storedKeywordNames(photo)
   return keywordNamesForValues(values)
 end
 
-local function setMetadata(photo, field, value)
-  photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
+local function setMetadata(photo, field, value, expectedMetadata)
+  local text = metadataText(value)
+  photo:setPropertyForPlugin(_PLUGIN, field, text)
+  if expectedMetadata then KeywordIdFinalizer.recordMetadata(expectedMetadata, photo, field, text) end
 end
 
-local function clearMetadata(photo)
+local function clearMetadata(photo, expectedMetadata)
   for _, field in ipairs(VALUE_FIELDS) do
-    photo:setPropertyForPlugin(_PLUGIN, field, "")
+    setMetadata(photo, field, "", expectedMetadata)
   end
   for _, field in ipairs(INTERNAL_FIELDS) do
-    photo:setPropertyForPlugin(_PLUGIN, field, "")
+    setMetadata(photo, field, "", expectedMetadata)
   end
 end
 
@@ -344,6 +384,51 @@ local function existingAssignment(photo)
     end
   end
   return false
+end
+
+local function effectivePlan(photo, plan, preserveExisting)
+  local values = {}
+  for _, field in ipairs(VALUE_FIELDS) do
+    local stored = cleanText(photo:getPropertyForPlugin(_PLUGIN, field))
+    local source = cleanText(plan.values and plan.values[field])
+    values[field] = metadataText((preserveExisting and stored ~= "" or source == "") and stored or source)
+  end
+  return {
+    values = values, keywordNames = keywordNamesForValues(values),
+    hasLocationData = hasAnyValue(values, LOCATION_VALUE_FIELDS), hasGpsData = plan.hasGpsData,
+    hasTimeData = cleanText(values.fnCaptureMonth) ~= "" and cleanText(values.fnCaptureYear) ~= "",
+    captureDiagnostic = plan.captureDiagnostic,
+  }
+end
+
+local function assignmentMatches(photo, plan)
+  for _, field in ipairs(VALUE_FIELDS) do
+    if cleanText(photo:getPropertyForPlugin(_PLUGIN, field)) ~= cleanText(plan.values[field]) then return false end
+  end
+  local wanted, actual, ids = {}, {}, {}
+  for _, name in ipairs(plan.keywordNames) do wanted[string.lower(name)] = true end
+  for key, value in pairs(assignedKeywords(photo)) do
+    local keyword = (type(key) == "table" or type(key) == "userdata") and key or value
+    local name = keywordName(keyword)
+    if hasManagedSuffix(name) then
+      local normalized = string.lower(name)
+      if not wanted[normalized] or actual[normalized] then return false end
+      actual[normalized] = true
+      local id = keywordLocalIdentifier(keyword)
+      if id then ids[id] = true end
+    end
+  end
+  for name in pairs(wanted) do if not actual[name] then return false end end
+  if cleanText(photo:getPropertyForPlugin(_PLUGIN, "locationTimeKeywordNames")) ~= table.concat(plan.keywordNames, "\n") then return false end
+  local storedIds = {}
+  for _, id in ipairs(splitStored(photo:getPropertyForPlugin(_PLUGIN, "locationTimeKeywordIds"), "[^,]+")) do
+    if storedIds[id] or not ids[id] then return false end
+    storedIds[id] = true
+  end
+  for id in pairs(ids) do if not storedIds[id] then return false end end
+  local assignedAt = cleanText(photo:getPropertyForPlugin(_PLUGIN, "locationTimeAssignedAt"))
+  if hasAnyValue(plan.values, VALUE_FIELDS) then return assignedAt ~= "" end
+  return assignedAt == ""
 end
 
 local function removeStoredKeywords(catalog, photo, protectedNames)
@@ -395,7 +480,7 @@ local function prepareKeywordObjects(catalog, photos, plans, mode)
   end
   for index, photo in ipairs(photos or {}) do
     local plan = plans[index] or { keywordNames = {} }
-    if not (mode == "add" and existingAssignment(photo)) then
+    if not assignmentMatches(photo, plan) then
       for _, name in ipairs(plan.keywordNames or {}) do
         local key = string.lower(cleanText(name))
         if key ~= "" and not keywordsByName[key] then
@@ -413,6 +498,7 @@ end
 
 local function addKeywords(photo, names, keywordsByName)
   local ids = {}
+  local assigned = {}
   local added = 0
   for _, name in ipairs(names) do
     local keyword = keywordsByName[string.lower(cleanText(name))]
@@ -420,13 +506,14 @@ local function addKeywords(photo, names, keywordsByName)
       error("Lightroom lieferte für „" .. name .. "“ kein Stichwortobjekt zurück.", 0)
     end
     photo:addKeyword(keyword)
+    table.insert(assigned, keyword)
     added = added + 1
     local id = keywordLocalIdentifier(keyword)
     if id then
       table.insert(ids, tostring(id))
     end
   end
-  return ids, added
+  return ids, added, assigned
 end
 
 local function protectedNames(options, photo)
@@ -443,19 +530,21 @@ function LocationTimeWriter.prepare(catalog, photos, options)
   local selectedPhotos = photos or {}
   for index, photo in ipairs(selectedPhotos) do
     local values, captureDiagnostic, hasGpsData = sourceValues(photo)
+    local effective = effectivePlan(photo, { values = values, hasGpsData = hasGpsData,
+      captureDiagnostic = captureDiagnostic }, options.preserveExisting == true)
+    values = effective.values
     local hasLocationData = hasAnyValue(values, LOCATION_VALUE_FIELDS)
     plans[index] = {
       values = values,
       keywordNames = keywordNamesForValues(values),
       hasLocationData = hasLocationData,
       hasGpsData = hasGpsData,
-      hasTimeData = hasAnyValue(values, { "fnCaptureMonth", "fnCaptureYear" }),
+      hasTimeData = effective.hasTimeData,
       captureDiagnostic = captureDiagnostic,
     }
     if options.resolveSuggestedLocations == true
         and hasGpsData
-        and not hasLocationData
-        and not (options.skipExisting == true and existingAssignment(photo)) then
+        and not hasLocationData then
       table.insert(suggestionPhotos, photo)
     end
     if options.progress and (index % 250 == 0 or index == #selectedPhotos) then
@@ -465,6 +554,7 @@ function LocationTimeWriter.prepare(catalog, photos, options)
           canceled = true,
           suggestedLocationPhotoCount = #suggestionPhotos,
           unresolvedSuggestedLocationPhotoCount = 0,
+          failedSuggestedLocationPhotoCount = 0,
         }
       end
     end
@@ -474,6 +564,7 @@ function LocationTimeWriter.prepare(catalog, photos, options)
     canceled = false,
     suggestedLocationPhotoCount = #suggestionPhotos,
     unresolvedSuggestedLocationPhotoCount = 0,
+    failedSuggestedLocationPhotoCount = 0,
   }
   if #suggestionPhotos > 0 then
     if options.beforeSuggestions then
@@ -483,7 +574,12 @@ function LocationTimeWriter.prepare(catalog, photos, options)
     preparation.canceled = suggestions.canceled == true
     for index, photo in ipairs(selectedPhotos) do
       local values = suggestions.valuesByPhoto[photo]
-      if values then
+      local suggestionFailed = suggestions.failedByPhoto
+        and suggestions.failedByPhoto[photo] ~= nil
+      if suggestionFailed then
+        preparation.failedSuggestedLocationPhotoCount =
+          preparation.failedSuggestedLocationPhotoCount + 1
+      elseif values then
         mergeMissingValues(plans[index].values, values, LOCATION_VALUE_FIELDS)
         plans[index].hasLocationData = hasAnyValue(
           plans[index].values,
@@ -491,9 +587,9 @@ function LocationTimeWriter.prepare(catalog, photos, options)
         )
         plans[index].keywordNames = keywordNamesForValues(plans[index].values)
       end
-      if plans[index].hasGpsData
-          and not plans[index].hasLocationData
-          and not (options.skipExisting == true and existingAssignment(photo)) then
+      if not suggestionFailed
+          and plans[index].hasGpsData
+          and not plans[index].hasLocationData then
         preparation.unresolvedSuggestedLocationPhotoCount =
           preparation.unresolvedSuggestedLocationPhotoCount + 1
       end
@@ -523,6 +619,12 @@ function LocationTimeWriter.hasManagedKeywordSuffix(value)
 end
 
 function LocationTimeWriter.applyPrepared(catalog, photos, plans, mode, options)
+  local expectedMetadataByPhoto = options and options.expectedMetadataByPhoto or {}
+  local effectivePlans = {}
+  for index, photo in ipairs(photos or {}) do
+    effectivePlans[index] = effectivePlan(photo, plans[index] or {}, mode == "add")
+  end
+  plans = effectivePlans
   local result = {
     photoCount = #(photos or {}),
     changedPhotoCount = 0,
@@ -536,57 +638,79 @@ function LocationTimeWriter.applyPrepared(catalog, photos, plans, mode, options)
     addedKeywordCount = 0,
     removedKeywordCount = 0,
     afterValues = {},
+    pendingKeywordIds = {},
   }
   local keywordsByName = prepareKeywordObjects(catalog, photos, plans, mode)
   for index, photo in ipairs(photos or {}) do
     local plan = plans[index] or { values = {}, keywordNames = {} }
+    local changedBeforePhoto = result.changedPhotoCount
+    local assignedKeywordObjects = {}
+    local expectedMetadata = expectedMetadataByPhoto[photo]
     local alreadyAssigned = existingAssignment(photo)
+    local hadInternalValues = false
+    for _, field in ipairs(INTERNAL_FIELDS) do
+      if cleanText(photo:getPropertyForPlugin(_PLUGIN, field)) ~= "" then
+        hadInternalValues = true
+        break
+      end
+    end
     local removedBeforePhoto = result.removedKeywordCount
-    if mode == "add" and alreadyAssigned then
+    if mode ~= "remove" then
+      if not hasAnyValue(plan.values, VALUE_FIELDS) then
+        result.missingDataPhotoCount = result.missingDataPhotoCount + 1
+      end
+      if not plan.hasLocationData then
+        result.missingLocationPhotoCount = result.missingLocationPhotoCount + 1
+        if plan.hasGpsData then
+          result.gpsWithoutStoredLocationPhotoCount = result.gpsWithoutStoredLocationPhotoCount + 1
+        else
+          result.missingGpsAndLocationPhotoCount = result.missingGpsAndLocationPhotoCount + 1
+        end
+      end
+      if not plan.hasTimeData then
+        result.missingTimePhotoCount = result.missingTimePhotoCount + 1
+        if not result.captureDiagnostic then result.captureDiagnostic = plan.captureDiagnostic end
+      end
+    end
+    if mode ~= "remove" and assignmentMatches(photo, plan) then
       result.skippedPhotoCount = result.skippedPhotoCount + 1
-      result.afterValues[index] = false
+      result.afterValues[index] = plan.values
     else
+      if mode ~= "remove" and not expectedMetadata then
+        expectedMetadata = KeywordIdFinalizer.metadataExpectation(photo)
+        expectedMetadataByPhoto[photo] = expectedMetadata
+      end
       result.removedKeywordCount = result.removedKeywordCount
         + removeStoredKeywords(catalog, photo, protectedNames(options, photo))
-      clearMetadata(photo)
+      clearMetadata(photo, expectedMetadata)
       if mode == "remove" then
         result.afterValues[index] = {}
-        if alreadyAssigned or result.removedKeywordCount > removedBeforePhoto then
+        if alreadyAssigned or hadInternalValues or result.removedKeywordCount > removedBeforePhoto then
           result.changedPhotoCount = result.changedPhotoCount + 1
         end
-      elseif #plan.keywordNames == 0 then
+      elseif not hasAnyValue(plan.values, VALUE_FIELDS) then
         result.afterValues[index] = {}
-        result.missingDataPhotoCount = result.missingDataPhotoCount + 1
-      else
-        local ids, added = addKeywords(photo, plan.keywordNames, keywordsByName)
-        for _, field in ipairs(VALUE_FIELDS) do
-          setMetadata(photo, field, plan.values[field])
+        if alreadyAssigned or hadInternalValues or result.removedKeywordCount > removedBeforePhoto then
+          result.changedPhotoCount = result.changedPhotoCount + 1
         end
-        setMetadata(photo, "locationTimeKeywordIds", table.concat(ids, ","))
-        setMetadata(photo, "locationTimeKeywordNames", table.concat(plan.keywordNames, "\n"))
-        setMetadata(photo, "locationTimeAssignedAt", os.date("!%Y-%m-%dT%H:%M:%SZ"))
+      else
+        local ids, added, assigned = addKeywords(photo, plan.keywordNames, keywordsByName)
+        assignedKeywordObjects = assigned
+        for _, field in ipairs(VALUE_FIELDS) do
+          setMetadata(photo, field, plan.values[field], expectedMetadata)
+        end
+        setMetadata(photo, "locationTimeKeywordIds", table.concat(ids, ","), expectedMetadata)
+        setMetadata(photo, "locationTimeKeywordNames", table.concat(plan.keywordNames, "\n"), expectedMetadata)
+        setMetadata(photo, "locationTimeAssignedAt", os.date("!%Y-%m-%dT%H:%M:%SZ"), expectedMetadata)
         result.addedKeywordCount = result.addedKeywordCount + added
         result.changedPhotoCount = result.changedPhotoCount + 1
         result.afterValues[index] = plan.values
       end
-      if mode ~= "remove" then
-        if not plan.hasLocationData then
-          result.missingLocationPhotoCount = result.missingLocationPhotoCount + 1
-          if plan.hasGpsData then
-            result.gpsWithoutStoredLocationPhotoCount =
-              result.gpsWithoutStoredLocationPhotoCount + 1
-          else
-            result.missingGpsAndLocationPhotoCount =
-              result.missingGpsAndLocationPhotoCount + 1
-          end
-        end
-        if not plan.hasTimeData then
-          result.missingTimePhotoCount = result.missingTimePhotoCount + 1
-          if not result.captureDiagnostic then
-            result.captureDiagnostic = plan.captureDiagnostic
-          end
-        end
-      end
+    end
+    if mode ~= "remove" and result.changedPhotoCount > changedBeforePhoto then
+      table.insert(result.pendingKeywordIds, KeywordIdFinalizer.capture(
+        photo, "locationTimeKeywordIds", plan.keywordNames, assignedKeywordObjects, expectedMetadata
+      ))
     end
   end
   return result
@@ -620,7 +744,7 @@ function LocationTimeWriter.execute(catalog, photos, mode, options, preparedPlan
   for index, photo in ipairs(photos or {}) do
     beforeStatistics[index] = Statistics.photoSnapshot(photo)
   end
-  return runWithWriteAccess(
+  local result = runWithWriteAccess(
     catalog,
     mode == "remove"
         and "FN Wildlife Orts- und Zeitstichwörter entfernen"
@@ -636,11 +760,17 @@ function LocationTimeWriter.execute(catalog, photos, mode, options, preparedPlan
           result.afterValues[index]
         )
       end
-      PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
+      if result.changedPhotoCount > 0 then
+        PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
+      end
       result.afterValues = nil
       return result
     end
   )
+  local pendingKeywordIds = result.pendingKeywordIds
+  result.pendingKeywordIds = nil
+  KeywordIdFinalizer.finalize(catalog, pendingKeywordIds)
+  return result
 end
 
 return LocationTimeWriter

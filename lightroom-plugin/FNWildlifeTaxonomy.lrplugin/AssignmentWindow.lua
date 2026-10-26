@@ -9,14 +9,17 @@ local KeywordWriter = require "KeywordWriter"
 local LocationTimeWriter = require "LocationTimeWriter"
 local LocationTimeMenu = require "LocationTimeMenu"
 local PluginState = require "PluginState"
+local PhotoSelection = require "PhotoSelection"
 local TaxonomyHelper = require "TaxonomyHelper"
 local DataVersionView = require "DataVersionView"
 local NamePreference = require "NamePreference"
 local TaxonomyRanks = require "TaxonomyRanks"
+local TaxonomyDetailsView = require "TaxonomyDetailsView"
 
 local AssignmentWindow = {}
 local bind = LrView.bind
 local activeDialogControls = nil
+local detailsTransition = false
 local ASSIGNMENT_WINDOW_WIDTH = 960
 local ASSIGNMENT_GROUP_MARGIN = 10
 local ASSIGNMENT_CONTENT_WIDTH = ASSIGNMENT_WINDOW_WIDTH - 2 * ASSIGNMENT_GROUP_MARGIN
@@ -111,7 +114,7 @@ local function isSpeciesTaxon(taxon)
 end
 
 local function selectionState(catalog)
-  local photos = catalog:getTargetPhotos() or {}
+  local photos, hiddenCount = PhotoSelection.selectedWithCollapsedFolderStacks(catalog)
   if #photos == 0 then
     return photos, "Keine Fotos ausgewählt", "Keine Datei ausgewählt", 0
   end
@@ -139,6 +142,9 @@ local function selectionState(catalog)
   end
 
   local text = photoCountText(#photos) .. " ausgewählt"
+  if hiddenCount > 0 then
+    text = text .. " · einschließlich " .. tostring(hiddenCount) .. " aus eingeklappten Stapeln"
+  end
   if assigned == 0 then
     return photos, text .. " · noch ohne Taxonomie", selectionLabel, assigned
   end
@@ -163,6 +169,7 @@ local function recentItems()
 end
 
 function AssignmentWindow.show(context)
+  if detailsTransition then return end
   if activeDialogControls then
     local focused = pcall(function()
       activeDialogControls:toFront()
@@ -182,6 +189,9 @@ function AssignmentWindow.show(context)
   local searchRequestSerial = 0
   local selectionRefreshSerial = 0
   local scheduleAutoSearch = nil
+  local ownDialogControls, pendingDetails = nil, nil
+  local initialized = false
+  local transitionOwner, dialogGeneration = {}, 0
 
   local function setPreview(value)
     local text = tostring(value or "")
@@ -218,6 +228,7 @@ function AssignmentWindow.show(context)
   setPreview("Noch keine Art ausgewählt.")
   props.canAssign = false
   props.canCorrect = false
+  props.canReadDetails = false
   props.canRemove = false
   props.canSearch = false
   props.packageReady = false
@@ -253,10 +264,12 @@ function AssignmentWindow.show(context)
   props:addObserver("canRetryPreference", refreshPreferenceAction)
 
   local function refreshActions()
-    local photos = catalog:getTargetPhotos() or {}
+    local photos = PluginState.selectedPhotos(catalog)
     props.canSearch = props.packageReady and not props.busy
     props.canAssign = currentTaxon ~= nil and #photos > 0 and not props.busy
     props.canCorrect = isSpeciesTaxon(currentTaxon) and not props.busy
+    props.canReadDetails = currentTaxon ~= nil and not props.busy
+      and cleanText(props.query) == cleanText(currentTaxonQuery)
     -- Der Button bleibt auch nach einer früheren, nur teilweise erfolgreichen
     -- Entfernung verfügbar. So können verwaltete Stichwort-Altlasten in einem
     -- zweiten Durchlauf bereinigt werden, obwohl die Plug-in-Metadaten bereits
@@ -313,11 +326,29 @@ function AssignmentWindow.show(context)
     end
   end
 
+  local function refreshResultTitle(taxon)
+    local items, changed = {}, false
+    local title = resultTitle(taxon)
+    for _, item in ipairs(props.resultItems or {}) do
+      if item.value == taxon.masterTaxonId and item.title ~= title then
+        local updated = {}
+        for key, value in pairs(item) do updated[key] = value end
+        updated.title = title
+        table.insert(items, updated)
+        changed = true
+      else
+        table.insert(items, item)
+      end
+    end
+    if changed then props.resultItems = items end
+  end
+
   local function loadTaxon(masterTaxonId, sourceQuery)
     if cleanText(masterTaxonId) == "" then
-      return
+      return false
     end
     local requestedQuery = cleanText(sourceQuery)
+    local selectedResultId = cleanText(props.masterTaxonId)
     setBusy(true)
     props.searchStatus = "Taxonomiedetails werden geladen ..."
     local ok, taxon = LrTasks.pcall(TaxonomyHelper.request, {
@@ -325,15 +356,15 @@ function AssignmentWindow.show(context)
       masterTaxonId = masterTaxonId,
     })
     setBusy(false)
+    if requestedQuery ~= cleanText(props.query) or selectedResultId ~= cleanText(props.masterTaxonId) then
+      return false
+    end
     if not ok then
       props.searchStatus = "Taxonomiedetails konnten nicht geladen werden: " .. tostring(taxon)
-      return
-    end
-    if requestedQuery ~= "" and requestedQuery ~= cleanText(props.query) then
-      props.searchStatus = "Die Sucheingabe wurde geändert. Die neue Suche wird abgewartet."
-      return
+      return false
     end
     currentTaxon = taxon
+    refreshResultTitle(taxon)
     props.germanNameItems = NamePreference.items(taxon)
     props.selectedGermanName = taxon.germanName or ""
     currentTaxonQuery = requestedQuery
@@ -341,6 +372,7 @@ function AssignmentWindow.show(context)
     props.searchStatus = "Art ist zur Zuweisung bereit."
     refreshSelection()
     refreshPreferenceAction()
+    return true
   end
 
   local function search()
@@ -413,6 +445,7 @@ function AssignmentWindow.show(context)
     setPreview("Noch keine Art ausgewählt.")
     props.canAssign = false
     props.canCorrect = false
+    props.canReadDetails = false
     if string.len(query) < 2 then
       props.searchStatus = "Nach deutschem, englischem oder wissenschaftlichem Namen suchen."
       return
@@ -449,6 +482,8 @@ function AssignmentWindow.show(context)
       props.searchStatus = "Bitte zuerst eine Art auswählen."
       return
     end
+    local assignedFromTaxon = currentTaxon
+    local assignedResultId = cleanText(props.masterTaxonId)
     local selectedPackage = currentTaxon.searchPackage or {}
     local activePackage = TaxonomyHelper.searchPackageStatus()
     local selectedPackageId = cleanText(selectedPackage.packageId)
@@ -484,7 +519,7 @@ function AssignmentWindow.show(context)
         return
       end
     end
-    local photos = catalog:getTargetPhotos() or {}
+    local photos = PhotoSelection.selectedWithCollapsedFolderStacks(catalog)
     if #photos == 0 then
       props.searchStatus = "Bitte mindestens ein Foto auswählen."
       return
@@ -527,22 +562,30 @@ function AssignmentWindow.show(context)
       props.searchStatus = tostring(result)
       return
     end
+    local preferenceRefreshMessage = ""
     if preference and result.photoCount > 0 then
       local published, message = NamePreference.publish(preference)
       if published then pendingNamePreference = nil else pendingNamePreference = preference end
       props.canRetryPreference = not published
       props.preferenceStatus = message
+      if published and currentTaxon == assignedFromTaxon and cleanText(props.query) == query
+          and cleanText(props.masterTaxonId) == assignedResultId then
+        if not loadTaxon(assignedFromTaxon.masterTaxonId, query) then
+          preferenceRefreshMessage = props.searchStatus
+        end
+      end
     end
     PluginState.addRecentTaxon(assignmentTaxon)
     props.recentItems = recentItems()
     props.recentTaxonId = ""
     local germanName = cleanText(assignmentTaxon.germanName)
-    local speciesName = germanName ~= "" and germanName or cleanText(currentTaxon.acceptedScientificName)
+    local speciesName = germanName ~= "" and germanName or cleanText(assignmentTaxon.acceptedScientificName)
     if result.photoCount == 1 then
       props.searchStatus = "1 Foto wurde " .. speciesName .. " zugewiesen."
     else
       props.searchStatus = tostring(result.photoCount) .. " Fotos wurden " .. speciesName .. " zugewiesen."
     end
+    if preferenceRefreshMessage ~= "" then props.searchStatus = props.searchStatus .. " · " .. preferenceRefreshMessage end
     setBusy(false)
     refreshSelection()
   end
@@ -567,7 +610,7 @@ function AssignmentWindow.show(context)
   end
 
   local function removeAssignment()
-    local photos = catalog:getTargetPhotos() or {}
+    local photos = PluginState.selectedPhotos(catalog)
     if #photos == 0 then
       props.searchStatus = "Bitte mindestens ein zugeordnetes Foto auswählen."
       return
@@ -598,7 +641,7 @@ function AssignmentWindow.show(context)
 
   local function removeLocationTime()
     if props.busy then return end
-    local photos = catalog:getTargetPhoto() and catalog:getTargetPhotos() or {}
+    local photos = PluginState.selectedPhotos(catalog)
     setBusy(true)
     local ok, result, errorMessage = LrTasks.pcall(LocationTimeMenu.runForPhotos, catalog, photos, "remove")
     setBusy(false)
@@ -628,7 +671,8 @@ function AssignmentWindow.show(context)
     setBusy(false)
   end
 
-  local view = factory:column({
+  local function createView(shownGeneration)
+    return factory:column({
     bind_to_object = props,
     spacing = factory:dialog_spacing(),
     width = ASSIGNMENT_WINDOW_WIDTH,
@@ -822,6 +866,26 @@ function AssignmentWindow.show(context)
         }),
         factory:row({
           fill_horizontal = 1,
+          factory:push_button({
+            title = "Taxonomiedetails lesen",
+            enabled = bind("canReadDetails"),
+            tooltip = "Den vollständigen Taxonomietext in kleinen Seiten mit Weiter, Zurück und Schließen lesen. Fotos und Namen werden dabei nicht geändert.",
+            action = function()
+              if shownGeneration ~= dialogGeneration or not props.canReadDetails or props.busy or not currentTaxon
+                or detailsTransition or not ownDialogControls then return end
+              -- Das Windows-SDK hält schwebende Fenster vor modalen Dialogen.
+              -- Erst den eigenen Floater schließen; nach dessen blockTask-Rückkehr
+              -- lesen und eine neue Ansicht mit allen bisherigen Werten öffnen.
+              pendingDetails = props.preview
+              detailsTransition = transitionOwner
+              local closed, closeError = pcall(function() ownDialogControls:close() end)
+              if not closed then
+                pendingDetails = nil
+                if detailsTransition == transitionOwner then detailsTransition = false end
+                props.searchStatus = "Details konnten nicht geöffnet werden: " .. tostring(closeError)
+              end
+            end,
+          }),
           factory:spacer({ fill_horizontal = 1 }),
           factory:push_button({
             title = "Artbezeichnung korrigieren",
@@ -875,38 +939,67 @@ function AssignmentWindow.show(context)
       factory:push_button({
         title = "Schließen",
         action = function()
-          if activeDialogControls then
+          if shownGeneration == dialogGeneration and ownDialogControls then
             pcall(function()
-              activeDialogControls:close()
+              ownDialogControls:close()
             end)
           end
         end,
       }),
     }),
-  })
+    })
+  end
 
   refreshSelection()
   local shown, showError = LrTasks.pcall(function()
-    LrDialogs.presentFloatingDialog(_PLUGIN, {
-      title = "FN Wildlife – Taxonomie zuweisen",
-      contents = view,
-      blockTask = true,
-      save_frame = "fnWildlifeTaxonomyAssignmentWindowV7",
-      selectionChangeObserver = function()
-        scheduleSelectionRefresh()
-      end,
-      onShow = function(controls)
-        activeDialogControls = controls
-        LrTasks.startAsyncTask(function()
-          initializeSearchPackage()
-        end)
-      end,
-      windowWillClose = function()
-        activeDialogControls = nil
-      end,
-    })
+    while true do
+      dialogGeneration = dialogGeneration + 1
+      local shownGeneration = dialogGeneration
+      LrDialogs.presentFloatingDialog(_PLUGIN, {
+        title = "FN Wildlife – Taxonomie zuweisen",
+        contents = createView(shownGeneration),
+        blockTask = true,
+        save_frame = "fnWildlifeTaxonomyAssignmentWindowV7",
+        selectionChangeObserver = function()
+          if shownGeneration == dialogGeneration and ownDialogControls then scheduleSelectionRefresh() end
+        end,
+        onShow = function(controls)
+          if shownGeneration ~= dialogGeneration then return end
+          activeDialogControls, ownDialogControls = controls, controls
+          if detailsTransition == transitionOwner then detailsTransition = false end
+          if not initialized then
+            initialized = true
+            LrTasks.startAsyncTask(function()
+              initializeSearchPackage()
+            end)
+          end
+        end,
+        windowWillClose = function()
+          if shownGeneration ~= dialogGeneration then return end
+          if activeDialogControls == ownDialogControls then activeDialogControls = nil end
+          ownDialogControls = nil
+          selectionRefreshSerial = selectionRefreshSerial + 1
+        end,
+      })
+      dialogGeneration = dialogGeneration + 1
+      if activeDialogControls == ownDialogControls then activeDialogControls = nil end
+      ownDialogControls = nil
+      LrTasks.yield()
+      if not pendingDetails then break end
+      local preview = pendingDetails
+      pendingDetails = nil
+      local read, readError = LrTasks.pcall(TaxonomyDetailsView.show, preview)
+      LrTasks.yield()
+      if not read then
+        props.searchStatus = "Details konnten nicht geöffnet werden: " .. tostring(readError)
+      end
+      refreshSelection()
+    end
   end)
-  activeDialogControls = nil
+  dialogGeneration = dialogGeneration + 1
+  if activeDialogControls == ownDialogControls then activeDialogControls = nil end
+  ownDialogControls = nil
+  if detailsTransition == transitionOwner then detailsTransition = false end
   if not shown then
     error(showError)
   end

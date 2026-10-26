@@ -30,8 +30,9 @@ kleine Eingabefixtures unter `scripts/fixtures` bleiben unverändert.
 
 - `Daten/`, `temp/`, `storage-path.json` und Plug-in-temp sind lokal und Git-ignoriert.
 - Syntax-/Stilprüfung und Veröffentlichungscode-Größenbudget zählen diese Laufzeitbestände nicht als Quellen.
-- Die bestehende Pages-Allowlist wird nicht erweitert: Datenbanken, Speicherkonfiguration und Tempdateien
-  dürfen nicht in das öffentliche Artefakt gelangen.
+- Die Pages-Positivliste enthält nur ausdrücklich benötigte öffentliche Laufzeitdateien. Neue öffentliche
+  Module werden einzeln aufgenommen und geprüft; Datenbanken, Speicherkonfiguration und Tempdateien
+  dürfen weiterhin nicht in das öffentliche Artefakt gelangen.
 - Das bewusst gestartete vollständige NAS-Backup schließt `Daten/` und `storage-path.json` ein, aber weder
   Explorer-temp noch Plug-in-temp. Alte `Testlauf`-Ausschlüsse bleiben unverändert.
 - Der Wiederholungsnachweis bindet zusätzlich SHA-256 der dauerhaften Daten und Speicherkonfiguration.

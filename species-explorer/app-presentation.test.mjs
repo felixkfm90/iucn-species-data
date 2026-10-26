@@ -9,9 +9,13 @@ new vm.Script(source, { filename: "app-presentation.js" }).runInContext(context)
 const presentation = context.SpeciesExplorerPresentation;
 
 test("Anzeigehelfer formatieren Größen, IUCN-Status und Datumswerte", () => {
-  assert.equal(presentation.formatBytes(0), "0 KB");
-  assert.equal(presentation.formatBytes(1536), "2 KB");
-  assert.equal(presentation.formatBytes(1.5 * 1024 * 1024), "1.5 MB");
+  assert.equal(presentation.formatBytes(0), "0 KiB");
+  assert.equal(presentation.formatBytes(1536), "2 KiB");
+  assert.equal(presentation.formatBytes(1.5 * 1024 * 1024), "1,5 MiB");
+  assert.equal(presentation.formatBytes(12 * 1024 ** 3), "12 GiB");
+  assert.equal(presentation.formatBytes(12.5 * 1024 ** 3), "12,5 GiB");
+  assert.equal(presentation.formatBytes(1024 ** 4), "1.024 GiB");
+  for (const invalid of [-1, NaN, Infinity, "ungültig"]) assert.equal(presentation.formatBytes(invalid), "Unbekannt");
   assert.equal(presentation.formatIucnFetchDate("2026-07-14"), "14.07.2026");
   assert.equal(presentation.formatIucnFetchDate(""), "Unbekannt");
   assert.equal(presentation.formatIucnStatus("EN"), "Stark gefährdet (EN)");
@@ -70,7 +74,7 @@ test("Assetanzeigen und Medienversionen bleiben deterministisch", () => {
   assert.equal(presentation.assetStatusText({ exists: false }), "Fehlt");
   assert.equal(
     presentation.assetStatusText({ exists: true, hashVerified: true, manuallyAdded: true, bytes: 2048 }),
-    "Vorhanden · Soundhash geprüft · manuell hinzugefügt · 2 KB",
+    "Vorhanden · Soundhash geprüft · manuell hinzugefügt · 2 KiB",
   );
   assert.equal(
     presentation.assetStatusText({ stale: true, staleReason: "Prüfsumme abweichend" }),

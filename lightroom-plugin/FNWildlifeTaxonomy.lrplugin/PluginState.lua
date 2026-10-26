@@ -7,6 +7,7 @@ local PluginState = {}
 local prefs = LrPrefs.prefsForPlugin()
 local STATISTICS_INDEX_FIELD = "statisticsIndexV1"
 local STATISTICS_BUILD_FIELD = "statisticsBuildV1"
+local STATISTICS_REVISION_FIELD = "statisticsRevisionV1"
 local WRITE_ACCESS_TIMEOUT_SECONDS = 10
 
 local function cleanText(value)
@@ -33,6 +34,20 @@ local function catalogKey(catalog)
     return tostring(path)
   end
   return "unbekannter-katalog"
+end
+
+function PluginState.selectedPhotos(catalog)
+  -- Ohne aktives Foto liefert getTargetPhotos den unmarkierten Filmstreifen.
+  -- Jede Auswahlaktion bindet ausschließlich tatsächlich markierte Fotos.
+  if not catalog:getTargetPhoto() then return {} end
+  local selected, seen = {}, {}
+  for _, photo in ipairs(catalog:getTargetPhotos() or {}) do
+    if not seen[photo] then
+      seen[photo] = true
+      table.insert(selected, photo)
+    end
+  end
+  return selected
 end
 
 function PluginState.recentTaxa()
@@ -66,9 +81,16 @@ local function decodeCatalogValue(catalog, field)
   return decodeTable(catalog:getPropertyForPlugin(_PLUGIN, field))
 end
 
-local function writeCatalogValues(catalog, values, clearFields)
+function PluginState.statisticsRevision(catalog)
+  return tonumber(catalog:getPropertyForPlugin(_PLUGIN, STATISTICS_REVISION_FIELD) or 0) or 0
+end
+
+local function writeCatalogValues(catalog, values, clearFields, expectedRevision)
   local completed = false
   catalog:withPrivateWriteAccessDo(function()
+    if expectedRevision ~= nil and PluginState.statisticsRevision(catalog) ~= expectedRevision then
+      error("FN-Daten wurden während des Statistikaufbaus geändert. Bitte Statistik neu aufbauen; der bisherige Index bleibt erhalten.", 0)
+    end
     for field, value in pairs(values) do
       catalog:setPropertyForPlugin(_PLUGIN, field, value)
     end
@@ -103,6 +125,7 @@ function PluginState.statisticsBuild(catalog, totalPhotos)
   if type(build) ~= "table"
     or tonumber(build.schemaVersion) ~= StatisticsIndex.SCHEMA_VERSION
     or tonumber(build.totalPhotos or -1) ~= tonumber(totalPhotos or -2)
+    or tonumber(build.dataRevision or -1) ~= PluginState.statisticsRevision(catalog)
     or not StatisticsIndex.isValid(build.index)
   then
     return nil
@@ -114,7 +137,7 @@ function PluginState.saveStatisticsBuild(catalog, build)
   build.catalogPath = catalogKey(catalog)
   writeCatalogValues(catalog, {
     [STATISTICS_BUILD_FIELD] = Json.encode(build),
-  })
+  }, nil, build.dataRevision)
 end
 
 function PluginState.saveStatisticsIndex(catalog, index)
@@ -123,15 +146,21 @@ function PluginState.saveStatisticsIndex(catalog, index)
   index.generatedAt = os.date("%d.%m.%Y, %H:%M")
   writeCatalogValues(catalog, {
     [STATISTICS_INDEX_FIELD] = Json.encode(index),
-  }, { STATISTICS_BUILD_FIELD })
+  }, { STATISTICS_BUILD_FIELD }, index.dataRevision)
 end
 
 function PluginState.applyStatisticsPhotoChanges(catalog, beforeSnapshots, afterSnapshots)
+  -- Ein pausierter oder gleichzeitig laufender Aufbau hat ältere Fotowerte.
+  -- Er darf sie nach einer eigenen FN-Aktion nicht als aktuell veröffentlichen.
+  local revision = PluginState.statisticsRevision(catalog) + 1
+  catalog:setPropertyForPlugin(_PLUGIN, STATISTICS_REVISION_FIELD, revision)
+  catalog:setPropertyForPlugin(_PLUGIN, STATISTICS_BUILD_FIELD, nil)
   local index = decodeCatalogValue(catalog, STATISTICS_INDEX_FIELD)
   if not StatisticsIndex.isValid(index) or index.status ~= "complete" then
     return false
   end
   StatisticsIndex.applyChanges(index, beforeSnapshots, afterSnapshots)
+  index.dataRevision = revision
   index.generatedAt = os.date("%d.%m.%Y, %H:%M")
   catalog:setPropertyForPlugin(_PLUGIN, STATISTICS_INDEX_FIELD, Json.encode(index))
   return true

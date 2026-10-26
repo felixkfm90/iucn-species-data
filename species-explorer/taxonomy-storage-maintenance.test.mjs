@@ -10,6 +10,7 @@ import { acquireMasterJobLock, prepareMasterJob } from "./taxonomy-master-job.mj
 import { executeMasterJob } from "./taxonomy-master-worker.mjs";
 import { assertTaxonomySpace, availableTaxonomySpace, TAXONOMY_SPACE_RESERVE } from "./taxonomy-space-budget.mjs";
 import { writeTaxonomyPublication, publishTaxonomyPair, prepareTaxonomyPublication } from "./taxonomy-publication.mjs";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const hash = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const checksum = (value) => `sha256:${crypto.createHash("sha256").update(value).digest("hex")}`;
@@ -23,10 +24,11 @@ async function age(directory) {
   }
   await fs.utimes(directory, old, old);
 }
-async function fixture(t) {
+async function fixture(t, { nestedData = false } = {}) {
   const root = await fs.mkdtemp(path.join(tmpdir(), "fn-storage-"));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
-  const taxonomyRoot = path.join(root, "taxonomy"), searchRoot = path.join(root, "lightroom");
+  const dataRoot = nestedData ? path.join(root, "Daten") : root;
+  const taxonomyRoot = path.join(dataRoot, "taxonomy"), searchRoot = path.join(dataRoot, "lightroom");
   const controller = new MasterRunController(taxonomyRoot);
   async function pair() {
     const id = `publication-${crypto.randomUUID()}`, masterVersion = `master-${crypto.randomUUID()}`, packageId = `package-${crypto.randomUUID()}`;
@@ -103,6 +105,194 @@ test("Unklare Rezepte und fremde Dateien werden nicht gelöscht; ihre Paarabhän
   await fs.writeFile(path.join(fresh.obsolete.directories[0], "meine-notizen.txt"), "nicht löschen");
   await age(fresh.obsolete.directories[0]);
   assert.match((await fresh.service().preview()).items.find((row) => row.id === fresh.obsolete.id).reason, /nicht vom Aufbau/);
+});
+
+async function historicalStorageFixture(t) {
+  const f = await fixture(t, { nestedData: true });
+  const sourceRoot = path.join(f.root, "old-data"), previousRepoRoot = path.join(f.root, "old-program");
+  const plan = { schemaVersion: 1, repoRoot: previousRepoRoot, sourceRoot,
+    targetRoot: path.join(previousRepoRoot, "Daten"), files: [], totalBytes: 0 };
+  plan.revision = hash(plan);
+  const journalFile = path.join(f.root, "Daten", ".storage-migration.json");
+  const journal = { schemaVersion: 1, state: "committed", plan, copied: [] };
+  await json(journalFile, journal);
+  await json(path.join(f.root, "storage-path.json"), { schemaVersion: 1, state: "ready", dataRoot: "Daten",
+    legacyDataRoot: sourceRoot, previousRepoRoot, migrationRevision: plan.revision });
+  const required = await f.pair();
+  const historicalFile = path.join(sourceRoot, "taxonomy", "master", "releases", required.id, "taxonomy-master.sqlite");
+  const job = await f.job("paused", [[historicalFile, "original-checksum"]]);
+  const recipe = { ...job.recipe, taxonomyRoot: path.join(sourceRoot, "taxonomy"), revision: undefined };
+  recipe.revision = hash(recipe);
+  const recipeFile = path.join(job.directory, "recipe.json");
+  await json(recipeFile, recipe);
+  await age(job.directory);
+  const relocatePath = (filename) => relocatedStoragePath(filename, { repoRoot: f.root });
+  return { ...f, sourceRoot, required, job, recipe, recipeFile, journal, journalFile, relocatePath };
+}
+
+test("Verifiziert umgezogene Originalrezepte schützen gebundene Paare ohne pauschale Sperre; Originalbytes bleiben", async (t) => {
+  const f = await historicalStorageFixture(t);
+  const before = await fs.readFile(f.recipeFile);
+  const plan = await f.service({ relocatePath: f.relocatePath }).preview();
+  const byId = new Map(plan.items.map((row) => [row.id, row]));
+  assert.equal(byId.get(f.job.id).reason, "Offener oder möglicherweise fortsetzbarer Auftrag");
+  assert.equal(byId.get(f.required.id).eligible, false);
+  assert.equal(byId.get(f.obsolete.id).eligible, true);
+  assert.deepEqual(await fs.readFile(f.recipeFile), before);
+  assert.equal(JSON.parse(before).revision, f.recipe.revision);
+});
+
+test("Unbekannte historische Wurzel, verändertes Rezept und beschädigter Umzugsbeleg schützen sämtliche Paare", async (t) => {
+  for (const change of ["unknown-root", "foreign-prefix", "changed-recipe", "changed-journal"]) await t.test(change, async (t) => {
+    const f = await historicalStorageFixture(t);
+    if (change === "changed-journal") await json(f.journalFile, { ...f.journal, state: "prepared" });
+    else {
+      const recipe = { ...f.recipe, taxonomyRoot: path.join(`${f.sourceRoot}${change === "foreign-prefix" ? "-foreign" : "-unknown"}`, "taxonomy") };
+      if (change !== "changed-recipe") recipe.revision = hash({ ...recipe, revision: undefined });
+      await json(f.recipeFile, recipe);
+    }
+    const before = await fs.readFile(f.recipeFile);
+    const plan = await f.service({ relocatePath: f.relocatePath }).preview();
+    assert.equal(plan.items.some((row) => row.kind === "pair" && row.eligible), false);
+    assert.match(plan.items.find((row) => row.id === f.job.id).reason, /Unvollständiges Auftragsrezept/);
+    assert.deepEqual(await fs.readFile(f.recipeFile), before);
+  });
+});
+
+test("Offener Auftrag schützt transitiv Originalrezepte und Eingänge fertiger Altaufträge sowie deren Paare", async (t) => {
+  const f = await fixture(t), requiredPair = await f.pair();
+  const original = await f.job("ready", [[path.join(requiredPair.directories[0], "taxonomy-master.sqlite"), "pair-checksum"]]);
+  await fs.writeFile(path.join(original.directory, "col.jsonl"), "unersetzbarer Originaleingang\n");
+  await age(original.directory);
+  const intermediate = await f.job("ready", [[path.join(original.directory, "recipe.json"), "original-checksum"]]);
+  const failed = await f.job("failed", [[path.join(intermediate.directory, "recipe.json"), "intermediate-checksum"]]);
+  const unbound = await f.job();
+  const plan = await f.service().preview(), byId = new Map(plan.items.map((row) => [row.id, row]));
+  for (const entry of [original, intermediate, failed, requiredPair]) assert.equal(byId.get(entry.id).eligible, false, entry.id);
+  assert.match(byId.get(original.id).reason, /geschützten Aufbauauftrag/);
+  assert.equal(byId.get(unbound.id).eligible, true);
+  const originalBytes = await fs.readFile(path.join(original.directory, "col.jsonl"));
+  const result = await f.service().clean({ confirmed: true, revision: plan.revision });
+  assert.ok(result.removed.some((row) => row.id === unbound.id));
+  assert.deepEqual(await fs.readFile(path.join(original.directory, "col.jsonl")), originalBytes);
+});
+
+test("Zyklische fertige Aufträge bleiben geschützt, ohne unverknüpfte abgeschlossene Eingänge dauerhaft zu sperren", async (t) => {
+  const f = await fixture(t), first = await f.job(), second = await f.job(), unbound = await f.job();
+  for (const [job, dependency] of [[first, second], [second, first]]) {
+    const recipe = { ...job.recipe, binding: { files: [[path.join(dependency.directory, "recipe.json"), "checksum"]] }, revision: undefined };
+    recipe.revision = hash(recipe);
+    await json(path.join(job.directory, "recipe.json"), recipe);
+    await age(job.directory);
+  }
+  const plan = await f.service().preview(), byId = new Map(plan.items.map((row) => [row.id, row]));
+  for (const job of [first, second]) {
+    assert.equal(byId.get(job.id).eligible, false);
+    assert.match(byId.get(job.id).reason, /Zyklische Auftragsabhängigkeit/);
+  }
+  assert.equal(byId.get(unbound.id).eligible, true);
+});
+
+test("Eigene Auftragseingänge sind kein Zyklus; fremder UUID-Pfad entsichert keine Aufträge", async (t) => {
+  for (const foreign of [false, true]) await t.test(String(foreign), async (t) => {
+    const f = await fixture(t), job = await f.job();
+    const input = path.join(foreign ? path.join(f.root, "foreign", job.id) : job.directory, "col.jsonl");
+    const recipe = { ...job.recipe, binding: { files: [[input, "checksum"]] }, revision: undefined };
+    recipe.revision = hash(recipe);
+    await json(path.join(job.directory, "recipe.json"), recipe);
+    await age(job.directory);
+    const plan = await f.service().preview();
+    assert.equal(plan.items.find((row) => row.id === job.id).eligible, !foreign);
+    if (foreign) assert.equal(plan.items.some((row) => row.eligible), false);
+  });
+});
+
+test("Windows-Pfadalias eines benötigten Originalauftrags wird nicht als ungebunden behandelt", async (t) => {
+  const f = await fixture(t), required = await f.job(), unbound = await f.job(), requiredPair = await f.pair();
+  const original = path.join(required.directory, "recipe.json");
+  const alias = process.platform === "win32" ? original.toUpperCase() : original;
+  const pairInput = path.join(requiredPair.directories[0], "taxonomy-master.sqlite");
+  const pairAlias = process.platform === "win32" ? pairInput.toUpperCase() : pairInput;
+  await fs.access(alias);
+  await fs.access(pairAlias);
+  await f.job("failed", [[alias, "checksum"], [pairAlias, "checksum"]]);
+  const byId = new Map((await f.service().preview()).items.map((row) => [row.id, row]));
+  assert.equal(byId.get(required.id).eligible, false);
+  assert.equal(byId.get(requiredPair.id).eligible, false);
+  assert.equal(byId.get(unbound.id).eligible, true);
+  assert.equal(byId.get(f.obsolete.id).eligible, true);
+});
+
+test("Quellenreparaturbeleg schützt seinen Auftrag; geänderter Beleg invalidiert den Bereinigungsplan", async (t) => {
+  const f = await fixture(t), required = await f.job(), unbound = await f.job();
+  const file = path.join(f.taxonomyRoot, "master", "source-recovery", "transfers", "proof.json");
+  const proof = { schemaVersion: 1, kind: "source-recovery-candidate", state: "ready",
+    jobId: required.id, jobRevision: required.recipe.revision };
+  await json(file, { ...proof, checksum: hash(proof) });
+  const plan = await f.service().preview(), byId = new Map(plan.items.map((row) => [row.id, row]));
+  assert.equal(byId.get(required.id).eligible, false);
+  assert.equal(byId.get(unbound.id).eligible, true);
+  await json(file, { schemaVersion: 1, state: "ready", jobId: unbound.id, changed: true });
+  await assert.rejects(f.service().clean({ confirmed: true, revision: plan.revision }), /seit der Vorschau/);
+  await fs.access(path.join(required.directory, "recipe.json"));
+});
+
+test("Veränderte Reparaturprüfsumme oder Auftragsrevision schützt alle Jobs und Paare", async (t) => {
+  for (const change of ["checksum", "missing-checksum", "job-revision"]) await t.test(change, async (t) => {
+    const f = await fixture(t), required = await f.job(), unbound = await f.job();
+    const body = { schemaVersion: 1, kind: "source-recovery-candidate", state: "ready",
+      jobId: required.id, jobRevision: change === "job-revision" ? "changed" : required.recipe.revision };
+    const proof = { ...body, checksum: hash(body) };
+    if (change === "checksum") proof.jobId = unbound.id;
+    if (change === "missing-checksum") delete proof.checksum;
+    await json(path.join(f.taxonomyRoot, "master", "source-recovery", "transfers", "proof.json"), proof);
+    const plan = await f.service().preview();
+    assert.equal(plan.items.some((row) => row.eligible), false);
+    assert.ok(plan.warnings.length);
+  });
+});
+
+test("Gesicherter Reparaturkandidat schützt seinen Originalauftrag über die Buildrevision", async (t) => {
+  const f = await fixture(t), required = await f.job(), unbound = await f.job();
+  await json(path.join(f.taxonomyRoot, "master", "source-recovery", "retained-candidates", "recovery", "manifest.json"), {
+    schemaVersion: 4, candidateId: "historical-master", buildJobRevision: required.recipe.revision,
+  });
+  const plan = await f.service().preview(), byId = new Map(plan.items.map((row) => [row.id, row]));
+  assert.equal(byId.get(required.id).eligible, false);
+  assert.equal(byId.get(unbound.id).eligible, true);
+});
+
+test("Unlesbarer Status, aktueller Zeiger oder Quellenreparaturbeleg erlaubt keine Bereinigung", async (t) => {
+  for (const change of ["state", "current", "source-recovery"]) await t.test(change, async (t) => {
+    const f = await fixture(t), job = await f.job(), unbound = await f.job();
+    const file = change === "state" ? path.join(job.directory, "state.json") : change === "current"
+      ? path.join(f.taxonomyRoot, "master", "build-jobs", "current.json")
+      : path.join(f.taxonomyRoot, "master", "source-recovery", "transfers", "proof.json");
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, "unlesbar");
+    if (change === "current") await assert.rejects(f.service().preview(), SyntaxError);
+    else assert.equal((await f.service().preview()).items.some((row) => row.eligible), false);
+    await fs.access(path.join(unbound.directory, "recipe.json"));
+  });
+});
+
+test("Fehlende, manipulierte oder unlesbare Auftragsbindung schützt auch fertige Altaufträge und Paare", async (t) => {
+  for (const change of ["missing-job", "changed-binding", "malformed-binding", "unreadable-recipe"]) await t.test(change, async (t) => {
+    const f = await fixture(t), needed = await f.job(), failed = await f.job("failed");
+    const file = path.join(failed.directory, "recipe.json");
+    const recipe = { ...failed.recipe, revision: undefined,
+      binding: { files: [[path.join(needed.directory, "recipe.json"), "checksum"]] } };
+    if (change === "missing-job") recipe.binding.files[0][0] = path.join(path.dirname(needed.directory), `job-${crypto.randomUUID()}`, "recipe.json");
+    if (change === "malformed-binding") recipe.binding.files = [null];
+    recipe.revision = hash(recipe);
+    if (change === "changed-binding") recipe.binding.files = [];
+    if (change === "unreadable-recipe") await fs.writeFile(file, "unlesbar");
+    else await json(file, recipe);
+    await age(failed.directory);
+    const plan = await f.service().preview();
+    assert.equal(plan.items.some((row) => row.eligible), false);
+    await fs.access(path.join(needed.directory, "recipe.json"));
+  });
 });
 
 test("Laufende Master-/Paarprozesse und Kontrollsperren verhindern Speicherpflege", async (t) => {

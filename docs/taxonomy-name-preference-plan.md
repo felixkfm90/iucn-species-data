@@ -1,6 +1,27 @@
 # Bevorzugte Artnamen in Explorer und Lightroom
 
-Stand: 2026-10-04
+Stand: 2026-10-19
+
+## Übereinstimmende Trefferbeschriftungen ab 0.4.24.34
+
+Nach erfolgreicher Namenswahl, Rückwahl oder Anbieterstandard erneuern Explorer und Lightroom auch
+die Beschriftung des bereits vorhandenen Suchtreffers aus den frisch gelesenen Taxondetails. Die
+Suchanfrage, ausgewählte Kennung, Reihenfolge und andere Treffer bleiben erhalten; keine erneute Suche.
+Bloße Vorauswahl, abgebrochene Bestätigung und fehlgeschlagene Speicherung ändern den Titel nicht.
+Antworten zu inzwischen geänderter Suche oder Auswahl werden verworfen, einschließlich alter Fehler.
+Eine über „Zuletzt verwendet“ geöffnete Art wird nicht zusätzlich in eine fremde Trefferliste eingefügt.
+
+Im Explorer öffnet eine verspätete Vorschau nach Such-, Auswahl- oder Dialogwechsel keine Bestätigung
+mehr. Nach Abbrechen oder Escape in der Namensvorschau kehrt verlorener Tastaturfokus zum wieder
+aktivierten Auslöser zurück, sofern dieselbe Art und Namensauswahl weiterhin offen sind. Eine inzwischen
+bewusst fokussierte andere Eingabe behält ihren Fokus. Die gezielte Browsernachprobe mit Escape,
+Klickabbruch und schmaler Ansicht ist am 19. Oktober bestanden; der Auditauftrag, Abschnitt 10.38,
+trennt sie vom automatisierten Verhaltensnachweis und vollständigen lokalen Prüfgate.
+
+Bei einer Fotozuweisung mit erfolgreich mitgespeicherter Namenspräferenz liest Lightroom die Art einmal
+frisch. Ein zusätzlicher Lesefehler wird neben der bereits erfolgreichen Fotozuweisung sichtbar; es gibt
+keinen zweiten Fotoschreibvorgang. Reine Namensaktionen verändern weiterhin keine bereits zugewiesenen
+Fotos. Quelltests und tatsächlicher Ladestand werden im [Auditauftrag, Abschnitt 10.36](audit-auftrag-phase-10-5.md#1036-globale-namenswahl-und-widersprüchliche-trefferbeschriftung--17-oktober) getrennt nachgewiesen.
 
 ## Lightroom-Buttonbeschriftungen ab 0.4.24.18
 
@@ -17,7 +38,9 @@ die unterschiedliche Wirkung; API, Bestätigungen, Revisionsbindung und Speicher
 Bereits zugewiesene Fotos und Projektdateien werden durch diese Namensaktionen nicht umbenannt. Der separate
 Explorer-Button und die Bestätigungsdialoge dürfen weiterhin `Namenswahl übernehmen` heißen; die obige Tabelle
 bezieht sich auf die kompakte Lightroom-Buttonreihe. Nach Detailaktualisierung wird der Speicherbutton erneut
-gegen den tatsächlich bevorzugten Namen geprüft. Sichtabnahme der neuen Reihe bleibt offen.
+gegen den tatsächlich bevorzugten Namen geprüft. Die kompakte Reihe und ihre reine Namenswirkung
+sind in der eigenen nativen .34-Runde einschließlich kontrolliertem Aktivierungsfehler und
+„Speichern wiederholen“ geprüft; genaue Grenzen im Auditauftrag, Abschnitt 10.36.
 Ab 0.4.24.19 erscheinen tatsächliche Namensrückmeldungen zusammen mit dem Such-/Aktionsstatus; dessen Tooltip
 enthält den vollständigen Text. Die bislang auch leer zweizeilig reservierte Namensstatusfläche entfällt.
 Die zuletzt verwendeten Arten bleiben ausschließlich ausdrücklich wählbare Suchabkürzungen: leere Startauswahl,

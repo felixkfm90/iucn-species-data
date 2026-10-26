@@ -1,8 +1,29 @@
 # Add Species Workflow
 
-Stand: 2026-10-05
+Stand: 2026-10-23
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
+
+## Verfügbarkeit vor dem Öffnen
+
+`Neue Art` prüft vor dem Öffnen und Zurücksetzen des Formulars den aktuellen Serverzustand. Ein noch
+offener Datenbankauftrag, laufende Datenbankarbeit, eine Sicherung oder Speicherung erhält sofort einen
+kurzen Hinweis. Ein fehlgeschlagener Auftrag heißt dabei ausdrücklich „fehlgeschlagen“; er bleibt bis zur
+sicheren Behandlung des gespeicherten Auftrags eine Sperre für neue Arten. Der Hinweis startet keinen
+Aufbau und verwirft keine Daten. Bei nicht erreichbarer Prüfung bleibt das Formular geschlossen.
+Vorschau und Speicherung prüfen die Sperre serverseitig erneut, falls zwischenzeitlich ein Update beginnt.
+Bestehende Artanlage-Aufträge bleiben getrennt lesbar und abbrechbar. Automatisierte Gegenproben mit
+eigenem Server und eigenen Dateien stehen im [Auditauftrag](audit-auftrag-phase-10-5.md#1022-vorrangige-fn--und-artanlage-reparaturen--11-oktober).
+
+Eine bewusst gewählte Art bindet ihre Master-ID beziehungsweise rohe CoL-/Ergänzungsreferenz an die
+Vorschau. Rohe Referenzen binden zusätzlich die tatsächlichen Anbieterkennungen; lokale CoL-Zeilennummern
+dürfen nach einem Quellenwechsel keinen anderen Anbieterbeleg unter einen alten Entwurf schieben.
+Vorschau und spätere Speicherung prüfen diese Auswahl erneut. Inzwischen als quellenungeklärt zurückbehaltene Klassifikationen
+werden nicht zur neuen Auswahl angeboten und können auch über einen alten Auswahlstand oder
+Vorschautoken nicht übernommen werden. Das gilt auch für konkret zurückgehaltene rohe CoL-/
+Ergänzungsbelege, anhand Anbieter plus Anbieter-Datensatz-ID. Direkte Verwaltungsdetails bleiben lesbar. Freie manuelle
+Artangaben bleiben möglich; aus einem gleichen Namen wird keine Masteridentität hergeleitet.
+Regel und Schutzumfang: [Mastervertrag](taxonomy-master-database-design.md).
 
 ## Artassistent bei fehlenden Medien – Korrektur vom 4. Oktober
 
@@ -25,10 +46,29 @@ Der geführte, an genau eine Art gebundene Suchlauf hält jetzt auch bei leerem 
 Automatisierte UI-/Controller-Gegenproben prüfen leeres Suchergebnis, Kartenimport, Sound-Abschluss,
 Rücksetzen/Wiederholen, gebundene Fortsetzung und Wiederöffnung. Kein produktiver Goldbaumsteiger-Neulauf
 oder neues Karten-/Soundasset durch die Reparatur. Felix hat die geführte Abfolge am Schwarzstorch in allen
-Instanzen praktisch bestätigt. Die neue echte Artanlage-Abbruchprüfung einschließlich Soundreset und
-erneuter Suche benötigt eine separate praktische Abnahme; die automatisierten Prüfungen verwenden isolierte Daten.
+Instanzen praktisch bestätigt. Am 5. Oktober bestätigte Felix zusätzlich den echten Abbruch seiner
+Schwarzstorch-Testanlage: nach seiner Beobachtung vollständig zurückgenommen. Dieser gezielte Nutzerbeleg
+bleibt anerkannt. Weitergehende Wiederanlauf-, Soundreset- und verspätete Medienfälle werden im laufenden
+Gesamtaudit getrennt geprüft; automatisierte Gegenproben verwenden ausschließlich isolierte Daten.
 
 ## Grundsatz
+
+Jede Öffnung des Assistenten besitzt eine eigene Generation. Antworten eines zuvor geschlossenen
+Dialogs dürfen einen neu geöffneten Dialog weder umschalten noch seine Meldungen ersetzen. Das gilt
+auch für Statusabfragen, verschachteltes Nachladen und laufende Aktualisierungsabfragen. Schließen
+bleibt möglich und bewahrt den gespeicherten Auftrag. Eine neue Art wird nach dem Artportrait-Schritt
+lokal angelegt; Karte und Sound werden danach im selben gespeicherten Auftrag geprüft.
+Die eigene Browserabnahme mit Wiederaufnahme, kontrolliertem Serverneustart, echtem Abbruch und alter
+Antwort nach neuer Eingabe steht im [Auditauftrag, Abschnitt 10.32](audit-auftrag-phase-10-5.md#1032-fortsetzung-explorer-und-lightroom-nach-reparaturabschluss--15-oktober).
+
+Eine gespeicherte geleitete Artanlage mit offener Medienprüfung bietet in der Prozessanzeige
+**Artanlage fortsetzen** an. Auch die Datenbank-/Prozessschaltfläche führt dann in denselben Assistenten.
+Nach einem Programmneustart öffnet sich dafür keine allgemeine Karten-/Soundprüfung von selbst.
+Die Aktion prüft die Verfügbarkeit erneut und liest den gespeicherten Auftrag; sie legt keine neue Art an
+und startet keine neue Suche. Eine nicht mehr eindeutig passende Sitzung oder ein zwischenzeitlich
+gewechselter Auftrag verlangt eine erneute Statusprüfung. Allgemeine Medienläufe behalten ihre eigene
+Prüfoberfläche. Die aktuelle tatsächliche Prozessneustart-/Medienabnahme und ihre verbleibenden Grenzen
+stehen im [Auditauftrag, Abschnitt 10.33](audit-auftrag-phase-10-5.md#1033-eigene-positive-medien-prozessneustartrunde--16-oktober).
 
 Neue Arten werden nicht automatisch vorgeschlagen oder automatisch in `species_list.json` eingefuegt.
 

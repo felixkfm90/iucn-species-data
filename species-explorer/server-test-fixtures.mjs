@@ -1,6 +1,47 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "../scripts/test-temp.mjs";
+import { assertTestTempPath, tmpdir } from "../scripts/test-temp.mjs";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
+import { fileURLToPath } from "node:url";
+
+const imageFixtures = new Map();
+
+export function serverFixtureStoragePaths(repoRoot) {
+  if (typeof repoRoot !== "string" || !repoRoot) throw new Error("Server-Test benötigt seinen eigenen Fixture-Ordner.");
+  const root = assertTestTempPath(repoRoot);
+  return { taxonomyRoot: join(root, "Daten", "taxonomy"), lightroomSearchRoot: join(root, "Daten", "lightroom") };
+}
+
+export async function withServerFixtureStorageEnvironment(repoRoot, operation) {
+  const paths = serverFixtureStoragePaths(repoRoot);
+  const values = { FN_EXPLORER_DATA_ROOT: join(repoRoot, "Daten"), IUCN_TAXONOMY_DIR: paths.taxonomyRoot,
+    FN_LIGHTROOM_SEARCH_ROOT: paths.lightroomSearchRoot };
+  const previous = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));
+  Object.assign(process.env, values);
+  try { return await operation(); }
+  finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+function createTestImage(format, width, height, seed = 1) {
+  const key = `${format}/${width}/${height}/${seed}`;
+  if (!imageFixtures.has(key)) {
+    const color = ((seed * 104729) % 0xffffff).toString(16).padStart(6, "0");
+    const ffmpeg = resolveFfmpegPath({ repoRoot: fileURLToPath(new URL("../", import.meta.url)) });
+    const run = spawnSync(ffmpeg, ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
+      `color=c=0x${color}:s=16x16`, "-vf", `scale=${width}:${height},format=rgb24`,
+      "-frames:v", "1", "-threads", "1", "-c:v", { jpeg: "mjpeg", png: "png", webp: "libwebp" }[format],
+      "-f", "image2pipe", "pipe:1"], { windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024 });
+    if (run.error || run.status !== 0 || !run.stdout?.length) throw new Error(`Echtes ${format}-Testbild konnte nicht erzeugt werden: ${run.error?.message || run.stderr}`);
+    imageFixtures.set(key, run.stdout);
+  }
+  return Buffer.from(imageFixtures.get(key));
+}
 
 export function registerFixtureCleanup(context, repoRoot) {
   const servers = [];
@@ -12,19 +53,7 @@ export function registerFixtureCleanup(context, repoRoot) {
 }
 
 export function createTestJpeg(width = 3, height = 2) {
-  return Buffer.from([
-    0xff, 0xd8,
-    0xff, 0xe0, 0x00, 0x0e,
-    0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01,
-    0xff, 0xc0, 0x00, 0x11, 0x08,
-    (height >> 8) & 0xff, height & 0xff,
-    (width >> 8) & 0xff, width & 0xff,
-    0x03,
-    0x01, 0x11, 0x00,
-    0x02, 0x11, 0x00,
-    0x03, 0x11, 0x00,
-    0xff, 0xd9,
-  ]);
+  return createTestImage("jpeg", width, height);
 }
 
 export function createTestMp3(seed = 1) {
@@ -40,24 +69,11 @@ export function createTestMp3(seed = 1) {
 }
 
 export function createTestWebp(seed = 1) {
-  return Buffer.concat([
-    Buffer.from("RIFF", "ascii"),
-    Buffer.from([0x08, 0x00, 0x00, 0x00]),
-    Buffer.from("WEBP", "ascii"),
-    Buffer.alloc(8, seed),
-  ]);
+  return createTestImage("webp", 8, 8, seed);
 }
 
 export function createTestPng(width = 1120, height = 1400) {
-  const buffer = Buffer.alloc(33);
-  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(buffer, 0);
-  buffer.writeUInt32BE(13, 8);
-  buffer.write("IHDR", 12, "ascii");
-  buffer.writeUInt32BE(width, 16);
-  buffer.writeUInt32BE(height, 20);
-  buffer[24] = 8;
-  buffer[25] = 2;
-  return buffer;
+  return createTestImage("png", width, height);
 }
 
 export async function createEditableFixture() {

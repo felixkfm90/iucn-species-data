@@ -1,14 +1,224 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-05
+Stand: 2026-10-25
 Roadmap: Phase 10.2 bis 10.4
-Status: lokaler Quellstand Plug-in-Version **0.4.24.22** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.39** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
 Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuweisung und Erhalt nach
 Schließen/Wiederöffnen. Übrige Funktions-/Großbestandsabnahme und Phase-10-Audit bleiben offen.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
+
+.39 erhält nach dem Detail-Leser Properties und einmalige Observer. Geschlossene Fenstergenerationen
+verlieren ihre Callbackberechtigung; beide Fensterübergänge geben die SDK-Task frei. Die gezielte
+Fenster-X-/Suchprüfung im eigenen Sechs-Foto-Katalog ist bestanden. Der anschließende enge native
+Detailfensterlauf bestätigt auch Escape, Fertig, Zurück/Weiter, erneute Suche und Tab-Rückkehr;
+andere Windows-Systemschrift-/DPI-Konfigurationen und die genaue ursprüngliche Ursache bleiben offen.
+
+Split B/C und Merge F bestehen native Übernahme und genaue Rücknahme mit vollständigem Nachvergleich.
+Auch die Mehrblockpause/Wiederöffnung mit 253 Testeinträgen, SDK-Fehler, Commit-vor-Journal-Wiederanlauf
+und gezielte Konflikt-/Teil-/Endrücknahme sind unabhängig geprüft. Die private Testkopie ist deaktiviert;
+reguläre .39 am Produktivpfad und Hauptkatalog auf D: sind wiederhergestellt. Die repräsentative
+Großkatalogprüfung für Laufzeit, Speicher und Abbruch bleibt offen. Den jeweils tatsächlich geprüften
+Stand und seine Grenzen führt ausschließlich der [Auditauftrag, Abschnitt 10.54](audit-auftrag-phase-10-5.md).
+
+Der Ersatzaufbau und gemeinsame Master-/Paketwechsel sind am 24. Oktober abgeschlossen. Kein
+weiterer Aufbau folgt aus diesen Prüfnachweisen; aktiver Paarstand und Quellen bleiben im
+[Taxonomie-Betriebsstand](taxonomy-current-status.md) dokumentiert. Ältere Testzähler und Zwischenstände
+unter 10.51/10.53 sind datierte Nachweise, kein laufender Auftrag oder jüngster Gesamtprüfstand.
+
+Neu erzeugte Suchpakete verwenden Schema **2** mit verpflichtendem Leservertrag
+`unused-classification-retention-v1`. Der aktuelle Node-Suchhelfer kann alte Schema-1-Pakete ohne
+Retentionsmarker weiterhin lesen; alte Leser verweigern Schema 2. So lassen sich ausschließlich als
+ungeklärter Bestand erhaltene Klassifikationen nicht mit einem alten Leser neu zuweisen. Datenbank
+und Manifest müssen denselben Leservertrag tragen. Die direkt lesbaren Verwaltungsdetails behalten
+den Erhaltungsnachweis; Suchtreffer, einzelne Zuweisungsabfragen und neue Artanlagen sperren diese
+Fälle. Rohe CoL-/Ergänzungstreffer derselben konkret zurückgehaltenen Anbieterbelege können die
+Explorer-Sperre nicht umgehen; eine Artanlagevorschau bindet dafür die stabilen Anbieterkennungen.
+Separate Paketaktivierung/-rücknahme verweigert tatsächliche Retentionspakete auch ohne bisherigen
+Paarzeiger und verlangt den gemeinsam geprüften Master-/Paketpfad.
+Die katalogweite Pflege behandelt ihre ID als nicht zuweisbar und überspringt sie im vorhandenen
+Pflegepfad. Andere veraltete Quellenstände erhalten dadurch keine pauschale neue Sperre.
+Das am 24. Oktober gemeinsam aktivierte Master-/Paketpaar verwendet Schema 2 und diesen
+Retentionsvertrag. Aktueller Paarstand im [Taxonomie-Betriebsstand](taxonomy-current-status.md),
+Aktivierungs- und Lesernachweise im Auditauftrag, Abschnitte 10.51 und 10.54.
+
+Version **0.4.24.25** ergänzt fehlende Orts-/Zeitfelder und Stichwörter auch bei einem bereits teilweise
+zugewiesenen Foto. `Hinzufügen` erhält gespeicherte FN-Werte; `Aktualisieren` gleicht die verfügbaren aktuellen
+Lightroom-Quelldaten ab. Fehlende Quellen löschen keinen noch gespeicherten FN-Wert. Die Katalogpflege
+prüft Metadaten, tatsächliche FN-Stichwortobjekte und interne Kennungen und schreibt nur notwendige
+Korrekturen. Sie zählt Taxonomie und Ort/Zeit unabhängig, also auch Orts-/Zeitänderungen an Taxonomiefotos.
+GPS ohne nutzbaren Lightroom-Ortsvorschlag wird ausdrücklich von fehlendem GPS unterschieden.
+Vorhandene FN-Ortswerte vermeiden einen erneuten Vorschlagsexport; fehlgeschlagene Vorschläge ohne
+gespeicherten Ort können bei einem bewusst neu gestarteten Abgleich erneut geprüft werden.
+Ein allein vorhandener ISO-Ländercode bleibt ein gültiges FN-Metadatum ohne eigenes Stichwort. Fotos
+ohne verwertbare Angaben werden unverändert übersprungen; die Bereinigung verwaister interner Belege
+oder reservierter FN-Zuordnungen zählt als tatsächliche Änderung.
+Version **0.4.24.26** ergänzt für Videos ohne gültiges `dateTimeOriginal` den SDK-Wert
+`dateTime` als Ersatz; dessen Grenze bei bestimmten MOV ist inzwischen nativ belegt und mit .29 korrigiert.
+Eine gültige ursprüngliche Aufnahmezeit hat Vorrang. Dateinamen und Foto-Scanzeiten dienen nicht als Ersatz;
+ohne verwertbare Aufnahmezeit bleiben gespeicherte FN-Zeiten
+erhalten. Die automatisierte Prüfung umfasst sechs künstliche Videos, gemischte Foto-/Videoauswahl und
+wiederholten unveränderten Abgleich: **70/70** bestanden. Der produktive FN-Abgleich mit .27 vom
+14. Oktober ergänzt die sechs Bartmeisen-Videos korrekt um November/2025 und die tatsächlichen
+Zeitstichwörter; derselbe lesende Nachvergleich bestätigt alle vorhandenen FN-Zuordnungen passend.
+Rohwerte des SDK werden dadurch nicht unabhängig protokolliert. Beleg und Abnahmegrenzen:
+[produktiver FN-Abschluss](audit-auftrag-phase-10-5.md#1027-produktiver-fn-katalogabgleich--14-oktober).
+
+Version **0.4.24.27** trennt fehlende Ortsvorschläge von tatsächlichen Vorschau-Export-/Lesefehlern,
+sowohl bei FN-Daten aktualisieren als auch im separaten Ort/Zeit-Aufruf. Der Katalogabschluss benennt
+FN-Schreibfehler separat. GPS allein garantiert keinen Ortsnamen.
+
+Version **0.4.24.28** liest den vorhandenen Statistikindex beim erneuten Anzeigen nach einem Dialog und
+unmittelbar vor einem Katalogexport frisch. Dadurch erscheinen inzwischen abgeschlossene FN-Zuweisungen
+in der erneut angezeigten Statistik beziehungsweise im Katalogexport. Ein inzwischen ungültiger Index
+verhindert den Export eines alten Ergebnisses; bestätigte Auswahlexporte behalten ihre konkrete Fotoliste.
+Dabei läuft kein versteckter Katalogscan. Ein bereits sichtbares Statistikfenster wird nicht fortlaufend
+automatisch aktualisiert. Die fünf neuen Verhaltenstests reproduzieren den alten Stand und die Korrektur;
+die drei betroffenen Gruppen bestehen mit **93/93**. .28 ist am Abend des 14. Oktober nach explizitem
+Neuladen am regulären Pfad nativ bestätigt; vollständiges lokales Gate **50 Gruppen / 1.745 bestanden**.
+Buckelwal und die vorhandenen Statistik-Kontrollsummen sind nativ passend. Die eigene März-/April-Probe
+mit verborgenem Stapelmitglied ist für Taxonomiezuweisung und separates Ort/Zeit-Hinzufügen bestanden;
+neue Exporte bleiben eine getrennte Abnahme. Verlauf und native Grenze ausschließlich im
+[Auditauftrag, Abschnitt 10.30](audit-auftrag-phase-10-5.md#1030-buckelwal-statistik-und-neue-auditreihenfolge--14-oktober).
+
+Version **0.4.24.29** erlaubt den direkten Zuweisungsmenüpunkt ausdrücklich auch bei reiner Videoauswahl.
+Nur bei Lightrooms bestätigtem `isVideo=true` wird nach fehlender Originalzeit `dateTimeDigitized` vor
+`dateTime` geprüft: beim nativ geprüften MOV enthält erstere Quelle das sichtbare Aufnahmedatum,
+letztere dagegen die spätere Dateierstellung. Fotos verwenden keine Digitalisierungs-/Scanzeit als Ersatz.
+Rohwert und formatierte Anzeige werden geprüft; gültige Originalzeit behält Vorrang, fehlende Quellen
+löschen keine gespeicherte FN-Zeit. Vier neue Verhaltenstests reproduzieren die echte widersprüchliche
+MOV-Quelle; vier betroffene Gruppen bestehen mit **110/110**. Private .29 im eigenen Katalog nativ geladen:
+direkter Videozugang aktiv und FN-Aktualisierung korrigiert das alte MOV-Datum samt echten Zeitstichwörtern.
+Die übrigen vier Testeinträge bleiben erhalten. Die eigene Statistik schließt das Video und dessen nur dort
+verwendete Art korrekt aus. Die unveränderte Wiederholung deckte zusätzlich eine verzögerte Speicherung
+neuer Stichwortkennungen auf; Korrektur und weitere Exportfälle sind getrennte Abnahmen im
+[Auditauftrag, Abschnitt 10.31](audit-auftrag-phase-10-5.md#1031-native-video-datumsquellen-und-fortsetzung--15-oktober).
+
+Version **0.4.24.30** führte den Abschluss neu verfügbarer interner Stichwortkennungen nach dem ersten
+SDK-Schreibabschluss ein. Der kurze zweite Zugriff prüft Fotoidentität, sämtliche FN-Werte und die exakten
+zugewiesenen Stichwortobjekte vor jeder Änderung; er schreibt nur die noch fehlenden Kennungen.
+Bestehende vollständige Kennungen brauchen keinen zweiten Zugriff. Die verzögerten Kennungen sind
+mit Gegenproben für unveränderte Wiederholung, konkurrierende Änderungen und Schreibsperren geprüft:
+**83/83** betroffene Verhaltenstests; vollständiges lokales Gate **50 Gruppen / 1.767 bestanden**.
+Die damalige Aktivierung des Originals im Hauptkatalog war keine native Schreibabnahme. Die nachfolgende
+.31-Probe im eigenen Katalog scheiterte, weil die rohe SDK-Stichwortliste innerhalb des ersten
+Schreibzugriffs die gerade hinzugefügten Wörter noch nicht enthielt. Der genaue native Fehler bleibt
+im Auditauftrag als historischer Befund erhalten.
+
+Version **0.4.24.32** bindet vor dem ersten Schreibabschluss die tatsächlich an `addKeyword` übergebenen
+Stichwortobjekte und ihre beauftragten Namen. Eine innerhalb dieses Zugriffs noch alte SDK-Leseliste
+verwirft deshalb keine bereits ausgeführte Zuweisung. Nach Rückkehr aus dem äußeren Schreibzugriff werden
+Fotoidentität, sämtliche FN-Werte und die wirklichen reservierten Stichwortzuordnungen aller geänderten
+Bereiche gemeinsam geprüft, auch bei schon vollständigen Kennungen oder einem leeren Ergebnis.
+Unveränderte Bereiche behalten ihre Namen und Objektidentitäten; Dubletten, fremde Änderungen und
+nicht eindeutig zuordenbare Objekte stoppen den Abschluss. Nur tatsächlich fehlende interne Kennungen
+benötigen anschließend einen zweiten Schreibzugriff. Gezielte echte Lua-Gegenproben **97/97** und das
+vollständige lokale Gate vom 15. Oktober, **09:27:16–09:35:06 MESZ, 50 Gruppen / 1.781 Tests**, bestanden
+ohne Fehler, Abbrüche oder Skips; alle 126 gebundenen Quellen unverändert. Die folgende native .32-Erstprobe
+speicherte im eigenen MOV zwar Dezember/2027 und die neuen tatsächlichen Stichwörter, stoppte aber beim
+Kennungsabschluss mit einer vermeintlichen FN-Metadatenänderung. Die interne Kennung blieb leer;
+der Teilabschluss wird nicht als erfolgreicher Gesamtlauf behandelt. Verlauf unter
+[Auditauftrag, Abschnitt 10.31](audit-auftrag-phase-10-5.md#1031-native-video-datumsquellen-und-fortsetzung--15-oktober).
+
+Version **0.4.24.33** bindet zusätzlich vor dem ersten Metadaten-Schreiben den vollständigen bisherigen
+FN-/UUID-Stand. Die beiden Writer zeichnen danach in derselben Erwartung je Foto exakt die tatsächlich
+geschriebenen normalisierten und begrenzten Werte auf, einschließlich Leerungen, Namen, Kennungen und
+Zuweisungszeitstempeln. Die Nachprüfung nach dem SDK-Abschluss vergleicht dagegen; eine noch alte
+Lesesicht innerhalb des Schreibzugriffs wird nicht als Beweis eines anderen Nachzustands übernommen.
+Unberührte FN-Werte bleiben exakt geschützt. Es gibt keine nachträglich frei gelesene neue Basis,
+Gleichsetzung von fehlendem Wert und Leerstring oder automatische Wiederholung. Gezielte Gegenprobe
+**107/107** und unabhängige Review ohne weiteren Blocker. Vollständiges lokales Gate am 15. Oktober,
+**14:14:45–14:26:45 MESZ: 50 Gruppen / 1.791 Tests**, keine Fehler, Abbrüche oder Skips;
+126 gebundene Quellen unverändert.
+
+Die eigene native .33-Orts-/Zeit-Erstprobe mit neuen Mai-/2028-Stichwörtern ist erfolgreich:
+ein geänderter und zwei unveränderte Orts-/Zeiteinträge, alle drei Taxonomien bereits aktuell,
+keine Schreibfehler; beide internen Zeitstichwortkennungen sind bereits nach diesem ersten Lauf vollständig.
+Die unveränderte Wiederholung meldet null Taxonomie-/Ortszeitänderungen, alle drei Einträge aktuell und
+keine Schreibfehler. Der unabhängige Nachvergleich besteht mit **31/31** Prüfungen: alle fünf vollständigen
+Testeinträge einschließlich FN-Zeitstempeln, alle realen Stichwortzuordnungen und sämtliche Statistikvariablen
+sind nach der unveränderten Wiederholung exakt gleich. Die erste Änderung schreibt nur die Statistik-
+Buchführung fort; Foto-/Arten-/Beobachtungszahlen bleiben gleich und das Video ausgeschlossen.
+Die weitere eigene native .33-Zuweisung mit neu erzeugter Taxonomiestichwortkennung ist im Erstlauf
+vollständig. Wiederöffnung und unveränderte Wiederholung bestehen im vollständigen Nachvergleich mit
+178/178 Prüfungen. Positive Favoritenzuweisung, abgelehnter und bestätigter Ersatz bestehen mit 123/123;
+Taxonomie-/Orts-/Zeitwerte und tatsächliche Keywords bleiben dabei gleich. Gesamtgate 16. Oktober:
+50 Gruppen / 1.805 Tests bestanden, 127 gebundene Quellen unverändert. Verdeckter Stapelkonflikt und
+Taxonomierücknahme mit 102/102; vollständige FN-Rücknahme, Wiederzuweisung und getrennte Orts-/Zeit-
+Rücknahme/Ergänzung mit 183/183 unabhängig bestätigt. Fünf Original-IPTC-Ortsfelder und Aufnahmezeit
+bei allen fünf Testeinträgen erhalten. Hauptkatalog abschließend offen, genau ein reguläres Original .33
+aktiviert, Testregistrierung entfernt/Belege erhalten. Diese kleine Matrix ersetzt keine weiteren nativen
+Namens-/Handoff-/Pause-/Skalierungsprüfungen. Aktuelle Ergebnisse und Grenzen im
+[Auditauftrag, Abschnitt 10.32](audit-auftrag-phase-10-5.md#1032-fortsetzung-explorer-und-lightroom-nach-reparaturabschluss--15-oktober).
+
+Bei **Taxonomie zuweisen** sowie **Ort und Zeit → Hinzufügen/Aktualisieren** wird im Ordner-/Alle-Fotos-
+Kontext ein ausdrücklich ausgewählter oberster eingeklappter Ordnerstapel einschließlich seiner verborgenen
+Mitglieder erfasst. Die Auswahl ist dedupliziert; die Anzeige nennt eingeschlossene Stapelmitglieder.
+Aufgeklappte Stapel, ausgewählte untere Mitglieder und aktive Sammlungs-/Publizierungskontexte bleiben bei
+der konkreten Auswahl. Der SDK-Vertrag stellt den Zustand von Sammlungsstapeln hier nicht entsprechend
+bereit; kein fremder Ordnerstapel wird dafür vermutet. Eine abweichende vorhandene Master-ID im erweiterten
+Satz stoppt die gesamte Taxonomiezuweisung vor dem Schreiben. FN-Rücknahmen bleiben bei der ausdrücklich
+markierten Auswahl. Die Katalogpflege liest ohnehin den ganzen Katalog, einschließlich Stapelmitgliedern.
+
+Videos können FN-Taxonomie, Orte, Zeit und die zugehörigen Stichwörter erhalten. Sie werden anhand von
+Lightrooms `isVideo` aus **Statistik, Arten-/Beobachtungszahlen, Favoriten-Fotopools und allen Statistikexporten**
+ausgeschlossen. Der interne Aufbau-/Checkpointumfang bleibt die Zahl geprüfter Katalogdateien; sichtbare
+Statistikwerte zählen Fotos. Indexschema **7** verwirft zuvor gespeicherte Indexe und pausierte Aufbauten
+mit möglichen Videozahlen. Ein neuer Statistikaufbau ist danach einmal erforderlich. Die Änderung filtert
+keine Videos aus FN-Daten aktualisieren oder dem FN-Nutzungsnachweis für Datenbankwechsel.
+
+**Befehlswahl:** Erneute Taxonomiezuweisung schreibt die aktuelle ausgewählte Taxonomie und ergänzt Ort/Zeit
+im Hinzufügenmodus. Bestehende FN-Orts-/Zeitwerte bleiben dabei erhalten. Ort/Zeit aktualisieren und
+FN-Daten aktualisieren vergleichen verfügbare aktuelle Quellen und ersetzen abweichende Werte; ohne Quelle
+bleiben bekannte FN-Werte erhalten. Die Katalogpflege repariert auch fehlende verwaltete Stichwörter und
+schreibt passende vollständige Zuweisungen nicht erneut. Automatische Taxonomiepflege braucht eine gültige
+gespeicherte Master-ID; ein manuelles FN-Stichwort, der Ordnername oder Dateiname genügen nicht.
+
+Das Original **0.4.24.32** wurde am 15. Oktober um **13:57 MESZ** vom regulären Projektpfad im Hauptkatalog
+nativ geladen und aktiviert bestätigt, einschließlich 273.485 Taxa und übereinstimmendem CoL-/Master-/
+Lightroom-Suchpaketstand. Nach gesondertem Auftrag wurden sechs obsolete Test-/Diagnoseregistrierungen
+entfernt; zu diesem Zeitpunkt blieb genau das Original registriert. Die zugehörigen Belegdateien blieben
+erhalten. Die anschließenden privaten .32-/ .33-Schreibproben waren auf den eigenen Testkatalog begrenzt.
+Nach deren Abschluss wurden auch diese beiden Registrierungen entfernt. Das reguläre Original **.33**
+ist anschließend im wieder geöffneten Hauptkatalog nativ als einziger FN-Eintrag geladen und aktiviert
+bestätigt, mit vollständigem übereinstimmendem Produktionspaar. Der Zusatzmodulmanager ist geschlossen;
+Test- und Belegdateien bleiben erhalten. Der vollständige lokale Endprüflauf vom
+15. Oktober besteht mit **50 Testgruppen und 1.791 Tests**. Die tatsächliche Reparatur gespeicherter
+FN-Daten und die neue Statistikberechnung werden davon getrennt geprüft. Der von Felix freigegebene
+produktive FN-Abgleich vom 14. Oktober ist abgeschlossen: 412 Taxonomie- und 938 Orts-/Zeitänderungen,
+keine Schreibfehler; alle 6.472 FN-Zuordnungen im unabhängigen Nachvergleich passend. Die tatsächliche
+Statistikberechnung mit Videoausschluss ist mit .29 im eigenen Fünf-Eintrag-Katalog nativ bestätigt;
+die März-/April-Zuweisung an eingeklappte Stapel mit .28 ebenfalls. Die neue Exportmatrix ist mit
+**sechs tatsächlich gespeicherten Varianten und 45/45 unabhängigen Inhalts-/Hashprüfungen abgeschlossen**:
+drei positive Katalogexporte und drei Auswahlexporte ausschließlich mit dem künstlichen MOV. Letztere
+enthalten korrekt null Arten/Beobachtungen; das TXT besitzt dabei einen 0-Arten-/0-Fotos-Kopf.
+Die physischen .29-/ .31-/ .32-Prüfkopien und der .33-Quellstand besitzen sieben bytegleiche Export-/
+Statistikmodule. Daraus folgt keine Gleichheit ihrer übrigen Dateien oder eine neue positive Foto-/
+Favoriten-/Konflikt-/Rücknahmematrix. Der vollständige Verlauf steht
+ausschließlich im [Auditauftrag](audit-auftrag-phase-10-5.md#1031-native-video-datumsquellen-und-fortsetzung--15-oktober).
+
+Die Auditkorrekturen vom 8. Oktober sichern Auswahlaktionen gegen einen Filmstreifenfallback ohne aktive
+Fotoauswahl, Statistik gegen unvollständige SDK-Batches und Änderungen während Pause/Aufbau sowie CSV gegen
+Formelfelder. Namensgleiche reservierte Taxonomiestichwörter werden nach Objekt statt sichtbarem Namen entfernt.
+Automatisierte Nachweise und native Restgrenzen stehen ausschließlich im
+[laufenden Gesamtaudit](audit-auftrag-phase-10-5.md). Der registrierte Plug-in-Pfad ist frisch geprüft;
+die tatsächlich geladene Version 0.4.24.24 wurde am 9. Oktober im Zusatzmodul-Manager nach Neuladen
+am korrekten Projektpfad geprüft. CoL, Master und Suchpaket stimmen laut nativer Anzeige überein.
+0.4.24.24 ergänzt die mehrzeilige Darstellung der zuvor nativ abgeschnittenen Hinweise bei fehlendem
+Statistikindex und Exportauswahl. Felix hat am 9. Oktober selbst einen Statistik-Neuaufbau gestartet und
+danach das geöffnete Statistikfenster zur Kontrolle freigegeben. Die unabhängige native Kontrolle bestätigt
+den persistenten Indexstand 09.10.2026, 14:41, eine vollständig sichtbare Statistik und den vollständig
+mehrzeiligen Auswahlhinweis im Exportdialog; dieser wurde damals ohne Dateiausgabe abgebrochen.
+Die freigegebene kleine Testkatalogrunde vom 10. Oktober bestätigt zusätzlich beide vollständigen Hinweise
+ohne aktuellen Index, positive und fehlende Zeit-/Ortswerte, Einzel-/Mehrfachauswahl, eine virtuelle Kopie,
+getrennte FN-Rücknahmen und Erhalt eines manuellen Stichworts. Sechs eigene CSV-/CSV-/TXT-Exporte wurden
+erstellt und inhaltlich geprüft. Ursprüngliches Plug-in und Hauptkatalog sind wiederhergestellt;
+Papageientaucher wird dort nativ gefunden. Der Nachweis mit Quellenbindungen steht unter 10.17 des
+[Auditauftrags](audit-auftrag-phase-10-5.md). Positive Favoritenmatrix, große Pause-/Race-Probe, Handoff
+und weitere DPI-Stufen bleiben getrennte Abnahmen; angezeigte Statistikwerte sind kein erneuter
+vollständiger produktiver Katalogscan.
 Version 0.4.24.17 korrigiert Orts-/Zeitentfernung mit dokumentierten SDK-Objekten auch bei leeren FN-Metadaten,
 ergänzt den unteren Entfernen-Button und drei Auswahlexporte mit Defaultnamen. Fehlender Statistikindex
 wird nur bewusst neu aufgebaut. Technische Gegenproben und praktische Restabnahme:
@@ -19,8 +229,8 @@ Felix bestätigt anschließend Weissstorch/Rebhuhn in den Verbrauchern. 0.4.24.2
 gemeldeten Lua-Vergleich unterschiedlich geschriebener, aber belegter Windows-Pfade. Schrägstriche,
 Groß-/Kleinschreibung und abschließende Trenner werden normalisiert; Herkunft, Revision und vollständiger
 Umzugsnachweis bleiben gesperrt, wenn sie tatsächlich abweichen. Keine Änderung an Originalbelegen,
-Datenbanken oder Fotos. Technischer Resolvernachweis bestanden, native Prüfung nach Plug-in-Neuladen
-noch getrennt: [aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
+Datenbanken oder Fotos. Technischer Resolvernachweis bestanden; Felix hat den Betrieb ohne frühere
+Warnmeldung am 5. Oktober bestätigt: [Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 
 Felix bestätigt die Orts-/Zeitentfernung für Einzel-/Mehrfachauswahl sowie die neuen Exporte anhand eines Fotos
 nach bewusstem Statistik-Neuaufbau. Das ist gezielte praktische Abnahme, kein Großkatalog- oder Gesamtaudit.
@@ -329,7 +539,7 @@ Aktueller Standardpfad nach dem geprüften Datenwechsel vom 4. Oktober:
 Zielvertrag vom 4. Oktober: gemeinsamer Daten-Unterordner beim Explorer als Standard, später in Einstellungen
 wählbar. Explorer und Plug-in müssen denselben bestätigten Datenstand und dieselben Pfadbindungen verwenden.
 Der AppData-Bestand ist vollständig übernommen und sein alter Datenordner leer, ohne Weiterleitung.
-Aktueller Programmname noch D:\IUCN_Datenbank, final D:\Arten-Explorer mit koordinierter Verbraucherbindung.
+Aktueller Programmordner ist `D:\Arten-Explorer`; Verbraucherbindung und Umzug sind abgeschlossen.
 Historische Zeiger-/Auftragspfade werden über das verifizierte Umzugsjournal aufgelöst; Belegbytes unverändert.
 Plug-in-Hilfsdateien liegen im eigenen temp beim Plug-in und werden nach Ende eigener Operationen/Helfer
 beim kontrollierten Schließen freigegeben; keine Katalog-,
@@ -443,7 +653,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.16`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.39`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
@@ -469,6 +679,10 @@ nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar blei
   vor dem Schreibzugriff deduplizierte sichtbare Keywordnamen, gespeicherte lokale Kennungen,
   Einzel-/Mehrfachzuweisung, kontextreiche Schreibfehler, verifizierter Write-Access-Callback und kontrollierte
   Rücknahme einschließlich `(FN)*`;
+- `KeywordIdFinalizer.lua`: Bindung der tatsächlich zugewiesenen Stichwortobjekte im ersten Schreibzugriff,
+  vollständige FN-Erwartung aus Vorzustand und exakt geschriebenen Werten, gemeinsame Prüfung aller
+  geänderten Bereiche nach dem SDK-Abschluss und ausschließlich bei Bedarf geschütztes Vervollständigen
+  interner Kennungen; keine erneute fachliche Zuweisung;
 - `AssignTaxonomy.lua` und `AssignmentWindow.lua`: dauerhaft geöffnetes, in vier gerahmte Arbeitsschritte
   gegliedertes Zuweisungsfenster mit Dateiname beziehungsweise Gesamtzahl der ausgewählten Fotos, geprüftem
   Suchpaketstatus, Taxonomievorschau, Konfliktprüfung, kontrollierter Rücknahme und den zehn zuletzt verwendeten
@@ -585,18 +799,18 @@ Statistikberechnung gestartet.
 
 Version 0.4.22.1 ergänzt drei getrennte Aktionen:
 
-- `Orts- und Zeitstichwörter hinzufügen ...` übernimmt nur Fotos, für die noch keine FN-Orts-/Zeitwerte gespeichert
-  sind;
+- `Orts- und Zeitstichwörter hinzufügen ...` ergänzt fehlende FN-Felder und Stichwörter an allen ausgewählten
+  Fotos; vorhandene FN-Werte bleiben erhalten;
 - `Orts- und Zeitstichwörter entfernen ...` entfernt ausschließlich die von dieser Funktion gespeicherten
   Stichwortverknüpfungen und Metadaten;
 - `Orts- und Zeitstichwörter aktualisieren ...` ersetzt den gespeicherten FN-Stand durch die aktuellen Lightroom-
-  Werte.
+  Werte, soweit diese verfügbar sind; fehlende Quellen löschen keine bekannten FN-Werte.
 
 Verwendet werden ausschließlich die dokumentierten Lightroom-Felder Ortsteil, Stadt, Bundesland/Region,
 Land/Region und ISO-Ländercode sowie die Aufnahmezeit. Sichtbare flache Stichwörter erhalten für Ortswerte die
 Endung `(FN Ort)` und für den deutschen Aufnahmemonat sowie das vierstellige Aufnahmejahr `(FN Zeit)`; der ISO-Code wird wegen der
 Redundanz nur als Plug-in-Metadatum gespeichert. Eine normale Taxonomiezuweisung ergänzt dieselben Orts-/Zeitwerte
-automatisch, sofern für das Foto noch kein solcher FN-Stand existiert. Taxonomie- und Orts-/Zeitaktionen schützen
+automatisch und repariert auch einen unvollständigen FN-Stand. Taxonomie- und Orts-/Zeitaktionen schützen
 die jeweils fremden gespeicherten Stichwortnamen gegeneinander. Manuelle Stichwörter bleiben unverändert. Es gibt
 bei diesen drei Auswahlaktionen keine katalogweite Suche und keinen eigenen Reverse-Geocoding-Dienst. Das Rohfeld `gps` bestimmt, ob für noch nicht
 gespeicherte Lightroom-Ortsvorschläge ein kleiner temporärer Export erforderlich ist.
@@ -713,7 +927,9 @@ Version 0.4.23.2 erkennt einen bereits vorhandenen FN-Orts-/Zeitstand nur noch a
 gespeicherten sichtbaren FN-Wert. Ein allein zurückgebliebener interner Aktualisierungsmarker kann ein leeres Foto
 daher nicht mehr fälschlich überspringen. Die Aufnahmezeitkonvertierung unterstützt beide zulässigen Formen des
 Komponentenergebnisses und liest bei Bedarf den formatierten Wert desselben Lightroom-Datumsfelds. Ein leerer oder
-teilweise geschriebener Stand wird beim nächsten `Hinzufügen` damit kontrolliert repariert.
+Stand wird beim nächsten `Hinzufügen` damit kontrolliert repariert. Ein bereits sichtbarer Teilstand wurde
+weiterhin vollständig übersprungen; fehlende Monate/Felder innerhalb solcher Teilstände werden erst seit
+0.4.24.25 ergänzt.
 
 Version 0.4.23.3 prüft jeden Quellwert, bevor die reservierte Endung angehängt wird. Leere Werte können daher keine
 alleinstehenden Stichwörter `(FN Ort)` oder `(FN Zeit)` mehr erzeugen. Die Aufnahmezeit wird zuerst über das
@@ -756,8 +972,14 @@ Master-IDs, Mehrfachfavoriten und verwaiste reservierte Stichwörter. Erst `Vors
 Taxonomieblock müssen Paket-ID, Masterversion und Korrekturrevision noch der Vorschau entsprechen. Nur eine
 weiterhin aktive identische `masterTaxonId` wird aktualisiert. Es gibt keine Namensähnlichkeitssuche und keine
 stille Nachfolger-, Split- oder Merge-Zuordnung. Orts-/Zeitwerte werden für auflösbare Taxonomiefotos sowie bereits
-eigenständig verwaltete Orts-/Zeitfotos nach den aktuellen Regeln ersetzt. Fotos mit GPS, aber ohne gespeicherte
-Ortsfelder gehen für einen bestätigten Lauf gemeinsam durch eine Lightroom-Export-Session; ein von Adobe
+eigenständig verwaltete Orts-/Zeitfotos nach den aktuellen Regeln abgeglichen. Unveränderte Felder, vollständige
+FN-Stichwortzuordnungen und Zeitmarker werden nicht neu geschrieben. Fehlende oder falsche reservierte
+Stichwörter sowie unvollständige Taxonomiefelder werden korrigiert; manuelle Stichwörter, Originalmetadaten
+und Art-Favoriten bleiben erhalten. Nicht auflösbare Taxonomien werden nicht umgedeutet; deren schon
+verwaltete Orts-/Zeitwerte können weiterhin getrennt abgeglichen werden. Die Ergebnisanzeige nennt
+tatsächliche Änderungen und unveränderte Fotos getrennt. Orts-/Zeitzähler umfassen auch Taxonomiefotos.
+Fotos mit GPS, aber ohne nutzbare Lightroom- oder gespeicherte FN-Ortsfelder gehen für einen bestätigten Lauf
+gemeinsam durch eine Lightroom-Export-Session; ein von Adobe
 angezeigter KI-Bestätigungsdialog lässt sich durch das SDK nicht unterdrücken. Pause/Fortsetzen greift zwischen den
 Blöcken beziehungsweise nach einem laufenden Export. Schließen beendet nach dem aktuellen Block; ein späterer
 Neustart ist idempotent, beginnt jedoch ohne persistenten Wartungscheckpoint mit einer neuen Vorschau. Erfolgreiche
@@ -986,7 +1208,14 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   exakt vorhandener Zeilenzahl wird nicht vorausgesetzt. Die zuverlässig alle Zeilen darstellende native
   `simple_list` behält unter Windows ihre weiße Systemfläche; das SDK dokumentiert für diesen Listentyp keine
   eigene Hintergrundfarbe. Der frühere `scrolled_view`-Ersatz wurde nicht erneut verwendet, weil er Taxonomiezeilen
-  praktisch abschnitt beziehungsweise vollständig ausblendete.
+  praktisch abschnitt beziehungsweise vollständig ausblendete. Quelle .35 ergänzt dafür den eigenen Button
+  `Taxonomiedetails lesen`: derselbe vollständige Text auf kompakten nur lesenden Seiten mit Weiter/Zurück/
+  Schließen, auch für höhere Ränge und ohne Fotoauswahl. .36 schließt vor dem modalen Leser ausschließlich
+  das eigene Zuweisungsfenster und öffnet danach dieselbe Ansicht mit erhaltenem Such-/Namenszustand
+  wieder; so kann das schwebende Fenster den Text nicht verdecken. Auf jeder Seite bleibt Schließen als
+  Cancelweg vorhanden, die letzte Seite bietet zusätzlich Fertig. Der aktuelle Suchtext und Busy-Zustand
+  schützen vor einer alten Detailansicht. Automatisierte Textvollständigkeit und Fenstergegenproben sind
+  kein nativer SDK-/DPI-/Screenreadernachweis; aktuelle Abnahmegrenzen im Auditauftrag, Abschnitt 10.49.
 - Der Favoriten-Ersetzungsdialog zeigt bewusst nur den verständlichen Arttext. Bildvorschauen und Dateinamen wurden
   nicht verwendet, weil sie in diesem Dialog nicht zuverlässig beziehungsweise nicht lesbar genug waren.
 - Die Orts-/Zeitfunktion übernimmt gespeicherte IPTC-Ortsfelder, Lightrooms beim temporären Export eingebettete
@@ -997,15 +1226,19 @@ Version 0.4.9.0 bei 132 Fotos und genau einer Taxonomiezuweisung praktisch mit `
   keine SDK-Kontrolle über Adobes KI-Bestätigungsdialog. Pause greift erst nach einem bereits laufenden Export.
   Der Lauf speichert keinen eigenen dauerhaften Fortschrittscheckpoint; nach Schließen beginnt ein idempotenter
   Neustart wieder mit Scan und Vorschau.
-- Die aktuelle Master-Taxon-ID wird aus wissenschaftlichem Namen, Rang und Reich gebildet. Reine deutsche oder
-  englische Namenskorrekturen sowie Hierarchieänderungen behalten deshalb die ID. Ändert sich eine dieser drei
-  Identitätskomponenten oder wird ein Taxon geteilt beziehungsweise zusammengeführt, existiert derzeit keine
-  automatische Nachfolgerbeziehung. Der Katalogpflegelauf überspringt die nicht mehr auflösbare ID, statt anhand
-  eines Namens zu raten; eine bestätigte Konflikt- beziehungsweise Nachfolgerzuordnung bleibt offen.
-  Ergänzung 9. September: Neue Masterkandidaten können bestätigte Identitätsentscheidungen in Schema 4 speichern;
-  das Paket exportiert diese als `package_info.identityRegistry`. Der Helfer meldet sie über `identity`, ohne
-  historische IDs auf aktive Ziele umzuleiten. Der Lua-Katalogpflegelauf verwendet diese neue Auskunft noch nicht.
-  Bedien-/Fotozuordnungsweg und produktive Abnahme bleiben offen; Details: `taxonomy-identity-incremental-plan.md`.
+- Die erstmalige Master-Taxon-ID wird aus wissenschaftlichem Namen, Rang und Reich gebildet. Reine deutsche
+  oder englische Namenskorrekturen sowie Hierarchieänderungen behalten die ID. Eine belegte bestätigte
+  Fortführung oder Quellenreparatur kann auch bei geänderten Identitätskomponenten die ursprüngliche ID
+  erhalten; Split und Merge verlangen eigene bestätigte Beziehungen. Neue Kandidaten speichern diese
+  Entscheidungen im Identitätsregister, das Paket exportiert sie als `package_info.identityRegistry`.
+  Der Helfer meldet sie über `identity`, ohne historische IDs still auf aktive Ziele umzuleiten.
+  Der normale Katalogpflegelauf überspringt weiterhin nicht auflösbare IDs, statt anhand eines Namens zu raten.
+  Für Fotoübernahmen ist der getrennte bestätigte Bedienweg mit Vorschau, Journal, Schreibblöcken,
+  Wiederaufnahme und Rücknahme implementiert: [Lightroom-Artänderungen](lightroom-identity-workflow.md).
+  Split B/C und Merge F bestehen native Übernahme und genaue Rücknahme. Mehrblockpause,
+  Wiederanlauf und die gezielten Fehler-/Konfliktfälle sind ebenfalls geprüft; die repräsentative
+  Großkatalogprüfung für Laufzeit, Speicher und Abbruch bleibt offen. Details:
+  `taxonomy-identity-incremental-plan.md` und der laufende Auditauftrag, Abschnitt 10.54.
 - Alte flache Taxonomie-Stichwörter ohne `(FN)`-Endung sind nicht eindeutig vom Nutzerbestand unterscheidbar und
   werden deshalb nicht automatisch gelöscht. Andere frühere Smart-Sammlungen mit unbekannten abweichenden Namen
   werden ebenfalls nicht automatisch entfernt; die beiden bekannten Alt-Sammlungen `5-Sterne-Tierbilder` und
@@ -1032,7 +1265,11 @@ insbesondere die Abschnitte zu Plug-in-Menüeinträgen und `edit_field`-Steuerel
 
 ## Betriebs- und Sicherungsgrenze
 
-Das Suchpaket ist abgeleitet und kann jederzeit aus dem aktiven Master neu erzeugt werden. Es gehört daher nicht in
-Git, GitHub Pages oder normale Projektbackups. `previous` ist der lokale schnelle Rollback. Unersetzbar und zu
-sichern bleiben Masterdatenbank, eigene Taxonomiekorrekturen, Projektverknüpfungen und später die normalen
-Lightroom-Katalogbackups. Die Einbindung in Installer, NAS und Mehrgerätebetrieb bleibt Phase 11.
+Das Suchpaket ist aus einem passenden Master ableitbar und gehört nicht in Git oder GitHub Pages.
+Die aktuelle vollständige NAS-Sicherung enthält jedoch ausdrücklich den gesamten gemeinsamen Datenordner
+einschließlich Suchpaket, Master, eigenen Entscheidungen, Projektlinks, Aufträgen und Konfiguration.
+Der gemeinsame Vorgänger ist der schnelle lokale Rücknahmestand und ersetzt keine externe Sicherung.
+Lightroom-Katalogbackups bleiben ein eigener Sicherungsbereich. Installer und Mehrgerätebetrieb sind
+spätere Erweiterungen; die schon vorhandene Vollsicherung ist keine erst in Phase 11 geplante Funktion.
+Umfang und geprüfte Restoregrenzen: [NAS-Vertrag](multi-device-backup-plan.md) und
+[Gesamtaudit](audit-auftrag-phase-10-5.md).

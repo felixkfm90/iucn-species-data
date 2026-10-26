@@ -86,14 +86,61 @@ function IdentitySnapshot.equal(left, right)
   return true
 end
 
-function IdentitySnapshot.resolveKeywords(catalog, snapshot)
-  local result = {}
+local function numericIdentifier(value)
+  return type(value) == "number" and value >= 1 and value <= 9007199254740991 and value % 1 == 0
+end
+
+local function keywordReadFailed()
+  error("Lightroom konnte die FN-Stichwörter nicht prüfen. Die Artänderung bleibt angehalten; das vorhandene Laufprotokoll bleibt erhalten.", 0)
+end
+
+local function invalidKeywordResponse()
+  error("Lightroom lieferte keine eindeutige FN-Stichwortantwort. Die Artänderung bleibt angehalten.", 0)
+end
+
+-- Journals retain string IDs. The documented SDK lookup accepts an array of
+-- numeric localIdentifier values and returns objects, not a positional map.
+local function lookupKeywords(catalog, entries)
+  local ids, wanted, result = {}, {}, {}
+  for _, entry in ipairs(entries) do
+    local id = type(entry.id) == "string" and tonumber(entry.id) or nil
+    assert(numericIdentifier(id) and string.format("%.0f", id) == entry.id and not wanted[entry.id]
+      and managed(entry.name), "Eine protokollierte FN-Stichwortkennung ist ungültig. Keine Fotoänderung wurde gestartet.")
+    wanted[entry.id] = true
+    table.insert(ids, id)
+  end
+  if #ids == 0 then return result end
+  local ok, keywords = LrTasks.pcall(function() return catalog:getKeywordsByLocalId(ids) end)
+  if not ok then keywordReadFailed() end
+  if type(keywords) ~= "table" then invalidKeywordResponse() end
+  local count = 0
+  for index, keyword in pairs(keywords) do
+    if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then invalidKeywordResponse() end
+    local readable, entry = LrTasks.pcall(function()
+      if type(keyword) ~= "table" and type(keyword) ~= "userdata" then return nil end
+      local id = keyword.localIdentifier
+      if not numericIdentifier(id) then return nil end
+      local name = keyword:getName()
+      if type(name) ~= "string" then return nil end
+      return { id = string.format("%.0f", id), name = name, keyword = keyword }
+    end)
+    if not readable then keywordReadFailed() end
+    if not entry or not wanted[entry.id] or result[entry.id] then invalidKeywordResponse() end
+    result[entry.id] = entry
+    count = count + 1
+  end
+  for index = 1, count do if keywords[index] == nil then invalidKeywordResponse() end end
+  return result
+end
+
+function IdentitySnapshot.resolveKeywords(catalog, snapshot, allowUnavailable)
+  local found, result = lookupKeywords(catalog, snapshot.keywords), {}
   for _, entry in ipairs(snapshot.keywords) do
-    local ok, keyword = LrTasks.pcall(function() return catalog:getKeywordByLocalIdentifier(entry.id) end)
-    if not ok or not keyword or keyword:getName() ~= entry.name or not managed(entry.name) then
+    local actual = found[entry.id]
+    if actual and actual.name == entry.name then result[entry.id] = actual.keyword
+    elseif allowUnavailable ~= true then
       error("Ein benötigtes FN-Stichwort wurde gelöscht oder umbenannt. Es wird nicht automatisch wiederhergestellt: " .. entry.name, 0)
     end
-    result[entry.id] = keyword
   end
   return result
 end

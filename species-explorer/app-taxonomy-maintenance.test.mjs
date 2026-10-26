@@ -14,17 +14,20 @@ const context = vm.createContext({
   },
 });
 new vm.Script(await readFile(new URL("./public/app-taxonomy-progress.js", import.meta.url), "utf8")).runInContext(context);
+new vm.Script(await readFile(new URL("./public/app-taxonomy-master.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source, { filename: "app-taxonomy-maintenance.js" }).runInContext(context);
 const maintenance = context.SpeciesExplorerTaxonomyMaintenance;
 
 function element() {
+  const listeners = {};
   return {
     disabled: false,
     hidden: false,
     innerHTML: "",
     textContent: "",
     value: 0,
-    addEventListener() {},
+    addEventListener(type, listener) { listeners[type] = listener; },
+    click() { listeners.click?.(); },
     removeAttribute(name) {
       delete this[name];
     },
@@ -391,7 +394,7 @@ test("veraltete Ergänzungsnamen werden ohne vorgetäuschtes CoL-Update dargeste
   await controller.refresh();
   assert.equal(
     visible.taxonomyUpdateButton.textContent,
-    "Namensbestand aktualisieren",
+    "Ergänzungsnamen prüfen",
   );
   assert.equal(
     visible.taxonomyMaintenanceSummary.textContent,
@@ -401,4 +404,76 @@ test("veraltete Ergänzungsnamen werden ohne vorgetäuschtes CoL-Update dargeste
     visible.taxonomyMaintenanceDetail.textContent,
     "Neueste verfügbare Version: COL26.7 XR vom 17.07.2026.",
   );
+});
+
+test("Programmstart bietet nur eine nachgewiesene CoL-Version an; Ergänzungsalter und Prüfunsicherheit bleiben still", async (t) => {
+  const current = availableUpdateStatus({ installed: true });
+  current.reference = { available: true, releaseId: current.latest.releaseId, source: current.latest };
+  for (const [label, status] of [
+    ["Ergänzungsprüfung älter als sieben Tage", { ...current, catalogueUpdateAvailable: false, supplementUpdateAvailable: true }],
+    ["offline mit veralteter neuer Version im Cache", { ...availableUpdateStatus({ installed: true }), latestCheckError: "Netzwerk nicht verfügbar" }],
+    ["Versionskennung fehlt", { ...availableUpdateStatus({ installed: true }), latest: { alias: "COL ohne Kennung" } }],
+    ["aktueller Release trotz widersprüchlichem Angebotsflag", { ...current, catalogueUpdateAvailable: true }],
+    ["noch unbekannte neueste Version", { ...current, latest: null, latestCheckedAt: "" }],
+    ["ungültiger Prüfzeitpunkt", { ...availableUpdateStatus({ installed: true }), latestCheckedAt: "undatiert" }],
+  ]) await t.test(label, async () => {
+    const delegated = [], requests = [];
+    const controller = maintenance.createTaxonomyMaintenanceController({
+      state: { updateTaxonomyDatabase: async (options) => { delegated.push(options); } }, elements: elements(),
+      fetchJson: async (url, options) => { requests.push({ url, options }); return url.endsWith("/preview") ? updatePreview() : status; },
+      escapeHtml: String, renderDatabaseStatus() {},
+    });
+    controller.setup(); await flushAsyncWork(); await controller.refresh(); await flushAsyncWork();
+    assert.equal(delegated.length, 0, "Kein ungeprüftes automatisches Updateangebot");
+    assert.equal(requests.filter(({ options }) => options?.method === "POST").length, 0, "Status lesen genügt");
+  });
+});
+
+test("ein inzwischen aktueller CoL-Stand in der frischen Vorschau erzeugt kein Ergänzungs-Popup", async () => {
+  const delegated = [];
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: { updateTaxonomyDatabase: async (options) => { delegated.push(options); } }, elements: elements(),
+    fetchJson: async (url) => url.endsWith("/preview")
+      ? { ...updatePreview(), updateCatalogue: false, updateSupplements: true }
+      : availableUpdateStatus({ installed: true }),
+    escapeHtml: String, renderDatabaseStatus() {},
+  });
+  controller.setup(); await flushAsyncWork();
+  assert.equal(delegated.length, 0);
+});
+
+test("ein zunächst unbekannter Versionsstand kann später genau ein belegtes Angebot liefern", async () => {
+  const delegated = [];
+  let status = { ...availableUpdateStatus({ installed: true }), latest: null, latestCheckedAt: "" };
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: { updateTaxonomyDatabase: async (options) => { delegated.push(options); } }, elements: elements(),
+    fetchJson: async (url) => url.endsWith("/preview") ? updatePreview() : status,
+    escapeHtml: String, renderDatabaseStatus() {},
+  });
+  controller.setup(); await flushAsyncWork(); assert.equal(delegated.length, 0);
+  status = availableUpdateStatus({ installed: true });
+  await controller.refresh(); await flushAsyncWork();
+  await controller.refresh(); await flushAsyncWork();
+  assert.equal(delegated.length, 1);
+  assert.equal(delegated[0].sourcePreview.token, "preview-token");
+});
+
+test("manuelle Ergänzungsprüfung behauptet keine neue Version und bleibt nach stillem Start erreichbar", async () => {
+  const messages = [], delegated = [], visible = elements();
+  const status = { ...availableUpdateStatus({ installed: true }), catalogueUpdateAvailable: false,
+    supplementUpdateAvailable: true, reference: { available: true, releaseId: availableUpdateStatus().latest.releaseId } };
+  const controller = maintenance.createTaxonomyMaintenanceController({
+    state: { setPipelineMessage: (message) => messages.push(message),
+      updateTaxonomyDatabase: async (options) => { delegated.push(options); } }, elements: visible,
+    fetchJson: async (url) => url.endsWith("/preview") ? { ...updatePreview(), updateCatalogue: false } : status,
+    escapeHtml: String, renderDatabaseStatus() {},
+  });
+  controller.setup(); await flushAsyncWork();
+  assert.equal(delegated.length, 0);
+  visible.taxonomyCheckButton.click(); await flushAsyncWork();
+  assert.match(messages.at(-1), /CoL ist aktuell.*erneut geprüft.*neue Quellenversion ist damit nicht nachgewiesen/);
+  assert.equal(delegated.length, 0);
+  visible.taxonomyUpdateButton.click(); await flushAsyncWork();
+  assert.equal(delegated.length, 1);
+  assert.notEqual(delegated[0].startup, true);
 });

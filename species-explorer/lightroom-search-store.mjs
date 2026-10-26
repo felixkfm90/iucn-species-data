@@ -1,3 +1,4 @@
+import { classificationRetentionForTaxon } from "./taxonomy-classification-retention.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -86,6 +87,7 @@ export class LightroomSearchStore {
       (correctionRelease?.entries || []).map((entry) => [entry.masterTaxonId, entry]),
     );
     this.closed = false;
+    this.retentionByTaxonId = new Map();
     const identityRow = database.prepare("SELECT value FROM package_info WHERE key = 'identityRegistry'").get();
     const registry = identityRow ? JSON.parse(identityRow.value) : emptyIdentityRegistry();
     this.identityState = identityRegistryState(registry);
@@ -171,6 +173,14 @@ export class LightroomSearchStore {
     };
   }
 
+  classificationRetention(row) {
+    const id = row.master_taxon_id;
+    if (!this.retentionByTaxonId.has(id)) {
+      this.retentionByTaxonId.set(id, classificationRetentionForTaxon({ ...row, statuses: this.statusRows.all(id) }));
+    }
+    return this.retentionByTaxonId.get(id);
+  }
+
   correctedRow(row) {
     const correction = this.correctionsByTaxonId.get(row.master_taxon_id);
     if (!correction) return row;
@@ -187,6 +197,7 @@ export class LightroomSearchStore {
     for (const correction of this.correctionsByTaxonId.values()) {
       const base = this.taxonRow.get(correction.masterTaxonId);
       if (!base || (kingdom !== "all" && base.kingdom !== kingdom)) continue;
+      if (this.classificationRetention(base)) continue;
       for (const [term, language] of [
         [correction.germanName, "de"],
         [correction.englishName, "en"],
@@ -243,6 +254,7 @@ export class LightroomSearchStore {
     const correctionRows = this.correctionSearchRows(queryValues, kingdom);
     const best = new Map();
     for (const row of rows) {
+      if (this.classificationRetention(row)) continue;
       if (kingdom !== "all" && row.kingdom !== kingdom) continue;
       const score = scoreCandidate(variants, row) - (row.project_linked ? 2 : 0);
       const current = best.get(row.master_taxon_id);
@@ -317,6 +329,7 @@ export class LightroomSearchStore {
     const baseRow = this.taxonRow.get(cleanText(masterTaxonId));
     const row = baseRow ? this.correctedRow(baseRow) : null;
     if (!row) return null;
+    const classificationRetention = this.classificationRetention(row);
     const hierarchy = this.hierarchyRows.all(row.master_taxon_id).map((entry) => ({
       rank: entry.rank,
       scientificName: entry.scientific_name,
@@ -352,6 +365,7 @@ export class LightroomSearchStore {
       rank: row.rank,
       kingdom: row.kingdom || null,
       lifecycleState: row.lifecycle_state,
+      ...(classificationRetention ? { classificationRetention, assignmentAllowed: false } : {}),
       projectLinked: this.projectRows.all(row.master_taxon_id).length > 0,
       referenceState: row.reference_state,
       hierarchy,
@@ -397,7 +411,7 @@ export async function openLightroomSearchStore({ searchRoot, slot = "active" } =
       readOnly: true,
     });
     try {
-      inspectLightroomSearchDatabase(database, { full: false });
+      inspectLightroomSearchDatabase(database, { full: false, manifest });
       return new LightroomSearchStore({
         database,
         manifest,

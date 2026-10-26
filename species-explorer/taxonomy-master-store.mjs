@@ -1,3 +1,4 @@
+import { CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY, classificationRetentionForTaxon } from "./taxonomy-classification-retention.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -346,6 +347,27 @@ export class TaxonomyMasterStore {
     }));
   }
 
+  retainsProviderRecords(records) {
+    this.assertOpen();
+    if (!this.retainedProviderRecords) {
+      const retained = new Set();
+      const rows = this.database.prepare(`
+        SELECT DISTINCT taxon.* FROM master_taxon taxon JOIN master_taxon_status status USING(master_taxon_id)
+        WHERE instr(status.status_detail, ?) > 0 OR instr(status.status_detail, ?) > 0
+          OR CASE WHEN json_valid(status.status_detail) THEN
+            json_extract(status.status_detail, '$.kind') = ? OR json_extract(status.status_detail, '$.policy') = ? ELSE 0 END
+      `).all(CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY, CLASSIFICATION_RETENTION_KIND, CLASSIFICATION_RETENTION_POLICY);
+      for (const row of rows) {
+        const marker = classificationRetentionForTaxon({ ...row, statuses: this.statusRows.all(row.master_taxon_id) });
+        for (const group of marker?.withheldGroups || []) for (const record of group.records) {
+          retained.add(`${record.provider}|${record.providerRecordId}`);
+        }
+      }
+      this.retainedProviderRecords = retained;
+    }
+    return (records || []).some(record => this.retainedProviderRecords.has(`${record.provider}|${String(record.providerRecordId || "").trim()}`));
+  }
+
   names(masterTaxonId, fields = this.fieldMap(masterTaxonId)) {
     const providerNames = this.providerNameRows.all(masterTaxonId).map(plain);
     const make = (language, fieldName) => {
@@ -411,6 +433,7 @@ export class TaxonomyMasterStore {
     const aliases = this.aliasRows.all(taxon.master_taxon_id).map(plain);
     const providers = this.providers(taxon.master_taxon_id);
     const statuses = this.statuses(taxon.master_taxon_id);
+    const classificationRetention = classificationRetentionForTaxon({ ...taxon, statuses });
     const scientificName = fields.get("scientific-name|")?.field_value
       || taxon.canonical_scientific_name;
     const germanName = names.germanNames[0]?.name || null;
@@ -425,6 +448,7 @@ export class TaxonomyMasterStore {
       providers,
       statuses,
       statusIds: statuses.map((entry) => entry.id),
+      classificationRetention,
       sourceProviders: [...new Set(providers.map((entry) => entry.provider))],
       fields,
       correction: correction || null,
@@ -444,6 +468,8 @@ export class TaxonomyMasterStore {
       const row = this.taxonRow.get(correction.masterTaxonId);
       if (!row || !matchesKingdom(row, { kingdom, kingdoms })) continue;
       if (rank !== "all" && row.rank !== rank) continue;
+      const taxon = this.compactTaxon(row);
+      if (taxon.classificationRetention) continue;
       for (const [value, entryLanguage] of [
         [correction.germanName, "de"],
         [correction.englishName, "en"],
@@ -452,7 +478,7 @@ export class TaxonomyMasterStore {
         const score = termScore(query, value);
         if (!Number.isFinite(score)) continue;
         ranked.push({
-          taxon: this.compactTaxon(row),
+          taxon,
           match: { value, type: "vernacular" },
           score,
         });
@@ -605,6 +631,7 @@ export class TaxonomyMasterStore {
         if (allowedKinds && !allowedKinds.has(row.term_kind)) continue;
         if (language !== "all" && row.term_kind === "vernacular" && row.language !== language) continue;
         const taxon = this.compactTaxon(row);
+        if (taxon.classificationRetention) continue;
         const type = row.term_kind === "synonym"
           ? "scientific_synonym"
           : row.term_kind === "scientific"
@@ -638,6 +665,7 @@ export class TaxonomyMasterStore {
     const ranked = [];
     for (const row of this.taxonRows.all()) {
       const taxon = this.compactTaxon(row);
+      if (taxon.classificationRetention) continue;
       if (!matchesKingdom(taxon, { kingdom, kingdoms })) continue;
       if (rank !== "all" && taxon.rank !== rank) continue;
       for (const term of this.searchTerms(taxon, { kind, language })) {
@@ -700,6 +728,7 @@ export class TaxonomyMasterStore {
     const matches = [];
     for (const row of rows) {
       const taxon = this.compactTaxon(row);
+      if (taxon.classificationRetention) continue;
       if (rank && taxon.rank !== rank) continue;
       if (kingdom && normalized(taxon.kingdom) !== normalized(kingdom)) continue;
       matches.push({
@@ -783,6 +812,7 @@ export class TaxonomyMasterStore {
       referenceState: taxon.reference_state,
       referenceGap: taxon.reference_state === "reference-gap",
       lifecycleState: taxon.lifecycle_state,
+      ...(taxon.classificationRetention ? { classificationRetention: taxon.classificationRetention, assignmentAllowed: false } : {}),
       projectLinks: this.projectRows.all(taxon.master_taxon_id).map(plain),
       source: resultSourceLabel(taxon.sourceProviders),
       masterCandidateId: this.manifest.candidateId,

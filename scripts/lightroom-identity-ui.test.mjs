@@ -1,18 +1,25 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
 import fengari from "fengari";
+import { tmpdir } from "./test-temp.mjs";
+import { createLightroomSearchRequestHandler } from "../species-explorer/lightroom-search-helper.mjs";
+import { IDENTITY_FIELDS } from "../species-explorer/lightroom-identity-snapshot.mjs";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 const root = new URL("../lightroom-plugin/FNWildlifeTaxonomy.lrplugin/", import.meta.url);
 const actionSource = await fs.readFile(new URL("IdentityAction.lua", root), "utf8");
 const viewSource = await fs.readFile(new URL("IdentityView.lua", root), "utf8");
-function execute(script) {
+const stateSource = await fs.readFile(new URL("PluginState.lua", root), "utf8");
+const selectionFunction = stateSource.match(/function PluginState\.selectedPhotos\(catalog\)[\s\S]*?\nend/)[0];
+function execute(script, inspect = () => undefined) {
   const state = lauxlib.luaL_newstate(); lualib.luaL_openlibs(state);
   try {
     assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
     const code = lua.lua_pcall(state, 0, 0, 0);
     assert.equal(code, lua.LUA_OK, code === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1));
+    return inspect(state);
   } finally { lua.lua_close(state); }
 }
 
@@ -22,10 +29,11 @@ local choices, permissions = {}, {}
 local changed, previews, pause, failWrite, favoriteConflict = 0, 0, false, false, false
 local run = { photos = { { photoUuid = "p1", state = "prepared" } } }
 local reviewConflicts = {}
+local sdkUuid = "11111111-1111-1111-1111-111111111111"
 local originalPcall = pcall
 function import(name)
   if name == "LrTasks" then return { pcall = originalPcall, yield = function() end } end
-  if name == "LrUUID" then return { generateUUID = function() return "11111111-1111-1111-1111-111111111111" end } end
+  if name == "LrUUID" then return { generateUUID = function() return sdkUuid end } end
   error(name)
 end
 local View = {
@@ -51,7 +59,7 @@ local photos = {}
 for i = 1, 2 do
   photos[i] = { getPropertyForPlugin = function() return "old" end, getRawMetadata = function() return "p" .. i end }
 end
-local catalog = { getTargetPhotos = function() return photos end }
+local catalog = { getTargetPhotos = function() return photos end, getTargetPhoto = function() return photos[1] end }
 local Workflow = {
   preview = function(_, input)
     table.insert(calls, "preview"); previews = previews + 1
@@ -91,11 +99,95 @@ local Workflow = {
 package.preload.IdentityWorkflow = function() return Workflow end
 package.preload.IdentityCatalog = function() return { key = function() return "catalog" end } end
 package.preload.IdentityView = function() return View end
+package.preload.PluginState = function()
+  local PluginState = {}; ${selectionFunction}; return PluginState
+end
 package.preload.IdentityAction = function()
 ${actionSource}
 end
 local Action = require "IdentityAction"
 `;
+
+async function journalBridge(t) {
+  const directory = await fs.mkdtemp(path.join(tmpdir(), "identity-ui-journal-"));
+  const sourceId = `mtx_${"1".repeat(32)}`, targetId = `mtx_${"2".repeat(32)}`;
+  const before = { photoUuid: "p1", values: { ...Object.fromEntries(IDENTITY_FIELDS.map((key) => [key, ""])),
+    masterTaxonId: sourceId, referenceImage: "no", taxonomyKeywordIds: "k1" },
+  keywords: [{ id: "k1", name: "Bisherige Art (FN)" }] };
+  const after = structuredClone(before);
+  after.values.masterTaxonId = targetId; after.values.taxonomyKeywordIds = "k2";
+  after.keywords = [{ id: "k2", name: "Nachfolgeart (FN)" }];
+  const store = {
+    identityRevision: "a".repeat(64),
+    status: () => ({ available: true, packageId: "identity-ui-package", masterVersion: "identity-ui-master" }),
+    identityResolution: (id) => id === sourceId
+      ? { state: "historical", type: "split", eventId: "b".repeat(64), successorIds: [targetId] }
+      : { state: "current", successorIds: [] },
+    taxon: (id) => id === targetId
+      ? { masterTaxonId: targetId, acceptedScientificName: "Testus target", rank: "species", lifecycleState: "active" } : null,
+    close() {},
+  };
+  const helper = await createLightroomSearchRequestHandler({ searchRoot: directory, openStore: async () => store });
+  t.after(async () => { helper.close(); await fs.rm(directory, { recursive: true, force: true }); });
+  const request = { catalogKey: "catalog", snapshots: [before], observed: [before], writerIdle: true,
+    inventoryRows: [{ photoUuid: before.photoUuid, masterTaxonId: sourceId, referenceImage: "no" }],
+    choices: [{ sourceMasterTaxonId: sourceId, targetMasterTaxonId: targetId }], favoriteDecisions: [] };
+  const preview = await helper.handle({ ...request, command: "photo-identity-plan" });
+  assert.equal(preview.ok, true);
+  return { helper, request: { ...request, token: preview.result.token, changes: [{ before, after }] } };
+}
+
+for (const sdkUuid of ["a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D",
+  "a1B2c3D4-e5F6-4A7b-8C9d-0e1F2a3B4c5D"]) {
+  test(`SDK-Laufkennung ${sdkUuid} erreicht über den Lua-Dialog das echte Journal kanonisch`, async (t) => {
+    const captured = execute(fixture + `
+sdkUuid = ${JSON.stringify(sdkUuid)}
+local originalPrepare = Workflow.prepare
+Workflow.prepare = function(catalog, input)
+  capturedRunId, capturedConfirmed = input.runId, input.confirmed
+  return originalPrepare(catalog, input)
+end
+choices = { "selection", "new" }; Action.run(catalog)
+assert(changed == 1)
+`, (state) => {
+      lua.lua_getglobal(state, to_luastring("capturedRunId"));
+      const runId = lua.lua_tojsstring(state, -1); lua.lua_pop(state, 1);
+      lua.lua_getglobal(state, to_luastring("capturedConfirmed"));
+      return { runId, confirmed: lua.lua_toboolean(state, -1) };
+    });
+    const { helper, request } = await journalBridge(t);
+    if (sdkUuid !== sdkUuid.toLowerCase()) {
+      const raw = await helper.handle({ ...request, command: "photo-identity-prepare", runId: sdkUuid, confirmed: true });
+      assert.equal(raw.ok, false, "Die Journalgrenze selbst bleibt strikt kanonisch.");
+      assert.match(raw.error.message, /Journalvorbereitung/);
+    }
+    const prepared = await helper.handle({ ...request, command: "photo-identity-prepare", ...captured });
+    assert.equal(prepared.ok, true, prepared.error?.message);
+    assert.equal(prepared.result.journalPrepared, true);
+    assert.equal(prepared.result.run.runId, sdkUuid.toLowerCase());
+    const read = await helper.handle({ command: "photo-identity-read", catalogKey: request.catalogKey, runId: captured.runId });
+    assert.equal(read.ok, true);
+    assert.equal(read.result.run.photos[0].state, "prepared");
+  });
+}
+
+for (const [label, value] of [["nil", "nil"], ["boolean", "false"], ["number", "123"], ["table", "{}"],
+  ["empty", '""'], ["nonhex", '"G1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D"'],
+  ["shape", '"A1B2C3D4E-5F6-4A7B-8C9D-0E1F2A3B4C5D"'],
+  ["short", '"A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5"'],
+  ["whitespace", '" A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D"']]) {
+  test(`Ungültige SDK-Laufkennung (${label}) hält vor Vorbereitung und Fotoschreiben an`, () => {
+    execute(fixture + `
+sdkUuid = ${value}; choices = { "selection", "new" }; Action.run(catalog)
+assert(changed == 0 and calls[#calls] == "preview", "Keine Vorbereitung oder Fotoänderung bei ungültiger SDK-Kennung")
+assert(messages[#messages].title == "Artänderung angehalten")
+assert(messages[#messages].text:find("gültige Laufkennung"))
+sdkUuid = "A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D"
+choices = { "selection", "new" }; Action.run(catalog)
+assert(changed == 1) -- Der angehaltene Dialog lässt einen späteren gültigen Lauf zu.
+`);
+  });
+}
 
 test("Artänderungsdialog startet beim Öffnen/Schließen keinen Kataloglauf; Zielwahl und Schlussbestätigung bleiben Pflicht", () => {
   execute(fixture + `
@@ -122,6 +214,21 @@ assert(changed == 0 and dialogs[#dialogs].title == "Art-Favoritenkonflikt")
 assert(dialogs[#dialogs].text:find("außerhalb der Auswahl"))
 choices = { "selection", "new", "outside" }; Action.run(catalog)
 assert(changed == 1 and confirms[#confirms].text:find("Favoritenmarkierungen: 1"))
+`);
+});
+
+test("Artänderungsprüfung behandelt unmarkierten Filmstreifen nicht als bestätigte Auswahl", () => {
+  execute(fixture + `
+catalog.getTargetPhoto = function() return nil end
+catalog.getTargetPhotos = function() error("Kein Filmstreifen-Fallback") end
+choices = { "selection" }; Action.run(catalog)
+assert(#calls == 0 and previews == 0 and changed == 0 and #confirms == 0)
+assert(messages[#messages].title == "Artänderung angehalten")
+catalog.getTargetPhoto = function() return photos[1] end
+choices = { "selection", "new" }; catalog.getTargetPhotos = function() return { photos[1], photos[1], photos[2] } end
+Action.run(catalog)
+assert(changed == 1 and previews == 2)
+assert(confirms[1].text:find("2 Fotos mit FN"))
 `);
 });
 

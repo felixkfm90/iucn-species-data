@@ -10,7 +10,7 @@ echo.
 where node.exe >nul 2>nul
 if errorlevel 1 (
   echo Node.js wurde nicht gefunden.
-  echo Bitte Node.js 18 oder neuer installieren und diese Datei erneut starten.
+  echo Bitte Node.js 24 installieren und diese Datei erneut starten.
   pause
   exit /b 1
 )
@@ -22,9 +22,9 @@ if not defined NODE_MAJOR (
   exit /b 1
 )
 
-if %NODE_MAJOR% LSS 18 (
+if %NODE_MAJOR% LSS 24 (
   echo Node.js ist zu alt. Gefunden: Version %NODE_MAJOR%
-  echo Bitte Node.js 18 oder neuer installieren und diese Datei erneut starten.
+  echo Bitte Node.js 24 installieren und diese Datei erneut starten.
   pause
   exit /b 1
 )
@@ -32,15 +32,15 @@ if %NODE_MAJOR% LSS 18 (
 if not exist "node_modules\electron\dist\electron.exe" (
   echo node_modules oder Electron wurden nicht gefunden.
   echo.
-  choice /C JN /M "npm install jetzt ausfuehren"
+  choice /C JN /M "Gesperrte Abhaengigkeiten mit npm ci jetzt installieren"
   if errorlevel 2 (
     echo Abgebrochen. Die App wurde nicht gestartet.
     pause
     exit /b 1
   )
-  call npm.cmd install
+  call npm.cmd ci
   if errorlevel 1 (
-    echo npm install ist fehlgeschlagen.
+    echo npm ci ist fehlgeschlagen.
     pause
     exit /b 1
   )

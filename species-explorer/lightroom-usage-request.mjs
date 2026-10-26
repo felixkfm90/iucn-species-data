@@ -101,19 +101,33 @@ export function createLightroomUsageRequestService({ taxonomyRoot: root, now = (
       }
       const proof = await catalogUsageStatus(root);
       // An unchanged closed catalog already has a genuine current receipt.
-      if (proof.ready) return { requested: false };
+      if (proof.ready && job.freshUsageCapture !== true) return { requested: false };
       return withTaxonomyCorrectionLock(root, async () => {
         const registry = await catalogUsageRegistration(root);
         if (!registry) throw new Error("Die vollständige FN-Katalogmenge muss einmalig registriert werden. Unbekannte Kataloge werden nicht als leer behandelt.");
+        if (job.freshUsageCapture === true && (!Array.isArray(job.confirmedCatalogs)
+            || job.confirmedCatalogs.length !== registry.catalogs.length
+            || new Set(job.confirmedCatalogs.map(key)).size !== registry.catalogs.length
+            || job.confirmedCatalogs.some((filename) => !registry.catalogs.some((catalog) => key(catalog.catalogPath) === key(filename))))) {
+          throw new Error("Der für den lokalen Neustart bestätigte FN-Katalogsatz wurde verändert.");
+        }
         const previous = checked(await read(requestPath(root)));
         if (!job.renewUsageRequest && previous?.updateRunId === job.updateRunId && previous.status === "pending") {
           return { requested: true, requestId: previous.requestId };
         }
+        // A capture retry changes the request binding, not the user's explicit
+        // normal-close choice for this exact update and confirmed catalog set.
+        // Never carry a previous close attempt or completed capture forward.
+        const keepNormalClose = job.renewUsageRequest === true && previous?.updateRunId === job.updateRunId
+          && previous.status !== "cancelled" && previous.agreement.confirmedAt === job.startedAt
+          && previous.catalogs.length === registry.catalogs.length
+          && previous.catalogs.every((filename) => registry.catalogs.some((catalog) => key(catalog.catalogPath) === key(filename)))
+          && Number.isFinite(Date.parse(previous.normalCloseRequestedAt));
         const document = await write(root, { schemaVersion: 1, requestId: `capture-request-${crypto.randomUUID()}`,
           updateRunId: job.updateRunId, baseRegistryRevision: registry.revision,
           catalogs: registry.catalogs.map((entry) => entry.catalogPath), status: "pending",
           agreement: { ...job.usageConsent, type: "prospective-user-agreement", confirmedAt: job.startedAt },
-          createdAt: now().toISOString() });
+          createdAt: now().toISOString(), ...(keepNormalClose ? { normalCloseRequestedAt: previous.normalCloseRequestedAt } : {}) });
         return { requested: true, requestId: document.requestId };
       });
     },

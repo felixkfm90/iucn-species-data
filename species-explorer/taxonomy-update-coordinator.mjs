@@ -3,6 +3,9 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
+import { masterJobDirectory } from "./taxonomy-master-job.mjs";
+import { assertRestartScope, isPreBuildRestart, readRestartInputs, restartDigest } from "./taxonomy-update-restart.mjs";
+import * as classificationAutomation from "./taxonomy-classification-automation.mjs";
 
 const DECISIONS = new Set(["refresh-and-build", "rebuild-master", "build-corrections", "apply-corrections", "sync-lightroom", "activate", "current"]);
 const RUNNING = new Set(["sources", "building", "activating", "applying-corrections", "syncing-lightroom"]);
@@ -51,9 +54,15 @@ function assertPairCurrent(master, maintenance, expectedRelease = "") {
 export class TaxonomyUpdateCoordinator {
   constructor({ taxonomyRoot, maintenanceService, masterService, checkStartReady = async () => ({ ready: false, reason: "catalog-usage" }),
     prepareStart = async () => {}, onStateChange = async () => {},
+    readProtectedUsageRenewalTarget = (root) => classificationAutomation.pendingClassificationUsageRenewalTarget(root),
+    prepareProtectedUsageRenewal = async () => { throw failure("Die gespeicherte automatische Vormerkung benötigt eine gezielte erneute FN-Prüfung."); },
     now = () => new Date(), pollIntervalMs = 10000, setTimer = setTimeout, clearTimer = clearTimeout,
-    writeState = atomicWriteJson, readState = async (file) => {
-      try { return JSON.parse(await fs.readFile(file, "utf8")); }
+    isRestartBlocked = () => false,
+    writeState = atomicWriteJson, readState = async (file, { maxBytes = 0 } = {}) => {
+      try {
+        if (maxBytes && (await fs.stat(file)).size > maxBytes) throw failure("Der gespeicherte Aufbaunachweis überschreitet seine zulässige Größe.");
+        return JSON.parse(await fs.readFile(file, "utf8"));
+      }
       catch (error) { if (error.code === "ENOENT") return null; throw error; }
     } } = {}) {
     if (!taxonomyRoot || !maintenanceService || !masterService) throw new TypeError("Taxonomiespeicher und beide Wartungsdienste sind erforderlich.");
@@ -62,11 +71,14 @@ export class TaxonomyUpdateCoordinator {
     this.master = masterService;
     this.checkStartReady = checkStartReady;
     this.prepareStart = prepareStart;
+    this.readProtectedUsageRenewalTarget = readProtectedUsageRenewalTarget;
+    this.prepareProtectedUsageRenewal = prepareProtectedUsageRenewal;
     this.onStateChange = onStateChange;
     this.now = now;
     this.pollIntervalMs = pollIntervalMs;
     this.setTimer = setTimer;
     this.clearTimer = clearTimer;
+    this.isRestartBlocked = isRestartBlocked;
     this.writeState = writeState;
     this.readState = readState;
     this.job = null;
@@ -91,6 +103,7 @@ export class TaxonomyUpdateCoordinator {
 
   async save(patch) {
     const next = { ...this.job, ...patch, updatedAt: this.now().toISOString() };
+    if (RUNNING.has(next.status) || WAITING.has(next.status)) next.completedAt = null;
     await this.writeState(this.file, next);
     this.job = next;
     await this.onStateChange(clone(next));
@@ -168,6 +181,106 @@ export class TaxonomyUpdateCoordinator {
     });
   }
 
+  async restartSnapshot() {
+    if (this.closed || await this.isRestartBlocked()) throw failure("Eine andere Aktion verhindert die lokale Neustartvorschau.");
+    const saved = await this.readState(this.file);
+    if (!saved || restartDigest(saved) !== restartDigest(this.job)) throw failure("Der gespeicherte Updateauftrag wurde inzwischen verändert.");
+    const [master, maintenance] = await Promise.all([this.master.status(), this.maintenance.status()]);
+    let originJob = this.job;
+    if (isPreBuildRestart(this.job)) {
+      const origin = this.job.restartGuard.identity;
+      originJob = await this.readState(path.join(path.dirname(this.file), "update-workflow-history", `${origin.updateRunId}.json`));
+      if (!originJob || restartDigest(originJob) !== this.job.restartGuard.originWorkflowRevision
+          || originJob.updateRunId !== origin.updateRunId || master.buildJob?.id !== origin.buildJobId) {
+        throw failure("Die Ursprungshistorie des lokalen Ersatzauftrags wurde verändert; kein neuer Aufbau.");
+      }
+    }
+    const identity = { updateRunId: originJob.updateRunId, buildJobId: master.buildJob.id,
+      referenceRelease: text(originJob.sourcePlan?.releaseId || originJob.baseline.referenceRelease) };
+    if (isPreBuildRestart(this.job)) identity.buildJobRevision = this.job.restartGuard.identity.buildJobRevision;
+    const inputs = await readRestartInputs({ taxonomyRoot: path.dirname(path.dirname(this.file)), identity,
+      master, maintenance, baseline: baseline(master) });
+    assertRestartScope(originJob, master, maintenance, inputs.binding.retainedCandidate);
+    await this.bindProtectedUsageRenewalTarget(inputs, originJob, master);
+    identity.buildJobRevision = inputs.buildJobRevision;
+    const token = restartDigest({ job: this.job, identity, inputs });
+    return { identity, inputs, originJob, public: { available: true, token, updateRunId: this.job.updateRunId,
+      buildJobId: identity.buildJobId, buildJobRevision: identity.buildJobRevision, baseline: inputs.binding.baseline,
+      catalogSetRevision: inputs.binding.catalogSetRevision, catalogCount: inputs.catalogs.length } };
+  }
+
+  async restartBuildPreview() {
+    return this.exclusive(async () => (await this.restartSnapshot()).public);
+  }
+
+  async restartBuild({ confirmed = false, token = "", updateRunId = "", buildJobId = "", buildJobRevision = "", usageConsent = null } = {}) {
+    return this.exclusive(async () => {
+      if (confirmed !== true || usageConsent?.allCatalogsConfirmed !== true || usageConsent?.noChangesUntilClose !== true) {
+        throw failure("Der neue lokale Aufbau und alle FN-Kataloge müssen ausdrücklich bestätigt werden.");
+      }
+      await this.ensureOwnerLock();
+      const preview = await this.restartSnapshot();
+      if (token !== preview.public.token || updateRunId !== preview.public.updateRunId
+          || buildJobId !== preview.identity.buildJobId || buildJobRevision !== preview.identity.buildJobRevision) {
+        throw failure("Die gebundene Neustartvorschau wurde verändert. Bitte erneut prüfen und bestätigen.");
+      }
+      const old = clone(this.job), history = path.join(path.dirname(this.file), "update-workflow-history", `${old.updateRunId}.json`);
+      const archived = await this.readState(history);
+      if (archived && restartDigest(archived) !== restartDigest(old)) throw failure("Die vorhandene Auftragshistorie darf nicht ersetzt werden.");
+      if (!archived) await this.writeState(history, old);
+      if ((await this.restartSnapshot()).public.token !== token) throw failure("Die Neustartvorschau hat sich während der Auftragssicherung verändert.");
+      const job = { schemaVersion: 1, updateRunId: `update-${randomUUID()}`, status: "waiting-usage", phase: "start",
+        decision: "rebuild-master", sourcePlan: null, sourceCompleted: true, buildStarted: false, boundCandidate: null,
+        baseline: preview.inputs.binding.baseline, startedAt: this.now().toISOString(),
+        usageConsent: clone(usageConsent), confirmedCatalogs: preview.inputs.catalogs, freshUsageCapture: true,
+        restartGuard: { identity: preview.identity, binding: preview.inputs.binding, originWorkflowRevision: restartDigest(preview.originJob) },
+        ...(preview.inputs.protectedUsageRenewalTarget ? { protectedUsageRenewalTarget: preview.inputs.protectedUsageRenewalTarget } : {}),
+        automaticFollowupRevision: "", automaticAttemptedCandidates: [],
+        message: "Der neue lokale Auftrag wartet auf eine frische FN-Erfassung und geschlossenes Lightroom.", error: "" };
+      await this.writeState(this.file, job);
+      this.job = job;
+      try { await this.prepareStart(clone(job)); }
+      catch (error) {
+        await this.stop("waiting-usage", error.message, error.message);
+        this.schedule();
+        return this.status();
+      }
+      await this.advance();
+      return this.status();
+    });
+  }
+
+  async assertRestartGuard(master, maintenance) {
+    if (!this.job.restartGuard || this.job.buildStarted) return;
+    if (await this.isRestartBlocked()) throw failure("Eine andere Aktion verhindert den lokalen Aufbau.");
+    const origin = await this.readState(path.join(path.dirname(this.file), "update-workflow-history", `${this.job.restartGuard.identity.updateRunId}.json`));
+    if (!origin || restartDigest(origin) !== this.job.restartGuard.originWorkflowRevision) {
+      throw failure("Die Ursprungshistorie wurde während des Wartens verändert; kein neuer Aufbau.");
+    }
+    const inputs = await readRestartInputs({ taxonomyRoot: path.dirname(path.dirname(this.file)),
+      identity: this.job.restartGuard.identity, master, maintenance, baseline: baseline(master) });
+    await this.bindProtectedUsageRenewalTarget(inputs, origin, master);
+    if (restartDigest(inputs.binding) !== restartDigest(this.job.restartGuard.binding)) {
+      throw failure("Der für den Neustart bestätigte Eingang wurde verändert. Bitte eine neue Vorschau bestätigen.");
+    }
+  }
+
+  async bindProtectedUsageRenewalTarget(inputs, origin, master) {
+    if (!origin.automaticFollowupRevision) return;
+    const target = await this.readProtectedUsageRenewalTarget(path.dirname(path.dirname(this.file)));
+    if (!target || !/^[a-f0-9]{64}$/.test(target.identityReviewRevision || "") || target.identityReviewRevision !== origin.automaticFollowupRevision
+        || master.identities?.revision !== target.identityReviewRevision || target.activeMasterId !== origin.baseline.masterVersion
+        || target.candidateId !== inputs.binding.retainedCandidate?.candidateId || !/^[a-f0-9]{64}$/.test(target.eventRevision || "")
+        || !/^[a-f0-9]{64}$/.test(target.identitySources || "") || !/^[a-f0-9]{64}$/.test(target.identityInputs || "")
+        || !Array.isArray(target.eventIds) || !target.eventIds.length || target.eventIds.length > 10000 || new Set(target.eventIds).size !== target.eventIds.length
+        || target.eventIds.some((id) => !/^[a-f0-9]{64}$/.test(id)) || !Array.isArray(target.usageRevisions) || !target.usageRevisions.length
+        || new Set(target.usageRevisions).size !== target.usageRevisions.length || target.usageRevisions.some((revision) => !/^[a-f0-9]{64}$/.test(revision))) {
+      throw failure("Die automatische Vormerkung gehört nicht unverändert zum geschützten lokalen Neustart.");
+    }
+    inputs.protectedUsageRenewalTarget = clone(target);
+    inputs.binding.protectedUsageRenewalTargetRevision = restartDigest(target);
+  }
+
   async restore() {
     return this.exclusive(async () => {
       if (this.closed) throw failure("Die Aktualisierungsbegleitung ist geschlossen.");
@@ -211,8 +324,57 @@ export class TaxonomyUpdateCoordinator {
     }
   }
 
+  async ownedBuildReady(master) {
+    await this.assertOwned(master);
+    const job = master.buildJob;
+    if (["paused", "pausing", "interrupted"].includes(job.status)) {
+      await this.stop(job.status === "interrupted" ? "interrupted" : "paused",
+        master.message || "Der eigene gesicherte Aufbau wartet auf gezielte Fortsetzung.");
+      return false;
+    }
+    assertHealthy(job, "Eigener Masteraufbau");
+    if (job.status !== "ready") return false;
+    if (this.job.boundCandidate) return true; // Explicit legacy binding is already checked above.
+    const directory = masterJobDirectory(path.dirname(path.dirname(this.file)), job.id);
+    const state = await this.readState(path.join(directory, "state.json"), { maxBytes: 512 * 1024 });
+    if (!state || state.schemaVersion !== 1 || state.id !== job.id) throw failure("Der fertige eigene Aufbau hat keinen eindeutigen Zustandsnachweis.");
+    if (["paused", "pausing", "interrupted"].includes(state.status)) {
+      await this.stop(state.status === "interrupted" ? "interrupted" : "paused",
+        "Der eigene gesicherte Aufbau wartet auf gezielte Fortsetzung.");
+      return false;
+    }
+    assertHealthy(state, "Eigener Masteraufbau");
+    if (state.status !== "ready") return false;
+    if (text(state.candidateId)) {
+      if (state.candidateId !== candidateId(master)) throw failure("Der vorhandene Kandidat gehört nicht zum fertigen eigenen Aufbau.");
+    } else {
+      // Older ready/resumed states may omit candidateId. Read only their recipe
+      // at this phase boundary, never hash inputs or open a database on a poll.
+      const recipe = await this.readState(path.join(directory, "recipe.json"), { maxBytes: 12 * 1024 * 1024 });
+      if (!recipe || recipe.schemaVersion !== 1 || recipe.id !== job.id || recipe.updateRunId !== this.job.updateRunId
+          || !text(recipe.revision) || recipe.revision !== master.lifecycle?.candidate?.buildJobRevision) {
+        throw failure("Der vorhandene Kandidat gehört nicht zum Rezept des fertigen eigenen Aufbaus.");
+      }
+    }
+    return true;
+  }
+
   async beginBuild({ alreadyReady = false } = {}) {
     if (!alreadyReady && !await this.readyForPhase("build")) return;
+    if (this.closed) return;
+    if (this.job.restartGuard && !this.job.buildStarted) {
+      if (this.job.protectedUsageRenewalTarget) {
+        await this.save({ status: "waiting-usage",
+          message: "FN-Nachweis registriert. Gespeicherte Entscheidungen werden erneut geprüft." });
+        if (this.closed) return;
+        const renewed = await this.prepareProtectedUsageRenewal({ job: clone(this.job), usageRevision: this.job.usageRevision });
+        if (!/^[a-f0-9]{64}$/.test(renewed?.receiptRevision || "")) throw failure("Die erneute FN-Prüfung hat keinen gebundenen Abschlussnachweis.");
+        await this.save({ protectedUsageRenewalRevision: renewed.receiptRevision });
+        if (this.closed) return;
+      }
+      const [master, maintenance] = await Promise.all([this.master.status(), this.maintenance.status()]);
+      await this.assertRestartGuard(master, maintenance);
+    }
     await this.save({ status: "building", phase: "build", buildStarted: true, boundCandidate: null,
       message: "Der lokale Master wird aus den gebundenen Quellen aufgebaut.", error: "" });
     if (this.closed) return;
@@ -232,19 +394,42 @@ export class TaxonomyUpdateCoordinator {
     } else if (["rebuild-master", "build-corrections"].includes(this.job.decision)) await this.beginBuild({ alreadyReady: true });
     else if (this.job.decision === "activate") await this.inspectCandidate(master, { alreadyReady: true });
     else if (this.job.decision === "current") await this.finish(master, maintenance);
-    else {
-      const correction = this.job.decision === "apply-corrections";
-      await this.save({ status: correction ? "applying-corrections" : "syncing-lightroom", phase: correction ? "corrections" : "package",
-        message: correction ? "Eigene Namen werden gemeinsam geprüft und übernommen." : "Lightroom-Suchpaket wird geprüft und synchronisiert." });
-      if (this.closed) return;
-      if (correction) await this.master.applyCorrections({ confirmed: true });
-      else await this.master.syncLightroomPackage();
+    else await this.beginStandalonePhase();
+  }
+
+  async beginStandalonePhase() {
+    const correction = this.job.decision === "apply-corrections";
+    await this.save({ status: correction ? "applying-corrections" : "syncing-lightroom", phase: correction ? "corrections" : "package",
+      message: correction ? "Eigene Namen werden gemeinsam geprüft und übernommen." : "Lightroom-Suchpaket wird geprüft und synchronisiert.", error: "" });
+    if (this.closed) return;
+    if (correction) await this.master.applyCorrections({ confirmed: true });
+    else await this.master.syncLightroomPackage();
+  }
+
+  standaloneNeedsRetry(master) {
+    const phase = this.job.phase.replace(/^resume-/, "");
+    const correction = phase === "corrections";
+    if (!["corrections", "package"].includes(phase) || this.job.buildStarted || this.job.boundCandidate
+      || this.job.decision !== (correction ? "apply-corrections" : "sync-lightroom")
+      || JSON.stringify(baseline(master)) !== JSON.stringify(this.job.baseline)) {
+      throw failure("Die gebundene Grundlage des Namens- oder Paketabgleichs wurde verändert. Bitte den gespeicherten Auftrag prüfen.");
     }
+    return correction ? master.corrections?.pending === true
+      : master.lightroomPackage?.needsRebuild === true || ["missing", "stale"].includes(master.lightroomPackage?.status);
+  }
+
+  async resumeStandalonePhase() {
+    // Re-read after the asynchronous catalog proof, never retarget the original
+    // authorization. Already committed effects only need their completion proof.
+    const [master, maintenance] = await Promise.all([this.master.status(), this.maintenance.status()]);
+    if (master.active || maintenance.active) throw failure("Eine Datenbankaktion ist noch aktiv.");
+    if (!this.standaloneNeedsRetry(master)) await this.finish(master, maintenance);
+    else await this.beginStandalonePhase();
   }
 
   async inspectCandidate(master, { alreadyReady = false } = {}) {
     assertHealthy(master, "Masterprüfung");
-    await this.assertOwned(master);
+    if (!await this.ownedBuildReady(master)) return;
     const blocking = Number(master.lifecycle?.blockingConflictCount ?? master.lifecycle?.blockingConflicts?.length ?? 0);
     const id = candidateId(master);
     if (!id) throw failure("Der zum Auftrag gehörige Masterkandidat fehlt.");
@@ -307,6 +492,7 @@ export class TaxonomyUpdateCoordinator {
         else if (phase === "build") await this.beginBuild({ alreadyReady: true });
         else if (phase === "candidate") await this.inspectCandidate(await this.master.status(), { alreadyReady: true });
         else if (phase === "resume-build") await this.resumeExistingBuild();
+        else if (["resume-corrections", "resume-package"].includes(phase)) await this.resumeStandalonePhase();
         else throw failure("Die gespeicherte Wartephase ist nicht eindeutig fortsetzbar.");
       } else if (this.job.status === "sources") {
         const source = await this.maintenance.status();
@@ -320,12 +506,12 @@ export class TaxonomyUpdateCoordinator {
         const master = await this.master.status();
         assertHealthy(master, "Master-/Paketaktualisierung");
         if (master.active) return;
-        if (STOPPED.has(master.status) || (master.buildJob?.available && STOPPED.has(master.buildJob.status))) {
+        if (this.job.status === "building") await this.inspectCandidate(master);
+        else if (STOPPED.has(master.status) || (master.buildJob?.available && STOPPED.has(master.buildJob.status))) {
           await this.stop(master.status === "paused" || master.buildJob?.status === "paused" ? "paused" : "interrupted",
             master.message || "Der gesicherte Aufbau wartet auf gezielte Fortsetzung.");
           return;
         }
-        if (this.job.status === "building") await this.inspectCandidate(master);
         else await this.finish();
       }
     } catch (error) {
@@ -345,6 +531,12 @@ export class TaxonomyUpdateCoordinator {
         await this.prepareStart({ ...clone(this.job), renewUsageRequest: true });
         await this.save({ status: "waiting-lightroom", error: "" });
         await this.advance();
+      } else if (["corrections", "package", "resume-corrections", "resume-package"].includes(this.job.phase)) {
+        if (!this.standaloneNeedsRetry(master)) await this.finish(master, await this.maintenance.status());
+        else {
+          await this.save({ status: "waiting-usage", phase: `resume-${this.job.phase.replace(/^resume-/, "")}`, error: "" });
+          await this.advance();
+        }
       } else if (this.job.buildStarted && master.buildJob?.status !== "ready") {
         await this.assertOwned(master);
         if (!master.buildJob?.canResume) throw failure("Der eigene gespeicherte Aufbau kann nicht sicher fortgesetzt werden.");
@@ -355,7 +547,7 @@ export class TaxonomyUpdateCoordinator {
           await this.assertOwned(master);
           await this.save({ automaticFollowupRevision: "", error: "" });
           await this.beginBuild();
-        } else if (["activation", "corrections", "package"].includes(this.job.phase) && !master.lifecycle?.candidate) await this.finish();
+        } else if (this.job.phase === "activation" && !master.lifecycle?.candidate) await this.finish();
         else {
           await this.save({ status: "building", phase: "candidate", error: "" });
           await this.inspectCandidate(master);
@@ -380,8 +572,9 @@ export class TaxonomyUpdateCoordinator {
       if (this.closed || this.job?.status !== "waiting-decisions") return this.status();
       try {
         const master = await this.master.status();
-        await this.assertOwned(master);
+        assertHealthy(master, "Masterprüfung nach Entscheidung");
         if (master.active) throw failure("Eine fremde Aktion läuft während der Entscheidungsübergabe.");
+        if (!await this.ownedBuildReady(master)) return this.status();
         const count = Number(master.lifecycle?.blockingConflictCount || 0);
         if (!count) await this.inspectCandidate(master);
         else if (master.identities?.pending && !master.identities?.candidateIncludesCurrent

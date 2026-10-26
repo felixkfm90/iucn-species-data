@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { readNasBackupArchives } from "./nas-backup-archives.mjs";
 
 const MAX_BACKUP_ROOT_LENGTH = 500;
 const MAX_BACKUPS = 3;
@@ -65,11 +66,22 @@ export async function createBackupService({
   isPipelineActive,
   isAssetWriteActive,
   spawnProcess = spawn,
+  readArchives = readNasBackupArchives,
+  tempSession = null,
 }) {
   let processHandle = null;
   let settings = await loadExplorerSettings();
   let currentBackupRoot = normalizeBackupRoot(settings.nasBackupRoot) || defaultBackupRoot;
   let state = initialBackupState(currentBackupRoot);
+  let archiveInventory = null;
+
+  function listArchives() {
+    if (archiveInventory) return archiveInventory;
+    const backupRoot = validateBackupRoot(currentBackupRoot);
+    archiveInventory = Promise.resolve().then(() => readArchives(backupRoot, { tempSession }))
+      .finally(() => { archiveInventory = null; });
+    return archiveInventory;
+  }
 
   async function loadExplorerSettings() {
     try {
@@ -346,5 +358,6 @@ export async function createBackupService({
     startNasBackup,
     isBackupActive,
     getState: () => state,
+    listArchives,
   };
 }

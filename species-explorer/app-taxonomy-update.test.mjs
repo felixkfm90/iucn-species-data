@@ -7,7 +7,7 @@ const context = vm.createContext({ clearTimeout() {}, setTimeout(callback, delay
   if (delay === 900) queueMicrotask(callback); // Only the explicit workflow wait; no background timer runs.
   return 1;
 } });
-for (const file of ["app-taxonomy-progress.js", "app-taxonomy-database.js", "app-taxonomy-maintenance.js"]) {
+for (const file of ["app-taxonomy-progress.js", "app-taxonomy-master.js", "app-taxonomy-database.js", "app-taxonomy-maintenance.js"]) {
   new vm.Script(await readFile(new URL(`./public/${file}`, import.meta.url), "utf8"), { filename: file }).runInContext(context);
 }
 
@@ -28,15 +28,18 @@ function fixture(options = {}) {
   const base = () => ({ status: "idle", active: false, lifecycle: { active: { candidateId: "old" } },
     reference: { status: "current", needsMasterRebuild: false }, lightroomPackage: { status: "current", needsRebuild: false } });
   const referenceBase = () => ({ status: "idle", active: false, updateAvailable: options.hasWork !== false,
-    latestCheckedAt: "2026-10-02T00:00:00Z", latest: { alias: "COL fixture", issued: "2026-10-01" },
-    reference: { available: options.installed !== false }, rollbackAvailable: true });
+    catalogueUpdateAvailable: options.hasWork !== false && options.catalogue !== false,
+    supplementUpdateAvailable: options.hasWork !== false && options.catalogue === false,
+    latestCheckedAt: "2026-10-02T00:00:00Z", latest: { releaseId: "col-fixture-new", alias: "COL fixture", issued: "2026-10-01" },
+    reference: { available: options.installed !== false, releaseId: options.catalogue === false ? "col-fixture-new" : "col-fixture-old" }, rollbackAvailable: true });
   let master = options.initialMaster || base(), reference = referenceBase(), phase = "initial";
   let sourceQueued = false, masterQueued = false;
   const calls = [], messages = [], confirmations = [], delegated = [];
   const state = { taxonomyMasterSnapshot: master, taxonomyMaintenanceSnapshot: reference,
     setPipelineMessage: (text, type) => messages.push({ text, type }) };
   const preview = () => ({ hasWork: options.hasWork !== false, token: "bound-source-token", latest: reference.latest,
-    updateCatalogue: options.catalogue !== false, warning: "Quellenhinweis", requiredFreeBytes: 12 * 1024 ** 3 });
+    updateCatalogue: options.catalogue !== false, warning: "Quellenhinweis", requiredFreeBytes: 12 * 1024 ** 3,
+    supplements: options.supplements || { lastFullRefreshAt: "2026-10-02T18:19:14.671Z", stale: true } });
   const fetchJson = async (url, payload) => {
     calls.push({ url, payload, phase });
     if (payload?.method === "POST") {
@@ -116,9 +119,11 @@ test("Startangebot und manuelle Aktion durchlaufen denselben vollständigen Quel
     const f = fixture({ asyncStages: true });
     await start(f, entry);
     assert.equal(f.confirmations.length, 1);
+    if (entry === "startup") assert.equal(f.confirmations[0].title, "Neue Taxonomieversion verfügbar");
     assert.match(f.confirmations[0].message, /Master und Lightroom-Suchpaket/);
     assert.match(f.confirmations[0].message, /Offene Konflikte stoppen/);
     assert.match(f.confirmations[0].message, /12 GB/);
+    assert.doesNotMatch(f.confirmations[0].message, /mit dem vorhandenen Stand weiterarbeiten|Prüfung mit „Später“ verschieben/);
     assert.deepEqual(writes(f).map((call) => call.url), ["/api/taxonomy/update/start", "/api/taxonomy/master/build", "/api/taxonomy/master/activate"]);
     assert.deepEqual(JSON.parse(writes(f)[0].payload.body), { token: "bound-source-token" });
     assert.deepEqual(JSON.parse(writes(f)[1].payload.body), { refreshProviders: true });
@@ -141,13 +146,15 @@ test("Später/Abbrechen schreibt nichts; ein späterer manueller Start bleibt m�
     assert.equal(writes(f).length, 0);
     assert.equal(f.state.taxonomyDatabaseBusy, false);
     if (entry === "startup") {
-      assert.equal(f.confirmations[0].title, "Keine Taxonomiedatenbank installiert");
+      assert.equal(f.confirmations[0].title, "Taxonomiedatenbank installieren?");
       assert.equal(f.confirmations[0].cancelLabel, "Später");
+      assert.equal(f.confirmations[0].initialFocus, "cancel");
       await f.maintenance.refresh(); await flush();
       assert.equal(f.confirmations.length, 1);
     }
     confirmed = true;
     await f.state.updateTaxonomyDatabase();
+    assert.equal(f.confirmations.at(-1).initialFocus, "confirm");
     assert.equal(success(f).length, 1);
   });
 });
@@ -164,6 +171,28 @@ test("beide Einstiege sind schon während der Rückfrage gemeinsam gesperrt", as
   releaseConfirm(false); await running;
   assert.equal(writes(f).length, 0);
   assert.equal(f.state.taxonomyDatabaseBusy, false);
+});
+
+test("offene Startbestätigung zeigt Vorbereitung und keine gestartete Aktualisierung; Abbruch löst nur die Sperre", async () => {
+  let releaseConfirm;
+  const f = fixture({ confirm: () => new Promise((resolve) => { releaseConfirm = resolve; }) });
+  const pending = f.state.updateTaxonomyDatabase({ startup: true });
+  assert.match(f.elements.taxonomyDatabaseOverviewSummary.textContent, /Vorschau wird geprüft/);
+  await flush();
+  f.state.renderTaxonomyDatabaseOverview();
+  assert.match(f.elements.taxonomyDatabaseOverviewSummary.textContent, /Bestätigung ausstehend/);
+  assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Schritt \d+ von|wird aktualisiert|Quellen vorbereiten/);
+  assert.equal(f.state.taxonomyDatabaseBusy, true);
+  assert.equal(f.elements.taxonomyDatabaseUpdateButton.disabled, true);
+  assert.equal(writes(f).length, 0);
+  await f.state.updateTaxonomyDatabase();
+  assert.equal(f.confirmations.length, 1);
+  releaseConfirm(false);
+  await pending;
+  assert.equal(writes(f).length, 0);
+  assert.equal(f.state.taxonomyDatabaseBusy, false);
+  assert.equal(f.elements.taxonomyDatabaseUpdateButton.disabled, false);
+  assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewSummary.textContent, /Bestätigung|Vorschau/);
 });
 
 test("Fehler nach Quellenwechsel setzt beim nächsten Klick lokal fort; erneutes Öffnen startet nichts", async () => {
@@ -308,12 +337,61 @@ test("lokaler Drift, Namenswahl und Paketnachholung verwenden auch vom Start aus
   });
 });
 
-test("aktuell ohne Arbeit startet weder Download noch Aufbau; Ergänzungsupdate endet ebenfalls beim geprüften Paar", async () => {
+test("aktuell ohne Arbeit startet nichts; manuelles Ergänzungsupdate endet beim geprüften Paar", async () => {
   const current = fixture({ hasWork: false }); await current.state.updateTaxonomyDatabase();
   assert.equal(current.confirmations.length, 0); assert.equal(writes(current).length, 0);
-  const supplements = fixture({ catalogue: false }); await start(supplements, "startup");
-  assert.equal(supplements.confirmations[0].title, "Namensbestand ist veraltet");
+  const supplements = fixture({ catalogue: false }); await start(supplements, "manual");
+  assert.equal(supplements.confirmations[0].title, "Datenbank aktualisieren?");
+  assert.match(supplements.confirmations[0].message, /CoL ist aktuell; die Ergänzungsnamen werden erneut geprüft/);
   assert.equal(writes(supplements).length, 3); assert.equal(success(supplements).length, 1);
+});
+
+test("Ergänzungsalter erzeugt beim Programmstart kein Angebot; bewusste manuelle Prüfung bleibt verfügbar", async (t) => {
+  for (const { label, supplements } of [
+    { label: "frühere vollständige Prüfung", supplements: { stale: true, lastFullRefreshAt: "2026-10-02T18:19:14.671Z" } },
+    { label: "fehlender Prüftermin", supplements: { stale: true, lastFullRefreshAt: "" } },
+    { label: "ungültiger Prüftermin", supplements: { stale: true, lastFullRefreshAt: "nicht-datiert" } },
+  ]) await t.test(label, async () => {
+    let accepted = false;
+    const f = fixture({ catalogue: false, supplements, confirm: async () => accepted });
+    await start(f, "startup");
+    assert.equal(f.confirmations.length, 0);
+    assert.equal(f.calls.filter((call) => call.payload?.method === "POST").length, 0);
+    assert.equal(writes(f).length, 0);
+    assert.notEqual(f.state.taxonomyDatabaseBusy, true);
+    await f.maintenance.refresh(); await flush();
+    assert.equal(f.confirmations.length, 0);
+    await f.state.updateTaxonomyDatabase();
+    assert.equal(f.confirmations.length, 1);
+    assert.equal(f.confirmations[0].title, "Datenbank aktualisieren?");
+    assert.match(f.confirmations[0].message, /Master und Lightroom-Suchpaket/);
+    assert.match(f.confirmations[0].message, /Offene Konflikte stoppen/);
+    assert.equal(writes(f).length, 0);
+    accepted = true;
+    await f.state.updateTaxonomyDatabase();
+    assert.equal(f.confirmations.at(-1).title, "Datenbank aktualisieren?");
+    assert.doesNotMatch(f.confirmations.at(-1).message, /mit dem vorhandenen Stand weiterarbeiten|Prüfung mit „Später“ verschieben/);
+    assert.deepEqual(writes(f).map((call) => call.url), ["/api/taxonomy/update/start", "/api/taxonomy/master/build", "/api/taxonomy/master/activate"]);
+    assert.equal(success(f).length, 1);
+  });
+});
+
+test("auch ein unmittelbar aufgerufenes Startangebot löst bei bloßem Ergänzungsalter keinen Wechsel aus", async () => {
+  const f = fixture({ catalogue: false });
+  await f.state.updateTaxonomyDatabase({ startup: true });
+  assert.equal(f.confirmations.length, 0);
+  assert.equal(writes(f).length, 0);
+  assert.equal(f.state.taxonomyDatabaseBusy, false);
+});
+
+test("allein fällige Ergänzungsprüfung wird in der Datenbankübersicht nicht als neue CoL-Version behauptet", async () => {
+  const f = fixture({ catalogue: false });
+  await start(f, "startup"); await f.database.refresh();
+  assert.equal(f.elements.taxonomyDatabaseOverviewSummary.textContent, "Datenbank aktuell");
+  assert.doesNotMatch(f.elements.taxonomyDatabaseOverviewDetail.textContent, /Verfügbar:/);
+  assert.equal(f.elements.taxonomyUpdateButton.textContent, "Ergänzungsnamen prüfen");
+  assert.equal(f.confirmations.length, 0);
+  assert.equal(writes(f).length, 0);
 });
 
 test("fehlende gemeinsame Steuerung bietet keinen reinen Quellen-Start als Ersatz", async () => {

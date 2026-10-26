@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-05
+Stand: 2026-10-26
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -8,21 +8,176 @@ Freigaben, Datenvergleiche und historischen Laufberichte stehen im
 Reihenfolge der offenen Arbeiten; aktuelle Projekt-/Assetzähler stehen ausschließlich im
 [generierten Projektstatus](project-status.md).
 
+Das Gesamtaudit wurde am 8. Oktober beauftragt und läuft im Hauptarbeitschat. Befunde, lokale Korrekturen,
+Prüfresultate und offene native/live Grenzen stehen ausschließlich im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
+
+Der von Felix beauftragte Wechsel auf **COL26.10 XR vom 16. Oktober** ist am **24. Oktober um
+03:18:42 UTC** mit `completed/completed` beendet. Auftrag `update-0d0b6e9e…` besteht eigene frische
+FN-Erfassung im D:-Hauptkatalog, normales Lightroomende, Erneuerung der 179 gespeicherten Entscheidungen,
+Masteraufbau und gemeinsame Paketübernahme. Die Quellen- und Prüfsummenbindung der aktiven Manifeste
+stimmt mit dem gemeinsamen Veröffentlichungspunkt überein; die Kandidatenqualität meldet keine Fehler.
+
+Die vorherigen Retentions- und Manifestgrenzenfehler sind lokal korrigiert. Abschließende gemeinsame
+Regression **243/243** und Gesamtgate **50 Gruppen / 2.065 Tests** bestanden. Der zuvor geöffnete native
+Dialog zeigte noch einen alten Fehler. Die Statusaktualisierung und der veraltete Konfliktdetailtext sind
+anschließend lokal korrigiert; neues Gesamtgate 50 Gruppen/2.086 Tests bestanden. Native Neuladung
+bestätigt den Abschluss in Hauptansicht und Dialog ohne alten Sperrtext. Historische Quellenhinweise
+benennen ausdrücklich keine aktuell offenen Entscheidungen. Einzelbelege ausschließlich im Auditauftrag.
+Die neue eigene Quittung vom 24. Oktober belegt 127.427 Katalogeinträge und 7.246 FN-Zuordnungen in
+68 Taxa; ein alter Nachweis wurde nicht neu datiert. Lightroom wurde anschließend im D:-Hauptkatalog
+geöffnet; Original-Plug-in 0.4.24.39 bestätigt dort das neue gemeinsame Paar. Die getrennte eigene
+Testserie besteht inzwischen Mehrblockpause/Wiederöffnung mit 253 Testfotos in beiden Richtungen,
+SDK-Fehler, Commit-vor-Journal-Wiederanlauf sowie Konflikt-/Teil-/Endrücknahme einschließlich unabhängigem
+vollständigem Endvergleich. Der Testkatalog ist geschlossen; reguläre .39 und D:-Hauptkatalog sind
+wiederhergestellt. Großkatalog-Leistungsprüfung und übrige Betriebsgrenzen bleiben offen. Einzelbelege,
+datierte Zwischenstände und jüngster Gesamtprüfstand ausschließlich im Auditauftrag 10.54.
+
+Der vereinbarte Erhalt historischer Quellenfälle gilt nur für unbenutzte, ungeschützte Identitäten:
+bisherige Kennung und Daten bleiben erhalten, neue Auswahl und Zuweisung bleiben gesperrt, solange
+der Quellenbeleg ungeklärt ist. Betroffene Projektarten, FN-Nutzung, eigene Namen oder geschützte
+Feldentscheidungen erlauben diesen automatischen Fortsetzungsweg weiterhin nicht.
+
+## Aktives Paar – 24. Oktober
+
+| Ebene | Aktiver Stand |
+| --- | --- |
+| Master-CoL-Herkunft | `col-xr-2026-10-16-316691` (`COL26.10 XR`) |
+| Master | `master-20261024014609415` |
+| Lightroom-Suchpaket | `lightroom-cbbd9b7e7d35ac507d35`, aus demselben Master |
+| Gemeinsame Veröffentlichung | `publication-bbbfafc1-6fa7-4b8d-a8f8-6f2f2319da07` |
+| Erhaltener direkter Vorgänger | Passendes Master-/Paketpaar vom 13. Oktober |
+
+## Geschützter Wiederanlauf abgeschlossen – 13. Oktober
+
+Der freigegebene eigene Ersatzlauf ist um **18:09:17 MESZ** erfolgreich mit `completed/completed` beendet.
+Master und Lightroom-Suchpaket wurden gemeinsam übernommen; die Artanlage ist wieder verfügbar.
+Alle **273.480** vorherigen Master-IDs bleiben erhalten, keine offenen Klassifikationsfälle und gültige
+Kandidatenqualität. Der neue normale Suchhelfer findet Papageientaucher als `Fratercula arctica`.
+Felix bestätigt anschließend, dass der Explorer wieder benutzbar ist.
+
+| Ebene | Historischer Paarstand vom 13. Oktober, jetzt direkter Vorgänger |
+| --- | --- |
+| Master-CoL-Herkunft | `col-xr-2026-09-25-316441` (`COL26.9 XR`); neue Referenz getrennt bereits `col-xr-2026-10-16-316691` |
+| Master | `master-20261013143021566` |
+| Lightroom-Suchpaket | `lightroom-dd834fb15dbd6f1c3257`, aus demselben Master |
+| Gemeinsame Veröffentlichung | `publication-eec8a0ea-dd2d-4c30-9a5e-89398e6536e4` |
+| Erhaltener direkter Vorgänger | Passendes Master-/Paketpaar vom 3. Oktober |
+| Eigenes abgeschlossenes Update | `update-337cbac5-9664-4c8f-af6f-1f5b4d09a57c` |
+
+Die frühere Windows-Übergabestörung und deren falsche Anzeige als offener Entscheidungsauftrag sind
+lokal korrigiert. Alte Aufträge und Rezepte bleiben unverändert erhalten. Für den tatsächlichen Ersatzlauf
+wurden die zwischenzeitlichen Lightroom-Änderungen frisch erfasst: 6.110 zugewiesene Dateien, 64 Master-IDs,
+vollständiger registrierter Katalogsatz, regulärer Lightroomabschluss. Gespeicherte Schutzentscheidungen
+sind durch einen neuen, gebundenen Erneuerungsnachweis erneut geprüft. Vollständiger Verlauf und aktuelle
+Abschlussgegenprobe unter Abschnitt 10.24 des Auditauftrags. Heutige weitere Katalogänderungen veralten
+diesen Nachweis für einen späteren Datenbankwechsel; der erfolgreiche Paarabschluss wird dadurch nicht
+zurückgenommen und eine normale FN-Zuweisung verlangt keinen neuen Masteraufbau.
+
+Plug-in-Quellstand **0.4.24.27** ist abgeschlossen und am 13. sowie 14. Oktober nativ vom regulären
+Projektpfad geladen und aktiviert bestätigt. Videozeit-Fallback, FN-Abgleich, getrennte Ortsvorschlags-
+Fehleranzeige, Mitnahme verborgener Bilder in eingeklappten Ordnerstapeln und Ausschluss von Videos aus
+Statistik/Statistikexporten sind lokal umgesetzt und automatisiert geprüft. Videos bleiben für FN-
+Zuweisungen zugelassen. Der freigegebene produktive FN-Abgleich vom 14. Oktober ist abgeschlossen
+und unabhängig passend geprüft, einschließlich der sechs zuvor unvollständigen Bartmeisen-Videos.
+Diese FN-Abnahme bleibt vom Datenbankwechsel getrennt; die nachfolgenden Statistik-/Exportnachweise
+und ihre verbleibenden Grenzen stehen unter Abschnitt 10.31.
+Vollständiger Nachweis im Auditauftrag, Abschnitt 10.27.
+
+Der Quellstand **0.4.24.28** korrigiert eine separat reproduzierte veraltete Statistik-/
+Exportanzeige nach Rückkehr aus einem Dialog; **93/93** betroffene Tests und vollständiges lokales Gate
+**50 Gruppen / 1.745 bestanden**. .28 am Abend des 14. Oktober vom regulären Pfad tatsächlich neu geladen
+und aktiviert bestätigt. Buckelwal gezielt lesend mit 702 FN-Zuordnungen und nativ mit 702 Statistikfotos
+vollständig festgestellt; seine frühere kurze Verzögerung wird nicht mit der anderen
+Anzeigelücke gleichgesetzt. Verlauf und aktuelle Auditreihenfolge im Auditauftrag, Abschnitt 10.30.
+
+Aktueller Quellstand ist **0.4.24.39**, regulär nach normalem Neustart am Projektpfad tatsächlich gelesen.
+.39 schützt die Lebensdauer des Zuweisungsfensters beim Wechsel zum Detail-Leser; 58/58 direkte
+Detail-/Vertragsprüfungen bestehen. Die private .39 besteht zweimaliges Schließen des Detail-Lesers per X
+und die anschließende ausdrückliche dritte Suche. Der spätere enge native Detailfensterlauf bestätigt
+Escape, Fertig, Zurück/Weiter, erneute Suche und Tab-Rückkehr mit unverändertem Testkatalog.
+Die genaue ursprüngliche Ursache und andere Windows-Systemschrift-/DPI-Konfigurationen bleiben offen.
+.38 korrigiert den SDK-Stichwortzugriff für Artänderung und
+Rücknahme auf den dokumentierten Arrayzugriff mit numerischen Kennungen und exakter Objektbindung;
+32/32 Kern- und 227/227 betroffene Tests sowie Vollgate mit 50 Gruppen / 1.937 Tests bestehen.
+Split B, Split C und Merge F bestehen inzwischen jeweils native Übernahme und genaue Rücknahme;
+alle sechs eigenen Testeinträge, geschützte Felder/Stichwörter und die inkrementelle Statistik sind
+unabhängig nachgeprüft. Auch Mehrblockpause/Wiederöffnung und gezielte SDK-, Commit-/Journal- und
+Konflikt-/Rücknahmefälle sind inzwischen bestanden; die repräsentative Großkatalogprüfung bleibt offen.
+Die private .39 ist nach
+diesen Tests deaktiviert und reguläre .39 vor der Rückkehr in den D-Hauptkatalog aktiviert; die erneute
+Plug-in-Kontrolle im wieder geöffneten Hauptkatalog ist inzwischen bestanden. Nachweise und der
+integrierte Gesamtprüflauf unter Auditauftrag, Abschnitte 10.51, 10.53 und 10.54.
+.37 normalisiert neue SDK-Laufkennungen vor der
+Artänderungs-Journalvorbereitung und verweigert ungültige Kennungen vor diesem Schritt. Der native
+Vorbereitungsfehler ist mit unverändertem Sechs-Foto-Bestand gesichert; 93/93 gekoppelte und betroffene
+Tests und Gesamtgate mit 50 Gruppen / 1.923 Tests bestanden damals; der konkrete Kennungsfehler ist in
+den späteren nativen Grundfällen überwunden. .36 korrigiert die nativ verdeckte Detailanzeige durch
+zustandserhaltendes Schließen und Wiederöffnen des eigenen Zuweisungsfensters; die spätere enge
+.39-X-/Suchabnahme und ihre verbleibende Bediengrenze sind oben eingeordnet. .35 korrigiert die Zielstichwortbindung nach Schreibabschluss
+und den Statistik-Nachzustand bei Artänderungen/Rücknahmen; die reine Textdetailansicht ergänzt einen
+Tastaturweg zur bisherigen nativen Liste. Quellkorrektur, gezielte Gegenprobe und tatsächlicher Ladestand
+bleiben getrennt; aktueller Nachweis im Auditauftrag, Abschnitte 10.48 bis 10.50. .34 erneuert nach einer Namensänderung auch den vorhandenen
+Suchtreffertitel und schützt vor verspäteten Detailantworten. Der tatsächliche Ladestand und die neue
+native Abnahme stehen getrennt im Auditauftrag, Abschnitt 10.36. Original .34 ist am 18. Oktober
+am regulären Pfad nativ aktiviert und mit dem produktiven Paar passend bestätigt. Die eigene Namensrunde
+einschließlich Fehler/Wiederholung und das lokale Gesamtgate mit 1.863 Tests sind bestanden; weitere
+Statistik- und Gesamt-Auditnachweise bleiben getrennt. Das Original .32 wurde am 15. Oktober um **13:57 MESZ** vom regulären
+Projektpfad im Hauptkatalog nativ aktiviert bestätigt, einschließlich 273.485 Taxa und vollständigem
+übereinstimmendem Produktionspaar. Nach der beauftragten Entfernung sechs obsoleter Registrierungen
+blieb zu diesem Zeitpunkt genau das Original übrig; Belegdateien blieben erhalten. .29 korrigiert den direkten Videozugang
+und die nativ belegte abweichende MOV-Datumsquelle; eigene Video-FN-Aktualisierung und Ausschluss aus
+der Statistik bestanden. .32 bindet die tatsächlich zugewiesenen Stichwortobjekte; .33 ergänzt die
+vollständigen erwarteten FN-Werte aus Vorzustand und exakt geschriebenen Werten für die gemeinsame
+Nachprüfung. Die nativen .31-/ .32-Fehler bleiben als historische Nachweise erhalten. Gezielte **107/107**,
+unabhängige Review ohne Blocker und vollständiges lokales Gate vom 15. Oktober,
+**14:14:45–14:26:45 MESZ, 50 Gruppen / 1.791 Tests**, bestanden; alle 126 gebundenen Quellen unverändert.
+Die eigene native .33-Orts-/Zeit-Erstprobe mit neuen Mai-/2028-Stichwörtern und vollständigen Kennungen
+ist erfolgreich; die unveränderte Wiederholung meldet null Änderungen und keine Schreibfehler.
+Der unabhängige vollständige Nachvergleich besteht mit **31/31** Prüfungen; sämtliche FN-Daten,
+realen Stichwortzuordnungen und Statistikvariablen bleiben bei der Wiederholung exakt gleich.
+Die beiden privaten .32-/ .33-Registrierungen sind anschließend entfernt. Original **.33** ist im wieder
+geöffneten Hauptkatalog als einziger FN-Eintrag geladen und aktiviert mit passendem Produktionspaar
+bestätigt. Die anschließende native .33-Neuerzeugung einer Taxonomiestichwortkennung ist im Erstlauf
+vollständig; unveränderte Wiederöffnung und Wiederholung sind mit 178/178 Prüfungen bestätigt.
+Positive Favoritenzuweisung, Ablehnung und bestätigter Ersatz bestehen mit 123/123. Gesamtgate vom
+16. Oktober: 50 Gruppen / 1.805 Tests bestanden. Verdeckter Stapelkonflikt/Taxonomierücknahme mit 102/102,
+vollständige FN- und getrennte Orts-/Zeitrücknahme/Ergänzung mit 183/183 samt Original-IPTC-Erhalt bestätigt.
+Hauptkatalog abschließend offen, genau ein reguläres Original .33 aktiviert; Testregistrierung entfernt und
+Belege erhalten. Weitere Namens-/Handoff-/Pause-/Skalierungsfälle bleiben in Abschnitt 10.32 getrennt.
+Die native März-/April-Stapelzuweisung unter .28 ist bestanden. Die neue Sechsvarianten-Exportmatrix ist
+mit **45/45** unabhängigen Prüfungen abgeschlossen: drei positive Katalogvarianten und drei reine MOV-
+Auswahlwege, deren sieben Export-/Statistikmodule in den physischen .29-/ .31-/ .32-Kopien und .33 bytegleich
+sind. Keine neue positive Favoriten-, Konflikt- oder exakte Rücknahmeabnahme daraus ableiten.
+Aktueller Verlauf und Abnahmegrenzen ausschließlich unter Abschnitt 10.31 des Auditauftrags.
+
+Die reguläre Speichervorschau schützt das aktive Paar und den direkten Rückweg. Weitere historisch
+benötigte Eingänge/Fehleraufträge sind keine zusätzlichen reservierten Backups und werden nicht pauschal
+gelöscht. Zwei alte fertige Jobordner wurden nach Felix' gesonderter Bestätigung am 13. Oktober regulär
+entfernt: 2.154.452.155 Bytes, keine fehlgeschlagene Löschung, Aktivzeiger unverändert. Andere geschützte
+Bestände bleiben erhalten. Der Gesamtauditabschluss bleibt offen.
+
 ## Reguläres Quellenupdate technisch abgeschlossen – 3. Oktober
+
+> **Historischer Verlauf bis zum 3. Oktober.** Die folgenden Abschnitte bewahren damalige
+> Prüfungen, Entscheidungen und Restlisten. Aussagen wie „vor dem Audit offen“ oder „noch nicht
+> implementiert“ beziehen sich auf diesen früheren Stand. Den heutigen Paarabschluss beschreiben
+> die vorstehenden Abschnitte; aktuelle Restarbeiten und Abnahmegrenzen führt ausschließlich der
+> [laufende Auditauftrag](audit-auftrag-phase-10-5.md).
 
 Der von Felix bestätigte lokale Folgeweg vom 3. Oktober ist um **09:11:14 MESZ** erfolgreich abgeschlossen:
 Master und Lightroom-Suchpaket sind gemeinsam aktiviert, Service `completed` / nicht aktiv, kein offener
 Kandidat, keine Fehler/Warnungen und keine blockierenden Konflikte. Die 30-Minuten-Wiedervorlage ist auf
 Felix' Wunsch gelöscht. Die folgenden Reparatur- und Zwischenstände sind datierte Vorgeschichte.
 
-| Ebene | Aktueller bestätigter Stand |
+| Ebene | Bestätigter Stand am 3. Oktober |
 | --- | --- |
 | Referenz und Master-CoL-Herkunft | `col-xr-2026-09-25-316441` (`COL26.9 XR`) |
 | Master | `master-20261003055911210` |
 | Lightroom-Suchpaket | `lightroom-fa739bd28ec1e82a0283`, aus demselben Master |
 | Gemeinsame Veröffentlichung | `publication-b64beeb2-9951-4cf0-ac4e-1a326c5c3e91` |
 | Erhaltener Vorgänger | Passendes Master-/Paketpaar vom 1. Oktober |
-| Lightroom-Plug-in beim produktiven Update | `0.4.24.15`; aktueller lokaler Quellstand `0.4.24.22`, neue Speicher-/Temp-/Bedienprüfung getrennt |
+| Lightroom-Plug-in | Beim damaligen produktiven Update `0.4.24.15`; heutiger Quell-/Ladestand und weitere Abnahmen stehen oben und im laufenden Audit |
 
 Einmaliger unabhängiger lesender Vergleich bestanden: sämtliche 273.466 bisherigen IDs erhalten,
 kein vorher aktiver Eintrag verloren; vier technische Ersatz-IDs weiter historisch. Alle 60 Projektlinks,
@@ -70,7 +225,8 @@ Vor-Audit-Pflichtpunkt. Reparaturserie `550829f` veröffentlicht; Pages `3731963
 und Deployment vollständig erfolgreich. Kein neuer produktiver Taxonomieaufbau. Felix bestätigt am
 5. Oktober auch den echten Artabbruch mit Schwarzstorch (nach seiner Beobachtung vollständig zurückgenommen)
 und Lightroom ohne die vorherige Warnmeldung. Beide gezielten Nutzerabnahmen abgeschlossen;
-keine unabhängige neue Restprüfung daraus ableiten. Das Gesamtaudit ist weiterhin nicht durchgeführt.
+keine unabhängige neue Restprüfung daraus ableiten. Zu diesem Abschluss vom 5. Oktober war das
+Gesamtaudit noch nicht gestartet; den aktuellen Prüfstand führt der Auditauftrag oben.
 [Aktueller Reparaturnachweis](audits/2026-10-04-creation-abort-and-publication.md).
 Die folgenden Absätze sind vorausgehende datierte Umsetzungsschritte.
 
@@ -235,6 +391,9 @@ katalogweiter FN-Abgleich wurde für diese Dokumentation gestartet. Das bezeichn
 nicht die anschließend von Felix bestätigten regulären Quellenversuche.
 
 ## Was nach dem technischen Updateabschluss vor dem Audit offen bleibt
+
+Historische Restliste vor dem Auditbeginn am 8. Oktober, keine heutige Aufgabenliste. Die inzwischen
+umgesetzten und abgenommenen Schritte sowie verbleibenden Grenzen stehen im Auditauftrag.
 
 - Den von Felix beauftragten automatischen Gesamtweg umsetzen: FN-Nutzungsnachweis und technische
   Phasenübergänge ohne die heutigen wiederholten manuellen Aktionen, fachliche Rückfragen nur bei relevanten

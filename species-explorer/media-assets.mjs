@@ -15,6 +15,7 @@ import {
 } from "../scripts/portrait-generator.mjs";
 import { resolveFfmpegPath } from "../scripts/spectrogram-renderer.mjs";
 import { assertPublicHttpUrl } from "./request-security.mjs";
+import { validateImageDecode } from "../scripts/image-validation.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -405,17 +406,42 @@ $headers = @{
   'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
 }
 try {
-  $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
-  $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
-  $status = 200
-  if ($response -and $response.StatusCode) { $status = [int]$response.StatusCode }
-  [pscustomobject]@{ status = $status; length = [int64]$file.Length } | ConvertTo-Json -Compress
+  $request = [System.Net.HttpWebRequest]::Create($Uri)
+  $request.AllowAutoRedirect = $false
+  $request.Timeout = 30000
+  $request.ReadWriteTimeout = 30000
+  $request.Accept = $headers.Accept
+  $request.UserAgent = $headers.'User-Agent'
+  foreach ($key in $headers.Keys) {
+    if ($key -notin @('Accept', 'User-Agent')) { $request.Headers[$key] = $headers[$key] }
+  }
+  $response = $request.GetResponse()
+  $status = [int]$response.StatusCode
+  if ($status -ne 200) { throw "Kartenantwort ist nicht freigegeben (HTTP $status)." }
+  $limit = 20 * 1024 * 1024
+  if ($response.ContentLength -gt $limit) { throw 'JPEG-Datei darf maximal 20 MB gross sein.' }
+  $inputStream = $response.GetResponseStream()
+  $outputStream = [System.IO.File]::Open($OutFile, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+  $buffer = New-Object byte[] 65536
+  $received = 0
+  while (($read = $inputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+    $received += $read
+    if ($received -gt $limit) { throw 'JPEG-Datei darf maximal 20 MB gross sein.' }
+    $outputStream.Write($buffer, 0, $read)
+  }
+  [pscustomobject]@{ status = $status; length = [int64]$received } | ConvertTo-Json -Compress
   exit 0
 } catch {
   $status = $null
   if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+  elseif ($response) { $status = [int]$response.StatusCode }
   [pscustomobject]@{ status = $status; error = $_.Exception.Message } | ConvertTo-Json -Compress
   exit 1
+} finally {
+  if ($outputStream) { $outputStream.Dispose() }
+  if ($inputStream) { $inputStream.Dispose() }
+  if ($response) { $response.Dispose() }
+  if ($request) { $request.Abort() }
 }
 `.trim();
 
@@ -444,16 +470,22 @@ try {
       if (info.status === 200 && buffer.length >= 10_000 && isJpegBuffer(buffer)) {
         return buffer;
       }
-      lastMessage = `keine gültige Karte (${info.status ?? "unbekannt"})`;
+      throw Object.assign(new Error(`IUCN-Kartenantwort ist keine gültige JPEG-Datei (HTTP ${info.status ?? "unbekannt"}).`),
+        { code: "IUCN_MAP_INVALID_RESPONSE" });
     } catch (error) {
+      if (error.code === "IUCN_MAP_INVALID_RESPONSE") throw error;
       const output = String(error.stdout || error.stderr || "").trim();
       lastMessage = error.message;
       if (output) {
+        let parsed;
         try {
-          const parsed = JSON.parse(output);
+          parsed = JSON.parse(output);
           lastMessage = parsed.error || lastMessage;
         } catch {
           lastMessage = output.slice(0, 200);
+        }
+        if (parsed?.status) {
+          throw iucnBrowserAccessError(source, Number(parsed.status)) || new Error(lastMessage);
         }
       }
     } finally {
@@ -468,47 +500,92 @@ try {
   );
 }
 
+async function readMapResponseBody(response, controller) {
+  if (!response.body?.getReader) throw new Error("Kartenantwort besitzt keinen lesbaren Downloadstream.");
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0, rejectAbort;
+  const aborted = new Promise((_, reject) => { rejectAbort = reject; });
+  const onAbort = () => {
+    rejectAbort(Object.assign(new Error("Kartenabruf wurde abgebrochen."), { name: "AbortError" }));
+    void reader.cancel().catch(() => {});
+  };
+  controller.signal.addEventListener("abort", onAbort, { once: true });
+  try {
+    if (controller.signal.aborted) onAbort();
+    for (;;) {
+      const { done, value } = await Promise.race([reader.read(), aborted]);
+      if (done) break;
+      received += value.byteLength;
+      if (received > MAX_MAP_BYTES) {
+        controller.abort();
+        throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, received);
+  } finally {
+    controller.signal.removeEventListener("abort", onAbort);
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 export async function fetchMapPreviewSource(source, {
   fetchImpl = fetch, validateUrl = assertPublicHttpUrl, powerShell = fetchMapPreviewSourceWithPowerShell,
+  timeoutMs = MAP_SOURCE_FETCH_TIMEOUT_MS,
 } = {}) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAP_SOURCE_FETCH_TIMEOUT_MS) {
+    throw new TypeError("Ungültige Zeitgrenze für den Kartenabruf.");
+  }
   let parsed = await validateUrl(source);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), MAP_SOURCE_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let receivedHttpResponse = false;
+  let transportFailure = false;
+  let response;
   try {
-    let response;
     for (let redirects = 0; redirects <= 5; redirects += 1) {
-      response = await fetchImpl(parsed, {
-        redirect: "manual",
-        signal: controller.signal,
-        headers: {
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-          "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-          "Cache-Control": "max-age=0",
-          "Upgrade-Insecure-Requests": "1",
-          "Sec-Fetch-Dest": "document",
-          "Sec-Fetch-Mode": "navigate",
-          "Sec-Fetch-Site": "none",
-          "Sec-Fetch-User": "?1",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-        },
-      });
+      try {
+        response = await fetchImpl(parsed, {
+          redirect: "manual",
+          signal: controller.signal,
+          headers: {
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cache-Control": "max-age=0",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+          },
+        });
+      } catch (error) {
+        const code = String(error.cause?.code || error.code || "");
+        transportFailure = ["ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT",
+          "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_SOCKET", "ERR_SSL_WRONG_VERSION_NUMBER",
+          "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR"].includes(code);
+        throw error;
+      }
+      receivedHttpResponse = true;
       if (![301, 302, 303, 307, 308].includes(response.status)) break;
       const location = response.headers.get("location");
       if (!location) throw new Error("Karten-URL lieferte eine Weiterleitung ohne Ziel");
       if (redirects === 5) throw new Error("Karten-URL enthält zu viele Weiterleitungen");
+      await response.body?.cancel();
       parsed = await validateUrl(new URL(location, parsed));
     }
     if (!response.ok) {
-      throw new Error(`Karten-URL konnte nicht geladen werden (HTTP ${response.status}).`);
+      throw iucnBrowserAccessError(source, response.status)
+        || new Error(`Karten-URL konnte nicht geladen werden (HTTP ${response.status}).`);
     }
     const contentLength = Number(response.headers.get("content-length") || 0);
     if (contentLength > MAX_MAP_BYTES) {
       throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
     }
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length > MAX_MAP_BYTES) {
-      throw new Error("JPEG-Datei darf maximal 20 MB groß sein");
-    }
+    const buffer = await readMapResponseBody(response, controller);
     if (isIucnDistributionMapUrl(source) && !isJpegBuffer(buffer)) {
       throw new Error("IUCN-Karten-URL lieferte keine gültige JPEG-Datei.");
     }
@@ -518,11 +595,16 @@ export async function fetchMapPreviewSource(source, {
     if (error.name === "AbortError") {
       throw new Error("Karten-URL hat nicht rechtzeitig geantwortet");
     }
-    const fallback = await powerShell(source);
-    if (fallback) return fallback;
+    // A different transport may recover an initial network/TLS failure, but
+    // must never retry a denied HTTP response or an untrusted redirect chain.
+    if (transportFailure && !receivedHttpResponse) {
+      const fallback = await powerShell(source);
+      if (fallback) return fallback;
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
+    await response?.body?.cancel().catch(() => {});
   }
 }
 
@@ -533,6 +615,7 @@ async function normalizeMapUploadToJpeg({
   mapImageRenderer,
 }) {
   const inspected = inspectMapUploadImage(buffer, originalName);
+  await validateImageDecode(buffer, { ...inspected, repoRoot });
   if (inspected.format === "jpeg") {
     return {
       buffer,
@@ -554,6 +637,7 @@ async function normalizeMapUploadToJpeg({
     });
     const convertedBuffer = await readFile(outputPath);
     const dimensions = inspectJpeg(convertedBuffer);
+    await validateImageDecode(convertedBuffer, { format: "jpeg", ...dimensions, repoRoot });
     return {
       buffer: convertedBuffer,
       dimensions,
@@ -633,6 +717,7 @@ export async function validateMapPreviewPayload(payload, {
   if (!errors.length && !dimensions) {
     try {
       dimensions = inspectJpeg(buffer);
+      await validateImageDecode(buffer, { format: "jpeg", ...dimensions, repoRoot });
     } catch (error) {
       errors.push(error.message);
     }

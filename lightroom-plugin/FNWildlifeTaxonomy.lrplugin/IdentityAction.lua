@@ -3,8 +3,19 @@ local LrUUID = import "LrUUID"
 local Workflow = require "IdentityWorkflow"
 local Catalog = require "IdentityCatalog"
 local View = require "IdentityView"
+local PluginState = require "PluginState"
 local Action = {}
 local running = false
+
+local function newRunId()
+  local value = LrUUID.generateUUID()
+  local message = "Lightroom hat keine gültige Laufkennung geliefert. Die Artänderung wurde nicht vorbereitet."
+  assert(type(value) == "string", message)
+  value = string.lower(value)
+  local a, b, c, d, e = value:match("^(%x+)%-(%x+)%-(%x+)%-(%x+)%-(%x+)$")
+  assert(a and #a == 8 and #b == 4 and #c == 4 and #d == 4 and #e == 12, message)
+  return value
+end
 
 local function count(run, state)
   local result = 0
@@ -42,7 +53,7 @@ local function process(catalog, input)
 end
 
 local function selection(catalog)
-  local photos = catalog:getTargetPhotos() or {}
+  local photos = PluginState.selectedPhotos(catalog)
   assert(#photos > 0 and #photos <= 10000, "Bitte 1 bis 10.000 Fotos für die Prüfung auswählen.")
   local selected, selectedCount = {}, 0
   for _, photo in ipairs(photos) do
@@ -100,7 +111,7 @@ local function selection(catalog)
     .. "Unverändert: " .. View.photos(plan.skippedPhotoCount) .. ". Entfernte Favoritenmarkierungen: " .. demotions .. ".\n"
     .. "Ort/Zeit und fremde Stichwörter bleiben erhalten. Bitte vorher den Lightroom-Katalog sichern.\n"
     .. "Ein Rücknahmeprotokoll wird gespeichert. Nach einem Vorbereitungsabbruch können leere neue FN-Stichwörter bestehen bleiben.", "Übernehmen") then return end
-  input.runId = LrUUID.generateUUID()
+  input.runId = newRunId()
   input.confirmed = true; input.token = plan.token; input.direction = "apply"
   local prepared, canceled = View.work("FN Artänderung vorbereiten", function(progress) return Workflow.prepare(catalog, input, progress) end)
   if not prepared then

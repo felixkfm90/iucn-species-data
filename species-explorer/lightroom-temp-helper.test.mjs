@@ -3,13 +3,13 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
-import { tmpdir } from "../scripts/test-temp.mjs";
+import { assertTestTempPath, tmpdir } from "../scripts/test-temp.mjs";
 import { detectLightroomOwnerPid, runPluginTempHelper } from "./lightroom-temp-helper.mjs";
 import { cleanupOrphanTempSessions, readOwnedPluginTempSession, writeOwnedPluginTempSession } from "./temp-session.mjs";
 
 async function fixture(context) {
   const pluginRoot = await mkdtemp(path.join(tmpdir(), "lightroom-temp-helper-"));
-  context.after(() => rm(pluginRoot, { recursive: true, force: true }));
+  context.after(() => rm(assertTestTempPath(pluginRoot), { recursive: true, force: true, maxRetries: 2, retryDelay: 100 }));
   const options = { pluginRoot, sessionId: randomUUID(), capability: randomUUID(), detectOwner: async () => 101 };
   const { root } = await runPluginTempHelper({ ...options, command: "create" });
   return { options, root };
@@ -50,7 +50,7 @@ test("capability and a completed operation are required before plugin cleanup", 
 
 test("unknown LR process ownership cannot be mistaken for a crashed SDK session", async (context) => {
   const pluginRoot = await mkdtemp(path.join(tmpdir(), "lightroom-temp-unknown-"));
-  context.after(() => rm(pluginRoot, { recursive: true, force: true }));
+  context.after(() => rm(assertTestTempPath(pluginRoot), { recursive: true, force: true, maxRetries: 2, retryDelay: 100 }));
   const options = { pluginRoot, sessionId: randomUUID(), capability: randomUUID(), detectOwner: async () => null };
   const { root } = await runPluginTempHelper({ ...options, command: "create" });
   const result = await cleanupOrphanTempSessions({ repoRoot: pluginRoot, owner: "plugin" });
@@ -64,7 +64,7 @@ test("unknown LR process ownership cannot be mistaken for a crashed SDK session"
 
 test("one validated owner anchor binds further operations without another process probe", async (context) => {
   const pluginRoot = await mkdtemp(path.join(tmpdir(), "lightroom-temp-owner-"));
-  context.after(() => rm(pluginRoot, { recursive: true, force: true }));
+  context.after(() => rm(assertTestTempPath(pluginRoot), { recursive: true, force: true, maxRetries: 2, retryDelay: 100 }));
   let probes = 0;
   const owner = { pluginRoot, sessionId: randomUUID(), capability: randomUUID(), detectOwner: async () => { probes += 1; return 101; } };
   await runPluginTempHelper({ ...owner, command: "create-owner" });

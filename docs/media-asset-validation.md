@@ -1,6 +1,6 @@
 # Medienprüfung und Pages-Größenbudget
 
-Stand: 2026-07-18
+Stand: 2026-10-09
 
 ## Zweck
 
@@ -12,16 +12,41 @@ unkomprimierte oder unerwartet große Datei unbemerkt veröffentlicht wird.
 
 Der Validator `scripts/validate-media-assets.mjs` prüft für jede Art aus `species_list.json`:
 
-- `map.jpg`: echte JPEG-Signatur und lesbare, positive Bildabmessungen;
-- `portrait.webp`: echter WebP-Container und lesbare, positive Bildabmessungen;
+- `map.jpg`: JPEG-Struktur, positive Bildabmessungen und tatsächliche Dekodierbarkeit;
+- `portrait.webp`: vollständiger WebP-Container, positive Bildabmessungen und tatsächliche Dekodierbarkeit;
 - `sound.mp3`: mehrere aufeinanderfolgende gültige MPEG-Audioframes über den zentralen Audioinspektor;
 - `credits.json`: gültiges JSON;
-- `spectrogram.webp`: echter WebP-Container und lesbare, positive Bildabmessungen.
+- `spectrogram.webp`: vollständiger WebP-Container, positive Bildabmessungen und tatsächliche Dekodierbarkeit.
 
 Zusätzlich werden alle veröffentlichten PNG-Dateien unter `graphics/` auf PNG-Signatur und Abmessungen geprüft.
+Der gemeinsame asynchrone Decoder prüft JPEG/PNG/WebP mit FFmpeg, begrenzt Datei-/Pixelgröße, Zeit,
+Einzelallokation, Threads und Ausgabe und wartet auf das tatsächliche Prozessende. Ein Dateikopf allein
+beweist keine darstellbare Karte. Inhaltshashgebundene Erfolge werden nur in einem begrenzten Prozesscache
+gehalten; geänderte Bytes werden erneut geprüft. Der Kartenimport nutzt dieselbe Prüfung vor Übernahme;
+Fehler erhalten das vorherige Medium und Register. Die Veröffentlichung bindet ihre Eingänge erneut nach
+der asynchronen Prüfung. Linux-CI installiert FFmpeg ausdrücklich, statt fehlende Dekodierbarkeit zu überspringen.
 Verwaiste Art-Assetordner werden abgewiesen. Ein laut `fehlende_elemente_report.json` bewusst fehlendes Soundpaket
 wie beim Grünen Leguan ist erlaubt; ein nur teilweise vorhandenes Soundpaket oder ein Widerspruch zum Report ist
 hingegen ein Fehler.
+
+Der Pipeline-Kartenadapter `scripts/iucn-map-adapter.mjs` verwendet dieselbe tatsächliche JPEG-Prüfung
+vor Dateiersatz und Bewertungsquittung. Direkter Abruf und Cacheweg prüfen Startadresse und jedes manuell
+verfolgte Weiterleitungsziel auf öffentliche HTTP-/HTTPS-Adressen; API-Zugangsdaten bleiben ausschließlich
+am Origin `https://api.iucnredlist.org`. Eine HTTP-Zugriffssperre wird nicht durch einen anderen Host,
+Cache oder Windows-Abruf umgangen. Windows darf ausschließlich einen geeigneten initialen Transportfehler
+vor jeder HTTP-Antwort ersetzen; Zertifikat-, Weiterleitungs-, Antwortstream- und Bildfehler sind terminal.
+Fehler erhalten die bisherige Karte und ihren Bewertungsstand. Der Browserimport bleibt der vorgesehene
+Bedienweg bei einer Anbietersperre.
+
+Die Transportgrenzen gelten je Abruf, nicht als Gesamtbudget einer Art: höchstens fünf Weiterleitungen,
+20 MiB je Antwort und 30 Sekunden für den Node-Abruf einschließlich Weiterleitungskette und Antwortlesen.
+Der Windows-Helfer verbietet Weiterleitungen, begrenzt seinen Stream vor Dateischreiben und schließt
+Antwort und Dateien bei Fehlern. Seine Verbindungs-/Lese-Wartezeit beträgt jeweils 30 Sekunden,
+der gesamte Helfer ist auf 60 Sekunden je Versuch begrenzt; maximal drei Versuche nur bei geeigneten
+Transportfehlern. Die JPEG-Dekodierung ist zusätzlich auf 15 Sekunden und 40 Millionen Pixel begrenzt.
+Jede der drei direkten Quellenvarianten besitzt einen eigenen Satz mit höchstens 50 Quellen; anschließend
+teilen alle Cachekandidaten und der öffentliche Cachepfad einen solchen Satz. Mehrere erlaubte Abrufe
+werden nacheinander versucht; kein globales 30-Sekunden-, 20-MiB- oder 50-Quellen-Budget ist zugesichert.
 
 Lokale Befehle:
 
@@ -47,6 +72,13 @@ Budget wächst automatisch mit dem fachlichen Artenbestand: 12 MiB Grundbedarf p
 `species_list.json`. Ein absolutes Notfalllimit von 500 MiB schützt zusätzlich vor einem grundsätzlich entgleisten
 Artefakt. Wird eine Grenze überschritten, endet der Build mit einer verständlichen Meldung, bevor Daten zu GitHub
 Pages hochgeladen werden.
+
+Der Bau darf ausschließlich `_site` direkt unter seiner Projektwurzel ersetzen. Isolierte Prüfungen
+verwenden eine eigene kleine Projektkopie in ihrer gebundenen Temp-Sitzung; fremde Temp-Unterordner
+werden auch dann verweigert, wenn ihr Endname `_site` lautet.
+Quelldaten-/Datenordner und verknüpfte Zielpfade werden vor jeder Löschwirkung abgewiesen. Neue Testartefakte
+liegen in der eigenen Programm-temp-Sitzung. Auditbefunde und konkrete Gegenproben:
+[Gesamtaudit Phase 10.5](audit-auftrag-phase-10-5.md).
 
 ```powershell
 npm.cmd run --silent pages:prepare -- --base-mib=12 --per-species-mib=2.5 --absolute-max-mib=500

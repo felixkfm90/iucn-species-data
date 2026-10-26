@@ -19,6 +19,7 @@ import {
 import { validateTaxonomyMasterDatabase } from "./taxonomy-master-schema.mjs";
 import { readIdentityReview } from "./taxonomy-identity-review.mjs";
 import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
+import { assertClassificationRetentionMaster, assertClassificationRetentionUsage } from "./taxonomy-classification-retention-usage.mjs";
 import { identityRegistryRevision, emptyIdentityRegistry } from "./taxonomy-identity-registry.mjs";
 import { isClassificationReviewConflict } from "./taxonomy-classification-review.mjs";
 import {
@@ -238,12 +239,16 @@ function compactManifestDiff(manifest) {
 
 export async function inspectTaxonomyMasterLifecycle(taxonomyRoot, {
   lightweight = false,
+  deferCandidate = false,
 } = {}) {
+  if (deferCandidate && !lightweight) throw new TypeError("Aufgeschobene Kandidatenprüfung ist nur im leichten Laufstatus zulässig.");
   const [candidate, activeManifest, previousManifest] = await Promise.all([
-    inspectTaxonomyMasterCandidate(taxonomyRoot, {
-      validate: !lightweight,
-      blockingConflictsOnly: lightweight,
-    }),
+    deferCandidate
+      ? Promise.resolve({ available: false, reason: "active-build" })
+      : inspectTaxonomyMasterCandidate(taxonomyRoot, {
+        validate: !lightweight,
+        blockingConflictsOnly: lightweight,
+      }),
     readTaxonomyMasterManifest(taxonomyRoot, "active"),
     readTaxonomyMasterManifest(taxonomyRoot, "previous"),
   ]);
@@ -264,7 +269,7 @@ export async function inspectTaxonomyMasterLifecycle(taxonomyRoot, {
   }
   const conflicts = candidate.available ? candidate.conflicts : [];
   const blockingConflicts = conflicts.filter((entry) => BLOCKING_CONFLICTS.has(entry.conflict_type));
-  const blockingConflictCount = candidate.available
+  const blockingConflictCount = deferCandidate ? null : candidate.available
     ? Number(candidate.blockingConflictCount ?? blockingConflicts.length)
     : 0;
   return {
@@ -278,7 +283,8 @@ export async function inspectTaxonomyMasterLifecycle(taxonomyRoot, {
       candidate.available
       && blockingConflictCount === 0,
     ),
-    canRollback: Boolean(previous),
+    canRollback: !deferCandidate && Boolean(previous),
+    ...(deferCandidate ? { candidateInspection: { status: "deferred", reason: "active-build" } } : {}),
   };
 }
 
@@ -460,6 +466,7 @@ export async function activateTaxonomyMasterCandidate(taxonomyRoot, {
   assertMasterTaxonIdsRetained({ previousPath: taxonomyMasterDatabasePath(taxonomyRoot, "active"),
     currentPath: taxonomyMasterDatabasePath(taxonomyRoot, "staging"), DatabaseSync });
 
+  await assertClassificationRetentionUsage(taxonomyRoot, candidate.manifest.classificationRetentions);
   const timestamp = now().toISOString();
   await updateSlotManifest(taxonomyRoot, "staging", {
     state: "active",
@@ -528,6 +535,9 @@ export async function rollbackTaxonomyMaster(taxonomyRoot, {
   if (!await pathExists(active, fileSystem) || !await pathExists(previous, fileSystem)) {
     throw new Error("Für die Wiederherstellung werden eine aktive und eine vorherige Masterversion benötigt.");
   }
+  const previousManifest = await readTaxonomyMasterManifest(taxonomyRoot, "previous");
+  await assertClassificationRetentionMaster(taxonomyMasterDatabasePath(taxonomyRoot, "previous"), previousManifest);
+  await assertClassificationRetentionUsage(taxonomyRoot, previousManifest?.classificationRetentions);
   const temporary = path.join(
     taxonomyMasterRoot(taxonomyRoot),
     `.rollback-${crypto.randomUUID()}`,

@@ -1,17 +1,69 @@
 # Lightroom-Artänderungen: Vorschau, Journal und Schreibkern
 
-Stand: 2026-09-20
+Stand: 2026-10-23
 
 Status: **implementiert, praktische Lightroom-Abnahme offen**. Vorschau und Journal sind
 über den Suchhelfer verbunden; Wiederaufnahmeprüfung und favoritenabhängige Blockplanung sind implementiert.
 Der Lua-Schreibkern ist nun mit ausdrücklichem Katalogleselauf, Journalvorbereitung, blockweiser Übernahme
 und Rücknahmeprüfung verbunden. Auswahl, Bestätigungsdialoge, Fortschritt und Rücknahmebedienung sind
 über „FN Wildlife verwalten“ → „Artänderungen prüfen ...“ erreichbar. Kein produktiver
-Katalog wurde in den automatisierten Prüfungen verändert. Eingeführt in Plug-in-Version `0.4.24.13`, aktuell
-weiterhin enthalten in `0.4.24.14`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
+Katalog wurde in den automatisierten Prüfungen verändert. Eingeführt in Plug-in-Version `0.4.24.13`, aktueller
+lokaler Quellstand `0.4.24.39`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
 unverändert. Gesamtumfang: `taxonomy-identity-incremental-plan.md`.
 Der Benutzer hat das reine Öffnen ohne Auswahl bestätigt. Das ist keine Abnahme einer tatsächlichen
 Split-/Merge-Übernahme oder ihrer Rücknahme; hierfür weiterhin einen separaten Testkatalog verwenden.
+
+Auditkorrektur vom 22. Oktober: Der native erste Split-Versuch wurde vor Journalanlage und Fotoänderung
+angehalten, weil SDK-Laufkennungen Großbuchstaben enthalten können. .37 normalisiert neue Laufkennungen
+am Lua-Erzeuger in Kleinschreibung und prüft Typ sowie UUID-Gruppenform vor der Journalvorbereitung.
+Die strenge Journalgrenze bleibt erhalten. Gekoppelte Tests verwenden den tatsächlichen Lua-Aufrufer
+und JavaScript-Journalhelfer; 93/93 betroffene Prüfungen sowie das vollständige .37-Gate mit
+50 Gruppen / 1.923 Tests bestehen. Native Übernahme/Rücknahme bleibt getrennt offen; Nachweise
+unter Auditauftrag, Abschnitt 10.50.
+
+Die weitere Auditkorrektur .38 verwendet für Stichwortauflösung ausschließlich den dokumentierten
+SDK-Arrayzugriff `getKeywordsByLocalId` mit numerischen Kennungen. Das Journal behält seine Stringkennungen;
+zurückgelesene Objekte werden unabhängig von ihrer Reihenfolge exakt an ID und Namen gebunden.
+Fehlende/umbenannte Altobjekte bleiben Rücknahmekonflikte, technische SDK-/Antwortfehler stoppen mit
+eigenem Prüfhinweis. Keine Stichwortrekonstruktion. 32/32 Kern- und 227/227 betroffene Prüfungen bestehen;
+das vollständige neue Gate besteht mit 50 Gruppen / 1.937 Tests und 139 unveränderten Quellen.
+Private .38 ist im eigenen Testkatalog tatsächlich geladen; die Fortsetzung des vorhandenen
+vorbereiteten Laufs und seine genaue Rücknahme werden getrennt nativ geprüft.
+
+Am 23. Oktober ist der unabhängige Nachvergleich des gespeicherten tatsächlichen Split-B-Apply bestanden:
+alle sechs Fotos, genau ein betroffenes Foto, alle FN-/Stichwort-/Statistikwerte einschließlich des
+vertraglich erlaubten leeren Beispielnamens passend. Der verstärkte Hilfsprüfer besteht 52/52 Gegenproben;
+keine neue native Ausführung aus der gespeicherten Probe ableiten. Anschließend wurde private .39
+tatsächlich geladen und ausschließlich derselbe B-Lauf nativ zurückgenommen: ein Foto, null Konflikte.
+Unabhängige lesende Prüfung aller sechs Einträge bestätigt den vollständigen Ausgangsstand,
+geschützte Nichttaxonomie-Felder/Stichwörter und die gebundene inkrementelle Statistik. Der aktuelle
+Hilfsprüfer besteht 57/57 Gegenproben, einschließlich tatsächlicher SQLite-Zeilenprototypen.
+Auch Split C ist nativ übernommen und im selben Lauf konfliktfrei zurückgenommen; alle sechs
+gespeicherten Einträge und die inkrementelle Statistik unabhängig gegen den Ausgangsstand geprüft.
+Der nur gespeicherte Belege prüfende Helfer besteht inzwischen 72 Gegenproben und erhält ein zuvor
+nicht gespeichertes Favoritenfeld exakt; eine leere Rohangabe wird nicht mit einem geschriebenen „no“
+gleichgesetzt. Merge F ist nativ übernommen und unabhängig für alle sechs Einträge nachgeprüft:
+zwei Taxonomieübertragungen, genau zwei Favoritenabwahlen einschließlich eines Fotos außerhalb
+der Auswahl, genau ein erhaltener gewählter Favorit. Auch derselbe Merge-Lauf ist anschließend nativ
+ohne Konflikte zurückgenommen und für alle sechs Einträge unabhängig vollständig gegen die Baseline
+nachgeprüft; ursprüngliche Favoriten, Taxonomien und inkrementelle Statistik wiederhergestellt.
+Diese drei erfolgreichen Grundfälle ersetzen keine native Pause-/Fehler-/Großkatalogmatrix.
+Vollständige Belege und getrennt freigegebenes produktives CoL-Update unter 10.51.
+.39 ändert ausschließlich die Fensterlebensdauer der normalen Zuweisungsansicht; keine Änderung am
+Identitätsschreibkern oder Journal. Quellübernahme und tatsächlicher nativer Ladestand bleiben getrennt.
+
+Auditkorrektur vom 20. Oktober: `prepareTarget` bindet Namen und interne Kennungen der tatsächlich
+angelegten Zielstichwörter erst nach dem SDK-Schreibabschluss. Vor der Bindung wird der bestätigte
+Katalog-/Foto-/Paketstand erneut geprüft; dauerhaft unlesbare Kennungen stoppen weiterhin vor der
+Journalanlage und vor jeder Fotoänderung. Bereits angelegte leere Stichwörter können beim Abbruch
+verbleiben, ohne automatische Entfernung.
+Die Statistikänderung wird für Übernahme und Rücknahme aus dem vollständigen exakten Journalziel
+und der vorherigen Ort-/Zeit-/Datum-/Datei-/Videoaufnahme gebildet, statt FN-Setter im selben Zugriff
+sofort zurückzulesen. Foto- und Indexänderung bleiben in derselben Katalogtransaktion; die tatsächliche
+vollständige Fotorücklesung nach dem SDK-Abschluss bleibt Voraussetzung für den Journalabschluss.
+Echte Lua-Module und Statistikindex sind mit künstlich verzögerten SDK-Lesesichten geprüft; dies ist
+noch keine native Lightroom-Artänderungsabnahme. Aktuelle Belege und Grenzen stehen ausschließlich im
+[Auditauftrag, Abschnitt 10.48](audit-auftrag-phase-10-5.md#1048-explorer-und-lightroom-vorziehen-artänderungsschreibkern--20-oktober).
 
 ## Bedienung und erste Abnahme
 

@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { inspectMp3Buffer } from "./audio-format.mjs";
+import { validateImageDecode } from "./image-validation.mjs";
+import { inspectJpeg, inspectPng, inspectWebp } from "./image-header.mjs";
+import { createHash } from "node:crypto";
 
 const modulePath = fileURLToPath(import.meta.url);
 const isCli = path.resolve(process.argv[1] || "") === modulePath;
@@ -16,73 +19,14 @@ export const MEDIA_LIMITS = Object.freeze({
   speciesPackage: 15 * MIB,
 });
 
-export function inspectJpeg(buffer) {
-  if (!Buffer.isBuffer(buffer) || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
-    return invalid("JPEG-Signatur fehlt");
-  }
+export { inspectJpeg, inspectPng, inspectWebp } from "./image-header.mjs";
 
-  let offset = 2;
-  while (offset + 3 < buffer.length) {
-    if (buffer[offset] !== 0xff) {
-      offset += 1;
-      continue;
-    }
-    while (buffer[offset] === 0xff) offset += 1;
-    const marker = buffer[offset];
-    offset += 1;
-    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) continue;
-    if (offset + 1 >= buffer.length) break;
-    const segmentLength = buffer.readUInt16BE(offset);
-    if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
-    if (isJpegSofMarker(marker) && segmentLength >= 7) {
-      const height = buffer.readUInt16BE(offset + 3);
-      const width = buffer.readUInt16BE(offset + 5);
-      return dimensionsResult("jpeg", width, height);
-    }
-    offset += segmentLength;
-  }
-  return invalid("JPEG-Abmessungen konnten nicht gelesen werden");
-}
-
-export function inspectPng(buffer) {
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  if (!Buffer.isBuffer(buffer) || buffer.length < 24 || !buffer.subarray(0, 8).equals(signature)) {
-    return invalid("PNG-Signatur fehlt");
-  }
-  if (buffer.toString("ascii", 12, 16) !== "IHDR") return invalid("PNG-IHDR fehlt");
-  return dimensionsResult("png", buffer.readUInt32BE(16), buffer.readUInt32BE(20));
-}
-
-export function inspectWebp(buffer) {
-  if (
-    !Buffer.isBuffer(buffer)
-    || buffer.length < 30
-    || buffer.toString("ascii", 0, 4) !== "RIFF"
-    || buffer.toString("ascii", 8, 12) !== "WEBP"
-  ) {
-    return invalid("WebP-Signatur fehlt");
-  }
-
-  const chunk = buffer.toString("ascii", 12, 16);
-  if (chunk === "VP8X") {
-    const width = 1 + readUInt24LE(buffer, 24);
-    const height = 1 + readUInt24LE(buffer, 27);
-    return dimensionsResult("webp", width, height);
-  }
-  if (chunk === "VP8 " && buffer.length >= 30 && buffer.subarray(23, 26).equals(Buffer.from([0x9d, 0x01, 0x2a]))) {
-    return dimensionsResult("webp", buffer.readUInt16LE(26) & 0x3fff, buffer.readUInt16LE(28) & 0x3fff);
-  }
-  if (chunk === "VP8L" && buffer.length >= 25 && buffer[20] === 0x2f) {
-    const width = 1 + buffer[21] + ((buffer[22] & 0x3f) << 8);
-    const height = 1 + ((buffer[22] & 0xc0) >> 6) + (buffer[23] << 2) + ((buffer[24] & 0x0f) << 10);
-    return dimensionsResult("webp", width, height);
-  }
-  return invalid(`WebP-Chunk ${chunk || "unbekannt"} wird nicht erkannt`);
-}
-
-export function validateRepositoryMedia(repoRoot = process.cwd()) {
-  const speciesList = readJson(path.join(repoRoot, "species_list.json"));
-  const report = readJson(path.join(repoRoot, "fehlende_elemente_report.json"));
+export async function validateRepositoryMedia(repoRoot = process.cwd(), { decodeImage = validateImageDecode } = {}) {
+  const checkedInputs = new Map();
+  const remember = (filePath, buffer) => checkedInputs.set(filePath, createHash("sha256").update(buffer).digest("hex"));
+  const readBoundJson = (filePath) => { const buffer = fs.readFileSync(filePath); remember(filePath, buffer); return JSON.parse(buffer); };
+  const speciesList = readBoundJson(path.join(repoRoot, "species_list.json"));
+  const report = readBoundJson(path.join(repoRoot, "fehlende_elemente_report.json"));
   if (!Array.isArray(speciesList)) throw new Error("species_list.json muss ein Array sein.");
 
   const allowedMissingSounds = new Set(report?.missing?.soundMp3 ?? []);
@@ -96,14 +40,17 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
     expectedSafeNames.add(safeName);
     const assetDir = path.join(repoRoot, "species-assets", safeName);
     validateDirectorySize(assetDir, germanName, MEDIA_LIMITS.speciesPackage, errors);
-    validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors);
-    validateRequiredImage(
+    await validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors, repoRoot, remember, decodeImage);
+    await validateRequiredImage(
       path.join(assetDir, "portrait.webp"),
       "Artportrait",
       inspectWebp,
       MEDIA_LIMITS.portrait,
       results,
       errors,
+      repoRoot,
+      remember,
+      decodeImage,
     );
 
     const soundFiles = ["sound.mp3", "credits.json", "spectrogram.webp"];
@@ -118,15 +65,18 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
       continue;
     }
 
-    validateRequiredSound(path.join(assetDir, "sound.mp3"), MEDIA_LIMITS.sound, results, errors);
-    validateRequiredJson(path.join(assetDir, "credits.json"), "Sound-Credits", MEDIA_LIMITS.credits, results, errors);
-    validateRequiredImage(
+    validateRequiredSound(path.join(assetDir, "sound.mp3"), MEDIA_LIMITS.sound, results, errors, remember);
+    validateRequiredJson(path.join(assetDir, "credits.json"), "Sound-Credits", MEDIA_LIMITS.credits, results, errors, remember);
+    await validateRequiredImage(
       path.join(assetDir, "spectrogram.webp"),
       "Spektrogramm",
       inspectWebp,
       MEDIA_LIMITS.spectrogram,
       results,
       errors,
+      repoRoot,
+      remember,
+      decodeImage,
     );
   }
 
@@ -142,8 +92,18 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
   const graphicsRoot = path.join(repoRoot, "graphics");
   if (fs.existsSync(graphicsRoot)) {
     for (const filePath of walkFiles(graphicsRoot).filter((item) => path.extname(item).toLowerCase() === ".png")) {
-      validateRequiredImage(filePath, "Grafik", inspectPng, MEDIA_LIMITS.graphic, results, errors);
+      await validateRequiredImage(filePath, "Grafik", inspectPng, MEDIA_LIMITS.graphic, results, errors, repoRoot, remember, decodeImage);
     }
+  }
+
+  // Decoding yields the event loop. Bind its result to the exact still-present
+  // public inputs rather than authorizing files changed during that wait.
+  for (const [filePath, expectedHash] of checkedInputs) {
+    try {
+      if (createHash("sha256").update(fs.readFileSync(filePath)).digest("hex") !== expectedHash) {
+        errors.push(`${relative(filePath)}: Datei wurde während der Medienprüfung geändert. Bitte erneut prüfen.`);
+      }
+    } catch { errors.push(`${relative(filePath)}: Datei ist nach der Medienprüfung nicht mehr lesbar. Bitte erneut prüfen.`); }
   }
 
   return {
@@ -160,28 +120,33 @@ export function validateRepositoryMedia(repoRoot = process.cwd()) {
   };
 }
 
-function validateRequiredImage(filePath, label, inspector, maxBytes, results, errors) {
+async function validateRequiredImage(filePath, label, inspector, maxBytes, results, errors, repoRoot, remember, decodeImage) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: ${label} fehlt.`);
     return;
   }
   if (!validateFileSize(filePath, label, maxBytes, errors)) return;
-  const inspected = inspector(fs.readFileSync(filePath));
+  const buffer = fs.readFileSync(filePath);
+  remember(filePath, buffer);
+  const inspected = inspector(buffer);
   if (!inspected.valid) {
     errors.push(`${relative(filePath)}: ${label} ist ungültig (${inspected.reason}).`);
     return;
   }
+  try { await decodeImage(buffer, { ...inspected, repoRoot }); }
+  catch (error) { errors.push(`${relative(filePath)}: ${label} ist ungültig (${error.message}).`); return; }
   results.push({ path: relative(filePath), type: inspected.format, width: inspected.width, height: inspected.height });
 }
 
-function validateRequiredSound(filePath, maxBytes, results, errors) {
+function validateRequiredSound(filePath, maxBytes, results, errors, remember) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: Tierstimme fehlt.`);
     return;
   }
   if (!validateFileSize(filePath, "Tierstimme", maxBytes, errors)) return;
   try {
-    const inspected = inspectMp3Buffer(fs.readFileSync(filePath));
+    const buffer = fs.readFileSync(filePath); remember(filePath, buffer);
+    const inspected = inspectMp3Buffer(buffer);
     results.push({
       path: relative(filePath),
       type: inspected.format,
@@ -193,14 +158,14 @@ function validateRequiredSound(filePath, maxBytes, results, errors) {
   }
 }
 
-function validateRequiredJson(filePath, label, maxBytes, results, errors) {
+function validateRequiredJson(filePath, label, maxBytes, results, errors, remember) {
   if (!fs.existsSync(filePath)) {
     errors.push(`${relative(filePath)}: ${label} fehlen.`);
     return;
   }
   if (!validateFileSize(filePath, label, maxBytes, errors)) return;
   try {
-    JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const buffer = fs.readFileSync(filePath); remember(filePath, buffer); JSON.parse(buffer);
     results.push({ path: relative(filePath), type: "json" });
   } catch (error) {
     errors.push(`${relative(filePath)}: ${label} sind kein gültiges JSON (${error.message}).`);
@@ -227,25 +192,6 @@ function validateDirectorySize(dirPath, germanName, maxBytes, errors) {
 
 function formatMib(bytes) {
   return `${(bytes / MIB).toFixed(2)} MiB`;
-}
-
-function dimensionsResult(format, width, height) {
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
-    return invalid(`${format}-Abmessungen sind ungültig`);
-  }
-  return { valid: true, format, width, height };
-}
-
-function invalid(reason) {
-  return { valid: false, format: "unknown", reason };
-}
-
-function isJpegSofMarker(marker) {
-  return [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker);
-}
-
-function readUInt24LE(buffer, offset) {
-  return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
 }
 
 function sanitizeAssetName(input) {
@@ -284,7 +230,7 @@ function relative(filePath) {
 
 if (isCli) {
   activeRepoRoot = path.resolve(process.argv.find((arg) => arg.startsWith("--repo-root="))?.slice(12) || process.cwd());
-  const report = validateRepositoryMedia(activeRepoRoot);
+  const report = await validateRepositoryMedia(activeRepoRoot);
   console.log(JSON.stringify({
     ok: report.ok,
     counts: report.counts,

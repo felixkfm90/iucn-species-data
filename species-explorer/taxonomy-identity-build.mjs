@@ -17,7 +17,8 @@ const liveRecords = (group) => (group?.records || []).filter((record) => record.
 
 // Planning is entirely in memory. The caller writes only its new staging DB.
 export function prepareIdentityBuild({ groups, previousState, registry = previousState.identityRegistry,
-  baseVersion, sourceRevision, inputRevision, releases, ensureGroup, projects = [], projectKeyOf = taxonIdentityKey }) {
+  baseVersion, sourceRevision, inputRevision, releases, ensureGroup, projects = [], projectKeyOf = taxonIdentityKey,
+  classificationRetention, protectedMasterIds = [] }) {
   const previous = validateIdentityRegistry(previousState.identityRegistry);
   registry = validateIdentityRegistry(registry);
   if (JSON.stringify(registry.events.slice(0, previous.events.length)) !== JSON.stringify(previous.events)) {
@@ -81,7 +82,8 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
   const heldProjects = new Map();
   for (const entry of state.current.values()) ensureGroup(entry);
   moveAssignedProjects({ groups, projects, state, keyOf: projectKeyOf });
-  carryClassificationGroups({ state, groups });
+  const classificationRetentions = carryClassificationGroups({ state, groups, previousState, classificationRetention,
+    protectedMasterIds, baseVersion, sourceRevision, inputRevision, releases });
 
   // Historic source tuples cannot be resurrected by a hash or a retained project
   // name. In a same-name split, only fresh provider values may enter the new ID.
@@ -138,7 +140,7 @@ export function prepareIdentityBuild({ groups, previousState, registry = previou
       }
     }
   }
-  return { registry, state, heldProjects };
+  return { registry, state, heldProjects, classificationRetentions };
 }
 
 export function writeIdentityBuild(database, plan, timestamp) {

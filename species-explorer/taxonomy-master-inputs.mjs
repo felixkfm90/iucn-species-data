@@ -25,7 +25,7 @@ const RULE_FILES = ["taxonomy-source-recovery-conflicts.mjs", "taxonomy-source-r
   "taxonomy-master-job.mjs", "taxonomy-master-worker.mjs", "taxonomy-master-process.mjs", "../scripts/taxonomy-master-worker.mjs",
   "taxonomy-master-source-binding.mjs", "taxonomy-master-run-controller.mjs", "taxonomy-master-search-reuse.mjs",
   "taxonomy-master-graph-reuse.mjs", "taxonomy-master-writer.mjs", "taxonomy-master-reuse-reader.mjs",
-  "taxonomy-classification-review.mjs", "taxonomy-classification-build.mjs", "taxonomy-classification-deferral.mjs", "taxonomy-master-lifecycle.mjs",
+  "taxonomy-classification-review.mjs", "taxonomy-classification-build.mjs", "taxonomy-classification-retention.mjs", "taxonomy-classification-retention-usage.mjs", "taxonomy-classification-deferral.mjs", "taxonomy-master-lifecycle.mjs",
   "taxonomy-classification-automation.mjs", "lightroom-catalog-usage.mjs"];
 
 export async function masterBuildRulesRevision() {

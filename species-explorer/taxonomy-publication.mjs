@@ -1,6 +1,7 @@
 import { withTaxonomyBuildCache } from "./taxonomy-build-cache.mjs";
 import crypto from "node:crypto";
 import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
+import { assertClassificationRetentionMaster, assertClassificationRetentionUsage } from "./taxonomy-classification-retention-usage.mjs";
 import { assertMasterTaxonIdsRetained } from "./taxonomy-master-continuity.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -128,6 +129,7 @@ async function preparePublicationUnlocked({ taxonomyRoot, searchRoot, id, action
   const sourceManifestText = await fs.readFile(manifestAt(sourceDatabase), "utf8");
   if (expectedSourceManifest && sourceManifestText !== expectedSourceManifest) throw new Error("Der Kandidat wurde vor der Vorbereitung geändert.");
   const sourceManifest = JSON.parse(sourceManifestText);
+  await assertClassificationRetentionUsage(taxonomyRoot, sourceManifest.classificationRetentions);
   if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot, { full: true });
   const masterBytes = await taxonomyDirectoryBytes(path.dirname(sourceDatabase));
   const searchBytes = await taxonomyDirectoryBytes(path.dirname(lightroomSearchDatabasePath(searchRoot)));
@@ -201,6 +203,7 @@ export async function publishTaxonomyPair({ taxonomyRoot, searchRoot, confirmed 
   const sourceDatabase = taxonomyMasterDatabasePath(taxonomyRoot, sourceSlot);
   const sourceManifestText = await fs.readFile(manifestAt(sourceDatabase), "utf8");
   const sourceManifest = JSON.parse(sourceManifestText);
+  await assertClassificationRetentionUsage(taxonomyRoot, sourceManifest.classificationRetentions);
   await validateInputs(sourceManifest);
   let publicationAttempted = false;
   try {
@@ -210,12 +213,14 @@ export async function publishTaxonomyPair({ taxonomyRoot, searchRoot, confirmed 
     signal?.throwIfAborted();
     if (prepared.pointer?.active?.id !== id || prepared.sourceManifestText !== sourceManifestText) throw new Error("Unpassendes Ergebnis der Paarvorbereitung.");
     if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot, { full: true });
+    await assertClassificationRetentionUsage(taxonomyRoot, sourceManifest.classificationRetentions);
     onProgress({ phase: "activate", percent: 99, message: "Geprüfter Master und Suchpaket werden gemeinsam aktiviert." });
     await withTaxonomyCorrectionLock(taxonomyRoot, async () => {
       if (await generation(taxonomyRoot, searchRoot, readInputs) !== baseline) {
         throw new Error("Datenstand oder Namenswahl wurden zwischenzeitlich geändert. Beide bisherigen Versionen bleiben aktiv.");
       }
       await validateInputs(sourceManifest);
+      await assertClassificationRetentionUsage(taxonomyRoot, sourceManifest.classificationRetentions, { full: false });
       if (sourceSlot === "staging") await assertPendingClassificationAutomation(taxonomyRoot);
       if (await fs.readFile(manifestAt(sourceDatabase), "utf8") !== sourceManifestText) {
         throw new Error("Der Kandidat wurde während der Aktivierung geändert.");
@@ -239,6 +244,8 @@ async function prepareRollback({ taxonomyRoot, searchRoot, corrections, now }) {
   const packageDatabase = lightroomSearchDatabasePath(searchRoot, "previous");
   const verified = await verifyLightroomSearchPackage({ searchRoot, slot: "previous" });
   const master = await json(manifestAt(masterDatabase));
+  await assertClassificationRetentionMaster(masterDatabase, master);
+  await assertClassificationRetentionUsage(taxonomyRoot, master.classificationRetentions);
   if (master.candidateId !== pointer.previous.masterVersion
     || verified.manifest.packageId !== pointer.previous.packageId
     || verified.manifest.masterVersion !== pointer.previous.masterVersion
@@ -261,16 +268,25 @@ export async function rollbackTaxonomyPair({ taxonomyRoot, searchRoot, confirmed
   if (!confirmed) throw new Error("Die gemeinsame Wiederherstellung muss ausdrücklich bestätigt werden.");
   ({ taxonomyRoot, searchRoot } = roots(taxonomyRoot, searchRoot));
   const baseline = await generation(taxonomyRoot, searchRoot, readInputs);
+  const previousManifestPath = manifestAt(taxonomyMasterDatabasePath(taxonomyRoot, "previous"));
+  const previousManifestText = await optionalText(previousManifestPath);
+  const previousManifest = JSON.parse(previousManifestText || "null");
+  await assertClassificationRetentionUsage(taxonomyRoot, previousManifest?.classificationRetentions);
   corrections = (await readInputs())?.corrections || corrections;
   signal?.throwIfAborted();
   onProgress({ phase: "verify", percent: 0, message: "Vorheriges Master-/Suchpaket wird im Hintergrund geprüft." });
   const prepared = await prepare({ taxonomyRoot, searchRoot, id: `publication-${crypto.randomUUID()}`,
     action: "rollback", corrections, now, onProgress, signal });
   signal?.throwIfAborted();
+  await assertClassificationRetentionUsage(taxonomyRoot, previousManifest?.classificationRetentions);
   await withTaxonomyCorrectionLock(taxonomyRoot, async () => {
     if (await generation(taxonomyRoot, searchRoot, readInputs) !== baseline) {
       throw new Error("Datenstand oder Namenswahl wurden während der Wiederherstellung geändert.");
     }
+    if (await optionalText(previousManifestPath) !== previousManifestText) {
+      throw new Error("Der vorherige Master wurde während der Wiederherstellung geändert.");
+    }
+    await assertClassificationRetentionUsage(taxonomyRoot, previousManifest?.classificationRetentions, { full: false });
     signal?.throwIfAborted();
     await writePointer(taxonomyRoot, prepared.pointer);
   });

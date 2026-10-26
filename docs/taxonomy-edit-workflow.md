@@ -1,6 +1,6 @@
 # Kontrollierte Taxonomiebearbeitung
 
-Stand: 2026-07-22
+Stand: 2026-10-10
 
 Der Arten-Explorer kann die automatisch geladenen Taxonomiewerte kontrolliert korrigieren, ohne die nächste
 Datenpipeline gegen die manuelle Entscheidung arbeiten zu lassen.
@@ -27,6 +27,36 @@ wissenschaftlichen Namens, weil daran URL-Slug, Artidentität und weitere Metada
 
 Bei einer bereits manuell bearbeiteten Taxonomie kann `Automatische Werte wiederherstellen` gewählt werden. Auch
 dieser Vorgang läuft über Vorschau und Speichern.
+
+## Frühere Taxonomiebearbeitungen auswählen
+
+`Bearbeitungsstände` bei der gewählten Art zeigt zusätzlich die vorhandenen Sicherungen ihrer
+Taxonomiebearbeitung. `Stand prüfen` zeigt die konkrete Vorschau. `Stand wiederherstellen…` öffnet die
+Bestätigung; erst deren `Stand wiederherstellen` übernimmt den Stand. Die damaligen manuellen Werte der sechs Ränge
+werden als Override übernommen; die heutige automatische Vergleichsbasis bleibt erhalten. Der Änderungsgrund
+kennzeichnet den gewählten Sicherungszeitpunkt und übernimmt den damaligen Grund.
+
+War der gewählte Stand ohne manuellen Override, nimmt die Vorschau den heutigen Override zurück und verwendet
+die heutige automatische Vergleichsbasis. Damalige automatische Taxonomiewerte werden dabei nicht eingespielt.
+Die Vorschau erklärt diese Unterscheidung. Ist die Taxonomie bereits automatisch, gibt es keinen Override
+zurückzunehmen. Ältere vollständige `speciesData-taxonomy`-Sicherungen ohne verlässlichen Override-Nachweis
+werden mit Begründung angezeigt und können über diese Auswahl nicht übernommen werden.
+
+Auch wenn die sichtbaren Taxonomiewerte gleich bleiben, zeigt die Vorschau den Wechsel zwischen manueller
+und automatischer Pflege sowie einen geänderten Grund. Eine reine Änderung dieser Pflegeangaben schreibt
+keine unveränderten generierten Taxonomiewerte erneut.
+
+Andere Arten, Artidentität und Medien bleiben erhalten. Fremde gültige Taxonomieeinzelstände erscheinen nicht
+in dieser Art-Auswahl. Beschädigte, widersprüchliche oder verknüpfte Dateien sind gesperrt. Vor dem ersten
+Schreiben werden Sicherungsinhalt und heutige Quelldateien erneut gegen die Vorschau geprüft; außerdem wird der
+heutige Originalstand gesichert. Eine Übernahme startet keine Pipeline oder Veröffentlichung und erweitert
+keine Aufbewahrung. Ein Dateizugriffsfehler kann auch die automatische Rückschreibung verhindern; der angelegte
+Originalstand bleibt dann der Rückweg.
+
+Die Auswahl verwendet `GET /api/species/:id/backups`, `POST /api/species/:id/backups/preview` und
+`POST /api/species/:id/backups/restore`. Die beiden Schreibanfragen benötigen den geschützten Explorer-Kontext;
+der Restore akzeptiert ausschließlich die gebundene Vorschau. Laufende Pipeline-, Sicherungs-, Medien- oder
+Artanlagenvorgänge verhindern die Übernahme.
 
 ## Datenmodell
 

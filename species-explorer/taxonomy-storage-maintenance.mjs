@@ -7,6 +7,7 @@ import { withTaxonomyCorrectionLock } from "./taxonomy-correction-lock.mjs";
 import { acquireMasterJobLock } from "./taxonomy-master-job.mjs";
 import { sha256File } from "./lightroom-search-storage.mjs";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
+import { relocatedStoragePath } from "./storage-paths.mjs";
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const PAIR = new RegExp(`^publication-${UUID}$`, "u");
@@ -15,6 +16,7 @@ const DAY = 86400000;
 export const TAXONOMY_RETENTION = Object.freeze({ minimumAgeDays: 7, extraPairs: 0, completedJobs: 0 });
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const same = (a, b) => process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
+const pathSegment = (value) => process.platform === "win32" ? value.toLowerCase() : value;
 
 // Check every existing ancestor, including a Windows junction above the managed
 // directory. Missing roots are fine for a read-only preview of a fresh install.
@@ -105,7 +107,7 @@ function managedFile(kind, file, index) {
     || (file.startsWith("lightroom/staging/") && searchFile.test(file.slice(18)));
 }
 
-async function inspect({ taxonomyRoot, searchRoot, now }) {
+async function inspect({ taxonomyRoot, searchRoot, now, relocatePath }) {
   taxonomyRoot = path.resolve(taxonomyRoot); searchRoot = path.resolve(searchRoot);
   if (same(taxonomyRoot, searchRoot) || !same(path.dirname(taxonomyRoot), path.dirname(searchRoot))) {
     throw new Error("Speicherpflege benötigt getrennte Datenbankordner mit gemeinsamem Elternordner.");
@@ -122,7 +124,7 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
   const protectedPairs = new Set([pointer?.active?.id, pointer?.previous?.id].filter(Boolean));
   const items = [], recipes = new Map();
   const warnings = [];
-  let protectAllPairs = false;
+  let protectAllPairs = false, protectAllJobs = false;
   // A pointer alone is not a backup. Require the recorded bytes of BOTH the
   // active pair and its one rollback pair before offering older copies.
   try {
@@ -164,11 +166,26 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
     await item("job", id, [path.join(jobsRoot, id)], async (row) => {
       const recipe = await readJson(path.join(row.directories[0], "recipe.json"));
       recipes.set(id, recipe);
-      if (!recipe || recipe.id !== id || recipe.schemaVersion !== 1 || !same(path.resolve(recipe.taxonomyRoot), taxonomyRoot)
-        || recipe.revision !== digest({ ...recipe, revision: undefined }) || !Array.isArray(recipe.binding?.files)) {
-        protectAllPairs = true; row.reason = "Unvollständiges Auftragsrezept"; return;
+      let validRecipe = false;
+      try {
+        // Check the immutable original revision before projecting only its
+        // filesystem access through a verified migration. Unknown/broken
+        // relocation proofs still protect every possibly dependent pair.
+        validRecipe = recipe?.id === id && recipe.schemaVersion === 1
+          && recipe.revision === digest({ ...recipe, revision: undefined }) && Array.isArray(recipe.binding?.files)
+          && recipe.binding.files.every((entry) => Array.isArray(entry) && entry.length === 2
+            && typeof entry[0] === "string" && path.isAbsolute(entry[0])
+            && (entry[1] === null || typeof entry[1] === "string"))
+          && typeof recipe.taxonomyRoot === "string" && path.isAbsolute(recipe.taxonomyRoot)
+          && same(path.resolve(relocatePath(recipe.taxonomyRoot)), taxonomyRoot);
+      } catch { /* An unverified root is never an empty dependency set. */ }
+      if (!validRecipe) {
+        protectAllPairs = true; protectAllJobs = true; row.reason = "Unvollständiges Auftragsrezept"; return;
       }
-      const state = await readJson(path.join(row.directories[0], "state.json"));
+      let state;
+      try { state = await readJson(path.join(row.directories[0], "state.json")); }
+      catch (error) { protectAllJobs = true; protectAllPairs = true; throw error; }
+      if (state?.id !== id || typeof state.status !== "string") { protectAllJobs = true; protectAllPairs = true; }
       if (id === current?.id) row.reason = "Letzter Aufbauauftrag";
       else if (recipe.revision === staging?.buildJobRevision) row.reason = "Gehört zum aktuellen Kandidaten";
       else if (state?.id !== id || state.status !== "ready") row.reason = "Offener oder möglicherweise fortsetzbarer Auftrag";
@@ -180,13 +197,102 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
     else if (index < TAXONOMY_RETENTION.completedJobs) row.reason = "Zusätzlicher abgeschlossener Aufbauauftrag";
     else row.eligible = true;
   }
+  // A retained recipe can require another job's immutable recipe or spooled
+  // inputs. Protect that entire transitive closure before deriving pair pins.
+  // Unknown dependencies and cycles never become an empty protection set.
+  const jobRows = new Map(items.filter((row) => row.kind === "job").map((row) => [row.id, row]));
+  const recoveryRoot = path.join(taxonomyRoot, "master", "source-recovery"), recoveryPins = new Set();
+  let recoverySnapshot = null;
+  try {
+    recoverySnapshot = await snapshotOrMissing(recoveryRoot);
+    for (const file of recoverySnapshot?.files || []) {
+      if (!file.endsWith(".json") || path.posix.basename(file) === "records.json") continue;
+      const proof = await readJson(path.join(recoveryRoot, ...file.split("/")));
+      if (!proof || typeof proof !== "object" || Array.isArray(proof)
+        || !Number.isInteger(proof.schemaVersion) || proof.schemaVersion < 1) throw new Error("Quellenreparaturbeleg ist unlesbar.");
+      const { checksum, ...originalProof } = proof;
+      if ((checksum !== undefined || ["source-recovery-candidate", "scoped-source-recovery-replacement"].includes(proof.kind))
+        && checksum !== digest(originalProof)) throw new Error("Quellenreparaturbeleg wurde verändert.");
+      if (proof.jobId !== undefined) {
+        if (typeof proof.jobId !== "string" || !JOB.test(proof.jobId) || !jobRows.has(proof.jobId)
+          || (proof.jobRevision !== undefined && proof.jobRevision !== recipes.get(proof.jobId)?.revision)) {
+          throw new Error("Auftragsbindung eines Quellenreparaturbelegs fehlt oder wurde verändert.");
+        }
+        recoveryPins.add(proof.jobId);
+      }
+      if (proof.buildJobRevision !== undefined) {
+        const job = [...recipes.entries()].find(([, recipe]) => recipe?.revision === proof.buildJobRevision);
+        if (!job) throw new Error("Auftragsbindung eines gesicherten Reparaturkandidaten fehlt.");
+        recoveryPins.add(job[0]);
+      }
+    }
+  } catch (error) {
+    protectAllJobs = true; protectAllPairs = true;
+    warnings.push(`${error.message} Aufbauaufträge und Paare bleiben geschützt.`);
+  }
+  const dependencies = new Map();
+  for (const [id] of jobRows) {
+    const recipe = recipes.get(id);
+    if (!Array.isArray(recipe?.binding?.files)) { protectAllJobs = true; protectAllPairs = true; continue; }
+    const ids = new Set();
+    for (const entry of recipe.binding.files) {
+      if (!Array.isArray(entry) || typeof entry[0] !== "string") { protectAllJobs = true; protectAllPairs = true; continue; }
+      const segments = entry[0].split(/[\\/]/u).map(pathSegment);
+      if (!segments.some((segment) => JOB.test(segment))) continue;
+      try {
+        const relative = path.relative(jobsRoot, path.resolve(relocatePath(entry[0])));
+        if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+          protectAllJobs = true; protectAllPairs = true; continue;
+        }
+        const dependency = pathSegment(relative.split(path.sep)[0]);
+        if (!JOB.test(dependency)) { protectAllJobs = true; protectAllPairs = true; continue; }
+        // Own spooled inputs are not a foreign job cycle.
+        if (dependency !== id) ids.add(dependency);
+      } catch { protectAllJobs = true; protectAllPairs = true; }
+    }
+    dependencies.set(id, ids);
+    if ([...ids].some((dependency) => !jobRows.has(dependency))) {
+      protectAllJobs = true; protectAllPairs = true;
+      warnings.push(`Auftragsabhängigkeit von ${id} fehlt oder ist unbekannt; Aufbauaufträge und Paare bleiben geschützt.`);
+    }
+  }
+  const visiting = new Set(), visited = new Set(), cyclic = new Set();
+  function visitJob(id, trail = []) {
+    if (visiting.has(id)) { for (const dependency of trail.slice(trail.indexOf(id))) cyclic.add(dependency); return; }
+    if (visited.has(id)) return;
+    visiting.add(id);
+    for (const dependency of dependencies.get(id) || []) if (jobRows.has(dependency)) visitJob(dependency, [...trail, id]);
+    visiting.delete(id); visited.add(id);
+  }
+  for (const id of jobRows.keys()) visitJob(id);
+  for (const id of recoveryPins) {
+    const row = jobRows.get(id); row.eligible = false; row.reason ||= "Gebundener Quellenreparaturbeleg";
+  }
+  for (const id of cyclic) { const row = jobRows.get(id); row.eligible = false; row.reason ||= "Zyklische Auftragsabhängigkeit"; }
+  const retained = [...jobRows.values()].filter((row) => !row.eligible).map((row) => row.id);
+  const checked = new Set();
+  for (let index = 0; index < retained.length; index += 1) {
+    const id = retained[index];
+    if (checked.has(id)) continue;
+    checked.add(id);
+    for (const dependency of dependencies.get(id) || []) {
+      const row = jobRows.get(dependency);
+      if (!row) continue; // Missing dependencies already protect all jobs/pairs.
+      row.eligible = false; row.reason ||= "Von einem geschützten Aufbauauftrag benötigte Eingänge";
+      retained.push(dependency);
+    }
+  }
+  if (protectAllJobs) for (const row of jobRows.values()) {
+    row.eligible = false; row.reason ||= "Abhängigkeiten eines Auftrags sind unklar";
+  }
   for (const row of items.filter((entry) => entry.kind === "job" && !entry.eligible)) {
     const recipe = recipes.get(row.id);
     if (!Array.isArray(recipe?.binding?.files)) { protectAllPairs = true; continue; }
-    for (const [filename] of recipe.binding.files) {
+    for (const entry of recipe.binding.files) {
+      const filename = Array.isArray(entry) ? entry[0] : null;
       if (typeof filename !== "string") { protectAllPairs = true; continue; }
       // Retained jobs may depend on older immutable pairs, even if not current.
-      for (const segment of filename.split(/[\\/]/u)) if (PAIR.test(segment)) protectedPairs.add(segment);
+      for (const segment of filename.split(/[\\/]/u).map(pathSegment)) if (PAIR.test(segment)) protectedPairs.add(segment);
     }
   }
   if (current && !recipes.has(current.id)) throw new Error("Der letzte Aufbauauftrag fehlt oder ist nicht sicher lesbar; Bereinigung gesperrt.");
@@ -225,7 +331,8 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
     });
   }
   items.sort((a, b) => a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id));
-  const revision = digest({ taxonomyRoot, searchRoot, pointerJson, current, staging, items });
+  const revision = digest({ taxonomyRoot, searchRoot, pointerJson, current, staging,
+    recoveryFingerprint: recoverySnapshot?.fingerprint || null, items });
   return { revision, policy: TAXONOMY_RETENTION, warnings, items, freeBytes: await availableTaxonomySpace(taxonomyRoot),
     managedBytes: items.reduce((sum, row) => sum + row.bytes, 0),
     reclaimableBytes: items.filter((row) => row.eligible).reduce((sum, row) => sum + row.bytes, 0) };
@@ -233,8 +340,9 @@ async function inspect({ taxonomyRoot, searchRoot, now }) {
 
 export function createTaxonomyStorageMaintenance({ taxonomyRoot, searchRoot, controller, now = () => new Date(),
   remove = (directory) => fs.rm(directory, { recursive: true, force: false, maxRetries: 2, retryDelay: 80 }),
+  relocatePath = relocatedStoragePath,
 }) {
-  const options = { taxonomyRoot, searchRoot, now };
+  const options = { taxonomyRoot, searchRoot, now, relocatePath };
   // Preview does not inspect photo catalogs, start workers, or delete anything.
   const exclusive = async (operation) => {
     await noLinks(taxonomyRoot); await noLinks(searchRoot);

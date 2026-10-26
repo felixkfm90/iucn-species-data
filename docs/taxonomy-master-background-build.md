@@ -1,6 +1,6 @@
 # Fortsetzbarer Master-Hintergrundaufbau
 
-Stand: 2026-10-02
+Stand: 2026-10-23
 
 ## Freigabestand
 
@@ -228,6 +228,13 @@ verlorene Aufnahme-Merkmale und vier unbestätigte ID-Wechsel bei fehlendem Reic
 Wechsel ist damit nachgewiesen, die fachliche Bestandsfreigabe aber bis zur Reparatur blockiert.
 
 ## Fortschrittsanzeige
+
+Während eines aktiven Aufbaus oder seiner Pausierung verwendet der leichte Status den aktuellen gebundenen
+Workerjob statt eines älteren Fortschritts im Service. Die Inspektion einer alten Staging-Datenbank wird in
+dieser Phase zurückgestellt: Konfliktzahl unbekannt (`null`), Kandidatenprüfung ausdrücklich ausstehend,
+Aktivierung und Rücknahme gesperrt. Fertige, pausierte, unterbrochene oder fehlgeschlagene Aufträge erhalten
+wieder die bisherige Kandidatenprüfung. Der vollständige Prüf-/Aktivierungspfad erlaubt keinen Aufschub.
+Lokale Umsetzung und verbleibende native Leistungsgrenze: Auditauftrag, Abschnitt 10.54 (A-64).
 
 Auftrag vom 28. September, nach dem erfolgreichen Grundlagenlauf **implementiert und gezielt automatisiert geprüft**.
 Die frühere Anzeige fester Phasenmarken wie 45 % war als Gesamtfortschritt missverständlich. Das reine Modul

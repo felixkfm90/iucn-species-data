@@ -23,7 +23,8 @@ class Element {
   get innerHTML() { return this.html || ""; }
   addEventListener(name, fn) { this.listeners.set(name, fn); }
   async emit(name, event = {}) { return this.listeners.get(name)?.({ preventDefault() {}, stopPropagation() {}, target: this, ...event }); }
-  focus() { this.focused = true; } reset() {} removeAttribute(name) { delete this[name]; }
+  focus() { this.focused = true; if (this.ownerDocument) this.ownerDocument.activeElement = this; }
+  reset() {} removeAttribute(name) { delete this[name]; }
 }
 
 async function settle(predicate) {
@@ -31,22 +32,44 @@ async function settle(predicate) {
   assert.fail("Workflow did not reach the expected state");
 }
 
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
 function harness({ status = "awaiting-review", finalStatus = "completed", failReview = false,
   confirm = true, failRestart = false, failReset = false, noReviewAssets = false, persistReview = false, initializeReference = () => {},
-  ownedCreation = false, pendingAborts = 0, finalPublished = false, restartStatus } = {}) {
+  ownedCreation = false, pendingAborts = 0, finalPublished = false, restartStatus,
+  availability = { available: true }, failAvailability = false, fetchOverride, beforeLoad,
+  focusDocument = null, confirmOverride, referenceSelection = null, scientificName } = {}) {
   const dialog = new Element(), form = new Element(), open = new Element(), close = new Element();
+  if (focusDocument) {
+    open.ownerDocument = focusDocument;
+    open.isConnected = true;
+    let disabled = false;
+    Object.defineProperty(open, "disabled", {
+      get: () => disabled,
+      set(value) {
+        disabled = value;
+        // Native buttons lose focus immediately when they become disabled.
+        if (value && focusDocument.activeElement === open) focusDocument.activeElement = focusDocument.body;
+      },
+    });
+  }
   const headerClose = new Element();
   headerClose.textContent = "×";
   close.textContent = "Abbrechen";
   const steps = [1, 2, 3, 4].map((n) => { const e = new Element(); e.dataset.newSpeciesStep = n; return e; });
   dialog.groups = { ".new-species-cancel": [close, headerClose], "[data-new-species-step]": steps };
   form.elements = { german: new Element() };
+  if (focusDocument) form.elements.german.ownerDocument = focusDocument;
   const state = { species: [] }, calls = [], confirmations = [], loadStatuses = [];
   const filters = { search: new Element(), statusFilter: new Element(), flagFilter: new Element() };
-  let dialogOptions, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
+  let dialogOptions, dialogReturnFocus, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
   let reviewSubmitted = false, restartReviewed = false;
   let created = false, aborted = false, abortReads = 0;
-  const context = vm.createContext({ document: {}, FormData: class {}, clearTimeout, setTimeout });
+  const context = vm.createContext({ document: focusDocument || {}, FormData: class {}, clearTimeout, setTimeout });
   new vm.Script(source).runInContext(context);
   const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } } };
   const controller = context.SpeciesExplorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
@@ -54,16 +77,30 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       ...filters },
     createMessageSetter: (element) => (text = "", type = "") => { element.textContent = text; element.hidden = !text; element.type = type; },
     createFieldFeedbackController: () => ({ clearFieldErrors() {}, applyFieldErrors() {}, updateMeasurementMode() {} }),
-    createNewSpeciesFormModel: () => ({ speciesValues: () => ({ german: "Rebhuhn" }), localFieldErrors: () => ({}) }),
-    createTaxonomyReferenceController: () => ({ reset() {}, initialize: initializeReference }),
+    createNewSpeciesFormModel: () => ({ speciesValues: () => ({ german: "Rebhuhn", ...(scientificName ? { scientificName } : {}) }), localFieldErrors: () => ({}) }),
+    createTaxonomyReferenceController: () => ({ reset() {}, initialize: initializeReference, getSelection: () => referenceSelection }),
     createDialogController: (options) => {
       dialogOptions = options;
-      close.addEventListener("click", () => { if (options.beforeClose()) opened = false; });
-      return { open() { opened = true; }, close() { if (options.beforeClose()) opened = false; } };
+      const finishClose = () => {
+        if (!options.beforeClose()) return;
+        opened = false; dialog.open = false;
+        if (dialogReturnFocus?.isConnected && !dialogReturnFocus.disabled) dialogReturnFocus.focus?.();
+      };
+      close.addEventListener("click", finishClose);
+      return { open() { dialogReturnFocus = focusDocument?.activeElement; opened = true; dialog.open = true; },
+        close: finishClose };
     },
     fetchJson: async (route, options) => {
       const body = options?.body ? JSON.parse(options.body) : null;
       calls.push({ route, body });
+      if (fetchOverride) {
+        const result = await fetchOverride(route, options);
+        if (result !== undefined) return result;
+      }
+      if (route === "/api/species/new/availability") {
+        if (failAvailability) throw new Error("Prüfung nicht erreichbar");
+        return availability;
+      }
       if (route.endsWith("/new/preview")) return { token: "draft", entry: {}, derived: {} };
       if (route.endsWith("/new/discard")) return { discarded: true };
       if (route.endsWith("/new/sessions")) return { sessions: ownedCreation && created && !aborted
@@ -102,8 +139,12 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       if (route === "/api/pipeline/assets/review") { if (failReview) throw new Error("Medienprüfung fehlgeschlagen"); reviewSubmitted = true; if (starts > 1) restartReviewed = true; return {}; }
       throw new Error(`Unexpected route: ${route}`);
     },
-    loadData: async () => { loadStatuses.push(state.pipelineStatusSnapshot?.status); state.species = aborted ? [] : [species]; },
-    showQuickConfirm: async (options) => { confirmations.push(options); return confirm; },
+    loadData: async () => {
+      loadStatuses.push(state.pipelineStatusSnapshot?.status);
+      await beforeLoad?.(loadStatuses.length);
+      state.species = aborted ? [] : [species];
+    },
+    showQuickConfirm: async (options) => { confirmations.push(options); return confirmOverride ? confirmOverride(options) : confirm; },
     fileToBase64: async () => "local-image-bytes", escapeHtml: (x) => String(x || ""), formatBytes: (x) => `${x} Bytes`,
     releaseMediaWithin() {}, iucnDistributionMapUrl: () => mapUrl,
     soundLicenseInfo: () => ({}), soundLicenseBadgeHtml: () => "", soundSearchOutcome: () => ({}),
@@ -114,7 +155,8 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const action = (key, value) => ({ closest: (selector) => selector === `[${key}]` ? { dataset: {
     [key.replace(/^data-/, "").replace(/-([a-z])/g, (_, c) => c.toUpperCase())]: value,
   } } : null });
-  return { state, calls, confirmations, loadStatuses, filters, form, get, close, headerClose, steps, map, sound, open, dialogOptions: () => dialogOptions, opened: () => opened,
+  return { state, calls, confirmations, loadStatuses, filters, form, get, close, headerClose, steps, map, sound, open,
+    dialogOptions: () => dialogOptions, dialogReturnFocus: () => dialogReturnFocus, opened: () => opened,
     async start() {
       await open.emit("click"); await form.emit("submit");
       await get(".new-species-next-button").emit("click");
@@ -134,6 +176,22 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   };
 }
 
+test("Neue-Art-Vorschau bindet nur die weiterhin ausgewählte Master-ID; manuelle Namensänderung entfernt die Bindung", async () => {
+  const id = `mtx_${"1".repeat(32)}`;
+  for (const [scientificName, referenceSelection, expected, expectedReference] of [
+    ["Perdix perdix", { scientificName: "Perdix perdix", masterTaxonId: id, taxonomyReference: id }, id, id],
+    ["Perdix altera", { scientificName: "Perdix perdix", masterTaxonId: id, taxonomyReference: id }, "", ""],
+    ["Perdix perdix", { scientificName: "Perdix perdix", taxonomyReference: "12345" }, "", "12345"],
+    ["Perdix perdix", { scientificName: "Perdix perdix", taxonomyReference: `stx_${"1".repeat(24)}` }, "", `stx_${"1".repeat(24)}`],
+    ["Perdix perdix", null, "", ""],
+  ]) {
+    const h = harness({ scientificName, referenceSelection });
+    await h.open.emit("click"); await h.form.emit("submit");
+    assert.equal(h.calls.find(call => call.route === "/api/species/new/preview").body.masterTaxonId, expected);
+    assert.equal(h.calls.find(call => call.route === "/api/species/new/preview").body.taxonomyReference, expectedReference);
+  }
+});
+
 test("Neue Art ohne automatische Karte und Sound erreicht beide Schritte vor der Übertragung", async () => {
   const h = harness({ noReviewAssets: true }); await h.start();
   assert.equal(h.calls.find((c) => c.route === "/api/pipeline/start").body.guidedSpeciesCreation, true);
@@ -147,6 +205,338 @@ test("Neue Art ohne automatische Karte und Sound erreicht beide Schritte vor der
   await settle(() => /erfolgreich angelegt/.test(h.get(".new-species-finish-message").textContent));
   assert.deepEqual(h.calls.find((c) => c.route === "/api/pipeline/assets/review").body, { runId: "run", choices: [] });
   assert.equal(h.calls.filter((c) => c.route.endsWith("/new/save")).length, 1);
+});
+
+test("Neue Art prüft die aktuelle Sperre vor Öffnung und erhält die Formulareingaben", async () => {
+  let initialized = 0;
+  const h = harness({ availability: { available: false, reason: "update-failed",
+    message: "Das Datenbank-Update ist fehlgeschlagen. Der gespeicherte Auftrag ist noch offen." },
+  initializeReference: () => { initialized += 1; } });
+  h.form.elements.german.value = "Wendehals";
+  await h.open.emit("click");
+  assert.equal(h.opened(), false);
+  assert.equal(h.form.elements.german.value, "Wendehals");
+  assert.equal(initialized, 0);
+  assert.deepEqual(h.calls.map((call) => call.route), ["/api/species/new/availability"]);
+  assert.match(h.confirmations[0].message, /fehlgeschlagen/);
+  assert.equal(h.open.disabled, false);
+});
+
+test("Neue Art bleibt bei fehlgeschlagener Verfügbarkeitsprüfung geschlossen", async () => {
+  const h = harness({ failAvailability: true });
+  await h.open.emit("click");
+  assert.equal(h.opened(), false);
+  assert.match(h.confirmations[0].message, /Prüfung nicht erreichbar/);
+  assert.equal(h.open.disabled, false);
+});
+
+function createFocusDocument() {
+  const body = {}, documentElement = {};
+  return { body, documentElement, activeElement: body };
+}
+
+for (const failAvailability of [false, true]) {
+  for (const closeReason of ["confirm", "escape"]) {
+    test(`Neue Art: ${failAvailability ? "Lesefehler" : "Sperrhinweis"} gibt Fokus nach ${closeReason} an eigenen Auslöser zurück`, async () => {
+      const documentRef = createFocusDocument();
+      let h;
+      h = harness({ focusDocument: documentRef, failAvailability, availability: { available: false },
+        confirmOverride: () => {
+          assert.equal(h.open.disabled, true);
+          assert.equal(documentRef.activeElement, documentRef.body, "Deaktivierung hat den ursprünglichen Fokus verloren");
+          // The real confirmation resolves after its native dialog has closed.
+          documentRef.activeElement = closeReason === "confirm" ? documentRef.body : documentRef.documentElement;
+          return closeReason === "confirm";
+        } });
+      documentRef.activeElement = h.open;
+      await h.open.emit("click");
+      assert.equal(h.open.disabled, false);
+      assert.equal(documentRef.activeElement, h.open);
+      assert.equal(h.opened(), false);
+      assert.deepEqual(h.calls.map(({ route }) => route), ["/api/species/new/availability"]);
+    });
+  }
+}
+
+test("Neue Art: erfolgreiche Prüfung erhält den nativen Rückkehrpunkt und fokussiert das Formular", async () => {
+  const documentRef = createFocusDocument();
+  const h = harness({ focusDocument: documentRef });
+  documentRef.activeElement = h.open;
+  await h.open.emit("click");
+  assert.equal(h.dialogReturnFocus(), h.open, "showModal benötigt den reaktivierten Auslöser als Rückkehrpunkt");
+  assert.equal(documentRef.activeElement, h.form.elements.german);
+  assert.equal(h.opened(), true);
+  await h.close.emit("click");
+  assert.equal(documentRef.activeElement, h.open, "der eigene Native-Close-Rückkehrpunkt bleibt nutzbar");
+});
+
+for (const mode of ["other-focus", "foreign-origin", "disconnected", "stale-generation"]) {
+  test(`Neue Art: Verfügbarkeitsabschluss übernimmt keinen Fokus bei ${mode}`, async () => {
+    const documentRef = createFocusDocument();
+    const other = new Element(); other.ownerDocument = documentRef;
+    let h;
+    h = harness({ focusDocument: documentRef, availability: { available: false },
+      confirmOverride: () => {
+        documentRef.activeElement = documentRef.body;
+        if (mode === "other-focus") other.focus();
+        if (mode === "disconnected") h.open.isConnected = false;
+        if (mode === "stale-generation") h.dialogOptions().beforeClose();
+        return false;
+      } });
+    documentRef.activeElement = mode === "foreign-origin" ? other : h.open;
+    await h.open.emit("click");
+    assert.equal(h.open.disabled, false);
+    assert.equal(documentRef.activeElement, mode === "other-focus" ? other : documentRef.body);
+    assert.equal(h.open.focused, undefined);
+    assert.equal(h.opened(), false);
+  });
+}
+
+const savedCreation = { id: "saved-creation", slug: "perdixperdix", germanName: "Gespeichertes Rebhuhn", canAbort: true };
+const resumeStatus = { status: "awaiting-review", guidedSpeciesCreation: true, runId: "saved-run",
+  targets: [{ slug: "perdixperdix", germanName: "Gespeichertes Rebhuhn" }], reviewAssets: [] };
+
+test("Fortsetzen-Statusaktion öffnet denselben gespeicherten Auftrag ohne neue Art oder Pipeline", async () => {
+  const pending = { ...resumeStatus, creationId: savedCreation.id,
+    reviewAssets: [{ safeName: "Rebhuhn", germanName: "Rebhuhn", type: "sound", url: "/sound.mp3" }] };
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions")
+    ? { sessions: [savedCreation] } : route === "/api/pipeline/status" ? pending : undefined });
+  h.state.pipelineStatusSnapshot = pending;
+  assert.equal(typeof h.state.resumeNewSpeciesCreation, "function");
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.opened(), true);
+  assert.equal(h.get(".new-species-abort-button").hidden, false);
+  assert.equal(h.steps[0].hidden, true);
+  assert.equal(h.calls.some((c) => /\/new\/save$|\/pipeline\/start$/.test(c.route)), false);
+  const calls = h.calls.length;
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.calls.length, calls, "offener Assistent wird nicht zurückgesetzt oder doppelt gelesen");
+});
+
+test("Fortsetzen verwechselt eine gespeicherte Artanlage nicht mit einer anderen verfügbaren Sitzung", async () => {
+  const pending = { ...resumeStatus, creationId: "different-creation" };
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions") ? { sessions: [savedCreation] } : undefined });
+  h.state.pipelineStatusSnapshot = pending;
+  assert.equal(typeof h.state.resumeNewSpeciesCreation, "function");
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.opened(), false);
+  assert.match(h.confirmations.at(-1).title, /nicht fortgesetzt/);
+  assert.equal(h.calls.some((c) => /\/new\/save$|\/pipeline\/start$|\/new\/abort$/.test(c.route)), false);
+});
+
+test("Fortsetzen prüft Verfügbarkeit erneut und startet bei Sperre oder unpassendem Status nichts", async () => {
+  const h = harness({ availability: { available: false, message: "Datenbankauftrag offen" } });
+  assert.equal(typeof h.state.resumeNewSpeciesCreation, "function");
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.calls.length, 0);
+  h.state.pipelineStatusSnapshot = { ...resumeStatus, creationId: savedCreation.id };
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.opened(), false);
+  assert.match(h.confirmations.at(-1).message, /Datenbankauftrag offen/);
+  assert.deepEqual(h.calls.map((c) => c.route), ["/api/species/new/availability"]);
+});
+
+test("Fortsetzen übernimmt nach der Sitzungsprüfung keinen zwischenzeitlich gewechselten Auftrag", async () => {
+  for (const change of [{ creationId: "foreign-creation" }, { runId: "foreign-run" },
+    { targets: [{ slug: "foreignspecies", germanName: "Andere Art" }] }]) {
+    const pending = { ...resumeStatus, creationId: savedCreation.id };
+    const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions")
+      ? { sessions: [savedCreation] } : route === "/api/pipeline/status" ? { ...pending, ...change } : undefined });
+    h.state.pipelineStatusSnapshot = pending;
+    await h.state.resumeNewSpeciesCreation();
+    assert.match(h.get(".new-species-finish-message").textContent, /Auftrag.*geändert/);
+    assert.equal(h.loadStatuses.length, 0, "keine Daten eines gewechselten Auftrags einblenden");
+    assert.equal(h.map.hidden, true);
+    assert.equal(h.sound.hidden, true);
+    assert.equal(h.calls.some((c) => /\/new\/save$|\/pipeline\/start$|\/new\/abort$/.test(c.route)), false);
+  }
+});
+
+for (const mode of ["replace", "in-place"]) {
+  for (const field of ["creationId", "runId", "slug"]) {
+    test(`Fortsetzen bindet ${field} vor Verfügbarkeit auch bei ${mode}-Statusänderung`, async () => {
+      const availability = deferred();
+      const pending = { ...resumeStatus, creationId: savedCreation.id,
+        targets: resumeStatus.targets.map((target) => ({ ...target })) };
+      let h;
+      h = harness({ fetchOverride: (route) => route === "/api/species/new/availability"
+        ? availability.promise : route.endsWith("/new/sessions") ? { sessions: [savedCreation] }
+          : route === "/api/pipeline/status" ? h.state.pipelineStatusSnapshot : undefined });
+      h.state.pipelineStatusSnapshot = pending;
+      h.form.elements.german.value = "Ungespeicherte Eingabe erhalten";
+      let resets = 0;
+      h.form.reset = () => { resets += 1; h.form.elements.german.value = ""; };
+      const opening = h.state.resumeNewSpeciesCreation();
+      await settle(() => h.calls.some((call) => call.route === "/api/species/new/availability"));
+      const changed = mode === "replace"
+        ? { ...pending, targets: pending.targets.map((target) => ({ ...target })) } : pending;
+      if (field === "slug") changed.targets[0].slug = "andererauftrag";
+      else changed[field] = `anderer-${field}`;
+      h.state.pipelineStatusSnapshot = changed;
+      availability.resolve({ available: true });
+      await opening;
+      try {
+        assert.deepEqual(h.calls.map((call) => call.route), ["/api/species/new/availability"],
+          "gewechselten Auftrag vor Sitzungslesen oder weiterer Aktion abweisen");
+        assert.equal(resets, 0, "Formular vor der Identitätsprüfung nicht zurücksetzen");
+        assert.equal(h.form.elements.german.value, "Ungespeicherte Eingabe erhalten");
+        assert.equal(h.opened(), false);
+        assert.equal(h.loadStatuses.length, 0);
+        assert.match(h.confirmations.at(-1)?.message || "", /geändert|nicht.*fortsetzbar|Status.*prüfen/i);
+      } finally { if (h.opened()) await h.close.emit("click"); }
+    });
+  }
+}
+
+async function advanceReopenedForm(h) {
+  await h.open.emit("click");
+  h.form.elements.german.value = "Neue eigene Eingabe";
+  await h.form.emit("submit");
+  await h.get(".new-species-next-button").emit("click");
+  assert.equal(h.steps[1].hidden, false);
+}
+
+function assertReopenedFormUnchanged(h, message) {
+  assert.equal(h.opened(), true);
+  assert.equal(h.steps[1].hidden, false);
+  assert.equal(h.steps[2].hidden, true);
+  assert.equal(h.steps[3].hidden, true);
+  assert.equal(h.form.elements.german.value, "Neue eigene Eingabe");
+  assert.equal(h.get(".new-species-message").textContent, message);
+  assert.equal(h.get(".new-species-finish-message").textContent, "");
+  assert.equal(h.get(".new-species-abort-button").hidden, true);
+  assert.equal(h.map.hidden, true);
+  assert.equal(h.close.disabled, false);
+  assert.equal(h.state.holdNewSpeciesBackground, true);
+}
+
+test("Neue Art: verspäteter gespeicherter Auftrag verändert nach Schließen nicht das neu bediente Formular", async () => {
+  const sessions = deferred(); let reads = 0;
+  const h = harness({ fetchOverride: async (route) => route.endsWith("/new/sessions") && ++reads === 1 ? sessions.promise : undefined });
+  const firstOpen = h.open.emit("click"); await settle(() => reads === 1);
+  assert.equal(h.close.disabled, false);
+  await h.close.emit("click"); await advanceReopenedForm(h);
+  const message = h.get(".new-species-message").textContent;
+  sessions.resolve({ sessions: [savedCreation] }); await firstOpen;
+  assertReopenedFormUnchanged(h, message);
+  await h.close.emit("click");
+});
+
+test("Neue Art: verspäteter Sessions-Fehler überschreibt keine Meldung des neu geöffneten Formulars", async () => {
+  const sessions = deferred(); let reads = 0;
+  const h = harness({ fetchOverride: async (route) => route.endsWith("/new/sessions") && ++reads === 1 ? sessions.promise : undefined });
+  const firstOpen = h.open.emit("click"); await settle(() => reads === 1);
+  await h.close.emit("click"); await advanceReopenedForm(h);
+  const message = h.get(".new-species-message").textContent;
+  sessions.reject(new Error("Alter Sessions-Fehler")); await firstOpen;
+  assertReopenedFormUnchanged(h, message);
+  await h.close.emit("click");
+});
+
+test("Neue Art: leere Antwort nach Schließen startet weder Referenzprüfung noch Fokus", async () => {
+  const sessions = deferred(); let initialized = 0;
+  const h = harness({ initializeReference: () => { initialized += 1; },
+    fetchOverride: (route) => route.endsWith("/new/sessions") ? sessions.promise : undefined });
+  const opening = h.open.emit("click"); await settle(() => h.calls.some(call => call.route.endsWith("/new/sessions")));
+  await h.close.emit("click");
+  const message = h.get(".new-species-message").textContent;
+  sessions.resolve({ sessions: [] }); await opening;
+  assert.equal(h.opened(), false);
+  assert.equal(initialized, 0);
+  assert.equal(h.form.elements.german.focused, undefined);
+  assert.equal(h.get(".new-species-message").textContent, message);
+  assert.equal(h.state.holdNewSpeciesBackground, false);
+});
+
+test("Neue Art: alter Auftrag mit vorgemerkt gewünschtem Abbruch wird nach Schließen nicht abgebrochen", async () => {
+  const sessions = deferred();
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions") ? sessions.promise : undefined });
+  const opening = h.open.emit("click"); await settle(() => h.calls.some(call => call.route.endsWith("/new/sessions")));
+  await h.close.emit("click"); sessions.resolve({ sessions: [{ ...savedCreation, abortRequested: true }] }); await opening;
+  assert.equal(h.opened(), false);
+  assert.equal(h.calls.some(call => call.route.endsWith("/new/abort")), false);
+});
+
+for (const failure of [false, true]) {
+  test(`Neue Art: alter Wiederaufnahmestatus ${failure ? "mit Fehler" : "mit Erfolg"} ersetzt kein neues Formular`, async () => {
+    const status = deferred(); let reads = 0;
+    const h = harness({ fetchOverride: (route) => route === "/api/pipeline/status"
+      ? ++reads === 1 ? status.promise : { status: "idle" } : undefined });
+    h.state.pipelineStatusSnapshot = resumeStatus;
+    const opening = h.open.emit("click"); await settle(() => reads === 1);
+    assert.equal(h.close.disabled, false);
+    await h.close.emit("click"); await advanceReopenedForm(h);
+    const message = h.get(".new-species-message").textContent;
+    if (failure) status.reject(new Error("Alter Status-Fehler"));
+    else status.resolve(resumeStatus);
+    await opening;
+    assertReopenedFormUnchanged(h, message);
+    assert.equal(h.loadStatuses.length, 0);
+    await h.close.emit("click");
+  });
+}
+
+for (const loadNumber of [1, 2]) {
+  for (const failure of [false, true]) {
+    test(`Neue Art: verspätetes ${loadNumber}. Datenladen bei Wiederaufnahme ${failure ? "mit Fehler" : "mit Erfolg"} erhält neues Formular`, async () => {
+      const loading = deferred(); let statuses = 0;
+      const h = harness({ fetchOverride: (route) => route === "/api/pipeline/status"
+        ? ++statuses === 1 ? resumeStatus : { status: "idle" } : undefined,
+      beforeLoad: (number) => number === loadNumber ? loading.promise : undefined });
+      h.state.pipelineStatusSnapshot = resumeStatus;
+      const opening = h.open.emit("click"); await settle(() => h.loadStatuses.length === loadNumber);
+      assert.equal(h.close.disabled, false);
+      await h.close.emit("click"); await advanceReopenedForm(h);
+      const message = h.get(".new-species-message").textContent;
+      if (failure) loading.reject(new Error("Alter Datenladefehler"));
+      else loading.resolve();
+      await opening;
+      assertReopenedFormUnchanged(h, message);
+      assert.equal(h.loadStatuses.length, loadNumber);
+      await h.close.emit("click");
+    });
+  }
+}
+
+test("Neue Art: ununterbrochene Wiederaufnahme lädt Auftrag und Kartenprüfung weiterhin vollständig", async () => {
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions") ? { sessions: [savedCreation] }
+    : route === "/api/pipeline/status" ? resumeStatus : undefined });
+  h.state.pipelineStatusSnapshot = resumeStatus;
+  await h.open.emit("click");
+  assert.equal(h.opened(), true);
+  assert.equal(h.steps[2].hidden, false);
+  assert.equal(h.map.hidden, false);
+  assert.match(h.map.innerHTML, /Gespeicherte Karte einfügen/);
+  assert.equal(h.get(".new-species-abort-button").hidden, false);
+  assert.equal(h.loadStatuses.length, 2);
+  assert.equal(h.close.disabled, false);
+  await h.close.emit("click");
+});
+
+test("Neue Art: doppelte Öffnung während Verfügbarkeitsprüfung erzeugt nur einen Vorgang", async () => {
+  const availability = deferred();
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/availability") ? availability.promise : undefined });
+  const opening = h.open.emit("click");
+  await settle(() => h.calls.some(call => call.route.endsWith("/new/availability")));
+  await h.open.emit("click");
+  availability.resolve({ available: true }); await opening;
+  assert.equal(h.calls.filter(call => call.route.endsWith("/new/availability")).length, 1);
+  assert.equal(h.calls.filter(call => call.route.endsWith("/new/sessions")).length, 1);
+  assert.equal(h.opened(), true);
+  assert.equal(h.open.disabled, false);
+  await h.close.emit("click");
+});
+
+test("Neue Art: weiterer Öffnungsaufruf entwertet noch ausstehende Sessions-Antwort des ersten Aufrufs", async () => {
+  const sessions = deferred(); let reads = 0;
+  const h = harness({ fetchOverride: (route) => route.endsWith("/new/sessions") && ++reads === 1 ? sessions.promise : undefined });
+  const firstOpen = h.open.emit("click"); await settle(() => reads === 1);
+  await advanceReopenedForm(h);
+  const message = h.get(".new-species-message").textContent;
+  sessions.resolve({ sessions: [savedCreation] }); await firstOpen;
+  assert.equal(h.calls.filter(call => call.route.endsWith("/new/sessions")).length, 2);
+  assertReopenedFormUnchanged(h, message);
+  await h.close.emit("click");
 });
 
 test("Leere Art-Medienprüfung bleibt nach Schließen wieder aufnehmbar, ohne erneute Artanlage", async () => {

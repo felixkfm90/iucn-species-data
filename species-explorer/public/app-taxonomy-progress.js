@@ -29,26 +29,103 @@
     return 4;
   }
 
-  function taxonomyProgressPresentation({ master = {}, reference = {}, busy = false } = {}) {
+  function previousBuildOfLocalRestart(master = {}) {
+    const workflow = master.updateWorkflow || {}, job = master.buildJob || {};
+    const origin = workflow.restartGuard?.identity;
+    return Boolean(workflow.updateRunId && !["completed", "idle"].includes(workflow.status)
+      && workflow.freshUsageCapture === true && workflow.sourceCompleted === true && workflow.decision === "rebuild-master"
+      && ["start", "build"].includes(workflow.phase) && job.available === true && ["failed", "stale"].includes(job.status)
+      && origin?.updateRunId && origin.buildJobId && workflow.updateRunId !== origin.updateRunId
+      && job.updateRunId === origin.updateRunId && job.id === origin.buildJobId);
+  }
+
+  // The service can recover the previous failed job until the new recipe exists.
+  // Filter only that explicitly owned historical job, never mutate API state or
+  // use this presentation snapshot for an operation's activation checks.
+  function taxonomyMasterPresentationSnapshot(master = {}) {
+    const oldBuild = previousBuildOfLocalRestart(master), retained = retainedCandidateOfLocalRestart(master);
+    if (!oldBuild && !retained) return master;
+    const job = master.buildJob || {};
+    const recovered = oldBuild && master.active !== true && master.status === job.status
+      && (!master.error || master.error === job.error);
+    return { ...master, ...(oldBuild ? { buildJob: { available: false } } : {}),
+      ...(recovered ? { status: "idle", error: "", message: "", action: "", progressPhase: "",
+        progressCurrent: null, progressTotal: null, progressPercent: null } : {}),
+      ...(retained ? { lifecycle: { ...master.lifecycle, candidate: null, blockingConflictCount: retained.remainingConflicts },
+        retainedCandidateMessage: "Erhaltener Kandidat gehört zum vorherigen Auftrag. Der neue lokale Aufbau verarbeitet die erneut geprüften Entscheidungen; der bisherige Master und das Lightroom-Suchpaket bleiben aktiv." } : {}) };
+  }
+
+  function retainedCandidateOfLocalRestart(master) {
+    const workflow = master.updateWorkflow || {}, job = master.buildJob || {};
+    const guard = workflow.restartGuard || {}, origin = guard.identity || {}, retained = guard.binding?.retainedCandidate;
+    const candidate = master.lifecycle?.candidate;
+    const ownBuilding = workflow.buildStarted === true && workflow.status === "building" && workflow.phase === "build"
+      && job.available === true && job.id && job.updateRunId === workflow.updateRunId && job.status === "building";
+    const preparing = previousBuildOfLocalRestart(master);
+    const waiting = ["waiting-lightroom", "waiting-usage"].includes(workflow.status) && workflow.phase === "start" && workflow.buildStarted === false;
+    const count = Number(candidate?.classificationReview?.total || 0);
+    const blocking = Number(master.lifecycle?.blockingConflictCount ?? master.lifecycle?.blockingConflicts?.length ?? 0);
+    if (!retained || !candidate || !workflow.updateRunId || workflow.updateRunId === origin.updateRunId || !origin.updateRunId
+        || !origin.buildJobId || workflow.active !== true || workflow.freshUsageCapture !== true || workflow.sourceCompleted !== true
+        || workflow.decision !== "rebuild-master" || workflow.error || job.error && !preparing
+        || master.error && !(preparing && master.error === job.error) || master.lifecycle?.error
+        || !(preparing && (waiting || workflow.status === "building" && workflow.phase === "build") || ownBuilding)
+        || retained.updateRunId !== origin.updateRunId || !retained.buildJobId
+        || candidate.candidateId !== retained.candidateId || candidate.buildJobRevision !== retained.buildJobRevision
+        || ![retained.buildJobRevision, retained.manifestSha256, retained.recipeSha256, retained.stateSha256].every((value) => /^[a-f0-9]{64}$/.test(value || ""))
+        || !Number.isSafeInteger(count) || count < 0 || !Number.isSafeInteger(blocking) || blocking < count) return null;
+    return { remainingConflicts: blocking - count };
+  }
+
+  function taxonomyClassificationFollowupPresentation(master = {}) {
+    const workflow = master.updateWorkflow || {}, job = master.buildJob || {}, identities = master.identities || {};
+    const lifecycle = master.lifecycle || {}, candidate = lifecycle.candidate;
+    const candidateId = text(candidate?.candidateId), revision = text(identities.revision);
+    const count = Number(candidate?.classificationReview?.total || 0);
+    const blocking = Number(lifecycle.blockingConflictCount
+      ?? (Array.isArray(lifecycle.blockingConflicts) ? lifecycle.blockingConflicts.length : 0));
+    if (!workflow.updateRunId || workflow.status !== "building" || workflow.active !== true || workflow.phase !== "build"
+        || workflow.buildStarted !== true || job.available !== true || !job.id || job.status !== "building"
+        || job.updateRunId !== workflow.updateRunId || master.error || workflow.error || job.error
+        || !candidateId || !revision || workflow.automaticFollowupRevision !== identities.revision
+        || identities.pending !== true || identities.candidateIncludesCurrent !== false
+        || identities.classificationCandidateId !== candidateId || !Array.isArray(workflow.automaticAttemptedCandidates)
+        || !workflow.automaticAttemptedCandidates.includes(candidateId)
+        || !Number.isSafeInteger(count) || count <= 0 || !Number.isSafeInteger(blocking) || blocking < count) return null;
+    return { count, remainingConflicts: blocking - count,
+      message: `${count.toLocaleString("de-DE")} ${count === 1 ? "Klassifikationsfall gehört" : "Klassifikationsfälle gehören"} zum vorherigen Kandidaten. Der laufende Folgeaufbau verarbeitet die gespeicherte Entscheidung.` };
+  }
+
+  function taxonomyProgressPresentation({ master = {}, reference = {}, busy = false, preparation = "" } = {}) {
     master ||= {};
     reference ||= {};
+    const preparingReplacement = previousBuildOfLocalRestart(master);
+    master = taxonomyMasterPresentationSnapshot(master);
+    const classificationFollowup = taxonomyClassificationFollowupPresentation(master);
     const job = master.buildJob || {};
     const referenceActive = reference.active === true;
     const pending = job.available === true && job.status !== "ready";
     const running = referenceActive || master.active === true || ACTIVE.has(master.status);
     const workflow = master.updateWorkflow;
     const workflowOpen = Boolean(workflow?.updateRunId && !["completed", "idle"].includes(workflow.status));
-    if (workflowOpen && !running && (!pending || workflow.phase === "sources")) {
+    if (busy && ["preview", "confirmation"].includes(preparation) && !running && !workflow?.active) {
+      const stage = preparation === "confirmation" ? "Bestätigung ausstehend" : "Vorschau wird geprüft";
+      const detail = `${stage} · Es wurde noch keine neue Aktualisierung gestartet`;
+      return { step: null, totalSteps: BUILD_STEPS.length, stage, phase: "", percent: null,
+        detail, compact: `Datenbank-Update\n${stage}`, state: stage, running: false,
+        completed: false, preparation: true, className: "review" };
+    }
+    if (workflowOpen && !running && !master.error && (!pending || workflow.phase === "sources")) {
       const states = { "waiting-lightroom": "Warte auf Lightroom-Schließung", "waiting-usage": "FN-Nutzung prüfen",
         "waiting-decisions": "Entscheidung erforderlich", paused: "pausiert", interrupted: "unterbrochen", failed: "fehlgeschlagen" };
       const state = states[workflow.status] || "läuft";
       const phaseSteps = { sources: 1, build: 3, "resume-build": 3, candidate: 4, package: 5, activation: 7 };
       const waiting = ["waiting-lightroom", "waiting-usage"].includes(workflow.status);
-      const step = waiting ? null : phaseSteps[workflow.phase] || null;
+      const step = waiting ? null : preparingReplacement && workflow.phase === "build" ? 2 : phaseSteps[workflow.phase] || null;
       const stage = step ? BUILD_STEPS[step - 1] : state;
       const phase = workflow.phase === "sources" ? REFERENCE_PHASES[reference.phase] || "Quellenprüfung" : "";
       const detail = [step ? `Schritt ${step} von ${BUILD_STEPS.length}` : "", stage,
-        phase, state !== stage ? state : "", text(workflow.message), text(workflow.error)].filter(Boolean).join(" · ");
+        phase, state !== stage ? state : "", text(workflow.message), master.retainedCandidateMessage, text(workflow.error)].filter(Boolean).join(" · ");
       return { step, totalSteps: BUILD_STEPS.length, stage, phase, percent: null,
         detail, compact: `Datenbank-Update\n${step ? `${step}/${BUILD_STEPS.length} ${stage} · ` : ""}${state}`,
         state, running: workflow.active === true, completed: false,
@@ -62,7 +139,8 @@
     const referenceInFocus = referenceActive || sourceFailure;
     const status = referenceInFocus ? reference.status : pending ? job.status : master.status;
     const lifecycle = master.lifecycle || {};
-    const conflicts = Number(lifecycle.blockingConflictCount ?? lifecycle.blockingConflicts?.length ?? 0);
+    const conflicts = classificationFollowup?.remainingConflicts
+      ?? Number(lifecycle.blockingConflictCount ?? lifecycle.blockingConflicts?.length ?? 0);
     const candidate = Boolean(lifecycle.candidate);
     const sourcesAwaitMaster = reference.action === "update" && reference.status === "completed"
       && Date.parse(reference.completedAt) > Date.parse(master.completedAt || "1970-01-01T00:00:00Z");
@@ -107,15 +185,24 @@
       steps = BUILD_STEPS; index = 1; phase = "Masterabgleich ausstehend";
     }
     const source = referenceInFocus ? reference : savedProgress || master;
-    const measured = completed || waiting || stopped || failed || unfinished ? null
+    let measured = completed || waiting || stopped || failed || unfinished ? null
       : measuredProgress(savedProgress ? source.current : source.progressCurrent,
         savedProgress ? source.total : source.progressTotal);
+    const colSelectionRead = !referenceInFocus && !savedProgress && !failed && !stopped
+      && !master.lightroomPackage?.needsRebuild && !master.lightroomPackage?.error
+      && master.active === true && master.status === "building" && action === "build"
+      && phase === "CoL-Referenz" && measured
+      && number(master.progressCurrent) === number(master.progressTotal);
+    const activityMessage = colSelectionRead
+      ? "CoL-Auswahl gelesen. Eingänge werden weiter vorbereitet und geprüft." : "";
+    // The finished selection count does not measure the remaining input work.
+    if (activityMessage) measured = null;
     const stateLabel = failed ? "fehlgeschlagen" : stopped || (waiting ? conflicts ? "Entscheidung erforderlich" : "Übernahme ausstehend"
       : unfinished ? "Prüfung erforderlich" : completed ? "abgeschlossen" : "läuft");
     const stage = steps[index];
     const step = `Schritt ${index + 1} von ${steps.length}`;
     const suffix = measured ? `${measured.percent} % dieses Teilschritts · ${measured.count}` : "";
-    const detail = [step, stage, phase && phase !== stage ? phase : "", suffix,
+    const detail = [step, stage, activityMessage || (phase && phase !== stage ? phase : ""), suffix, classificationFollowup?.message, master.retainedCandidateMessage,
       stateLabel !== "läuft" && stateLabel !== "abgeschlossen" ? stateLabel : ""].filter(Boolean).join(" · ");
     const compactStatus = completed ? "Abgeschlossen"
       : [`${index + 1}/${steps.length} ${stage}`, measured ? `${measured.percent} %` : "",
@@ -123,8 +210,10 @@
     const compact = `Datenbank-Update\n${compactStatus}`;
     return { step: index + 1, totalSteps: steps.length, stage, phase, percent: measured?.percent ?? null,
       detail, compact, state: stateLabel, running, completed, sourceFailure,
+      ...(activityMessage ? { activityMessage } : {}),
       className: failed ? "failed" : stopped || waiting || unfinished ? "review" : running || busy ? "taxonomy" : "current" };
   }
 
-  global.SpeciesExplorerTaxonomyProgress = Object.freeze({ measuredProgress, taxonomyProgressPresentation });
+  global.SpeciesExplorerTaxonomyProgress = Object.freeze({ measuredProgress, taxonomyProgressPresentation,
+    taxonomyMasterPresentationSnapshot, taxonomyClassificationFollowupPresentation });
 })(globalThis);

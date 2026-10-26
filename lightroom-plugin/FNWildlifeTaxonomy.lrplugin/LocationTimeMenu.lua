@@ -4,13 +4,15 @@ local LrTasks = import "LrTasks"
 
 local KeywordWriter = require "KeywordWriter"
 local LocationTimeWriter = require "LocationTimeWriter"
+local PluginState = require "PluginState"
+local PhotoSelection = require "PhotoSelection"
 
 local ACTIONS = {
   add = {
     question = "Orts- und Zeitstichwörter hinzufügen?",
-    explanation = "Gespeicherte Lightroom-Ortsfelder, vorhandene exportierbare Ortsvorschläge und die Aufnahmezeit werden für bisher noch nicht "
-      .. "bearbeitete Fotos als verwaltete (FN Ort)- und (FN Zeit)-Stichwörter übernommen. Bereits vorhandene "
-      .. "FN-Orts- und Zeitwerte bleiben unverändert.",
+    explanation = "Fehlende FN-Orts- und Zeitfelder sowie Stichwörter werden aus den Lightroom-Ortsfeldern, "
+      .. "exportierbaren Ortsvorschlägen und der Aufnahmezeit ergänzt. Bereits gespeicherte FN-Werte bleiben erhalten. "
+      .. "Mit „Aktualisieren“ werden vorhandene Werte mit den aktuellen Quelldaten abgeglichen.",
     button = "Hinzufügen",
     success = "Orts- und Zeitstichwörter hinzugefügt",
   },
@@ -36,8 +38,11 @@ local function resultMessage(result, mode)
   local changedPhotoCount = tonumber(result and result.changedPhotoCount or 0) or 0
   local skippedPhotoCount = tonumber(result and result.skippedPhotoCount or 0) or 0
   local missingDataPhotoCount = tonumber(result and result.missingDataPhotoCount or 0) or 0
-  local gpsWithoutStoredLocationPhotoCount = tonumber(
-    result and result.gpsWithoutStoredLocationPhotoCount or 0
+  local unresolvedSuggestedLocationPhotoCount = tonumber(
+    result and result.unresolvedSuggestedLocationPhotoCount or 0
+  ) or 0
+  local failedSuggestedLocationPhotoCount = tonumber(
+    result and result.failedSuggestedLocationPhotoCount or 0
   ) or 0
   local missingGpsAndLocationPhotoCount = tonumber(
     result and result.missingGpsAndLocationPhotoCount or 0
@@ -69,14 +74,20 @@ local function resultMessage(result, mode)
           and " Foto konnten keine Orts- oder Zeitstichwörter erstellt werden."
         or " Fotos konnten keine Orts- oder Zeitstichwörter erstellt werden.")
   end
-  if gpsWithoutStoredLocationPhotoCount > 0 then
+  if unresolvedSuggestedLocationPhotoCount > 0 then
     message = message
-      .. (gpsWithoutStoredLocationPhotoCount == 1
+      .. (unresolvedSuggestedLocationPhotoCount == 1
           and " Das Foto enthält GPS-Koordinaten, Lightroom lieferte dafür aber keine exportierbaren Ortsvorschläge."
         or " "
-          .. tostring(gpsWithoutStoredLocationPhotoCount)
+          .. tostring(unresolvedSuggestedLocationPhotoCount)
           .. " Fotos enthalten GPS-Koordinaten, Lightroom lieferte dafür aber keine exportierbaren Ortsvorschläge.")
       .. " Bitte in den Katalogeinstellungen prüfen, ob Adressvorschläge beim Export übernommen werden; private gespeicherte Orte werden von Lightroom ausgelassen."
+  end
+  if failedSuggestedLocationPhotoCount > 0 then
+    message = message
+      .. " Für " .. tostring(failedSuggestedLocationPhotoCount)
+      .. (failedSuggestedLocationPhotoCount == 1 and " Foto konnten" or " Fotos konnten")
+      .. " die Ortsvorschläge nicht exportiert oder gelesen werden. Zeitdaten wurden trotzdem geprüft."
   end
   if missingGpsAndLocationPhotoCount > 0 then
     message = message
@@ -133,7 +144,7 @@ function LocationTimeMenu.runForPhotos(catalog, photos, mode)
     if mode ~= "remove" then
       plans, preparation = LocationTimeWriter.prepare(catalog, photos, {
         resolveSuggestedLocations = true,
-        skipExisting = mode == "add",
+        preserveExisting = mode == "add",
       })
     end
     if preparation and preparation.canceled then
@@ -160,6 +171,11 @@ function LocationTimeMenu.runForPhotos(catalog, photos, mode)
       )
       return nil, tostring(result)
     end
+    result.suggestedLocationPhotoCount = preparation and preparation.suggestedLocationPhotoCount or 0
+    result.unresolvedSuggestedLocationPhotoCount = preparation
+      and preparation.unresolvedSuggestedLocationPhotoCount or 0
+    result.failedSuggestedLocationPhotoCount = preparation
+      and preparation.failedSuggestedLocationPhotoCount or 0
     LrDialogs.message(action.success, resultMessage(result, mode), "info")
     return result
 end
@@ -167,7 +183,8 @@ end
 function LocationTimeMenu.run(mode)
   LrTasks.startAsyncTask(function()
     local catalog = LrApplication.activeCatalog()
-    local photos = catalog:getTargetPhoto() and catalog:getTargetPhotos() or {}
+    local photos = mode == "remove" and PluginState.selectedPhotos(catalog)
+      or PhotoSelection.selectedWithCollapsedFolderStacks(catalog)
     local ok, result = LrTasks.pcall(LocationTimeMenu.runForPhotos, catalog, photos, mode)
     if not ok then
       LrDialogs.message("Orts- und Zeitstichwörter konnten nicht verarbeitet werden", tostring(result), "warning")

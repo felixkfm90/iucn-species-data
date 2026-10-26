@@ -1,6 +1,6 @@
 # Aufbewahrung temporärer Explorer-Dateien
 
-Stand: 2026-10-05
+Stand: 2026-10-25
 
 ## Aktueller Speicher- und Tempvertrag
 
@@ -31,6 +31,9 @@ wartet auf die bestehenden eigenen Operationen/Helfer. Es entfernt einzelne regi
 niemals pauschal den gesamten Tempbaum. Dauerhafte, fremde, verschachtelte oder unbekannte Inhalte bleiben
 einschließlich ihres Eigentumsnachweises erhalten. Verzeichnislinks und Pfadüberschreitungen sind gesperrt.
 Sperrfehler bleiben sichtbar im Ergebnis; unbekannter Prozesszustand zählt nicht als beendeter Prozess.
+Scheitert die Speicherung einer neuen Operationsanmeldung, wird nur deren eigene Erhöhung zurückgenommen;
+bereits laufende Operationen bleiben geschützt. Der Fehler wird dem Aufrufer gemeldet. Nach Behebung der
+Schreibursache kann die Speicherwarteschlange weitere Anmeldungen und das reguläre Schließen ausführen.
 
 Nach Absturz darf eine Sitzung nur bereinigt werden, wenn Eigentümer und alle Helfer nachweislich beendet sind.
 Eine lebende wiederverwendete PID wird konservativ erhalten. Beim Plug-in bleibt ein nicht sicher ermittelter
@@ -70,7 +73,11 @@ Programmordnerwechsel liegt derselbe Bestand unter `D:\Arten-Explorer\temp\altre
 | Gesamt | 15 | 3.037.671 |
 
 Alle 15 SHA-256-Prüfwerte/Größen sind identisch; die ursprünglichen vier Quellen sind nicht mehr vorhanden.
-Nichts gelöscht. `verschiebung.json` im Ziel enthält Quell-/Ziel-/Prüfwertzuordnung und Rückweg.
+Dies beschreibt die Verschiebung vom 4. Oktober. Felix hat am 7. Oktober genau diese 15 Altdateien
+frisch zur endgültigen Entfernung freigegeben; sie wurden einzeln geprüft und entfernt.
+`verschiebung.json` bleibt als Herkunftsbeleg erhalten, stellt die entfernten Bytes aber nicht wieder her.
+Die vollständige Einzelzielquittung und Abschlussgrenze stehen im
+[führenden Auditauftrag, Abschnitt 5.6](audit-auftrag-phase-10-5.md#56-vor-audit-umsetzung-und-reale-bereinigung--7-oktober).
 Dieser belegte Altordner wird nicht als neue entbehrliche Sitzung adoptiert oder beim Schließen gelöscht.
 Reparaturentscheidungen, gemeinsame Paarprüfbelege und andere noch benötigte Dateien sind ausdrücklich ausgeschlossen.
 

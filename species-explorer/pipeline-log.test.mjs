@@ -3,12 +3,14 @@ import test from "node:test";
 
 import { formatSpectrogramPipelineLog, formatPipelineSummary, createPipelineTextReader } from "./pipeline-log.mjs";
 import { checkPipelinePublication } from "./pipeline-publication-check.mjs";
-import { createEditableFixture, createTestJpeg } from "./server-test-fixtures.mjs";
+import { createEditableFixture, createTestJpeg, createTestWebp } from "./server-test-fixtures.mjs";
 import { rm, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { createHash } from "node:crypto";
 import { createPipelineController } from "./pipeline-controller.mjs";
+import { validateRepositoryMedia } from "../scripts/validate-media-assets.mjs";
+import { validateImageDecode } from "../scripts/image-validation.mjs";
 
 test("Prozessausgaben erhalten Umlaute und vollständige Zeilen über beliebige Byte-Grenzen", () => {
   const lines = [], errors = [];
@@ -86,16 +88,15 @@ test("Lokale Veröffentlichungsprüfung verwendet dieselben Medienregeln wie CI"
   const root = await createEditableFixture();
   t.after(() => rm(root, { recursive: true, force: true }));
   const map = join(root, "species-assets", "Amsel", "map.jpg");
-  const webp = Buffer.alloc(30);
-  webp.write("RIFF", 0); webp.writeUInt32LE(22, 4); webp.write("WEBPVP8X", 8);
+  const webp = createTestWebp(1);
   await writeFile(map, createTestJpeg(640, 480));
   await writeFile(join(root, "species-assets", "Amsel", "portrait.webp"), webp);
   await writeFile(join(root, "species-assets", "Amsel", "spectrogram.webp"), webp);
   const before = await readFile(map);
-  assert.equal(checkPipelinePublication(root).ok, true);
+  assert.equal((await checkPipelinePublication(root)).ok, true);
   assert.deepEqual(await readFile(map), before);
   await rm(map);
-  const failed = checkPipelinePublication(root);
+  const failed = await checkPipelinePublication(root);
   assert.equal(failed.ok, false);
   assert.match(failed.message, /map.jpg: Karte fehlt.*Lokale Änderungen bleiben erhalten/s);
 });
@@ -111,12 +112,31 @@ test("Explorer unterdrückt nur doppelte Berichte und prüft Medien vor Git-Akti
   assert.match(update, /args.mode === "nc-sounds" \? "nicht geprüft"/);
 });
 
+test("Während asynchroner Bildprüfung geänderte Karte entwertet Freigabe, ohne die Fremdänderung zu überschreiben", async (t) => {
+  const root = await createEditableFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const assetRoot = join(root, "species-assets", "Amsel"), map = join(assetRoot, "map.jpg");
+  await writeFile(map, createTestJpeg(640, 480));
+  for (const name of ["portrait.webp", "spectrogram.webp"]) await writeFile(join(assetRoot, name), createTestWebp(1));
+  const foreign = createTestJpeg(645, 480);
+  let changed = false;
+  const checked = await checkPipelinePublication(root, (repoRoot) => validateRepositoryMedia(repoRoot, {
+    async decodeImage(buffer, options) {
+      const result = await validateImageDecode(buffer, options);
+      if (!changed) { changed = true; await writeFile(map, foreign); }
+      return result;
+    },
+  }));
+  assert.equal(checked.ok, false); assert.match(checked.message, /während der Medienprüfung geändert/);
+  assert.deepEqual(await readFile(map), foreign);
+  assert.equal((await checkPipelinePublication(root)).ok, true);
+});
+
 test("Transfer stoppt vor Git bei fehlender Karte oder unveröffentlichtem Generator und bleibt wiederholbar", async (t) => {
   const root = await createEditableFixture();
   t.after(() => rm(root, { recursive: true, force: true }));
   const assets = join(root, "species-assets", "Amsel");
-  const webp = Buffer.alloc(30);
-  webp.write("RIFF", 0); webp.writeUInt32LE(22, 4); webp.write("WEBPVP8X", 8);
+  const webp = createTestWebp(1);
   await writeFile(join(assets, "portrait.webp"), webp);
   await writeFile(join(assets, "spectrogram.webp"), webp);
   await rm(join(assets, "map.jpg"));

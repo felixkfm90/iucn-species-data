@@ -44,6 +44,8 @@ const explorerDetailMedia = window.SpeciesExplorerDetailMedia;
 if (!explorerDetailMedia) throw new Error("Explorer-Detailmedien konnten nicht geladen werden.");
 const explorerDetailView = window.SpeciesExplorerDetailView;
 if (!explorerDetailView) throw new Error("Explorer-Detailansicht konnte nicht geladen werden.");
+const explorerWebsitePages = window.SpeciesExplorerWebsitePages;
+if (!explorerWebsitePages) throw new Error("Explorer-Websiteanzeige konnte nicht geladen werden.");
 const explorerSelection = window.SpeciesExplorerSelection;
 if (!explorerSelection) throw new Error("Explorer-Artauswahl konnte nicht geladen werden.");
 const explorerAssetReview = window.SpeciesExplorerAssetReview;
@@ -54,6 +56,8 @@ const explorerPipeline = window.SpeciesExplorerPipeline;
 if (!explorerPipeline) throw new Error("Explorer-Pipelineanzeige konnte nicht geladen werden.");
 const explorerBackupWorkflow = window.SpeciesExplorerBackupWorkflow;
 if (!explorerBackupWorkflow) throw new Error("Explorer-Backupablauf konnte nicht geladen werden.");
+const explorerBackupHistory = window.SpeciesExplorerBackupHistory;
+if (!explorerBackupHistory) throw new Error("Explorer-Sicherungsübersicht konnte nicht geladen werden.");
 const explorerPipelineWorkflow = window.SpeciesExplorerPipelineWorkflow;
 if (!explorerPipelineWorkflow) throw new Error("Explorer-Pipelineablauf konnte nicht geladen werden.");
 const explorerTaxonomyMaintenance = window.SpeciesExplorerTaxonomyMaintenance;
@@ -183,7 +187,6 @@ const {
   renderBackupPreview,
 } = createPipelinePreviewRenderer({ escapeHtml, formatBytes });
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
-
 const elements = {
   speciesCount: document.querySelector("#species-count"),
   assetIssues: document.querySelector("#asset-issues"),
@@ -204,6 +207,7 @@ const elements = {
   validationReportDetail: document.querySelector("#validation-report-detail"),
   validationSpecial: document.querySelector("#validation-special"),
   validationDetails: document.querySelector("#validation-details"),
+  websitePagesSummary: document.querySelector("#website-pages-summary"), websitePagesCheck: document.querySelector("#website-pages-check"),
   search: document.querySelector("#search"),
   statusFilter: document.querySelector("#status-filter"),
   flagFilter: document.querySelector("#flag-filter"),
@@ -294,21 +298,16 @@ const elements = {
   detailPanel: document.querySelector("#detail-panel"),
   itemTemplate: document.querySelector("#species-item-template"),
 };
-
 const showQuickConfirm = createQuickConfirm({
   documentRef: document,
   escapeHtml,
   createDialogController,
 });
-
 const renderDetail = explorerDetailView.createDetailViewRenderer({
   state,
   elements,
   escapeHtml,
-  formatBytes,
-  formatIucnFetchDate,
-  formatIucnStatus,
-  assetStatusText,
+  formatBytes, formatIucnFetchDate, formatIucnStatus, assetStatusText,
   dataRows,
   formatSexSpecificDataValue,
   iucnStatusIconUrl,
@@ -320,9 +319,7 @@ const renderDetail = explorerDetailView.createDetailViewRenderer({
   creditLinkWithLicense,
   assetVersionKey,
   versionedAssetUrl,
-  sizeUnits: MANUAL_SIZE_UNITS,
-  weightUnits: MANUAL_WEIGHT_UNITS,
-  ageUnits: MANUAL_AGE_UNITS,
+  sizeUnits: MANUAL_SIZE_UNITS, weightUnits: MANUAL_WEIGHT_UNITS, ageUnits: MANUAL_AGE_UNITS,
   parseManualMeasurement,
   renderUnitOptions,
   renderManualMeasurementEditor,
@@ -337,12 +334,10 @@ const renderDetail = explorerDetailView.createDetailViewRenderer({
   setupSpeciesEditor: (...args) => setupSpeciesEditor(...args),
   setupSpeciesRefresh: (...args) => setupSpeciesRefresh(...args),
   setupSpeciesDelete: (...args) => setupSpeciesDelete(...args),
+  renderWebsiteStatus: explorerWebsitePages.renderWebsiteStatus, renderWebsiteHint: explorerWebsitePages.renderWebsiteHint,
 });
 
-const {
-  selectSpecies,
-  hasOpenDialog,
-} = createSpeciesSelectionController({
+const { selectSpecies, hasOpenDialog, refreshListSelection } = createSpeciesSelectionController({
   state,
   elements,
   windowRef: window,
@@ -369,11 +364,15 @@ const {
   escapeHtml,
   iucnStatusIconUrl,
   iucnTrendIconUrl,
-  filterSpecies: globalThis.SpeciesExplorerFilters.filterSpecies,
+  filterSpecies: (species, filters) => globalThis.SpeciesExplorerFilters.filterSpecies(species,
+    { ...filters, websitePagesSnapshot: state.websitePagesSnapshot }),
   resolveDatabaseStatus,
   databaseStatusLabel,
   onSpeciesSelect: (id) => selectSpecies(id),
+  onSpeciesListRendered: refreshListSelection,
 });
+
+const websitePagesController = explorerWebsitePages.createWebsitePagesController({ state, elements, fetchJson, escapeHtml, onChange: applyFilters });
 
 const {
   refreshExplorerModelOnly,
@@ -388,7 +387,7 @@ const {
   ensureSessionToken,
   loadExplorerSnapshot,
   fetchRevision,
-  updateSummary,
+  updateSummary: (summary) => { updateSummary(summary); websitePagesController.renderOverview(); },
   updateValidation,
   updatePendingChanges,
   populateStatusFilter,
@@ -585,6 +584,7 @@ const {
 });
 
 setupBackupSettings({ state, elements, fetchJson, createDialogController });
+explorerBackupHistory.createBackupHistoryController({ state, elements, fetchJson, createDialogController, showQuickConfirm, loadData, escapeHtml, formatDate, formatBytes, backupRetentionText });
 setupPipelineControl();
 setupTaxonomyMaintenance();
 setupTaxonomyMaster();
@@ -595,3 +595,4 @@ window.speciesExplorerDesktop?.onTaxonomyCorrectionRequest?.((request) => {
 });
 setupNewSpeciesCreator();
 void startLifecycle();
+void websitePagesController.start();

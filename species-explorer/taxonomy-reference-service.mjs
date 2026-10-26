@@ -1,3 +1,4 @@
+import { classificationRetentionForTaxon } from "./taxonomy-classification-retention.mjs";
 import path from "node:path";
 
 import { readActiveTaxonomyCorrectionPointer } from "./taxonomy-correction-release.mjs";
@@ -464,7 +465,9 @@ export class TaxonomyReferenceService {
     const localResults = mergeMasterAndReferenceResults(
       searchOptions.query,
       master.results,
-      base.results,
+      base.results.filter(result => !masterStore?.retainsProviderRecords?.([
+        { provider: "catalogue-of-life", providerRecordId: result.sourceId },
+      ])),
       searchOptions.limit,
     );
     const baseHasExactMatch = localResults.some(
@@ -486,7 +489,7 @@ export class TaxonomyReferenceService {
     const combined = mergeSearchResults(
       searchOptions.query,
       localResults,
-      supplements,
+      supplements.filter(result => !masterStore?.retainsProviderRecords?.(result.records || [])),
       searchOptions.limit,
     );
     const results = mergeMasterAndReferenceResults(searchOptions.query, master.results, combined, searchOptions.limit);
@@ -527,7 +530,7 @@ export class TaxonomyReferenceService {
     };
   }
 
-  async taxon(reference) {
+  async taxon(reference, { assignmentBinding = false } = {}) {
     const normalizedReference = normalizeTaxonReference(reference);
     const store = await this.requireStore();
     const masterStore = await this.ensureMasterStore();
@@ -536,9 +539,18 @@ export class TaxonomyReferenceService {
       : normalizedReference.startsWith("stx_")
         ? await this.supplementService?.taxon(normalizedReference)
         : store.taxon(normalizedReference);
+    let providerRecords = [];
+    if (result && !result.masterTaxonId) {
+      const records = normalizedReference.startsWith("stx_")
+        ? (this.supplementService?.findProviderOnlyTaxon?.(normalizedReference)?.records || result.records || [])
+        : [{ provider: "catalogue-of-life", providerRecordId: result.source_id || result.sourceId }];
+      providerRecords = records.map(record => ({ provider: record.provider, providerRecordId: String(record.providerRecordId || "").trim() }))
+        .sort((left, right) => `${left.provider}|${left.providerRecordId}`.localeCompare(`${right.provider}|${right.providerRecordId}`, "en"));
+      if (masterStore?.retainsProviderRecords?.(records)) result = { ...result, assignmentAllowed: false };
+    }
     // A cached CoL/supplement result may still be selected after a master update.
     // Resolve only an exact, rank- and kingdom-bound unique active master match.
-    if (result && !result.masterTaxonId && masterStore) {
+    if (result && !result.masterTaxonId && result.assignmentAllowed !== false && masterStore) {
       const kingdom = typeof result.kingdom === "object"
         ? result.kingdom?.scientificName || result.kingdom?.id : result.kingdom;
       if (kingdom && result.rank) {
@@ -563,12 +575,28 @@ export class TaxonomyReferenceService {
       : normalizedReference.startsWith("stx_")
         ? { releaseId: "Versionierter Ergänzungsausschnitt" }
         : store.status();
+    if (assignmentBinding && !normalizedReference.startsWith("mtx_") && (!providerRecords.length || providerRecords.some(record => !record.provider || !record.providerRecordId))) {
+      throw createHttpError("Die Herkunft der ausgewählten Taxonomiereferenz kann nicht mehr geprüft werden.", 409);
+    }
     return {
       available: true,
       ...result,
       releaseId: status.releaseId || status.candidateId,
       source: result.source || "Catalogue of Life",
+      ...(assignmentBinding ? { assignmentBinding: { reference: normalizedReference, providerRecords } } : {}),
     };
+  }
+
+  async assertAssignable(reference) {
+    const id = String(reference ?? "").trim();
+    if (!/^(?:mtx_[a-f0-9]{32}|stx_[a-f0-9]{24}|[0-9]+)$/.test(id)) throw createHttpError("Die ausgewählte Taxonkennung ist ungültig.", 400);
+    const store = await this.ensureMasterStore();
+    const taxon = id.startsWith("mtx_") ? store?.taxon(id) : await this.taxon(id, { assignmentBinding: true });
+    if (!taxon) throw createHttpError("Das ausgewählte Mastertaxon ist nicht mehr vorhanden.", 409);
+    if (taxon.assignmentAllowed === false || classificationRetentionForTaxon(taxon)) {
+      throw Object.assign(createHttpError("Dieses Taxon bleibt nur als historischer Bestand erhalten und kann nicht für eine neue Art übernommen werden.", 409), { code: "classification-source-retained" });
+    }
+    return { ...taxon, assignmentBinding: taxon.assignmentBinding || { reference: id, providerRecords: [] } };
   }
 
   async markResearched(payload = {}) {

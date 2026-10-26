@@ -363,6 +363,9 @@ export function createSpeciesEditOperations({
       metadataUpdates.push("credits.json", "portrait.json");
     }
 
+    // Historical restoration binds its selected backup and current sources again
+    // here. A failed guard must not roll back a newer external source change.
+    await preview.beforeWriteGuard?.();
     let assetDirectoryMoved = false;
     try {
       if (safeNameChanged && existsSync(oldAssetDirectory)) {

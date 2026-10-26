@@ -1,6 +1,7 @@
 import { tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { test } from "node:test";
@@ -74,6 +75,43 @@ async function fixture(t, count = 510) {
   return { base, root, rows, options, job: () => prepareMasterJob(options()) };
 }
 const json = async (file) => JSON.parse(await fs.readFile(file, "utf8"));
+
+test("Gesicherte Eingänge werden vor Rezept und Prüfsummenprüfung ohne erfundenen Fortschritt angekündigt", async (t) => {
+  const f = await fixture(t, 10), options = f.options(), progress = [];
+  let inputsRead = false;
+  const job = await prepareMasterJob({ ...options, colRecords: (async function* () {
+    yield* options.colRecords;
+    inputsRead = true;
+  })(), onProgress(event) {
+    progress.push(event);
+    if (event.phase !== "Eingangsstand prüfen") return;
+    assert.equal(inputsRead, true);
+    const jobsRoot = path.join(f.root, "master", "build-jobs");
+    const jobs = readdirSync(jobsRoot).filter((name) => name.startsWith("job-"));
+    assert.equal(jobs.length, 1);
+    assert.equal(existsSync(path.join(jobsRoot, jobs[0], "col.jsonl")), true);
+    assert.equal(existsSync(path.join(jobsRoot, jobs[0], "recipe.json")), false);
+    assert.equal(event.current, null);
+    assert.equal(event.total, null);
+    assert.equal(event.percent, null);
+    assert.match(event.message, /Prüfsummen/);
+  } });
+  assert.deepEqual(progress.map(({ phase }) => phase), ["Eingangsstand prüfen", "Auftrag gesichert"]);
+  await verifyMasterJob(f.root, await json(path.join(job.directory, "recipe.json")));
+});
+
+test("Prüfsummenhinweis umgeht keine frische Eingangsprüfung oder erhält ein ungültiges neues Rezept", async (t) => {
+  const f = await fixture(t, 10), guard = path.join(f.base, "guard.json"), progress = [];
+  await fs.writeFile(guard, "[]");
+  await assert.rejects(prepareMasterJob({ ...f.options(), guardFiles: [guard], onProgress(event) {
+    progress.push(event.phase);
+    if (event.phase === "Eingangsstand prüfen") writeFileSync(guard, "[1]");
+  } }), { code: "MASTER_JOB_STALE" });
+  assert.deepEqual(progress, ["Eingangsstand prüfen"]);
+  assert.deepEqual((await fs.readdir(path.join(f.root, "master", "build-jobs"))).filter((name) => name.startsWith("job-")), []);
+  assert.equal(await fs.readFile(guard, "utf8"), "[1]");
+});
+
 function cursor(directory) {
   const database = new DatabaseSync(path.join(directory, "candidate", "taxonomy-master.sqlite"));
   try {

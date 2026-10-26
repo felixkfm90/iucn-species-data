@@ -367,7 +367,7 @@ local function buildProgressText(processed, total)
   return formatInteger(processed)
     .. " von "
     .. formatInteger(total)
-    .. " Fotos · "
+    .. " Katalogdateien geprüft · "
     .. string.gsub(string.format("%.1f", percent), "%.", ",")
     .. " %"
 end
@@ -385,7 +385,7 @@ local function buildIndexWindow(catalog, restart)
     props.status = restart
       and "Der Statistikindex wird vollständig neu aufgebaut."
       or "Der Statistikindex wird vorbereitet."
-    props.progress = "Noch keine Fotos verarbeitet."
+    props.progress = "Noch keine Katalogdateien geprüft."
     props.toggleTitle = "Pausieren"
 
     local function updateControls(status, title)
@@ -479,7 +479,7 @@ local function buildIndexWindow(catalog, restart)
           action = function()
             if running then
               pauseRequested = true
-              updateControls("Pause wird nach dem aktuellen Fotoblock gespeichert ...", "Pausieren")
+              updateControls("Pause wird nach dem aktuellen Dateiblock gespeichert ...", "Pausieren")
             else
               startWorker()
             end
@@ -520,6 +520,11 @@ end
 
 local function csvField(value)
   local text = tostring(value or "")
+  -- CSV-Quotes schützen Trennzeichen, verhindern aber keine Tabellenformeln.
+  -- Auch vorangestellte Leer-/Steuerzeichen können Tabellenprogramme ignorieren.
+  if string.find(text, "^[%s]*[=+%@%-]") or string.find(text, "^[\t\r\n]") then
+    text = "'" .. text
+  end
   return '"' .. string.gsub(text, '"', '""') .. '"'
 end
 
@@ -787,6 +792,7 @@ local function chooseExport(catalog, hasIndex)
           title = "Für „Nur markierte Fotos“ gilt die Auswahl beim Klick auf „Exportieren“. "
             .. "Fotozahlen und Art-Favoriten beziehen sich ausschließlich auf diese Auswahl.",
           width_in_chars = 64,
+          height_in_lines = 4,
         }),
       }),
     })
@@ -839,6 +845,20 @@ local function exportStatistics(catalog, statistics)
     local exportResult = statistics
     if choice.scope == "selection" then
       exportResult = selectionStatistics(catalog, choice.photos)
+    else
+      -- Eine zuvor gestartete FN-Aktion kann während der Exportauswahl
+      -- abgeschlossen werden. Katalogexporte müssen den gespeicherten
+      -- aktuellen Index lesen statt den alten Dashboard-Snapshot verwenden.
+      exportResult = select(1, Statistics.load(catalog))
+      if not exportResult then
+        LrDialogs.message(
+          "Katalogstatistik ist nicht mehr aktuell",
+          "Der Katalog hat sich seit dem Öffnen geändert. Bitte Statistik neu aufbauen; "
+            .. "markierte Fotos können weiterhin direkt exportiert werden.",
+          "info"
+        )
+        return
+      end
     end
     if not exportResult then
       return
@@ -864,12 +884,16 @@ local function missingIndexContents(factory)
       title = "Es ist kein aktueller Katalogindex vorhanden. Für Katalogstatistik und Katalogexport "
         .. "bitte „Statistik neu aufbauen“ wählen. Markierte Fotos können sofort exportiert werden.",
       width_in_chars = 72,
+      height_in_lines = 4,
     }),
   })
 end
 
 local function showDashboard(catalog, statistics)
   while true do
+    -- Auch beim Rückweg aus dem Exportdialog den tatsächlichen Index neu
+    -- lesen. FN-Zuweisungen übernehmen ihren Statistikstand synchron.
+    statistics = select(1, Statistics.load(catalog))
     local result = LrFunctionContext.callWithContext("FN Wildlife Statistik", function(context)
       local factory = LrView.osFactory()
       local props = LrBinding.makePropertyTable(context)

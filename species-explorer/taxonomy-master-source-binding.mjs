@@ -3,9 +3,13 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { masterFileFingerprint } from "./taxonomy-master-inputs.mjs";
 import { latestProviderSliceVersion, providerSliceManifestPath, providerSliceDataPath } from "./taxonomy-master-slices.mjs";
-import { readActiveTaxonomyPointer, taxonomyActivePointerPath, taxonomyDatabasePath, taxonomyReleaseManifestPath } from "./taxonomy-storage.mjs";
+import { readActiveTaxonomyPointer, taxonomyActivePointerPath, taxonomyDatabasePath, taxonomyReleaseManifestPath, loadNodeSqlite } from "./taxonomy-storage.mjs";
 import { assertPendingClassificationAutomation } from "./taxonomy-classification-automation.mjs";
 import { relocatedStoragePath } from "./storage-paths.mjs";
+import { assertClassificationRetentionUsage } from "./taxonomy-classification-retention-usage.mjs";
+import { readIdentityReview } from "./taxonomy-identity-review.mjs";
+import { readIdentityRegistry } from "./taxonomy-identity-registry.mjs";
+import { taxonomyMasterDatabasePath } from "./taxonomy-master-storage.mjs";
 
 const PROVIDERS = ["inaturalist", "gbif", "worms", "wikidata", "animalia"];
 async function fingerprint(filename) {
@@ -13,9 +17,23 @@ async function fingerprint(filename) {
   catch (error) { if (error.code === "ENOENT") return null; throw error; }
 }
 
+// The optional pending document does not replace the applied registry in an
+// installed master. Read only identity tables; never enumerate taxonomy rows.
+export async function readMasterBuildIdentityRegistry(taxonomyRoot) {
+  const pending = await readIdentityReview(taxonomyRoot);
+  if (pending) return pending.registry;
+  const filename = taxonomyMasterDatabasePath(taxonomyRoot);
+  try { await fs.access(filename); }
+  catch (error) { if (error.code === "ENOENT") return undefined; throw error; }
+  const { DatabaseSync } = await loadNodeSqlite();
+  const database = new DatabaseSync(filename, { readOnly: true });
+  try { return readIdentityRegistry(database); }
+  finally { database.close(); }
+}
+
 // Enumerate TODAY's selection, not only the files which existed at job creation.
 // No network request and no SQLite open. Called for preparation/resume, not polling.
-export async function readMasterSourceBinding(taxonomyRoot, selection) {
+export async function readMasterSourceBinding(taxonomyRoot, selection, { classificationRetention = null } = {}) {
   if (!selection?.speciesListPath || !selection?.correctionsPath) throw new Error("Projektdateien für den Masteraufbau fehlen.");
   const reference = await readActiveTaxonomyPointer(taxonomyRoot);
   const versions = await Promise.all(PROVIDERS.map(async (provider) => [provider, await latestProviderSliceVersion(taxonomyRoot, provider)]));
@@ -31,8 +49,10 @@ export async function readMasterSourceBinding(taxonomyRoot, selection) {
   // from this cache affect selection; unrelated searches must not stale a job.
   const retainedRevision = createHash("sha256").update(JSON.stringify(await readRetainedMasterTaxa(taxonomyRoot))).digest("hex");
   const automation = await assertPendingClassificationAutomation(taxonomyRoot);
+  const retention = await assertClassificationRetentionUsage(taxonomyRoot, classificationRetention, { full: false });
   return { reference: reference?.activeRelease || null, versions, retainedRevision,
     ...(automation ? { classificationAutomation: automation } : {}),
+    ...(retention ? { classificationRetention: retention } : {}),
     files: await Promise.all(files.map(async (filename) => [path.resolve(filename), await fingerprint(filename)])) };
 }
 

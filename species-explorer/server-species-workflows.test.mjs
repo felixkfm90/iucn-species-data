@@ -1,8 +1,10 @@
 import { registerFixtureCleanup } from "./server-test-fixtures.mjs";
 import assert from "node:assert/strict";
 import fs, { existsSync } from "node:fs";
+import fsPromises from "node:fs/promises";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -11,6 +13,8 @@ import {
   isExplorerAlreadyReachable,
 } from "./server.mjs";
 import { buildExplorerModel } from "./explorer-model.mjs";
+import { TaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
+import { TaxonomyMasterService } from "./taxonomy-master-service.mjs";
 import {
   inspectJpeg,
   inspectMp3,
@@ -159,6 +163,178 @@ test("Bearbeiten braucht Vorschau, validiert und legt vor dem Speichern ein Back
   const validation = await (await fetch(`${baseUrl}/api/validation`)).json();
   assert.equal(validation.status, "issues");
   assert.equal(validation.data.mismatchSpeciesCount, 1);
+});
+
+test("Ältere Artenlistenstände werden über Vorschau artweise zurückgeholt und veraltete Bestätigungen verweigert", async (context) => {
+  const repoRoot = await createEditableFixture();
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  const listPath = join(repoRoot, "species_list.json");
+  const dataPath = join(repoRoot, "speciesData.json");
+  const input = JSON.parse(await readFile(listPath, "utf8"));
+  const generated = JSON.parse(await readFile(dataPath, "utf8"));
+  input.push({ ...input[0], german: "Drossel", genus: "Turdus", species: "philomelos", english: "Song Thrush" });
+  generated.push({ ...generated[0], URLSlug: "turdusphilomelos", "Deutscher Name": "Drossel", "Wissenschaftlicher Name": "Turdus philomelos", "Englischer Name": "Song Thrush", Species: "philomelos" });
+  await writeFile(listPath, JSON.stringify(input));
+  await writeFile(dataPath, JSON.stringify(generated));
+  const backupDir = join(repoRoot, "species-explorer", "backups");
+  await mkdir(backupDir, { recursive: true });
+  const older = structuredClone(input);
+  older[0].english = "Blackbird (earlier)";
+  older[0].weight = "ca. 70-100 g";
+  older[1].english = "Old foreign species value";
+  const backupId = "species_list-20261008T010101Z-Amsel-1234abcd.json";
+  const selectedPath = join(backupDir, backupId);
+  await writeFile(selectedPath, JSON.stringify(older));
+  const mediaPath = join(repoRoot, "species-assets", "Amsel", "sound.mp3");
+  const mediaBefore = await readFile(mediaPath);
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  const address = await app.listen();
+  cleanupFixture(app);
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const api = `${baseUrl}/api/species/turdusmerula/backups`;
+  const post = (action, payload) => fetch(`${api}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  const listResponse = await fetch(api);
+  assert.equal(listResponse.status, 200);
+  const history = await listResponse.json();
+  assert.equal(history.species.id, "turdusmerula");
+  assert.equal(history.backups.find((entry) => entry.backupId === backupId)?.available, true);
+  const beforePreview = await readFile(listPath, "utf8");
+  const previewResponse = await post("preview", { kind: "species", backupId });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  assert.ok(preview.token);
+  assert.equal(await readFile(listPath, "utf8"), beforePreview);
+  assert.equal((await post("restore", { token: "invalid" })).status, 409);
+  const restored = await post("restore", { token: preview.token });
+  assert.equal(restored.status, 200, restored.status === 200 ? "" : await restored.clone().text());
+  const current = JSON.parse(await readFile(listPath, "utf8"));
+  const currentGenerated = JSON.parse(await readFile(dataPath, "utf8"));
+  assert.equal(current[0].english, "Blackbird (earlier)");
+  assert.equal(current[0].weight, "ca. 70-100 g");
+  assert.deepEqual(current[1], input[1]);
+  assert.equal(currentGenerated[0]["Englischer Name"], "Blackbird (earlier)");
+  assert.deepEqual(currentGenerated[1], generated[1]);
+  assert.deepEqual(await readFile(mediaPath), mediaBefore);
+  assert.equal((await post("restore", { token: preview.token })).status, 409);
+  older[0].english = "Another old value";
+  await writeFile(selectedPath, JSON.stringify(older));
+  const freshResponse = await post("preview", { kind: "species", backupId });
+  assert.equal(freshResponse.status, 200);
+  const fresh = await freshResponse.json();
+  const independentlyChanged = JSON.parse(await readFile(listPath, "utf8"));
+  independentlyChanged[1].english = "Newer foreign species value";
+  await writeFile(listPath, JSON.stringify(independentlyChanged));
+  const staleResponse = await post("restore", { token: fresh.token });
+  assert.equal(staleResponse.status, 409);
+  assert.deepEqual(JSON.parse(await readFile(listPath, "utf8")), independentlyChanged);
+  const boundResponse = await post("preview", { kind: "species", backupId });
+  assert.equal(boundResponse.status, 200);
+  const bound = await boundResponse.json();
+  await writeFile(selectedPath, JSON.stringify({ unexpected: "changed backup" }));
+  assert.equal((await post("restore", { token: bound.token })).status, 409);
+  assert.deepEqual(JSON.parse(await readFile(listPath, "utf8")), independentlyChanged);
+});
+
+test("Historische Wiederherstellung und Quellen-/Masteraktionen sperren sich in beiden Richtungen", { timeout: 15000 }, async (context) => {
+  const repoRoot = await createEditableFixture();
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  const listPath = join(repoRoot, "species_list.json");
+  const sourceText = await readFile(listPath, "utf8");
+  const older = JSON.parse(sourceText);
+  older[0].english = "Earlier fixture blackbird";
+  const backupDir = join(repoRoot, "species-explorer", "backups");
+  await mkdir(backupDir, { recursive: true });
+  const backupId = "species_list-20261001T100000Z-Amsel-aabbccdd.json";
+  await writeFile(join(backupDir, backupId), JSON.stringify(older));
+  const app = await createExplorerServer({ repoRoot, port: 0 });
+  cleanupFixture(app);
+  const address = await app.listen();
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const post = (pathname, payload = {}) => fetch(`${baseUrl}${pathname}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  });
+  const prefix = "/api/species/turdusmerula/backups";
+  const previewResponse = await post(`${prefix}/preview`, { kind: "species", backupId });
+  assert.equal(previewResponse.status, 200);
+  const preview = await previewResponse.json();
+  const scanEntered = Promise.withResolvers();
+  const releaseScan = Promise.withResolvers();
+  const originalReaddir = fsPromises.readdir;
+  const originalMasterStart = TaxonomyMasterService.prototype.startBuild;
+  const originalSourceStart = TaxonomyMaintenanceService.prototype.startUpdate;
+  const started = [];
+  const services = {};
+  let holdScan = true;
+  let restoring;
+  try {
+    // Hold only this fixture's ownership scan after the server acquires its
+    // mutation lock. The actual restore and its data writes are unchanged.
+    fsPromises.readdir = async (filename, ...options) => {
+      if (holdScan && filename === join(repoRoot, "species-explorer", "creation-sessions")) {
+        holdScan = false;
+        scanEntered.resolve();
+        await releaseScan.promise;
+      }
+      return originalReaddir(filename, ...options);
+    };
+    syncBuiltinESMExports();
+    // Retain the real readiness checks, but never launch a download or build.
+    TaxonomyMasterService.prototype.startBuild = function fixtureMasterStart() {
+      services.master = this;
+      this.assertAvailable();
+      started.push("master");
+      return { fixtureOnly: true };
+    };
+    TaxonomyMaintenanceService.prototype.startUpdate = async function fixtureSourceStart() {
+      services.source = this;
+      this.assertOpen();
+      this.assertProjectReady();
+      started.push("source");
+      return { fixtureOnly: true };
+    };
+    restoring = post(`${prefix}/restore`, { token: preview.token });
+    await scanEntered.promise;
+    const sourceDuring = await post("/api/taxonomy/update/start", { token: "fixture-only" });
+    const masterDuring = await post("/api/taxonomy/master/build", { refreshProviders: false });
+    const sourceError = await sourceDuring.json();
+    const masterError = await masterDuring.json();
+    assert.deepEqual({ source: sourceDuring.status, master: masterDuring.status }, { source: 409, master: 409 });
+    assert.match(sourceError.error, /andere Datenbank-Aktion/);
+    assert.match(masterError.error, /bereits eine Datenbank/);
+    assert.deepEqual(started, [], "Kein anderer Dienst darf während der Restoremutation starten");
+    assert.equal(await readFile(listPath, "utf8"), sourceText, "Die angehaltene Wiederherstellung hat noch nicht geschrieben");
+    releaseScan.resolve();
+    assert.equal((await restoring).status, 200);
+    assert.equal(JSON.parse(await readFile(listPath, "utf8"))[0].english, older[0].english);
+    // The completed restoration releases its lock rather than disabling these
+    // routes. Both benign service probes can now reach their post-guard work.
+    assert.equal((await post("/api/taxonomy/update/start", { token: "fixture-only" })).status, 200);
+    assert.equal((await post("/api/taxonomy/master/build", { refreshProviders: false })).status, 200);
+    assert.deepEqual(started, ["source", "master"]);
+    older[0].english = "Another earlier fixture value";
+    await writeFile(join(backupDir, backupId), JSON.stringify(older));
+    for (const [name, status] of [["source", "downloading"], ["master", "building"]]) {
+      const response = await post(`${prefix}/preview`, { kind: "species", backupId });
+      assert.equal(response.status, 200);
+      const plan = await response.json();
+      const previousStatus = services[name].state.status;
+      services[name].state.status = status;
+      try {
+        const before = await readFile(listPath, "utf8");
+        const refused = await post(`${prefix}/restore`, { token: plan.token });
+        assert.equal(refused.status, 409, `${name} muss den Restore verhindern`);
+        assert.match((await refused.json()).error, /laufende Speicherung, Datenaktualisierung/);
+        assert.equal(await readFile(listPath, "utf8"), before);
+      } finally { services[name].state.status = previousStatus; }
+    }
+  } finally {
+    releaseScan.resolve();
+    if (restoring) await restoring;
+    fsPromises.readdir = originalReaddir;
+    syncBuiltinESMExports();
+    TaxonomyMasterService.prototype.startBuild = originalMasterStart;
+    TaxonomyMaintenanceService.prototype.startUpdate = originalSourceStart;
+  }
 });
 
 test("Taxonomie kann kontrolliert geändert und auf automatische Werte zurückgesetzt werden", async (context) => {
@@ -635,6 +811,36 @@ test("Neue Arten werden validiert, kollisionsfrei vorgeschaut und sicher angehä
     body: JSON.stringify({ token: finalPreview.token }),
   });
   assert.equal(reusedSaveResponse.status, 409);
+});
+
+test("Neue Art erklärt den fehlgeschlagenen Updateauftrag schon vor dem Formular und sperrt auch direkte Vorschauaufrufe", async (context) => {
+  const repoRoot = await createEditableFixture();
+  const cleanupFixture = registerFixtureCleanup(context, repoRoot);
+  const taxonomyRoot = join(repoRoot, "own-taxonomy");
+  const masterRoot = join(taxonomyRoot, "master");
+  await mkdir(masterRoot, { recursive: true });
+  const workflowPath = join(masterRoot, "update-workflow.json");
+  const workflowText = JSON.stringify({ schemaVersion: 1,
+    updateRunId: "update-11111111-1111-4111-8111-111111111111", status: "failed", phase: "build",
+    decision: "refresh-and-build", automaticAttemptedCandidates: [], error: "Testaufbau fehlgeschlagen" });
+  await writeFile(workflowPath, workflowText);
+  const before = await readFile(join(repoRoot, "species_list.json"), "utf8");
+  const app = await createExplorerServer({ repoRoot, taxonomyRoot, port: 0 });
+  cleanupFixture(app);
+  const address = await app.listen();
+  const baseUrl = `http://${app.host}:${address.port}`;
+  const response = await fetch(`${baseUrl}/api/species/new/availability`);
+  assert.equal(response.status, 200);
+  const availability = await response.json();
+  assert.equal(availability.available, false);
+  assert.equal(availability.reason, "update-failed");
+  assert.match(availability.message, /fehlgeschlagen/);
+  const blocked = await fetch(`${baseUrl}/api/species/new/preview`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: { german: "Wendehals" } }) });
+  assert.equal(blocked.status, 409);
+  assert.match((await blocked.json()).error, /fehlgeschlagen/);
+  assert.equal(await readFile(join(repoRoot, "species_list.json"), "utf8"), before);
+  assert.equal(await readFile(workflowPath, "utf8"), workflowText);
 });
 
 test("Pipeline-Auswahl trennt fehlende Arten vom vollständigen Lauf", async (context) => {

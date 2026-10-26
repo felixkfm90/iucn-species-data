@@ -102,6 +102,7 @@
     formatIucnStatus,
     iucnStatusIconUrl,
     iucnTrendIconUrl,
+    websitePagesSnapshot = null,
   } = {}) {
     for (const [name, dependency] of Object.entries({
       formatIucnStatus,
@@ -147,6 +148,10 @@
     if (species.missingPortrait) {
       flags.push({ label: "P", className: "portrait", title: "Artporträt fehlt" });
     }
+    if (global.SpeciesExplorerWebsitePages?.pagePresentation(species.id, websitePagesSnapshot).status === "missing") {
+      flags.push({ label: "W", className: "website", role: "img",
+        title: "Art noch nicht auf der FN-Website veröffentlicht" });
+    }
 
     return Object.freeze({
       id: species.id,
@@ -179,6 +184,7 @@
     resolveDatabaseStatus,
     databaseStatusLabel,
     onSpeciesSelect,
+    onSpeciesListRendered = () => {},
     documentRef = global.document,
     OptionConstructor = global.Option,
   } = {}) {
@@ -205,7 +211,7 @@
     function renderDatabaseStatus(stateName = "") {
       const taxonomyProgress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
         master: state.taxonomyMasterSnapshot, reference: state.taxonomyMaintenanceSnapshot,
-        busy: state.taxonomyDatabaseBusy });
+        busy: state.taxonomyDatabaseBusy, preparation: state.taxonomyDatabasePreparation });
       const taxonomyActive = Boolean(
         state.taxonomyDatabaseBusy
         || state.taxonomyMaintenanceSnapshot?.active
@@ -234,11 +240,15 @@
       card.classList.toggle("error", !ok);
     };
 
-    const createFlag = ({ label, className, title }) => {
+    const createFlag = ({ label, className, title, role }) => {
       const span = documentRef.createElement("span");
       span.className = `flag ${className}`;
       span.textContent = label;
       if (title) span.title = title;
+      if (role) {
+        span.setAttribute("role", role);
+        span.setAttribute("aria-label", title);
+      }
       return span;
     };
 
@@ -321,6 +331,8 @@
 
     function renderSpeciesList() {
       const previousScrollTop = elements.speciesList.scrollTop;
+      const focusedId = elements.speciesList.contains?.(documentRef.activeElement)
+        ? documentRef.activeElement?.dataset?.id : "";
       elements.speciesList.replaceChildren();
       elements.visibleCount.textContent = `${state.filtered.length} ${state.filtered.length === 1 ? "Art" : "Arten"}`;
 
@@ -329,19 +341,30 @@
         empty.className = "no-results";
         empty.textContent = "Keine Art passt zu den Filtern.";
         elements.speciesList.append(empty);
+        elements.speciesList.tabIndex = 0;
+        onSpeciesListRendered();
+        if (focusedId) elements.speciesList.focus?.({ preventScroll: true });
         return;
       }
 
+      const entryId = state.filtered.some((entry) => entry.id === state.selectedId)
+        ? state.selectedId : state.filtered[0]?.id;
+      elements.speciesList.tabIndex = -1;
+      let restoreFocusItem = null;
       for (const species of state.filtered) {
         const presentation = createSpeciesListItemPresentation(species, {
           formatIucnStatus,
           iucnStatusIconUrl,
           iucnTrendIconUrl,
+          websitePagesSnapshot: state.websitePagesSnapshot,
         });
         const item = elements.itemTemplate.content.firstElementChild.cloneNode(true);
         item.dataset.id = presentation.id;
         item.classList.toggle("active", presentation.id === state.selectedId);
         item.setAttribute("aria-selected", String(presentation.id === state.selectedId));
+        item.tabIndex = presentation.id === entryId ? 0 : -1;
+        if (presentation.id === focusedId) restoreFocusItem = item;
+        else if (!restoreFocusItem && presentation.id === entryId) restoreFocusItem = item;
         item.querySelector("strong").textContent = presentation.germanName;
         item.querySelector("em").textContent = presentation.scientificName;
 
@@ -354,6 +377,8 @@
       }
 
       elements.speciesList.scrollTop = previousScrollTop;
+      onSpeciesListRendered();
+      if (focusedId) restoreFocusItem?.focus?.({ preventScroll: true });
     }
 
     return Object.freeze({

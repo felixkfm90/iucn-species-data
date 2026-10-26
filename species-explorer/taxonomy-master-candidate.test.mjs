@@ -810,3 +810,8 @@ test("kanonisiert abweichende Anbieter-Reichsnamen nur im Master und erhält den
     database.close();
   }
 });
+
+test('Masterstatus: default full lifecycle mode cannot opt out of candidate validation', async (t) => {
+  const root = await createRoot(t);
+  await assert.rejects(inspectTaxonomyMasterLifecycle(root, { deferCandidate: true }), /leichten Laufstatus/);
+});

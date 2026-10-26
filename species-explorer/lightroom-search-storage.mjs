@@ -7,7 +7,7 @@ import { publishedTaxonomyDirectory, assertSeparatePublicationAllowed } from "./
 
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
-export const LIGHTROOM_SEARCH_SCHEMA_VERSION = 1;
+export const LIGHTROOM_SEARCH_SCHEMA_VERSION = 2;
 
 const SLOTS = Object.freeze({
   active: "active",
@@ -130,6 +130,14 @@ export async function prepareLightroomSearchStaging(searchRoot) {
   return staging;
 }
 
+function assertRetentionPairPublication(verification) {
+  if (verification?.counts?.classificationRetentionCount > 0) {
+    throw Object.assign(new Error("Suchpakete mit zurückbehaltenen Klassifikationen dürfen nur gemeinsam mit dem gebundenen Master über den Paarpfad aktiviert oder zurückgesetzt werden."), {
+      code: "CLASSIFICATION_RETENTION_PAIR_REQUIRED",
+    });
+  }
+}
+
 export async function activateLightroomSearchPackage(searchRoot, {
   verify,
   now = () => new Date(),
@@ -144,6 +152,7 @@ export async function activateLightroomSearchPackage(searchRoot, {
   const previous = lightroomSearchSlotDirectory(root, "previous");
   const displaced = path.join(root, `.previous-displaced-${crypto.randomUUID()}`);
   const verification = await verify({ searchRoot: root, slot: "staging" });
+  assertRetentionPairPublication(verification);
   const stagingManifest = await readLightroomSearchManifest(root, "staging");
   if (!stagingManifest) {
     throw new Error("Das geprüfte Lightroom-Suchpaket besitzt kein Manifest.");
@@ -207,7 +216,7 @@ export async function rollbackLightroomSearchPackage(searchRoot, {
   if (!await pathExists(previous)) {
     throw new Error("Es ist kein vorheriges Lightroom-Suchpaket vorhanden.");
   }
-  await verify({ searchRoot: root, slot: "previous" });
+  assertRetentionPairPublication(await verify({ searchRoot: root, slot: "previous" }));
   const displaced = path.join(root, `.active-displaced-${crypto.randomUUID()}`);
   await safeRename(root, active, displaced);
   try {

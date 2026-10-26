@@ -44,7 +44,11 @@ class FakeDialog {
     this.className = "";
     this.innerHTML = "";
     this.removed = false;
+    this.attributes = new Map();
   }
+
+  setAttribute(name, value) { this.attributes.set(name, String(value)); }
+  getAttribute(name) { return this.attributes.get(name) ?? null; }
 
   querySelector(selector) {
     if (selector === ".quick-confirm-form") return this.form;
@@ -107,7 +111,8 @@ test("Kurzbestätigung maskiert sichtbare Texte und übernimmt den Gefahrenstil"
   assert.match(dialog.innerHTML, /Löschen &amp; prüfen/);
   assert.match(dialog.innerHTML, /Wirklich &quot;löschen&quot;\?/);
   assert.match(dialog.innerHTML, /quick-confirm-ok danger/);
-  assert.equal(dialog.confirm.focused, true);
+  assert.equal(dialog.cancel.focused, true);
+  assert.equal(dialog.confirm.focused, false);
   dialog.cancel.emit("click");
   return pending;
 });
@@ -116,11 +121,25 @@ test("Bestätigen liefert true und schließt mit eindeutigem Grund", async () =>
   const fixture = createFixture();
   const pending = fixture.showQuickConfirm({ title: "Übertragen" });
   const dialog = fixture.appended[0];
+  assert.equal(dialog.confirm.focused, true);
   const event = dialog.form.emit("submit");
   assert.equal(event.defaultPrevented, true);
   assert.equal(await pending, true);
   assert.equal(fixture.controllers[0].closeReason, "confirm");
   assert.equal(dialog.removed, true);
+});
+
+test("Startangebot legt den Anfangsfokus auf Später und dessen Aktivierung bestätigt nichts", async () => {
+  const fixture = createFixture();
+  const pending = fixture.showQuickConfirm({ title: "Datenbank aktualisieren?", confirmLabel: "Jetzt aktualisieren",
+    cancelLabel: "Später", initialFocus: "cancel" });
+  const dialog = fixture.appended[0];
+  assert.equal(dialog.cancel.focused, true);
+  assert.equal(dialog.confirm.focused, false);
+  assert.match(dialog.innerHTML, /quick-confirm-cancel" type="button"/);
+  dialog.cancel.emit("click"); // Activation of the focused cancel button (native Enter is checked in the browser).
+  assert.equal(await pending, false);
+  assert.equal(fixture.controllers[0].closeReason, "cancel");
 });
 
 test("Abbrechen liefert false und entfernt den temporären Dialog", async () => {
@@ -145,4 +164,36 @@ test("Fehlende Abhängigkeiten werden vor dem Öffnen erklärt", () => {
     }),
     /escapeHtml/,
   );
+});
+
+test("Jeder gleichzeitig offene Bestätigungsdialog hat seinen eigenen Titel und Beschreibungsbezug", async () => {
+  const first = createFixture();
+  const second = createFixture();
+  const pendingFirst = first.showQuickConfirm({ title: "Löschen?", message: "Nur die Testart." });
+  const pendingSecond = second.showQuickConfirm({ title: "Übertragen?", message: "Geprüfte Änderungen." });
+  const [one, two] = [first.appended[0], second.appended[0]];
+  for (const dialog of [one, two]) {
+    const titleId = dialog.getAttribute("aria-labelledby");
+    const descriptionId = dialog.getAttribute("aria-describedby");
+    assert.ok(titleId, "Der zugängliche Name muss auf den sichtbaren Titel zeigen");
+    assert.ok(descriptionId, "Der Hinweis muss dem Dialog zugeordnet sein");
+    assert.ok(dialog.innerHTML.includes(`<h2 id="${titleId}">`));
+    assert.ok(dialog.innerHTML.includes(`<p id="${descriptionId}" class="quick-confirm-message">`));
+  }
+  assert.notEqual(one.getAttribute("aria-labelledby"), two.getAttribute("aria-labelledby"));
+  assert.notEqual(one.getAttribute("aria-describedby"), two.getAttribute("aria-describedby"));
+  one.cancel.emit("click");
+  two.form.emit("submit");
+  assert.equal(await pendingFirst, false);
+  assert.equal(await pendingSecond, true);
+});
+
+test("Eine Bestätigung ohne Zusatztext verweist nicht auf eine fehlende Beschreibung", async () => {
+  const fixture = createFixture();
+  const pending = fixture.showQuickConfirm();
+  const dialog = fixture.appended[0];
+  assert.ok(dialog.getAttribute("aria-labelledby"));
+  assert.equal(dialog.getAttribute("aria-describedby"), null);
+  dialog.cancel.emit("click");
+  assert.equal(await pending, false);
 });

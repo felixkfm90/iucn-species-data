@@ -176,8 +176,9 @@ export async function createManagedTempSession({
   await persist(directory, manifest, { initial: true });
   let writes = Promise.resolve();
   const save = () => {
-    writes = writes.then(() => persist(directory, manifest));
-    return writes;
+    const pending = writes.then(() => persist(directory, manifest));
+    writes = pending.catch(() => {});
+    return pending;
   };
   let closedResult = null;
   let finishInProgress = null;
@@ -222,7 +223,8 @@ export async function createManagedTempSession({
     async beginOperation() {
       if (manifest.state !== "open") throw new Error("Keine neue Operation während Temp-Schließung.");
       manifest.operations += 1;
-      await save();
+      try { await save(); }
+      catch (error) { manifest.operations -= 1; throw error; }
       let released = false;
       return async () => {
         if (released) return closedResult;

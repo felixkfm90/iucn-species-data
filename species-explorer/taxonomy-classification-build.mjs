@@ -1,5 +1,6 @@
 import { classificationReviewCase, assertMatchingClassificationCase } from "./taxonomy-classification-review.mjs";
 import { taxonIdentityKey } from "./taxonomy-identity-registry.mjs";
+import { planClassificationRetention } from "./taxonomy-classification-retention.mjs";
 
 const live = (group) => (group?.records || []).filter((record) => record.versionChangeState !== "removed");
 
@@ -22,9 +23,10 @@ export function validateNewClassification({ event, previousState, groups, releas
 // Move the confirmed species group, not the provider's raw kingdom assertion.
 // Subsequent updates must still have a unique matching provider link. An absent
 // or contradictory link is never treated as authorization for a new identity.
-export function carryClassificationGroups({ state, groups }) {
+export function carryClassificationGroups({ state, groups, previousState, classificationRetention, protectedMasterIds, baseVersion, sourceRevision, inputRevision, releases }) {
+  const retentions = [];
   const locations = new Map();
-  if (!state.classifications.size) return;
+  if (!state.classifications.size) return retentions;
   for (const group of groups.values()) for (const record of live(group)) {
     if (record.provider !== "inaturalist") continue;
     const keys = locations.get(record.providerRecordId) || new Set();
@@ -43,6 +45,11 @@ export function carryClassificationGroups({ state, groups }) {
     const records = live(target).filter((record) => record.provider === "catalogue-of-life");
     const checked = classificationReviewCase({ sources: proof.sources, records,
       target: proof.target, baseVersion: proof.baseVersion, colVersion: proof.colVersion });
+    if (checked.category !== "matching-provider-id") {
+      retentions.push(planClassificationRetention({ state, groups, previousState, event, currentCase: checked,
+        classificationRetention, protectedMasterIds, baseVersion, sourceRevision, inputRevision, releases, locations }));
+      continue;
+    }
     assertMatchingClassificationCase(checked);
     const sourceKeys = locations.get(proof.previousProviderIds[0]);
     if (!sourceKeys?.size || sourceKeys.size !== 1 || ![source?.key, target?.key].includes([...sourceKeys][0])) {
@@ -60,4 +67,5 @@ export function carryClassificationGroups({ state, groups }) {
     target.identityKingdom = current.kingdom;
     target.identityClassification = true;
   }
+  return retentions;
 }

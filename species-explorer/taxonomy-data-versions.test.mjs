@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { compareTaxonomyDataVersions, readTaxonomyDataVersions, readVersionJson } from "./taxonomy-data-versions.mjs";
 import { createTaxonomyUpdatePresence } from "./taxonomy-update-presence.mjs";
+import { LIGHTROOM_SEARCH_READER_CONTRACT } from "./lightroom-search-schema.mjs";
 
 function matching() {
   return {
@@ -55,6 +56,18 @@ test("Versionsvergleich trennt Verfügbarkeit, Referenz-/Masterdrift und Paketdr
     { master: { ...matching().master, sources: [] } },
   ]) assert.equal(compareTaxonomyDataVersions({ ...matching(), ...change }).state, "unverifiable");
   assert.equal(compareTaxonomyDataVersions({ ...matching(), available: false }).state, "missing");
+});
+
+test("Versionsvergleich akzeptiert Schema 1 und bindet Schema 2 an seinen Retentionsleservertrag", () => {
+  const data = matching();
+  data.packageManifest.schemaVersion = 2;
+  assert.equal(compareTaxonomyDataVersions(data).state, "unverifiable");
+  data.packageManifest.readerContract = LIGHTROOM_SEARCH_READER_CONTRACT;
+  assert.equal(compareTaxonomyDataVersions(data).state, "current");
+  data.packageManifest.readerContract = "future-reader";
+  assert.equal(compareTaxonomyDataVersions(data).state, "unverifiable");
+  data.packageManifest.schemaVersion = 99;
+  assert.equal(compareTaxonomyDataVersions(data).state, "unverifiable");
 });
 
 test("Versionsvergleich prüft Korrekturschichten und ignoriert nicht mehr anwendbare alte Zeiger", () => {

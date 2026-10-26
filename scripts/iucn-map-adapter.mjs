@@ -5,8 +5,45 @@ import { createManagedTempSession } from "../species-explorer/temp-session.mjs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { iucnBrowserAccessError } from "./iucn-map-access.mjs";
+import { assertPublicHttpUrl } from "../species-explorer/request-security.mjs";
+import { validateImageDecode } from "./image-validation.mjs";
 
 const defaultExecFile = promisify(execFile);
+const REPO_ROOT = fileURLToPath(new URL("../", import.meta.url));
+const MAX_MAP_BYTES = 20 * 1024 * 1024;
+const MAP_FETCH_TIMEOUT_MS = 30_000;
+const TRANSPORT_FAILURES = new Set(["ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_SOCKET", "ERR_SSL_WRONG_VERSION_NUMBER", "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR"]);
+
+async function readBoundedBody(response, controller) {
+  if (!response.body?.getReader) throw new Error("Kartenantwort besitzt keinen lesbaren Downloadstream.");
+  const reader = response.body.getReader(), chunks = [];
+  let received = 0, rejectAbort;
+  const aborted = new Promise((_, reject) => { rejectAbort = reject; });
+  const onAbort = () => {
+    rejectAbort(Object.assign(new Error("Kartenabruf wurde abgebrochen."), { name: "AbortError" }));
+    void reader.cancel().catch(() => {});
+  };
+  controller.signal.addEventListener("abort", onAbort, { once: true });
+  try {
+    if (controller.signal.aborted) onAbort();
+    for (;;) {
+      const { done, value } = await Promise.race([reader.read(), aborted]);
+      if (done) break;
+      received += value.byteLength;
+      if (received > MAX_MAP_BYTES) {
+        controller.abort();
+        throw new Error("JPEG-Datei darf maximal 20 MiB groß sein.");
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks, received);
+  } finally {
+    controller.signal.removeEventListener("abort", onAbort);
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 
 export function isJpegBuffer(buffer) {
   return buffer.length >= 4
@@ -95,7 +132,9 @@ export function createIucnMapAdapter({
   baseUrl = "https://api.iucnredlist.org/api/v4",
   platform = process.platform,
   execFileAsync = defaultExecFile,
-  tempRoot = fileURLToPath(new URL("../", import.meta.url)),
+  tempRoot = REPO_ROOT,
+  validateUrl = assertPublicHttpUrl,
+  timeoutMs = MAP_FETCH_TIMEOUT_MS,
   logger = console,
   powerShellRetryAttempts = 3,
   powerShellRetryDelayMs = 1_500,
@@ -103,6 +142,11 @@ export function createIucnMapAdapter({
   if (typeof fetch !== "function") throw new TypeError("IUCN-Kartenadapter benötigt fetch.");
   if (typeof iucnGET !== "function") throw new TypeError("IUCN-Kartenadapter benötigt iucnGET.");
   if (typeof sleep !== "function") throw new TypeError("IUCN-Kartenadapter benötigt sleep.");
+  if (typeof validateUrl !== "function" || !Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAP_FETCH_TIMEOUT_MS
+      || !Number.isInteger(powerShellRetryAttempts) || powerShellRetryAttempts < 1 || powerShellRetryAttempts > 3
+      || !Number.isFinite(powerShellRetryDelayMs) || powerShellRetryDelayMs < 0 || powerShellRetryDelayMs > 1500) {
+    throw new TypeError("Ungültige URL-Prüfung oder Zeitgrenze für den Kartenabruf.");
+  }
 
   async function findTaxonId(entry) {
     const direct = taxonIdFromTaxon(entry) || numericId(entry["Taxon ID"]);
@@ -117,7 +161,7 @@ export function createIucnMapAdapter({
   }
 
   function requestHeaders(url) {
-    const host = new URL(url).hostname.toLowerCase();
+    const parsed = new URL(url);
     const headers = {
       Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
       "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -129,7 +173,7 @@ export function createIucnMapAdapter({
       "Sec-Fetch-User": "?1",
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
     };
-    if (token && host === "api.iucnredlist.org") {
+    if (token && parsed.origin === "https://api.iucnredlist.org") {
       headers.Authorization = `Bearer ${token}`;
     }
     return headers;
@@ -141,14 +185,6 @@ export function createIucnMapAdapter({
     return (parsed.hostname.toLowerCase() === "iucnredlist.org" || parsed.hostname.toLowerCase() === "www.iucnredlist.org")
       && parsed.pathname.includes("/api/v4/assessments/")
       && parsed.pathname.endsWith("/distribution_map/jpg");
-  }
-
-  function removeQuietly(filePath) {
-    try {
-      if (fs.existsSync(filePath)) fs.rmSync(filePath, { recursive: true, force: true });
-    } catch {
-      // Temporäre Dateien sind für den nächsten Lauf nicht relevant.
-    }
   }
 
   async function fetchWithPowerShell(url) {
@@ -171,21 +207,44 @@ $headers = @{
   'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
 }
 try {
-  $response = Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $Uri -Headers $headers -OutFile $OutFile -ErrorAction Stop
-  $file = Get-Item -LiteralPath $OutFile -ErrorAction Stop
-  $status = 200
-  $contentType = ''
-  if ($response) {
-    if ($response.StatusCode) { $status = [int]$response.StatusCode }
-    if ($response.Headers -and $response.Headers['Content-Type']) { $contentType = ($response.Headers['Content-Type'] -join ';') }
+  $request = [System.Net.HttpWebRequest]::Create($Uri)
+  $request.AllowAutoRedirect = $false
+  $request.Timeout = 30000
+  $request.ReadWriteTimeout = 30000
+  $request.Accept = $headers.Accept
+  $request.UserAgent = $headers.'User-Agent'
+  foreach ($key in $headers.Keys) {
+    if ($key -notin @('Accept', 'User-Agent')) { $request.Headers[$key] = $headers[$key] }
   }
-  [pscustomobject]@{ status = $status; contentType = $contentType; length = [int64]$file.Length } | ConvertTo-Json -Compress
+  $response = $request.GetResponse()
+  $status = [int]$response.StatusCode
+  if ($status -ne 200) { throw "Kartenantwort ist nicht freigegeben (HTTP $status)." }
+  $limit = 20 * 1024 * 1024
+  if ($response.ContentLength -gt $limit) { throw 'JPEG-Datei darf maximal 20 MiB gross sein.' }
+  $inputStream = $response.GetResponseStream()
+  $outputStream = [System.IO.File]::Open($OutFile, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+  $buffer = New-Object byte[] 65536
+  $received = 0
+  while (($read = $inputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+    $received += $read
+    if ($received -gt $limit) { throw 'JPEG-Datei darf maximal 20 MiB gross sein.' }
+    $outputStream.Write($buffer, 0, $read)
+  }
+  [pscustomobject]@{ status = $status; length = [int64]$received } | ConvertTo-Json -Compress
   exit 0
 } catch {
   $status = $null
   if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
-  [pscustomobject]@{ status = $status; error = $_.Exception.Message } | ConvertTo-Json -Compress
+  elseif ($response) { $status = [int]$response.StatusCode }
+  $transportStatus = $null
+  if ($_.Exception -is [System.Net.WebException]) { $transportStatus = $_.Exception.Status.ToString() }
+  [pscustomobject]@{ status = $status; transportStatus = $transportStatus; error = $_.Exception.Message } | ConvertTo-Json -Compress
   exit 1
+} finally {
+  if ($outputStream) { $outputStream.Dispose() }
+  if ($inputStream) { $inputStream.Dispose() }
+  if ($response) { $response.Dispose() }
+  if ($request) { $request.Abort() }
 }`.trim();
     let lastMessage = "";
     for (let attempt = 1; attempt <= powerShellRetryAttempts; attempt++) {
@@ -204,23 +263,35 @@ try {
           },
         );
         const info = JSON.parse(String(stdout || "{}"));
+        if (fs.existsSync(tempFile) && fs.statSync(tempFile).size > MAX_MAP_BYTES) {
+          throw Object.assign(new Error("JPEG-Datei darf maximal 20 MiB groß sein."), { code: "IUCN_MAP_INVALID_RESPONSE" });
+        }
         const buffer = fs.existsSync(tempFile) ? fs.readFileSync(tempFile) : Buffer.alloc(0);
         if (info.status === 200 && buffer.length >= 10_000 && isJpegBuffer(buffer)) {
+          await validateImageDecode(buffer, { format: "jpeg", repoRoot: REPO_ROOT });
           logger.log(attempt > 1
             ? `↪ IUCN-Karte über Windows-WebRequest-Fallback geladen (Versuch ${attempt}).`
             : "↪ IUCN-Karte über Windows-WebRequest-Fallback geladen.");
           return buffer;
         }
-        lastMessage = `keine gültige Karte (${info.status ?? "unbekannt"})`;
+        throw Object.assign(new Error(`IUCN-Kartenantwort ist keine gültige JPEG-Datei (HTTP ${info.status ?? "unbekannt"}).`),
+          { code: "IUCN_MAP_INVALID_RESPONSE" });
       } catch (error) {
+        if (error.code === "IUCN_MAP_INVALID_RESPONSE" || !error.stdout && !error.stderr && !error.killed) throw error;
         const output = String(error.stdout || error.stderr || "").trim();
         lastMessage = error.message;
         if (output) {
+          let info;
           try {
-            const info = JSON.parse(output);
+            info = JSON.parse(output);
             lastMessage = info.error || lastMessage;
           } catch {
             lastMessage = output.slice(0, 200);
+          }
+          if (info?.status) throw iucnBrowserAccessError(url, Number(info.status)) || new Error(lastMessage);
+          if (!["ConnectFailure", "ConnectionClosed", "KeepAliveFailure", "NameResolutionFailure", "Timeout",
+            "ReceiveFailure", "SendFailure", "ProxyNameResolutionFailure"].includes(info?.transportStatus)) {
+            throw new Error(lastMessage);
           }
         }
       } finally {
@@ -235,47 +306,79 @@ try {
     return null;
   }
 
+  async function fetchBoundedResponse(url, { allowNative = false } = {}) {
+    const controller = new AbortController();
+    let rejectAbort, response, receivedHttpResponse = false, transportFailure = false;
+    const aborted = new Promise((_, reject) => { rejectAbort = reject; });
+    const onAbort = () => rejectAbort(Object.assign(new Error("Kartenabruf wurde abgebrochen."), { name: "AbortError" }));
+    controller.signal.addEventListener("abort", onAbort, { once: true });
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      let parsed = await Promise.race([validateUrl(url), aborted]);
+      for (let redirects = 0; redirects <= 5; redirects++) {
+        try {
+          response = await Promise.race([fetch(parsed.href, { headers: requestHeaders(parsed.href),
+            redirect: "manual", signal: controller.signal }), aborted]);
+        } catch (error) {
+          transportFailure = TRANSPORT_FAILURES.has(String(error.cause?.code || error.code || ""));
+          throw error;
+        }
+        receivedHttpResponse = true;
+        if (![301, 302, 303, 307, 308].includes(response.status)) break;
+        const location = response.headers.get("location");
+        await response.body?.cancel();
+        if (!location || redirects === 5) throw new Error("Karten-URL enthält eine ungültige oder zu lange Weiterleitung.");
+        parsed = await Promise.race([validateUrl(new URL(location, parsed)), aborted]);
+      }
+      const denied = iucnBrowserAccessError(parsed.href, response.status);
+      if (denied) throw denied;
+      if ([401, 403].includes(response.status)) throw new Error(`Kartenabruf ist nicht freigegeben (HTTP ${response.status}).`);
+      if (Number(response.headers.get("content-length") || 0) > MAX_MAP_BYTES) {
+        throw new Error("JPEG-Datei darf maximal 20 MiB groß sein.");
+      }
+      return { response, buffer: await readBoundedBody(response, controller) };
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("Karten-URL hat nicht rechtzeitig geantwortet.");
+      // A second transport can recover only an initial network/TLS failure.
+      // HTTP denial, redirect rejection, body and certificate errors are final.
+      if (allowNative && transportFailure && !receivedHttpResponse && !controller.signal.aborted) {
+        const buffer = await fetchWithPowerShell(url);
+        if (buffer) return { response: null, buffer };
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      controller.signal.removeEventListener("abort", onAbort);
+      await response?.body?.cancel().catch(() => {});
+    }
+  }
+
   async function fetchValidJpeg(url, { cacheFile = "", seen = new Set() } = {}) {
     if (seen.has(url)) return null;
+    if (seen.size >= 50) throw new Error("Kartenantwort enthält zu viele weitere Quellen.");
     seen.add(url);
-    let response;
-    try {
-      response = await fetch(url, { headers: requestHeaders(url), redirect: "follow" });
-    } catch (error) {
-      const fallback = await fetchWithPowerShell(url);
-      if (fallback) return fallback;
-      logger.warn(`⚠ JPEG-Abruf bei ${new URL(url).hostname} fehlgeschlagen: ${error.message}`);
-      return null;
-    }
-    if (!response.ok) {
+    const { response, buffer } = await fetchBoundedResponse(url, { allowNative: true });
+    if (response && !response.ok) {
       const host = new URL(url).hostname;
-      const body = await response.text().catch(() => "");
+      const body = buffer.toString("utf8");
       for (const candidate of extractCachedIucnMapUrls(body, cacheFile)) {
         const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
         if (cached) return cached;
       }
-      const fallback = await fetchWithPowerShell(url);
-      if (fallback) return fallback;
-      if (response.status === 403 && host.includes("iucnredlist.org")) {
-        logger.warn("⚠ IUCN-Kartenendpunkt blockiert lokalen Abruf (HTTP 403); prüfe Cache-/Backblaze-Fallback.");
-      } else if (response.status === 401 && host.includes("backblazeb2.com")) {
-        logger.warn("⚠ IUCN-Cache-Datei benötigt einen signierten Backblaze-Link; öffentlicher Cachepfad ist nicht direkt abrufbar.");
-      } else {
-        logger.warn(`⚠ JPEG-Abruf fehlgeschlagen (${response.status}) bei ${host}.`);
-      }
+      logger.warn(`⚠ JPEG-Abruf fehlgeschlagen (${response.status}) bei ${host}.`);
       return null;
     }
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length >= 10_000 && isJpegBuffer(buffer)) return buffer;
-    const contentType = response.headers.get("content-type") || "";
+    if (buffer.length >= 10_000 && isJpegBuffer(buffer)) {
+      await validateImageDecode(buffer, { format: "jpeg", repoRoot: REPO_ROOT });
+      return buffer;
+    }
+    const contentType = response?.headers.get("content-type") || "";
     if (/text|json|html/i.test(contentType) || buffer.length < 2_000_000) {
       for (const candidate of extractCachedIucnMapUrls(buffer.toString("utf8"), cacheFile)) {
         const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
         if (cached) return cached;
       }
     }
-    const fallback = await fetchWithPowerShell(url);
-    if (fallback) return fallback;
     logger.warn(`⚠ JPEG-Abruf bei ${new URL(url).hostname} lieferte keine gültige Kartendatei.`);
     return null;
   }
@@ -284,13 +387,12 @@ try {
     const taxonId = await findTaxonId(entry);
     if (!taxonId) return null;
     const cacheFile = `T${taxonId}A${assessmentId}.jpg`;
+    const seen = new Set();
     try {
-      const pageResponse = await fetch(`https://www.iucnredlist.org/species/${taxonId}/${assessmentId}`, {
-        headers: { Accept: "text/html,application/xhtml+xml", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      });
+      const { response: pageResponse, buffer } = await fetchBoundedResponse(`https://www.iucnredlist.org/species/${taxonId}/${assessmentId}`);
       if (pageResponse.ok) {
-        for (const candidate of extractCachedIucnMapUrls(await pageResponse.text(), cacheFile)) {
-          const cached = await fetchValidJpeg(candidate, { cacheFile });
+        for (const candidate of extractCachedIucnMapUrls(buffer.toString("utf8"), cacheFile).slice(0, 50)) {
+          const cached = await fetchValidJpeg(candidate, { cacheFile, seen });
           if (cached) {
             logger.log(`↪ IUCN-Karte über Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
             return cached;
@@ -299,11 +401,12 @@ try {
       }
     } catch (error) {
       logger.warn(`⚠ IUCN-Cache-Seite für ${name} nicht nutzbar: ${error.message}`);
+      throw error;
     }
     try {
       const cached = await fetchValidJpeg(
         `https://f002.backblazeb2.com/file/cached-individual-maps/${cacheFile}`,
-        { cacheFile },
+        { cacheFile, seen },
       );
       if (cached) {
         logger.log(`↪ IUCN-Karte über öffentlichen Cache gefunden für ${name} (${taxonId}/${assessmentId})`);
@@ -311,6 +414,7 @@ try {
       }
     } catch (error) {
       logger.warn(`⚠ IUCN-Cache-Datei für ${name} nicht nutzbar: ${error.message}`);
+      throw error;
     }
     return null;
   }

@@ -21,9 +21,12 @@ const READ_RESOURCES = new Map([
   ["/api/revision", "revision"],
   ["/api/pending-changes", "pending-changes"],
   ["/api/settings", "settings"],
+  ["/api/species/new/availability", "new-species-availability"],
   ["/api/pipeline/status", "pipeline-status"],
   ["/api/backup/status", "backup-status"],
+  ["/api/backup/archives", "backup-archives"],
   ["/api/reload", "reload"],
+  ["/api/website/species-pages", "website-species-pages"],
 ]);
 
 const POST_ROUTES = new Map([
@@ -36,6 +39,8 @@ const POST_ROUTES = new Map([
   ["/api/taxonomy/update/start", { name: "taxonomy-maintenance", action: "start" }],
   ["/api/taxonomy/update/sequence-start", { name: "taxonomy-maintenance", action: "sequence-start" }],
   ["/api/taxonomy/update/sequence-resume", { name: "taxonomy-maintenance", action: "sequence-resume" }],
+  ["/api/taxonomy/update/sequence-restart-preview", { name: "taxonomy-maintenance", action: "sequence-restart-preview" }],
+  ["/api/taxonomy/update/sequence-restart-build", { name: "taxonomy-maintenance", action: "sequence-restart-build" }],
   ["/api/taxonomy/update/sequence-pause", { name: "taxonomy-maintenance", action: "sequence-pause" }],
   ["/api/taxonomy/update/lightroom-close", { name: "taxonomy-maintenance", action: "lightroom-close" }],
   ["/api/taxonomy/update/rollback", { name: "taxonomy-maintenance", action: "rollback" }],
@@ -97,6 +102,8 @@ export function matchExplorerRoute(method, pathname) {
   if (normalizedPath === "/api/session") return { name: "session" };
 
   if (normalizedMethod === "GET" || normalizedMethod === "HEAD") {
+    const backupsRoute = normalizedPath.match(/^\/api\/species\/([^/]+)\/backups$/);
+    if (backupsRoute) return { name: "edit-backups", encodedId: backupsRoute[1], action: "list" };
     const previewFileRoute = normalizedPath.match(
       /^\/api\/species\/([^/]+)\/assets\/(map|sound|portrait)\/preview-file$/,
     );
@@ -112,6 +119,8 @@ export function matchExplorerRoute(method, pathname) {
   if (normalizedMethod === "POST") {
     const exactRoute = POST_ROUTES.get(normalizedPath);
     if (exactRoute) return { ...exactRoute };
+    const restoreRoute = normalizedPath.match(/^\/api\/species\/([^/]+)\/backups\/(preview|restore)$/);
+    if (restoreRoute) return { name: "edit-backups", encodedId: restoreRoute[1], action: restoreRoute[2] };
 
     for (const [assetType, actions] of Object.entries(ASSET_ACTIONS)) {
       const assetRoute = normalizedPath.match(
@@ -264,6 +273,14 @@ export function createExplorerRequestHandler({
         return;
       }
 
+      if (route.name === "edit-backups") {
+        assertBrowserReadContext(request, expectedOrigin);
+        const id = decodeRouteId(route.encodedId);
+        const payload = route.action === "list" ? {} : await readJsonBody(request);
+        sendJson(response, 200, await operations.editBackups({ id, action: route.action, payload }));
+        return;
+      }
+
       if (route.name === "pipeline") {
         const payload = await readJsonBody(request);
         sendJson(response, 200, await operations.pipeline({ action: route.action, payload }));
@@ -347,7 +364,9 @@ export function createExplorerRequestHandler({
       }
 
       if (route.name === "read") {
-        sendJson(response, 200, await operations.read({ resource: route.resource }));
+        if (["backup-archives", "website-species-pages"].includes(route.resource)) assertBrowserReadContext(request, expectedOrigin);
+        sendJson(response, 200, await operations.read({ resource: route.resource,
+          ...(route.resource === "website-species-pages" ? { searchParams: url.searchParams } : {}) }));
         return;
       }
 

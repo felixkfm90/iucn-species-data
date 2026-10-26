@@ -474,8 +474,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(desktopLauncherSource, /shell\.Run command,\s*0,\s*False/);
   assert.match(shortcutInstallerSource, /CreateShortcut/);
   assert.match(shortcutInstallerSource, /wscript\.exe/);
-  assert.match(restoreStartSource, /Node\.js 18 oder neuer/);
-  assert.match(restoreStartSource, /npm\.cmd install/);
+  assert.match(restoreStartSource, /Node\.js 24 installieren/);
+  assert.match(restoreStartSource, /if %NODE_MAJOR% LSS 24/);
+  assert.match(restoreStartSource, /npm\.cmd ci/);
   assert.match(restoreStartSource, /species:desktop:shortcut/);
   assert.match(restoreStartSource, /start-explorer\.vbs/);
   assert.match(nasBackupSource, /W:\\Website Datenbank Backup/);
@@ -584,7 +585,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(iucnMapAdapterSource, /powerShellRetryAttempts = 3/);
   assert.match(iucnMapAdapterSource, /Neuer Versuch folgt/);
   assert.match(iucnMapAdapterSource, /IUCN_MAP_URL/);
-  assert.match(iucnMapAdapterSource, /Invoke-WebRequest -UseBasicParsing/);
+  // Windows transport behavior and refusal/resource boundaries are exercised
+  // in provider-adapters.test.mjs; this UI contract does not pin its builtin.
   assert.match(iucnMapAdapterSource, /function extractCachedIucnMapUrls\(text, cacheFile = ""\)/);
   assert.match(iucnMapAdapterSource, /cached-individual-maps/);
   assert.match(iucnMapAdapterSource, /\$\{baseUrl\}\/assessments\/\$\{assessmentId\}\/distribution_map\/jpg/);
@@ -938,4 +940,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(cssSource, /button\.danger/);
   assert.match(appSelectionSource, /windowRef\.scrollTo\(scrollPosition\)/);
   assert.doesNotMatch(appSource, /renderSpeciesList\(\);\s*renderDetail\(species\)/);
+});
+
+test("Statusdialog: das verborgene Aktionsraster überstimmt seine sichtbare Gridregel", async () => {
+  const css = await readFile(new URL("./public/app.css", import.meta.url), "utf8");
+  assert.match(css, /\.pipeline-mode-choice\s*\{[^}]*display:\s*grid/s,
+    "Die ausdrücklich geöffnete Aktionsauswahl bleibt ein Raster");
+  assert.match(css, /\.pipeline-mode-choice\[hidden\]\s*\{[^}]*display:\s*none\s*;/s,
+    "Der Statusmodus muss die Autor-Gridregel mit dem engeren Hidden-Selektor ausblenden");
+  assert.doesNotMatch(css, /(?:^|\})\s*\[hidden\]\s*\{/,
+    "Diese Korrektur darf keine globale Hidden-Regel einführen");
 });

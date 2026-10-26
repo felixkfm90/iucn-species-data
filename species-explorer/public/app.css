@@ -434,6 +434,10 @@ button.danger,
   gap: 10px;
 }
 
+.pipeline-mode-choice[hidden] {
+  display: none;
+}
+
 .action-group {
   padding: 0;
   background: #f7faf8;
@@ -829,6 +833,42 @@ button.danger,
 
 .taxonomy-database-dialog {
   width: min(940px, calc(100vw - 24px));
+}
+
+.edit-dialog.backup-history-dialog {
+  width: min(1000px, calc(100vw - 24px));
+}
+
+.backup-history-scroll {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.backup-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.backup-history-table th,
+.backup-history-table td {
+  min-width: 120px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.backup-history-table code {
+  display: inline-block;
+  max-width: 320px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.backup-history-table button {
+  min-height: 36px;
 }
 
 .taxonomy-database-form {
@@ -1590,7 +1630,8 @@ button:focus-visible {
   background: var(--amber-soft);
 }
 
-.flag.map {
+.flag.map,
+.flag.website {
   color: var(--blue);
   background: var(--blue-soft);
 }
@@ -1660,6 +1701,58 @@ button:focus-visible {
   display: grid;
   justify-items: end;
   gap: 7px;
+}
+
+.species-website-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.website-page-link {
+  display: inline-block;
+  padding: 6px 9px;
+  border: 1px solid #83b5a0;
+  border-radius: 5px;
+  color: #155a45;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.website-page-link:hover {
+  background: #e5f2ec;
+  text-decoration: underline;
+}
+
+.website-page-link:focus-visible {
+  outline: 3px solid #155a45;
+  outline-offset: 3px;
+}
+
+.website-page-note {
+  color: #4c5b53;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.website-page-missing {
+  color: #79540c;
+  background: #fff4d6;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+
+.website-pages-overview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.8rem;
 }
 
 .detail-actions {
@@ -2659,6 +2752,7 @@ button:focus-visible {
 }
 
 .taxonomy-reference-result:hover,
+.taxonomy-reference-result[aria-selected="true"],
 .taxonomy-reference-result:focus-visible {
   border-color: #82ad9a;
   background: #f7fbf9;
@@ -4722,6 +4816,19 @@ button:focus-visible {
 }
 
 @media (max-width: 720px) {
+  html,
+  body {
+    height: auto;
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    grid-template-rows: auto;
+  }
+
   .app-header {
     padding: 12px 14px;
     grid-template-columns: 1fr;
@@ -4753,7 +4860,14 @@ button:focus-visible {
 
   .summary-bar > div,
   .summary-bar > div:first-child {
+    min-width: 0;
+    flex-wrap: wrap;
     padding: 11px 8px 11px 0;
+  }
+
+  .summary-bar > div > small {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .summary-bar > div:nth-child(2) {
@@ -4780,7 +4894,7 @@ button:focus-visible {
 
   .workspace {
     display: block;
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .species-panel {

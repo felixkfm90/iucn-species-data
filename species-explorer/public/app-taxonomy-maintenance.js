@@ -7,6 +7,18 @@
     return release.issued ? `${name} vom ${release.issued.split("-").reverse().join(".")}` : name;
   }
 
+  function startupCatalogueUpdateAvailable(status = {}) {
+    const latestRelease = String(status.latest?.releaseId || "").trim();
+    const reference = status.reference || {};
+    const activeRelease = String(status.activeRelease || reference.releaseId || reference.source?.releaseId || "").trim();
+    return status.catalogueUpdateAvailable === true
+      && Boolean(latestRelease)
+      && Number.isFinite(Date.parse(status.latestCheckedAt || ""))
+      && !status.latestCheckError
+      && (reference.available === false || reference.boundedPrototype === true
+        || Boolean(activeRelease && latestRelease !== activeRelease));
+  }
+
   function conflictText(conflicts, details = []) {
     if (!conflicts) return "";
     const parts = [
@@ -55,6 +67,9 @@
   } = {}) {
     let preview = null;
     let pollTimer = null;
+    let statusReadFailures = 0;
+    const statusRetryDelays = [1000, 2000, 4000, 8000, 15000];
+    const readStatus = global.SpeciesExplorerTaxonomyMaster.createTaxonomyStatusReader({ state, fetchJson });
     let startupOfferEnabled = false;
     let startupOfferHandled = false;
     let startupOfferPending = false;
@@ -107,7 +122,9 @@
       `;
     }
 
-    function render(status) {
+    function render(status, { acceptedRead = false } = {}) {
+      if (!acceptedRead) global.SpeciesExplorerTaxonomyMaster.invalidateTaxonomyStatusRead(state, "reference");
+      if (state.taxonomyStatusReadErrors) delete state.taxonomyStatusReadErrors.reference;
       state.taxonomyMaintenanceSnapshot = status;
       state.renderTaxonomyDatabaseOverview?.();
       const active = status.active === true || state.taxonomyDatabaseBusy === true || state.taxonomyMasterSnapshot?.active === true;
@@ -164,7 +181,7 @@
           ? "Geprüfte Version übernehmen"
           : "Datenbank aktualisieren"
         : status.supplementUpdateAvailable
-          ? "Namensbestand aktualisieren"
+          ? "Ergänzungsnamen prüfen"
           : "Datenbank aktualisieren";
 
       if (active) renderDatabaseStatus("taxonomy");
@@ -178,14 +195,24 @@
     }
 
     async function refresh() {
-      try {
-        render(await fetchJson("/api/taxonomy/status"));
-      } catch (error) {
-        elements.taxonomyMaintenanceSummary.textContent = "Taxonomiestatus nicht verfügbar";
-        elements.taxonomyMaintenanceDetail.textContent = error.message;
-        state.taxonomyMaintenanceSnapshot = { status: "failed", error: error.message };
-        state.renderTaxonomyDatabaseOverview?.();
+      const result = await readStatus("/api/taxonomy/status");
+      if (!result.isCurrent()) return;
+      if (!result.error && result.value) {
+        statusReadFailures = 0;
+        render(result.value, { acceptedRead: true });
+        return;
       }
+      const error = result.error || new Error("Kein gültiger Taxonomiestatus verfügbar.");
+      (state.taxonomyStatusReadErrors ||= {}).reference = error.message;
+      elements.taxonomyMaintenanceSummary.textContent = "Taxonomiestatus nicht aktuell";
+      elements.taxonomyMaintenanceDetail.textContent = "Letzter bestätigter Stand; aktuell nicht bestätigt. " + error.message;
+      state.renderTaxonomyDatabaseOverview?.();
+      clearTimeout(pollTimer);
+      const snapshot = state.taxonomyMaintenanceSnapshot || {};
+      const active = snapshot.active === true || state.taxonomyMasterSnapshot?.updateWorkflow?.active === true;
+      const delay = statusRetryDelays[Math.min(statusReadFailures++, statusRetryDelays.length - 1)];
+      pollTimer = active || statusReadFailures <= statusRetryDelays.length
+        ? global.setTimeout(refresh, delay) : null;
     }
 
     async function beginUpdate(options = {}) {
@@ -205,16 +232,18 @@
         || state.taxonomyMasterSnapshot?.active
         || typeof state.updateTaxonomyDatabase !== "function"
         || status.active
-        || !status.updateAvailable
-        || !status.latest
-        || !status.latestCheckedAt
+        || !startupCatalogueUpdateAvailable(status)
       ) {
         return;
       }
       startupOfferPending = true;
       try {
         const result = preview?.hasWork ? preview : await createPreview();
-        if (!result.hasWork) return;
+        // The age of supplementary API results is not a published new version.
+        // Recheck after preview: another window may already have updated CoL,
+        // or the forced release check may have failed while a cached target exists.
+        if (!result.hasWork || result.updateCatalogue !== true || !result.latest?.releaseId
+            || !startupCatalogueUpdateAvailable(state.taxonomyMaintenanceSnapshot)) return;
         await beginUpdate({ startup: true, sourcePreview: result });
       } catch (error) {
         setActionMessage([error.message, ...(error.details || [])].join(" · "), "error");
@@ -243,7 +272,7 @@
           result.hasWork
             ? result.updateCatalogue
               ? `Neuere Datenbankversion verfügbar: ${releaseLabel(result.latest)}.`
-              : "Ein neuer Namensbestand ist verfügbar."
+              : "CoL ist aktuell. Die Ergänzungsnamen können erneut geprüft werden; eine neue Quellenversion ist damit nicht nachgewiesen."
             : "Die Taxonomiedatenbank ist aktuell.",
           result.hasWork ? "info" : "success",
         );

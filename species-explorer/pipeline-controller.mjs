@@ -597,9 +597,11 @@ export function createPipelineController({
       throw Object.assign(new Error("Eine gespeicherte Artanlage wartet auf ihre Rücknahme. Bitte Artanlage abbrechen abschließen, bevor Änderungen übertragen werden."), { statusCode: 409 });
     }
     runtime.state.phase = "Lokale Veröffentlichungsprüfung";
-    const preflight = checkPipelinePublication(repoRoot);
+    const preflight = await checkPipelinePublication(repoRoot);
     appendPipelineLog(preflight.message);
     if (!preflight.ok) { runtime.state.error = preflight.message; return 1; }
+    await assertFreshPipelineTargets();
+    if (await creationAbortRequested()) return -2;
     const sourcePreflight = checkPublicationSources(repoRoot);
     appendPipelineLog(sourcePreflight.message);
     if (!sourcePreflight.ok) { runtime.state.error = sourcePreflight.message; return 1; }
@@ -688,7 +690,9 @@ export function createPipelineController({
     await assertFreshPipelineTargets();
     if (await creationAbortRequested()) { await finishPipelineRun(-2); return; }
     if (runtime.state.guidedSpeciesCreation) {
-      const media = checkPipelinePublication(repoRoot);
+      const media = await checkPipelinePublication(repoRoot);
+      await assertFreshPipelineTargets();
+      if (await creationAbortRequested()) { await finishPipelineRun(-2); return; }
       if (!media.ok) {
         runtime.state.publicationPending = media.message;
         appendPipelineLog(`Artassistent lokal abgeschlossen; Übertragung noch offen: ${media.message}`);

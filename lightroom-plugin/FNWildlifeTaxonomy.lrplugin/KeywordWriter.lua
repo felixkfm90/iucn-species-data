@@ -2,6 +2,7 @@ local LrTasks = import "LrTasks"
 local PluginState = require "PluginState"
 local Statistics = require "Statistics"
 local LocationTimeWriter = require "LocationTimeWriter"
+local KeywordIdFinalizer = require "KeywordIdFinalizer"
 local TaxonomyRanks = require "TaxonomyRanks"
 
 local KeywordWriter = {}
@@ -192,14 +193,29 @@ end
 
 local function removeManagedKeywords(catalog, photo, names, protectedNames)
   local removed = 0
-  for _, name in ipairs(names or {}) do
+  local ok, assigned = LrTasks.pcall(function() return photo:getRawMetadata("keywords") end)
+  if not ok or type(assigned) ~= "table" then
+    error("Lightroom konnte die vorhandenen Taxonomiestichwörter nicht vollständig lesen.", 0)
+  end
+  local candidates, seen = {}, {}
+  for key, value in pairs(assigned) do
+    local keyword = (type(key) == "table" or type(key) == "userdata") and key or value
+    if type(keyword) ~= "table" and type(keyword) ~= "userdata" then
+      error("Lightroom lieferte kein gültiges zugeordnetes Taxonomiestichwortobjekt.", 0)
+    end
+    if hasPluginKeywordSuffix(keyword) and not seen[keyword] then
+      seen[keyword] = true
+      table.insert(candidates, keyword)
+    end
+  end
+  for _, keyword in ipairs(candidates) do
+    local name = keywordName(keyword)
     -- Ausschließlich eindeutig mit (FN) oder (FN)* gekennzeichnete Plug-in-
     -- Stichwortobjekte werden vom Foto getrennt. Alle sonstigen, auch manuell
     -- gepflegten Lightroom-Stichwörter bleiben unverändert erhalten.
-    -- createKeyword liefert mit returnExisting=true dasselbe Katalogobjekt,
-    -- das auch bei der Zuweisung an photo:addKeyword übergeben wurde.
+    -- Reale Objekte verwenden: createKeyword darf innerhalb eines Blocks
+    -- nicht für Entfernung und erneute Anlage desselben Namens laufen.
     if not protectedNames or not protectedNames[string.lower(name)] then
-      local keyword = createKeyword(catalog, name, nil)
       photo:removeKeyword(keyword)
       removed = removed + 1
     end
@@ -241,37 +257,41 @@ end
 
 local function removeCurrentManagedKeywords(catalog, photo, protectedNames)
   local removed = 0
-  local seen = {}
+  local seenObjects, seenNames = {}, {}
 
   local function removeCandidate(candidate)
     local name = keywordName(candidate)
-    if not hasPluginKeywordNameSuffix(name) or seen[name] then
+    if not hasPluginKeywordNameSuffix(name) then
       return
     end
-    seen[name] = true
     if protectedNames and protectedNames[string.lower(name)] then
       return
     end
+    if type(candidate) == "string" and seenNames[name] then return end
     local keyword = type(candidate) == "string" and createKeyword(catalog, name, nil) or candidate
+    local identifier = keywordLocalIdentifier(keyword)
+    local objectKey = identifier and ("id:" .. identifier) or keyword
+    if seenObjects[objectKey] then return end
+    seenObjects[objectKey] = true
+    seenNames[name] = true
     photo:removeKeyword(keyword)
     removed = removed + 1
   end
 
-  -- Der bei der Zuweisung gespeicherte Taxonomiepfad bildet zusammen mit den
-  -- wissenschaftlichen Rangwerten exakt dieselben sichtbaren Namen nach, die
-  -- assign() an createKeyword uebergibt. Dieser deterministische Rueckweg ist
-  -- noetig, weil Lightroom die zugeordneten Stichwortobjekte nicht in allen
-  -- Versionen zuverlaessig ueber getRawMetadata("keywords") zurueckliefert.
-  for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
-    removeCandidate(name)
-  end
-
+  -- Tatsächliche Objekte zuerst: gleichnamige Stichwörter können unter
+  -- verschiedenen Eltern liegen und sind verschiedene Zuordnungen.
   local ok, assigned = LrTasks.pcall(function()
     return photo:getRawMetadata("keywords")
   end)
   for key, value in pairs(ok and assigned or {}) do
     removeCandidate(key)
     removeCandidate(value)
+  end
+
+  -- Deterministischer Rückweg für ältere SDK-Stände mit unvollständiger
+  -- Objektliste. Er erzeugt keine zweite Entfernung bereits gelesener Namen.
+  for _, name in ipairs(managedKeywordNamesFromMetadata(photo)) do
+    removeCandidate(name)
   end
 
   local formattedOk, formatted = LrTasks.pcall(function()
@@ -307,8 +327,10 @@ local function metadataText(value)
   return utf8Prefix(value, 460)
 end
 
-local function setText(photo, field, value)
-  photo:setPropertyForPlugin(_PLUGIN, field, metadataText(value))
+local function setText(photo, field, value, expectedMetadata)
+  local text = metadataText(value)
+  photo:setPropertyForPlugin(_PLUGIN, field, text)
+  if expectedMetadata then KeywordIdFinalizer.recordMetadata(expectedMetadata, photo, field, text) end
 end
 
 local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
@@ -328,6 +350,7 @@ local function runWithWriteAccess(catalog, actionName, callback, errorFormatter)
   if completed then
     return result
   end
+
   local message = "Lightroom konnte den Katalog-Schreibzugriff innerhalb von "
     .. tostring(WRITE_ACCESS_TIMEOUT_SECONDS)
     .. " Sekunden nicht ausführen. Bitte kurz warten und erneut versuchen."
@@ -384,6 +407,38 @@ function KeywordWriter.findConflicts(photos, taxon)
   return conflicts
 end
 
+local function taxonomyAssignmentMatches(photo, template)
+  for field, value in pairs(template.values) do
+    if field ~= "assignedAt" and field ~= "taxonomyKeywordIds"
+        and cleanText(photo:getPropertyForPlugin(_PLUGIN, field)) ~= value then return false end
+  end
+  if cleanText(photo:getPropertyForPlugin(_PLUGIN, "assignedAt")) == "" then return false end
+  local wanted, actual, ids = {}, {}, {}
+  for _, name in ipairs(template.names) do wanted[string.lower(name)] = true end
+  local assigned = photo:getRawMetadata("keywords")
+  if type(assigned) ~= "table" then error("Lightroom konnte die Taxonomiestichwörter nicht vollständig lesen.", 0) end
+  for key, value in pairs(assigned) do
+    local keyword = (type(key) == "table" or type(key) == "userdata") and key or value
+    if type(keyword) ~= "table" and type(keyword) ~= "userdata" then
+      error("Lightroom lieferte kein gültiges Taxonomiestichwortobjekt.", 0)
+    end
+    if hasPluginKeywordSuffix(keyword) then
+      local name = string.lower(keywordName(keyword))
+      if not wanted[name] or actual[name] then return false end
+      actual[name] = true
+      local id = keywordLocalIdentifier(keyword)
+      if id then ids[id] = true end
+    end
+  end
+  for name in pairs(wanted) do if not actual[name] then return false end end
+  local stored = cleanText(photo:getPropertyForPlugin(_PLUGIN, "taxonomyKeywordIds"))
+  if next(ids) == nil then return stored == "none" end
+  local storedIds = parseKeywordIds(stored)
+  for id in pairs(ids) do if not storedIds[id] then return false end end
+  for id in pairs(storedIds) do if not ids[id] then return false end end
+  return true
+end
+
 function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans, options)
   options = options or {}
   local conflicts = KeywordWriter.findConflicts(photos, taxon)
@@ -398,11 +453,15 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
 
   local previousKeywordNames = {}
   local beforeStatistics = {}
+  local taxonomyChanges, updatedTaxonomyPhotoCount = {}, 0
+  local template = options.skipUnchanged and KeywordWriter.identityTemplate(taxon) or nil
   local locationTimePlans = preparedLocationTimePlans
     or LocationTimeWriter.prepare(catalog, photos, { resolveSuggestedLocations = false })
   for index, photo in ipairs(photos) do
     previousKeywordNames[index] = resolveManagedKeywordNames(catalog, photo)
     beforeStatistics[index] = Statistics.photoSnapshot(photo)
+    taxonomyChanges[photo] = not template or not taxonomyAssignmentMatches(photo, template)
+    if taxonomyChanges[photo] then updatedTaxonomyPhotoCount = updatedTaxonomyPhotoCount + 1 end
   end
 
   local hierarchyPath = {}
@@ -432,8 +491,12 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
   local managedKeywords = {}
   local currentKeyword = ""
   local currentStep = "Katalog-Schreibzugriff starten"
+  local locationTimeResult
+  local pendingKeywordIds = {}
+  local expectedMetadataByPhoto = {}
   runWithWriteAccess(catalog, "FN Wildlife Taxonomie zuweisen", function()
     for index, photo in ipairs(photos) do
+      if taxonomyChanges[photo] then
       currentKeyword = ""
       currentStep = "vorhandene (FN)-Stichwörter entfernen"
       removeManagedKeywords(
@@ -442,9 +505,10 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
         previousKeywordNames[index],
         LocationTimeWriter.managedKeywordNameSet(photo)
       )
+      end
     end
 
-    for _, readableKeyword in ipairs(managedKeywordNames) do
+    for _, readableKeyword in ipairs(updatedTaxonomyPhotoCount > 0 and managedKeywordNames or {}) do
       currentKeyword = readableKeyword
       currentStep = "Stichwort erzeugen"
       local keyword = createKeyword(catalog, readableKeyword, nil)
@@ -456,8 +520,10 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
       end
       table.insert(managedKeywords, keyword)
       for _, photo in ipairs(photos) do
+        if taxonomyChanges[photo] then
         currentStep = "Stichwort zum Foto hinzufügen"
         photo:addKeyword(keyword)
+        end
       end
     end
 
@@ -480,10 +546,14 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
     local function setAssignmentText(photo, field, value)
       currentKeyword = ""
       currentStep = "Metadatenfeld " .. field .. " schreiben"
-      setText(photo, field, value)
+      if not expectedMetadataByPhoto[photo] then
+        expectedMetadataByPhoto[photo] = KeywordIdFinalizer.metadataExpectation(photo)
+      end
+      setText(photo, field, value, expectedMetadataByPhoto[photo])
     end
 
     for _, photo in ipairs(photos) do
+      if taxonomyChanges[photo] then
       setAssignmentText(photo, "masterTaxonId", taxon.masterTaxonId)
       setAssignmentText(photo, "projectTaxonId", projectTaxonId)
       setAssignmentText(photo, "germanName", taxon.germanName)
@@ -500,15 +570,17 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
         setAssignmentText(photo, TaxonomyRanks.metadataFieldId(rank.id), rankValues[rank.id] or "")
       end
       setAssignmentText(photo, "assignedAt", assignedAt)
+      end
     end
     currentKeyword = ""
     currentStep = "Orts- und Zeitstichwörter ergänzen"
-    local locationTimeResult = LocationTimeWriter.applyPrepared(
+    locationTimeResult = LocationTimeWriter.applyPrepared(
       catalog,
       photos,
       locationTimePlans,
       options.locationTimeMode == "update" and "update" or "add",
-      { protectedNamesForPhoto = KeywordWriter.taxonomyKeywordNameSet }
+      { protectedNamesForPhoto = KeywordWriter.taxonomyKeywordNameSet,
+        expectedMetadataByPhoto = expectedMetadataByPhoto }
     )
     local afterStatistics = {}
     for index in ipairs(photos) do
@@ -521,10 +593,25 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
         locationTimeResult.afterValues[index]
       )
     end
-    PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
+    if updatedTaxonomyPhotoCount > 0 or locationTimeResult.changedPhotoCount > 0 then
+      PluginState.applyStatisticsPhotoChanges(catalog, beforeStatistics, afterStatistics)
+    end
+    for _, pending in ipairs(locationTimeResult.pendingKeywordIds or {}) do
+      table.insert(pendingKeywordIds, pending)
+    end
+    locationTimeResult.pendingKeywordIds = nil
+    for _, photo in ipairs(photos) do
+      if taxonomyChanges[photo] then
+        table.insert(pendingKeywordIds, KeywordIdFinalizer.capture(
+          photo, "taxonomyKeywordIds", managedKeywordNames, managedKeywords,
+          expectedMetadataByPhoto[photo]
+        ))
+      end
+    end
   end, function(reason)
     return assignmentError(taxon, currentKeyword, currentStep, #photos, reason)
   end)
+  KeywordIdFinalizer.finalize(catalog, pendingKeywordIds)
 
   for _, photo in ipairs(photos) do
     local assignedTaxonId = cleanText(photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"))
@@ -546,6 +633,12 @@ function KeywordWriter.assign(catalog, photos, taxon, preparedLocationTimePlans,
     photoCount = #photos,
     keywordCount = #managedKeywordNames,
     hierarchyCount = #hierarchyPath,
+    updatedTaxonomyPhotoCount = updatedTaxonomyPhotoCount,
+    unchangedTaxonomyPhotoCount = #photos - updatedTaxonomyPhotoCount,
+    updatedLocationTimePhotoCount = locationTimeResult.changedPhotoCount,
+    unchangedLocationTimePhotoCount = locationTimeResult.skippedPhotoCount,
+    missingGpsAndLocationPhotoCount = locationTimeResult.missingGpsAndLocationPhotoCount,
+    missingTimePhotoCount = locationTimeResult.missingTimePhotoCount,
   }
 end
 

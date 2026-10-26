@@ -6,7 +6,7 @@ local cleanText = TaxonomyRanks.cleanText
 local LrDate = import "LrDate"
 local LrPathUtils = import "LrPathUtils"
 
-StatisticsIndex.SCHEMA_VERSION = 6
+StatisticsIndex.SCHEMA_VERSION = 7
 
 local LOCATION_FIELDS = {
   "fnCountry",
@@ -308,6 +308,9 @@ function StatisticsIndex.new(totalPhotos)
     schemaVersion = StatisticsIndex.SCHEMA_VERSION,
     status = "building",
     totalPhotos = tonumber(totalPhotos or 0) or 0,
+    -- Der interne Umfang bindet alle Katalogdateien an den Scan/Checkpoint.
+    -- videoCount wird nur beim Lesen gezählt, nicht bei FN-Metadatendeltas.
+    videoCount = 0,
     assignedPhotos = 0,
     species = {},
     families = {},
@@ -327,6 +330,9 @@ end
 function StatisticsIndex.isValid(index)
   return type(index) == "table"
     and tonumber(index.schemaVersion) == StatisticsIndex.SCHEMA_VERSION
+    and type(index.videoCount) == "number"
+    and index.videoCount >= 0
+    and index.videoCount <= (tonumber(index.totalPhotos or 0) or 0)
     and type(index.species) == "table"
     and type(index.families) == "table"
     and type(index.genera) == "table"
@@ -344,6 +350,7 @@ end
 function StatisticsIndex.snapshot(values)
   values = values or {}
   return {
+    isVideo = values.isVideo == true,
     masterTaxonId = cleanText(values.masterTaxonId),
     germanName = cleanText(values.germanName),
     englishName = cleanText(values.englishName),
@@ -373,6 +380,7 @@ end
 
 function StatisticsIndex.photoSnapshot(photo)
   return StatisticsIndex.snapshot({
+    isVideo = photo:getRawMetadata("isVideo"),
     masterTaxonId = photo:getPropertyForPlugin(_PLUGIN, "masterTaxonId"),
     germanName = photo:getPropertyForPlugin(_PLUGIN, "germanName"),
     englishName = photo:getPropertyForPlugin(_PLUGIN, "englishName"),
@@ -399,6 +407,7 @@ function StatisticsIndex.photoSnapshot(photo)
 end
 
 function StatisticsIndex.add(index, snapshot)
+  if snapshot and snapshot.isVideo then return end
   changeLocationTime(index.locationTime, snapshot, 1)
   if hasValidTaxonomy(snapshot) then
     changeLocationTime(index.taxonomyLocationTime, snapshot, 1)
@@ -470,6 +479,7 @@ function StatisticsIndex.add(index, snapshot)
 end
 
 function StatisticsIndex.remove(index, snapshot)
+  if snapshot and snapshot.isVideo then return end
   changeLocationTime(index.locationTime, snapshot, -1)
   if hasValidTaxonomy(snapshot) then
     changeLocationTime(index.taxonomyLocationTime, snapshot, -1)
@@ -694,7 +704,7 @@ function StatisticsIndex.result(index)
   end
   table.sort(observationRows, sortObservations)
 
-  local totalPhotos = tonumber(index.totalPhotos or 0) or 0
+  local totalPhotos = math.max((tonumber(index.totalPhotos or 0) or 0) - index.videoCount, 0)
   local assignedPhotos = tonumber(index.assignedPhotos or 0) or 0
   return {
     totalPhotos = totalPhotos,

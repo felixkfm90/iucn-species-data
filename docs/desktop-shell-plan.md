@@ -1,19 +1,17 @@
 # Browserunabhängiger Arten-Explorer
 
-Stand: 2026-07-22
+Stand: 2026-10-26
 
 ## Ziel
 
-Die gesamte lokale Arten-Explorer-App soll wie eine normale Windows-Anwendung gestartet und bedient werden.
-Chrome, eine manuell geöffnete Browserseite und die sichtbare URL `http://127.0.0.1:4177` sollen für den normalen
-Betrieb nicht mehr erforderlich sein.
+Die lokale Arten-Explorer-App wird als Windows-Anwendung gestartet und bedient. Eine manuell geöffnete
+Browserseite unter `http://127.0.0.1:4177` ist für den normalen Desktopbetrieb nicht erforderlich.
 
-Die bestehende Node-/HTML-/CSS-/JavaScript-Anwendung bleibt erhalten. Sie wird nicht neu geschrieben, sondern in
-einen Desktop-Wrapper eingebettet.
+Die Desktop-Hülle bettet die bestehende Node-/HTML-/CSS-/JavaScript-Anwendung ein.
 
 ## Technische Richtung
 
-Der erste Prototyp nutzt Electron.
+Die Desktop-Hülle nutzt Electron.
 
 Gründe:
 
@@ -31,15 +29,15 @@ Nachteile:
 Eine WebView2-Variante wäre kleiner, erzeugt aber mehr Windows-spezifischen Integrationscode. Sie bleibt eine
 Alternative, falls die Electron-Paketgröße im Prototyp nicht akzeptabel ist.
 
-## Geplanter Ablauf
+## Start- und Schließablauf
 
-1. Desktop-Prozess startet.
+1. Desktop-Prozess startet und erzeugt das Fenster mit interner Startseite.
 2. Freier lokaler Port wird ermittelt oder Port 4177 kontrolliert belegt.
 3. Der bestehende Explorer-Server wird im Electron-Hauptprozess als verwalteter Server gestartet.
 4. Die App wartet auf einen erfolgreichen `/api/summary`-Healthcheck.
-5. Erst danach öffnet sich das App-Fenster.
+5. Nach erfolgreicher Prüfung ersetzt die Hauptansicht die bis dahin mögliche interne Startseite.
 6. Serverfehler werden als verständliche App-Fehlermeldung mit `Neu starten` angezeigt.
-7. Beim Schließen beendet die App nur den von ihr selbst gestarteten Serverprozess.
+7. Beim Schließen beendet die App nur den von ihr selbst gestarteten lokalen Server.
 8. Laufende Pipelineprozesse müssen eine bewusste Schließentscheidung auslösen.
 
 ## Sicherheitsgrenzen
@@ -108,11 +106,35 @@ Der Server wird nicht als sichtbares Konsolenfenster gestartet. Beim Schließen 
 Desktop-Hülle gestartete Server beendet. Wenn ein Pipeline- oder Asset-Prüfschritt läuft, fragt die App vor dem
 Schließen nach.
 
+Die Desktop-Startprüfung hat eine gemeinsame Frist von zehn Sekunden, einschließlich vollständiger
+JSON-Antwort und Wiederholungen. Beim Schließen liest die App Pipeline, Sicherung und offene Änderungen
+getrennt mit jeweils fünf Sekunden Frist. Ein Lesefehler entfernt keine anderen bereits bekannten
+Warnungen. Kann ein Status nicht zuverlässig geprüft werden, erscheint zusätzlich **Status nicht
+vollständig geprüft**. Standard und Abbruch lassen die App offen; **Trotzdem schließen** erfordert eine
+bewusste Wahl. Ein weiterer Schließversuch während derselben Prüfung oder eines offenen Dialogs startet
+keine zweite Abfrage. Diese Lesefristen begrenzen nicht pauschal den anschließenden Serverabbau.
+
 `species:desktop:shortcut` erstellt eine Desktop-Verknüpfung `Arten-Explorer.lnk`. Sie verweist auf
 `wscript.exe` und startet `start-explorer.vbs`, damit beim Doppelklick kein dauerhaft sichtbares PowerShell- oder
 Konsolenfenster offen bleibt. Die Prozessausgabe landet bei Bedarf in
 `species-explorer/logs/desktop-launch.log`. Die Datei wird bei jedem Start überschrieben, sodass genau der letzte
 Start diagnostizierbar bleibt und der Launcher-Log nicht unbegrenzt wächst.
+
+Seit 26. Oktober verwendet die Desktop-Hülle das von Felix angenommene eigene Arten-Explorer-Symbol
+unter `species-explorer/desktop/assets/`: Das PNG ist die korrigierte RGBA-Ausgabe mit transparentem
+Außenbereich und weißer Flugzeugturbine. `arten-explorer-transparent.ico` enthält 16, 24, 32, 48, 64,
+128 und 256 Pixel mit erhaltenem Alphakanal; die Größenumrechnung ist proportional ohne Beschnitt.
+Das FN-Logo der Website gehört weiterhin zu deren eigenem Einbau.
+Electron erhält das ICO beim Erzeugen des Windows-Fensters für Fenster-/Taskleistensymbol; auf anderen
+Plattformen wird das PNG verwendet. Der Verknüpfungsinstaller bindet dasselbe ICO relativ zu seinem
+Installationsordner und stoppt bei fehlender Datei vor dem Speichern der Verknüpfung.
+
+Die Quellintegration ändert weder ein laufendes Fenster noch eine vorhandene Desktop-Verknüpfung.
+Ein normaler späterer App-Start lädt das Fenstersymbol; die Verknüpfung übernimmt es erst beim bewusst
+erneuten Aufruf von `species:desktop:shortcut`. Bereits angeheftete Windows-Verknüpfungen können einen
+eigenen Symbolcache behalten. Das angenommene transparente Symbol wurde am 26. Oktober an der
+bestehenden Desktopverknüpfung und am regulär gestarteten Fenster nativ geprüft. Einzelbelege stehen
+im Auditauftrag; ein globaler Iconcache wurde dafür nicht gelöscht.
 
 Seit 2026-07-22 nutzt auch ein erneuter Doppelklick denselben verständlichen Ablauf: Electron erkennt die bereits
 laufende Instanz und aktiviert deren Fenster. Ein minimiertes Fenster wird wiederhergestellt, ein verborgenes
@@ -132,6 +154,13 @@ stoppt den Server wieder kontrolliert. Der separate Desktop-Test prüft Wiederhe
 und den sicheren Umgang mit fehlenden oder bereits zerstörten Fenstern.
 
 ## Phasenfolge
+
+Die lokale Explorer-Abschlussprüfung vom 26. Oktober ist im
+[Gesamtauditauftrag](audit-auftrag-phase-10-5.md) angenommen: vorhandene vollständige Prüfungen,
+gezielte Nachprüfungen der späteren Änderungen, tatsächlicher Desktopbetrieb und isolierte Messung
+bleiben getrennte Nachweise. Der normale produktive Datenbankstart wurde nicht als Leistungsprobe
+gemessen; aus der kurzen Messung folgt keine Speicherleck- oder physische Geräteabnahme.
+Veröffentlichung, abschließende Bereinigung und Gesamt-Go gehören zum noch laufenden Gesamtaudit.
 
 - Phase 7.7: Assetverwaltung einschließlich kostenfreiem Portrait-Prompt-/Importworkflow abgeschlossen
 - Phase 7.8: browserunabhängiger Desktop-Wrapper für die gesamte App abgeschlossen und von Felix getestet

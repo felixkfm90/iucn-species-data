@@ -47,6 +47,8 @@
       dataRevisionTimer: null,
       dataLoading: false,
       sessionToken: "",
+      websitePagesSnapshot: null,
+      websitePagesChecking: false,
     };
   }
 

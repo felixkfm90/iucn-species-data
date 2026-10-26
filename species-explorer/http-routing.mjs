@@ -1,6 +1,6 @@
 import { createReadStream, existsSync } from "node:fs";
-import { stat } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { lstat, stat } from "node:fs/promises";
+import { dirname, extname, join, normalize, resolve } from "node:path";
 import { isSpeciesAssetFileName } from "./asset-files.mjs";
 import { isPathInside } from "./request-security.mjs";
 import { sanitizeAssetName } from "./species-model.mjs";
@@ -152,6 +152,20 @@ export async function sendFile(request, response, path) {
     return;
   }
 
+  // Lexical route boundaries alone do not protect a linked file or directory.
+  // Check every ancestor before opening a stream, including the route root.
+  for (let current = resolve(path);; current = dirname(current)) {
+    const attributes = await lstat(current).catch((error) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+    if (!attributes || attributes.isSymbolicLink()) {
+      sendText(response, 404, "Nicht gefunden");
+      return;
+    }
+    if (current === dirname(current)) break;
+  }
+
   const details = await stat(path);
   if (!details.isFile()) {
     sendText(response, 404, "Nicht gefunden");
@@ -176,7 +190,12 @@ export async function sendFile(request, response, path) {
     response.on("close", cleanup);
     response.on("finish", cleanup);
     stream.on("close", cleanup);
-    stream.on("error", cleanup);
+    stream.on("error", () => {
+      cleanup();
+      // Headers may already describe a complete file. A failed reader must
+      // close that response, never leave its client waiting for missing bytes.
+      response.destroy();
+    });
     stream.pipe(response);
   };
 

@@ -21,11 +21,13 @@ import { renderMapJpeg } from "./media-assets.mjs";
 import { closeActiveFileStreams } from "./http-routing.mjs";
 import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
+import { speciesCreationAvailability } from "./species-creation-availability.mjs";
 import { createSpeciesCreationSessionStore } from "./species-creation-session.mjs";
 import { createTaxonomyNamePreferenceService } from "./taxonomy-name-preference-service.mjs";
 import { createSpeciesDeleteOperations } from "./species-delete.mjs";
 import { createSpeciesEditOperations } from "./species-edit.mjs";
 import { createTaxonomyEditOperations } from "./taxonomy-edit.mjs";
+import { createEditBackupRestorationOperations } from "./edit-backup-restoration.mjs";
 import { createMapAssetOperations } from "./map-asset-workflow.mjs";
 import { createSoundAssetOperations } from "./sound-asset-workflow.mjs";
 import { createPortraitAssetOperations } from "./portrait-asset-workflow.mjs";
@@ -50,6 +52,7 @@ import {
 import { createTaxonomyProviderRefreshService } from "./taxonomy-provider-refresh-service.mjs";
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
+import { createWebsiteSpeciesPagesService } from "./website-species-pages.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -112,6 +115,7 @@ export async function createExplorerServer({
   lightroomSearchRoot = defaultLightroomSearchRoot(process.env, repoRoot),
   lightroomCloseGate = null,
   pipelineSpawnProcess,
+  websitePagesService = createWebsiteSpeciesPagesService(),
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   await cleanupOrphanTempSessions({ repoRoot, owner: "explorer" });
@@ -277,6 +281,7 @@ export async function createExplorerServer({
     saveBackupSettings,
     previewNasBackup,
     startNasBackup,
+    listArchives: listNasBackupArchives,
     isBackupActive,
     getState: getBackupState,
   } = await createBackupService({
@@ -285,6 +290,7 @@ export async function createExplorerServer({
     localSettingsPath,
     localSettingsFile: LOCAL_SETTINGS_FILE,
     backupLogLineLimit: BACKUP_LOG_LINE_LIMIT,
+    tempSession,
     isPipelineActive,
     isAssetWriteActive: () => assetWriteActive || creationMutationActive,
   });
@@ -301,6 +307,7 @@ export async function createExplorerServer({
       isPipelineProcessActive()
       || isBackupActive()
       || assetWriteActive
+      || creationMutationActive
       || taxonomyMasterService?.isActive()
     ),
   });
@@ -333,6 +340,7 @@ export async function createExplorerServer({
       isPipelineProcessActive()
       || isBackupActive()
       || assetWriteActive
+      || creationMutationActive
       || taxonomyMaintenanceService?.isActive()
     ),
   });
@@ -341,8 +349,10 @@ export async function createExplorerServer({
   taxonomyUpdateCoordinator = createTaxonomyUpdateCoordinator({ taxonomyRoot,
     maintenanceService: taxonomyMaintenanceService, masterService: taxonomyMasterService,
     checkStartReady: (context) => closeGate.ready(context),
+    isRestartBlocked: () => Boolean(isPipelineProcessActive() || isBackupActive() || assetWriteActive || creationMutationActive),
     prepareStart: lightroomCloseGate ? undefined : (job) => usageRequests.prepare(job),
-    onStateChange: lightroomCloseGate ? undefined : (job) => usageRequests.syncJob(job), pollIntervalMs: 10000 });
+    onStateChange: lightroomCloseGate ? undefined : (job) => usageRequests.syncJob(job),
+    prepareProtectedUsageRenewal: (context) => taxonomyMasterService.prepareProtectedUsageRenewal(context), pollIntervalMs: 10000 });
   await taxonomyUpdateCoordinator.restore();
 
   async function assertUpdateRouteAllowed(action) {
@@ -353,6 +363,12 @@ export async function createExplorerServer({
     const usage = ["catalog-usage-save", "catalog-usage-preview"].includes(action);
     if (readOnly || usage || decision && sequence.status === "waiting-decisions") return;
     throw Object.assign(new Error("Der gespeicherte Datenbank-Updateauftrag besitzt den Ablauf. Bitte dessen Fortsetzen/Pause verwenden."), { statusCode: 409 });
+  }
+
+  function newSpeciesAvailability() {
+    return speciesCreationAvailability({ updateWorkflow: taxonomyUpdateCoordinator.status(),
+      databaseActive: taxonomyMaintenanceService.isActive() || taxonomyMasterService.isActive(),
+      backupActive: isBackupActive(), assetWriteActive, creationMutationActive });
   }
 
   async function continueAfterDecision(result) {
@@ -503,6 +519,7 @@ export async function createExplorerServer({
     portraitRenderer,
     creationSessions,
     isBackupActive,
+    assertTaxonomyAssignable: (id) => taxonomyReference.assertAssignable(id),
   });
 
   const {
@@ -559,6 +576,12 @@ export async function createExplorerServer({
     hashText,
     compactTimestamp,
     writeJsonAtomic,
+  });
+
+  const { listEditBackups, previewEditBackupRestoration, saveEditBackupRestoration } = createEditBackupRestorationOperations({
+    repoRoot, backupDir, speciesListPath, speciesDataPath, taxonomyOverridesPath,
+    getModel: () => model, previewTokens, previewTokenTtlMs: PREVIEW_TOKEN_TTL_MS,
+    cleanupPreviewTokens, previewSpeciesEdit, saveSpeciesEdit, previewTaxonomyEdit, saveTaxonomyEdit,
   });
 
   async function abortOwnedCreation(creationId) {
@@ -707,6 +730,10 @@ export async function createExplorerServer({
         return savePipelineAssetReview(payload);
       },
       async newSpecies({ action, payload }) {
+        if (["preview", "portrait-prompt", "portrait-preview", "save"].includes(action)) {
+          const availability = newSpeciesAvailability();
+          if (!availability.available) throw Object.assign(new Error(availability.message), { statusCode: 409 });
+        }
         if (action === "preview") return previewNewSpecies(payload);
         if (action === "discard") return discardNewSpecies(payload);
         if (action === "sessions") return { sessions: await creationSessions.list() };
@@ -770,7 +797,25 @@ export async function createExplorerServer({
         try { return await saveTaxonomyEdit(id, payload); }
         finally { creationMutationActive = false; }
       },
-      async read({ resource }) {
+      async editBackups({ id, action, payload }) {
+        if (action === "list") { await refreshModel(); return listEditBackups(id); }
+        if (action === "preview") { await refreshModel(); return previewEditBackupRestoration(id, payload); }
+        if (creationMutationActive || assetWriteActive || pipelineRuntime.assetReviewSaving
+            || isPipelineActive() || isBackupActive() || pipelineState.status === "awaiting-review") {
+          throw Object.assign(new Error("Die laufende Speicherung, Datenaktualisierung oder Prüfung muss vor der Wiederherstellung abgeschlossen werden."), { statusCode: 409 });
+        }
+        creationMutationActive = true;
+        try {
+          if (await creationSessions.findBySlug(id)) {
+            throw Object.assign(new Error("Der offene Artanlage-Auftrag muss vor einer historischen Wiederherstellung abgeschlossen oder abgebrochen werden."), { statusCode: 409 });
+          }
+          return await saveEditBackupRestoration(id, payload);
+        } finally { creationMutationActive = false; }
+      },
+      async read({ resource, searchParams }) {
+        if (resource === "website-species-pages") {
+          return websitePagesService.snapshot({ refresh: searchParams?.get("refresh") === "1" });
+        }
         if (resource === "summary") {
           await refreshModel();
           return model.summary;
@@ -792,8 +837,10 @@ export async function createExplorerServer({
           return pendingChangesPayload();
         }
         if (resource === "settings") return publicSettingsPayload();
+        if (resource === "new-species-availability") return newSpeciesAvailability();
         if (resource === "pipeline-status") return pipelineState;
         if (resource === "backup-status") return getBackupState();
+        if (resource === "backup-archives") return listNasBackupArchives();
         if (resource === "reload") {
           await refreshModel({ force: true });
           return { ok: true, summary: model.summary };
@@ -829,6 +876,8 @@ export async function createExplorerServer({
       async taxonomyMaintenance({ action, payload }) {
         if (action === "sequence-start") return taxonomyUpdateCoordinator.start(payload);
         if (action === "sequence-resume") return taxonomyUpdateCoordinator.resume(payload);
+        if (action === "sequence-restart-preview") return taxonomyUpdateCoordinator.restartBuildPreview();
+        if (action === "sequence-restart-build") return taxonomyUpdateCoordinator.restartBuild(payload);
         if (action === "sequence-pause") return taxonomyUpdateCoordinator.pause();
         if (action === "lightroom-close") return closeGate.requestClose({ confirmed: payload.confirmed,
           updateRunId: taxonomyUpdateCoordinator.status().updateRunId });

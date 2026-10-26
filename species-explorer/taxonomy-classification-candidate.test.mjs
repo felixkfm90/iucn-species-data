@@ -9,6 +9,9 @@ import { buildTaxonomyMasterCandidate, inspectTaxonomyMasterCandidate } from "./
 import { activateTaxonomyMasterCandidate, decideTaxonomyMasterConflict, inspectTaxonomyMasterLifecycle } from "./taxonomy-master-lifecycle.mjs";
 import { prepareTaxonomyPublication } from "./taxonomy-publication.mjs";
 import { taxonomyMasterDatabasePath, taxonomyMasterManifestPath } from "./taxonomy-master-storage.mjs";
+import { createIdentityReviewService, readIdentityReview } from "./taxonomy-identity-review.mjs";
+import { createTaxonomyMasterService } from "./taxonomy-master-service.mjs";
+import { writeProviderSlice } from "./taxonomy-master-slices.mjs";
 
 const FIRST = new Date("2026-09-01T00:00:00Z"), SECOND = new Date("2026-10-02T00:00:00Z");
 const scientificName = "Testus classificatus";
@@ -41,6 +44,99 @@ function readRows(root, slot) {
     ownNames: db.prepare("SELECT master_taxon_id, field_value, origin_kind FROM master_field_assertion WHERE field_name='german-name' AND selected=1").all() }; }
   finally { db.close(); }
 }
+
+async function classifiedServiceFixture(t, { deferred = false } = {}) {
+  const { root } = await baseline(t);
+  const built = await candidate(root, deferred ? [] : ["inat:101"]);
+  const review = createIdentityReviewService({ taxonomyRoot: root, now: () => SECOND,
+    readInputRevision: async () => built.inputRevisions.identityInputs });
+  const preview = await review[deferred ? "classificationDeferralPreview" : "classificationPreview"]();
+  assert.equal(preview.count, 1);
+  await review[deferred ? "classificationDeferralSave" : "classificationSave"]({ token: preview.token, confirmed: true });
+  const registry = (await readIdentityReview(root)).registry;
+  await candidate(root, deferred ? [] : ["inat:101"], { identityRegistry: registry,
+    now: () => new Date(SECOND.getTime() + 1000) });
+  await activateTaxonomyMasterCandidate(root, { confirmed: true, now: () => new Date(SECOND.getTime() + 2000) });
+  const before = readRows(root, "active");
+  const speciesListPath = path.join(path.dirname(root), "species-list.json"), correctionsPath = path.join(path.dirname(root), "corrections.json");
+  await fs.writeFile(speciesListPath, JSON.stringify(projectTaxa.map((entry) => ({ ...entry, slug: entry.projectSlug }))));
+  await fs.writeFile(correctionsPath, JSON.stringify({ entries: corrections }));
+  await writeProviderSlice(root, { provider: "inaturalist", providerVersion: "fixture-refreshed",
+    retrievedAt: new Date(SECOND.getTime() + 3000).toISOString(), records: [external] });
+  let currentIdentifiers = deferred ? [] : ["inat:101"], missing = false;
+  const searched = [];
+  const store = {
+    status: () => ({ releaseId: "col-fixture-next", importedAt: SECOND.toISOString(), source: {} }),
+    findTaxonByScientificName(name) {
+      searched.push(name);
+      return !missing && name === scientificName ? { taxonId: "current-col-record" } : null;
+    },
+    taxon: () => ({ source_id: "col-fixture-1", scientific_name: scientificName, rank: "species",
+      kingdom: { scientificName: "Bacillati" },
+      identifiers: currentIdentifiers.map((identifier) => ({ identifier_type: "inat", identifier })) }),
+  };
+  const service = createTaxonomyMasterService({ taxonomyRoot: root, speciesListPath, correctionsPath,
+    referenceService: { requireStore: async () => store }, now: () => new Date(SECOND.getTime() + 4000) });
+  t.after(() => service.close());
+  return { root, before, searched, service,
+    setCurrentIdentifiers: (value) => { currentIdentifiers = value; }, setMissing: () => { missing = true; } };
+}
+
+test("Explorer-Folgeaufbau liest bestätigte Klassifikation bei gleicher CoL-Version erneut und erhält ID, eigene Namen und Projektlinks", async (t) => {
+  const { root, before, searched, service } = await classifiedServiceFixture(t);
+  await service.startBuild({ refreshProviders: false });
+  await service.runPromise;
+  assert.equal(service.state.status, "ready", service.state.error);
+  assert.deepEqual(searched, [scientificName]);
+  const after = readRows(root, "staging");
+  assert.deepEqual(after.taxa.map((row) => [row.master_taxon_id, row.kingdom]), before.taxa.map((row) => [row.master_taxon_id, row.kingdom]));
+  assert.deepEqual(after.links, before.links);
+  assert.deepEqual(after.ownNames, before.ownNames);
+  assert.deepEqual(readRows(root, "active"), before, "Folgeaufbau aktiviert keinen Kandidaten");
+  assert.equal((await inspectTaxonomyMasterCandidate(root)).blockingConflictCount, 0);
+});
+
+test("Explorer-Folgeaufbau schützt gespeicherte Klassifikation weiter vor fehlenden, abweichenden oder mehrdeutigen aktuellen Quellenbelegen", async (t) => {
+  for (const [label, identifiers] of [["missing-link", []], ["different-link", ["inat:202"]],
+    ["ambiguous-link", ["inat:101", "inat:202"]], ["missing-record", null]]) {
+    await t.test(label, async (subtest) => {
+      const { root, before, searched, service, setCurrentIdentifiers, setMissing } = await classifiedServiceFixture(subtest);
+      if (identifiers === null) setMissing(); else setCurrentIdentifiers(identifiers);
+      const activeHash = await fingerprint(taxonomyMasterDatabasePath(root, "active"));
+      await service.startBuild({ refreshProviders: false });
+      await service.runPromise;
+      assert.equal(service.state.status, "failed");
+      assert.match(service.state.error, /unveränderten, eindeutigen Quellenbeleg/);
+      assert.deepEqual(searched, [scientificName], "Der aktuelle Beleg wird tatsächlich geprüft");
+      assert.deepEqual(readRows(root, "active"), before);
+      assert.equal(await fingerprint(taxonomyMasterDatabasePath(root, "active")), activeHash);
+    });
+  }
+});
+
+test("Explorer-Folgeaufbau prüft historische Zurückstellung bei gleicher CoL-Version und öffnet einen geänderten Quellenfall erneut", async (t) => {
+  for (const changed of [false, true]) await t.test(changed ? "changed-current-link" : "unchanged-current-proof", async (subtest) => {
+    const { root, before, searched, service, setCurrentIdentifiers } = await classifiedServiceFixture(subtest, { deferred: true });
+    if (changed) setCurrentIdentifiers(["inat:101"]);
+    await service.startBuild({ refreshProviders: false });
+    await service.runPromise;
+    assert.equal(service.state.status, "ready", service.state.error);
+    const inspected = await inspectTaxonomyMasterCandidate(root);
+    assert.equal(inspected.manifest.classificationDeferrals.total, changed ? 0 : 1);
+    assert.equal(inspected.blockingConflictCount, changed ? 1 : 0);
+    assert.equal(inspected.manifest.classificationReview.matchingProviderId, changed ? 1 : 0);
+    assert.deepEqual(searched, [scientificName]);
+    assert.deepEqual(readRows(root, "active"), before);
+    if (!changed) {
+      const after = readRows(root, "staging");
+      const taxonIdentity = (row) => [row.master_taxon_id, row.canonical_scientific_name, row.rank, row.kingdom,
+        row.lifecycle_state, row.reference_state];
+      assert.deepEqual(after.taxa.map(taxonIdentity), before.taxa.map(taxonIdentity));
+      assert.deepEqual(after.links, before.links);
+      assert.deepEqual(after.ownNames, before.ownNames);
+    }
+  });
+});
 
 test("regulärer Kandidat hält alle vier Reichs-/Quellenfälle gesperrt und bewahrt ursprüngliche IDs und eigene Namen", async (t) => {
   for (const [ids, expected] of [ [["inat:101"], "matchingProviderId"], [["inat:202"], "differentProviderId"],

@@ -350,12 +350,18 @@ local function applyUpdate(catalog, state, callbacks)
     targetPhotoCount = #targetPhotos,
     processedPhotoCount = 0,
     updatedTaxonomyPhotoCount = 0,
+    unchangedTaxonomyPhotoCount = 0,
     updatedLocationTimePhotoCount = 0,
+    unchangedLocationTimePhotoCount = 0,
+    missingGpsAndLocationPhotoCount = 0,
+    missingTimePhotoCount = 0,
     failedPhotoCount = 0,
     errors = {},
     suggestedLocationPhotoCount = preparation and preparation.suggestedLocationPhotoCount or 0,
     unresolvedSuggestedLocationPhotoCount = preparation
       and preparation.unresolvedSuggestedLocationPhotoCount or 0,
+    failedSuggestedLocationPhotoCount = preparation
+      and preparation.failedSuggestedLocationPhotoCount or 0,
   }
 
   local function afterBlock(processed)
@@ -386,10 +392,15 @@ local function applyUpdate(catalog, state, callbacks)
         chunk,
         group.taxon,
         plansForPhotos(chunk, plansByPhoto),
-        { locationTimeMode = "update" }
+        { locationTimeMode = "update", skipUnchanged = true }
       )
       if ok then
-        result.updatedTaxonomyPhotoCount = result.updatedTaxonomyPhotoCount + #chunk
+        result.updatedTaxonomyPhotoCount = result.updatedTaxonomyPhotoCount + updateResult.updatedTaxonomyPhotoCount
+        result.unchangedTaxonomyPhotoCount = result.unchangedTaxonomyPhotoCount + updateResult.unchangedTaxonomyPhotoCount
+        result.updatedLocationTimePhotoCount = result.updatedLocationTimePhotoCount + updateResult.updatedLocationTimePhotoCount
+        result.unchangedLocationTimePhotoCount = result.unchangedLocationTimePhotoCount + updateResult.unchangedLocationTimePhotoCount
+        result.missingGpsAndLocationPhotoCount = result.missingGpsAndLocationPhotoCount + updateResult.missingGpsAndLocationPhotoCount
+        result.missingTimePhotoCount = result.missingTimePhotoCount + updateResult.missingTimePhotoCount
       else
         result.failedPhotoCount = result.failedPhotoCount + #chunk
         table.insert(result.errors, cleanText(group.taxon.germanName)
@@ -424,6 +435,11 @@ local function applyUpdate(catalog, state, callbacks)
     if ok then
       result.updatedLocationTimePhotoCount = result.updatedLocationTimePhotoCount
         + tonumber(updateResult.changedPhotoCount or 0)
+      result.unchangedLocationTimePhotoCount = result.unchangedLocationTimePhotoCount
+        + tonumber(updateResult.skippedPhotoCount or 0)
+      result.missingGpsAndLocationPhotoCount = result.missingGpsAndLocationPhotoCount
+        + tonumber(updateResult.missingGpsAndLocationPhotoCount or 0)
+      result.missingTimePhotoCount = result.missingTimePhotoCount + tonumber(updateResult.missingTimePhotoCount or 0)
     else
       result.failedPhotoCount = result.failedPhotoCount + #chunk
       table.insert(result.errors, "Orts-/Zeitblock ab Foto " .. tostring(firstIndex)
@@ -442,15 +458,27 @@ end
 local function completionText(state, result)
   local lines = {
     "Taxonomie aktualisiert: " .. tostring(result.updatedTaxonomyPhotoCount or 0) .. " Fotos",
-    "Eigenständige Orts-/Zeitdaten aktualisiert: "
+    "Taxonomie bereits vollständig und aktuell: " .. tostring(result.unchangedTaxonomyPhotoCount or 0) .. " Fotos",
+    "Orts-/Zeitdaten aktualisiert (mit und ohne Taxonomie): "
       .. tostring(result.updatedLocationTimePhotoCount or 0) .. " Fotos",
+    "Orts-/Zeitdaten unverändert: " .. tostring(result.unchangedLocationTimePhotoCount or 0) .. " Fotos",
     "Nicht auflösbare Taxonomie übersprungen: "
       .. tostring(state.unresolvedTaxonomyPhotoCount or 0) .. " Fotos",
-    "Fehlgeschlagen: " .. tostring(result.failedPhotoCount or 0) .. " Fotos",
+    "FN-Daten konnten nicht geschrieben werden: " .. tostring(result.failedPhotoCount or 0) .. " Fotos",
   }
   if (result.unresolvedSuggestedLocationPhotoCount or 0) > 0 then
-    table.insert(lines, "GPS-Ortsvorschläge ohne verwertbares Ergebnis: "
-      .. tostring(result.unresolvedSuggestedLocationPhotoCount) .. " Fotos")
+    table.insert(lines, "GPS vorhanden, aber Lightroom lieferte keine nutzbaren Ortsvorschläge: "
+      .. tostring(result.unresolvedSuggestedLocationPhotoCount) .. " Fotos. Zeitdaten werden trotzdem geprüft.")
+  end
+  if (result.failedSuggestedLocationPhotoCount or 0) > 0 then
+    table.insert(lines, "Ortsvorschläge konnten nicht exportiert oder gelesen werden: "
+      .. tostring(result.failedSuggestedLocationPhotoCount) .. " Fotos. Zeitdaten werden trotzdem geprüft.")
+  end
+  if (result.missingGpsAndLocationPhotoCount or 0) > 0 then
+    table.insert(lines, "Keine nutzbaren Ortsangaben und kein GPS: " .. tostring(result.missingGpsAndLocationPhotoCount) .. " Fotos")
+  end
+  if (result.missingTimePhotoCount or 0) > 0 then
+    table.insert(lines, "Aufnahmejahr oder -monat nicht vollständig ermittelbar: " .. tostring(result.missingTimePhotoCount) .. " Fotos")
   end
   if #(result.errors or {}) > 0 then
     table.insert(lines, "")

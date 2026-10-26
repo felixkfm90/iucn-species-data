@@ -48,6 +48,37 @@ function elements() {
   };
 }
 
+test("Masteranzeige übernimmt den neutralen CoL-Übergang ohne Messwert und bewahrt Quellen- und Fachfehler", () => {
+  const visible = elements(), state = { taxonomyMaintenanceSnapshot: {} };
+  const controller = masterUi.createTaxonomyMasterController({ state, elements: visible, escapeHtml: String,
+    renderDatabaseStatus() {}, fetchJson: async () => { throw new Error("Keine API beim Rendern"); } });
+  const master = { status: "building", active: true, action: "build", progressPhase: "CoL-Referenz",
+    progressCurrent: 273470, progressTotal: 273470, message: "Relevante CoL-Taxa werden gelesen." };
+  controller.render(master);
+  assert.equal(visible.taxonomyMasterDetail.textContent, "CoL-Auswahl gelesen. Eingänge werden weiter vorbereitet und geprüft.");
+  assert.equal(visible.taxonomyMasterProgress.value, undefined);
+  assert.doesNotMatch(visible.taxonomyMasterProgressDetail.textContent, /100 %/);
+  controller.render({ ...master, progressCurrent: 273469 });
+  assert.equal(visible.taxonomyMasterDetail.textContent, master.message);
+  assert.equal(visible.taxonomyMasterProgress.value, 99);
+  state.taxonomyMaintenanceSnapshot = { active: true, phase: "download", progressCurrent: 1, progressTotal: 4 };
+  controller.render(master);
+  assert.equal(visible.taxonomyMasterDetail.textContent, master.message);
+  assert.match(visible.taxonomyMasterProgressDetail.textContent, /Quelldownload.*25 %/);
+  assert.equal(visible.taxonomyMasterProgress.value, 25);
+  state.taxonomyMaintenanceSnapshot = {};
+  for (const [status, expected] of [
+    [{ ...master, error: "Masterprüfung fehlgeschlagen" }, /Masterprüfung fehlgeschlagen/],
+    [{ ...master, status: "partial", active: false, message: "Teilstand", error: "Paket fehlt" }, /Teilstand Paket fehlt/],
+    [{ ...master, lightroomPackage: { needsRebuild: true, error: "Paketprüfung fehlgeschlagen" } }, /Paketprüfung fehlgeschlagen/],
+    [{ ...master, progressPhase: "Suchindex", progressCurrent: 1, progressTotal: 100, message: "Suchindex wird aufgebaut." }, /Suchindex wird aufgebaut/],
+  ]) {
+    controller.render(status);
+    assert.match(visible.taxonomyMasterDetail.textContent, expected);
+    assert.doesNotMatch(visible.taxonomyMasterDetail.textContent + visible.taxonomyMasterProgressDetail.textContent, /CoL-Auswahl gelesen/);
+  }
+});
+
 function readyStatus() {
   return {
     status: "ready",
@@ -590,4 +621,33 @@ test("automatischer Lightroom-Paketbau nutzt denselben sichtbaren Fortschrittsbl
   assert.equal(visible.taxonomyMasterProgress.value, undefined, "Keine Messmenge: unbestimmter Balken statt erfundener 42 %");
   assert.match(visible.taxonomyMasterProgressDetail.textContent, /Lightroom-Suchpaket · Taxonomieexport/);
   assert.equal(visible.taxonomyMasterBuildButton.disabled, true);
+});
+
+function statusReviewElement() {
+  let html = '', text = '';
+  return { hidden: false, disabled: false, value: 0, open: false, classList: { toggle() {} }, addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; },
+    get innerHTML() { return html; }, set innerHTML(value) { html = value; text = ''; },
+    get textContent() { return text; }, set textContent(value) { text = value; html = ''; },
+    removeAttribute(key) { delete this[key]; } };
+}
+
+test('Masterstatus: unknown conflict inspection cannot be presented as a completed current pair', async () => {
+  const snapshot = { status: 'completed', active: false, lifecycle: { active: { candidateId: 'current-master' }, conflicts: [], blockingConflicts: [], blockingConflictCount: null,
+    candidateInspection: { status: 'deferred', reason: 'active-build' } },
+    reference: { status: 'current', activeMatchesReference: true }, corrections: { pending: false }, identities: { pending: false },
+    lightroomPackage: { status: 'current', masterVersion: 'current-master', packageVersion: 'current-master' } };
+  assert.equal(masterUi.activePairIsCurrent(snapshot), false);
+});
+
+test('Masterstatus: master conflict panel explicitly labels unknown inspection and disables both mutations', async () => {
+  const nodes = new Map();
+  const elements = new Proxy({}, { get(_, key) { if (!nodes.has(key)) nodes.set(key, statusReviewElement()); return nodes.get(key); } });
+  const controller = masterUi.createTaxonomyMasterController({ state: {}, elements, escapeHtml: String, renderDatabaseStatus() {}, fetchJson: async () => { throw new Error('No API'); } });
+  controller.render({ status: 'idle', active: false, lifecycle: { candidate: null, active: { candidateId: 'active' }, blockingConflictCount: null,
+    candidateInspection: { status: 'deferred', reason: 'active-build' }, canActivate: true, canRollback: true } });
+  assert.equal(elements.taxonomyMasterConflicts.hidden, false);
+  assert.match(elements.taxonomyMasterConflicts.textContent, /Konfliktprüfung ausstehend/);
+  assert.equal(elements.taxonomyMasterActivateButton.disabled, true);
+  assert.equal(elements.taxonomyMasterRollbackButton.disabled, true);
+  assert.doesNotMatch(elements.taxonomyMasterDetail.textContent, /keine offenen|bereit zur Übernahme/);
 });

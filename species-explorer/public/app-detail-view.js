@@ -38,6 +38,8 @@
       setupSpeciesEditor,
       setupSpeciesRefresh,
       setupSpeciesDelete,
+      renderWebsiteStatus = () => "",
+      renderWebsiteHint = () => "",
     } = dependencies;
     const MANUAL_SIZE_UNITS = sizeUnits;
     const MANUAL_WEIGHT_UNITS = weightUnits;
@@ -168,6 +170,9 @@
             <div class="detail-title-row">
               <h2>${escapeHtml(species.germanName)}</h2>
               <div class="detail-badges">${badges}</div>
+              <div class="species-website-status" data-species-website="${escapeHtml(species.id)}">
+                ${renderWebsiteStatus(species.id, state.websitePagesSnapshot, { escapeHtml })}
+              </div>
             </div>
             <p class="scientific-name">${escapeHtml(species.scientificName)}</p>
             ${species.englishName && species.englishName !== "Unbekannt"
@@ -177,6 +182,7 @@
           <div class="detail-meta">
             ${species.inInput ? `
               <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
+                <button type="button" data-backup-history-open="${escapeHtml(species.id)}">Bearbeitungsstände</button>
                 <button class="refresh-species-open" type="button">Art aktualisieren</button>
                 <button class="delete-species-open danger" type="button">Löschen</button>
               </div>
@@ -302,6 +308,10 @@
         </div>
 
         ${issues}
+        <section class="issues-section website-hint" data-species-website-hint="${escapeHtml(species.id)}"
+          ${renderWebsiteHint(species.id, state.websitePagesSnapshot, { escapeHtml }) ? "" : "hidden"}>
+          ${renderWebsiteHint(species.id, state.websitePagesSnapshot, { escapeHtml })}
+        </section>
 
         <dialog class="edit-dialog" aria-labelledby="edit-dialog-title">
           <form class="edit-form">

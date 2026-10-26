@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, rmdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { cleanupOrphanTempSessions, createManagedTempSession } from "./temp-session.mjs";
@@ -8,9 +8,65 @@ import { tmpdir } from "../scripts/test-temp.mjs";
 async function fixture(context) {
   const directory = tmpdir();
   const repoRoot = await mkdtemp(path.join(directory, "temp-session-"));
-  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  context.after(() => rm(repoRoot, { recursive: true, force: true, maxRetries: 8, retryDelay: 80 }));
   return repoRoot;
 }
+
+function ownFixturePath(root, relative) {
+  const target = path.resolve(root, relative);
+  assert.equal(path.dirname(target), path.resolve(root), "Mutation stays in the own fixture session");
+  return target;
+}
+
+async function withBlockedPersistence(session, action) {
+  const manifestPath = ownFixturePath(session.root, ".fn-temp-session.json");
+  const backupPath = ownFixturePath(session.root, "exact-manifest-backup.json");
+  const original = await readFile(manifestPath);
+  await rename(manifestPath, backupPath);
+  try {
+    await mkdir(manifestPath);
+    try { await action(); }
+    finally { await rmdir(ownFixturePath(session.root, ".fn-temp-session.json")); }
+  } finally {
+    await rename(ownFixturePath(session.root, "exact-manifest-backup.json"), manifestPath);
+    assert.deepEqual(await readFile(manifestPath), original, "Ownership bytes restored exactly without field edits");
+  }
+}
+
+async function assertClosedSession(session, durable) {
+  const result = await session.close();
+  assert.equal(result.pending, undefined);
+  assert.deepEqual(result.errors, []);
+  const manifest = JSON.parse(await readFile(path.join(session.root, ".fn-temp-session.json"), "utf8"));
+  assert.equal(manifest.state, "closed");
+  assert.equal(manifest.operations, 0);
+  assert.deepEqual(manifest.helperPids, []);
+  assert.equal(await readFile(durable, "utf8"), "durable fixture");
+}
+
+test("failed first operation acquisition can close after a real persistence failure is removed", async (context) => {
+  const repoRoot = await fixture(context);
+  const session = await createManagedTempSession({ repoRoot });
+  const durable = await session.filePath("keep.json", { durable: true });
+  await writeFile(durable, "durable fixture");
+  await withBlockedPersistence(session, () => assert.rejects(session.beginOperation()));
+  await assertClosedSession(session, durable);
+});
+
+test("failed second acquisition retains an existing operation until its own release", async (context) => {
+  const repoRoot = await fixture(context);
+  const session = await createManagedTempSession({ repoRoot });
+  const durable = await session.filePath("keep.json", { durable: true });
+  await writeFile(durable, "durable fixture");
+  const release = await session.beginOperation();
+  await withBlockedPersistence(session, () => assert.rejects(session.beginOperation()));
+  assert.equal((await session.close()).pending, true);
+  const manifest = JSON.parse(await readFile(path.join(session.root, ".fn-temp-session.json"), "utf8"));
+  assert.equal(manifest.state, "closing");
+  assert.equal(manifest.operations, 1);
+  await release();
+  await assertClosedSession(session, durable);
+});
 
 test("own close removes only registered disposable files; durable and foreign files remain", async (context) => {
   const repoRoot = await fixture(context);

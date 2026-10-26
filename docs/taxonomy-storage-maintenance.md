@@ -1,15 +1,42 @@
 # Taxonomie: Aufbewahrung und Speicherplatz
 
-Stand: 2026-10-03
+Stand: 2026-10-25
 
-Status: implementiert und mit isolierten Datenbanken/Dateibeständen geprüft. Keine produktiven Dateien für
-diese Umsetzung gelöscht. Der vollständige Betriebs-/Großbestandstest steht weiterhin aus.
+Status: implementiert, isoliert geprüft und am **13. Oktober** mit einer ausdrücklich bestätigten
+Bereinigung zweier alter fertiger Aufbauordner am produktiven Bestand ausgeführt. Die reguläre Vorschau
+prüfte aktives Master-/Lightroom-Paar und direkten Vorgänger anhand ihrer SHA-256-Prüfsummen. Die bestätigte
+Bereinigung entfernte **2.154.452.155 Bytes**, ohne Fehler und ohne Änderung der aktiven Zeiger. Der isolierte
+NAS-Restore einschließlich getrenntem Programmstart ist inzwischen im
+[Auditauftrag unter 10.41/10.43](audit-auftrag-phase-10-5.md) abgenommen. Daraus folgt keine Produktivübernahme;
+die übrige Betriebs-/Großbestandsabnahme bleibt offen.
 
-Die inzwischen abgeschlossene [Quellenreparatur](taxonomy-partial-source-recovery.md) aktivierte das neue
+Die historische abgeschlossene [Quellenreparatur](taxonomy-partial-source-recovery.md) aktivierte das damalige neue
 Master-/Lightroom-Paar und erhielt das passende Paar vom 28. September als Rückweg. Alte Reparaturjournale,
 Fehleraufträge/private Fehlerdatenbank und aufbewahrter erster Kandidat wurden nicht bereinigt. Diese benötigten
-Nachweise sind keine zusätzlichen pauschal freigegebenen Backups; der aktuelle Dokumentations-/Commitauftrag
-enthält keine Löschfreigabe. Jede spätere Bereinigung braucht ihren eigenen frischen, unveränderten Vorschauplan.
+Nachweise sind keine zusätzlichen pauschal freigegebenen Backups; der damalige Dokumentations-/Commitauftrag
+enthielt keine Löschfreigabe. Jede spätere Bereinigung braucht ihren eigenen frischen, unveränderten Vorschauplan.
+Heute aktiv ist das gemeinsam übernommene Paar vom 24. Oktober; sein direkter Vorgänger stammt vom
+13. Oktober. Die aktuelle gebundene Menge führt der [Taxonomie-Betriebsstand](taxonomy-current-status.md).
+
+## Tatsächlich bestätigte Bereinigung vom 13. Oktober
+
+Felix gab genau die folgenden beiden alten fertigen Aufbauordner zum dauerhaften Entfernen frei:
+
+| Aufbauordner | Herkunft | Tatsächlich entfernte Bytes |
+| --- | --- | ---: |
+| `job-8006153d-67c0-4e4f-97e7-224fd15d120e` | 3. Oktober | 1.081.290.927 |
+| `job-b7795544-1758-464f-baaf-66c7ed6f32db` | 2. Oktober | 1.073.161.228 |
+
+Die reguläre Vorschau um 21:12:27 MESZ meldete keine Warnungen. Nach der ausdrücklichen Bestätigung
+entfernte `storage-clean` mit derselben unveränderten Vorschaurevision beide Ordner um **21:25:41 MESZ**:
+zwei entfernt, keine Fehler, beide Zielpfade fehlen anschließend, Aktivzeiger bytegleich. Gebundene
+Vorschau-/Quittungsbelege stehen ausschließlich im [Auditauftrag, Abschnitt 10.26](audit-auftrag-phase-10-5.md#1026-abschluss-der-beauftragten-fn-stapel-video-reparaturen-und-speicherpflege--13-oktober).
+
+Dies ist die tatsächliche Löschmenge dieser Aktion, keine Bilanz des gesamten Speicherverbrauchs.
+Andere ältere Paare, Legacy-, Recovery- und fehlgeschlagene Aufträge sind weiterhin durch erhaltene
+Originaleingänge, direkte/transitive Abhängigkeiten oder offene Fehler geschützt. Sie wurden nicht entfernt
+und sind durch diese Freigabe nicht zum Löschen bestimmt. Die früheren Aussagen „keine produktiven Dateien
+entfernt“ beschreiben ausdrücklich die datierten Implementierungs-/Teststände vor dieser Bereinigung.
 
 ## Aufbewahrungsentscheidung
 
@@ -17,7 +44,8 @@ Ergänzung am 3. Oktober: Eine bestätigte Paarbereinigung speichert vor dem ers
 Quittung unter `master/storage-cleanups`. Nach einem Teilfehler nennt sie tatsächlich entfernte Bytes.
 Nur belegte unveränderte Reste können nach frischer Vorschau und erneuter Bestätigung fortgesetzt werden;
 aktive/vorherige Paare und benötigte Aufträge bleiben erneut geschützt. Unbekannte oder manipulierte Reste
-werden nicht freigegeben. Isolierte Fehler-/Retrytests bestanden; keine produktiven Dateien entfernt.
+werden nicht freigegeben. Isolierte Fehler-/Retrytests bestanden; bei dieser Ergänzung vom 3. Oktober keine
+produktiven Dateien entfernt.
 
 Benutzerentscheidung vom 20. September: **Aktiver Stand plus genau ein vorheriger, geprüfter Stand als Backup**.
 Gemeint ist ein funktionierendes Master-/Lightroom-Paar, nicht irgendein alter, möglicherweise unfertiger Kandidat.
@@ -31,13 +59,21 @@ Immer geschützt bleiben:
 - aktive/vorherige Legacy-Slots, Staging-Kandidat, CoL-Referenzen und Anbieterstände;
 - letzter gespeicherter Aufbauauftrag und der zum Staging-Kandidaten gehörende Auftrag;
 - alle nicht sicher abgeschlossenen Aufträge, insbesondere pausierte, unterbrochene, fehlgeschlagene und veraltete;
+- auch fertige Aufbauaufträge, deren direkte oder transitive Eingänge von einem geschützten Auftrag benötigt werden;
 - ältere Paare, deren Dateien noch von einem geschützten Auftrag benötigt werden;
 - unvollständige/unklare Einträge, fremde Dateien, Verknüpfungen und Windows-Junctions.
 
 Vor einer Freigabe alter Paare werden aktiver Stand und Vorgänger anhand ihrer Manifeste und der aufgezeichneten
 SHA-256-Prüfsummen geprüft. Fehlendes, beschädigtes oder unpassendes Backup: keine Paarbereinigung. Eine unbekannte
 Auftragsabhängigkeit schützt ebenfalls alle möglicherweise benötigten Paare. Nicht auflösbare zentrale Zeiger
-sperren den Vorgang vollständig. Die Prüfung ersetzt kein externes Backup gegen einen Laufwerksausfall.
+sperren den Vorgang vollständig. Unlesbare, fehlende oder manipulierte zentrale Auftrags-/Recoverybindungen
+schützen sowohl möglicherweise benötigte Jobs als auch Paare. Recovery-Originalchecksums und
+Auftragsrevisionen müssen zusammenpassen. Nach einem verifizierten Speicherumzug wird zuerst die
+Revision des originalen Rezepts geprüft und anschließend ausschließlich dessen Zugriffspfad über das
+passende committed Umzugsjournal projiziert; historische Originalbytes werden nicht umgeschrieben.
+Windows-Schreibweisen werden nur für den Abhängigkeitsgraph kanonisch verglichen. Die im Gesamtaudit
+belegten Gegenproben und die konkrete geschützte Menge stehen im
+[Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md). Die Prüfung ersetzt kein externes Backup gegen einen Laufwerksausfall.
 
 ## Bedienung
 
@@ -109,7 +145,9 @@ dieser ist samt ausdrücklichem Speicherpflege-/Bestätigungsvertrag aktualisier
 Schemata, Projektstatus und die lokalen Produkt-/Assetprüfungen sind erfolgreich. Keine produktive Bereinigung,
 kein neuer Quellen-/Masterlauf. Die Speicherpflege-Änderungen sind noch nicht veröffentlicht.
 
-Der nächste Schritt ist die gebündelte Betriebs- und Großbestandsabnahme nach
+Weiter offen bleibt die gebündelte Betriebs- und Großbestandsabnahme nach
 [Roadmap](roadmap.md) und [Hintergrundaufbau](taxonomy-master-background-build.md), kein weiterer automatischer
-Lösch- oder Produktionslauf. Squarespace-Footer geprüft: nur lokale Explorer-Module betroffen. Keine Lua-Änderung;
-Plug-in-Version bleibt 0.4.24.14.
+Lösch- oder Produktionslauf. Die damalige Speicherpflege-Implementierung änderte keine Lua-Dateien und
+beließ das Plug-in bei 0.4.24.14. Der heutige Quell-/Ladestand ist davon getrennt im
+[Lightroom-Vertrag](lightroom-search-package.md) dokumentiert; die aktuellen Belege und offenen Grenzen
+stehen im [Auditauftrag](audit-auftrag-phase-10-5.md).

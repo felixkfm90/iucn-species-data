@@ -57,6 +57,43 @@ test("nur bestätigter Start erzeugt frische Requestbindung; alte Quittung wird 
   assert.deepEqual(await catalogUsageRegistration(f.root), f.registry);
 });
 
+test("bestätigter lokaler Wiederanlauf verlangt auch bei aktueller geschlossener FN-Quittung eine neue eigene Requestbindung", async (t) => {
+  const f = await fixture(t);
+  for (const input of f.inputs) await fs.unlink(input.catalogPath + ".lock");
+  assert.equal((await catalogUsageStatus(f.root)).ready, true);
+  const capturesBefore = await fs.readFile(path.join(f.root, "catalog-usage", "captures.json"));
+  const restart = { ...job, freshUsageCapture: true, confirmedCatalogs: f.inputs.map((input) => input.catalogPath) };
+  const created = await f.requests.prepare(restart);
+  assert.equal(created.requested, true);
+  const pending = await f.requests.status(restart.updateRunId);
+  assert.equal(pending.exists, true);
+  assert.equal(pending.ready, false, "Alte globale Quittung ist keine Quittung des neuen Auftrags");
+  assert.deepEqual(await fs.readFile(path.join(f.root, "catalog-usage", "captures.json")), capturesBefore);
+  assert.deepEqual(await catalogUsageRegistration(f.root), f.registry);
+  const gate = createLightroomCloseGate({ taxonomyRoot: f.root, usageRequests: f.requests, processes: async () => [] });
+  assert.equal((await gate.ready({ job: restart })).ready, false);
+  await f.capture();
+  assert.equal((await gate.ready({ job: restart })).ready, true);
+  assert.equal((await f.requests.status(restart.updateRunId)).request.status, "completed");
+  assert.equal((await gate.ready({ job: { ...restart, phase: "build" } })).ready, true);
+  await fs.appendFile(f.inputs[0].catalogPath, "changed after closed fresh capture");
+  assert.equal((await gate.ready({ job: { ...restart, phase: "build" } })).ready, false);
+});
+
+test("lokaler Wiederanlauf bindet den neu bestätigten Katalogsatz und übernimmt keinen fremden Close-Marker", async (t) => {
+  const f = await fixture(t);
+  await f.requests.prepare(job);
+  await f.requests.queueNormalClose(job.updateRunId);
+  const restart = { ...job, updateRunId: "update-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", freshUsageCapture: true,
+    confirmedCatalogs: f.inputs.map((input) => input.catalogPath) };
+  await assert.rejects(f.requests.prepare({ ...restart, confirmedCatalogs: [] }), /Katalogsatz/);
+  await assert.rejects(f.requests.prepare({ ...restart, confirmedCatalogs: [path.join(f.directory, "foreign.lrcat")] }), /Katalogsatz/);
+  await f.requests.prepare(restart);
+  const value = await f.requests.status(restart.updateRunId);
+  assert.equal(value.request.normalCloseRequestedAt, undefined);
+  assert.equal(value.ready, false);
+});
+
 test("neue SDK-Quittung wird erst nach geschlossenem stabilem Katalog automatisch registriert", async (t) => {
   const f = await fixture(t);
   await f.requests.prepare(job);
@@ -188,6 +225,99 @@ test("SDK-Abbruch wird zum sichtbaren technischen Fehler, nicht zu leerem Katalo
   assert.deepEqual(await catalogUsageRegistration(f.root), f.registry);
   await f.requests.prepare({ ...job, renewUsageRequest: true });
   assert.notEqual((await f.requests.status(job.updateRunId)).request.requestId, bound.requestId);
+});
+
+test("bestätigtes normales Schließen bleibt beim eigenen Erfassungsretry erhalten und wartet auf neue SDK-Quittung", async (t) => {
+  const f = await fixture(t);
+  let closeCalls = 0;
+  const gate = createLightroomCloseGate({ taxonomyRoot: f.root, usageRequests: f.requests,
+    processes: async () => [{ id: 123, path: "C:\\Adobe\\Lightroom.exe" }],
+    closeProcesses: async () => { closeCalls++; } });
+  await f.requests.prepare(job);
+  await gate.requestClose({ confirmed: true, updateRunId: job.updateRunId });
+  const original = (await f.requests.status(job.updateRunId)).request;
+  await reportCatalogUsageRequestError(f.root, { captureRequestId: original.requestId,
+    requestRevision: original.captureRevision, message: "Erfassung abgebrochen" });
+  await assert.rejects(gate.ready({ job }), /Erfassung abgebrochen/);
+  assert.equal(closeCalls, 0, "kein Schließen nach abgebrochener Erfassung");
+  await f.requests.prepare({ ...job, renewUsageRequest: true });
+  const retry = (await f.requests.status(job.updateRunId)).request;
+  assert.notEqual(retry.requestId, original.requestId);
+  assert.notEqual(retry.captureRevision, original.captureRevision);
+  assert.equal(retry.normalCloseRequestedAt, original.normalCloseRequestedAt);
+  assert.equal(retry.normalCloseAttemptedAt, undefined);
+  assert.equal(retry.captureError, undefined);
+  await gate.ready({ job });
+  assert.equal(closeCalls, 0, "alte Quittung darf erneuerte Erfassung nicht freigeben");
+  await f.capture();
+  await gate.ready({ job });
+  await gate.ready({ job });
+  assert.equal(closeCalls, 1, "gespeicherte Bestätigung fordert nach frischer Erfassung genau einmal normales Schließen an");
+});
+
+test("Schließbestätigung wird nicht auf fremden, neu bestätigten oder stornierten Auftrag übertragen", async (t) => {
+  for (const scenario of ["foreign-run", "new-agreement", "cancelled", "no-consent"]) {
+    const f = await fixture(t);
+    await f.requests.prepare(job);
+    await f.requests.queueNormalClose(job.updateRunId);
+    const original = (await f.requests.status(job.updateRunId)).request;
+    await reportCatalogUsageRequestError(f.root, { captureRequestId: original.requestId,
+      requestRevision: original.captureRevision, message: "Erfassung abgebrochen" });
+    let nextJob = { ...job, renewUsageRequest: true };
+    if (scenario === "foreign-run") nextJob.updateRunId = "update-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    if (scenario === "new-agreement") nextJob.startedAt = "2026-10-03T11:00:00.000Z";
+    if (scenario === "cancelled") await f.requests.syncJob({ ...job, status: "completed" });
+    if (scenario === "no-consent") {
+      nextJob.usageConsent = { ...job.usageConsent, noChangesUntilClose: false };
+      await assert.rejects(f.requests.prepare(nextJob), /einmalige Bestätigung/);
+      assert.equal((await f.requests.status(job.updateRunId)).request.status, "paused");
+      const gate = createLightroomCloseGate({ taxonomyRoot: f.root, usageRequests: f.requests,
+        processes: async () => [{ id: 123, path: "C:\\Adobe\\Lightroom.exe" }],
+        closeProcesses: async () => { assert.fail("Widerrufene Startvereinbarung darf kein Schließen auslösen"); } });
+      await assert.rejects(gate.ready({ job: nextJob }), /Erfassung abgebrochen/);
+      continue;
+    }
+    await f.requests.prepare(nextJob);
+    const retry = (await f.requests.status(nextJob.updateRunId)).request;
+    assert.equal(retry.normalCloseRequestedAt, undefined, scenario);
+    assert.equal(retry.normalCloseAttemptedAt, undefined, scenario);
+    let closeCalls = 0;
+    const gate = createLightroomCloseGate({ taxonomyRoot: f.root, usageRequests: f.requests,
+      processes: async () => [{ id: 123, path: "C:\\Adobe\\Lightroom.exe" }], closeProcesses: async () => { closeCalls++; } });
+    await f.capture();
+    await gate.ready({ job: nextJob });
+    assert.equal(closeCalls, 0, scenario);
+  }
+});
+
+test("bereits abgeschlossener eigener Erfassungsrequest ersetzt weder neue Quittung noch neuen Schließnachweis", async (t) => {
+  const f = await fixture(t);
+  let closeCalls = 0;
+  const gate = createLightroomCloseGate({ taxonomyRoot: f.root, usageRequests: f.requests,
+    processes: async () => [{ id: 123, path: "C:\\Adobe\\Lightroom.exe" }], closeProcesses: async () => { closeCalls++; } });
+  await f.requests.prepare(job);
+  await gate.requestClose({ confirmed: true, updateRunId: job.updateRunId });
+  await f.capture();
+  await gate.ready({ job });
+  assert.equal(closeCalls, 1);
+  await f.close();
+  await f.requests.bindClosed(job.updateRunId);
+  const original = (await f.requests.status(job.updateRunId)).request;
+  assert.equal(original.status, "completed");
+  assert.ok(original.normalCloseAttemptedAt);
+  await fs.writeFile(f.inputs[0].catalogPath + ".lock", "reopened synthetic catalog");
+  await f.requests.prepare({ ...job, renewUsageRequest: true });
+  const retry = await f.requests.status(job.updateRunId);
+  assert.equal(retry.ready, false, "abgeschlossene alte Quittung ist nicht an neuen Request gebunden");
+  assert.equal(retry.request.status, "pending");
+  assert.equal(retry.request.normalCloseRequestedAt, original.normalCloseRequestedAt);
+  assert.equal(retry.request.normalCloseAttemptedAt, undefined, "alter Schließversuch ist kein Versuch für den neuen Request");
+  await gate.ready({ job });
+  assert.equal(closeCalls, 1);
+  await f.capture();
+  await gate.ready({ job });
+  await gate.ready({ job });
+  assert.equal(closeCalls, 2, "neuer Request nach frischer Quittung genau einmal versucht");
 });
 
 test("fehlende Erstregistrierung und unveränderter geschlossener Nachweis sind getrennte Fälle", async (t) => {

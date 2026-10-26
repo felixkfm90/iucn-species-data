@@ -1,6 +1,6 @@
 # Dokumentationsübersicht
 
-Stand: 2026-10-07
+Stand: 2026-10-25
 
 Aktuelle Bedien- und Betriebsverträge stehen neben ausdrücklich datierten Messungen und historischen
 Planungs-/Auditberichten. Ein älteres Datum allein macht einen unveränderten Vertrag nicht ungültig; ein
@@ -9,9 +9,9 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 ## Einstieg und verbindlicher aktueller Stand
 
 - [Projekt-README](../README.md): Installation, Bedienung und Betrieb.
-- [Roadmap](roadmap.md): aktuelle Restreihenfolge und offene Abnahmen vor dem Audit.
+- [Roadmap](roadmap.md): aktueller Arbeitsstand und nächste Schritte.
 - [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md): einzige führende Auditdatei einschließlich
-  Vorabregeln, kritischer Sicherungsempfehlungen, Entscheidungen und offenen Startgrenzen; noch kein Auditbefund.
+  Vorabregeln, Entscheidungen und laufender Befunde; Gesamtaudit am 8. Oktober begonnen, Abschluss offen.
 - [Taxonomie-Betriebsstand](taxonomy-current-status.md): abgeschlossene Reparatur und reguläres Quellenupdate, aktives lokales Paar und offene Abnahmen.
 - [Projektstatus](project-status.md): einzige aktuelle Quelle für Arten-/Assetzähler und Pflege-/Lizenzlisten; automatisch erzeugt.
 - [Dokumentationsregeln](documentation-lifecycle.md): Zuständigkeiten, historische Berichte und Prüfpflichten.
@@ -45,7 +45,7 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Neue Art anlegen](add-species-workflow.md), [Art umbenennen](rename-species-workflow.md),
   [Art löschen](delete-species-workflow.md), [manuelle Datenfelder](manual-species-fields.md).
 - [Artanlage-/Namenswahl-Regressionsstand](explorer-regression-fixes.md): datierter technischer Prüfstand.
-- [Artabbruch, verspätete Medienentscheidung und Lightroom-Pfadwarnung vom 4. Oktober](audits/2026-10-04-creation-abort-and-publication.md): jüngste gezielte Fehlerkorrektur und separate Prüfgrenzen.
+- [Artabbruch, verspätete Medienentscheidung und Lightroom-Pfadwarnung vom 4. Oktober](audits/2026-10-04-creation-abort-and-publication.md): datierter Korrektur- und Prüfbeleg; spätere Arbeiten stehen im laufenden Auditauftrag.
 - [Pipeline-Steuerung und Abschlussausgaben](pipeline-control-plan.md).
 - [Prüfung neuer Karten/Sounds](asset-review-workflow.md), [manuelle Kartenschutzmarkierungen](manual-map-overrides.md).
 - [Soundeditor und Ablehnungsrücksetzung](sound-editor.md), [Soundbar](soundbar.md).
@@ -63,7 +63,9 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 
 ## Squarespace und Website
 
-- [Footer](squarespace-footer.html), [Custom CSS](squarespace-custom.css): versionierte Einbindungsvorlagen.
+- [Footer](squarespace-footer.html), [Custom CSS](squarespace-custom.css): versionierte Einbindungsvorlagen;
+  CSS bleibt Standard-CSS. Die nötige LESS-Schreibweise ausschließlich im CMS-Editor beschreibt der
+  [Websitebetrieb](../README.md#website-und-veröffentlichung).
 - [Vorschau-/Veröffentlichungsvertrag Phase 8](phase-8-preview-release.md).
 - [Monatsaudit-Ablauf](monthly-site-audit.md), [SEO-Arbeitsliste](seo-worklist.md),
   [Bild-Alternativtexte](image-alt-audit.md), [CSS-Prüfung](css-layout-audit.md).

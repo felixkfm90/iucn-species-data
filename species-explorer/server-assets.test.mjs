@@ -5,6 +5,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
 import { join } from "node:path";
 import test from "node:test";
+import { checkPipelinePublication } from "./pipeline-publication-check.mjs";
 
 import {
   createExplorerServer as createProtectedExplorerServer,
@@ -45,6 +46,63 @@ await import("./public/filter.js");
 const createExplorerServer = (options = {}) => createProtectedExplorerServer({
   ...options,
   sessionProtection: false,
+});
+
+test("Beschädigte Karten werden vor Speicherung gesperrt; alte Karte und Register bleiben erhalten, Abschlussgate stoppt", async (context) => {
+  const root = await createEditableFixture();
+  const cleanup = registerFixtureCleanup(context, root);
+  const original = createTestJpeg(640, 480), mapPath = join(root, "species-assets", "Amsel", "map.jpg");
+  await writeFile(mapPath, original);
+  for (const name of ["portrait.webp", "spectrogram.webp"]) await writeFile(join(root, "species-assets", "Amsel", name), createTestWebp(2));
+  const server = await createExplorerServer({ repoRoot: root, port: 0, sessionProtection: false,
+    publishAssetChanges: false, rebuildReportAfterAssetSave: false });
+  cleanup(server); const address = await server.listen(), base = `http://127.0.0.1:${address.port}`;
+  const headerOnly = original.subarray(0, original.indexOf(Buffer.from([0xff, 0xda])));
+  const broken = [headerOnly, original.subarray(0, -10), Buffer.from("<html>403 Forbidden</html>")];
+  assert.equal((await checkPipelinePublication(root)).ok, true);
+  for (const buffer of broken) {
+    const response = await fetch(`${base}/api/species/turdusmerula/assets/map/preview`, { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ originalName: "bad.jpg",
+        imageBase64: buffer.toString("base64"), reason: "Audit: defekte Karte" }) });
+    assert.equal(response.status, 400, JSON.stringify(await response.json()));
+    assert.deepEqual(await readFile(mapPath), original);
+    assert.equal(await readFile(join(root, "species-assets-overrides.json"), "utf8").catch(() => null), null);
+    await writeFile(mapPath, buffer);
+    const gate = await checkPipelinePublication(root);
+    assert.equal(gate.ok, false); assert.match(gate.message, /map.jpg: Karte ist ungültig/);
+    await writeFile(mapPath, original);
+  }
+  assert.equal((await checkPipelinePublication(root)).ok, true);
+});
+
+test("Portrait-Neu- und Bestandsimport schützen Entwurf und Original vor beschädigtem Eingang und Renderausgang", async (context) => {
+  const root = await createEditableFixture(), cleanup = registerFixtureCleanup(context, root);
+  const original = createTestWebp(7), portraitPath = join(root, "species-assets", "Amsel", "portrait.webp");
+  await writeFile(portraitPath, original);
+  const listBefore = await readFile(join(root, "species_list.json"));
+  let renders = 0;
+  const server = await createExplorerServer({ repoRoot: root, port: 0, publishAssetChanges: false,
+    rebuildReportAfterAssetSave: false, portraitRenderer: async ({ outputPath }) => {
+      renders += 1; await writeFile(outputPath, createTestWebp(2).subarray(0, 30)); return { width: 1280, height: 1600 };
+    } });
+  cleanup(server); const address = await server.listen(), base = `http://127.0.0.1:${address.port}`;
+  const post = async (route, body) => { const response = await fetch(base + route, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return { status: response.status, data: await response.json() }; };
+  const draft = await post("/api/species/new/preview", { values: { german: "Testvogel", english: "Test bird",
+    scientificName: "Testus avis", size: "ca. 20 cm", weight: "ca. 50 g", lifeExpectancy: "ca. 5 Jahre" } });
+  assert.equal(draft.status, 200);
+  const valid = createTestPng(800, 1000), broken = valid.subarray(0, 33);
+  for (const route of ["/api/species/new/portrait-preview", "/api/species/turdusmerula/assets/portrait/preview"]) {
+    const payload = { token: draft.data.token, originalName: "portrait.png", imageBase64: broken.toString("base64") };
+    assert.equal((await post(route, payload)).status, 400);
+    const rendered = await post(route, { ...payload, imageBase64: valid.toString("base64") });
+    assert.notEqual(rendered.status, 200, JSON.stringify(rendered));
+  }
+  assert.equal(renders, 2, "Beschädigte Eingänge starten keinen Renderer");
+  assert.deepEqual(await readFile(portraitPath), original);
+  assert.deepEqual(await readFile(join(root, "species_list.json")), listBefore);
+  assert.equal((await post("/api/species/new/save", { token: draft.data.token })).status, 200, "Portraitfehler lässt ursprünglichen Entwurf gültig");
 });
 
 test("offene Artanlage erlaubt mehrere Karten- und Soundwahlen mit unverändertem ursprünglichem Rücknahmesatz", async (context) => {
@@ -473,7 +531,7 @@ test("Soundimport ersetzt MP3 und Credits gemeinsam und erzeugt ein hashverknüp
   assert.equal(mp3Inspection.signature, "ID3 + MPEG frames");
   assert.equal(mp3Inspection.frameOffset, 10);
   assert.equal(mp3Inspection.verifiedFrames, 3);
-  assert.deepEqual(inspectWebp(webp), { signature: "RIFF/WEBP" });
+  assert.deepEqual(inspectWebp(webp), { signature: "RIFF/WEBP", width: 8, height: 8 });
   assert.throws(() => inspectWebp(Buffer.from("kein webp")), /WebP/);
   assert.throws(
     () => inspectMp3(Buffer.from([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])),

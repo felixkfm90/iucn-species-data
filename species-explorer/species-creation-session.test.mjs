@@ -38,8 +38,7 @@ async function publicationFixture(t) {
   await writeFile(join(root, "lastSavedAssessmentId.json"), "{}");
   await writeFile(join(root, "species-assets-overrides.json"), JSON.stringify({ version: 1, assets: {} }));
   await writeFile(join(root, "docs", "project-status.md"), "Fixture status\n");
-  const validWebp = Buffer.alloc(30); validWebp.write("RIFF"); validWebp.writeUInt32LE(22, 4);
-  validWebp.write("WEBPVP8X", 8); validWebp.writeUInt32LE(10, 16);
+  const validWebp = createTestWebp(1);
   await writeFile(join(root, "species-assets", "Amsel", "map.jpg"), createTestJpeg(640, 480));
   for (const name of ["portrait.webp", "spectrogram.webp"]) await writeFile(join(root, "species-assets", "Amsel", name), validWebp);
   git("init", "--quiet", "-b", "main");

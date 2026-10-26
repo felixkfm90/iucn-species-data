@@ -58,6 +58,7 @@ function createOperations(calls, previewPath = null) {
     deleteSpecies: record("deleteSpecies"),
     editSpecies: record("editSpecies"),
     editTaxonomy: record("editTaxonomy"),
+    editBackups: record("editBackups"),
     taxonomyRead: record("taxonomyRead"),
     taxonomyMaintenance: record("taxonomyMaintenance"),
     taxonomyMaster: record("taxonomyMaster"),
@@ -72,7 +73,7 @@ function createOperations(calls, previewPath = null) {
 }
 
 test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", () => {
-  for (const action of ["sequence-start", "sequence-resume", "sequence-pause", "lightroom-close"]) {
+  for (const action of ["sequence-start", "sequence-resume", "sequence-pause", "sequence-restart-preview", "sequence-restart-build", "lightroom-close"]) {
     assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/update/${action}`), { name: "taxonomy-maintenance", action });
     assert.notEqual(matchExplorerRoute("GET", `/api/taxonomy/update/${action}`).name, "taxonomy-maintenance");
   }
@@ -199,6 +200,70 @@ test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", (
   assert.deepEqual(matchExplorerRoute("DELETE", "/api/species/Amsel"), {
     name: "method-not-allowed",
   });
+});
+
+test("Historische Sicherungen sind getrennt lesbar und brauchen eine geschützte Bestätigung", async (context) => {
+  const root = await createTemporaryRoot(context);
+  const publicDir = path.join(root, "public");
+  await mkdir(publicDir, { recursive: true });
+  const calls = [];
+  const baseUrl = await createTestServer(context, {
+    host: "127.0.0.1", sessionToken: "restore-session", sessionProtection: true,
+    repoRoot: root, publicDir, operations: createOperations(calls),
+  });
+  const pathPrefix = "/api/species/Art%20Test/backups";
+  const listed = await fetch(`${baseUrl}${pathPrefix}`);
+  assert.equal(listed.status, 200);
+  assert.deepEqual(calls.at(-1), { name: "editBackups", id: "Art Test", action: "list", payload: {} });
+  const archives = await fetch(`${baseUrl}/api/backup/archives`);
+  assert.equal(archives.status, 200);
+  assert.deepEqual(calls.at(-1), { name: "read", resource: "backup-archives" });
+  const readCalls = calls.length;
+  for (const pathname of [pathPrefix, "/api/backup/archives"]) {
+    assert.equal((await fetch(`${baseUrl}${pathname}`, { headers: { Origin: "https://fremd.example" } })).status, 403);
+  }
+  assert.equal(calls.length, readCalls);
+  for (const action of ["preview", "restore"]) {
+    const callsBeforeWrite = calls.length;
+    const denied = await fetch(`${baseUrl}${pathPrefix}/${action}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: "chosen" }),
+    });
+    assert.equal(denied.status, 403);
+    assert.equal(calls.length, callsBeforeWrite);
+    const allowed = await fetch(`${baseUrl}${pathPrefix}/${action}`, {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Species-Explorer-Session": "restore-session" },
+      body: JSON.stringify({ token: "chosen" }),
+    });
+    assert.equal(allowed.status, 200);
+    assert.deepEqual(calls.at(-1), { name: "editBackups", id: "Art Test", action, payload: { token: "chosen" } });
+  }
+});
+
+test("Neustartvorschau und bestätigter Neuaufbau benötigen die lokale Sitzung und erhalten die exakte Auftragsbindung", async (context) => {
+  const root = await createTemporaryRoot(context);
+  const publicDir = path.join(root, "public");
+  await mkdir(publicDir, { recursive: true });
+  const calls = [];
+  const baseUrl = await createTestServer(context, { host: "127.0.0.1", sessionToken: "restart-session",
+    sessionProtection: true, repoRoot: root, publicDir, operations: createOperations(calls) });
+  const payload = { confirmed: true, token: "bound-preview", updateRunId: "update-previous",
+    buildJobId: "job-previous", buildJobRevision: "bound-recipe",
+    usageConsent: { allCatalogsConfirmed: true, noChangesUntilClose: true } };
+  for (const action of ["sequence-restart-preview", "sequence-restart-build"]) {
+    const pathname = `/api/taxonomy/update/${action}`;
+    for (const headers of [{}, { "X-Species-Explorer-Session": "restart-session", Origin: "https://fremd.example" }]) {
+      const before = calls.length;
+      const denied = await fetch(`${baseUrl}${pathname}`, { method: "POST",
+        headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(payload) });
+      assert.equal(denied.status, 403);
+      assert.equal(calls.length, before, "Abgewiesene Aufrufe dürfen die Fachoperation nicht erreichen");
+    }
+    const allowed = await fetch(`${baseUrl}${pathname}`, { method: "POST",
+      headers: { "Content-Type": "application/json", "X-Species-Explorer-Session": "restart-session" },
+      body: JSON.stringify(payload) });
+    assert.equal(allowed.status, 200);
+    assert.deepEqual(calls.at(-1), { name: "taxonomyMaintenance", action, payload });
+  }
 });
 
 test("Handler liefert Sitzung, Lesedaten und freigegebene statische Dateien", async (context) => {
